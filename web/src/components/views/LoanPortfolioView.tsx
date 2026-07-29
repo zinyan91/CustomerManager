@@ -50,7 +50,11 @@ const fmtMoney = (v?: number | null) => v !== undefined && v !== null ? v.toLoca
 const fmtRate = (v?: number | null) => v !== undefined && v !== null ? (v * 100).toFixed(2) + '%/năm' : '—';
 const fmtDate = (v?: string | null) => {
   if (!v) return '—';
-  try { return new Date(v).toLocaleDateString('vi-VN'); } catch { return v; }
+  try {
+    const parts = v.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    return v;
+  } catch { return v; }
 };
 
 // Helper: Auto-calculate End Date by adding months to a date string (YYYY-MM-DD)
@@ -101,7 +105,8 @@ function generateSchedule(
     }
   }
 
-  const annualRate = interestRate / 100;
+  // interestRate is stored as decimal (e.g. 0.1105 for 11.05%)
+  const annualRate = interestRate > 1 ? interestRate / 100 : interestRate;
 
   for (let i = 1; i <= periods; i++) {
     const dueDate = new Date(startYear, startMonth + i, startDay);
@@ -528,17 +533,18 @@ export const LoanPortfolioView: React.FC = () => {
         delete payload.Id;
 
         // ─── RÀNG BUỘC: Kiểm tra dư nợ KUNN không vượt quá Tổng mức cấp HMTD ───
-        if (loanAmount && creditLimit > 0) {
-          // Tổng tất cả KUNN hiện có (không tính bản thân nếu đang update)
+        // Dùng totalCreditLimit từ hợp đồng master GNN-01 (không phải creditLimit từ form)
+        const masterLimit = totalCreditLimit > 0 ? totalCreditLimit : creditLimit;
+        if (loanAmount && masterLimit > 0) {
           const existingKunnTotal = contracts
-            .filter(c => c.Id !== selectedContract?.Id) // bỏ qua KUNN đang chỉnh sửa nếu có
-            .reduce((sum, c) => sum + (c.LoanAmount || c.ContractAmount || 0), 0);
+            .filter(c => c.Id !== selectedContract?.Id)
+            .reduce((sum, c) => sum + (c.LoanAmount || 0), 0);
           const newTotal = existingKunnTotal + loanAmount;
-          const remaining = creditLimit - existingKunnTotal;
+          const remaining = masterLimit - existingKunnTotal;
 
-          if (newTotal > creditLimit) {
+          if (newTotal > masterLimit) {
             showNotify('error',
-              `❌ VƯỢT HẠN MỨC! Tổng mức cấp HMTD: ${creditLimit.toLocaleString('vi-VN')} VNĐ | ` +
+              `❌ VƯỢT HẠN MỨC! Tổng mức cấp HMTD: ${masterLimit.toLocaleString('vi-VN')} VNĐ | ` +
               `KUNN hiện hữu: ${existingKunnTotal.toLocaleString('vi-VN')} VNĐ | ` +
               `HMTD còn lại: ${remaining.toLocaleString('vi-VN')} VNĐ | ` +
               `Số tiền KUNN đang nhập: ${loanAmount.toLocaleString('vi-VN')} VNĐ — ` +

@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Customer, Collateral, LoanContract, CreditCard } from '../types';
+import type { Customer, Collateral, LoanContract, CreditCard, RepaymentSchedule } from '../types';
 
 export async function fetchCustomersAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
   try {
@@ -152,3 +152,80 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
     return data;
   }
 }
+
+// Fetch contracts by customer ID (search-first approach)
+export async function fetchContractsByCustomerAPI(customerId: number): Promise<LoanContract[]> {
+  try {
+    const { data, error } = await supabase
+      .from('LoanContracts')
+      .select('*, customer:Customers(*), collateral:Collaterals(*)')
+      .eq('CustomerId', customerId)
+      .order('Id', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('fetchContractsByCustomerAPI error:', err);
+    return [];
+  }
+}
+
+// Repayment Schedules
+export async function fetchRepaymentSchedulesAPI(contractId: number): Promise<RepaymentSchedule[]> {
+  try {
+    const { data, error } = await supabase
+      .from('RepaymentSchedules')
+      .select('*')
+      .eq('ContractId', contractId)
+      .order('PeriodNumber', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('fetchRepaymentSchedulesAPI error:', err);
+    return [];
+  }
+}
+
+export async function saveRepaymentScheduleAPI(schedule: Partial<RepaymentSchedule>): Promise<RepaymentSchedule> {
+  const isUpdate = !!schedule.Id;
+
+  if (!isUpdate) {
+    try {
+      const { data } = await supabase.from('RepaymentSchedules').select('Id');
+      const maxId = (data && data.length > 0) ? Math.max(...data.map((d: any) => d.Id || 0)) : 0;
+      schedule.Id = maxId + 1;
+    } catch {
+      schedule.Id = Date.now();
+    }
+  }
+
+  if (isUpdate) {
+    const { data, error } = await supabase.from('RepaymentSchedules').update(schedule).eq('Id', schedule.Id).select().single();
+    if (error) throw error;
+    return data;
+  } else {
+    const { data, error } = await supabase.from('RepaymentSchedules').insert([schedule]).select().single();
+    if (error) throw error;
+    return data;
+  }
+}
+
+export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<RepaymentSchedule>[]): Promise<void> {
+  if (!schedules.length) return;
+  // Get max ID
+  try {
+    const { data } = await supabase.from('RepaymentSchedules').select('Id');
+    let maxId = (data && data.length > 0) ? Math.max(...data.map((d: any) => d.Id || 0)) : 0;
+    const withIds = schedules.map((s) => ({ ...s, Id: ++maxId }));
+    const { error } = await supabase.from('RepaymentSchedules').insert(withIds);
+    if (error) throw error;
+  } catch (err) {
+    console.error('bulkSaveRepaymentSchedulesAPI error:', err);
+    throw err;
+  }
+}
+
+export async function deleteRepaymentSchedulesByContractAPI(contractId: number): Promise<void> {
+  const { error } = await supabase.from('RepaymentSchedules').delete().eq('ContractId', contractId);
+  if (error) throw error;
+}
+

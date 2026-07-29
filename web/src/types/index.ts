@@ -39,15 +39,48 @@ export interface LoanContract {
   CustomerId: number;
   CollateralId?: number | null;
   ContractNumber: string;
-  ContractType: number; // 0: HMTD, 1: TermLoan
-  ContractAmount?: number;
-  DebtGroup?: number;
+  ContractType: number;            // 0: HMTD, 1: TermLoan
+
+  // HĐTD fields (Hợp Đồng Tín Dụng)
+  ContractAmount?: number;         // Tổng mức cấp (HĐTD level)
+  ContractStartDate?: string | null; // Ngày HĐ có hiệu lực
+  ContractEndDate?: string | null;   // Ngày kết thúc HĐ
+  LoanTenorMonths?: number | null;   // Thời hạn vay (tháng)
+  HdtdDueDate?: string | null;       // Ngày kết thúc HĐTD (legacy)
+
+  // KUNN fields (Giấy Nhận Nợ)
+  LoanAmount?: number | null;        // Số tiền nhận nợ (KUNN level)
+  CurrentBalance?: number | null;    // Dư nợ hiện hữu
+  InterestRate?: number | null;      // Lãi suất (e.g. 0.085 = 8.5%)
+  DisbursementDate?: string | null;  // Ngày giải ngân (ngày bắt đầu nhận nợ)
+  KunnDueDate?: string | null;       // Ngày kết thúc KUNN
+  KunnTenor?: string | null;         // Thời hạn KUNN (e.g. "5T", "10 năm")
+  RepaymentStartDate?: string | null;// Ngày bắt đầu trả nợ
+
+  // Other
+  LoanPurpose?: string | null;       // Mô tả mục đích vay (free text)
+  LoanPurposeType?: string | null;   // Loại mục đích vay (Kinh doanh, tiêu dùng...)
+  DebtGroup?: number;                // Nhóm nợ (1-5)
   IsSettled?: boolean;
   IsRestructured?: boolean;
-  HdtdDueDate?: string | null;   // Ngày giải ngân KUNN
-  LoanPurpose?: string | null;   // Mục đích vay vốn (KUNN)
+  Note?: string | null;
+
   customer?: Customer;
   collateral?: Collateral;
+}
+
+export interface RepaymentSchedule {
+  Id: number;
+  ContractId: number;
+  PeriodNumber: number;
+  DueDate: string;
+  PrincipalAmount: number;
+  InterestAmount: number;
+  TotalAmount: number;
+  IsPaid: boolean;
+  PaymentDate?: string | null;
+  ActualPaidAmount?: number;
+  Note?: string | null;
 }
 
 export interface CreditCard {

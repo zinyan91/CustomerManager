@@ -12,19 +12,25 @@ export async function fetchCustomersAPI(filters?: { cif?: string; name?: string;
 
     const res = await fetch(`${API_BASE}/customers?${params.toString()}`);
     if (res.ok) {
-      return await res.json();
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
     }
-  } catch {
-    // Fallback to Supabase SDK if API endpoint is not present (e.g., local preview)
+  } catch (err) {
+    console.warn("API fetch failed, falling back to Supabase SDK:", err);
   }
 
-  let query = supabase.from('Customers').select('*').order('Id', { ascending: false });
-  if (filters?.cif) query = query.ilike('CifKh', `%${filters.cif}%`);
-  if (filters?.name) query = query.ilike('FullName', `%${filters.name}%`);
-  if (filters?.nationalId) query = query.ilike('NationalId', `%${filters.nationalId}%`);
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
+  try {
+    let query = supabase.from('Customers').select('*');
+    if (filters?.cif) query = query.ilike('CifKh', `%${filters.cif}%`);
+    if (filters?.name) query = query.ilike('FullName', `%${filters.name}%`);
+    if (filters?.nationalId) query = query.ilike('NationalId', `%${filters.nationalId}%`);
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data || []).sort((a: any, b: any) => (b.Id || 0) - (a.Id || 0));
+  } catch (err: any) {
+    console.error("Supabase SDK fallback error:", err);
+    return [];
+  }
 }
 
 export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Customer> {
@@ -41,8 +47,8 @@ export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Cust
     if (res.ok) {
       return await res.json();
     }
-  } catch {
-    // Fallback to Supabase SDK
+  } catch (err) {
+    console.warn("API save failed, falling back to Supabase SDK:", err);
   }
 
   if (customer.Id) {
@@ -60,8 +66,8 @@ export async function deleteCustomerAPI(id: number): Promise<void> {
   try {
     const res = await fetch(`${API_BASE}/customers?id=${id}`, { method: 'DELETE' });
     if (res.ok) return;
-  } catch {
-    // Fallback to Supabase SDK
+  } catch (err) {
+    console.warn("API delete failed, falling back to Supabase SDK:", err);
   }
 
   const { error } = await supabase.from('Customers').delete().eq('Id', id);
@@ -71,14 +77,21 @@ export async function deleteCustomerAPI(id: number): Promise<void> {
 export async function fetchCollateralsAPI(): Promise<Collateral[]> {
   try {
     const res = await fetch(`${API_BASE}/collaterals`);
-    if (res.ok) return await res.json();
-  } catch {
-    // Fallback
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (err) {
+    console.warn("API collaterals fetch failed:", err);
   }
 
-  const { data, error } = await supabase.from('Collaterals').select('*, customer:Customers(*)').order('Id', { ascending: false });
-  if (error) throw error;
-  return data || [];
+  try {
+    const { data, error } = await supabase.from('Collaterals').select('*, customer:Customers(*)');
+    if (error) throw error;
+    return (data || []).sort((a: any, b: any) => (b.Id || 0) - (a.Id || 0));
+  } catch (err) {
+    return [];
+  }
 }
 
 export async function saveCollateralAPI(collateral: Partial<Collateral>): Promise<Collateral> {
@@ -93,8 +106,8 @@ export async function saveCollateralAPI(collateral: Partial<Collateral>): Promis
       body: JSON.stringify(collateral)
     });
     if (res.ok) return await res.json();
-  } catch {
-    // Fallback
+  } catch (err) {
+    console.warn("API saveCollateral failed:", err);
   }
 
   if (collateral.Id) {
@@ -111,14 +124,21 @@ export async function saveCollateralAPI(collateral: Partial<Collateral>): Promis
 export async function fetchContractsAPI(): Promise<LoanContract[]> {
   try {
     const res = await fetch(`${API_BASE}/contracts`);
-    if (res.ok) return await res.json();
-  } catch {
-    // Fallback
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (err) {
+    console.warn("API contracts fetch failed:", err);
   }
 
-  const { data, error } = await supabase.from('LoanContracts').select('*, customer:Customers(*), collateral:Collaterals(*)').order('Id', { ascending: false });
-  if (error) throw error;
-  return data || [];
+  try {
+    const { data, error } = await supabase.from('LoanContracts').select('*, customer:Customers(*), collateral:Collaterals(*)');
+    if (error) throw error;
+    return (data || []).sort((a: any, b: any) => (b.Id || 0) - (a.Id || 0));
+  } catch (err) {
+    return [];
+  }
 }
 
 export async function saveContractAPI(contract: Partial<LoanContract>): Promise<LoanContract> {
@@ -133,8 +153,8 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
       body: JSON.stringify(contract)
     });
     if (res.ok) return await res.json();
-  } catch {
-    // Fallback
+  } catch (err) {
+    console.warn("API saveContract failed:", err);
   }
 
   if (contract.Id) {
@@ -151,14 +171,21 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
 export async function fetchCreditCardsAPI(): Promise<CreditCard[]> {
   try {
     const res = await fetch(`${API_BASE}/credit-cards`);
-    if (res.ok) return await res.json();
-  } catch {
-    // Fallback
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (err) {
+    console.warn("API credit-cards fetch failed:", err);
   }
 
-  const { data, error } = await supabase.from('CreditCards').select('*, customer:Customers(*)').order('Id', { ascending: false });
-  if (error) throw error;
-  return data || [];
+  try {
+    const { data, error } = await supabase.from('CreditCards').select('*, customer:Customers(*)');
+    if (error) throw error;
+    return (data || []).sort((a: any, b: any) => (b.Id || 0) - (a.Id || 0));
+  } catch (err) {
+    return [];
+  }
 }
 
 export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<CreditCard> {
@@ -169,8 +196,8 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
       body: JSON.stringify(card)
     });
     if (res.ok) return await res.json();
-  } catch {
-    // Fallback
+  } catch (err) {
+    console.warn("API saveCreditCard failed:", err);
   }
 
   const { data, error } = await supabase.from('CreditCards').insert([card]).select().single();

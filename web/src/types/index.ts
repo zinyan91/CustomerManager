@@ -34,15 +34,26 @@ export interface Collateral {
   customer?: Customer;
 }
 
+export interface ContractCollateral {
+  Id: number;
+  ContractId: number;
+  CollateralId: number;
+  AllocatedValue?: number;
+  Note?: string | null;
+  collateral?: Collateral;
+}
+
 export interface LoanContract {
   Id: number;
   CustomerId: number;
   CollateralId?: number | null;
+  ParentContractId?: number | null; // Dành cho KUNN thuộc HĐTD Hạn mức
   ContractNumber: string;
-  ContractType: number;            // 0: HMTD, 1: TermLoan
+  ContractType: number;              // 0: HMTD, 1: TermLoan, 2: HMTD từng lần, 3: Thẻ tín dụng, 4: Cầm cố STK...
+  LoanMethod?: string | null;        // Phương thức vay (Hạn mức tín dụng, Hạn mức tín dụng từng lần, Cho vay từng lần, Hạn mức thẻ tín dụng, Cầm cố sổ tiết kiệm)
 
   // HĐTD fields (Hợp Đồng Tín Dụng)
-  ContractAmount?: number;         // Tổng mức cấp (HĐTD level)
+  ContractAmount?: number;           // Tổng mức cấp (HĐTD level)
   ContractStartDate?: string | null; // Ngày HĐ có hiệu lực
   ContractEndDate?: string | null;   // Ngày kết thúc HĐ
   LoanTenorMonths?: number | null;   // Thời hạn vay (tháng)
@@ -51,11 +62,25 @@ export interface LoanContract {
   // KUNN fields (Giấy Nhận Nợ)
   LoanAmount?: number | null;        // Số tiền nhận nợ (KUNN level)
   CurrentBalance?: number | null;    // Dư nợ hiện hữu
-  InterestRate?: number | null;      // Lãi suất (e.g. 0.085 = 8.5%)
   DisbursementDate?: string | null;  // Ngày giải ngân (ngày bắt đầu nhận nợ)
   KunnDueDate?: string | null;       // Ngày kết thúc KUNN
   KunnTenor?: string | null;         // Thời hạn KUNN (e.g. "5T", "10 năm")
   RepaymentStartDate?: string | null;// Ngày bắt đầu trả nợ
+
+  // Detailed Interest Rates
+  InterestRate?: number | null;           // Lãi suất áp dụng hiện tại (%/năm decimal, e.g. 0.085)
+  PreferentialRate?: number | null;       // Lãi suất ưu đãi (LSUD)
+  PreferentialPeriodMonths?: number | null; // Thời gian ưu đãi (tháng)
+  BaseRate?: number | null;               // Lãi suất cơ sở (LSCS)
+  MarginRate?: number | null;             // Biên độ lãi suất
+  PostPreferentialRate?: number | null;   // Lãi suất sau ưu đãi = LSUD + Biên độ
+  NormalRate?: number | null;             // Lãi suất thông thường = LSCS + Biên độ
+
+  // Repayment Methods & Grace
+  PrincipalRepaymentMethod?: string | null; // Cách thức trả gốc
+  InterestRepaymentMethod?: string | null;  // Cách thức trả lãi
+  PrincipalGracePeriodMonths?: number | null; // Ân hạn gốc (tháng)
+  InterestGracePeriodMonths?: number | null;  // Ân hạn lãi (tháng)
 
   // Other
   LoanPurpose?: string | null;       // Mô tả mục đích vay (free text)
@@ -67,6 +92,7 @@ export interface LoanContract {
 
   customer?: Customer;
   collateral?: Collateral;
+  contractCollaterals?: ContractCollateral[];
 }
 
 export interface RepaymentSchedule {

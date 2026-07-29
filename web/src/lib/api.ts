@@ -56,6 +56,20 @@ export async function fetchCollateralsAPI(): Promise<Collateral[]> {
   }
 }
 
+export async function fetchCollateralsByCustomerAPI(customerId: number): Promise<Collateral[]> {
+  try {
+    const { data, error } = await supabase
+      .from('Collaterals')
+      .select('*')
+      .eq('CustomerId', customerId);
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error("fetchCollateralsByCustomerAPI error:", err);
+    return [];
+  }
+}
+
 export async function saveCollateralAPI(collateral: Partial<Collateral>): Promise<Collateral> {
   const isUpdate = !!collateral.Id;
 

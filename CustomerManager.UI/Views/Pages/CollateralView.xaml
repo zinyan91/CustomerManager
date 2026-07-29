@@ -1,0 +1,244 @@
+<UserControl x:Class="CustomerManager.Views.Pages.CollateralView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="420"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- DANH SÁCH TÀI SẢN BẢO ĐẢM BÊN TRÁI (TỰ ĐỘNG DÃN 100% CHIỀU CAO) -->
+        <Grid Grid.Column="0" Margin="0,0,20,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- KHUNG BỘ LỌC KHÁCH HÀNG & TỔNG HỢP KPI THẾ CHẤP -->
+            <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <Grid Margin="0,0,0,14">
+                        <TextBlock Text="DANH MỤC TÀI SẢN BẢO ĐẢM (TSĐB)" Style="{StaticResource Text.Header}" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Border Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource BdCard}" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Số TSĐB: " Foreground="{DynamicResource OnSurfaceSecondary}" FontSize="12"/>
+                                    <TextBlock Text="{Binding FilteredCollateralCount}" Foreground="{DynamicResource Primary}" FontWeight="Bold" FontSize="12"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource BdCard}" BorderThickness="1" CornerRadius="6" Padding="10,4">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Tổng giá trị: " Foreground="{DynamicResource OnSurfaceSecondary}" FontSize="12"/>
+                                    <TextBlock Text="{Binding FilteredTotalAppraisedValue, Converter={StaticResource DecimalMoneyConverter}}" Foreground="{DynamicResource Success}" FontWeight="Bold" FontSize="12"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- 3 Ô TRA CỨU TÀI SẢN THÔNG MINH -->
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Style="{StaticResource WatermarkTextBox}" Tag="Mã CIF KH..." Margin="0,0,6,0"
+                                 Text="{Binding SearchCif, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox Grid.Column="1" Style="{StaticResource WatermarkTextBox}" Tag="Họ tên KH CSH..." Margin="0,0,6,0"
+                                 Text="{Binding SearchOwnerName, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBox Grid.Column="2" Style="{StaticResource WatermarkTextBox}" Tag="Mã TS chứng thư..."
+                                 Text="{Binding SearchAssetCode, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+
+                    <!-- COMBOBOX LỌC THEO KHÁCH HÀNG THUẬN TIỆN -->
+                    <ComboBox ItemsSource="{Binding FilterCustomerList}" 
+                              SelectedValuePath="Id" 
+                              DisplayMemberPath="DisplayName" 
+                              SelectedValue="{Binding FilterCustomerId}" 
+                              Validation.ErrorTemplate="{x:Null}"
+                              Height="38"/>
+                </StackPanel>
+            </Border>
+
+            <!-- DATAGRID CHUẨN 10 CỘT (DÃN TOÀN BỘ CHIỀU CAO MÀN HÌNH) -->
+            <Border Grid.Row="1" Style="{StaticResource Card}" VerticalAlignment="Stretch">
+                <DataGrid Style="{StaticResource AppDataGrid}" 
+                          ItemsSource="{Binding Collaterals}" 
+                          SelectedItem="{Binding SelectedCollateral}" 
+                          PreviewMouseLeftButtonDown="DataGrid_PreviewMouseLeftButtonDown"
+                          AutoGenerateColumns="False" 
+                          VerticalAlignment="Stretch"
+                          IsReadOnly="True">
+                    <DataGrid.Columns>
+                        <!-- 1. Mã TS chứng thư -->
+                        <DataGridTextColumn Header="MÃ TS" Binding="{Binding AssetCodeDisplay}" Width="100"/>
+                        
+                        <!-- 2. Chủ sở hữu (CSH) -->
+                        <DataGridTextColumn Header="CHỦ SỞ HỮU (CSH)" Binding="{Binding Customer.FullName}" Width="140"/>
+                        
+                        <!-- 3. Địa chỉ -->
+                        <DataGridTextColumn Header="ĐỊA CHỈ TSĐB" Binding="{Binding Address}" Width="1.3*"/>
+                        
+                        <!-- 4. Loại TS rút gọn (Loại 1, Loại 2, Loại 3, Loại 4, Hạn chế) -->
+                        <DataGridTextColumn Header="LOẠI TÀI SẢN" Binding="{Binding AssetTypeDisplay}" Width="110"/>
+                        
+                        <!-- 5. LTV tối đa -->
+                        <DataGridTextColumn Header="LTV TỐI ĐA" Binding="{Binding LtvMaxRate, StringFormat={}{0:P0}}" Width="85"/>
+                        
+                        <!-- 6. LTV khoản vay (Hiển thị - khi chưa có khoản vay) -->
+                        <DataGridTextColumn Header="LTV VAY" Binding="{Binding LtvLoanDisplay}" Width="80"/>
+                        
+                        <!-- 7. Ngày Định giá -->
+                        <DataGridTextColumn Header="NGÀY ĐỊNH GIÁ" Binding="{Binding AppraisalDate, StringFormat={}{0:dd/MM/yyyy}}" Width="105"/>
+                        
+                        <!-- 8. Hiệu lực định giá -->
+                        <DataGridTextColumn Header="HIỆU LỰC" Binding="{Binding AppraisalValidMonths, StringFormat={}{0} tháng}" Width="85"/>
+                        
+                        <!-- 9. Ngày hết hạn định giá -->
+                        <DataGridTextColumn Header="HẾT HẠN ĐỊNH GIÁ" Binding="{Binding ExpiryDate, StringFormat={}{0:dd/MM/yyyy}}" Width="120"/>
+                        
+                        <!-- 10. Số ngày còn lại (Kèm Đổi 0 ngày/Hết hạn thành "Cần định giá lại tài sản") -->
+                        <DataGridTemplateColumn Header="CÒN LẠI (NGÀY)" Width="170">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="6" Padding="8,4" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#064E3B"/>
+                                                <Setter Property="BorderBrush" Value="#10B981"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Style.Triggers>
+                                                    <!-- Còn <= 30 ngày: Tô VÀNG -->
+                                                    <DataTrigger Binding="{Binding IsWarningDays}" Value="True">
+                                                        <Setter Property="Background" Value="#78350F"/>
+                                                        <Setter Property="BorderBrush" Value="#F59E0B"/>
+                                                    </DataTrigger>
+                                                    <!-- Hết hạn / <= 0 ngày: Tô ĐỎ "Cần định giá lại tài sản" -->
+                                                    <DataTrigger Binding="{Binding IsExpiredDays}" Value="True">
+                                                        <Setter Property="Background" Value="#7F1D1D"/>
+                                                        <Setter Property="BorderBrush" Value="#EF4444"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding RemainingDaysDisplay}" FontWeight="Bold" FontSize="11" Foreground="#FFFFFF"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+        </Grid>
+
+        <!-- FORM KHỞI TẠO & CẬP NHẬT CHỨNG THƯ ĐỊNH GIÁ BÊN PHẢI -->
+        <Border Grid.Column="1" Style="{StaticResource CardPanel}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <Grid Margin="0,0,0,4">
+                        <TextBlock Text="{Binding FormTitle}" Style="{StaticResource Text.Title}" Foreground="{DynamicResource Primary}" VerticalAlignment="Center"/>
+                        <Button Content="✨ TẠO MỚI" 
+                                Command="{Binding ClearSelectionCommand}" 
+                                Style="{StaticResource SecondaryButton}" 
+                                Height="28" 
+                                Padding="8,2" 
+                                HorizontalAlignment="Right" 
+                                VerticalAlignment="Center"
+                                Visibility="{Binding IsCollateralSelected, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    </Grid>
+                    <TextBlock Text="Khởi tạo hoặc tái định giá chứng thư ngân hàng" Foreground="{DynamicResource OnSurfaceSecondary}" FontSize="12" Margin="0,0,0,16"/>
+
+                    <!-- MÃ CHỨNG THƯ ĐỊNH GIÁ (DO BANKER NHẬP HOẶC TỰ SINH) -->
+                    <TextBlock Text="Mã chứng thư TSĐB (Mã TS) *" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                    <TextBox Style="{StaticResource InputTextBox}" Text="{Binding InputAssetCode}" Margin="0,0,0,14"/>
+
+                    <!-- CHỦ SỞ HỮU TSĐB -->
+                    <TextBlock Text="Khách hàng chủ sở hữu *" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                    <ComboBox ItemsSource="{Binding Customers}" 
+                              SelectedValuePath="Id" 
+                              DisplayMemberPath="FullName" 
+                              SelectedValue="{Binding SelectedCustomerId}" 
+                              Validation.ErrorTemplate="{x:Null}"
+                              Margin="0,0,0,14"/>
+
+                    <!-- DROPDOWN 1: NHÓM TÀI SẢN BẢO ĐẢM TỔNG QUÁT -->
+                    <TextBlock Text="Nhóm tài sản bảo đảm *" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                    <ComboBox ItemsSource="{Binding MainAssetGroupOptions}" 
+                              SelectedItem="{Binding InputMainAssetGroup}" 
+                              Validation.ErrorTemplate="{x:Null}"
+                              Margin="0,0,0,14"/>
+
+                    <!-- DROPDOWN 2: XẾP LOẠI BĐS (HIỂN THỊ KHI LÀ BẤT ĐỘNG SẢN) -->
+                    <Border Visibility="{Binding IsRealEstateGroup, Converter={StaticResource BoolToVisibilityConverter}}"
+                            Background="{DynamicResource Surface2}"
+                            BorderBrush="{DynamicResource Primary}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="12"
+                            Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="🏡 PHÂN LOẠI XẾP LOẠI BẤT ĐỘNG SẢN" FontWeight="Bold" Foreground="{DynamicResource Primary}" Margin="0,0,0,8"/>
+                            <ComboBox ItemsSource="{Binding RealEstateClassOptions}" 
+                                      SelectedItem="{Binding InputRealEstateClass}"
+                                      Validation.ErrorTemplate="{x:Null}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- GIÁ TRỊ TÀI SẢN (TỰ THÊM DẤU PHẨY REAL-TIME KHI GÕ SỐ) -->
+                    <TextBlock Text="Giá trị tài sản (VNĐ) *" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                    <TextBox Style="{StaticResource InputTextBox}" 
+                             Text="{Binding InputAppraisedValueText, UpdateSourceTrigger=PropertyChanged}" 
+                             Margin="0,0,0,14"/>
+
+                    <!-- TỶ LỆ LTV TỐI ĐA & HIỆU LỰC ĐỊNH GIÁ -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                            <TextBlock Text="LTV Tối đa (LTV Trần)" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                            <TextBox Style="{StaticResource InputTextBox}" 
+                                     Text="{Binding InputLtvMaxRate, StringFormat={}{0:P0}}" 
+                                     IsReadOnly="{Binding IsCustomLtvAllowed, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                            <TextBlock Text="Hiệu lực định giá *" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding ValidityMonthsOptions}" 
+                                      SelectedItem="{Binding InputValidityMonths}"
+                                      Validation.ErrorTemplate="{x:Null}"
+                                      Padding="10,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- NGÀY ĐỊNH GIÁ -->
+                    <TextBlock Text="Ngày Định giá ngân hàng *" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                    <DatePicker SelectedDate="{Binding InputAppraisalDate}" Margin="0,0,0,14"/>
+
+                    <!-- ĐỊA CHỈ TSĐB -->
+                    <TextBlock Text="Địa chỉ / Mô tả chi tiết TSĐB *" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                    <TextBox Style="{StaticResource InputTextBox}" Text="{Binding InputAddress}" Margin="0,0,0,14"/>
+
+                    <!-- GHI CHÚ CHỨNG THƯ -->
+                    <TextBlock Text="Ghi chú chứng thư định giá" Style="{StaticResource LabelText}" Margin="0,0,0,4"/>
+                    <TextBox Style="{StaticResource InputTextBox}" Text="{Binding InputNote}" Margin="0,0,0,24"/>
+
+                    <Grid Margin="0,0,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="{Binding SubmitButtonText}" 
+                                Style="{StaticResource PrimaryButton}" 
+                                Height="48" Margin="0,0,8,0"
+                                Command="{Binding SaveOrUpdateCollateralCommand}"/>
+                        <Button Grid.Column="1" Content="🗑️ XOÁ TSĐB" 
+                                Style="{StaticResource DangerButton}" 
+                                Height="48" Width="120"
+                                Command="{Binding DeleteCollateralCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

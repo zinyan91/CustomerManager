@@ -1,0 +1,75 @@
+<UserControl x:Class="CustomerManager.Views.Pages.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <StackPanel Margin="0,0,0,0">
+            <!-- HEADER -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="⚙️ CÀI ĐẶT GIAO DIỆN HỆ THỐNG" Style="{StaticResource Text.Header}" Margin="0,0,0,6"/>
+                    <TextBlock Text="Tùy chỉnh chế độ hiển thị Sáng / Tối và tông màu thương hiệu cho Banker Portfolio" Foreground="{DynamicResource OnSurfaceSecondary}" FontSize="13"/>
+                </StackPanel>
+            </Border>
+
+            <!-- DANH SÁCH THEME CARDS -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- THEME 1: SLATE DARK MODE -->
+                <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
+                    <StackPanel>
+                        <Border Background="#0F172A" Height="100" CornerRadius="8" Margin="0,0,0,16" Padding="12">
+                            <Grid>
+                                <TextBlock Text="SLATE DARK" Foreground="#0EA5E9" FontWeight="Bold" FontSize="14"/>
+                                <Border Background="#1E293B" CornerRadius="6" Height="36" VerticalAlignment="Bottom" Padding="8">
+                                    <TextBlock Text="Bảng điều khiển tối" Foreground="#94A3B8" FontSize="11" VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="🌙 Slate Dark Mode" Style="{StaticResource Text.Title}" Margin="0,0,0,6"/>
+                        <TextBlock Text="Giao diện tối chuẩn Banking Slate, tối ưu trải nghiệm dịu mắt ban đêm." Foreground="{DynamicResource OnSurfaceSecondary}" FontSize="12" Margin="0,0,0,20" TextWrapping="Wrap"/>
+                        <Button Content="KÍCH HOẠT THEME TỐI" Style="{StaticResource PrimaryButton}" Command="{Binding SelectSlateDarkCommand}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- THEME 2: EMERALD LIGHT MODE -->
+                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0,6,0">
+                    <StackPanel>
+                        <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" Height="100" CornerRadius="8" Margin="0,0,0,16" Padding="12">
+                            <Grid>
+                                <TextBlock Text="EMERALD LIGHT" Foreground="#10B981" FontWeight="Bold" FontSize="14"/>
+                                <Border Background="#FFFFFF" CornerRadius="6" Height="36" VerticalAlignment="Bottom" Padding="8">
+                                    <TextBlock Text="Bảng điều khiển sáng" Foreground="#64748B" FontSize="11" VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="☀️ Emerald Light Mode" Style="{StaticResource Text.Title}" Margin="0,0,0,6"/>
+                        <TextBlock Text="Giao diện sáng tinh tế, phù hợp môi trường văn phòng chi nhánh ban ngày." Foreground="{DynamicResource OnSurfaceSecondary}" FontSize="12" Margin="0,0,0,20" TextWrapping="Wrap"/>
+                        <Button Content="KÍCH HOẠT THEME SÁNG" Style="{StaticResource SuccessButton}" Command="{Binding SelectEmeraldLightCommand}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- THEME 3: DEEP INDIGO MODE -->
+                <Border Grid.Column="2" Style="{StaticResource Card}" Margin="12,0,0,0">
+                    <StackPanel>
+                        <Border Background="#0B0914" Height="100" CornerRadius="8" Margin="0,0,0,16" Padding="12">
+                            <Grid>
+                                <TextBlock Text="DEEP INDIGO" Foreground="#6366F1" FontWeight="Bold" FontSize="14"/>
+                                <Border Background="#141226" CornerRadius="6" Height="36" VerticalAlignment="Bottom" Padding="8">
+                                    <TextBlock Text="Tím hoàng gia cao cấp" Foreground="#A5B4FC" FontSize="11" VerticalAlignment="Center"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="🍇 Deep Indigo Mode" Style="{StaticResource Text.Title}" Margin="0,0,0,6"/>
+                        <TextBlock Text="Tông màu tím Indigo cao cấp, phong cách ngân hàng đầu tư hiện đại." Foreground="{DynamicResource OnSurfaceSecondary}" FontSize="12" Margin="0,0,0,20" TextWrapping="Wrap"/>
+                        <Button Content="KÍCH HOẠT INDIGO" Style="{StaticResource PrimaryButton}" Command="{Binding SelectDeepIndigoCommand}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </Grid>
+</UserControl>

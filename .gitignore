@@ -1,0 +1,22 @@
+# Node / Web
+node_modules/
+dist/
+.vite/
+*.local
+
+# .NET / Visual Studio
+.vs/
+bin/
+obj/
+*.user
+*.suo
+
+# Environment
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+npm-debug.log*

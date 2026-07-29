@@ -1,0 +1,23 @@
+[
+  {
+    "cif_kh": "005353873",
+    "asset_code": "45804",
+    "address": "12T",
+    "appraised_value": 46169.0,
+    "asset_class": "Loại 1"
+  },
+  {
+    "cif_kh": "005236683",
+    "asset_code": "71803.2023",
+    "address": "Thửa đất số 425 Tờ bản đồ số 11 Ấp Bình Lợi, Xã Đức Tân, Huyện Tân Trụ, Tỉnh Long An",
+    "appraised_value": 2140000000.0,
+    "asset_class": "Loại 2"
+  },
+  {
+    "cif_kh": "005353873",
+    "asset_code": "109168.2024",
+    "address": "Thửa đất số 115 Tờ bản đồ số 15 Số nhà 126/2, 100 Bình Thới, Phường 14, Quận 11, Thành Phố Hồ Chí Minh",
+    "appraised_value": 3262000000.0,
+    "asset_class": "Loại 1"
+  }
+]

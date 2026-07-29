@@ -1,0 +1,107 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- =======================
+         APP TAB CONTROL (KEY CŨ)
+       ======================= -->
+    <Style x:Key="AppTabControl" TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0"
+                                Background="{DynamicResource BgCard}"
+                                BorderBrush="{DynamicResource BdCard}"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="6"
+                                Margin="0,0,0,8">
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Disabled"
+                                          Focusable="False">
+                                <TabPanel x:Name="HeaderPanel"
+                                          IsItemsHost="True"
+                                          Background="Transparent" />
+                            </ScrollViewer>
+                        </Border>
+
+                        <Border Grid.Row="1"
+                                Background="{DynamicResource BgCard2}"
+                                BorderBrush="{DynamicResource BdCard}"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="12">
+                            <ContentPresenter x:Name="PART_SelectedContentHost"
+                                              Margin="0"
+                                              ContentSource="SelectedContent"/>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- =======================
+         APP TAB ITEM (KEY CŨ)
+       ======================= -->
+    <Style x:Key="AppTabItem" TargetType="TabItem">
+        <Setter Property="Margin" Value="0,0,6,0"/>
+        <Setter Property="Padding" Value="14,6"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnSurface}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+
+        <Setter Property="BorderThickness" Value="1"/>
+
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="Bd"
+                        CornerRadius="8"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        Padding="{TemplateBinding Padding}"
+                        SnapsToDevicePixels="True">
+                        <ContentPresenter VerticalAlignment="Center"
+                                      HorizontalAlignment="Center"
+                                      ContentSource="Header"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background"
+                                Value="{DynamicResource Primary}"/>
+                            <Setter Property="Foreground"
+                                Value="{DynamicResource OnPrimary}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground"
+                                Value="{DynamicResource OnSurfaceMuted}"/>
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <!-- IMPLICIT STYLES FOR ALL TABCONTROLS & TABITEMS -->
+    <Style TargetType="TabControl" BasedOn="{StaticResource AppTabControl}"/>
+    <Style TargetType="TabItem" BasedOn="{StaticResource AppTabItem}"/>
+
+</ResourceDictionary>

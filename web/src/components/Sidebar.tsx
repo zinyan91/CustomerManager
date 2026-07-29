@@ -1,5 +1,6 @@
 import React from 'react';
 import { LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -7,6 +8,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+  const { theme } = useTheme();
+
   const menuItems = [
     { id: 'dashboard', label: 'Tổng Quan Dashboard', icon: LayoutDashboard },
     { id: 'customers', label: 'Danh Sách Khách Hàng', icon: Users },
@@ -17,10 +20,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     { id: 'settings', label: 'Cấu Hình & Cài Đặt', icon: Settings },
   ];
 
+  const sidebarBg = theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800';
+  const labelColor = theme === 'light' ? 'text-slate-400' : 'text-slate-500';
+  const footerBorder = theme === 'light' ? 'border-slate-200' : 'border-slate-800';
+  const footerText = theme === 'light' ? 'text-slate-400' : 'text-slate-500';
+  const inactiveClass = theme === 'light'
+    ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800';
+
   return (
-    <aside className="w-60 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-3 min-h-[calc(100vh-57px)] shrink-0">
+    <aside className={`w-60 ${sidebarBg} border-r flex flex-col justify-between p-3 min-h-[calc(100vh-57px)] shrink-0 transition-colors duration-200`}>
       <div className="space-y-1">
-        <div className="px-3 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+        <div className={`px-3 py-2 text-[11px] font-bold ${labelColor} uppercase tracking-wider`}>
           Phân Hệ Chức Năng
         </div>
         {menuItems.map((item) => {
@@ -33,7 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
               className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg font-medium text-xs transition-all ${
                 isActive
                   ? 'bg-sky-600 text-white font-semibold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  : inactiveClass
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -43,8 +54,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         })}
       </div>
 
-      <div className="border-t border-slate-800 pt-3 px-2">
-        <div className="text-[11px] text-slate-500 font-medium">
+      <div className={`border-t ${footerBorder} pt-3 px-2`}>
+        <div className={`text-[11px] ${footerText} font-medium`}>
           Dữ liệu đồng bộ trực tiếp Supabase PostgreSQL
         </div>
       </div>

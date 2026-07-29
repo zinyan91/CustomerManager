@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTheme } from './context/ThemeContext';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/views/DashboardView';
@@ -10,13 +11,22 @@ import { SettingsView } from './components/views/SettingsView';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { theme } = useTheme();
+
+  const bgClass = theme === 'light'
+    ? 'bg-slate-50 text-slate-900'
+    : 'bg-slate-950 text-slate-100';
+
+  const mainClass = theme === 'light'
+    ? 'bg-slate-100'
+    : '';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased">
+    <div className={`min-h-screen ${bgClass} flex flex-col font-sans antialiased transition-colors duration-200`}>
       <Header />
       <div className="flex flex-1">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className={`flex-1 p-6 overflow-y-auto ${mainClass}`}>
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'customers' && <CustomerListView />}
           {activeTab === 'loans' && <LoanPortfolioView />}

@@ -44,6 +44,8 @@ export interface LoanContract {
   DebtGroup?: number;
   IsSettled?: boolean;
   IsRestructured?: boolean;
+  HdtdDueDate?: string | null;   // Ngày giải ngân KUNN
+  LoanPurpose?: string | null;   // Mục đích vay vốn (KUNN)
   customer?: Customer;
   collateral?: Collateral;
 }

@@ -8,11 +8,13 @@ export interface Customer {
   Email?: string | null;
   Address?: string | null;
   AccountNumber?: string | null;
-  SpouseAccountNumber?: string | null;
   MaritalStatus: string;
-  SpouseName?: string | null;
-  SpouseNationalId?: string | null;
-  SpousePhone?: string | null;
+  KhlqRelationship?: string | null;   // Mối quan hệ: Vợ/Chồng, Người bảo lãnh, Bố/Mẹ, Con cái, Bên bảo đảm, Khác
+  SpouseName?: string | null;         // Họ tên Vợ/Chồng / Người liên quan / Người bảo lãnh
+  SpouseNationalId?: string | null;   // CCCD Vợ/Chồng / Người bảo lãnh
+  SpousePhone?: string | null;        // SĐT Vợ/Chồng / Người bảo lãnh
+  SpouseAccountNumber?: string | null;// STK Vợ/Chồng / Người bảo lãnh
+  KhlqAddress?: string | null;        // Địa chỉ người liên quan / bảo lãnh
   SpouseIncome?: number;
   MonthlyIncome?: number;
   CreditRating?: string;

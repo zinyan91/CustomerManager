@@ -17,7 +17,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-4 min-h-[calc(100vh-61px)] shrink-0">
+    <aside className="w-60 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-3 min-h-[calc(100vh-57px)] shrink-0">
       <div className="space-y-1">
         <div className="px-3 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
           Phân Hệ Chức Năng
@@ -29,28 +29,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg font-medium text-xs transition-all ${
                 isActive
-                  ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/30 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  ? 'bg-sky-600 text-white font-semibold shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+              <Icon className="w-4 h-4" />
               <span>{item.label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* Footer Info */}
-      <div className="border-t border-slate-800/80 pt-4 px-2">
-        <div className="bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
-          <div className="text-[11px] text-slate-400 font-semibold mb-1">
-            🌐 SUPABASE CLOUD SYNCED
-          </div>
-          <div className="text-[10px] text-slate-500">
-            Hệ thống Quản lý Dự nợ & Phân tích Tín dụng Ngân hàng
-          </div>
+      <div className="border-t border-slate-800 pt-3 px-2">
+        <div className="text-[11px] text-slate-500 font-medium">
+          Dữ liệu đồng bộ trực tiếp Supabase PostgreSQL
         </div>
       </div>
     </aside>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  fetchCustomersAPI, fetchContractsByCustomerAPI, saveContractAPI,
+  fetchCustomersAPI, fetchContractsByCustomerAPI, saveContractAPI, deleteContractAPI,
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI,
   fetchCollateralsByCustomerAPI
 } from '../../lib/api';
@@ -9,7 +9,7 @@ import type { LoanContract, Customer, RepaymentSchedule, Collateral } from '../.
 import { useTheme } from '../../context/ThemeContext';
 import {
   Search, FileText, Receipt, Calendar, CheckCircle, AlertCircle,
-  User, ChevronRight, Plus, RefreshCw, X, ChevronDown, ShieldCheck, DollarSign, Building2, Save
+  User, ChevronRight, Plus, RefreshCw, X, ChevronDown, ShieldCheck, DollarSign, Building2, Save, Trash2
 } from 'lucide-react';
 
 const LOAN_METHODS = [
@@ -527,6 +527,30 @@ export const LoanPortfolioView: React.FC = () => {
     }
   };
 
+  const handleDeleteContract = async (e: React.MouseEvent, contractId: number, contractNumber: string) => {
+    e.stopPropagation();
+    if (!window.confirm(`Bạn có chắc chắn muốn XÓA Hợp đồng Tín dụng / KUNN "${contractNumber}" không?\nHành động này không thể hoàn tác!`)) {
+      return;
+    }
+    setLoading(true);
+    try {
+      await deleteContractAPI(contractId);
+      showNotify('success', `Đã xóa Hợp đồng Tín dụng / KUNN "${contractNumber}" thành công!`);
+      if (selectedContract?.Id === contractId) {
+        setSelectedContract(null);
+        setShowForm(false);
+      }
+      if (foundCustomer) {
+        const refreshed = await fetchContractsByCustomerAPI(foundCustomer.Id);
+        setContracts(refreshed);
+      }
+    } catch (err: any) {
+      showNotify('error', `Lỗi xóa HĐTD: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGenerateSchedule = async () => {
     if (!selectedContract) return;
     const loanAmt = selectedContract.LoanAmount || selectedContract.ContractAmount || 0;
@@ -820,11 +844,12 @@ export const LoanPortfolioView: React.FC = () => {
                         <th className="p-3 whitespace-nowrap">NGÀY KẾT THÚC</th>
                         <th className="p-3 whitespace-nowrap">PHƯƠNG THỨC VAY</th>
                         <th className="p-3 whitespace-nowrap">NHÓM NỢ</th>
+                        <th className="p-3 whitespace-nowrap text-center">THAO TÁC</th>
                       </tr>
                     </thead>
                     <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
                       {contracts.length === 0 ? (
-                        <tr><td colSpan={8} className="text-center p-8 text-slate-400">
+                        <tr><td colSpan={9} className="text-center p-8 text-slate-400">
                           Chưa có Giấy Nhận Nợ nào. Nhấn "Tạo HĐTD mới" để nhập khoản vay.
                         </td></tr>
                       ) : contracts.map(c => {
@@ -1365,15 +1390,27 @@ export const LoanPortfolioView: React.FC = () => {
                       </button>
 
                       {selectedContract && (
-                        <button
-                          type="button"
-                          onClick={(e) => handleSaveContract(e, false)}
-                          disabled={loading}
-                          className="flex-1 bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-sky-600/30 text-xs flex items-center justify-center space-x-2"
-                        >
-                          <Save className="w-4 h-4" />
-                          <span>{loading ? 'Đang lưu...' : `💾 CẬP NHẬT KUNN NÀY (#${selectedContract.ContractNumber})`}</span>
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => handleSaveContract(e, false)}
+                            disabled={loading}
+                            className="flex-1 bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-sky-600/30 text-xs flex items-center justify-center space-x-2"
+                          >
+                            <Save className="w-4 h-4" />
+                            <span>{loading ? 'Đang lưu...' : `💾 CẬP NHẬT KUNN NÀY (#${selectedContract.ContractNumber})`}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteContract(e, selectedContract.Id, selectedContract.ContractNumber)}
+                            disabled={loading}
+                            className="bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-rose-600/30 text-xs flex items-center justify-center space-x-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>XÓA HĐTD NÀY</span>
+                          </button>
+                        </>
                       )}
                     </div>
                   </form>

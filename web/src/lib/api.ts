@@ -286,6 +286,11 @@ export async function fetchContractsByCustomerAPI(customerId: number): Promise<L
   }
 }
 
+export async function deleteContractAPI(contractId: number): Promise<void> {
+  const { error } = await supabase.from('LoanContracts').delete().eq('Id', contractId);
+  if (error) throw error;
+}
+
 export async function fetchRepaymentSchedulesAPI(contractId: number): Promise<RepaymentSchedule[]> {
   try {
     const { data, error } = await supabase

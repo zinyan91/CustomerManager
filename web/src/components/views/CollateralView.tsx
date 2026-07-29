@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI } from '../../lib/api';
+import { formatMoneyInput } from '../../lib/utils';
 import type { Collateral, Customer } from '../../types';
 import { Building2, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -68,7 +69,7 @@ export const CollateralView: React.FC = () => {
     setInputAssetCode(col.AssetCode || '');
     setInputAssetType(col.AssetType || 'Loại 1');
     setInputAddress(col.Address || '');
-    setInputAppraisedValue((col.AppraisedValue || col.Value) ? (col.AppraisedValue || col.Value)!.toLocaleString('vi-VN') : '0');
+    setInputAppraisedValue((col.AppraisedValue || col.Value) ? formatMoneyInput((col.AppraisedValue || col.Value)!.toString()) : '');
   };
 
   const clearForm = () => {
@@ -278,9 +279,10 @@ export const CollateralView: React.FC = () => {
               <input
                 type="text"
                 required
+                placeholder="Ví dụ: 960.000.000"
                 value={inputAppraisedValue}
-                onChange={(e) => setInputAppraisedValue(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 text-base font-bold focus:outline-none focus:border-sky-500"
+                onChange={(e) => setInputAppraisedValue(formatMoneyInput(e.target.value))}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 text-base font-bold focus:outline-none focus:border-sky-500 font-mono"
               />
             </div>
 

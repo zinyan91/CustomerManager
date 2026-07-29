@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -14,6 +14,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     { id: 'collaterals', label: 'Định Giá TSĐB', icon: Building2 },
     { id: 'credit-cards', label: 'Thẻ Tín Dụng', icon: CreditCard },
     { id: 'post-loan', label: 'Kiểm Soát Sau Vay', icon: ShieldAlert },
+    { id: 'settings', label: 'Cấu Hình & Cài Đặt', icon: Settings },
   ];
 
   return (

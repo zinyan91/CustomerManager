@@ -15,7 +15,7 @@ export const CustomerListView: React.FC = () => {
   const [searchName, setSearchName] = useState('');
   const [searchNationalId, setSearchNationalId] = useState('');
 
-  // Form Inputs
+  // Form Inputs (Income fields removed per user request)
   const [inputCif, setInputCif] = useState('');
   const [inputFullName, setInputFullName] = useState('');
   const [inputNationalId, setInputNationalId] = useState('');
@@ -23,14 +23,12 @@ export const CustomerListView: React.FC = () => {
   const [inputEmail, setInputEmail] = useState('');
   const [inputAddress, setInputAddress] = useState('');
   const [inputAccountNumber, setInputAccountNumber] = useState('');
-  const [inputMonthlyIncome, setInputMonthlyIncome] = useState('');
   const [inputMaritalStatus, setInputMaritalStatus] = useState('Độc thân');
   const [inputCifKhlq, setInputCifKhlq] = useState('');
   const [inputSpouseName, setInputSpouseName] = useState('');
   const [inputSpouseNationalId, setInputSpouseNationalId] = useState('');
   const [inputSpousePhone, setInputSpousePhone] = useState('');
   const [inputSpouseAccountNumber, setInputSpouseAccountNumber] = useState('');
-  const [inputSpouseIncome, setInputSpouseIncome] = useState('');
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -72,14 +70,12 @@ export const CustomerListView: React.FC = () => {
     setInputEmail(cus.Email || '');
     setInputAddress(cus.Address || '');
     setInputAccountNumber(cus.AccountNumber || '');
-    setInputMonthlyIncome(cus.MonthlyIncome ? cus.MonthlyIncome.toLocaleString('vi-VN') : '0');
     setInputMaritalStatus(cus.MaritalStatus || 'Độc thân');
     setInputCifKhlq(cus.CifKhlq || '');
     setInputSpouseName(cus.SpouseName || '');
     setInputSpouseNationalId(cus.SpouseNationalId || '');
     setInputSpousePhone(cus.SpousePhone || '');
     setInputSpouseAccountNumber(cus.SpouseAccountNumber || '');
-    setInputSpouseIncome(cus.SpouseIncome ? cus.SpouseIncome.toLocaleString('vi-VN') : '0');
   };
 
   const clearForm = () => {
@@ -91,14 +87,12 @@ export const CustomerListView: React.FC = () => {
     setInputEmail('');
     setInputAddress('');
     setInputAccountNumber('');
-    setInputMonthlyIncome('');
     setInputMaritalStatus('Độc thân');
     setInputCifKhlq('');
     setInputSpouseName('');
     setInputSpouseNationalId('');
     setInputSpousePhone('');
     setInputSpouseAccountNumber('');
-    setInputSpouseIncome('');
   };
 
   const handleSaveCustomer = async (e: React.FormEvent) => {
@@ -122,14 +116,12 @@ export const CustomerListView: React.FC = () => {
       Email: inputEmail.trim() || null,
       Address: inputAddress.trim() || null,
       AccountNumber: inputAccountNumber.trim() || null,
-      MonthlyIncome: parseFloat(inputMonthlyIncome.replace(/\D/g, '')) || 0,
       MaritalStatus: inputMaritalStatus,
       CifKhlq: inputCifKhlq.trim() || null,
       SpouseName: inputMaritalStatus === 'Đã kết hôn' ? inputSpouseName.trim() || null : null,
       SpouseNationalId: inputMaritalStatus === 'Đã kết hôn' ? inputSpouseNationalId.trim() || null : null,
       SpousePhone: inputMaritalStatus === 'Đã kết hôn' ? inputSpousePhone.trim() || null : null,
       SpouseAccountNumber: inputMaritalStatus === 'Đã kết hôn' ? inputSpouseAccountNumber.trim() || null : null,
-      SpouseIncome: inputMaritalStatus === 'Đã kết hôn' ? parseFloat(inputSpouseIncome.replace(/\D/g, '')) || 0 : 0,
     };
 
     try {
@@ -196,7 +188,7 @@ export const CustomerListView: React.FC = () => {
           });
           count++;
         } catch {
-          // ignore duplicate errors
+          // ignore
         }
       }
 
@@ -382,7 +374,7 @@ export const CustomerListView: React.FC = () => {
                   required
                   value={inputCif}
                   onChange={(e) => setInputCif(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-sky-500 font-mono"
                 />
               </div>
               <div>
@@ -403,7 +395,7 @@ export const CustomerListView: React.FC = () => {
                 required
                 value={inputFullName}
                 onChange={(e) => setInputFullName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-sky-500 font-bold"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-100 focus:outline-none focus:border-sky-500 font-bold"
               />
             </div>
 
@@ -418,18 +410,6 @@ export const CustomerListView: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block font-medium text-slate-400 mb-1">Thu nhập tháng (VNĐ)</label>
-                <input
-                  type="text"
-                  value={inputMonthlyIncome}
-                  onChange={(e) => setInputMonthlyIncome(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold focus:outline-none focus:border-sky-500"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
                 <label className="block font-medium text-slate-400 mb-1">Số tài khoản (STK) KH</label>
                 <input
                   type="text"
@@ -438,15 +418,16 @@ export const CustomerListView: React.FC = () => {
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sky-400 font-bold focus:outline-none focus:border-sky-500"
                 />
               </div>
-              <div>
-                <label className="block font-medium text-slate-400 mb-1">Địa chỉ liên lạc</label>
-                <input
-                  type="text"
-                  value={inputAddress}
-                  onChange={(e) => setInputAddress(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-sky-500"
-                />
-              </div>
+            </div>
+
+            <div>
+              <label className="block font-medium text-slate-400 mb-1">Địa chỉ liên lạc</label>
+              <input
+                type="text"
+                value={inputAddress}
+                onChange={(e) => setInputAddress(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-sky-500"
+              />
             </div>
 
             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
@@ -474,7 +455,7 @@ export const CustomerListView: React.FC = () => {
                     type="text"
                     value={inputCifKhlq}
                     onChange={(e) => setInputCifKhlq(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-sky-500 font-mono"
                   />
                 </div>
               </div>
@@ -511,25 +492,14 @@ export const CustomerListView: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-medium text-slate-400 mb-1">STK Vợ/Chồng</label>
-                      <input
-                        type="text"
-                        value={inputSpouseAccountNumber}
-                        onChange={(e) => setInputSpouseAccountNumber(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-sky-400 font-bold focus:outline-none focus:border-sky-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-medium text-slate-400 mb-1">Thu nhập Vợ/Chồng</label>
-                      <input
-                        type="text"
-                        value={inputSpouseIncome}
-                        onChange={(e) => setInputSpouseIncome(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold focus:outline-none focus:border-sky-500"
-                      />
-                    </div>
+                  <div>
+                    <label className="block font-medium text-slate-400 mb-1">STK Vợ/Chồng</label>
+                    <input
+                      type="text"
+                      value={inputSpouseAccountNumber}
+                      onChange={(e) => setInputSpouseAccountNumber(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-sky-400 font-bold focus:outline-none focus:border-sky-500"
+                    />
                   </div>
                 </div>
               )}

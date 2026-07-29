@@ -6,43 +6,28 @@ import { CustomerListView } from './components/views/CustomerListView';
 import { LoanPortfolioView } from './components/views/LoanPortfolioView';
 import { CollateralView } from './components/views/CollateralView';
 import { CreditCardView } from './components/views/CreditCardView';
+import { SettingsView } from './components/views/SettingsView';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  const renderActiveView = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <DashboardView />;
-      case 'customers':
-        return <CustomerListView />;
-      case 'loans':
-        return <LoanPortfolioView />;
-      case 'collaterals':
-        return <CollateralView />;
-      case 'credit-cards':
-        return <CreditCardView />;
-      case 'post-loan':
-        return (
-          <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center space-y-3">
-            <h3 className="text-lg font-bold text-sky-400">PHÂN HỆ KIỂM SOÁT SAU VAY & ĐIỀU KIỆN PHÊ DUYỆT</h3>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
-              Theo dõi CASA, Dòng tiền giao dịch, Đợt kiểm tra sau vay định kỳ gần nhất và tiếp theo.
-            </p>
-          </div>
-        );
-      default:
-        return <DashboardView />;
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased">
       <Header />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <main className="flex-1 p-6 overflow-y-auto bg-slate-950/90 min-h-[calc(100vh-61px)]">
-          {renderActiveView()}
+        <main className="flex-1 p-6 overflow-y-auto">
+          {activeTab === 'dashboard' && <DashboardView />}
+          {activeTab === 'customers' && <CustomerListView />}
+          {activeTab === 'loans' && <LoanPortfolioView />}
+          {activeTab === 'collaterals' && <CollateralView />}
+          {activeTab === 'credit-cards' && <CreditCardView />}
+          {activeTab === 'settings' && <SettingsView />}
+          {activeTab === 'post-loan' && (
+            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 text-xs">
+              🔒 Phân hệ Kiểm Soát Sau Vay & Giám Sát Tín Dụng đang được tích hợp quy trình chấm điểm định kỳ.
+            </div>
+          )}
         </main>
       </div>
     </div>

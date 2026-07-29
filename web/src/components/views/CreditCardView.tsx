@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCreditCardsAPI, fetchCustomersAPI, saveCreditCardAPI } from '../../lib/api';
+import { formatMoneyInput } from '../../lib/utils';
 import type { CreditCard as CreditCardType, Customer } from '../../types';
 import { CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -198,10 +199,10 @@ export const CreditCardView: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="50,000,000"
+                  placeholder="Ví dụ: 50.000.000"
                   value={inputLimit}
-                  onChange={(e) => setInputLimit(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold text-sm focus:outline-none focus:border-sky-500"
+                  onChange={(e) => setInputLimit(formatMoneyInput(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-mono font-bold text-sm focus:outline-none focus:border-sky-500"
                 />
               </div>
             </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchContractsAPI, fetchCustomersAPI, saveContractAPI } from '../../lib/api';
+import { formatMoneyInput } from '../../lib/utils';
 import type { LoanContract, Customer } from '../../types';
 import { FileText, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -188,7 +189,7 @@ export const LoanPortfolioView: React.FC = () => {
                             setInputCustomerId(con.CustomerId);
                             setInputContractNumber(con.ContractNumber);
                             setInputContractType(con.ContractType);
-                            setInputCreditLimit(con.ContractAmount ? con.ContractAmount.toLocaleString('vi-VN') : '0');
+                            setInputCreditLimit(con.ContractAmount ? formatMoneyInput(con.ContractAmount.toString()) : '');
                           }
                         }}
                         className={`cursor-pointer transition-colors ${
@@ -272,9 +273,10 @@ export const LoanPortfolioView: React.FC = () => {
               <input
                 type="text"
                 required
+                placeholder="Ví dụ: 960.000.000"
                 value={inputCreditLimit}
-                onChange={(e) => setInputCreditLimit(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold text-sm focus:outline-none focus:border-sky-500"
+                onChange={(e) => setInputCreditLimit(formatMoneyInput(e.target.value))}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-mono font-bold text-sm focus:outline-none focus:border-sky-500"
               />
             </div>
 

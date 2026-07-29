@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { pool } from './db';
+import { getPool } from './db';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,6 +11,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const pool = getPool();
+
     if (req.method === 'GET') {
       const sql = `
         SELECT l.*, 
@@ -24,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'POST') {
-      const body = req.body;
+      const body = req.body || {};
       const sql = `
         INSERT INTO "LoanContracts" (
           "Id", "CustomerId", "ContractNumber", "ContractType", "ContractAmount", "DebtGroup", "IsSettled", "IsRestructured"
@@ -35,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         RETURNING *;
       `;
       const values = [
-        body.CustomerId, body.ContractNumber, body.ContractType || 0,
+        body.CustomerId, body.ContractNumber || 'HD001', body.ContractType || 0,
         body.ContractAmount || 0, body.DebtGroup || 1
       ];
 
@@ -45,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'PUT') {
       const { id } = req.query;
-      const body = req.body;
+      const body = req.body || {};
       const sql = `
         UPDATE "LoanContracts" SET
           "CustomerId" = $1, "ContractNumber" = $2, "ContractType" = $3,
@@ -64,6 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(405).json({ error: 'Method Not Allowed' });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    console.error("Vercel Serverless Function Error:", error);
+    return res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 }

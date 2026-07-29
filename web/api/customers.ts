@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { pool } from './db';
+import { getPool } from './db';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,6 +11,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const pool = getPool();
+
     if (req.method === 'GET') {
       const { cif, name, nationalId } = req.query;
       let sql = 'SELECT * FROM "Customers" WHERE 1=1';
@@ -36,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'POST') {
-      const body = req.body;
+      const body = req.body || {};
       const sql = `
         INSERT INTO "Customers" (
           "Id", "CifKh", "FullName", "NationalId", "Phone", "Email", "Address",
@@ -62,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'PUT') {
       const { id } = req.query;
-      const body = req.body;
+      const body = req.body || {};
 
       const sql = `
         UPDATE "Customers" SET
@@ -94,6 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(405).json({ error: 'Method Not Allowed' });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    console.error("Vercel Serverless Function Error:", error);
+    return res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 }

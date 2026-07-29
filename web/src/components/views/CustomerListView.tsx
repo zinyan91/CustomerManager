@@ -46,16 +46,16 @@ export const CustomerListView: React.FC = () => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('Customers').select('*').order('id', { ascending: false });
+      let query = supabase.from('Customers').select('*').order('Id', { ascending: false });
 
       if (searchCif.trim()) {
-        query = query.ilike('cif_kh', `%${searchCif.trim()}%`);
+        query = query.ilike('CifKh', `%${searchCif.trim()}%`);
       }
       if (searchName.trim()) {
-        query = query.ilike('full_name', `%${searchName.trim()}%`);
+        query = query.ilike('FullName', `%${searchName.trim()}%`);
       }
       if (searchNationalId.trim()) {
-        query = query.ilike('national_id', `%${searchNationalId.trim()}%`);
+        query = query.ilike('NationalId', `%${searchNationalId.trim()}%`);
       }
 
       const { data, error } = await query;
@@ -69,27 +69,26 @@ export const CustomerListView: React.FC = () => {
   };
 
   const handleSelectCustomer = (cus: Customer) => {
-    if (selectedCustomer?.id === cus.id) {
-      // Toggle unselect
+    if (selectedCustomer?.Id === cus.Id) {
       clearForm();
       return;
     }
     setSelectedCustomer(cus);
-    setInputCif(cus.cif_kh || '');
-    setInputFullName(cus.full_name || '');
-    setInputNationalId(cus.national_id || '');
-    setInputPhone(cus.phone || '');
-    setInputEmail(cus.email || '');
-    setInputAddress(cus.address || '');
-    setInputAccountNumber(cus.account_number || '');
-    setInputMonthlyIncome(cus.monthly_income ? cus.monthly_income.toLocaleString('vi-VN') : '0');
-    setInputMaritalStatus(cus.marital_status || 'Độc thân');
-    setInputCifKhlq(cus.cif_khlq || '');
-    setInputSpouseName(cus.spouse_name || '');
-    setInputSpouseNationalId(cus.spouse_national_id || '');
-    setInputSpousePhone(cus.spouse_phone || '');
-    setInputSpouseAccountNumber(cus.spouse_account_number || '');
-    setInputSpouseIncome(cus.spouse_income ? cus.spouse_income.toLocaleString('vi-VN') : '0');
+    setInputCif(cus.CifKh || '');
+    setInputFullName(cus.FullName || '');
+    setInputNationalId(cus.NationalId || '');
+    setInputPhone(cus.Phone || '');
+    setInputEmail(cus.Email || '');
+    setInputAddress(cus.Address || '');
+    setInputAccountNumber(cus.AccountNumber || '');
+    setInputMonthlyIncome(cus.MonthlyIncome ? cus.MonthlyIncome.toLocaleString('vi-VN') : '0');
+    setInputMaritalStatus(cus.MaritalStatus || 'Độc thân');
+    setInputCifKhlq(cus.CifKhlq || '');
+    setInputSpouseName(cus.SpouseName || '');
+    setInputSpouseNationalId(cus.SpouseNationalId || '');
+    setInputSpousePhone(cus.SpousePhone || '');
+    setInputSpouseAccountNumber(cus.SpouseAccountNumber || '');
+    setInputSpouseIncome(cus.SpouseIncome ? cus.SpouseIncome.toLocaleString('vi-VN') : '0');
   };
 
   const clearForm = () => {
@@ -124,34 +123,32 @@ export const CustomerListView: React.FC = () => {
     }
 
     const payload = {
-      cif_kh: inputCif.trim(),
-      full_name: inputFullName.trim(),
-      national_id: inputNationalId.trim() || null,
-      phone: inputPhone.trim() || null,
-      email: inputEmail.trim() || null,
-      address: inputAddress.trim() || null,
-      account_number: inputAccountNumber.trim() || null,
-      monthly_income: parseFloat(inputMonthlyIncome.replace(/\D/g, '')) || 0,
-      marital_status: inputMaritalStatus,
-      cif_khlq: inputCifKhlq.trim() || null,
-      spouse_name: inputMaritalStatus === 'Đã kết hôn' ? inputSpouseName.trim() || null : null,
-      spouse_national_id: inputMaritalStatus === 'Đã kết hôn' ? inputSpouseNationalId.trim() || null : null,
-      spouse_phone: inputMaritalStatus === 'Đã kết hôn' ? inputSpousePhone.trim() || null : null,
-      spouse_account_number: inputMaritalStatus === 'Đã kết hôn' ? inputSpouseAccountNumber.trim() || null : null,
-      spouse_income: inputMaritalStatus === 'Đã kết hôn' ? parseFloat(inputSpouseIncome.replace(/\D/g, '')) || 0 : 0,
+      CifKh: inputCif.trim(),
+      FullName: inputFullName.trim(),
+      NationalId: inputNationalId.trim() || null,
+      Phone: inputPhone.trim() || null,
+      Email: inputEmail.trim() || null,
+      Address: inputAddress.trim() || null,
+      AccountNumber: inputAccountNumber.trim() || null,
+      MonthlyIncome: parseFloat(inputMonthlyIncome.replace(/\D/g, '')) || 0,
+      MaritalStatus: inputMaritalStatus,
+      CifKhlq: inputCifKhlq.trim() || null,
+      SpouseName: inputMaritalStatus === 'Đã kết hôn' ? inputSpouseName.trim() || null : null,
+      SpouseNationalId: inputMaritalStatus === 'Đã kết hôn' ? inputSpouseNationalId.trim() || null : null,
+      SpousePhone: inputMaritalStatus === 'Đã kết hôn' ? inputSpousePhone.trim() || null : null,
+      SpouseAccountNumber: inputMaritalStatus === 'Đã kết hôn' ? inputSpouseAccountNumber.trim() || null : null,
+      SpouseIncome: inputMaritalStatus === 'Đã kết hôn' ? parseFloat(inputSpouseIncome.replace(/\D/g, '')) || 0 : 0,
     };
 
     try {
       if (selectedCustomer) {
-        // Update
-        const { error } = await supabase.from('Customers').update(payload).eq('id', selectedCustomer.id);
+        const { error } = await supabase.from('Customers').update(payload).eq('Id', selectedCustomer.Id);
         if (error) throw error;
-        showNotify('success', `Đã cập nhật hồ sơ khách hàng '${payload.full_name}' thành công!`);
+        showNotify('success', `Đã cập nhật hồ sơ khách hàng '${payload.FullName}' thành công!`);
       } else {
-        // Insert
         const { error } = await supabase.from('Customers').insert([payload]);
         if (error) throw error;
-        showNotify('success', `Đã tạo mới hồ sơ khách hàng '${payload.full_name}' thành công!`);
+        showNotify('success', `Đã tạo mới hồ sơ khách hàng '${payload.FullName}' thành công!`);
       }
 
       clearForm();
@@ -163,10 +160,10 @@ export const CustomerListView: React.FC = () => {
 
   const handleDeleteCustomer = async () => {
     if (!selectedCustomer) return;
-    if (!confirm(`Bạn có chắc chắn muốn xoá khách hàng '${selectedCustomer.full_name}' (CIF: ${selectedCustomer.cif_kh})?`)) return;
+    if (!confirm(`Bạn có chắc chắn muốn xoá khách hàng '${selectedCustomer.FullName}' (CIF: ${selectedCustomer.CifKh})?`)) return;
 
     try {
-      const { error } = await supabase.from('Customers').delete().eq('id', selectedCustomer.id);
+      const { error } = await supabase.from('Customers').delete().eq('Id', selectedCustomer.Id);
       if (error) throw error;
       showNotify('success', 'Đã xoá khách hàng thành công!');
       clearForm();
@@ -176,7 +173,6 @@ export const CustomerListView: React.FC = () => {
     }
   };
 
-  // Import CSV
   const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -207,13 +203,13 @@ export const CustomerListView: React.FC = () => {
 
         try {
           await supabase.from('Customers').insert([{
-            cif_kh: cif || `CIF_AUTO_${Date.now()}_${i}`,
-            cif_khlq: cifLq,
-            full_name: name || 'Khách hàng mới',
-            marital_status: marital,
-            spouse_name: spouse,
-            account_number: stk,
-            spouse_account_number: stkSpouse
+            CifKh: cif || `CIF_AUTO_${Date.now()}_${i}`,
+            CifKhlq: cifLq,
+            FullName: name || 'Khách hàng mới',
+            MaritalStatus: marital,
+            SpouseName: spouse,
+            AccountNumber: stk,
+            SpouseAccountNumber: stkSpouse
           }]);
           count++;
         } catch {
@@ -227,12 +223,11 @@ export const CustomerListView: React.FC = () => {
     reader.readAsText(file);
   };
 
-  // Export CSV
   const handleExportCSV = () => {
     if (customers.length === 0) return;
     const header = 'cif_kh,cif_khlq,full_name,marital_status,spouse_name,account_number,spouse_account_number\n';
     const rows = customers.map(c => 
-      `"${c.cif_kh || ''}","${c.cif_khlq || ''}","${c.full_name || ''}","${c.marital_status || ''}","${c.spouse_name || ''}","${c.account_number || ''}","${c.spouse_account_number || ''}"`
+      `"${c.CifKh || ''}","${c.CifKhlq || ''}","${c.FullName || ''}","${c.MaritalStatus || ''}","${c.SpouseName || ''}","${c.AccountNumber || ''}","${c.SpouseAccountNumber || ''}"`
     ).join('\n');
 
     const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8;' });
@@ -246,7 +241,6 @@ export const CustomerListView: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Toast Notification */}
       {notification && (
         <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${
           notification.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300' : 'bg-red-950/90 border-red-500/40 text-red-300'
@@ -256,7 +250,6 @@ export const CustomerListView: React.FC = () => {
         </div>
       )}
 
-      {/* Top Search Toolbar */}
       <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
         <div className="text-xs font-bold text-sky-400 uppercase tracking-wider mb-3">
           TRA CỨU VÀ QUẢN LÝ DỮ LIỆU KHÁCH HÀNG
@@ -307,9 +300,7 @@ export const CustomerListView: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Area: Grid & Form */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: Customers DataGrid Table */}
         <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-215px)]">
           <div className="p-3 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-300">
@@ -341,26 +332,26 @@ export const CustomerListView: React.FC = () => {
                   </tr>
                 ) : (
                   customers.map((cus) => {
-                    const isSelected = selectedCustomer?.id === cus.id;
+                    const isSelected = selectedCustomer?.Id === cus.Id;
                     return (
                       <tr
-                        key={cus.id}
+                        key={cus.Id}
                         onClick={() => handleSelectCustomer(cus)}
                         className={`cursor-pointer transition-colors ${
                           isSelected ? 'bg-sky-950/60 border-l-4 border-l-sky-500 font-semibold' : 'hover:bg-slate-800/40'
                         }`}
                       >
-                        <td className="p-3 font-mono text-sky-400 font-bold whitespace-nowrap">{cus.cif_kh}</td>
-                        <td className="p-3 font-bold text-slate-100 whitespace-nowrap">{cus.full_name}</td>
-                        <td className="p-3 text-slate-400 whitespace-nowrap">{cus.cif_khlq || '-'}</td>
+                        <td className="p-3 font-mono text-sky-400 font-bold whitespace-nowrap">{cus.CifKh}</td>
+                        <td className="p-3 font-bold text-slate-100 whitespace-nowrap">{cus.FullName}</td>
+                        <td className="p-3 text-slate-400 whitespace-nowrap">{cus.CifKhlq || '-'}</td>
                         <td className="p-3 text-slate-300 whitespace-nowrap">
-                          {cus.marital_status === 'Đã kết hôn' ? cus.spouse_name || 'Chưa khai báo' : '-'}
+                          {cus.MaritalStatus === 'Đã kết hôn' ? cus.SpouseName || 'Chưa khai báo' : '-'}
                         </td>
                         <td className="p-3 whitespace-nowrap">
                           <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                            cus.marital_status === 'Đã kết hôn' ? 'bg-sky-500/10 text-sky-400' : 'bg-slate-800 text-slate-400'
+                            cus.MaritalStatus === 'Đã kết hôn' ? 'bg-sky-500/10 text-sky-400' : 'bg-slate-800 text-slate-400'
                           }`}>
-                            {cus.marital_status}
+                            {cus.MaritalStatus}
                           </span>
                         </td>
                         <td className="p-3 text-center whitespace-nowrap">
@@ -385,7 +376,6 @@ export const CustomerListView: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Add/Edit Customer Form */}
         <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 overflow-y-auto max-h-[calc(100vh-215px)]">
           <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
             <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
@@ -401,7 +391,6 @@ export const CustomerListView: React.FC = () => {
           </div>
 
           <form onSubmit={handleSaveCustomer} className="space-y-4 text-xs">
-            {/* Row 1 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-medium text-slate-400 mb-1">Mã CIF *</label>
@@ -424,7 +413,6 @@ export const CustomerListView: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 2 */}
             <div>
               <label className="block font-medium text-slate-400 mb-1">Họ tên khách hàng *</label>
               <input
@@ -436,7 +424,6 @@ export const CustomerListView: React.FC = () => {
               />
             </div>
 
-            {/* Row 3 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-medium text-slate-400 mb-1">Số điện thoại</label>
@@ -458,7 +445,6 @@ export const CustomerListView: React.FC = () => {
               </div>
             </div>
 
-            {/* Row 4 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-medium text-slate-400 mb-1">Số tài khoản (STK) KH</label>
@@ -480,7 +466,6 @@ export const CustomerListView: React.FC = () => {
               </div>
             </div>
 
-            {/* Marital & KHLQ Box */}
             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
               <div className="text-xs font-bold text-sky-400 uppercase border-b border-slate-800 pb-2">
                 THÔNG TIN HÔN NHÂN & KHLQ
@@ -567,7 +552,6 @@ export const CustomerListView: React.FC = () => {
               )}
             </div>
 
-            {/* Action Buttons */}
             <div className="pt-2 flex items-center space-x-3">
               <button
                 type="submit"
@@ -590,16 +574,15 @@ export const CustomerListView: React.FC = () => {
         </div>
       </div>
 
-      {/* Details Popup Modal */}
       {isModalOpen && detailCustomer && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
                 <h3 className="text-base font-bold text-sky-400">
-                  HỒ SƠ CHI TIẾT: {detailCustomer.full_name}
+                  HỒ SƠ CHI TIẾT: {detailCustomer.FullName}
                 </h3>
-                <p className="text-xs text-slate-400">Mã CIF: {detailCustomer.cif_kh}</p>
+                <p className="text-xs text-slate-400">Mã CIF: {detailCustomer.CifKh}</p>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -609,28 +592,26 @@ export const CustomerListView: React.FC = () => {
               </button>
             </div>
 
-            {/* Info Group 1 */}
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-sky-400 uppercase">1. Thông Tin Pháp Lý & Liên Lạc KH</h4>
               <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 grid grid-cols-2 gap-3 text-xs">
-                <div><span className="text-slate-400">Họ và tên:</span> <span className="font-bold text-slate-100">{detailCustomer.full_name}</span></div>
-                <div><span className="text-slate-400">Số CCCD:</span> <span className="font-bold text-slate-200">{detailCustomer.national_id || 'Chưa khai báo'}</span></div>
-                <div><span className="text-slate-400">Số tài khoản (STK):</span> <span className="font-bold text-sky-400">{detailCustomer.account_number || 'Chưa khai báo'}</span></div>
-                <div><span className="text-slate-400">Số điện thoại:</span> <span className="font-bold text-slate-200">{detailCustomer.phone || 'Chưa khai báo'}</span></div>
-                <div className="col-span-2"><span className="text-slate-400">Địa chỉ:</span> <span className="text-slate-200">{detailCustomer.address || 'Chưa khai báo'}</span></div>
+                <div><span className="text-slate-400">Họ và tên:</span> <span className="font-bold text-slate-100">{detailCustomer.FullName}</span></div>
+                <div><span className="text-slate-400">Số CCCD:</span> <span className="font-bold text-slate-200">{detailCustomer.NationalId || 'Chưa khai báo'}</span></div>
+                <div><span className="text-slate-400">Số tài khoản (STK):</span> <span className="font-bold text-sky-400">{detailCustomer.AccountNumber || 'Chưa khai báo'}</span></div>
+                <div><span className="text-slate-400">Số điện thoại:</span> <span className="font-bold text-slate-200">{detailCustomer.Phone || 'Chưa khai báo'}</span></div>
+                <div className="col-span-2"><span className="text-slate-400">Địa chỉ:</span> <span className="text-slate-200">{detailCustomer.Address || 'Chưa khai báo'}</span></div>
               </div>
             </div>
 
-            {/* Info Group 2 */}
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-sky-400 uppercase">2. Thông Tin Hôn Nhân & KHLQ (Vợ/Chồng)</h4>
               <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 grid grid-cols-2 gap-3 text-xs">
-                <div><span className="text-slate-400">Tình trạng hôn nhân:</span> <span className="font-bold text-slate-100">{detailCustomer.marital_status}</span></div>
-                <div><span className="text-slate-400">Mã CIF KHLQ:</span> <span className="font-bold text-sky-400">{detailCustomer.cif_khlq || '-'}</span></div>
-                <div><span className="text-slate-400">Họ tên Vợ/Chồng:</span> <span className="font-bold text-slate-100">{detailCustomer.spouse_name || '-'}</span></div>
-                <div><span className="text-slate-400">STK Vợ/Chồng:</span> <span className="font-bold text-sky-400">{detailCustomer.spouse_account_number || '-'}</span></div>
-                <div><span className="text-slate-400">CCCD Vợ/Chồng:</span> <span className="text-slate-200">{detailCustomer.spouse_national_id || '-'}</span></div>
-                <div><span className="text-slate-400">SĐT Vợ/Chồng:</span> <span className="text-slate-200">{detailCustomer.spouse_phone || '-'}</span></div>
+                <div><span className="text-slate-400">Tình trạng hôn nhân:</span> <span className="font-bold text-slate-100">{detailCustomer.MaritalStatus}</span></div>
+                <div><span className="text-slate-400">Mã CIF KHLQ:</span> <span className="font-bold text-sky-400">{detailCustomer.CifKhlq || '-'}</span></div>
+                <div><span className="text-slate-400">Họ tên Vợ/Chồng:</span> <span className="font-bold text-slate-100">{detailCustomer.SpouseName || '-'}</span></div>
+                <div><span className="text-slate-400">STK Vợ/Chồng:</span> <span className="font-bold text-sky-400">{detailCustomer.SpouseAccountNumber || '-'}</span></div>
+                <div><span className="text-slate-400">CCCD Vợ/Chồng:</span> <span className="text-slate-200">{detailCustomer.SpouseNationalId || '-'}</span></div>
+                <div><span className="text-slate-400">SĐT Vợ/Chồng:</span> <span className="text-slate-200">{detailCustomer.SpousePhone || '-'}</span></div>
               </div>
             </div>
           </div>

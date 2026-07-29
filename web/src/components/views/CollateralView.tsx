@@ -17,12 +17,9 @@ export const CollateralView: React.FC = () => {
   // Form Inputs
   const [inputCustomerId, setInputCustomerId] = useState<number | ''>('');
   const [inputAssetCode, setInputAssetCode] = useState('');
-  const [inputAssetName, setInputAssetName] = useState('');
   const [inputAssetType, setInputAssetType] = useState('Loại 1');
   const [inputAddress, setInputAddress] = useState('');
   const [inputAppraisedValue, setInputAppraisedValue] = useState('');
-  const [inputAppraisalDate, setInputAppraisalDate] = useState('');
-  const [inputRemarks, setInputRemarks] = useState('');
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -39,8 +36,8 @@ export const CollateralView: React.FC = () => {
     setLoading(true);
     try {
       const [resCus, resCol] = await Promise.all([
-        supabase.from('Customers').select('*').order('full_name'),
-        supabase.from('Collaterals').select('*, customer:Customers(*)').order('id', { ascending: false }),
+        supabase.from('Customers').select('*').order('FullName'),
+        supabase.from('Collaterals').select('*, customer:Customers(*)').order('Id', { ascending: false }),
       ]);
 
       if (resCus.data) setCustomers(resCus.data);
@@ -53,40 +50,34 @@ export const CollateralView: React.FC = () => {
   };
 
   const filteredCollaterals = collaterals.filter((col) => {
-    const cifMatch = !searchCif.trim() || (col.customer?.cif_kh && col.customer.cif_kh.toLowerCase().includes(searchCif.toLowerCase()));
-    const nameMatch = !searchOwnerName.trim() || (col.customer?.full_name && col.customer.full_name.toLowerCase().includes(searchOwnerName.toLowerCase()));
-    const codeMatch = !searchAssetCode.trim() || (col.asset_code && col.asset_code.toLowerCase().includes(searchAssetCode.toLowerCase()));
+    const cifMatch = !searchCif.trim() || (col.customer?.CifKh && col.customer.CifKh.toLowerCase().includes(searchCif.toLowerCase()));
+    const nameMatch = !searchOwnerName.trim() || (col.customer?.FullName && col.customer.FullName.toLowerCase().includes(searchOwnerName.toLowerCase()));
+    const codeMatch = !searchAssetCode.trim() || (col.AssetCode && col.AssetCode.toLowerCase().includes(searchAssetCode.toLowerCase()));
     return cifMatch && nameMatch && codeMatch;
   });
 
-  const totalAppraisedVal = filteredCollaterals.reduce((acc, c) => acc + (c.appraised_value || 0), 0);
+  const totalAppraisedVal = filteredCollaterals.reduce((acc, c) => acc + (c.AppraisedValue || c.Value || 0), 0);
 
   const handleSelectCollateral = (col: Collateral) => {
-    if (selectedCollateral?.id === col.id) {
+    if (selectedCollateral?.Id === col.Id) {
       clearForm();
       return;
     }
     setSelectedCollateral(col);
-    setInputCustomerId(col.customer_id);
-    setInputAssetCode(col.asset_code || '');
-    setInputAssetName(col.asset_name || '');
-    setInputAssetType(col.asset_type || col.real_estate_class || 'Loại 1');
-    setInputAddress(col.address || '');
-    setInputAppraisedValue(col.appraised_value ? col.appraised_value.toLocaleString('vi-VN') : '0');
-    setInputAppraisalDate(col.appraisal_date || '');
-    setInputRemarks(col.remarks || '');
+    setInputCustomerId(col.CustomerId);
+    setInputAssetCode(col.AssetCode || '');
+    setInputAssetType(col.AssetType || 'Loại 1');
+    setInputAddress(col.Address || '');
+    setInputAppraisedValue((col.AppraisedValue || col.Value) ? (col.AppraisedValue || col.Value)!.toLocaleString('vi-VN') : '0');
   };
 
   const clearForm = () => {
     setSelectedCollateral(null);
     setInputCustomerId('');
     setInputAssetCode('');
-    setInputAssetName('');
     setInputAssetType('Loại 1');
     setInputAddress('');
     setInputAppraisedValue('');
-    setInputAppraisalDate('');
-    setInputRemarks('');
   };
 
   const handleSaveCollateral = async (e: React.FormEvent) => {
@@ -103,21 +94,17 @@ export const CollateralView: React.FC = () => {
     }
 
     const payload = {
-      customer_id: Number(inputCustomerId),
-      asset_code: inputAssetCode.trim() || null,
-      asset_name: inputAssetName.trim() || 'Bất động sản',
-      asset_type: inputAssetType,
-      main_asset_group: 'Bất động sản',
-      real_estate_class: inputAssetType,
-      address: inputAddress.trim() || null,
-      appraised_value: val,
-      appraisal_date: inputAppraisalDate || null,
-      remarks: inputRemarks.trim() || null,
+      CustomerId: Number(inputCustomerId),
+      AssetCode: inputAssetCode.trim() || null,
+      AssetType: inputAssetType,
+      Address: inputAddress.trim() || null,
+      AppraisedValue: val,
+      Value: val,
     };
 
     try {
       if (selectedCollateral) {
-        const { error } = await supabase.from('Collaterals').update(payload).eq('id', selectedCollateral.id);
+        const { error } = await supabase.from('Collaterals').update(payload).eq('Id', selectedCollateral.Id);
         if (error) throw error;
         showNotify('success', 'Đã cập nhật thông tin TSĐB thành công!');
       } else {
@@ -137,7 +124,6 @@ export const CollateralView: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Toast Notification */}
       {notification && (
         <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${
           notification.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300' : 'bg-red-950/90 border-red-500/40 text-red-300'
@@ -147,7 +133,6 @@ export const CollateralView: React.FC = () => {
         </div>
       )}
 
-      {/* Top Search Toolbar & KPI Banner */}
       <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-xs font-bold text-sky-400 uppercase tracking-wider">
@@ -163,7 +148,6 @@ export const CollateralView: React.FC = () => {
           </div>
         </div>
 
-        {/* 3 Search Inputs */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <input
             type="text"
@@ -189,9 +173,7 @@ export const CollateralView: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Grid & Form */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left DataGrid */}
         <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-215px)]">
           <div className="p-3 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-300">DANH SÁCH TSĐB ({filteredCollaterals.length})</span>
@@ -216,28 +198,28 @@ export const CollateralView: React.FC = () => {
                   <tr><td colSpan={5} className="text-center p-8 text-slate-500">Không tìm thấy tài sản bảo đảm nào.</td></tr>
                 ) : (
                   filteredCollaterals.map((col) => {
-                    const isSelected = selectedCollateral?.id === col.id;
+                    const isSelected = selectedCollateral?.Id === col.Id;
                     return (
                       <tr
-                        key={col.id}
+                        key={col.Id}
                         onClick={() => handleSelectCollateral(col)}
                         className={`cursor-pointer transition-colors ${
                           isSelected ? 'bg-sky-950/60 border-l-4 border-l-sky-500 font-semibold' : 'hover:bg-slate-800/40'
                         }`}
                       >
-                        <td className="p-3 font-mono text-sky-400 font-bold whitespace-nowrap">{col.asset_code || 'N/A'}</td>
+                        <td className="p-3 font-mono text-sky-400 font-bold whitespace-nowrap">{col.AssetCode || 'N/A'}</td>
                         <td className="p-3 font-bold text-slate-100 whitespace-nowrap">
-                          {col.customer?.full_name || 'Khách hàng chưa rõ'} ({col.customer?.cif_kh || ''})
+                          {col.customer?.FullName || 'Khách hàng chưa rõ'} ({col.customer?.CifKh || ''})
                         </td>
                         <td className="p-3 whitespace-nowrap">
                           <span className="bg-slate-800 border border-slate-700 text-sky-400 px-2 py-0.5 rounded-md text-[10px] font-bold">
-                            {col.asset_type || col.real_estate_class || 'Loại 1'}
+                            {col.AssetType || 'Loại 1'}
                           </span>
                         </td>
                         <td className="p-3 font-bold text-emerald-400 text-right whitespace-nowrap">
-                          {formatMoney(col.appraised_value || 0)}
+                          {formatMoney(col.AppraisedValue || col.Value || 0)}
                         </td>
-                        <td className="p-3 text-slate-400 max-w-xs truncate">{col.address || 'Chưa khai báo'}</td>
+                        <td className="p-3 text-slate-400 max-w-xs truncate">{col.Address || 'Chưa khai báo'}</td>
                       </tr>
                     );
                   })
@@ -247,7 +229,6 @@ export const CollateralView: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Form */}
         <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 overflow-y-auto max-h-[calc(100vh-215px)]">
           <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
             <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
@@ -268,7 +249,7 @@ export const CollateralView: React.FC = () => {
               >
                 <option value="">-- Chọn Khách hàng --</option>
                 {customers.map((c) => (
-                  <option key={c.id} value={c.id}>👤 {c.full_name} ({c.cif_kh})</option>
+                  <option key={c.Id} value={c.Id}>👤 {c.FullName} ({c.CifKh})</option>
                 ))}
               </select>
             </div>

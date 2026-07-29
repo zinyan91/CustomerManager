@@ -30,8 +30,8 @@ export const CreditCardView: React.FC = () => {
     setLoading(true);
     try {
       const [resCus, resCard] = await Promise.all([
-        supabase.from('Customers').select('*').order('full_name'),
-        supabase.from('CreditCards').select('*, customer:Customers(*)').order('id', { ascending: false }),
+        supabase.from('Customers').select('*').order('FullName'),
+        supabase.from('CreditCards').select('*, customer:Customers(*)').order('Id', { ascending: false }),
       ]);
 
       if (resCus.data) setCustomers(resCus.data);
@@ -53,12 +53,13 @@ export const CreditCardView: React.FC = () => {
     const limit = parseFloat(inputLimit.replace(/\D/g, '')) || 0;
 
     const payload = {
-      customer_id: Number(inputCustomerId),
-      card_type_classification: inputClassification,
-      card_number: inputCardNumber.trim() || null,
-      credit_limit: limit,
-      outstanding_balance: 0,
-      remarks: inputRemarks.trim() || null,
+      CustomerId: Number(inputCustomerId),
+      IssuanceType: inputClassification,
+      CardNumber: inputCardNumber.trim() || null,
+      CreditLimit: limit,
+      Limit: limit,
+      CurrentBalance: 0,
+      Note: inputRemarks.trim() || null,
     };
 
     try {
@@ -79,7 +80,6 @@ export const CreditCardView: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Notification Toast */}
       {notification && (
         <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${
           notification.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300' : 'bg-red-950/90 border-red-500/40 text-red-300'
@@ -89,7 +89,6 @@ export const CreditCardView: React.FC = () => {
         </div>
       )}
 
-      {/* Title Header */}
       <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
         <div>
           <h2 className="text-sm font-bold text-sky-400 uppercase tracking-wider">
@@ -98,13 +97,11 @@ export const CreditCardView: React.FC = () => {
           <p className="text-xs text-slate-400">Cấp & theo dõi Thẻ tín dụng theo diện Cầm cố STK, Quan hệ tín dụng, Tín chấp lương</p>
         </div>
         <div className="bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-400">
-          Tổng Hạn Mức Thẻ: {formatMoney(cards.reduce((a, b) => a + (b.credit_limit || 0), 0))}
+          Tổng Hạn Mức Thẻ: {formatMoney(cards.reduce((a, b) => a + (b.CreditLimit || b.Limit || 0), 0))}
         </div>
       </div>
 
-      {/* Grid Area */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left DataGrid */}
         <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-215px)]">
           <div className="p-3 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-300">DANH SÁCH THẺ TÍN DỤNG ({cards.length})</span>
@@ -127,18 +124,18 @@ export const CreditCardView: React.FC = () => {
                   <tr><td colSpan={4} className="text-center p-8 text-slate-500">Chưa có thẻ tín dụng nào được cấp.</td></tr>
                 ) : (
                   cards.map((card) => (
-                    <tr key={card.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="p-3 font-mono text-sky-400 font-bold whitespace-nowrap">{card.card_number || 'THẺ_PHÁT_HÀNH'}</td>
+                    <tr key={card.Id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="p-3 font-mono text-sky-400 font-bold whitespace-nowrap">{card.CardNumber || 'THẺ_PHÁT_HÀNH'}</td>
                       <td className="p-3 font-bold text-slate-100 whitespace-nowrap">
-                        {card.customer?.full_name || 'KH'} ({card.customer?.cif_kh || ''})
+                        {card.customer?.FullName || 'KH'} ({card.customer?.CifKh || ''})
                       </td>
                       <td className="p-3 whitespace-nowrap">
                         <span className="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded-md text-[10px] font-bold">
-                          {card.card_type_classification}
+                          {card.IssuanceType || 'Quan hệ tín dụng'}
                         </span>
                       </td>
                       <td className="p-3 font-bold text-emerald-400 text-right whitespace-nowrap">
-                        {formatMoney(card.credit_limit || 0)}
+                        {formatMoney(card.CreditLimit || card.Limit || 0)}
                       </td>
                     </tr>
                   ))
@@ -148,7 +145,6 @@ export const CreditCardView: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Form */}
         <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 overflow-y-auto max-h-[calc(100vh-215px)]">
           <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
             <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
@@ -168,7 +164,7 @@ export const CreditCardView: React.FC = () => {
               >
                 <option value="">-- Chọn Khách hàng --</option>
                 {customers.map((c) => (
-                  <option key={c.id} value={c.id}>👤 {c.full_name} ({c.cif_kh})</option>
+                  <option key={c.Id} value={c.Id}>👤 {c.FullName} ({c.CifKh})</option>
                 ))}
               </select>
             </div>

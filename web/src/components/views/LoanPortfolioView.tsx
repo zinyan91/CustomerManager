@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI, saveContractAPI,
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI
@@ -7,7 +7,7 @@ import { formatMoneyInput } from '../../lib/utils';
 import type { LoanContract, Customer, RepaymentSchedule } from '../../types';
 import {
   Search, FileText, Receipt, Calendar, CheckCircle, AlertCircle,
-  User, ChevronRight, Plus, RefreshCw, X
+  User, ChevronRight, Plus, RefreshCw, X, ChevronDown
 } from 'lucide-react';
 
 const LOAN_PURPOSE_TYPES = ['Kinh doanh', 'Tiêu dùng', 'Sửa chữa nhà', 'Mua bất động sản', 'Khác'];
@@ -66,6 +66,11 @@ export const LoanPortfolioView: React.FC = () => {
   const [searchContract, setSearchContract] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
+  // Dropdown quick-pick: all customers
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
+  const [dropdownQuery, setDropdownQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+
   // Result state
   const [foundCustomer, setFoundCustomer] = useState<Customer | null>(null);
   const [contracts, setContracts] = useState<LoanContract[]>([]);
@@ -90,6 +95,35 @@ export const LoanPortfolioView: React.FC = () => {
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Load all customers for dropdown on mount
+  useEffect(() => {
+    fetchCustomersAPI().then(setAllCustomers).catch(() => {});
+  }, []);
+
+  // Filtered dropdown list
+  const dropdownFiltered = dropdownQuery.trim().length < 1
+    ? allCustomers.slice(0, 30)
+    : allCustomers.filter(c =>
+        c.FullName.toLowerCase().includes(dropdownQuery.toLowerCase()) ||
+        c.CifKh.toLowerCase().includes(dropdownQuery.toLowerCase()) ||
+        (c.NationalId || '').includes(dropdownQuery)
+      ).slice(0, 30);
+
+  const handlePickCustomer = async (c: Customer) => {
+    setShowDropdown(false);
+    setDropdownQuery(c.FullName);
+    setSearchCif(c.CifKh);
+    setSearchName('');
+    setSearchContract('');
+    setFoundCustomer(c);
+    setContracts([]);
+    setSelectedContract(null);
+    setShowForm(false);
+    setMainTab('kunn');
+    const cons = await fetchContractsByCustomerAPI(c.Id);
+    setContracts(cons);
+  };
 
   const showNotify = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -298,20 +332,70 @@ export const LoanPortfolioView: React.FC = () => {
           <Search className="w-4 h-4" />
           <span>TRA CỨU THÔNG TIN KHOẢN VAY</span>
         </div>
+
+        {/* Quick-pick dropdown */}
+        <div className="mb-3 relative">
+          <label className="block text-slate-500 mb-1 text-[11px] uppercase tracking-wide">⚡ Chọn nhanh từ danh sách Khách hàng</label>
+          <div className="relative">
+            <input
+              type="text"
+              value={dropdownQuery}
+              onChange={e => { setDropdownQuery(e.target.value); setShowDropdown(true); }}
+              onFocus={() => setShowDropdown(true)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 180)}
+              placeholder={`Gõ tên hoặc CIF để lọc nhanh... (${allCustomers.length} KH)`}
+              className="w-full bg-slate-950 border border-sky-800/60 rounded-xl pl-3 pr-10 py-2.5 text-slate-200 focus:outline-none focus:border-sky-500 transition-colors"
+            />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+          </div>
+          {showDropdown && dropdownFiltered.length > 0 && (
+            <div className="absolute z-40 w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
+              {dropdownFiltered.map(c => (
+                <button
+                  key={c.Id}
+                  type="button"
+                  onMouseDown={() => handlePickCustomer(c)}
+                  className="w-full text-left px-4 py-2.5 hover:bg-sky-600/20 transition-colors flex items-center justify-between group border-b border-slate-800/50 last:border-0"
+                >
+                  <div>
+                    <span className="font-semibold text-slate-100 group-hover:text-sky-300 transition-colors">{c.FullName}</span>
+                    {c.SpouseName && <span className="text-slate-500 ml-2 text-[10px]">KHLQ: {c.SpouseName}</span>}
+                  </div>
+                  <div className="text-right shrink-0 ml-3">
+                    <span className="font-mono text-sky-400 text-[11px]">{c.CifKh}</span>
+                    {c.Phone && <span className="block text-slate-500 text-[10px]">📞 {c.Phone}</span>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+          {showDropdown && dropdownQuery.trim().length > 0 && dropdownFiltered.length === 0 && (
+            <div className="absolute z-40 w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-xl px-4 py-3 text-slate-500 text-xs">
+              Không tìm thấy khách hàng phù hợp.
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center space-x-2 mb-3">
+          <div className="flex-1 h-px bg-slate-800"></div>
+          <span className="text-[10px] text-slate-600 uppercase tracking-wider px-2">hoặc tìm theo thông tin</span>
+          <div className="flex-1 h-px bg-slate-800"></div>
+        </div>
+
         <form onSubmit={handleSearch} className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[160px]">
+          <div className="flex-1 min-w-[140px]">
             <label className="block text-slate-500 mb-1 text-[11px]">Mã CIF Khách hàng</label>
             <input type="text" value={searchCif} onChange={e => setSearchCif(e.target.value)}
               placeholder="005236683..."
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-sky-500 transition-colors" />
           </div>
-          <div className="flex-1 min-w-[160px]">
+          <div className="flex-1 min-w-[140px]">
             <label className="block text-slate-500 mb-1 text-[11px]">Họ tên Khách hàng</label>
             <input type="text" value={searchName} onChange={e => setSearchName(e.target.value)}
               placeholder="Lê Ngọc Quế Hân..."
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-sky-500 transition-colors" />
           </div>
-          <div className="flex-1 min-w-[160px]">
+          <div className="flex-1 min-w-[140px]">
             <label className="block text-slate-500 mb-1 text-[11px]">Số Hợp Đồng Tín Dụng</label>
             <input type="text" value={searchContract} onChange={e => setSearchContract(e.target.value)}
               placeholder="HDTL-005236683..."
@@ -323,7 +407,11 @@ export const LoanPortfolioView: React.FC = () => {
             <span>{isSearching ? 'Đang tìm...' : 'TÌM KIẾM'}</span>
           </button>
           {foundCustomer && (
-            <button type="button" onClick={() => { setFoundCustomer(null); setContracts([]); setSelectedContract(null); setShowForm(false); setSearchCif(''); setSearchName(''); setSearchContract(''); }}
+            <button type="button" onClick={() => {
+              setFoundCustomer(null); setContracts([]); setSelectedContract(null);
+              setShowForm(false); setSearchCif(''); setSearchName('');
+              setSearchContract(''); setDropdownQuery('');
+            }}
               className="flex items-center space-x-1 text-slate-500 hover:text-slate-300 px-3 py-2 rounded-xl transition-colors">
               <X className="w-4 h-4" />
               <span>Xóa</span>

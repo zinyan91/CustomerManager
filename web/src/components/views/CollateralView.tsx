@@ -70,6 +70,15 @@ export const CollateralView: React.FC = () => {
 
   const totalAppraisedVal = filteredCollaterals.reduce((acc, c) => acc + (c.AppraisedValue || c.Value || 0), 0);
 
+  const handleAssetTypeChange = (type: string) => {
+    setInputAssetType(type);
+    if (type === 'Loại 1') setInputLtvPercent('80');
+    else if (type === 'Loại 2') setInputLtvPercent('70');
+    else if (type === 'Loại 3') setInputLtvPercent('60');
+    else if (type === 'Loại 4') setInputLtvPercent('55');
+    else if (type === 'Hạn chế') setInputLtvPercent('50');
+  };
+
   const handleSelectCollateral = (col: Collateral) => {
     if (selectedCollateral?.Id === col.Id) {
       clearForm();
@@ -81,7 +90,7 @@ export const CollateralView: React.FC = () => {
     setInputAssetType(col.AssetType || 'Loại 1');
     setInputAddress(col.Address || '');
     setInputAppraisedValue((col.AppraisedValue || col.Value) ? formatMoneyInput((col.AppraisedValue || col.Value)!.toString()) : '');
-    setInputLtvPercent(col.LtvPercent ? col.LtvPercent.toString() : '70');
+    setInputLtvPercent(col.LtvPercent ? col.LtvPercent.toString() : '80');
   };
 
   const clearForm = () => {
@@ -91,7 +100,7 @@ export const CollateralView: React.FC = () => {
     setInputAssetType('Loại 1');
     setInputAddress('');
     setInputAppraisedValue('');
-    setInputLtvPercent('70');
+    setInputLtvPercent('80');
   };
 
   const handleSaveCollateral = async (e: React.FormEvent) => {
@@ -327,13 +336,15 @@ export const CollateralView: React.FC = () => {
                 <label className="block font-medium mb-1">Xếp loại tài sản *</label>
                 <select
                   value={inputAssetType}
-                  onChange={(e) => setInputAssetType(e.target.value)}
+                  onChange={(e) => handleAssetTypeChange(e.target.value)}
                   className={`w-full rounded-xl p-2.5 font-bold ${inputStyle}`}
                 >
-                  <option value="Loại 1">Loại 1 (BĐS Thổ cư)</option>
-                  <option value="Loại 2">Loại 2 (BĐS Đất nông nghiệp)</option>
-                  <option value="Loại 3">Loại 3 (Phương tiện vận tải)</option>
-                  <option value="Loại 4">Loại 4 (Sổ tiết kiệm / GTCG)</option>
+                  <option value="Loại 1">Loại 1 (LTV 80%)</option>
+                  <option value="Loại 2">Loại 2 (LTV 70%)</option>
+                  <option value="Loại 3">Loại 3 (LTV 60%)</option>
+                  <option value="Loại 4">Loại 4 (LTV 55%)</option>
+                  <option value="Hạn chế">Hạn chế (LTV 50% / Trình ban)</option>
+                  <option value="Ngoại lệ">Ngoại lệ (LTV Tùy chỉnh)</option>
                 </select>
               </div>
             </div>
@@ -356,9 +367,12 @@ export const CollateralView: React.FC = () => {
                   type="number"
                   min={10}
                   max={100}
+                  readOnly={inputAssetType !== 'Ngoại lệ'}
                   value={inputLtvPercent}
                   onChange={(e) => setInputLtvPercent(e.target.value)}
-                  className={`w-full rounded-xl p-2.5 font-mono font-bold text-sky-600 dark:text-sky-400 text-sm ${inputStyle}`}
+                  className={`w-full rounded-xl p-2.5 font-mono font-bold text-sky-600 dark:text-sky-400 text-sm ${inputStyle} ${
+                    inputAssetType !== 'Ngoại lệ' ? 'bg-slate-100 dark:bg-slate-900 cursor-not-allowed opacity-90' : ''
+                  }`}
                 />
               </div>
             </div>

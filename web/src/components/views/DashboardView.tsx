@@ -43,9 +43,11 @@ export const DashboardView: React.FC = () => {
     { name: 'Loại 2 (70%)', value: collaterals.filter(c => c.AssetType === 'Loại 2').reduce((a, b) => a + (b.AppraisedValue || b.Value || 0), 0) },
     { name: 'Loại 3 (60%)', value: collaterals.filter(c => c.AssetType === 'Loại 3').reduce((a, b) => a + (b.AppraisedValue || b.Value || 0), 0) },
     { name: 'Loại 4 (55%)', value: collaterals.filter(c => c.AssetType === 'Loại 4').reduce((a, b) => a + (b.AppraisedValue || b.Value || 0), 0) },
+    { name: 'Hạn chế (50%)', value: collaterals.filter(c => c.AssetType === 'Hạn chế').reduce((a, b) => a + (b.AppraisedValue || b.Value || 0), 0) },
+    { name: 'Ngoại lệ', value: collaterals.filter(c => c.AssetType === 'Ngoại lệ').reduce((a, b) => a + (b.AppraisedValue || b.Value || 0), 0) },
   ].filter(d => d.value > 0);
 
-  const COLORS = ['#0284c7', '#059669', '#d97706', '#dc2626'];
+  const COLORS = ['#0284c7', '#059669', '#d97706', '#dc2626', '#8b5cf6', '#ec4899'];
 
   const formatMoney = (val: number) => {
     if (val >= 1e9) return (val / 1e9).toFixed(2) + ' Tỷ';

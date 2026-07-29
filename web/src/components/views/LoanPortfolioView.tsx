@@ -405,26 +405,42 @@ export const LoanPortfolioView: React.FC = () => {
     setSelectedContract(null);
     setSchedules([]);
     const defaultMethod = LOAN_METHODS[0];
+
+    // Pre-populate master contract info if customer already has one
+    const master = contracts.find(c => c.LoanMethod === 'Hạn mức tín dụng') || (contracts.length > 0 ? contracts[0] : null);
+
     setForm({
       CustomerId: foundCustomer?.Id,
-      ContractType: 0,
-      LoanMethod: defaultMethod,
-      DebtGroup: 1,
-      PrincipalRepaymentMethod: 'Trả cuối kỳ',
-      InterestRepaymentMethod: 'Trả hàng tháng theo dư nợ thực tế',
+      ContractType: master ? master.ContractType : 0,
+      LoanMethod: master ? master.LoanMethod : defaultMethod,
+      DebtGroup: master ? master.DebtGroup : 1,
+      ContractNumber: master ? `${master.ContractNumber}/KUNN-${(contracts.length + 1).toString().padStart(2, '0')}` : '',
+      ContractStartDate: master ? master.ContractStartDate : '',
+      ContractEndDate: master ? master.ContractEndDate : '',
+      LoanTenorMonths: master ? master.LoanTenorMonths : 12,
+      PrincipalRepaymentMethod: master ? master.PrincipalRepaymentMethod : 'Gốc trả cuối kỳ',
+      InterestRepaymentMethod: master ? master.InterestRepaymentMethod : 'Trả hàng tháng theo dư nợ thực tế',
       PrincipalGracePeriodMonths: 0,
       InterestGracePeriodMonths: 0,
+      LoanPurposeType: master ? master.LoanPurposeType : '',
+      LoanPurpose: master ? master.LoanPurpose : '',
       IsSettled: false,
       IsRestructured: false
     });
-    setFormCreditLimit('');
+
+    if (master) {
+      setFormCreditLimit(master.ContractAmount ? master.ContractAmount.toLocaleString('vi-VN') : '');
+    } else {
+      setFormCreditLimit('');
+    }
+
     setFormLoanAmount('');
     setFormCurrentBalance('');
-    setRatePreferential('');
-    setRatePreferentialMonths('');
-    setRateBase('');
-    setRateMargin('');
-    setSelectedCollateralIds([]);
+    setRatePreferential(master?.PreferentialRate ? (master.PreferentialRate * 100).toString() : '');
+    setRatePreferentialMonths(master?.PreferentialPeriodMonths ? master.PreferentialPeriodMonths.toString() : '');
+    setRateBase(master?.BaseRate ? (master.BaseRate * 100).toString() : '');
+    setRateMargin(master?.MarginRate ? (master.MarginRate * 100).toString() : '');
+    setSelectedCollateralIds(master?.CollateralId ? [master.CollateralId] : []);
     setShowForm(true);
   };
 
@@ -469,8 +485,13 @@ export const LoanPortfolioView: React.FC = () => {
         CollateralId: selectedCollateralIds.length > 0 ? selectedCollateralIds[0] : null,
       };
 
+      // CRITICAL FIX: Delete Id when creating a new contract/KUNN so PostgREST inserts a new row instead of updating existing contract
+      if (!selectedContract) {
+        delete payload.Id;
+      }
+
       const savedContract = await saveContractAPI(payload);
-      showNotify('success', 'Đã lưu thông tin HĐTD thành công!');
+      showNotify('success', 'Đã lưu thông tin KUNN/HĐTD thành công!');
 
       if (foundCustomer) {
         const refreshed = await fetchContractsByCustomerAPI(foundCustomer.Id);
@@ -896,7 +917,27 @@ export const LoanPortfolioView: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Đưa Tổng mức cấp lên trên theo yêu cầu */}
+                      {/* Chuyển Mục đích vay & Mô tả chi tiết lên thông tin chung */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Mục đích vay vốn</label>
+                          <select value={form.LoanPurposeType || ''}
+                            onChange={e => setForm(f => ({ ...f, LoanPurposeType: e.target.value }))}
+                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`}>
+                            <option value="">-- Chọn mục đích --</option>
+                            {LOAN_PURPOSE_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Mô tả chi tiết mục đích vay</label>
+                          <input type="text" value={form.LoanPurpose || ''}
+                            onChange={e => setForm(f => ({ ...f, LoanPurpose: e.target.value }))}
+                            placeholder="Bổ sung vốn kinh doanh, mua sắm máy móc..."
+                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                        </div>
+                      </div>
+
+                      {/* Tổng mức cấp HĐTD (Chỉ lưu chứ không khoá hẳn) */}
                       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Tổng mức cấp (HĐTD) *</label>
@@ -1072,25 +1113,7 @@ export const LoanPortfolioView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* SECTION 4: Purpose & Description */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Mục đích vay vốn</label>
-                        <select value={form.LoanPurposeType || ''}
-                          onChange={e => setForm(f => ({ ...f, LoanPurposeType: e.target.value }))}
-                          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`}>
-                          <option value="">-- Chọn mục đích --</option>
-                          {LOAN_PURPOSE_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Mô tả chi tiết mục đích vay</label>
-                        <input type="text" value={form.LoanPurpose || ''}
-                          onChange={e => setForm(f => ({ ...f, LoanPurpose: e.target.value }))}
-                          placeholder="Bổ sung vốn kinh doanh, mua sắm máy móc..."
-                          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                      </div>
-                    </div>
+                    {/* SECTION 3: MỤC ĐÍCH VAY & MÔ TẢ (ĐÃ ĐƯỢC CHUYỂN LÊN KHỐI 1) */}
 
                     {/* SECTION 6: CHI TIẾT LÃI SUẤT (Chọn 1 trong 2 chế độ) */}
                     <div className={`rounded-xl p-4 space-y-3 border ${sectionBoxBg}`}>

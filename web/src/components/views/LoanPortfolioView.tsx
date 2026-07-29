@@ -4,7 +4,7 @@ import {
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI,
   fetchCollateralsByCustomerAPI
 } from '../../lib/api';
-import { formatMoneyInput } from '../../lib/utils';
+import { formatMoneyInput, fmtDate } from '../../lib/utils';
 import type { LoanContract, Customer, RepaymentSchedule, Collateral } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -48,14 +48,6 @@ const DEBT_GROUP_COLORS: Record<number, string> = {
 
 const fmtMoney = (v?: number | null) => v !== undefined && v !== null ? v.toLocaleString('vi-VN') + ' VNĐ' : '—';
 const fmtRate = (v?: number | null) => v !== undefined && v !== null ? (v * 100).toFixed(2) + '%/năm' : '—';
-const fmtDate = (v?: string | null) => {
-  if (!v) return '—';
-  try {
-    const parts = v.split('-');
-    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    return v;
-  } catch { return v; }
-};
 
 // Helper: Auto-calculate End Date by adding months to a date string (YYYY-MM-DD)
 function addMonthsToDate(dateStr?: string | null, months?: number | null): string {

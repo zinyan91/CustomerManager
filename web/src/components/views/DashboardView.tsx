@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
+import { fmtDate } from '../../lib/utils';
 import type { Customer, Collateral, LoanContract } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -414,7 +415,7 @@ export const DashboardView: React.FC = () => {
                     <td className="p-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
                       {fmtFullMoney(contract.LoanAmount || contract.CurrentBalance || 0)}
                     </td>
-                    <td className="p-2.5 text-center font-bold text-sky-600 dark:text-sky-400">{contract.KunnDueDate}</td>
+                    <td className="p-2.5 text-center font-bold text-sky-600 dark:text-sky-400">{fmtDate(contract.KunnDueDate)}</td>
                     <td className="p-2.5 text-center font-bold">{contract.KunnTenor || `${contract.LoanTenorMonths}T`}</td>
                     <td className="p-2.5 text-center">
                       <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
@@ -489,7 +490,7 @@ export const DashboardView: React.FC = () => {
                       <td className="p-2.5 text-right font-mono font-bold text-sky-600 dark:text-sky-400">
                         {fmtFullMoney(contract.ContractAmount || 0)}
                       </td>
-                      <td className="p-2.5 text-center font-bold">{contract.ContractEndDate}</td>
+                      <td className="p-2.5 text-center font-bold">{fmtDate(contract.ContractEndDate)}</td>
                       <td className="p-2.5 text-center">
                         <span className={`px-2.5 py-1 rounded-lg text-[10px] inline-block ${badgeStyle}`}>
                           {statusText}
@@ -568,7 +569,7 @@ export const DashboardView: React.FC = () => {
                       <td className="p-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
                         {fmtFullMoney(val)}
                       </td>
-                      <td className="p-2.5 text-center font-bold">{expiryDateStr || 'N/A'}</td>
+                      <td className="p-2.5 text-center font-bold">{expiryDateStr ? fmtDate(expiryDateStr) : 'N/A'}</td>
                       <td className="p-2.5 text-center">
                         <span className={`px-2.5 py-1 rounded-lg text-[10px] inline-block ${badgeStyle}`}>
                           {statusText}

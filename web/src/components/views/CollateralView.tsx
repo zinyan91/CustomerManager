@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI } from '../../lib/api';
-import { formatMoneyInput } from '../../lib/utils';
+import { formatMoneyInput, fmtDate } from '../../lib/utils';
 import type { Collateral, Customer } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { Building2, CheckCircle, AlertCircle, Plus } from 'lucide-react';
@@ -334,7 +334,7 @@ export const CollateralView: React.FC = () => {
                           {formatMoney(col.AppraisedValue || col.Value || 0)}
                         </td>
                         <td className="p-3 text-center font-bold font-mono whitespace-nowrap">
-                          {expDateStr || 'N/A'}
+                          {expDateStr ? fmtDate(expDateStr) : 'N/A'}
                         </td>
                         <td className="p-3 text-center whitespace-nowrap">
                           <span className={`px-2.5 py-1 rounded-lg text-[10px] inline-block ${badgeStyle}`}>

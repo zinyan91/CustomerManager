@@ -9,7 +9,7 @@ import type { LoanContract, Customer, RepaymentSchedule, Collateral } from '../.
 import { useTheme } from '../../context/ThemeContext';
 import {
   Search, FileText, Receipt, Calendar, CheckCircle, AlertCircle,
-  User, ChevronRight, Plus, RefreshCw, X, ChevronDown, ShieldCheck, DollarSign, Building2
+  User, ChevronRight, Plus, RefreshCw, X, ChevronDown, ShieldCheck, DollarSign, Building2, Save
 } from 'lucide-react';
 
 const LOAN_METHODS = [
@@ -285,31 +285,41 @@ export const LoanPortfolioView: React.FC = () => {
     setShowForm(false);
 
     try {
-      const customers = await fetchCustomersAPI({
-        cif: searchCif.trim() || undefined,
-        name: searchName.trim() || undefined,
-      });
+      let customers: Customer[] = [];
+      if (searchCif.trim()) {
+        customers = await fetchCustomersAPI({ cif: searchCif.trim() });
+      } else if (searchName.trim()) {
+        customers = await fetchCustomersAPI({ name: searchName.trim() });
+      } else {
+        customers = await fetchCustomersAPI({});
+      }
 
       let matchedCustomer: Customer | null = null;
+      if (customers.length > 0) {
+        matchedCustomer = customers[0];
+      }
 
-      if (searchContract.trim() && !matchedCustomer) {
-        const allCust = customers.length > 0 ? customers : await fetchCustomersAPI({});
+      if (!matchedCustomer && searchContract.trim()) {
+        const allCust = await fetchCustomersAPI({});
         for (const c of allCust) {
           const cons = await fetchContractsByCustomerAPI(c.Id);
           const found = cons.find(con => con.ContractNumber?.toLowerCase().includes(searchContract.toLowerCase()));
           if (found) { matchedCustomer = c; setContracts(cons); break; }
         }
-      } else if (customers.length > 0) {
-        matchedCustomer = customers[0];
-        const cons = await fetchContractsByCustomerAPI(matchedCustomer.Id);
-        setContracts(cons);
       }
 
       if (!matchedCustomer) {
         showNotify('error', 'Không tìm thấy khách hàng phù hợp.');
       } else {
         setFoundCustomer(matchedCustomer);
-        const cols = await fetchCollateralsByCustomerAPI(matchedCustomer.Id);
+        setDropdownQuery(matchedCustomer.FullName);
+        setSearchCif(matchedCustomer.CifKh);
+        setSearchName('');
+        const [cons, cols] = await Promise.all([
+          fetchContractsByCustomerAPI(matchedCustomer.Id),
+          fetchCollateralsByCustomerAPI(matchedCustomer.Id),
+        ]);
+        setContracts(cons);
         setCollaterals(cols);
       }
     } catch (err: any) {
@@ -444,18 +454,21 @@ export const LoanPortfolioView: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleSaveContract = async (e: React.FormEvent) => {
+  const handleSaveContract = async (e: React.FormEvent, forceInsert: boolean = false) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const targetCustomerId = form.CustomerId || foundCustomer?.Id;
+      const targetCustomerId = foundCustomer?.Id || form.CustomerId;
       if (!targetCustomerId) {
-        showNotify('error', 'Chưa chọn khách hàng vay!');
-        setLoading(false);
+        showNotify('error', 'Vui lòng chọn hoặc tìm kiếm Khách hàng vay trước!');
+        return;
+      }
+      if (!form.ContractNumber?.trim()) {
+        showNotify('error', 'Vui lòng nhập Số Hợp đồng Tín dụng!');
         return;
       }
 
-      const creditLimit = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || undefined;
+      const creditLimit = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
       const loanAmount = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || undefined;
       const currentBal = parseFloat(formCurrentBalance.replace(/\./g, '').replace(',', '.')) || undefined;
 
@@ -485,33 +498,26 @@ export const LoanPortfolioView: React.FC = () => {
         CollateralId: selectedCollateralIds.length > 0 ? selectedCollateralIds[0] : null,
       };
 
-      // CRITICAL FIX: Delete Id when creating a new contract/KUNN so PostgREST inserts a new row instead of updating existing contract
-      if (!selectedContract) {
+      // Force insert (create new KUNN) or when no contract selected
+      if (forceInsert || !selectedContract) {
         delete payload.Id;
       }
 
       const savedContract = await saveContractAPI(payload);
-      showNotify('success', 'Đã lưu thông tin KUNN/HĐTD thành công!');
+      showNotify('success', (forceInsert || !selectedContract) ? 'Đã TẠO MỚI thành công Giấy nhận nợ (KUNN)!' : 'Đã CẬP NHẬT thông tin KUNN/HĐTD!');
 
-      if (foundCustomer) {
-        const refreshed = await fetchContractsByCustomerAPI(foundCustomer.Id);
+      if (targetCustomerId) {
+        const refreshed = await fetchContractsByCustomerAPI(targetCustomerId);
         setContracts(refreshed);
-        const updated = refreshed.find(c => c.Id === savedContract.Id || c.Id === payload.Id);
-        if (updated) {
-          setSelectedContract(updated);
-          populateForm(updated);
+        if (!forceInsert && selectedContract) {
+          const updated = refreshed.find(c => c.Id === savedContract.Id);
+          if (updated) {
+            setSelectedContract(updated);
+            populateForm(updated);
+          }
         } else {
-          // Direct fallback state sync
-          setContracts(prev => {
-            const idx = prev.findIndex(x => x.Id === savedContract.Id);
-            if (idx >= 0) {
-              const copy = [...prev];
-              copy[idx] = savedContract;
-              return copy;
-            }
-            return [savedContract, ...prev];
-          });
-          setSelectedContract(savedContract);
+          // Reset selection so user can immediately create next KUNN without overwriting
+          setSelectedContract(null);
         }
       }
     } catch (err: any) {
@@ -1347,10 +1353,29 @@ export const LoanPortfolioView: React.FC = () => {
                       </label>
                     </div>
 
-                    <button type="submit" disabled={loading}
-                      className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-sky-600/30 text-sm">
-                      {loading ? 'Đang lưu...' : (selectedContract ? 'CẬP NHẬT HỢP ĐỒNG TÍN DỤNG' : 'LƯU HỢP ĐỒNG TÍN DỤNG')}
-                    </button>
+                    <div className="flex flex-col md:flex-row items-center gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={(e) => handleSaveContract(e, true)}
+                        disabled={loading}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-emerald-600/30 text-xs flex items-center justify-center space-x-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>{loading ? 'Đang lưu...' : '+ LƯU THÀNH GNN / KUNN MỚI (THÊM LẦN RÚT VAY)'}</span>
+                      </button>
+
+                      {selectedContract && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleSaveContract(e, false)}
+                          disabled={loading}
+                          className="flex-1 bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-sky-600/30 text-xs flex items-center justify-center space-x-2"
+                        >
+                          <Save className="w-4 h-4" />
+                          <span>{loading ? 'Đang lưu...' : `💾 CẬP NHẬT KUNN NÀY (#${selectedContract.ContractNumber})`}</span>
+                        </button>
+                      )}
+                    </div>
                   </form>
                 </div>
               )}

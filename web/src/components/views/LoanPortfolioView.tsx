@@ -21,7 +21,7 @@ const LOAN_METHODS = [
 ];
 
 const PRINCIPAL_REPAY_OPTIONS = [
-  'Trả cuối kỳ',
+  'Gốc trả cuối kỳ',
   'Trả đều hàng tháng',
   'Trả đều hàng quý (3 tháng)',
   'Trả gốc tăng dần',
@@ -293,17 +293,17 @@ export const LoanPortfolioView: React.FC = () => {
 
   // ─── LOAN METHOD SELECTION & REPAYMENT DEFAULTS ────────────────────────────
   const handleLoanMethodChange = (method: string) => {
-    let pRepay = form.PrincipalRepaymentMethod || 'Trả cuối kỳ';
+    let pRepay = form.PrincipalRepaymentMethod || 'Gốc trả cuối kỳ';
     let iRepay = form.InterestRepaymentMethod || 'Trả hàng tháng theo dư nợ thực tế';
 
     if (method === 'Hạn mức tín dụng') {
-      pRepay = 'Trả cuối kỳ';
+      pRepay = 'Gốc trả cuối kỳ';
       iRepay = 'Trả hàng tháng theo dư nợ thực tế';
     } else if (method === 'Cho vay từng lần' || method === 'Hạn mức tín dụng từng lần') {
       pRepay = 'Trả đều hàng tháng';
-      iRepay = 'Trả hàng tháng theo dư nợ giảm dần';
+      iRepay = 'Trả hàng tháng theo dư nợ thực tế';
     } else if (method === 'Cầm cố sổ tiết kiệm') {
-      pRepay = 'Trả cuối kỳ';
+      pRepay = 'Gốc trả cuối kỳ';
       iRepay = 'Trả cuối kỳ';
     } else if (method === 'Hạn mức thẻ tín dụng') {
       pRepay = 'Thanh toán dư nợ tối thiểu hàng tháng';
@@ -862,7 +862,7 @@ export const LoanPortfolioView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* SECTION 2: Thời hạn & Ngày tháng (Có tự động tính toán ngày kết thúc) */}
+                    {/* SECTION 2: Thời hạn & Ngày tháng */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
                         <label className={`block mb-1 ${labelStyle}`}>Ngày HĐ có hiệu lực</label>
@@ -871,11 +871,30 @@ export const LoanPortfolioView: React.FC = () => {
                           className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
                       </div>
                       <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Thời hạn vay (tháng)</label>
-                        <input type="number" min={1} value={form.LoanTenorMonths || ''}
-                          onChange={e => setForm(f => ({ ...f, LoanTenorMonths: parseInt(e.target.value) || undefined }))}
-                          placeholder="12, 120, 240..."
-                          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                        <label className={`block mb-1 ${labelStyle}`}>Thời hạn vay (HĐTD)</label>
+                        {form.LoanMethod === 'Hạn mức tín dụng' ? (
+                          <div className="flex items-center space-x-1.5">
+                            {[12, 24].map(m => (
+                              <button
+                                key={m}
+                                type="button"
+                                onClick={() => setForm(f => ({ ...f, LoanTenorMonths: m }))}
+                                className={`flex-1 p-2.5 text-xs rounded-xl font-bold border transition-colors ${
+                                  form.LoanTenorMonths === m
+                                    ? 'bg-sky-600 text-white border-sky-500 shadow-sm'
+                                    : isLight ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
+                                }`}
+                              >
+                                {m} tháng
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <input type="number" min={1} value={form.LoanTenorMonths || ''}
+                            onChange={e => setForm(f => ({ ...f, LoanTenorMonths: parseInt(e.target.value) || undefined }))}
+                            placeholder="12, 120, 240..."
+                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                        )}
                       </div>
                       <div>
                         <label className={`block mb-1 ${labelStyle}`}>
@@ -905,10 +924,27 @@ export const LoanPortfolioView: React.FC = () => {
                       </div>
                       <div>
                         <label className={`block mb-1 ${labelStyle}`}>Thời hạn KUNN</label>
-                        <input type="text" value={form.KunnTenor || ''}
-                          onChange={e => setForm(f => ({ ...f, KunnTenor: e.target.value }))}
-                          placeholder="5T / 12 tháng..."
-                          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                        {form.LoanMethod === 'Hạn mức tín dụng' ? (
+                          <select
+                            value={form.KunnTenor || '6 tháng'}
+                            onChange={e => {
+                              const val = e.target.value;
+                              const months = parseInt(val) || 0;
+                              const kunnEnd = form.DisbursementDate && months > 0 ? addMonthsToDate(form.DisbursementDate, months) : form.KunnDueDate;
+                              setForm(f => ({ ...f, KunnTenor: val, KunnDueDate: kunnEnd || f.KunnDueDate }));
+                            }}
+                            className={`w-full rounded-xl p-2.5 text-xs font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`}
+                          >
+                            {['0 tháng', '3 tháng', '5 tháng', '6 tháng', '9 tháng', '12 tháng'].map(t => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input type="text" value={form.KunnTenor || ''}
+                            onChange={e => setForm(f => ({ ...f, KunnTenor: e.target.value }))}
+                            placeholder="5T / 12 tháng..."
+                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                        )}
                       </div>
                       <div>
                         <label className={`block mb-1 ${labelStyle}`}>
@@ -1066,41 +1102,46 @@ export const LoanPortfolioView: React.FC = () => {
                     {/* SECTION 7: PHƯƠNG THỨC TRẢ NỢ & ÂN HẠN */}
                     <div className={`rounded-xl p-4 space-y-3 border ${sectionBoxBg}`}>
                       <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                        PHƯƠNG THỨC TRẢ NỢ & ÂN HẠN
+                        PHƯƠNG THỨC TRẢ NỢ {form.LoanMethod === 'Hạn mức tín dụng' ? '(MẶC ĐỊNH HMTD)' : '& ÂN HẠN'}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Cách thức trả gốc</label>
-                          <select value={form.PrincipalRepaymentMethod || ''}
+                          <select value={form.PrincipalRepaymentMethod || 'Gốc trả cuối kỳ'}
+                            disabled={form.LoanMethod === 'Hạn mức tín dụng'}
                             onChange={e => setForm(f => ({ ...f, PrincipalRepaymentMethod: e.target.value }))}
-                            className={`w-full rounded-xl p-2.5 text-xs font-semibold ${inputStyle}`}>
+                            className={`w-full rounded-xl p-2.5 text-xs font-semibold ${inputStyle} ${form.LoanMethod === 'Hạn mức tín dụng' ? 'opacity-80 cursor-not-allowed bg-slate-100 dark:bg-slate-950 font-bold text-sky-600 dark:text-sky-400' : ''}`}>
                             {PRINCIPAL_REPAY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                           </select>
                         </div>
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Cách thức trả lãi</label>
-                          <select value={form.InterestRepaymentMethod || ''}
+                          <select value={form.InterestRepaymentMethod || 'Trả hàng tháng theo dư nợ thực tế'}
+                            disabled={form.LoanMethod === 'Hạn mức tín dụng'}
                             onChange={e => setForm(f => ({ ...f, InterestRepaymentMethod: e.target.value }))}
-                            className={`w-full rounded-xl p-2.5 text-xs font-semibold ${inputStyle}`}>
+                            className={`w-full rounded-xl p-2.5 text-xs font-semibold ${inputStyle} ${form.LoanMethod === 'Hạn mức tín dụng' ? 'opacity-80 cursor-not-allowed bg-slate-100 dark:bg-slate-950 font-bold text-sky-600 dark:text-sky-400' : ''}`}>
                             {INTEREST_REPAY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                           </select>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Ân hạn gốc (tháng)</label>
-                          <input type="number" min={0} value={form.PrincipalGracePeriodMonths ?? 0}
-                            onChange={e => setForm(f => ({ ...f, PrincipalGracePeriodMonths: parseInt(e.target.value) || 0 }))}
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                      {/* Tự động ẨN hoàn toàn ô Ân hạn đối với Phương thức Hạn mức tín dụng */}
+                      {form.LoanMethod !== 'Hạn mức tín dụng' && (
+                        <div className="grid grid-cols-2 gap-4 pt-1 border-t border-slate-200 dark:border-slate-800">
+                          <div>
+                            <label className={`block mb-1 ${labelStyle}`}>Ân hạn gốc (tháng)</label>
+                            <input type="number" min={0} value={form.PrincipalGracePeriodMonths ?? 0}
+                              onChange={e => setForm(f => ({ ...f, PrincipalGracePeriodMonths: parseInt(e.target.value) || 0 }))}
+                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                          </div>
+                          <div>
+                            <label className={`block mb-1 ${labelStyle}`}>Ân hạn lãi (tháng)</label>
+                            <input type="number" min={0} value={form.InterestGracePeriodMonths ?? 0}
+                              onChange={e => setForm(f => ({ ...f, InterestGracePeriodMonths: parseInt(e.target.value) || 0 }))}
+                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                          </div>
                         </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Ân hạn lãi (tháng)</label>
-                          <input type="number" min={0} value={form.InterestGracePeriodMonths ?? 0}
-                            onChange={e => setForm(f => ({ ...f, InterestGracePeriodMonths: parseInt(e.target.value) || 0 }))}
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                        </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* SECTION 8: BẢO ĐẢM TÀI SẢN (Clean & High Contrast in both Light/Dark mode) */}

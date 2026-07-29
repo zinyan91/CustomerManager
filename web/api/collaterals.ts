@@ -27,8 +27,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const body = req.body;
       const sql = `
         INSERT INTO "Collaterals" (
-          "CustomerId", "AssetCode", "AssetType", "Address", "AppraisedValue", "Value"
-        ) VALUES ($1, $2, $3, $4, $5, $6)
+          "Id", "CustomerId", "AssetCode", "AssetType", "Address", "AppraisedValue", "Value"
+        ) VALUES (
+          (SELECT COALESCE(MAX("Id"), 0) + 1 FROM "Collaterals"),
+          $1, $2, $3, $4, $5, $6
+        )
         RETURNING *;
       `;
       const values = [

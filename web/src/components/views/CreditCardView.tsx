@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { fetchCreditCardsAPI, fetchCustomersAPI, saveCreditCardAPI } from '../../lib/api';
 import type { CreditCard as CreditCardType, Customer } from '../../types';
 import { CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -30,12 +30,12 @@ export const CreditCardView: React.FC = () => {
     setLoading(true);
     try {
       const [resCus, resCard] = await Promise.all([
-        supabase.from('Customers').select('*').order('FullName'),
-        supabase.from('CreditCards').select('*, customer:Customers(*)').order('Id', { ascending: false }),
+        fetchCustomersAPI(),
+        fetchCreditCardsAPI(),
       ]);
 
-      if (resCus.data) setCustomers(resCus.data);
-      if (resCard.data) setCards(resCard.data);
+      setCustomers(resCus);
+      setCards(resCard);
     } catch (err: any) {
       showNotify('error', `Lỗi nạp danh sách Thẻ tín dụng: ${err.message}`);
     } finally {
@@ -52,7 +52,7 @@ export const CreditCardView: React.FC = () => {
 
     const limit = parseFloat(inputLimit.replace(/\D/g, '')) || 0;
 
-    const payload = {
+    const payload: Partial<CreditCardType> = {
       CustomerId: Number(inputCustomerId),
       IssuanceType: inputClassification,
       CardNumber: inputCardNumber.trim() || null,
@@ -63,8 +63,7 @@ export const CreditCardView: React.FC = () => {
     };
 
     try {
-      const { error } = await supabase.from('CreditCards').insert([payload]);
-      if (error) throw error;
+      await saveCreditCardAPI(payload);
       showNotify('success', 'Đã cấp thẻ tín dụng thành công!');
       setInputCustomerId('');
       setInputCardNumber('');
@@ -102,7 +101,7 @@ export const CreditCardView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-215px)]">
+        <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-overflow-hidden flex flex-col h-[calc(100vh-215px)]">
           <div className="p-3 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-300">DANH SÁCH THẺ TÍN DỤNG ({cards.length})</span>
           </div>

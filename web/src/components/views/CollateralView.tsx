@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI } from '../../lib/api';
 import type { Collateral, Customer } from '../../types';
 import { Building2, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -36,12 +36,12 @@ export const CollateralView: React.FC = () => {
     setLoading(true);
     try {
       const [resCus, resCol] = await Promise.all([
-        supabase.from('Customers').select('*').order('FullName'),
-        supabase.from('Collaterals').select('*, customer:Customers(*)').order('Id', { ascending: false }),
+        fetchCustomersAPI(),
+        fetchCollateralsAPI(),
       ]);
 
-      if (resCus.data) setCustomers(resCus.data);
-      if (resCol.data) setCollaterals(resCol.data);
+      setCustomers(resCus);
+      setCollaterals(resCol);
     } catch (err: any) {
       showNotify('error', `Lỗi nạp danh sách TSĐB: ${err.message}`);
     } finally {
@@ -93,7 +93,8 @@ export const CollateralView: React.FC = () => {
       return;
     }
 
-    const payload = {
+    const payload: Partial<Collateral> = {
+      Id: selectedCollateral?.Id,
       CustomerId: Number(inputCustomerId),
       AssetCode: inputAssetCode.trim() || null,
       AssetType: inputAssetType,
@@ -103,16 +104,8 @@ export const CollateralView: React.FC = () => {
     };
 
     try {
-      if (selectedCollateral) {
-        const { error } = await supabase.from('Collaterals').update(payload).eq('Id', selectedCollateral.Id);
-        if (error) throw error;
-        showNotify('success', 'Đã cập nhật thông tin TSĐB thành công!');
-      } else {
-        const { error } = await supabase.from('Collaterals').insert([payload]);
-        if (error) throw error;
-        showNotify('success', 'Đã tạo mới tài sản bảo đảm thành công!');
-      }
-
+      await saveCollateralAPI(payload);
+      showNotify('success', 'Đã lưu thông tin TSĐB thành công!');
       clearForm();
       fetchData();
     } catch (err: any) {

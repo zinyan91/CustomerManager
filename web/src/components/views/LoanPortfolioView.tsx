@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { fetchContractsAPI, fetchCustomersAPI, saveContractAPI } from '../../lib/api';
 import type { LoanContract, Customer } from '../../types';
 import { FileText, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -36,12 +36,12 @@ export const LoanPortfolioView: React.FC = () => {
     setLoading(true);
     try {
       const [resCus, resCon] = await Promise.all([
-        supabase.from('Customers').select('*').order('FullName'),
-        supabase.from('LoanContracts').select('*, customer:Customers(*), collateral:Collaterals(*)').order('Id', { ascending: false }),
+        fetchCustomersAPI(),
+        fetchContractsAPI(),
       ]);
 
-      if (resCus.data) setCustomers(resCus.data);
-      if (resCon.data) setContracts(resCon.data);
+      setCustomers(resCus);
+      setContracts(resCon);
     } catch (err: any) {
       showNotify('error', `Lỗi nạp danh sách HĐTD: ${err.message}`);
     } finally {
@@ -72,7 +72,8 @@ export const LoanPortfolioView: React.FC = () => {
 
     const limit = parseFloat(inputCreditLimit.replace(/\D/g, '')) || 0;
 
-    const payload = {
+    const payload: Partial<LoanContract> = {
+      Id: selectedContract?.Id,
       CustomerId: Number(inputCustomerId),
       ContractNumber: inputContractNumber.trim(),
       ContractType: Number(inputContractType),
@@ -81,16 +82,8 @@ export const LoanPortfolioView: React.FC = () => {
     };
 
     try {
-      if (selectedContract) {
-        const { error } = await supabase.from('LoanContracts').update(payload).eq('Id', selectedContract.Id);
-        if (error) throw error;
-        showNotify('success', 'Đã cập nhật hợp đồng tín dụng thành công!');
-      } else {
-        const { error } = await supabase.from('LoanContracts').insert([payload]);
-        if (error) throw error;
-        showNotify('success', 'Đã khởi tạo hợp đồng tín dụng thành công!');
-      }
-
+      await saveContractAPI(payload);
+      showNotify('success', 'Đã lưu hợp đồng tín dụng thành công!');
       clearForm();
       fetchData();
     } catch (err: any) {

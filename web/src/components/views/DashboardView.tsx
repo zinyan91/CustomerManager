@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
 import type { Customer, Collateral, LoanContract } from '../../types';
 import { DollarSign, Users, Building2, CreditCard, TrendingUp } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
@@ -18,14 +18,14 @@ export const DashboardView: React.FC = () => {
     setLoading(true);
     try {
       const [resCus, resCol, resCon] = await Promise.all([
-        supabase.from('Customers').select('*'),
-        supabase.from('Collaterals').select('*'),
-        supabase.from('LoanContracts').select('*'),
+        fetchCustomersAPI(),
+        fetchCollateralsAPI(),
+        fetchContractsAPI(),
       ]);
 
-      if (resCus.data) setCustomers(resCus.data);
-      if (resCol.data) setCollaterals(resCol.data);
-      if (resCon.data) setContracts(resCon.data);
+      setCustomers(resCus);
+      setCollaterals(resCol);
+      setContracts(resCon);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {

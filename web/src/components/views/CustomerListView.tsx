@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { fetchCustomersAPI, saveCustomerAPI, deleteCustomerAPI } from '../../lib/api';
 import type { Customer } from '../../types';
 import { Search, Plus, Download, Upload, Eye, Trash2, X, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -46,21 +46,12 @@ export const CustomerListView: React.FC = () => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('Customers').select('*').order('Id', { ascending: false });
-
-      if (searchCif.trim()) {
-        query = query.ilike('CifKh', `%${searchCif.trim()}%`);
-      }
-      if (searchName.trim()) {
-        query = query.ilike('FullName', `%${searchName.trim()}%`);
-      }
-      if (searchNationalId.trim()) {
-        query = query.ilike('NationalId', `%${searchNationalId.trim()}%`);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      if (data) setCustomers(data);
+      const data = await fetchCustomersAPI({
+        cif: searchCif,
+        name: searchName,
+        nationalId: searchNationalId
+      });
+      setCustomers(data);
     } catch (err: any) {
       showNotify('error', `Lỗi nạp danh sách khách hàng: ${err.message}`);
     } finally {
@@ -122,7 +113,8 @@ export const CustomerListView: React.FC = () => {
       return;
     }
 
-    const payload = {
+    const payload: Partial<Customer> = {
+      Id: selectedCustomer?.Id,
       CifKh: inputCif.trim(),
       FullName: inputFullName.trim(),
       NationalId: inputNationalId.trim() || null,
@@ -141,16 +133,8 @@ export const CustomerListView: React.FC = () => {
     };
 
     try {
-      if (selectedCustomer) {
-        const { error } = await supabase.from('Customers').update(payload).eq('Id', selectedCustomer.Id);
-        if (error) throw error;
-        showNotify('success', `Đã cập nhật hồ sơ khách hàng '${payload.FullName}' thành công!`);
-      } else {
-        const { error } = await supabase.from('Customers').insert([payload]);
-        if (error) throw error;
-        showNotify('success', `Đã tạo mới hồ sơ khách hàng '${payload.FullName}' thành công!`);
-      }
-
+      await saveCustomerAPI(payload);
+      showNotify('success', `Đã lưu hồ sơ khách hàng '${payload.FullName}' thành công!`);
       clearForm();
       fetchCustomers();
     } catch (err: any) {
@@ -163,8 +147,7 @@ export const CustomerListView: React.FC = () => {
     if (!confirm(`Bạn có chắc chắn muốn xoá khách hàng '${selectedCustomer.FullName}' (CIF: ${selectedCustomer.CifKh})?`)) return;
 
     try {
-      const { error } = await supabase.from('Customers').delete().eq('Id', selectedCustomer.Id);
-      if (error) throw error;
+      await deleteCustomerAPI(selectedCustomer.Id);
       showNotify('success', 'Đã xoá khách hàng thành công!');
       clearForm();
       fetchCustomers();
@@ -202,7 +185,7 @@ export const CustomerListView: React.FC = () => {
         if (!cif && !name) continue;
 
         try {
-          await supabase.from('Customers').insert([{
+          await saveCustomerAPI({
             CifKh: cif || `CIF_AUTO_${Date.now()}_${i}`,
             CifKhlq: cifLq,
             FullName: name || 'Khách hàng mới',
@@ -210,7 +193,7 @@ export const CustomerListView: React.FC = () => {
             SpouseName: spouse,
             AccountNumber: stk,
             SpouseAccountNumber: stkSpouse
-          }]);
+          });
           count++;
         } catch {
           // ignore duplicate errors

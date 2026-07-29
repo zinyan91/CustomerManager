@@ -76,36 +76,63 @@ function parseKunnTenorMonths(tenorStr?: string | null): number {
   return match ? parseInt(match[0], 10) : 0;
 }
 
-// Generate repayment schedule (equal principal method)
+// Generate repayment schedule with Bullet (Gốc trả cuối kỳ) or Equal Principal support
 function generateSchedule(
   contractId: number,
   loanAmount: number,
   interestRate: number,
-  startDate: string,
+  startDateStr: string,
   periods: number,
-  repaymentDay: number // day of month (1,15,25,30)
+  isBulletPrincipal: boolean = true
 ): Partial<RepaymentSchedule>[] {
-  const monthlyPrincipal = loanAmount / periods;
-  const monthlyRate = interestRate / 12;
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
-  const start = new Date(startDate);
+
+  let startYear = 2026;
+  let startMonth = 4;
+  let startDay = 5;
+
+  if (startDateStr) {
+    const parts = startDateStr.split('-');
+    if (parts.length === 3) {
+      startYear = parseInt(parts[0], 10);
+      startMonth = parseInt(parts[1], 10) - 1;
+      startDay = parseInt(parts[2], 10);
+    }
+  }
+
+  const annualRate = interestRate / 100;
 
   for (let i = 1; i <= periods; i++) {
-    const dueDate = new Date(start.getFullYear(), start.getMonth() + i, repaymentDay);
-    const interest = balance * monthlyRate;
-    const principal = Math.round(monthlyPrincipal);
+    const dueDate = new Date(startYear, startMonth + i, startDay);
+    const prevDate = new Date(startYear, startMonth + i - 1, startDay);
+    const diffDays = Math.max(28, Math.round((dueDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+    let principal = 0;
+    if (isBulletPrincipal) {
+      // HMTD / KUNN: Gốc trả cuối kỳ
+      principal = (i === periods) ? balance : 0;
+    } else {
+      // Gốc trả đều hàng tháng
+      principal = Math.round(loanAmount / periods);
+      if (i === periods) principal = balance;
+    }
+
+    const interest = Math.round(balance * annualRate * (diffDays / 365));
+
     schedules.push({
       ContractId: contractId,
       PeriodNumber: i,
       DueDate: dueDate.toISOString().split('T')[0],
       PrincipalAmount: principal,
-      InterestAmount: Math.round(interest),
-      TotalAmount: Math.round(principal + interest),
+      InterestAmount: interest,
+      TotalAmount: principal + interest,
       IsPaid: false,
     });
-    balance -= principal;
+
+    balance = Math.max(0, balance - principal);
   }
+
   return schedules;
 }
 
@@ -155,8 +182,6 @@ export const LoanPortfolioView: React.FC = () => {
   const [customLtvMap, setCustomLtvMap] = useState<Record<number, number>>({});
 
   // Schedule gen form
-  const [schedPeriods, setSchedPeriods] = useState('12');
-  const [schedRepayDay, setSchedRepayDay] = useState('15');
   const [isGenerating, setIsGenerating] = useState(false);
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -554,13 +579,15 @@ export const LoanPortfolioView: React.FC = () => {
   const handleGenerateSchedule = async () => {
     if (!selectedContract) return;
     const loanAmt = selectedContract.LoanAmount || selectedContract.ContractAmount || 0;
-    const rate = selectedContract.InterestRate || (selectedContract.NormalRate) || 0;
-    const startDate = selectedContract.RepaymentStartDate || selectedContract.DisbursementDate || selectedContract.ContractStartDate;
-    const periods = parseInt(schedPeriods) || selectedContract.LoanTenorMonths || 12;
-    const repayDay = parseInt(schedRepayDay) || 15;
+    const rate = selectedContract.InterestRate || selectedContract.NormalRate || 0;
+    const startDate = selectedContract.DisbursementDate || selectedContract.RepaymentStartDate || selectedContract.ContractStartDate;
+
+    const periods = parseKunnTenorMonths(selectedContract.KunnTenor) || selectedContract.LoanTenorMonths || 12;
+
+    const isBullet = (selectedContract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ' || selectedContract.LoanMethod === 'Hạn mức tín dụng';
 
     if (!loanAmt || !rate || !startDate) {
-      showNotify('error', 'Cần nhập đủ: Số tiền nhận nợ, Lãi suất, Ngày bắt đầu trả nợ trước khi tạo lịch!');
+      showNotify('error', 'Cần có Số tiền nhận nợ, Lãi suất và Ngày giải ngân/bắt đầu trả nợ!');
       return;
     }
 
@@ -568,12 +595,12 @@ export const LoanPortfolioView: React.FC = () => {
     try {
       await deleteRepaymentSchedulesByContractAPI(selectedContract.Id);
 
-      const generated = generateSchedule(selectedContract.Id, loanAmt, rate, startDate, periods, repayDay);
+      const generated = generateSchedule(selectedContract.Id, loanAmt, rate, startDate, periods, isBullet);
       await bulkSaveRepaymentSchedulesAPI(generated);
 
       const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
       setSchedules(refreshed);
-      showNotify('success', `Đã tạo ${refreshed.length} kỳ trả nợ thành công!`);
+      showNotify('success', `Đã tạo tự động ${refreshed.length} kỳ trả nợ (${isBullet ? 'Gốc trả cuối kỳ' : 'Gốc trả đều hàng tháng'})!`);
     } catch (err: any) {
       showNotify('error', `Lỗi tạo lịch: ${err.message}`);
     } finally {
@@ -1444,30 +1471,20 @@ export const LoanPortfolioView: React.FC = () => {
                 </div>
 
                 {selectedContract && (
-                  <div className={`flex flex-wrap items-end gap-3 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                    <div>
-                      <label className={`block mb-1 text-[11px] ${labelStyle}`}>Số kỳ trả nợ (tháng)</label>
-                      <input type="number" value={schedPeriods} onChange={e => setSchedPeriods(e.target.value)}
-                        className={`w-24 rounded-xl p-2 text-center font-bold ${inputStyle}`} />
+                  <div className={`flex flex-wrap items-center justify-between gap-3 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+                    <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
+                      <span>Số tiền KUNN: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{fmtMoney(selectedContract.LoanAmount || selectedContract.ContractAmount)}</strong></span>
+                      <span>Lãi suất: <strong className="text-rose-600 dark:text-rose-400 font-mono">{fmtRate(selectedContract.InterestRate || selectedContract.NormalRate)}</strong></span>
+                      <span>Thời hạn KUNN: <strong className="text-sky-600 dark:text-sky-400">{selectedContract.KunnTenor || `${selectedContract.LoanTenorMonths || 12} tháng`}</strong></span>
+                      <span>Phương thức gốc: <strong className="text-purple-600 dark:text-purple-400">{selectedContract.PrincipalRepaymentMethod || 'Gốc trả cuối kỳ'}</strong></span>
+                      <span>Ngày giải ngân: <strong className="text-amber-600 dark:text-amber-400 font-mono">{fmtDate(selectedContract.DisbursementDate || selectedContract.ContractStartDate)}</strong></span>
                     </div>
-                    <div>
-                      <label className={`block mb-1 text-[11px] ${labelStyle}`}>Ngày trả trong tháng</label>
-                      <select value={schedRepayDay} onChange={e => setSchedRepayDay(e.target.value)}
-                        className={`rounded-xl p-2 font-bold ${inputStyle}`}>
-                        {['1','5','10','15','20','25','28','30'].map(d => <option key={d} value={d}>Ngày {d}</option>)}
-                      </select>
-                    </div>
+
                     <button onClick={handleGenerateSchedule} disabled={isGenerating}
-                      className="flex items-center space-x-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-white font-bold px-4 py-2 rounded-xl transition-colors text-xs shadow-md shadow-amber-600/20">
+                      className="flex items-center space-x-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-xs shadow-md shadow-amber-600/20">
                       <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                      <span>{isGenerating ? 'Đang tạo...' : 'Tạo tự động lịch thu nợ'}</span>
+                      <span>{isGenerating ? 'Đang tính toán...' : '🔄 TẠO / LÀM MỚI LỊCH THU NỢ TỰ ĐỘNG'}</span>
                     </button>
-                    {selectedContract && (
-                      <div className="text-[11px] text-slate-400 flex flex-col ml-auto">
-                        <span>Số tiền tính lãi: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{fmtMoney(selectedContract.LoanAmount || selectedContract.ContractAmount)}</span></span>
-                        <span>Lãi suất áp dụng: <span className="text-rose-600 dark:text-rose-400 font-bold">{fmtRate(selectedContract.InterestRate || selectedContract.NormalRate)}</span></span>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -1497,6 +1514,7 @@ export const LoanPortfolioView: React.FC = () => {
                       <tr>
                         <th className="p-3 text-center">KỲ</th>
                         <th className="p-3">NGÀY ĐẾN HẠN</th>
+                        <th className="p-3 text-center">SỐ NGÀY QUÁ HẠN</th>
                         <th className="p-3 text-right">GỐC</th>
                         <th className="p-3 text-right">LÃI</th>
                         <th className="p-3 text-right">TỔNG CỘNG</th>
@@ -1507,47 +1525,82 @@ export const LoanPortfolioView: React.FC = () => {
                     </thead>
                     <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
                       {!selectedContract ? (
-                        <tr><td colSpan={8} className="text-center p-8 text-slate-400">Chọn một HĐTD để xem lịch thu nợ</td></tr>
+                        <tr><td colSpan={9} className="text-center p-8 text-slate-400">Chọn một HĐTD để xem lịch thu nợ</td></tr>
                       ) : schedules.length === 0 ? (
-                        <tr><td colSpan={8} className="text-center p-8 text-slate-400">
-                          Chưa có lịch thu nợ. Nhấn "Tạo tự động lịch thu nợ" để tính toán.
+                        <tr><td colSpan={9} className="text-center p-8 text-slate-400">
+                          Chưa có lịch thu nợ. Nhấn "TẠO LỊCH THU NỢ TỰ ĐỘNG" để tính toán.
                         </td></tr>
-                      ) : schedules.map(s => (
-                        <tr key={s.Id} className={`transition-colors ${s.IsPaid ? 'bg-emerald-50 dark:bg-emerald-950/10' : ''} ${tableRowHover}`}>
-                          <td className="p-3 text-center font-bold">{s.PeriodNumber}</td>
-                          <td className="p-3 font-mono">{fmtDate(s.DueDate)}</td>
-                          <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono font-bold">{(s.PrincipalAmount || 0).toLocaleString('vi-VN')}</td>
-                          <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono font-bold">{(s.InterestAmount || 0).toLocaleString('vi-VN')}</td>
-                          <td className="p-3 text-right font-bold text-amber-600 dark:text-amber-400 font-mono text-sm">{(s.TotalAmount || 0).toLocaleString('vi-VN')}</td>
-                          <td className="p-3 text-center">
-                            {s.IsPaid ? (
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                                ✓ Đã TT
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                                Chờ TT
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-3 text-slate-400">{s.IsPaid ? fmtDate(s.PaymentDate) : '—'}</td>
-                          <td className="p-3 text-center">
-                            <button onClick={() => handleMarkPaid(s)}
-                              className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
-                                s.IsPaid
-                                  ? isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                  : 'bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-600 dark:text-emerald-400 border border-emerald-600/30'
-                              }`}>
-                              {s.IsPaid ? 'Hủy TT' : 'Đánh dấu TT'}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      ) : schedules.map(s => {
+                        // Calculate overdue days
+                        let overdueDays = 0;
+                        if (!s.IsPaid && s.DueDate) {
+                          const parts = s.DueDate.split('-');
+                          if (parts.length === 3) {
+                            const due = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            due.setHours(0, 0, 0, 0);
+                            const diff = today.getTime() - due.getTime();
+                            if (diff > 0) overdueDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                          }
+                        }
+
+                        const isOverdue = !s.IsPaid && overdueDays > 0;
+
+                        return (
+                          <tr key={s.Id} className={`transition-colors ${
+                            s.IsPaid
+                              ? 'bg-emerald-50/50 dark:bg-emerald-950/10'
+                              : isOverdue
+                                ? 'bg-rose-50/60 dark:bg-rose-950/30 font-semibold'
+                                : tableRowHover
+                          }`}>
+                            <td className="p-3 text-center font-bold">{s.PeriodNumber}</td>
+                            <td className="p-3 font-mono font-bold">{fmtDate(s.DueDate)}</td>
+                            <td className="p-3 text-center font-bold">
+                              {overdueDays > 0 ? (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] bg-rose-600 text-white font-mono animate-pulse">
+                                  Quá {overdueDays} ngày
+                                </span>
+                              ) : <span className="text-slate-400 font-normal">—</span>}
+                            </td>
+                            <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono font-bold">{(s.PrincipalAmount || 0).toLocaleString('vi-VN')}</td>
+                            <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono font-bold">{(s.InterestAmount || 0).toLocaleString('vi-VN')}</td>
+                            <td className="p-3 text-right font-bold text-amber-600 dark:text-amber-400 font-mono text-sm">{(s.TotalAmount || 0).toLocaleString('vi-VN')}</td>
+                            <td className="p-3 text-center">
+                              {s.IsPaid ? (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                  ✓ Đã TT
+                                </span>
+                              ) : isOverdue ? (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-600 text-white border border-rose-500 animate-pulse">
+                                  🔴 Quá hạn
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                  🟡 Chờ TT
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3 text-slate-400">{s.IsPaid ? fmtDate(s.PaymentDate) : '—'}</td>
+                            <td className="p-3 text-center">
+                              <button onClick={() => handleMarkPaid(s)}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
+                                  s.IsPaid
+                                    ? isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                    : 'bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-600 dark:text-emerald-400 border border-emerald-600/30'
+                                }`}>
+                                {s.IsPaid ? 'Hủy TT' : 'Đánh dấu TT'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                     {schedules.length > 0 && (
                       <tfoot className={`border-t sticky bottom-0 font-bold ${tableHeaderStyle}`}>
                         <tr>
-                          <td className="p-3" colSpan={2}>TỔNG CỘNG LỊCH THU NỢ</td>
+                          <td className="p-3" colSpan={3}>TỔNG CỘNG LỊCH THU NỢ</td>
                           <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono">
                             {schedules.reduce((a, s) => a + (s.PrincipalAmount || 0), 0).toLocaleString('vi-VN')}
                           </td>
@@ -1563,6 +1616,124 @@ export const LoanPortfolioView: React.FC = () => {
                     )}
                   </table>
                 </div>
+
+                {/* ── BẢNG THỐNG KÊ CHI TIẾT DƯ NỢ & LÃI PHẠT QUÁ HẠN ── */}
+                {selectedContract && schedules.length > 0 && (() => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+
+                  let duePrincipal = 0;
+                  let paidPrincipal = 0;
+                  let dueInterest = 0;
+                  let paidInterest = 0;
+                  let penaltyPrincipal = 0;
+                  let penaltyInterest = 0;
+
+                  const annualRate = (selectedContract.InterestRate || selectedContract.NormalRate || 0.11) > 1 
+                    ? (selectedContract.InterestRate || selectedContract.NormalRate || 11) / 100 
+                    : (selectedContract.InterestRate || selectedContract.NormalRate || 0.11);
+
+                  schedules.forEach(s => {
+                    if (!s.DueDate) return;
+                    const parts = s.DueDate.split('-');
+                    if (parts.length !== 3) return;
+                    const due = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    due.setHours(0, 0, 0, 0);
+
+                    const isDue = due <= today;
+                    if (isDue) {
+                      duePrincipal += s.PrincipalAmount || 0;
+                      dueInterest += s.InterestAmount || 0;
+                    }
+
+                    if (s.IsPaid) {
+                      paidPrincipal += s.PrincipalAmount || 0;
+                      paidInterest += s.InterestAmount || 0;
+                    } else if (due < today) {
+                      const diffTime = today.getTime() - due.getTime();
+                      const daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                      if (daysOverdue > 0) {
+                        // Penalty on overdue principal (150% of annual rate * days / 365)
+                        penaltyPrincipal += (s.PrincipalAmount || 0) * (annualRate * 1.5) * (daysOverdue / 365);
+                        // Penalty on overdue interest (10% annual rate * days / 365)
+                        penaltyInterest += (s.InterestAmount || 0) * 0.10 * (daysOverdue / 365);
+                      }
+                    }
+                  });
+
+                  const overduePrincipal = Math.max(0, duePrincipal - paidPrincipal);
+                  const overdueInterest = Math.max(0, dueInterest - paidInterest);
+                  const totalPenalty = Math.round(penaltyPrincipal + penaltyInterest);
+                  const totalUrgentPayment = overduePrincipal + overdueInterest + totalPenalty;
+
+                  return (
+                    <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/80 space-y-3">
+                      <div className="font-bold text-xs uppercase tracking-wider text-rose-600 dark:text-rose-400 flex items-center space-x-2">
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>BẢNG THỐNG KÊ CHI TIẾT NGHĨA VỤ NỢ & PHẠT CHẬM TRẢ KHẨN CẤP</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {/* Gốc */}
+                        <div className="p-3 rounded-xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 space-y-1.5">
+                          <div className="text-[11px] font-bold text-sky-600 dark:text-sky-400 uppercase">NGHĨA VỤ NỢ GỐC</div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-500">Gốc tới due (đến hạn):</span>
+                            <span className="font-mono font-bold">{duePrincipal.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-500">Gốc đã thanh toán:</span>
+                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{paidPrincipal.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          <div className="flex justify-between text-xs pt-1 border-t border-slate-200 dark:border-slate-800">
+                            <span className="font-bold text-rose-600 dark:text-rose-400">🔴 GỐC QUÁ HẠN:</span>
+                            <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{overduePrincipal.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                        </div>
+
+                        {/* Lãi */}
+                        <div className="p-3 rounded-xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 space-y-1.5">
+                          <div className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase">NGHĨA VỤ NỢ LÃI</div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-500">Lãi tới due (đến hạn):</span>
+                            <span className="font-mono font-bold">{dueInterest.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-500">Lãi đã thanh toán:</span>
+                            <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{paidInterest.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          <div className="flex justify-between text-xs pt-1 border-t border-slate-200 dark:border-slate-800">
+                            <span className="font-bold text-rose-600 dark:text-rose-400">🔴 LÃI QUÁ HẠN:</span>
+                            <span className="font-mono font-bold text-rose-600 dark:text-rose-400">{overdueInterest.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                        </div>
+
+                        {/* Lãi phạt chậm trả */}
+                        <div className="p-3 rounded-xl border bg-rose-50/50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 space-y-1.5">
+                          <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase">LÃI PHẠT CHẬM TRẢ & PHÍ QUÁ HẠN</div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-500">Phạt gốc (150% LS):</span>
+                            <span className="font-mono font-bold text-rose-600">{Math.round(penaltyPrincipal).toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-500">Phạt lãi (10%/năm):</span>
+                            <span className="font-mono font-bold text-rose-600">{Math.round(penaltyInterest).toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                          <div className="flex justify-between text-xs pt-1 border-t border-rose-200 dark:border-rose-800">
+                            <span className="font-bold text-rose-700 dark:text-rose-300">TỔNG PHẠT CHẬM TRẢ:</span>
+                            <span className="font-mono font-bold text-rose-700 dark:text-rose-300">{totalPenalty.toLocaleString('vi-VN')} VNĐ</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bar Total Urgent Payment */}
+                      <div className="p-3 rounded-xl bg-rose-600 text-white font-bold flex flex-wrap items-center justify-between shadow-md">
+                        <span className="text-xs uppercase tracking-wider">TỔNG NGHĨA VỤ CẦN THANH TOÁN KHẨN CẤP (GỐC + LÃI QUÁ HẠN + PHẠT):</span>
+                        <span className="font-mono text-base font-extrabold">{totalUrgentPayment.toLocaleString('vi-VN')} VNĐ</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}

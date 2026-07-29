@@ -275,7 +275,7 @@ export async function fetchContractsByCustomerAPI(customerId: number): Promise<L
   try {
     const { data, error } = await supabase
       .from('LoanContracts')
-      .select('*, customer:Customers(*), collateral:Collaterals(*)')
+      .select('*, customer:Customers(*)')
       .eq('CustomerId', customerId)
       .order('Id', { ascending: false });
     if (error) throw error;

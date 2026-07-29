@@ -49,6 +49,7 @@ export const CustomerListView: React.FC = () => {
         name: searchName,
         nationalId: searchNationalId
       });
+      data.sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
       setCustomers(data);
     } catch (err: any) {
       showNotify('error', `Lỗi nạp danh sách khách hàng: ${err.message}`);

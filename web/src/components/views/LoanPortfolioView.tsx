@@ -136,6 +136,7 @@ export const LoanPortfolioView: React.FC = () => {
   const [formCurrentBalance, setFormCurrentBalance] = useState('');
 
   // Interest Rates form state (% string, e.g. "8.5")
+  const [interestRateMode, setInterestRateMode] = useState<'pref' | 'base'>('pref');
   const [ratePreferential, setRatePreferential] = useState('');
   const [ratePreferentialMonths, setRatePreferentialMonths] = useState('');
   const [rateBase, setRateBase] = useState('');
@@ -155,10 +156,31 @@ export const LoanPortfolioView: React.FC = () => {
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Load all customers for dropdown on mount
+  // Load all customers for dropdown on mount & sort A-Z
   useEffect(() => {
-    fetchCustomersAPI().then(setAllCustomers).catch(() => {});
+    fetchCustomersAPI().then(list => {
+      list.sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
+      setAllCustomers(list);
+    }).catch(() => {});
   }, []);
+
+  // Requirement 1: Cho vay từng lần -> thời hạn HĐ bằng luôn thời hạn KUNN
+  useEffect(() => {
+    const isSingleLoan = form.LoanMethod === 'Cho vay từng lần' || form.LoanMethod === 'Hạn mức tín dụng từng lần';
+    if (isSingleLoan && form.LoanTenorMonths) {
+      const kunnTenorStr = `${form.LoanTenorMonths} tháng`;
+      const calculatedEnd = addMonthsToDate(form.ContractStartDate || form.DisbursementDate, form.LoanTenorMonths);
+
+      setForm(prev => {
+        let updated = false;
+        const copy = { ...prev };
+        if (copy.KunnTenor !== kunnTenorStr) { copy.KunnTenor = kunnTenorStr; updated = true; }
+        if (!copy.DisbursementDate && copy.ContractStartDate) { copy.DisbursementDate = copy.ContractStartDate; updated = true; }
+        if (calculatedEnd && copy.KunnDueDate !== calculatedEnd) { copy.KunnDueDate = calculatedEnd; updated = true; }
+        return updated ? copy : prev;
+      });
+    }
+  }, [form.LoanMethod, form.LoanTenorMonths, form.ContractStartDate, form.DisbursementDate]);
 
   // Auto-calculate End Dates when Effective Date / Disbursement Date / Tenor changes
   useEffect(() => {
@@ -955,56 +977,90 @@ export const LoanPortfolioView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* SECTION 6: CHI TIẾT LÃI SUẤT (LSUD, LSCS, Biên độ) */}
+                    {/* SECTION 6: CHI TIẾT LÃI SUẤT (Chọn 1 trong 2 chế độ) */}
                     <div className={`rounded-xl p-4 space-y-3 border ${sectionBoxBg}`}>
-                      <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
-                        <span>CẤU TRÚC LÃI SUẤT CHUYÊN SÂU</span>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Lãi suất ưu đãi (LSUD) %</label>
-                          <input type="number" step="0.01" min={0} value={ratePreferential}
-                            onChange={e => setRatePreferential(e.target.value)}
-                            placeholder="7.5"
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-rose-600 dark:text-rose-400 ${inputStyle}`} />
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+                          CẤU TRÚC LÃI SUẤT
                         </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Thời gian ưu đãi (tháng)</label>
-                          <input type="number" min={0} value={ratePreferentialMonths}
-                            onChange={e => setRatePreferentialMonths(e.target.value)}
-                            placeholder="6, 12..."
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Lãi suất cơ sở (LSCS) %</label>
-                          <input type="number" step="0.01" min={0} value={rateBase}
-                            onChange={e => setRateBase(e.target.value)}
-                            placeholder="8.5"
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-rose-500 dark:text-rose-300 ${inputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Biên độ cộng thêm %</label>
-                          <input type="number" step="0.01" min={0} value={rateMargin}
-                            onChange={e => setRateMargin(e.target.value)}
-                            placeholder="3.5"
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-300 ${inputStyle}`} />
+                        <div className="flex items-center space-x-4 text-xs font-semibold">
+                          <label className="flex items-center space-x-1.5 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="rateMode"
+                              checked={interestRateMode === 'pref'}
+                              onChange={() => setInterestRateMode('pref')}
+                              className="w-3.5 h-3.5 text-rose-600 focus:ring-rose-500"
+                            />
+                            <span>1. LS Ưu đãi & Sau ưu đãi</span>
+                          </label>
+                          <label className="flex items-center space-x-1.5 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="rateMode"
+                              checked={interestRateMode === 'base'}
+                              onChange={() => setInterestRateMode('base')}
+                              className="w-3.5 h-3.5 text-rose-600 focus:ring-rose-500"
+                            />
+                            <span>2. LS Thông thường (LSCS + Biên độ)</span>
+                          </label>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-slate-900">
-                        <div className={`flex items-center justify-between p-2.5 rounded-lg border ${
-                          isLight ? 'bg-white border-slate-200' : 'bg-slate-900/60 border-slate-800'
-                        }`}>
-                          <span className={labelStyle}>Lãi suất sau ưu đãi:</span>
-                          <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{postPrefRate.toFixed(2)} %/năm</span>
+                      {interestRateMode === 'pref' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                          <div>
+                            <label className={`block mb-1 ${labelStyle}`}>Lãi suất ưu đãi (LSUD) %/năm</label>
+                            <input type="number" step="0.01" min={0} value={ratePreferential}
+                              onChange={e => setRatePreferential(e.target.value)}
+                              placeholder="7.5"
+                              className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-rose-600 dark:text-rose-400 ${inputStyle}`} />
+                          </div>
+                          <div>
+                            <label className={`block mb-1 ${labelStyle}`}>Thời gian ưu đãi (tháng)</label>
+                            <input type="number" min={0} value={ratePreferentialMonths}
+                              onChange={e => setRatePreferentialMonths(e.target.value)}
+                              placeholder="6, 12..."
+                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                          </div>
+                          <div>
+                            <label className={`block mb-1 ${labelStyle}`}>Biên độ cộng thêm %/năm</label>
+                            <input type="number" step="0.01" min={0} value={rateMargin}
+                              onChange={e => setRateMargin(e.target.value)}
+                              placeholder="3.5"
+                              className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-300 ${inputStyle}`} />
+                          </div>
+                          <div className={`col-span-full flex items-center justify-between p-2.5 rounded-lg border ${
+                            isLight ? 'bg-white border-slate-200' : 'bg-slate-900/60 border-slate-800'
+                          }`}>
+                            <span className={labelStyle}>Lãi suất sau ưu đãi (LSUD + Biên độ):</span>
+                            <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{postPrefRate.toFixed(2)} %/năm</span>
+                          </div>
                         </div>
-                        <div className={`flex items-center justify-between p-2.5 rounded-lg border ${
-                          isLight ? 'bg-white border-slate-200' : 'bg-slate-900/60 border-slate-800'
-                        }`}>
-                          <span className={labelStyle}>Lãi suất thông thường:</span>
-                          <span className="font-mono font-bold text-rose-600 dark:text-rose-400 text-sm">{normalRate.toFixed(2)} %/năm</span>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                          <div>
+                            <label className={`block mb-1 ${labelStyle}`}>Lãi suất cơ sở (LSCS) %/năm</label>
+                            <input type="number" step="0.01" min={0} value={rateBase}
+                              onChange={e => setRateBase(e.target.value)}
+                              placeholder="8.5"
+                              className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-rose-500 dark:text-rose-300 ${inputStyle}`} />
+                          </div>
+                          <div>
+                            <label className={`block mb-1 ${labelStyle}`}>Biên độ cộng thêm %/năm</label>
+                            <input type="number" step="0.01" min={0} value={rateMargin}
+                              onChange={e => setRateMargin(e.target.value)}
+                              placeholder="3.5"
+                              className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-300 ${inputStyle}`} />
+                          </div>
+                          <div className={`col-span-full flex items-center justify-between p-2.5 rounded-lg border ${
+                            isLight ? 'bg-white border-slate-200' : 'bg-slate-900/60 border-slate-800'
+                          }`}>
+                            <span className={labelStyle}>Lãi suất thông thường (LSCS + Biên độ):</span>
+                            <span className="font-mono font-bold text-rose-600 dark:text-rose-400 text-sm">{normalRate.toFixed(2)} %/năm</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* SECTION 7: PHƯƠNG THỨC TRẢ NỢ & ÂN HẠN */}

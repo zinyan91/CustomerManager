@@ -20,12 +20,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     { id: 'settings', label: 'Cấu Hình & Cài Đặt', icon: Settings },
   ];
 
-  const sidebarBg = theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800';
-  const labelColor = theme === 'light' ? 'text-slate-400' : 'text-slate-500';
-  const footerBorder = theme === 'light' ? 'border-slate-200' : 'border-slate-800';
-  const footerText = theme === 'light' ? 'text-slate-400' : 'text-slate-500';
-  const inactiveClass = theme === 'light'
-    ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
+  const isLight = theme === 'light';
+  const sidebarBg = isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800';
+  const labelColor = isLight ? 'text-slate-400' : 'text-slate-500';
+  const footerBorder = isLight ? 'border-slate-200' : 'border-slate-800';
+  const footerText = isLight ? 'text-slate-400' : 'text-slate-500';
+  const inactiveClass = isLight
+    ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800';
 
   return (
@@ -54,9 +55,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         })}
       </div>
 
-      <div className={`border-t ${footerBorder} pt-3 px-2`}>
-        <div className={`text-[11px] ${footerText} font-medium`}>
-          Dữ liệu đồng bộ trực tiếp Supabase PostgreSQL
+      <div className={`border-t ${footerBorder} pt-3 px-3 text-center`}>
+        <div className={`text-[11px] ${footerText} font-semibold font-mono tracking-wide`}>
+          v2.4.0 • Customer Manager Enterprise
         </div>
       </div>
     </aside>

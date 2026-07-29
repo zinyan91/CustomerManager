@@ -123,7 +123,7 @@ export const DashboardView: React.FC = () => {
     const cus = customers.find(cust => cust.Id === c.CustomerId);
     const dueInfo = getMonthlyDueInfo(c.RepaymentStartDate || c.DisbursementDate || c.ContractStartDate);
     return { contract: c, customer: cus, dueInfo };
-  }).filter(item => item.dueInfo && item.dueInfo.daysLeft >= 0 && item.dueInfo.daysLeft <= 5)
+  }).filter(item => item.dueInfo && item.dueInfo.daysLeft <= 5)
     .sort((a, b) => (a.dueInfo?.daysLeft ?? 0) - (b.dueInfo?.daysLeft ?? 0));
 
   // ── 5. Table 2: KUNN sắp đến hạn (Lọc trước 10 ngày) ──
@@ -131,7 +131,7 @@ export const DashboardView: React.FC = () => {
     const cus = customers.find(cust => cust.Id === c.CustomerId);
     const daysLeft = getDaysUntil(c.KunnDueDate);
     return { contract: c, customer: cus, daysLeft };
-  }).filter(item => item.daysLeft !== null && item.daysLeft >= 0 && item.daysLeft <= 10)
+  }).filter(item => item.daysLeft !== null && item.daysLeft <= 10)
     .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
   // ── 6. Table 3: HMTD sắp tới hạn (Lọc 45 ngày: 21-45 Xanh lá, 6-20 Vàng, <=5 Đỏ) ──
@@ -139,7 +139,7 @@ export const DashboardView: React.FC = () => {
     const cus = customers.find(cust => cust.Id === c.CustomerId);
     const daysLeft = getDaysUntil(c.ContractEndDate);
     return { contract: c, customer: cus, daysLeft };
-  }).filter(item => item.daysLeft !== null && item.daysLeft >= 0 && item.daysLeft <= 45)
+  }).filter(item => item.daysLeft !== null && item.daysLeft <= 45)
     .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
   // ── 7. Table 4: Định giá TSĐB sắp tới hạn (Lọc 30 ngày: 16-30 Xanh lá, 1-15 Vàng, <=0 Đỏ) ──
@@ -326,13 +326,13 @@ export const DashboardView: React.FC = () => {
             </h3>
           </div>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-            {dueInMonthList.length} khoản nợ
+            {dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) >= 0).length} sắp đến · {dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) < 0).length} quá hạn
           </span>
         </div>
 
         {dueInMonthList.length === 0 ? (
           <div className="text-center py-6 text-xs text-slate-400 italic">
-            Không có khách hàng nào tới hạn đóng kỳ trong 5 ngày tới.
+            Không có khách hàng nào tới hạn hoặc quá hạn đóng kỳ trong kỳ này.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -348,26 +348,32 @@ export const DashboardView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {dueInMonthList.map(({ contract, customer, dueInfo }) => (
-                  <tr key={contract.Id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
-                    <td className="p-2.5 font-mono text-sky-600 dark:text-sky-400">{customer?.CifKh || 'N/A'}</td>
-                    <td className="p-2.5 font-mono">{contract.ContractNumber}</td>
-                    <td className="p-2.5 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
-                      {fmtFullMoney(contract.CurrentBalance ?? contract.LoanAmount ?? contract.ContractAmount ?? 0)}
-                    </td>
-                    <td className="p-2.5 text-center font-bold text-sky-600 dark:text-sky-400">{dueInfo?.dueDateStr}</td>
-                    <td className="p-2.5 text-center">
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                        (dueInfo?.daysLeft ?? 0) <= 2
-                          ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800 animate-pulse'
-                          : 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800'
-                      }`}>
-                        Còn {dueInfo?.daysLeft} ngày
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {dueInMonthList.map(({ contract, customer, dueInfo }) => {
+                  const dl = dueInfo?.daysLeft ?? 0;
+                  const isOverdue = dl < 0;
+                  const badgeCls = isOverdue
+                    ? 'bg-rose-600 text-white border border-rose-500 font-bold animate-pulse'
+                    : dl <= 2
+                      ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800'
+                      : 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800';
+                  const badgeText = isOverdue ? `🔴 Quá hạn ${Math.abs(dl)} ngày` : `Còn ${dl} ngày`;
+                  return (
+                    <tr key={contract.Id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isOverdue ? 'bg-rose-50/30 dark:bg-rose-950/10' : ''}`}>
+                      <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
+                      <td className="p-2.5 font-mono text-sky-600 dark:text-sky-400">{customer?.CifKh || 'N/A'}</td>
+                      <td className="p-2.5 font-mono">{contract.ContractNumber}</td>
+                      <td className="p-2.5 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                        {fmtFullMoney(contract.CurrentBalance ?? contract.LoanAmount ?? contract.ContractAmount ?? 0)}
+                      </td>
+                      <td className="p-2.5 text-center font-bold text-sky-600 dark:text-sky-400">{dueInfo?.dueDateStr}</td>
+                      <td className="p-2.5 text-center">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${badgeCls}`}>
+                          {badgeText}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -384,13 +390,13 @@ export const DashboardView: React.FC = () => {
             </h3>
           </div>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
-            {dueKunnList.length} khoản KUNN
+            {dueKunnList.filter(i => (i.daysLeft ?? 0) >= 0).length} sắp đến · {dueKunnList.filter(i => (i.daysLeft ?? 0) < 0).length} quá hạn
           </span>
         </div>
 
         {dueKunnList.length === 0 ? (
           <div className="text-center py-6 text-xs text-slate-400 italic">
-            Không có KUNN nào sắp đến hạn kết thúc trong 10 ngày tới.
+            Không có KUNN nào sắp đến hạn hoặc quá hạn kết thúc.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -407,27 +413,33 @@ export const DashboardView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {dueKunnList.map(({ contract, customer, daysLeft }) => (
-                  <tr key={contract.Id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
-                    <td className="p-2.5 font-mono text-sky-600 dark:text-sky-400">{customer?.CifKh || 'N/A'}</td>
-                    <td className="p-2.5 font-mono">{contract.ContractNumber}</td>
-                    <td className="p-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                      {fmtFullMoney(contract.LoanAmount || contract.CurrentBalance || 0)}
-                    </td>
-                    <td className="p-2.5 text-center font-bold text-sky-600 dark:text-sky-400">{fmtDate(contract.KunnDueDate)}</td>
-                    <td className="p-2.5 text-center font-bold">{contract.KunnTenor || `${contract.LoanTenorMonths}T`}</td>
-                    <td className="p-2.5 text-center">
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                        (daysLeft ?? 0) <= 3
-                          ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800 animate-pulse'
-                          : 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800'
-                      }`}>
-                        Còn {daysLeft} ngày
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {dueKunnList.map(({ contract, customer, daysLeft }) => {
+                  const dl = daysLeft ?? 0;
+                  const isOverdue = dl < 0;
+                  const badgeCls = isOverdue
+                    ? 'bg-rose-600 text-white border border-rose-500 font-bold animate-pulse'
+                    : dl <= 3
+                      ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800'
+                      : 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800';
+                  const badgeText = isOverdue ? `🔴 Quá hạn ${Math.abs(dl)} ngày` : `Còn ${dl} ngày`;
+                  return (
+                    <tr key={contract.Id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isOverdue ? 'bg-rose-50/30 dark:bg-rose-950/10' : ''}`}>
+                      <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
+                      <td className="p-2.5 font-mono text-sky-600 dark:text-sky-400">{customer?.CifKh || 'N/A'}</td>
+                      <td className="p-2.5 font-mono">{contract.ContractNumber}</td>
+                      <td className="p-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        {fmtFullMoney(contract.LoanAmount || contract.CurrentBalance || 0)}
+                      </td>
+                      <td className="p-2.5 text-center font-bold text-sky-600 dark:text-sky-400">{fmtDate(contract.KunnDueDate)}</td>
+                      <td className="p-2.5 text-center font-bold">{contract.KunnTenor || `${contract.LoanTenorMonths}T`}</td>
+                      <td className="p-2.5 text-center">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${badgeCls}`}>
+                          {badgeText}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -444,13 +456,13 @@ export const DashboardView: React.FC = () => {
             </h3>
           </div>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
-            {dueHmtdList.length} hợp đồng HMTD
+            {dueHmtdList.filter(i => (i.daysLeft ?? 0) >= 0).length} sắp đến · {dueHmtdList.filter(i => (i.daysLeft ?? 0) < 0).length} quá hạn
           </span>
         </div>
 
         {dueHmtdList.length === 0 ? (
           <div className="text-center py-6 text-xs text-slate-400 italic">
-            Không có Hợp đồng HMTD nào sắp tới hạn kết thúc trong 45 ngày tới.
+            Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -468,10 +480,13 @@ export const DashboardView: React.FC = () => {
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {dueHmtdList.map(({ contract, customer, daysLeft }) => {
                   const days = daysLeft ?? 0;
-                  // Color rules: 21-45 -> Xanh lá; 6-20 -> Vàng; <=5 -> Đỏ
+                  const isOverdue = days < 0;
                   let badgeStyle = '';
                   let statusText = '';
-                  if (days >= 21) {
+                  if (isOverdue) {
+                    badgeStyle = 'bg-rose-600 text-white border border-rose-500 font-bold animate-pulse';
+                    statusText = `🔴 Đã hết hạn (${Math.abs(days)} ngày)`;
+                  } else if (days >= 21) {
                     badgeStyle = 'bg-emerald-50 text-emerald-600 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800';
                     statusText = `🟢 An toàn (Còn ${days} ngày)`;
                   } else if (days >= 6) {
@@ -483,7 +498,7 @@ export const DashboardView: React.FC = () => {
                   }
 
                   return (
-                    <tr key={contract.Id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <tr key={contract.Id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isOverdue ? 'bg-rose-50/30 dark:bg-rose-950/10' : ''}`}>
                       <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
                       <td className="p-2.5 font-mono text-sky-600 dark:text-sky-400">{customer?.CifKh || 'N/A'}</td>
                       <td className="p-2.5 font-mono font-bold text-purple-600 dark:text-purple-400">{contract.ContractNumber}</td>

@@ -25,13 +25,34 @@ export const CollateralView: React.FC = () => {
   const [inputAssetType, setInputAssetType] = useState('Loại 1');
   const [inputAddress, setInputAddress] = useState('');
   const [inputAppraisedValue, setInputAppraisedValue] = useState('');
-  const [inputLtvPercent, setInputLtvPercent] = useState('70');
+  const [inputLtvPercent, setInputLtvPercent] = useState('80');
+  const [inputAppraisalDate, setInputAppraisalDate] = useState('');
+  const [inputAppraisalTenorMonths, setInputAppraisalTenorMonths] = useState<number>(12);
+  const [inputAppraisalExpiryDate, setInputAppraisalExpiryDate] = useState('');
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Helper: Auto-calculate Appraisal Expiry Date
+  useEffect(() => {
+    if (inputAppraisalDate && inputAppraisalTenorMonths) {
+      try {
+        const parts = inputAppraisalDate.split('-');
+        if (parts.length === 3) {
+          const year = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          const d = new Date(year, month + Number(inputAppraisalTenorMonths), day);
+          if (!isNaN(d.getTime())) {
+            setInputAppraisalExpiryDate(d.toISOString().split('T')[0]);
+          }
+        }
+      } catch {}
+    }
+  }, [inputAppraisalDate, inputAppraisalTenorMonths]);
 
   const showNotify = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -91,6 +112,9 @@ export const CollateralView: React.FC = () => {
     setInputAddress(col.Address || '');
     setInputAppraisedValue((col.AppraisedValue || col.Value) ? formatMoneyInput((col.AppraisedValue || col.Value)!.toString()) : '');
     setInputLtvPercent(col.LtvPercent ? col.LtvPercent.toString() : '80');
+    setInputAppraisalDate(col.AppraisalDate ? col.AppraisalDate.split('T')[0] : '');
+    setInputAppraisalTenorMonths(col.AppraisalTenorMonths || 12);
+    setInputAppraisalExpiryDate(col.AppraisalExpiryDate ? col.AppraisalExpiryDate.split('T')[0] : '');
   };
 
   const clearForm = () => {
@@ -101,6 +125,9 @@ export const CollateralView: React.FC = () => {
     setInputAddress('');
     setInputAppraisedValue('');
     setInputLtvPercent('80');
+    setInputAppraisalDate('');
+    setInputAppraisalTenorMonths(12);
+    setInputAppraisalExpiryDate('');
   };
 
   const handleSaveCollateral = async (e: React.FormEvent) => {
@@ -126,7 +153,10 @@ export const CollateralView: React.FC = () => {
       Address: inputAddress.trim() || null,
       AppraisedValue: val,
       Value: val,
-      LtvPercent: ltv, // Explicitly set to avoid NOT NULL violation
+      LtvPercent: ltv,
+      AppraisalDate: inputAppraisalDate || null,
+      AppraisalTenorMonths: inputAppraisalTenorMonths || 12,
+      AppraisalExpiryDate: inputAppraisalExpiryDate || null,
     };
 
     try {
@@ -151,6 +181,10 @@ export const CollateralView: React.FC = () => {
   const inputStyle = isLight
     ? 'bg-white border-slate-300 text-slate-900 focus:border-sky-500'
     : 'bg-slate-950 border-slate-800 text-slate-200 focus:border-sky-500';
+
+  const readonlyInputStyle = isLight
+    ? 'bg-slate-100 border-slate-200 text-slate-700 cursor-not-allowed font-semibold'
+    : 'bg-slate-950/80 border-slate-800 text-slate-300 cursor-not-allowed font-semibold';
 
   const tableHeaderStyle = isLight
     ? 'bg-slate-100 text-slate-700 border-slate-200 font-bold'
@@ -219,25 +253,56 @@ export const CollateralView: React.FC = () => {
           </div>
 
           <div className="overflow-auto flex-1">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs border-collapse">
               <thead className={tableHeaderStyle}>
                 <tr>
                   <th className="p-3 whitespace-nowrap">KH CHỦ SỞ HỮU</th>
                   <th className="p-3 whitespace-nowrap">MÃ CIF</th>
-                  <th className="p-3 whitespace-nowrap">MÃ TS</th>
-                  <th className="p-3 whitespace-nowrap">XẾP LOẠI</th>
+                  <th className="p-3 whitespace-nowrap">MÃ TS / ĐỊA CHỈ</th>
+                  <th className="p-3 whitespace-nowrap">XẾP LOẠI & LTV</th>
                   <th className="p-3 whitespace-nowrap text-right">GIÁ TRỊ ĐỊNH GIÁ</th>
-                  <th className="p-3 whitespace-nowrap">ĐỊA CHỈ TSBĐ</th>
+                  <th className="p-3 whitespace-nowrap text-center">HẾT HẠN ĐỊNH GIÁ</th>
+                  <th className="p-3 whitespace-nowrap text-center">HẠN CÒN LẠI (TRẠNG THÁI)</th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/60'}`}>
                 {loading ? (
-                  <tr><td colSpan={6} className="text-center p-8 text-slate-400">Đang tải dữ liệu TSĐB...</td></tr>
+                  <tr><td colSpan={7} className="text-center p-8 text-slate-400">Đang tải dữ liệu TSĐB...</td></tr>
                 ) : filteredCollaterals.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center p-8 text-slate-400">Không tìm thấy tài sản bảo đảm nào.</td></tr>
+                  <tr><td colSpan={7} className="text-center p-8 text-slate-400">Không tìm thấy tài sản bảo đảm nào.</td></tr>
                 ) : (
                   filteredCollaterals.map((col) => {
                     const isSelected = selectedCollateral?.Id === col.Id;
+
+                    // Days remaining until appraisal expiry
+                    let daysLeft: number | null = null;
+                    const expDateStr = col.AppraisalExpiryDate ? col.AppraisalExpiryDate.split('T')[0] : '';
+                    if (expDateStr) {
+                      const parts = expDateStr.split('-');
+                      if (parts.length === 3) {
+                        const expDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        expDate.setHours(0, 0, 0, 0);
+                        daysLeft = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                      }
+                    }
+
+                    let badgeStyle = 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+                    let statusText = '—';
+                    if (daysLeft !== null) {
+                      if (daysLeft >= 16) {
+                        badgeStyle = 'bg-emerald-50 text-emerald-600 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800';
+                        statusText = `🟢 An toàn (Còn ${daysLeft} ngày)`;
+                      } else if (daysLeft >= 1) {
+                        badgeStyle = 'bg-amber-50 text-amber-600 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800 font-bold';
+                        statusText = `🟡 Cần chú ý (Còn ${daysLeft} ngày)`;
+                      } else {
+                        badgeStyle = 'bg-rose-600 text-white border border-rose-500 font-bold animate-pulse';
+                        statusText = `🔴 Đã hết hạn (${Math.abs(daysLeft)} ngày quá hạn)`;
+                      }
+                    }
+
                     return (
                       <tr
                         key={col.Id}
@@ -254,18 +319,28 @@ export const CollateralView: React.FC = () => {
                         <td className="p-3 font-mono font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">
                           {col.customer?.CifKh || '—'}
                         </td>
-                        <td className="p-3 font-mono text-slate-500 font-bold whitespace-nowrap">{col.AssetCode || 'N/A'}</td>
+                        <td className="p-3 max-w-xs truncate" title={col.Address || col.AssetCode || ''}>
+                          <div className="font-mono text-slate-700 dark:text-slate-200 font-bold">{col.AssetCode || 'TSBĐ'}</div>
+                          <div className="text-[11px] text-slate-400 truncate">{col.Address || 'Chưa khai báo'}</div>
+                        </td>
                         <td className="p-3 whitespace-nowrap">
                           <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
-                            isLight ? 'bg-slate-100 border-slate-200 text-sky-600' : 'bg-slate-800 border-slate-700 text-sky-400'
+                            isLight ? 'bg-sky-50 border-sky-200 text-sky-600' : 'bg-sky-950 border-sky-800 text-sky-400'
                           }`}>
-                            {col.AssetType || 'Loại 1'}
+                            {col.AssetType || 'Loại 1'} ({col.LtvPercent || 80}%)
                           </span>
                         </td>
                         <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400 text-right whitespace-nowrap">
                           {formatMoney(col.AppraisedValue || col.Value || 0)}
                         </td>
-                        <td className="p-3 text-slate-500 max-w-xs truncate" title={col.Address || ''}>{col.Address || 'Chưa khai báo'}</td>
+                        <td className="p-3 text-center font-bold font-mono whitespace-nowrap">
+                          {expDateStr || 'N/A'}
+                        </td>
+                        <td className="p-3 text-center whitespace-nowrap">
+                          <span className={`px-2.5 py-1 rounded-lg text-[10px] inline-block ${badgeStyle}`}>
+                            {statusText}
+                          </span>
+                        </td>
                       </tr>
                     );
                   })
@@ -373,6 +448,47 @@ export const CollateralView: React.FC = () => {
                   className={`w-full rounded-xl p-2.5 font-mono font-bold text-sky-600 dark:text-sky-400 text-sm ${inputStyle} ${
                     inputAssetType !== 'Ngoại lệ' ? 'bg-slate-100 dark:bg-slate-900 cursor-not-allowed opacity-90' : ''
                   }`}
+                />
+              </div>
+            </div>
+
+            {/* Thông tin Ngày định giá & Hạn định giá */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3 rounded-xl border bg-sky-50/50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800">
+              <div>
+                <label className="block font-medium mb-1">Ngày định giá TS</label>
+                <input
+                  type="date"
+                  value={inputAppraisalDate}
+                  onChange={(e) => setInputAppraisalDate(e.target.value)}
+                  className={`w-full rounded-xl p-2 font-semibold ${inputStyle}`}
+                />
+              </div>
+              <div>
+                <label className="block font-medium mb-1">Thời hạn định giá</label>
+                <div className="flex items-center space-x-1">
+                  {[6, 12, 24].map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setInputAppraisalTenorMonths(m)}
+                      className={`flex-1 p-2 text-xs rounded-xl font-bold border transition-colors ${
+                        inputAppraisalTenorMonths === m
+                          ? 'bg-sky-600 text-white border-sky-500 shadow-sm'
+                          : isLight ? 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
+                      }`}
+                    >
+                      {m}T
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block font-medium mb-1">Ngày hết hạn định giá</label>
+                <input
+                  type="date"
+                  readOnly
+                  value={inputAppraisalExpiryDate}
+                  className={`w-full rounded-xl p-2 font-bold font-mono text-sky-600 dark:text-sky-400 ${readonlyInputStyle}`}
                 />
               </div>
             </div>

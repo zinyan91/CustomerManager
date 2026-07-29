@@ -32,6 +32,8 @@ export interface Collateral {
   AssetType?: string;
   LtvPercent?: number;
   AppraisalDate?: string | null;
+  AppraisalTenorMonths?: number | null;
+  AppraisalExpiryDate?: string | null;
   Note?: string | null;
   customer?: Customer;
 }

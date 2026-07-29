@@ -9,7 +9,7 @@ import type { LoanContract, Customer, RepaymentSchedule, Collateral } from '../.
 import { useTheme } from '../../context/ThemeContext';
 import {
   Search, FileText, Receipt, Calendar, CheckCircle, AlertCircle,
-  User, ChevronRight, Plus, RefreshCw, X, ChevronDown, ShieldCheck, DollarSign
+  User, ChevronRight, Plus, RefreshCw, X, ChevronDown, ShieldCheck, DollarSign, Building2
 } from 'lucide-react';
 
 const LOAN_METHODS = [
@@ -68,6 +68,12 @@ function addMonthsToDate(dateStr?: string | null, months?: number | null): strin
   } catch {
     return '';
   }
+}
+
+function parseKunnTenorMonths(tenorStr?: string | null): number {
+  if (!tenorStr) return 0;
+  const match = tenorStr.match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
 }
 
 // Generate repayment schedule (equal principal method)
@@ -164,23 +170,30 @@ export const LoanPortfolioView: React.FC = () => {
     }).catch(() => {});
   }, []);
 
-  // Requirement 1: Cho vay từng lần -> thời hạn HĐ bằng luôn thời hạn KUNN
+  // Requirement 1 & 2: Auto-sync cho Cho vay từng lần & KUNN
   useEffect(() => {
     const isSingleLoan = form.LoanMethod === 'Cho vay từng lần' || form.LoanMethod === 'Hạn mức tín dụng từng lần';
-    if (isSingleLoan && form.LoanTenorMonths) {
-      const kunnTenorStr = `${form.LoanTenorMonths} tháng`;
-      const calculatedEnd = addMonthsToDate(form.ContractStartDate || form.DisbursementDate, form.LoanTenorMonths);
+    if (isSingleLoan) {
+      if (form.LoanTenorMonths) {
+        const kunnTenorStr = `${form.LoanTenorMonths} tháng`;
+        const calculatedEnd = addMonthsToDate(form.ContractStartDate || form.DisbursementDate, form.LoanTenorMonths);
 
-      setForm(prev => {
-        let updated = false;
-        const copy = { ...prev };
-        if (copy.KunnTenor !== kunnTenorStr) { copy.KunnTenor = kunnTenorStr; updated = true; }
-        if (!copy.DisbursementDate && copy.ContractStartDate) { copy.DisbursementDate = copy.ContractStartDate; updated = true; }
-        if (calculatedEnd && copy.KunnDueDate !== calculatedEnd) { copy.KunnDueDate = calculatedEnd; updated = true; }
-        return updated ? copy : prev;
-      });
+        setForm(prev => {
+          let updated = false;
+          const copy = { ...prev };
+          if (copy.KunnTenor !== kunnTenorStr) { copy.KunnTenor = kunnTenorStr; updated = true; }
+          if (!copy.DisbursementDate && copy.ContractStartDate) { copy.DisbursementDate = copy.ContractStartDate; updated = true; }
+          if (calculatedEnd && copy.KunnDueDate !== calculatedEnd) { copy.KunnDueDate = calculatedEnd; updated = true; }
+          return updated ? copy : prev;
+        });
+      }
+
+      // Auto-sync Total Limit = KUNN Loan Amount for Single Loans
+      if (formLoanAmount && formCreditLimit !== formLoanAmount) {
+        setFormCreditLimit(formLoanAmount);
+      }
     }
-  }, [form.LoanMethod, form.LoanTenorMonths, form.ContractStartDate, form.DisbursementDate]);
+  }, [form.LoanMethod, form.LoanTenorMonths, form.ContractStartDate, form.DisbursementDate, formLoanAmount]);
 
   // Auto-calculate End Dates when Effective Date / Disbursement Date / Tenor changes
   useEffect(() => {
@@ -192,22 +205,37 @@ export const LoanPortfolioView: React.FC = () => {
     }
   }, [form.ContractStartDate, form.LoanTenorMonths]);
 
+  // Auto-calculate KUNN Due Date REACTIVELY whenever DisbursementDate or KunnTenor changes
   useEffect(() => {
-    if (form.DisbursementDate && form.LoanTenorMonths) {
-      const calculatedKunnEnd = addMonthsToDate(form.DisbursementDate, form.LoanTenorMonths);
-      if (calculatedKunnEnd && calculatedKunnEnd !== form.KunnDueDate) {
-        setForm(prev => ({ ...prev, KunnDueDate: calculatedKunnEnd }));
+    if (form.DisbursementDate) {
+      const months = parseKunnTenorMonths(form.KunnTenor) || form.LoanTenorMonths || 0;
+      if (months > 0) {
+        const calculatedKunnEnd = addMonthsToDate(form.DisbursementDate, months);
+        if (calculatedKunnEnd && calculatedKunnEnd !== form.KunnDueDate) {
+          setForm(prev => ({ ...prev, KunnDueDate: calculatedKunnEnd }));
+        }
       }
     }
-  }, [form.DisbursementDate, form.LoanTenorMonths]);
+  }, [form.DisbursementDate, form.KunnTenor, form.LoanTenorMonths]);
 
-  // Derived Rates Calculations
+  // Derived Rates & Amount Calculations
   const prefVal = parseFloat(ratePreferential) || 0;
   const baseVal = parseFloat(rateBase) || 0;
   const marginVal = parseFloat(rateMargin) || 0;
 
   const postPrefRate = prefVal + marginVal; // LSUD + Biên độ
   const normalRate = baseVal + marginVal;    // LSCS + Biên độ
+
+  const creditLimitNum = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
+  const kunnLoanAmountNum = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
+
+  // Sum of all existing KUNNs under current customer (excluding selectedContract if editing)
+  const totalExistingKunnBalance = contracts
+    .filter(c => !selectedContract || c.Id !== selectedContract.Id)
+    .reduce((acc, c) => acc + (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0), 0);
+
+  // Remaining HMTD Credit Limit = Total Limit - (Existing KUNNs + Current KUNN)
+  const remainingHmtdLimit = Math.max(0, creditLimitNum - totalExistingKunnBalance - kunnLoanAmountNum);
 
   // Filtered dropdown list for quick pick
   const dropdownFiltered = dropdownQuery.trim().length < 1
@@ -831,134 +859,216 @@ export const LoanPortfolioView: React.FC = () => {
                   </div>
 
                   <form onSubmit={handleSaveContract} className="space-y-6">
-                    {/* SECTION 1: thông tin chung khách hàng & phương thức vay */}
-                    <div className={`grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl border ${sectionBoxBg}`}>
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Tên Khách hàng vay</label>
-                        <input type="text" readOnly
-                          value={foundCustomer ? foundCustomer.FullName : ''}
-                          className={`w-full rounded-xl p-2.5 text-xs ${readonlyInputStyle}`} />
+                    {/* SECTION 1: THÔNG TIN CHUNG HỢP ĐỒNG TÍN DỤNG (HĐTD) */}
+                    <div className={`rounded-xl p-4 space-y-4 border ${sectionBoxBg}`}>
+                      <div className="text-[11px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-2">
+                        <FileText className="w-4 h-4" />
+                        <span>THÔNG TIN CHUNG HỢP ĐỒNG TÍN DỤNG (HĐTD)</span>
                       </div>
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Mã CIF KH</label>
-                        <input type="text" readOnly
-                          value={foundCustomer ? foundCustomer.CifKh : ''}
-                          className={`w-full rounded-xl p-2.5 text-xs font-mono text-sky-600 dark:text-sky-400 ${readonlyInputStyle}`} />
-                      </div>
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Số Hợp Đồng Tín Dụng</label>
-                        <input type="text" value={form.ContractNumber || ''}
-                          onChange={e => setForm(f => ({ ...f, ContractNumber: e.target.value }))}
-                          placeholder="HDTD-71803/2026..."
-                          className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
-                      </div>
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Phương thức vay *</label>
-                        <select required value={form.LoanMethod || LOAN_METHODS[0]}
-                          onChange={e => handleLoanMethodChange(e.target.value)}
-                          className={`w-full rounded-xl p-2.5 text-xs font-bold ${inputStyle}`}>
-                          {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-                        </select>
-                      </div>
-                    </div>
 
-                    {/* SECTION 2: Thời hạn & Ngày tháng */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Ngày HĐ có hiệu lực</label>
-                        <input type="date" value={form.ContractStartDate || ''}
-                          onChange={e => setForm(f => ({ ...f, ContractStartDate: e.target.value }))}
-                          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                      </div>
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Thời hạn vay (HĐTD)</label>
-                        {form.LoanMethod === 'Hạn mức tín dụng' ? (
-                          <div className="flex items-center space-x-1.5">
-                            {[12, 24].map(m => (
-                              <button
-                                key={m}
-                                type="button"
-                                onClick={() => setForm(f => ({ ...f, LoanTenorMonths: m }))}
-                                className={`flex-1 p-2.5 text-xs rounded-xl font-bold border transition-colors ${
-                                  form.LoanTenorMonths === m
-                                    ? 'bg-sky-600 text-white border-sky-500 shadow-sm'
-                                    : isLight ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
-                                }`}
-                              >
-                                {m} tháng
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <input type="number" min={1} value={form.LoanTenorMonths || ''}
-                            onChange={e => setForm(f => ({ ...f, LoanTenorMonths: parseInt(e.target.value) || undefined }))}
-                            placeholder="12, 120, 240..."
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                        )}
-                      </div>
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>
-                          <span>Ngày kết thúc HĐ</span>
-                        </label>
-                        <input type="date" value={form.ContractEndDate || ''}
-                          onChange={e => setForm(f => ({ ...f, ContractEndDate: e.target.value }))}
-                          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                      </div>
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Phân loại Nhóm nợ</label>
-                        <select value={form.DebtGroup ?? 1}
-                          onChange={e => setForm(f => ({ ...f, DebtGroup: Number(e.target.value) }))}
-                          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`}>
-                          {[1,2,3,4,5].map(g => <option key={g} value={g}>Nhóm {g}</option>)}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* SECTION 3: KUNN Detail Dates */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Ngày giải ngân (bắt đầu KUNN)</label>
-                        <input type="date" value={form.DisbursementDate || ''}
-                          onChange={e => setForm(f => ({ ...f, DisbursementDate: e.target.value }))}
-                          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                      </div>
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Thời hạn KUNN</label>
-                        {form.LoanMethod === 'Hạn mức tín dụng' ? (
-                          <select
-                            value={form.KunnTenor || '6 tháng'}
-                            onChange={e => {
-                              const val = e.target.value;
-                              const months = parseInt(val) || 0;
-                              const kunnEnd = form.DisbursementDate && months > 0 ? addMonthsToDate(form.DisbursementDate, months) : form.KunnDueDate;
-                              setForm(f => ({ ...f, KunnTenor: val, KunnDueDate: kunnEnd || f.KunnDueDate }));
-                            }}
-                            className={`w-full rounded-xl p-2.5 text-xs font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`}
-                          >
-                            {['0 tháng', '3 tháng', '5 tháng', '6 tháng', '9 tháng', '12 tháng'].map(t => (
-                              <option key={t} value={t}>{t}</option>
-                            ))}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Tên Khách hàng vay</label>
+                          <input type="text" readOnly
+                            value={foundCustomer ? foundCustomer.FullName : ''}
+                            className={`w-full rounded-xl p-2.5 text-xs ${readonlyInputStyle}`} />
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Mã CIF KH</label>
+                          <input type="text" readOnly
+                            value={foundCustomer ? foundCustomer.CifKh : ''}
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono text-sky-600 dark:text-sky-400 ${readonlyInputStyle}`} />
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Số Hợp Đồng Tín Dụng *</label>
+                          <input type="text" value={form.ContractNumber || ''}
+                            onChange={e => setForm(f => ({ ...f, ContractNumber: e.target.value }))}
+                            placeholder="HDTD-71803/2026..."
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Phương thức vay *</label>
+                          <select required value={form.LoanMethod || LOAN_METHODS[0]}
+                            onChange={e => handleLoanMethodChange(e.target.value)}
+                            className={`w-full rounded-xl p-2.5 text-xs font-bold ${inputStyle}`}>
+                            {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
                           </select>
-                        ) : (
-                          <input type="text" value={form.KunnTenor || ''}
-                            onChange={e => setForm(f => ({ ...f, KunnTenor: e.target.value }))}
-                            placeholder="5T / 12 tháng..."
+                        </div>
+                      </div>
+
+                      {/* Đưa Tổng mức cấp lên trên theo yêu cầu */}
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Tổng mức cấp (HĐTD) *</label>
+                          <input type="text" value={formCreditLimit}
+                            onChange={e => {
+                              const val = formatMoneyInput(e.target.value);
+                              setFormCreditLimit(val);
+                              if (form.LoanMethod === 'Cho vay từng lần' || form.LoanMethod === 'Hạn mức tín dụng từng lần') {
+                                setFormLoanAmount(val);
+                              }
+                            }}
+                            placeholder="1.000.000.000"
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Ngày HĐ có hiệu lực</label>
+                          <input type="date" value={form.ContractStartDate || ''}
+                            onChange={e => setForm(f => ({ ...f, ContractStartDate: e.target.value }))}
                             className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                        )}
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Thời hạn vay (HĐTD)</label>
+                          {form.LoanMethod === 'Hạn mức tín dụng' ? (
+                            <div className="flex items-center space-x-1.5">
+                              {[12, 24].map(m => (
+                                <button
+                                  key={m}
+                                  type="button"
+                                  onClick={() => setForm(f => ({ ...f, LoanTenorMonths: m }))}
+                                  className={`flex-1 p-2.5 text-xs rounded-xl font-bold border transition-colors ${
+                                    form.LoanTenorMonths === m
+                                      ? 'bg-sky-600 text-white border-sky-500 shadow-sm'
+                                      : isLight ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
+                                  }`}
+                                >
+                                  {m} tháng
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <input type="number" min={1} value={form.LoanTenorMonths || ''}
+                              onChange={e => setForm(f => ({ ...f, LoanTenorMonths: parseInt(e.target.value) || undefined }))}
+                              placeholder="12, 120, 240..."
+                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                          )}
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>
+                            <span>Ngày kết thúc HĐ</span>
+                          </label>
+                          <input type="date" value={form.ContractEndDate || ''}
+                            onChange={e => setForm(f => ({ ...f, ContractEndDate: e.target.value }))}
+                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Phân loại Nhóm nợ</label>
+                          <select value={form.DebtGroup ?? 1}
+                            onChange={e => setForm(f => ({ ...f, DebtGroup: Number(e.target.value) }))}
+                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`}>
+                            {[1,2,3,4,5].map(g => <option key={g} value={g}>Nhóm {g}</option>)}
+                          </select>
+                        </div>
                       </div>
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>
-                          <span>Ngày kết thúc KUNN</span>
-                        </label>
-                        <input type="date" value={form.KunnDueDate || ''}
-                          onChange={e => setForm(f => ({ ...f, KunnDueDate: e.target.value }))}
-                          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+
+                      {/* Banner Hạn mức HMTD còn lại */}
+                      {form.LoanMethod === 'Hạn mức tín dụng' && (
+                        <div className={`p-3 rounded-xl border flex flex-wrap items-center justify-between text-xs font-semibold ${
+                          isLight ? 'bg-sky-50 border-sky-200 text-sky-900' : 'bg-sky-950/60 border-sky-500/30 text-sky-200'
+                        }`}>
+                          <div className="flex items-center space-x-2">
+                            <Building2 className="w-4 h-4 text-sky-500" />
+                            <span>TÌNH TRẠNG HẠN MỨC TÍN DỤNG:</span>
+                          </div>
+                          <div className="flex items-center space-x-4 font-mono">
+                            <span>Tổng mức cấp: <strong className="text-sky-600 dark:text-sky-400">{fmtMoney(creditLimitNum)}</strong></span>
+                            <span>• Dư nợ KUNN đã có: <strong className="text-amber-600 dark:text-amber-400">{fmtMoney(totalExistingKunnBalance)}</strong></span>
+                            <span>• Khả năng giải ngân còn lại: <strong className="text-emerald-600 dark:text-emerald-400">{fmtMoney(Math.max(0, creditLimitNum - totalExistingKunnBalance))}</strong></span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* SECTION 2: THÔNG TIN GIẤY NHẬN NỢ (KUNN) & GIẢI NGÂN LẦN NÀY */}
+                    <div className={`rounded-xl p-4 space-y-4 border ${sectionBoxBg}`}>
+                      <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center space-x-2">
+                        <DollarSign className="w-4 h-4" />
+                        <span>THÔNG TIN GIẤY NHẬN NỢ (KUNN) & GIẢI NGÂN LẦN NÀY</span>
                       </div>
-                      <div>
-                        <label className={`block mb-1 ${labelStyle}`}>Ngày bắt đầu trả nợ</label>
-                        <input type="date" value={form.RepaymentStartDate || ''}
-                          onChange={e => setForm(f => ({ ...f, RepaymentStartDate: e.target.value }))}
-                          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Số tiền nhận nợ lần này (KUNN) *</label>
+                          <input type="text" value={formLoanAmount}
+                            onChange={e => {
+                              const val = formatMoneyInput(e.target.value);
+                              setFormLoanAmount(val);
+                              if (form.LoanMethod === 'Cho vay từng lần' || form.LoanMethod === 'Hạn mức tín dụng từng lần') {
+                                setFormCreditLimit(val);
+                              }
+                            }}
+                            placeholder="200.000.000"
+                            className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 ${inputStyle}`} />
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Dư nợ HMTD hiện hữu (Tổng KUNN đã có)</label>
+                          <input type="text" readOnly value={fmtMoney(totalExistingKunnBalance)}
+                            className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-amber-600 dark:text-amber-400 ${readonlyInputStyle}`} />
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Hạn mức HMTD còn lại (sau lần này)</label>
+                          <input type="text" readOnly value={fmtMoney(remainingHmtdLimit)}
+                            className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold ${
+                              remainingHmtdLimit >= 0 ? 'text-sky-600 dark:text-sky-400' : 'text-red-500'
+                            } ${readonlyInputStyle}`} />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Ngày giải ngân (bắt đầu KUNN)</label>
+                          <input type="date" value={form.DisbursementDate || ''}
+                            onChange={e => {
+                              const disDate = e.target.value;
+                              const months = parseKunnTenorMonths(form.KunnTenor) || form.LoanTenorMonths || 0;
+                              const kunnEnd = disDate && months > 0 ? addMonthsToDate(disDate, months) : form.KunnDueDate;
+                              setForm(f => ({ ...f, DisbursementDate: disDate, KunnDueDate: kunnEnd || f.KunnDueDate }));
+                            }}
+                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Thời hạn KUNN</label>
+                          {form.LoanMethod === 'Hạn mức tín dụng' ? (
+                            <select
+                              value={form.KunnTenor || '6 tháng'}
+                              onChange={e => {
+                                const val = e.target.value;
+                                const months = parseKunnTenorMonths(val);
+                                const kunnEnd = form.DisbursementDate && months > 0 ? addMonthsToDate(form.DisbursementDate, months) : form.KunnDueDate;
+                                setForm(f => ({ ...f, KunnTenor: val, KunnDueDate: kunnEnd || f.KunnDueDate }));
+                              }}
+                              className={`w-full rounded-xl p-2.5 text-xs font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`}
+                            >
+                              {['0 tháng', '3 tháng', '5 tháng', '6 tháng', '9 tháng', '12 tháng'].map(t => (
+                                <option key={t} value={t}>{t}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input type="text" value={form.KunnTenor || ''}
+                              onChange={e => {
+                                const val = e.target.value;
+                                const months = parseKunnTenorMonths(val);
+                                const kunnEnd = form.DisbursementDate && months > 0 ? addMonthsToDate(form.DisbursementDate, months) : form.KunnDueDate;
+                                setForm(f => ({ ...f, KunnTenor: val, KunnDueDate: kunnEnd || f.KunnDueDate }));
+                              }}
+                              placeholder="5T / 12 tháng..."
+                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                          )}
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>
+                            <span>Ngày kết thúc KUNN (Tự động tính)</span>
+                          </label>
+                          <input type="date" value={form.KunnDueDate || ''}
+                            onChange={e => setForm(f => ({ ...f, KunnDueDate: e.target.value }))}
+                            className={`w-full rounded-xl p-2.5 text-xs font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Ngày bắt đầu trả nợ</label>
+                          <input type="date" value={form.RepaymentStartDate || ''}
+                            onChange={e => setForm(f => ({ ...f, RepaymentStartDate: e.target.value }))}
+                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                        </div>
                       </div>
                     </div>
 
@@ -979,37 +1089,6 @@ export const LoanPortfolioView: React.FC = () => {
                           onChange={e => setForm(f => ({ ...f, LoanPurpose: e.target.value }))}
                           placeholder="Bổ sung vốn kinh doanh, mua sắm máy móc..."
                           className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                      </div>
-                    </div>
-
-                    {/* SECTION 5: THÔNG TIN SỐ TIỀN (Sạch sẽ, không chú thích rườm rà) */}
-                    <div className={`rounded-xl p-4 space-y-3 border ${sectionBoxBg}`}>
-                      <div className="text-[11px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-1.5">
-                        <DollarSign className="w-3.5 h-3.5" />
-                        <span>THÔNG TIN SỐ TIỀN VAY</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Tổng mức cấp (HĐTD)</label>
-                          <input type="text" value={formCreditLimit}
-                            onChange={e => setFormCreditLimit(formatMoneyInput(e.target.value))}
-                            placeholder="960.000.000"
-                            className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Số tiền nhận nợ (KUNN)</label>
-                          <input type="text" value={formLoanAmount}
-                            onChange={e => setFormLoanAmount(formatMoneyInput(e.target.value))}
-                            placeholder="960.000.000"
-                            className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 ${inputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Dư nợ hiện hữu</label>
-                          <input type="text" value={formCurrentBalance}
-                            onChange={e => setFormCurrentBalance(formatMoneyInput(e.target.value))}
-                            placeholder="944.000.000"
-                            className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-amber-600 dark:text-amber-400 ${inputStyle}`} />
-                        </div>
                       </div>
                     </div>
 

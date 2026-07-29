@@ -526,6 +526,28 @@ export const LoanPortfolioView: React.FC = () => {
       // Force insert (create new KUNN) or when no contract selected
       if (forceInsert || !selectedContract) {
         delete payload.Id;
+
+        // ─── RÀNG BUỘC: Kiểm tra dư nợ KUNN không vượt quá Tổng mức cấp HMTD ───
+        if (loanAmount && creditLimit > 0) {
+          // Tổng tất cả KUNN hiện có (không tính bản thân nếu đang update)
+          const existingKunnTotal = contracts
+            .filter(c => c.Id !== selectedContract?.Id) // bỏ qua KUNN đang chỉnh sửa nếu có
+            .reduce((sum, c) => sum + (c.LoanAmount || c.ContractAmount || 0), 0);
+          const newTotal = existingKunnTotal + loanAmount;
+          const remaining = creditLimit - existingKunnTotal;
+
+          if (newTotal > creditLimit) {
+            showNotify('error',
+              `❌ VƯỢT HẠN MỨC! Tổng mức cấp HMTD: ${creditLimit.toLocaleString('vi-VN')} VNĐ | ` +
+              `KUNN hiện hữu: ${existingKunnTotal.toLocaleString('vi-VN')} VNĐ | ` +
+              `HMTD còn lại: ${remaining.toLocaleString('vi-VN')} VNĐ | ` +
+              `Số tiền KUNN đang nhập: ${loanAmount.toLocaleString('vi-VN')} VNĐ — ` +
+              `Không thể tạo KUNN mới vì vượt hạn mức!`
+            );
+            setLoading(false);
+            return;
+          }
+        }
       }
 
       const savedContract = await saveContractAPI(payload);
@@ -642,8 +664,16 @@ export const LoanPortfolioView: React.FC = () => {
   const currentFormCreditLimitNum = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
   const isLtvExceeded = selectedCollateralIds.length > 0 && maxAllowedLoanLtv > 0 && currentFormCreditLimitNum > maxAllowedLoanLtv;
 
+  // Tổng mức cấp HĐTD = lấy từ ContractAmount của hợp đồng đầu tiên (hợp đồng gốc GNN-01)
+  // Không cộng dồn vì tất cả KUNN đều có chung 1 mức cấp HMTD
+  const masterContract = contracts.length > 0 ? contracts[contracts.length - 1] : null; // GNN-01 là hợp đồng đầu tiên (sort ascending Id)
+  const totalCreditLimit = masterContract?.ContractAmount || 0;
+
+  // Tổng dư nợ KUNN = tổng LoanAmount của tất cả KUNN (lần rút vay thực tế)
   const totalKunnAmount = contracts.reduce((sum, c) => sum + (c.LoanAmount || 0), 0);
-  const totalCreditLimit = contracts.reduce((sum, c) => sum + (c.ContractAmount || 0), 0);
+  
+  // HMTD còn lại = Tổng mức cấp - Tổng KUNN đã giải ngân
+  const remainingCreditLimit = Math.max(0, totalCreditLimit - totalKunnAmount);
 
   // Dynamic Theme Classes
   const containerCardBg = isLight
@@ -819,12 +849,20 @@ export const LoanPortfolioView: React.FC = () => {
                 <div className="text-[10px] uppercase text-slate-400 font-semibold">Tổng mức cấp HĐTD</div>
                 <div className="text-sky-600 dark:text-sky-400 font-bold text-sm">{fmtMoney(totalCreditLimit)}</div>
               </div>
-              <div className="text-right">
-                <div className="text-[10px] uppercase text-slate-400 font-semibold">Tổng số dư KUNN</div>
+              <div className={`text-right pr-4 border-r ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+                <div className="text-[10px] uppercase text-slate-400 font-semibold">Tổng dư nợ KUNN</div>
                 <div className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">{fmtMoney(totalKunnAmount)}</div>
               </div>
+              <div className="text-right">
+                <div className="text-[10px] uppercase text-slate-400 font-semibold">HMTD còn lại</div>
+                <div className={`font-bold text-sm ${remainingCreditLimit === 0 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                  {fmtMoney(remainingCreditLimit)}
+                </div>
+              </div>
               <button onClick={handleNewContract}
-                className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl transition-colors text-xs shadow-md shadow-emerald-600/20">
+                disabled={totalCreditLimit > 0 && remainingCreditLimit === 0}
+                title={totalCreditLimit > 0 && remainingCreditLimit === 0 ? 'HMTD đã giải ngân hết — không thể tạo KUNN mới!' : 'Tạo HĐTD / KUNN mới'}
+                className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-xl transition-colors text-xs shadow-md shadow-emerald-600/20">
                 <Plus className="w-3.5 h-3.5" />
                 <span>Tạo HĐTD mới</span>
               </button>

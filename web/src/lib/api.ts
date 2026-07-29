@@ -108,25 +108,40 @@ export async function fetchContractsAPI(): Promise<LoanContract[]> {
 export async function saveContractAPI(contract: Partial<LoanContract>): Promise<LoanContract> {
   const isUpdate = !!contract.Id;
 
+  // Clean payload from non-database column fields
+  const cleanContract: any = { ...contract };
+  delete cleanContract.customer;
+  delete cleanContract.collateral;
+  delete cleanContract.contractCollaterals;
+
   if (!isUpdate) {
     try {
       const { data } = await supabase.from('LoanContracts').select('Id');
       const maxId = (data && data.length > 0) ? Math.max(...data.map(d => d.Id || 0)) : 0;
-      contract.Id = maxId + 1;
+      cleanContract.Id = maxId + 1;
     } catch {
-      contract.Id = Date.now();
+      cleanContract.Id = Date.now();
     }
   }
 
-  contract.IsSettled = contract.IsSettled ?? false;
-  contract.IsRestructured = contract.IsRestructured ?? false;
+  cleanContract.IsSettled = cleanContract.IsSettled ?? false;
+  cleanContract.IsRestructured = cleanContract.IsRestructured ?? false;
 
   if (isUpdate) {
-    const { data, error } = await supabase.from('LoanContracts').update(contract).eq('Id', contract.Id).select().single();
+    const { data, error } = await supabase
+      .from('LoanContracts')
+      .update(cleanContract)
+      .eq('Id', cleanContract.Id)
+      .select('*, customer:Customers(*)')
+      .single();
     if (error) throw error;
     return data;
   } else {
-    const { data, error } = await supabase.from('LoanContracts').insert([contract]).select().single();
+    const { data, error } = await supabase
+      .from('LoanContracts')
+      .insert([cleanContract])
+      .select('*, customer:Customers(*)')
+      .single();
     if (error) throw error;
     return data;
   }

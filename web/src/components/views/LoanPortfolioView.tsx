@@ -382,6 +382,13 @@ export const LoanPortfolioView: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      const targetCustomerId = form.CustomerId || foundCustomer?.Id;
+      if (!targetCustomerId) {
+        showNotify('error', 'Chưa chọn khách hàng vay!');
+        setLoading(false);
+        return;
+      }
+
       const creditLimit = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || undefined;
       const loanAmount = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || undefined;
       const currentBal = parseFloat(formCurrentBalance.replace(/\./g, '').replace(',', '.')) || undefined;
@@ -396,6 +403,7 @@ export const LoanPortfolioView: React.FC = () => {
 
       const payload: Partial<LoanContract> = {
         ...form,
+        CustomerId: targetCustomerId,
         ContractAmount: creditLimit,
         LoanAmount: loanAmount ?? creditLimit,
         CurrentBalance: currentBal ?? loanAmount ?? creditLimit,
@@ -411,14 +419,29 @@ export const LoanPortfolioView: React.FC = () => {
         CollateralId: selectedCollateralIds.length > 0 ? selectedCollateralIds[0] : null,
       };
 
-      await saveContractAPI(payload);
+      const savedContract = await saveContractAPI(payload);
       showNotify('success', 'Đã lưu thông tin HĐTD thành công!');
 
       if (foundCustomer) {
         const refreshed = await fetchContractsByCustomerAPI(foundCustomer.Id);
         setContracts(refreshed);
-        const updated = refreshed.find(c => c.Id === payload.Id);
-        if (updated) { setSelectedContract(updated); populateForm(updated); }
+        const updated = refreshed.find(c => c.Id === savedContract.Id || c.Id === payload.Id);
+        if (updated) {
+          setSelectedContract(updated);
+          populateForm(updated);
+        } else {
+          // Direct fallback state sync
+          setContracts(prev => {
+            const idx = prev.findIndex(x => x.Id === savedContract.Id);
+            if (idx >= 0) {
+              const copy = [...prev];
+              copy[idx] = savedContract;
+              return copy;
+            }
+            return [savedContract, ...prev];
+          });
+          setSelectedContract(savedContract);
+        }
       }
     } catch (err: any) {
       showNotify('error', `Lỗi lưu HĐTD: ${err.message}`);
@@ -833,9 +856,8 @@ export const LoanPortfolioView: React.FC = () => {
                           className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
                       </div>
                       <div>
-                        <label className={`block mb-1 ${labelStyle} flex items-center space-x-1`}>
+                        <label className={`block mb-1 ${labelStyle}`}>
                           <span>Ngày kết thúc HĐ</span>
-                          <span className="text-[10px] text-sky-500 font-semibold">(Tự động tính)</span>
                         </label>
                         <input type="date" value={form.ContractEndDate || ''}
                           onChange={e => setForm(f => ({ ...f, ContractEndDate: e.target.value }))}
@@ -867,9 +889,8 @@ export const LoanPortfolioView: React.FC = () => {
                           className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
                       </div>
                       <div>
-                        <label className={`block mb-1 ${labelStyle} flex items-center space-x-1`}>
+                        <label className={`block mb-1 ${labelStyle}`}>
                           <span>Ngày kết thúc KUNN</span>
-                          <span className="text-[10px] text-sky-500 font-semibold">(Tự động tính)</span>
                         </label>
                         <input type="date" value={form.KunnDueDate || ''}
                           onChange={e => setForm(f => ({ ...f, KunnDueDate: e.target.value }))}
@@ -936,9 +957,8 @@ export const LoanPortfolioView: React.FC = () => {
 
                     {/* SECTION 6: CHI TIẾT LÃI SUẤT (LSUD, LSCS, Biên độ) */}
                     <div className={`rounded-xl p-4 space-y-3 border ${sectionBoxBg}`}>
-                      <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider flex items-center justify-between">
+                      <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
                         <span>CẤU TRÚC LÃI SUẤT CHUYÊN SÂU</span>
-                        <span className="text-[10px] text-slate-400 font-normal">Công thức: LS sau ưu đãi = LSUD + Biên độ | LS thông thường = LSCS + Biên độ</span>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>

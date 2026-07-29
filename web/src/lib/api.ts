@@ -175,17 +175,6 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
     throw new Error('Số Hợp đồng tín dụng là bắt buộc!');
   }
 
-  // Duplicate ContractNumber check
-  const { data: numCheck } = await supabase
-    .from('LoanContracts')
-    .select('Id, ContractNumber')
-    .eq('ContractNumber', contractNumber);
-
-  const duplicateNum = (numCheck || []).find(c => c.Id !== contract.Id);
-  if (duplicateNum) {
-    throw new Error(`Số Hợp Đồng Tín Dụng "${contractNumber}" đã tồn tại trên hệ thống!`);
-  }
-
   // Clean payload from non-database column fields
   const cleanContract: any = { ...contract };
   delete cleanContract.customer;
@@ -203,6 +192,7 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   }
 
   cleanContract.ContractNumber = contractNumber;
+  cleanContract.ContractType = cleanContract.ContractType ?? 0;
   cleanContract.IsSettled = cleanContract.IsSettled ?? false;
   cleanContract.IsRestructured = cleanContract.IsRestructured ?? false;
 

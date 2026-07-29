@@ -321,7 +321,7 @@ export const DashboardView: React.FC = () => {
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-amber-500" />
             <h3 className="font-bold text-xs uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              1. KHÁCH HÀNG CHUẨN BỊ ĐÓNG KỲ DUE CỦA THÁNG (TRƯỚC 5 NGÀY)
+              1. KHÁCH HÀNG CHUẨN BỊ ĐÓNG KỲ DUE CỦA THÁNG
             </h3>
           </div>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
@@ -379,7 +379,7 @@ export const DashboardView: React.FC = () => {
           <div className="flex items-center space-x-2">
             <Clock className="w-4 h-4 text-sky-500" />
             <h3 className="font-bold text-xs uppercase tracking-wider text-sky-600 dark:text-sky-400">
-              2. DANH SÁCH GIẤY NHẬN NỢ (KUNN) SẮP ĐẾN HẠN KẾT THÚC (TRƯỚC 10 NGÀY)
+              2. DANH SÁCH GIẤY NHẬN NỢ (KUNN) SẮP ĐẾN HẠN KẾT THÚC
             </h3>
           </div>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
@@ -439,7 +439,7 @@ export const DashboardView: React.FC = () => {
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4 text-purple-500" />
             <h3 className="font-bold text-xs uppercase tracking-wider text-purple-600 dark:text-purple-400">
-              3. DANH SÁCH HẠN MỨC TÍN DỤNG (HMTD) SẮP TỚI HẠN KẾT THÚC (TRƯỚC 45 NGÀY)
+              3. DANH SÁCH HẠN MỨC TÍN DỤNG (HMTD) SẮP TỚI HẠN KẾT THÚC
             </h3>
           </div>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
@@ -510,7 +510,7 @@ export const DashboardView: React.FC = () => {
           <div className="flex items-center space-x-2">
             <Building2 className="w-4 h-4 text-emerald-500" />
             <h3 className="font-bold text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              4. DANH SÁCH ĐỊNH GIÁ TÀI SẢN BẢO ĐẢM SẮP TỚI HẠN (TRƯỚC 30 NGÀY)
+              4. DANH SÁCH ĐỊNH GIÁ TÀI SẢN BẢO ĐẢM SẮP TỚI HẠN
             </h3>
           </div>
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">

@@ -34,8 +34,19 @@ export async function fetchCustomersAPI(filters?: { cif?: string; name?: string;
 }
 
 export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Customer> {
+  const isUpdate = !!customer.Id;
+
+  if (!isUpdate) {
+    try {
+      const { data } = await supabase.from('Customers').select('Id');
+      const maxId = (data && data.length > 0) ? Math.max(...data.map(d => d.Id || 0)) : 0;
+      customer.Id = maxId + 1;
+    } catch {
+      customer.Id = Date.now();
+    }
+  }
+
   try {
-    const isUpdate = !!customer.Id;
     const url = isUpdate ? `${API_BASE}/customers?id=${customer.Id}` : `${API_BASE}/customers`;
     const method = isUpdate ? 'PUT' : 'POST';
 
@@ -44,14 +55,12 @@ export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Cust
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(customer)
     });
-    if (res.ok) {
-      return await res.json();
-    }
+    if (res.ok) return await res.json();
   } catch (err) {
     console.warn("API save failed, falling back to Supabase SDK:", err);
   }
 
-  if (customer.Id) {
+  if (isUpdate) {
     const { data, error } = await supabase.from('Customers').update(customer).eq('Id', customer.Id).select().single();
     if (error) throw error;
     return data;
@@ -95,8 +104,19 @@ export async function fetchCollateralsAPI(): Promise<Collateral[]> {
 }
 
 export async function saveCollateralAPI(collateral: Partial<Collateral>): Promise<Collateral> {
+  const isUpdate = !!collateral.Id;
+
+  if (!isUpdate) {
+    try {
+      const { data } = await supabase.from('Collaterals').select('Id');
+      const maxId = (data && data.length > 0) ? Math.max(...data.map(d => d.Id || 0)) : 0;
+      collateral.Id = maxId + 1;
+    } catch {
+      collateral.Id = Date.now();
+    }
+  }
+
   try {
-    const isUpdate = !!collateral.Id;
     const url = isUpdate ? `${API_BASE}/collaterals?id=${collateral.Id}` : `${API_BASE}/collaterals`;
     const method = isUpdate ? 'PUT' : 'POST';
 
@@ -110,7 +130,7 @@ export async function saveCollateralAPI(collateral: Partial<Collateral>): Promis
     console.warn("API saveCollateral failed:", err);
   }
 
-  if (collateral.Id) {
+  if (isUpdate) {
     const { data, error } = await supabase.from('Collaterals').update(collateral).eq('Id', collateral.Id).select().single();
     if (error) throw error;
     return data;
@@ -142,8 +162,23 @@ export async function fetchContractsAPI(): Promise<LoanContract[]> {
 }
 
 export async function saveContractAPI(contract: Partial<LoanContract>): Promise<LoanContract> {
+  const isUpdate = !!contract.Id;
+
+  if (!isUpdate) {
+    try {
+      const { data } = await supabase.from('LoanContracts').select('Id');
+      const maxId = (data && data.length > 0) ? Math.max(...data.map(d => d.Id || 0)) : 0;
+      contract.Id = maxId + 1;
+    } catch {
+      contract.Id = Date.now();
+    }
+  }
+
+  // Ensure default boolean fields for LoanContracts
+  contract.IsSettled = contract.IsSettled ?? false;
+  contract.IsRestructured = contract.IsRestructured ?? false;
+
   try {
-    const isUpdate = !!contract.Id;
     const url = isUpdate ? `${API_BASE}/contracts?id=${contract.Id}` : `${API_BASE}/contracts`;
     const method = isUpdate ? 'PUT' : 'POST';
 
@@ -157,7 +192,7 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
     console.warn("API saveContract failed:", err);
   }
 
-  if (contract.Id) {
+  if (isUpdate) {
     const { data, error } = await supabase.from('LoanContracts').update(contract).eq('Id', contract.Id).select().single();
     if (error) throw error;
     return data;
@@ -189,9 +224,21 @@ export async function fetchCreditCardsAPI(): Promise<CreditCard[]> {
 }
 
 export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<CreditCard> {
+  const isUpdate = !!card.Id;
+
+  if (!isUpdate) {
+    try {
+      const { data } = await supabase.from('CreditCards').select('Id');
+      const maxId = (data && data.length > 0) ? Math.max(...data.map(d => d.Id || 0)) : 0;
+      card.Id = maxId + 1;
+    } catch {
+      card.Id = Date.now();
+    }
+  }
+
   try {
     const res = await fetch(`${API_BASE}/credit-cards`, {
-      method: 'POST',
+      method: isUpdate ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(card)
     });
@@ -200,7 +247,13 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
     console.warn("API saveCreditCard failed:", err);
   }
 
-  const { data, error } = await supabase.from('CreditCards').insert([card]).select().single();
-  if (error) throw error;
-  return data;
+  if (isUpdate) {
+    const { data, error } = await supabase.from('CreditCards').update(card).eq('Id', card.Id).select().single();
+    if (error) throw error;
+    return data;
+  } else {
+    const { data, error } = await supabase.from('CreditCards').insert([card]).select().single();
+    if (error) throw error;
+    return data;
+  }
 }

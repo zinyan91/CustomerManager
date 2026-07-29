@@ -42,6 +42,8 @@ export interface LoanContract {
   ContractType: number; // 0: HMTD, 1: TermLoan
   ContractAmount?: number;
   DebtGroup?: number;
+  IsSettled?: boolean;
+  IsRestructured?: boolean;
   customer?: Customer;
   collateral?: Collateral;
 }

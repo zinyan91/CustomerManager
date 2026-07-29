@@ -9,7 +9,7 @@ export async function fetchCustomersAPI(filters?: { cif?: string; name?: string;
     if (filters?.nationalId) query = query.ilike('NationalId', `%${filters.nationalId}%`);
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).sort((a: any, b: any) => (b.Id || 0) - (a.Id || 0));
+    return (data || []).sort((a: any, b: any) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
   } catch (err: any) {
     console.error("fetchCustomersAPI error:", err);
     return [];
@@ -18,6 +18,40 @@ export async function fetchCustomersAPI(filters?: { cif?: string; name?: string;
 
 export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Customer> {
   const isUpdate = !!customer.Id;
+  const cif = (customer.CifKh || '').trim();
+  const name = (customer.FullName || '').trim();
+  const nationalId = (customer.NationalId || '').trim();
+
+  if (!cif) {
+    throw new Error('Mã CIF Khách hàng là bắt buộc!');
+  }
+  if (!name) {
+    throw new Error('Họ tên Khách hàng là bắt buộc!');
+  }
+
+  // Duplicate CIF validation check
+  const { data: cifCheck } = await supabase
+    .from('Customers')
+    .select('Id, FullName, CifKh')
+    .eq('CifKh', cif);
+
+  const duplicateCif = (cifCheck || []).find(c => c.Id !== customer.Id);
+  if (duplicateCif) {
+    throw new Error(`Mã CIF "${cif}" đã tồn tại trên hệ thống (thuộc KH: ${duplicateCif.FullName})!`);
+  }
+
+  // Duplicate CCCD/CMND validation check
+  if (nationalId) {
+    const { data: idCheck } = await supabase
+      .from('Customers')
+      .select('Id, FullName, NationalId')
+      .eq('NationalId', nationalId);
+
+    const duplicateId = (idCheck || []).find(c => c.Id !== customer.Id);
+    if (duplicateId) {
+      throw new Error(`Số CCCD/CMND "${nationalId}" đã tồn tại trên hệ thống (thuộc KH: ${duplicateId.FullName})!`);
+    }
+  }
 
   if (!isUpdate) {
     try {
@@ -28,6 +62,10 @@ export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Cust
       customer.Id = Date.now();
     }
   }
+
+  customer.CifKh = cif;
+  customer.FullName = name;
+  customer.NationalId = nationalId || null;
 
   if (isUpdate) {
     const { data, error } = await supabase.from('Customers').update(customer).eq('Id', customer.Id).select().single();
@@ -49,7 +87,7 @@ export async function fetchCollateralsAPI(): Promise<Collateral[]> {
   try {
     const { data, error } = await supabase.from('Collaterals').select('*, customer:Customers(*)');
     if (error) throw error;
-    return (data || []).sort((a: any, b: any) => (b.Id || 0) - (a.Id || 0));
+    return (data || []).sort((a: any, b: any) => (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
   } catch (err) {
     console.error("fetchCollateralsAPI error:", err);
     return [];
@@ -72,6 +110,24 @@ export async function fetchCollateralsByCustomerAPI(customerId: number): Promise
 
 export async function saveCollateralAPI(collateral: Partial<Collateral>): Promise<Collateral> {
   const isUpdate = !!collateral.Id;
+  const assetCode = (collateral.AssetCode || '').trim();
+
+  if (!collateral.CustomerId) {
+    throw new Error('Khách hàng chủ sở hữu là bắt buộc!');
+  }
+
+  // Duplicate AssetCode check
+  if (assetCode) {
+    const { data: codeCheck } = await supabase
+      .from('Collaterals')
+      .select('Id, AssetCode')
+      .eq('AssetCode', assetCode);
+
+    const duplicateCode = (codeCheck || []).find(c => c.Id !== collateral.Id);
+    if (duplicateCode) {
+      throw new Error(`Mã chứng thư TSĐB "${assetCode}" đã tồn tại trên hệ thống!`);
+    }
+  }
 
   if (!isUpdate) {
     try {
@@ -82,6 +138,9 @@ export async function saveCollateralAPI(collateral: Partial<Collateral>): Promis
       collateral.Id = Date.now();
     }
   }
+
+  collateral.AssetCode = assetCode || null;
+  collateral.LtvPercent = (collateral.LtvPercent && collateral.LtvPercent > 0) ? collateral.LtvPercent : 70;
 
   if (isUpdate) {
     const { data, error } = await supabase.from('Collaterals').update(collateral).eq('Id', collateral.Id).select().single();
@@ -98,7 +157,7 @@ export async function fetchContractsAPI(): Promise<LoanContract[]> {
   try {
     const { data, error } = await supabase.from('LoanContracts').select('*, customer:Customers(*)');
     if (error) throw error;
-    return (data || []).sort((a: any, b: any) => (b.Id || 0) - (a.Id || 0));
+    return (data || []).sort((a: any, b: any) => (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
   } catch (err) {
     console.error("fetchContractsAPI error:", err);
     return [];
@@ -107,6 +166,25 @@ export async function fetchContractsAPI(): Promise<LoanContract[]> {
 
 export async function saveContractAPI(contract: Partial<LoanContract>): Promise<LoanContract> {
   const isUpdate = !!contract.Id;
+  const contractNumber = (contract.ContractNumber || '').trim();
+
+  if (!contract.CustomerId) {
+    throw new Error('Khách hàng vay là bắt buộc!');
+  }
+  if (!contractNumber) {
+    throw new Error('Số Hợp đồng tín dụng là bắt buộc!');
+  }
+
+  // Duplicate ContractNumber check
+  const { data: numCheck } = await supabase
+    .from('LoanContracts')
+    .select('Id, ContractNumber')
+    .eq('ContractNumber', contractNumber);
+
+  const duplicateNum = (numCheck || []).find(c => c.Id !== contract.Id);
+  if (duplicateNum) {
+    throw new Error(`Số Hợp Đồng Tín Dụng "${contractNumber}" đã tồn tại trên hệ thống!`);
+  }
 
   // Clean payload from non-database column fields
   const cleanContract: any = { ...contract };
@@ -124,6 +202,7 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
     }
   }
 
+  cleanContract.ContractNumber = contractNumber;
   cleanContract.IsSettled = cleanContract.IsSettled ?? false;
   cleanContract.IsRestructured = cleanContract.IsRestructured ?? false;
 
@@ -151,7 +230,7 @@ export async function fetchCreditCardsAPI(): Promise<CreditCard[]> {
   try {
     const { data, error } = await supabase.from('CreditCards').select('*, customer:Customers(*)');
     if (error) throw error;
-    return (data || []).sort((a: any, b: any) => (b.Id || 0) - (a.Id || 0));
+    return (data || []).sort((a: any, b: any) => (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
   } catch (err) {
     console.error("fetchCreditCardsAPI error:", err);
     return [];
@@ -160,6 +239,24 @@ export async function fetchCreditCardsAPI(): Promise<CreditCard[]> {
 
 export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<CreditCard> {
   const isUpdate = !!card.Id;
+  const cardNumber = (card.CardNumber || '').trim();
+
+  if (!card.CustomerId) {
+    throw new Error('Khách hàng sở hữu thẻ là bắt buộc!');
+  }
+
+  // Duplicate CardNumber check
+  if (cardNumber) {
+    const { data: cardCheck } = await supabase
+      .from('CreditCards')
+      .select('Id, CardNumber')
+      .eq('CardNumber', cardNumber);
+
+    const duplicateCard = (cardCheck || []).find(c => c.Id !== card.Id);
+    if (duplicateCard) {
+      throw new Error(`Số thẻ tín dụng "${cardNumber}" đã tồn tại trên hệ thống!`);
+    }
+  }
 
   if (!isUpdate) {
     try {
@@ -170,6 +267,8 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
       card.Id = Date.now();
     }
   }
+
+  card.CardNumber = cardNumber || null;
 
   if (isUpdate) {
     const { data, error } = await supabase.from('CreditCards').update(card).eq('Id', card.Id).select().single();
@@ -182,7 +281,6 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
   }
 }
 
-// Fetch contracts by customer ID (search-first approach)
 export async function fetchContractsByCustomerAPI(customerId: number): Promise<LoanContract[]> {
   try {
     const { data, error } = await supabase
@@ -198,7 +296,6 @@ export async function fetchContractsByCustomerAPI(customerId: number): Promise<L
   }
 }
 
-// Repayment Schedules
 export async function fetchRepaymentSchedulesAPI(contractId: number): Promise<RepaymentSchedule[]> {
   try {
     const { data, error } = await supabase
@@ -214,47 +311,21 @@ export async function fetchRepaymentSchedulesAPI(contractId: number): Promise<Re
   }
 }
 
-export async function saveRepaymentScheduleAPI(schedule: Partial<RepaymentSchedule>): Promise<RepaymentSchedule> {
-  const isUpdate = !!schedule.Id;
-
-  if (!isUpdate) {
-    try {
-      const { data } = await supabase.from('RepaymentSchedules').select('Id');
-      const maxId = (data && data.length > 0) ? Math.max(...data.map((d: any) => d.Id || 0)) : 0;
-      schedule.Id = maxId + 1;
-    } catch {
-      schedule.Id = Date.now();
-    }
-  }
-
-  if (isUpdate) {
-    const { data, error } = await supabase.from('RepaymentSchedules').update(schedule).eq('Id', schedule.Id).select().single();
-    if (error) throw error;
-    return data;
-  } else {
-    const { data, error } = await supabase.from('RepaymentSchedules').insert([schedule]).select().single();
-    if (error) throw error;
-    return data;
-  }
-}
-
 export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<RepaymentSchedule>[]): Promise<void> {
-  if (!schedules.length) return;
-  // Get max ID
-  try {
-    const { data } = await supabase.from('RepaymentSchedules').select('Id');
-    let maxId = (data && data.length > 0) ? Math.max(...data.map((d: any) => d.Id || 0)) : 0;
-    const withIds = schedules.map((s) => ({ ...s, Id: ++maxId }));
-    const { error } = await supabase.from('RepaymentSchedules').insert(withIds);
-    if (error) throw error;
-  } catch (err) {
-    console.error('bulkSaveRepaymentSchedulesAPI error:', err);
-    throw err;
-  }
+  if (schedules.length === 0) return;
+  const { data } = await supabase.from('RepaymentSchedules').select('Id');
+  let startId = (data && data.length > 0) ? Math.max(...data.map(d => d.Id || 0)) + 1 : 1;
+
+  const toInsert = schedules.map(s => ({
+    ...s,
+    Id: s.Id || startId++,
+  }));
+
+  const { error } = await supabase.from('RepaymentSchedules').insert(toInsert);
+  if (error) throw error;
 }
 
 export async function deleteRepaymentSchedulesByContractAPI(contractId: number): Promise<void> {
   const { error } = await supabase.from('RepaymentSchedules').delete().eq('ContractId', contractId);
   if (error) throw error;
 }
-

@@ -196,6 +196,53 @@ export const LoanPortfolioView: React.FC = () => {
   // Master HĐTD Filter state ('ALL' or specific master contract number)
   const [selectedMasterFilter, setSelectedMasterFilter] = useState<string>('ALL');
 
+  // Repayment Schedules map for all contracts (contractId -> RepaymentSchedule[])
+  const [allSchedulesMap, setAllSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
+
+  // Tự động phân loại nhóm nợ (1-5) theo chuẩn NHNN dựa trên số ngày quá hạn lịch thu nợ
+  const getAutoDebtGroupInfo = (schedules?: RepaymentSchedule[]) => {
+    if (!schedules || schedules.length === 0) {
+      return { debtGroup: 1, maxOverdueDays: 0 };
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let maxOverdueDays = 0;
+    let worstDueDate: string | undefined = undefined;
+
+    for (const s of schedules) {
+      if (!s.IsPaid && s.DueDate) {
+        const parts = s.DueDate.split('-');
+        if (parts.length === 3) {
+          const dueDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          dueDate.setHours(0, 0, 0, 0);
+
+          if (today > dueDate) {
+            const diffTime = today.getTime() - dueDate.getTime();
+            const overdueDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            if (overdueDays > maxOverdueDays) {
+              maxOverdueDays = overdueDays;
+              worstDueDate = s.DueDate;
+            }
+          }
+        }
+      }
+    }
+
+    let debtGroup = 1;
+    if (maxOverdueDays >= 10 && maxOverdueDays <= 90) {
+      debtGroup = 2; // Nhóm 2: Quá hạn 10-90 ngày
+    } else if (maxOverdueDays >= 91 && maxOverdueDays <= 180) {
+      debtGroup = 3; // Nhóm 3: Quá hạn 91-180 ngày
+    } else if (maxOverdueDays >= 181 && maxOverdueDays <= 360) {
+      debtGroup = 4; // Nhóm 4: Quá hạn 181-360 ngày
+    } else if (maxOverdueDays > 360) {
+      debtGroup = 5; // Nhóm 5: Quá hạn > 360 ngày
+    }
+
+    return { debtGroup, maxOverdueDays, worstDueDate };
+  };
+
   // Trích xuất Số HĐTD Gốc chuẩn từ LoanContract
   const getMasterHdtdNumber = (c: LoanContract): string => {
     if (c.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate)) {
@@ -331,6 +378,17 @@ export const LoanPortfolioView: React.FC = () => {
         (c.NationalId || '').includes(dropdownQuery)
       ).slice(0, 30);
 
+  const loadAllSchedulesForContracts = async (cons: LoanContract[]) => {
+    const map: Record<number, RepaymentSchedule[]> = {};
+    await Promise.all(cons.map(async (c) => {
+      try {
+        const schs = await fetchRepaymentSchedulesAPI(c.Id);
+        map[c.Id] = schs;
+      } catch {}
+    }));
+    setAllSchedulesMap(map);
+  };
+
   const handlePickCustomer = async (c: Customer) => {
     setShowDropdown(false);
     setDropdownQuery(c.FullName);
@@ -348,6 +406,7 @@ export const LoanPortfolioView: React.FC = () => {
     ]);
     setContracts(cons);
     setCollaterals(cols);
+    loadAllSchedulesForContracts(cons);
   };
 
   const showNotify = (type: 'success' | 'error', message: string) => {
@@ -406,6 +465,7 @@ export const LoanPortfolioView: React.FC = () => {
         ]);
         setContracts(cons);
         setCollaterals(cols);
+        loadAllSchedulesForContracts(cons);
       }
     } catch (err: any) {
       showNotify('error', `Lỗi tìm kiếm: ${err.message}`);
@@ -453,6 +513,7 @@ export const LoanPortfolioView: React.FC = () => {
     populateForm(c);
     const s = await fetchRepaymentSchedulesAPI(c.Id);
     setSchedules(s);
+    setAllSchedulesMap(prev => ({ ...prev, [c.Id]: s }));
   };
 
   const populateForm = (c: LoanContract) => {
@@ -761,6 +822,15 @@ export const LoanPortfolioView: React.FC = () => {
 
       const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
       setSchedules(refreshed);
+      setAllSchedulesMap(prev => ({ ...prev, [selectedContract.Id]: refreshed }));
+
+      const autoInfo = getAutoDebtGroupInfo(refreshed);
+      if (selectedContract.DebtGroup !== autoInfo.debtGroup) {
+        await saveContractAPI({ Id: selectedContract.Id, DebtGroup: autoInfo.debtGroup });
+        setContracts(prev => prev.map(con => con.Id === selectedContract.Id ? { ...con, DebtGroup: autoInfo.debtGroup } : con));
+        setForm(f => ({ ...f, DebtGroup: autoInfo.debtGroup }));
+      }
+
       showNotify('success',
         `Đã tạo ${refreshed.length} kỳ trả nợ (${isBullet ? 'Gốc trả cuối kỳ' : 'Gốc trả đều hàng tháng'}). Kỳ 1: ${repayStartDate}`);
     } catch (err: any) {
@@ -778,7 +848,20 @@ export const LoanPortfolioView: React.FC = () => {
         .update({ IsPaid: updated.IsPaid, PaymentDate: updated.PaymentDate })
         .eq('Id', s.Id);
       if (error) throw error;
-      setSchedules(prev => prev.map(x => x.Id === s.Id ? { ...x, IsPaid: updated.IsPaid, PaymentDate: updated.PaymentDate ?? undefined } : x));
+
+      const newSchedules = schedules.map(x => x.Id === s.Id ? { ...x, IsPaid: updated.IsPaid, PaymentDate: updated.PaymentDate ?? undefined } : x);
+      setSchedules(newSchedules);
+
+      if (selectedContract) {
+        setAllSchedulesMap(prev => ({ ...prev, [selectedContract.Id]: newSchedules }));
+        const autoInfo = getAutoDebtGroupInfo(newSchedules);
+        if (selectedContract.DebtGroup !== autoInfo.debtGroup) {
+          await saveContractAPI({ Id: selectedContract.Id, DebtGroup: autoInfo.debtGroup });
+          setContracts(prev => prev.map(con => con.Id === selectedContract.Id ? { ...con, DebtGroup: autoInfo.debtGroup } : con));
+          setForm(f => ({ ...f, DebtGroup: autoInfo.debtGroup }));
+        }
+      }
+
       showNotify('success', updated.IsPaid ? 'Đã đánh dấu thanh toán!' : 'Đã hủy thanh toán');
     } catch (err: any) {
       showNotify('error', `Lỗi: ${err.message}`);
@@ -1173,7 +1256,9 @@ export const LoanPortfolioView: React.FC = () => {
                         </td></tr>
                       ) : filteredContracts.map(c => {
                         const isSelected = selectedContract?.Id === c.Id;
-                        const dg = c.DebtGroup || 1;
+                        const cSchedules = allSchedulesMap[c.Id] || [];
+                        const autoDebt = getAutoDebtGroupInfo(cSchedules);
+                        const effectiveDg = autoDebt.maxOverdueDays > 0 ? autoDebt.debtGroup : (c.DebtGroup || 1);
                         const masterNo = getMasterHdtdNumber(c);
                         return (
                           <tr key={c.Id}
@@ -1207,11 +1292,12 @@ export const LoanPortfolioView: React.FC = () => {
                               </span>
                             </td>
                             <td className="p-3 whitespace-nowrap">
-                              {dg > 1 ? (
-                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${DEBT_GROUP_COLORS[dg]}`}>
-                                  {DEBT_GROUP_LABELS[dg]}
-                                </span>
-                              ) : <span className="text-slate-400 font-medium">Nhóm 1</span>}
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${DEBT_GROUP_COLORS[effectiveDg]}`}>
+                                {DEBT_GROUP_LABELS[effectiveDg]}
+                                {autoDebt.maxOverdueDays > 0 && (
+                                  <span className="ml-1 text-[9px] font-mono opacity-90">({autoDebt.maxOverdueDays}d quá hạn)</span>
+                                )}
+                              </span>
                             </td>
                           </tr>
                         );
@@ -1353,11 +1439,33 @@ export const LoanPortfolioView: React.FC = () => {
                             className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
                         </div>
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Phân loại Nhóm nợ</label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className={labelStyle}>Phân loại Nhóm nợ</label>
+                            {(() => {
+                              const schs = selectedContract ? (allSchedulesMap[selectedContract.Id] || schedules) : schedules;
+                              const autoInfo = getAutoDebtGroupInfo(schs);
+                              if (autoInfo.maxOverdueDays > 0) {
+                                return (
+                                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                                    ⚡ Tự động: Nhóm {autoInfo.debtGroup} ({autoInfo.maxOverdueDays}d quá hạn)
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                                  ✓ Đúng hạn (Nhóm 1)
+                                </span>
+                              );
+                            })()}
+                          </div>
                           <select value={form.DebtGroup ?? 1}
                             onChange={e => setForm(f => ({ ...f, DebtGroup: Number(e.target.value) }))}
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`}>
-                            {[1,2,3,4,5].map(g => <option key={g} value={g}>Nhóm {g}</option>)}
+                            className={`w-full rounded-xl p-2.5 text-xs font-bold ${inputStyle}`}>
+                            {[1,2,3,4,5].map(g => (
+                              <option key={g} value={g}>
+                                Nhóm {g} ({g === 1 ? 'Nợ đủ tiêu chuẩn <10 ngày' : g === 2 ? 'Nợ cần chú ý 10-90 ngày' : g === 3 ? 'Nợ dưới tiêu chuẩn 91-180 ngày' : g === 4 ? 'Nợ nghi ngờ 181-360 ngày' : 'Nợ có khả năng mất vốn >360 ngày'})
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </div>

@@ -120,7 +120,8 @@ function generateSchedule(
   periods: number,
   isBulletPrincipal: boolean = true,
   disbursementDateStr?: string,
-  customMonthlyPrincipal?: number
+  customMonthlyPrincipal?: number,
+  principalGraceMonths: number = 0
 ): Partial<RepaymentSchedule>[] {
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
@@ -136,11 +137,12 @@ function generateSchedule(
   let prevDateStr = disbursementDateStr || repaymentStartDateStr;
 
   // Tiền gốc trả đều hàng tháng (mặc định làm tròn 1.000 VNĐ chuẩn Core Banking Flexcube/T24)
+  const remainingRepayPeriods = Math.max(1, periods - principalGraceMonths);
   const defaultMonthlyPrincipal = isBulletPrincipal
     ? 0
     : (customMonthlyPrincipal && customMonthlyPrincipal > 0
         ? customMonthlyPrincipal
-        : roundPrincipalCore(loanAmount / periods, '1k'));
+        : roundPrincipalCore(loanAmount / remainingRepayPeriods, '1k'));
 
   for (let i = 1; i <= periods; i++) {
     // Ngày trả nợ của Kỳ i (Kỳ 1 = RepaymentStartDate, các kỳ sau = +1 tháng, kẹp ngày tháng)
@@ -158,7 +160,9 @@ function generateSchedule(
     if (isBulletPrincipal) {
       principal = (i === periods) ? balance : 0;
     } else {
-      if (i === periods) {
+      if (i <= principalGraceMonths) {
+        principal = 0; // Ân hạn gốc: Kỳ i <= số tháng ân hạn -> Gốc = 0
+      } else if (i === periods) {
         principal = balance; // Kỳ cuối trả hết dư nợ còn lại
       } else {
         principal = Math.min(balance, defaultMonthlyPrincipal);
@@ -312,6 +316,7 @@ export const LoanPortfolioView: React.FC = () => {
 
   // Schedule gen form
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -871,7 +876,8 @@ export const LoanPortfolioView: React.FC = () => {
     try {
       await deleteRepaymentSchedulesByContractAPI(selectedContract.Id);
       const disburseDate = selectedContract.DisbursementDate || selectedContract.ContractStartDate || undefined;
-      const generated = generateSchedule(selectedContract.Id, loanAmt, rate, repayStartDate, periods, isBullet, disburseDate);
+      const graceMonths = selectedContract.PrincipalGracePeriodMonths || 0;
+      const generated = generateSchedule(selectedContract.Id, loanAmt, rate, repayStartDate, periods, isBullet, disburseDate, undefined, graceMonths);
       await bulkSaveRepaymentSchedulesAPI(generated);
 
       const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
@@ -896,6 +902,35 @@ export const LoanPortfolioView: React.FC = () => {
       showNotify('error', `Lỗi tạo lịch: ${err.message}`);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSaveCustomSchedule = async () => {
+    if (!selectedContract || schedules.length === 0) return;
+    setIsSavingSchedule(true);
+    try {
+      await bulkSaveRepaymentSchedulesAPI(schedules);
+      const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
+      setSchedules(refreshed);
+      setAllSchedulesMap(prev => ({ ...prev, [selectedContract.Id]: refreshed }));
+
+      const autoInfo = getAutoDebtGroupInfo(refreshed);
+      if (selectedContract.DebtGroup !== autoInfo.debtGroup) {
+        await saveContractAPI({
+          Id: selectedContract.Id,
+          CustomerId: selectedContract.CustomerId,
+          ContractNumber: selectedContract.ContractNumber,
+          DebtGroup: autoInfo.debtGroup
+        });
+        setContracts(prev => prev.map(con => con.Id === selectedContract.Id ? { ...con, DebtGroup: autoInfo.debtGroup } : con));
+        setForm(f => ({ ...f, DebtGroup: autoInfo.debtGroup }));
+      }
+
+      showNotify('success', 'Đã LƯU THÀNH CÔNG lịch thu nợ đã điều chỉnh thủ công!');
+    } catch (err: any) {
+      showNotify('error', `Lỗi lưu lịch thu nợ: ${err.message}`);
+    } finally {
+      setIsSavingSchedule(false);
     }
   };
 
@@ -1527,11 +1562,10 @@ export const LoanPortfolioView: React.FC = () => {
                         </div>
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>
-                            <span>Ngày kết thúc HĐ</span>
+                            <span>Ngày kết thúc HĐ (tự động)</span>
                           </label>
-                          <DateInput value={form.ContractEndDate || ''}
-                            onChange={val => setForm(f => ({ ...f, ContractEndDate: val }))}
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                          <DateInput readOnly value={form.ContractEndDate || ''}
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono border ${readonlyInputStyle}`} />
                         </div>
                         <div>
                           <div className="flex items-center justify-between mb-1">
@@ -1656,11 +1690,10 @@ export const LoanPortfolioView: React.FC = () => {
                         </div>
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>
-                            <span>Ngày kết thúc KUNN</span>
+                            <span>Ngày kết thúc KUNN (tự động)</span>
                           </label>
-                          <DateInput value={form.KunnDueDate || ''}
-                            onChange={val => setForm(f => ({ ...f, KunnDueDate: val }))}
-                            className={`w-full rounded-xl p-2.5 text-xs font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
+                          <DateInput readOnly value={form.KunnDueDate || ''}
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 border ${readonlyInputStyle}`} />
                         </div>
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Ngày bắt đầu trả nợ</label>
@@ -1988,11 +2021,21 @@ export const LoanPortfolioView: React.FC = () => {
                       <span>Ngày giải ngân: <strong className="text-amber-600 dark:text-amber-400 font-mono">{fmtDate(selectedContract.DisbursementDate || selectedContract.ContractStartDate)}</strong></span>
                     </div>
 
-                    <button onClick={handleGenerateSchedule} disabled={isGenerating}
-                      className="flex items-center space-x-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-xs shadow-md shadow-amber-600/20">
-                      <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                      <span>{isGenerating ? 'Đang tính toán...' : '🔄 TẠO / LÀM MỚI LỊCH THU NỢ TỰ ĐỘNG'}</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {schedules.length > 0 && (
+                        <button onClick={handleSaveCustomSchedule} disabled={isSavingSchedule}
+                          className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-xs shadow-md shadow-emerald-600/20"
+                          title="Lưu các điều chỉnh số tiền gốc từng kỳ vào cơ sở dữ liệu">
+                          <Save className="w-3.5 h-3.5" />
+                          <span>{isSavingSchedule ? 'Đang lưu...' : '💾 LƯU LỊCH THU NỢ ĐÃ ĐIỀU CHỈNH'}</span>
+                        </button>
+                      )}
+                      <button onClick={handleGenerateSchedule} disabled={isGenerating}
+                        className="flex items-center space-x-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-xs shadow-md shadow-amber-600/20">
+                        <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                        <span>{isGenerating ? 'Đang tính toán...' : '🔄 TẠO / LÀM MỚI LỊCH THU NỢ TỰ ĐỘNG'}</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

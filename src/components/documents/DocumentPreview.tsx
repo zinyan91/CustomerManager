@@ -128,7 +128,6 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
       <div className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
         <div>
           <h2 className="font-bold text-sm text-sky-600 dark:text-sky-400 uppercase tracking-wider">{docTitle}</h2>
-          <span className="text-[11px] text-slate-500">Khuôn dạng chuẩn Nghị định 30/2020/NĐ-CP (Times New Roman 13pt)</span>
         </div>
         <div className="flex items-center space-x-2">
           <button
@@ -151,7 +150,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
       </div>
 
       {/* Preview Sheet Container (A4 Page simulation) */}
-      <div className="p-6 sm:p-10 overflow-x-auto bg-slate-300/70 dark:bg-slate-950 flex justify-center">
+      <div className="p-3 sm:p-4 overflow-x-auto bg-slate-200/80 dark:bg-slate-950 flex justify-center">
         {/* Scoped CSS for Document Preview on screen */}
         <style>{`
           .a4-sheet-container {
@@ -160,10 +159,11 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
             line-height: 1.5 !important;
             color: #000000 !important;
             background-color: #ffffff !important;
-            width: 210mm;
+            width: 100%;
+            max-width: 210mm;
             min-height: 297mm;
-            padding: 25mm 20mm 20mm 25mm;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            padding: 16mm 14mm;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
             box-sizing: border-box;
           }
           .a4-sheet-container h1 {

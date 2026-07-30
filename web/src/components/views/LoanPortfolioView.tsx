@@ -49,18 +49,35 @@ const DEBT_GROUP_COLORS: Record<number, string> = {
 const fmtMoney = (v?: number | null) => v !== undefined && v !== null ? v.toLocaleString('vi-VN') + ' VNĐ' : '—';
 const fmtRate = (v?: number | null) => v !== undefined && v !== null ? (v * 100).toFixed(2) + '%/năm' : '—';
 
-// Helper: Auto-calculate End Date by adding months to a date string (YYYY-MM-DD)
+// Helper: Add months to a YYYY-MM-DD date string, keeping the SAME calendar day.
+// VD: 24/03/2026 + 5 tháng = 24/08/2026 (KHÔNG lùi ngày)
+// Nếu tháng đích không có ngày đó (VD: 31/1 + 1T) thì lấy ngày cuối tháng.
 function addMonthsToDate(dateStr?: string | null, months?: number | null): string {
   if (!dateStr || !months || isNaN(months) || months <= 0) return '';
   try {
     const parts = dateStr.split('-');
     if (parts.length !== 3) return '';
     const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
+    const month = parseInt(parts[1], 10) - 1; // 0-indexed
     const day = parseInt(parts[2], 10);
-    const d = new Date(year, month + Number(months), day);
+
+    let targetYear = year;
+    let targetMonth = month + Number(months);
+    // Normalize overflow months into years
+    targetYear += Math.floor(targetMonth / 12);
+    targetMonth = targetMonth % 12;
+
+    // Clamp day to last day of target month
+    const daysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+    const targetDay = Math.min(day, daysInTargetMonth);
+
+    const d = new Date(targetYear, targetMonth, targetDay);
     if (isNaN(d.getTime())) return '';
-    return d.toISOString().split('T')[0];
+    // Format as YYYY-MM-DD without timezone conversion
+    const yy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
   } catch {
     return '';
   }
@@ -72,27 +89,37 @@ function parseKunnTenorMonths(tenorStr?: string | null): number {
   return match ? parseInt(match[0], 10) : 0;
 }
 
-// Generate repayment schedule with Bullet (Gốc trả cuối kỳ) or Equal Principal support
+// Lấy ngày cuối tháng an toàn (không dùng toISOString để tránh timezone shift)
+function formatDateLocal(d: Date): string {
+  const yy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+// Generate repayment schedule with Bullet (Gốc trả cuối kỳ) or Equal Principal support.
+// Kỳ 1 = chính xác ngày RepaymentStartDate. Kỳ 2 = +1 tháng. Kỳ N = +(N-1) tháng.
 function generateSchedule(
   contractId: number,
   loanAmount: number,
   interestRate: number,
-  startDateStr: string,
+  repaymentStartDateStr: string, // Ngày bắt đầu trả nợ — kỳ đầu tiên sẽ là ngày này
   periods: number,
   isBulletPrincipal: boolean = true
 ): Partial<RepaymentSchedule>[] {
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
 
-  let startYear = 2026;
-  let startMonth = 4;
-  let startDay = 5;
+  // Parse ngày bắt đầu trả nợ
+  let startYear = new Date().getFullYear();
+  let startMonth = new Date().getMonth(); // 0-indexed
+  let startDay = new Date().getDate();
 
-  if (startDateStr) {
-    const parts = startDateStr.split('-');
+  if (repaymentStartDateStr) {
+    const parts = repaymentStartDateStr.split('-');
     if (parts.length === 3) {
       startYear = parseInt(parts[0], 10);
-      startMonth = parseInt(parts[1], 10) - 1;
+      startMonth = parseInt(parts[1], 10) - 1; // 0-indexed
       startDay = parseInt(parts[2], 10);
     }
   }
@@ -101,9 +128,28 @@ function generateSchedule(
   const annualRate = interestRate > 1 ? interestRate / 100 : interestRate;
 
   for (let i = 1; i <= periods; i++) {
-    const dueDate = new Date(startYear, startMonth + i, startDay);
-    const prevDate = new Date(startYear, startMonth + i - 1, startDay);
-    const diffDays = Math.max(28, Math.round((dueDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)));
+    // Kỳ i: ngày = startDate + (i-1) tháng — kỳ 1 = chính xác startDate
+    let dueTotalMonths = startMonth + (i - 1);
+    let dueYear = startYear + Math.floor(dueTotalMonths / 12);
+    let dueMonthIdx = dueTotalMonths % 12; // 0-indexed
+    const daysInDueMonth = new Date(dueYear, dueMonthIdx + 1, 0).getDate();
+    const dueDay = Math.min(startDay, daysInDueMonth);
+    const dueDate = new Date(dueYear, dueMonthIdx, dueDay);
+
+    // Kỳ trước để tính số ngày giữa 2 kỳ
+    let prevDays: number;
+    if (i === 1) {
+      // Kỳ đầu: số ngày từ ngày giải ngân đến ngày trả — mặc định ~30 ngày
+      prevDays = 30;
+    } else {
+      let prevTotalMonths = startMonth + (i - 2);
+      let prevYear = startYear + Math.floor(prevTotalMonths / 12);
+      let prevMonthIdx = prevTotalMonths % 12;
+      const daysInPrevMonth = new Date(prevYear, prevMonthIdx + 1, 0).getDate();
+      const prevDay = Math.min(startDay, daysInPrevMonth);
+      const prevDate = new Date(prevYear, prevMonthIdx, prevDay);
+      prevDays = Math.max(28, Math.round((dueDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)));
+    }
 
     let principal = 0;
     if (isBulletPrincipal) {
@@ -112,15 +158,15 @@ function generateSchedule(
     } else {
       // Gốc trả đều hàng tháng
       principal = Math.round(loanAmount / periods);
-      if (i === periods) principal = balance;
+      if (i === periods) principal = balance; // kỳ cuối trả hết số dư
     }
 
-    const interest = Math.round(balance * annualRate * (diffDays / 365));
+    const interest = Math.round(balance * annualRate * (prevDays / 365));
 
     schedules.push({
       ContractId: contractId,
       PeriodNumber: i,
-      DueDate: dueDate.toISOString().split('T')[0],
+      DueDate: formatDateLocal(dueDate),
       PrincipalAmount: principal,
       InterestAmount: interest,
       TotalAmount: principal + interest,
@@ -396,7 +442,8 @@ export const LoanPortfolioView: React.FC = () => {
     setForm({
       Id: c.Id,
       CustomerId: c.CustomerId,
-      ContractNumber: c.ContractNumber,
+      ContractNumber: c.ContractNumber,      // Số KUNN (GNN-N)
+      HdtdDueDate: c.HdtdDueDate ?? '',     // Số HĐTD gốc (tái sử dụng field HdtdDueDate)
       ContractType: c.ContractType,
       LoanMethod: c.LoanMethod || LOAN_METHODS[0],
       DebtGroup: c.DebtGroup ?? 1,
@@ -438,15 +485,26 @@ export const LoanPortfolioView: React.FC = () => {
     setSchedules([]);
     const defaultMethod = LOAN_METHODS[0];
 
-    // Pre-populate master contract info if customer already has one
+    // Master = HĐTD chính (Hạn mức tín dụng) hoặc hợp đồng đầu tiên
     const master = contracts.find(c => c.LoanMethod === 'Hạn mức tín dụng') || (contracts.length > 0 ? contracts[0] : null);
+
+    // Số HĐTD gốc — KHÔNG thay đổi, giữ nguyên từ master
+    // Số KUNN mới = {SốHĐTD}/GNN-{N} (đề xuất, user có thể sửa)
+    const masterContractNo = master?.ContractNumber || '';
+    const nextKunnIndex = (contracts.length + 1).toString().padStart(2, '0');
+    const suggestedKunnNumber = masterContractNo
+      ? `${masterContractNo}/GNN-${nextKunnIndex}`
+      : '';
 
     setForm({
       CustomerId: foundCustomer?.Id,
       ContractType: master ? master.ContractType : 0,
       LoanMethod: master ? master.LoanMethod : defaultMethod,
       DebtGroup: master ? master.DebtGroup : 1,
-      ContractNumber: master ? `${master.ContractNumber}/KUNN-${(contracts.length + 1).toString().padStart(2, '0')}` : '',
+      // ContractNumber = Số KUNN (GNN-N) — đây là định danh của lần rút nợ này
+      ContractNumber: suggestedKunnNumber,
+      // HdtdDueDate lưu Số HĐTD gốc để tham chiếu (reuse field sẵn có, không cần thêm cột)
+      HdtdDueDate: masterContractNo || undefined,
       ContractStartDate: master ? master.ContractStartDate : '',
       ContractEndDate: master ? master.ContractEndDate : '',
       LoanTenorMonths: master ? master.LoanTenorMonths : 12,
@@ -600,14 +658,20 @@ export const LoanPortfolioView: React.FC = () => {
     if (!selectedContract) return;
     const loanAmt = selectedContract.LoanAmount || selectedContract.ContractAmount || 0;
     const rate = selectedContract.InterestRate || selectedContract.NormalRate || 0;
-    const startDate = selectedContract.DisbursementDate || selectedContract.RepaymentStartDate || selectedContract.ContractStartDate;
+
+    // Ưu tiên RepaymentStartDate (ngày bắt đầu trả nợ) — đây là kỳ 1
+    // Fallback: DisbursementDate → ContractStartDate
+    const repayStartDate = selectedContract.RepaymentStartDate
+      || selectedContract.DisbursementDate
+      || selectedContract.ContractStartDate;
 
     const periods = parseKunnTenorMonths(selectedContract.KunnTenor) || selectedContract.LoanTenorMonths || 12;
 
-    const isBullet = (selectedContract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ' || selectedContract.LoanMethod === 'Hạn mức tín dụng';
+    const isBullet = (selectedContract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ'
+      || selectedContract.LoanMethod === 'Hạn mức tín dụng';
 
-    if (!loanAmt || !rate || !startDate) {
-      showNotify('error', 'Cần có Số tiền nhận nợ, Lãi suất và Ngày giải ngân/bắt đầu trả nợ!');
+    if (!loanAmt || !rate || !repayStartDate) {
+      showNotify('error', 'Cần có Số tiền nhận nợ, Lãi suất và Ngày bắt đầu trả nợ!');
       return;
     }
 
@@ -615,12 +679,13 @@ export const LoanPortfolioView: React.FC = () => {
     try {
       await deleteRepaymentSchedulesByContractAPI(selectedContract.Id);
 
-      const generated = generateSchedule(selectedContract.Id, loanAmt, rate, startDate, periods, isBullet);
+      const generated = generateSchedule(selectedContract.Id, loanAmt, rate, repayStartDate, periods, isBullet);
       await bulkSaveRepaymentSchedulesAPI(generated);
 
       const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
       setSchedules(refreshed);
-      showNotify('success', `Đã tạo tự động ${refreshed.length} kỳ trả nợ (${isBullet ? 'Gốc trả cuối kỳ' : 'Gốc trả đều hàng tháng'})!`);
+      showNotify('success',
+        `Đã tạo ${refreshed.length} kỳ trả nợ (${isBullet ? 'Gốc trả cuối kỳ' : 'Gốc trả đều hàng tháng'}). Kỳ 1: ${repayStartDate}`);
     } catch (err: any) {
       showNotify('error', `Lỗi tạo lịch: ${err.message}`);
     } finally {
@@ -899,7 +964,8 @@ export const LoanPortfolioView: React.FC = () => {
                   <table className="w-full text-left text-xs">
                     <thead className={tableHeaderStyle}>
                       <tr>
-                        <th className="p-3 whitespace-nowrap">SỐ HĐTD</th>
+                        <th className="p-3 whitespace-nowrap">SỐ KUNN (GNN)</th>
+                        <th className="p-3 whitespace-nowrap">SỐ HĐTD GỐC</th>
                         <th className="p-3 whitespace-nowrap text-right">SỐ TIỀN NHẬN NỢ</th>
                         <th className="p-3 whitespace-nowrap text-right">DƯ NỢ HIỆN HỮU</th>
                         <th className="p-3 whitespace-nowrap">LÃI SUẤT AP</th>
@@ -930,6 +996,10 @@ export const LoanPortfolioView: React.FC = () => {
                                 {isSelected && <ChevronRight className="w-3.5 h-3.5 text-sky-500" />}
                                 <span>{c.ContractNumber}</span>
                               </div>
+                            </td>
+                            {/* Số HĐTD gốc (lưu trong HdtdDueDate) */}
+                            <td className="p-3 font-mono text-purple-600 dark:text-purple-400 font-semibold whitespace-nowrap text-[11px]">
+                              {c.HdtdDueDate || <span className="text-slate-400 font-normal italic">—</span>}
                             </td>
                             <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                               {fmtMoney(c.LoanAmount || c.ContractAmount)}
@@ -995,13 +1065,29 @@ export const LoanPortfolioView: React.FC = () => {
                             className={`w-full rounded-xl p-2.5 text-xs font-mono text-sky-600 dark:text-sky-400 ${readonlyInputStyle}`} />
                         </div>
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Số Hợp Đồng Tín Dụng *</label>
-                          <input type="text" value={form.ContractNumber || ''}
-                            onChange={e => setForm(f => ({ ...f, ContractNumber: e.target.value }))}
+                          <label className={`block mb-1 ${labelStyle}`}>
+                            Số HĐTD
+                            <span className="ml-1 text-[10px] text-slate-400 font-normal normal-case">(ghi trên hợp đồng ký KH)</span>
+                          </label>
+                          <input type="text"
+                            value={form.HdtdDueDate || ''}
+                            onChange={e => setForm(f => ({ ...f, HdtdDueDate: e.target.value }))}
                             placeholder="HDTD-71803/2026..."
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-purple-600 dark:text-purple-400 ${inputStyle}`} />
                         </div>
                         <div>
+                          <label className={`block mb-1 ${labelStyle}`}>
+                            Số KUNN (GNN)
+                            <span className="ml-1 text-[10px] text-slate-400 font-normal normal-case">(mỗi lần rút vay = 1 GNN)</span>
+                          </label>
+                          <input type="text" value={form.ContractNumber || ''}
+                            onChange={e => setForm(f => ({ ...f, ContractNumber: e.target.value }))}
+                            placeholder="HDTD-71803/2026/GNN-01..."
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+                        <div className="md:col-span-3">
                           <label className={`block mb-1 ${labelStyle}`}>Phương thức vay *</label>
                           <select required value={form.LoanMethod || LOAN_METHODS[0]}
                             onChange={e => handleLoanMethodChange(e.target.value)}
@@ -1009,6 +1095,15 @@ export const LoanPortfolioView: React.FC = () => {
                             {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
                           </select>
                         </div>
+                        {form.HdtdDueDate && form.ContractNumber && (
+                          <div className={`p-2.5 rounded-xl border text-[11px] flex flex-col justify-center ${
+                            isLight ? 'bg-purple-50 border-purple-200 text-purple-900' : 'bg-purple-950/40 border-purple-700/40 text-purple-200'
+                          }`}>
+                            <div className="font-bold text-[10px] uppercase tracking-wider text-purple-500 mb-1">Tham chiếu</div>
+                            <div>HĐTD: <span className="font-mono font-bold">{form.HdtdDueDate}</span></div>
+                            <div>KUNN: <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{form.ContractNumber}</span></div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Chuyển Mục đích vay & Mô tả chi tiết lên thông tin chung */}

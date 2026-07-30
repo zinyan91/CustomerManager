@@ -63,6 +63,113 @@ function diffDays(startDateStr: string, endDateStr: string): number {
   }
 }
 
+// Helper: Beautiful Formatted HTML Excel Exporter (.xls)
+function exportToExcelHTML(
+  filename: string,
+  title: string,
+  params: { label: string; value: string }[],
+  headers: string[],
+  rows: (string | number)[][],
+  footerRow?: (string | number)[]
+) {
+  let paramRowsHtml = '';
+  for (let i = 0; i < params.length; i += 2) {
+    const p1 = params[i];
+    const p2 = params[i + 1];
+    paramRowsHtml += `
+      <tr>
+        <td class="param-label">${p1 ? p1.label : ''}</td>
+        <td class="param-val">${p1 ? p1.value : ''}</td>
+        <td class="param-label">${p2 ? p2.label : ''}</td>
+        <td class="param-val">${p2 ? p2.value : ''}</td>
+      </tr>
+    `;
+  }
+
+  const headerHtml = headers.map(h => `<th>${h}</th>`).join('');
+
+  const bodyHtml = rows.map((r, idx) => {
+    const bgClass = idx % 2 === 0 ? 'row-even' : 'row-odd';
+    const cellsHtml = r.map((c, colIdx) => {
+      const isNum = typeof c === 'number';
+      const alignClass = colIdx === 0 ? 'text-center text-bold' : isNum ? 'text-right font-mono' : 'text-center';
+      const formatted = isNum ? c.toLocaleString('vi-VN') : c;
+      return `<td class="${alignClass}">${formatted}</td>`;
+    }).join('');
+    return `<tr class="${bgClass}">${cellsHtml}</tr>`;
+  }).join('');
+
+  let footerHtml = '';
+  if (footerRow) {
+    const cellsHtml = footerRow.map((c, colIdx) => {
+      const isNum = typeof c === 'number';
+      const alignClass = colIdx === 0 ? 'text-center text-bold' : isNum ? 'text-right text-bold font-mono' : 'text-center';
+      const formatted = isNum ? c.toLocaleString('vi-VN') : c;
+      return `<td class="${alignClass}">${formatted}</td>`;
+    }).join('');
+    footerHtml = `<tfoot><tr class="summary-row">${cellsHtml}</tr></tfoot>`;
+  }
+
+  const html = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="utf-8" />
+      <!--[if gte mso 9]>
+      <xml>
+        <x:ExcelWorkbook>
+          <x:ExcelWorksheets>
+            <x:ExcelWorksheet>
+              <x:Name>${title.substring(0, 30)}</x:Name>
+              <x:WorksheetOptions>
+                <x:DisplayGridlines/>
+              </x:WorksheetOptions>
+            </x:ExcelWorksheet>
+          </x:ExcelWorksheets>
+        </x:ExcelWorkbook>
+      </xml>
+      <![endif]-->
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; margin: 20px; }
+        .title { font-size: 16px; font-weight: bold; color: #0284c7; text-align: center; padding: 12px; margin-bottom: 10px; }
+        .param-table { border-collapse: collapse; margin-bottom: 16px; width: 100%; }
+        .param-table td { padding: 6px 10px; border: 1px solid #cbd5e1; font-size: 11px; }
+        .param-label { font-weight: bold; background-color: #f1f5f9; color: #334155; width: 20%; }
+        .param-val { font-weight: bold; color: #0f172a; width: 30%; }
+        .data-table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        .data-table th { background-color: #0284c7; color: #ffffff; font-weight: bold; padding: 8px 10px; border: 1px solid #0369a1; text-align: center; font-size: 11px; }
+        .data-table td { padding: 6px 10px; border: 1px solid #cbd5e1; font-size: 11px; }
+        .row-even { background-color: #ffffff; }
+        .row-odd { background-color: #f8fafc; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-bold { font-weight: bold; }
+        .font-mono { font-family: 'Consolas', 'Courier New', monospace; }
+        .summary-row { background-color: #e0f2fe; font-weight: bold; border-top: 2px solid #0284c7; border-bottom: 2px double #0284c7; }
+        .summary-row td { padding: 8px 10px; }
+      </style>
+    </head>
+    <body>
+      <div class="title">${title}</div>
+      ${params.length > 0 ? `<table class="param-table">${paramRowsHtml}</table>` : ''}
+      <table class="data-table">
+        <thead><tr>${headerHtml}</tr></thead>
+        <tbody>${bodyHtml}</tbody>
+        ${footerHtml}
+      </table>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filename}.xls`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 export const CalculatorView: React.FC = () => {
   const { theme } = useTheme();
   const isLight = theme === 'light';
@@ -165,36 +272,45 @@ export const CalculatorView: React.FC = () => {
     }
   }
 
-  // ── EXPORT EXCEL FUNCTION ──
-  const handleExportExcel = () => {
-    let csvContent = '\uFEFF';
-    csvContent += 'BẢNG CHI TIẾT LỊCH TRẢ NỢ DỰ KIẾN (VAY TỪNG LẦN)\n';
-    csvContent += `Số tiền vay: ${numLoanAmount.toLocaleString('vi-VN')} VNĐ\n`;
-    csvContent += `Thời hạn vay: ${loanTenorMonths} tháng (${loanTenorYears} năm)\n`;
-    csvContent += `Ngày bắt đầu: ${fmtDate(loanStartDate)} - Ngày kết thúc: ${fmtDate(loanEndDate)}\n`;
-    csvContent += `Cấu trúc lãi suất: ${termRateMode === 'pref' ? `Ưu đãi ${termPrefRate}% (${termPrefMonths}T), Sau ưu đãi ${postPrefRate.toFixed(2)}%` : `Thông thường ${normalRate.toFixed(2)}%`}\n\n`;
+  // ── EXPORT EXCEL TOOL 1 ──
+  const handleExportTermLoanExcel = () => {
+    const params = [
+      { label: 'Số tiền vay:', value: `${numLoanAmount.toLocaleString('vi-VN')} VNĐ` },
+      { label: 'Ngày bắt đầu vay:', value: fmtDate(loanStartDate) },
+      { label: 'Thời hạn vay:', value: `${loanTenorMonths} tháng (${loanTenorYears} năm)` },
+      { label: 'Ngày kết thúc vay:', value: fmtDate(loanEndDate) },
+      { label: 'Ân hạn gốc:', value: `${gracePeriodMonths} tháng` },
+      { label: 'Cấu trúc lãi suất:', value: termRateMode === 'pref' ? `Ưu đãi ${termPrefRate}% (${termPrefMonths}T), Sau ưu đãi ${postPrefRate.toFixed(2)}%` : `Thông thường ${normalRate.toFixed(2)}% (LSCS ${termBaseRate}% + Biên ${termMarginRate}%)` },
+    ];
 
-    csvContent += 'Kỳ trả nợ,Ngày trả nợ,Dư nợ đầu kỳ (VNĐ),Tiền gốc (VNĐ),Tiền lãi (VNĐ),Tổng trả (VNĐ),Dư nợ cuối kỳ (VNĐ)\n';
+    const headers = [
+      'KỲ TRẢ NỢ', 'NGÀY TRẢ NỢ', 'DƯ NỢ ĐẦU KỲ (VNĐ)', 'TIỀN GỐC (VNĐ)',
+      'TIỀN LÃI (VNĐ)', 'TỔNG TRẢ (GỐC + LÃI)', 'DƯ NỢ CUỐI KỲ (VNĐ)'
+    ];
 
-    scheduleRows.forEach(r => {
-      csvContent += `Kỳ #${r.period},${fmtDate(r.dueDate)},${r.openingBalance},${r.principal},${r.interest},${r.totalPayment},${r.closingBalance}\n`;
-    });
+    const rows = scheduleRows.map(r => [
+      `Kỳ #${r.period}`,
+      fmtDate(r.dueDate),
+      r.openingBalance,
+      r.principal,
+      r.interest,
+      r.totalPayment,
+      r.closingBalance
+    ]);
 
-    csvContent += `TỔNG CỘNG,,${numLoanAmount},${totalPrincipalPaid},${totalInterestPaid},${totalPrincipalPaid + totalInterestPaid},0\n`;
+    const footerRow = [
+      'TỔNG CỘNG', '', numLoanAmount, totalPrincipalPaid, totalInterestPaid,
+      totalPrincipalPaid + totalInterestPaid, 0
+    ];
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Lich_Tra_No_Du_Kien_${loanStartDate}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // ── EXPORT PDF / PRINT FUNCTION ──
-  const handleExportPDF = () => {
-    window.print();
+    exportToExcelHTML(
+      `Lich_Tra_No_Du_Kien_${loanStartDate}`,
+      'BẢNG DỰ KIẾN LỊCH TRẢ NỢ KHOẢN VAY TỪNG LẦN',
+      params,
+      headers,
+      rows,
+      footerRow
+    );
   };
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -247,13 +363,45 @@ export const CalculatorView: React.FC = () => {
   const stkNetDifference = stkInterestEarned - stkLoanInterestCost;
   const stkTotalLoanPay = numStkLoanAmount + stkLoanInterestCost;
 
+  // ── EXPORT EXCEL TOOL 2 ──
+  const handleExportStkSingleExcel = () => {
+    const params = [
+      { label: 'Giá trị sổ tiết kiệm:', value: `${numStkDepositAmount.toLocaleString('vi-VN')} VNĐ` },
+      { label: 'Tỉ lệ cầm cố:', value: `${stkPledgeRatio}%` },
+      { label: 'Ngày gửi sổ:', value: fmtDate(stkDepositDate) },
+      { label: 'Số tiền vay cầm cố:', value: `${numStkLoanAmount.toLocaleString('vi-VN')} VNĐ` },
+      { label: 'Kỳ hạn sổ:', value: `${stkTenorVal} ${stkTenorUnit === 'day' ? 'ngày' : stkTenorUnit === 'month' ? 'tháng' : 'năm'}` },
+      { label: 'Lãi suất vay:', value: `${stkLoanRate} %/năm` },
+      { label: 'Ngày đáo hạn sổ/vay:', value: fmtDate(stkExpiryDate) },
+      { label: 'Lãi vay phải trả:', value: `${stkLoanInterestCost.toLocaleString('vi-VN')} VNĐ` },
+      { label: 'Lãi suất sổ:', value: `${stkDepositRate} %/năm` },
+      { label: 'Chênh lệch (Lãi sổ - Lãi vay):', value: `${stkNetDifference >= 0 ? '+' : ''}${stkNetDifference.toLocaleString('vi-VN')} VNĐ` },
+    ];
+
+    const headers = ['MỤC NGHĨA VỤ TÀI CHÍNH', 'THÔNG TIN SỔ TIẾT KIỆM', 'THÔNG TIN KHOẢN VAY CẦM CỐ', 'KẾT QUẢ / CHÊNH LỆCH'];
+    const rows = [
+      ['Số tiền gốc', `${numStkDepositAmount.toLocaleString('vi-VN')} VNĐ`, `${numStkLoanAmount.toLocaleString('vi-VN')} VNĐ`, '—'],
+      ['Số ngày thực tế', `${stkDepositDays} ngày`, `${stkLoanDays} ngày`, '—'],
+      ['Lãi suất (%/năm)', `${stkDepositRate}%`, `${stkLoanRate}%`, '—'],
+      ['Tiền lãi (Dự kiến / Phải trả)', `+${stkInterestEarned.toLocaleString('vi-VN')} VNĐ`, `-${stkLoanInterestCost.toLocaleString('vi-VN')} VNĐ`, `${stkNetDifference >= 0 ? '+' : ''}${stkNetDifference.toLocaleString('vi-VN')} VNĐ`],
+      ['Tổng thanh toán khi đáo hạn', `${(numStkDepositAmount + stkInterestEarned).toLocaleString('vi-VN')} VNĐ`, `${stkTotalLoanPay.toLocaleString('vi-VN')} VNĐ`, '—']
+    ];
+
+    exportToExcelHTML(
+      `Bang_Tinh_Cam_Co_STK_${stkDepositDate}`,
+      'BẢNG TÍNH LÃI VAY CẦM CỐ SỔ TIẾT KIỆM (1 KỲ)',
+      params,
+      headers,
+      rows
+    );
+  };
+
   // ──────────────────────────────────────────────────────────────────────────
   // TOOL 3: VAY CẦM CỐ STK TÁI TỤC NHIỀU KỲ
   // ──────────────────────────────────────────────────────────────────────────
   const [multiCyclesCount, setMultiCyclesCount] = useState<number>(4);
-  const [multiRolloverOption, setMultiRolloverOption] = useState<'compound' | 'principal_only'>('compound'); // Lãi nhập gốc vs Chỉ gốc
+  const [multiRolloverOption, setMultiRolloverOption] = useState<'compound' | 'principal_only'>('compound');
 
-  // Calculate multi-cycle rows
   const multiCycleRows: {
     cycleNumber: number;
     startDate: string;
@@ -281,7 +429,6 @@ export const CalculatorView: React.FC = () => {
       const daysInCycle = diffDays(cycleStart, cycleEnd);
       const cycleDepInterest = Math.round(currentDeposit * numStkDepositRate * (daysInCycle / 365));
 
-      // Loan amount for this cycle based on pledge ratio
       const cycleRatio = parseFloat(stkPledgeRatio) || 90;
       const cycleLoanAmt = Math.round(currentDeposit * (cycleRatio / 100));
       const cycleLoanInterest = Math.round(cycleLoanAmt * numStkLoanRate * (daysInCycle / 365));
@@ -309,6 +456,52 @@ export const CalculatorView: React.FC = () => {
     }
   }
 
+  // ── EXPORT EXCEL TOOL 3 ──
+  const handleExportStkMultiExcel = () => {
+    const params = [
+      { label: 'Gốc sổ ban đầu:', value: `${numStkDepositAmount.toLocaleString('vi-VN')} VNĐ` },
+      { label: 'Số kỳ tái tục:', value: `${multiCyclesCount} kỳ` },
+      { label: 'Kỳ hạn mỗi kỳ:', value: `${stkTenorVal} ${stkTenorUnit === 'day' ? 'ngày' : stkTenorUnit === 'month' ? 'tháng' : 'năm'}` },
+      { label: 'Phương thức tái tục:', value: multiRolloverOption === 'compound' ? 'Tái tục Gốc + Lãi (Lãi nhập gốc)' : 'Chỉ tái tục Gốc (Lãi rút ra)' },
+      { label: 'Lãi suất sổ / Lãi suất vay:', value: `${stkDepositRate}% / ${stkLoanRate}%` },
+      { label: 'Tỷ lệ cầm cố:', value: `${stkPledgeRatio}%` },
+    ];
+
+    const headers = [
+      'KỲ TÁI TỤC', 'NGÀY BẮT ĐẦU', 'NGÀY ĐÁO HẠN', 'GỐC SỔ ĐẦU KỲ (VNĐ)',
+      'LÃI SỔ NHẬN (VNĐ)', 'SỐ TIỀN VAY CẦM CỐ (VNĐ)', 'LÃI VAY PHẢI TRẢ (VNĐ)',
+      'CHÊNH LỆCH KỲ NÀY (VNĐ)', 'CHÊNH LỆCH TÍCH LŨY (VNĐ)'
+    ];
+
+    const rows = multiCycleRows.map(r => [
+      `Kỳ #${r.cycleNumber}`,
+      fmtDate(r.startDate),
+      fmtDate(r.expiryDate),
+      r.depositOpening,
+      r.depositInterest,
+      r.loanAmount,
+      r.loanInterest,
+      r.netProfit,
+      r.cumulativeNetProfit
+    ]);
+
+    const totalDepInt = multiCycleRows.reduce((sum, r) => sum + r.depositInterest, 0);
+    const totalLoanInt = multiCycleRows.reduce((sum, r) => sum + r.loanInterest, 0);
+
+    const footerRow = [
+      `TỔNG CỘNG (${multiCycleRows.length} KỲ)`, '', '', '', totalDepInt, '', totalLoanInt, '', cumNetProfit
+    ];
+
+    exportToExcelHTML(
+      `Bang_Tai_Tuc_STK_${stkDepositDate}`,
+      'BẢNG DỰ PHÓNG LÃI TÁI TỤC SỔ TIẾT KIỆM & VAY CẦM CỐ NHIỀU KỲ',
+      params,
+      headers,
+      rows,
+      footerRow
+    );
+  };
+
   const formatMoney = (val: number) => val.toLocaleString('vi-VN') + ' VNĐ';
 
   // Dynamic Theme Classes
@@ -334,6 +527,20 @@ export const CalculatorView: React.FC = () => {
 
   return (
     <div className="space-y-4 text-xs max-w-7xl mx-auto pb-10 transition-colors duration-200 print:p-0 print:max-w-none">
+      {/* CSS PRINT MEDIA STYLING */}
+      <style>{`
+        @media print {
+          body { background: white !important; color: black !important; font-size: 10px !important; }
+          .print\\:hidden { display: none !important; }
+          aside, header { display: none !important; }
+          main { margin: 0 !important; padding: 0 !important; }
+          table { width: 100% !important; border-collapse: collapse !important; font-size: 10px !important; }
+          th, td { border: 1px solid #64748b !important; padding: 4px 6px !important; }
+          th { background-color: #f1f5f9 !important; color: black !important; }
+          @page { size: landscape; margin: 10mm; }
+        }
+      `}</style>
+
       {/* ── HEADER TITLE ── */}
       <div className={`${containerCardBg} p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3 print:hidden`}>
         <div>
@@ -563,7 +770,7 @@ export const CalculatorView: React.FC = () => {
             </div>
           </div>
 
-          {/* ── KPI TỔNG KẾT KHOẢN VAY (ĐÃ BỎ CHÚ THÍCH PHỤ) ── */}
+          {/* ── KPI TỔNG KẾT KHOẢN VAY ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
             <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
               <div className="text-[11px] font-bold text-slate-400 uppercase">TỔNG GỐC TRẢ</div>
@@ -594,7 +801,7 @@ export const CalculatorView: React.FC = () => {
             </div>
           </div>
 
-          {/* ── BẢNG LINH ĐỘNG LỊCH TRẢ NỢ CHI TIẾT (CÓ NÚT XUẤT EXCEL & IN PDF) ── */}
+          {/* ── BẢNG LINH ĐỘNG LỊCH TRẢ NỢ CHI TIẾT ── */}
           <div className={`${containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
             <div className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
               <span className="font-bold text-xs uppercase flex items-center space-x-2">
@@ -606,16 +813,16 @@ export const CalculatorView: React.FC = () => {
               <div className="flex items-center space-x-2 print:hidden">
                 <button
                   type="button"
-                  onClick={handleExportExcel}
+                  onClick={handleExportTermLoanExcel}
                   className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-colors shadow-sm"
-                  title="Xuất bảng chi tiết ra file Excel (.csv)"
+                  title="Xuất định dạng chuẩn Excel (.xls) có màu sắc, đường viền và căn chỉnh đẹp"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Xuất Excel</span>
+                  <span>Xuất Excel Đẹp (.xls)</span>
                 </button>
                 <button
                   type="button"
-                  onClick={handleExportPDF}
+                  onClick={() => window.print()}
                   className="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-colors shadow-sm"
                   title="In hoặc Lưu bảng chi tiết ra PDF"
                 >
@@ -862,9 +1069,33 @@ export const CalculatorView: React.FC = () => {
 
           {/* Box 3: TỔNG KẾT KẾT QUẢ CẦM CỐ (1 KỲ) */}
           <div className={`${containerCardBg} rounded-2xl p-5 border shadow-xl space-y-4`}>
-            <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center space-x-2 border-b pb-2.5 border-slate-200 dark:border-slate-800">
-              <CheckCircle className="w-4 h-4" />
-              <span>3. BẢNG TỔNG KẾT NGHĨA VỤ TÀI CHÍNH & CHÊNH LỆCH LÃI SỔ VỚI LÃI VAY</span>
+            <div className={`flex flex-wrap items-center justify-between gap-3 border-b pb-2.5 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+              <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4" />
+                <span>3. BẢNG TỔNG KẾT NGHĨA VỤ TÀI CHÍNH & CHÊNH LỆCH LÃI SỔ VỚI LÃI VAY</span>
+              </div>
+
+              {/* Export Buttons Tool 2 */}
+              <div className="flex items-center space-x-2 print:hidden">
+                <button
+                  type="button"
+                  onClick={handleExportStkSingleExcel}
+                  className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-colors shadow-sm"
+                  title="Xuất bảng tính cầm cố STK 1 kỳ ra Excel (.xls)"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Xuất Excel Đẹp (.xls)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-colors shadow-sm"
+                  title="In hoặc Lưu bảng tính ra PDF"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>In / Xuất PDF</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -957,7 +1188,28 @@ export const CalculatorView: React.FC = () => {
                 <TrendingUp className="w-4 h-4 text-sky-500" />
                 <span>BẢNG CHI TIẾT DỰ PHÓNG LÃI TÁI TỤC & VAY CẦM CỐ QUA {multiCycleRows.length} KỲ</span>
               </span>
-              <span className="text-[11px] text-slate-400">Đơn vị: VNĐ</span>
+
+              {/* Export Buttons Tool 3 */}
+              <div className="flex items-center space-x-2 print:hidden">
+                <button
+                  type="button"
+                  onClick={handleExportStkMultiExcel}
+                  className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-colors shadow-sm"
+                  title="Xuất bảng tái tục nhiều kỳ ra Excel (.xls)"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Xuất Excel Đẹp (.xls)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-colors shadow-sm"
+                  title="In hoặc Lưu bảng tái tục nhiều kỳ ra PDF"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>In / Xuất PDF</span>
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto max-h-[500px] overflow-y-auto">

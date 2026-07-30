@@ -216,6 +216,9 @@ export const LoanPortfolioView: React.FC = () => {
   // Repayment Schedules map for all contracts (contractId -> RepaymentSchedule[])
   const [allSchedulesMap, setAllSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
 
+  // Custom Overdue Days Map for schedule table rows (scheduleId -> overdueDays)
+  const [customOverdueDaysMap, setCustomOverdueDaysMap] = useState<Record<number, number>>({});
+
   // Tự động phân loại nhóm nợ (1-5) theo chuẩn NHNN dựa trên số ngày quá hạn lịch thu nợ
   const getAutoDebtGroupInfo = (schedules?: RepaymentSchedule[]) => {
     if (!schedules || schedules.length === 0) {
@@ -1997,118 +2000,178 @@ export const LoanPortfolioView: React.FC = () => {
                   )}
                 </div>
                 <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className={tableHeaderStyle}>
-                      <tr>
-                        <th className="p-3 text-center">KỲ</th>
-                        <th className="p-3">NGÀY ĐẾN HẠN</th>
-                        <th className="p-3 text-center">SỐ NGÀY QUÁ HẠN</th>
-                        <th className="p-3 text-right">GỐC</th>
-                        <th className="p-3 text-right">LÃI</th>
-                        <th className="p-3 text-right">TỔNG CỘNG</th>
-                        <th className="p-3 text-center">TRẠNG THÁI</th>
-                        <th className="p-3">NGÀY TT</th>
-                        <th className="p-3 text-center">THAO TÁC</th>
-                      </tr>
-                    </thead>
-                    <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
-                      {!selectedContract ? (
-                        <tr><td colSpan={9} className="text-center p-8 text-slate-400">Chọn một HĐTD để xem lịch thu nợ</td></tr>
-                      ) : schedules.length === 0 ? (
-                        <tr><td colSpan={9} className="text-center p-8 text-slate-400">
-                          Chưa có lịch thu nợ. Nhấn "TẠO LỊCH THU NỢ TỰ ĐỘNG" để tính toán.
-                        </td></tr>
-                      ) : schedules.map(s => {
-                        // Calculate overdue days
-                        let overdueDays = 0;
-                        if (!s.IsPaid && s.DueDate) {
-                          const parts = s.DueDate.split('-');
-                          if (parts.length === 3) {
-                            const due = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            due.setHours(0, 0, 0, 0);
-                            const diff = today.getTime() - due.getTime();
-                            if (diff > 0) overdueDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                          }
+                  {(() => {
+                    // Helper to calculate penalty for a schedule item
+                    const getPenaltyForSchedule = (s: RepaymentSchedule) => {
+                      if (s.IsPaid) return 0;
+                      let autoDays = 0;
+                      if (s.DueDate) {
+                        const parts = s.DueDate.split('-');
+                        if (parts.length === 3) {
+                          const due = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          due.setHours(0, 0, 0, 0);
+                          const diff = today.getTime() - due.getTime();
+                          if (diff > 0) autoDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
                         }
+                      }
+                      const effDays = customOverdueDaysMap[s.Id] !== undefined ? customOverdueDaysMap[s.Id] : autoDays;
+                      if (effDays <= 0) return 0;
+                      const annualRate = (selectedContract?.InterestRate || selectedContract?.NormalRate || 0.085) > 1
+                        ? (selectedContract?.InterestRate || selectedContract?.NormalRate || 8.5) / 100
+                        : (selectedContract?.InterestRate || selectedContract?.NormalRate || 0.085);
+                      return Math.round((s.PrincipalAmount || 0) * (annualRate * 1.5) * (effDays / 365));
+                    };
 
-                        const isOverdue = !s.IsPaid && overdueDays > 0;
+                    const totalPenaltySum = schedules.reduce((a, s) => a + getPenaltyForSchedule(s), 0);
 
-                        return (
-                          <tr key={s.Id} className={`transition-colors ${
-                            s.IsPaid
-                              ? 'bg-emerald-50/50 dark:bg-emerald-950/10'
-                              : isOverdue
-                                ? 'bg-rose-50/60 dark:bg-rose-950/30 font-semibold'
-                                : tableRowHover
-                          }`}>
-                            <td className="p-3 text-center font-bold">{s.PeriodNumber}</td>
-                            <td className="p-3 font-mono font-bold">{fmtDate(s.DueDate)}</td>
-                            <td className="p-3 text-center font-bold">
-                              {overdueDays > 0 ? (
-                                <span className="px-2 py-0.5 rounded-md text-[10px] bg-rose-600 text-white font-mono animate-pulse">
-                                  Quá {overdueDays} ngày
-                                </span>
-                              ) : <span className="text-slate-400 font-normal">—</span>}
-                            </td>
-                            <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono font-bold">{(s.PrincipalAmount || 0).toLocaleString('vi-VN')}</td>
-                            <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono font-bold">{(s.InterestAmount || 0).toLocaleString('vi-VN')}</td>
-                            <td className="p-3 text-right font-bold text-amber-600 dark:text-amber-400 font-mono text-sm">{(s.TotalAmount || 0).toLocaleString('vi-VN')}</td>
-                            <td className="p-3 text-center">
-                              {s.IsPaid ? (
-                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                                  ✓ Đã TT
-                                </span>
-                              ) : isOverdue ? (
-                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-600 text-white border border-rose-500 animate-pulse">
-                                  🔴 Quá hạn
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                                  🟡 Chờ TT
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-3 text-slate-400">{s.IsPaid ? fmtDate(s.PaymentDate) : '—'}</td>
-                            <td className="p-3 text-center">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleMarkPaid(s);
-                                }}
-                                className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
-                                  s.IsPaid
-                                    ? isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                    : 'bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-600 dark:text-emerald-400 border border-emerald-600/30'
-                                }`}>
-                                {s.IsPaid ? 'Hủy TT' : 'Đánh dấu TT'}
-                              </button>
-                            </td>
+                    return (
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead className={`sticky top-0 ${tableHeaderStyle}`}>
+                          <tr>
+                            <th className="p-3 text-center whitespace-nowrap">KỲ</th>
+                            <th className="p-3 whitespace-nowrap">NGÀY ĐẾN HẠN</th>
+                            <th className="p-3 text-center whitespace-nowrap text-rose-500">⚡ SỐ NGÀY QUÁ HẠN (NHẬP)</th>
+                            <th className="p-3 text-right whitespace-nowrap">GỐC</th>
+                            <th className="p-3 text-right whitespace-nowrap">LÃI THƯỜNG</th>
+                            <th className="p-3 text-right whitespace-nowrap text-rose-500">LÃI PHẠT QUÁ HẠN (150%)</th>
+                            <th className="p-3 text-right whitespace-nowrap">TỔNG NGHĨA VỤ TRẢ</th>
+                            <th className="p-3 text-center whitespace-nowrap">TRẠNG THÁI</th>
+                            <th className="p-3 whitespace-nowrap">NGÀY TT</th>
+                            <th className="p-3 text-center whitespace-nowrap">THAO TÁC</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                    {schedules.length > 0 && (
-                      <tfoot className={`border-t sticky bottom-0 font-bold ${tableHeaderStyle}`}>
-                        <tr>
-                          <td className="p-3" colSpan={3}>TỔNG CỘNG LỊCH THU NỢ</td>
-                          <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono">
-                            {schedules.reduce((a, s) => a + (s.PrincipalAmount || 0), 0).toLocaleString('vi-VN')}
-                          </td>
-                          <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono">
-                            {schedules.reduce((a, s) => a + (s.InterestAmount || 0), 0).toLocaleString('vi-VN')}
-                          </td>
-                          <td className="p-3 text-right text-amber-600 dark:text-amber-400 font-mono">
-                            {schedules.reduce((a, s) => a + (s.TotalAmount || 0), 0).toLocaleString('vi-VN')}
-                          </td>
-                          <td colSpan={3}></td>
-                        </tr>
-                      </tfoot>
-                    )}
-                  </table>
+                        </thead>
+                        <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
+                          {!selectedContract ? (
+                            <tr><td colSpan={10} className="text-center p-8 text-slate-400">Chọn một HĐTD để xem lịch thu nợ</td></tr>
+                          ) : schedules.length === 0 ? (
+                            <tr><td colSpan={10} className="text-center p-8 text-slate-400">
+                              Chưa có lịch thu nợ. Nhấn "TẠO LỊCH THU NỢ TỰ ĐỘNG" để tính toán.
+                            </td></tr>
+                          ) : schedules.map(s => {
+                            // Calculate default auto overdue days
+                            let autoOverdue = 0;
+                            if (!s.IsPaid && s.DueDate) {
+                              const parts = s.DueDate.split('-');
+                              if (parts.length === 3) {
+                                const due = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                due.setHours(0, 0, 0, 0);
+                                const diff = today.getTime() - due.getTime();
+                                if (diff > 0) autoOverdue = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                              }
+                            }
+
+                            const effectiveOverdueDays = customOverdueDaysMap[s.Id] !== undefined
+                              ? customOverdueDaysMap[s.Id]
+                              : autoOverdue;
+
+                            const isOverdue = !s.IsPaid && effectiveOverdueDays > 0;
+                            const penaltyAmount = getPenaltyForSchedule(s);
+                            const rowTotalAmount = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penaltyAmount;
+
+                            return (
+                              <tr key={s.Id} className={`transition-colors ${
+                                s.IsPaid
+                                  ? 'bg-emerald-50/50 dark:bg-emerald-950/10'
+                                  : isOverdue
+                                    ? 'bg-rose-50/60 dark:bg-rose-950/30 font-semibold'
+                                    : tableRowHover
+                              }`}>
+                                <td className="p-3 text-center font-bold font-mono">#{s.PeriodNumber}</td>
+                                <td className="p-3 font-mono font-bold">{fmtDate(s.DueDate)}</td>
+                                <td className="p-3 text-center">
+                                  {s.IsPaid ? (
+                                    <span className="text-slate-400 font-normal">—</span>
+                                  ) : (
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      max={365}
+                                      value={customOverdueDaysMap[s.Id] ?? autoOverdue}
+                                      onChange={e => {
+                                        const val = parseInt(e.target.value, 10);
+                                        setCustomOverdueDaysMap(prev => ({
+                                          ...prev,
+                                          [s.Id]: isNaN(val) || val < 0 ? 0 : val
+                                        }));
+                                      }}
+                                      placeholder="0"
+                                      className={`w-20 text-center rounded-xl px-2 py-1 text-xs font-mono font-bold border transition-all ${
+                                        effectiveOverdueDays > 0
+                                          ? 'bg-rose-600 text-white border-rose-500 shadow-sm animate-pulse'
+                                          : inputStyle
+                                      }`}
+                                    />
+                                  )}
+                                </td>
+                                <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono font-bold">{(s.PrincipalAmount || 0).toLocaleString('vi-VN')}</td>
+                                <td className="p-3 text-right text-amber-600 dark:text-amber-400 font-mono font-bold">{(s.InterestAmount || 0).toLocaleString('vi-VN')}</td>
+                                <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono font-bold">
+                                  {penaltyAmount > 0 ? penaltyAmount.toLocaleString('vi-VN') : '—'}
+                                </td>
+                                <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">{rowTotalAmount.toLocaleString('vi-VN')}</td>
+                                <td className="p-3 text-center">
+                                  {s.IsPaid ? (
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                      ✓ Đã TT
+                                    </span>
+                                  ) : isOverdue ? (
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-600 text-white border border-rose-500 animate-pulse">
+                                      🔴 Quá {effectiveOverdueDays}d
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                      🟡 Chờ TT
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-slate-400">{s.IsPaid ? fmtDate(s.PaymentDate) : '—'}</td>
+                                <td className="p-3 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleMarkPaid(s);
+                                    }}
+                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
+                                      s.IsPaid
+                                        ? isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                        : 'bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-600 dark:text-emerald-400 border border-emerald-600/30'
+                                    }`}>
+                                    {s.IsPaid ? 'Hủy TT' : 'Đánh dấu TT'}
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                        {schedules.length > 0 && (
+                          <tfoot className={`border-t sticky bottom-0 font-bold ${tableHeaderStyle}`}>
+                            <tr>
+                              <td className="p-3 text-center" colSpan={3}>TỔNG CỘNG LỊCH THU NỢ</td>
+                              <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono">
+                                {schedules.reduce((a, s) => a + (s.PrincipalAmount || 0), 0).toLocaleString('vi-VN')}
+                              </td>
+                              <td className="p-3 text-right text-amber-600 dark:text-amber-400 font-mono">
+                                {schedules.reduce((a, s) => a + (s.InterestAmount || 0), 0).toLocaleString('vi-VN')}
+                              </td>
+                              <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono">
+                                {totalPenaltySum.toLocaleString('vi-VN')}
+                              </td>
+                              <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-mono text-sm">
+                                {(schedules.reduce((a, s) => a + (s.PrincipalAmount || 0) + (s.InterestAmount || 0), 0) + totalPenaltySum).toLocaleString('vi-VN')}
+                              </td>
+                              <td colSpan={3}></td>
+                            </tr>
+                          </tfoot>
+                        )}
+                      </table>
+                    );
+                  })()}
                 </div>
 
                 {/* ── BẢNG THỐNG KÊ CHI TIẾT DƯ NỢ & LÃI PHẠT QUÁ HẠN ── */}
@@ -2127,33 +2190,37 @@ export const LoanPortfolioView: React.FC = () => {
                     ? (selectedContract.InterestRate || selectedContract.NormalRate || 11) / 100 
                     : (selectedContract.InterestRate || selectedContract.NormalRate || 0.11);
 
-                  schedules.forEach(s => {
-                    if (!s.DueDate) return;
-                    const parts = s.DueDate.split('-');
-                    if (parts.length !== 3) return;
-                    const due = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-                    due.setHours(0, 0, 0, 0);
+                    schedules.forEach(s => {
+                      if (!s.DueDate) return;
+                      const parts = s.DueDate.split('-');
+                      if (parts.length !== 3) return;
+                      const due = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                      due.setHours(0, 0, 0, 0);
 
-                    const isDue = due <= today;
-                    if (isDue) {
-                      duePrincipal += s.PrincipalAmount || 0;
-                      dueInterest += s.InterestAmount || 0;
-                    }
-
-                    if (s.IsPaid) {
-                      paidPrincipal += s.PrincipalAmount || 0;
-                      paidInterest += s.InterestAmount || 0;
-                    } else if (due < today) {
-                      const diffTime = today.getTime() - due.getTime();
-                      const daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                      if (daysOverdue > 0) {
-                        // Penalty on overdue principal (150% of annual rate * days / 365)
-                        penaltyPrincipal += (s.PrincipalAmount || 0) * (annualRate * 1.5) * (daysOverdue / 365);
-                        // Penalty on overdue interest (10% annual rate * days / 365)
-                        penaltyInterest += (s.InterestAmount || 0) * 0.10 * (daysOverdue / 365);
+                      const isDue = due <= today;
+                      if (isDue) {
+                        duePrincipal += s.PrincipalAmount || 0;
+                        dueInterest += s.InterestAmount || 0;
                       }
-                    }
-                  });
+
+                      if (s.IsPaid) {
+                        paidPrincipal += s.PrincipalAmount || 0;
+                        paidInterest += s.InterestAmount || 0;
+                      } else {
+                        let autoDays = 0;
+                        if (due < today) {
+                          const diffTime = today.getTime() - due.getTime();
+                          autoDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        }
+                        const effDays = customOverdueDaysMap[s.Id] !== undefined ? customOverdueDaysMap[s.Id] : autoDays;
+                        if (effDays > 0) {
+                          // Penalty on overdue principal (150% of annual rate * days / 365)
+                          penaltyPrincipal += (s.PrincipalAmount || 0) * (annualRate * 1.5) * (effDays / 365);
+                          // Penalty on overdue interest (10% annual rate * days / 365)
+                          penaltyInterest += (s.InterestAmount || 0) * 0.10 * (effDays / 365);
+                        }
+                      }
+                    });
 
                   const overduePrincipal = Math.max(0, duePrincipal - paidPrincipal);
                   const overdueInterest = Math.max(0, dueInterest - paidInterest);

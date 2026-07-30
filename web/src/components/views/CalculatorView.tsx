@@ -190,12 +190,16 @@ export const CalculatorView: React.FC = () => {
   const [loanAmountInput, setLoanAmountInput] = useState('500.000.000');
   const [gracePeriodMonths, setGracePeriodMonths] = useState<number>(0);
   
-  // Rate mode for Tool 1
+  // Rate mode & penalty ratio for Tool 1
   const [termRateMode, setTermRateMode] = useState<'pref' | 'normal'>('pref');
   const [termPrefRate, setTermPrefRate] = useState('7.5');     // Lãi suất ưu đãi %/năm
   const [termPrefMonths, setTermPrefMonths] = useState('6');    // Thời gian ưu đãi (tháng)
   const [termBaseRate, setTermBaseRate] = useState('8.5');     // Lãi suất cơ sở %/năm
   const [termMarginRate, setTermMarginRate] = useState('3.5');   // Biên độ %/năm
+  const [termPenaltyRatio, setTermPenaltyRatio] = useState('150'); // % so với LS trong hạn (NHNN 150%)
+
+  // Interactive overdue days map per period (period -> overdueDays)
+  const [overdueDaysMap, setOverdueDaysMap] = useState<Record<number, number>>({});
 
   // Derived loan tenor months & end date
   const loanTenorMonths = typeof loanTenorYears === 'number' && loanTenorYears > 0 ? loanTenorYears * 12 : 12;
@@ -220,9 +224,11 @@ export const CalculatorView: React.FC = () => {
   const scheduleRows: {
     period: number;
     dueDate: string;
+    overdueDays: number;
     openingBalance: number;
     principal: number;
     interest: number;
+    penaltyInterest: number;
     totalPayment: number;
     closingBalance: number;
   }[] = [];
@@ -233,7 +239,10 @@ export const CalculatorView: React.FC = () => {
 
   let totalPrincipalPaid = 0;
   let totalInterestPaid = 0;
+  let totalPenaltyInterestPaid = 0;
   let maxPaymentRow = { period: 0, amount: 0 };
+
+  const penaltyRatioNum = parseFloat(termPenaltyRatio) || 150;
 
   if (numLoanAmount > 0 && loanTenorMonths > 0) {
     for (let i = 1; i <= loanTenorMonths; i++) {
@@ -241,6 +250,7 @@ export const CalculatorView: React.FC = () => {
       const dueDate = addMonths(loanStartDate, i);
       const actualDays = diffDays(prevDate, dueDate) || 30;
       const opening = currentBal;
+      const overdueDays = overdueDaysMap[i] || 0;
 
       // Principal payment logic (Grace period = 0 principal)
       let principal = 0;
@@ -254,9 +264,14 @@ export const CalculatorView: React.FC = () => {
         applicableRateDec = i <= numPrefMonths ? numPrefRateDec : numPostPrefRateDec;
       }
 
+      // 1. Normal interest for period
       const interest = Math.round(opening * applicableRateDec * (actualDays / 365));
 
-      const totalPay = principal + interest;
+      // 2. Overdue Penalty interest = Opening * (applicableRate * penaltyRatio) * (overdueDays / 365)
+      const penaltyRateDec = applicableRateDec * (penaltyRatioNum / 100);
+      const penaltyInterest = overdueDays > 0 ? Math.round(opening * penaltyRateDec * (overdueDays / 365)) : 0;
+
+      const totalPay = principal + interest + penaltyInterest;
       const closing = Math.max(0, opening - principal);
 
       if (totalPay > maxPaymentRow.amount) {
@@ -265,13 +280,16 @@ export const CalculatorView: React.FC = () => {
 
       totalPrincipalPaid += principal;
       totalInterestPaid += interest;
+      totalPenaltyInterestPaid += penaltyInterest;
 
       scheduleRows.push({
         period: i,
         dueDate,
+        overdueDays,
         openingBalance: opening,
         principal,
         interest,
+        penaltyInterest,
         totalPayment: totalPay,
         closingBalance: closing
       });
@@ -289,26 +307,28 @@ export const CalculatorView: React.FC = () => {
       { label: 'Ngày kết thúc vay:', value: fmtDate(loanEndDate) },
       { label: 'Ân hạn gốc:', value: `${gracePeriodMonths} tháng` },
       { label: 'Cấu trúc lãi suất:', value: termRateMode === 'pref' ? `Ưu đãi ${termPrefRate}% (${termPrefMonths}T), Sau ưu đãi ${postPrefRate.toFixed(2)}%` : `Thông thường ${normalRate.toFixed(2)}% (LSCS ${termBaseRate}% + Biên ${termMarginRate}%)` },
+      { label: 'Tỷ lệ Lãi phạt quá hạn:', value: `${penaltyRatioNum}% so với Lãi suất thường` },
     ];
 
     const headers = [
-      'KỲ TRẢ NỢ', 'NGÀY TRẢ NỢ', 'DƯ NỢ ĐẦU KỲ (VNĐ)', 'TIỀN GỐC (VNĐ)',
-      'TIỀN LÃI (VNĐ)', 'TỔNG TRẢ (GỐC + LÃI)', 'DƯ NỢ CUỐI KỲ (VNĐ)'
+      'KỲ TRẢ NỢ', 'NGÀY TRẢ NỢ', 'SỐ NGÀY QUÁ HẠN', 'DƯ NỢ ĐẦU KỲ (VNĐ)', 'TIỀN GỐC (VNĐ)',
+      'LÃI TRONG HẠN (VNĐ)', 'LÃI PHẠT QUÁ HẠN (VNĐ)', 'TỔNG TRẢ (GỐC + LÃI + PHẠT)', 'DƯ NỢ CUỐI KỲ (VNĐ)'
     ];
 
     const rows = scheduleRows.map(r => [
       `Kỳ #${r.period}`,
       fmtDate(r.dueDate),
+      r.overdueDays > 0 ? `${r.overdueDays} ngày` : '0',
       r.openingBalance,
       r.principal,
       r.interest,
+      r.penaltyInterest,
       r.totalPayment,
       r.closingBalance
     ]);
 
     const footerRow = [
-      'TỔNG CỘNG', '', numLoanAmount, totalPrincipalPaid, totalInterestPaid,
-      totalPrincipalPaid + totalInterestPaid, 0
+      'TỔNG CỘNG', '', '', numLoanAmount, totalPrincipalPaid, totalInterestPaid, totalPenaltyInterestPaid, totalPrincipalPaid + totalInterestPaid + totalPenaltyInterestPaid, 0
     ];
 
     exportToExcelHTML(
@@ -813,7 +833,7 @@ export const CalculatorView: React.FC = () => {
 
               {termRateMode === 'pref' ? (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <div>
                       <label className="block font-medium mb-1 text-slate-400">Lãi suất ưu đãi (LSUD) %/năm</label>
                       <input
@@ -844,6 +864,17 @@ export const CalculatorView: React.FC = () => {
                         className={`w-full rounded-xl p-2 font-mono font-bold text-amber-500 border ${inputStyle}`}
                       />
                     </div>
+                    <div>
+                      <label className="block font-medium mb-1 text-slate-400">Tỷ lệ Lãi phạt (% so với LS thường)</label>
+                      <input
+                        type="number"
+                        step="5"
+                        value={termPenaltyRatio}
+                        onChange={e => setTermPenaltyRatio(e.target.value)}
+                        placeholder="150"
+                        className={`w-full rounded-xl p-2 font-mono font-bold text-rose-600 border ${inputStyle}`}
+                      />
+                    </div>
                   </div>
                   <div className={`p-2.5 rounded-xl border flex items-center justify-between font-semibold ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
                     <span className="text-slate-400">Lãi suất sau ưu đãi (LSUD + Biên độ):</span>
@@ -852,7 +883,7 @@ export const CalculatorView: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
                       <label className="block font-medium mb-1 text-slate-400">Lãi suất cơ sở (LSCS) %/năm</label>
                       <input
@@ -871,6 +902,17 @@ export const CalculatorView: React.FC = () => {
                         value={termMarginRate}
                         onChange={e => setTermMarginRate(e.target.value)}
                         className={`w-full rounded-xl p-2 font-mono font-bold text-amber-500 border ${inputStyle}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1 text-slate-400">Tỷ lệ Lãi phạt (% so với LS thường)</label>
+                      <input
+                        type="number"
+                        step="5"
+                        value={termPenaltyRatio}
+                        onChange={e => setTermPenaltyRatio(e.target.value)}
+                        placeholder="150"
+                        className={`w-full rounded-xl p-2 font-mono font-bold text-rose-600 border ${inputStyle}`}
                       />
                     </div>
                   </div>
@@ -893,23 +935,26 @@ export const CalculatorView: React.FC = () => {
             </div>
 
             <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
-              <div className="text-[11px] font-bold text-slate-400 uppercase">TỔNG LÃI TRẢ (DỰ KIẾN)</div>
-              <div className="text-xl font-extrabold text-rose-600 dark:text-rose-400 font-mono mt-1">
+              <div className="text-[11px] font-bold text-slate-400 uppercase">TỔNG LÃI TRONG HẠN</div>
+              <div className="text-xl font-extrabold text-amber-600 dark:text-amber-400 font-mono mt-1">
                 {formatMoney(totalInterestPaid)}
               </div>
             </div>
 
             <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
-              <div className="text-[11px] font-bold text-slate-400 uppercase">KỲ CÓ SỐ TRẢ NỢ CAO NHẤT</div>
-              <div className="text-xl font-extrabold text-amber-600 dark:text-amber-400 font-mono mt-1">
-                {formatMoney(maxPaymentRow.amount)}
+              <div className="text-[11px] font-bold text-rose-500 uppercase flex items-center justify-between">
+                <span>TỔNG LÃI PHẠT QUÁ HẠN</span>
+                {totalPenaltyInterestPaid > 0 && <span className="text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-mono animate-pulse">CÓ PHẠT</span>}
+              </div>
+              <div className="text-xl font-extrabold text-rose-600 dark:text-rose-400 font-mono mt-1">
+                {formatMoney(totalPenaltyInterestPaid)}
               </div>
             </div>
 
             <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
-              <div className="text-[11px] font-bold text-slate-400 uppercase">TỔNG GỐC + LÃI PHẢI TRẢ</div>
+              <div className="text-[11px] font-bold text-slate-400 uppercase">TỔNG NGHĨA VỤ TRẢ (GỐC+LÃI+PHẠT)</div>
               <div className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-1">
-                {formatMoney(totalPrincipalPaid + totalInterestPaid)}
+                {formatMoney(totalPrincipalPaid + totalInterestPaid + totalPenaltyInterestPaid)}
               </div>
             </div>
           </div>
@@ -949,23 +994,49 @@ export const CalculatorView: React.FC = () => {
               <table className="w-full text-left text-xs border-collapse">
                 <thead className={`sticky top-0 ${tableHeaderStyle}`}>
                   <tr>
-                    <th className="p-3 text-center">KỲ TRẢ NỢ</th>
-                    <th className="p-3">NGÀY TRẢ NỢ</th>
-                    <th className="p-3 text-right">DƯ NỢ ĐẦU KỲ</th>
-                    <th className="p-3 text-right">TIỀN GỐC</th>
-                    <th className="p-3 text-right">TIỀN LÃI</th>
-                    <th className="p-3 text-right">TỔNG TRẢ (GỐC + LÃI)</th>
-                    <th className="p-3 text-right">DƯ NỢ CUỐI KỲ</th>
+                    <th className="p-3 text-center whitespace-nowrap">KỲ TRẢ NỢ</th>
+                    <th className="p-3 whitespace-nowrap">NGÀY TRẢ NỢ</th>
+                    <th className="p-3 text-center whitespace-nowrap text-rose-500">⚡ SỐ NGÀY QUÁ HẠN (NHẬP)</th>
+                    <th className="p-3 text-right whitespace-nowrap">DƯ NỢ ĐẦU KỲ</th>
+                    <th className="p-3 text-right whitespace-nowrap">TIỀN GỐC</th>
+                    <th className="p-3 text-right whitespace-nowrap">LÃI TRONG HẠN</th>
+                    <th className="p-3 text-right whitespace-nowrap text-rose-500">LÃI PHẠT QUÁ HẠN ({penaltyRatioNum}%)</th>
+                    <th className="p-3 text-right whitespace-nowrap">TỔNG TRẢ (GỐC+LÃI+PHẠT)</th>
+                    <th className="p-3 text-right whitespace-nowrap">DƯ NỢ CUỐI KỲ</th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/60'}`}>
                   {scheduleRows.map((r) => (
-                    <tr key={r.period} className={`transition-colors ${isLight ? 'hover:bg-sky-50/50' : 'hover:bg-slate-800/40'}`}>
+                    <tr key={r.period} className={`transition-colors ${r.overdueDays > 0 ? 'bg-rose-50/60 dark:bg-rose-950/30 font-semibold' : isLight ? 'hover:bg-sky-50/50' : 'hover:bg-slate-800/40'}`}>
                       <td className="p-3 text-center font-bold font-mono">#{r.period}</td>
                       <td className="p-3 font-mono font-bold text-slate-600 dark:text-slate-300">{fmtDate(r.dueDate)}</td>
+                      <td className="p-3 text-center">
+                        <input
+                          type="number"
+                          min={0}
+                          max={365}
+                          value={overdueDaysMap[r.period] ?? ''}
+                          onChange={e => {
+                            const val = parseInt(e.target.value, 10);
+                            setOverdueDaysMap(prev => ({
+                              ...prev,
+                              [r.period]: isNaN(val) || val < 0 ? 0 : val
+                            }));
+                          }}
+                          placeholder="0 ngày"
+                          className={`w-20 text-center rounded-xl px-2 py-1 text-xs font-mono font-bold border transition-all ${
+                            (overdueDaysMap[r.period] || 0) > 0
+                              ? 'bg-rose-600 text-white border-rose-500 shadow-sm animate-pulse'
+                              : inputStyle
+                          }`}
+                        />
+                      </td>
                       <td className="p-3 text-right font-mono font-semibold">{r.openingBalance.toLocaleString('vi-VN')}</td>
                       <td className="p-3 text-right font-mono font-bold text-sky-600 dark:text-sky-400">{r.principal.toLocaleString('vi-VN')}</td>
-                      <td className="p-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400">{r.interest.toLocaleString('vi-VN')}</td>
+                      <td className="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">{r.interest.toLocaleString('vi-VN')}</td>
+                      <td className="p-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
+                        {r.penaltyInterest > 0 ? r.penaltyInterest.toLocaleString('vi-VN') : '—'}
+                      </td>
                       <td className="p-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">{r.totalPayment.toLocaleString('vi-VN')}</td>
                       <td className="p-3 text-right font-mono text-slate-500">{r.closingBalance.toLocaleString('vi-VN')}</td>
                     </tr>
@@ -973,10 +1044,11 @@ export const CalculatorView: React.FC = () => {
                 </tbody>
                 <tfoot className={`border-t sticky bottom-0 font-bold ${tableHeaderStyle}`}>
                   <tr>
-                    <td className="p-3 text-center" colSpan={3}>TỔNG CỘNG TOÀN BỘ KỲ VAY</td>
+                    <td className="p-3 text-center" colSpan={4}>TỔNG CỘNG TOÀN BỘ KỲ VAY</td>
                     <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono">{totalPrincipalPaid.toLocaleString('vi-VN')}</td>
-                    <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono">{totalInterestPaid.toLocaleString('vi-VN')}</td>
-                    <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-mono text-sm">{(totalPrincipalPaid + totalInterestPaid).toLocaleString('vi-VN')}</td>
+                    <td className="p-3 text-right text-amber-600 dark:text-amber-400 font-mono">{totalInterestPaid.toLocaleString('vi-VN')}</td>
+                    <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono">{totalPenaltyInterestPaid.toLocaleString('vi-VN')}</td>
+                    <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-mono text-sm">{(totalPrincipalPaid + totalInterestPaid + totalPenaltyInterestPaid).toLocaleString('vi-VN')}</td>
                     <td className="p-3 text-right font-mono">0</td>
                   </tr>
                 </tfoot>

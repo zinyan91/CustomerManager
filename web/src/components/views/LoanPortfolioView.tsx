@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI, saveContractAPI, deleteContractAPI,
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI,
@@ -50,8 +50,6 @@ const fmtMoney = (v?: number | null) => v !== undefined && v !== null ? v.toLoca
 const fmtRate = (v?: number | null) => v !== undefined && v !== null ? (v * 100).toFixed(2) + '%/năm' : '—';
 
 // Helper: Add months to a YYYY-MM-DD date string, keeping the SAME calendar day.
-// VD: 24/03/2026 + 5 tháng = 24/08/2026 (KHÔNG lùi ngày)
-// Nếu tháng đích không có ngày đó (VD: 31/1 + 1T) thì lấy ngày cuối tháng.
 function addMonthsToDate(dateStr?: string | null, months?: number | null): string {
   if (!dateStr || !months || isNaN(months) || months <= 0) return '';
   try {
@@ -63,17 +61,14 @@ function addMonthsToDate(dateStr?: string | null, months?: number | null): strin
 
     let targetYear = year;
     let targetMonth = month + Number(months);
-    // Normalize overflow months into years
     targetYear += Math.floor(targetMonth / 12);
     targetMonth = targetMonth % 12;
 
-    // Clamp day to last day of target month
     const daysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
     const targetDay = Math.min(day, daysInTargetMonth);
 
     const d = new Date(targetYear, targetMonth, targetDay);
     if (isNaN(d.getTime())) return '';
-    // Format as YYYY-MM-DD without timezone conversion
     const yy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
@@ -89,7 +84,6 @@ function parseKunnTenorMonths(tenorStr?: string | null): number {
   return match ? parseInt(match[0], 10) : 0;
 }
 
-// Lấy ngày cuối tháng an toàn (không dùng toISOString để tránh timezone shift)
 function formatDateLocal(d: Date): string {
   const yy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -97,49 +91,42 @@ function formatDateLocal(d: Date): string {
   return `${yy}-${mm}-${dd}`;
 }
 
-// Generate repayment schedule with Bullet (Gốc trả cuối kỳ) or Equal Principal support.
-// Kỳ 1 = chính xác ngày RepaymentStartDate. Kỳ 2 = +1 tháng. Kỳ N = +(N-1) tháng.
 function generateSchedule(
   contractId: number,
   loanAmount: number,
   interestRate: number,
-  repaymentStartDateStr: string, // Ngày bắt đầu trả nợ — kỳ đầu tiên sẽ là ngày này
+  repaymentStartDateStr: string,
   periods: number,
   isBulletPrincipal: boolean = true
 ): Partial<RepaymentSchedule>[] {
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
 
-  // Parse ngày bắt đầu trả nợ
   let startYear = new Date().getFullYear();
-  let startMonth = new Date().getMonth(); // 0-indexed
+  let startMonth = new Date().getMonth();
   let startDay = new Date().getDate();
 
   if (repaymentStartDateStr) {
     const parts = repaymentStartDateStr.split('-');
     if (parts.length === 3) {
       startYear = parseInt(parts[0], 10);
-      startMonth = parseInt(parts[1], 10) - 1; // 0-indexed
+      startMonth = parseInt(parts[1], 10) - 1;
       startDay = parseInt(parts[2], 10);
     }
   }
 
-  // interestRate is stored as decimal (e.g. 0.1105 for 11.05%)
   const annualRate = interestRate > 1 ? interestRate / 100 : interestRate;
 
   for (let i = 1; i <= periods; i++) {
-    // Kỳ i: ngày = startDate + (i-1) tháng — kỳ 1 = chính xác startDate
     let dueTotalMonths = startMonth + (i - 1);
     let dueYear = startYear + Math.floor(dueTotalMonths / 12);
-    let dueMonthIdx = dueTotalMonths % 12; // 0-indexed
+    let dueMonthIdx = dueTotalMonths % 12;
     const daysInDueMonth = new Date(dueYear, dueMonthIdx + 1, 0).getDate();
     const dueDay = Math.min(startDay, daysInDueMonth);
     const dueDate = new Date(dueYear, dueMonthIdx, dueDay);
 
-    // Kỳ trước để tính số ngày giữa 2 kỳ
     let prevDays: number;
     if (i === 1) {
-      // Kỳ đầu: số ngày từ ngày giải ngân đến ngày trả — mặc định ~30 ngày
       prevDays = 30;
     } else {
       let prevTotalMonths = startMonth + (i - 2);
@@ -153,12 +140,10 @@ function generateSchedule(
 
     let principal = 0;
     if (isBulletPrincipal) {
-      // HMTD / KUNN: Gốc trả cuối kỳ
       principal = (i === periods) ? balance : 0;
     } else {
-      // Gốc trả đều hàng tháng
       principal = Math.round(loanAmount / periods);
-      if (i === periods) principal = balance; // kỳ cuối trả hết số dư
+      if (i === periods) principal = balance;
     }
 
     const interest = Math.round(balance * annualRate * (prevDays / 365));
@@ -201,9 +186,40 @@ export const LoanPortfolioView: React.FC = () => {
   const [selectedContract, setSelectedContract] = useState<LoanContract | null>(null);
   const [schedules, setSchedules] = useState<RepaymentSchedule[]>([]);
 
-  // Tab
+  // Main UI Tab & Form visibility
   const [mainTab, setMainTab] = useState<'kunn' | 'schedule'>('kunn');
   const [showForm, setShowForm] = useState(false);
+
+  // Master HĐTD Filter state ('ALL' or specific master contract number)
+  const [selectedMasterFilter, setSelectedMasterFilter] = useState<string>('ALL');
+
+  // Trích xuất Số HĐTD Gốc chuẩn từ LoanContract
+  const getMasterHdtdNumber = (c: LoanContract): string => {
+    if (c.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate)) {
+      return c.HdtdDueDate.trim();
+    }
+    if (c.Note?.includes('HĐTD:')) {
+      const match = c.Note.match(/HĐTD:\s*([^\n\r]+)/);
+      if (match && match[1]) return match[1].trim();
+    }
+    if (c.ContractNumber?.includes('/GNN-')) {
+      return c.ContractNumber.split('/GNN-')[0].trim();
+    }
+    return c.ContractNumber?.trim() || 'HĐTD-CHÍNH';
+  };
+
+  // Tự động nhảy số KUNN (/GNN-01, /GNN-02...) khi gõ hoặc chọn Số HĐTD Gốc
+  const handleHdtdNumberChange = (val: string) => {
+    setFormHdtdNumber(val);
+    const trimmed = val.trim();
+    if (trimmed) {
+      const existingCount = contracts.filter(c => getMasterHdtdNumber(c).toLowerCase() === trimmed.toLowerCase()).length;
+      const nextIndex = (existingCount + 1).toString().padStart(2, '0');
+      setFormKunnNumber(`${trimmed}/GNN-${nextIndex}`);
+    } else {
+      setFormKunnNumber('');
+    }
+  };
 
   // Form state (HĐTD + KUNN + Lãi suất + Phương thức trả nợ)
   const [form, setForm] = useState<Partial<LoanContract>>({});
@@ -503,19 +519,23 @@ export const LoanPortfolioView: React.FC = () => {
     setSchedules([]);
     const defaultMethod = LOAN_METHODS[0];
 
-    // Master = HĐTD chính (Hạn mức tín dụng) hoặc hợp đồng đầu tiên
-    const master = contracts.find(c => c.LoanMethod === 'Hạn mức tín dụng') || (contracts.length > 0 ? contracts[0] : null);
+    // Lấy HĐTD được lọc hiện tại hoặc HĐTD hạn mức mặc định
+    let masterHdtd = selectedMasterFilter !== 'ALL' ? selectedMasterFilter : '';
+    let master = contracts.find(c => getMasterHdtdNumber(c) === masterHdtd);
+    
+    if (!masterHdtd) {
+      master = contracts.find(c => c.LoanMethod === 'Hạn mức tín dụng') || (contracts.length > 0 ? contracts[0] : undefined);
+      if (master) masterHdtd = getMasterHdtdNumber(master);
+    }
 
-    const masterHdtd = master
-      ? ((master.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(master.HdtdDueDate))
-          ? master.HdtdDueDate
-          : (master.Note?.includes('HĐTD:') ? master.Note.split('HĐTD:')[1].split('\n')[0].trim() : master.ContractNumber))
-      : '';
-
-    const nextKunnIndex = (contracts.length + 1).toString().padStart(2, '0');
-    const suggestedKunnNumber = masterHdtd
-      ? `${masterHdtd}/GNN-${nextKunnIndex}`
-      : '';
+    let suggestedKunnNumber = '';
+    if (masterHdtd) {
+      const existingKunnCount = contracts.filter(c => getMasterHdtdNumber(c).toLowerCase() === masterHdtd.toLowerCase()).length;
+      const nextKunnIndex = (existingKunnCount + 1).toString().padStart(2, '0');
+      suggestedKunnNumber = `${masterHdtd}/GNN-${nextKunnIndex}`;
+    } else {
+      suggestedKunnNumber = 'HĐTD-01/GNN-01';
+    }
 
     setFormHdtdNumber(masterHdtd);
     setFormKunnNumber(suggestedKunnNumber);
@@ -568,14 +588,20 @@ export const LoanPortfolioView: React.FC = () => {
       }
 
       const hdtd = formHdtdNumber.trim();
-      const kunn = formKunnNumber.trim();
-      const effectiveContractNumber = kunn || hdtd;
+      let kunn = formKunnNumber.trim();
 
-      if (!effectiveContractNumber) {
-        showNotify('error', 'Vui lòng nhập Số HĐTD hoặc Số KUNN!');
-        setLoading(false);
-        return;
+      // Nếu không nhập số KUNN, tự động sinh số KUNN = hdtd/GNN-01, /GNN-02...
+      if (!kunn) {
+        if (hdtd) {
+          const existingCount = contracts.filter(c => getMasterHdtdNumber(c).toLowerCase() === hdtd.toLowerCase()).length;
+          const nextIndex = (existingCount + 1).toString().padStart(2, '0');
+          kunn = `${hdtd}/GNN-${nextIndex}`;
+        } else {
+          kunn = 'HĐTD-01/GNN-01';
+        }
       }
+
+      const effectiveContractNumber = kunn;
 
       const creditLimit = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
       const loanAmount = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || undefined;
@@ -771,16 +797,76 @@ export const LoanPortfolioView: React.FC = () => {
   const currentFormCreditLimitNum = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
   const isLtvExceeded = selectedCollateralIds.length > 0 && maxAllowedLoanLtv > 0 && currentFormCreditLimitNum > maxAllowedLoanLtv;
 
-  // Tổng mức cấp HĐTD = lấy từ ContractAmount của hợp đồng đầu tiên (hợp đồng gốc GNN-01)
-  // Không cộng dồn vì tất cả KUNN đều có chung 1 mức cấp HMTD
-  const masterContract = contracts.length > 0 ? contracts[contracts.length - 1] : null; // GNN-01 là hợp đồng đầu tiên (sort ascending Id)
-  const totalCreditLimit = masterContract?.ContractAmount || 0;
+  // Gom nhóm danh sách các Master HĐTD thuộc về Khách hàng này
+  const masterHdtdGroups = useMemo(() => {
+    const map = new Map<string, {
+      masterNo: string;
+      contracts: LoanContract[];
+      masterContract: LoanContract | null;
+      totalCreditLimit: number;
+      totalKunnDisbursed: number;
+      remainingLimit: number;
+    }>();
 
-  // Tổng dư nợ KUNN = tổng LoanAmount của tất cả KUNN (lần rút vay thực tế)
-  const totalKunnAmount = contracts.reduce((sum, c) => sum + (c.LoanAmount || 0), 0);
-  
-  // HMTD còn lại = Tổng mức cấp - Tổng KUNN đã giải ngân
-  const remainingCreditLimit = Math.max(0, totalCreditLimit - totalKunnAmount);
+    for (const c of contracts) {
+      const masterNo = getMasterHdtdNumber(c);
+      if (!map.has(masterNo)) {
+        map.set(masterNo, {
+          masterNo,
+          contracts: [],
+          masterContract: null,
+          totalCreditLimit: 0,
+          totalKunnDisbursed: 0,
+          remainingLimit: 0,
+        });
+      }
+      const group = map.get(masterNo)!;
+      group.contracts.push(c);
+      
+      if (c.ContractAmount && c.ContractAmount > group.totalCreditLimit) {
+        group.totalCreditLimit = c.ContractAmount;
+        group.masterContract = c;
+      }
+      group.totalKunnDisbursed += (c.LoanAmount || 0);
+    }
+
+    for (const group of map.values()) {
+      if (group.totalCreditLimit === 0 && group.contracts.length > 0) {
+        group.totalCreditLimit = group.contracts[0].ContractAmount || group.contracts[0].LoanAmount || 0;
+      }
+      group.remainingLimit = Math.max(0, group.totalCreditLimit - group.totalKunnDisbursed);
+    }
+
+    return Array.from(map.values());
+  }, [contracts]);
+
+  // Lọc danh sách KUNN theo bộ lọc Master HĐTD được chọn
+  const filteredContracts = useMemo(() => {
+    if (selectedMasterFilter === 'ALL') return contracts;
+    return contracts.filter(c => getMasterHdtdNumber(c) === selectedMasterFilter);
+  }, [contracts, selectedMasterFilter]);
+
+  // Thống kê Tài chính theo Bộ lọc HĐTD
+  const summaryFinancials = useMemo(() => {
+    if (selectedMasterFilter === 'ALL') {
+      const totalCredit = masterHdtdGroups.reduce((sum, g) => sum + g.totalCreditLimit, 0);
+      const totalDisbursed = contracts.reduce((sum, c) => sum + (c.LoanAmount || 0), 0);
+      const totalRemaining = Math.max(0, totalCredit - totalDisbursed);
+      return { totalCredit, totalDisbursed, totalRemaining };
+    } else {
+      const group = masterHdtdGroups.find(g => g.masterNo === selectedMasterFilter);
+      if (!group) return { totalCredit: 0, totalDisbursed: 0, totalRemaining: 0 };
+      return {
+        totalCredit: group.totalCreditLimit,
+        totalDisbursed: group.totalKunnDisbursed,
+        totalRemaining: group.remainingLimit
+      };
+    }
+  }, [contracts, masterHdtdGroups, selectedMasterFilter]);
+
+  const totalCreditLimit = summaryFinancials.totalCredit;
+  const totalKunnAmount = summaryFinancials.totalDisbursed;
+  const remainingCreditLimit = summaryFinancials.totalRemaining;
 
   // Dynamic Theme Classes
   const containerCardBg = isLight
@@ -953,15 +1039,19 @@ export const LoanPortfolioView: React.FC = () => {
 
             <div className="flex items-center space-x-4">
               <div className={`text-right pr-4 border-r ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                <div className="text-[10px] uppercase text-slate-400 font-semibold">Tổng mức cấp HĐTD</div>
+                <div className="text-[10px] uppercase text-slate-400 font-semibold">
+                  {selectedMasterFilter === 'ALL' ? 'Tổng Mức Cấp (Tất cả)' : 'Mức Cấp HĐTD'}
+                </div>
                 <div className="text-sky-600 dark:text-sky-400 font-bold text-sm">{fmtMoney(totalCreditLimit)}</div>
               </div>
               <div className={`text-right pr-4 border-r ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                <div className="text-[10px] uppercase text-slate-400 font-semibold">Tổng dư nợ KUNN</div>
+                <div className="text-[10px] uppercase text-slate-400 font-semibold">
+                  {selectedMasterFilter === 'ALL' ? 'Tổng Dư Nợ KUNN' : 'Dư Nợ KUNN Thuộc HĐ'}
+                </div>
                 <div className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">{fmtMoney(totalKunnAmount)}</div>
               </div>
               <div className="text-right">
-                <div className="text-[10px] uppercase text-slate-400 font-semibold">HMTD còn lại</div>
+                <div className="text-[10px] uppercase text-slate-400 font-semibold">HMTD Còn Lại</div>
                 <div className={`font-bold text-sm ${remainingCreditLimit === 0 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
                   {fmtMoney(remainingCreditLimit)}
                 </div>
@@ -973,6 +1063,56 @@ export const LoanPortfolioView: React.FC = () => {
                 <span>Tạo HĐTD mới</span>
               </button>
             </div>
+
+            {/* ── BỘ LỌC QUẢN LÝ THEO TỪNG GÓI HĐTD CỦA KHÁCH HÀNG ── */}
+            {masterHdtdGroups.length > 0 && (
+              <div className="w-full border-t pt-3 mt-1 border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
+                    <FileText className="w-3.5 h-3.5 text-purple-500" />
+                    <span>LỌC XEM THEO HĐTD CHÍNH ({masterHdtdGroups.length} HĐTD):</span>
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMasterFilter('ALL')}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                        selectedMasterFilter === 'ALL'
+                          ? 'bg-sky-600 text-white shadow-sm'
+                          : isLight ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      📊 Tất cả HĐTD ({contracts.length} KUNN)
+                    </button>
+                    {masterHdtdGroups.map(g => (
+                      <button
+                        key={g.masterNo}
+                        type="button"
+                        onClick={() => setSelectedMasterFilter(g.masterNo)}
+                        className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center space-x-1.5 ${
+                          selectedMasterFilter === g.masterNo
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : isLight
+                              ? 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'
+                              : 'bg-purple-950/40 text-purple-300 hover:bg-purple-900/40 border border-purple-800'
+                        }`}
+                      >
+                        <span>📜 {g.masterNo}</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-sans">
+                          {g.contracts.length} KUNN
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedMasterFilter !== 'ALL' && (
+                  <span className="text-[11px] italic text-purple-600 dark:text-purple-400 font-medium">
+                    ⚡ Đang xem gói HĐTD: <strong className="font-mono">{selectedMasterFilter}</strong>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Sub-tabs Navigation */}
@@ -999,7 +1139,7 @@ export const LoanPortfolioView: React.FC = () => {
                 <div className={`p-3 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
                   <span className="font-bold flex items-center space-x-2 text-xs">
                     <Receipt className="w-4 h-4 text-amber-500" />
-                    <span>DANH SÁCH GIẤY NHẬN NỢ (KUNN) — {contracts.length} KHOẢN VAY</span>
+                    <span>DANH SÁCH GIẤY NHẬN NỢ (KUNN) — {filteredContracts.length} KHOẢN VAY</span>
                   </span>
                   <span className="text-[11px] text-slate-400">Nhấp vào dòng để xem chi tiết / cập nhật HĐTD</span>
                 </div>
@@ -1020,13 +1160,14 @@ export const LoanPortfolioView: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
-                      {contracts.length === 0 ? (
-                        <tr><td colSpan={9} className="text-center p-8 text-slate-400">
-                          Chưa có Giấy Nhận Nợ nào. Nhấn "Tạo HĐTD mới" để nhập khoản vay.
+                      {filteredContracts.length === 0 ? (
+                        <tr><td colSpan={10} className="text-center p-8 text-slate-400">
+                          Chưa có Giấy Nhận Nợ nào trong bộ lọc HĐTD này. Nhấn "Tạo HĐTD mới" để nhập khoản vay.
                         </td></tr>
-                      ) : contracts.map(c => {
+                      ) : filteredContracts.map(c => {
                         const isSelected = selectedContract?.Id === c.Id;
                         const dg = c.DebtGroup || 1;
+                        const masterNo = getMasterHdtdNumber(c);
                         return (
                           <tr key={c.Id}
                             onClick={() => handleSelectContract(c)}
@@ -1042,12 +1183,7 @@ export const LoanPortfolioView: React.FC = () => {
                             </td>
                             {/* Số HĐTD gốc */}
                             <td className="p-3 font-mono text-purple-600 dark:text-purple-400 font-semibold whitespace-nowrap text-[11px]">
-                              {c.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate)
-                                ? c.HdtdDueDate
-                                : c.Note?.includes('HĐTD:')
-                                  ? c.Note.split('HĐTD:')[1].split('\n')[0].trim()
-                                  : <span className="text-slate-400 font-normal italic">—</span>
-                              }
+                              {masterNo}
                             </td>
                             <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                               {fmtMoney(c.LoanAmount || c.ContractAmount)}
@@ -1113,10 +1249,10 @@ export const LoanPortfolioView: React.FC = () => {
                             className={`w-full rounded-xl p-2.5 text-xs font-mono text-sky-600 dark:text-sky-400 ${readonlyInputStyle}`} />
                         </div>
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Số HĐTD</label>
+                          <label className={`block mb-1 ${labelStyle}`}>Số HĐTD Gốc</label>
                           <input type="text"
                             value={formHdtdNumber}
-                            onChange={e => setFormHdtdNumber(e.target.value)}
+                            onChange={e => handleHdtdNumberChange(e.target.value)}
                             placeholder="2002/HDTD/9634078..."
                             className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-purple-600 dark:text-purple-400 ${inputStyle}`} />
                         </div>

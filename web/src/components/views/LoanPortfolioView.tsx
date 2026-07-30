@@ -104,6 +104,12 @@ function getDaysBetween(d1Str: string, d2Str: string): number {
   return Math.max(1, Math.round((utc2 - utc1) / (1000 * 60 * 60 * 24)));
 }
 
+function roundPrincipalCore(rawPrincipal: number, roundMode: '50k' | '10k' | 'exact' = '50k'): number {
+  if (roundMode === 'exact' || !rawPrincipal || rawPrincipal <= 0) return Math.round(rawPrincipal);
+  const step = roundMode === '50k' ? 50000 : 10000;
+  return Math.ceil(rawPrincipal / step) * step;
+}
+
 // Generate repayment schedule matching Core Banking exact calendar day formulas
 function generateSchedule(
   contractId: number,
@@ -112,7 +118,8 @@ function generateSchedule(
   repaymentStartDateStr: string,
   periods: number,
   isBulletPrincipal: boolean = true,
-  disbursementDateStr?: string
+  disbursementDateStr?: string,
+  customMonthlyPrincipal?: number
 ): Partial<RepaymentSchedule>[] {
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
@@ -126,6 +133,13 @@ function generateSchedule(
 
   // Lịch sử ngày trả nợ kỳ trước (Kỳ 1 bắt đầu tính số ngày thực tế từ Ngày giải ngân)
   let prevDateStr = disbursementDateStr || repaymentStartDateStr;
+
+  // Tiền gốc trả đều hàng tháng (mặc định làm tròn lên 50k chuẩn Core Banking T24 nếu không chỉ định)
+  const defaultMonthlyPrincipal = isBulletPrincipal
+    ? 0
+    : (customMonthlyPrincipal && customMonthlyPrincipal > 0
+        ? customMonthlyPrincipal
+        : roundPrincipalCore(loanAmount / periods, '50k'));
 
   for (let i = 1; i <= periods; i++) {
     // Ngày trả nợ của Kỳ i (Kỳ 1 = RepaymentStartDate, các kỳ sau = +1 tháng, kẹp ngày tháng)
@@ -143,8 +157,11 @@ function generateSchedule(
     if (isBulletPrincipal) {
       principal = (i === periods) ? balance : 0;
     } else {
-      principal = Math.round(loanAmount / periods);
-      if (i === periods) principal = balance;
+      if (i === periods) {
+        principal = balance; // Kỳ cuối trả hết dư nợ còn lại
+      } else {
+        principal = Math.min(balance, defaultMonthlyPrincipal);
+      }
     }
 
     // Công thức Core Ngân hàng: Lãi = Dư nợ * (Lãi suất / 365) * Số ngày thực tế trong kỳ

@@ -96,6 +96,7 @@ export interface LoanContract {
 
   customer?: Customer;
   collateral?: Collateral;
+  CollateralIds?: string | null;
   contractCollaterals?: ContractCollateral[];
 }
 

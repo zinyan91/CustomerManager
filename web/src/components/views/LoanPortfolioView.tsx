@@ -240,21 +240,17 @@ export const LoanPortfolioView: React.FC = () => {
     }).catch(() => {});
   }, []);
 
-  // Requirement 1 & 2: Auto-sync cho Cho vay từng lần & KUNN
+  // Auto-sync cho Cho vay từng lần & KUNN
   useEffect(() => {
     const isSingleLoan = form.LoanMethod === 'Cho vay từng lần' || form.LoanMethod === 'Hạn mức tín dụng từng lần';
     if (isSingleLoan) {
       if (form.LoanTenorMonths) {
         const kunnTenorStr = `${form.LoanTenorMonths} tháng`;
-        const calculatedEnd = addMonthsToDate(form.ContractStartDate || form.DisbursementDate, form.LoanTenorMonths);
-
         setForm(prev => {
-          let updated = false;
-          const copy = { ...prev };
-          if (copy.KunnTenor !== kunnTenorStr) { copy.KunnTenor = kunnTenorStr; updated = true; }
-          if (!copy.DisbursementDate && copy.ContractStartDate) { copy.DisbursementDate = copy.ContractStartDate; updated = true; }
-          if (calculatedEnd && copy.KunnDueDate !== calculatedEnd) { copy.KunnDueDate = calculatedEnd; updated = true; }
-          return updated ? copy : prev;
+          if (prev.KunnTenor !== kunnTenorStr) {
+            return { ...prev, KunnTenor: kunnTenorStr };
+          }
+          return prev;
         });
       }
 
@@ -263,7 +259,7 @@ export const LoanPortfolioView: React.FC = () => {
         setFormCreditLimit(formLoanAmount);
       }
     }
-  }, [form.LoanMethod, form.LoanTenorMonths, form.ContractStartDate, form.DisbursementDate, formLoanAmount]);
+  }, [form.LoanMethod, form.LoanTenorMonths, formLoanAmount]);
 
   // Auto-calculate End Dates when Effective Date / Disbursement Date / Tenor changes
   useEffect(() => {
@@ -482,7 +478,10 @@ export const LoanPortfolioView: React.FC = () => {
     setRateBase(c.BaseRate ? (c.BaseRate * 100).toString() : '');
     setRateMargin(c.MarginRate ? (c.MarginRate * 100).toString() : '');
 
-    if (c.CollateralId) {
+    if (c.CollateralIds) {
+      const ids = c.CollateralIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      setSelectedCollateralIds(ids);
+    } else if (c.CollateralId) {
       setSelectedCollateralIds([c.CollateralId]);
     } else {
       setSelectedCollateralIds([]);
@@ -601,6 +600,7 @@ export const LoanPortfolioView: React.FC = () => {
         InterestRate: activeInterestRate,
 
         CollateralId: selectedCollateralIds.length > 0 ? selectedCollateralIds[0] : null,
+        CollateralIds: selectedCollateralIds.length > 0 ? selectedCollateralIds.join(',') : null,
       };
 
       // Force insert (create new KUNN) or when no contract selected
@@ -1456,7 +1456,7 @@ export const LoanPortfolioView: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <div className="text-[11px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-1.5">
                           <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                          <span>TÀI SẢN BẢO ĐẢM LIÊN KẾT (1 HĐTD — N TSBĐ)</span>
+                          <span>TÀI SẢN BẢO ĐẢM LIÊN KẾT</span>
                         </div>
                         <span className="text-[10px] text-slate-500 font-medium">Tổng Định giá: {fmtMoney(totalAppraisedValue)}</span>
                       </div>

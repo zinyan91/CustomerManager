@@ -3,7 +3,7 @@ import type { Customer, Collateral, LoanContract, CreditCard, RepaymentSchedule 
 
 export async function fetchCustomersAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
   try {
-    let query = supabase.from('Customers').select('*');
+    let query = supabase.from('Customers').select('*').limit(1000);
     if (filters?.cif) query = query.ilike('CifKh', `%${filters.cif}%`);
     if (filters?.name) query = query.ilike('FullName', `%${filters.name}%`);
     if (filters?.nationalId) query = query.ilike('NationalId', `%${filters.nationalId}%`);

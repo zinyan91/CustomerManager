@@ -426,14 +426,14 @@ export const LoanPortfolioView: React.FC = () => {
   // Remaining HMTD Credit Limit for this specific HĐTD = Credit Limit of this HĐTD - (Existing KUNNs of this HĐTD + Current KUNN)
   const remainingHmtdLimit = Math.max(0, creditLimitNum - totalExistingKunnBalance - kunnLoanAmountNum);
 
-  // Filtered dropdown list for quick pick
+  // Filtered dropdown list for quick pick (Loads ALL customers without 30-item limit)
   const dropdownFiltered = dropdownQuery.trim().length < 1
-    ? allCustomers.slice(0, 30)
+    ? allCustomers
     : allCustomers.filter(c =>
         c.FullName.toLowerCase().includes(dropdownQuery.toLowerCase()) ||
         c.CifKh.toLowerCase().includes(dropdownQuery.toLowerCase()) ||
         (c.NationalId || '').includes(dropdownQuery)
-      ).slice(0, 30);
+      );
 
   const loadAllSchedulesForContracts = async (cons: LoanContract[]) => {
     const map: Record<number, RepaymentSchedule[]> = {};

@@ -1,7 +1,13 @@
 import React from 'react';
 import type { ThemeStyles } from '../../lib/themeStyles';
 
-export type TemplateType = 'lease_mb' | 'construction' | 'sale_contract' | 'lease_house' | 'payment_request';
+export type TemplateType =
+  | 'lease_mb'
+  | 'construction'
+  | 'sale_contract'
+  | 'lease_house'
+  | 'payment_request_sale'
+  | 'payment_request_const';
 
 interface TemplateSelectorProps {
   styles: ThemeStyles;
@@ -12,10 +18,11 @@ interface TemplateSelectorProps {
 
 export const TEMPLATE_LIST: { id: TemplateType; label: string }[] = [
   { id: 'lease_mb', label: '1. HĐ Thuê Mặt Bằng' },
-  { id: 'construction', label: '2. HĐ Thi Công Nhà Ở Dân Dụng' },
+  { id: 'construction', label: '2. HĐ Thi Công Nhà Ở' },
   { id: 'sale_contract', label: '3. HĐ Mua Bán Hàng Hóa' },
-  { id: 'lease_house', label: '4. HĐ Thuê Nhà Ở Dân Dụng' },
-  { id: 'payment_request', label: '5. Giấy Đề Nghị Thanh Toán' },
+  { id: 'lease_house', label: '4. HĐ Thuê Nhà Ở' },
+  { id: 'payment_request_sale', label: '5. Đề Nghị Thanh Toán (HĐ Mua Bán)' },
+  { id: 'payment_request_const', label: '6. Đề Nghị Thanh Toán (HĐ Thi Công)' },
 ];
 
 export const TemplateSelector: React.FC<TemplateSelectorProps> = ({

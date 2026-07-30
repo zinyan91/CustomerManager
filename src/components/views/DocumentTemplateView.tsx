@@ -302,16 +302,110 @@ export const DocumentTemplateView: React.FC = () => {
       `;
     }
 
+    if (selectedTemplate === 'payment_request_sale') {
+      const remainingNum = Math.max(0, totalSaleAmount - (parseFloat(salePaymentStage1.replace(/\D/g, '')) || 0));
+
+      return `
+        <div class="text-center no-indent">
+          <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+          <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
+          <div style="text-align: center; margin: 4px 0;" class="no-indent">
+            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
+          </div>
+        </div>
+
+        <div class="text-right font-italic text-[12pt] pt-2 pb-2 no-indent">
+          ........, Ngày .... Tháng .... Năm 2026
+        </div>
+
+        <div class="text-center pt-2 pb-2 no-indent">
+          <h1>GIẤY ĐỀ NGHỊ THANH TOÁN</h1>
+        </div>
+
+        <p class="clause-p">Kính gửi: <strong>Bà ${nfc(saleBuyerName)}</strong></p>
+
+        <p class="clause-p">Căn cứ hợp đồng mua bán hàng hóa ký ngày: <strong>${fmtDate(saleContractDate)}</strong> giữa Bà ${nfc(saleBuyerName)} và Ông ${nfc(saleSellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
+
+        <p class="clause-p"><strong>1. Giá trị hợp đồng:</strong> <strong>${totalSaleAmount.toLocaleString('vi-VN')} đồng</strong></p>
+        <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;(Bằng chữ: Năm trăm chín mươi ba triệu sáu trăm nghìn đồng)</p>
+
+        <p class="clause-p"><strong>2. Thời hạn thanh toán:</strong></p>
+        <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;+ Bà Cảnh đã thanh toán cho tôi với số tiền đợt đầu tiên là: <strong>${salePaymentStage1} đồng</strong></p>
+        <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;+ Bà Cảnh thanh toán cho tôi số tiền còn lại của hợp đồng đợt này là: <strong>${remainingNum.toLocaleString('vi-VN')} đồng</strong> trước khi nhận hàng</p>
+
+        <p class="clause-p"><strong>3. Thông tin thanh toán:</strong></p>
+        <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;– Họ & tên: <strong>${nfc(saleSellerName)}</strong></p>
+        <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;– CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;&nbsp;&nbsp;&nbsp;– Ngày cấp: <strong>${nfc(saleSellerCccdDate)}</strong> &nbsp;&nbsp;&nbsp;&nbsp;– Nơi cấp: <strong>CCS QLHC về TTXH</strong></p>
+
+        <p class="clause-p pt-3">Kính mong Bà Cảnh sắp xếp thanh toán số tiền nêu trên trước khi nhận hàng, theo đúng tiến độ đã thỏa thuận trong hợp đồng.</p>
+
+        <p class="clause-p">Trân trọng!</p>
+
+        <table class="sig-table font-serif">
+          <tbody>
+            <tr>
+              <td style="width: 50%;"></td>
+              <td style="width: 50%; text-align: center;">
+                <div class="font-bold uppercase">Người đề nghị thanh toán</div>
+                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
+                <div style="height: 70px;"></div>
+                <div class="font-bold uppercase">${nfc(saleSellerName)}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Default: payment_request_const (HĐ Thi công nhà ở)
     return `
       <div class="text-center no-indent">
         <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
         <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
+        <div style="text-align: center; margin: 4px 0;" class="no-indent">
+          <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
+        </div>
       </div>
+
+      <div class="text-right font-italic text-[12pt] pt-2 pb-2 no-indent">
+        ........, Ngày .... Tháng .... Năm 2026
+      </div>
+
       <div class="text-center pt-2 pb-2 no-indent">
         <h1>GIẤY ĐỀ NGHỊ THANH TOÁN</h1>
       </div>
-      <p class="clause-p">Kính gửi: Bà Lê Thị Cảnh.</p>
-      <p class="clause-p">Đề nghị thanh toán hợp đồng mua bán mỹ phẩm đợt 2 số tiền: <strong>500.000.000 VNĐ</strong>.</p>
+
+      <p class="clause-p">Kính gửi: <strong>Bà ${nfc(constPartyAName)}</strong></p>
+
+      <p class="clause-p">- Căn cứ hợp đồng thi công nhà ở dân dụng ký ngày <strong>${fmtDate(constContractDate)}</strong> giữa Bà ${nfc(constPartyAName)} và Bà ${nfc(constPartyBName)}</p>
+      <p class="clause-p">- Nay tôi kính đề nghị Bà ${nfc(constPartyAName)} thanh toán cho tôi phần còn lại của hợp đồng thi công nhà ở nêu trên, với nội dung cụ thể như sau:</p>
+
+      <p class="clause-p"><strong>1. Giá trị hợp đồng:</strong> <strong>${constTotalPrice} đồng</strong></p>
+      <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;(Bằng chữ: Một tỷ không trăm lẻ ba triệu bảy trăm ngàn)</p>
+
+      <p class="clause-p"><strong>2. Thời hạn thanh toán:</strong></p>
+      <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;+ Đợt 1: Bà Dung đã thanh toán cho tôi với số tiền đợt đầu tiên là: <strong>${constDepositStage1} đồng</strong></p>
+      <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;+ Đợt 2: Đề nghị bà Dung thanh toán cho tôi số tiền đợt 2 là: <strong>${constStage2Amount} đồng</strong></p>
+
+      <p class="clause-p"><strong>3. Thông tin thanh toán:</strong></p>
+      <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;- Họ & Tên: <strong>${nfc(constPartyBName)}</strong></p>
+      <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;- CCCD số: <strong>${nfc(constPartyBCccd)}</strong> &nbsp;&nbsp;&nbsp;&nbsp;- Ngày cấp: <strong>03/03/2022</strong> &nbsp;&nbsp;&nbsp;&nbsp;- Nơi cấp: <strong>Cục Cảnh Sát QLHC</strong></p>
+
+      <p class="clause-p pt-3">Trân trọng cảm ơn!</p>
+
+      <table class="sig-table font-serif">
+        <tbody>
+          <tr>
+            <td style="width: 50%;"></td>
+            <td style="width: 50%; text-align: center;">
+              <div class="font-bold uppercase">Người đề nghị thanh toán</div>
+              <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
+              <div style="height: 70px;"></div>
+              <div class="font-bold uppercase">${nfc(constPartyBName)}</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     `;
   };
 

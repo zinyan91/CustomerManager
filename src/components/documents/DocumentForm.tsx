@@ -405,5 +405,109 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
     );
   }
 
+  if (selectedTemplate === 'payment_request_sale') {
+    return (
+      <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
+        <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
+          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
+            THÔNG TIN ĐỀ NGHỊ THANH TOÁN - HỢP ĐỒNG MUA BÁN HÀNG HÓA
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">NGƯỜI NHẬN & NGƯỜI ĐỀ NGHỊ</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Kính gửi (Người nhận thanh toán)</label>
+              <input type="text" value={saleBuyerName} onChange={e => setSaleBuyerName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Người đề nghị (Bên Bán)</label>
+              <input type="text" value={saleSellerName} onChange={e => setSaleSellerName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Số CCCD Bên Bán</label>
+              <input type="text" value={saleSellerCccd} onChange={e => setSaleSellerCccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Ngày cấp CCCD</label>
+              <input type="text" value={saleSellerCccdDate} onChange={e => setSaleSellerCccdDate(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">NỘI DUNG & TIẾN ĐỘ THANH TOÁN</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Ngày ký HĐ Mua Bán</label>
+              <DateInput value={saleContractDate} onChange={setSaleContractDate} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Đã thanh toán Đợt 1 (VNĐ)</label>
+              <input type="text" value={salePaymentStage1} onChange={e => setSalePaymentStage1(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Tổng giá trị HĐ (VNĐ)</label>
+              <div className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.readonlyInputStyle}`}>
+                {saleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0).toLocaleString('vi-VN')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedTemplate === 'payment_request_const') {
+    return (
+      <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
+        <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
+          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
+            THÔNG TIN ĐỀ NGHỊ THANH TOÁN - HỢP ĐỒNG THI CÔNG NHÀ Ở
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">NGƯỜI NHẬN & NGƯỜI ĐỀ NGHỊ</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Kính gửi (Chủ Đầu Tư)</label>
+              <input type="text" value={constPartyAName} onChange={e => setConstPartyAName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Người đề nghị (Nhà Thầu)</label>
+              <input type="text" value={constPartyBName} onChange={e => setConstPartyBName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+            </div>
+          </div>
+          <div>
+            <label className={`block mb-1 ${styles.labelStyle}`}>Số STK / CCCD Nhà Thầu</label>
+            <input type="text" value={constPartyBCccd} onChange={e => setConstPartyBCccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">NỘI DUNG & TIẾN ĐỘ THANH TOÁN</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Ngày ký HĐ Thi Công</label>
+              <DateInput value={constContractDate} onChange={setConstContractDate} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Đã thanh toán Đợt 1 (VNĐ)</label>
+              <input type="text" value={constDepositStage1} onChange={e => setConstDepositStage1(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Đề nghị thanh toán Đợt 2 (VNĐ)</label>
+              <input type="text" value={constStage2Amount} onChange={e => setConstStage2Amount(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-purple-600 dark:text-purple-400 ${styles.inputStyle}`} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return null;
 };

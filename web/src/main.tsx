@@ -3,11 +3,14 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { ThemeProvider } from './context/ThemeContext.tsx'
+import { DateFormatProvider } from './context/DateFormatContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <App />
+      <DateFormatProvider>
+        <App />
+      </DateFormatProvider>
     </ThemeProvider>
   </StrictMode>,
 )

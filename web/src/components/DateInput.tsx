@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar } from 'lucide-react';
+import { useDateFormat, type DateFormat } from '../context/DateFormatContext';
+import { parseAnyDate } from '../lib/utils';
 
 export interface DateInputProps {
   value?: string | null;
@@ -11,39 +13,64 @@ export interface DateInputProps {
   required?: boolean;
   id?: string;
   name?: string;
+  format?: DateFormat;
 }
 
-export function isoToDisplay(isoStr?: string | null): string {
-  if (!isoStr) return '';
-  const clean = String(isoStr).trim().split('T')[0].split(' ')[0];
-  if (!clean) return '';
+export function dateToDisplay(v?: string | null, format: DateFormat = 'dd/mm/yyyy'): string {
+  if (!v) return '';
+  const parsed = parseAnyDate(v);
+  if (!parsed) return String(v);
 
-  const matchIso = clean.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-  if (matchIso) {
-    const [, yyyy, mm, dd] = matchIso;
-    return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`;
-  }
+  const dd = String(parsed.day).padStart(2, '0');
+  const mm = String(parsed.month).padStart(2, '0');
+  const yyyy = String(parsed.year);
 
-  const matchDisplay = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (matchDisplay) {
-    const [, dd, mm, yyyy] = matchDisplay;
-    return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`;
-  }
-
-  return clean;
+  if (format === 'mm/dd/yyyy') return `${mm}/${dd}/${yyyy}`;
+  if (format === 'yyyy-mm-dd') return `${yyyy}-${mm}-${dd}`;
+  return `${dd}/${mm}/${yyyy}`;
 }
 
-export function displayToIso(displayStr: string): string | null {
+export function displayToIso(displayStr: string, format: DateFormat = 'dd/mm/yyyy'): string | null {
   const clean = displayStr.trim();
-  let day: number, month: number, year: number;
+  if (!clean) return null;
 
-  const match = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (match) {
-    day = parseInt(match[1], 10);
-    month = parseInt(match[2], 10);
-    year = parseInt(match[3], 10);
+  let day: number | null = null;
+  let month: number | null = null;
+  let year: number | null = null;
+
+  if (format === 'yyyy-mm-dd') {
+    const match = clean.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (match) {
+      year = parseInt(match[1], 10);
+      month = parseInt(match[2], 10);
+      day = parseInt(match[3], 10);
+    }
+  } else if (format === 'mm/dd/yyyy') {
+    const match = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (match) {
+      month = parseInt(match[1], 10);
+      day = parseInt(match[2], 10);
+      year = parseInt(match[3], 10);
+    }
   } else {
-    return null;
+    // dd/mm/yyyy
+    const match = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (match) {
+      day = parseInt(match[1], 10);
+      month = parseInt(match[2], 10);
+      year = parseInt(match[3], 10);
+    }
+  }
+
+  if (day === null || month === null || year === null) {
+    const parsed = parseAnyDate(clean);
+    if (parsed) {
+      day = parsed.day;
+      month = parsed.month;
+      year = parsed.year;
+    } else {
+      return null;
+    }
   }
 
   if (month < 1 || month > 12) return null;
@@ -64,18 +91,26 @@ export function displayToIso(displayStr: string): string | null {
   return `${year}-${mmStr}-${ddStr}`;
 }
 
-function autoFormatDisplayDate(input: string, prev: string): string {
+function autoFormatDisplayDate(input: string, prev: string, format: DateFormat): string {
   if (input.length < prev.length) {
     return input;
+  }
+
+  if (format === 'yyyy-mm-dd') {
+    const digits = input.replace(/\D/g, '').slice(0, 8);
+    if (!digits) return '';
+    if (digits.length <= 4) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
   }
 
   if (input.includes('/')) {
     const parts = input.split('/');
     if (parts.length === 3 && parts[2].length === 4) {
-      const d = parts[0].padStart(2, '0');
-      const m = parts[1].padStart(2, '0');
+      const p1 = parts[0].padStart(2, '0');
+      const p2 = parts[1].padStart(2, '0');
       const y = parts[2];
-      return `${d}/${m}/${y}`;
+      return `${p1}/${p2}/${y}`;
     }
   }
 
@@ -91,14 +126,20 @@ export const DateInput: React.FC<DateInputProps> = ({
   value,
   onChange,
   className = '',
-  placeholder = 'dd/mm/yyyy',
+  placeholder,
   disabled = false,
   readOnly = false,
   required = false,
   id,
   name,
+  format: propFormat,
 }) => {
-  const [displayText, setDisplayText] = useState<string>(() => isoToDisplay(value));
+  const { dateFormat: globalFormat } = useDateFormat();
+  const activeFormat = propFormat || globalFormat || 'dd/mm/yyyy';
+
+  const activePlaceholder = placeholder || activeFormat;
+
+  const [displayText, setDisplayText] = useState<string>(() => dateToDisplay(value, activeFormat));
   const hiddenDateRef = useRef<HTMLInputElement>(null);
   const isInternalChange = useRef(false);
 
@@ -107,15 +148,15 @@ export const DateInput: React.FC<DateInputProps> = ({
       isInternalChange.current = false;
       return;
     }
-    setDisplayText(isoToDisplay(value));
-  }, [value]);
+    setDisplayText(dateToDisplay(value, activeFormat));
+  }, [value, activeFormat]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawVal = e.target.value;
-    const formatted = autoFormatDisplayDate(rawVal, displayText);
+    const formatted = autoFormatDisplayDate(rawVal, displayText, activeFormat);
     setDisplayText(formatted);
 
-    const iso = displayToIso(formatted);
+    const iso = displayToIso(formatted, activeFormat);
     if (iso !== null) {
       isInternalChange.current = true;
       onChange?.(iso);
@@ -127,15 +168,15 @@ export const DateInput: React.FC<DateInputProps> = ({
 
   const handleBlur = () => {
     if (displayText.trim() !== '') {
-      const iso = displayToIso(displayText);
+      const iso = displayToIso(displayText, activeFormat);
       if (iso) {
-        setDisplayText(isoToDisplay(iso));
+        setDisplayText(dateToDisplay(iso, activeFormat));
         if (iso !== value) {
           isInternalChange.current = true;
           onChange?.(iso);
         }
       } else {
-        setDisplayText(isoToDisplay(value));
+        setDisplayText(dateToDisplay(value, activeFormat));
       }
     } else {
       if (value) {
@@ -162,7 +203,7 @@ export const DateInput: React.FC<DateInputProps> = ({
 
   const handleNativePickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newIso = e.target.value;
-    setDisplayText(isoToDisplay(newIso));
+    setDisplayText(dateToDisplay(newIso, activeFormat));
     isInternalChange.current = true;
     onChange?.(newIso);
   };
@@ -176,7 +217,7 @@ export const DateInput: React.FC<DateInputProps> = ({
         value={displayText}
         onChange={handleTextChange}
         onBlur={handleBlur}
-        placeholder={placeholder}
+        placeholder={activePlaceholder}
         disabled={disabled}
         readOnly={readOnly}
         required={required}

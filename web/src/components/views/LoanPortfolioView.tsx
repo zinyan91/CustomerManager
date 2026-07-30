@@ -323,11 +323,9 @@ export const LoanPortfolioView: React.FC = () => {
     }).catch(() => {});
   }, []);
 
-  // Auto-sync cho Cho vay từng lần & KUNN
   useEffect(() => {
     const isSingleLoan = form.LoanMethod === 'Cho vay từng lần' || form.LoanMethod === 'Hạn mức tín dụng từng lần';
     if (isSingleLoan) {
-      // Auto-sync KUNN tenor label
       if (form.LoanTenorMonths) {
         const kunnTenorStr = `${form.LoanTenorMonths} tháng`;
         setForm(prev => {
@@ -337,6 +335,12 @@ export const LoanPortfolioView: React.FC = () => {
           return prev;
         });
       }
+    } else if (form.LoanMethod === 'Hạn mức tín dụng' || form.LoanMethod?.includes('Hạn mức')) {
+      setForm(prev => ({
+        ...prev,
+        LoanPurposeType: 'Kinh doanh',
+        LoanPurpose: prev.LoanPurpose || 'Cho vay Phục vụ Hoạt động Kinh doanh'
+      }));
     }
   }, [form.LoanMethod, form.LoanTenorMonths]);
 
@@ -1866,7 +1870,6 @@ export const LoanPortfolioView: React.FC = () => {
                                         <span className="font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
                                           {col.LtvPercent || 70}%
                                         </span>
-                                        <span className="text-[10px] text-slate-400 italic">(Cập nhật tại Tab Định giá TSBĐ)</span>
                                       </span>
                                     </div>
                                   </div>
@@ -1930,7 +1933,7 @@ export const LoanPortfolioView: React.FC = () => {
                             className="flex-1 bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-sky-600/30 text-xs flex items-center justify-center space-x-2"
                           >
                             <Save className="w-4 h-4" />
-                            <span>{loading ? 'Đang lưu...' : `💾 CẬP NHẬT KUNN NÀY (#${selectedContract.ContractNumber})`}</span>
+                            <span>{loading ? 'Đang lưu...' : `CẬP NHẬT KUNN NÀY (#${selectedContract.ContractNumber})`}</span>
                           </button>
 
                           <button
@@ -2046,7 +2049,7 @@ export const LoanPortfolioView: React.FC = () => {
                           <tr>
                             <th className="p-3 text-center whitespace-nowrap">KỲ</th>
                             <th className="p-3 whitespace-nowrap">NGÀY ĐẾN HẠN</th>
-                            <th className="p-3 text-center whitespace-nowrap text-rose-500">⚡ SỐ NGÀY QUÁ HẠN (NHẬP)</th>
+                            <th className="p-3 text-center whitespace-nowrap text-rose-500">SỐ NGÀY QUÁ HẠN (NHẬP)</th>
                             <th className="p-3 text-right whitespace-nowrap">GỐC</th>
                             <th className="p-3 text-right whitespace-nowrap">LÃI THƯỜNG</th>
                             <th className="p-3 text-right whitespace-nowrap text-rose-500">LÃI PHẠT QUÁ HẠN (150%)</th>

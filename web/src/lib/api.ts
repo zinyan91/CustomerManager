@@ -242,7 +242,6 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
     throw new Error('Khách hàng sở hữu thẻ là bắt buộc!');
   }
 
-  // Duplicate CardNumber check
   if (cardNumber) {
     const { data: cardCheck } = await supabase
       .from('CreditCards')
@@ -255,25 +254,46 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
     }
   }
 
-  if (!isUpdate) {
-    try {
-      const { data } = await supabase.from('CreditCards').select('Id');
-      const maxId = (data && data.length > 0) ? Math.max(...data.map(d => d.Id || 0)) : 0;
-      card.Id = maxId + 1;
-    } catch {
-      card.Id = Date.now();
-    }
+  const { customer, Limit, ...dbPayload } = card as any;
+
+  const cardData: any = {
+    CustomerId: Number(dbPayload.CustomerId),
+    CardNumber: cardNumber || null,
+    CreditLimit: Number(dbPayload.CreditLimit || Limit || 0),
+    CurrentBalance: Number(dbPayload.CurrentBalance || 0),
+    Note: dbPayload.Note || (dbPayload.IssuanceType ? `[IssuanceType:${dbPayload.IssuanceType}]` : null),
+  };
+
+  if (dbPayload.IssuanceType) {
+    cardData.IssuanceType = String(dbPayload.IssuanceType);
   }
 
-  card.CardNumber = cardNumber || null;
-
   if (isUpdate) {
-    const { data, error } = await supabase.from('CreditCards').update(card).eq('Id', card.Id).select().single();
-    if (error) throw error;
+    cardData.Id = dbPayload.Id;
+    const { data, error } = await supabase.from('CreditCards').update(cardData).eq('Id', cardData.Id).select().single();
+    if (error) {
+      delete cardData.IssuanceType;
+      const { data: retryData, error: retryErr } = await supabase.from('CreditCards').update(cardData).eq('Id', cardData.Id).select().single();
+      if (retryErr) throw retryErr;
+      return retryData;
+    }
     return data;
   } else {
-    const { data, error } = await supabase.from('CreditCards').insert([card]).select().single();
-    if (error) throw error;
+    try {
+      const { data } = await supabase.from('CreditCards').select('Id').order('Id', { ascending: false }).limit(1);
+      const maxId = (data && data.length > 0 && data[0].Id) ? data[0].Id : 0;
+      cardData.Id = maxId + 1;
+    } catch {
+      cardData.Id = Date.now();
+    }
+
+    const { data, error } = await supabase.from('CreditCards').insert([cardData]).select().single();
+    if (error) {
+      delete cardData.IssuanceType;
+      const { data: retryData, error: retryErr } = await supabase.from('CreditCards').insert([cardData]).select().single();
+      if (retryErr) throw retryErr;
+      return retryData;
+    }
     return data;
   }
 }
@@ -315,16 +335,26 @@ export async function fetchRepaymentSchedulesAPI(contractId: number): Promise<Re
 
 export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<RepaymentSchedule>[]): Promise<void> {
   if (schedules.length === 0) return;
-  const { data } = await supabase.from('RepaymentSchedules').select('Id');
-  let startId = (data && data.length > 0) ? Math.max(...data.map(d => d.Id || 0)) + 1 : 1;
 
-  const toInsert = schedules.map(s => ({
-    ...s,
-    Id: s.Id || startId++,
-  }));
+  const toInsertClean = schedules.map(s => {
+    if (s.Id && s.Id > 0) return s;
+    const { Id, ...rest } = s;
+    return rest;
+  });
 
-  const { error } = await supabase.from('RepaymentSchedules').insert(toInsert);
-  if (error) throw error;
+  const { error } = await supabase.from('RepaymentSchedules').insert(toInsertClean);
+  if (error) {
+    const { data } = await supabase.from('RepaymentSchedules').select('Id').order('Id', { ascending: false }).limit(1);
+    let startId = (data && data.length > 0 && data[0].Id) ? data[0].Id + 1 : 1;
+
+    const toInsertWithId = schedules.map(s => ({
+      ...s,
+      Id: (s.Id && s.Id > 0) ? s.Id : startId++,
+    }));
+
+    const { error: err2 } = await supabase.from('RepaymentSchedules').insert(toInsertWithId);
+    if (err2) throw err2;
+  }
 }
 
 export async function deleteRepaymentSchedulesByContractAPI(contractId: number): Promise<void> {

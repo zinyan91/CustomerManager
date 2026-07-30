@@ -18,12 +18,37 @@ export function parseMoneyInput(value: string): number {
 export function fmtDate(v?: string | null): string {
   if (!v) return '—';
   try {
-    // Handle ISO datetime strings like "2026-05-15T00:00:00Z"
-    const dateOnly = v.split('T')[0];
-    const parts = dateOnly.split('-');
-    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    return v;
+    const str = String(v).trim();
+    if (!str || str === '—') return '—';
+
+    const dateOnly = str.split('T')[0].split(' ')[0];
+
+    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateOnly)) {
+      const parts = dateOnly.split(/[-/]/);
+      const yyyy = parts[0];
+      const mm = parts[1].padStart(2, '0');
+      const dd = parts[2].padStart(2, '0');
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateOnly)) {
+      const parts = dateOnly.split('/');
+      const p1 = parts[0].padStart(2, '0');
+      const p2 = parts[1].padStart(2, '0');
+      const yyyy = parts[2];
+      return `${p1}/${p2}/${yyyy}`;
+    }
+
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    return str;
   } catch {
-    return v;
+    return String(v);
   }
 }

@@ -563,7 +563,7 @@ export const LoanPortfolioView: React.FC = () => {
       IsRestructured: false
     });
 
-    if (master) {
+    if (master && master.LoanMethod === 'Hạn mức tín dụng') {
       setFormCreditLimit(master.ContractAmount ? master.ContractAmount.toLocaleString('vi-VN') : '');
     } else {
       setFormCreditLimit('');
@@ -606,9 +606,13 @@ export const LoanPortfolioView: React.FC = () => {
 
       const effectiveContractNumber = kunn;
 
-      const creditLimit = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
-      const loanAmount = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || undefined;
-      const currentBal = parseFloat(formCurrentBalance.replace(/\./g, '').replace(',', '.')) || undefined;
+      const creditLimitInput = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
+      const loanAmountInput = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
+      const currentBalInput = parseFloat(formCurrentBalance.replace(/\./g, '').replace(',', '.')) || 0;
+
+      const creditLimit = creditLimitInput || loanAmountInput || 0;
+      const loanAmount = loanAmountInput || creditLimitInput || 0;
+      const currentBal = currentBalInput || loanAmount;
 
       const prefDec = prefVal ? prefVal / 100 : undefined;
       const baseDec = baseVal ? baseVal / 100 : undefined;
@@ -636,8 +640,8 @@ export const LoanPortfolioView: React.FC = () => {
         Note: noteText || null,
 
         ContractAmount: creditLimit,
-        LoanAmount: loanAmount ?? creditLimit,
-        CurrentBalance: currentBal ?? loanAmount ?? creditLimit,
+        LoanAmount: loanAmount,
+        CurrentBalance: currentBal,
 
         PreferentialRate: prefDec,
         PreferentialPeriodMonths: parseInt(ratePreferentialMonths) || undefined,

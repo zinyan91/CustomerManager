@@ -372,12 +372,17 @@ export const LoanPortfolioView: React.FC = () => {
   const creditLimitNum = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
   const kunnLoanAmountNum = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
 
-  // Sum of all existing KUNNs under current customer (excluding selectedContract if editing)
+  // Sum of existing KUNNs belonging ONLY to the current HĐTD (excluding selectedContract if editing)
+  const effectiveFormHdtdNo = formHdtdNumber.trim() || (selectedContract ? getMasterHdtdNumber(selectedContract) : '');
   const totalExistingKunnBalance = contracts
-    .filter(c => !selectedContract || c.Id !== selectedContract.Id)
-    .reduce((acc, c) => acc + (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0), 0);
+    .filter(c => {
+      if (selectedContract && c.Id === selectedContract.Id) return false;
+      if (!effectiveFormHdtdNo) return false;
+      return getMasterHdtdNumber(c).toLowerCase() === effectiveFormHdtdNo.toLowerCase();
+    })
+    .reduce((acc, c) => acc + (c.LoanAmount || c.CurrentBalance || 0), 0);
 
-  // Remaining HMTD Credit Limit = Total Limit - (Existing KUNNs + Current KUNN)
+  // Remaining HMTD Credit Limit for this specific HĐTD = Credit Limit of this HĐTD - (Existing KUNNs of this HĐTD + Current KUNN)
   const remainingHmtdLimit = Math.max(0, creditLimitNum - totalExistingKunnBalance - kunnLoanAmountNum);
 
   // Filtered dropdown list for quick pick
@@ -749,22 +754,28 @@ export const LoanPortfolioView: React.FC = () => {
       if (forceInsert || !selectedContract) {
         delete payload.Id;
 
-        // ─── RÀNG BUỘC: Kiểm tra dư nợ KUNN không vượt quá Tổng mức cấp HMTD (Chỉ áp dụng với Hạn mức tín dụng) ───
-        const masterLimit = totalCreditLimit > 0 ? totalCreditLimit : creditLimit;
-        if (form.LoanMethod === 'Hạn mức tín dụng' && loanAmount && masterLimit > 0) {
+        // ─── RÀNG BUỘC: Kiểm tra dư nợ KUNN không vượt quá Hạn mức tín dụng của HĐTD này ───
+        const targetHdtdNo = formHdtdNumber.trim() || (selectedContract ? getMasterHdtdNumber(selectedContract) : '');
+        const targetGroup = masterHdtdGroups.find(g => g.masterNo.toLowerCase() === targetHdtdNo.toLowerCase());
+        const specificMasterLimit = creditLimit > 0 ? creditLimit : (targetGroup?.totalCreditLimit || 0);
+
+        if (form.LoanMethod === 'Hạn mức tín dụng' && loanAmount && specificMasterLimit > 0) {
           const existingKunnTotal = contracts
-            .filter(c => c.Id !== selectedContract?.Id)
+            .filter(c => {
+              if (selectedContract && c.Id === selectedContract.Id && !forceInsert) return false;
+              return targetHdtdNo ? getMasterHdtdNumber(c).toLowerCase() === targetHdtdNo.toLowerCase() : false;
+            })
             .reduce((sum, c) => sum + (c.LoanAmount || 0), 0);
           const newTotal = existingKunnTotal + loanAmount;
-          const remaining = masterLimit - existingKunnTotal;
+          const remaining = Math.max(0, specificMasterLimit - existingKunnTotal);
 
-          if (newTotal > masterLimit) {
+          if (newTotal > specificMasterLimit) {
             showNotify('error',
-              `❌ VƯỢT HẠN MỨC! Tổng mức cấp HMTD: ${masterLimit.toLocaleString('vi-VN')} VNĐ | ` +
-              `KUNN hiện hữu: ${existingKunnTotal.toLocaleString('vi-VN')} VNĐ | ` +
+              `❌ VƯỢT HẠN MỨC HĐTD (${targetHdtdNo || 'này'})! Hạn mức HĐTD này: ${specificMasterLimit.toLocaleString('vi-VN')} VNĐ | ` +
+              `KUNN hiện hữu của HĐTD này: ${existingKunnTotal.toLocaleString('vi-VN')} VNĐ | ` +
               `HMTD còn lại: ${remaining.toLocaleString('vi-VN')} VNĐ | ` +
               `Số tiền KUNN đang nhập: ${loanAmount.toLocaleString('vi-VN')} VNĐ — ` +
-              `Không thể tạo KUNN mới vì vượt hạn mức!`
+              `Không thể tạo KUNN mới vì vượt hạn mức HĐTD này!`
             );
             setLoading(false);
             return;

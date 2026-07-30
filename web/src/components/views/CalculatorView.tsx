@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { formatMoneyInput, fmtDate } from '../../lib/utils';
 import {
-  Calculator, DollarSign, Calendar, RefreshCw, Layers, TrendingUp, CheckCircle, Percent
+  Calculator, DollarSign, Calendar, RefreshCw, Layers, TrendingUp, CheckCircle, Percent, Download, Printer
 } from 'lucide-react';
 
 // Helper: Add months to a YYYY-MM-DD date string, keeping exact day with last-day clamp
@@ -79,19 +79,29 @@ export const CalculatorView: React.FC = () => {
   
   // Rate mode for Tool 1
   const [termRateMode, setTermRateMode] = useState<'pref' | 'normal'>('pref');
-  const [termPrefRate, setTermPrefRate] = useState('7.5');
-  const [termPrefMonths, setTermPrefMonths] = useState('6');
-  const [termNormalRate, setTermNormalRate] = useState('10.5');
+  const [termPrefRate, setTermPrefRate] = useState('7.5');     // Lãi suất ưu đãi %/năm
+  const [termPrefMonths, setTermPrefMonths] = useState('6');    // Thời gian ưu đãi (tháng)
+  const [termBaseRate, setTermBaseRate] = useState('8.5');     // Lãi suất cơ sở %/năm
+  const [termMarginRate, setTermMarginRate] = useState('3.5');   // Biên độ %/năm
 
   // Derived loan tenor months & end date
   const loanTenorMonths = typeof loanTenorYears === 'number' && loanTenorYears > 0 ? loanTenorYears * 12 : 12;
   const loanEndDate = addMonths(loanStartDate, loanTenorMonths);
 
-  // Computed Loan Schedule Data
+  // Derived Interest Rates Calculation
+  const prefVal = parseFloat(termPrefRate) || 0;
+  const baseVal = parseFloat(termBaseRate) || 0;
+  const marginVal = parseFloat(termMarginRate) || 0;
+
+  const postPrefRate = prefVal + marginVal;  // Lãi suất sau ưu đãi = LSUD + Biên độ
+  const normalRate = baseVal + marginVal;    // Lãi suất thông thường = LSCS + Biên độ
+
   const numLoanAmount = parseFloat(loanAmountInput.replace(/\D/g, '')) || 0;
-  const numPrefRate = (parseFloat(termPrefRate) || 0) / 100;
-  const numNormalRate = (parseFloat(termNormalRate) || 0) / 100;
   const numPrefMonths = parseInt(termPrefMonths, 10) || 0;
+
+  const numPrefRateDec = prefVal / 100;
+  const numPostPrefRateDec = postPrefRate / 100;
+  const numNormalRateDec = normalRate / 100;
 
   // Calculate schedule rows
   const scheduleRows: {
@@ -124,8 +134,12 @@ export const CalculatorView: React.FC = () => {
       }
 
       // Interest calculation based on rate mode and month index
-      const applicableRate = (termRateMode === 'pref' && i <= numPrefMonths) ? numPrefRate : numNormalRate;
-      const interest = Math.round(opening * applicableRate * (30 / 365));
+      let applicableRateDec = numNormalRateDec;
+      if (termRateMode === 'pref') {
+        applicableRateDec = i <= numPrefMonths ? numPrefRateDec : numPostPrefRateDec;
+      }
+
+      const interest = Math.round(opening * applicableRateDec * (30 / 365));
 
       const totalPay = principal + interest;
       const closing = Math.max(0, opening - principal);
@@ -150,6 +164,38 @@ export const CalculatorView: React.FC = () => {
       currentBal = closing;
     }
   }
+
+  // ── EXPORT EXCEL FUNCTION ──
+  const handleExportExcel = () => {
+    let csvContent = '\uFEFF';
+    csvContent += 'BẢNG CHI TIẾT LỊCH TRẢ NỢ DỰ KIẾN (VAY TỪNG LẦN)\n';
+    csvContent += `Số tiền vay: ${numLoanAmount.toLocaleString('vi-VN')} VNĐ\n`;
+    csvContent += `Thời hạn vay: ${loanTenorMonths} tháng (${loanTenorYears} năm)\n`;
+    csvContent += `Ngày bắt đầu: ${fmtDate(loanStartDate)} - Ngày kết thúc: ${fmtDate(loanEndDate)}\n`;
+    csvContent += `Cấu trúc lãi suất: ${termRateMode === 'pref' ? `Ưu đãi ${termPrefRate}% (${termPrefMonths}T), Sau ưu đãi ${postPrefRate.toFixed(2)}%` : `Thông thường ${normalRate.toFixed(2)}%`}\n\n`;
+
+    csvContent += 'Kỳ trả nợ,Ngày trả nợ,Dư nợ đầu kỳ (VNĐ),Tiền gốc (VNĐ),Tiền lãi (VNĐ),Tổng trả (VNĐ),Dư nợ cuối kỳ (VNĐ)\n';
+
+    scheduleRows.forEach(r => {
+      csvContent += `Kỳ #${r.period},${fmtDate(r.dueDate)},${r.openingBalance},${r.principal},${r.interest},${r.totalPayment},${r.closingBalance}\n`;
+    });
+
+    csvContent += `TỔNG CỘNG,,${numLoanAmount},${totalPrincipalPaid},${totalInterestPaid},${totalPrincipalPaid + totalInterestPaid},0\n`;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Lich_Tra_No_Du_Kien_${loanStartDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // ── EXPORT PDF / PRINT FUNCTION ──
+  const handleExportPDF = () => {
+    window.print();
+  };
 
   // ──────────────────────────────────────────────────────────────────────────
   // TOOL 2: VAY CẦM CỐ SỔ TIẾT KIỆM (1 KỲ)
@@ -287,9 +333,9 @@ export const CalculatorView: React.FC = () => {
     : 'bg-slate-950 text-slate-400 border-slate-800 font-bold';
 
   return (
-    <div className="space-y-4 text-xs max-w-7xl mx-auto pb-10 transition-colors duration-200">
+    <div className="space-y-4 text-xs max-w-7xl mx-auto pb-10 transition-colors duration-200 print:p-0 print:max-w-none">
       {/* ── HEADER TITLE ── */}
-      <div className={`${containerCardBg} p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3`}>
+      <div className={`${containerCardBg} p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3 print:hidden`}>
         <div>
           <h2 className="text-base font-bold uppercase tracking-tight flex items-center space-x-2 text-sky-500">
             <Calculator className="w-5 h-5" />
@@ -338,7 +384,7 @@ export const CalculatorView: React.FC = () => {
       {activeTab === 'term_loan' && (
         <div className="space-y-4">
           {/* Form Input Box */}
-          <div className={`${containerCardBg} rounded-2xl p-5 border space-y-4`}>
+          <div className={`${containerCardBg} rounded-2xl p-5 border space-y-4 print:border-none print:p-0`}>
             <div className="text-xs font-bold text-sky-500 uppercase tracking-wider flex items-center space-x-2 border-b pb-2.5 border-slate-200 dark:border-slate-800">
               <Calendar className="w-4 h-4" />
               <span>KHUNG NHẬP LIỆU THÔNG TIN KHOẢN VAY TỪNG LẦN</span>
@@ -415,11 +461,11 @@ export const CalculatorView: React.FC = () => {
               </div>
             </div>
 
-            {/* Interest Rate Options */}
+            {/* Interest Rate Options with Margin Rate */}
             <div className={`p-4 rounded-xl border space-y-3 ${sectionBoxBg}`}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="font-bold text-sky-600 dark:text-sky-400 uppercase text-[11px]">
-                  CẤU TRÚC LÃI SUẤT ÁP DỤNG
+                  CẤU TRÚC LÃI SUẤT ÁP DỤNG & BIÊN ĐỘ
                 </div>
                 <div className="flex items-center space-x-4 text-xs font-semibold">
                   <label className="flex items-center space-x-1.5 cursor-pointer">
@@ -440,104 +486,143 @@ export const CalculatorView: React.FC = () => {
                       onChange={() => setTermRateMode('normal')}
                       className="w-3.5 h-3.5 text-sky-600 focus:ring-sky-500"
                     />
-                    <span>2. Lãi suất thông thường (Cố định)</span>
+                    <span>2. Lãi suất thông thường (LSCS + Biên độ)</span>
                   </label>
                 </div>
               </div>
 
               {termRateMode === 'pref' ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block font-medium mb-1 text-slate-400">Lãi suất ưu đãi (%/năm)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={termPrefRate}
-                      onChange={e => setTermPrefRate(e.target.value)}
-                      className={`w-full rounded-xl p-2 font-mono font-bold text-rose-500 border ${inputStyle}`}
-                    />
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block font-medium mb-1 text-slate-400">Lãi suất ưu đãi (LSUD) %/năm</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={termPrefRate}
+                        onChange={e => setTermPrefRate(e.target.value)}
+                        className={`w-full rounded-xl p-2 font-mono font-bold text-rose-500 border ${inputStyle}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1 text-slate-400">Thời gian ưu đãi (Tháng)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={termPrefMonths}
+                        onChange={e => setTermPrefMonths(e.target.value)}
+                        className={`w-full rounded-xl p-2 font-bold border ${inputStyle}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1 text-slate-400">Biên độ cộng thêm %/năm</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={termMarginRate}
+                        onChange={e => setTermMarginRate(e.target.value)}
+                        className={`w-full rounded-xl p-2 font-mono font-bold text-amber-500 border ${inputStyle}`}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block font-medium mb-1 text-slate-400">Thời gian ưu đãi (Tháng)</label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={termPrefMonths}
-                      onChange={e => setTermPrefMonths(e.target.value)}
-                      className={`w-full rounded-xl p-2 font-bold border ${inputStyle}`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-medium mb-1 text-slate-400">Lãi suất thả nổi sau ưu đãi (%/năm)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={termNormalRate}
-                      onChange={e => setTermNormalRate(e.target.value)}
-                      className={`w-full rounded-xl p-2 font-mono font-bold text-amber-500 border ${inputStyle}`}
-                    />
+                  <div className={`p-2.5 rounded-xl border flex items-center justify-between font-semibold ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
+                    <span className="text-slate-400">Lãi suất sau ưu đãi (LSUD + Biên độ):</span>
+                    <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{postPrefRate.toFixed(2)} %/năm</span>
                   </div>
                 </div>
               ) : (
-                <div className="max-w-md">
-                  <label className="block font-medium mb-1 text-slate-400">Lãi suất thông thường cố định (%/năm)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={termNormalRate}
-                    onChange={e => setTermNormalRate(e.target.value)}
-                    className={`w-full rounded-xl p-2 font-mono font-bold text-sky-500 border ${inputStyle}`}
-                  />
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-medium mb-1 text-slate-400">Lãi suất cơ sở (LSCS) %/năm</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={termBaseRate}
+                        onChange={e => setTermBaseRate(e.target.value)}
+                        className={`w-full rounded-xl p-2 font-mono font-bold text-sky-500 border ${inputStyle}`}
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium mb-1 text-slate-400">Biên độ cộng thêm %/năm</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={termMarginRate}
+                        onChange={e => setTermMarginRate(e.target.value)}
+                        className={`w-full rounded-xl p-2 font-mono font-bold text-amber-500 border ${inputStyle}`}
+                      />
+                    </div>
+                  </div>
+                  <div className={`p-2.5 rounded-xl border flex items-center justify-between font-semibold ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
+                    <span className="text-slate-400">Lãi suất thông thường (LSCS + Biên độ):</span>
+                    <span className="font-mono font-bold text-rose-600 dark:text-rose-400 text-sm">{normalRate.toFixed(2)} %/năm</span>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* ── KPI TỔNG KẾT KHOẢN VAY ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* ── KPI TỔNG KẾT KHOẢN VAY (ĐÃ BỎ CHÚ THÍCH PHỤ) ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
             <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
               <div className="text-[11px] font-bold text-slate-400 uppercase">TỔNG GỐC TRẢ</div>
-              <div className="text-lg font-extrabold text-sky-600 dark:text-sky-400 font-mono mt-1">
+              <div className="text-xl font-extrabold text-sky-600 dark:text-sky-400 font-mono mt-1">
                 {formatMoney(totalPrincipalPaid)}
               </div>
-              <div className="text-[11px] text-slate-500 mt-1">Bằng đúng số tiền vay ban đầu</div>
             </div>
 
             <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
               <div className="text-[11px] font-bold text-slate-400 uppercase">TỔNG LÃI TRẢ (DỰ KIẾN)</div>
-              <div className="text-lg font-extrabold text-rose-600 dark:text-rose-400 font-mono mt-1">
+              <div className="text-xl font-extrabold text-rose-600 dark:text-rose-400 font-mono mt-1">
                 {formatMoney(totalInterestPaid)}
-              </div>
-              <div className="text-[11px] text-slate-500 mt-1">
-                Chiếm {numLoanAmount > 0 ? ((totalInterestPaid / numLoanAmount) * 100).toFixed(1) : 0}% gốc vay
               </div>
             </div>
 
             <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
               <div className="text-[11px] font-bold text-slate-400 uppercase">KỲ CÓ SỐ TRẢ NỢ CAO NHẤT</div>
-              <div className="text-lg font-extrabold text-amber-600 dark:text-amber-400 font-mono mt-1">
+              <div className="text-xl font-extrabold text-amber-600 dark:text-amber-400 font-mono mt-1">
                 {formatMoney(maxPaymentRow.amount)}
               </div>
-              <div className="text-[11px] text-slate-500 mt-1">Rơi vào Kỳ #{maxPaymentRow.period}</div>
             </div>
 
             <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
               <div className="text-[11px] font-bold text-slate-400 uppercase">TỔNG GỐC + LÃI PHẢI TRẢ</div>
-              <div className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-1">
+              <div className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-1">
                 {formatMoney(totalPrincipalPaid + totalInterestPaid)}
               </div>
-              <div className="text-[11px] text-slate-500 mt-1">Tổng nghĩa vụ tài chính toàn bộ kỳ vay</div>
             </div>
           </div>
 
-          {/* ── BẢNG LINH ĐỘNG LỊCH TRẢ NỢ CHI TIẾT ── */}
+          {/* ── BẢNG LINH ĐỘNG LỊCH TRẢ NỢ CHI TIẾT (CÓ NÚT XUẤT EXCEL & IN PDF) ── */}
           <div className={`${containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
-            <div className={`p-3 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
+            <div className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
               <span className="font-bold text-xs uppercase flex items-center space-x-2">
                 <Layers className="w-4 h-4 text-sky-500" />
                 <span>BẢNG CHI TIẾT LỊCH TRẢ NỢ DỰ KIẾN ({scheduleRows.length} KỲ TRẢ NỢ)</span>
               </span>
-              <span className="text-[11px] text-slate-400">Đơn vị: VNĐ</span>
+
+              {/* Export Buttons */}
+              <div className="flex items-center space-x-2 print:hidden">
+                <button
+                  type="button"
+                  onClick={handleExportExcel}
+                  className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-colors shadow-sm"
+                  title="Xuất bảng chi tiết ra file Excel (.csv)"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Xuất Excel</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportPDF}
+                  className="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-colors shadow-sm"
+                  title="In hoặc Lưu bảng chi tiết ra PDF"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>In / Xuất PDF</span>
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
@@ -788,7 +873,6 @@ export const CalculatorView: React.FC = () => {
                 <div className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-1">
                   +{formatMoney(stkInterestEarned)}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1">Lãi nhận từ Ngân hàng khi đáo hạn STK</div>
               </div>
 
               <div className={`p-4 rounded-xl border ${sectionBoxBg}`}>
@@ -796,16 +880,12 @@ export const CalculatorView: React.FC = () => {
                 <div className="text-lg font-extrabold text-rose-600 dark:text-rose-400 font-mono mt-1">
                   -{formatMoney(stkLoanInterestCost)}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1">Lãi vay cầm cố phải trả khoản vay</div>
               </div>
 
               <div className={`p-4 rounded-xl border ${stkNetDifference >= 0 ? 'bg-emerald-50/60 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800' : 'bg-rose-50/60 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800'}`}>
                 <div className="text-[11px] font-bold uppercase text-slate-500">CHÊNH LỆCH (LÃI SỔ - LÃI VAY)</div>
                 <div className={`text-lg font-extrabold font-mono mt-1 ${stkNetDifference >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                   {stkNetDifference >= 0 ? '+' : ''}{formatMoney(stkNetDifference)}
-                </div>
-                <div className="text-[11px] text-slate-500 mt-1">
-                  {stkNetDifference >= 0 ? '🟢 Lãi sổ bù đắp dư tiền lãi vay' : '🔴 Lãi sổ không đủ trả tiền lãi vay'}
                 </div>
               </div>
 
@@ -814,7 +894,6 @@ export const CalculatorView: React.FC = () => {
                 <div className="text-lg font-extrabold text-sky-600 dark:text-sky-400 font-mono mt-1">
                   {formatMoney(stkTotalLoanPay)}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1">Số tiền thanh toán tất toán khoản vay cầm cố</div>
               </div>
             </div>
           </div>
@@ -873,7 +952,7 @@ export const CalculatorView: React.FC = () => {
 
           {/* Bảng Chi Tiết Tái Tục Nhiều Kỳ */}
           <div className={`${containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
-            <div className={`p-3 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
+            <div className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
               <span className="font-bold text-xs uppercase flex items-center space-x-2">
                 <TrendingUp className="w-4 h-4 text-sky-500" />
                 <span>BẢNG CHI TIẾT DỰ PHÓNG LÃI TÁI TỤC & VAY CẦM CỐ QUA {multiCycleRows.length} KỲ</span>

@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
   const isLight = theme === 'light';
 
   return (
-    <header className={`border-b sticky top-0 z-50 px-3 md:px-6 py-2.5 md:py-3 flex items-center justify-between shadow-sm transition-colors duration-200 ${
+    <header className={`fixed top-0 left-0 right-0 z-50 h-[53px] md:h-[57px] px-3 md:px-6 py-2.5 md:py-3 flex items-center justify-between border-b shadow-sm transition-colors duration-200 ${
       isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-slate-100'
     }`}>
       <div className="flex items-center space-x-2.5 md:space-x-3">

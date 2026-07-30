@@ -207,6 +207,8 @@ export const LoanPortfolioView: React.FC = () => {
 
   // Form state (HĐTD + KUNN + Lãi suất + Phương thức trả nợ)
   const [form, setForm] = useState<Partial<LoanContract>>({});
+  const [formHdtdNumber, setFormHdtdNumber] = useState('');
+  const [formKunnNumber, setFormKunnNumber] = useState('');
   const [formCreditLimit, setFormCreditLimit] = useState('');
   const [formLoanAmount, setFormLoanAmount] = useState('');
   const [formCurrentBalance, setFormCurrentBalance] = useState('');
@@ -439,11 +441,18 @@ export const LoanPortfolioView: React.FC = () => {
   };
 
   const populateForm = (c: LoanContract) => {
+    const masterHdtdNo = (c.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate))
+      ? c.HdtdDueDate
+      : (c.Note?.includes('HĐTD:') ? c.Note.split('HĐTD:')[1].split('\n')[0].trim() : c.ContractNumber);
+
+    setFormHdtdNumber(masterHdtdNo || '');
+    setFormKunnNumber(c.ContractNumber || '');
+
     setForm({
       Id: c.Id,
       CustomerId: c.CustomerId,
-      ContractNumber: c.ContractNumber,      // Số KUNN (GNN-N)
-      HdtdDueDate: c.HdtdDueDate ?? '',     // Số HĐTD gốc (tái sử dụng field HdtdDueDate)
+      ContractNumber: c.ContractNumber,
+      HdtdDueDate: (c.HdtdDueDate && /^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate)) ? c.HdtdDueDate : null,
       ContractType: c.ContractType,
       LoanMethod: c.LoanMethod || LOAN_METHODS[0],
       DebtGroup: c.DebtGroup ?? 1,
@@ -488,23 +497,27 @@ export const LoanPortfolioView: React.FC = () => {
     // Master = HĐTD chính (Hạn mức tín dụng) hoặc hợp đồng đầu tiên
     const master = contracts.find(c => c.LoanMethod === 'Hạn mức tín dụng') || (contracts.length > 0 ? contracts[0] : null);
 
-    // Số HĐTD gốc — KHÔNG thay đổi, giữ nguyên từ master
-    // Số KUNN mới = {SốHĐTD}/GNN-{N} (đề xuất, user có thể sửa)
-    const masterContractNo = master?.ContractNumber || '';
-    const nextKunnIndex = (contracts.length + 1).toString().padStart(2, '0');
-    const suggestedKunnNumber = masterContractNo
-      ? `${masterContractNo}/GNN-${nextKunnIndex}`
+    const masterHdtd = master
+      ? ((master.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(master.HdtdDueDate))
+          ? master.HdtdDueDate
+          : (master.Note?.includes('HĐTD:') ? master.Note.split('HĐTD:')[1].split('\n')[0].trim() : master.ContractNumber))
       : '';
+
+    const nextKunnIndex = (contracts.length + 1).toString().padStart(2, '0');
+    const suggestedKunnNumber = masterHdtd
+      ? `${masterHdtd}/GNN-${nextKunnIndex}`
+      : '';
+
+    setFormHdtdNumber(masterHdtd);
+    setFormKunnNumber(suggestedKunnNumber);
 
     setForm({
       CustomerId: foundCustomer?.Id,
       ContractType: master ? master.ContractType : 0,
       LoanMethod: master ? master.LoanMethod : defaultMethod,
       DebtGroup: master ? master.DebtGroup : 1,
-      // ContractNumber = Số KUNN (GNN-N) — đây là định danh của lần rút nợ này
       ContractNumber: suggestedKunnNumber,
-      // HdtdDueDate lưu Số HĐTD gốc để tham chiếu (reuse field sẵn có, không cần thêm cột)
-      HdtdDueDate: masterContractNo || undefined,
+      HdtdDueDate: null,
       ContractStartDate: master ? master.ContractStartDate : '',
       ContractEndDate: master ? master.ContractEndDate : '',
       LoanTenorMonths: master ? master.LoanTenorMonths : 12,
@@ -541,10 +554,17 @@ export const LoanPortfolioView: React.FC = () => {
       const targetCustomerId = foundCustomer?.Id || form.CustomerId;
       if (!targetCustomerId) {
         showNotify('error', 'Vui lòng chọn hoặc tìm kiếm Khách hàng vay trước!');
+        setLoading(false);
         return;
       }
-      if (!form.ContractNumber?.trim()) {
-        showNotify('error', 'Vui lòng nhập Số Hợp đồng Tín dụng!');
+
+      const hdtd = formHdtdNumber.trim();
+      const kunn = formKunnNumber.trim();
+      const effectiveContractNumber = kunn || hdtd;
+
+      if (!effectiveContractNumber) {
+        showNotify('error', 'Vui lòng nhập Số HĐTD hoặc Số KUNN!');
+        setLoading(false);
         return;
       }
 
@@ -563,6 +583,11 @@ export const LoanPortfolioView: React.FC = () => {
       const payload: Partial<LoanContract> = {
         ...form,
         CustomerId: targetCustomerId,
+        ContractNumber: effectiveContractNumber,
+        // HdtdDueDate must be YYYY-MM-DD or null
+        HdtdDueDate: (form.HdtdDueDate && /^\d{4}-\d{2}-\d{2}$/.test(form.HdtdDueDate)) ? form.HdtdDueDate : null,
+        Note: hdtd && hdtd !== effectiveContractNumber ? `HĐTD: ${hdtd}` : (form.Note || null),
+
         ContractAmount: creditLimit,
         LoanAmount: loanAmount ?? creditLimit,
         CurrentBalance: currentBal ?? loanAmount ?? creditLimit,
@@ -997,9 +1022,14 @@ export const LoanPortfolioView: React.FC = () => {
                                 <span>{c.ContractNumber}</span>
                               </div>
                             </td>
-                            {/* Số HĐTD gốc (lưu trong HdtdDueDate) */}
+                            {/* Số HĐTD gốc */}
                             <td className="p-3 font-mono text-purple-600 dark:text-purple-400 font-semibold whitespace-nowrap text-[11px]">
-                              {c.HdtdDueDate || <span className="text-slate-400 font-normal italic">—</span>}
+                              {c.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate)
+                                ? c.HdtdDueDate
+                                : c.Note?.includes('HĐTD:')
+                                  ? c.Note.split('HĐTD:')[1].split('\n')[0].trim()
+                                  : <span className="text-slate-400 font-normal italic">—</span>
+                              }
                             </td>
                             <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                               {fmtMoney(c.LoanAmount || c.ContractAmount)}
@@ -1065,29 +1095,24 @@ export const LoanPortfolioView: React.FC = () => {
                             className={`w-full rounded-xl p-2.5 text-xs font-mono text-sky-600 dark:text-sky-400 ${readonlyInputStyle}`} />
                         </div>
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>
-                            Số HĐTD
-                            <span className="ml-1 text-[10px] text-slate-400 font-normal normal-case">(ghi trên hợp đồng ký KH)</span>
-                          </label>
+                          <label className={`block mb-1 ${labelStyle}`}>Số HĐTD</label>
                           <input type="text"
-                            value={form.HdtdDueDate || ''}
-                            onChange={e => setForm(f => ({ ...f, HdtdDueDate: e.target.value }))}
-                            placeholder="HDTD-71803/2026..."
+                            value={formHdtdNumber}
+                            onChange={e => setFormHdtdNumber(e.target.value)}
+                            placeholder="2002/HDTD/9634078..."
                             className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-purple-600 dark:text-purple-400 ${inputStyle}`} />
                         </div>
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>
-                            Số KUNN (GNN)
-                            <span className="ml-1 text-[10px] text-slate-400 font-normal normal-case">(mỗi lần rút vay = 1 GNN)</span>
-                          </label>
-                          <input type="text" value={form.ContractNumber || ''}
-                            onChange={e => setForm(f => ({ ...f, ContractNumber: e.target.value }))}
-                            placeholder="HDTD-71803/2026/GNN-01..."
+                          <label className={`block mb-1 ${labelStyle}`}>Số KUNN (GNN)</label>
+                          <input type="text"
+                            value={formKunnNumber}
+                            onChange={e => setFormKunnNumber(e.target.value)}
+                            placeholder="2002/HDTD/9634078/GNN-01..."
                             className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
                         </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
-                        <div className="md:col-span-3">
+                        <div className="md:col-span-4">
                           <label className={`block mb-1 ${labelStyle}`}>Phương thức vay *</label>
                           <select required value={form.LoanMethod || LOAN_METHODS[0]}
                             onChange={e => handleLoanMethodChange(e.target.value)}
@@ -1095,15 +1120,6 @@ export const LoanPortfolioView: React.FC = () => {
                             {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
                           </select>
                         </div>
-                        {form.HdtdDueDate && form.ContractNumber && (
-                          <div className={`p-2.5 rounded-xl border text-[11px] flex flex-col justify-center ${
-                            isLight ? 'bg-purple-50 border-purple-200 text-purple-900' : 'bg-purple-950/40 border-purple-700/40 text-purple-200'
-                          }`}>
-                            <div className="font-bold text-[10px] uppercase tracking-wider text-purple-500 mb-1">Tham chiếu</div>
-                            <div>HĐTD: <span className="font-mono font-bold">{form.HdtdDueDate}</span></div>
-                            <div>KUNN: <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{form.ContractNumber}</span></div>
-                          </div>
-                        )}
                       </div>
 
                       {/* Chuyển Mục đích vay & Mô tả chi tiết lên thông tin chung */}
@@ -1287,7 +1303,7 @@ export const LoanPortfolioView: React.FC = () => {
                         </div>
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>
-                            <span>Ngày kết thúc KUNN (Tự động tính)</span>
+                            <span>Ngày kết thúc KUNN</span>
                           </label>
                           <input type="date" value={form.KunnDueDate || ''}
                             onChange={e => setForm(f => ({ ...f, KunnDueDate: e.target.value }))}
@@ -1393,7 +1409,7 @@ export const LoanPortfolioView: React.FC = () => {
                     {/* SECTION 7: PHƯƠNG THỨC TRẢ NỢ & ÂN HẠN */}
                     <div className={`rounded-xl p-4 space-y-3 border ${sectionBoxBg}`}>
                       <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                        PHƯƠNG THỨC TRẢ NỢ {form.LoanMethod === 'Hạn mức tín dụng' ? '(MẶC ĐỊNH HMTD)' : '& ÂN HẠN'}
+                        PHƯƠNG THỨC TRẢ NỢ {form.LoanMethod === 'Hạn mức tín dụng' ? '' : '& ÂN HẠN'}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>

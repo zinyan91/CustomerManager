@@ -181,6 +181,11 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   delete cleanContract.collateral;
   delete cleanContract.contractCollaterals;
 
+  // Sanitize HdtdDueDate to prevent PostgreSQL date format errors
+  if (cleanContract.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(cleanContract.HdtdDueDate)) {
+    delete cleanContract.HdtdDueDate;
+  }
+
   if (!isUpdate) {
     try {
       const { data } = await supabase.from('LoanContracts').select('Id');

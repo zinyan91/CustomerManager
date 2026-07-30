@@ -302,12 +302,10 @@ export const LoanPortfolioView: React.FC = () => {
   const [ratePreferentialMonths, setRatePreferentialMonths] = useState('');
   const [rateBase, setRateBase] = useState('');
   const [rateMargin, setRateMargin] = useState('');
+  const [ratePenalty, setRatePenalty] = useState('150');
 
   // Selected Collateral IDs for current contract
   const [selectedCollateralIds, setSelectedCollateralIds] = useState<number[]>([]);
-
-  // Custom LTV override map (collateralId -> LTV percent)
-  const [customLtvMap, setCustomLtvMap] = useState<Record<number, number>>({});
 
   // Schedule gen form
   const [isGenerating, setIsGenerating] = useState(false);
@@ -327,6 +325,7 @@ export const LoanPortfolioView: React.FC = () => {
   useEffect(() => {
     const isSingleLoan = form.LoanMethod === 'Cho vay từng lần' || form.LoanMethod === 'Hạn mức tín dụng từng lần';
     if (isSingleLoan) {
+      // Auto-sync KUNN tenor label
       if (form.LoanTenorMonths) {
         const kunnTenorStr = `${form.LoanTenorMonths} tháng`;
         setForm(prev => {
@@ -336,13 +335,8 @@ export const LoanPortfolioView: React.FC = () => {
           return prev;
         });
       }
-
-      // Auto-sync Total Limit = KUNN Loan Amount for Single Loans
-      if (formLoanAmount && formCreditLimit !== formLoanAmount) {
-        setFormCreditLimit(formLoanAmount);
-      }
     }
-  }, [form.LoanMethod, form.LoanTenorMonths, formLoanAmount]);
+  }, [form.LoanMethod, form.LoanTenorMonths]);
 
   // Auto-calculate End Dates when Effective Date / Disbursement Date / Tenor changes
   useEffect(() => {
@@ -668,6 +662,13 @@ export const LoanPortfolioView: React.FC = () => {
         return;
       }
 
+      // REQUEST 5: Bắt lỗi nếu không chọn TSBĐ liên kết
+      if (selectedCollateralIds.length === 0) {
+        showNotify('error', '⚠️ BẮT BUỘC CHỌN TẢI SẢN BẢO ĐẢM! Vui lòng chọn ít nhất 01 Tài sản bảo đảm liên kết với HĐTD/KUNN này!');
+        setLoading(false);
+        return;
+      }
+
       const hdtd = formHdtdNumber.trim();
       let kunn = formKunnNumber.trim();
 
@@ -684,12 +685,10 @@ export const LoanPortfolioView: React.FC = () => {
 
       const effectiveContractNumber = kunn;
 
-      const creditLimitInput = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
-      const loanAmountInput = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
+      const creditLimit = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
+      const loanAmount = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
       const currentBalInput = parseFloat(formCurrentBalance.replace(/\./g, '').replace(',', '.')) || 0;
 
-      const creditLimit = creditLimitInput || loanAmountInput || 0;
-      const loanAmount = loanAmountInput || creditLimitInput || 0;
       const currentBal = currentBalInput || loanAmount;
 
       const prefDec = prefVal ? prefVal / 100 : undefined;
@@ -701,20 +700,32 @@ export const LoanPortfolioView: React.FC = () => {
       const activeInterestRate = prefDec || normalDec || baseDec || undefined;
 
       let noteText = form.Note || '';
-      noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').trim();
+      noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').replace(/\[PENALTY_RATE:[^\]]*\]/g, '').trim();
       if (hdtd && hdtd !== effectiveContractNumber && !noteText.includes(`HĐTD: ${hdtd}`)) {
         noteText = `HĐTD: ${hdtd}\n${noteText}`.trim();
+      }
+      if (ratePenalty.trim()) {
+        noteText = `${noteText}\n[PENALTY_RATE:${ratePenalty.trim()}]`.trim();
       }
       if (selectedCollateralIds.length > 0) {
         noteText = `${noteText}\n[COLLATERAL_IDS:${selectedCollateralIds.join(',')}]`.trim();
       }
 
+      // REQUEST 2: Helper cleanDate làm sạch ngày tháng (chuyển "" thành null để tránh lỗi Postgres syntax)
+      const cleanDate = (d?: string | null) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) ? d.trim() : null;
+
       const payload: Partial<LoanContract> = {
         ...form,
         CustomerId: targetCustomerId,
         ContractNumber: effectiveContractNumber,
-        // HdtdDueDate must be YYYY-MM-DD or null
-        HdtdDueDate: (form.HdtdDueDate && /^\d{4}-\d{2}-\d{2}$/.test(form.HdtdDueDate)) ? form.HdtdDueDate : null,
+
+        ContractStartDate: cleanDate(form.ContractStartDate),
+        ContractEndDate: cleanDate(form.ContractEndDate),
+        DisbursementDate: cleanDate(form.DisbursementDate),
+        KunnDueDate: cleanDate(form.KunnDueDate),
+        RepaymentStartDate: cleanDate(form.RepaymentStartDate),
+        HdtdDueDate: cleanDate(form.HdtdDueDate),
+
         Note: noteText || null,
 
         ContractAmount: creditLimit,
@@ -887,7 +898,6 @@ export const LoanPortfolioView: React.FC = () => {
 
   // Helper function to get effective LTV percentage for a collateral item (default 70% if unassigned)
   const getEffectiveLtv = (c: Collateral) => {
-    if (customLtvMap[c.Id] !== undefined) return customLtvMap[c.Id];
     return (c.LtvPercent && c.LtvPercent > 0) ? c.LtvPercent : 70;
   };
 
@@ -1024,18 +1034,20 @@ export const LoanPortfolioView: React.FC = () => {
 
         {/* Quick-pick dropdown */}
         <div className="mb-3 relative">
-          <label className={`block mb-1 text-[11px] uppercase tracking-wide ${isLight ? 'text-slate-600 font-bold' : 'text-slate-400'}`}>
-            ⚡ Chọn nhanh từ danh sách Khách hàng
+          <label className={`block mb-1 text-[11px] uppercase tracking-wide flex items-center justify-between ${isLight ? 'text-slate-700 font-bold' : 'text-slate-300'}`}>
+            <span>⚡ CHỌN KHÁCH HÀNG TỪ DANH SÁCH</span>
+            <span className="text-[10px] text-sky-500 font-normal">({allCustomers.length} Khách hàng sẵn có)</span>
           </label>
           <div className="relative">
             <input
               type="text"
               value={dropdownQuery}
               onChange={e => { setDropdownQuery(e.target.value); setShowDropdown(true); }}
+              onClick={() => setShowDropdown(prev => !prev)}
               onFocus={() => setShowDropdown(true)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 180)}
-              placeholder={`Gõ tên hoặc CIF để lọc nhanh... (${allCustomers.length} KH)`}
-              className={`w-full rounded-xl pl-3 pr-10 py-2.5 text-xs transition-colors ${inputStyle}`}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+              placeholder={`Nhấp vào đây hoặc gõ tên / Mã CIF để chọn Khách hàng... (${allCustomers.length} KH)`}
+              className={`w-full rounded-xl pl-3 pr-10 py-2.5 text-xs transition-colors cursor-pointer ${inputStyle}`}
             />
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
@@ -1680,6 +1692,23 @@ export const LoanPortfolioView: React.FC = () => {
                           </div>
                         </div>
                       )}
+
+                      {/* Lãi suất phạt quá hạn / Vi phạm */}
+                      <div className="pt-3 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Lãi suất phạt quá hạn / Vi phạm (+% hoặc % LS Đang AP)</label>
+                          <input type="text" value={ratePenalty}
+                            onChange={e => setRatePenalty(e.target.value)}
+                            placeholder="150% LS đang áp dụng (hoặc +3.5%/năm)..."
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-red-600 dark:text-red-400 ${inputStyle}`} />
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Quy định phạt theo HĐTD</label>
+                          <div className="text-xs p-2.5 rounded-xl border bg-amber-50/50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 font-medium">
+                            ⚡ Lãi suất phạt quá hạn bằng <strong>{ratePenalty || '150'}%</strong> lãi suất cho vay đang áp dụng đối với dư nợ gốc quá hạn.
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* SECTION 7: PHƯƠNG THỨC TRẢ NỢ & ÂN HẠN */}
@@ -1772,19 +1801,12 @@ export const LoanPortfolioView: React.FC = () => {
                                     </div>
                                     <div className="text-[11px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-3">
                                       <span>Định giá: <strong className={isLight ? 'text-slate-800' : 'text-slate-200'}>{fmtMoney(val)}</strong></span>
-                                      <span className="flex items-center space-x-1">
+                                      <span className="flex items-center space-x-1.5">
                                         <span>LTV cho phép:</span>
-                                        <input
-                                          type="number"
-                                          min={10}
-                                          max={100}
-                                          value={effectiveLtv}
-                                          onChange={e => setCustomLtvMap(prev => ({ ...prev, [col.Id]: parseFloat(e.target.value) || 70 }))}
-                                          className={`w-14 px-1.5 py-0.5 text-center font-bold text-xs rounded border ${
-                                            isLight ? 'bg-white border-slate-300 text-slate-900' : 'bg-slate-950 border-slate-700 text-slate-200'
-                                          }`}
-                                        />
-                                        <span>%</span>
+                                        <span className="font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
+                                          {col.LtvPercent || 70}%
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 italic">(Cập nhật tại Tab Định giá TSBĐ)</span>
                                       </span>
                                     </div>
                                   </div>

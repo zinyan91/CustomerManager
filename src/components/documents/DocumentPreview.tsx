@@ -128,7 +128,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
       <div className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
         <div>
           <h2 className="font-bold text-sm text-sky-600 dark:text-sky-400 uppercase tracking-wider">{docTitle}</h2>
-          <span className="text-[11px] text-slate-500">Chuẩn lề Nghị định 30/2020/NĐ-CP (Times New Roman 13pt)</span>
+          <span className="text-[11px] text-slate-500">Khuôn dạng chuẩn Nghị định 30/2020/NĐ-CP (Times New Roman 13pt)</span>
         </div>
         <div className="flex items-center space-x-2">
           <button
@@ -151,10 +151,94 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
       </div>
 
       {/* Preview Sheet Container (A4 Page simulation) */}
-      <div className="p-8 overflow-x-auto bg-slate-200/60 dark:bg-slate-950/80 flex justify-center">
+      <div className="p-6 sm:p-10 overflow-x-auto bg-slate-300/70 dark:bg-slate-950 flex justify-center">
+        {/* Scoped CSS for Document Preview on screen */}
+        <style>{`
+          .a4-sheet-container {
+            font-family: 'Times New Roman', Times, serif !important;
+            font-size: 13pt !important;
+            line-height: 1.5 !important;
+            color: #000000 !important;
+            background-color: #ffffff !important;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 25mm 20mm 20mm 25mm;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+          }
+          .a4-sheet-container h1 {
+            text-align: center !important;
+            font-size: 15pt !important;
+            font-weight: bold !important;
+            text-transform: uppercase !important;
+            margin-top: 14pt !important;
+            margin-bottom: 12pt !important;
+            line-height: 1.3 !important;
+            letter-spacing: normal !important;
+          }
+          .a4-sheet-container h2 {
+            font-size: 13pt !important;
+            font-weight: bold !important;
+            text-transform: uppercase !important;
+            margin-top: 12pt !important;
+            margin-bottom: 6pt !important;
+            text-align: left !important;
+          }
+          .a4-sheet-container p {
+            margin-top: 3pt !important;
+            margin-bottom: 6pt !important;
+            line-height: 1.5 !important;
+          }
+          .a4-sheet-container p.clause-p {
+            margin-top: 4pt !important;
+            margin-bottom: 6pt !important;
+            text-align: justify !important;
+            text-indent: 1.27cm !important;
+            line-height: 1.5 !important;
+          }
+          .a4-sheet-container .no-indent {
+            text-indent: 0 !important;
+          }
+          .a4-sheet-container .text-center {
+            text-align: center !important;
+          }
+          .a4-sheet-container .text-right {
+            text-align: right !important;
+          }
+          .a4-sheet-container .font-bold {
+            font-weight: bold !important;
+          }
+          .a4-sheet-container .font-italic {
+            font-style: italic !important;
+          }
+          .a4-sheet-container .table-doc {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            margin-top: 10pt !important;
+            margin-bottom: 10pt !important;
+          }
+          .a4-sheet-container .table-doc th,
+          .a4-sheet-container .table-doc td {
+            border: 1px solid #000000 !important;
+            padding: 6pt 8pt !important;
+            font-size: 12pt !important;
+          }
+          .a4-sheet-container .sig-table {
+            width: 100% !important;
+            margin-top: 24pt !important;
+            border-collapse: collapse !important;
+            border: none !important;
+          }
+          .a4-sheet-container .sig-table td {
+            width: 50% !important;
+            text-align: center !important;
+            vertical-align: top !important;
+            border: none !important;
+            padding: 4px !important;
+          }
+        `}</style>
         <div
-          className="bg-white text-black p-10 rounded-sm shadow-2xl min-w-[210mm] max-w-[210mm] min-h-[297mm] font-serif leading-relaxed"
-          style={{ fontFamily: "'Times New Roman', Times, serif" }}
+          className="a4-sheet-container"
           dangerouslySetInnerHTML={{ __html: docHtml }}
         />
       </div>

@@ -1,5 +1,4 @@
 import React from 'react';
-import { FileText } from 'lucide-react';
 import type { ThemeStyles } from '../../lib/themeStyles';
 
 export type TemplateType = 'lease_mb' | 'construction' | 'sale_contract' | 'lease_house' | 'payment_request';
@@ -26,27 +25,30 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   setSelectedTemplate,
 }) => {
   return (
-    <div className={`${styles.containerCardBg} rounded-2xl p-3 border flex flex-wrap items-center gap-2`}>
-      <div className="text-xs font-bold text-sky-500 uppercase tracking-wider flex items-center space-x-1.5 px-2">
-        <FileText className="w-4 h-4" />
-        <span>CHỌN MẪU BIỂU MẪU:</span>
-      </div>
-      <div className="flex flex-wrap items-center gap-2 flex-1">
-        {TEMPLATE_LIST.map(t => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setSelectedTemplate(t.id)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-left border ${selectedTemplate === t.id
-              ? 'bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/30'
-              : isLight
-                ? 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-sky-50 hover:border-sky-200'
-                : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+    <div className={`${styles.containerCardBg} rounded-2xl p-3 border shadow-sm`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-2 mr-1 hidden sm:block">
+          Mẫu biểu:
+        </div>
+        {TEMPLATE_LIST.map((t) => {
+          const isActive = selectedTemplate === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setSelectedTemplate(t.id)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 border ${
+                isActive
+                  ? 'bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/25 ring-2 ring-sky-500/20'
+                  : isLight
+                    ? 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200/70'
+                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
               }`}
-          >
-            <div>{t.label}</div>
-          </button>
-        ))}
+            >
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

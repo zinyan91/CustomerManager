@@ -405,10 +405,9 @@ export const LoanPortfolioView: React.FC = () => {
   const prefVal = parseFloat(ratePreferential) || 0;
   const baseVal = parseFloat(rateBase) || 0;
   const marginVal = parseFloat(rateMargin) || 0;
-  const penaltySurchargeVal = parseFloat(rateConditionSurcharge) || 0;
 
-  const postPrefRate = prefVal + marginVal + penaltySurchargeVal;
-  const normalRate = baseVal + marginVal + penaltySurchargeVal;
+  const postPrefRate = prefVal + marginVal;
+  const normalRate = baseVal + marginVal;
 
   const creditLimitNum = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
   const kunnLoanAmountNum = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
@@ -745,13 +744,13 @@ export const LoanPortfolioView: React.FC = () => {
 
       const currentBal = currentBalInput || loanAmount;
 
-      const prefDec = prefVal ? (prefVal + penaltySurchargeVal) / 100 : undefined;
+      const prefDec = prefVal ? prefVal / 100 : undefined;
       const baseDec = baseVal ? baseVal / 100 : undefined;
       const marginDec = marginVal ? marginVal / 100 : undefined;
       const postPrefDec = postPrefRate ? postPrefRate / 100 : undefined;
       const normalDec = normalRate ? normalRate / 100 : undefined;
 
-      const activeInterestRate = prefDec || normalDec || baseDec || undefined;
+      const activeInterestRate = (interestRateMode === 'pref' ? prefDec : normalDec) || prefDec || normalDec || baseDec || undefined;
 
       let noteText = form.Note || '';
       noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').replace(/\[PENALTY_SURCHARGE:[^\]]*\]/g, '').trim();

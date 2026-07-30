@@ -101,7 +101,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
                   <td className="p-3 text-right font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
                     {fmtMoney(getEffectiveBalanceForContract(c))}
                   </td>
-                  <td className="p-3 text-sky-600 dark:text-sky-300 font-mono whitespace-nowrap">{fmtRate(c.InterestRate || c.NormalRate)}</td>
+                  <td className="p-3 text-sky-600 dark:text-sky-300 font-mono font-bold whitespace-nowrap">{fmtRate(c.PreferentialRate || c.InterestRate || c.NormalRate)}</td>
                   <td className="p-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">{fmtDate(c.DisbursementDate || c.ContractStartDate)}</td>
                   <td className="p-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">{fmtDate(c.KunnDueDate || c.ContractEndDate)}</td>
                   <td className="p-3 whitespace-nowrap">

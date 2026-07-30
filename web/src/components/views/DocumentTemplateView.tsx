@@ -36,7 +36,7 @@ function exportToWordDoc(filename: string, docHtml: string) {
       <style>
         @page WordSection1 {
           size: 210mm 297mm; /* A4 */
-          margin: 25mm 20mm 20mm 30mm; /* Lề trên 2.5cm, lề dưới 2cm, lề phải 2cm, lề trái 3cm chuẩn Nghị định 30 */
+          margin: 25mm 20mm 20mm 30mm; /* Lề trên 2.5cm, lề dưới 2cm, lề phải 2cm, lề trái 3cm chuẩn NĐ 30 */
         }
         div.WordSection1 { page: WordSection1; }
         body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.5; color: #000000; }
@@ -50,8 +50,8 @@ function exportToWordDoc(filename: string, docHtml: string) {
         .font-italic { font-style: italic; }
         .table-doc { border-collapse: collapse; width: 100%; margin-top: 10pt; margin-bottom: 10pt; }
         .table-doc th, .table-doc td { border: 1px solid #000; padding: 6pt 8pt; font-size: 12pt; }
-        .sig-block { width: 100%; margin-top: 25pt; page-break-inside: avoid; }
-        .sig-col { width: 50%; text-align: center; vertical-align: top; }
+        .sig-table { width: 100%; margin-top: 25pt; border-collapse: collapse; border: none; }
+        .sig-table td { width: 50%; text-align: center; vertical-align: top; border: none; padding: 0; }
       </style>
     </head>
     <body>
@@ -70,6 +70,58 @@ function exportToWordDoc(filename: string, docHtml: string) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+}
+
+// Helper: Open Clean PDF Print Window for Document ONLY (No Web UI)
+function exportToPDFOnly(filename: string, docHtml: string) {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+
+  const pdfHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <title>${filename}</title>
+      <style>
+        @page {
+          size: A4 portrait;
+          margin: 25mm 20mm 20mm 30mm; /* Chuẩn lề NĐ 30: Trên 2.5cm, Dưới 2cm, Phải 2cm, Trái 3cm */
+        }
+        body {
+          font-family: 'Times New Roman', Times, serif;
+          font-size: 13pt;
+          line-height: 1.5;
+          color: #000000;
+          margin: 0;
+          padding: 0;
+        }
+        h1 { text-align: center; font-size: 16pt; font-weight: bold; text-transform: uppercase; margin-top: 12pt; margin-bottom: 12pt; }
+        h2 { text-align: center; font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-top: 10pt; margin-bottom: 10pt; }
+        p { margin-bottom: 6pt; text-align: justify; text-indent: 1.27cm; line-height: 1.5; }
+        .no-indent { text-indent: 0 !important; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+        .table-doc { border-collapse: collapse; width: 100%; margin-top: 10pt; margin-bottom: 10pt; }
+        .table-doc th, .table-doc td { border: 1px solid #000; padding: 6pt 8pt; font-size: 12pt; }
+        .sig-table { width: 100%; margin-top: 25pt; border-collapse: collapse; border: none; }
+        .sig-table td { width: 50%; text-align: center; vertical-align: top; border: none; padding: 0; }
+      </style>
+    </head>
+    <body>
+      ${docHtml}
+      <script>
+        window.onload = function() {
+          window.print();
+        };
+      </script>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.write(pdfHtml);
+  printWindow.document.close();
 }
 
 export const DocumentTemplateView: React.FC = () => {
@@ -226,6 +278,7 @@ export const DocumentTemplateView: React.FC = () => {
           text-align: justify;
           text-indent: 1.27cm;
           margin-bottom: 6pt;
+          line-height: 1.5;
         }
         .doc-preview-sheet .no-indent {
           text-indent: 0 !important;
@@ -258,91 +311,76 @@ export const DocumentTemplateView: React.FC = () => {
         </div>
       </div>
 
-      {/* ── TEMPLATE SELECTOR CARDS ── */}
+      {/* ── TEMPLATE SELECTOR CARDS (ĐÃ BỎ CHÚ THÍCH PHỤ) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 print:hidden">
         <button
           onClick={() => setSelectedTemplate('lease_mb')}
-          className={`p-3.5 rounded-2xl border text-left transition-all ${
+          className={`p-3.5 rounded-2xl border text-center transition-all ${
             selectedTemplate === 'lease_mb'
               ? 'bg-sky-600 text-white font-bold shadow-md border-sky-500 scale-[1.01]'
               : `${containerCardBg} hover:border-sky-500`
           }`}
         >
-          <div className="flex items-center space-x-2 font-bold text-xs uppercase">
+          <div className="flex items-center justify-center space-x-2 font-bold text-xs uppercase">
             <Building className="w-4 h-4 shrink-0" />
-            <span className="truncate">1. HĐ Thuê Mặt Bằng</span>
+            <span>1. HĐ Thuê Mặt Bằng</span>
           </div>
-          <p className={`text-[11px] mt-1.5 ${selectedTemplate === 'lease_mb' ? 'text-sky-100' : 'text-slate-400'}`}>
-            Đầy đủ 9 điều khoản chuẩn
-          </p>
         </button>
 
         <button
           onClick={() => setSelectedTemplate('construction')}
-          className={`p-3.5 rounded-2xl border text-left transition-all ${
+          className={`p-3.5 rounded-2xl border text-center transition-all ${
             selectedTemplate === 'construction'
               ? 'bg-sky-600 text-white font-bold shadow-md border-sky-500 scale-[1.01]'
               : `${containerCardBg} hover:border-sky-500`
           }`}
         >
-          <div className="flex items-center space-x-2 font-bold text-xs uppercase">
+          <div className="flex items-center justify-center space-x-2 font-bold text-xs uppercase">
             <ListChecks className="w-4 h-4 shrink-0" />
-            <span className="truncate">2. HĐ Thi Công Nhà Ở</span>
+            <span>2. HĐ Thi Công Nhà Ở</span>
           </div>
-          <p className={`text-[11px] mt-1.5 ${selectedTemplate === 'construction' ? 'text-sky-100' : 'text-slate-400'}`}>
-            Thi công & bảo hành nhà
-          </p>
         </button>
 
         <button
           onClick={() => setSelectedTemplate('sale_contract')}
-          className={`p-3.5 rounded-2xl border text-left transition-all ${
+          className={`p-3.5 rounded-2xl border text-center transition-all ${
             selectedTemplate === 'sale_contract'
               ? 'bg-sky-600 text-white font-bold shadow-md border-sky-500 scale-[1.01]'
               : `${containerCardBg} hover:border-sky-500`
           }`}
         >
-          <div className="flex items-center space-x-2 font-bold text-xs uppercase">
+          <div className="flex items-center justify-center space-x-2 font-bold text-xs uppercase">
             <DollarSign className="w-4 h-4 shrink-0" />
-            <span className="truncate">3. HĐ Mua Bán Hàng Hóa</span>
+            <span>3. HĐ Mua Bán Hàng Hóa</span>
           </div>
-          <p className={`text-[11px] mt-1.5 ${selectedTemplate === 'sale_contract' ? 'text-sky-100' : 'text-slate-400'}`}>
-            Đa mặt hàng (Thêm/Xóa)
-          </p>
         </button>
 
         <button
           onClick={() => setSelectedTemplate('lease_house')}
-          className={`p-3.5 rounded-2xl border text-left transition-all ${
+          className={`p-3.5 rounded-2xl border text-center transition-all ${
             selectedTemplate === 'lease_house'
               ? 'bg-sky-600 text-white font-bold shadow-md border-sky-500 scale-[1.01]'
               : `${containerCardBg} hover:border-sky-500`
           }`}
         >
-          <div className="flex items-center space-x-2 font-bold text-xs uppercase">
+          <div className="flex items-center justify-center space-x-2 font-bold text-xs uppercase">
             <User className="w-4 h-4 shrink-0" />
-            <span className="truncate">4. HĐ Thuê Nhà Ở</span>
+            <span>4. HĐ Thuê Nhà Ở</span>
           </div>
-          <p className={`text-[11px] mt-1.5 ${selectedTemplate === 'lease_house' ? 'text-sky-100' : 'text-slate-400'}`}>
-            Cho thuê nhà nguyên căn
-          </p>
         </button>
 
         <button
           onClick={() => setSelectedTemplate('payment_request')}
-          className={`p-3.5 rounded-2xl border text-left transition-all ${
+          className={`p-3.5 rounded-2xl border text-center transition-all ${
             selectedTemplate === 'payment_request'
               ? 'bg-emerald-600 text-white font-bold shadow-md border-emerald-500 scale-[1.01]'
               : `${containerCardBg} hover:border-emerald-500`
           }`}
         >
-          <div className="flex items-center space-x-2 font-bold text-xs uppercase">
+          <div className="flex items-center justify-center space-x-2 font-bold text-xs uppercase">
             <CreditCard className="w-4 h-4 shrink-0" />
-            <span className="truncate">5. Đề Nghị Thanh Toán</span>
+            <span>5. Đề Nghị Thanh Toán</span>
           </div>
-          <p className={`text-[11px] mt-1.5 ${selectedTemplate === 'payment_request' ? 'text-emerald-100' : 'text-slate-400'}`}>
-            File Word độc lập
-          </p>
         </button>
       </div>
 
@@ -990,29 +1028,34 @@ export const DocumentTemplateView: React.FC = () => {
                   }
                 }}
                 className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
-                title="Xuất văn bản thành file Word (.doc / .docx) giữ nguyên định dạng"
+                title="Xuất văn bản thành file Word (.doc / .docx) giữ nguyên định dạng 2 cột chữ ký"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Xuất File Word (.doc)</span>
               </button>
               <button
                 type="button"
-                onClick={() => window.print()}
+                onClick={() => {
+                  const previewElem = document.getElementById('document-preview-container');
+                  if (previewElem) {
+                    exportToPDFOnly(`Van_Ban_${selectedTemplate}_${mbContractDate}`, previewElem.innerHTML);
+                  }
+                }}
                 className="flex items-center space-x-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
-                title="In trực tiếp hoặc Lưu file PDF chuẩn khổ A4"
+                title="Tạo file PDF độc lập chuẩn khổ A4 (không chứa giao diện web)"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>In / Xuất PDF</span>
+                <span>Xuất File PDF (.pdf)</span>
               </button>
             </div>
           </div>
 
-          {/* LIVE PREVIEW A4 PAPER SHEET WITH COMPLETE UNTRUNCATED TEXT */}
+          {/* LIVE PREVIEW A4 PAPER SHEET WITH LEGAL VIETNAMESE TYPOGRAPHY */}
           <div
             id="document-preview-container"
             className="doc-preview-sheet bg-white text-slate-950 p-10 sm:p-14 rounded-2xl border border-slate-200 shadow-2xl space-y-4 max-w-[210mm] mx-auto transition-all"
           >
-            {/* ── PREVIEW 1: HỢP ĐỒNG THUÊ MẶT BẰNG FULL TEXT (ĐẦY ĐỦ 9 ĐIỀU) ── */}
+            {/* ── PREVIEW 1: HỢP ĐỒNG THUÊ MẶT BẰNG FULL TEXT ── */}
             {selectedTemplate === 'lease_mb' && (
               <div className="space-y-4">
                 <div className="text-center space-y-1">
@@ -1025,9 +1068,6 @@ export const DocumentTemplateView: React.FC = () => {
 
                 <div className="text-center pt-3 pb-1">
                   <h1 className="text-[16pt] font-bold uppercase tracking-wide">HỢP ĐỒNG THUÊ MẶT BẰNG KINH DOANH</h1>
-                  <p className="italic text-[13pt] text-slate-800 mt-1 no-indent text-center">
-                    Hôm nay, ngày {fmtDate(mbContractDate)} tại địa điểm cho thuê, chúng tôi gồm có:
-                  </p>
                 </div>
 
                 <div className="space-y-1">
@@ -1100,24 +1140,29 @@ export const DocumentTemplateView: React.FC = () => {
                   <p className="text-justify">Hợp đồng này được lập thành 02 (hai) bản gốc có giá trị pháp lý như nhau, mỗi bên giữ 01 bản để thực hiện.</p>
                 </div>
 
-                <div className="pt-8 grid grid-cols-2 text-center gap-4 border-t border-slate-300 font-serif">
-                  <div>
-                    <div className="font-bold uppercase text-[13pt]">ĐẠI DIỆN BÊN A</div>
-                    <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
-                    <div className="h-24"></div>
-                    <div className="font-bold uppercase text-[13pt]">{nfc(mbPartyAName)}</div>
-                  </div>
-                  <div>
-                    <div className="font-bold uppercase text-[13pt]">ĐẠI DIỆN BÊN B</div>
-                    <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
-                    <div className="h-24"></div>
-                    <div className="font-bold uppercase text-[13pt]">{nfc(mbPartyBName)}</div>
-                  </div>
-                </div>
+                {/* SIGNATURE BLOCK TABLE FORM (COMPATIBLE WITH WORD 2-COLUMN LAYOUT) */}
+                <table className="sig-table font-serif" style={{ width: '100%', borderCollapse: 'collapse', border: 'none', marginTop: '30pt' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: '0' }}>
+                        <div className="font-bold uppercase text-[13pt]">ĐẠI DIỆN BÊN A</div>
+                        <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
+                        <div style={{ height: '70px' }}></div>
+                        <div className="font-bold uppercase text-[13pt]">{nfc(mbPartyAName)}</div>
+                      </td>
+                      <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: '0' }}>
+                        <div className="font-bold uppercase text-[13pt]">ĐẠI DIỆN BÊN B</div>
+                        <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
+                        <div style={{ height: '70px' }}></div>
+                        <div className="font-bold uppercase text-[13pt]">{nfc(mbPartyBName)}</div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             )}
 
-            {/* ── PREVIEW 2: HỢP ĐỒNG THI CÔNG NHÀ Ở FULL TEXT (ĐẦY ĐỦ ĐIỀU KHOẢN) ── */}
+            {/* ── PREVIEW 2: HỢP ĐỒNG THI CÔNG NHÀ Ở FULL TEXT (ĐẦY ĐỦ TẤT CẢ TIỂU MỤC) ── */}
             {selectedTemplate === 'construction' && (
               <div className="space-y-4">
                 <div className="text-center space-y-1">
@@ -1130,13 +1175,14 @@ export const DocumentTemplateView: React.FC = () => {
 
                 <div className="text-center pt-3 pb-1">
                   <h1 className="text-[16pt] font-bold uppercase tracking-wide">HỢP ĐỒNG THI CÔNG NHÀ Ở DÂN DỤNG</h1>
-                  <p className="italic text-[13pt] text-slate-800 mt-1 no-indent text-center">
-                    Căn cứ vào nhu cầu và khả năng hợp tác của hai bên. Hôm nay, ngày {fmtDate(constContractDate)}, chúng tôi gồm có:
-                  </p>
                 </div>
 
+                <p className="text-justify">
+                  Căn cứ vào nhu cầu và khả năng hợp tác của hai bên. Hôm nay, ngày {fmtDate(constContractDate)}, chúng tôi gồm có:
+                </p>
+
                 <div className="space-y-1">
-                  <div className="font-bold uppercase text-[13pt] no-indent">BÊN THUÊ THI CÔNG XÂY DỰNG (Bên A):</div>
+                  <div className="font-bold uppercase text-[13pt] no-indent">BÊN THUÊ THI CÔNG XÂY DỰNG: (Sau đây gọi tắt là Bên A)</div>
                   <div className="pl-6 space-y-0.5 no-indent">
                     <div>• Bà: <strong className="uppercase">{nfc(constPartyAName)}</strong></div>
                     <div>• CCCD số: <strong>{nfc(constPartyACccd)}</strong> | Địa chỉ: {nfc(constPartyAAddress)}</div>
@@ -1144,62 +1190,87 @@ export const DocumentTemplateView: React.FC = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <div className="font-bold uppercase text-[13pt] no-indent">BÊN NHẬN THI CÔNG XÂY DỰNG (Bên B):</div>
+                  <div className="font-bold uppercase text-[13pt] no-indent">BÊN NHẬN THI CÔNG XÂY DỰNG: (Sau đây gọi tắt là Bên B)</div>
                   <div className="pl-6 space-y-0.5 no-indent">
                     <div>• Bà: <strong className="uppercase">{nfc(constPartyBName)}</strong></div>
                     <div>• CCCD số: <strong>{nfc(constPartyBCccd)}</strong></div>
                   </div>
                 </div>
 
+                <p className="text-justify">
+                  Hai bên thỏa thuận ký hợp đồng với các điều khoản như sau:
+                </p>
+
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent">Điều 1: Nội dung và phạm vi công việc</div>
-                  <p className="text-justify">1. Địa điểm thi công: {nfc(constSiteAddress)}.</p>
-                  <p className="text-justify">2. Phạm vi công việc: Sửa chữa/tân trang phần tường (trát, bả, sơn lại), thay thế hoặc lát lại gạch nền/sàn, thi công đường dây điện nước, sửa chữa thay mới cửa mái tôn lan can theo thiết kế.</p>
-                  <p className="text-justify">3. Chất lượng & tiêu chuẩn kỹ thuật: Đúng quy trình xây dựng dân dụng, an toàn lao động và vật liệu đảm bảo chất lượng theo thỏa thuận.</p>
+                  <p className="text-justify">1. Địa điểm thi công: Bên B nhận thi công/sửa chữa nhà ở dân dụng tại địa chỉ: <strong>{nfc(constSiteAddress)}</strong>.</p>
+                  <p className="text-justify">2. Phạm vi công việc mà Bên B đảm nhận: Bên B nhận thực hiện toàn bộ phần nhân công (hoặc cả nhân công + vật liệu, tùy thỏa thuận) cho các hạng mục sau:</p>
+                  <div className="pl-6 space-y-0.5 no-indent">
+                    <div>- Sửa chữa/tân trang phần tường: trát, bả, sơn lại toàn bộ các mảng tường bị hư hỏng.</div>
+                    <div>- Thay thế hoặc lát lại gạch nền, sàn theo mẫu Bên A đã lựa chọn.</div>
+                    <div>- Thi công hệ thống điện nước: đi lại đường dây điện, thay ổ cắm, công tắc, thay đường ống cấp – thoát nước hỏng.</div>
+                    <div>- Sửa chữa, thay mới cửa, mái tôn, lan can, cầu thang (nếu có).</div>
+                  </div>
+                  <p className="text-justify">3. Chất lượng & tiêu chuẩn kỹ thuật: Công việc thi công phải đảm bảo đúng quy trình xây dựng dân dụng, an toàn lao động và tiêu chuẩn chất lượng theo thỏa thuận.</p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent">Điều 2: Thời gian và tiến độ thực hiện</div>
-                  <p className="text-justify">- Ngày khởi công: Ngày {fmtDate(constStartDate)}</p>
-                  <p className="text-justify">- Ngày hoàn thành dự kiến: Ngày {fmtDate(constEndDate)}</p>
+                  <p className="text-justify">- Ngày khởi công: Ngày <strong>{fmtDate(constStartDate)}</strong></p>
+                  <p className="text-justify">- Ngày hoàn thành dự kiến: Ngày <strong>{fmtDate(constEndDate)}</strong></p>
+                  <p className="text-justify">- Tổng thời gian thực hiện dự kiến: 2 tháng (không tính Thứ 7, Chủ nhật). Trường hợp bất khả kháng, hai bên sẽ điều chỉnh bằng văn bản.</p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent">Điều 3. Giá trị hợp đồng và phương thức thanh toán</div>
                   <p className="text-justify">- Tổng giá trị hợp đồng: <strong>{constTotalPrice} VNĐ</strong>.</p>
-                  <p className="text-justify">- Đợt 1 (Thanh toán trước): <strong>{constDepositStage1} VNĐ</strong>.</p>
-                  <p className="text-justify">- Đợt 2 (Số tiền còn lại): Thanh toán trước khi bàn giao hoàn thiện công trình là <strong>{constStage2Amount} VNĐ</strong>.</p>
+                  <p className="text-justify">- Đợt 1: Bên A thanh toán cho Bên B số tiền là: <strong>{constDepositStage1} VNĐ</strong>.</p>
+                  <p className="text-justify">- Đợt 2: Số tiền còn lại là <strong>{constStage2Amount} VNĐ</strong> sẽ được Bên A thanh toán toàn bộ trước khi bàn giao hoàn thiện công trình.</p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent">Điều 4: Quyền và nghĩa vụ của các bên</div>
-                  <p className="text-justify">1. Quyền & nghĩa vụ Bên A: Giám sát kiểm tra quá trình thi công, bàn giao mặt bằng sạch sẽ an toàn và thanh toán đúng hạn.</p>
-                  <p className="text-justify">2. Quyền & nghĩa vụ Bên B: Thi công đúng thiết kế, quy chuẩn xây dựng, đảm bảo an toàn lao động, giữ gìn vệ sinh môi trường và bảo hành công trình.</p>
+                  <div className="font-bold text-[12pt] no-indent">1. Quyền và nghĩa vụ của bên A:</div>
+                  <p className="text-justify">a. Quyền lợi: Yêu cầu Bên B thi công đúng tiến độ, đúng chất lượng. Giám sát, kiểm tra quá trình thi công; có quyền tạm ngừng nếu không đạt yêu cầu.</p>
+                  <p className="text-justify">b. Nghĩa vụ: Bàn giao mặt bằng sạch sẽ, an toàn, đúng thời gian. Thanh toán đúng hạn theo tiến độ hợp đồng.</p>
+                  <div className="font-bold text-[12pt] no-indent">2. Quyền và nghĩa vụ của bên B:</div>
+                  <p className="text-justify">a. Quyền lợi: Nhận đủ và đúng hạn số tiền theo hợp đồng.</p>
+                  <p className="text-justify">b. Nghĩa vụ: Thi công đúng thiết kế, đúng quy chuẩn xây dựng, đảm bảo an toàn lao động và bảo hành công trình theo Điều 5.</p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent">Điều 5. Nghiệm thu, bàn giao và bảo hành</div>
-                  <p className="text-justify">Thời gian bảo hành là 06 tháng kể từ ngày bàn giao đối với các lỗi kỹ thuật phát sinh trong quá trình thi công.</p>
+                  <p className="text-justify">Hai bên tiến hành nghiệm thu theo từng giai đoạn và nghiệm thu tổng thể khi hoàn thành. Thời gian bảo hành: 06 tháng kể từ ngày bàn giao đối với các lỗi kỹ thuật do quá trình thi công.</p>
                 </div>
 
-                <div className="pt-8 grid grid-cols-2 text-center gap-4 border-t border-slate-300 font-serif">
-                  <div>
-                    <div className="font-bold uppercase text-[13pt]">BÊN THUÊ THI CÔNG (BÊN A)</div>
-                    <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
-                    <div className="h-20"></div>
-                    <div className="font-bold uppercase text-[13pt]">{nfc(constPartyAName)}</div>
-                  </div>
-                  <div>
-                    <div className="font-bold uppercase text-[13pt]">BÊN NHẬN THI CÔNG (BÊN B)</div>
-                    <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
-                    <div className="h-20"></div>
-                    <div className="font-bold uppercase text-[13pt]">{nfc(constPartyBName)}</div>
-                  </div>
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent">Điều 6. Điều khoản chung</div>
+                  <p className="text-justify">Hợp đồng có hiệu lực từ ngày ký. Mọi sửa đổi phải lập thành văn bản. Hợp đồng được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản.</p>
                 </div>
+
+                {/* SIGNATURE TABLE FOR WORD */}
+                <table className="sig-table font-serif" style={{ width: '100%', borderCollapse: 'collapse', border: 'none', marginTop: '30pt' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: '0' }}>
+                        <div className="font-bold uppercase text-[13pt]">ĐẠI DIỆN BÊN A</div>
+                        <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
+                        <div style={{ height: '70px' }}></div>
+                        <div className="font-bold uppercase text-[13pt]">{nfc(constPartyAName)}</div>
+                      </td>
+                      <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: '0' }}>
+                        <div className="font-bold uppercase text-[13pt]">ĐẠI DIỆN BÊN B</div>
+                        <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
+                        <div style={{ height: '70px' }}></div>
+                        <div className="font-bold uppercase text-[13pt]">{nfc(constPartyBName)}</div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             )}
 
-            {/* ── PREVIEW 3: HỢP ĐỒNG MUA BÁN HÀNG HÓA (ĐA MẶT HÀNG CHI TIẾT) ── */}
+            {/* ── PREVIEW 3: HỢP ĐỒNG MUA BÁN HÀNG HÓA FULL TEXT ── */}
             {selectedTemplate === 'sale_contract' && (
               <div className="space-y-4">
                 <div className="text-center space-y-1">
@@ -1212,8 +1283,11 @@ export const DocumentTemplateView: React.FC = () => {
 
                 <div className="text-center pt-3 pb-1">
                   <h1 className="text-[16pt] font-bold uppercase tracking-wide">HỢP ĐỒNG MUA BÁN HÀNG HÓA</h1>
-                  <p className="italic text-[13pt] text-slate-800 mt-1 no-indent text-center">Ngày {fmtDate(saleContractDate)}</p>
                 </div>
+
+                <p className="text-justify">
+                  Hôm nay, ngày {fmtDate(saleContractDate)}, tại văn phòng giao dịch, chúng tôi gồm có:
+                </p>
 
                 <div className="space-y-1">
                   <div className="font-bold uppercase text-[13pt] no-indent">BÊN BÁN (BÊN A): {nfc(saleSellerName)}</div>
@@ -1230,8 +1304,12 @@ export const DocumentTemplateView: React.FC = () => {
                   </div>
                 </div>
 
+                <p className="text-justify">
+                  Hai bên cùng thỏa thuận và thống nhất ký kết Hợp đồng mua bán hàng hóa với các điều khoản chi tiết như sau:
+                </p>
+
                 <div className="space-y-2">
-                  <div className="font-bold text-[13pt] no-indent">ĐIỀU 1: DANH MỤC HÀNG HÓA MUA BÁN CHI TIẾT</div>
+                  <div className="font-bold text-[13pt] no-indent">ĐIỀU 1: DANH MỤC HÀNG HÓA VÀ GIÁ TRỊ THANH TOÁN</div>
                   <table className="w-full border-collapse border border-black text-[12pt] my-2">
                     <thead>
                       <tr className="bg-slate-100">
@@ -1268,28 +1346,38 @@ export const DocumentTemplateView: React.FC = () => {
 
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent">ĐIỀU 2: PHƯƠNG THỨC GIAO HÀNG VÀ THANH TOÁN</div>
-                  <p className="text-justify">2.1. Phương thức thanh toán: Chuyển khoản ngân hàng vào tài khoản Bên A.</p>
-                  <p className="text-justify">2.2. Giao nhận: Bên A bàn giao đầy đủ số lượng và chất lượng hàng hóa cho Bên B tại địa điểm đã thỏa thuận.</p>
+                  <p className="text-justify">2.1. Phương thức thanh toán: Chuyển khoản ngân hàng vào tài khoản Bên A trong thời hạn đã thỏa thuận.</p>
+                  <p className="text-justify">2.2. Giao nhận: Bên A bàn giao đầy đủ số lượng và chủng loại hàng hóa cho Bên B theo hóa đơn bàn giao.</p>
                 </div>
 
-                <div className="pt-8 grid grid-cols-2 text-center gap-4 border-t border-slate-300 font-serif">
-                  <div>
-                    <div className="font-bold uppercase text-[13pt]">ĐẠI DIỆN BÊN BÁN</div>
-                    <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
-                    <div className="h-20"></div>
-                    <div className="font-bold uppercase text-[13pt]">{nfc(saleSellerName)}</div>
-                  </div>
-                  <div>
-                    <div className="font-bold uppercase text-[13pt]">ĐẠI DIỆN BÊN MUA</div>
-                    <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
-                    <div className="h-20"></div>
-                    <div className="font-bold uppercase text-[13pt]">{nfc(saleBuyerName)}</div>
-                  </div>
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent">ĐIỀU 3: ĐIỀU KHOẢN CHUNG</div>
+                  <p className="text-justify">Hợp đồng này được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản để thực hiện.</p>
                 </div>
+
+                {/* SIGNATURE TABLE FOR WORD */}
+                <table className="sig-table font-serif" style={{ width: '100%', borderCollapse: 'collapse', border: 'none', marginTop: '30pt' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: '0' }}>
+                        <div className="font-bold uppercase text-[13pt]">ĐẠI DIỆN BÊN BÁN</div>
+                        <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
+                        <div style={{ height: '70px' }}></div>
+                        <div className="font-bold uppercase text-[13pt]">{nfc(saleSellerName)}</div>
+                      </td>
+                      <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: '0' }}>
+                        <div className="font-bold uppercase text-[13pt]">ĐẠI DIỆN BÊN MUA</div>
+                        <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
+                        <div style={{ height: '70px' }}></div>
+                        <div className="font-bold uppercase text-[13pt]">{nfc(saleBuyerName)}</div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             )}
 
-            {/* ── PREVIEW 4: HỢP ĐỒNG THUÊ NHÀ Ở DÂN DỤNG ── */}
+            {/* ── PREVIEW 4: HỢP ĐỒNG THUÊ NHÀ Ở DÂN DỤNG FULL TEXT ── */}
             {selectedTemplate === 'lease_house' && (
               <div className="space-y-4">
                 <div className="text-center space-y-1">
@@ -1302,14 +1390,17 @@ export const DocumentTemplateView: React.FC = () => {
 
                 <div className="text-center pt-3 pb-1">
                   <h1 className="text-[16pt] font-bold uppercase tracking-wide">HỢP ĐỒNG THUÊ NHÀ Ở DÂN DỤNG</h1>
-                  <p className="italic text-[13pt] text-slate-800 mt-1 no-indent text-center">Ngày {fmtDate(mbContractDate)}</p>
                 </div>
+
+                <p className="text-justify">
+                  Hôm nay, ngày {fmtDate(mbContractDate)}, tại nhà cho thuê, chúng tôi gồm có:
+                </p>
 
                 <div className="space-y-1">
                   <div className="font-bold uppercase text-[13pt] no-indent">BÊN CHO THUÊ NHÀ (BÊN A):</div>
                   <div className="pl-6 space-y-0.5 no-indent">
                     <div>• Chủ nhà: <strong className="uppercase">{nfc(mbPartyAName)}</strong></div>
-                    <div>• CCCD: <strong>{nfc(mbPartyACccd)}</strong></div>
+                    <div>• CCCD số: <strong>{nfc(mbPartyACccd)}</strong></div>
                   </div>
                 </div>
 
@@ -1317,30 +1408,44 @@ export const DocumentTemplateView: React.FC = () => {
                   <div className="font-bold uppercase text-[13pt] no-indent">BÊN THUÊ NHÀ (BÊN B):</div>
                   <div className="pl-6 space-y-0.5 no-indent">
                     <div>• Người thuê: <strong className="uppercase">{nfc(mbPartyBName)}</strong></div>
-                    <div>• CCCD: <strong>{nfc(mbPartyBCccd)}</strong></div>
+                    <div>• CCCD số: <strong>{nfc(mbPartyBCccd)}</strong></div>
                   </div>
+                </div>
+
+                <p className="text-justify">
+                  Hai bên cùng tự nguyện ký kết hợp đồng thuê nhà ở với các điều khoản như sau:
+                </p>
+
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent">ĐIỀU 1: ĐỐI TƯỢNG VÀ MỤC ĐÍCH THUÊ</div>
+                  <p className="text-justify">1.1. Bên A đồng ý cho Bên B thuê căn nhà ở dân dụng để sinh hoạt gia đình.</p>
+                  <p className="text-justify">1.2. Giá thuê nhà: <strong>{mbMonthlyPrice} VNĐ/tháng</strong>. Tiền cọc giữ nhà: <strong>{mbDepositAmount} VNĐ</strong>.</p>
                 </div>
 
                 <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent">ĐIỀU KHOẢN CHÍNH HỢP ĐỒNG</div>
-                  <p className="text-justify">1.1. Giá thuê nhà: <strong>{mbMonthlyPrice} VNĐ/tháng</strong>.</p>
-                  <p className="text-justify">1.2. Tiền cọc giữ nhà: <strong>{mbDepositAmount} VNĐ</strong>.</p>
+                  <div className="font-bold text-[13pt] no-indent">ĐIỀU 2: ĐIỀU KHOẢN CHUNG</div>
+                  <p className="text-justify">Hợp đồng được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản.</p>
                 </div>
 
-                <div className="pt-8 grid grid-cols-2 text-center gap-4 border-t border-slate-300 font-serif">
-                  <div>
-                    <div className="font-bold uppercase text-[13pt]">CHỦ NHÀ (BÊN A)</div>
-                    <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
-                    <div className="h-20"></div>
-                    <div className="font-bold uppercase text-[13pt]">{nfc(mbPartyAName)}</div>
-                  </div>
-                  <div>
-                    <div className="font-bold uppercase text-[13pt]">NGƯỜI THUÊ (BÊN B)</div>
-                    <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
-                    <div className="h-20"></div>
-                    <div className="font-bold uppercase text-[13pt]">{nfc(mbPartyBName)}</div>
-                  </div>
-                </div>
+                {/* SIGNATURE TABLE FOR WORD */}
+                <table className="sig-table font-serif" style={{ width: '100%', borderCollapse: 'collapse', border: 'none', marginTop: '30pt' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: '0' }}>
+                        <div className="font-bold uppercase text-[13pt]">CHỦ NHÀ (BÊN A)</div>
+                        <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
+                        <div style={{ height: '70px' }}></div>
+                        <div className="font-bold uppercase text-[13pt]">{nfc(mbPartyAName)}</div>
+                      </td>
+                      <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: '0' }}>
+                        <div className="font-bold uppercase text-[13pt]">NGƯỜI THUÊ (BÊN B)</div>
+                        <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
+                        <div style={{ height: '70px' }}></div>
+                        <div className="font-bold uppercase text-[13pt]">{nfc(mbPartyBName)}</div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             )}
 
@@ -1399,15 +1504,19 @@ export const DocumentTemplateView: React.FC = () => {
                   Trân trọng cảm ơn!
                 </p>
 
-                <div className="pt-8 grid grid-cols-2 text-center gap-4 border-t border-slate-300 font-serif">
-                  <div></div>
-                  <div>
-                    <div className="font-bold uppercase text-[13pt]">NGƯỜI ĐỀ NGHỊ THANH TOÁN</div>
-                    <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
-                    <div className="h-24"></div>
-                    <div className="font-bold uppercase text-[13pt]">{nfc(prRequesterName)}</div>
-                  </div>
-                </div>
+                <table className="sig-table font-serif" style={{ width: '100%', borderCollapse: 'collapse', border: 'none', marginTop: '30pt' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: '50%', border: 'none' }}></td>
+                      <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: '0' }}>
+                        <div className="font-bold uppercase text-[13pt]">NGƯỜI ĐỀ NGHỊ THANH TOÁN</div>
+                        <div className="italic text-[11pt] text-slate-700">(Ký và ghi rõ họ tên)</div>
+                        <div style={{ height: '70px' }}></div>
+                        <div className="font-bold uppercase text-[13pt]">{nfc(prRequesterName)}</div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

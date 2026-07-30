@@ -1036,18 +1036,25 @@ export const LoanPortfolioView: React.FC = () => {
       }
       const group = map.get(masterNo)!;
       group.contracts.push(c);
-      
-      if (c.ContractAmount && c.ContractAmount > group.totalCreditLimit) {
-        group.totalCreditLimit = c.ContractAmount;
-        group.masterContract = c;
-      }
       group.totalKunnDisbursed += (c.LoanAmount || 0);
     }
 
     for (const group of map.values()) {
-      if (group.totalCreditLimit === 0 && group.contracts.length > 0) {
-        group.totalCreditLimit = group.contracts[0].ContractAmount || group.contracts[0].LoanAmount || 0;
+      // Kiểm tra xem nhóm có HĐTD Hạn Mức Tín Dụng gốc chính (LoanMethod === 'Hạn mức tín dụng') hay không
+      const explicitMaster = group.contracts.find(c =>
+        (c.LoanMethod === 'Hạn mức tín dụng' || c.LoanMethod === 'Hạn mức tín dụng từng lần') &&
+        c.ContractAmount && c.ContractAmount > 0
+      );
+
+      if (explicitMaster) {
+        group.masterContract = explicitMaster;
+        group.totalCreditLimit = explicitMaster.ContractAmount || 0;
+      } else {
+        // Đối với Cho vay từng lần hoặc các khoản vay độc lập: Mức cấp bằng TỔNG số tiền của các khoản vay trong nhóm
+        group.masterContract = group.contracts[0] || null;
+        group.totalCreditLimit = group.contracts.reduce((sum, c) => sum + (c.ContractAmount || c.LoanAmount || 0), 0);
       }
+
       group.remainingLimit = Math.max(0, group.totalCreditLimit - group.totalKunnDisbursed);
     }
 

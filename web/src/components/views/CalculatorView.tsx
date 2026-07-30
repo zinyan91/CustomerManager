@@ -170,11 +170,17 @@ function exportToExcelHTML(
   document.body.removeChild(a);
 }
 
+function roundPrincipalCore(rawPrincipal: number, roundMode: '50k' | '10k' | 'exact' = '50k'): number {
+  if (roundMode === 'exact' || !rawPrincipal || rawPrincipal <= 0) return Math.round(rawPrincipal);
+  const step = roundMode === '50k' ? 50000 : 10000;
+  return Math.ceil(rawPrincipal / step) * step;
+}
+
 export const CalculatorView: React.FC = () => {
   const { theme } = useTheme();
   const isLight = theme === 'light';
 
-  const [activeTab, setActiveTab] = useState<'term_loan' | 'stk_single' | 'stk_multi'>('term_loan');
+  const [activeTab, setActiveTab] = useState<'term_loan' | 'consumer_fin' | 'stk_single' | 'stk_multi'>('term_loan');
 
   // ──────────────────────────────────────────────────────────────────────────
   // TOOL 1: TÍNH KHOẢN VAY TỪNG LẦN (LỊCH TRẢ NỢ DỰ KIẾN)
@@ -223,7 +229,7 @@ export const CalculatorView: React.FC = () => {
 
   let currentBal = numLoanAmount;
   const activePayMonths = Math.max(1, loanTenorMonths - gracePeriodMonths);
-  const equalPrincipalPerMonth = Math.round(numLoanAmount / activePayMonths);
+  const equalPrincipalPerMonth = roundPrincipalCore(numLoanAmount / activePayMonths, '50k');
 
   let totalPrincipalPaid = 0;
   let totalInterestPaid = 0;
@@ -308,6 +314,104 @@ export const CalculatorView: React.FC = () => {
     exportToExcelHTML(
       `Lich_Tra_No_Du_Kien_${loanStartDate}`,
       'BẢNG DỰ KIẾN LỊCH TRẢ NỢ KHOẢN VAY TỪNG LẦN',
+      params,
+      headers,
+      rows,
+      footerRow
+    );
+  };
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // TOOL 4: VAY TRẢ GÓP CÔNG TY TÀI CHÍNH (GỐC TRẢ ĐỀU, LÃI PHẲNG/CỐ ĐỊNH)
+  // ──────────────────────────────────────────────────────────────────────────
+  const [finLoanAmountInput, setFinLoanAmountInput] = useState('50.000.000');
+  const [finTenorMonths, setFinTenorMonths] = useState<number>(12);
+  const [finFlatRateMonth, setFinFlatRateMonth] = useState('1.5'); // %/tháng
+  const [finStartDate, setFinStartDate] = useState('2026-04-01');
+  const [finFeePerMonthInput, setFinFeePerMonthInput] = useState('0');
+
+  const numFinLoanAmount = parseFloat(finLoanAmountInput.replace(/\D/g, '')) || 0;
+  const numFinFlatRateMonth = parseFloat(finFlatRateMonth) || 0;
+  const numFinFeePerMonth = parseFloat(finFeePerMonthInput.replace(/\D/g, '')) || 0;
+
+  const finMonthlyPrincipal = finTenorMonths > 0 ? Math.round(numFinLoanAmount / finTenorMonths) : 0;
+  const finMonthlyInterest = Math.round(numFinLoanAmount * (numFinFlatRateMonth / 100));
+  const finTotalMonthlyPay = finMonthlyPrincipal + finMonthlyInterest + numFinFeePerMonth;
+
+  const finTotalInterest = finMonthlyInterest * finTenorMonths;
+  const finTotalFee = numFinFeePerMonth * finTenorMonths;
+  const finTotalPayment = numFinLoanAmount + finTotalInterest + finTotalFee;
+
+  const finEffectiveYearRate = finTenorMonths > 0 ? ((2 * finTenorMonths * (numFinFlatRateMonth * 12)) / (finTenorMonths + 1)) : 0;
+
+  const finScheduleRows: {
+    period: number;
+    dueDate: string;
+    openingBalance: number;
+    principal: number;
+    interest: number;
+    fee: number;
+    totalPayment: number;
+    closingBalance: number;
+  }[] = [];
+
+  let finCurrentBal = numFinLoanAmount;
+  if (numFinLoanAmount > 0 && finTenorMonths > 0) {
+    for (let i = 1; i <= finTenorMonths; i++) {
+      const dueDate = addMonths(finStartDate, i);
+      const opening = finCurrentBal;
+      const principal = (i === finTenorMonths) ? opening : Math.min(opening, finMonthlyPrincipal);
+      const closing = Math.max(0, opening - principal);
+
+      finScheduleRows.push({
+        period: i,
+        dueDate,
+        openingBalance: opening,
+        principal,
+        interest: finMonthlyInterest,
+        fee: numFinFeePerMonth,
+        totalPayment: principal + finMonthlyInterest + numFinFeePerMonth,
+        closingBalance: closing
+      });
+
+      finCurrentBal = closing;
+    }
+  }
+
+  const handleExportFinExcel = () => {
+    const params = [
+      { label: 'Số tiền vay trả góp:', value: `${numFinLoanAmount.toLocaleString('vi-VN')} VNĐ` },
+      { label: 'Thời hạn trả góp:', value: `${finTenorMonths} tháng` },
+      { label: 'Lãi suất phẳng / tháng:', value: `${finFlatRateMonth} %/tháng` },
+      { label: 'Ngày giải ngân:', value: fmtDate(finStartDate) },
+      { label: 'Phí / Bảo hiểm hàng tháng:', value: `${numFinFeePerMonth.toLocaleString('vi-VN')} VNĐ` },
+      { label: 'Tổng tiền phải trả:', value: `${finTotalPayment.toLocaleString('vi-VN')} VNĐ` },
+    ];
+
+    const headers = [
+      'KỲ TRẢ NỢ', 'NGÀY TRẢ NỢ', 'DƯ NỢ ĐẦU KỲ (VNĐ)', 'TIỀN GỐC (VNĐ)',
+      'LÃI CỐ ĐỊNH (VNĐ)', 'PHÍ/BH (VNĐ)', 'TỔNG TRẢ HÀNG THÁNG', 'DƯ NỢ CUỐI KỲ'
+    ];
+
+    const rows = finScheduleRows.map(r => [
+      `Kỳ #${r.period}`,
+      fmtDate(r.dueDate),
+      r.openingBalance,
+      r.principal,
+      r.interest,
+      r.fee,
+      r.totalPayment,
+      r.closingBalance
+    ]);
+
+    const footerRow = [
+      'TỔNG CỘNG', '', numFinLoanAmount, numFinLoanAmount, finTotalInterest,
+      finTotalFee, finTotalPayment, 0
+    ];
+
+    exportToExcelHTML(
+      `Lich_Tra_Gop_CTTC_${finStartDate}`,
+      'BẢNG TÍNH VAY TRẢ GÓP CÔNG TY TÀI CHÍNH (GỐC & LÃI PHẲNG)',
       params,
       headers,
       rows,
@@ -564,7 +668,16 @@ export const CalculatorView: React.FC = () => {
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
-            <span>1. Vay Từng Lần</span>
+            <span>1. Vay Ngân Hàng (Khoản vay từng lần)</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('consumer_fin')}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              activeTab === 'consumer_fin' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <DollarSign className="w-3.5 h-3.5" />
+            <span>2. Vay Trả Góp CTTC (Gốc & Lãi Phẳng)</span>
           </button>
           <button
             onClick={() => setActiveTab('stk_single')}
@@ -573,7 +686,7 @@ export const CalculatorView: React.FC = () => {
             }`}
           >
             <Percent className="w-3.5 h-3.5" />
-            <span>2. Cầm Cố STK (1 Kỳ)</span>
+            <span>3. Cầm Cố STK (1 Kỳ)</span>
           </button>
           <button
             onClick={() => setActiveTab('stk_multi')}
@@ -582,7 +695,7 @@ export const CalculatorView: React.FC = () => {
             }`}
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>3. Cầm Cố STK Tái Tục</span>
+            <span>4. Cầm Cố STK Tái Tục</span>
           </button>
         </div>
       </div>
@@ -866,6 +979,197 @@ export const CalculatorView: React.FC = () => {
                     <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono">{totalPrincipalPaid.toLocaleString('vi-VN')}</td>
                     <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono">{totalInterestPaid.toLocaleString('vi-VN')}</td>
                     <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-mono text-sm">{(totalPrincipalPaid + totalInterestPaid).toLocaleString('vi-VN')}</td>
+                    <td className="p-3 text-right font-mono">0</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {/* TAB 2: VAY TRẢ GÓP CÔNG TY TÀI CHÍNH (GỐC TRẢ ĐỀU, LÃI PHẲNG/CỐ ĐỊNH) */}
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {activeTab === 'consumer_fin' && (
+        <div className="space-y-4">
+          <div className={`${containerCardBg} rounded-2xl p-5 border space-y-4 print:border-none print:p-0`}>
+            <div className="text-xs font-bold text-amber-500 uppercase tracking-wider flex items-center space-x-2 border-b pb-2.5 border-slate-200 dark:border-slate-800">
+              <DollarSign className="w-4 h-4" />
+              <span>KHUNG NHẬP LIỆU VAY TRẢ GÓP CÔNG TY TÀI CHÍNH (CTTC)</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block font-medium mb-1">Số tiền vay trả góp (VNĐ) *</label>
+                <input
+                  type="text"
+                  value={finLoanAmountInput}
+                  onChange={e => setFinLoanAmountInput(formatMoneyInput(e.target.value))}
+                  placeholder="50.000.000"
+                  className={`w-full rounded-xl p-2.5 font-mono font-bold text-amber-600 dark:text-amber-400 border ${inputStyle}`}
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium mb-1">Thời hạn trả góp (tháng) *</label>
+                <select
+                  value={finTenorMonths}
+                  onChange={e => setFinTenorMonths(parseInt(e.target.value, 10) || 12)}
+                  className={`w-full rounded-xl p-2.5 font-bold border ${inputStyle}`}
+                >
+                  {[3, 6, 9, 12, 15, 18, 24, 36, 48, 60].map(m => (
+                    <option key={m} value={m}>{m} tháng</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-medium mb-1">Lãi suất phẳng (%/tháng) *</label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={finFlatRateMonth}
+                    onChange={e => setFinFlatRateMonth(e.target.value)}
+                    placeholder="1.5"
+                    className={`w-full rounded-xl p-2.5 font-mono font-bold text-rose-600 dark:text-rose-400 border ${inputStyle}`}
+                  />
+                  <span className="font-bold text-slate-400 shrink-0">% / tháng</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-medium mb-1">Ngày bắt đầu trả nợ</label>
+                <input
+                  type="date"
+                  value={finStartDate}
+                  onChange={e => setFinStartDate(e.target.value)}
+                  className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <div>
+                <label className="block font-medium mb-1">Phí quản lý / BH khoản vay (tháng)</label>
+                <input
+                  type="text"
+                  value={finFeePerMonthInput}
+                  onChange={e => setFinFeePerMonthInput(formatMoneyInput(e.target.value))}
+                  placeholder="0"
+                  className={`w-full rounded-xl p-2.5 font-mono font-bold text-purple-600 dark:text-purple-400 border ${inputStyle}`}
+                />
+              </div>
+
+              <div className="col-span-2 flex items-center justify-between p-3 rounded-xl border bg-amber-50/50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300">
+                <div>
+                  <div className="font-bold">Lãi suất giảm dần tương đương (APR Quy đổi):</div>
+                  <div className="text-[11px] opacity-80">Công thức quy đổi từ Lãi phẳng sang Lãi suất thực tế %/năm</div>
+                </div>
+                <div className="text-base font-mono font-extrabold text-rose-600 dark:text-rose-400">
+                  {finEffectiveYearRate.toFixed(2)} %/năm
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── KPI SUMMARIES ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
+            <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
+              <div className="text-[11px] font-bold text-slate-400 uppercase">TIỀN GỐC TRẢ MỖI THÁNG</div>
+              <div className="text-xl font-extrabold text-sky-600 dark:text-sky-400 font-mono mt-1">
+                {formatMoney(finMonthlyPrincipal)}
+              </div>
+            </div>
+
+            <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
+              <div className="text-[11px] font-bold text-slate-400 uppercase">TIỀN LÃI PHẲNG MỖI THÁNG</div>
+              <div className="text-xl font-extrabold text-rose-600 dark:text-rose-400 font-mono mt-1">
+                {formatMoney(finMonthlyInterest)}
+              </div>
+            </div>
+
+            <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
+              <div className="text-[11px] font-bold text-slate-400 uppercase">TỔNG TRẢ CỐ ĐỊNH MỖI THÁNG</div>
+              <div className="text-xl font-extrabold text-amber-600 dark:text-amber-400 font-mono mt-1">
+                {formatMoney(finTotalMonthlyPay)}
+              </div>
+            </div>
+
+            <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
+              <div className="text-[11px] font-bold text-slate-400 uppercase">TỔNG TOÀN BỘ TIỀN PHẢI TRẢ</div>
+              <div className="text-xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-1">
+                {formatMoney(finTotalPayment)}
+              </div>
+            </div>
+          </div>
+
+          {/* ── BẢNG LỊCH TRẢ GÓP CTTC ── */}
+          <div className={`${containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
+            <div className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
+              <span className="font-bold text-xs uppercase flex items-center space-x-2">
+                <Layers className="w-4 h-4 text-amber-500" />
+                <span>BẢNG CHI TIẾT LỊCH TRẢ GÓP CÔNG TY TÀI CHÍNH ({finScheduleRows.length} KỲ)</span>
+              </span>
+
+              <div className="flex items-center space-x-2 print:hidden">
+                <button
+                  type="button"
+                  onClick={handleExportFinExcel}
+                  className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-colors shadow-sm"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Xuất Excel Đẹp (.xls)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center space-x-1.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-colors shadow-sm"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>In / PDF</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto max-h-[550px] overflow-y-auto">
+              <table className="w-full text-left text-xs">
+                <thead className={`sticky top-0 z-10 ${tableHeaderStyle}`}>
+                  <tr>
+                    <th className="p-3 text-center">KỲ</th>
+                    <th className="p-3">NGÀY ĐẾN HẠN</th>
+                    <th className="p-3 text-right">DƯ NỢ ĐẦU KỲ</th>
+                    <th className="p-3 text-right">TIỀN GỐC</th>
+                    <th className="p-3 text-right">LÃI PHẲNG CỐ ĐỊNH</th>
+                    <th className="p-3 text-right">PHÍ / BH</th>
+                    <th className="p-3 text-right">TỔNG TRẢ THÁNG</th>
+                    <th className="p-3 text-right">DƯ NỢ CUỐI KỲ</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
+                  {finScheduleRows.map((r, idx) => (
+                    <tr key={r.period} className={`transition-colors ${idx % 2 === 0 ? '' : isLight ? 'bg-slate-50/50' : 'bg-slate-900/30'}`}>
+                      <td className="p-3 text-center font-bold">{r.period}</td>
+                      <td className="p-3 font-mono font-semibold">{fmtDate(r.dueDate)}</td>
+                      <td className="p-3 text-right font-mono">{r.openingBalance.toLocaleString('vi-VN')}</td>
+                      <td className="p-3 text-right font-mono font-bold text-sky-600 dark:text-sky-400">{r.principal.toLocaleString('vi-VN')}</td>
+                      <td className="p-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400">{r.interest.toLocaleString('vi-VN')}</td>
+                      <td className="p-3 text-right font-mono text-purple-600 dark:text-purple-400">{r.fee > 0 ? r.fee.toLocaleString('vi-VN') : '—'}</td>
+                      <td className="p-3 text-right font-mono font-extrabold text-amber-600 dark:text-amber-400">{r.totalPayment.toLocaleString('vi-VN')}</td>
+                      <td className="p-3 text-right font-mono">{r.closingBalance.toLocaleString('vi-VN')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className={`border-t sticky bottom-0 font-bold ${tableHeaderStyle}`}>
+                  <tr>
+                    <td className="p-3" colSpan={2}>TỔNG CỘNG HỢP ĐỒNG</td>
+                    <td className="p-3 text-right font-mono">{numFinLoanAmount.toLocaleString('vi-VN')}</td>
+                    <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono">{numFinLoanAmount.toLocaleString('vi-VN')}</td>
+                    <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono">{finTotalInterest.toLocaleString('vi-VN')}</td>
+                    <td className="p-3 text-right text-purple-600 dark:text-purple-400 font-mono">{finTotalFee > 0 ? finTotalFee.toLocaleString('vi-VN') : '—'}</td>
+                    <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-mono text-sm">{finTotalPayment.toLocaleString('vi-VN')}</td>
                     <td className="p-3 text-right font-mono">0</td>
                   </tr>
                 </tfoot>

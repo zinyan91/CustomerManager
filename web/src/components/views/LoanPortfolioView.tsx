@@ -883,11 +883,32 @@ export const LoanPortfolioView: React.FC = () => {
       if (selectedContract) {
         setAllSchedulesMap(prev => ({ ...prev, [selectedContract.Id]: newSchedules }));
         const autoInfo = getAutoDebtGroupInfo(newSchedules);
-        if (selectedContract.DebtGroup !== autoInfo.debtGroup) {
-          await saveContractAPI({ Id: selectedContract.Id, DebtGroup: autoInfo.debtGroup });
-          setContracts(prev => prev.map(con => con.Id === selectedContract.Id ? { ...con, DebtGroup: autoInfo.debtGroup } : con));
-          setForm(f => ({ ...f, DebtGroup: autoInfo.debtGroup }));
-        }
+
+        // Tính Dư nợ hiện hữu thực tế = Số tiền vay KUNN - Tổng gốc đã thanh toán
+        const totalPaidP = newSchedules.filter(x => x.IsPaid).reduce((sum, x) => sum + (x.PrincipalAmount || 0), 0);
+        const origLoan = selectedContract.LoanAmount || selectedContract.ContractAmount || 0;
+        const newBal = Math.max(0, origLoan - totalPaidP);
+
+        await saveContractAPI({
+          Id: selectedContract.Id,
+          CurrentBalance: newBal,
+          DebtGroup: autoInfo.debtGroup
+        });
+
+        setContracts(prev => prev.map(con => con.Id === selectedContract.Id ? {
+          ...con,
+          CurrentBalance: newBal,
+          DebtGroup: autoInfo.debtGroup
+        } : con));
+
+        setSelectedContract(prev => prev ? {
+          ...prev,
+          CurrentBalance: newBal,
+          DebtGroup: autoInfo.debtGroup
+        } : null);
+
+        setFormCurrentBalance(newBal.toLocaleString('vi-VN'));
+        setForm(f => ({ ...f, CurrentBalance: newBal, DebtGroup: autoInfo.debtGroup }));
       }
 
       showNotify('success', updated.IsPaid ? 'Đã đánh dấu thanh toán!' : 'Đã hủy thanh toán');
@@ -957,29 +978,39 @@ export const LoanPortfolioView: React.FC = () => {
     return Array.from(map.values());
   }, [contracts]);
 
+  const getEffectiveBalanceForContract = (c: LoanContract) => {
+    const schs = allSchedulesMap[c.Id] || [];
+    if (schs.length > 0) {
+      const paidP = schs.filter(s => s.IsPaid).reduce((sum, s) => sum + (s.PrincipalAmount || 0), 0);
+      return Math.max(0, (c.LoanAmount || c.ContractAmount || 0) - paidP);
+    }
+    return c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0;
+  };
+
   // Lọc danh sách KUNN theo bộ lọc Master HĐTD được chọn
   const filteredContracts = useMemo(() => {
     if (selectedMasterFilter === 'ALL') return contracts;
     return contracts.filter(c => getMasterHdtdNumber(c) === selectedMasterFilter);
   }, [contracts, selectedMasterFilter]);
 
-  // Thống kê Tài chính theo Bộ lọc HĐTD
+  // Thống kê Tài chính theo Bộ lọc HĐTD (Tự động trừ đi số tiền gốc đã thanh toán)
   const summaryFinancials = useMemo(() => {
     if (selectedMasterFilter === 'ALL') {
       const totalCredit = masterHdtdGroups.reduce((sum, g) => sum + g.totalCreditLimit, 0);
-      const totalDisbursed = contracts.reduce((sum, c) => sum + (c.LoanAmount || 0), 0);
+      const totalDisbursed = contracts.reduce((sum, c) => sum + getEffectiveBalanceForContract(c), 0);
       const totalRemaining = Math.max(0, totalCredit - totalDisbursed);
       return { totalCredit, totalDisbursed, totalRemaining };
     } else {
       const group = masterHdtdGroups.find(g => g.masterNo === selectedMasterFilter);
       if (!group) return { totalCredit: 0, totalDisbursed: 0, totalRemaining: 0 };
+      const totalDisbursed = group.contracts.reduce((sum, c) => sum + getEffectiveBalanceForContract(c), 0);
       return {
         totalCredit: group.totalCreditLimit,
-        totalDisbursed: group.totalKunnDisbursed,
-        totalRemaining: group.remainingLimit
+        totalDisbursed,
+        totalRemaining: Math.max(0, group.totalCreditLimit - totalDisbursed)
       };
     }
-  }, [contracts, masterHdtdGroups, selectedMasterFilter]);
+  }, [contracts, masterHdtdGroups, selectedMasterFilter, allSchedulesMap]);
 
   const totalCreditLimit = summaryFinancials.totalCredit;
   const totalKunnAmount = summaryFinancials.totalDisbursed;
@@ -1310,7 +1341,7 @@ export const LoanPortfolioView: React.FC = () => {
                               {fmtMoney(c.LoanAmount || c.ContractAmount)}
                             </td>
                             <td className="p-3 text-right font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
-                              {fmtMoney(c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount)}
+                              {fmtMoney(getEffectiveBalanceForContract(c))}
                             </td>
                             <td className="p-3 text-sky-600 dark:text-sky-300 font-mono whitespace-nowrap">{fmtRate(c.InterestRate || c.NormalRate)}</td>
                             <td className="p-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">{fmtDate(c.DisbursementDate || c.ContractStartDate)}</td>
@@ -2029,7 +2060,13 @@ export const LoanPortfolioView: React.FC = () => {
                             </td>
                             <td className="p-3 text-slate-400">{s.IsPaid ? fmtDate(s.PaymentDate) : '—'}</td>
                             <td className="p-3 text-center">
-                              <button onClick={() => handleMarkPaid(s)}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleMarkPaid(s);
+                                }}
                                 className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
                                   s.IsPaid
                                     ? isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'

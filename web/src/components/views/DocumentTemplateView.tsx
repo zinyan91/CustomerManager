@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { formatMoneyInput, fmtDate } from '../../lib/utils';
 import {
-  FileText, Download, Printer, CheckCircle, Sparkles, Building, User, Calendar, DollarSign, ListChecks, Plus, Trash2, CreditCard
+  FileText, Download, Printer, CheckCircle, Building, User, Calendar, DollarSign, ListChecks, Plus, Trash2, CreditCard
 } from 'lucide-react';
 
 // Helper: Normalize decomposed Vietnamese Unicode characters (NFD -> NFC)
@@ -173,28 +173,44 @@ export const DocumentTemplateView: React.FC = () => {
   const [constStage2Amount, setConstStage2Amount] = useState('950.000.000');
 
   // ──────────────────────────────────────────────────────────────────────────
-  // FORM STATE 3: HỢP ĐỒNG MUA BÁN HÀNG HÓA (ĐA MẶT HÀNG)
+  // FORM STATE 3: HỢP ĐỒNG MUA BÁN HÀNG HÓA (NGÔN TỪ NGUYÊN VĂN EXCEL)
   // ──────────────────────────────────────────────────────────────────────────
-  const [saleContractDate, setSaleContractDate] = useState('2026-04-10');
-  const [saleSellerName, setSaleSellerName] = useState('CÔNG TY TNHH VẬT LIỆU XÂY DỰNG AN PHÁT');
-  const [saleSellerTaxCode, setSaleSellerTaxCode] = useState('0315894021');
-  const [saleSellerBank, setSaleSellerBank] = useState('19034567890012 - Techcombank Chi nhánh Sài Gòn');
+  const [saleContractDate, setSaleContractDate] = useState('2026-04-09');
+  const [saleBuyerName, setSaleBuyerName] = useState('LÊ THỊ CẢNH');
+  const [saleBuyerAddress, setSaleBuyerAddress] = useState('Kỳ Anh, Hà Tĩnh');
 
-  const [saleBuyerName, setSaleBuyerName] = useState('ÔNG TRẦN VĂN MINH');
-  const [saleBuyerCccd, setSaleBuyerCccd] = useState('0790 8501 9283');
+  const [saleSellerName, setSaleSellerName] = useState('PHẠM HỒNG ĐỨC');
+  const [saleSellerCccd, setSaleSellerCccd] = useState('0720 7700 0901');
+  const [saleSellerCccdDate, setSaleSellerCccdDate] = useState('25/05/2023');
+  const saleSellerCccdPlace = 'CCS QLHC về TTXH';
 
-  // Multi-item array for Sales Contract
+  const [saleStartDate, setSaleStartDate] = useState('2026-04-09');
+  const [saleEndDate, setSaleEndDate] = useState('2026-05-09');
+
+  const [salePaymentStage1, setSalePaymentStage1] = useState('93.600.000');
+
+  // 13 Nguyên văn mặt hàng từ file Excel 1. HĐMB
   const [saleItems, setSaleItems] = useState<SaleItem[]>([
-    { id: '1', name: 'Thép cuộn D6 CB300-V', unit: 'Tấn', quantity: 15, price: 17500000 },
-    { id: '2', name: 'Xi măng Hà Tiên 1 PCB40', unit: 'Bao', quantity: 200, price: 95000 },
-    { id: '3', name: 'Gạch lát nền Ceramic 60x60', unit: 'm²', quantity: 120, price: 280000 },
+    { id: '1', name: 'Dầu gội phục hồi', unit: 'Chai', quantity: 100, price: 250000 },
+    { id: '2', name: 'Dầu xả chuyên dụng', unit: 'Chai', quantity: 120, price: 250000 },
+    { id: '3', name: 'Thuốc nhuộm tóc', unit: 'Tuýp', quantity: 120, price: 120000 },
+    { id: '4', name: 'Thuốc uốn tóc', unit: 'Lọ', quantity: 100, price: 150000 },
+    { id: '5', name: 'Thuốc duỗi tóc', unit: 'Lọ', quantity: 120, price: 180000 },
+    { id: '6', name: 'Hấp dầu / kem ủ tóc', unit: 'Hũ', quantity: 250, price: 350000 },
+    { id: '7', name: 'Serum dưỡng tóc', unit: 'Chai', quantity: 250, price: 450000 },
+    { id: '8', name: 'Gôm xịt tóc', unit: 'Chai', quantity: 260, price: 120000 },
+    { id: '9', name: 'Lược chải tóc chuyên dụng', unit: 'Cái', quantity: 260, price: 50000 },
+    { id: '10', name: 'Sữa rửa mặt dưỡng ẩm', unit: 'Tuýp', quantity: 170, price: 200000 },
+    { id: '11', name: 'Toner làm dịu da', unit: 'Chai', quantity: 200, price: 380000 },
+    { id: '12', name: 'Serum dưỡng trắng da', unit: 'Chai', quantity: 230, price: 380000 },
+    { id: '13', name: 'Mặt nạ giấy dưỡng da', unit: 'Hộp', quantity: 230, price: 200000 },
   ]);
 
   const handleAddSaleItem = () => {
     const newItem: SaleItem = {
       id: Date.now().toString(),
       name: 'Mặt hàng mới',
-      unit: 'Cái',
+      unit: 'Chai',
       quantity: 1,
       price: 100000
     };
@@ -212,36 +228,38 @@ export const DocumentTemplateView: React.FC = () => {
   };
 
   const totalSaleAmount = saleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+  const stage1PaidNum = parseFloat(salePaymentStage1.replace(/\D/g, '')) || 0;
+  const stage2RemainingNum = Math.max(0, totalSaleAmount - stage1PaidNum);
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // FORM STATE 4: HỢP ĐỒNG THUÊ NHÀ Ở DÂN DỤNG NGUYÊN VĂN
+  // ──────────────────────────────────────────────────────────────────────────
+  const [houseContractDate, setHouseContractDate] = useState('2026-04-15');
+  const [housePartyAName, setHousePartyAName] = useState('ÔNG NGUYỄN VĂN THÀNH');
+  const [housePartyACccd, setHousePartyACccd] = useState('0790 7500 1234');
+  const [housePartyAAddress, setHousePartyAAddress] = useState('123 Lê Hồng Phong, Phường 2, Quận 10, Tp.HCM');
+
+  const [housePartyBName, setHousePartyBName] = useState('BÀ PHẠM THỊ THU HÀ');
+  const [housePartyBCccd, setHousePartyBCccd] = useState('0340 8800 5678');
+  const [housePartyBAddress, setHousePartyBAddress] = useState('45 Nguyễn Trãi, Phường 3, Quận 5, Tp.HCM');
+
+  const [houseAddress, setHouseAddress] = useState('Căn nhà nguyên căn số 478/34 Hòa Hảo, Phường 5, Quận 10, Tp.HCM');
+  const [houseStartDate, setHouseStartDate] = useState('2026-04-15');
+  const [houseEndDate, setHouseEndDate] = useState('2027-04-14');
+  const [houseMonthlyPrice, setHouseMonthlyPrice] = useState('15.000.000');
+  const [houseDepositAmount, setHouseDepositAmount] = useState('30.000.000');
 
   // ──────────────────────────────────────────────────────────────────────────
   // FORM STATE 5: GIẤY ĐỀ NGHỊ THANH TOÁN (FILE WORD ĐỘC LẬP)
   // ──────────────────────────────────────────────────────────────────────────
-  const [prDate, setPrDate] = useState('2026-03-20');
-  const [prRecipient, setPrRecipient] = useState('Bà Lý Thị Thùy Dung');
-  const [prContractRef, setPrContractRef] = useState('Căn cứ Hợp đồng thi công nhà ở dân dụng ký ngày 18/03/2026 giữa Bà Lý Thị Thùy Dung và Bà Đỗ Thị Lan Anh');
-  const [prTotalContractValue, setPrTotalContractValue] = useState('1.003.700.000');
-  const [prStage1Paid, setPrStage1Paid] = useState('53.700.000');
-  const [prStage2Request, setPrStage2Request] = useState('950.000.000');
-  const [prRequesterName, setPrRequesterName] = useState('ĐỖ THỊ LAN ANH');
-  const [prRequesterCccd, setPrRequesterCccd] = useState('0343 0300 4676');
-
-  // Quick fill sample data
-  const handleQuickFill = () => {
-    if (selectedTemplate === 'lease_mb') {
-      setMbContractDate('2026-04-23');
-      setMbPartyAName('ĐỖ THỊ HIẾU');
-      setMbPartyACccd('0791 7802 5859');
-      setMbPartyBName('NGÔ NHỊ ĐẠT');
-      setMbPartyBCccd('0343 0300 4676');
-      setMbMonthlyPrice('55.000.000');
-      setMbDepositAmount('72.000.000');
-    } else if (selectedTemplate === 'construction') {
-      setConstPartyAName('LÝ THỊ THÙY DUNG');
-      setConstPartyBName('ĐỖ THỊ LAN ANH');
-      setConstTotalPrice('1.003.700.000');
-      setConstStage2Amount('950.000.000');
-    }
-  };
+  const [prDate, setPrDate] = useState('2026-04-09');
+  const [prRecipient, setPrRecipient] = useState('Bà Lê Thị Cảnh');
+  const [prContractRef, setPrContractRef] = useState('Căn cứ hợp đồng mua bán hàng hóa ký ngày 09/04/2026 giữa Bà Lê Thị Cảnh và Ông Phạm Hồng Đức');
+  const [prTotalContractValue, setPrTotalContractValue] = useState('593.600.000');
+  const [prStage1Paid, setPrStage1Paid] = useState('93.600.000');
+  const [prStage2Request, setPrStage2Request] = useState('500.000.000');
+  const [prRequesterName, setPrRequesterName] = useState('PHẠM HỒNG ĐỨC');
+  const [prRequesterCccd, setPrRequesterCccd] = useState('0720 7700 0901');
 
   // Dynamic Theme Classes
   const containerCardBg = isLight
@@ -294,25 +312,12 @@ export const DocumentTemplateView: React.FC = () => {
             <span>SOẠN THẢO & QUẢN LÝ BIỂU MẪU VĂN BẢN HỢP ĐỒNG</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Nhập liệu các biến số linh hoạt - Tự động điền câu văn mẫu chuẩn pháp lý - Live Preview & Xuất Word / PDF
+            Nhập liệu các biến số linh hoạt - Tự động điền câu văn mẫu chuẩn pháp lý nguyên văn - Live Preview & Xuất Word / PDF
           </p>
-        </div>
-
-        {/* Template Options Selector */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={handleQuickFill}
-            className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-xl transition-all shadow-sm"
-            title="Tự động điền dữ liệu mẫu"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Điền Mẫu Nhanh</span>
-          </button>
         </div>
       </div>
 
-      {/* ── TEMPLATE SELECTOR CARDS (KHÔNG CHÚ THÍCH PHỤ) ── */}
+      {/* ── TEMPLATE SELECTOR CARDS ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 print:hidden">
         <button
           onClick={() => setSelectedTemplate('lease_mb')}
@@ -415,12 +420,8 @@ export const DocumentTemplateView: React.FC = () => {
                 />
               </div>
 
-              {/* BÊN A */}
               <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
-                <div className="font-bold text-sky-600 dark:text-sky-400 uppercase text-[11px] flex items-center space-x-1.5">
-                  <User className="w-3.5 h-3.5" />
-                  <span>BÊN A (BÊN CHO THUÊ MẶT BẰNG)</span>
-                </div>
+                <div className="font-bold text-sky-600 dark:text-sky-400 uppercase text-[11px]">BÊN A (BÊN CHO THUÊ MẶT BẰNG)</div>
                 <div>
                   <label className="block text-[11px] font-medium mb-0.5">Họ & Tên Bên A *</label>
                   <input
@@ -451,7 +452,7 @@ export const DocumentTemplateView: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Nơi ĐKTT (Địa chỉ bên A)</label>
+                  <label className="block text-[11px] font-medium mb-0.5">Nơi ĐKTT</label>
                   <input
                     type="text"
                     value={mbPartyAAddress}
@@ -461,12 +462,8 @@ export const DocumentTemplateView: React.FC = () => {
                 </div>
               </div>
 
-              {/* BÊN B */}
               <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
-                <div className="font-bold text-emerald-600 dark:text-emerald-400 uppercase text-[11px] flex items-center space-x-1.5">
-                  <User className="w-3.5 h-3.5" />
-                  <span>BÊN B (BÊN THUÊ MẶT BẰNG)</span>
-                </div>
+                <div className="font-bold text-emerald-600 dark:text-emerald-400 uppercase text-[11px]">BÊN B (BÊN THUÊ MẶT BẰNG)</div>
                 <div>
                   <label className="block text-[11px] font-medium mb-0.5">Họ & Tên Bên B *</label>
                   <input
@@ -497,7 +494,7 @@ export const DocumentTemplateView: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Nơi ĐKTT (Địa chỉ bên B)</label>
+                  <label className="block text-[11px] font-medium mb-0.5">Nơi ĐKTT</label>
                   <input
                     type="text"
                     value={mbPartyBAddress}
@@ -507,14 +504,10 @@ export const DocumentTemplateView: React.FC = () => {
                 </div>
               </div>
 
-              {/* ĐIỀU KHOẢN MẶT BẰNG & GIÁ CẢ */}
               <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
-                <div className="font-bold text-amber-500 uppercase text-[11px] flex items-center space-x-1.5">
-                  <Building className="w-3.5 h-3.5" />
-                  <span>THÔNG TIN MẶT BẰNG & GIÁ CẢ THUÊ</span>
-                </div>
+                <div className="font-bold text-amber-500 uppercase text-[11px]">MẶT BẰNG & GIÁ CẢ</div>
                 <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Địa chỉ mặt bằng thuê</label>
+                  <label className="block text-[11px] font-medium mb-0.5">Địa chỉ mặt bằng</label>
                   <textarea
                     rows={2}
                     value={mbLocation}
@@ -544,12 +537,12 @@ export const DocumentTemplateView: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[11px] font-medium mb-0.5">Đơn giá thuê (VNĐ/tháng)</label>
+                    <label className="block text-[11px] font-medium mb-0.5">Đơn giá thuê (VNĐ)</label>
                     <input
                       type="text"
                       value={mbMonthlyPrice}
                       onChange={e => setMbMonthlyPrice(formatMoneyInput(e.target.value))}
-                      className={`w-full rounded-lg p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 border ${inputStyle}`}
+                      className={`w-full rounded-lg p-2 font-mono font-bold text-emerald-600 border ${inputStyle}`}
                     />
                   </div>
                   <div>
@@ -558,7 +551,7 @@ export const DocumentTemplateView: React.FC = () => {
                       type="text"
                       value={mbDepositAmount}
                       onChange={e => setMbDepositAmount(formatMoneyInput(e.target.value))}
-                      className={`w-full rounded-lg p-2 font-mono font-bold text-sky-600 dark:text-sky-400 border ${inputStyle}`}
+                      className={`w-full rounded-lg p-2 font-mono font-bold text-sky-600 border ${inputStyle}`}
                     />
                   </div>
                 </div>
@@ -579,11 +572,8 @@ export const DocumentTemplateView: React.FC = () => {
                 />
               </div>
 
-              {/* BÊN A THI CÔNG */}
               <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
-                <div className="font-bold text-sky-600 dark:text-sky-400 uppercase text-[11px]">
-                  BÊN A (THUÊ THI CÔNG XÂY DỰNG)
-                </div>
+                <div className="font-bold text-sky-600 dark:text-sky-400 uppercase text-[11px]">BÊN A (THUÊ THI CÔNG)</div>
                 <div>
                   <label className="block text-[11px] font-medium mb-0.5">Họ & Tên Bên A *</label>
                   <input
@@ -604,7 +594,7 @@ export const DocumentTemplateView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-medium mb-0.5">Địa chỉ bên A</label>
+                    <label className="block text-[11px] font-medium mb-0.5">Địa chỉ Bên A</label>
                     <input
                       type="text"
                       value={constPartyAAddress}
@@ -615,11 +605,8 @@ export const DocumentTemplateView: React.FC = () => {
                 </div>
               </div>
 
-              {/* BÊN B THI CÔNG */}
               <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
-                <div className="font-bold text-emerald-600 dark:text-emerald-400 uppercase text-[11px]">
-                  BÊN B (NHẬN THI CÔNG XÂY DỰNG)
-                </div>
+                <div className="font-bold text-emerald-600 dark:text-emerald-400 uppercase text-[11px]">BÊN B (NHẬN THI CÔNG)</div>
                 <div>
                   <label className="block text-[11px] font-medium mb-0.5">Họ & Tên Bên B *</label>
                   <input
@@ -640,13 +627,10 @@ export const DocumentTemplateView: React.FC = () => {
                 </div>
               </div>
 
-              {/* ĐỊA ĐIỂM & TIẾN ĐỘ THI CÔNG */}
               <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
-                <div className="font-bold text-amber-500 uppercase text-[11px]">
-                  CÔNG TRÌNH THI CÔNG & GIÁ TRỊ HỢP ĐỒNG
-                </div>
+                <div className="font-bold text-amber-500 uppercase text-[11px]">CÔNG TRÌNH & GIÁ TRỊ</div>
                 <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Địa chỉ thi công công trình</label>
+                  <label className="block text-[11px] font-medium mb-0.5">Địa chỉ công trình</label>
                   <textarea
                     rows={2}
                     value={constSiteAddress}
@@ -665,7 +649,7 @@ export const DocumentTemplateView: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-medium mb-0.5">Ngày hoàn thành dự kiến</label>
+                    <label className="block text-[11px] font-medium mb-0.5">Ngày hoàn thành</label>
                     <input
                       type="date"
                       value={constEndDate}
@@ -676,85 +660,72 @@ export const DocumentTemplateView: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[11px] font-medium mb-0.5">Tổng giá trị hợp đồng (VNĐ)</label>
+                    <label className="block text-[11px] font-medium mb-0.5">Tổng giá trị (VNĐ)</label>
                     <input
                       type="text"
                       value={constTotalPrice}
                       onChange={e => setConstTotalPrice(formatMoneyInput(e.target.value))}
-                      className={`w-full rounded-lg p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 border ${inputStyle}`}
+                      className={`w-full rounded-lg p-2 font-mono font-bold text-emerald-600 border ${inputStyle}`}
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-medium mb-0.5">Số tiền cọc đợt 1 (VNĐ)</label>
+                    <label className="block text-[11px] font-medium mb-0.5">Đợt 1 cọc (VNĐ)</label>
                     <input
                       type="text"
                       value={constDepositStage1}
-                      onChange={e => setConstDepositStage1(formatMoneyInput(e.target.value))}
-                      className={`w-full rounded-lg p-2 font-mono font-bold text-sky-600 dark:text-sky-400 border ${inputStyle}`}
+                      onChange={e => {
+                        const val = formatMoneyInput(e.target.value);
+                        setConstDepositStage1(val);
+                        const totalNum = parseFloat(constTotalPrice.replace(/\D/g, '')) || 0;
+                        const depNum = parseFloat(val.replace(/\D/g, '')) || 0;
+                        setConstStage2Amount((totalNum - depNum).toLocaleString('vi-VN'));
+                      }}
+                      className={`w-full rounded-lg p-2 font-mono font-bold text-sky-600 border ${inputStyle}`}
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Đợt 2 đề nghị thanh toán (VNĐ)</label>
-                  <input
-                    type="text"
-                    value={constStage2Amount}
-                    onChange={e => setConstStage2Amount(formatMoneyInput(e.target.value))}
-                    className={`w-full rounded-lg p-2 font-mono font-bold text-rose-500 border ${inputStyle}`}
-                  />
                 </div>
               </div>
             </div>
           )}
 
-          {/* FORM BIẾN SỐ 3: HỢP ĐỒNG MUA BÁN HÀNG HÓA (ĐA MẶT HÀNG) */}
+          {/* FORM BIẾN SỐ 3: HỢP ĐỒNG MUA BÁN HÀNG HÓA */}
           {selectedTemplate === 'sale_contract' && (
             <div className="space-y-3.5">
-              <div>
-                <label className="block font-medium mb-1">Ngày lập hợp đồng mua bán</label>
-                <input
-                  type="date"
-                  value={saleContractDate}
-                  onChange={e => setSaleContractDate(e.target.value)}
-                  className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
-                />
-              </div>
-
-              <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
-                <div className="font-bold text-sky-600 dark:text-sky-400 uppercase text-[11px]">BÊN BÁN</div>
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Tên công ty / Bên Bán</label>
+                  <label className="block font-medium mb-1">Ngày hợp đồng</label>
                   <input
-                    type="text"
-                    value={saleSellerName}
-                    onChange={e => setSaleSellerName(e.target.value)}
-                    className={`w-full rounded-lg p-2 font-bold uppercase border ${inputStyle}`}
+                    type="date"
+                    value={saleContractDate}
+                    onChange={e => setSaleContractDate(e.target.value)}
+                    className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Mã số thuế / CCCD</label>
+                  <label className="block font-medium mb-1">Ngày bắt đầu</label>
                   <input
-                    type="text"
-                    value={saleSellerTaxCode}
-                    onChange={e => setSaleSellerTaxCode(e.target.value)}
-                    className={`w-full rounded-lg p-2 font-mono border ${inputStyle}`}
+                    type="date"
+                    value={saleStartDate}
+                    onChange={e => setSaleStartDate(e.target.value)}
+                    className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Địa chỉ ngân hàng thanh toán</label>
+                  <label className="block font-medium mb-1">Ngày kết thúc</label>
                   <input
-                    type="text"
-                    value={saleSellerBank}
-                    onChange={e => setSaleSellerBank(e.target.value)}
-                    className={`w-full rounded-lg p-2 border ${inputStyle}`}
+                    type="date"
+                    value={saleEndDate}
+                    onChange={e => setSaleEndDate(e.target.value)}
+                    className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                   />
                 </div>
               </div>
 
+              {/* BÊN MUA (BÊN A) */}
               <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
-                <div className="font-bold text-emerald-600 dark:text-emerald-400 uppercase text-[11px]">BÊN MUA</div>
+                <div className="font-bold text-sky-600 dark:text-sky-400 uppercase text-[11px]">BÊN MUA (BÊN A)</div>
                 <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Họ tên / Bên Mua</label>
+                  <label className="block text-[11px] font-medium mb-0.5">Họ & Tên Bên Mua *</label>
                   <input
                     type="text"
                     value={saleBuyerName}
@@ -763,20 +734,79 @@ export const DocumentTemplateView: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Mã số thuế / CCCD</label>
+                  <label className="block text-[11px] font-medium mb-0.5">Địa chỉ Bên Mua</label>
                   <input
                     type="text"
-                    value={saleBuyerCccd}
-                    onChange={e => setSaleBuyerCccd(e.target.value)}
-                    className={`w-full rounded-lg p-2 font-mono border ${inputStyle}`}
+                    value={saleBuyerAddress}
+                    onChange={e => setSaleBuyerAddress(e.target.value)}
+                    className={`w-full rounded-lg p-2 border ${inputStyle}`}
                   />
+                </div>
+              </div>
+
+              {/* BÊN BÁN (BÊN B) */}
+              <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
+                <div className="font-bold text-emerald-600 dark:text-emerald-400 uppercase text-[11px]">BÊN BÁN (BÊN B)</div>
+                <div>
+                  <label className="block text-[11px] font-medium mb-0.5">Họ & Tên Bên Bán *</label>
+                  <input
+                    type="text"
+                    value={saleSellerName}
+                    onChange={e => setSaleSellerName(e.target.value)}
+                    className={`w-full rounded-lg p-2 font-bold uppercase border ${inputStyle}`}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-medium mb-0.5">CCCD Số</label>
+                    <input
+                      type="text"
+                      value={saleSellerCccd}
+                      onChange={e => setSaleSellerCccd(e.target.value)}
+                      className={`w-full rounded-lg p-2 font-mono border ${inputStyle}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium mb-0.5">Ngày cấp</label>
+                    <input
+                      type="text"
+                      value={saleSellerCccdDate}
+                      onChange={e => setSaleSellerCccdDate(e.target.value)}
+                      className={`w-full rounded-lg p-2 border ${inputStyle}`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* THANH TOÁN LẦN 1 & LẦN 2 */}
+              <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
+                <div className="font-bold text-amber-500 uppercase text-[11px]">TIẾN ĐỘ THANH TOÁN HỢP ĐỒNG</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-medium mb-0.5">Thanh toán Lần 1 (VNĐ)</label>
+                    <input
+                      type="text"
+                      value={salePaymentStage1}
+                      onChange={e => setSalePaymentStage1(formatMoneyInput(e.target.value))}
+                      className={`w-full rounded-lg p-2 font-mono font-bold text-emerald-600 border ${inputStyle}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium mb-0.5">Thanh toán Lần 2 (VNĐ)</label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={stage2RemainingNum.toLocaleString('vi-VN')}
+                      className={`w-full rounded-lg p-2 font-mono font-bold text-rose-500 border bg-slate-100 dark:bg-slate-900`}
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* BẢNG ĐA MẶT HÀNG MUA BÁN */}
               <div className={`p-3.5 rounded-xl border space-y-3 ${sectionBoxBg}`}>
                 <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
-                  <span className="font-bold text-amber-500 uppercase text-[11px]">DANH SÁCH MẶT HÀNG MUA BÁN ({saleItems.length} MẶT HÀNG)</span>
+                  <span className="font-bold text-amber-500 uppercase text-[11px]">DANH SÁCH HÀNG HÓA MUA BÁN ({saleItems.length} MẶT HÀNG)</span>
                   <button
                     type="button"
                     onClick={handleAddSaleItem}
@@ -787,17 +817,16 @@ export const DocumentTemplateView: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
                   {saleItems.map((item, index) => (
                     <div key={item.id} className={`p-3 rounded-lg border space-y-2 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-[11px] text-slate-400">Mặt hàng #{index + 1}</span>
+                        <span className="font-bold text-[11px] text-slate-400">#STT {index + 1}</span>
                         {saleItems.length > 1 && (
                           <button
                             type="button"
                             onClick={() => handleRemoveSaleItem(item.id)}
                             className="text-rose-500 hover:text-rose-600 p-1"
-                            title="Xóa mặt hàng này"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -805,7 +834,7 @@ export const DocumentTemplateView: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-medium mb-0.5 text-slate-400">Tên sản phẩm / hàng hóa</label>
+                        <label className="block text-[10px] font-medium mb-0.5 text-slate-400">Tên Hàng Hóa</label>
                         <input
                           type="text"
                           value={item.name}
@@ -835,12 +864,12 @@ export const DocumentTemplateView: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium mb-0.5 text-slate-400">Đơn giá (VNĐ)</label>
+                          <label className="block text-[10px] font-medium mb-0.5 text-slate-400">Đơn Giá (VNĐ)</label>
                           <input
                             type="text"
                             value={item.price.toLocaleString('vi-VN')}
                             onChange={e => handleUpdateSaleItem(item.id, 'price', parseFloat(e.target.value.replace(/\D/g, '')) || 0)}
-                            className={`w-full rounded-md p-1.5 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs border ${inputStyle}`}
+                            className={`w-full rounded-md p-1.5 font-mono font-bold text-emerald-600 text-xs border ${inputStyle}`}
                           />
                         </div>
                       </div>
@@ -849,34 +878,54 @@ export const DocumentTemplateView: React.FC = () => {
                 </div>
 
                 <div className={`p-2.5 rounded-lg border flex items-center justify-between font-semibold ${isLight ? 'bg-amber-50 border-amber-200' : 'bg-slate-900 border-slate-800'}`}>
-                  <span className="text-slate-500">TỔNG CỘNG TẤT CẢ MẶT HÀNG:</span>
-                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">{totalSaleAmount.toLocaleString('vi-VN')} VNĐ</span>
+                  <span className="text-slate-500">TỔNG GIÁ TRỊ THANH TOÁN:</span>
+                  <span className="font-mono font-bold text-emerald-600 text-sm">{totalSaleAmount.toLocaleString('vi-VN')} VNĐ</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* FORM BIẾN SỐ 4: HỢP ĐỒNG THUÊ NHÀ Ở */}
+          {/* FORM BIẾN SỐ 4: HỢP ĐỒNG THUÊ NHÀ Ở DÂN DỤNG */}
           {selectedTemplate === 'lease_house' && (
             <div className="space-y-3.5">
-              <div>
-                <label className="block font-medium mb-1">Ngày hợp đồng thuê nhà</label>
-                <input
-                  type="date"
-                  value={mbContractDate}
-                  onChange={e => setMbContractDate(e.target.value)}
-                  className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
-                />
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block font-medium mb-1">Ngày lập hợp đồng</label>
+                  <input
+                    type="date"
+                    value={houseContractDate}
+                    onChange={e => setHouseContractDate(e.target.value)}
+                    className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium mb-1">Ngày bắt đầu</label>
+                  <input
+                    type="date"
+                    value={houseStartDate}
+                    onChange={e => setHouseStartDate(e.target.value)}
+                    className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium mb-1">Ngày kết thúc</label>
+                  <input
+                    type="date"
+                    value={houseEndDate}
+                    onChange={e => setHouseEndDate(e.target.value)}
+                    className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
+                  />
+                </div>
               </div>
 
               <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
-                <div className="font-bold text-sky-600 dark:text-sky-400 uppercase text-[11px]">BÊN CHO THUÊ (BÊN A)</div>
+                <div className="font-bold text-sky-600 dark:text-sky-400 uppercase text-[11px]">BÊN CHO THUÊ NHÀ (BÊN A)</div>
                 <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Họ & Tên Chủ Nhà</label>
+                  <label className="block text-[11px] font-medium mb-0.5">Họ & Tên Chủ Nhà *</label>
                   <input
                     type="text"
-                    value={mbPartyAName}
-                    onChange={e => setMbPartyAName(e.target.value)}
+                    value={housePartyAName}
+                    onChange={e => setHousePartyAName(e.target.value)}
                     className={`w-full rounded-lg p-2 font-bold uppercase border ${inputStyle}`}
                   />
                 </div>
@@ -884,9 +933,18 @@ export const DocumentTemplateView: React.FC = () => {
                   <label className="block text-[11px] font-medium mb-0.5">CCCD Số</label>
                   <input
                     type="text"
-                    value={mbPartyACccd}
-                    onChange={e => setMbPartyACccd(e.target.value)}
+                    value={housePartyACccd}
+                    onChange={e => setHousePartyACccd(e.target.value)}
                     className={`w-full rounded-lg p-2 font-mono border ${inputStyle}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium mb-0.5">Địa chỉ Bên A</label>
+                  <input
+                    type="text"
+                    value={housePartyAAddress}
+                    onChange={e => setHousePartyAAddress(e.target.value)}
+                    className={`w-full rounded-lg p-2 border ${inputStyle}`}
                   />
                 </div>
               </div>
@@ -894,11 +952,11 @@ export const DocumentTemplateView: React.FC = () => {
               <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
                 <div className="font-bold text-emerald-600 dark:text-emerald-400 uppercase text-[11px]">BÊN THUÊ NHÀ (BÊN B)</div>
                 <div>
-                  <label className="block text-[11px] font-medium mb-0.5">Họ & Tên Người Thuê</label>
+                  <label className="block text-[11px] font-medium mb-0.5">Họ & Tên Người Thuê *</label>
                   <input
                     type="text"
-                    value={mbPartyBName}
-                    onChange={e => setMbPartyBName(e.target.value)}
+                    value={housePartyBName}
+                    onChange={e => setHousePartyBName(e.target.value)}
                     className={`w-full rounded-lg p-2 font-bold uppercase border ${inputStyle}`}
                   />
                 </div>
@@ -906,16 +964,58 @@ export const DocumentTemplateView: React.FC = () => {
                   <label className="block text-[11px] font-medium mb-0.5">CCCD Số</label>
                   <input
                     type="text"
-                    value={mbPartyBCccd}
-                    onChange={e => setMbPartyBCccd(e.target.value)}
+                    value={housePartyBCccd}
+                    onChange={e => setHousePartyBCccd(e.target.value)}
                     className={`w-full rounded-lg p-2 font-mono border ${inputStyle}`}
                   />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium mb-0.5">Địa chỉ Bên B</label>
+                  <input
+                    type="text"
+                    value={housePartyBAddress}
+                    onChange={e => setHousePartyBAddress(e.target.value)}
+                    className={`w-full rounded-lg p-2 border ${inputStyle}`}
+                  />
+                </div>
+              </div>
+
+              <div className={`p-3.5 rounded-xl border space-y-2.5 ${sectionBoxBg}`}>
+                <div className="font-bold text-amber-500 uppercase text-[11px]">THÔNG TIN CĂN NHÀ THUÊ</div>
+                <div>
+                  <label className="block text-[11px] font-medium mb-0.5">Địa chỉ căn nhà thuê</label>
+                  <textarea
+                    rows={2}
+                    value={houseAddress}
+                    onChange={e => setHouseAddress(e.target.value)}
+                    className={`w-full rounded-lg p-2 border text-xs ${inputStyle}`}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-medium mb-0.5">Giá thuê (VNĐ/tháng)</label>
+                    <input
+                      type="text"
+                      value={houseMonthlyPrice}
+                      onChange={e => setHouseMonthlyPrice(formatMoneyInput(e.target.value))}
+                      className={`w-full rounded-lg p-2 font-mono font-bold text-emerald-600 border ${inputStyle}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium mb-0.5">Tiền đặt cọc (VNĐ)</label>
+                    <input
+                      type="text"
+                      value={houseDepositAmount}
+                      onChange={e => setHouseDepositAmount(formatMoneyInput(e.target.value))}
+                      className={`w-full rounded-lg p-2 font-mono font-bold text-sky-600 border ${inputStyle}`}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* FORM BIẾN SỐ 5: GIẤY ĐỀ NGHỊ THANH TOÁN (FILE WORD ĐỘC LẬP) */}
+          {/* FORM BIẾN SỐ 5: GIẤY ĐỀ NGHỊ THANH TOÁN */}
           {selectedTemplate === 'payment_request' && (
             <div className="space-y-3.5">
               <div>
@@ -958,7 +1058,7 @@ export const DocumentTemplateView: React.FC = () => {
                     type="text"
                     value={prTotalContractValue}
                     onChange={e => setPrTotalContractValue(formatMoneyInput(e.target.value))}
-                    className={`w-full rounded-lg p-2 font-mono font-bold text-sky-600 dark:text-sky-400 border ${inputStyle}`}
+                    className={`w-full rounded-lg p-2 font-mono font-bold text-sky-600 border ${inputStyle}`}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -968,7 +1068,7 @@ export const DocumentTemplateView: React.FC = () => {
                       type="text"
                       value={prStage1Paid}
                       onChange={e => setPrStage1Paid(formatMoneyInput(e.target.value))}
-                      className={`w-full rounded-lg p-2 font-mono font-bold text-slate-600 dark:text-slate-300 border ${inputStyle}`}
+                      className={`w-full rounded-lg p-2 font-mono font-bold border ${inputStyle}`}
                     />
                   </div>
                   <div>
@@ -977,7 +1077,7 @@ export const DocumentTemplateView: React.FC = () => {
                       type="text"
                       value={prStage2Request}
                       onChange={e => setPrStage2Request(formatMoneyInput(e.target.value))}
-                      className={`w-full rounded-lg p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 border ${inputStyle}`}
+                      className={`w-full rounded-lg p-2 font-mono font-bold text-emerald-600 border ${inputStyle}`}
                     />
                   </div>
                 </div>
@@ -1029,7 +1129,6 @@ export const DocumentTemplateView: React.FC = () => {
                   }
                 }}
                 className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
-                title="Xuất văn bản thành file Word (.doc) giữ nguyên định dạng 2 cột chữ ký"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Xuất File Word (.doc)</span>
@@ -1043,7 +1142,6 @@ export const DocumentTemplateView: React.FC = () => {
                   }
                 }}
                 className="flex items-center space-x-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all shadow-sm"
-                title="Tạo file PDF độc lập chuẩn khổ A4 (không chứa giao diện web)"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Xuất File PDF (.pdf)</span>
@@ -1051,12 +1149,12 @@ export const DocumentTemplateView: React.FC = () => {
             </div>
           </div>
 
-          {/* LIVE PREVIEW A4 PAPER SHEET WITH EXPLICIT PARAGRAPH CLASSES */}
+          {/* LIVE PREVIEW A4 PAPER SHEET WITH NGUYÊN VĂN CONTRACT TEXT */}
           <div
             id="document-preview-container"
             className="doc-preview-sheet bg-white text-slate-950 p-10 sm:p-14 rounded-2xl border border-slate-200 shadow-2xl space-y-4 max-w-[210mm] mx-auto transition-all"
           >
-            {/* ── PREVIEW 1: HỢP ĐỒNG THUÊ MẶT BẰNG FULL TEXT ── */}
+            {/* ── PREVIEW 1: HỢP ĐỒNG THUÊ MẶT BẰNG ── */}
             {selectedTemplate === 'lease_mb' && (
               <div className="space-y-4">
                 <div className="text-center space-y-1 no-indent">
@@ -1096,52 +1194,34 @@ export const DocumentTemplateView: React.FC = () => {
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 1: ĐỐI TƯỢNG VÀ MỤC ĐÍCH THUÊ</div>
                   <p className="clause-p">1.1. Bên A đồng ý cho Bên B thuê và Bên B đồng ý thuê mặt bằng tại địa chỉ: <strong>{nfc(mbLocation)}</strong>.</p>
-                  <p className="clause-p">1.2. Mục đích thuê: Sử dụng làm địa điểm hoạt động sản xuất kinh doanh hợp pháp theo quy định của pháp luật. Khi chuyển đổi mục đích hoạt động thì phải thông báo cho Bên A bằng văn bản.</p>
+                  <p className="clause-p">1.2. Mục đích thuê: Sử dụng làm địa điểm hoạt động sản xuất kinh doanh hợp pháp theo quy định của pháp luật.</p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 2: THỜI HẠN HỢP ĐỒNG, GIÁ CẢ VÀ PHƯƠNG THỨC THANH TOÁN</div>
-                  <p className="clause-p">2.1. Thời hạn có hiệu lực của hợp đồng này là 01 năm kể từ ngày <strong>{fmtDate(mbStartDate)}</strong> đến hết ngày <strong>{fmtDate(mbEndDate)}</strong>.</p>
-                  <p className="clause-p">2.2. Đơn giá thuê: <strong>{mbMonthlyPrice} VNĐ/tháng</strong> (Đơn giá nêu trong hợp đồng này đã bao gồm thuế VAT).</p>
-                  <p className="clause-p">2.3. Phương thức thanh toán: Bên B thanh toán tiền cho Bên A mỗi tháng một lần bằng tiền mặt hoặc chuyển khoản trong vòng 10 ngày đầu của mỗi tháng. Nếu nộp chậm quá 01 tháng Bên A có quyền tính thêm lãi phạt chậm nộp.</p>
-                  <p className="clause-p">2.4. Tiền ký quỹ: Bên B đồng ý chuyển số tiền <strong>{mbDepositAmount} VNĐ</strong> vào tài khoản ngân hàng cho Bên A trong vòng 01 tuần kể từ ngày ký hợp đồng. Số tiền này sẽ được trả lại cho Bên B khi hai bên thanh lý hợp đồng.</p>
+                  <p className="clause-p">2.1. Thời hạn thuê là 01 năm kể từ ngày <strong>{fmtDate(mbStartDate)}</strong> đến hết ngày <strong>{fmtDate(mbEndDate)}</strong>.</p>
+                  <p className="clause-p">2.2. Đơn giá thuê: <strong>{mbMonthlyPrice} VNĐ/tháng</strong>.</p>
+                  <p className="clause-p">2.3. Phương thức thanh toán: Bên B thanh toán tiền cho Bên A mỗi tháng một lần trong vòng 10 ngày đầu của mỗi tháng.</p>
+                  <p className="clause-p">2.4. Tiền ký quỹ: Số tiền <strong>{mbDepositAmount} VNĐ</strong> được chuyển cho Bên A trong vòng 01 tuần kể từ ngày ký hợp đồng.</p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 3: QUYỀN VÀ NGHĨA VỤ CỦA BÊN A</div>
                   <p className="clause-p">3.1. Bàn giao mặt bằng thuê đúng thời gian quy định cho Bên B.</p>
-                  <p className="clause-p">3.2. Bảo đảm quyền sử dụng trọn vẹn và hợp pháp của Bên B đối với khu vực thuê trong suốt thời gian hiệu lực hợp đồng.</p>
+                  <p className="clause-p">3.2. Bảo đảm quyền sử dụng trọn vẹn và hợp pháp cho Bên B.</p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 4: QUYỀN VÀ NGHĨA VỤ CỦA BÊN B</div>
-                  <p className="clause-p">4.1. Chịu trách nhiệm trước pháp luật về tính hợp pháp của hoạt động sản xuất kinh doanh. Nghiêm cấm lợi dụng hợp đồng để chứa chấp hàng giả, hàng lậu.</p>
-                  <p className="clause-p">4.2. Thanh toán đầy đủ tiền điện, nước, internet và thực hiện nghĩa vụ thuế đối với Nhà nước.</p>
-                  <p className="clause-p">4.3. Không được phép thế chấp, cho thuê lại hoặc chuyển nhượng mặt bằng thuê cho bên thứ ba vì bất kỳ lý do nào.</p>
-                  <p className="clause-p">4.4. Đảm bảo an toàn phòng cháy chữa cháy (PCCC) và an ninh trật tự chung tại khu vực thuê.</p>
+                  <p className="clause-p">4.1. Chịu trách nhiệm trước pháp luật về tính hợp pháp của hoạt động sản xuất kinh doanh.</p>
+                  <p className="clause-p">4.2. Thanh toán đầy đủ tiền điện, nước, internet và thực hiện nghĩa vụ thuế.</p>
                 </div>
 
                 <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 5: CHẤM DỨT HỢP ĐỒNG</div>
-                  <p className="clause-p">Hợp đồng này được chấm dứt khi hết thời hạn thuê, khu vực bị giải tỏa theo quyết định của cơ quan nhà nước có thẩm quyền hoặc các trường hợp bất khả kháng theo quy định pháp luật.</p>
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 5: ĐIỀU KHOẢN CHUNG</div>
+                  <p className="clause-p">Hợp đồng được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản.</p>
                 </div>
 
-                <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 6: NGHĨA VỤ SAU KHI CHẤM DỨT HỢP ĐỒNG</div>
-                  <p className="clause-p">Khi chấm dứt hợp đồng, Bên B có trách nhiệm bàn giao lại nguyên hiện trạng mặt bằng cho Bên A trong vòng 15 ngày và thanh toán toàn bộ chi phí tồn đọng.</p>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 7: TRANH CHẤP VÀ GIẢI QUYẾT TRANH CHẤP</div>
-                  <p className="clause-p">Mọi tranh phát sinh từ việc thực hiện hợp đồng trước hết sẽ được thương lượng hòa giải. Nếu không giải quyết được sẽ đưa ra Tòa án có thẩm quyền phán quyết.</p>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 8: ĐIỀU KHOẢN CHUNG</div>
-                  <p className="clause-p">Hợp đồng này được lập thành 02 (hai) bản gốc có giá trị pháp lý như nhau, mỗi bên giữ 01 bản để thực hiện.</p>
-                </div>
-
-                {/* SIGNATURE BLOCK TABLE WITH EXPLICIT 6-LINE BLANK SPACING FOR SIGNING */}
                 <table className="sig-table font-serif" style={{ width: '100%', borderCollapse: 'collapse', border: 'none', marginTop: '30pt' }}>
                   <tbody>
                     <tr>
@@ -1163,7 +1243,7 @@ export const DocumentTemplateView: React.FC = () => {
               </div>
             )}
 
-            {/* ── PREVIEW 2: HỢP ĐỒNG THI CÔNG NHÀ Ở FULL TEXT ── */}
+            {/* ── PREVIEW 2: HỢP ĐỒNG THI CÔNG NHÀ Ở ── */}
             {selectedTemplate === 'construction' && (
               <div className="space-y-4">
                 <div className="text-center space-y-1 no-indent">
@@ -1205,51 +1285,20 @@ export const DocumentTemplateView: React.FC = () => {
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent mt-3">Điều 1: Nội dung và phạm vi công việc</div>
                   <p className="clause-p">1. Địa điểm thi công: Bên B nhận thi công/sửa chữa nhà ở dân dụng tại địa chỉ: <strong>{nfc(constSiteAddress)}</strong>.</p>
-                  <p className="clause-p">2. Phạm vi công việc mà Bên B đảm nhận: Bên B nhận thực hiện toàn bộ phần nhân công (hoặc cả nhân công + vật liệu, tùy thỏa thuận) cho các hạng mục sau:</p>
-                  <div className="pl-6 space-y-0.5 no-indent">
-                    <div>- Sửa chữa/tân trang phần tường: trát, bả, sơn lại toàn bộ các mảng tường bị hư hỏng.</div>
-                    <div>- Thay thế hoặc lát lại gạch nền, sàn theo mẫu Bên A đã lựa chọn.</div>
-                    <div>- Thi công hệ thống điện nước: đi lại đường dây điện, thay ổ cắm, công tắc, thay đường ống cấp – thoát nước hỏng.</div>
-                    <div>- Sửa chữa, thay mới cửa, mái tôn, lan can, cầu thang (nếu có).</div>
-                  </div>
-                  <p className="clause-p">3. Chất lượng & tiêu chuẩn kỹ thuật: Công việc thi công phải đảm bảo đúng quy trình xây dựng dân dụng, an toàn lao động và tiêu chuẩn chất lượng theo thỏa thuận.</p>
+                  <p className="clause-p">2. Phạm vi công việc: Sửa chữa/tân trang phần tường, lát gạch nền sàn, đi lại đường dây điện nước, thay mới cửa mái tôn lan can.</p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent mt-3">Điều 2: Thời gian và tiến độ thực hiện</div>
-                  <p className="clause-p">- Ngày khởi công: Ngày <strong>{fmtDate(constStartDate)}</strong></p>
-                  <p className="clause-p">- Ngày hoàn thành dự kiến: Ngày <strong>{fmtDate(constEndDate)}</strong></p>
-                  <p className="clause-p">- Tổng thời gian thực hiện dự kiến: 2 tháng (không tính Thứ 7, Chủ nhật). Trường hợp bất khả kháng, hai bên sẽ điều chỉnh bằng văn bản.</p>
+                  <p className="clause-p">- Ngày khởi công: Ngày <strong>{fmtDate(constStartDate)}</strong> đến ngày <strong>{fmtDate(constEndDate)}</strong>.</p>
                 </div>
 
                 <div className="space-y-1">
                   <div className="font-bold text-[13pt] no-indent mt-3">Điều 3. Giá trị hợp đồng và phương thức thanh toán</div>
                   <p className="clause-p">- Tổng giá trị hợp đồng: <strong>{constTotalPrice} VNĐ</strong>.</p>
-                  <p className="clause-p">- Đợt 1: Bên A thanh toán cho Bên B số tiền là: <strong>{constDepositStage1} VNĐ</strong>.</p>
-                  <p className="clause-p">- Đợt 2: Số tiền còn lại là <strong>{constStage2Amount} VNĐ</strong> sẽ được Bên A thanh toán toàn bộ trước khi bàn giao hoàn thiện công trình.</p>
+                  <p className="clause-p">- Đợt 1: <strong>{constDepositStage1} VNĐ</strong>. Đợt 2: <strong>{constStage2Amount} VNĐ</strong>.</p>
                 </div>
 
-                <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent mt-3">Điều 4: Quyền và nghĩa vụ của các bên</div>
-                  <div className="font-bold text-[12pt] no-indent">1. Quyền và nghĩa vụ của bên A:</div>
-                  <p className="clause-p">a. Quyền lợi: Yêu cầu Bên B thi công đúng tiến độ, đúng chất lượng. Giám sát, kiểm tra quá trình thi công; có quyền tạm ngừng nếu không đạt yêu cầu.</p>
-                  <p className="clause-p">b. Nghĩa vụ: Bàn giao mặt bằng sạch sẽ, an toàn, đúng thời gian. Thanh toán đúng hạn theo tiến độ hợp đồng.</p>
-                  <div className="font-bold text-[12pt] no-indent">2. Quyền và nghĩa vụ của bên B:</div>
-                  <p className="clause-p">a. Quyền lợi: Nhận đủ và đúng hạn số tiền theo hợp đồng.</p>
-                  <p className="clause-p">b. Nghĩa vụ: Thi công đúng thiết kế, đúng quy chuẩn xây dựng, đảm bảo an toàn lao động và bảo hành công trình theo Điều 5.</p>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent mt-3">Điều 5. Nghiệm thu, bàn giao và bảo hành</div>
-                  <p className="clause-p">Hai bên tiến hành nghiệm thu theo từng giai đoạn và nghiệm thu tổng thể khi hoàn thành. Thời gian bảo hành: 06 tháng kể từ ngày bàn giao đối với các lỗi kỹ thuật do quá trình thi công.</p>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent mt-3">Điều 6. Điều khoản chung</div>
-                  <p className="clause-p">Hợp đồng có hiệu lực từ ngày ký. Mọi sửa đổi phải lập thành văn bản. Hợp đồng được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản.</p>
-                </div>
-
-                {/* SIGNATURE TABLE */}
                 <table className="sig-table font-serif" style={{ width: '100%', borderCollapse: 'collapse', border: 'none', marginTop: '30pt' }}>
                   <tbody>
                     <tr>
@@ -1271,7 +1320,7 @@ export const DocumentTemplateView: React.FC = () => {
               </div>
             )}
 
-            {/* ── PREVIEW 3: HỢP ĐỒNG MUA BÁN HÀNG HÓA FULL TEXT ── */}
+            {/* ── PREVIEW 3: HỢP ĐỒNG MUA BÁN HÀNG HÓA NGUYÊN VĂN FULL TEXT 8 ĐIỀU ── */}
             {selectedTemplate === 'sale_contract' && (
               <div className="space-y-4">
                 <div className="text-center space-y-1 no-indent">
@@ -1283,54 +1332,56 @@ export const DocumentTemplateView: React.FC = () => {
                 </div>
 
                 <div className="text-center pt-3 pb-1 no-indent">
-                  <h1 className="text-[16pt] font-bold uppercase tracking-wide no-indent">HỢP ĐỒNG MUA BÁN HÀNG HÓA</h1>
+                  <h1 className="text-[16pt] font-bold uppercase tracking-wide no-indent">HỢP ĐỒNG MUA BÁN HÀNG HOÁ</h1>
                 </div>
 
                 <p className="clause-p">
-                  Hôm nay, ngày {fmtDate(saleContractDate)}, tại văn phòng giao dịch, chúng tôi gồm có:
+                  Hôm nay, ngày {fmtDate(saleContractDate)}, chúng tôi gồm có:
                 </p>
 
                 <div className="space-y-1 no-indent">
-                  <div className="font-bold uppercase text-[13pt] no-indent">BÊN BÁN (BÊN A): {nfc(saleSellerName)}</div>
+                  <div className="font-bold uppercase text-[13pt] no-indent">BÊN MUA: (Sau đây gọi tắt là Bên A)</div>
                   <div className="pl-6 space-y-0.5 no-indent">
-                    <div>- Mã số thuế: {nfc(saleSellerTaxCode)}</div>
-                    <div>- Tài khoản nhận tiền: {nfc(saleSellerBank)}</div>
+                    <div>- Họ tên: <strong className="uppercase">{nfc(saleBuyerName)}</strong></div>
+                    <div>- Địa chỉ: {nfc(saleBuyerAddress)}</div>
                   </div>
                 </div>
 
                 <div className="space-y-1 no-indent">
-                  <div className="font-bold uppercase text-[13pt] no-indent">BÊN MUA (BÊN B): {nfc(saleBuyerName)}</div>
+                  <div className="font-bold uppercase text-[13pt] no-indent">BÊN BÁN: (Sau đây gọi tắt là Bên B)</div>
                   <div className="pl-6 space-y-0.5 no-indent">
-                    <div>- CCCD/MST: {nfc(saleBuyerCccd)}</div>
+                    <div>- Họ tên: <strong className="uppercase">{nfc(saleSellerName)}</strong></div>
+                    <div>- CCCD số: <strong>{nfc(saleSellerCccd)}</strong> | Ngày cấp: {nfc(saleSellerCccdDate)} | Nơi cấp: {nfc(saleSellerCccdPlace)}</div>
                   </div>
                 </div>
 
                 <p className="clause-p">
-                  Hai bên cùng thỏa thuận và thống nhất ký kết Hợp đồng mua bán hàng hóa với các điều khoản chi tiết như sau:
+                  Hai bên A và B thống nhất thoả thuận nội dung Hợp đồng như sau:
                 </p>
 
+                {/* ĐIỀU 1: BẢNG DANH MỤC HÀNG HÓA 13 MẶT HÀNG NGUYÊN VĂN FILE EXCEL */}
                 <div className="space-y-2">
-                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 1: DANH MỤC HÀNG HÓA VÀ GIÁ TRỊ THANH TOÁN</div>
-                  <table className="w-full border-collapse border border-black text-[12pt] my-2">
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 1: ĐỐI TƯỢNG VÀ GIÁ CẢ</div>
+                  <table className="w-full border-collapse border border-black text-[11pt] my-2">
                     <thead>
                       <tr className="bg-slate-100">
-                        <th className="border border-black p-2 font-bold text-center w-12">STT</th>
-                        <th className="border border-black p-2 font-bold">TÊN HÀNG HÓA / SẢN PHẨM</th>
-                        <th className="border border-black p-2 font-bold text-center w-16">ĐVT</th>
-                        <th className="border border-black p-2 font-bold text-center w-20">SỐ LƯỢNG</th>
-                        <th className="border border-black p-2 font-bold text-right">ĐƠN GIÁ (VNĐ)</th>
-                        <th className="border border-black p-2 font-bold text-right">THÀNH TIỀN (VNĐ)</th>
+                        <th className="border border-black p-1.5 font-bold text-center w-10">STT</th>
+                        <th className="border border-black p-1.5 font-bold">Tên Hàng Hóa</th>
+                        <th className="border border-black p-1.5 font-bold text-center w-14">ĐVT</th>
+                        <th className="border border-black p-1.5 font-bold text-center w-16">Số lượng</th>
+                        <th className="border border-black p-1.5 font-bold text-right">Đơn Giá</th>
+                        <th className="border border-black p-1.5 font-bold text-right">Thành Tiền</th>
                       </tr>
                     </thead>
                     <tbody>
                       {saleItems.map((item, idx) => (
                         <tr key={item.id}>
-                          <td className="border border-black p-2 text-center">{idx + 1}</td>
-                          <td className="border border-black p-2 font-bold">{nfc(item.name)}</td>
-                          <td className="border border-black p-2 text-center">{item.unit}</td>
-                          <td className="border border-black p-2 text-center font-mono">{item.quantity}</td>
-                          <td className="border border-black p-2 text-right font-mono">{item.price.toLocaleString('vi-VN')}</td>
-                          <td className="border border-black p-2 text-right font-mono font-bold">
+                          <td className="border border-black p-1.5 text-center">{idx + 1}</td>
+                          <td className="border border-black p-1.5 font-bold">{nfc(item.name)}</td>
+                          <td className="border border-black p-1.5 text-center">{item.unit}</td>
+                          <td className="border border-black p-1.5 text-center font-mono">{item.quantity}</td>
+                          <td className="border border-black p-1.5 text-right font-mono">{item.price.toLocaleString('vi-VN')}</td>
+                          <td className="border border-black p-1.5 text-right font-mono font-bold">
                             {(item.quantity * item.price).toLocaleString('vi-VN')}
                           </td>
                         </tr>
@@ -1338,22 +1389,60 @@ export const DocumentTemplateView: React.FC = () => {
                     </tbody>
                     <tfoot>
                       <tr className="font-bold bg-slate-100">
-                        <td colSpan={5} className="border border-black p-2 text-center uppercase">TỔNG CỘNG TIỀN HÀNG THANH TOÁN</td>
-                        <td className="border border-black p-2 text-right font-mono text-emerald-700">{totalSaleAmount.toLocaleString('vi-VN')} VNĐ</td>
+                        <td colSpan={5} className="border border-black p-1.5 text-center uppercase">Tổng cộng</td>
+                        <td className="border border-black p-1.5 text-right font-mono text-emerald-700">{totalSaleAmount.toLocaleString('vi-VN')} VNĐ</td>
                       </tr>
                     </tfoot>
                   </table>
                 </div>
 
                 <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 2: PHƯƠNG THỨC GIAO HÀNG VÀ THANH TOÁN</div>
-                  <p className="clause-p">2.1. Phương thức thanh toán: Chuyển khoản ngân hàng vào tài khoản Bên A trong thời hạn đã thỏa thuận.</p>
-                  <p className="clause-p">2.2. Giao nhận: Bên A bàn giao đầy đủ số lượng và chủng loại hàng hóa cho Bên B theo hóa đơn bàn giao.</p>
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 2: THỜI HẠN HỢP ĐỒNG</div>
+                  <p className="clause-p">– Thời hạn Hợp đồng là: 01 tháng kể từ ngày <strong>{fmtDate(saleStartDate)}</strong> đến ngày <strong>{fmtDate(saleEndDate)}</strong>.</p>
                 </div>
 
                 <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 3: ĐIỀU KHOẢN CHUNG</div>
-                  <p className="clause-p">Hợp đồng này được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản để thực hiện.</p>
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 3: THỜI HẠN VÀ PHƯƠNG THỨC THANH TOÁN</div>
+                  <p className="clause-p">– Tổng số tiền Bên Mua phải thanh toán cho Bên Bán là: <strong>{totalSaleAmount.toLocaleString('vi-VN')} đồng</strong>.</p>
+                  <div className="font-bold text-[12pt] no-indent">1. Thời hạn thanh toán:</div>
+                  <p className="clause-p">Mỗi một lô hàng khi Bên B xuất ra cho Bên A thì Bên A sẽ thanh toán như sau:</p>
+                  <p className="clause-p">– Lần 1: Bên A thanh toán cho Bên B số tiền là: <strong>{salePaymentStage1} đồng</strong>.</p>
+                  <p className="clause-p">– Lần 2: Số tiền còn lại là <strong>{stage2RemainingNum.toLocaleString('vi-VN')} đồng</strong> sẽ được Bên A thanh toán toàn bộ trước khi nhận hàng dựa trên phiếu đề nghị thanh toán.</p>
+                  <div className="font-bold text-[12pt] no-indent">2. Phương thức thanh toán:</div>
+                  <p className="clause-p">Thanh toán bằng tiền mặt hoặc chuyển khoản.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 4: THỜI ĐIỂM VÀ ĐỊA ĐIỂM CHUYỂN GIAO TÀI SẢN</div>
+                  <p className="clause-p">Bên bán chuyển giao tài sản cho Bên mua trong thời hạn 30 ngày kể từ ngày ký kết hợp đồng.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 5: NGHĨA VỤ CỦA BÊN BÁN</div>
+                  <p className="clause-p">- Bên Bán chịu trách nhiệm về số lượng, chất lượng đối với toàn bộ các sản phẩm do Bên Bán cung cấp.</p>
+                  <p className="clause-p">- Bên Bán có nghĩa vụ cung cấp mọi chỉ dẫn cần thiết đối với việc bảo quản, sử dụng hàng hoá theo quy định của Hợp đồng này cho Bên mua.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 6: NGHĨA VỤ CỦA BÊN MUA</div>
+                  <p className="clause-p">- Bên mua có nghĩa vụ thanh toán toàn bộ chi phí vận chuyển.</p>
+                  <p className="clause-p">- Tổ chức tiếp nhận nhanh, an toàn, dứt điểm cho từng lô hàng.</p>
+                  <p className="clause-p">- Thanh toán theo quy định tại Điều 3 Hợp đồng này.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 7: CÁC TRƯỜNG HỢP CHẤM DỨT HỢP ĐỒNG</div>
+                  <p className="clause-p">Hợp đồng này sẽ được chấm dứt trong các trường hợp sau:</p>
+                  <p className="clause-p">- Khi các Bên thực hiện xong các quyền và nghĩa vụ quy định trong Hợp đồng này.</p>
+                  <p className="clause-p">- Khi một Bên vi phạm hợp đồng dẫn đến Hợp đồng không thể thực hiện được thì phía Bên kia có quyền đơn phương chấm dứt hợp đồng.</p>
+                  <p className="clause-p">- Hợp đồng có thể được chấm dứt do sự thỏa thuận của các Bên.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 8: HIỆU LỰC THI HÀNH</div>
+                  <p className="clause-p">- Hợp đồng này có hiệu lực kể từ ngày ký, và chỉ được coi là kết thúc khi các Bên đã hoàn thành các nghĩa vụ của mình trong Hợp đồng.</p>
+                  <p className="clause-p">- Trong trường hợp một Bên muốn sửa đổi các điều khoản trong hợp đồng thì phải thông báo cho Bên kia biết trước ít nhất là 03 ngày và cùng nhau thoả thuận lại những điểm cần thay đổi với sự đồng ý của hai Bên.</p>
+                  <p className="clause-p">- Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, các bản có giá trị pháp lý như nhau.</p>
                 </div>
 
                 {/* SIGNATURE TABLE */}
@@ -1378,7 +1467,7 @@ export const DocumentTemplateView: React.FC = () => {
               </div>
             )}
 
-            {/* ── PREVIEW 4: HỢP ĐỒNG THUÊ NHÀ Ở DÂN DỤNG FULL TEXT ── */}
+            {/* ── PREVIEW 4: HỢP ĐỒNG THUÊ NHÀ Ở DÂN DỤNG NGUYÊN VĂN FULL TEXT 7 ĐIỀU ── */}
             {selectedTemplate === 'lease_house' && (
               <div className="space-y-4">
                 <div className="text-center space-y-1 no-indent">
@@ -1394,38 +1483,72 @@ export const DocumentTemplateView: React.FC = () => {
                 </div>
 
                 <p className="clause-p">
-                  Hôm nay, ngày {fmtDate(mbContractDate)}, tại nhà cho thuê, chúng tôi gồm có:
+                  Căn cứ Bộ Luật Dân sự nước Cộng Hòa Xã Hội Chủ Nghĩa Việt Nam. Hôm nay, ngày {fmtDate(houseContractDate)}, tại căn nhà cho thuê, chúng tôi gồm có:
                 </p>
 
                 <div className="space-y-1 no-indent">
                   <div className="font-bold uppercase text-[13pt] no-indent">BÊN CHO THUÊ NHÀ (BÊN A):</div>
                   <div className="pl-6 space-y-0.5 no-indent">
-                    <div>- Chủ nhà: <strong className="uppercase">{nfc(mbPartyAName)}</strong></div>
-                    <div>- CCCD số: <strong>{nfc(mbPartyACccd)}</strong></div>
+                    <div>- Họ tên: <strong className="uppercase">{nfc(housePartyAName)}</strong></div>
+                    <div>- CCCD số: <strong>{nfc(housePartyACccd)}</strong></div>
+                    <div>- Địa chỉ: {nfc(housePartyAAddress)}</div>
                   </div>
                 </div>
 
                 <div className="space-y-1 no-indent">
                   <div className="font-bold uppercase text-[13pt] no-indent">BÊN THUÊ NHÀ (BÊN B):</div>
                   <div className="pl-6 space-y-0.5 no-indent">
-                    <div>- Người thuê: <strong className="uppercase">{nfc(mbPartyBName)}</strong></div>
-                    <div>- CCCD số: <strong>{nfc(mbPartyBCccd)}</strong></div>
+                    <div>- Họ tên: <strong className="uppercase">{nfc(housePartyBName)}</strong></div>
+                    <div>- CCCD số: <strong>{nfc(housePartyBCccd)}</strong></div>
+                    <div>- Địa chỉ: {nfc(housePartyBAddress)}</div>
                   </div>
                 </div>
 
                 <p className="clause-p">
-                  Hai bên cùng tự nguyện ký kết hợp đồng thuê nhà ở với các điều khoản như sau:
+                  Hai bên cùng tự nguyện thỏa thuận và nhất trí ký kết hợp đồng thuê nhà ở dân dụng với các điều khoản như sau:
                 </p>
 
                 <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 1: ĐỐI TƯỢNG VÀ MỤC ĐÍCH THUÊ</div>
-                  <p className="clause-p">1.1. Bên A đồng ý cho Bên B thuê căn nhà ở dân dụng để sinh hoạt gia đình.</p>
-                  <p className="clause-p">1.2. Giá thuê nhà: <strong>{mbMonthlyPrice} VNĐ/tháng</strong>. Tiền cọc giữ nhà: <strong>{mbDepositAmount} VNĐ</strong>.</p>
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 1: ĐỐI TƯỢNG VÀ MỤC ĐÍCH THUÊ NHÀ</div>
+                  <p className="clause-p">1.1. Bên A đồng ý cho Bên B thuê căn nhà ở dân dụng tại địa chỉ: <strong>{nfc(houseAddress)}</strong>.</p>
+                  <p className="clause-p">1.2. Mục đích thuê: Dùng để ở và sinh hoạt gia đình hợp pháp.</p>
                 </div>
 
                 <div className="space-y-1">
-                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 2: ĐIỀU KHOẢN CHUNG</div>
-                  <p className="clause-p">Hợp đồng được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản để thực hiện.</p>
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 2: THỜI HẠN HỢP ĐỒNG VÀ GIÁ CẢ THANH TOÁN</div>
+                  <p className="clause-p">2.1. Thời hạn thuê nhà là 01 (một) năm kể từ ngày <strong>{fmtDate(houseStartDate)}</strong> đến ngày <strong>{fmtDate(houseEndDate)}</strong>.</p>
+                  <p className="clause-p">2.2. Giá thuê nhà: <strong>{houseMonthlyPrice} VNĐ/tháng</strong>. Phương thức thanh toán: Thanh toán tiền thuê nhà 01 tháng một lần trong vòng 05 ngày đầu mỗi tháng.</p>
+                  <p className="clause-p">2.3. Tiền đặt cọc: Bên B giao cho Bên A số tiền đặt cọc là <strong>{houseDepositAmount} VNĐ</strong> để đảm bảo thực hiện hợp đồng. Số tiền này sẽ hoàn trả sau khi thanh lý hợp đồng.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 3: QUYỀN VÀ NGHĨA VỤ CỦA BÊN A</div>
+                  <p className="clause-p">3.1. Bàn giao nhà ở và trang thiết bị gắn liền cho Bên B đúng thời hạn.</p>
+                  <p className="clause-p">3.2. Bảo đảm quyền sử dụng nhà trọn vẹn và độc lập cho Bên B trong suốt thời gian thuê.</p>
+                  <p className="clause-p">3.3. Nhận đủ tiền thuê nhà đúng thời hạn theo thỏa thuận.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 4: QUYỀN VÀ NGHĨA VỤ CỦA BÊN B</div>
+                  <p className="clause-p">4.1. Sử dụng nhà đúng mục đích thuê, giữ gìn nhà ở và có trách nhiệm sửa chữa các hư hỏng do mình gây ra.</p>
+                  <p className="clause-p">4.2. Thanh toán đầy đủ các chi phí điện, nước, rác sinh hoạt, internet và dịch vụ phát sinh trong quá trình ở.</p>
+                  <p className="clause-p">4.3. Không được tự ý sửa đổi kết cấu nhà hoặc cho bên thứ ba thuê lại khi chưa có sự đồng ý bằng văn bản của Bên A.</p>
+                  <p className="clause-p">4.4. Chấp hành các quy định về an ninh trật tự, tạm trú tạm vắng và phòng cháy chữa cháy tại địa phương.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 5: ĐƠN PHƯƠNG CHẤM DỨT HỢP ĐỒNG</div>
+                  <p className="clause-p">Trường hợp một trong hai bên muốn chấm dứt hợp đồng trước thời hạn phải thông báo cho bên kia biết trước ít nhất 30 ngày.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 6: GIẢI QUYẾT TRANH CHẤP</div>
+                  <p className="clause-p">Mọi tranh chấp phát sinh trong quá trình thực hiện hợp đồng sẽ được hai bên cùng nhau bàn bạc giải quyết trên tinh thần hợp tác. Nếu không tự giải quyết được sẽ đưa ra Tòa án có thẩm quyền phán quyết.</p>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="font-bold text-[13pt] no-indent mt-3">ĐIỀU 7: ĐIỀU KHOẢN THI HÀNH</div>
+                  <p className="clause-p">Hợp đồng này có hiệu lực kể từ ngày ký, được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản để thực hiện.</p>
                 </div>
 
                 {/* SIGNATURE TABLE */}
@@ -1436,13 +1559,13 @@ export const DocumentTemplateView: React.FC = () => {
                         <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt' }}>CHỦ NHÀ (BÊN A)</div>
                         <div style={{ fontStyle: 'italic', fontSize: '11pt', marginTop: '2pt', color: '#334155' }}>(Ký và ghi rõ họ tên)</div>
                         <div style={{ height: '80px' }}></div>
-                        <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt' }}>{nfc(mbPartyAName)}</div>
+                        <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt' }}>{nfc(housePartyAName)}</div>
                       </td>
                       <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: '0' }}>
                         <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt' }}>NGƯỜI THUÊ (BÊN B)</div>
                         <div style={{ fontStyle: 'italic', fontSize: '11pt', marginTop: '2pt', color: '#334155' }}>(Ký và ghi rõ họ tên)</div>
                         <div style={{ height: '80px' }}></div>
-                        <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt' }}>{nfc(mbPartyBName)}</div>
+                        <div style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '13pt' }}>{nfc(housePartyBName)}</div>
                       </td>
                     </tr>
                   </tbody>
@@ -1450,7 +1573,7 @@ export const DocumentTemplateView: React.FC = () => {
               </div>
             )}
 
-            {/* ── PREVIEW 5: GIẤY ĐỀ NGHỊ THANH TOÁN (FILE WORD ĐỘC LẬP) ── */}
+            {/* ── PREVIEW 5: GIẤY ĐỀ NGHỊ THANH TOÁN ── */}
             {selectedTemplate === 'payment_request' && (
               <div className="space-y-4">
                 <div className="text-center space-y-1 no-indent">
@@ -1476,8 +1599,9 @@ export const DocumentTemplateView: React.FC = () => {
                 <p className="clause-p">
                   - {nfc(prContractRef)}.
                 </p>
+
                 <p className="clause-p">
-                  - Nay tôi kính đề nghị <strong>{nfc(prRecipient)}</strong> thanh toán cho tôi phần còn lại của hợp đồng thi công nhà ở nêu trên, với nội dung cụ thể như sau:
+                  - Tôi xin đề nghị thanh toán theo các nội dung sau:
                 </p>
 
                 <div className="space-y-2 pl-4 no-indent">
@@ -1487,8 +1611,8 @@ export const DocumentTemplateView: React.FC = () => {
                   <div>
                     <strong>2. Thời hạn & Tiến độ thanh toán:</strong>
                     <div className="pl-4 space-y-1 mt-1">
-                      <div>+ Đợt 1: Đã thanh toán với số tiền đợt đầu tiên là: <strong>{prStage1Paid} VNĐ</strong></div>
-                      <div>+ Đợt 2: Đề nghị thanh toán số tiền đợt 2 là: <strong className="text-rose-600 font-mono text-[14pt]">{prStage2Request} VNĐ</strong></div>
+                      <div>+ Đã thanh toán đợt đầu tiên là: <strong>{prStage1Paid} VNĐ</strong></div>
+                      <div>+ Đề nghị thanh toán số tiền đợt này là: <strong className="text-rose-600 font-mono text-[14pt]">{prStage2Request} VNĐ</strong> trước khi nhận hàng</div>
                     </div>
                   </div>
 

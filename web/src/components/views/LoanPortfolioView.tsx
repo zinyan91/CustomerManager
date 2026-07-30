@@ -627,10 +627,9 @@ export const LoanPortfolioView: React.FC = () => {
       if (forceInsert || !selectedContract) {
         delete payload.Id;
 
-        // ─── RÀNG BUỘC: Kiểm tra dư nợ KUNN không vượt quá Tổng mức cấp HMTD ───
-        // Dùng totalCreditLimit từ hợp đồng master GNN-01 (không phải creditLimit từ form)
+        // ─── RÀNG BUỘC: Kiểm tra dư nợ KUNN không vượt quá Tổng mức cấp HMTD (Chỉ áp dụng với Hạn mức tín dụng) ───
         const masterLimit = totalCreditLimit > 0 ? totalCreditLimit : creditLimit;
-        if (loanAmount && masterLimit > 0) {
+        if (form.LoanMethod === 'Hạn mức tín dụng' && loanAmount && masterLimit > 0) {
           const existingKunnTotal = contracts
             .filter(c => c.Id !== selectedContract?.Id)
             .reduce((sum, c) => sum + (c.LoanAmount || 0), 0);
@@ -968,9 +967,8 @@ export const LoanPortfolioView: React.FC = () => {
                 </div>
               </div>
               <button onClick={handleNewContract}
-                disabled={totalCreditLimit > 0 && remainingCreditLimit === 0}
-                title={totalCreditLimit > 0 && remainingCreditLimit === 0 ? 'HMTD đã giải ngân hết — không thể tạo KUNN mới!' : 'Tạo HĐTD / KUNN mới'}
-                className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-4 py-2 rounded-xl transition-colors text-xs shadow-md shadow-emerald-600/20">
+                title="Tạo Hợp đồng Tín dụng / KUNN mới"
+                className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl transition-colors text-xs shadow-md shadow-emerald-600/20">
                 <Plus className="w-3.5 h-3.5" />
                 <span>Tạo HĐTD mới</span>
               </button>

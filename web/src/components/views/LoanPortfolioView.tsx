@@ -1081,9 +1081,9 @@ export const LoanPortfolioView: React.FC = () => {
               type="text"
               value={dropdownQuery}
               onChange={e => { setDropdownQuery(e.target.value); setShowDropdown(true); }}
-              onClick={() => setShowDropdown(prev => !prev)}
+              onClick={() => { setDropdownQuery(''); setShowDropdown(true); }}
               onFocus={() => setShowDropdown(true)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 350)}
               placeholder={`Nhấp vào đây hoặc gõ tên / Mã CIF để chọn Khách hàng... (${allCustomers.length} KH)`}
               className={`w-full rounded-xl pl-3 pr-10 py-2.5 text-xs transition-colors cursor-pointer ${inputStyle}`}
             />
@@ -1097,21 +1097,15 @@ export const LoanPortfolioView: React.FC = () => {
                 <button
                   key={c.Id}
                   type="button"
-                  onMouseDown={() => handlePickCustomer(c)}
+                  onMouseDown={(e) => { e.preventDefault(); handlePickCustomer(c); }}
                   className={`w-full text-left px-4 py-2.5 transition-colors flex items-center justify-between group border-b last:border-0 ${
                     isLight
                       ? 'hover:bg-sky-50 border-slate-100'
                       : 'hover:bg-sky-600/20 border-slate-800/50'
                   }`}
                 >
-                  <div>
-                    <span className="font-semibold text-sky-600 dark:text-sky-400 group-hover:underline">{c.FullName}</span>
-                    {c.SpouseName && <span className="text-slate-400 ml-2 text-[10px]">KHLQ: {c.SpouseName}</span>}
-                  </div>
-                  <div className="text-right shrink-0 ml-3">
-                    <span className="font-mono text-sky-600 dark:text-sky-400 font-bold text-[11px]">{c.CifKh}</span>
-                    {c.Phone && <span className="block text-slate-400 text-[10px]">📞 {c.Phone}</span>}
-                  </div>
+                  <span className="font-semibold text-sky-600 dark:text-sky-400 group-hover:underline">{c.FullName}</span>
+                  <span className="font-mono text-sky-600 dark:text-sky-400 font-bold text-[11px] shrink-0 ml-3">{c.CifKh}</span>
                 </button>
               ))}
             </div>

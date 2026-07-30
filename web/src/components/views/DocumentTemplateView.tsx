@@ -311,9 +311,7 @@ export const DocumentTemplateView: React.FC = () => {
             <FileText className="w-5 h-5" />
             <span>SOẠN THẢO & QUẢN LÝ BIỂU MẪU VĂN BẢN HỢP ĐỒNG</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Nhập liệu các biến số linh hoạt - Tự động điền câu văn mẫu chuẩn pháp lý nguyên văn - Live Preview & Xuất Word / PDF
-          </p>
+
         </div>
       </div>
 

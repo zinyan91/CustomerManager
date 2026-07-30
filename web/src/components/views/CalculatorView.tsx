@@ -654,9 +654,7 @@ export const CalculatorView: React.FC = () => {
             <Calculator className="w-5 h-5" />
             <span>CÔNG CỤ & BẢNG TÍNH LÃI VAY TIỆN ÍCH</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Tính toán lịch trả nợ vay từng lần & Bảng tính vay cầm cố sổ tiết kiệm (1 kỳ / tái tục nhiều kỳ)
-          </p>
+
         </div>
 
         {/* Tab Navigation */}

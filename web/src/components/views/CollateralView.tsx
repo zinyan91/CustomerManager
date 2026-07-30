@@ -32,6 +32,8 @@ export const CollateralView: React.FC = () => {
   const [inputAppraisalExpiryDate, setInputAppraisalExpiryDate] = useState('');
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [colPage, setColPage] = useState(1);
+  const COL_PAGE_SIZE = 10;
 
   useEffect(() => {
     fetchData();
@@ -91,6 +93,8 @@ export const CollateralView: React.FC = () => {
     .sort((a, b) => (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
 
   const totalAppraisedVal = filteredCollaterals.reduce((acc, c) => acc + (c.AppraisedValue || c.Value || 0), 0);
+  const totalColPages = Math.max(1, Math.ceil(filteredCollaterals.length / COL_PAGE_SIZE));
+  const pagedCollaterals = filteredCollaterals.slice((colPage - 1) * COL_PAGE_SIZE, colPage * COL_PAGE_SIZE);
 
   const handleAssetTypeChange = (type: string) => {
     setInputAssetType(type);
@@ -233,7 +237,7 @@ export const CollateralView: React.FC = () => {
             />
             <input
               type="text"
-              placeholder="Họ tên KH CSH (sắp xếp A-Z)..."
+              placeholder="Họ tên KH của TSĐB..."
               value={searchOwnerName}
               onChange={(e) => setSearchOwnerName(e.target.value)}
               className={`rounded-xl px-3 py-1.5 text-xs transition-colors border ${inputStyle}`}
@@ -288,7 +292,7 @@ export const CollateralView: React.FC = () => {
                     onChange={(e) => setInputCustomerId(Number(e.target.value))}
                     className={`w-full rounded-xl p-2 font-bold transition-colors border ${inputStyle}`}
                   >
-                    <option value="">-- Chọn Khách hàng (A-Z) --</option>
+                    <option value="">-- Chọn Khách hàng --</option>
                     {customers.map((c) => (
                       <option key={c.Id} value={c.Id}>
                         👤 {c.FullName} (CIF: {c.CifKh})
@@ -297,7 +301,7 @@ export const CollateralView: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-medium mb-1">Mã TS (Chứng thư định giá)</label>
+                  <label className="block font-medium mb-1">Mã TS</label>
                   <input
                     type="text"
                     placeholder="91651.2024..."
@@ -427,8 +431,23 @@ export const CollateralView: React.FC = () => {
         style={{ height: formCollapsed ? 'calc(100vh - 185px)' : 'calc(100vh - 390px)' }}
       >
         <div className={`p-3 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/50 border-slate-800'}`}>
-          <span className="text-xs font-bold">DANH SÁCH TSĐB (SẮP XẾP A - Z: {filteredCollaterals.length})</span>
-          <span className="text-[11px] text-slate-400">Bấm vào dòng để chọn/chỉnh sửa</span>
+          <span className="text-xs font-bold">DANH SÁCH TSĐB ({filteredCollaterals.length})</span>
+          <div className="flex items-center space-x-2">
+            <span className="text-[11px] text-slate-400">Bấm vào dòng để chọn/chỉnh sửa</span>
+            {totalColPages > 1 && (
+              <div className="flex items-center space-x-1">
+                <button type="button" onClick={() => setColPage(p => Math.max(1, p - 1))} disabled={colPage === 1}
+                  className="px-2 py-0.5 rounded text-[11px] border disabled:opacity-40 transition-colors hover:bg-sky-600/20 border-slate-600">
+                  &lt;
+                </button>
+                <span className="text-[11px] font-bold px-1">{colPage}/{totalColPages}</span>
+                <button type="button" onClick={() => setColPage(p => Math.min(totalColPages, p + 1))} disabled={colPage === totalColPages}
+                  className="px-2 py-0.5 rounded text-[11px] border disabled:opacity-40 transition-colors hover:bg-sky-600/20 border-slate-600">
+                  &gt;
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="overflow-auto flex-1">
@@ -447,10 +466,10 @@ export const CollateralView: React.FC = () => {
             <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/60'}`}>
               {loading ? (
                 <tr><td colSpan={7} className="text-center p-8 text-slate-400">Đang tải dữ liệu TSĐB...</td></tr>
-              ) : filteredCollaterals.length === 0 ? (
+              ) : pagedCollaterals.length === 0 ? (
                 <tr><td colSpan={7} className="text-center p-8 text-slate-400">Không tìm thấy tài sản bảo đảm nào.</td></tr>
               ) : (
-                filteredCollaterals.map((col) => {
+                pagedCollaterals.map((col) => {
                   const isSelected = selectedCollateral?.Id === col.Id;
 
                   // Days remaining until appraisal expiry

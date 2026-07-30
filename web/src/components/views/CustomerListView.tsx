@@ -31,7 +31,7 @@ export const CustomerListView: React.FC = () => {
   
   // Expanded KHLQ & Guarantor fields
   const [inputCifKhlq, setInputCifKhlq] = useState('');
-  const [inputKhlqRelationship, setInputKhlqRelationship] = useState('Vợ / Chồng');
+  const [inputKhlqRelationship, setInputKhlqRelationship] = useState('Không có KHLQ');
   const [inputSpouseName, setInputSpouseName] = useState('');
   const [inputSpouseNationalId, setInputSpouseNationalId] = useState('');
   const [inputSpousePhone, setInputSpousePhone] = useState('');
@@ -100,7 +100,7 @@ export const CustomerListView: React.FC = () => {
     setInputAccountNumber('');
     setInputMaritalStatus('Độc thân');
     setInputCifKhlq('');
-    setInputKhlqRelationship('Vợ / Chồng');
+    setInputKhlqRelationship('Không có KHLQ');
     setInputSpouseName('');
     setInputSpouseNationalId('');
     setInputSpousePhone('');
@@ -326,7 +326,7 @@ export const CustomerListView: React.FC = () => {
         <div className={`${containerCardBg} lg:col-span-7 rounded-2xl overflow-hidden border flex flex-col h-[calc(100vh-215px)]`}>
           <div className={`p-3 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/50 border-slate-800'}`}>
             <span className="text-xs font-bold">
-              DANH SÁCH KHÁCH HÀNG (SẮP XẾP A-Z: {customers.length})
+              DANH SÁCH KHÁCH HÀNG ({customers.length})
             </span>
             <span className="text-[11px] text-slate-400">Bấm vào dòng để chọn/chỉnh sửa</span>
           </div>

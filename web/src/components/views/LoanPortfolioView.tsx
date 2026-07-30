@@ -473,12 +473,22 @@ export const LoanPortfolioView: React.FC = () => {
     setFormLoanAmount(c.LoanAmount ? c.LoanAmount.toLocaleString('vi-VN') : '');
     setFormCurrentBalance(c.CurrentBalance ? c.CurrentBalance.toLocaleString('vi-VN') : '');
 
-    setRatePreferential(c.PreferentialRate ? (c.PreferentialRate * 100).toString() : '');
+    setRatePreferential(c.PreferentialRate ? Number((c.PreferentialRate * 100).toFixed(4)).toString() : '');
     setRatePreferentialMonths(c.PreferentialPeriodMonths ? c.PreferentialPeriodMonths.toString() : '');
-    setRateBase(c.BaseRate ? (c.BaseRate * 100).toString() : '');
-    setRateMargin(c.MarginRate ? (c.MarginRate * 100).toString() : '');
+    setRateBase(c.BaseRate ? Number((c.BaseRate * 100).toFixed(4)).toString() : '');
+    setRateMargin(c.MarginRate ? Number((c.MarginRate * 100).toFixed(4)).toString() : '');
 
-    if (c.CollateralIds) {
+    if (c.Note?.includes('[COLLATERAL_IDS:')) {
+      const match = c.Note.match(/\[COLLATERAL_IDS:([^\]]+)\]/);
+      if (match && match[1]) {
+        const ids = match[1].split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+        setSelectedCollateralIds(ids);
+      } else if (c.CollateralId) {
+        setSelectedCollateralIds([c.CollateralId]);
+      } else {
+        setSelectedCollateralIds([]);
+      }
+    } else if (c.CollateralIds) {
       const ids = c.CollateralIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
       setSelectedCollateralIds(ids);
     } else if (c.CollateralId) {
@@ -579,13 +589,22 @@ export const LoanPortfolioView: React.FC = () => {
 
       const activeInterestRate = prefDec || normalDec || baseDec || undefined;
 
+      let noteText = form.Note || '';
+      noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').trim();
+      if (hdtd && hdtd !== effectiveContractNumber && !noteText.includes(`HĐTD: ${hdtd}`)) {
+        noteText = `HĐTD: ${hdtd}\n${noteText}`.trim();
+      }
+      if (selectedCollateralIds.length > 0) {
+        noteText = `${noteText}\n[COLLATERAL_IDS:${selectedCollateralIds.join(',')}]`.trim();
+      }
+
       const payload: Partial<LoanContract> = {
         ...form,
         CustomerId: targetCustomerId,
         ContractNumber: effectiveContractNumber,
         // HdtdDueDate must be YYYY-MM-DD or null
         HdtdDueDate: (form.HdtdDueDate && /^\d{4}-\d{2}-\d{2}$/.test(form.HdtdDueDate)) ? form.HdtdDueDate : null,
-        Note: hdtd && hdtd !== effectiveContractNumber ? `HĐTD: ${hdtd}` : (form.Note || null),
+        Note: noteText || null,
 
         ContractAmount: creditLimit,
         LoanAmount: loanAmount ?? creditLimit,
@@ -600,8 +619,9 @@ export const LoanPortfolioView: React.FC = () => {
         InterestRate: activeInterestRate,
 
         CollateralId: selectedCollateralIds.length > 0 ? selectedCollateralIds[0] : null,
-        CollateralIds: selectedCollateralIds.length > 0 ? selectedCollateralIds.join(',') : null,
       };
+
+      delete (payload as any).CollateralIds;
 
       // Force insert (create new KUNN) or when no contract selected
       if (forceInsert || !selectedContract) {

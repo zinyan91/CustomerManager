@@ -4,6 +4,7 @@ import { formatMoneyInput, fmtDate } from '../../lib/utils';
 import {
   Calculator, DollarSign, Calendar, RefreshCw, Layers, TrendingUp, CheckCircle, Percent, Download, Printer
 } from 'lucide-react';
+import { DateInput } from '../DateInput';
 
 // Helper: Add months to a YYYY-MM-DD date string, keeping exact day with last-day clamp
 function addMonths(dateStr: string, months: number): string {
@@ -189,7 +190,7 @@ export const CalculatorView: React.FC = () => {
   const [loanTenorYears, setLoanTenorYears] = useState<number | ''>(1);
   const [loanAmountInput, setLoanAmountInput] = useState('500.000.000');
   const [gracePeriodMonths, setGracePeriodMonths] = useState<number>(0);
-  
+
   const [termRateMode, setTermRateMode] = useState<'pref' | 'normal'>('pref');
   const [termPrefRate, setTermPrefRate] = useState('7.5');
   const [termPrefMonths, setTermPrefMonths] = useState('6');
@@ -662,36 +663,32 @@ export const CalculatorView: React.FC = () => {
         <div className={`flex items-center space-x-1 border rounded-xl p-1 ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
           <button
             onClick={() => setActiveTab('term_loan')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              activeTab === 'term_loan' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
-            }`}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'term_loan' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+              }`}
           >
             <Calendar className="w-3.5 h-3.5" />
             <span>1. Vay Ngân Hàng (Khoản vay từng lần)</span>
           </button>
           <button
             onClick={() => setActiveTab('consumer_fin')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              activeTab === 'consumer_fin' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
-            }`}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'consumer_fin' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+              }`}
           >
             <DollarSign className="w-3.5 h-3.5" />
             <span>2. Vay Trả Góp CTTC (Gốc & Lãi Phẳng)</span>
           </button>
           <button
             onClick={() => setActiveTab('stk_single')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              activeTab === 'stk_single' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
-            }`}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'stk_single' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+              }`}
           >
             <Percent className="w-3.5 h-3.5" />
             <span>3. Cầm Cố STK (1 Kỳ)</span>
           </button>
           <button
             onClick={() => setActiveTab('stk_multi')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              activeTab === 'stk_multi' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
-            }`}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${activeTab === 'stk_multi' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+              }`}
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>4. Cầm Cố STK Tái Tục</span>
@@ -714,10 +711,9 @@ export const CalculatorView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block font-medium mb-1">Ngày vay (bắt đầu)</label>
-                <input
-                  type="date"
+                <DateInput
                   value={loanStartDate}
-                  onChange={e => setLoanStartDate(e.target.value)}
+                  onChange={val => setLoanStartDate(val)}
                   className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                 />
               </div>
@@ -747,8 +743,7 @@ export const CalculatorView: React.FC = () => {
 
               <div>
                 <label className="block font-medium mb-1">Ngày kết thúc vay</label>
-                <input
-                  type="date"
+                <DateInput
                   readOnly
                   value={loanEndDate}
                   className={`w-full rounded-xl p-2.5 border font-mono ${readonlyStyle}`}
@@ -1059,10 +1054,9 @@ export const CalculatorView: React.FC = () => {
 
               <div>
                 <label className="block font-medium mb-1">Ngày bắt đầu trả nợ</label>
-                <input
-                  type="date"
+                <DateInput
                   value={finStartDate}
-                  onChange={e => setFinStartDate(e.target.value)}
+                  onChange={val => setFinStartDate(val)}
                   className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                 />
               </div>
@@ -1102,7 +1096,7 @@ export const CalculatorView: React.FC = () => {
             </div>
 
             <div className={`${containerCardBg} p-4 rounded-2xl border shadow-sm`}>
-              <div className="text-[11px] font-bold text-slate-400 uppercase">TIỀN LÃI PHẲNG MỖI THÁNG</div>
+              <div className="text-[11px] font-bold text-slate-400 uppercase">TIỀN LÃI MỖI THÁNG</div>
               <div className="text-xl font-extrabold text-rose-600 dark:text-rose-400 font-mono mt-1">
                 {formatMoney(finMonthlyInterest)}
               </div>
@@ -1138,7 +1132,7 @@ export const CalculatorView: React.FC = () => {
                   className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl transition-colors shadow-sm"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Xuất Excel Đẹp (.xls)</span>
+                  <span>Xuất Excel (.xls)</span>
                 </button>
                 <button
                   type="button"
@@ -1231,12 +1225,11 @@ export const CalculatorView: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block font-medium mb-1">Ngày gửi sổ</label>
-                    <input
-                      type="date"
+                    <DateInput
                       value={stkDepositDate}
-                      onChange={e => {
-                        setStkDepositDate(e.target.value);
-                        setStkDisbursementDate(e.target.value);
+                      onChange={val => {
+                        setStkDepositDate(val);
+                        setStkDisbursementDate(val);
                       }}
                       className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                     />
@@ -1278,8 +1271,7 @@ export const CalculatorView: React.FC = () => {
                   </div>
                   <div>
                     <label className="block font-medium mb-1">Ngày đáo hạn sổ (tự động)</label>
-                    <input
-                      type="date"
+                    <DateInput
                       readOnly
                       value={stkExpiryDate}
                       className={`w-full rounded-xl p-2.5 font-mono border ${readonlyStyle}`}
@@ -1335,10 +1327,9 @@ export const CalculatorView: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block font-medium mb-1">Ngày giải ngân vay</label>
-                    <input
-                      type="date"
+                    <DateInput
                       value={stkDisbursementDate}
-                      onChange={e => setStkDisbursementDate(e.target.value)}
+                      onChange={val => setStkDisbursementDate(val)}
                       className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                     />
                   </div>
@@ -1358,8 +1349,7 @@ export const CalculatorView: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block font-medium mb-1">Ngày đáo hạn vay</label>
-                    <input
-                      type="date"
+                    <DateInput
                       readOnly
                       value={stkLoanDueDate}
                       className={`w-full rounded-xl p-2.5 font-mono border ${readonlyStyle}`}

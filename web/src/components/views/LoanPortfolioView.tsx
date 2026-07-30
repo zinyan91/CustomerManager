@@ -11,6 +11,7 @@ import {
   Search, FileText, Receipt, Calendar, CheckCircle, AlertCircle,
   User, ChevronRight, Plus, RefreshCw, X, ChevronDown, ShieldCheck, DollarSign, Building2, Save, Trash2
 } from 'lucide-react';
+import { DateInput } from '../DateInput';
 
 const LOAN_METHODS = [
   'Hạn mức tín dụng',
@@ -1494,8 +1495,8 @@ export const LoanPortfolioView: React.FC = () => {
                         </div>
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Ngày HĐ có hiệu lực</label>
-                          <input type="date" value={form.ContractStartDate || ''}
-                            onChange={e => setForm(f => ({ ...f, ContractStartDate: e.target.value }))}
+                          <DateInput value={form.ContractStartDate || ''}
+                            onChange={val => setForm(f => ({ ...f, ContractStartDate: val }))}
                             className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
                         </div>
                         <div>
@@ -1528,8 +1529,8 @@ export const LoanPortfolioView: React.FC = () => {
                           <label className={`block mb-1 ${labelStyle}`}>
                             <span>Ngày kết thúc HĐ</span>
                           </label>
-                          <input type="date" value={form.ContractEndDate || ''}
-                            onChange={e => setForm(f => ({ ...f, ContractEndDate: e.target.value }))}
+                          <DateInput value={form.ContractEndDate || ''}
+                            onChange={val => setForm(f => ({ ...f, ContractEndDate: val }))}
                             className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
                         </div>
                         <div>
@@ -1616,9 +1617,8 @@ export const LoanPortfolioView: React.FC = () => {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Ngày giải ngân (bắt đầu KUNN)</label>
-                          <input type="date" value={form.DisbursementDate || ''}
-                            onChange={e => {
-                              const disDate = e.target.value;
+                          <DateInput value={form.DisbursementDate || ''}
+                            onChange={disDate => {
                               const months = parseKunnTenorMonths(form.KunnTenor) || form.LoanTenorMonths || 0;
                               const kunnEnd = disDate && months > 0 ? addMonthsToDate(disDate, months) : form.KunnDueDate;
                               setForm(f => ({ ...f, DisbursementDate: disDate, KunnDueDate: kunnEnd || f.KunnDueDate }));
@@ -1658,14 +1658,14 @@ export const LoanPortfolioView: React.FC = () => {
                           <label className={`block mb-1 ${labelStyle}`}>
                             <span>Ngày kết thúc KUNN</span>
                           </label>
-                          <input type="date" value={form.KunnDueDate || ''}
-                            onChange={e => setForm(f => ({ ...f, KunnDueDate: e.target.value }))}
+                          <DateInput value={form.KunnDueDate || ''}
+                            onChange={val => setForm(f => ({ ...f, KunnDueDate: val }))}
                             className={`w-full rounded-xl p-2.5 text-xs font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
                         </div>
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Ngày bắt đầu trả nợ</label>
-                          <input type="date" value={form.RepaymentStartDate || ''}
-                            onChange={e => setForm(f => ({ ...f, RepaymentStartDate: e.target.value }))}
+                          <DateInput value={form.RepaymentStartDate || ''}
+                            onChange={val => setForm(f => ({ ...f, RepaymentStartDate: val }))}
                             className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
                         </div>
                       </div>

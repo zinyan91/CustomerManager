@@ -4,6 +4,7 @@ import { formatMoneyInput, fmtDate } from '../../lib/utils';
 import {
   FileText, Download, Printer, CheckCircle, Building, User, Calendar, DollarSign, ListChecks, Plus, Trash2, CreditCard
 } from 'lucide-react';
+import { DateInput } from '../DateInput';
 
 // Helper: Normalize decomposed Vietnamese Unicode characters (NFD -> NFC)
 const nfc = (str: string) => (str ? str.normalize('NFC') : '');
@@ -410,10 +411,9 @@ export const DocumentTemplateView: React.FC = () => {
             <div className="space-y-3.5">
               <div>
                 <label className="block font-medium mb-1">Ngày lập hợp đồng</label>
-                <input
-                  type="date"
+                <DateInput
                   value={mbContractDate}
-                  onChange={e => setMbContractDate(e.target.value)}
+                  onChange={val => setMbContractDate(val)}
                   className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                 />
               </div>
@@ -516,19 +516,17 @@ export const DocumentTemplateView: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[11px] font-medium mb-0.5">Ngày bắt đầu thuê</label>
-                    <input
-                      type="date"
+                    <DateInput
                       value={mbStartDate}
-                      onChange={e => setMbStartDate(e.target.value)}
+                      onChange={val => setMbStartDate(val)}
                       className={`w-full rounded-lg p-2 border ${inputStyle}`}
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] font-medium mb-0.5">Ngày kết thúc thuê</label>
-                    <input
-                      type="date"
+                    <DateInput
                       value={mbEndDate}
-                      onChange={e => setMbEndDate(e.target.value)}
+                      onChange={val => setMbEndDate(val)}
                       className={`w-full rounded-lg p-2 border ${inputStyle}`}
                     />
                   </div>
@@ -562,10 +560,9 @@ export const DocumentTemplateView: React.FC = () => {
             <div className="space-y-3.5">
               <div>
                 <label className="block font-medium mb-1">Ngày lập hợp đồng thi công</label>
-                <input
-                  type="date"
+                <DateInput
                   value={constContractDate}
-                  onChange={e => setConstContractDate(e.target.value)}
+                  onChange={val => setConstContractDate(val)}
                   className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                 />
               </div>
@@ -639,19 +636,17 @@ export const DocumentTemplateView: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[11px] font-medium mb-0.5">Ngày khởi công</label>
-                    <input
-                      type="date"
+                    <DateInput
                       value={constStartDate}
-                      onChange={e => setConstStartDate(e.target.value)}
+                      onChange={val => setConstStartDate(val)}
                       className={`w-full rounded-lg p-2 border ${inputStyle}`}
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] font-medium mb-0.5">Ngày hoàn thành</label>
-                    <input
-                      type="date"
+                    <DateInput
                       value={constEndDate}
-                      onChange={e => setConstEndDate(e.target.value)}
+                      onChange={val => setConstEndDate(val)}
                       className={`w-full rounded-lg p-2 border ${inputStyle}`}
                     />
                   </div>
@@ -692,28 +687,25 @@ export const DocumentTemplateView: React.FC = () => {
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block font-medium mb-1">Ngày hợp đồng</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={saleContractDate}
-                    onChange={e => setSaleContractDate(e.target.value)}
+                    onChange={val => setSaleContractDate(val)}
                     className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                   />
                 </div>
                 <div>
                   <label className="block font-medium mb-1">Ngày bắt đầu</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={saleStartDate}
-                    onChange={e => setSaleStartDate(e.target.value)}
+                    onChange={val => setSaleStartDate(val)}
                     className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                   />
                 </div>
                 <div>
                   <label className="block font-medium mb-1">Ngày kết thúc</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={saleEndDate}
-                    onChange={e => setSaleEndDate(e.target.value)}
+                    onChange={val => setSaleEndDate(val)}
                     className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                   />
                 </div>
@@ -889,28 +881,25 @@ export const DocumentTemplateView: React.FC = () => {
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block font-medium mb-1">Ngày lập hợp đồng</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={houseContractDate}
-                    onChange={e => setHouseContractDate(e.target.value)}
+                    onChange={val => setHouseContractDate(val)}
                     className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                   />
                 </div>
                 <div>
                   <label className="block font-medium mb-1">Ngày bắt đầu</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={houseStartDate}
-                    onChange={e => setHouseStartDate(e.target.value)}
+                    onChange={val => setHouseStartDate(val)}
                     className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                   />
                 </div>
                 <div>
                   <label className="block font-medium mb-1">Ngày kết thúc</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={houseEndDate}
-                    onChange={e => setHouseEndDate(e.target.value)}
+                    onChange={val => setHouseEndDate(val)}
                     className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                   />
                 </div>
@@ -1018,10 +1007,9 @@ export const DocumentTemplateView: React.FC = () => {
             <div className="space-y-3.5">
               <div>
                 <label className="block font-medium mb-1">Ngày lập đề nghị thanh toán</label>
-                <input
-                  type="date"
+                <DateInput
                   value={prDate}
-                  onChange={e => setPrDate(e.target.value)}
+                  onChange={val => setPrDate(val)}
                   className={`w-full rounded-xl p-2.5 font-semibold border ${inputStyle}`}
                 />
               </div>

@@ -4,6 +4,7 @@ import { formatMoneyInput, fmtDate } from '../../lib/utils';
 import type { Collateral, Customer } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { Building2, CheckCircle, AlertCircle, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { DateInput } from '../DateInput';
 
 export const CollateralView: React.FC = () => {
   const { theme } = useTheme();
@@ -356,10 +357,9 @@ export const CollateralView: React.FC = () => {
                 </div>
                 <div>
                   <label className="block font-medium mb-1">Ngày định giá TS</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={inputAppraisalDate}
-                    onChange={(e) => setInputAppraisalDate(e.target.value)}
+                    onChange={(val) => setInputAppraisalDate(val)}
                     className={`w-full rounded-xl p-2 font-semibold border ${inputStyle}`}
                   />
                 </div>
@@ -384,8 +384,7 @@ export const CollateralView: React.FC = () => {
                 </div>
                 <div>
                   <label className="block font-medium mb-1">Ngày hết hạn định giá</label>
-                  <input
-                    type="date"
+                  <DateInput
                     readOnly
                     value={inputAppraisalExpiryDate}
                     className={`w-full rounded-xl p-2 font-bold font-mono text-sky-600 dark:text-sky-400 border ${readonlyInputStyle}`}

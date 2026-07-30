@@ -1304,13 +1304,7 @@ export const LoanPortfolioView: React.FC = () => {
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Tổng mức cấp (HĐTD) *</label>
                           <input type="text" value={formCreditLimit}
-                            onChange={e => {
-                              const val = formatMoneyInput(e.target.value);
-                              setFormCreditLimit(val);
-                              if (form.LoanMethod === 'Cho vay từng lần' || form.LoanMethod === 'Hạn mức tín dụng từng lần') {
-                                setFormLoanAmount(val);
-                              }
-                            }}
+                            onChange={e => setFormCreditLimit(formatMoneyInput(e.target.value))}
                             placeholder="1.000.000.000"
                             className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
                         </div>
@@ -1391,16 +1385,12 @@ export const LoanPortfolioView: React.FC = () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Số tiền nhận nợ lần này (KUNN) *</label>
+                          <label className={`block mb-1 ${labelStyle}`}>
+                            {form.LoanMethod === 'Hạn mức tín dụng' ? 'Số tiền nhận nợ lần này (KUNN) *' : 'Số tiền giải ngân thực tế (KUNN) *'}
+                          </label>
                           <input type="text" value={formLoanAmount}
-                            onChange={e => {
-                              const val = formatMoneyInput(e.target.value);
-                              setFormLoanAmount(val);
-                              if (form.LoanMethod === 'Cho vay từng lần' || form.LoanMethod === 'Hạn mức tín dụng từng lần') {
-                                setFormCreditLimit(val);
-                              }
-                            }}
-                            placeholder="200.000.000"
+                            onChange={e => setFormLoanAmount(formatMoneyInput(e.target.value))}
+                            placeholder="650.000.000"
                             className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 ${inputStyle}`} />
                         </div>
                         <div>

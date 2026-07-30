@@ -51,9 +51,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
-      {/* Sidebar Navigation (On mobile starts below Header, on desktop is static) */}
+      {/* Sidebar Navigation: Sticky on Desktop so it stays visible when scrolling down */}
       <aside
-        className={`fixed md:static top-[53px] md:top-0 bottom-0 left-0 z-40 w-64 md:w-60 ${sidebarBg} border-r flex flex-col justify-between p-3 min-h-[calc(100vh-53px)] md:min-h-[calc(100vh-57px)] shrink-0 transition-transform duration-200 ease-in-out ${
+        className={`fixed md:sticky top-[53px] md:top-[57px] bottom-0 left-0 z-40 w-64 md:w-60 ${sidebarBg} border-r flex flex-col justify-between p-3 h-[calc(100vh-53px)] md:h-[calc(100vh-57px)] shrink-0 overflow-y-auto transition-transform duration-200 ease-in-out ${
           isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
         }`}
       >

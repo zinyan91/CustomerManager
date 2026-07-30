@@ -25,14 +25,14 @@ export function App() {
   return (
     <div className={`min-h-screen ${bgClass} flex flex-col font-sans antialiased transition-colors duration-200`}>
       <Header onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)} />
-      <div className="flex flex-1 relative overflow-x-hidden">
+      <div className="flex flex-1 items-start relative overflow-x-hidden">
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           isOpenMobile={isMobileMenuOpen}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
         />
-        <main className={`flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto ${mainClass}`}>
+        <main className={`flex-1 min-w-0 p-3 sm:p-4 md:p-6 overflow-y-auto ${mainClass}`}>
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'customers' && <CustomerListView />}
           {activeTab === 'loans' && <LoanPortfolioView />}

@@ -111,68 +111,62 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
             THÔNG TIN HỢP ĐỒNG THUÊ MẶT BẰNG / NHÀ Ở
           </div>
-          <span className="text-slate-400 text-[11px]">Nhập đầy đủ thông tin để tự động cập nhật vào mẫu văn bản</span>
         </div>
         
-        {/* Section 1: Bên A & Bên B */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-            <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">Bên A (Cho Thuê)</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Họ và tên Bên A</label>
-                <input type="text" value={mbPartyAName} onChange={e => setMbPartyAName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
-              </div>
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Số CCCD</label>
-                <input type="text" value={mbPartyACccd} onChange={e => setMbPartyACccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
-              </div>
+        {/* Section 1: Bên A (Cho Thuê) - Full Width Block */}
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN A (CHO THUÊ)</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Họ và tên Bên A</label>
+              <input type="text" value={mbPartyAName} onChange={e => setMbPartyAName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Ngày cấp CCCD</label>
-                <input type="text" value={mbPartyACccdDate} onChange={e => setMbPartyACccdDate(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
-              </div>
-              <div className="sm:col-span-2">
-                <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ thường trú</label>
-                <input type="text" value={mbPartyAAddress} onChange={e => setMbPartyAAddress(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
-              </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Số CCCD</label>
+              <input type="text" value={mbPartyACccd} onChange={e => setMbPartyACccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Ngày cấp CCCD</label>
+              <input type="text" value={mbPartyACccdDate} onChange={e => setMbPartyACccdDate(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
             </div>
           </div>
-
-          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-            <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">Bên B (Bên Thuê)</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Họ và tên Bên B</label>
-                <input type="text" value={mbPartyBName} onChange={e => setMbPartyBName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
-              </div>
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Số CCCD</label>
-                <input type="text" value={mbPartyBCccd} onChange={e => setMbPartyBCccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Ngày cấp CCCD</label>
-                <input type="text" value={mbPartyBCccdDate} onChange={e => setMbPartyBCccdDate(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
-              </div>
-              <div className="sm:col-span-2">
-                <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ thường trú</label>
-                <input type="text" value={mbPartyBAddress} onChange={e => setMbPartyBAddress(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
-              </div>
-            </div>
+          <div>
+            <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ thường trú Bên A</label>
+            <input type="text" value={mbPartyAAddress} onChange={e => setMbPartyAAddress(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
           </div>
         </div>
 
-        {/* Section 2: Mặt bằng & Điều khoản */}
+        {/* Section 2: Bên B (Bên Thuê) - Full Width Block Below */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">Thông Tin Mặt Bằng & Giá Thuê</div>
+          <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN B (BÊN THUÊ)</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Họ và tên Bên B</label>
+              <input type="text" value={mbPartyBName} onChange={e => setMbPartyBName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Số CCCD</label>
+              <input type="text" value={mbPartyBCccd} onChange={e => setMbPartyBCccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Ngày cấp CCCD</label>
+              <input type="text" value={mbPartyBCccdDate} onChange={e => setMbPartyBCccdDate(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+            </div>
+          </div>
           <div>
-            <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ mặt bằng / nhà ở cho thuê</label>
+            <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ thường trú Bên B</label>
+            <input type="text" value={mbPartyBAddress} onChange={e => setMbPartyBAddress(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+          </div>
+        </div>
+
+        {/* Section 3: Thông Tin Mặt Bằng & Giá Thuê */}
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THÔNG TIN MẶT BẰNG & GIÁ THUÊ</div>
+          <div>
+            <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ mặt bằng cho thuê</label>
             <input type="text" value={mbLocation} onChange={e => setMbLocation(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Ngày ký HĐ</label>
               <DateInput value={mbContractDate} onChange={setMbContractDate} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
@@ -205,52 +199,50 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
             THÔNG TIN HỢP ĐỒNG THI CÔNG NHÀ Ở DÂN DỤNG
           </div>
-          <span className="text-slate-400 text-[11px]">Cấu hình thông tin 2 bên và giá trị thanh toán</span>
         </div>
         
-        {/* Section 1: Bên A & Bên B */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-            <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">Bên A (Chủ Đầu Tư)</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Chủ Đầu Tư</label>
-                <input type="text" value={constPartyAName} onChange={e => setConstPartyAName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
-              </div>
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Số CCCD Bên A</label>
-                <input type="text" value={constPartyACccd} onChange={e => setConstPartyACccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
-              </div>
+        {/* Section 1: Bên A (Chủ Đầu Tư) - Full Width Block */}
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN A (CHỦ ĐẦU TƯ)</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Chủ Đầu Tư</label>
+              <input type="text" value={constPartyAName} onChange={e => setConstPartyAName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
             </div>
             <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ Bên A</label>
-              <input type="text" value={constPartyAAddress} onChange={e => setConstPartyAAddress(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+              <label className={`block mb-1 ${styles.labelStyle}`}>Số CCCD Bên A</label>
+              <input type="text" value={constPartyACccd} onChange={e => setConstPartyACccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
             </div>
           </div>
-
-          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-            <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">Bên B (Nhà Thầu Thi Công)</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Đại Diện Bên B</label>
-                <input type="text" value={constPartyBName} onChange={e => setConstPartyBName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
-              </div>
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Số STK / CCCD Bên B</label>
-                <input type="text" value={constPartyBCccd} onChange={e => setConstPartyBCccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
-              </div>
-            </div>
-            <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Địa điểm công trình thi công</label>
-              <input type="text" value={constSiteAddress} onChange={e => setConstSiteAddress(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
-            </div>
+          <div>
+            <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ Bên A</label>
+            <input type="text" value={constPartyAAddress} onChange={e => setConstPartyAAddress(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
           </div>
         </div>
 
-        {/* Section 2: Thời Gian & Giá Trị */}
+        {/* Section 2: Bên B (Nhà Thầu Thi Công) - Full Width Block Below */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">Thời Gian Thi Công & Tiến Độ Thanh Toán</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3">
+          <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN B (NHÀ THẦU THI CÔNG)</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Đại Diện Bên B</label>
+              <input type="text" value={constPartyBName} onChange={e => setConstPartyBName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Số STK / CCCD Bên B</label>
+              <input type="text" value={constPartyBCccd} onChange={e => setConstPartyBCccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+            </div>
+          </div>
+          <div>
+            <label className={`block mb-1 ${styles.labelStyle}`}>Địa điểm công trình thi công</label>
+            <input type="text" value={constSiteAddress} onChange={e => setConstSiteAddress(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+          </div>
+        </div>
+
+        {/* Section 3: Thời Gian & Giá Trị */}
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THỜI GIAN THI CÔNG & TIẾN ĐỘ THANH TOÁN</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Ngày ký HĐ</label>
               <DateInput value={constContractDate} onChange={setConstContractDate} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
@@ -263,6 +255,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
               <label className={`block mb-1 ${styles.labelStyle}`}>Ngày hoàn thành</label>
               <DateInput value={constEndDate} onChange={setConstEndDate} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
             </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Tổng giá trị (VNĐ)</label>
               <input type="text" value={constTotalPrice} onChange={e => setConstTotalPrice(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.inputStyle}`} />
@@ -288,48 +282,46 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
             THÔNG TIN HỢP ĐỒNG MUA BÁN HÀNG HÓA & DANH MỤC SẢN PHẨM
           </div>
-          <span className="text-slate-400 text-[11px]">Nhập thông tin Bên A, Bên B và danh mục hàng hóa</span>
         </div>
 
-        {/* Section 1: Bên A & Bên B */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-            <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">Bên Mua (Bên A)</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Bên Mua</label>
-                <input type="text" value={saleBuyerName} onChange={e => setSaleBuyerName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
-              </div>
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ Bên A</label>
-                <input type="text" value={saleBuyerAddress} onChange={e => setSaleBuyerAddress(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
-              </div>
-            </div>
-          </div>
-
-          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-            <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">Bên Bán (Bên B)</div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Bên Bán</label>
-                <input type="text" value={saleSellerName} onChange={e => setSaleSellerName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
-              </div>
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Số CCCD Bên B</label>
-                <input type="text" value={saleSellerCccd} onChange={e => setSaleSellerCccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
-              </div>
-              <div>
-                <label className={`block mb-1 ${styles.labelStyle}`}>Ngày cấp CCCD</label>
-                <input type="text" value={saleSellerCccdDate} onChange={e => setSaleSellerCccdDate(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 2: Điều khoản & Tiến độ */}
+        {/* Section 1: Bên A (Bên Mua) - Full Width Block */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">Thời Gian & Tiến Độ Thanh Toán</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN MUA (BÊN A)</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Bên Mua</label>
+              <input type="text" value={saleBuyerName} onChange={e => setSaleBuyerName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ Bên A</label>
+              <input type="text" value={saleBuyerAddress} onChange={e => setSaleBuyerAddress(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Bên B (Bên Bán) - Full Width Block Below */}
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN BÁN (BÊN B)</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Bên Bán</label>
+              <input type="text" value={saleSellerName} onChange={e => setSaleSellerName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Số CCCD Bên B</label>
+              <input type="text" value={saleSellerCccd} onChange={e => setSaleSellerCccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Ngày cấp CCCD</label>
+              <input type="text" value={saleSellerCccdDate} onChange={e => setSaleSellerCccdDate(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Điều khoản & Tiến độ */}
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THỜI GIAN & TIẾN ĐỘ THANH TOÁN</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Ngày ký HĐ</label>
               <DateInput value={saleContractDate} onChange={setSaleContractDate} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />

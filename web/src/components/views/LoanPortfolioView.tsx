@@ -84,59 +84,60 @@ function parseKunnTenorMonths(tenorStr?: string | null): number {
   return match ? parseInt(match[0], 10) : 0;
 }
 
-function formatDateLocal(d: Date): string {
-  const yy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yy}-${mm}-${dd}`;
+function parseDateParts(dStr?: string | null) {
+  if (!dStr) return null;
+  const parts = dStr.split('-');
+  if (parts.length !== 3) return null;
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10) - 1; // 0-indexed
+  const d = parseInt(parts[2], 10);
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+  return { y, m, d };
 }
 
+function getDaysBetween(d1Str: string, d2Str: string): number {
+  const p1 = parseDateParts(d1Str);
+  const p2 = parseDateParts(d2Str);
+  if (!p1 || !p2) return 30;
+  const utc1 = Date.UTC(p1.y, p1.m, p1.d);
+  const utc2 = Date.UTC(p2.y, p2.m, p2.d);
+  return Math.max(1, Math.round((utc2 - utc1) / (1000 * 60 * 60 * 24)));
+}
+
+// Generate repayment schedule matching Core Banking exact calendar day formulas
 function generateSchedule(
   contractId: number,
   loanAmount: number,
   interestRate: number,
   repaymentStartDateStr: string,
   periods: number,
-  isBulletPrincipal: boolean = true
+  isBulletPrincipal: boolean = true,
+  disbursementDateStr?: string
 ): Partial<RepaymentSchedule>[] {
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
 
-  let startYear = new Date().getFullYear();
-  let startMonth = new Date().getMonth();
-  let startDay = new Date().getDate();
-
-  if (repaymentStartDateStr) {
-    const parts = repaymentStartDateStr.split('-');
-    if (parts.length === 3) {
-      startYear = parseInt(parts[0], 10);
-      startMonth = parseInt(parts[1], 10) - 1;
-      startDay = parseInt(parts[2], 10);
-    }
-  }
+  const startParts = parseDateParts(repaymentStartDateStr);
+  const startYear = startParts ? startParts.y : new Date().getFullYear();
+  const startMonth = startParts ? startParts.m : new Date().getMonth();
+  const startDay = startParts ? startParts.d : new Date().getDate();
 
   const annualRate = interestRate > 1 ? interestRate / 100 : interestRate;
 
+  // Lịch sử ngày trả nợ kỳ trước (Kỳ 1 bắt đầu tính số ngày thực tế từ Ngày giải ngân)
+  let prevDateStr = disbursementDateStr || repaymentStartDateStr;
+
   for (let i = 1; i <= periods; i++) {
+    // Ngày trả nợ của Kỳ i (Kỳ 1 = RepaymentStartDate, các kỳ sau = +1 tháng, kẹp ngày tháng)
     let dueTotalMonths = startMonth + (i - 1);
     let dueYear = startYear + Math.floor(dueTotalMonths / 12);
     let dueMonthIdx = dueTotalMonths % 12;
     const daysInDueMonth = new Date(dueYear, dueMonthIdx + 1, 0).getDate();
     const dueDay = Math.min(startDay, daysInDueMonth);
-    const dueDate = new Date(dueYear, dueMonthIdx, dueDay);
+    const dueDateStr = `${dueYear}-${String(dueMonthIdx + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
 
-    let prevDays: number;
-    if (i === 1) {
-      prevDays = 30;
-    } else {
-      let prevTotalMonths = startMonth + (i - 2);
-      let prevYear = startYear + Math.floor(prevTotalMonths / 12);
-      let prevMonthIdx = prevTotalMonths % 12;
-      const daysInPrevMonth = new Date(prevYear, prevMonthIdx + 1, 0).getDate();
-      const prevDay = Math.min(startDay, daysInPrevMonth);
-      const prevDate = new Date(prevYear, prevMonthIdx, prevDay);
-      prevDays = Math.max(28, Math.round((dueDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)));
-    }
+    // Tính số ngày thực tế trong kỳ từ prevDateStr đến dueDateStr (VD: Tháng 5 có 31 ngày, Tháng 6 có 30 ngày)
+    const days = getDaysBetween(prevDateStr, dueDateStr);
 
     let principal = 0;
     if (isBulletPrincipal) {
@@ -146,12 +147,13 @@ function generateSchedule(
       if (i === periods) principal = balance;
     }
 
-    const interest = Math.round(balance * annualRate * (prevDays / 365));
+    // Công thức Core Ngân hàng: Lãi = Dư nợ * (Lãi suất / 365) * Số ngày thực tế trong kỳ
+    const interest = Math.round(balance * annualRate * (days / 365));
 
     schedules.push({
       ContractId: contractId,
       PeriodNumber: i,
-      DueDate: formatDateLocal(dueDate),
+      DueDate: dueDateStr,
       PrincipalAmount: principal,
       InterestAmount: interest,
       TotalAmount: principal + interest,
@@ -159,6 +161,7 @@ function generateSchedule(
     });
 
     balance = Math.max(0, balance - principal);
+    prevDateStr = dueDateStr;
   }
 
   return schedules;
@@ -748,8 +751,8 @@ export const LoanPortfolioView: React.FC = () => {
     setIsGenerating(true);
     try {
       await deleteRepaymentSchedulesByContractAPI(selectedContract.Id);
-
-      const generated = generateSchedule(selectedContract.Id, loanAmt, rate, repayStartDate, periods, isBullet);
+      const disburseDate = selectedContract.DisbursementDate || selectedContract.ContractStartDate || undefined;
+      const generated = generateSchedule(selectedContract.Id, loanAmt, rate, repayStartDate, periods, isBullet, disburseDate);
       await bulkSaveRepaymentSchedulesAPI(generated);
 
       const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);

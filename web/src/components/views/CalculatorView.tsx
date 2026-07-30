@@ -231,7 +231,9 @@ export const CalculatorView: React.FC = () => {
 
   if (numLoanAmount > 0 && loanTenorMonths > 0) {
     for (let i = 1; i <= loanTenorMonths; i++) {
-      const dueDate = i === 1 ? loanStartDate : addMonths(loanStartDate, i - 1);
+      const prevDate = i === 1 ? loanStartDate : addMonths(loanStartDate, i - 1);
+      const dueDate = addMonths(loanStartDate, i);
+      const actualDays = diffDays(prevDate, dueDate) || 30;
       const opening = currentBal;
 
       // Principal payment logic (Grace period = 0 principal)
@@ -246,7 +248,7 @@ export const CalculatorView: React.FC = () => {
         applicableRateDec = i <= numPrefMonths ? numPrefRateDec : numPostPrefRateDec;
       }
 
-      const interest = Math.round(opening * applicableRateDec * (30 / 365));
+      const interest = Math.round(opening * applicableRateDec * (actualDays / 365));
 
       const totalPay = principal + interest;
       const closing = Math.max(0, opening - principal);

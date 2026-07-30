@@ -11,6 +11,7 @@ import { SettingsView } from './components/views/SettingsView';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme } = useTheme();
 
   const bgClass = theme === 'light'
@@ -23,10 +24,15 @@ export function App() {
 
   return (
     <div className={`min-h-screen ${bgClass} flex flex-col font-sans antialiased transition-colors duration-200`}>
-      <Header />
-      <div className="flex flex-1">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <main className={`flex-1 p-6 overflow-y-auto ${mainClass}`}>
+      <Header onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)} />
+      <div className="flex flex-1 relative overflow-x-hidden">
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isOpenMobile={isMobileMenuOpen}
+          onCloseMobile={() => setIsMobileMenuOpen(false)}
+        />
+        <main className={`flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto ${mainClass}`}>
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'customers' && <CustomerListView />}
           {activeTab === 'loans' && <LoanPortfolioView />}
@@ -34,7 +40,7 @@ export function App() {
           {activeTab === 'credit-cards' && <CreditCardView />}
           {activeTab === 'settings' && <SettingsView />}
           {activeTab === 'post-loan' && (
-            <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 text-xs">
+            <div className="p-6 md:p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 text-xs">
               🔒 Phân hệ Kiểm Soát Sau Vay & Giám Sát Tín Dụng đang được tích hợp quy trình chấm điểm định kỳ.
             </div>
           )}

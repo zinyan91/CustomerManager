@@ -1,13 +1,20 @@
 import React from 'react';
-import { LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isOpenMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  activeTab,
+  setActiveTab,
+  isOpenMobile = false,
+  onCloseMobile,
+}) => {
   const { theme } = useTheme();
 
   const menuItems = [
@@ -29,37 +36,67 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800';
 
-  return (
-    <aside className={`w-60 ${sidebarBg} border-r flex flex-col justify-between p-3 min-h-[calc(100vh-57px)] shrink-0 transition-colors duration-200`}>
-      <div className="space-y-1">
-        <div className={`px-3 py-2 text-[11px] font-bold ${labelColor} uppercase tracking-wider`}>
-          Phân Hệ Chức Năng
-        </div>
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-lg font-medium text-xs transition-all ${
-                isActive
-                  ? 'bg-sky-600 text-white font-semibold shadow-sm'
-                  : inactiveClass
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
+  const handleTabClick = (tabId: string) => {
+    setActiveTab(tabId);
+    if (onCloseMobile) onCloseMobile();
+  };
 
-      <div className={`border-t ${footerBorder} pt-3 px-3 text-center`}>
-        <div className={`text-[11px] ${footerText} font-semibold font-mono tracking-wide`}>
-          v2.4.0 • Customer Manager Enterprise
+  return (
+    <>
+      {/* Mobile Overlay Backdrop */}
+      {isOpenMobile && (
+        <div
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-40 md:hidden transition-opacity"
+          onClick={onCloseMobile}
+        />
+      )}
+
+      {/* Sidebar Navigation */}
+      <aside
+        className={`fixed md:static inset-y-0 left-0 z-50 w-64 md:w-60 ${sidebarBg} border-r flex flex-col justify-between p-3 min-h-screen md:min-h-[calc(100vh-57px)] shrink-0 transition-transform duration-200 ease-in-out ${
+          isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
+        <div className="space-y-1">
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className={`text-[11px] font-bold ${labelColor} uppercase tracking-wider`}>
+              Phân Hệ Chức Năng
+            </span>
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="md:hidden text-slate-400 hover:text-slate-200 p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleTabClick(item.id)}
+                className={`w-full flex items-center space-x-2.5 px-3 py-2.5 md:py-2 rounded-xl md:rounded-lg font-medium text-xs transition-all ${
+                  isActive
+                    ? 'bg-sky-600 text-white font-semibold shadow-sm'
+                    : inactiveClass
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </button>
+            );
+          })}
         </div>
-      </div>
-    </aside>
+
+        <div className={`border-t ${footerBorder} pt-3 px-3 text-center`}>
+          <div className={`text-[11px] ${footerText} font-semibold font-mono tracking-wide`}>
+            v2.4.0 • Customer Manager
+          </div>
+        </div>
+      </aside>
+    </>
   );
 };

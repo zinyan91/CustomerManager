@@ -168,11 +168,13 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   const isUpdate = !!contract.Id;
   const contractNumber = (contract.ContractNumber || '').trim();
 
-  if (!contract.CustomerId) {
-    throw new Error('Khách hàng vay là bắt buộc!');
-  }
-  if (!contractNumber) {
-    throw new Error('Số Hợp đồng tín dụng là bắt buộc!');
+  if (!isUpdate) {
+    if (!contract.CustomerId) {
+      throw new Error('Khách hàng vay là bắt buộc!');
+    }
+    if (!contractNumber) {
+      throw new Error('Số Hợp đồng tín dụng là bắt buộc!');
+    }
   }
 
   // Clean payload from non-database column fields

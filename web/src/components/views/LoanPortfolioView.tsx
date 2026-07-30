@@ -104,9 +104,9 @@ function getDaysBetween(d1Str: string, d2Str: string): number {
   return Math.max(1, Math.round((utc2 - utc1) / (1000 * 60 * 60 * 24)));
 }
 
-function roundPrincipalCore(rawPrincipal: number, roundMode: '50k' | '10k' | 'exact' = '50k'): number {
+function roundPrincipalCore(rawPrincipal: number, roundMode: '1k' | '10k' | '50k' | 'exact' = '1k'): number {
   if (roundMode === 'exact' || !rawPrincipal || rawPrincipal <= 0) return Math.round(rawPrincipal);
-  const step = roundMode === '50k' ? 50000 : 10000;
+  const step = roundMode === '50k' ? 50000 : roundMode === '10k' ? 10000 : 1000;
   return Math.ceil(rawPrincipal / step) * step;
 }
 
@@ -134,12 +134,12 @@ function generateSchedule(
   // Lịch sử ngày trả nợ kỳ trước (Kỳ 1 bắt đầu tính số ngày thực tế từ Ngày giải ngân)
   let prevDateStr = disbursementDateStr || repaymentStartDateStr;
 
-  // Tiền gốc trả đều hàng tháng (mặc định làm tròn lên 50k chuẩn Core Banking T24 nếu không chỉ định)
+  // Tiền gốc trả đều hàng tháng (mặc định làm tròn 1.000 VNĐ chuẩn Core Banking Flexcube/T24)
   const defaultMonthlyPrincipal = isBulletPrincipal
     ? 0
     : (customMonthlyPrincipal && customMonthlyPrincipal > 0
         ? customMonthlyPrincipal
-        : roundPrincipalCore(loanAmount / periods, '50k'));
+        : roundPrincipalCore(loanAmount / periods, '1k'));
 
   for (let i = 1; i <= periods; i++) {
     // Ngày trả nợ của Kỳ i (Kỳ 1 = RepaymentStartDate, các kỳ sau = +1 tháng, kẹp ngày tháng)
@@ -854,7 +854,12 @@ export const LoanPortfolioView: React.FC = () => {
 
       const autoInfo = getAutoDebtGroupInfo(refreshed);
       if (selectedContract.DebtGroup !== autoInfo.debtGroup) {
-        await saveContractAPI({ Id: selectedContract.Id, DebtGroup: autoInfo.debtGroup });
+        await saveContractAPI({
+          Id: selectedContract.Id,
+          CustomerId: selectedContract.CustomerId,
+          ContractNumber: selectedContract.ContractNumber,
+          DebtGroup: autoInfo.debtGroup
+        });
         setContracts(prev => prev.map(con => con.Id === selectedContract.Id ? { ...con, DebtGroup: autoInfo.debtGroup } : con));
         setForm(f => ({ ...f, DebtGroup: autoInfo.debtGroup }));
       }
@@ -891,6 +896,8 @@ export const LoanPortfolioView: React.FC = () => {
 
         await saveContractAPI({
           Id: selectedContract.Id,
+          CustomerId: selectedContract.CustomerId,
+          ContractNumber: selectedContract.ContractNumber,
           CurrentBalance: newBal,
           DebtGroup: autoInfo.debtGroup
         });

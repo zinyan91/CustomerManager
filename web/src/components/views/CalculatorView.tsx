@@ -170,9 +170,9 @@ function exportToExcelHTML(
   document.body.removeChild(a);
 }
 
-function roundPrincipalCore(rawPrincipal: number, roundMode: '50k' | '10k' | 'exact' = '50k'): number {
+function roundPrincipalCore(rawPrincipal: number, roundMode: '1k' | '10k' | '50k' | 'exact' = '1k'): number {
   if (roundMode === 'exact' || !rawPrincipal || rawPrincipal <= 0) return Math.round(rawPrincipal);
-  const step = roundMode === '50k' ? 50000 : 10000;
+  const step = roundMode === '50k' ? 50000 : roundMode === '10k' ? 10000 : 1000;
   return Math.ceil(rawPrincipal / step) * step;
 }
 
@@ -229,7 +229,7 @@ export const CalculatorView: React.FC = () => {
 
   let currentBal = numLoanAmount;
   const activePayMonths = Math.max(1, loanTenorMonths - gracePeriodMonths);
-  const equalPrincipalPerMonth = roundPrincipalCore(numLoanAmount / activePayMonths, '50k');
+  const equalPrincipalPerMonth = roundPrincipalCore(numLoanAmount / activePayMonths, '1k');
 
   let totalPrincipalPaid = 0;
   let totalInterestPaid = 0;

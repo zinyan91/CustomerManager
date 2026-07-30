@@ -80,8 +80,6 @@ export const DocumentTemplateView: React.FC = () => {
   };
 
   const totalSaleAmount = saleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-  const stage1PaidNum = parseFloat(salePaymentStage1.replace(/\D/g, '')) || 0;
-  const stage2RemainingNum = Math.max(0, totalSaleAmount - stage1PaidNum);
 
   // Generate Document HTML based on active template (EXACT ORIGINAL TEMPLATE TEXT)
   const currentTplInfo = TEMPLATE_LIST.find(t => t.id === selectedTemplate) || TEMPLATE_LIST[0];
@@ -212,47 +210,91 @@ export const DocumentTemplateView: React.FC = () => {
           </div>
         </div>
         <div class="text-center pt-2 pb-2 no-indent">
-          <h1>HỢP ĐỒNG MUA BÁN HÀNG HÓA</h1>
-          <p class="font-italic text-[11pt] no-indent">(Số: 09042026/HĐMB-MỸ PHẨM)</p>
+          <h1>HỢP ĐỒNG MUA BÁN HÀNG HOÁ</h1>
         </div>
-        <p class="clause-p">Hôm nay, ngày ${fmtDate(saleContractDate)}, giữa Bên Mua <strong>${nfc(saleBuyerName)}</strong> và Bên Bán <strong>${nfc(saleSellerName)}</strong> (CCCD: ${saleSellerCccd}).</p>
-        <h2>ĐIỀU 1: DANH MỤC HÀNG HÓA MUA BÁN</h2>
+
+        <p class="clause-p">Hôm nay, ngày 9 tháng 4 năm 2026, chúng tôi gồm có:</p>
+        
+        <p class="font-bold no-indent">BÊN MUA: (Sau đây gọi tắt là Bên A)</p>
+        <p class="clause-p">- Họ tên: <strong>${nfc(saleBuyerName)}</strong></p>
+        <p class="clause-p">- Địa chỉ: <strong>${nfc(saleBuyerAddress)}</strong></p>
+
+        <p class="font-bold no-indent pt-2">BÊN BÁN: (Sau đây gọi tắt là Bên B)</p>
+        <p class="clause-p">- Họ tên: <strong>${nfc(saleSellerName)}</strong></p>
+        <p class="clause-p">- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: <strong>${nfc(saleSellerCccdDate)}</strong> &nbsp;|&nbsp; Nơi cấp: CCS QLHC về TTXH</p>
+
+        <p class="clause-p pt-2">Hai bên A và B thống nhất thoả thuận nội dung Hợp đồng như sau:</p>
+
+        <h2>ĐIỀU 1: ĐỐI TƯỢNG VÀ GIÁ CẢ</h2>
         <table class="table-doc">
           <thead>
             <tr>
               <th style="width: 5%;">STT</th>
-              <th style="width: 40%;">Tên Sản Phẩm / Vật Tư</th>
+              <th style="width: 40%;">Tên Hàng Hóa</th>
               <th style="width: 10%;">ĐVT</th>
-              <th style="width: 10%;">SL</th>
-              <th style="width: 17%;">Đơn Giá (VNĐ)</th>
-              <th style="width: 18%;">Thành Tiền (VNĐ)</th>
+              <th style="width: 10%;">Số lượng</th>
+              <th style="width: 17%;">Đơn Giá</th>
+              <th style="width: 18%;">Thành Tiền</th>
             </tr>
           </thead>
           <tbody>
             ${itemsRowsHtml}
             <tr>
-              <td colSpan="5" class="text-bold text-center">TỔNG CỘNG GIÁ TRỊ HỢP ĐỒNG</td>
-              <td class="text-right font-bold text-[13pt]">${totalSaleAmount.toLocaleString('vi-VN')} VNĐ</td>
+              <td colSpan="5" class="text-bold text-center font-bold">Tổng cộng</td>
+              <td class="text-right font-bold text-[13pt]">${totalSaleAmount.toLocaleString('vi-VN')}</td>
             </tr>
           </tbody>
         </table>
-        <h2>ĐIỀU 2: THANH TOÁN & GIAO HÀNG</h2>
-        <p class="clause-p">1. Đợt 1 đặt cọc: <strong>${salePaymentStage1} VNĐ</strong>. Đợt 2 còn lại: <strong>${stage2RemainingNum.toLocaleString('vi-VN')} VNĐ</strong>.</p>
-        <p class="clause-p">2. Thời gian giao nhận từ <strong>${fmtDate(saleStartDate)}</strong> đến <strong>${fmtDate(saleEndDate)}</strong>.</p>
+
+        <h2>ĐIỀU 2: THỜI HẠN HỢP ĐỒNG</h2>
+        <p class="clause-p">– Thời hạn Hợp đồng là: 01 tháng kể từ ngày 09/04/2026 đến ngày 09/05/2026</p>
+
+        <h2>ĐIỀU 3: THỜI HẠN VÀ PHƯƠNG THỨC THANH TOÁN</h2>
+        <p class="clause-p">– Tổng số tiền Bên Mua phải thanh toán cho Bên Bán là: <strong>${totalSaleAmount.toLocaleString('vi-VN')} đồng</strong></p>
+        <p class="clause-p">(Bằng chữ: Năm trăm chín mươi ba triệu sáu trăm nghìn đồng)</p>
+        <p class="clause-p"><strong>1. Thời hạn thanh toán:</strong></p>
+        <p class="clause-p">Mỗi một lô hàng khi Bên B xuất ra cho Bên A thì Bên A sẽ thanh toán như sau:</p>
+        <p class="clause-p">– Lần 1: Bên A thanh toán cho Bên B số tiền là: <strong>${salePaymentStage1} đồng</strong></p>
+        <p class="clause-p">– Lần 2: Số tiền còn lại sẽ được Bên A thanh toán toàn bộ trước khi nhận hàng dựa trên phiếu đề nghị thanh toán</p>
+        <p class="clause-p"><strong>2. Phương thức thanh toán:</strong> Thanh toán bằng tiền mặt hoặc chuyển khoản.</p>
+
+        <h2>ĐIỀU 4: THỜI ĐIỂM VÀ ĐỊA ĐIỂM CHUYỂN GIAO TÀI SẢN</h2>
+        <p class="clause-p">Bên bán chuyển giao tài sản cho Bên mua trong thời hạn 30 ngày kể từ ngày ký kết hợp đồng.</p>
+
+        <h2>ĐIỀU 5: NGHĨA VỤ CỦA BÊN BÁN</h2>
+        <p class="clause-p">- Bên Bán chịu trách nhiệm về số lượng, chất lượng đối với toàn bộ các sản phẩm do Bên Bán cung cấp.</p>
+        <p class="clause-p">- Bên Bán có nghĩa vụ cung cấp mọi chỉ dẫn cần thiết đối với việc bảo quản, sử dụng hàng hoá theo quy định của Hợp đồng này cho Bên mua.</p>
+
+        <h2>ĐIỀU 6: NGHĨA VỤ CỦA BÊN MUA</h2>
+        <p class="clause-p">- Bên mua có nghĩa vụ thanh toán toàn bộ chi phí vận chuyển</p>
+        <p class="clause-p">- Tổ chức tiếp nhận nhanh, an toàn, dứt điểm cho từng lô hàng.</p>
+        <p class="clause-p">- Thanh toán theo quy định tại Điều 7 Hợp đồng này.</p>
+
+        <h2>ĐIỀU 7: CÁC TRƯỜNG HỢP CHẤM DỨT HỢP ĐỒNG</h2>
+        <p class="clause-p">Hợp đồng này sẽ được chấm dứt trong các trường hợp sau:</p>
+        <p class="clause-p">- Khi các Bên thực hiện xong các quyền và nghĩa vụ quy định trong Hợp đồng này.</p>
+        <p class="clause-p">- Khi một Bên vi phạm hợp đồng dẫn đến Hợp đồng không thể thực hiện được thì phía Bên kia có quyền đơn phương chấm dứt hợp đồng.</p>
+        <p class="clause-p">- Hợp đồng có thể được chấm dứt do sự thỏa thuận của các Bên.</p>
+
+        <h2>ĐIỀU 8: HIỆU LỰC THI HÀNH</h2>
+        <p class="clause-p">- Hợp đồng này có hiệu lực kể từ ngày ký, và chỉ được coi là kết thúc khi các Bên đã hoàn thành các nghĩa vụ của mình trong Hợp đồng.</p>
+        <p class="clause-p">- Trong trường hợp một Bên muốn sửa đổi các điều khoản trong hợp đồng thì phải thông báo cho Bên kia biết trước ít nhất là 03 ngày và cùng nhau thoả thuận lại những điểm cần thay đổi với sự đồng ý của hai Bên.</p>
+        <p class="clause-p">- Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, các bản có giá trị pháp lý như nhau.</p>
+
         <table class="sig-table font-serif">
           <tbody>
             <tr>
               <td>
-                <div class="font-bold uppercase">BÊN MUA (BÊN A)</div>
-                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
-                <div class="font-bold uppercase">${nfc(saleBuyerName)}</div>
-              </td>
-              <td>
-                <div class="font-bold uppercase">BÊN BÁN (BÊN B)</div>
+                <div class="font-bold uppercase">ĐẠI DIỆN BÊN BÁN</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
                 <div style="height: 70px;"></div>
                 <div class="font-bold uppercase">${nfc(saleSellerName)}</div>
+              </td>
+              <td>
+                <div class="font-bold uppercase">ĐẠI DIỆN BÊN MUA</div>
+                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
+                <div style="height: 70px;"></div>
+                <div class="font-bold uppercase">${nfc(saleBuyerName)}</div>
               </td>
             </tr>
           </tbody>

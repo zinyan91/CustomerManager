@@ -953,8 +953,16 @@ export const LoanPortfolioView: React.FC = () => {
     return sum + (val * ltv / 100);
   }, 0);
 
+  const formCurrentBalNum = parseFloat(formCurrentBalance.replace(/\./g, '').replace(',', '.')) || 0;
+  const formLoanAmountNum = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
   const currentFormCreditLimitNum = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
-  const isLtvExceeded = selectedCollateralIds.length > 0 && maxAllowedLoanLtv > 0 && currentFormCreditLimitNum > maxAllowedLoanLtv;
+
+  // LTV khoản vay được tính dựa trên Dư nợ thực tế hiện hữu (hoặc Số tiền nhận nợ KUNN giải ngân thực tế), giảm dần khi gốc giảm
+  const effectiveLtvLoanAmount = (formCurrentBalNum > 0)
+    ? formCurrentBalNum
+    : (formLoanAmountNum > 0 ? formLoanAmountNum : currentFormCreditLimitNum);
+
+  const isLtvExceeded = selectedCollateralIds.length > 0 && maxAllowedLoanLtv > 0 && effectiveLtvLoanAmount > maxAllowedLoanLtv;
 
   // Gom nhóm danh sách các Master HĐTD thuộc về Khách hàng này
   const masterHdtdGroups = useMemo(() => {
@@ -1874,7 +1882,7 @@ export const LoanPortfolioView: React.FC = () => {
                         <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-300 dark:border-red-500/50 text-red-700 dark:text-red-300 text-xs flex items-center space-x-2">
                           <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
                           <span>
-                            <strong>Cảnh báo LTV:</strong> Tổng mức cấp HĐTD ({fmtMoney(currentFormCreditLimitNum)}) vượt quá mức bảo đảm tối đa cho phép của TSBĐ ({fmtMoney(maxAllowedLoanLtv)})!
+                            <strong>Cảnh báo LTV:</strong> Dư nợ khoản vay hiện tại ({fmtMoney(effectiveLtvLoanAmount)}) vượt quá mức bảo đảm tối đa cho phép của TSBĐ ({fmtMoney(maxAllowedLoanLtv)})!
                           </span>
                         </div>
                       )}

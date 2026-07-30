@@ -83,11 +83,11 @@ export const DocumentTemplateView: React.FC = () => {
   const stage1PaidNum = parseFloat(salePaymentStage1.replace(/\D/g, '')) || 0;
   const stage2RemainingNum = Math.max(0, totalSaleAmount - stage1PaidNum);
 
-  // Generate Document HTML based on active template
+  // Generate Document HTML based on active template (EXACT ORIGINAL TEMPLATE TEXT)
   const currentTplInfo = TEMPLATE_LIST.find(t => t.id === selectedTemplate) || TEMPLATE_LIST[0];
 
   const generateDocHtml = () => {
-    if (selectedTemplate === 'lease_mb' || selectedTemplate === 'lease_house') {
+    if (selectedTemplate === 'lease_mb') {
       return `
         <div class="text-center no-indent">
           <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
@@ -136,78 +136,59 @@ export const DocumentTemplateView: React.FC = () => {
 
     if (selectedTemplate === 'construction') {
       return `
-      <div class="text-center no-indent">
-        <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-        <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
-        <div style="text-align: center; margin: 4px 0;" class="no-indent">
-          <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
+        <div class="text-center no-indent">
+          <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+          <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
+          <div style="text-align: center; margin: 4px 0;" class="no-indent">
+            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
+          </div>
         </div>
-      </div>
-      <div class="text-center pt-2 pb-2 no-indent">
-        <h1>HỢP ĐỒNG THI CÔNG NHÀ Ở DÂN DỤNG</h1>
-        <p class="font-italic text-[11pt] no-indent">Căn cứ vào nhu cầu và khả năng hợp tác của hai bên. Hôm nay, ngày ${fmtDate(constContractDate)}, chúng tôi gồm có:</p>
-      </div>
-
-      <p class="font-bold no-indent">BÊN THUÊ THI CÔNG XÂY DỰNG (BÊN A):</p>
-      <p class="clause-p">- Bà: <strong>${nfc(constPartyAName)}</strong></p>
-      <p class="clause-p">- CCCD số: <strong>${constPartyACccd}</strong> | Ngày cấp: 29/11/2021 | Nơi cấp: Cục Cảnh sát QLHC về TTXH</p>
-      <p class="clause-p">- Nơi ĐKTT: ${nfc(constPartyAAddress)}</p>
-
-      <p class="font-bold no-indent pt-2">BÊN NHẬN THI CÔNG XÂY DỰNG (BÊN B):</p>
-      <p class="clause-p">- Bà: <strong>${nfc(constPartyBName)}</strong></p>
-      <p class="clause-p">- STK/CCCD số: <strong>${constPartyBCccd}</strong> | Ngày cấp: 03/03/2022 | Nơi cấp: Cục Cảnh sát QLHC về TTXH</p>
-
-      <p class="clause-p pt-2">Hai bên thỏa thuận ký hợp đồng với các điều khoản như sau:</p>
-
-      <h2>ĐIỀU 1: NỘI DUNG VÀ PHẠM VI CÔNG VIỆC</h2>
-      <p class="clause-p"><strong>1. Địa điểm thi công:</strong> Bên B nhận thi công/sửa chữa nhà ở dân dụng tại địa chỉ: <strong>${nfc(constSiteAddress)}</strong>.</p>
-      <p class="clause-p"><strong>2. Phạm vi công việc:</strong> Bên B nhận thực hiện toàn bộ phần nhân công (hoặc cả nhân công + vật liệu) cho các hạng mục:</p>
-      <p class="clause-p">- Sửa chữa/tân trang phần tường: trát, bả, sơn lại toàn bộ các mảng tường bị hư hỏng.</p>
-      <p class="clause-p">- Thay thế hoặc lát lại gạch nền, sàn theo mẫu Bên A đã lựa chọn.</p>
-      <p class="clause-p">- Thi công hệ thống điện nước: đi lại đường dây điện, thay ổ cắm, công tắc, thay đường ống cấp – thoát nước hỏng.</p>
-      <p class="clause-p">- Sửa chữa, thay mới cửa, mái tôn, lan can, cầu thang (nếu có).</p>
-      <p class="clause-p"><strong>3. Chất lượng & tiêu chuẩn kỹ thuật:</strong> Đảm bảo quy trình xây dựng dân dụng, an toàn lao động và đúng chủng loại vật liệu cam kết.</p>
-
-      <h2>ĐIỀU 2: THỜI GIAN VÀ TIẾN ĐỘ THỰC HIỆN</h2>
-      <p class="clause-p">- Ngày khởi công: <strong>${fmtDate(constStartDate)}</strong></p>
-      <p class="clause-p">- Ngày hoàn thành dự kiến: <strong>${fmtDate(constEndDate)}</strong></p>
-      <p class="clause-p">- Tổng thời gian thực hiện dự kiến: 2 tháng (không tính Thứ 7, Chủ nhật).</p>
-
-      <h2>ĐIỀU 3: GIÁ TRỊ HỢP ĐỒNG VÀ PHƯƠNG THỨC THANH TOÁN</h2>
-      <p class="clause-p">- Tổng giá trị hợp đồng: <strong>${constTotalPrice} VNĐ</strong> (Bằng chữ: Một tỷ không trăm lẻ ba triệu bảy trăm ngàn đồng).</p>
-      <p class="clause-p">- Phương thức thanh toán:</p>
-      <p class="clause-p">&nbsp;&nbsp;+ Đợt 1: Bên A thanh toán cho Bên B số tiền là: <strong>${constDepositStage1} VNĐ</strong>.</p>
-      <p class="clause-p">&nbsp;&nbsp;+ Đợt 2: Số tiền còn lại (<strong>${constStage2Amount} VNĐ</strong>) sẽ được Bên A thanh toán toàn bộ trước khi bàn giao hoàn thiện công trình.</p>
-
-      <h2>ĐIỀU 4: QUYỀN VÀ NGHĨA VỤ CỦA CÁC BÊN</h2>
-      <p class="clause-p"><strong>1. Bên A:</strong> Bàn giao mặt bằng, giám sát chất lượng và thanh toán đúng tiến độ.</p>
-      <p class="clause-p"><strong>2. Bên B:</strong> Thi công đúng thiết kế, đảm bảo an toàn lao động, giữ gìn vệ sinh và bảo hành công trình.</p>
-
-      <h2>ĐIỀU 5: NGHIỆM THU, BÀN GIAO VÀ BẢO HÀNH</h2>
-      <p class="clause-p">- Thời gian bảo hành: 06 tháng kể từ ngày bàn giao công trình.</p>
-
-      <h2>ĐIỀU 6: ĐIỀU KHOẢN CHUNG</h2>
-      <p class="clause-p">- Hợp đồng có hiệu lực từ ngày ký và được lập thành 02 bản có giá trị pháp lý như nhau.</p>
-
-      <table class="sig-table font-serif">
-        <tbody>
-          <tr>
-            <td>
-              <div class="font-bold uppercase">ĐẠI DIỆN BÊN A</div>
-              <div class="font-italic text-[11pt]">(Ký, ghi rõ họ tên)</div>
-              <div style="height: 70px;"></div>
-              <div class="font-bold uppercase">${nfc(constPartyAName)}</div>
-            </td>
-            <td>
-              <div class="font-bold uppercase">ĐẠI DIỆN BÊN B</div>
-              <div class="font-italic text-[11pt]">(Ký, ghi rõ họ tên)</div>
-              <div style="height: 70px;"></div>
-              <div class="font-bold uppercase">${nfc(constPartyBName)}</div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    `;
+        <div class="text-center pt-3 pb-1 no-indent">
+          <h1>HỢP ĐỒNG THI CÔNG NHÀ Ở DÂN DỤNG</h1>
+        </div>
+        <p class="clause-p">Căn cứ vào nhu cầu và khả năng hợp tác của hai bên. Hôm nay, ngày ${fmtDate(constContractDate)}, chúng tôi gồm có:</p>
+        <div class="space-y-1 no-indent">
+          <div class="font-bold uppercase text-[13pt] no-indent">BÊN THUÊ THI CÔNG XÂY DỰNG: (Sau đây gọi tắt là Bên A)</div>
+          <div class="pl-6 space-y-0.5 no-indent">
+            <div>- Bà: <strong class="uppercase">${nfc(constPartyAName)}</strong></div>
+            <div>- CCCD số: <strong>${nfc(constPartyACccd)}</strong> | Địa chỉ: ${nfc(constPartyAAddress)}</div>
+          </div>
+        </div>
+        <div class="space-y-1 no-indent pt-2">
+          <div class="font-bold uppercase text-[13pt] no-indent">BÊN NHẬN THI CÔNG XÂY DỰNG: (Sau đây gọi tắt là Bên B)</div>
+          <div class="pl-6 space-y-0.5 no-indent">
+            <div>- Bà: <strong class="uppercase">${nfc(constPartyBName)}</strong></div>
+            <div>- CCCD số: <strong>${nfc(constPartyBCccd)}</strong></div>
+          </div>
+        </div>
+        <p class="clause-p pt-2">Hai bên thỏa thuận ký hợp đồng với các điều khoản như sau:</p>
+        <h2>Điều 1: Nội dung và phạm vi công việc</h2>
+        <p class="clause-p">1. Địa điểm thi công: Bên B nhận thi công/sửa chữa nhà ở dân dụng tại địa chỉ: <strong>${nfc(constSiteAddress)}</strong>.</p>
+        <p class="clause-p">2. Phạm vi công việc: Sửa chữa/tân trang phần tường, lát gạch nền sàn, đi lại đường dây điện nước, thay mới cửa mái tôn lan can.</p>
+        <h2>Điều 2: Thời gian và tiến độ thực hiện</h2>
+        <p class="clause-p">- Ngày khởi công: Ngày <strong>${fmtDate(constStartDate)}</strong> đến ngày <strong>${fmtDate(constEndDate)}</strong>.</p>
+        <h2>Điều 3. Giá trị hợp đồng và phương thức thanh toán</h2>
+        <p class="clause-p">- Tổng giá trị hợp đồng: <strong>${constTotalPrice} VNĐ</strong>.</p>
+        <p class="clause-p">- Đợt 1: <strong>${constDepositStage1} VNĐ</strong>. Đợt 2: <strong>${constStage2Amount} VNĐ</strong>.</p>
+        <table class="sig-table font-serif">
+          <tbody>
+            <tr>
+              <td>
+                <div class="font-bold uppercase">BÊN THUÊ THI CÔNG (BÊN A)</div>
+                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
+                <div style="height: 70px;"></div>
+                <div class="font-bold uppercase">${nfc(constPartyAName)}</div>
+              </td>
+              <td>
+                <div class="font-bold uppercase">BÊN NHẬN THI CÔNG (BÊN B)</div>
+                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
+                <div style="height: 70px;"></div>
+                <div class="font-bold uppercase">${nfc(constPartyBName)}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      `;
     }
 
     if (selectedTemplate === 'sale_contract') {
@@ -302,57 +283,64 @@ export const DocumentTemplateView: React.FC = () => {
         setSelectedTemplate={setSelectedTemplate}
       />
 
-      {/* ── DYNAMIC FORM INPUTS ── */}
-      <DocumentForm
-        styles={styles}
-        selectedTemplate={selectedTemplate}
-        mbContractDate={mbContractDate} setMbContractDate={setMbContractDate}
-        mbPartyAName={mbPartyAName} setMbPartyAName={setMbPartyAName}
-        mbPartyACccd={mbPartyACccd} setMbPartyACccd={setMbPartyACccd}
-        mbPartyACccdDate={mbPartyACccdDate} setMbPartyACccdDate={setMbPartyACccdDate}
-        mbPartyAAddress={mbPartyAAddress} setMbPartyAAddress={setMbPartyAAddress}
-        mbPartyBName={mbPartyBName} setMbPartyBName={setMbPartyBName}
-        mbPartyBCccd={mbPartyBCccd} setMbPartyBCccd={setMbPartyBCccd}
-        mbPartyBCccdDate={mbPartyBCccdDate} setMbPartyBCccdDate={setMbPartyBCccdDate}
-        mbPartyBAddress={mbPartyBAddress} setMbPartyBAddress={setMbPartyBAddress}
-        mbLocation={mbLocation} setMbLocation={setMbLocation}
-        mbStartDate={mbStartDate} setMbStartDate={setMbStartDate}
-        mbEndDate={mbEndDate} setMbEndDate={setMbEndDate}
-        mbMonthlyPrice={mbMonthlyPrice} setMbMonthlyPrice={setMbMonthlyPrice}
-        mbDepositAmount={mbDepositAmount} setMbDepositAmount={setMbDepositAmount}
-        constContractDate={constContractDate} setConstContractDate={setConstContractDate}
-        constPartyAName={constPartyAName} setConstPartyAName={setConstPartyAName}
-        constPartyACccd={constPartyACccd} setConstPartyACccd={setConstPartyACccd}
-        constPartyAAddress={constPartyAAddress} setConstPartyAAddress={setConstPartyAAddress}
-        constPartyBName={constPartyBName} setConstPartyBName={setConstPartyBName}
-        constPartyBCccd={constPartyBCccd} setConstPartyBCccd={setConstPartyBCccd}
-        constSiteAddress={constSiteAddress} setConstSiteAddress={setConstSiteAddress}
-        constStartDate={constStartDate} setConstStartDate={setConstStartDate}
-        constEndDate={constEndDate} setConstEndDate={setConstEndDate}
-        constTotalPrice={constTotalPrice} setConstTotalPrice={setConstTotalPrice}
-        constDepositStage1={constDepositStage1} setConstDepositStage1={setConstDepositStage1}
-        constStage2Amount={constStage2Amount} setConstStage2Amount={setConstStage2Amount}
-        saleContractDate={saleContractDate} setSaleContractDate={setSaleContractDate}
-        saleBuyerName={saleBuyerName} setSaleBuyerName={setSaleBuyerName}
-        saleBuyerAddress={saleBuyerAddress} setSaleBuyerAddress={setSaleBuyerAddress}
-        saleSellerName={saleSellerName} setSaleSellerName={setSaleSellerName}
-        saleSellerCccd={saleSellerCccd} setSaleSellerCccd={setSaleSellerCccd}
-        saleSellerCccdDate={saleSellerCccdDate} setSaleSellerCccdDate={setSaleSellerCccdDate}
-        saleStartDate={saleStartDate} setSaleStartDate={setSaleStartDate}
-        saleEndDate={saleEndDate} setSaleEndDate={setSaleEndDate}
-        salePaymentStage1={salePaymentStage1} setSalePaymentStage1={setSalePaymentStage1}
-        saleItems={saleItems} setSaleItems={setSaleItems}
-        handleAddSaleItem={handleAddSaleItem}
-      />
+      {/* ── 2-COLUMN SIDE-BY-SIDE LAYOUT: FORM LEFT (5 cols), PREVIEW RIGHT (7 cols) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Input Form */}
+        <div className="lg:col-span-5 space-y-4">
+          <DocumentForm
+            styles={styles}
+            selectedTemplate={selectedTemplate}
+            mbContractDate={mbContractDate} setMbContractDate={setMbContractDate}
+            mbPartyAName={mbPartyAName} setMbPartyAName={setMbPartyAName}
+            mbPartyACccd={mbPartyACccd} setMbPartyACccd={setMbPartyACccd}
+            mbPartyACccdDate={mbPartyACccdDate} setMbPartyACccdDate={setMbPartyACccdDate}
+            mbPartyAAddress={mbPartyAAddress} setMbPartyAAddress={setMbPartyAAddress}
+            mbPartyBName={mbPartyBName} setMbPartyBName={setMbPartyBName}
+            mbPartyBCccd={mbPartyBCccd} setMbPartyBCccd={setMbPartyBCccd}
+            mbPartyBCccdDate={mbPartyBCccdDate} setMbPartyBCccdDate={setMbPartyBCccdDate}
+            mbPartyBAddress={mbPartyBAddress} setMbPartyBAddress={setMbPartyBAddress}
+            mbLocation={mbLocation} setMbLocation={setMbLocation}
+            mbStartDate={mbStartDate} setMbStartDate={setMbStartDate}
+            mbEndDate={mbEndDate} setMbEndDate={setMbEndDate}
+            mbMonthlyPrice={mbMonthlyPrice} setMbMonthlyPrice={setMbMonthlyPrice}
+            mbDepositAmount={mbDepositAmount} setMbDepositAmount={setMbDepositAmount}
+            constContractDate={constContractDate} setConstContractDate={setConstContractDate}
+            constPartyAName={constPartyAName} setConstPartyAName={setConstPartyAName}
+            constPartyACccd={constPartyACccd} setConstPartyACccd={setConstPartyACccd}
+            constPartyAAddress={constPartyAAddress} setConstPartyAAddress={setConstPartyAAddress}
+            constPartyBName={constPartyBName} setConstPartyBName={setConstPartyBName}
+            constPartyBCccd={constPartyBCccd} setConstPartyBCccd={setConstPartyBCccd}
+            constSiteAddress={constSiteAddress} setConstSiteAddress={setConstSiteAddress}
+            constStartDate={constStartDate} setConstStartDate={setConstStartDate}
+            constEndDate={constEndDate} setConstEndDate={setConstEndDate}
+            constTotalPrice={constTotalPrice} setConstTotalPrice={setConstTotalPrice}
+            constDepositStage1={constDepositStage1} setConstDepositStage1={setConstDepositStage1}
+            constStage2Amount={constStage2Amount} setConstStage2Amount={setConstStage2Amount}
+            saleContractDate={saleContractDate} setSaleContractDate={setSaleContractDate}
+            saleBuyerName={saleBuyerName} setSaleBuyerName={setSaleBuyerName}
+            saleBuyerAddress={saleBuyerAddress} setSaleBuyerAddress={setSaleBuyerAddress}
+            saleSellerName={saleSellerName} setSaleSellerName={setSaleSellerName}
+            saleSellerCccd={saleSellerCccd} setSaleSellerCccd={setSaleSellerCccd}
+            saleSellerCccdDate={saleSellerCccdDate} setSaleSellerCccdDate={setSaleSellerCccdDate}
+            saleStartDate={saleStartDate} setSaleStartDate={setSaleStartDate}
+            saleEndDate={saleEndDate} setSaleEndDate={setSaleEndDate}
+            salePaymentStage1={salePaymentStage1} setSalePaymentStage1={setSalePaymentStage1}
+            saleItems={saleItems} setSaleItems={setSaleItems}
+            handleAddSaleItem={handleAddSaleItem}
+          />
+        </div>
 
-      {/* ── DOCUMENT PREVIEW & EXPORT ── */}
-      <DocumentPreview
-        styles={styles}
-        isLight={isLight}
-        docTitle={currentTplInfo.label}
-        docFilename={currentTplInfo.id}
-        docHtml={generateDocHtml()}
-      />
+        {/* Right Column: Live Document Preview */}
+        <div className="lg:col-span-7">
+          <DocumentPreview
+            styles={styles}
+            isLight={isLight}
+            docTitle={currentTplInfo.label}
+            docFilename={currentTplInfo.id}
+            docHtml={generateDocHtml()}
+          />
+        </div>
+      </div>
     </div>
   );
 };

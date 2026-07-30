@@ -119,7 +119,10 @@ function generateSchedule(
   isBulletPrincipal: boolean = true,
   disbursementDateStr?: string,
   customMonthlyPrincipal?: number,
-  principalGraceMonths: number = 0
+  principalGraceMonths: number = 0,
+  prepaymentAmount: number = 0,
+  prepaymentPeriod: number = 0,
+  prepaymentMode: 'reduce_monthly' | 'shorten_tenor' = 'reduce_monthly'
 ): Partial<RepaymentSchedule>[] {
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
@@ -136,13 +139,15 @@ function generateSchedule(
 
   // Tiền gốc trả đều hàng tháng (mặc định làm tròn 1.000 VNĐ chuẩn Core Banking Flexcube/T24)
   const remainingRepayPeriods = Math.max(1, periods - principalGraceMonths);
-  const defaultMonthlyPrincipal = isBulletPrincipal
+  let defaultMonthlyPrincipal = isBulletPrincipal
     ? 0
     : (customMonthlyPrincipal && customMonthlyPrincipal > 0
         ? customMonthlyPrincipal
         : roundPrincipalCore(loanAmount / remainingRepayPeriods, '1k'));
 
   for (let i = 1; i <= periods; i++) {
+    if (balance <= 0) break;
+
     // Ngày trả nợ của Kỳ i (Kỳ 1 = RepaymentStartDate, các kỳ sau = +1 tháng, kẹp ngày tháng)
     let dueTotalMonths = startMonth + (i - 1);
     let dueYear = startYear + Math.floor(dueTotalMonths / 12);
@@ -154,18 +159,27 @@ function generateSchedule(
     // Tính số ngày thực tế trong kỳ từ prevDateStr đến dueDateStr (VD: Tháng 5 có 31 ngày, Tháng 6 có 30 ngày)
     const days = getDaysBetween(prevDateStr, dueDateStr);
 
-    let principal = 0;
+    let normalPrincipal = 0;
     if (isBulletPrincipal) {
-      principal = (i === periods) ? balance : 0;
+      normalPrincipal = (i === periods) ? balance : 0;
     } else {
       if (i <= principalGraceMonths) {
-        principal = 0; // Ân hạn gốc: Kỳ i <= số tháng ân hạn -> Gốc = 0
+        normalPrincipal = 0; // Ân hạn gốc: Kỳ i <= số tháng ân hạn -> Gốc = 0
       } else if (i === periods) {
-        principal = balance; // Kỳ cuối trả hết dư nợ còn lại
+        normalPrincipal = balance; // Kỳ cuối trả hết dư nợ còn lại
       } else {
-        principal = Math.min(balance, defaultMonthlyPrincipal);
+        normalPrincipal = Math.min(balance, defaultMonthlyPrincipal);
       }
     }
+
+    // Trả nợ trước hạn tại kỳ `prepaymentPeriod`
+    let periodPrepay = 0;
+    if (prepaymentAmount > 0 && i === prepaymentPeriod) {
+      const remainingAfterNormal = Math.max(0, balance - normalPrincipal);
+      periodPrepay = Math.min(remainingAfterNormal, prepaymentAmount);
+    }
+
+    const totalPrincipalInPeriod = Math.min(balance, normalPrincipal + periodPrepay);
 
     // Công thức Core Ngân hàng: Lãi = Dư nợ * (Lãi suất / 365) * Số ngày thực tế trong kỳ
     const interest = Math.round(balance * annualRate * (days / 365));
@@ -174,13 +188,24 @@ function generateSchedule(
       ContractId: contractId,
       PeriodNumber: i,
       DueDate: dueDateStr,
-      PrincipalAmount: principal,
+      PrincipalAmount: totalPrincipalInPeriod,
       InterestAmount: interest,
-      TotalAmount: principal + interest,
+      TotalAmount: totalPrincipalInPeriod + interest,
       IsPaid: false,
+      Note: periodPrepay > 0 ? `[TRẢ TRƯỚC HẠN: +${periodPrepay.toLocaleString('vi-VN')}đ]` : undefined,
     });
 
-    balance = Math.max(0, balance - principal);
+    const endingBal = Math.max(0, balance - totalPrincipalInPeriod);
+
+    // Nếu chọn phương án giảm tiền gốc trả hàng tháng sau khi trả trước hạn
+    if (periodPrepay > 0 && prepaymentMode === 'reduce_monthly' && !isBulletPrincipal) {
+      const remainingPeriods = periods - i;
+      if (remainingPeriods > 0 && endingBal > 0) {
+        defaultMonthlyPrincipal = roundPrincipalCore(endingBal / remainingPeriods, '1k');
+      }
+    }
+
+    balance = endingBal;
     prevDateStr = dueDateStr;
   }
 
@@ -212,6 +237,12 @@ export const LoanPortfolioView: React.FC = () => {
   // Main UI Tab & Form visibility
   const [mainTab, setMainTab] = useState<'kunn' | 'schedule'>('kunn');
   const [showForm, setShowForm] = useState(false);
+
+  // Prepayment (Trả nợ trước hạn) state
+  const [prepaymentAmountInput, setPrepaymentAmountInput] = useState('0');
+  const [prepaymentPeriodInput, setPrepaymentPeriodInput] = useState<number>(1);
+  const [prepaymentModeInput, setPrepaymentModeInput] = useState<'reduce_monthly' | 'shorten_tenor'>('reduce_monthly');
+  const [showPrepaymentBox, setShowPrepaymentBox] = useState(false);
 
   // Master HĐTD Filter state ('ALL' or specific master contract number)
   const [selectedMasterFilter, setSelectedMasterFilter] = useState<string>('ALL');
@@ -875,7 +906,22 @@ export const LoanPortfolioView: React.FC = () => {
       await deleteRepaymentSchedulesByContractAPI(selectedContract.Id);
       const disburseDate = selectedContract.DisbursementDate || selectedContract.ContractStartDate || undefined;
       const graceMonths = selectedContract.PrincipalGracePeriodMonths || 0;
-      const generated = generateSchedule(selectedContract.Id, loanAmt, rate, repayStartDate, periods, isBullet, disburseDate, undefined, graceMonths);
+      const prepayAmt = parseFloat(prepaymentAmountInput.replace(/\D/g, '')) || 0;
+
+      const generated = generateSchedule(
+        selectedContract.Id,
+        loanAmt,
+        rate,
+        repayStartDate,
+        periods,
+        isBullet,
+        disburseDate,
+        undefined,
+        graceMonths,
+        prepayAmt,
+        prepaymentPeriodInput,
+        prepaymentModeInput
+      );
       await bulkSaveRepaymentSchedulesAPI(generated);
 
       const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
@@ -895,7 +941,10 @@ export const LoanPortfolioView: React.FC = () => {
       }
 
       showNotify('success',
-        `Đã tạo ${refreshed.length} kỳ trả nợ (${isBullet ? 'Gốc trả cuối kỳ' : 'Gốc trả đều hàng tháng'}). Kỳ 1: ${repayStartDate}`);
+        prepayAmt > 0
+          ? `⚡ Đã cập nhật Trả nợ trước hạn ${prepayAmt.toLocaleString('vi-VN')} VNĐ tại Kỳ ${prepaymentPeriodInput} và tính lại Lịch gốc lãi thành công!`
+          : `Đã tạo ${refreshed.length} kỳ trả nợ (${isBullet ? 'Gốc trả cuối kỳ' : 'Gốc trả đều hàng tháng'}). Kỳ 1: ${repayStartDate}`
+      );
     } catch (err: any) {
       showNotify('error', `Lỗi tạo lịch: ${err.message}`);
     } finally {
@@ -1810,6 +1859,20 @@ export const LoanPortfolioView: React.FC = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowPrepaymentBox(!showPrepaymentBox)}
+                        className={`flex items-center space-x-1.5 font-bold px-3.5 py-2.5 rounded-xl transition-all text-xs border shadow-sm ${
+                          showPrepaymentBox || prepaymentAmountInput !== '0'
+                            ? 'bg-amber-500 text-white border-amber-400 shadow-amber-500/30'
+                            : isLight
+                              ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                              : 'bg-amber-950/40 text-amber-300 border-amber-800 hover:border-amber-700'
+                        }`}
+                      >
+                        <span>⚡ {showPrepaymentBox ? 'Ẩn ô trả trước hạn' : 'Cập nhật Trả Nợ Trước Hạn'}</span>
+                      </button>
+
                       {schedules.length > 0 && (
                         <button onClick={handleSaveCustomSchedule} disabled={isSavingSchedule}
                           className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-xs shadow-md shadow-emerald-600/20"
@@ -1819,9 +1882,73 @@ export const LoanPortfolioView: React.FC = () => {
                         </button>
                       )}
                       <button onClick={handleGenerateSchedule} disabled={isGenerating}
-                        className="flex items-center space-x-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-xs shadow-md shadow-amber-600/20">
+                        className="flex items-center space-x-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-xs shadow-md shadow-sky-600/20">
                         <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                        <span>{isGenerating ? 'Đang tính toán...' : '🔄 TẠO / LÀM MỚI LỊCH THU NỢ TỰ ĐỘNG'}</span>
+                        <span>{isGenerating ? 'Đang tính toán...' : '🔄 TÍNH & TẠO LỊCH THU NỢ TỰ ĐỘNG'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Expanded Box for Prepayment (Trả Nợ Trước Hạn) */}
+                {selectedContract && showPrepaymentBox && (
+                  <div className="mt-4 p-4 rounded-xl border border-amber-300 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/30 space-y-3">
+                    <div className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center justify-between border-b pb-2 border-amber-200 dark:border-amber-900/50">
+                      <span className="flex items-center space-x-2">
+                        <span>⚡ THÔNG TIN CẬP NHẬT TRẢ NỢ TRƯỚC HẠN (PREPAYMENT)</span>
+                      </span>
+                      <span className="text-[11px] text-amber-600 dark:text-amber-400 font-normal">Tự động tính lại dư nợ gốc & lãi thường các kỳ tiếp theo</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block mb-1 font-bold text-amber-900 dark:text-amber-200 text-xs">Số tiền trả nợ trước hạn (VNĐ)</label>
+                        <input
+                          type="text"
+                          value={prepaymentAmountInput}
+                          onChange={e => {
+                            const digits = e.target.value.replace(/\D/g, '');
+                            setPrepaymentAmountInput(digits ? Number(digits).toLocaleString('vi-VN') : '0');
+                          }}
+                          placeholder="Ví dụ: 100.000.000..."
+                          className={`w-full rounded-xl p-2.5 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${inputStyle}`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block mb-1 font-bold text-amber-900 dark:text-amber-200 text-xs">Trả trước hạn tại Kỳ số</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={parseKunnTenorMonths(selectedContract.KunnTenor) || selectedContract.LoanTenorMonths || 12}
+                          value={prepaymentPeriodInput}
+                          onChange={e => setPrepaymentPeriodInput(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                          className={`w-full rounded-xl p-2.5 font-mono font-bold ${inputStyle}`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block mb-1 font-bold text-amber-900 dark:text-amber-200 text-xs">Phương án xử lý kỳ còn lại</label>
+                        <select
+                          value={prepaymentModeInput}
+                          onChange={e => setPrepaymentModeInput(e.target.value as any)}
+                          className={`w-full rounded-xl p-2.5 font-bold ${inputStyle}`}
+                        >
+                          <option value="reduce_monthly">Giảm số tiền gốc trả hàng tháng các kỳ còn lại</option>
+                          <option value="shorten_tenor">Rút ngắn thời hạn vay (kết thúc khoản vay sớm hơn)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={handleGenerateSchedule}
+                        disabled={isGenerating}
+                        className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-md text-xs flex items-center space-x-2"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                        <span>ÁP DỤNG TRẢ TRƯỚC HẠN & TÍNH LẠI LỊCH GỐC LÃI</span>
                       </button>
                     </div>
                   </div>
@@ -1919,14 +2046,17 @@ export const LoanPortfolioView: React.FC = () => {
                             const isOverdue = !s.IsPaid && effectiveOverdueDays > 0;
                             const penaltyAmount = getPenaltyForSchedule(s);
                             const rowTotalAmount = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penaltyAmount;
+                            const isPrepayRow = s.Note?.includes('TRẢ TRƯỚC HẠN');
 
                             return (
                               <tr key={s.Id} className={`transition-colors ${
-                                s.IsPaid
-                                  ? 'bg-emerald-50/50 dark:bg-emerald-950/10'
-                                  : isOverdue
-                                    ? 'bg-rose-50/60 dark:bg-rose-950/30 font-semibold'
-                                    : tableRowHover
+                                isPrepayRow
+                                  ? 'bg-amber-500/10 dark:bg-amber-500/20 font-semibold border-l-4 border-amber-500'
+                                  : s.IsPaid
+                                    ? 'bg-emerald-50/50 dark:bg-emerald-950/10'
+                                    : isOverdue
+                                      ? 'bg-rose-50/60 dark:bg-rose-950/30 font-semibold'
+                                      : tableRowHover
                               }`}>
                                 <td className="p-3 text-center font-bold font-mono">#{s.PeriodNumber}</td>
                                 <td className="p-3 font-mono font-bold">{fmtDate(s.DueDate)}</td>

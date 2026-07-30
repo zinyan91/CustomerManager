@@ -148,9 +148,15 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   const [repayMethod, setRepayMethod] = useState<'equal_principal' | 'bullet'>('equal_principal');
   const [principalGraceMonths, setPrincipalGraceMonths] = useState<number>(0);
 
+  // PREPAYMENT (TRẢ NỢ TRƯỚC HẠN) STATE
+  const [prepaymentAmountStr, setPrepaymentAmountStr] = useState('0');
+  const [prepaymentPeriod, setPrepaymentPeriod] = useState<number>(3);
+  const [prepaymentMode, setPrepaymentMode] = useState<'reduce_monthly' | 'shorten_tenor'>('reduce_monthly');
+
   const loanAmt = parseFloat(loanAmountStr.replace(/\D/g, '')) || 0;
   const rateAnnual = parseFloat(interestRateStr) || 0;
   const rateDecimal = rateAnnual / 100;
+  const prepayAmt = parseFloat(prepaymentAmountStr.replace(/\D/g, '')) || 0;
 
   const scheduleRows = React.useMemo(() => {
     if (!loanAmt || !rateAnnual || !tenorMonths || !disbursementDate) return [];
@@ -164,54 +170,74 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       interest: number;
       totalPayment: number;
       endingBalance: number;
+      prepayment: number;
     }[] = [];
 
     let currentBalance = loanAmt;
     let prevDate = disbursementDate;
 
     const repayPeriods = Math.max(1, tenorMonths - principalGraceMonths);
-    const stepPrincipal = repayMethod === 'bullet'
+    let stepPrincipal = repayMethod === 'bullet'
       ? 0
       : Math.ceil((loanAmt / repayPeriods) / 1000) * 1000;
 
     for (let i = 1; i <= tenorMonths; i++) {
+      if (currentBalance <= 0) break;
+
       const dueDate = addMonths(disbursementDate, i);
       const days = diffDays(prevDate, dueDate);
 
-      let principal = 0;
+      let normalPrincipal = 0;
       if (repayMethod === 'bullet') {
-        principal = (i === tenorMonths) ? currentBalance : 0;
+        normalPrincipal = (i === tenorMonths) ? currentBalance : 0;
       } else {
         if (i <= principalGraceMonths) {
-          principal = 0;
+          normalPrincipal = 0;
         } else if (i === tenorMonths) {
-          principal = currentBalance;
+          normalPrincipal = currentBalance;
         } else {
-          principal = Math.min(currentBalance, stepPrincipal);
+          normalPrincipal = Math.min(currentBalance, stepPrincipal);
         }
       }
 
+      // Prepayment applied at period `prepaymentPeriod`
+      let periodPrepay = 0;
+      if (prepayAmt > 0 && i === prepaymentPeriod) {
+        const remainingAfterNormal = Math.max(0, currentBalance - normalPrincipal);
+        periodPrepay = Math.min(remainingAfterNormal, prepayAmt);
+      }
+
+      const totalPrincipalInPeriod = Math.min(currentBalance, normalPrincipal + periodPrepay);
       const interest = Math.round(currentBalance * rateDecimal * (days / 365));
-      const totalPayment = principal + interest;
-      const endingBalance = Math.max(0, currentBalance - principal);
+      const totalPayment = totalPrincipalInPeriod + interest;
+      const endingBalance = Math.max(0, currentBalance - totalPrincipalInPeriod);
 
       rows.push({
         period: i,
         dueDate,
         days,
         beginningBalance: currentBalance,
-        principal,
+        principal: totalPrincipalInPeriod,
         interest,
         totalPayment,
         endingBalance,
+        prepayment: periodPrepay,
       });
+
+      // Recalculate remaining monthly principal if `reduce_monthly` mode selected after prepayment
+      if (periodPrepay > 0 && prepaymentMode === 'reduce_monthly' && repayMethod !== 'bullet') {
+        const remainingPeriods = tenorMonths - i;
+        if (remainingPeriods > 0 && endingBalance > 0) {
+          stepPrincipal = Math.ceil((endingBalance / remainingPeriods) / 1000) * 1000;
+        }
+      }
 
       currentBalance = endingBalance;
       prevDate = dueDate;
     }
 
     return rows;
-  }, [loanAmt, rateAnnual, rateDecimal, tenorMonths, disbursementDate, repayMethod, principalGraceMonths]);
+  }, [loanAmt, rateAnnual, rateDecimal, tenorMonths, disbursementDate, repayMethod, principalGraceMonths, prepayAmt, prepaymentPeriod, prepaymentMode]);
 
   const totalPrincipalSum = scheduleRows.reduce((a, r) => a + r.principal, 0);
   const totalInterestSum = scheduleRows.reduce((a, r) => a + r.interest, 0);
@@ -318,6 +344,53 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             />
           </div>
         </div>
+
+        {/* Section: TRẢ NỢ TRƯỚC HẠN (PREPAYMENT) */}
+        <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20 space-y-3">
+          <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center space-x-2 border-b pb-1.5 border-amber-200 dark:border-amber-900/40">
+            <span>⚡ CẬP NHẬT TRẢ NỢ TRƯỚC HẠN (TÍNH LẠI GỐC LÃI TỰ ĐỘNG)</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className="block mb-1 font-bold text-amber-800 dark:text-amber-300 text-xs">Số tiền trả nợ trước hạn (VNĐ)</label>
+              <input
+                type="text"
+                value={prepaymentAmountStr}
+                onChange={e => {
+                  const digits = e.target.value.replace(/\D/g, '');
+                  setPrepaymentAmountStr(digits ? Number(digits).toLocaleString('vi-VN') : '0');
+                }}
+                placeholder="Nhập số tiền trả trước hạn..."
+                className={`w-full rounded-xl p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${styles.inputStyle}`}
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1 font-bold text-amber-800 dark:text-amber-300 text-xs">Trả nợ trước hạn tại Kỳ số</label>
+              <input
+                type="number"
+                min={1}
+                max={tenorMonths}
+                value={prepaymentPeriod}
+                onChange={e => setPrepaymentPeriod(Math.max(1, Math.min(tenorMonths, parseInt(e.target.value, 10) || 1)))}
+                className={`w-full rounded-xl p-2 font-mono font-bold ${styles.inputStyle}`}
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1 font-bold text-amber-800 dark:text-amber-300 text-xs">Phương án xử lý sau trả trước hạn</label>
+              <select
+                value={prepaymentMode}
+                onChange={e => setPrepaymentMode(e.target.value as any)}
+                className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`}
+              >
+                <option value="reduce_monthly">Giảm số tiền gốc trả hàng tháng các kỳ còn lại</option>
+                <option value="shorten_tenor">Rút ngắn thời hạn vay (kết thúc khoản vay sớm)</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Schedule Table Box */}
@@ -362,12 +435,24 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             </thead>
             <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
               {scheduleRows.map(r => (
-                <tr key={r.period} className={styles.tableRowHover}>
-                  <td className="p-3 text-center font-bold font-mono">#{r.period}</td>
+                <tr key={r.period} className={`${styles.tableRowHover} ${r.prepayment > 0 ? 'bg-amber-500/10 dark:bg-amber-500/15 font-bold border-l-4 border-amber-500' : ''}`}>
+                  <td className="p-3 text-center font-bold font-mono">
+                    #{r.period}
+                    {r.prepayment > 0 && (
+                      <span className="block text-[10px] text-amber-600 dark:text-amber-400 font-normal">⚡ Trả trước hạn</span>
+                    )}
+                  </td>
                   <td className="p-3 text-center font-mono font-bold">{fmtDate(r.dueDate)}</td>
                   <td className="p-3 text-center font-mono">{r.days}d</td>
                   <td className="p-3 text-right font-mono">{r.beginningBalance.toLocaleString('vi-VN')}</td>
-                  <td className="p-3 text-right font-mono font-bold text-sky-600 dark:text-sky-400">{r.principal.toLocaleString('vi-VN')}</td>
+                  <td className="p-3 text-right font-mono font-bold text-sky-600 dark:text-sky-400">
+                    {r.principal.toLocaleString('vi-VN')}
+                    {r.prepayment > 0 && (
+                      <span className="block text-[10px] text-amber-600 dark:text-amber-400">
+                        (+{r.prepayment.toLocaleString('vi-VN')}đ)
+                      </span>
+                    )}
+                  </td>
                   <td className="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">{r.interest.toLocaleString('vi-VN')}</td>
                   <td className="p-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">{r.totalPayment.toLocaleString('vi-VN')}</td>
                   <td className="p-3 text-right font-mono">{r.endingBalance.toLocaleString('vi-VN')}</td>

@@ -11,12 +11,12 @@ interface TemplateSelectorProps {
   setSelectedTemplate: (tpl: TemplateType) => void;
 }
 
-export const TEMPLATE_LIST: { id: TemplateType; label: string; desc: string }[] = [
-  { id: 'lease_mb', label: '1. HĐ Thuê Mặt Bằng Kinh Doanh', desc: 'Mẫu hợp đồng thuê nhà xưởng / mặt bằng buôn bán' },
-  { id: 'construction', label: '2. HĐ Thi Công Nhà Ở Dân Dụng', desc: 'Mẫu hợp đồng giao nhận thi công sửa chữa nhà ở' },
-  { id: 'sale_contract', label: '3. HĐ Mua Bán Hàng Hóa Nguyên Văn', desc: 'Hợp đồng mua bán danh mục mỹ phẩm & vật tư' },
-  { id: 'lease_house', label: '4. HĐ Thuê Nhà Ở Dân Dụng', desc: 'Mẫu hợp đồng cho thuê căn hộ / nhà ở nguyên căn' },
-  { id: 'payment_request', label: '5. Giấy Đề Nghị Thanh Toán', desc: 'Mẫu văn bản thanh toán chi phí dự án / ngân sách' },
+export const TEMPLATE_LIST: { id: TemplateType; label: string }[] = [
+  { id: 'lease_mb', label: '1. HĐ Thuê Mặt Bằng' },
+  { id: 'construction', label: '2. HĐ Thi Công Nhà Ở Dân Dụng' },
+  { id: 'sale_contract', label: '3. HĐ Mua Bán Hàng Hóa Nguyên Văn' },
+  { id: 'lease_house', label: '4. HĐ Thuê Nhà Ở Dân Dụng' },
+  { id: 'payment_request', label: '5. Giấy Đề Nghị Thanh Toán' },
 ];
 
 export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
@@ -37,13 +37,12 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             key={t.id}
             type="button"
             onClick={() => setSelectedTemplate(t.id)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-left border ${
-              selectedTemplate === t.id
-                ? 'bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/30'
-                : isLight
-                  ? 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-sky-50 hover:border-sky-200'
-                  : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
-            }`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all text-left border ${selectedTemplate === t.id
+              ? 'bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/30'
+              : isLight
+                ? 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-sky-50 hover:border-sky-200'
+                : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+              }`}
           >
             <div>{t.label}</div>
           </button>

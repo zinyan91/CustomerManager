@@ -324,7 +324,8 @@ export async function fetchRepaymentSchedulesAPI(contractId: number): Promise<Re
       .from('RepaymentSchedules')
       .select('*')
       .eq('ContractId', contractId)
-      .order('PeriodNumber', { ascending: true });
+      .order('PeriodNumber', { ascending: true })
+      .limit(1000);
     if (error) throw error;
     return data || [];
   } catch (err) {

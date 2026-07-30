@@ -4,9 +4,13 @@ import type { ThemeStyles } from '../../lib/themeStyles';
 
 function exportToWordDoc(filename: string, docHtml: string) {
   const wordDocumentHtml = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+    <html xmlns:v="urn:schemas-microsoft-com:vml"
+          xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:w="urn:schemas-microsoft-com:office:word"
+          xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
+          xmlns="http://www.w3.org/TR/REC-html40">
     <head>
-      <meta charset="utf-8" />
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
       <title>${filename}</title>
       <!--[if gte mso 9]>
       <xml>
@@ -14,27 +18,104 @@ function exportToWordDoc(filename: string, docHtml: string) {
           <w:View>Print</w:View>
           <w:Zoom>100</w:Zoom>
           <w:DoNotOptimizeForBrowser/>
+          <w:ValidateAgainstSchemas/>
+          <w:SaveIfXMLInvalid>false</w:SaveIfXMLInvalid>
+          <w:IgnoreMixedContent>false</w:IgnoreMixedContent>
+          <w:AlwaysShowPlaceholderText>false</w:AlwaysShowPlaceholderText>
+          <w:Compatibility>
+            <w:BreakWrappedTables/>
+            <w:SnapToGridInCell/>
+            <w:WrapTextWithPunct/>
+            <w:UseAsianBreakRules/>
+            <w:UseWord2010TableStyleRules/>
+          </w:Compatibility>
         </w:WordDocument>
       </xml>
       <![endif]-->
       <style>
+        @page {
+          size: 210mm 297mm;
+          margin: 25mm 20mm 20mm 30mm;
+          mso-header-margin: 36.0pt;
+          mso-footer-margin: 36.0pt;
+          mso-paper-source: 0;
+        }
         @page WordSection1 {
           size: 210mm 297mm;
           margin: 25mm 20mm 20mm 30mm;
         }
         div.WordSection1 { page: WordSection1; }
-        body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; line-height: 1.5; color: #000000; }
-        h1 { text-align: center; font-size: 16pt; font-weight: bold; text-transform: uppercase; margin-top: 14pt; margin-bottom: 12pt; }
-        h2 { text-align: center; font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-top: 10pt; margin-bottom: 10pt; }
-        p.clause-p { margin-top: 3pt; margin-bottom: 6pt; text-align: justify; text-indent: 1.27cm; line-height: 1.5; }
-        .no-indent { text-indent: 0 !important; }
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .font-bold { font-weight: bold; }
-        .table-doc { border-collapse: collapse; width: 100%; margin-top: 10pt; margin-bottom: 10pt; }
-        .table-doc th, .table-doc td { border: 1px solid #000; padding: 6pt 8pt; font-size: 12pt; }
-        .sig-table { width: 100%; margin-top: 30pt; border-collapse: collapse; border: none; }
-        .sig-table td { width: 50%; text-align: center; vertical-align: top; border: none; padding: 0; }
+        body, p, td, th, div, span {
+          font-family: 'Times New Roman', Times, serif !important;
+          font-size: 13.0pt;
+          line-height: 1.35;
+          color: #000000;
+        }
+        h1 {
+          text-align: center !important;
+          font-size: 16.0pt !important;
+          font-weight: bold !important;
+          text-transform: uppercase !important;
+          margin-top: 14.0pt !important;
+          margin-bottom: 12.0pt !important;
+          font-family: 'Times New Roman', Times, serif !important;
+        }
+        h2 {
+          font-size: 13.0pt !important;
+          font-weight: bold !important;
+          text-transform: uppercase !important;
+          margin-top: 12.0pt !important;
+          margin-bottom: 6.0pt !important;
+          text-align: left !important;
+          font-family: 'Times New Roman', Times, serif !important;
+        }
+        p {
+          margin-top: 3.0pt;
+          margin-bottom: 6.0pt;
+          line-height: 1.35;
+        }
+        p.clause-p {
+          margin-top: 4.0pt !important;
+          margin-bottom: 6.0pt !important;
+          text-align: justify !important;
+          text-indent: 36.0pt !important;
+          line-height: 1.35 !important;
+        }
+        .no-indent { text-indent: 0pt !important; }
+        .text-center { text-align: center !important; }
+        .text-right { text-align: right !important; }
+        .font-bold { font-weight: bold !important; }
+        .font-italic { font-style: italic !important; }
+        table {
+          border-collapse: collapse !important;
+          mso-table-lspace: 0pt !important;
+          mso-table-rspace: 0pt !important;
+        }
+        table.table-doc {
+          width: 100% !important;
+          margin-top: 10.0pt !important;
+          margin-bottom: 10.0pt !important;
+          border-collapse: collapse !important;
+        }
+        table.table-doc th, table.table-doc td {
+          border: 1.0pt solid #000000 !important;
+          padding: 4.0pt 6.0pt !important;
+          font-size: 11.0pt !important;
+          vertical-align: middle !important;
+        }
+        table.sig-table {
+          width: 100% !important;
+          margin-top: 24.0pt !important;
+          border-collapse: collapse !important;
+          border: none !important;
+        }
+        table.sig-table td {
+          width: 50% !important;
+          text-align: center !important;
+          vertical-align: top !important;
+          border: none !important;
+          padding: 4.0pt !important;
+        }
       </style>
     </head>
     <body>
@@ -45,7 +126,8 @@ function exportToWordDoc(filename: string, docHtml: string) {
     </html>
   `;
 
-  const blob = new Blob([wordDocumentHtml], { type: 'application/msword;charset=utf-8' });
+  // UTF-8 BOM '\uFEFF' ensures Microsoft Word parses Vietnamese Unicode correctly without garbled fonts
+  const blob = new Blob(['\uFEFF' + wordDocumentHtml], { type: 'application/msword;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

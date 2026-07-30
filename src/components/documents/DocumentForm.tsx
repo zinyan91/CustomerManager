@@ -12,6 +12,15 @@ export interface SaleItem {
   price: number;
 }
 
+export interface ConstItem {
+  id: string;
+  name: string;
+  unit: string;
+  quantity: number;
+  price: number;
+  note: string;
+}
+
 interface DocumentFormProps {
   styles: ThemeStyles;
   selectedTemplate: TemplateType;
@@ -45,6 +54,8 @@ interface DocumentFormProps {
   constTotalPrice: string; setConstTotalPrice: (v: string) => void;
   constDepositStage1: string; setConstDepositStage1: (v: string) => void;
   constStage2Amount: string; setConstStage2Amount: (v: string) => void;
+  constItems: ConstItem[]; setConstItems: React.Dispatch<React.SetStateAction<ConstItem[]>>;
+  handleAddConstItem: () => void;
 
   // Sale Contract Form State
   saleContractDate: string; setSaleContractDate: (v: string) => void;
@@ -91,6 +102,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
   constTotalPrice, setConstTotalPrice,
   constDepositStage1, setConstDepositStage1,
   constStage2Amount, setConstStage2Amount,
+  constItems, setConstItems,
+  handleAddConstItem,
 
   saleContractDate, setSaleContractDate,
   saleBuyerName, setSaleBuyerName,
@@ -269,6 +282,73 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
               <label className={`block mb-1 ${styles.labelStyle}`}>Thanh toán Đợt 2 (VNĐ)</label>
               <input type="text" value={constStage2Amount} onChange={e => setConstStage2Amount(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-purple-600 dark:text-purple-400 ${styles.inputStyle}`} />
             </div>
+          </div>
+        </div>
+
+        {/* Construction Estimate Items Table */}
+        <div className="border rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
+          <div className="p-2.5 bg-slate-100 dark:bg-slate-900 font-bold flex items-center justify-between">
+            <span>BẢNG DỰ TOÁN HẠNG MỤC CÔNG VIỆC THI CÔNG ({constItems.length} HẠNG MỤC)</span>
+            <button type="button" onClick={handleAddConstItem} className="flex items-center space-x-1 bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded-lg text-xs">
+              <Plus className="w-3.5 h-3.5" />
+              <span>Thêm hạng mục</span>
+            </button>
+          </div>
+          <div className="max-h-72 overflow-y-auto">
+            <table className="w-full text-left text-xs">
+              <thead className={styles.tableHeaderStyle}>
+                <tr>
+                  <th className="p-2">STT</th>
+                  <th className="p-2">HẠNG MỤC CÔNG VIỆC</th>
+                  <th className="p-2 text-center">ĐVT</th>
+                  <th className="p-2 text-center">KHỐI LƯỢNG</th>
+                  <th className="p-2 text-right">ĐƠN GIÁ (VNĐ)</th>
+                  <th className="p-2 text-right">THÀNH TIỀN (VNĐ)</th>
+                  <th className="p-2">GHI CHÚ</th>
+                  <th className="p-2 text-center">XÓA</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {constItems.map((item, idx) => (
+                  <tr key={item.id}>
+                    <td className="p-2 text-center font-bold">{idx + 1}</td>
+                    <td className="p-2">
+                      <input type="text" value={item.name} onChange={e => {
+                        const next = [...constItems]; next[idx].name = e.target.value; setConstItems(next);
+                      }} className={`w-full rounded-lg p-1 ${styles.inputStyle}`} />
+                    </td>
+                    <td className="p-2 text-center">
+                      <input type="text" value={item.unit} onChange={e => {
+                        const next = [...constItems]; next[idx].unit = e.target.value; setConstItems(next);
+                      }} className={`w-16 rounded-lg p-1 text-center ${styles.inputStyle}`} />
+                    </td>
+                    <td className="p-2 text-center">
+                      <input type="number" step="0.1" value={item.quantity} onChange={e => {
+                        const next = [...constItems]; next[idx].quantity = Number(e.target.value) || 0; setConstItems(next);
+                      }} className={`w-16 rounded-lg p-1 text-center font-mono ${styles.inputStyle}`} />
+                    </td>
+                    <td className="p-2 text-right">
+                      <input type="number" min={0} value={item.price} onChange={e => {
+                        const next = [...constItems]; next[idx].price = Number(e.target.value) || 0; setConstItems(next);
+                      }} className={`w-24 rounded-lg p-1 text-right font-mono ${styles.inputStyle}`} />
+                    </td>
+                    <td className="p-2 text-right font-mono font-bold text-sky-600 dark:text-sky-400">
+                      {(item.quantity * item.price).toLocaleString('vi-VN')}
+                    </td>
+                    <td className="p-2">
+                      <input type="text" value={item.note} onChange={e => {
+                        const next = [...constItems]; next[idx].note = e.target.value; setConstItems(next);
+                      }} className={`w-full rounded-lg p-1 ${styles.inputStyle}`} />
+                    </td>
+                    <td className="p-2 text-center">
+                      <button type="button" onClick={() => setConstItems(constItems.filter(i => i.id !== item.id))} className="text-rose-500 hover:text-rose-700">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

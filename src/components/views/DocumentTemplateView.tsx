@@ -45,6 +45,36 @@ export const DocumentTemplateView: React.FC = () => {
   const [constDepositStage1, setConstDepositStage1] = useState('53.700.000');
   const [constStage2Amount, setConstStage2Amount] = useState('950.000.000');
 
+  const [constItems, setConstItems] = useState([
+    { id: '1', name: 'Sửa chữa tường (vữa, sơn)', unit: 'm²', quantity: 36.5, price: 6000000, note: 'Vẽ lại tường, bả vữa, sơn lại' },
+    { id: '2', name: 'Thay thế gạch lát nền', unit: 'm²', quantity: 36.5, price: 6000000, note: 'Thay gạch lát sàn mới' },
+    { id: '3', name: 'Lắp đặt hệ thống điện (đi dây, ổ cắm)', unit: 'm', quantity: 18, price: 2600000, note: 'Đi lại hệ thống điện' },
+    { id: '4', name: 'Sửa chữa cửa (sơn lại, thay bản lề)', unit: 'Cái', quantity: 2, price: 5000000, note: 'Sơn cửa, thay bản lề' },
+    { id: '5', name: 'Sửa chữa mái tôn (vệ sinh, sơn lại)', unit: 'm²', quantity: 45, price: 2200000, note: 'Sơn lại mái tôn' },
+    { id: '6', name: 'Sơn tường ngoài', unit: 'm²', quantity: 68, price: 1000000, note: 'Sơn lại tường ngoài nhà' },
+    { id: '7', name: 'Vệ sinh tổng thể', unit: 'Mỗi', quantity: 1, price: 5000000, note: 'Dọn dẹp vệ sinh toàn bộ nhà' },
+    { id: '8', name: 'Lắp đặt trần thạch cao', unit: 'm²', quantity: 45, price: 280000, note: 'Lắp trần thạch cao cho các phòng' },
+    { id: '9', name: 'Lắp đặt hệ thống chiếu sáng hiện đại', unit: 'Cái', quantity: 15, price: 1000000, note: 'Lắp đèn chiếu sáng LED hiện đại' },
+    { id: '10', name: 'Thay thế cửa cuốn, cửa nhựa', unit: 'Cái', quantity: 1, price: 1500000, note: 'Thay mới cửa cuốn, cửa nhựa' },
+    { id: '11', name: 'Thay thế cửa nhôm, cửa kính hư hỏng tại ban công', unit: 'Cái', quantity: 10, price: 2200000, note: 'Thay cửa hư hỏng' },
+    { id: '12', name: 'Chống thấm, sửa chữa sân thượng và mái che', unit: 'm²', quantity: 40, price: 700000, note: 'Chống thấm, sửa mái, không đục phá kết cấu' },
+    { id: '13', name: 'Cải tạo, ốp lát lại nhà vệ sinh tầng trệt', unit: 'm²', quantity: 36.5, price: 1600000, note: 'Ốp lát, thay thiết bị, không thay đổi tường chịu lực' },
+    { id: '14', name: 'Cải tạo, ốp lát lại nhà vệ sinh các tầng 1', unit: 'm²', quantity: 36.5, price: 1600000, note: 'Cải tạo hoàn thiện, giữ nguyên kết cấu' },
+    { id: '15', name: 'Cải tạo, ốp lát lại nhà vệ sinh các tầng 2', unit: 'm²', quantity: 36.5, price: 1600000, note: 'Cải tạo hoàn thiện, giữ nguyên kết cấu' },
+    { id: '16', name: 'Sơn bả lại trần nhà phòng khách và các tầng', unit: 'm²', quantity: 36, price: 450000, note: 'Hoàn thiện sơn bả trần' },
+    { id: '17', name: 'Lắp đặt bổ sung đèn LED chiếu sáng trong nhà', unit: 'Cái', quantity: 4, price: 850000, note: 'Bổ sung đèn LED tiết kiệm điện' },
+    { id: '18', name: 'Lát gạch hoàn thiện ban công, lô gia', unit: 'm²', quantity: 50, price: 500000, note: 'Lát gạch hoàn thiện khu vực ban công' },
+    { id: '19', name: 'Sửa chữa, thay mới tủ bếp, mặt bàn bếp', unit: 'Bộ', quantity: 5, price: 4600000, note: 'Thay tủ bếp, mặt bàn, không can thiệp kết cấu' },
+    { id: '20', name: 'Sửa chữa, sơn mới lan can và tay vịn cầu thang', unit: 'm', quantity: 30, price: 500000, note: 'Sơn sửa lan can, tay vịn, đảm bảo an toàn' },
+  ]);
+
+  const handleAddConstItem = () => {
+    setConstItems([
+      ...constItems,
+      { id: Date.now().toString(), name: 'Hạng mục mới', unit: 'm²', quantity: 1, price: 1000000, note: 'Ghi chú công việc' }
+    ]);
+  };
+
   // FORM STATE 3: HỢP ĐỒNG MUA BÁN HÀNG HÓA
   const [saleContractDate, setSaleContractDate] = useState('2026-04-09');
   const [saleBuyerName, setSaleBuyerName] = useState('LÊ THỊ CẢNH');
@@ -133,6 +163,20 @@ export const DocumentTemplateView: React.FC = () => {
     }
 
     if (selectedTemplate === 'construction') {
+      const constRowsHtml = constItems.map((item, idx) => `
+        <tr>
+          <td class="text-center font-bold">${idx + 1}</td>
+          <td>${nfc(item.name)}</td>
+          <td class="text-center">${item.unit}</td>
+          <td class="text-center">${item.quantity}</td>
+          <td class="text-right">${item.price.toLocaleString('vi-VN')}</td>
+          <td class="text-right font-bold">${(item.quantity * item.price).toLocaleString('vi-VN')}</td>
+          <td>${nfc(item.note)}</td>
+        </tr>
+      `).join('');
+
+      const totalConstCalculated = constItems.reduce((sum, i) => sum + (i.quantity * i.price), 0);
+
       return `
         <div class="text-center no-indent">
           <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
@@ -149,7 +193,7 @@ export const DocumentTemplateView: React.FC = () => {
           <div class="font-bold uppercase text-[13pt] no-indent">BÊN THUÊ THI CÔNG XÂY DỰNG: (Sau đây gọi tắt là Bên A)</div>
           <div class="pl-6 space-y-0.5 no-indent">
             <div>- Bà: <strong class="uppercase">${nfc(constPartyAName)}</strong></div>
-            <div>- CCCD số: <strong>${nfc(constPartyACccd)}</strong> | Địa chỉ: ${nfc(constPartyAAddress)}</div>
+            <div>- CCCD số: <strong>${nfc(constPartyACccd)}</strong> &nbsp;|&nbsp; Địa chỉ: ${nfc(constPartyAAddress)}</div>
           </div>
         </div>
         <div class="space-y-1 no-indent pt-2">
@@ -160,12 +204,45 @@ export const DocumentTemplateView: React.FC = () => {
           </div>
         </div>
         <p class="clause-p pt-2">Hai bên thỏa thuận ký hợp đồng với các điều khoản như sau:</p>
-        <h2>Điều 1: Nội dung và phạm vi công việc</h2>
+        <h2>Điều 1: Nội dung và Bảng dự toán công trình</h2>
         <p class="clause-p">1. Địa điểm thi công: Bên B nhận thi công/sửa chữa nhà ở dân dụng tại địa chỉ: <strong>${nfc(constSiteAddress)}</strong>.</p>
-        <p class="clause-p">2. Phạm vi công việc: Sửa chữa/tân trang phần tường, lát gạch nền sàn, đi lại đường dây điện nước, thay mới cửa mái tôn lan can.</p>
+        <p class="clause-p">2. Chi tiết các hạng mục thi công theo Bảng dự toán dưới đây:</p>
+
+        <table class="table-doc">
+          <thead>
+            <tr>
+              <th style="width: 5%;">STT</th>
+              <th style="width: 30%;">Hạng mục công việc</th>
+              <th style="width: 8%;">Đơn vị</th>
+              <th style="width: 10%;">Khối lượng</th>
+              <th style="width: 15%;">Đơn giá (VNĐ)</th>
+              <th style="width: 16%;">Thành tiền (VNĐ)</th>
+              <th style="width: 16%;">Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${constRowsHtml}
+            <tr>
+              <td colSpan="5" class="text-right font-bold">Tổng cộng (tạm tính):</td>
+              <td class="text-right font-bold text-[12pt]">${totalConstCalculated.toLocaleString('vi-VN')}</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td colSpan="5" class="text-right font-bold">Số tiền vay:</td>
+              <td class="text-right font-bold">800.000.000</td>
+              <td class="text-right font-bold">96,74%</td>
+            </tr>
+            <tr>
+              <td colSpan="5" class="text-right font-bold">Còn lại:</td>
+              <td class="text-right font-bold">203.700.000</td>
+              <td class="text-right font-bold">3,26%</td>
+            </tr>
+          </tbody>
+        </table>
+
         <h2>Điều 2: Thời gian và tiến độ thực hiện</h2>
-        <p class="clause-p">- Ngày khởi công: Ngày <strong>${fmtDate(constStartDate)}</strong> đến ngày <strong>${fmtDate(constEndDate)}</strong>.</p>
-        <h2>Điều 3. Giá trị hợp đồng và phương thức thanh toán</h2>
+        <p class="clause-p">- Ngày khởi công: Từ ngày <strong>${fmtDate(constStartDate)}</strong> đến ngày <strong>${fmtDate(constEndDate)}</strong>.</p>
+        <h2>Điều 3: Giá trị hợp đồng và phương thức thanh toán</h2>
         <p class="clause-p">- Tổng giá trị hợp đồng: <strong>${constTotalPrice} VNĐ</strong>.</p>
         <p class="clause-p">- Đợt 1: <strong>${constDepositStage1} VNĐ</strong>. Đợt 2: <strong>${constStage2Amount} VNĐ</strong>.</p>
         <table class="sig-table font-serif">
@@ -452,6 +529,8 @@ export const DocumentTemplateView: React.FC = () => {
             constTotalPrice={constTotalPrice} setConstTotalPrice={setConstTotalPrice}
             constDepositStage1={constDepositStage1} setConstDepositStage1={setConstDepositStage1}
             constStage2Amount={constStage2Amount} setConstStage2Amount={setConstStage2Amount}
+            constItems={constItems} setConstItems={setConstItems}
+            handleAddConstItem={handleAddConstItem}
             saleContractDate={saleContractDate} setSaleContractDate={setSaleContractDate}
             saleBuyerName={saleBuyerName} setSaleBuyerName={setSaleBuyerName}
             saleBuyerAddress={saleBuyerAddress} setSaleBuyerAddress={setSaleBuyerAddress}

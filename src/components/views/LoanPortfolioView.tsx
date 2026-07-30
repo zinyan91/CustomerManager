@@ -405,9 +405,36 @@ export const LoanPortfolioView: React.FC = () => {
   const prefVal = parseFloat(ratePreferential) || 0;
   const baseVal = parseFloat(rateBase) || 0;
   const marginVal = parseFloat(rateMargin) || 0;
+  const surchargeVal = parseFloat(rateConditionSurcharge) || 0;
 
   const postPrefRate = prefVal + marginVal;
   const normalRate = baseVal + marginVal;
+
+  // Tính xem HĐTD/KUNN hiện tại đã hết thời gian ưu đãi chưa
+  let isPromoExpired = false;
+  const prefMonths = parseInt(ratePreferentialMonths, 10) || 0;
+  const startStr = form.DisbursementDate || form.ContractStartDate;
+  if (startStr && prefMonths > 0) {
+    const parts = startStr.split('-');
+    if (parts.length === 3) {
+      const start = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      const now = new Date();
+      const diffMonths = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+      if (diffMonths >= prefMonths) {
+        isPromoExpired = true;
+      }
+    }
+  }
+
+  // Lãi suất áp dụng thực tế (kèm phạt vi phạm điều kiện)
+  let currentActiveRateDisplay = 0;
+  if (interestRateMode === 'pref' && prefVal > 0) {
+    currentActiveRateDisplay = isPromoExpired ? (postPrefRate + surchargeVal) : (prefVal + surchargeVal);
+  } else if (baseVal > 0) {
+    currentActiveRateDisplay = normalRate + surchargeVal;
+  } else if (prefVal > 0) {
+    currentActiveRateDisplay = prefVal + surchargeVal;
+  }
 
   const creditLimitNum = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
   const kunnLoanAmountNum = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
@@ -750,7 +777,9 @@ export const LoanPortfolioView: React.FC = () => {
       const postPrefDec = postPrefRate ? postPrefRate / 100 : undefined;
       const normalDec = normalRate ? normalRate / 100 : undefined;
 
-      const activeInterestRate = (interestRateMode === 'pref' ? prefDec : normalDec) || prefDec || normalDec || baseDec || undefined;
+      const activeInterestRate = currentActiveRateDisplay > 0
+        ? currentActiveRateDisplay / 100
+        : ((interestRateMode === 'pref' ? prefDec : normalDec) || prefDec || normalDec || baseDec || undefined);
 
       let noteText = form.Note || '';
       noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').replace(/\[PENALTY_SURCHARGE:[^\]]*\]/g, '').trim();
@@ -1595,11 +1624,19 @@ export const LoanPortfolioView: React.FC = () => {
                               placeholder="3.5"
                               className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-300 ${inputStyle}`} />
                           </div>
-                          <div className={`col-span-full flex items-center justify-between p-2.5 rounded-lg border ${
-                            isLight ? 'bg-white border-slate-200' : 'bg-slate-900/60 border-slate-800'
+                          <div className={`col-span-full space-y-2 p-3 rounded-xl border ${
+                            isLight ? 'bg-sky-50/80 border-sky-200' : 'bg-sky-950/40 border-sky-900/60'
                           }`}>
-                            <span className={labelStyle}>Lãi suất sau ưu đãi (LSUD + Biên độ):</span>
-                            <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{postPrefRate.toFixed(2)} %/năm</span>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className={labelStyle}>Lãi suất sau ưu đãi chuẩn (LSƯĐ + Biên độ):</span>
+                              <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{postPrefRate.toFixed(2)} %/năm</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs pt-2 border-t border-sky-200 dark:border-sky-900/50">
+                              <span className="font-bold text-sky-700 dark:text-sky-300">👉 LÃI SUẤT ÁP DỤNG THỰC TẾ (KÈM PHẠT {surchargeVal > 0 ? `+${surchargeVal}%` : '0%'}):</span>
+                              <span className="font-mono font-bold text-rose-600 dark:text-rose-400 text-sm">
+                                {currentActiveRateDisplay.toFixed(2)} %/năm {isPromoExpired ? '(Hết hạn ưu đãi -> LS Sau ưu đãi + Phạt)' : '(Trong hạn ưu đãi -> LS Ưu đãi + Phạt)'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       ) : (
@@ -1618,11 +1655,19 @@ export const LoanPortfolioView: React.FC = () => {
                               placeholder="3.5"
                               className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-300 ${inputStyle}`} />
                           </div>
-                          <div className={`col-span-full flex items-center justify-between p-2.5 rounded-lg border ${
-                            isLight ? 'bg-white border-slate-200' : 'bg-slate-900/60 border-slate-800'
+                          <div className={`col-span-full space-y-2 p-3 rounded-xl border ${
+                            isLight ? 'bg-sky-50/80 border-sky-200' : 'bg-sky-950/40 border-sky-900/60'
                           }`}>
-                            <span className={labelStyle}>Lãi suất thông thường (LSCS + Biên độ):</span>
-                            <span className="font-mono font-bold text-rose-600 dark:text-rose-400 text-sm">{normalRate.toFixed(2)} %/năm</span>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className={labelStyle}>Lãi suất thông thường chuẩn (LSCS + Biên độ):</span>
+                              <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{normalRate.toFixed(2)} %/năm</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs pt-2 border-t border-sky-200 dark:border-sky-900/50">
+                              <span className="font-bold text-sky-700 dark:text-sky-300">👉 LÃI SUẤT ÁP DỤNG THỰC TẾ (LSCS + BIÊN ĐỘ + PHẠT {surchargeVal > 0 ? `+${surchargeVal}%` : '0%'}):</span>
+                              <span className="font-mono font-bold text-rose-600 dark:text-rose-400 text-sm">
+                                {currentActiveRateDisplay.toFixed(2)} %/năm
+                              </span>
+                            </div>
                           </div>
                         </div>
                       )}

@@ -190,28 +190,25 @@ export const CalculatorView: React.FC = () => {
   const [loanAmountInput, setLoanAmountInput] = useState('500.000.000');
   const [gracePeriodMonths, setGracePeriodMonths] = useState<number>(0);
   
-  // Rate mode & penalty ratio for Tool 1
   const [termRateMode, setTermRateMode] = useState<'pref' | 'normal'>('pref');
-  const [termPrefRate, setTermPrefRate] = useState('7.5');     // Lãi suất ưu đãi %/năm
-  const [termPrefMonths, setTermPrefMonths] = useState('6');    // Thời gian ưu đãi (tháng)
-  const [termBaseRate, setTermBaseRate] = useState('8.5');     // Lãi suất cơ sở %/năm
-  const [termMarginRate, setTermMarginRate] = useState('3.5');   // Biên độ %/năm
-  const [termPenaltyRatio, setTermPenaltyRatio] = useState('150'); // % so với LS trong hạn (NHNN 150%)
+  const [termPrefRate, setTermPrefRate] = useState('7.5');
+  const [termPrefMonths, setTermPrefMonths] = useState('6');
+  const [termBaseRate, setTermBaseRate] = useState('8.5');
+  const [termMarginRate, setTermMarginRate] = useState('3.5');
+  const [termConditionSurcharge, setTermConditionSurcharge] = useState('0');
 
-  // Interactive overdue days map per period (period -> overdueDays)
   const [overdueDaysMap, setOverdueDaysMap] = useState<Record<number, number>>({});
 
-  // Derived loan tenor months & end date
   const loanTenorMonths = typeof loanTenorYears === 'number' && loanTenorYears > 0 ? loanTenorYears * 12 : 12;
   const loanEndDate = addMonths(loanStartDate, loanTenorMonths);
 
-  // Derived Interest Rates Calculation
   const prefVal = parseFloat(termPrefRate) || 0;
   const baseVal = parseFloat(termBaseRate) || 0;
   const marginVal = parseFloat(termMarginRate) || 0;
+  const surchargeVal = parseFloat(termConditionSurcharge) || 0;
 
-  const postPrefRate = prefVal + marginVal;  // Lãi suất sau ưu đãi = LSUD + Biên độ
-  const normalRate = baseVal + marginVal;    // Lãi suất thông thường = LSCS + Biên độ
+  const postPrefRate = prefVal + marginVal + surchargeVal;
+  const normalRate = baseVal + marginVal + surchargeVal;
 
   const numLoanAmount = parseFloat(loanAmountInput.replace(/\D/g, '')) || 0;
   const numPrefMonths = parseInt(termPrefMonths, 10) || 0;
@@ -242,7 +239,7 @@ export const CalculatorView: React.FC = () => {
   let totalPenaltyInterestPaid = 0;
   let maxPaymentRow = { period: 0, amount: 0 };
 
-  const penaltyRatioNum = parseFloat(termPenaltyRatio) || 150;
+  const penaltyRatioNum = 150;
 
   if (numLoanAmount > 0 && loanTenorMonths > 0) {
     for (let i = 1; i <= loanTenorMonths; i++) {
@@ -865,13 +862,14 @@ export const CalculatorView: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block font-medium mb-1 text-slate-400">Tỷ lệ Lãi phạt (% so với LS thường)</label>
+                      <label className="block font-medium mb-1 text-slate-400">Phạt vi phạm điều kiện (+%/năm)</label>
                       <input
                         type="number"
-                        step="5"
-                        value={termPenaltyRatio}
-                        onChange={e => setTermPenaltyRatio(e.target.value)}
-                        placeholder="150"
+                        step="0.1"
+                        min={0}
+                        value={termConditionSurcharge}
+                        onChange={e => setTermConditionSurcharge(e.target.value)}
+                        placeholder="0.5"
                         className={`w-full rounded-xl p-2 font-mono font-bold text-rose-600 border ${inputStyle}`}
                       />
                     </div>
@@ -905,13 +903,14 @@ export const CalculatorView: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block font-medium mb-1 text-slate-400">Tỷ lệ Lãi phạt (% so với LS thường)</label>
+                      <label className="block font-medium mb-1 text-slate-400">Phạt vi phạm điều kiện (+%/năm)</label>
                       <input
                         type="number"
-                        step="5"
-                        value={termPenaltyRatio}
-                        onChange={e => setTermPenaltyRatio(e.target.value)}
-                        placeholder="150"
+                        step="0.1"
+                        min={0}
+                        value={termConditionSurcharge}
+                        onChange={e => setTermConditionSurcharge(e.target.value)}
+                        placeholder="0.5"
                         className={`w-full rounded-xl p-2 font-mono font-bold text-rose-600 border ${inputStyle}`}
                       />
                     </div>

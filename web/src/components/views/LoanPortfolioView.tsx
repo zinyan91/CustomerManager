@@ -299,13 +299,12 @@ export const LoanPortfolioView: React.FC = () => {
   const [formLoanAmount, setFormLoanAmount] = useState('');
   const [formCurrentBalance, setFormCurrentBalance] = useState('');
 
-  // Interest Rates form state (% string, e.g. "8.5")
   const [interestRateMode, setInterestRateMode] = useState<'pref' | 'base'>('pref');
   const [ratePreferential, setRatePreferential] = useState('');
   const [ratePreferentialMonths, setRatePreferentialMonths] = useState('');
   const [rateBase, setRateBase] = useState('');
   const [rateMargin, setRateMargin] = useState('');
-  const [ratePenalty, setRatePenalty] = useState('150');
+  const [rateConditionSurcharge, setRateConditionSurcharge] = useState('0');
 
   // Selected Collateral IDs for current contract
   const [selectedCollateralIds, setSelectedCollateralIds] = useState<number[]>([]);
@@ -364,13 +363,13 @@ export const LoanPortfolioView: React.FC = () => {
     }
   }, [form.DisbursementDate, form.KunnTenor, form.LoanTenorMonths]);
 
-  // Derived Rates & Amount Calculations
   const prefVal = parseFloat(ratePreferential) || 0;
   const baseVal = parseFloat(rateBase) || 0;
   const marginVal = parseFloat(rateMargin) || 0;
+  const penaltySurchargeVal = parseFloat(rateConditionSurcharge) || 0;
 
-  const postPrefRate = prefVal + marginVal; // LSUD + Biên độ
-  const normalRate = baseVal + marginVal;    // LSCS + Biên độ
+  const postPrefRate = prefVal + marginVal + penaltySurchargeVal;
+  const normalRate = baseVal + marginVal + penaltySurchargeVal;
 
   const creditLimitNum = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
   const kunnLoanAmountNum = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
@@ -577,6 +576,14 @@ export const LoanPortfolioView: React.FC = () => {
     setRateBase(c.BaseRate ? Number((c.BaseRate * 100).toFixed(4)).toString() : '');
     setRateMargin(c.MarginRate ? Number((c.MarginRate * 100).toFixed(4)).toString() : '');
 
+    if (c.Note?.includes('[PENALTY_SURCHARGE:')) {
+      const match = c.Note.match(/\[PENALTY_SURCHARGE:([^\]]+)\]/);
+      if (match && match[1]) setRateConditionSurcharge(match[1].trim());
+      else setRateConditionSurcharge('0');
+    } else {
+      setRateConditionSurcharge('0');
+    }
+
     if (c.Note?.includes('[COLLATERAL_IDS:')) {
       const match = c.Note.match(/\[COLLATERAL_IDS:([^\]]+)\]/);
       if (match && match[1]) {
@@ -699,7 +706,7 @@ export const LoanPortfolioView: React.FC = () => {
 
       const currentBal = currentBalInput || loanAmount;
 
-      const prefDec = prefVal ? prefVal / 100 : undefined;
+      const prefDec = prefVal ? (prefVal + penaltySurchargeVal) / 100 : undefined;
       const baseDec = baseVal ? baseVal / 100 : undefined;
       const marginDec = marginVal ? marginVal / 100 : undefined;
       const postPrefDec = postPrefRate ? postPrefRate / 100 : undefined;
@@ -708,12 +715,12 @@ export const LoanPortfolioView: React.FC = () => {
       const activeInterestRate = prefDec || normalDec || baseDec || undefined;
 
       let noteText = form.Note || '';
-      noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').replace(/\[PENALTY_RATE:[^\]]*\]/g, '').trim();
+      noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').replace(/\[PENALTY_SURCHARGE:[^\]]*\]/g, '').trim();
       if (hdtd && hdtd !== effectiveContractNumber && !noteText.includes(`HĐTD: ${hdtd}`)) {
         noteText = `HĐTD: ${hdtd}\n${noteText}`.trim();
       }
-      if (ratePenalty.trim()) {
-        noteText = `${noteText}\n[PENALTY_RATE:${ratePenalty.trim()}]`.trim();
+      if (rateConditionSurcharge.trim() && parseFloat(rateConditionSurcharge) > 0) {
+        noteText = `${noteText}\n[PENALTY_SURCHARGE:${rateConditionSurcharge.trim()}]`.trim();
       }
       if (selectedCollateralIds.length > 0) {
         noteText = `${noteText}\n[COLLATERAL_IDS:${selectedCollateralIds.join(',')}]`.trim();
@@ -1747,19 +1754,18 @@ export const LoanPortfolioView: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Lãi suất phạt quá hạn / Vi phạm */}
                       <div className="pt-3 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Lãi suất phạt quá hạn / Vi phạm (+% hoặc % LS Đang AP)</label>
-                          <input type="text" value={ratePenalty}
-                            onChange={e => setRatePenalty(e.target.value)}
-                            placeholder="150% LS đang áp dụng (hoặc +3.5%/năm)..."
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-red-600 dark:text-red-400 ${inputStyle}`} />
+                          <label className={`block mb-1 ${labelStyle}`}>Phạt cộng thêm do vi phạm điều kiện (+%/năm)</label>
+                          <input type="number" step="0.1" min={0} value={rateConditionSurcharge}
+                            onChange={e => setRateConditionSurcharge(e.target.value)}
+                            placeholder="0.5 (%/năm)..."
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-rose-600 dark:text-rose-400 ${inputStyle}`} />
                         </div>
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Quy định phạt theo HĐTD</label>
+                          <label className={`block mb-1 ${labelStyle}`}>Điều kiện phê duyệt (CASA / BCTC)</label>
                           <div className="text-xs p-2.5 rounded-xl border bg-amber-50/50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 font-medium">
-                            ⚡ Lãi suất phạt quá hạn bằng <strong>{ratePenalty || '150'}%</strong> lãi suất cho vay đang áp dụng đối với dư nợ gốc quá hạn.
+                            💡 Nếu KH không đạt chỉ tiêu CASA / BCTC, nhập <strong>+{rateConditionSurcharge || '0.5'}%</strong> để cộng thêm vào lãi suất áp dụng. Khi KH đạt lại điều kiện ở đợt soát xét tiếp theo, đổi về <strong>0%</strong> để khôi phục lãi suất chuẩn.
                           </div>
                         </div>
                       </div>

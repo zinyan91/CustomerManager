@@ -43,17 +43,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Mobile Overlay Backdrop */}
+      {/* Mobile Overlay Backdrop (Starts below Header) */}
       {isOpenMobile && (
         <div
-          className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-40 md:hidden transition-opacity"
+          className="fixed top-[53px] inset-x-0 bottom-0 bg-slate-950/70 backdrop-blur-xs z-40 md:hidden transition-opacity"
           onClick={onCloseMobile}
         />
       )}
 
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation (On mobile starts below Header, on desktop is static) */}
       <aside
-        className={`fixed md:static inset-y-0 left-0 z-50 w-64 md:w-60 ${sidebarBg} border-r flex flex-col justify-between p-3 min-h-screen md:min-h-[calc(100vh-57px)] shrink-0 transition-transform duration-200 ease-in-out ${
+        className={`fixed md:static top-[53px] md:top-0 bottom-0 left-0 z-40 w-64 md:w-60 ${sidebarBg} border-r flex flex-col justify-between p-3 min-h-[calc(100vh-53px)] md:min-h-[calc(100vh-57px)] shrink-0 transition-transform duration-200 ease-in-out ${
           isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
         }`}
       >

@@ -284,17 +284,48 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (selectedTemplate === 'const_estimate') {
+    return (
+      <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
+        <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
+          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
+            BẢNG DỰ TOÁN HẠNG MỤC CÔNG VIỆC THI CÔNG
+          </div>
+        </div>
+
+        {/* Section 1: Thông tin công trình & Đơn vị thi công */}
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THÔNG TIN CÔNG TRÌNH</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Chủ Đầu Tư (Bên A)</label>
+              <input type="text" value={constPartyAName} onChange={e => setConstPartyAName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Nhà Thầu Thi Công (Bên B)</label>
+              <input type="text" value={constPartyBName} onChange={e => setConstPartyBName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+            </div>
+          </div>
+          <div>
+            <label className={`block mb-1 ${styles.labelStyle}`}>Địa điểm thi công</label>
+            <input type="text" value={constSiteAddress} onChange={e => setConstSiteAddress(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+          </div>
+        </div>
 
         {/* Construction Estimate Items Table */}
         <div className="border rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
           <div className="p-2.5 bg-slate-100 dark:bg-slate-900 font-bold flex items-center justify-between">
-            <span>BẢNG DỰ TOÁN HẠNG MỤC CÔNG VIỆC THI CÔNG ({constItems.length} HẠNG MỤC)</span>
+            <span>DANH MỤC HẠNG MỤC DỰ TOÁN ({constItems.length} HẠNG MỤC)</span>
             <button type="button" onClick={handleAddConstItem} className="flex items-center space-x-1 bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded-lg text-xs">
               <Plus className="w-3.5 h-3.5" />
               <span>Thêm hạng mục</span>
             </button>
           </div>
-          <div className="max-h-72 overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto">
             <table className="w-full text-left text-xs">
               <thead className={styles.tableHeaderStyle}>
                 <tr>

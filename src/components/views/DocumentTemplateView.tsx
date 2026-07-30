@@ -163,20 +163,6 @@ export const DocumentTemplateView: React.FC = () => {
     }
 
     if (selectedTemplate === 'construction') {
-      const constRowsHtml = constItems.map((item, idx) => `
-        <tr>
-          <td class="text-center font-bold">${idx + 1}</td>
-          <td>${nfc(item.name)}</td>
-          <td class="text-center">${item.unit}</td>
-          <td class="text-center">${item.quantity}</td>
-          <td class="text-right">${item.price.toLocaleString('vi-VN')}</td>
-          <td class="text-right font-bold">${(item.quantity * item.price).toLocaleString('vi-VN')}</td>
-          <td>${nfc(item.note)}</td>
-        </tr>
-      `).join('');
-
-      const totalConstCalculated = constItems.reduce((sum, i) => sum + (i.quantity * i.price), 0);
-
       return `
         <div class="text-center no-indent">
           <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
@@ -204,9 +190,67 @@ export const DocumentTemplateView: React.FC = () => {
           </div>
         </div>
         <p class="clause-p pt-2">Hai bên thỏa thuận ký hợp đồng với các điều khoản như sau:</p>
-        <h2>Điều 1: Nội dung và Bảng dự toán công trình</h2>
+        <h2>Điều 1: Nội dung và phạm vi công việc</h2>
         <p class="clause-p">1. Địa điểm thi công: Bên B nhận thi công/sửa chữa nhà ở dân dụng tại địa chỉ: <strong>${nfc(constSiteAddress)}</strong>.</p>
-        <p class="clause-p">2. Chi tiết các hạng mục thi công theo Bảng dự toán dưới đây:</p>
+        <p class="clause-p">2. Phạm vi công việc: Sửa chữa/tân trang phần tường, lát gạch nền sàn, đi lại đường dây điện nước, thay mới cửa mái tôn lan can theo Bảng dự toán chi tiết đính kèm Hợp đồng này.</p>
+        <h2>Điều 2: Thời gian và tiến độ thực hiện</h2>
+        <p class="clause-p">- Ngày khởi công: Từ ngày <strong>${fmtDate(constStartDate)}</strong> đến ngày <strong>${fmtDate(constEndDate)}</strong>.</p>
+        <h2>Điều 3: Giá trị hợp đồng và phương thức thanh toán</h2>
+        <p class="clause-p">- Tổng giá trị hợp đồng: <strong>${constTotalPrice} VNĐ</strong>.</p>
+        <p class="clause-p">- Đợt 1: <strong>${constDepositStage1} VNĐ</strong>. Đợt 2: <strong>${constStage2Amount} VNĐ</strong>.</p>
+        <table class="sig-table font-serif">
+          <tbody>
+            <tr>
+              <td>
+                <div class="font-bold uppercase">BÊN THUÊ THI CÔNG (BÊN A)</div>
+                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
+                <div style="height: 70px;"></div>
+                <div class="font-bold uppercase">${nfc(constPartyAName)}</div>
+              </td>
+              <td>
+                <div class="font-bold uppercase">BÊN NHẬN THI CÔNG (BÊN B)</div>
+                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
+                <div style="height: 70px;"></div>
+                <div class="font-bold uppercase">${nfc(constPartyBName)}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    if (selectedTemplate === 'const_estimate') {
+      const constRowsHtml = constItems.map((item, idx) => `
+        <tr>
+          <td class="text-center font-bold">${idx + 1}</td>
+          <td>${nfc(item.name)}</td>
+          <td class="text-center">${item.unit}</td>
+          <td class="text-center">${item.quantity}</td>
+          <td class="text-right">${item.price.toLocaleString('vi-VN')}</td>
+          <td class="text-right font-bold">${(item.quantity * item.price).toLocaleString('vi-VN')}</td>
+          <td>${nfc(item.note)}</td>
+        </tr>
+      `).join('');
+
+      const totalConstCalculated = constItems.reduce((sum, i) => sum + (i.quantity * i.price), 0);
+
+      return `
+        <div class="text-center no-indent">
+          <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+          <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
+          <div style="text-align: center; margin: 4px 0;" class="no-indent">
+            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
+          </div>
+        </div>
+
+        <div class="text-center pt-3 pb-2 no-indent">
+          <h1>BẢNG DỰ TOÁN HẠNG MỤC CÔNG VIỆC THI CÔNG</h1>
+          <p class="font-italic text-[11pt] no-indent">(Đính kèm Hợp đồng thi công nhà ở ngày ${fmtDate(constContractDate)})</p>
+        </div>
+
+        <p class="clause-p"><strong>Chủ Đầu Tư (Bên A):</strong> ${nfc(constPartyAName)}</p>
+        <p class="clause-p"><strong>Nhà Thầu Thi Công (Bên B):</strong> ${nfc(constPartyBName)}</p>
+        <p class="clause-p"><strong>Công trình / Địa điểm:</strong> ${nfc(constSiteAddress)}</p>
 
         <table class="table-doc">
           <thead>
@@ -240,22 +284,17 @@ export const DocumentTemplateView: React.FC = () => {
           </tbody>
         </table>
 
-        <h2>Điều 2: Thời gian và tiến độ thực hiện</h2>
-        <p class="clause-p">- Ngày khởi công: Từ ngày <strong>${fmtDate(constStartDate)}</strong> đến ngày <strong>${fmtDate(constEndDate)}</strong>.</p>
-        <h2>Điều 3: Giá trị hợp đồng và phương thức thanh toán</h2>
-        <p class="clause-p">- Tổng giá trị hợp đồng: <strong>${constTotalPrice} VNĐ</strong>.</p>
-        <p class="clause-p">- Đợt 1: <strong>${constDepositStage1} VNĐ</strong>. Đợt 2: <strong>${constStage2Amount} VNĐ</strong>.</p>
         <table class="sig-table font-serif">
           <tbody>
             <tr>
               <td>
-                <div class="font-bold uppercase">BÊN THUÊ THI CÔNG (BÊN A)</div>
+                <div class="font-bold uppercase">ĐẠI DIỆN BÊN A</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
                 <div style="height: 70px;"></div>
                 <div class="font-bold uppercase">${nfc(constPartyAName)}</div>
               </td>
               <td>
-                <div class="font-bold uppercase">BÊN NHẬN THI CÔNG (BÊN B)</div>
+                <div class="font-bold uppercase">ĐẠI DIỆN BÊN B</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
                 <div style="height: 70px;"></div>
                 <div class="font-bold uppercase">${nfc(constPartyBName)}</div>

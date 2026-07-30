@@ -7,6 +7,7 @@ import { CustomerListView } from './components/views/CustomerListView';
 import { LoanPortfolioView } from './components/views/LoanPortfolioView';
 import { CollateralView } from './components/views/CollateralView';
 import { CreditCardView } from './components/views/CreditCardView';
+import { CalculatorView } from './components/views/CalculatorView';
 import { SettingsView } from './components/views/SettingsView';
 
 export function App() {
@@ -38,6 +39,7 @@ export function App() {
           {activeTab === 'loans' && <LoanPortfolioView />}
           {activeTab === 'collaterals' && <CollateralView />}
           {activeTab === 'credit-cards' && <CreditCardView />}
+          {activeTab === 'calculators' && <CalculatorView />}
           {activeTab === 'settings' && <SettingsView />}
           {activeTab === 'post-loan' && (
             <div className="p-6 md:p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 text-xs">

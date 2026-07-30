@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="CustomerManager.Core/CustomerManager.Core.csproj" />
-  <Project Path="CustomerManager.Data/CustomerManager.Data.csproj" />
-  <Project Path="CustomerManager.Services/CustomerManager.Services.csproj" />
-  <Project Path="CustomerManager.UI/CustomerManager.UI.csproj" />
-</Solution>

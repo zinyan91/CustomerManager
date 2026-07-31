@@ -28,7 +28,7 @@ export const CollateralView: React.FC = () => {
   // Form Inputs
   const [inputCustomerId, setInputCustomerId] = useState<number | ''>('');
   const [inputAssetCode, setInputAssetCode] = useState('');
-  const [inputAssetType, setInputAssetType] = useState('Loại 1');
+  const [inputAssetType, setInputAssetType] = useState('BĐS - Loại 1');
   const [inputAddress, setInputAddress] = useState('');
   const [inputAppraisedValue, setInputAppraisedValue] = useState('');
   const [inputLtvPercent, setInputLtvPercent] = useState('80');
@@ -62,7 +62,19 @@ export const CollateralView: React.FC = () => {
 
   // Set default LTV based on asset type
   useEffect(() => {
-    if (inputAssetType === 'Loại 1') setInputLtvPercent('80');
+    if (inputAssetType === 'BĐS - Loại 1') setInputLtvPercent('80');
+    else if (inputAssetType === 'BĐS - Loại 2') setInputLtvPercent('70');
+    else if (inputAssetType === 'BĐS - Loại 3') setInputLtvPercent('60');
+    else if (inputAssetType === 'BĐS - Loại 4') setInputLtvPercent('55');
+    else if (inputAssetType === 'BĐS - Hạn chế nhận TS') setInputLtvPercent('0');
+    else if (inputAssetType.startsWith('Phương tiện')) setInputLtvPercent('70');
+    else if (inputAssetType.startsWith('Máy móc')) setInputLtvPercent('60');
+    else if (inputAssetType.startsWith('Hàng hóa')) setInputLtvPercent('50');
+    else if (inputAssetType.startsWith('Sổ tiết kiệm')) setInputLtvPercent('100');
+    else if (inputAssetType.startsWith('STK khác')) setInputLtvPercent('90');
+    else if (inputAssetType.startsWith('Giấy tờ')) setInputLtvPercent('80');
+    else if (inputAssetType.startsWith('Quyền tài sản')) setInputLtvPercent('50');
+    else if (inputAssetType === 'Loại 1') setInputLtvPercent('80');
     else if (inputAssetType === 'Loại 2') setInputLtvPercent('70');
     else if (inputAssetType === 'Loại 3') setInputLtvPercent('50');
   }, [inputAssetType]);
@@ -89,7 +101,17 @@ export const CollateralView: React.FC = () => {
   };
 
   const getEffectiveLtv = (c: Collateral) => {
-    if (c.LtvPercent) return c.LtvPercent;
+    if (c.LtvPercent !== undefined && c.LtvPercent !== null && c.LtvPercent > 0) return c.LtvPercent;
+    if (c.AssetType === 'BĐS - Loại 1') return 80;
+    if (c.AssetType === 'BĐS - Loại 2') return 70;
+    if (c.AssetType === 'BĐS - Loại 3') return 60;
+    if (c.AssetType === 'BĐS - Loại 4') return 55;
+    if (c.AssetType === 'BĐS - Hạn chế nhận TS') return 0;
+    if (c.AssetType?.includes('Phương tiện')) return 70;
+    if (c.AssetType?.includes('Máy móc')) return 60;
+    if (c.AssetType?.includes('Hàng hóa')) return 50;
+    if (c.AssetType?.includes('Sổ tiết kiệm')) return 100;
+    if (c.AssetType?.includes('STK khác')) return 90;
     if (c.AssetType === 'Loại 2') return 70;
     if (c.AssetType === 'Loại 3') return 50;
     return 80;
@@ -100,7 +122,7 @@ export const CollateralView: React.FC = () => {
     setFormCollapsed(false);
     setInputCustomerId(c.CustomerId);
     setInputAssetCode(c.AssetCode || '');
-    setInputAssetType(c.AssetType || 'Loại 1');
+    setInputAssetType(c.AssetType || 'BĐS - Loại 1');
     setInputAddress(c.Address || '');
     const val = c.AppraisedValue || c.Value || 0;
     setInputAppraisedValue(val ? val.toLocaleString('vi-VN') : '');
@@ -114,7 +136,7 @@ export const CollateralView: React.FC = () => {
     setSelectedCollateral(null);
     setInputCustomerId('');
     setInputAssetCode('');
-    setInputAssetType('Loại 1');
+    setInputAssetType('BĐS - Loại 1');
     setInputAddress('');
     setInputAppraisedValue('');
     setInputLtvPercent('80');

@@ -111,9 +111,28 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
               <label className={`block mb-1 ${styles.labelStyle}`}>Phân loại Tài sản bảo đảm *</label>
               <select required value={inputAssetType} onChange={e => setInputAssetType(e.target.value)}
                 className={`w-full rounded-xl p-2.5 font-bold ${styles.inputStyle}`}>
-                <option value="Loại 1">Loại 1 — Bất động sản, Giấy tờ có giá (LTV 80%)</option>
-                <option value="Loại 2">Loại 2 — Phương tiện vận tải, Máy móc thiết bị (LTV 70%)</option>
-                <option value="Loại 3">Loại 3 — Hàng hóa, Quyền tài sản khác (LTV 50%)</option>
+                <optgroup label="🏠 BẤT ĐỘNG SẢN (BĐS)">
+                  <option value="BĐS - Loại 1">BĐS - Loại 1 (LTV 80%)</option>
+                  <option value="BĐS - Loại 2">BĐS - Loại 2 (LTV 70%)</option>
+                  <option value="BĐS - Loại 3">BĐS - Loại 3 (LTV 60%)</option>
+                  <option value="BĐS - Loại 4">BĐS - Loại 4 (LTV 55%)</option>
+                  <option value="BĐS - Hạn chế nhận TS">BĐS - Hạn chế nhận TS (LTV 0%)</option>
+                  <option value="BĐS - Tùy chỉnh LTV">BĐS - Tùy chỉnh LTV</option>
+                </optgroup>
+                <optgroup label="🚗 PHƯƠNG TIỆN VẬN TẢI & HÀNG HÓA">
+                  <option value="Phương tiện vận tải (Ô tô, Xe nâng...)">Phương tiện vận tải (LTV 70%)</option>
+                  <option value="Máy móc thiết bị, Dây chuyền sản xuất">Máy móc thiết bị (LTV 60%)</option>
+                  <option value="Hàng hóa, Vật tư kho">Hàng hóa, Vật tư kho (LTV 50%)</option>
+                </optgroup>
+                <optgroup label="📜 GIẤY TỜ CÓ GIÁ & SỔ TIẾT KIỆM">
+                  <option value="Sổ tiết kiệm / Tiền gửi nội bộ">Sổ tiết kiệm nội bộ (LTV 100%)</option>
+                  <option value="STK khác ngân hàng / Trái phiếu CP">STK khác / Trái phiếu CP (LTV 90%)</option>
+                  <option value="Giấy tờ có giá khác">Giấy tờ có giá khác (LTV 80%)</option>
+                </optgroup>
+                <optgroup label="📦 TÀI SẢN KHÁC & QUYỀN TÀI SẢN">
+                  <option value="Quyền tài sản / Quyền đòi nợ">Quyền tài sản / Quyền đòi nợ (LTV 50%)</option>
+                  <option value="Tài sản khác (Tùy chỉnh LTV)">Tài sản khác (Tùy chỉnh LTV)</option>
+                </optgroup>
               </select>
             </div>
           </div>

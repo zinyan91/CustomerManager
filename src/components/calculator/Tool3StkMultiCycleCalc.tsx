@@ -225,7 +225,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4`}>
         <div className="text-xs font-bold text-sky-500 uppercase tracking-wider flex items-center space-x-2 border-b pb-2 border-slate-200 dark:border-slate-800">
           <TrendingUp className="w-4 h-4" />
-          <span>THÔNG SỐ DỰ PHỎNG TÁI TỤC STK NHIỀU VÒNG</span>
+          <span>THÔNG SỐ CẦM CỐ SỔ TIẾT KIỆM (STK) TÁI TỤC NHIỀU VÒNG</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -22,8 +22,8 @@ export const CalculatorView: React.FC = () => {
 
   const toolsList = [
     { id: 'loan' as const, label: '1. Tính Lịch Thu Nợ Khoản Vay', icon: Calculator },
-    { id: 'stk_single' as const, label: '2. Tính Lãi Gửi Tiết Kiệm STK', icon: Layers },
-    { id: 'stk_multi' as const, label: '3. Dự Phỏng Tái Tục STK', icon: TrendingUp },
+    { id: 'stk_single' as const, label: '2. Tính Cầm Cố Sổ Tiết Kiệm (STK)', icon: Layers },
+    { id: 'stk_multi' as const, label: '3. Tính Cầm Cố STK Tái Tục', icon: TrendingUp },
     { id: 'rate_reduction' as const, label: '4. Tính Giảm Lãi Suất Vay', icon: TrendingDown },
     { id: 'credit_capacity' as const, label: '5. Thẩm Định Hạn Mức (DTI/LTV)', icon: ShieldCheck },
     { id: 'prepayment_analysis' as const, label: '6. Phân Tích Trả Nợ Trước Hạn', icon: Award },

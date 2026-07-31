@@ -2,7 +2,7 @@ import React from 'react';
 import { Building2 } from 'lucide-react';
 import type { Collateral, Customer } from '../../types';
 import type { ThemeStyles } from '../../lib/themeStyles';
-import { fmtMoney, fmtDate } from '../../lib/utils';
+import { fmtMoney, fmtDate, formatAssetType } from '../../lib/utils';
 
 interface CollateralTableProps {
   styles: ThemeStyles;
@@ -77,7 +77,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                     <div className="text-[10px] font-mono text-sky-600 dark:text-sky-400">{cust ? `CIF: ${cust.CifKh}` : ''}</div>
                   </td>
                   <td className="p-3 font-semibold text-purple-600 dark:text-purple-400 whitespace-nowrap">
-                    {col.AssetType || 'Loại 1'}
+                    {formatAssetType(col.AssetType)}
                   </td>
                   <td className="p-3 font-mono text-slate-700 dark:text-slate-300">
                     <div className="font-bold">{col.AssetCode || '—'}</div>

@@ -134,6 +134,8 @@ export interface CreditCard {
   CreditLimit?: number;
   Limit?: number;
   CurrentBalance?: number;
+  CollateralId?: number | null;
   Note?: string | null;
   customer?: Customer;
+  collateral?: Collateral;
 }

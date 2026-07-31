@@ -21,6 +21,12 @@ export function fmtRate(v?: number | null): string {
   return Number(val.toFixed(4)).toString() + '%/năm';
 }
 
+export function formatAssetType(assetType?: string | null): string {
+  if (!assetType) return 'Loại 1';
+  let cleaned = assetType.replace(/^(BĐS|BDS)\s*-\s*/i, '').replace(/^(BĐS|BDS)\s+/i, '').trim();
+  return cleaned || 'Loại 1';
+}
+
 export interface ParsedDate {
   year: number;
   month: number;

@@ -111,13 +111,13 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
               <label className={`block mb-1 ${styles.labelStyle}`}>Phân loại Tài sản bảo đảm *</label>
               <select required value={inputAssetType} onChange={e => setInputAssetType(e.target.value)}
                 className={`w-full rounded-xl p-2.5 font-bold ${styles.inputStyle}`}>
-                <optgroup label="🏠 BẤT ĐỘNG SẢN (BĐS)">
-                  <option value="BĐS - Loại 1">BĐS - Loại 1 (LTV 80%)</option>
-                  <option value="BĐS - Loại 2">BĐS - Loại 2 (LTV 70%)</option>
-                  <option value="BĐS - Loại 3">BĐS - Loại 3 (LTV 60%)</option>
-                  <option value="BĐS - Loại 4">BĐS - Loại 4 (LTV 55%)</option>
-                  <option value="BĐS - Hạn chế nhận TS">BĐS - Hạn chế nhận TS (LTV 0%)</option>
-                  <option value="BĐS - Tùy chỉnh LTV">BĐS - Tùy chỉnh LTV</option>
+                <optgroup label="🏠 BẤT ĐỘNG SẢN & TÀI SẢN BẢO ĐẢM">
+                  <option value="Loại 1">Loại 1 (LTV 80%)</option>
+                  <option value="Loại 2">Loại 2 (LTV 70%)</option>
+                  <option value="Loại 3">Loại 3 (LTV 60%)</option>
+                  <option value="Loại 4">Loại 4 (LTV 55%)</option>
+                  <option value="Hạn chế nhận TS">Hạn chế nhận TS (LTV 0%)</option>
+                  <option value="Tùy chỉnh LTV">Tùy chỉnh LTV</option>
                 </optgroup>
                 <optgroup label="🚗 PHƯƠNG TIỆN VẬN TẢI & HÀNG HÓA">
                   <option value="Phương tiện vận tải (Ô tô, Xe nâng...)">Phương tiện vận tải (LTV 70%)</option>

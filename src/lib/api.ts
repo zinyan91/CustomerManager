@@ -294,36 +294,49 @@ export async function fetchCreditCardsAPI(): Promise<CreditCard[]> {
 
 export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<CreditCard> {
   const isUpdate = !!card.Id;
-  const cardNumber = (card.CardNumber || '').trim();
+  const rawCardNumber = (card.CardNumber || '').trim();
+  const autoMaskNumber = `4532••••${Math.floor(1000 + Math.random() * 9000)}`;
+  const cardNumber = rawCardNumber || autoMaskNumber;
 
   if (!card.CustomerId) {
     throw new Error('Khách hàng sở hữu thẻ là bắt buộc!');
   }
 
-  if (cardNumber) {
+  if (rawCardNumber) {
     const { data: cardCheck } = await supabase
       .from('CreditCards')
       .select('Id, CardNumber')
-      .eq('CardNumber', cardNumber);
+      .eq('CardNumber', rawCardNumber);
 
     const duplicateCard = (cardCheck || []).find(c => c.Id !== card.Id);
     if (duplicateCard) {
-      throw new Error(`Số thẻ tín dụng "${cardNumber}" đã tồn tại trên hệ thống!`);
+      throw new Error(`Số thẻ tín dụng "${rawCardNumber}" đã tồn tại trên hệ thống!`);
     }
   }
 
   const { customer, Limit, ...dbPayload } = card as any;
 
+  let noteStr = dbPayload.Note || '';
+  if (dbPayload.IssuanceType && !noteStr.includes('[IssuanceType:')) {
+    noteStr = `[IssuanceType:${dbPayload.IssuanceType}] ${noteStr}`.trim();
+  }
+  if (dbPayload.CollateralId && !noteStr.includes('[CollateralId:')) {
+    noteStr = `[CollateralId:${dbPayload.CollateralId}] ${noteStr}`.trim();
+  }
+
   const cardData: any = {
     CustomerId: Number(dbPayload.CustomerId),
-    CardNumber: cardNumber || null,
+    CardNumber: cardNumber,
     CreditLimit: Number(dbPayload.CreditLimit || Limit || 0),
     CurrentBalance: Number(dbPayload.CurrentBalance || 0),
-    Note: dbPayload.Note || (dbPayload.IssuanceType ? `[IssuanceType:${dbPayload.IssuanceType}]` : null),
+    Note: noteStr || null,
   };
 
   if (dbPayload.IssuanceType) {
     cardData.IssuanceType = String(dbPayload.IssuanceType);
+  }
+  if (dbPayload.CollateralId) {
+    cardData.CollateralId = Number(dbPayload.CollateralId);
   }
 
   if (isUpdate) {
@@ -331,6 +344,7 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
     const { data, error } = await supabase.from('CreditCards').update(cardData).eq('Id', cardData.Id).select().single();
     if (error) {
       delete cardData.IssuanceType;
+      delete cardData.CollateralId;
       const { data: retryData, error: retryErr } = await supabase.from('CreditCards').update(cardData).eq('Id', cardData.Id).select().single();
       if (retryErr) throw retryErr;
       return retryData;
@@ -348,12 +362,18 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
     const { data, error } = await supabase.from('CreditCards').insert([cardData]).select().single();
     if (error) {
       delete cardData.IssuanceType;
+      delete cardData.CollateralId;
       const { data: retryData, error: retryErr } = await supabase.from('CreditCards').insert([cardData]).select().single();
       if (retryErr) throw retryErr;
       return retryData;
     }
     return data;
   }
+}
+
+export async function deleteCreditCardAPI(id: number): Promise<void> {
+  const { error } = await supabase.from('CreditCards').delete().eq('Id', id);
+  if (error) throw error;
 }
 
 export async function fetchContractsByCustomerAPI(customerId: number): Promise<LoanContract[]> {

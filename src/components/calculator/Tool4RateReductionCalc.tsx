@@ -256,9 +256,6 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
             <TrendingDown className="w-5 h-5 text-emerald-500" />
             <span>CÔNG CỤ TÍNH GIẢM LÃI SUẤT VAY (CHUẨN GIẢM LS VAY.XLSX)</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Tính toán chính xác số tiền giảm lãi cho khoản vay ngắn hạn & trung dài hạn (Actual/365 theo ngày thực tế)
-          </p>
         </div>
 
         {/* Sub-tab Switcher */}

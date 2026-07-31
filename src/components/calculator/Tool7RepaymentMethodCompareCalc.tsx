@@ -61,9 +61,6 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = ({ isLight 
           <Layers className="w-5 h-5 text-purple-500" />
           <span>SO SÁNH 2 PHƯƠNG THỨC TRẢ NỢ: GỐC ĐỀU VS NIÊN KIM (EMI/LÃI CỐ ĐỊNH)</span>
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Tư vấn giải pháp trả nợ phù hợp nhất với dòng tiền và thu nhập của khách hàng
-        </p>
       </div>
 
       {/* Input Form */}

@@ -50,9 +50,6 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = ({ isLight 
           <RefreshCw className="w-5 h-5 text-emerald-500" />
           <span>QUY ĐỔI LÃI SUẤT PHẲNG $\leftrightarrow$ LÃI SUẤT DƯ NỢ GIẢM DẦN & LÃI SUẤT HIỆU LỰC (EAR/APR)</span>
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Quy đổi chính xác giữa Lãi suất phẳng (Flat rate) và Lãi suất dư nợ giảm dần (Effective rate) để giải thích minh bạch cho khách hàng
-        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

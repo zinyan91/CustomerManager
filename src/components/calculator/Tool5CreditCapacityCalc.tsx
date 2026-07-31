@@ -78,9 +78,6 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = ({ isLight }) => {
           <ShieldCheck className="w-5 h-5 text-sky-500" />
           <span>TÍNH HẠN MỨC VAY TỐI ĐA THEO THU NHẬP (DTI/DSR) & TÀI SẢN BẢO ĐẢM (LTV)</span>
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Thẩm định nhanh khả năng trả nợ và xác định hạn mức cấp tín dụng tối đa an toàn cho khách hàng
-        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

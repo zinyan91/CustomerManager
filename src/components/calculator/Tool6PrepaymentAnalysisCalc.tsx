@@ -63,9 +63,6 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
           <Award className="w-5 h-5 text-emerald-500" />
           <span>TÍNH PHÍ TRẢ NỢ TRƯỚC HẠN & BÀI TOÁN "CÓ NÊN TRẢ NỢ TRƯỚC HẠN?"</span>
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          So sánh chi phí phạt trả trước hạn với số tiền lãi tiết kiệm được để tư vấn tối ưu cho khách hàng
-        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -136,7 +136,7 @@ export const CollateralView: React.FC = () => {
     setSelectedCollateral(null);
     setInputCustomerId('');
     setInputAssetCode('');
-    setInputAssetType('BĐS - Loại 1');
+    setInputAssetType('Loại 1');
     setInputAddress('');
     setInputAppraisedValue('');
     setInputLtvPercent('80');
@@ -218,8 +218,8 @@ export const CollateralView: React.FC = () => {
       {/* Toast Notification */}
       {notification && (
         <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success'
-            ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
-            : 'bg-red-950/90 border-red-500/40 text-red-300'
+          ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
+          : 'bg-red-950/90 border-red-500/40 text-red-300'
           }`}>
           {notification.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
           <span>{notification.message}</span>

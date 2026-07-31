@@ -2188,7 +2188,7 @@ export const LoanPortfolioView: React.FC = () => {
                           if (diff > 0) autoDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
                         }
                       }
-                      const effDays = s.OverdueDays !== undefined ? s.OverdueDays : autoDays;
+                      const effDays = (s.OverdueDays && s.OverdueDays > 0) ? s.OverdueDays : autoDays;
                       if (effDays <= 0) return 0;
                       const annualRate = getEffectiveActiveRate(selectedContract, s.DueDate);
                       return Math.round((s.PrincipalAmount || 0) * (annualRate * 1.5) * (effDays / 365));
@@ -2203,7 +2203,7 @@ export const LoanPortfolioView: React.FC = () => {
                             <th className="p-3 text-center whitespace-nowrap">KỲ</th>
                             <th className="p-3 whitespace-nowrap">NGÀY ĐẾN HẠN</th>
                             <th className="p-3 text-center whitespace-nowrap text-purple-600 dark:text-purple-400">LÃI SUẤT ÁP DỤNG</th>
-                            <th className="p-3 text-center whitespace-nowrap text-rose-500">SỐ NGÀY QUÁ HẠN (NHẬP)</th>
+                            <th className="p-3 text-center whitespace-nowrap text-rose-500">SỐ NGÀY QUÁ HẠN</th>
                             <th className="p-3 text-right whitespace-nowrap">GỐC</th>
                             <th className="p-3 text-right whitespace-nowrap">LÃI THƯỜNG</th>
                             <th className="p-3 text-right whitespace-nowrap text-rose-500">LÃI PHẠT QUÁ HẠN (150%)</th>
@@ -2221,7 +2221,7 @@ export const LoanPortfolioView: React.FC = () => {
                               Chưa có lịch thu nợ. Nhấn "TẠO LỊCH THU NỢ TỰ ĐỘNG" để tính toán.
                             </td></tr>
                           ) : schedules.map(s => {
-                            // Calculate default auto overdue days
+                            // Calculate default auto overdue days relative to today
                             let autoOverdue = 0;
                             if (!s.IsPaid && s.DueDate) {
                               const parts = s.DueDate.split('-');
@@ -2235,7 +2235,9 @@ export const LoanPortfolioView: React.FC = () => {
                               }
                             }
 
-                            const effectiveOverdueDays = s.OverdueDays !== undefined ? s.OverdueDays : autoOverdue;
+                            const effectiveOverdueDays = s.IsPaid
+                              ? (s.OverdueDays || 0)
+                              : ((s.OverdueDays && s.OverdueDays > 0) ? s.OverdueDays : autoOverdue);
                             const penaltyAmount = s.OverdueInterestAmount ?? getPenaltyForSchedule(s);
                             const isOverdue = effectiveOverdueDays > 0;
                             const rowTotalAmount = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penaltyAmount;

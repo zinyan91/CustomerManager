@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { getThemeStyles } from '../../lib/themeStyles';
-import { Calculator, Layers, TrendingUp } from 'lucide-react';
+import { Calculator, Layers, TrendingUp, TrendingDown } from 'lucide-react';
 import { Tool1LoanScheduleCalc } from '../calculator/Tool1LoanScheduleCalc';
 import { Tool2StkSingleCalc } from '../calculator/Tool2StkSingleCalc';
 import { Tool3StkMultiCycleCalc } from '../calculator/Tool3StkMultiCycleCalc';
+import { Tool4RateReductionCalc } from '../calculator/Tool4RateReductionCalc';
 
 export const CalculatorView: React.FC = () => {
   const { theme } = useTheme();
   const isLight = theme === 'light';
   const styles = getThemeStyles(isLight);
 
-  const [activeTool, setActiveTool] = useState<'loan' | 'stk_single' | 'stk_multi'>('loan');
+  const [activeTool, setActiveTool] = useState<'loan' | 'stk_single' | 'stk_multi' | 'rate_reduction'>('rate_reduction');
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
@@ -20,7 +21,8 @@ export const CalculatorView: React.FC = () => {
         {[
           { id: 'loan' as const, label: '1. Tính Lịch Thu Nợ Khoản Vay', icon: Calculator },
           { id: 'stk_single' as const, label: '2. Tính Lãi Gửi Tiết Kiệm STK', icon: Layers },
-          { id: 'stk_multi' as const, label: '3. Dự Phỏng Tái Tụi STK Nhiều Vòng', icon: TrendingUp },
+          { id: 'stk_multi' as const, label: '3. Dự Phỏng Tái Tục STK Nhiều Vòng', icon: TrendingUp },
+          { id: 'rate_reduction' as const, label: '4. Tính Giảm Lãi Suất Vay', icon: TrendingDown },
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -49,6 +51,9 @@ export const CalculatorView: React.FC = () => {
       )}
       {activeTool === 'stk_multi' && (
         <Tool3StkMultiCycleCalc styles={styles} isLight={isLight} />
+      )}
+      {activeTool === 'rate_reduction' && (
+        <Tool4RateReductionCalc styles={styles} isLight={isLight} />
       )}
     </div>
   );

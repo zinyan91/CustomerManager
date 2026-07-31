@@ -2386,7 +2386,49 @@ export const LoanPortfolioView: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              {/* Cột 1: Quá hạn & Trả trước hạn */}
+              {/* Cột 1: Gốc, Lãi & Trả trước */}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-sky-600 dark:text-sky-400 mb-1">
+                    Gốc đã đóng kỳ này (VNĐ)
+                  </label>
+                  <input
+                    type="text"
+                    value={modalActualPaidPrincipalStr}
+                    onChange={e => setModalActualPaidPrincipalStr(formatMoneyInput(e.target.value))}
+                    placeholder="0"
+                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-50/50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+                    Lãi đã đóng kỳ này (VNĐ)
+                  </label>
+                  <input
+                    type="text"
+                    value={modalActualPaidInterestStr}
+                    onChange={e => setModalActualPaidInterestStr(formatMoneyInput(e.target.value))}
+                    placeholder="0"
+                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 mb-1">
+                    Trả nợ gốc trước hạn kỳ này (VNĐ)
+                  </label>
+                  <input
+                    type="text"
+                    value={modalPrepaidPrincipalStr}
+                    onChange={e => setModalPrepaidPrincipalStr(formatMoneyInput(e.target.value))}
+                    placeholder="0"
+                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"
+                  />
+                </div>
+              </div>
+
+              {/* Cột 2: Quá hạn & Ngày TT */}
               <div className="space-y-3">
                 <div>
                   <label className="block text-[11px] font-bold text-rose-600 dark:text-rose-400 mb-1">
@@ -2408,7 +2450,7 @@ export const LoanPortfolioView: React.FC = () => {
                       }
                     }}
                     placeholder="0"
-                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-transparent border-slate-200 dark:border-slate-800"
+                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800"
                   />
                 </div>
 
@@ -2420,47 +2462,7 @@ export const LoanPortfolioView: React.FC = () => {
                     type="text"
                     value={modalOverdueInterestStr}
                     onChange={e => setModalOverdueInterestStr(formatMoneyInput(e.target.value))}
-                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-transparent border-slate-200 dark:border-slate-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 mb-1">
-                    Trả nợ trước hạn kỳ này (VNĐ)
-                  </label>
-                  <input
-                    type="text"
-                    value={modalPrepaidPrincipalStr}
-                    onChange={e => setModalPrepaidPrincipalStr(formatMoneyInput(e.target.value))}
-                    placeholder="0"
-                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-amber-600 dark:text-amber-400 bg-transparent border-slate-200 dark:border-slate-800"
-                  />
-                </div>
-              </div>
-
-              {/* Cột 2: Thực đóng & Trạng thái */}
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-sky-600 dark:text-sky-400 mb-1">
-                    Gốc thực đóng kỳ này (VNĐ)
-                  </label>
-                  <input
-                    type="text"
-                    value={modalActualPaidPrincipalStr}
-                    onChange={e => setModalActualPaidPrincipalStr(formatMoneyInput(e.target.value))}
-                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-sky-600 dark:text-sky-400 bg-transparent border-slate-200 dark:border-slate-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-1">
-                    Lãi thực đóng kỳ này (VNĐ)
-                  </label>
-                  <input
-                    type="text"
-                    value={modalActualPaidInterestStr}
-                    onChange={e => setModalActualPaidInterestStr(formatMoneyInput(e.target.value))}
-                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-transparent border-slate-200 dark:border-slate-800"
+                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800"
                   />
                 </div>
 

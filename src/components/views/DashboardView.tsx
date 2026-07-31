@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
-import { fmtDate, parseAnyDate } from '../../lib/utils';
+import { fmtDate, parseAnyDate, getMasterHdtdNumber } from '../../lib/utils';
 import type { Customer, Collateral, LoanContract } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -134,12 +134,36 @@ export const DashboardView: React.FC = () => {
   }).filter(item => item.daysLeft !== null && item.daysLeft <= 10)
     .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
-  // ── 6. Table 3: HMTD sắp tới hạn (Lọc 45 ngày: 21-45 Xanh lá, 6-20 Vàng, <=5 Đỏ) ──
-  const dueHmtdList = contracts.filter(c => c.LoanMethod === 'Hạn mức tín dụng').map(c => {
+  // ── 6. Table 3: HMTD sắp tới hạn (Group theo Số HĐTD Hạn mức Gốc, không lặp KUNN) ──
+  const hmtdMap: Record<string, { masterNo: string; contract: LoanContract; customer?: Customer; endDateStr: string; daysLeft: number | null }> = {};
+
+  contracts.forEach(c => {
+    const isHmtd = c.LoanMethod === 'Hạn mức tín dụng' || c.LoanMethod?.includes('Hạn mức');
+    if (!isHmtd) return;
+
+    const masterNo = getMasterHdtdNumber(c);
     const cus = customers.find(cust => cust.Id === c.CustomerId);
-    const daysLeft = getDaysUntil(c.ContractEndDate);
-    return { contract: c, customer: cus, daysLeft };
-  }).filter(item => item.daysLeft !== null && item.daysLeft <= 45)
+
+    let endDateStr = c.ContractEndDate || '';
+    if (!endDateStr && c.HdtdDueDate && /^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate.trim())) {
+      endDateStr = c.HdtdDueDate.trim();
+    }
+
+    const daysLeft = getDaysUntil(endDateStr);
+
+    if (!hmtdMap[masterNo] || (c.ContractAmount && c.ContractAmount > (hmtdMap[masterNo].contract.ContractAmount || 0))) {
+      hmtdMap[masterNo] = {
+        masterNo,
+        contract: c,
+        customer: cus,
+        endDateStr,
+        daysLeft
+      };
+    }
+  });
+
+  const dueHmtdList = Object.values(hmtdMap)
+    .filter(item => item.daysLeft !== null && item.daysLeft <= 45)
     .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
   // ── 7. Table 4: Định giá TSĐB sắp tới hạn (Lọc 30 ngày: 16-30 Xanh lá, 1-15 Vàng, <=0 Đỏ) ──
@@ -484,7 +508,7 @@ export const DashboardView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {dueHmtdList.map(({ contract, customer, daysLeft }) => {
+                {dueHmtdList.map(({ masterNo, contract, customer, endDateStr, daysLeft }) => {
                   const days = daysLeft ?? 0;
                   const isOverdue = days < 0;
                   let badgeStyle = '';
@@ -504,14 +528,14 @@ export const DashboardView: React.FC = () => {
                   }
 
                   return (
-                    <tr key={contract.Id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isOverdue ? 'bg-rose-50/30 dark:bg-rose-950/10' : ''}`}>
+                    <tr key={masterNo} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isOverdue ? 'bg-rose-50/30 dark:bg-rose-950/10' : ''}`}>
                       <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
                       <td className="p-2.5 font-mono text-sky-600 dark:text-sky-400">{customer?.CifKh || 'N/A'}</td>
-                      <td className="p-2.5 font-mono font-bold text-purple-600 dark:text-purple-400">{contract.ContractNumber}</td>
+                      <td className="p-2.5 font-mono font-bold text-purple-600 dark:text-purple-400">{masterNo}</td>
                       <td className="p-2.5 text-right font-mono font-bold text-sky-600 dark:text-sky-400">
                         {fmtFullMoney(contract.ContractAmount || 0)}
                       </td>
-                      <td className="p-2.5 text-center font-bold">{fmtDate(contract.ContractEndDate)}</td>
+                      <td className="p-2.5 text-center font-bold">{fmtDate(endDateStr)}</td>
                       <td className="p-2.5 text-center">
                         <span className={`px-2.5 py-1 rounded-lg text-[10px] inline-block ${badgeStyle}`}>
                           {statusText}

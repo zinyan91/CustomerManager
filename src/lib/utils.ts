@@ -176,3 +176,18 @@ export function getEffectiveActiveRate(c?: LoanContract | null, targetDateStr?: 
   }
   return c.InterestRate || c.NormalRate || c.PreferentialRate || c.BaseRate || 0.085;
 }
+
+export function getMasterHdtdNumber(c?: LoanContract | null): string {
+  if (!c) return '';
+  if (c.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate)) {
+    return c.HdtdDueDate.trim();
+  }
+  if (c.Note?.includes('HĐTD:')) {
+    const match = c.Note.match(/HĐTD:\s*([^\n\r]+)/);
+    if (match && match[1]) return match[1].trim();
+  }
+  if (c.ContractNumber?.includes('/GNN-')) {
+    return c.ContractNumber.split('/GNN-')[0].trim();
+  }
+  return c.ContractNumber?.trim() || 'HĐTD-CHÍNH';
+}

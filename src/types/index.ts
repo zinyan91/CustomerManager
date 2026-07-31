@@ -92,6 +92,8 @@ export interface LoanContract {
   customer?: Customer;
   collateral?: Collateral;
   CollateralIds?: string | null;
+  PenaltySurcharge?: number | null;
+  RateHistory?: RateAdjustmentHistoryItem[] | string | null;
   contractCollaterals?: ContractCollateral[];
 }
 

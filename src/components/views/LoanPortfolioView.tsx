@@ -4,7 +4,7 @@ import {
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI,
   fetchCollateralsByCustomerAPI
 } from '../../lib/api';
-import { formatMoneyInput, fmtDate, getContractRateHistory, serializeContractRateHistory } from '../../lib/utils';
+import { formatMoneyInput, fmtDate, getContractRateHistory } from '../../lib/utils';
 import type { LoanContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -683,7 +683,9 @@ export const LoanPortfolioView: React.FC = () => {
     setRateBase(c.BaseRate ? Number((c.BaseRate * 100).toFixed(4)).toString() : '');
     setRateMargin(c.MarginRate ? Number((c.MarginRate * 100).toFixed(4)).toString() : '');
 
-    if (c.Note?.includes('[PENALTY_SURCHARGE:')) {
+    if (c.PenaltySurcharge != null && c.PenaltySurcharge > 0) {
+      setRateConditionSurcharge(c.PenaltySurcharge.toString());
+    } else if (c.Note?.includes('[PENALTY_SURCHARGE:')) {
       const match = c.Note.match(/\[PENALTY_SURCHARGE:([^\]]+)\]/);
       if (match && match[1]) setRateConditionSurcharge(match[1].trim());
       else setRateConditionSurcharge('0');
@@ -694,7 +696,10 @@ export const LoanPortfolioView: React.FC = () => {
     const history = getContractRateHistory(c);
     setRateHistory(history);
 
-    if (c.Note?.includes('[COLLATERAL_IDS:')) {
+    if (c.CollateralIds) {
+      const ids = c.CollateralIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      setSelectedCollateralIds(ids);
+    } else if (c.Note?.includes('[COLLATERAL_IDS:')) {
       const match = c.Note.match(/\[COLLATERAL_IDS:([^\]]+)\]/);
       if (match && match[1]) {
         const ids = match[1].split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
@@ -704,9 +709,6 @@ export const LoanPortfolioView: React.FC = () => {
       } else {
         setSelectedCollateralIds([]);
       }
-    } else if (c.CollateralIds) {
-      const ids = c.CollateralIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-      setSelectedCollateralIds(ids);
     } else if (c.CollateralId) {
       setSelectedCollateralIds([c.CollateralId]);
     } else {
@@ -831,15 +833,6 @@ export const LoanPortfolioView: React.FC = () => {
       if (hdtd && hdtd !== effectiveContractNumber && !noteText.includes(`HĐTD: ${hdtd}`)) {
         noteText = `HĐTD: ${hdtd}\n${noteText}`.trim();
       }
-      if (rateConditionSurcharge.trim() && parseFloat(rateConditionSurcharge) > 0) {
-        noteText = `${noteText}\n[PENALTY_SURCHARGE:${rateConditionSurcharge.trim()}]`.trim();
-      }
-      if (selectedCollateralIds.length > 0) {
-        noteText = `${noteText}\n[COLLATERAL_IDS:${selectedCollateralIds.join(',')}]`.trim();
-      }
-      if (rateHistory.length > 0) {
-        noteText = `${noteText}\n${serializeContractRateHistory(rateHistory)}`.trim();
-      }
 
       // REQUEST 2: Helper cleanDate làm sạch ngày tháng (chuyển "" thành null để tránh lỗi Postgres syntax)
       const cleanDate = (d?: string | null) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) ? d.trim() : null;
@@ -857,6 +850,9 @@ export const LoanPortfolioView: React.FC = () => {
         HdtdDueDate: cleanDate(form.HdtdDueDate),
 
         Note: noteText || null,
+        RateHistory: rateHistory.length > 0 ? (rateHistory as any) : null,
+        CollateralIds: selectedCollateralIds.length > 0 ? selectedCollateralIds.join(',') : null,
+        PenaltySurcharge: parseFloat(rateConditionSurcharge) || 0,
 
         ContractAmount: creditLimit,
         LoanAmount: loanAmount,
@@ -872,8 +868,6 @@ export const LoanPortfolioView: React.FC = () => {
 
         CollateralId: selectedCollateralIds.length > 0 ? selectedCollateralIds[0] : null,
       };
-
-      delete (payload as any).CollateralIds;
 
       // Force insert (create new KUNN) or when no contract selected
       if (forceInsert || !selectedContract) {

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Customer, Collateral, LoanContract, CreditCard, RepaymentSchedule } from '../types';
+import { serializeContractRateHistory } from './utils';
 
 export async function fetchCustomersAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
   try {
@@ -204,21 +205,78 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   cleanContract.IsRestructured = cleanContract.IsRestructured ?? false;
 
   if (isUpdate) {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('LoanContracts')
       .update(cleanContract)
       .eq('Id', cleanContract.Id)
       .select('*, customer:Customers(*)')
       .single();
-    if (error) throw error;
+
+    if (error && (error.code === 'PGRST204' || error.message.includes('column'))) {
+      const fallbackContract = { ...cleanContract };
+      delete fallbackContract.RateHistory;
+      delete fallbackContract.PenaltySurcharge;
+      delete fallbackContract.CollateralIds;
+
+      let noteExtra = '';
+      if (cleanContract.RateHistory && Array.isArray(cleanContract.RateHistory)) {
+        noteExtra += `\n${serializeContractRateHistory(cleanContract.RateHistory)}`;
+      }
+      if (cleanContract.CollateralIds) {
+        noteExtra += `\n[COLLATERAL_IDS:${cleanContract.CollateralIds}]`;
+      }
+      if (cleanContract.PenaltySurcharge) {
+        noteExtra += `\n[PENALTY_SURCHARGE:${cleanContract.PenaltySurcharge}]`;
+      }
+      fallbackContract.Note = `${fallbackContract.Note || ''}${noteExtra}`.trim() || null;
+
+      const res = await supabase
+        .from('LoanContracts')
+        .update(fallbackContract)
+        .eq('Id', fallbackContract.Id)
+        .select('*, customer:Customers(*)')
+        .single();
+      if (res.error) throw res.error;
+      data = res.data;
+    } else if (error) {
+      throw error;
+    }
     return data;
   } else {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('LoanContracts')
       .insert([cleanContract])
       .select('*, customer:Customers(*)')
       .single();
-    if (error) throw error;
+
+    if (error && (error.code === 'PGRST204' || error.message.includes('column'))) {
+      const fallbackContract = { ...cleanContract };
+      delete fallbackContract.RateHistory;
+      delete fallbackContract.PenaltySurcharge;
+      delete fallbackContract.CollateralIds;
+
+      let noteExtra = '';
+      if (cleanContract.RateHistory && Array.isArray(cleanContract.RateHistory)) {
+        noteExtra += `\n${serializeContractRateHistory(cleanContract.RateHistory)}`;
+      }
+      if (cleanContract.CollateralIds) {
+        noteExtra += `\n[COLLATERAL_IDS:${cleanContract.CollateralIds}]`;
+      }
+      if (cleanContract.PenaltySurcharge) {
+        noteExtra += `\n[PENALTY_SURCHARGE:${cleanContract.PenaltySurcharge}]`;
+      }
+      fallbackContract.Note = `${fallbackContract.Note || ''}${noteExtra}`.trim() || null;
+
+      const res = await supabase
+        .from('LoanContracts')
+        .insert([fallbackContract])
+        .select('*, customer:Customers(*)')
+        .single();
+      if (res.error) throw res.error;
+      data = res.data;
+    } else if (error) {
+      throw error;
+    }
     return data;
   }
 }

@@ -111,25 +111,41 @@ export function fmtDate(
 import type { RateAdjustmentHistoryItem, LoanContract } from '../types';
 
 export function getContractRateHistory(c?: LoanContract | null): RateAdjustmentHistoryItem[] {
-  if (!c || !c.Note) return [];
+  if (!c) return [];
 
-  // Try encoded format first
-  const encodedMatch = c.Note.match(/\[RATE_HISTORY:([^\]]+)\]/);
-  if (encodedMatch && encodedMatch[1]) {
-    try {
-      const decoded = decodeURIComponent(encodedMatch[1]);
-      const parsed = JSON.parse(decoded);
-      if (Array.isArray(parsed)) return parsed;
-    } catch {}
+  // 1. Check dedicated RateHistory column first (JSONB or JSON string)
+  if (c.RateHistory) {
+    if (Array.isArray(c.RateHistory)) {
+      return c.RateHistory;
+    }
+    if (typeof c.RateHistory === 'string' && c.RateHistory.trim()) {
+      try {
+        const parsed = JSON.parse(c.RateHistory);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
   }
 
-  // Fallback for previous unencoded format
-  const rawMatch = c.Note.match(/\[RATE_HISTORY:([\s\S]*?)\]\]/) || c.Note.match(/\[RATE_HISTORY:([\s\S]*?)\]/);
-  if (rawMatch && rawMatch[1]) {
-    try {
-      const parsed = JSON.parse(rawMatch[1]);
-      if (Array.isArray(parsed)) return parsed;
-    } catch {}
+  // 2. Fallback to Note field (for legacy records)
+  if (c.Note) {
+    // Try encoded format
+    const encodedMatch = c.Note.match(/\[RATE_HISTORY:([^\]]+)\]/);
+    if (encodedMatch && encodedMatch[1]) {
+      try {
+        const decoded = decodeURIComponent(encodedMatch[1]);
+        const parsed = JSON.parse(decoded);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
+
+    // Fallback for previous unencoded format
+    const rawMatch = c.Note.match(/\[RATE_HISTORY:([\s\S]*?)\]\]/) || c.Note.match(/\[RATE_HISTORY:([\s\S]*?)\]/);
+    if (rawMatch && rawMatch[1]) {
+      try {
+        const parsed = JSON.parse(rawMatch[1]);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {}
+    }
   }
 
   return [];

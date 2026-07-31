@@ -108,6 +108,11 @@ export interface RepaymentSchedule {
   IsPaid: boolean;
   PaymentDate?: string | null;
   ActualPaidAmount?: number;
+  OverdueDays?: number;
+  OverdueInterestAmount?: number;
+  ActualPaidPrincipal?: number;
+  ActualPaidInterest?: number;
+  PrepaidPrincipalAmount?: number;
   Note?: string | null;
 }
 

@@ -118,8 +118,12 @@ export const DashboardView: React.FC = () => {
     return { group, count: matched.length, amount };
   });
 
+  const [onlyGroup1, setOnlyGroup1] = useState(true);
+
+  const activeContracts = contracts.filter(c => !onlyGroup1 || (c.DebtGroup ?? 1) === 1);
+
   // ── 4. Table 1: KH chuẩn bị đóng kỳ due của tháng (Lọc trước 5 ngày) ──
-  const dueInMonthList = contracts.map(c => {
+  const dueInMonthList = activeContracts.map(c => {
     const cus = customers.find(cust => cust.Id === c.CustomerId);
     const dueInfo = getMonthlyDueInfo(c.RepaymentStartDate || c.DisbursementDate || c.ContractStartDate);
     return { contract: c, customer: cus, dueInfo };
@@ -127,7 +131,7 @@ export const DashboardView: React.FC = () => {
     .sort((a, b) => (a.dueInfo?.daysLeft ?? 0) - (b.dueInfo?.daysLeft ?? 0));
 
   // ── 5. Table 2: KUNN sắp đến hạn (Lọc trước 10 ngày) ──
-  const dueKunnList = contracts.map(c => {
+  const dueKunnList = activeContracts.map(c => {
     const cus = customers.find(cust => cust.Id === c.CustomerId);
     const daysLeft = getDaysUntil(c.KunnDueDate);
     return { contract: c, customer: cus, daysLeft };
@@ -137,7 +141,7 @@ export const DashboardView: React.FC = () => {
   // ── 6. Table 3: HMTD sắp tới hạn (Group theo Số HĐTD Hạn mức Gốc, không lặp KUNN) ──
   const hmtdMap: Record<string, { masterNo: string; contract: LoanContract; customer?: Customer; endDateStr: string; daysLeft: number | null }> = {};
 
-  contracts.forEach(c => {
+  activeContracts.forEach(c => {
     const isHmtd = c.LoanMethod === 'Hạn mức tín dụng' || c.LoanMethod?.includes('Hạn mức');
     if (!isHmtd) return;
 
@@ -343,6 +347,38 @@ export const DashboardView: React.FC = () => {
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* ── BỘ LỌC PHÂN LOẠI NHÓM NỢ CẢNH BÁO (TÁCH NHÓM 2+) ── */}
+      <div className={`${cardBg} rounded-2xl p-3.5 border shadow-sm flex flex-wrap items-center justify-between gap-3`}>
+        <div className="flex items-center space-x-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+          <ShieldAlert className="w-4 h-4 text-sky-500" />
+          <span>BỘ LỌC BÁO CÁO CẢNH BÁO DƯ NỢ:</span>
+        </div>
+        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setOnlyGroup1(true)}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              onlyGroup1
+                ? 'bg-sky-600 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            ✓ Chỉ xem Nợ Nhóm 1 (Chuẩn đủ điều kiện)
+          </button>
+          <button
+            type="button"
+            onClick={() => setOnlyGroup1(false)}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              !onlyGroup1
+                ? 'bg-amber-600 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            Bao gồm cả Nợ Nhóm 2+ (Nợ chú ý & Nợ xấu)
+          </button>
         </div>
       </div>
 

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI, saveContractAPI, deleteContractAPI,
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI,
-  fetchCollateralsByCustomerAPI
+  fetchCollateralsByCustomerAPI, updateRepaymentScheduleAPI
 } from '../../lib/api';
-import { formatMoneyInput, fmtDate, getContractRateHistory } from '../../lib/utils';
+import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRate } from '../../lib/utils';
 import type { LoanContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -292,9 +292,6 @@ export const LoanPortfolioView: React.FC = () => {
   // Repayment Schedules map for all contracts (contractId -> RepaymentSchedule[])
   const [allSchedulesMap, setAllSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
 
-  // Custom Overdue Days Map for schedule table rows (scheduleId -> overdueDays)
-  const [customOverdueDaysMap, setCustomOverdueDaysMap] = useState<Record<number, number>>({});
-
   // Tự động phân loại nhóm nợ (1-5) theo chuẩn NHNN dựa trên số ngày quá hạn lịch thu nợ
   const getAutoDebtGroupInfo = (schedules?: RepaymentSchedule[]) => {
     if (!schedules || schedules.length === 0) {
@@ -388,6 +385,17 @@ export const LoanPortfolioView: React.FC = () => {
   // Schedule gen form
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+
+  // Schedule payment edit modal state
+  const [editingSchedule, setEditingSchedule] = useState<RepaymentSchedule | null>(null);
+  const [modalOverdueDaysStr, setModalOverdueDaysStr] = useState('0');
+  const [modalOverdueInterestStr, setModalOverdueInterestStr] = useState('0');
+  const [modalPrepaidPrincipalStr, setModalPrepaidPrincipalStr] = useState('0');
+  const [modalActualPaidPrincipalStr, setModalActualPaidPrincipalStr] = useState('0');
+  const [modalActualPaidInterestStr, setModalActualPaidInterestStr] = useState('0');
+  const [modalIsPaid, setModalIsPaid] = useState(false);
+  const [modalPaymentDate, setModalPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [modalNote, setModalNote] = useState('');
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1060,54 +1068,101 @@ export const LoanPortfolioView: React.FC = () => {
     }
   };
 
-  const handleMarkPaid = async (s: RepaymentSchedule) => {
+  const openPaymentModal = (s: RepaymentSchedule) => {
+    setEditingSchedule(s);
+    const overdue = s.OverdueDays ?? 0;
+    setModalOverdueDaysStr(overdue.toString());
+
+    let initialPenalty = s.OverdueInterestAmount ?? 0;
+    if (!initialPenalty && overdue > 0 && selectedContract) {
+      const rate = getEffectiveActiveRate(selectedContract, s.DueDate);
+      initialPenalty = Math.round((s.PrincipalAmount || 0) * (rate * 1.5) * (overdue / 365));
+    }
+    setModalOverdueInterestStr(initialPenalty ? initialPenalty.toLocaleString('vi-VN') : '0');
+
+    const prepay = s.PrepaidPrincipalAmount ?? 0;
+    setModalPrepaidPrincipalStr(prepay ? prepay.toLocaleString('vi-VN') : '0');
+
+    const actP = s.ActualPaidPrincipal ?? ((s.PrincipalAmount || 0) + prepay);
+    setModalActualPaidPrincipalStr(actP ? actP.toLocaleString('vi-VN') : '0');
+
+    const actI = s.ActualPaidInterest ?? ((s.InterestAmount || 0) + initialPenalty);
+    setModalActualPaidInterestStr(actI ? actI.toLocaleString('vi-VN') : '0');
+
+    setModalIsPaid(s.IsPaid);
+    setModalPaymentDate(s.PaymentDate || new Date().toISOString().split('T')[0]);
+    setModalNote(s.Note || '');
+  };
+
+  const handleSavePaymentModal = async () => {
+    if (!editingSchedule || !selectedContract) return;
+
+    const overdueDays = parseInt(modalOverdueDaysStr, 10) || 0;
+    const overdueInterest = parseFloat(modalOverdueInterestStr.replace(/\D/g, '')) || 0;
+    const prepaidPrincipal = parseFloat(modalPrepaidPrincipalStr.replace(/\D/g, '')) || 0;
+    const actualPaidP = parseFloat(modalActualPaidPrincipalStr.replace(/\D/g, '')) || 0;
+    const actualPaidI = parseFloat(modalActualPaidInterestStr.replace(/\D/g, '')) || 0;
+
+    const updated: Partial<RepaymentSchedule> = {
+      Id: editingSchedule.Id,
+      ContractId: editingSchedule.ContractId,
+      PeriodNumber: editingSchedule.PeriodNumber,
+      DueDate: editingSchedule.DueDate,
+      PrincipalAmount: editingSchedule.PrincipalAmount,
+      InterestAmount: editingSchedule.InterestAmount,
+      TotalAmount: editingSchedule.PrincipalAmount + editingSchedule.InterestAmount + overdueInterest,
+      IsPaid: modalIsPaid,
+      PaymentDate: modalIsPaid ? modalPaymentDate : null,
+      OverdueDays: overdueDays,
+      OverdueInterestAmount: overdueInterest,
+      ActualPaidPrincipal: actualPaidP,
+      ActualPaidInterest: actualPaidI,
+      PrepaidPrincipalAmount: prepaidPrincipal,
+      Note: modalNote || null
+    };
+
     try {
-      const updated = { ...s, IsPaid: !s.IsPaid, PaymentDate: !s.IsPaid ? new Date().toISOString().split('T')[0] : null };
-      const { error } = await (await import('../../lib/supabase')).supabase
-        .from('RepaymentSchedules')
-        .update({ IsPaid: updated.IsPaid, PaymentDate: updated.PaymentDate })
-        .eq('Id', s.Id);
-      if (error) throw error;
+      setLoading(true);
+      await updateRepaymentScheduleAPI(updated);
 
-      const newSchedules = schedules.map(x => x.Id === s.Id ? { ...x, IsPaid: updated.IsPaid, PaymentDate: updated.PaymentDate ?? undefined } : x);
-      setSchedules(newSchedules);
+      const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
+      setSchedules(refreshed);
+      setAllSchedulesMap(prev => ({ ...prev, [selectedContract.Id]: refreshed }));
 
-      if (selectedContract) {
-        setAllSchedulesMap(prev => ({ ...prev, [selectedContract.Id]: newSchedules }));
-        const autoInfo = getAutoDebtGroupInfo(newSchedules);
+      const autoInfo = getAutoDebtGroupInfo(refreshed);
 
-        // Tính Dư nợ hiện hữu thực tế = Số tiền vay KUNN - Tổng gốc đã thanh toán
-        const totalPaidP = newSchedules.filter(x => x.IsPaid).reduce((sum, x) => sum + (x.PrincipalAmount || 0), 0);
-        const origLoan = selectedContract.LoanAmount || selectedContract.ContractAmount || 0;
-        const newBal = Math.max(0, origLoan - totalPaidP);
+      // Tính Dư nợ hiện hữu thực tế = Số tiền vay KUNN - Tổng gốc đã thanh toán
+      const totalPaidP = refreshed.filter(x => x.IsPaid).reduce((sum, x) => sum + (x.ActualPaidPrincipal || x.PrincipalAmount || 0), 0);
+      const origLoan = selectedContract.LoanAmount || selectedContract.ContractAmount || 0;
+      const newBal = Math.max(0, origLoan - totalPaidP);
 
-        await saveContractAPI({
-          Id: selectedContract.Id,
-          CustomerId: selectedContract.CustomerId,
-          ContractNumber: selectedContract.ContractNumber,
-          CurrentBalance: newBal,
-          DebtGroup: autoInfo.debtGroup
-        });
+      await saveContractAPI({
+        Id: selectedContract.Id,
+        CustomerId: selectedContract.CustomerId,
+        ContractNumber: selectedContract.ContractNumber,
+        CurrentBalance: newBal,
+        DebtGroup: autoInfo.debtGroup
+      });
 
-        setContracts(prev => prev.map(con => con.Id === selectedContract.Id ? {
-          ...con,
-          CurrentBalance: newBal,
-          DebtGroup: autoInfo.debtGroup
-        } : con));
+      setContracts(prev => prev.map(con => con.Id === selectedContract.Id ? {
+        ...con,
+        CurrentBalance: newBal,
+        DebtGroup: autoInfo.debtGroup
+      } : con));
 
-        setSelectedContract(prev => prev ? {
-          ...prev,
-          CurrentBalance: newBal,
-          DebtGroup: autoInfo.debtGroup
-        } : null);
+      setSelectedContract(prev => prev ? {
+        ...prev,
+        CurrentBalance: newBal,
+        DebtGroup: autoInfo.debtGroup
+      } : null);
 
-        setFormCurrentBalance(newBal.toLocaleString('vi-VN'));
-        setForm(f => ({ ...f, CurrentBalance: newBal, DebtGroup: autoInfo.debtGroup }));
-      }
-
-      showNotify('success', updated.IsPaid ? 'Đã đánh dấu thanh toán!' : 'Đã hủy thanh toán');
+      setFormCurrentBalance(newBal.toLocaleString('vi-VN'));
+      setEditingSchedule(null);
+      showNotify('success', `✓ Đã cập nhật thanh toán & số ngày quá hạn cho Kỳ #${editingSchedule.PeriodNumber} thành công!`);
     } catch (err: any) {
-      showNotify('error', `Lỗi: ${err.message}`);
+      showNotify('error', `Lỗi lưu thông tin kỳ trả nợ: ${err.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -2203,7 +2258,7 @@ export const LoanPortfolioView: React.FC = () => {
                           if (diff > 0) autoDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
                         }
                       }
-                      const effDays = customOverdueDaysMap[s.Id] !== undefined ? customOverdueDaysMap[s.Id] : autoDays;
+                      const effDays = s.OverdueDays !== undefined ? s.OverdueDays : autoDays;
                       if (effDays <= 0) return 0;
                       const annualRate = (selectedContract?.InterestRate || selectedContract?.NormalRate || 0.085) > 1
                         ? (selectedContract?.InterestRate || selectedContract?.NormalRate || 8.5) / 100
@@ -2251,14 +2306,11 @@ export const LoanPortfolioView: React.FC = () => {
                               }
                             }
 
-                            const effectiveOverdueDays = customOverdueDaysMap[s.Id] !== undefined
-                              ? customOverdueDaysMap[s.Id]
-                              : autoOverdue;
-
-                            const isOverdue = !s.IsPaid && effectiveOverdueDays > 0;
-                            const penaltyAmount = getPenaltyForSchedule(s);
+                            const effectiveOverdueDays = s.OverdueDays !== undefined ? s.OverdueDays : autoOverdue;
+                            const penaltyAmount = s.OverdueInterestAmount ?? getPenaltyForSchedule(s);
+                            const isOverdue = effectiveOverdueDays > 0;
                             const rowTotalAmount = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penaltyAmount;
-                            const isPrepayRow = s.Note?.includes('TRẢ TRƯỚC HẠN');
+                            const isPrepayRow = (s.PrepaidPrincipalAmount && s.PrepaidPrincipalAmount > 0) || s.Note?.includes('TRẢ TRƯỚC HẠN');
 
                             return (
                               <tr key={s.Id} className={`transition-colors ${
@@ -2272,32 +2324,23 @@ export const LoanPortfolioView: React.FC = () => {
                               }`}>
                                 <td className="p-3 text-center font-bold font-mono">#{s.PeriodNumber}</td>
                                 <td className="p-3 font-mono font-bold">{fmtDate(s.DueDate)}</td>
-                                <td className="p-3 text-center">
-                                  {s.IsPaid ? (
-                                    <span className="text-slate-400 font-normal">—</span>
+                                <td className="p-3 text-center font-mono font-bold">
+                                  {effectiveOverdueDays > 0 ? (
+                                    <span className="px-2 py-0.5 rounded-lg bg-rose-600 text-white text-[11px] font-extrabold shadow-sm">
+                                      {effectiveOverdueDays} ngày
+                                    </span>
                                   ) : (
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      max={365}
-                                      value={customOverdueDaysMap[s.Id] ?? autoOverdue}
-                                      onChange={e => {
-                                        const val = parseInt(e.target.value, 10);
-                                        setCustomOverdueDaysMap(prev => ({
-                                          ...prev,
-                                          [s.Id]: isNaN(val) || val < 0 ? 0 : val
-                                        }));
-                                      }}
-                                      placeholder="0"
-                                      className={`w-20 text-center rounded-xl px-2 py-1 text-xs font-mono font-bold border transition-all ${
-                                        effectiveOverdueDays > 0
-                                          ? 'bg-rose-600 text-white border-rose-500 shadow-sm animate-pulse'
-                                          : inputStyle
-                                      }`}
-                                    />
+                                    <span className="text-slate-400 font-normal">—</span>
                                   )}
                                 </td>
-                                <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono font-bold">{(s.PrincipalAmount || 0).toLocaleString('vi-VN')}</td>
+                                <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono font-bold">
+                                  {(s.PrincipalAmount || 0).toLocaleString('vi-VN')}
+                                  {s.PrepaidPrincipalAmount ? (
+                                    <div className="text-[10px] text-amber-600 dark:text-amber-400">
+                                      +Trả trước: {s.PrepaidPrincipalAmount.toLocaleString('vi-VN')}
+                                    </div>
+                                  ) : null}
+                                </td>
                                 <td className="p-3 text-right text-amber-600 dark:text-amber-400 font-mono font-bold">{(s.InterestAmount || 0).toLocaleString('vi-VN')}</td>
                                 <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono font-bold">
                                   {penaltyAmount > 0 ? penaltyAmount.toLocaleString('vi-VN') : '—'}
@@ -2305,34 +2348,34 @@ export const LoanPortfolioView: React.FC = () => {
                                 <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">{rowTotalAmount.toLocaleString('vi-VN')}</td>
                                 <td className="p-3 text-center">
                                   {s.IsPaid ? (
-                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                                      ✓ Đã TT
+                                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                      ✓ Đã TT {effectiveOverdueDays > 0 ? `(Trễ ${effectiveOverdueDays}d)` : ''}
                                     </span>
                                   ) : isOverdue ? (
-                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-600 text-white border border-rose-500 animate-pulse">
+                                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-rose-600 text-white border border-rose-500 animate-pulse">
                                       🔴 Quá {effectiveOverdueDays}d
                                     </span>
                                   ) : (
-                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                                       🟡 Chờ TT
                                     </span>
                                   )}
                                 </td>
-                                <td className="p-3 text-slate-400">{s.IsPaid ? fmtDate(s.PaymentDate) : '—'}</td>
+                                <td className="p-3 font-mono font-bold text-slate-600 dark:text-slate-300">{s.IsPaid ? fmtDate(s.PaymentDate) : '—'}</td>
                                 <td className="p-3 text-center">
                                   <button
                                     type="button"
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      handleMarkPaid(s);
+                                      openPaymentModal(s);
                                     }}
-                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center space-x-1 border ${
                                       s.IsPaid
-                                        ? isLight ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                                        : 'bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-600 dark:text-emerald-400 border border-emerald-600/30'
+                                        ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                                        : 'bg-sky-600 hover:bg-sky-500 text-white border-sky-500 shadow-sky-600/20'
                                     }`}>
-                                    {s.IsPaid ? 'Hủy TT' : 'Đánh dấu TT'}
+                                    <span>⚙️ Ghi nhận TT / Sửa</span>
                                   </button>
                                 </td>
                               </tr>
@@ -2375,6 +2418,161 @@ export const LoanPortfolioView: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── MODAL GHI NHẬN THANH TOÁN / TRẢ TRƯỚC HẠN & SỐ NGÀY QUÁ HẠN ── */}
+      {editingSchedule && selectedContract && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className={`${containerCardBg} w-full max-w-xl rounded-2xl border shadow-2xl p-5 space-y-4`}>
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <Receipt className="w-5 h-5 text-sky-500" />
+                <h3 className="font-bold text-sm uppercase tracking-wide text-slate-900 dark:text-slate-100">
+                  GHI NHẬN THANH TOÁN & QUÁ HẠN — KỲ #{editingSchedule.PeriodNumber}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSchedule(null)}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 grid grid-cols-2 gap-3 text-xs">
+              <div>Ngày đến hạn kỳ: <strong className="font-mono text-slate-900 dark:text-slate-100">{fmtDate(editingSchedule.DueDate)}</strong></div>
+              <div>Gốc quy định: <strong className="font-mono text-sky-600 dark:text-sky-400">{editingSchedule.PrincipalAmount.toLocaleString('vi-VN')} VNĐ</strong></div>
+              <div>Lãi quy định: <strong className="font-mono text-amber-600 dark:text-amber-400">{editingSchedule.InterestAmount.toLocaleString('vi-VN')} VNĐ</strong></div>
+              <div>Tổng nghĩa vụ chuẩn: <strong className="font-mono text-emerald-600 dark:text-emerald-400">{(editingSchedule.PrincipalAmount + editingSchedule.InterestAmount).toLocaleString('vi-VN')} VNĐ</strong></div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {/* Cột 1: Quá hạn & Trả trước hạn */}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-rose-600 dark:text-rose-400 mb-1">
+                    Số ngày quá hạn (ngày)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={modalOverdueDaysStr}
+                    onChange={e => {
+                      const days = parseInt(e.target.value, 10) || 0;
+                      setModalOverdueDaysStr(e.target.value);
+                      if (days > 0 && selectedContract) {
+                        const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
+                        const calcPen = Math.round((editingSchedule.PrincipalAmount || 0) * (rate * 1.5) * (days / 365));
+                        setModalOverdueInterestStr(calcPen.toLocaleString('vi-VN'));
+                      } else {
+                        setModalOverdueInterestStr('0');
+                      }
+                    }}
+                    placeholder="0"
+                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-transparent border-slate-200 dark:border-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-rose-600 dark:text-rose-400 mb-1">
+                    Lãi phạt quá hạn 150% (VNĐ)
+                  </label>
+                  <input
+                    type="text"
+                    value={modalOverdueInterestStr}
+                    onChange={e => setModalOverdueInterestStr(formatMoneyInput(e.target.value))}
+                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-transparent border-slate-200 dark:border-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 mb-1">
+                    Trả nợ trước hạn kỳ này (VNĐ)
+                  </label>
+                  <input
+                    type="text"
+                    value={modalPrepaidPrincipalStr}
+                    onChange={e => setModalPrepaidPrincipalStr(formatMoneyInput(e.target.value))}
+                    placeholder="0"
+                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-amber-600 dark:text-amber-400 bg-transparent border-slate-200 dark:border-slate-800"
+                  />
+                </div>
+              </div>
+
+              {/* Cột 2: Thực đóng & Trạng thái */}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-sky-600 dark:text-sky-400 mb-1">
+                    Gốc thực đóng kỳ này (VNĐ)
+                  </label>
+                  <input
+                    type="text"
+                    value={modalActualPaidPrincipalStr}
+                    onChange={e => setModalActualPaidPrincipalStr(formatMoneyInput(e.target.value))}
+                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-sky-600 dark:text-sky-400 bg-transparent border-slate-200 dark:border-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-1">
+                    Lãi thực đóng kỳ này (VNĐ)
+                  </label>
+                  <input
+                    type="text"
+                    value={modalActualPaidInterestStr}
+                    onChange={e => setModalActualPaidInterestStr(formatMoneyInput(e.target.value))}
+                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-transparent border-slate-200 dark:border-slate-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1">
+                    Ngày thanh toán thực tế
+                  </label>
+                  <DateInput
+                    value={modalPaymentDate}
+                    onChange={setModalPaymentDate}
+                    className="w-full p-2.5 rounded-xl border text-xs bg-transparent border-slate-200 dark:border-slate-800"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={modalIsPaid}
+                  onChange={e => setModalIsPaid(e.target.checked)}
+                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                  Xác nhận Kỳ #{editingSchedule.PeriodNumber} đã thanh toán
+                </span>
+              </label>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingSchedule(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSavePaymentModal}
+                  disabled={loading}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/30 flex items-center space-x-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{loading ? 'Đang lưu...' : 'LƯU CẬP NHẬT KỲ THU NỢ'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

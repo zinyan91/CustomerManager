@@ -420,3 +420,45 @@ export async function deleteRepaymentSchedulesByContractAPI(contractId: number):
   const { error } = await supabase.from('RepaymentSchedules').delete().eq('ContractId', contractId);
   if (error) throw error;
 }
+
+export async function updateRepaymentScheduleAPI(schedule: Partial<RepaymentSchedule>): Promise<RepaymentSchedule> {
+  if (!schedule.Id) throw new Error('Cần có Id kỳ trả nợ để cập nhật!');
+
+  const cleanPayload: any = { ...schedule };
+
+  const { data, error } = await supabase
+    .from('RepaymentSchedules')
+    .update(cleanPayload)
+    .eq('Id', schedule.Id)
+    .select()
+    .single();
+
+  if (error && (error.code === 'PGRST204' || error.message.includes('column'))) {
+    const fallbackPayload = { ...cleanPayload };
+    delete fallbackPayload.OverdueDays;
+    delete fallbackPayload.OverdueInterestAmount;
+    delete fallbackPayload.ActualPaidPrincipal;
+    delete fallbackPayload.ActualPaidInterest;
+    delete fallbackPayload.PrepaidPrincipalAmount;
+
+    let noteExtras = [];
+    if (cleanPayload.OverdueDays) noteExtras.push(`OverdueDays:${cleanPayload.OverdueDays}`);
+    if (cleanPayload.OverdueInterestAmount) noteExtras.push(`OverdueInterest:${cleanPayload.OverdueInterestAmount}`);
+    if (cleanPayload.ActualPaidPrincipal) noteExtras.push(`PaidP:${cleanPayload.ActualPaidPrincipal}`);
+    if (cleanPayload.ActualPaidInterest) noteExtras.push(`PaidI:${cleanPayload.ActualPaidInterest}`);
+    if (noteExtras.length > 0) {
+      fallbackPayload.Note = `${fallbackPayload.Note || ''} [${noteExtras.join(';')}]`.trim();
+    }
+
+    const { data: retryData, error: retryErr } = await supabase
+      .from('RepaymentSchedules')
+      .update(fallbackPayload)
+      .eq('Id', schedule.Id)
+      .select()
+      .single();
+    if (retryErr) throw retryErr;
+    return retryData;
+  }
+  if (error) throw error;
+  return data;
+}

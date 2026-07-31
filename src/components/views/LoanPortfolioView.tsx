@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI, saveContractAPI, deleteContractAPI,
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
-  fetchCollateralsByCustomerAPI
+  fetchCollateralsByCustomerAPI, deleteRepaymentSchedulesByContractAPI
 } from '../../lib/api';
 import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRate } from '../../lib/utils';
 import type { LoanContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
@@ -908,17 +908,21 @@ export const LoanPortfolioView: React.FC = () => {
 
       const savedContract = await saveContractAPI(payload);
 
-      // Tự động khởi tạo lịch thu nợ nếu hợp đồng này chưa có lịch
+      // Tự động khởi tạo hoặc cập nhật lại lịch thu nợ theo ngày bắt đầu trả nợ mới / thời hạn mới
       const existingScheds = await fetchRepaymentSchedulesAPI(savedContract.Id);
-      if (existingScheds.length === 0) {
-        const repayStartDate = savedContract.RepaymentStartDate || savedContract.DisbursementDate || savedContract.ContractStartDate;
-        const periods = parseKunnTenorMonths(savedContract.KunnTenor) || savedContract.LoanTenorMonths || 12;
-        const isBullet = (savedContract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ' || savedContract.LoanMethod === 'Hạn mức tín dụng';
-        const rate = savedContract.InterestRate || savedContract.NormalRate || 0;
-        const amt = savedContract.LoanAmount || savedContract.ContractAmount || 0;
+      const repayStartDate = savedContract.RepaymentStartDate || savedContract.DisbursementDate || savedContract.ContractStartDate;
+      const periods = parseKunnTenorMonths(savedContract.KunnTenor) || savedContract.LoanTenorMonths || 12;
+      const isBullet = (savedContract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ' || savedContract.LoanMethod === 'Hạn mức tín dụng';
+      const rate = savedContract.InterestRate || savedContract.NormalRate || 0;
+      const amt = savedContract.LoanAmount || savedContract.ContractAmount || 0;
 
-        if (amt > 0 && rate > 0 && repayStartDate) {
-          const history = getContractRateHistory(savedContract);
+      if (amt > 0 && rate > 0 && repayStartDate) {
+        const history = getContractRateHistory(savedContract);
+
+        if (existingScheds.length === 0 || existingScheds.length !== periods) {
+          if (existingScheds.length > 0) {
+            await deleteRepaymentSchedulesByContractAPI(savedContract.Id);
+          }
           const generated = generateSchedule(
             savedContract.Id,
             amt,
@@ -935,6 +939,34 @@ export const LoanPortfolioView: React.FC = () => {
             history
           );
           await bulkSaveRepaymentSchedulesAPI(generated);
+          const newScheds = await fetchRepaymentSchedulesAPI(savedContract.Id);
+          setSchedules(newScheds);
+          setAllSchedulesMap(prev => ({ ...prev, [savedContract.Id]: newScheds }));
+        } else {
+          // Cập nhật lại ngày đến hạn (DueDate) cho từng kỳ theo Ngày bắt đầu trả nợ mới
+          const startParts = parseDateParts(repayStartDate);
+          const startYear = startParts ? startParts.y : new Date().getFullYear();
+          const startMonth = startParts ? startParts.m : new Date().getMonth();
+          const startDay = startParts ? startParts.d : new Date().getDate();
+
+          const updatedWithNewDates: RepaymentSchedule[] = existingScheds.map((s, idx) => {
+            const i = idx + 1;
+            let dueTotalMonths = startMonth + (i - 1);
+            let dueYear = startYear + Math.floor(dueTotalMonths / 12);
+            let dueMonthIdx = dueTotalMonths % 12;
+            const daysInDueMonth = new Date(dueYear, dueMonthIdx + 1, 0).getDate();
+            const dueDay = Math.min(startDay, daysInDueMonth);
+            const newDueDateStr = `${dueYear}-${String(dueMonthIdx + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
+
+            return {
+              ...s,
+              DueDate: newDueDateStr
+            };
+          });
+
+          const recalculated = recalculateFutureSchedules(updatedWithNewDates, savedContract);
+          await bulkSaveRepaymentSchedulesAPI(recalculated);
+
           const newScheds = await fetchRepaymentSchedulesAPI(savedContract.Id);
           setSchedules(newScheds);
           setAllSchedulesMap(prev => ({ ...prev, [savedContract.Id]: newScheds }));

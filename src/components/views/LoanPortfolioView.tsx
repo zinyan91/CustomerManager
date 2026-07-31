@@ -1043,21 +1043,17 @@ export const LoanPortfolioView: React.FC = () => {
     const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
     const graceMonths = contract.PrincipalGracePeriodMonths || 0;
     const isBullet = (contract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ' || contract.LoanMethod === 'Hạn mức tín dụng';
-    const defaultAnnualRate = (contract.InterestRate || contract.NormalRate || 0.085) > 1
-      ? (contract.InterestRate || contract.NormalRate || 8.5) / 100
-      : (contract.InterestRate || contract.NormalRate || 0.085);
-
-    const history = getContractRateHistory(contract);
-    const sortedHistory = (history && history.length > 0)
-      ? [...history].sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate))
-      : [];
+    
+    const totalPeriods = schedList.length;
+    const remainingRepayPeriods = Math.max(1, totalPeriods - graceMonths);
+    let baseMonthlyPrincipal = isBullet ? 0 : roundPrincipalCore(loanAmt / remainingRepayPeriods, '1k');
 
     let currentBalance = loanAmt;
     let prevDateStr: string = contract.DisbursementDate || contract.ContractStartDate || new Date().toISOString().split('T')[0];
 
     const result: RepaymentSchedule[] = [];
 
-    for (let i = 0; i < schedList.length; i++) {
+    for (let i = 0; i < totalPeriods; i++) {
       const s = schedList[i];
       const periodNum = i + 1;
       const dueDateStr = s.DueDate;
@@ -1065,38 +1061,19 @@ export const LoanPortfolioView: React.FC = () => {
       const days = getDaysBetween(prevDateStr, dueDateStr);
       prevDateStr = dueDateStr;
 
-      let activeAnnualRate = defaultAnnualRate;
-      if (sortedHistory.length > 0) {
-        let activeItem: RateAdjustmentHistoryItem | null = null;
-        for (const item of sortedHistory) {
-          if (item.effectiveDate <= dueDateStr) {
-            activeItem = item;
-          } else {
-            break;
-          }
-        }
-        if (activeItem && activeItem.ratePercent > 0) {
-          activeAnnualRate = activeItem.ratePercent / 100;
-        }
-      }
-
+      const activeAnnualRate = getEffectiveActiveRate(contract, dueDateStr);
       const calculatedInterest = Math.round(currentBalance * activeAnnualRate * (days / 365));
 
       let expectedNormalPrincipal = 0;
       if (isBullet) {
-        expectedNormalPrincipal = (periodNum === schedList.length) ? currentBalance : 0;
+        expectedNormalPrincipal = (periodNum === totalPeriods) ? currentBalance : 0;
       } else {
         if (periodNum <= graceMonths) {
           expectedNormalPrincipal = 0;
-        } else if (periodNum === schedList.length) {
+        } else if (periodNum === totalPeriods) {
           expectedNormalPrincipal = currentBalance;
         } else {
-          const remainingUnpaidNonGrace = schedList.slice(i).filter((item, idx) => {
-            const itemPeriod = i + idx + 1;
-            return !item.IsPaid && itemPeriod > graceMonths;
-          }).length;
-          const count = Math.max(1, remainingUnpaidNonGrace);
-          expectedNormalPrincipal = Math.min(currentBalance, roundPrincipalCore(currentBalance / count, '1k'));
+          expectedNormalPrincipal = Math.min(currentBalance, baseMonthlyPrincipal);
         }
       }
 
@@ -1105,7 +1082,7 @@ export const LoanPortfolioView: React.FC = () => {
       if (s.IsPaid) {
         const recordedP = (s.ActualPaidPrincipal !== undefined && s.ActualPaidPrincipal !== null && s.ActualPaidPrincipal > 0)
           ? s.ActualPaidPrincipal
-          : (s.PrincipalAmount > 0 ? s.PrincipalAmount : expectedNormalPrincipal);
+          : expectedNormalPrincipal;
         principalInPeriod = Math.min(currentBalance, recordedP);
       } else if (s.ActualPaidPrincipal && s.ActualPaidPrincipal > 0) {
         const recordedP = s.ActualPaidPrincipal + (s.PrepaidPrincipalAmount ?? 0);
@@ -1113,12 +1090,18 @@ export const LoanPortfolioView: React.FC = () => {
       } else if (s.PrepaidPrincipalAmount && s.PrepaidPrincipalAmount > 0) {
         const recordedP = expectedNormalPrincipal + s.PrepaidPrincipalAmount;
         principalInPeriod = Math.min(currentBalance, recordedP);
+        
+        const remainingUnpaidNonGrace = totalPeriods - periodNum;
+        if (remainingUnpaidNonGrace > 0) {
+          const balAfterPrepay = Math.max(0, currentBalance - recordedP);
+          baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingUnpaidNonGrace, '1k');
+        }
       } else {
         principalInPeriod = expectedNormalPrincipal;
       }
 
       const overduePen = s.OverdueInterestAmount ?? 0;
-      const totalObligation = (s.IsPaid ? principalInPeriod : principalInPeriod) + (s.IsPaid ? (s.ActualPaidInterest ?? calculatedInterest) : calculatedInterest) + overduePen;
+      const totalObligation = principalInPeriod + (s.IsPaid ? (s.ActualPaidInterest ?? calculatedInterest) : calculatedInterest) + overduePen;
 
       result.push({
         ...s,

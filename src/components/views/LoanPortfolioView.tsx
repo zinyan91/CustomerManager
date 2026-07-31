@@ -827,7 +827,7 @@ export const LoanPortfolioView: React.FC = () => {
         : ((interestRateMode === 'pref' ? prefDec : normalDec) || prefDec || normalDec || baseDec || undefined);
 
       let noteText = form.Note || '';
-      noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').replace(/\[PENALTY_SURCHARGE:[^\]]*\]/g, '').replace(/\[RATE_HISTORY:[^\]]*\]/g, '').trim();
+      noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').replace(/\[PENALTY_SURCHARGE:[^\]]*\]/g, '').replace(/\[RATE_HISTORY:[^\]]*\]/g, '').replace(/\[RATE_HISTORY:[\s\S]*?\]\]/g, '').trim();
       if (hdtd && hdtd !== effectiveContractNumber && !noteText.includes(`HĐTD: ${hdtd}`)) {
         noteText = `HĐTD: ${hdtd}\n${noteText}`.trim();
       }

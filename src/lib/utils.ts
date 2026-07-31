@@ -112,20 +112,32 @@ import type { RateAdjustmentHistoryItem, LoanContract } from '../types';
 
 export function getContractRateHistory(c?: LoanContract | null): RateAdjustmentHistoryItem[] {
   if (!c || !c.Note) return [];
-  const match = c.Note.match(/\[RATE_HISTORY:(.*?)\]/s);
-  if (!match || !match[1]) return [];
-  try {
-    const parsed = JSON.parse(match[1]);
-    if (Array.isArray(parsed)) return parsed;
-  } catch {
-    return [];
+
+  // Try encoded format first
+  const encodedMatch = c.Note.match(/\[RATE_HISTORY:([^\]]+)\]/);
+  if (encodedMatch && encodedMatch[1]) {
+    try {
+      const decoded = decodeURIComponent(encodedMatch[1]);
+      const parsed = JSON.parse(decoded);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
   }
+
+  // Fallback for previous unencoded format
+  const rawMatch = c.Note.match(/\[RATE_HISTORY:([\s\S]*?)\]\]/) || c.Note.match(/\[RATE_HISTORY:([\s\S]*?)\]/);
+  if (rawMatch && rawMatch[1]) {
+    try {
+      const parsed = JSON.parse(rawMatch[1]);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+
   return [];
 }
 
 export function serializeContractRateHistory(history: RateAdjustmentHistoryItem[]): string {
   if (!history || history.length === 0) return '';
-  return `[RATE_HISTORY:${JSON.stringify(history)}]`;
+  return `[RATE_HISTORY:${encodeURIComponent(JSON.stringify(history))}]`;
 }
 
 export function getEffectiveActiveRate(c?: LoanContract | null, targetDateStr?: string): number {

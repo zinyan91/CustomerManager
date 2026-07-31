@@ -111,6 +111,31 @@ export const DocumentTemplateView: React.FC = () => {
 
   const totalSaleAmount = saleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
+  // PAYMENT REQUEST STATE (Dynamic Stages + Cash vs Transfer)
+  const [payMethodType, setPayMethodType] = useState<'cash' | 'transfer'>('cash');
+  const [payCashName, setPayCashName] = useState('PHẠM HỒNG ĐỨC');
+  const [payCashCccd, setPayCashCccd] = useState('0720 7700 0901');
+  const [payCashCccdDate, setPayCashCccdDate] = useState('25/05/2023');
+  const [payCashCccdPlace, setPayCashCccdPlace] = useState('CCS QLHC về TTXH');
+
+  const [payBankOwner, setPayBankOwner] = useState('PHẠM HỒNG ĐỨC');
+  const [payBankAccNo, setPayBankAccNo] = useState('1023456789');
+  const [payBankName, setPayBankName] = useState('Ngân hàng TMCP Ngoại thương Việt Nam (Vietcombank)');
+  const [payBankBranch, setPayBankBranch] = useState('Chi nhánh Hà Tĩnh');
+
+  const [payStages, setPayStages] = useState<any[]>([
+    { id: '1', stageName: 'Đợt 1 (Đợt đầu tiên)', amount: '93.600.000', status: 'paid', note: 'Đã thanh toán đợt đầu' },
+    { id: '2', stageName: 'Đợt 2 (Đợt này)', amount: '500.000.000', status: 'current', note: 'Thanh toán đợt này trước khi nhận hàng' }
+  ]);
+
+  const handleAddPayStage = () => {
+    const nextIdx = payStages.length + 1;
+    setPayStages([
+      ...payStages,
+      { id: Date.now().toString(), stageName: `Đợt ${nextIdx}`, amount: '100.000.000', status: 'current', note: 'Đề nghị thanh toán' }
+    ]);
+  };
+
   // Generate Document HTML based on active template (EXACT ORIGINAL TEMPLATE TEXT)
   const currentTplInfo = TEMPLATE_LIST.find(t => t.id === selectedTemplate) || TEMPLATE_LIST[0];
 
@@ -418,62 +443,55 @@ export const DocumentTemplateView: React.FC = () => {
       `;
     }
 
-    if (selectedTemplate === 'payment_request_sale') {
-      const remainingNum = Math.max(0, totalSaleAmount - (parseFloat(salePaymentStage1.replace(/\D/g, '')) || 0));
+    // Unify Payment Requests (payment_request_sale & payment_request_const)
+    const isSale = selectedTemplate === 'payment_request_sale';
+    const buyerName = isSale ? saleBuyerName : constPartyAName;
+    const sellerName = isSale ? saleSellerName : constPartyBName;
+    const contractDateStr = isSale ? saleContractDate : constContractDate;
+    const totalAmountStr = isSale ? totalSaleAmount.toLocaleString('vi-VN') : constTotalPrice;
+    const docTypeTitle = isSale ? 'Hợp đồng mua bán hàng hóa' : 'Hợp đồng thi công nhà ở dân dụng';
 
+    // Build Payment Tranches HTML (aligned & formatted neatly)
+    const stagesHtml = payStages.map((st) => {
+      let actionText = '';
+      if (st.status === 'paid') {
+        actionText = `Bà/Ông ${nfc(buyerName)} đã thanh toán số tiền là:`;
+      } else if (st.status === 'current') {
+        actionText = `Bà/Ông ${nfc(buyerName)} thanh toán số tiền đợt này là:`;
+      } else {
+        actionText = `Số tiền các đợt thanh toán tiếp theo:`;
+      }
       return `
-        <div class="text-center no-indent">
-          <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-          <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
-          <div style="text-align: center; margin: 4px 0;" class="no-indent">
-            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
-          </div>
-        </div>
+        <p class="clause-p" style="margin-left: 24px; text-align: justify;">
+          + <strong>${nfc(st.stageName)}:</strong> ${actionText} <strong>${st.amount} đồng</strong> ${st.note ? `<span class="font-italic">(${nfc(st.note)})</span>` : ''}
+        </p>
+      `;
+    }).join('');
 
-        <div class="text-right font-italic text-[12pt] pt-2 pb-2 no-indent">
-          ........, Ngày .... Tháng .... Năm 2026
-        </div>
+    // Build Beneficiary Info HTML (Line by Line for Cash or Transfer)
+    let infoHtml = '';
+    if (payMethodType === 'cash') {
+      const name = payCashName || sellerName;
+      const cccd = payCashCccd || (isSale ? saleSellerCccd : constPartyBCccd);
+      const cccdDate = payCashCccdDate || (isSale ? saleSellerCccdDate : '03/03/2022');
+      const cccdPlace = payCashCccdPlace || 'CCS QLHC về TTXH';
 
-        <div class="text-center pt-2 pb-2 no-indent">
-          <h1>GIẤY ĐỀ NGHỊ THANH TOÁN</h1>
-        </div>
-
-        <p class="clause-p">Kính gửi: <strong>Bà ${nfc(saleBuyerName)}</strong></p>
-
-        <p class="clause-p">Căn cứ hợp đồng mua bán hàng hóa ký ngày: <strong>${fmtDate(saleContractDate)}</strong> giữa Bà ${nfc(saleBuyerName)} và Ông ${nfc(saleSellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
-
-        <p class="clause-p"><strong>1. Giá trị hợp đồng:</strong> <strong>${totalSaleAmount.toLocaleString('vi-VN')} đồng</strong></p>
-        <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;(Bằng chữ: Năm trăm chín mươi ba triệu sáu trăm nghìn đồng)</p>
-
-        <p class="clause-p"><strong>2. Thời hạn thanh toán:</strong></p>
-        <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;+ Bà Cảnh đã thanh toán cho tôi với số tiền đợt đầu tiên là: <strong>${salePaymentStage1} đồng</strong></p>
-        <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;+ Bà Cảnh thanh toán cho tôi số tiền còn lại của hợp đồng đợt này là: <strong>${remainingNum.toLocaleString('vi-VN')} đồng</strong> trước khi nhận hàng</p>
-
-        <p class="clause-p"><strong>3. Thông tin thanh toán:</strong></p>
-        <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;– Họ & tên: <strong>${nfc(saleSellerName)}</strong></p>
-        <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;– CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;&nbsp;&nbsp;&nbsp;– Ngày cấp: <strong>${nfc(saleSellerCccdDate)}</strong> &nbsp;&nbsp;&nbsp;&nbsp;– Nơi cấp: <strong>CCS QLHC về TTXH</strong></p>
-
-        <p class="clause-p pt-3">Kính mong Bà Cảnh sắp xếp thanh toán số tiền nêu trên trước khi nhận hàng, theo đúng tiến độ đã thỏa thuận trong hợp đồng.</p>
-
-        <p class="clause-p">Trân trọng!</p>
-
-        <table class="sig-table font-serif">
-          <tbody>
-            <tr>
-              <td style="width: 50%;"></td>
-              <td style="width: 50%; text-align: center;">
-                <div class="font-bold uppercase">Người đề nghị thanh toán</div>
-                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
-                <div class="font-bold uppercase">${nfc(saleSellerName)}</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      infoHtml = `
+        <p class="clause-p" style="margin-left: 24px;">– Họ & tên: <strong>${nfc(name)}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– CCCD số: <strong>${nfc(cccd)}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– Ngày cấp: <strong>${nfc(cccdDate)}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– Nơi cấp: <strong>${nfc(cccdPlace)}</strong></p>
+      `;
+    } else {
+      const owner = payBankOwner || sellerName;
+      infoHtml = `
+        <p class="clause-p" style="margin-left: 24px;">– Họ tên chủ tài khoản: <strong>${nfc(owner)}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– Số tài khoản: <strong>${nfc(payBankAccNo)}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– Ngân hàng: <strong>${nfc(payBankName)}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– Chi nhánh: <strong>${nfc(payBankBranch)}</strong></p>
       `;
     }
 
-    // Default: payment_request_const (HĐ Thi công nhà ở)
     return `
       <div class="text-center no-indent">
         <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
@@ -491,23 +509,22 @@ export const DocumentTemplateView: React.FC = () => {
         <h1>GIẤY ĐỀ NGHỊ THANH TOÁN</h1>
       </div>
 
-      <p class="clause-p">Kính gửi: <strong>Bà ${nfc(constPartyAName)}</strong></p>
+      <p class="clause-p">Kính gửi: <strong>Bà/Ông ${nfc(buyerName)}</strong></p>
 
-      <p class="clause-p">- Căn cứ hợp đồng thi công nhà ở dân dụng ký ngày <strong>${fmtDate(constContractDate)}</strong> giữa Bà ${nfc(constPartyAName)} và Bà ${nfc(constPartyBName)}</p>
-      <p class="clause-p">- Nay tôi kính đề nghị Bà ${nfc(constPartyAName)} thanh toán cho tôi phần còn lại của hợp đồng thi công nhà ở nêu trên, với nội dung cụ thể như sau:</p>
+      <p class="clause-p">Căn cứ ${docTypeTitle} ký ngày: <strong>${fmtDate(contractDateStr)}</strong> giữa Bà/Ông ${nfc(buyerName)} và Ông/Bà ${nfc(sellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
 
-      <p class="clause-p"><strong>1. Giá trị hợp đồng:</strong> <strong>${constTotalPrice} đồng</strong></p>
-      <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;(Bằng chữ: Một tỷ không trăm lẻ ba triệu bảy trăm ngàn)</p>
+      <p class="clause-p"><strong>1. Giá trị hợp đồng:</strong> <strong>${totalAmountStr} đồng</strong></p>
+      <p class="clause-p" style="margin-left: 24px;">(Bằng chữ: ${isSale ? 'Năm trăm chín mươi ba triệu sáu trăm nghìn đồng' : 'Một tỷ không trăm lẻ ba triệu bảy trăm ngàn đồng'})</p>
 
       <p class="clause-p"><strong>2. Thời hạn thanh toán:</strong></p>
-      <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;+ Đợt 1: Bà Dung đã thanh toán cho tôi với số tiền đợt đầu tiên là: <strong>${constDepositStage1} đồng</strong></p>
-      <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;+ Đợt 2: Đề nghị bà Dung thanh toán cho tôi số tiền đợt 2 là: <strong>${constStage2Amount} đồng</strong></p>
+      ${stagesHtml}
 
-      <p class="clause-p"><strong>3. Thông tin thanh toán:</strong></p>
-      <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;- Họ & Tên: <strong>${nfc(constPartyBName)}</strong></p>
-      <p class="clause-p">&nbsp;&nbsp;&nbsp;&nbsp;- CCCD số: <strong>${nfc(constPartyBCccd)}</strong> &nbsp;&nbsp;&nbsp;&nbsp;- Ngày cấp: <strong>03/03/2022</strong> &nbsp;&nbsp;&nbsp;&nbsp;- Nơi cấp: <strong>Cục Cảnh Sát QLHC</strong></p>
+      <p class="clause-p"><strong>3. Thông tin thanh toán (${payMethodType === 'cash' ? 'Thanh toán tiền mặt' : 'Thanh toán chuyển khoản'}):</strong></p>
+      ${infoHtml}
 
-      <p class="clause-p pt-3">Trân trọng cảm ơn!</p>
+      <p class="clause-p pt-3">Kính mong Bà/Ông ${nfc(buyerName)} sắp xếp thanh toán số tiền nêu trên theo đúng tiến độ đã thỏa thuận trong hợp đồng.</p>
+
+      <p class="clause-p">Trân trọng!</p>
 
       <table class="sig-table font-serif">
         <tbody>
@@ -517,7 +534,7 @@ export const DocumentTemplateView: React.FC = () => {
               <div class="font-bold uppercase">Người đề nghị thanh toán</div>
               <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
               <div style="height: 70px;"></div>
-              <div class="font-bold uppercase">${nfc(constPartyBName)}</div>
+              <div class="font-bold uppercase">${nfc(payMethodType === 'cash' ? (payCashName || sellerName) : (payBankOwner || sellerName))}</div>
             </td>
           </tr>
         </tbody>
@@ -581,6 +598,17 @@ export const DocumentTemplateView: React.FC = () => {
             salePaymentStage1={salePaymentStage1} setSalePaymentStage1={setSalePaymentStage1}
             saleItems={saleItems} setSaleItems={setSaleItems}
             handleAddSaleItem={handleAddSaleItem}
+            payMethodType={payMethodType} setPayMethodType={setPayMethodType}
+            payCashName={payCashName} setPayCashName={setPayCashName}
+            payCashCccd={payCashCccd} setPayCashCccd={setPayCashCccd}
+            payCashCccdDate={payCashCccdDate} setPayCashCccdDate={setPayCashCccdDate}
+            payCashCccdPlace={payCashCccdPlace} setPayCashCccdPlace={setPayCashCccdPlace}
+            payBankOwner={payBankOwner} setPayBankOwner={setPayBankOwner}
+            payBankAccNo={payBankAccNo} setPayBankAccNo={setPayBankAccNo}
+            payBankName={payBankName} setPayBankName={setPayBankName}
+            payBankBranch={payBankBranch} setPayBankBranch={setPayBankBranch}
+            payStages={payStages} setPayStages={setPayStages}
+            handleAddPayStage={handleAddPayStage}
           />
         </div>
 

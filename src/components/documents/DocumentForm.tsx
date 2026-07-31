@@ -21,6 +21,14 @@ export interface ConstItem {
   note: string;
 }
 
+export interface PaymentStageItem {
+  id: string;
+  stageName: string;
+  amount: string;
+  status: 'paid' | 'current' | 'future';
+  note?: string;
+}
+
 interface DocumentFormProps {
   styles: ThemeStyles;
   selectedTemplate: TemplateType;
@@ -69,6 +77,21 @@ interface DocumentFormProps {
   salePaymentStage1: string; setSalePaymentStage1: (v: string) => void;
   saleItems: SaleItem[]; setSaleItems: React.Dispatch<React.SetStateAction<SaleItem[]>>;
   handleAddSaleItem: () => void;
+
+  // Payment Request Extra State (Cash vs Transfer + Dynamic Stages)
+  payMethodType?: 'cash' | 'transfer';
+  setPayMethodType?: (v: 'cash' | 'transfer') => void;
+  payCashName?: string; setPayCashName?: (v: string) => void;
+  payCashCccd?: string; setPayCashCccd?: (v: string) => void;
+  payCashCccdDate?: string; setPayCashCccdDate?: (v: string) => void;
+  payCashCccdPlace?: string; setPayCashCccdPlace?: (v: string) => void;
+  payBankOwner?: string; setPayBankOwner?: (v: string) => void;
+  payBankAccNo?: string; setPayBankAccNo?: (v: string) => void;
+  payBankName?: string; setPayBankName?: (v: string) => void;
+  payBankBranch?: string; setPayBankBranch?: (v: string) => void;
+  payStages?: PaymentStageItem[];
+  setPayStages?: React.Dispatch<React.SetStateAction<PaymentStageItem[]>>;
+  handleAddPayStage?: () => void;
 }
 
 export const DocumentForm: React.FC<DocumentFormProps> = ({
@@ -116,6 +139,18 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
   salePaymentStage1, setSalePaymentStage1,
   saleItems, setSaleItems,
   handleAddSaleItem,
+
+  payMethodType = 'cash', setPayMethodType,
+  payCashName = '', setPayCashName,
+  payCashCccd = '', setPayCashCccd,
+  payCashCccdDate = '', setPayCashCccdDate,
+  payCashCccdPlace = '', setPayCashCccdPlace,
+  payBankOwner = '', setPayBankOwner,
+  payBankAccNo = '', setPayBankAccNo,
+  payBankName = '', setPayBankName,
+  payBankBranch = '', setPayBankBranch,
+  payStages = [], setPayStages,
+  handleAddPayStage,
 }) => {
   if (selectedTemplate === 'lease_mb' || selectedTemplate === 'lease_house') {
     return (
@@ -516,104 +551,186 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
     );
   }
 
-  if (selectedTemplate === 'payment_request_sale') {
+  if (selectedTemplate === 'payment_request_sale' || selectedTemplate === 'payment_request_const') {
+    const isSale = selectedTemplate === 'payment_request_sale';
+    const recipientName = isSale ? saleBuyerName : constPartyAName;
+    const setRecipientName = isSale ? setSaleBuyerName : setConstPartyAName;
+
     return (
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
         <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
           <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
-            THÔNG TIN ĐỀ NGHỊ THANH TOÁN - HỢP ĐỒNG MUA BÁN HÀNG HÓA
+            THÔNG TIN GIẤY ĐỀ NGHỊ THANH TOÁN ({isSale ? 'HĐ MUA BÁN HÀNG HÓA' : 'HĐ THI CÔNG NHÀ Ở'})
           </div>
         </div>
 
+        {/* Section 1: Người nhận & Ngày hợp đồng */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">NGƯỜI NHẬN & NGƯỜI ĐỀ NGHỊ</div>
+          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">NGƯỜI NHẬN ĐỀ NGHỊ & HỢP ĐỒNG CĂN CỨ</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Kính gửi (Người nhận thanh toán)</label>
-              <input type="text" value={saleBuyerName} onChange={e => setSaleBuyerName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+              <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
             </div>
             <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Người đề nghị (Bên Bán)</label>
-              <input type="text" value={saleSellerName} onChange={e => setSaleSellerName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Số CCCD Bên Bán</label>
-              <input type="text" value={saleSellerCccd} onChange={e => setSaleSellerCccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
-            </div>
-            <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Ngày cấp CCCD</label>
-              <input type="text" value={saleSellerCccdDate} onChange={e => setSaleSellerCccdDate(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+              <label className={`block mb-1 ${styles.labelStyle}`}>Ngày ký Hợp Đồng căn cứ</label>
+              <DateInput
+                value={isSale ? saleContractDate : constContractDate}
+                onChange={isSale ? setSaleContractDate : setConstContractDate}
+                className={`w-full rounded-xl p-2 ${styles.inputStyle}`}
+              />
             </div>
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">NỘI DUNG & TIẾN ĐỘ THANH TOÁN</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Ngày ký HĐ Mua Bán</label>
-              <DateInput value={saleContractDate} onChange={setSaleContractDate} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
-            </div>
-            <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Đã thanh toán Đợt 1 (VNĐ)</label>
-              <input type="text" value={salePaymentStage1} onChange={e => setSalePaymentStage1(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${styles.inputStyle}`} />
-            </div>
-            <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Tổng giá trị HĐ (VNĐ)</label>
-              <div className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.readonlyInputStyle}`}>
-                {saleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0).toLocaleString('vi-VN')}
+        {/* Section 2: Phương thức thanh toán (Tiền mặt vs Chuyển khoản) */}
+        <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20 space-y-3">
+          <div className="font-bold text-amber-600 dark:text-amber-400 text-xs uppercase border-b pb-1 border-amber-200 dark:border-amber-900/40 flex items-center justify-between">
+            <span>THÔNG TIN BÊN BÁN / BÊN ĐỀ NGHỊ THANH TOÁN (2 PHƯƠNG THỨC)</span>
+          </div>
+
+          <div className="flex items-center space-x-6 pt-1">
+            <label className="flex items-center space-x-2 cursor-pointer font-bold">
+              <input
+                type="radio"
+                name="payMethodType"
+                value="cash"
+                checked={payMethodType === 'cash'}
+                onChange={() => setPayMethodType && setPayMethodType('cash')}
+                className="w-4 h-4 text-sky-600"
+              />
+              <span>💵 1. Thanh toán Tiền Mặt</span>
+            </label>
+            <label className="flex items-center space-x-2 cursor-pointer font-bold">
+              <input
+                type="radio"
+                name="payMethodType"
+                value="transfer"
+                checked={payMethodType === 'transfer'}
+                onChange={() => setPayMethodType && setPayMethodType('transfer')}
+                className="w-4 h-4 text-sky-600"
+              />
+              <span>🏦 2. Thanh toán Chuyển Khoản</span>
+            </label>
+          </div>
+
+          {payMethodType === 'cash' ? (
+            <div className="space-y-2 pt-2 border-t border-amber-200 dark:border-amber-900/40">
+              <div className="text-[11px] text-amber-700 dark:text-amber-300 italic">
+                💡 Thông tin tiền mặt hiển thị trên biểu mẫu (mỗi thông tin 1 dòng): Họ tên, CCCD số, Ngày cấp, Nơi cấp.
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên người nhận tiền mặt</label>
+                  <input type="text" value={payCashName || ''} onChange={e => setPayCashName && setPayCashName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+                </div>
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Số CCCD</label>
+                  <input type="text" value={payCashCccd || ''} onChange={e => setPayCashCccd && setPayCashCccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+                </div>
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Ngày cấp CCCD</label>
+                  <input type="text" value={payCashCccdDate || ''} onChange={e => setPayCashCccdDate && setPayCashCccdDate(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+                </div>
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Nơi cấp CCCD</label>
+                  <input type="text" value={payCashCccdPlace || ''} onChange={e => setPayCashCccdPlace && setPayCashCccdPlace(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (selectedTemplate === 'payment_request_const') {
-    return (
-      <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
-        <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
-          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
-            THÔNG TIN ĐỀ NGHỊ THANH TOÁN - HỢP ĐỒNG THI CÔNG NHÀ Ở
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">NGƯỜI NHẬN & NGƯỜI ĐỀ NGHỊ</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Kính gửi (Chủ Đầu Tư)</label>
-              <input type="text" value={constPartyAName} onChange={e => setConstPartyAName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+          ) : (
+            <div className="space-y-2 pt-2 border-t border-amber-200 dark:border-amber-900/40">
+              <div className="text-[11px] text-amber-700 dark:text-amber-300 italic">
+                💡 Thông tin chuyển khoản hiển thị trên biểu mẫu (mỗi thông tin 1 dòng): Họ tên chủ tài khoản, Số tài khoản, Ngân hàng, Chi nhánh.
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Chủ tài khoản</label>
+                  <input type="text" value={payBankOwner || ''} onChange={e => setPayBankOwner && setPayBankOwner(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+                </div>
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Số tài khoản (STK)</label>
+                  <input type="text" value={payBankAccNo || ''} onChange={e => setPayBankAccNo && setPayBankAccNo(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 ${styles.inputStyle}`} />
+                </div>
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Ngân hàng</label>
+                  <input type="text" value={payBankName || ''} onChange={e => setPayBankName && setPayBankName(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+                </div>
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Chi nhánh Ngân hàng</label>
+                  <input type="text" value={payBankBranch || ''} onChange={e => setPayBankBranch && setPayBankBranch(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Người đề nghị (Nhà Thầu)</label>
-              <input type="text" value={constPartyBName} onChange={e => setConstPartyBName(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
-            </div>
-          </div>
-          <div>
-            <label className={`block mb-1 ${styles.labelStyle}`}>Số STK / CCCD Nhà Thầu</label>
-            <input type="text" value={constPartyBCccd} onChange={e => setConstPartyBCccd(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
-          </div>
+          )}
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">NỘI DUNG & TIẾN ĐỘ THANH TOÁN</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Ngày ký HĐ Thi Công</label>
-              <DateInput value={constContractDate} onChange={setConstContractDate} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
-            </div>
-            <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Đã thanh toán Đợt 1 (VNĐ)</label>
-              <input type="text" value={constDepositStage1} onChange={e => setConstDepositStage1(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${styles.inputStyle}`} />
-            </div>
-            <div>
-              <label className={`block mb-1 ${styles.labelStyle}`}>Đề nghị thanh toán Đợt 2 (VNĐ)</label>
-              <input type="text" value={constStage2Amount} onChange={e => setConstStage2Amount(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-purple-600 dark:text-purple-400 ${styles.inputStyle}`} />
-            </div>
+        {/* Section 3: Tiến độ & Danh sách đợt thanh toán (Dynamic Stage List) */}
+        <div className="border rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
+          <div className="p-2.5 bg-slate-100 dark:bg-slate-900 font-bold flex items-center justify-between">
+            <span>DANH SÁCH CÁC ĐỢT THANH TOÁN (THANH TOÁN NHIỀU ĐỢT)</span>
+            <button type="button" onClick={handleAddPayStage} className="flex items-center space-x-1 bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded-lg text-xs">
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Thêm đợt thanh toán</span>
+            </button>
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            <table className="w-full text-left text-xs">
+              <thead className={styles.tableHeaderStyle}>
+                <tr>
+                  <th className="p-2">STT</th>
+                  <th className="p-2">TÊN ĐỢT THANH TOÁN</th>
+                  <th className="p-2">TRẠNG THÁI</th>
+                  <th className="p-2 text-right">SỐ TIỀN (VNĐ)</th>
+                  <th className="p-2">GHI CHÚ</th>
+                  <th className="p-2 text-center">XÓA</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {(payStages || []).map((stage, idx) => (
+                  <tr key={stage.id}>
+                    <td className="p-2 text-center font-bold">{idx + 1}</td>
+                    <td className="p-2">
+                      <input type="text" value={stage.stageName} onChange={e => {
+                        if (!setPayStages || !payStages) return;
+                        const next = [...payStages]; next[idx].stageName = e.target.value; setPayStages(next);
+                      }} className={`w-full rounded-lg p-1 ${styles.inputStyle}`} />
+                    </td>
+                    <td className="p-2">
+                      <select value={stage.status} onChange={e => {
+                        if (!setPayStages || !payStages) return;
+                        const next = [...payStages]; next[idx].status = e.target.value as any; setPayStages(next);
+                      }} className={`w-full rounded-lg p-1 font-bold ${styles.inputStyle}`}>
+                        <option value="paid">Đã thanh toán đợt này</option>
+                        <option value="current">Đề nghị thanh toán đợt này</option>
+                        <option value="future">Chờ thanh toán sau</option>
+                      </select>
+                    </td>
+                    <td className="p-2 text-right">
+                      <input type="text" value={stage.amount} onChange={e => {
+                        if (!setPayStages || !payStages) return;
+                        const digits = e.target.value.replace(/\D/g, '');
+                        const next = [...payStages]; next[idx].amount = digits ? Number(digits).toLocaleString('vi-VN') : ''; setPayStages(next);
+                      }} className={`w-28 rounded-lg p-1 text-right font-mono font-bold ${styles.inputStyle}`} />
+                    </td>
+                    <td className="p-2">
+                      <input type="text" value={stage.note || ''} onChange={e => {
+                        if (!setPayStages || !payStages) return;
+                        const next = [...payStages]; next[idx].note = e.target.value; setPayStages(next);
+                      }} className={`w-full rounded-lg p-1 ${styles.inputStyle}`} />
+                    </td>
+                    <td className="p-2 text-center">
+                      <button type="button" onClick={() => {
+                        if (!setPayStages || !payStages) return;
+                        setPayStages(payStages.filter(s => s.id !== stage.id));
+                      }} className="text-rose-500 hover:text-rose-700">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

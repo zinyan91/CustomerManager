@@ -122,7 +122,9 @@ function generateSchedule(
   principalGraceMonths: number = 0,
   prepaymentAmount: number = 0,
   prepaymentPeriod: number = 0,
-  prepaymentMode: 'reduce_monthly' | 'shorten_tenor' = 'reduce_monthly'
+  prepaymentMode: 'reduce_monthly' | 'shorten_tenor' = 'reduce_monthly',
+  rateHistory?: RateAdjustmentHistoryItem[],
+  prefInfo?: { prefRate: number; prefMonths: number; postPrefRate: number }
 ): Partial<RepaymentSchedule>[] {
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
@@ -132,7 +134,7 @@ function generateSchedule(
   const startMonth = startParts ? startParts.m : new Date().getMonth();
   const startDay = startParts ? startParts.d : new Date().getDate();
 
-  const annualRate = interestRate > 1 ? interestRate / 100 : interestRate;
+  const defaultAnnualRate = interestRate > 1 ? interestRate / 100 : interestRate;
 
   // Lịch sử ngày trả nợ kỳ trước (Kỳ 1 bắt đầu tính số ngày thực tế từ Ngày giải ngân)
   let prevDateStr = disbursementDateStr || repaymentStartDateStr;
@@ -145,6 +147,10 @@ function generateSchedule(
         ? customMonthlyPrincipal
         : roundPrincipalCore(loanAmount / remainingRepayPeriods, '1k'));
 
+  const sortedHistory = (rateHistory && rateHistory.length > 0)
+    ? [...rateHistory].sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate))
+    : [];
+
   for (let i = 1; i <= periods; i++) {
     if (balance <= 0) break;
 
@@ -156,8 +162,31 @@ function generateSchedule(
     const dueDay = Math.min(startDay, daysInDueMonth);
     const dueDateStr = `${dueYear}-${String(dueMonthIdx + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
 
-    // Tính số ngày thực tế trong kỳ từ prevDateStr đến dueDateStr (VD: Tháng 5 có 31 ngày, Tháng 6 có 30 ngày)
+    // Tính số ngày thực tế trong kỳ từ prevDateStr đến dueDateStr
     const days = getDaysBetween(prevDateStr, dueDateStr);
+
+    // XÁC ĐỊNH LÃI SUẤT HIỆU LỰC TẠI KỲ i:
+    let activeAnnualRate = defaultAnnualRate;
+
+    if (sortedHistory.length > 0) {
+      let activeItem: RateAdjustmentHistoryItem | null = null;
+      for (const item of sortedHistory) {
+        if (item.effectiveDate <= dueDateStr) {
+          activeItem = item;
+        } else {
+          break;
+        }
+      }
+      if (activeItem && activeItem.ratePercent > 0) {
+        activeAnnualRate = activeItem.ratePercent / 100;
+      }
+    } else if (prefInfo && prefInfo.prefRate > 0) {
+      if (i <= prefInfo.prefMonths) {
+        activeAnnualRate = prefInfo.prefRate > 1 ? prefInfo.prefRate / 100 : prefInfo.prefRate;
+      } else {
+        activeAnnualRate = prefInfo.postPrefRate > 1 ? prefInfo.postPrefRate / 100 : prefInfo.postPrefRate;
+      }
+    }
 
     let normalPrincipal = 0;
     if (isBulletPrincipal) {
@@ -181,8 +210,13 @@ function generateSchedule(
 
     const totalPrincipalInPeriod = Math.min(balance, normalPrincipal + periodPrepay);
 
-    // Công thức Core Ngân hàng: Lãi = Dư nợ * (Lãi suất / 365) * Số ngày thực tế trong kỳ
-    const interest = Math.round(balance * annualRate * (days / 365));
+    // Công thức Core Ngân hàng: Lãi = Dư nợ * (Lãi suất hiệu lực kỳ / 365) * Số ngày thực tế trong kỳ
+    const interest = Math.round(balance * activeAnnualRate * (days / 365));
+
+    let noteText: string | undefined = undefined;
+    if (periodPrepay > 0) {
+      noteText = `[TRẢ TRƯỚC HẠN: +${periodPrepay.toLocaleString('vi-VN')}đ]`;
+    }
 
     schedules.push({
       ContractId: contractId,
@@ -192,7 +226,7 @@ function generateSchedule(
       InterestAmount: interest,
       TotalAmount: totalPrincipalInPeriod + interest,
       IsPaid: false,
-      Note: periodPrepay > 0 ? `[TRẢ TRƯỚC HẠN: +${periodPrepay.toLocaleString('vi-VN')}đ]` : undefined,
+      Note: noteText,
     });
 
     const endingBal = Math.max(0, balance - totalPrincipalInPeriod);
@@ -950,6 +984,13 @@ export const LoanPortfolioView: React.FC = () => {
       const graceMonths = selectedContract.PrincipalGracePeriodMonths || 0;
       const prepayAmt = parseFloat(prepaymentAmountInput.replace(/\D/g, '')) || 0;
 
+      const history = getContractRateHistory(selectedContract);
+      const prefInfo = {
+        prefRate: selectedContract.PreferentialRate ? selectedContract.PreferentialRate * 100 : 0,
+        prefMonths: selectedContract.PreferentialPeriodMonths || 0,
+        postPrefRate: selectedContract.PostPreferentialRate ? selectedContract.PostPreferentialRate * 100 : (selectedContract.NormalRate ? selectedContract.NormalRate * 100 : 0)
+      };
+
       const generated = generateSchedule(
         selectedContract.Id,
         loanAmt,
@@ -962,7 +1003,9 @@ export const LoanPortfolioView: React.FC = () => {
         graceMonths,
         prepayAmt,
         prepaymentPeriodInput,
-        prepaymentModeInput
+        prepaymentModeInput,
+        history,
+        prefInfo
       );
       await bulkSaveRepaymentSchedulesAPI(generated);
 

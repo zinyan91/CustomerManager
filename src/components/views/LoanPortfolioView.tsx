@@ -2143,7 +2143,7 @@ export const LoanPortfolioView: React.FC = () => {
                   <div className={`flex flex-wrap items-center justify-between gap-3 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
                     <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
                       <span>Số tiền KUNN: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{fmtMoney(selectedContract.LoanAmount || selectedContract.ContractAmount)}</strong></span>
-                      <span>Lãi suất: <strong className="text-rose-600 dark:text-rose-400 font-mono">{fmtRate(selectedContract.InterestRate || selectedContract.NormalRate)}</strong></span>
+                      <span>Lãi suất hiện hành: <strong className="text-rose-600 dark:text-rose-400 font-mono">{fmtRate(getEffectiveActiveRate(selectedContract))}</strong></span>
                       <span>Thời hạn KUNN: <strong className="text-sky-600 dark:text-sky-400">{selectedContract.KunnTenor || `${selectedContract.LoanTenorMonths || 12} tháng`}</strong></span>
                       <span>Phương thức gốc: <strong className="text-purple-600 dark:text-purple-400">{selectedContract.PrincipalRepaymentMethod || 'Gốc trả cuối kỳ'}</strong></span>
                       <span>Ngày giải ngân: <strong className="text-amber-600 dark:text-amber-400 font-mono">{fmtDate(selectedContract.DisbursementDate || selectedContract.ContractStartDate)}</strong></span>
@@ -2175,7 +2175,7 @@ export const LoanPortfolioView: React.FC = () => {
                   {(() => {
                     // Helper to calculate penalty for a schedule item
                     const getPenaltyForSchedule = (s: RepaymentSchedule) => {
-                      if (s.IsPaid) return 0;
+                      if (s.IsPaid) return s.OverdueInterestAmount || 0;
                       let autoDays = 0;
                       if (s.DueDate) {
                         const parts = s.DueDate.split('-');
@@ -2190,9 +2190,7 @@ export const LoanPortfolioView: React.FC = () => {
                       }
                       const effDays = s.OverdueDays !== undefined ? s.OverdueDays : autoDays;
                       if (effDays <= 0) return 0;
-                      const annualRate = (selectedContract?.InterestRate || selectedContract?.NormalRate || 0.085) > 1
-                        ? (selectedContract?.InterestRate || selectedContract?.NormalRate || 8.5) / 100
-                        : (selectedContract?.InterestRate || selectedContract?.NormalRate || 0.085);
+                      const annualRate = getEffectiveActiveRate(selectedContract, s.DueDate);
                       return Math.round((s.PrincipalAmount || 0) * (annualRate * 1.5) * (effDays / 365));
                     };
 
@@ -2204,6 +2202,7 @@ export const LoanPortfolioView: React.FC = () => {
                           <tr>
                             <th className="p-3 text-center whitespace-nowrap">KỲ</th>
                             <th className="p-3 whitespace-nowrap">NGÀY ĐẾN HẠN</th>
+                            <th className="p-3 text-center whitespace-nowrap text-purple-600 dark:text-purple-400">LÃI SUẤT ÁP DỤNG</th>
                             <th className="p-3 text-center whitespace-nowrap text-rose-500">SỐ NGÀY QUÁ HẠN (NHẬP)</th>
                             <th className="p-3 text-right whitespace-nowrap">GỐC</th>
                             <th className="p-3 text-right whitespace-nowrap">LÃI THƯỜNG</th>
@@ -2216,9 +2215,9 @@ export const LoanPortfolioView: React.FC = () => {
                         </thead>
                         <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
                           {!selectedContract ? (
-                            <tr><td colSpan={10} className="text-center p-8 text-slate-400">Chọn một HĐTD để xem lịch thu nợ</td></tr>
+                            <tr><td colSpan={11} className="text-center p-8 text-slate-400">Chọn một HĐTD để xem lịch thu nợ</td></tr>
                           ) : schedules.length === 0 ? (
-                            <tr><td colSpan={10} className="text-center p-8 text-slate-400">
+                            <tr><td colSpan={11} className="text-center p-8 text-slate-400">
                               Chưa có lịch thu nợ. Nhấn "TẠO LỊCH THU NỢ TỰ ĐỘNG" để tính toán.
                             </td></tr>
                           ) : schedules.map(s => {
@@ -2242,6 +2241,9 @@ export const LoanPortfolioView: React.FC = () => {
                             const rowTotalAmount = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penaltyAmount;
                             const isPrepayRow = (s.PrepaidPrincipalAmount && s.PrepaidPrincipalAmount > 0) || s.Note?.includes('TRẢ TRƯỚC HẠN');
 
+                            const activeRateVal = getEffectiveActiveRate(selectedContract, s.DueDate);
+                            const activeRatePercentStr = (activeRateVal * 100).toFixed(2) + '%/năm';
+
                             return (
                               <tr key={s.Id} className={`transition-colors ${
                                 isPrepayRow
@@ -2254,6 +2256,9 @@ export const LoanPortfolioView: React.FC = () => {
                               }`}>
                                 <td className="p-3 text-center font-bold font-mono">#{s.PeriodNumber}</td>
                                 <td className="p-3 font-mono font-bold">{fmtDate(s.DueDate)}</td>
+                                <td className="p-3 text-center font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50/30 dark:bg-purple-950/20 rounded-lg">
+                                  {activeRatePercentStr}
+                                </td>
                                 <td className="p-3 text-center font-mono font-bold">
                                   {effectiveOverdueDays > 0 ? (
                                     <span className="px-2 py-0.5 rounded-lg bg-rose-600 text-white text-[11px] font-extrabold shadow-sm">
@@ -2315,7 +2320,7 @@ export const LoanPortfolioView: React.FC = () => {
                         {schedules.length > 0 && (
                           <tfoot className={`border-t sticky bottom-0 font-bold ${tableHeaderStyle}`}>
                             <tr>
-                              <td className="p-3 text-center" colSpan={3}>TỔNG CỘNG LỊCH THU NỢ</td>
+                              <td className="p-3 text-center" colSpan={4}>TỔNG CỘNG LỊCH THU NỢ</td>
                               <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono">
                                 {schedules.reduce((a, s) => a + (s.PrincipalAmount || 0), 0).toLocaleString('vi-VN')}
                               </td>

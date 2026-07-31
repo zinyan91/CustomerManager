@@ -395,24 +395,34 @@ export async function fetchRepaymentSchedulesAPI(contractId: number): Promise<Re
 export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<RepaymentSchedule>[]): Promise<void> {
   if (schedules.length === 0) return;
 
-  const toInsertClean = schedules.map(s => {
-    if (s.Id && s.Id > 0) return s;
-    const { Id, ...rest } = s;
-    return rest;
-  });
+  const withId = schedules.filter(s => s.Id && s.Id > 0);
+  const withoutId = schedules.filter(s => !s.Id || s.Id <= 0);
 
-  const { error } = await supabase.from('RepaymentSchedules').insert(toInsertClean);
-  if (error) {
-    const { data } = await supabase.from('RepaymentSchedules').select('Id').order('Id', { ascending: false }).limit(1);
-    let startId = (data && data.length > 0 && data[0].Id) ? data[0].Id + 1 : 1;
+  if (withId.length > 0) {
+    const { error: upsertErr } = await supabase.from('RepaymentSchedules').upsert(withId, { onConflict: 'Id' });
+    if (upsertErr) {
+      console.error('bulkSaveRepaymentSchedulesAPI upsert error:', upsertErr);
+      for (const s of withId) {
+        await supabase.from('RepaymentSchedules').update(s).eq('Id', s.Id);
+      }
+    }
+  }
 
-    const toInsertWithId = schedules.map(s => ({
-      ...s,
-      Id: (s.Id && s.Id > 0) ? s.Id : startId++,
-    }));
-
-    const { error: err2 } = await supabase.from('RepaymentSchedules').insert(toInsertWithId);
-    if (err2) throw err2;
+  if (withoutId.length > 0) {
+    const cleanWithoutId = withoutId.map(s => {
+      const { Id, ...rest } = s;
+      return rest;
+    });
+    const { error: insertErr } = await supabase.from('RepaymentSchedules').insert(cleanWithoutId);
+    if (insertErr) {
+      const { data } = await supabase.from('RepaymentSchedules').select('Id').order('Id', { ascending: false }).limit(1);
+      let startId = (data && data.length > 0 && data[0].Id) ? data[0].Id + 1 : 1;
+      const withGeneratedId = withoutId.map(s => ({
+        ...s,
+        Id: startId++,
+      }));
+      await supabase.from('RepaymentSchedules').upsert(withGeneratedId, { onConflict: 'Id' });
+    }
   }
 }
 

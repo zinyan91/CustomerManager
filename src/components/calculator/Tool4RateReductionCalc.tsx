@@ -444,7 +444,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
                   {fmtMoney(totalInterestSaved)}
                 </div>
                 <div className="text-[11px] text-slate-500 mt-0.5">
-                  Áp dụng trong {tdhNumMonthsReduce} kỳ (Tháng {tdhStartMonth} $\rightarrow$ {tdhStartMonth + tdhNumMonthsReduce - 1})
+                  Áp dụng trong {tdhNumMonthsReduce} kỳ (Tháng {tdhStartMonth} → {tdhStartMonth + tdhNumMonthsReduce - 1})
                 </div>
               </div>
               <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 rounded-xl text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
@@ -456,7 +456,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
               <div>
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">LÃI BAN ĐẦU vs SAU GIẢM</div>
                 <div className="text-lg font-extrabold text-sky-600 dark:text-sky-400 mt-1 font-mono">
-                  {fmtMoney(totalOriginalInterest)} $\rightarrow$ {fmtMoney(totalFinalInterest)}
+                  {fmtMoney(totalOriginalInterest)} → {fmtMoney(totalFinalInterest)}
                 </div>
                 <div className="text-[11px] text-slate-500 mt-0.5">
                   Tiết kiệm: <strong className="text-emerald-600 dark:text-emerald-400">-{((totalInterestSaved / (totalOriginalInterest || 1)) * 100).toFixed(1)}%</strong> chi phí lãi
@@ -643,7 +643,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
               </div>
               <div className="text-xs text-emerald-700 dark:text-emerald-400 pt-2 border-t border-emerald-200 dark:border-emerald-800/60 grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>• Tiền giảm lãi = Số dư × (LSCV quy định - LS đề xuất) × Số ngày/365</div>
-                <div>• Margin hiện tại: <strong>{(qMarginCurrent * 100).toFixed(2)}%</strong> $\rightarrow$ Margin đề xuất: <strong>{(qMarginProposed * 100).toFixed(2)}%</strong></div>
+                <div>• Margin hiện tại: <strong>{(qMarginCurrent * 100).toFixed(2)}%</strong> → Margin đề xuất: <strong>{(qMarginProposed * 100).toFixed(2)}%</strong></div>
               </div>
             </div>
           </div>

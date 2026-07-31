@@ -48,7 +48,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = ({ isLight 
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
         <h2 className="text-sm font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center space-x-2">
           <RefreshCw className="w-5 h-5 text-emerald-500" />
-          <span>QUY ĐỔI LÃI SUẤT PHẲNG $\leftrightarrow$ LÃI SUẤT DƯ NỢ GIẢM DẦN & LÃI SUẤT HIỆU LỰC (EAR/APR)</span>
+          <span>QUY ĐỔI LÃI SUẤT PHẲNG ↔ LÃI SUẤT DƯ NỢ GIẢM DẦN & LÃI SUẤT HIỆU LỰC (EAR/APR)</span>
         </h2>
       </div>
 
@@ -57,7 +57,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = ({ isLight 
         <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
           <div className="font-bold text-xs text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
             <Percent className="w-4 h-4" />
-            <span>1. LÃI PHẲNG (FLAT) $\rightarrow$ DƯ NỢ GIẢM DẦN</span>
+            <span>1. LÃI PHẲNG (FLAT) → DƯ NỢ GIẢM DẦN</span>
           </div>
 
           <div className="space-y-2.5 text-xs">
@@ -112,7 +112,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = ({ isLight 
         <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
           <div className="font-bold text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
             <RefreshCw className="w-4 h-4" />
-            <span>2. LS DANH NGHĨA $\rightarrow$ LS HIỆU LỰC (EAR / APR)</span>
+            <span>2. LS DANH NGHĨA → LS HIỆU LỰC (EAR / APR)</span>
           </div>
 
           <div className="space-y-2.5 text-xs">

@@ -61,7 +61,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
         <h2 className="text-sm font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center space-x-2">
           <Award className="w-5 h-5 text-emerald-500" />
-          <span>TÍNH PHÍ TRẢ NỢ TRƯỚC HẠN & BÀI TOÁN "CÓ NÊN TRẢ NỢ TRƯỚC HẠN?"</span>
+          <span>TÍNH PHÍ TRẢ NỢ TRƯỚC HẠN</span>
         </h2>
       </div>
 

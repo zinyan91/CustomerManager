@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI, saveContractAPI, deleteContractAPI,
-  fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI,
+  fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
   fetchCollateralsByCustomerAPI, updateRepaymentScheduleAPI
 } from '../../lib/api';
 import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRate } from '../../lib/utils';
@@ -9,7 +9,7 @@ import type { LoanContract, Customer, RepaymentSchedule, Collateral, RateAdjustm
 import { useTheme } from '../../context/ThemeContext';
 import {
   Search, FileText, Receipt, Calendar, CheckCircle, AlertCircle,
-  Plus, RefreshCw, X, ShieldCheck, DollarSign, Building2, Save, Trash2
+  Plus, X, ShieldCheck, DollarSign, Building2, Save, Trash2
 } from 'lucide-react';
 import { DateInput } from '../DateInput';
 import { CustomerSearchBar } from '../portfolio/CustomerSearchBar';
@@ -272,12 +272,6 @@ export const LoanPortfolioView: React.FC = () => {
   const [mainTab, setMainTab] = useState<'kunn' | 'schedule'>('kunn');
   const [showForm, setShowForm] = useState(false);
 
-  // Prepayment (Trả nợ trước hạn) state
-  const [prepaymentAmountInput, setPrepaymentAmountInput] = useState('0');
-  const [prepaymentPeriodInput, setPrepaymentPeriodInput] = useState<number>(1);
-  const [prepaymentModeInput, setPrepaymentModeInput] = useState<'reduce_monthly' | 'shorten_tenor'>('reduce_monthly');
-  const [showPrepaymentBox, setShowPrepaymentBox] = useState(false);
-
   // Rate adjustment history state (Lãi suất thả nổi nhiều lần)
   const [rateHistory, setRateHistory] = useState<RateAdjustmentHistoryItem[]>([]);
   const [newAdjDate, setNewAdjDate] = useState('');
@@ -381,10 +375,6 @@ export const LoanPortfolioView: React.FC = () => {
 
   // Selected Collateral IDs for current contract
   const [selectedCollateralIds, setSelectedCollateralIds] = useState<number[]>([]);
-
-  // Schedule gen form
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
   // Schedule payment edit modal state
   const [editingSchedule, setEditingSchedule] = useState<RepaymentSchedule | null>(null);
@@ -911,7 +901,41 @@ export const LoanPortfolioView: React.FC = () => {
       }
 
       const savedContract = await saveContractAPI(payload);
-      showNotify('success', (forceInsert || !selectedContract) ? 'Đã TẠO MỚI thành công Giấy nhận nợ (KUNN)!' : 'Đã CẬP NHẬT thông tin KUNN/HĐTD!');
+
+      // Tự động khởi tạo lịch thu nợ nếu hợp đồng này chưa có lịch
+      const existingScheds = await fetchRepaymentSchedulesAPI(savedContract.Id);
+      if (existingScheds.length === 0) {
+        const repayStartDate = savedContract.RepaymentStartDate || savedContract.DisbursementDate || savedContract.ContractStartDate;
+        const periods = parseKunnTenorMonths(savedContract.KunnTenor) || savedContract.LoanTenorMonths || 12;
+        const isBullet = (savedContract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ' || savedContract.LoanMethod === 'Hạn mức tín dụng';
+        const rate = savedContract.InterestRate || savedContract.NormalRate || 0;
+        const amt = savedContract.LoanAmount || savedContract.ContractAmount || 0;
+
+        if (amt > 0 && rate > 0 && repayStartDate) {
+          const history = getContractRateHistory(savedContract);
+          const generated = generateSchedule(
+            savedContract.Id,
+            amt,
+            rate,
+            repayStartDate,
+            periods,
+            isBullet,
+            savedContract.DisbursementDate || savedContract.ContractStartDate || undefined,
+            undefined,
+            savedContract.PrincipalGracePeriodMonths || 0,
+            0,
+            1,
+            'reduce_monthly',
+            history
+          );
+          await bulkSaveRepaymentSchedulesAPI(generated);
+          const newScheds = await fetchRepaymentSchedulesAPI(savedContract.Id);
+          setSchedules(newScheds);
+          setAllSchedulesMap(prev => ({ ...prev, [savedContract.Id]: newScheds }));
+        }
+      }
+
+      showNotify('success', (forceInsert || !selectedContract) ? 'Đã TẠO MỚI thành công Giấy nhận nợ (KUNN) & tự động lập Lịch thu nợ!' : 'Đã CẬP NHẬT thông tin KUNN/HĐTD!');
 
       if (targetCustomerId) {
         const refreshed = await fetchContractsByCustomerAPI(targetCustomerId);
@@ -958,119 +982,32 @@ export const LoanPortfolioView: React.FC = () => {
     }
   };
 
-  const handleGenerateSchedule = async () => {
-    if (!selectedContract) return;
-    const loanAmt = selectedContract.LoanAmount || selectedContract.ContractAmount || 0;
-    const rate = selectedContract.InterestRate || selectedContract.NormalRate || 0;
 
-    // Ưu tiên RepaymentStartDate (ngày bắt đầu trả nợ) — đây là kỳ 1
-    // Fallback: DisbursementDate → ContractStartDate
-    const repayStartDate = selectedContract.RepaymentStartDate
-      || selectedContract.DisbursementDate
-      || selectedContract.ContractStartDate;
 
-    const periods = parseKunnTenorMonths(selectedContract.KunnTenor) || selectedContract.LoanTenorMonths || 12;
-
-    const isBullet = (selectedContract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ'
-      || selectedContract.LoanMethod === 'Hạn mức tín dụng';
-
-    if (!loanAmt || !rate || !repayStartDate) {
-      showNotify('error', 'Cần có Số tiền nhận nợ, Lãi suất và Ngày bắt đầu trả nợ!');
-      return;
+  const calculateOverdueDaysFromDates = (paymentDateStr?: string | null, dueDateStr?: string | null) => {
+    if (!paymentDateStr || !dueDateStr) return 0;
+    const payParts = paymentDateStr.split('-');
+    const dueParts = dueDateStr.split('-');
+    if (payParts.length === 3 && dueParts.length === 3) {
+      const pay = new Date(parseInt(payParts[0], 10), parseInt(payParts[1], 10) - 1, parseInt(payParts[2], 10));
+      const due = new Date(parseInt(dueParts[0], 10), parseInt(dueParts[1], 10) - 1, parseInt(dueParts[2], 10));
+      pay.setHours(0, 0, 0, 0);
+      due.setHours(0, 0, 0, 0);
+      const diff = pay.getTime() - due.getTime();
+      return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
     }
-
-    setIsGenerating(true);
-    try {
-      await deleteRepaymentSchedulesByContractAPI(selectedContract.Id);
-      const disburseDate = selectedContract.DisbursementDate || selectedContract.ContractStartDate || undefined;
-      const graceMonths = selectedContract.PrincipalGracePeriodMonths || 0;
-      const prepayAmt = parseFloat(prepaymentAmountInput.replace(/\D/g, '')) || 0;
-
-      const history = getContractRateHistory(selectedContract);
-      const prefInfo = {
-        prefRate: selectedContract.PreferentialRate ? selectedContract.PreferentialRate * 100 : 0,
-        prefMonths: selectedContract.PreferentialPeriodMonths || 0,
-        postPrefRate: selectedContract.PostPreferentialRate ? selectedContract.PostPreferentialRate * 100 : (selectedContract.NormalRate ? selectedContract.NormalRate * 100 : 0)
-      };
-
-      const generated = generateSchedule(
-        selectedContract.Id,
-        loanAmt,
-        rate,
-        repayStartDate,
-        periods,
-        isBullet,
-        disburseDate,
-        undefined,
-        graceMonths,
-        prepayAmt,
-        prepaymentPeriodInput,
-        prepaymentModeInput,
-        history,
-        prefInfo
-      );
-      await bulkSaveRepaymentSchedulesAPI(generated);
-
-      const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
-      setSchedules(refreshed);
-      setAllSchedulesMap(prev => ({ ...prev, [selectedContract.Id]: refreshed }));
-
-      const autoInfo = getAutoDebtGroupInfo(refreshed);
-      if (selectedContract.DebtGroup !== autoInfo.debtGroup) {
-        await saveContractAPI({
-          Id: selectedContract.Id,
-          CustomerId: selectedContract.CustomerId,
-          ContractNumber: selectedContract.ContractNumber,
-          DebtGroup: autoInfo.debtGroup
-        });
-        setContracts(prev => prev.map(con => con.Id === selectedContract.Id ? { ...con, DebtGroup: autoInfo.debtGroup } : con));
-        setForm(f => ({ ...f, DebtGroup: autoInfo.debtGroup }));
-      }
-
-      showNotify('success',
-        prepayAmt > 0
-          ? `⚡ Đã cập nhật Trả nợ trước hạn ${prepayAmt.toLocaleString('vi-VN')} VNĐ tại Kỳ ${prepaymentPeriodInput} và tính lại Lịch gốc lãi thành công!`
-          : `Đã tạo ${refreshed.length} kỳ trả nợ (${isBullet ? 'Gốc trả cuối kỳ' : 'Gốc trả đều hàng tháng'}). Kỳ 1: ${repayStartDate}`
-      );
-    } catch (err: any) {
-      showNotify('error', `Lỗi tạo lịch: ${err.message}`);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleSaveCustomSchedule = async () => {
-    if (!selectedContract || schedules.length === 0) return;
-    setIsSavingSchedule(true);
-    try {
-      await bulkSaveRepaymentSchedulesAPI(schedules);
-      const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
-      setSchedules(refreshed);
-      setAllSchedulesMap(prev => ({ ...prev, [selectedContract.Id]: refreshed }));
-
-      const autoInfo = getAutoDebtGroupInfo(refreshed);
-      if (selectedContract.DebtGroup !== autoInfo.debtGroup) {
-        await saveContractAPI({
-          Id: selectedContract.Id,
-          CustomerId: selectedContract.CustomerId,
-          ContractNumber: selectedContract.ContractNumber,
-          DebtGroup: autoInfo.debtGroup
-        });
-        setContracts(prev => prev.map(con => con.Id === selectedContract.Id ? { ...con, DebtGroup: autoInfo.debtGroup } : con));
-        setForm(f => ({ ...f, DebtGroup: autoInfo.debtGroup }));
-      }
-
-      showNotify('success', 'Đã LƯU THÀNH CÔNG lịch thu nợ đã điều chỉnh thủ công!');
-    } catch (err: any) {
-      showNotify('error', `Lỗi lưu lịch thu nợ: ${err.message}`);
-    } finally {
-      setIsSavingSchedule(false);
-    }
+    return 0;
   };
 
   const openPaymentModal = (s: RepaymentSchedule) => {
     setEditingSchedule(s);
-    const overdue = s.OverdueDays ?? 0;
+    const payDate = s.PaymentDate || new Date().toISOString().split('T')[0];
+    setModalPaymentDate(payDate);
+
+    let overdue = s.OverdueDays;
+    if (overdue === undefined || overdue === null || overdue === 0) {
+      overdue = calculateOverdueDaysFromDates(payDate, s.DueDate);
+    }
     setModalOverdueDaysStr(overdue.toString());
 
     let initialPenalty = s.OverdueInterestAmount ?? 0;
@@ -1090,7 +1027,6 @@ export const LoanPortfolioView: React.FC = () => {
     setModalActualPaidInterestStr(actI ? actI.toLocaleString('vi-VN') : '0');
 
     setModalIsPaid(s.IsPaid);
-    setModalPaymentDate(s.PaymentDate || new Date().toISOString().split('T')[0]);
     setModalNote(s.Note || '');
   };
 
@@ -2124,100 +2060,6 @@ export const LoanPortfolioView: React.FC = () => {
                       <span>Phương thức gốc: <strong className="text-purple-600 dark:text-purple-400">{selectedContract.PrincipalRepaymentMethod || 'Gốc trả cuối kỳ'}</strong></span>
                       <span>Ngày giải ngân: <strong className="text-amber-600 dark:text-amber-400 font-mono">{fmtDate(selectedContract.DisbursementDate || selectedContract.ContractStartDate)}</strong></span>
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowPrepaymentBox(!showPrepaymentBox)}
-                        className={`flex items-center space-x-1.5 font-bold px-3.5 py-2.5 rounded-xl transition-all text-xs border shadow-sm ${
-                          showPrepaymentBox || prepaymentAmountInput !== '0'
-                            ? 'bg-amber-500 text-white border-amber-400 shadow-amber-500/30'
-                            : isLight
-                              ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                              : 'bg-amber-950/40 text-amber-300 border-amber-800 hover:border-amber-700'
-                        }`}
-                      >
-                        <span>⚡ {showPrepaymentBox ? 'Ẩn ô trả trước hạn' : 'Cập nhật Trả Nợ Trước Hạn'}</span>
-                      </button>
-
-                      {schedules.length > 0 && (
-                        <button onClick={handleSaveCustomSchedule} disabled={isSavingSchedule}
-                          className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-xs shadow-md shadow-emerald-600/20"
-                          title="Lưu các điều chỉnh số tiền gốc từng kỳ vào cơ sở dữ liệu">
-                          <Save className="w-3.5 h-3.5" />
-                          <span>{isSavingSchedule ? 'Đang lưu...' : '💾 LƯU LỊCH THU NỢ ĐÃ ĐIỀU CHỈNH'}</span>
-                        </button>
-                      )}
-                      <button onClick={handleGenerateSchedule} disabled={isGenerating}
-                        className="flex items-center space-x-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white font-bold px-4 py-2.5 rounded-xl transition-colors text-xs shadow-md shadow-sky-600/20">
-                        <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                        <span>{isGenerating ? 'Đang tính toán...' : '🔄 TÍNH & TẠO LỊCH THU NỢ TỰ ĐỘNG'}</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Expanded Box for Prepayment (Trả Nợ Trước Hạn) */}
-                {selectedContract && showPrepaymentBox && (
-                  <div className="mt-4 p-4 rounded-xl border border-amber-300 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/30 space-y-3">
-                    <div className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center justify-between border-b pb-2 border-amber-200 dark:border-amber-900/50">
-                      <span className="flex items-center space-x-2">
-                        <span>⚡ THÔNG TIN CẬP NHẬT TRẢ NỢ TRƯỚC HẠN (PREPAYMENT)</span>
-                      </span>
-                      <span className="text-[11px] text-amber-600 dark:text-amber-400 font-normal">Tự động tính lại dư nợ gốc & lãi thường các kỳ tiếp theo</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block mb-1 font-bold text-amber-900 dark:text-amber-200 text-xs">Số tiền trả nợ trước hạn (VNĐ)</label>
-                        <input
-                          type="text"
-                          value={prepaymentAmountInput}
-                          onChange={e => {
-                            const digits = e.target.value.replace(/\D/g, '');
-                            setPrepaymentAmountInput(digits ? Number(digits).toLocaleString('vi-VN') : '0');
-                          }}
-                          placeholder="Ví dụ: 100.000.000..."
-                          className={`w-full rounded-xl p-2.5 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${inputStyle}`}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block mb-1 font-bold text-amber-900 dark:text-amber-200 text-xs">Trả trước hạn tại Kỳ số</label>
-                        <input
-                          type="number"
-                          min={1}
-                          max={parseKunnTenorMonths(selectedContract.KunnTenor) || selectedContract.LoanTenorMonths || 12}
-                          value={prepaymentPeriodInput}
-                          onChange={e => setPrepaymentPeriodInput(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                          className={`w-full rounded-xl p-2.5 font-mono font-bold ${inputStyle}`}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block mb-1 font-bold text-amber-900 dark:text-amber-200 text-xs">Phương án xử lý kỳ còn lại</label>
-                        <select
-                          value={prepaymentModeInput}
-                          onChange={e => setPrepaymentModeInput(e.target.value as any)}
-                          className={`w-full rounded-xl p-2.5 font-bold ${inputStyle}`}
-                        >
-                          <option value="reduce_monthly">Giảm số tiền gốc trả hàng tháng các kỳ còn lại</option>
-                          <option value="shorten_tenor">Rút ngắn thời hạn vay (kết thúc khoản vay sớm hơn)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end pt-2">
-                      <button
-                        type="button"
-                        onClick={handleGenerateSchedule}
-                        disabled={isGenerating}
-                        className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-md text-xs flex items-center space-x-2"
-                      >
-                        <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-                        <span>ÁP DỤNG TRẢ TRƯỚC HẠN & TÍNH LẠI LỊCH GỐC LÃI</span>
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>
@@ -2533,7 +2375,20 @@ export const LoanPortfolioView: React.FC = () => {
                   </label>
                   <DateInput
                     value={modalPaymentDate}
-                    onChange={setModalPaymentDate}
+                    onChange={(newDate) => {
+                      setModalPaymentDate(newDate);
+                      if (editingSchedule && newDate) {
+                        const calcDays = calculateOverdueDaysFromDates(newDate, editingSchedule.DueDate);
+                        setModalOverdueDaysStr(calcDays.toString());
+                        if (calcDays > 0 && selectedContract) {
+                          const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
+                          const calcPen = Math.round((editingSchedule.PrincipalAmount || 0) * (rate * 1.5) * (calcDays / 365));
+                          setModalOverdueInterestStr(calcPen.toLocaleString('vi-VN'));
+                        } else {
+                          setModalOverdueInterestStr('0');
+                        }
+                      }
+                    }}
                     className="w-full p-2.5 rounded-xl border text-xs bg-transparent border-slate-200 dark:border-slate-800"
                   />
                 </div>

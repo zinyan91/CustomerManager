@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI, saveContractAPI, deleteContractAPI,
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
-  fetchCollateralsByCustomerAPI, updateRepaymentScheduleAPI
+  fetchCollateralsByCustomerAPI
 } from '../../lib/api';
 import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRate } from '../../lib/utils';
 import type { LoanContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
@@ -1030,6 +1030,96 @@ export const LoanPortfolioView: React.FC = () => {
     setModalNote(s.Note || '');
   };
 
+  const recalculateFutureSchedules = (
+    schedList: RepaymentSchedule[],
+    contract: LoanContract
+  ): RepaymentSchedule[] => {
+    const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
+    const graceMonths = contract.PrincipalGracePeriodMonths || 0;
+    const isBullet = (contract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ' || contract.LoanMethod === 'Hạn mức tín dụng';
+    const defaultAnnualRate = (contract.InterestRate || contract.NormalRate || 0.085) > 1
+      ? (contract.InterestRate || contract.NormalRate || 8.5) / 100
+      : (contract.InterestRate || contract.NormalRate || 0.085);
+
+    const history = getContractRateHistory(contract);
+    const sortedHistory = (history && history.length > 0)
+      ? [...history].sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate))
+      : [];
+
+    let currentBalance = loanAmt;
+    let prevDateStr: string = contract.DisbursementDate || contract.ContractStartDate || new Date().toISOString().split('T')[0];
+
+    const result: RepaymentSchedule[] = [];
+
+    for (let i = 0; i < schedList.length; i++) {
+      const s = schedList[i];
+      const periodNum = i + 1;
+      const dueDateStr = s.DueDate;
+
+      const days = getDaysBetween(prevDateStr, dueDateStr);
+      prevDateStr = dueDateStr;
+
+      let activeAnnualRate = defaultAnnualRate;
+      if (sortedHistory.length > 0) {
+        let activeItem: RateAdjustmentHistoryItem | null = null;
+        for (const item of sortedHistory) {
+          if (item.effectiveDate <= dueDateStr) {
+            activeItem = item;
+          } else {
+            break;
+          }
+        }
+        if (activeItem && activeItem.ratePercent > 0) {
+          activeAnnualRate = activeItem.ratePercent / 100;
+        }
+      }
+
+      const calculatedInterest = Math.round(currentBalance * activeAnnualRate * (days / 365));
+
+      let principalInPeriod = 0;
+
+      if (s.IsPaid || (s.ActualPaidPrincipal && s.ActualPaidPrincipal > 0) || (s.PrepaidPrincipalAmount && s.PrepaidPrincipalAmount > 0)) {
+        const userPaidP = s.IsPaid
+          ? (s.ActualPaidPrincipal ?? s.PrincipalAmount)
+          : (s.ActualPaidPrincipal ?? s.PrincipalAmount) + (s.PrepaidPrincipalAmount ?? 0);
+        principalInPeriod = Math.min(currentBalance, userPaidP);
+      } else {
+        if (isBullet) {
+          principalInPeriod = (periodNum === schedList.length) ? currentBalance : 0;
+        } else {
+          if (periodNum <= graceMonths) {
+            principalInPeriod = 0;
+          } else if (periodNum === schedList.length) {
+            principalInPeriod = currentBalance;
+          } else {
+            const remainingNonGracePeriods = schedList.slice(i).filter((_, idx) => (i + idx + 1) > graceMonths).length;
+            const remainingCount = Math.max(1, remainingNonGracePeriods);
+            const defaultMonthlyP = roundPrincipalCore(currentBalance / remainingCount, '1k');
+            principalInPeriod = Math.min(currentBalance, defaultMonthlyP);
+          }
+        }
+      }
+
+      const overduePen = s.OverdueInterestAmount ?? 0;
+      const totalObligation = (s.IsPaid ? (s.ActualPaidPrincipal ?? principalInPeriod) : principalInPeriod) + (s.IsPaid ? (s.ActualPaidInterest ?? calculatedInterest) : calculatedInterest) + overduePen;
+
+      result.push({
+        ...s,
+        PrincipalAmount: principalInPeriod,
+        InterestAmount: calculatedInterest,
+        TotalAmount: totalObligation
+      });
+
+      const deductedP = s.IsPaid
+        ? (s.ActualPaidPrincipal ?? principalInPeriod)
+        : (s.ActualPaidPrincipal ?? principalInPeriod) + (s.PrepaidPrincipalAmount ?? 0);
+
+      currentBalance = Math.max(0, currentBalance - deductedP);
+    }
+
+    return result;
+  };
+
   const handleSavePaymentModal = async () => {
     if (!editingSchedule || !selectedContract) return;
 
@@ -1039,14 +1129,9 @@ export const LoanPortfolioView: React.FC = () => {
     const actualPaidP = parseFloat(modalActualPaidPrincipalStr.replace(/\D/g, '')) || 0;
     const actualPaidI = parseFloat(modalActualPaidInterestStr.replace(/\D/g, '')) || 0;
 
-    const updated: Partial<RepaymentSchedule> = {
-      Id: editingSchedule.Id,
-      ContractId: editingSchedule.ContractId,
-      PeriodNumber: editingSchedule.PeriodNumber,
-      DueDate: editingSchedule.DueDate,
-      PrincipalAmount: editingSchedule.PrincipalAmount,
-      InterestAmount: editingSchedule.InterestAmount,
-      TotalAmount: editingSchedule.PrincipalAmount + editingSchedule.InterestAmount + overdueInterest,
+    const updated: RepaymentSchedule = {
+      ...editingSchedule,
+      TotalAmount: (modalIsPaid ? actualPaidP : editingSchedule.PrincipalAmount) + (modalIsPaid ? actualPaidI : editingSchedule.InterestAmount) + overdueInterest,
       IsPaid: modalIsPaid,
       PaymentDate: modalIsPaid ? modalPaymentDate : null,
       OverdueDays: overdueDays,
@@ -1059,7 +1144,11 @@ export const LoanPortfolioView: React.FC = () => {
 
     try {
       setLoading(true);
-      await updateRepaymentScheduleAPI(updated);
+
+      const draftList = schedules.map(s => s.Id === updated.Id ? updated : s);
+      const recalculated = recalculateFutureSchedules(draftList, selectedContract);
+
+      await bulkSaveRepaymentSchedulesAPI(recalculated);
 
       const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
       setSchedules(refreshed);
@@ -1067,7 +1156,6 @@ export const LoanPortfolioView: React.FC = () => {
 
       const autoInfo = getAutoDebtGroupInfo(refreshed);
 
-      // Tính Dư nợ hiện hữu thực tế = Số tiền vay KUNN - Tổng gốc đã thanh toán
       const totalPaidP = refreshed.filter(x => x.IsPaid).reduce((sum, x) => sum + (x.ActualPaidPrincipal || x.PrincipalAmount || 0), 0);
       const origLoan = selectedContract.LoanAmount || selectedContract.ContractAmount || 0;
       const newBal = Math.max(0, origLoan - totalPaidP);
@@ -1094,7 +1182,7 @@ export const LoanPortfolioView: React.FC = () => {
 
       setFormCurrentBalance(newBal.toLocaleString('vi-VN'));
       setEditingSchedule(null);
-      showNotify('success', `✓ Đã cập nhật thanh toán & số ngày quá hạn cho Kỳ #${editingSchedule.PeriodNumber} thành công!`);
+      showNotify('success', `✓ Đã cập nhật Kỳ #${editingSchedule.PeriodNumber} & tự động phân bổ lại số tiền gốc cho các kỳ sau!`);
     } catch (err: any) {
       showNotify('error', `Lỗi lưu thông tin kỳ trả nợ: ${err.message}`);
     } finally {

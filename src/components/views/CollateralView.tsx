@@ -102,11 +102,11 @@ export const CollateralView: React.FC = () => {
 
   const getEffectiveLtv = (c: Collateral) => {
     if (c.LtvPercent !== undefined && c.LtvPercent !== null && c.LtvPercent > 0) return c.LtvPercent;
-    if (c.AssetType === 'BĐS - Loại 1') return 80;
-    if (c.AssetType === 'BĐS - Loại 2') return 70;
-    if (c.AssetType === 'BĐS - Loại 3') return 60;
-    if (c.AssetType === 'BĐS - Loại 4') return 55;
-    if (c.AssetType === 'BĐS - Hạn chế nhận TS') return 0;
+    if (c.AssetType === 'Loại 1') return 80;
+    if (c.AssetType === 'Loại 2') return 70;
+    if (c.AssetType === 'Loại 3') return 60;
+    if (c.AssetType === 'Loại 4') return 55;
+    if (c.AssetType === 'Hạn chế nhận TS') return 0;
     if (c.AssetType?.includes('Phương tiện')) return 70;
     if (c.AssetType?.includes('Máy móc')) return 60;
     if (c.AssetType?.includes('Hàng hóa')) return 50;
@@ -122,7 +122,7 @@ export const CollateralView: React.FC = () => {
     setFormCollapsed(false);
     setInputCustomerId(c.CustomerId);
     setInputAssetCode(c.AssetCode || '');
-    setInputAssetType(c.AssetType || 'BĐS - Loại 1');
+    setInputAssetType(c.AssetType || 'Loại 1');
     setInputAddress(c.Address || '');
     const val = c.AppraisedValue || c.Value || 0;
     setInputAppraisedValue(val ? val.toLocaleString('vi-VN') : '');
@@ -217,11 +217,10 @@ export const CollateralView: React.FC = () => {
     <div className="space-y-4 text-xs transition-colors duration-200">
       {/* Toast Notification */}
       {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${
-          notification.type === 'success'
+        <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success'
             ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
             : 'bg-red-950/90 border-red-500/40 text-red-300'
-        }`}>
+          }`}>
           {notification.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
           <span>{notification.message}</span>
         </div>

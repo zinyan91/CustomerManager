@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
-import { fmtDate } from '../../lib/utils';
+import { fmtDate, parseAnyDate } from '../../lib/utils';
 import type { Customer, Collateral, LoanContract } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -12,9 +12,9 @@ import {
 function getDaysUntil(dateStr?: string | null): number | null {
   if (!dateStr) return null;
   try {
-    const parts = dateStr.split('-');
+    const parts = dateStr.split('T')[0].split(' ')[0].split('-');
     if (parts.length !== 3) return null;
-    const target = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    const target = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
     if (isNaN(target.getTime())) return null;
 
     const today = new Date();
@@ -145,23 +145,29 @@ export const DashboardView: React.FC = () => {
   // ── 7. Table 4: Định giá TSĐB sắp tới hạn (Lọc 30 ngày: 16-30 Xanh lá, 1-15 Vàng, <=0 Đỏ) ──
   const dueCollateralList = collaterals.map(col => {
     const cus = customers.find(cust => cust.Id === col.CustomerId);
-    // Expiry date is 1 year after AppraisalDate if present, or fallback 30 days from today
-    let expiryDateStr = col.AppraisalDate ? col.AppraisalDate.split('T')[0] : '';
-    if (expiryDateStr) {
-      const parts = expiryDateStr.split('-');
-      if (parts.length === 3) {
-        expiryDateStr = `${parseInt(parts[0]) + 1}-${parts[1]}-${parts[2]}`;
+
+    let expiryDateStr = '';
+    if (col.AppraisalExpiryDate) {
+      expiryDateStr = col.AppraisalExpiryDate.split('T')[0];
+    } else if (col.AppraisalDate) {
+      const parsed = parseAnyDate(col.AppraisalDate);
+      if (parsed) {
+        const tenor = col.AppraisalTenorMonths || 12;
+        const d = new Date(parsed.year, parsed.month - 1 + tenor, parsed.day);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        expiryDateStr = `${yyyy}-${mm}-${dd}`;
       }
-    } else {
-      // Default sample expiry date for preview
-      const d = new Date();
-      d.setDate(d.getDate() + 20);
-      expiryDateStr = d.toISOString().split('T')[0];
     }
+
+    if (!expiryDateStr) return null;
+
     const daysLeft = getDaysUntil(expiryDateStr);
     return { collateral: col, customer: cus, expiryDateStr, daysLeft };
-  }).filter(item => item.daysLeft !== null && item.daysLeft <= 30)
-    .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
+  }).filter((item): item is NonNullable<typeof item> => {
+    return item !== null && item.daysLeft !== null && item.daysLeft <= 30;
+  }).sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
   const formatMoney = (val: number) => {
     if (val >= 1e9) return (val / 1e9).toFixed(2) + ' Tỷ';

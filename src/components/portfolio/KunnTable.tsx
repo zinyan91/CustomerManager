@@ -1,7 +1,7 @@
 import React from 'react';
 import { Receipt, ChevronRight } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { fmtMoney, fmtRate, fmtDate } from '../../lib/utils';
+import { fmtMoney, fmtRate, fmtDate, getEffectiveActiveRate } from '../../lib/utils';
 
 const DEBT_GROUP_COLORS: Record<number, string> = {
   1: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20',
@@ -101,7 +101,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
                   <td className="p-3 text-right font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
                     {fmtMoney(getEffectiveBalanceForContract(c))}
                   </td>
-                  <td className="p-3 text-sky-600 dark:text-sky-300 font-mono font-bold whitespace-nowrap">{fmtRate(c.PreferentialRate || c.InterestRate || c.NormalRate)}</td>
+                  <td className="p-3 text-sky-600 dark:text-sky-300 font-mono font-bold whitespace-nowrap">{fmtRate(getEffectiveActiveRate(c))}</td>
                   <td className="p-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">{fmtDate(c.DisbursementDate || c.ContractStartDate)}</td>
                   <td className="p-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">{fmtDate(c.KunnDueDate || c.ContractEndDate)}</td>
                   <td className="p-3 whitespace-nowrap">

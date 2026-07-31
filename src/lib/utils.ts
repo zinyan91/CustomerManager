@@ -107,3 +107,44 @@ export function fmtDate(
   if (activeFmt === 'yyyy-mm-dd') return `${yyyy}-${mm}-${dd}`;
   return `${dd}/${mm}/${yyyy}`;
 }
+
+import type { RateAdjustmentHistoryItem, LoanContract } from '../types';
+
+export function getContractRateHistory(c?: LoanContract | null): RateAdjustmentHistoryItem[] {
+  if (!c || !c.Note) return [];
+  const match = c.Note.match(/\[RATE_HISTORY:(.*?)\]/s);
+  if (!match || !match[1]) return [];
+  try {
+    const parsed = JSON.parse(match[1]);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    return [];
+  }
+  return [];
+}
+
+export function serializeContractRateHistory(history: RateAdjustmentHistoryItem[]): string {
+  if (!history || history.length === 0) return '';
+  return `[RATE_HISTORY:${JSON.stringify(history)}]`;
+}
+
+export function getEffectiveActiveRate(c?: LoanContract | null, targetDateStr?: string): number {
+  if (!c) return 0.085;
+  const history = getContractRateHistory(c);
+  if (history.length > 0) {
+    const todayStr = targetDateStr || new Date().toISOString().split('T')[0];
+    const sorted = [...history].sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate));
+    let active = sorted[0];
+    for (const item of sorted) {
+      if (item.effectiveDate <= todayStr) {
+        active = item;
+      } else {
+        break;
+      }
+    }
+    if (active && active.ratePercent > 0) {
+      return active.ratePercent / 100;
+    }
+  }
+  return c.InterestRate || c.NormalRate || c.PreferentialRate || c.BaseRate || 0.085;
+}

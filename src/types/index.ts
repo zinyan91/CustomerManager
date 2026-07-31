@@ -109,6 +109,16 @@ export interface RepaymentSchedule {
   Note?: string | null;
 }
 
+export interface RateAdjustmentHistoryItem {
+  id: string;
+  effectiveDate: string;
+  ratePercent: number;
+  baseRatePercent?: number;
+  marginPercent?: number;
+  penaltyPercent?: number;
+  reason?: string;
+}
+
 export interface CreditCard {
   Id: number;
   CustomerId: number;

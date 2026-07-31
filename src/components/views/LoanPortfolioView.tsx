@@ -4,8 +4,8 @@ import {
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI,
   fetchCollateralsByCustomerAPI
 } from '../../lib/api';
-import { formatMoneyInput, fmtDate } from '../../lib/utils';
-import type { LoanContract, Customer, RepaymentSchedule, Collateral } from '../../types';
+import { formatMoneyInput, fmtDate, getContractRateHistory, serializeContractRateHistory } from '../../lib/utils';
+import type { LoanContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
   Search, FileText, Receipt, Calendar, CheckCircle, AlertCircle,
@@ -243,6 +243,14 @@ export const LoanPortfolioView: React.FC = () => {
   const [prepaymentPeriodInput, setPrepaymentPeriodInput] = useState<number>(1);
   const [prepaymentModeInput, setPrepaymentModeInput] = useState<'reduce_monthly' | 'shorten_tenor'>('reduce_monthly');
   const [showPrepaymentBox, setShowPrepaymentBox] = useState(false);
+
+  // Rate adjustment history state (Lãi suất thả nổi nhiều lần)
+  const [rateHistory, setRateHistory] = useState<RateAdjustmentHistoryItem[]>([]);
+  const [newAdjDate, setNewAdjDate] = useState('');
+  const [newAdjBaseRate, setNewAdjBaseRate] = useState('');
+  const [newAdjMargin, setNewAdjMargin] = useState('');
+  const [newAdjPenalty, setNewAdjPenalty] = useState('');
+  const [newAdjReason, setNewAdjReason] = useState('');
 
   // Master HĐTD Filter state ('ALL' or specific master contract number)
   const [selectedMasterFilter, setSelectedMasterFilter] = useState<string>('ALL');
@@ -649,6 +657,9 @@ export const LoanPortfolioView: React.FC = () => {
       setRateConditionSurcharge('0');
     }
 
+    const history = getContractRateHistory(c);
+    setRateHistory(history);
+
     if (c.Note?.includes('[COLLATERAL_IDS:')) {
       const match = c.Note.match(/\[COLLATERAL_IDS:([^\]]+)\]/);
       if (match && match[1]) {
@@ -782,7 +793,7 @@ export const LoanPortfolioView: React.FC = () => {
         : ((interestRateMode === 'pref' ? prefDec : normalDec) || prefDec || normalDec || baseDec || undefined);
 
       let noteText = form.Note || '';
-      noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').replace(/\[PENALTY_SURCHARGE:[^\]]*\]/g, '').trim();
+      noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').replace(/\[PENALTY_SURCHARGE:[^\]]*\]/g, '').replace(/\[RATE_HISTORY:[^\]]*\]/g, '').trim();
       if (hdtd && hdtd !== effectiveContractNumber && !noteText.includes(`HĐTD: ${hdtd}`)) {
         noteText = `HĐTD: ${hdtd}\n${noteText}`.trim();
       }
@@ -791,6 +802,9 @@ export const LoanPortfolioView: React.FC = () => {
       }
       if (selectedCollateralIds.length > 0) {
         noteText = `${noteText}\n[COLLATERAL_IDS:${selectedCollateralIds.join(',')}]`.trim();
+      }
+      if (rateHistory.length > 0) {
+        noteText = `${noteText}\n${serializeContractRateHistory(rateHistory)}`.trim();
       }
 
       // REQUEST 2: Helper cleanDate làm sạch ngày tháng (chuyển "" thành null để tránh lỗi Postgres syntax)
@@ -1684,6 +1698,123 @@ export const LoanPortfolioView: React.FC = () => {
                           <label className={`block mb-1 ${labelStyle}`}>Điều kiện phê duyệt (CASA / BCTC)</label>
                           <div className="text-xs p-2.5 rounded-xl border bg-amber-50/50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 font-medium">
                             💡 Nếu KH không đạt chỉ tiêu CASA / BCTC, nhập <strong>+{rateConditionSurcharge || '0.5'}%</strong> để cộng thêm vào lãi suất áp dụng. Khi KH đạt lại điều kiện ở đợt soát xét tiếp theo, đổi về <strong>0%</strong> để khôi phục lãi suất chuẩn.
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ── BẢNG LỊCH SỬ ĐIỀU CHỈNH LÃI SUẤT (THẢ NỔI NHIỀU LẦN) ── */}
+                      <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="font-bold text-sky-600 dark:text-sky-400 text-xs uppercase flex items-center space-x-1.5">
+                            <span>📈 LỊCH SỬ ĐIỀU CHỈNH LÃI SUẤT (THẢ NỔI NHIỀU LẦN)</span>
+                          </div>
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            {rateHistory.length} đợt điều chỉnh đã lưu
+                          </span>
+                        </div>
+
+                        {/* Existing Adjustment Records Table */}
+                        {rateHistory.length > 0 && (
+                          <div className="border rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
+                            <table className="w-full text-left text-xs">
+                              <thead className={tableHeaderStyle}>
+                                <tr>
+                                  <th className="p-2.5">STT</th>
+                                  <th className="p-2.5">NGÀY HẠN HIỆU LỰC</th>
+                                  <th className="p-2.5 text-right">LSCS (%)</th>
+                                  <th className="p-2.5 text-right">BIÊN ĐỘ (%)</th>
+                                  <th className="p-2.5 text-right">PHẠT (%)</th>
+                                  <th className="p-2.5 text-right">LÃI SUẤT ÁP DỤNG (%/NĂM)</th>
+                                  <th className="p-2.5">NỘI DUNG / LÝ DO ĐIỀU CHỈNH</th>
+                                  <th className="p-2.5 text-center">XÓA</th>
+                                </tr>
+                              </thead>
+                              <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800'}`}>
+                                {rateHistory.map((item, idx) => (
+                                  <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                                    <td className="p-2.5 font-bold text-center">{idx + 1}</td>
+                                    <td className="p-2.5 font-mono font-bold text-sky-600 dark:text-sky-400">{fmtDate(item.effectiveDate)}</td>
+                                    <td className="p-2.5 text-right font-mono">{item.baseRatePercent ? `${item.baseRatePercent}%` : '—'}</td>
+                                    <td className="p-2.5 text-right font-mono">{item.marginPercent ? `+${item.marginPercent}%` : '—'}</td>
+                                    <td className="p-2.5 text-right font-mono text-rose-500 font-bold">{item.penaltyPercent ? `+${item.penaltyPercent}%` : '0%'}</td>
+                                    <td className="p-2.5 text-right font-mono font-extrabold text-rose-600 dark:text-rose-400 text-sm">
+                                      {item.ratePercent.toFixed(2)} %/năm
+                                    </td>
+                                    <td className="p-2.5 text-slate-600 dark:text-slate-300 font-medium">{item.reason || 'Điều chỉnh LSCS'}</td>
+                                    <td className="p-2.5 text-center">
+                                      <button type="button" onClick={() => setRateHistory(rateHistory.filter(h => h.id !== item.id))}
+                                        className="text-rose-500 hover:text-rose-700">
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Input box to add new rate adjustment */}
+                        <div className="p-3 rounded-xl border border-sky-200 dark:border-sky-900/60 bg-sky-50/50 dark:bg-sky-950/20 space-y-3">
+                          <div className="font-bold text-sky-700 dark:text-sky-300 text-xs">
+                            + THÊM ĐỢT ĐIỀU CHỈNH LÃI SUẤT MỚI (KHI NGÂN HÀNG THAY ĐỔI LSCS / THẢ NỔI):
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+                            <div>
+                              <label className={`block mb-1 ${labelStyle}`}>Ngày hiệu lực *</label>
+                              <DateInput value={newAdjDate} onChange={setNewAdjDate} className={`w-full rounded-xl p-2 ${inputStyle}`} />
+                            </div>
+                            <div>
+                              <label className={`block mb-1 ${labelStyle}`}>LSCS (%)</label>
+                              <input type="number" step="0.01" value={newAdjBaseRate} onChange={e => setNewAdjBaseRate(e.target.value)} placeholder="9.2" className={`w-full rounded-xl p-2 font-mono ${inputStyle}`} />
+                            </div>
+                            <div>
+                              <label className={`block mb-1 ${labelStyle}`}>Biên độ (%)</label>
+                              <input type="number" step="0.01" value={newAdjMargin} onChange={e => setNewAdjMargin(e.target.value)} placeholder="1.35" className={`w-full rounded-xl p-2 font-mono ${inputStyle}`} />
+                            </div>
+                            <div>
+                              <label className={`block mb-1 ${labelStyle}`}>Phạt vi phạm (%)</label>
+                              <input type="number" step="0.1" value={newAdjPenalty} onChange={e => setNewAdjPenalty(e.target.value)} placeholder="0.5" className={`w-full rounded-xl p-2 font-mono ${inputStyle}`} />
+                            </div>
+                            <div>
+                              <label className={`block mb-1 ${labelStyle}`}>Lý do / Nội dung</label>
+                              <input type="text" value={newAdjReason} onChange={e => setNewAdjReason(e.target.value)} placeholder="Tăng LSCS T1/2027..." className={`w-full rounded-xl p-2 ${inputStyle}`} />
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <button type="button" onClick={() => {
+                              if (!newAdjDate) {
+                                showNotify('error', 'Vui lòng chọn Ngày áp dụng hiệu lực!');
+                                return;
+                              }
+                              const b = parseFloat(newAdjBaseRate) || 0;
+                              const m = parseFloat(newAdjMargin) || parseFloat(rateMargin) || 0;
+                              const p = parseFloat(newAdjPenalty) || parseFloat(rateConditionSurcharge) || 0;
+                              const totalRate = b > 0 ? (b + m + p) : (parseFloat(newAdjBaseRate) || currentActiveRateDisplay);
+                              if (totalRate <= 0) {
+                                showNotify('error', 'Vui lòng nhập Lãi suất cơ sở hoặc Lãi suất áp dụng!');
+                                return;
+                              }
+                              const newRecord: RateAdjustmentHistoryItem = {
+                                id: Date.now().toString(),
+                                effectiveDate: newAdjDate,
+                                baseRatePercent: b > 0 ? b : undefined,
+                                marginPercent: m > 0 ? m : undefined,
+                                penaltyPercent: p > 0 ? p : undefined,
+                                ratePercent: totalRate,
+                                reason: newAdjReason.trim() || 'Điều chỉnh lãi suất kỳ hạn'
+                              };
+                              const next = [...rateHistory, newRecord].sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate));
+                              setRateHistory(next);
+                              setNewAdjDate('');
+                              setNewAdjBaseRate('');
+                              setNewAdjMargin('');
+                              setNewAdjPenalty('');
+                              setNewAdjReason('');
+                              showNotify('success', `Đã thêm đợt điều chỉnh LS ${totalRate.toFixed(2)}%/năm từ ngày ${fmtDate(newAdjDate)}`);
+                            }} className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-sm">
+                              <span>+ Thêm đợt điều chỉnh LS này</span>
+                            </button>
                           </div>
                         </div>
                       </div>

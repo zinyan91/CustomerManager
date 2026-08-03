@@ -13,6 +13,7 @@ import { CreditCardView } from './components/views/CreditCardView';
 import { CalculatorView } from './components/views/CalculatorView';
 import { DocumentTemplateView } from './components/views/DocumentTemplateView';
 import { SettingsView } from './components/views/SettingsView';
+import { PostLoanControlView } from './components/views/PostLoanControlView';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -59,11 +60,7 @@ export function App() {
           {activeTab === 'calculators' && <CalculatorView />}
           {activeTab === 'templates' && <DocumentTemplateView />}
           {activeTab === 'settings' && <SettingsView />}
-          {activeTab === 'post-loan' && (
-            <div className="p-6 md:p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl text-slate-400 text-xs">
-              🔒 Phân hệ Kiểm Soát Sau Vay & Giám Sát Tín Dụng đang được tích hợp quy trình chấm điểm định kỳ.
-            </div>
-          )}
+          {activeTab === 'post-loan' && <PostLoanControlView />}
         </main>
       </div>
     </div>

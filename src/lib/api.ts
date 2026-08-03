@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Customer, Collateral, LoanContract, CreditCard, RepaymentSchedule } from '../types';
+import type { Customer, Collateral, LoanContract, CreditCard, RepaymentSchedule, CollateralAppraisal, PostLoanControlRecord } from '../types';
 import { defaultLtvForAssetType } from './collateralMath';
 
 export async function fetchCustomersAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
@@ -395,6 +395,92 @@ export async function updateRepaymentScheduleAPI(schedule: Partial<RepaymentSche
     .select()
     .single();
 
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchCollateralAppraisalsAPI(collateralId?: number): Promise<CollateralAppraisal[]> {
+  let query = supabase
+    .from('CollateralAppraisals')
+    .select('*')
+    .order('AppraisalDate', { ascending: false })
+    .limit(2000);
+  if (collateralId) query = query.eq('CollateralId', collateralId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+export async function saveCollateralAppraisalAPI(
+  appraisal: Partial<CollateralAppraisal>
+): Promise<CollateralAppraisal> {
+  if (!appraisal.CollateralId) throw new Error('Thiếu tài sản bảo đảm!');
+  if (!appraisal.AppraisalDate) throw new Error('Vui lòng nhập ngày định giá!');
+  if (!appraisal.AppraisedValue || appraisal.AppraisedValue <= 0) {
+    throw new Error('Vui lòng nhập giá trị định giá!');
+  }
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const payload = {
+    CollateralId: appraisal.CollateralId,
+    AppraisalDate: appraisal.AppraisalDate,
+    TenorMonths: appraisal.TenorMonths ?? 12,
+    AppraisedValue: appraisal.AppraisedValue,
+    AssetType: appraisal.AssetType ?? null,
+    LtvPercent: appraisal.LtvPercent ?? 0,
+    PerformedBy: session?.user?.id ?? null,
+    Note: appraisal.Note ?? null,
+  };
+
+  const { data, error } = await supabase
+    .from('CollateralAppraisals')
+    .insert([payload])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchPostLoanControlRecordsAPI(): Promise<PostLoanControlRecord[]> {
+  const { data, error } = await supabase
+    .from('PostLoanControlRecords')
+    .select('*')
+    .order('PerformedDate', { ascending: false })
+    .limit(5000);
+  if (error) throw error;
+  return data || [];
+}
+
+export async function savePostLoanControlRecordAPI(
+  record: Partial<PostLoanControlRecord>
+): Promise<PostLoanControlRecord> {
+  if (!record.ControlKey) throw new Error('Thiếu khoá đợt kiểm tra!');
+  if (!record.CustomerId) throw new Error('Thiếu khách hàng!');
+  if (!record.PerformedDate) throw new Error('Vui lòng nhập ngày thực hiện!');
+  if (!record.Result) throw new Error('Vui lòng chọn kết quả kiểm tra!');
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const payload = {
+    ControlType: record.ControlType,
+    ControlKey: record.ControlKey,
+    CustomerId: record.CustomerId,
+    ContractId: record.ContractId ?? null,
+    MasterHdtd: record.MasterHdtd ?? null,
+    CollateralId: record.CollateralId ?? null,
+    PeriodIndex: record.PeriodIndex ?? 1,
+    DueDate: record.DueDate,
+    PerformedDate: record.PerformedDate,
+    PerformedBy: session?.user?.id ?? null,
+    Result: record.Result,
+    Findings: record.Findings ?? null,
+    AppraisalId: record.AppraisalId ?? null,
+  };
+
+  const { data, error } = await supabase
+    .from('PostLoanControlRecords')
+    .upsert([payload], { onConflict: 'ControlKey' })
+    .select()
+    .single();
   if (error) throw error;
   return data;
 }

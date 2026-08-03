@@ -28,6 +28,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Đưa dữ liệu nghiệp vụ từ `Note` về cột riêng | 39 hợp đồng, đối chiếu từng dòng với bản sao lưu |
 | ✅ | Sửa kiểu cột `CreditCards.IssuanceType` | Cột số nhận chuỗi mô tả nên diện mở thẻ mất mỗi lần lưu |
 | ✅ | Gỡ nhánh đọc số HĐTD từ `HdtdDueDate` | Tàn dư thiết kế cũ |
+| ✅ | Chỉnh LTV của hai tài sản lệch bậc phân loại | Đã kiểm chứng 04/08/2026: 55 tài sản, mỗi xếp loại chỉ còn một giá trị LTV duy nhất (Loại 1 80% · Loại 2 70% · Loại 3 60% · Loại 4 55%) |
 | ⬜ | Xoá bảng `_backup_LoanContracts_Note_20260803` | Sau vài ngày chạy ổn |
 
 ## Lỗi tính tiền đã sửa
@@ -76,11 +77,6 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ⚠️ | Bảng lịch sử định giá `CollateralAppraisals` | Hiện mỗi lần định giá lại **ghi đè** giá trị cũ, mất lịch sử. Cần để so sánh biến động giá trị và xếp loại giữa các kỳ kiểm tra hiện trạng tài sản |
 | ⚠️ | Bảng lưu kết quả kiểm soát sau vay | Chờ kết quả truy vấn cấu trúc `PostLoanControls` để biết nên tận dụng hay tạo mới |
 
-## Chờ quyết định nghiệp vụ
-
-| | Việc | Ghi chú |
-| :--- | :--- | :--- |
-| ⚠️ | Hai tài sản có LTV lệch bậc phân loại | Loại 1 ở 70% (thận trọng hơn, không rủi ro) và Loại 3 ở 70% (cao hơn chính sách, hạn mức vượt ~160 triệu). `LtvPercent` là trường nhập tay nên có thể là ngoại lệ đã phê duyệt — cần người có thẩm quyền xác nhận |
 
 ## Cần kiểm thử trên giao diện
 

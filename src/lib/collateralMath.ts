@@ -61,6 +61,20 @@ export function getEffectiveLtv(c?: Pick<Collateral, 'LtvPercent' | 'AssetType'>
   return defaultLtvForAssetType(c.AssetType);
 }
 
+/** Tài sản thuộc diện hạn chế nhận làm bảo đảm (LTV chính sách = 0%). */
+export function isRestrictedAsset(assetType?: string | null): boolean {
+  return defaultLtvForAssetType(assetType) === 0;
+}
+
+/**
+ * Tài sản hạn chế nhận nhưng được gán LTV > 0 — chỉ hợp lệ khi có phê
+ * duyệt ngoại lệ. Dùng để cảnh báo và đánh dấu, không tự động chặn.
+ */
+export function isLtvException(c?: Pick<Collateral, 'LtvPercent' | 'AssetType'> | null): boolean {
+  if (!c) return false;
+  return isRestrictedAsset(c.AssetType) && getEffectiveLtv(c) > 0;
+}
+
 /** Hạn mức cho vay tối đa của một tài sản = giá trị định giá × LTV. */
 export function maxLoanFromCollateral(c?: Pick<Collateral, 'LtvPercent' | 'AssetType' | 'AppraisedValue' | 'Value'> | null): number {
   if (!c) return 0;

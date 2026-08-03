@@ -3,6 +3,7 @@ import { Building2, Trash2, Loader2 } from 'lucide-react';
 import type { Collateral, Customer } from '../../types';
 import type { ThemeStyles } from '../../lib/themeStyles';
 import { fmtMoney, fmtDate, formatAssetType } from '../../lib/utils';
+import { isLtvException } from '../../lib/collateralMath';
 
 interface CollateralTableProps {
   styles: ThemeStyles;
@@ -69,6 +70,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
               const val = col.AppraisedValue || col.Value || 0;
               const effectiveLtv = getEffectiveLtv(col);
               const maxLoan = val * effectiveLtv / 100;
+              const isException = isLtvException(col);
 
               return (
                 <tr key={col.Id} onClick={() => handleSelectRow(col)}
@@ -92,9 +94,21 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                     {fmtMoney(val)}
                   </td>
                   <td className="p-3 text-center whitespace-nowrap">
-                    <span className="px-2 py-0.5 rounded-md font-mono font-bold text-xs bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+                    <span className={`px-2 py-0.5 rounded-md font-mono font-bold text-xs border ${
+                      isException
+                        ? 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700'
+                        : 'bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-800'
+                    }`}>
                       {effectiveLtv}%
                     </span>
+                    {isException && (
+                      <div
+                        className="mt-1 text-[10px] font-bold text-amber-600 dark:text-amber-400"
+                        title="Tài sản hạn chế nhận nhưng được gán LTV > 0. Cần có phê duyệt ngoại lệ."
+                      >
+                        ⚠ NGOẠI LỆ
+                      </div>
+                    )}
                   </td>
                   <td className="p-3 text-right font-mono font-bold text-sky-600 dark:text-sky-300 whitespace-nowrap">
                     {fmtMoney(maxLoan)}

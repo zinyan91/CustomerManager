@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { defaultLtvForAssetType, getEffectiveLtv, maxLoanFromCollateral } from './collateralMath';
+import {
+  defaultLtvForAssetType, getEffectiveLtv, maxLoanFromCollateral,
+  isRestrictedAsset, isLtvException,
+} from './collateralMath';
 import type { Collateral } from '../types';
 
 describe('defaultLtvForAssetType', () => {
@@ -71,6 +74,28 @@ describe('getEffectiveLtv', () => {
 
   it('trả 80 khi không có tài sản', () => {
     expect(getEffectiveLtv(null)).toBe(80);
+  });
+});
+
+describe('isRestrictedAsset / isLtvException', () => {
+  it('nhận diện tài sản thuộc diện hạn chế nhận', () => {
+    expect(isRestrictedAsset('Hạn chế nhận TS')).toBe(true);
+    expect(isRestrictedAsset('BĐS - Hạn chế nhận TS')).toBe(true);
+    expect(isRestrictedAsset('Loại 1')).toBe(false);
+  });
+
+  it('tài sản hạn chế ở LTV 0% là bình thường, KHÔNG phải ngoại lệ', () => {
+    const c = { AssetType: 'Hạn chế nhận TS', LtvPercent: 0 } as Collateral;
+    expect(isLtvException(c)).toBe(false);
+  });
+
+  it('tài sản hạn chế mà LTV > 0 là NGOẠI LỆ, phải được đánh dấu', () => {
+    const c = { AssetType: 'Hạn chế nhận TS', LtvPercent: 50 } as Collateral;
+    expect(isLtvException(c)).toBe(true);
+  });
+
+  it('tài sản thường có LTV cao không phải ngoại lệ', () => {
+    expect(isLtvException({ AssetType: 'Loại 1', LtvPercent: 80 } as Collateral)).toBe(false);
   });
 });
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI } from '../../lib/api';
 import { parseAnyDate, fmtDate } from '../../lib/utils';
-import { defaultLtvForAssetType, getEffectiveLtv } from '../../lib/collateralMath';
+import { defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset } from '../../lib/collateralMath';
 import type { Collateral, Customer } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { CheckCircle, AlertCircle } from 'lucide-react';
@@ -156,6 +156,25 @@ export const CollateralView: React.FC = () => {
       return;
     }
 
+    // Tài sản hạn chế nhận: LTV chính sách là 0%. Gán LTV > 0 là trường hợp
+    // NGOẠI LỆ, phải qua phê duyệt — buộc người nhập xác nhận có ý thức thay
+    // vì để hệ thống âm thầm cho qua.
+    const ltvNum = Number.isNaN(parseFloat(inputLtvPercent))
+      ? defaultLtvForAssetType(inputAssetType)
+      : parseFloat(inputLtvPercent);
+
+    if (isRestrictedAsset(inputAssetType) && ltvNum > 0) {
+      const confirmed = window.confirm(
+        `TRÌNH NGOẠI LỆ — CẦN PHÊ DUYỆT\n\n` +
+        `Tài sản thuộc diện HẠN CHẾ NHẬN, tỷ lệ LTV theo chính sách là 0%.\n` +
+        `Bạn đang gán LTV ${ltvNum}%, tương ứng hạn mức cho vay tối đa ` +
+        `${(valNum * ltvNum / 100).toLocaleString('vi-VN')} VNĐ.\n\n` +
+        `Chỉ tiếp tục khi đã có phê duyệt ngoại lệ của cấp có thẩm quyền.\n` +
+        `Trường hợp này sẽ được đánh dấu trên danh sách TSĐB.`
+      );
+      if (!confirmed) return;
+    }
+
     let expiryDateIso: string | null = null;
     if (inputAppraisalDate && inputAppraisalTenorMonths) {
       const parsed = parseAnyDate(inputAppraisalDate);
@@ -179,9 +198,7 @@ export const CollateralView: React.FC = () => {
         AppraisedValue: valNum,
         Value: valNum,
         // Không dùng `|| 80`: LTV 0% (tài sản hạn chế nhận) là giá trị hợp lệ
-        LtvPercent: Number.isNaN(parseFloat(inputLtvPercent))
-          ? defaultLtvForAssetType(inputAssetType)
-          : parseFloat(inputLtvPercent),
+        LtvPercent: ltvNum,
         AppraisalDate: inputAppraisalDate || null,
         AppraisalTenorMonths: inputAppraisalTenorMonths || 12,
         AppraisalExpiryDate: expiryDateIso,

@@ -55,13 +55,9 @@ export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Cust
   }
 
   if (!isUpdate) {
-    try {
-      const { data } = await supabase.from('Customers').select('Id');
-      const maxId = (data && data.length > 0) ? Math.max(...data.map(d => d.Id || 0)) : 0;
-      customer.Id = maxId + 1;
-    } catch {
-      customer.Id = Date.now();
-    }
+    // Id do database tự cấp qua sequence. Không gửi kèm — client không thể
+    // biết Id lớn nhất thật sự vì RLS chỉ cho thấy phần dữ liệu của mình.
+    delete customer.Id;
 
     // Gán banker phụ trách là người đang đăng nhập. Bắt buộc: policy INSERT
     // của RLS yêu cầu OwnerId = auth.uid() (trừ admin).
@@ -140,13 +136,7 @@ export async function saveCollateralAPI(collateral: Partial<Collateral>): Promis
   }
 
   if (!isUpdate) {
-    try {
-      const { data } = await supabase.from('Collaterals').select('Id');
-      const maxId = (data && data.length > 0) ? Math.max(...data.map(d => d.Id || 0)) : 0;
-      collateral.Id = maxId + 1;
-    } catch {
-      collateral.Id = Date.now();
-    }
+    delete collateral.Id; // Id do database tự cấp qua sequence
   }
 
   collateral.AssetCode = assetCode || null;
@@ -245,13 +235,7 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   }
 
   if (!isUpdate) {
-    try {
-      const { data } = await supabase.from('LoanContracts').select('Id');
-      const maxId = (data && data.length > 0) ? Math.max(...data.map(d => d.Id || 0)) : 0;
-      cleanContract.Id = maxId + 1;
-    } catch {
-      cleanContract.Id = Date.now();
-    }
+    delete cleanContract.Id; // Id do database tự cấp qua sequence
   }
 
   cleanContract.ContractNumber = contractNumber;
@@ -369,7 +353,8 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
     }
   }
 
-  const { customer, Limit, ...dbPayload } = card as any;
+  // Tách bỏ customer (object join, không phải cột) và Limit (tên cũ của CreditLimit)
+  const { customer: _customer, Limit, ...dbPayload } = card as any;
 
   let noteStr = dbPayload.Note || '';
   if (dbPayload.IssuanceType && !noteStr.includes('[IssuanceType:')) {
@@ -406,14 +391,7 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
     }
     return data;
   } else {
-    try {
-      const { data } = await supabase.from('CreditCards').select('Id').order('Id', { ascending: false }).limit(1);
-      const maxId = (data && data.length > 0 && data[0].Id) ? data[0].Id : 0;
-      cardData.Id = maxId + 1;
-    } catch {
-      cardData.Id = Date.now();
-    }
-
+    // Id do database tự cấp qua sequence — cardData vốn không mang Id
     const { data, error } = await supabase.from('CreditCards').insert([cardData]).select().single();
     if (error) {
       delete cardData.IssuanceType;
@@ -477,27 +455,20 @@ export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<Repayment
     const { error: upsertErr } = await supabase.from('RepaymentSchedules').upsert(withId, { onConflict: 'Id' });
     if (upsertErr) {
       console.error('bulkSaveRepaymentSchedulesAPI upsert error:', upsertErr);
+      // Dự phòng: cập nhật từng kỳ. Lỗi phải được báo lên, không nuốt —
+      // lịch trả nợ lưu thiếu mà giao diện báo thành công là sai nghiêm trọng.
       for (const s of withId) {
-        await supabase.from('RepaymentSchedules').update(s).eq('Id', s.Id);
+        const { error } = await supabase.from('RepaymentSchedules').update(s).eq('Id', s.Id);
+        if (error) throw error;
       }
     }
   }
 
   if (withoutId.length > 0) {
-    const cleanWithoutId = withoutId.map(s => {
-      const { Id, ...rest } = s;
-      return rest;
-    });
+    // Bỏ Id để database tự cấp qua sequence
+    const cleanWithoutId = withoutId.map(({ Id: _Id, ...rest }) => rest);
     const { error: insertErr } = await supabase.from('RepaymentSchedules').insert(cleanWithoutId);
-    if (insertErr) {
-      const { data } = await supabase.from('RepaymentSchedules').select('Id').order('Id', { ascending: false }).limit(1);
-      let startId = (data && data.length > 0 && data[0].Id) ? data[0].Id + 1 : 1;
-      const withGeneratedId = withoutId.map(s => ({
-        ...s,
-        Id: startId++,
-      }));
-      await supabase.from('RepaymentSchedules').upsert(withGeneratedId, { onConflict: 'Id' });
-    }
+    if (insertErr) throw insertErr;
   }
 }
 

@@ -177,14 +177,25 @@ describe('getMasterHdtdNumber', () => {
     expect(getMasterHdtdNumber(c)).toBe('HD123');
   });
 
-  it('ưu tiên giá trị lưu trong HdtdDueDate khi đó không phải ngày', () => {
-    const c = { ContractNumber: 'HD999', HdtdDueDate: 'HDTD-MASTER-01' } as LoanContract;
-    expect(getMasterHdtdNumber(c)).toBe('HDTD-MASTER-01');
+  it('KHÔNG bao giờ đọc số hợp đồng từ HdtdDueDate', () => {
+    // Chống hồi quy: HdtdDueDate là cột timestamp, PostgREST trả về dạng
+    // ISO đầy đủ. Thiết kế cũ từng lấy giá trị này làm số hợp đồng, khiến
+    // dấu thời gian bị hiển thị ở vị trí số HĐTD và phá vỡ gom nhóm.
+    const c = {
+      ContractNumber: 'HD777/GNN-01',
+      HdtdDueDate: '2026-05-28T00:00:00+00:00',
+    } as LoanContract;
+    expect(getMasterHdtdNumber(c)).toBe('HD777');
   });
 
-  it('bỏ qua HdtdDueDate khi đó là ngày hợp lệ', () => {
+  it('bỏ qua HdtdDueDate kể cả khi đó là ngày dạng ngắn', () => {
     const c = { ContractNumber: 'HD777', HdtdDueDate: '2026-08-03' } as LoanContract;
     expect(getMasterHdtdNumber(c)).toBe('HD777');
+  });
+
+  it('đọc từ Note khi hợp đồng cũ có ghi "HĐTD:"', () => {
+    const c = { ContractNumber: 'HD001', Note: 'HĐTD: HD-MASTER-09' } as LoanContract;
+    expect(getMasterHdtdNumber(c)).toBe('HD-MASTER-09');
   });
 
   it('trả nhãn mặc định khi không có gì', () => {

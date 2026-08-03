@@ -4,7 +4,7 @@ import {
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
   fetchCollateralsByCustomerAPI, deleteRepaymentSchedulesByContractAPI
 } from '../../lib/api';
-import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRate } from '../../lib/utils';
+import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRate, getMasterHdtdNumber } from '../../lib/utils';
 import {
   addMonthsToDate, parseKunnTenorMonths, parseDateParts,
   getDaysBetween, roundPrincipalCore, generateSchedule
@@ -138,20 +138,6 @@ export const LoanPortfolioView: React.FC = () => {
   };
 
   // Trích xuất Số HĐTD Gốc chuẩn từ LoanContract
-  const getMasterHdtdNumber = (c: LoanContract): string => {
-    if (c.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate)) {
-      return c.HdtdDueDate.trim();
-    }
-    if (c.Note?.includes('HĐTD:')) {
-      const match = c.Note.match(/HĐTD:\s*([^\n\r]+)/);
-      if (match && match[1]) return match[1].trim();
-    }
-    if (c.ContractNumber?.includes('/GNN-')) {
-      return c.ContractNumber.split('/GNN-')[0].trim();
-    }
-    return c.ContractNumber?.trim() || 'HĐTD-CHÍNH';
-  };
-
   // Tự động nhảy số KUNN (/GNN-01, /GNN-02...) khi gõ hoặc chọn Số HĐTD Gốc
   const handleHdtdNumberChange = (val: string) => {
     setFormHdtdNumber(val);
@@ -453,11 +439,7 @@ export const LoanPortfolioView: React.FC = () => {
   };
 
   const populateForm = (c: LoanContract) => {
-    const masterHdtdNo = (c.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate))
-      ? c.HdtdDueDate
-      : (c.Note?.includes('HĐTD:') ? c.Note.split('HĐTD:')[1].split('\n')[0].trim() : c.ContractNumber);
-
-    setFormHdtdNumber(masterHdtdNo || '');
+    setFormHdtdNumber(getMasterHdtdNumber(c));
     setFormKunnNumber(c.ContractNumber || '');
 
     setForm({

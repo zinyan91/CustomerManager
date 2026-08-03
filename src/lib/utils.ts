@@ -183,11 +183,20 @@ export function getEffectiveActiveRate(c?: LoanContract | null, targetDateStr?: 
   return c.InterestRate || c.NormalRate || c.PreferentialRate || c.BaseRate || 0.085;
 }
 
+/**
+ * Số HĐTD gốc của một KUNN.
+ *
+ * Lưu ý: KHÔNG đọc từ HdtdDueDate. Ở thiết kế cũ cột đó từng được mượn
+ * để chứa số hợp đồng, nhưng nay nó là timestamp with time zone và luôn
+ * NULL. Giữ lại nhánh đó là quả mìn: PostgREST trả timestamptz dưới dạng
+ * "2026-05-28T00:00:00+00:00", không khớp mẫu YYYY-MM-DD, nên hàm sẽ trả
+ * về nguyên dấu thời gian làm số hợp đồng và phá vỡ toàn bộ gom nhóm
+ * Master HĐTD trên Dashboard, KunnTable và tab lọc.
+ *
+ * Số HĐTD thật nằm ở tiền tố của ContractNumber, dạng "HD123/GNN-01".
+ */
 export function getMasterHdtdNumber(c?: LoanContract | null): string {
   if (!c) return '';
-  if (c.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate)) {
-    return c.HdtdDueDate.trim();
-  }
   if (c.Note?.includes('HĐTD:')) {
     const match = c.Note.match(/HĐTD:\s*([^\n\r]+)/);
     if (match && match[1]) return match[1].trim();

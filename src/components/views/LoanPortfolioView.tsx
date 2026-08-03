@@ -13,6 +13,10 @@ import {
 } from '../../lib/loanMath';
 import { getEffectiveLtv } from '../../lib/collateralMath';
 import { computeCreditLimit, checkCollateralCapacity } from '../../lib/creditLimit';
+import {
+  getLoanProductRule, allowedPurposes, graceMonthOptions,
+  checkTenor, checkPurpose,
+} from '../../lib/loanProductRules';
 import type { LoanContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -51,7 +55,6 @@ const INTEREST_REPAY_OPTIONS = [
   'Tính theo sao kê hàng tháng'
 ];
 
-const LOAN_PURPOSE_TYPES = ['Kinh doanh', 'Tiêu dùng', 'Sửa chữa nhà', 'Mua bất động sản', 'Khác'];
 
 const fmtMoney = (v?: number | null) => v !== undefined && v !== null ? v.toLocaleString('vi-VN') + ' VNĐ' : '—';
 const fmtRate = (v?: number | null) => v !== undefined && v !== null ? (v * 100).toFixed(2) + '%/năm' : '—';
@@ -356,28 +359,30 @@ export const LoanPortfolioView: React.FC = () => {
 
   // ─── LOAN METHOD SELECTION & REPAYMENT DEFAULTS ────────────────────────────
   const handleLoanMethodChange = (method: string) => {
-    let pRepay = form.PrincipalRepaymentMethod || 'Gốc trả cuối kỳ';
-    let iRepay = form.InterestRepaymentMethod || 'Trả hàng tháng theo dư nợ thực tế';
+    // Mặc định theo sản phẩm — nguồn duy nhất ở lib/loanProductRules
+    const rule = getLoanProductRule(method);
+    const pRepay = rule.defaultPrincipalMethod;
+    const iRepay = rule.defaultInterestMethod;
 
-    if (method === 'Hạn mức tín dụng') {
-      pRepay = 'Gốc trả cuối kỳ';
-      iRepay = 'Trả hàng tháng theo dư nợ thực tế';
-    } else if (method === 'Cho vay từng lần' || method === 'Hạn mức tín dụng từng lần') {
-      pRepay = 'Trả đều hàng tháng';
-      iRepay = 'Trả hàng tháng theo dư nợ thực tế';
-    } else if (method === 'Cầm cố sổ tiết kiệm') {
-      pRepay = 'Gốc trả cuối kỳ';
-      iRepay = 'Trả cuối kỳ';
-    } else if (method === 'Hạn mức thẻ tín dụng') {
-      pRepay = 'Thanh toán dư nợ tối thiểu hàng tháng';
-      iRepay = 'Tính theo sao kê hàng tháng';
-    }
+    // Mục đích vay: tự điền nếu sản phẩm chỉ có một lựa chọn, hoặc nếu mục
+    // đích đang chọn không thuộc sản phẩm mới
+    const allowed = rule.purposes;
+    const currentPurpose = form.LoanPurposeType || '';
+    const nextPurpose =
+      rule.defaultPurpose && (rule.lockPurpose || !allowed.includes(currentPurpose))
+        ? rule.defaultPurpose
+        : currentPurpose;
+
+    // Ân hạn gốc: xoá nếu sản phẩm mới không áp dụng
+    const nextGrace = rule.graceMonths.length === 0 ? 0 : (form.PrincipalGracePeriodMonths ?? 0);
 
     setForm(prev => ({
       ...prev,
       LoanMethod: method,
       PrincipalRepaymentMethod: pRepay,
       InterestRepaymentMethod: iRepay,
+      LoanPurposeType: nextPurpose,
+      PrincipalGracePeriodMonths: nextGrace,
     }));
   };
 
@@ -976,6 +981,21 @@ export const LoanPortfolioView: React.FC = () => {
 
   // Chốt kiểm soát: tổng mức cấp của các HĐTD cùng thế chấp một tài sản
   // không được vượt hạn mức tối đa theo LTV của tài sản đó.
+  // Quy tắc sản phẩm theo phương thức vay (mục đích, kỳ hạn, ân hạn)
+  const productRule = useMemo(() => getLoanProductRule(form.LoanMethod), [form.LoanMethod]);
+  const graceOptions = useMemo(() => graceMonthOptions(form.LoanMethod), [form.LoanMethod]);
+
+  // Chỉ CẢNH BÁO, không chặn lưu — nghiệp vụ có ngoại lệ được phê duyệt
+  const tenorWarning = useMemo(() => {
+    const months = form.LoanTenorMonths || parseKunnTenorMonths(form.KunnTenor);
+    return checkTenor(form.LoanMethod, months).message;
+  }, [form.LoanMethod, form.LoanTenorMonths, form.KunnTenor]);
+
+  const purposeWarning = useMemo(
+    () => checkPurpose(form.LoanMethod, form.LoanPurposeType).message,
+    [form.LoanMethod, form.LoanPurposeType]
+  );
+
   const capacityWarnings = useMemo(
     () => checkCollateralCapacity(contracts, collaterals).filter(w => w.exceeded),
     [contracts, collaterals]
@@ -1212,13 +1232,36 @@ export const LoanPortfolioView: React.FC = () => {
                       {/* Chuyển Mục đích vay & Mô tả chi tiết lên thông tin chung */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Mục đích vay vốn</label>
+                          <label className={`block mb-1 ${labelStyle}`}>
+                            Mục đích vay vốn
+                            {productRule.lockPurpose && (
+                              <span className="ml-1 normal-case font-normal text-slate-400">
+                                (cố định theo sản phẩm)
+                              </span>
+                            )}
+                          </label>
                           <select value={form.LoanPurposeType || ''}
                             onChange={e => setForm(f => ({ ...f, LoanPurposeType: e.target.value }))}
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`}>
-                            <option value="">-- Chọn mục đích --</option>
-                            {LOAN_PURPOSE_TYPES.map(p => <option key={p} value={p}>{p}</option>)}
+                            disabled={productRule.lockPurpose}
+                            title={productRule.lockPurpose
+                              ? 'Sản phẩm này chỉ phục vụ một mục đích vay duy nhất.'
+                              : undefined}
+                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle} ${
+                              productRule.lockPurpose ? 'opacity-70 cursor-not-allowed' : ''
+                            }`}>
+                            {!productRule.lockPurpose && <option value="">-- Chọn mục đích --</option>}
+                            {allowedPurposes(form.LoanMethod).map(p => (
+                              <option key={p.value} value={p.value}>{p.label}</option>
+                            ))}
                           </select>
+                          {productRule.note && (
+                            <div className="mt-1 text-[10px] text-slate-400 leading-snug">{productRule.note}</div>
+                          )}
+                          {purposeWarning && (
+                            <div className="mt-1 text-[10px] text-amber-600 dark:text-amber-400 leading-snug">
+                              ⚠ {purposeWarning}
+                            </div>
+                          )}
                         </div>
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Mô tả chi tiết mục đích vay</label>
@@ -1286,8 +1329,13 @@ export const LoanPortfolioView: React.FC = () => {
                           ) : (
                             <input type="number" min={1} value={form.LoanTenorMonths || ''}
                               onChange={e => setForm(f => ({ ...f, LoanTenorMonths: parseInt(e.target.value) || undefined }))}
-                              placeholder="12, 120, 240..."
+                              placeholder={`${productRule.tenor.min} – ${productRule.tenor.max} tháng`}
                               className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                          )}
+                          {tenorWarning && (
+                            <div className="mt-1 text-[10px] text-amber-600 dark:text-amber-400 leading-snug">
+                              ⚠ {tenorWarning}
+                            </div>
                           )}
                         </div>
                         <div>
@@ -1697,14 +1745,19 @@ export const LoanPortfolioView: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Tự động ẨN hoàn toàn ô Ân hạn đối với Phương thức Hạn mức tín dụng */}
-                      {form.LoanMethod !== 'Hạn mức tín dụng' && (
+                      {/* Ân hạn chỉ hiện với sản phẩm có áp dụng — xem loanProductRules */}
+                      {graceOptions.length > 0 && (
                         <div className="grid grid-cols-2 gap-4 pt-1 border-t border-slate-200 dark:border-slate-800">
                           <div>
                             <label className={`block mb-1 ${labelStyle}`}>Ân hạn gốc (tháng)</label>
-                            <input type="number" min={0} value={form.PrincipalGracePeriodMonths ?? 0}
+                            <select value={form.PrincipalGracePeriodMonths ?? 0}
                               onChange={e => setForm(f => ({ ...f, PrincipalGracePeriodMonths: parseInt(e.target.value) || 0 }))}
-                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`}>
+                              <option value={0}>Không ân hạn</option>
+                              {graceOptions.map(g => (
+                                <option key={g} value={g}>{g} tháng</option>
+                              ))}
+                            </select>
                           </div>
                           <div>
                             <label className={`block mb-1 ${labelStyle}`}>Ân hạn lãi (tháng)</label>

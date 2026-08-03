@@ -62,6 +62,15 @@ export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Cust
     } catch {
       customer.Id = Date.now();
     }
+
+    // Gán banker phụ trách là người đang đăng nhập. Bắt buộc: policy INSERT
+    // của RLS yêu cầu OwnerId = auth.uid() (trừ admin).
+    if (!customer.OwnerId) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        customer.OwnerId = session.user.id;
+      }
+    }
   }
 
   customer.CifKh = cif;

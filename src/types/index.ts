@@ -1,5 +1,7 @@
 export interface Customer {
   Id: number;
+  /** Banker phụ trách (auth.users.id). NULL = chỉ admin nhìn thấy. */
+  OwnerId?: string | null;
   CifKh: string;
   CifKhlq?: string | null;
   FullName: string;

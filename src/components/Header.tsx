@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Sun, Moon, Wifi, WifiOff, Menu } from 'lucide-react';
+import { Sun, Moon, Wifi, WifiOff, Menu, LogOut, ShieldCheck, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   onToggleMobileMenu?: () => void;
@@ -9,6 +10,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
   const { theme, toggleTheme } = useTheme();
+  const { user, role, fullName, isAdmin, signOut } = useAuth();
   const [isOnline, setIsOnline] = useState<boolean | null>(true);
 
   useEffect(() => {
@@ -107,6 +109,43 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
             </>
           )}
         </div>
+
+        {/* Người dùng đang đăng nhập */}
+        <div className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border ${
+          isAdmin
+            ? isLight
+              ? 'bg-sky-50 border-sky-200 text-sky-700'
+              : 'bg-sky-950/60 border-sky-500/30 text-sky-400'
+            : isLight
+              ? 'bg-slate-100 border-slate-300 text-slate-700'
+              : 'bg-slate-800 border-slate-700 text-slate-300'
+        }`}>
+          {isAdmin ? <ShieldCheck className="w-3.5 h-3.5" /> : <User className="w-3.5 h-3.5" />}
+          <span className="max-w-[160px] truncate" title={user?.email ?? undefined}>
+            {fullName || user?.email}
+          </span>
+          <span className="opacity-60">
+            · {role === 'admin' ? 'Quản trị' : role === 'banker' ? 'Banker' : 'Chưa gán vai trò'}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm('Đăng xuất khỏi hệ thống? Dữ liệu chưa lưu sẽ bị mất.')) {
+              signOut();
+            }
+          }}
+          className={`flex items-center gap-1.5 border px-2.5 md:px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
+            isLight
+              ? 'bg-slate-100 hover:bg-red-50 border-slate-300 hover:border-red-300 text-slate-800 hover:text-red-700'
+              : 'bg-slate-800 hover:bg-red-950/50 border-slate-700 hover:border-red-500/40 text-slate-200 hover:text-red-400'
+          }`}
+          title="Đăng xuất"
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="hidden sm:inline">Đăng xuất</span>
+        </button>
       </div>
     </header>
   );

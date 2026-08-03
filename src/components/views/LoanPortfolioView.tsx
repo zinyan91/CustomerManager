@@ -10,6 +10,7 @@ import {
   getDaysBetween, roundPrincipalCore, generateSchedule
 } from '../../lib/loanMath';
 import { getEffectiveLtv } from '../../lib/collateralMath';
+import { computeCreditLimit, checkCollateralCapacity } from '../../lib/creditLimit';
 import type { LoanContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -157,6 +158,8 @@ export const LoanPortfolioView: React.FC = () => {
   const [formHdtdNumber, setFormHdtdNumber] = useState('');
   const [formKunnNumber, setFormKunnNumber] = useState('');
   const [formCreditLimit, setFormCreditLimit] = useState('');
+  const [formCreditLimitCode, setFormCreditLimitCode] = useState('');
+  const [formCreditLimitAmount, setFormCreditLimitAmount] = useState('');
   const [formLoanAmount, setFormLoanAmount] = useState('');
   const [formCurrentBalance, setFormCurrentBalance] = useState('');
 
@@ -469,6 +472,8 @@ export const LoanPortfolioView: React.FC = () => {
     });
 
     setFormCreditLimit(c.ContractAmount ? c.ContractAmount.toLocaleString('vi-VN') : '');
+    setFormCreditLimitCode(c.CreditLimitCode || '');
+    setFormCreditLimitAmount(c.CreditLimitAmount ? c.CreditLimitAmount.toLocaleString('vi-VN') : '');
     setFormLoanAmount(c.LoanAmount ? c.LoanAmount.toLocaleString('vi-VN') : '');
     setFormCurrentBalance(c.CurrentBalance ? c.CurrentBalance.toLocaleString('vi-VN') : '');
 
@@ -549,6 +554,10 @@ export const LoanPortfolioView: React.FC = () => {
     } else {
       setFormCreditLimit('');
     }
+
+    // Kế thừa mã HMTD từ hợp đồng gốc — KUNN mới thuộc cùng hạn mức đã duyệt
+    setFormCreditLimitCode(master?.CreditLimitCode || '');
+    setFormCreditLimitAmount(master?.CreditLimitAmount ? master.CreditLimitAmount.toLocaleString('vi-VN') : '');
 
     setFormLoanAmount('');
     setFormCurrentBalance('');
@@ -639,6 +648,12 @@ export const LoanPortfolioView: React.FC = () => {
         ContractAmount: creditLimit,
         LoanAmount: loanAmount,
         CurrentBalance: currentBal,
+
+        // Mã HMTD dùng chung: các HĐTD cùng mã chỉ tính hạn mức MỘT lần
+        CreditLimitCode: formCreditLimitCode.trim() || null,
+        CreditLimitAmount: formCreditLimitCode.trim()
+          ? (parseFloat(formCreditLimitAmount.replace(/\./g, '').replace(',', '.')) || null)
+          : null,
 
         PreferentialRate: prefDec,
         PreferentialPeriodMonths: parseInt(ratePreferentialMonths) || undefined,
@@ -1084,7 +1099,9 @@ export const LoanPortfolioView: React.FC = () => {
   // Thống kê Tài chính theo Bộ lọc HĐTD (Tự động trừ đi số tiền gốc đã thanh toán)
   const summaryFinancials = useMemo(() => {
     if (selectedMasterFilter === 'ALL') {
-      const totalCredit = masterHdtdGroups.reduce((sum, g) => sum + g.totalCreditLimit, 0);
+      // Các HĐTD dùng chung một mã HMTD chỉ được tính MỘT lần (TH2).
+      // Trước đây cộng mức cấp của từng nhóm HĐTD nên bị cộng đôi.
+      const totalCredit = computeCreditLimit(contracts).total;
       const totalDisbursed = contracts.reduce((sum, c) => sum + getEffectiveBalanceForContract(c), 0);
       const totalRemaining = Math.max(0, totalCredit - totalDisbursed);
       return { totalCredit, totalDisbursed, totalRemaining };
@@ -1099,6 +1116,13 @@ export const LoanPortfolioView: React.FC = () => {
       };
     }
   }, [contracts, masterHdtdGroups, selectedMasterFilter, allSchedulesMap]);
+
+  // Chốt kiểm soát: tổng mức cấp của các HĐTD cùng thế chấp một tài sản
+  // không được vượt hạn mức tối đa theo LTV của tài sản đó.
+  const capacityWarnings = useMemo(
+    () => checkCollateralCapacity(contracts, collaterals).filter(w => w.exceeded),
+    [contracts, collaterals]
+  );
 
   const totalCreditLimit = summaryFinancials.totalCredit;
   const totalKunnAmount = summaryFinancials.totalDisbursed;
@@ -1196,6 +1220,33 @@ export const LoanPortfolioView: React.FC = () => {
             remainingCreditLimit={remainingCreditLimit}
             handleNewContract={handleNewContract}
           />
+
+          {/* ── CẢNH BÁO: TỔNG MỨC CẤP VƯỢT KHẢ NĂNG BẢO ĐẢM CỦA TSĐB ── */}
+          {capacityWarnings.length > 0 && (
+            <div className="rounded-2xl border border-amber-400/60 bg-amber-50 dark:bg-amber-950/40 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-xs uppercase tracking-wide">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>Cảnh báo: Tổng mức cấp vượt khả năng bảo đảm</span>
+              </div>
+              {capacityWarnings.map(w => (
+                <div key={w.collateralIds.join('-')} className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                  {w.collateralIds.length > 1 ? `${w.collateralIds.length} TSĐB` : 'TSĐB'}{' '}
+                  <strong className="font-mono">{w.assetCodes.join(', ')}</strong> —
+                  tổng hạn mức tối đa theo LTV <strong>{fmtMoney(w.capacity)}</strong>,
+                  nhưng tổng mức cấp của {w.contractNumbers.length} hợp đồng đang là{' '}
+                  <strong>{fmtMoney(w.granted)}</strong>, vượt{' '}
+                  <strong className="text-rose-600 dark:text-rose-400">{fmtMoney(w.excessAmount)}</strong>.
+                  <div className="opacity-70 mt-0.5">
+                    Hợp đồng liên quan: {w.contractNumbers.join(' · ')}
+                  </div>
+                </div>
+              ))}
+              <div className="text-[10px] text-amber-700/80 dark:text-amber-400/70 pt-1 border-t border-amber-400/30">
+                Kiểm tra lại mức cấp trên từng hợp đồng. Nếu các hợp đồng dùng chung một hạn mức được duyệt,
+                hãy khai cùng một Mã HMTD để hệ thống chỉ tính một lần.
+              </div>
+            </div>
+          )}
 
           {/* ── BỘ LỌC QUẢN LÝ THEO TỪNG GÓI HĐTD CỦA KHÁCH HÀNG ── */}
           <MasterHdtdFilterTabs
@@ -1330,6 +1381,26 @@ export const LoanPortfolioView: React.FC = () => {
                             placeholder="1.000.000.000"
                             className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
                         </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>
+                            Mã HMTD dùng chung
+                            <span className="ml-1 normal-case font-normal text-slate-400">(nếu nhiều HĐTD chung một hạn mức)</span>
+                          </label>
+                          <input type="text" value={formCreditLimitCode}
+                            onChange={e => setFormCreditLimitCode(e.target.value)}
+                            placeholder="Số phê duyệt cấp tín dụng"
+                            title="Các HĐTD khai cùng mã này sẽ dùng chung một hạn mức, chỉ tính MỘT lần vào tổng mức cấp. Bỏ trống nếu hợp đồng có hạn mức riêng."
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono ${inputStyle}`} />
+                        </div>
+                        {formCreditLimitCode.trim() !== '' && (
+                          <div>
+                            <label className={`block mb-1 ${labelStyle}`}>Hạn mức được duyệt</label>
+                            <input type="text" value={formCreditLimitAmount}
+                              onChange={e => setFormCreditLimitAmount(formatMoneyInput(e.target.value))}
+                              placeholder="1.460.000.000"
+                              className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-400 ${inputStyle}`} />
+                          </div>
+                        )}
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Ngày HĐ có hiệu lực</label>
                           <DateInput value={form.ContractStartDate || ''}

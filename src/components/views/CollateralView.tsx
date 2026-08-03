@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI } from '../../lib/api';
+import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI } from '../../lib/api';
 import { parseAnyDate, fmtDate } from '../../lib/utils';
 import type { Collateral, Customer } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
@@ -38,6 +38,7 @@ export const CollateralView: React.FC = () => {
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [colPage, setColPage] = useState(1);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const COL_PAGE_SIZE = 10;
 
   useEffect(() => {
@@ -97,7 +98,8 @@ export const CollateralView: React.FC = () => {
 
   const showNotify = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 4000);
+    // Thông báo lỗi hiển thị lâu hơn: nội dung có thể liệt kê nhiều số hợp đồng
+    setTimeout(() => setNotification(null), type === 'error' ? 8000 : 4000);
   };
 
   const getEffectiveLtv = (c: Collateral) => {
@@ -143,6 +145,31 @@ export const CollateralView: React.FC = () => {
     setInputAppraisalDate('');
     setInputAppraisalTenorMonths(12);
     setInputAppraisalExpiryDate('');
+  };
+
+  const handleDelete = async (c: Collateral) => {
+    const label = c.AssetCode || c.Address || `#${c.Id}`;
+    const owner = customers.find(x => x.Id === c.CustomerId);
+    const confirmed = window.confirm(
+      `XOÁ VĨNH VIỄN tài sản bảo đảm?\n\n` +
+      `Mã TSĐB : ${label}\n` +
+      `Chủ sở hữu: ${owner?.FullName || `ID #${c.CustomerId}`}\n\n` +
+      `Hành động này KHÔNG THỂ hoàn tác.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(c.Id);
+    try {
+      await deleteCollateralAPI(c.Id);
+      showNotify('success', 'Đã XOÁ thành công TSBĐ!');
+      // Dọn form nếu đang mở đúng TSĐB vừa xoá
+      if (selectedCollateral?.Id === c.Id) handleResetForm();
+      await fetchData();
+    } catch (err: any) {
+      showNotify('error', err.message || 'Lỗi xoá TSBĐ.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -213,6 +240,11 @@ export const CollateralView: React.FC = () => {
   const totalPages = Math.ceil(filteredCollaterals.length / COL_PAGE_SIZE) || 1;
   const paginatedCollaterals = filteredCollaterals.slice((colPage - 1) * COL_PAGE_SIZE, colPage * COL_PAGE_SIZE);
 
+  // Xoá dòng cuối của trang cuối sẽ để lại trang trống — kéo về trang hợp lệ
+  useEffect(() => {
+    if (colPage > totalPages) setColPage(totalPages);
+  }, [colPage, totalPages]);
+
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
       {/* Toast Notification */}
@@ -251,6 +283,8 @@ export const CollateralView: React.FC = () => {
         setColPage={setColPage}
         totalPages={totalPages}
         getEffectiveLtv={getEffectiveLtv}
+        onDelete={handleDelete}
+        deletingId={deletingId}
       />
 
       {/* ── COLLATERAL APPRAISAL FORM ── */}

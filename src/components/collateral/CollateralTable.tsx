@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2 } from 'lucide-react';
+import { Building2, Trash2, Loader2 } from 'lucide-react';
 import type { Collateral, Customer } from '../../types';
 import type { ThemeStyles } from '../../lib/themeStyles';
 import { fmtMoney, fmtDate, formatAssetType } from '../../lib/utils';
@@ -16,6 +16,8 @@ interface CollateralTableProps {
   setColPage: React.Dispatch<React.SetStateAction<number>>;
   totalPages: number;
   getEffectiveLtv: (c: Collateral) => number;
+  onDelete: (c: Collateral) => void;
+  deletingId: number | null;
 }
 
 export const CollateralTable: React.FC<CollateralTableProps> = ({
@@ -30,6 +32,8 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
   setColPage,
   totalPages,
   getEffectiveLtv,
+  onDelete,
+  deletingId,
 }) => {
   return (
     <div className={`${styles.containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
@@ -53,11 +57,12 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
               <th className="p-3 whitespace-nowrap text-right">HẠN MỨC CHO VAY TỐI ĐA</th>
               <th className="p-3 whitespace-nowrap text-center">NGÀY ĐỊNH GIÁ</th>
               <th className="p-3 whitespace-nowrap text-center">HẠN ĐỊNH GIÁ</th>
+              <th className="p-3 whitespace-nowrap text-center">THAO TÁC</th>
             </tr>
           </thead>
           <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
             {paginatedCollaterals.length === 0 ? (
-              <tr><td colSpan={8} className="text-center p-8 text-slate-400">Không tìm thấy tài sản bảo đảm nào.</td></tr>
+              <tr><td colSpan={9} className="text-center p-8 text-slate-400">Không tìm thấy tài sản bảo đảm nào.</td></tr>
             ) : paginatedCollaterals.map(col => {
               const cust = customers.find(c => c.Id === col.CustomerId);
               const isSelected = selectedCollateral?.Id === col.Id;
@@ -99,6 +104,20 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                   </td>
                   <td className="p-3 text-center whitespace-nowrap text-slate-500 font-mono">
                     {fmtDate(col.AppraisalExpiryDate)}
+                  </td>
+                  <td className="p-3 text-center whitespace-nowrap">
+                    <button
+                      type="button"
+                      // Chặn nổi bọt để không kích hoạt chọn dòng của <tr>
+                      onClick={(e) => { e.stopPropagation(); onDelete(col); }}
+                      disabled={deletingId === col.Id}
+                      className="p-1.5 rounded-lg border border-transparent text-slate-400 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      title="Xoá tài sản bảo đảm"
+                    >
+                      {deletingId === col.Id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <Trash2 className="w-4 h-4" />}
+                    </button>
                   </td>
                 </tr>
               );

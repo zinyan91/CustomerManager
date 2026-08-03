@@ -163,6 +163,52 @@ export async function saveCollateralAPI(collateral: Partial<Collateral>): Promis
   }
 }
 
+/**
+ * Tìm các HĐTD đang thế chấp bằng TSĐB này.
+ * Kiểm tra cả cột CollateralId (liên kết đơn) lẫn CollateralIds (chuỗi
+ * nhiều mã, dạng "1,5,12").
+ *
+ * Lưu ý: dưới RLS, banker chỉ thấy được hợp đồng thuộc KH mình phụ trách.
+ * Trường hợp TSĐB bị hợp đồng của KH khác tham chiếu chéo sẽ không phát
+ * hiện được — hiếm gặp vì TSĐB và HĐTD thường cùng một khách hàng.
+ */
+export async function findContractsUsingCollateralAPI(collateralId: number): Promise<LoanContract[]> {
+  const { data, error } = await supabase
+    .from('LoanContracts')
+    .select('Id, ContractNumber, CollateralId, CollateralIds')
+    .or(`CollateralId.eq.${collateralId},CollateralIds.not.is.null`);
+  if (error) throw error;
+
+  return (data || []).filter((c: any) => {
+    if (c.CollateralId === collateralId) return true;
+    if (!c.CollateralIds) return false;
+    // So khớp từng phần tử, không dùng LIKE để tránh "1" khớp nhầm "10"
+    return String(c.CollateralIds)
+      .split(',')
+      .map((s: string) => s.trim())
+      .includes(String(collateralId));
+  }) as LoanContract[];
+}
+
+export async function deleteCollateralAPI(id: number): Promise<void> {
+  // Chặn xoá TSĐB đang bảo đảm cho khoản vay
+  const linked = await findContractsUsingCollateralAPI(id);
+  if (linked.length > 0) {
+    const names = linked.map(c => c.ContractNumber || `HĐ #${c.Id}`).join(', ');
+    throw new Error(
+      `Không thể xoá: TSĐB đang được thế chấp cho ${linked.length} hợp đồng (${names}). Vui lòng gỡ liên kết khỏi hợp đồng trước.`
+    );
+  }
+
+  // .select() để biết thực sự có dòng nào bị xoá không. Nếu RLS chặn,
+  // Supabase trả về mảng rỗng mà KHÔNG báo lỗi — phải tự phát hiện.
+  const { data, error } = await supabase.from('Collaterals').delete().eq('Id', id).select();
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Xoá thất bại: bạn không có quyền xoá TSĐB này, hoặc bản ghi đã bị xoá trước đó.');
+  }
+}
+
 export async function fetchContractsAPI(): Promise<LoanContract[]> {
   try {
     const { data, error } = await supabase.from('LoanContracts').select('*, customer:Customers(*)');

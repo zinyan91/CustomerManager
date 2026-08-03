@@ -164,8 +164,10 @@ describe('checkCollateralCapacity', () => {
     const ts11 = { Id: 11, CustomerId: 1, AppraisedValue: 2_714_000_000, LtvPercent: 80 } as Collateral;
     const ts12 = { Id: 12, CustomerId: 1, AppraisedValue: 5_095_000_000, LtvPercent: 80 } as Collateral;
     const r = checkCollateralCapacity([
-      hd({ ContractNumber: '2002/HĐTD/9632203/GNN-15', ContractAmount: 4_500_000_000, CollateralIds: '11,12' }),
-      hd({ ContractNumber: '2002/HĐTD/9632203/GNN-16', ContractAmount: 4_500_000_000, CollateralIds: '11,12' }),
+      hd({ ContractNumber: '2002/HĐTD/9632203/GNN-15', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 4_500_000_000, LoanAmount: 1_500_000_000, CollateralIds: '11,12' }),
+      hd({ ContractNumber: '2002/HĐTD/9632203/GNN-16', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 4_500_000_000, LoanAmount: 1_500_000_000, CollateralIds: '11,12' }),
     ], [ts11, ts12]);
 
     expect(r).toHaveLength(1);
@@ -222,5 +224,69 @@ describe('checkCollateralCapacity', () => {
   it('bỏ qua hợp đồng không có TSĐB', () => {
     const r = checkCollateralCapacity([hd({ ContractNumber: 'Z/GNN-01', ContractAmount: 9_000_000_000 })], [tsdb]);
     expect(r).toHaveLength(0);
+  });
+});
+
+describe('Cơ sở đối chiếu khác nhau theo loại vay', () => {
+  const tsCao = { Id: 35, CustomerId: 1, AppraisedValue: 1_816_000_000, LtvPercent: 60 } as Collateral;
+
+  it('CHO VAY TỪNG LẦN đối chiếu theo DƯ NỢ HIỆN HỮU, không phải mức cấp', () => {
+    const r = checkCollateralCapacity([
+      hd({ Id: 1, ContractNumber: 'HĐTD-01/GNN-01', LoanMethod: 'Cho vay từng lần',
+           ContractAmount: 800_000_000, CurrentBalance: 539_987_000, CollateralIds: '35' }),
+      hd({ Id: 2, ContractNumber: 'HĐTD-02/GNN-01', LoanMethod: 'Cho vay từng lần',
+           ContractAmount: 300_000_000, CurrentBalance: 245_000_000, CollateralIds: '35' }),
+    ], [tsCao]);
+
+    expect(r[0].capacity).toBe(1_089_600_000);
+    expect(r[0].granted).toBe(784_987_000);
+    expect(r[0].exceeded).toBe(false);
+  });
+
+  it('HẠN MỨC TÍN DỤNG đối chiếu theo MỨC CẤP vì khách hàng rút lại được', () => {
+    const r = checkCollateralCapacity([
+      hd({ Id: 1, ContractNumber: 'HM-01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 1_500_000_000, CurrentBalance: 100_000_000, CollateralIds: '35' }),
+    ], [tsCao]);
+
+    expect(r[0].granted).toBe(1_500_000_000);
+    expect(r[0].exceeded).toBe(true);
+  });
+
+  it('nhiều KUNN của một HĐTD hạn mức chỉ tính mức cấp MỘT lần', () => {
+    const r = checkCollateralCapacity([
+      hd({ Id: 1, ContractNumber: 'HM/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 1_000_000_000, CurrentBalance: 400_000_000, CollateralIds: '35' }),
+      hd({ Id: 2, ContractNumber: 'HM/GNN-02', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 1_000_000_000, CurrentBalance: 300_000_000, CollateralIds: '35' }),
+    ], [tsCao]);
+    expect(r[0].granted).toBe(1_000_000_000);
+  });
+
+  it('trộn hai loại thì cộng mức cấp hạn mức với dư nợ vay từng lần', () => {
+    const r = checkCollateralCapacity([
+      hd({ Id: 1, ContractNumber: 'HM/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 500_000_000, CurrentBalance: 100_000_000, CollateralIds: '35' }),
+      hd({ Id: 2, ContractNumber: 'TL/GNN-01', LoanMethod: 'Cho vay từng lần',
+           ContractAmount: 400_000_000, CurrentBalance: 150_000_000, CollateralIds: '35' }),
+    ], [tsCao]);
+    expect(r[0].granted).toBe(650_000_000);
+  });
+
+  it('dùng dư nợ tính từ lịch thu nợ khi có hàm tra', () => {
+    const r = checkCollateralCapacity([
+      hd({ Id: 1, ContractNumber: 'TL/GNN-01', LoanMethod: 'Cho vay từng lần',
+           ContractAmount: 800_000_000, CurrentBalance: 800_000_000, CollateralIds: '35' }),
+    ], [tsCao], () => 120_000_000);
+    expect(r[0].granted).toBe(120_000_000);
+  });
+
+  it('dư nợ đã về 0 thì không còn nghĩa vụ trên tài sản', () => {
+    const r = checkCollateralCapacity([
+      hd({ Id: 1, ContractNumber: 'TL/GNN-01', LoanMethod: 'Cho vay từng lần',
+           ContractAmount: 5_000_000_000, CurrentBalance: 0, CollateralIds: '35' }),
+    ], [tsCao]);
+    expect(r[0].granted).toBe(0);
+    expect(r[0].exceeded).toBe(false);
   });
 });

@@ -143,6 +143,19 @@ Số HĐTD gốc nằm ở **tiền tố `ContractNumber`** (`HD123/GNN-01`). C�
 
 Đối chiếu tổng mức cấp với tổng khả năng bảo đảm theo **cụm liên thông** hợp đồng ↔ tài sản, **không** xét từng tài sản riêng lẻ. Một hợp đồng thường được bảo đảm bằng nhiều tài sản cộng lại; một tài sản có thể bảo đảm nhiều hợp đồng. Xét lẻ sẽ báo động giả hàng loạt.
 
+### Cơ sở đối chiếu khác nhau theo loại vay
+
+Đây là điểm dễ sai nhất khi so tổng nghĩa vụ với khả năng bảo đảm:
+
+| Loại vay | Cơ sở đối chiếu | Lý do |
+| :--- | :--- | :--- |
+| **Hạn mức tín dụng** (tái sử dụng) | **Mức cấp** | Khách hàng rút lại được bất cứ lúc nào, tài sản phải đỡ đủ hạn mức |
+| **Cho vay từng lần** | **Dư nợ hiện hữu** | Giải ngân một lần rồi giảm dần, không rút lại được |
+
+Dùng mức cấp gốc cho vay từng lần sẽ báo động giả suốt vòng đời khoản vay, vì gốc trả vào thì LTV của khoản vay giảm theo. Tính chất tái sử dụng khai ở `revolving` trong `loanProductRules.ts`, tra bằng `isRevolvingCredit`.
+
+Cụm có cả hai loại thì cộng: mức cấp của phần hạn mức + dư nợ của phần vay từng lần.
+
 ---
 
 ## Sản phẩm vay
@@ -198,7 +211,7 @@ Không nhét dữ liệu nghiệp vụ vào `Note` — mỗi thông tin một c�
 
 ```bash
 npm run dev      # máy chủ phát triển
-npm test         # 196 test logic tài chính
+npm test         # 226 test logic tài chính
 npm run build    # typecheck + đóng gói
 npm run lint
 ```

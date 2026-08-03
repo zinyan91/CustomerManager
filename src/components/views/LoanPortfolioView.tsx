@@ -941,8 +941,9 @@ export const LoanPortfolioView: React.FC = () => {
   );
 
   const capacityWarnings = useMemo(
-    () => checkCollateralCapacity(contracts, collaterals).filter(w => w.exceeded),
-    [contracts, collaterals]
+    () => checkCollateralCapacity(contracts, collaterals, getEffectiveBalanceForContract)
+      .filter(w => w.exceeded),
+    [contracts, collaterals, allSchedulesMap]
   );
 
   const totalCreditLimit = summaryFinancials.totalCredit;
@@ -1048,7 +1049,7 @@ export const LoanPortfolioView: React.FC = () => {
                   {w.collateralIds.length > 1 ? `${w.collateralIds.length} TSĐB` : 'TSĐB'}{' '}
                   <strong className="font-mono">{w.assetCodes.join(', ')}</strong> —
                   tổng hạn mức tối đa theo LTV <strong>{fmtMoney(w.capacity)}</strong>,
-                  nhưng tổng mức cấp của {w.contractNumbers.length} hợp đồng đang là{' '}
+                  nhưng tổng nghĩa vụ của {w.contractNumbers.length} hợp đồng đang là{' '}
                   <strong>{fmtMoney(w.granted)}</strong>, vượt{' '}
                   <strong className="text-rose-600 dark:text-rose-400">{fmtMoney(w.excessAmount)}</strong>.
                   <div className="opacity-70 mt-0.5">
@@ -1057,8 +1058,8 @@ export const LoanPortfolioView: React.FC = () => {
                 </div>
               ))}
               <div className="text-[10px] text-amber-700/80 dark:text-amber-400/70 pt-1 border-t border-amber-400/30">
-                Kiểm tra lại mức cấp trên từng hợp đồng. Nếu các hợp đồng dùng chung một hạn mức được duyệt,
-                hãy khai cùng một Mã HMTD để hệ thống chỉ tính một lần.
+                Hạn mức tín dụng tính theo mức cấp (khách hàng rút lại được); cho vay từng lần tính theo dư nợ hiện hữu.
+                Nếu các hợp đồng dùng chung một hạn mức được duyệt, hãy khai cùng một Mã HMTD để hệ thống chỉ tính một lần.
               </div>
             </div>
           )}

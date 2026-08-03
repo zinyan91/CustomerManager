@@ -1,6 +1,7 @@
 import type { LoanContract, Collateral } from '../types';
 import { getMasterHdtdNumber } from './utils';
 import { maxLoanFromCollateral } from './collateralMath';
+import { isRevolvingCredit } from './loanProductRules';
 
 export interface SharedLimitGroup {
   code: string;
@@ -96,9 +97,27 @@ export function parseCollateralIds(c: LoanContract): number[] {
   return Array.from(ids);
 }
 
+export function clusterExposure(
+  contracts: LoanContract[],
+  getOutstanding?: (c: LoanContract) => number
+): number {
+  const revolving = contracts.filter(c => isRevolvingCredit(c.LoanMethod));
+  const term = contracts.filter(c => !isRevolvingCredit(c.LoanMethod));
+
+  const revolvingExposure = revolving.length > 0 ? computeCreditLimit(revolving).total : 0;
+
+  const outstandingOf = (c: LoanContract) =>
+    getOutstanding ? getOutstanding(c) : (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0);
+
+  const termExposure = term.reduce((sum, c) => sum + Math.max(0, outstandingOf(c)), 0);
+
+  return revolvingExposure + termExposure;
+}
+
 export function checkCollateralCapacity(
   contracts: LoanContract[],
-  collaterals: Collateral[]
+  collaterals: Collateral[],
+  getOutstanding?: (c: LoanContract) => number
 ): CollateralCapacityCheck[] {
   const collateralById = new Map(collaterals.map(c => [c.Id, c]));
 
@@ -139,7 +158,7 @@ export function checkCollateralCapacity(
   for (const cluster of clusters.values()) {
     const cols = Array.from(cluster.colIds).map(id => collateralById.get(id)!);
     const capacity = cols.reduce((sum, col) => sum + maxLoanFromCollateral(col), 0);
-    const granted = computeCreditLimit(cluster.contracts).total;
+    const granted = clusterExposure(cluster.contracts, getOutstanding);
     const excessAmount = Math.max(0, granted - capacity);
 
     result.push({

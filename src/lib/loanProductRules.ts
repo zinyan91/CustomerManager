@@ -22,6 +22,7 @@ export interface LoanProductRule {
   tenor: { min: number; max: number; typical?: number[] };
 
   graceMonths: number[];
+  revolving: boolean;
   defaultPrincipalMethod: string;
   defaultInterestMethod: string;
 
@@ -33,6 +34,7 @@ const PERMISSIVE: LoanProductRule = {
   lockPurpose: false,
   tenor: { min: 1, max: 360 },
   graceMonths: [],
+  revolving: false,
   defaultPrincipalMethod: 'Gốc trả cuối kỳ',
   defaultInterestMethod: 'Trả hàng tháng theo dư nợ thực tế',
 };
@@ -45,6 +47,7 @@ const RULES: Record<string, LoanProductRule> = {
     lockPurpose: true,
     tenor: { min: 12, max: 24, typical: [12, 24] },
     graceMonths: [],
+    revolving: true,
     defaultPrincipalMethod: 'Gốc trả cuối kỳ',
     defaultInterestMethod: 'Trả hàng tháng theo dư nợ thực tế',
     note: 'Vay ngắn hạn phục vụ sản xuất kinh doanh. Kỳ hạn thường 12 hoặc 24 tháng.',
@@ -56,6 +59,7 @@ const RULES: Record<string, LoanProductRule> = {
     lockPurpose: false,
     tenor: { min: 60, max: 360 },
     graceMonths: [6, 12, 15, 18, 24, 36],
+    revolving: false,
     defaultPrincipalMethod: 'Trả đều hàng tháng',
     defaultInterestMethod: 'Trả hàng tháng theo dư nợ thực tế',
     note: 'Vay dài hạn phục vụ đời sống. Kỳ hạn từ 5 năm đến tối đa 30 năm.',
@@ -69,6 +73,7 @@ const RULES: Record<string, LoanProductRule> = {
 
   'Hạn mức thẻ tín dụng': {
     ...PERMISSIVE,
+    revolving: true,
     defaultPrincipalMethod: 'Thanh toán dư nợ tối thiểu hàng tháng',
     defaultInterestMethod: 'Tính theo sao kê hàng tháng',
   },
@@ -143,4 +148,8 @@ export function checkGrace(loanMethod: string | null | undefined, graceMonths?: 
     };
   }
   return { ok: true };
+}
+
+export function isRevolvingCredit(loanMethod?: string | null): boolean {
+  return getLoanProductRule(loanMethod).revolving;
 }

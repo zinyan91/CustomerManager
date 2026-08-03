@@ -26,7 +26,7 @@ Mã nguồn không chứa chú thích. Toàn bộ giải thích "vì sao" nằm 
 
 ## 2. Logic tài chính
 
-Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 226 test tại `src/lib/__tests__/`.
+Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 235 test tại `src/lib/__tests__/`.
 
 | Tệp | Nội dung |
 | :--- | :--- |
@@ -97,6 +97,21 @@ Bảng chính sách LTV nằm ở một nơi duy nhất: `src/lib/collateralMath
 **Tài sản hạn chế nhận có LTV 0%.** Cho vay trên tài sản đó là **trình ngoại lệ, bắt buộc có phê duyệt của cấp có thẩm quyền**. Hệ thống buộc người nhập xác nhận và đánh dấu `⚠ NGOẠI LỆ` trên danh sách, nhưng không chặn cứng.
 
 Xoá tài sản bảo đảm bị chặn nếu nó đang thế chấp cho khoản vay. So khớp mã tài sản trong chuỗi `CollateralIds` phải tách theo dấu phẩy rồi so từng phần tử — dùng `LIKE '%1%'` sẽ khớp nhầm `10`, `21`.
+
+### Hiệu lực định giá
+
+Định giá **chỉ có hiệu lực trong 6 / 12 / 24 tháng** kể từ ngày định giá. Hết hiệu lực thì con số đó **không còn dùng được để tính hạn mức**, dù vẫn nằm trong cơ sở dữ liệu.
+
+| Trạng thái | Tính vào khả năng bảo đảm |
+| :--- | :--- |
+| Còn hiệu lực | Có |
+| Sắp hết hạn (còn ≤ 60 ngày) | Có, kèm cảnh báo |
+| **Hết hiệu lực** | **Không — bằng 0** |
+| Chưa có ngày định giá | Không — bằng 0 |
+
+`maxLoanFromCollateral` là số học thuần (giá trị × LTV). `usableCapacity` mới là con số dùng cho chốt kiểm soát: trả 0 khi định giá không còn hiệu lực. Chốt kiểm soát báo riêng loại rủi ro này để banker biết cần định giá lại, chứ không lẫn với việc vượt hạn mức.
+
+Ngày hết hiệu lực được **tính lại** từ `AppraisalDate` + `AppraisalTenorMonths` thay vì tin vào cột `AppraisalExpiryDate` (kiểu text, có thể lưu ở định dạng hiển thị).
 
 ---
 
@@ -186,6 +201,6 @@ Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor
 ```bash
 npm run dev        # Máy chủ phát triển
 npm run build      # Kiểm tra kiểu + đóng gói
-npm test           # 226 test logic tài chính
+npm test           # 235 test logic tài chính
 npm run lint       # Kiểm tra mã nguồn
 ```

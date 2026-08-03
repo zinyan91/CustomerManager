@@ -121,6 +121,21 @@ Theo số ngày quá hạn lớn nhất trong các kỳ **chưa thanh toán**:
 
 Khi so khớp mã tài sản trong chuỗi `CollateralIds` (dạng `"1,5,12"`): **tách theo dấu phẩy rồi so từng phần tử**. Dùng `LIKE '%1%'` sẽ khớp nhầm `10`, `21`.
 
+### Hiệu lực định giá
+
+Định giá **chỉ có hiệu lực trong 6 / 12 / 24 tháng** kể từ ngày định giá. Hết hiệu lực thì con số đó **không còn dùng được để tính hạn mức**, dù vẫn nằm trong cơ sở dữ liệu.
+
+| Trạng thái | Tính vào khả năng bảo đảm |
+| :--- | :--- |
+| Còn hiệu lực | Có |
+| Sắp hết hạn (còn ≤ 60 ngày) | Có, kèm cảnh báo |
+| **Hết hiệu lực** | **Không — bằng 0** |
+| Chưa có ngày định giá | Không — bằng 0 |
+
+`maxLoanFromCollateral` là số học thuần (giá trị × LTV). `usableCapacity` mới là con số dùng cho chốt kiểm soát: trả 0 khi định giá không còn hiệu lực. Chốt kiểm soát báo riêng loại rủi ro này để banker biết cần định giá lại, chứ không lẫn với việc vượt hạn mức.
+
+Ngày hết hiệu lực được **tính lại** từ `AppraisalDate` + `AppraisalTenorMonths` thay vì tin vào cột `AppraisalExpiryDate` (kiểu text, có thể lưu ở định dạng hiển thị).
+
 ---
 
 ## Ba tầng hạn mức tín dụng
@@ -211,7 +226,7 @@ Không nhét dữ liệu nghiệp vụ vào `Note` — mỗi thông tin một c�
 
 ```bash
 npm run dev      # máy chủ phát triển
-npm test         # 226 test logic tài chính
+npm test         # 235 test logic tài chính
 npm run build    # typecheck + đóng gói
 npm run lint
 ```

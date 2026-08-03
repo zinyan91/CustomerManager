@@ -6,6 +6,15 @@ const hd = (o: Partial<LoanContract>): LoanContract => ({
   Id: 0, CustomerId: 1, ContractNumber: '', ContractType: 0, ...o,
 } as LoanContract);
 
+const HOM_NAY = '2026-08-03';
+const DINH_GIA = '2026-07-01';
+
+const kiemTra = (
+  cs: LoanContract[],
+  cols: Collateral[],
+  getOut?: (c: LoanContract) => number,
+) => checkCollateralCapacity(cs, cols, getOut, HOM_NAY);
+
 describe('TH1 — một số HĐTD, nhiều KUNN', () => {
   it('mức cấp chỉ tính MỘT lần cho cả nhóm', () => {
     const r = computeCreditLimit([
@@ -107,11 +116,11 @@ describe('parseCollateralIds', () => {
 });
 
 describe('checkCollateralCapacity', () => {
-  const tsdb = { Id: 6, CustomerId: 1, AppraisedValue: 2_140_000_000, LtvPercent: 70 } as Collateral;
+  const tsdb = { Id: 6, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 2_140_000_000, LtvPercent: 70 } as Collateral;
 
   it('phát hiện tổng mức cấp VƯỢT khả năng bảo đảm', () => {
 
-    const r = checkCollateralCapacity([
+    const r = kiemTra([
       hd({ ContractNumber: 'A/GNN-01', ContractAmount: 1_460_000_000, CollateralIds: '6' }),
       hd({ ContractNumber: 'B/GNN-01', ContractAmount: 1_460_000_000, CollateralIds: '6' }),
     ], [tsdb]);
@@ -125,7 +134,7 @@ describe('checkCollateralCapacity', () => {
 
   it('không báo động khi tổng mức cấp nằm trong khả năng bảo đảm', () => {
 
-    const r = checkCollateralCapacity([
+    const r = kiemTra([
       hd({ ContractNumber: 'A/GNN-01', ContractAmount: 960_000_000, CollateralIds: '6' }),
       hd({ ContractNumber: 'B/GNN-01', ContractAmount: 500_000_000, CollateralIds: '6' }),
     ], [tsdb]);
@@ -134,7 +143,7 @@ describe('checkCollateralCapacity', () => {
   });
 
   it('KHÔNG báo động giả cho TH2 — hạn mức dùng chung tính một lần', () => {
-    const r = checkCollateralCapacity([
+    const r = kiemTra([
       hd({ ContractNumber: 'A/GNN-01', ContractAmount: 960_000_000, CollateralIds: '6', CreditLimitCode: 'PD-01', CreditLimitAmount: 1_460_000_000 }),
       hd({ ContractNumber: 'B/GNN-01', ContractAmount: 500_000_000, CollateralIds: '6', CreditLimitCode: 'PD-01', CreditLimitAmount: 1_460_000_000 }),
     ], [tsdb]);
@@ -144,7 +153,7 @@ describe('checkCollateralCapacity', () => {
 
   it('KHÔNG báo động giả cho TH1 — nhiều KUNN của cùng một HĐTD', () => {
 
-    const ts16 = { Id: 16, CustomerId: 1, AppraisedValue: 9_112_000_000, LtvPercent: 80 } as Collateral;
+    const ts16 = { Id: 16, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 9_112_000_000, LtvPercent: 80 } as Collateral;
     const kunns = Array.from({ length: 7 }, (_, i) =>
       hd({
         ContractNumber: `2002/HĐTD/9632774/GNN-0${i + 5}`,
@@ -153,7 +162,7 @@ describe('checkCollateralCapacity', () => {
         CollateralIds: '16',
       })
     );
-    const r = checkCollateralCapacity(kunns, [ts16]);
+    const r = kiemTra(kunns, [ts16]);
     expect(r[0].granted).toBe(7_000_000_000);
     expect(r[0].capacity).toBe(7_289_600_000);
     expect(r[0].exceeded).toBe(false);
@@ -161,9 +170,9 @@ describe('checkCollateralCapacity', () => {
 
   it('KHÔNG báo động giả khi một hợp đồng được bảo đảm bằng NHIỀU tài sản', () => {
 
-    const ts11 = { Id: 11, CustomerId: 1, AppraisedValue: 2_714_000_000, LtvPercent: 80 } as Collateral;
-    const ts12 = { Id: 12, CustomerId: 1, AppraisedValue: 5_095_000_000, LtvPercent: 80 } as Collateral;
-    const r = checkCollateralCapacity([
+    const ts11 = { Id: 11, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 2_714_000_000, LtvPercent: 80 } as Collateral;
+    const ts12 = { Id: 12, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 5_095_000_000, LtvPercent: 80 } as Collateral;
+    const r = kiemTra([
       hd({ ContractNumber: '2002/HĐTD/9632203/GNN-15', LoanMethod: 'Hạn mức tín dụng',
            ContractAmount: 4_500_000_000, LoanAmount: 1_500_000_000, CollateralIds: '11,12' }),
       hd({ ContractNumber: '2002/HĐTD/9632203/GNN-16', LoanMethod: 'Hạn mức tín dụng',
@@ -177,10 +186,10 @@ describe('checkCollateralCapacity', () => {
   });
 
   it('gộp thành một cụm khi các hợp đồng dùng chung tài sản', () => {
-    const tsA = { Id: 1, CustomerId: 1, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
-    const tsB = { Id: 2, CustomerId: 1, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
+    const tsA = { Id: 1, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
+    const tsB = { Id: 2, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
 
-    const r = checkCollateralCapacity([
+    const r = kiemTra([
       hd({ ContractNumber: 'X/GNN-01', ContractAmount: 700_000_000, CollateralIds: '1' }),
       hd({ ContractNumber: 'Y/GNN-01', ContractAmount: 700_000_000, CollateralIds: '1,2' }),
     ], [tsA, tsB]);
@@ -192,10 +201,10 @@ describe('checkCollateralCapacity', () => {
   });
 
   it('các cụm không liên quan được xét riêng', () => {
-    const tsA = { Id: 1, CustomerId: 1, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
-    const tsB = { Id: 2, CustomerId: 1, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
+    const tsA = { Id: 1, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
+    const tsB = { Id: 2, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
 
-    const r = checkCollateralCapacity([
+    const r = kiemTra([
       hd({ ContractNumber: 'X/GNN-01', ContractAmount: 500_000_000, CollateralIds: '1' }),
       hd({ ContractNumber: 'Y/GNN-01', ContractAmount: 900_000_000, CollateralIds: '2' }),
     ], [tsA, tsB]);
@@ -209,8 +218,8 @@ describe('checkCollateralCapacity', () => {
   });
 
   it('tài sản hạn chế nhận cho khả năng bảo đảm bằng 0 nên mọi mức cấp đều vượt', () => {
-    const hanChe = { Id: 9, CustomerId: 1, AppraisedValue: 5_000_000_000, LtvPercent: 0, AssetType: 'Hạn chế nhận TS' } as Collateral;
-    const r = checkCollateralCapacity([
+    const hanChe = { Id: 9, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 5_000_000_000, LtvPercent: 0, AssetType: 'Hạn chế nhận TS' } as Collateral;
+    const r = kiemTra([
       hd({ ContractNumber: 'X/GNN-01', ContractAmount: 100_000_000, CollateralIds: '9' }),
     ], [hanChe]);
     expect(r[0].capacity).toBe(0);
@@ -218,20 +227,20 @@ describe('checkCollateralCapacity', () => {
   });
 
   it('bỏ qua tài sản không gắn với hợp đồng nào', () => {
-    expect(checkCollateralCapacity([], [tsdb])).toHaveLength(0);
+    expect(kiemTra([], [tsdb])).toHaveLength(0);
   });
 
   it('bỏ qua hợp đồng không có TSĐB', () => {
-    const r = checkCollateralCapacity([hd({ ContractNumber: 'Z/GNN-01', ContractAmount: 9_000_000_000 })], [tsdb]);
+    const r = kiemTra([hd({ ContractNumber: 'Z/GNN-01', ContractAmount: 9_000_000_000 })], [tsdb]);
     expect(r).toHaveLength(0);
   });
 });
 
 describe('Cơ sở đối chiếu khác nhau theo loại vay', () => {
-  const tsCao = { Id: 35, CustomerId: 1, AppraisedValue: 1_816_000_000, LtvPercent: 60 } as Collateral;
+  const tsCao = { Id: 35, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 1_816_000_000, LtvPercent: 60 } as Collateral;
 
   it('CHO VAY TỪNG LẦN đối chiếu theo DƯ NỢ HIỆN HỮU, không phải mức cấp', () => {
-    const r = checkCollateralCapacity([
+    const r = kiemTra([
       hd({ Id: 1, ContractNumber: 'HĐTD-01/GNN-01', LoanMethod: 'Cho vay từng lần',
            ContractAmount: 800_000_000, CurrentBalance: 539_987_000, CollateralIds: '35' }),
       hd({ Id: 2, ContractNumber: 'HĐTD-02/GNN-01', LoanMethod: 'Cho vay từng lần',
@@ -244,7 +253,7 @@ describe('Cơ sở đối chiếu khác nhau theo loại vay', () => {
   });
 
   it('HẠN MỨC TÍN DỤNG đối chiếu theo MỨC CẤP vì khách hàng rút lại được', () => {
-    const r = checkCollateralCapacity([
+    const r = kiemTra([
       hd({ Id: 1, ContractNumber: 'HM-01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
            ContractAmount: 1_500_000_000, CurrentBalance: 100_000_000, CollateralIds: '35' }),
     ], [tsCao]);
@@ -254,7 +263,7 @@ describe('Cơ sở đối chiếu khác nhau theo loại vay', () => {
   });
 
   it('nhiều KUNN của một HĐTD hạn mức chỉ tính mức cấp MỘT lần', () => {
-    const r = checkCollateralCapacity([
+    const r = kiemTra([
       hd({ Id: 1, ContractNumber: 'HM/GNN-01', LoanMethod: 'Hạn mức tín dụng',
            ContractAmount: 1_000_000_000, CurrentBalance: 400_000_000, CollateralIds: '35' }),
       hd({ Id: 2, ContractNumber: 'HM/GNN-02', LoanMethod: 'Hạn mức tín dụng',
@@ -264,7 +273,7 @@ describe('Cơ sở đối chiếu khác nhau theo loại vay', () => {
   });
 
   it('trộn hai loại thì cộng mức cấp hạn mức với dư nợ vay từng lần', () => {
-    const r = checkCollateralCapacity([
+    const r = kiemTra([
       hd({ Id: 1, ContractNumber: 'HM/GNN-01', LoanMethod: 'Hạn mức tín dụng',
            ContractAmount: 500_000_000, CurrentBalance: 100_000_000, CollateralIds: '35' }),
       hd({ Id: 2, ContractNumber: 'TL/GNN-01', LoanMethod: 'Cho vay từng lần',
@@ -274,7 +283,7 @@ describe('Cơ sở đối chiếu khác nhau theo loại vay', () => {
   });
 
   it('dùng dư nợ tính từ lịch thu nợ khi có hàm tra', () => {
-    const r = checkCollateralCapacity([
+    const r = kiemTra([
       hd({ Id: 1, ContractNumber: 'TL/GNN-01', LoanMethod: 'Cho vay từng lần',
            ContractAmount: 800_000_000, CurrentBalance: 800_000_000, CollateralIds: '35' }),
     ], [tsCao], () => 120_000_000);
@@ -282,7 +291,7 @@ describe('Cơ sở đối chiếu khác nhau theo loại vay', () => {
   });
 
   it('dư nợ đã về 0 thì không còn nghĩa vụ trên tài sản', () => {
-    const r = checkCollateralCapacity([
+    const r = kiemTra([
       hd({ Id: 1, ContractNumber: 'TL/GNN-01', LoanMethod: 'Cho vay từng lần',
            ContractAmount: 5_000_000_000, CurrentBalance: 0, CollateralIds: '35' }),
     ], [tsCao]);

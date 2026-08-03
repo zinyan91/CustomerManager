@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   defaultLtvForAssetType, getEffectiveLtv, maxLoanFromCollateral,
   isRestrictedAsset, isLtvException,
+  appraisalExpiryDate, appraisalStatus, usableCapacity,
 } from '../collateralMath';
 import type { Collateral } from '../../types';
 
@@ -114,5 +115,73 @@ describe('maxLoanFromCollateral', () => {
   it('trả 0 khi không có giá trị định giá', () => {
     expect(maxLoanFromCollateral({ LtvPercent: 80 } as Collateral)).toBe(0);
     expect(maxLoanFromCollateral(null)).toBe(0);
+  });
+});
+
+describe('Hiệu lực định giá', () => {
+  const HOM_NAY = '2026-08-03';
+
+  it('tính ngày hết hiệu lực từ ngày định giá và kỳ hạn', () => {
+    expect(appraisalExpiryDate({ AppraisalDate: '2025-09-20', AppraisalTenorMonths: 12 } as Collateral))
+      .toBe('2026-09-20');
+    expect(appraisalExpiryDate({ AppraisalDate: '2025-09-20', AppraisalTenorMonths: 24 } as Collateral))
+      .toBe('2027-09-20');
+    expect(appraisalExpiryDate({ AppraisalDate: '2025-09-20', AppraisalTenorMonths: 6 } as Collateral))
+      .toBe('2026-03-20');
+  });
+
+  it('mặc định 12 tháng khi chưa khai kỳ hạn', () => {
+    expect(appraisalExpiryDate({ AppraisalDate: '2025-09-20' } as Collateral)).toBe('2026-09-20');
+  });
+
+  it('đọc được dấu thời gian đầy đủ của PostgREST', () => {
+    expect(appraisalExpiryDate({
+      AppraisalDate: '2025-09-20T00:00:00+00:00', AppraisalTenorMonths: 12,
+    } as unknown as Collateral)).toBe('2026-09-20');
+  });
+
+  it('kẹp về ngày cuối tháng khi tháng đích ngắn hơn', () => {
+    expect(appraisalExpiryDate({ AppraisalDate: '2025-08-31', AppraisalTenorMonths: 6 } as Collateral))
+      .toBe('2026-02-28');
+  });
+
+  it('phân loại đúng trạng thái hiệu lực', () => {
+    expect(appraisalStatus({ AppraisalDate: '2026-07-01', AppraisalTenorMonths: 12 } as Collateral, HOM_NAY))
+      .toBe('valid');
+    expect(appraisalStatus({ AppraisalDate: '2025-09-20', AppraisalTenorMonths: 12 } as Collateral, HOM_NAY))
+      .toBe('expiring_soon');
+    expect(appraisalStatus({ AppraisalDate: '2024-01-15', AppraisalTenorMonths: 12 } as Collateral, HOM_NAY))
+      .toBe('expired');
+    expect(appraisalStatus({ AppraisalDate: null } as Collateral, HOM_NAY)).toBe('missing');
+  });
+
+  it('định giá HẾT HIỆU LỰC thì khả năng bảo đảm bằng 0', () => {
+    const hetHieuLuc = {
+      Id: 1, AppraisedValue: 5_000_000_000, LtvPercent: 80,
+      AppraisalDate: '2024-01-15', AppraisalTenorMonths: 12,
+    } as Collateral;
+    expect(maxLoanFromCollateral(hetHieuLuc)).toBe(4_000_000_000);
+    expect(usableCapacity(hetHieuLuc, HOM_NAY)).toBe(0);
+  });
+
+  it('định giá còn hiệu lực thì dùng được đầy đủ', () => {
+    const conHieuLuc = {
+      Id: 1, AppraisedValue: 5_000_000_000, LtvPercent: 80,
+      AppraisalDate: '2026-07-01', AppraisalTenorMonths: 12,
+    } as Collateral;
+    expect(usableCapacity(conHieuLuc, HOM_NAY)).toBe(4_000_000_000);
+  });
+
+  it('sắp hết hiệu lực vẫn dùng được, chỉ để cảnh báo', () => {
+    const sapHet = {
+      Id: 1, AppraisedValue: 1_000_000_000, LtvPercent: 80,
+      AppraisalDate: '2025-09-20', AppraisalTenorMonths: 12,
+    } as Collateral;
+    expect(appraisalStatus(sapHet, HOM_NAY)).toBe('expiring_soon');
+    expect(usableCapacity(sapHet, HOM_NAY)).toBe(800_000_000);
+  });
+
+  it('chưa có ngày định giá thì không tính vào khả năng bảo đảm', () => {
+    expect(usableCapacity({ Id: 1, AppraisedValue: 2_000_000_000, LtvPercent: 80 } as Collateral, HOM_NAY)).toBe(0);
   });
 });

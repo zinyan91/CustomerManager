@@ -3,7 +3,7 @@ import { Building2, Trash2, Loader2 } from 'lucide-react';
 import type { Collateral, Customer } from '../../types';
 import type { ThemeStyles } from '../../lib/themeStyles';
 import { fmtMoney, fmtDate, formatAssetType } from '../../lib/utils';
-import { isLtvException } from '../../lib/collateralMath';
+import { isLtvException, appraisalStatus, appraisalExpiryDate } from '../../lib/collateralMath';
 
 interface CollateralTableProps {
   styles: ThemeStyles;
@@ -71,6 +71,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
               const effectiveLtv = getEffectiveLtv(col);
               const maxLoan = val * effectiveLtv / 100;
               const isException = isLtvException(col);
+              const dgStatus = appraisalStatus(col);
 
               return (
                 <tr key={col.Id} onClick={() => handleSelectRow(col)}
@@ -116,8 +117,28 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                   <td className="p-3 text-center whitespace-nowrap text-slate-500 font-mono">
                     {fmtDate(col.AppraisalDate)}
                   </td>
-                  <td className="p-3 text-center whitespace-nowrap text-slate-500 font-mono">
-                    {fmtDate(col.AppraisalExpiryDate)}
+                  <td className="p-3 text-center whitespace-nowrap font-mono">
+                    <span className={
+                      dgStatus === 'expired' ? 'text-rose-600 dark:text-rose-400 font-bold'
+                      : dgStatus === 'expiring_soon' ? 'text-amber-600 dark:text-amber-400 font-bold'
+                      : 'text-slate-500'
+                    }>
+                      {fmtDate(col.AppraisalExpiryDate || appraisalExpiryDate(col))}
+                    </span>
+                    {dgStatus === 'expired' && (
+                      <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400"
+                        title="Định giá đã hết hiệu lực, không được tính vào khả năng bảo đảm cho tới khi định giá lại.">
+                        HẾT HIỆU LỰC
+                      </div>
+                    )}
+                    {dgStatus === 'expiring_soon' && (
+                      <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                        SẮP HẾT HẠN
+                      </div>
+                    )}
+                    {dgStatus === 'missing' && (
+                      <div className="text-[10px] font-bold text-slate-400">CHƯA ĐỊNH GIÁ</div>
+                    )}
                   </td>
                   <td className="p-3 text-center whitespace-nowrap">
                     <button

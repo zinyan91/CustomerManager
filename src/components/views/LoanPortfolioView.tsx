@@ -927,6 +927,8 @@ export const LoanPortfolioView: React.FC = () => {
     }
   }, [contracts, masterHdtdGroups, selectedMasterFilter, allSchedulesMap]);
 
+  const todayIso = new Date().toISOString().split('T')[0];
+
   const productRule = useMemo(() => getLoanProductRule(form.LoanMethod), [form.LoanMethod]);
   const graceOptions = useMemo(() => graceMonthOptions(form.LoanMethod), [form.LoanMethod]);
 
@@ -941,8 +943,8 @@ export const LoanPortfolioView: React.FC = () => {
   );
 
   const capacityWarnings = useMemo(
-    () => checkCollateralCapacity(contracts, collaterals, getEffectiveBalanceForContract)
-      .filter(w => w.exceeded),
+    () => checkCollateralCapacity(contracts, collaterals, getEffectiveBalanceForContract, todayIso)
+      .filter(w => w.exceeded || w.expiredAppraisals.length > 0),
     [contracts, collaterals, allSchedulesMap]
   );
 
@@ -1042,16 +1044,29 @@ export const LoanPortfolioView: React.FC = () => {
             <div className="rounded-2xl border border-amber-400/60 bg-amber-50 dark:bg-amber-950/40 p-4 space-y-2">
               <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-xs uppercase tracking-wide">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>Cảnh báo: Tổng mức cấp vượt khả năng bảo đảm</span>
+                <span>Cảnh báo kiểm soát tài sản bảo đảm</span>
               </div>
               {capacityWarnings.map(w => (
                 <div key={w.collateralIds.join('-')} className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
-                  {w.collateralIds.length > 1 ? `${w.collateralIds.length} TSĐB` : 'TSĐB'}{' '}
-                  <strong className="font-mono">{w.assetCodes.join(', ')}</strong> —
-                  tổng hạn mức tối đa theo LTV <strong>{fmtMoney(w.capacity)}</strong>,
-                  nhưng tổng nghĩa vụ của {w.contractNumbers.length} hợp đồng đang là{' '}
-                  <strong>{fmtMoney(w.granted)}</strong>, vượt{' '}
-                  <strong className="text-rose-600 dark:text-rose-400">{fmtMoney(w.excessAmount)}</strong>.
+                  {w.expiredAppraisals.length > 0 && (
+                    <div className="mb-1">
+                      <strong className="text-rose-600 dark:text-rose-400">Định giá hết hiệu lực:</strong>{' '}
+                      {w.expiredAppraisals.map(e =>
+                        `${e.assetCode}${e.expiryDate ? ` (hết hạn ${fmtDate(e.expiryDate)})` : ' (chưa có ngày định giá)'}`
+                      ).join(' · ')}
+                      {' '}— không được tính vào khả năng bảo đảm cho tới khi định giá lại.
+                    </div>
+                  )}
+                  {w.exceeded && (
+                    <>
+                      {w.collateralIds.length > 1 ? `${w.collateralIds.length} TSĐB` : 'TSĐB'}{' '}
+                      <strong className="font-mono">{w.assetCodes.join(', ')}</strong> —
+                      khả năng bảo đảm còn hiệu lực <strong>{fmtMoney(w.capacity)}</strong>,
+                      nhưng tổng nghĩa vụ của {w.contractNumbers.length} hợp đồng đang là{' '}
+                      <strong>{fmtMoney(w.granted)}</strong>, vượt{' '}
+                      <strong className="text-rose-600 dark:text-rose-400">{fmtMoney(w.excessAmount)}</strong>.
+                    </>
+                  )}
                   <div className="opacity-70 mt-0.5">
                     Hợp đồng liên quan: {w.contractNumbers.join(' · ')}
                   </div>

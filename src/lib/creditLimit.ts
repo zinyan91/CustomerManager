@@ -1,6 +1,6 @@
 import type { LoanContract, Collateral } from '../types';
 import { getMasterHdtdNumber } from './utils';
-import { maxLoanFromCollateral } from './collateralMath';
+import { usableCapacity, appraisalStatus, appraisalExpiryDate } from './collateralMath';
 import { isRevolvingCredit } from './loanProductRules';
 
 export interface SharedLimitGroup {
@@ -83,6 +83,7 @@ export interface CollateralCapacityCheck {
   exceeded: boolean;
   excessAmount: number;
   contractNumbers: string[];
+  expiredAppraisals: { collateralId: number; assetCode: string; expiryDate: string | null }[];
 }
 
 export function parseCollateralIds(c: LoanContract): number[] {
@@ -117,7 +118,8 @@ export function clusterExposure(
 export function checkCollateralCapacity(
   contracts: LoanContract[],
   collaterals: Collateral[],
-  getOutstanding?: (c: LoanContract) => number
+  getOutstanding?: (c: LoanContract) => number,
+  todayStr?: string
 ): CollateralCapacityCheck[] {
   const collateralById = new Map(collaterals.map(c => [c.Id, c]));
 
@@ -157,7 +159,14 @@ export function checkCollateralCapacity(
   const result: CollateralCapacityCheck[] = [];
   for (const cluster of clusters.values()) {
     const cols = Array.from(cluster.colIds).map(id => collateralById.get(id)!);
-    const capacity = cols.reduce((sum, col) => sum + maxLoanFromCollateral(col), 0);
+    const capacity = cols.reduce((sum, col) => sum + usableCapacity(col, todayStr), 0);
+    const expiredAppraisals = cols
+      .filter(col => appraisalStatus(col, todayStr) === 'expired' || appraisalStatus(col, todayStr) === 'missing')
+      .map(col => ({
+        collateralId: col.Id,
+        assetCode: col.AssetCode || `#${col.Id}`,
+        expiryDate: appraisalExpiryDate(col),
+      }));
     const granted = clusterExposure(cluster.contracts, getOutstanding);
     const excessAmount = Math.max(0, granted - capacity);
 
@@ -169,6 +178,7 @@ export function checkCollateralCapacity(
       exceeded: excessAmount > 0,
       excessAmount,
       contractNumbers: cluster.contracts.map(c => c.ContractNumber),
+      expiredAppraisals,
     });
   }
 

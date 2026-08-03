@@ -1,4 +1,5 @@
 import type { Collateral } from '../types';
+import { parseAnyDate } from './utils';
 
 export const ASSET_TYPE_LTV: ReadonlyArray<readonly [string, number]> = [
 
@@ -54,4 +55,61 @@ export function maxLoanFromCollateral(c?: Pick<Collateral, 'LtvPercent' | 'Asset
   if (!c) return 0;
   const value = c.AppraisedValue || c.Value || 0;
   return value * getEffectiveLtv(c) / 100;
+}
+
+export const APPRAISAL_TENOR_DEFAULT_MONTHS = 12;
+export const APPRAISAL_WARN_DAYS = 60;
+
+export type AppraisalStatus = 'valid' | 'expiring_soon' | 'expired' | 'missing';
+
+function toIso(v?: string | null): string | null {
+  const p = parseAnyDate(v);
+  if (!p) return null;
+  return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+}
+
+export function appraisalExpiryDate(c?: Pick<Collateral, 'AppraisalDate' | 'AppraisalTenorMonths'> | null): string | null {
+  if (!c) return null;
+  const start = parseAnyDate(c.AppraisalDate);
+  if (!start) return null;
+  const months = c.AppraisalTenorMonths && c.AppraisalTenorMonths > 0
+    ? c.AppraisalTenorMonths
+    : APPRAISAL_TENOR_DEFAULT_MONTHS;
+  const totalMonths = start.month - 1 + Number(months);
+  const year = start.year + Math.floor(totalMonths / 12);
+  const monthIdx = totalMonths % 12;
+  const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+  const day = Math.min(start.day, daysInMonth);
+  return `${year}-${String(monthIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+export function appraisalStatus(
+  c?: Pick<Collateral, 'AppraisalDate' | 'AppraisalTenorMonths'> | null,
+  todayStr?: string,
+  warnDays: number = APPRAISAL_WARN_DAYS
+): AppraisalStatus {
+  const expiry = appraisalExpiryDate(c);
+  const today = toIso(todayStr) ?? new Date().toISOString().split('T')[0];
+  if (!expiry) return 'missing';
+  if (expiry < today) return 'expired';
+
+  const e = parseAnyDate(expiry)!;
+  const t = parseAnyDate(today)!;
+  const days = Math.round(
+    (Date.UTC(e.year, e.month - 1, e.day) - Date.UTC(t.year, t.month - 1, t.day)) / 86400000
+  );
+  return days <= warnDays ? 'expiring_soon' : 'valid';
+}
+
+export function isAppraisalUsable(
+  c?: Pick<Collateral, 'AppraisalDate' | 'AppraisalTenorMonths'> | null,
+  todayStr?: string
+): boolean {
+  const st = appraisalStatus(c, todayStr);
+  return st === 'valid' || st === 'expiring_soon';
+}
+
+export function usableCapacity(c?: Collateral | null, todayStr?: string): number {
+  if (!c) return 0;
+  return isAppraisalUsable(c, todayStr) ? maxLoanFromCollateral(c) : 0;
 }

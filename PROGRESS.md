@@ -41,6 +41,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Phương thức vay đè lên lựa chọn trả gốc | Giao diện ghi "trả đều" nhưng gốc mọi kỳ bằng 0 |
 | ✅ | Cộng đôi hạn mức khi nhiều HĐTD chung một HMTD | Thêm tầng `CreditLimitCode` |
 | ✅ | Báo động giả khi so mức cấp gốc với TSĐB ở vay từng lần | Vay từng lần phải đối chiếu theo **dư nợ hiện hữu**; hạn mức tín dụng mới đối chiếu theo mức cấp |
+| ✅ | Định giá hết hiệu lực vẫn được tính vào khả năng bảo đảm | Định giá chỉ có hiệu lực 6/12/24 tháng; hết hạn thì khả năng bảo đảm bằng 0 và báo cần định giá lại |
 
 ## Chức năng
 
@@ -59,13 +60,20 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
 | ✅ | Tách logic tài chính ra `src/lib/` dạng hàm thuần | |
-| ✅ | 226 test cho logic tính tiền | `src/lib/__tests__/` |
+| ✅ | 235 test cho logic tính tiền | `src/lib/__tests__/` |
 | ✅ | Gom kiến thức vào `CONVENTIONS.md` và skill `tin-dung` | Mã nguồn không còn chú thích |
 | ✅ | Viết lại `README.md` và `web_migration_plan.md` khớp thực tế | |
 | 🔄 | Tách nhỏ `LoanPortfolioView` | Còn khoảng 2.200 dòng. Đã bóc hết logic tài chính; phần còn lại là JSX |
 | ⬜ | Test cho thành phần giao diện | Hiện chỉ có test logic thuần |
 | ⬜ | Đồng bộ realtime, bộ nhớ đệm client | Có trong kế hoạch ban đầu, chưa làm |
 | ⬜ | Tên miền riêng | |
+
+## Đề xuất chờ xác nhận
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ⚠️ | Bảng lịch sử định giá `CollateralAppraisals` | Hiện mỗi lần định giá lại **ghi đè** giá trị cũ, mất lịch sử. Cần để so sánh biến động giá trị và xếp loại giữa các kỳ kiểm tra hiện trạng tài sản |
+| ⚠️ | Bảng lưu kết quả kiểm soát sau vay | Chờ kết quả truy vấn cấu trúc `PostLoanControls` để biết nên tận dụng hay tạo mới |
 
 ## Chờ quyết định nghiệp vụ
 
@@ -82,3 +90,4 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ⬜ | Lịch thu nợ của hợp đồng hạn mức đã chọn "Trả đều hàng tháng" — gốc phải chia đều thay vì dồn kỳ cuối |
 | ⬜ | Ràng buộc sản phẩm — chọn HMTD thì mục đích bị khoá và ô ân hạn ẩn; chọn cho vay từng lần thì ân hạn là danh sách 6/12/15/18/24/36 |
 | ⬜ | Cảnh báo TSĐB ở khách hàng LÊ VĂN CAO phải biến mất (dư nợ 784.987.000 < khả năng bảo đảm 1.089.600.000) |
+| ⬜ | Nhãn trạng thái định giá trên bảng TSĐB — HẾT HIỆU LỰC / SẮP HẾT HẠN / CHƯA ĐỊNH GIÁ hiển thị đúng màu |

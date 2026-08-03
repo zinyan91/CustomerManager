@@ -1,4 +1,5 @@
-import type { RepaymentSchedule, RateAdjustmentHistoryItem } from '../types';
+import type { RepaymentSchedule, RateAdjustmentHistoryItem, LoanContract } from '../types';
+import { getEffectiveActiveRate } from './utils';
 
 /**
  * Logic tính toán lịch trả nợ — tách ra khỏi LoanPortfolioView để test được.
@@ -211,4 +212,186 @@ function generateSchedule(
   }
 
   return schedules;
+}
+
+/* ------------------------------------------------------------------ */
+/* Quá hạn & phân nhóm nợ                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Số ngày trả chậm so với ngày đến hạn. Trả đúng hạn hoặc sớm thì 0.
+ */
+export function calculateOverdueDaysFromDates(
+  paymentDateStr?: string | null,
+  dueDateStr?: string | null
+): number {
+  const pay = parseDateParts(paymentDateStr);
+  const due = parseDateParts(dueDateStr);
+  if (!pay || !due) return 0;
+  const diff = Date.UTC(pay.y, pay.m, pay.d) - Date.UTC(due.y, due.m, due.d);
+  return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
+}
+
+export interface AutoDebtGroupInfo {
+  debtGroup: number;
+  maxOverdueDays: number;
+  worstDueDate?: string;
+}
+
+/**
+ * Phân nhóm nợ theo số ngày quá hạn lớn nhất trong các kỳ CHƯA thanh toán.
+ *
+ *   Nhóm 1  Đủ tiêu chuẩn        (dưới 10 ngày)
+ *   Nhóm 2  Cần chú ý            (10 – 90 ngày)
+ *   Nhóm 3  Dưới tiêu chuẩn      (91 – 180 ngày)
+ *   Nhóm 4  Nghi ngờ             (181 – 360 ngày)
+ *   Nhóm 5  Có khả năng mất vốn  (trên 360 ngày)
+ *
+ * `todayStr` dạng YYYY-MM-DD; bỏ trống thì lấy ngày hiện tại.
+ */
+export function getAutoDebtGroupInfo(
+  schedules?: RepaymentSchedule[],
+  todayStr?: string
+): AutoDebtGroupInfo {
+  if (!schedules || schedules.length === 0) {
+    return { debtGroup: 1, maxOverdueDays: 0 };
+  }
+
+  const today = parseDateParts(todayStr) ?? (() => {
+    const d = new Date();
+    return { y: d.getFullYear(), m: d.getMonth(), d: d.getDate() };
+  })();
+  const todayUtc = Date.UTC(today.y, today.m, today.d);
+
+  let maxOverdueDays = 0;
+  let worstDueDate: string | undefined;
+
+  for (const s of schedules) {
+    if (s.IsPaid || !s.DueDate) continue;
+    const due = parseDateParts(s.DueDate);
+    if (!due) continue;
+    const diff = todayUtc - Date.UTC(due.y, due.m, due.d);
+    if (diff <= 0) continue;
+    const overdueDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (overdueDays > maxOverdueDays) {
+      maxOverdueDays = overdueDays;
+      worstDueDate = s.DueDate;
+    }
+  }
+
+  let debtGroup = 1;
+  if (maxOverdueDays >= 10 && maxOverdueDays <= 90) debtGroup = 2;
+  else if (maxOverdueDays >= 91 && maxOverdueDays <= 180) debtGroup = 3;
+  else if (maxOverdueDays >= 181 && maxOverdueDays <= 360) debtGroup = 4;
+  else if (maxOverdueDays > 360) debtGroup = 5;
+
+  return { debtGroup, maxOverdueDays, worstDueDate };
+}
+
+/**
+ * Tính lại toàn bộ lịch trả nợ theo dư nợ thực tế.
+ *
+ * Dùng sau khi ghi nhận thu nợ hoặc trả trước hạn: các kỳ đã thanh toán
+ * giữ nguyên số liệu thực thu, các kỳ còn lại được tính lại gốc và lãi
+ * theo dư nợ mới.
+ *
+ * Trả trước hạn làm giảm gốc phải trả các kỳ sau (chia đều phần dư nợ
+ * còn lại cho số kỳ còn lại).
+ */
+export function recalculateSchedules(
+  schedList: RepaymentSchedule[],
+  contract: LoanContract,
+  todayStr?: string
+): RepaymentSchedule[] {
+  const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
+  const graceMonths = contract.PrincipalGracePeriodMonths || 0;
+  const isBullet =
+    (contract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ' ||
+    contract.LoanMethod === 'Hạn mức tín dụng';
+
+  const totalPeriods = schedList.length;
+  const remainingRepayPeriods = Math.max(1, totalPeriods - graceMonths);
+  let baseMonthlyPrincipal = isBullet ? 0 : roundPrincipalCore(loanAmt / remainingRepayPeriods, '1k');
+
+  let currentBalance = loanAmt;
+  let prevDateStr: string =
+    contract.DisbursementDate ||
+    contract.ContractStartDate ||
+    todayStr ||
+    new Date().toISOString().split('T')[0];
+
+  const result: RepaymentSchedule[] = [];
+
+  for (let i = 0; i < totalPeriods; i++) {
+    const s = schedList[i];
+    const periodNum = i + 1;
+    const dueDateStr = s.DueDate;
+
+    const days = getDaysBetween(prevDateStr, dueDateStr);
+    prevDateStr = dueDateStr;
+
+    const activeAnnualRate = getEffectiveActiveRate(contract, dueDateStr);
+    const calculatedInterest = Math.round(currentBalance * activeAnnualRate * (days / 365));
+
+    let expectedNormalPrincipal = 0;
+    if (isBullet) {
+      expectedNormalPrincipal = periodNum === totalPeriods ? currentBalance : 0;
+    } else if (periodNum <= graceMonths) {
+      expectedNormalPrincipal = 0;
+    } else if (periodNum === totalPeriods) {
+      expectedNormalPrincipal = currentBalance;
+    } else {
+      expectedNormalPrincipal = Math.min(currentBalance, baseMonthlyPrincipal);
+    }
+
+    let principalInPeriod = 0;
+
+    if (s.IsPaid) {
+      const recordedP =
+        s.ActualPaidPrincipal !== undefined && s.ActualPaidPrincipal !== null && s.ActualPaidPrincipal > 0
+          ? s.ActualPaidPrincipal
+          : expectedNormalPrincipal;
+      principalInPeriod = Math.min(currentBalance, recordedP);
+    } else if (s.ActualPaidPrincipal && s.ActualPaidPrincipal > 0) {
+      const recordedP = s.ActualPaidPrincipal + (s.PrepaidPrincipalAmount ?? 0);
+      principalInPeriod = Math.min(currentBalance, recordedP);
+    } else if (s.PrepaidPrincipalAmount && s.PrepaidPrincipalAmount > 0) {
+      const recordedP = expectedNormalPrincipal + s.PrepaidPrincipalAmount;
+      principalInPeriod = Math.min(currentBalance, recordedP);
+
+      const remainingUnpaidNonGrace = totalPeriods - periodNum;
+      if (remainingUnpaidNonGrace > 0) {
+        const balAfterPrepay = Math.max(0, currentBalance - recordedP);
+        baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingUnpaidNonGrace, '1k');
+      }
+    } else {
+      principalInPeriod = expectedNormalPrincipal;
+    }
+
+    const overduePen = s.OverdueInterestAmount ?? 0;
+    const totalObligation =
+      principalInPeriod +
+      (s.IsPaid ? (s.ActualPaidInterest ?? calculatedInterest) : calculatedInterest) +
+      overduePen;
+
+    result.push({
+      ...s,
+      PrincipalAmount: principalInPeriod,
+      InterestAmount: calculatedInterest,
+      TotalAmount: totalObligation,
+    });
+
+    // Dư nợ trừ đúng bằng phần gốc đã ghi nhận trong kỳ.
+    //
+    // Bản cũ ở nhánh chưa thanh toán tính:
+    //     (ActualPaidPrincipal ?? principalInPeriod) + PrepaidPrincipalAmount
+    // Khi kỳ chỉ có tiền trả trước hạn mà chưa có ActualPaidPrincipal thì
+    // principalInPeriod ĐÃ bao gồm tiền trả trước, nên cộng thêm lần nữa là
+    // trừ đôi. Dư nợ tụt nhanh hơn thực tế và tổng gốc thu về ÍT HƠN số đã
+    // cho vay — ngân hàng mất gốc. Test "TỔNG GỐC vẫn bằng số tiền vay" bắt
+    // được lỗi này: 90 triệu thay vì 120 triệu.
+    currentBalance = Math.max(0, currentBalance - principalInPeriod);
+  }
+
+  return result;
 }

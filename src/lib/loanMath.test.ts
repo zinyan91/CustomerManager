@@ -6,7 +6,11 @@ import {
   getDaysBetween,
   roundPrincipalCore,
   generateSchedule,
+  calculateOverdueDaysFromDates,
+  getAutoDebtGroupInfo,
+  recalculateSchedules,
 } from './loanMath';
+import type { RepaymentSchedule } from '../types';
 
 describe('addMonthsToDate', () => {
   it('cộng tháng bình thường, giữ nguyên ngày', () => {
@@ -254,5 +258,148 @@ describe('generateSchedule — TotalAmount', () => {
     for (const k of s) {
       expect(k.TotalAmount).toBe((k.PrincipalAmount || 0) + (k.InterestAmount || 0));
     }
+  });
+});
+
+describe('calculateOverdueDaysFromDates', () => {
+  it('trả đúng hạn hoặc sớm thì 0 ngày', () => {
+    expect(calculateOverdueDaysFromDates('2026-03-15', '2026-03-15')).toBe(0);
+    expect(calculateOverdueDaysFromDates('2026-03-10', '2026-03-15')).toBe(0);
+  });
+
+  it('đếm đúng số ngày trả chậm', () => {
+    expect(calculateOverdueDaysFromDates('2026-03-20', '2026-03-15')).toBe(5);
+    expect(calculateOverdueDaysFromDates('2026-04-15', '2026-03-15')).toBe(31);
+  });
+
+  it('thiếu ngày thì trả 0', () => {
+    expect(calculateOverdueDaysFromDates(null, '2026-03-15')).toBe(0);
+    expect(calculateOverdueDaysFromDates('2026-03-20', null)).toBe(0);
+  });
+});
+
+describe('getAutoDebtGroupInfo — phân nhóm nợ theo quy định', () => {
+  const ky = (dueDate: string, isPaid = false): RepaymentSchedule =>
+    ({ Id: 1, ContractId: 1, PeriodNumber: 1, DueDate: dueDate, PrincipalAmount: 0,
+       InterestAmount: 0, TotalAmount: 0, IsPaid: isPaid } as RepaymentSchedule);
+
+  it('Nhóm 1 khi chưa có kỳ nào quá hạn', () => {
+    expect(getAutoDebtGroupInfo([ky('2026-12-31')], '2026-08-03').debtGroup).toBe(1);
+  });
+
+  it('Nhóm 1 khi quá hạn dưới 10 ngày', () => {
+    const r = getAutoDebtGroupInfo([ky('2026-07-28')], '2026-08-03');
+    expect(r.maxOverdueDays).toBe(6);
+    expect(r.debtGroup).toBe(1);
+  });
+
+  it('Nhóm 2 — quá hạn 10 đến 90 ngày', () => {
+    expect(getAutoDebtGroupInfo([ky('2026-07-24')], '2026-08-03').debtGroup).toBe(2);
+    expect(getAutoDebtGroupInfo([ky('2026-05-05')], '2026-08-03').debtGroup).toBe(2);
+  });
+
+  it('Nhóm 3 — quá hạn 91 đến 180 ngày', () => {
+    expect(getAutoDebtGroupInfo([ky('2026-05-04')], '2026-08-03').debtGroup).toBe(3);
+    expect(getAutoDebtGroupInfo([ky('2026-02-05')], '2026-08-03').debtGroup).toBe(3);
+  });
+
+  it('Nhóm 4 — quá hạn 181 đến 360 ngày', () => {
+    expect(getAutoDebtGroupInfo([ky('2026-02-03')], '2026-08-03').debtGroup).toBe(4);
+    expect(getAutoDebtGroupInfo([ky('2025-08-09')], '2026-08-03').debtGroup).toBe(4);
+  });
+
+  it('Nhóm 5 — quá hạn trên 360 ngày', () => {
+    expect(getAutoDebtGroupInfo([ky('2025-08-07')], '2026-08-03').debtGroup).toBe(5);
+  });
+
+  it('BỎ QUA các kỳ đã thanh toán', () => {
+    // Kỳ quá hạn rất lâu nhưng đã trả -> không ảnh hưởng nhóm nợ
+    const r = getAutoDebtGroupInfo([ky('2024-01-01', true), ky('2026-12-31')], '2026-08-03');
+    expect(r.debtGroup).toBe(1);
+    expect(r.maxOverdueDays).toBe(0);
+  });
+
+  it('lấy kỳ quá hạn LÂU NHẤT trong các kỳ chưa trả', () => {
+    const r = getAutoDebtGroupInfo(
+      [ky('2026-07-20'), ky('2026-01-15'), ky('2026-07-01')], '2026-08-03'
+    );
+    expect(r.worstDueDate).toBe('2026-01-15');
+    expect(r.maxOverdueDays).toBe(200);   // 15/01 -> 03/08
+    expect(r.debtGroup).toBe(4);          // 181–360 ngày
+  });
+
+  it('không có lịch trả nợ thì mặc định Nhóm 1', () => {
+    expect(getAutoDebtGroupInfo([], '2026-08-03').debtGroup).toBe(1);
+    expect(getAutoDebtGroupInfo(undefined, '2026-08-03').debtGroup).toBe(1);
+  });
+});
+
+describe('recalculateSchedules', () => {
+  const hopDong = {
+    Id: 1, CustomerId: 1, ContractNumber: 'HD/GNN-01', ContractType: 0,
+    LoanAmount: 120_000_000, InterestRate: 0.1,
+    PrincipalRepaymentMethod: 'Trả đều hàng tháng',
+    DisbursementDate: '2026-01-15',
+  } as any;
+
+  const lich = (n: number) => Array.from({ length: n }, (_, i) => ({
+    Id: i + 1, ContractId: 1, PeriodNumber: i + 1,
+    DueDate: `2026-${String(i + 2).padStart(2, '0')}-15`,
+    PrincipalAmount: 0, InterestAmount: 0, TotalAmount: 0, IsPaid: false,
+  } as RepaymentSchedule));
+
+  it('TỔNG GỐC vẫn bằng đúng số tiền vay sau khi tính lại', () => {
+    const r = recalculateSchedules(lich(11), hopDong);
+    const tongGoc = r.reduce((s, k) => s + (k.PrincipalAmount || 0), 0);
+    expect(tongGoc).toBe(120_000_000);
+  });
+
+  it('TotalAmount luôn bằng gốc cộng lãi cộng phạt', () => {
+    const r = recalculateSchedules(lich(11), hopDong);
+    for (const k of r) {
+      expect(k.TotalAmount).toBe((k.PrincipalAmount || 0) + (k.InterestAmount || 0));
+    }
+  });
+
+  it('giữ nguyên số thực thu của kỳ đã thanh toán', () => {
+    const l = lich(11);
+    l[0] = { ...l[0], IsPaid: true, ActualPaidPrincipal: 20_000_000, ActualPaidInterest: 999_000 };
+    const r = recalculateSchedules(l, hopDong);
+    expect(r[0].PrincipalAmount).toBe(20_000_000);
+    expect(r[0].TotalAmount).toBe(20_000_000 + 999_000);
+  });
+
+  it('trả trước hạn làm GIẢM gốc phải trả các kỳ sau', () => {
+    const l = lich(11);
+    l[2] = { ...l[2], PrepaidPrincipalAmount: 30_000_000 };
+    const r = recalculateSchedules(l, hopDong);
+    expect(r[2].PrincipalAmount!).toBeGreaterThan(r[1].PrincipalAmount!);
+    expect(r[3].PrincipalAmount!).toBeLessThan(r[1].PrincipalAmount!);
+  });
+
+  it('trả trước hạn KHÔNG làm sai tổng gốc', () => {
+    const l = lich(11);
+    l[2] = { ...l[2], PrepaidPrincipalAmount: 30_000_000 };
+    const r = recalculateSchedules(l, hopDong);
+    const tongGoc = r.reduce((s, k) => s + (k.PrincipalAmount || 0), 0);
+    expect(tongGoc).toBe(120_000_000);
+  });
+
+  it('cộng lãi phạt quá hạn vào tổng phải trả của kỳ', () => {
+    const l = lich(11);
+    l[1] = { ...l[1], OverdueInterestAmount: 500_000 };
+    const r = recalculateSchedules(l, hopDong);
+    expect(r[1].TotalAmount).toBe((r[1].PrincipalAmount || 0) + (r[1].InterestAmount || 0) + 500_000);
+  });
+
+  it('gốc trả cuối kỳ: chỉ kỳ cuối trả gốc', () => {
+    const bullet = { ...hopDong, PrincipalRepaymentMethod: 'Gốc trả cuối kỳ' };
+    const r = recalculateSchedules(lich(6), bullet);
+    expect(r.slice(0, 5).every(k => k.PrincipalAmount === 0)).toBe(true);
+    expect(r[5].PrincipalAmount).toBe(120_000_000);
+  });
+
+  it('lịch rỗng trả về mảng rỗng', () => {
+    expect(recalculateSchedules([], hopDong)).toEqual([]);
   });
 });

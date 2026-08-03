@@ -7,7 +7,8 @@ import {
 import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRate, getMasterHdtdNumber } from '../../lib/utils';
 import {
   addMonthsToDate, parseKunnTenorMonths, parseDateParts,
-  getDaysBetween, roundPrincipalCore, generateSchedule
+  generateSchedule, calculateOverdueDaysFromDates,
+  getAutoDebtGroupInfo, recalculateSchedules
 } from '../../lib/loanMath';
 import { getEffectiveLtv } from '../../lib/collateralMath';
 import { computeCreditLimit, checkCollateralCapacity } from '../../lib/creditLimit';
@@ -96,48 +97,6 @@ export const LoanPortfolioView: React.FC = () => {
   const [allSchedulesMap, setAllSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
 
   // Tự động phân loại nhóm nợ (1-5) theo chuẩn NHNN dựa trên số ngày quá hạn lịch thu nợ
-  const getAutoDebtGroupInfo = (schedules?: RepaymentSchedule[]) => {
-    if (!schedules || schedules.length === 0) {
-      return { debtGroup: 1, maxOverdueDays: 0 };
-    }
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    let maxOverdueDays = 0;
-    let worstDueDate: string | undefined = undefined;
-
-    for (const s of schedules) {
-      if (!s.IsPaid && s.DueDate) {
-        const parts = s.DueDate.split('-');
-        if (parts.length === 3) {
-          const dueDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-          dueDate.setHours(0, 0, 0, 0);
-
-          if (today > dueDate) {
-            const diffTime = today.getTime() - dueDate.getTime();
-            const overdueDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            if (overdueDays > maxOverdueDays) {
-              maxOverdueDays = overdueDays;
-              worstDueDate = s.DueDate;
-            }
-          }
-        }
-      }
-    }
-
-    let debtGroup = 1;
-    if (maxOverdueDays >= 10 && maxOverdueDays <= 90) {
-      debtGroup = 2; // Nhóm 2: Quá hạn 10-90 ngày
-    } else if (maxOverdueDays >= 91 && maxOverdueDays <= 180) {
-      debtGroup = 3; // Nhóm 3: Quá hạn 91-180 ngày
-    } else if (maxOverdueDays >= 181 && maxOverdueDays <= 360) {
-      debtGroup = 4; // Nhóm 4: Quá hạn 181-360 ngày
-    } else if (maxOverdueDays > 360) {
-      debtGroup = 5; // Nhóm 5: Quá hạn > 360 ngày
-    }
-
-    return { debtGroup, maxOverdueDays, worstDueDate };
-  };
 
   // Trích xuất Số HĐTD Gốc chuẩn từ LoanContract
   // Tự động nhảy số KUNN (/GNN-01, /GNN-02...) khi gõ hoặc chọn Số HĐTD Gốc
@@ -433,7 +392,7 @@ export const LoanPortfolioView: React.FC = () => {
     populateForm(c);
     const s = await fetchRepaymentSchedulesAPI(c.Id);
     if (s.length > 0) {
-      const recalculated = recalculateFutureSchedules(s, c);
+      const recalculated = recalculateSchedules(s, c);
       setSchedules(recalculated);
       setAllSchedulesMap(prev => ({ ...prev, [c.Id]: recalculated }));
     } else {
@@ -757,7 +716,7 @@ export const LoanPortfolioView: React.FC = () => {
             };
           });
 
-          const recalculated = recalculateFutureSchedules(updatedWithNewDates, savedContract);
+          const recalculated = recalculateSchedules(updatedWithNewDates, savedContract);
           await bulkSaveRepaymentSchedulesAPI(recalculated);
 
           const newScheds = await fetchRepaymentSchedulesAPI(savedContract.Id);
@@ -815,20 +774,6 @@ export const LoanPortfolioView: React.FC = () => {
 
 
 
-  const calculateOverdueDaysFromDates = (paymentDateStr?: string | null, dueDateStr?: string | null) => {
-    if (!paymentDateStr || !dueDateStr) return 0;
-    const payParts = paymentDateStr.split('-');
-    const dueParts = dueDateStr.split('-');
-    if (payParts.length === 3 && dueParts.length === 3) {
-      const pay = new Date(parseInt(payParts[0], 10), parseInt(payParts[1], 10) - 1, parseInt(payParts[2], 10));
-      const due = new Date(parseInt(dueParts[0], 10), parseInt(dueParts[1], 10) - 1, parseInt(dueParts[2], 10));
-      pay.setHours(0, 0, 0, 0);
-      due.setHours(0, 0, 0, 0);
-      const diff = pay.getTime() - due.getTime();
-      return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
-    }
-    return 0;
-  };
 
   const openPaymentModal = (s: RepaymentSchedule) => {
     setEditingSchedule(s);
@@ -861,89 +806,6 @@ export const LoanPortfolioView: React.FC = () => {
     setModalNote(s.Note || '');
   };
 
-  const recalculateFutureSchedules = (
-    schedList: RepaymentSchedule[],
-    contract: LoanContract
-  ): RepaymentSchedule[] => {
-    const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
-    const graceMonths = contract.PrincipalGracePeriodMonths || 0;
-    const isBullet = (contract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ' || contract.LoanMethod === 'Hạn mức tín dụng';
-    
-    const totalPeriods = schedList.length;
-    const remainingRepayPeriods = Math.max(1, totalPeriods - graceMonths);
-    let baseMonthlyPrincipal = isBullet ? 0 : roundPrincipalCore(loanAmt / remainingRepayPeriods, '1k');
-
-    let currentBalance = loanAmt;
-    let prevDateStr: string = contract.DisbursementDate || contract.ContractStartDate || new Date().toISOString().split('T')[0];
-
-    const result: RepaymentSchedule[] = [];
-
-    for (let i = 0; i < totalPeriods; i++) {
-      const s = schedList[i];
-      const periodNum = i + 1;
-      const dueDateStr = s.DueDate;
-
-      const days = getDaysBetween(prevDateStr, dueDateStr);
-      prevDateStr = dueDateStr;
-
-      const activeAnnualRate = getEffectiveActiveRate(contract, dueDateStr);
-      const calculatedInterest = Math.round(currentBalance * activeAnnualRate * (days / 365));
-
-      let expectedNormalPrincipal = 0;
-      if (isBullet) {
-        expectedNormalPrincipal = (periodNum === totalPeriods) ? currentBalance : 0;
-      } else {
-        if (periodNum <= graceMonths) {
-          expectedNormalPrincipal = 0;
-        } else if (periodNum === totalPeriods) {
-          expectedNormalPrincipal = currentBalance;
-        } else {
-          expectedNormalPrincipal = Math.min(currentBalance, baseMonthlyPrincipal);
-        }
-      }
-
-      let principalInPeriod = 0;
-
-      if (s.IsPaid) {
-        const recordedP = (s.ActualPaidPrincipal !== undefined && s.ActualPaidPrincipal !== null && s.ActualPaidPrincipal > 0)
-          ? s.ActualPaidPrincipal
-          : expectedNormalPrincipal;
-        principalInPeriod = Math.min(currentBalance, recordedP);
-      } else if (s.ActualPaidPrincipal && s.ActualPaidPrincipal > 0) {
-        const recordedP = s.ActualPaidPrincipal + (s.PrepaidPrincipalAmount ?? 0);
-        principalInPeriod = Math.min(currentBalance, recordedP);
-      } else if (s.PrepaidPrincipalAmount && s.PrepaidPrincipalAmount > 0) {
-        const recordedP = expectedNormalPrincipal + s.PrepaidPrincipalAmount;
-        principalInPeriod = Math.min(currentBalance, recordedP);
-        
-        const remainingUnpaidNonGrace = totalPeriods - periodNum;
-        if (remainingUnpaidNonGrace > 0) {
-          const balAfterPrepay = Math.max(0, currentBalance - recordedP);
-          baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingUnpaidNonGrace, '1k');
-        }
-      } else {
-        principalInPeriod = expectedNormalPrincipal;
-      }
-
-      const overduePen = s.OverdueInterestAmount ?? 0;
-      const totalObligation = principalInPeriod + (s.IsPaid ? (s.ActualPaidInterest ?? calculatedInterest) : calculatedInterest) + overduePen;
-
-      result.push({
-        ...s,
-        PrincipalAmount: principalInPeriod,
-        InterestAmount: calculatedInterest,
-        TotalAmount: totalObligation
-      });
-
-      const deductedP = s.IsPaid
-        ? principalInPeriod
-        : (s.ActualPaidPrincipal ?? principalInPeriod) + (s.PrepaidPrincipalAmount ?? 0);
-
-      currentBalance = Math.max(0, currentBalance - deductedP);
-    }
-
-    return result;
-  };
 
   const handleSavePaymentModal = async () => {
     if (!editingSchedule || !selectedContract) return;
@@ -971,7 +833,7 @@ export const LoanPortfolioView: React.FC = () => {
       setLoading(true);
 
       const draftList = schedules.map(s => s.Id === updated.Id ? updated : s);
-      const recalculated = recalculateFutureSchedules(draftList, selectedContract);
+      const recalculated = recalculateSchedules(draftList, selectedContract);
 
       await bulkSaveRepaymentSchedulesAPI(recalculated);
 

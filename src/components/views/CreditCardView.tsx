@@ -4,6 +4,7 @@ import {
   fetchCollateralsByCustomerAPI, fetchCollateralsAPI
 } from '../../lib/api';
 import { formatMoneyInput, fmtMoney, formatAssetType } from '../../lib/utils';
+import { getEffectiveLtv } from '../../lib/collateralMath';
 import type { CreditCard as CreditCardType, Customer, Collateral } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { CreditCard, CheckCircle, AlertCircle, Plus, ChevronUp, ChevronDown, Trash2, Edit3, ShieldCheck, Search } from 'lucide-react';
@@ -73,17 +74,6 @@ export const CreditCardView: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getEffectiveLtv = (c: Collateral) => {
-    if (c.LtvPercent !== undefined && c.LtvPercent !== null && c.LtvPercent > 0) return c.LtvPercent;
-    const type = c.AssetType || '';
-    if (type.includes('Loại 1')) return 80;
-    if (type.includes('Loại 2')) return 70;
-    if (type.includes('Loại 3')) return 60;
-    if (type.includes('Loại 4')) return 55;
-    if (type.includes('Sổ tiết kiệm')) return 100;
-    return 70;
   };
 
   const selectedCollateralObj = useMemo(() => {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI } from '../../lib/api';
 import { parseAnyDate, fmtDate } from '../../lib/utils';
+import { defaultLtvForAssetType, getEffectiveLtv } from '../../lib/collateralMath';
 import type { Collateral, Customer } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { CheckCircle, AlertCircle } from 'lucide-react';
@@ -61,23 +62,11 @@ export const CollateralView: React.FC = () => {
     }
   }, [inputAppraisalDate, inputAppraisalTenorMonths]);
 
-  // Set default LTV based on asset type
+  // LTV mặc định theo phân loại tài sản — dùng chung một bảng ánh xạ với
+  // tầng lưu và màn hình khoản vay (trước đây mỗi nơi một bản, Loại 3 có
+  // chỗ ghi 60% có chỗ ghi 50%)
   useEffect(() => {
-    if (inputAssetType === 'BĐS - Loại 1') setInputLtvPercent('80');
-    else if (inputAssetType === 'BĐS - Loại 2') setInputLtvPercent('70');
-    else if (inputAssetType === 'BĐS - Loại 3') setInputLtvPercent('60');
-    else if (inputAssetType === 'BĐS - Loại 4') setInputLtvPercent('55');
-    else if (inputAssetType === 'BĐS - Hạn chế nhận TS') setInputLtvPercent('0');
-    else if (inputAssetType.startsWith('Phương tiện')) setInputLtvPercent('70');
-    else if (inputAssetType.startsWith('Máy móc')) setInputLtvPercent('60');
-    else if (inputAssetType.startsWith('Hàng hóa')) setInputLtvPercent('50');
-    else if (inputAssetType.startsWith('Sổ tiết kiệm')) setInputLtvPercent('100');
-    else if (inputAssetType.startsWith('STK khác')) setInputLtvPercent('90');
-    else if (inputAssetType.startsWith('Giấy tờ')) setInputLtvPercent('80');
-    else if (inputAssetType.startsWith('Quyền tài sản')) setInputLtvPercent('50');
-    else if (inputAssetType === 'Loại 1') setInputLtvPercent('80');
-    else if (inputAssetType === 'Loại 2') setInputLtvPercent('70');
-    else if (inputAssetType === 'Loại 3') setInputLtvPercent('50');
+    setInputLtvPercent(String(defaultLtvForAssetType(inputAssetType)));
   }, [inputAssetType]);
 
   const fetchData = async () => {
@@ -100,23 +89,6 @@ export const CollateralView: React.FC = () => {
     setNotification({ type, message });
     // Thông báo lỗi hiển thị lâu hơn: nội dung có thể liệt kê nhiều số hợp đồng
     setTimeout(() => setNotification(null), type === 'error' ? 8000 : 4000);
-  };
-
-  const getEffectiveLtv = (c: Collateral) => {
-    if (c.LtvPercent !== undefined && c.LtvPercent !== null && c.LtvPercent > 0) return c.LtvPercent;
-    if (c.AssetType === 'Loại 1') return 80;
-    if (c.AssetType === 'Loại 2') return 70;
-    if (c.AssetType === 'Loại 3') return 60;
-    if (c.AssetType === 'Loại 4') return 55;
-    if (c.AssetType === 'Hạn chế nhận TS') return 0;
-    if (c.AssetType?.includes('Phương tiện')) return 70;
-    if (c.AssetType?.includes('Máy móc')) return 60;
-    if (c.AssetType?.includes('Hàng hóa')) return 50;
-    if (c.AssetType?.includes('Sổ tiết kiệm')) return 100;
-    if (c.AssetType?.includes('STK khác')) return 90;
-    if (c.AssetType === 'Loại 2') return 70;
-    if (c.AssetType === 'Loại 3') return 50;
-    return 80;
   };
 
   const handleSelectRow = (c: Collateral) => {
@@ -206,7 +178,10 @@ export const CollateralView: React.FC = () => {
         Address: inputAddress.trim() || null,
         AppraisedValue: valNum,
         Value: valNum,
-        LtvPercent: parseFloat(inputLtvPercent) || 80,
+        // Không dùng `|| 80`: LTV 0% (tài sản hạn chế nhận) là giá trị hợp lệ
+        LtvPercent: Number.isNaN(parseFloat(inputLtvPercent))
+          ? defaultLtvForAssetType(inputAssetType)
+          : parseFloat(inputLtvPercent),
         AppraisalDate: inputAppraisalDate || null,
         AppraisalTenorMonths: inputAppraisalTenorMonths || 12,
         AppraisalExpiryDate: expiryDateIso,

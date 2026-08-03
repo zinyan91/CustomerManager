@@ -9,6 +9,7 @@ import {
   addMonthsToDate, parseKunnTenorMonths, parseDateParts,
   getDaysBetween, roundPrincipalCore, generateSchedule
 } from '../../lib/loanMath';
+import { getEffectiveLtv } from '../../lib/collateralMath';
 import type { LoanContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -1000,9 +1001,6 @@ export const LoanPortfolioView: React.FC = () => {
   };
 
   // Helper function to get effective LTV percentage for a collateral item (default 70% if unassigned)
-  const getEffectiveLtv = (c: Collateral) => {
-    return (c.LtvPercent && c.LtvPercent > 0) ? c.LtvPercent : 70;
-  };
 
   // Compute total Appraised Collateral Value & Max Allowed Loan based on LTV
   const selectedCollaterals = collaterals.filter(c => selectedCollateralIds.includes(c.Id));

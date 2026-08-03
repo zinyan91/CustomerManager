@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Customer, Collateral, LoanContract, CreditCard, RepaymentSchedule } from '../types';
+import { defaultLtvForAssetType } from './collateralMath';
 
 export async function fetchCustomersAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
   try {
@@ -139,7 +140,13 @@ export async function saveCollateralAPI(collateral: Partial<Collateral>): Promis
   }
 
   collateral.AssetCode = assetCode || null;
-  collateral.LtvPercent = (collateral.LtvPercent && collateral.LtvPercent > 0) ? collateral.LtvPercent : 70;
+  // Giữ nguyên LTV = 0 (tài sản hạn chế nhận). Trước đây dùng `|| 70` nên
+  // số 0 bị coi là trống và bị thay bằng 70 — biến tài sản không được nhận
+  // làm bảo đảm thành tài sản cho vay được.
+  collateral.LtvPercent =
+    (collateral.LtvPercent !== undefined && collateral.LtvPercent !== null && !isNaN(collateral.LtvPercent))
+      ? collateral.LtvPercent
+      : defaultLtvForAssetType(collateral.AssetType);
 
   if (isUpdate) {
     const { data, error } = await supabase.from('Collaterals').update(collateral).eq('Id', collateral.Id).select().single();

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Layers, CheckCircle2 } from 'lucide-react';
 import { fmtMoney, formatMoneyInput } from '../../lib/utils';
+import { emiMonthlyPayment } from '../../lib/calcMath';
 import type { ThemeStyles } from '../../lib/themeStyles';
 
 interface Tool7Props {
@@ -40,9 +41,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = ({ isLight 
   // 2. OPTION 2: Equal Monthly Installment (Niên kim / EMI dư nợ đều)
   const option2Data = useMemo(() => {
     if (!loanAmt || !tenorMonths || rateMonthly <= 0) return { fixedMonthlyPayment: 0, totalInterest: 0 };
-    // EMI = P * [r * (1+r)^n] / [(1+r)^n - 1]
-    const emiFactor = (rateMonthly * Math.pow(1 + rateMonthly, tenorMonths)) / (Math.pow(1 + rateMonthly, tenorMonths) - 1);
-    const fixedMonthlyPayment = Math.round(loanAmt * emiFactor);
+    const fixedMonthlyPayment = emiMonthlyPayment(loanAmt, rateMonthly, tenorMonths);
     const totalPayment = fixedMonthlyPayment * tenorMonths;
     const totalInterest = Math.max(0, totalPayment - loanAmt);
 

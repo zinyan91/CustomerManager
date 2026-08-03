@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { RefreshCw, Percent } from 'lucide-react';
 import { fmtMoney, formatMoneyInput } from '../../lib/utils';
+import { effectiveAnnualRate, flatToReducingApprox } from '../../lib/calcMath';
 import type { ThemeStyles } from '../../lib/themeStyles';
 
 interface Tool8Props {
@@ -33,12 +34,11 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = ({ isLight 
   // Approximate reducing rate %/năm:
   // Reducing Annual Rate ≈ (Flat Annual Rate * 2 * n) / (n + 1)
   const flatRateAnnual = flatRateMonthly * 12;
-  const approxReducingRateAnnual = (flatRateAnnual * 2 * flatTenorMonths) / (flatTenorMonths + 1);
+  const approxReducingRateAnnual = flatToReducingApprox(flatRateAnnual, flatTenorMonths);
 
   // 2. Nominal to EAR (Effective Annual Rate)
-  // EAR = (1 + r / m)^m - 1
   const nominalRateAnnual = (parseFloat(nominalRateAnnualStr) || 0) / 100;
-  const earRateAnnual = Math.pow(1 + nominalRateAnnual / compoundingFreq, compoundingFreq) - 1;
+  const earRateAnnual = effectiveAnnualRate(nominalRateAnnual, compoundingFreq);
 
   const cardBg = isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100';
 

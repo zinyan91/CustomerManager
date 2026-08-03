@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ShieldCheck, DollarSign, Building2, CheckCircle2 } from 'lucide-react';
 import { fmtMoney, formatMoneyInput } from '../../lib/utils';
+import { pvAnnuityFactor, dtiMaxMonthlyPayment as calcDtiMaxMonthlyPayment } from '../../lib/calcMath';
 import type { ThemeStyles } from '../../lib/themeStyles';
 
 interface Tool5Props {
@@ -45,21 +46,14 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = ({ isLight }) => {
     : ASSET_LTV_MAP[selectedAssetKey]?.ltv || 0.70;
 
   // 1. Calculate DTI Capacity
-  const dtiMaxMonthlyPayment = useMemo(() => {
-    const netDisposable = Math.max(0, monthlyIncome - livingExpense - existingDebt);
-    const dtiLimit = Math.max(0, (monthlyIncome * (maxDtiPercent / 100)) - existingDebt);
-    return Math.min(netDisposable, dtiLimit);
-  }, [monthlyIncome, livingExpense, existingDebt, maxDtiPercent]);
+  const dtiMaxMonthlyPayment = useMemo(
+    () => calcDtiMaxMonthlyPayment(monthlyIncome, livingExpense, existingDebt, maxDtiPercent),
+    [monthlyIncome, livingExpense, existingDebt, maxDtiPercent]
+  );
 
   const maxLoanAmountByDti = useMemo(() => {
     if (dtiMaxMonthlyPayment <= 0 || loanTenorMonths <= 0) return 0;
-    if (rateMonthly <= 0) {
-      return dtiMaxMonthlyPayment * loanTenorMonths;
-    }
-    // Present Value formula for Equal Monthly Installment (EMI)
-    // PV = PMT * [1 - (1+r)^(-n)] / r
-    const pvFactor = (1 - Math.pow(1 + rateMonthly, -loanTenorMonths)) / rateMonthly;
-    return Math.round(dtiMaxMonthlyPayment * pvFactor);
+    return Math.round(dtiMaxMonthlyPayment * pvAnnuityFactor(rateMonthly, loanTenorMonths));
   }, [dtiMaxMonthlyPayment, loanTenorMonths, rateMonthly]);
 
   // 2. Calculate LTV Capacity

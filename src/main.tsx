@@ -4,13 +4,16 @@ import './index.css'
 import App from './App.tsx'
 import { ThemeProvider } from './context/ThemeContext.tsx'
 import { DateFormatProvider } from './context/DateFormatContext.tsx'
+import { AuthProvider } from './context/AuthContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <DateFormatProvider>
-        <App />
-      </DateFormatProvider>
+      <AuthProvider>
+        <DateFormatProvider>
+          <App />
+        </DateFormatProvider>
+      </AuthProvider>
     </ThemeProvider>
   </StrictMode>,
 )

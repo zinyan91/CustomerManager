@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { useTheme } from './context/ThemeContext';
+import { useAuth } from './context/AuthContext';
+import { LoginView } from './components/LoginView';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/views/DashboardView';
@@ -15,6 +18,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme } = useTheme();
+  const { session, loading } = useAuth();
 
   const bgClass = theme === 'light'
     ? 'bg-slate-50 text-slate-900'
@@ -23,6 +27,20 @@ export function App() {
   const mainClass = theme === 'light'
     ? 'bg-slate-100'
     : '';
+
+  // Đang khôi phục session — chưa biết đã đăng nhập hay chưa.
+  // Chặn render để tránh nháy trang đăng nhập với người dùng đã có session.
+  if (loading) {
+    return (
+      <div className={`min-h-screen ${bgClass} flex items-center justify-center`}>
+        <Loader2 className="w-6 h-6 animate-spin text-sky-500" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <LoginView />;
+  }
 
   return (
     <div className={`min-h-screen ${bgClass} flex flex-col font-sans antialiased transition-colors duration-200`}>

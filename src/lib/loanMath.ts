@@ -1,8 +1,7 @@
 import type { RepaymentSchedule, RateAdjustmentHistoryItem, LoanContract } from '../types';
 import { getEffectiveActiveRate } from './utils';
 
-export
-function addMonthsToDate(dateStr?: string | null, months?: number | null): string {
+export function addMonthsToDate(dateStr?: string | null, months?: number | null): string {
   if (!dateStr || !months || isNaN(months) || months <= 0) return '';
   try {
     const parts = dateStr.split('-');
@@ -30,15 +29,23 @@ function addMonthsToDate(dateStr?: string | null, months?: number | null): strin
   }
 }
 
-export
-function parseKunnTenorMonths(tenorStr?: string | null): number {
+export function addDaysToDate(dateStr?: string | null, days?: number | null): string {
+  const parts = parseDateParts(dateStr);
+  if (!parts || days === undefined || days === null || isNaN(days)) return '';
+  const d = new Date(Date.UTC(parts.y, parts.m, parts.d + Number(days)));
+  const yy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+export function parseKunnTenorMonths(tenorStr?: string | null): number {
   if (!tenorStr) return 0;
   const match = tenorStr.match(/\d+/);
   return match ? parseInt(match[0], 10) : 0;
 }
 
-export
-function parseDateParts(dStr?: string | null) {
+export function parseDateParts(dStr?: string | null) {
   if (!dStr) return null;
   const parts = dStr.split('-');
   if (parts.length !== 3) return null;
@@ -49,8 +56,7 @@ function parseDateParts(dStr?: string | null) {
   return { y, m, d };
 }
 
-export
-function getDaysBetween(d1Str: string, d2Str: string): number {
+export function getDaysBetween(d1Str: string, d2Str: string): number {
   const p1 = parseDateParts(d1Str);
   const p2 = parseDateParts(d2Str);
   if (!p1 || !p2) return 30;
@@ -59,15 +65,13 @@ function getDaysBetween(d1Str: string, d2Str: string): number {
   return Math.max(1, Math.round((utc2 - utc1) / (1000 * 60 * 60 * 24)));
 }
 
-export
-function roundPrincipalCore(rawPrincipal: number, roundMode: '1k' | '10k' | '50k' | 'exact' = '1k'): number {
+export function roundPrincipalCore(rawPrincipal: number, roundMode: '1k' | '10k' | '50k' | 'exact' = '1k'): number {
   if (roundMode === 'exact' || !rawPrincipal || rawPrincipal <= 0) return Math.round(rawPrincipal);
   const step = roundMode === '50k' ? 50000 : roundMode === '10k' ? 10000 : 1000;
   return Math.ceil(rawPrincipal / step) * step;
 }
 
-export
-function generateSchedule(
+export function generateSchedule(
   contractId: number,
   loanAmount: number,
   interestRate: number,

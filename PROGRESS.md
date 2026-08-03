@@ -50,7 +50,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Chốt kiểm soát tổng mức cấp so với TSĐB | Xét theo cụm liên thông hợp đồng ↔ tài sản |
 | ✅ | Tầng hạn mức dùng chung cho nhiều HĐTD | `CreditLimitCode` + `CreditLimitAmount` |
 | ✅ | Quy tắc sản phẩm theo phương thức vay | Mục đích, kỳ hạn, ân hạn gốc |
-| ⬜ | Phân hệ Kiểm soát sau vay | Hiện là màn hình chờ. Bảng `PostLoanControls` đã có nhưng rỗng |
+| 🔄 | Phân hệ Kiểm soát sau vay | Đã xong lõi sinh lịch (`src/lib/postLoanControl.ts`, 24 test). Còn: bảng lưu kết quả kiểm tra + màn hình giao diện |
 | ⬜ | Màn hình quản trị người dùng | **Bắt buộc qua Edge Function** — không đưa `service_role` key vào frontend |
 
 ## Kỹ thuật

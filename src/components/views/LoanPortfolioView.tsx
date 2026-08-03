@@ -8,7 +8,8 @@ import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRa
 import {
   addMonthsToDate, parseKunnTenorMonths, parseDateParts,
   generateSchedule, calculateOverdueDaysFromDates,
-  getAutoDebtGroupInfo, recalculateSchedules, computeOutstandingBalance
+  getAutoDebtGroupInfo, recalculateSchedules, computeOutstandingBalance,
+  isBulletPrincipal
 } from '../../lib/loanMath';
 import { getEffectiveLtv } from '../../lib/collateralMath';
 import { computeCreditLimit, checkCollateralCapacity } from '../../lib/creditLimit';
@@ -664,7 +665,7 @@ export const LoanPortfolioView: React.FC = () => {
       const existingScheds = await fetchRepaymentSchedulesAPI(savedContract.Id);
       const repayStartDate = savedContract.RepaymentStartDate || savedContract.DisbursementDate || savedContract.ContractStartDate;
       const periods = parseKunnTenorMonths(savedContract.KunnTenor) || savedContract.LoanTenorMonths || 12;
-      const isBullet = (savedContract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ' || savedContract.LoanMethod === 'Hạn mức tín dụng';
+      const isBullet = isBulletPrincipal(savedContract);
       const rate = savedContract.InterestRate || savedContract.NormalRate || 0;
       const amt = savedContract.LoanAmount || savedContract.ContractAmount || 0;
 

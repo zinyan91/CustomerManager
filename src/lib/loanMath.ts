@@ -289,6 +289,24 @@ export function getAutoDebtGroupInfo(
 }
 
 /**
+ * Khoản vay có trả gốc một lần cuối kỳ hay không.
+ *
+ * CHỈ căn cứ vào phương thức trả gốc mà banker đã chọn. Trước đây có thêm
+ * vế `|| LoanMethod === 'Hạn mức tín dụng'` ép mọi hợp đồng hạn mức thành
+ * gốc cuối kỳ, bất kể lựa chọn trên biểu mẫu — dẫn tới giao diện hiển thị
+ * "Trả đều hàng tháng" trong khi lịch thu nợ lại tính theo cách khác, và
+ * cột gốc của mọi kỳ đều bằng 0.
+ *
+ * Giá trị mặc định của hợp đồng hạn mức vẫn là "Gốc trả cuối kỳ" (đặt ở
+ * biểu mẫu khi chọn phương thức vay), nhưng banker đổi được.
+ */
+export function isBulletPrincipal(
+  contract: Pick<LoanContract, 'PrincipalRepaymentMethod'>
+): boolean {
+  return (contract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ';
+}
+
+/**
  * Tính lại toàn bộ lịch trả nợ theo dư nợ thực tế.
  *
  * Dùng sau khi ghi nhận thu nợ hoặc trả trước hạn: các kỳ đã thanh toán
@@ -305,9 +323,7 @@ export function recalculateSchedules(
 ): RepaymentSchedule[] {
   const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
   const graceMonths = contract.PrincipalGracePeriodMonths || 0;
-  const isBullet =
-    (contract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ' ||
-    contract.LoanMethod === 'Hạn mức tín dụng';
+  const isBullet = isBulletPrincipal(contract);
 
   const totalPeriods = schedList.length;
   const remainingRepayPeriods = Math.max(1, totalPeriods - graceMonths);

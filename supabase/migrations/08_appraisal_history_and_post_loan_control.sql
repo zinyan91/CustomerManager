@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS public."CollateralAppraisals" (
   "AppraisalDate"  date    NOT NULL,
   "TenorMonths"    integer NOT NULL DEFAULT 12 CHECK ("TenorMonths" IN (6, 12, 24)),
   "ExpiryDate"     date    GENERATED ALWAYS AS
-                     (("AppraisalDate" + ("TenorMonths" || ' months')::interval)::date) STORED,
+                     (("AppraisalDate" + ("TenorMonths" * INTERVAL '1 month'))::date) STORED,
   "AppraisedValue" numeric NOT NULL CHECK ("AppraisedValue" >= 0),
   "AssetType"      text,
   "LtvPercent"     numeric NOT NULL CHECK ("LtvPercent" >= 0 AND "LtvPercent" <= 100),

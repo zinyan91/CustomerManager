@@ -1,4 +1,4 @@
-import type { LoanContract, Collateral } from '../types';
+import type { LoanContract, Collateral, PostLoanControlRecord, ControlResult } from '../types';
 import { addDaysToDate, addMonthsToDate, getDaysBetween, parseDateParts } from './loanMath';
 import { getMasterHdtdNumber } from './utils';
 import { parseCollateralIds } from './creditLimit';
@@ -15,7 +15,7 @@ export const PURPOSE_CHECK_DAYS = 30;
 export const PERIODIC_CHECK_MONTHS = 3;
 export const COLLATERAL_CHECK_MONTHS_DEFAULT = 12;
 
-export type ControlStatus = 'overdue' | 'due_soon' | 'upcoming';
+export type ControlStatus = 'overdue' | 'due_soon' | 'upcoming' | 'done';
 
 export interface ControlItem {
   key: string;
@@ -205,4 +205,41 @@ export function overdueDaysOf(item: ControlItem): number {
 
 export function daysFromBasis(item: ControlItem): number {
   return getDaysBetween(item.basisDate, item.dueDate);
+}
+
+export const CONTROL_RESULT_LABEL: Record<ControlResult, string> = {
+  pass: 'Đạt',
+  watch: 'Cần theo dõi',
+  fail: 'Không đạt',
+};
+
+export interface ControlItemWithRecord extends ControlItem {
+  record?: PostLoanControlRecord;
+}
+
+export function mergeControlRecords(
+  items: ControlItem[],
+  records: PostLoanControlRecord[]
+): ControlItemWithRecord[] {
+  const byKey = new Map(records.map(r => [r.ControlKey, r]));
+  return items.map(it => {
+    const record = byKey.get(it.key);
+    if (!record) return it;
+    return { ...it, status: 'done' as ControlStatus, record };
+  });
+}
+
+export function summarizeWithRecords(items: ControlItemWithRecord[]) {
+  const s = { overdue: 0, dueSoon: 0, upcoming: 0, done: 0, total: items.length };
+  for (const it of items) {
+    if (it.status === 'done') s.done++;
+    else if (it.status === 'overdue') s.overdue++;
+    else if (it.status === 'due_soon') s.dueSoon++;
+    else s.upcoming++;
+  }
+  return s;
+}
+
+export function pendingControls(items: ControlItemWithRecord[]): ControlItemWithRecord[] {
+  return items.filter(it => it.status !== 'done');
 }

@@ -5,8 +5,11 @@ import {
   overdueDaysOf,
   PURPOSE_CHECK_DAYS,
   PERIODIC_CHECK_MONTHS,
+  mergeControlRecords,
+  summarizeWithRecords,
+  pendingControls,
 } from '../postLoanControl';
-import type { LoanContract, Collateral } from '../../types';
+import type { LoanContract, Collateral, PostLoanControlRecord } from '../../types';
 
 const HOM_NAY = '2026-08-03';
 
@@ -288,5 +291,53 @@ describe('Sắp xếp và khoá định danh', () => {
       todayStr: HOM_NAY,
     });
     expect(new Set(r.map(x => x.key)).size).toBe(r.length);
+  });
+});
+
+describe('Khớp đợt kiểm tra đã thực hiện với lịch sinh tự động', () => {
+  const banGhi = (o: Partial<PostLoanControlRecord>): PostLoanControlRecord => ({
+    Id: 1, ControlType: 'purpose', ControlKey: '', CustomerId: 1,
+    PeriodIndex: 1, DueDate: '2026-02-14', PerformedDate: '2026-02-10',
+    Result: 'pass', ...o,
+  } as PostLoanControlRecord);
+
+  const lich = () => generateControlSchedule({
+    contracts: [hd({ Id: 7, ContractNumber: 'HD01/GNN-01', DisbursementDate: '2026-01-15', KunnDueDate: '2026-12-15' })],
+    collaterals: [], todayStr: HOM_NAY,
+  });
+
+  it('đợt đã thực hiện chuyển sang trạng thái hoàn thành', () => {
+    const items = lich();
+    const merged = mergeControlRecords(items, [banGhi({ ControlKey: 'purpose-7' })]);
+    const p = merged.find(x => x.key === 'purpose-7')!;
+    expect(p.status).toBe('done');
+    expect(p.record?.Result).toBe('pass');
+  });
+
+  it('đợt chưa thực hiện giữ nguyên trạng thái quá hạn', () => {
+    const merged = mergeControlRecords(lich(), [banGhi({ ControlKey: 'purpose-7' })]);
+    const conLai = merged.filter(x => x.key !== 'purpose-7');
+    expect(conLai.every(x => x.status !== 'done')).toBe(true);
+  });
+
+  it('bản ghi không khớp đợt nào thì bị bỏ qua, không tạo dòng lạ', () => {
+    const items = lich();
+    const merged = mergeControlRecords(items, [banGhi({ ControlKey: 'purpose-9999' })]);
+    expect(merged).toHaveLength(items.length);
+    expect(merged.every(x => x.status !== 'done')).toBe(true);
+  });
+
+  it('đếm đúng số đợt đã làm và còn phải làm', () => {
+    const merged = mergeControlRecords(lich(), [banGhi({ ControlKey: 'purpose-7' })]);
+    const s = summarizeWithRecords(merged);
+    expect(s.done).toBe(1);
+    expect(s.done + s.overdue + s.dueSoon + s.upcoming).toBe(s.total);
+    expect(pendingControls(merged)).toHaveLength(s.total - 1);
+  });
+
+  it('không có bản ghi nào thì mọi đợt đều còn phải làm', () => {
+    const merged = mergeControlRecords(lich(), []);
+    expect(summarizeWithRecords(merged).done).toBe(0);
+    expect(pendingControls(merged)).toHaveLength(merged.length);
   });
 });

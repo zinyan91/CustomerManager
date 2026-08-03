@@ -28,6 +28,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Đưa dữ liệu nghiệp vụ từ `Note` về cột riêng | 39 hợp đồng, đối chiếu từng dòng với bản sao lưu |
 | ✅ | Sửa kiểu cột `CreditCards.IssuanceType` | Cột số nhận chuỗi mô tả nên diện mở thẻ mất mỗi lần lưu |
 | ✅ | Gỡ nhánh đọc số HĐTD từ `HdtdDueDate` | Tàn dư thiết kế cũ |
+| 🔄 | Lịch sử định giá TSĐB | Migration 08 tạo bảng `CollateralAppraisals` kèm trigger đồng bộ giá trị hiện hành. Còn: giao diện ghi nhận định giá lại |
 | ✅ | Chỉnh LTV của hai tài sản lệch bậc phân loại | Đã kiểm chứng 04/08/2026: 55 tài sản, mỗi xếp loại chỉ còn một giá trị LTV duy nhất (Loại 1 80% · Loại 2 70% · Loại 3 60% · Loại 4 55%) |
 | ⬜ | Xoá bảng `_backup_LoanContracts_Note_20260803` | Sau vài ngày chạy ổn |
 
@@ -54,7 +55,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Tầng hạn mức dùng chung cho nhiều HĐTD | `CreditLimitCode` + `CreditLimitAmount` |
 | ✅ | Quy tắc sản phẩm theo phương thức vay | Mục đích, kỳ hạn, ân hạn gốc |
 | ✅ | Đồng bộ nhãn xếp loại TSĐB | Loại 1–4 và Hạn chế, bỏ tiền tố BĐS và phần trăm trong ngoặc, dùng chung ở Dashboard, bảng TSĐB, thẻ tín dụng |
-| 🔄 | Phân hệ Kiểm soát sau vay | Đã xong lõi sinh lịch (`src/lib/postLoanControl.ts`, 24 test). Còn: bảng lưu kết quả kiểm tra + màn hình giao diện |
+| 🔄 | Phân hệ Kiểm soát sau vay | Đã xong lõi sinh lịch và logic khớp bản ghi đã thực hiện (29 test), migration 08 tạo bảng lưu. Còn: tầng truy vấn + màn hình giao diện |
 | ⬜ | Màn hình quản trị người dùng | **Bắt buộc qua Edge Function** — không đưa `service_role` key vào frontend |
 
 ## Kỹ thuật
@@ -62,20 +63,13 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
 | ✅ | Tách logic tài chính ra `src/lib/` dạng hàm thuần | |
-| ✅ | 241 test cho logic tính tiền | `src/lib/__tests__/` |
+| ✅ | 246 test cho logic tính tiền | `src/lib/__tests__/` |
 | ✅ | Gom kiến thức vào `CONVENTIONS.md` và skill `tin-dung` | Mã nguồn không còn chú thích |
 | ✅ | Viết lại `README.md` và `web_migration_plan.md` khớp thực tế | |
 | 🔄 | Tách nhỏ `LoanPortfolioView` | Còn khoảng 2.200 dòng. Đã bóc hết logic tài chính; phần còn lại là JSX |
 | ⬜ | Test cho thành phần giao diện | Hiện chỉ có test logic thuần |
 | ⬜ | Đồng bộ realtime, bộ nhớ đệm client | Có trong kế hoạch ban đầu, chưa làm |
 | ⬜ | Tên miền riêng | |
-
-## Đề xuất chờ xác nhận
-
-| | Việc | Ghi chú |
-| :--- | :--- | :--- |
-| ⚠️ | Bảng lịch sử định giá `CollateralAppraisals` | Hiện mỗi lần định giá lại **ghi đè** giá trị cũ, mất lịch sử. Cần để so sánh biến động giá trị và xếp loại giữa các kỳ kiểm tra hiện trạng tài sản |
-| ⚠️ | Bảng lưu kết quả kiểm soát sau vay | Chờ kết quả truy vấn cấu trúc `PostLoanControls` để biết nên tận dụng hay tạo mới |
 
 
 ## Cần kiểm thử trên giao diện

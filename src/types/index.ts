@@ -145,3 +145,37 @@ export interface CreditCard {
   customer?: Customer;
   collateral?: Collateral;
 }
+
+export interface CollateralAppraisal {
+  Id: number;
+  CollateralId: number;
+  AppraisalDate: string;
+  TenorMonths: number;
+  ExpiryDate?: string;
+  AppraisedValue: number;
+  AssetType?: string | null;
+  LtvPercent: number;
+  PerformedBy?: string | null;
+  Note?: string | null;
+  CreatedAt?: string;
+}
+
+export type ControlResult = 'pass' | 'watch' | 'fail';
+
+export interface PostLoanControlRecord {
+  Id: number;
+  ControlType: 'purpose' | 'periodic' | 'collateral';
+  ControlKey: string;
+  CustomerId: number;
+  ContractId?: number | null;
+  MasterHdtd?: string | null;
+  CollateralId?: number | null;
+  PeriodIndex: number;
+  DueDate: string;
+  PerformedDate: string;
+  PerformedBy?: string | null;
+  Result: ControlResult;
+  Findings?: string | null;
+  AppraisalId?: number | null;
+  CreatedAt?: string;
+}

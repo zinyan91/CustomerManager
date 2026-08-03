@@ -226,7 +226,7 @@ Không nhét dữ liệu nghiệp vụ vào `Note` — mỗi thông tin một c�
 
 ```bash
 npm run dev      # máy chủ phát triển
-npm test         # 235 test logic tài chính
+npm test         # 241 test logic tài chính
 npm run build    # typecheck + đóng gói
 npm run lint
 ```

@@ -1,5 +1,5 @@
 import type { Collateral } from '../types';
-import { parseAnyDate } from './utils';
+import { parseAnyDate, formatAssetType } from './utils';
 
 export const ASSET_TYPE_LTV: ReadonlyArray<readonly [string, number]> = [
 
@@ -112,4 +112,10 @@ export function isAppraisalUsable(
 export function usableCapacity(c?: Collateral | null, todayStr?: string): number {
   if (!c) return 0;
   return isAppraisalUsable(c, todayStr) ? maxLoanFromCollateral(c) : 0;
+}
+
+export function assetClassLabel(assetType?: string | null): string {
+  const cleaned = formatAssetType(assetType).replace(/\s*\([^)]*\)\s*$/, '').trim();
+  if (/^hạn chế/i.test(cleaned)) return 'Hạn chế';
+  return cleaned;
 }

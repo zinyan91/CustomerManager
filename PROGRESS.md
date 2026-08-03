@@ -52,6 +52,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Chốt kiểm soát tổng mức cấp so với TSĐB | Xét theo cụm liên thông hợp đồng ↔ tài sản |
 | ✅ | Tầng hạn mức dùng chung cho nhiều HĐTD | `CreditLimitCode` + `CreditLimitAmount` |
 | ✅ | Quy tắc sản phẩm theo phương thức vay | Mục đích, kỳ hạn, ân hạn gốc |
+| ✅ | Đồng bộ nhãn xếp loại TSĐB | Loại 1–4 và Hạn chế, bỏ tiền tố BĐS và phần trăm trong ngoặc, dùng chung ở Dashboard, bảng TSĐB, thẻ tín dụng |
 | 🔄 | Phân hệ Kiểm soát sau vay | Đã xong lõi sinh lịch (`src/lib/postLoanControl.ts`, 24 test). Còn: bảng lưu kết quả kiểm tra + màn hình giao diện |
 | ⬜ | Màn hình quản trị người dùng | **Bắt buộc qua Edge Function** — không đưa `service_role` key vào frontend |
 
@@ -60,7 +61,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
 | ✅ | Tách logic tài chính ra `src/lib/` dạng hàm thuần | |
-| ✅ | 235 test cho logic tính tiền | `src/lib/__tests__/` |
+| ✅ | 241 test cho logic tính tiền | `src/lib/__tests__/` |
 | ✅ | Gom kiến thức vào `CONVENTIONS.md` và skill `tin-dung` | Mã nguồn không còn chú thích |
 | ✅ | Viết lại `README.md` và `web_migration_plan.md` khớp thực tế | |
 | 🔄 | Tách nhỏ `LoanPortfolioView` | Còn khoảng 2.200 dòng. Đã bóc hết logic tài chính; phần còn lại là JSX |

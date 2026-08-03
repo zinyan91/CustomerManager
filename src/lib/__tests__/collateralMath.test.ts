@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   defaultLtvForAssetType, getEffectiveLtv, maxLoanFromCollateral,
   isRestrictedAsset, isLtvException,
-  appraisalExpiryDate, appraisalStatus, usableCapacity,
+  appraisalExpiryDate, appraisalStatus, usableCapacity, assetClassLabel,
 } from '../collateralMath';
 import type { Collateral } from '../../types';
 
@@ -183,5 +183,39 @@ describe('Hiệu lực định giá', () => {
 
   it('chưa có ngày định giá thì không tính vào khả năng bảo đảm', () => {
     expect(usableCapacity({ Id: 1, AppraisedValue: 2_000_000_000, LtvPercent: 80 } as Collateral, HOM_NAY)).toBe(0);
+  });
+});
+
+describe('assetClassLabel — nhãn xếp loại đồng bộ', () => {
+  it('bỏ tiền tố BĐS', () => {
+    expect(assetClassLabel('BĐS - Loại 1')).toBe('Loại 1');
+    expect(assetClassLabel('BDS - Loại 3')).toBe('Loại 3');
+    expect(assetClassLabel('BĐS Loại 2')).toBe('Loại 2');
+  });
+
+  it('bỏ phần chú thích trong ngoặc', () => {
+    expect(assetClassLabel('Loại 1 (80%)')).toBe('Loại 1');
+    expect(assetClassLabel('BĐS - Loại 3 (60%)')).toBe('Loại 3');
+    expect(assetClassLabel('Loại 4 (55%)')).toBe('Loại 4');
+  });
+
+  it('tài sản hạn chế nhận rút gọn thành "Hạn chế"', () => {
+    expect(assetClassLabel('Hạn chế nhận TS')).toBe('Hạn chế');
+    expect(assetClassLabel('BĐS - Hạn chế nhận TS (LTV 0%)')).toBe('Hạn chế');
+  });
+
+  it('giữ nguyên các loại tài sản khác', () => {
+    expect(assetClassLabel('Sổ tiết kiệm cùng hệ thống')).toBe('Sổ tiết kiệm cùng hệ thống');
+    expect(assetClassLabel('Phương tiện vận tải')).toBe('Phương tiện vận tải');
+  });
+
+  it('rỗng thì mặc định Loại 1', () => {
+    expect(assetClassLabel(null)).toBe('Loại 1');
+    expect(assetClassLabel('')).toBe('Loại 1');
+  });
+
+  it('cho ra đúng năm nhãn chuẩn', () => {
+    const nhan = ['Loại 1', 'Loại 2', 'Loại 3', 'Loại 4', 'Hạn chế nhận TS'].map(assetClassLabel);
+    expect(nhan).toEqual(['Loại 1', 'Loại 2', 'Loại 3', 'Loại 4', 'Hạn chế']);
   });
 });

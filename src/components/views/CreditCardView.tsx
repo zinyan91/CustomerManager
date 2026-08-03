@@ -3,8 +3,8 @@ import {
   fetchCreditCardsAPI, fetchCustomersAPI, saveCreditCardAPI, deleteCreditCardAPI,
   fetchCollateralsByCustomerAPI, fetchCollateralsAPI
 } from '../../lib/api';
-import { formatMoneyInput, fmtMoney, formatAssetType } from '../../lib/utils';
-import { getEffectiveLtv } from '../../lib/collateralMath';
+import { formatMoneyInput, fmtMoney } from '../../lib/utils';
+import { getEffectiveLtv, assetClassLabel } from '../../lib/collateralMath';
 import type { CreditCard as CreditCardType, Customer, Collateral } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { CreditCard, CheckCircle, AlertCircle, Plus, ChevronUp, ChevronDown, Trash2, Edit3, ShieldCheck, Search } from 'lucide-react';
@@ -314,7 +314,7 @@ export const CreditCardView: React.FC = () => {
                       const maxL = Math.round(val * ltv / 100);
                       return (
                         <option key={col.Id} value={col.Id}>
-                          🏠 [Mã: {col.AssetCode || `ID#${col.Id}`}] {formatAssetType(col.AssetType)} — {fmtMoney(val)} (LTV {ltv}% = Max: {fmtMoney(maxL)})
+                          🏠 [Mã: {col.AssetCode || `ID#${col.Id}`}] {assetClassLabel(col.AssetType)} — {fmtMoney(val)} (LTV {ltv}% = Max: {fmtMoney(maxL)})
                         </option>
                       );
                     })
@@ -459,7 +459,7 @@ export const CreditCardView: React.FC = () => {
                       <td className="p-3 whitespace-nowrap">
                         {linkedCol ? (
                           <div className="text-[11px] font-semibold text-purple-700 dark:text-purple-300">
-                            🏠 [Mã: {linkedCol.AssetCode || `ID#${linkedCol.Id}`}] {formatAssetType(linkedCol.AssetType)}
+                            🏠 [Mã: {linkedCol.AssetCode || `ID#${linkedCol.Id}`}] {assetClassLabel(linkedCol.AssetType)}
                             <div className="text-[10px] text-slate-400 font-mono">Định giá: {fmtMoney(linkedCol.AppraisedValue || linkedCol.Value)}</div>
                           </div>
                         ) : (

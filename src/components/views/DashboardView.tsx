@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
 import { fmtDate, parseAnyDate, getMasterHdtdNumber } from '../../lib/utils';
+import { assetClassLabel } from '../../lib/collateralMath';
 import type { Customer, Collateral, LoanContract } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -621,7 +622,7 @@ export const DashboardView: React.FC = () => {
                       <td className="p-2.5 font-medium">{collateral.AssetCode || collateral.Address || 'TSBĐ'}</td>
                       <td className="p-2.5">
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
-                          {collateral.AssetType || 'Loại 1'} ({collateral.LtvPercent || 70}%)
+                          {assetClassLabel(collateral.AssetType)}
                         </span>
                       </td>
                       <td className="p-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">

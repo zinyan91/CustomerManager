@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
 import type { Customer, Collateral, LoanContract, CreditCard, RepaymentSchedule } from '../types';
-import { serializeContractRateHistory } from './utils';
 
 export async function fetchCustomersAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
   try {
@@ -243,79 +242,26 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   cleanContract.IsSettled = cleanContract.IsSettled ?? false;
   cleanContract.IsRestructured = cleanContract.IsRestructured ?? false;
 
+  // RateHistory (jsonb), CollateralIds (text), PenaltySurcharge (numeric)
+  // đều đã là cột thật. Nhánh dự phòng nhét chúng vào Note đã được gỡ:
+  // nó khiến dữ liệu nghiệp vụ nằm trong ô ghi chú, không truy vấn được
+  // và không kiểm toán được.
   if (isUpdate) {
-    let { data, error } = await supabase
+    const { data, error } = await supabase
       .from('LoanContracts')
       .update(cleanContract)
       .eq('Id', cleanContract.Id)
       .select('*, customer:Customers(*)')
       .single();
-
-    if (error && (error.code === 'PGRST204' || error.message.includes('column'))) {
-      const fallbackContract = { ...cleanContract };
-      delete fallbackContract.RateHistory;
-      delete fallbackContract.PenaltySurcharge;
-      delete fallbackContract.CollateralIds;
-
-      let noteExtra = '';
-      if (cleanContract.RateHistory && Array.isArray(cleanContract.RateHistory)) {
-        noteExtra += `\n${serializeContractRateHistory(cleanContract.RateHistory)}`;
-      }
-      if (cleanContract.CollateralIds) {
-        noteExtra += `\n[COLLATERAL_IDS:${cleanContract.CollateralIds}]`;
-      }
-      if (cleanContract.PenaltySurcharge) {
-        noteExtra += `\n[PENALTY_SURCHARGE:${cleanContract.PenaltySurcharge}]`;
-      }
-      fallbackContract.Note = `${fallbackContract.Note || ''}${noteExtra}`.trim() || null;
-
-      const res = await supabase
-        .from('LoanContracts')
-        .update(fallbackContract)
-        .eq('Id', fallbackContract.Id)
-        .select('*, customer:Customers(*)')
-        .single();
-      if (res.error) throw res.error;
-      data = res.data;
-    } else if (error) {
-      throw error;
-    }
+    if (error) throw error;
     return data;
   } else {
-    let { data, error } = await supabase
+    const { data, error } = await supabase
       .from('LoanContracts')
       .insert([cleanContract])
       .select('*, customer:Customers(*)')
       .single();
-
-    if (error && (error.code === 'PGRST204' || error.message.includes('column'))) {
-      const fallbackContract = { ...cleanContract };
-      delete fallbackContract.RateHistory;
-      delete fallbackContract.PenaltySurcharge;
-      delete fallbackContract.CollateralIds;
-
-      let noteExtra = '';
-      if (cleanContract.RateHistory && Array.isArray(cleanContract.RateHistory)) {
-        noteExtra += `\n${serializeContractRateHistory(cleanContract.RateHistory)}`;
-      }
-      if (cleanContract.CollateralIds) {
-        noteExtra += `\n[COLLATERAL_IDS:${cleanContract.CollateralIds}]`;
-      }
-      if (cleanContract.PenaltySurcharge) {
-        noteExtra += `\n[PENALTY_SURCHARGE:${cleanContract.PenaltySurcharge}]`;
-      }
-      fallbackContract.Note = `${fallbackContract.Note || ''}${noteExtra}`.trim() || null;
-
-      const res = await supabase
-        .from('LoanContracts')
-        .insert([fallbackContract])
-        .select('*, customer:Customers(*)')
-        .single();
-      if (res.error) throw res.error;
-      data = res.data;
-    } else if (error) {
-      throw error;
-    }
+    if (error) throw error;
     return data;
   }
 }
@@ -356,20 +302,17 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
   // Tách bỏ customer (object join, không phải cột) và Limit (tên cũ của CreditLimit)
   const { customer: _customer, Limit, ...dbPayload } = card as any;
 
-  let noteStr = dbPayload.Note || '';
-  if (dbPayload.IssuanceType && !noteStr.includes('[IssuanceType:')) {
-    noteStr = `[IssuanceType:${dbPayload.IssuanceType}] ${noteStr}`.trim();
-  }
-  if (dbPayload.CollateralId && !noteStr.includes('[CollateralId:')) {
-    noteStr = `[CollateralId:${dbPayload.CollateralId}] ${noteStr}`.trim();
-  }
-
+  // IssuanceType và CollateralId nay ghi thẳng vào cột riêng. Trước đây
+  // chúng còn được nhét kèm vào Note vì cột IssuanceType là kiểu integer
+  // nên mọi lần lưu đều lỗi; nhánh catch xoá cả hai trường rồi lưu lại,
+  // khiến giao diện báo thành công trong khi dữ liệu đã mất.
+  // Migration 06 đã đổi cột sang text.
   const cardData: any = {
     CustomerId: Number(dbPayload.CustomerId),
     CardNumber: cardNumber,
     CreditLimit: Number(dbPayload.CreditLimit || Limit || 0),
     CurrentBalance: Number(dbPayload.CurrentBalance || 0),
-    Note: noteStr || null,
+    Note: dbPayload.Note || null,
   };
 
   if (dbPayload.IssuanceType) {
@@ -382,24 +325,12 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
   if (isUpdate) {
     cardData.Id = dbPayload.Id;
     const { data, error } = await supabase.from('CreditCards').update(cardData).eq('Id', cardData.Id).select().single();
-    if (error) {
-      delete cardData.IssuanceType;
-      delete cardData.CollateralId;
-      const { data: retryData, error: retryErr } = await supabase.from('CreditCards').update(cardData).eq('Id', cardData.Id).select().single();
-      if (retryErr) throw retryErr;
-      return retryData;
-    }
+    if (error) throw error;
     return data;
   } else {
     // Id do database tự cấp qua sequence — cardData vốn không mang Id
     const { data, error } = await supabase.from('CreditCards').insert([cardData]).select().single();
-    if (error) {
-      delete cardData.IssuanceType;
-      delete cardData.CollateralId;
-      const { data: retryData, error: retryErr } = await supabase.from('CreditCards').insert([cardData]).select().single();
-      if (retryErr) throw retryErr;
-      return retryData;
-    }
+    if (error) throw error;
     return data;
   }
 }
@@ -482,6 +413,9 @@ export async function updateRepaymentScheduleAPI(schedule: Partial<RepaymentSche
 
   const cleanPayload: any = { ...schedule };
 
+  // Cả 5 cột OverdueDays / OverdueInterestAmount / ActualPaidPrincipal /
+  // ActualPaidInterest / PrepaidPrincipalAmount đều đã tồn tại thật.
+  // Nhánh dự phòng nhét số liệu thu nợ vào Note đã được gỡ.
   const { data, error } = await supabase
     .from('RepaymentSchedules')
     .update(cleanPayload)
@@ -489,32 +423,6 @@ export async function updateRepaymentScheduleAPI(schedule: Partial<RepaymentSche
     .select()
     .single();
 
-  if (error && (error.code === 'PGRST204' || error.message.includes('column'))) {
-    const fallbackPayload = { ...cleanPayload };
-    delete fallbackPayload.OverdueDays;
-    delete fallbackPayload.OverdueInterestAmount;
-    delete fallbackPayload.ActualPaidPrincipal;
-    delete fallbackPayload.ActualPaidInterest;
-    delete fallbackPayload.PrepaidPrincipalAmount;
-
-    let noteExtras = [];
-    if (cleanPayload.OverdueDays) noteExtras.push(`OverdueDays:${cleanPayload.OverdueDays}`);
-    if (cleanPayload.OverdueInterestAmount) noteExtras.push(`OverdueInterest:${cleanPayload.OverdueInterestAmount}`);
-    if (cleanPayload.ActualPaidPrincipal) noteExtras.push(`PaidP:${cleanPayload.ActualPaidPrincipal}`);
-    if (cleanPayload.ActualPaidInterest) noteExtras.push(`PaidI:${cleanPayload.ActualPaidInterest}`);
-    if (noteExtras.length > 0) {
-      fallbackPayload.Note = `${fallbackPayload.Note || ''} [${noteExtras.join(';')}]`.trim();
-    }
-
-    const { data: retryData, error: retryErr } = await supabase
-      .from('RepaymentSchedules')
-      .update(fallbackPayload)
-      .eq('Id', schedule.Id)
-      .select()
-      .single();
-    if (retryErr) throw retryErr;
-    return retryData;
-  }
   if (error) throw error;
   return data;
 }

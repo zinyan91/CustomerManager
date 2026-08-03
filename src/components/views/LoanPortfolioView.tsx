@@ -494,12 +494,9 @@ export const LoanPortfolioView: React.FC = () => {
     setRateBase(c.BaseRate ? Number((c.BaseRate * 100).toFixed(4)).toString() : '');
     setRateMargin(c.MarginRate ? Number((c.MarginRate * 100).toFixed(4)).toString() : '');
 
+    // Migration 06 đã đưa PenaltySurcharge từ Note về cột riêng
     if (c.PenaltySurcharge != null && c.PenaltySurcharge > 0) {
       setRateConditionSurcharge(c.PenaltySurcharge.toString());
-    } else if (c.Note?.includes('[PENALTY_SURCHARGE:')) {
-      const match = c.Note.match(/\[PENALTY_SURCHARGE:([^\]]+)\]/);
-      if (match && match[1]) setRateConditionSurcharge(match[1].trim());
-      else setRateConditionSurcharge('0');
     } else {
       setRateConditionSurcharge('0');
     }
@@ -507,19 +504,10 @@ export const LoanPortfolioView: React.FC = () => {
     const history = getContractRateHistory(c);
     setRateHistory(history);
 
+    // Migration 06 đã đưa CollateralIds từ Note về cột riêng (39 hợp đồng)
     if (c.CollateralIds) {
       const ids = c.CollateralIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
       setSelectedCollateralIds(ids);
-    } else if (c.Note?.includes('[COLLATERAL_IDS:')) {
-      const match = c.Note.match(/\[COLLATERAL_IDS:([^\]]+)\]/);
-      if (match && match[1]) {
-        const ids = match[1].split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-        setSelectedCollateralIds(ids);
-      } else if (c.CollateralId) {
-        setSelectedCollateralIds([c.CollateralId]);
-      } else {
-        setSelectedCollateralIds([]);
-      }
     } else if (c.CollateralId) {
       setSelectedCollateralIds([c.CollateralId]);
     } else {

@@ -9,6 +9,7 @@ import {
   calculateOverdueDaysFromDates,
   getAutoDebtGroupInfo,
   recalculateSchedules,
+  computeOutstandingBalance,
 } from './loanMath';
 import type { RepaymentSchedule } from '../types';
 
@@ -401,5 +402,79 @@ describe('recalculateSchedules', () => {
 
   it('lịch rỗng trả về mảng rỗng', () => {
     expect(recalculateSchedules([], hopDong)).toEqual([]);
+  });
+});
+
+describe('trả trước hạn trên kỳ ĐÃ thanh toán', () => {
+  const hopDongHM = {
+    Id: 1, CustomerId: 1, ContractNumber: 'HĐTD-01/GNN-01', ContractType: 0,
+    LoanAmount: 3_800_000_000, InterestRate: 0.085,
+    LoanMethod: 'Hạn mức tín dụng',
+    PrincipalRepaymentMethod: 'Trả đều hàng tháng',
+    DisbursementDate: '2025-08-25',
+  } as any;
+
+  const lich240 = () => Array.from({ length: 12 }, (_, i) => ({
+    Id: i + 1, ContractId: 1, PeriodNumber: i + 1,
+    DueDate: `2026-${String(i + 1).padStart(2, '0')}-15`,
+    PrincipalAmount: 0, InterestAmount: 0, TotalAmount: 0,
+    IsPaid: i < 10,
+  } as RepaymentSchedule));
+
+  it('GHI NHẬN tiền trả trước hạn kể cả khi kỳ đã tất toán', () => {
+    // Tình huống thật (LÊ VĂN HẬU): kỳ #10 vừa "Đã TT" vừa có trả trước
+    // 900 triệu. Bản cũ bỏ qua hoàn toàn -> gốc kỳ đó bằng 0.
+    const l = lich240();
+    l[9] = { ...l[9], PrepaidPrincipalAmount: 900_000_000 };
+    const r = recalculateSchedules(l, hopDongHM);
+    expect(r[9].PrincipalAmount).toBe(900_000_000);
+  });
+
+  it('dư nợ GIẢM đúng bằng số tiền trả trước hạn', () => {
+    const l = lich240();
+    l[9] = { ...l[9], PrepaidPrincipalAmount: 900_000_000 };
+    const r = recalculateSchedules(l, hopDongHM);
+    expect(computeOutstandingBalance(r, hopDongHM)).toBe(2_900_000_000);
+  });
+});
+
+describe('computeOutstandingBalance', () => {
+  const hd = {
+    Id: 1, CustomerId: 1, ContractNumber: 'A/GNN-01', ContractType: 0,
+    LoanAmount: 100_000_000,
+  } as any;
+
+  const ky = (o: Partial<RepaymentSchedule>): RepaymentSchedule =>
+    ({ Id: 1, ContractId: 1, PeriodNumber: 1, DueDate: '2026-01-15',
+       PrincipalAmount: 0, InterestAmount: 0, TotalAmount: 0, IsPaid: false, ...o } as RepaymentSchedule);
+
+  it('trừ gốc của các kỳ đã thanh toán', () => {
+    expect(computeOutstandingBalance(
+      [ky({ IsPaid: true, PrincipalAmount: 30_000_000 }), ky({})], hd
+    )).toBe(70_000_000);
+  });
+
+  it('trừ cả tiền trả trước hạn ghi trên kỳ CHƯA thanh toán', () => {
+    // Bản cũ bỏ qua trường hợp này nên dư nợ không đổi
+    expect(computeOutstandingBalance(
+      [ky({ PrepaidPrincipalAmount: 20_000_000 })], hd
+    )).toBe(80_000_000);
+  });
+
+  it('trừ cả phần thực thu trên kỳ chưa tất toán', () => {
+    expect(computeOutstandingBalance(
+      [ky({ ActualPaidPrincipal: 10_000_000, PrepaidPrincipalAmount: 5_000_000 })], hd
+    )).toBe(85_000_000);
+  });
+
+  it('không âm khi đã trả vượt', () => {
+    expect(computeOutstandingBalance(
+      [ky({ IsPaid: true, PrincipalAmount: 150_000_000 })], hd
+    )).toBe(0);
+  });
+
+  it('chưa có lịch thì lấy dư nợ trên hợp đồng', () => {
+    expect(computeOutstandingBalance([], { ...hd, CurrentBalance: 77_000_000 })).toBe(77_000_000);
+    expect(computeOutstandingBalance(undefined, hd)).toBe(100_000_000);
   });
 });

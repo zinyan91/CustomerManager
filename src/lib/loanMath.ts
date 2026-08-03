@@ -347,11 +347,25 @@ export function recalculateSchedules(
     let principalInPeriod = 0;
 
     if (s.IsPaid) {
-      const recordedP =
+      // Tiền trả trước hạn phải được cộng vào KỂ CẢ khi kỳ đã thanh toán.
+      // Bản cũ bỏ qua PrepaidPrincipalAmount ở nhánh này, nên khoản trả
+      // trước ghi trên một kỳ đã tất toán bị mất trắng: gốc ghi nhận bằng 0
+      // và dư nợ không giảm.
+      const base =
         s.ActualPaidPrincipal !== undefined && s.ActualPaidPrincipal !== null && s.ActualPaidPrincipal > 0
           ? s.ActualPaidPrincipal
           : expectedNormalPrincipal;
+      const recordedP = base + (s.PrepaidPrincipalAmount ?? 0);
       principalInPeriod = Math.min(currentBalance, recordedP);
+
+      // Trả trước hạn làm giảm gốc phải trả các kỳ còn lại
+      if ((s.PrepaidPrincipalAmount ?? 0) > 0 && !isBullet) {
+        const remainingPeriods = totalPeriods - periodNum;
+        if (remainingPeriods > 0) {
+          const balAfterPrepay = Math.max(0, currentBalance - principalInPeriod);
+          baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingPeriods, '1k');
+        }
+      }
     } else if (s.ActualPaidPrincipal && s.ActualPaidPrincipal > 0) {
       const recordedP = s.ActualPaidPrincipal + (s.PrepaidPrincipalAmount ?? 0);
       principalInPeriod = Math.min(currentBalance, recordedP);
@@ -394,4 +408,35 @@ export function recalculateSchedules(
   }
 
   return result;
+}
+
+/**
+ * Dư nợ gốc còn lại của một khoản vay.
+ *
+ * Gốc đã thu bao gồm:
+ *   - Kỳ ĐÃ thanh toán  : PrincipalAmount (đã gồm cả tiền trả trước hạn
+ *                          sau khi chạy qua recalculateSchedules)
+ *   - Kỳ CHƯA thanh toán: phần thực thu và tiền trả trước hạn ghi trên kỳ
+ *
+ * Bản cũ chỉ cộng PrincipalAmount của các kỳ đã thanh toán, nên tiền trả
+ * trước hạn ghi trên kỳ chưa tất toán không làm giảm dư nợ hiển thị.
+ */
+export function computeOutstandingBalance(
+  schedules: RepaymentSchedule[] | undefined,
+  contract: LoanContract
+): number {
+  const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
+  if (!schedules || schedules.length === 0) {
+    return contract.CurrentBalance ?? loanAmt;
+  }
+
+  let repaid = 0;
+  for (const s of schedules) {
+    if (s.IsPaid) {
+      repaid += s.PrincipalAmount || 0;
+    } else {
+      repaid += (s.ActualPaidPrincipal ?? 0) + (s.PrepaidPrincipalAmount ?? 0);
+    }
+  }
+  return Math.max(0, loanAmt - repaid);
 }

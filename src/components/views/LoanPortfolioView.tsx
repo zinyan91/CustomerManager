@@ -8,7 +8,7 @@ import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRa
 import {
   addMonthsToDate, parseKunnTenorMonths, parseDateParts,
   generateSchedule, calculateOverdueDaysFromDates,
-  getAutoDebtGroupInfo, recalculateSchedules
+  getAutoDebtGroupInfo, recalculateSchedules, computeOutstandingBalance
 } from '../../lib/loanMath';
 import { getEffectiveLtv } from '../../lib/collateralMath';
 import { computeCreditLimit, checkCollateralCapacity } from '../../lib/creditLimit';
@@ -943,14 +943,8 @@ export const LoanPortfolioView: React.FC = () => {
     return Array.from(map.values());
   }, [contracts]);
 
-  const getEffectiveBalanceForContract = (c: LoanContract) => {
-    const schs = allSchedulesMap[c.Id] || [];
-    if (schs.length > 0) {
-      const paidP = schs.filter(s => s.IsPaid).reduce((sum, s) => sum + (s.PrincipalAmount || 0), 0);
-      return Math.max(0, (c.LoanAmount || c.ContractAmount || 0) - paidP);
-    }
-    return c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0;
-  };
+  const getEffectiveBalanceForContract = (c: LoanContract) =>
+    computeOutstandingBalance(allSchedulesMap[c.Id], c);
 
   // Lọc danh sách KUNN theo bộ lọc Master HĐTD được chọn
   const filteredContracts = useMemo(() => {

@@ -126,7 +126,6 @@ function exportToWordDoc(filename: string, docHtml: string) {
     </html>
   `;
 
-  // UTF-8 BOM '\uFEFF' ensures Microsoft Word parses Vietnamese Unicode correctly without garbled fonts
   const blob = new Blob(['\uFEFF' + wordDocumentHtml], { type: 'application/msword;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -206,7 +205,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
 }) => {
   return (
     <div className={`${styles.containerCardBg} rounded-2xl border overflow-hidden shadow-xl`}>
-      {/* Header Toolbar */}
+
       <div className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${isLight ? 'bg-slate-100 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
         <div>
           <h2 className="font-bold text-sm text-sky-600 dark:text-sky-400 uppercase tracking-wider">{docTitle}</h2>
@@ -231,9 +230,8 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
         </div>
       </div>
 
-      {/* Preview Sheet Container (A4 Page simulation) */}
       <div className="p-3 sm:p-4 overflow-x-auto bg-slate-200/80 dark:bg-slate-950 flex justify-center">
-        {/* Scoped CSS for Document Preview on screen */}
+
         <style>{`
           .a4-sheet-container {
             font-family: 'Times New Roman', Times, serif !important;

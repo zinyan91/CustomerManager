@@ -35,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
       isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-800 text-slate-100'
     }`}>
       <div className="flex items-center space-x-2.5 md:space-x-3">
-        {/* Mobile Hamburger Button */}
+
         <button
           type="button"
           onClick={onToggleMobileMenu}
@@ -85,7 +85,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
           )}
         </button>
 
-        {/* Live Status Indicator */}
         <div className={`flex items-center space-x-1.5 px-2.5 md:px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
           isOnline === false
             ? 'bg-red-500/10 border-red-500/30 text-red-500'
@@ -110,7 +109,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
           )}
         </div>
 
-        {/* Người dùng đang đăng nhập */}
         <div className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border ${
           isAdmin
             ? isLight

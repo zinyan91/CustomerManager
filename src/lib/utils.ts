@@ -33,16 +33,11 @@ export interface ParsedDate {
   day: number;
 }
 
-/**
- * Robust date string parser.
- * Handles ISO (YYYY-MM-DD), VN (DD/MM/YYYY), US (MM/DD/YYYY), or ISO timestamps.
- */
 export function parseAnyDate(v?: string | null): ParsedDate | null {
   if (!v) return null;
   const str = String(v).trim().split('T')[0].split(' ')[0];
   if (!str || str === '—') return null;
 
-  // 1. YYYY-MM-DD or YYYY/MM/DD
   let match = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
   if (match) {
     const year = parseInt(match[1], 10);
@@ -53,7 +48,6 @@ export function parseAnyDate(v?: string | null): ParsedDate | null {
     }
   }
 
-  // 2. DD/MM/YYYY or MM/DD/YYYY
   match = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
   if (match) {
     const n1 = parseInt(match[1], 10);
@@ -61,20 +55,19 @@ export function parseAnyDate(v?: string | null): ParsedDate | null {
     const year = parseInt(match[3], 10);
 
     if (n1 > 12 && n2 <= 12) {
-      // n1 MUST be Day, n2 MUST be Month (DD/MM/YYYY)
+
       return { year, month: n2, day: n1 };
     }
     if (n2 > 12 && n1 <= 12) {
-      // n2 MUST be Day, n1 MUST be Month (MM/DD/YYYY)
+
       return { year, month: n1, day: n2 };
     }
     if (n1 <= 12 && n2 <= 12) {
-      // Default n1=Day, n2=Month (DD/MM/YYYY)
+
       return { year, month: n2, day: n1 };
     }
   }
 
-  // 3. Fallback standard Date parse
   const d = new Date(str);
   if (!isNaN(d.getTime())) {
     return {
@@ -87,10 +80,6 @@ export function parseAnyDate(v?: string | null): ParsedDate | null {
   return null;
 }
 
-/**
- * Format a YYYY-MM-DD (or ISO datetime) string according to the requested or stored format.
- * Returns '—' if input is null / undefined / empty.
- */
 export function fmtDate(
   v?: string | null,
   format?: 'dd/mm/yyyy' | 'mm/dd/yyyy' | 'yyyy-mm-dd'
@@ -119,7 +108,6 @@ import type { RateAdjustmentHistoryItem, LoanContract } from '../types';
 export function getContractRateHistory(c?: LoanContract | null): RateAdjustmentHistoryItem[] {
   if (!c) return [];
 
-  // 1. Check dedicated RateHistory column first (JSONB or JSON string)
   if (c.RateHistory) {
     if (Array.isArray(c.RateHistory)) {
       return c.RateHistory;
@@ -132,9 +120,8 @@ export function getContractRateHistory(c?: LoanContract | null): RateAdjustmentH
     }
   }
 
-  // 2. Fallback to Note field (for legacy records)
   if (c.Note) {
-    // Try encoded format
+
     const encodedMatch = c.Note.match(/\[RATE_HISTORY:([^\]]+)\]/);
     if (encodedMatch && encodedMatch[1]) {
       try {
@@ -144,7 +131,6 @@ export function getContractRateHistory(c?: LoanContract | null): RateAdjustmentH
       } catch {}
     }
 
-    // Fallback for previous unencoded format
     const rawMatch = c.Note.match(/\[RATE_HISTORY:([\s\S]*?)\]\]/) || c.Note.match(/\[RATE_HISTORY:([\s\S]*?)\]/);
     if (rawMatch && rawMatch[1]) {
       try {
@@ -183,18 +169,6 @@ export function getEffectiveActiveRate(c?: LoanContract | null, targetDateStr?: 
   return c.InterestRate || c.NormalRate || c.PreferentialRate || c.BaseRate || 0.085;
 }
 
-/**
- * Số HĐTD gốc của một KUNN.
- *
- * Lưu ý: KHÔNG đọc từ HdtdDueDate. Ở thiết kế cũ cột đó từng được mượn
- * để chứa số hợp đồng, nhưng nay nó là timestamp with time zone và luôn
- * NULL. Giữ lại nhánh đó là quả mìn: PostgREST trả timestamptz dưới dạng
- * "2026-05-28T00:00:00+00:00", không khớp mẫu YYYY-MM-DD, nên hàm sẽ trả
- * về nguyên dấu thời gian làm số hợp đồng và phá vỡ toàn bộ gom nhóm
- * Master HĐTD trên Dashboard, KunnTable và tab lọc.
- *
- * Số HĐTD thật nằm ở tiền tố của ContractNumber, dạng "HD123/GNN-01".
- */
 export function getMasterHdtdNumber(c?: LoanContract | null): string {
   if (!c) return '';
   if (c.Note?.includes('HĐTD:')) {

@@ -8,7 +8,7 @@ import {
   checkPurpose,
   checkGrace,
   purposeLabel,
-} from './loanProductRules';
+} from '../loanProductRules';
 
 describe('Hạn mức tín dụng — vay ngắn hạn sản xuất kinh doanh', () => {
   const M = 'Hạn mức tín dụng';
@@ -34,7 +34,7 @@ describe('Hạn mức tín dụng — vay ngắn hạn sản xuất kinh doanh',
   it('kỳ hạn 12 và 24 tháng là hợp lệ', () => {
     expect(checkTenor(M, 12).ok).toBe(true);
     expect(checkTenor(M, 24).ok).toBe(true);
-    expect(checkTenor(M, 18).ok).toBe(true); // trong khoảng
+    expect(checkTenor(M, 18).ok).toBe(true);
   });
 
   it('cảnh báo khi kỳ hạn ngoài 12–24 tháng', () => {
@@ -80,9 +80,9 @@ describe('Cho vay từng lần — vay dài hạn phục vụ đời sống', ()
   });
 
   it('kỳ hạn từ 5 năm đến 30 năm là hợp lệ', () => {
-    expect(checkTenor(M, 60).ok).toBe(true);   // 5 năm
-    expect(checkTenor(M, 240).ok).toBe(true);  // 20 năm
-    expect(checkTenor(M, 360).ok).toBe(true);  // 30 năm
+    expect(checkTenor(M, 60).ok).toBe(true);
+    expect(checkTenor(M, 240).ok).toBe(true);
+    expect(checkTenor(M, 360).ok).toBe(true);
   });
 
   it('cảnh báo khi ngắn hơn 5 năm hoặc dài hơn 30 năm', () => {

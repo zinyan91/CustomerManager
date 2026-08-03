@@ -56,7 +56,6 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
         <span>TRA CỨU THÔNG TIN KHOẢN VAY KHÁCH HÀNG</span>
       </div>
 
-      {/* Quick-pick dropdown */}
       <div className="mb-3 relative">
         <label className={`block mb-1 text-[11px] uppercase tracking-wide flex items-center justify-between ${isLight ? 'text-slate-700 font-bold' : 'text-slate-300'}`}>
           <span>⚡ CHỌN KHÁCH HÀNG TỪ DANH SÁCH</span>

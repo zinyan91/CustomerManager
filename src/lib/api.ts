@@ -30,7 +30,6 @@ export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Cust
     throw new Error('Họ tên Khách hàng là bắt buộc!');
   }
 
-  // Duplicate CIF validation check
   const { data: cifCheck } = await supabase
     .from('Customers')
     .select('Id, FullName, CifKh')
@@ -41,7 +40,6 @@ export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Cust
     throw new Error(`Mã CIF "${cif}" đã tồn tại trên hệ thống (thuộc KH: ${duplicateCif.FullName})!`);
   }
 
-  // Duplicate CCCD/CMND validation check
   if (nationalId) {
     const { data: idCheck } = await supabase
       .from('Customers')
@@ -55,12 +53,9 @@ export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Cust
   }
 
   if (!isUpdate) {
-    // Id do database tự cấp qua sequence. Không gửi kèm — client không thể
-    // biết Id lớn nhất thật sự vì RLS chỉ cho thấy phần dữ liệu của mình.
+
     delete customer.Id;
 
-    // Gán banker phụ trách là người đang đăng nhập. Bắt buộc: policy INSERT
-    // của RLS yêu cầu OwnerId = auth.uid() (trừ admin).
     if (!customer.OwnerId) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -122,7 +117,6 @@ export async function saveCollateralAPI(collateral: Partial<Collateral>): Promis
     throw new Error('Khách hàng chủ sở hữu là bắt buộc!');
   }
 
-  // Duplicate AssetCode check
   if (assetCode) {
     const { data: codeCheck } = await supabase
       .from('Collaterals')
@@ -136,13 +130,11 @@ export async function saveCollateralAPI(collateral: Partial<Collateral>): Promis
   }
 
   if (!isUpdate) {
-    delete collateral.Id; // Id do database tự cấp qua sequence
+    delete collateral.Id;
   }
 
   collateral.AssetCode = assetCode || null;
-  // Giữ nguyên LTV = 0 (tài sản hạn chế nhận). Trước đây dùng `|| 70` nên
-  // số 0 bị coi là trống và bị thay bằng 70 — biến tài sản không được nhận
-  // làm bảo đảm thành tài sản cho vay được.
+
   collateral.LtvPercent =
     (collateral.LtvPercent !== undefined && collateral.LtvPercent !== null && !isNaN(collateral.LtvPercent))
       ? collateral.LtvPercent
@@ -159,15 +151,6 @@ export async function saveCollateralAPI(collateral: Partial<Collateral>): Promis
   }
 }
 
-/**
- * Tìm các HĐTD đang thế chấp bằng TSĐB này.
- * Kiểm tra cả cột CollateralId (liên kết đơn) lẫn CollateralIds (chuỗi
- * nhiều mã, dạng "1,5,12").
- *
- * Lưu ý: dưới RLS, banker chỉ thấy được hợp đồng thuộc KH mình phụ trách.
- * Trường hợp TSĐB bị hợp đồng của KH khác tham chiếu chéo sẽ không phát
- * hiện được — hiếm gặp vì TSĐB và HĐTD thường cùng một khách hàng.
- */
 export async function findContractsUsingCollateralAPI(collateralId: number): Promise<LoanContract[]> {
   const { data, error } = await supabase
     .from('LoanContracts')
@@ -178,7 +161,7 @@ export async function findContractsUsingCollateralAPI(collateralId: number): Pro
   return (data || []).filter((c: any) => {
     if (c.CollateralId === collateralId) return true;
     if (!c.CollateralIds) return false;
-    // So khớp từng phần tử, không dùng LIKE để tránh "1" khớp nhầm "10"
+
     return String(c.CollateralIds)
       .split(',')
       .map((s: string) => s.trim())
@@ -187,7 +170,7 @@ export async function findContractsUsingCollateralAPI(collateralId: number): Pro
 }
 
 export async function deleteCollateralAPI(id: number): Promise<void> {
-  // Chặn xoá TSĐB đang bảo đảm cho khoản vay
+
   const linked = await findContractsUsingCollateralAPI(id);
   if (linked.length > 0) {
     const names = linked.map(c => c.ContractNumber || `HĐ #${c.Id}`).join(', ');
@@ -196,8 +179,6 @@ export async function deleteCollateralAPI(id: number): Promise<void> {
     );
   }
 
-  // .select() để biết thực sự có dòng nào bị xoá không. Nếu RLS chặn,
-  // Supabase trả về mảng rỗng mà KHÔNG báo lỗi — phải tự phát hiện.
   const { data, error } = await supabase.from('Collaterals').delete().eq('Id', id).select();
   if (error) throw error;
   if (!data || data.length === 0) {
@@ -229,19 +210,17 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
     }
   }
 
-  // Clean payload from non-database column fields
   const cleanContract: any = { ...contract };
   delete cleanContract.customer;
   delete cleanContract.collateral;
   delete cleanContract.contractCollaterals;
 
-  // Sanitize HdtdDueDate to prevent PostgreSQL date format errors
   if (cleanContract.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(cleanContract.HdtdDueDate)) {
     delete cleanContract.HdtdDueDate;
   }
 
   if (!isUpdate) {
-    delete cleanContract.Id; // Id do database tự cấp qua sequence
+    delete cleanContract.Id;
   }
 
   cleanContract.ContractNumber = contractNumber;
@@ -249,10 +228,6 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   cleanContract.IsSettled = cleanContract.IsSettled ?? false;
   cleanContract.IsRestructured = cleanContract.IsRestructured ?? false;
 
-  // RateHistory (jsonb), CollateralIds (text), PenaltySurcharge (numeric)
-  // đều đã là cột thật. Nhánh dự phòng nhét chúng vào Note đã được gỡ:
-  // nó khiến dữ liệu nghiệp vụ nằm trong ô ghi chú, không truy vấn được
-  // và không kiểm toán được.
   if (isUpdate) {
     const { data, error } = await supabase
       .from('LoanContracts')
@@ -306,14 +281,8 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
     }
   }
 
-  // Tách bỏ customer (object join, không phải cột) và Limit (tên cũ của CreditLimit)
   const { customer: _customer, Limit, ...dbPayload } = card as any;
 
-  // IssuanceType và CollateralId nay ghi thẳng vào cột riêng. Trước đây
-  // chúng còn được nhét kèm vào Note vì cột IssuanceType là kiểu integer
-  // nên mọi lần lưu đều lỗi; nhánh catch xoá cả hai trường rồi lưu lại,
-  // khiến giao diện báo thành công trong khi dữ liệu đã mất.
-  // Migration 06 đã đổi cột sang text.
   const cardData: any = {
     CustomerId: Number(dbPayload.CustomerId),
     CardNumber: cardNumber,
@@ -335,7 +304,7 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
     if (error) throw error;
     return data;
   } else {
-    // Id do database tự cấp qua sequence — cardData vốn không mang Id
+
     const { data, error } = await supabase.from('CreditCards').insert([cardData]).select().single();
     if (error) throw error;
     return data;
@@ -393,8 +362,7 @@ export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<Repayment
     const { error: upsertErr } = await supabase.from('RepaymentSchedules').upsert(withId, { onConflict: 'Id' });
     if (upsertErr) {
       console.error('bulkSaveRepaymentSchedulesAPI upsert error:', upsertErr);
-      // Dự phòng: cập nhật từng kỳ. Lỗi phải được báo lên, không nuốt —
-      // lịch trả nợ lưu thiếu mà giao diện báo thành công là sai nghiêm trọng.
+
       for (const s of withId) {
         const { error } = await supabase.from('RepaymentSchedules').update(s).eq('Id', s.Id);
         if (error) throw error;
@@ -403,7 +371,7 @@ export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<Repayment
   }
 
   if (withoutId.length > 0) {
-    // Bỏ Id để database tự cấp qua sequence
+
     const cleanWithoutId = withoutId.map(({ Id: _Id, ...rest }) => rest);
     const { error: insertErr } = await supabase.from('RepaymentSchedules').insert(cleanWithoutId);
     if (insertErr) throw insertErr;
@@ -420,9 +388,6 @@ export async function updateRepaymentScheduleAPI(schedule: Partial<RepaymentSche
 
   const cleanPayload: any = { ...schedule };
 
-  // Cả 5 cột OverdueDays / OverdueInterestAmount / ActualPaidPrincipal /
-  // ActualPaidInterest / PrepaidPrincipalAmount đều đã tồn tại thật.
-  // Nhánh dự phòng nhét số liệu thu nợ vào Note đã được gỡ.
   const { data, error } = await supabase
     .from('RepaymentSchedules')
     .update(cleanPayload)

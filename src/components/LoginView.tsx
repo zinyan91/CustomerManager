@@ -25,7 +25,7 @@ export const LoginView: React.FC = () => {
     setSubmitting(true);
     try {
       await signIn(email, password);
-      // Không cần điều hướng: AuthProvider phát session mới và App tự render lại.
+
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Đăng nhập thất bại.');
     } finally {

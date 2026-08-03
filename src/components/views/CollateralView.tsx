@@ -21,12 +21,10 @@ export const CollateralView: React.FC = () => {
   const [selectedCollateral, setSelectedCollateral] = useState<Collateral | null>(null);
   const [formCollapsed, setFormCollapsed] = useState(false);
 
-  // Search Filters
   const [searchCif, setSearchCif] = useState('');
   const [searchOwnerName, setSearchOwnerName] = useState('');
   const [searchAssetCode, setSearchAssetCode] = useState('');
 
-  // Form Inputs
   const [inputCustomerId, setInputCustomerId] = useState<number | ''>('');
   const [inputAssetCode, setInputAssetCode] = useState('');
   const [inputAssetType, setInputAssetType] = useState('BĐS - Loại 1');
@@ -46,7 +44,6 @@ export const CollateralView: React.FC = () => {
     fetchData();
   }, []);
 
-  // Auto-calculate Appraisal Expiry Date
   useEffect(() => {
     if (inputAppraisalDate && inputAppraisalTenorMonths) {
       const parsed = parseAnyDate(inputAppraisalDate);
@@ -62,9 +59,6 @@ export const CollateralView: React.FC = () => {
     }
   }, [inputAppraisalDate, inputAppraisalTenorMonths]);
 
-  // LTV mặc định theo phân loại tài sản — dùng chung một bảng ánh xạ với
-  // tầng lưu và màn hình khoản vay (trước đây mỗi nơi một bản, Loại 3 có
-  // chỗ ghi 60% có chỗ ghi 50%)
   useEffect(() => {
     setInputLtvPercent(String(defaultLtvForAssetType(inputAssetType)));
   }, [inputAssetType]);
@@ -87,7 +81,7 @@ export const CollateralView: React.FC = () => {
 
   const showNotify = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
-    // Thông báo lỗi hiển thị lâu hơn: nội dung có thể liệt kê nhiều số hợp đồng
+
     setTimeout(() => setNotification(null), type === 'error' ? 8000 : 4000);
   };
 
@@ -134,7 +128,7 @@ export const CollateralView: React.FC = () => {
     try {
       await deleteCollateralAPI(c.Id);
       showNotify('success', 'Đã XOÁ thành công TSBĐ!');
-      // Dọn form nếu đang mở đúng TSĐB vừa xoá
+
       if (selectedCollateral?.Id === c.Id) handleResetForm();
       await fetchData();
     } catch (err: any) {
@@ -156,9 +150,6 @@ export const CollateralView: React.FC = () => {
       return;
     }
 
-    // Tài sản hạn chế nhận: LTV chính sách là 0%. Gán LTV > 0 là trường hợp
-    // NGOẠI LỆ, phải qua phê duyệt — buộc người nhập xác nhận có ý thức thay
-    // vì để hệ thống âm thầm cho qua.
     const ltvNum = Number.isNaN(parseFloat(inputLtvPercent))
       ? defaultLtvForAssetType(inputAssetType)
       : parseFloat(inputLtvPercent);
@@ -197,7 +188,7 @@ export const CollateralView: React.FC = () => {
         Address: inputAddress.trim() || null,
         AppraisedValue: valNum,
         Value: valNum,
-        // Không dùng `|| 80`: LTV 0% (tài sản hạn chế nhận) là giá trị hợp lệ
+
         LtvPercent: ltvNum,
         AppraisalDate: inputAppraisalDate || null,
         AppraisalTenorMonths: inputAppraisalTenorMonths || 12,
@@ -215,7 +206,6 @@ export const CollateralView: React.FC = () => {
     }
   };
 
-  // Filtered Collaterals
   const filteredCollaterals = collaterals.filter(col => {
     const cust = customers.find(c => c.Id === col.CustomerId);
     if (searchCif.trim() && !cust?.CifKh.toLowerCase().includes(searchCif.trim().toLowerCase())) return false;
@@ -232,14 +222,13 @@ export const CollateralView: React.FC = () => {
   const totalPages = Math.ceil(filteredCollaterals.length / COL_PAGE_SIZE) || 1;
   const paginatedCollaterals = filteredCollaterals.slice((colPage - 1) * COL_PAGE_SIZE, colPage * COL_PAGE_SIZE);
 
-  // Xoá dòng cuối của trang cuối sẽ để lại trang trống — kéo về trang hợp lệ
   useEffect(() => {
     if (colPage > totalPages) setColPage(totalPages);
   }, [colPage, totalPages]);
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
-      {/* Toast Notification */}
+
       {notification && (
         <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success'
           ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
@@ -250,7 +239,6 @@ export const CollateralView: React.FC = () => {
         </div>
       )}
 
-      {/* ── SEARCH BAR ── */}
       <CollateralSearchBar
         styles={styles}
         searchCif={searchCif}
@@ -262,7 +250,6 @@ export const CollateralView: React.FC = () => {
         setColPage={setColPage}
       />
 
-      {/* ── COLLATERAL TABLE ── */}
       <CollateralTable
         styles={styles}
         isLight={isLight}
@@ -279,7 +266,6 @@ export const CollateralView: React.FC = () => {
         deletingId={deletingId}
       />
 
-      {/* ── COLLATERAL APPRAISAL FORM ── */}
       <CollateralForm
         styles={styles}
         isLight={isLight}

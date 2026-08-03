@@ -35,7 +35,6 @@ export const SettingsView: React.FC = () => {
       </div>
 
       <form onSubmit={handleSaveSettings} className="space-y-5 text-xs">
-        {/* Theme Settings Mode */}
         <div className="bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 p-5 rounded-2xl space-y-4">
           <h3 className="text-xs font-bold text-sky-400 light:text-sky-600 uppercase flex items-center space-x-2 border-b border-slate-800 light:border-slate-200 pb-2">
             <Sun className="w-4 h-4" />
@@ -79,7 +78,6 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Date Format Settings */}
         <div className="bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 p-5 rounded-2xl space-y-4">
           <h3 className="text-xs font-bold text-purple-400 light:text-purple-600 uppercase flex items-center space-x-2 border-b border-slate-800 light:border-slate-200 pb-2">
             <Calendar className="w-4 h-4" />
@@ -113,7 +111,6 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Formatting Settings */}
         <div className="bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 p-5 rounded-2xl space-y-4">
           <h3 className="text-xs font-bold text-emerald-400 light:text-emerald-600 uppercase flex items-center space-x-2 border-b border-slate-800 light:border-slate-200 pb-2">
             <Sliders className="w-4 h-4" />

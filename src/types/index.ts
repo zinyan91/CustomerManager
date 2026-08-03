@@ -1,6 +1,6 @@
 export interface Customer {
   Id: number;
-  /** Banker phụ trách (auth.users.id). NULL = chỉ admin nhìn thấy. */
+
   OwnerId?: string | null;
   CifKh: string;
   CifKhlq?: string | null;
@@ -59,9 +59,9 @@ export interface LoanContract {
   LoanMethod?: string | null;
 
   ContractAmount?: number;
-  /** Số phê duyệt cấp tín dụng. Các HĐTD cùng mã dùng chung một hạn mức. */
+
   CreditLimitCode?: string | null;
-  /** Hạn mức được duyệt của mã HMTD. Chỉ có ý nghĩa khi có CreditLimitCode. */
+
   CreditLimitAmount?: number | null;
   ContractStartDate?: string | null;
   ContractEndDate?: string | null;

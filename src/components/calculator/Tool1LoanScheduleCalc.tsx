@@ -110,7 +110,6 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   const [repayMethod, setRepayMethod] = useState<'equal_principal' | 'bullet'>('equal_principal');
   const [principalGraceMonths, setPrincipalGraceMonths] = useState<number>(0);
 
-  // PREPAYMENT (TRẢ NỢ TRƯỚC HẠN) STATE
   const [prepaymentAmountStr, setPrepaymentAmountStr] = useState('0');
   const [prepaymentPeriod, setPrepaymentPeriod] = useState<number>(3);
   const [prepaymentMode, setPrepaymentMode] = useState<'reduce_monthly' | 'shorten_tenor'>('reduce_monthly');
@@ -162,7 +161,6 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
         }
       }
 
-      // Prepayment applied at period `prepaymentPeriod`
       let periodPrepay = 0;
       if (prepayAmt > 0 && i === prepaymentPeriod) {
         const remainingAfterNormal = Math.max(0, currentBalance - normalPrincipal);
@@ -186,7 +184,6 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
         prepayment: periodPrepay,
       });
 
-      // Recalculate remaining monthly principal if `reduce_monthly` mode selected after prepayment
       if (periodPrepay > 0 && prepaymentMode === 'reduce_monthly' && repayMethod !== 'bullet') {
         const remainingPeriods = tenorMonths - i;
         if (remainingPeriods > 0 && endingBalance > 0) {
@@ -232,7 +229,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
 
   return (
     <div className="space-y-4">
-      {/* Input Parameters Box */}
+
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4`}>
         <div className="text-xs font-bold text-sky-500 uppercase tracking-wider flex items-center space-x-2 border-b pb-2 border-slate-200 dark:border-slate-800">
           <RefreshCw className="w-4 h-4" />
@@ -307,7 +304,6 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           </div>
         </div>
 
-        {/* Section: TRẢ NỢ TRƯỚC HẠN (PREPAYMENT) */}
         <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20 space-y-3">
           <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center space-x-2 border-b pb-1.5 border-amber-200 dark:border-amber-900/40">
             <span>⚡ CẬP NHẬT TRẢ NỢ TRƯỚC HẠN (TÍNH LẠI GỐC LÃI TỰ ĐỘNG)</span>
@@ -355,7 +351,6 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
         </div>
       </div>
 
-      {/* Schedule Table Box */}
       <div className={`${styles.containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
         <div className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
           <span className="font-bold text-xs uppercase flex items-center space-x-2">

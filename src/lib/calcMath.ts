@@ -1,16 +1,3 @@
-/**
- * Công thức tài chính dùng chung cho các Công cụ tính toán (Tool 1-8).
- *
- * Phần helper ngày tháng được dời nguyên văn từ Tool1/2/3 (trước đây bị
- * lặp lại y hệt ở cả ba file) — GIỮ NGUYÊN hành vi để không làm đổi kết
- * quả các công cụ đang dùng.
- *
- * ⚠️ Lưu ý: diffDays ở đây KHÁC getDaysBetween trong loanMath.ts:
- *   - Hai mốc trùng ngày : ở đây trả 0, loanMath trả 1
- *   - Chuỗi ngày hỏng    : ở đây trả 0, loanMath trả 30
- * Với ngày hợp lệ và khác nhau thì hai bên cho kết quả giống nhau.
- */
-
 export function addMonths(dateStr: string, months: number): string {
   if (!dateStr || !months || isNaN(months) || months <= 0) return '';
   try {
@@ -50,21 +37,12 @@ export function diffDays(startDateStr: string, endDateStr: string): number {
   }
 }
 
-/**
- * Hệ số giá trị hiện tại của dòng tiền đều (annuity).
- * PV = PMT × [1 - (1+r)^(-n)] / r
- */
 export function pvAnnuityFactor(rateMonthly: number, tenorMonths: number): number {
   if (tenorMonths <= 0) return 0;
-  if (rateMonthly <= 0) return tenorMonths; // Lãi suất 0: giá trị hiện tại = số kỳ
+  if (rateMonthly <= 0) return tenorMonths;
   return (1 - Math.pow(1 + rateMonthly, -tenorMonths)) / rateMonthly;
 }
 
-/**
- * Hệ số trả góp đều hàng tháng (EMI).
- * EMI = P × [r(1+r)^n] / [(1+r)^n - 1]
- * Đây là nghịch đảo của pvAnnuityFactor.
- */
 export function emiFactor(rateMonthly: number, tenorMonths: number): number {
   if (tenorMonths <= 0) return 0;
   if (rateMonthly <= 0) return 1 / tenorMonths;
@@ -72,16 +50,11 @@ export function emiFactor(rateMonthly: number, tenorMonths: number): number {
   return (rateMonthly * pow) / (pow - 1);
 }
 
-/** Tiền trả góp đều hàng tháng, làm tròn về đồng. */
 export function emiMonthlyPayment(loanAmount: number, rateMonthly: number, tenorMonths: number): number {
   if (!loanAmount || tenorMonths <= 0) return 0;
   return Math.round(loanAmount * emiFactor(rateMonthly, tenorMonths));
 }
 
-/**
- * Khả năng trả nợ hàng tháng theo DTI: lấy giá trị NHỎ HƠN giữa
- * thu nhập ròng khả dụng và trần DTI.
- */
 export function dtiMaxMonthlyPayment(
   monthlyIncome: number, livingExpense: number, existingDebt: number, maxDtiPercent: number
 ): number {
@@ -90,19 +63,11 @@ export function dtiMaxMonthlyPayment(
   return Math.min(netDisposable, dtiLimit);
 }
 
-/**
- * Lãi suất hiệu lực năm (EAR) từ lãi suất danh nghĩa.
- * EAR = (1 + r/m)^m - 1
- */
 export function effectiveAnnualRate(nominalRateAnnual: number, compoundingFreq: number): number {
   if (compoundingFreq <= 0) return nominalRateAnnual;
   return Math.pow(1 + nominalRateAnnual / compoundingFreq, compoundingFreq) - 1;
 }
 
-/**
- * Quy đổi xấp xỉ lãi suất phẳng sang lãi suất dư nợ giảm dần.
- * r_giảm_dần ≈ (r_phẳng × 2 × n) / (n + 1)
- */
 export function flatToReducingApprox(flatRateAnnual: number, tenorMonths: number): number {
   if (tenorMonths <= 0) return 0;
   return (flatRateAnnual * 2 * tenorMonths) / (tenorMonths + 1);

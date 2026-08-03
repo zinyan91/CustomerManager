@@ -15,7 +15,6 @@ export const DocumentTemplateView: React.FC = () => {
 
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('lease_mb');
 
-  // FORM STATE 1: HỢP ĐỒNG THUÊ MẶT BẰNG
   const [mbContractDate, setMbContractDate] = useState('2026-04-23');
   const [mbPartyAName, setMbPartyAName] = useState('ĐỖ THỊ HIẾU');
   const [mbPartyACccd, setMbPartyACccd] = useState('0791 7802 5859');
@@ -31,7 +30,6 @@ export const DocumentTemplateView: React.FC = () => {
   const [mbMonthlyPrice, setMbMonthlyPrice] = useState('55.000.000');
   const [mbDepositAmount, setMbDepositAmount] = useState('72.000.000');
 
-  // FORM STATE 2: HỢP ĐỒNG THI CÔNG NHÀ Ở DÂN DỤNG
   const [constContractDate, setConstContractDate] = useState('2026-03-18');
   const [constPartyAName, setConstPartyAName] = useState('LÝ THỊ THÙY DUNG');
   const [constPartyACccd, setConstPartyACccd] = useState('0791 7802 5859');
@@ -75,7 +73,6 @@ export const DocumentTemplateView: React.FC = () => {
     ]);
   };
 
-  // FORM STATE 3: HỢP ĐỒNG MUA BÁN HÀNG HÓA
   const [saleContractDate, setSaleContractDate] = useState('2026-04-09');
   const [saleBuyerName, setSaleBuyerName] = useState('LÊ THỊ CẢNH');
   const [saleBuyerAddress, setSaleBuyerAddress] = useState('Kỳ Anh, Hà Tĩnh');
@@ -111,7 +108,6 @@ export const DocumentTemplateView: React.FC = () => {
 
   const totalSaleAmount = saleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
-  // PAYMENT REQUEST STATE (Dynamic Stages + Cash vs Transfer)
   const [payMethodType, setPayMethodType] = useState<'cash' | 'transfer'>('cash');
   const [payCashName, setPayCashName] = useState('PHẠM HỒNG ĐỨC');
   const [payCashCccd, setPayCashCccd] = useState('0720 7700 0901');
@@ -136,7 +132,6 @@ export const DocumentTemplateView: React.FC = () => {
     ]);
   };
 
-  // Generate Document HTML based on active template (EXACT ORIGINAL TEMPLATE TEXT)
   const currentTplInfo = TEMPLATE_LIST.find(t => t.id === selectedTemplate) || TEMPLATE_LIST[0];
 
   const generateDocHtml = () => {
@@ -355,7 +350,7 @@ export const DocumentTemplateView: React.FC = () => {
         </div>
 
         <p class="clause-p">Hôm nay, ngày 9 tháng 4 năm 2026, chúng tôi gồm có:</p>
-        
+
         <p class="font-bold no-indent">BÊN MUA: (Sau đây gọi tắt là Bên A)</p>
         <p class="clause-p">- Họ tên: <strong>${nfc(saleBuyerName)}</strong></p>
         <p class="clause-p">- Địa chỉ: <strong>${nfc(saleBuyerAddress)}</strong></p>
@@ -443,7 +438,6 @@ export const DocumentTemplateView: React.FC = () => {
       `;
     }
 
-    // Unify Payment Requests (payment_request_sale & payment_request_const)
     const isSale = selectedTemplate === 'payment_request_sale';
     const buyerName = isSale ? saleBuyerName : constPartyAName;
     const sellerName = isSale ? saleSellerName : constPartyBName;
@@ -451,7 +445,6 @@ export const DocumentTemplateView: React.FC = () => {
     const totalAmountStr = isSale ? totalSaleAmount.toLocaleString('vi-VN') : constTotalPrice;
     const docTypeTitle = isSale ? 'Hợp đồng mua bán hàng hóa' : 'Hợp đồng thi công nhà ở dân dụng';
 
-    // Build Payment Tranches HTML (aligned & formatted neatly)
     const stagesHtml = payStages.map((st) => {
       let actionText = '';
       if (st.status === 'paid') {
@@ -468,7 +461,6 @@ export const DocumentTemplateView: React.FC = () => {
       `;
     }).join('');
 
-    // Build Beneficiary Info HTML (Line by Line for Cash or Transfer)
     let infoHtml = '';
     if (payMethodType === 'cash') {
       const name = payCashName || sellerName;
@@ -544,7 +536,7 @@ export const DocumentTemplateView: React.FC = () => {
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
-      {/* ── TEMPLATE SELECTOR ── */}
+
       <TemplateSelector
         styles={styles}
         isLight={isLight}
@@ -552,9 +544,7 @@ export const DocumentTemplateView: React.FC = () => {
         setSelectedTemplate={setSelectedTemplate}
       />
 
-      {/* ── 2-COLUMN SIDE-BY-SIDE LAYOUT: FORM LEFT (5 cols), PREVIEW RIGHT (7 cols) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Input Form */}
         <div className="lg:col-span-5 space-y-4">
           <DocumentForm
             styles={styles}
@@ -612,7 +602,6 @@ export const DocumentTemplateView: React.FC = () => {
           />
         </div>
 
-        {/* Right Column: Live Document Preview */}
         <div className="lg:col-span-7">
           <DocumentPreview
             styles={styles}

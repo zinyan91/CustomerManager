@@ -28,8 +28,6 @@ export function App() {
     ? 'bg-slate-100'
     : '';
 
-  // Đang khôi phục session — chưa biết đã đăng nhập hay chưa.
-  // Chặn render để tránh nháy trang đăng nhập với người dùng đã có session.
   if (loading) {
     return (
       <div className={`min-h-screen ${bgClass} flex items-center justify-center`}>

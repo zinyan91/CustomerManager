@@ -11,14 +11,13 @@ interface Tool7Props {
 
 export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = ({ isLight }) => {
   const [loanAmountStr, setLoanAmountStr] = useState('1.000.000.000');
-  const [tenorMonths, setTenorMonths] = useState<number>(60); // 5 năm
+  const [tenorMonths, setTenorMonths] = useState<number>(60);
   const [interestRateAnnualStr, setInterestRateAnnualStr] = useState('10.5');
 
   const loanAmt = parseFloat(loanAmountStr.replace(/\D/g, '')) || 0;
   const rateAnnual = (parseFloat(interestRateAnnualStr) || 0) / 100;
   const rateMonthly = rateAnnual / 12;
 
-  // 1. OPTION 1: Equal Principal (Gốc đều hàng tháng)
   const option1Data = useMemo(() => {
     if (!loanAmt || !tenorMonths) return { month1Payment: 0, lastMonthPayment: 0, totalInterest: 0 };
     const monthlyPrincipal = loanAmt / tenorMonths;
@@ -38,7 +37,6 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = ({ isLight 
     return { month1Payment, lastMonthPayment, totalInterest };
   }, [loanAmt, tenorMonths, rateMonthly]);
 
-  // 2. OPTION 2: Equal Monthly Installment (Niên kim / EMI dư nợ đều)
   const option2Data = useMemo(() => {
     if (!loanAmt || !tenorMonths || rateMonthly <= 0) return { fixedMonthlyPayment: 0, totalInterest: 0 };
     const fixedMonthlyPayment = emiMonthlyPayment(loanAmt, rateMonthly, tenorMonths);
@@ -54,7 +52,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = ({ isLight 
 
   return (
     <div className="space-y-5">
-      {/* Header */}
+
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
         <h2 className="text-sm font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center space-x-2">
           <Layers className="w-5 h-5 text-purple-500" />
@@ -62,7 +60,6 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = ({ isLight 
         </h2>
       </div>
 
-      {/* Input Form */}
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -99,9 +96,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = ({ isLight 
         </div>
       </div>
 
-      {/* COMPARISON CARDS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* OPTION 1: GỐC ĐỀU HÀNG THÁNG */}
         <div className={`${cardBg} rounded-2xl p-4 border border-sky-200 dark:border-sky-900/60 shadow-sm space-y-3`}>
           <div className="flex items-center justify-between border-b border-sky-100 dark:border-sky-900/40 pb-2">
             <span className="font-bold text-xs uppercase text-sky-600 dark:text-sky-400">
@@ -128,7 +123,6 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = ({ isLight 
           </div>
         </div>
 
-        {/* OPTION 2: NIÊN KIM EMI / GỐC LÃI CỐ ĐỊNH */}
         <div className={`${cardBg} rounded-2xl p-4 border border-purple-200 dark:border-purple-900/60 shadow-sm space-y-3`}>
           <div className="flex items-center justify-between border-b border-purple-100 dark:border-purple-900/40 pb-2">
             <span className="font-bold text-xs uppercase text-purple-600 dark:text-purple-400">
@@ -156,7 +150,6 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = ({ isLight 
         </div>
       </div>
 
-      {/* SUMMARY ADVICE */}
       <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 space-y-1 text-xs">
         <div className="flex items-center space-x-1.5 font-bold text-sky-800 dark:text-sky-300">
           <CheckCircle2 className="w-4 h-4 text-sky-500" />

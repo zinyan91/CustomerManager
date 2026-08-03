@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-/* ========================================
-   THEME VARIABLES: DARK MODE (default)
-   ======================================== */
 :root,
 :root.dark {
   --bg-primary: #0f172a;
@@ -19,9 +16,6 @@
   --scrollbar-thumb: #334155;
 }
 
-/* ========================================
-   THEME VARIABLES: LIGHT MODE
-   ======================================== */
 :root.light {
   --bg-primary: #f8fafc;
   --bg-secondary: #f1f5f9;
@@ -37,9 +31,6 @@
   --scrollbar-thumb: #cbd5e1;
 }
 
-/* ========================================
-   BASE STYLES
-   ======================================== */
 body {
   margin: 0;
   background-color: var(--bg-primary);
@@ -51,28 +42,22 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* ========================================
-   LIGHT MODE OVERRIDES (via :root.light)
-   ======================================== */
 :root.light body {
   background-color: #f8fafc;
   color: #0f172a;
 }
 
-/* Light mode: header */
 :root.light header {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
 }
 
-/* Light mode: sidebar */
 :root.light aside,
 :root.light nav {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
 }
 
-/* Light mode: cards / panels */
 :root.light .bg-slate-900,
 :root.light .bg-slate-950 {
   background-color: #ffffff !important;
@@ -82,13 +67,11 @@ body {
   background-color: #f1f5f9 !important;
 }
 
-/* Light mode: borders */
 :root.light .border-slate-800,
 :root.light .border-slate-700 {
   border-color: #e2e8f0 !important;
 }
 
-/* Light mode: text */
 :root.light .text-slate-100,
 :root.light .text-slate-200 {
   color: #0f172a !important;
@@ -103,7 +86,6 @@ body {
   color: #64748b !important;
 }
 
-/* Light mode: inputs and selects */
 :root.light input,
 :root.light select,
 :root.light textarea {
@@ -112,7 +94,6 @@ body {
   border-color: #cbd5e1 !important;
 }
 
-/* Light mode: table headers */
 :root.light thead {
   background-color: #f1f5f9 !important;
 }
@@ -121,19 +102,14 @@ body {
   color: #475569 !important;
 }
 
-/* Light mode: table rows hover */
 :root.light tbody tr:hover {
   background-color: #f1f5f9 !important;
 }
 
-/* Light mode: main content area */
 :root.light main {
   background-color: #f8fafc !important;
 }
 
-/* ========================================
-   CUSTOM SCROLLBARS
-   ======================================== */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

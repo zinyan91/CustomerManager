@@ -2,26 +2,6 @@ import type { LoanContract, Collateral } from '../types';
 import { getMasterHdtdNumber } from './utils';
 import { maxLoanFromCollateral } from './collateralMath';
 
-/**
- * Tính tổng mức cấp tín dụng của một khách hàng.
- *
- * Nghiệp vụ có ba tầng: Phê duyệt HMTD -> HĐTD -> KUNN. Ba trường hợp:
- *
- *   TH1  Một số HĐTD, nhiều KUNN
- *        Các KUNN cùng tiền tố số hợp đồng. Mức cấp chỉ tính MỘT lần,
- *        lấy giá trị lớn nhất trong nhóm.
- *
- *   TH2  Khác số HĐTD, CÙNG một HMTD
- *        Các HĐTD mang cùng CreditLimitCode. Hạn mức chung chỉ tính MỘT
- *        lần, mức cấp riêng của từng hợp đồng KHÔNG được cộng thêm.
- *
- *   TH3  Khác số HĐTD, khác HMTD
- *        Mỗi hợp đồng một hạn mức riêng, cộng lại.
- *
- * Bỏ trống CreditLimitCode thì hợp đồng được xử lý như TH1/TH3 — giữ
- * nguyên hành vi trước khi có tầng hạn mức.
- */
-
 export interface SharedLimitGroup {
   code: string;
   amount: number;
@@ -52,10 +32,9 @@ export function computeCreditLimit(contracts: LoanContract[]): CreditLimitBreakd
     const code = (c.CreditLimitCode || '').trim();
 
     if (code) {
-      // TH2 — hạn mức dùng chung, chỉ tính một lần cho cả mã
+
       const existing = sharedMap.get(code);
-      // Hạn mức được duyệt là nguồn chuẩn; nếu chưa khai thì tạm lấy mức
-      // cấp lớn nhất trong nhóm để không tính thiếu.
+
       const declared = c.CreditLimitAmount ?? 0;
       if (!existing) {
         sharedMap.set(code, {
@@ -71,7 +50,6 @@ export function computeCreditLimit(contracts: LoanContract[]): CreditLimitBreakd
       continue;
     }
 
-    // TH1 / TH3 — gom theo số HĐTD gốc, mức cấp lấy một lần
     const masterNo = getMasterHdtdNumber(c) || c.ContractNumber || '';
     const existing = standaloneMap.get(masterNo);
     if (!existing) {
@@ -95,22 +73,17 @@ export function computeCreditLimit(contracts: LoanContract[]): CreditLimitBreakd
   return { total, shared, standalone };
 }
 
-/* ------------------------------------------------------------------ */
-/* Chốt kiểm soát: tổng mức cấp so với khả năng bảo đảm của tài sản     */
-/* ------------------------------------------------------------------ */
-
 export interface CollateralCapacityCheck {
-  /** Các tài sản cùng bảo đảm cho nhóm hợp đồng này */
+
   collateralIds: number[];
   assetCodes: string[];
-  capacity: number;      // TỔNG hạn mức cho vay tối đa của cả nhóm tài sản
-  granted: number;       // Tổng mức cấp của nhóm hợp đồng, đã gom theo HĐTD và HMTD
+  capacity: number;
+  granted: number;
   exceeded: boolean;
   excessAmount: number;
   contractNumbers: string[];
 }
 
-/** Tách chuỗi "1,5,12" thành [1,5,12]. */
 export function parseCollateralIds(c: LoanContract): number[] {
   const ids = new Set<number>();
   if (c.CollateralId) ids.add(c.CollateralId);
@@ -123,29 +96,12 @@ export function parseCollateralIds(c: LoanContract): number[] {
   return Array.from(ids);
 }
 
-/**
- * Đối chiếu tổng mức cấp với tổng khả năng bảo đảm, theo CỤM LIÊN THÔNG
- * giữa hợp đồng và tài sản.
- *
- * Vì sao phải xét theo cụm thay vì từng tài sản:
- *   - Một hợp đồng thường được bảo đảm bằng NHIỀU tài sản cộng lại. So
- *     mức cấp với từng tài sản riêng lẻ sẽ báo động giả hàng loạt.
- *   - Một tài sản có thể bảo đảm cho nhiều hợp đồng. Nếu xét riêng từng
- *     tài sản thì sức bảo đảm của nó bị tính lặp.
- *
- * Cụm liên thông = tập hợp đồng và tài sản nối với nhau qua quan hệ thế
- * chấp. Trong mỗi cụm, so TỔNG mức cấp với TỔNG hạn mức tối đa.
- *
- * Mức cấp trong cụm được tính bằng computeCreditLimit nên các KUNN cùng
- * một HĐTD (TH1) và các HĐTD cùng mã HMTD (TH2) đều chỉ tính MỘT lần.
- */
 export function checkCollateralCapacity(
   contracts: LoanContract[],
   collaterals: Collateral[]
 ): CollateralCapacityCheck[] {
   const collateralById = new Map(collaterals.map(c => [c.Id, c]));
 
-  // Gộp cụm bằng union-find. Hợp đồng đánh khoá 'c<index>', tài sản 't<id>'.
   const parent = new Map<string, string>();
   const find = (x: string): string => {
     if (!parent.has(x)) parent.set(x, x);
@@ -163,14 +119,13 @@ export function checkCollateralCapacity(
 
   contracts.forEach((c, i) => {
     const colIds = parseCollateralIds(c).filter(id => collateralById.has(id));
-    if (colIds.length === 0) return; // Không có TSĐB thì không thuộc phạm vi chốt này
+    if (colIds.length === 0) return;
     const key = `c${i}`;
     find(key);
     for (const id of colIds) union(key, `t${id}`);
     linkedContracts.push({ key, contract: c, colIds });
   });
 
-  // Gom theo gốc cụm
   const clusters = new Map<string, { contracts: LoanContract[]; colIds: Set<number> }>();
   for (const { key, contract, colIds } of linkedContracts) {
     const root = find(key);

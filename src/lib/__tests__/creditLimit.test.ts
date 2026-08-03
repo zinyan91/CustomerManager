@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { computeCreditLimit, checkCollateralCapacity, parseCollateralIds } from './creditLimit';
-import type { LoanContract, Collateral } from '../types';
+import { computeCreditLimit, checkCollateralCapacity, parseCollateralIds } from '../creditLimit';
+import type { LoanContract, Collateral } from '../../types';
 
 const hd = (o: Partial<LoanContract>): LoanContract => ({
   Id: 0, CustomerId: 1, ContractNumber: '', ContractType: 0, ...o,
@@ -20,7 +20,7 @@ describe('TH1 — một số HĐTD, nhiều KUNN', () => {
 
 describe('TH3 — khác số HĐTD, khác HMTD', () => {
   it('cộng mức cấp của từng hợp đồng', () => {
-    // Đúng tình huống thật đã gặp: 960 + 500 = 1.460
+
     const r = computeCreditLimit([
       hd({ ContractNumber: '2002/HĐTD_1/9736290/GNN-01', ContractAmount: 960_000_000 }),
       hd({ ContractNumber: '2002/HĐTD_2/9736290/GNN-01', ContractAmount: 500_000_000 }),
@@ -42,7 +42,7 @@ describe('TH2 — khác số HĐTD, CÙNG một HMTD', () => {
         CreditLimitCode: 'PD-2026-001', CreditLimitAmount: 1_460_000_000,
       }),
     ]);
-    // KHÔNG phải 2.920.000.000 — đây chính là lỗi cộng đôi cần tránh
+
     expect(r.total).toBe(1_460_000_000);
     expect(r.shared).toHaveLength(1);
     expect(r.shared[0].contractNumbers).toHaveLength(2);
@@ -110,7 +110,7 @@ describe('checkCollateralCapacity', () => {
   const tsdb = { Id: 6, CustomerId: 1, AppraisedValue: 2_140_000_000, LtvPercent: 70 } as Collateral;
 
   it('phát hiện tổng mức cấp VƯỢT khả năng bảo đảm', () => {
-    // Đúng tình huống đã gặp: hai HĐTD mỗi cái ghi 1.460 trên cùng một TSĐB
+
     const r = checkCollateralCapacity([
       hd({ ContractNumber: 'A/GNN-01', ContractAmount: 1_460_000_000, CollateralIds: '6' }),
       hd({ ContractNumber: 'B/GNN-01', ContractAmount: 1_460_000_000, CollateralIds: '6' }),
@@ -124,7 +124,7 @@ describe('checkCollateralCapacity', () => {
   });
 
   it('không báo động khi tổng mức cấp nằm trong khả năng bảo đảm', () => {
-    // Sau khi sửa dữ liệu: 960 + 500 = 1.460 < 1.498
+
     const r = checkCollateralCapacity([
       hd({ ContractNumber: 'A/GNN-01', ContractAmount: 960_000_000, CollateralIds: '6' }),
       hd({ ContractNumber: 'B/GNN-01', ContractAmount: 500_000_000, CollateralIds: '6' }),
@@ -143,9 +143,7 @@ describe('checkCollateralCapacity', () => {
   });
 
   it('KHÔNG báo động giả cho TH1 — nhiều KUNN của cùng một HĐTD', () => {
-    // Tình huống thật (NGÔ NHỊ ĐẠT): một HĐTD hạn mức 7 tỷ, 7 KUNN mỗi cái
-    // 1 tỷ. ContractAmount lặp trên từng dòng KUNN là thiết kế đúng —
-    // KHÔNG được cộng thành 49 tỷ.
+
     const ts16 = { Id: 16, CustomerId: 1, AppraisedValue: 9_112_000_000, LtvPercent: 80 } as Collateral;
     const kunns = Array.from({ length: 7 }, (_, i) =>
       hd({
@@ -162,8 +160,7 @@ describe('checkCollateralCapacity', () => {
   });
 
   it('KHÔNG báo động giả khi một hợp đồng được bảo đảm bằng NHIỀU tài sản', () => {
-    // Tình huống thật (ĐOÀN THỊ TUYỂN): HĐTD 4,5 tỷ thế chấp hai tài sản.
-    // Xét riêng từng tài sản thì cả hai đều "vượt"; xét tổng thì thừa sức.
+
     const ts11 = { Id: 11, CustomerId: 1, AppraisedValue: 2_714_000_000, LtvPercent: 80 } as Collateral;
     const ts12 = { Id: 12, CustomerId: 1, AppraisedValue: 5_095_000_000, LtvPercent: 80 } as Collateral;
     const r = checkCollateralCapacity([
@@ -171,16 +168,16 @@ describe('checkCollateralCapacity', () => {
       hd({ ContractNumber: '2002/HĐTD/9632203/GNN-16', ContractAmount: 4_500_000_000, CollateralIds: '11,12' }),
     ], [ts11, ts12]);
 
-    expect(r).toHaveLength(1);                       // Một cụm, không phải hai dòng
-    expect(r[0].capacity).toBe(6_247_200_000);       // 2.171,2 + 4.076
-    expect(r[0].granted).toBe(4_500_000_000);        // Cùng HĐTD nên tính một lần
+    expect(r).toHaveLength(1);
+    expect(r[0].capacity).toBe(6_247_200_000);
+    expect(r[0].granted).toBe(4_500_000_000);
     expect(r[0].exceeded).toBe(false);
   });
 
   it('gộp thành một cụm khi các hợp đồng dùng chung tài sản', () => {
     const tsA = { Id: 1, CustomerId: 1, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
     const tsB = { Id: 2, CustomerId: 1, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
-    // HĐ_X dùng tài sản 1; HĐ_Y dùng tài sản 1 và 2 -> cả hai thuộc một cụm
+
     const r = checkCollateralCapacity([
       hd({ ContractNumber: 'X/GNN-01', ContractAmount: 700_000_000, CollateralIds: '1' }),
       hd({ ContractNumber: 'Y/GNN-01', ContractAmount: 700_000_000, CollateralIds: '1,2' }),
@@ -195,8 +192,7 @@ describe('checkCollateralCapacity', () => {
   it('các cụm không liên quan được xét riêng', () => {
     const tsA = { Id: 1, CustomerId: 1, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
     const tsB = { Id: 2, CustomerId: 1, AppraisedValue: 1_000_000_000, LtvPercent: 80 } as Collateral;
-    // Mỗi tài sản đỡ được 800tr. Cụm X trong hạn mức, cụm Y vượt —
-    // chứng minh hai cụm được xét độc lập, không bù trừ cho nhau.
+
     const r = checkCollateralCapacity([
       hd({ ContractNumber: 'X/GNN-01', ContractAmount: 500_000_000, CollateralIds: '1' }),
       hd({ ContractNumber: 'Y/GNN-01', ContractAmount: 900_000_000, CollateralIds: '2' }),

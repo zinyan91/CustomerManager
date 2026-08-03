@@ -14,12 +14,10 @@ export const CustomerListView: React.FC = () => {
   const [detailCustomer, setDetailCustomer] = useState<Customer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Search Filters
   const [searchCif, setSearchCif] = useState('');
   const [searchName, setSearchName] = useState('');
   const [searchNationalId, setSearchNationalId] = useState('');
 
-  // Form Inputs
   const [inputCif, setInputCif] = useState('');
   const [inputFullName, setInputFullName] = useState('');
   const [inputNationalId, setInputNationalId] = useState('');
@@ -28,8 +26,7 @@ export const CustomerListView: React.FC = () => {
   const [inputAddress, setInputAddress] = useState('');
   const [inputAccountNumber, setInputAccountNumber] = useState('');
   const [inputMaritalStatus, setInputMaritalStatus] = useState('Độc thân');
-  
-  // Expanded KHLQ & Guarantor fields
+
   const [inputCifKhlq, setInputCifKhlq] = useState('');
   const [inputKhlqRelationship, setInputKhlqRelationship] = useState('Không có KHLQ');
   const [inputSpouseName, setInputSpouseName] = useState('');
@@ -240,7 +237,6 @@ export const CustomerListView: React.FC = () => {
     reader.readAsText(file);
   };
 
-  // Dynamic Theme Styling
   const containerCardBg = isLight
     ? 'bg-white border-slate-200 text-slate-900 shadow-sm'
     : 'bg-slate-900 border-slate-800 text-slate-100 shadow-xl';
@@ -264,7 +260,6 @@ export const CustomerListView: React.FC = () => {
         </div>
       )}
 
-      {/* Top Bar Filters */}
       <div className={`${containerCardBg} p-4 rounded-2xl border space-y-3`}>
         <div className="text-xs font-bold text-sky-500 uppercase tracking-wider">
           TRA CỨU & QUẢN LÝ DANH SÁCH KHÁCH HÀNG (SẮP XẾP A - Z)
@@ -298,7 +293,7 @@ export const CustomerListView: React.FC = () => {
             <Search className="w-3.5 h-3.5" />
             <span>TÌM KIẾM</span>
           </button>
-          
+
           <div className="flex items-center space-x-2">
             <label className={`flex-1 border font-medium text-xs py-2 px-2 rounded-xl flex items-center justify-center space-x-1 cursor-pointer transition-colors ${
               isLight ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800' : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
@@ -322,7 +317,6 @@ export const CustomerListView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Customer List Table (lg:col-span-7) */}
         <div className={`${containerCardBg} lg:col-span-7 rounded-2xl overflow-hidden border flex flex-col h-[calc(100vh-215px)]`}>
           <div className={`p-3 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/50 border-slate-800'}`}>
             <span className="text-xs font-bold">
@@ -409,7 +403,6 @@ export const CustomerListView: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Customer Edit Form (lg:col-span-5) */}
         <div className={`${containerCardBg} lg:col-span-5 rounded-2xl p-5 border overflow-y-auto max-h-[calc(100vh-215px)] shadow-xl space-y-4`}>
           <div className={`flex items-center justify-between border-b pb-3 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
             <h3 className="text-sm font-bold flex items-center space-x-2">
@@ -493,14 +486,13 @@ export const CustomerListView: React.FC = () => {
               />
             </div>
 
-            {/* EXPANDED SECTION: HÔN NHÂN & KHLQ & NGƯỜI BẢO LÃNH */}
             <div className={`rounded-xl p-4 space-y-3 border ${
               isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
             }`}>
               <div className="text-xs font-bold text-sky-500 uppercase border-b pb-2 flex items-center justify-between">
                 <span>THÔNG TIN HÔN NHÂN & KHÁCH HÀNG LIÊN QUAN / BẢO LÃNH</span>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-medium mb-1">Tình trạng hôn nhân *</label>
@@ -631,7 +623,6 @@ export const CustomerListView: React.FC = () => {
         </div>
       </div>
 
-      {/* Customer Detail View Modal */}
       {isModalOpen && detailCustomer && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className={`${containerCardBg} w-full max-w-2xl rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto`}>

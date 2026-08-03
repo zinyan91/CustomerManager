@@ -10,8 +10,8 @@ import {
   serializeContractRateHistory,
   getEffectiveActiveRate,
   getMasterHdtdNumber,
-} from './utils';
-import type { LoanContract } from '../types';
+} from '../utils';
+import type { LoanContract } from '../../types';
 
 describe('formatMoneyInput / parseMoneyInput', () => {
   it('định dạng theo chuẩn Việt Nam (dấu chấm ngăn nghìn)', () => {
@@ -82,7 +82,7 @@ describe('parseAnyDate', () => {
   });
 
   it('trường hợp NHẬP NHẰNG mặc định hiểu là DD/MM/YYYY (chuẩn Việt Nam)', () => {
-    // 05/06/2026 có thể là 5/6 hoặc 6/5. Quy ước: ngày trước, tháng sau.
+
     expect(parseAnyDate('05/06/2026')).toEqual({ year: 2026, month: 6, day: 5 });
   });
 
@@ -178,9 +178,7 @@ describe('getMasterHdtdNumber', () => {
   });
 
   it('KHÔNG bao giờ đọc số hợp đồng từ HdtdDueDate', () => {
-    // Chống hồi quy: HdtdDueDate là cột timestamp, PostgREST trả về dạng
-    // ISO đầy đủ. Thiết kế cũ từng lấy giá trị này làm số hợp đồng, khiến
-    // dấu thời gian bị hiển thị ở vị trí số HĐTD và phá vỡ gom nhóm.
+
     const c = {
       ContractNumber: 'HD777/GNN-01',
       HdtdDueDate: '2026-05-28T00:00:00+00:00',

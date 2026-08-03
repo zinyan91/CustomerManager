@@ -19,14 +19,11 @@ export const CreditCardView: React.FC = () => {
   const [customerCollaterals, setCustomerCollaterals] = useState<Collateral[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Editing state & form collapse
   const [selectedCard, setSelectedCard] = useState<CreditCardType | null>(null);
   const [formCollapsed, setFormCollapsed] = useState(false);
 
-  // Search filter
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Inputs
   const [inputCustomerId, setInputCustomerId] = useState<number | ''>('');
   const [inputClassification, setInputClassification] = useState('Quan hệ tín dụng (Liên kết TSĐB)');
   const [inputCollateralId, setInputCollateralId] = useState<number | ''>('');
@@ -40,7 +37,6 @@ export const CreditCardView: React.FC = () => {
     fetchData();
   }, []);
 
-  // Fetch collaterals when customer selection changes
   useEffect(() => {
     if (inputCustomerId) {
       fetchCollateralsByCustomerAPI(Number(inputCustomerId))
@@ -185,7 +181,6 @@ export const CreditCardView: React.FC = () => {
     );
   }, [cards, searchQuery]);
 
-  // Dynamic Theme Classes
   const containerCardBg = isLight
     ? 'bg-white border-slate-200 text-slate-900 shadow-sm'
     : 'bg-slate-900 border-slate-800 text-slate-100 shadow-xl';
@@ -203,7 +198,7 @@ export const CreditCardView: React.FC = () => {
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
-      {/* Toast Notification */}
+
       {notification && (
         <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${
           notification.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300' : 'bg-red-950/90 border-red-500/40 text-red-300'
@@ -213,7 +208,6 @@ export const CreditCardView: React.FC = () => {
         </div>
       )}
 
-      {/* Header & Stats Bar */}
       <div className={`${containerCardBg} p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-4`}>
         <div className="text-xs font-bold text-sky-500 uppercase tracking-wider flex items-center space-x-2">
           <CreditCard className="w-5 h-5" />
@@ -241,7 +235,6 @@ export const CreditCardView: React.FC = () => {
         </div>
       </div>
 
-      {/* ── FORM ĐĂNG KÝ / CẬP NHẬT THẺ TÍN DỤNG (ĐẶT TRÊN CÙNG) ── */}
       <div className={`${containerCardBg} rounded-2xl p-5 space-y-4 border shadow-xl`}>
         <div className={`flex items-center justify-between pb-3 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
           <h3 className="font-bold flex items-center space-x-2 text-xs uppercase tracking-wider text-sky-500">
@@ -330,7 +323,6 @@ export const CreditCardView: React.FC = () => {
               </div>
             </div>
 
-            {/* Badge Thông tin TSBĐ Liên Kết nếu có chọn */}
             {selectedCollateralObj && (
               <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div className="flex flex-wrap items-center gap-4">
@@ -401,7 +393,6 @@ export const CreditCardView: React.FC = () => {
         )}
       </div>
 
-      {/* ── BẢNG DANH SÁCH THẺ TÍN DỤNG (ĐẶT BÊN DƯỚI KHUNG NHẬP) ── */}
       <div className={`${containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
         <div className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/50 border-slate-800'}`}>
           <span className="text-xs font-bold flex items-center space-x-2">

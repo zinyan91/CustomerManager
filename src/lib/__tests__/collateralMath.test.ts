@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   defaultLtvForAssetType, getEffectiveLtv, maxLoanFromCollateral,
   isRestrictedAsset, isLtvException,
-} from './collateralMath';
-import type { Collateral } from '../types';
+} from '../collateralMath';
+import type { Collateral } from '../../types';
 
 describe('defaultLtvForAssetType', () => {
   it('theo đúng chính sách bất động sản', () => {
@@ -25,8 +25,7 @@ describe('defaultLtvForAssetType', () => {
   });
 
   it('Loại 3 luôn là 60%, không phải 50%', () => {
-    // Chống hồi quy: trước đây cùng một file có chỗ ghi 60 chỗ ghi 50.
-    // web_migration_plan.md mục 3.3 quy định 60%.
+
     expect(defaultLtvForAssetType('Loại 3')).toBe(60);
     expect(defaultLtvForAssetType('BĐS - Loại 3')).toBe(60);
   });
@@ -49,8 +48,7 @@ describe('defaultLtvForAssetType', () => {
 
 describe('getEffectiveLtv', () => {
   it('GIỮ NGUYÊN LTV = 0 thay vì coi là giá trị trống', () => {
-    // Đây là lỗi cũ: `0 || 80` cho ra 80, biến tài sản hạn chế nhận
-    // thành tài sản bậc cao nhất và thổi hạn mức cho vay từ 0 lên 80%.
+
     const c = { LtvPercent: 0, AssetType: 'Hạn chế nhận TS' } as Collateral;
     expect(getEffectiveLtv(c)).toBe(0);
   });
@@ -65,9 +63,7 @@ describe('getEffectiveLtv', () => {
   });
 
   it('MỘT tài sản chỉ cho MỘT giá trị LTV', () => {
-    // Chống hồi quy: trước đây màn hình TSĐB và màn hình khoản vay dùng
-    // hai hàm khác nhau (mặc định 80 so với 70), nên cùng một tài sản cho
-    // ra hai hạn mức cho vay khác nhau.
+
     const c = { AssetType: 'Loại 1' } as Collateral;
     expect(getEffectiveLtv(c)).toBe(80);
   });

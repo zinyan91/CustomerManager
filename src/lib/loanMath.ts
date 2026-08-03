@@ -1,12 +1,6 @@
 import type { RepaymentSchedule, RateAdjustmentHistoryItem, LoanContract } from '../types';
 import { getEffectiveActiveRate } from './utils';
 
-/**
- * Logic tính toán lịch trả nợ — tách ra khỏi LoanPortfolioView để test được.
- * Dời nguyên văn, không thay đổi hành vi.
- */
-
-/** Cộng thêm số tháng vào ngày YYYY-MM-DD, giữ nguyên ngày trong tháng (kẹp về cuối tháng nếu tràn). */
 export
 function addMonthsToDate(dateStr?: string | null, months?: number | null): string {
   if (!dateStr || !months || isNaN(months) || months <= 0) return '';
@@ -14,7 +8,7 @@ function addMonthsToDate(dateStr?: string | null, months?: number | null): strin
     const parts = dateStr.split('-');
     if (parts.length !== 3) return '';
     const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1; // 0-indexed
+    const month = parseInt(parts[1], 10) - 1;
     const day = parseInt(parts[2], 10);
 
     let targetYear = year;
@@ -36,7 +30,6 @@ function addMonthsToDate(dateStr?: string | null, months?: number | null): strin
   }
 }
 
-/** Bóc số tháng từ chuỗi kỳ hạn KUNN, ví dụ "12 tháng" -> 12. */
 export
 function parseKunnTenorMonths(tenorStr?: string | null): number {
   if (!tenorStr) return 0;
@@ -44,20 +37,18 @@ function parseKunnTenorMonths(tenorStr?: string | null): number {
   return match ? parseInt(match[0], 10) : 0;
 }
 
-/** Tách YYYY-MM-DD thành {y, m (0-indexed), d}. */
 export
 function parseDateParts(dStr?: string | null) {
   if (!dStr) return null;
   const parts = dStr.split('-');
   if (parts.length !== 3) return null;
   const y = parseInt(parts[0], 10);
-  const m = parseInt(parts[1], 10) - 1; // 0-indexed
+  const m = parseInt(parts[1], 10) - 1;
   const d = parseInt(parts[2], 10);
   if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
   return { y, m, d };
 }
 
-/** Số ngày thực tế giữa hai mốc. Tối thiểu 1; trả 30 nếu chuỗi ngày không hợp lệ. */
 export
 function getDaysBetween(d1Str: string, d2Str: string): number {
   const p1 = parseDateParts(d1Str);
@@ -68,7 +59,6 @@ function getDaysBetween(d1Str: string, d2Str: string): number {
   return Math.max(1, Math.round((utc2 - utc1) / (1000 * 60 * 60 * 24)));
 }
 
-/** Làm tròn tiền gốc LÊN theo bước chuẩn Core Banking. */
 export
 function roundPrincipalCore(rawPrincipal: number, roundMode: '1k' | '10k' | '50k' | 'exact' = '1k'): number {
   if (roundMode === 'exact' || !rawPrincipal || rawPrincipal <= 0) return Math.round(rawPrincipal);
@@ -76,7 +66,6 @@ function roundPrincipalCore(rawPrincipal: number, roundMode: '1k' | '10k' | '50k
   return Math.ceil(rawPrincipal / step) * step;
 }
 
-/** Sinh lịch trả nợ theo công thức Core Banking (lãi tính trên số ngày thực tế / 365). */
 export
 function generateSchedule(
   contractId: number,
@@ -104,10 +93,8 @@ function generateSchedule(
 
   const defaultAnnualRate = interestRate > 1 ? interestRate / 100 : interestRate;
 
-  // Lịch sử ngày trả nợ kỳ trước (Kỳ 1 bắt đầu tính số ngày thực tế từ Ngày giải ngân)
   let prevDateStr = disbursementDateStr || repaymentStartDateStr;
 
-  // Tiền gốc trả đều hàng tháng (mặc định làm tròn 1.000 VNĐ chuẩn Core Banking Flexcube/T24)
   const remainingRepayPeriods = Math.max(1, periods - principalGraceMonths);
   let defaultMonthlyPrincipal = isBulletPrincipal
     ? 0
@@ -122,7 +109,6 @@ function generateSchedule(
   for (let i = 1; i <= periods; i++) {
     if (balance <= 0) break;
 
-    // Ngày trả nợ của Kỳ i (Kỳ 1 = RepaymentStartDate, các kỳ sau = +1 tháng, kẹp ngày tháng)
     let dueTotalMonths = startMonth + (i - 1);
     let dueYear = startYear + Math.floor(dueTotalMonths / 12);
     let dueMonthIdx = dueTotalMonths % 12;
@@ -130,10 +116,8 @@ function generateSchedule(
     const dueDay = Math.min(startDay, daysInDueMonth);
     const dueDateStr = `${dueYear}-${String(dueMonthIdx + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
 
-    // Tính số ngày thực tế trong kỳ từ prevDateStr đến dueDateStr
     const days = getDaysBetween(prevDateStr, dueDateStr);
 
-    // XÁC ĐỊNH LÃI SUẤT HIỆU LỰC TẠI KỲ i:
     let activeAnnualRate = defaultAnnualRate;
 
     if (sortedHistory.length > 0) {
@@ -161,15 +145,14 @@ function generateSchedule(
       normalPrincipal = (i === periods) ? balance : 0;
     } else {
       if (i <= principalGraceMonths) {
-        normalPrincipal = 0; // Ân hạn gốc: Kỳ i <= số tháng ân hạn -> Gốc = 0
+        normalPrincipal = 0;
       } else if (i === periods) {
-        normalPrincipal = balance; // Kỳ cuối trả hết dư nợ còn lại
+        normalPrincipal = balance;
       } else {
         normalPrincipal = Math.min(balance, defaultMonthlyPrincipal);
       }
     }
 
-    // Trả nợ trước hạn tại kỳ `prepaymentPeriod`
     let periodPrepay = 0;
     if (prepaymentAmount > 0 && i === prepaymentPeriod) {
       const remainingAfterNormal = Math.max(0, balance - normalPrincipal);
@@ -178,7 +161,6 @@ function generateSchedule(
 
     const totalPrincipalInPeriod = Math.min(balance, normalPrincipal + periodPrepay);
 
-    // Công thức Core Ngân hàng: Lãi = Dư nợ * (Lãi suất hiệu lực kỳ / 365) * Số ngày thực tế trong kỳ
     const interest = Math.round(balance * activeAnnualRate * (days / 365));
 
     let noteText: string | undefined = undefined;
@@ -199,7 +181,6 @@ function generateSchedule(
 
     const endingBal = Math.max(0, balance - totalPrincipalInPeriod);
 
-    // Nếu chọn phương án giảm tiền gốc trả hàng tháng sau khi trả trước hạn
     if (periodPrepay > 0 && prepaymentMode === 'reduce_monthly' && !isBulletPrincipal) {
       const remainingPeriods = periods - i;
       if (remainingPeriods > 0 && endingBal > 0) {
@@ -214,13 +195,6 @@ function generateSchedule(
   return schedules;
 }
 
-/* ------------------------------------------------------------------ */
-/* Quá hạn & phân nhóm nợ                                              */
-/* ------------------------------------------------------------------ */
-
-/**
- * Số ngày trả chậm so với ngày đến hạn. Trả đúng hạn hoặc sớm thì 0.
- */
 export function calculateOverdueDaysFromDates(
   paymentDateStr?: string | null,
   dueDateStr?: string | null
@@ -238,17 +212,6 @@ export interface AutoDebtGroupInfo {
   worstDueDate?: string;
 }
 
-/**
- * Phân nhóm nợ theo số ngày quá hạn lớn nhất trong các kỳ CHƯA thanh toán.
- *
- *   Nhóm 1  Đủ tiêu chuẩn        (dưới 10 ngày)
- *   Nhóm 2  Cần chú ý            (10 – 90 ngày)
- *   Nhóm 3  Dưới tiêu chuẩn      (91 – 180 ngày)
- *   Nhóm 4  Nghi ngờ             (181 – 360 ngày)
- *   Nhóm 5  Có khả năng mất vốn  (trên 360 ngày)
- *
- * `todayStr` dạng YYYY-MM-DD; bỏ trống thì lấy ngày hiện tại.
- */
 export function getAutoDebtGroupInfo(
   schedules?: RepaymentSchedule[],
   todayStr?: string
@@ -288,34 +251,12 @@ export function getAutoDebtGroupInfo(
   return { debtGroup, maxOverdueDays, worstDueDate };
 }
 
-/**
- * Khoản vay có trả gốc một lần cuối kỳ hay không.
- *
- * CHỈ căn cứ vào phương thức trả gốc mà banker đã chọn. Trước đây có thêm
- * vế `|| LoanMethod === 'Hạn mức tín dụng'` ép mọi hợp đồng hạn mức thành
- * gốc cuối kỳ, bất kể lựa chọn trên biểu mẫu — dẫn tới giao diện hiển thị
- * "Trả đều hàng tháng" trong khi lịch thu nợ lại tính theo cách khác, và
- * cột gốc của mọi kỳ đều bằng 0.
- *
- * Giá trị mặc định của hợp đồng hạn mức vẫn là "Gốc trả cuối kỳ" (đặt ở
- * biểu mẫu khi chọn phương thức vay), nhưng banker đổi được.
- */
 export function isBulletPrincipal(
   contract: Pick<LoanContract, 'PrincipalRepaymentMethod'>
 ): boolean {
   return (contract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ';
 }
 
-/**
- * Tính lại toàn bộ lịch trả nợ theo dư nợ thực tế.
- *
- * Dùng sau khi ghi nhận thu nợ hoặc trả trước hạn: các kỳ đã thanh toán
- * giữ nguyên số liệu thực thu, các kỳ còn lại được tính lại gốc và lãi
- * theo dư nợ mới.
- *
- * Trả trước hạn làm giảm gốc phải trả các kỳ sau (chia đều phần dư nợ
- * còn lại cho số kỳ còn lại).
- */
 export function recalculateSchedules(
   schedList: RepaymentSchedule[],
   contract: LoanContract,
@@ -363,10 +304,7 @@ export function recalculateSchedules(
     let principalInPeriod = 0;
 
     if (s.IsPaid) {
-      // Tiền trả trước hạn phải được cộng vào KỂ CẢ khi kỳ đã thanh toán.
-      // Bản cũ bỏ qua PrepaidPrincipalAmount ở nhánh này, nên khoản trả
-      // trước ghi trên một kỳ đã tất toán bị mất trắng: gốc ghi nhận bằng 0
-      // và dư nợ không giảm.
+
       const base =
         s.ActualPaidPrincipal !== undefined && s.ActualPaidPrincipal !== null && s.ActualPaidPrincipal > 0
           ? s.ActualPaidPrincipal
@@ -374,7 +312,6 @@ export function recalculateSchedules(
       const recordedP = base + (s.PrepaidPrincipalAmount ?? 0);
       principalInPeriod = Math.min(currentBalance, recordedP);
 
-      // Trả trước hạn làm giảm gốc phải trả các kỳ còn lại
       if ((s.PrepaidPrincipalAmount ?? 0) > 0 && !isBullet) {
         const remainingPeriods = totalPeriods - periodNum;
         if (remainingPeriods > 0) {
@@ -411,32 +348,12 @@ export function recalculateSchedules(
       TotalAmount: totalObligation,
     });
 
-    // Dư nợ trừ đúng bằng phần gốc đã ghi nhận trong kỳ.
-    //
-    // Bản cũ ở nhánh chưa thanh toán tính:
-    //     (ActualPaidPrincipal ?? principalInPeriod) + PrepaidPrincipalAmount
-    // Khi kỳ chỉ có tiền trả trước hạn mà chưa có ActualPaidPrincipal thì
-    // principalInPeriod ĐÃ bao gồm tiền trả trước, nên cộng thêm lần nữa là
-    // trừ đôi. Dư nợ tụt nhanh hơn thực tế và tổng gốc thu về ÍT HƠN số đã
-    // cho vay — ngân hàng mất gốc. Test "TỔNG GỐC vẫn bằng số tiền vay" bắt
-    // được lỗi này: 90 triệu thay vì 120 triệu.
     currentBalance = Math.max(0, currentBalance - principalInPeriod);
   }
 
   return result;
 }
 
-/**
- * Dư nợ gốc còn lại của một khoản vay.
- *
- * Gốc đã thu bao gồm:
- *   - Kỳ ĐÃ thanh toán  : PrincipalAmount (đã gồm cả tiền trả trước hạn
- *                          sau khi chạy qua recalculateSchedules)
- *   - Kỳ CHƯA thanh toán: phần thực thu và tiền trả trước hạn ghi trên kỳ
- *
- * Bản cũ chỉ cộng PrincipalAmount của các kỳ đã thanh toán, nên tiền trả
- * trước hạn ghi trên kỳ chưa tất toán không làm giảm dư nợ hiển thị.
- */
 export function computeOutstandingBalance(
   schedules: RepaymentSchedule[] | undefined,
   contract: LoanContract

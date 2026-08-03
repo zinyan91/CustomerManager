@@ -75,7 +75,6 @@ export const DebtSummaryCard: React.FC<DebtSummaryCardProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Gốc */}
         <div className="p-3 rounded-xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 space-y-1.5">
           <div className="text-[11px] font-bold text-sky-600 dark:text-sky-400 uppercase">NGHĨA VỤ NỢ GỐC</div>
           <div className="flex justify-between text-xs">
@@ -92,7 +91,6 @@ export const DebtSummaryCard: React.FC<DebtSummaryCardProps> = ({
           </div>
         </div>
 
-        {/* Lãi */}
         <div className="p-3 rounded-xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 space-y-1.5">
           <div className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase">NGHĨA VỤ NỢ LÃI</div>
           <div className="flex justify-between text-xs">
@@ -109,7 +107,6 @@ export const DebtSummaryCard: React.FC<DebtSummaryCardProps> = ({
           </div>
         </div>
 
-        {/* Lãi phạt chậm trả */}
         <div className="p-3 rounded-xl border bg-rose-50/50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 space-y-1.5">
           <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase">LÃI PHẠT CHẬM TRẢ & PHÍ QUÁ HẠN</div>
           <div className="flex justify-between text-xs">
@@ -127,7 +124,6 @@ export const DebtSummaryCard: React.FC<DebtSummaryCardProps> = ({
         </div>
       </div>
 
-      {/* Bar Total Urgent Payment */}
       <div className="p-3 rounded-xl bg-rose-600 text-white font-bold flex flex-wrap items-center justify-between shadow-md">
         <span className="text-xs uppercase tracking-wider">TỔNG NGHĨA VỤ CẦN THANH TOÁN KHẨN CẤP (GỐC + LÃI QUÁ HẠN + PHẠT):</span>
         <span className="font-mono text-base font-extrabold">{totalUrgentPayment.toLocaleString('vi-VN')} VNĐ</span>

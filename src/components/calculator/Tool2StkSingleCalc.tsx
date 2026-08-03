@@ -74,7 +74,6 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
           </div>
         </div>
 
-        {/* Results Banner */}
         <div className={`p-4 rounded-xl border grid grid-cols-1 md:grid-cols-4 gap-4 ${styles.sectionBoxBg}`}>
           <div>
             <div className="text-[11px] text-slate-400 uppercase font-semibold">Ngày đáo hạn dự kiến</div>

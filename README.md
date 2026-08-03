@@ -4,6 +4,13 @@
 
 Đây là bản chuyển đổi lên web của ứng dụng WPF desktop, dùng chung cơ sở dữ liệu Supabase PostgreSQL.
 
+> **Mã nguồn không chứa chú thích.** Mọi giải thích nghiệp vụ, công thức và quy ước nằm ở:
+> - **[CONVENTIONS.md](CONVENTIONS.md)** — quy ước, công thức, kiến thức nghiệp vụ
+> - **[.claude/skills/tin-dung/SKILL.md](.claude/skills/tin-dung/SKILL.md)** — bản dành cho AI, gọi bằng `/tin-dung`
+> - **[PROGRESS.md](PROGRESS.md)** — việc đã xong, đang làm, chuẩn bị làm
+>
+> Đọc trước khi sửa bất cứ thứ gì liên quan tới tiền.
+
 ---
 
 ## Công nghệ

@@ -8,8 +8,8 @@ import {
   dtiMaxMonthlyPayment,
   effectiveAnnualRate,
   flatToReducingApprox,
-} from './calcMath';
-import { getDaysBetween } from './loanMath';
+} from '../calcMath';
+import { getDaysBetween } from '../loanMath';
 
 describe('addMonths', () => {
   it('cộng tháng, giữ nguyên ngày', () => {
@@ -45,8 +45,7 @@ describe('diffDays', () => {
 });
 
 describe('KHÁC BIỆT giữa diffDays (công cụ) và getDaysBetween (lịch trả nợ)', () => {
-  // Ghi nhận có chủ đích để không ai vô tình hợp nhất hai bên mà đổi
-  // kết quả tính lãi. Xem thêm chú thích đầu file calcMath.ts.
+
   it('khớp nhau với mọi ngày hợp lệ và khác nhau', () => {
     expect(diffDays('2026-01-15', '2026-02-15')).toBe(getDaysBetween('2026-01-15', '2026-02-15'));
     expect(diffDays('2026-02-01', '2026-12-31')).toBe(getDaysBetween('2026-02-01', '2026-12-31'));
@@ -88,7 +87,7 @@ describe('pvAnnuityFactor và emiFactor', () => {
 
 describe('emiMonthlyPayment', () => {
   it('tính đúng theo công thức chuẩn', () => {
-    // 100tr, 1%/tháng, 12 kỳ -> khoảng 8.884.879đ
+
     const pmt = emiMonthlyPayment(100_000_000, 0.01, 12);
     expect(pmt).toBe(8_884_879);
   });
@@ -111,8 +110,7 @@ describe('emiMonthlyPayment', () => {
 
 describe('dtiMaxMonthlyPayment', () => {
   it('lấy giá trị NHỎ HƠN giữa thu nhập ròng và trần DTI', () => {
-    // Thu nhập 50tr, chi tiêu 20tr, nợ hiện có 5tr, trần DTI 60%
-    // Ròng khả dụng = 25tr; Trần DTI = 50×0.6 − 5 = 25tr -> lấy 25tr
+
     expect(dtiMaxMonthlyPayment(50_000_000, 20_000_000, 5_000_000, 60)).toBe(25_000_000);
   });
 
@@ -156,7 +154,7 @@ describe('flatToReducingApprox', () => {
   });
 
   it('lãi dư nợ giảm dần luôn CAO HƠN lãi phẳng tương đương', () => {
-    // Đây là điểm khách hàng hay hiểu nhầm: lãi phẳng nghe thấp hơn thực tế
+
     for (const n of [6, 12, 24, 36]) {
       expect(flatToReducingApprox(0.1, n)).toBeGreaterThan(0.1);
     }

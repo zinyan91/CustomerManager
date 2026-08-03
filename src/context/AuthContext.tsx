@@ -10,7 +10,7 @@ interface AuthContextType {
   role: AppRole | null;
   fullName: string | null;
   isAdmin: boolean;
-  /** true khi đang khôi phục session lúc tải trang — chưa biết đã đăng nhập hay chưa */
+
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -25,13 +25,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Khôi phục session đã lưu (nếu có) khi tải trang
+
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
     });
 
-    // Theo dõi đăng nhập / đăng xuất / làm mới token
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
       setLoading(false);
@@ -42,8 +41,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const userId = session?.user?.id ?? null;
 
-  // Tra vai trò trong bảng UserRoles. Tách riêng khỏi onAuthStateChange để
-  // tránh deadlock khi gọi supabase bên trong callback của chính nó.
   useEffect(() => {
     if (!userId) {
       setRole(null);

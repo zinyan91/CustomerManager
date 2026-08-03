@@ -9,25 +9,22 @@ interface Tool6Props {
 }
 
 export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) => {
-  // Inputs
-  const [balanceStr, setBalanceStr] = useState('800.000.000');
-  const [prepayAmountStr, setPrepayAmountStr] = useState('800.000.000'); // Mặc định trả hết
-  const [rateAnnualStr, setRateAnnualStr] = useState('11.5');
-  const [remainingTenorMonths, setRemainingTenorMonths] = useState<number>(60); // 5 năm
-  const [loanAgeYear, setLoanAgeYear] = useState<number>(2); // Năm thứ 2
 
-  // Penalty Fee Schedule Input (%/năm)
+  const [balanceStr, setBalanceStr] = useState('800.000.000');
+  const [prepayAmountStr, setPrepayAmountStr] = useState('800.000.000');
+  const [rateAnnualStr, setRateAnnualStr] = useState('11.5');
+  const [remainingTenorMonths, setRemainingTenorMonths] = useState<number>(60);
+  const [loanAgeYear, setLoanAgeYear] = useState<number>(2);
+
   const [penaltyYear1, setPenaltyYear1] = useState<string>('2.0');
   const [penaltyYear2, setPenaltyYear2] = useState<string>('1.5');
   const [penaltyYear3, setPenaltyYear3] = useState<string>('1.0');
   const [penaltyYear4Plus, setPenaltyYear4Plus] = useState<string>('0.0');
 
-  // Parse values
   const balance = parseFloat(balanceStr.replace(/\D/g, '')) || 0;
   const prepayAmt = parseFloat(prepayAmountStr.replace(/\D/g, '')) || balance;
   const rateAnnual = (parseFloat(rateAnnualStr) || 0) / 100;
 
-  // Active Penalty %
   const activePenaltyPercent = useMemo(() => {
     if (loanAgeYear === 1) return parseFloat(penaltyYear1) || 0;
     if (loanAgeYear === 2) return parseFloat(penaltyYear2) || 0;
@@ -35,11 +32,8 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
     return parseFloat(penaltyYear4Plus) || 0;
   }, [loanAgeYear, penaltyYear1, penaltyYear2, penaltyYear3, penaltyYear4Plus]);
 
-  // Calculations
   const penaltyFee = Math.round(prepayAmt * (activePenaltyPercent / 100));
 
-  // Estimate total remaining interest if NOT prepaid
-  // Simple Reducing balance estimation formula
   const monthlyPrincipal = balance / (remainingTenorMonths || 1);
   let totalRemainingInterestWithoutPrepay = 0;
   let curBal = balance;
@@ -48,7 +42,6 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
     curBal = Math.max(0, curBal - monthlyPrincipal);
   }
 
-  // Estimate interest saved
   const prepayRatio = balance > 0 ? Math.min(1, prepayAmt / balance) : 0;
   const totalInterestSaved = Math.round(totalRemainingInterestWithoutPrepay * prepayRatio);
   const netSavings = totalInterestSaved - penaltyFee;
@@ -57,7 +50,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
 
   return (
     <div className="space-y-5">
-      {/* Header */}
+
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
         <h2 className="text-sm font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center space-x-2">
           <Award className="w-5 h-5 text-emerald-500" />
@@ -66,7 +59,6 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* PANEL 1: THÔNG TIN KHOẢN VAY & TRẢ TRƯỚC HẠN */}
         <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
           <div className="font-bold text-xs text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
             <DollarSign className="w-4 h-4" />
@@ -138,7 +130,6 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
           </div>
         </div>
 
-        {/* PANEL 2: KHUNG PHÍ PHẠT TRẢ TRƯỚC HẠN NHÀ NƯỚC / NGÂN HÀNG */}
         <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
           <div className="font-bold text-xs text-rose-500 dark:text-rose-400 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
             <ShieldAlert className="w-4 h-4" />
@@ -204,7 +195,6 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
         </div>
       </div>
 
-      {/* ANALYSIS RESULT CARD */}
       <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 space-y-3">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-emerald-200 dark:border-emerald-800/60 pb-3">
           <div>

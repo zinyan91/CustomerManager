@@ -20,20 +20,18 @@ const ASSET_LTV_MAP: Record<string, { label: string; ltv: number }> = {
 };
 
 export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = ({ isLight }) => {
-  // DTI / Income Inputs
+
   const [monthlyIncomeStr, setMonthlyIncomeStr] = useState('35.000.000');
   const [livingExpenseStr, setLivingExpenseStr] = useState('10.000.000');
   const [existingDebtStr, setExistingDebtStr] = useState('0');
-  const [maxDtiPercent, setMaxDtiPercent] = useState<number>(60); // 60%
-  const [loanTenorMonths, setLoanTenorMonths] = useState<number>(120); // 10 năm
+  const [maxDtiPercent, setMaxDtiPercent] = useState<number>(60);
+  const [loanTenorMonths, setLoanTenorMonths] = useState<number>(120);
   const [interestRateAnnualStr, setInterestRateAnnualStr] = useState('10.5');
 
-  // LTV / Collateral Inputs
   const [assetValueStr, setAssetValueStr] = useState('3.500.000.000');
   const [selectedAssetKey, setSelectedAssetKey] = useState<string>('cat2');
   const [customLtvStr, setCustomLtvStr] = useState('70');
 
-  // Parse Inputs
   const monthlyIncome = parseFloat(monthlyIncomeStr.replace(/\D/g, '')) || 0;
   const livingExpense = parseFloat(livingExpenseStr.replace(/\D/g, '')) || 0;
   const existingDebt = parseFloat(existingDebtStr.replace(/\D/g, '')) || 0;
@@ -45,7 +43,6 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = ({ isLight }) => {
     ? (parseFloat(customLtvStr) || 70) / 100
     : ASSET_LTV_MAP[selectedAssetKey]?.ltv || 0.70;
 
-  // 1. Calculate DTI Capacity
   const dtiMaxMonthlyPayment = useMemo(
     () => calcDtiMaxMonthlyPayment(monthlyIncome, livingExpense, existingDebt, maxDtiPercent),
     [monthlyIncome, livingExpense, existingDebt, maxDtiPercent]
@@ -56,17 +53,15 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = ({ isLight }) => {
     return Math.round(dtiMaxMonthlyPayment * pvAnnuityFactor(rateMonthly, loanTenorMonths));
   }, [dtiMaxMonthlyPayment, loanTenorMonths, rateMonthly]);
 
-  // 2. Calculate LTV Capacity
   const maxLoanAmountByLtv = Math.round(assetValue * activeLtv);
 
-  // 3. Final Combined Recommendation
   const finalRecommendedLimit = Math.min(maxLoanAmountByDti, maxLoanAmountByLtv);
 
   const cardBg = isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100';
 
   return (
     <div className="space-y-5">
-      {/* Header */}
+
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
         <h2 className="text-sm font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center space-x-2">
           <ShieldCheck className="w-5 h-5 text-sky-500" />
@@ -75,7 +70,6 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = ({ isLight }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* PANEL 1: THẨM ĐỊNH NĂNG LỰC TÀI CHÍNH / THU NHẬP (DTI) */}
         <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
           <div className="font-bold text-xs text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
             <DollarSign className="w-4 h-4" />
@@ -163,7 +157,6 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = ({ isLight }) => {
           </div>
         </div>
 
-        {/* PANEL 2: ĐỊNH GIÁ & HẠN MỨC THEO TSBĐ (LTV) */}
         <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
           <div className="font-bold text-xs text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
             <Building2 className="w-4 h-4" />
@@ -225,7 +218,6 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = ({ isLight }) => {
         </div>
       </div>
 
-      {/* FINAL RECOMMENDATION RESULT CARD */}
       <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 space-y-2">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
           <div className="flex items-center space-x-2">

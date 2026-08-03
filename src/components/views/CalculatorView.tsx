@@ -33,7 +33,7 @@ export const CalculatorView: React.FC = () => {
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
-      {/* Tool Navigation Bar */}
+
       <div className={`${styles.containerCardBg} rounded-2xl p-2 border flex flex-wrap items-center gap-2`}>
         {toolsList.map(({ id, label, icon: Icon }) => (
           <button
@@ -54,7 +54,6 @@ export const CalculatorView: React.FC = () => {
         ))}
       </div>
 
-      {/* Render Active Calculation Tool */}
       {activeTool === 'loan' && (
         <Tool1LoanScheduleCalc styles={styles} isLight={isLight} />
       )}

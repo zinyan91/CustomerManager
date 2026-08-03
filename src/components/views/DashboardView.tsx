@@ -8,7 +8,6 @@ import {
   Calendar, Clock, ShieldAlert, FileText, AlertTriangle
 } from 'lucide-react';
 
-// Helper: Calculate days between today and target date
 function getDaysUntil(dateStr?: string | null): number | null {
   if (!dateStr) return null;
   try {
@@ -28,7 +27,6 @@ function getDaysUntil(dateStr?: string | null): number | null {
   }
 }
 
-// Helper: Calculate monthly payment due date and days remaining
 function getMonthlyDueInfo(dateStr?: string | null): { dueDateStr: string; daysLeft: number } | null {
   if (!dateStr) return null;
   try {
@@ -91,14 +89,12 @@ export const DashboardView: React.FC = () => {
     }
   };
 
-  // ── 1. KPI Aggregates ──
   const totalCustomersCount = customers.length;
   const totalDebt = contracts.reduce((acc, c) => acc + (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0), 0);
   const totalLimit = contracts.reduce((acc, c) => acc + (c.ContractAmount || 0), 0);
   const totalCollateralVal = collaterals.reduce((acc, c) => acc + (c.AppraisedValue || c.Value || 0), 0);
   const weightedLtv = totalCollateralVal > 0 ? (totalDebt / totalCollateralVal) * 100 : 0;
 
-  // ── 2. Breakdown by Loan Method ──
   const loanMethodStats = [
     'Hạn mức tín dụng',
     'Cho vay từng lần',
@@ -111,7 +107,6 @@ export const DashboardView: React.FC = () => {
     return { method, count: matched.length, amount };
   });
 
-  // ── Breakdown by Debt Group ──
   const debtGroupStats = [1, 2, 3, 4, 5].map(group => {
     const matched = contracts.filter(c => (c.DebtGroup ?? 1) === group);
     const amount = matched.reduce((sum, c) => sum + (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0), 0);
@@ -122,7 +117,6 @@ export const DashboardView: React.FC = () => {
 
   const activeContracts = contracts.filter(c => !onlyGroup1 || (c.DebtGroup ?? 1) === 1);
 
-  // ── 4. Table 1: KH chuẩn bị đóng kỳ due của tháng (Lọc trước 5 ngày) ──
   const dueInMonthList = activeContracts.map(c => {
     const cus = customers.find(cust => cust.Id === c.CustomerId);
     const dueInfo = getMonthlyDueInfo(c.RepaymentStartDate || c.DisbursementDate || c.ContractStartDate);
@@ -130,7 +124,6 @@ export const DashboardView: React.FC = () => {
   }).filter(item => item.dueInfo && item.dueInfo.daysLeft <= 5)
     .sort((a, b) => (a.dueInfo?.daysLeft ?? 0) - (b.dueInfo?.daysLeft ?? 0));
 
-  // ── 5. Table 2: KUNN sắp đến hạn (Lọc trước 10 ngày) ──
   const dueKunnList = activeContracts.map(c => {
     const cus = customers.find(cust => cust.Id === c.CustomerId);
     const daysLeft = getDaysUntil(c.KunnDueDate);
@@ -138,7 +131,6 @@ export const DashboardView: React.FC = () => {
   }).filter(item => item.daysLeft !== null && item.daysLeft <= 10)
     .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
-  // ── 6. Table 3: HMTD sắp tới hạn (Group theo Số HĐTD Hạn mức Gốc, không lặp KUNN) ──
   const hmtdMap: Record<string, { masterNo: string; contract: LoanContract; customer?: Customer; endDateStr: string; daysLeft: number | null }> = {};
 
   activeContracts.forEach(c => {
@@ -170,7 +162,6 @@ export const DashboardView: React.FC = () => {
     .filter(item => item.daysLeft !== null && item.daysLeft <= 45)
     .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
-  // ── 7. Table 4: Định giá TSĐB sắp tới hạn (Lọc 30 ngày: 16-30 Xanh lá, 1-15 Vàng, <=0 Đỏ) ──
   const dueCollateralList = collaterals.map(col => {
     const cus = customers.find(cust => cust.Id === col.CustomerId);
 
@@ -218,7 +209,7 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
-      {/* Title Header */}
+
       <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
         <div>
           <h2 className="text-base font-bold uppercase tracking-tight flex items-center space-x-2 text-slate-900 dark:text-slate-100">
@@ -238,9 +229,7 @@ export const DashboardView: React.FC = () => {
         </button>
       </div>
 
-      {/* ── YÊU CẦU 1, 2, 3: KPI CARDS GRID ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI 1: Tổng số KH */}
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
           <div>
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TỔNG SỐ KHÁCH HÀNG</div>
@@ -254,7 +243,6 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        {/* KPI 2: Quy mô Dư nợ */}
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
           <div>
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TỔNG QUY MÔ DƯ NỢ</div>
@@ -268,7 +256,6 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        {/* KPI 3: Giá trị Tài sản hiện có */}
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
           <div>
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TỔNG GIÁ TRỊ TSĐB</div>
@@ -282,7 +269,6 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        {/* KPI 4: Tổng Cảnh báo tới hạn */}
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
           <div>
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">CẢNH BÁO TỚI HẠN</div>
@@ -297,9 +283,7 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* ── YÊU CẦU 2 CHI TIẾT: DƯ NỢ PHÂN THEO PHƯƠNG THỨC VAY & NHÓM NỢ ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Dư nợ theo Phương thức vay */}
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm space-y-3`}>
           <div className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-1.5">
             <FileText className="w-4 h-4" />
@@ -323,7 +307,6 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        {/* Dư nợ theo Nhóm nợ (Nhóm 1 - 5) */}
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm space-y-3`}>
           <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center space-x-1.5">
             <ShieldAlert className="w-4 h-4" />
@@ -350,7 +333,6 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* ── BỘ LỌC PHÂN LOẠI NHÓM NỢ CẢNH BÁO (TÁCH NHÓM 2+) ── */}
       <div className={`${cardBg} rounded-2xl p-3.5 border shadow-sm flex flex-wrap items-center justify-between gap-3`}>
         <div className="flex items-center space-x-2 text-xs font-bold text-slate-700 dark:text-slate-200">
           <ShieldAlert className="w-4 h-4 text-sky-500" />
@@ -382,7 +364,6 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* ── YÊU CẦU 4: BẢNG 1 — KHÁCH HÀNG CHUẨN BỊ ĐÓNG KỲ DUE CỦA THÁNG (LỌC TRƯỚC 5 NGÀY) ── */}
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
           <div className="flex items-center space-x-2">
@@ -446,7 +427,6 @@ export const DashboardView: React.FC = () => {
         )}
       </div>
 
-      {/* ── YÊU CẦU 5: BẢNG 2 — KUNN SẮP ĐẾN HẠN (LỌC TRƯỚC 10 NGÀY) ── */}
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
           <div className="flex items-center space-x-2">
@@ -512,7 +492,6 @@ export const DashboardView: React.FC = () => {
         )}
       </div>
 
-      {/* ── YÊU CẦU 6: BẢNG 3 — HMTD SẮP TỚI HẠN (LỌC 45 NGÀY -> XANH LÁ, VÀNG, ĐỎ) ── */}
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
           <div className="flex items-center space-x-2">
@@ -586,7 +565,6 @@ export const DashboardView: React.FC = () => {
         )}
       </div>
 
-      {/* ── YÊU CẦU 7: BẢNG 4 — ĐỊNH GIÁ TSĐB SẮP TỚI HẠN (LỌC 30 NGÀY -> XANH LÁ, VÀNG, ĐỎ) ── */}
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
           <div className="flex items-center space-x-2">
@@ -621,7 +599,6 @@ export const DashboardView: React.FC = () => {
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {dueCollateralList.map(({ collateral, customer, expiryDateStr, daysLeft }) => {
                   const days = daysLeft ?? 0;
-                  // Color rules: 16-30 -> Xanh lá; 1-15 -> Vàng; <=0 -> Đỏ
                   let badgeStyle = '';
                   let statusText = '';
                   if (days >= 16) {

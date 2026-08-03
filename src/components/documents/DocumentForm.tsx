@@ -33,7 +33,6 @@ interface DocumentFormProps {
   styles: ThemeStyles;
   selectedTemplate: TemplateType;
 
-  // Lease MB Form State
   mbContractDate: string; setMbContractDate: (v: string) => void;
   mbPartyAName: string; setMbPartyAName: (v: string) => void;
   mbPartyACccd: string; setMbPartyACccd: (v: string) => void;
@@ -49,7 +48,6 @@ interface DocumentFormProps {
   mbMonthlyPrice: string; setMbMonthlyPrice: (v: string) => void;
   mbDepositAmount: string; setMbDepositAmount: (v: string) => void;
 
-  // Construction Form State
   constContractDate: string; setConstContractDate: (v: string) => void;
   constPartyAName: string; setConstPartyAName: (v: string) => void;
   constPartyACccd: string; setConstPartyACccd: (v: string) => void;
@@ -65,7 +63,6 @@ interface DocumentFormProps {
   constItems: ConstItem[]; setConstItems: React.Dispatch<React.SetStateAction<ConstItem[]>>;
   handleAddConstItem: () => void;
 
-  // Sale Contract Form State
   saleContractDate: string; setSaleContractDate: (v: string) => void;
   saleBuyerName: string; setSaleBuyerName: (v: string) => void;
   saleBuyerAddress: string; setSaleBuyerAddress: (v: string) => void;
@@ -78,7 +75,6 @@ interface DocumentFormProps {
   saleItems: SaleItem[]; setSaleItems: React.Dispatch<React.SetStateAction<SaleItem[]>>;
   handleAddSaleItem: () => void;
 
-  // Payment Request Extra State (Cash vs Transfer + Dynamic Stages)
   payMethodType?: 'cash' | 'transfer';
   setPayMethodType?: (v: 'cash' | 'transfer') => void;
   payCashName?: string; setPayCashName?: (v: string) => void;
@@ -160,8 +156,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
             THÔNG TIN HỢP ĐỒNG THUÊ MẶT BẰNG / NHÀ Ở
           </div>
         </div>
-        
-        {/* Section 1: Bên A (Cho Thuê) - Full Width Block */}
+
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN A (CHO THUÊ)</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -184,7 +179,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Section 2: Bên B (Bên Thuê) - Full Width Block Below */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN B (BÊN THUÊ)</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -207,7 +201,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Section 3: Thông Tin Mặt Bằng & Giá Thuê */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THÔNG TIN MẶT BẰNG & GIÁ THUÊ</div>
           <div>
@@ -248,8 +241,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
             THÔNG TIN HỢP ĐỒNG THI CÔNG NHÀ Ở DÂN DỤNG
           </div>
         </div>
-        
-        {/* Section 1: Bên A (Chủ Đầu Tư) - Full Width Block */}
+
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN A (CHỦ ĐẦU TƯ)</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -268,7 +260,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Section 2: Bên B (Nhà Thầu Thi Công) - Full Width Block Below */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN B (NHÀ THẦU THI CÔNG)</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -287,7 +278,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Section 3: Thời Gian & Giá Trị */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THỜI GIAN THI CÔNG & TIẾN ĐỘ THANH TOÁN</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -332,7 +322,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Section 1: Thông tin công trình & Đơn vị thi công */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THÔNG TIN CÔNG TRÌNH</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -351,7 +340,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Construction Estimate Items Table */}
         <div className="border rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
           <div className="p-2.5 bg-slate-100 dark:bg-slate-900 font-bold flex items-center justify-between">
             <span>DANH MỤC HẠNG MỤC DỰ TOÁN ({constItems.length} HẠNG MỤC)</span>
@@ -430,7 +418,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Section 1: Bên A (Bên Mua) - Full Width Block */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN MUA (BÊN A)</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -445,7 +432,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Section 2: Bên B (Bên Bán) - Full Width Block Below */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN BÁN (BÊN B)</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -464,7 +450,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Section 3: Điều khoản & Tiến độ */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THỜI GIAN & TIẾN ĐỘ THANH TOÁN</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -487,7 +472,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Dynamic Items Table */}
         <div className="border rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
           <div className="p-2.5 bg-slate-100 dark:bg-slate-900 font-bold flex items-center justify-between">
             <span>DANH MỤC MẶT HÀNG MUA BÁN ({saleItems.length} SẢN PHẨM)</span>
@@ -564,7 +548,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Section 1: Người nhận & Ngày hợp đồng */}
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">NGƯỜI NHẬN ĐỀ NGHỊ & HỢP ĐỒNG CĂN CỨ</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -583,7 +566,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        {/* Section 2: Phương thức thanh toán (Tiền mặt vs Chuyển khoản) */}
         <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20 space-y-3">
           <div className="font-bold text-amber-600 dark:text-amber-400 text-xs uppercase border-b pb-1 border-amber-200 dark:border-amber-900/40 flex items-center justify-between">
             <span>THÔNG TIN BÊN BÁN / BÊN ĐỀ NGHỊ THANH TOÁN (2 PHƯƠNG THỨC)</span>
@@ -665,7 +647,6 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           )}
         </div>
 
-        {/* Section 3: Tiến độ & Danh sách đợt thanh toán (Dynamic Stage List) */}
         <div className="border rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
           <div className="p-2.5 bg-slate-100 dark:bg-slate-900 font-bold flex items-center justify-between">
             <span>DANH SÁCH CÁC ĐỢT THANH TOÁN (THANH TOÁN NHIỀU ĐỢT)</span>

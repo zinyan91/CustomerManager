@@ -10,33 +10,25 @@ interface Tool8Props {
 }
 
 export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = ({ isLight }) => {
-  // Flat rate inputs
-  const [flatRateMonthlyStr, setFlatRateMonthlyStr] = useState('0.8'); // 0.8%/tháng
-  const [flatTenorMonths, setFlatTenorMonths] = useState<number>(24); // 24 tháng
+
+  const [flatRateMonthlyStr, setFlatRateMonthlyStr] = useState('0.8');
+  const [flatTenorMonths, setFlatTenorMonths] = useState<number>(24);
   const [sampleLoanAmtStr, setSampleLoanAmtStr] = useState('100.000.000');
 
-  // Nominal to Effective inputs
   const [nominalRateAnnualStr, setNominalRateAnnualStr] = useState('10.0');
-  const [compoundingFreq, setCompoundingFreq] = useState<number>(12); // Hàng tháng (12 lần/năm)
+  const [compoundingFreq, setCompoundingFreq] = useState<number>(12);
 
-  // Calculations:
-  // 1. Flat Rate to Effective Reducing Balance Rate (IRR / PMT estimation)
   const flatRateMonthly = (parseFloat(flatRateMonthlyStr) || 0) / 100;
   const sampleLoanAmt = parseFloat(sampleLoanAmtStr.replace(/\D/g, '')) || 100000000;
 
-  // Monthly interest under Flat Rate = LoanAmt * FlatRateMonthly
   const flatMonthlyInterest = sampleLoanAmt * flatRateMonthly;
   const flatMonthlyPrincipal = sampleLoanAmt / (flatTenorMonths || 1);
   const flatTotalMonthlyPayment = flatMonthlyPrincipal + flatMonthlyInterest;
   const flatTotalInterest = flatMonthlyInterest * flatTenorMonths;
 
-  // Find effective monthly interest rate r where PMT(r, n, PV=LoanAmt) = flatTotalMonthlyPayment
-  // Approximate reducing rate %/năm:
-  // Reducing Annual Rate ≈ (Flat Annual Rate * 2 * n) / (n + 1)
   const flatRateAnnual = flatRateMonthly * 12;
   const approxReducingRateAnnual = flatToReducingApprox(flatRateAnnual, flatTenorMonths);
 
-  // 2. Nominal to EAR (Effective Annual Rate)
   const nominalRateAnnual = (parseFloat(nominalRateAnnualStr) || 0) / 100;
   const earRateAnnual = effectiveAnnualRate(nominalRateAnnual, compoundingFreq);
 
@@ -44,7 +36,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = ({ isLight 
 
   return (
     <div className="space-y-5">
-      {/* Header */}
+
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
         <h2 className="text-sm font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center space-x-2">
           <RefreshCw className="w-5 h-5 text-emerald-500" />
@@ -53,7 +45,6 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = ({ isLight 
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* PANEL 1: QUY ĐỔI LÃI SUẤT PHẲNG -> LÃI SUẤT DƯ NỢ GIẢM DẦN */}
         <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
           <div className="font-bold text-xs text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
             <Percent className="w-4 h-4" />
@@ -108,7 +99,6 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = ({ isLight 
           </div>
         </div>
 
-        {/* PANEL 2: QUY ĐỔI LÃI SUẤT DANH NGHĨA -> LÃI SUẤT HIỆU LỰC (EAR / APR) */}
         <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
           <div className="font-bold text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
             <RefreshCw className="w-4 h-4" />

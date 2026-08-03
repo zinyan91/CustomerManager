@@ -11,13 +11,10 @@ interface Tool4Props {
 export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
   const [calcMode, setCalcMode] = useState<'quick' | 'tdh'>('tdh');
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // CHẾ ĐỘ 1: TÍNH GIẢM LÃI NGẮN HẠN / NHANH (SHEET 1)
-  // ──────────────────────────────────────────────────────────────────────────
   const [qBalanceStr, setQBalanceStr] = useState('1.500.000.000');
   const [qCurrentRateStr, setQCurrentRateStr] = useState('10.25');
   const [qProposedRateStr, setQProposedRateStr] = useState('8.25');
-  const [qDaysStr, setQDaysStr] = useState('61'); // 61 ngày cho 2 tháng
+  const [qDaysStr, setQDaysStr] = useState('61');
   const [qCofStr, setQCofStr] = useState('5.30');
 
   const qBalance = parseFloat(qBalanceStr.replace(/\D/g, '')) || 0;
@@ -31,22 +28,18 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
   const qMarginCurrent = qCurrentRate - qCof;
   const qMarginProposed = qProposedRate - qCof;
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // CHẾ ĐỘ 2: TÍNH GIẢM LÃI TRUNG DÀI HẠN (SHEET 2 - GIẢM LS VAY TDH)
-  // ──────────────────────────────────────────────────────────────────────────
   const [tdhLoanAmtStr, setTdhLoanAmtStr] = useState('2.000.000.000');
-  const [tdhTenorMonths, setTdhTenorMonths] = useState<number>(120); // 10 năm
+  const [tdhTenorMonths, setTdhTenorMonths] = useState<number>(120);
   const [tdhPrefRateStr, setTdhPrefRateStr] = useState('9.0');
   const [tdhPrefMonths, setTdhPrefMonths] = useState<number>(12);
   const [tdhPostPrefRateStr, setTdhPostPrefRateStr] = useState('12.6');
-  
-  // Thông số giảm lãi
-  const [tdhStartMonth, setTdhStartMonth] = useState<number>(28); // Tháng bắt đầu giảm s
-  const [tdhNumMonthsReduce, setTdhNumMonthsReduce] = useState<number>(3); // Số tháng giảm k
-  const [tdhProposedRateStr, setTdhProposedRateStr] = useState('9.9'); // LS đề xuất
-  const [tdhMinRateStr, setTdhMinRateStr] = useState('9.82'); // Sàn LSCV tối thiểu
-  const [tdhMaxReductionStr, setTdhMaxReductionStr] = useState('3.0'); // Trần giảm tối đa %
-  const [tdhCofStr, setTdhCofStr] = useState('8.5'); // COF %
+
+  const [tdhStartMonth, setTdhStartMonth] = useState<number>(28);
+  const [tdhNumMonthsReduce, setTdhNumMonthsReduce] = useState<number>(3);
+  const [tdhProposedRateStr, setTdhProposedRateStr] = useState('9.9');
+  const [tdhMinRateStr, setTdhMinRateStr] = useState('9.82');
+  const [tdhMaxReductionStr, setTdhMaxReductionStr] = useState('3.0');
+  const [tdhCofStr, setTdhCofStr] = useState('8.5');
   const [tdhStartDate, setTdhStartDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   const tdhLoanAmt = parseFloat(tdhLoanAmtStr.replace(/\D/g, '')) || 0;
@@ -57,7 +50,6 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
   const tdhMaxReduction = (parseFloat(tdhMaxReductionStr) || 0) / 100;
   const tdhCof = (parseFloat(tdhCofStr) || 0) / 100;
 
-  // Lịch tính chi tiết 120 tháng (Actual/365)
   const tdhScheduleRows = useMemo(() => {
     if (!tdhLoanAmt || !tdhTenorMonths || !tdhStartDate) return [];
 
@@ -106,10 +98,8 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
       const beginningBalance = Math.max(0, curBalance);
       const principalPayment = beginningBalance > 0 ? Math.min(monthlyPrincipalStep, beginningBalance) : 0;
 
-      // LS quy định kỳ
       const standardRateAnnual = m <= tdhPrefMonths ? tdhPrefRate : tdhPostPrefRate;
 
-      // Kiểm tra có nằm trong thời gian giảm lãi s -> s+k-1 không
       const inReduceWindow = m > tdhPrefMonths && m >= tdhStartMonth && m <= (tdhStartMonth + tdhNumMonthsReduce - 1);
 
       let reducedRateAnnual = standardRateAnnual;
@@ -166,7 +156,6 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
     return tdhScheduleRows.reduce((sum, r) => sum + r.interestFinal, 0);
   }, [tdhScheduleRows]);
 
-  // Xuất file Excel / HTML
   const handleExportExcel = () => {
     const headerHtml = `
       <tr style="background-color:#0284c7;color:#ffffff;font-weight:bold;text-align:center;">
@@ -249,7 +238,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
 
   return (
     <div className="space-y-5">
-      {/* Header Bar */}
+
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3`}>
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center space-x-2">
@@ -258,7 +247,6 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
           </h2>
         </div>
 
-        {/* Sub-tab Switcher */}
         <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
           <button
             type="button"
@@ -285,12 +273,8 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* CHẾ ĐỘ 1: GIẢM LÃI TRUNG DÀI HẠN (TDH) */}
-      {/* ─────────────────────────────────────────────────────────────────── */}
       {calcMode === 'tdh' && (
         <div className="space-y-4">
-          {/* Input Panel */}
           <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-4`}>
             <div className="font-bold text-xs text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
               <Calculator className="w-4 h-4" />
@@ -298,7 +282,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Cột 1: Thông số khoản vay */}
+
               <div className="space-y-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 mb-1">Số tiền vay (P) *</label>
@@ -330,7 +314,6 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
                 </div>
               </div>
 
-              {/* Cột 2: Cấu trúc lãi suất gốc */}
               <div className="space-y-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 mb-1">LS Ưu đãi (%/năm)</label>
@@ -364,7 +347,6 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
                 </div>
               </div>
 
-              {/* Cột 3: Phương án giảm lãi đề xuất */}
               <div className="space-y-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 mb-1">LS Đề xuất giảm (%/năm) *</label>
@@ -399,7 +381,6 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
                 </div>
               </div>
 
-              {/* Cột 4: Khống chế trần sàn & COF */}
               <div className="space-y-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 mb-1">LSCV Tối thiểu / Sàn (%/năm)</label>
@@ -435,7 +416,6 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
             </div>
           </div>
 
-          {/* Result KPI Summary Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className={`${cardBg} rounded-2xl p-4 border shadow-sm flex items-center justify-between`}>
               <div>
@@ -483,7 +463,6 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
             </div>
           </div>
 
-          {/* Schedule Table */}
           <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
               <div className="flex items-center space-x-2">
@@ -555,9 +534,6 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
         </div>
       )}
 
-      {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* CHẾ ĐỘ 2: GIẢM LÃI NGẮN HẠN / NHANH (SHEET 1) */}
-      {/* ─────────────────────────────────────────────────────────────────── */}
       {calcMode === 'quick' && (
         <div className="space-y-4">
           <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-4`}>
@@ -631,7 +607,6 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
               </div>
             </div>
 
-            {/* Quick Result Summary */}
             <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">

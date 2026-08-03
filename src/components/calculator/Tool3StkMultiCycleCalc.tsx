@@ -259,7 +259,6 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
         </div>
       </div>
 
-      {/* Cycle Results Table */}
       <div className={`${styles.containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
         <div className={`p-3 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
           <span className="font-bold text-xs uppercase flex items-center space-x-2">

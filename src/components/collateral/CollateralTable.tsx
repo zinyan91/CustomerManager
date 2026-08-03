@@ -122,7 +122,6 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                   <td className="p-3 text-center whitespace-nowrap">
                     <button
                       type="button"
-                      // Chặn nổi bọt để không kích hoạt chọn dòng của <tr>
                       onClick={(e) => { e.stopPropagation(); onDelete(col); }}
                       disabled={deletingId === col.Id}
                       className="p-1.5 rounded-lg border border-transparent text-slate-400 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
@@ -140,7 +139,6 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
         </table>
       </div>
 
-      {/* Pagination Footer */}
       {totalPages > 1 && (
         <div className={`p-3 border-t flex items-center justify-between text-xs ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
           <span className="text-slate-400">Trang {colPage} / {totalPages}</span>

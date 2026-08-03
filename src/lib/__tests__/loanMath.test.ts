@@ -11,8 +11,8 @@ import {
   recalculateSchedules,
   computeOutstandingBalance,
   isBulletPrincipal,
-} from './loanMath';
-import type { RepaymentSchedule } from '../types';
+} from '../loanMath';
+import type { RepaymentSchedule } from '../../types';
 
 describe('addMonthsToDate', () => {
   it('cộng tháng bình thường, giữ nguyên ngày', () => {
@@ -21,7 +21,7 @@ describe('addMonthsToDate', () => {
   });
 
   it('kẹp về ngày cuối tháng khi tháng đích ngắn hơn', () => {
-    // 31/01 + 1 tháng: tháng 2/2026 chỉ có 28 ngày
+
     expect(addMonthsToDate('2026-01-31', 1)).toBe('2026-02-28');
     expect(addMonthsToDate('2026-03-31', 1)).toBe('2026-04-30');
   });
@@ -103,7 +103,7 @@ describe('roundPrincipalCore', () => {
 
 describe('generateSchedule — bất biến quan trọng nhất', () => {
   it('TỔNG GỐC CÁC KỲ PHẢI BẰNG ĐÚNG SỐ TIỀN VAY (trả đều)', () => {
-    // Số tiền chia không hết: 100tr / 12 kỳ = 8.333.333,33
+
     const s = generateSchedule(1, 100_000_000, 10, '2026-02-15', 12, false, '2026-01-15');
     const tongGoc = s.reduce((sum, k) => sum + (k.PrincipalAmount || 0), 0);
     expect(tongGoc).toBe(100_000_000);
@@ -142,7 +142,7 @@ describe('generateSchedule — phân bổ gốc', () => {
   it('trả đều: gốc hằng số ở các kỳ giữa, kỳ cuối gánh phần dư', () => {
     const s = generateSchedule(1, 120_000_000, 10, '2026-02-15', 12, false, '2026-01-15');
     expect(s).toHaveLength(12);
-    // 120tr / 12 = 10tr chẵn
+
     expect(s.slice(0, 11).every(k => k.PrincipalAmount === 10_000_000)).toBe(true);
     expect(s[11].PrincipalAmount).toBe(10_000_000);
   });
@@ -162,7 +162,7 @@ describe('generateSchedule — phân bổ gốc', () => {
 describe('generateSchedule — tính lãi', () => {
   it('lãi = dư nợ × lãi suất năm × số ngày thực tế / 365', () => {
     const s = generateSchedule(1, 100_000_000, 10, '2026-02-15', 1, true, '2026-01-15');
-    // 15/01 -> 15/02 là 31 ngày
+
     const kyVong = Math.round(100_000_000 * 0.1 * (31 / 365));
     expect(s[0].InterestAmount).toBe(kyVong);
   });
@@ -185,9 +185,6 @@ describe('generateSchedule — tính lãi', () => {
   });
 
   it('lãi CÓ THỂ TĂNG so với kỳ trước khi kỳ đó dài hơn — đúng chuẩn số ngày thực tế/365', () => {
-    // Ghi lại có chủ đích: đây KHÔNG phải lỗi.
-    // Kỳ 15/02→15/03 chỉ 28 ngày, kỳ 15/03→15/04 có 31 ngày.
-    // Dư nợ giảm 10tr không bù nổi 3 ngày cộng thêm, nên lãi kỳ sau cao hơn.
     const s = generateSchedule(1, 120_000_000, 10, '2026-02-15', 12, false, '2026-01-15');
     expect(getDaysBetween(s[1].DueDate!, s[2].DueDate!)).toBe(31);
     expect(getDaysBetween(s[0].DueDate!, s[1].DueDate!)).toBe(28);
@@ -203,10 +200,8 @@ describe('generateSchedule — tính lãi', () => {
         { id: '2', effectiveDate: '2026-03-01', ratePercent: 20 },
       ]
     );
-    // Kỳ 1 (đến 15/02) dùng 10%; kỳ 3 (đến 15/04) đã sang mốc 20%
     const laiKy1TheoRate10 = Math.round(100_000_000 * 0.1 * (31 / 365));
     expect(s[0].InterestAmount).toBe(laiKy1TheoRate10);
-    // Kỳ 3: 15/03 -> 15/04 = 31 ngày, rate 20%
     expect(s[2].InterestAmount).toBe(Math.round(100_000_000 * 0.2 * (31 / 365)));
   });
 
@@ -216,9 +211,7 @@ describe('generateSchedule — tính lãi', () => {
       undefined, 0, 0, 0, 'reduce_monthly', undefined,
       { prefRate: 6, prefMonths: 2, postPrefRate: 12 }
     );
-    // Kỳ 1: 31 ngày @6%
     expect(s[0].InterestAmount).toBe(Math.round(100_000_000 * 0.06 * (31 / 365)));
-    // Kỳ 3: 15/03 -> 15/04 = 31 ngày @12%
     expect(s[2].InterestAmount).toBe(Math.round(100_000_000 * 0.12 * (31 / 365)));
   });
 });
@@ -315,7 +308,6 @@ describe('getAutoDebtGroupInfo — phân nhóm nợ theo quy định', () => {
   });
 
   it('BỎ QUA các kỳ đã thanh toán', () => {
-    // Kỳ quá hạn rất lâu nhưng đã trả -> không ảnh hưởng nhóm nợ
     const r = getAutoDebtGroupInfo([ky('2024-01-01', true), ky('2026-12-31')], '2026-08-03');
     expect(r.debtGroup).toBe(1);
     expect(r.maxOverdueDays).toBe(0);
@@ -326,8 +318,8 @@ describe('getAutoDebtGroupInfo — phân nhóm nợ theo quy định', () => {
       [ky('2026-07-20'), ky('2026-01-15'), ky('2026-07-01')], '2026-08-03'
     );
     expect(r.worstDueDate).toBe('2026-01-15');
-    expect(r.maxOverdueDays).toBe(200);   // 15/01 -> 03/08
-    expect(r.debtGroup).toBe(4);          // 181–360 ngày
+    expect(r.maxOverdueDays).toBe(200);
+    expect(r.debtGroup).toBe(4);
   });
 
   it('không có lịch trả nợ thì mặc định Nhóm 1', () => {
@@ -415,7 +407,6 @@ describe('trả trước hạn trên kỳ ĐÃ thanh toán', () => {
     DisbursementDate: '2025-08-25',
   } as any;
 
-  // Hợp đồng thật: 3,8 tỷ / 240 kỳ. Mười kỳ đầu đã tất toán.
   const lich240 = () => Array.from({ length: 240 }, (_, i) => ({
     Id: i + 1, ContractId: 1, PeriodNumber: i + 1,
     DueDate: `${2026 + Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, '0')}-15`,
@@ -424,9 +415,6 @@ describe('trả trước hạn trên kỳ ĐÃ thanh toán', () => {
   } as RepaymentSchedule));
 
   it('GHI NHẬN tiền trả trước hạn kể cả khi kỳ đã tất toán', () => {
-    // Tình huống thật (LÊ VĂN HẬU): kỳ #10 vừa "Đã TT" vừa có trả trước
-    // 900 triệu. Bản cũ bỏ qua hoàn toàn ở nhánh IsPaid -> khoản trả trước
-    // mất trắng, dư nợ không giảm.
     const goc = 3_800_000_000, kyHan = 240;
     const gocDeuMoiKy = roundPrincipalCore(goc / kyHan, '1k');
 
@@ -434,13 +422,10 @@ describe('trả trước hạn trên kỳ ĐÃ thanh toán', () => {
     l[9] = { ...l[9], PrepaidPrincipalAmount: 900_000_000 };
     const r = recalculateSchedules(l, hopDongHM);
 
-    // Gốc kỳ đó = gốc đều hàng tháng CỘNG phần trả trước hạn
     expect(r[9].PrincipalAmount).toBe(gocDeuMoiKy + 900_000_000);
   });
 
   it('dư nợ GIẢM đúng bằng số tiền trả trước hạn', () => {
-    // Phép so sánh vi phân: cùng một lịch, chỉ khác ở chỗ có trả trước hạn.
-    // Chênh lệch dư nợ phải bằng CHÍNH XÁC số tiền đã trả trước.
     const khongTraTruoc = recalculateSchedules(lich240(), hopDongHM);
 
     const l = lich240();
@@ -487,7 +472,6 @@ describe('computeOutstandingBalance', () => {
   });
 
   it('trừ cả tiền trả trước hạn ghi trên kỳ CHƯA thanh toán', () => {
-    // Bản cũ bỏ qua trường hợp này nên dư nợ không đổi
     expect(computeOutstandingBalance(
       [ky({ PrepaidPrincipalAmount: 20_000_000 })], hd
     )).toBe(80_000_000);
@@ -521,9 +505,6 @@ describe('isBulletPrincipal — lựa chọn của banker quyết định', () =
   });
 
   it('PHƯƠNG THỨC VAY không được đè lên lựa chọn trả gốc', () => {
-    // Chống hồi quy: trước đây LoanMethod === 'Hạn mức tín dụng' ép thành
-    // bullet, khiến giao diện ghi "Trả đều hàng tháng" nhưng cột gốc của
-    // mọi kỳ trong lịch thu nợ đều bằng 0.
     expect(isBulletPrincipal({
       LoanMethod: 'Hạn mức tín dụng',
       PrincipalRepaymentMethod: 'Trả đều hàng tháng',

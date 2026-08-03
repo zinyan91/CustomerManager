@@ -1,14 +1,3 @@
-/**
- * Quy tắc sản phẩm tín dụng — nguồn duy nhất cho mọi ràng buộc theo phương
- * thức vay: mục đích vay hợp lệ, kỳ hạn, ân hạn gốc, phương thức trả nợ
- * mặc định.
- *
- * Đặt tập trung ở đây thay vì rải điều kiện `if (LoanMethod === ...)` khắp
- * biểu mẫu — dự án này đã trả giá nhiều lần cho việc chép cùng một quy tắc
- * ra nhiều nơi rồi để chúng trôi dạt khác nhau.
- */
-
-/** Giá trị lưu trong CSDL giữ nguyên; chỉ nhãn hiển thị được viết lại. */
 export const LOAN_PURPOSES: ReadonlyArray<{ value: string; label: string }> = [
   { value: 'Kinh doanh',          label: 'Sản xuất kinh doanh' },
   { value: 'Tiêu dùng',           label: 'Tiêu dùng phục vụ đời sống' },
@@ -23,19 +12,19 @@ export function purposeLabel(value?: string | null): string {
 }
 
 export interface LoanProductRule {
-  /** Mục đích vay được phép. Rỗng = không giới hạn. */
+
   purposes: string[];
-  /** Mục đích tự điền khi chọn phương thức vay này. */
+
   defaultPurpose?: string;
-  /** Khoá ô mục đích vay (chỉ một lựa chọn duy nhất theo sản phẩm). */
+
   lockPurpose: boolean;
-  /** Kỳ hạn hợp lệ, tính theo tháng. */
+
   tenor: { min: number; max: number; typical?: number[] };
-  /** Các mức ân hạn gốc cho phép. Rỗng = sản phẩm không có ân hạn. */
+
   graceMonths: number[];
   defaultPrincipalMethod: string;
   defaultInterestMethod: string;
-  /** Mô tả ngắn hiện trên biểu mẫu để banker biết ràng buộc. */
+
   note?: string;
 }
 
@@ -49,7 +38,7 @@ const PERMISSIVE: LoanProductRule = {
 };
 
 const RULES: Record<string, LoanProductRule> = {
-  // Vay ngắn hạn, một mục đích duy nhất là sản xuất kinh doanh
+
   'Hạn mức tín dụng': {
     purposes: ['Kinh doanh'],
     defaultPurpose: 'Kinh doanh',
@@ -61,7 +50,6 @@ const RULES: Record<string, LoanProductRule> = {
     note: 'Vay ngắn hạn phục vụ sản xuất kinh doanh. Kỳ hạn thường 12 hoặc 24 tháng.',
   },
 
-  // Vay dài hạn phục vụ đời sống
   'Cho vay từng lần': {
     purposes: ['Tiêu dùng', 'Sửa chữa nhà', 'Mua bất động sản'],
     defaultPurpose: 'Tiêu dùng',
@@ -86,16 +74,11 @@ const RULES: Record<string, LoanProductRule> = {
   },
 };
 
-/**
- * Quy tắc của một phương thức vay. Phương thức chưa khai báo ràng buộc
- * riêng sẽ dùng bộ mặc định thoáng, giữ nguyên hành vi cũ.
- */
 export function getLoanProductRule(loanMethod?: string | null): LoanProductRule {
   if (!loanMethod) return PERMISSIVE;
   return RULES[loanMethod] ?? PERMISSIVE;
 }
 
-/** Danh sách mục đích vay được phép, kèm nhãn hiển thị. */
 export function allowedPurposes(loanMethod?: string | null) {
   const rule = getLoanProductRule(loanMethod);
   if (rule.purposes.length === 0) return LOAN_PURPOSES;
@@ -115,10 +98,6 @@ export interface RuleCheck {
   message?: string;
 }
 
-/**
- * Kiểm tra kỳ hạn so với sản phẩm. Chỉ CẢNH BÁO, không chặn — nghiệp vụ
- * ngân hàng có ngoại lệ được phê duyệt.
- */
 export function checkTenor(loanMethod: string | null | undefined, months: number): RuleCheck {
   const rule = getLoanProductRule(loanMethod);
   if (!months || months <= 0) return { ok: true };
@@ -136,7 +115,6 @@ export function checkTenor(loanMethod: string | null | undefined, months: number
   return { ok: true };
 }
 
-/** Kiểm tra mục đích vay có thuộc sản phẩm hay không. */
 export function checkPurpose(loanMethod: string | null | undefined, purpose?: string | null): RuleCheck {
   const rule = getLoanProductRule(loanMethod);
   if (rule.purposes.length === 0 || !purpose) return { ok: true };
@@ -151,7 +129,6 @@ export function checkPurpose(loanMethod: string | null | undefined, purpose?: st
   return { ok: true };
 }
 
-/** Kiểm tra mức ân hạn gốc. */
 export function checkGrace(loanMethod: string | null | undefined, graceMonths?: number | null): RuleCheck {
   const rule = getLoanProductRule(loanMethod);
   const g = graceMonths ?? 0;

@@ -2,7 +2,7 @@
 
 Cập nhật: 03/08/2026
 
-Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · ⚠️ chờ quyết định nghiệp vụ
+Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
 ---
 
@@ -17,8 +17,8 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · ⚠️ chờ quy
 | ✅ | Đăng nhập bắt buộc, tắt tự đăng ký | |
 | ✅ | Bật RLS trên toàn bộ bảng | Đã kiểm chứng: banker chỉ thấy KH của mình |
 | ✅ | Xoá thư mục `api/` code chết | Từng làm lộ mật khẩu database |
-| ⬜ | Bật chính sách mật khẩu Supabase | **Cần làm trước khi cấp tài khoản nhân viên thật.** Tối thiểu 12 ký tự + Leaked Password Protection |
-| ⬜ | Xoá tài khoản thử nghiệm `abc@gmail.com` | Mật khẩu yếu, đang nằm chung hệ thống với hồ sơ khách hàng thật |
+| 🕐 | Bật chính sách mật khẩu Supabase | Hoãn theo quyết định 03/08/2026. Mốc cần làm: **trước khi cấp tài khoản cho nhân viên thật**. Tối thiểu 12 ký tự + Leaked Password Protection |
+| 🕐 | Xoá tài khoản thử nghiệm `abc@gmail.com` | Hoãn theo quyết định 03/08/2026. Đây là tài khoản đang hoạt động, mật khẩu yếu, có quyền xem hồ sơ khách hàng thật — khác với hạng mục gia cố ở trên. Nên xử lý khi kết thúc đợt kiểm thử |
 
 ## Chất lượng dữ liệu
 

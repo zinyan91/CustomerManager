@@ -226,10 +226,19 @@ export function buildDepositMatrix(
   };
 }
 
+/**
+ * Tờ gửi khách CHỈ in kênh giao dịch của khách: tại quầy và online.
+ *
+ * FTP mua vốn nội bộ là giá điều hành nội bộ, in ra là để khách thấy biên lợi
+ * nhuận của ngân hàng. Quy tắc này đã có ở CONVENTIONS mục 8; có test riêng
+ * khẳng định chuỗi FTP không xuất hiện trong tờ in.
+ */
+const KENH_GUI_KHACH: DepositChannel[] = ['quay', 'online'];
+
 function depositRateTable(input: RateSheetInput): string {
   const channels: DepositChannel[] = input.channel
-    ? [input.channel]
-    : (['quay', 'online', 'ftp'] as DepositChannel[]);
+    ? (KENH_GUI_KHACH.includes(input.channel) ? [input.channel] : [])
+    : KENH_GUI_KHACH;
 
   return channels.map(ch => {
     const rows = input.tiers.filter(t => t.Channel === ch);
@@ -403,6 +412,7 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
   .bank { font-size: 11pt; font-weight: 800; letter-spacing: .12em; }
   h1 { font-size: 14pt; margin: 3px 0 1px; font-weight: 800; text-transform: uppercase; }
   .sub { font-size: 9.5pt; opacity: .92; }
+  .scope p { font-size: 8.5pt; color: #333; margin: 2px 0 0; line-height: 1.35; }
   h2 {
     font-size: 10pt; color: #0b5cab; margin: 10px 0 3px; text-transform: uppercase;
     border-bottom: 2px solid #d7e6f5; padding-bottom: 2px;
@@ -437,8 +447,10 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
   <header>
     ${input.logoDataUri ? '' : `<div class="bank">${esc(bankName)}</div>`}
     <h1>${esc(program.Name)}</h1>
-    <div class="sub">Dành cho Khách hàng cá nhân</div>
+    <div class="sub">${esc(program.TargetText || 'Dành cho Khách hàng cá nhân')}</div>
   </header>
+
+  ${program.ScopeText ? `<section class="scope"><h2>Phạm vi áp dụng</h2><p>${esc(program.ScopeText)}</p></section>` : ''}
 
   ${body}
   ${isDeposit ? '' : tierFeeTable(input)}

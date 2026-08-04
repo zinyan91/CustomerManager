@@ -249,3 +249,73 @@ describe('summarizeCreditContracts', () => {
     expect(r[0].outstanding).toBe(250_000_000);
   });
 });
+
+describe('canDisburse — khi nào còn giải ngân được', () => {
+  it('vay từng lần đã có KUNN thì KHOÁ, dù còn hiệu lực', () => {
+
+    const r = summarizeCreditContracts(
+      [cc({ Id: 7, LoanMethod: 'Cho vay từng lần', ContractAmount: 3_000_000_000, ContractEndDate: '2046-04-11' })],
+      [kunn({ Id: 1, CreditContractId: 7, LoanAmount: 3_000_000_000, CurrentBalance: 3_000_000_000 })],
+      { today: HOM_NAY }
+    );
+    expect(r[0].expired).toBe(false);
+    expect(r[0].headroom).toBe(0);
+    expect(r[0].canDisburse).toBe(false);
+    expect(r[0].blockReason).toContain('từng lần đã giải ngân');
+  });
+
+  it('vay từng lần chưa giải ngân thì còn giải ngân được', () => {
+    const r = summarizeCreditContracts(
+      [cc({ Id: 7, LoanMethod: 'Cho vay từng lần', ContractAmount: 3_000_000_000, ContractEndDate: '2046-04-11' })],
+      [], { today: HOM_NAY }
+    );
+    expect(r[0].available).toBe(3_000_000_000);
+    expect(r[0].canDisburse).toBe(true);
+  });
+
+  it('vay từng lần trả bớt gốc KHÔNG mở lại hạn mức', () => {
+
+    const r = summarizeCreditContracts(
+      [cc({ Id: 7, LoanMethod: 'Cho vay từng lần', ContractAmount: 3_000_000_000, ContractEndDate: '2046-04-11' })],
+      [kunn({ Id: 1, CreditContractId: 7, LoanAmount: 3_000_000_000, CurrentBalance: 500_000_000 })],
+      { today: HOM_NAY }
+    );
+    expect(r[0].outstanding).toBe(500_000_000);
+    expect(r[0].canDisburse).toBe(false);
+  });
+
+  it('HMTD tuần hoàn trả nợ xong thì mở lại hạn mức', () => {
+    const r = summarizeCreditContracts(
+      [cc({ Id: 7, LoanMethod: 'Hạn mức tín dụng', ContractAmount: 4_000_000_000, ContractEndDate: '2027-07-24' })],
+      [kunn({ Id: 1, CreditContractId: 7, LoanAmount: 1_400_000_000, CurrentBalance: 0, IsSettled: true })],
+      { today: HOM_NAY }
+    );
+    expect(r[0].available).toBe(4_000_000_000);
+    expect(r[0].canDisburse).toBe(true);
+  });
+
+  it('HMTD dùng hết hạn mức thì khoá', () => {
+    const r = summarizeCreditContracts(
+      [cc({ Id: 7, LoanMethod: 'Hạn mức tín dụng', ContractAmount: 1_000_000_000, ContractEndDate: '2027-07-24' })],
+      [kunn({ Id: 1, CreditContractId: 7, LoanAmount: 1_000_000_000, CurrentBalance: 1_000_000_000 })],
+      { today: HOM_NAY }
+    );
+    expect(r[0].canDisburse).toBe(false);
+    expect(r[0].blockReason).toBe('Đã dùng hết hạn mức');
+  });
+
+  it('hết hiệu lực và đã đóng vẫn khoá, lý do đúng thứ tự ưu tiên', () => {
+    const hetHieuLuc = summarizeCreditContracts(
+      [cc({ Id: 7, LoanMethod: 'Hạn mức tín dụng', ContractAmount: 4_000_000_000, ContractEndDate: '2026-07-24' })],
+      [], { today: HOM_NAY }
+    );
+    expect(hetHieuLuc[0].canDisburse).toBe(false);
+    expect(hetHieuLuc[0].blockReason).toContain('hết hiệu lực 24/07/2026');
+
+    const daDong = summarizeCreditContracts(
+      [cc({ Id: 7, LoanMethod: 'Hạn mức tín dụng', ContractAmount: 4_000_000_000, ContractEndDate: '2027-07-24', IsClosed: true })],
+      [], { today: HOM_NAY }
+    );
+    expect(daDong[0].blockReason).toBe('HĐTD đã đóng');
+  });
+});

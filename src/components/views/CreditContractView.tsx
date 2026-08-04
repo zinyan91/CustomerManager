@@ -364,18 +364,12 @@ export const CreditContractView: React.FC = () => {
                             <FileText className="w-3 h-3" /><span>Chi tiết</span>
                           </button>
                           {(() => {
-                            const khoaGiaiNgan = s.expired || !!s.contract.IsClosed;
+                            const khoaGiaiNgan = !s.canDisburse;
                             return (
                               <button
                                 disabled={khoaGiaiNgan}
                                 onClick={() => !khoaGiaiNgan && requestDisburse({ creditContractId: s.contract.Id, customerId: customer.Id })}
-                                title={
-                                  s.contract.IsClosed
-                                    ? 'HĐTD đã đóng — không giải ngân được'
-                                    : s.expired
-                                      ? `HĐTD hết hiệu lực ${fmtDate(s.contract.ContractEndDate)} — không giải ngân được`
-                                      : 'Giải ngân KUNN mới trên hợp đồng này'
-                                }
+                                title={khoaGiaiNgan ? s.blockReason : 'Giải ngân KUNN mới'}
                                 className={`flex items-center space-x-1 font-bold px-2.5 py-1.5 rounded-lg text-[11px] ${
                                   khoaGiaiNgan
                                     ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'

@@ -217,9 +217,6 @@ export const DashboardView: React.FC = () => {
             <Building2 className="w-5 h-5 text-sky-500" />
             <span>BÁO CÁO QUẢN TRỊ DƯ NỢ & HẠN MỨC TÍN DỤNG</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Theo dõi KPI quy mô dư nợ, xếp loại tài sản và 4 Bảng cảnh báo tới hạn tự động
-          </p>
         </div>
         <button
           onClick={fetchDashboardData}
@@ -343,22 +340,20 @@ export const DashboardView: React.FC = () => {
           <button
             type="button"
             onClick={() => setOnlyGroup1(true)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              onlyGroup1
-                ? 'bg-sky-600 text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${onlyGroup1
+              ? 'bg-sky-600 text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
           >
             ✓ Chỉ xem Nợ Nhóm 1 (Chuẩn đủ điều kiện)
           </button>
           <button
             type="button"
             onClick={() => setOnlyGroup1(false)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              !onlyGroup1
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${!onlyGroup1
+              ? 'bg-amber-600 text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
           >
             Bao gồm cả Nợ Nhóm 2+ (Nợ chú ý & Nợ xấu)
           </button>

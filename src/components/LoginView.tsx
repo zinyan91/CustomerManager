@@ -53,7 +53,7 @@ export const LoginView: React.FC = () => {
         <div className="text-center mb-6">
           <div className="text-4xl mb-3">🏦</div>
           <h1 className="text-base md:text-lg font-bold tracking-tight leading-tight">
-            QUẢN LÝ DƯ NỢ KHÁCH HÀNG
+            QUẢN LÝ KHÁCH HÀNG
           </h1>
           <p className={`text-xs mt-1.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
             Đăng nhập để truy cập hệ thống

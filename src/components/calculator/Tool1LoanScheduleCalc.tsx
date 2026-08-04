@@ -135,8 +135,8 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   const [principalGraceMonths, setPrincipalGraceMonths] = useState<number>(0);
 
   const [promoMonthsStr, setPromoMonthsStr] = useState('0');
-  const [postPromoBaseRateStr, setPostPromoBaseRateStr] = useState('');
   const [marginStr, setMarginStr] = useState('');
+  const [postPromoRateStr, setPostPromoRateStr] = useState('');
 
   const [prepayments, setPrepayments] = useState<PrepaymentRow[]>([]);
 
@@ -144,14 +144,14 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   const rateAnnual = parseFloat(interestRateStr) || 0;
 
   const promoMonths = parseNumOrNull(promoMonthsStr);
-  const postPromoBaseRate = parseNumOrNull(postPromoBaseRateStr);
   const marginAnnual = parseNumOrNull(marginStr);
+  const postPromoRateOverride = parseNumOrNull(postPromoRateStr);
 
   const hasPromo = promoMonths !== null && promoMonths > 0;
   const postRate = postPromoRateAnnual({
     promoRateAnnual: rateAnnual,
-    postPromoBaseRateAnnual: postPromoBaseRate,
     marginAnnual,
+    postPromoRateOverride,
   });
 
   const prepaymentPlan: PrepaymentPlanItem[] = React.useMemo(
@@ -176,12 +176,12 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       repayMethod,
       principalGraceMonths,
       promoMonths,
-      postPromoBaseRateAnnual: postPromoBaseRate,
       marginAnnual,
+      postPromoRateOverride,
       prepayments: prepaymentPlan,
     }),
     [loanAmt, rateAnnual, tenorMonths, disbursementDate, firstPaymentDate, repayMethod,
-      principalGraceMonths, promoMonths, postPromoBaseRate, marginAnnual, prepaymentPlan]
+      principalGraceMonths, promoMonths, marginAnnual, postPromoRateOverride, prepaymentPlan]
   );
 
   const addPrepayment = () => {
@@ -218,9 +218,8 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       ? [{
         label: 'Lãi suất sau ưu đãi:',
         value: `${postRate.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%/năm`
-          + (postPromoBaseRate !== null || marginAnnual !== null
-            ? ` (cơ sở ${(postPromoBaseRate === null ? rateAnnual : postPromoBaseRate).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`
-              + ` + biên độ ${(marginAnnual === null ? 0 : marginAnnual).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%)`
+          + (postPromoRateOverride === null && marginAnnual !== null
+            ? ` (LS ưu đãi + biên độ ${marginAnnual.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%)`
             : ''),
       }]
       : []),
@@ -278,7 +277,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           <span>THÔNG SỐ KHOẢN VAY CẦN TÍNH LỊCH</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className={`block mb-1 ${styles.labelStyle}`}>Số tiền vay (VNĐ) *</label>
             <input
@@ -289,17 +288,6 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 setLoanAmountStr(digits ? Number(digits).toLocaleString('vi-VN') : '');
               }}
               className={`w-full rounded-xl p-2.5 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.inputStyle}`}
-            />
-          </div>
-          <div>
-            <label className={`block mb-1 ${styles.labelStyle}`}>
-              {hasPromo ? 'Lãi suất ưu đãi (%/năm) *' : 'Lãi suất vay (%/năm) *'}
-            </label>
-            <input
-              type="text"
-              value={interestRateStr}
-              onChange={e => setInterestRateStr(e.target.value)}
-              className={`w-full rounded-xl p-2.5 font-mono font-bold ${styles.inputStyle}`}
             />
           </div>
           <div>
@@ -373,6 +361,15 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
+              <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">Lãi suất ưu đãi (%/năm) *</label>
+              <input
+                type="text"
+                value={interestRateStr}
+                onChange={e => setInterestRateStr(e.target.value)}
+                className={`w-full rounded-xl p-2 font-mono font-bold ${styles.inputStyle}`}
+              />
+            </div>
+            <div>
               <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">Số tháng ưu đãi</label>
               <input
                 type="number"
@@ -380,16 +377,6 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 max={tenorMonths}
                 value={promoMonthsStr}
                 onChange={e => setPromoMonthsStr(e.target.value)}
-                className={`w-full rounded-xl p-2 font-mono font-bold ${styles.inputStyle}`}
-              />
-            </div>
-            <div>
-              <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">LS cơ sở sau ưu đãi (%/năm)</label>
-              <input
-                type="text"
-                value={postPromoBaseRateStr}
-                onChange={e => setPostPromoBaseRateStr(e.target.value)}
-                placeholder="VD: 8.5"
                 className={`w-full rounded-xl p-2 font-mono font-bold ${styles.inputStyle}`}
               />
             </div>
@@ -405,29 +392,27 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             </div>
             <div>
               <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">LS sau ưu đãi (%/năm)</label>
-              <div className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 dark:text-sky-400 border border-dashed ${isLight ? 'border-sky-300 bg-white/60' : 'border-sky-800 bg-slate-950/40'}`}>
-                {hasPromo
-                  ? `${postRate.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%/năm`
-                  : 'Không áp dụng'}
-              </div>
+              <input
+                type="text"
+                value={postPromoRateStr}
+                onChange={e => setPostPromoRateStr(e.target.value)}
+                placeholder={hasPromo ? `${postRate.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} (LS ưu đãi + biên độ)` : 'Không áp dụng'}
+                className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.inputStyle}`}
+              />
             </div>
-          </div>
-
-          <div className="text-[11px] text-sky-700/80 dark:text-sky-400/80 leading-relaxed">
-            Số tháng ưu đãi = 0 thì toàn bộ kỳ hạn dùng một lãi suất. LS sau ưu đãi = LS cơ sở + biên độ; để trống LS cơ sở thì lấy lãi suất ưu đãi làm cơ sở.
           </div>
         </div>
 
         <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20 space-y-3">
           <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center justify-between gap-2 border-b pb-1.5 border-amber-200 dark:border-amber-900/40">
-            <span>⚡ TRẢ NỢ TRƯỚC HẠN NHIỀU KỲ (TÍNH LẠI GỐC LÃI TỰ ĐỘNG)</span>
+            <span>⚡ TRẢ NỢ TRƯỚC HẠN NHIỀU KỲ</span>
             <button
               type="button"
               onClick={addPrepayment}
               className="flex items-center space-x-1 bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] px-2.5 py-1 rounded-lg normal-case"
             >
               <Plus className="w-3 h-3" />
-              <span>Thêm lần trả trước hạn</span>
+              <span>Thêm</span>
             </button>
           </div>
 
@@ -486,9 +471,6 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                   </div>
                 </div>
               ))}
-              <div className="text-[11px] text-amber-700/80 dark:text-amber-400/80">
-                Nhiều lần khai ở cùng một kỳ sẽ được cộng dồn. Số tiền vượt dư nợ còn lại tự động cắt về đúng dư nợ.
-              </div>
             </div>
           )}
         </div>

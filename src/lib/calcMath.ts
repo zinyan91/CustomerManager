@@ -61,8 +61,8 @@ export interface LoanScheduleParams {
   repayMethod: PrincipalRepayMethod;
   principalGraceMonths?: number;
   promoMonths?: number | null;
-  postPromoBaseRateAnnual?: number | null;
   marginAnnual?: number | null;
+  postPromoRateOverride?: number | null;
   prepayments?: PrepaymentPlanItem[];
 }
 
@@ -89,14 +89,13 @@ function numOrNull(v: number | null | undefined): number | null {
 
 export function postPromoRateAnnual(params: {
   promoRateAnnual: number;
-  postPromoBaseRateAnnual?: number | null;
   marginAnnual?: number | null;
+  postPromoRateOverride?: number | null;
 }): number {
-  const base = numOrNull(params.postPromoBaseRateAnnual);
+  const override = numOrNull(params.postPromoRateOverride);
+  if (override !== null) return override;
   const margin = numOrNull(params.marginAnnual);
-  if (base !== null) return base + (margin === null ? 0 : margin);
-  if (margin !== null) return params.promoRateAnnual + margin;
-  return params.promoRateAnnual;
+  return params.promoRateAnnual + (margin === null ? 0 : margin);
 }
 
 export function periodRateAnnual(period: number, params: LoanScheduleParams): number {

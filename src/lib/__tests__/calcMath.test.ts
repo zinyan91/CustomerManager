@@ -173,25 +173,22 @@ describe('flatToReducingApprox', () => {
 });
 
 describe('postPromoRateAnnual', () => {
-  it('cơ sở + biên độ', () => {
-    expect(postPromoRateAnnual({ promoRateAnnual: 7, postPromoBaseRateAnnual: 8, marginAnnual: 3.5 })).toBe(11.5);
+  it('lãi ưu đãi + biên độ', () => {
+    expect(postPromoRateAnnual({ promoRateAnnual: 9.5, marginAnnual: 3.5 })).toBe(13);
   });
 
   it('biên độ 0 là giá trị hợp lệ, không bị coi là thiếu', () => {
-    expect(postPromoRateAnnual({ promoRateAnnual: 7, postPromoBaseRateAnnual: 9, marginAnnual: 0 })).toBe(9);
+    expect(postPromoRateAnnual({ promoRateAnnual: 9.5, marginAnnual: 0 })).toBe(9.5);
   });
 
-  it('LS cơ sở 0 là giá trị hợp lệ', () => {
-    expect(postPromoRateAnnual({ promoRateAnnual: 7, postPromoBaseRateAnnual: 0, marginAnnual: 2 })).toBe(2);
-  });
-
-  it('chỉ có biên độ thì cộng lên lãi ưu đãi', () => {
-    expect(postPromoRateAnnual({ promoRateAnnual: 7, marginAnnual: 3 })).toBe(10);
+  it('LS sau ưu đãi khai tay thì thắng, không cộng thêm biên độ', () => {
+    expect(postPromoRateAnnual({ promoRateAnnual: 9.5, marginAnnual: 3.5, postPromoRateOverride: 12.8 })).toBe(12.8);
+    expect(postPromoRateAnnual({ promoRateAnnual: 9.5, marginAnnual: 3.5, postPromoRateOverride: 0 })).toBe(0);
   });
 
   it('không khai gì thì giữ nguyên lãi ưu đãi', () => {
-    expect(postPromoRateAnnual({ promoRateAnnual: 7 })).toBe(7);
-    expect(postPromoRateAnnual({ promoRateAnnual: 7, postPromoBaseRateAnnual: null, marginAnnual: null })).toBe(7);
+    expect(postPromoRateAnnual({ promoRateAnnual: 9.5 })).toBe(9.5);
+    expect(postPromoRateAnnual({ promoRateAnnual: 9.5, marginAnnual: null, postPromoRateOverride: null })).toBe(9.5);
   });
 });
 
@@ -268,15 +265,15 @@ describe('buildLoanSchedule', () => {
 
   it('áp lãi ưu đãi trong thời gian ưu đãi, sau đó là cơ sở + biên độ', () => {
     const rows = buildLoanSchedule({
-      ...base, tenorMonths: 12, promoRateAnnual: 7,
-      promoMonths: 3, postPromoBaseRateAnnual: 8, marginAnnual: 3.5,
+      ...base, tenorMonths: 12, promoRateAnnual: 8,
+      promoMonths: 3, marginAnnual: 3.5,
     });
-    expect(rows.slice(0, 3).map(r => r.rateAnnual)).toEqual([7, 7, 7]);
+    expect(rows.slice(0, 3).map(r => r.rateAnnual)).toEqual([8, 8, 8]);
     expect(rows.slice(3).every(r => r.rateAnnual === 11.5)).toBe(true);
   });
 
   it('không khai ưu đãi thì mọi kỳ dùng một lãi suất', () => {
-    const rows = buildLoanSchedule({ ...base, promoMonths: 0, postPromoBaseRateAnnual: 14 });
+    const rows = buildLoanSchedule({ ...base, promoMonths: 0, marginAnnual: 4.5 });
     expect(rows.every(r => r.rateAnnual === 9.5)).toBe(true);
   });
 

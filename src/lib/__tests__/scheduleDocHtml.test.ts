@@ -4,12 +4,11 @@ import { buildScheduleDocHtml, escapeHtml } from '../scheduleDocHtml';
 
 const rows = buildLoanSchedule({
   loanAmount: 500_000_000,
-  promoRateAnnual: 8.5,
+  promoRateAnnual: 8,
   tenorMonths: 24,
   disbursementDate: '2026-08-04',
   repayMethod: 'equal_principal',
   promoMonths: 3,
-  postPromoBaseRateAnnual: 8,
   marginAnnual: 3.5,
   prepayments: [
     { period: 4, amount: 50_000_000, mode: 'reduce_monthly' },
@@ -64,7 +63,7 @@ describe('buildScheduleDocHtml', () => {
     expect(html).toContain('Từ ngày');
     expect(html).toContain('LS áp dụng (%/năm)');
     expect(html).toContain('04/08/2026');
-    expect(html).toContain('>8,5<');
+    expect(html).toContain('>8<');
     expect(html).toContain('>11,5<');
   });
 

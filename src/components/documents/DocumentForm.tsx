@@ -256,11 +256,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
           <div className="font-bold text-purple-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">GIÁ CẢ &amp; THANH TOÁN</div>
           <Text label="Giá chuyển nhượng (VNĐ)" field="transferPrice" mono />
-          <Text label="Giá chuyển nhượng bằng chữ" field="transferPriceInWords" />
           <Text label="Đặt cọc lần 1 (VNĐ)" field="deposit1" mono />
-          <Text label="Đặt cọc lần 1 bằng chữ" field="deposit1InWords" />
           <Text label="Thanh toán lần 2 (VNĐ)" field="payment2" mono />
-          <Text label="Thanh toán lần 2 bằng chữ" field="payment2InWords" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Thuế TNCN do bên</label>

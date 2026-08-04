@@ -28,11 +28,8 @@ export interface DepositContractData {
   certificateDate: string;
 
   transferPrice: string;
-  transferPriceInWords: string;
   deposit1: string;
-  deposit1InWords: string;
   payment2: string;
-  payment2InWords: string;
   incomeTaxBy: string;
   registrationTaxBy: string;
 
@@ -70,11 +67,8 @@ export const DEFAULT_DEPOSIT_CONTRACT: DepositContractData = {
   certificateDate: '05/12/2024',
 
   transferPrice: '2.350.000.000',
-  transferPriceInWords: 'Hai tỷ ba trăm năm mươi triệu đồng',
   deposit1: '600.000.000',
-  deposit1InWords: 'Sáu trăm triệu đồng',
   payment2: '1.750.000.000',
-  payment2InWords: 'Một tỷ bảy trăm năm mươi triệu đồng',
   incomeTaxBy: 'A',
   registrationTaxBy: 'B',
 

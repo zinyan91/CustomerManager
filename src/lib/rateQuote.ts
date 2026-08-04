@@ -22,6 +22,8 @@ export interface RateProgram {
   AllowPrepayFeeWaive: boolean;
   SourceVerified: boolean;
   Note?: string | null;
+  ScopeText?: string | null;
+  TargetText?: string | null;
 }
 
 export interface RateProgramTier {
@@ -322,3 +324,71 @@ export const KIND_LABELS: Record<RateProgramKind, string> = {
   cho_vay_trung_dai_han: 'Cho vay trung dài hạn',
   huy_dong: 'Huy động',
 };
+
+export interface DepositRateRow {
+  key: string;
+  balanceTierLabel: string;
+  tenorMonths: number | null;
+  payoutMode: DepositPayoutMode | null;
+  label: string;
+  sortOrder: number;
+  /** Lãi suất theo từng kênh. Thiếu kênh nào thì để undefined, KHÔNG phải 0. */
+  byChannel: Partial<Record<DepositChannel, number | null>>;
+  tierIdByChannel: Partial<Record<DepositChannel, number>>;
+}
+
+/**
+ * Gộp bảng lãi suất huy động của mọi kênh về một bảng: mỗi dòng một tổ hợp
+ * bậc số dư × kỳ hạn × cách trả lãi, mỗi kênh một cột.
+ *
+ * Kênh nào chưa công bố mức cho tổ hợp đó thì để trống, không suy ra 0 —
+ * chưa có số và 0%/năm là hai chuyện khác nhau.
+ */
+export function buildDepositRateRows(tiers: RateProgramTier[]): DepositRateRow[] {
+  const map = new Map<string, DepositRateRow>();
+
+  for (const t of tiers) {
+    const bac = (t.BalanceTierLabel || '').trim();
+    const key = [bac, t.TenorMonths ?? '', t.PayoutMode ?? ''].join('|');
+
+    let row = map.get(key);
+    if (!row) {
+      row = {
+        key,
+        balanceTierLabel: bac,
+        tenorMonths: t.TenorMonths ?? null,
+        payoutMode: t.PayoutMode ?? null,
+        label: t.Label,
+        sortOrder: t.SortOrder,
+        byChannel: {},
+        tierIdByChannel: {},
+      };
+      map.set(key, row);
+    }
+
+    if (t.SortOrder < row.sortOrder) row.sortOrder = t.SortOrder;
+
+    const ch = t.Channel;
+    if (ch) {
+      row.byChannel[ch] = t.RateAnnual ?? null;
+      row.tierIdByChannel[ch] = t.Id;
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    return (a.tenorMonths ?? 0) - (b.tenorMonths ?? 0);
+  });
+}
+
+/**
+ * Các kênh thực sự có dữ liệu, giữ đúng thứ tự quầy → online.
+ *
+ * KHÔNG gồm FTP: đó là giá mua vốn nội bộ, không bao giờ đưa vào bảng lãi suất
+ * gửi khách hàng. Xem tab Mua Bán Vốn Nội Bộ.
+ */
+export function depositChannelsPresent(tiers: RateProgramTier[]): DepositChannel[] {
+  const order: DepositChannel[] = ['quay', 'online'];
+  const co = new Set(tiers.map(t => t.Channel).filter(Boolean) as DepositChannel[]);
+  return order.filter(ch => co.has(ch));
+}

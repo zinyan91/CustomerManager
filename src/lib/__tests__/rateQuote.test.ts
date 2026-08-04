@@ -8,6 +8,8 @@ import {
   calcDepositInterest,
   collectQuoteWarnings,
   hasBlockingWarning,
+  buildDepositRateRows,
+  depositChannelsPresent,
 } from '../rateQuote';
 import type { RateProgram, RateProgramTier, RateProgramPrepaymentFee } from '../rateQuote';
 
@@ -290,5 +292,72 @@ describe('collectQuoteWarnings', () => {
       program: shortTerm, tier: lc2, onDate: '2026-08-01', loanTenorMonths: 6,
     });
     expect(hasBlockingWarning(w)).toBe(false);
+  });
+});
+
+describe('buildDepositRateRows — gộp bảng huy động theo cột kênh', () => {
+  const t = (o: Partial<RateProgramTier>): RateProgramTier => ({
+    Id: 0, ProgramId: 1, Label: '', SortOrder: 0, ...o,
+  } as RateProgramTier);
+
+  it('cùng bậc số dư, kỳ hạn, cách trả lãi thì gộp một dòng hai cột', () => {
+
+    const r = buildDepositRateRows([
+      t({ Id: 1, Channel: 'quay', BalanceTierLabel: 'Dưới 1 tỷ', TenorMonths: 6, PayoutMode: 'cuoi_ky', RateAnnual: 5.2, SortOrder: 1 }),
+      t({ Id: 2, Channel: 'online', BalanceTierLabel: 'Dưới 1 tỷ', TenorMonths: 6, PayoutMode: 'cuoi_ky', RateAnnual: 5.4, SortOrder: 1 }),
+    ]);
+
+    expect(r).toHaveLength(1);
+    expect(r[0].byChannel).toEqual({ quay: 5.2, online: 5.4 });
+    expect(r[0].tierIdByChannel).toEqual({ quay: 1, online: 2 });
+  });
+
+  it('kênh thiếu mức thì để TRỐNG, không suy ra 0', () => {
+
+    const r = buildDepositRateRows([
+      t({ Id: 1, Channel: 'quay', TenorMonths: 12, RateAnnual: 6.1, SortOrder: 1 }),
+    ]);
+    expect(r[0].byChannel.quay).toBe(6.1);
+    expect(r[0].byChannel.online).toBeUndefined();
+  });
+
+  it('phân biệt NULL đã khai với chưa có kênh', () => {
+    const r = buildDepositRateRows([
+      t({ Id: 1, Channel: 'quay', TenorMonths: 12, RateAnnual: null, SortOrder: 1 }),
+    ]);
+    expect(r[0].byChannel.quay).toBeNull();
+    expect('online' in r[0].byChannel).toBe(false);
+  });
+
+  it('kỳ hạn hoặc cách trả lãi khác nhau thì KHÔNG gộp', () => {
+    const r = buildDepositRateRows([
+      t({ Id: 1, Channel: 'quay', TenorMonths: 6, PayoutMode: 'cuoi_ky', RateAnnual: 5, SortOrder: 1 }),
+      t({ Id: 2, Channel: 'quay', TenorMonths: 12, PayoutMode: 'cuoi_ky', RateAnnual: 6, SortOrder: 2 }),
+      t({ Id: 3, Channel: 'quay', TenorMonths: 12, PayoutMode: 'tra_truoc', RateAnnual: 5.9, SortOrder: 3 }),
+    ]);
+    expect(r).toHaveLength(3);
+  });
+
+  it('sắp theo SortOrder rồi tới kỳ hạn', () => {
+    const r = buildDepositRateRows([
+      t({ Id: 1, Channel: 'quay', TenorMonths: 12, RateAnnual: 6, SortOrder: 2 }),
+      t({ Id: 2, Channel: 'quay', TenorMonths: 3, RateAnnual: 4, SortOrder: 1 }),
+    ]);
+    expect(r.map(x => x.tenorMonths)).toEqual([3, 12]);
+  });
+
+  it('depositChannelsPresent chỉ trả kênh có dữ liệu, đúng thứ tự', () => {
+    expect(depositChannelsPresent([
+      t({ Channel: 'online' }), t({ Channel: 'quay' }),
+    ])).toEqual(['quay', 'online']);
+    expect(depositChannelsPresent([t({ Channel: null })])).toEqual([]);
+  });
+
+  it('KHÔNG đưa FTP vào bảng gửi khách hàng', () => {
+
+    expect(depositChannelsPresent([t({ Channel: 'ftp' })])).toEqual([]);
+    expect(depositChannelsPresent([
+      t({ Channel: 'quay' }), t({ Channel: 'ftp' }),
+    ])).toEqual(['quay']);
   });
 });

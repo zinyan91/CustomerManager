@@ -1,0 +1,294 @@
+import { describe, it, expect } from 'vitest';
+import {
+  findActiveProgram,
+  isProgramExpired,
+  resolvePostFixedRate,
+  calcServiceFee,
+  findPrepaymentFee,
+  calcDepositInterest,
+  collectQuoteWarnings,
+  hasBlockingWarning,
+} from '../rateQuote';
+import type { RateProgram, RateProgramTier, RateProgramPrepaymentFee } from '../rateQuote';
+
+const shortTerm: RateProgram = {
+  Id: 1,
+  Kind: 'cho_vay_ngan_han',
+  Name: 'Ngắn hạn KHCN',
+  DocumentNumber: '2274/2026/TB-BĐH',
+  DocumentDate: '2026-07-22',
+  EffectiveFrom: '2026-07-22',
+  EffectiveTo: '2026-09-30',
+  QuotaVnd: 4_000_000_000_000,
+  FloatingBaseLabel: 'LSCS',
+  FloatingSpreadAnnual: 0.03,
+  RateResetMonths: 3,
+  MinFeeAmountVnd: 500_000,
+  NewCustomerFeeDiscount: 0.5,
+  CasaShortfallFeeAddon: 0.001,
+  CasaMinRatio: 0.05,
+  AllowRateReduction: false,
+  AllowPrepayFeeWaive: false,
+  SourceVerified: true,
+};
+
+const previous: RateProgram = {
+  ...shortTerm,
+  Id: 2,
+  DocumentNumber: '1679/2026/TB-TGĐ',
+  EffectiveFrom: '2026-06-19',
+  EffectiveTo: '2026-07-27',
+};
+
+const unverifiedTdh: RateProgram = {
+  ...shortTerm,
+  Id: 3,
+  Kind: 'cho_vay_trung_dai_han',
+  DocumentNumber: 'TAM-TDH-2026',
+  EffectiveFrom: '2026-07-22',
+  EffectiveTo: null,
+  SourceVerified: false,
+  AllowRateReduction: true,
+  AllowPrepayFeeWaive: true,
+};
+
+const lc2: RateProgramTier = {
+  Id: 20, ProgramId: 1, PackageCode: 'LC2', Label: 'Cố định 05 tháng',
+  FixedMonths: 5, MinTenorMonths: 5, MinFeeRatio: 0.0075,
+  RateAnnual: 0.088, SortOrder: 2,
+};
+
+describe('findActiveProgram', () => {
+  const all = [previous, shortTerm, unverifiedTdh];
+
+  it('picks the program in force on the given date', () => {
+    expect(findActiveProgram(all, 'cho_vay_ngan_han', '2026-08-01')?.DocumentNumber)
+      .toBe('2274/2026/TB-BĐH');
+  });
+
+  it('prefers the newest EffectiveFrom when two programs overlap', () => {
+    expect(findActiveProgram(all, 'cho_vay_ngan_han', '2026-07-25')?.DocumentNumber)
+      .toBe('2274/2026/TB-BĐH');
+  });
+
+  it('falls back to the older program before the new one starts', () => {
+    expect(findActiveProgram(all, 'cho_vay_ngan_han', '2026-07-01')?.DocumentNumber)
+      .toBe('1679/2026/TB-TGĐ');
+  });
+
+  it('includes the boundary days', () => {
+    expect(findActiveProgram(all, 'cho_vay_ngan_han', '2026-07-22')).not.toBeNull();
+    expect(findActiveProgram(all, 'cho_vay_ngan_han', '2026-09-30')).not.toBeNull();
+  });
+
+  it('returns null after every program has lapsed', () => {
+    expect(findActiveProgram(all, 'cho_vay_ngan_han', '2026-10-01')).toBeNull();
+  });
+
+  it('treats a null EffectiveTo as open-ended', () => {
+    expect(findActiveProgram(all, 'cho_vay_trung_dai_han', '2030-01-01')?.DocumentNumber)
+      .toBe('TAM-TDH-2026');
+  });
+
+  it('does not mix program kinds', () => {
+    expect(findActiveProgram(all, 'huy_dong', '2026-08-01')).toBeNull();
+  });
+
+  it('is safe on empty input', () => {
+    expect(findActiveProgram([], 'cho_vay_ngan_han', '2026-08-01')).toBeNull();
+  });
+});
+
+describe('isProgramExpired', () => {
+  it('reports expiry only after EffectiveTo', () => {
+    expect(isProgramExpired(shortTerm, '2026-09-30')).toBe(false);
+    expect(isProgramExpired(shortTerm, '2026-10-01')).toBe(true);
+  });
+
+  it('never expires an open-ended program', () => {
+    expect(isProgramExpired(unverifiedTdh, '2099-01-01')).toBe(false);
+  });
+});
+
+describe('resolvePostFixedRate', () => {
+  it('adds the minimum spread to the base rate', () => {
+    expect(resolvePostFixedRate(0.075, 0.03)).toBeCloseTo(0.105, 10);
+  });
+
+  it('returns null when the base rate is unknown', () => {
+    expect(resolvePostFixedRate(null, 0.03)).toBeNull();
+    expect(resolvePostFixedRate(undefined, 0.03)).toBeNull();
+  });
+
+  it('keeps a zero spread meaningful', () => {
+    expect(resolvePostFixedRate(0.09, 0)).toBeCloseTo(0.09, 10);
+  });
+});
+
+describe('calcServiceFee', () => {
+  const base = {
+    disbursementAmount: 1_000_000_000,
+    feeRatio: 0.0075,
+    minFeeAmountVnd: 500_000,
+    casaMinRatio: 0.05,
+    casaShortfallAddon: 0.001,
+  };
+
+  it('charges the tier ratio when CASA is sufficient', () => {
+    const r = calcServiceFee({ ...base, casaAverage: 60_000_000 });
+    expect(r.casaAddonApplied).toBe(false);
+    expect(r.effectiveRatio).toBeCloseTo(0.0075, 10);
+    expect(r.feeAmount).toBe(7_500_000);
+  });
+
+  it('adds 0,10% when average CASA falls below 5% of the disbursement', () => {
+    const r = calcServiceFee({ ...base, casaAverage: 40_000_000 });
+    expect(r.casaRequiredAmount).toBe(50_000_000);
+    expect(r.casaAddonApplied).toBe(true);
+    expect(r.effectiveRatio).toBeCloseTo(0.0085, 10);
+    expect(r.feeAmount).toBe(8_500_000);
+  });
+
+  it('treats CASA exactly at the threshold as sufficient', () => {
+    expect(calcServiceFee({ ...base, casaAverage: 50_000_000 }).casaAddonApplied).toBe(false);
+  });
+
+  it('treats zero CASA as a real shortfall, not as missing data', () => {
+    const r = calcServiceFee({ ...base, casaAverage: 0 });
+    expect(r.casaAddonApplied).toBe(true);
+  });
+
+  it('does not add the surcharge when CASA has not been supplied', () => {
+    const r = calcServiceFee({ ...base });
+    expect(r.casaAddonApplied).toBe(false);
+  });
+
+  it('discounts a new customer before adding the CASA surcharge', () => {
+    const r = calcServiceFee({ ...base, casaAverage: 40_000_000, newCustomerDiscount: 0.5 });
+    expect(r.effectiveRatio).toBeCloseTo(0.0075 * 0.5 + 0.001, 10);
+    expect(r.feeAmount).toBe(4_750_000);
+  });
+
+  it('clamps the discount to the 0..1 range', () => {
+    expect(calcServiceFee({ ...base, newCustomerDiscount: 2 }).effectiveRatio).toBe(0);
+    expect(calcServiceFee({ ...base, newCustomerDiscount: -1 }).effectiveRatio).toBeCloseTo(0.0075, 10);
+  });
+
+  it('lifts a small fee up to the 500.000 đồng floor', () => {
+    const r = calcServiceFee({ ...base, disbursementAmount: 50_000_000 });
+    expect(r.feeFromRatio).toBe(375_000);
+    expect(r.feeAmount).toBe(500_000);
+    expect(r.minFeeApplied).toBe(true);
+  });
+
+  it('reports nulls when the tier has no fee ratio yet', () => {
+    const r = calcServiceFee({ ...base, feeRatio: null });
+    expect(r.effectiveRatio).toBeNull();
+    expect(r.feeAmount).toBeNull();
+  });
+
+  it('keeps a zero fee ratio distinct from a missing one', () => {
+    const r = calcServiceFee({ ...base, feeRatio: 0, minFeeAmountVnd: null });
+    expect(r.effectiveRatio).toBe(0);
+    expect(r.feeAmount).toBe(0);
+  });
+});
+
+describe('findPrepaymentFee', () => {
+  const fees: RateProgramPrepaymentFee[] = [
+    { Id: 1, ProgramId: 3, YearFrom: 1, YearTo: 1, FeeRatio: 0.04 },
+    { Id: 2, ProgramId: 3, YearFrom: 2, YearTo: 2, FeeRatio: 0.03 },
+    { Id: 3, ProgramId: 3, YearFrom: 3, YearTo: 3, FeeRatio: null, Note: 'THIẾU SỐ' },
+    { Id: 4, ProgramId: 3, YearFrom: 4, YearTo: 4, FeeRatio: 0.01 },
+    { Id: 5, ProgramId: 3, YearFrom: 6, YearTo: null, FeeRatio: 0 },
+  ];
+
+  it('resolves a bounded year band', () => {
+    expect(findPrepaymentFee(fees, 2)?.FeeRatio).toBe(0.03);
+  });
+
+  it('resolves the open-ended tail band', () => {
+    expect(findPrepaymentFee(fees, 9)?.FeeRatio).toBe(0);
+  });
+
+  it('surfaces a known-missing figure as null rather than as free of charge', () => {
+    const row = findPrepaymentFee(fees, 3);
+    expect(row).not.toBeNull();
+    expect(row!.FeeRatio).toBeNull();
+  });
+
+  it('distinguishes a genuine zero fee from a missing one', () => {
+    expect(findPrepaymentFee(fees, 6)!.FeeRatio).toBe(0);
+  });
+
+  it('returns null for a year with no band', () => {
+    expect(findPrepaymentFee(fees, 5)).toBeNull();
+    expect(findPrepaymentFee(fees, 0)).toBeNull();
+  });
+});
+
+describe('calcDepositInterest', () => {
+  it('uses actual days over 365', () => {
+    expect(calcDepositInterest(1_000_000_000, 0.089, 180))
+      .toBe(Math.round(1_000_000_000 * 0.089 * 180 / 365));
+  });
+
+  it('returns null when the rate is unknown', () => {
+    expect(calcDepositInterest(1_000_000_000, null, 180)).toBeNull();
+  });
+
+  it('is safe on zero inputs', () => {
+    expect(calcDepositInterest(0, 0.089, 180)).toBe(0);
+    expect(calcDepositInterest(1_000_000_000, 0.089, 0)).toBe(0);
+  });
+});
+
+describe('collectQuoteWarnings', () => {
+  it('blocks when no program is in force', () => {
+    const w = collectQuoteWarnings({ program: null });
+    expect(hasBlockingWarning(w)).toBe(true);
+  });
+
+  it('blocks a program whose figures are not verified against the notice', () => {
+    const w = collectQuoteWarnings({ program: unverifiedTdh });
+    expect(hasBlockingWarning(w)).toBe(true);
+    expect(w.some(x => x.message.includes('chưa đối chiếu văn bản gốc'))).toBe(true);
+  });
+
+  it('blocks a tier that has no rate yet', () => {
+    const w = collectQuoteWarnings({
+      program: shortTerm,
+      tier: { ...lc2, RateAnnual: null },
+    });
+    expect(hasBlockingWarning(w)).toBe(true);
+  });
+
+  it('warns that the programme forbids using rate-reduction authority', () => {
+    const w = collectQuoteWarnings({ program: shortTerm, tier: lc2 });
+    expect(hasBlockingWarning(w)).toBe(false);
+    expect(w.some(x => x.message.includes('thẩm quyền giảm LSCV'))).toBe(true);
+    expect(w.some(x => x.message.includes('phí trả nợ trước hạn'))).toBe(true);
+  });
+
+  it('warns when the tenor is under the tier minimum', () => {
+    const w = collectQuoteWarnings({ program: shortTerm, tier: lc2, loanTenorMonths: 3 });
+    expect(w.some(x => x.message.includes('thấp hơn mức tối thiểu'))).toBe(true);
+  });
+
+  it('does not warn when the tenor meets the minimum', () => {
+    const w = collectQuoteWarnings({ program: shortTerm, tier: lc2, loanTenorMonths: 5 });
+    expect(w.some(x => x.message.includes('thấp hơn mức tối thiểu'))).toBe(false);
+  });
+
+  it('blocks an expired program', () => {
+    const w = collectQuoteWarnings({ program: shortTerm, tier: lc2, onDate: '2026-10-05' });
+    expect(hasBlockingWarning(w)).toBe(true);
+  });
+
+  it('produces no blocking warning for a clean quote', () => {
+    const w = collectQuoteWarnings({
+      program: shortTerm, tier: lc2, onDate: '2026-08-01', loanTenorMonths: 6,
+    });
+    expect(hasBlockingWarning(w)).toBe(false);
+  });
+});

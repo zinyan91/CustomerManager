@@ -1,15 +1,16 @@
-export function addMonths(dateStr: string, months: number): string {
-  if (!dateStr || !months || isNaN(months) || months <= 0) return '';
+export function edate(dateStr: string, monthOffset: number): string {
+  if (!dateStr || monthOffset === null || monthOffset === undefined || isNaN(monthOffset)) return '';
   try {
     const parts = dateStr.split('-');
     if (parts.length !== 3) return '';
     const y = parseInt(parts[0], 10);
     const m = parseInt(parts[1], 10) - 1;
     const d = parseInt(parts[2], 10);
+    if (isNaN(y) || isNaN(m) || isNaN(d)) return '';
 
-    let targetY = y + Math.floor((m + months) / 12);
-    let targetM = (m + months) % 12;
-    if (targetM < 0) { targetM += 12; targetY -= 1; }
+    const totalMonths = m + Math.trunc(monthOffset);
+    const targetY = y + Math.floor(totalMonths / 12);
+    const targetM = ((totalMonths % 12) + 12) % 12;
 
     const daysInTargetMonth = new Date(targetY, targetM + 1, 0).getDate();
     const targetD = Math.min(d, daysInTargetMonth);
@@ -20,6 +21,11 @@ export function addMonths(dateStr: string, months: number): string {
   } catch {
     return '';
   }
+}
+
+export function addMonths(dateStr: string, months: number): string {
+  if (!dateStr || !months || isNaN(months) || months <= 0) return '';
+  return edate(dateStr, months);
 }
 
 export function diffDays(startDateStr: string, endDateStr: string): number {

@@ -3,6 +3,7 @@ import { Download, Printer, Send } from 'lucide-react';
 import type { ThemeStyles } from '../../lib/themeStyles';
 import type { LoanScheduleRow } from '../../lib/calcMath';
 import { buildCustomerScheduleDocHtml } from '../../lib/scheduleDocHtml';
+import { printHtmlDoc } from '../../lib/printHtmlDoc';
 
 interface ScheduleCustomerExportProps {
   styles: ThemeStyles;
@@ -31,36 +32,7 @@ export const ScheduleCustomerExport: React.FC<ScheduleCustomerExportProps> = ({
 
   const handlePrintDoc = () => {
     if (rows.length === 0) return;
-
-    const frame = document.createElement('iframe');
-    frame.setAttribute('title', 'Bản lịch trả nợ gửi khách hàng');
-    frame.style.position = 'fixed';
-    frame.style.right = '0';
-    frame.style.bottom = '0';
-    frame.style.width = '0';
-    frame.style.height = '0';
-    frame.style.border = '0';
-    document.body.appendChild(frame);
-
-    const doc = frame.contentDocument;
-    const win = frame.contentWindow;
-    if (!doc || !win) {
-      document.body.removeChild(frame);
-      return;
-    }
-
-    const cleanup = () => {
-      if (frame.parentNode) frame.parentNode.removeChild(frame);
-    };
-
-    doc.open();
-    doc.write(buildDocHtml());
-    doc.close();
-
-    win.addEventListener('afterprint', cleanup);
-    win.focus();
-    win.print();
-    window.setTimeout(cleanup, 60_000);
+    printHtmlDoc(buildDocHtml(), 'Bản lịch trả nợ gửi khách hàng');
   };
 
   const handleExportDoc = () => {

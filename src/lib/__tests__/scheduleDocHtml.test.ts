@@ -96,3 +96,35 @@ describe('buildCustomerScheduleDocHtml', () => {
     expect(html).toContain('Số tiền vay:');
   });
 });
+
+describe('bản in nội bộ (đổi tiêu đề, bỏ phần ký)', () => {
+  it('dùng tiêu đề và phụ đề tự khai', () => {
+    const html = buildCustomerScheduleDocHtml({
+      ...baseInput,
+      title: 'Bảng lịch thu nợ dự kiến',
+      subtitle: '(Bản nội bộ phục vụ thẩm định khoản vay)',
+      showSignature: false,
+      noteText: '',
+    });
+    expect(html).toContain('Bảng lịch thu nợ dự kiến');
+    expect(html).toContain('(Bản nội bộ phục vụ thẩm định khoản vay)');
+    expect(html).toContain('<title>Bảng lịch thu nợ dự kiến</title>');
+  });
+
+  it('bỏ hẳn phần ký khi showSignature = false', () => {
+    const html = buildCustomerScheduleDocHtml({ ...baseInput, showSignature: false });
+    expect(html).not.toContain('class="sign"');
+    expect(html).not.toContain('Cán bộ lập bảng');
+  });
+
+  it('vẫn in đủ bảng lịch và dòng tổng ở bản nội bộ', () => {
+    const html = buildCustomerScheduleDocHtml({ ...baseInput, showSignature: false, noteText: '' });
+    expect((html.match(/<tr><td class="c">\d+<\/td>/g) ?? []).length).toBe(rows.length);
+    expect(html).toContain('TỔNG CỘNG');
+  });
+
+  it('bỏ phụ đề khi truyền chuỗi rỗng', () => {
+    const html = buildCustomerScheduleDocHtml({ ...baseInput, subtitle: '' });
+    expect(html).not.toContain('class="doc-sub"');
+  });
+});

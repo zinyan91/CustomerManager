@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useDateFormat, type DateFormat } from '../../context/DateFormatContext';
-import { Settings, Sun, Moon, Sliders, Calendar, Save, CheckCircle } from 'lucide-react';
+import { Settings, Sun, Moon, Sliders, Calendar, Clock, Save, CheckCircle } from 'lucide-react';
+import { useFormatSettings } from '../../context/FormatSettingsContext';
+import {
+  NUMBER_STYLE_SAMPLES, MAX_DIGITS,
+  formatDecimalWith, formatPercentWith, formatTimeWith, formatMoneyWith,
+} from '../../lib/formatSettings';
+import { fmtMoney } from '../../lib/utils';
+
+const DIGIT_OPTIONS = Array.from({ length: MAX_DIGITS + 1 }, (_, i) => i);
 
 export const SettingsView: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const { dateFormat, setDateFormat } = useDateFormat();
-  const [autoFormatNumber, setAutoFormatNumber] = useState(true);
+  const { formatSettings, updateFormatSettings } = useFormatSettings();
   const [notifySuccess, setNotifySuccess] = useState(false);
 
   const handleSaveSettings = (e: React.FormEvent) => {
@@ -117,17 +125,125 @@ export const SettingsView: React.FC = () => {
             <span>3. ĐỊNH DẠNG SỐ TIỀN & HIỂN THỊ</span>
           </h3>
 
+          <div className="space-y-2">
+            <div className="text-[11px] font-bold text-slate-300 light:text-slate-700 uppercase">Kiểu phân cách</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {([
+                { id: 'vi', title: 'Việt Nam', label: 'Nghìn dấu chấm, thập phân dấu phẩy' },
+                { id: 'en', title: 'Quốc tế', label: 'Nghìn dấu phẩy, thập phân dấu chấm' },
+                { id: 'space', title: 'Khoảng trắng', label: 'Nghìn khoảng trắng, thập phân dấu phẩy' },
+              ] as const).map((opt) => (
+                <div
+                  key={opt.id}
+                  onClick={() => updateFormatSettings({ numberStyle: opt.id })}
+                  className={`cursor-pointer p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
+                    formatSettings.numberStyle === opt.id
+                      ? 'bg-emerald-950/60 light:bg-emerald-50 border-emerald-500 text-emerald-300 light:text-emerald-900 font-bold shadow-md'
+                      : 'bg-slate-950 light:bg-slate-50 border-slate-800 light:border-slate-200 text-slate-400 hover:border-slate-700'
+                  }`}
+                >
+                  <div>
+                    <div className="text-xs font-bold text-slate-200 light:text-slate-900">{opt.title}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">{opt.label}</div>
+                  </div>
+                  <div className="mt-2 text-[11px] font-mono text-emerald-400 light:text-emerald-600 font-semibold bg-slate-900 light:bg-slate-100 p-1.5 rounded text-center border border-slate-800 light:border-slate-200">
+                    {NUMBER_STYLE_SAMPLES[opt.id]}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-3.5 bg-slate-950 light:bg-slate-50 border border-slate-800 light:border-slate-200 rounded-xl space-y-2">
+              <div>
+                <div className="font-bold text-slate-200 light:text-slate-800 text-xs">Số thập phân</div>
+                <div className="text-[11px] text-slate-400">Số chữ số sau dấu thập phân của các số thường</div>
+              </div>
+              <select
+                value={formatSettings.decimalDigits}
+                onChange={(e) => updateFormatSettings({ decimalDigits: parseInt(e.target.value, 10) })}
+                className="w-full rounded-xl p-2 text-xs bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 text-slate-200 light:text-slate-900"
+              >
+                {DIGIT_OPTIONS.map((d) => (
+                  <option key={d} value={d}>{d} chữ số</option>
+                ))}
+              </select>
+              <div className="text-[11px] font-mono text-emerald-400 light:text-emerald-600 bg-slate-900 light:bg-slate-100 p-1.5 rounded text-center border border-slate-800 light:border-slate-200">
+                Ví dụ: {formatDecimalWith(1234567.89123, formatSettings)}
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-950 light:bg-slate-50 border border-slate-800 light:border-slate-200 rounded-xl space-y-2">
+              <div>
+                <div className="font-bold text-slate-200 light:text-slate-800 text-xs">Phần trăm</div>
+                <div className="text-[11px] text-slate-400">Số chữ số sau dấu thập phân của lãi suất, tỷ lệ</div>
+              </div>
+              <select
+                value={formatSettings.percentDigits}
+                onChange={(e) => updateFormatSettings({ percentDigits: parseInt(e.target.value, 10) })}
+                className="w-full rounded-xl p-2 text-xs bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 text-slate-200 light:text-slate-900"
+              >
+                {DIGIT_OPTIONS.map((d) => (
+                  <option key={d} value={d}>{d} chữ số</option>
+                ))}
+              </select>
+              <div className="text-[11px] font-mono text-emerald-400 light:text-emerald-600 bg-slate-900 light:bg-slate-100 p-1.5 rounded text-center border border-slate-800 light:border-slate-200">
+                Ví dụ: {formatPercentWith(0.08456, formatSettings)}
+              </div>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between p-3.5 bg-slate-950 light:bg-slate-50 border border-slate-800 light:border-slate-200 rounded-xl">
             <div>
-              <div className="font-bold text-slate-200 light:text-slate-800">Tự động phân cách hàng nghìn (ví dụ: 960.000.000)</div>
-              <div className="text-[11px] text-slate-400">Tự động thêm dấu chấm phân cách số tiền ngay khi bạn gõ</div>
+              <div className="font-bold text-slate-200 light:text-slate-800">
+                Tự động phân cách hàng nghìn khi gõ (ví dụ: {formatMoneyWith(960000000, formatSettings)})
+              </div>
+              <div className="text-[11px] text-slate-400">Tự động thêm dấu phân cách vào ô nhập số tiền ngay khi bạn gõ</div>
             </div>
             <input
               type="checkbox"
-              checked={autoFormatNumber}
-              onChange={(e) => setAutoFormatNumber(e.target.checked)}
+              checked={formatSettings.autoGroupMoneyInput}
+              onChange={(e) => updateFormatSettings({ autoGroupMoneyInput: e.target.checked })}
               className="w-5 h-5 accent-sky-600 rounded cursor-pointer"
             />
+          </div>
+
+          <div className="p-3.5 bg-slate-950 light:bg-slate-50 border border-slate-800 light:border-slate-200 rounded-xl text-[11px] text-slate-400">
+            Số tiền luôn hiển thị nguyên đồng, không có phần thập phân — chỉ kiểu phân cách ở trên được áp dụng.
+            Ví dụ hiện tại: <span className="font-mono text-emerald-400 light:text-emerald-600 font-semibold">{fmtMoney(1500000000)}</span>
+          </div>
+        </div>
+
+        <div className="bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 p-5 rounded-2xl space-y-4">
+          <h3 className="text-xs font-bold text-sky-400 light:text-sky-600 uppercase flex items-center space-x-2 border-b border-slate-800 light:border-slate-200 pb-2">
+            <Clock className="w-4 h-4" />
+            <span>4. ĐỊNH DẠNG GIỜ (TIME FORMAT)</span>
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {([
+              { id: '24h', title: '24 giờ', label: 'Chuẩn Việt Nam' },
+              { id: '12h', title: '12 giờ (AM/PM)', label: 'Chuẩn Anh - Mỹ' },
+            ] as const).map((opt) => (
+              <div
+                key={opt.id}
+                onClick={() => updateFormatSettings({ timeFormat: opt.id })}
+                className={`cursor-pointer p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
+                  formatSettings.timeFormat === opt.id
+                    ? 'bg-sky-950/60 light:bg-sky-50 border-sky-500 text-sky-300 light:text-sky-900 font-bold shadow-md'
+                    : 'bg-slate-950 light:bg-slate-50 border-slate-800 light:border-slate-200 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <div>
+                  <div className="text-xs font-bold text-slate-200 light:text-slate-900">{opt.title}</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">{opt.label}</div>
+                </div>
+                <div className="mt-2 text-[11px] font-mono text-sky-400 light:text-sky-600 font-semibold bg-slate-900 light:bg-slate-100 p-1.5 rounded text-center border border-slate-800 light:border-slate-200">
+                  Ví dụ: {formatTimeWith('14:30', { ...formatSettings, timeFormat: opt.id })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

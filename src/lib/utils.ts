@@ -1,8 +1,14 @@
+import {
+  loadFormatSettings, formatMoneyWith, formatPercentWith, groupInteger, NUMBER_SEPARATORS,
+} from './formatSettings';
+
 export function formatMoneyInput(value: string): string {
   if (!value) return '';
   const digits = value.replace(/\D/g, '');
   if (!digits) return '';
-  return Number(digits).toLocaleString('vi-VN');
+  const settings = loadFormatSettings();
+  if (!settings.autoGroupMoneyInput) return digits;
+  return groupInteger(digits, NUMBER_SEPARATORS[settings.numberStyle].group);
 }
 
 export function parseMoneyInput(value: string): number {
@@ -12,13 +18,14 @@ export function parseMoneyInput(value: string): number {
 }
 
 export function fmtMoney(v?: number | null): string {
-  return v !== undefined && v !== null ? v.toLocaleString('vi-VN') + ' VNĐ' : '—';
+  if (v === undefined || v === null || isNaN(v)) return '—';
+  return `${formatMoneyWith(v)} VNĐ`;
 }
 
 export function fmtRate(v?: number | null): string {
   if (v === undefined || v === null || isNaN(v)) return '—';
-  const val = v > 1 ? v : v * 100;
-  return Number(val.toFixed(4)).toString() + '%/năm';
+  const ratio = v > 1 ? v / 100 : v;
+  return `${formatPercentWith(ratio)}/năm`;
 }
 
 export function formatAssetType(assetType?: string | null): string {

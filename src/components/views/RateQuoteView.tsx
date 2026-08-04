@@ -16,6 +16,7 @@ import {
   collectQuoteWarnings, hasBlockingWarning,
   PAYOUT_MODE_LABELS, CHANNEL_LABELS, KIND_LABELS, FBE_SCOPE_LABELS,
 } from '../../lib/rateQuote';
+import vietbankLogo from '../../assets/vietbank-logo.png?inline';
 import { buildRateSheetHtml, findRateSheetBlockers } from '../../lib/rateSheet';
 import type {
   RateProgram, RateProgramTier, RateProgramPrepaymentFee,
@@ -131,6 +132,7 @@ export const RateQuoteView: React.FC = () => {
     feeOptions: programFeeOptions,
     conditions: programConditions,
     preparedBy: preparedBy.trim() || undefined,
+    logoDataUri: vietbankLogo,
     channel: kind === 'huy_dong' ? channel : null,
   } : null), [program, programTiers, programPrepayFees, programFeeOptions, programConditions, preparedBy, kind, channel]);
 

@@ -62,6 +62,7 @@ export interface RateSheetInput {
   bankName?: string;
   preparedBy?: string;
   channel?: DepositChannel | null;
+  logoDataUri?: string | null;
 }
 
 export function findRateSheetBlockers(input: RateSheetInput): RateSheetBlocker[] {
@@ -246,10 +247,17 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
 <style>
   @page { size: A4 portrait; margin: 11mm 12mm; }
   * { box-sizing: border-box; }
+  /* Chrome mặc định KHÔNG in nền khi Save as PDF; không có dòng này thì
+     dải tiêu đề xanh và ô tiêu đề bảng in ra trắng, chữ trắng mất hút. */
+  html, body, header, th, .meta, tbody tr:nth-child(even) {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
   body {
     font-family: "Segoe UI", Roboto, Arial, sans-serif;
     color: #0f172a; margin: 0; font-size: 9.5pt; line-height: 1.32;
   }
+  .logobar { margin-bottom: 6px; }
+  .logobar img { height: 34px; width: auto; display: block; }
   header {
     background: #0b5cab; color: #fff; padding: 9px 14px; border-radius: 8px;
     margin-bottom: 9px;
@@ -283,8 +291,11 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
 </style>
 </head>
 <body>
+  ${input.logoDataUri
+    ? `<div class="logobar"><img src="${esc(input.logoDataUri)}" alt="${esc(bankName)}" /></div>`
+    : ''}
   <header>
-    <div class="bank">${esc(bankName)}</div>
+    ${input.logoDataUri ? '' : `<div class="bank">${esc(bankName)}</div>`}
     <h1>${esc(program.Name)}</h1>
     <div class="sub">Dành cho Khách hàng cá nhân</div>
   </header>

@@ -206,6 +206,24 @@ describe('buildRateSheetHtml', () => {
     expect(html).toContain('có thể thay đổi theo');
   });
 
+  it('prints backgrounds, otherwise the blue banner turns white on white', () => {
+    expect(html).toContain('print-color-adjust: exact');
+  });
+
+  it('shows the wordmark when no logo is supplied', () => {
+    expect(html).toContain('class="bank"');
+    expect(html).not.toContain('<img');
+  });
+
+  it('swaps the wordmark for the logo when one is supplied', () => {
+    const withLogo = buildRateSheetHtml({
+      program: tdh, tiers: tdhTiers,
+      logoDataUri: 'data:image/png;base64,AAAA',
+    });
+    expect(withLogo).toContain('<img src="data:image/png;base64,AAAA"');
+    expect(withLogo).not.toContain('class="bank"');
+  });
+
   it('escapes markup coming from the database', () => {
     const nasty = buildRateSheetHtml({
       program: { ...tdh, Name: 'Gói <script>alert(1)</script>' },

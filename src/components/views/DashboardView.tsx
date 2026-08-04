@@ -455,7 +455,7 @@ export const DashboardView: React.FC = () => {
               1. KHÁCH HÀNG CHUẨN BỊ ĐÓNG KỲ DUE CỦA THÁNG
             </h3>
           </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
             {dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) >= 0).length} sắp đến · {dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) < 0).length} quá hạn
           </span>
         </div>
@@ -497,7 +497,7 @@ export const DashboardView: React.FC = () => {
                       </td>
                       <td className="p-2.5 text-center font-bold text-sky-600 dark:text-sky-400">{dueInfo?.dueDateStr}</td>
                       <td className="p-2.5 text-center">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${badgeCls}`}>
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${badgeCls}`}>
                           {badgeText}
                         </span>
                       </td>
@@ -519,13 +519,13 @@ export const DashboardView: React.FC = () => {
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
               {kunnCount.upcoming} sắp đến · {kunnCount.expired} quá hạn
             </span>
           <div className="flex items-center gap-1.5">
             {(['all', 'upcoming', 'expired'] as DueFilter[]).map(f => (
               <button key={f} type="button" onClick={() => setKunnFilter(f)}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-colors ${
+                className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors ${
                   kunnFilter === f
                     ? 'bg-sky-600 text-white'
                     : isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800'
@@ -534,7 +534,7 @@ export const DashboardView: React.FC = () => {
               </button>
             ))}
             <button type="button" onClick={inKunn}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border ${
                 isLight ? 'bg-white border-slate-300 text-slate-600 hover:border-sky-400'
                         : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-sky-500'
               }`}>
@@ -583,7 +583,7 @@ export const DashboardView: React.FC = () => {
                       <td className="p-2.5 text-center font-bold text-sky-600 dark:text-sky-400">{fmtDate(contract.KunnDueDate)}</td>
                       <td className="p-2.5 text-center font-bold">{contract.KunnTenor || `${contract.LoanTenorMonths}T`}</td>
                       <td className="p-2.5 text-center">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${badgeCls}`}>
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${badgeCls}`}>
                           {badgeText}
                         </span>
                       </td>
@@ -605,13 +605,13 @@ export const DashboardView: React.FC = () => {
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
               {hmtdCount.upcoming} sắp đến · {hmtdCount.expired} quá hạn
             </span>
           <div className="flex items-center gap-1.5">
             {(['all', 'upcoming', 'expired'] as DueFilter[]).map(f => (
               <button key={f} type="button" onClick={() => setHmtdFilter(f)}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-colors ${
+                className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors ${
                   hmtdFilter === f
                     ? 'bg-purple-600 text-white'
                     : isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800'
@@ -620,7 +620,7 @@ export const DashboardView: React.FC = () => {
               </button>
             ))}
             <button type="button" onClick={inHmtd}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border ${
                 isLight ? 'bg-white border-slate-300 text-slate-600 hover:border-purple-400'
                         : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-purple-500'
               }`}>
@@ -677,7 +677,7 @@ export const DashboardView: React.FC = () => {
                       </td>
                       <td className="p-2.5 text-center font-bold">{fmtDate(endDateStr)}</td>
                       <td className="p-2.5 text-center">
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] inline-block ${badgeStyle}`}>
+                        <span className={`px-2.5 py-1 rounded-lg text-[11px] inline-block ${badgeStyle}`}>
                           {statusText}
                         </span>
                       </td>
@@ -699,13 +699,13 @@ export const DashboardView: React.FC = () => {
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
               {tsbdCount.upcoming} sắp đến · {tsbdCount.expired} quá hạn
             </span>
           <div className="flex items-center gap-1.5">
             {(['all', 'upcoming', 'expired'] as DueFilter[]).map(f => (
               <button key={f} type="button" onClick={() => setTsbdFilter(f)}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-colors ${
+                className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors ${
                   tsbdFilter === f
                     ? 'bg-emerald-600 text-white'
                     : isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800'
@@ -714,7 +714,7 @@ export const DashboardView: React.FC = () => {
               </button>
             ))}
             <button type="button" onClick={inTsbd}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border ${
                 isLight ? 'bg-white border-slate-300 text-slate-600 hover:border-emerald-400'
                         : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-emerald-500'
               }`}>
@@ -766,7 +766,7 @@ export const DashboardView: React.FC = () => {
                       <td className="p-2.5 font-mono text-sky-600 dark:text-sky-400">{customer?.CifKh || 'N/A'}</td>
                       <td className="p-2.5 font-medium">{collateral.AssetCode || collateral.Address || 'TSBĐ'}</td>
                       <td className="p-2.5">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
                           {assetClassLabel(collateral.AssetType)}
                         </span>
                       </td>
@@ -775,7 +775,7 @@ export const DashboardView: React.FC = () => {
                       </td>
                       <td className="p-2.5 text-center font-bold">{expiryDateStr ? fmtDate(expiryDateStr) : 'N/A'}</td>
                       <td className="p-2.5 text-center">
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] inline-block ${badgeStyle}`}>
+                        <span className={`px-2.5 py-1 rounded-lg text-[11px] inline-block ${badgeStyle}`}>
                           {statusText}
                         </span>
                       </td>

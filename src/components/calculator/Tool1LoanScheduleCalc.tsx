@@ -5,8 +5,7 @@ import { DateInput } from '../DateInput';
 import { fmtDate } from '../../lib/utils';
 import { buildLoanSchedule, postPromoRateAnnual } from '../../lib/calcMath';
 import type { PrepaymentMode, PrepaymentPlanItem } from '../../lib/calcMath';
-import { ScheduleCustomerExport } from './ScheduleCustomerExport';
-import { buildCustomerScheduleDocHtml } from '../../lib/scheduleDocHtml';
+import { buildScheduleDocHtml } from '../../lib/scheduleDocHtml';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
 
 function exportToExcelHTML(
@@ -253,14 +252,11 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
 
   const handlePrintSchedule = () => {
     if (scheduleRows.length === 0) return;
-    const html = buildCustomerScheduleDocHtml({
+    const html = buildScheduleDocHtml({
       rows: scheduleRows,
       info: loanInfoPairs,
       totals: { principal: totalPrincipalSum, interest: totalInterestSum, total: totalObligationSum },
       title: 'Bảng lịch thu nợ dự kiến',
-      subtitle: '(Bản nội bộ phục vụ thẩm định khoản vay)',
-      showSignature: false,
-      noteText: '',
     });
     printHtmlDoc(html, 'Bảng lịch thu nợ dự kiến');
   };
@@ -558,14 +554,6 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           </table>
         </div>
       </div>
-
-      <ScheduleCustomerExport
-        styles={styles}
-        isLight={isLight}
-        rows={scheduleRows}
-        info={loanInfoPairs}
-        totals={{ principal: totalPrincipalSum, interest: totalInterestSum, total: totalObligationSum }}
-      />
     </div>
   );
 };

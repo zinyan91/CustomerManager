@@ -21,8 +21,7 @@ import { fetchCreditContractsByCustomerAPI } from '../../lib/api';
 import { useWork } from '../../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
 import {
-  getLoanProductRule, allowedPurposes, graceMonthOptions,
-  checkTenor, checkPurpose,
+  graceMonthOptions,
 } from '../../lib/loanProductRules';
 import type { LoanContract, CreditContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
@@ -99,18 +98,6 @@ export const LoanPortfolioView: React.FC = () => {
   const [selectedMasterFilter, setSelectedMasterFilter] = useState<string>('ALL');
 
   const [allSchedulesMap, setAllSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
-
-  const handleHdtdNumberChange = (val: string) => {
-    setFormHdtdNumber(val);
-    const trimmed = val.trim();
-    if (trimmed) {
-      const existingCount = contracts.filter(c => getMasterHdtdNumber(c).toLowerCase() === trimmed.toLowerCase()).length;
-      const nextIndex = (existingCount + 1).toString().padStart(2, '0');
-      setFormKunnNumber(`${trimmed}/GNN-${nextIndex}`);
-    } else {
-      setFormKunnNumber('');
-    }
-  };
 
   const [form, setForm] = useState<Partial<LoanContract>>({});
   const [formHdtdNumber, setFormHdtdNumber] = useState('');
@@ -355,31 +342,6 @@ export const LoanPortfolioView: React.FC = () => {
     }
   };
 
-  const handleLoanMethodChange = (method: string) => {
-
-    const rule = getLoanProductRule(method);
-    const pRepay = rule.defaultPrincipalMethod;
-    const iRepay = rule.defaultInterestMethod;
-
-    const allowed = rule.purposes;
-    const currentPurpose = form.LoanPurposeType || '';
-    const nextPurpose =
-      rule.defaultPurpose && (rule.lockPurpose || !allowed.includes(currentPurpose))
-        ? rule.defaultPurpose
-        : currentPurpose;
-
-    const nextGrace = rule.graceMonths.length === 0 ? 0 : (form.PrincipalGracePeriodMonths ?? 0);
-
-    setForm(prev => ({
-      ...prev,
-      LoanMethod: method,
-      PrincipalRepaymentMethod: pRepay,
-      InterestRepaymentMethod: iRepay,
-      LoanPurposeType: nextPurpose,
-      PrincipalGracePeriodMonths: nextGrace,
-    }));
-  };
-
   const handleSelectContract = async (c: LoanContract) => {
     if (selectedContract?.Id === c.Id) {
       setSelectedContract(null);
@@ -461,66 +423,37 @@ export const LoanPortfolioView: React.FC = () => {
   };
 
   const handleNewContract = () => {
+    if (creditContracts.length === 0) {
+      showNotify('error', 'Khách hàng chưa có HĐTD nào. Sang tab Hợp Đồng Tín Dụng để tạo hợp đồng trước khi giải ngân.');
+      return;
+    }
+    if (selectableCreditContracts.length === 0) {
+      showNotify('error', 'Mọi HĐTD của khách hàng đã hết hiệu lực hoặc đã đóng — không giải ngân thêm được.');
+      return;
+    }
+
     setSelectedContract(null);
     setSchedules([]);
-    const defaultMethod = LOAN_METHODS[0];
-
-    let masterHdtd = selectedMasterFilter !== 'ALL' ? selectedMasterFilter : '';
-    let master = contracts.find(c => getMasterHdtdNumber(c) === masterHdtd);
-
-    if (!masterHdtd) {
-      master = contracts.find(c => c.LoanMethod === 'Hạn mức tín dụng') || (contracts.length > 0 ? contracts[0] : undefined);
-      if (master) masterHdtd = getMasterHdtdNumber(master);
-    }
-
-    let suggestedKunnNumber = '';
-    if (masterHdtd) {
-      const existingKunnCount = contracts.filter(c => getMasterHdtdNumber(c).toLowerCase() === masterHdtd.toLowerCase()).length;
-      const nextKunnIndex = (existingKunnCount + 1).toString().padStart(2, '0');
-      suggestedKunnNumber = `${masterHdtd}/GNN-${nextKunnIndex}`;
-    } else {
-      suggestedKunnNumber = 'HĐTD-01/GNN-01';
-    }
-
-    setFormHdtdNumber(masterHdtd);
-    setFormKunnNumber(suggestedKunnNumber);
-
-    setForm({
-      CustomerId: foundCustomer?.Id,
-      ContractType: master ? master.ContractType : 0,
-      LoanMethod: master ? master.LoanMethod : defaultMethod,
-      DebtGroup: master ? master.DebtGroup : 1,
-      ContractNumber: suggestedKunnNumber,
-      HdtdDueDate: null,
-      ContractStartDate: master ? master.ContractStartDate : '',
-      ContractEndDate: master ? master.ContractEndDate : '',
-      LoanTenorMonths: master ? master.LoanTenorMonths : 12,
-      PrincipalRepaymentMethod: master ? master.PrincipalRepaymentMethod : 'Gốc trả cuối kỳ',
-      InterestRepaymentMethod: master ? master.InterestRepaymentMethod : 'Trả hàng tháng theo dư nợ thực tế',
-      PrincipalGracePeriodMonths: 0,
-      InterestGracePeriodMonths: 0,
-      LoanPurposeType: master ? master.LoanPurposeType : '',
-      LoanPurpose: master ? master.LoanPurpose : '',
-      IsSettled: false,
-      IsRestructured: false
-    });
-
-    if (master && master.LoanMethod === 'Hạn mức tín dụng') {
-      setFormCreditLimit(master.ContractAmount ? master.ContractAmount.toLocaleString('vi-VN') : '');
-    } else {
-      setFormCreditLimit('');
-    }
-
-    setFormCreditLimitCode(master?.CreditLimitCode || '');
-    setFormCreditLimitAmount(master?.CreditLimitAmount ? master.CreditLimitAmount.toLocaleString('vi-VN') : '');
-
     setFormLoanAmount('');
     setFormCurrentBalance('');
-    setRatePreferential(master?.PreferentialRate ? (master.PreferentialRate * 100).toString() : '');
-    setRatePreferentialMonths(master?.PreferentialPeriodMonths ? master.PreferentialPeriodMonths.toString() : '');
-    setRateBase(master?.BaseRate ? (master.BaseRate * 100).toString() : '');
-    setRateMargin(master?.MarginRate ? (master.MarginRate * 100).toString() : '');
-    setSelectedCollateralIds(master?.CollateralId ? [master.CollateralId] : []);
+    setForm({
+      CustomerId: foundCustomer?.Id,
+      ContractType: 0,
+      DebtGroup: 1,
+      PrincipalRepaymentMethod: 'Gốc trả cuối kỳ',
+      InterestRepaymentMethod: 'Trả hàng tháng theo dư nợ thực tế',
+      PrincipalGracePeriodMonths: 0,
+      InterestGracePeriodMonths: 0,
+      IsSettled: false,
+      IsRestructured: false,
+    });
+
+    const preferred = selectedMasterFilter !== 'ALL'
+      ? selectableCreditContracts.find(cc => cc.HdtdNumber === selectedMasterFilter)
+      : undefined;
+    applyCreditContractToForm(preferred || selectableCreditContracts[0]);
+
+    setMainTab('kunn');
     setShowForm(true);
   };
 
@@ -536,7 +469,7 @@ export const LoanPortfolioView: React.FC = () => {
       }
 
       if (selectedCollateralIds.length === 0) {
-        showNotify('error', '⚠️ BẮT BUỘC CHỌN TẢI SẢN BẢO ĐẢM! Vui lòng chọn ít nhất 01 Tài sản bảo đảm liên kết với HĐTD/KUNN này!');
+        showNotify('error', '⚠️ CHƯA CÓ TÀI SẢN BẢO ĐẢM! KUNN thừa hưởng TSBĐ của HĐTD — hãy gán TSBĐ cho hợp đồng ở tab Hợp Đồng Tín Dụng.');
         setLoading(false);
         return;
       }
@@ -724,7 +657,7 @@ export const LoanPortfolioView: React.FC = () => {
         }
       }
 
-      showNotify('success', (forceInsert || !selectedContract) ? 'Đã TẠO MỚI thành công Giấy nhận nợ (KUNN) & tự động lập Lịch thu nợ!' : 'Đã CẬP NHẬT thông tin KUNN/HĐTD!');
+      showNotify('success', (forceInsert || !selectedContract) ? 'Đã TẠO MỚI thành công Giấy nhận nợ (KUNN) & tự động lập Lịch thu nợ!' : 'Đã CẬP NHẬT thông tin KUNN!');
 
       if (targetCustomerId) {
         const refreshed = await fetchContractsByCustomerAPI(targetCustomerId);
@@ -980,18 +913,7 @@ export const LoanPortfolioView: React.FC = () => {
   const availableBeforeThisKunn = formLimitStatus?.available ?? Math.max(0, creditLimitNum);
   const remainingHmtdLimit = Math.max(0, availableBeforeThisKunn - kunnLoanAmountNum);
 
-  const productRule = useMemo(() => getLoanProductRule(form.LoanMethod), [form.LoanMethod]);
   const graceOptions = useMemo(() => graceMonthOptions(form.LoanMethod), [form.LoanMethod]);
-
-  const tenorWarning = useMemo(() => {
-    const months = form.LoanTenorMonths || parseKunnTenorMonths(form.KunnTenor);
-    return checkTenor(form.LoanMethod, months).message;
-  }, [form.LoanMethod, form.LoanTenorMonths, form.KunnTenor]);
-
-  const purposeWarning = useMemo(
-    () => checkPurpose(form.LoanMethod, form.LoanPurposeType).message,
-    [form.LoanMethod, form.LoanPurposeType]
-  );
 
   const capacityWarnings = useMemo(
     () => checkCollateralCapacity(contracts, collaterals, getEffectiveBalanceForContract, todayIso)
@@ -1019,6 +941,48 @@ export const LoanPortfolioView: React.FC = () => {
     }
     return map;
   }, [selectedContract, schedules, todayIso]);
+
+  const applyCreditContractToForm = (cc: CreditContract, keepKunnNumber = false) => {
+    setFormHdtdNumber(cc.HdtdNumber);
+    if (!keepKunnNumber) {
+      setFormKunnNumber(nextKunnNumber(cc.HdtdNumber, contracts.map(c => c.ContractNumber)));
+    }
+    setForm(f => ({
+      ...f,
+      CreditContractId: cc.Id,
+      LoanMethod: cc.LoanMethod || f.LoanMethod,
+      ContractStartDate: cc.ContractStartDate || '',
+      ContractEndDate: cc.ContractEndDate || '',
+      LoanTenorMonths: cc.LoanTenorMonths || f.LoanTenorMonths,
+      LoanPurpose: cc.LoanPurpose || '',
+      LoanPurposeType: cc.LoanPurposeType || '',
+    }));
+    setFormCreditLimit(cc.ContractAmount ? cc.ContractAmount.toLocaleString('vi-VN') : '');
+    setFormCreditLimitCode(cc.ApprovalCode || '');
+    setFormCreditLimitAmount(cc.ApprovalAmount ? cc.ApprovalAmount.toLocaleString('vi-VN') : '');
+    setRatePreferential(cc.PreferentialRate ? (cc.PreferentialRate * 100).toString() : '');
+    setRatePreferentialMonths(cc.PreferentialPeriodMonths ? cc.PreferentialPeriodMonths.toString() : '');
+    setRateBase(cc.BaseRate ? (cc.BaseRate * 100).toString() : '');
+    setRateMargin(cc.MarginRate ? (cc.MarginRate * 100).toString() : '');
+    setSelectedCollateralIds(
+      (cc.CollateralIds || '').split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n))
+    );
+  };
+
+  /**
+   * HĐTD được chọn để giải ngân: bỏ hợp đồng đã đóng hoặc hết hiệu lực, vì hết
+   * hiệu lực là không giải ngân được nữa. HĐTD của KUNN đang sửa vẫn giữ lại
+   * để mở được hồ sơ cũ.
+   */
+  const selectableCreditContracts = useMemo(() => {
+    const currentId = selectedContract?.CreditContractId ?? null;
+    return creditContracts.filter(cc => {
+      if (cc.Id === currentId) return true;
+      if (cc.IsClosed) return false;
+      const end = (cc.ContractEndDate || '').trim();
+      return !(end && end < todayIso);
+    });
+  }, [creditContracts, selectedContract, todayIso]);
 
   const formCreditContract = useMemo(() => {
     if (creditContracts.length === 0) return null;
@@ -1245,7 +1209,7 @@ export const LoanPortfolioView: React.FC = () => {
 
           <div className={`flex items-center space-x-1 border rounded-xl p-1 w-fit ${containerCardBg}`}>
             {[
-              { id: 'kunn' as const, label: 'Danh sách KUNN & HĐTD', icon: Receipt },
+              { id: 'kunn' as const, label: 'Danh sách KUNN', icon: Receipt },
               { id: 'schedule' as const, label: 'Lịch Thu Nợ', icon: Calendar },
             ].map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setMainTab(id)}
@@ -1278,7 +1242,7 @@ export const LoanPortfolioView: React.FC = () => {
                   <div className={`flex items-center justify-between pb-3 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
                     <h3 className="font-bold flex items-center space-x-2 text-sm">
                       <FileText className="w-4 h-4 text-sky-500" />
-                      <span>{selectedContract ? `THÔNG TIN HỢP ĐỒNG TÍN DỤNG: ${selectedContract.ContractNumber}` : 'TẠO MỚI HỢP ĐỒNG TÍN DỤNG'}</span>
+                      <span>{selectedContract ? `THÔNG TIN GIẤY NHẬN NỢ: ${selectedContract.ContractNumber}` : 'GIẢI NGÂN KUNN MỚI'}</span>
                     </h3>
                     <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
                       <X className="w-4 h-4" />
@@ -1289,184 +1253,40 @@ export const LoanPortfolioView: React.FC = () => {
                     <div className={`rounded-xl p-4 space-y-4 border ${sectionBoxBg}`}>
                       <div className="text-[11px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-2">
                         <FileText className="w-4 h-4" />
-                        <span>THÔNG TIN CHUNG HỢP ĐỒNG TÍN DỤNG (HĐTD)</span>
+                        <span>HỢP ĐỒNG TÍN DỤNG CHA & PHÂN LOẠI NỢ</span>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Tên Khách hàng vay</label>
-                          <input type="text" readOnly
-                            value={foundCustomer ? foundCustomer.FullName : ''}
-                            className={`w-full rounded-xl p-2.5 text-xs ${readonlyInputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Mã CIF KH</label>
-                          <input type="text" readOnly
-                            value={foundCustomer ? foundCustomer.CifKh : ''}
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono text-sky-600 dark:text-sky-400 ${readonlyInputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Số HĐTD Gốc</label>
-                          <input type="text"
-                            value={formHdtdNumber}
-                            onChange={e => handleHdtdNumberChange(e.target.value)}
-                            placeholder="2002/HDTD/9634078..."
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-purple-600 dark:text-purple-400 ${inputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Số KUNN (GNN)</label>
-                          <input type="text"
-                            value={formKunnNumber}
-                            onChange={e => setFormKunnNumber(e.target.value)}
-                            placeholder="2002/HDTD/9634078/GNN-01..."
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
-                        <div className="md:col-span-4">
-                          <label className={`block mb-1 ${labelStyle}`}>Phương thức vay *</label>
-                          <select required value={form.LoanMethod || LOAN_METHODS[0]}
-                            onChange={e => handleLoanMethodChange(e.target.value)}
-                            className={`w-full rounded-xl p-2.5 text-xs font-bold ${inputStyle}`}>
-                            {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>
-                            Mục đích vay vốn
-                            {productRule.lockPurpose && (
-                              <span className="ml-1 normal-case font-normal text-slate-400">
-                                (cố định theo sản phẩm)
-                              </span>
-                            )}
-                          </label>
-                          <select value={form.LoanPurposeType || ''}
-                            onChange={e => setForm(f => ({ ...f, LoanPurposeType: e.target.value }))}
-                            disabled={productRule.lockPurpose}
-                            title={productRule.lockPurpose
-                              ? 'Sản phẩm này chỉ phục vụ một mục đích vay duy nhất.'
-                              : undefined}
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle} ${
-                              productRule.lockPurpose ? 'opacity-70 cursor-not-allowed' : ''
-                            }`}>
-                            {!productRule.lockPurpose && <option value="">-- Chọn mục đích --</option>}
-                            {allowedPurposes(form.LoanMethod).map(p => (
-                              <option key={p.value} value={p.value}>{p.label}</option>
+                          <label className={`block mb-1 ${labelStyle}`}>Hợp đồng tín dụng (HĐTD) *</label>
+                          <select
+                            value={form.CreditContractId ?? ''}
+                            onChange={e => {
+                              const id = parseInt(e.target.value, 10);
+                              const cc = creditContracts.find(x => x.Id === id);
+                              if (cc) applyCreditContractToForm(cc, !!selectedContract);
+                            }}
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-purple-600 dark:text-purple-400 ${inputStyle}`}>
+                            <option value="">— Chọn HĐTD —</option>
+                            {selectableCreditContracts.map(cc => (
+                              <option key={cc.Id} value={cc.Id}>{cc.HdtdNumber}</option>
                             ))}
                           </select>
-                          {productRule.note && (
-                            <div className="mt-1 text-[10px] text-slate-400 leading-snug">{productRule.note}</div>
-                          )}
-                          {purposeWarning && (
-                            <div className="mt-1 text-[10px] text-amber-600 dark:text-amber-400 leading-snug">
-                              ⚠ {purposeWarning}
+                          {creditContracts.length === 0 && (
+                            <div className="mt-1 text-[10px] font-semibold text-rose-500">
+                              Khách hàng chưa có HĐTD. Tạo ở tab Hợp Đồng Tín Dụng trước.
                             </div>
                           )}
                         </div>
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Mô tả chi tiết mục đích vay</label>
-                          <input type="text" value={form.LoanPurpose || ''}
-                            onChange={e => setForm(f => ({ ...f, LoanPurpose: e.target.value }))}
-                            placeholder="Bổ sung vốn kinh doanh, mua sắm máy móc..."
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Tổng mức cấp (HĐTD) *</label>
-                          <input type="text" value={formCreditLimit}
-                            onChange={e => setFormCreditLimit(formatMoneyInput(e.target.value))}
-                            placeholder="1.000.000.000"
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
+                          <label className={`block mb-1 ${labelStyle}`}>Số KUNN (GNN) *</label>
+                          <input type="text" value={formKunnNumber}
+                            onChange={e => setFormKunnNumber(e.target.value)}
+                            placeholder="2002/HDTD/9634078/GNN-01"
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 ${inputStyle}`} />
                         </div>
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>
-                            Mã HMTD dùng chung
-                            <span className="ml-1 normal-case font-normal text-slate-400">(nếu nhiều HĐTD chung một hạn mức)</span>
-                          </label>
-                          <input type="text" value={formCreditLimitCode}
-                            onChange={e => setFormCreditLimitCode(e.target.value)}
-                            placeholder="Số phê duyệt cấp tín dụng"
-                            title="Các HĐTD khai cùng mã này sẽ dùng chung một hạn mức, chỉ tính MỘT lần vào tổng mức cấp. Bỏ trống nếu hợp đồng có hạn mức riêng."
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono ${inputStyle}`} />
-                        </div>
-                        {formCreditLimitCode.trim() !== '' && (
-                          <div>
-                            <label className={`block mb-1 ${labelStyle}`}>Hạn mức được duyệt</label>
-                            <input type="text" value={formCreditLimitAmount}
-                              onChange={e => setFormCreditLimitAmount(formatMoneyInput(e.target.value))}
-                              placeholder="1.460.000.000"
-                              className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-400 ${inputStyle}`} />
-                          </div>
-                        )}
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Ngày HĐ có hiệu lực</label>
-                          <DateInput value={form.ContractStartDate || ''}
-                            onChange={val => setForm(f => ({ ...f, ContractStartDate: val }))}
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Thời hạn vay (HĐTD)</label>
-                          {form.LoanMethod === 'Hạn mức tín dụng' ? (
-                            <div className="flex items-center space-x-1.5">
-                              {[12, 24].map(m => (
-                                <button
-                                  key={m}
-                                  type="button"
-                                  onClick={() => setForm(f => ({ ...f, LoanTenorMonths: m }))}
-                                  className={`flex-1 p-2.5 text-xs rounded-xl font-bold border transition-colors ${
-                                    form.LoanTenorMonths === m
-                                      ? 'bg-sky-600 text-white border-sky-500 shadow-sm'
-                                      : isLight ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
-                                  }`}
-                                >
-                                  {m} tháng
-                                </button>
-                              ))}
-                            </div>
-                          ) : (
-                            <input type="number" min={1} value={form.LoanTenorMonths || ''}
-                              onChange={e => setForm(f => ({ ...f, LoanTenorMonths: parseInt(e.target.value) || undefined }))}
-                              placeholder={`${productRule.tenor.min} – ${productRule.tenor.max} tháng`}
-                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                          )}
-                          {tenorWarning && (
-                            <div className="mt-1 text-[10px] text-amber-600 dark:text-amber-400 leading-snug">
-                              ⚠ {tenorWarning}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>
-                            <span>Ngày kết thúc HĐ (tự động)</span>
-                          </label>
-                          <DateInput readOnly value={form.ContractEndDate || ''}
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono border ${readonlyInputStyle}`} />
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className={labelStyle}>Phân loại Nhóm nợ</label>
-                            {(() => {
-                              const schs = selectedContract ? (allSchedulesMap[selectedContract.Id] || schedules) : schedules;
-                              const autoInfo = getAutoDebtGroupInfo(schs);
-                              if (autoInfo.maxOverdueDays > 0) {
-                                return (
-                                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
-                                    ⚡ Tự động: Nhóm {autoInfo.debtGroup} ({autoInfo.maxOverdueDays}d quá hạn)
-                                  </span>
-                                );
-                              }
-                              return (
-                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                                  ✓ Đúng hạn (Nhóm 1)
-                                </span>
-                              );
-                            })()}
-                          </div>
+                          <label className={`block mb-1 ${labelStyle}`}>Phân loại Nhóm nợ</label>
                           <select value={form.DebtGroup ?? 1}
                             onChange={e => setForm(f => ({ ...f, DebtGroup: Number(e.target.value) }))}
                             className={`w-full rounded-xl p-2.5 text-xs font-bold ${inputStyle}`}>
@@ -1478,6 +1298,27 @@ export const LoanPortfolioView: React.FC = () => {
                           </select>
                         </div>
                       </div>
+
+                      {formCreditContract && (
+                        <div className={`rounded-xl p-3 border text-[11px] ${
+                          isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+                        }`}>
+                          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 font-mono">
+                            <span className="text-slate-500">{foundCustomer?.FullName} · CIF {foundCustomer?.CifKh}</span>
+                            <span>Phương thức: <strong>{formCreditContract.LoanMethod || '—'}</strong></span>
+                            <span>Mức cấp: <strong className="text-sky-600 dark:text-sky-400">{fmtMoney(formCreditContract.ContractAmount)}</strong></span>
+                            <span>Hiệu lực đến: <strong className={formLimitStatus?.expired ? 'text-rose-600 dark:text-rose-400' : ''}>
+                              {fmtDate(formCreditContract.ContractEndDate)}
+                            </strong></span>
+                            {formCreditContract.LoanPurposeType && (
+                              <span className="text-slate-500">Mục đích: {formCreditContract.LoanPurposeType}</span>
+                            )}
+                          </div>
+                          <div className="mt-1.5 text-[10px] font-sans text-slate-400">
+                            Thông tin cấp HĐTD chỉ sửa được ở tab Hợp Đồng Tín Dụng. KUNN thừa hưởng TSBĐ, mục đích và lãi suất chương trình của hợp đồng.
+                          </div>
+                        </div>
+                      )}
 
                       {kunnRevolving.state !== 'unknown' && (
                         <div className={`p-3 rounded-xl border text-[11px] font-semibold ${

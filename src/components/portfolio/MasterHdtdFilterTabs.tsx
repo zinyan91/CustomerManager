@@ -33,7 +33,7 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
           <FileText className="w-3.5 h-3.5 text-purple-500" />
-          <span>LỌC XEM THEO HĐTD CHÍNH ({masterHdtdGroups.length} HĐTD):</span>
+          <span>LỌC KUNN THEO HĐTD ({masterHdtdGroups.length} HĐTD):</span>
         </span>
         <div className="flex flex-wrap items-center gap-1.5">
           <button

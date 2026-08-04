@@ -98,6 +98,12 @@ export const DocumentTemplateView: React.FC = () => {
   const [saleSellerName, setSaleSellerName] = useState('PHẠM HỒNG ĐỨC');
   const [saleSellerCccd, setSaleSellerCccd] = useState('0720 7700 0901');
   const [saleSellerCccdDate, setSaleSellerCccdDate] = useState('25/05/2023');
+  const [saleSellerCccdPlace, setSaleSellerCccdPlace] = useState('CCS QLHC về TTXH');
+  const [salePayMethod, setSalePayMethod] = useState<'cash' | 'transfer'>('transfer');
+  const [saleBankOwner, setSaleBankOwner] = useState('PHẠM HỒNG ĐỨC');
+  const [saleBankAccNo, setSaleBankAccNo] = useState('1023456789');
+  const [saleBankName, setSaleBankName] = useState('Vietcombank');
+  const [saleBankBranch, setSaleBankBranch] = useState('Chi nhánh Hà Tĩnh');
   const [saleStartDate, setSaleStartDate] = useState('2026-04-09');
   const [saleEndDate, setSaleEndDate] = useState('2026-05-09');
   const [salePaymentStage1, setSalePaymentStage1] = useState('93.600.000');
@@ -135,7 +141,7 @@ export const DocumentTemplateView: React.FC = () => {
 
   const [payBankOwner, setPayBankOwner] = useState('PHẠM HỒNG ĐỨC');
   const [payBankAccNo, setPayBankAccNo] = useState('1023456789');
-  const [payBankName, setPayBankName] = useState('Ngân hàng TMCP Ngoại thương Việt Nam (Vietcombank)');
+  const [payBankName, setPayBankName] = useState('Vietcombank');
   const [payBankBranch, setPayBankBranch] = useState('Chi nhánh Hà Tĩnh');
 
   const [payStages, setPayStages] = useState<any[]>([
@@ -543,7 +549,7 @@ export const DocumentTemplateView: React.FC = () => {
 
         <p class="font-bold no-indent pt-2">BÊN BÁN: (Sau đây gọi tắt là Bên B)</p>
         <p class="clause-p">- Họ tên: <strong>${nfc(saleSellerName)}</strong></p>
-        <p class="clause-p">- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: <strong>${nfc(saleSellerCccdDate)}</strong> &nbsp;|&nbsp; Nơi cấp: CCS QLHC về TTXH</p>
+        <p class="clause-p">- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: <strong>${nfc(saleSellerCccdDate)}</strong> &nbsp;|&nbsp; Nơi cấp: <strong>${nfc(saleSellerCccdPlace)}</strong></p>
 
         <p class="clause-p pt-2">Hai bên A và B thống nhất thoả thuận nội dung Hợp đồng như sau:</p>
 
@@ -579,6 +585,18 @@ export const DocumentTemplateView: React.FC = () => {
         <p class="clause-p">– Lần 1: Bên A thanh toán cho Bên B số tiền là: <strong>${salePaymentStage1} đồng</strong></p>
         <p class="clause-p">– Lần 2: Số tiền còn lại sẽ được Bên A thanh toán toàn bộ trước khi nhận hàng dựa trên phiếu đề nghị thanh toán</p>
         <p class="clause-p"><strong>2. Phương thức thanh toán:</strong> Thanh toán bằng tiền mặt hoặc chuyển khoản.</p>
+        <p class="clause-p">Bên A thanh toán cho Bên B theo hình thức <strong>${salePayMethod === 'cash' ? 'tiền mặt' : 'chuyển khoản'}</strong>, thông tin cụ thể như sau:</p>
+        ${salePayMethod === 'cash' ? `
+        <p class="clause-p" style="margin-left: 24px;">– Người nhận tiền: <strong>${nfc(saleSellerName)}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– CCCD số: <strong>${nfc(saleSellerCccd)}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– Ngày cấp: <strong>${saleSellerCccdDate}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– Nơi cấp: <strong>${nfc(saleSellerCccdPlace)}</strong></p>
+        ` : `
+        <p class="clause-p" style="margin-left: 24px;">– Chủ tài khoản: <strong>${nfc(saleBankOwner || saleSellerName)}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– Số tài khoản: <strong>${nfc(saleBankAccNo)}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– Ngân hàng: <strong>${nfc(saleBankName)}</strong></p>
+        <p class="clause-p" style="margin-left: 24px;">– Chi nhánh: <strong>${nfc(saleBankBranch)}</strong></p>
+        `}
 
         <h2>ĐIỀU 4: THỜI ĐIỂM VÀ ĐỊA ĐIỂM CHUYỂN GIAO TÀI SẢN</h2>
         <p class="clause-p">Bên bán chuyển giao tài sản cho Bên mua trong thời hạn 30 ngày kể từ ngày ký kết hợp đồng.</p>
@@ -775,6 +793,12 @@ export const DocumentTemplateView: React.FC = () => {
             saleSellerName={saleSellerName} setSaleSellerName={setSaleSellerName}
             saleSellerCccd={saleSellerCccd} setSaleSellerCccd={setSaleSellerCccd}
             saleSellerCccdDate={saleSellerCccdDate} setSaleSellerCccdDate={setSaleSellerCccdDate}
+            saleSellerCccdPlace={saleSellerCccdPlace} setSaleSellerCccdPlace={setSaleSellerCccdPlace}
+            salePayMethod={salePayMethod} setSalePayMethod={setSalePayMethod}
+            saleBankOwner={saleBankOwner} setSaleBankOwner={setSaleBankOwner}
+            saleBankAccNo={saleBankAccNo} setSaleBankAccNo={setSaleBankAccNo}
+            saleBankName={saleBankName} setSaleBankName={setSaleBankName}
+            saleBankBranch={saleBankBranch} setSaleBankBranch={setSaleBankBranch}
             saleStartDate={saleStartDate} setSaleStartDate={setSaleStartDate}
             saleEndDate={saleEndDate} setSaleEndDate={setSaleEndDate}
             salePaymentStage1={salePaymentStage1} setSalePaymentStage1={setSalePaymentStage1}

@@ -23,6 +23,9 @@ export interface CustomerScheduleDocInput {
   docRef?: string;
   preparedBy?: string;
   noteText?: string;
+  title?: string;
+  subtitle?: string;
+  showSignature?: boolean;
 }
 
 const DOC_CSS = `
@@ -117,20 +120,28 @@ export function buildCustomerScheduleDocHtml(input: CustomerScheduleDocInput): s
     + `<td></td>`
     + `</tr>`;
 
-  return `<html><head><meta charset="utf-8" /><title>Lich tra no du kien</title><style>${DOC_CSS}</style></head>`
+  const title = txt(input.title) || 'Bảng lịch trả nợ dự kiến';
+  const subtitle = input.subtitle === undefined
+    ? '(Kèm theo hồ sơ vay của khách hàng)'
+    : txt(input.subtitle);
+  const showSignature = input.showSignature !== false;
+
+  return `<html><head><meta charset="utf-8" /><title>${title}</title><style>${DOC_CSS}</style></head>`
     + `<body>`
     + `<div class="doc-head">`
     + (org ? `<div class="org">${org}</div>` : '')
-    + `<div class="doc-title">Bảng lịch trả nợ dự kiến</div>`
-    + `<div class="doc-sub">(Kèm theo hồ sơ vay của khách hàng)</div>`
+    + `<div class="doc-title">${title}</div>`
+    + (subtitle ? `<div class="doc-sub">${subtitle}</div>` : '')
     + `</div>`
     + `<table class="info-table">${infoRows}</table>`
     + `<table class="sched"><thead><tr>${headHtml}</tr></thead><tbody>${bodyHtml}</tbody><tfoot>${footHtml}</tfoot></table>`
     + (note ? `<div class="note"><b>Lưu ý:</b> ${note}</div>` : '')
-    + `<table class="sign">`
-    + `<tr><td class="role">Khách hàng</td><td class="role">Cán bộ lập bảng</td></tr>`
-    + `<tr><td class="space"></td><td class="space"></td></tr>`
-    + `<tr><td>${customer}</td><td>${officer}</td></tr>`
-    + `</table>`
+    + (showSignature
+      ? `<table class="sign">`
+        + `<tr><td class="role">Khách hàng</td><td class="role">Cán bộ lập bảng</td></tr>`
+        + `<tr><td class="space"></td><td class="space"></td></tr>`
+        + `<tr><td>${customer}</td><td>${officer}</td></tr>`
+        + `</table>`
+      : '')
     + `</body></html>`;
 }

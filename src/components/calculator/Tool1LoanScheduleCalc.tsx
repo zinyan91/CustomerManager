@@ -6,6 +6,8 @@ import { fmtDate } from '../../lib/utils';
 import { buildLoanSchedule, postPromoRateAnnual } from '../../lib/calcMath';
 import type { PrepaymentMode, PrepaymentPlanItem } from '../../lib/calcMath';
 import { ScheduleCustomerExport } from './ScheduleCustomerExport';
+import { buildCustomerScheduleDocHtml } from '../../lib/scheduleDocHtml';
+import { printHtmlDoc } from '../../lib/printHtmlDoc';
 
 function exportToExcelHTML(
   filename: string,
@@ -249,6 +251,20 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
     exportToExcelHTML('Lich_Thu_No_Vay', 'BẢNG CHI TIẾT LỊCH THU NỢ DỰ KIẾN KHOẢN VAY', loanInfoPairs, headers, rows, footer);
   };
 
+  const handlePrintSchedule = () => {
+    if (scheduleRows.length === 0) return;
+    const html = buildCustomerScheduleDocHtml({
+      rows: scheduleRows,
+      info: loanInfoPairs,
+      totals: { principal: totalPrincipalSum, interest: totalInterestSum, total: totalObligationSum },
+      title: 'Bảng lịch thu nợ dự kiến',
+      subtitle: '(Bản nội bộ phục vụ thẩm định khoản vay)',
+      showSignature: false,
+      noteText: '',
+    });
+    printHtmlDoc(html, 'Bảng lịch thu nợ dự kiến');
+  };
+
   return (
     <div className="space-y-4">
 
@@ -477,7 +493,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             </button>
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={handlePrintSchedule}
               className="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm"
             >
               <Printer className="w-3.5 h-3.5" />

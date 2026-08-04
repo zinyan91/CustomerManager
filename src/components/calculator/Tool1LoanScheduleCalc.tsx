@@ -489,7 +489,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Xuất Excel Đẹp (.xls)</span>
+              <span>Xuất Excel (.xls)</span>
             </button>
             <button
               type="button"

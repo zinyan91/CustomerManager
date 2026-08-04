@@ -1,4 +1,5 @@
 import type { CreditContract, LoanContract } from '../types';
+import { isRevolvingCredit } from './loanProductRules';
 
 export const GNN_SEPARATOR = '/GNN-';
 
@@ -162,6 +163,15 @@ export interface CreditContractSummary {
   activeKunnCount: number;
   settledKunnCount: number;
   outstanding: number;
+  /** Tổng đã nhận nợ, tính cả KUNN đã tất toán. */
+  disbursedCumulative: number;
+  revolving: boolean;
+  /** Hạn mức còn trống theo sản phẩm, CHƯA xét hiệu lực. */
+  headroom: number;
+  /** Số tiền thực sự còn giải ngân được. */
+  available: number;
+  canDisburse: boolean;
+  blockReason: string;
   expired: boolean;
   isEmpty: boolean;
 }
@@ -185,13 +195,39 @@ export function summarizeCreditContracts(
     const active = own.filter(k => !k.IsSettled);
     const end = toIso(cc.ContractEndDate);
 
+    const outstanding = active.reduce((s, k) => s + Math.max(0, outstandingOf(k)), 0);
+    const disbursedCumulative = own.reduce(
+      (s, k) => s + Math.max(0, k.LoanAmount ?? k.CurrentBalance ?? 0), 0
+    );
+
+    const granted = cc.ContractAmount || 0;
+    const revolving = isRevolvingCredit(cc.LoanMethod);
+    const headroom = Math.max(0, granted - (revolving ? outstanding : disbursedCumulative));
+    const expired = !!(today && end && end < today);
+    const available = (expired || cc.IsClosed) ? 0 : headroom;
+
+    let blockReason = '';
+    if (cc.IsClosed) blockReason = 'HĐTD đã đóng';
+    else if (expired) blockReason = `HĐTD hết hiệu lực ${fmt(end)}`;
+    else if (headroom <= 0) {
+      blockReason = revolving
+        ? 'Đã dùng hết hạn mức'
+        : 'Vay từng lần đã giải ngân, không giải ngân thêm';
+    }
+
     return {
       contract: cc,
       kunnCount: own.length,
       activeKunnCount: active.length,
       settledKunnCount: own.length - active.length,
-      outstanding: active.reduce((s, k) => s + Math.max(0, outstandingOf(k)), 0),
-      expired: !!(today && end && end < today),
+      outstanding,
+      disbursedCumulative,
+      revolving,
+      headroom,
+      available,
+      canDisburse: available > 0,
+      blockReason,
+      expired,
       isEmpty: active.length === 0,
     };
   });

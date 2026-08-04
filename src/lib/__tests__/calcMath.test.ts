@@ -8,6 +8,9 @@ import {
   dtiMaxMonthlyPayment,
   effectiveAnnualRate,
   flatToReducingApprox,
+  buildLoanSchedule,
+  mergePrepayments,
+  postPromoRateAnnual,
 } from '../calcMath';
 import { getDaysBetween } from '../loanMath';
 
@@ -166,5 +169,175 @@ describe('flatToReducingApprox', () => {
 
   it('kỳ hạn 0 trả về 0', () => {
     expect(flatToReducingApprox(0.12, 0)).toBe(0);
+  });
+});
+
+describe('postPromoRateAnnual', () => {
+  it('cơ sở + biên độ', () => {
+    expect(postPromoRateAnnual({ promoRateAnnual: 7, postPromoBaseRateAnnual: 8, marginAnnual: 3.5 })).toBe(11.5);
+  });
+
+  it('biên độ 0 là giá trị hợp lệ, không bị coi là thiếu', () => {
+    expect(postPromoRateAnnual({ promoRateAnnual: 7, postPromoBaseRateAnnual: 9, marginAnnual: 0 })).toBe(9);
+  });
+
+  it('LS cơ sở 0 là giá trị hợp lệ', () => {
+    expect(postPromoRateAnnual({ promoRateAnnual: 7, postPromoBaseRateAnnual: 0, marginAnnual: 2 })).toBe(2);
+  });
+
+  it('chỉ có biên độ thì cộng lên lãi ưu đãi', () => {
+    expect(postPromoRateAnnual({ promoRateAnnual: 7, marginAnnual: 3 })).toBe(10);
+  });
+
+  it('không khai gì thì giữ nguyên lãi ưu đãi', () => {
+    expect(postPromoRateAnnual({ promoRateAnnual: 7 })).toBe(7);
+    expect(postPromoRateAnnual({ promoRateAnnual: 7, postPromoBaseRateAnnual: null, marginAnnual: null })).toBe(7);
+  });
+});
+
+describe('mergePrepayments', () => {
+  it('gộp nhiều lần trả trong cùng một kỳ và sắp xếp theo kỳ', () => {
+    const out = mergePrepayments([
+      { period: 5, amount: 10_000_000, mode: 'reduce_monthly' },
+      { period: 2, amount: 3_000_000, mode: 'reduce_monthly' },
+      { period: 5, amount: 5_000_000, mode: 'shorten_tenor' },
+    ]);
+    expect(out.map(p => p.period)).toEqual([2, 5]);
+    expect(out[1].amount).toBe(15_000_000);
+    expect(out[1].mode).toBe('shorten_tenor');
+  });
+
+  it('bỏ dòng trống, số tiền <= 0 hoặc kỳ không hợp lệ', () => {
+    expect(mergePrepayments([
+      { period: 0, amount: 1_000_000, mode: 'reduce_monthly' },
+      { period: 3, amount: 0, mode: 'reduce_monthly' },
+      { period: 4, amount: -5, mode: 'reduce_monthly' },
+      { period: NaN, amount: 1_000_000, mode: 'reduce_monthly' },
+    ])).toEqual([]);
+  });
+});
+
+describe('buildLoanSchedule', () => {
+  const base = {
+    loanAmount: 960_000_000,
+    promoRateAnnual: 9.5,
+    tenorMonths: 12,
+    disbursementDate: '2026-05-05',
+    repayMethod: 'equal_principal' as const,
+  };
+
+  it('BẤT BIẾN: tổng gốc các kỳ bằng số tiền vay', () => {
+    const cases = [
+      { ...base },
+      { ...base, principalGraceMonths: 3 },
+      { ...base, repayMethod: 'bullet' as const },
+      { ...base, tenorMonths: 120, principalGraceMonths: 18 },
+      {
+        ...base, tenorMonths: 120, principalGraceMonths: 18,
+        prepayments: [
+          { period: 2, amount: 8_000_000, mode: 'reduce_monthly' as const },
+          { period: 30, amount: 100_000_000, mode: 'reduce_monthly' as const },
+          { period: 60, amount: 50_000_000, mode: 'shorten_tenor' as const },
+        ],
+      },
+      {
+        ...base, tenorMonths: 24,
+        prepayments: [{ period: 3, amount: 900_000_000, mode: 'shorten_tenor' as const }],
+      },
+    ];
+    for (const c of cases) {
+      const rows = buildLoanSchedule(c);
+      expect(rows.reduce((a, r) => a + r.principal, 0)).toBe(c.loanAmount);
+    }
+  });
+
+  it('ngày bắt đầu kỳ 1 là ngày giải ngân, các kỳ sau nối liền nhau', () => {
+    const rows = buildLoanSchedule({ ...base, tenorMonths: 4 });
+    expect(rows[0].startDate).toBe('2026-05-05');
+    expect(rows[0].dueDate).toBe('2026-06-05');
+    for (let i = 1; i < rows.length; i++) {
+      expect(rows[i].startDate).toBe(rows[i - 1].dueDate);
+    }
+  });
+
+  it('số ngày là ngày thực tế giữa hai mốc, không phải 30', () => {
+    const rows = buildLoanSchedule({ ...base, tenorMonths: 12 });
+    expect(rows[0].days).toBe(31);
+    expect(rows[9].days).toBe(28);
+  });
+
+  it('áp lãi ưu đãi trong thời gian ưu đãi, sau đó là cơ sở + biên độ', () => {
+    const rows = buildLoanSchedule({
+      ...base, tenorMonths: 12, promoRateAnnual: 7,
+      promoMonths: 3, postPromoBaseRateAnnual: 8, marginAnnual: 3.5,
+    });
+    expect(rows.slice(0, 3).map(r => r.rateAnnual)).toEqual([7, 7, 7]);
+    expect(rows.slice(3).every(r => r.rateAnnual === 11.5)).toBe(true);
+  });
+
+  it('không khai ưu đãi thì mọi kỳ dùng một lãi suất', () => {
+    const rows = buildLoanSchedule({ ...base, promoMonths: 0, postPromoBaseRateAnnual: 14 });
+    expect(rows.every(r => r.rateAnnual === 9.5)).toBe(true);
+  });
+
+  it('lãi kỳ đầu = dư nợ x lãi suất x số ngày / 365', () => {
+    const rows = buildLoanSchedule(base);
+    expect(rows[0].interest).toBe(Math.round(960_000_000 * 0.095 * 31 / 365));
+  });
+
+  it('ân hạn gốc: các kỳ trong thời gian ân hạn không trả gốc', () => {
+    const rows = buildLoanSchedule({ ...base, tenorMonths: 12, principalGraceMonths: 3 });
+    expect(rows.slice(0, 3).every(r => r.principal === 0)).toBe(true);
+    expect(rows[3].principal).toBeGreaterThan(0);
+  });
+
+  it('trả trước hạn nhiều kỳ: mỗi kỳ đều được ghi nhận', () => {
+    const rows = buildLoanSchedule({
+      ...base, tenorMonths: 24,
+      prepayments: [
+        { period: 3, amount: 50_000_000, mode: 'reduce_monthly' },
+        { period: 9, amount: 30_000_000, mode: 'reduce_monthly' },
+      ],
+    });
+    expect(rows.filter(r => r.prepayment > 0).map(r => r.period)).toEqual([3, 9]);
+    expect(rows[2].prepayment).toBe(50_000_000);
+    expect(rows[8].prepayment).toBe(30_000_000);
+  });
+
+  it('giảm gốc hàng tháng sau mỗi lần trả trước hạn', () => {
+    const rows = buildLoanSchedule({
+      ...base, tenorMonths: 24,
+      prepayments: [
+        { period: 3, amount: 50_000_000, mode: 'reduce_monthly' },
+        { period: 9, amount: 30_000_000, mode: 'reduce_monthly' },
+      ],
+    });
+    expect(rows[3].scheduledPrincipal).toBeLessThan(rows[1].scheduledPrincipal);
+    expect(rows[9].scheduledPrincipal).toBeLessThan(rows[3].scheduledPrincipal);
+  });
+
+  it('rút ngắn thời hạn: khoản vay kết thúc sớm hơn kỳ hạn khai báo', () => {
+    const rows = buildLoanSchedule({
+      ...base, tenorMonths: 24,
+      prepayments: [{ period: 3, amount: 400_000_000, mode: 'shorten_tenor' }],
+    });
+    expect(rows.length).toBeLessThan(24);
+    expect(rows[rows.length - 1].endingBalance).toBe(0);
+  });
+
+  it('trả trước hạn không vượt quá dư nợ còn lại', () => {
+    const rows = buildLoanSchedule({
+      ...base, tenorMonths: 12,
+      prepayments: [{ period: 2, amount: 5_000_000_000, mode: 'shorten_tenor' }],
+    });
+    expect(rows.reduce((a, r) => a + r.principal, 0)).toBe(960_000_000);
+    expect(rows[1].endingBalance).toBe(0);
+    expect(rows.length).toBe(2);
+  });
+
+  it('đầu vào thiếu thì trả bảng rỗng', () => {
+    expect(buildLoanSchedule({ ...base, loanAmount: 0 })).toEqual([]);
+    expect(buildLoanSchedule({ ...base, disbursementDate: '' })).toEqual([]);
+    expect(buildLoanSchedule({ ...base, tenorMonths: 0 })).toEqual([]);
   });
 });

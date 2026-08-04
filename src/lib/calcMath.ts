@@ -43,6 +43,157 @@ export function diffDays(startDateStr: string, endDateStr: string): number {
   }
 }
 
+export type PrincipalRepayMethod = 'equal_principal' | 'bullet';
+export type PrepaymentMode = 'reduce_monthly' | 'shorten_tenor';
+
+export interface PrepaymentPlanItem {
+  period: number;
+  amount: number;
+  mode: PrepaymentMode;
+}
+
+export interface LoanScheduleParams {
+  loanAmount: number;
+  promoRateAnnual: number;
+  tenorMonths: number;
+  disbursementDate: string;
+  repayMethod: PrincipalRepayMethod;
+  principalGraceMonths?: number;
+  promoMonths?: number | null;
+  postPromoBaseRateAnnual?: number | null;
+  marginAnnual?: number | null;
+  prepayments?: PrepaymentPlanItem[];
+}
+
+export interface LoanScheduleRow {
+  period: number;
+  startDate: string;
+  dueDate: string;
+  days: number;
+  rateAnnual: number;
+  beginningBalance: number;
+  scheduledPrincipal: number;
+  prepayment: number;
+  principal: number;
+  interest: number;
+  totalPayment: number;
+  endingBalance: number;
+}
+
+function numOrNull(v: number | null | undefined): number | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v !== 'number' || Number.isNaN(v)) return null;
+  return v;
+}
+
+export function postPromoRateAnnual(params: {
+  promoRateAnnual: number;
+  postPromoBaseRateAnnual?: number | null;
+  marginAnnual?: number | null;
+}): number {
+  const base = numOrNull(params.postPromoBaseRateAnnual);
+  const margin = numOrNull(params.marginAnnual);
+  if (base !== null) return base + (margin === null ? 0 : margin);
+  if (margin !== null) return params.promoRateAnnual + margin;
+  return params.promoRateAnnual;
+}
+
+export function periodRateAnnual(period: number, params: LoanScheduleParams): number {
+  const promoMonths = numOrNull(params.promoMonths);
+  if (promoMonths !== null && promoMonths > 0 && period <= promoMonths) return params.promoRateAnnual;
+  if (promoMonths === null || promoMonths <= 0) return params.promoRateAnnual;
+  return postPromoRateAnnual(params);
+}
+
+export function mergePrepayments(items: PrepaymentPlanItem[]): PrepaymentPlanItem[] {
+  const byPeriod = new Map<number, PrepaymentPlanItem>();
+  for (const it of items) {
+    const period = Math.trunc(it.period);
+    const amount = numOrNull(it.amount);
+    if (!Number.isFinite(period) || period < 1) continue;
+    if (amount === null || amount <= 0) continue;
+    const prev = byPeriod.get(period);
+    byPeriod.set(period, {
+      period,
+      amount: (prev ? prev.amount : 0) + amount,
+      mode: it.mode,
+    });
+  }
+  return [...byPeriod.values()].sort((a, b) => a.period - b.period);
+}
+
+export function buildLoanSchedule(params: LoanScheduleParams): LoanScheduleRow[] {
+  const { loanAmount, tenorMonths, disbursementDate, repayMethod } = params;
+  if (!loanAmount || loanAmount <= 0 || !tenorMonths || tenorMonths < 1 || !disbursementDate) return [];
+
+  const graceRaw = numOrNull(params.principalGraceMonths);
+  const graceMonths = graceRaw === null ? 0 : Math.max(0, Math.min(tenorMonths - 1, Math.trunc(graceRaw)));
+  const plan = mergePrepayments(params.prepayments ?? []);
+
+  const rows: LoanScheduleRow[] = [];
+  let balance = loanAmount;
+  let prevDate = disbursementDate;
+  let stepPrincipal = repayMethod === 'bullet'
+    ? 0
+    : Math.ceil((loanAmount / Math.max(1, tenorMonths - graceMonths)) / 1000) * 1000;
+
+  for (let i = 1; i <= tenorMonths; i++) {
+    if (balance <= 0) break;
+
+    const dueDate = addMonths(disbursementDate, i);
+    const days = diffDays(prevDate, dueDate);
+    const rateAnnual = periodRateAnnual(i, params);
+
+    let scheduledPrincipal = 0;
+    if (repayMethod === 'bullet') {
+      scheduledPrincipal = i === tenorMonths ? balance : 0;
+    } else if (i <= graceMonths) {
+      scheduledPrincipal = 0;
+    } else if (i === tenorMonths) {
+      scheduledPrincipal = balance;
+    } else {
+      scheduledPrincipal = Math.min(balance, stepPrincipal);
+    }
+
+    const planned = plan.find(p => p.period === i);
+    let prepayment = 0;
+    if (planned) {
+      prepayment = Math.min(Math.max(0, balance - scheduledPrincipal), planned.amount);
+    }
+
+    const principal = Math.min(balance, scheduledPrincipal + prepayment);
+    const interest = Math.round(balance * (rateAnnual / 100) * (days / 365));
+    const endingBalance = Math.max(0, balance - principal);
+
+    rows.push({
+      period: i,
+      startDate: prevDate,
+      dueDate,
+      days,
+      rateAnnual,
+      beginningBalance: balance,
+      scheduledPrincipal,
+      prepayment,
+      principal,
+      interest,
+      totalPayment: principal + interest,
+      endingBalance,
+    });
+
+    if (prepayment > 0 && planned && planned.mode === 'reduce_monthly' && repayMethod !== 'bullet') {
+      const remainingPeriods = tenorMonths - i;
+      if (remainingPeriods > 0 && endingBalance > 0) {
+        stepPrincipal = Math.ceil((endingBalance / remainingPeriods) / 1000) * 1000;
+      }
+    }
+
+    balance = endingBalance;
+    prevDate = dueDate;
+  }
+
+  return rows;
+}
+
 export function pvAnnuityFactor(rateMonthly: number, tenorMonths: number): number {
   if (tenorMonths <= 0) return 0;
   if (rateMonthly <= 0) return tenorMonths;

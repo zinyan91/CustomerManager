@@ -8,6 +8,18 @@ import { DocumentPreview } from '../documents/DocumentPreview';
 
 const nfc = (str: string) => (str ? str.normalize('NFC') : '');
 
+const monthsBetweenLabel = (startIso: string, endIso: string): string => {
+  const a = startIso?.split('-'), b = endIso?.split('-');
+  if (!a || !b || a.length !== 3 || b.length !== 3) return '';
+  const months =
+    (parseInt(b[0], 10) - parseInt(a[0], 10)) * 12
+    + (parseInt(b[1], 10) - parseInt(a[1], 10));
+  if (isNaN(months) || months <= 0) return '';
+  return months % 12 === 0 && months >= 12
+    ? `${months / 12} năm`
+    : `${months} tháng`;
+};
+
 export const DocumentTemplateView: React.FC = () => {
   const { theme } = useTheme();
   const isLight = theme === 'light';
@@ -30,6 +42,12 @@ export const DocumentTemplateView: React.FC = () => {
   const [mbMonthlyPrice, setMbMonthlyPrice] = useState('55.000.000');
   const [mbDepositAmount, setMbDepositAmount] = useState('72.000.000');
 
+  const [lhFloors, setLhFloors] = useState('01');
+  const [lhLandArea, setLhLandArea] = useState('80');
+  const [lhHouseArea, setLhHouseArea] = useState('75');
+  const [lhHandoverDate, setLhHandoverDate] = useState('2026-04-23');
+  const [lhPaymentDay, setLhPaymentDay] = useState('05');
+
   const [constContractDate, setConstContractDate] = useState('2026-03-18');
   const [constPartyAName, setConstPartyAName] = useState('LÝ THỊ THÙY DUNG');
   const [constPartyACccd, setConstPartyACccd] = useState('0791 7802 5859');
@@ -42,6 +60,7 @@ export const DocumentTemplateView: React.FC = () => {
   const [constTotalPrice, setConstTotalPrice] = useState('1.003.700.000');
   const [constDepositStage1, setConstDepositStage1] = useState('53.700.000');
   const [constStage2Amount, setConstStage2Amount] = useState('950.000.000');
+  const [constWarrantyMonths, setConstWarrantyMonths] = useState('06');
 
   const [constItems, setConstItems] = useState([
     { id: '1', name: 'Sửa chữa tường (vữa, sơn)', unit: 'm²', quantity: 36.5, price: 6000000, note: 'Vẽ lại tường, bả vữa, sơn lại' },
@@ -134,6 +153,9 @@ export const DocumentTemplateView: React.FC = () => {
 
   const currentTplInfo = TEMPLATE_LIST.find(t => t.id === selectedTemplate) || TEMPLATE_LIST[0];
 
+  const constDurationMonths = monthsBetweenLabel(constStartDate, constEndDate) || 'theo thỏa thuận';
+  const lhTermLabel = monthsBetweenLabel(mbStartDate, mbEndDate) || 'theo thỏa thuận';
+
   const generateDocHtml = () => {
     if (selectedTemplate === 'lease_mb') {
       return `
@@ -182,6 +204,119 @@ export const DocumentTemplateView: React.FC = () => {
       `;
     }
 
+    if (selectedTemplate === 'lease_house') {
+      return `
+        <div class="text-center no-indent">
+          <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+          <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
+          <div style="text-align: center; margin: 4px 0;" class="no-indent">
+            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
+          </div>
+        </div>
+        <div class="text-center pt-2 pb-2 no-indent">
+          <h1>HỢP ĐỒNG THUÊ NHÀ</h1>
+        </div>
+        <p class="clause-p">- Căn cứ Bộ luật Dân sự số 91/2015/QH13 ngày 24/11/2015;</p>
+        <p class="clause-p">- Căn cứ Luật Thương mại số 36/2005/QH11 ngày 14 tháng 06 năm 2005;</p>
+        <p class="clause-p">- Căn cứ vào nhu cầu và sự thỏa thuận của các bên tham gia Hợp đồng;</p>
+        <p class="clause-p">Hôm nay, ngày ${fmtDate(mbContractDate)}, các Bên gồm:</p>
+
+        <p class="font-bold no-indent">BÊN CHO THUÊ (BÊN A):</p>
+        <p class="clause-p">- Ông/bà: <strong>${nfc(mbPartyAName)}</strong></p>
+        <p class="clause-p">- CCCD số: <strong>${mbPartyACccd}</strong> | Ngày cấp: ${mbPartyACccdDate} | Nơi cấp: Cục Cảnh sát QLHC về TTXH.</p>
+        <p class="clause-p">- Nơi ĐKTT: ${nfc(mbPartyAAddress)}.</p>
+        <p class="font-bold no-indent pt-2">BÊN THUÊ (BÊN B):</p>
+        <p class="clause-p">- Ông/bà: <strong>${nfc(mbPartyBName)}</strong></p>
+        <p class="clause-p">- CCCD số: <strong>${mbPartyBCccd}</strong> | Ngày cấp: ${mbPartyBCccdDate} | Nơi cấp: Cục Cảnh sát QLHC về TTXH.</p>
+        <p class="clause-p">- Nơi ĐKTT: ${nfc(mbPartyBAddress)}.</p>
+        <p class="clause-p">Bên A và Bên B sau đây gọi chung là “Hai Bên” hoặc “Các Bên”.</p>
+        <p class="clause-p">Sau khi thảo luận, Hai Bên thống nhất đi đến ký kết Hợp đồng thuê nhà (“Hợp Đồng”) với các điều khoản và điều kiện dưới đây:</p>
+
+        <h2>Điều 1: Nhà ở và các tài sản cho thuê kèm theo nhà ở</h2>
+        <p class="clause-p">1.1. Bên A đồng ý cho Bên B thuê và Bên B cũng đồng ý thuê quyền sử dụng đất và một căn nhà <strong>${nfc(lhFloors)}</strong> tầng gắn liền với quyền sử dụng đất tại địa chỉ: <strong>${nfc(mbLocation)}</strong> để sử dụng làm nơi để ở.</p>
+        <p class="clause-p">- Diện tích quyền sử dụng đất: <strong>${nfc(lhLandArea)} m²</strong>;</p>
+        <p class="clause-p">- Diện tích căn nhà: <strong>${nfc(lhHouseArea)} m²</strong>;</p>
+        <p class="clause-p">1.2. Bên A cam kết quyền sử dụng đất và căn nhà gắn liền trên đất trên là tài sản sở hữu hợp pháp của Bên A. Mọi tranh chấp phát sinh từ tài sản cho thuê trên Bên A hoàn toàn chịu trách nhiệm trước pháp luật.</p>
+
+        <h2>Điều 2: Bàn giao và sử dụng diện tích thuê</h2>
+        <p class="clause-p">2.1. Thời điểm Bên A bàn giao tài sản thuê vào ngày <strong>${fmtDate(lhHandoverDate)}</strong>;</p>
+        <p class="clause-p">2.2. Bên B được toàn quyền sử dụng tài sản thuê kể từ thời điểm được Bên A bàn giao từ thời điểm quy định tại Mục 2.1 trên đây.</p>
+
+        <h2>Điều 3: Thời hạn thuê</h2>
+        <p class="clause-p">3.1. Bên A cam kết cho Bên B thuê tài sản thuê với thời hạn là <strong>${lhTermLabel}</strong> kể từ ngày bàn giao Tài sản thuê;</p>
+        <p class="clause-p">3.2. Hết thời hạn thuê nêu trên nếu Bên B có nhu cầu tiếp tục sử dụng thì Bên A phải ưu tiên cho Bên B tiếp tục thuê.</p>
+
+        <h2>Điều 4: Đặt cọc tiền thuê nhà</h2>
+        <p class="clause-p">4.1. Bên B sẽ giao cho Bên A một khoản tiền là <strong>${mbDepositAmount} VNĐ</strong> ngay sau khi ký hợp đồng này. Số tiền này là tiền đặt cọc để đảm bảo thực hiện Hợp đồng cho thuê nhà.</p>
+        <p class="clause-p">4.2. Nếu Bên B đơn phương chấm dứt hợp đồng mà không thực hiện nghĩa vụ báo trước tới Bên A thì Bên A sẽ không phải hoàn trả lại Bên B số tiền đặt cọc này.</p>
+        <p class="clause-p">Nếu Bên A đơn phương chấm dứt hợp đồng mà không thực hiện nghĩa vụ báo trước tới Bên B thì Bên A sẽ phải hoàn trả lại Bên B số tiền đặt cọc và phải bồi thường thêm một khoản bằng chính tiền đặt cọc.</p>
+        <p class="clause-p">4.3. Tiền đặt cọc của Bên B sẽ không được dùng để thanh toán tiền thuê. Nếu Bên B vi phạm Hợp Đồng làm phát sinh thiệt hại cho Bên A thì Bên A có quyền khấu trừ tiền đặt cọc để bù đắp các chi phí khắc phục thiệt hại phát sinh. Mức chi phí bù đắp thiệt hại sẽ được Các Bên thống nhất bằng văn bản.</p>
+        <p class="clause-p">4.4. Vào thời điểm kết thúc thời hạn thuê hoặc kể từ ngày chấm dứt Hợp đồng, Bên A sẽ hoàn lại cho Bên B số tiền đặt cọc sau khi đã khấu trừ khoản tiền chi phí để khắc phục thiệt hại (nếu có).</p>
+
+        <h2>Điều 5: Tiền thuê nhà</h2>
+        <p class="clause-p">5.1. Tiền thuê nhà đối với diện tích thuê nêu tại Mục 1.1 Điều 1 là: <strong>${mbMonthlyPrice} VNĐ/tháng</strong>.</p>
+        <p class="clause-p">5.2. Tiền thuê nhà không bao gồm chi phí khác như tiền điện, nước, vệ sinh... Khoản tiền này sẽ do Bên B trả theo khối lượng, công suất sử dụng thực tế của Bên B hàng tháng, được tính theo đơn giá của nhà nước.</p>
+
+        <h2>Điều 6: Phương thức thanh toán tiền thuê nhà</h2>
+        <p class="clause-p">Tiền thuê nhà được thanh toán theo 01 (một) tháng/lần vào ngày <strong>${nfc(lhPaymentDay)}</strong> hàng tháng.</p>
+        <p class="clause-p">Các chi phí khác được Bên B tự thanh toán với các cơ quan, đơn vị có liên quan khi được yêu cầu.</p>
+        <p class="clause-p">Việc thanh toán tiền thuê nhà được thực hiện bằng đồng tiền Việt Nam theo hình thức trả trực tiếp bằng tiền mặt.</p>
+
+        <h2>Điều 7: Quyền và nghĩa vụ của bên cho thuê nhà</h2>
+        <p class="clause-p"><strong>7.1. Quyền lợi</strong></p>
+        <p class="clause-p">- Yêu cầu Bên B thanh toán tiền thuê và chi phí khác đầy đủ, đúng hạn theo thoả thuận trong Hợp Đồng;</p>
+        <p class="clause-p">- Yêu cầu Bên B phải sửa chữa phần hư hỏng, thiệt hại do lỗi của Bên B gây ra.</p>
+        <p class="clause-p"><strong>7.2. Nghĩa vụ</strong></p>
+        <p class="clause-p">- Bàn giao diện tích thuê cho Bên B theo đúng thời gian quy định trong Hợp đồng;</p>
+        <p class="clause-p">- Đảm bảo việc cho thuê theo Hợp đồng này là đúng quy định của pháp luật;</p>
+        <p class="clause-p">- Đảm bảo cho Bên B thực hiện quyền sử dụng diện tích thuê một cách độc lập và liên tục trong suốt thời hạn thuê, trừ trường hợp vi phạm pháp luật và/hoặc các quy định của Hợp đồng này;</p>
+        <p class="clause-p">- Không xâm phạm trái phép đến tài sản của Bên B trong phần diện tích thuê. Nếu Bên A có những hành vi vi phạm gây thiệt hại cho Bên B trong thời gian thuê thì Bên A phải bồi thường;</p>
+        <p class="clause-p">- Tuân thủ các nghĩa vụ khác theo thoả thuận tại Hợp đồng này hoặc/và các văn bản kèm theo Hợp đồng này; hoặc/và theo quy định của pháp luật Việt Nam.</p>
+
+        <h2>Điều 8: Quyền và nghĩa vụ của bên thuê nhà</h2>
+        <p class="clause-p"><strong>8.1. Quyền lợi</strong></p>
+        <p class="clause-p">- Nhận bàn giao diện tích thuê theo đúng thoả thuận trong Hợp đồng;</p>
+        <p class="clause-p">- Được sử dụng phần diện tích thuê làm nơi ở và các hoạt động hợp pháp khác;</p>
+        <p class="clause-p">- Yêu cầu Bên A sửa chữa kịp thời những hư hỏng không phải do lỗi của Bên B trong phần diện tích thuê để bảo đảm an toàn;</p>
+        <p class="clause-p">- Được tháo dỡ và đem ra khỏi phần diện tích thuê các tài sản, trang thiết bị của Bên B đã lắp đặt trong phần diện tích thuê khi hết thời hạn thuê hoặc đơn phương chấm dứt hợp đồng.</p>
+        <p class="clause-p"><strong>8.2. Nghĩa vụ</strong></p>
+        <p class="clause-p">- Sử dụng diện tích thuê đúng mục đích đã thỏa thuận, giữ gìn nhà ở và có trách nhiệm trong việc sửa chữa những hư hỏng do mình gây ra;</p>
+        <p class="clause-p">- Thanh toán tiền đặt cọc, tiền thuê đầy đủ, đúng thời hạn đã thỏa thuận;</p>
+        <p class="clause-p">- Trả lại diện tích thuê cho Bên A khi hết thời hạn thuê hoặc chấm dứt Hợp đồng thuê;</p>
+        <p class="clause-p">- Mọi việc sửa chữa, cải tạo, lắp đặt bổ sung các trang thiết bị làm ảnh hưởng đến kết cấu của căn phòng, Bên B phải có văn bản thông báo cho Bên A và chỉ được tiến hành các công việc này sau khi có sự đồng ý bằng văn bản của Bên A;</p>
+        <p class="clause-p">- Tuân thủ một cách chặt chẽ quy định tại Hợp đồng này và các quy định của pháp luật Việt Nam.</p>
+
+        <h2>Điều 9: Đơn phương chấm dứt hợp đồng thuê nhà</h2>
+        <p class="clause-p">Trong trường hợp một trong Hai Bên muốn đơn phương chấm dứt Hợp đồng trước hạn thì phải thông báo bằng văn bản cho bên kia trước 30 (ba mươi) ngày so với ngày mong muốn chấm dứt.</p>
+        <p class="clause-p">Nếu một trong Hai Bên không thực hiện nghĩa vụ thông báo cho Bên kia thì sẽ phải bồi thường cho bên đó một khoản tiền thuê tương đương với thời gian không thông báo và các thiệt hại khác phát sinh do việc chấm dứt Hợp đồng trái quy định.</p>
+
+        <h2>Điều 10: Điều khoản thi hành</h2>
+        <p class="clause-p">- Hợp đồng này có hiệu lực kể từ ngày hai bên cùng ký kết;</p>
+        <p class="clause-p">- Các Bên cam kết thực hiện nghiêm chỉnh và đầy đủ các thoả thuận trong Hợp đồng này trên tinh thần hợp tác, thiện chí;</p>
+        <p class="clause-p">- Mọi sửa đổi, bổ sung đối với bất kỳ điều khoản nào của Hợp đồng phải được lập thành văn bản, có đầy đủ chữ ký của mỗi Bên. Văn bản sửa đổi bổ sung Hợp đồng có giá trị pháp lý như Hợp đồng, là một phần không tách rời của Hợp đồng này;</p>
+        <p class="clause-p">- Hợp đồng được lập thành 02 (hai) bản có giá trị như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.</p>
+
+        <table class="sig-table font-serif">
+          <tbody>
+            <tr>
+              <td>
+                <div class="font-bold uppercase">BÊN CHO THUÊ</div>
+                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
+                <div style="height: 70px;"></div>
+                <div class="font-bold uppercase">${nfc(mbPartyAName)}</div>
+              </td>
+              <td>
+                <div class="font-bold uppercase">BÊN THUÊ</div>
+                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
+                <div style="height: 70px;"></div>
+                <div class="font-bold uppercase">${nfc(mbPartyBName)}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
     if (selectedTemplate === 'construction') {
       return `
         <div class="text-center no-indent">
@@ -211,13 +346,64 @@ export const DocumentTemplateView: React.FC = () => {
         </div>
         <p class="clause-p pt-2">Hai bên thỏa thuận ký hợp đồng với các điều khoản như sau:</p>
         <h2>Điều 1: Nội dung và phạm vi công việc</h2>
-        <p class="clause-p">1. Địa điểm thi công: Bên B nhận thi công/sửa chữa nhà ở dân dụng tại địa chỉ: <strong>${nfc(constSiteAddress)}</strong>.</p>
-        <p class="clause-p">2. Phạm vi công việc: Sửa chữa/tân trang phần tường, lát gạch nền sàn, đi lại đường dây điện nước, thay mới cửa mái tôn lan can theo Bảng dự toán chi tiết đính kèm Hợp đồng này.</p>
+        <p class="clause-p"><strong>1. Địa điểm thi công:</strong></p>
+        <p class="clause-p">Bên B nhận thi công/sửa chữa nhà ở dân dụng tại địa chỉ: <strong>${nfc(constSiteAddress)}</strong>.</p>
+        <p class="clause-p"><strong>2. Phạm vi công việc mà Bên B đảm nhận:</strong></p>
+        <p class="clause-p">Bên B nhận thực hiện toàn bộ phần nhân công (hoặc cả nhân công + vật liệu, tùy thỏa thuận) cho các hạng mục sau:</p>
+        <p class="clause-p">- Sửa chữa/tân trang phần tường: trát, bả, sơn lại toàn bộ các mảng tường bị hư hỏng.</p>
+        <p class="clause-p">- Thay thế hoặc lát lại gạch nền, sàn theo mẫu Bên A đã lựa chọn.</p>
+        <p class="clause-p">- Thi công hệ thống điện nước: đi lại đường dây điện, thay ổ cắm, công tắc, thay đường ống cấp – thoát nước hỏng.</p>
+        <p class="clause-p">- Sửa chữa, thay mới cửa, mái tôn, lan can, cầu thang (nếu có).</p>
+        <p class="clause-p">- Các hạng mục khác theo phụ lục kèm theo hợp đồng (nếu có).</p>
+        <p class="clause-p"><strong>3. Chất lượng &amp; tiêu chuẩn kỹ thuật:</strong></p>
+        <p class="clause-p">- Công việc thi công/sửa chữa phải đảm bảo đúng quy trình xây dựng dân dụng, an toàn lao động và tiêu chuẩn chất lượng theo thỏa thuận.</p>
+        <p class="clause-p">- Vật liệu (nếu Bên B cung cấp) phải đúng chủng loại, nhãn hiệu và chất lượng theo cam kết với Bên A.</p>
+
         <h2>Điều 2: Thời gian và tiến độ thực hiện</h2>
-        <p class="clause-p">- Ngày khởi công: Từ ngày <strong>${fmtDate(constStartDate)}</strong> đến ngày <strong>${fmtDate(constEndDate)}</strong>.</p>
+        <p class="clause-p">- Ngày khởi công: <strong>${fmtDate(constStartDate)}</strong>.</p>
+        <p class="clause-p">- Ngày hoàn thành dự kiến: <strong>${fmtDate(constEndDate)}</strong>.</p>
+        <p class="clause-p">- Tổng thời gian thực hiện dự kiến: <strong>${constDurationMonths}</strong> (không tính Thứ 7, Chủ nhật).</p>
+        <p class="clause-p">Trường hợp bất khả kháng (thiên tai, dịch bệnh, thay đổi thiết kế theo yêu cầu Bên A), hai bên sẽ điều chỉnh tiến độ bằng văn bản.</p>
+
         <h2>Điều 3: Giá trị hợp đồng và phương thức thanh toán</h2>
         <p class="clause-p">- Tổng giá trị hợp đồng: <strong>${constTotalPrice} VNĐ</strong>.</p>
-        <p class="clause-p">- Đợt 1: <strong>${constDepositStage1} VNĐ</strong>. Đợt 2: <strong>${constStage2Amount} VNĐ</strong>.</p>
+        <p class="clause-p">- Phương thức thanh toán:</p>
+        <p class="clause-p">- Đợt 1: Bên A thanh toán cho Bên B số tiền là: <strong>${constDepositStage1} VNĐ</strong>.</p>
+        <p class="clause-p">- Đợt 2: Số tiền còn lại là <strong>${constStage2Amount} VNĐ</strong> sẽ được Bên A thanh toán toàn bộ trước khi bàn giao hoàn thiện công trình.</p>
+
+        <h2>Điều 4: Quyền và nghĩa vụ của các bên</h2>
+        <p class="clause-p"><strong>1. Quyền và nghĩa vụ của Bên A:</strong></p>
+        <p class="clause-p"><em>a. Quyền lợi:</em></p>
+        <p class="clause-p">- Yêu cầu Bên B thi công đúng tiến độ, đúng chất lượng, đúng thiết kế/hạng mục đã thỏa thuận.</p>
+        <p class="clause-p">- Giám sát, kiểm tra quá trình thi công; có quyền tạm ngừng hoặc từ chối nghiệm thu nếu công trình không đạt yêu cầu.</p>
+        <p class="clause-p">- Yêu cầu thay đổi vật liệu, biện pháp thi công nếu phát hiện không phù hợp (khi đó hai bên phải lập biên bản điều chỉnh).</p>
+        <p class="clause-p"><em>b. Nghĩa vụ:</em></p>
+        <p class="clause-p">- Bàn giao mặt bằng thi công sạch sẽ, an toàn, đúng thời gian.</p>
+        <p class="clause-p">- Thanh toán đúng hạn, đủ số tiền theo tiến độ hợp đồng.</p>
+        <p class="clause-p">- Cung cấp điện, nước sinh hoạt/tạm thời phục vụ thi công (nếu có thỏa thuận).</p>
+        <p class="clause-p">- Phối hợp giải quyết các vấn đề phát sinh liên quan đến hàng xóm, chính quyền địa phương trong quá trình thi công.</p>
+        <p class="clause-p"><strong>2. Quyền và nghĩa vụ của Bên B:</strong></p>
+        <p class="clause-p"><em>a. Quyền lợi:</em></p>
+        <p class="clause-p">- Nhận đủ và đúng hạn số tiền theo hợp đồng.</p>
+        <p class="clause-p">- Được quyền tạm ngừng thi công nếu Bên A không thực hiện nghĩa vụ thanh toán theo thỏa thuận (sau khi đã có văn bản thông báo).</p>
+        <p class="clause-p"><em>b. Nghĩa vụ:</em></p>
+        <p class="clause-p">- Thi công đúng thiết kế, đúng quy chuẩn xây dựng, đảm bảo chất lượng và an toàn lao động.</p>
+        <p class="clause-p">- Chịu trách nhiệm về nhân công, phương tiện, máy móc, thiết bị phục vụ thi công.</p>
+        <p class="clause-p">- Không tự ý thay đổi vật liệu, chủng loại, thiết kế nếu chưa có sự đồng ý bằng văn bản của Bên A.</p>
+        <p class="clause-p">- Giữ gìn vệ sinh, an toàn khu vực thi công; hạn chế tiếng ồn, bụi bẩn gây ảnh hưởng đến môi trường và hàng xóm.</p>
+        <p class="clause-p">- Sửa chữa, khắc phục các hư hỏng, sai sót trong quá trình thi công do lỗi của Bên B.</p>
+        <p class="clause-p">- Thực hiện bảo hành công trình trong thời gian đã cam kết tại Điều 5.</p>
+
+        <h2>Điều 5: Nghiệm thu, bàn giao và bảo hành</h2>
+        <p class="clause-p">- Hai bên tiến hành nghiệm thu theo từng giai đoạn và nghiệm thu tổng thể khi công trình hoàn thành.</p>
+        <p class="clause-p">- Thời gian bảo hành: <strong>${nfc(constWarrantyMonths)} tháng</strong> kể từ ngày bàn giao. Bảo hành chỉ áp dụng với lỗi kỹ thuật trong quá trình thi công, không áp dụng cho hao mòn tự nhiên hoặc tác động bên ngoài (ngập nước, hỏa hoạn, thiên tai, tự ý thay đổi kết cấu công trình...).</p>
+        <p class="clause-p">- Trong thời gian bảo hành, Bên B có trách nhiệm sửa chữa, khắc phục miễn phí các lỗi do thi công.</p>
+
+        <h2>Điều 6: Điều khoản chung</h2>
+        <p class="clause-p">- Hợp đồng có hiệu lực từ ngày ký.</p>
+        <p class="clause-p">- Mọi sửa đổi, bổ sung phải được lập thành văn bản và có chữ ký của hai bên.</p>
+        <p class="clause-p">- Trường hợp phát sinh tranh chấp, hai bên cùng thương lượng; nếu không giải quyết được sẽ đưa ra Tòa án có thẩm quyền.</p>
+        <p class="clause-p">- Hợp đồng được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản.</p>
         <table class="sig-table font-serif">
           <tbody>
             <tr>
@@ -563,6 +749,11 @@ export const DocumentTemplateView: React.FC = () => {
             mbEndDate={mbEndDate} setMbEndDate={setMbEndDate}
             mbMonthlyPrice={mbMonthlyPrice} setMbMonthlyPrice={setMbMonthlyPrice}
             mbDepositAmount={mbDepositAmount} setMbDepositAmount={setMbDepositAmount}
+            lhFloors={lhFloors} setLhFloors={setLhFloors}
+            lhLandArea={lhLandArea} setLhLandArea={setLhLandArea}
+            lhHouseArea={lhHouseArea} setLhHouseArea={setLhHouseArea}
+            lhHandoverDate={lhHandoverDate} setLhHandoverDate={setLhHandoverDate}
+            lhPaymentDay={lhPaymentDay} setLhPaymentDay={setLhPaymentDay}
             constContractDate={constContractDate} setConstContractDate={setConstContractDate}
             constPartyAName={constPartyAName} setConstPartyAName={setConstPartyAName}
             constPartyACccd={constPartyACccd} setConstPartyACccd={setConstPartyACccd}
@@ -575,6 +766,7 @@ export const DocumentTemplateView: React.FC = () => {
             constTotalPrice={constTotalPrice} setConstTotalPrice={setConstTotalPrice}
             constDepositStage1={constDepositStage1} setConstDepositStage1={setConstDepositStage1}
             constStage2Amount={constStage2Amount} setConstStage2Amount={setConstStage2Amount}
+            constWarrantyMonths={constWarrantyMonths} setConstWarrantyMonths={setConstWarrantyMonths}
             constItems={constItems} setConstItems={setConstItems}
             handleAddConstItem={handleAddConstItem}
             saleContractDate={saleContractDate} setSaleContractDate={setSaleContractDate}

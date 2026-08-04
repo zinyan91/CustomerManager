@@ -47,6 +47,11 @@ interface DocumentFormProps {
   mbEndDate: string; setMbEndDate: (v: string) => void;
   mbMonthlyPrice: string; setMbMonthlyPrice: (v: string) => void;
   mbDepositAmount: string; setMbDepositAmount: (v: string) => void;
+  lhFloors: string; setLhFloors: (v: string) => void;
+  lhLandArea: string; setLhLandArea: (v: string) => void;
+  lhHouseArea: string; setLhHouseArea: (v: string) => void;
+  lhHandoverDate: string; setLhHandoverDate: (v: string) => void;
+  lhPaymentDay: string; setLhPaymentDay: (v: string) => void;
 
   constContractDate: string; setConstContractDate: (v: string) => void;
   constPartyAName: string; setConstPartyAName: (v: string) => void;
@@ -60,6 +65,7 @@ interface DocumentFormProps {
   constTotalPrice: string; setConstTotalPrice: (v: string) => void;
   constDepositStage1: string; setConstDepositStage1: (v: string) => void;
   constStage2Amount: string; setConstStage2Amount: (v: string) => void;
+  constWarrantyMonths: string; setConstWarrantyMonths: (v: string) => void;
   constItems: ConstItem[]; setConstItems: React.Dispatch<React.SetStateAction<ConstItem[]>>;
   handleAddConstItem: () => void;
 
@@ -108,6 +114,11 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
   mbEndDate, setMbEndDate,
   mbMonthlyPrice, setMbMonthlyPrice,
   mbDepositAmount, setMbDepositAmount,
+  lhFloors, setLhFloors,
+  lhLandArea, setLhLandArea,
+  lhHouseArea, setLhHouseArea,
+  lhHandoverDate, setLhHandoverDate,
+  lhPaymentDay, setLhPaymentDay,
 
   constContractDate, setConstContractDate,
   constPartyAName, setConstPartyAName,
@@ -121,6 +132,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
   constTotalPrice, setConstTotalPrice,
   constDepositStage1, setConstDepositStage1,
   constStage2Amount, setConstStage2Amount,
+  constWarrantyMonths, setConstWarrantyMonths,
   constItems, setConstItems,
   handleAddConstItem,
 
@@ -229,6 +241,36 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
             </div>
           </div>
         </div>
+
+        {selectedTemplate === 'lease_house' && (
+          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+            <div className="font-bold text-purple-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">
+              THÔNG TIN NHÀ Ở &amp; THANH TOÁN
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div>
+                <label className={`block mb-1 ${styles.labelStyle}`}>Số tầng</label>
+                <input type="text" value={lhFloors} onChange={e => setLhFloors(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+              </div>
+              <div>
+                <label className={`block mb-1 ${styles.labelStyle}`}>Diện tích đất (m²)</label>
+                <input type="text" value={lhLandArea} onChange={e => setLhLandArea(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+              </div>
+              <div>
+                <label className={`block mb-1 ${styles.labelStyle}`}>Diện tích nhà (m²)</label>
+                <input type="text" value={lhHouseArea} onChange={e => setLhHouseArea(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+              </div>
+              <div>
+                <label className={`block mb-1 ${styles.labelStyle}`}>Ngày bàn giao nhà</label>
+                <DateInput value={lhHandoverDate} onChange={setLhHandoverDate} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+              </div>
+              <div>
+                <label className={`block mb-1 ${styles.labelStyle}`}>Ngày thu tiền hàng tháng</label>
+                <input type="text" value={lhPaymentDay} onChange={e => setLhPaymentDay(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -306,6 +348,10 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Thanh toán Đợt 2 (VNĐ)</label>
               <input type="text" value={constStage2Amount} onChange={e => setConstStage2Amount(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-purple-600 dark:text-purple-400 ${styles.inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Thời gian bảo hành (tháng)</label>
+              <input type="text" value={constWarrantyMonths} onChange={e => setConstWarrantyMonths(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
             </div>
           </div>
         </div>

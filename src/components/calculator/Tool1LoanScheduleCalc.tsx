@@ -367,7 +367,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div>
-              <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">Lãi suất ưu đãi (%/năm) *</label>
+              <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">LS ưu đãi (%/năm) *</label>
               <input
                 type="text"
                 value={interestRateStr}
@@ -433,7 +433,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           </div>
 
           {prepayments.length === 0 ? (
-            <div className="text-[11px] text-amber-700/80 dark:text-amber-400/80">
+            <div className="text-[11px] text-amber-800 dark:text-amber-300">
               Chưa khai lần trả trước hạn nào. Bấm “Thêm lần trả trước hạn” để khai một hoặc nhiều lần ở các kỳ khác nhau.
             </div>
           ) : (

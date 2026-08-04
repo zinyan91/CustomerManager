@@ -439,7 +439,7 @@ export const RateQuoteView: React.FC = () => {
                           const thieu = !coKenh || v === null || v === undefined;
                           return (
                             <td key={ch} className={`p-2.5 text-right font-mono font-bold ${
-                              thieu ? 'text-slate-300 dark:text-slate-700' : 'text-sky-600 dark:text-sky-400'
+                              thieu ? 'text-slate-400 dark:text-slate-500' : 'text-sky-600 dark:text-sky-400'
                             }`}>
                               {thieu ? '—' : pct(v)}
                             </td>

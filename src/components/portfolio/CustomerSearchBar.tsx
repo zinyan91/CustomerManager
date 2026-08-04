@@ -99,7 +99,7 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
 
       <div className="flex items-center space-x-2 mb-3">
         <div className={`flex-1 h-px ${isLight ? 'bg-slate-200' : 'bg-slate-800'}`}></div>
-        <span className={`text-[10px] uppercase tracking-wider px-2 ${isLight ? 'text-slate-400' : 'text-slate-600'}`}>hoặc tìm kiếm nâng cao</span>
+        <span className={`text-[10px] uppercase tracking-wider px-2 ${isLight ? 'text-slate-400' : 'text-slate-400'}`}>hoặc tìm kiếm nâng cao</span>
         <div className={`flex-1 h-px ${isLight ? 'bg-slate-200' : 'bg-slate-800'}`}></div>
       </div>
 

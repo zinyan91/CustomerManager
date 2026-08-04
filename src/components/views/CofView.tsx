@@ -296,7 +296,7 @@ export const CofView: React.FC = () => {
                           <td
                             key={c.key}
                             onClick={() => isAdmin && beginEdit(key, value)}
-                            className={`p-2 text-center font-mono ${blank ? 'text-slate-300 dark:text-slate-700' : 'font-bold text-sky-600 dark:text-sky-400'} ${
+                            className={`p-2 text-center font-mono ${blank ? 'text-slate-400 dark:text-slate-500' : 'font-bold text-sky-600 dark:text-sky-400'} ${
                               isAdmin ? 'cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/40' : ''
                             }`}
                           >

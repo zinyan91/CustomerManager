@@ -70,7 +70,7 @@ export const SettingsView: React.FC = () => {
                   style={{ fontFamily: f.stack }}
                   className={`cursor-pointer p-3 rounded-xl border transition-all ${
                     fontSettings.family === f.key
-                      ? 'bg-sky-950/60 border-sky-500 text-sky-300 font-bold'
+                      ? 'bg-sky-950/60 light:bg-sky-50 border-sky-500 text-sky-300 light:text-sky-900 font-bold'
                       : 'bg-slate-950 light:bg-slate-50 border-slate-800 light:border-slate-200 text-slate-400 hover:border-slate-700'
                   }`}>
                   <div>{f.label}</div>
@@ -122,7 +122,7 @@ export const SettingsView: React.FC = () => {
               onClick={() => setTheme('dark')}
               className={`cursor-pointer p-4 rounded-xl border flex items-center space-x-3 transition-all ${
                 theme === 'dark'
-                  ? 'bg-sky-950/60 border-sky-500 text-sky-300 font-bold shadow-md'
+                  ? 'bg-sky-950/60 light:bg-sky-50 border-sky-500 text-sky-300 light:text-sky-900 font-bold shadow-md'
                   : 'bg-slate-950 light:bg-slate-50 border-slate-800 light:border-slate-200 text-slate-400 hover:border-slate-700'
               }`}
             >

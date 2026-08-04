@@ -38,7 +38,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   return (
     <div className={`${styles.containerCardBg} rounded-2xl p-3 border shadow-sm`}>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-2 mr-1 hidden sm:block">
+        <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-2 mr-1 hidden sm:block">
           Mẫu biểu:
         </div>
         {TEMPLATE_LIST.map((t) => {

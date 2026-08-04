@@ -260,6 +260,9 @@ export const CreditContractView: React.FC = () => {
           <div className="p-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
               Hợp đồng của {customer.FullName} — {visibleSummaries.length} HĐTD
+              <span className="ml-2 font-normal normal-case text-[11px] text-slate-400">
+                Nhấp vào dòng để xem chi tiết
+              </span>
               {closedCount > 0 && (
                 <button onClick={() => setShowSettled(v => !v)}
                   className="ml-3 font-normal normal-case text-[11px] text-sky-600 dark:text-sky-400 hover:underline">
@@ -293,11 +296,16 @@ export const CreditContractView: React.FC = () => {
                 </thead>
                 <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
                   {visibleSummaries.map(s => (
-                    <tr key={s.contract.Id} className={s.expired ? 'bg-rose-50/50 dark:bg-rose-950/20' : ''}>
+                    <tr key={s.contract.Id}
+                      onClick={() => openEdit(s.contract)}
+                      title="Nhấp để xem chi tiết HĐTD"
+                      className={`cursor-pointer transition-colors ${
+                        s.expired
+                          ? 'bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/70 dark:hover:bg-rose-950/40'
+                          : isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-800/40'
+                      }`}>
                       <td className="p-3 font-mono font-bold text-sky-600 dark:text-sky-400">
-                        <button onClick={() => openEdit(s.contract)} className="hover:underline text-left">
-                          {s.contract.HdtdNumber}
-                        </button>
+                        {s.contract.HdtdNumber}
                         {s.contract.ApprovalCode && (
                           <div className="text-[10px] font-sans font-normal text-purple-500 mt-0.5">
                             Hạn mức duyệt: {s.contract.ApprovalCode}
@@ -326,21 +334,15 @@ export const CreditContractView: React.FC = () => {
                       </td>
                       <td className="p-3">
                         <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => openEdit(s.contract)}
-                            title="Xem chi tiết / sửa HĐTD"
-                            className={`flex items-center space-x-1 font-bold px-2.5 py-1.5 rounded-lg text-[11px] border ${
-                              isLight
-                                ? 'bg-white border-slate-300 text-slate-700 hover:border-sky-400'
-                                : 'bg-slate-900 border-slate-700 text-slate-200 hover:border-sky-500'
-                            }`}>
-                            <FileText className="w-3 h-3" /><span>Chi tiết</span>
-                          </button>
                           {(() => {
                             const khoaGiaiNgan = !s.canDisburse;
                             return (
                               <button
                                 disabled={khoaGiaiNgan}
-                                onClick={() => !khoaGiaiNgan && requestDisburse({ creditContractId: s.contract.Id, customerId: customer.Id })}
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  if (!khoaGiaiNgan) requestDisburse({ creditContractId: s.contract.Id, customerId: customer.Id });
+                                }}
                                 title={khoaGiaiNgan ? s.blockReason : 'Giải ngân KUNN mới'}
                                 className={`flex items-center space-x-1 font-bold px-2.5 py-1.5 rounded-lg text-[11px] ${
                                   khoaGiaiNgan
@@ -351,7 +353,7 @@ export const CreditContractView: React.FC = () => {
                               </button>
                             );
                           })()}
-                          <button onClick={() => handleDelete(s.contract)} title="Xoá HĐTD"
+                          <button onClick={e => { e.stopPropagation(); handleDelete(s.contract); }} title="Xoá HĐTD"
                             className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

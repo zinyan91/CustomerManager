@@ -13,6 +13,7 @@ import { CreditCardView } from './components/views/CreditCardView';
 import { CalculatorView } from './components/views/CalculatorView';
 import { MdsdvLookupView } from './components/views/MdsdvLookupView';
 import { RateQuoteView } from './components/views/RateQuoteView';
+import { CofView } from './components/views/CofView';
 import { DocumentTemplateView } from './components/views/DocumentTemplateView';
 import { SettingsView } from './components/views/SettingsView';
 import { PostLoanControlView } from './components/views/PostLoanControlView';
@@ -62,6 +63,7 @@ export function App() {
           {activeTab === 'calculators' && <CalculatorView />}
           {activeTab === 'mdsdv' && <MdsdvLookupView />}
           {activeTab === 'rate-quote' && <RateQuoteView />}
+          {activeTab === 'cof' && <CofView />}
           {activeTab === 'templates' && <DocumentTemplateView />}
           {activeTab === 'settings' && <SettingsView />}
           {activeTab === 'post-loan' && <PostLoanControlView />}

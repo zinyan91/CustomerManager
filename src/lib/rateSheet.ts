@@ -1,6 +1,6 @@
 import type {
   RateProgram, RateProgramTier, RateProgramPrepaymentFee,
-  RateProgramFeeOption, RateProgramCondition, DepositChannel,
+  RateProgramFeeOption, RateProgramCondition, DepositChannel, DepositPayoutMode,
 } from './rateQuote';
 import { PAYOUT_MODE_LABELS, CHANNEL_LABELS } from './rateQuote';
 
@@ -179,6 +179,53 @@ function tierFeeTable(input: RateSheetInput): string {
     </table>`;
 }
 
+export interface DepositMatrix {
+  tenors: number[];
+  payoutModes: DepositPayoutMode[];
+  rows: { balanceTier: string; cells: (number | null)[] }[];
+}
+
+const PAYOUT_ORDER: DepositPayoutMode[] = ['cuoi_ky', 'hang_thang', 'hang_quy', 'tra_truoc'];
+
+export function buildDepositMatrix(
+  tiers: RateProgramTier[],
+  channel: DepositChannel
+): DepositMatrix {
+  const rows = tiers.filter(t => t.Channel === channel);
+
+  const tenors: number[] = [];
+  for (const t of rows) {
+    if (isNum(t.TenorMonths) && !tenors.includes(t.TenorMonths)) tenors.push(t.TenorMonths);
+  }
+  tenors.sort((a, b) => a - b);
+
+  const payoutModes = PAYOUT_ORDER.filter(m => rows.some(t => t.PayoutMode === m));
+
+  const balanceTiers: string[] = [];
+  for (const t of rows) {
+    const key = t.BalanceTierLabel || '';
+    if (!balanceTiers.includes(key)) balanceTiers.push(key);
+  }
+
+  return {
+    tenors,
+    payoutModes,
+    rows: balanceTiers.map(balanceTier => ({
+      balanceTier,
+      cells: tenors.flatMap(tenor =>
+        payoutModes.map(mode => {
+          const hit = rows.find(t =>
+            (t.BalanceTierLabel || '') === balanceTier
+            && t.TenorMonths === tenor
+            && t.PayoutMode === mode
+          );
+          return hit && isNum(hit.RateAnnual) ? hit.RateAnnual : null;
+        })
+      ),
+    })),
+  };
+}
+
 function depositRateTable(input: RateSheetInput): string {
   const channels: DepositChannel[] = input.channel
     ? [input.channel]
@@ -187,26 +234,47 @@ function depositRateTable(input: RateSheetInput): string {
   return channels.map(ch => {
     const rows = input.tiers.filter(t => t.Channel === ch);
     if (rows.length === 0) return '';
-    const body = rows.map(t => `
+
+    const hasTier = rows.some(t => t.BalanceTierLabel);
+    const hasPayout = rows.some(t => t.PayoutMode);
+
+    if (!hasTier || !hasPayout) {
+      const body = rows.map(t => `
+        <tr>
+          <td class="c1">${t.TenorMonths ? `Kỳ hạn ${t.TenorMonths} tháng` : esc(t.Label)}</td>
+          <td class="num strong">${formatRateForCustomer(t.RateAnnual)}</td>
+        </tr>`).join('');
+      return `
+        <h2>Lãi suất tiền gửi — ${esc(CHANNEL_LABELS[ch])}</h2>
+        <table>
+          <thead><tr><th>Kỳ hạn</th><th class="num">Lãi suất (%/năm)</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table>`;
+    }
+
+    const m = buildDepositMatrix(input.tiers, ch);
+    const groupHead = m.tenors
+      .map(t => `<th class="mid" colspan="${m.payoutModes.length}">Kỳ hạn ${String(t).padStart(2, '0')} tháng</th>`)
+      .join('');
+    const modeHead = m.tenors
+      .map(() => m.payoutModes.map(mo => `<th class="mid">${esc(PAYOUT_MODE_LABELS[mo])}</th>`).join(''))
+      .join('');
+    const body = m.rows.map(r => `
       <tr>
-        <td class="c1">${esc(t.BalanceTierLabel || '—')}</td>
-        <td class="num">${t.TenorMonths ? `${t.TenorMonths} tháng` : '—'}</td>
-        <td>${t.PayoutMode ? PAYOUT_MODE_LABELS[t.PayoutMode] : '—'}</td>
-        <td class="num strong">${formatRateForCustomer(t.RateAnnual)}</td>
+        <td class="c1">${esc(r.balanceTier) || '—'}</td>
+        ${r.cells.map(c => `<td class="num strong">${c === null ? '—' : formatRateForCustomer(c)}</td>`).join('')}
       </tr>`).join('');
+
     return `
       <h2>Lãi suất tiền gửi — ${esc(CHANNEL_LABELS[ch])}</h2>
       <table>
         <thead>
-          <tr>
-            <th>Điều kiện áp dụng</th>
-            <th class="num">Kỳ hạn</th>
-            <th>Cách trả lãi</th>
-            <th class="num">Lãi suất (%/năm)</th>
-          </tr>
+          <tr><th rowspan="2" class="mid">Điều kiện áp dụng</th>${groupHead}</tr>
+          <tr>${modeHead}</tr>
         </thead>
         <tbody>${body}</tbody>
-      </table>`;
+      </table>
+      <p class="note">Đơn vị tính: %/năm.</p>`;
   }).join('');
 }
 

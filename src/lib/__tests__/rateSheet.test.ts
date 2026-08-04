@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatRateForCustomer, formatMoneyForCustomer, formatDateForCustomer,
   prepaymentYearLabel, prepaymentFeeLabel, findRateSheetBlockers, buildRateSheetHtml,
-  pivotFeeOptions,
+  pivotFeeOptions, buildDepositMatrix,
 } from '../rateSheet';
 import type { RateProgram, RateProgramTier, RateProgramPrepaymentFee } from '../rateQuote';
 
@@ -307,5 +307,95 @@ describe('phí trả nợ trước hạn phân theo loại khoản vay', () => {
     expect(html).toContain('Thời điểm');
     expect(html).toContain('Năm 3');
     expect(html).not.toContain('Loại khoản vay');
+  });
+});
+
+describe('buildDepositMatrix', () => {
+  const quay: RateProgramTier[] = [];
+  let id = 1;
+  const TIERS = ['Số dư < 500 triệu đồng', 'Số dư ≥ 1 tỷ đồng'];
+  const RATES: Record<string, Record<number, Record<string, number>>> = {
+    'Số dư < 500 triệu đồng': {
+      6: { cuoi_ky: 0.089, hang_thang: 0.0874, hang_quy: 0.088, tra_truoc: 0.0852 },
+      12: { cuoi_ky: 0.089, hang_thang: 0.0856, hang_quy: 0.0862, tra_truoc: 0.0817 },
+    },
+    'Số dư ≥ 1 tỷ đồng': {
+      6: { cuoi_ky: 0.089, hang_thang: 0.0895, hang_quy: 0.0895, tra_truoc: 0.087 },
+      12: { cuoi_ky: 0.089, hang_thang: 0.0874, hang_quy: 0.088, tra_truoc: 0.0834 },
+    },
+  };
+  for (const tier of TIERS) {
+    for (const tenor of [6, 12]) {
+      for (const mode of ['cuoi_ky', 'hang_thang', 'hang_quy', 'tra_truoc'] as const) {
+        quay.push({
+          Id: id++, ProgramId: 1, Label: `${tier} ${tenor} ${mode}`,
+          Channel: 'quay', BalanceTierLabel: tier, PayoutMode: mode,
+          TenorMonths: tenor, RateAnnual: RATES[tier][tenor][mode], SortOrder: id,
+        });
+      }
+    }
+  }
+
+  it('lays the notice out as điều kiện × kỳ hạn × cách trả lãi', () => {
+    const m = buildDepositMatrix(quay, 'quay');
+    expect(m.tenors).toEqual([6, 12]);
+    expect(m.payoutModes).toEqual(['cuoi_ky', 'hang_thang', 'hang_quy', 'tra_truoc']);
+    expect(m.rows).toHaveLength(2);
+    expect(m.rows[0].cells).toHaveLength(8);
+  });
+
+  it('keeps each rate in the right cell', () => {
+    const m = buildDepositMatrix(quay, 'quay');
+    expect(m.rows[0].cells[0]).toBe(0.089);
+    expect(m.rows[0].cells[3]).toBe(0.0852);
+    expect(m.rows[0].cells[7]).toBe(0.0817);
+    expect(m.rows[1].cells[1]).toBe(0.0895);
+  });
+
+  it('preserves the order the tiers were published in', () => {
+    const m = buildDepositMatrix(quay, 'quay');
+    expect(m.rows.map(r => r.balanceTier)).toEqual(TIERS);
+  });
+
+  it('leaves a hole where the notice publishes no rate', () => {
+    const partial = quay.filter(t => !(t.TenorMonths === 12 && t.PayoutMode === 'tra_truoc'));
+    const m = buildDepositMatrix(partial, 'quay');
+    expect(m.rows[0].cells[7]).toBeNull();
+  });
+
+  it('ignores other channels', () => {
+    const mixed = [...quay, {
+      Id: 99, ProgramId: 1, Label: 'Online 6 tháng', Channel: 'online' as const,
+      TenorMonths: 6, RateAnnual: 0.088, SortOrder: 99,
+    }];
+    expect(buildDepositMatrix(mixed, 'quay').rows).toHaveLength(2);
+    expect(buildDepositMatrix(mixed, 'online').rows).toHaveLength(1);
+  });
+
+  it('is safe on empty input', () => {
+    expect(buildDepositMatrix([], 'quay')).toEqual({ tenors: [], payoutModes: [], rows: [] });
+  });
+
+  it('renders a matrix with merged tenor headers', () => {
+    const html = buildRateSheetHtml({
+      program: { ...tdh, Kind: 'huy_dong', Name: 'Lãi suất tiền gửi' },
+      tiers: quay, channel: 'quay',
+    });
+    expect(html).toContain('colspan="4"');
+    expect(html).toContain('rowspan="2"');
+    expect(html).toContain('Kỳ hạn 06 tháng');
+    expect(html).toContain('Kỳ hạn 12 tháng');
+    expect(html).toContain('8,17%');
+  });
+
+  it('falls back to a simple two-column table for the online channel', () => {
+    const html = buildRateSheetHtml({
+      program: { ...tdh, Kind: 'huy_dong', Name: 'Lãi suất tiền gửi' },
+      tiers: [{ Id: 1, ProgramId: 1, Label: 'Online 6 tháng', Channel: 'online', TenorMonths: 6, RateAnnual: 0.088, SortOrder: 1 }],
+      channel: 'online',
+    });
+    expect(html).toContain('Kỳ hạn 6 tháng');
+    expect(html).toContain('8,8%');
+    expect(html).not.toContain('colspan');
   });
 });

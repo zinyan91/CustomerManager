@@ -26,7 +26,7 @@ Mã nguồn không chứa chú thích. Toàn bộ giải thích "vì sao" nằm 
 
 ## 2. Logic tài chính
 
-Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 416 test tại `src/lib/__tests__/`.
+Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 439 test tại `src/lib/__tests__/`.
 
 | Tệp | Nội dung |
 | :--- | :--- |
@@ -40,6 +40,7 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 | `rateSheet.ts` | Dựng bảng lãi suất một trang A4 để gửi khách hàng |
 | `formatSettings.ts` | Định dạng số tiền, số thập phân, phần trăm và giờ theo thiết lập người dùng |
 | `numberToWords.ts` | Đọc số tiền thành chữ tiếng Việt cho biểu mẫu hợp đồng |
+| `cof.ts` | Giá mua vốn từ Hội Sở (FTP bán - COF) theo kỳ hạn và kỳ điều chỉnh |
 | `loanProductRules.ts` | Ràng buộc theo phương thức vay |
 | `utils.ts` | Định dạng tiền, phân tích ngày đa định dạng |
 
@@ -312,7 +313,9 @@ Cờ `AllowRateReduction = false` tồn tại vì Thông báo 2274 **cấm áp d
 | :--- | :--- | :--- |
 | Ngắn hạn `2274/2026/TB-BĐH` | Chính văn bản | **Đã đối chiếu** |
 | Trung dài hạn `1680/2026/TB-TGĐ` | Chính văn bản | **Đã đối chiếu** (migration 10) |
-| Huy động `TAM-HD-2279/...` | Bảng tính nội bộ | **Chưa** — chưa có văn bản 2279 |
+| Huy động `2279/2026/TB-BĐH` | Chính văn bản | **Đã đối chiếu** (migration 13) |
+
+Bảng tính nội bộ còn **bỏ sót cột "Lãi trả trước" của kỳ hạn 12 tháng** — chỉ chép 3 trong 4 cách trả lãi. Migration 13 bổ sung 3 mức 8,17% / 8,25% / 8,34%.
 
 **Gói cố định 3 tháng của trung dài hạn có LSCV đúng bằng 0%/năm.** Đây là ưu đãi 0% ba tháng đầu, là số liệu đã biết, không phải ô chưa điền. Migration 09 từng để `NULL` vì suy đoán sai từ bảng tính; migration 10 sửa thành `0`. Đừng "sửa" lại thành `NULL`.
 
@@ -366,7 +369,27 @@ Thiết lập được **cache trong module**, xoá cache khi lưu. Không có c
 
 ---
 
-## 10. Bảo mật
+## 10. Mua bán vốn nội bộ (COF)
+
+Giá mua vốn từ Hội Sở — FTP bán (COF). Tab riêng vì đây là **số liệu điều hành nội bộ**, không bao giờ được đưa vào tài liệu gửi khách hàng. Logic ở `src/lib/cof.ts`, dữ liệu ở `CofPrograms` / `CofStandardRates` / `CofRateItems` (migration 13).
+
+Đã nạp **phần cho vay VND** của Phụ lục B. Chưa nạp phần cho vay USD và toàn bộ Phụ lục A — FTP mua (VOF).
+
+### Bảng kỳ hạn để dạng rộng, không dạng dài
+
+`CofStandardRates` mỗi kỳ hạn **một dòng**, mỗi kỳ điều chỉnh lãi suất **một cột** (`FixedRate`, `Reset3M`… `Reset36M`). Đây đúng hình dạng bảng trong văn bản và là dạng admin sửa nhanh nhất — bấm thẳng vào ô, Enter là lưu. Nếu tách thành dạng dài mỗi ô một dòng thì giao diện phải xoay bảng lại và việc sửa trở nên rối.
+
+**Ô trống là NULL, không phải 0%.** Văn bản chỉ công bố mức cho một số tổ hợp kỳ hạn × kỳ điều chỉnh; ô còn lại bỏ trống có nghĩa "không áp dụng". Ghi 0 vào đó là bịa ra một mức giá vốn bằng không.
+
+Các mục còn lại nằm ở `CofRateItems` với hai cột `RateAnnual` và `Formula` tách bạch: văn bản có mục là con số (nhà ở xã hội 3,5%/năm), có mục là công thức bằng lời (CBNV = lãi suất cho vay − 0,75%/năm). Nhét công thức vào cột số sẽ mất nghĩa.
+
+### Kỳ điều chỉnh 6M, 9M, 12M, 24M chỉ dành cho khoản vay cũ
+
+Văn bản ghi rõ các kỳ này **chỉ áp dụng với khoản vay giải ngân trước ngày thông báo có hiệu lực**. Khoản vay mới chỉ được chọn LSCĐ hoặc ĐCLS 3M. Giao diện đánh dấu `(*)` ở các cột đó.
+
+---
+
+## 11. Bảo mật
 
 **Khoá `anon` của Supabase nằm công khai** trong gói JavaScript gửi tới trình duyệt. Màn hình đăng nhập chỉ chặn người dùng thông thường. **RLS là lớp phòng thủ duy nhất và thực sự.**
 
@@ -386,7 +409,7 @@ Khi RLS chặn một lệnh, Supabase trả về **mảng rỗng mà không báo
 
 ---
 
-## 11. Cơ sở dữ liệu
+## 12. Cơ sở dữ liệu
 
 Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor**, theo đúng thứ tự số.
 
@@ -394,11 +417,11 @@ Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor
 
 ---
 
-## 12. Lệnh thường dùng
+## 13. Lệnh thường dùng
 
 ```bash
 npm run dev        # Máy chủ phát triển
 npm run build      # Kiểm tra kiểu + đóng gói
-npm test           # 416 test logic tài chính
+npm test           # 439 test logic tài chính
 npm run lint       # Kiểm tra mã nguồn
 ```

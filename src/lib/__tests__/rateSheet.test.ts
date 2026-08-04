@@ -399,3 +399,56 @@ describe('buildDepositMatrix', () => {
     expect(html).not.toContain('colspan');
   });
 });
+
+describe('tờ gửi khách không được chứa số liệu nội bộ', () => {
+  const ct = (o: Partial<RateProgram>): RateProgram => ({
+    Id: 1, Kind: 'huy_dong', Name: 'Ưu đãi huy động', DocumentNumber: '2279/2026/TB-BĐH',
+    EffectiveFrom: '2026-07-23', AllowRateReduction: false, AllowPrepayFeeWaive: false,
+    SourceVerified: true, ...o,
+  } as RateProgram);
+
+  const bac = (o: Partial<RateProgramTier>): RateProgramTier => ({
+    Id: 0, ProgramId: 1, Label: '', SortOrder: 0, ...o,
+  } as RateProgramTier);
+
+  const tiers = [
+    bac({ Id: 1, Channel: 'quay', BalanceTierLabel: 'Số dư < 500 triệu', TenorMonths: 6, PayoutMode: 'cuoi_ky', RateAnnual: 0.089, SortOrder: 1 }),
+    bac({ Id: 2, Channel: 'online', TenorMonths: 6, RateAnnual: 0.088, SortOrder: 2 }),
+    bac({ Id: 3, Channel: 'ftp', TenorMonths: 6, RateAnnual: 0.094, SortOrder: 3 }),
+  ];
+
+  const dungTo = (channel?: 'quay' | 'online' | 'ftp' | null) => buildRateSheetHtml({
+    program: ct({}), tiers, prepaymentFees: [], feeOptions: [], conditions: [],
+    channel: channel ?? null,
+  } as any);
+
+  it('KHÔNG in bảng FTP mua vốn nội bộ', () => {
+
+    const html = dungTo();
+    expect(html).toContain('8,9%');
+    expect(html).not.toContain('9,4%');
+    expect(html.toLowerCase()).not.toContain('ftp');
+  });
+
+  it('vẫn in đủ tại quầy và online', () => {
+    const html = dungTo();
+    expect(html).toContain('8,8%');
+  });
+
+  it('chỉ định riêng kênh ftp cũng không in ra gì', () => {
+
+    const html = dungTo('ftp');
+    expect(html.toLowerCase()).not.toContain('ftp');
+    expect(html).not.toContain('9,4%');
+  });
+
+  it('in đối tượng và phạm vi áp dụng khi có', () => {
+    const html = buildRateSheetHtml({
+      program: ct({ TargetText: 'Khách hàng cá nhân mở tiết kiệm mới.', ScopeText: 'Tiết kiệm truyền thống và online có kỳ hạn.' }),
+      tiers, prepaymentFees: [], feeOptions: [], conditions: [], channel: null,
+    } as any);
+    expect(html).toContain('Khách hàng cá nhân mở tiết kiệm mới.');
+    expect(html).toContain('Phạm vi áp dụng');
+    expect(html).toContain('Tiết kiệm truyền thống và online có kỳ hạn.');
+  });
+});

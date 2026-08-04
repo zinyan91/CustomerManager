@@ -54,11 +54,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
         </div>
         <div>
           <h1 className="text-xs sm:text-sm md:text-base font-bold tracking-tight leading-tight">
-            QUẢN LÝ DỰ NỢ KHÁCH HÀNG & THẺ TÍN DỤNG
+            QUẢN LÝ KHÁCH HÀNG
           </h1>
-          <p className={`text-[11px] md:text-xs hidden md:block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-            Hệ thống Quản lý Hồ sơ Khách hàng, Hợp đồng Tín dụng & Tài sản Bảo đảm
-          </p>
         </div>
       </div>
 

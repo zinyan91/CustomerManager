@@ -286,7 +286,7 @@ export const LoanPortfolioView: React.FC = () => {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchCif.trim() && !searchName.trim() && !searchContract.trim()) {
-      showNotify('error', 'Nhập ít nhất 1 thông tin để tìm kiếm!');
+      showNotify('error', 'Nhập ít nhất một thông tin để tìm kiếm.');
       return;
     }
     setIsSearching(true);
@@ -336,7 +336,7 @@ export const LoanPortfolioView: React.FC = () => {
         loadAllSchedulesForContracts(cons);
       }
     } catch (err: any) {
-      showNotify('error', `Lỗi tìm kiếm: ${err.message}`);
+      showNotify('error', `Không tìm được: ${err.message}`);
     } finally {
       setIsSearching(false);
     }
@@ -427,11 +427,11 @@ export const LoanPortfolioView: React.FC = () => {
 
   const handleNewContract = () => {
     if (creditContracts.length === 0) {
-      showNotify('error', 'Khách hàng chưa có HĐTD nào. Sang tab Hợp Đồng Tín Dụng để tạo hợp đồng trước khi giải ngân.');
+      showNotify('error', 'Khách hàng chưa có HĐTD. Tạo ở tab Hợp Đồng Tín Dụng trước.');
       return;
     }
     if (selectableCreditContracts.length === 0) {
-      showNotify('error', 'Mọi HĐTD của khách hàng đã hết hiệu lực hoặc đã đóng — không giải ngân thêm được.');
+      showNotify('error', 'Mọi HĐTD đã hết hiệu lực hoặc đã đóng.');
       return;
     }
 
@@ -466,13 +466,13 @@ export const LoanPortfolioView: React.FC = () => {
     try {
       const targetCustomerId = foundCustomer?.Id || form.CustomerId;
       if (!targetCustomerId) {
-        showNotify('error', 'Vui lòng chọn hoặc tìm kiếm Khách hàng vay trước!');
+        showNotify('error', 'Chọn khách hàng trước.');
         setLoading(false);
         return;
       }
 
       if (selectedCollateralIds.length === 0) {
-        showNotify('error', '⚠️ CHƯA CÓ TÀI SẢN BẢO ĐẢM! KUNN thừa hưởng TSBĐ của HĐTD — hãy gán TSBĐ cho hợp đồng ở tab Hợp Đồng Tín Dụng.');
+        showNotify('error', 'HĐTD chưa gán TSBĐ. Gán ở tab Hợp Đồng Tín Dụng.');
         setLoading(false);
         return;
       }
@@ -572,21 +572,13 @@ export const LoanPortfolioView: React.FC = () => {
         const specificMasterLimit = targetStatus?.granted ?? creditLimit;
 
         if (loanAmount && specificMasterLimit > 0) {
-          const daSuDung = targetStatus?.used ?? 0;
           // Chặn theo hạn mức trống, KHÔNG theo available — HĐTD hết hiệu lực vẫn
           // phải nhập được KUNN lịch sử; việc hết hiệu lực chỉ cảnh báo trên form.
           const remaining = targetStatus?.headroom ?? Math.max(0, specificMasterLimit);
 
           if (loanAmount > remaining) {
-            const nhanNhan = targetStatus?.revolving
-              ? 'Dư nợ KUNN còn hiệu lực'
-              : 'Tổng số tiền đã nhận nợ';
             showNotify('error',
-              `❌ VƯỢT HẠN MỨC HĐTD (${targetHdtdNo || 'này'})! Hạn mức HĐTD này: ${specificMasterLimit.toLocaleString('vi-VN')} VNĐ | ` +
-              `${nhanNhan}: ${daSuDung.toLocaleString('vi-VN')} VNĐ | ` +
-              `Còn có thể giải ngân: ${remaining.toLocaleString('vi-VN')} VNĐ | ` +
-              `Số tiền KUNN đang nhập: ${loanAmount.toLocaleString('vi-VN')} VNĐ — ` +
-              `Không thể tạo KUNN mới vì vượt hạn mức HĐTD này!`
+              `Vượt hạn mức HĐTD ${targetHdtdNo}: còn ${remaining.toLocaleString('vi-VN')} VNĐ, đang nhập ${loanAmount.toLocaleString('vi-VN')} VNĐ.`
             );
             setLoading(false);
             return;
@@ -660,7 +652,7 @@ export const LoanPortfolioView: React.FC = () => {
         }
       }
 
-      showNotify('success', (forceInsert || !selectedContract) ? 'Đã TẠO MỚI thành công Giấy nhận nợ (KUNN) & tự động lập Lịch thu nợ!' : 'Đã CẬP NHẬT thông tin KUNN!');
+      showNotify('success', (forceInsert || !selectedContract) ? 'Đã tạo KUNN và lập lịch thu nợ.' : 'Đã cập nhật KUNN.');
 
       if (targetCustomerId) {
         const refreshed = await fetchContractsByCustomerAPI(targetCustomerId);
@@ -677,7 +669,7 @@ export const LoanPortfolioView: React.FC = () => {
         }
       }
     } catch (err: any) {
-      showNotify('error', `Lỗi lưu HĐTD: ${err.message}`);
+      showNotify('error', `Không lưu được: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -691,7 +683,7 @@ export const LoanPortfolioView: React.FC = () => {
     setLoading(true);
     try {
       await deleteContractAPI(contractId);
-      showNotify('success', `Đã xóa Hợp đồng Tín dụng / KUNN "${contractNumber}" thành công!`);
+      showNotify('success', `Đã xoá KUNN "${contractNumber}".`);
       if (selectedContract?.Id === contractId) {
         setSelectedContract(null);
         setShowForm(false);
@@ -701,7 +693,7 @@ export const LoanPortfolioView: React.FC = () => {
         setContracts(refreshed);
       }
     } catch (err: any) {
-      showNotify('error', `Lỗi xóa HĐTD: ${err.message}`);
+      showNotify('error', `Không xoá được: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -802,7 +794,7 @@ export const LoanPortfolioView: React.FC = () => {
       setEditingSchedule(null);
       showNotify('success', `✓ Đã cập nhật Kỳ #${editingSchedule.PeriodNumber} & tự động phân bổ lại số tiền gốc cho các kỳ sau!`);
     } catch (err: any) {
-      showNotify('error', `Lỗi lưu thông tin kỳ trả nợ: ${err.message}`);
+      showNotify('error', `Không lưu được kỳ trả nợ: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -1129,7 +1121,7 @@ export const LoanPortfolioView: React.FC = () => {
       {!foundCustomer && !isSearching && (
         <div className="flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
           <Search className="w-12 h-12 text-slate-300 dark:text-slate-700" />
-          <p className="text-sm">Nhập thông tin hoặc Chọn nhanh Khách hàng từ danh sách để bắt đầu</p>
+          <p className="text-sm">Chọn khách hàng để bắt đầu</p>
         </div>
       )}
 
@@ -1156,35 +1148,20 @@ export const LoanPortfolioView: React.FC = () => {
                 <span>Cảnh báo kiểm soát tài sản bảo đảm</span>
               </div>
               {capacityWarnings.map(w => (
-                <div key={w.collateralIds.join('-')} className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
-                  {w.expiredAppraisals.length > 0 && (
-                    <div className="mb-1">
-                      <strong className="text-rose-600 dark:text-rose-400">Định giá hết hiệu lực:</strong>{' '}
-                      {w.expiredAppraisals.map(e =>
-                        `${e.assetCode}${e.expiryDate ? ` (hết hạn ${fmtDate(e.expiryDate)})` : ' (chưa có ngày định giá)'}`
-                      ).join(' · ')}
-                      {' '}— không được tính vào khả năng bảo đảm cho tới khi định giá lại.
+                <div key={w.collateralIds.join('-')} className="text-[11px] text-amber-800 dark:text-amber-300">
+                  {w.expiredAppraisals.map(e => (
+                    <div key={e.collateralId} className="text-rose-600 dark:text-rose-400 font-semibold">
+                      {e.assetCode}: {e.expiryDate ? `định giá hết hiệu lực ${fmtDate(e.expiryDate)}` : 'chưa có ngày định giá'}
+                    </div>
+                  ))}
+                  {w.exceeded && (
+                    <div>
+                      <strong className="font-mono">{w.assetCodes.join(', ')}</strong>: bảo đảm {fmtMoney(w.capacity)}, nghĩa vụ {fmtMoney(w.granted)} — vượt{' '}
+                      <strong className="text-rose-600 dark:text-rose-400">{fmtMoney(w.excessAmount)}</strong>
                     </div>
                   )}
-                  {w.exceeded && (
-                    <>
-                      {w.collateralIds.length > 1 ? `${w.collateralIds.length} TSĐB` : 'TSĐB'}{' '}
-                      <strong className="font-mono">{w.assetCodes.join(', ')}</strong> —
-                      khả năng bảo đảm còn hiệu lực <strong>{fmtMoney(w.capacity)}</strong>,
-                      nhưng tổng nghĩa vụ của {w.contractNumbers.length} hợp đồng đang là{' '}
-                      <strong>{fmtMoney(w.granted)}</strong>, vượt{' '}
-                      <strong className="text-rose-600 dark:text-rose-400">{fmtMoney(w.excessAmount)}</strong>.
-                    </>
-                  )}
-                  <div className="opacity-70 mt-0.5">
-                    Hợp đồng liên quan: {w.contractNumbers.join(' · ')}
-                  </div>
                 </div>
               ))}
-              <div className="text-[10px] text-amber-700/80 dark:text-amber-400/70 pt-1 border-t border-amber-400/30">
-                Hạn mức tín dụng tính theo mức cấp (khách hàng rút lại được); cho vay từng lần tính theo dư nợ hiện hữu.
-                Nếu các hợp đồng dùng chung một hạn mức được duyệt, hãy khai cùng một Mã HMTD để hệ thống chỉ tính một lần.
-              </div>
             </div>
           )}
 
@@ -1365,14 +1342,14 @@ export const LoanPortfolioView: React.FC = () => {
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>
                             {formLimitStatus?.revolving === false
-                              ? 'Đã nhận nợ trên HĐTD này (không tuần hoàn)'
+                              ? 'Đã nhận nợ trên HĐTD này'
                               : 'Dư nợ HMTD hiện hữu (KUNN còn hiệu lực)'}
                           </label>
                           <input type="text" readOnly value={fmtMoney(totalExistingKunnBalance)}
                             className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-amber-600 dark:text-amber-400 ${readonlyInputStyle}`} />
                         </div>
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Hạn mức HMTD còn lại (sau lần này)</label>
+                          <label className={`block mb-1 ${labelStyle}`}>Hạn mức HMTD còn lại</label>
                           <input type="text" readOnly value={fmtMoney(remainingHmtdLimit)}
                             className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold ${remainingHmtdLimit >= 0 ? 'text-sky-600 dark:text-sky-400' : 'text-red-500'
                               } ${readonlyInputStyle}`} />
@@ -1421,7 +1398,7 @@ export const LoanPortfolioView: React.FC = () => {
                         </div>
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>
-                            <span>Ngày kết thúc KUNN (tự động)</span>
+                            <span>Ngày kết thúc KUNN</span>
                           </label>
                           <DateInput readOnly value={form.KunnDueDate || ''}
                             className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 border ${readonlyInputStyle}`} />
@@ -1490,13 +1467,13 @@ export const LoanPortfolioView: React.FC = () => {
                           <div className={`col-span-full space-y-2 p-3 rounded-xl border ${isLight ? 'bg-sky-50/80 border-sky-200' : 'bg-sky-950/40 border-sky-900/60'
                             }`}>
                             <div className="flex items-center justify-between text-xs">
-                              <span className={labelStyle}>Lãi suất sau ưu đãi chuẩn (LSƯĐ + Biên độ):</span>
+                              <span className={labelStyle}>Lãi suất sau ưu đãi:</span>
                               <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{postPrefRate.toFixed(2)} %/năm</span>
                             </div>
                             <div className="flex items-center justify-between text-xs pt-2 border-t border-sky-200 dark:border-sky-900/50">
-                              <span className="font-bold text-sky-700 dark:text-sky-300">👉 LÃI SUẤT ÁP DỤNG THỰC TẾ (KÈM PHẠT {surchargeVal > 0 ? `+${surchargeVal}%` : '0%'}):</span>
+                              <span className="font-bold text-sky-700 dark:text-sky-300">👉 LÃI SUẤT ÁP DỤNG (KÈM PHẠT {surchargeVal > 0 ? `+${surchargeVal}%` : '0%'}):</span>
                               <span className="font-mono font-bold text-rose-600 dark:text-rose-400 text-sm">
-                                {currentActiveRateDisplay.toFixed(2)} %/năm {isPromoExpired ? '(Hết hạn ưu đãi -> LS Sau ưu đãi + Phạt)' : '(Trong hạn ưu đãi -> LS Ưu đãi + Phạt)'}
+                                {currentActiveRateDisplay.toFixed(2)} %/năm
                               </span>
                             </div>
                           </div>
@@ -1551,7 +1528,7 @@ export const LoanPortfolioView: React.FC = () => {
                       <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="font-bold text-sky-600 dark:text-sky-400 text-xs uppercase flex items-center space-x-1.5">
-                            <span>📈 LỊCH SỬ ĐIỀU CHỈNH LÃI SUẤT (THẢ NỔI NHIỀU LẦN)</span>
+                            <span>📈 LỊCH SỬ ĐIỀU CHỈNH LÃI SUẤT</span>
                           </div>
                           <span className="text-[11px] text-slate-400 font-mono">
                             {rateHistory.length} đợt điều chỉnh đã lưu
@@ -1714,7 +1691,7 @@ export const LoanPortfolioView: React.FC = () => {
                     <div className={`rounded-xl p-3 border text-[11px] ${sectionBoxBg}`}>
                       <div className="flex items-center space-x-2 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1.5">
                         <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>TÀI SẢN BẢO ĐẢM (thừa hưởng từ HĐTD)</span>
+                        <span>TÀI SẢN BẢO ĐẢM</span>
                       </div>
                       {selectedCollaterals.length === 0 ? (
                         <div className="text-slate-400 italic">
@@ -1758,7 +1735,7 @@ export const LoanPortfolioView: React.FC = () => {
                         className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-emerald-600/30 text-xs flex items-center justify-center space-x-2"
                       >
                         <Plus className="w-4 h-4" />
-                        <span>{loading ? 'Đang lưu...' : '+ LƯU THÀNH GNN / KUNN MỚI (THÊM LẦN RÚT VAY)'}</span>
+                        <span>{loading ? 'Đang lưu...' : 'THÊM MỚI'}</span>
                       </button>
 
                       {selectedContract && (
@@ -1770,7 +1747,7 @@ export const LoanPortfolioView: React.FC = () => {
                             className="flex-1 bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-sky-600/30 text-xs flex items-center justify-center space-x-2"
                           >
                             <Save className="w-4 h-4" />
-                            <span>{loading ? 'Đang lưu...' : `CẬP NHẬT KUNN NÀY (#${selectedContract.ContractNumber})`}</span>
+                            <span>{loading ? 'Đang lưu...' : 'CẬP NHẬT KUNN NÀY'}</span>
                           </button>
 
                           <button
@@ -1780,7 +1757,7 @@ export const LoanPortfolioView: React.FC = () => {
                             className="bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-rose-600/30 text-xs flex items-center justify-center space-x-2"
                           >
                             <Trash2 className="w-4 h-4" />
-                            <span>XÓA HĐTD NÀY</span>
+                            <span>XOÁ KUNN</span>
                           </button>
                         </>
                       )}

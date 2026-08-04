@@ -343,12 +343,28 @@ export const CreditContractView: React.FC = () => {
                       </td>
                       <td className="p-3">
                         <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => requestDisburse({ creditContractId: s.contract.Id, customerId: customer.Id })}
-                            title="Giải ngân KUNN mới trên hợp đồng này"
-                            className="flex items-center space-x-1 bg-sky-600 hover:bg-sky-500 text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px]">
-                            <Banknote className="w-3 h-3" /><span>Giải ngân</span>
-                          </button>
+                          {(() => {
+                            const khoaGiaiNgan = s.expired || !!s.contract.IsClosed;
+                            return (
+                              <button
+                                disabled={khoaGiaiNgan}
+                                onClick={() => !khoaGiaiNgan && requestDisburse({ creditContractId: s.contract.Id, customerId: customer.Id })}
+                                title={
+                                  s.contract.IsClosed
+                                    ? 'HĐTD đã đóng — không giải ngân được'
+                                    : s.expired
+                                      ? `HĐTD hết hiệu lực ${fmtDate(s.contract.ContractEndDate)} — không giải ngân được`
+                                      : 'Giải ngân KUNN mới trên hợp đồng này'
+                                }
+                                className={`flex items-center space-x-1 font-bold px-2.5 py-1.5 rounded-lg text-[11px] ${
+                                  khoaGiaiNgan
+                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
+                                    : 'bg-sky-600 hover:bg-sky-500 text-white'
+                                }`}>
+                                <Banknote className="w-3 h-3" /><span>Giải ngân</span>
+                              </button>
+                            );
+                          })()}
                           <button onClick={() => handleDelete(s.contract)} title="Xoá HĐTD"
                             className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10">
                             <Trash2 className="w-3.5 h-3.5" />

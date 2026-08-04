@@ -74,10 +74,10 @@ export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
           )}
         </div>
         <button onClick={handleNewContract}
-          title="Tạo Hợp đồng Tín dụng / KUNN mới"
+          title="Giải ngân KUNN mới trên HĐTD hiện có"
           className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl transition-colors text-xs shadow-md shadow-emerald-600/20">
           <Plus className="w-3.5 h-3.5" />
-          <span>Tạo HĐTD mới</span>
+          <span>Giải ngân KUNN mới</span>
         </button>
       </div>
     </div>

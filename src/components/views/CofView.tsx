@@ -191,12 +191,6 @@ export const CofView: React.FC = () => {
                   <FileText className="w-4 h-4 text-sky-500" />
                   <h2 className="text-sm font-bold text-sky-600 dark:text-sky-400">{program.Name}</h2>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1 font-mono">
-                  {program.DocumentNumber}
-                  {program.DocumentDate ? ` • ngày ${fmtDate(program.DocumentDate)}` : ''}
-                  {' • hiệu lực từ '}{fmtDate(program.EffectiveFrom)}
-                  {program.EffectiveTo ? ` đến ${fmtDate(program.EffectiveTo)}` : ''}
-                </div>
               </div>
               {program.SourceVerified ? (
                 <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 h-fit">

@@ -12,6 +12,7 @@ interface CustomerSummaryHeaderProps {
   totalCreditLimit: number;
   totalKunnAmount: number;
   remainingCreditLimit: number;
+  expiredLimitNote?: string | null;
   handleNewContract: () => void;
 }
 
@@ -24,6 +25,7 @@ export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
   totalCreditLimit,
   totalKunnAmount,
   remainingCreditLimit,
+  expiredLimitNote,
   handleNewContract,
 }) => {
   return (
@@ -65,6 +67,11 @@ export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
           <div className={`font-bold text-sm ${remainingCreditLimit === 0 ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}>
             {fmtMoney(remainingCreditLimit)}
           </div>
+          {expiredLimitNote && (
+            <div className="text-[10px] font-semibold text-rose-600 dark:text-rose-400 max-w-[220px] leading-tight mt-0.5">
+              ⚠️ {expiredLimitNote}
+            </div>
+          )}
         </div>
         <button onClick={handleNewContract}
           title="Tạo Hợp đồng Tín dụng / KUNN mới"

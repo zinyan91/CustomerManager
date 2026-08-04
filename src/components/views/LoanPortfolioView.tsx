@@ -9,10 +9,14 @@ import {
   addMonthsToDate, parseKunnTenorMonths, parseDateParts,
   generateSchedule, calculateOverdueDaysFromDates,
   getAutoDebtGroupInfo, recalculateSchedules, computeOutstandingBalance,
-  isBulletPrincipal
+  isBulletPrincipal, getDaysBetween
 } from '../../lib/loanMath';
+import {
+  buildContractRateTimeline, splitPeriodByRate, formatSegmentsLabel,
+  type RateSegment,
+} from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
-import { computeCreditLimit, checkCollateralCapacity } from '../../lib/creditLimit';
+import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
 import {
   getLoanProductRule, allowedPurposes, graceMonthOptions,
   checkTenor, checkPurpose,
@@ -26,7 +30,7 @@ import {
 import { DateInput } from '../DateInput';
 import { CustomerSearchBar } from '../portfolio/CustomerSearchBar';
 import { CustomerSummaryHeader } from '../portfolio/CustomerSummaryHeader';
-import { MasterHdtdFilterTabs } from '../portfolio/MasterHdtdFilterTabs';
+import { MasterHdtdFilterTabs, type MasterHdtdGroup } from '../portfolio/MasterHdtdFilterTabs';
 import { KunnTable } from '../portfolio/KunnTable';
 import { DebtSummaryCard } from '../portfolio/DebtSummaryCard';
 
@@ -219,16 +223,6 @@ export const LoanPortfolioView: React.FC = () => {
   const kunnLoanAmountNum = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
 
   const effectiveFormHdtdNo = formHdtdNumber.trim() || (selectedContract ? getMasterHdtdNumber(selectedContract) : '');
-  const totalExistingKunnBalance = contracts
-    .filter(c => {
-      if (selectedContract && c.Id === selectedContract.Id) return false;
-      if (!effectiveFormHdtdNo) return false;
-      return getMasterHdtdNumber(c).toLowerCase() === effectiveFormHdtdNo.toLowerCase();
-    })
-    .reduce((acc, c) => acc + (c.LoanAmount || c.CurrentBalance || 0), 0);
-
-  const remainingHmtdLimit = Math.max(0, creditLimitNum - totalExistingKunnBalance - kunnLoanAmountNum);
-
   const dropdownFiltered = dropdownQuery.trim().length < 1
     ? allCustomers
     : allCustomers.filter(c =>
@@ -598,24 +592,34 @@ export const LoanPortfolioView: React.FC = () => {
         delete payload.Id;
 
         const targetHdtdNo = formHdtdNumber.trim() || (selectedContract ? getMasterHdtdNumber(selectedContract) : '');
-        const targetGroup = masterHdtdGroups.find(g => g.masterNo.toLowerCase() === targetHdtdNo.toLowerCase());
-        const specificMasterLimit = creditLimit > 0 ? creditLimit : (targetGroup?.totalCreditLimit || 0);
 
-        if (form.LoanMethod === 'Hạn mức tín dụng' && loanAmount && specificMasterLimit > 0) {
-          const existingKunnTotal = contracts
-            .filter(c => {
-              if (selectedContract && c.Id === selectedContract.Id && !forceInsert) return false;
-              return targetHdtdNo ? getMasterHdtdNumber(c).toLowerCase() === targetHdtdNo.toLowerCase() : false;
-            })
-            .reduce((sum, c) => sum + (c.LoanAmount || 0), 0);
-          const newTotal = existingKunnTotal + loanAmount;
-          const remaining = Math.max(0, specificMasterLimit - existingKunnTotal);
+        // Cùng nguồn tính với khối "Tình trạng hạn mức" trên form: dư nợ với HMTD
+        // tuần hoàn, tổng đã nhận nợ với vay từng lần, luôn loại KUNN đã tất toán.
+        const targetStatus = findLimitGroupFor(
+          computeLimitGroups(contracts, {
+            getOutstanding: getEffectiveBalanceForContract,
+            excludeContractId: (selectedContract && !forceInsert) ? selectedContract.Id : null,
+            grantedOverride: creditLimit > 0 ? creditLimit : null,
+            today: new Date().toISOString().split('T')[0],
+          }),
+          targetHdtdNo
+        );
+        const specificMasterLimit = targetStatus?.granted ?? creditLimit;
 
-          if (newTotal > specificMasterLimit) {
+        if (loanAmount && specificMasterLimit > 0) {
+          const daSuDung = targetStatus?.used ?? 0;
+          // Chặn theo hạn mức trống, KHÔNG theo available — HĐTD hết hiệu lực vẫn
+          // phải nhập được KUNN lịch sử; việc hết hiệu lực chỉ cảnh báo trên form.
+          const remaining = targetStatus?.headroom ?? Math.max(0, specificMasterLimit);
+
+          if (loanAmount > remaining) {
+            const nhanNhan = targetStatus?.revolving
+              ? 'Dư nợ KUNN còn hiệu lực'
+              : 'Tổng số tiền đã nhận nợ';
             showNotify('error',
               `❌ VƯỢT HẠN MỨC HĐTD (${targetHdtdNo || 'này'})! Hạn mức HĐTD này: ${specificMasterLimit.toLocaleString('vi-VN')} VNĐ | ` +
-              `KUNN hiện hữu của HĐTD này: ${existingKunnTotal.toLocaleString('vi-VN')} VNĐ | ` +
-              `HMTD còn lại: ${remaining.toLocaleString('vi-VN')} VNĐ | ` +
+              `${nhanNhan}: ${daSuDung.toLocaleString('vi-VN')} VNĐ | ` +
+              `Còn có thể giải ngân: ${remaining.toLocaleString('vi-VN')} VNĐ | ` +
               `Số tiền KUNN đang nhập: ${loanAmount.toLocaleString('vi-VN')} VNĐ — ` +
               `Không thể tạo KUNN mới vì vượt hạn mức HĐTD này!`
             );
@@ -858,15 +862,21 @@ export const LoanPortfolioView: React.FC = () => {
 
   const isLtvExceeded = selectedCollateralIds.length > 0 && maxAllowedLoanLtv > 0 && effectiveLtvLoanAmount > maxAllowedLoanLtv;
 
+  const todayIso = new Date().toISOString().split('T')[0];
+
+  const getEffectiveBalanceForContract = (c: LoanContract) =>
+    computeOutstandingBalance(allSchedulesMap[c.Id], c);
+
+  const limitGroups = useMemo(
+    () => computeLimitGroups(contracts, {
+      getOutstanding: getEffectiveBalanceForContract,
+      today: todayIso,
+    }),
+    [contracts, allSchedulesMap, todayIso]
+  );
+
   const masterHdtdGroups = useMemo(() => {
-    const map = new Map<string, {
-      masterNo: string;
-      contracts: LoanContract[];
-      masterContract: LoanContract | null;
-      totalCreditLimit: number;
-      totalKunnDisbursed: number;
-      remainingLimit: number;
-    }>();
+    const map = new Map<string, MasterHdtdGroup>();
 
     for (const c of contracts) {
       const masterNo = getMasterHdtdNumber(c);
@@ -887,21 +897,20 @@ export const LoanPortfolioView: React.FC = () => {
         group.totalCreditLimit = c.ContractAmount;
         group.masterContract = c;
       }
-      group.totalKunnDisbursed += (c.LoanAmount || 0);
     }
 
     for (const group of map.values()) {
       if (group.totalCreditLimit === 0 && group.contracts.length > 0) {
         group.totalCreditLimit = group.contracts[0].ContractAmount || group.contracts[0].LoanAmount || 0;
       }
-      group.remainingLimit = Math.max(0, group.totalCreditLimit - group.totalKunnDisbursed);
+      const status = findLimitGroupFor(limitGroups, group.masterNo);
+      group.totalKunnDisbursed = status?.used ?? 0;
+      group.remainingLimit = status?.available ?? Math.max(0, group.totalCreditLimit);
+      if (status && status.granted > 0) group.totalCreditLimit = status.granted;
     }
 
     return Array.from(map.values());
-  }, [contracts]);
-
-  const getEffectiveBalanceForContract = (c: LoanContract) =>
-    computeOutstandingBalance(allSchedulesMap[c.Id], c);
+  }, [contracts, limitGroups]);
 
   const filteredContracts = useMemo(() => {
     if (selectedMasterFilter === 'ALL') return contracts;
@@ -910,24 +919,37 @@ export const LoanPortfolioView: React.FC = () => {
 
   const summaryFinancials = useMemo(() => {
     if (selectedMasterFilter === 'ALL') {
-
-      const totalCredit = computeCreditLimit(contracts).total;
-      const totalDisbursed = contracts.reduce((sum, c) => sum + getEffectiveBalanceForContract(c), 0);
-      const totalRemaining = Math.max(0, totalCredit - totalDisbursed);
+      const totalCredit = limitGroups.reduce((sum, g) => sum + g.granted, 0);
+      const totalDisbursed = limitGroups.reduce((sum, g) => sum + g.outstanding, 0);
+      const totalRemaining = limitGroups.reduce((sum, g) => sum + g.available, 0);
       return { totalCredit, totalDisbursed, totalRemaining };
-    } else {
-      const group = masterHdtdGroups.find(g => g.masterNo === selectedMasterFilter);
-      if (!group) return { totalCredit: 0, totalDisbursed: 0, totalRemaining: 0 };
-      const totalDisbursed = group.contracts.reduce((sum, c) => sum + getEffectiveBalanceForContract(c), 0);
-      return {
-        totalCredit: group.totalCreditLimit,
-        totalDisbursed,
-        totalRemaining: Math.max(0, group.totalCreditLimit - totalDisbursed)
-      };
     }
-  }, [contracts, masterHdtdGroups, selectedMasterFilter, allSchedulesMap]);
+    const status = findLimitGroupFor(limitGroups, selectedMasterFilter);
+    if (!status) return { totalCredit: 0, totalDisbursed: 0, totalRemaining: 0 };
+    return {
+      totalCredit: status.granted,
+      totalDisbursed: status.outstanding,
+      totalRemaining: status.available,
+    };
+  }, [limitGroups, selectedMasterFilter]);
 
-  const todayIso = new Date().toISOString().split('T')[0];
+  const formLimitStatus = useMemo(
+    () => findLimitGroupFor(
+      computeLimitGroups(contracts, {
+        getOutstanding: getEffectiveBalanceForContract,
+        excludeContractId: selectedContract?.Id ?? null,
+        grantedOverride: creditLimitNum > 0 ? creditLimitNum : null,
+        today: todayIso,
+      }),
+      effectiveFormHdtdNo
+    ),
+    [contracts, allSchedulesMap, selectedContract, creditLimitNum, effectiveFormHdtdNo, todayIso]
+  );
+
+  const formGrantedLimit = formLimitStatus?.granted ?? creditLimitNum;
+  const totalExistingKunnBalance = formLimitStatus?.used ?? 0;
+  const availableBeforeThisKunn = formLimitStatus?.available ?? Math.max(0, creditLimitNum);
+  const remainingHmtdLimit = Math.max(0, availableBeforeThisKunn - kunnLoanAmountNum);
 
   const productRule = useMemo(() => getLoanProductRule(form.LoanMethod), [form.LoanMethod]);
   const graceOptions = useMemo(() => graceMonthOptions(form.LoanMethod), [form.LoanMethod]);
@@ -947,6 +969,39 @@ export const LoanPortfolioView: React.FC = () => {
       .filter(w => w.exceeded || w.expiredAppraisals.length > 0),
     [contracts, collaterals, allSchedulesMap]
   );
+
+  const periodRateSegments = useMemo(() => {
+    const map: Record<number, RateSegment[]> = {};
+    if (!selectedContract || schedules.length === 0) return map;
+
+    const timeline = buildContractRateTimeline(selectedContract, { today: todayIso });
+    if (timeline.length === 0) return map;
+
+    let prev = selectedContract.DisbursementDate
+      || selectedContract.RepaymentStartDate
+      || selectedContract.ContractStartDate
+      || '';
+
+    for (const s of [...schedules].sort((a, b) => a.PeriodNumber - b.PeriodNumber)) {
+      if (!s.DueDate) continue;
+      const from = prev || s.DueDate;
+      map[s.Id] = splitPeriodByRate(timeline, from, s.DueDate, getDaysBetween(from, s.DueDate));
+      prev = s.DueDate;
+    }
+    return map;
+  }, [selectedContract, schedules, todayIso]);
+
+  const expiredLimitNote = useMemo(() => {
+    const scope = selectedMasterFilter === 'ALL'
+      ? limitGroups
+      : limitGroups.filter(g => findLimitGroupFor([g], selectedMasterFilter));
+    const expired = scope.filter(g => g.expired && g.headroom > 0);
+    if (expired.length === 0) return null;
+    if (expired.length === 1) {
+      return `HĐTD hết hiệu lực ${fmtDate(expired[0].endDate)}`;
+    }
+    return `${expired.length} HĐTD đã hết hiệu lực`;
+  }, [limitGroups, selectedMasterFilter]);
 
   const totalCreditLimit = summaryFinancials.totalCredit;
   const totalKunnAmount = summaryFinancials.totalDisbursed;
@@ -1037,6 +1092,7 @@ export const LoanPortfolioView: React.FC = () => {
             totalCreditLimit={totalCreditLimit}
             totalKunnAmount={totalKunnAmount}
             remainingCreditLimit={remainingCreditLimit}
+            expiredLimitNote={expiredLimitNote}
             handleNewContract={handleNewContract}
           />
 
@@ -1332,10 +1388,24 @@ export const LoanPortfolioView: React.FC = () => {
                             <span>TÌNH TRẠNG HẠN MỨC TÍN DỤNG:</span>
                           </div>
                           <div className="flex items-center space-x-4 font-mono">
-                            <span>Tổng mức cấp: <strong className="text-sky-600 dark:text-sky-400">{fmtMoney(creditLimitNum)}</strong></span>
-                            <span>• Dư nợ KUNN đã có: <strong className="text-amber-600 dark:text-amber-400">{fmtMoney(totalExistingKunnBalance)}</strong></span>
-                            <span>• Khả năng giải ngân còn lại: <strong className="text-emerald-600 dark:text-emerald-400">{fmtMoney(Math.max(0, creditLimitNum - totalExistingKunnBalance))}</strong></span>
+                            <span>Tổng mức cấp: <strong className="text-sky-600 dark:text-sky-400">{fmtMoney(formGrantedLimit)}</strong></span>
+                            <span>• Dư nợ KUNN còn hiệu lực: <strong className="text-amber-600 dark:text-amber-400">{fmtMoney(totalExistingKunnBalance)}</strong></span>
+                            <span>• Khả năng giải ngân còn lại: <strong className={
+                              formLimitStatus?.expired
+                                ? 'text-rose-600 dark:text-rose-400 line-through'
+                                : 'text-emerald-600 dark:text-emerald-400'
+                            }>{fmtMoney(availableBeforeThisKunn)}</strong></span>
+                            {(formLimitStatus?.settledKunnCount ?? 0) > 0 && (
+                              <span className="text-[10px] font-sans font-normal text-slate-500">
+                                (đã loại {formLimitStatus!.settledKunnCount} KUNN đã tất toán)
+                              </span>
+                            )}
                           </div>
+                          {formLimitStatus?.expired && (
+                            <div className="w-full mt-2 pt-2 border-t border-rose-300 dark:border-rose-500/40 text-[11px] font-bold text-rose-600 dark:text-rose-400">
+                              ⚠️ HĐTD hết hiệu lực ngày {fmtDate(formLimitStatus.endDate)}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1357,7 +1427,11 @@ export const LoanPortfolioView: React.FC = () => {
                             className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 ${inputStyle}`} />
                         </div>
                         <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Dư nợ HMTD hiện hữu (Tổng KUNN đã có)</label>
+                          <label className={`block mb-1 ${labelStyle}`}>
+                            {formLimitStatus?.revolving === false
+                              ? 'Đã nhận nợ trên HĐTD này (không tuần hoàn)'
+                              : 'Dư nợ HMTD hiện hữu (KUNN còn hiệu lực)'}
+                          </label>
                           <input type="text" readOnly value={fmtMoney(totalExistingKunnBalance)}
                             className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-amber-600 dark:text-amber-400 ${readonlyInputStyle}`} />
                         </div>
@@ -1959,8 +2033,14 @@ export const LoanPortfolioView: React.FC = () => {
                             const rowTotalAmount = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penaltyAmount;
                             const isPrepayRow = (s.PrepaidPrincipalAmount && s.PrepaidPrincipalAmount > 0) || s.Note?.includes('TRẢ TRƯỚC HẠN');
 
-                            const activeRateVal = getEffectiveActiveRate(selectedContract, s.DueDate);
-                            const activeRatePercentStr = (activeRateVal * 100).toFixed(2) + '%/năm';
+                            const rateSegs = periodRateSegments[s.Id] || [];
+                            const activeRatePercentStr = rateSegs.length > 0
+                              ? formatSegmentsLabel(rateSegs) + '/năm'
+                              : (getEffectiveActiveRate(selectedContract, s.DueDate) * 100).toFixed(2) + '%/năm';
+                            const isForecastRate = rateSegs.some(x => x.forecast);
+                            const rateBreakdown = rateSegs.length > 1
+                              ? rateSegs.map(x => `${x.days} ngày @ ${x.ratePercent.toFixed(2).replace('.', ',')}% (${x.label})`).join('  +  ')
+                              : (rateSegs[0]?.label || '');
 
                             return (
                               <tr key={s.Id} className={`transition-colors ${
@@ -1974,8 +2054,14 @@ export const LoanPortfolioView: React.FC = () => {
                               }`}>
                                 <td className="p-3 text-center font-bold font-mono">#{s.PeriodNumber}</td>
                                 <td className="p-3 font-mono font-bold">{fmtDate(s.DueDate)}</td>
-                                <td className="p-3 text-center font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50/30 dark:bg-purple-950/20 rounded-lg">
-                                  {activeRatePercentStr}
+                                <td className="p-3 text-center font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50/30 dark:bg-purple-950/20 rounded-lg"
+                                  title={rateBreakdown || undefined}>
+                                  <div className={rateSegs.length > 1 ? 'whitespace-nowrap' : ''}>
+                                    {activeRatePercentStr}
+                                  </div>
+                                  {isForecastRate && (
+                                    <div className="text-[9px] font-sans font-normal text-slate-400 uppercase tracking-wide">dự phóng</div>
+                                  )}
                                 </td>
                                 <td className="p-3 text-center font-mono font-bold">
                                   {effectiveOverdueDays > 0 ? (

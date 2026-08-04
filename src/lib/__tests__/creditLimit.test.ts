@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { computeCreditLimit, checkCollateralCapacity, parseCollateralIds } from '../creditLimit';
+import {
+  computeCreditLimit,
+  checkCollateralCapacity,
+  parseCollateralIds,
+  computeLimitGroups,
+  findLimitGroupFor,
+} from '../creditLimit';
 import type { LoanContract, Collateral } from '../../types';
 
 const hd = (o: Partial<LoanContract>): LoanContract => ({
@@ -297,5 +303,176 @@ describe('Cơ sở đối chiếu khác nhau theo loại vay', () => {
     ], [tsCao]);
     expect(r[0].granted).toBe(0);
     expect(r[0].exceeded).toBe(false);
+  });
+});
+
+describe('computeLimitGroups — hạn mức khả dụng (nguồn duy nhất)', () => {
+  const dungChung = (cs: LoanContract[], o?: Parameters<typeof computeLimitGroups>[1]) =>
+    computeLimitGroups(cs, o);
+
+  it('HMTD tuần hoàn: khả dụng = mức cấp − dư nợ, KUNN đã trả hết KHÔNG chiếm hạn mức', () => {
+
+    const r = dungChung([
+      hd({ Id: 1, ContractNumber: '2002/HĐTD/9653222/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 4_000_000_000, LoanAmount: 1_400_000_000, CurrentBalance: 0 }),
+      hd({ Id: 2, ContractNumber: '2002/HĐTD/9653222/GNN-02', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 4_000_000_000, LoanAmount: 1_400_000_000, CurrentBalance: 0 }),
+      hd({ Id: 3, ContractNumber: '2002/HĐTD/9653222/GNN-03', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 4_000_000_000, LoanAmount: 1_200_000_000, CurrentBalance: 1_200_000_000 }),
+    ]);
+
+    expect(r).toHaveLength(1);
+    expect(r[0].granted).toBe(4_000_000_000);
+    expect(r[0].outstanding).toBe(1_200_000_000);
+    expect(r[0].available).toBe(2_800_000_000);
+  });
+
+  it('HMTD: tất toán KUNN thì giải phóng hạn mức', () => {
+    const r = dungChung([
+      hd({ Id: 1, ContractNumber: 'HD01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 2_000_000_000, LoanAmount: 800_000_000,
+           CurrentBalance: 800_000_000, IsSettled: true }),
+      hd({ Id: 2, ContractNumber: 'HD01/GNN-02', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 2_000_000_000, LoanAmount: 500_000_000, CurrentBalance: 500_000_000 }),
+    ]);
+    expect(r[0].outstanding).toBe(500_000_000);
+    expect(r[0].available).toBe(1_500_000_000);
+    expect(r[0].settledKunnCount).toBe(1);
+    expect(r[0].activeKunnCount).toBe(1);
+  });
+
+  it('cho vay từng lần KHÔNG tuần hoàn: trả nợ không mở lại hạn mức', () => {
+    const r = dungChung([
+      hd({ Id: 1, ContractNumber: 'TL/GNN-01', LoanMethod: 'Cho vay từng lần',
+           ContractAmount: 3_000_000_000, LoanAmount: 3_000_000_000, CurrentBalance: 1_000_000_000 }),
+    ]);
+    expect(r[0].revolving).toBe(false);
+    expect(r[0].outstanding).toBe(1_000_000_000);
+    expect(r[0].used).toBe(3_000_000_000);
+    expect(r[0].available).toBe(0);
+  });
+
+  it('ĐINH TIÊN HOÀNG — 2 HĐTD từng lần: mỗi HĐTD một nhóm, đều hết hạn mức', () => {
+    const r = dungChung([
+      hd({ Id: 1, ContractNumber: '2002/HĐTD_1/9726862/GNN-01', LoanMethod: 'Cho vay từng lần',
+           ContractAmount: 3_000_000_000, LoanAmount: 3_000_000_000, CurrentBalance: 3_000_000_000 }),
+      hd({ Id: 2, ContractNumber: '2002/HĐTD_2/9726862/GNN-01', LoanMethod: 'Cho vay từng lần',
+           ContractAmount: 1_930_000_000, LoanAmount: 1_930_000_000, CurrentBalance: 1_930_000_000 }),
+    ]);
+    expect(r).toHaveLength(2);
+    expect(r.reduce((s, g) => s + g.granted, 0)).toBe(4_930_000_000);
+    expect(r.reduce((s, g) => s + g.outstanding, 0)).toBe(4_930_000_000);
+    expect(r.every(g => g.available === 0)).toBe(true);
+  });
+
+  it('nhiều HĐTD dùng chung một mã hạn mức: chỉ một nhóm, mức cấp không cộng dồn', () => {
+    const r = dungChung([
+      hd({ Id: 1, ContractNumber: 'A/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 900_000_000, CurrentBalance: 400_000_000,
+           CreditLimitCode: 'PD-01', CreditLimitAmount: 1_460_000_000 }),
+      hd({ Id: 2, ContractNumber: 'B/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 900_000_000, CurrentBalance: 300_000_000,
+           CreditLimitCode: 'PD-01', CreditLimitAmount: 1_460_000_000 }),
+    ]);
+    expect(r).toHaveLength(1);
+    expect(r[0].isShared).toBe(true);
+    expect(r[0].hdtdNumbers).toHaveLength(2);
+    expect(r[0].granted).toBe(1_460_000_000);
+    expect(r[0].available).toBe(760_000_000);
+  });
+
+  it('tổng mức cấp khớp computeCreditLimit', () => {
+    const cs = [
+      hd({ Id: 1, ContractNumber: 'A/GNN-01', ContractAmount: 960_000_000 }),
+      hd({ Id: 2, ContractNumber: 'B/GNN-01', ContractAmount: 500_000_000 }),
+      hd({ Id: 3, ContractNumber: 'C/GNN-01', ContractAmount: 900_000_000,
+           CreditLimitCode: 'PD-09', CreditLimitAmount: 1_000_000_000 }),
+    ];
+    const tong = computeLimitGroups(cs).reduce((s, g) => s + g.granted, 0);
+    expect(tong).toBe(computeCreditLimit(cs).total);
+  });
+
+  it('loại trừ KUNN đang sửa và cho phép ghi đè mức cấp đang nhập trên form', () => {
+    const cs = [
+      hd({ Id: 1, ContractNumber: 'HD01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 2_000_000_000, LoanAmount: 800_000_000, CurrentBalance: 800_000_000 }),
+      hd({ Id: 2, ContractNumber: 'HD01/GNN-02', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 2_000_000_000, LoanAmount: 500_000_000, CurrentBalance: 500_000_000 }),
+    ];
+    const r = dungChung(cs, { excludeContractId: 2, grantedOverride: 2_500_000_000 });
+    expect(r[0].granted).toBe(2_500_000_000);
+    expect(r[0].outstanding).toBe(800_000_000);
+    expect(r[0].available).toBe(1_700_000_000);
+  });
+
+  it('dùng dư nợ tính từ lịch thu nợ khi có hàm tra', () => {
+    const r = dungChung([
+      hd({ Id: 1, ContractNumber: 'HD01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 2_000_000_000, LoanAmount: 1_000_000_000, CurrentBalance: 1_000_000_000 }),
+    ], { getOutstanding: () => 250_000_000 });
+    expect(r[0].outstanding).toBe(250_000_000);
+    expect(r[0].available).toBe(1_750_000_000);
+  });
+
+  it('findLimitGroupFor tra được theo số HĐTD nằm trong nhóm dùng chung', () => {
+    const groups = dungChung([
+      hd({ Id: 1, ContractNumber: 'A/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 900_000_000, CreditLimitCode: 'PD-01', CreditLimitAmount: 1_000_000_000 }),
+    ]);
+    expect(findLimitGroupFor(groups, 'A')?.key).toBe('PD-01');
+    expect(findLimitGroupFor(groups, 'PD-01')?.key).toBe('PD-01');
+    expect(findLimitGroupFor(groups, 'KHONG-CO')).toBeUndefined();
+  });
+});
+
+describe('hiệu lực HĐTD — hết hạn thì không còn giải ngân được', () => {
+  it('ĐẶNG BÁ NHÂN — HĐTD hết hiệu lực 24/07/2026, hôm nay 04/08/2026: khả dụng = 0', () => {
+    const cs = [
+      hd({ Id: 1, ContractNumber: '2002/HDTD/9653222/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 4_000_000_000, LoanAmount: 1_400_000_000, CurrentBalance: 0,
+           ContractEndDate: '2026-07-24' }),
+      hd({ Id: 2, ContractNumber: '2002/HDTD/9653222/GNN-02', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 4_000_000_000, LoanAmount: 1_400_000_000, CurrentBalance: 0,
+           ContractEndDate: '2026-07-24' }),
+      hd({ Id: 3, ContractNumber: '2002/HDTD/9653222/GNN-03', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 4_000_000_000, LoanAmount: 1_200_000_000, CurrentBalance: 1_200_000_000,
+           ContractEndDate: '2026-07-24' }),
+    ];
+
+    const r = computeLimitGroups(cs, { today: '2026-08-04' });
+    expect(r[0].expired).toBe(true);
+    expect(r[0].endDate).toBe('2026-07-24');
+    expect(r[0].outstanding).toBe(1_200_000_000);
+    expect(r[0].headroom).toBe(2_800_000_000);
+    expect(r[0].available).toBe(0);
+  });
+
+  it('cùng dữ liệu nhưng HĐTD còn hiệu lực: khả dụng = hạn mức trống theo dư nợ', () => {
+    const r = computeLimitGroups([
+      hd({ Id: 1, ContractNumber: 'HD01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 4_000_000_000, LoanAmount: 1_200_000_000,
+           CurrentBalance: 1_200_000_000, ContractEndDate: '2027-07-24' }),
+    ], { today: '2026-08-04' });
+    expect(r[0].expired).toBe(false);
+    expect(r[0].available).toBe(2_800_000_000);
+  });
+
+  it('đúng ngày hết hiệu lực vẫn còn giải ngân được', () => {
+    const r = computeLimitGroups([
+      hd({ Id: 1, ContractNumber: 'HD01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 2_000_000_000, LoanAmount: 500_000_000,
+           CurrentBalance: 500_000_000, ContractEndDate: '2026-08-04' }),
+    ], { today: '2026-08-04' });
+    expect(r[0].expired).toBe(false);
+    expect(r[0].available).toBe(1_500_000_000);
+  });
+
+  it('không truyền ngày tham chiếu thì không xét hiệu lực', () => {
+    const r = computeLimitGroups([
+      hd({ Id: 1, ContractNumber: 'HD01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 2_000_000_000, CurrentBalance: 0, ContractEndDate: '2020-01-01' }),
+    ]);
+    expect(r[0].expired).toBe(false);
+    expect(r[0].available).toBe(2_000_000_000);
   });
 });

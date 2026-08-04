@@ -9,7 +9,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { useWork } from '../../context/WorkContext';
 import { fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
-import { summarizeCreditContracts, kunnRevolvingStatus } from '../../lib/creditContract';
+import { summarizeCreditContracts } from '../../lib/creditContract';
 import { computeOutstandingBalance } from '../../lib/loanMath';
 import { getEffectiveLtv, usableCapacity, appraisalStatus, appraisalExpiryDate } from '../../lib/collateralMath';
 import { allowedPurposes } from '../../lib/loanProductRules';
@@ -117,23 +117,6 @@ export const CreditContractView: React.FC = () => {
     }),
     [contracts, kunns, schedulesMap, todayIso]
   );
-
-  const lockedByContract = useMemo(() => {
-    const map: Record<number, { count: number; amount: number }> = {};
-    for (const k of kunns) {
-      if (k.IsSettled || !k.CreditContractId) continue;
-      const cc = contracts.find(x => x.Id === k.CreditContractId);
-      if (kunnRevolvingStatus({ KunnDueDate: k.KunnDueDate }, cc).state !== 'locked') continue;
-      const bal = outstandingOf(k);
-      // Dư nợ đã về 0 thì không còn gì bị khoá, đánh dấu chỉ gây nhiễu.
-      if (bal <= 0) continue;
-      const cur = map[k.CreditContractId] || { count: 0, amount: 0 };
-      cur.count += 1;
-      cur.amount += bal;
-      map[k.CreditContractId] = cur;
-    }
-    return map;
-  }, [kunns, contracts, schedulesMap]);
 
   const visibleSummaries = useMemo(
     () => showSettled ? summaries : summaries.filter(s => !s.contract.IsClosed),
@@ -325,11 +308,6 @@ export const CreditContractView: React.FC = () => {
                       <td className="p-3 text-right font-mono font-bold">{fmtMoney(s.contract.ContractAmount)}</td>
                       <td className="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
                         {fmtMoney(s.outstanding)}
-                        {lockedByContract[s.contract.Id] && (
-                          <div className="text-[10px] font-sans font-semibold text-rose-600 dark:text-rose-400">
-                            khoá {fmtMoney(lockedByContract[s.contract.Id].amount)}
-                          </div>
-                        )}
                       </td>
                       <td className="p-3 text-center whitespace-nowrap">
                         <div className="font-mono">{fmtDate(s.contract.ContractEndDate)}</div>
@@ -344,12 +322,6 @@ export const CreditContractView: React.FC = () => {
                         )}
                         {s.kunnCount === 0 && (
                           <div className="text-[10px] text-slate-400">chưa giải ngân</div>
-                        )}
-                        {lockedByContract[s.contract.Id] && (
-                          <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400 mt-0.5"
-                            title="KUNN đáo hạn sau ngày hết hiệu lực HĐTD: không giải ngân lại được, phải tất toán">
-                            🔒 {lockedByContract[s.contract.Id].count} KUNN khoá
-                          </div>
                         )}
                       </td>
                       <td className="p-3">

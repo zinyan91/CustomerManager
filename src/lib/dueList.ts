@@ -67,8 +67,6 @@ function esc(v: unknown): string {
  *
  * Cùng cách làm với tờ lãi suất: không dùng thư viện ngoài, mở cửa sổ mới rồi
  * để trình duyệt in ra PDF. Khổ A4 ngang vì các bảng này nhiều cột.
- *
- * Đây là danh sách theo dõi NỘI BỘ, không phải tài liệu gửi khách hàng.
  */
 export function buildDueListHtml(input: DueListSheetInput): string {
   const right = new Set(input.alignRight || []);
@@ -113,9 +111,7 @@ export function buildDueListHtml(input: DueListSheetInput): string {
     <thead><tr>${head}</tr></thead>
     <tbody>${body}</tbody>
   </table>
-  <footer>
-    Danh sách theo dõi nội bộ.${input.preparedBy ? ` Người lập: ${esc(input.preparedBy)}.` : ''}
-  </footer>
+  ${input.preparedBy ? `<footer>Người lập: ${esc(input.preparedBy)}</footer>` : ''}
 </body>
 </html>`;
 }

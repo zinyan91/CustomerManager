@@ -82,12 +82,8 @@ describe('buildDueListHtml', () => {
     expect(html).toContain('&lt;script&gt;');
   });
 
-  it('ghi rõ là danh sách nội bộ', () => {
-    expect(buildDueListHtml(base)).toContain('Danh sách theo dõi nội bộ');
-  });
-
   it('in tên người lập khi có', () => {
-    expect(buildDueListHtml({ ...base, preparedBy: 'Nguyễn A' })).toContain('Người lập: Nguyễn A.');
+    expect(buildDueListHtml({ ...base, preparedBy: 'Nguyễn A' })).toContain('Người lập: Nguyễn A');
     expect(buildDueListHtml(base)).not.toContain('Người lập');
   });
 });

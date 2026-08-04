@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useDateFormat, type DateFormat } from '../../context/DateFormatContext';
-import { Settings, Sun, Moon, Sliders, Calendar, Clock, Save, CheckCircle } from 'lucide-react';
+import { Settings, Sun, Moon, Sliders, Calendar, Clock, Save, CheckCircle, Type, RotateCcw } from 'lucide-react';
 import { useFormatSettings } from '../../context/FormatSettingsContext';
 import {
   NUMBER_STYLE_SAMPLES, MAX_DIGITS,
   formatDecimalWith, formatPercentWith, formatTimeWith, formatMoneyWith,
 } from '../../lib/formatSettings';
 import { fmtMoney } from '../../lib/utils';
+import { useFontSettings } from '../../context/FontSettingsContext';
+import {
+  FONT_FAMILIES, FONT_SIZE_LIMITS, FONT_PART_LABELS, type FontSettings,
+} from '../../lib/fontSettings';
 
 const DIGIT_OPTIONS = Array.from({ length: MAX_DIGITS + 1 }, (_, i) => i);
 
@@ -15,6 +19,7 @@ export const SettingsView: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const { dateFormat, setDateFormat } = useDateFormat();
   const { formatSettings, updateFormatSettings } = useFormatSettings();
+  const { fontSettings, updateFontSettings, resetFontSettings } = useFontSettings();
   const [notifySuccess, setNotifySuccess] = useState(false);
 
   const handleSaveSettings = (e: React.FormEvent) => {
@@ -43,6 +48,69 @@ export const SettingsView: React.FC = () => {
       </div>
 
       <form onSubmit={handleSaveSettings} className="space-y-5 text-xs">
+
+        <div className="bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 p-5 rounded-2xl space-y-4">
+          <h3 className="text-xs font-bold text-sky-400 light:text-sky-600 uppercase flex items-center justify-between border-b border-slate-800 light:border-slate-200 pb-2">
+            <span className="flex items-center space-x-2">
+              <Type className="w-4 h-4" />
+              <span>CỠ CHỮ & FONT HIỂN THỊ</span>
+            </span>
+            <button type="button" onClick={resetFontSettings}
+              className="flex items-center gap-1 normal-case font-semibold text-[11px] text-slate-400 hover:text-sky-400">
+              <RotateCcw className="w-3 h-3" />Về mặc định
+            </button>
+          </h3>
+
+          <div>
+            <label className="block mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Font chữ</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {FONT_FAMILIES.map(f => (
+                <div key={f.key}
+                  onClick={() => updateFontSettings({ family: f.key })}
+                  style={{ fontFamily: f.stack }}
+                  className={`cursor-pointer p-3 rounded-xl border transition-all ${
+                    fontSettings.family === f.key
+                      ? 'bg-sky-950/60 border-sky-500 text-sky-300 font-bold'
+                      : 'bg-slate-950 light:bg-slate-50 border-slate-800 light:border-slate-200 text-slate-400 hover:border-slate-700'
+                  }`}>
+                  <div>{f.label}</div>
+                  <div className="text-[11px] opacity-80 mt-0.5">Dư nợ 1.930.000.000 đồng — lãi 9,50%/năm</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-1">
+            {(Object.keys(FONT_PART_LABELS) as (keyof typeof FONT_PART_LABELS)[]).map(part => {
+              const lim = FONT_SIZE_LIMITS[part];
+              return (
+                <div key={part} className="flex flex-wrap items-center gap-3">
+                  <span className="w-full md:w-56 text-[11px] font-semibold text-slate-400">
+                    {FONT_PART_LABELS[part]}
+                  </span>
+                  <input type="range" min={lim.min} max={lim.max} step={1}
+                    value={fontSettings[part] as number}
+                    onChange={e => updateFontSettings({ [part]: Number(e.target.value) } as Partial<FontSettings>)}
+                    className="flex-1 min-w-[140px] accent-sky-500" />
+                  <span className="w-14 text-right font-mono font-bold text-sky-400 light:text-sky-600">
+                    {fontSettings[part]}px
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="rounded-xl border border-slate-800 light:border-slate-200 p-3 space-y-1.5">
+            <div className="text-sm font-bold text-slate-200 light:text-slate-800">Xem trước tiêu đề mục</div>
+            <div className="text-xs text-slate-400">Nội dung bảng và nhãn nhập liệu hiển thị ở cỡ này.</div>
+            <div className="text-[11px] text-slate-500">Nhãn nhỏ, viên trạng thái và ghi chú.</div>
+            <div className="font-mono text-sky-400 light:text-sky-600">2002/HĐTD/9653222/GNN-01 · 4.000.000.000 VNĐ</div>
+          </div>
+
+          <p className="text-[11px] text-slate-500">
+            Thiết lập lưu trên máy này và áp cho mọi màn hình. Bản in PDF giữ cỡ chữ riêng để không vỡ khổ giấy.
+          </p>
+        </div>
         <div className="bg-slate-900 light:bg-white border border-slate-800 light:border-slate-200 p-5 rounded-2xl space-y-4">
           <h3 className="text-xs font-bold text-sky-400 light:text-sky-600 uppercase flex items-center space-x-2 border-b border-slate-800 light:border-slate-200 pb-2">
             <Sun className="w-4 h-4" />

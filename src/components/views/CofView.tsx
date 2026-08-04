@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Landmark, Loader2, RefreshCw, FileText, ShieldAlert, Save, Info } from 'lucide-react';
+import { Landmark, Loader2, RefreshCw, FileText, Save, Info } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { fmtDate } from '../../lib/utils';
@@ -197,9 +197,6 @@ export const CofView: React.FC = () => {
                   {' • hiệu lực từ '}{fmtDate(program.EffectiveFrom)}
                   {program.EffectiveTo ? ` đến ${fmtDate(program.EffectiveTo)}` : ''}
                 </div>
-                {program.ReplacesDocument && (
-                  <div className="text-[11px] text-slate-500">Thay thế: {program.ReplacesDocument}</div>
-                )}
               </div>
               {program.SourceVerified ? (
                 <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 h-fit">
@@ -210,15 +207,6 @@ export const CofView: React.FC = () => {
                   ⚠ CHƯA ĐỐI CHIẾU
                 </span>
               )}
-            </div>
-            {program.Note && (
-              <div className="text-[11px] text-slate-500 border-t border-slate-200 dark:border-slate-800 pt-2">
-                {program.Note}
-              </div>
-            )}
-            <div className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-2.5 text-[11px] font-bold text-amber-800 dark:text-amber-300 flex items-start space-x-2">
-              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>Số liệu nội bộ — không đưa vào tài liệu gửi khách hàng.</span>
             </div>
           </div>
 

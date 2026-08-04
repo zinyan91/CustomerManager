@@ -42,15 +42,12 @@ export function countByDue<T>(
 
 export interface DueListSheetInput {
   title: string;
-  subtitle?: string;
   columns: string[];
   /** Mỗi hàng là các ô đã định dạng sẵn dạng chuỗi. */
   rows: string[][];
   /** Chỉ số cột căn phải, thường là cột tiền. */
   alignRight?: number[];
   preparedBy?: string;
-  printedOn: string;
-  bankName?: string;
 }
 
 function esc(v: unknown): string {
@@ -90,8 +87,7 @@ export function buildDueListHtml(input: DueListSheetInput): string {
   @page { size: A4 landscape; margin: 10mm; }
   * { box-sizing: border-box; }
   body { font-family: "Segoe UI", Arial, sans-serif; color: #1a1a1a; margin: 0; font-size: 9pt; }
-  h1 { font-size: 13pt; color: #0b5cab; margin: 0 0 2px; }
-  .sub { font-size: 8.5pt; color: #555; margin-bottom: 8px; }
+  h1 { font-size: 13pt; color: #0b5cab; margin: 0 0 8px; }
   table { width: 100%; border-collapse: collapse; }
   th, td { border: 1px solid #c9d9e8; padding: 4px 6px; text-align: left; vertical-align: top; }
   th { background: #eaf2fa; color: #0b5cab; font-size: 8.5pt; text-transform: uppercase; }
@@ -103,10 +99,6 @@ export function buildDueListHtml(input: DueListSheetInput): string {
 </head>
 <body>
   <h1>${esc(input.title)}</h1>
-  <div class="sub">
-    ${input.bankName ? esc(input.bankName) + ' &bull; ' : ''}Ngày in: ${esc(input.printedOn)}
-    ${input.subtitle ? ' &bull; ' + esc(input.subtitle) : ''}
-  </div>
   <table>
     <thead><tr>${head}</tr></thead>
     <tbody>${body}</tbody>

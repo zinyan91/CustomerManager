@@ -50,7 +50,6 @@ describe('buildDueListHtml', () => {
     columns: ['Khách hàng', 'Số KUNN', 'Dư nợ'],
     rows: [['HỒ VĂN SÁNG', '2002/HĐTD/9606118/GNN-01', '650.000.000 VNĐ']],
     alignRight: [2],
-    printedOn: '04/08/2026',
   };
 
   it('in đủ tiêu đề, cột và dòng', () => {
@@ -58,7 +57,6 @@ describe('buildDueListHtml', () => {
     expect(html).toContain('Danh sách KUNN sắp đến hạn');
     expect(html).toContain('HỒ VĂN SÁNG');
     expect(html).toContain('650.000.000 VNĐ');
-    expect(html).toContain('Ngày in: 04/08/2026');
   });
 
   it('danh sách rỗng vẫn ra tài liệu hợp lệ', () => {

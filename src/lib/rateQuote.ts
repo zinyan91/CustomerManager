@@ -73,6 +73,25 @@ export interface DepositRateAuthority {
   SortOrder: number;
 }
 
+export interface RateProgramFeeOption {
+  Id: number;
+  ProgramId: number;
+  OptionLabel: string;
+  PackageGroup: string;
+  MinFeeRatio?: number | null;
+  CounterFeeRatio?: number | null;
+  Note?: string | null;
+  SortOrder: number;
+}
+
+export interface RateProgramCondition {
+  Id: number;
+  ProgramId: number;
+  Heading?: string | null;
+  Content: string;
+  SortOrder: number;
+}
+
 export const FBE_SCOPE_LABELS: Record<FbeCodeScope, string> = {
   co_dinh_suot_thoi_gian_vay: 'Cố định lãi suất suốt thời gian vay',
   co_dinh_ky_dau: 'Cố định lãi suất kỳ đầu',

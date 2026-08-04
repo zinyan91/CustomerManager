@@ -26,7 +26,7 @@ Mã nguồn không chứa chú thích. Toàn bộ giải thích "vì sao" nằm 
 
 ## 2. Logic tài chính
 
-Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 329 test tại `src/lib/__tests__/`.
+Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 356 test tại `src/lib/__tests__/`.
 
 | Tệp | Nội dung |
 | :--- | :--- |
@@ -37,6 +37,7 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 | `rateReduction.ts` | Tính tiền giảm lãi suất vay: ngắn hạn nhiều khoản và lịch trung dài hạn |
 | `mdsdv.ts` | Tra cứu mã mục đích sử dụng vốn theo danh mục FBE |
 | `rateQuote.ts` | Chào lãi suất theo chương trình từng thời kỳ, phí dịch vụ, cảnh báo chặn |
+| `rateSheet.ts` | Dựng bảng lãi suất một trang A4 để gửi khách hàng |
 | `loanProductRules.ts` | Ràng buộc theo phương thức vay |
 | `utils.ts` | Định dạng tiền, phân tích ngày đa định dạng |
 
@@ -308,10 +309,26 @@ Cờ `AllowRateReduction = false` tồn tại vì Thông báo 2274 **cấm áp d
 | Chương trình | Nguồn | Trạng thái |
 | :--- | :--- | :--- |
 | Ngắn hạn `2274/2026/TB-BĐH` | Chính văn bản | **Đã đối chiếu** |
-| Trung dài hạn `TAM-TDH-2026` | Bảng tính nội bộ | **Chưa** — thiếu lãi suất gói CĐ 3 tháng và phí Năm 3 |
+| Trung dài hạn `1680/2026/TB-TGĐ` | Chính văn bản | **Đã đối chiếu** (migration 10) |
 | Huy động `TAM-HD-2279/...` | Bảng tính nội bộ | **Chưa** — chưa có văn bản 2279 |
 
+**Gói cố định 3 tháng của trung dài hạn có LSCV đúng bằng 0%/năm.** Đây là ưu đãi 0% ba tháng đầu, là số liệu đã biết, không phải ô chưa điền. Migration 09 từng để `NULL` vì suy đoán sai từ bảng tính; migration 10 sửa thành `0`. Đừng "sửa" lại thành `NULL`.
+
 Bảng tính nội bộ `Book.xlsx` **sai cả 5 dòng lãi suất ngắn hạn** khi so với văn bản 2274 (một dòng ghi 110,50% thay vì 11,70%; một dòng ghi 0% thay vì 8,45%). Vì vậy số liệu trung dài hạn và huy động lấy từ cùng file đó phải coi là tạm cho tới khi có văn bản gốc. Không sửa `SourceVerified` thành `true` khi chưa thực sự đối chiếu.
+
+### Xuất bảng lãi suất gửi khách hàng
+
+`buildRateSheetHtml` dựng một tài liệu HTML **tự chứa, khổ A4 một trang**, mở ở cửa sổ mới rồi gọi `print()` để banker lưu thành PDF. Không dùng thư viện ngoài: trình duyệt đã in ra PDF tốt hơn mọi thư viện nhúng, và thêm phụ thuộc chỉ để đóng gói HTML là không cần thiết.
+
+Bố cục đo theo A4 trừ lề: rộng 703px, cao 1039px ở 96dpi. Khi thêm mục vào tờ này phải đo lại chiều cao thật, đừng ước lượng — tràn sang trang 2 làm tờ chào khách mất chuyên nghiệp.
+
+**Không xuất file khi còn số liệu thiếu.** `findRateSheetBlockers` chặn bốn trường hợp: chương trình chưa đối chiếu văn bản gốc, chương trình chưa có dòng nào, còn gói chưa có lãi suất, còn bậc phí trả nợ trước hạn chưa có số. Gửi cho khách một bảng lãi suất có ô trống hoặc số chưa kiểm chứng là rủi ro danh tiếng và có thể thành cam kết sai.
+
+Lãi suất `0%` **phải in ra "0%"**, không được in dấu gạch. Đây là lý do `formatRateForCustomer` phân biệt `0` với `null` thay vì dùng `||`.
+
+Mọi chuỗi lấy từ cơ sở dữ liệu đều đi qua hàm escape trước khi ghép vào HTML. Tờ này ghép chuỗi thủ công nên không có lớp bảo vệ nào của React; có test riêng khẳng định thẻ `<script>` trong tên chương trình bị vô hiệu hoá.
+
+Tờ chào khách **chỉ chứa thông tin đã công bố**: lãi suất, điều kiện, phí. Không đưa COF, biên độ lợi nhuận, hạn mức nội bộ hay dữ liệu khách hàng khác vào đây.
 
 ### Quyền ghi
 
@@ -352,6 +369,6 @@ Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor
 ```bash
 npm run dev        # Máy chủ phát triển
 npm run build      # Kiểm tra kiểu + đóng gói
-npm test           # 329 test logic tài chính
+npm test           # 356 test logic tài chính
 npm run lint       # Kiểm tra mã nguồn
 ```

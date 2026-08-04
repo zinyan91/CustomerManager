@@ -206,21 +206,13 @@ export const DashboardView: React.FC = () => {
   const hmtdCount = countByDue(dueHmtdList, soNgay);
   const tsbdCount = countByDue(dueCollateralList, soNgay);
 
-  const homNay = fmtDate(new Date().toISOString().split('T')[0]);
-
   const inDanhSach = (
     title: string,
-    filter: DueFilter,
     columns: string[],
     rows: string[][],
     alignRight: number[]
   ) => {
-    const html = buildDueListHtml({
-      title,
-      subtitle: `Bộ lọc: ${DUE_FILTER_LABELS[filter]} • ${rows.length} dòng`,
-      columns, rows, alignRight,
-      printedOn: homNay,
-    });
+    const html = buildDueListHtml({ title, columns, rows, alignRight });
     if (!openPrintWindow(html)) {
       window.alert('Trình duyệt đã chặn cửa sổ in. Cho phép pop-up rồi thử lại.');
     }
@@ -228,7 +220,6 @@ export const DashboardView: React.FC = () => {
 
   const inKunn = () => inDanhSach(
     'Danh sách Giấy nhận nợ (KUNN) sắp đến hạn kết thúc',
-    kunnFilter,
     ['Khách hàng vay', 'Mã CIF', 'Số HĐTD / KUNN', 'Số tiền KUNN', 'Ngày kết thúc', 'Kỳ hạn', 'Hạn còn lại'],
     kunnRows.map(({ contract, customer, daysLeft }) => [
       customer?.FullName || '',
@@ -245,7 +236,6 @@ export const DashboardView: React.FC = () => {
 
   const inHmtd = () => inDanhSach(
     'Danh sách Hạn mức tín dụng (HMTD) sắp tới hạn kết thúc',
-    hmtdFilter,
     ['Khách hàng vay', 'Mã CIF', 'Số HĐTD hạn mức', 'Tổng mức cấp', 'Ngày hết hạn HĐ', 'Hạn còn lại'],
     hmtdRows.map(({ masterNo, contract, customer, endDateStr, daysLeft }) => [
       customer?.FullName || '',
@@ -261,7 +251,6 @@ export const DashboardView: React.FC = () => {
 
   const inTsbd = () => inDanhSach(
     'Danh sách Định giá tài sản bảo đảm sắp tới hạn',
-    tsbdFilter,
     ['Chủ sở hữu TSBĐ', 'Mã CIF', 'Mã TS / Địa chỉ', 'Xếp loại TS', 'Giá trị định giá', 'Ngày hết hạn định giá', 'Trạng thái'],
     tsbdRows.map(({ collateral, customer, expiryDateStr, daysLeft }) => [
       customer?.FullName || '',

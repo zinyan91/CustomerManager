@@ -197,13 +197,13 @@ export const DocumentTemplateView: React.FC = () => {
               <td>
                 <div class="font-bold uppercase">BÊN CHO THUÊ (BÊN A)</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(mbPartyAName)}</div>
               </td>
               <td>
                 <div class="font-bold uppercase">BÊN THUÊ (BÊN B)</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(mbPartyBName)}</div>
               </td>
             </tr>
@@ -279,19 +279,19 @@ export const DocumentTemplateView: React.FC = () => {
               <td style="width: 33%;">
                 <div class="font-bold uppercase">BÊN A</div>
                 <div class="font-italic text-[11pt]">(Ký, ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(d.buyerName)}</div>
               </td>
               <td style="width: 34%;">
                 <div class="font-bold uppercase">NGƯỜI LÀM CHỨNG</div>
                 <div class="font-italic text-[11pt]">(Ký, ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">&nbsp;</div>
               </td>
               <td style="width: 33%;">
                 <div class="font-bold uppercase">BÊN B</div>
                 <div class="font-italic text-[11pt]">(Ký, ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(d.sellerName)}</div>
               </td>
             </tr>
@@ -396,13 +396,13 @@ export const DocumentTemplateView: React.FC = () => {
               <td>
                 <div class="font-bold uppercase">BÊN CHO THUÊ</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(mbPartyAName)}</div>
               </td>
               <td>
                 <div class="font-bold uppercase">BÊN THUÊ</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(mbPartyBName)}</div>
               </td>
             </tr>
@@ -502,13 +502,13 @@ export const DocumentTemplateView: React.FC = () => {
               <td>
                 <div class="font-bold uppercase">BÊN THUÊ THI CÔNG (BÊN A)</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(constPartyAName)}</div>
               </td>
               <td>
                 <div class="font-bold uppercase">BÊN NHẬN THI CÔNG (BÊN B)</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(constPartyBName)}</div>
               </td>
             </tr>
@@ -586,13 +586,13 @@ export const DocumentTemplateView: React.FC = () => {
               <td>
                 <div class="font-bold uppercase">ĐẠI DIỆN BÊN A</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(constPartyAName)}</div>
               </td>
               <td>
                 <div class="font-bold uppercase">ĐẠI DIỆN BÊN B</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(constPartyBName)}</div>
               </td>
             </tr>
@@ -702,13 +702,13 @@ export const DocumentTemplateView: React.FC = () => {
               <td>
                 <div class="font-bold uppercase">ĐẠI DIỆN BÊN BÁN</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(saleSellerName)}</div>
               </td>
               <td>
                 <div class="font-bold uppercase">ĐẠI DIỆN BÊN MUA</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 100px;"></div>
+                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
                 <div class="font-bold uppercase">${nfc(saleBuyerName)}</div>
               </td>
             </tr>
@@ -802,7 +802,7 @@ export const DocumentTemplateView: React.FC = () => {
             <td style="width: 50%; text-align: center;">
               <div class="font-bold uppercase">Người đề nghị thanh toán</div>
               <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-              <div style="height: 100px;"></div>
+              <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
               <div class="font-bold uppercase">${nfc(payMethodType === 'cash' ? (payCashName || sellerName) : (payBankOwner || sellerName))}</div>
             </td>
           </tr>

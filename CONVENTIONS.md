@@ -26,7 +26,7 @@ Mã nguồn không chứa chú thích. Toàn bộ giải thích "vì sao" nằm 
 
 ## 2. Logic tài chính
 
-Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 439 test tại `src/lib/__tests__/`.
+Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 464 test tại `src/lib/__tests__/`.
 
 | Tệp | Nội dung |
 | :--- | :--- |
@@ -41,6 +41,7 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 | `formatSettings.ts` | Định dạng số tiền, số thập phân, phần trăm và giờ theo thiết lập người dùng |
 | `numberToWords.ts` | Đọc số tiền thành chữ tiếng Việt cho biểu mẫu hợp đồng |
 | `cof.ts` | Giá mua vốn từ Hội Sở (FTP bán - COF) theo kỳ hạn và kỳ điều chỉnh |
+| `stkPledge.ts` | Cầm cố sổ tiết kiệm: một sổ, tái tục nhiều kỳ, và phạt chậm trả quá hạn |
 | `loanProductRules.ts` | Ràng buộc theo phương thức vay |
 | `utils.ts` | Định dạng tiền, phân tích ngày đa định dạng |
 
@@ -422,6 +423,6 @@ Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor
 ```bash
 npm run dev        # Máy chủ phát triển
 npm run build      # Kiểm tra kiểu + đóng gói
-npm test           # 439 test logic tài chính
+npm test           # 464 test logic tài chính
 npm run lint       # Kiểm tra mã nguồn
 ```

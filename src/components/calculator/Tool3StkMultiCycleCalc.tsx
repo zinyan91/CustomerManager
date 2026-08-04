@@ -1,313 +1,233 @@
 import React, { useState, useMemo } from 'react';
-import { TrendingUp, Download } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2 } from 'lucide-react';
+import { fmtMoney, fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
+import { buildStkRollover, TENOR_UNIT_LABELS } from '../../lib/stkPledge';
+import type { TenorUnit, StkCycleInput } from '../../lib/stkPledge';
 import type { ThemeStyles } from '../../lib/themeStyles';
-import { DateInput } from '../DateInput';
-import { fmtDate } from '../../lib/utils';
-import { addMonths, diffDays } from '../../lib/calcMath';
-
-function exportToExcelHTML(
-  filename: string,
-  title: string,
-  params: { label: string; value: string }[],
-  headers: string[],
-  rows: (string | number)[][],
-  footerRow?: (string | number)[]
-) {
-  let paramRowsHtml = '';
-  for (let i = 0; i < params.length; i += 2) {
-    const p1 = params[i];
-    const p2 = params[i + 1];
-    paramRowsHtml += `
-      <tr>
-        <td class="param-label">${p1 ? p1.label : ''}</td>
-        <td class="param-val">${p1 ? p1.value : ''}</td>
-        <td class="param-label">${p2 ? p2.label : ''}</td>
-        <td class="param-val">${p2 ? p2.value : ''}</td>
-      </tr>
-    `;
-  }
-
-  const headerHtml = headers.map(h => `<th>${h}</th>`).join('');
-
-  const bodyHtml = rows.map((r, idx) => {
-    const bgClass = idx % 2 === 0 ? 'row-even' : 'row-odd';
-    const cellsHtml = r.map((c, colIdx) => {
-      const isNum = typeof c === 'number';
-      const alignClass = colIdx === 0 ? 'text-center text-bold' : isNum ? 'text-right font-mono' : 'text-center';
-      const formatted = isNum ? c.toLocaleString('vi-VN') : c;
-      return `<td class="${alignClass}">${formatted}</td>`;
-    }).join('');
-    return `<tr class="${bgClass}">${cellsHtml}</tr>`;
-  }).join('');
-
-  let footerHtml = '';
-  if (footerRow) {
-    const footerCells = footerRow.map((c, colIdx) => {
-      const isNum = typeof c === 'number';
-      const alignClass = colIdx === 0 ? 'text-center' : isNum ? 'text-right font-mono' : 'text-center';
-      const formatted = isNum ? c.toLocaleString('vi-VN') : c;
-      return `<td class="${alignClass}">${formatted}</td>`;
-    }).join('');
-    footerHtml = `<tfoot><tr class="footer-row">${footerCells}</tr></tfoot>`;
-  }
-
-  const html = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-      <meta charset="utf-8" />
-      <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12px; color: #1e293b; background-color: #ffffff; }
-        .title { text-align: center; font-size: 16px; font-weight: bold; color: #0284c7; padding: 10px 0; text-transform: uppercase; }
-        .param-table { width: 100%; margin-bottom: 15px; border-collapse: collapse; background-color: #f8fafc; border: 1px solid #cbd5e1; }
-        .param-table td { padding: 6px 10px; border: 1px solid #e2e8f0; font-size: 11px; }
-        .param-label { font-weight: bold; color: #475569; width: 20%; background-color: #f1f5f9; }
-        .param-val { color: #0f172a; width: 30%; font-weight: 600; }
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .data-table th { background-color: #0284c7; color: #ffffff; font-weight: bold; padding: 8px; border: 1px solid #0369a1; text-align: center; font-size: 11px; }
-        .data-table td { padding: 6px 8px; border: 1px solid #cbd5e1; font-size: 11px; }
-        .row-even { background-color: #ffffff; }
-        .row-odd { background-color: #f8fafc; }
-        .footer-row td { background-color: #e0f2fe; color: #0369a1; font-weight: bold; font-size: 12px; border: 1px solid #7dd3fc; }
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .text-bold { font-weight: bold; }
-        .font-mono { font-family: 'Courier New', Courier, monospace; font-weight: bold; }
-      </style>
-    </head>
-    <body>
-      <div class="title">${title}</div>
-      <table class="param-table">${paramRowsHtml}</table>
-      <table class="data-table">
-        <thead><tr>${headerHtml}</tr></thead>
-        <tbody>${bodyHtml}</tbody>
-        ${footerHtml}
-      </table>
-    </body>
-    </html>
-  `;
-
-  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${filename}_${new Date().toISOString().split('T')[0]}.xls`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
 interface Tool3StkMultiCycleCalcProps {
   styles: ThemeStyles;
   isLight: boolean;
 }
 
-export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ styles, isLight }) => {
-  const [stkAmountStr, setStkAmountStr] = useState('300.000.000');
-  const [stkRateStr, setStkRateStr] = useState('6.0');
-  const [cycleMonths, setCycleMonths] = useState<number>(6);
-  const [totalCycles, setTotalCycles] = useState<number>(4);
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [rolloverType, setRolloverType] = useState<'compound' | 'simple'>('compound');
+interface CycleRowState extends StkCycleInput {
+  key: number;
+}
 
-  const stkAmt = parseFloat(stkAmountStr.replace(/\D/g, '')) || 0;
-  const stkRateAnnual = parseFloat(stkRateStr) || 0;
+export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ styles }) => {
+  const [loanAmountStr, setLoanAmountStr] = useState('500.000.000');
+  const [loanRateStr, setLoanRateStr] = useState('10.5');
+  const [disbursementDate, setDisbursementDate] = useState('2026-02-27');
+  const [loanDueDate, setLoanDueDate] = useState('2027-02-27');
+  const [savingsAmountStr, setSavingsAmountStr] = useState('500.000.000');
+  const [firstDepositDate, setFirstDepositDate] = useState('2026-02-27');
 
-  const cycleRows = useMemo(() => {
-    if (!stkAmt || !stkRateAnnual || !cycleMonths || !startDate) return [];
+  const [cycles, setCycles] = useState<CycleRowState[]>([
+    { key: 1, tenor: 6, tenorUnit: 'thang', savingsRateAnnual: 0.075, pledgeRatio: 1 },
+    { key: 2, tenor: 6, tenorUnit: 'thang', savingsRateAnnual: 0.068, pledgeRatio: 1 },
+    { key: 3, tenor: 6, tenorUnit: 'thang', savingsRateAnnual: 0.065, pledgeRatio: 1 },
+  ]);
+  const [nextKey, setNextKey] = useState(4);
 
-    const rows: {
-      cycle: number;
-      startDate: string;
-      endDate: string;
-      days: number;
-      beginningBalance: number;
-      interestEarned: number;
-      endingBalance: number;
-    }[] = [];
+  const patchCycle = (key: number, patch: Partial<CycleRowState>) =>
+    setCycles(prev => prev.map(c => (c.key === key ? { ...c, ...patch } : c)));
 
-    let currentBalance = stkAmt;
-    let currStart = startDate;
-
-    for (let c = 1; c <= totalCycles; c++) {
-      const currEnd = addMonths(currStart, cycleMonths);
-      const days = diffDays(currStart, currEnd);
-      const interestEarned = Math.round(currentBalance * (stkRateAnnual / 100) * (days / 365));
-      const endingBalance = rolloverType === 'compound'
-        ? currentBalance + interestEarned
-        : currentBalance;
-
-      rows.push({
-        cycle: c,
-        startDate: currStart,
-        endDate: currEnd,
-        days,
-        beginningBalance: currentBalance,
-        interestEarned,
-        endingBalance: rolloverType === 'compound' ? endingBalance : currentBalance + interestEarned,
-      });
-
-      currStart = currEnd;
-      if (rolloverType === 'compound') {
-        currentBalance = endingBalance;
-      }
-    }
-
-    return rows;
-  }, [stkAmt, stkRateAnnual, cycleMonths, totalCycles, startDate, rolloverType]);
-
-  const totalInterestEarned = cycleRows.reduce((a, r) => a + r.interestEarned, 0);
-
-  const handleExportExcel = () => {
-    if (cycleRows.length === 0) return;
-    const params = [
-      { label: 'Gốc STK ban đầu:', value: `${stkAmt.toLocaleString('vi-VN')} VNĐ` },
-      { label: 'Lãi suất STK:', value: `${stkRateAnnual}%/năm` },
-      { label: 'Kỳ hạn 1 vòng:', value: `${cycleMonths} tháng` },
-      { label: 'Số chu kỳ tái tục:', value: `${totalCycles} chu kỳ` },
-      { label: 'Ngày bắt đầu gửi:', value: fmtDate(startDate) },
-      { label: 'Phương thức quay vòng:', value: rolloverType === 'compound' ? 'Nhập gốc tái tục (Lãi kép)' : 'Rút lãi, quay gốc (Lãi đơn)' },
-    ];
-    const headers = ['Vòng', 'Ngày Bắt Đầu', 'Ngày Đáo Hạn', 'Số Ngày', 'Gốc Vòng Vay', 'Lãi Sinh Ra', 'Giá Trị Cuối Vòng'];
-    const rows = cycleRows.map(r => [
-      `Vòng ${r.cycle}`,
-      fmtDate(r.startDate),
-      fmtDate(r.endDate),
-      r.days,
-      r.beginningBalance,
-      r.interestEarned,
-      r.endingBalance,
-    ]);
-    const footer = ['TỔNG CỘNG', '', '', '', stkAmt, totalInterestEarned, stkAmt + totalInterestEarned];
-    exportToExcelHTML('Du_Phong_Tai_Tuc_STK', 'BẢNG DỰ PHỎNG TÁI TỤC SỔ TIẾT KIỆM NHIỀU KỲ', params, headers, rows, footer);
+  const addCycle = () => {
+    const last = cycles[cycles.length - 1];
+    setCycles(prev => [...prev, {
+      key: nextKey, tenor: 6, tenorUnit: 'thang',
+      savingsRateAnnual: last ? last.savingsRateAnnual : 0.06, pledgeRatio: 1,
+    }]);
+    setNextKey(k => k + 1);
   };
+
+  const removeCycle = (key: number) =>
+    setCycles(prev => (prev.length > 1 ? prev.filter(c => c.key !== key) : prev));
+
+  const result = useMemo(() => buildStkRollover({
+    loanAmount: parseMoneyInput(loanAmountStr),
+    loanRateAnnual: (parseFloat(loanRateStr) || 0) / 100,
+    disbursementDate,
+    loanDueDate,
+    initialSavingsAmount: parseMoneyInput(savingsAmountStr),
+    firstDepositDate,
+    cycles,
+  }), [loanAmountStr, loanRateStr, disbursementDate, loanDueDate, savingsAmountStr, firstDepositDate, cycles]);
+
+  const labelCls = `block mb-1 ${styles.labelStyle}`;
+  const inputCls = `w-full rounded-xl p-2 ${styles.inputStyle}`;
+  const cellCls = `w-full rounded-lg p-1.5 text-[11px] font-mono ${styles.inputStyle}`;
 
   return (
     <div className="space-y-4">
-      <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4`}>
-        <div className="text-xs font-bold text-sky-500 uppercase tracking-wider flex items-center space-x-2 border-b pb-2 border-slate-200 dark:border-slate-800">
+      <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
+        <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm flex items-center space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2">
           <TrendingUp className="w-4 h-4" />
-          <span>THÔNG SỐ CẦM CỐ SỔ TIẾT KIỆM (STK) TÁI TỤC NHIỀU VÒNG</span>
+          <span>BẢNG TÍNH LÃI SỔ TIẾT KIỆM TÁI TỤC NHIỀU KỲ (ACTUAL/365)</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className={`block mb-1 ${styles.labelStyle}`}>Gốc STK ban đầu (VNĐ) *</label>
-            <input
-              type="text"
-              value={stkAmountStr}
-              onChange={e => {
-                const digits = e.target.value.replace(/\D/g, '');
-                setStkAmountStr(digits ? Number(digits).toLocaleString('vi-VN') : '');
-              }}
-              className={`w-full rounded-xl p-2.5 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.inputStyle}`}
-            />
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-sky-500 text-[11px] uppercase">THÔNG TIN KHOẢN VAY</div>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+            <div>
+              <label className={labelCls}>Số tiền vay (VNĐ)</label>
+              <input type="text" value={loanAmountStr}
+                onChange={e => setLoanAmountStr(formatMoneyInput(e.target.value))}
+                className={`${inputCls} font-mono font-bold text-sky-600 dark:text-sky-400`} />
+            </div>
+            <div>
+              <label className={labelCls}>Lãi suất vay (%/năm)</label>
+              <input type="number" step="0.01" value={loanRateStr}
+                onChange={e => setLoanRateStr(e.target.value)} className={`${inputCls} font-mono font-bold`} />
+            </div>
+            <div>
+              <label className={labelCls}>Ngày giải ngân</label>
+              <input type="date" value={disbursementDate} onChange={e => setDisbursementDate(e.target.value)} className={`${inputCls} font-mono`} />
+            </div>
+            <div>
+              <label className={labelCls}>Ngày đáo hạn vay</label>
+              <input type="date" value={loanDueDate} onChange={e => setLoanDueDate(e.target.value)} className={`${inputCls} font-mono`} />
+            </div>
           </div>
-          <div>
-            <label className={`block mb-1 ${styles.labelStyle}`}>Lãi suất STK (%/năm) *</label>
-            <input
-              type="text"
-              value={stkRateStr}
-              onChange={e => setStkRateStr(e.target.value)}
-              className={`w-full rounded-xl p-2.5 font-mono font-bold ${styles.inputStyle}`}
-            />
-          </div>
-          <div>
-            <label className={`block mb-1 ${styles.labelStyle}`}>Kỳ hạn 1 vòng (Tháng) *</label>
-            <input
-              type="number"
-              min={1}
-              max={60}
-              value={cycleMonths}
-              onChange={e => setCycleMonths(Math.max(1, parseInt(e.target.value, 10) || 1))}
-              className={`w-full rounded-xl p-2.5 font-mono font-bold ${styles.inputStyle}`}
-            />
-          </div>
-          <div>
-            <label className={`block mb-1 ${styles.labelStyle}`}>Số chu kỳ tái tục dự phỏng *</label>
-            <input
-              type="number"
-              min={1}
-              max={20}
-              value={totalCycles}
-              onChange={e => setTotalCycles(Math.max(1, parseInt(e.target.value, 10) || 1))}
-              className={`w-full rounded-xl p-2.5 font-mono font-bold ${styles.inputStyle}`}
-            />
+          <div className="text-[11px] text-slate-500">
+            Số ngày vay: <strong className="font-mono">{result.loanDays}</strong> ngày · Tiền lãi vay:{' '}
+            <strong className="font-mono text-sky-600 dark:text-sky-400">{fmtMoney(result.loanInterest)}</strong>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
-          <div>
-            <label className={`block mb-1 ${styles.labelStyle}`}>Phương thức quay vòng STK *</label>
-            <select
-              value={rolloverType}
-              onChange={e => setRolloverType(e.target.value as any)}
-              className={`w-full rounded-xl p-2.5 font-bold ${styles.inputStyle}`}
-            >
-              <option value="compound">Nhập gốc tái tục (Lãi nhập gốc - Lãi kép)</option>
-              <option value="simple">Rút lãi hàng kỳ, chỉ quay vòng gốc ban đầu (Lãi đơn)</option>
-            </select>
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-amber-500 text-[11px] uppercase">SỔ TIẾT KIỆM KỲ ĐẦU</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className={labelCls}>Giá trị gốc kỳ đầu (VNĐ)</label>
+              <input type="text" value={savingsAmountStr}
+                onChange={e => setSavingsAmountStr(formatMoneyInput(e.target.value))}
+                className={`${inputCls} font-mono font-bold text-amber-600 dark:text-amber-400`} />
+            </div>
+            <div>
+              <label className={labelCls}>Ngày gửi kỳ đầu</label>
+              <input type="date" value={firstDepositDate} onChange={e => setFirstDepositDate(e.target.value)} className={`${inputCls} font-mono`} />
+            </div>
           </div>
-          <div>
-            <label className={`block mb-1 ${styles.labelStyle}`}>Ngày bắt đầu gửi *</label>
-            <DateInput
-              value={startDate}
-              onChange={val => setStartDate(val)}
-              className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`}
-            />
+          <div className="text-[11px] text-slate-500">
+            Gốc kỳ sau tự lấy bằng gốc cộng lãi kỳ trước; ngày gửi kỳ sau lấy bằng ngày đáo hạn kỳ trước.
           </div>
         </div>
-      </div>
 
-      <div className={`${styles.containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
-        <div className={`p-3 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
-          <span className="font-bold text-xs uppercase flex items-center space-x-2">
-            <span>BẢNG DỰ PHỎNG CÁC CHU KỲ TÁI TỤC ({cycleRows.length} CHU KỲ)</span>
-          </span>
-          <button
-            type="button"
-            onClick={handleExportExcel}
-            className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Xuất Excel Đẹp (.xls)</span>
+        <div className="flex items-center justify-between">
+          <div className="font-bold text-[11px] uppercase text-slate-500">CHI TIẾT CÁC KỲ SỔ TIẾT KIỆM</div>
+          <button type="button" onClick={addCycle}
+            className="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 shadow-sm transition-colors">
+            <Plus className="w-3.5 h-3.5" /><span>THÊM KỲ</span>
           </button>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className={styles.tableHeaderStyle}>
+          <table className="w-full text-left text-[11px] border-collapse min-w-[940px]">
+            <thead className="bg-slate-100 dark:bg-slate-950 font-bold border-b border-slate-200 dark:border-slate-800">
               <tr>
-                <th className="p-3 text-center whitespace-nowrap">VÒNG TÁI TỤC</th>
-                <th className="p-3 text-center whitespace-nowrap">NGÀY BẮT ĐẦU</th>
-                <th className="p-3 text-center whitespace-nowrap">NGÀY ĐÁO HẠN</th>
-                <th className="p-3 text-center whitespace-nowrap">SỐ NGÀY</th>
-                <th className="p-3 text-right whitespace-nowrap">GỐC VÒNG VAY</th>
-                <th className="p-3 text-right whitespace-nowrap text-amber-600 dark:text-amber-400">LÃI SINH RA</th>
-                <th className="p-3 text-right whitespace-nowrap text-emerald-600 dark:text-emerald-400">GIÁ TRỊ CUỐI VÒNG</th>
+                <th className="p-2 text-center">KỲ</th>
+                <th className="p-2 text-right">GỐC KỲ NÀY</th>
+                <th className="p-2">NGÀY GỬI</th>
+                <th className="p-2 text-center w-20">KỲ HẠN</th>
+                <th className="p-2 w-24">ĐƠN VỊ</th>
+                <th className="p-2">NGÀY ĐÁO HẠN</th>
+                <th className="p-2 text-center w-24">LS SỔ (%)</th>
+                <th className="p-2 text-center">SỐ NGÀY</th>
+                <th className="p-2 text-right">LÃI KỲ NÀY</th>
+                <th className="p-2 text-right">GỐC + LÃI</th>
+                <th className="p-2 text-center w-20">TỶ LỆ CC</th>
+                <th className="p-2 text-right">CẦM CỐ ĐƯỢC</th>
+                <th className="p-2" />
               </tr>
             </thead>
-            <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
-              {cycleRows.map(r => (
-                <tr key={r.cycle} className={styles.tableRowHover}>
-                  <td className="p-3 text-center font-bold font-mono">Vòng #{r.cycle}</td>
-                  <td className="p-3 text-center font-mono">{fmtDate(r.startDate)}</td>
-                  <td className="p-3 text-center font-mono font-bold">{fmtDate(r.endDate)}</td>
-                  <td className="p-3 text-center font-mono">{r.days}d</td>
-                  <td className="p-3 text-right font-mono">{r.beginningBalance.toLocaleString('vi-VN')}</td>
-                  <td className="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">+{r.interestEarned.toLocaleString('vi-VN')}</td>
-                  <td className="p-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">{r.endingBalance.toLocaleString('vi-VN')}</td>
-                </tr>
-              ))}
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              {result.rows.map((row, i) => {
+                const c = cycles[i];
+                return (
+                  <tr key={c.key} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <td className="p-2 text-center font-bold">{row.index}</td>
+                    <td className="p-2 text-right font-mono">{fmtMoney(row.openingPrincipal)}</td>
+                    <td className="p-2 font-mono text-slate-500">{row.depositDate ? fmtDate(row.depositDate) : '—'}</td>
+                    <td className="p-1.5">
+                      <input type="number" min={1} value={c.tenor}
+                        onChange={e => patchCycle(c.key, { tenor: parseInt(e.target.value, 10) || 1 })}
+                        className={`${cellCls} text-center`} />
+                    </td>
+                    <td className="p-1.5">
+                      <select value={c.tenorUnit}
+                        onChange={e => patchCycle(c.key, { tenorUnit: e.target.value as TenorUnit })}
+                        className={cellCls}>
+                        {(Object.keys(TENOR_UNIT_LABELS) as TenorUnit[]).map(u => (
+                          <option key={u} value={u}>{TENOR_UNIT_LABELS[u]}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="p-2 font-mono text-slate-500">{row.dueDate ? fmtDate(row.dueDate) : '—'}</td>
+                    <td className="p-1.5">
+                      <input type="number" step="0.01" value={(c.savingsRateAnnual * 100).toFixed(2)}
+                        onChange={e => patchCycle(c.key, { savingsRateAnnual: (parseFloat(e.target.value) || 0) / 100 })}
+                        className={`${cellCls} text-center font-bold`} />
+                    </td>
+                    <td className="p-2 text-center font-mono">{row.days}</td>
+                    <td className="p-2 text-right font-mono font-bold text-amber-600 dark:text-amber-400">{fmtMoney(row.interest)}</td>
+                    <td className="p-2 text-right font-mono">{fmtMoney(row.closingBalance)}</td>
+                    <td className="p-1.5">
+                      <input type="number" step="1" value={(c.pledgeRatio * 100).toFixed(0)}
+                        onChange={e => patchCycle(c.key, { pledgeRatio: (parseFloat(e.target.value) || 0) / 100 })}
+                        className={`${cellCls} text-center`} />
+                    </td>
+                    <td className="p-2 text-right font-mono text-sky-600 dark:text-sky-400">{fmtMoney(row.pledgeCapacity)}</td>
+                    <td className="p-2 text-center">
+                      <button type="button" onClick={() => removeCycle(c.key)} disabled={cycles.length <= 1}
+                        className="text-slate-400 hover:text-rose-500 disabled:opacity-30 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
-            <tfoot className={`border-t font-bold ${styles.tableHeaderStyle}`}>
-              <tr>
-                <td colSpan={5} className="p-3 text-center">TỔNG CỘNG LÃI TÍCH LŨY DỰ PHỎNG</td>
-                <td className="p-3 text-right text-amber-600 dark:text-amber-400 font-mono text-sm">+{totalInterestEarned.toLocaleString('vi-VN')} VNĐ</td>
-                <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-mono text-sm">{(stkAmt + totalInterestEarned).toLocaleString('vi-VN')} VNĐ</td>
-              </tr>
-            </tfoot>
           </table>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60">
+            <div className="text-[11px] font-bold text-slate-500 uppercase">TỔNG LÃI STK CÁC KỲ</div>
+            <div className="text-lg font-extrabold text-amber-600 dark:text-amber-400 font-mono mt-1">
+              {fmtMoney(result.totalSavingsInterest)}
+            </div>
+            <div className="text-[11px] text-slate-500 mt-0.5">
+              Gốc + lãi cuối cùng: {fmtMoney(result.finalBalance)}
+            </div>
+          </div>
+          <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60">
+            <div className="text-[11px] font-bold text-slate-500 uppercase">TIỀN LÃI VAY PHẢI TRẢ</div>
+            <div className="text-lg font-extrabold text-sky-600 dark:text-sky-400 font-mono mt-1">
+              {fmtMoney(result.loanInterest)}
+            </div>
+            <div className="text-[11px] text-slate-500 mt-0.5">
+              Tổng tiền trả nợ: {fmtMoney(result.totalRepayment)}
+            </div>
+          </div>
+          <div className={`p-4 rounded-2xl border ${
+            result.netGain >= 0
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
+              : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60'
+          }`}>
+            <div className="text-[11px] font-bold text-slate-500 uppercase flex items-center space-x-1.5">
+              {result.netGain >= 0
+                ? <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                : <TrendingDown className="w-3.5 h-3.5 text-rose-500" />}
+              <span>CHÊNH LỆCH</span>
+            </div>
+            <div className={`text-lg font-extrabold font-mono mt-1 ${
+              result.netGain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+            }`}>
+              {fmtMoney(result.netGain)}
+            </div>
+            <div className="text-[11px] text-slate-500 mt-0.5">Tổng lãi sổ − tiền lãi vay</div>
+          </div>
         </div>
       </div>
     </div>

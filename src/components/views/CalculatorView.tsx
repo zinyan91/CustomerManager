@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { getThemeStyles } from '../../lib/themeStyles';
-import { Calculator, Layers, TrendingUp, TrendingDown, ShieldCheck, Award, RefreshCw, BarChart2 } from 'lucide-react';
+import { Calculator, Layers, TrendingUp, TrendingDown, ShieldCheck, Award, RefreshCw, BarChart2, AlertTriangle } from 'lucide-react';
 import { Tool1LoanScheduleCalc } from '../calculator/Tool1LoanScheduleCalc';
 import { Tool2StkSingleCalc } from '../calculator/Tool2StkSingleCalc';
 import { Tool3StkMultiCycleCalc } from '../calculator/Tool3StkMultiCycleCalc';
@@ -10,6 +10,7 @@ import { Tool5CreditCapacityCalc } from '../calculator/Tool5CreditCapacityCalc';
 import { Tool6PrepaymentAnalysisCalc } from '../calculator/Tool6PrepaymentAnalysisCalc';
 import { Tool7RepaymentMethodCompareCalc } from '../calculator/Tool7RepaymentMethodCompareCalc';
 import { Tool8InterestRateConversionCalc } from '../calculator/Tool8InterestRateConversionCalc';
+import { Tool9OverduePenaltyCalc } from '../calculator/Tool9OverduePenaltyCalc';
 
 export const CalculatorView: React.FC = () => {
   const { theme } = useTheme();
@@ -17,7 +18,7 @@ export const CalculatorView: React.FC = () => {
   const styles = getThemeStyles(isLight);
 
   const [activeTool, setActiveTool] = useState<
-    'loan' | 'stk_single' | 'stk_multi' | 'rate_reduction' | 'credit_capacity' | 'prepayment_analysis' | 'repayment_compare' | 'rate_conversion'
+    'loan' | 'stk_single' | 'stk_multi' | 'rate_reduction' | 'credit_capacity' | 'prepayment_analysis' | 'repayment_compare' | 'rate_conversion' | 'overdue_penalty'
   >('rate_reduction');
 
   const toolsList = [
@@ -29,6 +30,7 @@ export const CalculatorView: React.FC = () => {
     { id: 'prepayment_analysis' as const, label: '6. Phân Tích Trả Nợ Trước Hạn', icon: Award },
     { id: 'repayment_compare' as const, label: '7. So Sánh Gốc Đều vs Niên Kim', icon: BarChart2 },
     { id: 'rate_conversion' as const, label: '8. Quy Đổi Lãi Phẳng & EAR', icon: RefreshCw },
+    { id: 'overdue_penalty' as const, label: '9. Tính Phạt Chậm Trả Quá Hạn', icon: AlertTriangle },
   ];
 
   return (
@@ -77,6 +79,9 @@ export const CalculatorView: React.FC = () => {
       )}
       {activeTool === 'rate_conversion' && (
         <Tool8InterestRateConversionCalc styles={styles} isLight={isLight} />
+      )}
+      {activeTool === 'overdue_penalty' && (
+        <Tool9OverduePenaltyCalc styles={styles} isLight={isLight} />
       )}
     </div>
   );

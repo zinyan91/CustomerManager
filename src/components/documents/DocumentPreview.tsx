@@ -117,7 +117,12 @@ function exportToWordDoc(filename: string, docHtml: string) {
           border-collapse: collapse !important;
           border: none !important;
         }
+        div.sig-space {
+          line-height: 1.25 !important;
+          mso-line-height-rule: exactly;
+        }
         table.sig-table td {
+          line-height: 1.25 !important;
           width: 50% !important;
           text-align: center !important;
           vertical-align: top !important;
@@ -169,7 +174,7 @@ function exportToPDFOnly(filename: string, docHtml: string) {
           padding: 0;
         }
         h1 { text-align: center; font-size: 16pt; font-weight: bold; text-transform: uppercase; margin-top: 14pt; margin-bottom: 12pt; }
-        h2 { text-align: center; font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-top: 10pt; margin-bottom: 10pt; }
+        h2 { text-align: left; font-size: 13pt; font-weight: bold; text-transform: uppercase; margin-top: 12pt; margin-bottom: 6pt; }
         p.clause-p { margin-top: 3pt; margin-bottom: 6pt; text-align: justify; text-indent: 1.27cm; line-height: 1.5; }
         .no-indent { text-indent: 0 !important; }
         p.item-p { text-indent: 0; margin: 2pt 0 2pt 14pt; text-align: justify; line-height: 1.5; }
@@ -179,7 +184,8 @@ function exportToPDFOnly(filename: string, docHtml: string) {
         .table-doc { border-collapse: collapse; width: 100%; margin-top: 10pt; margin-bottom: 10pt; }
         .table-doc th, .table-doc td { border: 1px solid #000; padding: 6pt 8pt; font-size: 12pt; }
         .sig-table { width: 100%; margin-top: 30pt; border-collapse: collapse; border: none; }
-        .sig-table td { width: 50%; text-align: center; vertical-align: top; border: none; padding: 0; }
+        .sig-table td { width: 50%; text-align: center; vertical-align: top; border: none; padding: 0; line-height: 1.25; }
+        .sig-space { height: 100px; line-height: 1.25; }
       </style>
     </head>
     <body>
@@ -324,7 +330,12 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
             border-collapse: collapse !important;
             border: none !important;
           }
+          .a4-sheet-container .sig-space {
+            height: 100px !important;
+            line-height: 1.25 !important;
+          }
           .a4-sheet-container .sig-table td {
+            line-height: 1.25 !important;
             width: 50% !important;
             text-align: center !important;
             vertical-align: top !important;

@@ -2,11 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
 import { fmtDate, parseAnyDate, getMasterHdtdNumber } from '../../lib/utils';
 import { assetClassLabel } from '../../lib/collateralMath';
+import {
+  filterByDue, countByDue, buildDueListHtml, openPrintWindow,
+  DUE_FILTER_LABELS, type DueFilter,
+} from '../../lib/dueList';
 import type { Customer, Collateral, LoanContract } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
   DollarSign, Users, Building2, AlertCircle, RefreshCw,
-  Calendar, Clock, ShieldAlert, FileText, AlertTriangle
+  Calendar, Clock, ShieldAlert, FileText, AlertTriangle, Printer
 } from 'lucide-react';
 
 function getDaysUntil(dateStr?: string | null): number | null {
@@ -115,6 +119,9 @@ export const DashboardView: React.FC = () => {
   });
 
   const [onlyGroup1, setOnlyGroup1] = useState(true);
+  const [kunnFilter, setKunnFilter] = useState<DueFilter>('all');
+  const [hmtdFilter, setHmtdFilter] = useState<DueFilter>('all');
+  const [tsbdFilter, setTsbdFilter] = useState<DueFilter>('all');
 
   const activeContracts = contracts.filter(c => !onlyGroup1 || (c.DebtGroup ?? 1) === 1);
 
@@ -188,6 +195,86 @@ export const DashboardView: React.FC = () => {
   }).filter((item): item is NonNullable<typeof item> => {
     return item !== null && item.daysLeft !== null && item.daysLeft <= 30;
   }).sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
+
+  const soNgay = (x: { daysLeft?: number | null }) => x.daysLeft;
+
+  const kunnRows = filterByDue(dueKunnList, kunnFilter, soNgay);
+  const hmtdRows = filterByDue(dueHmtdList, hmtdFilter, soNgay);
+  const tsbdRows = filterByDue(dueCollateralList, tsbdFilter, soNgay);
+
+  const kunnCount = countByDue(dueKunnList, soNgay);
+  const hmtdCount = countByDue(dueHmtdList, soNgay);
+  const tsbdCount = countByDue(dueCollateralList, soNgay);
+
+  const homNay = fmtDate(new Date().toISOString().split('T')[0]);
+
+  const inDanhSach = (
+    title: string,
+    filter: DueFilter,
+    columns: string[],
+    rows: string[][],
+    alignRight: number[]
+  ) => {
+    const html = buildDueListHtml({
+      title,
+      subtitle: `Bộ lọc: ${DUE_FILTER_LABELS[filter]} • ${rows.length} dòng`,
+      columns, rows, alignRight,
+      printedOn: homNay,
+    });
+    if (!openPrintWindow(html)) {
+      window.alert('Trình duyệt đã chặn cửa sổ in. Cho phép pop-up rồi thử lại.');
+    }
+  };
+
+  const inKunn = () => inDanhSach(
+    'Danh sách Giấy nhận nợ (KUNN) sắp đến hạn kết thúc',
+    kunnFilter,
+    ['Khách hàng vay', 'Mã CIF', 'Số HĐTD / KUNN', 'Số tiền KUNN', 'Ngày kết thúc', 'Kỳ hạn', 'Hạn còn lại'],
+    kunnRows.map(({ contract, customer, daysLeft }) => [
+      customer?.FullName || '',
+      customer?.CifKh || '',
+      contract.ContractNumber || '',
+      (contract.LoanAmount || contract.CurrentBalance || 0).toLocaleString('vi-VN') + ' VNĐ',
+      fmtDate(contract.KunnDueDate),
+      contract.KunnTenor || '',
+      daysLeft === null || daysLeft === undefined ? ''
+        : daysLeft < 0 ? `Quá hạn ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`,
+    ]),
+    [3]
+  );
+
+  const inHmtd = () => inDanhSach(
+    'Danh sách Hạn mức tín dụng (HMTD) sắp tới hạn kết thúc',
+    hmtdFilter,
+    ['Khách hàng vay', 'Mã CIF', 'Số HĐTD hạn mức', 'Tổng mức cấp', 'Ngày hết hạn HĐ', 'Hạn còn lại'],
+    hmtdRows.map(({ masterNo, contract, customer, endDateStr, daysLeft }) => [
+      customer?.FullName || '',
+      customer?.CifKh || '',
+      masterNo || '',
+      (contract.ContractAmount || 0).toLocaleString('vi-VN') + ' VNĐ',
+      fmtDate(endDateStr),
+      daysLeft === null || daysLeft === undefined ? ''
+        : daysLeft < 0 ? `Đã hết hạn ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`,
+    ]),
+    [3]
+  );
+
+  const inTsbd = () => inDanhSach(
+    'Danh sách Định giá tài sản bảo đảm sắp tới hạn',
+    tsbdFilter,
+    ['Chủ sở hữu TSBĐ', 'Mã CIF', 'Mã TS / Địa chỉ', 'Xếp loại TS', 'Giá trị định giá', 'Ngày hết hạn định giá', 'Trạng thái'],
+    tsbdRows.map(({ collateral, customer, expiryDateStr, daysLeft }) => [
+      customer?.FullName || '',
+      customer?.CifKh || '',
+      collateral.AssetCode || collateral.Address || '',
+      assetClassLabel(collateral.AssetType),
+      (collateral.AppraisedValue || collateral.Value || 0).toLocaleString('vi-VN') + ' VNĐ',
+      fmtDate(expiryDateStr),
+      daysLeft === null || daysLeft === undefined ? ''
+        : daysLeft < 0 ? `Đã hết hạn định giá ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`,
+    ]),
+    [4]
+  );
 
   const formatMoney = (val: number) => {
     if (val >= 1e9) return (val / 1e9).toFixed(2) + ' Tỷ';
@@ -431,12 +518,33 @@ export const DashboardView: React.FC = () => {
               2. DANH SÁCH GIẤY NHẬN NỢ (KUNN) SẮP ĐẾN HẠN KẾT THÚC
             </h3>
           </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
-            {dueKunnList.filter(i => (i.daysLeft ?? 0) >= 0).length} sắp đến · {dueKunnList.filter(i => (i.daysLeft ?? 0) < 0).length} quá hạn
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+              {kunnCount.upcoming} sắp đến · {kunnCount.expired} quá hạn
+            </span>
+          <div className="flex items-center gap-1.5">
+            {(['all', 'upcoming', 'expired'] as DueFilter[]).map(f => (
+              <button key={f} type="button" onClick={() => setKunnFilter(f)}
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-colors ${
+                  kunnFilter === f
+                    ? 'bg-sky-600 text-white'
+                    : isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800'
+                }`}>
+                {DUE_FILTER_LABELS[f]}
+              </button>
+            ))}
+            <button type="button" onClick={inKunn}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border ${
+                isLight ? 'bg-white border-slate-300 text-slate-600 hover:border-sky-400'
+                        : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-sky-500'
+              }`}>
+              <Printer className="w-3 h-3" />PDF
+            </button>
+          </div>
+        </div>
         </div>
 
-        {dueKunnList.length === 0 ? (
+        {kunnRows.length === 0 ? (
           <div className="text-center py-6 text-xs text-slate-400 italic">
             Không có KUNN nào sắp đến hạn hoặc quá hạn kết thúc.
           </div>
@@ -455,7 +563,7 @@ export const DashboardView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {dueKunnList.map(({ contract, customer, daysLeft }) => {
+                {kunnRows.map(({ contract, customer, daysLeft }) => {
                   const dl = daysLeft ?? 0;
                   const isOverdue = dl < 0;
                   const badgeCls = isOverdue
@@ -496,12 +604,33 @@ export const DashboardView: React.FC = () => {
               3. DANH SÁCH HẠN MỨC TÍN DỤNG (HMTD) SẮP TỚI HẠN KẾT THÚC
             </h3>
           </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
-            {dueHmtdList.filter(i => (i.daysLeft ?? 0) >= 0).length} sắp đến · {dueHmtdList.filter(i => (i.daysLeft ?? 0) < 0).length} quá hạn
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
+              {hmtdCount.upcoming} sắp đến · {hmtdCount.expired} quá hạn
+            </span>
+          <div className="flex items-center gap-1.5">
+            {(['all', 'upcoming', 'expired'] as DueFilter[]).map(f => (
+              <button key={f} type="button" onClick={() => setHmtdFilter(f)}
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-colors ${
+                  hmtdFilter === f
+                    ? 'bg-purple-600 text-white'
+                    : isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800'
+                }`}>
+                {DUE_FILTER_LABELS[f]}
+              </button>
+            ))}
+            <button type="button" onClick={inHmtd}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border ${
+                isLight ? 'bg-white border-slate-300 text-slate-600 hover:border-purple-400'
+                        : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-purple-500'
+              }`}>
+              <Printer className="w-3 h-3" />PDF
+            </button>
+          </div>
+        </div>
         </div>
 
-        {dueHmtdList.length === 0 ? (
+        {hmtdRows.length === 0 ? (
           <div className="text-center py-6 text-xs text-slate-400 italic">
             Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn.
           </div>
@@ -519,7 +648,7 @@ export const DashboardView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {dueHmtdList.map(({ masterNo, contract, customer, endDateStr, daysLeft }) => {
+                {hmtdRows.map(({ masterNo, contract, customer, endDateStr, daysLeft }) => {
                   const days = daysLeft ?? 0;
                   const isOverdue = days < 0;
                   let badgeStyle = '';
@@ -569,12 +698,33 @@ export const DashboardView: React.FC = () => {
               4. DANH SÁCH ĐỊNH GIÁ TÀI SẢN BẢO ĐẢM SẮP TỚI HẠN
             </h3>
           </div>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-            {dueCollateralList.length} tài sản
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              {tsbdCount.upcoming} sắp đến · {tsbdCount.expired} quá hạn
+            </span>
+          <div className="flex items-center gap-1.5">
+            {(['all', 'upcoming', 'expired'] as DueFilter[]).map(f => (
+              <button key={f} type="button" onClick={() => setTsbdFilter(f)}
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-colors ${
+                  tsbdFilter === f
+                    ? 'bg-emerald-600 text-white'
+                    : isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800'
+                }`}>
+                {DUE_FILTER_LABELS[f]}
+              </button>
+            ))}
+            <button type="button" onClick={inTsbd}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border ${
+                isLight ? 'bg-white border-slate-300 text-slate-600 hover:border-emerald-400'
+                        : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-emerald-500'
+              }`}>
+              <Printer className="w-3 h-3" />PDF
+            </button>
+          </div>
+        </div>
         </div>
 
-        {dueCollateralList.length === 0 ? (
+        {tsbdRows.length === 0 ? (
           <div className="text-center py-6 text-xs text-slate-400 italic">
             Không có Định giá TSĐB nào sắp hết hạn trong 30 ngày tới.
           </div>
@@ -593,7 +743,7 @@ export const DashboardView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                {dueCollateralList.map(({ collateral, customer, expiryDateStr, daysLeft }) => {
+                {tsbdRows.map(({ collateral, customer, expiryDateStr, daysLeft }) => {
                   const days = daysLeft ?? 0;
                   let badgeStyle = '';
                   let statusText = '';

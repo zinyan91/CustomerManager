@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { getThemeStyles } from '../../lib/themeStyles';
 import { fmtDate } from '../../lib/utils';
+import { moneyTextToWords, moneyToVietnameseWords } from '../../lib/numberToWords';
 import { TemplateSelector, TEMPLATE_LIST, type TemplateType } from '../documents/TemplateSelector';
 import { DocumentForm, type SaleItem } from '../documents/DocumentForm';
 import { DEFAULT_DEPOSIT_CONTRACT, type DepositContractData } from '../documents/depositContract';
@@ -171,9 +172,7 @@ export const DocumentTemplateView: React.FC = () => {
         <div class="text-center no-indent">
           <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
           <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
-          <div style="text-align: center; margin: 4px 0;" class="no-indent">
-            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
-          </div>
+          <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">----------o0o----------</div>
         </div>
         <div class="text-center pt-2 pb-2 no-indent">
           <h1>HỢP ĐỒNG THUÊ MẶT BẰNG KINH DOANH</h1>
@@ -181,16 +180,16 @@ export const DocumentTemplateView: React.FC = () => {
         </div>
         <p class="clause-p">Hôm nay, ngày ${fmtDate(mbContractDate)}, tại địa chỉ ${nfc(mbLocation)}, chúng tôi gồm có:</p>
         <p class="font-bold no-indent">BÊN CHO THUÊ (BÊN A):</p>
-        <p class="clause-p">- Họ và tên: <strong>${nfc(mbPartyAName)}</strong> | CCCD số: <strong>${mbPartyACccd}</strong> do Cục Cảnh sát QLHC về TTXH cấp ngày ${mbPartyACccdDate}.</p>
-        <p class="clause-p">- Địa chỉ thường trú: ${nfc(mbPartyAAddress)}.</p>
+        <p class="item-p">- Họ và tên: <strong>${nfc(mbPartyAName)}</strong> | CCCD số: <strong>${mbPartyACccd}</strong> do Cục Cảnh sát QLHC về TTXH cấp ngày ${mbPartyACccdDate}.</p>
+        <p class="item-p">- Địa chỉ thường trú: ${nfc(mbPartyAAddress)}.</p>
         <p class="font-bold no-indent pt-2">BÊN THUÊ (BÊN B):</p>
-        <p class="clause-p">- Họ và tên: <strong>${nfc(mbPartyBName)}</strong> | CCCD số: <strong>${mbPartyBCccd}</strong> do Cục Cảnh sát QLHC về TTXH cấp ngày ${mbPartyBCccdDate}.</p>
-        <p class="clause-p">- Địa chỉ thường trú: ${nfc(mbPartyBAddress)}.</p>
+        <p class="item-p">- Họ và tên: <strong>${nfc(mbPartyBName)}</strong> | CCCD số: <strong>${mbPartyBCccd}</strong> do Cục Cảnh sát QLHC về TTXH cấp ngày ${mbPartyBCccdDate}.</p>
+        <p class="item-p">- Địa chỉ thường trú: ${nfc(mbPartyBAddress)}.</p>
         <h2>ĐIỀU 1: NỘI DUNG HỢP ĐỒNG</h2>
         <p class="clause-p">Bên A đồng ý cho Bên B thuê mặt bằng kinh doanh tại địa chỉ: <strong>${nfc(mbLocation)}</strong>.</p>
         <p class="clause-p">Thời hạn thuê là 12 tháng kể từ ngày <strong>${fmtDate(mbStartDate)}</strong> đến hết ngày <strong>${fmtDate(mbEndDate)}</strong>.</p>
         <h2>ĐIỀU 2: GIÁ THUÊ VÀ ĐẶT CỌC</h2>
-        <p class="clause-p">1. Giá thuê mặt bằng là: <strong>${mbMonthlyPrice} VNĐ/tháng</strong> (Bằng chữ: Năm mươi lăm triệu đồng mỗi tháng).</p>
+        <p class="clause-p">1. Giá thuê mặt bằng là: <strong>${mbMonthlyPrice} VNĐ/tháng</strong> (Bằng chữ: ${moneyTextToWords(mbMonthlyPrice)} mỗi tháng).</p>
         <p class="clause-p">2. Tiền đặt cọc bảo đảm thực hiện hợp đồng là: <strong>${mbDepositAmount} VNĐ</strong>.</p>
         <table class="sig-table font-serif">
           <tbody>
@@ -198,13 +197,13 @@ export const DocumentTemplateView: React.FC = () => {
               <td>
                 <div class="font-bold uppercase">BÊN CHO THUÊ (BÊN A)</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(mbPartyAName)}</div>
               </td>
               <td>
                 <div class="font-bold uppercase">BÊN THUÊ (BÊN B)</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(mbPartyBName)}</div>
               </td>
             </tr>
@@ -220,9 +219,7 @@ export const DocumentTemplateView: React.FC = () => {
         <div class="text-center no-indent">
           <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
           <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
-          <div style="text-align: center; margin: 4px 0;" class="no-indent">
-            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
-          </div>
+          <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">----------o0o----------</div>
         </div>
         <div class="text-center pt-2 pb-2 no-indent">
           <h1>HỢP ĐỒNG ĐẶT CỌC</h1>
@@ -231,47 +228,47 @@ export const DocumentTemplateView: React.FC = () => {
         <p class="clause-p">Chúng tôi gồm có:</p>
 
         <p class="font-bold no-indent">I. BÊN MUA: (Gọi tắt là bên A)</p>
-        <p class="clause-p">- ${nfc(d.buyerTitle)}: <strong>${nfc(d.buyerName)}</strong> &nbsp;|&nbsp; Sinh năm: ${nfc(d.buyerBirthYear)}</p>
-        <p class="clause-p">- CCCD số: <strong>${nfc(d.buyerCccd)}</strong> &nbsp;|&nbsp; Cấp ngày: ${nfc(d.buyerCccdDate)} &nbsp;|&nbsp; Cấp tại: ${nfc(d.buyerCccdPlace)}</p>
-        <p class="clause-p">- HKTT: ${nfc(d.buyerAddress)}</p>
+        <p class="item-p">- ${nfc(d.buyerTitle)}: <strong>${nfc(d.buyerName)}</strong> &nbsp;|&nbsp; Sinh năm: ${nfc(d.buyerBirthYear)}</p>
+        <p class="item-p">- CCCD số: <strong>${nfc(d.buyerCccd)}</strong> &nbsp;|&nbsp; Cấp ngày: ${nfc(d.buyerCccdDate)} &nbsp;|&nbsp; Cấp tại: ${nfc(d.buyerCccdPlace)}</p>
+        <p class="item-p">- HKTT: ${nfc(d.buyerAddress)}</p>
 
         <p class="font-bold no-indent pt-2">II. BÊN BÁN: (Gọi tắt là bên B)</p>
-        <p class="clause-p">- ${nfc(d.sellerTitle)}: <strong>${nfc(d.sellerName)}</strong> &nbsp;|&nbsp; Sinh năm: ${nfc(d.sellerBirthYear)}</p>
-        <p class="clause-p">- CCCD số: <strong>${nfc(d.sellerCccd)}</strong> &nbsp;|&nbsp; Cấp ngày: ${nfc(d.sellerCccdDate)} &nbsp;|&nbsp; Cấp tại: ${nfc(d.sellerCccdPlace)}</p>
-        <p class="clause-p">- HKTT: ${nfc(d.sellerAddress)}</p>
+        <p class="item-p">- ${nfc(d.sellerTitle)}: <strong>${nfc(d.sellerName)}</strong> &nbsp;|&nbsp; Sinh năm: ${nfc(d.sellerBirthYear)}</p>
+        <p class="item-p">- CCCD số: <strong>${nfc(d.sellerCccd)}</strong> &nbsp;|&nbsp; Cấp ngày: ${nfc(d.sellerCccdDate)} &nbsp;|&nbsp; Cấp tại: ${nfc(d.sellerCccdPlace)}</p>
+        <p class="item-p">- HKTT: ${nfc(d.sellerAddress)}</p>
 
         <p class="clause-p pt-2">Hai bên đồng ý và thống nhất thỏa thuận như sau:</p>
 
         <h2>III. ĐỐI TƯỢNG CỦA HỢP ĐỒNG</h2>
         <p class="clause-p">Bên B đồng ý bán cho bên A phần đất và tài sản trên đất:</p>
-        <p class="clause-p">- Thửa đất số: <strong>${nfc(d.parcelNo)}</strong> &nbsp;|&nbsp; Tờ bản đồ số: <strong>${nfc(d.mapSheetNo)}</strong></p>
-        <p class="clause-p">- Diện tích: <strong>${nfc(d.area)} m²</strong> (Bằng chữ: ${nfc(d.areaInWords)}).</p>
-        <p class="clause-p">- Địa chỉ thửa đất: ${nfc(d.parcelAddress)}</p>
-        <p class="clause-p">- Loại đất: Đất ở tại đô thị: <strong>${nfc(d.urbanResidentialArea)} m²</strong> &nbsp;|&nbsp; Đất trồng cây lâu năm: <strong>${nfc(d.perennialCropArea)} m²</strong></p>
-        <p class="clause-p">- Giấy CNQSDĐ số <strong>${nfc(d.certificateNo)}</strong>, vào sổ cấp GCN số: <strong>${nfc(d.certificateBookNo)}</strong> do ${nfc(d.certificateIssuer)} cấp ngày ${nfc(d.certificateDate)}.</p>
+        <p class="item-p">- Thửa đất số: <strong>${nfc(d.parcelNo)}</strong> &nbsp;|&nbsp; Tờ bản đồ số: <strong>${nfc(d.mapSheetNo)}</strong></p>
+        <p class="item-p">- Diện tích: <strong>${nfc(d.area)} m²</strong> (Bằng chữ: ${nfc(d.areaInWords)}).</p>
+        <p class="item-p">- Địa chỉ thửa đất: ${nfc(d.parcelAddress)}</p>
+        <p class="item-p">- Loại đất: Đất ở tại đô thị: <strong>${nfc(d.urbanResidentialArea)} m²</strong> &nbsp;|&nbsp; Đất trồng cây lâu năm: <strong>${nfc(d.perennialCropArea)} m²</strong></p>
+        <p class="item-p">- Giấy CNQSDĐ số <strong>${nfc(d.certificateNo)}</strong>, vào sổ cấp GCN số: <strong>${nfc(d.certificateBookNo)}</strong> do ${nfc(d.certificateIssuer)} cấp ngày ${nfc(d.certificateDate)}.</p>
 
         <h2>IV. GIÁ CẢ VÀ PHƯƠNG THỨC THANH TOÁN</h2>
-        <p class="clause-p">- Giá chuyển nhượng: <strong>${nfc(d.transferPrice)}đ</strong> (${nfc(d.transferPriceInWords)})</p>
-        <p class="clause-p">- Hình thức thanh toán:</p>
-        <p class="clause-p">- Lần 1: Bên A đặt cọc cho bên B số tiền <strong>${nfc(d.deposit1)} đồng</strong> (Bằng chữ: ${nfc(d.deposit1InWords)}) ngay khi ký hợp đồng này.</p>
-        <p class="clause-p">- Lần 2: Bên A sẽ tiếp tục thanh toán cho bên B số tiền <strong>${nfc(d.payment2)} đồng</strong> (Bằng chữ: ${nfc(d.payment2InWords)})</p>
-        <p class="clause-p">- Các khoản phí, lệ phí: thuế thu nhập cá nhân ${taxLabel(d.incomeTaxBy)} chịu, ${taxLabel(d.registrationTaxBy)} chịu thuế trước bạ sang tên.</p>
+        <p class="item-p">- Giá chuyển nhượng: <strong>${nfc(d.transferPrice)}đ</strong> (Bằng chữ: ${moneyTextToWords(d.transferPrice)})</p>
+        <p class="item-p">- Hình thức thanh toán:</p>
+        <p class="item-p">- Lần 1: Bên A đặt cọc cho bên B số tiền <strong>${nfc(d.deposit1)} đồng</strong> (Bằng chữ: ${moneyTextToWords(d.deposit1)}) ngay khi ký hợp đồng này.</p>
+        <p class="item-p">- Lần 2: Bên A sẽ tiếp tục thanh toán cho bên B số tiền <strong>${nfc(d.payment2)} đồng</strong> (Bằng chữ: ${moneyTextToWords(d.payment2)})</p>
+        <p class="item-p">- Các khoản phí, lệ phí: thuế thu nhập cá nhân ${taxLabel(d.incomeTaxBy)} chịu, ${taxLabel(d.registrationTaxBy)} chịu thuế trước bạ sang tên.</p>
 
         <h2>V. THỎA THUẬN CHUNG</h2>
         <p class="clause-p">Bên B cam kết phần đất chuyển nhượng có nguồn gốc hợp pháp, hiện tại không tranh chấp, không thế chấp, không cho tặng, không góp vốn, không có đồng sở hữu nào khác, chưa sang nhượng cho bất kỳ ai và không bị kê biên để thi hành án.</p>
         <p class="clause-p">Nếu xảy ra sai phạm các vấn đề trên làm ảnh hưởng tới việc chuyển nhượng QSDĐ thì bên B chịu hoàn toàn trách nhiệm trước pháp luật.</p>
-        <p class="clause-p">- Nếu bên B đổi ý không bán đất cho bên A nữa với bất kỳ lý do gì, hoặc thực hiện sai hẹn theo thời gian thỏa thuận thì bên B phải trả lại tiền cọc cho bên A và bồi thường cho bên A số tiền gấp 2 lần số tiền mà bên B đã nhận cọc.</p>
-        <p class="clause-p">- Nếu bên A đổi ý không mua đất của bên B nữa với bất kỳ lý do gì, hoặc thực hiện sai hẹn theo thời gian thỏa thuận thì bên A sẽ mất toàn bộ số tiền đã đặt cọc cho bên B.</p>
-        <p class="clause-p">- Trong thời gian thực hiện hợp đồng mà có những tranh chấp về ranh đất, diện tích đất không đúng theo sổ đất, dính quy hoạch thì bên B phải trả lại cho bên A số tiền đã nhận cọc.</p>
-        <p class="clause-p">- Trong thời gian thực hiện hợp đồng bên A được quyền bán lại cho bên thứ 3, bên B có trách nhiệm thay mặt bên A ký bán cho bên thứ 3, số tiền chênh lệch bên A được hưởng.</p>
+        <p class="item-p">- Nếu bên B đổi ý không bán đất cho bên A nữa với bất kỳ lý do gì, hoặc thực hiện sai hẹn theo thời gian thỏa thuận thì bên B phải trả lại tiền cọc cho bên A và bồi thường cho bên A số tiền gấp 2 lần số tiền mà bên B đã nhận cọc.</p>
+        <p class="item-p">- Nếu bên A đổi ý không mua đất của bên B nữa với bất kỳ lý do gì, hoặc thực hiện sai hẹn theo thời gian thỏa thuận thì bên A sẽ mất toàn bộ số tiền đã đặt cọc cho bên B.</p>
+        <p class="item-p">- Trong thời gian thực hiện hợp đồng mà có những tranh chấp về ranh đất, diện tích đất không đúng theo sổ đất, dính quy hoạch thì bên B phải trả lại cho bên A số tiền đã nhận cọc.</p>
+        <p class="item-p">- Trong thời gian thực hiện hợp đồng bên A được quyền bán lại cho bên thứ 3, bên B có trách nhiệm thay mặt bên A ký bán cho bên thứ 3, số tiền chênh lệch bên A được hưởng.</p>
 
         <h2>VI. PHƯƠNG THỨC GIẢI QUYẾT TRANH CHẤP</h2>
-        <p class="clause-p">- Trong quá trình thực hiện hợp đồng mà phát sinh tranh chấp, các bên cùng nhau thương lượng giải quyết trên nguyên tắc tôn trọng quyền lợi của nhau. Trong trường hợp không giải quyết được thì một trong hai bên có quyền khởi kiện để yêu cầu Tòa án có thẩm quyền giải quyết theo quy định của pháp luật. Mọi tranh chấp sẽ được phán xử theo quy định của luật pháp của Việt Nam.</p>
+        <p class="item-p">- Trong quá trình thực hiện hợp đồng mà phát sinh tranh chấp, các bên cùng nhau thương lượng giải quyết trên nguyên tắc tôn trọng quyền lợi của nhau. Trong trường hợp không giải quyết được thì một trong hai bên có quyền khởi kiện để yêu cầu Tòa án có thẩm quyền giải quyết theo quy định của pháp luật. Mọi tranh chấp sẽ được phán xử theo quy định của luật pháp của Việt Nam.</p>
 
         <h2>VII. ĐIỀU KHOẢN CUỐI CÙNG</h2>
-        <p class="clause-p">- Hai bên công nhận đã hiểu rõ quyền, nghĩa vụ và lợi ích hợp pháp của mình, ý nghĩa và hậu quả pháp lý của việc giao kết Hợp đồng này.</p>
-        <p class="clause-p">- Hai bên cam kết thực hiện đúng các điều khoản trong hợp đồng.</p>
-        <p class="clause-p">- Hai bên đã tự đọc hợp đồng, đã hiểu và đồng ý tất cả các điều khoản ghi trong hợp đồng và ký vào hợp đồng này trước sự có mặt của người làm chứng.</p>
+        <p class="item-p">- Hai bên công nhận đã hiểu rõ quyền, nghĩa vụ và lợi ích hợp pháp của mình, ý nghĩa và hậu quả pháp lý của việc giao kết Hợp đồng này.</p>
+        <p class="item-p">- Hai bên cam kết thực hiện đúng các điều khoản trong hợp đồng.</p>
+        <p class="item-p">- Hai bên đã tự đọc hợp đồng, đã hiểu và đồng ý tất cả các điều khoản ghi trong hợp đồng và ký vào hợp đồng này trước sự có mặt của người làm chứng.</p>
         <p class="clause-p">Hợp đồng đặt cọc này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi bên giữ 01 (một) bản.</p>
 
         <p class="clause-p text-right font-italic pt-3">${nfc(d.signPlace)}, ngày ${fmtDate(d.signDate)}</p>
@@ -282,19 +279,19 @@ export const DocumentTemplateView: React.FC = () => {
               <td style="width: 33%;">
                 <div class="font-bold uppercase">BÊN A</div>
                 <div class="font-italic text-[11pt]">(Ký, ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(d.buyerName)}</div>
               </td>
               <td style="width: 34%;">
                 <div class="font-bold uppercase">NGƯỜI LÀM CHỨNG</div>
                 <div class="font-italic text-[11pt]">(Ký, ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">&nbsp;</div>
               </td>
               <td style="width: 33%;">
                 <div class="font-bold uppercase">BÊN B</div>
                 <div class="font-italic text-[11pt]">(Ký, ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(d.sellerName)}</div>
               </td>
             </tr>
@@ -308,33 +305,31 @@ export const DocumentTemplateView: React.FC = () => {
         <div class="text-center no-indent">
           <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
           <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
-          <div style="text-align: center; margin: 4px 0;" class="no-indent">
-            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
-          </div>
+          <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">----------o0o----------</div>
         </div>
         <div class="text-center pt-2 pb-2 no-indent">
           <h1>HỢP ĐỒNG THUÊ NHÀ</h1>
         </div>
-        <p class="clause-p">- Căn cứ Bộ luật Dân sự số 91/2015/QH13 ngày 24/11/2015;</p>
-        <p class="clause-p">- Căn cứ Luật Thương mại số 36/2005/QH11 ngày 14 tháng 06 năm 2005;</p>
-        <p class="clause-p">- Căn cứ vào nhu cầu và sự thỏa thuận của các bên tham gia Hợp đồng;</p>
+        <p class="item-p">- Căn cứ Bộ luật Dân sự số 91/2015/QH13 ngày 24/11/2015;</p>
+        <p class="item-p">- Căn cứ Luật Thương mại số 36/2005/QH11 ngày 14 tháng 06 năm 2005;</p>
+        <p class="item-p">- Căn cứ vào nhu cầu và sự thỏa thuận của các bên tham gia Hợp đồng;</p>
         <p class="clause-p">Hôm nay, ngày ${fmtDate(mbContractDate)}, các Bên gồm:</p>
 
         <p class="font-bold no-indent">BÊN CHO THUÊ (BÊN A):</p>
-        <p class="clause-p">- Ông/bà: <strong>${nfc(mbPartyAName)}</strong></p>
-        <p class="clause-p">- CCCD số: <strong>${mbPartyACccd}</strong> | Ngày cấp: ${mbPartyACccdDate} | Nơi cấp: Cục Cảnh sát QLHC về TTXH.</p>
-        <p class="clause-p">- Nơi ĐKTT: ${nfc(mbPartyAAddress)}.</p>
+        <p class="item-p">- Ông/bà: <strong>${nfc(mbPartyAName)}</strong></p>
+        <p class="item-p">- CCCD số: <strong>${mbPartyACccd}</strong> | Ngày cấp: ${mbPartyACccdDate} | Nơi cấp: Cục Cảnh sát QLHC về TTXH.</p>
+        <p class="item-p">- Nơi ĐKTT: ${nfc(mbPartyAAddress)}.</p>
         <p class="font-bold no-indent pt-2">BÊN THUÊ (BÊN B):</p>
-        <p class="clause-p">- Ông/bà: <strong>${nfc(mbPartyBName)}</strong></p>
-        <p class="clause-p">- CCCD số: <strong>${mbPartyBCccd}</strong> | Ngày cấp: ${mbPartyBCccdDate} | Nơi cấp: Cục Cảnh sát QLHC về TTXH.</p>
-        <p class="clause-p">- Nơi ĐKTT: ${nfc(mbPartyBAddress)}.</p>
+        <p class="item-p">- Ông/bà: <strong>${nfc(mbPartyBName)}</strong></p>
+        <p class="item-p">- CCCD số: <strong>${mbPartyBCccd}</strong> | Ngày cấp: ${mbPartyBCccdDate} | Nơi cấp: Cục Cảnh sát QLHC về TTXH.</p>
+        <p class="item-p">- Nơi ĐKTT: ${nfc(mbPartyBAddress)}.</p>
         <p class="clause-p">Bên A và Bên B sau đây gọi chung là “Hai Bên” hoặc “Các Bên”.</p>
         <p class="clause-p">Sau khi thảo luận, Hai Bên thống nhất đi đến ký kết Hợp đồng thuê nhà (“Hợp Đồng”) với các điều khoản và điều kiện dưới đây:</p>
 
         <h2>Điều 1: Nhà ở và các tài sản cho thuê kèm theo nhà ở</h2>
         <p class="clause-p">1.1. Bên A đồng ý cho Bên B thuê và Bên B cũng đồng ý thuê quyền sử dụng đất và một căn nhà <strong>${nfc(lhFloors)}</strong> tầng gắn liền với quyền sử dụng đất tại địa chỉ: <strong>${nfc(mbLocation)}</strong> để sử dụng làm nơi để ở.</p>
-        <p class="clause-p">- Diện tích quyền sử dụng đất: <strong>${nfc(lhLandArea)} m²</strong>;</p>
-        <p class="clause-p">- Diện tích căn nhà: <strong>${nfc(lhHouseArea)} m²</strong>;</p>
+        <p class="item-p">- Diện tích quyền sử dụng đất: <strong>${nfc(lhLandArea)} m²</strong>;</p>
+        <p class="item-p">- Diện tích căn nhà: <strong>${nfc(lhHouseArea)} m²</strong>;</p>
         <p class="clause-p">1.2. Bên A cam kết quyền sử dụng đất và căn nhà gắn liền trên đất trên là tài sản sở hữu hợp pháp của Bên A. Mọi tranh chấp phát sinh từ tài sản cho thuê trên Bên A hoàn toàn chịu trách nhiệm trước pháp luật.</p>
 
         <h2>Điều 2: Bàn giao và sử dụng diện tích thuê</h2>
@@ -363,37 +358,37 @@ export const DocumentTemplateView: React.FC = () => {
 
         <h2>Điều 7: Quyền và nghĩa vụ của bên cho thuê nhà</h2>
         <p class="clause-p"><strong>7.1. Quyền lợi</strong></p>
-        <p class="clause-p">- Yêu cầu Bên B thanh toán tiền thuê và chi phí khác đầy đủ, đúng hạn theo thoả thuận trong Hợp Đồng;</p>
-        <p class="clause-p">- Yêu cầu Bên B phải sửa chữa phần hư hỏng, thiệt hại do lỗi của Bên B gây ra.</p>
+        <p class="item-p">- Yêu cầu Bên B thanh toán tiền thuê và chi phí khác đầy đủ, đúng hạn theo thoả thuận trong Hợp Đồng;</p>
+        <p class="item-p">- Yêu cầu Bên B phải sửa chữa phần hư hỏng, thiệt hại do lỗi của Bên B gây ra.</p>
         <p class="clause-p"><strong>7.2. Nghĩa vụ</strong></p>
-        <p class="clause-p">- Bàn giao diện tích thuê cho Bên B theo đúng thời gian quy định trong Hợp đồng;</p>
-        <p class="clause-p">- Đảm bảo việc cho thuê theo Hợp đồng này là đúng quy định của pháp luật;</p>
-        <p class="clause-p">- Đảm bảo cho Bên B thực hiện quyền sử dụng diện tích thuê một cách độc lập và liên tục trong suốt thời hạn thuê, trừ trường hợp vi phạm pháp luật và/hoặc các quy định của Hợp đồng này;</p>
-        <p class="clause-p">- Không xâm phạm trái phép đến tài sản của Bên B trong phần diện tích thuê. Nếu Bên A có những hành vi vi phạm gây thiệt hại cho Bên B trong thời gian thuê thì Bên A phải bồi thường;</p>
-        <p class="clause-p">- Tuân thủ các nghĩa vụ khác theo thoả thuận tại Hợp đồng này hoặc/và các văn bản kèm theo Hợp đồng này; hoặc/và theo quy định của pháp luật Việt Nam.</p>
+        <p class="item-p">- Bàn giao diện tích thuê cho Bên B theo đúng thời gian quy định trong Hợp đồng;</p>
+        <p class="item-p">- Đảm bảo việc cho thuê theo Hợp đồng này là đúng quy định của pháp luật;</p>
+        <p class="item-p">- Đảm bảo cho Bên B thực hiện quyền sử dụng diện tích thuê một cách độc lập và liên tục trong suốt thời hạn thuê, trừ trường hợp vi phạm pháp luật và/hoặc các quy định của Hợp đồng này;</p>
+        <p class="item-p">- Không xâm phạm trái phép đến tài sản của Bên B trong phần diện tích thuê. Nếu Bên A có những hành vi vi phạm gây thiệt hại cho Bên B trong thời gian thuê thì Bên A phải bồi thường;</p>
+        <p class="item-p">- Tuân thủ các nghĩa vụ khác theo thoả thuận tại Hợp đồng này hoặc/và các văn bản kèm theo Hợp đồng này; hoặc/và theo quy định của pháp luật Việt Nam.</p>
 
         <h2>Điều 8: Quyền và nghĩa vụ của bên thuê nhà</h2>
         <p class="clause-p"><strong>8.1. Quyền lợi</strong></p>
-        <p class="clause-p">- Nhận bàn giao diện tích thuê theo đúng thoả thuận trong Hợp đồng;</p>
-        <p class="clause-p">- Được sử dụng phần diện tích thuê làm nơi ở và các hoạt động hợp pháp khác;</p>
-        <p class="clause-p">- Yêu cầu Bên A sửa chữa kịp thời những hư hỏng không phải do lỗi của Bên B trong phần diện tích thuê để bảo đảm an toàn;</p>
-        <p class="clause-p">- Được tháo dỡ và đem ra khỏi phần diện tích thuê các tài sản, trang thiết bị của Bên B đã lắp đặt trong phần diện tích thuê khi hết thời hạn thuê hoặc đơn phương chấm dứt hợp đồng.</p>
+        <p class="item-p">- Nhận bàn giao diện tích thuê theo đúng thoả thuận trong Hợp đồng;</p>
+        <p class="item-p">- Được sử dụng phần diện tích thuê làm nơi ở và các hoạt động hợp pháp khác;</p>
+        <p class="item-p">- Yêu cầu Bên A sửa chữa kịp thời những hư hỏng không phải do lỗi của Bên B trong phần diện tích thuê để bảo đảm an toàn;</p>
+        <p class="item-p">- Được tháo dỡ và đem ra khỏi phần diện tích thuê các tài sản, trang thiết bị của Bên B đã lắp đặt trong phần diện tích thuê khi hết thời hạn thuê hoặc đơn phương chấm dứt hợp đồng.</p>
         <p class="clause-p"><strong>8.2. Nghĩa vụ</strong></p>
-        <p class="clause-p">- Sử dụng diện tích thuê đúng mục đích đã thỏa thuận, giữ gìn nhà ở và có trách nhiệm trong việc sửa chữa những hư hỏng do mình gây ra;</p>
-        <p class="clause-p">- Thanh toán tiền đặt cọc, tiền thuê đầy đủ, đúng thời hạn đã thỏa thuận;</p>
-        <p class="clause-p">- Trả lại diện tích thuê cho Bên A khi hết thời hạn thuê hoặc chấm dứt Hợp đồng thuê;</p>
-        <p class="clause-p">- Mọi việc sửa chữa, cải tạo, lắp đặt bổ sung các trang thiết bị làm ảnh hưởng đến kết cấu của căn phòng, Bên B phải có văn bản thông báo cho Bên A và chỉ được tiến hành các công việc này sau khi có sự đồng ý bằng văn bản của Bên A;</p>
-        <p class="clause-p">- Tuân thủ một cách chặt chẽ quy định tại Hợp đồng này và các quy định của pháp luật Việt Nam.</p>
+        <p class="item-p">- Sử dụng diện tích thuê đúng mục đích đã thỏa thuận, giữ gìn nhà ở và có trách nhiệm trong việc sửa chữa những hư hỏng do mình gây ra;</p>
+        <p class="item-p">- Thanh toán tiền đặt cọc, tiền thuê đầy đủ, đúng thời hạn đã thỏa thuận;</p>
+        <p class="item-p">- Trả lại diện tích thuê cho Bên A khi hết thời hạn thuê hoặc chấm dứt Hợp đồng thuê;</p>
+        <p class="item-p">- Mọi việc sửa chữa, cải tạo, lắp đặt bổ sung các trang thiết bị làm ảnh hưởng đến kết cấu của căn phòng, Bên B phải có văn bản thông báo cho Bên A và chỉ được tiến hành các công việc này sau khi có sự đồng ý bằng văn bản của Bên A;</p>
+        <p class="item-p">- Tuân thủ một cách chặt chẽ quy định tại Hợp đồng này và các quy định của pháp luật Việt Nam.</p>
 
         <h2>Điều 9: Đơn phương chấm dứt hợp đồng thuê nhà</h2>
         <p class="clause-p">Trong trường hợp một trong Hai Bên muốn đơn phương chấm dứt Hợp đồng trước hạn thì phải thông báo bằng văn bản cho bên kia trước 30 (ba mươi) ngày so với ngày mong muốn chấm dứt.</p>
         <p class="clause-p">Nếu một trong Hai Bên không thực hiện nghĩa vụ thông báo cho Bên kia thì sẽ phải bồi thường cho bên đó một khoản tiền thuê tương đương với thời gian không thông báo và các thiệt hại khác phát sinh do việc chấm dứt Hợp đồng trái quy định.</p>
 
         <h2>Điều 10: Điều khoản thi hành</h2>
-        <p class="clause-p">- Hợp đồng này có hiệu lực kể từ ngày hai bên cùng ký kết;</p>
-        <p class="clause-p">- Các Bên cam kết thực hiện nghiêm chỉnh và đầy đủ các thoả thuận trong Hợp đồng này trên tinh thần hợp tác, thiện chí;</p>
-        <p class="clause-p">- Mọi sửa đổi, bổ sung đối với bất kỳ điều khoản nào của Hợp đồng phải được lập thành văn bản, có đầy đủ chữ ký của mỗi Bên. Văn bản sửa đổi bổ sung Hợp đồng có giá trị pháp lý như Hợp đồng, là một phần không tách rời của Hợp đồng này;</p>
-        <p class="clause-p">- Hợp đồng được lập thành 02 (hai) bản có giá trị như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.</p>
+        <p class="item-p">- Hợp đồng này có hiệu lực kể từ ngày hai bên cùng ký kết;</p>
+        <p class="item-p">- Các Bên cam kết thực hiện nghiêm chỉnh và đầy đủ các thoả thuận trong Hợp đồng này trên tinh thần hợp tác, thiện chí;</p>
+        <p class="item-p">- Mọi sửa đổi, bổ sung đối với bất kỳ điều khoản nào của Hợp đồng phải được lập thành văn bản, có đầy đủ chữ ký của mỗi Bên. Văn bản sửa đổi bổ sung Hợp đồng có giá trị pháp lý như Hợp đồng, là một phần không tách rời của Hợp đồng này;</p>
+        <p class="item-p">- Hợp đồng được lập thành 02 (hai) bản có giá trị như nhau, mỗi Bên giữ 01 (một) bản để thực hiện.</p>
 
         <table class="sig-table font-serif">
           <tbody>
@@ -401,13 +396,13 @@ export const DocumentTemplateView: React.FC = () => {
               <td>
                 <div class="font-bold uppercase">BÊN CHO THUÊ</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(mbPartyAName)}</div>
               </td>
               <td>
                 <div class="font-bold uppercase">BÊN THUÊ</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(mbPartyBName)}</div>
               </td>
             </tr>
@@ -421,9 +416,7 @@ export const DocumentTemplateView: React.FC = () => {
         <div class="text-center no-indent">
           <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
           <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
-          <div style="text-align: center; margin: 4px 0;" class="no-indent">
-            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
-          </div>
+          <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">----------o0o----------</div>
         </div>
         <div class="text-center pt-3 pb-1 no-indent">
           <h1>HỢP ĐỒNG THI CÔNG NHÀ Ở DÂN DỤNG</h1>
@@ -449,73 +442,73 @@ export const DocumentTemplateView: React.FC = () => {
         <p class="clause-p">Bên B nhận thi công/sửa chữa nhà ở dân dụng tại địa chỉ: <strong>${nfc(constSiteAddress)}</strong>.</p>
         <p class="clause-p"><strong>2. Phạm vi công việc mà Bên B đảm nhận:</strong></p>
         <p class="clause-p">Bên B nhận thực hiện toàn bộ phần nhân công (hoặc cả nhân công + vật liệu, tùy thỏa thuận) cho các hạng mục sau:</p>
-        <p class="clause-p">- Sửa chữa/tân trang phần tường: trát, bả, sơn lại toàn bộ các mảng tường bị hư hỏng.</p>
-        <p class="clause-p">- Thay thế hoặc lát lại gạch nền, sàn theo mẫu Bên A đã lựa chọn.</p>
-        <p class="clause-p">- Thi công hệ thống điện nước: đi lại đường dây điện, thay ổ cắm, công tắc, thay đường ống cấp – thoát nước hỏng.</p>
-        <p class="clause-p">- Sửa chữa, thay mới cửa, mái tôn, lan can, cầu thang (nếu có).</p>
-        <p class="clause-p">- Các hạng mục khác theo phụ lục kèm theo hợp đồng (nếu có).</p>
+        <p class="item-p">- Sửa chữa/tân trang phần tường: trát, bả, sơn lại toàn bộ các mảng tường bị hư hỏng.</p>
+        <p class="item-p">- Thay thế hoặc lát lại gạch nền, sàn theo mẫu Bên A đã lựa chọn.</p>
+        <p class="item-p">- Thi công hệ thống điện nước: đi lại đường dây điện, thay ổ cắm, công tắc, thay đường ống cấp – thoát nước hỏng.</p>
+        <p class="item-p">- Sửa chữa, thay mới cửa, mái tôn, lan can, cầu thang (nếu có).</p>
+        <p class="item-p">- Các hạng mục khác theo phụ lục kèm theo hợp đồng (nếu có).</p>
         <p class="clause-p"><strong>3. Chất lượng &amp; tiêu chuẩn kỹ thuật:</strong></p>
-        <p class="clause-p">- Công việc thi công/sửa chữa phải đảm bảo đúng quy trình xây dựng dân dụng, an toàn lao động và tiêu chuẩn chất lượng theo thỏa thuận.</p>
-        <p class="clause-p">- Vật liệu (nếu Bên B cung cấp) phải đúng chủng loại, nhãn hiệu và chất lượng theo cam kết với Bên A.</p>
+        <p class="item-p">- Công việc thi công/sửa chữa phải đảm bảo đúng quy trình xây dựng dân dụng, an toàn lao động và tiêu chuẩn chất lượng theo thỏa thuận.</p>
+        <p class="item-p">- Vật liệu (nếu Bên B cung cấp) phải đúng chủng loại, nhãn hiệu và chất lượng theo cam kết với Bên A.</p>
 
         <h2>Điều 2: Thời gian và tiến độ thực hiện</h2>
-        <p class="clause-p">- Ngày khởi công: <strong>${fmtDate(constStartDate)}</strong>.</p>
-        <p class="clause-p">- Ngày hoàn thành dự kiến: <strong>${fmtDate(constEndDate)}</strong>.</p>
-        <p class="clause-p">- Tổng thời gian thực hiện dự kiến: <strong>${constDurationMonths}</strong> (không tính Thứ 7, Chủ nhật).</p>
+        <p class="item-p">- Ngày khởi công: <strong>${fmtDate(constStartDate)}</strong>.</p>
+        <p class="item-p">- Ngày hoàn thành dự kiến: <strong>${fmtDate(constEndDate)}</strong>.</p>
+        <p class="item-p">- Tổng thời gian thực hiện dự kiến: <strong>${constDurationMonths}</strong> (không tính Thứ 7, Chủ nhật).</p>
         <p class="clause-p">Trường hợp bất khả kháng (thiên tai, dịch bệnh, thay đổi thiết kế theo yêu cầu Bên A), hai bên sẽ điều chỉnh tiến độ bằng văn bản.</p>
 
         <h2>Điều 3: Giá trị hợp đồng và phương thức thanh toán</h2>
-        <p class="clause-p">- Tổng giá trị hợp đồng: <strong>${constTotalPrice} VNĐ</strong>.</p>
-        <p class="clause-p">- Phương thức thanh toán:</p>
-        <p class="clause-p">- Đợt 1: Bên A thanh toán cho Bên B số tiền là: <strong>${constDepositStage1} VNĐ</strong>.</p>
-        <p class="clause-p">- Đợt 2: Số tiền còn lại là <strong>${constStage2Amount} VNĐ</strong> sẽ được Bên A thanh toán toàn bộ trước khi bàn giao hoàn thiện công trình.</p>
+        <p class="item-p">- Tổng giá trị hợp đồng: <strong>${constTotalPrice} VNĐ</strong>.</p>
+        <p class="item-p">- Phương thức thanh toán:</p>
+        <p class="item-p">- Đợt 1: Bên A thanh toán cho Bên B số tiền là: <strong>${constDepositStage1} VNĐ</strong>.</p>
+        <p class="item-p">- Đợt 2: Số tiền còn lại là <strong>${constStage2Amount} VNĐ</strong> sẽ được Bên A thanh toán toàn bộ trước khi bàn giao hoàn thiện công trình.</p>
 
         <h2>Điều 4: Quyền và nghĩa vụ của các bên</h2>
         <p class="clause-p"><strong>1. Quyền và nghĩa vụ của Bên A:</strong></p>
         <p class="clause-p"><em>a. Quyền lợi:</em></p>
-        <p class="clause-p">- Yêu cầu Bên B thi công đúng tiến độ, đúng chất lượng, đúng thiết kế/hạng mục đã thỏa thuận.</p>
-        <p class="clause-p">- Giám sát, kiểm tra quá trình thi công; có quyền tạm ngừng hoặc từ chối nghiệm thu nếu công trình không đạt yêu cầu.</p>
-        <p class="clause-p">- Yêu cầu thay đổi vật liệu, biện pháp thi công nếu phát hiện không phù hợp (khi đó hai bên phải lập biên bản điều chỉnh).</p>
+        <p class="item-p">- Yêu cầu Bên B thi công đúng tiến độ, đúng chất lượng, đúng thiết kế/hạng mục đã thỏa thuận.</p>
+        <p class="item-p">- Giám sát, kiểm tra quá trình thi công; có quyền tạm ngừng hoặc từ chối nghiệm thu nếu công trình không đạt yêu cầu.</p>
+        <p class="item-p">- Yêu cầu thay đổi vật liệu, biện pháp thi công nếu phát hiện không phù hợp (khi đó hai bên phải lập biên bản điều chỉnh).</p>
         <p class="clause-p"><em>b. Nghĩa vụ:</em></p>
-        <p class="clause-p">- Bàn giao mặt bằng thi công sạch sẽ, an toàn, đúng thời gian.</p>
-        <p class="clause-p">- Thanh toán đúng hạn, đủ số tiền theo tiến độ hợp đồng.</p>
-        <p class="clause-p">- Cung cấp điện, nước sinh hoạt/tạm thời phục vụ thi công (nếu có thỏa thuận).</p>
-        <p class="clause-p">- Phối hợp giải quyết các vấn đề phát sinh liên quan đến hàng xóm, chính quyền địa phương trong quá trình thi công.</p>
+        <p class="item-p">- Bàn giao mặt bằng thi công sạch sẽ, an toàn, đúng thời gian.</p>
+        <p class="item-p">- Thanh toán đúng hạn, đủ số tiền theo tiến độ hợp đồng.</p>
+        <p class="item-p">- Cung cấp điện, nước sinh hoạt/tạm thời phục vụ thi công (nếu có thỏa thuận).</p>
+        <p class="item-p">- Phối hợp giải quyết các vấn đề phát sinh liên quan đến hàng xóm, chính quyền địa phương trong quá trình thi công.</p>
         <p class="clause-p"><strong>2. Quyền và nghĩa vụ của Bên B:</strong></p>
         <p class="clause-p"><em>a. Quyền lợi:</em></p>
-        <p class="clause-p">- Nhận đủ và đúng hạn số tiền theo hợp đồng.</p>
-        <p class="clause-p">- Được quyền tạm ngừng thi công nếu Bên A không thực hiện nghĩa vụ thanh toán theo thỏa thuận (sau khi đã có văn bản thông báo).</p>
+        <p class="item-p">- Nhận đủ và đúng hạn số tiền theo hợp đồng.</p>
+        <p class="item-p">- Được quyền tạm ngừng thi công nếu Bên A không thực hiện nghĩa vụ thanh toán theo thỏa thuận (sau khi đã có văn bản thông báo).</p>
         <p class="clause-p"><em>b. Nghĩa vụ:</em></p>
-        <p class="clause-p">- Thi công đúng thiết kế, đúng quy chuẩn xây dựng, đảm bảo chất lượng và an toàn lao động.</p>
-        <p class="clause-p">- Chịu trách nhiệm về nhân công, phương tiện, máy móc, thiết bị phục vụ thi công.</p>
-        <p class="clause-p">- Không tự ý thay đổi vật liệu, chủng loại, thiết kế nếu chưa có sự đồng ý bằng văn bản của Bên A.</p>
-        <p class="clause-p">- Giữ gìn vệ sinh, an toàn khu vực thi công; hạn chế tiếng ồn, bụi bẩn gây ảnh hưởng đến môi trường và hàng xóm.</p>
-        <p class="clause-p">- Sửa chữa, khắc phục các hư hỏng, sai sót trong quá trình thi công do lỗi của Bên B.</p>
-        <p class="clause-p">- Thực hiện bảo hành công trình trong thời gian đã cam kết tại Điều 5.</p>
+        <p class="item-p">- Thi công đúng thiết kế, đúng quy chuẩn xây dựng, đảm bảo chất lượng và an toàn lao động.</p>
+        <p class="item-p">- Chịu trách nhiệm về nhân công, phương tiện, máy móc, thiết bị phục vụ thi công.</p>
+        <p class="item-p">- Không tự ý thay đổi vật liệu, chủng loại, thiết kế nếu chưa có sự đồng ý bằng văn bản của Bên A.</p>
+        <p class="item-p">- Giữ gìn vệ sinh, an toàn khu vực thi công; hạn chế tiếng ồn, bụi bẩn gây ảnh hưởng đến môi trường và hàng xóm.</p>
+        <p class="item-p">- Sửa chữa, khắc phục các hư hỏng, sai sót trong quá trình thi công do lỗi của Bên B.</p>
+        <p class="item-p">- Thực hiện bảo hành công trình trong thời gian đã cam kết tại Điều 5.</p>
 
         <h2>Điều 5: Nghiệm thu, bàn giao và bảo hành</h2>
-        <p class="clause-p">- Hai bên tiến hành nghiệm thu theo từng giai đoạn và nghiệm thu tổng thể khi công trình hoàn thành.</p>
-        <p class="clause-p">- Thời gian bảo hành: <strong>${nfc(constWarrantyMonths)} tháng</strong> kể từ ngày bàn giao. Bảo hành chỉ áp dụng với lỗi kỹ thuật trong quá trình thi công, không áp dụng cho hao mòn tự nhiên hoặc tác động bên ngoài (ngập nước, hỏa hoạn, thiên tai, tự ý thay đổi kết cấu công trình...).</p>
-        <p class="clause-p">- Trong thời gian bảo hành, Bên B có trách nhiệm sửa chữa, khắc phục miễn phí các lỗi do thi công.</p>
+        <p class="item-p">- Hai bên tiến hành nghiệm thu theo từng giai đoạn và nghiệm thu tổng thể khi công trình hoàn thành.</p>
+        <p class="item-p">- Thời gian bảo hành: <strong>${nfc(constWarrantyMonths)} tháng</strong> kể từ ngày bàn giao. Bảo hành chỉ áp dụng với lỗi kỹ thuật trong quá trình thi công, không áp dụng cho hao mòn tự nhiên hoặc tác động bên ngoài (ngập nước, hỏa hoạn, thiên tai, tự ý thay đổi kết cấu công trình...).</p>
+        <p class="item-p">- Trong thời gian bảo hành, Bên B có trách nhiệm sửa chữa, khắc phục miễn phí các lỗi do thi công.</p>
 
         <h2>Điều 6: Điều khoản chung</h2>
-        <p class="clause-p">- Hợp đồng có hiệu lực từ ngày ký.</p>
-        <p class="clause-p">- Mọi sửa đổi, bổ sung phải được lập thành văn bản và có chữ ký của hai bên.</p>
-        <p class="clause-p">- Trường hợp phát sinh tranh chấp, hai bên cùng thương lượng; nếu không giải quyết được sẽ đưa ra Tòa án có thẩm quyền.</p>
-        <p class="clause-p">- Hợp đồng được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản.</p>
+        <p class="item-p">- Hợp đồng có hiệu lực từ ngày ký.</p>
+        <p class="item-p">- Mọi sửa đổi, bổ sung phải được lập thành văn bản và có chữ ký của hai bên.</p>
+        <p class="item-p">- Trường hợp phát sinh tranh chấp, hai bên cùng thương lượng; nếu không giải quyết được sẽ đưa ra Tòa án có thẩm quyền.</p>
+        <p class="item-p">- Hợp đồng được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ 01 bản.</p>
         <table class="sig-table font-serif">
           <tbody>
             <tr>
               <td>
                 <div class="font-bold uppercase">BÊN THUÊ THI CÔNG (BÊN A)</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(constPartyAName)}</div>
               </td>
               <td>
                 <div class="font-bold uppercase">BÊN NHẬN THI CÔNG (BÊN B)</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(constPartyBName)}</div>
               </td>
             </tr>
@@ -543,9 +536,7 @@ export const DocumentTemplateView: React.FC = () => {
         <div class="text-center no-indent">
           <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
           <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
-          <div style="text-align: center; margin: 4px 0;" class="no-indent">
-            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
-          </div>
+          <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">----------o0o----------</div>
         </div>
 
         <div class="text-center pt-3 pb-2 no-indent">
@@ -595,13 +586,13 @@ export const DocumentTemplateView: React.FC = () => {
               <td>
                 <div class="font-bold uppercase">ĐẠI DIỆN BÊN A</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(constPartyAName)}</div>
               </td>
               <td>
                 <div class="font-bold uppercase">ĐẠI DIỆN BÊN B</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(constPartyBName)}</div>
               </td>
             </tr>
@@ -626,9 +617,7 @@ export const DocumentTemplateView: React.FC = () => {
         <div class="text-center no-indent">
           <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
           <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
-          <div style="text-align: center; margin: 4px 0;" class="no-indent">
-            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
-          </div>
+          <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">----------o0o----------</div>
         </div>
         <div class="text-center pt-2 pb-2 no-indent">
           <h1>HỢP ĐỒNG MUA BÁN HÀNG HOÁ</h1>
@@ -637,12 +626,17 @@ export const DocumentTemplateView: React.FC = () => {
         <p class="clause-p">Hôm nay, ngày 9 tháng 4 năm 2026, chúng tôi gồm có:</p>
 
         <p class="font-bold no-indent">BÊN MUA: (Sau đây gọi tắt là Bên A)</p>
-        <p class="clause-p">- Họ tên: <strong>${nfc(saleBuyerName)}</strong></p>
-        <p class="clause-p">- Địa chỉ: <strong>${nfc(saleBuyerAddress)}</strong></p>
+        <p class="item-p">- Họ tên: <strong>${nfc(saleBuyerName)}</strong></p>
+        <p class="item-p">- Địa chỉ: <strong>${nfc(saleBuyerAddress)}</strong></p>
 
         <p class="font-bold no-indent pt-2">BÊN BÁN: (Sau đây gọi tắt là Bên B)</p>
-        <p class="clause-p">- Họ tên: <strong>${nfc(saleSellerName)}</strong></p>
-        <p class="clause-p">- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: <strong>${nfc(saleSellerCccdDate)}</strong> &nbsp;|&nbsp; Nơi cấp: <strong>${nfc(saleSellerCccdPlace)}</strong></p>
+        <p class="item-p">- Họ tên: <strong>${nfc(saleSellerName)}</strong></p>
+        ${salePayMethod === 'cash' ? `
+        <p class="item-p">- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: <strong>${nfc(saleSellerCccdDate)}</strong> &nbsp;|&nbsp; Nơi cấp: <strong>${nfc(saleSellerCccdPlace)}</strong></p>
+        ` : `
+        <p class="item-p">- Chủ tài khoản: <strong>${nfc(saleBankOwner || saleSellerName)}</strong></p>
+        <p class="item-p">- Số tài khoản: <strong>${nfc(saleBankAccNo)}</strong> &nbsp;|&nbsp; Ngân hàng: <strong>${nfc(saleBankName)}</strong>${saleBankBranch ? ` &nbsp;|&nbsp; Chi nhánh: <strong>${nfc(saleBankBranch)}</strong>` : ''}</p>
+        `}
 
         <p class="clause-p pt-2">Hai bên A và B thống nhất thoả thuận nội dung Hợp đồng như sau:</p>
 
@@ -668,51 +662,39 @@ export const DocumentTemplateView: React.FC = () => {
         </table>
 
         <h2>ĐIỀU 2: THỜI HẠN HỢP ĐỒNG</h2>
-        <p class="clause-p">– Thời hạn Hợp đồng là: 01 tháng kể từ ngày 09/04/2026 đến ngày 09/05/2026</p>
+        <p class="item-p">– Thời hạn Hợp đồng là: 01 tháng kể từ ngày 09/04/2026 đến ngày 09/05/2026</p>
 
         <h2>ĐIỀU 3: THỜI HẠN VÀ PHƯƠNG THỨC THANH TOÁN</h2>
-        <p class="clause-p">– Tổng số tiền Bên Mua phải thanh toán cho Bên Bán là: <strong>${totalSaleAmount.toLocaleString('vi-VN')} đồng</strong></p>
-        <p class="clause-p">(Bằng chữ: Năm trăm chín mươi ba triệu sáu trăm nghìn đồng)</p>
+        <p class="item-p">– Tổng số tiền Bên Mua phải thanh toán cho Bên Bán là: <strong>${totalSaleAmount.toLocaleString('vi-VN')} đồng</strong></p>
+        <p class="clause-p">(Bằng chữ: ${moneyToVietnameseWords(totalSaleAmount)})</p>
         <p class="clause-p"><strong>1. Thời hạn thanh toán:</strong></p>
         <p class="clause-p">Mỗi một lô hàng khi Bên B xuất ra cho Bên A thì Bên A sẽ thanh toán như sau:</p>
-        <p class="clause-p">– Lần 1: Bên A thanh toán cho Bên B số tiền là: <strong>${salePaymentStage1} đồng</strong></p>
-        <p class="clause-p">– Lần 2: Số tiền còn lại sẽ được Bên A thanh toán toàn bộ trước khi nhận hàng dựa trên phiếu đề nghị thanh toán</p>
-        <p class="clause-p"><strong>2. Phương thức thanh toán:</strong> Thanh toán bằng tiền mặt hoặc chuyển khoản.</p>
-        <p class="clause-p">Bên A thanh toán cho Bên B theo hình thức <strong>${salePayMethod === 'cash' ? 'tiền mặt' : 'chuyển khoản'}</strong>, thông tin cụ thể như sau:</p>
-        ${salePayMethod === 'cash' ? `
-        <p class="clause-p" style="margin-left: 24px;">– Người nhận tiền: <strong>${nfc(saleSellerName)}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– CCCD số: <strong>${nfc(saleSellerCccd)}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– Ngày cấp: <strong>${saleSellerCccdDate}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– Nơi cấp: <strong>${nfc(saleSellerCccdPlace)}</strong></p>
-        ` : `
-        <p class="clause-p" style="margin-left: 24px;">– Chủ tài khoản: <strong>${nfc(saleBankOwner || saleSellerName)}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– Số tài khoản: <strong>${nfc(saleBankAccNo)}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– Ngân hàng: <strong>${nfc(saleBankName)}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– Chi nhánh: <strong>${nfc(saleBankBranch)}</strong></p>
-        `}
+        <p class="item-p">– Lần 1: Bên A thanh toán cho Bên B số tiền là: <strong>${salePaymentStage1} đồng</strong></p>
+        <p class="item-p">– Lần 2: Số tiền còn lại sẽ được Bên A thanh toán toàn bộ trước khi nhận hàng dựa trên phiếu đề nghị thanh toán</p>
+        <p class="clause-p"><strong>2. Phương thức thanh toán:</strong> Bên A thanh toán cho Bên B bằng hình thức <strong>${salePayMethod === 'cash' ? 'tiền mặt' : 'chuyển khoản'}</strong>, theo thông tin Bên B đã nêu tại phần đầu Hợp đồng này.</p>
 
         <h2>ĐIỀU 4: THỜI ĐIỂM VÀ ĐỊA ĐIỂM CHUYỂN GIAO TÀI SẢN</h2>
         <p class="clause-p">Bên bán chuyển giao tài sản cho Bên mua trong thời hạn 30 ngày kể từ ngày ký kết hợp đồng.</p>
 
         <h2>ĐIỀU 5: NGHĨA VỤ CỦA BÊN BÁN</h2>
-        <p class="clause-p">- Bên Bán chịu trách nhiệm về số lượng, chất lượng đối với toàn bộ các sản phẩm do Bên Bán cung cấp.</p>
-        <p class="clause-p">- Bên Bán có nghĩa vụ cung cấp mọi chỉ dẫn cần thiết đối với việc bảo quản, sử dụng hàng hoá theo quy định của Hợp đồng này cho Bên mua.</p>
+        <p class="item-p">- Bên Bán chịu trách nhiệm về số lượng, chất lượng đối với toàn bộ các sản phẩm do Bên Bán cung cấp.</p>
+        <p class="item-p">- Bên Bán có nghĩa vụ cung cấp mọi chỉ dẫn cần thiết đối với việc bảo quản, sử dụng hàng hoá theo quy định của Hợp đồng này cho Bên mua.</p>
 
         <h2>ĐIỀU 6: NGHĨA VỤ CỦA BÊN MUA</h2>
-        <p class="clause-p">- Bên mua có nghĩa vụ thanh toán toàn bộ chi phí vận chuyển</p>
-        <p class="clause-p">- Tổ chức tiếp nhận nhanh, an toàn, dứt điểm cho từng lô hàng.</p>
-        <p class="clause-p">- Thanh toán theo quy định tại Điều 7 Hợp đồng này.</p>
+        <p class="item-p">- Bên mua có nghĩa vụ thanh toán toàn bộ chi phí vận chuyển</p>
+        <p class="item-p">- Tổ chức tiếp nhận nhanh, an toàn, dứt điểm cho từng lô hàng.</p>
+        <p class="item-p">- Thanh toán theo quy định tại Điều 7 Hợp đồng này.</p>
 
         <h2>ĐIỀU 7: CÁC TRƯỜNG HỢP CHẤM DỨT HỢP ĐỒNG</h2>
         <p class="clause-p">Hợp đồng này sẽ được chấm dứt trong các trường hợp sau:</p>
-        <p class="clause-p">- Khi các Bên thực hiện xong các quyền và nghĩa vụ quy định trong Hợp đồng này.</p>
-        <p class="clause-p">- Khi một Bên vi phạm hợp đồng dẫn đến Hợp đồng không thể thực hiện được thì phía Bên kia có quyền đơn phương chấm dứt hợp đồng.</p>
-        <p class="clause-p">- Hợp đồng có thể được chấm dứt do sự thỏa thuận của các Bên.</p>
+        <p class="item-p">- Khi các Bên thực hiện xong các quyền và nghĩa vụ quy định trong Hợp đồng này.</p>
+        <p class="item-p">- Khi một Bên vi phạm hợp đồng dẫn đến Hợp đồng không thể thực hiện được thì phía Bên kia có quyền đơn phương chấm dứt hợp đồng.</p>
+        <p class="item-p">- Hợp đồng có thể được chấm dứt do sự thỏa thuận của các Bên.</p>
 
         <h2>ĐIỀU 8: HIỆU LỰC THI HÀNH</h2>
-        <p class="clause-p">- Hợp đồng này có hiệu lực kể từ ngày ký, và chỉ được coi là kết thúc khi các Bên đã hoàn thành các nghĩa vụ của mình trong Hợp đồng.</p>
-        <p class="clause-p">- Trong trường hợp một Bên muốn sửa đổi các điều khoản trong hợp đồng thì phải thông báo cho Bên kia biết trước ít nhất là 03 ngày và cùng nhau thoả thuận lại những điểm cần thay đổi với sự đồng ý của hai Bên.</p>
-        <p class="clause-p">- Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, các bản có giá trị pháp lý như nhau.</p>
+        <p class="item-p">- Hợp đồng này có hiệu lực kể từ ngày ký, và chỉ được coi là kết thúc khi các Bên đã hoàn thành các nghĩa vụ của mình trong Hợp đồng.</p>
+        <p class="item-p">- Trong trường hợp một Bên muốn sửa đổi các điều khoản trong hợp đồng thì phải thông báo cho Bên kia biết trước ít nhất là 03 ngày và cùng nhau thoả thuận lại những điểm cần thay đổi với sự đồng ý của hai Bên.</p>
+        <p class="item-p">- Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, các bản có giá trị pháp lý như nhau.</p>
 
         <table class="sig-table font-serif">
           <tbody>
@@ -720,13 +702,13 @@ export const DocumentTemplateView: React.FC = () => {
               <td>
                 <div class="font-bold uppercase">ĐẠI DIỆN BÊN BÁN</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(saleSellerName)}</div>
               </td>
               <td>
                 <div class="font-bold uppercase">ĐẠI DIỆN BÊN MUA</div>
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-                <div style="height: 70px;"></div>
+                <div style="height: 100px;"></div>
                 <div class="font-bold uppercase">${nfc(saleBuyerName)}</div>
               </td>
             </tr>
@@ -766,18 +748,18 @@ export const DocumentTemplateView: React.FC = () => {
       const cccdPlace = payCashCccdPlace || 'CCS QLHC về TTXH';
 
       infoHtml = `
-        <p class="clause-p" style="margin-left: 24px;">– Họ & tên: <strong>${nfc(name)}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– CCCD số: <strong>${nfc(cccd)}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– Ngày cấp: <strong>${nfc(cccdDate)}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– Nơi cấp: <strong>${nfc(cccdPlace)}</strong></p>
+        <p class="item-p" style="margin-left: 38px;">– Họ & tên: <strong>${nfc(name)}</strong></p>
+        <p class="item-p" style="margin-left: 38px;">– CCCD số: <strong>${nfc(cccd)}</strong></p>
+        <p class="item-p" style="margin-left: 38px;">– Ngày cấp: <strong>${nfc(cccdDate)}</strong></p>
+        <p class="item-p" style="margin-left: 38px;">– Nơi cấp: <strong>${nfc(cccdPlace)}</strong></p>
       `;
     } else {
       const owner = payBankOwner || sellerName;
       infoHtml = `
-        <p class="clause-p" style="margin-left: 24px;">– Họ tên chủ tài khoản: <strong>${nfc(owner)}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– Số tài khoản: <strong>${nfc(payBankAccNo)}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– Ngân hàng: <strong>${nfc(payBankName)}</strong></p>
-        <p class="clause-p" style="margin-left: 24px;">– Chi nhánh: <strong>${nfc(payBankBranch)}</strong></p>
+        <p class="item-p" style="margin-left: 38px;">– Họ tên chủ tài khoản: <strong>${nfc(owner)}</strong></p>
+        <p class="item-p" style="margin-left: 38px;">– Số tài khoản: <strong>${nfc(payBankAccNo)}</strong></p>
+        <p class="item-p" style="margin-left: 38px;">– Ngân hàng: <strong>${nfc(payBankName)}</strong></p>
+        <p class="item-p" style="margin-left: 38px;">– Chi nhánh: <strong>${nfc(payBankBranch)}</strong></p>
       `;
     }
 
@@ -785,9 +767,7 @@ export const DocumentTemplateView: React.FC = () => {
       <div class="text-center no-indent">
         <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
         <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
-        <div style="text-align: center; margin: 4px 0;" class="no-indent">
-          <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
-        </div>
+        <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">----------o0o----------</div>
       </div>
 
       <div class="text-right font-italic text-[12pt] pt-2 pb-2 no-indent">
@@ -798,12 +778,12 @@ export const DocumentTemplateView: React.FC = () => {
         <h1>GIẤY ĐỀ NGHỊ THANH TOÁN</h1>
       </div>
 
-      <p class="clause-p">Kính gửi: <strong>Bà/Ông ${nfc(buyerName)}</strong></p>
+      <p class="clause-p">Kính gửi: <strong>${nfc(buyerName)}</strong></p>
 
-      <p class="clause-p">Căn cứ ${docTypeTitle} ký ngày: <strong>${fmtDate(contractDateStr)}</strong> giữa Bà/Ông ${nfc(buyerName)} và Ông/Bà ${nfc(sellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
+      <p class="clause-p">Căn cứ ${docTypeTitle} ký ngày: <strong>${fmtDate(contractDateStr)}</strong> giữa ${nfc(buyerName)} và ${nfc(sellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
 
       <p class="clause-p"><strong>1. Giá trị hợp đồng:</strong> <strong>${totalAmountStr} đồng</strong></p>
-      <p class="clause-p" style="margin-left: 24px;">(Bằng chữ: ${isSale ? 'Năm trăm chín mươi ba triệu sáu trăm nghìn đồng' : 'Một tỷ không trăm lẻ ba triệu bảy trăm ngàn đồng'})</p>
+      <p class="item-p" style="margin-left: 38px;">(Bằng chữ: ${moneyTextToWords(totalAmountStr)})</p>
 
       <p class="clause-p"><strong>2. Thời hạn thanh toán:</strong></p>
       ${stagesHtml}
@@ -822,7 +802,7 @@ export const DocumentTemplateView: React.FC = () => {
             <td style="width: 50%; text-align: center;">
               <div class="font-bold uppercase">Người đề nghị thanh toán</div>
               <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
-              <div style="height: 70px;"></div>
+              <div style="height: 100px;"></div>
               <div class="font-bold uppercase">${nfc(payMethodType === 'cash' ? (payCashName || sellerName) : (payBankOwner || sellerName))}</div>
             </td>
           </tr>

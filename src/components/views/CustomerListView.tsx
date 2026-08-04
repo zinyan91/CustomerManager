@@ -252,9 +252,8 @@ export const CustomerListView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
       {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${
-          notification.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300' : 'bg-red-950/90 border-red-500/40 text-red-300'
-        }`}>
+        <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300' : 'bg-red-950/90 border-red-500/40 text-red-300'
+          }`}>
           {notification.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           <span>{notification.message}</span>
         </div>
@@ -262,7 +261,7 @@ export const CustomerListView: React.FC = () => {
 
       <div className={`${containerCardBg} p-4 rounded-2xl border space-y-3`}>
         <div className="text-xs font-bold text-sky-500 uppercase tracking-wider">
-          TRA CỨU & QUẢN LÝ DANH SÁCH KHÁCH HÀNG (SẮP XẾP A - Z)
+          TRA CỨU & QUẢN LÝ DANH SÁCH KHÁCH HÀNG
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <input
@@ -295,9 +294,8 @@ export const CustomerListView: React.FC = () => {
           </button>
 
           <div className="flex items-center space-x-2">
-            <label className={`flex-1 border font-medium text-xs py-2 px-2 rounded-xl flex items-center justify-center space-x-1 cursor-pointer transition-colors ${
-              isLight ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800' : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
-            }`}>
+            <label className={`flex-1 border font-medium text-xs py-2 px-2 rounded-xl flex items-center justify-center space-x-1 cursor-pointer transition-colors ${isLight ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800' : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+              }`}>
               <Upload className="w-3.5 h-3.5 text-sky-500" />
               <span>NHẬP CSV</span>
               <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
@@ -305,9 +303,8 @@ export const CustomerListView: React.FC = () => {
 
             <button
               onClick={handleExportCSV}
-              className={`flex-1 border font-medium text-xs py-2 px-2 rounded-xl flex items-center justify-center space-x-1 transition-colors ${
-                isLight ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800' : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
-              }`}
+              className={`flex-1 border font-medium text-xs py-2 px-2 rounded-xl flex items-center justify-center space-x-1 transition-colors ${isLight ? 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-800' : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+                }`}
             >
               <Download className="w-3.5 h-3.5 text-emerald-500" />
               <span>XUẤT CSV</span>
@@ -355,11 +352,10 @@ export const CustomerListView: React.FC = () => {
                       <tr
                         key={cus.Id}
                         onClick={() => handleSelectCustomer(cus)}
-                        className={`cursor-pointer transition-colors ${
-                          isSelected
+                        className={`cursor-pointer transition-colors ${isSelected
                             ? 'bg-sky-50 dark:bg-sky-950/60 border-l-4 border-l-sky-500 font-semibold'
                             : isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-800/40'
-                        }`}
+                          }`}
                       >
                         <td className="p-3 font-mono text-sky-600 dark:text-sky-400 font-bold whitespace-nowrap">{cus.CifKh}</td>
                         <td className="p-3 font-bold whitespace-nowrap">{cus.FullName}</td>
@@ -372,12 +368,11 @@ export const CustomerListView: React.FC = () => {
                           )}
                         </td>
                         <td className="p-3 whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
-                            relation === 'Vợ / Chồng' ? 'bg-sky-50 dark:bg-sky-950 border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400' :
-                            relation === 'Người bảo lãnh' ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' :
-                            relation === 'Bên bảo đảm (Chủ TSĐB)' ? 'bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400' :
-                            'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
-                          }`}>
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${relation === 'Vợ / Chồng' ? 'bg-sky-50 dark:bg-sky-950 border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400' :
+                              relation === 'Người bảo lãnh' ? 'bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' :
+                                relation === 'Bên bảo đảm (Chủ TSĐB)' ? 'bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400' :
+                                  'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'
+                            }`}>
                             {relation}
                           </span>
                         </td>
@@ -486,9 +481,8 @@ export const CustomerListView: React.FC = () => {
               />
             </div>
 
-            <div className={`rounded-xl p-4 space-y-3 border ${
-              isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
-            }`}>
+            <div className={`rounded-xl p-4 space-y-3 border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'
+              }`}>
               <div className="text-xs font-bold text-sky-500 uppercase border-b pb-2 flex items-center justify-between">
                 <span>THÔNG TIN HÔN NHÂN & KHÁCH HÀNG LIÊN QUAN / BẢO LÃNH</span>
               </div>

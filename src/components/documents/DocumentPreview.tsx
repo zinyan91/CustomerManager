@@ -82,6 +82,14 @@ function exportToWordDoc(filename: string, docHtml: string) {
           line-height: 1.35 !important;
         }
         .no-indent { text-indent: 0pt !important; }
+        p.item-p {
+          text-indent: 0pt !important;
+          margin-top: 2.0pt !important;
+          margin-bottom: 2.0pt !important;
+          margin-left: 14.0pt !important;
+          text-align: justify !important;
+          line-height: 1.5 !important;
+        }
         .text-center { text-align: center !important; }
         .text-right { text-align: right !important; }
         .font-bold { font-weight: bold !important; }
@@ -105,7 +113,7 @@ function exportToWordDoc(filename: string, docHtml: string) {
         }
         table.sig-table {
           width: 100% !important;
-          margin-top: 24.0pt !important;
+          margin-top: 20.0pt !important;
           border-collapse: collapse !important;
           border: none !important;
         }
@@ -164,6 +172,7 @@ function exportToPDFOnly(filename: string, docHtml: string) {
         h2 { text-align: center; font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-top: 10pt; margin-bottom: 10pt; }
         p.clause-p { margin-top: 3pt; margin-bottom: 6pt; text-align: justify; text-indent: 1.27cm; line-height: 1.5; }
         .no-indent { text-indent: 0 !important; }
+        p.item-p { text-indent: 0; margin: 2pt 0 2pt 14pt; text-align: justify; line-height: 1.5; }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
@@ -267,6 +276,12 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           .a4-sheet-container p {
             margin-top: 3pt !important;
             margin-bottom: 6pt !important;
+            line-height: 1.5 !important;
+          }
+          .a4-sheet-container p.item-p {
+            text-indent: 0 !important;
+            margin: 2pt 0 2pt 14pt !important;
+            text-align: justify !important;
             line-height: 1.5 !important;
           }
           .a4-sheet-container p.clause-p {

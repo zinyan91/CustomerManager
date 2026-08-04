@@ -135,6 +135,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   const [principalGraceMonths, setPrincipalGraceMonths] = useState<number>(0);
 
   const [promoMonthsStr, setPromoMonthsStr] = useState('0');
+  const [baseRateStr, setBaseRateStr] = useState('');
   const [marginStr, setMarginStr] = useState('');
   const [postPromoRateStr, setPostPromoRateStr] = useState('');
 
@@ -144,12 +145,14 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   const rateAnnual = parseFloat(interestRateStr) || 0;
 
   const promoMonths = parseNumOrNull(promoMonthsStr);
+  const baseRateAnnual = parseNumOrNull(baseRateStr);
   const marginAnnual = parseNumOrNull(marginStr);
   const postPromoRateOverride = parseNumOrNull(postPromoRateStr);
 
   const hasPromo = promoMonths !== null && promoMonths > 0;
   const postRate = postPromoRateAnnual({
     promoRateAnnual: rateAnnual,
+    baseRateAnnual,
     marginAnnual,
     postPromoRateOverride,
   });
@@ -176,12 +179,14 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       repayMethod,
       principalGraceMonths,
       promoMonths,
+      baseRateAnnual,
       marginAnnual,
       postPromoRateOverride,
       prepayments: prepaymentPlan,
     }),
     [loanAmt, rateAnnual, tenorMonths, disbursementDate, firstPaymentDate, repayMethod,
-      principalGraceMonths, promoMonths, marginAnnual, postPromoRateOverride, prepaymentPlan]
+      principalGraceMonths, promoMonths, baseRateAnnual, marginAnnual, postPromoRateOverride,
+      prepaymentPlan]
   );
 
   const addPrepayment = () => {
@@ -218,8 +223,9 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       ? [{
         label: 'Lãi suất sau ưu đãi:',
         value: `${postRate.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%/năm`
-          + (postPromoRateOverride === null && marginAnnual !== null
-            ? ` (LS ưu đãi + biên độ ${marginAnnual.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%)`
+          + (postPromoRateOverride === null && (baseRateAnnual !== null || marginAnnual !== null)
+            ? ` (cơ sở ${(baseRateAnnual === null ? rateAnnual : baseRateAnnual).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`
+              + ` + biên độ ${(marginAnnual === null ? 0 : marginAnnual).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%)`
             : ''),
       }]
       : []),
@@ -359,7 +365,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div>
               <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">Lãi suất ưu đãi (%/năm) *</label>
               <input
@@ -381,6 +387,16 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               />
             </div>
             <div>
+              <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">LS cơ sở (%/năm)</label>
+              <input
+                type="text"
+                value={baseRateStr}
+                onChange={e => setBaseRateStr(e.target.value)}
+                placeholder="VD: 9.9"
+                className={`w-full rounded-xl p-2 font-mono font-bold ${styles.inputStyle}`}
+              />
+            </div>
+            <div>
               <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">Biên độ (%/năm)</label>
               <input
                 type="text"
@@ -396,7 +412,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 type="text"
                 value={postPromoRateStr}
                 onChange={e => setPostPromoRateStr(e.target.value)}
-                placeholder={hasPromo ? `${postRate.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} (LS ưu đãi + biên độ)` : 'Không áp dụng'}
+                placeholder={hasPromo ? `${postRate.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} (cơ sở + biên độ)` : 'Không áp dụng'}
                 className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.inputStyle}`}
               />
             </div>

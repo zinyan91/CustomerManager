@@ -173,22 +173,31 @@ describe('flatToReducingApprox', () => {
 });
 
 describe('postPromoRateAnnual', () => {
-  it('lãi ưu đãi + biên độ', () => {
+  it('LS cơ sở + biên độ', () => {
+    expect(postPromoRateAnnual({ promoRateAnnual: 9.5, baseRateAnnual: 9.9, marginAnnual: 3.5 })).toBe(13.4);
+  });
+
+  it('LS cơ sở 0 và biên độ 0 là giá trị hợp lệ, không bị coi là thiếu', () => {
+    expect(postPromoRateAnnual({ promoRateAnnual: 9.5, baseRateAnnual: 0, marginAnnual: 3.5 })).toBe(3.5);
+    expect(postPromoRateAnnual({ promoRateAnnual: 9.5, baseRateAnnual: 9.9, marginAnnual: 0 })).toBe(9.9);
+  });
+
+  it('không khai LS cơ sở thì lấy lãi suất ưu đãi làm cơ sở', () => {
     expect(postPromoRateAnnual({ promoRateAnnual: 9.5, marginAnnual: 3.5 })).toBe(13);
   });
 
-  it('biên độ 0 là giá trị hợp lệ, không bị coi là thiếu', () => {
-    expect(postPromoRateAnnual({ promoRateAnnual: 9.5, marginAnnual: 0 })).toBe(9.5);
-  });
-
-  it('LS sau ưu đãi khai tay thì thắng, không cộng thêm biên độ', () => {
-    expect(postPromoRateAnnual({ promoRateAnnual: 9.5, marginAnnual: 3.5, postPromoRateOverride: 12.8 })).toBe(12.8);
+  it('LS sau ưu đãi khai tay thắng cả cơ sở và biên độ', () => {
+    expect(postPromoRateAnnual({
+      promoRateAnnual: 9.5, baseRateAnnual: 9.9, marginAnnual: 3.5, postPromoRateOverride: 12.8,
+    })).toBe(12.8);
     expect(postPromoRateAnnual({ promoRateAnnual: 9.5, marginAnnual: 3.5, postPromoRateOverride: 0 })).toBe(0);
   });
 
-  it('không khai gì thì giữ nguyên lãi ưu đãi', () => {
+  it('không khai gì thì giữ nguyên lãi suất ưu đãi', () => {
     expect(postPromoRateAnnual({ promoRateAnnual: 9.5 })).toBe(9.5);
-    expect(postPromoRateAnnual({ promoRateAnnual: 9.5, marginAnnual: null, postPromoRateOverride: null })).toBe(9.5);
+    expect(postPromoRateAnnual({
+      promoRateAnnual: 9.5, baseRateAnnual: null, marginAnnual: null, postPromoRateOverride: null,
+    })).toBe(9.5);
   });
 });
 
@@ -266,10 +275,10 @@ describe('buildLoanSchedule', () => {
   it('áp lãi ưu đãi trong thời gian ưu đãi, sau đó là cơ sở + biên độ', () => {
     const rows = buildLoanSchedule({
       ...base, tenorMonths: 12, promoRateAnnual: 8,
-      promoMonths: 3, marginAnnual: 3.5,
+      promoMonths: 3, baseRateAnnual: 9.9, marginAnnual: 3.5,
     });
     expect(rows.slice(0, 3).map(r => r.rateAnnual)).toEqual([8, 8, 8]);
-    expect(rows.slice(3).every(r => r.rateAnnual === 11.5)).toBe(true);
+    expect(rows.slice(3).every(r => r.rateAnnual === 13.4)).toBe(true);
   });
 
   it('không khai ưu đãi thì mọi kỳ dùng một lãi suất', () => {

@@ -26,7 +26,7 @@ Mã nguồn không chứa chú thích. Toàn bộ giải thích "vì sao" nằm 
 
 ## 2. Logic tài chính
 
-Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 290 test tại `src/lib/__tests__/`.
+Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 329 test tại `src/lib/__tests__/`.
 
 | Tệp | Nội dung |
 | :--- | :--- |
@@ -36,6 +36,7 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 | `calcMath.ts` | Công thức cho 8 công cụ tính toán (EMI, EAR, DTI), số học ngày tháng kiểu EDATE |
 | `rateReduction.ts` | Tính tiền giảm lãi suất vay: ngắn hạn nhiều khoản và lịch trung dài hạn |
 | `mdsdv.ts` | Tra cứu mã mục đích sử dụng vốn theo danh mục FBE |
+| `rateQuote.ts` | Chào lãi suất theo chương trình từng thời kỳ, phí dịch vụ, cảnh báo chặn |
 | `loanProductRules.ts` | Ràng buộc theo phương thức vay |
 | `utils.ts` | Định dạng tiền, phân tích ngày đa định dạng |
 
@@ -251,7 +252,74 @@ Kết quả trả về **giới hạn 300 dòng nhưng vẫn báo tổng số th
 
 ---
 
-## 8. Bảo mật
+## 8. Chào lãi suất theo chương trình
+
+Lãi suất chào khách **không được cứng hoá trong mã nguồn**. Mỗi kỳ là một văn bản của Ban điều hành có ngày hiệu lực riêng, nên dữ liệu nằm ở bảng `RatePrograms` (migration 09). Logic thuần ở `src/lib/rateQuote.ts`, giao diện là tab **Chào Lãi Suất**.
+
+Ba loại chương trình — cho vay ngắn hạn, cho vay trung dài hạn, huy động — dùng **chung** bảng dòng lãi suất `RateProgramTiers`, vì cùng bản chất "một điều kiện → một mức lãi". Các cột chiều để `NULL` ở loại không dùng: cho vay dùng `PackageCode`/`FixedMonths`/`MinFeeRatio`, huy động dùng `Channel`/`BalanceTierLabel`/`PayoutMode`.
+
+### Chọn chương trình theo ngày, không theo "mới nhất"
+
+`findActiveProgram` lấy chương trình có `EffectiveFrom ≤ ngày ≤ EffectiveTo`, hai đầu mút **tính vào**. Hai chương trình gối nhau thì lấy cái có `EffectiveFrom` muộn hơn. `EffectiveTo` để trống nghĩa là chưa có ngày kết thúc.
+
+Lấy "chương trình mới nhất" là sai: khoản vay giải ngân trong quá khứ phải áp lãi suất của kỳ đó, không phải kỳ hiện hành.
+
+### NULL và 0 là hai chuyện khác nhau
+
+Đây là chỗ dễ gây mất tiền nhất ở phần này:
+
+| Giá trị | Nghĩa |
+| :--- | :--- |
+| `RateAnnual = NULL` | **Chưa có số.** Hệ thống chặn không cho chào gói đó |
+| `RateAnnual = 0` | Lãi suất 0%/năm, là số liệu đã biết |
+| `FeeRatio = NULL` | **Chưa có số** |
+| `FeeRatio = 0` | Miễn phí, là số liệu đã biết |
+
+Bảng tính nội bộ ghi `0` cho ô chưa điền. Khi nạp phải chuyển thành `NULL`, nếu không hệ thống sẽ chào 0%/năm cho khách.
+
+### Công thức phí dịch vụ
+
+```
+Tỷ lệ phí = tỷ lệ theo gói × (1 − mức giảm KH mới) + phụ phí CASA
+Phí phải thu = max(Tỷ lệ phí × số tiền giải ngân, mức sàn)
+```
+
+Giảm cho khách hàng mới áp **trước**, phụ phí CASA cộng **sau**. Thứ tự này khớp ví dụ trong Thông báo 2274: gói LC2 phí 0,75%, CASA bình quân không đạt 5% dư nợ nên cộng 0,10% thành **0,85%**.
+
+`casaAverage` để trống nghĩa là **chưa soát xét** nên không cộng phụ phí. Còn `casaAverage = 0` là đã soát xét và CASA bằng 0 — phải cộng phụ phí. Đừng gộp hai trạng thái này.
+
+### Cảnh báo chặn
+
+`collectQuoteWarnings` trả về hai mức. Mức `block` là **không được chào khách**:
+
+- Không có chương trình hiệu lực tại ngày đã chọn
+- `SourceVerified = false` — số liệu chưa đối chiếu văn bản gốc
+- Gói chưa có lãi suất
+- Chương trình đã hết hiệu lực
+
+Mức `warn` chỉ nhắc: chương trình cấm dùng thẩm quyền giảm LSCV, cấm giảm phí trả nợ trước hạn, hoặc thời gian vay dưới mức tối thiểu của gói.
+
+Cờ `AllowRateReduction = false` tồn tại vì Thông báo 2274 **cấm áp dụng thẩm quyền giảm LSCV trong suốt thời gian vay**. Trước đây banker phải tự nhớ điều này khi mở công cụ giảm lãi suất.
+
+### Số liệu nào đã đối chiếu, số liệu nào chưa
+
+`SourceVerified` là cột quan trọng nhất của bảng này.
+
+| Chương trình | Nguồn | Trạng thái |
+| :--- | :--- | :--- |
+| Ngắn hạn `2274/2026/TB-BĐH` | Chính văn bản | **Đã đối chiếu** |
+| Trung dài hạn `TAM-TDH-2026` | Bảng tính nội bộ | **Chưa** — thiếu lãi suất gói CĐ 3 tháng và phí Năm 3 |
+| Huy động `TAM-HD-2279/...` | Bảng tính nội bộ | **Chưa** — chưa có văn bản 2279 |
+
+Bảng tính nội bộ `Book.xlsx` **sai cả 5 dòng lãi suất ngắn hạn** khi so với văn bản 2274 (một dòng ghi 110,50% thay vì 11,70%; một dòng ghi 0% thay vì 8,45%). Vì vậy số liệu trung dài hạn và huy động lấy từ cùng file đó phải coi là tạm cho tới khi có văn bản gốc. Không sửa `SourceVerified` thành `true` khi chưa thực sự đối chiếu.
+
+### Quyền ghi
+
+Đọc: mọi người dùng đã đăng nhập. Ghi: **chỉ `admin`**. Sai một con số ở đây là chào sai lãi suất cho toàn hệ thống, khác hẳn dữ liệu khách hàng chỉ ảnh hưởng một hồ sơ.
+
+---
+
+## 9. Bảo mật
 
 **Khoá `anon` của Supabase nằm công khai** trong gói JavaScript gửi tới trình duyệt. Màn hình đăng nhập chỉ chặn người dùng thông thường. **RLS là lớp phòng thủ duy nhất và thực sự.**
 
@@ -271,7 +339,7 @@ Khi RLS chặn một lệnh, Supabase trả về **mảng rỗng mà không báo
 
 ---
 
-## 9. Cơ sở dữ liệu
+## 10. Cơ sở dữ liệu
 
 Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor**, theo đúng thứ tự số.
 
@@ -279,11 +347,11 @@ Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor
 
 ---
 
-## 10. Lệnh thường dùng
+## 11. Lệnh thường dùng
 
 ```bash
 npm run dev        # Máy chủ phát triển
 npm run build      # Kiểm tra kiểu + đóng gói
-npm test           # 290 test logic tài chính
+npm test           # 329 test logic tài chính
 npm run lint       # Kiểm tra mã nguồn
 ```

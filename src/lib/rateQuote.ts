@@ -47,6 +47,7 @@ export interface RateProgramPrepaymentFee {
   YearFrom: number;
   YearTo?: number | null;
   FeeRatio?: number | null;
+  AppliesTo?: string | null;
   Note?: string | null;
 }
 

@@ -36,8 +36,8 @@ describe('formatMoneyInput / parseMoneyInput', () => {
 
 describe('fmtRate', () => {
   it('nhận cả dạng thập phân lẫn phần trăm', () => {
-    expect(fmtRate(0.085)).toBe('8.5%/năm');
-    expect(fmtRate(8.5)).toBe('8.5%/năm');
+    expect(fmtRate(0.085)).toBe('8,50%/năm');
+    expect(fmtRate(8.5)).toBe('8,50%/năm');
   });
 
   it('trả gạch ngang khi không có giá trị', () => {

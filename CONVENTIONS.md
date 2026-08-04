@@ -26,7 +26,7 @@ Mã nguồn không chứa chú thích. Toàn bộ giải thích "vì sao" nằm 
 
 ## 2. Logic tài chính
 
-Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 356 test tại `src/lib/__tests__/`.
+Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 396 test tại `src/lib/__tests__/`.
 
 | Tệp | Nội dung |
 | :--- | :--- |
@@ -38,6 +38,7 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 | `mdsdv.ts` | Tra cứu mã mục đích sử dụng vốn theo danh mục FBE |
 | `rateQuote.ts` | Chào lãi suất theo chương trình từng thời kỳ, phí dịch vụ, cảnh báo chặn |
 | `rateSheet.ts` | Dựng bảng lãi suất một trang A4 để gửi khách hàng |
+| `formatSettings.ts` | Định dạng số tiền, số thập phân, phần trăm và giờ theo thiết lập người dùng |
 | `loanProductRules.ts` | Ràng buộc theo phương thức vay |
 | `utils.ts` | Định dạng tiền, phân tích ngày đa định dạng |
 
@@ -336,7 +337,35 @@ Tờ chào khách **chỉ chứa thông tin đã công bố**: lãi suất, đi�
 
 ---
 
-## 9. Bảo mật
+## 9. Định dạng hiển thị
+
+Người dùng chọn được kiểu phân cách số, số chữ số thập phân, số chữ số phần trăm và định dạng giờ ở tab **Cấu Hình & Cài Đặt**. Logic thuần ở `src/lib/formatSettings.ts`, trạng thái ở `FormatSettingsContext`.
+
+| Thiết lập | Khoá localStorage | Mặc định |
+| :--- | :--- | :--- |
+| Kiểu phân cách | `app_number_style` | `vi` — nghìn dấu chấm, thập phân dấu phẩy |
+| Số thập phân | `app_decimal_digits` | 2 |
+| Phần trăm | `app_percent_digits` | 2 |
+| Định dạng giờ | `app_time_format` | `24h` |
+| Tự động phân cách khi gõ | `app_auto_group_money` | bật |
+
+`fmtMoney`, `fmtRate` và `formatMoneyInput` trong `utils.ts` đọc thiết lập này, nên **mọi màn hình đổi theo mà không phải sửa nơi gọi**. Đây là lý do các hàm định dạng đọc thẳng localStorage thay vì nhận tham số: cùng cách `fmtDate` đã làm cho định dạng ngày.
+
+Thiết lập được **cache trong module**, xoá cache khi lưu. Không có cache thì mỗi ô tiền trong bảng danh mục sẽ đọc localStorage một lần, bảng vài nghìn dòng là thấy chậm.
+
+### Số tiền không có phần thập phân
+
+Đồng Việt Nam không dùng phần lẻ trong nghiệp vụ, nên `fmtMoney` **luôn 0 chữ số thập phân**, chỉ ăn theo kiểu phân cách. Thiết lập "số thập phân" áp cho các số thường, không áp cho tiền.
+
+### Đổi mặc định của lãi suất
+
+`fmtRate` trước đây in `8.5%/năm` — dấu chấm thập phân và cắt số 0 thừa. Nay theo thiết lập nên mặc định thành **`8,50%/năm`**: dấu phẩy đúng chuẩn Việt Nam và khớp với bảng lãi suất gửi khách vốn đã in `8,45%`. Muốn về kiểu cũ thì chọn kiểu phân cách "Quốc tế" và phần trăm 1 chữ số.
+
+`fmtRate` vẫn giữ suy đoán cũ `v > 1 ? v/100 : v` để nhận cả `0.085` lẫn `8.5`. **Suy đoán này sai với lãi suất trên 100%/năm** — hiếm gặp nên chưa sửa, nhưng đừng dựa vào nó cho dữ liệu mới.
+
+---
+
+## 10. Bảo mật
 
 **Khoá `anon` của Supabase nằm công khai** trong gói JavaScript gửi tới trình duyệt. Màn hình đăng nhập chỉ chặn người dùng thông thường. **RLS là lớp phòng thủ duy nhất và thực sự.**
 
@@ -356,7 +385,7 @@ Khi RLS chặn một lệnh, Supabase trả về **mảng rỗng mà không báo
 
 ---
 
-## 10. Cơ sở dữ liệu
+## 11. Cơ sở dữ liệu
 
 Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor**, theo đúng thứ tự số.
 
@@ -364,11 +393,11 @@ Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor
 
 ---
 
-## 11. Lệnh thường dùng
+## 12. Lệnh thường dùng
 
 ```bash
 npm run dev        # Máy chủ phát triển
 npm run build      # Kiểm tra kiểu + đóng gói
-npm test           # 356 test logic tài chính
+npm test           # 396 test logic tài chính
 npm run lint       # Kiểm tra mã nguồn
 ```

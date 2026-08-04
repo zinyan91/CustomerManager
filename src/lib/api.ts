@@ -4,6 +4,7 @@ import { defaultLtvForAssetType } from './collateralMath';
 import type {
   RateProgram, RateProgramTier, RateProgramPrepaymentFee,
   RateProgramFbeCode, DepositRateAuthority,
+  RateProgramFeeOption, RateProgramCondition,
 } from './rateQuote';
 
 export async function fetchCustomersAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
@@ -572,4 +573,26 @@ export async function updateRateProgramAPI(
     throw new Error('Không cập nhật được chương trình. Chỉ admin có quyền sửa thông số chương trình.');
   }
   return data[0];
+}
+
+export async function fetchRateProgramFeeOptionsAPI(programIds: number[]): Promise<RateProgramFeeOption[]> {
+  if (!programIds || programIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('RateProgramFeeOptions')
+    .select('*')
+    .in('ProgramId', programIds)
+    .order('SortOrder', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchRateProgramConditionsAPI(programIds: number[]): Promise<RateProgramCondition[]> {
+  if (!programIds || programIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('RateProgramConditions')
+    .select('*')
+    .in('ProgramId', programIds)
+    .order('SortOrder', { ascending: true });
+  if (error) throw error;
+  return data || [];
 }

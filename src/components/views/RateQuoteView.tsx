@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Percent, TrendingDown, PiggyBank, Loader2, AlertTriangle, ShieldAlert,
-  FileText, Landmark, Save, RefreshCw,
+  FileText, Landmark, Save, RefreshCw, Printer,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -9,15 +9,18 @@ import { fmtMoney, fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/
 import {
   fetchRateProgramsAPI, fetchRateProgramTiersAPI, fetchRateProgramPrepaymentFeesAPI,
   fetchRateProgramFbeCodesAPI, fetchDepositRateAuthoritiesAPI, updateRateProgramTierAPI,
+  fetchRateProgramFeeOptionsAPI, fetchRateProgramConditionsAPI,
 } from '../../lib/api';
 import {
   findActiveProgram, resolvePostFixedRate, calcServiceFee, calcDepositInterest,
   collectQuoteWarnings, hasBlockingWarning,
   PAYOUT_MODE_LABELS, CHANNEL_LABELS, KIND_LABELS, FBE_SCOPE_LABELS,
 } from '../../lib/rateQuote';
+import { buildRateSheetHtml, findRateSheetBlockers } from '../../lib/rateSheet';
 import type {
   RateProgram, RateProgramTier, RateProgramPrepaymentFee,
   RateProgramFbeCode, DepositRateAuthority, RateProgramKind, DepositChannel,
+  RateProgramFeeOption, RateProgramCondition,
 } from '../../lib/rateQuote';
 
 const pct = (v?: number | null) =>
@@ -40,6 +43,9 @@ export const RateQuoteView: React.FC = () => {
   const [prepayFees, setPrepayFees] = useState<RateProgramPrepaymentFee[]>([]);
   const [fbeCodes, setFbeCodes] = useState<RateProgramFbeCode[]>([]);
   const [authorities, setAuthorities] = useState<DepositRateAuthority[]>([]);
+  const [feeOptions, setFeeOptions] = useState<RateProgramFeeOption[]>([]);
+  const [conditions, setConditions] = useState<RateProgramCondition[]>([]);
+  const [preparedBy, setPreparedBy] = useState('');
 
   const [selectedTierId, setSelectedTierId] = useState<number | null>(null);
   const [amountStr, setAmountStr] = useState('1.000.000.000');
@@ -61,16 +67,20 @@ export const RateQuoteView: React.FC = () => {
       const progs = await fetchRateProgramsAPI();
       setPrograms(progs);
       const ids = progs.map(p => p.Id);
-      const [t, f, c, a] = await Promise.all([
+      const [t, f, c, a, o, k] = await Promise.all([
         fetchRateProgramTiersAPI(ids),
         fetchRateProgramPrepaymentFeesAPI(ids),
         fetchRateProgramFbeCodesAPI(ids),
         fetchDepositRateAuthoritiesAPI(ids),
+        fetchRateProgramFeeOptionsAPI(ids),
+        fetchRateProgramConditionsAPI(ids),
       ]);
       setTiers(t);
       setPrepayFees(f);
       setFbeCodes(c);
       setAuthorities(a);
+      setFeeOptions(o);
+      setConditions(k);
     } catch (err: any) {
       setLoadError(err?.message || 'Không tải được chương trình lãi suất.');
     } finally {
@@ -105,6 +115,43 @@ export const RateQuoteView: React.FC = () => {
     () => (program ? authorities.filter(a => a.ProgramId === program.Id) : []),
     [authorities, program]
   );
+  const programFeeOptions = useMemo(
+    () => (program ? feeOptions.filter(o => o.ProgramId === program.Id) : []),
+    [feeOptions, program]
+  );
+  const programConditions = useMemo(
+    () => (program ? conditions.filter(c => c.ProgramId === program.Id) : []),
+    [conditions, program]
+  );
+
+  const sheetInput = useMemo(() => (program ? {
+    program,
+    tiers: programTiers,
+    prepaymentFees: programPrepayFees,
+    feeOptions: programFeeOptions,
+    conditions: programConditions,
+    preparedBy: preparedBy.trim() || undefined,
+    channel: kind === 'huy_dong' ? channel : null,
+  } : null), [program, programTiers, programPrepayFees, programFeeOptions, programConditions, preparedBy, kind, channel]);
+
+  const sheetBlockers = useMemo(
+    () => (sheetInput ? findRateSheetBlockers(sheetInput) : []),
+    [sheetInput]
+  );
+
+  const handleExportSheet = () => {
+    if (!sheetInput || sheetBlockers.length > 0) return;
+    const html = buildRateSheetHtml(sheetInput);
+    const win = window.open('', '_blank');
+    if (!win) {
+      setSaveMsg('Trình duyệt đã chặn cửa sổ mới. Cho phép pop-up rồi thử lại.');
+      return;
+    }
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    win.setTimeout(() => win.print(), 300);
+  };
 
   useEffect(() => {
     const pool = kind === 'huy_dong' ? depositTiers : lendingTiers;
@@ -618,6 +665,105 @@ export const RateQuoteView: React.FC = () => {
               </div>
             )}
           </div>
+
+          <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
+            <div className="font-bold text-xs uppercase tracking-wider text-sky-600 dark:text-sky-400 border-b border-slate-200 dark:border-slate-800 pb-2 flex items-center space-x-1.5">
+              <Printer className="w-4 h-4" />
+              <span>XUẤT BẢNG LÃI SUẤT GỬI KHÁCH HÀNG</span>
+            </div>
+
+            <div className="flex flex-col md:flex-row md:items-end gap-3">
+              <div className="flex-1 min-w-[200px]">
+                <label className={labelCls}>Nhân viên tư vấn (in trên file, có thể bỏ trống)</label>
+                <input
+                  type="text"
+                  value={preparedBy}
+                  onChange={e => setPreparedBy(e.target.value)}
+                  placeholder="Họ tên · số điện thoại"
+                  className={inputCls}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleExportSheet}
+                disabled={sheetBlockers.length > 0}
+                className="bg-sky-600 hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs px-4 py-2.5 rounded-xl font-bold flex items-center justify-center space-x-1.5 shadow-sm transition-colors"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>XUẤT PDF / HÌNH ẢNH</span>
+              </button>
+            </div>
+
+            {sheetBlockers.length > 0 ? (
+              <div className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 p-3 space-y-1">
+                <div className="text-xs font-bold text-rose-700 dark:text-rose-300">
+                  Chưa xuất được file cho khách hàng:
+                </div>
+                {sheetBlockers.map((b, i) => (
+                  <div key={i} className="text-[11px] text-rose-700 dark:text-rose-300">• {b.message}</div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-[11px] text-slate-500 space-y-0.5">
+                <div>
+                  Bấm nút để mở bản in khổ A4. Trong hộp thoại in, chọn <strong>“Save as PDF”</strong> để lưu file,
+                  hoặc chụp ảnh màn hình nếu cần gửi dạng hình.
+                </div>
+                <div>
+                  File chỉ gồm lãi suất, điều kiện và phí công bố của chương trình — không chứa thông tin nội bộ
+                  như COF, biên độ lợi nhuận hay dữ liệu khách hàng khác.
+                </div>
+              </div>
+            )}
+          </div>
+
+          {programFeeOptions.length > 0 && (
+            <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
+              <div className="p-3 border-b border-slate-200 dark:border-slate-800 font-bold text-xs uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                PHÍ DỊCH VỤ THEO PHƯƠNG ÁN
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[11px] border-collapse">
+                  <thead className="bg-slate-100 dark:bg-slate-950 font-bold border-b border-slate-200 dark:border-slate-800">
+                    <tr>
+                      <th className="p-2.5">PHƯƠNG ÁN</th>
+                      <th className="p-2.5">NHÓM GÓI CỐ ĐỊNH</th>
+                      <th className="p-2.5 text-right">PHÍ TỐI THIỂU</th>
+                      <th className="p-2.5 text-right">TRONG ĐÓ TẠI QUẦY / TKSĐ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {programFeeOptions.map(o => (
+                      <tr key={o.Id}>
+                        <td className="p-2.5 font-bold">{o.OptionLabel}</td>
+                        <td className="p-2.5">{o.PackageGroup}</td>
+                        <td className="p-2.5 text-right font-mono font-bold text-sky-600 dark:text-sky-400">
+                          {pct(o.MinFeeRatio)}
+                        </td>
+                        <td className="p-2.5 text-right font-mono">
+                          {o.CounterFeeRatio === null || o.CounterFeeRatio === undefined
+                            ? '—' : pct(o.CounterFeeRatio)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {programConditions.length > 0 && (
+            <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-1.5`}>
+              <div className="font-bold text-xs uppercase tracking-wider text-sky-600 dark:text-sky-400 border-b border-slate-200 dark:border-slate-800 pb-2">
+                ĐIỀU KIỆN ÁP DỤNG
+              </div>
+              {programConditions.map(c => (
+                <div key={c.Id} className="text-[11px] text-slate-600 dark:text-slate-300">
+                  • {c.Heading && <strong>{c.Heading}: </strong>}{c.Content}
+                </div>
+              ))}
+            </div>
+          )}
 
           {programPrepayFees.length > 0 && (
             <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>

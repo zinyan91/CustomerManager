@@ -15,12 +15,13 @@ import {
   findActiveProgram, resolvePostFixedRate, calcServiceFee, calcDepositInterest,
   collectQuoteWarnings, hasBlockingWarning,
   PAYOUT_MODE_LABELS, CHANNEL_LABELS, KIND_LABELS, FBE_SCOPE_LABELS,
+  buildDepositRateRows, depositChannelsPresent,
 } from '../../lib/rateQuote';
 import vietbankLogo from '../../assets/vietbank-logo.png?inline';
 import { buildRateSheetHtml, findRateSheetBlockers } from '../../lib/rateSheet';
 import type {
   RateProgram, RateProgramTier, RateProgramPrepaymentFee,
-  RateProgramFbeCode, DepositRateAuthority, RateProgramKind, DepositChannel,
+  RateProgramFbeCode, DepositRateAuthority, RateProgramKind,
   RateProgramFeeOption, RateProgramCondition,
 } from '../../lib/rateQuote';
 
@@ -55,7 +56,6 @@ export const RateQuoteView: React.FC = () => {
   const [casaStr, setCasaStr] = useState('');
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [depositDaysStr, setDepositDaysStr] = useState('180');
-  const [channel, setChannel] = useState<DepositChannel>('quay');
 
   const [editRateStr, setEditRateStr] = useState('');
   const [saving, setSaving] = useState(false);
@@ -99,10 +99,8 @@ export const RateQuoteView: React.FC = () => {
   );
 
   const lendingTiers = programTiers;
-  const depositTiers = useMemo(
-    () => programTiers.filter(t => t.Channel === channel),
-    [programTiers, channel]
-  );
+  const depositChannels = useMemo(() => depositChannelsPresent(programTiers), [programTiers]);
+  const depositRows = useMemo(() => buildDepositRateRows(programTiers), [programTiers]);
 
   const programPrepayFees = useMemo(
     () => (program ? prepayFees.filter(f => f.ProgramId === program.Id) : []),
@@ -133,8 +131,8 @@ export const RateQuoteView: React.FC = () => {
     conditions: programConditions,
     preparedBy: preparedBy.trim() || undefined,
     logoDataUri: vietbankLogo,
-    channel: kind === 'huy_dong' ? channel : null,
-  } : null), [program, programTiers, programPrepayFees, programFeeOptions, programConditions, preparedBy, kind, channel]);
+    channel: null,
+  } : null), [program, programTiers, programPrepayFees, programFeeOptions, programConditions, preparedBy, kind]);
 
   const sheetBlockers = useMemo(
     () => (sheetInput ? findRateSheetBlockers(sheetInput) : []),
@@ -156,10 +154,10 @@ export const RateQuoteView: React.FC = () => {
   };
 
   useEffect(() => {
-    const pool = kind === 'huy_dong' ? depositTiers : lendingTiers;
+    const pool = kind === 'huy_dong' ? programTiers : lendingTiers;
     if (pool.length === 0) { setSelectedTierId(null); return; }
     if (!pool.some(t => t.Id === selectedTierId)) setSelectedTierId(pool[0].Id);
-  }, [kind, depositTiers, lendingTiers, selectedTierId]);
+  }, [kind, programTiers, lendingTiers, selectedTierId]);
 
   const selectedTier = useMemo(
     () => programTiers.find(t => t.Id === selectedTierId) ?? null,
@@ -338,12 +336,28 @@ export const RateQuoteView: React.FC = () => {
                 )}
               </div>
             </div>
-            {program.Note && (
-              <div className="text-[11px] text-slate-500 border-t border-slate-200 dark:border-slate-800 pt-2">
-                {program.Note}
-              </div>
-            )}
           </div>
+
+          {(program.ScopeText || program.TargetText) && (
+            <div className={`${cardBg} rounded-2xl p-4 border grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]`}>
+              {program.TargetText && (
+                <div>
+                  <div className="font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 mb-1">
+                    Đối tượng áp dụng
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-400">{program.TargetText}</div>
+                </div>
+              )}
+              {program.ScopeText && (
+                <div>
+                  <div className="font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 mb-1">
+                    Phạm vi áp dụng
+                  </div>
+                  <div className="text-slate-600 dark:text-slate-400">{program.ScopeText}</div>
+                </div>
+              )}
+            </div>
+          )}
 
           {warnings.length > 0 && (
             <div className="space-y-2">
@@ -365,24 +379,6 @@ export const RateQuoteView: React.FC = () => {
             </div>
           )}
 
-          {kind === 'huy_dong' && (
-            <div className={`${cardBg} rounded-2xl p-2 border flex flex-wrap items-center gap-2`}>
-              {(['quay', 'online', 'ftp'] as DepositChannel[]).map(ch => (
-                <button
-                  key={ch}
-                  type="button"
-                  onClick={() => setChannel(ch)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    channel === ch
-                      ? 'bg-sky-600 text-white shadow-sm'
-                      : isLight ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800/60'
-                  }`}
-                >
-                  {CHANNEL_LABELS[ch]}
-                </button>
-              ))}
-            </div>
-          )}
 
           <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
             <div className="p-3 border-b border-slate-200 dark:border-slate-800 font-bold text-xs uppercase tracking-wider text-sky-600 dark:text-sky-400">
@@ -398,7 +394,11 @@ export const RateQuoteView: React.FC = () => {
                         <th className="p-2.5">BẬC SỐ DƯ / ĐIỀU KIỆN</th>
                         <th className="p-2.5 text-center">KỲ HẠN</th>
                         <th className="p-2.5">CÁCH TRẢ LÃI</th>
-                        <th className="p-2.5 text-right">LÃI SUẤT (%/NĂM)</th>
+                        {depositChannels.map(ch => (
+                          <th key={ch} className="p-2.5 text-right whitespace-nowrap">
+                            {CHANNEL_LABELS[ch].toUpperCase()} (%/NĂM)
+                          </th>
+                        ))}
                       </>
                     ) : (
                       <>
@@ -412,7 +412,43 @@ export const RateQuoteView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {(kind === 'huy_dong' ? depositTiers : lendingTiers).map(t => {
+                  {kind === 'huy_dong' && depositRows.map(row => {
+                    const firstId = depositChannels
+                      .map(ch => row.tierIdByChannel[ch])
+                      .find(x => x !== undefined) ?? 0;
+                    const active = firstId === selectedTierId;
+                    return (
+                      <tr key={row.key}
+                        onClick={() => setSelectedTierId(firstId)}
+                        className={`cursor-pointer transition-colors ${
+                          active ? 'bg-sky-50 dark:bg-sky-950/40 font-bold' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
+                        }`}>
+                        <td className="p-2.5 text-center">
+                          <input type="radio" checked={active} onChange={() => setSelectedTierId(firstId)} />
+                        </td>
+                        <td className="p-2.5">{row.balanceTierLabel || '—'}</td>
+                        <td className="p-2.5 text-center font-mono">
+                          {row.tenorMonths ? `${row.tenorMonths} tháng` : '—'}
+                        </td>
+                        <td className="p-2.5">
+                          {row.payoutMode ? PAYOUT_MODE_LABELS[row.payoutMode] : '—'}
+                        </td>
+                        {depositChannels.map(ch => {
+                          const coKenh = ch in row.byChannel;
+                          const v = row.byChannel[ch];
+                          const thieu = !coKenh || v === null || v === undefined;
+                          return (
+                            <td key={ch} className={`p-2.5 text-right font-mono font-bold ${
+                              thieu ? 'text-slate-300 dark:text-slate-700' : 'text-sky-600 dark:text-sky-400'
+                            }`}>
+                              {thieu ? '—' : pct(v)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  {kind !== 'huy_dong' && lendingTiers.map(t => {
                     const active = t.Id === selectedTierId;
                     const missing = t.RateAnnual === null || t.RateAnnual === undefined;
                     return (
@@ -428,21 +464,7 @@ export const RateQuoteView: React.FC = () => {
                         <td className="p-2.5 text-center">
                           <input type="radio" checked={active} onChange={() => setSelectedTierId(t.Id)} />
                         </td>
-                        {kind === 'huy_dong' ? (
-                          <>
-                            <td className="p-2.5">{t.BalanceTierLabel || '—'}</td>
-                            <td className="p-2.5 text-center font-mono">
-                              {t.TenorMonths ? `${t.TenorMonths} tháng` : '—'}
-                            </td>
-                            <td className="p-2.5">
-                              {t.PayoutMode ? PAYOUT_MODE_LABELS[t.PayoutMode] : '—'}
-                            </td>
-                            <td className={`p-2.5 text-right font-mono font-bold ${missing ? 'text-rose-500' : 'text-sky-600 dark:text-sky-400'}`}>
-                              {missing ? 'CHƯA CÓ' : pct(t.RateAnnual)}
-                            </td>
-                          </>
-                        ) : (
-                          <>
+                        <>
                             <td className="p-2.5 text-center font-mono font-bold">{t.PackageCode || '—'}</td>
                             <td className="p-2.5">
                               {t.Label}
@@ -459,12 +481,11 @@ export const RateQuoteView: React.FC = () => {
                               {missing ? 'CHƯA CÓ' : pct(t.RateAnnual)}
                             </td>
                             <td className="p-2.5 text-right font-mono">{pct(t.MinFeeRatio)}</td>
-                          </>
-                        )}
+                        </>
                       </tr>
                     );
                   })}
-                  {(kind === 'huy_dong' ? depositTiers : lendingTiers).length === 0 && (
+                  {(kind === 'huy_dong' ? depositRows : lendingTiers).length === 0 && (
                     <tr>
                       <td colSpan={6} className="p-6 text-center text-slate-400">
                         Chương trình chưa có dòng lãi suất nào.

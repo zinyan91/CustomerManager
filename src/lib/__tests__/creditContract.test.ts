@@ -1,0 +1,195 @@
+import { describe, it, expect } from 'vitest';
+import {
+  nextKunnNumber,
+  kunnSequenceOf,
+  checkKunnAgainstContract,
+  summarizeCreditContracts,
+} from '../creditContract';
+import type { CreditContract, LoanContract } from '../../types';
+
+const HOM_NAY = '2026-08-04';
+
+const cc = (o: Partial<CreditContract>): CreditContract => ({
+  Id: 1, CustomerId: 1, HdtdNumber: 'HD01', ...o,
+} as CreditContract);
+
+const kunn = (o: Partial<LoanContract>): LoanContract => ({
+  Id: 1, CustomerId: 1, ContractNumber: 'HD01/GNN-01', ContractType: 0, ...o,
+} as LoanContract);
+
+describe('nextKunnNumber', () => {
+  it('HĐTD chưa có KUNN nào thì bắt đầu từ 01', () => {
+    expect(nextKunnNumber('2002/HĐTD/9653222', [])).toBe('2002/HĐTD/9653222/GNN-01');
+  });
+
+  it('lấy MAX + 1, không đếm số dòng', () => {
+
+    expect(nextKunnNumber('HD01', ['HD01/GNN-01', 'HD01/GNN-05'])).toBe('HD01/GNN-06');
+  });
+
+  it('KUNN bị xoá giữa dãy KHÔNG làm tái sử dụng số', () => {
+    expect(nextKunnNumber('HD01', ['HD01/GNN-01', 'HD01/GNN-03'])).toBe('HD01/GNN-04');
+  });
+
+  it('KUNN đã tất toán vẫn giữ số của nó', () => {
+    expect(nextKunnNumber('HD01', ['HD01/GNN-01', 'HD01/GNN-02'])).toBe('HD01/GNN-03');
+  });
+
+  it('bỏ qua KUNN của HĐTD khác', () => {
+    expect(nextKunnNumber('HD01', ['HD02/GNN-07', 'HD01/GNN-01'])).toBe('HD01/GNN-02');
+  });
+
+  it('không phân biệt chữ hoa chữ thường', () => {
+    expect(nextKunnNumber('hd01', ['HD01/GNN-04'])).toBe('hd01/GNN-05');
+  });
+
+  it('dữ liệu cũ để số KUNN trùng số HĐTD thì coi như đã dùng 01', () => {
+
+    expect(nextKunnNumber('2002/HDTD/9653222', [
+      '2002/HDTD/9653222', '2002/HDTD/9653222', '2002/HDTD/9653222',
+    ])).toBe('2002/HDTD/9653222/GNN-02');
+  });
+
+  it('vượt 09 sang 10 vẫn đúng', () => {
+    expect(nextKunnNumber('HD01', ['HD01/GNN-09'])).toBe('HD01/GNN-10');
+  });
+
+  it('số HĐTD rỗng trả về rỗng', () => {
+    expect(nextKunnNumber('  ', ['HD01/GNN-01'])).toBe('');
+  });
+
+  it('kunnSequenceOf đọc được số thứ tự', () => {
+    expect(kunnSequenceOf('HD01/GNN-07')).toBe(7);
+    expect(kunnSequenceOf('HD01')).toBe(0);
+    expect(kunnSequenceOf(null)).toBe(0);
+  });
+});
+
+describe('checkKunnAgainstContract', () => {
+  it('KUNN đáo hạn SAU ngày hết hiệu lực HĐTD thì cảnh báo', () => {
+
+    const r = checkKunnAgainstContract(
+      kunn({ DisbursementDate: '2026-03-26', KunnDueDate: '2026-08-26' }),
+      cc({ HdtdNumber: '2002/HDTD/9653222', ContractStartDate: '2025-07-24', ContractEndDate: '2026-07-24' })
+    );
+    expect(r).toHaveLength(1);
+    expect(r[0].field).toBe('KunnDueDate');
+    expect(r[0].message).toContain('26/08/2026');
+    expect(r[0].message).toContain('24/07/2026');
+  });
+
+  it('KUNN nằm gọn trong hiệu lực HĐTD thì không cảnh báo', () => {
+    const r = checkKunnAgainstContract(
+      kunn({ DisbursementDate: '2026-03-26', KunnDueDate: '2026-06-26' }),
+      cc({ ContractStartDate: '2025-07-24', ContractEndDate: '2026-07-24' })
+    );
+    expect(r).toEqual([]);
+  });
+
+  it('đáo hạn ĐÚNG ngày hết hiệu lực là hợp lệ', () => {
+    const r = checkKunnAgainstContract(
+      kunn({ KunnDueDate: '2026-07-24' }),
+      cc({ ContractEndDate: '2026-07-24' })
+    );
+    expect(r).toEqual([]);
+  });
+
+  it('giải ngân trước ngày hiệu lực và sau ngày hết hiệu lực', () => {
+    expect(checkKunnAgainstContract(
+      kunn({ DisbursementDate: '2025-01-01' }),
+      cc({ ContractStartDate: '2025-07-24' })
+    )[0].field).toBe('DisbursementDate');
+
+    expect(checkKunnAgainstContract(
+      kunn({ DisbursementDate: '2026-08-01' }),
+      cc({ ContractEndDate: '2026-07-24' })
+    )[0].message).toContain('SAU ngày hết hiệu lực');
+  });
+
+  it('HĐTD đã đóng thì cảnh báo', () => {
+    const r = checkKunnAgainstContract(kunn({}), cc({ IsClosed: true }));
+    expect(r[0].message).toContain('đã đóng');
+  });
+
+  it('mọi cảnh báo đều là warn, không chặn cứng', () => {
+    const r = checkKunnAgainstContract(
+      kunn({ DisbursementDate: '2026-08-01', KunnDueDate: '2027-01-01' }),
+      cc({ ContractStartDate: '2025-07-24', ContractEndDate: '2026-07-24', IsClosed: true })
+    );
+    expect(r.length).toBeGreaterThan(1);
+    expect(r.every(x => x.level === 'warn')).toBe(true);
+  });
+
+  it('không có HĐTD cha thì không đối chiếu được', () => {
+    expect(checkKunnAgainstContract(kunn({ KunnDueDate: '2030-01-01' }), null)).toEqual([]);
+  });
+});
+
+describe('summarizeCreditContracts', () => {
+  it('HĐTD đã ký chưa giải ngân vẫn xuất hiện', () => {
+
+    const r = summarizeCreditContracts(
+      [cc({ Id: 7, HdtdNumber: 'HD-MOI', ContractAmount: 2_000_000_000, ContractEndDate: '2027-01-01' })],
+      [],
+      { today: HOM_NAY }
+    );
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ kunnCount: 0, activeKunnCount: 0, outstanding: 0, isEmpty: true, expired: false });
+  });
+
+  it('HMTD đã tất toán hết KUNN vẫn xuất hiện và còn hiệu lực', () => {
+
+    const r = summarizeCreditContracts(
+      [cc({ Id: 7, ContractEndDate: '2027-01-01' })],
+      [
+        kunn({ Id: 1, CreditContractId: 7, LoanAmount: 800_000_000, CurrentBalance: 0, IsSettled: true }),
+        kunn({ Id: 2, CreditContractId: 7, LoanAmount: 500_000_000, CurrentBalance: 0, IsSettled: true }),
+      ],
+      { today: HOM_NAY }
+    );
+    expect(r[0]).toMatchObject({
+      kunnCount: 2, activeKunnCount: 0, settledKunnCount: 2,
+      outstanding: 0, isEmpty: true, expired: false,
+    });
+  });
+
+  it('dư nợ chỉ tính KUNN còn hiệu lực', () => {
+    const r = summarizeCreditContracts(
+      [cc({ Id: 7 })],
+      [
+        kunn({ Id: 1, CreditContractId: 7, CurrentBalance: 800_000_000, IsSettled: true }),
+        kunn({ Id: 2, CreditContractId: 7, CurrentBalance: 500_000_000 }),
+      ]
+    );
+    expect(r[0].outstanding).toBe(500_000_000);
+    expect(r[0].activeKunnCount).toBe(1);
+  });
+
+  it('KUNN của HĐTD khác không bị gom sai', () => {
+    const r = summarizeCreditContracts(
+      [cc({ Id: 7 }), cc({ Id: 8, HdtdNumber: 'HD02' })],
+      [
+        kunn({ Id: 1, CreditContractId: 7, CurrentBalance: 100 }),
+        kunn({ Id: 2, CreditContractId: 8, CurrentBalance: 200 }),
+      ]
+    );
+    expect(r[0].outstanding).toBe(100);
+    expect(r[1].outstanding).toBe(200);
+  });
+
+  it('HĐTD hết hiệu lực được đánh dấu', () => {
+    const r = summarizeCreditContracts(
+      [cc({ Id: 7, ContractEndDate: '2026-07-24' })], [], { today: HOM_NAY }
+    );
+    expect(r[0].expired).toBe(true);
+  });
+
+  it('dùng dư nợ tính từ lịch thu nợ khi có hàm tra', () => {
+    const r = summarizeCreditContracts(
+      [cc({ Id: 7 })],
+      [kunn({ Id: 1, CreditContractId: 7, CurrentBalance: 900_000_000 })],
+      { getOutstanding: () => 250_000_000 }
+    );
+    expect(r[0].outstanding).toBe(250_000_000);
+  });
+});

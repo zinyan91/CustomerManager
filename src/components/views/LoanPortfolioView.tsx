@@ -16,16 +16,19 @@ import {
   type RateSegment,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
+import { checkKunnAgainstContract, nextKunnNumber } from '../../lib/creditContract';
+import { fetchCreditContractsByCustomerAPI } from '../../lib/api';
+import { useWork } from '../../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
 import {
   getLoanProductRule, allowedPurposes, graceMonthOptions,
   checkTenor, checkPurpose,
 } from '../../lib/loanProductRules';
-import type { LoanContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
+import type { LoanContract, CreditContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import {
   Search, FileText, Receipt, Calendar, CheckCircle, AlertCircle,
-  Plus, X, ShieldCheck, DollarSign, Building2, Save, Trash2
+  Plus, X, ShieldCheck, DollarSign, Building2, Save, Trash2, AlertTriangle
 } from 'lucide-react';
 import { DateInput } from '../DateInput';
 import { CustomerSearchBar } from '../portfolio/CustomerSearchBar';
@@ -71,6 +74,8 @@ export const LoanPortfolioView: React.FC = () => {
   const [searchContract, setSearchContract] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
+  const { selectedCustomerId, setSelectedCustomerId, disburseRequest, clearDisburseRequest } = useWork();
+  const [creditContracts, setCreditContracts] = useState<CreditContract[]>([]);
   const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [dropdownQuery, setDropdownQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -231,6 +236,23 @@ export const LoanPortfolioView: React.FC = () => {
         (c.NationalId || '').includes(dropdownQuery)
       );
 
+  useEffect(() => {
+    setSchedules([]);
+    setAllSchedulesMap({});
+    setSelectedContract(null);
+    setSelectedMasterFilter('ALL');
+    setShowForm(false);
+    setMainTab('kunn');
+
+    const id = foundCustomer?.Id;
+    if (!id) {
+      setCreditContracts([]);
+      return;
+    }
+    if (selectedCustomerId !== id) setSelectedCustomerId(id);
+    fetchCreditContractsByCustomerAPI(id).then(setCreditContracts);
+  }, [foundCustomer?.Id]);
+
   const loadAllSchedulesForContracts = async (cons: LoanContract[]) => {
     const map: Record<number, RepaymentSchedule[]> = {};
     await Promise.all(cons.map(async (c) => {
@@ -261,6 +283,13 @@ export const LoanPortfolioView: React.FC = () => {
     setCollaterals(cols);
     loadAllSchedulesForContracts(cons);
   };
+
+  useEffect(() => {
+    if (allCustomers.length === 0 || !selectedCustomerId) return;
+    if (foundCustomer?.Id === selectedCustomerId) return;
+    const c = allCustomers.find(x => x.Id === selectedCustomerId);
+    if (c) handlePickCustomer(c);
+  }, [selectedCustomerId, allCustomers]);
 
   const showNotify = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -991,6 +1020,72 @@ export const LoanPortfolioView: React.FC = () => {
     return map;
   }, [selectedContract, schedules, todayIso]);
 
+  const formCreditContract = useMemo(() => {
+    if (creditContracts.length === 0) return null;
+    if (selectedContract?.CreditContractId) {
+      return creditContracts.find(cc => cc.Id === selectedContract.CreditContractId) || null;
+    }
+    const no = effectiveFormHdtdNo.trim().toLowerCase();
+    if (!no) return null;
+    return creditContracts.find(cc => cc.HdtdNumber.trim().toLowerCase() === no) || null;
+  }, [creditContracts, selectedContract, effectiveFormHdtdNo]);
+
+  const kunnIssues = useMemo(
+    () => checkKunnAgainstContract(
+      { DisbursementDate: form.DisbursementDate, KunnDueDate: form.KunnDueDate, LoanAmount: kunnLoanAmountNum },
+      formCreditContract
+    ),
+    [form.DisbursementDate, form.KunnDueDate, kunnLoanAmountNum, formCreditContract]
+  );
+
+  useEffect(() => {
+    if (!disburseRequest || !foundCustomer) return;
+    if (disburseRequest.customerId !== foundCustomer.Id) return;
+    const cc = creditContracts.find(x => x.Id === disburseRequest.creditContractId);
+    if (!cc) return;
+
+    const kunnNo = nextKunnNumber(cc.HdtdNumber, contracts.map(c => c.ContractNumber));
+
+    setSelectedContract(null);
+    setSchedules([]);
+    setFormHdtdNumber(cc.HdtdNumber);
+    setFormKunnNumber(kunnNo);
+    setForm({
+      CustomerId: foundCustomer.Id,
+      CreditContractId: cc.Id,
+      ContractType: 0,
+      ContractNumber: kunnNo,
+      LoanMethod: cc.LoanMethod || 'Hạn mức tín dụng',
+      DebtGroup: 1,
+      ContractStartDate: cc.ContractStartDate || '',
+      ContractEndDate: cc.ContractEndDate || '',
+      LoanTenorMonths: cc.LoanTenorMonths || 12,
+      LoanPurpose: cc.LoanPurpose || '',
+      LoanPurposeType: cc.LoanPurposeType || '',
+      PrincipalRepaymentMethod: 'Gốc trả cuối kỳ',
+      InterestRepaymentMethod: 'Trả hàng tháng theo dư nợ thực tế',
+      PrincipalGracePeriodMonths: 0,
+      InterestGracePeriodMonths: 0,
+      IsSettled: false,
+      IsRestructured: false,
+    });
+    setFormCreditLimit(cc.ContractAmount ? cc.ContractAmount.toLocaleString('vi-VN') : '');
+    setFormCreditLimitCode(cc.ApprovalCode || '');
+    setFormCreditLimitAmount(cc.ApprovalAmount ? cc.ApprovalAmount.toLocaleString('vi-VN') : '');
+    setFormLoanAmount('');
+    setFormCurrentBalance('');
+    setRatePreferential(cc.PreferentialRate ? (cc.PreferentialRate * 100).toString() : '');
+    setRatePreferentialMonths(cc.PreferentialPeriodMonths ? cc.PreferentialPeriodMonths.toString() : '');
+    setRateBase(cc.BaseRate ? (cc.BaseRate * 100).toString() : '');
+    setRateMargin(cc.MarginRate ? (cc.MarginRate * 100).toString() : '');
+    setSelectedCollateralIds(
+      (cc.CollateralIds || '').split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n))
+    );
+    setMainTab('kunn');
+    setShowForm(true);
+    clearDisburseRequest();
+  }, [disburseRequest, foundCustomer, creditContracts, contracts]);
+
   const expiredLimitNote = useMemo(() => {
     const scope = selectedMasterFilter === 'ALL'
       ? limitGroups
@@ -1378,6 +1473,18 @@ export const LoanPortfolioView: React.FC = () => {
                           </select>
                         </div>
                       </div>
+
+                      {kunnIssues.length > 0 && (
+                        <div className={`p-3 rounded-xl border text-[11px] font-semibold space-y-1 ${
+                          isLight ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-amber-950/40 border-amber-500/40 text-amber-300'
+                        }`}>
+                          <div className="flex items-center space-x-1.5 uppercase tracking-wide">
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                            <span>Đối chiếu với HĐTD {formCreditContract?.HdtdNumber}</span>
+                          </div>
+                          {kunnIssues.map((x, i) => <div key={i}>• {x.message}</div>)}
+                        </div>
+                      )}
 
                       {form.LoanMethod === 'Hạn mức tín dụng' && (
                         <div className={`p-3 rounded-xl border flex flex-wrap items-center justify-between text-xs font-semibold ${

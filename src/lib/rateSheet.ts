@@ -63,6 +63,7 @@ export interface RateSheetInput {
   preparedBy?: string;
   channel?: DepositChannel | null;
   logoDataUri?: string | null;
+  issuedOn?: string | null;
 }
 
 export function findRateSheetBlockers(input: RateSheetInput): RateSheetBlocker[] {
@@ -110,19 +111,28 @@ function esc(v?: string | null): string {
 }
 
 function lendingRateTable(input: RateSheetInput): string {
-  const rows = input.tiers.map(t => `
+  const hasChoice = input.tiers.some(t => t.PackageCode);
+  const spread = input.program.FloatingSpreadAnnual;
+  const hasSpread = isNum(spread);
+
+  const spreadCellText = hasSpread
+    ? `${esc(input.program.FloatingBaseLabel || 'LSCS')} + biên độ tối thiểu ${formatRateForCustomer(spread)}`
+    : '';
+
+  const rows = input.tiers.map((t, i) => `
     <tr>
+      ${hasChoice ? `<td class="mid strong">${esc(t.PackageCode || '—')}</td>` : ''}
       <td class="c1">${esc(t.Label)}</td>
       <td class="num strong">${formatRateForCustomer(t.RateAnnual)}</td>
-      ${t.MinTenorMonths ? `<td class="num">${t.MinTenorMonths} tháng</td>` : '<td class="num">—</td>'}
+      <td class="num">${t.MinTenorMonths ? `${t.MinTenorMonths} tháng` : '—'}</td>
+      ${hasSpread && i === 0
+        ? `<td class="mid spread" rowspan="${input.tiers.length}">${spreadCellText}</td>`
+        : ''}
     </tr>`).join('');
 
-  const spread = input.program.FloatingSpreadAnnual;
-  const spreadNote = isNum(spread)
-    ? `<p class="note"><strong>Sau thời gian cố định:</strong> ${esc(input.program.FloatingBaseLabel || 'lãi suất cơ sở')}
-       + biên độ tối thiểu <strong>${formatRateForCustomer(spread)}</strong>${
-         input.program.RateResetMonths ? `, kỳ điều chỉnh ${input.program.RateResetMonths} tháng/lần` : ''
-       }.</p>`
+  const resetNote = input.program.RateResetMonths
+    ? `<p class="note">LSCV sau thời gian cố định áp dụng khi thời gian vay lớn hơn thời gian cố định,
+       kỳ điều chỉnh ${input.program.RateResetMonths} tháng/lần.</p>`
     : '';
 
   return `
@@ -130,14 +140,44 @@ function lendingRateTable(input: RateSheetInput): string {
     <table>
       <thead>
         <tr>
+          ${hasChoice ? '<th class="mid">Lựa chọn</th>' : ''}
           <th>Kỳ cố định LSCV</th>
           <th class="num">LSCV (%/năm)</th>
-          <th class="num">Thời gian vay tối thiểu</th>
+          <th class="num">TG vay tối thiểu</th>
+          ${hasSpread ? '<th class="mid">LSCV sau thời gian cố định</th>' : ''}
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
-    ${spreadNote}`;
+    ${resetNote}`;
+}
+
+function tierFeeTable(input: RateSheetInput): string {
+  const rows = input.tiers.filter(t => isNum(t.MinFeeRatio));
+  if (rows.length === 0) return '';
+
+  const minAmount = input.program.MinFeeAmountVnd;
+  const body = rows.map((t, i) => `
+    <tr>
+      <td class="mid strong">${esc(t.PackageCode || t.Label)}</td>
+      <td class="num strong">${formatRateForCustomer(t.MinFeeRatio)}</td>
+      ${isNum(minAmount) && i === 0
+        ? `<td class="mid" rowspan="${rows.length}">${formatMoneyForCustomer(minAmount)}</td>`
+        : ''}
+    </tr>`).join('');
+
+  return `
+    <h2>Doanh thu phí dịch vụ tối thiểu</h2>
+    <table>
+      <thead>
+        <tr>
+          <th class="mid">Lựa chọn</th>
+          <th class="num">Doanh thu phí tối thiểu</th>
+          ${isNum(minAmount) ? '<th class="mid">Số tiền tối thiểu</th>' : ''}
+        </tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table>`;
 }
 
 function depositRateTable(input: RateSheetInput): string {
@@ -179,28 +219,51 @@ function conditionsBlock(input: RateSheetInput): string {
   return `<h2>Điều kiện áp dụng</h2><ul>${items}</ul>`;
 }
 
+export function pivotFeeOptions(options: RateProgramFeeOption[]): {
+  optionLabels: string[];
+  groups: { group: string; cells: (RateProgramFeeOption | null)[] }[];
+} {
+  const optionLabels: string[] = [];
+  const groupNames: string[] = [];
+
+  for (const o of options) {
+    if (!optionLabels.includes(o.OptionLabel)) optionLabels.push(o.OptionLabel);
+    if (!groupNames.includes(o.PackageGroup)) groupNames.push(o.PackageGroup);
+  }
+
+  const groups = groupNames.map(group => ({
+    group,
+    cells: optionLabels.map(label =>
+      options.find(o => o.PackageGroup === group && o.OptionLabel === label) ?? null
+    ),
+  }));
+
+  return { optionLabels, groups };
+}
+
 function feeOptionsBlock(input: RateSheetInput): string {
   const options = input.feeOptions || [];
   if (options.length === 0) return '';
-  const rows = options.map(o => `
+
+  const { optionLabels, groups } = pivotFeeOptions(options);
+
+  const head = optionLabels.map(l => `<th class="mid">${esc(l)}</th>`).join('');
+  const body = groups.map(g => `
     <tr>
-      <td class="c1"><strong>${esc(o.OptionLabel)}</strong></td>
-      <td>${esc(o.PackageGroup)}</td>
-      <td class="num strong">${formatRateForCustomer(o.MinFeeRatio)}</td>
-      <td class="small">${esc(o.Note)}</td>
+      <td class="c1">${esc(g.group)}</td>
+      ${g.cells.map(c => c === null
+        ? '<td class="mid">—</td>'
+        : `<td>
+             <div class="feebig">${formatRateForCustomer(c.MinFeeRatio)}</div>
+             <div class="small">dư nợ giải ngân lần này${c.Note ? `. ${esc(c.Note)}` : ''}</div>
+           </td>`).join('')}
     </tr>`).join('');
+
   return `
-    <h2>Phí dịch vụ</h2>
+    <h2>Phí dịch vụ — khách hàng chọn 1 trong 2 phương án</h2>
     <table>
-      <thead>
-        <tr>
-          <th>Phương án</th>
-          <th>Nhóm gói cố định</th>
-          <th class="num">Phí tối thiểu / dư nợ giải ngân</th>
-          <th>Ghi chú</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
+      <thead><tr><th>Lựa chọn</th>${head}</tr></thead>
+      <tbody>${body}</tbody>
     </table>`;
 }
 
@@ -226,16 +289,6 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
   const { program } = input;
   const bankName = input.bankName || 'VIETBANK';
   const isDeposit = program.Kind === 'huy_dong';
-
-  const periodLine = [
-    `<strong>Thời gian triển khai:</strong> từ ngày ${formatDateForCustomer(program.EffectiveFrom)}`,
-    program.EffectiveTo ? ` đến hết ngày ${formatDateForCustomer(program.EffectiveTo)}` : '',
-    program.QuotaVnd ? ' hoặc đến khi hết hạn mức chương trình' : '',
-  ].join('') + '.';
-
-  const quotaLine = program.QuotaVnd
-    ? `<p><strong>Hạn mức chương trình:</strong> ${formatMoneyForCustomer(program.QuotaVnd)}.</p>`
-    : '';
 
   const body = isDeposit ? depositRateTable(input) : lendingRateTable(input);
 
@@ -278,6 +331,9 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
   th.num { text-align: right; }
   .strong { font-weight: 800; color: #0b5cab; }
   .c1 { font-weight: 600; }
+  .mid { text-align: center; vertical-align: middle; }
+  .spread { font-weight: 700; color: #0b5cab; }
+  .feebig { font-weight: 800; color: #0b5cab; font-size: 11pt; }
   .small { font-size: 8pt; color: #40556e; }
   .note { font-size: 8pt; color: #40556e; margin: 3px 0 0; }
   ul { margin: 3px 0 0 16px; padding: 0; }
@@ -300,20 +356,14 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
     <div class="sub">Dành cho Khách hàng cá nhân</div>
   </header>
 
-  <div class="meta">
-    ${quotaLine}
-    <p>${periodLine}</p>
-  </div>
-
   ${body}
-  ${conditionsBlock(input)}
+  ${isDeposit ? '' : tierFeeTable(input)}
   ${feeOptionsBlock(input)}
   ${prepaymentBlock(input)}
+  ${conditionsBlock(input)}
 
   <footer>
-    <p><strong>Chi tiết xem tại:</strong> Thông báo số ${esc(program.DocumentNumber)}${
-      program.DocumentDate ? ` ngày ${formatDateForCustomer(program.DocumentDate)}` : ''
-    }.</p>
+    ${input.issuedOn ? `<p><strong>Ngày lập:</strong> ${formatDateForCustomer(input.issuedOn)}</p>` : ''}
     ${input.preparedBy ? `<p><strong>Nhân viên tư vấn:</strong> ${esc(input.preparedBy)}</p>` : ''}
     <p class="disclaimer">
       Bảng lãi suất mang tính tham khảo tại thời điểm phát hành. Lãi suất và phí có thể thay đổi theo

@@ -133,8 +133,9 @@ export const RateQuoteView: React.FC = () => {
     conditions: programConditions,
     preparedBy: preparedBy.trim() || undefined,
     logoDataUri: vietbankLogo,
+    issuedOn: onDate,
     channel: kind === 'huy_dong' ? channel : null,
-  } : null), [program, programTiers, programPrepayFees, programFeeOptions, programConditions, preparedBy, kind, channel]);
+  } : null), [program, programTiers, programPrepayFees, programFeeOptions, programConditions, preparedBy, kind, channel, onDate]);
 
   const sheetBlockers = useMemo(
     () => (sheetInput ? findRateSheetBlockers(sheetInput) : []),

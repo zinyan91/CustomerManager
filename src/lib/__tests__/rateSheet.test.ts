@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatRateForCustomer, formatMoneyForCustomer, formatDateForCustomer,
   prepaymentYearLabel, prepaymentFeeLabel, findRateSheetBlockers, buildRateSheetHtml,
+  pivotFeeOptions,
 } from '../rateSheet';
 import type { RateProgram, RateProgramTier, RateProgramPrepaymentFee } from '../rateQuote';
 
@@ -165,6 +166,7 @@ describe('buildRateSheetHtml', () => {
       { Id: 1, ProgramId: 3, OptionLabel: 'Phương án 1', PackageGroup: 'Gói 24 tháng đầu', MinFeeRatio: 0.015, CounterFeeRatio: 0.01, Note: 'Tại quầy tối thiểu 1%.', SortOrder: 1 },
     ],
     preparedBy: 'Nguyễn Văn A',
+    issuedOn: '2026-08-04',
   });
 
   it('is a self-contained printable document sized for A4', () => {
@@ -181,11 +183,16 @@ describe('buildRateSheetHtml', () => {
     expect(html).toContain('10,5%');
   });
 
-  it('states the programme period, quota and source document', () => {
-    expect(html).toContain('19/6/2026');
-    expect(html).toContain('31/12/2026');
-    expect(html).toContain('1 nghìn tỷ đồng');
-    expect(html).toContain('1680/2026/TB-TGĐ');
+  it('keeps internal-only facts off the customer sheet', () => {
+    expect(html).not.toContain('1 nghìn tỷ đồng');
+    expect(html).not.toContain('Hạn mức chương trình');
+    expect(html).not.toContain('1680/2026/TB-TGĐ');
+    expect(html).not.toContain('Thời gian triển khai');
+  });
+
+  it('anchors the quote in time with an issue date', () => {
+    expect(html).toContain('Ngày lập');
+    expect(html).toContain('4/8/2026');
   });
 
   it('states the floating rate after the fixed period', () => {
@@ -245,5 +252,31 @@ describe('buildRateSheetHtml', () => {
     expect(deposit).toContain('Lãi hàng tháng');
     expect(deposit).toContain('8,74%');
     expect(deposit).not.toContain('Lãi suất cho vay');
+  });
+});
+
+describe('pivotFeeOptions', () => {
+  const options = [
+    { Id: 1, ProgramId: 3, OptionLabel: 'Phương án 1', PackageGroup: 'Gói 24 tháng đầu', MinFeeRatio: 0.015, CounterFeeRatio: 0.01, Note: null, SortOrder: 1 },
+    { Id: 2, ProgramId: 3, OptionLabel: 'Phương án 1', PackageGroup: 'Các gói còn lại', MinFeeRatio: 0.01, CounterFeeRatio: 0.005, Note: null, SortOrder: 2 },
+    { Id: 3, ProgramId: 3, OptionLabel: 'Phương án 2', PackageGroup: 'Gói 24 tháng đầu', MinFeeRatio: 0.0175, CounterFeeRatio: null, Note: null, SortOrder: 3 },
+    { Id: 4, ProgramId: 3, OptionLabel: 'Phương án 2', PackageGroup: 'Các gói còn lại', MinFeeRatio: 0.0125, CounterFeeRatio: null, Note: null, SortOrder: 4 },
+  ];
+
+  it('puts each phương án in its own column and each nhóm gói on its own row', () => {
+    const { optionLabels, groups } = pivotFeeOptions(options);
+    expect(optionLabels).toEqual(['Phương án 1', 'Phương án 2']);
+    expect(groups.map(g => g.group)).toEqual(['Gói 24 tháng đầu', 'Các gói còn lại']);
+    expect(groups[0].cells.map(c => c!.MinFeeRatio)).toEqual([0.015, 0.0175]);
+    expect(groups[1].cells.map(c => c!.MinFeeRatio)).toEqual([0.01, 0.0125]);
+  });
+
+  it('leaves a hole when a combination is not published', () => {
+    const { groups } = pivotFeeOptions(options.slice(0, 3));
+    expect(groups[1].cells[1]).toBeNull();
+  });
+
+  it('is safe on empty input', () => {
+    expect(pivotFeeOptions([])).toEqual({ optionLabels: [], groups: [] });
   });
 });

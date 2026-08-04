@@ -1,5 +1,6 @@
 import React from 'react';
 import { DateInput } from '../DateInput';
+import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../lib/documentOptions';
 import type { ThemeStyles } from '../../lib/themeStyles';
 import type { TemplateType } from './TemplateSelector';
 import { Plus, Trash2 } from 'lucide-react';
@@ -75,6 +76,12 @@ interface DocumentFormProps {
   saleSellerName: string; setSaleSellerName: (v: string) => void;
   saleSellerCccd: string; setSaleSellerCccd: (v: string) => void;
   saleSellerCccdDate: string; setSaleSellerCccdDate: (v: string) => void;
+  saleSellerCccdPlace: string; setSaleSellerCccdPlace: (v: string) => void;
+  salePayMethod: 'cash' | 'transfer'; setSalePayMethod: (v: 'cash' | 'transfer') => void;
+  saleBankOwner: string; setSaleBankOwner: (v: string) => void;
+  saleBankAccNo: string; setSaleBankAccNo: (v: string) => void;
+  saleBankName: string; setSaleBankName: (v: string) => void;
+  saleBankBranch: string; setSaleBankBranch: (v: string) => void;
   saleStartDate: string; setSaleStartDate: (v: string) => void;
   saleEndDate: string; setSaleEndDate: (v: string) => void;
   salePaymentStage1: string; setSalePaymentStage1: (v: string) => void;
@@ -142,6 +149,12 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
   saleSellerName, setSaleSellerName,
   saleSellerCccd, setSaleSellerCccd,
   saleSellerCccdDate, setSaleSellerCccdDate,
+  saleSellerCccdPlace, setSaleSellerCccdPlace,
+  salePayMethod, setSalePayMethod,
+  saleBankOwner, setSaleBankOwner,
+  saleBankAccNo, setSaleBankAccNo,
+  saleBankName, setSaleBankName,
+  saleBankBranch, setSaleBankBranch,
   saleStartDate, setSaleStartDate,
   saleEndDate, setSaleEndDate,
   salePaymentStage1, setSalePaymentStage1,
@@ -494,6 +507,57 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
               <input type="text" value={saleSellerCccdDate} onChange={e => setSaleSellerCccdDate(e.target.value)} className={`w-full rounded-xl p-2 font-mono ${styles.inputStyle}`} />
             </div>
           </div>
+          <div>
+            <label className={`block mb-1 ${styles.labelStyle}`}>Nơi cấp CCCD</label>
+            <select value={saleSellerCccdPlace} onChange={e => setSaleSellerCccdPlace(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`}>
+              {CCCD_ISSUE_PLACES.map(pl => <option key={pl} value={pl}>{pl}</option>)}
+            </select>
+          </div>
+
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2.5">
+            <div className="font-bold text-amber-500 text-[11px] uppercase">HÌNH THỨC NHẬN THANH TOÁN CỦA BÊN BÁN</div>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center space-x-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={salePayMethod === 'cash'}
+                  onChange={() => setSalePayMethod('cash')}
+                />
+                <span>💵 Tiền mặt</span>
+              </label>
+              <label className="flex items-center space-x-1.5 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={salePayMethod === 'transfer'}
+                  onChange={() => setSalePayMethod('transfer')}
+                />
+                <span>🏦 Chuyển khoản</span>
+              </label>
+            </div>
+
+            {salePayMethod === 'transfer' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên chủ tài khoản</label>
+                  <input type="text" value={saleBankOwner} onChange={e => setSaleBankOwner(e.target.value)} className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`} />
+                </div>
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Số tài khoản (STK)</label>
+                  <input type="text" value={saleBankAccNo} onChange={e => setSaleBankAccNo(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.inputStyle}`} />
+                </div>
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Ngân hàng</label>
+                  <select value={saleBankName} onChange={e => setSaleBankName(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`}>
+                    {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={`block mb-1 ${styles.labelStyle}`}>Chi nhánh</label>
+                  <input type="text" value={saleBankBranch} onChange={e => setSaleBankBranch(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
@@ -662,7 +726,9 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                 </div>
                 <div>
                   <label className={`block mb-1 ${styles.labelStyle}`}>Nơi cấp CCCD</label>
-                  <input type="text" value={payCashCccdPlace || ''} onChange={e => setPayCashCccdPlace && setPayCashCccdPlace(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+                  <select value={payCashCccdPlace || ''} onChange={e => setPayCashCccdPlace && setPayCashCccdPlace(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`}>
+                    {CCCD_ISSUE_PLACES.map(pl => <option key={pl} value={pl}>{pl}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
@@ -682,7 +748,9 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                 </div>
                 <div>
                   <label className={`block mb-1 ${styles.labelStyle}`}>Ngân hàng</label>
-                  <input type="text" value={payBankName || ''} onChange={e => setPayBankName && setPayBankName(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+                  <select value={payBankName || ''} onChange={e => setPayBankName && setPayBankName(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`}>
+                    {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className={`block mb-1 ${styles.labelStyle}`}>Chi nhánh Ngân hàng</label>

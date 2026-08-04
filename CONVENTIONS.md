@@ -10,6 +10,12 @@ Mã nguồn không chứa chú thích. Toàn bộ giải thích "vì sao" nằm 
 
 **Một quy tắc nghiệp vụ chỉ được cài ở MỘT nơi.** Dự án đã trả giá 5 lần cho việc chép hàm ra nhiều file rồi để chúng trôi dạt: `getEffectiveLtv` từng có 4 bản khác nhau khiến cùng một tài sản cho ba hạn mức cho vay khác nhau ở ba màn hình; `getMasterHdtdNumber` 3 bản; `diffDays` 3 bản. Cần dùng lại thì import, không copy.
 
+**Không viết công thức nghiệp vụ trong `.tsx`.** Mọi phép tính tiền, lãi, ngày, LTV, hạn mức phải nằm ở `src/lib/` dưới dạng hàm thuần có test; component chỉ gọi và hiển thị. Lý do đo được: `src/lib` có 477 test, `src/components` có **0** — công thức viết trong view là công thức không ai kiểm, và đó là nơi mọi lỗi lệch số của dự án này sinh ra.
+
+Ba lần đã trả giá: bốn cách tính hạn mức khả dụng cùng tồn tại, hai trong số đó viết thẳng trong `LoanPortfolioView`, khiến cùng một khách hàng hiện `2.800.000.000` ở đầu trang và `1.400.000.000` trong form. Khái niệm "lãi suất đang áp dụng" có ba bản: `getEffectiveActiveRate` trong `utils.ts` bỏ qua kỳ ưu đãi, khối tính trong view bỏ qua bảng điều chỉnh, nhánh trong `generateSchedule` chỉ chọn một trong hai. Và view tự tính LTV `giá trị × LTV / 100` nên chấp nhận cả định giá đã hết hiệu lực, trong khi `usableCapacity` loại — cùng hồ sơ, hai kết luận trái nhau trên cùng màn hình.
+
+Kể cả việc nhỏ cũng theo quy tắc này: đọc số tiền từ ô nhập dùng `parseMoneyInput` trong `utils.ts`, không tự viết lại `parseFloat(...replace(...))`.
+
 **Cẩn thận `||` khi số 0 là giá trị hợp lệ.** `parseFloat('0') || 80` cho ra `80`. Chính lỗi này từng biến tài sản "Hạn chế nhận TS" (LTV 0%) thành tài sản bậc cao nhất 80%. Dùng kiểm tra `null`/`undefined`/`NaN` tường minh.
 
 **Không nuốt lỗi.** Bắt lỗi rồi lưu lại sau khi xoá bớt trường sẽ khiến giao diện báo thành công trong khi dữ liệu đã mất. Đây là cách "diện mở thẻ" từng biến mất mỗi lần lưu.
@@ -26,7 +32,7 @@ Mã nguồn không chứa chú thích. Toàn bộ giải thích "vì sao" nằm 
 
 ## 2. Logic tài chính
 
-Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 464 test tại `src/lib/__tests__/`.
+Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 477 test tại `src/lib/__tests__/`.
 
 | Tệp | Nội dung |
 | :--- | :--- |
@@ -423,6 +429,6 @@ Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor
 ```bash
 npm run dev        # Máy chủ phát triển
 npm run build      # Kiểm tra kiểu + đóng gói
-npm test           # 464 test logic tài chính
+npm test           # 477 test logic tài chính
 npm run lint       # Kiểm tra mã nguồn
 ```

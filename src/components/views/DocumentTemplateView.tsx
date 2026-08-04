@@ -4,6 +4,7 @@ import { getThemeStyles } from '../../lib/themeStyles';
 import { fmtDate } from '../../lib/utils';
 import { TemplateSelector, TEMPLATE_LIST, type TemplateType } from '../documents/TemplateSelector';
 import { DocumentForm, type SaleItem } from '../documents/DocumentForm';
+import { DEFAULT_DEPOSIT_CONTRACT, type DepositContractData } from '../documents/depositContract';
 import { DocumentPreview } from '../documents/DocumentPreview';
 
 const nfc = (str: string) => (str ? str.normalize('NFC') : '');
@@ -98,6 +99,8 @@ export const DocumentTemplateView: React.FC = () => {
   const [saleSellerName, setSaleSellerName] = useState('PHẠM HỒNG ĐỨC');
   const [saleSellerCccd, setSaleSellerCccd] = useState('0720 7700 0901');
   const [saleSellerCccdDate, setSaleSellerCccdDate] = useState('25/05/2023');
+  const [deposit, setDeposit] = useState<DepositContractData>(DEFAULT_DEPOSIT_CONTRACT);
+
   const [saleSellerCccdPlace, setSaleSellerCccdPlace] = useState('CCS QLHC về TTXH');
   const [salePayMethod, setSalePayMethod] = useState<'cash' | 'transfer'>('transfer');
   const [saleBankOwner, setSaleBankOwner] = useState('PHẠM HỒNG ĐỨC');
@@ -203,6 +206,96 @@ export const DocumentTemplateView: React.FC = () => {
                 <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
                 <div style="height: 70px;"></div>
                 <div class="font-bold uppercase">${nfc(mbPartyBName)}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    if (selectedTemplate === 'deposit') {
+      const d = deposit;
+      const taxLabel = (side: string) => (side === 'A' ? 'bên A' : 'bên B');
+      return `
+        <div class="text-center no-indent">
+          <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+          <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
+          <div style="text-align: center; margin: 4px 0;" class="no-indent">
+            <span style="border-bottom: 2px solid #000; width: 140px; display: inline-block;"></span>
+          </div>
+        </div>
+        <div class="text-center pt-2 pb-2 no-indent">
+          <h1>HỢP ĐỒNG ĐẶT CỌC</h1>
+          <p class="font-italic text-[11pt] no-indent">(V/v chuyển nhượng QSDĐ và tài sản gắn liền với đất)</p>
+        </div>
+        <p class="clause-p">Chúng tôi gồm có:</p>
+
+        <p class="font-bold no-indent">I. BÊN MUA: (Gọi tắt là bên A)</p>
+        <p class="clause-p">- ${nfc(d.buyerTitle)}: <strong>${nfc(d.buyerName)}</strong> &nbsp;|&nbsp; Sinh năm: ${nfc(d.buyerBirthYear)}</p>
+        <p class="clause-p">- CCCD số: <strong>${nfc(d.buyerCccd)}</strong> &nbsp;|&nbsp; Cấp ngày: ${nfc(d.buyerCccdDate)} &nbsp;|&nbsp; Cấp tại: ${nfc(d.buyerCccdPlace)}</p>
+        <p class="clause-p">- HKTT: ${nfc(d.buyerAddress)}</p>
+
+        <p class="font-bold no-indent pt-2">II. BÊN BÁN: (Gọi tắt là bên B)</p>
+        <p class="clause-p">- ${nfc(d.sellerTitle)}: <strong>${nfc(d.sellerName)}</strong> &nbsp;|&nbsp; Sinh năm: ${nfc(d.sellerBirthYear)}</p>
+        <p class="clause-p">- CCCD số: <strong>${nfc(d.sellerCccd)}</strong> &nbsp;|&nbsp; Cấp ngày: ${nfc(d.sellerCccdDate)} &nbsp;|&nbsp; Cấp tại: ${nfc(d.sellerCccdPlace)}</p>
+        <p class="clause-p">- HKTT: ${nfc(d.sellerAddress)}</p>
+
+        <p class="clause-p pt-2">Hai bên đồng ý và thống nhất thỏa thuận như sau:</p>
+
+        <h2>III. ĐỐI TƯỢNG CỦA HỢP ĐỒNG</h2>
+        <p class="clause-p">Bên B đồng ý bán cho bên A phần đất và tài sản trên đất:</p>
+        <p class="clause-p">- Thửa đất số: <strong>${nfc(d.parcelNo)}</strong> &nbsp;|&nbsp; Tờ bản đồ số: <strong>${nfc(d.mapSheetNo)}</strong></p>
+        <p class="clause-p">- Diện tích: <strong>${nfc(d.area)} m²</strong> (Bằng chữ: ${nfc(d.areaInWords)}).</p>
+        <p class="clause-p">- Địa chỉ thửa đất: ${nfc(d.parcelAddress)}</p>
+        <p class="clause-p">- Loại đất: Đất ở tại đô thị: <strong>${nfc(d.urbanResidentialArea)} m²</strong> &nbsp;|&nbsp; Đất trồng cây lâu năm: <strong>${nfc(d.perennialCropArea)} m²</strong></p>
+        <p class="clause-p">- Giấy CNQSDĐ số <strong>${nfc(d.certificateNo)}</strong>, vào sổ cấp GCN số: <strong>${nfc(d.certificateBookNo)}</strong> do ${nfc(d.certificateIssuer)} cấp ngày ${nfc(d.certificateDate)}.</p>
+
+        <h2>IV. GIÁ CẢ VÀ PHƯƠNG THỨC THANH TOÁN</h2>
+        <p class="clause-p">- Giá chuyển nhượng: <strong>${nfc(d.transferPrice)}đ</strong> (${nfc(d.transferPriceInWords)})</p>
+        <p class="clause-p">- Hình thức thanh toán:</p>
+        <p class="clause-p">- Lần 1: Bên A đặt cọc cho bên B số tiền <strong>${nfc(d.deposit1)} đồng</strong> (Bằng chữ: ${nfc(d.deposit1InWords)}) ngay khi ký hợp đồng này.</p>
+        <p class="clause-p">- Lần 2: Bên A sẽ tiếp tục thanh toán cho bên B số tiền <strong>${nfc(d.payment2)} đồng</strong> (Bằng chữ: ${nfc(d.payment2InWords)})</p>
+        <p class="clause-p">- Các khoản phí, lệ phí: thuế thu nhập cá nhân ${taxLabel(d.incomeTaxBy)} chịu, ${taxLabel(d.registrationTaxBy)} chịu thuế trước bạ sang tên.</p>
+
+        <h2>V. THỎA THUẬN CHUNG</h2>
+        <p class="clause-p">Bên B cam kết phần đất chuyển nhượng có nguồn gốc hợp pháp, hiện tại không tranh chấp, không thế chấp, không cho tặng, không góp vốn, không có đồng sở hữu nào khác, chưa sang nhượng cho bất kỳ ai và không bị kê biên để thi hành án.</p>
+        <p class="clause-p">Nếu xảy ra sai phạm các vấn đề trên làm ảnh hưởng tới việc chuyển nhượng QSDĐ thì bên B chịu hoàn toàn trách nhiệm trước pháp luật.</p>
+        <p class="clause-p">- Nếu bên B đổi ý không bán đất cho bên A nữa với bất kỳ lý do gì, hoặc thực hiện sai hẹn theo thời gian thỏa thuận thì bên B phải trả lại tiền cọc cho bên A và bồi thường cho bên A số tiền gấp 2 lần số tiền mà bên B đã nhận cọc.</p>
+        <p class="clause-p">- Nếu bên A đổi ý không mua đất của bên B nữa với bất kỳ lý do gì, hoặc thực hiện sai hẹn theo thời gian thỏa thuận thì bên A sẽ mất toàn bộ số tiền đã đặt cọc cho bên B.</p>
+        <p class="clause-p">- Trong thời gian thực hiện hợp đồng mà có những tranh chấp về ranh đất, diện tích đất không đúng theo sổ đất, dính quy hoạch thì bên B phải trả lại cho bên A số tiền đã nhận cọc.</p>
+        <p class="clause-p">- Trong thời gian thực hiện hợp đồng bên A được quyền bán lại cho bên thứ 3, bên B có trách nhiệm thay mặt bên A ký bán cho bên thứ 3, số tiền chênh lệch bên A được hưởng.</p>
+
+        <h2>VI. PHƯƠNG THỨC GIẢI QUYẾT TRANH CHẤP</h2>
+        <p class="clause-p">- Trong quá trình thực hiện hợp đồng mà phát sinh tranh chấp, các bên cùng nhau thương lượng giải quyết trên nguyên tắc tôn trọng quyền lợi của nhau. Trong trường hợp không giải quyết được thì một trong hai bên có quyền khởi kiện để yêu cầu Tòa án có thẩm quyền giải quyết theo quy định của pháp luật. Mọi tranh chấp sẽ được phán xử theo quy định của luật pháp của Việt Nam.</p>
+
+        <h2>VII. ĐIỀU KHOẢN CUỐI CÙNG</h2>
+        <p class="clause-p">- Hai bên công nhận đã hiểu rõ quyền, nghĩa vụ và lợi ích hợp pháp của mình, ý nghĩa và hậu quả pháp lý của việc giao kết Hợp đồng này.</p>
+        <p class="clause-p">- Hai bên cam kết thực hiện đúng các điều khoản trong hợp đồng.</p>
+        <p class="clause-p">- Hai bên đã tự đọc hợp đồng, đã hiểu và đồng ý tất cả các điều khoản ghi trong hợp đồng và ký vào hợp đồng này trước sự có mặt của người làm chứng.</p>
+        <p class="clause-p">Hợp đồng đặt cọc này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi bên giữ 01 (một) bản.</p>
+
+        <p class="clause-p text-right font-italic pt-3">${nfc(d.signPlace)}, ngày ${fmtDate(d.signDate)}</p>
+
+        <table class="sig-table font-serif">
+          <tbody>
+            <tr>
+              <td style="width: 33%;">
+                <div class="font-bold uppercase">BÊN A</div>
+                <div class="font-italic text-[11pt]">(Ký, ghi rõ họ tên)</div>
+                <div style="height: 70px;"></div>
+                <div class="font-bold uppercase">${nfc(d.buyerName)}</div>
+              </td>
+              <td style="width: 34%;">
+                <div class="font-bold uppercase">NGƯỜI LÀM CHỨNG</div>
+                <div class="font-italic text-[11pt]">(Ký, ghi rõ họ tên)</div>
+                <div style="height: 70px;"></div>
+                <div class="font-bold uppercase">&nbsp;</div>
+              </td>
+              <td style="width: 33%;">
+                <div class="font-bold uppercase">BÊN B</div>
+                <div class="font-italic text-[11pt]">(Ký, ghi rõ họ tên)</div>
+                <div style="height: 70px;"></div>
+                <div class="font-bold uppercase">${nfc(d.sellerName)}</div>
               </td>
             </tr>
           </tbody>
@@ -813,6 +906,7 @@ export const DocumentTemplateView: React.FC = () => {
             payBankAccNo={payBankAccNo} setPayBankAccNo={setPayBankAccNo}
             payBankName={payBankName} setPayBankName={setPayBankName}
             payBankBranch={payBankBranch} setPayBankBranch={setPayBankBranch}
+            deposit={deposit} setDeposit={setDeposit}
             payStages={payStages} setPayStages={setPayStages}
             handleAddPayStage={handleAddPayStage}
           />

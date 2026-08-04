@@ -8,7 +8,8 @@ export type TemplateType =
   | 'sale_contract'
   | 'lease_house'
   | 'payment_request_sale'
-  | 'payment_request_const';
+  | 'payment_request_const'
+  | 'deposit';
 
 interface TemplateSelectorProps {
   styles: ThemeStyles;
@@ -25,6 +26,7 @@ export const TEMPLATE_LIST: { id: TemplateType; label: string }[] = [
   { id: 'lease_house', label: '5. HĐ Thuê Nhà Ở' },
   { id: 'payment_request_sale', label: '6. Đề Nghị Thanh Toán (HĐ Mua Bán)' },
   { id: 'payment_request_const', label: '7. Đề Nghị Thanh Toán (HĐ Thi Công)' },
+  { id: 'deposit', label: '8. HĐ Đặt Cọc (Chuyển Nhượng QSDĐ)' },
 ];
 
 export const TemplateSelector: React.FC<TemplateSelectorProps> = ({

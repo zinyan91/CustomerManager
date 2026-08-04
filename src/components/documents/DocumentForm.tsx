@@ -1,6 +1,7 @@
 import React from 'react';
 import { DateInput } from '../DateInput';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../lib/documentOptions';
+import type { DepositContractData } from './depositContract';
 import type { ThemeStyles } from '../../lib/themeStyles';
 import type { TemplateType } from './TemplateSelector';
 import { Plus, Trash2 } from 'lucide-react';
@@ -98,6 +99,9 @@ interface DocumentFormProps {
   payBankAccNo?: string; setPayBankAccNo?: (v: string) => void;
   payBankName?: string; setPayBankName?: (v: string) => void;
   payBankBranch?: string; setPayBankBranch?: (v: string) => void;
+  deposit: DepositContractData;
+  setDeposit: React.Dispatch<React.SetStateAction<DepositContractData>>;
+
   payStages?: PaymentStageItem[];
   setPayStages?: React.Dispatch<React.SetStateAction<PaymentStageItem[]>>;
   handleAddPayStage?: () => void;
@@ -170,9 +174,125 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
   payBankAccNo = '', setPayBankAccNo,
   payBankName = '', setPayBankName,
   payBankBranch = '', setPayBankBranch,
+  deposit, setDeposit,
   payStages = [], setPayStages,
   handleAddPayStage,
 }) => {
+  if (selectedTemplate === 'deposit') {
+    const set = (k: keyof DepositContractData) => (v: string) =>
+      setDeposit(prev => ({ ...prev, [k]: v }));
+
+    const Text = ({ label, field, mono }: { label: string; field: keyof DepositContractData; mono?: boolean }) => (
+      <div>
+        <label className={`block mb-1 ${styles.labelStyle}`}>{label}</label>
+        <input
+          type="text"
+          value={deposit[field]}
+          onChange={e => set(field)(e.target.value)}
+          className={`w-full rounded-xl p-2 ${mono ? 'font-mono' : ''} ${styles.inputStyle}`}
+        />
+      </div>
+    );
+
+    const partyBlock = (
+      who: 'buyer' | 'seller',
+      heading: string,
+      colour: string
+    ) => (
+      <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+        <div className={`font-bold ${colour} text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800`}>{heading}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div>
+            <label className={`block mb-1 ${styles.labelStyle}`}>Xưng hô</label>
+            <select
+              value={deposit[`${who}Title` as keyof DepositContractData]}
+              onChange={e => set(`${who}Title` as keyof DepositContractData)(e.target.value)}
+              className={`w-full rounded-xl p-2 ${styles.inputStyle}`}
+            >
+              <option value="Ông">Ông</option>
+              <option value="Bà">Bà</option>
+            </select>
+          </div>
+          <Text label="Họ và tên" field={`${who}Name` as keyof DepositContractData} />
+          <Text label="Năm sinh" field={`${who}BirthYear` as keyof DepositContractData} mono />
+          <Text label="Số CCCD" field={`${who}Cccd` as keyof DepositContractData} mono />
+          <Text label="Ngày cấp" field={`${who}CccdDate` as keyof DepositContractData} mono />
+          <Text label="Nơi cấp" field={`${who}CccdPlace` as keyof DepositContractData} />
+        </div>
+        <Text label="Hộ khẩu thường trú" field={`${who}Address` as keyof DepositContractData} />
+      </div>
+    );
+
+    return (
+      <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
+        <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
+          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
+            THÔNG TIN HỢP ĐỒNG ĐẶT CỌC
+          </div>
+        </div>
+
+        {partyBlock('buyer', 'BÊN MUA (BÊN A)', 'text-sky-500')}
+        {partyBlock('seller', 'BÊN BÁN (BÊN B)', 'text-emerald-500')}
+
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THÔNG TIN THỬA ĐẤT</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <Text label="Thửa đất số" field="parcelNo" mono />
+            <Text label="Tờ bản đồ số" field="mapSheetNo" mono />
+            <Text label="Diện tích (m²)" field="area" mono />
+            <Text label="Đất ở tại đô thị (m²)" field="urbanResidentialArea" mono />
+            <Text label="Đất trồng cây lâu năm (m²)" field="perennialCropArea" mono />
+            <Text label="Ngày cấp GCN" field="certificateDate" mono />
+          </div>
+          <Text label="Diện tích bằng chữ" field="areaInWords" />
+          <Text label="Địa chỉ thửa đất" field="parcelAddress" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <Text label="Số giấy CNQSDĐ" field="certificateNo" mono />
+            <Text label="Số vào sổ cấp GCN" field="certificateBookNo" mono />
+          </div>
+          <Text label="Cơ quan cấp GCN" field="certificateIssuer" />
+        </div>
+
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-purple-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">GIÁ CẢ &amp; THANH TOÁN</div>
+          <Text label="Giá chuyển nhượng (VNĐ)" field="transferPrice" mono />
+          <Text label="Giá chuyển nhượng bằng chữ" field="transferPriceInWords" />
+          <Text label="Đặt cọc lần 1 (VNĐ)" field="deposit1" mono />
+          <Text label="Đặt cọc lần 1 bằng chữ" field="deposit1InWords" />
+          <Text label="Thanh toán lần 2 (VNĐ)" field="payment2" mono />
+          <Text label="Thanh toán lần 2 bằng chữ" field="payment2InWords" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Thuế TNCN do bên</label>
+              <select value={deposit.incomeTaxBy} onChange={e => set('incomeTaxBy')(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`}>
+                <option value="A">Bên A (bên mua)</option>
+                <option value="B">Bên B (bên bán)</option>
+              </select>
+            </div>
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Thuế trước bạ do bên</label>
+              <select value={deposit.registrationTaxBy} onChange={e => set('registrationTaxBy')(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`}>
+                <option value="A">Bên A (bên mua)</option>
+                <option value="B">Bên B (bên bán)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
+          <div className="font-bold text-slate-400 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">KÝ KẾT</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <Text label="Địa điểm ký" field="signPlace" />
+            <div>
+              <label className={`block mb-1 ${styles.labelStyle}`}>Ngày ký</label>
+              <DateInput value={deposit.signDate} onChange={set('signDate')} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (selectedTemplate === 'lease_mb' || selectedTemplate === 'lease_house') {
     return (
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>

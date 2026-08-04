@@ -3,7 +3,7 @@ import { RefreshCw, Download, Printer, Plus, Trash2 } from 'lucide-react';
 import type { ThemeStyles } from '../../lib/themeStyles';
 import { DateInput } from '../DateInput';
 import { fmtDate } from '../../lib/utils';
-import { buildLoanSchedule, postPromoRateAnnual } from '../../lib/calcMath';
+import { addMonths, buildLoanSchedule, postPromoRateAnnual } from '../../lib/calcMath';
 import type { PrepaymentMode, PrepaymentPlanItem } from '../../lib/calcMath';
 import { buildScheduleDocHtml } from '../../lib/scheduleDocHtml';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
@@ -130,6 +130,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   const [interestRateStr, setInterestRateStr] = useState('8.5');
   const [tenorMonths, setTenorMonths] = useState<number>(12);
   const [disbursementDate, setDisbursementDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [firstPaymentDate, setFirstPaymentDate] = useState('');
   const [repayMethod, setRepayMethod] = useState<'equal_principal' | 'bullet'>('equal_principal');
   const [principalGraceMonths, setPrincipalGraceMonths] = useState<number>(0);
 
@@ -171,6 +172,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       promoRateAnnual: rateAnnual,
       tenorMonths,
       disbursementDate,
+      firstPaymentDate,
       repayMethod,
       principalGraceMonths,
       promoMonths,
@@ -178,8 +180,8 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       marginAnnual,
       prepayments: prepaymentPlan,
     }),
-    [loanAmt, rateAnnual, tenorMonths, disbursementDate, repayMethod, principalGraceMonths,
-      promoMonths, postPromoBaseRate, marginAnnual, prepaymentPlan]
+    [loanAmt, rateAnnual, tenorMonths, disbursementDate, firstPaymentDate, repayMethod,
+      principalGraceMonths, promoMonths, postPromoBaseRate, marginAnnual, prepaymentPlan]
   );
 
   const addPrepayment = () => {
@@ -201,6 +203,11 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   const totalInterestSum = scheduleRows.reduce((a, r) => a + r.interest, 0);
   const totalObligationSum = totalPrincipalSum + totalInterestSum;
 
+  const defaultFirstPaymentDate = addMonths(disbursementDate, 1);
+  const effectiveFirstPaymentDate = scheduleRows.length > 0
+    ? scheduleRows[0].dueDate
+    : defaultFirstPaymentDate;
+
   const loanInfoPairs = [
     { label: 'Số tiền vay:', value: `${loanAmt.toLocaleString('vi-VN')} VNĐ` },
     {
@@ -220,6 +227,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
     { label: 'Thời hạn vay:', value: `${tenorMonths} tháng` },
     { label: 'Ân hạn gốc:', value: `${principalGraceMonths} tháng` },
     { label: 'Ngày giải ngân:', value: fmtDate(disbursementDate) },
+    { label: 'Ngày bắt đầu trả nợ:', value: fmtDate(effectiveFirstPaymentDate) },
     { label: 'Phương thức trả gốc:', value: repayMethod === 'bullet' ? 'Gốc trả cuối kỳ' : 'Gốc trả đều hàng tháng' },
     ...(prepaymentPlan.length > 0
       ? [{
@@ -270,7 +278,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           <span>THÔNG SỐ KHOẢN VAY CẦN TÍNH LỊCH</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <label className={`block mb-1 ${styles.labelStyle}`}>Số tiền vay (VNĐ) *</label>
             <input
@@ -312,6 +320,19 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               onChange={val => setDisbursementDate(val)}
               className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`}
             />
+          </div>
+          <div>
+            <label className={`block mb-1 ${styles.labelStyle}`}>Ngày bắt đầu trả nợ</label>
+            <DateInput
+              value={firstPaymentDate}
+              onChange={val => setFirstPaymentDate(val)}
+              className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`}
+            />
+            <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+              {effectiveFirstPaymentDate === firstPaymentDate.trim() && firstPaymentDate.trim()
+                ? `Kỳ 1 đến hạn ${fmtDate(effectiveFirstPaymentDate)}`
+                : `Để trống: kỳ 1 đến hạn ${fmtDate(defaultFirstPaymentDate)}`}
+            </div>
           </div>
         </div>
 

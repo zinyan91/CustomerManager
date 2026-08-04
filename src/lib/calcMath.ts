@@ -57,6 +57,7 @@ export interface LoanScheduleParams {
   promoRateAnnual: number;
   tenorMonths: number;
   disbursementDate: string;
+  firstPaymentDate?: string | null;
   repayMethod: PrincipalRepayMethod;
   principalGraceMonths?: number;
   promoMonths?: number | null;
@@ -122,6 +123,14 @@ export function mergePrepayments(items: PrepaymentPlanItem[]): PrepaymentPlanIte
   return [...byPeriod.values()].sort((a, b) => a.period - b.period);
 }
 
+export function scheduleDueDate(period: number, params: LoanScheduleParams): string {
+  const first = (params.firstPaymentDate ?? '').trim();
+  if (first && diffDays(params.disbursementDate, first) > 0) {
+    return period === 1 ? first : edate(first, period - 1);
+  }
+  return addMonths(params.disbursementDate, period);
+}
+
 export function buildLoanSchedule(params: LoanScheduleParams): LoanScheduleRow[] {
   const { loanAmount, tenorMonths, disbursementDate, repayMethod } = params;
   if (!loanAmount || loanAmount <= 0 || !tenorMonths || tenorMonths < 1 || !disbursementDate) return [];
@@ -140,7 +149,7 @@ export function buildLoanSchedule(params: LoanScheduleParams): LoanScheduleRow[]
   for (let i = 1; i <= tenorMonths; i++) {
     if (balance <= 0) break;
 
-    const dueDate = addMonths(disbursementDate, i);
+    const dueDate = scheduleDueDate(i, params);
     const days = diffDays(prevDate, dueDate);
     const rateAnnual = periodRateAnnual(i, params);
 

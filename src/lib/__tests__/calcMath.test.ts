@@ -341,3 +341,57 @@ describe('buildLoanSchedule', () => {
     expect(buildLoanSchedule({ ...base, tenorMonths: 0 })).toEqual([]);
   });
 });
+
+describe('ngày bắt đầu trả nợ (ngày trả nợ kỳ 1)', () => {
+  const base = {
+    loanAmount: 500_000_000,
+    promoRateAnnual: 8.5,
+    tenorMonths: 12,
+    disbursementDate: '2026-08-04',
+    repayMethod: 'equal_principal' as const,
+  };
+
+  it('kỳ 1 đến hạn đúng ngày khai, các kỳ sau cách nhau một tháng', () => {
+    const rows = buildLoanSchedule({ ...base, firstPaymentDate: '2026-10-20' });
+    expect(rows[0].dueDate).toBe('2026-10-20');
+    expect(rows[1].dueDate).toBe('2026-11-20');
+    expect(rows[11].dueDate).toBe('2027-09-20');
+  });
+
+  it('kỳ 1 tính lãi theo số ngày thực tế từ ngày giải ngân', () => {
+    const rows = buildLoanSchedule({ ...base, firstPaymentDate: '2026-10-20' });
+    expect(rows[0].startDate).toBe('2026-08-04');
+    expect(rows[0].days).toBe(diffDays('2026-08-04', '2026-10-20'));
+    expect(rows[0].interest).toBe(Math.round(500_000_000 * 0.085 * rows[0].days / 365));
+  });
+
+  it('không khai thì vẫn là ngày giải ngân + 1 tháng như trước', () => {
+    const rows = buildLoanSchedule(base);
+    const same = buildLoanSchedule({ ...base, firstPaymentDate: '' });
+    expect(rows[0].dueDate).toBe('2026-09-04');
+    expect(same[0].dueDate).toBe('2026-09-04');
+  });
+
+  it('bỏ qua ngày trả nợ không sau ngày giải ngân', () => {
+    const rows = buildLoanSchedule({ ...base, firstPaymentDate: '2026-07-01' });
+    expect(rows[0].dueDate).toBe('2026-09-04');
+    expect(buildLoanSchedule({ ...base, firstPaymentDate: '2026-08-04' })[0].dueDate).toBe('2026-09-04');
+  });
+
+  it('BẤT BIẾN: tổng gốc vẫn bằng số tiền vay khi lùi ngày trả nợ', () => {
+    for (const first of ['2026-10-20', '2027-02-28', '2026-09-05']) {
+      const rows = buildLoanSchedule({
+        ...base, tenorMonths: 24, firstPaymentDate: first,
+        prepayments: [{ period: 5, amount: 40_000_000, mode: 'reduce_monthly' as const }],
+      });
+      expect(rows.reduce((a, r) => a + r.principal, 0)).toBe(500_000_000);
+    }
+  });
+
+  it('kẹp về ngày cuối tháng khi ngày trả nợ là 31', () => {
+    const rows = buildLoanSchedule({ ...base, firstPaymentDate: '2026-12-31' });
+    expect(rows[0].dueDate).toBe('2026-12-31');
+    expect(rows[1].dueDate).toBe('2027-01-31');
+    expect(rows[2].dueDate).toBe('2027-02-28');
+  });
+});

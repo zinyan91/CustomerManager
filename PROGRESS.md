@@ -85,3 +85,5 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ⬜ | Màn hình Kiểm soát sau vay — ghi nhận một đợt, kiểm tra trạng thái chuyển sang "đã thực hiện" và không sinh lại |
 | ⬜ | Định giá lại trong đợt kiểm tra hiện trạng tài sản — giá trị mới phải đồng bộ về bảng TSĐB qua trigger |
 | ⬜ | Nhãn trạng thái định giá trên bảng TSĐB — HẾT HIỆU LỰC / SẮP HẾT HẠN / CHƯA ĐỊNH GIÁ hiển thị đúng màu |
+| ⬜ | Công cụ 1 — Lịch thu nợ: khai nhiều lần trả trước hạn ở các kỳ khác nhau, kiểm tra cột NGÀY BẮT ĐẦU và LS ÁP DỤNG đổi đúng sau thời gian ưu đãi |
+| ⬜ | Công cụ 1 — Bản lịch gửi khách hàng: xuất .xls và In PDF (khổ ngang A4), kiểm tra phần ký và lưu ý hiện đủ |

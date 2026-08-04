@@ -11,6 +11,7 @@ import { LoanPortfolioView } from './components/views/LoanPortfolioView';
 import { CollateralView } from './components/views/CollateralView';
 import { CreditCardView } from './components/views/CreditCardView';
 import { CalculatorView } from './components/views/CalculatorView';
+import { MdsdvLookupView } from './components/views/MdsdvLookupView';
 import { DocumentTemplateView } from './components/views/DocumentTemplateView';
 import { SettingsView } from './components/views/SettingsView';
 import { PostLoanControlView } from './components/views/PostLoanControlView';
@@ -58,6 +59,7 @@ export function App() {
           {activeTab === 'collaterals' && <CollateralView />}
           {activeTab === 'credit-cards' && <CreditCardView />}
           {activeTab === 'calculators' && <CalculatorView />}
+          {activeTab === 'mdsdv' && <MdsdvLookupView />}
           {activeTab === 'templates' && <DocumentTemplateView />}
           {activeTab === 'settings' && <SettingsView />}
           {activeTab === 'post-loan' && <PostLoanControlView />}

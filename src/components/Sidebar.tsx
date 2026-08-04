@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings, Calculator, FileSignature, X } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings, Calculator, FileSignature, Target, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
@@ -24,6 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'collaterals', label: 'Định Giá TSĐB', icon: Building2 },
     { id: 'credit-cards', label: 'Thẻ Tín Dụng', icon: CreditCard },
     { id: 'calculators', label: 'Công Cụ Tính Toán', icon: Calculator },
+    { id: 'mdsdv', label: 'Tra Cứu Mục Đích Sử Dụng Vốn', icon: Target },
     { id: 'templates', label: 'Soạn Biểu Mẫu HĐ', icon: FileSignature },
     { id: 'post-loan', label: 'Kiểm Soát Sau Vay', icon: ShieldAlert },
     { id: 'settings', label: 'Cấu Hình & Cài Đặt', icon: Settings },

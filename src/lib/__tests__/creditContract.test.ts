@@ -3,6 +3,7 @@ import {
   nextKunnNumber,
   kunnSequenceOf,
   checkKunnAgainstContract,
+  kunnRevolvingStatus,
   summarizeCreditContracts,
 } from '../creditContract';
 import type { CreditContract, LoanContract } from '../../types';
@@ -66,16 +67,13 @@ describe('nextKunnNumber', () => {
 });
 
 describe('checkKunnAgainstContract', () => {
-  it('KUNN đáo hạn SAU ngày hết hiệu lực HĐTD thì cảnh báo', () => {
+  it('KUNN đáo hạn sau HĐTD KHÔNG phải lỗi nên không cảnh báo', () => {
 
     const r = checkKunnAgainstContract(
       kunn({ DisbursementDate: '2026-03-26', KunnDueDate: '2026-08-26' }),
       cc({ HdtdNumber: '2002/HDTD/9653222', ContractStartDate: '2025-07-24', ContractEndDate: '2026-07-24' })
     );
-    expect(r).toHaveLength(1);
-    expect(r[0].field).toBe('KunnDueDate');
-    expect(r[0].message).toContain('26/08/2026');
-    expect(r[0].message).toContain('24/07/2026');
+    expect(r).toEqual([]);
   });
 
   it('KUNN nằm gọn trong hiệu lực HĐTD thì không cảnh báo', () => {
@@ -120,8 +118,66 @@ describe('checkKunnAgainstContract', () => {
     expect(r.every(x => x.level === 'warn')).toBe(true);
   });
 
+  it('KUNN giải ngân trước ngày ký lệch 1 ngày vẫn cảnh báo, còn đáo hạn thì không', () => {
+
+    const r = checkKunnAgainstContract(
+      kunn({ DisbursementDate: '2026-06-26', KunnDueDate: '2046-06-26' }),
+      cc({ ContractStartDate: '2026-06-25', ContractEndDate: '2046-06-25' })
+    );
+    expect(r).toEqual([]);
+  });
+
   it('không có HĐTD cha thì không đối chiếu được', () => {
     expect(checkKunnAgainstContract(kunn({ KunnDueDate: '2030-01-01' }), null)).toEqual([]);
+  });
+});
+
+describe('kunnRevolvingStatus — hạn mức còn quay vòng được không', () => {
+  it('KUNN đáo hạn TRƯỚC ngày hết hiệu lực: còn giải ngân lại được', () => {
+
+    const r = kunnRevolvingStatus(
+      { KunnDueDate: '2026-05-20' },
+      { ContractEndDate: '2026-05-28' }
+    );
+    expect(r.state).toBe('redeployable');
+    expect(r.daysOfHeadroom).toBe(8);
+    expect(r.message).toContain('còn 8 ngày để giải ngân lại');
+  });
+
+  it('đáo hạn ĐÚNG ngày hết hiệu lực vẫn coi là còn quay vòng', () => {
+    const r = kunnRevolvingStatus(
+      { KunnDueDate: '2026-05-28' },
+      { ContractEndDate: '2026-05-28' }
+    );
+    expect(r.state).toBe('redeployable');
+    expect(r.daysOfHeadroom).toBe(0);
+  });
+
+  it('KUNN đáo hạn SAU ngày hết hiệu lực: khoá, cảnh báo nguy cơ nợ xấu', () => {
+
+    const r = kunnRevolvingStatus(
+      { KunnDueDate: '2026-08-26' },
+      { ContractEndDate: '2026-07-24' }
+    );
+    expect(r.state).toBe('locked');
+    expect(r.daysOfHeadroom).toBeLessThan(0);
+    expect(r.message).toContain('phải tất toán');
+    expect(r.message).toContain('chuyển nhóm nợ');
+  });
+
+  it('lệch đúng 1 ngày vẫn là khoá, không dung sai ngầm', () => {
+
+    const r = kunnRevolvingStatus(
+      { KunnDueDate: '2046-06-26' },
+      { ContractEndDate: '2046-06-25' }
+    );
+    expect(r.state).toBe('locked');
+    expect(r.daysOfHeadroom).toBe(-1);
+  });
+
+  it('thiếu ngày thì không kết luận', () => {
+    expect(kunnRevolvingStatus({ KunnDueDate: null }, { ContractEndDate: '2026-01-01' }).state).toBe('unknown');
+    expect(kunnRevolvingStatus({ KunnDueDate: '2026-01-01' }, null).state).toBe('unknown');
   });
 });
 

@@ -64,10 +64,12 @@ function fmt(d: string): string {
 /**
  * Đối chiếu một KUNN với HĐTD cha.
  *
- * KUNN không được sống lâu hơn hợp đồng sinh ra nó, và không được giải ngân
- * ngoài khoảng hiệu lực của hợp đồng. Trả về cảnh báo chứ không chặn cứng:
- * nghiệp vụ ngân hàng luôn có ngoại lệ được phê duyệt, và còn phải nhập được
- * KUNN lịch sử của hợp đồng đã hết hiệu lực.
+ * KUNN đáo hạn sau ngày hết hiệu lực HĐTD KHÔNG phải lỗi — xem
+ * kunnRevolvingStatus. Điều bị ràng buộc là NGÀY GIẢI NGÂN phải nằm trong thời
+ * gian hiệu lực của hợp đồng.
+ *
+ * Trả về cảnh báo chứ không chặn cứng: nghiệp vụ ngân hàng luôn có ngoại lệ
+ * được phê duyệt, và còn phải nhập được KUNN lịch sử của hợp đồng đã hết hiệu lực.
  */
 export function checkKunnAgainstContract(
   kunn: Pick<LoanContract, 'DisbursementDate' | 'KunnDueDate' | 'LoanAmount'>,
@@ -79,15 +81,6 @@ export function checkKunnAgainstContract(
   const start = toIso(contract.ContractStartDate);
   const end = toIso(contract.ContractEndDate);
   const disb = toIso(kunn.DisbursementDate);
-  const due = toIso(kunn.KunnDueDate);
-
-  if (end && due && due > end) {
-    issues.push({
-      level: 'warn',
-      field: 'KunnDueDate',
-      message: `KUNN đáo hạn ${fmt(due)} SAU ngày hết hiệu lực HĐTD ${fmt(end)}`,
-    });
-  }
 
   if (start && disb && disb < start) {
     issues.push({
@@ -114,6 +107,53 @@ export function checkKunnAgainstContract(
   }
 
   return issues;
+}
+
+export type KunnRevolvingState = 'redeployable' | 'locked' | 'unknown';
+
+export interface KunnRevolvingStatus {
+  state: KunnRevolvingState;
+  daysOfHeadroom: number;
+  message: string;
+}
+
+/**
+ * KUNN này còn cho phép giải ngân lại hay không.
+ *
+ *  - Đáo hạn TRƯỚC ngày hết hiệu lực HĐTD: trả xong vẫn còn thời gian rút lại,
+ *    hạn mức còn quay vòng được thêm ít nhất một lượt.
+ *  - Đáo hạn SAU ngày hết hiệu lực HĐTD: khi khoản này được trả thì hạn mức đã
+ *    hết hiệu lực, không rút lại được nữa. Khách buộc phải tất toán; không tất
+ *    toán được là nguy cơ chuyển nhóm nợ vì không còn đường quay vòng.
+ */
+export function kunnRevolvingStatus(
+  kunn: Pick<LoanContract, 'KunnDueDate'>,
+  contract?: Pick<CreditContract, 'ContractEndDate'> | null
+): KunnRevolvingStatus {
+  const end = toIso(contract?.ContractEndDate);
+  const due = toIso(kunn.KunnDueDate);
+
+  if (!end || !due) {
+    return { state: 'unknown', daysOfHeadroom: 0, message: '' };
+  }
+
+  const days = Math.round(
+    (Date.parse(end + 'T00:00:00Z') - Date.parse(due + 'T00:00:00Z')) / 86400000
+  );
+
+  if (days >= 0) {
+    return {
+      state: 'redeployable',
+      daysOfHeadroom: days,
+      message: `KUNN đáo hạn ${fmt(due)}, HĐTD còn hiệu lực tới ${fmt(end)} — sau khi tất toán còn ${days} ngày để giải ngân lại`,
+    };
+  }
+
+  return {
+    state: 'locked',
+    daysOfHeadroom: days,
+    message: `KUNN đáo hạn ${fmt(due)}, SAU ngày hết hiệu lực HĐTD ${fmt(end)} — không giải ngân lại được. Khoản này phải tất toán, không tất toán đúng hạn là nguy cơ chuyển nhóm nợ`,
+  };
 }
 
 export interface CreditContractSummary {

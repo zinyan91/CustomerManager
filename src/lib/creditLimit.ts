@@ -44,6 +44,18 @@ export interface LimitGroupStatus {
   available: number;
   endDate: string | null;
   expired: boolean;
+  /**
+   * Dư nợ của các KUNN đáo hạn SAU ngày hết hiệu lực HĐTD. Phần này mất khả
+   * năng quay vòng: khi nó được trả thì hạn mức đã hết hiệu lực, không rút lại
+   * được nữa, nên khách buộc phải tất toán — không tất toán được là nguy cơ
+   * chuyển nhóm nợ.
+   */
+  lockedOutstanding: number;
+  /**
+   * Dư nợ của các KUNN đáo hạn TRƯỚC ngày hết hiệu lực HĐTD. Trả xong vẫn còn
+   * thời gian để giải ngân lại.
+   */
+  redeployableOutstanding: number;
   activeKunnCount: number;
   settledKunnCount: number;
 }
@@ -79,7 +91,10 @@ export function computeLimitGroups(
     ?? ((c: LoanContract) => c.CurrentBalance ?? c.LoanAmount ?? 0);
   const excludeId = options?.excludeContractId ?? null;
 
-  const map = new Map<string, LimitGroupStatus & { declaredGranted: number }>();
+  const map = new Map<string, LimitGroupStatus & {
+    declaredGranted: number;
+    members: { dueDate: string; outstanding: number }[];
+  }>();
 
   for (const c of contracts) {
     const code = (c.CreditLimitCode || '').trim();
@@ -101,9 +116,12 @@ export function computeLimitGroups(
         available: 0,
         endDate: null,
         expired: false,
+        lockedOutstanding: 0,
+        redeployableOutstanding: 0,
         activeKunnCount: 0,
         settledKunnCount: 0,
         declaredGranted: 0,
+        members: [],
       };
       map.set(key, g);
     }
@@ -127,15 +145,17 @@ export function computeLimitGroups(
     if (c.IsSettled) {
       g.settledKunnCount += 1;
     } else {
+      const bal = Math.max(0, outstandingOf(c));
       g.activeKunnCount += 1;
-      g.outstanding += Math.max(0, outstandingOf(c));
+      g.outstanding += bal;
+      g.members.push({ dueDate: (c.KunnDueDate || '').trim(), outstanding: bal });
     }
     g.disbursedCumulative += Math.max(0, disbursedOf(c));
   }
 
   const result: LimitGroupStatus[] = [];
   for (const g of map.values()) {
-    const { declaredGranted, ...rest } = g;
+    const { declaredGranted, members, ...rest } = g;
     const granted = options?.grantedOverride && options.grantedOverride > 0
       ? options.grantedOverride
       : (declaredGranted > 0 ? declaredGranted : rest.granted);
@@ -146,12 +166,21 @@ export function computeLimitGroups(
     const today = options?.today ?? null;
     const expired = !!(today && rest.endDate && rest.endDate < today);
 
+    let lockedOutstanding = 0;
+    let redeployableOutstanding = 0;
+    for (const m of members) {
+      if (rest.endDate && m.dueDate && m.dueDate > rest.endDate) lockedOutstanding += m.outstanding;
+      else redeployableOutstanding += m.outstanding;
+    }
+
     result.push({
       ...rest,
       granted,
       used,
       headroom,
       expired,
+      lockedOutstanding,
+      redeployableOutstanding,
       available: expired ? 0 : headroom,
     });
   }

@@ -25,6 +25,151 @@ function limitOf(c: LoanContract): number {
   return c.ContractAmount || c.LoanAmount || 0;
 }
 
+function disbursedOf(c: LoanContract): number {
+  return c.LoanAmount ?? c.CurrentBalance ?? 0;
+}
+
+export interface LimitGroupStatus {
+  key: string;
+  isShared: boolean;
+  hdtdNumbers: string[];
+  revolving: boolean;
+  granted: number;
+  outstanding: number;
+  disbursedCumulative: number;
+  used: number;
+  /** Hạn mức còn trống theo dư nợ, CHƯA xét hiệu lực HĐTD. */
+  headroom: number;
+  /** Số tiền thực sự còn giải ngân được: bằng 0 nếu HĐTD đã hết hiệu lực. */
+  available: number;
+  endDate: string | null;
+  expired: boolean;
+  activeKunnCount: number;
+  settledKunnCount: number;
+}
+
+export interface LimitGroupOptions {
+  getOutstanding?: (c: LoanContract) => number;
+  excludeContractId?: number | null;
+  grantedOverride?: number | null;
+  /** Ngày tham chiếu (YYYY-MM-DD) để xét hiệu lực HĐTD. Bỏ trống thì không xét. */
+  today?: string | null;
+}
+
+/**
+ * NGUỒN DUY NHẤT tính hạn mức khả dụng.
+ *
+ * Nhóm theo mã hạn mức dùng chung nếu có, ngược lại theo số HĐTD — cùng cách
+ * nhóm với computeCreditLimit để tổng mức cấp của hai hàm luôn khớp nhau.
+ *
+ * Hạn mức khả dụng phụ thuộc sản phẩm:
+ *  - HMTD (tuần hoàn): mức cấp − dư nợ các KUNN còn hiệu lực. Trả nợ hoặc tất
+ *    toán KUNN là giải phóng hạn mức, giải ngân tiếp được.
+ *  - Cho vay từng lần (không tuần hoàn): mức cấp − tổng số tiền đã nhận nợ,
+ *    tính cả KUNN đã tất toán. Đã giải ngân là hết, trả nợ không mở lại hạn mức.
+ *
+ * Hạn mức chỉ khả dụng khi HĐTD còn hiệu lực. Hết ngày hiệu lực thì available = 0
+ * dù dư nợ đã về 0 (headroom vẫn giữ số trống theo dư nợ để đối chiếu).
+ */
+export function computeLimitGroups(
+  contracts: LoanContract[],
+  options?: LimitGroupOptions
+): LimitGroupStatus[] {
+  const outstandingOf = options?.getOutstanding
+    ?? ((c: LoanContract) => c.CurrentBalance ?? c.LoanAmount ?? 0);
+  const excludeId = options?.excludeContractId ?? null;
+
+  const map = new Map<string, LimitGroupStatus & { declaredGranted: number }>();
+
+  for (const c of contracts) {
+    const code = (c.CreditLimitCode || '').trim();
+    const hdtdNo = getMasterHdtdNumber(c) || c.ContractNumber || '';
+    const key = code || hdtdNo;
+
+    let g = map.get(key);
+    if (!g) {
+      g = {
+        key,
+        isShared: code !== '',
+        hdtdNumbers: [],
+        revolving: false,
+        granted: 0,
+        outstanding: 0,
+        disbursedCumulative: 0,
+        used: 0,
+        headroom: 0,
+        available: 0,
+        endDate: null,
+        expired: false,
+        activeKunnCount: 0,
+        settledKunnCount: 0,
+        declaredGranted: 0,
+      };
+      map.set(key, g);
+    }
+
+    if (!g.hdtdNumbers.includes(hdtdNo)) g.hdtdNumbers.push(hdtdNo);
+    if (isRevolvingCredit(c.LoanMethod)) g.revolving = true;
+
+    // Mức cấp là thông tin cấp HĐTD nên vẫn ghi nhận cả dòng đang bị loại trừ.
+    if (code) {
+      const declared = c.CreditLimitAmount ?? 0;
+      if (declared > g.declaredGranted) g.declaredGranted = declared;
+    }
+    if (limitOf(c) > g.granted) g.granted = limitOf(c);
+
+    // Ngày hết hiệu lực cũng là thông tin cấp HĐTD: lấy mốc muộn nhất trong nhóm.
+    const end = c.ContractEndDate || c.HdtdDueDate || null;
+    if (end && (!g.endDate || end > g.endDate)) g.endDate = end;
+
+    if (excludeId !== null && c.Id === excludeId) continue;
+
+    if (c.IsSettled) {
+      g.settledKunnCount += 1;
+    } else {
+      g.activeKunnCount += 1;
+      g.outstanding += Math.max(0, outstandingOf(c));
+    }
+    g.disbursedCumulative += Math.max(0, disbursedOf(c));
+  }
+
+  const result: LimitGroupStatus[] = [];
+  for (const g of map.values()) {
+    const { declaredGranted, ...rest } = g;
+    const granted = options?.grantedOverride && options.grantedOverride > 0
+      ? options.grantedOverride
+      : (declaredGranted > 0 ? declaredGranted : rest.granted);
+    const used = rest.revolving ? rest.outstanding : rest.disbursedCumulative;
+    const headroom = Math.max(0, granted - used);
+
+    // Hạn mức hết hiệu lực thì không giải ngân được nữa, dù dư nợ đã về 0.
+    const today = options?.today ?? null;
+    const expired = !!(today && rest.endDate && rest.endDate < today);
+
+    result.push({
+      ...rest,
+      granted,
+      used,
+      headroom,
+      expired,
+      available: expired ? 0 : headroom,
+    });
+  }
+  return result;
+}
+
+export function findLimitGroupFor(
+  groups: LimitGroupStatus[],
+  hdtdNumber: string
+): LimitGroupStatus | undefined {
+  const target = hdtdNumber.trim().toLowerCase();
+  if (!target) return undefined;
+  return groups.find(g =>
+    g.key.toLowerCase() === target ||
+    g.hdtdNumbers.some(n => n.toLowerCase() === target)
+  );
+}
+
 export function computeCreditLimit(contracts: LoanContract[]): CreditLimitBreakdown {
   const sharedMap = new Map<string, SharedLimitGroup>();
   const standaloneMap = new Map<string, StandaloneLimitGroup>();

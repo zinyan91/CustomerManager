@@ -476,3 +476,54 @@ describe('hiệu lực HĐTD — hết hạn thì không còn giải ngân đư�
     expect(r[0].available).toBe(2_000_000_000);
   });
 });
+
+describe('dư nợ khoá vì đáo hạn sau ngày hết hiệu lực HĐTD', () => {
+  it('KUNN đáo hạn TRƯỚC ngày hết hiệu lực thì còn quay vòng được', () => {
+
+    const r = computeLimitGroups([
+      hd({ Id: 1, ContractNumber: 'HD01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 2_000_000_000, LoanAmount: 800_000_000, CurrentBalance: 800_000_000,
+           ContractEndDate: '2026-05-28', KunnDueDate: '2026-05-20' }),
+    ], { today: '2026-05-01' });
+
+    expect(r[0].redeployableOutstanding).toBe(800_000_000);
+    expect(r[0].lockedOutstanding).toBe(0);
+    expect(r[0].available).toBe(1_200_000_000);
+  });
+
+  it('ĐẶNG BÁ NHÂN — KUNN đáo hạn 25/08 sau HĐTD 24/07: dư nợ bị khoá', () => {
+
+    const r = computeLimitGroups([
+      hd({ Id: 1, ContractNumber: '2002/HDTD/9653222/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 4_000_000_000, LoanAmount: 1_400_000_000, CurrentBalance: 0,
+           IsSettled: true, ContractEndDate: '2026-07-24', KunnDueDate: '2026-08-25' }),
+      hd({ Id: 2, ContractNumber: '2002/HDTD/9653222/GNN-03', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 4_000_000_000, LoanAmount: 1_200_000_000, CurrentBalance: 1_200_000_000,
+           ContractEndDate: '2026-07-24', KunnDueDate: '2026-08-25' }),
+    ], { today: '2026-08-04' });
+
+    expect(r[0].outstanding).toBe(1_200_000_000);
+    expect(r[0].lockedOutstanding).toBe(1_200_000_000);
+    expect(r[0].redeployableOutstanding).toBe(0);
+    expect(r[0].headroom).toBe(2_800_000_000);
+    expect(r[0].available).toBe(0);
+  });
+
+  it('KUNN đã tất toán không tính vào phần khoá', () => {
+    const r = computeLimitGroups([
+      hd({ Id: 1, ContractNumber: 'HD01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 2_000_000_000, LoanAmount: 900_000_000, CurrentBalance: 900_000_000,
+           IsSettled: true, ContractEndDate: '2026-01-01', KunnDueDate: '2026-06-01' }),
+    ], { today: '2026-08-04' });
+    expect(r[0].lockedOutstanding).toBe(0);
+  });
+
+  it('chưa có ngày hết hiệu lực thì coi như còn quay vòng', () => {
+    const r = computeLimitGroups([
+      hd({ Id: 1, ContractNumber: 'HD01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 2_000_000_000, CurrentBalance: 500_000_000, KunnDueDate: '2027-01-01' }),
+    ], { today: '2026-08-04' });
+    expect(r[0].lockedOutstanding).toBe(0);
+    expect(r[0].redeployableOutstanding).toBe(500_000_000);
+  });
+});

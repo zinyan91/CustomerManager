@@ -16,7 +16,7 @@ import {
   type RateSegment,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
-import { checkKunnAgainstContract, nextKunnNumber } from '../../lib/creditContract';
+import { checkKunnAgainstContract, kunnRevolvingStatus, nextKunnNumber } from '../../lib/creditContract';
 import { fetchCreditContractsByCustomerAPI } from '../../lib/api';
 import { useWork } from '../../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
@@ -1038,6 +1038,11 @@ export const LoanPortfolioView: React.FC = () => {
     [form.DisbursementDate, form.KunnDueDate, kunnLoanAmountNum, formCreditContract]
   );
 
+  const kunnRevolving = useMemo(
+    () => kunnRevolvingStatus({ KunnDueDate: form.KunnDueDate }, formCreditContract),
+    [form.KunnDueDate, formCreditContract]
+  );
+
   useEffect(() => {
     if (!disburseRequest || !foundCustomer) return;
     if (disburseRequest.customerId !== foundCustomer.Id) return;
@@ -1473,6 +1478,21 @@ export const LoanPortfolioView: React.FC = () => {
                           </select>
                         </div>
                       </div>
+
+                      {kunnRevolving.state !== 'unknown' && (
+                        <div className={`p-3 rounded-xl border text-[11px] font-semibold ${
+                          kunnRevolving.state === 'locked'
+                            ? (isLight ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-rose-950/40 border-rose-500/40 text-rose-300')
+                            : (isLight ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300')
+                        }`}>
+                          <div className="flex items-start space-x-1.5">
+                            {kunnRevolving.state === 'locked'
+                              ? <AlertTriangle className="w-3.5 h-3.5 mt-px shrink-0" />
+                              : <CheckCircle className="w-3.5 h-3.5 mt-px shrink-0" />}
+                            <span>{kunnRevolving.message}</span>
+                          </div>
+                        </div>
+                      )}
 
                       {kunnIssues.length > 0 && (
                         <div className={`p-3 rounded-xl border text-[11px] font-semibold space-y-1 ${

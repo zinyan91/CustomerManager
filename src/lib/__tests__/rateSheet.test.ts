@@ -166,7 +166,6 @@ describe('buildRateSheetHtml', () => {
       { Id: 1, ProgramId: 3, OptionLabel: 'Phương án 1', PackageGroup: 'Gói 24 tháng đầu', MinFeeRatio: 0.015, CounterFeeRatio: 0.01, Note: 'Tại quầy tối thiểu 1%.', SortOrder: 1 },
     ],
     preparedBy: 'Nguyễn Văn A',
-    issuedOn: '2026-08-04',
   });
 
   it('is a self-contained printable document sized for A4', () => {
@@ -190,9 +189,9 @@ describe('buildRateSheetHtml', () => {
     expect(html).not.toContain('Thời gian triển khai');
   });
 
-  it('anchors the quote in time with an issue date', () => {
-    expect(html).toContain('Ngày lập');
-    expect(html).toContain('4/8/2026');
+  it('carries no issue date or reference disclaimer', () => {
+    expect(html).not.toContain('Ngày lập');
+    expect(html).not.toContain('mang tính tham khảo');
   });
 
   it('states the floating rate after the fixed period', () => {
@@ -208,9 +207,8 @@ describe('buildRateSheetHtml', () => {
     expect(html).toContain('Phương án 1');
   });
 
-  it('names the adviser and carries a disclaimer', () => {
+  it('names the adviser', () => {
     expect(html).toContain('Nguyễn Văn A');
-    expect(html).toContain('có thể thay đổi theo');
   });
 
   it('prints backgrounds, otherwise the blue banner turns white on white', () => {
@@ -278,5 +276,36 @@ describe('pivotFeeOptions', () => {
 
   it('is safe on empty input', () => {
     expect(pivotFeeOptions([])).toEqual({ optionLabels: [], groups: [] });
+  });
+});
+
+describe('phí trả nợ trước hạn phân theo loại khoản vay', () => {
+  const nh: RateProgram = { ...tdh, Kind: 'cho_vay_ngan_han', DocumentNumber: '2274/2026/TB-BĐH' };
+  const byType: RateProgramPrepaymentFee[] = [
+    { Id: 1, ProgramId: 1, YearFrom: 1, YearTo: null, FeeRatio: 0, AppliesTo: 'Vay theo hạn mức tín dụng' },
+    { Id: 2, ProgramId: 1, YearFrom: 1, YearTo: null, FeeRatio: 0.005, AppliesTo: 'Vay từng lần',
+      Note: 'Miễn phí nếu trả trong vòng 10 ngày trước thời điểm kết thúc khoản vay.' },
+  ];
+
+  it('gives each loan type its own row with its own figure', () => {
+    const html = buildRateSheetHtml({ program: nh, tiers: tdhTiers, prepaymentFees: byType });
+    expect(html).toContain('Loại khoản vay');
+    expect(html).toContain('Vay theo hạn mức tín dụng');
+    expect(html).toContain('Miễn phí');
+    expect(html).toContain('Vay từng lần');
+    expect(html).toContain('0,5%');
+    expect(html).not.toContain('Thời điểm');
+  });
+
+  it('does not shrink the accompanying note into fine print', () => {
+    const html = buildRateSheetHtml({ program: nh, tiers: tdhTiers, prepaymentFees: byType });
+    expect(html).toContain('<p>Miễn phí nếu trả trong vòng 10 ngày');
+  });
+
+  it('still lays the trung dài hạn programme out by year', () => {
+    const html = buildRateSheetHtml({ program: tdh, tiers: tdhTiers, prepaymentFees: tdhFees });
+    expect(html).toContain('Thời điểm');
+    expect(html).toContain('Năm 3');
+    expect(html).not.toContain('Loại khoản vay');
   });
 });

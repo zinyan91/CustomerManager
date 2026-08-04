@@ -63,7 +63,6 @@ export interface RateSheetInput {
   preparedBy?: string;
   channel?: DepositChannel | null;
   logoDataUri?: string | null;
-  issuedOn?: string | null;
 }
 
 export function findRateSheetBlockers(input: RateSheetInput): RateSheetBlocker[] {
@@ -270,12 +269,30 @@ function feeOptionsBlock(input: RateSheetInput): string {
 function prepaymentBlock(input: RateSheetInput): string {
   const fees = input.prepaymentFees || [];
   if (fees.length === 0) return '';
-  const head = fees.map(f => `<th class="num">${esc(prepaymentYearLabel(f))}</th>`).join('');
-  const body = fees.map(f => `<td class="num strong">${esc(prepaymentFeeLabel(f))}</td>`).join('');
+
   const notes = fees
     .filter(f => f.Note)
-    .map(f => `<p class="note">${esc(f.Note)}</p>`)
+    .map(f => `<p>${esc(f.Note)}</p>`)
     .join('');
+
+  const byLoanType = fees.filter(f => f.AppliesTo);
+  if (byLoanType.length > 0) {
+    const body = byLoanType.map(f => `
+      <tr>
+        <td class="c1">${esc(f.AppliesTo)}</td>
+        <td class="num strong">${esc(prepaymentFeeLabel(f))}</td>
+      </tr>`).join('');
+    return `
+      <h2>Phí trả nợ trước hạn</h2>
+      <table>
+        <thead><tr><th>Loại khoản vay</th><th class="num">Mức phí</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+      ${notes}`;
+  }
+
+  const head = fees.map(f => `<th class="num">${esc(prepaymentYearLabel(f))}</th>`).join('');
+  const body = fees.map(f => `<td class="num strong">${esc(prepaymentFeeLabel(f))}</td>`).join('');
   return `
     <h2>Phí trả nợ trước hạn</h2>
     <table>
@@ -335,7 +352,7 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
   .spread { font-weight: 700; color: #0b5cab; }
   .feebig { font-weight: 800; color: #0b5cab; font-size: 11pt; }
   .small { font-size: 8pt; color: #40556e; }
-  .note { font-size: 8pt; color: #40556e; margin: 3px 0 0; }
+  .note { font-size: 9pt; color: #40556e; margin: 3px 0 0; }
   ul { margin: 3px 0 0 16px; padding: 0; }
   li { margin-bottom: 2px; }
   .meta { background: #f2f7fc; border: 1px solid #d7e6f5; border-radius: 6px; padding: 6px 10px; }
@@ -343,7 +360,6 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
     margin-top: 10px; border-top: 1px solid #c9d8e8; padding-top: 5px;
     font-size: 8pt; color: #5a6d84;
   }
-  .disclaimer { margin-top: 3px; font-style: italic; }
 </style>
 </head>
 <body>
@@ -363,13 +379,7 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
   ${conditionsBlock(input)}
 
   <footer>
-    ${input.issuedOn ? `<p><strong>Ngày lập:</strong> ${formatDateForCustomer(input.issuedOn)}</p>` : ''}
     ${input.preparedBy ? `<p><strong>Nhân viên tư vấn:</strong> ${esc(input.preparedBy)}</p>` : ''}
-    <p class="disclaimer">
-      Bảng lãi suất mang tính tham khảo tại thời điểm phát hành. Lãi suất và phí có thể thay đổi theo
-      thông báo của ${esc(bankName)} trong từng thời kỳ. Điều kiện cụ thể của từng khoản vay được xác định
-      khi ${esc(bankName)} thẩm định và phê duyệt hồ sơ.
-    </p>
   </footer>
 </body>
 </html>`;

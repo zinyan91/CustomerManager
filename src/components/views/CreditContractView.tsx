@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FileText, Plus, Trash2, Save, X, Banknote, AlertTriangle, Building2 } from 'lucide-react';
+import { FileText, Plus, Trash2, Save, X, Banknote, AlertTriangle, Building2, Percent } from 'lucide-react';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI,
   fetchCreditContractsByCustomerAPI, saveCreditContractAPI,
@@ -48,6 +48,10 @@ export const CreditContractView: React.FC = () => {
   const [formApprovalAmount, setFormApprovalAmount] = useState('');
   const [useSharedApproval, setUseSharedApproval] = useState(false);
   const [selectedCollateralIds, setSelectedCollateralIds] = useState<number[]>([]);
+  const [rateUuDai, setRateUuDai] = useState('');
+  const [rateUuDaiThang, setRateUuDaiThang] = useState('');
+  const [rateCoSo, setRateCoSo] = useState('');
+  const [rateBienDo, setRateBienDo] = useState('');
   const [showSettled, setShowSettled] = useState(false);
 
   const todayIso = new Date().toISOString().split('T')[0];
@@ -154,6 +158,7 @@ export const CreditContractView: React.FC = () => {
     setFormApprovalAmount('');
     setUseSharedApproval(false);
     setSelectedCollateralIds([]);
+    setRateUuDai(''); setRateUuDaiThang(''); setRateCoSo(''); setRateBienDo('');
     setShowForm(true);
   };
 
@@ -166,6 +171,11 @@ export const CreditContractView: React.FC = () => {
     setSelectedCollateralIds(
       (cc.CollateralIds || '').split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n))
     );
+    const pct = (v?: number | null) => (v ? (v <= 1 ? v * 100 : v).toString() : '');
+    setRateUuDai(pct(cc.PreferentialRate));
+    setRateUuDaiThang(cc.PreferentialPeriodMonths ? cc.PreferentialPeriodMonths.toString() : '');
+    setRateCoSo(pct(cc.BaseRate));
+    setRateBienDo(pct(cc.MarginRate));
     setShowForm(true);
   };
 
@@ -194,6 +204,12 @@ export const CreditContractView: React.FC = () => {
         ApprovalCode: useSharedApproval ? (form.ApprovalCode || '').trim() || null : null,
         ApprovalAmount: useSharedApproval ? (parseMoneyInput(formApprovalAmount) || null) : null,
         CollateralIds: selectedCollateralIds.join(','),
+        PreferentialRate: rateUuDai ? parseFloat(rateUuDai) / 100 : null,
+        PreferentialPeriodMonths: rateUuDaiThang ? parseInt(rateUuDaiThang, 10) : null,
+        BaseRate: rateCoSo ? parseFloat(rateCoSo) / 100 : null,
+        MarginRate: rateBienDo ? parseFloat(rateBienDo) / 100 : null,
+        PostPreferentialRate: laiThaNoi > 0 ? laiThaNoi / 100 : null,
+        NormalRate: laiThaNoi > 0 ? laiThaNoi / 100 : null,
       };
       await saveCreditContractAPI(payload);
       showNotify('success', editing ? 'Đã cập nhật HĐTD!' : 'Đã tạo HĐTD mới!');
@@ -226,6 +242,8 @@ export const CreditContractView: React.FC = () => {
   };
 
   const purposeOptions = useMemo(() => allowedPurposes(form.LoanMethod), [form.LoanMethod]);
+
+  const laiThaNoi = (parseFloat(rateCoSo) || 0) + (parseFloat(rateBienDo) || 0);
 
   const tongKhaNangBaoDam = useMemo(
     () => collaterals
@@ -354,6 +372,15 @@ export const CreditContractView: React.FC = () => {
                       </td>
                       <td className="p-3">
                         <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => openEdit(s.contract)}
+                            title="Xem chi tiết / sửa HĐTD"
+                            className={`flex items-center space-x-1 font-bold px-2.5 py-1.5 rounded-lg text-[11px] border ${
+                              isLight
+                                ? 'bg-white border-slate-300 text-slate-700 hover:border-sky-400'
+                                : 'bg-slate-900 border-slate-700 text-slate-200 hover:border-sky-500'
+                            }`}>
+                            <FileText className="w-3 h-3" /><span>Chi tiết</span>
+                          </button>
                           {(() => {
                             const khoaGiaiNgan = s.expired || !!s.contract.IsClosed;
                             return (
@@ -493,6 +520,55 @@ export const CreditContractView: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          <div className={`rounded-xl p-3 border ${isLight ? 'bg-slate-50/80 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
+            <div className={`mb-3 flex items-center space-x-2 ${labelStyle}`}>
+              <Percent className="w-3.5 h-3.5" />
+              <span>Lãi suất chương trình của HĐTD — KUNN thừa hưởng khi giải ngân</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className={`block mb-1 ${labelStyle}`}>Lãi ưu đãi (%/năm)</label>
+                <input type="number" step="0.01" value={rateUuDai}
+                  onChange={e => setRateUuDai(e.target.value)} placeholder="9.5"
+                  className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 ${inputStyle}`} />
+              </div>
+              <div>
+                <label className={`block mb-1 ${labelStyle}`}>Số tháng ưu đãi</label>
+                <input type="number" value={rateUuDaiThang}
+                  onChange={e => setRateUuDaiThang(e.target.value)} placeholder="12"
+                  className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold ${inputStyle}`} />
+              </div>
+              <div>
+                <label className={`block mb-1 ${labelStyle}`}>Lãi suất cơ sở (%/năm)</label>
+                <input type="number" step="0.01" value={rateCoSo}
+                  onChange={e => setRateCoSo(e.target.value)} placeholder="9.6"
+                  className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold ${inputStyle}`} />
+              </div>
+              <div>
+                <label className={`block mb-1 ${labelStyle}`}>Biên độ (%/năm)</label>
+                <input type="number" step="0.01" value={rateBienDo}
+                  onChange={e => setRateBienDo(e.target.value)} placeholder="3.2"
+                  className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold ${inputStyle}`} />
+              </div>
+            </div>
+            <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-1 text-[11px] font-mono">
+              {(parseFloat(rateCoSo) || 0) > 0 ? (
+                <>
+                  <span>Lãi thả nổi sau ưu đãi: <strong className="text-amber-600 dark:text-amber-400">
+                    {laiThaNoi.toFixed(2).replace('.', ',')}%/năm
+                  </strong></span>
+                  <span className="font-sans text-slate-400">
+                    = lãi suất cơ sở + biên độ. Lịch thu nợ của KUNN áp lãi ưu đãi cho các kỳ đầu rồi chuyển sang mức này.
+                  </span>
+                </>
+              ) : (
+                <span className="font-sans text-slate-400">
+                  Chưa có lãi suất cơ sở nên chưa tính được lãi thả nổi sau ưu đãi.
+                </span>
+              )}
+            </div>
           </div>
 
           <div>

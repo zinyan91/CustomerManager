@@ -214,6 +214,45 @@ describe('generateSchedule — tính lãi', () => {
     expect(s[0].InterestAmount).toBe(Math.round(100_000_000 * 0.06 * (31 / 365)));
     expect(s[2].InterestAmount).toBe(Math.round(100_000_000 * 0.12 * (31 / 365)));
   });
+
+  it('KHÔNG bỏ kỳ ưu đãi khi hợp đồng có thêm mốc điều chỉnh', () => {
+
+    const s = generateSchedule(
+      1, 100_000_000, 10, '2026-02-15', 5, true, '2026-01-15',
+      undefined, 0, 0, 0, 'reduce_monthly',
+      [{ id: '1', effectiveDate: '2026-05-15', ratePercent: 20 }],
+      { prefRate: 6, prefMonths: 2, postPrefRate: 12 }
+    );
+
+    expect(s[0].InterestAmount).toBe(Math.round(100_000_000 * 0.06 * (31 / 365)));
+    expect(s[2].InterestAmount).toBe(Math.round(100_000_000 * 0.12 * (31 / 365)));
+    expect(s[4].InterestAmount).toBe(Math.round(100_000_000 * 0.20 * (31 / 365)));
+  });
+
+  it('mốc đổi lãi rơi giữa kỳ thì tách lãi theo số ngày', () => {
+
+    const s = generateSchedule(
+      1, 100_000_000, 10, '2026-02-15', 3, true, '2026-01-15',
+      undefined, 0, 0, 0, 'reduce_monthly',
+      [{ id: '1', effectiveDate: '2026-03-01', ratePercent: 20 }]
+    );
+
+    const kyGomHaiDoan = Math.round(
+      100_000_000 * 0.10 * (14 / 365) + 100_000_000 * 0.20 * (14 / 365)
+    );
+    expect(s[1].InterestAmount).toBe(kyGomHaiDoan);
+    expect(s[2].InterestAmount).toBe(Math.round(100_000_000 * 0.20 * (31 / 365)));
+  });
+
+  it('tách lãi giữa kỳ vẫn giữ đúng tổng số ngày của kỳ', () => {
+    const s = generateSchedule(
+      1, 100_000_000, 10, '2026-02-15', 2, true, '2026-01-15',
+      undefined, 0, 0, 0, 'reduce_monthly',
+      [{ id: '1', effectiveDate: '2026-03-01', ratePercent: 10 }]
+    );
+
+    expect(s[1].InterestAmount).toBe(Math.round(100_000_000 * 0.10 * (28 / 365)));
+  });
 });
 
 describe('generateSchedule — ngày đến hạn', () => {

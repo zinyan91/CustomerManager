@@ -1,5 +1,6 @@
 import type { RepaymentSchedule, RateAdjustmentHistoryItem, LoanContract } from '../types';
 import { getEffectiveActiveRate } from './utils';
+import { buildContractRateTimeline, buildRateTimeline, splitPeriodByRate } from './rateResolution';
 
 export function addMonthsToDate(dateStr?: string | null, months?: number | null): string {
   if (!dateStr || !months || isNaN(months) || months <= 0) return '';
@@ -106,9 +107,14 @@ export function generateSchedule(
         ? customMonthlyPrincipal
         : roundPrincipalCore(loanAmount / remainingRepayPeriods, '1k'));
 
-  const sortedHistory = (rateHistory && rateHistory.length > 0)
-    ? [...rateHistory].sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate))
-    : [];
+  const rateTimeline = buildRateTimeline({
+    startDate: disbursementDateStr || repaymentStartDateStr,
+    preferentialRate: prefInfo && prefInfo.prefMonths > 0 ? prefInfo.prefRate : 0,
+    preferentialPeriodMonths: prefInfo ? prefInfo.prefMonths : 0,
+    postPreferentialRate: prefInfo && prefInfo.prefMonths > 0 ? prefInfo.postPrefRate : 0,
+    interestRate,
+    rateHistory,
+  });
 
   for (let i = 1; i <= periods; i++) {
     if (balance <= 0) break;
@@ -122,27 +128,9 @@ export function generateSchedule(
 
     const days = getDaysBetween(prevDateStr, dueDateStr);
 
-    let activeAnnualRate = defaultAnnualRate;
-
-    if (sortedHistory.length > 0) {
-      let activeItem: RateAdjustmentHistoryItem | null = null;
-      for (const item of sortedHistory) {
-        if (item.effectiveDate <= dueDateStr) {
-          activeItem = item;
-        } else {
-          break;
-        }
-      }
-      if (activeItem && activeItem.ratePercent > 0) {
-        activeAnnualRate = activeItem.ratePercent / 100;
-      }
-    } else if (prefInfo && prefInfo.prefRate > 0) {
-      if (i <= prefInfo.prefMonths) {
-        activeAnnualRate = prefInfo.prefRate > 1 ? prefInfo.prefRate / 100 : prefInfo.prefRate;
-      } else {
-        activeAnnualRate = prefInfo.postPrefRate > 1 ? prefInfo.postPrefRate / 100 : prefInfo.postPrefRate;
-      }
-    }
+    const rateSegments = rateTimeline.length > 0
+      ? splitPeriodByRate(rateTimeline, prevDateStr, dueDateStr, days)
+      : [];
 
     let normalPrincipal = 0;
     if (isBulletPrincipal) {
@@ -165,7 +153,10 @@ export function generateSchedule(
 
     const totalPrincipalInPeriod = Math.min(balance, normalPrincipal + periodPrepay);
 
-    const interest = Math.round(balance * activeAnnualRate * (days / 365));
+    const interest = rateSegments.length > 0
+      ? Math.round(rateSegments.reduce(
+          (sum, seg) => sum + balance * (seg.ratePercent / 100) * (seg.days / 365), 0))
+      : Math.round(balance * defaultAnnualRate * (days / 365));
 
     let noteText: string | undefined = undefined;
     if (periodPrepay > 0) {
@@ -281,6 +272,8 @@ export function recalculateSchedules(
     todayStr ||
     new Date().toISOString().split('T')[0];
 
+  const rateTimeline = buildContractRateTimeline(contract, { today: todayStr });
+
   const result: RepaymentSchedule[] = [];
 
   for (let i = 0; i < totalPeriods; i++) {
@@ -289,10 +282,16 @@ export function recalculateSchedules(
     const dueDateStr = s.DueDate;
 
     const days = getDaysBetween(prevDateStr, dueDateStr);
+    const periodStartStr = prevDateStr;
     prevDateStr = dueDateStr;
 
-    const activeAnnualRate = getEffectiveActiveRate(contract, dueDateStr);
-    const calculatedInterest = Math.round(currentBalance * activeAnnualRate * (days / 365));
+    const rateSegments = rateTimeline.length > 0
+      ? splitPeriodByRate(rateTimeline, periodStartStr, dueDateStr, days)
+      : [];
+    const calculatedInterest = rateSegments.length > 0
+      ? Math.round(rateSegments.reduce(
+          (sum, seg) => sum + currentBalance * (seg.ratePercent / 100) * (seg.days / 365), 0))
+      : Math.round(currentBalance * getEffectiveActiveRate(contract, dueDateStr) * (days / 365));
 
     let expectedNormalPrincipal = 0;
     if (isBullet) {

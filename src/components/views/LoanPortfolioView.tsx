@@ -9,8 +9,12 @@ import {
   addMonthsToDate, parseKunnTenorMonths, parseDateParts,
   generateSchedule, calculateOverdueDaysFromDates,
   getAutoDebtGroupInfo, recalculateSchedules, computeOutstandingBalance,
-  isBulletPrincipal
+  isBulletPrincipal, getDaysBetween
 } from '../../lib/loanMath';
+import {
+  buildContractRateTimeline, splitPeriodByRate, formatSegmentsLabel,
+  type RateSegment,
+} from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
 import {
@@ -965,6 +969,27 @@ export const LoanPortfolioView: React.FC = () => {
       .filter(w => w.exceeded || w.expiredAppraisals.length > 0),
     [contracts, collaterals, allSchedulesMap]
   );
+
+  const periodRateSegments = useMemo(() => {
+    const map: Record<number, RateSegment[]> = {};
+    if (!selectedContract || schedules.length === 0) return map;
+
+    const timeline = buildContractRateTimeline(selectedContract, { today: todayIso });
+    if (timeline.length === 0) return map;
+
+    let prev = selectedContract.DisbursementDate
+      || selectedContract.RepaymentStartDate
+      || selectedContract.ContractStartDate
+      || '';
+
+    for (const s of [...schedules].sort((a, b) => a.PeriodNumber - b.PeriodNumber)) {
+      if (!s.DueDate) continue;
+      const from = prev || s.DueDate;
+      map[s.Id] = splitPeriodByRate(timeline, from, s.DueDate, getDaysBetween(from, s.DueDate));
+      prev = s.DueDate;
+    }
+    return map;
+  }, [selectedContract, schedules, todayIso]);
 
   const expiredLimitNote = useMemo(() => {
     const scope = selectedMasterFilter === 'ALL'
@@ -2008,8 +2033,14 @@ export const LoanPortfolioView: React.FC = () => {
                             const rowTotalAmount = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penaltyAmount;
                             const isPrepayRow = (s.PrepaidPrincipalAmount && s.PrepaidPrincipalAmount > 0) || s.Note?.includes('TRẢ TRƯỚC HẠN');
 
-                            const activeRateVal = getEffectiveActiveRate(selectedContract, s.DueDate);
-                            const activeRatePercentStr = (activeRateVal * 100).toFixed(2) + '%/năm';
+                            const rateSegs = periodRateSegments[s.Id] || [];
+                            const activeRatePercentStr = rateSegs.length > 0
+                              ? formatSegmentsLabel(rateSegs) + '/năm'
+                              : (getEffectiveActiveRate(selectedContract, s.DueDate) * 100).toFixed(2) + '%/năm';
+                            const isForecastRate = rateSegs.some(x => x.forecast);
+                            const rateBreakdown = rateSegs.length > 1
+                              ? rateSegs.map(x => `${x.days} ngày @ ${x.ratePercent.toFixed(2).replace('.', ',')}% (${x.label})`).join('  +  ')
+                              : (rateSegs[0]?.label || '');
 
                             return (
                               <tr key={s.Id} className={`transition-colors ${
@@ -2023,8 +2054,14 @@ export const LoanPortfolioView: React.FC = () => {
                               }`}>
                                 <td className="p-3 text-center font-bold font-mono">#{s.PeriodNumber}</td>
                                 <td className="p-3 font-mono font-bold">{fmtDate(s.DueDate)}</td>
-                                <td className="p-3 text-center font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50/30 dark:bg-purple-950/20 rounded-lg">
-                                  {activeRatePercentStr}
+                                <td className="p-3 text-center font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50/30 dark:bg-purple-950/20 rounded-lg"
+                                  title={rateBreakdown || undefined}>
+                                  <div className={rateSegs.length > 1 ? 'whitespace-nowrap' : ''}>
+                                    {activeRatePercentStr}
+                                  </div>
+                                  {isForecastRate && (
+                                    <div className="text-[9px] font-sans font-normal text-slate-400 uppercase tracking-wide">dự phóng</div>
+                                  )}
                                 </td>
                                 <td className="p-3 text-center font-mono font-bold">
                                   {effectiveOverdueDays > 0 ? (

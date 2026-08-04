@@ -11,6 +11,7 @@ import { useWork } from '../../context/WorkContext';
 import { fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
 import { summarizeCreditContracts, kunnRevolvingStatus } from '../../lib/creditContract';
 import { computeOutstandingBalance } from '../../lib/loanMath';
+import { getEffectiveLtv, usableCapacity, appraisalStatus } from '../../lib/collateralMath';
 import { allowedPurposes } from '../../lib/loanProductRules';
 import { DateInput } from '../DateInput';
 import type { Customer, CreditContract, LoanContract, Collateral, RepaymentSchedule } from '../../types';
@@ -225,6 +226,16 @@ export const CreditContractView: React.FC = () => {
   };
 
   const purposeOptions = useMemo(() => allowedPurposes(form.LoanMethod), [form.LoanMethod]);
+
+  const tongKhaNangBaoDam = useMemo(
+    () => collaterals
+      .filter(c => selectedCollateralIds.includes(c.Id))
+      .reduce((s, c) => s + usableCapacity(c, todayIso), 0),
+    [collaterals, selectedCollateralIds, todayIso]
+  );
+
+  const vuotKhaNangBaoDam = tongKhaNangBaoDam > 0
+    && parseMoneyInput(formAmount) > tongKhaNangBaoDam;
 
   return (
     <div className="space-y-4">
@@ -495,21 +506,69 @@ export const CreditContractView: React.FC = () => {
                 <span>Khách hàng chưa có TSBĐ nào. Thêm ở tab Định Giá TSĐB trước.</span>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {collaterals.map(col => (
-                  <label key={col.Id} className={`flex items-center space-x-2 p-2 rounded-lg border cursor-pointer text-xs ${
-                    selectedCollateralIds.includes(col.Id)
-                      ? 'border-emerald-500 bg-emerald-500/10'
-                      : isLight ? 'border-slate-200' : 'border-slate-700'
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {collaterals.map(col => {
+                  const isChecked = selectedCollateralIds.includes(col.Id);
+                  const val = col.AppraisedValue || col.Value || 0;
+                  const ltv = getEffectiveLtv(col);
+                  const capacity = usableCapacity(col, todayIso);
+                  const tinhTrang = appraisalStatus(col, todayIso);
+
+                  return (
+                    <div key={col.Id} className={`p-3 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+                      isChecked
+                        ? (isLight ? 'bg-sky-50 border-sky-400' : 'bg-sky-950/60 border-sky-500')
+                        : (isLight ? 'bg-white border-slate-300 hover:border-sky-400' : 'bg-slate-900/80 border-slate-800 hover:border-slate-700')
+                    }`}>
+                      <div className="flex items-start space-x-3 flex-1 min-w-[220px]">
+                        <input type="checkbox" checked={isChecked}
+                          onChange={e => setSelectedCollateralIds(prev =>
+                            e.target.checked ? [...prev, col.Id] : prev.filter(x => x !== col.Id))}
+                          className="w-4 h-4 rounded text-sky-600 mt-0.5" />
+                        <div>
+                          <div className="font-bold text-xs">
+                            {col.AssetType || 'TSBĐ'} — {col.Address || col.AssetCode}
+                          </div>
+                          <div className="text-[11px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-3">
+                            <span>Định giá: <strong>{fmtMoney(val)}</strong></span>
+                            <span>LTV: <strong className="font-mono text-sky-600 dark:text-sky-400">{ltv}%</strong></span>
+                            <span>Ngày định giá: <span className="font-mono">{fmtDate(col.AppraisalDate)}</span></span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] text-slate-400 block uppercase">Khả năng bảo đảm</span>
+                        <span className={`text-xs font-mono font-bold ${
+                          capacity > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                        }`}>
+                          {fmtMoney(capacity)}
+                        </span>
+                        {capacity === 0 && (
+                          <span className="block text-[10px] font-semibold text-rose-500">
+                            {tinhTrang === 'expired' ? 'định giá hết hiệu lực' : 'chưa có ngày định giá'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {selectedCollateralIds.length > 0 && (
+                  <div className={`p-3 rounded-xl border text-xs font-semibold flex flex-wrap items-center justify-between gap-3 ${
+                    isLight ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
                   }`}>
-                    <input type="checkbox" checked={selectedCollateralIds.includes(col.Id)}
-                      onChange={e => setSelectedCollateralIds(prev =>
-                        e.target.checked ? [...prev, col.Id] : prev.filter(x => x !== col.Id))}
-                      className="w-3.5 h-3.5 accent-emerald-600" />
-                    <span className="font-mono">{col.AssetCode || `TS-${col.Id}`}</span>
-                    <span className="text-slate-500 truncate">{col.Address || col.AssetType || ''}</span>
-                  </label>
-                ))}
+                    <span>TỔNG KHẢ NĂNG BẢO ĐẢM ({selectedCollateralIds.length} tài sản)</span>
+                    <span className="font-mono">{fmtMoney(tongKhaNangBaoDam)}</span>
+                  </div>
+                )}
+
+                {vuotKhaNangBaoDam && (
+                  <div className={`p-3 rounded-xl border text-xs font-bold ${
+                    isLight ? 'bg-rose-50 border-rose-300 text-rose-800' : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
+                  }`}>
+                    Tổng mức cấp {fmtMoney(parseMoneyInput(formAmount))} vượt khả năng bảo đảm {fmtMoney(tongKhaNangBaoDam)}
+                  </div>
+                )}
               </div>
             )}
           </div>

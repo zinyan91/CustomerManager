@@ -16,7 +16,7 @@ import {
   type RateSegment,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
-import { checkKunnAgainstContract, kunnRevolvingStatus, nextKunnNumber } from '../../lib/creditContract';
+import { checkKunnAgainstContract, nextKunnNumber } from '../../lib/creditContract';
 import { fetchCreditContractsByCustomerAPI } from '../../lib/api';
 import { useWork } from '../../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
@@ -134,7 +134,7 @@ export const LoanPortfolioView: React.FC = () => {
     fetchCustomersAPI().then(list => {
       list.sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
       setAllCustomers(list);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -218,10 +218,10 @@ export const LoanPortfolioView: React.FC = () => {
   const dropdownFiltered = dropdownQuery.trim().length < 1
     ? allCustomers
     : allCustomers.filter(c =>
-        c.FullName.toLowerCase().includes(dropdownQuery.toLowerCase()) ||
-        c.CifKh.toLowerCase().includes(dropdownQuery.toLowerCase()) ||
-        (c.NationalId || '').includes(dropdownQuery)
-      );
+      c.FullName.toLowerCase().includes(dropdownQuery.toLowerCase()) ||
+      c.CifKh.toLowerCase().includes(dropdownQuery.toLowerCase()) ||
+      (c.NationalId || '').includes(dropdownQuery)
+    );
 
   useEffect(() => {
     setSchedules([]);
@@ -246,7 +246,7 @@ export const LoanPortfolioView: React.FC = () => {
       try {
         const schs = await fetchRepaymentSchedulesAPI(c.Id);
         map[c.Id] = schs;
-      } catch {}
+      } catch { }
     }));
     setAllSchedulesMap(map);
   };
@@ -370,6 +370,9 @@ export const LoanPortfolioView: React.FC = () => {
     setForm({
       Id: c.Id,
       CustomerId: c.CustomerId,
+      CreditContractId: c.CreditContractId
+        ?? creditContracts.find(cc => cc.HdtdNumber === getMasterHdtdNumber(c))?.Id
+        ?? null,
       ContractNumber: c.ContractNumber,
       HdtdDueDate: (c.HdtdDueDate && /^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate)) ? c.HdtdDueDate : null,
       ContractType: c.ContractType,
@@ -806,7 +809,6 @@ export const LoanPortfolioView: React.FC = () => {
   };
 
   const selectedCollaterals = collaterals.filter(c => selectedCollateralIds.includes(c.Id));
-  const totalAppraisedValue = selectedCollaterals.reduce((sum, c) => sum + (c.AppraisedValue || c.Value || 0), 0);
 
   const maxAllowedLoanLtv = selectedCollaterals.reduce((sum, c) => {
     const val = c.AppraisedValue || c.Value || 0;
@@ -814,15 +816,8 @@ export const LoanPortfolioView: React.FC = () => {
     return sum + (val * ltv / 100);
   }, 0);
 
-  const formCurrentBalNum = parseFloat(formCurrentBalance.replace(/\./g, '').replace(',', '.')) || 0;
-  const formLoanAmountNum = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
-  const currentFormCreditLimitNum = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
 
-  const effectiveLtvLoanAmount = (formCurrentBalNum > 0)
-    ? formCurrentBalNum
-    : (formLoanAmountNum > 0 ? formLoanAmountNum : currentFormCreditLimitNum);
 
-  const isLtvExceeded = selectedCollateralIds.length > 0 && maxAllowedLoanLtv > 0 && effectiveLtvLoanAmount > maxAllowedLoanLtv;
 
   const todayIso = new Date().toISOString().split('T')[0];
 
@@ -1002,11 +997,6 @@ export const LoanPortfolioView: React.FC = () => {
     [form.DisbursementDate, form.KunnDueDate, kunnLoanAmountNum, formCreditContract]
   );
 
-  const kunnRevolving = useMemo(
-    () => kunnRevolvingStatus({ KunnDueDate: form.KunnDueDate }, formCreditContract),
-    [form.KunnDueDate, formCreditContract]
-  );
-
   useEffect(() => {
     if (!disburseRequest || !foundCustomer) return;
     if (disburseRequest.customerId !== foundCustomer.Id) return;
@@ -1099,11 +1089,10 @@ export const LoanPortfolioView: React.FC = () => {
     <div className="space-y-4 text-xs transition-colors duration-200">
 
       {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${
-          notification.type === 'success'
-            ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
-            : 'bg-red-950/90 border-red-500/40 text-red-300'
-        }`}>
+        <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success'
+          ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
+          : 'bg-red-950/90 border-red-500/40 text-red-300'
+          }`}>
           {notification.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
           <span>{notification.message}</span>
         </div>
@@ -1213,9 +1202,8 @@ export const LoanPortfolioView: React.FC = () => {
               { id: 'schedule' as const, label: 'Lịch Thu Nợ', icon: Calendar },
             ].map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setMainTab(id)}
-                className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                  mainTab === id ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}>
+                className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${mainTab === id ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}>
                 <Icon className="w-3.5 h-3.5" />
                 <span>{label}</span>
               </button>
@@ -1290,7 +1278,7 @@ export const LoanPortfolioView: React.FC = () => {
                           <select value={form.DebtGroup ?? 1}
                             onChange={e => setForm(f => ({ ...f, DebtGroup: Number(e.target.value) }))}
                             className={`w-full rounded-xl p-2.5 text-xs font-bold ${inputStyle}`}>
-                            {[1,2,3,4,5].map(g => (
+                            {[1, 2, 3, 4, 5].map(g => (
                               <option key={g} value={g}>
                                 Nhóm {g} ({g === 1 ? 'Nợ đủ tiêu chuẩn <10 ngày' : g === 2 ? 'Nợ cần chú ý 10-90 ngày' : g === 3 ? 'Nợ dưới tiêu chuẩn 91-180 ngày' : g === 4 ? 'Nợ nghi ngờ 181-360 ngày' : 'Nợ có khả năng mất vốn >360 ngày'})
                               </option>
@@ -1300,9 +1288,8 @@ export const LoanPortfolioView: React.FC = () => {
                       </div>
 
                       {formCreditContract && (
-                        <div className={`rounded-xl p-3 border text-[11px] ${
-                          isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
-                        }`}>
+                        <div className={`rounded-xl p-3 border text-[11px] ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+                          }`}>
                           <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 font-mono">
                             <span className="text-slate-500">{foundCustomer?.FullName} · CIF {foundCustomer?.CifKh}</span>
                             <span>Phương thức: <strong>{formCreditContract.LoanMethod || '—'}</strong></span>
@@ -1314,31 +1301,13 @@ export const LoanPortfolioView: React.FC = () => {
                               <span className="text-slate-500">Mục đích: {formCreditContract.LoanPurposeType}</span>
                             )}
                           </div>
-                          <div className="mt-1.5 text-[10px] font-sans text-slate-400">
-                            Thông tin cấp HĐTD chỉ sửa được ở tab Hợp Đồng Tín Dụng. KUNN thừa hưởng TSBĐ, mục đích và lãi suất chương trình của hợp đồng.
-                          </div>
                         </div>
                       )}
 
-                      {kunnRevolving.state !== 'unknown' && (
-                        <div className={`p-3 rounded-xl border text-[11px] font-semibold ${
-                          kunnRevolving.state === 'locked'
-                            ? (isLight ? 'bg-rose-50 border-rose-300 text-rose-900' : 'bg-rose-950/40 border-rose-500/40 text-rose-300')
-                            : (isLight ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300')
-                        }`}>
-                          <div className="flex items-start space-x-1.5">
-                            {kunnRevolving.state === 'locked'
-                              ? <AlertTriangle className="w-3.5 h-3.5 mt-px shrink-0" />
-                              : <CheckCircle className="w-3.5 h-3.5 mt-px shrink-0" />}
-                            <span>{kunnRevolving.message}</span>
-                          </div>
-                        </div>
-                      )}
 
                       {kunnIssues.length > 0 && (
-                        <div className={`p-3 rounded-xl border text-[11px] font-semibold space-y-1 ${
-                          isLight ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-amber-950/40 border-amber-500/40 text-amber-300'
-                        }`}>
+                        <div className={`p-3 rounded-xl border text-[11px] font-semibold space-y-1 ${isLight ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-amber-950/40 border-amber-500/40 text-amber-300'
+                          }`}>
                           <div className="flex items-center space-x-1.5 uppercase tracking-wide">
                             <AlertTriangle className="w-3.5 h-3.5" />
                             <span>Đối chiếu với HĐTD {formCreditContract?.HdtdNumber}</span>
@@ -1348,9 +1317,8 @@ export const LoanPortfolioView: React.FC = () => {
                       )}
 
                       {form.LoanMethod === 'Hạn mức tín dụng' && (
-                        <div className={`p-3 rounded-xl border flex flex-wrap items-center justify-between text-xs font-semibold ${
-                          isLight ? 'bg-sky-50 border-sky-200 text-sky-900' : 'bg-sky-950/60 border-sky-500/30 text-sky-200'
-                        }`}>
+                        <div className={`p-3 rounded-xl border flex flex-wrap items-center justify-between text-xs font-semibold ${isLight ? 'bg-sky-50 border-sky-200 text-sky-900' : 'bg-sky-950/60 border-sky-500/30 text-sky-200'
+                          }`}>
                           <div className="flex items-center space-x-2">
                             <Building2 className="w-4 h-4 text-sky-500" />
                             <span>TÌNH TRẠNG HẠN MỨC TÍN DỤNG:</span>
@@ -1406,9 +1374,8 @@ export const LoanPortfolioView: React.FC = () => {
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Hạn mức HMTD còn lại (sau lần này)</label>
                           <input type="text" readOnly value={fmtMoney(remainingHmtdLimit)}
-                            className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold ${
-                              remainingHmtdLimit >= 0 ? 'text-sky-600 dark:text-sky-400' : 'text-red-500'
-                            } ${readonlyInputStyle}`} />
+                            className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold ${remainingHmtdLimit >= 0 ? 'text-sky-600 dark:text-sky-400' : 'text-red-500'
+                              } ${readonlyInputStyle}`} />
                         </div>
                       </div>
 
@@ -1520,9 +1487,8 @@ export const LoanPortfolioView: React.FC = () => {
                               placeholder="3.5"
                               className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-300 ${inputStyle}`} />
                           </div>
-                          <div className={`col-span-full space-y-2 p-3 rounded-xl border ${
-                            isLight ? 'bg-sky-50/80 border-sky-200' : 'bg-sky-950/40 border-sky-900/60'
-                          }`}>
+                          <div className={`col-span-full space-y-2 p-3 rounded-xl border ${isLight ? 'bg-sky-50/80 border-sky-200' : 'bg-sky-950/40 border-sky-900/60'
+                            }`}>
                             <div className="flex items-center justify-between text-xs">
                               <span className={labelStyle}>Lãi suất sau ưu đãi chuẩn (LSƯĐ + Biên độ):</span>
                               <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{postPrefRate.toFixed(2)} %/năm</span>
@@ -1551,9 +1517,8 @@ export const LoanPortfolioView: React.FC = () => {
                               placeholder="3.5"
                               className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-300 ${inputStyle}`} />
                           </div>
-                          <div className={`col-span-full space-y-2 p-3 rounded-xl border ${
-                            isLight ? 'bg-sky-50/80 border-sky-200' : 'bg-sky-950/40 border-sky-900/60'
-                          }`}>
+                          <div className={`col-span-full space-y-2 p-3 rounded-xl border ${isLight ? 'bg-sky-50/80 border-sky-200' : 'bg-sky-950/40 border-sky-900/60'
+                            }`}>
                             <div className="flex items-center justify-between text-xs">
                               <span className={labelStyle}>Lãi suất thông thường chuẩn (LSCS + Biên độ):</span>
                               <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{normalRate.toFixed(2)} %/năm</span>
@@ -1579,7 +1544,6 @@ export const LoanPortfolioView: React.FC = () => {
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Điều kiện phê duyệt (CASA / BCTC)</label>
                           <div className="text-xs p-2.5 rounded-xl border bg-amber-50/50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 font-medium">
-                            💡 Nếu KH không đạt chỉ tiêu CASA / BCTC, nhập <strong>+{rateConditionSurcharge || '0.5'}%</strong> để cộng thêm vào lãi suất áp dụng. Khi KH đạt lại điều kiện ở đợt soát xét tiếp theo, đổi về <strong>0%</strong> để khôi phục lãi suất chuẩn.
                           </div>
                         </div>
                       </div>
@@ -1747,76 +1711,25 @@ export const LoanPortfolioView: React.FC = () => {
                       )}
                     </div>
 
-                    <div className={`rounded-xl p-4 space-y-3 border ${sectionBoxBg}`}>
-                      <div className="flex items-center justify-between">
-                        <div className="text-[11px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-1.5">
-                          <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                          <span>TÀI SẢN BẢO ĐẢM LIÊN KẾT</span>
-                        </div>
-                        <span className="text-[10px] text-slate-500 font-medium">Tổng Định giá: {fmtMoney(totalAppraisedValue)}</span>
+                    <div className={`rounded-xl p-3 border text-[11px] ${sectionBoxBg}`}>
+                      <div className="flex items-center space-x-2 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>TÀI SẢN BẢO ĐẢM (thừa hưởng từ HĐTD)</span>
                       </div>
-
-                      {collaterals.length === 0 ? (
-                        <div className="text-slate-400 text-xs py-2 italic">
-                          Khách hàng này chưa có tài sản bảo đảm nào trong hệ thống.
+                      {selectedCollaterals.length === 0 ? (
+                        <div className="text-slate-400 italic">
+                          HĐTD chưa gán TSBĐ. Gán ở tab Hợp Đồng Tín Dụng.
                         </div>
                       ) : (
-                        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                          {collaterals.map(col => {
-                            const isChecked = selectedCollateralIds.includes(col.Id);
-                            const val = col.AppraisedValue || col.Value || 0;
-                            const effectiveLtv = getEffectiveLtv(col);
-                            const maxLoanCol = val * effectiveLtv / 100;
-
-                            const itemStyle = isChecked
-                              ? isLight
-                                ? 'bg-sky-50 border-sky-400 text-slate-900 shadow-sm font-medium'
-                                : 'bg-sky-950/60 border-sky-500 text-slate-100 font-medium'
-                              : isLight
-                                ? 'bg-white border-slate-300 text-slate-800 hover:border-sky-400'
-                                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700';
-
-                            return (
-                              <div key={col.Id} className={`p-3 rounded-xl border flex flex-wrap items-center justify-between gap-3 transition-colors ${itemStyle}`}>
-                                <div className="flex items-start space-x-3 flex-1 min-w-[200px]">
-                                  <input type="checkbox" checked={isChecked}
-                                    onChange={e => {
-                                      if (e.target.checked) setSelectedCollateralIds(prev => [...prev, col.Id]);
-                                      else setSelectedCollateralIds(prev => prev.filter(id => id !== col.Id));
-                                    }}
-                                    className="w-4 h-4 rounded text-sky-600 mt-0.5" />
-                                  <div>
-                                    <div className={`font-bold text-xs ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                                      {col.AssetType || 'TSBĐ'} — {col.Address || col.AssetCode}
-                                    </div>
-                                    <div className="text-[11px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-3">
-                                      <span>Định giá: <strong className={isLight ? 'text-slate-800' : 'text-slate-200'}>{fmtMoney(val)}</strong></span>
-                                      <span className="flex items-center space-x-1.5">
-                                        <span>LTV cho phép:</span>
-                                        <span className="font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
-                                          {col.LtvPercent || 70}%
-                                        </span>
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right shrink-0">
-                                  <span className="text-[10px] text-slate-400 block uppercase">Hạn mức vay tối đa</span>
-                                  <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                    {fmtMoney(maxLoanCol)}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {isLtvExceeded && (
-                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-300 dark:border-red-500/50 text-red-700 dark:text-red-300 text-xs flex items-center space-x-2">
-                          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                          <span>
-                            <strong>Cảnh báo LTV:</strong> Dư nợ khoản vay hiện tại ({fmtMoney(effectiveLtvLoanAmount)}) vượt quá mức bảo đảm tối đa cho phép của TSBĐ ({fmtMoney(maxAllowedLoanLtv)})!
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono">
+                          {selectedCollaterals.map(col => (
+                            <span key={col.Id}>
+                              {col.AssetCode || `TS-${col.Id}`}
+                              <span className="text-slate-500"> · {fmtMoney(col.AppraisedValue || col.Value || 0)}</span>
+                            </span>
+                          ))}
+                          <span className="text-slate-500">
+                            Khả năng bảo đảm tối đa: <strong className="text-emerald-600 dark:text-emerald-400">{fmtMoney(maxAllowedLoanLtv)}</strong>
                           </span>
                         </div>
                       )}
@@ -1888,13 +1801,12 @@ export const LoanPortfolioView: React.FC = () => {
                 <div className="flex flex-wrap gap-2 mb-4">
                   {contracts.map(c => (
                     <button key={c.Id} onClick={() => handleSelectContract(c)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
-                        selectedContract?.Id === c.Id
-                          ? 'bg-sky-600 text-white border-sky-500 shadow-sm'
-                          : isLight
-                            ? 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                            : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-sky-700'
-                      }`}>
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${selectedContract?.Id === c.Id
+                        ? 'bg-sky-600 text-white border-sky-500 shadow-sm'
+                        : isLight
+                          ? 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-sky-700'
+                        }`}>
                       {c.ContractNumber} ({fmtMoney(c.LoanAmount || c.ContractAmount)})
                     </button>
                   ))}
@@ -2011,15 +1923,14 @@ export const LoanPortfolioView: React.FC = () => {
                               : (rateSegs[0]?.label || '');
 
                             return (
-                              <tr key={s.Id} className={`transition-colors ${
-                                isPrepayRow
-                                  ? 'bg-amber-500/10 dark:bg-amber-500/20 font-semibold border-l-4 border-amber-500'
-                                  : s.IsPaid
-                                    ? 'bg-emerald-50/50 dark:bg-emerald-950/10'
-                                    : isOverdue
-                                      ? 'bg-rose-50/60 dark:bg-rose-950/30 font-semibold'
-                                      : tableRowHover
-                              }`}>
+                              <tr key={s.Id} className={`transition-colors ${isPrepayRow
+                                ? 'bg-amber-500/10 dark:bg-amber-500/20 font-semibold border-l-4 border-amber-500'
+                                : s.IsPaid
+                                  ? 'bg-emerald-50/50 dark:bg-emerald-950/10'
+                                  : isOverdue
+                                    ? 'bg-rose-50/60 dark:bg-rose-950/30 font-semibold'
+                                    : tableRowHover
+                                }`}>
                                 <td className="p-3 text-center font-bold font-mono">#{s.PeriodNumber}</td>
                                 <td className="p-3 font-mono font-bold">{fmtDate(s.DueDate)}</td>
                                 <td className="p-3 text-center font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50/30 dark:bg-purple-950/20 rounded-lg"
@@ -2077,11 +1988,10 @@ export const LoanPortfolioView: React.FC = () => {
                                       e.stopPropagation();
                                       openPaymentModal(s);
                                     }}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center space-x-1 border ${
-                                      s.IsPaid
-                                        ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                                        : 'bg-sky-600 hover:bg-sky-500 text-white border-sky-500 shadow-sky-600/20'
-                                    }`}>
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center space-x-1 border ${s.IsPaid
+                                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                                      : 'bg-sky-600 hover:bg-sky-500 text-white border-sky-500 shadow-sky-600/20'
+                                      }`}>
                                     <span>⚙️ Ghi nhận TT / Sửa</span>
                                   </button>
                                 </td>

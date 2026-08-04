@@ -49,9 +49,46 @@ export interface ContractCollateral {
   collateral?: Collateral;
 }
 
+export interface CreditContract {
+  Id: number;
+  CustomerId: number;
+  HdtdNumber: string;
+
+  ApprovalCode?: string | null;
+  ApprovalAmount?: number | null;
+
+  LoanMethod?: string | null;
+  ContractAmount?: number | null;
+  ContractStartDate?: string | null;
+  ContractEndDate?: string | null;
+  LoanTenorMonths?: number | null;
+
+  LoanPurpose?: string | null;
+  LoanPurposeType?: string | null;
+
+  PreferentialRate?: number | null;
+  PreferentialPeriodMonths?: number | null;
+  PostPreferentialRate?: number | null;
+  BaseRate?: number | null;
+  MarginRate?: number | null;
+  NormalRate?: number | null;
+  InterestRate?: number | null;
+  RateHistory?: string | null;
+
+  CollateralIds?: string | null;
+
+  IsClosed?: boolean;
+  ClosedDate?: string | null;
+  Note?: string | null;
+  CreatedAt?: string;
+
+  customer?: Customer;
+}
+
 export interface LoanContract {
   Id: number;
   CustomerId: number;
+  CreditContractId?: number | null;
   CollateralId?: number | null;
   ParentContractId?: number | null;
   ContractNumber: string;
@@ -92,6 +129,7 @@ export interface LoanContract {
   LoanPurposeType?: string | null;
   DebtGroup?: number;
   IsSettled?: boolean;
+  SettledDate?: string | null;
   IsRestructured?: boolean;
   Note?: string | null;
 

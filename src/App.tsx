@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useTheme } from './context/ThemeContext';
 import { useAuth } from './context/AuthContext';
+import { useWork } from './context/WorkContext';
 import { LoginView } from './components/LoginView';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/views/DashboardView';
 import { CustomerListView } from './components/views/CustomerListView';
 import { LoanPortfolioView } from './components/views/LoanPortfolioView';
+import { CreditContractView } from './components/views/CreditContractView';
 import { CollateralView } from './components/views/CollateralView';
 import { CreditCardView } from './components/views/CreditCardView';
 import { CalculatorView } from './components/views/CalculatorView';
@@ -19,7 +21,7 @@ import { SettingsView } from './components/views/SettingsView';
 import { PostLoanControlView } from './components/views/PostLoanControlView';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const { activeTab, setActiveTab } = useWork();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { theme } = useTheme();
   const { session, loading } = useAuth();
@@ -57,6 +59,7 @@ export function App() {
         <main className={`flex-1 md:ml-60 min-w-0 p-3 sm:p-4 md:p-6 overflow-y-auto ${mainClass}`}>
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'customers' && <CustomerListView />}
+          {activeTab === 'credit-contracts' && <CreditContractView />}
           {activeTab === 'loans' && <LoanPortfolioView />}
           {activeTab === 'collaterals' && <CollateralView />}
           {activeTab === 'credit-cards' && <CreditCardView />}

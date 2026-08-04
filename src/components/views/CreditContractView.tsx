@@ -1,0 +1,478 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { FileText, Plus, Trash2, Save, X, Banknote, AlertTriangle, Building2 } from 'lucide-react';
+import {
+  fetchCustomersAPI, fetchContractsByCustomerAPI,
+  fetchCreditContractsByCustomerAPI, saveCreditContractAPI,
+  deleteCreditContractAPI, countKunnOfCreditContractAPI,
+  fetchCollateralsByCustomerAPI,
+} from '../../lib/api';
+import { useTheme } from '../../context/ThemeContext';
+import { useWork } from '../../context/WorkContext';
+import { fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
+import { summarizeCreditContracts } from '../../lib/creditContract';
+import { computeOutstandingBalance } from '../../lib/loanMath';
+import { allowedPurposes } from '../../lib/loanProductRules';
+import { DateInput } from '../DateInput';
+import type { Customer, CreditContract, LoanContract, Collateral } from '../../types';
+
+const LOAN_METHODS = [
+  'Hạn mức tín dụng',
+  'Hạn mức tín dụng từng lần',
+  'Cho vay từng lần',
+  'Hạn mức thẻ tín dụng',
+  'Cầm cố sổ tiết kiệm',
+];
+
+const fmtMoney = (v?: number | null) =>
+  v !== undefined && v !== null ? v.toLocaleString('vi-VN') + ' VNĐ' : '—';
+
+export const CreditContractView: React.FC = () => {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const { selectedCustomerId, setSelectedCustomerId, requestDisburse } = useWork();
+
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [contracts, setContracts] = useState<CreditContract[]>([]);
+  const [kunns, setKunns] = useState<LoanContract[]>([]);
+  const [collaterals, setCollaterals] = useState<Collateral[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [notify, setNotify] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<CreditContract | null>(null);
+  const [form, setForm] = useState<Partial<CreditContract>>({});
+  const [formAmount, setFormAmount] = useState('');
+  const [formApprovalAmount, setFormApprovalAmount] = useState('');
+  const [useSharedApproval, setUseSharedApproval] = useState(false);
+  const [selectedCollateralIds, setSelectedCollateralIds] = useState<number[]>([]);
+  const [showSettled, setShowSettled] = useState(false);
+
+  const todayIso = new Date().toISOString().split('T')[0];
+
+  const containerCardBg = isLight
+    ? 'bg-white border-slate-200 text-slate-900 shadow-sm'
+    : 'bg-slate-900 border-slate-800 text-slate-100 shadow-xl';
+  const inputStyle = isLight
+    ? 'bg-white border-slate-300 text-slate-900 focus:border-sky-500'
+    : 'bg-slate-950 border-slate-700 text-slate-100 focus:border-sky-500';
+  const labelStyle = 'text-[11px] font-semibold uppercase tracking-wide text-slate-500';
+
+  const showNotify = (type: 'success' | 'error', message: string) => {
+    setNotify({ type, message });
+    setTimeout(() => setNotify(null), 5000);
+  };
+
+  useEffect(() => {
+    fetchCustomersAPI({}).then(setAllCustomers);
+  }, []);
+
+  const loadCustomer = async (c: Customer | null) => {
+    setCustomer(c);
+    setShowForm(false);
+    setEditing(null);
+    if (!c) {
+      setContracts([]); setKunns([]); setCollaterals([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const [ccs, ks, cols] = await Promise.all([
+        fetchCreditContractsByCustomerAPI(c.Id),
+        fetchContractsByCustomerAPI(c.Id),
+        fetchCollateralsByCustomerAPI(c.Id),
+      ]);
+      setContracts(ccs);
+      setKunns(ks);
+      setCollaterals(cols);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (allCustomers.length === 0) return;
+    if (selectedCustomerId && selectedCustomerId !== customer?.Id) {
+      const c = allCustomers.find(x => x.Id === selectedCustomerId);
+      if (c) loadCustomer(c);
+    }
+  }, [selectedCustomerId, allCustomers]);
+
+  const summaries = useMemo(
+    () => summarizeCreditContracts(contracts, kunns, {
+      getOutstanding: (k) => computeOutstandingBalance(undefined, k),
+      today: todayIso,
+    }),
+    [contracts, kunns, todayIso]
+  );
+
+  const visibleSummaries = useMemo(
+    () => showSettled ? summaries : summaries.filter(s => !s.contract.IsClosed),
+    [summaries, showSettled]
+  );
+
+  const closedCount = summaries.filter(s => s.contract.IsClosed).length;
+
+  const openNew = () => {
+    setEditing(null);
+    setForm({
+      CustomerId: customer?.Id,
+      LoanMethod: LOAN_METHODS[0],
+      LoanTenorMonths: 12,
+      IsClosed: false,
+    });
+    setFormAmount('');
+    setFormApprovalAmount('');
+    setUseSharedApproval(false);
+    setSelectedCollateralIds([]);
+    setShowForm(true);
+  };
+
+  const openEdit = (cc: CreditContract) => {
+    setEditing(cc);
+    setForm({ ...cc });
+    setFormAmount(cc.ContractAmount ? cc.ContractAmount.toLocaleString('vi-VN') : '');
+    setFormApprovalAmount(cc.ApprovalAmount ? cc.ApprovalAmount.toLocaleString('vi-VN') : '');
+    setUseSharedApproval(!!(cc.ApprovalCode || '').trim());
+    setSelectedCollateralIds(
+      (cc.CollateralIds || '').split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n))
+    );
+    setShowForm(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customer) return;
+
+    const hdtd = (form.HdtdNumber || '').trim();
+    if (!hdtd) {
+      showNotify('error', 'Số HĐTD là bắt buộc!');
+      return;
+    }
+    if (selectedCollateralIds.length === 0) {
+      showNotify('error', '⚠️ Phải chọn ít nhất 01 Tài sản bảo đảm cho HĐTD! KUNN sẽ thừa hưởng TSBĐ của hợp đồng.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const payload: Partial<CreditContract> = {
+        ...form,
+        Id: editing?.Id,
+        CustomerId: customer.Id,
+        HdtdNumber: hdtd,
+        ContractAmount: parseMoneyInput(formAmount) || null,
+        ApprovalCode: useSharedApproval ? (form.ApprovalCode || '').trim() || null : null,
+        ApprovalAmount: useSharedApproval ? (parseMoneyInput(formApprovalAmount) || null) : null,
+        CollateralIds: selectedCollateralIds.join(','),
+      };
+      await saveCreditContractAPI(payload);
+      showNotify('success', editing ? 'Đã cập nhật HĐTD!' : 'Đã tạo HĐTD mới!');
+      setShowForm(false);
+      await loadCustomer(customer);
+    } catch (err: any) {
+      showNotify('error', err.message || 'Lỗi lưu HĐTD');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (cc: CreditContract) => {
+    const n = await countKunnOfCreditContractAPI(cc.Id);
+    if (n > 0) {
+      showNotify('error', `Không xoá được: HĐTD ${cc.HdtdNumber} đang có ${n} KUNN. Xoá KUNN trước.`);
+      return;
+    }
+    if (!window.confirm(`Xoá HĐTD "${cc.HdtdNumber}"?\nHành động này không thể hoàn tác.`)) return;
+    setLoading(true);
+    try {
+      await deleteCreditContractAPI(cc.Id);
+      showNotify('success', `Đã xoá HĐTD ${cc.HdtdNumber}`);
+      await loadCustomer(customer);
+    } catch (err: any) {
+      showNotify('error', err.message || 'Lỗi xoá HĐTD');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const purposeOptions = useMemo(() => allowedPurposes(form.LoanMethod), [form.LoanMethod]);
+
+  return (
+    <div className="space-y-4">
+      {notify && (
+        <div className={`p-3 rounded-xl border text-xs font-semibold ${
+          notify.type === 'success'
+            ? 'bg-emerald-50 border-emerald-300 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+            : 'bg-rose-50 border-rose-300 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+        }`}>{notify.message}</div>
+      )}
+
+      <div className={`${containerCardBg} rounded-2xl p-4 border space-y-3`}>
+        <div className="flex items-center space-x-2 text-sky-600 dark:text-sky-400 font-bold text-xs uppercase tracking-wider">
+          <FileText className="w-4 h-4" />
+          <span>Quản lý Hợp đồng Tín dụng</span>
+        </div>
+        <div>
+          <label className={`block mb-1 ${labelStyle}`}>Khách hàng ({allCustomers.length} KH)</label>
+          <select
+            value={customer?.Id ?? ''}
+            onChange={e => {
+              const id = parseInt(e.target.value, 10);
+              const c = allCustomers.find(x => x.Id === id) || null;
+              setSelectedCustomerId(c?.Id ?? null);
+              loadCustomer(c);
+            }}
+            className={`w-full rounded-xl p-2.5 text-sm font-semibold ${inputStyle}`}
+          >
+            <option value="">— Chọn khách hàng —</option>
+            {allCustomers.map(c => (
+              <option key={c.Id} value={c.Id}>{c.FullName} — CIF {c.CifKh}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {customer && (
+        <div className={`${containerCardBg} rounded-2xl border overflow-hidden`}>
+          <div className="p-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Hợp đồng của {customer.FullName} — {visibleSummaries.length} HĐTD
+              {closedCount > 0 && (
+                <button onClick={() => setShowSettled(v => !v)}
+                  className="ml-3 font-normal normal-case text-[11px] text-sky-600 dark:text-sky-400 hover:underline">
+                  {showSettled ? 'Ẩn' : 'Hiện'} {closedCount} HĐTD đã đóng
+                </button>
+              )}
+            </div>
+            <button onClick={openNew}
+              className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs">
+              <Plus className="w-3.5 h-3.5" /><span>Tạo HĐTD mới</span>
+            </button>
+          </div>
+
+          {visibleSummaries.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 text-sm">
+              {loading ? 'Đang tải…' : 'Khách hàng chưa có HĐTD nào.'}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className={isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-950 text-slate-400'}>
+                  <tr>
+                    <th className="p-3 whitespace-nowrap">SỐ HĐTD</th>
+                    <th className="p-3 whitespace-nowrap">PHƯƠNG THỨC VAY</th>
+                    <th className="p-3 text-right whitespace-nowrap">TỔNG MỨC CẤP</th>
+                    <th className="p-3 text-right whitespace-nowrap">DƯ NỢ KUNN</th>
+                    <th className="p-3 text-center whitespace-nowrap">HIỆU LỰC</th>
+                    <th className="p-3 text-center whitespace-nowrap">KUNN</th>
+                    <th className="p-3 text-center whitespace-nowrap">THAO TÁC</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
+                  {visibleSummaries.map(s => (
+                    <tr key={s.contract.Id} className={s.expired ? 'bg-rose-50/50 dark:bg-rose-950/20' : ''}>
+                      <td className="p-3 font-mono font-bold text-sky-600 dark:text-sky-400">
+                        <button onClick={() => openEdit(s.contract)} className="hover:underline text-left">
+                          {s.contract.HdtdNumber}
+                        </button>
+                        {s.contract.ApprovalCode && (
+                          <div className="text-[10px] font-sans font-normal text-purple-500 mt-0.5">
+                            Hạn mức duyệt: {s.contract.ApprovalCode}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-3">{s.contract.LoanMethod || '—'}</td>
+                      <td className="p-3 text-right font-mono font-bold">{fmtMoney(s.contract.ContractAmount)}</td>
+                      <td className="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                        {fmtMoney(s.outstanding)}
+                      </td>
+                      <td className="p-3 text-center whitespace-nowrap">
+                        <div className="font-mono">{fmtDate(s.contract.ContractEndDate)}</div>
+                        {s.expired && (
+                          <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400">HẾT HIỆU LỰC</div>
+                        )}
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="font-bold">{s.activeKunnCount}</span>
+                        {s.settledKunnCount > 0 && (
+                          <span className="text-slate-400"> +{s.settledKunnCount} đã TT</span>
+                        )}
+                        {s.kunnCount === 0 && (
+                          <div className="text-[10px] text-slate-400">chưa giải ngân</div>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => requestDisburse({ creditContractId: s.contract.Id, customerId: customer.Id })}
+                            title="Giải ngân KUNN mới trên hợp đồng này"
+                            className="flex items-center space-x-1 bg-sky-600 hover:bg-sky-500 text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px]">
+                            <Banknote className="w-3 h-3" /><span>Giải ngân</span>
+                          </button>
+                          <button onClick={() => handleDelete(s.contract)} title="Xoá HĐTD"
+                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {showForm && customer && (
+        <form onSubmit={handleSave} className={`${containerCardBg} rounded-2xl p-4 border space-y-4`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider">
+              <FileText className="w-4 h-4" />
+              <span>{editing ? `Sửa HĐTD ${editing.HdtdNumber}` : 'Hợp đồng tín dụng mới'}</span>
+            </div>
+            <button type="button" onClick={() => setShowForm(false)} className="p-1 text-slate-400 hover:text-slate-600">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={`block mb-1 ${labelStyle}`}>Số HĐTD * (duy nhất trong khách hàng)</label>
+              <input type="text" value={form.HdtdNumber || ''}
+                onChange={e => setForm(f => ({ ...f, HdtdNumber: e.target.value }))}
+                placeholder="2002/HĐTD/9653222"
+                className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold ${inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${labelStyle}`}>Phương thức vay *</label>
+              <select value={form.LoanMethod || ''}
+                onChange={e => setForm(f => ({ ...f, LoanMethod: e.target.value, LoanPurposeType: '' }))}
+                className={`w-full rounded-xl p-2.5 text-sm ${inputStyle}`}>
+                {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={`block mb-1 ${labelStyle}`}>Tổng mức cấp (HĐTD) *</label>
+              <input type="text" value={formAmount}
+                onChange={e => setFormAmount(formatMoneyInput(e.target.value))}
+                placeholder="4.000.000.000"
+                className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={`block mb-1 ${labelStyle}`}>Ngày HĐ có hiệu lực</label>
+              <DateInput value={form.ContractStartDate || ''}
+                onChange={v => setForm(f => ({ ...f, ContractStartDate: v }))}
+                className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${labelStyle}`}>Ngày kết thúc HĐ</label>
+              <DateInput value={form.ContractEndDate || ''}
+                onChange={v => setForm(f => ({ ...f, ContractEndDate: v }))}
+                className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
+            </div>
+            <div>
+              <label className={`block mb-1 ${labelStyle}`}>Thời hạn HĐTD (tháng)</label>
+              <input type="number" value={form.LoanTenorMonths ?? ''}
+                onChange={e => setForm(f => ({ ...f, LoanTenorMonths: parseInt(e.target.value, 10) || null }))}
+                className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={`block mb-1 ${labelStyle}`}>Mục đích vay vốn</label>
+              <select value={form.LoanPurposeType || ''}
+                onChange={e => setForm(f => ({ ...f, LoanPurposeType: e.target.value }))}
+                className={`w-full rounded-xl p-2.5 text-sm ${inputStyle}`}>
+                <option value="">— Chọn —</option>
+                {purposeOptions.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={`block mb-1 ${labelStyle}`}>Mô tả chi tiết mục đích</label>
+              <input type="text" value={form.LoanPurpose || ''}
+                onChange={e => setForm(f => ({ ...f, LoanPurpose: e.target.value }))}
+                className={`w-full rounded-xl p-2.5 text-sm ${inputStyle}`} />
+            </div>
+          </div>
+
+          <div className={`rounded-xl p-3 border ${isLight ? 'bg-purple-50/60 border-purple-200' : 'bg-purple-950/30 border-purple-500/30'}`}>
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" checked={useSharedApproval}
+                onChange={e => setUseSharedApproval(e.target.checked)}
+                className="w-4 h-4 accent-purple-600" />
+              <span className="text-xs font-semibold">
+                HĐTD này dùng chung hạn mức phê duyệt với HĐTD khác
+              </span>
+            </label>
+            {useSharedApproval && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                <div>
+                  <label className={`block mb-1 ${labelStyle}`}>Số phê duyệt / Mã hạn mức được duyệt</label>
+                  <input type="text" value={form.ApprovalCode || ''}
+                    onChange={e => setForm(f => ({ ...f, ApprovalCode: e.target.value }))}
+                    placeholder="PD-2026-001"
+                    className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
+                </div>
+                <div>
+                  <label className={`block mb-1 ${labelStyle}`}>Hạn mức được duyệt</label>
+                  <input type="text" value={formApprovalAmount}
+                    onChange={e => setFormApprovalAmount(formatMoneyInput(e.target.value))}
+                    className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className={`mb-2 flex items-center space-x-2 ${labelStyle}`}>
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Tài sản bảo đảm cho HĐTD * — KUNN thừa hưởng, không chọn lại từng lần giải ngân</span>
+            </div>
+            {collaterals.length === 0 ? (
+              <div className="text-xs text-rose-500 flex items-center space-x-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Khách hàng chưa có TSBĐ nào. Thêm ở tab Định Giá TSĐB trước.</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {collaterals.map(col => (
+                  <label key={col.Id} className={`flex items-center space-x-2 p-2 rounded-lg border cursor-pointer text-xs ${
+                    selectedCollateralIds.includes(col.Id)
+                      ? 'border-emerald-500 bg-emerald-500/10'
+                      : isLight ? 'border-slate-200' : 'border-slate-700'
+                  }`}>
+                    <input type="checkbox" checked={selectedCollateralIds.includes(col.Id)}
+                      onChange={e => setSelectedCollateralIds(prev =>
+                        e.target.checked ? [...prev, col.Id] : prev.filter(x => x !== col.Id))}
+                      className="w-3.5 h-3.5 accent-emerald-600" />
+                    <span className="font-mono">{col.AssetCode || `TS-${col.Id}`}</span>
+                    <span className="text-slate-500 truncate">{col.Address || col.AssetType || ''}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input type="checkbox" checked={form.IsClosed ?? false}
+                onChange={e => setForm(f => ({ ...f, IsClosed: e.target.checked }))}
+                className="w-4 h-4 accent-rose-600" />
+              <span className="text-xs font-medium">HĐTD đã đóng (không giải ngân tiếp)</span>
+            </label>
+            <button type="submit" disabled={loading}
+              className="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-bold px-5 py-2 rounded-xl text-xs">
+              <Save className="w-3.5 h-3.5" /><span>{editing ? 'Cập nhật' : 'Tạo HĐTD'}</span>
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};

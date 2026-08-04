@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Customer, Collateral, LoanContract, CreditCard, RepaymentSchedule, CollateralAppraisal, PostLoanControlRecord } from '../types';
+import type { Customer, Collateral, LoanContract, CreditContract, CreditCard, RepaymentSchedule, CollateralAppraisal, PostLoanControlRecord } from '../types';
 import { defaultLtvForAssetType } from './collateralMath';
 import type {
   RateProgram, RateProgramTier, RateProgramPrepaymentFee,
@@ -252,6 +252,69 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
     if (error) throw error;
     return data;
   }
+}
+
+export async function fetchCreditContractsByCustomerAPI(customerId: number): Promise<CreditContract[]> {
+  try {
+    const { data, error } = await supabase
+      .from('CreditContracts')
+      .select('*')
+      .eq('CustomerId', customerId)
+      .order('HdtdNumber', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('fetchCreditContractsByCustomerAPI error:', err);
+    return [];
+  }
+}
+
+export async function saveCreditContractAPI(cc: Partial<CreditContract>): Promise<CreditContract> {
+  const isUpdate = !!cc.Id;
+  const hdtdNumber = (cc.HdtdNumber || '').trim();
+
+  if (!cc.CustomerId) throw new Error('Khách hàng vay là bắt buộc!');
+  if (!hdtdNumber) throw new Error('Số Hợp đồng tín dụng là bắt buộc!');
+
+  const clean: any = { ...cc, HdtdNumber: hdtdNumber };
+  delete clean.customer;
+  if (!isUpdate) delete clean.Id;
+
+  clean.IsClosed = clean.IsClosed ?? false;
+
+  const q = isUpdate
+    ? supabase.from('CreditContracts').update(clean).eq('Id', clean.Id).select('*').single()
+    : supabase.from('CreditContracts').insert([clean]).select('*').single();
+
+  const { data, error } = await q;
+  if (error) {
+    if (error.code === '23505' || /uq_credit_contract_number|duplicate key/i.test(error.message)) {
+      throw new Error(`Số HĐTD "${hdtdNumber}" đã tồn tại cho khách hàng này!`);
+    }
+    throw error;
+  }
+  return data;
+}
+
+export async function deleteCreditContractAPI(id: number): Promise<void> {
+  const { data, error } = await supabase
+    .from('CreditContracts')
+    .delete()
+    .eq('Id', id)
+    .select('Id');
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Không xoá được HĐTD: không có quyền hoặc hợp đồng đã bị xoá.');
+  }
+}
+
+export async function countKunnOfCreditContractAPI(creditContractId: number): Promise<number> {
+  const { count, error } = await supabase
+    .from('LoanContracts')
+    .select('Id', { count: 'exact', head: true })
+    .eq('CreditContractId', creditContractId);
+  if (error) throw error;
+  return count || 0;
 }
 
 export async function fetchCreditCardsAPI(): Promise<CreditCard[]> {

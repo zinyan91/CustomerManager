@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext.tsx'
 import { DateFormatProvider } from './context/DateFormatContext.tsx'
 import { FormatSettingsProvider } from './context/FormatSettingsContext.tsx'
 import { AuthProvider } from './context/AuthContext.tsx'
+import { WorkProvider } from './context/WorkContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -13,7 +14,9 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <DateFormatProvider>
           <FormatSettingsProvider>
-            <App />
+            <WorkProvider>
+              <App />
+            </WorkProvider>
           </FormatSettingsProvider>
         </DateFormatProvider>
       </AuthProvider>

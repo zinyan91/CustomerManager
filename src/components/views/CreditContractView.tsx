@@ -298,7 +298,6 @@ export const CreditContractView: React.FC = () => {
                   {visibleSummaries.map(s => (
                     <tr key={s.contract.Id}
                       onClick={() => openEdit(s.contract)}
-                      title="Nhấp để xem chi tiết HĐTD"
                       className={`cursor-pointer transition-colors ${
                         s.expired
                           ? 'bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/70 dark:hover:bg-rose-950/40'

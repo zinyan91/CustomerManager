@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Percent, TrendingDown, PiggyBank, Loader2, AlertTriangle, ShieldAlert,
-  FileText, Landmark, Save, RefreshCw, Printer,
+  FileText, Landmark, Save, RefreshCw, Printer, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -56,6 +56,8 @@ export const RateQuoteView: React.FC = () => {
   const [casaStr, setCasaStr] = useState('');
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [depositDaysStr, setDepositDaysStr] = useState('180');
+
+  const [showFeeTable, setShowFeeTable] = useState(false);
 
   const [editRateStr, setEditRateStr] = useState('');
   const [saving, setSaving] = useState(false);
@@ -742,10 +744,18 @@ export const RateQuoteView: React.FC = () => {
 
           {programFeeOptions.length > 0 && (
             <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
-              <div className="p-3 border-b border-slate-200 dark:border-slate-800 font-bold text-xs uppercase tracking-wider text-sky-600 dark:text-sky-400">
-                PHÍ DỊCH VỤ THEO PHƯƠNG ÁN
-              </div>
-              <div className="overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setShowFeeTable(v => !v)}
+                className="w-full p-3 flex items-center justify-between gap-2 font-bold text-xs uppercase tracking-wider text-sky-600 dark:text-sky-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+              >
+                <span>PHÍ DỊCH VỤ THEO PHƯƠNG ÁN ({programFeeOptions.length} phương án)</span>
+                <span className="flex items-center gap-1 normal-case font-medium text-slate-500 dark:text-slate-400">
+                  {showFeeTable ? 'Ẩn bảng' : 'Xem bảng'}
+                  {showFeeTable ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </span>
+              </button>
+              <div className={`overflow-x-auto border-t border-slate-200 dark:border-slate-800 ${showFeeTable ? '' : 'hidden'}`}>
                 <table className="w-full text-left text-[11px] border-collapse">
                   <thead className="bg-slate-100 dark:bg-slate-950 font-bold border-b border-slate-200 dark:border-slate-800">
                     <tr>

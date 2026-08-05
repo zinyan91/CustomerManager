@@ -766,3 +766,36 @@ describe('generateSchedule — kỳ cuối rơi vào ngày đáo hạn', () => {
     expect(cuoi.InterestAmount).toBe(Math.round(duNoDauKy * 0.095 * 51 / 365));
   });
 });
+
+describe('kỳ đầu không được rơi trước hoặc trùng ngày giải ngân', () => {
+  it('dịch mốc trả nợ tới lần đầu tiên SAU ngày giải ngân', () => {
+    // NGÔ NHỊ ĐẠT GNN-11: giải ngân 08/05/2026, mốc thu lãi ngày 15, hạn mức
+    // 5 tháng. Lịch cũ bắt đầu 15/04/2026 — trước cả ngày tiền ra.
+    const s = generateSchedule(1, 1_000_000_000, 9, '2026-04-15', 5, true, '2026-05-08');
+    expect(s[0].DueDate).toBe('2026-05-15');
+    expect(s.every(k => (k.DueDate || '') > '2026-05-08')).toBe(true);
+  });
+
+  it('mốc trả nợ trùng đúng ngày giải ngân cũng bị dịch sang kỳ sau', () => {
+    // TRẦN THỊ KIM CHI: giải ngân 17/02/2025, lịch cũ có kỳ 1 ngay 17/02/2025.
+    const s = generateSchedule(1, 850_000_000, 8.5, '2025-02-17', 6, true, '2025-02-17');
+    expect(s[0].DueDate).toBe('2025-03-17');
+    expect(s[5].DueDate).toBe('2025-08-17');
+  });
+
+  it('kỳ 1 tính lãi theo số ngày thực tế từ ngày giải ngân, không phải 1 ngày', () => {
+    const s = generateSchedule(1, 1_000_000_000, 9, '2026-04-15', 5, true, '2026-05-08');
+    expect(getDaysBetween('2026-05-08', s[0].DueDate!)).toBe(7);
+    expect(s[0].InterestAmount).toBe(Math.round(1_000_000_000 * 0.09 * 7 / 365));
+  });
+
+  it('mốc trả nợ vốn đã sau ngày giải ngân thì giữ nguyên', () => {
+    const s = generateSchedule(1, 500_000_000, 9, '2026-06-15', 6, true, '2026-05-08');
+    expect(s[0].DueDate).toBe('2026-06-15');
+  });
+
+  it('không khai ngày giải ngân thì không dịch gì', () => {
+    const s = generateSchedule(1, 500_000_000, 9, '2026-04-15', 3, true);
+    expect(s[0].DueDate).toBe('2026-04-15');
+  });
+});

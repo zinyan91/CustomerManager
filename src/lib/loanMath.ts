@@ -111,9 +111,27 @@ export function generateSchedule(
   let balance = loanAmount;
 
   const startParts = parseDateParts(repaymentStartDateStr);
-  const startYear = startParts ? startParts.y : new Date().getFullYear();
-  const startMonth = startParts ? startParts.m : new Date().getMonth();
+  let startYear = startParts ? startParts.y : new Date().getFullYear();
+  let startMonth = startParts ? startParts.m : new Date().getMonth();
   const startDay = startParts ? startParts.d : new Date().getDate();
+
+  /* Kỳ trả nợ đầu tiên phải SAU ngày giải ngân.
+     Dữ liệu thật có 5 KUNN dùng chung một mốc trả nợ của hợp đồng hạn mức (ngày
+     15/04) trong khi mỗi khoản giải ngân một ngày khác trong tháng 5 — lịch tính
+     lãi cho quãng tiền chưa ra khỏi ngân hàng, và hàm đếm ngày chặn số âm về 1
+     nên kỳ 1 chỉ ra 1 ngày lãi. Dịch mốc lên từng tháng cho tới khi vượt ngày
+     giải ngân; giữ nguyên ngày trong tháng. */
+  const disburseParts = parseDateParts(disbursementDateStr || '');
+  if (disburseParts) {
+    const disburseUtc = Date.UTC(disburseParts.y, disburseParts.m, disburseParts.d);
+    for (let guard = 0; guard < 600; guard++) {
+      const daysInMonth = new Date(startYear, startMonth + 1, 0).getDate();
+      const day = Math.min(startDay, daysInMonth);
+      if (Date.UTC(startYear, startMonth, day) > disburseUtc) break;
+      startMonth += 1;
+      if (startMonth > 11) { startMonth = 0; startYear += 1; }
+    }
+  }
 
   const defaultAnnualRate = interestRate > 1 ? interestRate / 100 : interestRate;
 

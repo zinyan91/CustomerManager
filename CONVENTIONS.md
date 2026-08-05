@@ -76,6 +76,14 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 
 Trạng thái sai đã tồn tại trong dữ liệu thì **báo cáo rồi để banker quyết**, không sửa hàng loạt: mở lại hợp đồng nếu khoản vay còn chạy thật, hoặc tất toán từng KUNN nếu khách đã trả hết mà chưa ai đánh dấu.
 
+**Hạn mức chỉ khả dụng trong thời gian hiệu lực.** Ba điều kiện độc lập cùng cho `available = 0`: hợp đồng **đã đóng**, **hết hiệu lực** (`ContractEndDate < today`), hoặc **chưa tới ngày hiệu lực** (`ContractStartDate > today`). Điều kiện thứ ba là khoảng trống giữa hai HĐTD kế nhiệm: HĐTD mới có thể ký với ngày hiệu lực nằm sau ngày đáo hạn của KUNN đang chạy, và trong quãng đó không hợp đồng nào cho phép giải ngân. Trước 05/08/2026 chỉ xét `ContractEndDate`, nên hợp đồng đã ký chưa tới hiệu lực vẫn chào hạn mức khả dụng.
+
+Nhóm dùng chung hạn mức lấy **ngày hiệu lực sớm nhất** trong nhóm: một hợp đồng đã hiệu lực là cả nhóm giải ngân được. Chưa khai `ContractStartDate` thì **không suy đoán** — coi như đã hiệu lực.
+
+**Không ghi đè kỳ ĐÃ THU.** Kỳ đã thanh toán là dữ liệu lịch sử: `redateSchedules` giữ nguyên `DueDate`, `recalculateSchedules` giữ nguyên `InterestAmount` của kỳ đó. Vì `ActualPaidInterest` chưa từng được điền (0/898 kỳ), `InterestAmount` chính là bản ghi tiền lãi đã thu — tính lại theo mốc mới là sửa lịch sử. Gốc thì **vẫn** tính lại để tiền trả trước hạn ghi nhận được kể cả trên kỳ đã tất toán, theo đúng mục *Trả trước hạn*.
+
+**KUNN bắt buộc có `CreditContractId`** (`NOT NULL`, migration 23). Trigger chặn đóng HĐTD đối chiếu qua khoá ngoại này; để trống thì khoản vay vô hình với trigger và HĐTD vẫn đóng được dù còn dư nợ. Không suy liên kết từ tiền tố số hiệu — số hiệu sửa được bằng tay, khoá ngoại thì không.
+
 **Đóng HĐTD là dừng quyền giải ngân, KHÔNG phải xoá nợ.** Hai câu hỏi khác nhau, hai hàm khác nhau, đừng trả lời câu này bằng câu kia:
 
 | Câu hỏi | Hàm |

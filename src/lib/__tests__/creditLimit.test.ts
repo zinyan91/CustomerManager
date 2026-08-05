@@ -604,3 +604,73 @@ describe('computeLimitGroups — HĐTD đã đóng', () => {
     expect(g.available).toBe(0);
   });
 });
+
+describe('computeLimitGroups — HĐTD chưa tới ngày hiệu lực', () => {
+  const chuaHieuLuc = [
+    hd({
+      Id: 1, ContractNumber: '2003/HĐTD/9629301/GNN-01',
+      LoanMethod: 'Hạn mức tín dụng', ContractAmount: 600_000_000,
+      ContractStartDate: '2026-10-01', ContractEndDate: '2027-10-01',
+      IsSettled: false, CurrentBalance: 0,
+    }),
+  ];
+
+  it('không giải ngân được trước ngày hiệu lực, dù chưa hết hạn và còn trống', () => {
+    const [g] = computeLimitGroups(chuaHieuLuc, { today: '2026-08-05' });
+    expect(g.expired).toBe(false);
+    expect(g.notYetEffective).toBe(true);
+    expect(g.headroom).toBe(600_000_000);
+    expect(g.available).toBe(0);
+  });
+
+  it('tới ngày hiệu lực thì giải ngân được', () => {
+    const [g] = computeLimitGroups(chuaHieuLuc, { today: '2026-10-01' });
+    expect(g.notYetEffective).toBe(false);
+    expect(g.available).toBe(600_000_000);
+  });
+
+  it('nhóm dùng chung: một HĐTD đã hiệu lực là cả nhóm giải ngân được', () => {
+    const nhom = [
+      hd({ ...chuaHieuLuc[0], CreditLimitCode: 'HM-01', CreditLimitAmount: 600_000_000 }),
+      hd({
+        Id: 2, ContractNumber: '2002/HĐTD/9629301/GNN-01',
+        LoanMethod: 'Hạn mức tín dụng', CreditLimitCode: 'HM-01',
+        CreditLimitAmount: 600_000_000, ContractAmount: 600_000_000,
+        ContractStartDate: '2025-12-05', ContractEndDate: '2026-12-05',
+        IsSettled: false, CurrentBalance: 0,
+      }),
+    ];
+    const [g] = computeLimitGroups(nhom, { today: '2026-08-05' });
+    expect(g.notYetEffective).toBe(false);
+    expect(g.available).toBe(600_000_000);
+  });
+
+  it('cả nhóm đều chưa tới hiệu lực thì chặn', () => {
+    const nhom = [
+      hd({ ...chuaHieuLuc[0], CreditLimitCode: 'HM-01', CreditLimitAmount: 600_000_000 }),
+      hd({
+        Id: 2, ContractNumber: '2004/HĐTD/9629301/GNN-01',
+        LoanMethod: 'Hạn mức tín dụng', CreditLimitCode: 'HM-01',
+        CreditLimitAmount: 600_000_000, ContractAmount: 600_000_000,
+        ContractStartDate: '2026-11-01', ContractEndDate: '2027-11-01',
+        IsSettled: false, CurrentBalance: 0,
+      }),
+    ];
+    const [g] = computeLimitGroups(nhom, { today: '2026-08-05' })
+    expect(g.notYetEffective).toBe(true);
+    expect(g.available).toBe(0);
+  });
+
+  it('không truyền today thì không xét hiệu lực, giữ nguyên hành vi cũ', () => {
+    const [g] = computeLimitGroups(chuaHieuLuc);
+    expect(g.notYetEffective).toBe(false);
+    expect(g.available).toBe(600_000_000);
+  });
+
+  it('chưa khai ngày hiệu lực thì không suy đoán', () => {
+    const khongKhai = [hd({ ...chuaHieuLuc[0], ContractStartDate: undefined })];
+    const [g] = computeLimitGroups(khongKhai, { today: '2026-08-05' });
+    expect(g.notYetEffective).toBe(false);
+    expect(g.available).toBe(600_000_000);
+  });
+});

@@ -505,3 +505,25 @@ describe('summarizeCreditContracts — bỏ khái niệm dư nợ treo', () => {
     expect('closedWithBalance' in s).toBe(false);
   });
 });
+
+describe('summarizeCreditContracts — HĐTD chưa tới ngày hiệu lực', () => {
+  const hd = cc({
+    Id: 9, HdtdNumber: 'HD09', ContractAmount: 1_000_000_000,
+    LoanMethod: 'Hạn mức tín dụng',
+    ContractStartDate: '2026-10-01', ContractEndDate: '2027-10-01',
+  });
+
+  it('không giải ngân được trước ngày hiệu lực', () => {
+    const [s] = summarizeCreditContracts([hd], [], { today: HOM_NAY });
+    expect(s.expired).toBe(false);
+    expect(s.notYetEffective).toBe(true);
+    expect(s.available).toBe(0);
+    expect(s.canDisburse).toBe(false);
+  });
+
+  it('tới ngày hiệu lực thì giải ngân được', () => {
+    const [s] = summarizeCreditContracts([hd], [], { today: '2026-10-01' });
+    expect(s.notYetEffective).toBe(false);
+    expect(s.available).toBe(1_000_000_000);
+  });
+});

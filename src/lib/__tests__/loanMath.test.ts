@@ -17,7 +17,7 @@ import {
   redateSchedules,
   buildDueDateSequence,
 } from '../loanMath';
-import type { RepaymentSchedule } from '../../types';
+import type { RepaymentSchedule, LoanContract } from '../../types';
 
 describe('addMonthsToDate', () => {
   it('cộng tháng bình thường, giữ nguyên ngày', () => {
@@ -968,5 +968,63 @@ describe('buildDueDateSequence — nguồn duy nhất sinh dãy ngày đến h�
   it('trả mảng rỗng khi số kỳ không dương', () => {
     expect(buildDueDateSequence('2026-05-15', 0, '2026-05-08')).toEqual([]);
     expect(buildDueDateSequence('2026-05-15', null, '2026-05-08')).toEqual([]);
+  });
+});
+
+describe('không ghi đè kỳ ĐÃ THU', () => {
+  const lich = (n: number, paidUpTo: number): RepaymentSchedule[] =>
+    Array.from({ length: n }, (_, i) => ({
+      Id: 900 + i,
+      ContractId: 77,
+      PeriodNumber: i + 1,
+      DueDate: `2026-0${i + 1}-15`,
+      PrincipalAmount: 10_000_000,
+      InterestAmount: 500_000 + i,
+      IsPaid: i < paidUpTo,
+    } as RepaymentSchedule));
+
+  it('redateSchedules giữ nguyên ngày đến hạn của kỳ đã thu', () => {
+    const goc = lich(5, 2);
+    const r = redateSchedules(goc, '2026-06-20', '2026-05-10');
+    expect(r[0].DueDate).toBe('2026-01-15');
+    expect(r[1].DueDate).toBe('2026-02-15');
+    expect(r[2].DueDate).not.toBe('2026-03-15');
+    expect(r[3].DueDate).not.toBe('2026-04-15');
+  });
+
+  it('kỳ chưa thu vẫn nhận mốc mới theo đúng dãy dùng chung', () => {
+    const r = redateSchedules(lich(5, 2), '2026-06-20', '2026-05-10');
+    const day = r.filter(s => !s.IsPaid).map(s => s.DueDate);
+    expect(day).toEqual(['2026-08-20', '2026-09-20', '2026-10-20']);
+  });
+
+  it('mọi kỳ đã thu thì không đổi gì', () => {
+    const goc = lich(3, 3);
+    const r = redateSchedules(goc, '2026-09-01', '2026-05-10');
+    expect(r.map(s => s.DueDate)).toEqual(goc.map(s => s.DueDate));
+  });
+
+  it('recalculateSchedules giữ nguyên tiền lãi của kỳ đã thu', () => {
+    const goc = lich(4, 2);
+    const hd = {
+      Id: 77, LoanAmount: 40_000_000, InterestRate: 0.1,
+      DisbursementDate: '2025-12-20', PrincipalRepaymentMethod: 'Gốc trả đều',
+    } as LoanContract;
+    const r = recalculateSchedules(goc, hd);
+    expect(r[0].InterestAmount).toBe(500_000);
+    expect(r[1].InterestAmount).toBe(500_001);
+    expect(r[2].InterestAmount).not.toBe(500_002);
+  });
+
+  it('kỳ đã thu vẫn hấp thu tiền trả trước hạn vào gốc, không bị đóng băng cả dòng', () => {
+    const goc = lich(4, 2);
+    goc[1].PrepaidPrincipalAmount = 5_000_000;
+    const hd = {
+      Id: 77, LoanAmount: 40_000_000, InterestRate: 0.1,
+      DisbursementDate: '2025-12-20', PrincipalRepaymentMethod: 'Gốc trả đều',
+    } as LoanContract;
+    const r = recalculateSchedules(goc, hd);
+    expect(r[1].PrincipalAmount).toBeGreaterThan(10_000_000);
+    expect(r[1].InterestAmount).toBe(500_001);
   });
 });

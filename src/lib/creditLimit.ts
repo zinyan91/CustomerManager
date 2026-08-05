@@ -40,8 +40,10 @@ export interface LimitGroupStatus {
   used: number;
   headroom: number;
   available: number;
+  startDate: string | null;
   endDate: string | null;
   expired: boolean;
+  notYetEffective: boolean;
   closed: boolean;
   lockedOutstanding: number;
   redeployableOutstanding: number;
@@ -88,8 +90,10 @@ export function computeLimitGroups(
         used: 0,
         headroom: 0,
         available: 0,
+        startDate: null,
         endDate: null,
         expired: false,
+        notYetEffective: false,
         closed: false,
         lockedOutstanding: 0,
         redeployableOutstanding: 0,
@@ -113,6 +117,9 @@ export function computeLimitGroups(
 
     const end = toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate);
     if (end && (!g.endDate || end > g.endDate)) g.endDate = end;
+
+    const start = toIsoDate(c.ContractStartDate);
+    if (start && (!g.startDate || start < g.startDate)) g.startDate = start;
 
     if (excludeId !== null && c.Id === excludeId) continue;
 
@@ -138,6 +145,7 @@ export function computeLimitGroups(
 
     const today = options?.today ?? null;
     const expired = !!(today && rest.endDate && rest.endDate < today);
+    const notYetEffective = !!(today && rest.startDate && rest.startDate > today);
 
     let lockedOutstanding = 0;
     let redeployableOutstanding = 0;
@@ -152,9 +160,10 @@ export function computeLimitGroups(
       used,
       headroom,
       expired,
+      notYetEffective,
       lockedOutstanding,
       redeployableOutstanding,
-      available: (expired || rest.closed) ? 0 : headroom,
+      available: (expired || notYetEffective || rest.closed) ? 0 : headroom,
     });
   }
   return result;

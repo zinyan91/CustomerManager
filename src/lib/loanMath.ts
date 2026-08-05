@@ -152,7 +152,9 @@ export function redateSchedules(
   const dueDates = buildDueDateSequence(
     repaymentStartDateStr, schedules.length, disbursementDateStr, maturityDateStr
   );
-  return schedules.map((s, idx) => ({ ...s, DueDate: dueDates[idx] ?? s.DueDate }));
+  return schedules.map((s, idx) => s.IsPaid
+    ? { ...s }
+    : { ...s, DueDate: dueDates[idx] ?? s.DueDate });
 }
 
 export function generateSchedule(
@@ -421,10 +423,13 @@ export function recalculateSchedules(
     const rateSegments = rateTimeline.length > 0
       ? splitPeriodByRate(rateTimeline, periodStartStr, dueDateStr, days)
       : [];
-    const calculatedInterest = rateSegments.length > 0
+    const derivedInterest = rateSegments.length > 0
       ? Math.round(rateSegments.reduce(
           (sum, seg) => sum + actualBalance * (seg.ratePercent / 100) * (seg.days / 365), 0))
       : Math.round(actualBalance * getEffectiveActiveRate(contract, dueDateStr) * (days / 365));
+    const calculatedInterest = s.IsPaid && s.InterestAmount !== undefined && s.InterestAmount !== null
+      ? s.InterestAmount
+      : derivedInterest;
 
     const prepaid = s.PrepaidPrincipalAmount ?? 0;
 

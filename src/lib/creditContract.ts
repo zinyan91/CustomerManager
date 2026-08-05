@@ -191,6 +191,7 @@ export interface CreditContractSummary {
   canDisburse: boolean;
   blockReason: string;
   expired: boolean;
+  notYetEffective: boolean;
   isEmpty: boolean;
 }
 
@@ -216,12 +217,15 @@ export function summarizeCreditContracts(
     const granted = cc.ContractAmount || 0;
     const revolving = isRevolvingCredit(cc.LoanMethod);
     const headroom = Math.max(0, granted - (revolving ? outstanding : disbursedCumulative));
+    const start = toIso(cc.ContractStartDate);
     const expired = !!(today && end && end < today);
-    const available = (expired || cc.IsClosed) ? 0 : headroom;
+    const notYetEffective = !!(today && start && start > today);
+    const available = (expired || notYetEffective || cc.IsClosed) ? 0 : headroom;
 
     let blockReason = '';
     if (cc.IsClosed) blockReason = 'HĐTD đã đóng';
     else if (expired) blockReason = `HĐTD hết hiệu lực ${fmt(end)}`;
+    else if (notYetEffective) blockReason = `HĐTD có hiệu lực từ ${fmt(start)}`;
     else if (headroom <= 0) {
       blockReason = revolving
         ? 'Đã dùng hết hạn mức'
@@ -241,6 +245,7 @@ export function summarizeCreditContracts(
       canDisburse: available > 0,
       blockReason,
       expired,
+      notYetEffective,
       isEmpty: active.length === 0,
     };
   });

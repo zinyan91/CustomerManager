@@ -110,6 +110,12 @@ export function fmtDate(
   return `${dd}/${mm}/${yyyy}`;
 }
 
+export function toIsoDate(v?: string | null): string | null {
+  const p = parseAnyDate(v);
+  if (!p) return null;
+  return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`;
+}
+
 import type { RateAdjustmentHistoryItem, LoanContract } from '../types';
 
 export function getContractRateHistory(c?: LoanContract | null): RateAdjustmentHistoryItem[] {

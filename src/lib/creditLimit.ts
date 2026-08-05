@@ -1,5 +1,5 @@
 import type { LoanContract, Collateral } from '../types';
-import { getMasterHdtdNumber } from './utils';
+import { getMasterHdtdNumber, toIsoDate } from './utils';
 import { usableCapacity, appraisalStatus, appraisalExpiryDate } from './collateralMath';
 import { isRevolvingCredit } from './loanProductRules';
 
@@ -137,7 +137,7 @@ export function computeLimitGroups(
     if (limitOf(c) > g.granted) g.granted = limitOf(c);
 
     // Ngày hết hiệu lực cũng là thông tin cấp HĐTD: lấy mốc muộn nhất trong nhóm.
-    const end = c.ContractEndDate || c.HdtdDueDate || null;
+    const end = toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate);
     if (end && (!g.endDate || end > g.endDate)) g.endDate = end;
 
     if (excludeId !== null && c.Id === excludeId) continue;

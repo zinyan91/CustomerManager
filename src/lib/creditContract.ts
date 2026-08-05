@@ -38,6 +38,39 @@ export function nextKunnNumber(hdtdNumber: string, existingKunnNumbers: string[]
   return `${hdtd}${GNN_SEPARATOR}${String(maxIndex + 1).padStart(2, '0')}`;
 }
 
+/**
+ * Số hiệu KUNN so theo dạng chuẩn hoá: 'HD01/GNN-01' và 'hd01/gnn-01 ' là cùng
+ * một số chứng từ, khác nhau chỉ vì cách gõ. Unique index dưới database cũng
+ * đặt trên lower(btrim(...)) để hai lớp kiểm tra nói cùng một chuyện.
+ */
+export function normalizeKunnNumber(kunnNumber?: string | null): string {
+  return (kunnNumber || '').trim().toLowerCase();
+}
+
+/**
+ * Số hiệu này đã có KUNN khác dùng chưa.
+ *
+ * nextKunnNumber được gọi lúc MỞ FORM, nên số sinh ra đã cũ vào lúc bấm lưu:
+ * tạo hai KUNN liên tiếp trong cùng phiên, hoặc hai người cùng nhập một HĐTD,
+ * đều ra cùng một số. Dữ liệu thật có 8 dòng trùng số vì thiếu bước này.
+ *
+ * Trả về Id của dòng đang giữ số đó, hoặc null nếu số còn trống.
+ */
+export function findKunnNumberClash(
+  candidate: string,
+  existing: Array<Pick<LoanContract, 'Id' | 'ContractNumber'>>,
+  selfId?: number | null
+): number | null {
+  const want = normalizeKunnNumber(candidate);
+  if (!want) return null;
+
+  for (const row of existing) {
+    if (selfId !== null && selfId !== undefined && row.Id === selfId) continue;
+    if (normalizeKunnNumber(row.ContractNumber) === want) return row.Id;
+  }
+  return null;
+}
+
 export function kunnSequenceOf(kunnNumber?: string | null): number {
   if (!kunnNumber) return 0;
   const idx = kunnNumber.lastIndexOf(GNN_SEPARATOR);

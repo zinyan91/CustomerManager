@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
-import { fmtDate, parseAnyDate, getMasterHdtdNumber } from '../../lib/utils';
+import { fmtDate, parseAnyDate, getMasterHdtdNumber, toIsoDate } from '../../lib/utils';
 import { assetClassLabel } from '../../lib/collateralMath';
 import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
@@ -155,10 +155,7 @@ export const DashboardView: React.FC = () => {
     const masterNo = getMasterHdtdNumber(c);
     const cus = customers.find(cust => cust.Id === c.CustomerId);
 
-    let endDateStr = c.ContractEndDate || '';
-    if (!endDateStr && c.HdtdDueDate && /^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate.trim())) {
-      endDateStr = c.HdtdDueDate.trim();
-    }
+    const endDateStr = toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate) || '';
 
     const daysLeft = getDaysUntil(endDateStr);
 

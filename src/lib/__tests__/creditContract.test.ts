@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   nextKunnNumber,
+  normalizeKunnNumber,
+  findKunnNumberClash,
   kunnSequenceOf,
   checkKunnAgainstContract,
   kunnRevolvingStatus,
@@ -65,6 +67,43 @@ describe('nextKunnNumber', () => {
     expect(kunnSequenceOf('HD01/GNN-07')).toBe(7);
     expect(kunnSequenceOf('HD01')).toBe(0);
     expect(kunnSequenceOf(null)).toBe(0);
+  });
+});
+
+describe('findKunnNumberClash — chống trùng số chứng từ', () => {
+  const rows = [
+    { Id: 1027, ContractNumber: '2002/HĐTD/9632203/GNN-03' },
+    { Id: 1068, ContractNumber: '2002/HĐTD/9632203/GNN-04' },
+  ];
+
+  it('số còn trống thì không báo trùng', () => {
+    expect(findKunnNumberClash('2002/HĐTD/9632203/GNN-05', rows)).toBeNull();
+  });
+
+  it('trả về Id của dòng đang giữ số đó', () => {
+    expect(findKunnNumberClash('2002/HĐTD/9632203/GNN-04', rows)).toBe(1068);
+  });
+
+  it('khác cách gõ vẫn là cùng một số chứng từ', () => {
+    expect(findKunnNumberClash('  2002/hđtd/9632203/gnn-04 ', rows)).toBe(1068);
+  });
+
+  it('sửa chính dòng đó không tự báo trùng với bản thân', () => {
+    expect(findKunnNumberClash('2002/HĐTD/9632203/GNN-04', rows, 1068)).toBeNull();
+  });
+
+  it('số rỗng là KUNN nháp chưa đặt số, không phải trùng', () => {
+    expect(findKunnNumberClash('   ', [{ Id: 1, ContractNumber: '' }])).toBeNull();
+  });
+
+  it('số KUNN là tiền tố của số khác thì KHÔNG trùng', () => {
+    const nhieuKy = [{ Id: 5, ContractNumber: 'HD01/GNN-011' }];
+    expect(findKunnNumberClash('HD01/GNN-01', nhieuKy)).toBeNull();
+  });
+
+  it('normalizeKunnNumber khớp đúng quy tắc của unique index dưới database', () => {
+    expect(normalizeKunnNumber('  HD01/GNN-01 ')).toBe('hd01/gnn-01');
+    expect(normalizeKunnNumber(null)).toBe('');
   });
 });
 

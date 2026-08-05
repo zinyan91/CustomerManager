@@ -5,6 +5,7 @@ import {
   fmtRate,
   formatAssetType,
   parseAnyDate,
+  toIsoDate,
   fmtDate,
   getContractRateHistory,
   serializeContractRateHistory,
@@ -168,6 +169,38 @@ describe('getEffectiveActiveRate', () => {
   it('mặc định 8.5% khi không có thông tin nào', () => {
     expect(getEffectiveActiveRate({} as LoanContract)).toBeCloseTo(0.085);
     expect(getEffectiveActiveRate(null)).toBeCloseTo(0.085);
+  });
+});
+
+describe('toIsoDate — chuẩn hoá ngày lấy từ database về một dạng', () => {
+  /* HdtdDueDate từng là timestamptz nên trả về chuỗi có múi giờ, còn mọi cột
+     ngày khác trả về dạng ngắn. So chuỗi trực tiếp giữa hai dạng đó là sai. */
+  it('cắt phần giờ khỏi timestamptz, KHÔNG quy đổi múi giờ', () => {
+    expect(toIsoDate('2026-05-28T00:00:00+00:00')).toBe('2026-05-28');
+  });
+
+  it('giữ nguyên ngày đã ở dạng ISO ngắn', () => {
+    expect(toIsoDate('2026-08-03')).toBe('2026-08-03');
+  });
+
+  it('nhận cả ngày kiểu Việt Nam', () => {
+    expect(toIsoDate('03/08/2026')).toBe('2026-08-03');
+  });
+
+  it('đệm 0 để so chuỗi ra đúng thứ tự', () => {
+    expect(toIsoDate('2026-1-5')).toBe('2026-01-05');
+  });
+
+  it('so chuỗi giữa hai dạng cho đúng thứ tự sau khi chuẩn hoá', () => {
+    const a = toIsoDate('2026-05-28T00:00:00+00:00')!;
+    const b = toIsoDate('2026-09-23')!;
+    expect(a < b).toBe(true);
+  });
+
+  it('không có ngày thì trả null, không trả chuỗi rỗng', () => {
+    expect(toIsoDate(null)).toBeNull();
+    expect(toIsoDate('')).toBeNull();
+    expect(toIsoDate('—')).toBeNull();
   });
 });
 

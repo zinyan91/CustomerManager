@@ -4,7 +4,7 @@ import {
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
   fetchCollateralsByCustomerAPI, deleteRepaymentSchedulesByContractAPI
 } from '../../lib/api';
-import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRate, getMasterHdtdNumber } from '../../lib/utils';
+import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRate, getMasterHdtdNumber, toIsoDate } from '../../lib/utils';
 import {
   addMonthsToDate, parseKunnTenorMonths, parseDateParts,
   generateSchedule, calculateOverdueDaysFromDates,
@@ -384,7 +384,7 @@ export const LoanPortfolioView: React.FC = () => {
         ?? creditContracts.find(cc => cc.HdtdNumber === getMasterHdtdNumber(c))?.Id
         ?? null,
       ContractNumber: c.ContractNumber,
-      HdtdDueDate: (c.HdtdDueDate && /^\d{4}-\d{2}-\d{2}$/.test(c.HdtdDueDate)) ? c.HdtdDueDate : null,
+      HdtdDueDate: toIsoDate(c.HdtdDueDate),
       ContractType: c.ContractType,
       LoanMethod: c.LoanMethod || LOAN_METHODS[0],
       DebtGroup: c.DebtGroup ?? 1,

@@ -386,7 +386,11 @@ export function recalculateSchedules(
     const overduePen = s.OverdueInterestAmount ?? 0;
     const totalObligation =
       principalInPeriod +
-      (s.IsPaid ? (s.ActualPaidInterest ?? calculatedInterest) : calculatedInterest) +
+      (s.IsPaid
+        ? (s.ActualPaidInterest !== undefined && s.ActualPaidInterest !== null && s.ActualPaidInterest > 0
+            ? s.ActualPaidInterest
+            : calculatedInterest)
+        : calculatedInterest) +
       overduePen;
 
     result.push({

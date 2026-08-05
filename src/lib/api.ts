@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import type { Customer, Collateral, LoanContract, CreditContract, CreditCard, RepaymentSchedule, CollateralAppraisal, PostLoanControlRecord } from '../types';
 import { defaultLtvForAssetType } from './collateralMath';
+import { toIsoDate } from './utils';
+import { findKunnNumberClash } from './creditContract';
 import type {
   RateProgram, RateProgramTier, RateProgramPrepaymentFee,
   RateProgramFbeCode, DepositRateAuthority,
@@ -221,8 +223,8 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   delete cleanContract.collateral;
   delete cleanContract.contractCollaterals;
 
-  if (cleanContract.HdtdDueDate && !/^\d{4}-\d{2}-\d{2}$/.test(cleanContract.HdtdDueDate)) {
-    delete cleanContract.HdtdDueDate;
+  if ('HdtdDueDate' in cleanContract) {
+    cleanContract.HdtdDueDate = toIsoDate(cleanContract.HdtdDueDate);
   }
 
   if (!isUpdate) {
@@ -234,6 +236,8 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   cleanContract.IsSettled = cleanContract.IsSettled ?? false;
   cleanContract.IsRestructured = cleanContract.IsRestructured ?? false;
 
+  await assertKunnNumberFree(contractNumber, isUpdate ? cleanContract.Id : null);
+
   if (isUpdate) {
     const { data, error } = await supabase
       .from('LoanContracts')
@@ -241,7 +245,7 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
       .eq('Id', cleanContract.Id)
       .select('*, customer:Customers(*)')
       .single();
-    if (error) throw error;
+    if (error) throw kunnNumberError(error, contractNumber);
     return data;
   } else {
     const { data, error } = await supabase
@@ -249,9 +253,49 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
       .insert([cleanContract])
       .select('*, customer:Customers(*)')
       .single();
-    if (error) throw error;
+    if (error) throw kunnNumberError(error, contractNumber);
     return data;
   }
+}
+
+/*
+ * Số KUNN sinh lúc mở form đã cũ vào lúc bấm lưu, nên phải hỏi lại database.
+ *
+ * Đây là kiểm tra để BÁO LỖI CHO NGƯỜI NHẬP, không phải lớp bảo vệ: dưới RLS
+ * banker chỉ thấy KUNN của khách hàng mình nên số do banker khác đã dùng là vô
+ * hình ở đây. Lớp bảo vệ thật là unique index (migration 20).
+ *
+ * Không tự đổi số giúp: số KUNN là số chứng từ khớp GNN giấy, máy đặt lại thì
+ * bản đối chiếu hồ sơ và core banking đều lệch.
+ */
+async function assertKunnNumberFree(contractNumber: string, selfId?: number | null): Promise<void> {
+  if (!contractNumber) return;
+
+  const { data, error } = await supabase
+    .from('LoanContracts')
+    .select('Id, ContractNumber')
+    .ilike('ContractNumber', `%${contractNumber}%`);
+
+  if (error) return;
+
+  const clashId = findKunnNumberClash(contractNumber, data || [], selfId ?? null);
+  if (clashId !== null) {
+    throw new Error(
+      `Số KUNN "${contractNumber}" đã được dùng cho khoản vay Id ${clashId}. `
+      + 'Số KUNN là số chứng từ, không được trùng — đối chiếu GNN giấy rồi nhập số khác.'
+    );
+  }
+}
+
+function kunnNumberError(error: any, contractNumber: string): Error {
+  if (error?.code === '23505') {
+    return new Error(
+      `Số KUNN "${contractNumber}" đã tồn tại trong hệ thống. `
+      + 'Có thể khoản vay đó thuộc khách hàng của banker khác nên không hiện ra ở đây. '
+      + 'Đối chiếu GNN giấy rồi nhập số khác.'
+    );
+  }
+  return error;
 }
 
 export async function fetchCreditContractsByCustomerAPI(customerId: number): Promise<CreditContract[]> {

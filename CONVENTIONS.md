@@ -10,7 +10,9 @@ Mã nguồn không chứa chú thích. Toàn bộ giải thích "vì sao" nằm 
 
 **Một quy tắc nghiệp vụ chỉ được cài ở MỘT nơi.** Dự án đã trả giá 5 lần cho việc chép hàm ra nhiều file rồi để chúng trôi dạt: `getEffectiveLtv` từng có 4 bản khác nhau khiến cùng một tài sản cho ba hạn mức cho vay khác nhau ở ba màn hình; `getMasterHdtdNumber` 3 bản; `diffDays` 3 bản. Cần dùng lại thì import, không copy.
 
-**Không viết công thức nghiệp vụ trong `.tsx`.** Mọi phép tính tiền, lãi, ngày, LTV, hạn mức phải nằm ở `src/lib/` dưới dạng hàm thuần có test; component chỉ gọi và hiển thị. Lý do đo được: `src/lib` có 477 test, `src/components` có **0** — công thức viết trong view là công thức không ai kiểm, và đó là nơi mọi lỗi lệch số của dự án này sinh ra.
+**Không viết công thức nghiệp vụ trong `.tsx`.** Mọi phép tính tiền, lãi, ngày, LTV, hạn mức phải nằm ở `src/lib/` dưới dạng hàm thuần có test; component chỉ gọi và hiển thị. Lý do đo được: `src/lib` có 681 test, `src/components` có **3** — công thức viết trong view là công thức không ai kiểm, và đó là nơi mọi lỗi lệch số của dự án này sinh ra.
+
+**Test hàm thuần không bắt được lỗi runtime trong component.** Ngày 05/08/2026 tab KUNN trắng trang vì `getEffectiveBalanceForContract` gọi `kunnSettled` khai sau nó — build, lint và 668 test đều xanh. Test giao diện ở `src/components/__tests__/` chỉ làm một việc: dựng component lên và khẳng định nó render tới cùng. Không kiểm công thức tiền ở đó (đã có test hàm thuần lo), và mỗi tệp tự khai `// @vitest-environment jsdom` để 681 test logic không phải chịu chi phí dựng DOM.
 
 Ba lần đã trả giá: bốn cách tính hạn mức khả dụng cùng tồn tại, hai trong số đó viết thẳng trong `LoanPortfolioView`, khiến cùng một khách hàng hiện `2.800.000.000` ở đầu trang và `1.400.000.000` trong form. Khái niệm "lãi suất đang áp dụng" có ba bản: `getEffectiveActiveRate` trong `utils.ts` bỏ qua kỳ ưu đãi, khối tính trong view bỏ qua bảng điều chỉnh, nhánh trong `generateSchedule` chỉ chọn một trong hai. Và view tự tính LTV `giá trị × LTV / 100` nên chấp nhận cả định giá đã hết hiệu lực, trong khi `usableCapacity` loại — cùng hồ sơ, hai kết luận trái nhau trên cùng màn hình.
 
@@ -32,7 +34,7 @@ Kể cả việc nhỏ cũng theo quy tắc này: đọc số tiền từ ô nh�
 
 ## 2. Logic tài chính
 
-Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 477 test tại `src/lib/__tests__/`.
+Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 681 test tại `src/lib/__tests__/`.
 
 | Tệp | Nội dung |
 | :--- | :--- |
@@ -60,6 +62,15 @@ Lãi = Dư nợ × Lãi suất năm × Số ngày thực tế trong kỳ / 365
 ```
 
 Vì dùng số ngày thực tế, **tiền lãi có thể TĂNG so với kỳ trước dù dư nợ đã giảm**. Kỳ 15/03–15/04 (31 ngày) cao hơn kỳ 15/02–15/03 (28 ngày) là đúng, không phải lỗi. Có test riêng ghi nhận hành vi này để không ai "sửa" thành sai.
+
+### Ngày trả nợ kỳ đầu tiên là DỮ LIỆU GỐC, không suy ra được
+
+`RepaymentStartDate` của từng KUNN do **khách hàng chọn** và ghi trên GNN giấy. Có khách chọn ngày 1, ngày 15, ngày 28, ngày 30. Không có quy tắc nào suy được con số này:
+
+- **Không** phải giải ngân + 1 tháng. LÊ NGỌC QUẾ HÂN giải ngân 05/05/2026, trả kỳ 1 ngày 15/05/2026 — kỳ 1 chỉ 10 ngày.
+- **Không** gom về một ngày dùng chung cho cả hợp đồng hạn mức. Chính việc 5 KUNN của NGÔ NHỊ ĐẠT mượn mốc 15/04/2026 của hợp đồng đã sinh ra lỗi kỳ 1 rơi trước ngày giải ngân và thu vượt của khách hơn 21 triệu.
+
+Ràng buộc duy nhất được cài trong `generateSchedule`: **kỳ 1 phải SAU ngày giải ngân**. Mốc khai sớm hơn thì dịch lên từng tháng, giữ nguyên ngày trong tháng — không đổi ngày khách đã chọn. Để trống `RepaymentStartDate` thì mới mặc định giải ngân + 1 tháng, và đó là **giá trị tạm chờ khai theo chứng từ**, không phải quy tắc nghiệp vụ.
 
 ### Bất biến quan trọng nhất
 
@@ -140,6 +151,14 @@ Nghiệp vụ có ba tầng: **Phê duyệt HMTD → HĐTD → KUNN**.
 | **TH3** | Khác số HĐTD, khác HMTD | Cộng mức cấp của từng hợp đồng. |
 
 Số HĐTD gốc nằm ở **tiền tố của `ContractNumber`**, dạng `HD123/GNN-01`. Cột `HdtdDueDate` **không** chứa số hợp đồng — đó là tàn dư thiết kế cũ đã gỡ bỏ.
+
+### Số hiệu KUNN là số chứng từ, không được trùng
+
+`nextKunnNumber` chỉ **gợi ý** số tiếp theo lúc mở form. Số đó đã cũ vào lúc bấm lưu, nên phải kiểm tra lại — `assertKunnNumberFree` trong `api.ts` hỏi lại database trước khi ghi. Dữ liệu thật từng có 8 dòng trùng số vì thiếu bước này.
+
+Kiểm tra ở client **không phải lớp bảo vệ**: dưới RLS banker chỉ thấy KUNN của khách hàng mình nên số do banker khác đã dùng là vô hình. Lớp bảo vệ thật là unique index trên `lower(btrim("ContractNumber"))` (migration 20) — cùng lý lẽ với RLS. Hai lớp phải so theo cùng một quy tắc chuẩn hoá, đó là lý do có `normalizeKunnNumber`.
+
+**Không tự đổi số giúp người nhập.** Số KUNN phải khớp GNN giấy; máy đặt lại thì bản đối chiếu hồ sơ và core banking đều lệch. Trùng số thì báo lỗi và để banker tra chứng từ.
 
 ### Chốt kiểm soát theo tài sản bảo đảm
 
@@ -422,6 +441,18 @@ Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor
 
 > **Thứ tự triển khai:** khi một thay đổi vừa động vào lược đồ vừa động vào mã nguồn, **luôn chạy migration trước rồi mới deploy**. Làm ngược lại sẽ có khoảng thời gian hệ thống ở trạng thái hỏng.
 
+Script trong `supabase/reports/` là **báo cáo chỉ đọc**, không phải migration: không UPDATE, không INSERT, chạy lại bao nhiêu lần cũng được.
+
+### Mọi cột ngày đều là kiểu `date`
+
+Không dùng `timestamptz` cho ngày nghiệp vụ. `HdtdDueDate` từng là `timestamptz` nên PostgREST trả về `2026-05-28T00:00:00+00:00` trong khi mọi cột khác trả về `2026-05-28`. Hệ quả: `creditLimit.ts` so chuỗi giữa hai dạng ra sai thứ tự, còn hai view thì tự chặn bằng regex `^\d{4}-\d{2}-\d{2}$` nên nhánh dự phòng coi như chết, và `saveContractAPI` xoá hẳn trường khỏi payload — mở KUNN cũ rồi lưu là mất giá trị mà giao diện vẫn báo thành công. Migration 19 đã đổi kiểu.
+
+Ngày đọc từ database chuẩn hoá bằng **`toIsoDate` trong `utils.ts`**, không viết lại regex tại chỗ dùng. Hàm này cắt phần giờ **không quy đổi múi giờ**: giá trị banker nhập từ trình duyệt ở +07 nên ngày người nhập thấy là ngày theo giờ Việt Nam, quy đổi về UTC sẽ lùi một ngày.
+
+### Bước chốt an toàn trong migration phải thực sự chạy được
+
+Migration 16 bước 2 — đúng bước kiểm "số mới có trùng số cũ không" — thiếu dấu phẩy giữa hai CTE nên **luôn lỗi cú pháp**, còn bước 4 đổi số vẫn chạy. Đây là đường sinh ra phần lớn các cặp KUNN trùng số. Chạy migration nhiều bước thì đọc kết quả từng bước, thấy lỗi cú pháp ở bước rà soát là **dừng lại**, không nhảy sang bước cập nhật.
+
 ---
 
 ## 13. Lệnh thường dùng
@@ -429,6 +460,6 @@ Script trong `supabase/migrations/` chạy **thủ công qua Supabase SQL Editor
 ```bash
 npm run dev        # Máy chủ phát triển
 npm run build      # Kiểm tra kiểu + đóng gói
-npm test           # 477 test logic tài chính
+npm test           # 684 test: 681 logic tài chính + 3 khói giao diện
 npm run lint       # Kiểm tra mã nguồn
 ```

@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 05/08/2026 (cuối ngày)
+Cập nhật: 05/08/2026 (sau khi chốt hai quyết định nghiệp vụ)
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -32,8 +32,11 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Chỉnh LTV của hai tài sản lệch bậc phân loại | Đã kiểm chứng 04/08/2026: 55 tài sản, mỗi xếp loại chỉ còn một giá trị LTV duy nhất (Loại 1 80% · Loại 2 70% · Loại 3 60% · Loại 4 55%) |
 | ✅ | Số HĐTD gốc của KUNN đọc theo HĐTD liên kết | `resolveMasterHdtdNumber`. Trước đây suy từ tiền tố số KUNN nên sửa số bên HĐTD không kéo theo. Migration 16 đổi luôn tiền tố số KUNN cũ |
 | ✅ | Làm tròn lại gốc kỳ chưa trả theo bước 10.000đ | Migration 18 đã chạy 05/08/2026. Kiểm chứng: Σ(gốc)=số tiền vay đúng ở **mọi** khoản, gốc kỳ chưa trả chia hết 10.000. Loại 41 dòng: gốc trả cuối kỳ và 2 KUNN đang thu lẻ |
+| ✅ | Chuẩn hoá ngày đọc từ database về một dạng | `toIsoDate` trong `utils.ts`. `HdtdDueDate` kiểu `timestamptz` trả về chuỗi có múi giờ nên `creditLimit.ts` so chuỗi ra sai thứ tự, hai view tự chặn bằng regex khiến nhánh dự phòng ngày hết hiệu lực coi như chết, và `saveContractAPI` **xoá hẳn trường khỏi payload** — mở KUNN cũ rồi lưu là mất giá trị mà giao diện vẫn báo thành công. 6 test |
+| ✅ | Chống trùng số hiệu KUNN ở mã nguồn | `assertKunnNumberFree` hỏi lại database trước khi ghi, `findKunnNumberClash` so theo dạng chuẩn hoá, lỗi unique của Postgres dịch sang tiếng Việt. 7 test. Nguyên nhân cũ: `nextKunnNumber` gọi lúc **mở form**, số không kiểm lại lúc lưu; cộng với migration 16 bước 2 thiếu dấu phẩy giữa hai CTE nên bước chốt an toàn chưa bao giờ chạy trong khi bước đổi số vẫn chạy |
 | ⬜ | Xoá bảng `_backup_LoanContracts_Note_20260803` | Sau vài ngày chạy ổn |
 | ⬜ | Xoá bảng `_backup_SchedulePrincipal_20260805` và `_backup_KunnNumbers_20260805` | Sau vài ngày chạy ổn |
+| ⬜ | Xoá bảng `_backup_HdtdDueDate_20260805` | Sau vài ngày chạy ổn |
 | ⬜ | Xoá bảng `PostLoanControls` kế thừa từ WPF | Rỗng và chỉ có 4 cột (`Id`, `CustomerId`, `LastControlDate`, `Result`), không biểu diễn được ba loại kiểm tra theo kỳ nên đã tạo bảng mới thay thế |
 
 ## Lỗi tính tiền đã sửa
@@ -89,27 +92,35 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
 | ✅ | Tách logic tài chính ra `src/lib/` dạng hàm thuần | Công cụ 1 bóc thêm `buildLoanSchedule` (calcMath), `scheduleDocHtml`, `printHtmlDoc` — component chỉ còn JSX |
-| ✅ | 668 test cho logic tính tiền | `src/lib/__tests__/`. Bất biến Σ(gốc) = số tiền vay được khoá ở mọi tổ hợp: ân hạn, gốc cuối kỳ, nhiều lần trả trước hạn, rút ngắn kỳ hạn, lùi ngày trả nợ |
+| ✅ | 681 test cho logic tính tiền | `src/lib/__tests__/`. Bất biến Σ(gốc) = số tiền vay được khoá ở mọi tổ hợp: ân hạn, gốc cuối kỳ, nhiều lần trả trước hạn, rút ngắn kỳ hạn, lùi ngày trả nợ |
+| ✅ | Test cho thành phần giao diện | `src/components/__tests__/`, vitest + Testing Library, mỗi tệp tự khai `// @vitest-environment jsdom` để 681 test logic không phải dựng DOM. Ba test khói cho tab KUNN. **Đã kiểm chứng bằng cách tái tạo lỗi trắng trang 05/08/2026: 2/3 test đỏ đúng chỗ** |
 | ✅ | Gom kiến thức vào `CONVENTIONS.md` và skill `tin-dung` | Mã nguồn không còn chú thích |
 | ✅ | Viết lại `README.md` và `web_migration_plan.md` khớp thực tế | |
 | 🔄 | Tách nhỏ `LoanPortfolioView` | Còn khoảng 2.200 dòng. Đã bóc hết logic tài chính; phần còn lại là JSX |
-| ⬜ | Test cho thành phần giao diện | Hiện chỉ có test logic thuần |
+| ⬜ | Mở rộng test giao diện sang các phân hệ còn lại | Hiện chỉ có tab KUNN |
 | ⬜ | Đồng bộ realtime, bộ nhớ đệm client | Có trong kế hoạch ban đầu, chưa làm |
 | ⬜ | Tên miền riêng | |
 
 
-## ⚠️ Đang dở — đọc trước khi làm tiếp phần lịch trả nợ
+## Quyết định nghiệp vụ đã chốt 05/08/2026
 
-Đợt rà soát 05/08/2026 trên dữ liệu thật còn hai việc **chờ quyết định nghiệp vụ**,
-chưa có câu trả lời thì **đừng viết script sinh lại lịch**:
+| Câu hỏi | Quyết định |
+| :--- | :--- |
+| Ngày thu lãi hàng tháng của hợp đồng hạn mức | **Theo lựa chọn của từng khách hàng, khai trên từng KUNN.** Có khách chọn ngày 1, 15, 28, 30 — không gom chung được, và cũng không phải giải ngân + 1 tháng: LÊ NGỌC QUẾ HÂN giải ngân 05/05/2026 nhưng trả kỳ 1 ngày 15/05/2026. `RepaymentStartDate` là dữ liệu gốc phải khai theo GNN giấy. Đã ghi vào `CONVENTIONS.md` §2 |
+| Xử lý ≈21,7 triệu đã thu vượt của NGÔ NHỊ ĐẠT | **Chưa xử lý, chỉ báo cáo.** Không hoàn, không cấn trừ, không ghi điều chỉnh. Báo cáo ở `supabase/reports/01_thu_vuot_ky_dau.sql` |
+
+## ⚠️ Đang dở — đọc trước khi làm tiếp phần lịch trả nợ
 
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
-| ⚠️ | Ngày thu lãi hàng tháng của hợp đồng hạn mức | Ngày 15, hay ngày giải ngân của từng KUNN? Toàn bộ dữ liệu đang dùng ngày 15, nhưng chính khung ngày 15 dùng chung sinh ra lỗi kỳ đầu trước ngày giải ngân |
-| ⚠️ | Xử lý 21,7 triệu đã thu vượt của NGÔ NHỊ ĐẠT | Hoàn, cấn trừ, hay ghi nhận điều chỉnh. Sinh lại lịch sẽ ghi đè các kỳ đã thanh toán nên phải chốt trước |
+| ⚠️ | **Độ tin cậy của cờ `IsPaid` trong `RepaymentSchedules` đang bị nghi ngờ** | Phát hiện 05/08/2026: `PaymentDate = 2026-07-30` đồng loạt trên nhiều kỳ khác nhau, `ActualPaidInterest = 0` ở toàn bộ 898/898 kỳ `IsPaid=true` — do một **tiến trình cập nhật tự động chạy ngày 30/07/2026** (chưa rõ là script nào). Anh xác nhận: không chắc tiến trình đó có đánh dấu `IsPaid=true` đúng cho từng kỳ hay không, chỉ chắc chắn `PaymentDate` sai. Hệ quả nếu `IsPaid` sai: dư nợ hiện tại, phân nhóm nợ theo quá hạn, và chính con số 21,7 triệu "đã chốt" đều cần xem lại — tất cả đều tính dựa trên kỳ nào `IsPaid=true`. **Cần xác định tiến trình 30/07/2026 là gì trước khi tin bất kỳ con số "đã thu" nào của hệ thống** |
+| 🔄 | Chạy báo cáo thu vượt trên production | `supabase/reports/01_thu_vuot_ky_dau.sql`, nay 6 phần, chỉ đọc. Phần 5 liệt kê KUNN đang mượn mốc trả nợ của hợp đồng. Phần 6 đối chiếu `KunnTenor` với khoảng giải ngân→đáo hạn (chỉ bắt lệch giữa hai cột, không bắt được trường hợp cả hai cùng sai như ĐOÀN THỊ TUYỂN — vẫn cần đối chiếu tay GNN giấy cho nhóm hạn mức). Sửa 05/08/2026: PHẦN 2–3 ban đầu trả 0 dòng vì `coalesce(ActualPaidInterest, InterestAmount)` — `ActualPaidInterest` chưa từng được điền (0/898 kỳ đã thu có giá trị dương), đã sửa dùng thẳng `InterestAmount`. Cùng lỗi `??` với số 0 cũng có ở `loanMath.ts:389` (tính `TotalAmount`), đã sửa — hiện chưa gây hại vì UI không đọc trường đó. **Kiểm chứng 05/08/2026: PHẦN 3 cho tổng `thu_thừa` nhóm NGÔ NHỊ ĐẠT = 21.698.628đ ≈ 21,7 triệu — khớp đúng con số đã chốt.** PHẦN 3 còn phát hiện thêm TRẦN THỊ KIM CHI thu thừa 197.945đ (cùng nguyên nhân: kỳ 1 trùng đúng ngày giải ngân), **chưa nằm trong quyết định đã chốt — đang chờ anh quyết định** áp dụng chung logic "chưa xử lý, chỉ báo cáo" hay cần quyết định riêng |
+| ✅ | Khai lại `RepaymentStartDate` theo GNN giấy cho nhóm hạn mức | Migration 21 đã chạy 05/08/2026 (`21_repayment_start_date_han_muc.sql`). 10 dòng đã sửa theo GNN giấy: NGÔ NHỊ ĐẠT ×5 và PHẠM NGỌC CẢNH → 15/05/2026; NGUYỄN VƯƠNG VŨ và PHAN THÚC BẢO → 15/07/2026; TRẦN MINH HIẾU → 15/07/2025; TRẦN THỊ KIM CHI → 15/03/2025. Kiểm chứng lại: PHAN THÚC BẢO và TRẦN MINH HIẾU vẫn hiện trong chẩn đoán "trùng ngày trong tháng với mốc HĐTD" — đây là trùng ngẫu nhiên đã xác nhận đúng GNN giấy, không phải lỗi |
 | ⬜ | Đối chiếu `KunnTenor` nhóm hạn mức với GNN giấy | Gần cả nhóm khai 5 tháng; GNN của ĐOÀN THỊ TUYỂN ghi 06 tháng, đáo hạn 23/10/2026 thay vì 23/09/2026 đang lưu. Ngày đáo hạn là dữ liệu gốc, sai nó thì sinh lại lịch vẫn sai |
-| ⬜ | Số hiệu KUNN trùng nhau | 1027 & 1068; 1036–1038; 1005–1007 (ba dòng thiếu cả phần `/GNN-`). Làm hàm sinh số KUNN tiếp theo tính sai |
-| ⬜ | Đổi `HdtdDueDate` từ `timestamptz` sang `date` | Mọi cột ngày khác đều là `date`. Lệch múi giờ đủ để xếp sai một hạn mức vào nhóm hết hiệu lực |
+| ⬜ | Sinh lại lịch trả nợ — mở rộng ra toàn bộ danh sách phần 4 của report 01 | Chỉ làm SAU khi `RepaymentStartDate` và `KunnTenor` đã đúng GNN giấy. Phần 4 của `01_thu_vuot_ky_dau.sql` đã liệt kê đầy đủ ~60 dòng lệch đáo hạn trên toàn danh mục — không giới hạn ở nhóm hạn mức. Quyết định "chưa xử lý phần thu vượt" nghĩa là script **không được ghi đè các kỳ đã thanh toán** — chỉ sinh lại kỳ chưa trả |
+| ✅ | Số hiệu KUNN trùng nhau | Mã nguồn đã chống trùng (`assertKunnNumberFree` + `findKunnNumberClash`, 7 test). Migration 20 đã chạy 05/08/2026: bước 1–2 rà soát ra 0 dòng (đã sạch), bước 4 tạo unique index `LoanContracts_ContractNumber_key`, bước 5 xác nhận index tồn tại |
+| ⚠️ | Phạm vi "kỳ cuối không rơi vào ngày đáo hạn" rộng hơn nhóm hạn mức | Phát hiện 05/08/2026: báo cáo đối chiếu `ky_cuoi_den_han` với `ngay_dao_han` cho ra **~60 dòng lệch trên toàn danh mục**, không riêng NGÔ NHỊ ĐẠT — gồm cả vay từng lần dài hạn 60–240 tháng của nhiều khách hàng khác. Lỗi đã sửa ở code (`generateSchedule`, commit `8d44435`) nhưng lịch **đã sinh sẵn trong database từ trước khi sửa** vẫn giữ nguyên sai; sửa code không tự cập nhật ngược dữ liệu cũ. Cần viết báo cáo chỉ đọc liệt kê đầy đủ, rồi mở rộng bước "sinh lại lịch trả nợ" ra toàn bộ danh sách này — không giới hạn ở nhóm hạn mức như kế hoạch ban đầu. Cùng nguyên tắc: không ghi đè kỳ đã thanh toán |
+| ✅ | Đổi `HdtdDueDate` từ `timestamptz` sang `date` | Migration 19 đã chạy 05/08/2026. Có backup `_backup_HdtdDueDate_20260805`, kiểm chứng không lệch giá trị giữa bản cũ và bản mới |
 
 ## Cần kiểm thử trên giao diện
 

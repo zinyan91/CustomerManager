@@ -828,6 +828,14 @@ export const LoanPortfolioView: React.FC = () => {
 
   const todayIso = new Date().toISOString().split('T')[0];
 
+  const kunnSettled = useCallback(
+    (c: LoanContract) => isKunnSettled(
+      c,
+      c.CreditContractId ? creditContracts.find(cc => cc.Id === c.CreditContractId) : null
+    ),
+    [creditContracts]
+  );
+
   /* Đóng HĐTD cũng là hết nợ, không chỉ riêng cờ tất toán trên từng KUNN. */
   const getEffectiveBalanceForContract = (c: LoanContract) =>
     kunnSettled(c) ? 0 : computeOutstandingBalance(allSchedulesMap[c.Id], c);
@@ -838,14 +846,6 @@ export const LoanPortfolioView: React.FC = () => {
       today: todayIso,
     }),
     [contracts, allSchedulesMap, todayIso]
-  );
-
-  const kunnSettled = useCallback(
-    (c: LoanContract) => isKunnSettled(
-      c,
-      c.CreditContractId ? creditContracts.find(cc => cc.Id === c.CreditContractId) : null
-    ),
-    [creditContracts]
   );
 
   const masterNoOf = useCallback(

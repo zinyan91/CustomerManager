@@ -192,19 +192,35 @@ export function kunnRevolvingStatus(
 }
 
 /**
- * KUNN gắn liền với HĐTD: đóng HĐTD là toàn bộ KUNN của nó đã hoàn thành nghĩa
- * vụ, khỏi phải đánh dấu tất toán từng cái.
+ * KUNN đã tất toán hay chưa — CHỈ căn cứ cờ tất toán của chính KUNN đó.
  *
- * Suy ra khi đọc, KHÔNG ghi cờ `IsSettled` xuống từng KUNN: nhân bản cờ ra nhiều
- * chỗ thì mở lại hợp đồng phải đi gỡ từng dòng, và chỉ cần bỏ sót một dòng là hai
- * nơi nói hai chuyện khác nhau.
+ * Quyết định nghiệp vụ 05/08/2026: **đóng HĐTD là dừng quyền giải ngân, KHÔNG
+ * phải xoá nợ.** Hàm này trước đây trả về `true` khi HĐTD có `IsClosed`, và cái
+ * suy diễn đó đã che dư nợ thật khỏi mọi con số: hồ sơ NGUYỄN MINH HÙNG hiện
+ * "Dư nợ hiện hữu 0" trên hai KUNN 200 triệu `IsSettled = false` chưa trả một
+ * đồng nào, chỉ vì HĐTD bị đóng.
+ *
+ * Hai câu hỏi khác nhau, hai hàm khác nhau:
+ *  - Còn nợ không? → hàm này (và `computeOutstandingBalance` cho số tiền).
+ *  - Còn giải ngân được không? → `computeLimitGroups(options.isClosed)` và
+ *    `summarizeCreditContracts`, cùng cho `available = 0` khi HĐTD đã đóng.
  */
-export function isKunnSettled(
-  kunn: Pick<LoanContract, 'IsSettled'>,
-  contract?: Pick<CreditContract, 'IsClosed'> | null
+export function isKunnSettled(kunn: Pick<LoanContract, 'IsSettled'>): boolean {
+  return kunn.IsSettled === true;
+}
+
+/**
+ * KUNN có thuộc một HĐTD đã đóng hay không.
+ *
+ * Chỉ xét theo liên kết `CreditContractId`, không suy từ tiền tố số hiệu: số hiệu
+ * sửa được bằng tay còn khoá ngoại thì không.
+ */
+export function isKunnOfClosedHdtd(
+  kunn: Pick<LoanContract, 'CreditContractId'>,
+  creditContracts: Pick<CreditContract, 'Id' | 'IsClosed'>[]
 ): boolean {
-  if (kunn.IsSettled === true) return true;
-  return contract?.IsClosed === true;
+  if (kunn.CreditContractId === null || kunn.CreditContractId === undefined) return false;
+  return creditContracts.some(cc => cc.Id === kunn.CreditContractId && cc.IsClosed === true);
 }
 
 export interface CreditContractSummary {
@@ -247,7 +263,7 @@ export function summarizeCreditContracts(
 
   return contracts.map(cc => {
     const own = kunns.filter(k => k.CreditContractId === cc.Id);
-    const active = own.filter(k => !isKunnSettled(k, cc));
+    const active = own.filter(k => !isKunnSettled(k));
     const end = toIso(cc.ContractEndDate);
 
     const outstanding = active.reduce((s, k) => s + Math.max(0, outstandingOf(k)), 0);

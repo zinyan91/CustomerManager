@@ -9,6 +9,7 @@ import {
   summarizeCreditContracts,
   resolveMasterHdtdNumber,
   isKunnSettled,
+  isKunnOfClosedHdtd,
 } from '../creditContract';
 import type { CreditContract, LoanContract } from '../../types';
 
@@ -393,23 +394,45 @@ describe('resolveMasterHdtdNumber — số HĐTD gốc của một KUNN', () => 
   });
 });
 
-describe('isKunnSettled — KUNN gắn liền với HĐTD', () => {
-  it('HĐTD đã đóng thì mọi KUNN của nó coi như đã hoàn thành nghĩa vụ', () => {
-    const hd = cc({ Id: 5, IsClosed: true });
-    expect(isKunnSettled(kunn({ CreditContractId: 5, IsSettled: false }), hd)).toBe(true);
+describe('isKunnSettled — chỉ căn cứ cờ tất toán của chính KUNN', () => {
+  /* Quyết định nghiệp vụ 05/08/2026: ĐÓNG HĐTD LÀ DỪNG QUYỀN GIẢI NGÂN, KHÔNG
+     PHẢI XOÁ NỢ. Trước đây hàm này suy "đã tất toán" từ cờ IsClosed, khiến hồ sơ
+     NGUYỄN MINH HÙNG hiện dư nợ 0 trong khi lịch còn 400 triệu chưa trả. Quyền
+     giải ngân nay xét riêng qua computeLimitGroups(options.isClosed). */
+  it('HĐTD đã đóng KHÔNG làm KUNN thành đã tất toán', () => {
+    expect(isKunnSettled(kunn({ CreditContractId: 5, IsSettled: false }))).toBe(false);
   });
 
-  it('KUNN tự tất toán thì vẫn tất toán dù HĐTD còn mở', () => {
-    expect(isKunnSettled(kunn({ IsSettled: true }), cc({ Id: 5, IsClosed: false }))).toBe(true);
+  it('chỉ cờ tất toán của chính KUNN mới quyết định', () => {
+    expect(isKunnSettled(kunn({ IsSettled: true }))).toBe(true);
+    expect(isKunnSettled(kunn({ IsSettled: false }))).toBe(false);
   });
 
-  it('HĐTD còn mở và KUNN chưa tất toán thì chưa tất toán', () => {
-    expect(isKunnSettled(kunn({ IsSettled: false }), cc({ Id: 5, IsClosed: false }))).toBe(false);
+  it('cờ chưa khai thì coi như chưa tất toán, không nuốt thành true', () => {
+    expect(isKunnSettled(kunn({ IsSettled: undefined }))).toBe(false);
+    expect(isKunnSettled(kunn({ IsSettled: null as unknown as boolean }))).toBe(false);
+  });
+});
+
+describe('isKunnOfClosedHdtd', () => {
+  const hds = [cc({ Id: 5, IsClosed: true }), cc({ Id: 6, IsClosed: false })];
+
+  it('nhận ra KUNN thuộc HĐTD đã đóng', () => {
+    expect(isKunnOfClosedHdtd(kunn({ CreditContractId: 5 }), hds)).toBe(true);
   });
 
-  it('không tìm được HĐTD thì chỉ căn cứ cờ của chính KUNN', () => {
-    expect(isKunnSettled(kunn({ IsSettled: false }), null)).toBe(false);
-    expect(isKunnSettled(kunn({ IsSettled: true }), null)).toBe(true);
+  it('HĐTD còn mở thì false', () => {
+    expect(isKunnOfClosedHdtd(kunn({ CreditContractId: 6 }), hds)).toBe(false);
+  });
+
+  it('KUNN chưa liên kết HĐTD nào thì false, không đoán theo số hiệu', () => {
+    expect(isKunnOfClosedHdtd(kunn({ CreditContractId: null }), hds)).toBe(false);
+    expect(isKunnOfClosedHdtd(kunn({}), hds)).toBe(false);
+  });
+
+  it('liên kết tới HĐTD không có trong danh sách thì false', () => {
+    expect(isKunnOfClosedHdtd(kunn({ CreditContractId: 99 }), hds)).toBe(false);
+    expect(isKunnOfClosedHdtd(kunn({ CreditContractId: 5 }), [])).toBe(false);
   });
 });
 
@@ -417,33 +440,50 @@ describe('summarizeCreditContracts — HĐTD đã đóng', () => {
   const hd = cc({ Id: 9, HdtdNumber: 'HD09', ContractAmount: 1_000_000_000, LoanMethod: 'Cho vay từng lần' });
   const gnn = kunn({ Id: 91, CreditContractId: 9, ContractNumber: 'HD09/GNN-01', LoanAmount: 600_000_000, IsSettled: false });
 
-  it('đóng HĐTD thì KUNN được tính là đã tất toán và dư nợ về 0', () => {
-    const [mo] = summarizeCreditContracts([hd], [gnn], { getOutstanding: () => 400_000_000, today: HOM_NAY });
+  const dungHd = (o: Partial<CreditContract>, tra: number) => summarizeCreditContracts(
+    [{ ...hd, ...o }], [gnn], { getOutstanding: () => tra, today: HOM_NAY }
+  )[0];
+
+  /* Quyết định 05/08/2026: đóng HĐTD KHÔNG xoá nợ. Trước đây khối này khẳng định
+     điều ngược lại, và chính nó khiến hồ sơ NGUYỄN MINH HÙNG hiện dư nợ 0 trong
+     khi còn 400 triệu chưa trả. */
+  it('đóng HĐTD KHÔNG làm dư nợ về 0, KUNN vẫn là khoản đang hoạt động', () => {
+    const mo = dungHd({}, 400_000_000);
     expect(mo.activeKunnCount).toBe(1);
     expect(mo.outstanding).toBe(400_000_000);
 
-    const [dong] = summarizeCreditContracts(
-      [{ ...hd, IsClosed: true }], [gnn],
-      { getOutstanding: () => 400_000_000, today: HOM_NAY }
+    const dong = dungHd({ IsClosed: true }, 400_000_000);
+    expect(dong.activeKunnCount).toBe(1);
+    expect(dong.settledKunnCount).toBe(0);
+    expect(dong.outstanding).toBe(400_000_000);
+  });
+
+  it('đóng HĐTD vẫn chặn giải ngân, đó mới là việc nó làm', () => {
+    const dong = dungHd({ IsClosed: true }, 400_000_000);
+    expect(dong.available).toBe(0);
+    expect(dong.canDisburse).toBe(false);
+    expect(dong.blockReason).toBe('HĐTD đã đóng');
+  });
+
+  it('KUNN tự tất toán thì mới tính là đã tất toán và dư nợ về 0', () => {
+    const [daTt] = summarizeCreditContracts(
+      [hd], [{ ...gnn, IsSettled: true }],
+      { getOutstanding: () => 0, today: HOM_NAY }
     );
-    expect(dong.activeKunnCount).toBe(0);
-    expect(dong.settledKunnCount).toBe(1);
-    expect(dong.outstanding).toBe(0);
+    expect(daTt.activeKunnCount).toBe(0);
+    expect(daTt.settledKunnCount).toBe(1);
+    expect(daTt.outstanding).toBe(0);
   });
 
   it('báo riêng phần dư nợ còn treo khi đóng HĐTD, không xoá dấu vết', () => {
-    const [dong] = summarizeCreditContracts(
-      [{ ...hd, IsClosed: true }], [gnn],
-      { getOutstanding: () => 400_000_000, today: HOM_NAY }
-    );
-    expect(dong.closedWithBalance).toBe(400_000_000);
+    expect(dungHd({ IsClosed: true }, 400_000_000).closedWithBalance).toBe(400_000_000);
   });
 
   it('đóng HĐTD mà KUNN đã trả hết thì không có gì treo', () => {
-    const [dong] = summarizeCreditContracts(
-      [{ ...hd, IsClosed: true }], [gnn],
-      { getOutstanding: () => 0, today: HOM_NAY }
-    );
-    expect(dong.closedWithBalance).toBe(0);
+    expect(dungHd({ IsClosed: true }, 0).closedWithBalance).toBe(0);
+  });
+
+  it('HĐTD còn mở thì không báo dư nợ treo dù còn nợ', () => {
+    expect(dungHd({}, 400_000_000).closedWithBalance).toBe(0);
   });
 });

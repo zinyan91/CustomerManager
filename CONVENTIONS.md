@@ -72,6 +72,19 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 
 **`computeLimitGroups` phải được truyền `options.isClosed`.** Cờ `IsClosed` nằm ở bảng `CreditContracts` còn hàm này chỉ nhận `LoanContract[]`, nên nó không tự biết hợp đồng đã đóng. Bỏ trống thì hạn mức khả dụng ra số dương trên HĐTD đã đóng — hồ sơ NGUYỄN MINH HÙNG ngày 05/08/2026 hiện HMTD còn lại 600 triệu với nút Giải ngân đang bật, trong khi HĐTD đã đóng và còn 400 triệu chưa trả. **Đóng HĐTD và hết hiệu lực theo ngày là hai chuyện khác nhau**: hợp đồng còn hạn vẫn đóng được, nên không thay cái này bằng cái kia. Cả `computeLimitGroups` và `summarizeCreditContracts` đều cho `available = 0` khi `expired || closed`, và xếp lý do chặn cùng thứ tự: đã đóng → hết hiệu lực → hết hạn mức.
 
+**Đóng HĐTD là dừng quyền giải ngân, KHÔNG phải xoá nợ.** Hai câu hỏi khác nhau, hai hàm khác nhau, đừng trả lời câu này bằng câu kia:
+
+| Câu hỏi | Hàm |
+| :--- | :--- |
+| KUNN còn nợ không? | `isKunnSettled(kunn)` — **chỉ** cờ `IsSettled` của chính KUNN |
+| Còn bao nhiêu nợ? | `computeOutstandingBalance(schedules, kunn)` |
+| Còn giải ngân được không? | `computeLimitGroups(options.isClosed)` · `summarizeCreditContracts` |
+| KUNN thuộc HĐTD đã đóng? | `isKunnOfClosedHdtd(kunn, creditContracts)` |
+
+`isKunnSettled` từng trả `true` khi HĐTD có `IsClosed`, và suy diễn đó che dư nợ thật khỏi **mọi** con số: hai KUNN 200 triệu của NGUYỄN MINH HÙNG, `IsSettled = false`, chưa trả một đồng, vẫn hiện "Dư nợ hiện hữu 0" kèm nhãn "ĐÃ TẤT TOÁN (theo HĐTD)" chỉ vì hợp đồng bị đóng. Cùng lúc đó tab HĐTD báo đỏ "còn 400.000.000" — hai màn hình nói ngược nhau về cùng một hồ sơ.
+
+Kéo theo: **HĐTD đã đóng mà còn KUNN chưa tất toán thì luôn hiện**, không ẩn theo toggle "Hiện HĐTD đã đóng" — ẩn mặc định là che mất khoản nợ đang treo.
+
 **KUNN không có dòng nào trong `RepaymentSchedules` thì dư nợ không giảm được.** `computeOutstandingBalance` rơi vào nhánh dự phòng trả `CurrentBalance`, và không có kỳ nào để đánh dấu đã thu. Đo 05/08/2026: 14/97 KUNN chưa tất toán ở trạng thái này, treo 4,635 tỷ. Mọi đường tạo KUNN phải sinh lịch; nhập KUNN bằng SQL mà bỏ bước này là tạo ra khoản vay không thu nợ được.
 
 **Không dùng `new Date().toISOString().split('T')[0]` để lấy ngày hôm nay.** Đó là ngày theo UTC: ở múi giờ Việt Nam (UTC+7), mọi lần chạy trước 07:00 sáng đều trả về NGÀY HÔM QUA. Lỗi này từng nằm ở 16 chỗ, gồm cả `getEffectiveActiveRate` (chọn sai mốc điều chỉnh lãi suất trong buổi sáng) và chốt xét hiệu lực HĐTD. Dùng `todayIso()`.

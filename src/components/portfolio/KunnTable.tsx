@@ -30,6 +30,8 @@ interface KunnTableProps {
   getAutoDebtGroupInfo: (schs?: RepaymentSchedule[]) => { debtGroup: number; maxOverdueDays: number };
   getMasterHdtdNumber: (c: LoanContract) => string;
   isSettled?: (c: LoanContract) => boolean;
+  /** KUNN thuộc HĐTD đã đóng — chưa tất toán thì phải báo. */
+  isOfClosedHdtd?: (c: LoanContract) => boolean;
   getEffectiveBalanceForContract: (c: LoanContract) => number;
 }
 
@@ -44,6 +46,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
   getAutoDebtGroupInfo,
   getMasterHdtdNumber,
   isSettled,
+  isOfClosedHdtd,
   getEffectiveBalanceForContract,
 }) => {
   return (
@@ -115,17 +118,23 @@ export const KunnTable: React.FC<KunnTableProps> = ({
                     {isSettled && isSettled(c) ? (
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                         ✓ ĐÃ TẤT TOÁN
-                        {!c.IsSettled && (
-                          <span className="ml-1 text-[9px] font-normal opacity-90">(theo HĐTD)</span>
-                        )}
                       </span>
                     ) : (
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${DEBT_GROUP_COLORS[effectiveDg]}`}>
-                        {DEBT_GROUP_LABELS[effectiveDg]}
-                        {autoDebt.maxOverdueDays > 0 && (
-                          <span className="ml-1 text-[9px] font-mono opacity-90">({autoDebt.maxOverdueDays}d quá hạn)</span>
+                      <div className="space-y-0.5">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${DEBT_GROUP_COLORS[effectiveDg]}`}>
+                          {DEBT_GROUP_LABELS[effectiveDg]}
+                          {autoDebt.maxOverdueDays > 0 && (
+                            <span className="ml-1 text-[9px] font-mono opacity-90">({autoDebt.maxOverdueDays}d quá hạn)</span>
+                          )}
+                        </span>
+                        {/* Đóng HĐTD không xoá nợ: khoản vẫn đang chạy, chỉ mất quyền
+                            rút lại khi trả. Banker cần thấy ngay để đi tất toán. */}
+                        {isOfClosedHdtd && isOfClosedHdtd(c) && (
+                          <div className="text-[9px] font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                            ⚠ HĐTD đã đóng, còn nợ
+                          </div>
                         )}
-                      </span>
+                      </div>
                     )}
                   </td>
                 </tr>

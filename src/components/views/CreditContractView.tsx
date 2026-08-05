@@ -113,8 +113,8 @@ export const CreditContractView: React.FC = () => {
     }
   }, [form.ContractStartDate, form.LoanTenorMonths]);
 
-  /* Getter THÔ theo lịch trả nợ. summarizeCreditContracts tự áp quy tắc tất toán
-     để còn tính được phần dư nợ treo khi đóng HĐTD mà KUNN chưa tất toán. */
+  /* Dư nợ đọc từ lịch thu nợ, đúng nguồn tab Khoản Vay đang dùng. Đóng HĐTD không
+     xoá nợ nên KUNN chưa tất toán vẫn được cộng vào dư nợ như bình thường. */
   const outstandingOf = (k: LoanContract) => computeOutstandingBalance(schedulesMap[k.Id], k);
 
   const summaries = useMemo(
@@ -125,12 +125,18 @@ export const CreditContractView: React.FC = () => {
     [contracts, kunns, schedulesMap, today]
   );
 
+  /* HĐTD đã đóng mà KUNN chưa tất toán thì LUÔN hiện, không ẩn theo toggle: đây là
+     trạng thái phải đi xử lý, ẩn mặc định là che mất khoản nợ còn treo. */
   const visibleSummaries = useMemo(
-    () => showSettled ? summaries : summaries.filter(s => !s.contract.IsClosed),
+    () => showSettled
+      ? summaries
+      : summaries.filter(s => !s.contract.IsClosed || s.activeKunnCount > 0),
     [summaries, showSettled]
   );
 
-  const closedCount = summaries.filter(s => s.contract.IsClosed).length;
+  const closedCount = summaries.filter(
+    s => s.contract.IsClosed && s.activeKunnCount === 0
+  ).length;
 
   const openNew = () => {
     setEditing(null);
@@ -371,8 +377,10 @@ export const CreditContractView: React.FC = () => {
                         {s.settledKunnCount > 0 && (
                           <span className="text-slate-400"> +{s.settledKunnCount} đã TT</span>
                         )}
-                        {s.contract.IsClosed && s.kunnCount > 0 && (
-                          <div className="text-[10px] text-slate-400">theo HĐTD đã đóng</div>
+                        {s.contract.IsClosed && s.activeKunnCount > 0 && (
+                          <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400">
+                            còn khoản chưa tất toán
+                          </div>
                         )}
                         {s.kunnCount === 0 && (
                           <div className="text-[10px] text-slate-400">chưa giải ngân</div>

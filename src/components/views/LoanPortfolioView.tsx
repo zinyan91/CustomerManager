@@ -9,13 +9,14 @@ import {
   addMonthsToDate, parseKunnTenorMonths,
   generateSchedule, calculateOverdueDaysFromDates,
   getAutoDebtGroupInfo, recalculateSchedules, computeOutstandingBalance,
-  isBulletPrincipal, getDaysBetween, redateSchedules } from '../../lib/loanMath';
+  isBulletPrincipal, getDaysBetween, redateSchedules
+} from '../../lib/loanMath';
 import {
   buildContractRateTimeline, splitPeriodByRate,
   type RateSegment,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
-import { checkKunnAgainstContract, nextKunnNumber, resolveMasterHdtdNumber, isKunnSettled } from '../../lib/creditContract';
+import { checkKunnAgainstContract, nextKunnNumber, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd } from '../../lib/creditContract';
 import { fetchCreditContractsByCustomerAPI } from '../../lib/api';
 import { useWork } from '../../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
@@ -559,7 +560,7 @@ export const LoanPortfolioView: React.FC = () => {
             excludeContractId: (selectedContract && !forceInsert) ? selectedContract.Id : null,
             grantedOverride: creditLimit > 0 ? creditLimit : null,
             today: todayIso(),
-            isClosed: isKunnOfClosedHdtd,
+            isClosed: kunnOfClosedHdtd,
           }),
           targetHdtdNo
         );
@@ -795,24 +796,18 @@ export const LoanPortfolioView: React.FC = () => {
 
   const today = todayIso();
 
-  const kunnSettled = useCallback(
-    (c: LoanContract) => isKunnSettled(
-      c,
-      c.CreditContractId ? creditContracts.find(cc => cc.Id === c.CreditContractId) : null
-    ),
-    [creditContracts]
-  );
+  const kunnSettled = useCallback((c: LoanContract) => isKunnSettled(c), []);
 
-  /* Đóng HĐTD cũng là hết nợ, không chỉ riêng cờ tất toán trên từng KUNN. */
+  /* Đóng HĐTD KHÔNG xoá nợ, nên dư nợ luôn đọc từ lịch thu nợ. Chỉ KUNN tự tất
+     toán mới về 0 — quyết định nghiệp vụ 05/08/2026. */
   const getEffectiveBalanceForContract = (c: LoanContract) =>
-    kunnSettled(c) ? 0 : computeOutstandingBalance(allSchedulesMap[c.Id], c);
+    computeOutstandingBalance(allSchedulesMap[c.Id], c);
 
   /* Cờ IsClosed nằm ở bảng CreditContracts nên computeLimitGroups không tự đọc
      được — phải truyền vào, nếu không hạn mức khả dụng sẽ ra số dương trên HĐTD
      đã đóng. */
-  const isKunnOfClosedHdtd = useCallback(
-    (c: LoanContract) => !!c.CreditContractId
-      && creditContracts.find(cc => cc.Id === c.CreditContractId)?.IsClosed === true,
+  const kunnOfClosedHdtd = useCallback(
+    (c: LoanContract) => isKunnOfClosedHdtd(c, creditContracts),
     [creditContracts]
   );
 
@@ -820,9 +815,9 @@ export const LoanPortfolioView: React.FC = () => {
     () => computeLimitGroups(contracts, {
       getOutstanding: getEffectiveBalanceForContract,
       today: today,
-      isClosed: isKunnOfClosedHdtd,
+      isClosed: kunnOfClosedHdtd,
     }),
-    [contracts, allSchedulesMap, today, isKunnOfClosedHdtd]
+    [contracts, allSchedulesMap, today, kunnOfClosedHdtd]
   );
 
   const masterNoOf = useCallback(
@@ -895,11 +890,11 @@ export const LoanPortfolioView: React.FC = () => {
         excludeContractId: selectedContract?.Id ?? null,
         grantedOverride: creditLimitNum > 0 ? creditLimitNum : null,
         today: today,
-        isClosed: isKunnOfClosedHdtd,
+        isClosed: kunnOfClosedHdtd,
       }),
       effectiveFormHdtdNo
     ),
-    [contracts, allSchedulesMap, selectedContract, creditLimitNum, effectiveFormHdtdNo, today, isKunnOfClosedHdtd]
+    [contracts, allSchedulesMap, selectedContract, creditLimitNum, effectiveFormHdtdNo, today, kunnOfClosedHdtd]
   );
 
   const formGrantedLimit = formLimitStatus?.granted ?? creditLimitNum;
@@ -968,11 +963,6 @@ export const LoanPortfolioView: React.FC = () => {
     );
   };
 
-  /**
-   * HĐTD được chọn để giải ngân: bỏ hợp đồng đã đóng hoặc hết hiệu lực, vì hết
-   * hiệu lực là không giải ngân được nữa. HĐTD của KUNN đang sửa vẫn giữ lại
-   * để mở được hồ sơ cũ.
-   */
   const selectableCreditContracts = useMemo(() => {
     const currentId = selectedContract?.CreditContractId ?? null;
     return creditContracts.filter(cc => {
@@ -1235,6 +1225,7 @@ export const LoanPortfolioView: React.FC = () => {
                 getAutoDebtGroupInfo={getAutoDebtGroupInfo}
                 getMasterHdtdNumber={masterNoOf}
                 isSettled={kunnSettled}
+                isOfClosedHdtd={kunnOfClosedHdtd}
                 getEffectiveBalanceForContract={getEffectiveBalanceForContract}
               />
 

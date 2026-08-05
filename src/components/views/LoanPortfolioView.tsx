@@ -559,6 +559,7 @@ export const LoanPortfolioView: React.FC = () => {
             excludeContractId: (selectedContract && !forceInsert) ? selectedContract.Id : null,
             grantedOverride: creditLimit > 0 ? creditLimit : null,
             today: todayIso(),
+            isClosed: isKunnOfClosedHdtd,
           }),
           targetHdtdNo
         );
@@ -806,12 +807,22 @@ export const LoanPortfolioView: React.FC = () => {
   const getEffectiveBalanceForContract = (c: LoanContract) =>
     kunnSettled(c) ? 0 : computeOutstandingBalance(allSchedulesMap[c.Id], c);
 
+  /* Cờ IsClosed nằm ở bảng CreditContracts nên computeLimitGroups không tự đọc
+     được — phải truyền vào, nếu không hạn mức khả dụng sẽ ra số dương trên HĐTD
+     đã đóng. */
+  const isKunnOfClosedHdtd = useCallback(
+    (c: LoanContract) => !!c.CreditContractId
+      && creditContracts.find(cc => cc.Id === c.CreditContractId)?.IsClosed === true,
+    [creditContracts]
+  );
+
   const limitGroups = useMemo(
     () => computeLimitGroups(contracts, {
       getOutstanding: getEffectiveBalanceForContract,
       today: today,
+      isClosed: isKunnOfClosedHdtd,
     }),
-    [contracts, allSchedulesMap, today]
+    [contracts, allSchedulesMap, today, isKunnOfClosedHdtd]
   );
 
   const masterNoOf = useCallback(
@@ -884,10 +895,11 @@ export const LoanPortfolioView: React.FC = () => {
         excludeContractId: selectedContract?.Id ?? null,
         grantedOverride: creditLimitNum > 0 ? creditLimitNum : null,
         today: today,
+        isClosed: isKunnOfClosedHdtd,
       }),
       effectiveFormHdtdNo
     ),
-    [contracts, allSchedulesMap, selectedContract, creditLimitNum, effectiveFormHdtdNo, today]
+    [contracts, allSchedulesMap, selectedContract, creditLimitNum, effectiveFormHdtdNo, today, isKunnOfClosedHdtd]
   );
 
   const formGrantedLimit = formLimitStatus?.granted ?? creditLimitNum;
@@ -1037,17 +1049,39 @@ export const LoanPortfolioView: React.FC = () => {
     clearDisburseRequest();
   }, [disburseRequest, foundCustomer, creditContracts, contracts]);
 
-  const expiredLimitNote = useMemo(() => {
-    const scope = selectedMasterFilter === 'ALL'
+  const scopedLimitGroups = useMemo(
+    () => selectedMasterFilter === 'ALL'
       ? limitGroups
-      : limitGroups.filter(g => findLimitGroupFor([g], selectedMasterFilter));
-    const expired = scope.filter(g => g.expired && g.headroom > 0);
+      : limitGroups.filter(g => findLimitGroupFor([g], selectedMasterFilter)),
+    [limitGroups, selectedMasterFilter]
+  );
+
+  /* Chỉ báo khi còn hạn mức trống: hết hiệu lực mà đã dùng hết hạn mức thì không
+     có gì mất, cảnh báo chỉ làm ồn. HĐTD đã đóng thì báo bất kể trống hay không,
+     vì đóng hợp đồng khi KUNN chưa tất toán là chuyện phải thấy ngay. */
+  const expiredLimitNote = useMemo(() => {
+    const closed = scopedLimitGroups.filter(g => g.closed);
+    if (closed.length === 1) return 'HĐTD đã đóng, không giải ngân thêm';
+    if (closed.length > 1) return `${closed.length} HĐTD đã đóng, không giải ngân thêm`;
+
+    const expired = scopedLimitGroups.filter(g => g.expired && g.headroom > 0);
     if (expired.length === 0) return null;
     if (expired.length === 1) {
       return `HĐTD hết hiệu lực ${fmtDate(expired[0].endDate)}`;
     }
     return `${expired.length} HĐTD đã hết hiệu lực`;
-  }, [limitGroups, selectedMasterFilter]);
+  }, [scopedLimitGroups]);
+
+  /* Không còn nhóm hạn mức nào giải ngân được thì chặn hẳn nút, kèm lý do — trước
+     đây nút luôn bật, kể cả trên HĐTD đã đóng còn dư nợ chưa trả. */
+  const disburseBlockReason = useMemo(() => {
+    if (!foundCustomer || scopedLimitGroups.length === 0) return '';
+    if (scopedLimitGroups.some(g => g.available > 0)) return '';
+    const reasons = Array.from(
+      new Set(scopedLimitGroups.map(g => g.blockReason).filter(Boolean))
+    );
+    return reasons.length > 0 ? reasons.join('; ') : 'Không còn hạn mức khả dụng';
+  }, [scopedLimitGroups, foundCustomer]);
 
   const totalCreditLimit = summaryFinancials.totalCredit;
   const totalKunnAmount = summaryFinancials.totalDisbursed;
@@ -1138,6 +1172,7 @@ export const LoanPortfolioView: React.FC = () => {
             totalKunnAmount={totalKunnAmount}
             remainingCreditLimit={remainingCreditLimit}
             expiredLimitNote={expiredLimitNote}
+            disburseBlockReason={disburseBlockReason}
             handleNewContract={handleNewContract}
           />
 

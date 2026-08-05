@@ -527,3 +527,92 @@ describe('dư nợ khoá vì đáo hạn sau ngày hết hiệu lực HĐTD', ()
     expect(r[0].redeployableOutstanding).toBe(500_000_000);
   });
 });
+
+describe('computeLimitGroups — HĐTD đã đóng', () => {
+  // Hồ sơ NGUYỄN MINH HÙNG 05/08/2026: HĐTD 2002/HĐTD/9629301 đã đóng, hiệu lực
+  // còn tới 05/12/2026, hai KUNN 200 triệu chưa tất toán và chưa có lịch thu nợ.
+  const kunns = [
+    hd({
+      Id: 1, ContractNumber: '2002/HĐTD/9629301/GNN-01',
+      LoanMethod: 'Hạn mức tín dụng', ContractAmount: 600_000_000,
+      LoanAmount: 200_000_000, CurrentBalance: 200_000_000,
+      ContractEndDate: '2026-12-05', KunnDueDate: '2026-09-13', IsSettled: false,
+    }),
+    hd({
+      Id: 2, ContractNumber: '2002/HĐTD/9629301/GNN-02',
+      LoanMethod: 'Hạn mức tín dụng', ContractAmount: 600_000_000,
+      LoanAmount: 200_000_000, CurrentBalance: 200_000_000,
+      ContractEndDate: '2026-12-05', KunnDueDate: '2026-09-13', IsSettled: false,
+    }),
+  ];
+
+  it('HĐTD đã đóng thì không còn giải ngân được, dù ngày hiệu lực còn ở tương lai', () => {
+    const [g] = computeLimitGroups(kunns, { today: '2026-08-05', isClosed: () => true });
+    expect(g.expired).toBe(false);
+    expect(g.closed).toBe(true);
+    expect(g.available).toBe(0);
+    expect(g.blockReason).toBe('HĐTD đã đóng');
+  });
+
+  it('vẫn giữ headroom để đối chiếu, không xoá dấu vết hạn mức trống', () => {
+    const [g] = computeLimitGroups(kunns, { today: '2026-08-05', isClosed: () => true });
+    expect(g.granted).toBe(600_000_000);
+    expect(g.outstanding).toBe(400_000_000);
+    expect(g.headroom).toBe(200_000_000);
+  });
+
+  it('HĐTD đã đóng mà dư nợ đã về 0 thì cũng không giải ngân lại được', () => {
+    const daTra = kunns.map(k => hd({ ...k, CurrentBalance: 0 }));
+    const [g] = computeLimitGroups(daTra, { today: '2026-08-05', isClosed: () => true });
+    expect(g.outstanding).toBe(0);
+    expect(g.headroom).toBe(600_000_000);
+    expect(g.available).toBe(0);
+  });
+
+  it('không truyền isClosed thì giữ nguyên hành vi cũ — đây là chỗ đã sinh ra lỗi', () => {
+    const [g] = computeLimitGroups(kunns, { today: '2026-08-05' });
+    expect(g.closed).toBe(false);
+    expect(g.available).toBe(200_000_000);
+    expect(g.blockReason).toBe('');
+  });
+
+  it('một KUNN thuộc HĐTD đã đóng là đủ để cả nhóm dùng chung hạn mức bị chặn', () => {
+    const nhomChung = [
+      hd({ ...kunns[0], CreditLimitCode: 'HM-01', CreditLimitAmount: 600_000_000 }),
+      hd({
+        Id: 3, ContractNumber: '2003/HĐTD/9629301/GNN-01',
+        LoanMethod: 'Hạn mức tín dụng', CreditLimitCode: 'HM-01',
+        CreditLimitAmount: 600_000_000, ContractAmount: 600_000_000,
+        LoanAmount: 100_000_000, CurrentBalance: 100_000_000,
+        ContractEndDate: '2027-01-01', IsSettled: false,
+      }),
+    ];
+    const [g] = computeLimitGroups(nhomChung, {
+      today: '2026-08-05',
+      isClosed: c => c.Id === 1,
+    });
+    expect(g.isShared).toBe(true);
+    expect(g.closed).toBe(true);
+    expect(g.available).toBe(0);
+  });
+
+  it('đóng hợp đồng đứng trước hết hiệu lực trong lý do chặn', () => {
+    const hetHan = kunns.map(k => hd({ ...k, ContractEndDate: '2026-07-01' }));
+    const [g] = computeLimitGroups(hetHan, { today: '2026-08-05', isClosed: () => true });
+    expect(g.expired).toBe(true);
+    expect(g.blockReason).toBe('HĐTD đã đóng');
+  });
+
+  it('còn hạn, chưa đóng, còn trống thì không có lý do chặn', () => {
+    const [g] = computeLimitGroups(kunns, { today: '2026-08-05', isClosed: () => false });
+    expect(g.available).toBe(200_000_000);
+    expect(g.blockReason).toBe('');
+  });
+
+  it('dùng hết hạn mức thì báo đúng lý do', () => {
+    const hetHanMuc = kunns.map(k => hd({ ...k, CurrentBalance: 300_000_000 }));
+    const [g] = computeLimitGroups(hetHanMuc, { today: '2026-08-05', isClosed: () => false });
+    expect(g.headroom).toBe(0);
+    expect(g.blockReason).toBe('Đã dùng hết hạn mức');
+  });
+});

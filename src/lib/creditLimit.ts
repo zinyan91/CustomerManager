@@ -40,10 +40,20 @@ export interface LimitGroupStatus {
   used: number;
   /** Hạn mức còn trống theo dư nợ, CHƯA xét hiệu lực HĐTD. */
   headroom: number;
-  /** Số tiền thực sự còn giải ngân được: bằng 0 nếu HĐTD đã hết hiệu lực. */
+  /**
+   * Số tiền thực sự còn giải ngân được: bằng 0 nếu HĐTD đã hết hiệu lực HOẶC đã
+   * bị đóng.
+   */
   available: number;
   endDate: string | null;
   expired: boolean;
+  /**
+   * HĐTD của nhóm đã bị đóng. Đóng hợp đồng là dừng quyền giải ngân, khác với
+   * hết hiệu lực theo ngày — hợp đồng còn hạn vẫn đóng được, và ngược lại.
+   */
+  closed: boolean;
+  /** Lý do không giải ngân được, rỗng khi còn giải ngân được. */
+  blockReason: string;
   /**
    * Dư nợ của các KUNN đáo hạn SAU ngày hết hiệu lực HĐTD. Phần này mất khả
    * năng quay vòng: khi nó được trả thì hạn mức đã hết hiệu lực, không rút lại
@@ -66,6 +76,14 @@ export interface LimitGroupOptions {
   grantedOverride?: number | null;
   /** Ngày tham chiếu (YYYY-MM-DD) để xét hiệu lực HĐTD. Bỏ trống thì không xét. */
   today?: string | null;
+  /**
+   * KUNN thuộc một HĐTD đã bị đóng hay chưa.
+   *
+   * Cờ `IsClosed` nằm ở bảng `CreditContracts`, hàm này chỉ nhận `LoanContract[]`
+   * nên không tự đọc được. Bỏ trống thì không xét đóng hợp đồng — và khi đó hạn
+   * mức khả dụng sẽ ra số dương trên cả HĐTD đã đóng.
+   */
+  isClosed?: (c: LoanContract) => boolean;
 }
 
 /**
@@ -80,8 +98,15 @@ export interface LimitGroupOptions {
  *  - Cho vay từng lần (không tuần hoàn): mức cấp − tổng số tiền đã nhận nợ,
  *    tính cả KUNN đã tất toán. Đã giải ngân là hết, trả nợ không mở lại hạn mức.
  *
- * Hạn mức chỉ khả dụng khi HĐTD còn hiệu lực. Hết ngày hiệu lực thì available = 0
- * dù dư nợ đã về 0 (headroom vẫn giữ số trống theo dư nợ để đối chiếu).
+ * Hạn mức chỉ khả dụng khi HĐTD còn hiệu lực VÀ chưa bị đóng. Hết hiệu lực hoặc
+ * đã đóng thì available = 0 dù dư nợ đã về 0 (headroom vẫn giữ số trống theo dư nợ
+ * để đối chiếu).
+ *
+ * Cờ đóng hợp đồng phải truyền vào qua options.isClosed: cờ đó nằm ở bảng
+ * CreditContracts mà hàm này chỉ nhận LoanContract[]. Bỏ trống thì màn hình sẽ
+ * chào hạn mức khả dụng trên cả HĐTD đã đóng — đúng lỗi đã gặp ở hồ sơ NGUYỄN
+ * MINH HÙNG ngày 05/08/2026: HĐTD đóng, còn 400 triệu chưa trả, tab Khoản Vay vẫn
+ * ghi HMTD còn lại 600 triệu.
  */
 export function computeLimitGroups(
   contracts: LoanContract[],
@@ -116,6 +141,8 @@ export function computeLimitGroups(
         available: 0,
         endDate: null,
         expired: false,
+        closed: false,
+        blockReason: '',
         lockedOutstanding: 0,
         redeployableOutstanding: 0,
         activeKunnCount: 0,
@@ -128,6 +155,9 @@ export function computeLimitGroups(
 
     if (!g.hdtdNumbers.includes(hdtdNo)) g.hdtdNumbers.push(hdtdNo);
     if (isRevolvingCredit(c.LoanMethod)) g.revolving = true;
+    // Một KUNN thuộc HĐTD đã đóng là đủ để cả nhóm hết quyền giải ngân: nhóm dùng
+    // chung hạn mức thì hạn mức chỉ có một, không rút qua hợp đồng khác được.
+    if (options?.isClosed?.(c)) g.closed = true;
 
     // Mức cấp là thông tin cấp HĐTD nên vẫn ghi nhận cả dòng đang bị loại trừ.
     if (code) {
@@ -166,6 +196,17 @@ export function computeLimitGroups(
     const today = options?.today ?? null;
     const expired = !!(today && rest.endDate && rest.endDate < today);
 
+    /* Cùng thứ tự ưu tiên lý do chặn với summarizeCreditContracts: đóng hợp đồng
+       là quyết định tường minh của banker nên đứng trước hết hiệu lực theo ngày. */
+    let blockReason = '';
+    if (rest.closed) blockReason = 'HĐTD đã đóng';
+    else if (expired) blockReason = `HĐTD hết hiệu lực ${rest.endDate}`;
+    else if (headroom <= 0) {
+      blockReason = rest.revolving
+        ? 'Đã dùng hết hạn mức'
+        : 'Vay từng lần đã giải ngân, không giải ngân thêm';
+    }
+
     let lockedOutstanding = 0;
     let redeployableOutstanding = 0;
     for (const m of members) {
@@ -179,9 +220,10 @@ export function computeLimitGroups(
       used,
       headroom,
       expired,
+      blockReason,
       lockedOutstanding,
       redeployableOutstanding,
-      available: expired ? 0 : headroom,
+      available: (expired || rest.closed) ? 0 : headroom,
     });
   }
   return result;

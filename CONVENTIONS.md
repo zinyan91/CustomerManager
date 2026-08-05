@@ -70,6 +70,10 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 | Đọc số tiền từ ô nhập chỉ có chữ số | `parseMoneyInput` (`utils.ts`) |
 | Đọc số tiền có thể lẻ đồng | `parseMoneyDecimalInput` (`utils.ts`) |
 
+**`computeLimitGroups` phải được truyền `options.isClosed`.** Cờ `IsClosed` nằm ở bảng `CreditContracts` còn hàm này chỉ nhận `LoanContract[]`, nên nó không tự biết hợp đồng đã đóng. Bỏ trống thì hạn mức khả dụng ra số dương trên HĐTD đã đóng — hồ sơ NGUYỄN MINH HÙNG ngày 05/08/2026 hiện HMTD còn lại 600 triệu với nút Giải ngân đang bật, trong khi HĐTD đã đóng và còn 400 triệu chưa trả. **Đóng HĐTD và hết hiệu lực theo ngày là hai chuyện khác nhau**: hợp đồng còn hạn vẫn đóng được, nên không thay cái này bằng cái kia. Cả `computeLimitGroups` và `summarizeCreditContracts` đều cho `available = 0` khi `expired || closed`, và xếp lý do chặn cùng thứ tự: đã đóng → hết hiệu lực → hết hạn mức.
+
+**KUNN không có dòng nào trong `RepaymentSchedules` thì dư nợ không giảm được.** `computeOutstandingBalance` rơi vào nhánh dự phòng trả `CurrentBalance`, và không có kỳ nào để đánh dấu đã thu. Đo 05/08/2026: 14/97 KUNN chưa tất toán ở trạng thái này, treo 4,635 tỷ. Mọi đường tạo KUNN phải sinh lịch; nhập KUNN bằng SQL mà bỏ bước này là tạo ra khoản vay không thu nợ được.
+
 **Không dùng `new Date().toISOString().split('T')[0]` để lấy ngày hôm nay.** Đó là ngày theo UTC: ở múi giờ Việt Nam (UTC+7), mọi lần chạy trước 07:00 sáng đều trả về NGÀY HÔM QUA. Lỗi này từng nằm ở 16 chỗ, gồm cả `getEffectiveActiveRate` (chọn sai mốc điều chỉnh lãi suất trong buổi sáng) và chốt xét hiệu lực HĐTD. Dùng `todayIso()`.
 
 Sửa gì liên quan tới tiền thì **viết test trước**. Ba lỗi mất tiền trong dự án này đều do test phát hiện, không ai thấy bằng mắt.

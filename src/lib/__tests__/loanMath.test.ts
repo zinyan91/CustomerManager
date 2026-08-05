@@ -5,6 +5,7 @@ import {
   parseDateParts,
   getDaysBetween,
   roundPrincipalCore,
+  PRINCIPAL_ROUND_MODE,
   generateSchedule,
   calculateOverdueDaysFromDates,
   getAutoDebtGroupInfo,
@@ -81,7 +82,14 @@ describe('getDaysBetween', () => {
 });
 
 describe('roundPrincipalCore', () => {
-  it('làm tròn LÊN theo bước 1.000 (chuẩn Core Banking)', () => {
+  it('mặc định làm tròn LÊN theo bước 10.000, đúng như giấy nhận nợ', () => {
+    expect(PRINCIPAL_ROUND_MODE).toBe('10k');
+    expect(roundPrincipalCore(4_166_667)).toBe(4_170_000);
+    expect(roundPrincipalCore(4_170_000)).toBe(4_170_000);
+    expect(roundPrincipalCore(4_170_001)).toBe(4_180_000);
+  });
+
+  it('vẫn làm tròn được theo bước 1.000 khi khai rõ', () => {
     expect(roundPrincipalCore(10_500, '1k')).toBe(11_000);
     expect(roundPrincipalCore(10_001, '1k')).toBe(11_000);
     expect(roundPrincipalCore(10_000, '1k')).toBe(10_000);
@@ -97,7 +105,32 @@ describe('roundPrincipalCore', () => {
   });
 
   it('trả 0 với đầu vào không dương', () => {
+    expect(roundPrincipalCore(0)).toBe(0);
     expect(roundPrincipalCore(0, '1k')).toBe(0);
+  });
+});
+
+describe('khớp giấy nhận nợ thật — PNAT.CN.03111223/GNN-01', () => {
+  const GOC = 500_000_000;
+  const KY_HAN = 120;
+
+  it('gốc mỗi kỳ 4.170.000đ, kỳ cuối 3.770.000đ như chứng từ', () => {
+    const s = generateSchedule(1, GOC, 8, '2024-01-15', KY_HAN, false, '2023-12-19');
+    expect(s[0].PrincipalAmount).toBe(4_170_000);
+    expect(s[KY_HAN - 2].PrincipalAmount).toBe(4_170_000);
+    expect(s[KY_HAN - 1].PrincipalAmount).toBe(3_770_000);
+  });
+
+  it('BẤT BIẾN: tổng gốc vẫn bằng đúng số tiền vay', () => {
+    const s = generateSchedule(1, GOC, 8, '2024-01-15', KY_HAN, false, '2023-12-19');
+    expect(s.reduce((sum, k) => sum + (k.PrincipalAmount || 0), 0)).toBe(GOC);
+  });
+
+  it('đủ 120 kỳ, kỳ đầu 15/01/2024, các kỳ sau ngày 15 hàng tháng', () => {
+    const s = generateSchedule(1, GOC, 8, '2024-01-15', KY_HAN, false, '2023-12-19');
+    expect(s.length).toBe(KY_HAN);
+    expect(s[0].DueDate).toBe('2024-01-15');
+    expect(s[1].DueDate).toBe('2024-02-15');
   });
 });
 
@@ -455,7 +488,7 @@ describe('trả trước hạn trên kỳ ĐÃ thanh toán', () => {
 
   it('GHI NHẬN tiền trả trước hạn kể cả khi kỳ đã tất toán', () => {
     const goc = 3_800_000_000, kyHan = 240;
-    const gocDeuMoiKy = roundPrincipalCore(goc / kyHan, '1k');
+    const gocDeuMoiKy = roundPrincipalCore(goc / kyHan);
 
     const l = lich240();
     l[9] = { ...l[9], PrepaidPrincipalAmount: 900_000_000 };

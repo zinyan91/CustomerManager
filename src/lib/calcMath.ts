@@ -1,3 +1,5 @@
+import { roundPrincipalCore } from './loanMath';
+
 export function edate(dateStr: string, monthOffset: number): string {
   if (!dateStr || monthOffset === null || monthOffset === undefined || isNaN(monthOffset)) return '';
   try {
@@ -146,7 +148,7 @@ export function buildLoanSchedule(params: LoanScheduleParams): LoanScheduleRow[]
   let prevDate = disbursementDate;
   let stepPrincipal = repayMethod === 'bullet'
     ? 0
-    : Math.ceil((loanAmount / Math.max(1, tenorMonths - graceMonths)) / 1000) * 1000;
+    : roundPrincipalCore(loanAmount / Math.max(1, tenorMonths - graceMonths));
 
   for (let i = 1; i <= tenorMonths; i++) {
     if (balance <= 0) break;
@@ -194,7 +196,7 @@ export function buildLoanSchedule(params: LoanScheduleParams): LoanScheduleRow[]
     if (prepayment > 0 && planned && planned.mode === 'reduce_monthly' && repayMethod !== 'bullet') {
       const remainingPeriods = tenorMonths - i;
       if (remainingPeriods > 0 && endingBalance > 0) {
-        stepPrincipal = Math.ceil((endingBalance / remainingPeriods) / 1000) * 1000;
+        stepPrincipal = roundPrincipalCore(endingBalance / remainingPeriods);
       }
     }
 

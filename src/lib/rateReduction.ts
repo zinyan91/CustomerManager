@@ -1,5 +1,6 @@
 import { edate, diffDays } from './calcMath';
-import { roundPrincipalCore } from './loanMath';
+import { roundPrincipalCore, PRINCIPAL_ROUND_MODE } from './loanMath';
+import type { PrincipalRoundMode } from './loanMath';
 
 export interface RateReductionLoanInput {
   balance: number;
@@ -59,7 +60,7 @@ export interface RateReductionScheduleInput {
   proposedRateAnnual?: number | null;
   minRateAnnual: number;
   maxReductionAnnual: number;
-  roundMode?: '1k' | '10k' | '50k' | 'exact';
+  roundMode?: PrincipalRoundMode;
 }
 
 export interface RateReductionSchedulePeriod {
@@ -106,7 +107,7 @@ export function buildRateReductionSchedule(
   const postRate = isNum(input.postPreferentialRateAnnual) ? input.postPreferentialRateAnnual : 0;
   const startMonth = isNum(input.reductionStartMonth) ? Math.trunc(input.reductionStartMonth) : 0;
   const reduceMonths = isNum(input.reductionMonths) ? Math.trunc(input.reductionMonths) : 0;
-  const roundMode = input.roundMode ?? '1k';
+  const roundMode = input.roundMode ?? PRINCIPAL_ROUND_MODE;
 
   const rawPrincipal = loanAmount / tenorMonths;
   const steadyPrincipal = roundMode === 'exact'

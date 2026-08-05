@@ -66,7 +66,25 @@ export function getDaysBetween(d1Str: string, d2Str: string): number {
   return Math.max(1, Math.round((utc2 - utc1) / (1000 * 60 * 60 * 24)));
 }
 
-export function roundPrincipalCore(rawPrincipal: number, roundMode: '1k' | '10k' | '50k' | 'exact' = '1k'): number {
+export type PrincipalRoundMode = '1k' | '10k' | '50k' | 'exact';
+
+/**
+ * Bước làm tròn gốc của lịch trả nợ.
+ *
+ * Đối chiếu giấy nhận nợ thật (PNAT.CN.03111223/GNN-01, 500.000.000đ chia 120
+ * kỳ): gốc mỗi kỳ ghi 4.170.000đ, kỳ cuối 3.770.000đ. 500.000.000 / 120 =
+ * 4.166.667đ, làm tròn LÊN bước 10.000 ra đúng 4.170.000. Bước 1.000 dùng trước
+ * đây cho ra 4.167.000đ — lệch mọi kỳ so với chứng từ khách đang giữ.
+ *
+ * Đổi ở đây là đổi cho toàn hệ thống. Kỳ cuối luôn gánh phần dư để giữ bất biến
+ * Σ(gốc các kỳ) = số tiền vay.
+ */
+export const PRINCIPAL_ROUND_MODE: PrincipalRoundMode = '10k';
+
+export function roundPrincipalCore(
+  rawPrincipal: number,
+  roundMode: PrincipalRoundMode = PRINCIPAL_ROUND_MODE
+): number {
   if (roundMode === 'exact' || !rawPrincipal || rawPrincipal <= 0) return Math.round(rawPrincipal);
   const step = roundMode === '50k' ? 50000 : roundMode === '10k' ? 10000 : 1000;
   return Math.ceil(rawPrincipal / step) * step;
@@ -105,7 +123,7 @@ export function generateSchedule(
     ? 0
     : (customMonthlyPrincipal && customMonthlyPrincipal > 0
         ? customMonthlyPrincipal
-        : roundPrincipalCore(loanAmount / remainingRepayPeriods, '1k'));
+        : roundPrincipalCore(loanAmount / remainingRepayPeriods));
 
   const rateTimeline = buildRateTimeline({
     startDate: disbursementDateStr || repaymentStartDateStr,
@@ -179,7 +197,7 @@ export function generateSchedule(
     if (periodPrepay > 0 && prepaymentMode === 'reduce_monthly' && !isBulletPrincipal) {
       const remainingPeriods = periods - i;
       if (remainingPeriods > 0 && endingBal > 0) {
-        defaultMonthlyPrincipal = roundPrincipalCore(endingBal / remainingPeriods, '1k');
+        defaultMonthlyPrincipal = roundPrincipalCore(endingBal / remainingPeriods);
       }
     }
 
@@ -263,7 +281,7 @@ export function recalculateSchedules(
 
   const totalPeriods = schedList.length;
   const remainingRepayPeriods = Math.max(1, totalPeriods - graceMonths);
-  let baseMonthlyPrincipal = isBullet ? 0 : roundPrincipalCore(loanAmt / remainingRepayPeriods, '1k');
+  let baseMonthlyPrincipal = isBullet ? 0 : roundPrincipalCore(loanAmt / remainingRepayPeriods);
 
   let currentBalance = loanAmt;
   let prevDateStr: string =
@@ -319,7 +337,7 @@ export function recalculateSchedules(
         const remainingPeriods = totalPeriods - periodNum;
         if (remainingPeriods > 0) {
           const balAfterPrepay = Math.max(0, currentBalance - principalInPeriod);
-          baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingPeriods, '1k');
+          baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingPeriods);
         }
       }
     } else if (s.ActualPaidPrincipal && s.ActualPaidPrincipal > 0) {
@@ -332,7 +350,7 @@ export function recalculateSchedules(
       const remainingUnpaidNonGrace = totalPeriods - periodNum;
       if (remainingUnpaidNonGrace > 0) {
         const balAfterPrepay = Math.max(0, currentBalance - recordedP);
-        baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingUnpaidNonGrace, '1k');
+        baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingUnpaidNonGrace);
       }
     } else {
       principalInPeriod = expectedNormalPrincipal;

@@ -17,8 +17,8 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Đăng nhập bắt buộc, tắt tự đăng ký | |
 | ✅ | Bật RLS trên toàn bộ bảng | Đã kiểm chứng: banker chỉ thấy KH của mình |
 | ✅ | Xoá thư mục `api/` code chết | Từng làm lộ mật khẩu database |
-| 🕐 | Bật chính sách mật khẩu Supabase | Hoãn theo quyết định 03/08/2026. Mốc cần làm: **trước khi cấp tài khoản cho nhân viên thật**. Tối thiểu 12 ký tự + Leaked Password Protection |
-| 🕐 | Xoá tài khoản thử nghiệm `abc@gmail.com` | Hoãn theo quyết định 03/08/2026. Đây là tài khoản đang hoạt động, mật khẩu yếu, có quyền xem hồ sơ khách hàng thật — khác với hạng mục gia cố ở trên. Nên xử lý khi kết thúc đợt kiểm thử |
+| 🕐 | Bật chính sách mật khẩu Supabase | Hoãn tiếp theo quyết định 05/08/2026: chưa cấp tài khoản cho ai nên chưa cần. Mốc cần làm: **trước khi cấp tài khoản đầu tiên**. Tối thiểu 12 ký tự + Leaked Password Protection |
+| 🕐 | Xoá tài khoản thử nghiệm `abc@gmail.com` | Hoãn theo quyết định 03/08/2026. **Không phụ thuộc việc cấp tài khoản**: đây là tài khoản đang hoạt động, mật khẩu yếu, có quyền xem hồ sơ khách hàng thật. Mốc: khi kết thúc đợt kiểm thử |
 
 ## Chất lượng dữ liệu
 
@@ -79,7 +79,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Quy tắc sản phẩm theo phương thức vay | Mục đích, kỳ hạn, ân hạn gốc |
 | ✅ | Đồng bộ nhãn xếp loại TSĐB | Loại 1–4 và Hạn chế, bỏ tiền tố BĐS và phần trăm trong ngoặc, dùng chung ở Dashboard, bảng TSĐB, thẻ tín dụng |
 | ✅ | Phân hệ Kiểm soát sau vay | Ba loại kiểm tra, lịch sinh tự động, ghi nhận kết quả, định giá lại ngay trong đợt kiểm tra hiện trạng tài sản. 29 test cho phần lõi |
-| ⬜ | Màn hình quản trị người dùng | **Bắt buộc qua Edge Function** — không đưa `service_role` key vào frontend |
+| 🕐 | Màn hình quản trị người dùng | Bỏ qua theo quyết định 05/08/2026: chưa cần cấp tài khoản cho người dùng khác. Khi làm thì **bắt buộc qua Edge Function** — không đưa `service_role` key vào frontend |
 
 ## Kỹ thuật
 

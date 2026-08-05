@@ -58,6 +58,7 @@ export const RateQuoteView: React.FC = () => {
   const [depositDaysStr, setDepositDaysStr] = useState('180');
 
   const [showFeeTable, setShowFeeTable] = useState(false);
+  const [includeFeeInSheet, setIncludeFeeInSheet] = useState(true);
 
   const [editRateStr, setEditRateStr] = useState('');
   const [saving, setSaving] = useState(false);
@@ -134,7 +135,9 @@ export const RateQuoteView: React.FC = () => {
     preparedBy: preparedBy.trim() || undefined,
     logoDataUri: vietbankLogo,
     channel: null,
-  } : null), [program, programTiers, programPrepayFees, programFeeOptions, programConditions, preparedBy, kind]);
+    includeFeeOptions: includeFeeInSheet,
+  } : null), [program, programTiers, programPrepayFees, programFeeOptions, programConditions,
+    preparedBy, includeFeeInSheet, kind]);
 
   const sheetBlockers = useMemo(
     () => (sheetInput ? findRateSheetBlockers(sheetInput) : []),
@@ -718,6 +721,25 @@ export const RateQuoteView: React.FC = () => {
                 <span>XUẤT PDF / HÌNH ẢNH</span>
               </button>
             </div>
+
+            {programFeeOptions.length > 0 && (
+              <label className="flex items-start gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={includeFeeInSheet}
+                  onChange={e => setIncludeFeeInSheet(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-sky-600"
+                />
+                <span className="text-[11px] leading-relaxed">
+                  <span className="font-bold">Kèm bảng phí dịch vụ trong file gửi khách hàng</span>
+                  <span className="block text-slate-500 dark:text-slate-400">
+                    {includeFeeInSheet
+                      ? `File sẽ có bảng ${programFeeOptions.length} phương án phí dịch vụ.`
+                      : 'File chỉ ghi một dòng là chương trình có phí dịch vụ, mức phí tư vấn theo phương án khách hàng chọn.'}
+                  </span>
+                </span>
+              </label>
+            )}
 
             {sheetBlockers.length > 0 ? (
               <div className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 p-3 space-y-1">

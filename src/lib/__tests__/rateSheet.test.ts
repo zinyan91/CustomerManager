@@ -211,6 +211,35 @@ describe('buildRateSheetHtml', () => {
     expect(html).toContain('Nguyễn Văn A');
   });
 
+  it('bỏ bảng phí khi chọn không kèm, nhưng vẫn nói rõ là có phí', () => {
+    const khongKemPhi = buildRateSheetHtml({
+      program: tdh,
+      tiers: tdhTiers,
+      prepaymentFees: tdhFees,
+      feeOptions: [
+        { Id: 1, ProgramId: 3, OptionLabel: 'Phương án 1', PackageGroup: 'Gói 24 tháng đầu', MinFeeRatio: 0.015, CounterFeeRatio: 0.01, Note: 'Tại quầy tối thiểu 1%.', SortOrder: 1 },
+        { Id: 2, ProgramId: 3, OptionLabel: 'Phương án 2', PackageGroup: 'Gói 24 tháng đầu', MinFeeRatio: 0.02, CounterFeeRatio: null, Note: null, SortOrder: 2 },
+      ],
+      includeFeeOptions: false,
+    });
+    expect(khongKemPhi).not.toContain('Phương án 1');
+    expect(khongKemPhi).not.toContain('1,5%');
+    expect(khongKemPhi).toContain('Phí dịch vụ');
+    expect(khongKemPhi).toContain('2 phương án phí dịch vụ');
+  });
+
+  it('mặc định vẫn kèm bảng phí như trước', () => {
+    expect(html).toContain('Phương án 1');
+    expect(html).toContain('khách hàng chọn 1 trong 2 phương án');
+  });
+
+  it('không khai phương án phí thì không sinh khối phí, dù bật hay tắt', () => {
+    for (const flag of [true, false, undefined]) {
+      const out = buildRateSheetHtml({ program: tdh, tiers: tdhTiers, feeOptions: [], includeFeeOptions: flag });
+      expect(out).not.toContain('Phí dịch vụ');
+    }
+  });
+
   it('prints backgrounds, otherwise the blue banner turns white on white', () => {
     expect(html).toContain('print-color-adjust: exact');
   });

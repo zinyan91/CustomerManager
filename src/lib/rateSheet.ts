@@ -63,6 +63,7 @@ export interface RateSheetInput {
   preparedBy?: string;
   channel?: DepositChannel | null;
   logoDataUri?: string | null;
+  includeFeeOptions?: boolean;
 }
 
 export function findRateSheetBlockers(input: RateSheetInput): RateSheetBlocker[] {
@@ -320,6 +321,12 @@ export function pivotFeeOptions(options: RateProgramFeeOption[]): {
 function feeOptionsBlock(input: RateSheetInput): string {
   const options = input.feeOptions || [];
   if (options.length === 0) return '';
+
+  if (input.includeFeeOptions === false) {
+    return `
+    <h2>Phí dịch vụ</h2>
+    <p class="small">Chương trình có ${options.length} phương án phí dịch vụ. Mức phí cụ thể được tư vấn theo phương án khách hàng chọn.</p>`;
+  }
 
   const { optionLabels, groups } = pivotFeeOptions(options);
 

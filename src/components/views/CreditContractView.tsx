@@ -264,6 +264,38 @@ export const CreditContractView: React.FC = () => {
       </div>
 
       {customer && (
+        <div className={`${containerCardBg} rounded-2xl border p-3 grid grid-cols-2 md:grid-cols-4 gap-3`}>
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Mã CIF</div>
+            <div className="font-mono font-bold text-sm text-purple-600 dark:text-purple-400">{customer.CifKh || '—'}</div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Khách hàng</div>
+            <div className="font-bold text-sm truncate" title={customer.FullName}>{customer.FullName}</div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Số HĐTD đang chọn</div>
+            <div className="font-mono font-bold text-sm text-sky-600 dark:text-sky-400 truncate">
+              {showForm
+                ? (form.HdtdNumber?.trim() || (editing ? editing.HdtdNumber : 'HĐTD mới — chưa nhập số'))
+                : '— chưa chọn —'}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Số HĐTD của KH</div>
+            <div className="font-bold text-sm">
+              {summaries.length} HĐTD
+              {closedCount > 0 && (
+                <span className="ml-1 text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                  ({closedCount} đã đóng)
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {customer && (
         <div className={`${containerCardBg} rounded-2xl border overflow-hidden`}>
           <div className="p-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-500">

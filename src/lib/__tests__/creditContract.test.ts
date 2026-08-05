@@ -5,6 +5,7 @@ import {
   checkKunnAgainstContract,
   kunnRevolvingStatus,
   summarizeCreditContracts,
+  resolveMasterHdtdNumber,
 } from '../creditContract';
 import type { CreditContract, LoanContract } from '../../types';
 
@@ -317,5 +318,37 @@ describe('canDisburse — khi nào còn giải ngân được', () => {
       [], { today: HOM_NAY }
     );
     expect(daDong[0].blockReason).toBe('HĐTD đã đóng');
+  });
+});
+
+describe('resolveMasterHdtdNumber — số HĐTD gốc của một KUNN', () => {
+  it('lấy số hiện hành của HĐTD được liên kết, không lấy tiền tố cũ trong số KUNN', () => {
+    const hopDong = cc({ Id: 7, HdtdNumber: '2002/HĐTD/9662961' });
+    const gnn = kunn({ CreditContractId: 7, ContractNumber: 'HĐTD-02/GNN-01' });
+    expect(resolveMasterHdtdNumber(gnn, [hopDong])).toBe('2002/HĐTD/9662961');
+  });
+
+  it('đổi số bên HĐTD thì KUNN hiển thị theo số mới ngay', () => {
+    const gnn = kunn({ CreditContractId: 7, ContractNumber: 'HD-CU/GNN-01' });
+    expect(resolveMasterHdtdNumber(gnn, [cc({ Id: 7, HdtdNumber: 'SO-CU' })])).toBe('SO-CU');
+    expect(resolveMasterHdtdNumber(gnn, [cc({ Id: 7, HdtdNumber: 'SO-MOI' })])).toBe('SO-MOI');
+  });
+
+  it('chưa liên kết HĐTD thì suy từ tiền tố số KUNN như trước', () => {
+    expect(resolveMasterHdtdNumber(kunn({ ContractNumber: 'HD09/GNN-03' }), [])).toBe('HD09');
+  });
+
+  it('liên kết trỏ tới HĐTD không còn tồn tại thì vẫn suy từ tiền tố', () => {
+    const gnn = kunn({ CreditContractId: 99, ContractNumber: 'HD09/GNN-03' });
+    expect(resolveMasterHdtdNumber(gnn, [cc({ Id: 7, HdtdNumber: 'KHAC' })])).toBe('HD09');
+  });
+
+  it('HĐTD liên kết để trống số thì không trả về chuỗi rỗng', () => {
+    const gnn = kunn({ CreditContractId: 7, ContractNumber: 'HD09/GNN-03' });
+    expect(resolveMasterHdtdNumber(gnn, [cc({ Id: 7, HdtdNumber: '   ' })])).toBe('HD09');
+  });
+
+  it('an toàn khi không có KUNN', () => {
+    expect(resolveMasterHdtdNumber(null, [])).toBe('');
   });
 });

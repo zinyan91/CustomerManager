@@ -1,5 +1,6 @@
 import type { CreditContract, LoanContract } from '../types';
 import { isRevolvingCredit } from './loanProductRules';
+import { getMasterHdtdNumber } from './utils';
 
 export const GNN_SEPARATOR = '/GNN-';
 
@@ -231,4 +232,19 @@ export function summarizeCreditContracts(
       isEmpty: active.length === 0,
     };
   });
+}
+
+export function resolveMasterHdtdNumber(
+  kunn: LoanContract | null | undefined,
+  creditContracts: CreditContract[]
+): string {
+  if (!kunn) return '';
+
+  if (kunn.CreditContractId !== null && kunn.CreditContractId !== undefined) {
+    const linked = creditContracts.find(cc => cc.Id === kunn.CreditContractId);
+    const no = (linked?.HdtdNumber || '').trim();
+    if (no) return no;
+  }
+
+  return getMasterHdtdNumber(kunn);
 }

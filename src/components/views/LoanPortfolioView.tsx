@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI, saveContractAPI, deleteContractAPI,
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
@@ -16,7 +16,7 @@ import {
   type RateSegment,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
-import { checkKunnAgainstContract, nextKunnNumber } from '../../lib/creditContract';
+import { checkKunnAgainstContract, nextKunnNumber, resolveMasterHdtdNumber } from '../../lib/creditContract';
 import { fetchCreditContractsByCustomerAPI } from '../../lib/api';
 import { useWork } from '../../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
@@ -214,7 +214,7 @@ export const LoanPortfolioView: React.FC = () => {
   const creditLimitNum = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
   const kunnLoanAmountNum = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
 
-  const effectiveFormHdtdNo = formHdtdNumber.trim() || (selectedContract ? getMasterHdtdNumber(selectedContract) : '');
+  const effectiveFormHdtdNo = formHdtdNumber.trim() || (selectedContract ? resolveMasterHdtdNumber(selectedContract, creditContracts) : '');
   const dropdownFiltered = dropdownQuery.trim().length < 1
     ? allCustomers
     : allCustomers.filter(c =>
@@ -364,7 +364,7 @@ export const LoanPortfolioView: React.FC = () => {
   };
 
   const populateForm = (c: LoanContract) => {
-    setFormHdtdNumber(getMasterHdtdNumber(c));
+    setFormHdtdNumber(resolveMasterHdtdNumber(c, creditContracts));
     setFormKunnNumber(c.ContractNumber || '');
 
     setForm({
@@ -824,11 +824,16 @@ export const LoanPortfolioView: React.FC = () => {
     [contracts, allSchedulesMap, todayIso]
   );
 
+  const masterNoOf = useCallback(
+    (c: LoanContract) => resolveMasterHdtdNumber(c, creditContracts),
+    [creditContracts]
+  );
+
   const masterHdtdGroups = useMemo(() => {
     const map = new Map<string, MasterHdtdGroup>();
 
     for (const c of contracts) {
-      const masterNo = getMasterHdtdNumber(c);
+      const masterNo = masterNoOf(c);
       if (!map.has(masterNo)) {
         map.set(masterNo, {
           masterNo,
@@ -859,12 +864,12 @@ export const LoanPortfolioView: React.FC = () => {
     }
 
     return Array.from(map.values());
-  }, [contracts, limitGroups]);
+  }, [contracts, limitGroups, masterNoOf]);
 
   const filteredContracts = useMemo(() => {
     if (selectedMasterFilter === 'ALL') return contracts;
-    return contracts.filter(c => getMasterHdtdNumber(c) === selectedMasterFilter);
-  }, [contracts, selectedMasterFilter]);
+    return contracts.filter(c => masterNoOf(c) === selectedMasterFilter);
+  }, [contracts, selectedMasterFilter, masterNoOf]);
 
   const summaryFinancials = useMemo(() => {
     if (selectedMasterFilter === 'ALL') {
@@ -1198,7 +1203,7 @@ export const LoanPortfolioView: React.FC = () => {
                 handleSelectContract={handleSelectContract}
                 allSchedulesMap={allSchedulesMap}
                 getAutoDebtGroupInfo={getAutoDebtGroupInfo}
-                getMasterHdtdNumber={getMasterHdtdNumber}
+                getMasterHdtdNumber={masterNoOf}
                 getEffectiveBalanceForContract={getEffectiveBalanceForContract}
               />
 

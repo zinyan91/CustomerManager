@@ -158,6 +158,22 @@ export function kunnRevolvingStatus(
   };
 }
 
+/**
+ * KUNN gắn liền với HĐTD: đóng HĐTD là toàn bộ KUNN của nó đã hoàn thành nghĩa
+ * vụ, khỏi phải đánh dấu tất toán từng cái.
+ *
+ * Suy ra khi đọc, KHÔNG ghi cờ `IsSettled` xuống từng KUNN: nhân bản cờ ra nhiều
+ * chỗ thì mở lại hợp đồng phải đi gỡ từng dòng, và chỉ cần bỏ sót một dòng là hai
+ * nơi nói hai chuyện khác nhau.
+ */
+export function isKunnSettled(
+  kunn: Pick<LoanContract, 'IsSettled'>,
+  contract?: Pick<CreditContract, 'IsClosed'> | null
+): boolean {
+  if (kunn.IsSettled === true) return true;
+  return contract?.IsClosed === true;
+}
+
 export interface CreditContractSummary {
   contract: CreditContract;
   kunnCount: number;
@@ -175,6 +191,11 @@ export interface CreditContractSummary {
   blockReason: string;
   expired: boolean;
   isEmpty: boolean;
+  /**
+   * Dư nợ còn treo theo lịch trả nợ của các KUNN dù HĐTD đã đóng. Bình thường
+   * bằng 0; khác 0 là dấu hiệu đóng hợp đồng khi khách chưa trả hết.
+   */
+  closedWithBalance: number;
 }
 
 /**
@@ -193,7 +214,7 @@ export function summarizeCreditContracts(
 
   return contracts.map(cc => {
     const own = kunns.filter(k => k.CreditContractId === cc.Id);
-    const active = own.filter(k => !k.IsSettled);
+    const active = own.filter(k => !isKunnSettled(k, cc));
     const end = toIso(cc.ContractEndDate);
 
     const outstanding = active.reduce((s, k) => s + Math.max(0, outstandingOf(k)), 0);
@@ -229,6 +250,9 @@ export function summarizeCreditContracts(
       canDisburse: available > 0,
       blockReason,
       expired,
+      closedWithBalance: cc.IsClosed
+        ? own.reduce((s, k) => s + Math.max(0, outstandingOf(k)), 0)
+        : 0,
       isEmpty: active.length === 0,
     };
   });

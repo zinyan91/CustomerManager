@@ -355,6 +355,11 @@ export const CreditContractView: React.FC = () => {
                       <td className="p-3 text-right font-mono font-bold">{fmtMoney(s.contract.ContractAmount)}</td>
                       <td className="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
                         {fmtMoney(s.outstanding)}
+                        {s.closedWithBalance > 0 && (
+                          <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400 normal-case">
+                            ⚠ đã đóng HĐTD nhưng còn {fmtMoney(s.closedWithBalance)}
+                          </div>
+                        )}
                       </td>
                       <td className="p-3 text-center whitespace-nowrap">
                         <div className="font-mono">{fmtDate(s.contract.ContractEndDate)}</div>
@@ -366,6 +371,9 @@ export const CreditContractView: React.FC = () => {
                         <span className="font-bold">{s.activeKunnCount}</span>
                         {s.settledKunnCount > 0 && (
                           <span className="text-slate-400"> +{s.settledKunnCount} đã TT</span>
+                        )}
+                        {s.contract.IsClosed && s.kunnCount > 0 && (
+                          <div className="text-[10px] text-slate-400">theo HĐTD đã đóng</div>
                         )}
                         {s.kunnCount === 0 && (
                           <div className="text-[10px] text-slate-400">chưa giải ngân</div>

@@ -15,7 +15,7 @@ import {
   type RateSegment,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
-import { checkKunnAgainstContract, nextKunnNumber, resolveMasterHdtdNumber } from '../../lib/creditContract';
+import { checkKunnAgainstContract, nextKunnNumber, resolveMasterHdtdNumber, isKunnSettled } from '../../lib/creditContract';
 import { fetchCreditContractsByCustomerAPI } from '../../lib/api';
 import { useWork } from '../../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
@@ -836,6 +836,14 @@ export const LoanPortfolioView: React.FC = () => {
     [contracts, allSchedulesMap, todayIso]
   );
 
+  const kunnSettled = useCallback(
+    (c: LoanContract) => isKunnSettled(
+      c,
+      c.CreditContractId ? creditContracts.find(cc => cc.Id === c.CreditContractId) : null
+    ),
+    [creditContracts]
+  );
+
   const masterNoOf = useCallback(
     (c: LoanContract) => resolveMasterHdtdNumber(c, creditContracts),
     [creditContracts]
@@ -1216,6 +1224,7 @@ export const LoanPortfolioView: React.FC = () => {
                 allSchedulesMap={allSchedulesMap}
                 getAutoDebtGroupInfo={getAutoDebtGroupInfo}
                 getMasterHdtdNumber={masterNoOf}
+                isSettled={kunnSettled}
                 getEffectiveBalanceForContract={getEffectiveBalanceForContract}
               />
 

@@ -29,6 +29,7 @@ interface KunnTableProps {
   allSchedulesMap: Record<number, RepaymentSchedule[]>;
   getAutoDebtGroupInfo: (schs?: RepaymentSchedule[]) => { debtGroup: number; maxOverdueDays: number };
   getMasterHdtdNumber: (c: LoanContract) => string;
+  isSettled?: (c: LoanContract) => boolean;
   getEffectiveBalanceForContract: (c: LoanContract) => number;
 }
 
@@ -42,6 +43,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
   allSchedulesMap,
   getAutoDebtGroupInfo,
   getMasterHdtdNumber,
+  isSettled,
   getEffectiveBalanceForContract,
 }) => {
   return (
@@ -110,12 +112,21 @@ export const KunnTable: React.FC<KunnTableProps> = ({
                     </span>
                   </td>
                   <td className="p-3 whitespace-nowrap">
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${DEBT_GROUP_COLORS[effectiveDg]}`}>
-                      {DEBT_GROUP_LABELS[effectiveDg]}
-                      {autoDebt.maxOverdueDays > 0 && (
-                        <span className="ml-1 text-[9px] font-mono opacity-90">({autoDebt.maxOverdueDays}d quá hạn)</span>
-                      )}
-                    </span>
+                    {isSettled && isSettled(c) ? (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                        ✓ ĐÃ TẤT TOÁN
+                        {!c.IsSettled && (
+                          <span className="ml-1 text-[9px] font-normal opacity-90">(theo HĐTD)</span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${DEBT_GROUP_COLORS[effectiveDg]}`}>
+                        {DEBT_GROUP_LABELS[effectiveDg]}
+                        {autoDebt.maxOverdueDays > 0 && (
+                          <span className="ml-1 text-[9px] font-mono opacity-90">({autoDebt.maxOverdueDays}d quá hạn)</span>
+                        )}
+                      </span>
+                    )}
                   </td>
                 </tr>
               );

@@ -6,6 +6,7 @@ import {
   kunnRevolvingStatus,
   summarizeCreditContracts,
   resolveMasterHdtdNumber,
+  isKunnSettled,
 } from '../creditContract';
 import type { CreditContract, LoanContract } from '../../types';
 
@@ -350,5 +351,60 @@ describe('resolveMasterHdtdNumber — số HĐTD gốc của một KUNN', () => 
 
   it('an toàn khi không có KUNN', () => {
     expect(resolveMasterHdtdNumber(null, [])).toBe('');
+  });
+});
+
+describe('isKunnSettled — KUNN gắn liền với HĐTD', () => {
+  it('HĐTD đã đóng thì mọi KUNN của nó coi như đã hoàn thành nghĩa vụ', () => {
+    const hd = cc({ Id: 5, IsClosed: true });
+    expect(isKunnSettled(kunn({ CreditContractId: 5, IsSettled: false }), hd)).toBe(true);
+  });
+
+  it('KUNN tự tất toán thì vẫn tất toán dù HĐTD còn mở', () => {
+    expect(isKunnSettled(kunn({ IsSettled: true }), cc({ Id: 5, IsClosed: false }))).toBe(true);
+  });
+
+  it('HĐTD còn mở và KUNN chưa tất toán thì chưa tất toán', () => {
+    expect(isKunnSettled(kunn({ IsSettled: false }), cc({ Id: 5, IsClosed: false }))).toBe(false);
+  });
+
+  it('không tìm được HĐTD thì chỉ căn cứ cờ của chính KUNN', () => {
+    expect(isKunnSettled(kunn({ IsSettled: false }), null)).toBe(false);
+    expect(isKunnSettled(kunn({ IsSettled: true }), null)).toBe(true);
+  });
+});
+
+describe('summarizeCreditContracts — HĐTD đã đóng', () => {
+  const hd = cc({ Id: 9, HdtdNumber: 'HD09', ContractAmount: 1_000_000_000, LoanMethod: 'Cho vay từng lần' });
+  const gnn = kunn({ Id: 91, CreditContractId: 9, ContractNumber: 'HD09/GNN-01', LoanAmount: 600_000_000, IsSettled: false });
+
+  it('đóng HĐTD thì KUNN được tính là đã tất toán và dư nợ về 0', () => {
+    const [mo] = summarizeCreditContracts([hd], [gnn], { getOutstanding: () => 400_000_000, today: HOM_NAY });
+    expect(mo.activeKunnCount).toBe(1);
+    expect(mo.outstanding).toBe(400_000_000);
+
+    const [dong] = summarizeCreditContracts(
+      [{ ...hd, IsClosed: true }], [gnn],
+      { getOutstanding: () => 400_000_000, today: HOM_NAY }
+    );
+    expect(dong.activeKunnCount).toBe(0);
+    expect(dong.settledKunnCount).toBe(1);
+    expect(dong.outstanding).toBe(0);
+  });
+
+  it('báo riêng phần dư nợ còn treo khi đóng HĐTD, không xoá dấu vết', () => {
+    const [dong] = summarizeCreditContracts(
+      [{ ...hd, IsClosed: true }], [gnn],
+      { getOutstanding: () => 400_000_000, today: HOM_NAY }
+    );
+    expect(dong.closedWithBalance).toBe(400_000_000);
+  });
+
+  it('đóng HĐTD mà KUNN đã trả hết thì không có gì treo', () => {
+    const [dong] = summarizeCreditContracts(
+      [{ ...hd, IsClosed: true }], [gnn],
+      { getOutstanding: () => 0, today: HOM_NAY }
+    );
+    expect(dong.closedWithBalance).toBe(0);
   });
 });

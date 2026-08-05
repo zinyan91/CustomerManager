@@ -2,7 +2,7 @@ import React from 'react';
 import { Calendar } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
 import { fmtDate, fmtMoney, fmtRate, getEffectiveActiveRate } from '../../lib/utils';
-import { paidPrincipalOf } from '../../lib/loanMath';
+import { paidPrincipalOf, computeSchedulePenalty } from '../../lib/loanMath';
 import { formatSegmentsLabel, type RateSegment } from '../../lib/rateResolution';
 import { DebtSummaryCard } from './DebtSummaryCard';
 
@@ -27,22 +27,10 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
 }) => {
   const getPenaltyForSchedule = (s: RepaymentSchedule) => {
     if (s.IsPaid) return s.OverdueInterestAmount || 0;
-    let autoDays = 0;
-    if (s.DueDate) {
-      const parts = s.DueDate.split('-');
-      if (parts.length === 3) {
-        const due = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        due.setHours(0, 0, 0, 0);
-        const diff = today.getTime() - due.getTime();
-        if (diff > 0) autoDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
-      }
-    }
-    const effDays = (s.OverdueDays && s.OverdueDays > 0) ? s.OverdueDays : autoDays;
-    if (effDays <= 0) return 0;
-    const annualRate = getEffectiveActiveRate(selectedContract, s.DueDate);
-    return Math.round((s.PrincipalAmount || 0) * (annualRate * 1.5) * (effDays / 365));
+    return computeSchedulePenalty(
+      s,
+      getEffectiveActiveRate(selectedContract, s.DueDate)
+    ).principalPenalty;
   };
 
   const totalPenaltySum = schedules.reduce((a, s) => a + getPenaltyForSchedule(s), 0);

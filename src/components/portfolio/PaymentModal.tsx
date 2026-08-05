@@ -1,10 +1,8 @@
 import React from 'react';
 import { Receipt, X, Save } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { fmtDate } from '../../lib/utils';
-import { getEffectiveActiveRate } from '../../lib/utils';
-import { calculateOverdueDaysFromDates } from '../../lib/loanMath';
-import { formatMoneyInput } from '../../lib/utils';
+import { fmtDate, getEffectiveActiveRate, formatMoneyInput } from '../../lib/utils';
+import { calculateOverdueDaysFromDates, computeSchedulePenalty } from '../../lib/loanMath';
 import { DateInput } from '../DateInput';
 
 interface PaymentModalProps {
@@ -134,7 +132,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   setModalOverdueDaysStr(e.target.value);
                   if (days > 0 && selectedContract) {
                     const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
-                    const calcPen = Math.round((editingSchedule.PrincipalAmount || 0) * (rate * 1.5) * (days / 365));
+                    const calcPen = computeSchedulePenalty(editingSchedule, rate, { overdueDays: days }).principalPenalty;
                     setModalOverdueInterestStr(calcPen.toLocaleString('vi-VN'));
                   } else {
                     setModalOverdueInterestStr('0');
@@ -170,7 +168,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     setModalOverdueDaysStr(calcDays.toString());
                     if (calcDays > 0 && selectedContract) {
                       const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
-                      const calcPen = Math.round((editingSchedule.PrincipalAmount || 0) * (rate * 1.5) * (calcDays / 365));
+                      const calcPen = computeSchedulePenalty(editingSchedule, rate, { overdueDays: calcDays }).principalPenalty;
                       setModalOverdueInterestStr(calcPen.toLocaleString('vi-VN'));
                     } else {
                       setModalOverdueInterestStr('0');

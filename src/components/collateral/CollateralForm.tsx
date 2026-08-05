@@ -3,7 +3,7 @@ import { Building2, Plus, Save, ChevronUp, ChevronDown } from 'lucide-react';
 import type { Collateral, Customer } from '../../types';
 import type { ThemeStyles } from '../../lib/themeStyles';
 import { DateInput } from '../DateInput';
-import { fmtMoney } from '../../lib/utils';
+import { fmtMoney, parseMoneyInput } from '../../lib/utils';
 
 interface CollateralFormProps {
   styles: ThemeStyles;
@@ -62,7 +62,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
   handleReset,
   loading,
 }) => {
-  const numericAppraisedValue = parseFloat(inputAppraisedValue.replace(/\D/g, '')) || 0;
+  const numericAppraisedValue = parseMoneyInput(inputAppraisedValue);
   const ltvVal = parseFloat(inputLtvPercent) || 80;
   const maxLoanCapacity = numericAppraisedValue * ltvVal / 100;
 

@@ -10,9 +10,9 @@ Mã nguồn không chứa chú thích. Toàn bộ giải thích "vì sao" nằm 
 
 **Một quy tắc nghiệp vụ chỉ được cài ở MỘT nơi.** Dự án đã trả giá 5 lần cho việc chép hàm ra nhiều file rồi để chúng trôi dạt: `getEffectiveLtv` từng có 4 bản khác nhau khiến cùng một tài sản cho ba hạn mức cho vay khác nhau ở ba màn hình; `getMasterHdtdNumber` 3 bản; `diffDays` 3 bản. Cần dùng lại thì import, không copy.
 
-**Không viết công thức nghiệp vụ trong `.tsx`.** Mọi phép tính tiền, lãi, ngày, LTV, hạn mức phải nằm ở `src/lib/` dưới dạng hàm thuần có test; component chỉ gọi và hiển thị. Lý do đo được: `src/lib` có 681 test, `src/components` có **3** — công thức viết trong view là công thức không ai kiểm, và đó là nơi mọi lỗi lệch số của dự án này sinh ra.
+**Không viết công thức nghiệp vụ trong `.tsx`.** Mọi phép tính tiền, lãi, ngày, LTV, hạn mức phải nằm ở `src/lib/` dưới dạng hàm thuần có test; component chỉ gọi và hiển thị. Lý do đo được: `src/lib` có 707 test, `src/components` có **3** — công thức viết trong view là công thức không ai kiểm, và đó là nơi mọi lỗi lệch số của dự án này sinh ra.
 
-**Test hàm thuần không bắt được lỗi runtime trong component.** Ngày 05/08/2026 tab KUNN trắng trang vì `getEffectiveBalanceForContract` gọi `kunnSettled` khai sau nó — build, lint và 668 test đều xanh. Test giao diện ở `src/components/__tests__/` chỉ làm một việc: dựng component lên và khẳng định nó render tới cùng. Không kiểm công thức tiền ở đó (đã có test hàm thuần lo), và mỗi tệp tự khai `// @vitest-environment jsdom` để 681 test logic không phải chịu chi phí dựng DOM.
+**Test hàm thuần không bắt được lỗi runtime trong component.** Ngày 05/08/2026 tab KUNN trắng trang vì `getEffectiveBalanceForContract` gọi `kunnSettled` khai sau nó — build, lint và 668 test đều xanh. Test giao diện ở `src/components/__tests__/` chỉ làm một việc: dựng component lên và khẳng định nó render tới cùng. Không kiểm công thức tiền ở đó (đã có test hàm thuần lo), và mỗi tệp tự khai `// @vitest-environment jsdom` để 707 test logic không phải chịu chi phí dựng DOM.
 
 Ba lần đã trả giá: bốn cách tính hạn mức khả dụng cùng tồn tại, hai trong số đó viết thẳng trong `LoanPortfolioView`, khiến cùng một khách hàng hiện `2.800.000.000` ở đầu trang và `1.400.000.000` trong form. Khái niệm "lãi suất đang áp dụng" có ba bản: `getEffectiveActiveRate` trong `utils.ts` bỏ qua kỳ ưu đãi, khối tính trong view bỏ qua bảng điều chỉnh, nhánh trong `generateSchedule` chỉ chọn một trong hai. Và view tự tính LTV `giá trị × LTV / 100` nên chấp nhận cả định giá đã hết hiệu lực, trong khi `usableCapacity` loại — cùng hồ sơ, hai kết luận trái nhau trên cùng màn hình.
 
@@ -34,7 +34,7 @@ Kể cả việc nhỏ cũng theo quy tắc này: đọc số tiền từ ô nh�
 
 ## 2. Logic tài chính
 
-Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 681 test tại `src/lib/__tests__/`.
+Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 707 test tại `src/lib/__tests__/`.
 
 | Tệp | Nội dung |
 | :--- | :--- |
@@ -51,7 +51,26 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 | `cof.ts` | Giá mua vốn từ Hội Sở (FTP bán - COF) theo kỳ hạn và kỳ điều chỉnh |
 | `stkPledge.ts` | Cầm cố sổ tiết kiệm: một sổ, tái tục nhiều kỳ, và phạt chậm trả quá hạn |
 | `loanProductRules.ts` | Ràng buộc theo phương thức vay |
-| `utils.ts` | Định dạng tiền, phân tích ngày đa định dạng |
+| `utils.ts` | Định dạng tiền, phần trăm, phân tích ngày đa định dạng, `todayIso`, `daysUntil` |
+| `dueList.ts` | Bộ lọc và bảng in danh sách đến hạn, `monthlyDueInfo` cho mốc thu lãi tháng kế tiếp |
+
+### Nơi lưu trữ chung — dùng, đừng chép lại
+
+Đợt gộp 05/08/2026 rút các bản sao trong `.tsx` về một chỗ. Cần thứ nào dưới đây thì import, tuyệt đối không viết lại trong component:
+
+| Việc cần làm | Gọi hàm |
+| :--- | :--- |
+| Tiền phạt quá hạn của một kỳ (150% gốc + 10% lãi chậm trả) | `computeSchedulePenalty` (`loanMath.ts`) |
+| Số ngày quá hạn thực tế của một kỳ | `overdueDaysOfSchedule` (`loanMath.ts`) |
+| Ngày hôm nay dạng `YYYY-MM-DD` | `todayIso` (`utils.ts`) |
+| Số ngày còn lại tới một mốc | `daysUntil` (`utils.ts`) |
+| Mốc thu lãi hàng tháng kế tiếp | `monthlyDueInfo` (`dueList.ts`) |
+| Hiển thị phần trăm từ tỷ lệ thập phân | `fmtPercent` (`utils.ts`) |
+| Hiển thị số tiền | `fmtMoney` (`utils.ts`) |
+| Đọc số tiền từ ô nhập chỉ có chữ số | `parseMoneyInput` (`utils.ts`) |
+| Đọc số tiền có thể lẻ đồng | `parseMoneyDecimalInput` (`utils.ts`) |
+
+**Không dùng `new Date().toISOString().split('T')[0]` để lấy ngày hôm nay.** Đó là ngày theo UTC: ở múi giờ Việt Nam (UTC+7), mọi lần chạy trước 07:00 sáng đều trả về NGÀY HÔM QUA. Lỗi này từng nằm ở 16 chỗ, gồm cả `getEffectiveActiveRate` (chọn sai mốc điều chỉnh lãi suất trong buổi sáng) và chốt xét hiệu lực HĐTD. Dùng `todayIso()`.
 
 Sửa gì liên quan tới tiền thì **viết test trước**. Ba lỗi mất tiền trong dự án này đều do test phát hiện, không ai thấy bằng mắt.
 
@@ -70,7 +89,9 @@ Vì dùng số ngày thực tế, **tiền lãi có thể TĂNG so với kỳ tr
 - **Không** phải giải ngân + 1 tháng. LÊ NGỌC QUẾ HÂN giải ngân 05/05/2026, trả kỳ 1 ngày 15/05/2026 — kỳ 1 chỉ 10 ngày.
 - **Không** gom về một ngày dùng chung cho cả hợp đồng hạn mức. Chính việc 5 KUNN của NGÔ NHỊ ĐẠT mượn mốc 15/04/2026 của hợp đồng đã sinh ra lỗi kỳ 1 rơi trước ngày giải ngân và thu vượt của khách hơn 21 triệu.
 
-Ràng buộc duy nhất được cài trong `generateSchedule`: **kỳ 1 phải SAU ngày giải ngân**. Mốc khai sớm hơn thì dịch lên từng tháng, giữ nguyên ngày trong tháng — không đổi ngày khách đã chọn. Để trống `RepaymentStartDate` thì mới mặc định giải ngân + 1 tháng, và đó là **giá trị tạm chờ khai theo chứng từ**, không phải quy tắc nghiệp vụ.
+Ràng buộc duy nhất: **kỳ 1 phải SAU ngày giải ngân**. Mốc khai sớm hơn thì dịch lên từng tháng, giữ nguyên ngày trong tháng — không đổi ngày khách đã chọn. Để trống `RepaymentStartDate` thì mới mặc định giải ngân + 1 tháng, và đó là **giá trị tạm chờ khai theo chứng từ**, không phải quy tắc nghiệp vụ.
+
+Ràng buộc này cài trong **`buildDueDateSequence`** — nguồn duy nhất sinh dãy ngày đến hạn. Có **hai** đường ghi ngày đến nợ và cả hai đều phải đi qua đó: `generateSchedule` khi tạo lịch mới, và `redateSchedules` khi banker sửa mốc trả nợ của một KUNN **đã có lịch**. Cài chốt ở một đường không bịt được đường kia: bản chép tay trong `LoanPortfolioView` từng làm chính điều đó, khiến hồ sơ NGÔ NHỊ ĐẠT tái tạo lại được lỗi cũ sau khi đường tạo mới đã sửa. Thêm đường ghi ngày thứ ba thì cũng phải gọi hàm này, đừng cộng tháng bằng tay.
 
 ### Bất biến quan trọng nhất
 

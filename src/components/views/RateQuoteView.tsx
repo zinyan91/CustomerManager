@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { fmtMoney, fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
+import { fmtMoney, fmtDate, fmtPercent, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import {
   fetchRateProgramsAPI, fetchRateProgramTiersAPI, fetchRateProgramPrepaymentFeesAPI,
   fetchRateProgramFbeCodesAPI, fetchDepositRateAuthoritiesAPI, updateRateProgramTierAPI,
@@ -25,10 +25,7 @@ import type {
   RateProgramFeeOption, RateProgramCondition,
 } from '../../lib/rateQuote';
 
-const pct = (v?: number | null) =>
-  v === null || v === undefined || isNaN(v) ? '—' : `${(v * 100).toFixed(2)}%`;
 
-const todayIso = () => new Date().toISOString().split('T')[0];
 
 export const RateQuoteView: React.FC = () => {
   const { theme } = useTheme();
@@ -452,7 +449,7 @@ export const RateQuoteView: React.FC = () => {
                             <td key={ch} className={`p-2.5 text-right font-mono font-bold ${
                               thieu ? 'text-slate-400 dark:text-slate-500' : 'text-sky-600 dark:text-sky-400'
                             }`}>
-                              {thieu ? '—' : pct(v)}
+                              {thieu ? '—' : fmtPercent(v)}
                             </td>
                           );
                         })}
@@ -489,9 +486,9 @@ export const RateQuoteView: React.FC = () => {
                               {t.MinTenorMonths ? `${t.MinTenorMonths} tháng` : '—'}
                             </td>
                             <td className={`p-2.5 text-right font-mono font-bold ${missing ? 'text-rose-500' : 'text-sky-600 dark:text-sky-400'}`}>
-                              {missing ? 'CHƯA CÓ' : pct(t.RateAnnual)}
+                              {missing ? 'CHƯA CÓ' : fmtPercent(t.RateAnnual)}
                             </td>
-                            <td className="p-2.5 text-right font-mono">{pct(t.MinFeeRatio)}</td>
+                            <td className="p-2.5 text-right font-mono">{fmtPercent(t.MinFeeRatio)}</td>
                         </>
                       </tr>
                     );
@@ -508,7 +505,7 @@ export const RateQuoteView: React.FC = () => {
             </div>
             {program.FloatingSpreadAnnual !== null && program.FloatingSpreadAnnual !== undefined && kind !== 'huy_dong' && (
               <div className="p-3 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
-                Sau thời gian cố định: <strong>{program.FloatingBaseLabel || 'LSCS'} + biên độ tối thiểu {pct(program.FloatingSpreadAnnual)}</strong>
+                Sau thời gian cố định: <strong>{program.FloatingBaseLabel || 'LSCS'} + biên độ tối thiểu {fmtPercent(program.FloatingSpreadAnnual)}</strong>
                 {program.RateResetMonths ? `, kỳ điều chỉnh ${program.RateResetMonths} tháng/lần.` : '.'}
               </div>
             )}
@@ -621,7 +618,7 @@ export const RateQuoteView: React.FC = () => {
                   onChange={e => setIsNewCustomer(e.target.checked)}
                 />
                 <span>
-                  Khách hàng mới — giảm tối đa {pct(program.NewCustomerFeeDiscount)} phí dịch vụ
+                  Khách hàng mới — giảm tối đa {fmtPercent(program.NewCustomerFeeDiscount)} phí dịch vụ
                 </span>
               </label>
             )}
@@ -668,7 +665,7 @@ export const RateQuoteView: React.FC = () => {
                     {postFixedRate === null ? '—' : `${(postFixedRate * 100).toFixed(2)} %/năm`}
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1">
-                    {program.FloatingBaseLabel || 'LSCS'} {pct(baseRate)} + biên độ {pct(program.FloatingSpreadAnnual)}
+                    {program.FloatingBaseLabel || 'LSCS'} {fmtPercent(baseRate)} + biên độ {fmtPercent(program.FloatingSpreadAnnual)}
                   </div>
                 </div>
 
@@ -678,10 +675,10 @@ export const RateQuoteView: React.FC = () => {
                     {fee.feeAmount === null ? '—' : fmtMoney(fee.feeAmount)}
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1 space-y-0.5">
-                    <div>Tỷ lệ áp dụng: <strong>{pct(fee.effectiveRatio)}</strong></div>
+                    <div>Tỷ lệ áp dụng: <strong>{fmtPercent(fee.effectiveRatio)}</strong></div>
                     {fee.casaAddonApplied && (
                       <div className="text-amber-600 dark:text-amber-400">
-                        + {pct(program.CasaShortfallFeeAddon)} do CASA bình quân dưới {pct(program.CasaMinRatio)} dư nợ
+                        + {fmtPercent(program.CasaShortfallFeeAddon)} do CASA bình quân dưới {fmtPercent(program.CasaMinRatio)} dư nợ
                         {fee.casaRequiredAmount !== null && ` (cần ${fmtMoney(fee.casaRequiredAmount)})`}
                       </div>
                     )}
@@ -792,11 +789,11 @@ export const RateQuoteView: React.FC = () => {
                         <td className="p-2.5 font-bold">{o.OptionLabel}</td>
                         <td className="p-2.5">{o.PackageGroup}</td>
                         <td className="p-2.5 text-right font-mono font-bold text-sky-600 dark:text-sky-400">
-                          {pct(o.MinFeeRatio)}
+                          {fmtPercent(o.MinFeeRatio)}
                         </td>
                         <td className="p-2.5 text-right font-mono">
                           {o.CounterFeeRatio === null || o.CounterFeeRatio === undefined
-                            ? '—' : pct(o.CounterFeeRatio)}
+                            ? '—' : fmtPercent(o.CounterFeeRatio)}
                         </td>
                       </tr>
                     ))}
@@ -844,7 +841,7 @@ export const RateQuoteView: React.FC = () => {
                               : f.YearFrom === f.YearTo ? `Năm ${f.YearFrom}` : `Năm ${f.YearFrom} – ${f.YearTo}`}
                           </td>
                           <td className={`p-2.5 text-right font-mono font-bold ${missing ? 'text-rose-500' : ''}`}>
-                            {missing ? 'THIẾU SỐ' : f.FeeRatio === 0 ? 'Miễn phí' : pct(f.FeeRatio)}
+                            {missing ? 'THIẾU SỐ' : f.FeeRatio === 0 ? 'Miễn phí' : fmtPercent(f.FeeRatio)}
                           </td>
                           <td className="p-2.5 text-slate-500">{f.Note || ''}</td>
                         </tr>
@@ -884,9 +881,9 @@ export const RateQuoteView: React.FC = () => {
                         <tr key={a.Id}>
                           <td className="p-2.5 font-bold">{a.AuthorityLevel}</td>
                           <td className="p-2.5">{a.TenorLabel}</td>
-                          <td className="p-2.5 text-right font-mono">{pct(a.CurrentRate)}</td>
+                          <td className="p-2.5 text-right font-mono">{fmtPercent(a.CurrentRate)}</td>
                           <td className="p-2.5 text-right font-mono font-bold text-sky-600 dark:text-sky-400">
-                            {pct(a.AdjustedRate)}
+                            {fmtPercent(a.AdjustedRate)}
                           </td>
                           <td className="p-2.5 text-right font-mono text-emerald-600 dark:text-emerald-400">
                             {delta === null ? '—' : `+${(delta * 100).toFixed(2)}%`}

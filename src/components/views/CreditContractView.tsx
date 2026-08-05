@@ -8,7 +8,7 @@ import {
 } from '../../lib/api';
 import { useTheme } from '../../context/ThemeContext';
 import { useWork } from '../../context/WorkContext';
-import { fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
+import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { summarizeCreditContracts } from '../../lib/creditContract';
 import { addMonthsToDate, computeOutstandingBalance } from '../../lib/loanMath';
 import { getEffectiveLtv, usableCapacity, appraisalStatus, appraisalExpiryDate } from '../../lib/collateralMath';
@@ -23,9 +23,6 @@ const LOAN_METHODS = [
   'Hạn mức thẻ tín dụng',
   'Cầm cố sổ tiết kiệm',
 ];
-
-const fmtMoney = (v?: number | null) =>
-  v !== undefined && v !== null ? v.toLocaleString('vi-VN') + ' VNĐ' : '—';
 
 export const CreditContractView: React.FC = () => {
   const { theme } = useTheme();
@@ -50,7 +47,7 @@ export const CreditContractView: React.FC = () => {
   const [selectedCollateralIds, setSelectedCollateralIds] = useState<number[]>([]);
   const [showSettled, setShowSettled] = useState(false);
 
-  const todayIso = new Date().toISOString().split('T')[0];
+  const today = todayIso();
 
   const containerCardBg = isLight
     ? 'bg-white border-slate-200 text-slate-900 shadow-sm'
@@ -123,9 +120,9 @@ export const CreditContractView: React.FC = () => {
   const summaries = useMemo(
     () => summarizeCreditContracts(contracts, kunns, {
       getOutstanding: outstandingOf,
-      today: todayIso,
+      today: today,
     }),
-    [contracts, kunns, schedulesMap, todayIso]
+    [contracts, kunns, schedulesMap, today]
   );
 
   const visibleSummaries = useMemo(
@@ -223,8 +220,8 @@ export const CreditContractView: React.FC = () => {
   const tongKhaNangBaoDam = useMemo(
     () => collaterals
       .filter(c => selectedCollateralIds.includes(c.Id))
-      .reduce((s, c) => s + usableCapacity(c, todayIso), 0),
-    [collaterals, selectedCollateralIds, todayIso]
+      .reduce((s, c) => s + usableCapacity(c, today), 0),
+    [collaterals, selectedCollateralIds, today]
   );
 
   const vuotKhaNangBaoDam = tongKhaNangBaoDam > 0
@@ -537,8 +534,8 @@ export const CreditContractView: React.FC = () => {
                   const isChecked = selectedCollateralIds.includes(col.Id);
                   const val = col.AppraisedValue || col.Value || 0;
                   const ltv = getEffectiveLtv(col);
-                  const capacity = usableCapacity(col, todayIso);
-                  const tinhTrang = appraisalStatus(col, todayIso);
+                  const capacity = usableCapacity(col, today);
+                  const tinhTrang = appraisalStatus(col, today);
 
                   return (
                     <div key={col.Id} className={`p-3 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${

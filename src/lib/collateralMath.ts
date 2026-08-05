@@ -1,5 +1,5 @@
 import type { Collateral } from '../types';
-import { parseAnyDate, formatAssetType } from './utils';
+import { parseAnyDate, formatAssetType, todayIso } from './utils';
 
 export const ASSET_TYPE_LTV: ReadonlyArray<readonly [string, number]> = [
 
@@ -89,7 +89,7 @@ export function appraisalStatus(
   warnDays: number = APPRAISAL_WARN_DAYS
 ): AppraisalStatus {
   const expiry = appraisalExpiryDate(c);
-  const today = toIso(todayStr) ?? new Date().toISOString().split('T')[0];
+  const today = toIso(todayStr) ?? todayIso();
   if (!expiry) return 'missing';
   if (expiry < today) return 'expired';
 

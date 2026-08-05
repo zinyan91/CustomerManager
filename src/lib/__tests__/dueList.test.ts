@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { filterByDue, countByDue, buildDueListHtml } from '../dueList';
+import { filterByDue, countByDue, buildDueListHtml, monthlyDueInfo } from '../dueList';
 
 const items = [
   { ten: 'A', daysLeft: 5 },
@@ -83,5 +83,46 @@ describe('buildDueListHtml', () => {
   it('in tên người lập khi có', () => {
     expect(buildDueListHtml({ ...base, preparedBy: 'Nguyễn A' })).toContain('Người lập: Nguyễn A');
     expect(buildDueListHtml(base)).not.toContain('Người lập');
+  });
+});
+
+describe('monthlyDueInfo', () => {
+  it('lấy mốc trong tháng này khi chưa qua ngày', () => {
+    const r = monthlyDueInfo('2025-03-15', '2026-08-05');
+    expect(r).not.toBeNull();
+    expect(r!.dueDateIso).toBe('2026-08-15');
+    expect(r!.dueDateStr).toBe('15/08/2026');
+    expect(r!.daysLeft).toBe(10);
+  });
+
+  it('nhảy sang tháng sau khi mốc trong tháng này đã qua', () => {
+    const r = monthlyDueInfo('2025-03-01', '2026-08-05');
+    expect(r!.dueDateIso).toBe('2026-09-01');
+    expect(r!.daysLeft).toBe(27);
+  });
+
+  it('coi đến hạn hôm nay là còn 0 ngày, chưa nhảy tháng', () => {
+    const r = monthlyDueInfo('2025-03-05', '2026-08-05');
+    expect(r!.dueDateIso).toBe('2026-08-05');
+    expect(r!.daysLeft).toBe(0);
+  });
+
+  it('kẹp ngày 31 về ngày cuối tháng ngắn, không tràn sang tháng sau', () => {
+    const r = monthlyDueInfo('2025-01-31', '2026-09-01');
+    expect(r!.dueDateIso).toBe('2026-09-30');
+  });
+
+  it('kẹp ngày 30 về 28 tháng 2 năm không nhuận', () => {
+    const r = monthlyDueInfo('2025-01-30', '2026-02-01');
+    expect(r!.dueDateIso).toBe('2026-02-28');
+  });
+
+  it('vắt qua năm khi mốc tháng 12 đã qua', () => {
+    const r = monthlyDueInfo('2025-05-01', '2026-12-15');
+    expect(r!.dueDateIso).toBe('2027-01-01');
+  });
+
+  it('trả null khi thiếu ngày gốc', () => {
+    expect(monthlyDueInfo(null, '2026-08-05')).toBeNull();
   });
 });

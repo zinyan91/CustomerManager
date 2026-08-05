@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ShieldCheck, DollarSign, Building2, CheckCircle2 } from 'lucide-react';
-import { fmtMoney, formatMoneyInput } from '../../lib/utils';
+import { fmtMoney, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
 import { pvAnnuityFactor, dtiMaxMonthlyPayment as calcDtiMaxMonthlyPayment } from '../../lib/calcMath';
 import type { ThemeStyles } from '../../lib/themeStyles';
 
@@ -32,10 +32,10 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = ({ isLight }) => {
   const [selectedAssetKey, setSelectedAssetKey] = useState<string>('cat2');
   const [customLtvStr, setCustomLtvStr] = useState('70');
 
-  const monthlyIncome = parseFloat(monthlyIncomeStr.replace(/\D/g, '')) || 0;
-  const livingExpense = parseFloat(livingExpenseStr.replace(/\D/g, '')) || 0;
-  const existingDebt = parseFloat(existingDebtStr.replace(/\D/g, '')) || 0;
-  const assetValue = parseFloat(assetValueStr.replace(/\D/g, '')) || 0;
+  const monthlyIncome = parseMoneyInput(monthlyIncomeStr);
+  const livingExpense = parseMoneyInput(livingExpenseStr);
+  const existingDebt = parseMoneyInput(existingDebtStr);
+  const assetValue = parseMoneyInput(assetValueStr);
   const rateAnnual = (parseFloat(interestRateAnnualStr) || 0) / 100;
   const rateMonthly = rateAnnual / 12;
 

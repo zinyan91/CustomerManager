@@ -3,7 +3,7 @@ import {
   fetchCreditCardsAPI, fetchCustomersAPI, saveCreditCardAPI, deleteCreditCardAPI,
   fetchCollateralsByCustomerAPI, fetchCollateralsAPI
 } from '../../lib/api';
-import { formatMoneyInput, fmtMoney } from '../../lib/utils';
+import { formatMoneyInput, fmtMoney, parseMoneyInput } from '../../lib/utils';
 import { getEffectiveLtv, assetClassLabel } from '../../lib/collateralMath';
 import type { CreditCard as CreditCardType, Customer, Collateral } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
@@ -122,7 +122,7 @@ export const CreditCardView: React.FC = () => {
       return;
     }
 
-    const limitVal = parseFloat(inputLimit.replace(/\D/g, '')) || 0;
+    const limitVal = parseMoneyInput(inputLimit);
     if (limitVal <= 0) {
       showNotify('error', 'Hạn mức thẻ phải lớn hơn 0!');
       return;

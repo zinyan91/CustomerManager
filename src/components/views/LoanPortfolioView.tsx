@@ -4,12 +4,12 @@ import {
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
   fetchCollateralsByCustomerAPI, deleteRepaymentSchedulesByContractAPI
 } from '../../lib/api';
-import { fmtDate, fmtMoney, getContractRateHistory, getEffectiveActiveRate, getMasterHdtdNumber, toIsoDate } from '../../lib/utils';
+import { fmtDate, fmtMoney, getContractRateHistory, getEffectiveActiveRate, getMasterHdtdNumber, parseMoneyDecimalInput, parseMoneyInput, toIsoDate, todayIso } from '../../lib/utils';
 import {
-  addMonthsToDate, parseKunnTenorMonths, parseDateParts,
+  addMonthsToDate, parseKunnTenorMonths,
   generateSchedule, calculateOverdueDaysFromDates,
   getAutoDebtGroupInfo, recalculateSchedules, computeOutstandingBalance,
-  isBulletPrincipal, getDaysBetween } from '../../lib/loanMath';
+  isBulletPrincipal, getDaysBetween, redateSchedules } from '../../lib/loanMath';
 import {
   buildContractRateTimeline, splitPeriodByRate,
   type RateSegment,
@@ -113,7 +113,7 @@ export const LoanPortfolioView: React.FC = () => {
   const [modalActualPaidPrincipalStr, setModalActualPaidPrincipalStr] = useState('0');
   const [modalActualPaidInterestStr, setModalActualPaidInterestStr] = useState('0');
   const [modalIsPaid, setModalIsPaid] = useState(false);
-  const [modalPaymentDate, setModalPaymentDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [modalPaymentDate, setModalPaymentDate] = useState(() => todayIso());
   const [modalNote, setModalNote] = useState('');
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -200,8 +200,8 @@ export const LoanPortfolioView: React.FC = () => {
     currentActiveRateDisplay = prefVal + surchargeVal;
   }
 
-  const creditLimitNum = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
-  const kunnLoanAmountNum = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
+  const creditLimitNum = parseMoneyDecimalInput(formCreditLimit);
+  const kunnLoanAmountNum = parseMoneyDecimalInput(formLoanAmount);
 
   const effectiveFormHdtdNo = formHdtdNumber.trim() || (selectedContract ? resolveMasterHdtdNumber(selectedContract, creditContracts) : '');
   const dropdownFiltered = dropdownQuery.trim().length < 1
@@ -482,9 +482,9 @@ export const LoanPortfolioView: React.FC = () => {
 
       const effectiveContractNumber = kunn;
 
-      const creditLimit = parseFloat(formCreditLimit.replace(/\./g, '').replace(',', '.')) || 0;
-      const loanAmount = parseFloat(formLoanAmount.replace(/\./g, '').replace(',', '.')) || 0;
-      const currentBalInput = parseFloat(formCurrentBalance.replace(/\./g, '').replace(',', '.')) || 0;
+      const creditLimit = parseMoneyDecimalInput(formCreditLimit);
+      const loanAmount = parseMoneyDecimalInput(formLoanAmount);
+      const currentBalInput = parseMoneyDecimalInput(formCurrentBalance);
 
       const currentBal = currentBalInput || loanAmount;
 
@@ -529,7 +529,7 @@ export const LoanPortfolioView: React.FC = () => {
 
         CreditLimitCode: formCreditLimitCode.trim() || null,
         CreditLimitAmount: formCreditLimitCode.trim()
-          ? (parseFloat(formCreditLimitAmount.replace(/\./g, '').replace(',', '.')) || null)
+          ? (parseMoneyDecimalInput(formCreditLimitAmount) || null)
           : null,
 
         PreferentialRate: prefDec,
@@ -558,7 +558,7 @@ export const LoanPortfolioView: React.FC = () => {
             getOutstanding: getEffectiveBalanceForContract,
             excludeContractId: (selectedContract && !forceInsert) ? selectedContract.Id : null,
             grantedOverride: creditLimit > 0 ? creditLimit : null,
-            today: new Date().toISOString().split('T')[0],
+            today: todayIso(),
           }),
           targetHdtdNo
         );
@@ -619,25 +619,12 @@ export const LoanPortfolioView: React.FC = () => {
           setAllSchedulesMap(prev => ({ ...prev, [savedContract.Id]: newScheds }));
         } else {
 
-          const startParts = parseDateParts(repayStartDate);
-          const startYear = startParts ? startParts.y : new Date().getFullYear();
-          const startMonth = startParts ? startParts.m : new Date().getMonth();
-          const startDay = startParts ? startParts.d : new Date().getDate();
-
-          const updatedWithNewDates: RepaymentSchedule[] = existingScheds.map((s, idx) => {
-            const i = idx + 1;
-            let dueTotalMonths = startMonth + (i - 1);
-            let dueYear = startYear + Math.floor(dueTotalMonths / 12);
-            let dueMonthIdx = dueTotalMonths % 12;
-            const daysInDueMonth = new Date(dueYear, dueMonthIdx + 1, 0).getDate();
-            const dueDay = Math.min(startDay, daysInDueMonth);
-            const newDueDateStr = `${dueYear}-${String(dueMonthIdx + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
-
-            return {
-              ...s,
-              DueDate: newDueDateStr
-            };
-          });
+          const updatedWithNewDates = redateSchedules(
+            existingScheds,
+            repayStartDate,
+            savedContract.DisbursementDate || savedContract.ContractStartDate || undefined,
+            savedContract.KunnDueDate || savedContract.ContractEndDate || undefined
+          );
 
           const recalculated = recalculateSchedules(updatedWithNewDates, savedContract);
           await bulkSaveRepaymentSchedulesAPI(recalculated);
@@ -697,7 +684,7 @@ export const LoanPortfolioView: React.FC = () => {
 
   const openPaymentModal = (s: RepaymentSchedule) => {
     setEditingSchedule(s);
-    const payDate = s.PaymentDate || new Date().toISOString().split('T')[0];
+    const payDate = s.PaymentDate || todayIso();
     setModalPaymentDate(payDate);
 
     let overdue = s.OverdueDays;
@@ -730,10 +717,10 @@ export const LoanPortfolioView: React.FC = () => {
     if (!editingSchedule || !selectedContract) return;
 
     const overdueDays = parseInt(modalOverdueDaysStr, 10) || 0;
-    const overdueInterest = parseFloat(modalOverdueInterestStr.replace(/\D/g, '')) || 0;
-    const prepaidPrincipal = parseFloat(modalPrepaidPrincipalStr.replace(/\D/g, '')) || 0;
-    const actualPaidP = parseFloat(modalActualPaidPrincipalStr.replace(/\D/g, '')) || 0;
-    const actualPaidI = parseFloat(modalActualPaidInterestStr.replace(/\D/g, '')) || 0;
+    const overdueInterest = parseMoneyInput(modalOverdueInterestStr);
+    const prepaidPrincipal = parseMoneyInput(modalPrepaidPrincipalStr);
+    const actualPaidP = parseMoneyInput(modalActualPaidPrincipalStr);
+    const actualPaidI = parseMoneyInput(modalActualPaidInterestStr);
 
     const updated: RepaymentSchedule = {
       ...editingSchedule,
@@ -805,7 +792,7 @@ export const LoanPortfolioView: React.FC = () => {
 
 
 
-  const todayIso = new Date().toISOString().split('T')[0];
+  const today = todayIso();
 
   const kunnSettled = useCallback(
     (c: LoanContract) => isKunnSettled(
@@ -822,9 +809,9 @@ export const LoanPortfolioView: React.FC = () => {
   const limitGroups = useMemo(
     () => computeLimitGroups(contracts, {
       getOutstanding: getEffectiveBalanceForContract,
-      today: todayIso,
+      today: today,
     }),
-    [contracts, allSchedulesMap, todayIso]
+    [contracts, allSchedulesMap, today]
   );
 
   const masterNoOf = useCallback(
@@ -896,11 +883,11 @@ export const LoanPortfolioView: React.FC = () => {
         getOutstanding: getEffectiveBalanceForContract,
         excludeContractId: selectedContract?.Id ?? null,
         grantedOverride: creditLimitNum > 0 ? creditLimitNum : null,
-        today: todayIso,
+        today: today,
       }),
       effectiveFormHdtdNo
     ),
-    [contracts, allSchedulesMap, selectedContract, creditLimitNum, effectiveFormHdtdNo, todayIso]
+    [contracts, allSchedulesMap, selectedContract, creditLimitNum, effectiveFormHdtdNo, today]
   );
 
   const formGrantedLimit = formLimitStatus?.granted ?? creditLimitNum;
@@ -911,7 +898,7 @@ export const LoanPortfolioView: React.FC = () => {
   const graceOptions = useMemo(() => graceMonthOptions(form.LoanMethod), [form.LoanMethod]);
 
   const capacityWarnings = useMemo(
-    () => checkCollateralCapacity(contracts, collaterals, getEffectiveBalanceForContract, todayIso)
+    () => checkCollateralCapacity(contracts, collaterals, getEffectiveBalanceForContract, today)
       .filter(w => w.exceeded || w.expiredAppraisals.length > 0),
     [contracts, collaterals, allSchedulesMap]
   );
@@ -920,7 +907,7 @@ export const LoanPortfolioView: React.FC = () => {
     const map: Record<number, RateSegment[]> = {};
     if (!selectedContract || schedules.length === 0) return map;
 
-    const timeline = buildContractRateTimeline(selectedContract, { today: todayIso });
+    const timeline = buildContractRateTimeline(selectedContract, { today: today });
     if (timeline.length === 0) return map;
 
     let prev = selectedContract.DisbursementDate
@@ -935,7 +922,7 @@ export const LoanPortfolioView: React.FC = () => {
       prev = s.DueDate;
     }
     return map;
-  }, [selectedContract, schedules, todayIso]);
+  }, [selectedContract, schedules, today]);
 
   const applyCreditContractToForm = (cc: CreditContract, keepKunnNumber = false) => {
     setFormHdtdNumber(cc.HdtdNumber);
@@ -980,9 +967,9 @@ export const LoanPortfolioView: React.FC = () => {
       if (cc.Id === currentId) return true;
       if (cc.IsClosed) return false;
       const end = (cc.ContractEndDate || '').trim();
-      return !(end && end < todayIso);
+      return !(end && end < today);
     });
-  }, [creditContracts, selectedContract, todayIso]);
+  }, [creditContracts, selectedContract, today]);
 
   const formCreditContract = useMemo(() => {
     if (creditContracts.length === 0) return null;

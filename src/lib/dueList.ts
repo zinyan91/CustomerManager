@@ -1,4 +1,56 @@
+import { parseAnyDate, daysUntil } from './utils';
+
 export type DueFilter = 'all' | 'upcoming' | 'expired';
+
+export interface MonthlyDueInfo {
+  dueDateIso: string;
+  dueDateStr: string;
+  daysLeft: number;
+}
+
+/**
+ * Mốc thu lãi hàng tháng kế tiếp, suy từ NGÀY TRONG THÁNG của mốc gốc.
+ *
+ * Mốc gốc đã qua trong tháng này thì nhảy sang tháng sau. Ngày 29–31 được kẹp
+ * về ngày cuối tháng ngắn, cùng cách kẹp với addMonthsToDate — không để tràn
+ * sang tháng kế tiếp như new Date(y, m, 31) mặc định.
+ */
+export function monthlyDueInfo(
+  dateStr?: string | null,
+  todayStr?: string
+): MonthlyDueInfo | null {
+  const origin = parseAnyDate(dateStr);
+  if (!origin) return null;
+
+  const base = todayStr ? parseAnyDate(todayStr) : null;
+  const now = base
+    ? new Date(base.year, base.month - 1, base.day)
+    : (() => {
+        const d = new Date();
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      })();
+
+  const clampedDueIn = (year: number, monthIdx: number): Date => {
+    const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+    return new Date(year, monthIdx, Math.min(origin.day, daysInMonth));
+  };
+
+  let due = clampedDueIn(now.getFullYear(), now.getMonth());
+  if (due.getTime() < now.getTime()) {
+    due = clampedDueIn(now.getFullYear(), now.getMonth() + 1);
+  }
+
+  const yyyy = due.getFullYear();
+  const mm = String(due.getMonth() + 1).padStart(2, '0');
+  const dd = String(due.getDate()).padStart(2, '0');
+  const dueDateIso = `${yyyy}-${mm}-${dd}`;
+
+  return {
+    dueDateIso,
+    dueDateStr: `${dd}/${mm}/${yyyy}`,
+    daysLeft: daysUntil(dueDateIso, todayStr) ?? 0,
+  };
+}
 
 export const DUE_FILTER_LABELS: Record<DueFilter, string> = {
   all: 'Tất cả',

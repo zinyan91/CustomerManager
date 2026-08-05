@@ -1,6 +1,7 @@
 import type { RepaymentSchedule, RateAdjustmentHistoryItem, LoanContract } from '../types';
-import { getEffectiveActiveRate } from './utils';
+import { getEffectiveActiveRate, todayIso } from './utils';
 import { buildContractRateTimeline, buildRateTimeline, splitPeriodByRate } from './rateResolution';
+import { calcOverduePenalty } from './stkPledge';
 
 export function addMonthsToDate(dateStr?: string | null, months?: number | null): string {
   if (!dateStr || !months || isNaN(months) || months <= 0) return '';
@@ -90,6 +91,113 @@ export function roundPrincipalCore(
   return Math.ceil(rawPrincipal / step) * step;
 }
 
+export interface DueDateAnchor {
+  year: number;
+  monthIdx: number;
+  day: number;
+}
+
+/**
+ * Mốc kỳ trả nợ đầu tiên đã đối chiếu với ngày giải ngân.
+ *
+ * Kỳ trả nợ đầu tiên phải SAU ngày giải ngân. Dữ liệu thật có 5 KUNN dùng chung
+ * một mốc trả nợ của hợp đồng hạn mức (ngày 15/04) trong khi mỗi khoản giải ngân
+ * một ngày khác trong tháng 5 — lịch tính lãi cho quãng tiền chưa ra khỏi ngân
+ * hàng, và hàm đếm ngày chặn số âm về 1 nên kỳ 1 chỉ ra 1 ngày lãi. Dịch mốc lên
+ * từng tháng cho tới khi vượt ngày giải ngân; GIỮ NGUYÊN ngày trong tháng mà
+ * khách đã chọn.
+ */
+export function resolveFirstDueAnchor(
+  repaymentStartDateStr?: string | null,
+  disbursementDateStr?: string | null
+): DueDateAnchor {
+  const startParts = parseDateParts(repaymentStartDateStr);
+  let year = startParts ? startParts.y : new Date().getFullYear();
+  let monthIdx = startParts ? startParts.m : new Date().getMonth();
+  const day = startParts ? startParts.d : new Date().getDate();
+
+  const disburseParts = parseDateParts(disbursementDateStr || '');
+  if (disburseParts) {
+    const disburseUtc = Date.UTC(disburseParts.y, disburseParts.m, disburseParts.d);
+    for (let guard = 0; guard < 600; guard++) {
+      const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+      const d = Math.min(day, daysInMonth);
+      if (Date.UTC(year, monthIdx, d) > disburseUtc) break;
+      monthIdx += 1;
+      if (monthIdx > 11) { monthIdx = 0; year += 1; }
+    }
+  }
+
+  return { year, monthIdx, day };
+}
+
+function dueDateAtCycle(anchor: DueDateAnchor, n: number): string {
+  const totalMonths = anchor.monthIdx + (n - 1);
+  const y = anchor.year + Math.floor(totalMonths / 12);
+  const mIdx = totalMonths % 12;
+  const d = Math.min(anchor.day, new Date(y, mIdx + 1, 0).getDate());
+  return `${y}-${String(mIdx + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+/**
+ * NGUỒN DUY NHẤT sinh dãy ngày đến hạn của lịch trả nợ.
+ *
+ * Cả đường tạo lịch mới (generateSchedule) và đường khai lại ngày khi sửa KUNN
+ * đều phải gọi hàm này. Trước đây LoanPortfolioView tự cộng tháng khi sửa KUNN
+ * nên bỏ mất chốt "kỳ 1 phải sau ngày giải ngân" — bịt đường tạo mới không bịt
+ * được đường sửa, và đó chính là cơ chế đã sinh vụ thu vượt 21,7 triệu.
+ */
+export function buildDueDateSequence(
+  repaymentStartDateStr?: string | null,
+  periods?: number | null,
+  disbursementDateStr?: string | null,
+  maturityDateStr?: string | null
+): string[] {
+  const count = Math.max(0, Math.floor(periods || 0));
+  if (count === 0) return [];
+
+  const anchor = resolveFirstDueAnchor(repaymentStartDateStr, disbursementDateStr);
+  const dates: string[] = [];
+  for (let i = 1; i <= count; i++) dates.push(dueDateAtCycle(anchor, i));
+
+  /* Giấy nhận nợ: "Kỳ trả nợ cuối cùng sẽ được trả vào NGÀY ĐÁO HẠN". Cộng dồn
+     theo kỳ sẽ cho kỳ cuối rơi trước đáo hạn khi ngày trả nợ đầu tiên không phải
+     giải ngân + 1 tháng, và khoản vay bị tính thiếu lãi quãng còn lại.
+     Chỉ áp khi bên gọi khai rõ ngày đáo hạn: suy ngầm từ giải ngân + số kỳ sẽ âm
+     thầm đổi ngày đến hạn của mọi lịch cũ đang sinh theo cách khác. */
+  const daoHan = (maturityDateStr || '').trim();
+  if (daoHan) {
+    const kyTruoc = count === 1
+      ? (disbursementDateStr || repaymentStartDateStr || '')
+      : dates[count - 2];
+    if (kyTruoc && getDaysBetween(kyTruoc, daoHan) > 1) dates[count - 1] = daoHan;
+  }
+
+  return dates;
+}
+
+/**
+ * Khai lại ngày đến hạn cho lịch trả nợ ĐÃ TỒN TẠI, giữ nguyên số kỳ và mọi
+ * trường khác của từng kỳ.
+ *
+ * Dùng khi banker sửa mốc trả nợ / ngày giải ngân của một KUNN đã có lịch. Phải
+ * đi qua buildDueDateSequence để đường sửa chịu đúng những ràng buộc của đường
+ * tạo mới — trước đây LoanPortfolioView tự cộng tháng ở đây nên chốt "kỳ 1 phải
+ * sau ngày giải ngân" chỉ có hiệu lực khi tạo mới.
+ */
+export function redateSchedules(
+  schedules: RepaymentSchedule[],
+  repaymentStartDateStr?: string | null,
+  disbursementDateStr?: string | null,
+  maturityDateStr?: string | null
+): RepaymentSchedule[] {
+  if (!schedules || schedules.length === 0) return [];
+  const dueDates = buildDueDateSequence(
+    repaymentStartDateStr, schedules.length, disbursementDateStr, maturityDateStr
+  );
+  return schedules.map((s, idx) => ({ ...s, DueDate: dueDates[idx] ?? s.DueDate }));
+}
+
 export function generateSchedule(
   contractId: number,
   loanAmount: number,
@@ -110,28 +218,9 @@ export function generateSchedule(
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
 
-  const startParts = parseDateParts(repaymentStartDateStr);
-  let startYear = startParts ? startParts.y : new Date().getFullYear();
-  let startMonth = startParts ? startParts.m : new Date().getMonth();
-  const startDay = startParts ? startParts.d : new Date().getDate();
-
-  /* Kỳ trả nợ đầu tiên phải SAU ngày giải ngân.
-     Dữ liệu thật có 5 KUNN dùng chung một mốc trả nợ của hợp đồng hạn mức (ngày
-     15/04) trong khi mỗi khoản giải ngân một ngày khác trong tháng 5 — lịch tính
-     lãi cho quãng tiền chưa ra khỏi ngân hàng, và hàm đếm ngày chặn số âm về 1
-     nên kỳ 1 chỉ ra 1 ngày lãi. Dịch mốc lên từng tháng cho tới khi vượt ngày
-     giải ngân; giữ nguyên ngày trong tháng. */
-  const disburseParts = parseDateParts(disbursementDateStr || '');
-  if (disburseParts) {
-    const disburseUtc = Date.UTC(disburseParts.y, disburseParts.m, disburseParts.d);
-    for (let guard = 0; guard < 600; guard++) {
-      const daysInMonth = new Date(startYear, startMonth + 1, 0).getDate();
-      const day = Math.min(startDay, daysInMonth);
-      if (Date.UTC(startYear, startMonth, day) > disburseUtc) break;
-      startMonth += 1;
-      if (startMonth > 11) { startMonth = 0; startYear += 1; }
-    }
-  }
+  const dueDates = buildDueDateSequence(
+    repaymentStartDateStr, periods, disbursementDateStr, maturityDateStr
+  );
 
   const defaultAnnualRate = interestRate > 1 ? interestRate / 100 : interestRate;
 
@@ -156,25 +245,7 @@ export function generateSchedule(
   for (let i = 1; i <= periods; i++) {
     if (balance <= 0) break;
 
-    const duePerCycle = (n: number) => {
-      const totalMonths = startMonth + (n - 1);
-      const y = startYear + Math.floor(totalMonths / 12);
-      const mIdx = totalMonths % 12;
-      const d = Math.min(startDay, new Date(y, mIdx + 1, 0).getDate());
-      return `${y}-${String(mIdx + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    };
-
-    /* Giấy nhận nợ: "Kỳ trả nợ cuối cùng sẽ được trả vào NGÀY ĐÁO HẠN". Cộng dồn
-       theo kỳ sẽ cho kỳ cuối rơi trước đáo hạn khi ngày trả nợ đầu tiên không
-       phải giải ngân + 1 tháng, và khoản vay bị tính thiếu lãi quãng còn lại. */
-    // Chỉ áp khi bên gọi khai rõ ngày đáo hạn. Suy ngầm từ giải ngân + số kỳ sẽ
-    // âm thầm đổi ngày đến hạn của mọi lịch cũ đang sinh theo cách khác.
-    const daoHan = (maturityDateStr || '').trim();
-    let dueDateStr = duePerCycle(i);
-    if (i === periods && daoHan) {
-      const kyTruoc = periods === 1 ? (disbursementDateStr || repaymentStartDateStr) : duePerCycle(periods - 1);
-      if (getDaysBetween(kyTruoc, daoHan) > 1) dueDateStr = daoHan;
-    }
+    const dueDateStr = dueDates[i - 1];
 
     const days = getDaysBetween(prevDateStr, dueDateStr);
 
@@ -249,6 +320,60 @@ export function calculateOverdueDaysFromDates(
   if (!pay || !due) return 0;
   const diff = Date.UTC(pay.y, pay.m, pay.d) - Date.UTC(due.y, due.m, due.d);
   return diff > 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
+}
+
+export function overdueDaysOfSchedule(
+  s: Pick<RepaymentSchedule, 'OverdueDays' | 'DueDate'>,
+  asOfDateStr?: string
+): number {
+  if (s.OverdueDays !== undefined && s.OverdueDays !== null && s.OverdueDays > 0) {
+    return s.OverdueDays;
+  }
+  return calculateOverdueDaysFromDates(asOfDateStr || todayIso(), s.DueDate);
+}
+
+export interface SchedulePenalty {
+  overdueDays: number;
+  principalPenaltyRate: number;
+  principalPenalty: number;
+  interestPenalty: number;
+  total: number;
+}
+
+export function computeSchedulePenalty(
+  s: Pick<RepaymentSchedule, 'OverdueDays' | 'DueDate' | 'PrincipalAmount' | 'InterestAmount'>,
+  annualRate: number,
+  options?: { asOfDateStr?: string; overdueDays?: number }
+): SchedulePenalty {
+  const overdueDays = options?.overdueDays !== undefined && options.overdueDays !== null
+    ? Math.max(0, options.overdueDays)
+    : overdueDaysOfSchedule(s, options?.asOfDateStr);
+
+  if (overdueDays <= 0) {
+    return {
+      overdueDays: 0,
+      principalPenaltyRate: 0,
+      principalPenalty: 0,
+      interestPenalty: 0,
+      total: 0,
+    };
+  }
+
+  const r = calcOverduePenalty({
+    overduePrincipal: s.PrincipalAmount || 0,
+    normalRateAnnual: annualRate,
+    principalOverdueDays: overdueDays,
+    unpaidInterest: s.InterestAmount || 0,
+    interestOverdueDays: overdueDays,
+  });
+
+  return {
+    overdueDays,
+    principalPenaltyRate: r.principalPenaltyRate,
+    principalPenalty: r.principalPenalty,
+    interestPenalty: r.interestPenalty,
+    total: r.principalPenalty + r.interestPenalty,
+  };
 }
 
 export interface AutoDebtGroupInfo {
@@ -329,7 +454,7 @@ export function recalculateSchedules(
     contract.DisbursementDate ||
     contract.ContractStartDate ||
     todayStr ||
-    new Date().toISOString().split('T')[0];
+    todayIso();
 
   const rateTimeline = buildContractRateTimeline(contract, { today: todayStr });
 

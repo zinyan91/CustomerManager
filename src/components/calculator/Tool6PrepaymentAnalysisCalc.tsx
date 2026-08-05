@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ShieldAlert, DollarSign, Award, CheckCircle } from 'lucide-react';
-import { fmtMoney, formatMoneyInput } from '../../lib/utils';
+import { fmtMoney, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
 import type { ThemeStyles } from '../../lib/themeStyles';
 
 interface Tool6Props {
@@ -21,8 +21,8 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
   const [penaltyYear3, setPenaltyYear3] = useState<string>('1.0');
   const [penaltyYear4Plus, setPenaltyYear4Plus] = useState<string>('0.0');
 
-  const balance = parseFloat(balanceStr.replace(/\D/g, '')) || 0;
-  const prepayAmt = parseFloat(prepayAmountStr.replace(/\D/g, '')) || balance;
+  const balance = parseMoneyInput(balanceStr);
+  const prepayAmt = parseMoneyInput(prepayAmountStr) || balance;
   const rateAnnual = (parseFloat(rateAnnualStr) || 0) / 100;
 
   const activePenaltyPercent = useMemo(() => {

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Layers, CheckCircle2 } from 'lucide-react';
-import { fmtMoney, formatMoneyInput } from '../../lib/utils';
+import { fmtMoney, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
 import { emiMonthlyPayment } from '../../lib/calcMath';
 import type { ThemeStyles } from '../../lib/themeStyles';
 
@@ -14,7 +14,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = ({ isLight 
   const [tenorMonths, setTenorMonths] = useState<number>(60);
   const [interestRateAnnualStr, setInterestRateAnnualStr] = useState('10.5');
 
-  const loanAmt = parseFloat(loanAmountStr.replace(/\D/g, '')) || 0;
+  const loanAmt = parseMoneyInput(loanAmountStr);
   const rateAnnual = (parseFloat(interestRateAnnualStr) || 0) / 100;
   const rateMonthly = rateAnnual / 12;
 

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
-import { fmtDate, parseAnyDate, getMasterHdtdNumber, toIsoDate } from '../../lib/utils';
+import { fmtDate, parseAnyDate, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
 import { assetClassLabel } from '../../lib/collateralMath';
 import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
-  DUE_FILTER_LABELS, type DueFilter,
+  DUE_FILTER_LABELS, monthlyDueInfo, type DueFilter,
 } from '../../lib/dueList';
 import type { Customer, Collateral, LoanContract } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
@@ -12,55 +12,6 @@ import {
   DollarSign, Users, Building2, AlertCircle, RefreshCw,
   Calendar, Clock, ShieldAlert, FileText, AlertTriangle, Printer
 } from 'lucide-react';
-
-function getDaysUntil(dateStr?: string | null): number | null {
-  if (!dateStr) return null;
-  try {
-    const parts = dateStr.split('T')[0].split(' ')[0].split('-');
-    if (parts.length !== 3) return null;
-    const target = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-    if (isNaN(target.getTime())) return null;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    target.setHours(0, 0, 0, 0);
-
-    const diffTime = target.getTime() - today.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  } catch {
-    return null;
-  }
-}
-
-function getMonthlyDueInfo(dateStr?: string | null): { dueDateStr: string; daysLeft: number } | null {
-  if (!dateStr) return null;
-  try {
-    const parts = dateStr.split('-');
-    if (parts.length !== 3) return null;
-    const origDay = parseInt(parts[2], 10);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    let dueThisMonth = new Date(today.getFullYear(), today.getMonth(), origDay);
-    dueThisMonth.setHours(0, 0, 0, 0);
-
-    if (dueThisMonth < today) {
-      dueThisMonth = new Date(today.getFullYear(), today.getMonth() + 1, origDay);
-    }
-
-    const diffTime = dueThisMonth.getTime() - today.getTime();
-    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    const yyyy = dueThisMonth.getFullYear();
-    const mm = String(dueThisMonth.getMonth() + 1).padStart(2, '0');
-    const dd = String(dueThisMonth.getDate()).padStart(2, '0');
-
-    return { dueDateStr: `${dd}/${mm}/${yyyy}`, daysLeft };
-  } catch {
-    return null;
-  }
-}
 
 export const DashboardView: React.FC = () => {
   const { theme } = useTheme();
@@ -134,14 +85,14 @@ export const DashboardView: React.FC = () => {
 
   const dueInMonthList = activeContracts.map(c => {
     const cus = customers.find(cust => cust.Id === c.CustomerId);
-    const dueInfo = getMonthlyDueInfo(c.RepaymentStartDate || c.DisbursementDate || c.ContractStartDate);
+    const dueInfo = monthlyDueInfo(c.RepaymentStartDate || c.DisbursementDate || c.ContractStartDate);
     return { contract: c, customer: cus, dueInfo };
   }).filter(item => item.dueInfo && item.dueInfo.daysLeft <= 5)
     .sort((a, b) => (a.dueInfo?.daysLeft ?? 0) - (b.dueInfo?.daysLeft ?? 0));
 
   const dueKunnList = activeContracts.map(c => {
     const cus = customers.find(cust => cust.Id === c.CustomerId);
-    const daysLeft = getDaysUntil(c.KunnDueDate);
+    const daysLeft = daysUntil(c.KunnDueDate);
     return { contract: c, customer: cus, daysLeft };
   }).filter(item => item.daysLeft !== null && item.daysLeft <= 10)
     .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
@@ -157,7 +108,7 @@ export const DashboardView: React.FC = () => {
 
     const endDateStr = toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate) || '';
 
-    const daysLeft = getDaysUntil(endDateStr);
+    const daysLeft = daysUntil(endDateStr);
 
     if (!hmtdMap[masterNo] || (c.ContractAmount && c.ContractAmount > (hmtdMap[masterNo].contract.ContractAmount || 0))) {
       hmtdMap[masterNo] = {
@@ -194,7 +145,7 @@ export const DashboardView: React.FC = () => {
 
     if (!expiryDateStr) return null;
 
-    const daysLeft = getDaysUntil(expiryDateStr);
+    const daysLeft = daysUntil(expiryDateStr);
     return { collateral: col, customer: cus, expiryDateStr, daysLeft };
   }).filter((item): item is NonNullable<typeof item> => {
     return item !== null && item.daysLeft !== null && item.daysLeft <= 30;

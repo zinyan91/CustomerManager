@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Percent, TrendingDown, Download, FileSpreadsheet, Calculator, Calendar, Plus, Trash2 } from 'lucide-react';
-import { fmtMoney, fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
+import { fmtMoney, fmtDate, fmtPercent, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import {
   calcRateReductionForLoan,
   sumInterestReduced,
@@ -28,7 +28,6 @@ interface QuickLoanRow {
   cofStr: string;
 }
 
-const pct = (v: number) => `${(v * 100).toFixed(2)}%`;
 
 const newQuickRow = (key: number): QuickLoanRow => ({
   key,
@@ -99,7 +98,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
   const [tdhMinRateStr, setTdhMinRateStr] = useState('9.82');
   const [tdhMaxReductionStr, setTdhMaxReductionStr] = useState('3.0');
   const [tdhCofStr, setTdhCofStr] = useState('8.5');
-  const [tdhStartDate, setTdhStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [tdhStartDate, setTdhStartDate] = useState(() => todayIso());
 
   const tdhLoanAmt = parseMoneyInput(tdhLoanAmtStr);
   const tdhPrefRate = (parseFloat(tdhPrefRateStr) || 0) / 100;
@@ -189,9 +188,9 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
         <td style="text-align:center;">${r.daysInPeriod}</td>
         <td style="text-align:right;">${r.beginningBalance.toLocaleString('vi-VN')}</td>
         <td style="text-align:right;">${r.principalPayment.toLocaleString('vi-VN')}</td>
-        <td style="text-align:center;">${pct(r.standardRateAnnual)}</td>
-        <td style="text-align:center;font-weight:bold;color:${r.isReduced ? '#16a34a' : '#000'};">${pct(r.reducedRateAnnual)}</td>
-        <td style="text-align:center;color:#dc2626;">${pct(r.deltaRateAnnual)}</td>
+        <td style="text-align:center;">${fmtPercent(r.standardRateAnnual)}</td>
+        <td style="text-align:center;font-weight:bold;color:${r.isReduced ? '#16a34a' : '#000'};">${fmtPercent(r.reducedRateAnnual)}</td>
+        <td style="text-align:center;color:#dc2626;">${fmtPercent(r.deltaRateAnnual)}</td>
         <td style="text-align:right;font-weight:bold;color:#16a34a;">${r.interestReduced.toLocaleString('vi-VN')}</td>
         <td style="text-align:right;">${r.interestOriginal.toLocaleString('vi-VN')}</td>
         <td style="text-align:right;font-weight:bold;">${r.interestFinal.toLocaleString('vi-VN')}</td>
@@ -214,8 +213,8 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
     const subtitle = [
       `<strong>Số tiền vay:</strong> ${tdhLoanAmt.toLocaleString('vi-VN')} VNĐ`,
       `<strong>Thời hạn:</strong> ${tdhTenorMonths} tháng`,
-      `<strong>LS ưu đãi:</strong> ${pct(tdhPrefRate)} (${tdhPrefMonths} tháng)`,
-      `<strong>LS sau ưu đãi:</strong> ${pct(tdhPostPrefRate)}`,
+      `<strong>LS ưu đãi:</strong> ${fmtPercent(tdhPrefRate)} (${tdhPrefMonths} tháng)`,
+      `<strong>LS sau ưu đãi:</strong> ${fmtPercent(tdhPostPrefRate)}`,
       `<strong>Áp dụng giảm:</strong> tháng ${tdhStartMonth} → ${tdhStartMonth + tdhNumMonthsReduce - 1}`,
     ].join(' | ');
 
@@ -225,7 +224,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
         subtitle,
         `<table><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody><tfoot>${footerHtml}</tfoot></table>`
       ),
-      `BANG_TINH_GIAM_LAI_TDH_${new Date().toISOString().split('T')[0]}.xls`
+      `BANG_TINH_GIAM_LAI_TDH_${todayIso()}.xls`
     );
   };
 
@@ -260,13 +259,13 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
         <td style="text-align:center;">${q.row.riskCoefficientStr}</td>
         <td style="text-align:center;">${q.row.standardRateStr}</td>
         <td style="text-align:center;">${q.row.proposedRateStr}</td>
-        <td style="text-align:center;color:#dc2626;">${pct(q.result.deltaRateAnnual)}</td>
+        <td style="text-align:center;color:#dc2626;">${fmtPercent(q.result.deltaRateAnnual)}</td>
         <td style="text-align:center;">${q.row.applyLabel}</td>
         <td style="text-align:center;">${q.row.daysStr}</td>
         <td style="text-align:right;font-weight:bold;color:#16a34a;">${q.result.interestReduced.toLocaleString('vi-VN')}</td>
         <td style="text-align:center;">${q.row.cofStr}</td>
-        <td style="text-align:center;">${q.result.marginCurrentAnnual === null ? '—' : pct(q.result.marginCurrentAnnual)}</td>
-        <td style="text-align:center;">${q.result.marginProposedAnnual === null ? '—' : pct(q.result.marginProposedAnnual)}</td>
+        <td style="text-align:center;">${q.result.marginCurrentAnnual === null ? '—' : fmtPercent(q.result.marginCurrentAnnual)}</td>
+        <td style="text-align:center;">${q.result.marginProposedAnnual === null ? '—' : fmtPercent(q.result.marginProposedAnnual)}</td>
       </tr>
     `).join('');
 
@@ -286,7 +285,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
         `<strong>Số khoản vay:</strong> ${quickResults.length} | <strong>Tổng số dư:</strong> ${quickTotalBalance.toLocaleString('vi-VN')} VNĐ`,
         `<table><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody><tfoot>${footerHtml}</tfoot></table>`
       ),
-      `BANG_TINH_GIAM_LAI_NGAN_HAN_${new Date().toISOString().split('T')[0]}.xls`
+      `BANG_TINH_GIAM_LAI_NGAN_HAN_${todayIso()}.xls`
     );
   };
 
@@ -527,7 +526,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
                 <div className="text-[11px] text-slate-500 mt-0.5">
                   {effectiveReducedRate === null
                     ? 'Chưa áp dụng giảm lãi suất'
-                    : `LS giảm chốt ${pct(effectiveReducedRate)} − COF ${pct(tdhCof)}`}
+                    : `LS giảm chốt ${fmtPercent(effectiveReducedRate)} − COF ${fmtPercent(tdhCof)}`}
                 </div>
               </div>
               <div className="p-3 bg-amber-50 dark:bg-amber-950/60 rounded-xl text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
@@ -538,7 +537,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
 
           {effectiveReducedRate !== null && effectiveReducedRate - tdhCof < 0 && (
             <div className="rounded-2xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 p-3 text-xs font-bold text-rose-700 dark:text-rose-300">
-              ⚠ LS giảm chốt {pct(effectiveReducedRate)} thấp hơn chi phí vốn COF {pct(tdhCof)} — margin âm, cần cấp có thẩm quyền phê duyệt.
+              ⚠ LS giảm chốt {fmtPercent(effectiveReducedRate)} thấp hơn chi phí vốn COF {fmtPercent(tdhCof)} — margin âm, cần cấp có thẩm quyền phê duyệt.
             </div>
           )}
 
@@ -591,12 +590,12 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
                       <td className="p-2 text-center">{r.daysInPeriod}</td>
                       <td className="p-2 text-right">{fmtMoney(r.beginningBalance)}</td>
                       <td className="p-2 text-right">{fmtMoney(r.principalPayment)}</td>
-                      <td className="p-2 text-center">{pct(r.standardRateAnnual)}</td>
+                      <td className="p-2 text-center">{fmtPercent(r.standardRateAnnual)}</td>
                       <td className={`p-2 text-center font-bold ${r.isReduced ? 'text-emerald-600 dark:text-emerald-400' : ''}`}>
-                        {pct(r.reducedRateAnnual)}
+                        {fmtPercent(r.reducedRateAnnual)}
                       </td>
                       <td className="p-2 text-center text-rose-500 font-bold">
-                        {r.isReduced ? `-${pct(r.deltaRateAnnual)}` : '0%'}
+                        {r.isReduced ? `-${fmtPercent(r.deltaRateAnnual)}` : '0%'}
                       </td>
                       <td className="p-2 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
                         {r.isReduced ? fmtMoney(r.interestReduced) : '0 VNĐ'}
@@ -743,7 +742,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
                         />
                       </td>
                       <td className="p-2 text-center font-mono font-bold text-rose-600 dark:text-rose-400">
-                        -{pct(q.result.deltaRateAnnual)}
+                        -{fmtPercent(q.result.deltaRateAnnual)}
                       </td>
                       <td className="p-1.5">
                         <input
@@ -776,7 +775,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = ({ isLight }) => {
                           <span className="text-slate-400">—</span>
                         ) : (
                           <span className={q.result.marginProposedAnnual < 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : ''}>
-                            {pct(q.result.marginCurrentAnnual)} → {pct(q.result.marginProposedAnnual)}
+                            {fmtPercent(q.result.marginCurrentAnnual)} → {fmtPercent(q.result.marginProposedAnnual)}
                           </span>
                         )}
                       </td>

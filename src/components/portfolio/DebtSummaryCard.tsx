@@ -1,5 +1,7 @@
 import React from 'react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
+import { computeSchedulePenalty, overdueDaysOfSchedule } from '../../lib/loanMath';
+import { getEffectiveActiveRate } from '../../lib/utils';
 
 interface DebtSummaryCardProps {
   selectedContract: LoanContract;
@@ -15,9 +17,6 @@ export const DebtSummaryCard: React.FC<DebtSummaryCardProps> = ({
   const schs = selectedContract ? (allSchedulesMap[selectedContract.Id] || schedules) : schedules;
   if (!selectedContract || schs.length === 0) return null;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   let duePrincipal = 0;
   let paidPrincipal = 0;
   let overduePrincipal = 0;
@@ -27,25 +26,8 @@ export const DebtSummaryCard: React.FC<DebtSummaryCardProps> = ({
   let penaltyPrincipal = 0;
   let penaltyInterest = 0;
 
-  const annualRate = (selectedContract.InterestRate || selectedContract.NormalRate || 0.085) > 1
-    ? (selectedContract.InterestRate || selectedContract.NormalRate || 8.5) / 100
-    : (selectedContract.InterestRate || selectedContract.NormalRate || 0.085);
-
   for (const s of schs) {
-    let isPastDue = false;
-    let overdueDays = 0;
-    if (s.DueDate) {
-      const parts = s.DueDate.split('-');
-      if (parts.length === 3) {
-        const dueDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-        dueDate.setHours(0, 0, 0, 0);
-        const diff = today.getTime() - dueDate.getTime();
-        if (diff > 0) {
-          isPastDue = true;
-          overdueDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
-        }
-      }
-    }
+    const isPastDue = overdueDaysOfSchedule(s) > 0;
 
     if (isPastDue || s.IsPaid) {
       duePrincipal += (s.PrincipalAmount || 0);
@@ -57,12 +39,17 @@ export const DebtSummaryCard: React.FC<DebtSummaryCardProps> = ({
     } else if (isPastDue) {
       overduePrincipal += (s.PrincipalAmount || 0);
       overdueInterest += (s.InterestAmount || 0);
-      penaltyPrincipal += (s.PrincipalAmount || 0) * (annualRate * 1.5) * (overdueDays / 365);
-      penaltyInterest += (s.InterestAmount || 0) * 0.10 * (overdueDays / 365);
+      const penalty = computeSchedulePenalty(
+        s,
+        getEffectiveActiveRate(selectedContract, s.DueDate)
+      );
+      penaltyPrincipal += penalty.principalPenalty;
+      penaltyInterest += penalty.interestPenalty;
     }
   }
 
-  const totalPenalty = Math.round(penaltyPrincipal + penaltyInterest);
+  const totalPenalty = penaltyPrincipal + penaltyInterest;
+
   const totalUrgentPayment = overduePrincipal + overdueInterest + totalPenalty;
 
   return (

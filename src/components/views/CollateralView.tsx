@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI } from '../../lib/api';
-import { parseAnyDate, fmtDate } from '../../lib/utils';
+import { parseAnyDate, fmtDate, parseMoneyInput } from '../../lib/utils';
 import { defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset } from '../../lib/collateralMath';
 import type { Collateral, Customer } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
@@ -144,7 +144,7 @@ export const CollateralView: React.FC = () => {
       showNotify('error', 'Vui lòng chọn Khách hàng sở hữu TSBĐ!');
       return;
     }
-    const valNum = parseFloat(inputAppraisedValue.replace(/\D/g, '')) || 0;
+    const valNum = parseMoneyInput(inputAppraisedValue);
     if (!valNum) {
       showNotify('error', 'Vui lòng nhập Giá trị định giá TSBĐ!');
       return;

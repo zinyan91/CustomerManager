@@ -6,6 +6,9 @@ import {
   formatAssetType,
   parseAnyDate,
   toIsoDate,
+  fmtPercent,
+  todayIso,
+  daysUntil,
   fmtDate,
   getContractRateHistory,
   serializeContractRateHistory,
@@ -231,5 +234,53 @@ describe('getMasterHdtdNumber', () => {
 
   it('trả nhãn mặc định khi không có gì', () => {
     expect(getMasterHdtdNumber({} as LoanContract)).toBe('HĐTD-CHÍNH');
+  });
+});
+
+describe('fmtPercent', () => {
+  it('nhận tỷ lệ dạng thập phân và trả về phần trăm', () => {
+    expect(fmtPercent(0.105)).toBe('10,50%');
+  });
+
+  it('giữ số 0 là giá trị hợp lệ, không rơi về fallback', () => {
+    expect(fmtPercent(0)).toBe('0,00%');
+  });
+
+  it('trả fallback khi thiếu dữ liệu', () => {
+    expect(fmtPercent(null)).toBe('—');
+    expect(fmtPercent(undefined)).toBe('—');
+    expect(fmtPercent(NaN)).toBe('—');
+    expect(fmtPercent(null, '')).toBe('');
+  });
+});
+
+describe('todayIso', () => {
+  it('trả về ngày theo múi giờ máy, không lệch ngày như toISOString', () => {
+    const d = new Date();
+    const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    expect(todayIso()).toBe(expected);
+  });
+});
+
+describe('daysUntil', () => {
+  it('đếm số ngày còn lại tới mốc trong tương lai', () => {
+    expect(daysUntil('2026-08-15', '2026-08-05')).toBe(10);
+  });
+
+  it('trả 0 khi đến hạn đúng hôm nay', () => {
+    expect(daysUntil('2026-08-05', '2026-08-05')).toBe(0);
+  });
+
+  it('trả số âm khi mốc đã qua', () => {
+    expect(daysUntil('2026-07-31', '2026-08-05')).toBe(-5);
+  });
+
+  it('không lệch một ngày khi khoảng thời gian vắt qua mốc đổi giờ mùa hè', () => {
+    expect(daysUntil('2026-04-01', '2026-03-01')).toBe(31);
+  });
+
+  it('trả null khi thiếu ngày', () => {
+    expect(daysUntil(null, '2026-08-05')).toBeNull();
+    expect(daysUntil('', '2026-08-05')).toBeNull();
   });
 });

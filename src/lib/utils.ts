@@ -17,6 +17,24 @@ export function parseMoneyInput(value: string): number {
   return parseFloat(digits) || 0;
 }
 
+/**
+ * Đọc số tiền còn giữ phần thập phân.
+ *
+ * Dùng cho các ô có thể nhận giá trị lẻ đồng, ví dụ khi nạp sẵn từ cơ sở dữ
+ * liệu bằng toLocaleString. parseMoneyInput cắt sạch ký tự không phải chữ số
+ * nên "1.000.000,5" ra 10000005 — mất chỗ dấu thập phân.
+ */
+export function parseMoneyDecimalInput(value: string): number {
+  if (!value) return 0;
+  const sep = NUMBER_SEPARATORS[loadFormatSettings().numberStyle] ?? NUMBER_SEPARATORS.vi;
+  const cleaned = value
+    .split(sep.group).join('')
+    .replace(sep.decimal, '.')
+    .replace(/[^\d.-]/g, '');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
 export function fmtMoney(v?: number | null): string {
   if (v === undefined || v === null || isNaN(v)) return '—';
   return `${formatMoneyWith(v)} VNĐ`;
@@ -26,6 +44,33 @@ export function fmtRate(v?: number | null): string {
   if (v === undefined || v === null || isNaN(v)) return '—';
   const ratio = v > 1 ? v / 100 : v;
   return `${formatPercentWith(ratio)}/năm`;
+}
+
+export function fmtPercent(v?: number | null, fallback: string = '—'): string {
+  if (v === undefined || v === null || isNaN(v)) return fallback;
+  return formatPercentWith(v);
+}
+
+export function todayIso(): string {
+  const d = new Date();
+  const yy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+export function daysUntil(dateStr?: string | null, todayStr?: string): number | null {
+  const target = parseAnyDate(dateStr);
+  if (!target) return null;
+  const base = todayStr ? parseAnyDate(todayStr) : null;
+  const now = base
+    ? Date.UTC(base.year, base.month - 1, base.day)
+    : (() => {
+        const d = new Date();
+        return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+      })();
+  const to = Date.UTC(target.year, target.month - 1, target.day);
+  return Math.round((to - now) / 86400000);
 }
 
 export function formatAssetType(assetType?: string | null): string {
@@ -165,7 +210,7 @@ export function getEffectiveActiveRate(c?: LoanContract | null, targetDateStr?: 
   if (!c) return 0.085;
   const history = getContractRateHistory(c);
   if (history.length > 0) {
-    const todayStr = targetDateStr || new Date().toISOString().split('T')[0];
+    const todayStr = targetDateStr || todayIso();
     const sorted = [...history].sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate));
     let active = sorted[0];
     for (const item of sorted) {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { RefreshCw, Percent } from 'lucide-react';
-import { fmtMoney, formatMoneyInput } from '../../lib/utils';
+import { fmtMoney, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
 import { effectiveAnnualRate, flatToReducingApprox } from '../../lib/calcMath';
 import type { ThemeStyles } from '../../lib/themeStyles';
 
@@ -19,7 +19,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = ({ isLight 
   const [compoundingFreq, setCompoundingFreq] = useState<number>(12);
 
   const flatRateMonthly = (parseFloat(flatRateMonthlyStr) || 0) / 100;
-  const sampleLoanAmt = parseFloat(sampleLoanAmtStr.replace(/\D/g, '')) || 100000000;
+  const sampleLoanAmt = parseMoneyInput(sampleLoanAmtStr) || 100000000;
 
   const flatMonthlyInterest = sampleLoanAmt * flatRateMonthly;
   const flatMonthlyPrincipal = sampleLoanAmt / (flatTenorMonths || 1);

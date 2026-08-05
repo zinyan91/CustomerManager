@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { RefreshCw, Download, Printer, Plus, Trash2 } from 'lucide-react';
 import type { ThemeStyles } from '../../lib/themeStyles';
 import { DateInput } from '../DateInput';
-import { fmtDate } from '../../lib/utils';
+import { fmtDate, parseMoneyInput, todayIso } from '../../lib/utils';
 import { addMonths, buildLoanSchedule, postPromoRateAnnual } from '../../lib/calcMath';
 import type { PrepaymentMode, PrepaymentPlanItem } from '../../lib/calcMath';
 import { buildScheduleDocHtml } from '../../lib/scheduleDocHtml';
@@ -93,7 +93,7 @@ function exportToExcelHTML(
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${filename}_${new Date().toISOString().split('T')[0]}.xls`;
+  a.download = `${filename}_${todayIso()}.xls`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -129,7 +129,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   const [loanAmountStr, setLoanAmountStr] = useState('500.000.000');
   const [interestRateStr, setInterestRateStr] = useState('8.5');
   const [tenorMonths, setTenorMonths] = useState<number>(12);
-  const [disbursementDate, setDisbursementDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [disbursementDate, setDisbursementDate] = useState(() => todayIso());
   const [firstPaymentDate, setFirstPaymentDate] = useState('');
   const [repayMethod, setRepayMethod] = useState<'equal_principal' | 'bullet'>('equal_principal');
   const [principalGraceMonths, setPrincipalGraceMonths] = useState<number>(0);
@@ -141,7 +141,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
 
   const [prepayments, setPrepayments] = useState<PrepaymentRow[]>([]);
 
-  const loanAmt = parseFloat(loanAmountStr.replace(/\D/g, '')) || 0;
+  const loanAmt = parseMoneyInput(loanAmountStr);
   const rateAnnual = parseFloat(interestRateStr) || 0;
 
   const promoMonths = parseNumOrNull(promoMonthsStr);
@@ -161,7 +161,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
     () => prepayments
       .map(p => ({
         period: parseInt(p.periodStr, 10),
-        amount: parseFloat(p.amountStr.replace(/\D/g, '')),
+        amount: parseMoneyInput(p.amountStr),
         mode: p.mode,
       }))
       .filter(p => Number.isFinite(p.period) && p.period >= 1 && p.period <= tenorMonths

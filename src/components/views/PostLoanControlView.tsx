@@ -11,7 +11,7 @@ import {
   CONTROL_TYPE_LABEL, CONTROL_RESULT_LABEL, overdueDaysOf,
   type ControlItemWithRecord, type ControlType,
 } from '../../lib/postLoanControl';
-import { fmtDate, fmtMoney, formatMoneyInput } from '../../lib/utils';
+import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { assetClassLabel, defaultLtvForAssetType } from '../../lib/collateralMath';
 import { useTheme } from '../../context/ThemeContext';
 import { getThemeStyles } from '../../lib/themeStyles';
@@ -46,7 +46,7 @@ export const PostLoanControlView: React.FC = () => {
   const [modalTenor, setModalTenor] = useState<6 | 12 | 24>(12);
   const [saving, setSaving] = useState(false);
 
-  const todayIso = new Date().toISOString().split('T')[0];
+  const today = todayIso();
 
   useEffect(() => { loadAll(); }, []);
 
@@ -77,7 +77,7 @@ export const PostLoanControlView: React.FC = () => {
 
   const items = useMemo(() => {
     const schedule = generateControlSchedule({
-      contracts, collaterals, todayStr: todayIso,
+      contracts, collaterals, todayStr: today,
       collateralIntervalMonths,
     });
     return mergeControlRecords(schedule, records);
@@ -100,7 +100,7 @@ export const PostLoanControlView: React.FC = () => {
 
   const openModal = (it: ControlItemWithRecord) => {
     setEditing(it);
-    setModalDate(it.record?.PerformedDate || todayIso);
+    setModalDate(it.record?.PerformedDate || today);
     setModalResult(it.record?.Result || 'pass');
     setModalFindings(it.record?.Findings || '');
     setModalReappraise(false);
@@ -121,7 +121,7 @@ export const PostLoanControlView: React.FC = () => {
       let appraisalId: number | null = editing.record?.AppraisalId ?? null;
 
       if (modalReappraise && editing.collateralId) {
-        const value = parseFloat(modalValue.replace(/\D/g, '')) || 0;
+        const value = parseMoneyInput(modalValue);
         if (!value) throw new Error('Vui lòng nhập giá trị định giá mới!');
         const appraisal = await saveCollateralAppraisalAPI({
           CollateralId: editing.collateralId,
@@ -445,7 +445,7 @@ export const PostLoanControlView: React.FC = () => {
                         LTV áp dụng theo xếp loại: <strong>{defaultLtvForAssetType(modalAssetType)}%</strong> —
                         hạn mức cho vay tối đa{' '}
                         <strong className="text-sky-600 dark:text-sky-400">
-                          {fmtMoney((parseFloat(modalValue.replace(/\D/g, '')) || 0) * defaultLtvForAssetType(modalAssetType) / 100)}
+                          {fmtMoney((parseMoneyInput(modalValue)) * defaultLtvForAssetType(modalAssetType) / 100)}
                         </strong>.
                         Giá trị này sẽ trở thành định giá hiện hành của tài sản.
                       </div>

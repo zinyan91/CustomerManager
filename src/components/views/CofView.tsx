@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Landmark, Loader2, RefreshCw, FileText, Save, Info } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { fmtDate } from '../../lib/utils';
+import { fmtDate, fmtPercent, todayIso } from '../../lib/utils';
+
+const fmtPercentEmpty = (v?: number | null) => fmtPercent(v, '');
 import {
   fetchCofProgramsAPI, fetchCofStandardRatesAPI, fetchCofRateItemsAPI,
   updateCofStandardRateAPI, updateCofRateItemAPI,
@@ -15,10 +17,7 @@ import type {
   CofProgram, CofStandardRate, CofRateItem, CofRateColumnKey, CofSection,
 } from '../../lib/cof';
 
-const pct = (v?: number | null) =>
-  v === null || v === undefined || isNaN(v) ? '' : `${(v * 100).toFixed(2)}%`;
 
-const todayIso = () => new Date().toISOString().split('T')[0];
 
 const ITEM_SECTIONS: CofSection[] = [
   'cam_co_stk_vnd', 'san_pham_dac_thu', 'tat_toan_truoc_han', 'no_qua_han', 'thanh_khoan',
@@ -228,7 +227,7 @@ export const CofView: React.FC = () => {
               <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60">
                 <div className="text-[10px] font-bold text-slate-500 uppercase">COF → MARGIN</div>
                 <div className="font-mono font-extrabold text-sky-600 dark:text-sky-400 mt-0.5">
-                  {selectedCof === null ? 'Không có mức' : pct(selectedCof)}
+                  {selectedCof === null ? 'Không có mức' : fmtPercentEmpty(selectedCof)}
                   {' → '}
                   <span className={margin !== null && margin < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}>
                     {margin === null ? '—' : `${(margin * 100).toFixed(2)}%`}
@@ -300,7 +299,7 @@ export const CofView: React.FC = () => {
                               isAdmin ? 'cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/40' : ''
                             }`}
                           >
-                            {blank ? '—' : pct(value)}
+                            {blank ? '—' : fmtPercentEmpty(value)}
                           </td>
                         );
                       })}
@@ -370,7 +369,7 @@ export const CofView: React.FC = () => {
                                       blank ? 'text-slate-400' : 'font-bold text-sky-600 dark:text-sky-400'
                                     } ${isAdmin ? 'cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/40' : ''}`}
                                   >
-                                    {blank ? '—' : item.RateAnnual === 0 ? 'Miễn phí' : pct(item.RateAnnual)}
+                                    {blank ? '—' : item.RateAnnual === 0 ? 'Miễn phí' : fmtPercentEmpty(item.RateAnnual)}
                                   </td>
                                 )}
                                 <td className="p-2 text-slate-500">

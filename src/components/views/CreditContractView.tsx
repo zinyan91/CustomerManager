@@ -430,9 +430,6 @@ export const CreditContractView: React.FC = () => {
               <DateInput readOnly value={form.ContractEndDate || ''}
                 onChange={v => setForm(f => ({ ...f, ContractEndDate: v }))}
                 className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
-              <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                Tự tính từ ngày hiệu lực + thời hạn
-              </div>
             </div>
           </div>
 

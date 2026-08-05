@@ -64,6 +64,16 @@ const INTEREST_REPAY_OPTIONS = [
 const fmtMoney = (v?: number | null) => v !== undefined && v !== null ? v.toLocaleString('vi-VN') + ' VNĐ' : '—';
 const fmtRate = (v?: number | null) => v !== undefined && v !== null ? (v * 100).toFixed(2) + '%/năm' : '—';
 
+function rateToInput(v?: number | null): string {
+  if (v === null || v === undefined || Number.isNaN(v)) return '';
+  return Number((v * 100).toFixed(4)).toString();
+}
+
+function intToInput(v?: number | null): string {
+  if (v === null || v === undefined || Number.isNaN(v)) return '';
+  return String(v);
+}
+
 export const LoanPortfolioView: React.FC = () => {
   const { theme } = useTheme();
   const isLight = theme === 'light';
@@ -114,6 +124,7 @@ export const LoanPortfolioView: React.FC = () => {
   const [rateBase, setRateBase] = useState('');
   const [rateMargin, setRateMargin] = useState('');
   const [rateConditionSurcharge, setRateConditionSurcharge] = useState('0');
+  const [rateFloor, setRateFloor] = useState('');
 
   const [selectedCollateralIds, setSelectedCollateralIds] = useState<number[]>([]);
 
@@ -401,10 +412,11 @@ export const LoanPortfolioView: React.FC = () => {
     setFormLoanAmount(c.LoanAmount ? c.LoanAmount.toLocaleString('vi-VN') : '');
     setFormCurrentBalance(c.CurrentBalance ? c.CurrentBalance.toLocaleString('vi-VN') : '');
 
-    setRatePreferential(c.PreferentialRate ? Number((c.PreferentialRate * 100).toFixed(4)).toString() : '');
-    setRatePreferentialMonths(c.PreferentialPeriodMonths ? c.PreferentialPeriodMonths.toString() : '');
-    setRateBase(c.BaseRate ? Number((c.BaseRate * 100).toFixed(4)).toString() : '');
-    setRateMargin(c.MarginRate ? Number((c.MarginRate * 100).toFixed(4)).toString() : '');
+    setRatePreferential(rateToInput(c.PreferentialRate));
+    setRatePreferentialMonths(intToInput(c.PreferentialPeriodMonths));
+    setRateBase(rateToInput(c.BaseRate));
+    setRateMargin(rateToInput(c.MarginRate));
+    setRateFloor(rateToInput(c.RateFloorAnnual));
 
     if (c.PenaltySurcharge != null && c.PenaltySurcharge > 0) {
       setRateConditionSurcharge(c.PenaltySurcharge.toString());
@@ -543,11 +555,14 @@ export const LoanPortfolioView: React.FC = () => {
           : null,
 
         PreferentialRate: prefDec,
-        PreferentialPeriodMonths: parseInt(ratePreferentialMonths) || undefined,
+        PreferentialPeriodMonths: ratePreferentialMonths.trim() === ''
+          ? undefined
+          : (parseInt(ratePreferentialMonths, 10) || 0),
         BaseRate: baseDec,
         MarginRate: marginDec,
         PostPreferentialRate: postPrefDec,
         NormalRate: normalDec,
+        RateFloorAnnual: rateFloor.trim() === '' ? null : (parseFloat(rateFloor) || 0) / 100,
         InterestRate: activeInterestRate,
 
         CollateralId: selectedCollateralIds.length > 0 ? selectedCollateralIds[0] : null,
@@ -952,10 +967,10 @@ export const LoanPortfolioView: React.FC = () => {
     setFormCreditLimit(cc.ContractAmount ? cc.ContractAmount.toLocaleString('vi-VN') : '');
     setFormCreditLimitCode(cc.ApprovalCode || '');
     setFormCreditLimitAmount(cc.ApprovalAmount ? cc.ApprovalAmount.toLocaleString('vi-VN') : '');
-    setRatePreferential(cc.PreferentialRate ? (cc.PreferentialRate * 100).toString() : '');
-    setRatePreferentialMonths(cc.PreferentialPeriodMonths ? cc.PreferentialPeriodMonths.toString() : '');
-    setRateBase(cc.BaseRate ? (cc.BaseRate * 100).toString() : '');
-    setRateMargin(cc.MarginRate ? (cc.MarginRate * 100).toString() : '');
+    setRatePreferential(rateToInput(cc.PreferentialRate));
+    setRatePreferentialMonths(intToInput(cc.PreferentialPeriodMonths));
+    setRateBase(rateToInput(cc.BaseRate));
+    setRateMargin(rateToInput(cc.MarginRate));
     setSelectedCollateralIds(
       (cc.CollateralIds || '').split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n))
     );
@@ -1030,10 +1045,10 @@ export const LoanPortfolioView: React.FC = () => {
     setFormCreditLimitAmount(cc.ApprovalAmount ? cc.ApprovalAmount.toLocaleString('vi-VN') : '');
     setFormLoanAmount('');
     setFormCurrentBalance('');
-    setRatePreferential(cc.PreferentialRate ? (cc.PreferentialRate * 100).toString() : '');
-    setRatePreferentialMonths(cc.PreferentialPeriodMonths ? cc.PreferentialPeriodMonths.toString() : '');
-    setRateBase(cc.BaseRate ? (cc.BaseRate * 100).toString() : '');
-    setRateMargin(cc.MarginRate ? (cc.MarginRate * 100).toString() : '');
+    setRatePreferential(rateToInput(cc.PreferentialRate));
+    setRatePreferentialMonths(intToInput(cc.PreferentialPeriodMonths));
+    setRateBase(rateToInput(cc.BaseRate));
+    setRateMargin(rateToInput(cc.MarginRate));
     setSelectedCollateralIds(
       (cc.CollateralIds || '').split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n))
     );
@@ -1464,7 +1479,7 @@ export const LoanPortfolioView: React.FC = () => {
                           </div>
                           <div>
                             <label className={`block mb-1 ${labelStyle}`}>Biên độ cộng thêm %/năm</label>
-                            <input type="number" step="0.01" min={0} value={rateMargin}
+                            <input type="number" step="0.01" value={rateMargin}
                               onChange={e => setRateMargin(e.target.value)}
                               placeholder="3.5"
                               className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-300 ${inputStyle}`} />
@@ -1494,7 +1509,7 @@ export const LoanPortfolioView: React.FC = () => {
                           </div>
                           <div>
                             <label className={`block mb-1 ${labelStyle}`}>Biên độ cộng thêm %/năm</label>
-                            <input type="number" step="0.01" min={0} value={rateMargin}
+                            <input type="number" step="0.01" value={rateMargin}
                               onChange={e => setRateMargin(e.target.value)}
                               placeholder="3.5"
                               className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-300 ${inputStyle}`} />
@@ -1522,6 +1537,16 @@ export const LoanPortfolioView: React.FC = () => {
                             onChange={e => setRateConditionSurcharge(e.target.value)}
                             placeholder="0.5 (%/năm)..."
                             className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-rose-600 dark:text-rose-400 ${inputStyle}`} />
+                        </div>
+                        <div>
+                          <label className={`block mb-1 ${labelStyle}`}>Sàn lãi suất theo hợp đồng (%/năm)</label>
+                          <input type="number" step="0.01" min={0} value={rateFloor}
+                            onChange={e => setRateFloor(e.target.value)}
+                            placeholder="Bỏ trống nếu hợp đồng không quy định"
+                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold ${inputStyle}`} />
+                          <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                            Chặn lãi thả nổi không tụt dưới mức này khi biên độ âm
+                          </div>
                         </div>
                         <div>
                           <label className={`block mb-1 ${labelStyle}`}>Điều kiện phê duyệt (CASA / BCTC)</label>
@@ -1613,8 +1638,14 @@ export const LoanPortfolioView: React.FC = () => {
                                 return;
                               }
                               const b = parseFloat(newAdjBaseRate) || 0;
-                              const m = parseFloat(newAdjMargin) || parseFloat(rateMargin) || 0;
-                              const p = parseFloat(newAdjPenalty) || parseFloat(rateConditionSurcharge) || 0;
+                              const numOr = (a: string, b: string) => {
+                                const x = parseFloat(a);
+                                if (!Number.isNaN(x)) return x;
+                                const y = parseFloat(b);
+                                return Number.isNaN(y) ? 0 : y;
+                              };
+                              const m = numOr(newAdjMargin, rateMargin);
+                              const p = numOr(newAdjPenalty, rateConditionSurcharge);
                               const totalRate = b > 0 ? (b + m + p) : (parseFloat(newAdjBaseRate) || currentActiveRateDisplay);
                               if (totalRate <= 0) {
                                 showNotify('error', 'Vui lòng nhập Lãi suất cơ sở hoặc Lãi suất áp dụng!');
@@ -1859,7 +1890,7 @@ export const LoanPortfolioView: React.FC = () => {
                             <th className="p-3 text-center whitespace-nowrap text-rose-500">SỐ NGÀY QUÁ HẠN</th>
                             <th className="p-3 text-right whitespace-nowrap">GỐC</th>
                             <th className="p-3 text-right whitespace-nowrap">LÃI THƯỜNG</th>
-                            <th className="p-3 text-right whitespace-nowrap text-rose-500">LÃI PHẠT QUÁ HẠN (150%)</th>
+                            <th className="p-3 text-right whitespace-nowrap text-rose-500">LÃI PHẠT QUÁ HẠN</th>
                             <th className="p-3 text-right whitespace-nowrap">TỔNG NGHĨA VỤ TRẢ</th>
                             <th className="p-3 text-center whitespace-nowrap">TRẠNG THÁI</th>
                             <th className="p-3 whitespace-nowrap">NGÀY TT</th>

@@ -31,6 +31,7 @@ export interface RateTimelineInput {
   marginRate?: number | null;
   normalRate?: number | null;
   interestRate?: number | null;
+  rateFloorAnnual?: number | null;
   rateHistory?: RateAdjustmentHistoryItem[];
 }
 
@@ -44,6 +45,21 @@ function toPercent(v?: number | null): number {
   if (v === undefined || v === null || isNaN(v)) return 0;
   if (v <= 0) return 0;
   return v <= 1 ? v * 100 : v;
+}
+
+/**
+ * Biên độ là số DUY NHẤT trong dòng thời gian lãi suất có thể âm: lãi suất sau
+ * ưu đãi được chào dưới lãi suất cơ sở (khách ưu tiên, chương trình giảm tiếp).
+ * `toPercent` trả 0 cho mọi số âm nên không dùng được ở đây — biên độ âm sẽ bị
+ * bỏ mất và lãi tính cao hơn hợp đồng.
+ *
+ * Suy đơn vị theo TRỊ TUYỆT ĐỐI: |v| <= 1 là dạng thập phân (-0,005 = -0,5%),
+ * lớn hơn 1 là dạng phần trăm (-0,5 phải khai là -0.5 dạng phần trăm thì mới
+ * ra -0,5%). Đây đúng quy ước đang dùng cho các mức lãi khác trong dự án.
+ */
+function toPercentSigned(v?: number | null): number {
+  if (v === undefined || v === null || isNaN(v)) return 0;
+  return Math.abs(v) <= 1 ? v * 100 : v;
 }
 
 function addMonthsClamped(dateStr: string, months: number): string {
@@ -60,18 +76,38 @@ function addMonthsClamped(dateStr: string, months: number): string {
   return `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-function floatingRatePercent(input: RateTimelineInput): number {
+/**
+ * Sàn lãi suất: hợp đồng cho biên độ âm thường kèm câu "không thấp hơn X%/năm".
+ * Không có sàn thì cũng không để lãi tụt xuống 0 hoặc âm.
+ */
+function applyRateFloor(ratePercent: number, input: RateTimelineInput): number {
+  const floor = toPercent(input.rateFloorAnnual);
+  return Math.max(floor, ratePercent, 0);
+}
+
+/**
+ * Trả kèm `configured` để phân biệt "chưa khai lãi thả nổi" với "khai ra 0%".
+ * Trước đây chỉ trả một con số và bên gọi kiểm `> 0`, nên biên độ âm lớn hơn lãi
+ * cơ sở bị kẹp về 0 rồi lại bị hiểu là chưa khai, khoản vay âm thầm nhận lãi
+ * mặc định 8,5%/năm. Lãi suất 0% là con số hợp lệ trong dự án này — chương trình
+ * trung dài hạn có gói ưu đãi 0% thật.
+ */
+function floatingRate(input: RateTimelineInput): { value: number; configured: boolean } {
   const base = toPercent(input.baseRate);
-  const margin = toPercent(input.marginRate);
-  if (base > 0) return base + margin;
+  if (base > 0) {
+    return { value: applyRateFloor(base + toPercentSigned(input.marginRate), input), configured: true };
+  }
 
   const postPref = toPercent(input.postPreferentialRate);
-  if (postPref > 0) return postPref;
+  if (postPref > 0) return { value: postPref, configured: true };
 
   const normal = toPercent(input.normalRate);
-  if (normal > 0) return normal;
+  if (normal > 0) return { value: normal, configured: true };
 
-  return toPercent(input.interestRate);
+  const interest = toPercent(input.interestRate);
+  if (interest > 0) return { value: interest, configured: true };
+
+  return { value: 0, configured: false };
 }
 
 function fmtDayMonthYear(iso: string): string {
@@ -103,7 +139,7 @@ export function buildRateTimeline(
 
   const prefRate = toPercent(input.preferentialRate);
   const prefMonths = input.preferentialPeriodMonths || 0;
-  const floating = floatingRatePercent(input);
+  const floating = floatingRate(input);
 
   const points: RateTimelinePoint[] = [];
 
@@ -117,7 +153,7 @@ export function buildRateTimeline(
         forecast: false,
       });
       const afterPref = addMonthsClamped(start, prefMonths);
-      const afterRate = floating > 0 ? floating : prefRate;
+      const afterRate = floating.configured ? floating.value : prefRate;
       points.push({
         fromDate: afterPref,
         ratePercent: afterRate,
@@ -126,12 +162,14 @@ export function buildRateTimeline(
         forecast: !!(today && afterPref > today),
       });
     } else {
-      const opening = floating > 0 ? floating : (prefRate > 0 ? prefRate : DEFAULT_RATE_PERCENT);
+      const opening = floating.configured
+        ? floating.value
+        : (prefRate > 0 ? prefRate : DEFAULT_RATE_PERCENT);
       points.push({
         fromDate: start,
         ratePercent: opening,
-        kind: floating > 0 ? 'floating' : 'contract',
-        label: floating > 0 ? 'Thả nổi (base + biên)' : 'Lãi suất hợp đồng',
+        kind: floating.configured ? 'floating' : 'contract',
+        label: floating.configured ? 'Thả nổi (base + biên)' : 'Lãi suất hợp đồng',
         forecast: false,
       });
     }
@@ -140,7 +178,10 @@ export function buildRateTimeline(
   for (const item of input.rateHistory || []) {
     if (!item?.effectiveDate) continue;
     const explicit = toPercent(item.ratePercent);
-    const composed = toPercent(item.baseRatePercent) + toPercent(item.marginPercent);
+    const composedBase = toPercent(item.baseRatePercent);
+    const composed = composedBase > 0
+      ? applyRateFloor(composedBase + toPercentSigned(item.marginPercent), input)
+      : 0;
     const rate = explicit > 0 ? explicit : composed;
     if (rate <= 0) continue;
     points.push({
@@ -188,6 +229,7 @@ export function buildContractRateTimeline(
     postPreferentialRate: c.PostPreferentialRate,
     baseRate: c.BaseRate,
     marginRate: c.MarginRate,
+    rateFloorAnnual: c.RateFloorAnnual,
     normalRate: c.NormalRate,
     interestRate: c.InterestRate,
     rateHistory: getContractRateHistory(c),

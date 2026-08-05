@@ -119,6 +119,7 @@ export interface LoanContract {
   MarginRate?: number | null;
   PostPreferentialRate?: number | null;
   NormalRate?: number | null;
+  RateFloorAnnual?: number | null;
 
   PrincipalRepaymentMethod?: string | null;
   InterestRepaymentMethod?: string | null;

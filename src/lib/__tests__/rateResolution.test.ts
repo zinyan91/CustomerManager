@@ -261,3 +261,81 @@ describe('buildContractRateTimeline — đọc từ hợp đồng', () => {
     expect(buildContractRateTimeline(null)).toEqual([]);
   });
 });
+
+describe('biên độ âm — lãi sau ưu đãi thấp hơn lãi suất cơ sở', () => {
+  it('trừ biên độ âm thay vì bỏ mất nó', () => {
+    const tl = buildRateTimeline({
+      startDate: '2026-01-15',
+      preferentialRate: 0.075,
+      preferentialPeriodMonths: 6,
+      baseRate: 0.099,
+      marginRate: -0.005,
+    }, { today: HOM_NAY });
+    const thaNoi = tl.find(p => p.kind === 'floating');
+    expect(thaNoi?.ratePercent).toBeCloseTo(9.4, 10);
+  });
+
+  it('nhận biên độ âm khai dạng phần trăm (trị tuyệt đối > 1)', () => {
+    const tl = buildRateTimeline({
+      startDate: '2026-01-15', baseRate: 9.9, marginRate: -1.5,
+    }, { today: HOM_NAY });
+    expect(tl[0].ratePercent).toBeCloseTo(8.4, 10);
+  });
+
+  it('biên độ 0 giữ nguyên lãi suất cơ sở', () => {
+    const tl = buildRateTimeline({
+      startDate: '2026-01-15', baseRate: 0.099, marginRate: 0,
+    }, { today: HOM_NAY });
+    expect(tl[0].ratePercent).toBeCloseTo(9.9, 10);
+  });
+
+  it('biên độ dương vẫn cộng như trước', () => {
+    const tl = buildRateTimeline({
+      startDate: '2026-01-15', baseRate: 0.099, marginRate: 0.035,
+    }, { today: HOM_NAY });
+    expect(tl[0].ratePercent).toBeCloseTo(13.4, 10);
+  });
+});
+
+describe('sàn lãi suất', () => {
+  it('chặn ở sàn khi cơ sở + biên độ tụt xuống dưới sàn', () => {
+    const tl = buildRateTimeline({
+      startDate: '2026-01-15', baseRate: 0.08, marginRate: -0.03, rateFloorAnnual: 0.06,
+    }, { today: HOM_NAY });
+    expect(tl[0].ratePercent).toBeCloseTo(6, 10);
+  });
+
+  it('không can thiệp khi lãi suất còn trên sàn', () => {
+    const tl = buildRateTimeline({
+      startDate: '2026-01-15', baseRate: 0.099, marginRate: -0.005, rateFloorAnnual: 0.06,
+    }, { today: HOM_NAY });
+    expect(tl[0].ratePercent).toBeCloseTo(9.4, 10);
+  });
+
+  it('không khai sàn thì vẫn không cho lãi suất xuống dưới 0', () => {
+    const tl = buildRateTimeline({
+      startDate: '2026-01-15', baseRate: 0.05, marginRate: -0.08,
+    }, { today: HOM_NAY });
+    expect(tl[0].ratePercent).toBe(0);
+  });
+
+  it('áp sàn cho cả mốc điều chỉnh khai theo cơ sở + biên độ', () => {
+    const tl = buildRateTimeline({
+      startDate: '2026-01-15', baseRate: 0.099, marginRate: 0.035, rateFloorAnnual: 0.07,
+      rateHistory: [
+        { id: '1', effectiveDate: '2026-06-15', ratePercent: 0, baseRatePercent: 0.08, marginPercent: -0.03 },
+      ],
+    }, { today: HOM_NAY });
+    const dieuChinh = tl.find(p => p.kind === 'adjustment');
+    expect(dieuChinh?.ratePercent).toBeCloseTo(7, 10);
+  });
+
+  it('đọc sàn từ hợp đồng', () => {
+    const hd = {
+      Id: 1, CustomerId: 1, ContractNumber: 'HD/GNN-01', ContractType: 1,
+      DisbursementDate: '2026-01-15', BaseRate: 0.08, MarginRate: -0.03, RateFloorAnnual: 0.065,
+    } as LoanContract;
+    const tl = buildContractRateTimeline(hd, { today: HOM_NAY });
+    expect(tl[0].ratePercent).toBeCloseTo(6.5, 10);
+  });
+});

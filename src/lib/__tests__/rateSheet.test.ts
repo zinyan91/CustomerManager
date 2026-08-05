@@ -211,7 +211,7 @@ describe('buildRateSheetHtml', () => {
     expect(html).toContain('Nguyễn Văn A');
   });
 
-  it('bỏ bảng phí khi chọn không kèm, nhưng vẫn nói rõ là có phí', () => {
+  it('bỏ tick thì file không còn bảng phí, tiêu đề phí hay dòng chú thích nào', () => {
     const khongKemPhi = buildRateSheetHtml({
       program: tdh,
       tiers: tdhTiers,
@@ -220,24 +220,28 @@ describe('buildRateSheetHtml', () => {
         { Id: 1, ProgramId: 3, OptionLabel: 'Phương án 1', PackageGroup: 'Gói 24 tháng đầu', MinFeeRatio: 0.015, CounterFeeRatio: 0.01, Note: 'Tại quầy tối thiểu 1%.', SortOrder: 1 },
         { Id: 2, ProgramId: 3, OptionLabel: 'Phương án 2', PackageGroup: 'Gói 24 tháng đầu', MinFeeRatio: 0.02, CounterFeeRatio: null, Note: null, SortOrder: 2 },
       ],
-      includeFeeOptions: false,
+      includeFees: false,
     });
     expect(khongKemPhi).not.toContain('Phương án 1');
-    expect(khongKemPhi).not.toContain('1,5%');
-    expect(khongKemPhi).toContain('Phí dịch vụ');
-    expect(khongKemPhi).toContain('2 phương án phí dịch vụ');
+    expect(khongKemPhi).not.toContain('Phí dịch vụ');
+    expect(khongKemPhi).not.toContain('phí dịch vụ');
+    expect(khongKemPhi).not.toContain('Doanh thu phí');
+  });
+
+  it('bỏ tick vẫn giữ nguyên lãi suất, phí trả nợ trước hạn và điều kiện', () => {
+    const khongKemPhi = buildRateSheetHtml({
+      program: tdh, tiers: tdhTiers, prepaymentFees: tdhFees,
+      conditions: [{ Id: 1, ProgramId: 3, Heading: 'Khách hàng phát hành thẻ mới', Content: 'Doanh số tối thiểu 3 triệu đồng.', SortOrder: 1 }],
+      includeFees: false,
+    });
+    expect(khongKemPhi).toContain('8,5%');
+    expect(khongKemPhi).toContain('Năm 3');
+    expect(khongKemPhi).toContain('Khách hàng phát hành thẻ mới');
   });
 
   it('mặc định vẫn kèm bảng phí như trước', () => {
     expect(html).toContain('Phương án 1');
     expect(html).toContain('khách hàng chọn 1 trong 2 phương án');
-  });
-
-  it('không khai phương án phí thì không sinh khối phí, dù bật hay tắt', () => {
-    for (const flag of [true, false, undefined]) {
-      const out = buildRateSheetHtml({ program: tdh, tiers: tdhTiers, feeOptions: [], includeFeeOptions: flag });
-      expect(out).not.toContain('Phí dịch vụ');
-    }
   });
 
   it('prints backgrounds, otherwise the blue banner turns white on white', () => {

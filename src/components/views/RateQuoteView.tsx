@@ -126,6 +126,12 @@ export const RateQuoteView: React.FC = () => {
     [conditions, program]
   );
 
+  const hasFeeContent = useMemo(
+    () => programFeeOptions.length > 0
+      || programTiers.some(t => t.MinFeeRatio !== null && t.MinFeeRatio !== undefined),
+    [programFeeOptions, programTiers]
+  );
+
   const sheetInput = useMemo(() => (program ? {
     program,
     tiers: programTiers,
@@ -135,7 +141,7 @@ export const RateQuoteView: React.FC = () => {
     preparedBy: preparedBy.trim() || undefined,
     logoDataUri: vietbankLogo,
     channel: null,
-    includeFeeOptions: includeFeeInSheet,
+    includeFees: includeFeeInSheet,
   } : null), [program, programTiers, programPrepayFees, programFeeOptions, programConditions,
     preparedBy, includeFeeInSheet, kind]);
 
@@ -722,22 +728,15 @@ export const RateQuoteView: React.FC = () => {
               </button>
             </div>
 
-            {programFeeOptions.length > 0 && (
-              <label className="flex items-start gap-2 cursor-pointer select-none">
+            {hasFeeContent && (
+              <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={includeFeeInSheet}
                   onChange={e => setIncludeFeeInSheet(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 accent-sky-600"
+                  className="w-4 h-4 accent-sky-600"
                 />
-                <span className="text-[11px] leading-relaxed">
-                  <span className="font-bold">Kèm bảng phí dịch vụ trong file gửi khách hàng</span>
-                  <span className="block text-slate-500 dark:text-slate-400">
-                    {includeFeeInSheet
-                      ? `File sẽ có bảng ${programFeeOptions.length} phương án phí dịch vụ.`
-                      : 'File chỉ ghi một dòng là chương trình có phí dịch vụ, mức phí tư vấn theo phương án khách hàng chọn.'}
-                  </span>
-                </span>
+                <span className="text-[11px] font-bold">Kèm bảng phí dịch vụ trong file gửi khách hàng</span>
               </label>
             )}
 

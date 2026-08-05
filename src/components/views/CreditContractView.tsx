@@ -10,7 +10,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useWork } from '../../context/WorkContext';
 import { fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
 import { summarizeCreditContracts } from '../../lib/creditContract';
-import { computeOutstandingBalance } from '../../lib/loanMath';
+import { addMonthsToDate, computeOutstandingBalance } from '../../lib/loanMath';
 import { getEffectiveLtv, usableCapacity, appraisalStatus, appraisalExpiryDate } from '../../lib/collateralMath';
 import { allowedPurposes } from '../../lib/loanProductRules';
 import { DateInput } from '../DateInput';
@@ -107,6 +107,14 @@ export const CreditContractView: React.FC = () => {
       if (c) loadCustomer(c);
     }
   }, [selectedCustomerId, allCustomers]);
+
+  useEffect(() => {
+    if (!form.ContractStartDate || !form.LoanTenorMonths) return;
+    const calculatedEnd = addMonthsToDate(form.ContractStartDate, form.LoanTenorMonths);
+    if (calculatedEnd && calculatedEnd !== form.ContractEndDate) {
+      setForm(prev => ({ ...prev, ContractEndDate: calculatedEnd }));
+    }
+  }, [form.ContractStartDate, form.LoanTenorMonths]);
 
   const outstandingOf = (k: LoanContract) => computeOutstandingBalance(schedulesMap[k.Id], k);
 
@@ -412,16 +420,19 @@ export const CreditContractView: React.FC = () => {
                 className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
             </div>
             <div>
-              <label className={`block mb-1 ${labelStyle}`}>Ngày kết thúc HĐ</label>
-              <DateInput value={form.ContractEndDate || ''}
-                onChange={v => setForm(f => ({ ...f, ContractEndDate: v }))}
+              <label className={`block mb-1 ${labelStyle}`}>Thời hạn HĐTD (tháng)</label>
+              <input type="number" min={1} value={form.LoanTenorMonths ?? ''}
+                onChange={e => setForm(f => ({ ...f, LoanTenorMonths: parseInt(e.target.value, 10) || null }))}
                 className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
             </div>
             <div>
-              <label className={`block mb-1 ${labelStyle}`}>Thời hạn HĐTD (tháng)</label>
-              <input type="number" value={form.LoanTenorMonths ?? ''}
-                onChange={e => setForm(f => ({ ...f, LoanTenorMonths: parseInt(e.target.value, 10) || null }))}
+              <label className={`block mb-1 ${labelStyle}`}>Ngày kết thúc HĐ</label>
+              <DateInput readOnly value={form.ContractEndDate || ''}
+                onChange={v => setForm(f => ({ ...f, ContractEndDate: v }))}
                 className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
+              <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                Tự tính từ ngày hiệu lực + thời hạn
+              </div>
             </div>
           </div>
 

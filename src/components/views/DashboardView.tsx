@@ -94,8 +94,15 @@ export const DashboardView: React.FC = () => {
     }
   };
 
+  /* Dư nợ của một KUNN cho các con số tổng hợp.
+     Tất toán là hết nợ. Không xét cờ này thì khoản đã tất toán vẫn cộng vào tổng
+     dư nợ, vào phân bổ nhóm nợ, và kéo LTV bình quân lên sai. */
+  const duNoCua = (c: LoanContract) =>
+    c.IsSettled ? 0 : (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0);
+  const chuaTatToan = contracts.filter(c => !c.IsSettled);
+
   const totalCustomersCount = customers.length;
-  const totalDebt = contracts.reduce((acc, c) => acc + (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0), 0);
+  const totalDebt = contracts.reduce((acc, c) => acc + duNoCua(c), 0);
   const totalLimit = contracts.reduce((acc, c) => acc + (c.ContractAmount || 0), 0);
   const totalCollateralVal = collaterals.reduce((acc, c) => acc + (c.AppraisedValue || c.Value || 0), 0);
   const weightedLtv = totalCollateralVal > 0 ? (totalDebt / totalCollateralVal) * 100 : 0;
@@ -107,14 +114,14 @@ export const DashboardView: React.FC = () => {
     'Cầm cố sổ tiết kiệm',
     'Hạn mức tín dụng từng lần'
   ].map(method => {
-    const matched = contracts.filter(c => c.LoanMethod === method);
-    const amount = matched.reduce((sum, c) => sum + (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0), 0);
+    const matched = chuaTatToan.filter(c => c.LoanMethod === method);
+    const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
     return { method, count: matched.length, amount };
   });
 
   const debtGroupStats = [1, 2, 3, 4, 5].map(group => {
-    const matched = contracts.filter(c => (c.DebtGroup ?? 1) === group);
-    const amount = matched.reduce((sum, c) => sum + (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0), 0);
+    const matched = chuaTatToan.filter(c => (c.DebtGroup ?? 1) === group);
+    const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
     return { group, count: matched.length, amount };
   });
 
@@ -123,7 +130,7 @@ export const DashboardView: React.FC = () => {
   const [hmtdFilter, setHmtdFilter] = useState<DueFilter>('all');
   const [tsbdFilter, setTsbdFilter] = useState<DueFilter>('all');
 
-  const activeContracts = contracts.filter(c => !onlyGroup1 || (c.DebtGroup ?? 1) === 1);
+  const activeContracts = chuaTatToan.filter(c => !onlyGroup1 || (c.DebtGroup ?? 1) === 1);
 
   const dueInMonthList = activeContracts.map(c => {
     const cus = customers.find(cust => cust.Id === c.CustomerId);

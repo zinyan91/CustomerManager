@@ -116,6 +116,8 @@ export const CreditContractView: React.FC = () => {
     }
   }, [form.ContractStartDate, form.LoanTenorMonths]);
 
+  /* Getter THÔ theo lịch trả nợ. summarizeCreditContracts tự áp quy tắc tất toán
+     để còn tính được phần dư nợ treo khi đóng HĐTD mà KUNN chưa tất toán. */
   const outstandingOf = (k: LoanContract) => computeOutstandingBalance(schedulesMap[k.Id], k);
 
   const summaries = useMemo(

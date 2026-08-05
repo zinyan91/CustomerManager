@@ -825,8 +825,9 @@ export const LoanPortfolioView: React.FC = () => {
 
   const todayIso = new Date().toISOString().split('T')[0];
 
+  /* Đóng HĐTD cũng là hết nợ, không chỉ riêng cờ tất toán trên từng KUNN. */
   const getEffectiveBalanceForContract = (c: LoanContract) =>
-    computeOutstandingBalance(allSchedulesMap[c.Id], c);
+    kunnSettled(c) ? 0 : computeOutstandingBalance(allSchedulesMap[c.Id], c);
 
   const limitGroups = useMemo(
     () => computeLimitGroups(contracts, {

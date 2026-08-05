@@ -700,3 +700,38 @@ describe('tách gốc phải trả, gốc đã trả và gốc trả trước h�
     );
   });
 });
+
+describe('tất toán thì hết nợ', () => {
+  const hopDong = {
+    Id: 1, CustomerId: 1, ContractNumber: 'HD/GNN-01', ContractType: 1,
+    LoanAmount: 500_000_000, InterestRate: 0.09,
+    PrincipalRepaymentMethod: 'Trả đều hàng tháng',
+    DisbursementDate: '2024-01-19',
+  } as any;
+
+  const lich = () => Array.from({ length: 120 }, (_, i) => ({
+    Id: i + 1, ContractId: 1, PeriodNumber: i + 1,
+    DueDate: `2024-${String((i % 12) + 1).padStart(2, '0')}-15`,
+    PrincipalAmount: 4_170_000, InterestAmount: 0, TotalAmount: 0,
+    IsPaid: i < 20,
+  } as RepaymentSchedule));
+
+  it('KUNN đã tất toán thì dư nợ bằng 0 dù lịch còn kỳ chưa trả', () => {
+    const daTatToan = { ...hopDong, IsSettled: true };
+    expect(computeOutstandingBalance(lich(), daTatToan)).toBe(0);
+  });
+
+  it('tất toán TRƯỚC HẠN: còn 100 kỳ chưa trả vẫn hết nợ', () => {
+    const l = lich();
+    expect(l.filter(k => !k.IsPaid).length).toBe(100);
+    expect(computeOutstandingBalance(l, { ...hopDong, IsSettled: true })).toBe(0);
+  });
+
+  it('chưa tất toán thì vẫn tính theo gốc đã trả', () => {
+    expect(computeOutstandingBalance(lich(), hopDong)).toBe(500_000_000 - 20 * 4_170_000);
+  });
+
+  it('không có lịch trả nợ mà đã tất toán thì cũng bằng 0', () => {
+    expect(computeOutstandingBalance(undefined, { ...hopDong, CurrentBalance: 123_000_000, IsSettled: true })).toBe(0);
+  });
+});

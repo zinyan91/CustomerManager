@@ -394,6 +394,11 @@ export function computeOutstandingBalance(
   schedules: RepaymentSchedule[] | undefined,
   contract: LoanContract
 ): number {
+  /* Tất toán là hết nợ, kể cả tất toán TRƯỚC HẠN khi lịch còn hàng chục kỳ chưa
+     tới hạn: khách đã nộp đủ nghĩa vụ còn lại để thu nợ. Không chặn ở đây thì
+     các kỳ tương lai vẫn bị cộng thành dư nợ và khoản vay đã đóng vẫn báo còn nợ. */
+  if (contract.IsSettled === true) return 0;
+
   const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
   if (!schedules || schedules.length === 0) {
     return contract.CurrentBalance ?? loanAmt;

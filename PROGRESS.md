@@ -48,6 +48,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Trừ đôi tiền trả trước hạn | Tổng gốc thu về hụt so với số cho vay |
 | ✅ | Trả trước hạn mất trắng khi kỳ đã tất toán | Dư nợ không giảm |
 | ✅ | Phương thức vay đè lên lựa chọn trả gốc | Giao diện ghi "trả đều" nhưng gốc mọi kỳ bằng 0 |
+| ✅ | Mặc định `PrincipalRepaymentMethod` khi tạo KUNN mới không theo `LoanMethod` | Phát hiện 05/08/2026 qua khoản Nguyễn Thị Bé Hai: `loanProductRules.ts` đã có sẵn `defaultPrincipalMethod` đúng quy tắc (Hạn mức tín dụng → gốc cuối kỳ, Cho vay từng lần → gốc trả đều) nhưng `LoanPortfolioView.tsx` không hề dùng tới, hai chỗ tạo KUNN mới hardcode `'Gốc trả cuối kỳ'` bất kể `LoanMethod`. Đã nối `getLoanProductRule().defaultPrincipalMethod` vào `applyCreditContractToForm` (chỉ áp khi tạo mới, giữ nguyên lựa chọn cũ khi sửa KUNN đã lưu) và luồng giải ngân nhanh từ Dashboard. Rà soát diện rộng: không còn khoản "Cho vay từng lần" nào khác bị sai giá trị này — chỉ là lỗi khai đơn lẻ ở khoản của Nguyễn Thị Bé Hai, anh đã tự sửa lại đúng |
 | ✅ | Cộng đôi hạn mức khi nhiều HĐTD chung một HMTD | Thêm tầng `CreditLimitCode` |
 | ✅ | Báo động giả khi so mức cấp gốc với TSĐB ở vay từng lần | Vay từng lần phải đối chiếu theo **dư nợ hiện hữu**; hạn mức tín dụng mới đối chiếu theo mức cấp |
 | ✅ | Biên độ âm bị bỏ mất, khoản vay tính lãi cao hơn hợp đồng | `toPercent` trả 0 cho mọi số âm. Biên độ là số duy nhất trong dòng thời gian lãi suất được phép âm (lãi sau ưu đãi chào dưới lãi cơ sở) |
@@ -57,6 +58,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Trắng trang tab KUNN khi chọn khách hàng | `getEffectiveBalanceForContract` gọi `kunnSettled` khai sau nó; `limitGroups` gọi lúc render nên ném ReferenceError. Build, lint và 668 test đều xanh — lỗi runtime trong component |
 | ✅ | Gốc mỗi kỳ lệch chứng từ vì làm tròn bước 1.000đ | GNN thật ghi 4.170.000đ/kỳ (500tr/120 làm tròn lên bước **10.000**), hệ thống cho 4.167.000đ. Gom về `PRINCIPAL_ROUND_MODE`, đã chạy migration 18 sửa dữ liệu cũ |
 | ✅ | Định giá hết hiệu lực vẫn được tính vào khả năng bảo đảm | Định giá chỉ có hiệu lực 6/12/24 tháng; hết hạn thì khả năng bảo đảm bằng 0 và báo cần định giá lại |
+| ✅ | Trả trước hạn trong lúc còn ân hạn gốc làm gốc đều sau ân hạn bị tính hụt, dồn cục vào kỳ cuối | Phát hiện 05/08/2026 qua đối chiếu PDF thật (GNN 960tr/120 tháng, ân hạn 18 tháng, trả trước hạn kỳ 2&3): công thức tính lại gốc đều chia dư nợ cho `tenorMonths - kỳ hiện tại` (117 kỳ) thay vì kỳ còn lại SAU ân hạn (102 kỳ) — gốc/kỳ hụt còn 8.070.000đ thay vì đúng 9.260.000đ, kỳ cuối phải gánh 128.930.000đ (gấp 16 lần một kỳ thường). Lỗi có ở CẢ HAI nơi giống hệt nhau: `calcMath.ts` (Công cụ 1) và `loanMath.ts` (lịch KUNN thật) — đã sửa cả hai thành `tenorMonths - Math.max(kỳ hiện tại, số tháng ân hạn)`. Test hồi quy trong `calcMath.test.ts` |
 
 ## Lỗi giao diện đã sửa
 
@@ -96,7 +98,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Test cho thành phần giao diện | `src/components/__tests__/`, vitest + Testing Library, mỗi tệp tự khai `// @vitest-environment jsdom` để 681 test logic không phải dựng DOM. Ba test khói cho tab KUNN. **Đã kiểm chứng bằng cách tái tạo lỗi trắng trang 05/08/2026: 2/3 test đỏ đúng chỗ** |
 | ✅ | Gom kiến thức vào `CONVENTIONS.md` và skill `tin-dung` | Mã nguồn không còn chú thích |
 | ✅ | Viết lại `README.md` và `web_migration_plan.md` khớp thực tế | |
-| 🔄 | Tách nhỏ `LoanPortfolioView` | Còn khoảng 2.200 dòng. Đã bóc hết logic tài chính; phần còn lại là JSX |
+| ✅ | Tách nhỏ `LoanPortfolioView` | Từ 2.264 dòng còn 1.333 dòng (giảm 41%). Tách 3 khối JSX lớn sang `src/components/portfolio/`: `KunnForm.tsx` (form tạo/sửa KUNN, ~580 dòng), `ScheduleTab.tsx` (tab Lịch Thu Nợ, ~270 dòng), `PaymentModal.tsx` (modal ghi nhận thanh toán, ~165 dòng). Nhân tiện dọn trùng lặp: `fmtMoney`/`fmtRate` cục bộ trong view (tự ý bỏ qua thiết lập định dạng người dùng) thay bằng bản dùng chung ở `utils.ts`; `PRINCIPAL_REPAY_OPTIONS`/`INTEREST_REPAY_OPTIONS` chuyển sang `loanProductRules.ts`. Đã kiểm chứng cả 3 phần trên trình duyệt thật (mở form KUNN, xem lịch thu nợ, mở modal ghi nhận TT). Build + 686 test đều xanh |
 | ⬜ | Mở rộng test giao diện sang các phân hệ còn lại | Hiện chỉ có tab KUNN |
 | ⬜ | Đồng bộ realtime, bộ nhớ đệm client | Có trong kế hoạch ban đầu, chưa làm |
 | ⬜ | Tên miền riêng | |

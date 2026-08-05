@@ -4,14 +4,14 @@ import {
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
   fetchCollateralsByCustomerAPI, deleteRepaymentSchedulesByContractAPI
 } from '../../lib/api';
-import { formatMoneyInput, fmtDate, getContractRateHistory, getEffectiveActiveRate, getMasterHdtdNumber, toIsoDate } from '../../lib/utils';
+import { fmtDate, fmtMoney, getContractRateHistory, getEffectiveActiveRate, getMasterHdtdNumber, toIsoDate } from '../../lib/utils';
 import {
   addMonthsToDate, parseKunnTenorMonths, parseDateParts,
   generateSchedule, calculateOverdueDaysFromDates,
   getAutoDebtGroupInfo, recalculateSchedules, computeOutstandingBalance,
-  isBulletPrincipal, getDaysBetween, paidPrincipalOf } from '../../lib/loanMath';
+  isBulletPrincipal, getDaysBetween } from '../../lib/loanMath';
 import {
-  buildContractRateTimeline, splitPeriodByRate, formatSegmentsLabel,
+  buildContractRateTimeline, splitPeriodByRate,
   type RateSegment,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
@@ -21,19 +21,18 @@ import { useWork } from '../../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
 import {
   graceMonthOptions,
+  getLoanProductRule,
 } from '../../lib/loanProductRules';
 import type { LoanContract, CreditContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
-import {
-  Search, FileText, Receipt, Calendar, CheckCircle, AlertCircle,
-  Plus, X, ShieldCheck, DollarSign, Building2, Save, Trash2, AlertTriangle
-} from 'lucide-react';
-import { DateInput } from '../DateInput';
+import { Search, Receipt, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
 import { CustomerSearchBar } from '../portfolio/CustomerSearchBar';
 import { CustomerSummaryHeader } from '../portfolio/CustomerSummaryHeader';
 import { MasterHdtdFilterTabs, type MasterHdtdGroup } from '../portfolio/MasterHdtdFilterTabs';
 import { KunnTable } from '../portfolio/KunnTable';
-import { DebtSummaryCard } from '../portfolio/DebtSummaryCard';
+import { PaymentModal } from '../portfolio/PaymentModal';
+import { KunnForm } from '../portfolio/KunnForm';
+import { ScheduleTab } from '../portfolio/ScheduleTab';
 
 const LOAN_METHODS = [
   'Hạn mức tín dụng',
@@ -42,26 +41,6 @@ const LOAN_METHODS = [
   'Hạn mức thẻ tín dụng',
   'Cầm cố sổ tiết kiệm'
 ];
-
-const PRINCIPAL_REPAY_OPTIONS = [
-  'Gốc trả cuối kỳ',
-  'Trả đều hàng tháng',
-  'Trả đều hàng quý (3 tháng)',
-  'Trả gốc tăng dần',
-  'Thanh toán dư nợ tối thiểu hàng tháng',
-  'Theo thỏa thuận trong KUNN'
-];
-
-const INTEREST_REPAY_OPTIONS = [
-  'Trả hàng tháng theo dư nợ thực tế',
-  'Trả hàng tháng theo dư nợ giảm dần',
-  'Trả hàng tháng theo dư nợ ban đầu',
-  'Trả cuối kỳ',
-  'Tính theo sao kê hàng tháng'
-];
-
-const fmtMoney = (v?: number | null) => v !== undefined && v !== null ? v.toLocaleString('vi-VN') + ' VNĐ' : '—';
-const fmtRate = (v?: number | null) => v !== undefined && v !== null ? (v * 100).toFixed(2) + '%/năm' : '—';
 
 function rateToInput(v?: number | null): string {
   if (v === null || v === undefined || Number.isNaN(v)) return '';
@@ -972,6 +951,11 @@ export const LoanPortfolioView: React.FC = () => {
       LoanTenorMonths: cc.LoanTenorMonths || f.LoanTenorMonths,
       LoanPurpose: cc.LoanPurpose || '',
       LoanPurposeType: cc.LoanPurposeType || '',
+      // Chỉ áp mặc định theo phương thức vay khi tạo KUNN mới — sửa KUNN cũ
+      // (keepKunnNumber=true) giữ nguyên lựa chọn banker đã lưu.
+      PrincipalRepaymentMethod: keepKunnNumber
+        ? f.PrincipalRepaymentMethod
+        : getLoanProductRule(cc.LoanMethod).defaultPrincipalMethod,
     }));
     setFormCreditLimit(cc.ContractAmount ? cc.ContractAmount.toLocaleString('vi-VN') : '');
     setFormCreditLimitCode(cc.ApprovalCode || '');
@@ -1042,7 +1026,7 @@ export const LoanPortfolioView: React.FC = () => {
       LoanTenorMonths: cc.LoanTenorMonths || 12,
       LoanPurpose: cc.LoanPurpose || '',
       LoanPurposeType: cc.LoanPurposeType || '',
-      PrincipalRepaymentMethod: 'Gốc trả cuối kỳ',
+      PrincipalRepaymentMethod: getLoanProductRule(cc.LoanMethod).defaultPrincipalMethod,
       InterestRepaymentMethod: 'Trả hàng tháng theo dư nợ thực tế',
       PrincipalGracePeriodMonths: 0,
       InterestGracePeriodMonths: 0,
@@ -1233,1024 +1217,116 @@ export const LoanPortfolioView: React.FC = () => {
               />
 
               {showForm && (
-                <div className={`${containerCardBg} rounded-2xl p-5 space-y-5 border shadow-xl`}>
-                  <div className={`flex items-center justify-between pb-3 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                    <h3 className="font-bold flex items-center space-x-2 text-sm">
-                      <FileText className="w-4 h-4 text-sky-500" />
-                      <span>{selectedContract ? `THÔNG TIN GIẤY NHẬN NỢ: ${selectedContract.ContractNumber}` : 'GIẢI NGÂN KUNN MỚI'}</span>
-                    </h3>
-                    <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <form onSubmit={handleSaveContract} className="space-y-6">
-                    <div className={`rounded-xl p-4 space-y-4 border ${sectionBoxBg}`}>
-                      <div className="text-[11px] font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-2">
-                        <FileText className="w-4 h-4" />
-                        <span>HỢP ĐỒNG TÍN DỤNG CHA & PHÂN LOẠI NỢ</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Hợp đồng tín dụng (HĐTD) *</label>
-                          <select
-                            value={form.CreditContractId ?? ''}
-                            onChange={e => {
-                              const id = parseInt(e.target.value, 10);
-                              const cc = creditContracts.find(x => x.Id === id);
-                              if (cc) applyCreditContractToForm(cc, !!selectedContract);
-                            }}
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-purple-600 dark:text-purple-400 ${inputStyle}`}>
-                            <option value="">— Chọn HĐTD —</option>
-                            {selectableCreditContracts.map(cc => (
-                              <option key={cc.Id} value={cc.Id}>{cc.HdtdNumber}</option>
-                            ))}
-                          </select>
-                          {creditContracts.length === 0 && (
-                            <div className="mt-1 text-[10px] font-semibold text-rose-500">
-                              Khách hàng chưa có HĐTD. Tạo ở tab Hợp Đồng Tín Dụng trước.
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Số KUNN (GNN) *</label>
-                          <input type="text" value={formKunnNumber}
-                            onChange={e => setFormKunnNumber(e.target.value)}
-                            placeholder="2002/HDTD/9634078/GNN-01"
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 ${inputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Phân loại Nhóm nợ</label>
-                          <select value={form.DebtGroup ?? 1}
-                            onChange={e => setForm(f => ({ ...f, DebtGroup: Number(e.target.value) }))}
-                            className={`w-full rounded-xl p-2.5 text-xs font-bold ${inputStyle}`}>
-                            {[1, 2, 3, 4, 5].map(g => (
-                              <option key={g} value={g}>
-                                Nhóm {g} ({g === 1 ? 'Nợ đủ tiêu chuẩn <10 ngày' : g === 2 ? 'Nợ cần chú ý 10-90 ngày' : g === 3 ? 'Nợ dưới tiêu chuẩn 91-180 ngày' : g === 4 ? 'Nợ nghi ngờ 181-360 ngày' : 'Nợ có khả năng mất vốn >360 ngày'})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      {formCreditContract && (
-                        <div className={`rounded-xl p-3 border text-[11px] ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
-                          }`}>
-                          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 font-mono">
-                            <span className="text-slate-500">{foundCustomer?.FullName} · CIF {foundCustomer?.CifKh}</span>
-                            <span>Phương thức: <strong>{formCreditContract.LoanMethod || '—'}</strong></span>
-                            <span>Mức cấp: <strong className="text-sky-600 dark:text-sky-400">{fmtMoney(formCreditContract.ContractAmount)}</strong></span>
-                            <span>Hiệu lực đến: <strong className={formLimitStatus?.expired ? 'text-rose-600 dark:text-rose-400' : ''}>
-                              {fmtDate(formCreditContract.ContractEndDate)}
-                            </strong></span>
-                            {formCreditContract.LoanPurposeType && (
-                              <span className="text-slate-500">Mục đích: {formCreditContract.LoanPurposeType}</span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-
-                      {kunnIssues.length > 0 && (
-                        <div className={`p-3 rounded-xl border text-[11px] font-semibold space-y-1 ${isLight ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-amber-950/40 border-amber-500/40 text-amber-300'
-                          }`}>
-                          <div className="flex items-center space-x-1.5 uppercase tracking-wide">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            <span>Đối chiếu với HĐTD {formCreditContract?.HdtdNumber}</span>
-                          </div>
-                          {kunnIssues.map((x, i) => <div key={i}>• {x.message}</div>)}
-                        </div>
-                      )}
-
-                      {form.LoanMethod === 'Hạn mức tín dụng' && (
-                        <div className={`p-3 rounded-xl border flex flex-wrap items-center justify-between text-xs font-semibold ${isLight ? 'bg-sky-50 border-sky-200 text-sky-900' : 'bg-sky-950/60 border-sky-500/30 text-sky-200'
-                          }`}>
-                          <div className="flex items-center space-x-2">
-                            <Building2 className="w-4 h-4 text-sky-500" />
-                            <span>TÌNH TRẠNG HẠN MỨC TÍN DỤNG:</span>
-                          </div>
-                          <div className="flex items-center space-x-4 font-mono">
-                            <span>Tổng mức cấp: <strong className="text-sky-600 dark:text-sky-400">{fmtMoney(formGrantedLimit)}</strong></span>
-                            <span>• Dư nợ KUNN còn hiệu lực: <strong className="text-amber-600 dark:text-amber-400">{fmtMoney(totalExistingKunnBalance)}</strong></span>
-                            <span>• Khả năng giải ngân còn lại: <strong className={
-                              formLimitStatus?.expired
-                                ? 'text-rose-600 dark:text-rose-400 line-through'
-                                : 'text-emerald-600 dark:text-emerald-400'
-                            }>{fmtMoney(availableBeforeThisKunn)}</strong></span>
-                            {(formLimitStatus?.settledKunnCount ?? 0) > 0 && (
-                              <span className="text-[10px] font-sans font-normal text-slate-500">
-                                (đã loại {formLimitStatus!.settledKunnCount} KUNN đã tất toán)
-                              </span>
-                            )}
-                          </div>
-                          {formLimitStatus?.expired && (
-                            <div className="w-full mt-2 pt-2 border-t border-rose-300 dark:border-rose-500/40 text-[11px] font-bold text-rose-600 dark:text-rose-400">
-                              ⚠️ HĐTD hết hiệu lực ngày {fmtDate(formLimitStatus.endDate)}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className={`rounded-xl p-4 space-y-4 border ${sectionBoxBg}`}>
-                      <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center space-x-2">
-                        <DollarSign className="w-4 h-4" />
-                        <span>THÔNG TIN GIẤY NHẬN NỢ (KUNN) & GIẢI NGÂN LẦN NÀY</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>
-                            {form.LoanMethod === 'Hạn mức tín dụng' ? 'Số tiền nhận nợ lần này (KUNN) *' : 'Số tiền giải ngân thực tế (KUNN) *'}
-                          </label>
-                          <input type="text" value={formLoanAmount}
-                            onChange={e => setFormLoanAmount(formatMoneyInput(e.target.value))}
-                            placeholder="650.000.000"
-                            className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 ${inputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>
-                            {formLimitStatus?.revolving === false
-                              ? 'Đã nhận nợ trên HĐTD này'
-                              : 'Dư nợ HMTD hiện hữu (KUNN còn hiệu lực)'}
-                          </label>
-                          <input type="text" readOnly value={fmtMoney(totalExistingKunnBalance)}
-                            className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-amber-600 dark:text-amber-400 ${readonlyInputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Hạn mức HMTD còn lại</label>
-                          <input type="text" readOnly value={fmtMoney(remainingHmtdLimit)}
-                            className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold ${remainingHmtdLimit >= 0 ? 'text-sky-600 dark:text-sky-400' : 'text-red-500'
-                              } ${readonlyInputStyle}`} />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Ngày giải ngân (bắt đầu KUNN)</label>
-                          <DateInput value={form.DisbursementDate || ''}
-                            onChange={disDate => {
-                              const months = parseKunnTenorMonths(form.KunnTenor) || form.LoanTenorMonths || 0;
-                              const kunnEnd = disDate && months > 0 ? addMonthsToDate(disDate, months) : form.KunnDueDate;
-                              setForm(f => ({ ...f, DisbursementDate: disDate, KunnDueDate: kunnEnd || f.KunnDueDate }));
-                            }}
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Thời hạn KUNN</label>
-                          {form.LoanMethod === 'Hạn mức tín dụng' ? (
-                            <select
-                              value={form.KunnTenor || '6 tháng'}
-                              onChange={e => {
-                                const val = e.target.value;
-                                const months = parseKunnTenorMonths(val);
-                                const kunnEnd = form.DisbursementDate && months > 0 ? addMonthsToDate(form.DisbursementDate, months) : form.KunnDueDate;
-                                setForm(f => ({ ...f, KunnTenor: val, KunnDueDate: kunnEnd || f.KunnDueDate }));
-                              }}
-                              className={`w-full rounded-xl p-2.5 text-xs font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`}
-                            >
-                              {['0 tháng', '3 tháng', '5 tháng', '6 tháng', '9 tháng', '12 tháng'].map(t => (
-                                <option key={t} value={t}>{t}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input type="text" value={form.KunnTenor || ''}
-                              onChange={e => {
-                                const val = e.target.value;
-                                const months = parseKunnTenorMonths(val);
-                                const kunnEnd = form.DisbursementDate && months > 0 ? addMonthsToDate(form.DisbursementDate, months) : form.KunnDueDate;
-                                setForm(f => ({ ...f, KunnTenor: val, KunnDueDate: kunnEnd || f.KunnDueDate }));
-                              }}
-                              placeholder="5T / 12 tháng..."
-                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                          )}
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>
-                            <span>Ngày kết thúc KUNN</span>
-                          </label>
-                          <DateInput readOnly value={form.KunnDueDate || ''}
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 border ${readonlyInputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Ngày bắt đầu trả nợ</label>
-                          <DateInput value={form.RepaymentStartDate || ''}
-                            onChange={val => setForm(f => ({ ...f, RepaymentStartDate: val }))}
-                            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={`rounded-xl p-4 space-y-3 border ${sectionBoxBg}`}>
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
-                          CẤU TRÚC LÃI SUẤT
-                        </div>
-                        <div className="flex items-center space-x-4 text-xs font-semibold">
-                          <label className="flex items-center space-x-1.5 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="rateMode"
-                              checked={interestRateMode === 'pref'}
-                              onChange={() => setInterestRateMode('pref')}
-                              className="w-3.5 h-3.5 text-rose-600 focus:ring-rose-500"
-                            />
-                            <span>1. LS Ưu đãi & Sau ưu đãi</span>
-                          </label>
-                          <label className="flex items-center space-x-1.5 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="rateMode"
-                              checked={interestRateMode === 'base'}
-                              onChange={() => setInterestRateMode('base')}
-                              className="w-3.5 h-3.5 text-rose-600 focus:ring-rose-500"
-                            />
-                            <span>2. LS Thông thường (LSCS + Biên độ)</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {interestRateMode === 'pref' ? (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
-                          <div>
-                            <label className={`block mb-1 ${labelStyle}`}>Lãi suất ưu đãi (LSUD) %/năm</label>
-                            <input type="number" step="0.01" min={0} value={ratePreferential}
-                              onChange={e => setRatePreferential(e.target.value)}
-                              placeholder="7.5"
-                              className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-rose-600 dark:text-rose-400 ${inputStyle}`} />
-                          </div>
-                          <div>
-                            <label className={`block mb-1 ${labelStyle}`}>Thời gian ưu đãi (tháng)</label>
-                            <input type="number" min={0} value={ratePreferentialMonths}
-                              onChange={e => setRatePreferentialMonths(e.target.value)}
-                              placeholder="6, 12..."
-                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                          </div>
-                          <div>
-                            <label className={`block mb-1 ${labelStyle}`}>Biên độ cộng thêm %/năm</label>
-                            <input type="number" step="0.01" value={rateMargin}
-                              onChange={e => setRateMargin(e.target.value)}
-                              placeholder="3.5"
-                              className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-300 ${inputStyle}`} />
-                          </div>
-                          <div className={`col-span-full space-y-2 p-3 rounded-xl border ${isLight ? 'bg-sky-50/80 border-sky-200' : 'bg-sky-950/40 border-sky-900/60'
-                            }`}>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className={labelStyle}>Lãi suất sau ưu đãi:</span>
-                              <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{postPrefRate.toFixed(2)} %/năm</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs pt-2 border-t border-sky-200 dark:border-sky-900/50">
-                              <span className="font-bold text-sky-700 dark:text-sky-300">👉 LÃI SUẤT ÁP DỤNG (KÈM PHẠT {surchargeVal > 0 ? `+${surchargeVal}%` : '0%'}):</span>
-                              <span className="font-mono font-bold text-rose-600 dark:text-rose-400 text-sm">
-                                {currentActiveRateDisplay.toFixed(2)} %/năm
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                          <div>
-                            <label className={`block mb-1 ${labelStyle}`}>Lãi suất cơ sở (LSCS) %/năm</label>
-                            <input type="number" step="0.01" min={0} value={rateBase}
-                              onChange={e => setRateBase(e.target.value)}
-                              placeholder="8.5"
-                              className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-rose-500 dark:text-rose-300 ${inputStyle}`} />
-                          </div>
-                          <div>
-                            <label className={`block mb-1 ${labelStyle}`}>Biên độ cộng thêm %/năm</label>
-                            <input type="number" step="0.01" value={rateMargin}
-                              onChange={e => setRateMargin(e.target.value)}
-                              placeholder="3.5"
-                              className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-amber-600 dark:text-amber-300 ${inputStyle}`} />
-                          </div>
-                          <div className={`col-span-full space-y-2 p-3 rounded-xl border ${isLight ? 'bg-sky-50/80 border-sky-200' : 'bg-sky-950/40 border-sky-900/60'
-                            }`}>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className={labelStyle}>Lãi suất thông thường chuẩn (LSCS + Biên độ):</span>
-                              <span className="font-mono font-bold text-amber-600 dark:text-amber-400 text-sm">{normalRate.toFixed(2)} %/năm</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs pt-2 border-t border-sky-200 dark:border-sky-900/50">
-                              <span className="font-bold text-sky-700 dark:text-sky-300">👉 LÃI SUẤT ÁP DỤNG THỰC TẾ (LSCS + BIÊN ĐỘ + PHẠT {surchargeVal > 0 ? `+${surchargeVal}%` : '0%'}):</span>
-                              <span className="font-mono font-bold text-rose-600 dark:text-rose-400 text-sm">
-                                {currentActiveRateDisplay.toFixed(2)} %/năm
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="pt-3 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Phạt cộng thêm do vi phạm điều kiện (+%/năm)</label>
-                          <input type="number" step="0.1" min={0} value={rateConditionSurcharge}
-                            onChange={e => setRateConditionSurcharge(e.target.value)}
-                            placeholder="0.5 (%/năm)..."
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-rose-600 dark:text-rose-400 ${inputStyle}`} />
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Sàn lãi suất theo hợp đồng (%/năm)</label>
-                          <input type="number" step="0.01" min={0} value={rateFloor}
-                            onChange={e => setRateFloor(e.target.value)}
-                            placeholder="Bỏ trống nếu hợp đồng không quy định"
-                            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold ${inputStyle}`} />
-                          <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                            Chặn lãi thả nổi không tụt dưới mức này khi biên độ âm
-                          </div>
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Điều kiện phê duyệt (CASA / BCTC)</label>
-                          <div className="text-xs p-2.5 rounded-xl border bg-amber-50/50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-800 dark:text-amber-300 font-medium">
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="font-bold text-sky-600 dark:text-sky-400 text-xs uppercase flex items-center space-x-1.5">
-                            <span>📈 LỊCH SỬ ĐIỀU CHỈNH LÃI SUẤT</span>
-                          </div>
-                          <span className="text-[11px] text-slate-400 font-mono">
-                            {rateHistory.length} đợt điều chỉnh đã lưu
-                          </span>
-                        </div>
-
-                        {rateHistory.length > 0 && (
-                          <div className="border rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
-                            <table className="w-full text-left text-xs">
-                              <thead className={tableHeaderStyle}>
-                                <tr>
-                                  <th className="p-2.5">STT</th>
-                                  <th className="p-2.5">NGÀY HẠN HIỆU LỰC</th>
-                                  <th className="p-2.5 text-right">LSCS (%)</th>
-                                  <th className="p-2.5 text-right">BIÊN ĐỘ (%)</th>
-                                  <th className="p-2.5 text-right">PHẠT (%)</th>
-                                  <th className="p-2.5 text-right">LÃI SUẤT ÁP DỤNG (%/NĂM)</th>
-                                  <th className="p-2.5">NỘI DUNG / LÝ DO ĐIỀU CHỈNH</th>
-                                  <th className="p-2.5 text-center">XÓA</th>
-                                </tr>
-                              </thead>
-                              <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800'}`}>
-                                {rateHistory.map((item, idx) => (
-                                  <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
-                                    <td className="p-2.5 font-bold text-center">{idx + 1}</td>
-                                    <td className="p-2.5 font-mono font-bold text-sky-600 dark:text-sky-400">{fmtDate(item.effectiveDate)}</td>
-                                    <td className="p-2.5 text-right font-mono">{item.baseRatePercent ? `${item.baseRatePercent}%` : '—'}</td>
-                                    <td className="p-2.5 text-right font-mono">{item.marginPercent ? `+${item.marginPercent}%` : '—'}</td>
-                                    <td className="p-2.5 text-right font-mono text-rose-500 font-bold">{item.penaltyPercent ? `+${item.penaltyPercent}%` : '0%'}</td>
-                                    <td className="p-2.5 text-right font-mono font-extrabold text-rose-600 dark:text-rose-400 text-sm">
-                                      {item.ratePercent.toFixed(2)} %/năm
-                                    </td>
-                                    <td className="p-2.5 text-slate-600 dark:text-slate-300 font-medium">{item.reason || 'Điều chỉnh LSCS'}</td>
-                                    <td className="p-2.5 text-center">
-                                      <button type="button" onClick={() => setRateHistory(rateHistory.filter(h => h.id !== item.id))}
-                                        className="text-rose-500 hover:text-rose-700">
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-
-                        <div className="p-3 rounded-xl border border-sky-200 dark:border-sky-900/60 bg-sky-50/50 dark:bg-sky-950/20 space-y-3">
-                          <div className="font-bold text-sky-700 dark:text-sky-300 text-xs">
-                            + THÊM ĐỢT ĐIỀU CHỈNH LÃI SUẤT MỚI (KHI NGÂN HÀNG THAY ĐỔI LSCS / THẢ NỔI):
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
-                            <div>
-                              <label className={`block mb-1 ${labelStyle}`}>Ngày hiệu lực *</label>
-                              <DateInput value={newAdjDate} onChange={setNewAdjDate} className={`w-full rounded-xl p-2 ${inputStyle}`} />
-                            </div>
-                            <div>
-                              <label className={`block mb-1 ${labelStyle}`}>LSCS (%)</label>
-                              <input type="number" step="0.01" value={newAdjBaseRate} onChange={e => setNewAdjBaseRate(e.target.value)} placeholder="9.2" className={`w-full rounded-xl p-2 font-mono ${inputStyle}`} />
-                            </div>
-                            <div>
-                              <label className={`block mb-1 ${labelStyle}`}>Biên độ (%)</label>
-                              <input type="number" step="0.01" value={newAdjMargin} onChange={e => setNewAdjMargin(e.target.value)} placeholder="1.35" className={`w-full rounded-xl p-2 font-mono ${inputStyle}`} />
-                            </div>
-                            <div>
-                              <label className={`block mb-1 ${labelStyle}`}>Phạt vi phạm (%)</label>
-                              <input type="number" step="0.1" value={newAdjPenalty} onChange={e => setNewAdjPenalty(e.target.value)} placeholder="0.5" className={`w-full rounded-xl p-2 font-mono ${inputStyle}`} />
-                            </div>
-                            <div>
-                              <label className={`block mb-1 ${labelStyle}`}>Lý do / Nội dung</label>
-                              <input type="text" value={newAdjReason} onChange={e => setNewAdjReason(e.target.value)} placeholder="Tăng LSCS T1/2027..." className={`w-full rounded-xl p-2 ${inputStyle}`} />
-                            </div>
-                          </div>
-                          <div className="flex justify-end">
-                            <button type="button" onClick={() => {
-                              if (!newAdjDate) {
-                                showNotify('error', 'Vui lòng chọn Ngày áp dụng hiệu lực!');
-                                return;
-                              }
-                              const b = parseFloat(newAdjBaseRate) || 0;
-                              const numOr = (a: string, b: string) => {
-                                const x = parseFloat(a);
-                                if (!Number.isNaN(x)) return x;
-                                const y = parseFloat(b);
-                                return Number.isNaN(y) ? 0 : y;
-                              };
-                              const m = numOr(newAdjMargin, rateMargin);
-                              const p = numOr(newAdjPenalty, rateConditionSurcharge);
-                              const totalRate = b > 0 ? (b + m + p) : (parseFloat(newAdjBaseRate) || currentActiveRateDisplay);
-                              if (totalRate <= 0) {
-                                showNotify('error', 'Vui lòng nhập Lãi suất cơ sở hoặc Lãi suất áp dụng!');
-                                return;
-                              }
-                              const newRecord: RateAdjustmentHistoryItem = {
-                                id: Date.now().toString(),
-                                effectiveDate: newAdjDate,
-                                baseRatePercent: b > 0 ? b : undefined,
-                                marginPercent: m > 0 ? m : undefined,
-                                penaltyPercent: p > 0 ? p : undefined,
-                                ratePercent: totalRate,
-                                reason: newAdjReason.trim() || 'Điều chỉnh lãi suất kỳ hạn'
-                              };
-                              const next = [...rateHistory, newRecord].sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate));
-                              setRateHistory(next);
-                              setNewAdjDate('');
-                              setNewAdjBaseRate('');
-                              setNewAdjMargin('');
-                              setNewAdjPenalty('');
-                              setNewAdjReason('');
-                              showNotify('success', `Đã thêm đợt điều chỉnh LS ${totalRate.toFixed(2)}%/năm từ ngày ${fmtDate(newAdjDate)}`);
-                            }} className="bg-sky-600 hover:bg-sky-500 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-sm">
-                              <span>+ Thêm đợt điều chỉnh LS này</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={`rounded-xl p-4 space-y-3 border ${sectionBoxBg}`}>
-                      <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                        PHƯƠNG THỨC TRẢ NỢ {form.LoanMethod === 'Hạn mức tín dụng' ? '' : '& ÂN HẠN'}
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Cách thức trả gốc</label>
-                          <select value={form.PrincipalRepaymentMethod || 'Gốc trả cuối kỳ'}
-                            disabled={form.LoanMethod === 'Hạn mức tín dụng'}
-                            onChange={e => setForm(f => ({ ...f, PrincipalRepaymentMethod: e.target.value }))}
-                            className={`w-full rounded-xl p-2.5 text-xs font-semibold ${inputStyle} ${form.LoanMethod === 'Hạn mức tín dụng' ? 'opacity-80 cursor-not-allowed bg-slate-100 dark:bg-slate-950 font-bold text-sky-600 dark:text-sky-400' : ''}`}>
-                            {PRINCIPAL_REPAY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label className={`block mb-1 ${labelStyle}`}>Cách thức trả lãi</label>
-                          <select value={form.InterestRepaymentMethod || 'Trả hàng tháng theo dư nợ thực tế'}
-                            disabled={form.LoanMethod === 'Hạn mức tín dụng'}
-                            onChange={e => setForm(f => ({ ...f, InterestRepaymentMethod: e.target.value }))}
-                            className={`w-full rounded-xl p-2.5 text-xs font-semibold ${inputStyle} ${form.LoanMethod === 'Hạn mức tín dụng' ? 'opacity-80 cursor-not-allowed bg-slate-100 dark:bg-slate-950 font-bold text-sky-600 dark:text-sky-400' : ''}`}>
-                            {INTEREST_REPAY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                          </select>
-                        </div>
-                      </div>
-
-                      {graceOptions.length > 0 && (
-                        <div className="grid grid-cols-2 gap-4 pt-1 border-t border-slate-200 dark:border-slate-800">
-                          <div>
-                            <label className={`block mb-1 ${labelStyle}`}>Ân hạn gốc (tháng)</label>
-                            <select value={form.PrincipalGracePeriodMonths ?? 0}
-                              onChange={e => setForm(f => ({ ...f, PrincipalGracePeriodMonths: parseInt(e.target.value) || 0 }))}
-                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`}>
-                              <option value={0}>Không ân hạn</option>
-                              {graceOptions.map(g => (
-                                <option key={g} value={g}>{g} tháng</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className={`block mb-1 ${labelStyle}`}>Ân hạn lãi (tháng)</label>
-                            <input type="number" min={0} value={form.InterestGracePeriodMonths ?? 0}
-                              onChange={e => setForm(f => ({ ...f, InterestGracePeriodMonths: parseInt(e.target.value) || 0 }))}
-                              className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className={`rounded-xl p-3 border text-[11px] ${sectionBoxBg}`}>
-                      <div className="flex items-center space-x-2 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1.5">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>TÀI SẢN BẢO ĐẢM</span>
-                      </div>
-                      {selectedCollaterals.length === 0 ? (
-                        <div className="text-slate-400 italic">
-                          HĐTD chưa gán TSBĐ. Gán ở tab Hợp Đồng Tín Dụng.
-                        </div>
-                      ) : (
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono">
-                          {selectedCollaterals.map(col => (
-                            <span key={col.Id}>
-                              {col.AssetCode || `TS-${col.Id}`}
-                              <span className="text-slate-500"> · {fmtMoney(col.AppraisedValue || col.Value || 0)}</span>
-                            </span>
-                          ))}
-                          <span className="text-slate-500">
-                            Khả năng bảo đảm tối đa: <strong className="text-emerald-600 dark:text-emerald-400">{fmtMoney(maxAllowedLoanLtv)}</strong>
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center space-x-6">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" checked={form.IsSettled ?? false}
-                          onChange={e => setForm(f => ({ ...f, IsSettled: e.target.checked }))}
-                          className="w-4 h-4 rounded text-sky-600" />
-                        <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>Hợp đồng đã tất toán</span>
-                      </label>
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" checked={form.IsRestructured ?? false}
-                          onChange={e => setForm(f => ({ ...f, IsRestructured: e.target.checked }))}
-                          className="w-4 h-4 rounded text-sky-600" />
-                        <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>Hợp đồng đã tái cơ cấu nợ</span>
-                      </label>
-                    </div>
-
-                    <div className="flex flex-col md:flex-row items-center gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={(e) => handleSaveContract(e, true)}
-                        disabled={loading}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-emerald-600/30 text-xs flex items-center justify-center space-x-2"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>{loading ? 'Đang lưu...' : 'THÊM MỚI'}</span>
-                      </button>
-
-                      {selectedContract && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={(e) => handleSaveContract(e, false)}
-                            disabled={loading}
-                            className="flex-1 bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-sky-600/30 text-xs flex items-center justify-center space-x-2"
-                          >
-                            <Save className="w-4 h-4" />
-                            <span>{loading ? 'Đang lưu...' : 'CẬP NHẬT KUNN NÀY'}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => handleDeleteContract(e, selectedContract.Id, selectedContract.ContractNumber)}
-                            disabled={loading}
-                            className="bg-rose-600 hover:bg-rose-500 disabled:opacity-60 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-lg shadow-rose-600/30 text-xs flex items-center justify-center space-x-2"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            <span>XOÁ KUNN</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </form>
-                </div>
+                <KunnForm
+                  isLight={isLight}
+                  containerCardBg={containerCardBg}
+                  sectionBoxBg={sectionBoxBg}
+                  inputStyle={inputStyle}
+                  readonlyInputStyle={readonlyInputStyle}
+                  labelStyle={labelStyle}
+                  tableHeaderStyle={tableHeaderStyle}
+                  selectedContract={selectedContract}
+                  foundCustomer={foundCustomer}
+                  setShowForm={setShowForm}
+                  form={form}
+                  setForm={setForm}
+                  handleSaveContract={handleSaveContract}
+                  handleDeleteContract={handleDeleteContract}
+                  loading={loading}
+                  creditContracts={creditContracts}
+                  selectableCreditContracts={selectableCreditContracts}
+                  applyCreditContractToForm={applyCreditContractToForm}
+                  formCreditContract={formCreditContract}
+                  formKunnNumber={formKunnNumber}
+                  setFormKunnNumber={setFormKunnNumber}
+                  formLimitStatus={formLimitStatus}
+                  kunnIssues={kunnIssues}
+                  formGrantedLimit={formGrantedLimit}
+                  totalExistingKunnBalance={totalExistingKunnBalance}
+                  availableBeforeThisKunn={availableBeforeThisKunn}
+                  remainingHmtdLimit={remainingHmtdLimit}
+                  formLoanAmount={formLoanAmount}
+                  setFormLoanAmount={setFormLoanAmount}
+                  interestRateMode={interestRateMode}
+                  setInterestRateMode={setInterestRateMode}
+                  ratePreferential={ratePreferential}
+                  setRatePreferential={setRatePreferential}
+                  ratePreferentialMonths={ratePreferentialMonths}
+                  setRatePreferentialMonths={setRatePreferentialMonths}
+                  rateBase={rateBase}
+                  setRateBase={setRateBase}
+                  rateMargin={rateMargin}
+                  setRateMargin={setRateMargin}
+                  postPrefRate={postPrefRate}
+                  normalRate={normalRate}
+                  surchargeVal={surchargeVal}
+                  currentActiveRateDisplay={currentActiveRateDisplay}
+                  rateConditionSurcharge={rateConditionSurcharge}
+                  setRateConditionSurcharge={setRateConditionSurcharge}
+                  rateFloor={rateFloor}
+                  setRateFloor={setRateFloor}
+                  rateHistory={rateHistory}
+                  setRateHistory={setRateHistory}
+                  newAdjDate={newAdjDate}
+                  setNewAdjDate={setNewAdjDate}
+                  newAdjBaseRate={newAdjBaseRate}
+                  setNewAdjBaseRate={setNewAdjBaseRate}
+                  newAdjMargin={newAdjMargin}
+                  setNewAdjMargin={setNewAdjMargin}
+                  newAdjPenalty={newAdjPenalty}
+                  setNewAdjPenalty={setNewAdjPenalty}
+                  newAdjReason={newAdjReason}
+                  setNewAdjReason={setNewAdjReason}
+                  showNotify={showNotify}
+                  graceOptions={graceOptions}
+                  selectedCollaterals={selectedCollaterals}
+                  maxAllowedLoanLtv={maxAllowedLoanLtv}
+                />
               )}
             </div>
           )}
 
           {mainTab === 'schedule' && (
-            <div className="space-y-4">
-              <div className={`${containerCardBg} rounded-2xl p-4 border`}>
-                <div className="font-bold mb-3 flex items-center space-x-2 text-xs">
-                  <Calendar className="w-4 h-4 text-sky-500" />
-                  <span>CHỌN HỢP ĐỒNG TÍN DỤNG ĐỂ XEM / TẠO LỊCH THU NỢ</span>
-                </div>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {contracts.map(c => (
-                    <button key={c.Id} onClick={() => handleSelectContract(c)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${selectedContract?.Id === c.Id
-                        ? 'bg-sky-600 text-white border-sky-500 shadow-sm'
-                        : isLight
-                          ? 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-sky-700'
-                        }`}>
-                      {c.ContractNumber} ({fmtMoney(c.LoanAmount || c.ContractAmount)})
-                    </button>
-                  ))}
-                </div>
-
-                {selectedContract && (
-                  <div className={`flex flex-wrap items-center justify-between gap-3 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
-                      <span>Số tiền KUNN: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{fmtMoney(selectedContract.LoanAmount || selectedContract.ContractAmount)}</strong></span>
-                      <span>Lãi suất hiện hành: <strong className="text-rose-600 dark:text-rose-400 font-mono">{fmtRate(getEffectiveActiveRate(selectedContract))}</strong></span>
-                      <span>Thời hạn KUNN: <strong className="text-sky-600 dark:text-sky-400">{selectedContract.KunnTenor || `${selectedContract.LoanTenorMonths || 12} tháng`}</strong></span>
-                      <span>Phương thức gốc: <strong className="text-purple-600 dark:text-purple-400">{selectedContract.PrincipalRepaymentMethod || 'Gốc trả cuối kỳ'}</strong></span>
-                      <span>Ngày giải ngân: <strong className="text-amber-600 dark:text-amber-400 font-mono">{fmtDate(selectedContract.DisbursementDate || selectedContract.ContractStartDate)}</strong></span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className={`${containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
-                <div className={`p-3 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
-                  <span className="font-bold text-xs">
-                    LỊCH THU NỢ {selectedContract ? `— ${selectedContract.ContractNumber}` : ''} ({schedules.length} kỳ)
-                  </span>
-                  {schedules.length > 0 && (
-                    <div className="text-[11px] text-slate-500 flex items-center space-x-4">
-                      <span className="flex items-center space-x-1">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                        <span>Đã TT: {schedules.filter(s => s.IsPaid).length} kỳ</span>
-                      </span>
-                      <span className="flex items-center space-x-1">
-                        <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
-                        <span>Chờ TT: {schedules.filter(s => !s.IsPaid).length} kỳ</span>
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-                  {(() => {
-                    const getPenaltyForSchedule = (s: RepaymentSchedule) => {
-                      if (s.IsPaid) return s.OverdueInterestAmount || 0;
-                      let autoDays = 0;
-                      if (s.DueDate) {
-                        const parts = s.DueDate.split('-');
-                        if (parts.length === 3) {
-                          const due = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0);
-                          due.setHours(0, 0, 0, 0);
-                          const diff = today.getTime() - due.getTime();
-                          if (diff > 0) autoDays = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                        }
-                      }
-                      const effDays = (s.OverdueDays && s.OverdueDays > 0) ? s.OverdueDays : autoDays;
-                      if (effDays <= 0) return 0;
-                      const annualRate = getEffectiveActiveRate(selectedContract, s.DueDate);
-                      return Math.round((s.PrincipalAmount || 0) * (annualRate * 1.5) * (effDays / 365));
-                    };
-
-                    const totalPenaltySum = schedules.reduce((a, s) => a + getPenaltyForSchedule(s), 0);
-
-                    return (
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead className={`sticky top-0 ${tableHeaderStyle}`}>
-                          <tr>
-                            <th className="p-3 text-center whitespace-nowrap">KỲ</th>
-                            <th className="p-3 whitespace-nowrap">NGÀY ĐẾN HẠN</th>
-                            <th className="p-3 text-center whitespace-nowrap text-purple-600 dark:text-purple-400">LÃI SUẤT ÁP DỤNG</th>
-                            <th className="p-3 text-center whitespace-nowrap text-rose-500">SỐ NGÀY QUÁ HẠN</th>
-                            <th className="p-3 text-right whitespace-nowrap">GỐC PHẢI TRẢ</th>
-                            <th className="p-3 text-right whitespace-nowrap text-emerald-600 dark:text-emerald-400">GỐC ĐÃ TRẢ</th>
-                            <th className="p-3 text-right whitespace-nowrap">LÃI THƯỜNG</th>
-                            <th className="p-3 text-right whitespace-nowrap text-rose-500">LÃI PHẠT QUÁ HẠN</th>
-                            <th className="p-3 text-right whitespace-nowrap">TỔNG NGHĨA VỤ TRẢ</th>
-                            <th className="p-3 text-center whitespace-nowrap">TRẠNG THÁI</th>
-                            <th className="p-3 whitespace-nowrap">NGÀY TT</th>
-                            <th className="p-3 text-center whitespace-nowrap">THAO TÁC</th>
-                          </tr>
-                        </thead>
-                        <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
-                          {!selectedContract ? (
-                            <tr><td colSpan={12} className="text-center p-8 text-slate-400">Chọn một HĐTD để xem lịch thu nợ</td></tr>
-                          ) : schedules.length === 0 ? (
-                            <tr><td colSpan={12} className="text-center p-8 text-slate-400">
-                              Chưa có lịch thu nợ. Nhấn "TẠO LỊCH THU NỢ TỰ ĐỘNG" để tính toán.
-                            </td></tr>
-                          ) : schedules.map(s => {
-                            let autoOverdue = 0;
-                            if (!s.IsPaid && s.DueDate) {
-                              const parts = s.DueDate.split('-');
-                              if (parts.length === 3) {
-                                const due = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
-                                due.setHours(0, 0, 0, 0);
-                                const diff = today.getTime() - due.getTime();
-                                if (diff > 0) autoOverdue = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                              }
-                            }
-
-                            const effectiveOverdueDays = s.IsPaid
-                              ? (s.OverdueDays || 0)
-                              : ((s.OverdueDays && s.OverdueDays > 0) ? s.OverdueDays : autoOverdue);
-                            const penaltyAmount = s.OverdueInterestAmount ?? getPenaltyForSchedule(s);
-                            const isOverdue = effectiveOverdueDays > 0;
-                            const rowTotalAmount = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penaltyAmount;
-                            const isPrepayRow = (s.PrepaidPrincipalAmount && s.PrepaidPrincipalAmount > 0) || s.Note?.includes('TRẢ TRƯỚC HẠN');
-
-                            const rateSegs = periodRateSegments[s.Id] || [];
-                            const activeRatePercentStr = rateSegs.length > 0
-                              ? formatSegmentsLabel(rateSegs) + '/năm'
-                              : (getEffectiveActiveRate(selectedContract, s.DueDate) * 100).toFixed(2) + '%/năm';
-                            const isForecastRate = rateSegs.some(x => x.forecast);
-                            const rateBreakdown = rateSegs.length > 1
-                              ? rateSegs.map(x => `${x.days} ngày @ ${x.ratePercent.toFixed(2).replace('.', ',')}% (${x.label})`).join('  +  ')
-                              : (rateSegs[0]?.label || '');
-
-                            return (
-                              <tr key={s.Id} className={`transition-colors ${isPrepayRow
-                                ? 'bg-amber-500/10 dark:bg-amber-500/20 font-semibold border-l-4 border-amber-500'
-                                : s.IsPaid
-                                  ? 'bg-emerald-50/50 dark:bg-emerald-950/10'
-                                  : isOverdue
-                                    ? 'bg-rose-50/60 dark:bg-rose-950/30 font-semibold'
-                                    : tableRowHover
-                                }`}>
-                                <td className="p-3 text-center font-bold font-mono">#{s.PeriodNumber}</td>
-                                <td className="p-3 font-mono font-bold">{fmtDate(s.DueDate)}</td>
-                                <td className="p-3 text-center font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50/30 dark:bg-purple-950/20 rounded-lg"
-                                  title={rateBreakdown || undefined}>
-                                  <div className={rateSegs.length > 1 ? 'whitespace-nowrap' : ''}>
-                                    {activeRatePercentStr}
-                                  </div>
-                                  {isForecastRate && (
-                                    <div className="text-[9px] font-sans font-normal text-slate-400 uppercase tracking-wide">dự phóng</div>
-                                  )}
-                                </td>
-                                <td className="p-3 text-center font-mono font-bold">
-                                  {effectiveOverdueDays > 0 ? (
-                                    <span className="px-2 py-0.5 rounded-lg bg-rose-600 text-white text-[11px] font-extrabold shadow-sm">
-                                      {effectiveOverdueDays} ngày
-                                    </span>
-                                  ) : (
-                                    <span className="text-slate-400 font-normal">—</span>
-                                  )}
-                                </td>
-                                <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono font-bold">
-                                  {(s.PrincipalAmount || 0).toLocaleString('vi-VN')}
-                                  {s.PrepaidPrincipalAmount ? (
-                                    <div className="text-[10px] text-amber-600 dark:text-amber-400">
-                                      gồm trả trước hạn {s.PrepaidPrincipalAmount.toLocaleString('vi-VN')}
-                                    </div>
-                                  ) : null}
-                                </td>
-                                <td className="p-3 text-right font-mono font-bold">
-                                  {(() => {
-                                    const phaiTra = s.PrincipalAmount || 0;
-                                    const daTra = paidPrincipalOf(s);
-                                    if (daTra === 0) {
-                                      return <span className="text-slate-400 font-normal">—</span>;
-                                    }
-                                    const thieu = phaiTra - daTra;
-                                    return (
-                                      <>
-                                        <span className="text-emerald-600 dark:text-emerald-400">
-                                          {daTra.toLocaleString('vi-VN')}
-                                        </span>
-                                        {thieu > 0 && (
-                                          <div className="text-[10px] text-rose-600 dark:text-rose-400 font-normal">
-                                            còn thiếu {thieu.toLocaleString('vi-VN')}
-                                          </div>
-                                        )}
-                                      </>
-                                    );
-                                  })()}
-                                </td>
-                                <td className="p-3 text-right text-amber-600 dark:text-amber-400 font-mono font-bold">{(s.InterestAmount || 0).toLocaleString('vi-VN')}</td>
-                                <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono font-bold">
-                                  {penaltyAmount > 0 ? penaltyAmount.toLocaleString('vi-VN') : '—'}
-                                </td>
-                                <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">{rowTotalAmount.toLocaleString('vi-VN')}</td>
-                                <td className="p-3 text-center">
-                                  {s.IsPaid ? (
-                                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                                      ✓ Đã TT {effectiveOverdueDays > 0 ? `(Trễ ${effectiveOverdueDays}d)` : ''}
-                                    </span>
-                                  ) : isOverdue ? (
-                                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-rose-600 text-white border border-rose-500 animate-pulse">
-                                      🔴 Quá {effectiveOverdueDays}d
-                                    </span>
-                                  ) : (
-                                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                                      🟡 Chờ TT
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="p-3 font-mono font-bold text-slate-600 dark:text-slate-300">{s.IsPaid ? fmtDate(s.PaymentDate) : '—'}</td>
-                                <td className="p-3 text-center">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      openPaymentModal(s);
-                                    }}
-                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center space-x-1 border ${s.IsPaid
-                                      ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                                      : 'bg-sky-600 hover:bg-sky-500 text-white border-sky-500 shadow-sky-600/20'
-                                      }`}>
-                                    <span>⚙️ Ghi nhận TT / Sửa</span>
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                        {schedules.length > 0 && (
-                          <tfoot className={`border-t sticky bottom-0 font-bold ${tableHeaderStyle}`}>
-                            <tr>
-                              <td className="p-3 text-center" colSpan={4}>TỔNG CỘNG LỊCH THU NỢ</td>
-                              <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono">
-                                {schedules.reduce((a, s) => a + (s.PrincipalAmount || 0), 0).toLocaleString('vi-VN')}
-                              </td>
-                              <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-mono">
-                                {schedules.reduce((a, s) => a + paidPrincipalOf(s), 0).toLocaleString('vi-VN')}
-                              </td>
-                              <td className="p-3 text-right text-amber-600 dark:text-amber-400 font-mono">
-                                {schedules.reduce((a, s) => a + (s.InterestAmount || 0), 0).toLocaleString('vi-VN')}
-                              </td>
-                              <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono">
-                                {totalPenaltySum.toLocaleString('vi-VN')}
-                              </td>
-                              <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-mono text-sm">
-                                {(schedules.reduce((a, s) => a + (s.PrincipalAmount || 0) + (s.InterestAmount || 0), 0) + totalPenaltySum).toLocaleString('vi-VN')}
-                              </td>
-                              <td colSpan={3}></td>
-                            </tr>
-                          </tfoot>
-                        )}
-                      </table>
-                    );
-                  })()}
-                </div>
-
-                {selectedContract && (
-                  <DebtSummaryCard
-                    selectedContract={selectedContract}
-                    schedules={schedules}
-                    allSchedulesMap={allSchedulesMap}
-                  />
-                )}
-              </div>
-            </div>
+            <ScheduleTab
+              isLight={isLight}
+              containerCardBg={containerCardBg}
+              tableHeaderStyle={tableHeaderStyle}
+              tableRowHover={tableRowHover}
+              contracts={contracts}
+              selectedContract={selectedContract}
+              handleSelectContract={handleSelectContract}
+              schedules={schedules}
+              allSchedulesMap={allSchedulesMap}
+              periodRateSegments={periodRateSegments}
+              openPaymentModal={openPaymentModal}
+            />
           )}
         </div>
       )}
 
       {editingSchedule && selectedContract && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className={`${containerCardBg} w-full max-w-xl rounded-2xl border shadow-2xl p-5 space-y-4`}>
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-              <div className="flex items-center space-x-2">
-                <Receipt className="w-5 h-5 text-sky-500" />
-                <h3 className="font-bold text-sm uppercase tracking-wide text-slate-900 dark:text-slate-100">
-                  GHI NHẬN THANH TOÁN & QUÁ HẠN — KỲ #{editingSchedule.PeriodNumber}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditingSchedule(null)}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 grid grid-cols-2 gap-3 text-xs">
-              <div>Ngày đến hạn kỳ: <strong className="font-mono text-slate-900 dark:text-slate-100">{fmtDate(editingSchedule.DueDate)}</strong></div>
-              <div>Gốc quy định: <strong className="font-mono text-sky-600 dark:text-sky-400">{editingSchedule.PrincipalAmount.toLocaleString('vi-VN')} VNĐ</strong></div>
-              <div>Lãi quy định: <strong className="font-mono text-amber-600 dark:text-amber-400">{editingSchedule.InterestAmount.toLocaleString('vi-VN')} VNĐ</strong></div>
-              <div>Tổng nghĩa vụ chuẩn: <strong className="font-mono text-emerald-600 dark:text-emerald-400">{(editingSchedule.PrincipalAmount + editingSchedule.InterestAmount).toLocaleString('vi-VN')} VNĐ</strong></div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-sky-600 dark:text-sky-400 mb-1">
-                    Gốc đã đóng kỳ này (VNĐ)
-                  </label>
-                  <input
-                    type="text"
-                    value={modalActualPaidPrincipalStr}
-                    onChange={e => setModalActualPaidPrincipalStr(formatMoneyInput(e.target.value))}
-                    placeholder="0"
-                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-50/50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-1">
-                    Lãi đã đóng kỳ này (VNĐ)
-                  </label>
-                  <input
-                    type="text"
-                    value={modalActualPaidInterestStr}
-                    onChange={e => setModalActualPaidInterestStr(formatMoneyInput(e.target.value))}
-                    placeholder="0"
-                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 mb-1">
-                    Trả nợ gốc trước hạn kỳ này (VNĐ)
-                  </label>
-                  <input
-                    type="text"
-                    value={modalPrepaidPrincipalStr}
-                    onChange={e => setModalPrepaidPrincipalStr(formatMoneyInput(e.target.value))}
-                    placeholder="0"
-                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-rose-600 dark:text-rose-400 mb-1">
-                    Số ngày quá hạn (ngày)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={modalOverdueDaysStr}
-                    onChange={e => {
-                      const days = parseInt(e.target.value, 10) || 0;
-                      setModalOverdueDaysStr(e.target.value);
-                      if (days > 0 && selectedContract) {
-                        const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
-                        const calcPen = Math.round((editingSchedule.PrincipalAmount || 0) * (rate * 1.5) * (days / 365));
-                        setModalOverdueInterestStr(calcPen.toLocaleString('vi-VN'));
-                      } else {
-                        setModalOverdueInterestStr('0');
-                      }
-                    }}
-                    placeholder="0"
-                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-rose-600 dark:text-rose-400 mb-1">
-                    Lãi phạt quá hạn 150% (VNĐ)
-                  </label>
-                  <input
-                    type="text"
-                    value={modalOverdueInterestStr}
-                    onChange={e => setModalOverdueInterestStr(formatMoneyInput(e.target.value))}
-                    className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-rose-50/50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-1">
-                    Ngày thanh toán thực tế
-                  </label>
-                  <DateInput
-                    value={modalPaymentDate}
-                    onChange={(newDate) => {
-                      setModalPaymentDate(newDate);
-                      if (editingSchedule && newDate) {
-                        const calcDays = calculateOverdueDaysFromDates(newDate, editingSchedule.DueDate);
-                        setModalOverdueDaysStr(calcDays.toString());
-                        if (calcDays > 0 && selectedContract) {
-                          const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
-                          const calcPen = Math.round((editingSchedule.PrincipalAmount || 0) * (rate * 1.5) * (calcDays / 365));
-                          setModalOverdueInterestStr(calcPen.toLocaleString('vi-VN'));
-                        } else {
-                          setModalOverdueInterestStr('0');
-                        }
-                      }
-                    }}
-                    className="w-full p-2.5 rounded-xl border text-xs bg-transparent border-slate-200 dark:border-slate-800"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={modalIsPaid}
-                  onChange={e => setModalIsPaid(e.target.checked)}
-                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                  Xác nhận Kỳ #{editingSchedule.PeriodNumber} đã thanh toán
-                </span>
-              </label>
-
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingSchedule(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSavePaymentModal}
-                  disabled={loading}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/30 flex items-center space-x-1.5"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{loading ? 'Đang lưu...' : 'LƯU CẬP NHẬT KỲ THU NỢ'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <PaymentModal
+          editingSchedule={editingSchedule}
+          selectedContract={selectedContract}
+          containerCardBg={containerCardBg}
+          loading={loading}
+          modalActualPaidPrincipalStr={modalActualPaidPrincipalStr}
+          setModalActualPaidPrincipalStr={setModalActualPaidPrincipalStr}
+          modalActualPaidInterestStr={modalActualPaidInterestStr}
+          setModalActualPaidInterestStr={setModalActualPaidInterestStr}
+          modalPrepaidPrincipalStr={modalPrepaidPrincipalStr}
+          setModalPrepaidPrincipalStr={setModalPrepaidPrincipalStr}
+          modalOverdueDaysStr={modalOverdueDaysStr}
+          setModalOverdueDaysStr={setModalOverdueDaysStr}
+          modalOverdueInterestStr={modalOverdueInterestStr}
+          setModalOverdueInterestStr={setModalOverdueInterestStr}
+          modalPaymentDate={modalPaymentDate}
+          setModalPaymentDate={setModalPaymentDate}
+          modalIsPaid={modalIsPaid}
+          setModalIsPaid={setModalIsPaid}
+          onClose={() => setEditingSchedule(null)}
+          onSave={handleSavePaymentModal}
+        />
       )}
     </div>
   );

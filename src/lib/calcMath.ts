@@ -209,7 +209,11 @@ export function buildLoanSchedule(params: LoanScheduleParams): LoanScheduleRow[]
     });
 
     if (prepayment > 0 && planned && planned.mode === 'reduce_monthly' && repayMethod !== 'bullet') {
-      const remainingPeriods = tenorMonths - i;
+      // Trả trước hạn trong lúc còn ân hạn gốc (i <= graceMonths): các kỳ còn
+      // lại của ân hạn vẫn chưa trả gốc, nên số kỳ để chia đều phần dư nợ mới
+      // là kỳ SAU ân hạn, không phải kỳ sau kỳ hiện tại — dùng tenorMonths - i
+      // ở đây từng làm gốc mỗi kỳ bị tính hụt và dồn cả phần thiếu vào kỳ cuối.
+      const remainingPeriods = tenorMonths - Math.max(i, graceMonths);
       if (remainingPeriods > 0 && endingBalance > 0) {
         stepPrincipal = roundPrincipalCore(endingBalance / remainingPeriods);
       }

@@ -79,6 +79,23 @@ const RULES: Record<string, LoanProductRule> = {
   },
 };
 
+export const PRINCIPAL_REPAY_OPTIONS = [
+  'Gốc trả cuối kỳ',
+  'Trả đều hàng tháng',
+  'Trả đều hàng quý (3 tháng)',
+  'Trả gốc tăng dần',
+  'Thanh toán dư nợ tối thiểu hàng tháng',
+  'Theo thỏa thuận trong KUNN'
+];
+
+export const INTEREST_REPAY_OPTIONS = [
+  'Trả hàng tháng theo dư nợ thực tế',
+  'Trả hàng tháng theo dư nợ giảm dần',
+  'Trả hàng tháng theo dư nợ ban đầu',
+  'Trả cuối kỳ',
+  'Tính theo sao kê hàng tháng'
+];
+
 export function getLoanProductRule(loanMethod?: string | null): LoanProductRule {
   if (!loanMethod) return PERMISSIVE;
   return RULES[loanMethod] ?? PERMISSIVE;

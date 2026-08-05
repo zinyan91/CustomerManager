@@ -297,6 +297,27 @@ describe('buildLoanSchedule', () => {
     expect(rows[3].principal).toBeGreaterThan(0);
   });
 
+  it('trả trước hạn TRONG lúc ân hạn gốc: gốc đều sau ân hạn tính theo số kỳ sau ân hạn, không dồn cục kỳ cuối', () => {
+    // Tái tạo đúng ca thực tế (GNN 960tr/120 tháng, ân hạn 18 tháng, trả trước
+    // hạn kỳ 2 và 3 — trong lúc còn ân hạn). Trước khi sửa: gốc/kỳ tính hụt
+    // (8.070.000 thay vì ~9.260.000) vì chia dư nợ cho tenorMonths - kỳ hiện tại
+    // (117) thay vì kỳ còn lại SAU ân hạn (102), kỳ cuối phải gánh 128.930.000 —
+    // gấp hơn 16 lần một kỳ thường.
+    const rows = buildLoanSchedule({
+      ...base, loanAmount: 960_000_000, tenorMonths: 120, principalGraceMonths: 18,
+      prepayments: [
+        { period: 2, amount: 8_000_000, mode: 'reduce_monthly' },
+        { period: 3, amount: 8_000_000, mode: 'reduce_monthly' },
+      ],
+    });
+    const firstAfterGrace = rows[18].principal; // kỳ 19
+    const lastPeriod = rows[rows.length - 1].principal; // kỳ 120
+    expect(firstAfterGrace).toBeGreaterThan(9_000_000);
+    // Kỳ cuối chỉ gánh phần dư làm tròn, không được vượt quá một kỳ thường quá xa.
+    expect(lastPeriod).toBeLessThan(firstAfterGrace * 1.5);
+    expect(rows.reduce((a, r) => a + r.principal, 0)).toBe(960_000_000);
+  });
+
   it('trả trước hạn nhiều kỳ: mỗi kỳ đều được ghi nhận', () => {
     const rows = buildLoanSchedule({
       ...base, tenorMonths: 24,

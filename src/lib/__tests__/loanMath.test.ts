@@ -461,6 +461,24 @@ describe('recalculateSchedules', () => {
     expect(tongGoc).toBe(120_000_000);
   });
 
+  it('trả trước hạn TRONG lúc còn ân hạn gốc: gốc đều sau ân hạn tính theo số kỳ sau ân hạn, không dồn cục kỳ cuối', () => {
+    // Tái tạo ca thực tế (GNN 960tr/120 tháng, ân hạn 18 tháng, trả trước hạn kỳ
+    // 2 và 3 — trong lúc còn ân hạn). Trước khi sửa: gốc/kỳ sau ân hạn tính hụt
+    // vì chia dư nợ cho totalPeriods - kỳ hiện tại (117) thay vì kỳ còn lại SAU
+    // ân hạn (102), kỳ cuối phải gánh phần dư khổng lồ.
+    const hd = { ...hopDong, LoanAmount: 960_000_000, PrincipalGracePeriodMonths: 18 };
+    const l = lich(120);
+    l[1] = { ...l[1], PrepaidPrincipalAmount: 8_000_000 };
+    l[2] = { ...l[2], PrepaidPrincipalAmount: 8_000_000 };
+    const r = recalculateSchedules(l, hd);
+
+    const firstAfterGrace = r[18].PrincipalAmount!; // kỳ 19
+    const lastPeriod = r[r.length - 1].PrincipalAmount!; // kỳ 120
+    expect(firstAfterGrace).toBeGreaterThan(9_000_000);
+    expect(lastPeriod).toBeLessThan(firstAfterGrace * 1.5);
+    expect(r.reduce((s, k) => s + (k.PrincipalAmount || 0), 0)).toBe(960_000_000);
+  });
+
   it('cộng lãi phạt quá hạn vào tổng phải trả của kỳ', () => {
     const l = lich(11);
     l[1] = { ...l[1], OverdueInterestAmount: 500_000 };

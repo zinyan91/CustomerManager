@@ -370,7 +370,13 @@ export function recalculateSchedules(
     const principalInPeriod = Math.min(planBalance, scheduledPrincipal + prepaid);
 
     if (prepaid > 0 && !isBullet) {
-      const remainingPeriods = totalPeriods - periodNum;
+      // Trả trước hạn trong lúc còn ân hạn gốc (periodNum <= graceMonths): các kỳ
+      // còn lại của ân hạn vẫn chưa trả gốc, nên số kỳ để chia đều phần dư nợ mới
+      // là kỳ SAU ân hạn, không phải kỳ sau kỳ hiện tại — dùng totalPeriods -
+      // periodNum ở đây từng làm gốc mỗi kỳ bị tính hụt và dồn cả phần thiếu vào
+      // kỳ cuối (960tr/120 kỳ, ân hạn 18 tháng: gốc/kỳ hụt còn 8,07tr thay vì
+      // ~9,26tr, kỳ cuối gánh 128,93tr thay vì gánh phần dư nhỏ như bình thường).
+      const remainingPeriods = totalPeriods - Math.max(periodNum, graceMonths);
       if (remainingPeriods > 0) {
         const balAfterPrepay = Math.max(0, planBalance - principalInPeriod);
         baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingPeriods);

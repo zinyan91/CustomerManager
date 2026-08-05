@@ -10,6 +10,7 @@ import {
   resolveMasterHdtdNumber,
   isKunnSettled,
   isKunnOfClosedHdtd,
+  canCloseCreditContract,
 } from '../creditContract';
 import type { CreditContract, LoanContract } from '../../types';
 
@@ -456,16 +457,51 @@ describe('summarizeCreditContracts — HĐTD đã đóng', () => {
     expect(daTt.settledKunnCount).toBe(1);
     expect(daTt.outstanding).toBe(0);
   });
+});
 
-  it('báo riêng phần dư nợ còn treo khi đóng HĐTD, không xoá dấu vết', () => {
-    expect(dungHd({ IsClosed: true }, 400_000_000).closedWithBalance).toBe(400_000_000);
+describe('canCloseCreditContract', () => {
+  const hd = cc({ Id: 9, HdtdNumber: 'HD09' });
+  const gnn = (o: Partial<LoanContract>) => kunn({ Id: 91, CreditContractId: 9, ContractNumber: 'HD09/GNN-01', ...o });
+
+  it('không đóng được khi còn KUNN chưa tất toán', () => {
+    const r = canCloseCreditContract(hd, [gnn({ IsSettled: false })]);
+    expect(r.allowed).toBe(false);
+    expect(r.unsettledKunnNumbers).toEqual(['HD09/GNN-01']);
   });
 
-  it('đóng HĐTD mà KUNN đã trả hết thì không có gì treo', () => {
-    expect(dungHd({ IsClosed: true }, 0).closedWithBalance).toBe(0);
+  it('đóng được khi mọi KUNN đã tất toán', () => {
+    const r = canCloseCreditContract(hd, [gnn({ IsSettled: true })]);
+    expect(r.allowed).toBe(true);
+    expect(r.unsettledKunnNumbers).toEqual([]);
   });
 
-  it('HĐTD còn mở thì không báo dư nợ treo dù còn nợ', () => {
-    expect(dungHd({}, 400_000_000).closedWithBalance).toBe(0);
+  it('HĐTD chưa giải ngân KUNN nào thì đóng được', () => {
+    expect(canCloseCreditContract(hd, []).allowed).toBe(true);
+  });
+
+  it('chỉ xét KUNN của chính HĐTD đó', () => {
+    const khac = kunn({ Id: 92, CreditContractId: 10, ContractNumber: 'HD10/GNN-01', IsSettled: false });
+    expect(canCloseCreditContract(hd, [khac]).allowed).toBe(true);
+  });
+
+  it('liệt kê đủ mọi KUNN chưa tất toán để banker biết phải xử lý cái nào', () => {
+    const r = canCloseCreditContract(hd, [
+      gnn({ Id: 91, ContractNumber: 'HD09/GNN-01', IsSettled: true }),
+      gnn({ Id: 92, ContractNumber: 'HD09/GNN-02', IsSettled: false }),
+      gnn({ Id: 93, ContractNumber: 'HD09/GNN-03', IsSettled: false }),
+    ]);
+    expect(r.allowed).toBe(false);
+    expect(r.unsettledKunnNumbers).toEqual(['HD09/GNN-02', 'HD09/GNN-03']);
+  });
+});
+
+describe('summarizeCreditContracts — bỏ khái niệm dư nợ treo', () => {
+  it('không còn trả về closedWithBalance: đóng HĐTD khi còn nợ là trạng thái bị chặn, không phải trạng thái cần hiển thị', () => {
+    const [s] = summarizeCreditContracts(
+      [cc({ Id: 9, HdtdNumber: 'HD09', IsClosed: true })],
+      [kunn({ Id: 91, CreditContractId: 9, IsSettled: false })],
+      { getOutstanding: () => 400_000_000, today: HOM_NAY }
+    );
+    expect('closedWithBalance' in s).toBe(false);
   });
 });

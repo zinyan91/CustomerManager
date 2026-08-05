@@ -9,7 +9,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { useWork } from '../../context/WorkContext';
 import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
-import { summarizeCreditContracts } from '../../lib/creditContract';
+import { summarizeCreditContracts, canCloseCreditContract } from '../../lib/creditContract';
 import { addMonthsToDate, computeOutstandingBalance } from '../../lib/loanMath';
 import { getEffectiveLtv, usableCapacity, appraisalStatus, appraisalExpiryDate } from '../../lib/collateralMath';
 import { allowedPurposes } from '../../lib/loanProductRules';
@@ -122,15 +122,18 @@ export const CreditContractView: React.FC = () => {
   );
 
   const visibleSummaries = useMemo(
-    () => showSettled
-      ? summaries
-      : summaries.filter(s => !s.contract.IsClosed || s.activeKunnCount > 0),
+    () => showSettled ? summaries : summaries.filter(s => !s.contract.IsClosed),
     [summaries, showSettled]
   );
 
-  const closedCount = summaries.filter(
-    s => s.contract.IsClosed && s.activeKunnCount === 0
-  ).length;
+  const closedCount = summaries.filter(s => s.contract.IsClosed).length;
+
+  const closeCheck = useMemo(
+    () => editing
+      ? canCloseCreditContract(editing, kunns)
+      : { allowed: true, unsettledKunnNumbers: [] },
+    [editing, kunns]
+  );
 
   const openNew = () => {
     setEditing(null);
@@ -171,6 +174,14 @@ export const CreditContractView: React.FC = () => {
     if (selectedCollateralIds.length === 0) {
       showNotify('error', 'Chọn ít nhất 01 tài sản bảo đảm cho HĐTD.');
       return;
+    }
+    if (form.IsClosed && editing) {
+      const check = canCloseCreditContract(editing, kunns);
+      if (!check.allowed) {
+        showNotify('error',
+          `Chưa tất toán: ${check.unsettledKunnNumbers.join(', ')}.`);
+        return;
+      }
     }
 
     setLoading(true);
@@ -354,11 +365,6 @@ export const CreditContractView: React.FC = () => {
                       <td className="p-3 text-right font-mono font-bold">{fmtMoney(s.contract.ContractAmount)}</td>
                       <td className="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
                         {fmtMoney(s.outstanding)}
-                        {s.closedWithBalance > 0 && (
-                          <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400 normal-case">
-                            ⚠ đã đóng HĐTD nhưng còn {fmtMoney(s.closedWithBalance)}
-                          </div>
-                        )}
                       </td>
                       <td className="p-3 text-center whitespace-nowrap">
                         <div className="font-mono">{fmtDate(s.contract.ContractEndDate)}</div>
@@ -370,11 +376,6 @@ export const CreditContractView: React.FC = () => {
                         <span className="font-bold">{s.activeKunnCount}</span>
                         {s.settledKunnCount > 0 && (
                           <span className="text-slate-400"> +{s.settledKunnCount} đã TT</span>
-                        )}
-                        {s.contract.IsClosed && s.activeKunnCount > 0 && (
-                          <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400">
-                            còn khoản chưa tất toán
-                          </div>
                         )}
                         {s.kunnCount === 0 && (
                           <div className="text-[10px] text-slate-400">chưa giải ngân</div>
@@ -391,7 +392,6 @@ export const CreditContractView: React.FC = () => {
                                   e.stopPropagation();
                                   if (!khoaGiaiNgan) requestDisburse({ creditContractId: s.contract.Id, customerId: customer.Id });
                                 }}
-                                title={khoaGiaiNgan ? s.blockReason : 'Giải ngân KUNN mới'}
                                 className={`flex items-center space-x-1 font-bold px-2.5 py-1.5 rounded-lg text-[11px] ${
                                   khoaGiaiNgan
                                     ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
@@ -603,9 +603,12 @@ export const CreditContractView: React.FC = () => {
           <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
             <label className="flex items-center space-x-2 cursor-pointer">
               <input type="checkbox" checked={form.IsClosed ?? false}
+                disabled={!closeCheck.allowed}
                 onChange={e => setForm(f => ({ ...f, IsClosed: e.target.checked }))}
-                className="w-4 h-4 accent-rose-600" />
-              <span className="text-xs font-medium">HĐTD đã đóng</span>
+                className="w-4 h-4 accent-rose-600 disabled:opacity-40" />
+              <span className={`text-xs font-medium ${closeCheck.allowed ? '' : 'text-slate-400'}`}>
+                HĐTD đã đóng
+              </span>
             </label>
             <button type="submit" disabled={loading}
               className="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-bold px-5 py-2 rounded-xl text-xs">

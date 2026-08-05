@@ -1030,10 +1030,6 @@ export const LoanPortfolioView: React.FC = () => {
   );
 
   const expiredLimitNote = useMemo(() => {
-    const closed = scopedLimitGroups.filter(g => g.closed);
-    if (closed.length === 1) return 'HĐTD đã đóng, không giải ngân thêm';
-    if (closed.length > 1) return `${closed.length} HĐTD đã đóng, không giải ngân thêm`;
-
     const expired = scopedLimitGroups.filter(g => g.expired && g.headroom > 0);
     if (expired.length === 0) return null;
     if (expired.length === 1) {
@@ -1042,14 +1038,8 @@ export const LoanPortfolioView: React.FC = () => {
     return `${expired.length} HĐTD đã hết hiệu lực`;
   }, [scopedLimitGroups]);
 
-  const disburseBlockReason = useMemo(() => {
-    if (!foundCustomer || scopedLimitGroups.length === 0) return '';
-    if (scopedLimitGroups.some(g => g.available > 0)) return '';
-    const reasons = Array.from(
-      new Set(scopedLimitGroups.map(g => g.blockReason).filter(Boolean))
-    );
-    return reasons.length > 0 ? reasons.join('; ') : 'Không còn hạn mức khả dụng';
-  }, [scopedLimitGroups, foundCustomer]);
+  const canDisburse = scopedLimitGroups.length === 0
+    || scopedLimitGroups.some(g => g.available > 0);
 
   const totalCreditLimit = summaryFinancials.totalCredit;
   const totalKunnAmount = summaryFinancials.totalDisbursed;
@@ -1140,7 +1130,7 @@ export const LoanPortfolioView: React.FC = () => {
             totalKunnAmount={totalKunnAmount}
             remainingCreditLimit={remainingCreditLimit}
             expiredLimitNote={expiredLimitNote}
-            disburseBlockReason={disburseBlockReason}
+            canDisburse={canDisburse}
             handleNewContract={handleNewContract}
           />
 
@@ -1203,7 +1193,6 @@ export const LoanPortfolioView: React.FC = () => {
                 getAutoDebtGroupInfo={getAutoDebtGroupInfo}
                 getMasterHdtdNumber={masterNoOf}
                 isSettled={kunnSettled}
-                isOfClosedHdtd={kunnOfClosedHdtd}
                 getEffectiveBalanceForContract={getEffectiveBalanceForContract}
               />
 

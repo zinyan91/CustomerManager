@@ -161,6 +161,23 @@ export function isKunnOfClosedHdtd(
   return creditContracts.some(cc => cc.Id === kunn.CreditContractId && cc.IsClosed === true);
 }
 
+export interface CloseCreditContractCheck {
+  allowed: boolean;
+  unsettledKunnNumbers: string[];
+}
+
+export function canCloseCreditContract(
+  contract: Pick<CreditContract, 'Id'>,
+  kunns: Pick<LoanContract, 'CreditContractId' | 'ContractNumber' | 'IsSettled'>[]
+): CloseCreditContractCheck {
+  const unsettledKunnNumbers = kunns
+    .filter(k => k.CreditContractId === contract.Id && !isKunnSettled(k))
+    .map(k => (k.ContractNumber || '').trim())
+    .filter(Boolean);
+
+  return { allowed: unsettledKunnNumbers.length === 0, unsettledKunnNumbers };
+}
+
 export interface CreditContractSummary {
   contract: CreditContract;
   kunnCount: number;
@@ -175,7 +192,6 @@ export interface CreditContractSummary {
   blockReason: string;
   expired: boolean;
   isEmpty: boolean;
-  closedWithBalance: number;
 }
 
 export function summarizeCreditContracts(
@@ -225,9 +241,6 @@ export function summarizeCreditContracts(
       canDisburse: available > 0,
       blockReason,
       expired,
-      closedWithBalance: cc.IsClosed
-        ? own.reduce((s, k) => s + Math.max(0, outstandingOf(k)), 0)
-        : 0,
       isEmpty: active.length === 0,
     };
   });

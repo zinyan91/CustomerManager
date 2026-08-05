@@ -72,6 +72,10 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 
 **`computeLimitGroups` phải được truyền `options.isClosed`.** Cờ `IsClosed` nằm ở bảng `CreditContracts` còn hàm này chỉ nhận `LoanContract[]`, nên nó không tự biết hợp đồng đã đóng. Bỏ trống thì hạn mức khả dụng ra số dương trên HĐTD đã đóng — hồ sơ NGUYỄN MINH HÙNG ngày 05/08/2026 hiện HMTD còn lại 600 triệu với nút Giải ngân đang bật, trong khi HĐTD đã đóng và còn 400 triệu chưa trả. **Đóng HĐTD và hết hiệu lực theo ngày là hai chuyện khác nhau**: hợp đồng còn hạn vẫn đóng được, nên không thay cái này bằng cái kia. Cả `computeLimitGroups` và `summarizeCreditContracts` đều cho `available = 0` khi `expired || closed`, và xếp lý do chặn cùng thứ tự: đã đóng → hết hiệu lực → hết hạn mức.
 
+**Không đóng HĐTD khi còn KUNN chưa tất toán.** Không ngân hàng nào tất toán hợp đồng mà còn dư nợ, nên đó là **dữ liệu sai phải chặn**, không phải trạng thái cần thiết kế màn hình để hiển thị. Chốt ở `canCloseCreditContract` cho đường giao diện, và trigger `trg_chan_dong_hdtd_con_du_no` (migration 22) là lớp bảo vệ thật — cùng lý lẽ với RLS và unique index số KUNN: chốt ở client không đỡ được đường ghi bằng SQL.
+
+Trạng thái sai đã tồn tại trong dữ liệu thì **báo cáo rồi để banker quyết**, không sửa hàng loạt: mở lại hợp đồng nếu khoản vay còn chạy thật, hoặc tất toán từng KUNN nếu khách đã trả hết mà chưa ai đánh dấu.
+
 **Đóng HĐTD là dừng quyền giải ngân, KHÔNG phải xoá nợ.** Hai câu hỏi khác nhau, hai hàm khác nhau, đừng trả lời câu này bằng câu kia:
 
 | Câu hỏi | Hàm |
@@ -83,7 +87,11 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 
 `isKunnSettled` từng trả `true` khi HĐTD có `IsClosed`, và suy diễn đó che dư nợ thật khỏi **mọi** con số: hai KUNN 200 triệu của NGUYỄN MINH HÙNG, `IsSettled = false`, chưa trả một đồng, vẫn hiện "Dư nợ hiện hữu 0" kèm nhãn "ĐÃ TẤT TOÁN (theo HĐTD)" chỉ vì hợp đồng bị đóng. Cùng lúc đó tab HĐTD báo đỏ "còn 400.000.000" — hai màn hình nói ngược nhau về cùng một hồ sơ.
 
-Kéo theo: **HĐTD đã đóng mà còn KUNN chưa tất toán thì luôn hiện**, không ẩn theo toggle "Hiện HĐTD đã đóng" — ẩn mặc định là che mất khoản nợ đang treo.
+### Giao diện cài quy tắc, không giải thích quy tắc
+
+Người dùng hệ thống này là banker. **Không viết lời giải thích nghiệp vụ lên màn hình** — nút bị làm mờ đã nói đủ, thêm tooltip "HĐTD đã đóng nên không giải ngân được" là nhắc lại điều họ biết rõ hơn ta.
+
+Quy tắc thì cài thành hành vi: chặn ô nhập, làm mờ nút, từ chối lưu kèm **dữ liệu** banker chưa biết (số hiệu KUNN nào chưa tất toán, con số nào vượt). Chỉ đưa chữ lên giao diện khi nó mang thông tin mới, không khi nó mang lời dạy nghiệp vụ.
 
 **KUNN không có dòng nào trong `RepaymentSchedules` thì dư nợ không giảm được.** `computeOutstandingBalance` rơi vào nhánh dự phòng trả `CurrentBalance`, và không có kỳ nào để đánh dấu đã thu. Đo 05/08/2026: 14/97 KUNN chưa tất toán ở trạng thái này, treo 4,635 tỷ. Mọi đường tạo KUNN phải sinh lịch; nhập KUNN bằng SQL mà bỏ bước này là tạo ra khoản vay không thu nợ được.
 
@@ -520,7 +528,8 @@ Mã nguồn không có chú thích, nên phần "vì sao" của từng hàm nằ
 | `normalizeKunnNumber` | `'HD01/GNN-01'` và `'hd01/gnn-01 '` là cùng một số chứng từ. Unique index dưới database cũng đặt trên `lower(btrim(...))` để hai lớp kiểm tra nói cùng một chuyện. |
 | `checkKunnAgainstContract` | Trả **cảnh báo**, không chặn cứng: nghiệp vụ luôn có ngoại lệ được phê duyệt, và còn phải nhập được KUNN lịch sử của hợp đồng đã hết hiệu lực. Ràng buộc thật là **ngày giải ngân** phải nằm trong thời gian hiệu lực; KUNN đáo hạn sau ngày hết hiệu lực **không** phải lỗi. |
 | `kunnRevolvingStatus` | Đáo hạn **trước** ngày hết hiệu lực HĐTD: trả xong còn rút lại được. Đáo hạn **sau**: trả xong thì hạn mức đã hết hiệu lực, khách buộc phải tất toán — không tất toán được là nguy cơ chuyển nhóm nợ. |
-| `summarizeCreditContracts` | Trả về **cả** HĐTD chưa có KUNN nào: hợp đồng đã ký chưa giải ngân, và hạn mức còn hiệu lực đã tất toán hết KUNN, đều là trạng thái bình thường phải nhìn thấy. `closedWithBalance` khác 0 là dấu hiệu đóng hợp đồng khi khách chưa trả hết. |
+| `summarizeCreditContracts` | Trả về **cả** HĐTD chưa có KUNN nào: hợp đồng đã ký chưa giải ngân, và hạn mức còn hiệu lực đã tất toán hết KUNN, đều là trạng thái bình thường phải nhìn thấy. |
+| `canCloseCreditContract` | Chốt đóng HĐTD cho đường giao diện. Trả về danh sách số hiệu KUNN chưa tất toán để thông báo lỗi nêu đúng khoản phải xử lý. |
 
 ### `creditLimit.ts`
 

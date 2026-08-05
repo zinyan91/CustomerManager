@@ -13,7 +13,7 @@ interface CustomerSummaryHeaderProps {
   totalKunnAmount: number;
   remainingCreditLimit: number;
   expiredLimitNote?: string | null;
-  disburseBlockReason?: string;
+  canDisburse?: boolean;
   handleNewContract: () => void;
 }
 
@@ -27,10 +27,9 @@ export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
   totalKunnAmount,
   remainingCreditLimit,
   expiredLimitNote,
-  disburseBlockReason,
+  canDisburse = true,
   handleNewContract,
 }) => {
-  const blocked = !!disburseBlockReason;
   return (
     <div className={`${containerCardBg} rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 border`}>
       <div className="flex items-center space-x-3">
@@ -77,11 +76,10 @@ export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
           )}
         </div>
         <button onClick={handleNewContract}
-          disabled={blocked}
-          title={blocked ? `Không giải ngân được: ${disburseBlockReason}` : 'Giải ngân KUNN mới trên HĐTD hiện có'}
-          className={`flex items-center space-x-1.5 font-bold px-4 py-2 rounded-xl transition-colors text-xs ${blocked
-            ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'
-            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'}`}>
+          disabled={!canDisburse}
+          className={`flex items-center space-x-1.5 font-bold px-4 py-2 rounded-xl transition-colors text-xs ${canDisburse
+            ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
+            : 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'}`}>
           <Plus className="w-3.5 h-3.5" />
           <span>Giải ngân KUNN mới</span>
         </button>

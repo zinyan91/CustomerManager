@@ -43,7 +43,6 @@ export interface LimitGroupStatus {
   endDate: string | null;
   expired: boolean;
   closed: boolean;
-  blockReason: string;
   lockedOutstanding: number;
   redeployableOutstanding: number;
   activeKunnCount: number;
@@ -92,7 +91,6 @@ export function computeLimitGroups(
         endDate: null,
         expired: false,
         closed: false,
-        blockReason: '',
         lockedOutstanding: 0,
         redeployableOutstanding: 0,
         activeKunnCount: 0,
@@ -141,15 +139,6 @@ export function computeLimitGroups(
     const today = options?.today ?? null;
     const expired = !!(today && rest.endDate && rest.endDate < today);
 
-    let blockReason = '';
-    if (rest.closed) blockReason = 'HĐTD đã đóng';
-    else if (expired) blockReason = `HĐTD hết hiệu lực ${rest.endDate}`;
-    else if (headroom <= 0) {
-      blockReason = rest.revolving
-        ? 'Đã dùng hết hạn mức'
-        : 'Vay từng lần đã giải ngân, không giải ngân thêm';
-    }
-
     let lockedOutstanding = 0;
     let redeployableOutstanding = 0;
     for (const m of members) {
@@ -163,7 +152,6 @@ export function computeLimitGroups(
       used,
       headroom,
       expired,
-      blockReason,
       lockedOutstanding,
       redeployableOutstanding,
       available: (expired || rest.closed) ? 0 : headroom,

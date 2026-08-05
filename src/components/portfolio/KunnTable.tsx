@@ -30,7 +30,6 @@ interface KunnTableProps {
   getAutoDebtGroupInfo: (schs?: RepaymentSchedule[]) => { debtGroup: number; maxOverdueDays: number };
   getMasterHdtdNumber: (c: LoanContract) => string;
   isSettled?: (c: LoanContract) => boolean;
-  isOfClosedHdtd?: (c: LoanContract) => boolean;
   getEffectiveBalanceForContract: (c: LoanContract) => number;
 }
 
@@ -45,7 +44,6 @@ export const KunnTable: React.FC<KunnTableProps> = ({
   getAutoDebtGroupInfo,
   getMasterHdtdNumber,
   isSettled,
-  isOfClosedHdtd,
   getEffectiveBalanceForContract,
 }) => {
   return (
@@ -119,20 +117,12 @@ export const KunnTable: React.FC<KunnTableProps> = ({
                         ✓ ĐÃ TẤT TOÁN
                       </span>
                     ) : (
-                      <div className="space-y-0.5">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${DEBT_GROUP_COLORS[effectiveDg]}`}>
-                          {DEBT_GROUP_LABELS[effectiveDg]}
-                          {autoDebt.maxOverdueDays > 0 && (
-                            <span className="ml-1 text-[9px] font-mono opacity-90">({autoDebt.maxOverdueDays}d quá hạn)</span>
-                          )}
-                        </span>
-                        {}
-                        {isOfClosedHdtd && isOfClosedHdtd(c) && (
-                          <div className="text-[9px] font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
-                            ⚠ HĐTD đã đóng, còn nợ
-                          </div>
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${DEBT_GROUP_COLORS[effectiveDg]}`}>
+                        {DEBT_GROUP_LABELS[effectiveDg]}
+                        {autoDebt.maxOverdueDays > 0 && (
+                          <span className="ml-1 text-[9px] font-mono opacity-90">({autoDebt.maxOverdueDays}d quá hạn)</span>
                         )}
-                      </div>
+                      </span>
                     )}
                   </td>
                 </tr>

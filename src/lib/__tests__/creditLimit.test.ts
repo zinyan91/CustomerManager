@@ -541,7 +541,6 @@ describe('computeLimitGroups — HĐTD đã đóng', () => {
     expect(g.expired).toBe(false);
     expect(g.closed).toBe(true);
     expect(g.available).toBe(0);
-    expect(g.blockReason).toBe('HĐTD đã đóng');
   });
 
   it('vẫn giữ headroom để đối chiếu, không xoá dấu vết hạn mức trống', () => {
@@ -563,7 +562,6 @@ describe('computeLimitGroups — HĐTD đã đóng', () => {
     const [g] = computeLimitGroups(kunns, { today: '2026-08-05' });
     expect(g.closed).toBe(false);
     expect(g.available).toBe(200_000_000);
-    expect(g.blockReason).toBe('');
   });
 
   it('một KUNN thuộc HĐTD đã đóng là đủ để cả nhóm dùng chung hạn mức bị chặn', () => {
@@ -586,23 +584,23 @@ describe('computeLimitGroups — HĐTD đã đóng', () => {
     expect(g.available).toBe(0);
   });
 
-  it('đóng hợp đồng đứng trước hết hiệu lực trong lý do chặn', () => {
+  it('hết hiệu lực và đã đóng thì vẫn không giải ngân được', () => {
     const hetHan = kunns.map(k => hd({ ...k, ContractEndDate: '2026-07-01' }));
     const [g] = computeLimitGroups(hetHan, { today: '2026-08-05', isClosed: () => true });
     expect(g.expired).toBe(true);
-    expect(g.blockReason).toBe('HĐTD đã đóng');
+    expect(g.closed).toBe(true);
+    expect(g.available).toBe(0);
   });
 
-  it('còn hạn, chưa đóng, còn trống thì không có lý do chặn', () => {
+  it('còn hạn, chưa đóng, còn trống thì giải ngân được', () => {
     const [g] = computeLimitGroups(kunns, { today: '2026-08-05', isClosed: () => false });
     expect(g.available).toBe(200_000_000);
-    expect(g.blockReason).toBe('');
   });
 
-  it('dùng hết hạn mức thì báo đúng lý do', () => {
+  it('dùng hết hạn mức thì available về 0', () => {
     const hetHanMuc = kunns.map(k => hd({ ...k, CurrentBalance: 300_000_000 }));
     const [g] = computeLimitGroups(hetHanMuc, { today: '2026-08-05', isClosed: () => false });
     expect(g.headroom).toBe(0);
-    expect(g.blockReason).toBe('Đã dùng hết hạn mức');
+    expect(g.available).toBe(0);
   });
 });

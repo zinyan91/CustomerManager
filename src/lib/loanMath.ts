@@ -238,11 +238,6 @@ export function generateSchedule(
           (sum, seg) => sum + balance * (seg.ratePercent / 100) * (seg.days / 365), 0))
       : Math.round(balance * defaultAnnualRate * (days / 365));
 
-    let noteText: string | undefined = undefined;
-    if (periodPrepay > 0) {
-      noteText = `[TRẢ TRƯỚC HẠN: +${periodPrepay.toLocaleString('vi-VN')}đ]`;
-    }
-
     schedules.push({
       ContractId: contractId,
       PeriodNumber: i,
@@ -250,8 +245,8 @@ export function generateSchedule(
       PrincipalAmount: totalPrincipalInPeriod,
       InterestAmount: interest,
       TotalAmount: totalPrincipalInPeriod + interest,
+      PrepaidPrincipalAmount: periodPrepay,
       IsPaid: false,
-      Note: noteText,
     });
 
     const endingBal = Math.max(0, balance - totalPrincipalInPeriod);

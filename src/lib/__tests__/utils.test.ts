@@ -9,9 +9,9 @@ import {
   fmtPercent,
   todayIso,
   daysUntil,
+  stripLegacyNoteBlobs,
   fmtDate,
   getContractRateHistory,
-  serializeContractRateHistory,
   getEffectiveActiveRate,
   getMasterHdtdNumber,
 } from '../utils';
@@ -132,18 +132,13 @@ describe('lịch sử điều chỉnh lãi suất', () => {
   });
 
   it('đọc được từ trường Note của bản ghi cũ (chuỗi mã hoá)', () => {
-    const c = { Note: serializeContractRateHistory(lichSu) } as LoanContract;
-    expect(getContractRateHistory(c)).toEqual(lichSu);
+    const blob = `[RATE_HISTORY:${encodeURIComponent(JSON.stringify(lichSu))}]`;
+    expect(getContractRateHistory({ Note: blob } as LoanContract)).toEqual(lichSu);
   });
 
   it('không vỡ khi JSON hỏng, trả mảng rỗng', () => {
     expect(getContractRateHistory({ RateHistory: '{hỏng' } as unknown as LoanContract)).toEqual([]);
     expect(getContractRateHistory(null)).toEqual([]);
-  });
-
-  it('khứ hồi qua Note không mất dữ liệu', () => {
-    const c = { Note: serializeContractRateHistory(lichSu) } as LoanContract;
-    expect(getContractRateHistory(c)).toEqual(lichSu);
   });
 });
 
@@ -223,10 +218,6 @@ describe('getMasterHdtdNumber', () => {
     expect(getMasterHdtdNumber(c)).toBe('HD777');
   });
 
-  it('đọc từ Note khi hợp đồng cũ có ghi "HĐTD:"', () => {
-    const c = { ContractNumber: 'HD001', Note: 'HĐTD: HD-MASTER-09' } as LoanContract;
-    expect(getMasterHdtdNumber(c)).toBe('HD-MASTER-09');
-  });
 
   it('trả nhãn mặc định khi không có gì', () => {
     expect(getMasterHdtdNumber({} as LoanContract)).toBe('HĐTD-CHÍNH');
@@ -278,5 +269,61 @@ describe('daysUntil', () => {
   it('trả null khi thiếu ngày', () => {
     expect(daysUntil(null, '2026-08-05')).toBeNull();
     expect(daysUntil('', '2026-08-05')).toBeNull();
+  });
+});
+
+describe('getMasterHdtdNumber — không đọc Note', () => {
+  it('lấy tiền tố số KUNN, bỏ qua Note kể cả khi Note có chuỗi HĐTD', () => {
+    const c = {
+      ContractNumber: '2002/HĐTD/9662961/GNN-01',
+      Note: 'HĐTD: HĐTD-02',
+    } as LoanContract;
+    expect(getMasterHdtdNumber(c)).toBe('2002/HĐTD/9662961');
+  });
+
+  it('KUNN không có hậu tố GNN thì lấy nguyên số hiệu', () => {
+    const c = { ContractNumber: 'PNAT.CN.13250423', Note: 'HĐTD: HĐTD-01' } as LoanContract;
+    expect(getMasterHdtdNumber(c)).toBe('PNAT.CN.13250423');
+  });
+
+  it('Note còn nội dung khác cũng không ảnh hưởng', () => {
+    const c = {
+      ContractNumber: 'HD01/GNN-03',
+      Note: 'Khách hẹn trả sớm\nHĐTD: SỐ-CŨ-KHÔNG-DÙNG',
+    } as LoanContract;
+    expect(getMasterHdtdNumber(c)).toBe('HD01');
+  });
+});
+
+describe('stripLegacyNoteBlobs', () => {
+  it('gỡ dòng HĐTD nhét trong ghi chú', () => {
+    expect(stripLegacyNoteBlobs('HĐTD: 2002/HĐTD/9662961')).toBe('');
+  });
+
+  it('giữ nguyên phần ghi chú thật của banker', () => {
+    expect(stripLegacyNoteBlobs('HĐTD: HĐTD-02\nKhách hẹn trả sớm'))
+      .toBe('Khách hẹn trả sớm');
+    expect(stripLegacyNoteBlobs('Khách hẹn trả sớm\nHĐTD: HĐTD-02'))
+      .toBe('Khách hẹn trả sớm');
+  });
+
+  it('gỡ các khối dữ liệu nghiệp vụ cũ khác', () => {
+    expect(stripLegacyNoteBlobs('[COLLATERAL_IDS:1,2] còn nợ phí [RATE_HISTORY:xx]'))
+      .toBe('còn nợ phí');
+    expect(stripLegacyNoteBlobs('[PENALTY_SURCHARGE:0.5]')).toBe('');
+  });
+
+  it('ghi chú không chứa gì cần gỡ thì không đổi', () => {
+    expect(stripLegacyNoteBlobs('Khách đi công tác')).toBe('Khách đi công tác');
+  });
+
+  it('rỗng hoặc thiếu thì trả chuỗi rỗng', () => {
+    expect(stripLegacyNoteBlobs('')).toBe('');
+    expect(stripLegacyNoteBlobs(null)).toBe('');
+    expect(stripLegacyNoteBlobs(undefined)).toBe('');
+  });
+
+  it('gỡ nhiều dòng trống còn lại, không để lại khoảng trắng thừa', () => {
+    expect(stripLegacyNoteBlobs('HĐTD: X\n\n\nGhi chú\n\n')).toBe('Ghi chú');
   });
 });

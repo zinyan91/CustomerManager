@@ -190,11 +190,6 @@ export function getContractRateHistory(c?: LoanContract | null): RateAdjustmentH
   return [];
 }
 
-export function serializeContractRateHistory(history: RateAdjustmentHistoryItem[]): string {
-  if (!history || history.length === 0) return '';
-  return `[RATE_HISTORY:${encodeURIComponent(JSON.stringify(history))}]`;
-}
-
 export function getEffectiveActiveRate(c?: LoanContract | null, targetDateStr?: string): number {
   if (!c) return 0.085;
   const history = getContractRateHistory(c);
@@ -216,12 +211,23 @@ export function getEffectiveActiveRate(c?: LoanContract | null, targetDateStr?: 
   return c.InterestRate || c.NormalRate || c.PreferentialRate || c.BaseRate || 0.085;
 }
 
+export function stripLegacyNoteBlobs(note?: string | null): string {
+  if (!note) return '';
+  return note
+    .replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '')
+    .replace(/\[PENALTY_SURCHARGE:[^\]]*\]/g, '')
+    .replace(/\[RATE_HISTORY:[\s\S]*?\]\]/g, '')
+    .replace(/\[RATE_HISTORY:[^\]]*\]/g, '')
+    .split(/\r?\n/)
+    .filter(line => !/^\s*HĐTD:/.test(line))
+    .map(line => line.trim())
+    .filter(Boolean)
+    .join('\n')
+    .trim();
+}
+
 export function getMasterHdtdNumber(c?: LoanContract | null): string {
   if (!c) return '';
-  if (c.Note?.includes('HĐTD:')) {
-    const match = c.Note.match(/HĐTD:\s*([^\n\r]+)/);
-    if (match && match[1]) return match[1].trim();
-  }
   if (c.ContractNumber?.includes('/GNN-')) {
     return c.ContractNumber.split('/GNN-')[0].trim();
   }

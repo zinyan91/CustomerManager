@@ -301,13 +301,13 @@ describe('generateSchedule — ngày đến hạn', () => {
 });
 
 describe('generateSchedule — trả trước hạn', () => {
-  it('kỳ trả trước hạn có gốc lớn hơn và được ghi chú', () => {
+  it('kỳ trả trước hạn có gốc lớn hơn và ghi số tiền vào cột riêng', () => {
     const s = generateSchedule(
       1, 100_000_000, 10, '2026-02-15', 12, false, '2026-01-15',
       undefined, 0, 20_000_000, 4, 'reduce_monthly'
     );
     expect(s[3].PrincipalAmount!).toBeGreaterThan(s[2].PrincipalAmount!);
-    expect(s[3].Note).toContain('TRẢ TRƯỚC HẠN');
+    expect(s[3].PrepaidPrincipalAmount).toBeGreaterThan(0);
   });
 
   it('trả trước hạn làm giảm gốc phải trả các kỳ sau', () => {
@@ -1026,5 +1026,42 @@ describe('không ghi đè kỳ ĐÃ THU', () => {
     const r = recalculateSchedules(goc, hd);
     expect(r[1].PrincipalAmount).toBeGreaterThan(10_000_000);
     expect(r[1].InterestAmount).toBe(500_001);
+  });
+});
+
+describe('tiền trả trước hạn ghi vào cột riêng, không nhét trong Note', () => {
+  const sinh = () => generateSchedule(
+    1, 100_000_000, 10, '2026-02-15', 12, false, '2026-01-15',
+    undefined, 0, 20_000_000, 4, 'reduce_monthly'
+  );
+
+  it('ghi số tiền vào PrepaidPrincipalAmount', () => {
+    const s = sinh();
+    expect(s[3].PrepaidPrincipalAmount).toBe(20_000_000);
+  });
+
+  it('không kỳ nào còn chuỗi TRẢ TRƯỚC HẠN trong Note', () => {
+    expect(sinh().some(k => (k.Note || '').includes('TRẢ TRƯỚC HẠN'))).toBe(false);
+  });
+
+  it('kỳ không trả trước hạn thì cột đó bằng 0, không phải null', () => {
+    const s = sinh();
+    expect(s[0].PrepaidPrincipalAmount).toBe(0);
+    expect(s[4].PrepaidPrincipalAmount).toBe(0);
+  });
+
+  it('BẤT BIẾN vẫn giữ: tổng gốc bằng đúng số tiền vay', () => {
+    expect(sinh().reduce((a, k) => a + (k.PrincipalAmount || 0), 0)).toBe(100_000_000);
+  });
+
+  it('recalculateSchedules đọc lại từ cột và cho ra cùng số gốc', () => {
+    const sinhMoi = sinh() as RepaymentSchedule[];
+    const hd = {
+      Id: 1, LoanAmount: 100_000_000, InterestRate: 0.1,
+      DisbursementDate: '2026-01-15', PrincipalRepaymentMethod: 'Gốc trả đều',
+    } as LoanContract;
+    const lai = recalculateSchedules(sinhMoi, hd);
+    expect(lai[3].PrincipalAmount).toBe(sinhMoi[3].PrincipalAmount);
+    expect(lai.reduce((a, k) => a + (k.PrincipalAmount || 0), 0)).toBe(100_000_000);
   });
 });

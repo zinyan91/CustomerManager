@@ -22,7 +22,20 @@ Kể cả việc nhỏ cũng theo quy tắc này: đọc số tiền từ ô nh�
 
 **Không nuốt lỗi.** Bắt lỗi rồi lưu lại sau khi xoá bớt trường sẽ khiến giao diện báo thành công trong khi dữ liệu đã mất. Đây là cách "diện mở thẻ" từng biến mất mỗi lần lưu.
 
-**Không nhét dữ liệu nghiệp vụ vào trường ghi chú.** Mỗi thông tin phải có cột riêng. Từng có 39 hợp đồng lưu liên kết tài sản bảo đảm dưới dạng chuỗi `[COLLATERAL_IDS:...]` trong `Note` — không truy vấn được, không kiểm toán được.
+**Không nhét dữ liệu nghiệp vụ vào trường ghi chú.** Mỗi thông tin phải có cột riêng. Không truy vấn được, không kiểm toán được, và tạo ra **nguồn thứ hai trôi dạt khỏi cột thật**.
+
+Rà soát 05/08/2026 tìm ra ba đường ghi vẫn đang **sống**, không phải tàn dư — migration 06 dọn dữ liệu cũ nhưng không bịt đường ghi:
+
+| Chuỗi | Bảng | Ghi bởi | Cột đúng |
+| :--- | :--- | :--- | :--- |
+| `HĐTD: <số>` | `LoanContracts` | `LoanPortfolioView` khi lưu KUNN | `CreditContractId` |
+| `[TRẢ TRƯỚC HẠN: +Xđ]` | `RepaymentSchedules` | `generateSchedule` | `PrepaidPrincipalAmount` |
+| `[CollateralId:N]` | `CreditCards` | (chỉ còn đọc) | `CollateralId` |
+| `[COLLATERAL_IDS:...]` · `[RATE_HISTORY:...]` · `[PENALTY_SURCHARGE:...]` | `LoanContracts` | (chỉ còn đọc) | cột riêng |
+
+Cái giá đo được: `HĐTD:` có ở 100 KUNN và **lệch số thật ở 2 dòng** (LÊ VĂN CAO ghi `HĐTD-01`/`HĐTD-02`). Vì `getMasterHdtdNumber` đọc `Note` **trước** `ContractNumber`, và `computeLimitGroups` lấy hàm đó làm khoá gom nhóm, `findLimitGroupFor` tra bằng số thật không khớp được — chốt kiểm soát hạn mức của hai KUNN đó rơi về mặc định thay vì chặn theo nhóm. Còn `[TRẢ TRƯỚC HẠN:]` ghi số tiền vào `Note` mà bỏ trống `PrepaidPrincipalAmount`, nên tiền trả trước hạn vô hình với `paidPrincipalOf` và `recalculateSchedules`.
+
+Cả ba đã bịt. Gỡ chuỗi khỏi ghi chú dùng `stripLegacyNoteBlobs` (`utils.ts`) — **giữ nguyên phần ghi chú thật của banker trong cùng ô**. Báo cáo `supabase/reports/02_du_lieu_nghiep_vu_trong_note.sql` đo phần dữ liệu còn lại, migration 24 dọn.
 
 **Sinh ID do cơ sở dữ liệu đảm nhiệm** qua sequence. Không tính `max(Id)+1` ở client: dưới RLS, client chỉ nhìn thấy phần dữ liệu của mình nên con số đó luôn sai và gây trùng khoá chính.
 

@@ -4,7 +4,7 @@ import {
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
   fetchCollateralsByCustomerAPI, deleteRepaymentSchedulesByContractAPI
 } from '../../lib/api';
-import { fmtDate, fmtMoney, getContractRateHistory, getEffectiveActiveRate, getMasterHdtdNumber, parseMoneyDecimalInput, parseMoneyInput, toIsoDate, todayIso } from '../../lib/utils';
+import { fmtDate, fmtMoney, getContractRateHistory, getEffectiveActiveRate, getMasterHdtdNumber, parseMoneyDecimalInput, parseMoneyInput, stripLegacyNoteBlobs, toIsoDate, todayIso } from '../../lib/utils';
 import {
   addMonthsToDate, parseKunnTenorMonths,
   generateSchedule, calculateOverdueDaysFromDates,
@@ -500,10 +500,7 @@ export const LoanPortfolioView: React.FC = () => {
         : ((interestRateMode === 'pref' ? prefDec : normalDec) || prefDec || normalDec || baseDec || undefined);
 
       let noteText = form.Note || '';
-      noteText = noteText.replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '').replace(/\[PENALTY_SURCHARGE:[^\]]*\]/g, '').replace(/\[RATE_HISTORY:[^\]]*\]/g, '').replace(/\[RATE_HISTORY:[\s\S]*?\]\]/g, '').trim();
-      if (hdtd && hdtd !== effectiveContractNumber && !noteText.includes(`HĐTD: ${hdtd}`)) {
-        noteText = `HĐTD: ${hdtd}\n${noteText}`.trim();
-      }
+      noteText = stripLegacyNoteBlobs(noteText);
 
       const cleanDate = (d?: string | null) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) ? d.trim() : null;
 

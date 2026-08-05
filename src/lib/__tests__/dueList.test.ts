@@ -17,7 +17,6 @@ describe('filterByDue', () => {
   });
 
   it('sắp đến hạn gồm cả dòng đến hạn HÔM NAY', () => {
-
     expect(filterByDue(items, 'upcoming', days).map(x => x.ten)).toEqual(['A', 'B', 'E']);
   });
 
@@ -26,7 +25,6 @@ describe('filterByDue', () => {
   });
 
   it('thiếu số ngày thì xếp vào sắp đến hạn, không biến mất khỏi cả hai bộ lọc', () => {
-
     const chuaBiet = [{ ten: 'X', daysLeft: null as number | null }];
     expect(filterByDue(chuaBiet, 'upcoming', days)).toHaveLength(1);
     expect(filterByDue(chuaBiet, 'expired', days)).toHaveLength(0);
@@ -71,7 +69,6 @@ describe('buildDueListHtml', () => {
   });
 
   it('escape chuỗi lấy từ cơ sở dữ liệu', () => {
-
     const html = buildDueListHtml({
       ...base,
       rows: [['<script>alert(1)</script>', 'x', 'y']],

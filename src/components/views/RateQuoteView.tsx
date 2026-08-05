@@ -25,8 +25,6 @@ import type {
   RateProgramFeeOption, RateProgramCondition,
 } from '../../lib/rateQuote';
 
-
-
 export const RateQuoteView: React.FC = () => {
   const { theme } = useTheme();
   const { isAdmin } = useAuth();
@@ -386,7 +384,6 @@ export const RateQuoteView: React.FC = () => {
               ))}
             </div>
           )}
-
 
           <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
             <div className="p-3 border-b border-slate-200 dark:border-slate-800 font-bold text-xs uppercase tracking-wider text-sky-600 dark:text-sky-400">

@@ -45,9 +45,6 @@ export const DashboardView: React.FC = () => {
     }
   };
 
-  /* Dư nợ của một KUNN cho các con số tổng hợp.
-     Tất toán là hết nợ. Không xét cờ này thì khoản đã tất toán vẫn cộng vào tổng
-     dư nợ, vào phân bổ nhóm nợ, và kéo LTV bình quân lên sai. */
   const duNoCua = (c: LoanContract) =>
     c.IsSettled ? 0 : (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0);
   const chuaTatToan = contracts.filter(c => !c.IsSettled);

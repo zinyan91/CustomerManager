@@ -26,7 +26,6 @@ describe('defaultLtvForAssetType', () => {
   });
 
   it('Loại 3 luôn là 60%, không phải 50%', () => {
-
     expect(defaultLtvForAssetType('Loại 3')).toBe(60);
     expect(defaultLtvForAssetType('BĐS - Loại 3')).toBe(60);
   });
@@ -49,7 +48,6 @@ describe('defaultLtvForAssetType', () => {
 
 describe('getEffectiveLtv', () => {
   it('GIỮ NGUYÊN LTV = 0 thay vì coi là giá trị trống', () => {
-
     const c = { LtvPercent: 0, AssetType: 'Hạn chế nhận TS' } as Collateral;
     expect(getEffectiveLtv(c)).toBe(0);
   });
@@ -64,7 +62,6 @@ describe('getEffectiveLtv', () => {
   });
 
   it('MỘT tài sản chỉ cho MỘT giá trị LTV', () => {
-
     const c = { AssetType: 'Loại 1' } as Collateral;
     expect(getEffectiveLtv(c)).toBe(80);
   });

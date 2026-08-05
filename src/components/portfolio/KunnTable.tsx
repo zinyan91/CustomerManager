@@ -30,7 +30,6 @@ interface KunnTableProps {
   getAutoDebtGroupInfo: (schs?: RepaymentSchedule[]) => { debtGroup: number; maxOverdueDays: number };
   getMasterHdtdNumber: (c: LoanContract) => string;
   isSettled?: (c: LoanContract) => boolean;
-  /** KUNN thuộc HĐTD đã đóng — chưa tất toán thì phải báo. */
   isOfClosedHdtd?: (c: LoanContract) => boolean;
   getEffectiveBalanceForContract: (c: LoanContract) => number;
 }
@@ -127,8 +126,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
                             <span className="ml-1 text-[9px] font-mono opacity-90">({autoDebt.maxOverdueDays}d quá hạn)</span>
                           )}
                         </span>
-                        {/* Đóng HĐTD không xoá nợ: khoản vẫn đang chạy, chỉ mất quyền
-                            rút lại khi trả. Banker cần thấy ngay để đi tất toán. */}
+                        {}
                         {isOfClosedHdtd && isOfClosedHdtd(c) && (
                           <div className="text-[9px] font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
                             ⚠ HĐTD đã đóng, còn nợ

@@ -26,7 +26,6 @@ describe('addMonthsToDate', () => {
   });
 
   it('kẹp về ngày cuối tháng khi tháng đích ngắn hơn', () => {
-
     expect(addMonthsToDate('2026-01-31', 1)).toBe('2026-02-28');
     expect(addMonthsToDate('2026-03-31', 1)).toBe('2026-04-30');
   });
@@ -140,7 +139,6 @@ describe('khớp giấy nhận nợ thật — PNAT.CN.03111223/GNN-01', () => {
 
 describe('generateSchedule — bất biến quan trọng nhất', () => {
   it('TỔNG GỐC CÁC KỲ PHẢI BẰNG ĐÚNG SỐ TIỀN VAY (trả đều)', () => {
-
     const s = generateSchedule(1, 100_000_000, 10, '2026-02-15', 12, false, '2026-01-15');
     const tongGoc = s.reduce((sum, k) => sum + (k.PrincipalAmount || 0), 0);
     expect(tongGoc).toBe(100_000_000);
@@ -253,7 +251,6 @@ describe('generateSchedule — tính lãi', () => {
   });
 
   it('KHÔNG bỏ kỳ ưu đãi khi hợp đồng có thêm mốc điều chỉnh', () => {
-
     const s = generateSchedule(
       1, 100_000_000, 10, '2026-02-15', 5, true, '2026-01-15',
       undefined, 0, 0, 0, 'reduce_monthly',
@@ -267,7 +264,6 @@ describe('generateSchedule — tính lãi', () => {
   });
 
   it('mốc đổi lãi rơi giữa kỳ thì tách lãi theo số ngày', () => {
-
     const s = generateSchedule(
       1, 100_000_000, 10, '2026-02-15', 3, true, '2026-01-15',
       undefined, 0, 0, 0, 'reduce_monthly',
@@ -466,18 +462,14 @@ describe('recalculateSchedules', () => {
   });
 
   it('trả trước hạn TRONG lúc còn ân hạn gốc: gốc đều sau ân hạn tính theo số kỳ sau ân hạn, không dồn cục kỳ cuối', () => {
-    // Tái tạo ca thực tế (GNN 960tr/120 tháng, ân hạn 18 tháng, trả trước hạn kỳ
-    // 2 và 3 — trong lúc còn ân hạn). Trước khi sửa: gốc/kỳ sau ân hạn tính hụt
-    // vì chia dư nợ cho totalPeriods - kỳ hiện tại (117) thay vì kỳ còn lại SAU
-    // ân hạn (102), kỳ cuối phải gánh phần dư khổng lồ.
     const hd = { ...hopDong, LoanAmount: 960_000_000, PrincipalGracePeriodMonths: 18 };
     const l = lich(120);
     l[1] = { ...l[1], PrepaidPrincipalAmount: 8_000_000 };
     l[2] = { ...l[2], PrepaidPrincipalAmount: 8_000_000 };
     const r = recalculateSchedules(l, hd);
 
-    const firstAfterGrace = r[18].PrincipalAmount!; // kỳ 19
-    const lastPeriod = r[r.length - 1].PrincipalAmount!; // kỳ 120
+    const firstAfterGrace = r[18].PrincipalAmount!;
+    const lastPeriod = r[r.length - 1].PrincipalAmount!;
     expect(firstAfterGrace).toBeGreaterThan(9_000_000);
     expect(lastPeriod).toBeLessThan(firstAfterGrace * 1.5);
     expect(r.reduce((s, k) => s + (k.PrincipalAmount || 0), 0)).toBe(960_000_000);
@@ -783,7 +775,6 @@ describe('generateSchedule — kỳ cuối rơi vào ngày đáo hạn', () => {
     const truoc = s[118];
     expect(getDaysBetween(truoc.DueDate!, cuoi.DueDate!)).toBe(51);
 
-    // Kỳ cuối tất toán hết dư nợ, nên dư nợ đầu kỳ bằng đúng gốc của kỳ đó.
     const duNoDauKy = cuoi.PrincipalAmount || 0;
     expect(cuoi.InterestAmount).toBe(Math.round(duNoDauKy * 0.095 * 51 / 365));
   });
@@ -791,15 +782,12 @@ describe('generateSchedule — kỳ cuối rơi vào ngày đáo hạn', () => {
 
 describe('kỳ đầu không được rơi trước hoặc trùng ngày giải ngân', () => {
   it('dịch mốc trả nợ tới lần đầu tiên SAU ngày giải ngân', () => {
-    // NGÔ NHỊ ĐẠT GNN-11: giải ngân 08/05/2026, mốc thu lãi ngày 15, hạn mức
-    // 5 tháng. Lịch cũ bắt đầu 15/04/2026 — trước cả ngày tiền ra.
     const s = generateSchedule(1, 1_000_000_000, 9, '2026-04-15', 5, true, '2026-05-08');
     expect(s[0].DueDate).toBe('2026-05-15');
     expect(s.every(k => (k.DueDate || '') > '2026-05-08')).toBe(true);
   });
 
   it('mốc trả nợ trùng đúng ngày giải ngân cũng bị dịch sang kỳ sau', () => {
-    // TRẦN THỊ KIM CHI: giải ngân 17/02/2025, lịch cũ có kỳ 1 ngay 17/02/2025.
     const s = generateSchedule(1, 850_000_000, 8.5, '2025-02-17', 6, true, '2025-02-17');
     expect(s[0].DueDate).toBe('2025-03-17');
     expect(s[5].DueDate).toBe('2025-08-17');
@@ -901,9 +889,6 @@ describe('redateSchedules — đường SỬA KUNN đã có lịch', () => {
     } as RepaymentSchedule));
 
   it('kỳ 1 không được rơi trước ngày giải ngân khi khai lại ngày cho lịch cũ', () => {
-    // NGÔ NHỊ ĐẠT GNN-11: giải ngân 08/05/2026, mốc thu lãi ngày 15, 5 kỳ.
-    // Khối tự cộng tháng trong LoanPortfolioView trả ra 15/04/2026 cho kỳ 1 —
-    // trước cả ngày tiền ra khỏi ngân hàng.
     const r = redateSchedules(kunn(5), '2026-04-15', '2026-05-08');
     expect(r[0].DueDate).toBe('2026-05-15');
     expect(r.every(s => (s.DueDate || '') > '2026-05-08')).toBe(true);
@@ -976,8 +961,6 @@ describe('buildDueDateSequence — nguồn duy nhất sinh dãy ngày đến h�
   });
 
   it('KHÔNG đưa kỳ cuối về đáo hạn khi làm vậy sinh ra kỳ chỉ 1 ngày', () => {
-    // Chốt so với KỲ TRƯỚC, không so với ngày kỳ cuối tự nhiên: đáo hạn rơi
-    // ngay sát kỳ trước thì kỳ cuối sẽ gần như không có lãi.
     const r = buildDueDateSequence('2026-05-15', 3, '2026-05-08', '2026-06-16');
     expect(r[2]).toBe('2026-07-15');
   });

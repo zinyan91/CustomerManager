@@ -12,7 +12,6 @@ export function purposeLabel(value?: string | null): string {
 }
 
 export interface LoanProductRule {
-
   purposes: string[];
 
   defaultPurpose?: string;
@@ -40,7 +39,6 @@ const PERMISSIVE: LoanProductRule = {
 };
 
 const RULES: Record<string, LoanProductRule> = {
-
   'Hạn mức tín dụng': {
     purposes: ['Kinh doanh'],
     defaultPurpose: 'Kinh doanh',

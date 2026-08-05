@@ -13,7 +13,6 @@ interface CustomerSummaryHeaderProps {
   totalKunnAmount: number;
   remainingCreditLimit: number;
   expiredLimitNote?: string | null;
-  /** Rỗng nghĩa là giải ngân được. Khác rỗng thì chặn nút và hiện làm tooltip. */
   disburseBlockReason?: string;
   handleNewContract: () => void;
 }

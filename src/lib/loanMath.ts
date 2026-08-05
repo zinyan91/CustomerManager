@@ -69,17 +69,6 @@ export function getDaysBetween(d1Str: string, d2Str: string): number {
 
 export type PrincipalRoundMode = '1k' | '10k' | '50k' | 'exact';
 
-/**
- * Bước làm tròn gốc của lịch trả nợ.
- *
- * Đối chiếu giấy nhận nợ thật (PNAT.CN.03111223/GNN-01, 500.000.000đ chia 120
- * kỳ): gốc mỗi kỳ ghi 4.170.000đ, kỳ cuối 3.770.000đ. 500.000.000 / 120 =
- * 4.166.667đ, làm tròn LÊN bước 10.000 ra đúng 4.170.000. Bước 1.000 dùng trước
- * đây cho ra 4.167.000đ — lệch mọi kỳ so với chứng từ khách đang giữ.
- *
- * Đổi ở đây là đổi cho toàn hệ thống. Kỳ cuối luôn gánh phần dư để giữ bất biến
- * Σ(gốc các kỳ) = số tiền vay.
- */
 export const PRINCIPAL_ROUND_MODE: PrincipalRoundMode = '10k';
 
 export function roundPrincipalCore(
@@ -97,16 +86,6 @@ export interface DueDateAnchor {
   day: number;
 }
 
-/**
- * Mốc kỳ trả nợ đầu tiên đã đối chiếu với ngày giải ngân.
- *
- * Kỳ trả nợ đầu tiên phải SAU ngày giải ngân. Dữ liệu thật có 5 KUNN dùng chung
- * một mốc trả nợ của hợp đồng hạn mức (ngày 15/04) trong khi mỗi khoản giải ngân
- * một ngày khác trong tháng 5 — lịch tính lãi cho quãng tiền chưa ra khỏi ngân
- * hàng, và hàm đếm ngày chặn số âm về 1 nên kỳ 1 chỉ ra 1 ngày lãi. Dịch mốc lên
- * từng tháng cho tới khi vượt ngày giải ngân; GIỮ NGUYÊN ngày trong tháng mà
- * khách đã chọn.
- */
 export function resolveFirstDueAnchor(
   repaymentStartDateStr?: string | null,
   disbursementDateStr?: string | null
@@ -139,14 +118,6 @@ function dueDateAtCycle(anchor: DueDateAnchor, n: number): string {
   return `${y}-${String(mIdx + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
-/**
- * NGUỒN DUY NHẤT sinh dãy ngày đến hạn của lịch trả nợ.
- *
- * Cả đường tạo lịch mới (generateSchedule) và đường khai lại ngày khi sửa KUNN
- * đều phải gọi hàm này. Trước đây LoanPortfolioView tự cộng tháng khi sửa KUNN
- * nên bỏ mất chốt "kỳ 1 phải sau ngày giải ngân" — bịt đường tạo mới không bịt
- * được đường sửa, và đó chính là cơ chế đã sinh vụ thu vượt 21,7 triệu.
- */
 export function buildDueDateSequence(
   repaymentStartDateStr?: string | null,
   periods?: number | null,
@@ -160,11 +131,6 @@ export function buildDueDateSequence(
   const dates: string[] = [];
   for (let i = 1; i <= count; i++) dates.push(dueDateAtCycle(anchor, i));
 
-  /* Giấy nhận nợ: "Kỳ trả nợ cuối cùng sẽ được trả vào NGÀY ĐÁO HẠN". Cộng dồn
-     theo kỳ sẽ cho kỳ cuối rơi trước đáo hạn khi ngày trả nợ đầu tiên không phải
-     giải ngân + 1 tháng, và khoản vay bị tính thiếu lãi quãng còn lại.
-     Chỉ áp khi bên gọi khai rõ ngày đáo hạn: suy ngầm từ giải ngân + số kỳ sẽ âm
-     thầm đổi ngày đến hạn của mọi lịch cũ đang sinh theo cách khác. */
   const daoHan = (maturityDateStr || '').trim();
   if (daoHan) {
     const kyTruoc = count === 1
@@ -176,15 +142,6 @@ export function buildDueDateSequence(
   return dates;
 }
 
-/**
- * Khai lại ngày đến hạn cho lịch trả nợ ĐÃ TỒN TẠI, giữ nguyên số kỳ và mọi
- * trường khác của từng kỳ.
- *
- * Dùng khi banker sửa mốc trả nợ / ngày giải ngân của một KUNN đã có lịch. Phải
- * đi qua buildDueDateSequence để đường sửa chịu đúng những ràng buộc của đường
- * tạo mới — trước đây LoanPortfolioView tự cộng tháng ở đây nên chốt "kỳ 1 phải
- * sau ngày giải ngân" chỉ có hiệu lực khi tạo mới.
- */
 export function redateSchedules(
   schedules: RepaymentSchedule[],
   repaymentStartDateStr?: string | null,
@@ -440,14 +397,6 @@ export function recalculateSchedules(
   const remainingRepayPeriods = Math.max(1, totalPeriods - graceMonths);
   let baseMonthlyPrincipal = isBullet ? 0 : roundPrincipalCore(loanAmt / remainingRepayPeriods);
 
-  /* HAI dòng dư nợ, không gộp làm một.
-     · planBalance: dư nợ theo lịch, chỉ giảm theo GỐC PHẢI TRẢ và gốc trả trước
-       hạn. Giữ bất biến Σ(gốc phải trả) = số tiền vay.
-     · actualBalance: dư nợ thực tế, giảm theo GỐC ĐÃ TRẢ. Lãi tính trên số này,
-       nên khách trả thiếu thì lãi kỳ sau vẫn tính trên dư nợ còn cao.
-     Trước đây dùng một biến duy nhất nên số khách trả vào ghi đè lên gốc phải
-     trả của kỳ: kỳ 11 khách nộp 2.592đ thì lịch ghi gốc phải trả 2.592đ thay vì
-     4.590.000đ, phần hụt bị dồn sang kỳ cuối. */
   let planBalance = loanAmt;
   let actualBalance = loanAmt;
   let prevDateStr: string =
@@ -490,17 +439,9 @@ export function recalculateSchedules(
       scheduledPrincipal = Math.min(planBalance, baseMonthlyPrincipal);
     }
 
-    // Gốc trả trước hạn là tiền gốc thu thêm trong kỳ, nên nằm trong nghĩa vụ gốc
-    // của kỳ đó và làm giảm gốc phải trả các kỳ còn lại.
     const principalInPeriod = Math.min(planBalance, scheduledPrincipal + prepaid);
 
     if (prepaid > 0 && !isBullet) {
-      // Trả trước hạn trong lúc còn ân hạn gốc (periodNum <= graceMonths): các kỳ
-      // còn lại của ân hạn vẫn chưa trả gốc, nên số kỳ để chia đều phần dư nợ mới
-      // là kỳ SAU ân hạn, không phải kỳ sau kỳ hiện tại — dùng totalPeriods -
-      // periodNum ở đây từng làm gốc mỗi kỳ bị tính hụt và dồn cả phần thiếu vào
-      // kỳ cuối (960tr/120 kỳ, ân hạn 18 tháng: gốc/kỳ hụt còn 8,07tr thay vì
-      // ~9,26tr, kỳ cuối gánh 128,93tr thay vì gánh phần dư nhỏ như bình thường).
       const remainingPeriods = totalPeriods - Math.max(periodNum, graceMonths);
       if (remainingPeriods > 0) {
         const balAfterPrepay = Math.max(0, planBalance - principalInPeriod);
@@ -538,17 +479,6 @@ export function recalculateSchedules(
   return result;
 }
 
-/**
- * GỐC ĐÃ TRẢ của một kỳ.
- *
- * Ba khái niệm khác nhau, đừng gộp: `PrincipalAmount` là gốc PHẢI trả theo lịch
- * (không đổi khi khách trả thiếu), `ActualPaidPrincipal` là gốc ĐÃ trả,
- * `PrepaidPrincipalAmount` là gốc trả TRƯỚC HẠN để giảm kỳ sau.
- *
- * Dữ liệu cũ có kỳ đánh dấu đã thanh toán nhưng `ActualPaidPrincipal` bằng 0 —
- * hiểu là đã trả đủ theo lịch. `PrincipalAmount` đã gồm gốc trả trước hạn của kỳ
- * nên nhánh đó không cộng thêm lần nữa.
- */
 export function paidPrincipalOf(s: RepaymentSchedule): number {
   const paid = s.ActualPaidPrincipal ?? 0;
   const prepaid = s.PrepaidPrincipalAmount ?? 0;
@@ -561,9 +491,6 @@ export function computeOutstandingBalance(
   schedules: RepaymentSchedule[] | undefined,
   contract: LoanContract
 ): number {
-  /* Tất toán là hết nợ, kể cả tất toán TRƯỚC HẠN khi lịch còn hàng chục kỳ chưa
-     tới hạn: khách đã nộp đủ nghĩa vụ còn lại để thu nợ. Không chặn ở đây thì
-     các kỳ tương lai vẫn bị cộng thành dư nợ và khoản vay đã đóng vẫn báo còn nợ. */
   if (contract.IsSettled === true) return 0;
 
   const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
@@ -571,7 +498,6 @@ export function computeOutstandingBalance(
     return contract.CurrentBalance ?? loanAmt;
   }
 
-  // Dư nợ giảm theo tiền GỐC ĐÃ THỰC THU, không theo gốc phải trả.
   let repaid = 0;
   for (const s of schedules) repaid += paidPrincipalOf(s);
 

@@ -35,7 +35,6 @@ describe('TH1 — một số HĐTD, nhiều KUNN', () => {
 
 describe('TH3 — khác số HĐTD, khác HMTD', () => {
   it('cộng mức cấp của từng hợp đồng', () => {
-
     const r = computeCreditLimit([
       hd({ ContractNumber: '2002/HĐTD_1/9736290/GNN-01', ContractAmount: 960_000_000 }),
       hd({ ContractNumber: '2002/HĐTD_2/9736290/GNN-01', ContractAmount: 500_000_000 }),
@@ -125,7 +124,6 @@ describe('checkCollateralCapacity', () => {
   const tsdb = { Id: 6, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 2_140_000_000, LtvPercent: 70 } as Collateral;
 
   it('phát hiện tổng mức cấp VƯỢT khả năng bảo đảm', () => {
-
     const r = kiemTra([
       hd({ ContractNumber: 'A/GNN-01', ContractAmount: 1_460_000_000, CollateralIds: '6' }),
       hd({ ContractNumber: 'B/GNN-01', ContractAmount: 1_460_000_000, CollateralIds: '6' }),
@@ -139,7 +137,6 @@ describe('checkCollateralCapacity', () => {
   });
 
   it('không báo động khi tổng mức cấp nằm trong khả năng bảo đảm', () => {
-
     const r = kiemTra([
       hd({ ContractNumber: 'A/GNN-01', ContractAmount: 960_000_000, CollateralIds: '6' }),
       hd({ ContractNumber: 'B/GNN-01', ContractAmount: 500_000_000, CollateralIds: '6' }),
@@ -158,7 +155,6 @@ describe('checkCollateralCapacity', () => {
   });
 
   it('KHÔNG báo động giả cho TH1 — nhiều KUNN của cùng một HĐTD', () => {
-
     const ts16 = { Id: 16, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 9_112_000_000, LtvPercent: 80 } as Collateral;
     const kunns = Array.from({ length: 7 }, (_, i) =>
       hd({
@@ -175,7 +171,6 @@ describe('checkCollateralCapacity', () => {
   });
 
   it('KHÔNG báo động giả khi một hợp đồng được bảo đảm bằng NHIỀU tài sản', () => {
-
     const ts11 = { Id: 11, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 2_714_000_000, LtvPercent: 80 } as Collateral;
     const ts12 = { Id: 12, CustomerId: 1, AppraisalDate: DINH_GIA, AppraisalTenorMonths: 24, AppraisedValue: 5_095_000_000, LtvPercent: 80 } as Collateral;
     const r = kiemTra([
@@ -311,7 +306,6 @@ describe('computeLimitGroups — hạn mức khả dụng (nguồn duy nhất)',
     computeLimitGroups(cs, o);
 
   it('HMTD tuần hoàn: khả dụng = mức cấp − dư nợ, KUNN đã trả hết KHÔNG chiếm hạn mức', () => {
-
     const r = dungChung([
       hd({ Id: 1, ContractNumber: '2002/HĐTD/9653222/GNN-01', LoanMethod: 'Hạn mức tín dụng',
            ContractAmount: 4_000_000_000, LoanAmount: 1_400_000_000, CurrentBalance: 0 }),
@@ -479,7 +473,6 @@ describe('hiệu lực HĐTD — hết hạn thì không còn giải ngân đư�
 
 describe('dư nợ khoá vì đáo hạn sau ngày hết hiệu lực HĐTD', () => {
   it('KUNN đáo hạn TRƯỚC ngày hết hiệu lực thì còn quay vòng được', () => {
-
     const r = computeLimitGroups([
       hd({ Id: 1, ContractNumber: 'HD01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
            ContractAmount: 2_000_000_000, LoanAmount: 800_000_000, CurrentBalance: 800_000_000,
@@ -492,7 +485,6 @@ describe('dư nợ khoá vì đáo hạn sau ngày hết hiệu lực HĐTD', ()
   });
 
   it('ĐẶNG BÁ NHÂN — KUNN đáo hạn 25/08 sau HĐTD 24/07: dư nợ bị khoá', () => {
-
     const r = computeLimitGroups([
       hd({ Id: 1, ContractNumber: '2002/HDTD/9653222/GNN-01', LoanMethod: 'Hạn mức tín dụng',
            ContractAmount: 4_000_000_000, LoanAmount: 1_400_000_000, CurrentBalance: 0,
@@ -529,8 +521,6 @@ describe('dư nợ khoá vì đáo hạn sau ngày hết hiệu lực HĐTD', ()
 });
 
 describe('computeLimitGroups — HĐTD đã đóng', () => {
-  // Hồ sơ NGUYỄN MINH HÙNG 05/08/2026: HĐTD 2002/HĐTD/9629301 đã đóng, hiệu lực
-  // còn tới 05/12/2026, hai KUNN 200 triệu chưa tất toán và chưa có lịch thu nợ.
   const kunns = [
     hd({
       Id: 1, ContractNumber: '2002/HĐTD/9629301/GNN-01',

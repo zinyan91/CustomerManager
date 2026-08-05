@@ -332,18 +332,10 @@ export interface DepositRateRow {
   payoutMode: DepositPayoutMode | null;
   label: string;
   sortOrder: number;
-  /** Lãi suất theo từng kênh. Thiếu kênh nào thì để undefined, KHÔNG phải 0. */
   byChannel: Partial<Record<DepositChannel, number | null>>;
   tierIdByChannel: Partial<Record<DepositChannel, number>>;
 }
 
-/**
- * Gộp bảng lãi suất huy động của mọi kênh về một bảng: mỗi dòng một tổ hợp
- * bậc số dư × kỳ hạn × cách trả lãi, mỗi kênh một cột.
- *
- * Kênh nào chưa công bố mức cho tổ hợp đó thì để trống, không suy ra 0 —
- * chưa có số và 0%/năm là hai chuyện khác nhau.
- */
 export function buildDepositRateRows(tiers: RateProgramTier[]): DepositRateRow[] {
   const map = new Map<string, DepositRateRow>();
 
@@ -381,12 +373,6 @@ export function buildDepositRateRows(tiers: RateProgramTier[]): DepositRateRow[]
   });
 }
 
-/**
- * Các kênh thực sự có dữ liệu, giữ đúng thứ tự quầy → online.
- *
- * KHÔNG gồm FTP: đó là giá mua vốn nội bộ, không bao giờ đưa vào bảng lãi suất
- * gửi khách hàng. Xem tab Mua Bán Vốn Nội Bộ.
- */
 export function depositChannelsPresent(tiers: RateProgramTier[]): DepositChannel[] {
   const order: DepositChannel[] = ['quay', 'online'];
   const co = new Set(tiers.map(t => t.Channel).filter(Boolean) as DepositChannel[]);

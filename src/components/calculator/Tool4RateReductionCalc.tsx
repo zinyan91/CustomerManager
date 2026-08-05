@@ -28,7 +28,6 @@ interface QuickLoanRow {
   cofStr: string;
 }
 
-
 const newQuickRow = (key: number): QuickLoanRow => ({
   key,
   name: 'Hạn mức <Bổ sung vốn kinh doanh>',

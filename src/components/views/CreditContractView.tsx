@@ -85,8 +85,6 @@ export const CreditContractView: React.FC = () => {
       setKunns(ks);
       setCollaterals(cols);
 
-      // Dư nợ phải tính từ lịch thu nợ, đúng nguồn tab KUNN đang dùng. Lấy
-      // CurrentBalance đã lưu sẽ ra số khác trên hai tab của cùng một khách.
       const map: Record<number, RepaymentSchedule[]> = {};
       await Promise.all(ks.map(async k => {
         try { map[k.Id] = await fetchRepaymentSchedulesAPI(k.Id); } catch {}
@@ -113,8 +111,6 @@ export const CreditContractView: React.FC = () => {
     }
   }, [form.ContractStartDate, form.LoanTenorMonths]);
 
-  /* Dư nợ đọc từ lịch thu nợ, đúng nguồn tab Khoản Vay đang dùng. Đóng HĐTD không
-     xoá nợ nên KUNN chưa tất toán vẫn được cộng vào dư nợ như bình thường. */
   const outstandingOf = (k: LoanContract) => computeOutstandingBalance(schedulesMap[k.Id], k);
 
   const summaries = useMemo(
@@ -125,8 +121,6 @@ export const CreditContractView: React.FC = () => {
     [contracts, kunns, schedulesMap, today]
   );
 
-  /* HĐTD đã đóng mà KUNN chưa tất toán thì LUÔN hiện, không ẩn theo toggle: đây là
-     trạng thái phải đi xử lý, ẩn mặc định là che mất khoản nợ còn treo. */
   const visibleSummaries = useMemo(
     () => showSettled
       ? summaries

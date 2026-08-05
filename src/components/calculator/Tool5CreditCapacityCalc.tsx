@@ -20,7 +20,6 @@ const ASSET_LTV_MAP: Record<string, { label: string; ltv: number }> = {
 };
 
 export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = ({ isLight }) => {
-
   const [monthlyIncomeStr, setMonthlyIncomeStr] = useState('35.000.000');
   const [livingExpenseStr, setLivingExpenseStr] = useState('10.000.000');
   const [existingDebtStr, setExistingDebtStr] = useState('0');

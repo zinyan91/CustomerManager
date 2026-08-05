@@ -12,7 +12,6 @@ describe('clampFontSize', () => {
   });
 
   it('giá trị không phải số thì về mặc định', () => {
-
     expect(clampFontSize('heading', 'abc')).toBe(FONT_SIZE_LIMITS.heading.default);
     expect(clampFontSize('heading', NaN)).toBe(FONT_SIZE_LIMITS.heading.default);
     expect(clampFontSize('heading', Infinity)).toBe(FONT_SIZE_LIMITS.heading.default);
@@ -34,7 +33,6 @@ describe('normalizeFontSettings', () => {
   });
 
   it('font lạ thì về mặc định hệ thống, không để vỡ giao diện', () => {
-
     expect(normalizeFontSettings({ family: 'comic-sans' }).family).toBe('system');
   });
 
@@ -60,7 +58,6 @@ describe('fontStackOf', () => {
   });
 
   it('KHÔNG tải font từ mạng ngoài', () => {
-
     for (const f of FONT_FAMILIES) {
       expect(f.stack).not.toMatch(/https?:|url\(/);
     }
@@ -78,7 +75,6 @@ describe('cssVariablesFor', () => {
   });
 
   it('chuẩn hoá trước khi sinh biến nên giá trị sai không lọt ra CSS', () => {
-
     const v = cssVariablesFor({ family: 'system', heading: 500, table: -3, small: 11, mono: 12 } as never);
     expect(v['--fs-heading']).toBe(`${FONT_SIZE_LIMITS.heading.max}px`);
     expect(v['--fs-table']).toBe(`${FONT_SIZE_LIMITS.table.min}px`);

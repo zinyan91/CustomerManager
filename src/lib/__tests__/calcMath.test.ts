@@ -48,7 +48,6 @@ describe('diffDays', () => {
 });
 
 describe('KHÁC BIỆT giữa diffDays (công cụ) và getDaysBetween (lịch trả nợ)', () => {
-
   it('khớp nhau với mọi ngày hợp lệ và khác nhau', () => {
     expect(diffDays('2026-01-15', '2026-02-15')).toBe(getDaysBetween('2026-01-15', '2026-02-15'));
     expect(diffDays('2026-02-01', '2026-12-31')).toBe(getDaysBetween('2026-02-01', '2026-12-31'));
@@ -90,7 +89,6 @@ describe('pvAnnuityFactor và emiFactor', () => {
 
 describe('emiMonthlyPayment', () => {
   it('tính đúng theo công thức chuẩn', () => {
-
     const pmt = emiMonthlyPayment(100_000_000, 0.01, 12);
     expect(pmt).toBe(8_884_879);
   });
@@ -113,7 +111,6 @@ describe('emiMonthlyPayment', () => {
 
 describe('dtiMaxMonthlyPayment', () => {
   it('lấy giá trị NHỎ HƠN giữa thu nhập ròng và trần DTI', () => {
-
     expect(dtiMaxMonthlyPayment(50_000_000, 20_000_000, 5_000_000, 60)).toBe(25_000_000);
   });
 
@@ -157,7 +154,6 @@ describe('flatToReducingApprox', () => {
   });
 
   it('lãi dư nợ giảm dần luôn CAO HƠN lãi phẳng tương đương', () => {
-
     for (const n of [6, 12, 24, 36]) {
       expect(flatToReducingApprox(0.1, n)).toBeGreaterThan(0.1);
     }
@@ -298,11 +294,6 @@ describe('buildLoanSchedule', () => {
   });
 
   it('trả trước hạn TRONG lúc ân hạn gốc: gốc đều sau ân hạn tính theo số kỳ sau ân hạn, không dồn cục kỳ cuối', () => {
-    // Tái tạo đúng ca thực tế (GNN 960tr/120 tháng, ân hạn 18 tháng, trả trước
-    // hạn kỳ 2 và 3 — trong lúc còn ân hạn). Trước khi sửa: gốc/kỳ tính hụt
-    // (8.070.000 thay vì ~9.260.000) vì chia dư nợ cho tenorMonths - kỳ hiện tại
-    // (117) thay vì kỳ còn lại SAU ân hạn (102), kỳ cuối phải gánh 128.930.000 —
-    // gấp hơn 16 lần một kỳ thường.
     const rows = buildLoanSchedule({
       ...base, loanAmount: 960_000_000, tenorMonths: 120, principalGraceMonths: 18,
       prepayments: [
@@ -310,10 +301,9 @@ describe('buildLoanSchedule', () => {
         { period: 3, amount: 8_000_000, mode: 'reduce_monthly' },
       ],
     });
-    const firstAfterGrace = rows[18].principal; // kỳ 19
-    const lastPeriod = rows[rows.length - 1].principal; // kỳ 120
+    const firstAfterGrace = rows[18].principal;
+    const lastPeriod = rows[rows.length - 1].principal;
     expect(firstAfterGrace).toBeGreaterThan(9_000_000);
-    // Kỳ cuối chỉ gánh phần dư làm tròn, không được vượt quá một kỳ thường quá xa.
     expect(lastPeriod).toBeLessThan(firstAfterGrace * 1.5);
     expect(rows.reduce((a, r) => a + r.principal, 0)).toBe(960_000_000);
   });

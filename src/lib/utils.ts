@@ -17,13 +17,6 @@ export function parseMoneyInput(value: string): number {
   return parseFloat(digits) || 0;
 }
 
-/**
- * Đọc số tiền còn giữ phần thập phân.
- *
- * Dùng cho các ô có thể nhận giá trị lẻ đồng, ví dụ khi nạp sẵn từ cơ sở dữ
- * liệu bằng toLocaleString. parseMoneyInput cắt sạch ký tự không phải chữ số
- * nên "1.000.000,5" ra 10000005 — mất chỗ dấu thập phân.
- */
 export function parseMoneyDecimalInput(value: string): number {
   if (!value) return 0;
   const sep = NUMBER_SEPARATORS[loadFormatSettings().numberStyle] ?? NUMBER_SEPARATORS.vi;
@@ -107,15 +100,12 @@ export function parseAnyDate(v?: string | null): ParsedDate | null {
     const year = parseInt(match[3], 10);
 
     if (n1 > 12 && n2 <= 12) {
-
       return { year, month: n2, day: n1 };
     }
     if (n2 > 12 && n1 <= 12) {
-
       return { year, month: n1, day: n2 };
     }
     if (n1 <= 12 && n2 <= 12) {
-
       return { year, month: n2, day: n1 };
     }
   }
@@ -179,7 +169,6 @@ export function getContractRateHistory(c?: LoanContract | null): RateAdjustmentH
   }
 
   if (c.Note) {
-
     const encodedMatch = c.Note.match(/\[RATE_HISTORY:([^\]]+)\]/);
     if (encodedMatch && encodedMatch[1]) {
       try {

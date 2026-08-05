@@ -38,33 +38,13 @@ export interface LimitGroupStatus {
   outstanding: number;
   disbursedCumulative: number;
   used: number;
-  /** Hạn mức còn trống theo dư nợ, CHƯA xét hiệu lực HĐTD. */
   headroom: number;
-  /**
-   * Số tiền thực sự còn giải ngân được: bằng 0 nếu HĐTD đã hết hiệu lực HOẶC đã
-   * bị đóng.
-   */
   available: number;
   endDate: string | null;
   expired: boolean;
-  /**
-   * HĐTD của nhóm đã bị đóng. Đóng hợp đồng là dừng quyền giải ngân, khác với
-   * hết hiệu lực theo ngày — hợp đồng còn hạn vẫn đóng được, và ngược lại.
-   */
   closed: boolean;
-  /** Lý do không giải ngân được, rỗng khi còn giải ngân được. */
   blockReason: string;
-  /**
-   * Dư nợ của các KUNN đáo hạn SAU ngày hết hiệu lực HĐTD. Phần này mất khả
-   * năng quay vòng: khi nó được trả thì hạn mức đã hết hiệu lực, không rút lại
-   * được nữa, nên khách buộc phải tất toán — không tất toán được là nguy cơ
-   * chuyển nhóm nợ.
-   */
   lockedOutstanding: number;
-  /**
-   * Dư nợ của các KUNN đáo hạn TRƯỚC ngày hết hiệu lực HĐTD. Trả xong vẫn còn
-   * thời gian để giải ngân lại.
-   */
   redeployableOutstanding: number;
   activeKunnCount: number;
   settledKunnCount: number;
@@ -74,40 +54,10 @@ export interface LimitGroupOptions {
   getOutstanding?: (c: LoanContract) => number;
   excludeContractId?: number | null;
   grantedOverride?: number | null;
-  /** Ngày tham chiếu (YYYY-MM-DD) để xét hiệu lực HĐTD. Bỏ trống thì không xét. */
   today?: string | null;
-  /**
-   * KUNN thuộc một HĐTD đã bị đóng hay chưa.
-   *
-   * Cờ `IsClosed` nằm ở bảng `CreditContracts`, hàm này chỉ nhận `LoanContract[]`
-   * nên không tự đọc được. Bỏ trống thì không xét đóng hợp đồng — và khi đó hạn
-   * mức khả dụng sẽ ra số dương trên cả HĐTD đã đóng.
-   */
   isClosed?: (c: LoanContract) => boolean;
 }
 
-/**
- * NGUỒN DUY NHẤT tính hạn mức khả dụng.
- *
- * Nhóm theo mã hạn mức dùng chung nếu có, ngược lại theo số HĐTD — cùng cách
- * nhóm với computeCreditLimit để tổng mức cấp của hai hàm luôn khớp nhau.
- *
- * Hạn mức khả dụng phụ thuộc sản phẩm:
- *  - HMTD (tuần hoàn): mức cấp − dư nợ các KUNN còn hiệu lực. Trả nợ hoặc tất
- *    toán KUNN là giải phóng hạn mức, giải ngân tiếp được.
- *  - Cho vay từng lần (không tuần hoàn): mức cấp − tổng số tiền đã nhận nợ,
- *    tính cả KUNN đã tất toán. Đã giải ngân là hết, trả nợ không mở lại hạn mức.
- *
- * Hạn mức chỉ khả dụng khi HĐTD còn hiệu lực VÀ chưa bị đóng. Hết hiệu lực hoặc
- * đã đóng thì available = 0 dù dư nợ đã về 0 (headroom vẫn giữ số trống theo dư nợ
- * để đối chiếu).
- *
- * Cờ đóng hợp đồng phải truyền vào qua options.isClosed: cờ đó nằm ở bảng
- * CreditContracts mà hàm này chỉ nhận LoanContract[]. Bỏ trống thì màn hình sẽ
- * chào hạn mức khả dụng trên cả HĐTD đã đóng — đúng lỗi đã gặp ở hồ sơ NGUYỄN
- * MINH HÙNG ngày 05/08/2026: HĐTD đóng, còn 400 triệu chưa trả, tab Khoản Vay vẫn
- * ghi HMTD còn lại 600 triệu.
- */
 export function computeLimitGroups(
   contracts: LoanContract[],
   options?: LimitGroupOptions
@@ -155,18 +105,14 @@ export function computeLimitGroups(
 
     if (!g.hdtdNumbers.includes(hdtdNo)) g.hdtdNumbers.push(hdtdNo);
     if (isRevolvingCredit(c.LoanMethod)) g.revolving = true;
-    // Một KUNN thuộc HĐTD đã đóng là đủ để cả nhóm hết quyền giải ngân: nhóm dùng
-    // chung hạn mức thì hạn mức chỉ có một, không rút qua hợp đồng khác được.
     if (options?.isClosed?.(c)) g.closed = true;
 
-    // Mức cấp là thông tin cấp HĐTD nên vẫn ghi nhận cả dòng đang bị loại trừ.
     if (code) {
       const declared = c.CreditLimitAmount ?? 0;
       if (declared > g.declaredGranted) g.declaredGranted = declared;
     }
     if (limitOf(c) > g.granted) g.granted = limitOf(c);
 
-    // Ngày hết hiệu lực cũng là thông tin cấp HĐTD: lấy mốc muộn nhất trong nhóm.
     const end = toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate);
     if (end && (!g.endDate || end > g.endDate)) g.endDate = end;
 
@@ -192,12 +138,9 @@ export function computeLimitGroups(
     const used = rest.revolving ? rest.outstanding : rest.disbursedCumulative;
     const headroom = Math.max(0, granted - used);
 
-    // Hạn mức hết hiệu lực thì không giải ngân được nữa, dù dư nợ đã về 0.
     const today = options?.today ?? null;
     const expired = !!(today && rest.endDate && rest.endDate < today);
 
-    /* Cùng thứ tự ưu tiên lý do chặn với summarizeCreditContracts: đóng hợp đồng
-       là quyết định tường minh của banker nên đứng trước hết hiệu lực theo ngày. */
     let blockReason = '';
     if (rest.closed) blockReason = 'HĐTD đã đóng';
     else if (expired) blockReason = `HĐTD hết hiệu lực ${rest.endDate}`;
@@ -249,7 +192,6 @@ export function computeCreditLimit(contracts: LoanContract[]): CreditLimitBreakd
     const code = (c.CreditLimitCode || '').trim();
 
     if (code) {
-
       const existing = sharedMap.get(code);
 
       const declared = c.CreditLimitAmount ?? 0;
@@ -291,7 +233,6 @@ export function computeCreditLimit(contracts: LoanContract[]): CreditLimitBreakd
 }
 
 export interface CollateralCapacityCheck {
-
   collateralIds: number[];
   assetCodes: string[];
   capacity: number;

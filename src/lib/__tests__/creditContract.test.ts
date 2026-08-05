@@ -29,7 +29,6 @@ describe('nextKunnNumber', () => {
   });
 
   it('lấy MAX + 1, không đếm số dòng', () => {
-
     expect(nextKunnNumber('HD01', ['HD01/GNN-01', 'HD01/GNN-05'])).toBe('HD01/GNN-06');
   });
 
@@ -50,7 +49,6 @@ describe('nextKunnNumber', () => {
   });
 
   it('dữ liệu cũ để số KUNN trùng số HĐTD thì coi như đã dùng 01', () => {
-
     expect(nextKunnNumber('2002/HDTD/9653222', [
       '2002/HDTD/9653222', '2002/HDTD/9653222', '2002/HDTD/9653222',
     ])).toBe('2002/HDTD/9653222/GNN-02');
@@ -110,7 +108,6 @@ describe('findKunnNumberClash — chống trùng số chứng từ', () => {
 
 describe('checkKunnAgainstContract', () => {
   it('KUNN đáo hạn sau HĐTD KHÔNG phải lỗi nên không cảnh báo', () => {
-
     const r = checkKunnAgainstContract(
       kunn({ DisbursementDate: '2026-03-26', KunnDueDate: '2026-08-26' }),
       cc({ HdtdNumber: '2002/HDTD/9653222', ContractStartDate: '2025-07-24', ContractEndDate: '2026-07-24' })
@@ -161,7 +158,6 @@ describe('checkKunnAgainstContract', () => {
   });
 
   it('KUNN giải ngân trước ngày ký lệch 1 ngày vẫn cảnh báo, còn đáo hạn thì không', () => {
-
     const r = checkKunnAgainstContract(
       kunn({ DisbursementDate: '2026-06-26', KunnDueDate: '2046-06-26' }),
       cc({ ContractStartDate: '2026-06-25', ContractEndDate: '2046-06-25' })
@@ -176,7 +172,6 @@ describe('checkKunnAgainstContract', () => {
 
 describe('kunnRevolvingStatus — hạn mức còn quay vòng được không', () => {
   it('KUNN đáo hạn TRƯỚC ngày hết hiệu lực: còn giải ngân lại được', () => {
-
     const r = kunnRevolvingStatus(
       { KunnDueDate: '2026-05-20' },
       { ContractEndDate: '2026-05-28' }
@@ -196,7 +191,6 @@ describe('kunnRevolvingStatus — hạn mức còn quay vòng được không', 
   });
 
   it('KUNN đáo hạn SAU ngày hết hiệu lực: khoá, cảnh báo nguy cơ nợ xấu', () => {
-
     const r = kunnRevolvingStatus(
       { KunnDueDate: '2026-08-26' },
       { ContractEndDate: '2026-07-24' }
@@ -208,7 +202,6 @@ describe('kunnRevolvingStatus — hạn mức còn quay vòng được không', 
   });
 
   it('lệch đúng 1 ngày vẫn là khoá, không dung sai ngầm', () => {
-
     const r = kunnRevolvingStatus(
       { KunnDueDate: '2046-06-26' },
       { ContractEndDate: '2046-06-25' }
@@ -225,7 +218,6 @@ describe('kunnRevolvingStatus — hạn mức còn quay vòng được không', 
 
 describe('summarizeCreditContracts', () => {
   it('HĐTD đã ký chưa giải ngân vẫn xuất hiện', () => {
-
     const r = summarizeCreditContracts(
       [cc({ Id: 7, HdtdNumber: 'HD-MOI', ContractAmount: 2_000_000_000, ContractEndDate: '2027-01-01' })],
       [],
@@ -236,7 +228,6 @@ describe('summarizeCreditContracts', () => {
   });
 
   it('HMTD đã tất toán hết KUNN vẫn xuất hiện và còn hiệu lực', () => {
-
     const r = summarizeCreditContracts(
       [cc({ Id: 7, ContractEndDate: '2027-01-01' })],
       [
@@ -294,7 +285,6 @@ describe('summarizeCreditContracts', () => {
 
 describe('canDisburse — khi nào còn giải ngân được', () => {
   it('vay từng lần đã có KUNN thì KHOÁ, dù còn hiệu lực', () => {
-
     const r = summarizeCreditContracts(
       [cc({ Id: 7, LoanMethod: 'Cho vay từng lần', ContractAmount: 3_000_000_000, ContractEndDate: '2046-04-11' })],
       [kunn({ Id: 1, CreditContractId: 7, LoanAmount: 3_000_000_000, CurrentBalance: 3_000_000_000 })],
@@ -316,7 +306,6 @@ describe('canDisburse — khi nào còn giải ngân được', () => {
   });
 
   it('vay từng lần trả bớt gốc KHÔNG mở lại hạn mức', () => {
-
     const r = summarizeCreditContracts(
       [cc({ Id: 7, LoanMethod: 'Cho vay từng lần', ContractAmount: 3_000_000_000, ContractEndDate: '2046-04-11' })],
       [kunn({ Id: 1, CreditContractId: 7, LoanAmount: 3_000_000_000, CurrentBalance: 500_000_000 })],
@@ -395,10 +384,6 @@ describe('resolveMasterHdtdNumber — số HĐTD gốc của một KUNN', () => 
 });
 
 describe('isKunnSettled — chỉ căn cứ cờ tất toán của chính KUNN', () => {
-  /* Quyết định nghiệp vụ 05/08/2026: ĐÓNG HĐTD LÀ DỪNG QUYỀN GIẢI NGÂN, KHÔNG
-     PHẢI XOÁ NỢ. Trước đây hàm này suy "đã tất toán" từ cờ IsClosed, khiến hồ sơ
-     NGUYỄN MINH HÙNG hiện dư nợ 0 trong khi lịch còn 400 triệu chưa trả. Quyền
-     giải ngân nay xét riêng qua computeLimitGroups(options.isClosed). */
   it('HĐTD đã đóng KHÔNG làm KUNN thành đã tất toán', () => {
     expect(isKunnSettled(kunn({ CreditContractId: 5, IsSettled: false }))).toBe(false);
   });
@@ -444,9 +429,6 @@ describe('summarizeCreditContracts — HĐTD đã đóng', () => {
     [{ ...hd, ...o }], [gnn], { getOutstanding: () => tra, today: HOM_NAY }
   )[0];
 
-  /* Quyết định 05/08/2026: đóng HĐTD KHÔNG xoá nợ. Trước đây khối này khẳng định
-     điều ngược lại, và chính nó khiến hồ sơ NGUYỄN MINH HÙNG hiện dư nợ 0 trong
-     khi còn 400 triệu chưa trả. */
   it('đóng HĐTD KHÔNG làm dư nợ về 0, KUNN vẫn là khoản đang hoạt động', () => {
     const mo = dungHd({}, 400_000_000);
     expect(mo.activeKunnCount).toBe(1);

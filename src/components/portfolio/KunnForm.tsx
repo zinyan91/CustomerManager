@@ -184,7 +184,6 @@ export const KunnForm: React.FC<KunnFormProps> = ({
             </div>
           )}
 
-
           {kunnIssues.length > 0 && (
             <div className={`p-3 rounded-xl border text-[11px] font-semibold space-y-1 ${isLight ? 'bg-amber-50 border-amber-300 text-amber-900' : 'bg-amber-950/40 border-amber-500/40 text-amber-300'
               }`}>

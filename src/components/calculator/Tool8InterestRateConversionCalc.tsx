@@ -10,7 +10,6 @@ interface Tool8Props {
 }
 
 export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = ({ isLight }) => {
-
   const [flatRateMonthlyStr, setFlatRateMonthlyStr] = useState('0.8');
   const [flatTenorMonths, setFlatTenorMonths] = useState<number>(24);
   const [sampleLoanAmtStr, setSampleLoanAmtStr] = useState('100.000.000');

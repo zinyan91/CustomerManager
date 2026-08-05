@@ -86,7 +86,6 @@ describe('parseAnyDate', () => {
   });
 
   it('trường hợp NHẬP NHẰNG mặc định hiểu là DD/MM/YYYY (chuẩn Việt Nam)', () => {
-
     expect(parseAnyDate('05/06/2026')).toEqual({ year: 2026, month: 6, day: 5 });
   });
 
@@ -176,8 +175,6 @@ describe('getEffectiveActiveRate', () => {
 });
 
 describe('toIsoDate — chuẩn hoá ngày lấy từ database về một dạng', () => {
-  /* HdtdDueDate từng là timestamptz nên trả về chuỗi có múi giờ, còn mọi cột
-     ngày khác trả về dạng ngắn. So chuỗi trực tiếp giữa hai dạng đó là sai. */
   it('cắt phần giờ khỏi timestamptz, KHÔNG quy đổi múi giờ', () => {
     expect(toIsoDate('2026-05-28T00:00:00+00:00')).toBe('2026-05-28');
   });
@@ -214,7 +211,6 @@ describe('getMasterHdtdNumber', () => {
   });
 
   it('KHÔNG bao giờ đọc số hợp đồng từ HdtdDueDate', () => {
-
     const c = {
       ContractNumber: 'HD777/GNN-01',
       HdtdDueDate: '2026-05-28T00:00:00+00:00',

@@ -118,7 +118,9 @@ Sai bất biến này là ngân hàng thu thừa hoặc thu thiếu của khách
 
 ### Làm tròn gốc
 
-Làm tròn **LÊN** theo bước 1.000 đồng, chuẩn core banking. Kỳ cuối gánh phần dư để đảm bảo bất biến trên.
+Làm tròn **LÊN** theo bước **10.000 đồng**, khai ở `PRINCIPAL_ROUND_MODE`. Kỳ cuối gánh phần dư để đảm bảo bất biến trên.
+
+Bước này lấy từ chứng từ thật, không phải chọn cho tròn: GNN `PNAT.CN.03111223/GNN-01` cho vay 500.000.000đ chia 120 kỳ ghi gốc mỗi kỳ 4.170.000đ, kỳ cuối 3.770.000đ. `500.000.000 / 120 = 4.166.667`, làm tròn lên bước 10.000 ra đúng 4.170.000. Bước 1.000 dùng trước đây cho 4.167.000đ — lệch **mọi** kỳ so với chứng từ khách đang giữ. Đổi hằng số này là đổi cho toàn hệ thống; migration 18 đã sửa dữ liệu cũ theo bước mới.
 
 ### Phương thức trả gốc
 
@@ -129,6 +131,8 @@ Hợp đồng hạn mức vẫn **mặc định** "Gốc trả cuối kỳ", nh�
 ### Trả trước hạn
 
 Phải được ghi nhận **kể cả khi kỳ đã tất toán**. Dư nợ trừ đúng bằng phần gốc ghi nhận trong kỳ — `principalInPeriod` đã bao gồm tiền trả trước, cộng thêm lần nữa là trừ đôi và ngân hàng mất gốc.
+
+**Trả trước hạn trong lúc còn ân hạn gốc thì chia lại theo số kỳ SAU ân hạn.** Các kỳ ân hạn còn lại vẫn chưa trả gốc, nên số kỳ để chia phần dư nợ mới không phải `tổng kỳ − kỳ hiện tại`. Dùng công thức đó từng làm gốc mỗi kỳ tính hụt rồi dồn phần thiếu vào kỳ cuối: khoản 960 triệu chia 120 kỳ ân hạn 18 tháng ra gốc/kỳ 8,07 triệu thay vì ~9,26 triệu, kỳ cuối gánh 128,93 triệu.
 
 ### Phân nhóm nợ
 
@@ -493,11 +497,66 @@ Migration 16 bước 2 — đúng bước kiểm "số mới có trùng số cũ
 
 ---
 
-## 13. Lệnh thường dùng
+## 13. Sổ tra cứu — hàm nào giữ quy tắc nào
+
+Mã nguồn không có chú thích, nên phần "vì sao" của từng hàm nằm ở đây.
+
+### `loanMath.ts`
+
+| Hàm | Điều phải biết |
+| :--- | :--- |
+| `buildDueDateSequence` | **Nguồn duy nhất** sinh dãy ngày đến hạn. Cả `generateSchedule` (tạo lịch mới) và `redateSchedules` (khai lại ngày khi sửa KUNN) đều gọi nó. Xem §2 *Ngày trả nợ kỳ đầu tiên*. |
+| `resolveFirstDueAnchor` | Dịch mốc trả nợ lên từng tháng cho tới khi vượt ngày giải ngân, **giữ nguyên ngày trong tháng** khách đã chọn. |
+| `redateSchedules` | Giữ nguyên số kỳ và mọi trường khác của từng kỳ, chỉ đổi `DueDate`. **Hiện vẫn ghi đè ngày của kỳ đã thu** — chờ quyết định nghiệp vụ. |
+| `paidPrincipalOf` | Ba khái niệm khác nhau, đừng gộp: `PrincipalAmount` là gốc **phải** trả theo lịch (không đổi khi khách trả thiếu), `ActualPaidPrincipal` là gốc **đã** trả, `PrepaidPrincipalAmount` là gốc trả **trước hạn**. Dữ liệu cũ có kỳ đánh dấu đã thanh toán nhưng `ActualPaidPrincipal` bằng 0 — hiểu là đã trả đủ theo lịch. `PrincipalAmount` đã gồm phần trả trước hạn của kỳ nên nhánh đó không cộng thêm lần nữa. |
+| `computeOutstandingBalance` | Trả 0 khi `IsSettled` — tất toán trước hạn là hết nợ dù lịch còn hàng chục kỳ chưa tới hạn. Không có dòng lịch nào thì rơi về `CurrentBalance`; xem cảnh báo dư nợ đóng băng ở §2. Dư nợ giảm theo gốc **đã thực thu**, không theo gốc phải trả. |
+| `computeSchedulePenalty` | Phạt gốc = 150% lãi suất trong hạn, phạt lãi chậm trả = 10%/năm, cùng Actual/365. Hằng số ở `stkPledge.ts`. |
+
+### `creditContract.ts`
+
+| Hàm | Điều phải biết |
+| :--- | :--- |
+| `nextKunnNumber` | Lấy `MAX` số thứ tự rồi cộng 1, **không đếm số dòng** — đếm dòng sinh trùng ngay khi có KUNN bị xoá giữa dãy. Số đã dùng không tái sử dụng. Xem §4 *Số hiệu KUNN*. |
+| `normalizeKunnNumber` | `'HD01/GNN-01'` và `'hd01/gnn-01 '` là cùng một số chứng từ. Unique index dưới database cũng đặt trên `lower(btrim(...))` để hai lớp kiểm tra nói cùng một chuyện. |
+| `checkKunnAgainstContract` | Trả **cảnh báo**, không chặn cứng: nghiệp vụ luôn có ngoại lệ được phê duyệt, và còn phải nhập được KUNN lịch sử của hợp đồng đã hết hiệu lực. Ràng buộc thật là **ngày giải ngân** phải nằm trong thời gian hiệu lực; KUNN đáo hạn sau ngày hết hiệu lực **không** phải lỗi. |
+| `kunnRevolvingStatus` | Đáo hạn **trước** ngày hết hiệu lực HĐTD: trả xong còn rút lại được. Đáo hạn **sau**: trả xong thì hạn mức đã hết hiệu lực, khách buộc phải tất toán — không tất toán được là nguy cơ chuyển nhóm nợ. |
+| `summarizeCreditContracts` | Trả về **cả** HĐTD chưa có KUNN nào: hợp đồng đã ký chưa giải ngân, và hạn mức còn hiệu lực đã tất toán hết KUNN, đều là trạng thái bình thường phải nhìn thấy. `closedWithBalance` khác 0 là dấu hiệu đóng hợp đồng khi khách chưa trả hết. |
+
+### `creditLimit.ts`
+
+`computeLimitGroups` là **nguồn duy nhất** tính hạn mức khả dụng. Nhóm theo mã hạn mức dùng chung nếu có, ngược lại theo số HĐTD — cùng cách nhóm với `computeCreditLimit` để tổng mức cấp của hai hàm luôn khớp.
+
+Cơ sở trừ hạn mức phụ thuộc sản phẩm: **HMTD tuần hoàn** lấy mức cấp − dư nợ các KUNN còn hiệu lực (trả nợ là giải phóng hạn mức); **cho vay từng lần** lấy mức cấp − tổng đã nhận nợ kể cả KUNN đã tất toán (đã giải ngân là hết).
+
+Mức cấp và ngày hết hiệu lực là thông tin **cấp HĐTD**, nên vẫn ghi nhận từ dòng đang bị `excludeContractId` loại trừ, và ngày hết hiệu lực lấy mốc muộn nhất trong nhóm. Một KUNN thuộc HĐTD đã đóng là đủ để **cả nhóm** hết quyền giải ngân: nhóm dùng chung hạn mức thì hạn mức chỉ có một, không rút qua hợp đồng khác được.
+
+`headroom` là hạn mức trống theo dư nợ, **chưa** xét hiệu lực — giữ lại để đối chiếu. `available` mới là số giải ngân được thật.
+
+### `dueList.ts`
+
+`filterByDue` đặt mốc 0 vào nhóm "sắp đến hạn": đến hạn **hôm nay** thì chưa quá hạn, khớp cách phân nhóm nợ ở §2. Thiếu số ngày cũng coi là sắp đến hạn để dòng đó không âm thầm biến mất khỏi cả hai bộ lọc.
+
+`buildDueListHtml` không dùng thư viện ngoài, mở cửa sổ mới rồi để trình duyệt in ra PDF — cùng cách làm với tờ lãi suất. Khổ A4 **ngang** vì các bảng này nhiều cột.
+
+### `rateSheet.ts` · `dueList.ts` — bảng in
+
+Cả hai dựng tài liệu HTML tự chứa rồi để trình duyệt in ra PDF, **không dùng thư viện ngoài**. Tờ lãi suất khổ A4 dọc; danh sách theo dõi hạn khổ A4 **ngang** vì nhiều cột.
+
+Trong `<style>` của tờ in bắt buộc có `print-color-adjust: exact` cho `html, body, header, th, .meta` và hàng chẵn: **Chrome mặc định KHÔNG in nền khi Save as PDF**, thiếu dòng này thì dải tiêu đề xanh và ô tiêu đề bảng in ra trắng, chữ trắng mất hút.
+
+`KENH_GUI_KHACH` chỉ gồm `quay` và `online` — xem §8 *Tờ chào khách chỉ chứa thông tin đã công bố*. Có test riêng khẳng định chuỗi FTP không xuất hiện trong tờ in.
+
+### `fontSettings.ts`
+
+Chỉ dùng font có sẵn trên máy, **không tải từ CDN**: tải font ngoài kéo theo phụ thuộc mạng và làm chữ nhảy khi trang mới mở, mà hệ thống này chạy trong mạng nội bộ ngân hàng. Mỗi lựa chọn đều có dấu tiếng Việt đầy đủ và font dự phòng phía sau.
+
+---
+
+## 14. Lệnh thường dùng
 
 ```bash
 npm run dev        # Máy chủ phát triển
 npm run build      # Kiểm tra kiểu + đóng gói
-npm test           # 684 test: 681 logic tài chính + 3 khói giao diện
+npm test           # 739 test: 736 logic tài chính + 3 khói giao diện
 npm run lint       # Kiểm tra mã nguồn
 ```

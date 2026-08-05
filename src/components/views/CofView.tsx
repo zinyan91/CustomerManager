@@ -17,8 +17,6 @@ import type {
   CofProgram, CofStandardRate, CofRateItem, CofRateColumnKey, CofSection,
 } from '../../lib/cof';
 
-
-
 const ITEM_SECTIONS: CofSection[] = [
   'cam_co_stk_vnd', 'san_pham_dac_thu', 'tat_toan_truoc_han', 'no_qua_han', 'thanh_khoan',
 ];

@@ -8,13 +8,6 @@ export interface MonthlyDueInfo {
   daysLeft: number;
 }
 
-/**
- * Mốc thu lãi hàng tháng kế tiếp, suy từ NGÀY TRONG THÁNG của mốc gốc.
- *
- * Mốc gốc đã qua trong tháng này thì nhảy sang tháng sau. Ngày 29–31 được kẹp
- * về ngày cuối tháng ngắn, cùng cách kẹp với addMonthsToDate — không để tràn
- * sang tháng kế tiếp như new Date(y, m, 31) mặc định.
- */
 export function monthlyDueInfo(
   dateStr?: string | null,
   todayStr?: string
@@ -58,13 +51,6 @@ export const DUE_FILTER_LABELS: Record<DueFilter, string> = {
   expired: 'Đã hết hạn',
 };
 
-/**
- * Lọc danh sách theo số ngày còn lại.
- *
- * Mốc 0 thuộc nhóm "sắp đến hạn": đến hạn HÔM NAY thì chưa quá hạn, khớp đúng
- * cách phân nhóm nợ đang dùng trong dự án (dưới 10 ngày quá hạn vẫn Nhóm 1).
- * Thiếu số ngày thì coi là sắp đến hạn để không âm thầm biến mất khỏi cả hai bộ lọc.
- */
 export function filterByDue<T>(
   items: T[],
   filter: DueFilter,
@@ -95,9 +81,7 @@ export function countByDue<T>(
 export interface DueListSheetInput {
   title: string;
   columns: string[];
-  /** Mỗi hàng là các ô đã định dạng sẵn dạng chuỗi. */
   rows: string[][];
-  /** Chỉ số cột căn phải, thường là cột tiền. */
   alignRight?: number[];
   preparedBy?: string;
 }
@@ -111,12 +95,6 @@ function esc(v: unknown): string {
     .replace(/'/g, '&#39;');
 }
 
-/**
- * Dựng tài liệu HTML tự chứa để in danh sách theo dõi hạn.
- *
- * Cùng cách làm với tờ lãi suất: không dùng thư viện ngoài, mở cửa sổ mới rồi
- * để trình duyệt in ra PDF. Khổ A4 ngang vì các bảng này nhiều cột.
- */
 export function buildDueListHtml(input: DueListSheetInput): string {
   const right = new Set(input.alignRight || []);
 

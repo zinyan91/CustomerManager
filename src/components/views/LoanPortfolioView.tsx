@@ -552,8 +552,6 @@ export const LoanPortfolioView: React.FC = () => {
 
         const targetHdtdNo = formHdtdNumber.trim() || (selectedContract ? getMasterHdtdNumber(selectedContract) : '');
 
-        // Cùng nguồn tính với khối "Tình trạng hạn mức" trên form: dư nợ với HMTD
-        // tuần hoàn, tổng đã nhận nợ với vay từng lần, luôn loại KUNN đã tất toán.
         const targetStatus = findLimitGroupFor(
           computeLimitGroups(contracts, {
             getOutstanding: getEffectiveBalanceForContract,
@@ -567,8 +565,6 @@ export const LoanPortfolioView: React.FC = () => {
         const specificMasterLimit = targetStatus?.granted ?? creditLimit;
 
         if (loanAmount && specificMasterLimit > 0) {
-          // Chặn theo hạn mức trống, KHÔNG theo available — HĐTD hết hiệu lực vẫn
-          // phải nhập được KUNN lịch sử; việc hết hiệu lực chỉ cảnh báo trên form.
           const remaining = targetStatus?.headroom ?? Math.max(0, specificMasterLimit);
 
           if (loanAmount > remaining) {
@@ -612,7 +608,6 @@ export const LoanPortfolioView: React.FC = () => {
             'reduce_monthly',
             history,
             undefined,
-            // GNN: kỳ trả nợ cuối cùng rơi vào ngày đáo hạn của khoản vay.
             savedContract.KunnDueDate || savedContract.ContractEndDate || undefined
           );
           await bulkSaveRepaymentSchedulesAPI(generated);
@@ -620,7 +615,6 @@ export const LoanPortfolioView: React.FC = () => {
           setSchedules(newScheds);
           setAllSchedulesMap(prev => ({ ...prev, [savedContract.Id]: newScheds }));
         } else {
-
           const updatedWithNewDates = redateSchedules(
             existingScheds,
             repayStartDate,
@@ -649,7 +643,6 @@ export const LoanPortfolioView: React.FC = () => {
             populateForm(updated);
           }
         } else {
-
           setSelectedContract(null);
         }
       }
@@ -791,21 +784,13 @@ export const LoanPortfolioView: React.FC = () => {
     return sum + (val * ltv / 100);
   }, 0);
 
-
-
-
   const today = todayIso();
 
   const kunnSettled = useCallback((c: LoanContract) => isKunnSettled(c), []);
 
-  /* Đóng HĐTD KHÔNG xoá nợ, nên dư nợ luôn đọc từ lịch thu nợ. Chỉ KUNN tự tất
-     toán mới về 0 — quyết định nghiệp vụ 05/08/2026. */
   const getEffectiveBalanceForContract = (c: LoanContract) =>
     computeOutstandingBalance(allSchedulesMap[c.Id], c);
 
-  /* Cờ IsClosed nằm ở bảng CreditContracts nên computeLimitGroups không tự đọc
-     được — phải truyền vào, nếu không hạn mức khả dụng sẽ ra số dương trên HĐTD
-     đã đóng. */
   const kunnOfClosedHdtd = useCallback(
     (c: LoanContract) => isKunnOfClosedHdtd(c, creditContracts),
     [creditContracts]
@@ -945,8 +930,6 @@ export const LoanPortfolioView: React.FC = () => {
       LoanTenorMonths: cc.LoanTenorMonths || f.LoanTenorMonths,
       LoanPurpose: cc.LoanPurpose || '',
       LoanPurposeType: cc.LoanPurposeType || '',
-      // Chỉ áp mặc định theo phương thức vay khi tạo KUNN mới — sửa KUNN cũ
-      // (keepKunnNumber=true) giữ nguyên lựa chọn banker đã lưu.
       PrincipalRepaymentMethod: keepKunnNumber
         ? f.PrincipalRepaymentMethod
         : getLoanProductRule(cc.LoanMethod).defaultPrincipalMethod,
@@ -1046,9 +1029,6 @@ export const LoanPortfolioView: React.FC = () => {
     [limitGroups, selectedMasterFilter]
   );
 
-  /* Chỉ báo khi còn hạn mức trống: hết hiệu lực mà đã dùng hết hạn mức thì không
-     có gì mất, cảnh báo chỉ làm ồn. HĐTD đã đóng thì báo bất kể trống hay không,
-     vì đóng hợp đồng khi KUNN chưa tất toán là chuyện phải thấy ngay. */
   const expiredLimitNote = useMemo(() => {
     const closed = scopedLimitGroups.filter(g => g.closed);
     if (closed.length === 1) return 'HĐTD đã đóng, không giải ngân thêm';
@@ -1062,8 +1042,6 @@ export const LoanPortfolioView: React.FC = () => {
     return `${expired.length} HĐTD đã hết hiệu lực`;
   }, [scopedLimitGroups]);
 
-  /* Không còn nhóm hạn mức nào giải ngân được thì chặn hẳn nút, kèm lý do — trước
-     đây nút luôn bật, kể cả trên HĐTD đã đóng còn dư nợ chưa trả. */
   const disburseBlockReason = useMemo(() => {
     if (!foundCustomer || scopedLimitGroups.length === 0) return '';
     if (scopedLimitGroups.some(g => g.available > 0)) return '';

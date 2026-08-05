@@ -27,7 +27,6 @@ describe('buildRateTimeline — hợp nhất ưu đãi, thả nổi và bảng �
   });
 
   it('KHÔNG bỏ kỳ ưu đãi khi hợp đồng đã có mốc điều chỉnh', () => {
-
     const t = buildRateTimeline({
       startDate: '2026-04-15',
       preferentialRate: 9.5,
@@ -172,7 +171,6 @@ describe('splitPeriodByRate — tách lãi theo số ngày trong kỳ', () => {
   });
 
   it('kỳ có mốc chuyển giữa kỳ tách thành hai đoạn', () => {
-
     const s = splitPeriodByRate(t, '2027-04-01', '2027-05-01', 30);
     expect(s).toHaveLength(2);
     expect(s[0]).toMatchObject({ fromDate: '2027-04-01', toDate: '2027-04-15', days: 14, ratePercent: 9.5 });

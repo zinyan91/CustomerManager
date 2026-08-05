@@ -301,7 +301,6 @@ describe('buildDepositRateRows — gộp bảng huy động theo cột kênh', (
   } as RateProgramTier);
 
   it('cùng bậc số dư, kỳ hạn, cách trả lãi thì gộp một dòng hai cột', () => {
-
     const r = buildDepositRateRows([
       t({ Id: 1, Channel: 'quay', BalanceTierLabel: 'Dưới 1 tỷ', TenorMonths: 6, PayoutMode: 'cuoi_ky', RateAnnual: 5.2, SortOrder: 1 }),
       t({ Id: 2, Channel: 'online', BalanceTierLabel: 'Dưới 1 tỷ', TenorMonths: 6, PayoutMode: 'cuoi_ky', RateAnnual: 5.4, SortOrder: 1 }),
@@ -313,7 +312,6 @@ describe('buildDepositRateRows — gộp bảng huy động theo cột kênh', (
   });
 
   it('kênh thiếu mức thì để TRỐNG, không suy ra 0', () => {
-
     const r = buildDepositRateRows([
       t({ Id: 1, Channel: 'quay', TenorMonths: 12, RateAnnual: 6.1, SortOrder: 1 }),
     ]);
@@ -354,7 +352,6 @@ describe('buildDepositRateRows — gộp bảng huy động theo cột kênh', (
   });
 
   it('KHÔNG đưa FTP vào bảng gửi khách hàng', () => {
-
     expect(depositChannelsPresent([t({ Channel: 'ftp' })])).toEqual([]);
     expect(depositChannelsPresent([
       t({ Channel: 'quay' }), t({ Channel: 'ftp' }),

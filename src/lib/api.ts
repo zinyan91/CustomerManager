@@ -61,7 +61,6 @@ export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Cust
   }
 
   if (!isUpdate) {
-
     delete customer.Id;
 
     if (!customer.OwnerId) {
@@ -178,7 +177,6 @@ export async function findContractsUsingCollateralAPI(collateralId: number): Pro
 }
 
 export async function deleteCollateralAPI(id: number): Promise<void> {
-
   const linked = await findContractsUsingCollateralAPI(id);
   if (linked.length > 0) {
     const names = linked.map(c => c.ContractNumber || `HĐ #${c.Id}`).join(', ');
@@ -258,16 +256,6 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   }
 }
 
-/*
- * Số KUNN sinh lúc mở form đã cũ vào lúc bấm lưu, nên phải hỏi lại database.
- *
- * Đây là kiểm tra để BÁO LỖI CHO NGƯỜI NHẬP, không phải lớp bảo vệ: dưới RLS
- * banker chỉ thấy KUNN của khách hàng mình nên số do banker khác đã dùng là vô
- * hình ở đây. Lớp bảo vệ thật là unique index (migration 20).
- *
- * Không tự đổi số giúp: số KUNN là số chứng từ khớp GNN giấy, máy đặt lại thì
- * bản đối chiếu hồ sơ và core banking đều lệch.
- */
 async function assertKunnNumberFree(contractNumber: string, selfId?: number | null): Promise<void> {
   if (!contractNumber) return;
 
@@ -417,7 +405,6 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
     if (error) throw error;
     return data;
   } else {
-
     const { data, error } = await supabase.from('CreditCards').insert([cardData]).select().single();
     if (error) throw error;
     return data;
@@ -484,7 +471,6 @@ export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<Repayment
   }
 
   if (withoutId.length > 0) {
-
     const cleanWithoutId = withoutId.map(({ Id: _Id, ...rest }) => rest);
     const { error: insertErr } = await supabase.from('RepaymentSchedules').insert(cleanWithoutId);
     if (insertErr) throw insertErr;

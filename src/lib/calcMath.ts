@@ -137,11 +137,6 @@ export function scheduleDueDate(period: number, params: LoanScheduleParams): str
 
   const theoKy = period === 1 ? first : edate(first, period - 1);
 
-  /* Giấy nhận nợ ghi: "Kỳ trả nợ cuối cùng sẽ được trả vào NGÀY ĐÁO HẠN". Khi
-     ngày trả nợ đầu tiên không phải giải ngân + 1 tháng, cộng dồn theo kỳ sẽ cho
-     kỳ cuối rơi TRƯỚC đáo hạn (960tr/120 kỳ, giải ngân 05/05/2026, trả nợ từ
-     15/05/2026 → kỳ 120 ra 15/04/2036 thay vì 05/05/2036) và khoản vay bị tính
-     thiếu lãi của quãng còn lại. */
   if (period === params.tenorMonths && maturity) {
     const kyTruoc = params.tenorMonths === 1 ? params.disbursementDate : edate(first, params.tenorMonths - 2);
     if (diffDays(kyTruoc, maturity) > 0) return maturity;
@@ -209,10 +204,6 @@ export function buildLoanSchedule(params: LoanScheduleParams): LoanScheduleRow[]
     });
 
     if (prepayment > 0 && planned && planned.mode === 'reduce_monthly' && repayMethod !== 'bullet') {
-      // Trả trước hạn trong lúc còn ân hạn gốc (i <= graceMonths): các kỳ còn
-      // lại của ân hạn vẫn chưa trả gốc, nên số kỳ để chia đều phần dư nợ mới
-      // là kỳ SAU ân hạn, không phải kỳ sau kỳ hiện tại — dùng tenorMonths - i
-      // ở đây từng làm gốc mỗi kỳ bị tính hụt và dồn cả phần thiếu vào kỳ cuối.
       const remainingPeriods = tenorMonths - Math.max(i, graceMonths);
       if (remainingPeriods > 0 && endingBalance > 0) {
         stepPrincipal = roundPrincipalCore(endingBalance / remainingPeriods);

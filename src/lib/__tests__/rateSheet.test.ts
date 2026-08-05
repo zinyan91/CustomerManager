@@ -456,7 +456,6 @@ describe('tờ gửi khách không được chứa số liệu nội bộ', () =
   } as any);
 
   it('KHÔNG in bảng FTP mua vốn nội bộ', () => {
-
     const html = dungTo();
     expect(html).toContain('8,9%');
     expect(html).not.toContain('9,4%');
@@ -469,7 +468,6 @@ describe('tờ gửi khách không được chứa số liệu nội bộ', () =
   });
 
   it('chỉ định riêng kênh ftp cũng không in ra gì', () => {
-
     const html = dungTo('ftp');
     expect(html.toLowerCase()).not.toContain('ftp');
     expect(html).not.toContain('9,4%');

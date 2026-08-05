@@ -1,18 +1,5 @@
 // @vitest-environment jsdom
 
-/*
- * Test khói cho tab KUNN.
- *
- * Lý do có tệp này: 05/08/2026 tab KUNN trắng trang mỗi lần chọn khách hàng vì
- * getEffectiveBalanceForContract gọi kunnSettled khai sau nó 11 dòng, còn
- * limitGroups gọi hàm đó ngay lúc render nên ném ReferenceError. Build, lint và
- * 668 test logic đều xanh — không lớp nào trong số đó dựng component lên.
- *
- * Vì vậy bài test ở đây KHÔNG kiểm công thức tiền (đã có test hàm thuần lo).
- * Nó chỉ khẳng định một điều mà chỉ nó khẳng định được: chọn khách hàng thì
- * component render tới cùng, không ném lỗi runtime.
- */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React, { useEffect } from 'react';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
@@ -67,8 +54,6 @@ import { LoanPortfolioView } from '../views/LoanPortfolioView';
 import { WorkProvider, useWork } from '../../context/WorkContext';
 import { ThemeProvider } from '../../context/ThemeContext';
 
-/* Đúng đường đã làm trắng trang: một tab khác đẩy khách hàng sang qua
-   WorkContext, LoanPortfolioView tự nạp dữ liệu rồi render danh sách KUNN. */
 const ChonKhachHang: React.FC<{ id: number }> = ({ id }) => {
   const { setSelectedCustomerId } = useWork();
   useEffect(() => { setSelectedCustomerId(id); }, [id, setSelectedCustomerId]);
@@ -123,8 +108,6 @@ describe('LoanPortfolioView — tab KUNN dựng được lên', () => {
       expect(screen.getByText('2002/HĐTD/9632203/GNN-01')).toBeTruthy();
     });
 
-    /* ReferenceError của lần trắng trang đi ra qua console.error của React
-       trước khi cây component bị bỏ. Bắt ở đây để lần sau không lọt nữa. */
     const nghiemTrong = loiRender.filter(
       m => /ReferenceError|Cannot access|is not defined|is not a function/.test(m)
     );

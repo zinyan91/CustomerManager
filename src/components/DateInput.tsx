@@ -53,7 +53,6 @@ export function displayToIso(displayStr: string, format: DateFormat = 'dd/mm/yyy
       year = parseInt(match[3], 10);
     }
   } else {
-
     const match = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (match) {
       day = parseInt(match[1], 10);

@@ -4,14 +4,6 @@ import { getMasterHdtdNumber } from './utils';
 
 export const GNN_SEPARATOR = '/GNN-';
 
-/**
- * Sinh số KUNN tiếp theo của một HĐTD.
- *
- * Lấy MAX số thứ tự đang có rồi cộng 1, không đếm số dòng: đếm dòng sẽ sinh
- * trùng ngay khi có KUNN bị xoá giữa dãy. Số đã dùng không bao giờ tái sử
- * dụng, kể cả khi KUNN cũ đã tất toán — tất toán GNN-01 thì khoản mới là
- * GNN-02.
- */
 export function nextKunnNumber(hdtdNumber: string, existingKunnNumbers: string[]): string {
   const hdtd = (hdtdNumber || '').trim();
   if (!hdtd) return '';
@@ -31,31 +23,16 @@ export function nextKunnNumber(hdtdNumber: string, existingKunnNumbers: string[]
       continue;
     }
 
-    // Dữ liệu cũ: số KUNN để trùng số HĐTD, chưa có hậu tố GNN.
     if (lower === hdtd.toLowerCase() && maxIndex < 1) maxIndex = 1;
   }
 
   return `${hdtd}${GNN_SEPARATOR}${String(maxIndex + 1).padStart(2, '0')}`;
 }
 
-/**
- * Số hiệu KUNN so theo dạng chuẩn hoá: 'HD01/GNN-01' và 'hd01/gnn-01 ' là cùng
- * một số chứng từ, khác nhau chỉ vì cách gõ. Unique index dưới database cũng
- * đặt trên lower(btrim(...)) để hai lớp kiểm tra nói cùng một chuyện.
- */
 export function normalizeKunnNumber(kunnNumber?: string | null): string {
   return (kunnNumber || '').trim().toLowerCase();
 }
 
-/**
- * Số hiệu này đã có KUNN khác dùng chưa.
- *
- * nextKunnNumber được gọi lúc MỞ FORM, nên số sinh ra đã cũ vào lúc bấm lưu:
- * tạo hai KUNN liên tiếp trong cùng phiên, hoặc hai người cùng nhập một HĐTD,
- * đều ra cùng một số. Dữ liệu thật có 8 dòng trùng số vì thiếu bước này.
- *
- * Trả về Id của dòng đang giữ số đó, hoặc null nếu số còn trống.
- */
 export function findKunnNumberClash(
   candidate: string,
   existing: Array<Pick<LoanContract, 'Id' | 'ContractNumber'>>,
@@ -96,16 +73,6 @@ function fmt(d: string): string {
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
 }
 
-/**
- * Đối chiếu một KUNN với HĐTD cha.
- *
- * KUNN đáo hạn sau ngày hết hiệu lực HĐTD KHÔNG phải lỗi — xem
- * kunnRevolvingStatus. Điều bị ràng buộc là NGÀY GIẢI NGÂN phải nằm trong thời
- * gian hiệu lực của hợp đồng.
- *
- * Trả về cảnh báo chứ không chặn cứng: nghiệp vụ ngân hàng luôn có ngoại lệ
- * được phê duyệt, và còn phải nhập được KUNN lịch sử của hợp đồng đã hết hiệu lực.
- */
 export function checkKunnAgainstContract(
   kunn: Pick<LoanContract, 'DisbursementDate' | 'KunnDueDate' | 'LoanAmount'>,
   contract?: Pick<CreditContract, 'HdtdNumber' | 'ContractStartDate' | 'ContractEndDate' | 'IsClosed'> | null
@@ -152,15 +119,6 @@ export interface KunnRevolvingStatus {
   message: string;
 }
 
-/**
- * KUNN này còn cho phép giải ngân lại hay không.
- *
- *  - Đáo hạn TRƯỚC ngày hết hiệu lực HĐTD: trả xong vẫn còn thời gian rút lại,
- *    hạn mức còn quay vòng được thêm ít nhất một lượt.
- *  - Đáo hạn SAU ngày hết hiệu lực HĐTD: khi khoản này được trả thì hạn mức đã
- *    hết hiệu lực, không rút lại được nữa. Khách buộc phải tất toán; không tất
- *    toán được là nguy cơ chuyển nhóm nợ vì không còn đường quay vòng.
- */
 export function kunnRevolvingStatus(
   kunn: Pick<LoanContract, 'KunnDueDate'>,
   contract?: Pick<CreditContract, 'ContractEndDate'> | null
@@ -191,30 +149,10 @@ export function kunnRevolvingStatus(
   };
 }
 
-/**
- * KUNN đã tất toán hay chưa — CHỈ căn cứ cờ tất toán của chính KUNN đó.
- *
- * Quyết định nghiệp vụ 05/08/2026: **đóng HĐTD là dừng quyền giải ngân, KHÔNG
- * phải xoá nợ.** Hàm này trước đây trả về `true` khi HĐTD có `IsClosed`, và cái
- * suy diễn đó đã che dư nợ thật khỏi mọi con số: hồ sơ NGUYỄN MINH HÙNG hiện
- * "Dư nợ hiện hữu 0" trên hai KUNN 200 triệu `IsSettled = false` chưa trả một
- * đồng nào, chỉ vì HĐTD bị đóng.
- *
- * Hai câu hỏi khác nhau, hai hàm khác nhau:
- *  - Còn nợ không? → hàm này (và `computeOutstandingBalance` cho số tiền).
- *  - Còn giải ngân được không? → `computeLimitGroups(options.isClosed)` và
- *    `summarizeCreditContracts`, cùng cho `available = 0` khi HĐTD đã đóng.
- */
 export function isKunnSettled(kunn: Pick<LoanContract, 'IsSettled'>): boolean {
   return kunn.IsSettled === true;
 }
 
-/**
- * KUNN có thuộc một HĐTD đã đóng hay không.
- *
- * Chỉ xét theo liên kết `CreditContractId`, không suy từ tiền tố số hiệu: số hiệu
- * sửa được bằng tay còn khoá ngoại thì không.
- */
 export function isKunnOfClosedHdtd(
   kunn: Pick<LoanContract, 'CreditContractId'>,
   creditContracts: Pick<CreditContract, 'Id' | 'IsClosed'>[]
@@ -229,29 +167,17 @@ export interface CreditContractSummary {
   activeKunnCount: number;
   settledKunnCount: number;
   outstanding: number;
-  /** Tổng đã nhận nợ, tính cả KUNN đã tất toán. */
   disbursedCumulative: number;
   revolving: boolean;
-  /** Hạn mức còn trống theo sản phẩm, CHƯA xét hiệu lực. */
   headroom: number;
-  /** Số tiền thực sự còn giải ngân được. */
   available: number;
   canDisburse: boolean;
   blockReason: string;
   expired: boolean;
   isEmpty: boolean;
-  /**
-   * Dư nợ còn treo theo lịch trả nợ của các KUNN dù HĐTD đã đóng. Bình thường
-   * bằng 0; khác 0 là dấu hiệu đóng hợp đồng khi khách chưa trả hết.
-   */
   closedWithBalance: number;
 }
 
-/**
- * Gom KUNN về từng HĐTD. Trả về CẢ hợp đồng chưa có KUNN nào — hợp đồng đã ký
- * chưa giải ngân, và hạn mức còn hiệu lực nhưng đã tất toán hết KUNN, đều là
- * trạng thái bình thường phải nhìn thấy được.
- */
 export function summarizeCreditContracts(
   contracts: CreditContract[],
   kunns: LoanContract[],

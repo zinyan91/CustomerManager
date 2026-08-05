@@ -6,13 +6,6 @@ export interface FontFamilyOption {
   stack: string;
 }
 
-/**
- * Chỉ dùng font có sẵn trên máy, không tải từ CDN.
- *
- * Tải font ngoài kéo theo phụ thuộc mạng và làm chữ nhảy khi trang mới mở; hệ
- * thống này chạy trong mạng nội bộ ngân hàng nên càng không nên phụ thuộc.
- * Mỗi lựa chọn đều có dấu tiếng Việt đầy đủ và có font dự phòng phía sau.
- */
 export const FONT_FAMILIES: FontFamilyOption[] = [
   { key: 'system', label: 'Mặc định hệ thống', stack: 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif' },
   { key: 'inter', label: 'Inter / Segoe UI', stack: 'Inter, "Segoe UI", system-ui, Arial, sans-serif' },
@@ -23,13 +16,9 @@ export const FONT_FAMILIES: FontFamilyOption[] = [
 
 export interface FontSettings {
   family: FontFamilyKey;
-  /** Tiêu đề mục và tiêu đề màn hình. */
   heading: number;
-  /** Ô bảng, nhãn nhập liệu, nội dung chính. */
   table: number;
-  /** Nhãn đếm, viên trạng thái, ghi chú nhỏ. */
   small: number;
-  /** Số tiền và mã hợp đồng dạng chữ đơn cách. */
   mono: number;
 }
 
@@ -99,7 +88,6 @@ export function saveFontSettings(s: FontSettings): void {
   } catch {}
 }
 
-/** Các biến CSS mà index.css đọc để áp cỡ chữ cho toàn ứng dụng. */
 export function cssVariablesFor(s: FontSettings): Record<string, string> {
   const n = normalizeFontSettings(s);
   return {

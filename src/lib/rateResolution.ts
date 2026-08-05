@@ -47,16 +47,6 @@ function toPercent(v?: number | null): number {
   return v <= 1 ? v * 100 : v;
 }
 
-/**
- * Biên độ là số DUY NHẤT trong dòng thời gian lãi suất có thể âm: lãi suất sau
- * ưu đãi được chào dưới lãi suất cơ sở (khách ưu tiên, chương trình giảm tiếp).
- * `toPercent` trả 0 cho mọi số âm nên không dùng được ở đây — biên độ âm sẽ bị
- * bỏ mất và lãi tính cao hơn hợp đồng.
- *
- * Suy đơn vị theo TRỊ TUYỆT ĐỐI: |v| <= 1 là dạng thập phân (-0,005 = -0,5%),
- * lớn hơn 1 là dạng phần trăm (-0,5 phải khai là -0.5 dạng phần trăm thì mới
- * ra -0,5%). Đây đúng quy ước đang dùng cho các mức lãi khác trong dự án.
- */
 function toPercentSigned(v?: number | null): number {
   if (v === undefined || v === null || isNaN(v)) return 0;
   return Math.abs(v) <= 1 ? v * 100 : v;
@@ -76,22 +66,11 @@ function addMonthsClamped(dateStr: string, months: number): string {
   return `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
-/**
- * Sàn lãi suất: hợp đồng cho biên độ âm thường kèm câu "không thấp hơn X%/năm".
- * Không có sàn thì cũng không để lãi tụt xuống 0 hoặc âm.
- */
 function applyRateFloor(ratePercent: number, input: RateTimelineInput): number {
   const floor = toPercent(input.rateFloorAnnual);
   return Math.max(floor, ratePercent, 0);
 }
 
-/**
- * Trả kèm `configured` để phân biệt "chưa khai lãi thả nổi" với "khai ra 0%".
- * Trước đây chỉ trả một con số và bên gọi kiểm `> 0`, nên biên độ âm lớn hơn lãi
- * cơ sở bị kẹp về 0 rồi lại bị hiểu là chưa khai, khoản vay âm thầm nhận lãi
- * mặc định 8,5%/năm. Lãi suất 0% là con số hợp lệ trong dự án này — chương trình
- * trung dài hạn có gói ưu đãi 0% thật.
- */
 function floatingRate(input: RateTimelineInput): { value: number; configured: boolean } {
   const base = toPercent(input.baseRate);
   if (base > 0) {
@@ -115,21 +94,6 @@ function fmtDayMonthYear(iso: string): string {
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
 }
 
-/**
- * Dựng MỘT dòng thời gian lãi suất duy nhất cho khoản vay.
- *
- * Thứ tự ưu tiên, sau đè lên trước:
- *  1. Lãi ưu đãi cho `preferentialPeriodMonths` tháng đầu kể từ ngày giải ngân
- *  2. Hết ưu đãi chuyển sang thả nổi = base rate + biên
- *  3. Từng mốc trong bảng điều chỉnh lãi suất ghi đè theo `effectiveDate`
- *
- * Trước đây ba việc này nằm ở ba nơi và loại trừ nhau: hễ hợp đồng có một mốc
- * điều chỉnh là kỳ ưu đãi bị bỏ hoàn toàn khỏi cách tính.
- *
- * Lãi suất nhận cả dạng thập phân (0.095) và dạng phần trăm (9.5); giá trị trên
- * 1 được coi là phần trăm, theo đúng quy ước đang dùng trong dự án. Kết quả luôn
- * trả về theo phần trăm/năm.
- */
 export function buildRateTimeline(
   input: RateTimelineInput,
   options?: RateTimelineOptions
@@ -248,13 +212,6 @@ export function resolveRateAt(
   return active ?? (timeline.length > 0 ? timeline[0] : null);
 }
 
-/**
- * Cắt một kỳ trả nợ thành các đoạn lãi suất theo số ngày thực tế.
- *
- * Mốc đổi lãi suất rơi giữa kỳ thì kỳ đó có hai đoạn, đúng cách ngân hàng thực
- * tính. `totalDays` là số ngày của cả kỳ do bên gọi tính; tổng số ngày các đoạn
- * luôn bằng đúng `totalDays` để tiền lãi của kỳ không bị lệch vì làm tròn.
- */
 export function splitPeriodByRate(
   timeline: RateTimelinePoint[],
   periodStart: string,

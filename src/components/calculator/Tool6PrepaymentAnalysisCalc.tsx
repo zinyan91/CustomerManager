@@ -9,7 +9,6 @@ interface Tool6Props {
 }
 
 export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) => {
-
   const [balanceStr, setBalanceStr] = useState('800.000.000');
   const [prepayAmountStr, setPrepayAmountStr] = useState('800.000.000');
   const [rateAnnualStr, setRateAnnualStr] = useState('11.5');

@@ -228,13 +228,6 @@ export function buildDepositMatrix(
   };
 }
 
-/**
- * Tờ gửi khách CHỈ in kênh giao dịch của khách: tại quầy và online.
- *
- * FTP mua vốn nội bộ là giá điều hành nội bộ, in ra là để khách thấy biên lợi
- * nhuận của ngân hàng. Quy tắc này đã có ở CONVENTIONS mục 8; có test riêng
- * khẳng định chuỗi FTP không xuất hiện trong tờ in.
- */
 const KENH_GUI_KHACH: DepositChannel[] = ['quay', 'online'];
 
 function depositRateTable(input: RateSheetInput): string {
@@ -397,8 +390,6 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
 <style>
   @page { size: A4 portrait; margin: 11mm 12mm; }
   * { box-sizing: border-box; }
-  /* Chrome mặc định KHÔNG in nền khi Save as PDF; không có dòng này thì
-     dải tiêu đề xanh và ô tiêu đề bảng in ra trắng, chữ trắng mất hút. */
   html, body, header, th, .meta, tbody tr:nth-child(even) {
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }

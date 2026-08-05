@@ -629,7 +629,10 @@ export const LoanPortfolioView: React.FC = () => {
             0,
             1,
             'reduce_monthly',
-            history
+            history,
+            undefined,
+            // GNN: kỳ trả nợ cuối cùng rơi vào ngày đáo hạn của khoản vay.
+            savedContract.KunnDueDate || savedContract.ContractEndDate || undefined
           );
           await bulkSaveRepaymentSchedulesAPI(generated);
           const newScheds = await fetchRepaymentSchedulesAPI(savedContract.Id);

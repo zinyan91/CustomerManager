@@ -104,7 +104,8 @@ export function generateSchedule(
   prepaymentPeriod: number = 0,
   prepaymentMode: 'reduce_monthly' | 'shorten_tenor' = 'reduce_monthly',
   rateHistory?: RateAdjustmentHistoryItem[],
-  prefInfo?: { prefRate: number; prefMonths: number; postPrefRate: number }
+  prefInfo?: { prefRate: number; prefMonths: number; postPrefRate: number },
+  maturityDateStr?: string
 ): Partial<RepaymentSchedule>[] {
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
@@ -137,12 +138,25 @@ export function generateSchedule(
   for (let i = 1; i <= periods; i++) {
     if (balance <= 0) break;
 
-    let dueTotalMonths = startMonth + (i - 1);
-    let dueYear = startYear + Math.floor(dueTotalMonths / 12);
-    let dueMonthIdx = dueTotalMonths % 12;
-    const daysInDueMonth = new Date(dueYear, dueMonthIdx + 1, 0).getDate();
-    const dueDay = Math.min(startDay, daysInDueMonth);
-    const dueDateStr = `${dueYear}-${String(dueMonthIdx + 1).padStart(2, '0')}-${String(dueDay).padStart(2, '0')}`;
+    const duePerCycle = (n: number) => {
+      const totalMonths = startMonth + (n - 1);
+      const y = startYear + Math.floor(totalMonths / 12);
+      const mIdx = totalMonths % 12;
+      const d = Math.min(startDay, new Date(y, mIdx + 1, 0).getDate());
+      return `${y}-${String(mIdx + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    };
+
+    /* Giấy nhận nợ: "Kỳ trả nợ cuối cùng sẽ được trả vào NGÀY ĐÁO HẠN". Cộng dồn
+       theo kỳ sẽ cho kỳ cuối rơi trước đáo hạn khi ngày trả nợ đầu tiên không
+       phải giải ngân + 1 tháng, và khoản vay bị tính thiếu lãi quãng còn lại. */
+    // Chỉ áp khi bên gọi khai rõ ngày đáo hạn. Suy ngầm từ giải ngân + số kỳ sẽ
+    // âm thầm đổi ngày đến hạn của mọi lịch cũ đang sinh theo cách khác.
+    const daoHan = (maturityDateStr || '').trim();
+    let dueDateStr = duePerCycle(i);
+    if (i === periods && daoHan) {
+      const kyTruoc = periods === 1 ? (disbursementDateStr || repaymentStartDateStr) : duePerCycle(periods - 1);
+      if (getDaysBetween(kyTruoc, daoHan) > 1) dueDateStr = daoHan;
+    }
 
     const days = getDaysBetween(prevDateStr, dueDateStr);
 

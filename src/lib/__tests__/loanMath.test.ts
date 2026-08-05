@@ -735,3 +735,34 @@ describe('tất toán thì hết nợ', () => {
     expect(computeOutstandingBalance(undefined, { ...hopDong, CurrentBalance: 123_000_000, IsSettled: true })).toBe(0);
   });
 });
+
+describe('generateSchedule — kỳ cuối rơi vào ngày đáo hạn', () => {
+  it('lấy ngày đáo hạn khai kèm cho kỳ cuối', () => {
+    const s = generateSchedule(1, 960_000_000, 9.5, '2026-05-15', 120, false, '2026-05-05', undefined, 0, 0, 0, 'reduce_monthly', undefined, undefined, '2036-05-05');
+    expect(s.length).toBe(120);
+    expect(s[118].DueDate).toBe('2036-03-15');
+    expect(s[119].DueDate).toBe('2036-05-05');
+    expect(s.reduce((a, k) => a + (k.PrincipalAmount || 0), 0)).toBe(960_000_000);
+  });
+
+  it('không khai đáo hạn thì giữ nguyên cách cộng dồn theo kỳ', () => {
+    const s = generateSchedule(1, 960_000_000, 9.5, '2026-05-15', 120, false, '2026-05-05');
+    expect(s[119].DueDate).toBe('2036-04-15');
+  });
+
+  it('giữ nguyên kỳ cuối khi đáo hạn không sau kỳ liền trước', () => {
+    const s = generateSchedule(1, 300_000_000, 9, '2026-09-15', 3, false, '2026-05-05', undefined, 0, 0, 0, 'reduce_monthly', undefined, undefined, '2026-08-05');
+    expect(s[2].DueDate).toBe('2026-11-15');
+  });
+
+  it('lãi kỳ cuối tính theo số ngày thực tế tới đáo hạn', () => {
+    const s = generateSchedule(1, 960_000_000, 9.5, '2026-05-15', 120, false, '2026-05-05', undefined, 0, 0, 0, 'reduce_monthly', undefined, undefined, '2036-05-05');
+    const cuoi = s[119];
+    const truoc = s[118];
+    expect(getDaysBetween(truoc.DueDate!, cuoi.DueDate!)).toBe(51);
+
+    // Kỳ cuối tất toán hết dư nợ, nên dư nợ đầu kỳ bằng đúng gốc của kỳ đó.
+    const duNoDauKy = cuoi.PrincipalAmount || 0;
+    expect(cuoi.InterestAmount).toBe(Math.round(duNoDauKy * 0.095 * 51 / 365));
+  });
+});

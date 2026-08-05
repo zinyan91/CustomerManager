@@ -401,3 +401,52 @@ describe('ngày bắt đầu trả nợ (ngày trả nợ kỳ 1)', () => {
     expect(rows[2].dueDate).toBe('2027-02-28');
   });
 });
+
+describe('kỳ cuối rơi vào ngày đáo hạn', () => {
+  const base = {
+    loanAmount: 960_000_000,
+    promoRateAnnual: 9.5,
+    tenorMonths: 120,
+    disbursementDate: '2026-05-05',
+    firstPaymentDate: '2026-05-15',
+    repayMethod: 'equal_principal' as const,
+    promoMonths: 12,
+    baseRateAnnual: 9.65,
+    marginAnnual: 3.75,
+  };
+
+  it('kỳ cuối đến hạn đúng ngày đáo hạn, không phải ngày 15 của tháng trước', () => {
+    const rows = buildLoanSchedule(base);
+    expect(rows.length).toBe(120);
+    expect(rows[118].dueDate).toBe('2036-03-15');
+    expect(rows[119].dueDate).toBe('2036-05-05');
+  });
+
+  it('kỳ cuối tính lãi theo số ngày thực tế tới ngày đáo hạn', () => {
+    const rows = buildLoanSchedule(base);
+    const cuoi = rows[119];
+    expect(cuoi.days).toBe(diffDays('2036-03-15', '2036-05-05'));
+    expect(cuoi.days).toBe(51);
+    expect(cuoi.interest).toBe(Math.round(cuoi.beginningBalance * (13.4 / 100) * 51 / 365));
+  });
+
+  it('BẤT BIẾN: tổng gốc vẫn bằng số tiền vay', () => {
+    const rows = buildLoanSchedule(base);
+    expect(rows.reduce((a, r) => a + r.principal, 0)).toBe(960_000_000);
+    expect(rows[119].endingBalance).toBe(0);
+  });
+
+  it('không khai ngày bắt đầu trả nợ thì kỳ cuối vốn đã là ngày đáo hạn', () => {
+    const rows = buildLoanSchedule({ ...base, firstPaymentDate: '' });
+    expect(rows[119].dueDate).toBe('2036-05-05');
+  });
+
+  it('vẫn giữ nguyên khi ngày đáo hạn không sau kỳ liền trước', () => {
+    const rows = buildLoanSchedule({
+      loanAmount: 300_000_000, promoRateAnnual: 9, tenorMonths: 3,
+      disbursementDate: '2026-05-05', firstPaymentDate: '2026-09-15',
+      repayMethod: 'equal_principal',
+    });
+    expect(rows[2].dueDate).toBe('2026-11-15');
+  });
+});

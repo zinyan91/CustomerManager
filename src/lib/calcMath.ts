@@ -128,11 +128,26 @@ export function mergePrepayments(items: PrepaymentPlanItem[]): PrepaymentPlanIte
 }
 
 export function scheduleDueDate(period: number, params: LoanScheduleParams): string {
+  const maturity = addMonths(params.disbursementDate, params.tenorMonths);
   const first = (params.firstPaymentDate ?? '').trim();
-  if (first && diffDays(params.disbursementDate, first) > 0) {
-    return period === 1 ? first : edate(first, period - 1);
+
+  if (!first || diffDays(params.disbursementDate, first) <= 0) {
+    return addMonths(params.disbursementDate, period);
   }
-  return addMonths(params.disbursementDate, period);
+
+  const theoKy = period === 1 ? first : edate(first, period - 1);
+
+  /* Giấy nhận nợ ghi: "Kỳ trả nợ cuối cùng sẽ được trả vào NGÀY ĐÁO HẠN". Khi
+     ngày trả nợ đầu tiên không phải giải ngân + 1 tháng, cộng dồn theo kỳ sẽ cho
+     kỳ cuối rơi TRƯỚC đáo hạn (960tr/120 kỳ, giải ngân 05/05/2026, trả nợ từ
+     15/05/2026 → kỳ 120 ra 15/04/2036 thay vì 05/05/2036) và khoản vay bị tính
+     thiếu lãi của quãng còn lại. */
+  if (period === params.tenorMonths && maturity) {
+    const kyTruoc = params.tenorMonths === 1 ? params.disbursementDate : edate(first, params.tenorMonths - 2);
+    if (diffDays(kyTruoc, maturity) > 0) return maturity;
+  }
+
+  return theoKy;
 }
 
 export function buildLoanSchedule(params: LoanScheduleParams): LoanScheduleRow[] {

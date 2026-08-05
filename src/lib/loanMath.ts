@@ -283,7 +283,16 @@ export function recalculateSchedules(
   const remainingRepayPeriods = Math.max(1, totalPeriods - graceMonths);
   let baseMonthlyPrincipal = isBullet ? 0 : roundPrincipalCore(loanAmt / remainingRepayPeriods);
 
-  let currentBalance = loanAmt;
+  /* HAI dòng dư nợ, không gộp làm một.
+     · planBalance: dư nợ theo lịch, chỉ giảm theo GỐC PHẢI TRẢ và gốc trả trước
+       hạn. Giữ bất biến Σ(gốc phải trả) = số tiền vay.
+     · actualBalance: dư nợ thực tế, giảm theo GỐC ĐÃ TRẢ. Lãi tính trên số này,
+       nên khách trả thiếu thì lãi kỳ sau vẫn tính trên dư nợ còn cao.
+     Trước đây dùng một biến duy nhất nên số khách trả vào ghi đè lên gốc phải
+     trả của kỳ: kỳ 11 khách nộp 2.592đ thì lịch ghi gốc phải trả 2.592đ thay vì
+     4.590.000đ, phần hụt bị dồn sang kỳ cuối. */
+  let planBalance = loanAmt;
+  let actualBalance = loanAmt;
   let prevDateStr: string =
     contract.DisbursementDate ||
     contract.ContractStartDate ||
@@ -308,53 +317,39 @@ export function recalculateSchedules(
       : [];
     const calculatedInterest = rateSegments.length > 0
       ? Math.round(rateSegments.reduce(
-          (sum, seg) => sum + currentBalance * (seg.ratePercent / 100) * (seg.days / 365), 0))
-      : Math.round(currentBalance * getEffectiveActiveRate(contract, dueDateStr) * (days / 365));
+          (sum, seg) => sum + actualBalance * (seg.ratePercent / 100) * (seg.days / 365), 0))
+      : Math.round(actualBalance * getEffectiveActiveRate(contract, dueDateStr) * (days / 365));
 
-    let expectedNormalPrincipal = 0;
+    const prepaid = s.PrepaidPrincipalAmount ?? 0;
+
+    let scheduledPrincipal = 0;
     if (isBullet) {
-      expectedNormalPrincipal = periodNum === totalPeriods ? currentBalance : 0;
+      scheduledPrincipal = periodNum === totalPeriods ? planBalance : 0;
     } else if (periodNum <= graceMonths) {
-      expectedNormalPrincipal = 0;
+      scheduledPrincipal = 0;
     } else if (periodNum === totalPeriods) {
-      expectedNormalPrincipal = currentBalance;
+      scheduledPrincipal = planBalance;
     } else {
-      expectedNormalPrincipal = Math.min(currentBalance, baseMonthlyPrincipal);
+      scheduledPrincipal = Math.min(planBalance, baseMonthlyPrincipal);
     }
 
-    let principalInPeriod = 0;
+    // Gốc trả trước hạn là tiền gốc thu thêm trong kỳ, nên nằm trong nghĩa vụ gốc
+    // của kỳ đó và làm giảm gốc phải trả các kỳ còn lại.
+    const principalInPeriod = Math.min(planBalance, scheduledPrincipal + prepaid);
 
-    if (s.IsPaid) {
-
-      const base =
-        s.ActualPaidPrincipal !== undefined && s.ActualPaidPrincipal !== null && s.ActualPaidPrincipal > 0
-          ? s.ActualPaidPrincipal
-          : expectedNormalPrincipal;
-      const recordedP = base + (s.PrepaidPrincipalAmount ?? 0);
-      principalInPeriod = Math.min(currentBalance, recordedP);
-
-      if ((s.PrepaidPrincipalAmount ?? 0) > 0 && !isBullet) {
-        const remainingPeriods = totalPeriods - periodNum;
-        if (remainingPeriods > 0) {
-          const balAfterPrepay = Math.max(0, currentBalance - principalInPeriod);
-          baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingPeriods);
-        }
+    if (prepaid > 0 && !isBullet) {
+      const remainingPeriods = totalPeriods - periodNum;
+      if (remainingPeriods > 0) {
+        const balAfterPrepay = Math.max(0, planBalance - principalInPeriod);
+        baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingPeriods);
       }
-    } else if (s.ActualPaidPrincipal && s.ActualPaidPrincipal > 0) {
-      const recordedP = s.ActualPaidPrincipal + (s.PrepaidPrincipalAmount ?? 0);
-      principalInPeriod = Math.min(currentBalance, recordedP);
-    } else if (s.PrepaidPrincipalAmount && s.PrepaidPrincipalAmount > 0) {
-      const recordedP = expectedNormalPrincipal + s.PrepaidPrincipalAmount;
-      principalInPeriod = Math.min(currentBalance, recordedP);
-
-      const remainingUnpaidNonGrace = totalPeriods - periodNum;
-      if (remainingUnpaidNonGrace > 0) {
-        const balAfterPrepay = Math.max(0, currentBalance - recordedP);
-        baseMonthlyPrincipal = roundPrincipalCore(balAfterPrepay / remainingUnpaidNonGrace);
-      }
-    } else {
-      principalInPeriod = expectedNormalPrincipal;
     }
+
+    const collectedPrincipal = s.IsPaid
+      ? (s.ActualPaidPrincipal !== undefined && s.ActualPaidPrincipal !== null && s.ActualPaidPrincipal > 0
+          ? s.ActualPaidPrincipal + prepaid
+          : principalInPeriod)
+      : (s.ActualPaidPrincipal ?? 0) + prepaid;
 
     const overduePen = s.OverdueInterestAmount ?? 0;
     const totalObligation =
@@ -369,10 +364,30 @@ export function recalculateSchedules(
       TotalAmount: totalObligation,
     });
 
-    currentBalance = Math.max(0, currentBalance - principalInPeriod);
+    planBalance = Math.max(0, planBalance - principalInPeriod);
+    actualBalance = Math.max(0, actualBalance - Math.min(actualBalance, collectedPrincipal));
   }
 
   return result;
+}
+
+/**
+ * GỐC ĐÃ TRẢ của một kỳ.
+ *
+ * Ba khái niệm khác nhau, đừng gộp: `PrincipalAmount` là gốc PHẢI trả theo lịch
+ * (không đổi khi khách trả thiếu), `ActualPaidPrincipal` là gốc ĐÃ trả,
+ * `PrepaidPrincipalAmount` là gốc trả TRƯỚC HẠN để giảm kỳ sau.
+ *
+ * Dữ liệu cũ có kỳ đánh dấu đã thanh toán nhưng `ActualPaidPrincipal` bằng 0 —
+ * hiểu là đã trả đủ theo lịch. `PrincipalAmount` đã gồm gốc trả trước hạn của kỳ
+ * nên nhánh đó không cộng thêm lần nữa.
+ */
+export function paidPrincipalOf(s: RepaymentSchedule): number {
+  const paid = s.ActualPaidPrincipal ?? 0;
+  const prepaid = s.PrepaidPrincipalAmount ?? 0;
+  if (paid > 0) return paid + prepaid;
+  if (s.IsPaid) return s.PrincipalAmount || 0;
+  return prepaid;
 }
 
 export function computeOutstandingBalance(
@@ -384,13 +399,9 @@ export function computeOutstandingBalance(
     return contract.CurrentBalance ?? loanAmt;
   }
 
+  // Dư nợ giảm theo tiền GỐC ĐÃ THỰC THU, không theo gốc phải trả.
   let repaid = 0;
-  for (const s of schedules) {
-    if (s.IsPaid) {
-      repaid += s.PrincipalAmount || 0;
-    } else {
-      repaid += (s.ActualPaidPrincipal ?? 0) + (s.PrepaidPrincipalAmount ?? 0);
-    }
-  }
+  for (const s of schedules) repaid += paidPrincipalOf(s);
+
   return Math.max(0, loanAmt - repaid);
 }

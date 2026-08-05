@@ -9,8 +9,7 @@ import {
   addMonthsToDate, parseKunnTenorMonths, parseDateParts,
   generateSchedule, calculateOverdueDaysFromDates,
   getAutoDebtGroupInfo, recalculateSchedules, computeOutstandingBalance,
-  isBulletPrincipal, getDaysBetween
-} from '../../lib/loanMath';
+  isBulletPrincipal, getDaysBetween, paidPrincipalOf } from '../../lib/loanMath';
 import {
   buildContractRateTimeline, splitPeriodByRate, formatSegmentsLabel,
   type RateSegment,
@@ -756,7 +755,7 @@ export const LoanPortfolioView: React.FC = () => {
 
     const updated: RepaymentSchedule = {
       ...editingSchedule,
-      TotalAmount: (modalIsPaid ? actualPaidP : editingSchedule.PrincipalAmount) + (modalIsPaid ? actualPaidI : editingSchedule.InterestAmount) + overdueInterest,
+      TotalAmount: (editingSchedule.PrincipalAmount || 0) + (editingSchedule.InterestAmount || 0) + overdueInterest,
       IsPaid: modalIsPaid,
       PaymentDate: modalIsPaid ? modalPaymentDate : null,
       OverdueDays: overdueDays,
@@ -781,9 +780,7 @@ export const LoanPortfolioView: React.FC = () => {
 
       const autoInfo = getAutoDebtGroupInfo(refreshed);
 
-      const totalPaidP = refreshed.filter(x => x.IsPaid).reduce((sum, x) => sum + (x.ActualPaidPrincipal || x.PrincipalAmount || 0), 0);
-      const origLoan = selectedContract.LoanAmount || selectedContract.ContractAmount || 0;
-      const newBal = Math.max(0, origLoan - totalPaidP);
+      const newBal = computeOutstandingBalance(refreshed, selectedContract);
 
       await saveContractAPI({
         Id: selectedContract.Id,
@@ -1888,7 +1885,8 @@ export const LoanPortfolioView: React.FC = () => {
                             <th className="p-3 whitespace-nowrap">NGÀY ĐẾN HẠN</th>
                             <th className="p-3 text-center whitespace-nowrap text-purple-600 dark:text-purple-400">LÃI SUẤT ÁP DỤNG</th>
                             <th className="p-3 text-center whitespace-nowrap text-rose-500">SỐ NGÀY QUÁ HẠN</th>
-                            <th className="p-3 text-right whitespace-nowrap">GỐC</th>
+                            <th className="p-3 text-right whitespace-nowrap">GỐC PHẢI TRẢ</th>
+                            <th className="p-3 text-right whitespace-nowrap text-emerald-600 dark:text-emerald-400">GỐC ĐÃ TRẢ</th>
                             <th className="p-3 text-right whitespace-nowrap">LÃI THƯỜNG</th>
                             <th className="p-3 text-right whitespace-nowrap text-rose-500">LÃI PHẠT QUÁ HẠN</th>
                             <th className="p-3 text-right whitespace-nowrap">TỔNG NGHĨA VỤ TRẢ</th>
@@ -1899,9 +1897,9 @@ export const LoanPortfolioView: React.FC = () => {
                         </thead>
                         <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
                           {!selectedContract ? (
-                            <tr><td colSpan={11} className="text-center p-8 text-slate-400">Chọn một HĐTD để xem lịch thu nợ</td></tr>
+                            <tr><td colSpan={12} className="text-center p-8 text-slate-400">Chọn một HĐTD để xem lịch thu nợ</td></tr>
                           ) : schedules.length === 0 ? (
-                            <tr><td colSpan={11} className="text-center p-8 text-slate-400">
+                            <tr><td colSpan={12} className="text-center p-8 text-slate-400">
                               Chưa có lịch thu nợ. Nhấn "TẠO LỊCH THU NỢ TỰ ĐỘNG" để tính toán.
                             </td></tr>
                           ) : schedules.map(s => {
@@ -1968,9 +1966,31 @@ export const LoanPortfolioView: React.FC = () => {
                                   {(s.PrincipalAmount || 0).toLocaleString('vi-VN')}
                                   {s.PrepaidPrincipalAmount ? (
                                     <div className="text-[10px] text-amber-600 dark:text-amber-400">
-                                      +Trả trước: {s.PrepaidPrincipalAmount.toLocaleString('vi-VN')}
+                                      gồm trả trước hạn {s.PrepaidPrincipalAmount.toLocaleString('vi-VN')}
                                     </div>
                                   ) : null}
+                                </td>
+                                <td className="p-3 text-right font-mono font-bold">
+                                  {(() => {
+                                    const phaiTra = s.PrincipalAmount || 0;
+                                    const daTra = paidPrincipalOf(s);
+                                    if (daTra === 0) {
+                                      return <span className="text-slate-400 font-normal">—</span>;
+                                    }
+                                    const thieu = phaiTra - daTra;
+                                    return (
+                                      <>
+                                        <span className="text-emerald-600 dark:text-emerald-400">
+                                          {daTra.toLocaleString('vi-VN')}
+                                        </span>
+                                        {thieu > 0 && (
+                                          <div className="text-[10px] text-rose-600 dark:text-rose-400 font-normal">
+                                            còn thiếu {thieu.toLocaleString('vi-VN')}
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
                                 </td>
                                 <td className="p-3 text-right text-amber-600 dark:text-amber-400 font-mono font-bold">{(s.InterestAmount || 0).toLocaleString('vi-VN')}</td>
                                 <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono font-bold">
@@ -2018,6 +2038,9 @@ export const LoanPortfolioView: React.FC = () => {
                               <td className="p-3 text-center" colSpan={4}>TỔNG CỘNG LỊCH THU NỢ</td>
                               <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono">
                                 {schedules.reduce((a, s) => a + (s.PrincipalAmount || 0), 0).toLocaleString('vi-VN')}
+                              </td>
+                              <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-mono">
+                                {schedules.reduce((a, s) => a + paidPrincipalOf(s), 0).toLocaleString('vi-VN')}
                               </td>
                               <td className="p-3 text-right text-amber-600 dark:text-amber-400 font-mono">
                                 {schedules.reduce((a, s) => a + (s.InterestAmount || 0), 0).toLocaleString('vi-VN')}

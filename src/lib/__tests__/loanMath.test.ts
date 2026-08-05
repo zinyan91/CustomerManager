@@ -427,12 +427,22 @@ describe('recalculateSchedules', () => {
     }
   });
 
-  it('giữ nguyên số thực thu của kỳ đã thanh toán', () => {
+  it('kỳ đã thanh toán: gốc phải trả giữ theo lịch, số thực thu ghi riêng', () => {
     const l = lich(11);
     l[0] = { ...l[0], IsPaid: true, ActualPaidPrincipal: 20_000_000, ActualPaidInterest: 999_000 };
     const r = recalculateSchedules(l, hopDong);
-    expect(r[0].PrincipalAmount).toBe(20_000_000);
-    expect(r[0].TotalAmount).toBe(20_000_000 + 999_000);
+
+    expect(r[0].PrincipalAmount).toBe(10_910_000);
+    expect(r[0].ActualPaidPrincipal).toBe(20_000_000);
+    expect(r[0].TotalAmount).toBe(10_910_000 + 999_000);
+  });
+
+  it('khách trả vượt gốc của kỳ thì dư nợ giảm theo số thực thu', () => {
+    const l = lich(11);
+    l[0] = { ...l[0], IsPaid: true, ActualPaidPrincipal: 20_000_000 };
+    const r = recalculateSchedules(l, hopDong);
+
+    expect(computeOutstandingBalance(r, hopDong)).toBe(120_000_000 - 20_000_000);
   });
 
   it('trả trước hạn làm GIẢM gốc phải trả các kỳ sau', () => {
@@ -612,5 +622,81 @@ describe('computeOutstandingBalance', () => {
     expect(computeOutstandingBalance(
       [ky({ IsPaid: true, PrincipalAmount: 500_000_000 })], hd
     )).toBe(0);
+  });
+});
+
+describe('tách gốc phải trả, gốc đã trả và gốc trả trước hạn', () => {
+  const hopDong = {
+    Id: 1, CustomerId: 1, ContractNumber: 'PNAT.CN.01181023/GNN-02', ContractType: 1,
+    LoanAmount: 550_000_000, InterestRate: 0.09,
+    PrincipalRepaymentMethod: 'Trả đều hàng tháng',
+    DisbursementDate: '2023-10-19',
+  } as any;
+
+  const lich = (n = 120) => Array.from({ length: n }, (_, i) => ({
+    Id: i + 1, ContractId: 1, PeriodNumber: i + 1,
+    DueDate: `${2023 + Math.floor((i + 10) / 12)}-${String(((i + 10) % 12) + 1).padStart(2, '0')}-15`,
+    PrincipalAmount: 0, InterestAmount: 0, TotalAmount: 0,
+    IsPaid: i < 10,
+  } as RepaymentSchedule));
+
+  it('khách trả thiếu ở một kỳ thì GỐC PHẢI TRẢ của kỳ đó không đổi', () => {
+    const l = lich();
+    l[10] = { ...l[10], ActualPaidPrincipal: 2_592, IsPaid: false };
+    const r = recalculateSchedules(l, hopDong);
+
+    expect(r[10].PrincipalAmount).toBe(4_590_000);
+    expect(r[10].ActualPaidPrincipal).toBe(2_592);
+  });
+
+  it('trả thiếu KHÔNG làm đổi gốc phải trả của các kỳ sau', () => {
+    const l = lich();
+    l[10] = { ...l[10], ActualPaidPrincipal: 2_592, IsPaid: false };
+    const r = recalculateSchedules(l, hopDong);
+
+    expect(r[11].PrincipalAmount).toBe(4_590_000);
+    expect(r[50].PrincipalAmount).toBe(4_590_000);
+  });
+
+  it('BẤT BIẾN: tổng GỐC PHẢI TRẢ vẫn bằng số tiền vay dù có trả thiếu', () => {
+    const l = lich();
+    l[10] = { ...l[10], ActualPaidPrincipal: 2_592, IsPaid: false };
+    l[11] = { ...l[11], ActualPaidPrincipal: 1_000_000, IsPaid: false };
+    const r = recalculateSchedules(l, hopDong);
+
+    expect(r.reduce((s, k) => s + (k.PrincipalAmount || 0), 0)).toBe(550_000_000);
+  });
+
+  it('dư nợ tính theo GỐC ĐÃ TRẢ, không theo gốc phải trả', () => {
+    const l = lich();
+    l[10] = { ...l[10], ActualPaidPrincipal: 2_592, IsPaid: false };
+    const r = recalculateSchedules(l, hopDong);
+
+    const daTra = 10 * 4_590_000 + 2_592;
+    expect(computeOutstandingBalance(r, hopDong)).toBe(550_000_000 - daTra);
+  });
+
+  it('gốc trả trước hạn thì GIẢM gốc phải trả các kỳ còn lại', () => {
+    const l = lich();
+    l[10] = { ...l[10], PrepaidPrincipalAmount: 100_000_000, ActualPaidPrincipal: 4_590_000, IsPaid: true };
+    const r = recalculateSchedules(l, hopDong);
+
+    expect(r[11].PrincipalAmount).toBeLessThan(4_590_000);
+    expect(r.reduce((s, k) => s + (k.PrincipalAmount || 0), 0)).toBe(550_000_000);
+  });
+
+  it('kỳ đã tất toán mà không khai gốc đã trả thì lấy gốc phải trả', () => {
+    const r = recalculateSchedules(lich(), hopDong);
+    expect(computeOutstandingBalance(r, hopDong)).toBe(550_000_000 - 10 * 4_590_000);
+  });
+
+  it('tổng nghĩa vụ trả là gốc phải trả + lãi + lãi phạt, không phải số đã thu', () => {
+    const l = lich();
+    l[10] = { ...l[10], ActualPaidPrincipal: 2_592, IsPaid: false, OverdueInterestAmount: 1_168_166 };
+    const r = recalculateSchedules(l, hopDong);
+
+    expect(r[10].TotalAmount).toBe(
+      (r[10].PrincipalAmount || 0) + (r[10].InterestAmount || 0) + 1_168_166
+    );
   });
 });

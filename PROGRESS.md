@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 05/08/2026 (chiều)
+Cập nhật: 05/08/2026 (cuối ngày)
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -49,6 +49,9 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Báo động giả khi so mức cấp gốc với TSĐB ở vay từng lần | Vay từng lần phải đối chiếu theo **dư nợ hiện hữu**; hạn mức tín dụng mới đối chiếu theo mức cấp |
 | ✅ | Biên độ âm bị bỏ mất, khoản vay tính lãi cao hơn hợp đồng | `toPercent` trả 0 cho mọi số âm. Biên độ là số duy nhất trong dòng thời gian lãi suất được phép âm (lãi sau ưu đãi chào dưới lãi cơ sở) |
 | ✅ | Lãi thả nổi ra 0% bị hiểu là "chưa khai" rồi nhận mặc định 8,5%/năm | Hệ quả của lỗi trên: biên độ âm lớn hơn lãi cơ sở → kẹp về 0 → mất hẳn liên hệ với hợp đồng. Tách `{ value, configured }`; 0% là con số hợp lệ |
+| ✅ | Kỳ trả nợ cuối cùng không rơi vào ngày đáo hạn | GNN ghi "kỳ cuối trả vào ngày đáo hạn". Lịch cộng dồn theo kỳ nên kỳ cuối rơi trước đáo hạn khi ngày trả nợ đầu tiên khác giải ngân + 1 tháng |
+| ✅ | Kỳ trả nợ đầu tiên rơi TRƯỚC ngày giải ngân | 5 KUNN của NGÔ NHỊ ĐẠT dùng chung mốc 15/04/2026 của hợp đồng hạn mức. Tính lãi cho quãng tiền chưa ra khỏi ngân hàng; hàm đếm ngày chặn số âm về 1 nên kỳ 1 chỉ ra 1 ngày lãi |
+| ✅ | Trắng trang tab KUNN khi chọn khách hàng | `getEffectiveBalanceForContract` gọi `kunnSettled` khai sau nó; `limitGroups` gọi lúc render nên ném ReferenceError. Build, lint và 668 test đều xanh — lỗi runtime trong component |
 | ✅ | Gốc mỗi kỳ lệch chứng từ vì làm tròn bước 1.000đ | GNN thật ghi 4.170.000đ/kỳ (500tr/120 làm tròn lên bước **10.000**), hệ thống cho 4.167.000đ. Gom về `PRINCIPAL_ROUND_MODE`, đã chạy migration 18 sửa dữ liệu cũ |
 | ✅ | Định giá hết hiệu lực vẫn được tính vào khả năng bảo đảm | Định giá chỉ có hiệu lực 6/12/24 tháng; hết hạn thì khả năng bảo đảm bằng 0 và báo cần định giá lại |
 
@@ -86,7 +89,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
 | ✅ | Tách logic tài chính ra `src/lib/` dạng hàm thuần | Công cụ 1 bóc thêm `buildLoanSchedule` (calcMath), `scheduleDocHtml`, `printHtmlDoc` — component chỉ còn JSX |
-| ✅ | 635 test cho logic tính tiền | `src/lib/__tests__/`. Bất biến Σ(gốc) = số tiền vay được khoá ở mọi tổ hợp: ân hạn, gốc cuối kỳ, nhiều lần trả trước hạn, rút ngắn kỳ hạn, lùi ngày trả nợ |
+| ✅ | 668 test cho logic tính tiền | `src/lib/__tests__/`. Bất biến Σ(gốc) = số tiền vay được khoá ở mọi tổ hợp: ân hạn, gốc cuối kỳ, nhiều lần trả trước hạn, rút ngắn kỳ hạn, lùi ngày trả nợ |
 | ✅ | Gom kiến thức vào `CONVENTIONS.md` và skill `tin-dung` | Mã nguồn không còn chú thích |
 | ✅ | Viết lại `README.md` và `web_migration_plan.md` khớp thực tế | |
 | 🔄 | Tách nhỏ `LoanPortfolioView` | Còn khoảng 2.200 dòng. Đã bóc hết logic tài chính; phần còn lại là JSX |
@@ -94,6 +97,19 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ⬜ | Đồng bộ realtime, bộ nhớ đệm client | Có trong kế hoạch ban đầu, chưa làm |
 | ⬜ | Tên miền riêng | |
 
+
+## ⚠️ Đang dở — đọc trước khi làm tiếp phần lịch trả nợ
+
+Đợt rà soát 05/08/2026 trên dữ liệu thật còn hai việc **chờ quyết định nghiệp vụ**,
+chưa có câu trả lời thì **đừng viết script sinh lại lịch**:
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ⚠️ | Ngày thu lãi hàng tháng của hợp đồng hạn mức | Ngày 15, hay ngày giải ngân của từng KUNN? Toàn bộ dữ liệu đang dùng ngày 15, nhưng chính khung ngày 15 dùng chung sinh ra lỗi kỳ đầu trước ngày giải ngân |
+| ⚠️ | Xử lý 21,7 triệu đã thu vượt của NGÔ NHỊ ĐẠT | Hoàn, cấn trừ, hay ghi nhận điều chỉnh. Sinh lại lịch sẽ ghi đè các kỳ đã thanh toán nên phải chốt trước |
+| ⬜ | Đối chiếu `KunnTenor` nhóm hạn mức với GNN giấy | Gần cả nhóm khai 5 tháng; GNN của ĐOÀN THỊ TUYỂN ghi 06 tháng, đáo hạn 23/10/2026 thay vì 23/09/2026 đang lưu. Ngày đáo hạn là dữ liệu gốc, sai nó thì sinh lại lịch vẫn sai |
+| ⬜ | Số hiệu KUNN trùng nhau | 1027 & 1068; 1036–1038; 1005–1007 (ba dòng thiếu cả phần `/GNN-`). Làm hàm sinh số KUNN tiếp theo tính sai |
+| ⬜ | Đổi `HdtdDueDate` từ `timestamptz` sang `date` | Mọi cột ngày khác đều là `date`. Lệch múi giờ đủ để xếp sai một hạn mức vào nhóm hết hiệu lực |
 
 ## Cần kiểm thử trên giao diện
 

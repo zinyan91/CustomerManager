@@ -2,7 +2,7 @@ import React from 'react';
 import { DateInput } from '../DateInput';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../lib/documentOptions';
 import type { DepositContractData } from './depositContract';
-import type { ThemeStyles } from '../../lib/themeStyles';
+import type { UiClasses } from '../../lib/uiClasses';
 import type { TemplateType } from './TemplateSelector';
 import { Plus, Trash2 } from 'lucide-react';
 
@@ -32,7 +32,7 @@ export interface PaymentStageItem {
 }
 
 interface DocumentFormProps {
-  styles: ThemeStyles;
+  styles: UiClasses;
   selectedTemplate: TemplateType;
 
   mbContractDate: string; setMbContractDate: (v: string) => void;
@@ -199,8 +199,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
       heading: string,
       colour: string
     ) => (
-      <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-        <div className={`font-bold ${colour} text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800`}>{heading}</div>
+      <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+        <div className={`font-bold ${colour} text-xs uppercase border-b pb-1 border-line`}>{heading}</div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div>
             <label className={`block mb-1 ${styles.labelStyle}`}>Xưng hô</label>
@@ -225,17 +225,17 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
 
     return (
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
-        <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
-          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
+        <div className="flex items-center justify-between border-b pb-2 border-line">
+          <div className="font-bold text-accent uppercase tracking-wider text-sm">
             THÔNG TIN HỢP ĐỒNG ĐẶT CỌC
           </div>
         </div>
 
-        {partyBlock('buyer', 'BÊN MUA (BÊN A)', 'text-sky-500')}
-        {partyBlock('seller', 'BÊN BÁN (BÊN B)', 'text-emerald-500')}
+        {partyBlock('buyer', 'BÊN MUA (BÊN A)', 'text-accent')}
+        {partyBlock('seller', 'BÊN BÁN (BÊN B)', 'text-pos')}
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THÔNG TIN THỬA ĐẤT</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-warn text-xs uppercase border-b pb-1 border-line">THÔNG TIN THỬA ĐẤT</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <Text label="Thửa đất số" field="parcelNo" mono />
             <Text label="Tờ bản đồ số" field="mapSheetNo" mono />
@@ -253,8 +253,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           <Text label="Cơ quan cấp GCN" field="certificateIssuer" />
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-purple-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">GIÁ CẢ &amp; THANH TOÁN</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-accent text-xs uppercase border-b pb-1 border-line">GIÁ CẢ &amp; THANH TOÁN</div>
           <Text label="Giá chuyển nhượng (VNĐ)" field="transferPrice" mono />
           <Text label="Đặt cọc lần 1 (VNĐ)" field="deposit1" mono />
           <Text label="Thanh toán lần 2 (VNĐ)" field="payment2" mono />
@@ -276,8 +276,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-slate-400 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">KÝ KẾT</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-ink-faint text-xs uppercase border-b pb-1 border-line">KÝ KẾT</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <Text label="Địa điểm ký" field="signPlace" />
             <div>
@@ -293,14 +293,14 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
   if (selectedTemplate === 'lease_mb' || selectedTemplate === 'lease_house') {
     return (
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
-        <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
-          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
+        <div className="flex items-center justify-between border-b pb-2 border-line">
+          <div className="font-bold text-accent uppercase tracking-wider text-sm">
             THÔNG TIN HỢP ĐỒNG THUÊ MẶT BẰNG / NHÀ Ở
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN A (CHO THUÊ)</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-accent text-xs uppercase border-b pb-1 border-line">BÊN A (CHO THUÊ)</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Họ và tên Bên A</label>
@@ -321,8 +321,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN B (BÊN THUÊ)</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-pos text-xs uppercase border-b pb-1 border-line">BÊN B (BÊN THUÊ)</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Họ và tên Bên B</label>
@@ -343,8 +343,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THÔNG TIN MẶT BẰNG & GIÁ THUÊ</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-warn text-xs uppercase border-b pb-1 border-line">THÔNG TIN MẶT BẰNG & GIÁ THUÊ</div>
           <div>
             <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ mặt bằng cho thuê</label>
             <input type="text" value={mbLocation} onChange={e => setMbLocation(e.target.value)} className={`w-full rounded-xl p-2 ${styles.inputStyle}`} />
@@ -363,18 +363,18 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
             </div>
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Giá thuê / tháng (VNĐ)</label>
-              <input type="text" value={mbMonthlyPrice} onChange={e => setMbMonthlyPrice(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.inputStyle}`} />
+              <input type="text" value={mbMonthlyPrice} onChange={e => setMbMonthlyPrice(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-accent ${styles.inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Tiền đặt cọc (VNĐ)</label>
-              <input type="text" value={mbDepositAmount} onChange={e => setMbDepositAmount(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${styles.inputStyle}`} />
+              <input type="text" value={mbDepositAmount} onChange={e => setMbDepositAmount(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-pos ${styles.inputStyle}`} />
             </div>
           </div>
         </div>
 
         {selectedTemplate === 'lease_house' && (
-          <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-            <div className="font-bold text-purple-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">
+          <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+            <div className="font-bold text-accent text-xs uppercase border-b pb-1 border-line">
               THÔNG TIN NHÀ Ở &amp; THANH TOÁN
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -408,14 +408,14 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
   if (selectedTemplate === 'construction') {
     return (
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
-        <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
-          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
+        <div className="flex items-center justify-between border-b pb-2 border-line">
+          <div className="font-bold text-accent uppercase tracking-wider text-sm">
             THÔNG TIN HỢP ĐỒNG THI CÔNG NHÀ Ở DÂN DỤNG
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN A (CHỦ ĐẦU TƯ)</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-accent text-xs uppercase border-b pb-1 border-line">BÊN A (CHỦ ĐẦU TƯ)</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Chủ Đầu Tư</label>
@@ -432,8 +432,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN B (NHÀ THẦU THI CÔNG)</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-pos text-xs uppercase border-b pb-1 border-line">BÊN B (NHÀ THẦU THI CÔNG)</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Đại Diện Bên B</label>
@@ -450,8 +450,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THỜI GIAN THI CÔNG & TIẾN ĐỘ THANH TOÁN</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-warn text-xs uppercase border-b pb-1 border-line">THỜI GIAN THI CÔNG & TIẾN ĐỘ THANH TOÁN</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Ngày ký HĐ</label>
@@ -469,15 +469,15 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Tổng giá trị (VNĐ)</label>
-              <input type="text" value={constTotalPrice} onChange={e => setConstTotalPrice(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.inputStyle}`} />
+              <input type="text" value={constTotalPrice} onChange={e => setConstTotalPrice(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-accent ${styles.inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Đặt cọc Đợt 1 (VNĐ)</label>
-              <input type="text" value={constDepositStage1} onChange={e => setConstDepositStage1(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${styles.inputStyle}`} />
+              <input type="text" value={constDepositStage1} onChange={e => setConstDepositStage1(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-pos ${styles.inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Thanh toán Đợt 2 (VNĐ)</label>
-              <input type="text" value={constStage2Amount} onChange={e => setConstStage2Amount(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-purple-600 dark:text-purple-400 ${styles.inputStyle}`} />
+              <input type="text" value={constStage2Amount} onChange={e => setConstStage2Amount(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-accent ${styles.inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Thời gian bảo hành (tháng)</label>
@@ -492,14 +492,14 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
   if (selectedTemplate === 'const_estimate') {
     return (
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
-        <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
-          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
+        <div className="flex items-center justify-between border-b pb-2 border-line">
+          <div className="font-bold text-accent uppercase tracking-wider text-sm">
             BẢNG DỰ TOÁN HẠNG MỤC CÔNG VIỆC THI CÔNG
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THÔNG TIN CÔNG TRÌNH</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-accent text-xs uppercase border-b pb-1 border-line">THÔNG TIN CÔNG TRÌNH</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Chủ Đầu Tư (Bên A)</label>
@@ -516,10 +516,10 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        <div className="border rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
-          <div className="p-2.5 bg-slate-100 dark:bg-slate-900 font-bold flex items-center justify-between">
+        <div className="border rounded-xl overflow-hidden border-line">
+          <div className="p-2.5 bg-panel-muted font-bold flex items-center justify-between">
             <span>DANH MỤC HẠNG MỤC DỰ TOÁN ({constItems.length} HẠNG MỤC)</span>
-            <button type="button" onClick={handleAddConstItem} className="flex items-center space-x-1 bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded-lg text-xs">
+            <button type="button" onClick={handleAddConstItem} className="flex items-center space-x-1 bg-accent hover:opacity-90 text-accent-ink px-3 py-1 rounded-lg text-xs">
               <Plus className="w-3.5 h-3.5" />
               <span>Thêm hạng mục</span>
             </button>
@@ -538,7 +538,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                   <th className="p-2 text-center">XÓA</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-line">
                 {constItems.map((item, idx) => (
                   <tr key={item.id}>
                     <td className="p-2 text-center font-bold">{idx + 1}</td>
@@ -562,7 +562,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                         const next = [...constItems]; next[idx].price = Number(e.target.value) || 0; setConstItems(next);
                       }} className={`w-24 rounded-lg p-1 text-right font-mono ${styles.inputStyle}`} />
                     </td>
-                    <td className="p-2 text-right font-mono font-bold text-sky-600 dark:text-sky-400">
+                    <td className="p-2 text-right font-mono font-bold text-accent">
                       {(item.quantity * item.price).toLocaleString('vi-VN')}
                     </td>
                     <td className="p-2">
@@ -571,7 +571,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                       }} className={`w-full rounded-lg p-1 ${styles.inputStyle}`} />
                     </td>
                     <td className="p-2 text-center">
-                      <button type="button" onClick={() => setConstItems(constItems.filter(i => i.id !== item.id))} className="text-rose-500 hover:text-rose-700">
+                      <button type="button" onClick={() => setConstItems(constItems.filter(i => i.id !== item.id))} className="text-neg hover:text-neg">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
@@ -588,14 +588,14 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
   if (selectedTemplate === 'sale_contract') {
     return (
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
-        <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
-          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
+        <div className="flex items-center justify-between border-b pb-2 border-line">
+          <div className="font-bold text-accent uppercase tracking-wider text-sm">
             THÔNG TIN HỢP ĐỒNG MUA BÁN HÀNG HÓA & DANH MỤC SẢN PHẨM
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN MUA (BÊN A)</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-accent text-xs uppercase border-b pb-1 border-line">BÊN MUA (BÊN A)</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Bên Mua</label>
@@ -608,8 +608,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-emerald-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">BÊN BÁN (BÊN B)</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-pos text-xs uppercase border-b pb-1 border-line">BÊN BÁN (BÊN B)</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Họ tên Bên Bán</label>
@@ -631,8 +631,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
             </select>
           </div>
 
-          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2.5">
-            <div className="font-bold text-amber-500 text-[11px] uppercase">HÌNH THỨC NHẬN THANH TOÁN CỦA BÊN BÁN</div>
+          <div className="pt-2 border-t border-line space-y-2.5">
+            <div className="font-bold text-warn text-[11px] uppercase">HÌNH THỨC NHẬN THANH TOÁN CỦA BÊN BÁN</div>
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center space-x-1.5 cursor-pointer">
                 <input
@@ -660,7 +660,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                 </div>
                 <div>
                   <label className={`block mb-1 ${styles.labelStyle}`}>Số tài khoản (STK)</label>
-                  <input type="text" value={saleBankAccNo} onChange={e => setSaleBankAccNo(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.inputStyle}`} />
+                  <input type="text" value={saleBankAccNo} onChange={e => setSaleBankAccNo(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-accent ${styles.inputStyle}`} />
                 </div>
                 <div>
                   <label className={`block mb-1 ${styles.labelStyle}`}>Ngân hàng</label>
@@ -677,8 +677,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-amber-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">THỜI GIAN & TIẾN ĐỘ THANH TOÁN</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-warn text-xs uppercase border-b pb-1 border-line">THỜI GIAN & TIẾN ĐỘ THANH TOÁN</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Ngày ký HĐ</label>
@@ -694,15 +694,15 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
             </div>
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Đặt cọc Đợt 1 (VNĐ)</label>
-              <input type="text" value={salePaymentStage1} onChange={e => setSalePaymentStage1(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${styles.inputStyle}`} />
+              <input type="text" value={salePaymentStage1} onChange={e => setSalePaymentStage1(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-pos ${styles.inputStyle}`} />
             </div>
           </div>
         </div>
 
-        <div className="border rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
-          <div className="p-2.5 bg-slate-100 dark:bg-slate-900 font-bold flex items-center justify-between">
+        <div className="border rounded-xl overflow-hidden border-line">
+          <div className="p-2.5 bg-panel-muted font-bold flex items-center justify-between">
             <span>DANH MỤC MẶT HÀNG MUA BÁN ({saleItems.length} SẢN PHẨM)</span>
-            <button type="button" onClick={handleAddSaleItem} className="flex items-center space-x-1 bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded-lg text-xs">
+            <button type="button" onClick={handleAddSaleItem} className="flex items-center space-x-1 bg-accent hover:opacity-90 text-accent-ink px-3 py-1 rounded-lg text-xs">
               <Plus className="w-3.5 h-3.5" />
               <span>Thêm mặt hàng</span>
             </button>
@@ -720,7 +720,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                   <th className="p-2 text-center">XÓA</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-line">
                 {saleItems.map((item, idx) => (
                   <tr key={item.id}>
                     <td className="p-2 text-center font-bold">{idx + 1}</td>
@@ -744,11 +744,11 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                         const next = [...saleItems]; next[idx].price = Number(e.target.value) || 0; setSaleItems(next);
                       }} className={`w-28 rounded-lg p-1 text-right font-mono ${styles.inputStyle}`} />
                     </td>
-                    <td className="p-2 text-right font-mono font-bold text-sky-600 dark:text-sky-400">
+                    <td className="p-2 text-right font-mono font-bold text-accent">
                       {(item.quantity * item.price).toLocaleString('vi-VN')}
                     </td>
                     <td className="p-2 text-center">
-                      <button type="button" onClick={() => setSaleItems(saleItems.filter(i => i.id !== item.id))} className="text-rose-500 hover:text-rose-700">
+                      <button type="button" onClick={() => setSaleItems(saleItems.filter(i => i.id !== item.id))} className="text-neg hover:text-neg">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
@@ -769,14 +769,14 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
 
     return (
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
-        <div className="flex items-center justify-between border-b pb-2 border-slate-200 dark:border-slate-800">
-          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm">
+        <div className="flex items-center justify-between border-b pb-2 border-line">
+          <div className="font-bold text-accent uppercase tracking-wider text-sm">
             THÔNG TIN GIẤY ĐỀ NGHỊ THANH TOÁN ({isSale ? 'HĐ MUA BÁN HÀNG HÓA' : 'HĐ THI CÔNG NHÀ Ở'})
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-sky-500 text-xs uppercase border-b pb-1 border-slate-200 dark:border-slate-800">NGƯỜI NHẬN ĐỀ NGHỊ & HỢP ĐỒNG CĂN CỨ</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-accent text-xs uppercase border-b pb-1 border-line">NGƯỜI NHẬN ĐỀ NGHỊ & HỢP ĐỒNG CĂN CỨ</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Kính gửi (Người nhận thanh toán)</label>
@@ -793,8 +793,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20 space-y-3">
-          <div className="font-bold text-amber-600 dark:text-amber-400 text-xs uppercase border-b pb-1 border-amber-200 dark:border-amber-900/40 flex items-center justify-between">
+        <div className="p-3.5 rounded-xl border border-warn/30  bg-warn-soft  space-y-3">
+          <div className="font-bold text-warn text-xs uppercase border-b pb-1 border-warn/30  flex items-center justify-between">
             <span>THÔNG TIN BÊN BÁN / BÊN ĐỀ NGHỊ THANH TOÁN (2 PHƯƠNG THỨC)</span>
           </div>
 
@@ -806,7 +806,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                 value="cash"
                 checked={payMethodType === 'cash'}
                 onChange={() => setPayMethodType && setPayMethodType('cash')}
-                className="w-4 h-4 text-sky-600"
+                className="w-4 h-4 text-accent"
               />
               <span>💵 1. Thanh toán Tiền Mặt</span>
             </label>
@@ -817,15 +817,15 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                 value="transfer"
                 checked={payMethodType === 'transfer'}
                 onChange={() => setPayMethodType && setPayMethodType('transfer')}
-                className="w-4 h-4 text-sky-600"
+                className="w-4 h-4 text-accent"
               />
               <span>🏦 2. Thanh toán Chuyển Khoản</span>
             </label>
           </div>
 
           {payMethodType === 'cash' ? (
-            <div className="space-y-2 pt-2 border-t border-amber-200 dark:border-amber-900/40">
-              <div className="text-[11px] text-amber-700 dark:text-amber-300 italic">
+            <div className="space-y-2 pt-2 border-t border-warn/30 ">
+              <div className="text-[11px] text-warn italic">
                 💡 Thông tin tiền mặt hiển thị trên biểu mẫu (mỗi thông tin 1 dòng): Họ tên, CCCD số, Ngày cấp, Nơi cấp.
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -850,8 +850,8 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
               </div>
             </div>
           ) : (
-            <div className="space-y-2 pt-2 border-t border-amber-200 dark:border-amber-900/40">
-              <div className="text-[11px] text-amber-700 dark:text-amber-300 italic">
+            <div className="space-y-2 pt-2 border-t border-warn/30 ">
+              <div className="text-[11px] text-warn italic">
                 💡 Thông tin chuyển khoản hiển thị trên biểu mẫu (mỗi thông tin 1 dòng): Họ tên chủ tài khoản, Số tài khoản, Ngân hàng, Chi nhánh.
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -861,7 +861,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                 </div>
                 <div>
                   <label className={`block mb-1 ${styles.labelStyle}`}>Số tài khoản (STK)</label>
-                  <input type="text" value={payBankAccNo || ''} onChange={e => setPayBankAccNo && setPayBankAccNo(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 ${styles.inputStyle}`} />
+                  <input type="text" value={payBankAccNo || ''} onChange={e => setPayBankAccNo && setPayBankAccNo(e.target.value)} className={`w-full rounded-xl p-2 font-mono font-bold text-accent ${styles.inputStyle}`} />
                 </div>
                 <div>
                   <label className={`block mb-1 ${styles.labelStyle}`}>Ngân hàng</label>
@@ -878,10 +878,10 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
           )}
         </div>
 
-        <div className="border rounded-xl overflow-hidden border-slate-200 dark:border-slate-800">
-          <div className="p-2.5 bg-slate-100 dark:bg-slate-900 font-bold flex items-center justify-between">
+        <div className="border rounded-xl overflow-hidden border-line">
+          <div className="p-2.5 bg-panel-muted font-bold flex items-center justify-between">
             <span>DANH SÁCH CÁC ĐỢT THANH TOÁN (THANH TOÁN NHIỀU ĐỢT)</span>
-            <button type="button" onClick={handleAddPayStage} className="flex items-center space-x-1 bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded-lg text-xs">
+            <button type="button" onClick={handleAddPayStage} className="flex items-center space-x-1 bg-accent hover:opacity-90 text-accent-ink px-3 py-1 rounded-lg text-xs">
               <Plus className="w-3.5 h-3.5" />
               <span>+ Thêm đợt thanh toán</span>
             </button>
@@ -898,7 +898,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                   <th className="p-2 text-center">XÓA</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-line">
                 {(payStages || []).map((stage, idx) => (
                   <tr key={stage.id}>
                     <td className="p-2 text-center font-bold">{idx + 1}</td>
@@ -935,7 +935,7 @@ export const DocumentForm: React.FC<DocumentFormProps> = ({
                       <button type="button" onClick={() => {
                         if (!setPayStages || !payStages) return;
                         setPayStages(payStages.filter(s => s.id !== stage.id));
-                      }} className="text-rose-500 hover:text-rose-700">
+                      }} className="text-neg hover:text-neg">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>

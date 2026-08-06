@@ -1,39 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
 import { fmtDate, fmtMoney, fmtRate } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import {
   paidPrincipalOf, computeSchedulePenalty, isScheduleFullySettled, schedulePaymentStatus,
 } from '../../lib/loanMath';
-import { formatSegmentsLabel, type RateSegment } from '../../lib/rateResolution';
 import { PeriodDetailCard } from './PeriodDetailCard';
+import { useLang } from '../../context/LanguageContext';
+
+type Density = 'cozy' | 'compact';
 
 interface ScheduleTabProps {
-  isLight: boolean;
-  containerCardBg: string;
-  tableHeaderStyle: string;
-  tableRowHover: string;
   contracts: LoanContract[];
   selectedContract: LoanContract | null;
   handleSelectContract: (c: LoanContract) => void;
   schedules: RepaymentSchedule[];
-  allSchedulesMap: Record<number, RepaymentSchedule[]>;
-  periodRateSegments: Record<number, RateSegment[]>;
   openPaymentModal: (s: RepaymentSchedule) => void;
 }
 
-export const ScheduleTab: React.FC<ScheduleTabProps> = ({
-  isLight, containerCardBg, tableHeaderStyle, tableRowHover,
-  contracts, selectedContract, handleSelectContract,
-  schedules, allSchedulesMap, periodRateSegments, openPaymentModal,
-}) => {
-  const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null);
+const DENSITY_KEY = 'schedule_density';
 
-  // Auto-select initial schedule period when contract or schedules change
+const num = (v: number) => (v > 0 ? v.toLocaleString('vi-VN') : '–');
+
+export const ScheduleTab: React.FC<ScheduleTabProps> = ({
+  contracts, selectedContract, handleSelectContract, schedules, openPaymentModal,
+}) => {
+  const { t } = useLang();
+  const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null);
+  const [density, setDensity] = useState<Density>(
+    () => (localStorage.getItem(DENSITY_KEY) === 'compact' ? 'compact' : 'cozy')
+  );
+
+  useEffect(() => {
+    localStorage.setItem(DENSITY_KEY, density);
+  }, [density]);
+
   useEffect(() => {
     if (schedules && schedules.length > 0) {
-      // Prefer selecting first overdue schedule, or first unpaid, or first overall
       const overdueOrUnpaid = schedules.find(s => !isScheduleFullySettled(s)) || schedules[0];
       setSelectedScheduleId(overdueOrUnpaid.Id);
     } else {
@@ -50,85 +53,113 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
   };
 
   const totalPenaltySum = schedules.reduce((a, s) => a + getPenaltyForSchedule(s), 0);
-
   const selectedScheduleObj = schedules.find(s => s.Id === selectedScheduleId) || null;
+  const settledCount = schedules.filter(isScheduleFullySettled).length;
+
+  const cell = 'px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap';
+  const headCell = 'px-[var(--row-px)] py-2 text-[10px] font-semibold uppercase tracking-[0.09em] text-ink-faint whitespace-nowrap';
 
   return (
-    <div className="space-y-4">
-      {/* Contract Selection Box */}
-      <div className={`${containerCardBg} rounded-2xl p-4 border`}>
-        <div className="font-bold mb-3 flex items-center space-x-2 text-xs">
-          <Calendar className="w-4 h-4 text-sky-500" />
-          <span>CHỌN HỢP ĐỒNG TÍN DỤNG ĐỂ XEM / TẠO LỊCH THU NỢ</span>
+    <div className="space-y-3" data-density={density}>
+      <div className="bg-panel border border-line rounded-lg p-4">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2.5">
+          {t('schedule.contracts')}
         </div>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {contracts.map(c => (
-            <button key={c.Id} onClick={() => handleSelectContract(c)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${selectedContract?.Id === c.Id
-                ? 'bg-sky-600 text-white border-sky-500 shadow-sm'
-                : isLight
-                  ? 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                  : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-sky-700'
-                }`}>
-              {c.ContractNumber} ({fmtMoney(c.LoanAmount || c.ContractAmount)})
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-1.5">
+          {contracts.map(c => {
+            const isCurrent = selectedContract?.Id === c.Id;
+            return (
+              <button
+                key={c.Id}
+                onClick={() => handleSelectContract(c)}
+                aria-pressed={isCurrent}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium border transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  isCurrent
+                    ? 'bg-accent text-accent-ink border-accent'
+                    : 'bg-panel text-ink-muted border-line hover:border-line-strong hover:text-ink'
+                }`}
+              >
+                <span className="font-mono">{c.ContractNumber}</span>
+                <span className="opacity-70"> · {fmtMoney(c.LoanAmount || c.ContractAmount)}</span>
+              </button>
+            );
+          })}
         </div>
 
         {selectedContract && (
-          <div className={`flex flex-wrap items-center justify-between gap-3 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-            <div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
-              <span>Số tiền KUNN: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{fmtMoney(selectedContract.LoanAmount || selectedContract.ContractAmount)}</strong></span>
-              <span>Lãi suất hiện hành: <strong className="text-rose-600 dark:text-rose-400 font-mono">{fmtRate(getEffectiveActiveRate(selectedContract))}</strong></span>
-              <span>Thời hạn KUNN: <strong className="text-sky-600 dark:text-sky-400">{selectedContract.KunnTenor || `${selectedContract.LoanTenorMonths || 12} tháng`}</strong></span>
-              <span>Phương thức gốc: <strong className="text-purple-600 dark:text-purple-400">{selectedContract.PrincipalRepaymentMethod || 'Gốc trả cuối kỳ'}</strong></span>
-              <span>Ngày giải ngân: <strong className="text-amber-600 dark:text-amber-400 font-mono">{fmtDate(selectedContract.DisbursementDate || selectedContract.ContractStartDate)}</strong></span>
-            </div>
-          </div>
+          <dl className="grid grid-cols-2 md:grid-cols-5 gap-x-6 gap-y-3 mt-4 pt-4 border-t border-line">
+            {[
+              { k: t('schedule.loanAmount'), v: fmtMoney(selectedContract.LoanAmount || selectedContract.ContractAmount), mono: true },
+              { k: t('schedule.activeRate'), v: fmtRate(getEffectiveActiveRate(selectedContract)), mono: true },
+              { k: t('schedule.tenor'), v: selectedContract.KunnTenor || `${selectedContract.LoanTenorMonths || 12} ${t('schedule.months')}`, mono: false },
+              { k: t('schedule.principalMethod'), v: selectedContract.PrincipalRepaymentMethod || t('schedule.defaultMethod'), mono: false },
+              { k: t('schedule.disbursementDate'), v: fmtDate(selectedContract.DisbursementDate || selectedContract.ContractStartDate), mono: true },
+            ].map(f => (
+              <div key={f.k}>
+                <dt className="text-[10px] uppercase tracking-[0.08em] text-ink-faint mb-0.5">{f.k}</dt>
+                <dd className={`text-ink font-semibold ${f.mono ? 'font-mono' : 'text-xs'}`}>{f.v}</dd>
+              </div>
+            ))}
+          </dl>
         )}
       </div>
 
-      {/* Main Schedule Table Box */}
-      <div className={`${containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
-        <div className={`p-3 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
-          <span className="font-bold text-xs">
-            LỊCH THU NỢ {selectedContract ? `— ${selectedContract.ContractNumber}` : ''} ({schedules.length} kỳ)
-          </span>
-          {schedules.length > 0 && (
-            <div className="text-[11px] text-slate-500 flex items-center space-x-4">
-              <span className="flex items-center space-x-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                <span>Đã TT: {schedules.filter(isScheduleFullySettled).length} kỳ</span>
+      <div className="bg-panel border border-line rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-line flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-baseline gap-2.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
+              {t('schedule.title')}
+            </span>
+            {selectedContract && (
+              <span className="font-mono text-ink font-semibold">{selectedContract.ContractNumber}</span>
+            )}
+            {schedules.length > 0 && (
+              <span className="text-xs text-ink-muted">
+                <span className="font-mono text-pos">{settledCount}</span>
+                <span className="text-ink-faint">/</span>
+                <span className="font-mono">{schedules.length}</span> {t('schedule.settledCount')}
               </span>
-              <span className="flex items-center space-x-1">
-                <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
-                <span>Chờ TT: {schedules.filter(s => !isScheduleFullySettled(s)).length} kỳ</span>
-              </span>
-            </div>
-          )}
+            )}
+          </div>
+
+          <div className="inline-flex rounded-md border border-line overflow-hidden" role="group" aria-label={t('schedule.density')}>
+            {(['cozy', 'compact'] as Density[]).map(d => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setDensity(d)}
+                aria-pressed={density === d}
+                className={`px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
+                  density === d ? 'bg-accent-soft text-accent' : 'text-ink-faint hover:text-ink'
+                }`}
+              >
+                {d === 'cozy' ? t('schedule.densityCozy') : t('schedule.densityCompact')}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="overflow-x-auto max-h-[460px] overflow-y-auto">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className={`sticky top-0 ${tableHeaderStyle}`}>
-              <tr>
-                <th className="p-3 text-center w-10">SELECT</th>
-                <th className="p-3 text-center whitespace-nowrap">REPAYMENT</th>
-                <th className="p-3 text-center whitespace-nowrap">STATUS</th>
-                <th className="p-3 whitespace-nowrap">DUE DATE</th>
-                <th className="p-3 text-center whitespace-nowrap text-rose-500">DAYS OVERDUE</th>
-                <th className="p-3 text-right whitespace-nowrap">REPAYMENT DUE</th>
-                <th className="p-3 text-right whitespace-nowrap text-rose-500">REPAYMENT UNPAID</th>
-                <th className="p-3 whitespace-nowrap">PAYMENT / CAPITALIZATION DATE</th>
-                <th className="p-3 text-center whitespace-nowrap">THAO TÁC</th>
+            <thead className="sticky top-0 z-10 bg-panel-muted">
+              <tr className="border-b border-line">
+                <th className={`${headCell} w-9`}><span className="sr-only">{t('schedule.selectPeriod')}</span></th>
+                <th className={`${headCell} text-right w-14`}>{t('schedule.period')}</th>
+                <th className={headCell}>{t('schedule.status')}</th>
+                <th className={headCell}>{t('schedule.dueDate')}</th>
+                <th className={`${headCell} text-right`}>{t('schedule.overdueDays')}</th>
+                <th className={`${headCell} text-right`}>{t('schedule.due')}</th>
+                <th className={`${headCell} text-right`}>{t('schedule.unpaid')}</th>
+                <th className={headCell}>{t('schedule.paymentDate')}</th>
+                <th className={`${headCell} text-right`}>{t('schedule.actions')}</th>
               </tr>
             </thead>
-            <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
+            <tbody>
               {!selectedContract ? (
-                <tr><td colSpan={9} className="text-center p-8 text-slate-400">Chọn một HĐTD để xem lịch thu nợ</td></tr>
+                <tr><td colSpan={9} className="text-center py-12 text-ink-faint">{t('schedule.emptyNoContract')}</td></tr>
               ) : schedules.length === 0 ? (
-                <tr><td colSpan={9} className="text-center p-8 text-slate-400">
-                  Chưa có lịch thu nợ. Nhấn "TẠO LỊCH THU NỢ TỰ ĐỘNG" để tính toán.
+                <tr><td colSpan={9} className="text-center py-12 text-ink-faint">
+                  {t('schedule.emptyNoSchedule')}
                 </td></tr>
               ) : schedules.map(s => {
                 let autoOverdue = 0;
@@ -150,74 +181,62 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                   ? (s.OverdueDays || 0)
                   : ((s.OverdueDays && s.OverdueDays > 0) ? s.OverdueDays : autoOverdue);
                 const penaltyAmount = s.OverdueInterestAmount ?? getPenaltyForSchedule(s);
-                const isOverdue = effectiveOverdueDays > 0;
+                const isOverdue = effectiveOverdueDays > 0 && !daThuDu;
                 const repaymentDueTotal = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penaltyAmount;
                 const paidTotal = paidPrincipalOf(s) + (daThuDu ? (s.InterestAmount || 0) : paymentStat.collectedInterest) + (daThuDu ? penaltyAmount : 0);
                 const repaymentUnpaidTotal = Math.max(0, repaymentDueTotal - paidTotal);
-
                 const isSelectedRow = selectedScheduleId === s.Id;
+
+                const rail = isOverdue ? 'border-l-neg' : daThuDu ? 'border-l-pos' : 'border-l-transparent';
 
                 return (
                   <tr
                     key={s.Id}
                     onClick={() => setSelectedScheduleId(s.Id)}
-                    className={`cursor-pointer transition-colors ${
-                      isSelectedRow
-                        ? isLight
-                          ? 'bg-sky-100/90 font-semibold text-slate-900 border-l-4 border-sky-600'
-                          : 'bg-sky-950/60 font-semibold text-white border-l-4 border-sky-500'
-                        : daThuDu
-                        ? 'bg-emerald-50/40 dark:bg-emerald-950/10'
-                        : isOverdue
-                        ? 'bg-rose-50/50 dark:bg-rose-950/30'
-                        : tableRowHover
+                    className={`border-b border-line/60 border-l-2 ${rail} cursor-pointer transition-colors duration-150 ${
+                      isSelectedRow ? 'bg-accent-soft' : 'hover:bg-panel-muted'
                     }`}
                   >
-                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className={`${cell} text-center`} onClick={(e) => e.stopPropagation()}>
                       <input
                         type="radio"
                         name="selectedSchedulePeriod"
                         checked={isSelectedRow}
                         onChange={() => setSelectedScheduleId(s.Id)}
-                        className="w-4 h-4 text-sky-600 focus:ring-sky-500 border-slate-300 cursor-pointer"
+                        aria-label={`${t('schedule.viewPeriod')} ${s.PeriodNumber}`}
+                        className="w-3.5 h-3.5 accent-accent cursor-pointer align-middle"
                       />
                     </td>
-                    <td className="p-3 text-center font-bold font-mono text-sm">{s.PeriodNumber}</td>
-                    <td className="p-3 text-center">
+                    <td className={`${cell} text-right font-mono font-semibold text-ink`}>{s.PeriodNumber}</td>
+                    <td className={cell}>
                       {daThuDu ? (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                          Paid
+                        <span className="inline-flex items-center gap-1.5 text-pos font-semibold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-pos" aria-hidden="true" />
+                          {t('schedule.statusPaid')}
                         </span>
                       ) : isOverdue ? (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white border border-rose-500">
-                          Overdue
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-neg text-surface font-bold text-[10px] uppercase tracking-[0.06em]">
+                          {t('schedule.statusOverdue')}
                         </span>
                       ) : (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                          Pending
+                        <span className="inline-flex items-center gap-1.5 text-ink-muted">
+                          <span className="w-1.5 h-1.5 rounded-full bg-line-strong" aria-hidden="true" />
+                          {t('schedule.statusPending')}
                         </span>
                       )}
                     </td>
-                    <td className="p-3 font-mono font-medium">{fmtDate(s.DueDate)}</td>
-                    <td className="p-3 text-center font-mono font-bold">
-                      {effectiveOverdueDays > 0 ? (
-                        <span className="text-rose-600 dark:text-rose-400 font-extrabold">
-                          {effectiveOverdueDays}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 font-normal">0</span>
-                      )}
+                    <td className={`${cell} font-mono text-ink`}>{fmtDate(s.DueDate)}</td>
+                    <td className={`${cell} text-right font-mono ${effectiveOverdueDays > 0 ? 'text-neg font-semibold' : 'text-ink-faint'}`}>
+                      {effectiveOverdueDays > 0 ? effectiveOverdueDays : '–'}
                     </td>
-                    <td className="p-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">
-                      {repaymentDueTotal.toLocaleString('vi-VN')}
+                    <td className={`${cell} text-right font-mono text-ink`}>{num(repaymentDueTotal)}</td>
+                    <td className={`${cell} text-right font-mono ${repaymentUnpaidTotal > 0 ? 'text-neg font-semibold' : 'text-ink-faint'}`}>
+                      {num(repaymentUnpaidTotal)}
                     </td>
-                    <td className="p-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
-                      {repaymentUnpaidTotal > 0 ? repaymentUnpaidTotal.toLocaleString('vi-VN') : '0'}
+                    <td className={`${cell} font-mono ${s.PaymentDate ? 'text-ink-muted' : 'text-ink-faint'}`}>
+                      {s.PaymentDate ? fmtDate(s.PaymentDate) : '–'}
                     </td>
-                    <td className="p-3 font-mono font-medium text-slate-600 dark:text-slate-300">
-                      {daThuDu ? fmtDate(s.PaymentDate) : (s.PaymentDate ? fmtDate(s.PaymentDate) : '—')}
-                    </td>
-                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className={`${cell} text-right`} onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -225,11 +244,9 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                           e.stopPropagation();
                           openPaymentModal(s);
                         }}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shadow-sm border ${s.IsPaid
-                          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                          : 'bg-sky-600 hover:bg-sky-500 text-white border-sky-500 shadow-sky-600/20'
-                          }`}>
-                        <span>⚙️ Ghi nhận TT / Sửa</span>
+                        className="px-2 py-1 rounded-md border border-line text-ink-muted text-[11px] font-semibold hover:border-accent hover:text-accent transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      >
+                        {t('schedule.record')}
                       </button>
                     </td>
                   </tr>
@@ -237,13 +254,15 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
               })}
             </tbody>
             {schedules.length > 0 && (
-              <tfoot className={`border-t sticky bottom-0 font-bold ${tableHeaderStyle}`}>
-                <tr>
-                  <td className="p-3 text-center" colSpan={5}>TỔNG CỘNG LỊCH THU NỢ</td>
-                  <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono">
+              <tfoot className="sticky bottom-0 bg-panel-muted">
+                <tr className="border-t border-line-strong">
+                  <td className={`${cell} text-[10px] font-semibold uppercase tracking-[0.09em] text-ink-faint`} colSpan={5}>
+                    {t('schedule.total')}
+                  </td>
+                  <td className={`${cell} text-right font-mono font-bold text-ink`}>
                     {(schedules.reduce((a, s) => a + (s.PrincipalAmount || 0) + (s.InterestAmount || 0), 0) + totalPenaltySum).toLocaleString('vi-VN')}
                   </td>
-                  <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-mono">
+                  <td className={`${cell} text-right font-mono font-bold text-neg`}>
                     {schedules.reduce((a, s) => {
                       const penalty = getPenaltyForSchedule(s);
                       const due = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penalty;
@@ -259,18 +278,14 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
             )}
           </table>
         </div>
-
-        {/* Breakdown detail component for the selected period */}
-        {selectedContract && (
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
-            <PeriodDetailCard
-              isLight={isLight}
-              selectedContract={selectedContract}
-              selectedSchedule={selectedScheduleObj}
-            />
-          </div>
-        )}
       </div>
+
+      {selectedContract && (
+        <PeriodDetailCard
+          selectedContract={selectedContract}
+          selectedSchedule={selectedScheduleObj}
+        />
+      )}
     </div>
   );
 };

@@ -3,7 +3,6 @@ import { Search, ChevronDown, X } from 'lucide-react';
 import type { Customer } from '../../types';
 
 interface CustomerSearchBarProps {
-  isLight: boolean;
   inputStyle: string;
   labelStyle: string;
   allCustomers: Customer[];
@@ -27,7 +26,6 @@ interface CustomerSearchBarProps {
 }
 
 export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
-  isLight,
   inputStyle,
   labelStyle,
   allCustomers,
@@ -51,15 +49,15 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
 }) => {
   return (
     <div className={`${containerCardBg} rounded-2xl p-5 border`}>
-      <div className="text-xs font-bold text-sky-500 uppercase tracking-wider mb-3 flex items-center space-x-2">
+      <div className="text-xs font-bold text-accent uppercase tracking-wider mb-3 flex items-center space-x-2">
         <Search className="w-4 h-4" />
         <span>TRA CỨU THÔNG TIN KHOẢN VAY KHÁCH HÀNG</span>
       </div>
 
       <div className="mb-3 relative">
-        <label className={`block mb-1 text-[11px] uppercase tracking-wide flex items-center justify-between ${isLight ? 'text-slate-700 font-bold' : 'text-slate-300'}`}>
+        <label className={`block mb-1 text-[11px] uppercase tracking-wide flex items-center justify-between ${'text-ink-muted font-bold'}`}>
           <span>⚡ CHỌN KHÁCH HÀNG TỪ DANH SÁCH</span>
-          <span className="text-[10px] text-sky-500 font-normal">({allCustomers.length} Khách hàng sẵn có)</span>
+          <span className="text-[10px] text-accent font-normal">({allCustomers.length} Khách hàng sẵn có)</span>
         </label>
         <div className="relative">
           <input
@@ -72,11 +70,11 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
             placeholder={`Nhấp vào đây hoặc gõ tên / Mã CIF để chọn Khách hàng... (${allCustomers.length} KH)`}
             className={`w-full rounded-xl pl-3 pr-10 py-2.5 text-xs transition-colors cursor-pointer ${inputStyle}`}
           />
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint pointer-events-none" />
         </div>
         {showDropdown && dropdownFiltered.length > 0 && (
           <div className={`absolute z-40 w-full mt-1 border rounded-xl shadow-2xl max-h-60 overflow-y-auto ${
-            isLight ? 'bg-white border-slate-200 text-slate-900' : 'bg-slate-900 border-slate-700 text-slate-100'
+            'bg-panel border-line text-ink'
           }`}>
             {dropdownFiltered.map(c => (
               <button
@@ -84,13 +82,11 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); handlePickCustomer(c); }}
                 className={`w-full text-left px-4 py-2.5 transition-colors flex items-center justify-between group border-b last:border-0 ${
-                  isLight
-                    ? 'hover:bg-sky-50 border-slate-100'
-                    : 'hover:bg-sky-600/20 border-slate-800/50'
+                  'hover:bg-panel-muted border-line'
                 }`}
               >
-                <span className="font-semibold text-sky-600 dark:text-sky-400 group-hover:underline">{c.FullName}</span>
-                <span className="font-mono text-sky-600 dark:text-sky-400 font-bold text-[11px] shrink-0 ml-3">{c.CifKh}</span>
+                <span className="font-semibold text-accent group-hover:underline">{c.FullName}</span>
+                <span className="font-mono text-accent font-bold text-[11px] shrink-0 ml-3">{c.CifKh}</span>
               </button>
             ))}
           </div>
@@ -98,9 +94,9 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
       </div>
 
       <div className="flex items-center space-x-2 mb-3">
-        <div className={`flex-1 h-px ${isLight ? 'bg-slate-200' : 'bg-slate-800'}`}></div>
-        <span className={`text-[10px] uppercase tracking-wider px-2 ${isLight ? 'text-slate-400' : 'text-slate-400'}`}>hoặc tìm kiếm nâng cao</span>
-        <div className={`flex-1 h-px ${isLight ? 'bg-slate-200' : 'bg-slate-800'}`}></div>
+        <div className={`flex-1 h-px ${'bg-panel-muted'}`}></div>
+        <span className={`text-[10px] uppercase tracking-wider px-2 ${'text-ink-faint'}`}>hoặc tìm kiếm nâng cao</span>
+        <div className={`flex-1 h-px ${'bg-panel-muted'}`}></div>
       </div>
 
       <form onSubmit={handleSearch} className="flex flex-wrap gap-3 items-end">
@@ -123,13 +119,13 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
             className={`w-full rounded-xl px-3 py-2 text-xs transition-colors ${inputStyle}`} />
         </div>
         <button type="submit" disabled={isSearching}
-          className="flex items-center space-x-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white font-bold px-5 py-2 rounded-xl transition-colors shrink-0 shadow-sm">
+          className="flex items-center space-x-2 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold px-5 py-2 rounded-xl transition-colors shrink-0 shadow-sm">
           <Search className="w-4 h-4" />
           <span>{isSearching ? 'Đang tìm...' : 'TÌM KIẾM'}</span>
         </button>
         {foundCustomer && (
           <button type="button" onClick={handleClearSearch}
-            className="flex items-center space-x-1 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 px-3 py-2 rounded-xl transition-colors">
+            className="flex items-center space-x-1 text-ink-faint hover:text-ink-muted  px-3 py-2 rounded-xl transition-colors">
             <X className="w-4 h-4" />
             <span>Xóa</span>
           </button>

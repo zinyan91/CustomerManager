@@ -12,7 +12,6 @@ export interface MasterHdtdGroup {
 }
 
 interface MasterHdtdFilterTabsProps {
-  isLight: boolean;
   masterHdtdGroups: MasterHdtdGroup[];
   selectedMasterFilter: string;
   setSelectedMasterFilter: (filter: string) => void;
@@ -20,7 +19,6 @@ interface MasterHdtdFilterTabsProps {
 }
 
 export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
-  isLight,
   masterHdtdGroups,
   selectedMasterFilter,
   setSelectedMasterFilter,
@@ -29,10 +27,10 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
   if (masterHdtdGroups.length === 0) return null;
 
   return (
-    <div className="w-full border-t pt-3 mt-1 border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+    <div className="w-full border-t pt-3 mt-1 border-line flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
-          <FileText className="w-3.5 h-3.5 text-purple-500" />
+        <span className="text-[11px] font-bold text-ink-faint uppercase tracking-wider flex items-center space-x-1">
+          <FileText className="w-3.5 h-3.5 text-accent" />
           <span>LỌC KUNN THEO HĐTD ({masterHdtdGroups.length} HĐTD):</span>
         </span>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -41,8 +39,8 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
             onClick={() => setSelectedMasterFilter('ALL')}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
               selectedMasterFilter === 'ALL'
-                ? 'bg-sky-600 text-white shadow-sm'
-                : isLight ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                ? 'bg-accent text-accent-ink shadow-sm'
+                : 'bg-panel-muted text-ink-muted hover:bg-panel-muted'
             }`}
           >
             📊 Tất cả HĐTD ({contractsCount} KUNN)
@@ -54,10 +52,8 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
               onClick={() => setSelectedMasterFilter(g.masterNo)}
               className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center space-x-1.5 ${
                 selectedMasterFilter === g.masterNo
-                  ? 'bg-purple-600 text-white shadow-sm'
-                  : isLight
-                    ? 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'
-                    : 'bg-purple-950/40 text-purple-300 hover:bg-purple-900/40 border border-purple-800'
+                  ? 'bg-accent text-accent-ink shadow-sm'
+                  : 'bg-accent-soft text-accent hover:bg-accent-soft border border-accent/30'
               }`}
             >
               <span>📜 {g.masterNo}</span>
@@ -70,7 +66,7 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
       </div>
 
       {selectedMasterFilter !== 'ALL' && (
-        <span className="text-[11px] italic text-purple-600 dark:text-purple-400 font-medium">
+        <span className="text-[11px] italic text-accent font-medium">
           ⚡ Đang xem gói HĐTD: <strong className="font-mono">{selectedMasterFilter}</strong>
         </span>
       )}

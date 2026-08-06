@@ -649,7 +649,61 @@ Chỉ dùng font có sẵn trên máy, **không tải từ CDN**: tải font ngo
 
 ---
 
-## 14. Lệnh thường dùng
+## 15. Lớp token giao diện & hai ngôn ngữ
+
+### Vì sao có lớp token
+
+Trước đây mỗi component tự quyết định màu của mình bằng `isLight ? 'bg-white ...' : 'bg-slate-900 ...'` — 107 biểu thức rải trong 34 file, thêm chuỗi class truyền qua props (`containerCardBg`, `tableHeaderStyle`, `inputStyle`) và 18 dòng `!important` trong `index.css` để vá tương phản. Hệ quả: đổi diện mạo là phép nhân 34 lần, và tương phản WCAG phải sửa ở từng lớp Tailwind.
+
+Nay màu khai báo **một chỗ** trong `index.css`: biến `--t-*` đổi theo `:root.light` / `:root.dark`, `@theme inline` biến chúng thành utility Tailwind thật.
+
+| Nhóm | Utility | Dùng cho |
+| :--- | :--- | :--- |
+| Nền | `bg-surface` `bg-panel` `bg-panel-muted` | nền trang, thẻ, dải tiêu đề bảng |
+| Viền | `border-line` `border-line-strong` | viền thường, viền nhấn (đường tổng cộng) |
+| Chữ | `text-ink` `text-ink-muted` `text-ink-faint` | số liệu, chữ phụ, nhãn cột |
+| Hành động | `bg-accent` `text-accent` `bg-accent-soft` `text-accent-ink` | nút chính, dòng đang chọn |
+| Trạng thái | `text-pos` `text-neg` `text-warn` (+ `-soft`) | đã thu, quá hạn / còn nợ, cảnh báo |
+
+**Quy tắc: màu chỉ được mang nghĩa.** Khung giao diện đi màu trung tính; `pos` / `neg` / `warn` chỉ dùng cho trạng thái nghiệp vụ, `accent` chỉ cho hành động và lựa chọn hiện hành. Không tô màu để trang trí — banker học được ý nghĩa của màu thì mới quét bảng nhanh.
+
+Mọi cặp màu đã đo tương phản ở cả hai giao diện, thấp nhất **5.09** (nhãn cột `ink-faint` trên `panel-muted`). Đổi giá trị `--t-*` thì đo lại, đừng ước lượng bằng mắt: chữ 10–11px không có chỗ để hụt tương phản. Riêng viên "Quá hạn" nền đặc phải dùng `text-surface` chứ không `text-white` — ở giao diện tối nền đỏ sáng, chữ trắng chỉ đạt 2.71.
+
+Mật độ dòng đi qua `data-density="cozy" | "compact"` đặt ở khối bao ngoài, ô bảng dùng `px-[var(--row-px)] py-[var(--row-py)]`. Bảng lịch thu nợ 40 kỳ và bảng tra cứu không cần cùng chiều cao dòng.
+
+Số tiền luôn `font-mono` — lớp này đã bật `tabular-nums`, cột số mới thẳng hàng. Số 0 in thành `–`: bảng ngân hàng đầy số 0 thì mắt không tìm ra số thật.
+
+### Hai ngôn ngữ
+
+`src/lib/i18n.ts` giữ từ điển `vi` / `en`, `LanguageContext` cấp hàm `t()` và ghi `app_lang` vào localStorage kèm thuộc tính `lang` trên `<html>`. Công tắc VI/EN nằm ở Header.
+
+**Không viết song ngữ chồng dòng** (nhãn tiếng Anh kèm nhãn tiếng Việt bên dưới). Một màn hình chỉ nói một thứ tiếng tại một thời điểm; muốn thấy tiếng kia thì bật công tắc.
+
+Toàn bộ giao diện đã chuyển sang token: không còn `isLight` trong mã, không còn lớp màu thô (`slate-*`, `sky-*`, `emerald-*`…) trong `.tsx`, và các khối `!important` ghi đè theo lớp Tailwind trong `index.css` đã gỡ hết — chỉ còn khối `prefers-reduced-motion`.
+
+Chuỗi class dùng chung nằm ở `src/lib/uiClasses.ts` (`UI.containerCardBg`, `UI.inputStyle`, `UI.tableHeaderStyle`, `BTN_PRIMARY`, `DEBT_GROUP_COLOR`…). Đây là nơi duy nhất khai báo; component không tự dựng chuỗi class riêng và **không truyền chuỗi class qua props** nữa. `src/lib/themeStyles.ts` đã xoá.
+
+Lưu ý khi đặt tên lớp động: Tailwind quét mã tĩnh, nên `bg-g${n}` **không sinh ra lớp nào**. Dùng bảng tra như `DEBT_GROUP_COLOR[n]`.
+
+Đã chuyển sang `t()`: Header, Sidebar, `ScheduleTab`, `PeriodDetailCard`. Các màn còn lại vẫn để chuỗi tiếng Việt cứng. Các màn còn lại vẫn để chuỗi tiếng Việt cứng trong mã, chuyển dần theo từng đợt cùng lúc dọn `isLight`. Giá trị dữ liệu lấy từ CSDL (`KunnTenor`, `PrincipalRepaymentMethod`, tên nhóm nợ) **không dịch** — đó là dữ liệu nghiệp vụ, không phải giao diện.
+
+---
+
+## 16. Tách vai trò trong `src/`
+
+| Thư mục | Vai trò |
+| :--- | :--- |
+| `src/lib/` | Logic thuần, không phụ thuộc React: tính toán tài chính, định dạng, gọi API, chuỗi class dùng chung, từ điển ngôn ngữ |
+| `src/hooks/` | Trạng thái + luồng nghiệp vụ tái sử dụng được, ví dụ `usePaymentModal` giữ toàn bộ luồng ghi nhận thu nợ (mở form, dựng bản ghi, lưu, tính lại lịch) |
+| `src/context/` | Trạng thái toàn ứng dụng: phiên đăng nhập, giao diện sáng/tối, ngôn ngữ, thiết lập định dạng |
+| `src/components/views/` | Màn hình: điều phối dữ liệu và ghép các thành phần con, **không** ôm luôn logic nghiệp vụ |
+| `src/components/<miền>/` | Thành phần thuộc một miền nghiệp vụ (`portfolio`, `collateral`, `documents`, `calculator`) |
+
+Một tệp làm một việc. Màn hình quá 400 dòng là dấu hiệu logic đang nằm nhầm chỗ: rút phần tính toán thuần về `lib/`, phần trạng thái + luồng về `hooks/`, phần trình bày về component con.
+
+---
+
+## 17. Lệnh thường dùng
 
 ```bash
 npm run dev        # Máy chủ phát triển

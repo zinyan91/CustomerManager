@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { ShieldAlert, DollarSign, Award, CheckCircle } from 'lucide-react';
 import { fmtMoney, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
-import type { ThemeStyles } from '../../lib/themeStyles';
+import type { UiClasses } from '../../lib/uiClasses';
+import { UI } from '../../lib/uiClasses';
 
 interface Tool6Props {
-  styles: ThemeStyles;
-  isLight: boolean;
+  styles: UiClasses;
 }
 
-export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) => {
+export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
   const [balanceStr, setBalanceStr] = useState('800.000.000');
   const [prepayAmountStr, setPrepayAmountStr] = useState('800.000.000');
   const [rateAnnualStr, setRateAnnualStr] = useState('11.5');
@@ -45,28 +45,28 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
   const totalInterestSaved = Math.round(totalRemainingInterestWithoutPrepay * prepayRatio);
   const netSavings = totalInterestSaved - penaltyFee;
 
-  const cardBg = isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100';
+  const cardBg = UI.containerCardBg;
 
   return (
     <div className="space-y-5">
 
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center space-x-2">
-          <Award className="w-5 h-5 text-emerald-500" />
+        <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center space-x-2">
+          <Award className="w-5 h-5 text-pos" />
           <span>TÍNH PHÍ TRẢ NỢ TRƯỚC HẠN</span>
         </h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
-          <div className="font-bold text-xs text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
+          <div className="font-bold text-xs text-accent uppercase tracking-wider flex items-center space-x-1.5 border-b border-line pb-2">
             <DollarSign className="w-4 h-4" />
             <span>1. KHOẢN VAY & SỐ TIỀN TRẢ TRƯỚC HẠN</span>
           </div>
 
           <div className="space-y-2.5">
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 mb-1">Dư nợ gốc hiện tại (VND) *</label>
+              <label className="block text-[11px] font-bold text-ink-faint mb-1">Dư nợ gốc hiện tại (VND) *</label>
               <input
                 type="text"
                 value={balanceStr}
@@ -75,49 +75,49 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
                   setBalanceStr(val);
                   setPrepayAmountStr(val);
                 }}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-sky-600 dark:text-sky-400 bg-transparent border-slate-200 dark:border-slate-800"
+                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-accent bg-transparent border-line"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 mb-1">Số tiền đăng ký trả trước hạn (VND) *</label>
+              <label className="block text-[11px] font-bold text-ink-faint mb-1">Số tiền đăng ký trả trước hạn (VND) *</label>
               <input
                 type="text"
                 value={prepayAmountStr}
                 onChange={e => setPrepayAmountStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-transparent border-slate-200 dark:border-slate-800"
+                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-pos bg-transparent border-line"
               />
             </div>
 
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 mb-1">Lãi suất (%/năm)</label>
+                <label className="block text-[11px] font-bold text-ink-faint mb-1">Lãi suất (%/năm)</label>
                 <input
                   type="number"
                   step="0.1"
                   value={rateAnnualStr}
                   onChange={e => setRateAnnualStr(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-amber-600 bg-transparent border-slate-200 dark:border-slate-800"
+                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-warn bg-transparent border-line"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 mb-1">Thời hạn còn lại (tháng)</label>
+                <label className="block text-[11px] font-bold text-ink-faint mb-1">Thời hạn còn lại (tháng)</label>
                 <input
                   type="number"
                   min={1}
                   value={remainingTenorMonths}
                   onChange={e => setRemainingTenorMonths(parseInt(e.target.value, 10) || 12)}
-                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-slate-200 dark:border-slate-800"
+                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 mb-1">Thời gian đã vay</label>
+                <label className="block text-[11px] font-bold text-ink-faint mb-1">Thời gian đã vay</label>
                 <select
                   value={loanAgeYear}
                   onChange={e => setLoanAgeYear(parseInt(e.target.value, 10))}
-                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-slate-200 dark:border-slate-800"
+                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
                 >
                   <option value={1}>Năm thứ 1</option>
                   <option value={2}>Năm thứ 2</option>
@@ -130,89 +130,89 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ isLight }) =
         </div>
 
         <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
-          <div className="font-bold text-xs text-rose-500 dark:text-rose-400 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-200 dark:border-slate-800 pb-2">
+          <div className="font-bold text-xs text-neg uppercase tracking-wider flex items-center space-x-1.5 border-b border-line pb-2">
             <ShieldAlert className="w-4 h-4" />
             <span>2. KHUNG PHÍ PHẠT TRẢ NỢ TRƯỚC HẠN HỢP ĐỒNG (%)</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 mb-1">Năm 1 phạt (%)</label>
+              <label className="block text-[11px] font-bold text-ink-faint mb-1">Năm 1 phạt (%)</label>
               <input
                 type="number"
                 step="0.1"
                 value={penaltyYear1}
                 onChange={e => setPenaltyYear1(e.target.value)}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-slate-200 dark:border-slate-800"
+                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 mb-1">Năm 2 phạt (%)</label>
+              <label className="block text-[11px] font-bold text-ink-faint mb-1">Năm 2 phạt (%)</label>
               <input
                 type="number"
                 step="0.1"
                 value={penaltyYear2}
                 onChange={e => setPenaltyYear2(e.target.value)}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-slate-200 dark:border-slate-800"
+                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 mb-1">Năm 3 phạt (%)</label>
+              <label className="block text-[11px] font-bold text-ink-faint mb-1">Năm 3 phạt (%)</label>
               <input
                 type="number"
                 step="0.1"
                 value={penaltyYear3}
                 onChange={e => setPenaltyYear3(e.target.value)}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-slate-200 dark:border-slate-800"
+                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 mb-1">Từ năm 4+ (%)</label>
+              <label className="block text-[11px] font-bold text-ink-faint mb-1">Từ năm 4+ (%)</label>
               <input
                 type="number"
                 step="0.1"
                 value={penaltyYear4Plus}
                 onChange={e => setPenaltyYear4Plus(e.target.value)}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-slate-200 dark:border-slate-800"
+                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
               />
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 space-y-1">
+          <div className="p-3 rounded-xl bg-neg-soft  border border-neg/30  space-y-1">
             <div className="flex justify-between text-xs">
-              <span className="text-slate-600 dark:text-slate-400">Tỷ lệ phí phạt áp dụng (Năm thứ {loanAgeYear}):</span>
-              <strong className="font-mono text-rose-600 dark:text-rose-400">{activePenaltyPercent}%</strong>
+              <span className="text-ink-muted">Tỷ lệ phí phạt áp dụng (Năm thứ {loanAgeYear}):</span>
+              <strong className="font-mono text-neg">{activePenaltyPercent}%</strong>
             </div>
-            <div className="flex justify-between text-xs pt-1 border-t border-rose-200 dark:border-rose-800/60">
-              <span className="font-bold text-rose-800 dark:text-rose-300">👉 TIỀN PHẠT TRẢ TRƯỚC HẠN:</span>
-              <strong className="font-mono font-extrabold text-rose-600 dark:text-rose-400 text-sm">{fmtMoney(penaltyFee)}</strong>
+            <div className="flex justify-between text-xs pt-1 border-t border-neg/30 ">
+              <span className="font-bold text-neg">👉 TIỀN PHẠT TRẢ TRƯỚC HẠN:</span>
+              <strong className="font-mono font-extrabold text-neg text-sm">{fmtMoney(penaltyFee)}</strong>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 space-y-3">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-emerald-200 dark:border-emerald-800/60 pb-3">
+      <div className="p-4 rounded-2xl bg-pos-soft  border border-pos/30  space-y-3">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-pos/30  pb-3">
           <div>
-            <div className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider flex items-center space-x-1.5">
-              <CheckCircle className="w-4 h-4 text-emerald-500" />
+            <div className="text-xs font-bold text-pos uppercase tracking-wider flex items-center space-x-1.5">
+              <CheckCircle className="w-4 h-4 text-pos" />
               <span>BÀI TOÁN PHÂN TÍCH TIẾT KIỆM CHI PHÍ LÃI:</span>
             </div>
-            <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-1">
+            <div className="text-2xl font-extrabold text-pos font-mono mt-1">
               TIẾT KIỆM RÒNG: {fmtMoney(netSavings)}
             </div>
           </div>
 
           <div className="text-xs space-y-1 font-mono">
-            <div className="text-slate-600 dark:text-slate-300">• Tổng lãi tiết kiệm được: <strong className="text-emerald-600 dark:text-emerald-400">{fmtMoney(totalInterestSaved)}</strong></div>
-            <div className="text-slate-600 dark:text-slate-300">• Phí phạt trả trước hạn: <strong className="text-rose-600 dark:text-rose-400">-{fmtMoney(penaltyFee)}</strong></div>
+            <div className="text-ink-muted">• Tổng lãi tiết kiệm được: <strong className="text-pos">{fmtMoney(totalInterestSaved)}</strong></div>
+            <div className="text-ink-muted">• Phí phạt trả trước hạn: <strong className="text-neg">-{fmtMoney(penaltyFee)}</strong></div>
           </div>
         </div>
 
-        <div className="text-xs text-emerald-800 dark:text-emerald-300 font-medium">
+        <div className="text-xs text-pos font-medium">
           💡 <strong>Kết luận tư vấn:</strong> Khách hàng nên trả nợ trước hạn ngay vì tổng tiền lãi tiết kiệm được trong {remainingTenorMonths} tháng tới ({fmtMoney(totalInterestSaved)}) vượt xa tiền phí phạt ({fmtMoney(penaltyFee)}), giúp khách hàng <strong>lời ròng {fmtMoney(netSavings)}</strong>!
         </div>
       </div>

@@ -227,7 +227,7 @@ export const DateInput: React.FC<DateInputProps> = ({
           type="button"
           onClick={handleCalendarClick}
           tabIndex={-1}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-500 focus:outline-none p-0.5 rounded transition-colors"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-accent focus:outline-none p-0.5 rounded transition-colors"
           title="Chọn ngày"
         >
           <Calendar className="w-4 h-4" />

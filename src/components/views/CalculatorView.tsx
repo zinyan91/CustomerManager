@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useTheme } from '../../context/ThemeContext';
-import { getThemeStyles } from '../../lib/themeStyles';
+import { UI } from '../../lib/uiClasses';
 import { Calculator, Layers, TrendingUp, TrendingDown, ShieldCheck, Award, RefreshCw, BarChart2, AlertTriangle } from 'lucide-react';
 import { Tool1LoanScheduleCalc } from '../calculator/Tool1LoanScheduleCalc';
 import { Tool2StkSingleCalc } from '../calculator/Tool2StkSingleCalc';
@@ -13,9 +12,7 @@ import { Tool8InterestRateConversionCalc } from '../calculator/Tool8InterestRate
 import { Tool9OverduePenaltyCalc } from '../calculator/Tool9OverduePenaltyCalc';
 
 export const CalculatorView: React.FC = () => {
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
-  const styles = getThemeStyles(isLight);
+  const styles = UI;
 
   const [activeTool, setActiveTool] = useState<
     'loan' | 'stk_single' | 'stk_multi' | 'rate_reduction' | 'credit_capacity' | 'prepayment_analysis' | 'repayment_compare' | 'rate_conversion' | 'overdue_penalty'
@@ -44,10 +41,8 @@ export const CalculatorView: React.FC = () => {
             onClick={() => setActiveTool(id)}
             className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTool === id
-                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
-                : isLight
-                  ? 'text-slate-600 hover:bg-slate-100'
-                  : 'text-slate-400 hover:bg-slate-800/60'
+                ? 'bg-accent text-accent-ink shadow-md '
+                : 'text-ink-muted hover:bg-panel-muted'
             }`}
           >
             <Icon className="w-4 h-4" />
@@ -57,31 +52,31 @@ export const CalculatorView: React.FC = () => {
       </div>
 
       {activeTool === 'loan' && (
-        <Tool1LoanScheduleCalc styles={styles} isLight={isLight} />
+        <Tool1LoanScheduleCalc styles={styles} />
       )}
       {activeTool === 'stk_single' && (
         <Tool2StkSingleCalc styles={styles} />
       )}
       {activeTool === 'stk_multi' && (
-        <Tool3StkMultiCycleCalc styles={styles} isLight={isLight} />
+        <Tool3StkMultiCycleCalc styles={styles} />
       )}
       {activeTool === 'rate_reduction' && (
-        <Tool4RateReductionCalc styles={styles} isLight={isLight} />
+        <Tool4RateReductionCalc styles={styles} />
       )}
       {activeTool === 'credit_capacity' && (
-        <Tool5CreditCapacityCalc styles={styles} isLight={isLight} />
+        <Tool5CreditCapacityCalc styles={styles} />
       )}
       {activeTool === 'prepayment_analysis' && (
-        <Tool6PrepaymentAnalysisCalc styles={styles} isLight={isLight} />
+        <Tool6PrepaymentAnalysisCalc styles={styles} />
       )}
       {activeTool === 'repayment_compare' && (
-        <Tool7RepaymentMethodCompareCalc styles={styles} isLight={isLight} />
+        <Tool7RepaymentMethodCompareCalc styles={styles} />
       )}
       {activeTool === 'rate_conversion' && (
-        <Tool8InterestRateConversionCalc styles={styles} isLight={isLight} />
+        <Tool8InterestRateConversionCalc styles={styles} />
       )}
       {activeTool === 'overdue_penalty' && (
-        <Tool9OverduePenaltyCalc styles={styles} isLight={isLight} />
+        <Tool9OverduePenaltyCalc styles={styles} />
       )}
     </div>
   );

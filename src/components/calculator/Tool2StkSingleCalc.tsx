@@ -3,10 +3,10 @@ import { Layers, TrendingUp, TrendingDown } from 'lucide-react';
 import { fmtMoney, fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
 import { calcStkPledge, TENOR_UNIT_LABELS } from '../../lib/stkPledge';
 import type { TenorUnit } from '../../lib/stkPledge';
-import type { ThemeStyles } from '../../lib/themeStyles';
+import type { UiClasses } from '../../lib/uiClasses';
 
 interface Tool2StkSingleCalcProps {
-  styles: ThemeStyles;
+  styles: UiClasses;
 }
 
 export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }) => {
@@ -47,19 +47,19 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
   return (
     <div className="space-y-4">
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
-        <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm flex items-center space-x-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+        <div className="font-bold text-accent uppercase tracking-wider text-sm flex items-center space-x-2 border-b border-line pb-2">
           <Layers className="w-4 h-4" />
           <span>BẢNG TÍNH LÃI CẦM CỐ SỔ TIẾT KIỆM (ACTUAL/365)</span>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-amber-500 text-[11px] uppercase">THÔNG TIN SỔ TIẾT KIỆM</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-warn text-[11px] uppercase">THÔNG TIN SỔ TIẾT KIỆM</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
               <label className={labelCls}>Giá trị sổ tiết kiệm (VNĐ)</label>
               <input type="text" value={savingsAmountStr}
                 onChange={e => setSavingsAmountStr(formatMoneyInput(e.target.value))}
-                className={`${inputCls} font-mono font-bold text-amber-600 dark:text-amber-400`} />
+                className={`${inputCls} font-mono font-bold text-warn`} />
             </div>
             <div>
               <label className={labelCls}>Ngày gửi sổ</label>
@@ -85,25 +85,25 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
             </div>
             <div>
               <label className={labelCls}>Ngày đáo hạn sổ</label>
-              <div className={`${inputCls} font-mono font-bold text-amber-600 dark:text-amber-400`}>
+              <div className={`${inputCls} font-mono font-bold text-warn`}>
                 {result.savingsDueDate ? fmtDate(result.savingsDueDate) : '—'}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-2.5">
-          <div className="font-bold text-sky-500 text-[11px] uppercase">THÔNG TIN KHOẢN VAY CẦM CỐ</div>
+        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+          <div className="font-bold text-accent text-[11px] uppercase">THÔNG TIN KHOẢN VAY CẦM CỐ</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
               <label className={labelCls}>Số tiền vay (VNĐ)</label>
               <input type="text" value={loanAmountStr}
                 onChange={e => setLoanAmountStr(formatMoneyInput(e.target.value))}
-                className={`${inputCls} font-mono font-bold text-sky-600 dark:text-sky-400`} />
+                className={`${inputCls} font-mono font-bold text-accent`} />
             </div>
             <div>
               <label className={labelCls}>Tỷ lệ cầm cố</label>
-              <div className={`${inputCls} font-mono font-bold ${overPledged ? 'text-rose-600 dark:text-rose-400' : ''}`}>
+              <div className={`${inputCls} font-mono font-bold ${overPledged ? 'text-neg' : ''}`}>
                 {savingsAmount > 0 ? `${(pledgeRatio * 100).toFixed(2)}%` : '—'}
               </div>
             </div>
@@ -111,7 +111,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
               <label className={labelCls}>Lãi suất vay (%/năm)</label>
               <input type="number" step="0.01" value={loanRateStr}
                 onChange={e => setLoanRateStr(e.target.value)}
-                className={`${inputCls} font-mono font-bold text-sky-600 dark:text-sky-400`} />
+                className={`${inputCls} font-mono font-bold text-accent`} />
             </div>
             <div>
               <label className={labelCls}>Ngày giải ngân</label>
@@ -135,28 +135,28 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
         </div>
 
         {overPledged && (
-          <div className="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 p-3 text-[11px] font-bold text-rose-700 dark:text-rose-300">
+          <div className="rounded-xl border border-neg/30 bg-neg-soft  p-3 text-[11px] font-bold text-neg">
             ⚠ Số tiền vay lớn hơn giá trị sổ tiết kiệm — tỷ lệ cầm cố vượt 100%.
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60">
-            <div className="text-[11px] font-bold text-slate-500 uppercase">LÃI SỔ TIẾT KIỆM NHẬN ĐƯỢC</div>
-            <div className="text-xl font-extrabold text-amber-600 dark:text-amber-400 font-mono mt-1">
+          <div className="p-4 rounded-2xl bg-warn-soft  border border-warn/30 ">
+            <div className="text-[11px] font-bold text-ink-faint uppercase">LÃI SỔ TIẾT KIỆM NHẬN ĐƯỢC</div>
+            <div className="text-xl font-extrabold text-warn font-mono mt-1">
               {fmtMoney(result.savingsInterest)}
             </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
+            <div className="text-[11px] text-ink-faint mt-0.5">
               {fmtMoney(savingsAmount)} × {savingsRateStr}% × {result.savingsDays} ngày / 365
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60">
-            <div className="text-[11px] font-bold text-slate-500 uppercase">TIỀN LÃI VAY PHẢI TRẢ</div>
-            <div className="text-xl font-extrabold text-sky-600 dark:text-sky-400 font-mono mt-1">
+          <div className="p-4 rounded-2xl bg-accent-soft  border border-accent/30 ">
+            <div className="text-[11px] font-bold text-ink-faint uppercase">TIỀN LÃI VAY PHẢI TRẢ</div>
+            <div className="text-xl font-extrabold text-accent font-mono mt-1">
               {fmtMoney(result.loanInterest)}
             </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
+            <div className="text-[11px] text-ink-faint mt-0.5">
               {fmtMoney(result.loanAmount)} × {loanRateStr}% × {result.loanDays} ngày / 365
             </div>
           </div>
@@ -164,25 +164,25 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
 
         <div className={`p-4 rounded-2xl border ${
           result.netGain >= 0
-            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
-            : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60'
+            ? 'bg-pos-soft  border-pos/30 '
+            : 'bg-neg-soft  border-neg/30 '
         }`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center space-x-2">
               {result.netGain >= 0
-                ? <TrendingUp className="w-5 h-5 text-emerald-500" />
-                : <TrendingDown className="w-5 h-5 text-rose-500" />}
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                ? <TrendingUp className="w-5 h-5 text-pos" />
+                : <TrendingDown className="w-5 h-5 text-neg" />}
+              <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
                 {result.netGain >= 0 ? 'CHÊNH LỆCH — KHÁCH HÀNG CÒN LỢI' : 'CHÊNH LỆCH — KHÁCH HÀNG CHỊU THIỆT'}
               </span>
             </div>
             <span className={`text-2xl font-extrabold font-mono ${
-              result.netGain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+              result.netGain >= 0 ? 'text-pos' : 'text-neg'
             }`}>
               {fmtMoney(result.netGain)}
             </span>
           </div>
-          <div className="text-[11px] text-slate-500 mt-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+          <div className="text-[11px] text-ink-faint mt-2 pt-2 border-t border-line">
             Lãi sổ {fmtMoney(result.savingsInterest)} − Lãi vay {fmtMoney(result.loanInterest)}.
             Tổng tiền trả nợ khi đáo hạn: <strong className="font-mono">{fmtMoney(result.totalRepayment)}</strong>
             {' '}(gốc vay {fmtMoney(result.loanAmount)} + lãi vay {fmtMoney(result.loanInterest)}).

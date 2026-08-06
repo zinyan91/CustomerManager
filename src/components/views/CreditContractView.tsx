@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { UI } from '../../lib/uiClasses';
 import { FileText, Plus, Trash2, Save, X, Banknote, AlertTriangle, Building2 } from 'lucide-react';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI,
@@ -6,7 +7,6 @@ import {
   deleteCreditContractAPI, countKunnOfCreditContractAPI,
   fetchCollateralsByCustomerAPI, fetchRepaymentSchedulesAPI,
 } from '../../lib/api';
-import { useTheme } from '../../context/ThemeContext';
 import { useWork } from '../../context/WorkContext';
 import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { summarizeCreditContracts, canCloseCreditContract } from '../../lib/creditContract';
@@ -25,8 +25,6 @@ const LOAN_METHODS = [
 ];
 
 export const CreditContractView: React.FC = () => {
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
   const { selectedCustomerId, setSelectedCustomerId, requestDisburse } = useWork();
 
   const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
@@ -49,13 +47,9 @@ export const CreditContractView: React.FC = () => {
 
   const today = todayIso();
 
-  const containerCardBg = isLight
-    ? 'bg-white border-slate-200 text-slate-900 shadow-sm'
-    : 'bg-slate-900 border-slate-800 text-slate-100 shadow-xl';
-  const inputStyle = isLight
-    ? 'bg-white border-slate-300 text-slate-900 focus:border-sky-500'
-    : 'bg-slate-950 border-slate-700 text-slate-100 focus:border-sky-500';
-  const labelStyle = 'text-[11px] font-semibold uppercase tracking-wide text-slate-500';
+  const containerCardBg = UI.containerCardBg;
+  const inputStyle = UI.inputStyle;
+  const labelStyle = UI.labelStyle;
 
   const showNotify = (type: 'success' | 'error', message: string) => {
     setNotify({ type, message });
@@ -243,13 +237,13 @@ export const CreditContractView: React.FC = () => {
       {notify && (
         <div className={`p-3 rounded-xl border text-xs font-semibold ${
           notify.type === 'success'
-            ? 'bg-emerald-50 border-emerald-300 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-            : 'bg-rose-50 border-rose-300 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
+            ? 'bg-pos-soft border-pos/30 text-pos '
+            : 'bg-neg-soft border-neg/30 text-neg '
         }`}>{notify.message}</div>
       )}
 
       <div className={`${containerCardBg} rounded-2xl p-4 border space-y-3`}>
-        <div className="flex items-center space-x-2 text-sky-600 dark:text-sky-400 font-bold text-xs uppercase tracking-wider">
+        <div className="flex items-center space-x-2 text-accent font-bold text-xs uppercase tracking-wider">
           <FileText className="w-4 h-4" />
           <span>Quản lý Hợp đồng Tín dụng</span>
         </div>
@@ -276,27 +270,27 @@ export const CreditContractView: React.FC = () => {
       {customer && (
         <div className={`${containerCardBg} rounded-2xl border p-3 grid grid-cols-2 md:grid-cols-4 gap-3`}>
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Mã CIF</div>
-            <div className="font-mono font-bold text-sm text-purple-600 dark:text-purple-400">{customer.CifKh || '—'}</div>
+            <div className="text-[10px] uppercase tracking-wider text-ink-faint">Mã CIF</div>
+            <div className="font-mono font-bold text-sm text-accent">{customer.CifKh || '—'}</div>
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Khách hàng</div>
+            <div className="text-[10px] uppercase tracking-wider text-ink-faint">Khách hàng</div>
             <div className="font-bold text-sm truncate" title={customer.FullName}>{customer.FullName}</div>
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Số HĐTD đang chọn</div>
-            <div className="font-mono font-bold text-sm text-sky-600 dark:text-sky-400 truncate">
+            <div className="text-[10px] uppercase tracking-wider text-ink-faint">Số HĐTD đang chọn</div>
+            <div className="font-mono font-bold text-sm text-accent truncate">
               {showForm
                 ? (form.HdtdNumber?.trim() || (editing ? editing.HdtdNumber : 'HĐTD mới — chưa nhập số'))
                 : '— chưa chọn —'}
             </div>
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">Số HĐTD của KH</div>
+            <div className="text-[10px] uppercase tracking-wider text-ink-faint">Số HĐTD của KH</div>
             <div className="font-bold text-sm">
               {summaries.length} HĐTD
               {closedCount > 0 && (
-                <span className="ml-1 text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                <span className="ml-1 text-[11px] font-normal text-ink-faint">
                   ({closedCount} đã đóng)
                 </span>
               )}
@@ -307,33 +301,33 @@ export const CreditContractView: React.FC = () => {
 
       {customer && (
         <div className={`${containerCardBg} rounded-2xl border overflow-hidden`}>
-          <div className="p-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <div className="p-4 flex flex-wrap items-center justify-between gap-3 border-b border-line">
+            <div className="text-xs font-bold uppercase tracking-wider text-ink-faint">
               Hợp đồng của {customer.FullName} — {visibleSummaries.length} HĐTD
-              <span className="ml-2 font-normal normal-case text-[11px] text-slate-400">
+              <span className="ml-2 font-normal normal-case text-[11px] text-ink-faint">
                 Nhấp vào dòng để xem chi tiết
               </span>
               {closedCount > 0 && (
                 <button onClick={() => setShowSettled(v => !v)}
-                  className="ml-3 font-normal normal-case text-[11px] text-sky-600 dark:text-sky-400 hover:underline">
+                  className="ml-3 font-normal normal-case text-[11px] text-accent hover:underline">
                   {showSettled ? 'Ẩn' : 'Hiện'} {closedCount} HĐTD đã đóng
                 </button>
               )}
             </div>
             <button onClick={openNew}
-              className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs">
+              className="flex items-center space-x-1.5 bg-pos hover:opacity-90 text-accent-ink font-bold px-4 py-2 rounded-xl text-xs">
               <Plus className="w-3.5 h-3.5" /><span>Tạo HĐTD mới</span>
             </button>
           </div>
 
           {visibleSummaries.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-sm">
+            <div className="p-8 text-center text-ink-faint text-sm">
               {loading ? 'Đang tải…' : 'Khách hàng chưa có HĐTD nào.'}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className={isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-950 text-slate-400'}>
+                <thead className={'bg-panel-muted text-ink-muted'}>
                   <tr>
                     <th className="p-3 whitespace-nowrap">SỐ HĐTD</th>
                     <th className="p-3 whitespace-nowrap">PHƯƠNG THỨC VAY</th>
@@ -344,41 +338,41 @@ export const CreditContractView: React.FC = () => {
                     <th className="p-3 text-center whitespace-nowrap">THAO TÁC</th>
                   </tr>
                 </thead>
-                <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
+                <tbody className={`divide-y ${'divide-line'}`}>
                   {visibleSummaries.map(s => (
                     <tr key={s.contract.Id}
                       onClick={() => openEdit(s.contract)}
                       className={`cursor-pointer transition-colors ${
                         s.expired
-                          ? 'bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/70 dark:hover:bg-rose-950/40'
-                          : isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-800/40'
+                          ? 'bg-neg-soft  hover:bg-neg-soft '
+                          : 'hover:bg-panel-muted'
                       }`}>
-                      <td className="p-3 font-mono font-bold text-sky-600 dark:text-sky-400">
+                      <td className="p-3 font-mono font-bold text-accent">
                         {s.contract.HdtdNumber}
                         {s.contract.ApprovalCode && (
-                          <div className="text-[10px] font-sans font-normal text-purple-500 mt-0.5">
+                          <div className="text-[10px] font-sans font-normal text-accent mt-0.5">
                             Hạn mức duyệt: {s.contract.ApprovalCode}
                           </div>
                         )}
                       </td>
                       <td className="p-3">{s.contract.LoanMethod || '—'}</td>
                       <td className="p-3 text-right font-mono font-bold">{fmtMoney(s.contract.ContractAmount)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                      <td className="p-3 text-right font-mono font-bold text-warn">
                         {fmtMoney(s.outstanding)}
                       </td>
                       <td className="p-3 text-center whitespace-nowrap">
                         <div className="font-mono">{fmtDate(s.contract.ContractEndDate)}</div>
                         {s.expired && (
-                          <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400">HẾT HIỆU LỰC</div>
+                          <div className="text-[10px] font-bold text-neg">HẾT HIỆU LỰC</div>
                         )}
                       </td>
                       <td className="p-3 text-center">
                         <span className="font-bold">{s.activeKunnCount}</span>
                         {s.settledKunnCount > 0 && (
-                          <span className="text-slate-400"> +{s.settledKunnCount} đã TT</span>
+                          <span className="text-ink-faint"> +{s.settledKunnCount} đã TT</span>
                         )}
                         {s.kunnCount === 0 && (
-                          <div className="text-[10px] text-slate-400">chưa giải ngân</div>
+                          <div className="text-[10px] text-ink-faint">chưa giải ngân</div>
                         )}
                       </td>
                       <td className="p-3">
@@ -394,15 +388,15 @@ export const CreditContractView: React.FC = () => {
                                 }}
                                 className={`flex items-center space-x-1 font-bold px-2.5 py-1.5 rounded-lg text-[11px] ${
                                   khoaGiaiNgan
-                                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600'
-                                    : 'bg-sky-600 hover:bg-sky-500 text-white'
+                                    ? 'bg-panel-muted text-ink-faint cursor-not-allowed'
+                                    : 'bg-accent hover:opacity-90 text-accent-ink'
                                 }`}>
                                 <Banknote className="w-3 h-3" /><span>Giải ngân</span>
                               </button>
                             );
                           })()}
                           <button onClick={e => { e.stopPropagation(); handleDelete(s.contract); }} title="Xoá HĐTD"
-                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10">
+                            className="p-1.5 rounded-lg text-neg hover:bg-neg">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -419,11 +413,11 @@ export const CreditContractView: React.FC = () => {
       {showForm && customer && (
         <form onSubmit={handleSave} className={`${containerCardBg} rounded-2xl p-4 border space-y-4`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider">
+            <div className="flex items-center space-x-2 text-pos font-bold text-xs uppercase tracking-wider">
               <FileText className="w-4 h-4" />
               <span>{editing ? `Sửa HĐTD ${editing.HdtdNumber}` : 'Hợp đồng tín dụng mới'}</span>
             </div>
-            <button type="button" onClick={() => setShowForm(false)} className="p-1 text-slate-400 hover:text-slate-600">
+            <button type="button" onClick={() => setShowForm(false)} className="p-1 text-ink-faint hover:text-ink-muted">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -449,7 +443,7 @@ export const CreditContractView: React.FC = () => {
               <input type="text" value={formAmount}
                 onChange={e => setFormAmount(formatMoneyInput(e.target.value))}
                 placeholder="4.000.000.000"
-                className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-sky-600 dark:text-sky-400 ${inputStyle}`} />
+                className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-accent ${inputStyle}`} />
             </div>
           </div>
 
@@ -492,11 +486,11 @@ export const CreditContractView: React.FC = () => {
             </div>
           </div>
 
-          <div className={`rounded-xl p-3 border ${isLight ? 'bg-purple-50/60 border-purple-200' : 'bg-purple-950/30 border-purple-500/30'}`}>
+          <div className={`rounded-xl p-3 border ${'bg-accent-soft border-accent/30'}`}>
             <label className="flex items-center space-x-2 cursor-pointer">
               <input type="checkbox" checked={useSharedApproval}
                 onChange={e => setUseSharedApproval(e.target.checked)}
-                className="w-4 h-4 accent-purple-600" />
+                className="w-4 h-4 accent-accent" />
               <span className="text-xs font-semibold">
                 HĐTD này dùng chung hạn mức phê duyệt với HĐTD khác
               </span>
@@ -526,7 +520,7 @@ export const CreditContractView: React.FC = () => {
               <span>Tài sản bảo đảm cho HĐTD *</span>
             </div>
             {collaterals.length === 0 ? (
-              <div className="text-xs text-rose-500 flex items-center space-x-1.5">
+              <div className="text-xs text-neg flex items-center space-x-1.5">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 <span>Chưa có TSBĐ. Thêm ở tab Định Giá TSĐB.</span>
               </div>
@@ -542,34 +536,34 @@ export const CreditContractView: React.FC = () => {
                   return (
                     <div key={col.Id} className={`p-3 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
                       isChecked
-                        ? (isLight ? 'bg-sky-50 border-sky-400' : 'bg-sky-950/60 border-sky-500')
-                        : (isLight ? 'bg-white border-slate-300 hover:border-sky-400' : 'bg-slate-900/80 border-slate-800 hover:border-slate-700')
+                        ? ('bg-accent-soft border-accent/30')
+                        : ('bg-panel border-line hover:border-accent')
                     }`}>
                       <div className="flex items-start space-x-3 flex-1 min-w-[220px]">
                         <input type="checkbox" checked={isChecked}
                           onChange={e => setSelectedCollateralIds(prev =>
                             e.target.checked ? [...prev, col.Id] : prev.filter(x => x !== col.Id))}
-                          className="w-4 h-4 rounded text-sky-600 mt-0.5" />
+                          className="w-4 h-4 rounded text-accent mt-0.5" />
                         <div>
                           <div className="font-bold text-xs">
                             {col.AssetType || 'TSBĐ'} — {col.Address || col.AssetCode}
                           </div>
-                          <div className="text-[11px] text-slate-500 mt-0.5 flex flex-wrap items-center gap-3">
+                          <div className="text-[11px] text-ink-faint mt-0.5 flex flex-wrap items-center gap-3">
                             <span>Định giá: <strong>{fmtMoney(val)}</strong></span>
-                            <span>LTV: <strong className="font-mono text-sky-600 dark:text-sky-400">{ltv}%</strong></span>
+                            <span>LTV: <strong className="font-mono text-accent">{ltv}%</strong></span>
                             <span>Ngày định giá: <span className="font-mono">{fmtDate(col.AppraisalDate)}</span></span>
                           </div>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-[10px] text-slate-400 block uppercase">Khả năng bảo đảm</span>
+                        <span className="text-[10px] text-ink-faint block uppercase">Khả năng bảo đảm</span>
                         <span className={`text-xs font-mono font-bold ${
-                          capacity > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                          capacity > 0 ? 'text-pos' : 'text-neg'
                         }`}>
                           {fmtMoney(capacity)}
                         </span>
                         {capacity === 0 && (
-                          <span className="block text-[10px] font-semibold text-rose-500">
+                          <span className="block text-[10px] font-semibold text-neg">
                             {tinhTrang === 'expired'
                               ? `Định giá hết hiệu lực ${fmtDate(appraisalExpiryDate(col))}`
                               : 'Chưa có ngày định giá'}
@@ -582,7 +576,7 @@ export const CreditContractView: React.FC = () => {
 
                 {selectedCollateralIds.length > 0 && (
                   <div className={`p-3 rounded-xl border text-xs font-semibold flex flex-wrap items-center justify-between gap-3 ${
-                    isLight ? 'bg-emerald-50 border-emerald-300 text-emerald-900' : 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
+                    'bg-pos-soft border-pos/30 text-pos'
                   }`}>
                     <span>TỔNG KHẢ NĂNG BẢO ĐẢM ({selectedCollateralIds.length} tài sản)</span>
                     <span className="font-mono">{fmtMoney(tongKhaNangBaoDam)}</span>
@@ -591,7 +585,7 @@ export const CreditContractView: React.FC = () => {
 
                 {vuotKhaNangBaoDam && (
                   <div className={`p-3 rounded-xl border text-xs font-bold ${
-                    isLight ? 'bg-rose-50 border-rose-300 text-rose-800' : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
+                    'bg-neg-soft border-neg/30 text-neg'
                   }`}>
                     Mức cấp {fmtMoney(parseMoneyInput(formAmount))} vượt khả năng bảo đảm {fmtMoney(tongKhaNangBaoDam)}
                   </div>
@@ -600,18 +594,18 @@ export const CreditContractView: React.FC = () => {
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between pt-2 border-t border-line">
             <label className="flex items-center space-x-2 cursor-pointer">
               <input type="checkbox" checked={form.IsClosed ?? false}
                 disabled={!closeCheck.allowed}
                 onChange={e => setForm(f => ({ ...f, IsClosed: e.target.checked }))}
-                className="w-4 h-4 accent-rose-600 disabled:opacity-40" />
-              <span className={`text-xs font-medium ${closeCheck.allowed ? '' : 'text-slate-400'}`}>
+                className="w-4 h-4 accent-accent disabled:opacity-40" />
+              <span className={`text-xs font-medium ${closeCheck.allowed ? '' : 'text-ink-faint'}`}>
                 HĐTD đã đóng
               </span>
             </label>
             <button type="submit" disabled={loading}
-              className="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-bold px-5 py-2 rounded-xl text-xs">
+              className="flex items-center space-x-1.5 bg-accent hover:opacity-90 disabled:opacity-50 text-accent-ink font-bold px-5 py-2 rounded-xl text-xs">
               <Save className="w-3.5 h-3.5" /><span>{editing ? 'Cập nhật' : 'Tạo HĐTD'}</span>
             </button>
           </div>

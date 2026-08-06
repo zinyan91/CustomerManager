@@ -78,8 +78,10 @@ const dictionary = {
 
     'period.empty': 'Chọn một kỳ ở bảng trên để xem phân rã khoản trả',
     'period.dueOn': 'đến hạn',
-    'period.recovery': 'Tiến độ thu hồi kỳ',
-    'period.recoveryAria': 'Đã thu {paid} trên {due} đồng của kỳ {period}',
+    'period.slabUnpaid': 'Còn phải thu',
+    'period.slabSettled': 'Đã thu đủ',
+    'period.slabSub': 'trên {due} phải trả · đã thu {pct}%',
+    'period.overdueBadge': 'Quá hạn {days} ngày',
     'period.elements': 'Thành phần khoản trả',
     'period.colDue': 'Phải trả',
     'period.colPaid': 'Đã trả',
@@ -88,9 +90,6 @@ const dictionary = {
     'period.rowPrincipal': 'Nợ gốc',
     'period.rowInterest': 'Nợ lãi',
     'period.rowPenalty': 'Lãi phạt dồn tích',
-    'period.compPrincipal': 'Gốc',
-    'period.compInterest': 'Lãi',
-    'period.compPenalty': 'Lãi phạt',
   },
   en: {
     'nav.groupOverview': 'Overview',
@@ -160,8 +159,10 @@ const dictionary = {
 
     'period.empty': 'Select a repayment above to see its breakdown',
     'period.dueOn': 'due',
-    'period.recovery': 'Repayment recovered',
-    'period.recoveryAria': 'Collected {paid} of {due} VND for repayment {period}',
+    'period.slabUnpaid': 'Still to collect',
+    'period.slabSettled': 'Fully collected',
+    'period.slabSub': 'of {due} due · {pct}% collected',
+    'period.overdueBadge': '{days} days overdue',
     'period.elements': 'Repayment elements',
     'period.colDue': 'Due',
     'period.colPaid': 'Paid',
@@ -170,9 +171,6 @@ const dictionary = {
     'period.rowPrincipal': 'Principal',
     'period.rowInterest': 'Interest',
     'period.rowPenalty': 'Penalty interest accrued',
-    'period.compPrincipal': 'Principal',
-    'period.compInterest': 'Interest',
-    'period.compPenalty': 'Penalty',
   },
 } as const;
 

@@ -608,6 +608,20 @@ Mã nguồn không có chú thích, nên phần "vì sao" của từng hàm nằ
 | `computeOutstandingBalance` | Trả 0 khi `IsSettled` — tất toán trước hạn là hết nợ dù lịch còn hàng chục kỳ chưa tới hạn. Không có dòng lịch nào thì rơi về `CurrentBalance`; xem cảnh báo dư nợ đóng băng ở §2. Dư nợ giảm theo gốc **đã thực thu**, không theo gốc phải trả. |
 | `computeSchedulePenalty` | Phạt gốc = 150% lãi suất trong hạn, phạt lãi chậm trả = 10%/năm, cùng Actual/365. Hằng số ở `stkPledge.ts`. |
 
+### `scheduleView.ts`
+
+Nguồn duy nhất phân rã nghĩa vụ **một kỳ** thành gốc / lãi / lãi phạt theo ba cột Phải trả · Đã trả · Còn nợ. Mọi chỗ hiển thị số tiền của một kỳ đều gọi `periodObligation`, tổng cột gọi `sumObligations` trên cùng mảng đó — tổng chân bảng khi ấy **bằng định nghĩa** là tổng các dòng.
+
+Vì sao phải rút ra: trước đó công thức này có **ba bản viết trong `.tsx`** — dòng bảng, `tfoot`, và `PeriodDetailCard` — và chúng đã trôi dạt đúng như §1 cảnh báo. Bản `tfoot` phân giải lãi phạt bằng "đã tất toán thì lấy cột, chưa thì tính dồn tích", nên với kỳ chưa tất toán mà banker **khai tay `OverdueInterestAmount = 0` (miễn phạt)** nó bỏ qua số khai và áp mức tính tự động 150%. Dòng hiện `0`, chân bảng hiện một số lớn hơn: tổng cột không bằng tổng các dòng trên cùng màn hình.
+
+| Hàm | Điều phải biết |
+| :--- | :--- |
+| `resolvePenaltyDue` | `OverdueInterestAmount` là lãi phạt **đã ghi nhận** và luôn thắng, kể cả khi bằng 0 — đây chính là cái bẫy `\|\|` ở §1, phải dùng `??`. `KUNN PNAT.CN.01290824/GNN-01` khai `PENALTY_RATE:0` là ca thật. Chỉ khi cột **chưa khai** mới rơi về `computeSchedulePenalty`, và kỳ đã tất toán chưa khai thì bằng 0 chứ không tính dồn tích. |
+| `periodObligation` | Phân giải lãi phạt phải khớp `schedulePaymentStatus`, vốn chỉ lấy cột đã ghi nhận làm nghĩa vụ. Lệch nhau thì màn hình vừa báo "đã thu đủ" vừa hiện một khoản còn nợ — trạng thái vô lý mà §1 yêu cầu chặn từ gốc. |
+| `sumObligations` | Cộng `total.unpaid` **của từng kỳ đã kẹp sàn 0**, không lấy tổng phải trả trừ tổng đã trả: một kỳ thu vượt sẽ bù khống phần thiếu của kỳ khác và giấu mất kỳ nợ. |
+
+Số ngày quá hạn lấy từ `overdueDaysOfSchedule`, **không tự viết lại phép trừ ngày trong `.tsx`** — `diffDays` từng có 3 bản, xem §1.
+
 ### `creditContract.ts`
 
 | Hàm | Điều phải biết |

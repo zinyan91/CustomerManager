@@ -16,6 +16,8 @@ import {
   computeSchedulePenalty,
   redateSchedules,
   schedulePaymentStatus,
+  alignLastPeriodToMaturity,
+  needsLastPeriodAlignment,
   buildDueDateSequence,
 } from '../loanMath';
 import type { RepaymentSchedule, LoanContract } from '../../types';
@@ -1191,5 +1193,64 @@ describe('kỳ thu một phần vẫn bị đếm quá hạn và tính phạt', 
 
   it('overdueDaysOfSchedule vẫn đếm ngày cho kỳ thu một phần', () => {
     expect(overdueDaysOfSchedule(kyThieu, '2026-08-05')).toBeGreaterThan(360);
+  });
+});
+
+describe('alignLastPeriodToMaturity — kéo kỳ cuối về ngày đáo hạn', () => {
+  const lich = (dates: string[], paidUpTo = 0): RepaymentSchedule[] =>
+    dates.map((d, i) => ({
+      Id: 900 + i, ContractId: 1, PeriodNumber: i + 1, DueDate: d,
+      PrincipalAmount: 1_000_000, InterestAmount: 10_000, TotalAmount: 0,
+      IsPaid: i < paidUpTo,
+    } as RepaymentSchedule));
+
+  it('chỉ đổi kỳ cuối, mọi kỳ khác giữ nguyên', () => {
+    const goc = lich(['2026-05-15', '2026-06-15', '2026-07-15']);
+    const r = alignLastPeriodToMaturity(goc, '2026-07-24');
+    expect(r.map(s => s.DueDate)).toEqual(['2026-05-15', '2026-06-15', '2026-07-24']);
+  });
+
+  it('ca ĐOÀN NGỌC LÝ: kỳ cuối đang lệch trước đáo hạn 20 ngày', () => {
+    const r = alignLastPeriodToMaturity(lich(['2036-03-15', '2036-04-15']), '2036-05-05');
+    expect(r[1].DueDate).toBe('2036-05-05');
+  });
+
+  it('KHÔNG đổi khi kỳ cuối đã thu — không ghi đè lịch sử', () => {
+    const goc = lich(['2025-07-15', '2025-08-15'], 2);
+    const r = alignLastPeriodToMaturity(goc, '2025-08-17');
+    expect(r[1].DueDate).toBe('2025-08-15');
+  });
+
+  it('KHÔNG đổi khi làm vậy sinh ra kỳ cuối chỉ 1 ngày', () => {
+    const r = alignLastPeriodToMaturity(lich(['2026-06-15', '2026-07-15']), '2026-06-16');
+    expect(r[1].DueDate).toBe('2026-07-15');
+  });
+
+  it('KHÔNG đổi khi chưa khai ngày đáo hạn', () => {
+    const r = alignLastPeriodToMaturity(lich(['2026-06-15', '2026-07-15']), null);
+    expect(r[1].DueDate).toBe('2026-07-15');
+  });
+
+  it('kỳ cuối đã đúng đáo hạn thì không có gì đổi', () => {
+    const r = alignLastPeriodToMaturity(lich(['2026-06-15', '2026-07-15']), '2026-07-15');
+    expect(r[1].DueDate).toBe('2026-07-15');
+  });
+
+  it('lịch một kỳ duy nhất vẫn kéo được về đáo hạn', () => {
+    const r = alignLastPeriodToMaturity(lich(['2026-07-15']), '2026-07-24');
+    expect(r[0].DueDate).toBe('2026-07-24');
+  });
+
+  it('needsLastPeriodAlignment nhận ra đúng khoản cần sửa', () => {
+    expect(needsLastPeriodAlignment(lich(['2036-03-15', '2036-04-15']), '2036-05-05')).toBe(true);
+    expect(needsLastPeriodAlignment(lich(['2026-06-15', '2026-07-15']), '2026-07-15')).toBe(false);
+    expect(needsLastPeriodAlignment(lich(['2025-07-15', '2025-08-15'], 2), '2025-08-17')).toBe(false);
+    expect(needsLastPeriodAlignment([], '2026-07-24')).toBe(false);
+  });
+
+  it('cho ra cùng ngày kỳ cuối với buildDueDateSequence', () => {
+    const day = buildDueDateSequence('2026-05-15', 3, '2026-05-08', '2026-07-24');
+    const r = alignLastPeriodToMaturity(lich(['2026-05-15', '2026-06-15', '2026-07-15']), '2026-07-24');
+    expect(r[2].DueDate).toBe(day[2]);
   });
 });

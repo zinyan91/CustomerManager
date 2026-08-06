@@ -138,10 +138,50 @@ export function buildDueDateSequence(
     const kyTruoc = count === 1
       ? (disbursementDateStr || repaymentStartDateStr || '')
       : dates[count - 2];
-    if (kyTruoc && getDaysBetween(kyTruoc, daoHan) > 1) dates[count - 1] = daoHan;
+    if (shouldPullLastPeriodToMaturity(kyTruoc, daoHan)) dates[count - 1] = daoHan;
   }
 
   return dates;
+}
+
+export function shouldPullLastPeriodToMaturity(
+  prevDueDateStr?: string | null,
+  maturityDateStr?: string | null
+): boolean {
+  const prev = (prevDueDateStr || '').trim();
+  const daoHan = (maturityDateStr || '').trim();
+  if (!prev || !daoHan) return false;
+  return getDaysBetween(prev, daoHan) > 1;
+}
+
+export function alignLastPeriodToMaturity(
+  schedules: RepaymentSchedule[],
+  maturityDateStr?: string | null
+): RepaymentSchedule[] {
+  if (!schedules || schedules.length === 0) return [];
+
+  const sorted = [...schedules].sort((a, b) => a.PeriodNumber - b.PeriodNumber);
+  const last = sorted[sorted.length - 1];
+  const daoHan = (maturityDateStr || '').trim();
+
+  if (!daoHan || last.IsPaid || last.DueDate === daoHan) return sorted;
+
+  const prev = sorted.length === 1 ? last.DueDate : sorted[sorted.length - 2].DueDate;
+  if (!shouldPullLastPeriodToMaturity(prev, daoHan)) return sorted;
+
+  return sorted.map((s, i) =>
+    i === sorted.length - 1 ? { ...s, DueDate: daoHan } : s
+  );
+}
+
+export function needsLastPeriodAlignment(
+  schedules: RepaymentSchedule[],
+  maturityDateStr?: string | null
+): boolean {
+  if (!schedules || schedules.length === 0) return false;
+  const before = [...schedules].sort((a, b) => a.PeriodNumber - b.PeriodNumber);
+  const after = alignLastPeriodToMaturity(schedules, maturityDateStr);
+  return before[before.length - 1].DueDate !== after[after.length - 1].DueDate;
 }
 
 export function redateSchedules(

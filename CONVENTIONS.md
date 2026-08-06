@@ -186,6 +186,8 @@ Vì dùng số ngày thực tế, **tiền lãi có thể TĂNG so với kỳ tr
 
 Ràng buộc duy nhất: **kỳ 1 phải SAU ngày giải ngân**. Mốc khai sớm hơn thì dịch lên từng tháng, giữ nguyên ngày trong tháng — không đổi ngày khách đã chọn. Để trống `RepaymentStartDate` thì mới mặc định giải ngân + 1 tháng, và đó là **giá trị tạm chờ khai theo chứng từ**, không phải quy tắc nghiệp vụ.
 
+**Kỳ cuối rơi vào ngày đáo hạn** có chốt riêng: chỉ kéo về khi làm vậy không sinh ra một kỳ chỉ 1 ngày. Chốt đó ở `shouldPullLastPeriodToMaturity`, dùng chung cho `buildDueDateSequence` (sinh lịch mới) và `alignLastPeriodToMaturity` (sửa lịch đã có). Hàm thứ hai **chỉ đổi kỳ cuối**, không chạm kỳ nào khác, và bỏ qua khi kỳ cuối đã thu — dùng cho nút bảo trì ở tab Cài đặt thay vì viết SQL sửa hàng loạt.
+
 Ràng buộc này cài trong **`buildDueDateSequence`** — nguồn duy nhất sinh dãy ngày đến hạn. Có **hai** đường ghi ngày đến nợ và cả hai đều phải đi qua đó: `generateSchedule` khi tạo lịch mới, và `redateSchedules` khi banker sửa mốc trả nợ của một KUNN **đã có lịch**. Cài chốt ở một đường không bịt được đường kia: bản chép tay trong `LoanPortfolioView` từng làm chính điều đó, khiến hồ sơ NGÔ NHỊ ĐẠT tái tạo lại được lỗi cũ sau khi đường tạo mới đã sửa. Thêm đường ghi ngày thứ ba thì cũng phải gọi hàm này, đừng cộng tháng bằng tay.
 
 ### Kỳ chỉ xong khi thu ĐỦ nghĩa vụ

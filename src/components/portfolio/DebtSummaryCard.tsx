@@ -1,6 +1,8 @@
 import React from 'react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { computeSchedulePenalty, overdueDaysOfSchedule } from '../../lib/loanMath';
+import {
+  computeSchedulePenalty, overdueDaysOfSchedule, isScheduleFullySettled, schedulePaymentStatus,
+} from '../../lib/loanMath';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
 
 interface DebtSummaryCardProps {
@@ -27,16 +29,20 @@ export const DebtSummaryCard: React.FC<DebtSummaryCardProps> = ({
   let penaltyInterest = 0;
 
   for (const s of schs) {
-    const isPastDue = overdueDaysOfSchedule(s) > 0;
+    const daThuDu = isScheduleFullySettled(s);
+    const isPastDue = !daThuDu && overdueDaysOfSchedule(s) > 0;
+    const thuDuoc = schedulePaymentStatus(s);
 
-    if (isPastDue || s.IsPaid) {
+    if (isPastDue || daThuDu) {
       duePrincipal += (s.PrincipalAmount || 0);
       dueInterest += (s.InterestAmount || 0);
     }
-    if (s.IsPaid) {
+    if (daThuDu) {
       paidPrincipal += (s.PrincipalAmount || 0);
       paidInterest += (s.InterestAmount || 0);
     } else if (isPastDue) {
+      paidPrincipal += thuDuoc.collectedPrincipal;
+      paidInterest += thuDuoc.collectedInterest;
       overduePrincipal += (s.PrincipalAmount || 0);
       overdueInterest += (s.InterestAmount || 0);
       const penalty = computeSchedulePenalty(

@@ -15,6 +15,7 @@ import {
   overdueDaysOfSchedule,
   computeSchedulePenalty,
   redateSchedules,
+  schedulePaymentStatus,
   buildDueDateSequence,
 } from '../loanMath';
 import type { RepaymentSchedule, LoanContract } from '../../types';
@@ -1063,5 +1064,132 @@ describe('tiền trả trước hạn ghi vào cột riêng, không nhét trong 
     const lai = recalculateSchedules(sinhMoi, hd);
     expect(lai[3].PrincipalAmount).toBe(sinhMoi[3].PrincipalAmount);
     expect(lai.reduce((a, k) => a + (k.PrincipalAmount || 0), 0)).toBe(100_000_000);
+  });
+});
+
+describe('schedulePaymentStatus — kỳ chỉ xong khi thu ĐỦ nghĩa vụ', () => {
+  const ky = (o: Partial<RepaymentSchedule>): RepaymentSchedule => ({
+    Id: 1, ContractId: 1, PeriodNumber: 1, DueDate: '2025-06-15',
+    PrincipalAmount: 5_420_000, InterestAmount: 3_827_218, TotalAmount: 0,
+    IsPaid: false, ...o,
+  } as RepaymentSchedule);
+
+  it('chưa thu gì', () => {
+    const r = schedulePaymentStatus(ky({}));
+    expect(r.status).toBe('chua_thu');
+    expect(r.collected).toBe(0);
+    expect(r.shortfall).toBe(9_247_218);
+  });
+
+  it('đủ gốc nhưng thiếu lãi thì KHÔNG xong — ca PHẠM TẤN KIỆT kỳ 17', () => {
+    const r = schedulePaymentStatus(ky({
+      IsPaid: true, OverdueInterestAmount: 17_819,
+      ActualPaidPrincipal: 5_420_000, ActualPaidInterest: 358_140,
+    }));
+    expect(r.status).toBe('thu_mot_phan');
+    expect(r.shortfall).toBe(3_486_897);
+  });
+
+  it('mới thu một phần gốc thì KHÔNG xong — ca PHẠM TẤN KIỆT kỳ 18', () => {
+    const r = schedulePaymentStatus(ky({
+      IsPaid: true, PrincipalAmount: 5_420_000, InterestAmount: 3_668_121,
+      OverdueInterestAmount: 668_219, ActualPaidPrincipal: 1_911, ActualPaidInterest: 0,
+    }));
+    expect(r.status).toBe('thu_mot_phan');
+    expect(r.shortfall).toBe(9_754_429);
+  });
+
+  it('thu một phần gốc một phần lãi thì KHÔNG xong', () => {
+    const r = schedulePaymentStatus(ky({
+      ActualPaidPrincipal: 2_000_000, ActualPaidInterest: 1_000_000,
+    }));
+    expect(r.status).toBe('thu_mot_phan');
+  });
+
+  it('thu đủ cả gốc lãi phạt mới xong', () => {
+    const r = schedulePaymentStatus(ky({
+      OverdueInterestAmount: 17_819,
+      ActualPaidPrincipal: 5_420_000, ActualPaidInterest: 3_845_037,
+    }));
+    expect(r.status).toBe('da_thu_du');
+    expect(r.shortfall).toBe(0);
+  });
+
+  it('đủ gốc và lãi mà chưa đóng phạt thì vẫn chưa xong', () => {
+    const r = schedulePaymentStatus(ky({
+      OverdueInterestAmount: 17_819,
+      ActualPaidPrincipal: 5_420_000, ActualPaidInterest: 3_827_218,
+    }));
+    expect(r.status).toBe('thu_mot_phan');
+    expect(r.shortfall).toBe(17_819);
+  });
+
+  it('QUY ƯỚC CŨ: IsPaid kèm hai cột khai tay bỏ trống là đã trả đủ theo lịch', () => {
+    const r = schedulePaymentStatus(ky({ IsPaid: true }));
+    expect(r.status).toBe('da_thu_du');
+    expect(r.shortfall).toBe(0);
+  });
+
+  it('quy ước cũ vẫn đúng khi kỳ có trả trước hạn — ca LÊ VĂN HẬU, không được báo thiếu', () => {
+    const r = schedulePaymentStatus(ky({
+      IsPaid: true, PrincipalAmount: 900_470_000, InterestAmount: 20_843_138,
+      PrepaidPrincipalAmount: 888_000_000,
+    }));
+    expect(r.status).toBe('da_thu_du');
+    expect(r.shortfall).toBe(0);
+  });
+
+  it('trả trước hạn KHÔNG bị trừ hai lần: gốc đã thu cộng cả phần trả trước', () => {
+    const r = schedulePaymentStatus(ky({
+      PrincipalAmount: 900_470_000, InterestAmount: 20_843_138,
+      PrepaidPrincipalAmount: 888_000_000, ActualPaidPrincipal: 12_470_000,
+      ActualPaidInterest: 20_843_138,
+    }));
+    expect(r.collectedPrincipal).toBe(900_470_000);
+    expect(r.status).toBe('da_thu_du');
+  });
+
+  it('thu thừa vẫn tính là xong, không âm', () => {
+    const r = schedulePaymentStatus(ky({
+      ActualPaidPrincipal: 6_000_000, ActualPaidInterest: 4_000_000,
+    }));
+    expect(r.status).toBe('da_thu_du');
+    expect(r.shortfall).toBe(0);
+  });
+});
+
+describe('kỳ thu một phần vẫn bị đếm quá hạn và tính phạt', () => {
+  const kyThieu = {
+    Id: 1, ContractId: 1, PeriodNumber: 17, DueDate: '2025-06-15',
+    PrincipalAmount: 5_420_000, InterestAmount: 3_827_218, TotalAmount: 0,
+    OverdueInterestAmount: 17_819, IsPaid: true,
+    ActualPaidPrincipal: 5_420_000, ActualPaidInterest: 358_140,
+  } as RepaymentSchedule;
+
+  it('getAutoDebtGroupInfo KHÔNG bỏ qua kỳ mới thu một phần dù đã tích IsPaid', () => {
+    const r = getAutoDebtGroupInfo([kyThieu], '2026-08-05');
+    expect(r.maxOverdueDays).toBeGreaterThan(360);
+    expect(r.debtGroup).toBe(5);
+  });
+
+  it('kỳ thu ĐỦ thì vẫn được bỏ qua như trước', () => {
+    const kyDu = {
+      ...kyThieu, ActualPaidInterest: 3_845_037,
+    } as RepaymentSchedule;
+    const r = getAutoDebtGroupInfo([kyDu], '2026-08-05');
+    expect(r.maxOverdueDays).toBe(0);
+    expect(r.debtGroup).toBe(1);
+  });
+
+  it('kỳ theo quy ước cũ vẫn được bỏ qua — không làm 831 kỳ đã thu thành quá hạn', () => {
+    const kyCu = {
+      ...kyThieu, ActualPaidPrincipal: 0, ActualPaidInterest: 0,
+    } as RepaymentSchedule;
+    const r = getAutoDebtGroupInfo([kyCu], '2026-08-05');
+    expect(r.maxOverdueDays).toBe(0);
+  });
+
+  it('overdueDaysOfSchedule vẫn đếm ngày cho kỳ thu một phần', () => {
+    expect(overdueDaysOfSchedule(kyThieu, '2026-08-05')).toBeGreaterThan(360);
   });
 });

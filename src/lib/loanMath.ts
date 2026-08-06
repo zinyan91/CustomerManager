@@ -356,7 +356,7 @@ export function getAutoDebtGroupInfo(
   let worstDueDate: string | undefined;
 
   for (const s of schedules) {
-    if (s.IsPaid || !s.DueDate) continue;
+    if (!s.DueDate || isScheduleFullySettled(s)) continue;
     const due = parseDateParts(s.DueDate);
     if (!due) continue;
     const diff = todayUtc - Date.UTC(due.y, due.m, due.d);
@@ -487,6 +487,65 @@ export function paidPrincipalOf(s: RepaymentSchedule): number {
   if (paid > 0) return paid + prepaid;
   if (s.IsPaid) return s.PrincipalAmount || 0;
   return prepaid;
+}
+
+export const PENALTY_COUNTS_TOWARD_SETTLEMENT = true;
+
+export type SchedulePaymentState = 'chua_thu' | 'thu_mot_phan' | 'da_thu_du';
+
+export interface SchedulePaymentStatus {
+  obligation: number;
+  collectedPrincipal: number;
+  collectedInterest: number;
+  collected: number;
+  shortfall: number;
+  status: SchedulePaymentState;
+}
+
+export function schedulePaymentStatus(
+  s: Pick<RepaymentSchedule,
+    'IsPaid' | 'PrincipalAmount' | 'InterestAmount' | 'OverdueInterestAmount'
+    | 'ActualPaidPrincipal' | 'ActualPaidInterest' | 'PrepaidPrincipalAmount'>
+): SchedulePaymentStatus {
+  const principalDue = s.PrincipalAmount || 0;
+  const interestDue = s.InterestAmount || 0;
+  const penaltyDue = PENALTY_COUNTS_TOWARD_SETTLEMENT ? (s.OverdueInterestAmount || 0) : 0;
+  const obligation = principalDue + interestDue + penaltyDue;
+
+  const paidPrincipal = s.ActualPaidPrincipal ?? 0;
+  const paidInterest = s.ActualPaidInterest ?? 0;
+  const prepaid = s.PrepaidPrincipalAmount ?? 0;
+  const declaredNothing = paidPrincipal <= 0 && paidInterest <= 0;
+
+  if (s.IsPaid && declaredNothing) {
+    return {
+      obligation,
+      collectedPrincipal: principalDue,
+      collectedInterest: interestDue + penaltyDue,
+      collected: obligation,
+      shortfall: 0,
+      status: 'da_thu_du',
+    };
+  }
+
+  const collectedPrincipal = paidPrincipal > 0 ? paidPrincipal + prepaid : prepaid;
+  const collectedInterest = paidInterest;
+  const collected = collectedPrincipal + collectedInterest;
+  const shortfall = Math.max(0, obligation - collected);
+
+  const status: SchedulePaymentState = collected <= 0
+    ? 'chua_thu'
+    : (shortfall > 0 ? 'thu_mot_phan' : 'da_thu_du');
+
+  return { obligation, collectedPrincipal, collectedInterest, collected, shortfall, status };
+}
+
+export function isScheduleFullySettled(
+  s: Pick<RepaymentSchedule,
+    'IsPaid' | 'PrincipalAmount' | 'InterestAmount' | 'OverdueInterestAmount'
+    | 'ActualPaidPrincipal' | 'ActualPaidInterest' | 'PrepaidPrincipalAmount'>
+): boolean {
+  return schedulePaymentStatus(s).status === 'da_thu_du';
 }
 
 export function computeOutstandingBalance(

@@ -184,6 +184,22 @@ Ràng buộc duy nhất: **kỳ 1 phải SAU ngày giải ngân**. Mốc khai s�
 
 Ràng buộc này cài trong **`buildDueDateSequence`** — nguồn duy nhất sinh dãy ngày đến hạn. Có **hai** đường ghi ngày đến nợ và cả hai đều phải đi qua đó: `generateSchedule` khi tạo lịch mới, và `redateSchedules` khi banker sửa mốc trả nợ của một KUNN **đã có lịch**. Cài chốt ở một đường không bịt được đường kia: bản chép tay trong `LoanPortfolioView` từng làm chính điều đó, khiến hồ sơ NGÔ NHỊ ĐẠT tái tạo lại được lỗi cũ sau khi đường tạo mới đã sửa. Thêm đường ghi ngày thứ ba thì cũng phải gọi hàm này, đừng cộng tháng bằng tay.
 
+### Kỳ chỉ xong khi thu ĐỦ nghĩa vụ
+
+Chốt 05/08/2026. Nghĩa vụ của một kỳ = `PrincipalAmount + InterestAmount + OverdueInterestAmount`. Thu một phần gốc, đủ gốc mà chưa đóng lãi, hay một phần gốc một phần lãi — **đều chưa xong**.
+
+`schedulePaymentStatus` trong `loanMath.ts` là nguồn duy nhất, trả ba trạng thái `chua_thu` / `thu_mot_phan` / `da_thu_du`. `isScheduleFullySettled` là dạng gọn dùng ở chỗ chỉ cần đúng/sai. Trước đó `IsPaid` là **ô tích tay** và điều khiển cả ba đường: `getAutoDebtGroupInfo` bỏ kỳ đó khỏi đếm ngày quá hạn, phần hiển thị ngừng tính phạt, thẻ tổng hợp cộng toàn bộ gốc lãi vào cột đã thu. Tích sớm là **khai thiếu dư nợ, khai tốt nhóm nợ và tha phạt** — cả ba đều lệch về phía có lợi cho hồ sơ.
+
+Ba điều bắt buộc phải giữ khi sửa chỗ này:
+
+**Quy ước cũ phải được tôn trọng.** `IsPaid = true` kèm **cả hai** cột `ActualPaidPrincipal` và `ActualPaidInterest` bỏ trống nghĩa là "đã trả đủ theo lịch" — đo được 831/835 kỳ đã thu ở trạng thái này. Bỏ nhánh đó là biến 831 kỳ thành chưa thu và làm dư nợ toàn danh mục phình lên.
+
+**Trả trước hạn không được trừ hai lần.** `PrincipalAmount` đã gồm `PrepaidPrincipalAmount`, nên gốc đã thu là `ActualPaidPrincipal + PrepaidPrincipalAmount` (khi có khai tay) — không phải nghĩa vụ trừ đi phần trả trước. Hồ sơ LÊ VĂN HẬU `2002/HĐTD/9665732/GNN-01` kỳ 7 và 10 trả trước 785 và 888 triệu; công thức sai biến khách **trả sớm** thành khách **nợ quá hạn**.
+
+**Không cần ngưỡng làm tròn.** Đo 05/08/2026: 0 kỳ thiếu dưới 1.000đ, 0 kỳ thiếu dưới 100.000đ; hai kỳ thiếu thật đều trên 3 triệu. So bằng chính xác.
+
+Phạt có tính vào nghĩa vụ hay không đặt ở hằng số `PENALTY_COUNTS_TOWARD_SETTLEMENT`, hiện `true` — kỳ đã thu đủ gốc lãi mà chưa đóng phạt vẫn chưa xong. Đổi một chỗ là đổi toàn hệ thống.
+
 ### Bất biến quan trọng nhất
 
 > **Tổng tiền gốc các kỳ luôn bằng đúng số tiền vay**, ở mọi phương thức trả nợ.

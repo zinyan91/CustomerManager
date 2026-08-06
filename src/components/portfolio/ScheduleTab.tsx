@@ -3,7 +3,9 @@ import { Calendar } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
 import { fmtDate, fmtMoney, fmtRate } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
-import { paidPrincipalOf, computeSchedulePenalty } from '../../lib/loanMath';
+import {
+  paidPrincipalOf, computeSchedulePenalty, isScheduleFullySettled, schedulePaymentStatus,
+} from '../../lib/loanMath';
 import { formatSegmentsLabel, type RateSegment } from '../../lib/rateResolution';
 import { DebtSummaryCard } from './DebtSummaryCard';
 
@@ -27,7 +29,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
   schedules, allSchedulesMap, periodRateSegments, openPaymentModal,
 }) => {
   const getPenaltyForSchedule = (s: RepaymentSchedule) => {
-    if (s.IsPaid) return s.OverdueInterestAmount || 0;
+    if (isScheduleFullySettled(s)) return s.OverdueInterestAmount || 0;
     return computeSchedulePenalty(
       s,
       getEffectiveActiveRate(selectedContract, s.DueDate)
@@ -79,11 +81,11 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
             <div className="text-[11px] text-slate-500 flex items-center space-x-4">
               <span className="flex items-center space-x-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                <span>Đã TT: {schedules.filter(s => s.IsPaid).length} kỳ</span>
+                <span>Đã TT: {schedules.filter(isScheduleFullySettled).length} kỳ</span>
               </span>
               <span className="flex items-center space-x-1">
                 <span className="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
-                <span>Chờ TT: {schedules.filter(s => !s.IsPaid).length} kỳ</span>
+                <span>Chờ TT: {schedules.filter(s => !isScheduleFullySettled(s)).length} kỳ</span>
               </span>
             </div>
           )}
@@ -115,7 +117,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                 </td></tr>
               ) : schedules.map(s => {
                 let autoOverdue = 0;
-                if (!s.IsPaid && s.DueDate) {
+                if (!isScheduleFullySettled(s) && s.DueDate) {
                   const parts = s.DueDate.split('-');
                   if (parts.length === 3) {
                     const due = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
@@ -127,7 +129,9 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                   }
                 }
 
-                const effectiveOverdueDays = s.IsPaid
+                const daThuDu = isScheduleFullySettled(s);
+                const thieu = schedulePaymentStatus(s).shortfall;
+                const effectiveOverdueDays = daThuDu
                   ? (s.OverdueDays || 0)
                   : ((s.OverdueDays && s.OverdueDays > 0) ? s.OverdueDays : autoOverdue);
                 const penaltyAmount = s.OverdueInterestAmount ?? getPenaltyForSchedule(s);
@@ -147,7 +151,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                 return (
                   <tr key={s.Id} className={`transition-colors ${isPrepayRow
                     ? 'bg-amber-500/10 dark:bg-amber-500/20 font-semibold border-l-4 border-amber-500'
-                    : s.IsPaid
+                    : daThuDu
                       ? 'bg-emerald-50/50 dark:bg-emerald-950/10'
                       : isOverdue
                         ? 'bg-rose-50/60 dark:bg-rose-950/30 font-semibold'
@@ -209,9 +213,13 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                     </td>
                     <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono text-sm">{rowTotalAmount.toLocaleString('vi-VN')}</td>
                     <td className="p-3 text-center">
-                      {s.IsPaid ? (
+                      {daThuDu ? (
                         <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                           ✓ Đã TT {effectiveOverdueDays > 0 ? `(Trễ ${effectiveOverdueDays}d)` : ''}
+                        </span>
+                      ) : thieu > 0 && s.IsPaid ? (
+                        <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-orange-600 text-white border border-orange-500">
+                          Thu thiếu {thieu.toLocaleString('vi-VN')}
                         </span>
                       ) : isOverdue ? (
                         <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-rose-600 text-white border border-rose-500 animate-pulse">
@@ -223,7 +231,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="p-3 font-mono font-bold text-slate-600 dark:text-slate-300">{s.IsPaid ? fmtDate(s.PaymentDate) : '—'}</td>
+                    <td className="p-3 font-mono font-bold text-slate-600 dark:text-slate-300">{daThuDu ? fmtDate(s.PaymentDate) : '—'}</td>
                     <td className="p-3 text-center">
                       <button
                         type="button"

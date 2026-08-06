@@ -632,7 +632,7 @@ Thẻ là **rủi ro tái sử dụng**: trả vào là tiêu lại được. N�
 | 2 | Tài sản đang thế chấp | Hạn mức thẻ ≤ phần còn trống của **cụm liên thông**, tính cả khoản vay và thẻ khác |
 | 3 | Sổ tiết kiệm cầm cố | Thêm **trần sản phẩm 90% mệnh giá**, áp đồng thời với ràng buộc cụm |
 
-**Trần sản phẩm và trần LTV là hai ràng buộc khác loại, cả hai phải thoả.** Sổ 500tr cùng hệ thống có LTV 100% ở góc nhìn cho vay nên cụm đỡ được 500tr; nhưng thẻ bị `CARD_STK_LTV_PERCENT = 90` kẹp về 450tr. Sổ đó đang đỡ khoản vay 300tr thì thẻ tối đa `min(500−300, 450) = 200tr`. `checkCardLimit` trả về `blocker` để thông báo nêu đúng trần nào bị chạm.
+**Trần sản phẩm và trần LTV là hai ràng buộc khác loại, cả hai phải thoả.** Sổ 500tr cùng hệ thống có LTV 100% ở góc nhìn cho vay nên khả năng bảo đảm của cụm là 500tr; nhưng thẻ bị `CARD_STK_LTV_PERCENT = 90` kẹp về 450tr. Sổ đó đang bảo đảm cho khoản vay 300tr thì thẻ tối đa `min(500−300, 450) = 200tr`. `checkCardLimit` trả về `blocker` để thông báo nêu đúng trần nào bị chạm.
 
 Vì sao 90% chứ không theo bảng LTV: đây là quy tắc **của sản phẩm thẻ**, cố ý đè lên bảng LTV cho vay. Đừng "sửa" nó thành `getEffectiveLtv`.
 

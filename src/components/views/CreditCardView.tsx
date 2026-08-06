@@ -17,9 +17,9 @@ const LY_DO_CHAN: Record<string, (k: CardLimitCheck) => string> = {
   appraisal_unusable: () =>
     'Định giá tài sản đã hết hiệu lực nên không dùng để cấp hạn mức được. Định giá lại trước khi mở thẻ.',
   product_cap_exceeded: k =>
-    `Thẻ bảo đảm bằng sổ tiết kiệm chỉ được tối đa ${CARD_STK_LTV_PERCENT}% mệnh giá — ${fmtMoney(k.productCap || 0)}. Đang xin vượt ${fmtMoney(k.excessAmount)}.`,
+    `Thẻ bảo đảm bằng sổ tiết kiệm chỉ được cấp tối đa ${CARD_STK_LTV_PERCENT}% mệnh giá, tức ${fmtMoney(k.productCap || 0)}. Hạn mức đề nghị vượt ${fmtMoney(k.excessAmount)}.`,
   cluster_exceeded: k =>
-    `Cụm tài sản đỡ được ${fmtMoney(k.clusterCapacity)}, đã dùng ${fmtMoney(k.clusterUsed)} cho các khoản vay và thẻ khác. Còn cấp được ${fmtMoney(k.maxAllowed)}, đang xin vượt ${fmtMoney(k.excessAmount)}.`,
+    `Khả năng bảo đảm của cụm tài sản là ${fmtMoney(k.clusterCapacity)}, đã sử dụng ${fmtMoney(k.clusterUsed)} cho các khoản vay và thẻ khác. Hạn mức khả dụng còn ${fmtMoney(k.maxAllowed)}, hạn mức đề nghị vượt ${fmtMoney(k.excessAmount)}.`,
 };
 
 export const CreditCardView: React.FC = () => {
@@ -337,7 +337,7 @@ export const CreditCardView: React.FC = () => {
                       const maxL = Math.round(maxLoanFromCollateral(col));
                       return (
                         <option key={col.Id} value={col.Id}>
-                          🏠 [Mã: {col.AssetCode || `ID#${col.Id}`}] {assetClassLabel(col.AssetType)} — {fmtMoney(val)} (LTV {ltv}% = Max: {fmtMoney(maxL)})
+                          🏠 [Mã: {col.AssetCode || `ID#${col.Id}`}] {assetClassLabel(col.AssetType)} — {fmtMoney(val)} (LTV {ltv}% · khả năng bảo đảm {fmtMoney(maxL)})
                         </option>
                       );
                     })
@@ -352,12 +352,12 @@ export const CreditCardView: React.FC = () => {
                   <span>Mã/Địa chỉ TSBĐ: <strong className="font-bold text-ink">{selectedCollateralObj.AssetCode || '—'} ({selectedCollateralObj.Address || ''})</strong></span>
                   <span>Giá trị định giá: <strong className="font-mono text-pos">{fmtMoney(collateralValue(selectedCollateralObj))}</strong></span>
                   <span>LTV Tối đa: <strong className="font-mono text-accent">{getEffectiveLtv(selectedCollateralObj)}%</strong></span>
-                  <span>Cụm tài sản đỡ được: <strong className="font-mono text-ink">{fmtMoney(limitCheck.clusterCapacity)}</strong></span>
-                  <span>Đã dùng: <strong className="font-mono text-ink">{fmtMoney(limitCheck.clusterUsed)}</strong></span>
+                  <span>Khả năng bảo đảm của cụm: <strong className="font-mono text-ink">{fmtMoney(limitCheck.clusterCapacity)}</strong></span>
+                  <span>Đã sử dụng: <strong className="font-mono text-ink">{fmtMoney(limitCheck.clusterUsed)}</strong></span>
                   {limitCheck.productCap !== null && (
-                    <span>Trần thẻ trên sổ ({CARD_STK_LTV_PERCENT}%): <strong className="font-mono text-ink">{fmtMoney(limitCheck.productCap)}</strong></span>
+                    <span>Trần thẻ trên sổ tiết kiệm ({CARD_STK_LTV_PERCENT}%): <strong className="font-mono text-ink">{fmtMoney(limitCheck.productCap)}</strong></span>
                   )}
-                  <span>Còn cấp được: <strong className="font-mono text-accent">{fmtMoney(selectedCollateralMaxLimit)}</strong></span>
+                  <span>Hạn mức khả dụng: <strong className="font-mono text-accent">{fmtMoney(selectedCollateralMaxLimit)}</strong></span>
                 </div>
                 {selectedCollateralMaxLimit > 0 && (
                   <button
@@ -365,7 +365,7 @@ export const CreditCardView: React.FC = () => {
                     onClick={() => setInputLimit(selectedCollateralMaxLimit.toLocaleString('vi-VN'))}
                     className="px-3 py-1 rounded-lg bg-accent hover:bg-accent text-accent-ink font-bold text-[11px] transition-colors"
                   >
-                    Áp dụng Hạn mức tối đa này
+                    Áp dụng hạn mức khả dụng
                   </button>
                 )}
               </div>

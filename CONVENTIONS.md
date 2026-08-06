@@ -48,6 +48,13 @@ Rà soát diện rộng bằng `supabase/reports/03_quet_toan_bo_cot_van_ban.sql
 
 **Viết SQL rà soát phải dùng lại đúng quy tắc đã cài trong code.** Một câu SQL cộng `ContractAmount` mà quên gom theo HĐTD gốc đã tạo ra báo động giả 41 tỷ trên dữ liệu vốn đã đúng.
 
+Trả giá lần thứ hai ngày 05/08/2026 với `reports/05`: câu tìm "kỳ thu thiếu" tự cộng tay thay vì phản chiếu `paidPrincipalOf`, và sinh hai báo động giả trên hồ sơ LÊ VĂN HẬU — khách **trả nợ trước hạn**, bị báo thành nợ quá hạn. Hai cái bẫy phải nhớ khi viết SQL về tiền thu nợ:
+
+- **`PrincipalAmount` VỐN ĐÃ bao gồm `PrepaidPrincipalAmount`.** Trừ phần trả trước hạn ra khỏi nghĩa vụ là trừ hai lần. Kỳ 7 của `2002/HĐTD/9665732/GNN-01`: `800.840.000 + 24.158.604 − 785.000.000` ra một khoản "thiếu" 39.998.604đ không tồn tại.
+- **`ActualPaidPrincipal = 0` kèm `IsPaid = true` nghĩa là "đã trả đủ theo lịch"**, không phải "chưa thu đồng nào" — xem mục `paidPrincipalOf` ở §13. Hiểu ngược thì 829/835 kỳ đã thu bị báo là chưa thu.
+
+Chỉ được kết luận một kỳ thu thiếu khi **có khai tay** ít nhất một trong `ActualPaidPrincipal` / `ActualPaidInterest` mà tổng vẫn dưới nghĩa vụ.
+
 **Rà soát bảo mật liệt kê tài nguyên từ `pg_tables`,** không suy từ mã nguồn. Cách suy từ code từng bỏ sót 7 bảng đang mở.
 
 ---

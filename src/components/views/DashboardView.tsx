@@ -5,13 +5,14 @@ import { fmtDate, parseAnyDate, getMasterHdtdNumber, toIsoDate, daysUntil } from
 import { assetClassLabel } from '../../lib/collateralMath';
 import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
-  DUE_FILTER_LABELS, monthlyDueInfo, type DueFilter,
+  monthlyDueInfo, type DueFilter,
 } from '../../lib/dueList';
 import type { Customer, Collateral, LoanContract } from '../../types';
 import {
   DollarSign, Users, Building2, AlertCircle, RefreshCw,
-  Calendar, Clock, ShieldAlert, FileText, AlertTriangle, Printer
+  Calendar, Clock, ShieldAlert, FileText, AlertTriangle,
 } from 'lucide-react';
+import { DueSectionPanel, dueBadgeClass, dueBadgeText } from '../dashboard/DueSectionPanel';
 
 export const DashboardView: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -384,344 +385,202 @@ export const DashboardView: React.FC = () => {
           </button>
         </div>
       </div>
+      <DueSectionPanel
+        icon={Calendar}
+        tone="warn"
+        title="1. Khách hàng chuẩn bị đóng kỳ due của tháng"
+        counts={{
+          upcoming: dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) >= 0).length,
+          expired: dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) < 0).length,
+        }}
+        columns={[
+          { label: 'KHÁCH HÀNG VAY' },
+          { label: 'MÃ CIF' },
+          { label: 'SỐ HĐTD / KUNN' },
+          { label: 'DƯ NỢ HIỆN HỮU', align: 'right' },
+          { label: 'NGÀY ĐẾN HẠN DUE', align: 'center' },
+          { label: 'HẠN CÒN LẠI', align: 'center' },
+        ]}
+        isEmpty={dueInMonthList.length === 0}
+        emptyText="Không có khách hàng nào tới hạn hoặc quá hạn đóng kỳ trong kỳ này."
+        cardBg={cardBg}
+        tableHeaderBg={tableHeaderBg}
+      >
+        {dueInMonthList.map(({ contract, customer, dueInfo }) => {
+          const dl = dueInfo?.daysLeft ?? 0;
+          return (
+            <tr key={contract.Id} className={`hover:bg-panel-muted transition-colors ${dl < 0 ? 'bg-neg-soft' : ''}`}>
+              <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
+              <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
+              <td className="p-2.5 font-mono">{contract.ContractNumber}</td>
+              <td className="p-2.5 text-right font-mono font-bold text-warn">
+                {fmtFullMoney(contract.CurrentBalance ?? contract.LoanAmount ?? contract.ContractAmount ?? 0)}
+              </td>
+              <td className="p-2.5 text-center font-bold text-accent">{dueInfo?.dueDateStr}</td>
+              <td className="p-2.5 text-center">
+                <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 2)}`}>
+                  {dueBadgeText(dl)}
+                </span>
+              </td>
+            </tr>
+          );
+        })}
+      </DueSectionPanel>
 
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
-        <div className="flex items-center justify-between border-b border-line pb-2">
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4 text-warn" />
-            <h3 className="font-bold text-xs uppercase tracking-wider text-warn">
-              1. KHÁCH HÀNG CHUẨN BỊ ĐÓNG KỲ DUE CỦA THÁNG
-            </h3>
-          </div>
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-warn-soft text-warn border border-warn/30">
-            {dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) >= 0).length} sắp đến · {dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) < 0).length} quá hạn
-          </span>
-        </div>
+      <DueSectionPanel
+        icon={Clock}
+        tone="accent"
+        title="2. Danh sách giấy nhận nợ (KUNN) sắp đến hạn kết thúc"
+        counts={kunnCount}
+        filter={kunnFilter}
+        onFilterChange={setKunnFilter}
+        onPrint={inKunn}
+        columns={[
+          { label: 'KHÁCH HÀNG VAY' },
+          { label: 'MÃ CIF' },
+          { label: 'SỐ HĐTD / KUNN' },
+          { label: 'SỐ TIỀN KUNN / DƯ NỢ', align: 'right' },
+          { label: 'NGÀY KẾT THÚC KUNN', align: 'center' },
+          { label: 'KỲ HẠN KUNN', align: 'center' },
+          { label: 'HẠN CÒN LẠI', align: 'center' },
+        ]}
+        isEmpty={kunnRows.length === 0}
+        emptyText="Không có KUNN nào sắp đến hạn hoặc quá hạn kết thúc."
+        cardBg={cardBg}
+        tableHeaderBg={tableHeaderBg}
+      >
+        {kunnRows.map(({ contract, customer, daysLeft }) => {
+          const dl = daysLeft ?? 0;
+          return (
+            <tr key={contract.Id} className={`hover:bg-panel-muted transition-colors ${dl < 0 ? 'bg-neg-soft' : ''}`}>
+              <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
+              <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
+              <td className="p-2.5 font-mono">{contract.ContractNumber}</td>
+              <td className="p-2.5 text-right font-mono font-bold text-pos">
+                {fmtFullMoney(contract.LoanAmount || contract.CurrentBalance || 0)}
+              </td>
+              <td className="p-2.5 text-center font-bold text-accent">{fmtDate(contract.KunnDueDate)}</td>
+              <td className="p-2.5 text-center font-bold">{contract.KunnTenor || `${contract.LoanTenorMonths}T`}</td>
+              <td className="p-2.5 text-center">
+                <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 3)}`}>
+                  {dueBadgeText(dl)}
+                </span>
+              </td>
+            </tr>
+          );
+        })}
+      </DueSectionPanel>
 
-        {dueInMonthList.length === 0 ? (
-          <div className="text-center py-6 text-xs text-ink-faint italic">
-            Không có khách hàng nào tới hạn hoặc quá hạn đóng kỳ trong kỳ này.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className={`${tableHeaderBg} font-bold border-b border-line`}>
-                  <th className="p-2.5">KHÁCH HÀNG VAY</th>
-                  <th className="p-2.5">MÃ CIF</th>
-                  <th className="p-2.5">SỐ HĐTD / KUNN</th>
-                  <th className="p-2.5 text-right">DƯ NỢ HIỆN HỮU</th>
-                  <th className="p-2.5 text-center">NGÀY ĐẾN HẠN DUE</th>
-                  <th className="p-2.5 text-center">HẠN CÒN LẠI</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {dueInMonthList.map(({ contract, customer, dueInfo }) => {
-                  const dl = dueInfo?.daysLeft ?? 0;
-                  const isOverdue = dl < 0;
-                  const badgeCls = isOverdue
-                    ? 'bg-neg text-white border border-neg font-bold animate-pulse'
-                    : dl <= 2
-                      ? 'bg-neg-soft text-neg border border-neg/30   '
-                      : 'bg-warn-soft text-warn border border-warn/30   ';
-                  const badgeText = isOverdue ? `🔴 Quá hạn ${Math.abs(dl)} ngày` : `Còn ${dl} ngày`;
-                  return (
-                    <tr key={contract.Id} className={`hover:bg-panel-muted transition-colors ${isOverdue ? 'bg-neg-soft ' : ''}`}>
-                      <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
-                      <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
-                      <td className="p-2.5 font-mono">{contract.ContractNumber}</td>
-                      <td className="p-2.5 text-right font-mono font-bold text-warn">
-                        {fmtFullMoney(contract.CurrentBalance ?? contract.LoanAmount ?? contract.ContractAmount ?? 0)}
-                      </td>
-                      <td className="p-2.5 text-center font-bold text-accent">{dueInfo?.dueDateStr}</td>
-                      <td className="p-2.5 text-center">
-                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${badgeCls}`}>
-                          {badgeText}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <DueSectionPanel
+        icon={AlertTriangle}
+        tone="accent"
+        title="3. Danh sách hạn mức tín dụng (HMTD) sắp tới hạn kết thúc"
+        counts={hmtdCount}
+        filter={hmtdFilter}
+        onFilterChange={setHmtdFilter}
+        onPrint={inHmtd}
+        columns={[
+          { label: 'KHÁCH HÀNG VAY' },
+          { label: 'MÃ CIF' },
+          { label: 'SỐ HĐTD HẠN MỨC' },
+          { label: 'TỔNG MỨC CẤP HMTD', align: 'right' },
+          { label: 'NGÀY HẾT HẠN HĐ', align: 'center' },
+          { label: 'TRẠNG THÁI HẠN MỨC', align: 'center' },
+        ]}
+        isEmpty={hmtdRows.length === 0}
+        emptyText="Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn."
+        cardBg={cardBg}
+        tableHeaderBg={tableHeaderBg}
+      >
+        {hmtdRows.map(({ masterNo, contract, customer, endDateStr, daysLeft }) => {
+          const days = daysLeft ?? 0;
+          const badgeStyle = days < 0 || days < 6
+            ? 'bg-neg text-surface border border-neg font-bold'
+            : days >= 21
+              ? 'bg-pos-soft text-pos border border-pos/30'
+              : 'bg-warn-soft text-warn border border-warn/30 font-bold';
+          const statusText = days < 0
+            ? `Đã hết hạn ${Math.abs(days)} ngày`
+            : days >= 21
+              ? `An toàn · còn ${days} ngày`
+              : days >= 6
+                ? `Cần chú ý · còn ${days} ngày`
+                : `Khẩn cấp · còn ${days} ngày`;
+          return (
+            <tr key={masterNo} className={`hover:bg-panel-muted transition-colors ${days < 0 ? 'bg-neg-soft' : ''}`}>
+              <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
+              <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
+              <td className="p-2.5 font-mono font-bold text-accent">{masterNo}</td>
+              <td className="p-2.5 text-right font-mono font-bold text-accent">
+                {fmtFullMoney(contract.ContractAmount || 0)}
+              </td>
+              <td className="p-2.5 text-center font-bold">{fmtDate(endDateStr)}</td>
+              <td className="p-2.5 text-center">
+                <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${badgeStyle}`}>
+                  {statusText}
+                </span>
+              </td>
+            </tr>
+          );
+        })}
+      </DueSectionPanel>
 
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
-        <div className="flex items-center justify-between border-b border-line pb-2">
-          <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4 text-accent" />
-            <h3 className="font-bold text-xs uppercase tracking-wider text-accent">
-              2. DANH SÁCH GIẤY NHẬN NỢ (KUNN) SẮP ĐẾN HẠN KẾT THÚC
-            </h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-accent/30">
-              {kunnCount.upcoming} sắp đến · {kunnCount.expired} quá hạn
-            </span>
-          <div className="flex items-center gap-1.5">
-            {(['all', 'upcoming', 'expired'] as DueFilter[]).map(f => (
-              <button key={f} type="button" onClick={() => setKunnFilter(f)}
-                className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors ${
-                  kunnFilter === f
-                    ? 'bg-accent text-accent-ink'
-                    : 'text-ink-faint hover:bg-panel-muted'
-                }`}>
-                {DUE_FILTER_LABELS[f]}
-              </button>
-            ))}
-            <button type="button" onClick={inKunn}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border ${
-                'bg-panel border-line text-ink-muted hover:border-accent hover:text-accent'
-              }`}>
-              <Printer className="w-3 h-3" />PDF
-            </button>
-          </div>
-        </div>
-        </div>
-
-        {kunnRows.length === 0 ? (
-          <div className="text-center py-6 text-xs text-ink-faint italic">
-            Không có KUNN nào sắp đến hạn hoặc quá hạn kết thúc.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className={`${tableHeaderBg} font-bold border-b border-line`}>
-                  <th className="p-2.5">KHÁCH HÀNG VAY</th>
-                  <th className="p-2.5">MÃ CIF</th>
-                  <th className="p-2.5">SỐ HĐTD / KUNN</th>
-                  <th className="p-2.5 text-right">SỐ TIỀN KUNN / DƯ NỢ</th>
-                  <th className="p-2.5 text-center">NGÀY KẾT THÚC KUNN</th>
-                  <th className="p-2.5 text-center">KỲ HẠN KUNN</th>
-                  <th className="p-2.5 text-center">HẠN CÒN LẠI</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {kunnRows.map(({ contract, customer, daysLeft }) => {
-                  const dl = daysLeft ?? 0;
-                  const isOverdue = dl < 0;
-                  const badgeCls = isOverdue
-                    ? 'bg-neg text-white border border-neg font-bold animate-pulse'
-                    : dl <= 3
-                      ? 'bg-neg-soft text-neg border border-neg/30   '
-                      : 'bg-warn-soft text-warn border border-warn/30   ';
-                  const badgeText = isOverdue ? `🔴 Quá hạn ${Math.abs(dl)} ngày` : `Còn ${dl} ngày`;
-                  return (
-                    <tr key={contract.Id} className={`hover:bg-panel-muted transition-colors ${isOverdue ? 'bg-neg-soft ' : ''}`}>
-                      <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
-                      <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
-                      <td className="p-2.5 font-mono">{contract.ContractNumber}</td>
-                      <td className="p-2.5 text-right font-mono font-bold text-pos">
-                        {fmtFullMoney(contract.LoanAmount || contract.CurrentBalance || 0)}
-                      </td>
-                      <td className="p-2.5 text-center font-bold text-accent">{fmtDate(contract.KunnDueDate)}</td>
-                      <td className="p-2.5 text-center font-bold">{contract.KunnTenor || `${contract.LoanTenorMonths}T`}</td>
-                      <td className="p-2.5 text-center">
-                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${badgeCls}`}>
-                          {badgeText}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
-        <div className="flex items-center justify-between border-b border-line pb-2">
-          <div className="flex items-center space-x-2">
-            <AlertTriangle className="w-4 h-4 text-accent" />
-            <h3 className="font-bold text-xs uppercase tracking-wider text-accent">
-              3. DANH SÁCH HẠN MỨC TÍN DỤNG (HMTD) SẮP TỚI HẠN KẾT THÚC
-            </h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-accent/30">
-              {hmtdCount.upcoming} sắp đến · {hmtdCount.expired} quá hạn
-            </span>
-          <div className="flex items-center gap-1.5">
-            {(['all', 'upcoming', 'expired'] as DueFilter[]).map(f => (
-              <button key={f} type="button" onClick={() => setHmtdFilter(f)}
-                className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors ${
-                  hmtdFilter === f
-                    ? 'bg-accent text-accent-ink'
-                    : 'text-ink-faint hover:bg-panel-muted'
-                }`}>
-                {DUE_FILTER_LABELS[f]}
-              </button>
-            ))}
-            <button type="button" onClick={inHmtd}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border ${
-                'bg-panel border-line text-ink-muted hover:border-accent hover:text-accent'
-              }`}>
-              <Printer className="w-3 h-3" />PDF
-            </button>
-          </div>
-        </div>
-        </div>
-
-        {hmtdRows.length === 0 ? (
-          <div className="text-center py-6 text-xs text-ink-faint italic">
-            Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className={`${tableHeaderBg} font-bold border-b border-line`}>
-                  <th className="p-2.5">KHÁCH HÀNG VAY</th>
-                  <th className="p-2.5">MÃ CIF</th>
-                  <th className="p-2.5">SỐ HĐTD HẠN MỨC</th>
-                  <th className="p-2.5 text-right">TỔNG MỨC CẤP HMTD</th>
-                  <th className="p-2.5 text-center">NGÀY HẾT HẠN HĐ</th>
-                  <th className="p-2.5 text-center">TRẠNG THÁI HẠN MỨC (MÀU)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {hmtdRows.map(({ masterNo, contract, customer, endDateStr, daysLeft }) => {
-                  const days = daysLeft ?? 0;
-                  const isOverdue = days < 0;
-                  let badgeStyle = '';
-                  let statusText = '';
-                  if (isOverdue) {
-                    badgeStyle = 'bg-neg text-white border border-neg font-bold animate-pulse';
-                    statusText = `🔴 Đã hết hạn (${Math.abs(days)} ngày)`;
-                  } else if (days >= 21) {
-                    badgeStyle = 'bg-pos-soft text-pos border border-pos/30   ';
-                    statusText = `🟢 An toàn (Còn ${days} ngày)`;
-                  } else if (days >= 6) {
-                    badgeStyle = 'bg-warn-soft text-warn border border-warn/30    font-bold';
-                    statusText = `🟡 Cần chú ý (Còn ${days} ngày)`;
-                  } else {
-                    badgeStyle = 'bg-neg text-white border border-neg font-bold animate-pulse';
-                    statusText = `🔴 Khẩn cấp (Còn ${days} ngày)`;
-                  }
-
-                  return (
-                    <tr key={masterNo} className={`hover:bg-panel-muted transition-colors ${isOverdue ? 'bg-neg-soft ' : ''}`}>
-                      <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
-                      <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
-                      <td className="p-2.5 font-mono font-bold text-accent">{masterNo}</td>
-                      <td className="p-2.5 text-right font-mono font-bold text-accent">
-                        {fmtFullMoney(contract.ContractAmount || 0)}
-                      </td>
-                      <td className="p-2.5 text-center font-bold">{fmtDate(endDateStr)}</td>
-                      <td className="p-2.5 text-center">
-                        <span className={`px-2.5 py-1 rounded-lg text-[11px] inline-block ${badgeStyle}`}>
-                          {statusText}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
-        <div className="flex items-center justify-between border-b border-line pb-2">
-          <div className="flex items-center space-x-2">
-            <Building2 className="w-4 h-4 text-pos" />
-            <h3 className="font-bold text-xs uppercase tracking-wider text-pos">
-              4. DANH SÁCH ĐỊNH GIÁ TÀI SẢN BẢO ĐẢM SẮP TỚI HẠN
-            </h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-pos-soft text-pos border border-pos/30">
-              {tsbdCount.upcoming} sắp đến · {tsbdCount.expired} quá hạn
-            </span>
-          <div className="flex items-center gap-1.5">
-            {(['all', 'upcoming', 'expired'] as DueFilter[]).map(f => (
-              <button key={f} type="button" onClick={() => setTsbdFilter(f)}
-                className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors ${
-                  tsbdFilter === f
-                    ? 'bg-pos text-accent-ink'
-                    : 'text-ink-faint hover:bg-panel-muted'
-                }`}>
-                {DUE_FILTER_LABELS[f]}
-              </button>
-            ))}
-            <button type="button" onClick={inTsbd}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border ${
-                'bg-panel border-line text-ink-muted hover:border-accent hover:text-accent'
-              }`}>
-              <Printer className="w-3 h-3" />PDF
-            </button>
-          </div>
-        </div>
-        </div>
-
-        {tsbdRows.length === 0 ? (
-          <div className="text-center py-6 text-xs text-ink-faint italic">
-            Không có Định giá TSĐB nào sắp hết hạn trong 30 ngày tới.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className={`${tableHeaderBg} font-bold border-b border-line`}>
-                  <th className="p-2.5">CHỦ SỞ HỮU TSĐB</th>
-                  <th className="p-2.5">MÃ CIF</th>
-                  <th className="p-2.5">MÃ TS / ĐỊA CHỈ</th>
-                  <th className="p-2.5">XẾP LOẠI TS</th>
-                  <th className="p-2.5 text-right">GIÁ TRỊ ĐỊNH GIÁ</th>
-                  <th className="p-2.5 text-center">NGÀY HẾT HẠN ĐỊNH GIÁ</th>
-                  <th className="p-2.5 text-center">TRẠNG THÁI (MÀU)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {tsbdRows.map(({ collateral, customer, expiryDateStr, daysLeft }) => {
-                  const days = daysLeft ?? 0;
-                  let badgeStyle = '';
-                  let statusText = '';
-                  if (days >= 16) {
-                    badgeStyle = 'bg-pos-soft text-pos border border-pos/30   ';
-                    statusText = `🟢 An toàn (Còn ${days} ngày)`;
-                  } else if (days >= 1) {
-                    badgeStyle = 'bg-warn-soft text-warn border border-warn/30    font-bold';
-                    statusText = `🟡 Cần chú ý (Còn ${days} ngày)`;
-                  } else {
-                    badgeStyle = 'bg-neg text-white border border-neg font-bold animate-pulse';
-                    statusText = `🔴 Đã hết hạn định giá (${Math.abs(days)} ngày quá hạn)`;
-                  }
-
-                  const val = collateral.AppraisedValue || collateral.Value || 0;
-
-                  return (
-                    <tr key={collateral.Id} className="hover:bg-panel-muted transition-colors">
-                      <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
-                      <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
-                      <td className="p-2.5 font-medium">{collateral.AssetCode || collateral.Address || 'TSBĐ'}</td>
-                      <td className="p-2.5">
-                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-accent-soft text-accent border border-accent/30">
-                          {assetClassLabel(collateral.AssetType)}
-                        </span>
-                      </td>
-                      <td className="p-2.5 text-right font-mono font-bold text-pos">
-                        {fmtFullMoney(val)}
-                      </td>
-                      <td className="p-2.5 text-center font-bold">{expiryDateStr ? fmtDate(expiryDateStr) : 'N/A'}</td>
-                      <td className="p-2.5 text-center">
-                        <span className={`px-2.5 py-1 rounded-lg text-[11px] inline-block ${badgeStyle}`}>
-                          {statusText}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <DueSectionPanel
+        icon={Building2}
+        tone="pos"
+        title="4. Danh sách định giá tài sản bảo đảm sắp tới hạn"
+        counts={tsbdCount}
+        filter={tsbdFilter}
+        onFilterChange={setTsbdFilter}
+        onPrint={inTsbd}
+        columns={[
+          { label: 'CHỦ SỞ HỮU TSĐB' },
+          { label: 'MÃ CIF' },
+          { label: 'MÃ TS / ĐỊA CHỈ' },
+          { label: 'XẾP LOẠI TS' },
+          { label: 'GIÁ TRỊ ĐỊNH GIÁ', align: 'right' },
+          { label: 'NGÀY HẾT HẠN ĐỊNH GIÁ', align: 'center' },
+          { label: 'TRẠNG THÁI', align: 'center' },
+        ]}
+        isEmpty={tsbdRows.length === 0}
+        emptyText="Không có Định giá TSĐB nào sắp hết hạn trong 30 ngày tới."
+        cardBg={cardBg}
+        tableHeaderBg={tableHeaderBg}
+      >
+        {tsbdRows.map(({ collateral, customer, expiryDateStr, daysLeft }) => {
+          const days = daysLeft ?? 0;
+          const badgeStyle = days >= 16
+            ? 'bg-pos-soft text-pos border border-pos/30'
+            : days >= 1
+              ? 'bg-warn-soft text-warn border border-warn/30 font-bold'
+              : 'bg-neg text-surface border border-neg font-bold';
+          const statusText = days >= 16
+            ? `An toàn · còn ${days} ngày`
+            : days >= 1
+              ? `Cần chú ý · còn ${days} ngày`
+              : `Quá hạn ${Math.abs(days)} ngày`;
+          const val = collateral.AppraisedValue || collateral.Value || 0;
+          return (
+            <tr key={collateral.Id} className={`hover:bg-panel-muted transition-colors ${days < 1 ? 'bg-neg-soft' : ''}`}>
+              <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
+              <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
+              <td className="p-2.5 font-medium">{collateral.AssetCode || collateral.Address || 'TSBĐ'}</td>
+              <td className="p-2.5">
+                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-accent-soft text-accent border border-accent/30">
+                  {assetClassLabel(collateral.AssetType)}
+                </span>
+              </td>
+              <td className="p-2.5 text-right font-mono font-bold text-pos">{fmtFullMoney(val)}</td>
+              <td className="p-2.5 text-center font-bold">{expiryDateStr ? fmtDate(expiryDateStr) : 'N/A'}</td>
+              <td className="p-2.5 text-center">
+                <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${badgeStyle}`}>
+                  {statusText}
+                </span>
+              </td>
+            </tr>
+          );
+        })}
+      </DueSectionPanel>
     </div>
   );
 };

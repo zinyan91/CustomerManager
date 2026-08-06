@@ -87,6 +87,21 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 
 Thứ tự đúng, cài trong `floatingRate`: `BaseRate + MarginRate` (áp sàn `RateFloorAnnual`) → `PostPreferentialRate` → `NormalRate` → `InterestRate`. Kỳ ưu đãi ghi đè N tháng đầu, mốc điều chỉnh ghi đè kể từ ngày hiệu lực. Cùng hàm này nuôi cả nhãn trên màn hình lẫn tiền phạt quá hạn, nên không còn chỗ nào lệch.
 
+### Hai chế độ lãi suất LOẠI TRỪ NHAU
+
+Quyết định nghiệp vụ 05/08/2026: một KUNN chỉ theo **một** trong hai chế độ.
+
+| Chế độ | Cột được lưu | Cột phải để trống |
+| :--- | :--- | :--- |
+| **Ưu đãi** | `PreferentialRate`, `PreferentialPeriodMonths`, `PostPreferentialRate` (= ưu đãi + biên), `MarginRate` | `BaseRate`, `NormalRate` |
+| **Thông thường** | `BaseRate`, `MarginRate`, `NormalRate` (= cơ sở + biên) | `PreferentialRate`, `PreferentialPeriodMonths`, `PostPreferentialRate` |
+
+Chọn LS thông thường thì lãi ưu đãi **không tồn tại để mà áp dụng**. Trước đây form lưu cả hai nhóm cột bất kể banker chọn gì, còn `buildRateTimeline` thấy `PreferentialRate > 0` kèm số kỳ `> 0` là áp ưu đãi — nên khoản khai theo lãi thông thường vẫn bị tính lãi ưu đãi. Hồ sơ ĐOÀN NGỌC LÝ `2002/HĐTD_1/9718695/GNN-03` khai ưu đãi 10,20%/24 tháng **và** cơ sở 9,70% + biên 1,35%: khung hiện 11,25% còn mọi kỳ tính ở 10,20%.
+
+`buildRateFields(mode, input)` trong `rateResolution.ts` là **nơi duy nhất** dựng nhóm cột lãi suất khi lưu — nó xoá hẳn nhánh không dùng, nên dữ liệu tự nói lên chế độ và không tạo lại được mâu thuẫn. `resolveRateModeOf` suy chế độ ngược lại khi mở form; trước đây `interestRateMode` là state không nạp lại từ hợp đồng, khiến **mở KUNN rồi bấm Lưu là đổi lãi suất đã lưu dù không sửa gì**.
+
+Còn một khoảng trống **chờ quyết định**: `PenaltySurcharge` (phụ trội điều kiện) được lưu và đọc lại vào form nhưng **không nằm trong đầu vào của `buildRateTimeline`**, nên không kỳ lãi nào cộng nó. Báo cáo `supabase/reports/04_kunn_khai_ca_hai_che_do_lai_suat.sql` liệt kê các khoản bị ảnh hưởng.
+
 **`computeLimitGroups` phải được truyền `options.isClosed`.** Cờ `IsClosed` nằm ở bảng `CreditContracts` còn hàm này chỉ nhận `LoanContract[]`, nên nó không tự biết hợp đồng đã đóng. Bỏ trống thì hạn mức khả dụng ra số dương trên HĐTD đã đóng — hồ sơ NGUYỄN MINH HÙNG ngày 05/08/2026 hiện HMTD còn lại 600 triệu với nút Giải ngân đang bật, trong khi HĐTD đã đóng và còn 400 triệu chưa trả. **Đóng HĐTD và hết hiệu lực theo ngày là hai chuyện khác nhau**: hợp đồng còn hạn vẫn đóng được, nên không thay cái này bằng cái kia. Cả `computeLimitGroups` và `summarizeCreditContracts` đều cho `available = 0` khi `expired || closed`, và xếp lý do chặn cùng thứ tự: đã đóng → hết hiệu lực → hết hạn mức.
 
 **Không đóng HĐTD khi còn KUNN chưa tất toán.** Không ngân hàng nào tất toán hợp đồng mà còn dư nợ, nên đó là **dữ liệu sai phải chặn**, không phải trạng thái cần thiết kế màn hình để hiển thị. Chốt ở `canCloseCreditContract` cho đường giao diện, và trigger `trg_chan_dong_hdtd_con_du_no` (migration 22, đã chạy và kiểm chứng 05/08/2026) là lớp bảo vệ thật — cùng lý lẽ với RLS và unique index số KUNN: chốt ở client không đỡ được đường ghi bằng SQL.

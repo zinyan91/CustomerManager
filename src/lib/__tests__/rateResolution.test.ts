@@ -6,6 +6,7 @@ import {
   splitPeriodByRate,
   getEffectiveActiveRate,
   resolveRateModeOf,
+  buildRateFields,
   weightedRatePercent,
   formatSegmentsLabel,
 } from '../rateResolution';
@@ -436,5 +437,57 @@ describe('resolveRateModeOf — chế độ lãi suất phải suy lại từ h�
   it('không khai gì thì mặc định ưu đãi, giữ nguyên hành vi form trống', () => {
     expect(resolveRateModeOf({} as LoanContract)).toBe('pref');
     expect(resolveRateModeOf(null)).toBe('pref');
+  });
+});
+
+describe('buildRateFields — hai chế độ lãi suất loại trừ nhau', () => {
+  const nhap = { prefPercent: 10.2, prefMonths: 24, basePercent: 9.7, marginPercent: 1.35, floorPercent: null };
+
+  it('chế độ ưu đãi: KHÔNG lưu lãi cơ sở, thả nổi sau ưu đãi = ưu đãi + biên', () => {
+    const r = buildRateFields('pref', nhap);
+    expect(r.PreferentialRate).toBeCloseTo(0.102, 10);
+    expect(r.PreferentialPeriodMonths).toBe(24);
+    expect(r.PostPreferentialRate).toBeCloseTo(0.1155, 10);
+    expect(r.BaseRate).toBeNull();
+    expect(r.NormalRate).toBeNull();
+    expect(r.MarginRate).toBeCloseTo(0.0135, 10);
+  });
+
+  it('chế độ thông thường: KHÔNG lưu lãi ưu đãi — chọn thông thường thì ưu đãi không tồn tại', () => {
+    const r = buildRateFields('base', nhap);
+    expect(r.PreferentialRate).toBeNull();
+    expect(r.PreferentialPeriodMonths).toBeNull();
+    expect(r.PostPreferentialRate).toBeNull();
+    expect(r.BaseRate).toBeCloseTo(0.097, 10);
+    expect(r.NormalRate).toBeCloseTo(0.1105, 10);
+  });
+
+  it('dòng thời gian của chế độ thông thường chỉ có một mức, không có đoạn ưu đãi', () => {
+    const c = { DisbursementDate: '2026-04-09', ...buildRateFields('base', nhap) } as LoanContract;
+    const timeline = buildContractRateTimeline(c, { today: '2026-08-05' });
+    expect(timeline).toHaveLength(1);
+    expect(timeline[0].ratePercent).toBeCloseTo(11.05, 10);
+    expect(getEffectiveActiveRate(c, '2026-05-15')).toBeCloseTo(0.1105, 10);
+  });
+
+  it('dòng thời gian của chế độ ưu đãi: ưu đãi rồi mới thả nổi đúng mức sau ưu đãi', () => {
+    const c = { DisbursementDate: '2026-04-09', ...buildRateFields('pref', nhap) } as LoanContract;
+    const timeline = buildContractRateTimeline(c, { today: '2026-08-05' });
+    expect(timeline).toHaveLength(2);
+    expect(timeline[0].ratePercent).toBeCloseTo(10.2, 10);
+    expect(timeline[1].ratePercent).toBeCloseTo(11.55, 10);
+    expect(getEffectiveActiveRate(c, '2026-05-15')).toBeCloseTo(0.102, 10);
+    expect(getEffectiveActiveRate(c, '2028-06-15')).toBeCloseTo(0.1155, 10);
+  });
+
+  it('chế độ ưu đãi mà bỏ trống số kỳ thì không lưu ưu đãi, tránh tạo mâu thuẫn', () => {
+    const r = buildRateFields('pref', { ...nhap, prefMonths: 0 });
+    expect(r.PreferentialRate).toBeNull();
+    expect(r.PreferentialPeriodMonths).toBeNull();
+  });
+
+  it('giữ sàn lãi suất khi có khai', () => {
+    expect(buildRateFields('base', { ...nhap, floorPercent: 8 }).RateFloorAnnual).toBeCloseTo(0.08, 10);
+    expect(buildRateFields('base', nhap).RateFloorAnnual).toBeNull();
   });
 });

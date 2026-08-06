@@ -13,6 +13,7 @@ import {
 } from '../../lib/loanMath';
 import {
   buildContractRateTimeline, splitPeriodByRate, getEffectiveActiveRate, resolveRateModeOf,
+  buildRateFields,
   type RateSegment,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
@@ -493,8 +494,6 @@ export const LoanPortfolioView: React.FC = () => {
 
       const prefDec = prefVal ? prefVal / 100 : undefined;
       const baseDec = baseVal ? baseVal / 100 : undefined;
-      const marginDec = marginVal ? marginVal / 100 : undefined;
-      const postPrefDec = postPrefRate ? postPrefRate / 100 : undefined;
       const normalDec = normalRate ? normalRate / 100 : undefined;
 
       const activeInterestRate = currentActiveRateDisplay > 0
@@ -532,15 +531,13 @@ export const LoanPortfolioView: React.FC = () => {
           ? (parseMoneyDecimalInput(formCreditLimitAmount) || null)
           : null,
 
-        PreferentialRate: prefDec,
-        PreferentialPeriodMonths: ratePreferentialMonths.trim() === ''
-          ? undefined
-          : (parseInt(ratePreferentialMonths, 10) || 0),
-        BaseRate: baseDec,
-        MarginRate: marginDec,
-        PostPreferentialRate: postPrefDec,
-        NormalRate: normalDec,
-        RateFloorAnnual: rateFloor.trim() === '' ? null : (parseFloat(rateFloor) || 0) / 100,
+        ...buildRateFields(interestRateMode, {
+          prefPercent: prefVal,
+          prefMonths: parseInt(ratePreferentialMonths, 10) || 0,
+          basePercent: baseVal,
+          marginPercent: marginVal,
+          floorPercent: rateFloor.trim() === '' ? null : parseFloat(rateFloor) || 0,
+        }),
         InterestRate: activeInterestRate,
 
         CollateralId: selectedCollateralIds.length > 0 ? selectedCollateralIds[0] : null,

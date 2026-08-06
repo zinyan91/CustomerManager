@@ -248,6 +248,44 @@ export function resolveRateModeOf(c?: LoanContract | null): RateMode {
   return 'pref';
 }
 
+export interface RateFieldsInput {
+  prefPercent?: number | null;
+  prefMonths?: number | null;
+  basePercent?: number | null;
+  marginPercent?: number | null;
+  floorPercent?: number | null;
+}
+
+export interface RateFields {
+  PreferentialRate: number | null;
+  PreferentialPeriodMonths: number | null;
+  PostPreferentialRate: number | null;
+  BaseRate: number | null;
+  MarginRate: number | null;
+  NormalRate: number | null;
+  RateFloorAnnual: number | null;
+}
+
+export function buildRateFields(mode: RateMode, input: RateFieldsInput): RateFields {
+  const pref = input.prefPercent && input.prefPercent > 0 ? input.prefPercent : 0;
+  const months = input.prefMonths && input.prefMonths > 0 ? input.prefMonths : 0;
+  const base = input.basePercent && input.basePercent > 0 ? input.basePercent : 0;
+  const margin = input.marginPercent ?? 0;
+  const floor = input.floorPercent && input.floorPercent > 0 ? input.floorPercent : 0;
+
+  const usePref = mode === 'pref' && pref > 0 && months > 0;
+
+  return {
+    PreferentialRate: usePref ? pref / 100 : null,
+    PreferentialPeriodMonths: usePref ? months : null,
+    PostPreferentialRate: usePref ? (pref + margin) / 100 : null,
+    BaseRate: usePref ? null : (base > 0 ? base / 100 : null),
+    MarginRate: margin !== 0 ? margin / 100 : null,
+    NormalRate: usePref ? null : (base > 0 ? (base + margin) / 100 : null),
+    RateFloorAnnual: floor > 0 ? floor / 100 : null,
+  };
+}
+
 export function splitPeriodByRate(
   timeline: RateTimelinePoint[],
   periodStart: string,

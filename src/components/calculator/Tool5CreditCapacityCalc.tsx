@@ -61,16 +61,16 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
   return (
     <div className="space-y-5">
 
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center space-x-2">
+      <div className={`${cardBg} rounded-lg p-4 border`}>
+        <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
           <ShieldCheck className="w-5 h-5 text-accent" />
           <span>TÍNH HẠN MỨC VAY TỐI ĐA THEO THU NHẬP (DTI/DSR) & TÀI SẢN BẢO ĐẢM (LTV)</span>
         </h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
-          <div className="font-bold text-xs text-accent uppercase tracking-wider flex items-center space-x-1.5 border-b border-line pb-2">
+        <div className={`${cardBg} rounded-lg p-4 border space-y-3.5`}>
+          <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-1.5 border-b border-line pb-2">
             <DollarSign className="w-4 h-4" />
             <span>1. NĂNG LỰC TÀI CHÍNH & THU NHẬP (DTI)</span>
           </div>
@@ -82,7 +82,7 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
                 type="text"
                 value={monthlyIncomeStr}
                 onChange={e => setMonthlyIncomeStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-pos bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-pos bg-transparent border-line"
               />
             </div>
 
@@ -92,7 +92,7 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
                 type="text"
                 value={livingExpenseStr}
                 onChange={e => setLivingExpenseStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono bg-transparent border-line"
               />
             </div>
 
@@ -102,7 +102,7 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
                 type="text"
                 value={existingDebtStr}
                 onChange={e => setExistingDebtStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono text-neg bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono text-neg bg-transparent border-line"
               />
             </div>
 
@@ -112,7 +112,7 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
                 <select
                   value={maxDtiPercent}
                   onChange={e => setMaxDtiPercent(parseInt(e.target.value, 10))}
-                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                  className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
                 >
                   <option value={50}>50% (An toàn)</option>
                   <option value={60}>60% (Chuẩn)</option>
@@ -127,7 +127,7 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
                   min={1}
                   value={loanTenorMonths}
                   onChange={e => setLoanTenorMonths(parseInt(e.target.value, 10) || 12)}
-                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                  className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
                 />
               </div>
 
@@ -138,26 +138,26 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
                   step="0.1"
                   value={interestRateAnnualStr}
                   onChange={e => setInterestRateAnnualStr(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-warn bg-transparent border-line"
+                  className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-warn bg-transparent border-line"
                 />
               </div>
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-accent-soft  border border-accent/30  space-y-1">
+          <div className="p-3 rounded-md bg-accent-soft  border border-accent/30  space-y-1">
             <div className="flex justify-between text-xs">
               <span className="text-ink-muted">Khả năng trả nợ nợ gốc+lãi hàng tháng:</span>
               <strong className="font-mono text-accent">{fmtMoney(dtiMaxMonthlyPayment)} / tháng</strong>
             </div>
             <div className="flex justify-between text-xs pt-1 border-t border-accent/30 ">
-              <span className="font-bold text-accent ">👉 HẠN MỨC VAY TỐI ĐA THEO DTI:</span>
+              <span className="font-bold text-accent ">HẠN MỨC VAY TỐI ĐA THEO DTI:</span>
               <strong className="font-mono font-extrabold text-accent text-sm">{fmtMoney(maxLoanAmountByDti)}</strong>
             </div>
           </div>
         </div>
 
-        <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
-          <div className="font-bold text-xs text-warn uppercase tracking-wider flex items-center space-x-1.5 border-b border-line pb-2">
+        <div className={`${cardBg} rounded-lg p-4 border space-y-3.5`}>
+          <div className="font-bold text-xs text-warn tracking-tight flex items-center space-x-1.5 border-b border-line pb-2">
             <Building2 className="w-4 h-4" />
             <span>2. TÀI SẢN BẢO ĐẢM & TỶ LỆ LTV</span>
           </div>
@@ -169,7 +169,7 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
                 type="text"
                 value={assetValueStr}
                 onChange={e => setAssetValueStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-warn bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-warn bg-transparent border-line"
               />
             </div>
 
@@ -178,7 +178,7 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
               <select
                 value={selectedAssetKey}
                 onChange={e => setSelectedAssetKey(e.target.value)}
-                className="w-full p-2.5 rounded-xl border text-xs font-medium bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-medium bg-transparent border-line"
               >
                 {Object.entries(ASSET_LTV_MAP).map(([k, v]) => (
                   <option key={k} value={k}>
@@ -198,31 +198,31 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
                   max={100}
                   value={customLtvStr}
                   onChange={e => setCustomLtvStr(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                  className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
                 />
               </div>
             )}
           </div>
 
-          <div className="p-3 rounded-xl bg-warn-soft  border border-warn/30  space-y-1">
+          <div className="p-3 rounded-md bg-warn-soft  border border-warn/30  space-y-1">
             <div className="flex justify-between text-xs">
               <span className="text-ink-muted">Tỷ lệ LTV áp dụng:</span>
               <strong className="font-mono text-warn">{(activeLtv * 100).toFixed(0)}% Giá trị TS</strong>
             </div>
             <div className="flex justify-between text-xs pt-1 border-t border-warn/30 ">
-              <span className="font-bold text-warn">👉 HẠN MỨC VAY TỐI ĐA THEO TSBĐ:</span>
+              <span className="font-bold text-warn">HẠN MỨC VAY TỐI ĐA THEO TSBĐ:</span>
               <strong className="font-mono font-extrabold text-warn text-sm">{fmtMoney(maxLoanAmountByLtv)}</strong>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-4 rounded-2xl bg-pos-soft  border border-pos/30  space-y-2">
+      <div className="p-4 rounded-lg bg-pos-soft  border border-pos/30  space-y-2">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
           <div className="flex items-center space-x-2">
             <CheckCircle2 className="w-5 h-5 text-pos flex-shrink-0" />
             <div>
-              <div className="text-xs font-bold text-pos uppercase tracking-wider">
+              <div className="text-xs font-bold text-pos tracking-tight">
                 ĐỀ XUẤT HẠN MỨC CẤP TÍN DỤNG TỐI ĐA AN TOÀN (MIN DTI & LTV):
               </div>
               <div className="text-2xl font-extrabold text-pos font-mono mt-0.5">

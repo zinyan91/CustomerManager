@@ -35,7 +35,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
   deletingId,
 }) => {
   return (
-    <div className={`${styles.containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
+    <div className={`${styles.containerCardBg} rounded-lg overflow-hidden border`}>
       <div className={`p-3 border-b flex items-center justify-between ${'bg-panel-muted border-line'}`}>
         <span className="font-bold flex items-center space-x-2 text-xs">
           <Building2 className="w-4 h-4 text-accent" />
@@ -48,15 +48,15 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
         <table className="w-full text-left text-xs">
           <thead className={styles.tableHeaderStyle}>
             <tr>
-              <th className="p-3 whitespace-nowrap">KHÁCH HÀNG / CIF</th>
-              <th className="p-3 whitespace-nowrap">LOẠI TSBĐ</th>
-              <th className="p-3 whitespace-nowrap">MÃ / SỐ GCN / ĐỊA CHỈ</th>
-              <th className="p-3 whitespace-nowrap text-right">GIÁ TRỊ ĐỊNH GIÁ</th>
-              <th className="p-3 whitespace-nowrap text-center">TỈ LỆ LTV</th>
-              <th className="p-3 whitespace-nowrap text-right">HẠN MỨC CHO VAY TỐI ĐA</th>
-              <th className="p-3 whitespace-nowrap text-center">NGÀY ĐỊNH GIÁ</th>
-              <th className="p-3 whitespace-nowrap text-center">HẠN ĐỊNH GIÁ</th>
-              <th className="p-3 whitespace-nowrap text-center">THAO TÁC</th>
+              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">KHÁCH HÀNG / CIF</th>
+              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">LOẠI TSBĐ</th>
+              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">MÃ / SỐ GCN / ĐỊA CHỈ</th>
+              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-right">GIÁ TRỊ ĐỊNH GIÁ</th>
+              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">TỈ LỆ LTV</th>
+              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-right">HẠN MỨC CHO VAY TỐI ĐA</th>
+              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">NGÀY ĐỊNH GIÁ</th>
+              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">HẠN ĐỊNH GIÁ</th>
+              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">THAO TÁC</th>
             </tr>
           </thead>
           <tbody className={`divide-y ${'divide-line'}`}>
@@ -78,21 +78,21 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                       ? 'bg-accent-soft border-l-2 border-l-accent font-semibold'
                       : styles.tableRowHover
                   }`}>
-                  <td className="p-3 whitespace-nowrap">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
                     <div className="font-bold text-ink">{cust ? cust.FullName : `ID #${col.CustomerId}`}</div>
                     <div className="text-[10px] font-mono text-accent">{cust ? `CIF: ${cust.CifKh}` : ''}</div>
                   </td>
-                  <td className="p-3 font-semibold text-accent whitespace-nowrap">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-semibold text-accent whitespace-nowrap">
                     {assetClassLabel(col.AssetType)}
                   </td>
-                  <td className="p-3 font-mono text-ink-muted">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-ink-muted">
                     <div className="font-bold">{col.AssetCode || '—'}</div>
                     <div className="text-[10px] text-ink-faint font-sans truncate max-w-xs">{col.Address}</div>
                   </td>
-                  <td className="p-3 text-right font-mono font-bold text-pos whitespace-nowrap">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-pos whitespace-nowrap">
                     {fmtMoney(val)}
                   </td>
-                  <td className="p-3 text-center whitespace-nowrap">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
                     <span className={`px-2 py-0.5 rounded-md font-mono font-bold text-xs border ${
                       isException
                         ? 'bg-warn-soft text-warn border-warn/30 '
@@ -109,13 +109,13 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                       </div>
                     )}
                   </td>
-                  <td className="p-3 text-right font-mono font-bold text-accent  whitespace-nowrap">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-accent  whitespace-nowrap">
                     {fmtMoney(maxLoan)}
                   </td>
-                  <td className="p-3 text-center whitespace-nowrap text-ink-faint font-mono">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap text-ink-faint font-mono">
                     {fmtDate(col.AppraisalDate)}
                   </td>
-                  <td className="p-3 text-center whitespace-nowrap font-mono">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap font-mono">
                     <span className={
                       dgStatus === 'expired' ? 'text-neg font-bold'
                       : dgStatus === 'expiring_soon' ? 'text-warn font-bold'
@@ -138,12 +138,12 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                       <div className="text-[10px] font-bold text-ink-faint">CHƯA ĐỊNH GIÁ</div>
                     )}
                   </td>
-                  <td className="p-3 text-center whitespace-nowrap">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onDelete(col); }}
                       disabled={deletingId === col.Id}
-                      className="p-1.5 rounded-lg border border-transparent text-ink-faint hover:text-neg hover:bg-neg hover:border-neg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 rounded-lg border border-transparent text-ink-faint hover:text-neg hover:bg-neg-soft hover:border-neg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       title="Xoá tài sản bảo đảm"
                     >
                       {deletingId === col.Id

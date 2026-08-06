@@ -50,16 +50,16 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
   return (
     <div className="space-y-5">
 
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center space-x-2">
+      <div className={`${cardBg} rounded-lg p-4 border`}>
+        <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
           <Award className="w-5 h-5 text-pos" />
           <span>TÍNH PHÍ TRẢ NỢ TRƯỚC HẠN</span>
         </h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
-          <div className="font-bold text-xs text-accent uppercase tracking-wider flex items-center space-x-1.5 border-b border-line pb-2">
+        <div className={`${cardBg} rounded-lg p-4 border space-y-3.5`}>
+          <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-1.5 border-b border-line pb-2">
             <DollarSign className="w-4 h-4" />
             <span>1. KHOẢN VAY & SỐ TIỀN TRẢ TRƯỚC HẠN</span>
           </div>
@@ -75,7 +75,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
                   setBalanceStr(val);
                   setPrepayAmountStr(val);
                 }}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-accent bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-accent bg-transparent border-line"
               />
             </div>
 
@@ -85,7 +85,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
                 type="text"
                 value={prepayAmountStr}
                 onChange={e => setPrepayAmountStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-pos bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-pos bg-transparent border-line"
               />
             </div>
 
@@ -97,7 +97,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
                   step="0.1"
                   value={rateAnnualStr}
                   onChange={e => setRateAnnualStr(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-warn bg-transparent border-line"
+                  className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-warn bg-transparent border-line"
                 />
               </div>
 
@@ -108,7 +108,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
                   min={1}
                   value={remainingTenorMonths}
                   onChange={e => setRemainingTenorMonths(parseInt(e.target.value, 10) || 12)}
-                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                  className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
                 />
               </div>
 
@@ -117,7 +117,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
                 <select
                   value={loanAgeYear}
                   onChange={e => setLoanAgeYear(parseInt(e.target.value, 10))}
-                  className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                  className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
                 >
                   <option value={1}>Năm thứ 1</option>
                   <option value={2}>Năm thứ 2</option>
@@ -129,8 +129,8 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
           </div>
         </div>
 
-        <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
-          <div className="font-bold text-xs text-neg uppercase tracking-wider flex items-center space-x-1.5 border-b border-line pb-2">
+        <div className={`${cardBg} rounded-lg p-4 border space-y-3.5`}>
+          <div className="font-bold text-xs text-neg tracking-tight flex items-center space-x-1.5 border-b border-line pb-2">
             <ShieldAlert className="w-4 h-4" />
             <span>2. KHUNG PHÍ PHẠT TRẢ NỢ TRƯỚC HẠN HỢP ĐỒNG (%)</span>
           </div>
@@ -143,7 +143,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
                 step="0.1"
                 value={penaltyYear1}
                 onChange={e => setPenaltyYear1(e.target.value)}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
               />
             </div>
 
@@ -154,7 +154,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
                 step="0.1"
                 value={penaltyYear2}
                 onChange={e => setPenaltyYear2(e.target.value)}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
               />
             </div>
 
@@ -165,7 +165,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
                 step="0.1"
                 value={penaltyYear3}
                 onChange={e => setPenaltyYear3(e.target.value)}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
               />
             </div>
 
@@ -176,28 +176,28 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = () => {
                 step="0.1"
                 value={penaltyYear4Plus}
                 onChange={e => setPenaltyYear4Plus(e.target.value)}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
               />
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-neg-soft  border border-neg/30  space-y-1">
+          <div className="p-3 rounded-md bg-neg-soft  border border-neg/30  space-y-1">
             <div className="flex justify-between text-xs">
               <span className="text-ink-muted">Tỷ lệ phí phạt áp dụng (Năm thứ {loanAgeYear}):</span>
               <strong className="font-mono text-neg">{activePenaltyPercent}%</strong>
             </div>
             <div className="flex justify-between text-xs pt-1 border-t border-neg/30 ">
-              <span className="font-bold text-neg">👉 TIỀN PHẠT TRẢ TRƯỚC HẠN:</span>
+              <span className="font-bold text-neg">TIỀN PHẠT TRẢ TRƯỚC HẠN:</span>
               <strong className="font-mono font-extrabold text-neg text-sm">{fmtMoney(penaltyFee)}</strong>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-4 rounded-2xl bg-pos-soft  border border-pos/30  space-y-3">
+      <div className="p-4 rounded-lg bg-pos-soft  border border-pos/30  space-y-3">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-pos/30  pb-3">
           <div>
-            <div className="text-xs font-bold text-pos uppercase tracking-wider flex items-center space-x-1.5">
+            <div className="text-xs font-bold text-pos tracking-tight flex items-center space-x-1.5">
               <CheckCircle className="w-4 h-4 text-pos" />
               <span>BÀI TOÁN PHÂN TÍCH TIẾT KIỆM CHI PHÍ LÃI:</span>
             </div>

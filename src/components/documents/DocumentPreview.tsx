@@ -217,17 +217,17 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   docHtml,
 }) => {
   return (
-    <div className={`${styles.containerCardBg} rounded-2xl border overflow-hidden shadow-xl`}>
+    <div className={`${styles.containerCardBg} rounded-lg border overflow-hidden`}>
 
       <div className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${'bg-panel-muted border-line'}`}>
         <div>
-          <h2 className="font-bold text-sm text-accent uppercase tracking-wider">{docTitle}</h2>
+          <h2 className="font-bold text-sm text-accent tracking-tight">{docTitle}</h2>
         </div>
         <div className="flex items-center space-x-2">
           <button
             type="button"
             onClick={() => exportToWordDoc(docFilename, docHtml)}
-            className="flex items-center space-x-1.5 bg-accent hover:bg-accent text-accent-ink font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm"
+            className="flex items-center space-x-1.5 bg-accent hover:bg-accent text-accent-ink font-bold text-xs px-3.5 py-2 rounded-md transition-colors"
           >
             <Download className="w-4 h-4" />
             <span>Tải Word (.doc)</span>
@@ -235,7 +235,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           <button
             type="button"
             onClick={() => exportToPDFOnly(docFilename, docHtml)}
-            className="flex items-center space-x-1.5 bg-neg hover:opacity-90 text-accent-ink font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm"
+            className="flex items-center space-x-1.5 bg-neg hover:opacity-90 text-accent-ink font-bold text-xs px-3.5 py-2 rounded-md transition-colors"
           >
             <Printer className="w-4 h-4" />
             <span>In / Xuất PDF</span>

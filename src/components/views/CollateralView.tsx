@@ -227,7 +227,7 @@ export const CollateralView: React.FC = () => {
     <div className="space-y-4 text-xs transition-colors duration-200">
 
       {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success'
+        <div className={`fixed top-16 right-6 z-50 p-4 rounded-md border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success'
           ? 'bg-pos-soft border-pos/30 text-pos'
           : 'bg-neg-soft border-neg/30 text-neg'
           }`}>

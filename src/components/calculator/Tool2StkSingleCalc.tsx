@@ -42,17 +42,17 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
 
   const overPledged = savingsAmount > 0 && loanAmount > savingsAmount;
   const labelCls = `block mb-1 ${styles.labelStyle}`;
-  const inputCls = `w-full rounded-xl p-2 ${styles.inputStyle}`;
+  const inputCls = `w-full rounded-md p-2 ${styles.inputStyle}`;
 
   return (
     <div className="space-y-4">
-      <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
+      <div className={`${styles.containerCardBg} rounded-lg p-5 border space-y-4 text-xs`}>
         <div className="font-bold text-accent uppercase tracking-wider text-sm flex items-center space-x-2 border-b border-line pb-2">
           <Layers className="w-4 h-4" />
           <span>BẢNG TÍNH LÃI CẦM CỐ SỔ TIẾT KIỆM (ACTUAL/365)</span>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+        <div className="p-3.5 rounded-md border border-line  bg-panel-muted  space-y-2.5">
           <div className="font-bold text-warn text-[11px] uppercase">THÔNG TIN SỔ TIẾT KIỆM</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
@@ -92,7 +92,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+        <div className="p-3.5 rounded-md border border-line  bg-panel-muted  space-y-2.5">
           <div className="font-bold text-accent text-[11px] uppercase">THÔNG TIN KHOẢN VAY CẦM CỐ</div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
@@ -135,13 +135,13 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
         </div>
 
         {overPledged && (
-          <div className="rounded-xl border border-neg/30 bg-neg-soft  p-3 text-[11px] font-bold text-neg">
+          <div className="rounded-md border border-neg/30 bg-neg-soft  p-3 text-[11px] font-bold text-neg">
             ⚠ Số tiền vay lớn hơn giá trị sổ tiết kiệm — tỷ lệ cầm cố vượt 100%.
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="p-4 rounded-2xl bg-warn-soft  border border-warn/30 ">
+          <div className="p-4 rounded-lg bg-warn-soft  border border-warn/30 ">
             <div className="text-[11px] font-bold text-ink-faint uppercase">LÃI SỔ TIẾT KIỆM NHẬN ĐƯỢC</div>
             <div className="text-xl font-extrabold text-warn font-mono mt-1">
               {fmtMoney(result.savingsInterest)}
@@ -151,7 +151,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-accent-soft  border border-accent/30 ">
+          <div className="p-4 rounded-lg bg-accent-soft  border border-accent/30 ">
             <div className="text-[11px] font-bold text-ink-faint uppercase">TIỀN LÃI VAY PHẢI TRẢ</div>
             <div className="text-xl font-extrabold text-accent font-mono mt-1">
               {fmtMoney(result.loanInterest)}
@@ -162,7 +162,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
           </div>
         </div>
 
-        <div className={`p-4 rounded-2xl border ${
+        <div className={`p-4 rounded-lg border ${
           result.netGain >= 0
             ? 'bg-pos-soft  border-pos/30 '
             : 'bg-neg-soft  border-neg/30 '
@@ -172,7 +172,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
               {result.netGain >= 0
                 ? <TrendingUp className="w-5 h-5 text-pos" />
                 : <TrendingDown className="w-5 h-5 text-neg" />}
-              <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+              <span className="text-xs font-bold tracking-tight text-ink-muted">
                 {result.netGain >= 0 ? 'CHÊNH LỆCH — KHÁCH HÀNG CÒN LỢI' : 'CHÊNH LỆCH — KHÁCH HÀNG CHỊU THIỆT'}
               </span>
             </div>

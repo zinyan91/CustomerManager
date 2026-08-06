@@ -239,14 +239,14 @@ export const DashboardView: React.FC = () => {
 
       <div className="flex items-center justify-between border-b border-line pb-3">
         <div>
-          <h2 className="text-base font-bold uppercase tracking-tight flex items-center space-x-2 text-ink">
+          <h2 className="text-base font-bold  tracking-tight flex items-center space-x-2 text-ink">
             <Building2 className="w-5 h-5 text-accent" />
             <span>BÁO CÁO QUẢN TRỊ DƯ NỢ & HẠN MỨC TÍN DỤNG</span>
           </h2>
         </div>
         <button
           onClick={fetchDashboardData}
-          className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-2 rounded-xl flex items-center space-x-1.5 font-bold shadow-sm transition-colors"
+          className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-2 rounded-md flex items-center space-x-1.5 font-bold transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>CẬP NHẬT DỮ LIỆU</span>
@@ -254,7 +254,7 @@ export const DashboardView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
+        <div className={`${cardBg} p-4 rounded-lg border flex items-center justify-between`}>
           <div>
             <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">TỔNG SỐ KHÁCH HÀNG</div>
             <div className="text-2xl font-extrabold text-accent mt-1">
@@ -262,12 +262,12 @@ export const DashboardView: React.FC = () => {
             </div>
             <div className="text-[11px] text-ink-faint mt-1">Đang giao dịch & quản lý tín dụng</div>
           </div>
-          <div className="p-3 bg-accent-soft rounded-xl text-accent border border-accent/30">
+          <div className="p-3 bg-accent-soft rounded-md text-accent border border-accent/30">
             <Users className="w-6 h-6" />
           </div>
         </div>
 
-        <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
+        <div className={`${cardBg} p-4 rounded-lg border flex items-center justify-between`}>
           <div>
             <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">TỔNG QUY MÔ DƯ NỢ</div>
             <div className="text-2xl font-extrabold text-pos mt-1">
@@ -275,12 +275,12 @@ export const DashboardView: React.FC = () => {
             </div>
             <div className="text-[11px] text-ink-faint mt-1">Tổng hạn mức cấp: {formatMoney(totalLimit)}</div>
           </div>
-          <div className="p-3 bg-pos-soft rounded-xl text-pos border border-pos/30">
+          <div className="p-3 bg-pos-soft rounded-md text-pos border border-pos/30">
             <DollarSign className="w-6 h-6" />
           </div>
         </div>
 
-        <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
+        <div className={`${cardBg} p-4 rounded-lg border flex items-center justify-between`}>
           <div>
             <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">TỔNG GIÁ TRỊ TSĐB</div>
             <div className="text-2xl font-extrabold text-warn mt-1">
@@ -288,12 +288,12 @@ export const DashboardView: React.FC = () => {
             </div>
             <div className="text-[11px] text-ink-faint mt-1">LTV bình quân: <strong className="text-accent">{weightedLtv.toFixed(1)}%</strong> ({collaterals.length} TS)</div>
           </div>
-          <div className="p-3 bg-warn-soft rounded-xl text-warn border border-warn/30">
+          <div className="p-3 bg-warn-soft rounded-md text-warn border border-warn/30">
             <Building2 className="w-6 h-6" />
           </div>
         </div>
 
-        <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
+        <div className={`${cardBg} p-4 rounded-lg border flex items-center justify-between`}>
           <div>
             <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">CẢNH BÁO TỚI HẠN</div>
             <div className="text-2xl font-extrabold text-neg mt-1">
@@ -301,15 +301,15 @@ export const DashboardView: React.FC = () => {
             </div>
             <div className="text-[11px] text-ink-faint mt-1">Cần theo dõi & xử lý ngay</div>
           </div>
-          <div className="p-3 bg-neg-soft rounded-xl text-neg border border-neg/30">
+          <div className="p-3 bg-neg-soft rounded-md text-neg border border-neg/30">
             <AlertCircle className="w-6 h-6" />
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`${cardBg} p-4 rounded-2xl border shadow-sm space-y-3`}>
-          <div className="text-xs font-bold text-accent uppercase tracking-wider flex items-center space-x-1.5">
+        <div className={`${cardBg} p-4 rounded-lg border space-y-3`}>
+          <div className="text-xs font-bold text-accent tracking-tight flex items-center space-x-1.5">
             <FileText className="w-4 h-4" />
             <span>DƯ NỢ THEO PHƯƠNG THỨC VAY</span>
           </div>
@@ -331,8 +331,8 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        <div className={`${cardBg} p-4 rounded-2xl border shadow-sm space-y-3`}>
-          <div className="text-xs font-bold text-pos uppercase tracking-wider flex items-center space-x-1.5">
+        <div className={`${cardBg} p-4 rounded-lg border space-y-3`}>
+          <div className="text-xs font-bold text-pos tracking-tight flex items-center space-x-1.5">
             <ShieldAlert className="w-4 h-4" />
             <span>PHÂN BỔ DƯ NỢ THEO NHÓM NỢ (NHÓM 1 - 5)</span>
           </div>
@@ -357,17 +357,17 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      <div className={`${cardBg} rounded-2xl p-3.5 border shadow-sm flex flex-wrap items-center justify-between gap-3`}>
+      <div className={`${cardBg} rounded-lg p-3.5 border flex flex-wrap items-center justify-between gap-3`}>
         <div className="flex items-center space-x-2 text-xs font-bold text-ink">
           <ShieldAlert className="w-4 h-4 text-accent" />
           <span>BỘ LỌC BÁO CÁO CẢNH BÁO DƯ NỢ:</span>
         </div>
-        <div className="flex items-center bg-panel-muted p-1 rounded-xl">
+        <div className="flex items-center bg-panel-muted p-1 rounded-md">
           <button
             type="button"
             onClick={() => setOnlyGroup1(true)}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${onlyGroup1
-              ? 'bg-accent text-accent-ink shadow-sm'
+              ? 'bg-accent text-accent-ink'
               : 'text-ink-faint hover:text-ink'
               }`}
           >
@@ -377,7 +377,7 @@ export const DashboardView: React.FC = () => {
             type="button"
             onClick={() => setOnlyGroup1(false)}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${!onlyGroup1
-              ? 'bg-warn text-accent-ink shadow-sm'
+              ? 'bg-accent text-accent-ink'
               : 'text-ink-faint hover:text-ink'
               }`}
           >

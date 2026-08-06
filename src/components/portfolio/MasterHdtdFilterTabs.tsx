@@ -39,11 +39,11 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
             onClick={() => setSelectedMasterFilter('ALL')}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
               selectedMasterFilter === 'ALL'
-                ? 'bg-accent text-accent-ink shadow-sm'
+                ? 'bg-accent text-accent-ink'
                 : 'bg-panel-muted text-ink-muted hover:bg-panel-muted'
             }`}
           >
-            📊 Tất cả HĐTD ({contractsCount} KUNN)
+            Tất cả HĐTD ({contractsCount} KUNN)
           </button>
           {masterHdtdGroups.map(g => (
             <button
@@ -52,11 +52,11 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
               onClick={() => setSelectedMasterFilter(g.masterNo)}
               className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center space-x-1.5 ${
                 selectedMasterFilter === g.masterNo
-                  ? 'bg-accent text-accent-ink shadow-sm'
+                  ? 'bg-accent text-accent-ink'
                   : 'bg-accent-soft text-accent hover:bg-accent-soft border border-accent/30'
               }`}
             >
-              <span>📜 {g.masterNo}</span>
+              <span>{g.masterNo}</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-sans">
                 {g.contracts.length} KUNN
               </span>
@@ -67,7 +67,7 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
 
       {selectedMasterFilter !== 'ALL' && (
         <span className="text-[11px] italic text-accent font-medium">
-          ⚡ Đang xem gói HĐTD: <strong className="font-mono">{selectedMasterFilter}</strong>
+          Đang xem gói HĐTD: <strong className="font-mono">{selectedMasterFilter}</strong>
         </span>
       )}
     </div>

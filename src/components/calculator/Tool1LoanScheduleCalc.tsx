@@ -276,8 +276,8 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   return (
     <div className="space-y-4">
 
-      <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4`}>
-        <div className="text-xs font-bold text-accent uppercase tracking-wider flex items-center space-x-2 border-b pb-2 border-line">
+      <div className={`${styles.containerCardBg} rounded-lg p-5 border space-y-4`}>
+        <div className="text-xs font-bold text-accent tracking-tight flex items-center space-x-2 border-b pb-2 border-line">
           <RefreshCw className="w-4 h-4" />
           <span>THÔNG SỐ KHOẢN VAY CẦN TÍNH LỊCH</span>
         </div>
@@ -292,7 +292,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 const digits = e.target.value.replace(/\D/g, '');
                 setLoanAmountStr(digits ? Number(digits).toLocaleString('vi-VN') : '');
               }}
-              className={`w-full rounded-xl p-2.5 font-mono font-bold text-accent ${styles.inputStyle}`}
+              className={`w-full rounded-md p-2.5 font-mono font-bold text-accent ${styles.inputStyle}`}
             />
           </div>
           <div>
@@ -303,7 +303,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               max={360}
               value={tenorMonths}
               onChange={e => setTenorMonths(Math.max(1, parseInt(e.target.value, 10) || 1))}
-              className={`w-full rounded-xl p-2.5 font-mono font-bold ${styles.inputStyle}`}
+              className={`w-full rounded-md p-2.5 font-mono font-bold ${styles.inputStyle}`}
             />
           </div>
           <div>
@@ -311,7 +311,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <DateInput
               value={disbursementDate}
               onChange={val => setDisbursementDate(val)}
-              className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`}
+              className={`w-full rounded-md p-2.5 ${styles.inputStyle}`}
             />
           </div>
           <div>
@@ -319,7 +319,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <DateInput
               value={firstPaymentDate}
               onChange={val => setFirstPaymentDate(val)}
-              className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`}
+              className={`w-full rounded-md p-2.5 ${styles.inputStyle}`}
             />
             <div className="mt-1 text-[11px] text-ink-faint">
               {effectiveFirstPaymentDate === firstPaymentDate.trim() && firstPaymentDate.trim()
@@ -335,7 +335,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <select
               value={repayMethod}
               onChange={e => setRepayMethod(e.target.value as any)}
-              className={`w-full rounded-xl p-2.5 font-bold ${styles.inputStyle}`}
+              className={`w-full rounded-md p-2.5 font-bold ${styles.inputStyle}`}
             >
               <option value="equal_principal">Gốc trả đều hàng tháng (Dư nợ giảm dần)</option>
               <option value="bullet">Gốc trả cuối kỳ (Bullet Payment)</option>
@@ -349,13 +349,13 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               max={tenorMonths - 1}
               value={principalGraceMonths}
               onChange={e => setPrincipalGraceMonths(Math.max(0, parseInt(e.target.value, 10) || 0))}
-              className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`}
+              className={`w-full rounded-md p-2.5 ${styles.inputStyle}`}
             />
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-accent/30  bg-accent-soft  space-y-3">
-          <div className="text-xs font-bold text-accent uppercase tracking-wider flex items-center justify-between gap-2 border-b pb-1.5 border-accent/30 ">
+        <div className="p-3.5 rounded-md border border-accent/30  bg-accent-soft  space-y-3">
+          <div className="text-xs font-bold text-accent tracking-tight flex items-center justify-between gap-2 border-b pb-1.5 border-accent/30 ">
             <span>🎁 LÃI SUẤT ƯU ĐÃI VÀ LÃI SUẤT SAU ƯU ĐÃI</span>
             {hasPromo && (
               <span className="normal-case font-mono">
@@ -371,7 +371,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 type="text"
                 value={interestRateStr}
                 onChange={e => setInterestRateStr(e.target.value)}
-                className={`w-full rounded-xl p-2 font-mono font-bold ${styles.inputStyle}`}
+                className={`w-full rounded-md p-2 font-mono font-bold ${styles.inputStyle}`}
               />
             </div>
             <div>
@@ -382,7 +382,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 max={tenorMonths}
                 value={promoMonthsStr}
                 onChange={e => setPromoMonthsStr(e.target.value)}
-                className={`w-full rounded-xl p-2 font-mono font-bold ${styles.inputStyle}`}
+                className={`w-full rounded-md p-2 font-mono font-bold ${styles.inputStyle}`}
               />
             </div>
             <div>
@@ -392,7 +392,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 value={baseRateStr}
                 onChange={e => setBaseRateStr(e.target.value)}
                 placeholder="VD: 9.9"
-                className={`w-full rounded-xl p-2 font-mono font-bold ${styles.inputStyle}`}
+                className={`w-full rounded-md p-2 font-mono font-bold ${styles.inputStyle}`}
               />
             </div>
             <div>
@@ -402,7 +402,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 value={marginStr}
                 onChange={e => setMarginStr(e.target.value)}
                 placeholder="VD: 3.5"
-                className={`w-full rounded-xl p-2 font-mono font-bold ${styles.inputStyle}`}
+                className={`w-full rounded-md p-2 font-mono font-bold ${styles.inputStyle}`}
               />
             </div>
             <div>
@@ -412,19 +412,19 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 value={postPromoRateStr}
                 onChange={e => setPostPromoRateStr(e.target.value)}
                 placeholder={hasPromo ? `${postRate.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} (cơ sở + biên độ)` : 'Không áp dụng'}
-                className={`w-full rounded-xl p-2 font-mono font-bold text-accent ${styles.inputStyle}`}
+                className={`w-full rounded-md p-2 font-mono font-bold text-accent ${styles.inputStyle}`}
               />
             </div>
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-warn/30  bg-warn-soft  space-y-3">
-          <div className="text-xs font-bold text-warn uppercase tracking-wider flex items-center justify-between gap-2 border-b pb-1.5 border-warn/30 ">
-            <span>⚡ TRẢ NỢ TRƯỚC HẠN NHIỀU KỲ</span>
+        <div className="p-3.5 rounded-md border border-warn/30  bg-warn-soft  space-y-3">
+          <div className="text-xs font-bold text-warn tracking-tight flex items-center justify-between gap-2 border-b pb-1.5 border-warn/30 ">
+            <span>TRẢ NỢ TRƯỚC HẠN NHIỀU KỲ</span>
             <button
               type="button"
               onClick={addPrepayment}
-              className="flex items-center space-x-1 bg-warn hover:bg-warn text-accent-ink font-bold text-[11px] px-2.5 py-1 rounded-lg normal-case"
+              className="flex items-center space-x-1 bg-accent hover:opacity-90 text-accent-ink font-bold text-[11px] px-2.5 py-1 rounded-lg normal-case"
             >
               <Plus className="w-3 h-3" />
               <span>Thêm</span>
@@ -447,7 +447,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                       max={tenorMonths}
                       value={p.periodStr}
                       onChange={e => updatePrepayment(p.id, { periodStr: e.target.value })}
-                      className={`w-full rounded-xl p-2 font-mono font-bold ${styles.inputStyle}`}
+                      className={`w-full rounded-md p-2 font-mono font-bold ${styles.inputStyle}`}
                     />
                   </div>
                   <div className="md:col-span-4">
@@ -460,7 +460,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                         updatePrepayment(p.id, { amountStr: digits ? Number(digits).toLocaleString('vi-VN') : '' });
                       }}
                       placeholder="Nhập số tiền..."
-                      className={`w-full rounded-xl p-2 font-mono font-bold text-pos ${styles.inputStyle}`}
+                      className={`w-full rounded-md p-2 font-mono font-bold text-pos ${styles.inputStyle}`}
                     />
                   </div>
                   <div className="md:col-span-5">
@@ -468,7 +468,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                     <select
                       value={p.mode}
                       onChange={e => updatePrepayment(p.id, { mode: e.target.value as PrepaymentMode })}
-                      className={`w-full rounded-xl p-2 font-bold ${styles.inputStyle}`}
+                      className={`w-full rounded-md p-2 font-bold ${styles.inputStyle}`}
                     >
                       <option value="reduce_monthly">Giảm số tiền gốc trả hàng tháng các kỳ còn lại</option>
                       <option value="shorten_tenor">Rút ngắn thời hạn vay (kết thúc khoản vay sớm)</option>
@@ -479,7 +479,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                       type="button"
                       onClick={() => removePrepayment(p.id)}
                       title="Xoá lần trả trước hạn này"
-                      className="p-2 rounded-xl text-neg hover:bg-neg"
+                      className="p-2 rounded-md text-neg hover:bg-neg-soft"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -491,7 +491,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
         </div>
       </div>
 
-      <div className={`${styles.containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
+      <div className={`${styles.containerCardBg} rounded-lg overflow-hidden border`}>
         <div className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 ${'bg-panel-muted border-line'}`}>
           <span className="font-bold text-xs uppercase flex items-center space-x-2">
             <span>BẢNG LỊCH THU NỢ DỰ KIẾN ({scheduleRows.length} KỲ)</span>
@@ -500,7 +500,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <button
               type="button"
               onClick={handleExportExcel}
-              className="flex items-center space-x-1.5 bg-pos hover:opacity-90 text-accent-ink font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm"
+              className="flex items-center space-x-1.5 font-bold text-xs px-3 py-1.5 rounded-md border border-line text-ink-muted hover:border-accent hover:text-accent"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Xuất Excel (.xls)</span>
@@ -508,7 +508,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <button
               type="button"
               onClick={handlePrintSchedule}
-              className="flex items-center space-x-1.5 bg-accent hover:opacity-90 text-accent-ink font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm"
+              className="flex items-center space-x-1.5 font-bold text-xs px-3 py-1.5 rounded-md border border-line text-ink-muted hover:border-accent hover:text-accent"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>In / Xuất PDF</span>
@@ -520,33 +520,33 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           <table className="w-full text-left text-xs border-collapse">
             <thead className={`sticky top-0 ${styles.tableHeaderStyle}`}>
               <tr>
-                <th className="p-3 text-center whitespace-nowrap">KỲ</th>
-                <th className="p-3 whitespace-nowrap text-center">NGÀY BẮT ĐẦU</th>
-                <th className="p-3 whitespace-nowrap text-center">NGÀY ĐẾN HẠN</th>
-                <th className="p-3 text-center whitespace-nowrap">SỐ NGÀY</th>
-                <th className="p-3 text-center whitespace-nowrap">LS ÁP DỤNG</th>
-                <th className="p-3 text-right whitespace-nowrap">DƯ NỢ ĐẦU KỲ</th>
-                <th className="p-3 text-right whitespace-nowrap text-accent">GỐC TRẢ</th>
-                <th className="p-3 text-right whitespace-nowrap text-warn">LÃI THƯỜNG</th>
-                <th className="p-3 text-right whitespace-nowrap text-pos">TỔNG TRẢ TRONG KỲ</th>
-                <th className="p-3 text-right whitespace-nowrap">DƯ NỢ CUỐI KỲ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">KỲ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">NGÀY BẮT ĐẦU</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">NGÀY ĐẾN HẠN</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">SỐ NGÀY</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">LS ÁP DỤNG</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap">DƯ NỢ ĐẦU KỲ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap text-accent">GỐC TRẢ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap text-warn">LÃI THƯỜNG</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap text-pos">TỔNG TRẢ TRONG KỲ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap">DƯ NỢ CUỐI KỲ</th>
               </tr>
             </thead>
             <tbody className={`divide-y ${'divide-line'}`}>
               {scheduleRows.map(r => (
-                <tr key={r.period} className={`${styles.tableRowHover} ${r.prepayment > 0 ? 'bg-warn  font-bold border-l-4 border-warn' : ''}`}>
-                  <td className="p-3 text-center font-bold font-mono">
+                <tr key={r.period} className={`${styles.tableRowHover} ${r.prepayment > 0 ? 'bg-warn-soft  font-bold border-l-2 border-warn' : ''}`}>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-bold font-mono">
                     #{r.period}
                     {r.prepayment > 0 && (
-                      <span className="block text-[10px] text-warn font-normal">⚡ Trả trước hạn</span>
+                      <span className="block text-[10px] text-warn font-normal">Trả trước hạn</span>
                     )}
                   </td>
-                  <td className="p-3 text-center font-mono">{fmtDate(r.startDate)}</td>
-                  <td className="p-3 text-center font-mono font-bold">{fmtDate(r.dueDate)}</td>
-                  <td className="p-3 text-center font-mono">{r.days}d</td>
-                  <td className="p-3 text-center font-mono">{r.rateAnnual.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%</td>
-                  <td className="p-3 text-right font-mono">{r.beginningBalance.toLocaleString('vi-VN')}</td>
-                  <td className="p-3 text-right font-mono font-bold text-accent">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">{fmtDate(r.startDate)}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono font-bold">{fmtDate(r.dueDate)}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">{r.days}d</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">{r.rateAnnual.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{r.beginningBalance.toLocaleString('vi-VN')}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-accent">
                     {r.principal.toLocaleString('vi-VN')}
                     {r.prepayment > 0 && (
                       <span className="block text-[10px] text-warn">
@@ -554,18 +554,18 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                       </span>
                     )}
                   </td>
-                  <td className="p-3 text-right font-mono font-bold text-warn">{r.interest.toLocaleString('vi-VN')}</td>
-                  <td className="p-3 text-right font-mono font-bold text-pos">{r.totalPayment.toLocaleString('vi-VN')}</td>
-                  <td className="p-3 text-right font-mono">{r.endingBalance.toLocaleString('vi-VN')}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-warn">{r.interest.toLocaleString('vi-VN')}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-pos">{r.totalPayment.toLocaleString('vi-VN')}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{r.endingBalance.toLocaleString('vi-VN')}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot className={`border-t sticky bottom-0 font-bold ${styles.tableHeaderStyle}`}>
               <tr>
-                <td colSpan={6} className="p-3 text-center">TỔNG CỘNG LỊCH THU NỢ</td>
-                <td className="p-3 text-right text-accent font-mono">{totalPrincipalSum.toLocaleString('vi-VN')}</td>
-                <td className="p-3 text-right text-warn font-mono">{totalInterestSum.toLocaleString('vi-VN')}</td>
-                <td className="p-3 text-right text-pos font-mono text-sm">{totalObligationSum.toLocaleString('vi-VN')}</td>
+                <td colSpan={6} className="px-[var(--row-px)] py-[var(--row-py)] text-center">TỔNG CỘNG LỊCH THU NỢ</td>
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right text-accent font-mono">{totalPrincipalSum.toLocaleString('vi-VN')}</td>
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right text-warn font-mono">{totalInterestSum.toLocaleString('vi-VN')}</td>
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right text-pos font-mono text-sm">{totalObligationSum.toLocaleString('vi-VN')}</td>
                 <td></td>
               </tr>
             </tfoot>

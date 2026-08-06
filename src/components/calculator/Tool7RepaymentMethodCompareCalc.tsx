@@ -53,14 +53,14 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = () => {
   return (
     <div className="space-y-5">
 
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center space-x-2">
+      <div className={`${cardBg} rounded-lg p-4 border`}>
+        <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
           <Layers className="w-5 h-5 text-accent" />
           <span>SO SÁNH 2 PHƯƠNG THỨC TRẢ NỢ: GỐC ĐỀU VS NIÊN KIM (EMI/LÃI CỐ ĐỊNH)</span>
         </h2>
       </div>
 
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
+      <div className={`${cardBg} rounded-lg p-4 border space-y-3`}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-[11px] font-bold text-ink-faint mb-1">Số tiền vay (VND) *</label>
@@ -68,7 +68,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = () => {
               type="text"
               value={loanAmountStr}
               onChange={e => setLoanAmountStr(formatMoneyInput(e.target.value))}
-              className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-accent bg-transparent border-line"
+              className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-accent bg-transparent border-line"
             />
           </div>
 
@@ -79,7 +79,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = () => {
               min={1}
               value={tenorMonths}
               onChange={e => setTenorMonths(parseInt(e.target.value, 10) || 12)}
-              className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+              className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
             />
           </div>
 
@@ -90,14 +90,14 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = () => {
               step="0.1"
               value={interestRateAnnualStr}
               onChange={e => setInterestRateAnnualStr(e.target.value)}
-              className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-warn bg-transparent border-line"
+              className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-warn bg-transparent border-line"
             />
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`${cardBg} rounded-2xl p-4 border border-accent/30  shadow-sm space-y-3`}>
+        <div className={`${cardBg} rounded-lg p-4 border border-accent/30  space-y-3`}>
           <div className="flex items-center justify-between border-b border-accent/30  pb-2">
             <span className="font-bold text-xs uppercase text-accent">
               PHƯƠNG ÁN 1: GỐC TRẢ ĐỀU (LÃI GIẢM DẦN)
@@ -123,7 +123,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = () => {
           </div>
         </div>
 
-        <div className={`${cardBg} rounded-2xl p-4 border border-accent/30  shadow-sm space-y-3`}>
+        <div className={`${cardBg} rounded-lg p-4 border border-accent/30  space-y-3`}>
           <div className="flex items-center justify-between border-b border-accent/30  pb-2">
             <span className="font-bold text-xs uppercase text-accent">
               PHƯƠNG ÁN 2: NIÊN KIM EMI (CỐ ĐỊNH HÀNG THÁNG)
@@ -150,7 +150,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = () => {
         </div>
       </div>
 
-      <div className="p-4 rounded-2xl bg-accent-soft  border border-accent/30  space-y-1 text-xs">
+      <div className="p-4 rounded-lg bg-accent-soft  border border-accent/30  space-y-1 text-xs">
         <div className="flex items-center space-x-1.5 font-bold text-accent ">
           <CheckCircle2 className="w-4 h-4 text-accent" />
           <span>SO SÁNH TỔNG QUAN DÀNH CHO TƯ VẤN:</span>

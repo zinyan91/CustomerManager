@@ -685,7 +685,21 @@ Chuỗi class dùng chung nằm ở `src/lib/uiClasses.ts` (`UI.containerCardBg`
 
 Lưu ý khi đặt tên lớp động: Tailwind quét mã tĩnh, nên `bg-g${n}` **không sinh ra lớp nào**. Dùng bảng tra như `DEBT_GROUP_COLOR[n]`.
 
-Đã chuyển sang `t()`: Header, Sidebar, `ScheduleTab`, `PeriodDetailCard`. Các màn còn lại vẫn để chuỗi tiếng Việt cứng. Các màn còn lại vẫn để chuỗi tiếng Việt cứng trong mã, chuyển dần theo từng đợt cùng lúc dọn `isLight`. Giá trị dữ liệu lấy từ CSDL (`KunnTenor`, `PrincipalRepaymentMethod`, tên nhóm nợ) **không dịch** — đó là dữ liệu nghiệp vụ, không phải giao diện.
+Đã chuyển sang `t()`: Header, Sidebar, `ScheduleTab`, `PeriodDetailCard`. Các màn còn lại vẫn để chuỗi tiếng Việt cứng — vì vậy **công tắc VI/EN đang tắt** bằng cờ `LANG_SWITCH_ENABLED` trong `i18n.ts`. Bật nửa vời còn tệ hơn không bật: người dùng sẽ thấy thanh điều hướng tiếng Anh nằm cạnh thân màn tiếng Việt. Dịch xong toàn bộ thì bật lại cờ đó.
+
+### Quy tắc hình thức dùng chung
+
+Ba thứ dưới đây khai báo ở `src/lib/uiClasses.ts`, đừng dựng lại tại chỗ:
+
+| Hạng mục | Quy tắc |
+| :--- | :--- |
+| Bo góc | `RADIUS_PANEL` (`rounded-lg`) cho thẻ và bảng; `RADIUS_CONTROL` (`rounded-md`) cho nút, ô nhập, viên trạng thái. Chỉ hai bán kính, không có bán kính thứ ba |
+| Nút | `BTN_PRIMARY` nền màu nhấn — **mỗi màn chỉ một nút chính**; `BTN_SECONDARY` viền mờ cho thao tác phụ như xuất Excel, in, nhập CSV; `BTN_DANGER` cho thao tác xoá |
+| Tiêu đề | `HEADING_SCREEN` cho tiêu đề màn, `HEADING_PANEL` cho tiêu đề thẻ, `SECTION_LABEL` cho nhãn nhỏ. **Chữ in hoa chỉ dùng cho nhãn 10–11px**; tiêu đề cỡ `text-sm` trở lên viết thường |
+
+Màu nền đặc của trạng thái (`bg-neg`, `bg-warn`, `bg-pos`) đi kèm chữ `text-surface`, không phải `text-white`: ở giao diện tối nền đỏ sáng với chữ trắng chỉ đạt tương phản 2,71.
+
+Bảng dữ liệu dùng `TABLE_HEAD` cho hàng tiêu đề và `TABLE_CELL` cho ô. Ô lấy giãn cách từ biến `--row-px` / `--row-py` nên mọi bảng đổi mật độ cùng lúc; `data-density="compact"` đặt ở khối bao ngoài để thu gọn một vùng cụ thể. Các màn còn lại vẫn để chuỗi tiếng Việt cứng trong mã, chuyển dần theo từng đợt cùng lúc dọn `isLight`. Giá trị dữ liệu lấy từ CSDL (`KunnTenor`, `PrincipalRepaymentMethod`, tên nhóm nợ) **không dịch** — đó là dữ liệu nghiệp vụ, không phải giao diện.
 
 ---
 

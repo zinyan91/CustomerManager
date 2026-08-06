@@ -46,7 +46,7 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
   totalExistingKunnBalance,
   availableBeforeThisKunn,
 }) => (
-  <div className={`rounded-xl p-4 space-y-4 border ${sectionBoxBg}`}>
+  <div className={`rounded-md p-4 space-y-4 border ${sectionBoxBg}`}>
     <div className="text-[11px] font-bold text-accent uppercase tracking-wider flex items-center space-x-2">
       <FileText className="w-4 h-4" />
       <span>HỢP ĐỒNG TÍN DỤNG CHA & PHÂN LOẠI NỢ</span>
@@ -62,7 +62,7 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
             const cc = creditContracts.find(x => x.Id === id);
             if (cc) applyCreditContractToForm(cc, !!selectedContract);
           }}
-          className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-accent ${inputStyle}`}>
+          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-accent ${inputStyle}`}>
           <option value="">— Chọn HĐTD —</option>
           {selectableCreditContracts.map(cc => (
             <option key={cc.Id} value={cc.Id}>{cc.HdtdNumber}</option>
@@ -79,13 +79,13 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
         <input type="text" value={formKunnNumber}
           onChange={e => setFormKunnNumber(e.target.value)}
           placeholder="2002/HDTD/9634078/GNN-01"
-          className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-pos ${inputStyle}`} />
+          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-pos ${inputStyle}`} />
       </div>
       <div>
         <label className={`block mb-1 ${labelStyle}`}>Phân loại Nhóm nợ</label>
         <select value={form.DebtGroup ?? 1}
           onChange={e => setForm(f => ({ ...f, DebtGroup: Number(e.target.value) }))}
-          className={`w-full rounded-xl p-2.5 text-xs font-bold ${inputStyle}`}>
+          className={`w-full rounded-md p-2.5 text-xs font-bold ${inputStyle}`}>
           {[1, 2, 3, 4, 5].map(g => (
             <option key={g} value={g}>
               Nhóm {g} ({g === 1 ? 'Nợ đủ tiêu chuẩn <10 ngày' : g === 2 ? 'Nợ cần chú ý 10-90 ngày' : g === 3 ? 'Nợ dưới tiêu chuẩn 91-180 ngày' : g === 4 ? 'Nợ nghi ngờ 181-360 ngày' : 'Nợ có khả năng mất vốn >360 ngày'})
@@ -96,7 +96,7 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
     </div>
 
     {formCreditContract && (
-      <div className={`rounded-xl p-3 border text-[11px] ${'bg-panel border-line'
+      <div className={`rounded-md p-3 border text-[11px] ${'bg-panel border-line'
         }`}>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 font-mono">
           <span className="text-ink-faint">{foundCustomer?.FullName} · CIF {foundCustomer?.CifKh}</span>
@@ -113,7 +113,7 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
     )}
 
     {kunnIssues.length > 0 && (
-      <div className={`p-3 rounded-xl border text-[11px] font-semibold space-y-1 ${'bg-warn-soft border-warn/30 text-warn'
+      <div className={`p-3 rounded-md border text-[11px] font-semibold space-y-1 ${'bg-warn-soft border-warn/30 text-warn'
         }`}>
         <div className="flex items-center space-x-1.5 uppercase tracking-wide">
           <AlertTriangle className="w-3.5 h-3.5" />
@@ -124,7 +124,7 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
     )}
 
     {form.LoanMethod === 'Hạn mức tín dụng' && (
-      <div className={`p-3 rounded-xl border flex flex-wrap items-center justify-between text-xs font-semibold ${'bg-accent-soft border-accent/30 text-accent'
+      <div className={`p-3 rounded-md border flex flex-wrap items-center justify-between text-xs font-semibold ${'bg-accent-soft border-accent/30 text-accent'
         }`}>
         <div className="flex items-center space-x-2">
           <Building2 className="w-4 h-4 text-accent" />

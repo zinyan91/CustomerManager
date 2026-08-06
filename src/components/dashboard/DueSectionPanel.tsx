@@ -50,11 +50,11 @@ export const DueSectionPanel: React.FC<DueSectionPanelProps> = ({
   icon: Icon, tone, title, counts, columns, isEmpty, emptyText,
   cardBg, tableHeaderBg, filter, onFilterChange, onPrint, children,
 }) => (
-  <div className={`${cardBg} rounded-2xl p-4 border space-y-3`}>
+  <div className={`${cardBg} rounded-lg p-4 border space-y-3`}>
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2">
       <div className="flex items-center space-x-2">
         <Icon className={`w-4 h-4 ${TONE_TEXT[tone]}`} />
-        <h3 className={`font-bold text-xs uppercase tracking-wider ${TONE_TEXT[tone]}`}>{title}</h3>
+        <h3 className={`font-bold text-xs tracking-tight ${TONE_TEXT[tone]}`}>{title}</h3>
       </div>
 
       <div className="flex items-center gap-2">

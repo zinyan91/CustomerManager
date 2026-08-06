@@ -54,18 +54,18 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
   }), [loanAmountStr, loanRateStr, disbursementDate, loanDueDate, savingsAmountStr, firstDepositDate, cycles]);
 
   const labelCls = `block mb-1 ${styles.labelStyle}`;
-  const inputCls = `w-full rounded-xl p-2 ${styles.inputStyle}`;
+  const inputCls = `w-full rounded-md p-2 ${styles.inputStyle}`;
   const cellCls = `w-full rounded-lg p-1.5 text-[11px] font-mono ${styles.inputStyle}`;
 
   return (
     <div className="space-y-4">
-      <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
+      <div className={`${styles.containerCardBg} rounded-lg p-5 border space-y-4 text-xs`}>
         <div className="font-bold text-accent uppercase tracking-wider text-sm flex items-center space-x-2 border-b border-line pb-2">
           <TrendingUp className="w-4 h-4" />
           <span>BẢNG TÍNH LÃI SỔ TIẾT KIỆM TÁI TỤC NHIỀU KỲ (ACTUAL/365)</span>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+        <div className="p-3.5 rounded-md border border-line  bg-panel-muted  space-y-2.5">
           <div className="font-bold text-accent text-[11px] uppercase">THÔNG TIN KHOẢN VAY</div>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
             <div>
@@ -94,7 +94,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-line  bg-panel-muted  space-y-2.5">
+        <div className="p-3.5 rounded-md border border-line  bg-panel-muted  space-y-2.5">
           <div className="font-bold text-warn text-[11px] uppercase">SỔ TIẾT KIỆM KỲ ĐẦU</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div>
@@ -116,28 +116,28 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
         <div className="flex items-center justify-between">
           <div className="font-bold text-[11px] uppercase text-ink-faint">CHI TIẾT CÁC KỲ SỔ TIẾT KIỆM</div>
           <button type="button" onClick={addCycle}
-            className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 shadow-sm transition-colors">
+            className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors">
             <Plus className="w-3.5 h-3.5" /><span>THÊM KỲ</span>
           </button>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[11px] border-collapse min-w-[940px]">
-            <thead className="bg-panel-muted font-bold border-b border-line">
+            <thead className="bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line">
               <tr>
-                <th className="p-2 text-center">KỲ</th>
-                <th className="p-2 text-right">GỐC KỲ NÀY</th>
-                <th className="p-2">NGÀY GỬI</th>
-                <th className="p-2 text-center w-20">KỲ HẠN</th>
-                <th className="p-2 w-24">ĐƠN VỊ</th>
-                <th className="p-2">NGÀY ĐÁO HẠN</th>
-                <th className="p-2 text-center w-24">LS SỔ (%)</th>
-                <th className="p-2 text-center">SỐ NGÀY</th>
-                <th className="p-2 text-right">LÃI KỲ NÀY</th>
-                <th className="p-2 text-right">GỐC + LÃI</th>
-                <th className="p-2 text-center w-20">TỶ LỆ CC</th>
-                <th className="p-2 text-right">CẦM CỐ ĐƯỢC</th>
-                <th className="p-2" />
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">KỲ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">GỐC KỲ NÀY</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)]">NGÀY GỬI</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-20">KỲ HẠN</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] w-24">ĐƠN VỊ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)]">NGÀY ĐÁO HẠN</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-24">LS SỔ (%)</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">SỐ NGÀY</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">LÃI KỲ NÀY</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">GỐC + LÃI</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-20">TỶ LỆ CC</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">CẦM CỐ ĐƯỢC</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)]" />
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -145,9 +145,9 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
                 const c = cycles[i];
                 return (
                   <tr key={c.key} className="hover:bg-panel-muted">
-                    <td className="p-2 text-center font-bold">{row.index}</td>
-                    <td className="p-2 text-right font-mono">{fmtMoney(row.openingPrincipal)}</td>
-                    <td className="p-2 font-mono text-ink-faint">{row.depositDate ? fmtDate(row.depositDate) : '—'}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-bold">{row.index}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{fmtMoney(row.openingPrincipal)}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-ink-faint">{row.depositDate ? fmtDate(row.depositDate) : '—'}</td>
                     <td className="p-1.5">
                       <input type="number" min={1} value={c.tenor}
                         onChange={e => patchCycle(c.key, { tenor: parseInt(e.target.value, 10) || 1 })}
@@ -162,22 +162,22 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
                         ))}
                       </select>
                     </td>
-                    <td className="p-2 font-mono text-ink-faint">{row.dueDate ? fmtDate(row.dueDate) : '—'}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-ink-faint">{row.dueDate ? fmtDate(row.dueDate) : '—'}</td>
                     <td className="p-1.5">
                       <input type="number" step="0.01" value={(c.savingsRateAnnual * 100).toFixed(2)}
                         onChange={e => patchCycle(c.key, { savingsRateAnnual: (parseFloat(e.target.value) || 0) / 100 })}
                         className={`${cellCls} text-center font-bold`} />
                     </td>
-                    <td className="p-2 text-center font-mono">{row.days}</td>
-                    <td className="p-2 text-right font-mono font-bold text-warn">{fmtMoney(row.interest)}</td>
-                    <td className="p-2 text-right font-mono">{fmtMoney(row.closingBalance)}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">{row.days}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-warn">{fmtMoney(row.interest)}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{fmtMoney(row.closingBalance)}</td>
                     <td className="p-1.5">
                       <input type="number" step="1" value={(c.pledgeRatio * 100).toFixed(0)}
                         onChange={e => patchCycle(c.key, { pledgeRatio: (parseFloat(e.target.value) || 0) / 100 })}
                         className={`${cellCls} text-center`} />
                     </td>
-                    <td className="p-2 text-right font-mono text-accent">{fmtMoney(row.pledgeCapacity)}</td>
-                    <td className="p-2 text-center">
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-accent">{fmtMoney(row.pledgeCapacity)}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
                       <button type="button" onClick={() => removeCycle(c.key)} disabled={cycles.length <= 1}
                         className="text-ink-faint hover:text-neg disabled:opacity-30 transition-colors">
                         <Trash2 className="w-3.5 h-3.5" />
@@ -191,7 +191,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="p-4 rounded-2xl bg-warn-soft  border border-warn/30 ">
+          <div className="p-4 rounded-lg bg-warn-soft  border border-warn/30 ">
             <div className="text-[11px] font-bold text-ink-faint uppercase">TỔNG LÃI STK CÁC KỲ</div>
             <div className="text-lg font-extrabold text-warn font-mono mt-1">
               {fmtMoney(result.totalSavingsInterest)}
@@ -200,7 +200,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
               Gốc + lãi cuối cùng: {fmtMoney(result.finalBalance)}
             </div>
           </div>
-          <div className="p-4 rounded-2xl bg-accent-soft  border border-accent/30 ">
+          <div className="p-4 rounded-lg bg-accent-soft  border border-accent/30 ">
             <div className="text-[11px] font-bold text-ink-faint uppercase">TIỀN LÃI VAY PHẢI TRẢ</div>
             <div className="text-lg font-extrabold text-accent font-mono mt-1">
               {fmtMoney(result.loanInterest)}
@@ -209,7 +209,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
               Tổng tiền trả nợ: {fmtMoney(result.totalRepayment)}
             </div>
           </div>
-          <div className={`p-4 rounded-2xl border ${
+          <div className={`p-4 rounded-lg border ${
             result.netGain >= 0
               ? 'bg-pos-soft  border-pos/30 '
               : 'bg-neg-soft  border-neg/30 '

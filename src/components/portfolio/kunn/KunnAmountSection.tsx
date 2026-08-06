@@ -33,7 +33,7 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
   formLoanAmount,
   setFormLoanAmount,
 }) => (
-  <div className={`rounded-xl p-4 space-y-4 border ${sectionBoxBg}`}>
+  <div className={`rounded-md p-4 space-y-4 border ${sectionBoxBg}`}>
     <div className="text-[11px] font-bold text-pos uppercase tracking-wider flex items-center space-x-2">
       <DollarSign className="w-4 h-4" />
       <span>THÔNG TIN GIẤY NHẬN NỢ (KUNN) & GIẢI NGÂN LẦN NÀY</span>
@@ -47,7 +47,7 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
         <input type="text" value={formLoanAmount}
           onChange={e => setFormLoanAmount(formatMoneyInput(e.target.value))}
           placeholder="650.000.000"
-          className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-pos ${inputStyle}`} />
+          className={`w-full rounded-md p-2.5 text-sm font-mono font-bold text-pos ${inputStyle}`} />
       </div>
       <div>
         <label className={`block mb-1 ${labelStyle}`}>
@@ -56,12 +56,12 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
             : 'Dư nợ HMTD hiện hữu (KUNN còn hiệu lực)'}
         </label>
         <input type="text" readOnly value={fmtMoney(totalExistingKunnBalance)}
-          className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-warn ${readonlyInputStyle}`} />
+          className={`w-full rounded-md p-2.5 text-sm font-mono font-bold text-warn ${readonlyInputStyle}`} />
       </div>
       <div>
         <label className={`block mb-1 ${labelStyle}`}>Hạn mức HMTD còn lại</label>
         <input type="text" readOnly value={fmtMoney(remainingHmtdLimit)}
-          className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold ${remainingHmtdLimit >= 0 ? 'text-accent' : 'text-neg'
+          className={`w-full rounded-md p-2.5 text-sm font-mono font-bold ${remainingHmtdLimit >= 0 ? 'text-accent' : 'text-neg'
             } ${readonlyInputStyle}`} />
       </div>
     </div>
@@ -75,7 +75,7 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
             const kunnEnd = disDate && months > 0 ? addMonthsToDate(disDate, months) : form.KunnDueDate;
             setForm(f => ({ ...f, DisbursementDate: disDate, KunnDueDate: kunnEnd || f.KunnDueDate }));
           }}
-          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+          className={`w-full rounded-md p-2.5 text-xs ${inputStyle}`} />
       </div>
       <div>
         <label className={`block mb-1 ${labelStyle}`}>Thời hạn KUNN *</label>
@@ -89,7 +89,7 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
               const kunnEnd = form.DisbursementDate && months > 0 ? addMonthsToDate(form.DisbursementDate, months) : form.KunnDueDate;
               setForm(f => ({ ...f, KunnTenor: val, KunnDueDate: kunnEnd || f.KunnDueDate }));
             }}
-            className={`w-full rounded-xl p-2.5 text-xs font-bold text-accent ${inputStyle}`}
+            className={`w-full rounded-md p-2.5 text-xs font-bold text-accent ${inputStyle}`}
           >
             <option value="">— Chọn thời hạn —</option>
             {['0 tháng', '3 tháng', '5 tháng', '6 tháng', '9 tháng', '12 tháng'].map(t => (
@@ -105,7 +105,7 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
               setForm(f => ({ ...f, KunnTenor: val, KunnDueDate: kunnEnd || f.KunnDueDate }));
             }}
             placeholder="5T / 12 tháng..."
-            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+            className={`w-full rounded-md p-2.5 text-xs ${inputStyle}`} />
         )}
       </div>
       <div>
@@ -113,13 +113,13 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
           <span>Ngày kết thúc KUNN</span>
         </label>
         <DateInput readOnly value={form.KunnDueDate || ''}
-          className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-accent border ${readonlyInputStyle}`} />
+          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-accent border ${readonlyInputStyle}`} />
       </div>
       <div>
         <label className={`block mb-1 ${labelStyle}`}>Ngày bắt đầu trả nợ</label>
         <DateInput value={form.RepaymentStartDate || ''}
           onChange={val => setForm(f => ({ ...f, RepaymentStartDate: val }))}
-          className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+          className={`w-full rounded-md p-2.5 text-xs ${inputStyle}`} />
       </div>
     </div>
   </div>

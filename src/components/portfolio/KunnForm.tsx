@@ -104,7 +104,7 @@ export const KunnForm: React.FC<KunnFormProps> = ({
   graceOptions, selectedCollaterals, maxAllowedLoanLtv,
 }) => {
   return (
-    <div className={`${containerCardBg} rounded-2xl p-5 space-y-5 border shadow-xl`}>
+    <div className={`${containerCardBg} rounded-lg p-5 space-y-5 border`}>
       <div className={`flex items-center justify-between pb-3 border-b ${'border-line'}`}>
         <h3 className="font-bold flex items-center space-x-2 text-sm">
           <FileText className="w-4 h-4 text-accent" />
@@ -219,7 +219,7 @@ export const KunnForm: React.FC<KunnFormProps> = ({
           type="button"
           onClick={(e) => handleSaveContract(e, true)}
           disabled={loading}
-          className="flex-1 bg-pos hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-3 px-4 rounded-xl transition-colors shadow-lg  text-xs flex items-center justify-center space-x-2"
+          className="flex-1 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-3 px-4 rounded-md transition-colors  text-xs flex items-center justify-center space-x-2"
         >
           <Plus className="w-4 h-4" />
           <span>{loading ? 'Đang lưu...' : 'THÊM MỚI'}</span>
@@ -230,7 +230,7 @@ export const KunnForm: React.FC<KunnFormProps> = ({
               type="button"
               onClick={(e) => handleSaveContract(e, false)}
               disabled={loading}
-              className="flex-1 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-3 px-4 rounded-xl transition-colors shadow-lg  text-xs flex items-center justify-center space-x-2"
+              className="flex-1 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-3 px-4 rounded-md transition-colors  text-xs flex items-center justify-center space-x-2"
             >
               <Save className="w-4 h-4" />
               <span>{loading ? 'Đang lưu...' : 'CẬP NHẬT KUNN NÀY'}</span>
@@ -239,7 +239,7 @@ export const KunnForm: React.FC<KunnFormProps> = ({
               type="button"
               onClick={(e) => handleDeleteContract(e, selectedContract.Id, selectedContract.ContractNumber)}
               disabled={loading}
-              className="bg-neg hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-3 px-4 rounded-xl transition-colors shadow-lg  text-xs flex items-center justify-center space-x-2"
+              className="bg-neg hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-3 px-4 rounded-md transition-colors  text-xs flex items-center justify-center space-x-2"
             >
               <Trash2 className="w-4 h-4" />
               <span>XOÁ KUNN</span>

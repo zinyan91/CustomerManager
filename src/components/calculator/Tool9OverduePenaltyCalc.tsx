@@ -65,7 +65,7 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
 
   return (
     <div className="space-y-4">
-      <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
+      <div className={`${styles.containerCardBg} rounded-lg p-5 border space-y-4 text-xs`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-2">
           <div className="font-bold text-accent uppercase tracking-wider text-sm flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4 text-neg" />
@@ -74,7 +74,7 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
           <button
             type="button"
             onClick={() => { setRows(prev => [...prev, newRow(nextKey)]); setNextKey(k => k + 1); }}
-            className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 shadow-sm transition-colors"
+            className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" /><span>THÊM HỢP ĐỒNG</span>
           </button>
@@ -88,20 +88,20 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[11px] border-collapse min-w-[1080px]">
-            <thead className="bg-panel-muted font-bold border-b border-line">
+            <thead className="bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line">
               <tr>
-                <th className="p-2">MÃ HĐ</th>
-                <th className="p-2 text-right min-w-[130px]">DƯ NỢ GỐC QUÁ HẠN</th>
-                <th className="p-2 text-center w-24">LS TRONG HẠN</th>
-                <th className="p-2 text-center w-24">LS PHẠT GỐC</th>
-                <th className="p-2 text-center w-20">SỐ NGÀY</th>
-                <th className="p-2 text-right">TIỀN PHẠT GỐC</th>
-                <th className="p-2 text-right min-w-[120px]">LÃI CHẬM TRẢ</th>
-                <th className="p-2 text-center w-24">LS PHẠT LÃI</th>
-                <th className="p-2 text-center w-20">SỐ NGÀY</th>
-                <th className="p-2 text-right">TIỀN PHẠT LÃI</th>
-                <th className="p-2 text-right min-w-[140px]">TỔNG PHẢI TRẢ</th>
-                <th className="p-2" />
+                <th className="px-[var(--row-px)] py-[var(--row-py)]">MÃ HĐ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right min-w-[130px]">DƯ NỢ GỐC QUÁ HẠN</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-24">LS TRONG HẠN</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-24">LS PHẠT GỐC</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-20">SỐ NGÀY</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">TIỀN PHẠT GỐC</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right min-w-[120px]">LÃI CHẬM TRẢ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-24">LS PHẠT LÃI</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-20">SỐ NGÀY</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">TIỀN PHẠT LÃI</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right min-w-[140px]">TỔNG PHẢI TRẢ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)]" />
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -121,7 +121,7 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
                       onChange={e => patch(row.key, { normalRateStr: e.target.value })}
                       className={`${cellCls} text-center`} />
                   </td>
-                  <td className="p-2 text-center font-mono font-bold text-neg">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono font-bold text-neg">
                     {(calc.principalPenaltyRate * 100).toFixed(2)}%
                   </td>
                   <td className="p-1.5">
@@ -129,7 +129,7 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
                       onChange={e => patch(row.key, { principalDaysStr: e.target.value })}
                       className={`${cellCls} text-center`} />
                   </td>
-                  <td className="p-2 text-right font-mono font-bold text-neg">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-neg">
                     {fmtMoney(calc.principalPenalty)}
                   </td>
                   <td className="p-1.5">
@@ -147,13 +147,13 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
                       onChange={e => patch(row.key, { interestDaysStr: e.target.value })}
                       className={`${cellCls} text-center`} />
                   </td>
-                  <td className="p-2 text-right font-mono text-neg">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-neg">
                     {fmtMoney(calc.interestPenalty)}
                   </td>
-                  <td className="p-2 text-right font-mono font-extrabold text-accent">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-extrabold text-accent">
                     {fmtMoney(calc.totalDue)}
                   </td>
-                  <td className="p-2 text-center">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
                     <button
                       type="button"
                       onClick={() => setRows(prev => (prev.length > 1 ? prev.filter(r => r.key !== row.key) : prev))}
@@ -168,12 +168,12 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
             </tbody>
             <tfoot className="bg-accent-soft  font-bold border-t-2 border-accent/30">
               <tr>
-                <td className="p-2" colSpan={5}>TỔNG</td>
-                <td className="p-2 text-right font-mono text-neg">{fmtMoney(totals.principalPenalty)}</td>
-                <td className="p-2" colSpan={3} />
-                <td className="p-2 text-right font-mono text-neg">{fmtMoney(totals.interestPenalty)}</td>
-                <td className="p-2 text-right font-mono text-accent text-sm">{fmtMoney(totals.totalDue)}</td>
-                <td className="p-2" />
+                <td className="px-[var(--row-px)] py-[var(--row-py)]" colSpan={5}>TỔNG</td>
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-neg">{fmtMoney(totals.principalPenalty)}</td>
+                <td className="px-[var(--row-px)] py-[var(--row-py)]" colSpan={3} />
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-neg">{fmtMoney(totals.interestPenalty)}</td>
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-accent text-sm">{fmtMoney(totals.totalDue)}</td>
+                <td className="px-[var(--row-px)] py-[var(--row-py)]" />
               </tr>
             </tfoot>
           </table>

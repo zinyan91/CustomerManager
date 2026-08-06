@@ -259,28 +259,28 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
   };
 
   const cardBg = UI.containerCardBg;
-  const inputCls = 'w-full p-2 rounded-xl border text-xs font-mono bg-transparent border-line ';
+  const inputCls = 'w-full p-2 rounded-md border text-xs font-mono bg-transparent border-line ';
   const cellInputCls = 'w-full p-1.5 rounded-lg border text-[11px] font-mono bg-transparent border-line ';
   const labelCls = 'block text-[11px] font-bold text-ink-faint mb-1';
 
   return (
     <div className="space-y-5">
 
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3`}>
+      <div className={`${cardBg} rounded-lg p-4 border flex flex-col md:flex-row items-start md:items-center justify-between gap-3`}>
         <div>
-          <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center space-x-2">
+          <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
             <TrendingDown className="w-5 h-5 text-pos" />
             <span>CÔNG CỤ TÍNH GIẢM LÃI SUẤT VAY (ACTUAL/365)</span>
           </h2>
         </div>
 
-        <div className="flex items-center bg-panel-muted p-1 rounded-xl">
+        <div className="flex items-center bg-panel-muted p-1 rounded-md">
           <button
             type="button"
             onClick={() => setCalcMode('tdh')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
               calcMode === 'tdh'
-                ? 'bg-accent text-accent-ink shadow-sm'
+                ? 'bg-accent text-accent-ink'
                 : 'text-ink-faint hover:text-ink'
             }`}
           >
@@ -291,7 +291,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
             onClick={() => setCalcMode('quick')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
               calcMode === 'quick'
-                ? 'bg-accent text-accent-ink shadow-sm'
+                ? 'bg-accent text-accent-ink'
                 : 'text-ink-faint hover:text-ink'
             }`}
           >
@@ -302,8 +302,8 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
 
       {calcMode === 'tdh' && (
         <div className="space-y-4">
-          <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-4`}>
-            <div className="font-bold text-xs text-accent uppercase tracking-wider flex items-center space-x-1.5 border-b border-line pb-2">
+          <div className={`${cardBg} rounded-lg p-4 border space-y-4`}>
+            <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-1.5 border-b border-line pb-2">
               <Calculator className="w-4 h-4" />
               <span>THÔNG SỐ KHOẢN VAY &amp; ĐỀ XUẤT GIẢM LÃI SUẤT</span>
             </div>
@@ -448,7 +448,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className={`${cardBg} rounded-2xl p-4 border shadow-sm flex items-center justify-between`}>
+            <div className={`${cardBg} rounded-lg p-4 border flex items-center justify-between`}>
               <div>
                 <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">TỔNG TIỀN GIẢM LÃI DỰ KIẾN</div>
                 <div className="text-xl font-extrabold text-pos mt-1">
@@ -460,12 +460,12 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                     : 'Chưa có kỳ nào được giảm'}
                 </div>
               </div>
-              <div className="p-3 bg-pos-soft rounded-xl text-pos border border-pos/30">
+              <div className="p-3 bg-pos-soft rounded-md text-pos border border-pos/30">
                 <TrendingDown className="w-6 h-6" />
               </div>
             </div>
 
-            <div className={`${cardBg} rounded-2xl p-4 border shadow-sm flex items-center justify-between`}>
+            <div className={`${cardBg} rounded-lg p-4 border flex items-center justify-between`}>
               <div>
                 <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">LÃI BAN ĐẦU vs SAU GIẢM</div>
                 <div className="text-sm font-extrabold text-accent mt-1 font-mono">
@@ -479,12 +479,12 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                   chi phí lãi toàn kỳ
                 </div>
               </div>
-              <div className="p-3 bg-accent-soft rounded-xl text-accent border border-accent/30">
+              <div className="p-3 bg-accent-soft rounded-md text-accent border border-accent/30">
                 <Percent className="w-6 h-6" />
               </div>
             </div>
 
-            <div className={`${cardBg} rounded-2xl p-4 border shadow-sm flex items-center justify-between`}>
+            <div className={`${cardBg} rounded-lg p-4 border flex items-center justify-between`}>
               <div>
                 <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">MARGIN SAU GIẢM vs COF</div>
                 <div className="text-xl font-extrabold text-warn mt-1 font-mono">
@@ -498,30 +498,30 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                     : `LS giảm chốt ${fmtPercent(effectiveReducedRate)} − COF ${fmtPercent(tdhCof)}`}
                 </div>
               </div>
-              <div className="p-3 bg-warn-soft rounded-xl text-warn border border-warn/30">
+              <div className="p-3 bg-warn-soft rounded-md text-warn border border-warn/30">
                 <FileSpreadsheet className="w-6 h-6" />
               </div>
             </div>
           </div>
 
           {effectiveReducedRate !== null && effectiveReducedRate - tdhCof < 0 && (
-            <div className="rounded-2xl border border-neg/30 bg-neg-soft  p-3 text-xs font-bold text-neg">
+            <div className="rounded-lg border border-neg/30 bg-neg-soft  p-3 text-xs font-bold text-neg">
               ⚠ LS giảm chốt {fmtPercent(effectiveReducedRate)} thấp hơn chi phí vốn COF {fmtPercent(tdhCof)} — margin âm, cần cấp có thẩm quyền phê duyệt.
             </div>
           )}
 
-          <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
+          <div className={`${cardBg} rounded-lg p-4 border space-y-3`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-line pb-2">
               <div className="flex items-center space-x-2">
                 <Calendar className="w-4 h-4 text-accent" />
-                <h3 className="font-bold text-xs uppercase tracking-wider text-accent">
+                <h3 className="font-bold text-xs tracking-tight text-accent">
                   LỊCH TRẢ NỢ VÀ TIỀN GIẢM LÃI CHI TIẾT ({tdhScheduleRows.length} KỲ — ACTUAL/365)
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={handleExportTdh}
-                className="bg-pos hover:opacity-90 text-accent-ink text-xs px-3.5 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 shadow-sm transition-colors"
+                className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>XUẤT EXCEL</span>
@@ -530,20 +530,20 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
 
             <div className="overflow-x-auto max-h-[500px]">
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="sticky top-0 bg-panel-muted font-bold border-b border-line">
+                <thead className="sticky top-0 bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line">
                   <tr>
-                    <th className="p-2 text-center">KỲ</th>
-                    <th className="p-2">NGÀY TRẢ NỢ</th>
-                    <th className="p-2 text-center">SỐ NGÀY</th>
-                    <th className="p-2 text-right">DƯ NỢ ĐẦU KỲ</th>
-                    <th className="p-2 text-right">GỐC TRẢ KỲ</th>
-                    <th className="p-2 text-center">LS QUY ĐỊNH</th>
-                    <th className="p-2 text-center">LS GIẢM CHỐT</th>
-                    <th className="p-2 text-center">ΔLS GIẢM</th>
-                    <th className="p-2 text-right font-extrabold text-pos">TIỀN GIẢM LÃI KỲ</th>
-                    <th className="p-2 text-right">LÃI CHƯA GIẢM</th>
-                    <th className="p-2 text-right">LÃI SAU GIẢM</th>
-                    <th className="p-2 text-right">DƯ NỢ CUỐI KỲ</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">KỲ</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)]">NGÀY TRẢ NỢ</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">SỐ NGÀY</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">DƯ NỢ ĐẦU KỲ</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">GỐC TRẢ KỲ</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">LS QUY ĐỊNH</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">LS GIẢM CHỐT</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">ΔLS GIẢM</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-right font-extrabold text-pos">TIỀN GIẢM LÃI KỲ</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">LÃI CHƯA GIẢM</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">LÃI SAU GIẢM</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">DƯ NỢ CUỐI KỲ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line font-mono">
@@ -554,40 +554,40 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                         r.isReduced ? 'bg-pos-soft  font-semibold' : ''
                       }`}
                     >
-                      <td className="p-2 text-center font-bold">{r.month}</td>
-                      <td className="p-2 text-accent">{fmtDate(r.paymentDate)}</td>
-                      <td className="p-2 text-center">{r.daysInPeriod}</td>
-                      <td className="p-2 text-right">{fmtMoney(r.beginningBalance)}</td>
-                      <td className="p-2 text-right">{fmtMoney(r.principalPayment)}</td>
-                      <td className="p-2 text-center">{fmtPercent(r.standardRateAnnual)}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-bold">{r.month}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-accent">{fmtDate(r.paymentDate)}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">{r.daysInPeriod}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-right">{fmtMoney(r.beginningBalance)}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-right">{fmtMoney(r.principalPayment)}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">{fmtPercent(r.standardRateAnnual)}</td>
                       <td className={`p-2 text-center font-bold ${r.isReduced ? 'text-pos' : ''}`}>
                         {fmtPercent(r.reducedRateAnnual)}
                       </td>
-                      <td className="p-2 text-center text-neg font-bold">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center text-neg font-bold">
                         {r.isReduced ? `-${fmtPercent(r.deltaRateAnnual)}` : '0%'}
                       </td>
-                      <td className="p-2 text-right font-extrabold text-pos">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-extrabold text-pos">
                         {r.isReduced ? fmtMoney(r.interestReduced) : '0 VNĐ'}
                       </td>
-                      <td className="p-2 text-right text-ink-faint">{fmtMoney(r.interestOriginal)}</td>
-                      <td className="p-2 text-right font-bold text-accent">{fmtMoney(r.interestFinal)}</td>
-                      <td className="p-2 text-right">{fmtMoney(r.endingBalance)}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-right text-ink-faint">{fmtMoney(r.interestOriginal)}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-bold text-accent">{fmtMoney(r.interestFinal)}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-right">{fmtMoney(r.endingBalance)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-accent-soft  font-bold border-t-2 border-accent/30">
                   <tr>
-                    <td className="p-2 text-center" colSpan={4}>TỔNG</td>
-                    <td className="p-2 text-right font-mono">{fmtMoney(tdhSummary.totalPrincipal)}</td>
-                    <td className="p-2" colSpan={3} />
-                    <td className="p-2 text-right font-mono text-pos">
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center" colSpan={4}>TỔNG</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{fmtMoney(tdhSummary.totalPrincipal)}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)]" colSpan={3} />
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-pos">
                       {fmtMoney(tdhSummary.totalInterestReduced)}
                     </td>
-                    <td className="p-2 text-right font-mono">{fmtMoney(tdhSummary.totalInterestOriginal)}</td>
-                    <td className="p-2 text-right font-mono text-accent">
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{fmtMoney(tdhSummary.totalInterestOriginal)}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-accent">
                       {fmtMoney(tdhSummary.totalInterestFinal)}
                     </td>
-                    <td className="p-2" />
+                    <td className="px-[var(--row-px)] py-[var(--row-py)]" />
                   </tr>
                 </tfoot>
               </table>
@@ -598,11 +598,11 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
 
       {calcMode === 'quick' && (
         <div className="space-y-4">
-          <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
+          <div className={`${cardBg} rounded-lg p-4 border space-y-3`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-line pb-2">
               <div className="flex items-center space-x-2">
                 <Percent className="w-4 h-4 text-accent" />
-                <h3 className="font-bold text-xs uppercase tracking-wider text-accent">
+                <h3 className="font-bold text-xs tracking-tight text-accent">
                   BẢNG TÍNH GIẢM LÃI SUẤT NGẮN HẠN / HẠN MỨC ({quickResults.length} KHOẢN — ACTUAL/365)
                 </h3>
               </div>
@@ -610,7 +610,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                 <button
                   type="button"
                   onClick={addQuickRow}
-                  className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 shadow-sm transition-colors"
+                  className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>THÊM KHOẢN VAY</span>
@@ -618,7 +618,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                 <button
                   type="button"
                   onClick={handleExportQuick}
-                  className="bg-pos hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 shadow-sm transition-colors"
+                  className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>XUẤT EXCEL</span>
@@ -628,29 +628,29 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-[11px] border-collapse min-w-[1180px]">
-                <thead className="bg-panel-muted font-bold border-b border-line">
+                <thead className="bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line">
                   <tr>
-                    <th className="p-2 text-center">STT</th>
-                    <th className="p-2 min-w-[170px]">KHOẢN VAY</th>
-                    <th className="p-2 min-w-[100px]">TÀI KHOẢN VAY</th>
-                    <th className="p-2 min-w-[90px]">THỜI HẠN</th>
-                    <th className="p-2 min-w-[130px] text-right">SỐ DƯ (VND)</th>
-                    <th className="p-2 min-w-[60px] text-center">HSRR</th>
-                    <th className="p-2 min-w-[80px] text-center">LSCV QUY ĐỊNH</th>
-                    <th className="p-2 min-w-[80px] text-center">LS ĐỀ XUẤT</th>
-                    <th className="p-2 text-center">ΔLS</th>
-                    <th className="p-2 min-w-[90px]">THỜI HẠN ÁP DỤNG</th>
-                    <th className="p-2 min-w-[70px] text-center">SỐ NGÀY</th>
-                    <th className="p-2 min-w-[70px] text-center">COF</th>
-                    <th className="p-2 text-center">MARGIN → ĐỀ XUẤT</th>
-                    <th className="p-2 min-w-[130px] text-right font-extrabold text-pos">TIỀN GIẢM LÃI</th>
-                    <th className="p-2" />
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">STT</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[170px]">KHOẢN VAY</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[100px]">TÀI KHOẢN VAY</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[90px]">THỜI HẠN</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[130px] text-right">SỐ DƯ (VND)</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[60px] text-center">HSRR</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[80px] text-center">LSCV QUY ĐỊNH</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[80px] text-center">LS ĐỀ XUẤT</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">ΔLS</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[90px]">THỜI HẠN ÁP DỤNG</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[70px] text-center">SỐ NGÀY</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[70px] text-center">COF</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">MARGIN → ĐỀ XUẤT</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[130px] text-right font-extrabold text-pos">TIỀN GIẢM LÃI</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)]" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
                   {quickResults.map((q, idx) => (
                     <tr key={q.row.key} className="hover:bg-panel-muted transition-colors">
-                      <td className="p-2 text-center font-bold">{idx + 1}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-bold">{idx + 1}</td>
                       <td className="p-1.5">
                         <input
                           type="text"
@@ -710,7 +710,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                           className={`${cellInputCls} text-center font-bold text-pos`}
                         />
                       </td>
-                      <td className="p-2 text-center font-mono font-bold text-neg">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono font-bold text-neg">
                         -{fmtPercent(q.result.deltaRateAnnual)}
                       </td>
                       <td className="p-1.5">
@@ -739,7 +739,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                           className={`${cellInputCls} text-center`}
                         />
                       </td>
-                      <td className="p-2 text-center font-mono">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">
                         {q.result.marginCurrentAnnual === null || q.result.marginProposedAnnual === null ? (
                           <span className="text-ink-faint">—</span>
                         ) : (
@@ -748,10 +748,10 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                           </span>
                         )}
                       </td>
-                      <td className="p-2 text-right font-mono font-extrabold text-pos">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-extrabold text-pos">
                         {fmtMoney(q.result.interestReduced)}
                       </td>
-                      <td className="p-2 text-center">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
                         <button
                           type="button"
                           onClick={() => removeQuickRow(q.row.key)}
@@ -766,22 +766,22 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                 </tbody>
                 <tfoot className="bg-accent-soft  font-bold border-t-2 border-accent/30">
                   <tr>
-                    <td className="p-2 text-center" colSpan={4}>TỔNG</td>
-                    <td className="p-2 text-right font-mono">{fmtMoney(quickTotalBalance)}</td>
-                    <td className="p-2" colSpan={8} />
-                    <td className="p-2 text-right font-mono text-pos text-sm">
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center" colSpan={4}>TỔNG</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{fmtMoney(quickTotalBalance)}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)]" colSpan={8} />
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-pos text-sm">
                       {fmtMoney(quickTotalReduced)}
                     </td>
-                    <td className="p-2" />
+                    <td className="px-[var(--row-px)] py-[var(--row-py)]" />
                   </tr>
                 </tfoot>
               </table>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-pos-soft  border border-pos/30  space-y-2">
+          <div className="p-4 rounded-lg bg-pos-soft  border border-pos/30  space-y-2">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              <span className="text-xs font-bold text-pos uppercase tracking-wider">
+              <span className="text-xs font-bold text-pos tracking-tight">
                 TỔNG TIỀN GIẢM LÃI DỰ KIẾN
               </span>
               <span className="text-2xl font-extrabold text-pos font-mono">

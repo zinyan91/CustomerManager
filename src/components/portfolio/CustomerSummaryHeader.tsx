@@ -29,9 +29,9 @@ export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
   handleNewContract,
 }) => {
   return (
-    <div className={`${containerCardBg} rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 border`}>
+    <div className={`${containerCardBg} rounded-lg p-4 flex flex-wrap items-center justify-between gap-4 border`}>
       <div className="flex items-center space-x-3">
-        <div className="bg-accent rounded-full p-2.5 shadow-lg ">
+        <div className="bg-accent rounded-full p-2.5 ">
           <User className="w-5 h-5 text-accent-ink" />
         </div>
         <div>
@@ -75,8 +75,8 @@ export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
         </div>
         <button onClick={handleNewContract}
           disabled={!canDisburse}
-          className={`flex items-center space-x-1.5 font-bold px-4 py-2 rounded-xl transition-colors text-xs ${canDisburse
-            ? 'bg-pos hover:opacity-90 text-accent-ink shadow-md '
+          className={`flex items-center space-x-1.5 font-bold px-4 py-2 rounded-md transition-colors text-xs ${canDisburse
+            ? 'bg-accent hover:opacity-90 text-accent-ink '
             : 'bg-panel-muted text-ink-faint cursor-not-allowed'}`}>
           <Plus className="w-3.5 h-3.5" />
           <span>Giải ngân KUNN mới</span>

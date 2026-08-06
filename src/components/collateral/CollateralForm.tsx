@@ -65,9 +65,9 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
   const maxLoanCapacity = numericAppraisedValue * ltvVal / 100;
 
   return (
-    <div className={`${styles.containerCardBg} rounded-2xl p-5 space-y-4 border shadow-xl`}>
+    <div className={`${styles.containerCardBg} rounded-lg p-5 space-y-4 border`}>
       <div className={`flex items-center justify-between pb-3 border-b ${'border-line'}`}>
-        <h3 className="font-bold flex items-center space-x-2 text-xs uppercase tracking-wider text-accent">
+        <h3 className="font-bold flex items-center space-x-2 text-xs tracking-tight text-accent">
           <Building2 className="w-4 h-4" />
           <span>{selectedCollateral ? `CẬP NHẬT TÀI SẢN BẢO ĐẢM #${selectedCollateral.Id}` : 'TẠO MỚI TÀI SẢN BẢO ĐẢM'}</span>
         </h3>
@@ -92,7 +92,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
               <label className={`block mb-1 ${styles.labelStyle}`}>Khách hàng sở hữu / CIF *</label>
               <select required value={inputCustomerId}
                 onChange={e => setInputCustomerId(e.target.value ? Number(e.target.value) : '')}
-                className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`}>
+                className={`w-full rounded-md p-2.5 ${styles.inputStyle}`}>
                 <option value="">-- Chọn Khách hàng --</option>
                 {customers.map(c => (
                   <option key={c.Id} value={c.Id}>{c.FullName} ({c.CifKh})</option>
@@ -103,12 +103,12 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
               <label className={`block mb-1 ${styles.labelStyle}`}>Mã TSBĐ / Số Giấy Chứng Nhận</label>
               <input type="text" value={inputAssetCode} onChange={e => setInputAssetCode(e.target.value)}
                 placeholder="GCN-2026-001..."
-                className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`} />
+                className={`w-full rounded-md p-2.5 ${styles.inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Phân loại Tài sản bảo đảm *</label>
               <select required value={inputAssetType} onChange={e => setInputAssetType(e.target.value)}
-                className={`w-full rounded-xl p-2.5 font-bold ${styles.inputStyle}`}>
+                className={`w-full rounded-md p-2.5 font-bold ${styles.inputStyle}`}>
                 <optgroup label="🏠 BẤT ĐỘNG SẢN & TÀI SẢN BẢO ĐẢM">
                   <option value="Loại 1">Loại 1 (LTV 80%)</option>
                   <option value="Loại 2">Loại 2 (LTV 70%)</option>
@@ -122,7 +122,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                   <option value="Máy móc thiết bị, Dây chuyền sản xuất">Máy móc thiết bị (LTV 60%)</option>
                   <option value="Hàng hóa, Vật tư kho">Hàng hóa, Vật tư kho (LTV 50%)</option>
                 </optgroup>
-                <optgroup label="📜 GIẤY TỜ CÓ GIÁ & SỔ TIẾT KIỆM">
+                <optgroup label="GIẤY TỜ CÓ GIÁ & SỔ TIẾT KIỆM">
                   <option value="Sổ tiết kiệm / Tiền gửi nội bộ">Sổ tiết kiệm nội bộ (LTV 100%)</option>
                   <option value="STK khác ngân hàng / Trái phiếu CP">STK khác / Trái phiếu CP (LTV 90%)</option>
                   <option value="Giấy tờ có giá khác">Giấy tờ có giá khác (LTV 80%)</option>
@@ -139,7 +139,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
             <label className={`block mb-1 ${styles.labelStyle}`}>Địa chỉ / Mô tả chi tiết TSBĐ *</label>
             <input type="text" required value={inputAddress} onChange={e => setInputAddress(e.target.value)}
               placeholder="Thửa đất số..., Tờ bản đồ số..., Số nhà..."
-              className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`} />
+              className={`w-full rounded-md p-2.5 ${styles.inputStyle}`} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -151,28 +151,28 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                   setInputAppraisedValue(digits ? Number(digits).toLocaleString('vi-VN') : '');
                 }}
                 placeholder="1.000.000.000"
-                className={`w-full rounded-xl p-2.5 font-mono font-bold text-pos ${styles.inputStyle}`} />
+                className={`w-full rounded-md p-2.5 font-mono font-bold text-pos ${styles.inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Tỉ lệ LTV tối đa (%)</label>
               <input type="number" min={1} max={100} value={inputLtvPercent}
                 onChange={e => setInputLtvPercent(e.target.value)}
-                className={`w-full rounded-xl p-2.5 font-mono font-bold ${styles.inputStyle}`} />
+                className={`w-full rounded-md p-2.5 font-mono font-bold ${styles.inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Ngày định giá</label>
               <DateInput value={inputAppraisalDate} onChange={val => setInputAppraisalDate(val)}
-                className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`} />
+                className={`w-full rounded-md p-2.5 ${styles.inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Thời hạn định giá (Tháng)</label>
               <input type="number" min={1} max={120} value={inputAppraisalTenorMonths}
                 onChange={e => setInputAppraisalTenorMonths(Number(e.target.value) || 12)}
-                className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`} />
+                className={`w-full rounded-md p-2.5 ${styles.inputStyle}`} />
             </div>
           </div>
 
-          <div className={`p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${styles.sectionBoxBg}`}>
+          <div className={`p-3.5 rounded-md border flex flex-wrap items-center justify-between gap-3 ${styles.sectionBoxBg}`}>
             <div>
               <div className="text-[11px] text-ink-faint">Hạn mức cho cấp tín dụng tối đa tính theo LTV ({ltvVal}%):</div>
               <div className="text-sm font-mono font-extrabold text-accent mt-0.5">
@@ -189,13 +189,13 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
 
           <div className="flex items-center space-x-3 pt-2">
             <button type="submit" disabled={loading}
-              className="flex-1 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-2.5 px-4 rounded-xl transition-colors shadow-lg  flex items-center justify-center space-x-2">
+              className="flex-1 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-2.5 px-4 rounded-md transition-colors  flex items-center justify-center space-x-2">
               {selectedCollateral ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               <span>{loading ? 'Đang lưu...' : selectedCollateral ? 'CẬP NHẬT TÀI SẢN' : '+ LƯU TÀI SẢN BẢO ĐẢM MỚI'}</span>
             </button>
             {selectedCollateral && (
               <button type="button" onClick={handleReset}
-                className="bg-panel-muted hover:bg-panel-muted text-ink-muted font-bold py-2.5 px-4 rounded-xl transition-colors">
+                className="bg-panel-muted hover:bg-panel-muted text-ink-muted font-bold py-2.5 px-4 rounded-md transition-colors">
                 Hủy
               </button>
             )}

@@ -16,7 +16,7 @@ export const CalculatorView: React.FC = () => {
 
   const [activeTool, setActiveTool] = useState<
     'loan' | 'stk_single' | 'stk_multi' | 'rate_reduction' | 'credit_capacity' | 'prepayment_analysis' | 'repayment_compare' | 'rate_conversion' | 'overdue_penalty'
-  >('rate_reduction');
+  >('loan');
 
   const toolsList = [
     { id: 'loan' as const, label: '1. Tính Lịch Thu Nợ Khoản Vay', icon: Calculator },

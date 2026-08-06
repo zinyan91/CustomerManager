@@ -32,6 +32,7 @@ export interface RateTimelineInput {
   normalRate?: number | null;
   interestRate?: number | null;
   rateFloorAnnual?: number | null;
+  conditionSurchargePercent?: number | null;
   rateHistory?: RateAdjustmentHistoryItem[];
 }
 
@@ -64,6 +65,12 @@ function addMonthsClamped(dateStr: string, months: number): string {
   const lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
   const day = Math.min(d, lastDay);
   return `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function surchargePoints(input: RateTimelineInput): number {
+  const v = input.conditionSurchargePercent;
+  if (v === undefined || v === null || isNaN(v) || v <= 0) return 0;
+  return v;
 }
 
 function applyRateFloor(ratePercent: number, input: RateTimelineInput): number {
@@ -104,6 +111,7 @@ export function buildRateTimeline(
   const prefRate = toPercent(input.preferentialRate);
   const prefMonths = input.preferentialPeriodMonths || 0;
   const floating = floatingRate(input);
+  const surcharge = surchargePoints(input);
 
   const points: RateTimelinePoint[] = [];
 
@@ -111,7 +119,7 @@ export function buildRateTimeline(
     if (prefRate > 0 && prefMonths > 0) {
       points.push({
         fromDate: start,
-        ratePercent: prefRate,
+        ratePercent: prefRate + surcharge,
         kind: 'preferential',
         label: `Ưu đãi ${prefMonths} tháng đầu`,
         forecast: false,
@@ -120,7 +128,7 @@ export function buildRateTimeline(
       const afterRate = floating.configured ? floating.value : prefRate;
       points.push({
         fromDate: afterPref,
-        ratePercent: afterRate,
+        ratePercent: afterRate + surcharge,
         kind: 'floating',
         label: 'Thả nổi (base + biên)',
         forecast: !!(today && afterPref > today),
@@ -131,7 +139,7 @@ export function buildRateTimeline(
         : (prefRate > 0 ? prefRate : DEFAULT_RATE_PERCENT);
       points.push({
         fromDate: start,
-        ratePercent: opening,
+        ratePercent: opening + surcharge,
         kind: floating.configured ? 'floating' : 'contract',
         label: floating.configured ? 'Thả nổi (base + biên)' : 'Lãi suất hợp đồng',
         forecast: false,
@@ -143,8 +151,9 @@ export function buildRateTimeline(
     if (!item?.effectiveDate) continue;
     const explicit = toPercent(item.ratePercent);
     const composedBase = toPercent(item.baseRatePercent);
+    const itemSurcharge = item.penaltyPercent && item.penaltyPercent > 0 ? item.penaltyPercent : 0;
     const composed = composedBase > 0
-      ? applyRateFloor(composedBase + toPercentSigned(item.marginPercent), input)
+      ? applyRateFloor(composedBase + toPercentSigned(item.marginPercent), input) + itemSurcharge
       : 0;
     const rate = explicit > 0 ? explicit : composed;
     if (rate <= 0) continue;
@@ -190,6 +199,7 @@ function contractRateInput(c: LoanContract): RateTimelineInput {
     baseRate: c.BaseRate,
     marginRate: c.MarginRate,
     rateFloorAnnual: c.RateFloorAnnual,
+    conditionSurchargePercent: c.PenaltySurcharge,
     normalRate: c.NormalRate,
     interestRate: c.InterestRate,
     rateHistory: getContractRateHistory(c),
@@ -228,11 +238,14 @@ export function getEffectiveActiveRate(
     : null;
   if (point && point.ratePercent > 0) return point.ratePercent / 100;
 
-  const floating = floatingRate(contractRateInput(c));
-  if (floating.configured && floating.value > 0) return floating.value / 100;
+  const input = contractRateInput(c);
+  const surcharge = surchargePoints(input);
+
+  const floating = floatingRate(input);
+  if (floating.configured && floating.value > 0) return (floating.value + surcharge) / 100;
 
   const pref = toPercent(c.PreferentialRate);
-  if (pref > 0) return pref / 100;
+  if (pref > 0) return (pref + surcharge) / 100;
 
   return DEFAULT_RATE_PERCENT / 100;
 }

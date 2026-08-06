@@ -100,7 +100,19 @@ Chọn LS thông thường thì lãi ưu đãi **không tồn tại để mà á
 
 `buildRateFields(mode, input)` trong `rateResolution.ts` là **nơi duy nhất** dựng nhóm cột lãi suất khi lưu — nó xoá hẳn nhánh không dùng, nên dữ liệu tự nói lên chế độ và không tạo lại được mâu thuẫn. `resolveRateModeOf` suy chế độ ngược lại khi mở form; trước đây `interestRateMode` là state không nạp lại từ hợp đồng, khiến **mở KUNN rồi bấm Lưu là đổi lãi suất đã lưu dù không sửa gì**.
 
-Còn một khoảng trống **chờ quyết định**: `PenaltySurcharge` (phụ trội điều kiện) được lưu và đọc lại vào form nhưng **không nằm trong đầu vào của `buildRateTimeline`**, nên không kỳ lãi nào cộng nó. Báo cáo `supabase/reports/04_kunn_khai_ca_hai_che_do_lai_suat.sql` liệt kê các khoản bị ảnh hưởng.
+### Phụ trội điều kiện được cộng vào lãi suất cho vay
+
+Chốt 05/08/2026. `PenaltySurcharge` cộng vào **mọi đoạn định giá** của dòng thời gian: đoạn ưu đãi, đoạn thả nổi sau ưu đãi, và mức hợp đồng khi không có ưu đãi. Trước đó cột này chỉ được lưu rồi đọc lại vào form — không kỳ lãi nào cộng nó.
+
+Ba cái bẫy khi chạm vào chỗ này:
+
+**Đơn vị khác các cột lãi suất còn lại.** `PenaltySurcharge` lưu theo **điểm phần trăm** (`0.2` nghĩa là 0,20%), trong khi `MarginRate`, `BaseRate`, `PreferentialRate` lưu theo **tỷ lệ** (`0.0135` nghĩa là 1,35%). Cho nên **không được** đưa nó qua `toPercent()` — hàm đó sẽ biến `0.2` thành 20%.
+
+**Mốc điều chỉnh đã gồm phụ trội sẵn.** `ratePercent` của một `RateAdjustmentHistoryItem` do form dựng bằng `base + biên + phụ trội`, nên cộng thêm phụ trội cấp hợp đồng vào đó là **cộng đôi**. Chỉ nhánh dự phòng khi mốc bỏ trống `ratePercent` mới cộng `penaltyPercent` của chính mốc đó.
+
+**Sàn lãi suất áp cho phần định giá, phụ trội cộng lên sau.** `applyRateFloor(base + biên)` rồi mới `+ phụ trội` — cơ sở 5% + biên 1% với sàn 8% và phụ trội 0,2% ra **8,2%**, không phải 8%.
+
+Form không tự cộng lãi suất nữa: `currentActiveRateDisplay` dựng một hợp đồng nháp từ chính các ô đang nhập rồi gọi `getEffectiveActiveRate`, nên con số xem trước **khớp đúng** con số sẽ lưu và sẽ tính. Bản cũ cộng tay `base + biên + phụ trội` và bỏ qua sàn, lại tự đếm tháng để đoán ưu đãi đã hết chưa.
 
 **`computeLimitGroups` phải được truyền `options.isClosed`.** Cờ `IsClosed` nằm ở bảng `CreditContracts` còn hàm này chỉ nhận `LoanContract[]`, nên nó không tự biết hợp đồng đã đóng. Bỏ trống thì hạn mức khả dụng ra số dương trên HĐTD đã đóng — hồ sơ NGUYỄN MINH HÙNG ngày 05/08/2026 hiện HMTD còn lại 600 triệu với nút Giải ngân đang bật, trong khi HĐTD đã đóng và còn 400 triệu chưa trả. **Đóng HĐTD và hết hiệu lực theo ngày là hai chuyện khác nhau**: hợp đồng còn hạn vẫn đóng được, nên không thay cái này bằng cái kia. Cả `computeLimitGroups` và `summarizeCreditContracts` đều cho `available = 0` khi `expired || closed`, và xếp lý do chặn cùng thứ tự: đã đóng → hết hiệu lực → hết hạn mức.
 

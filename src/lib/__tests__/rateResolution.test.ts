@@ -491,3 +491,64 @@ describe('buildRateFields — hai chế độ lãi suất loại trừ nhau', ()
     expect(buildRateFields('base', nhap).RateFloorAnnual).toBeNull();
   });
 });
+
+describe('phụ trội điều kiện cộng vào lãi suất cho vay', () => {
+  const nen = { DisbursementDate: '2026-04-09', MarginRate: 0.0135 };
+
+  it('chế độ thông thường: cơ sở + biên + phụ trội, khớp con số banker nhập', () => {
+    const c = { ...nen, BaseRate: 0.097, NormalRate: 0.1105, PenaltySurcharge: 0.2 } as LoanContract;
+    const timeline = buildContractRateTimeline(c, { today: '2026-08-05' });
+    expect(timeline).toHaveLength(1);
+    expect(timeline[0].ratePercent).toBeCloseTo(11.25, 10);
+    expect(getEffectiveActiveRate(c, '2026-05-15')).toBeCloseTo(0.1125, 10);
+  });
+
+  it('chế độ ưu đãi: cộng vào cả đoạn ưu đãi và đoạn sau ưu đãi', () => {
+    const c = {
+      ...nen, PreferentialRate: 0.102, PreferentialPeriodMonths: 24,
+      PostPreferentialRate: 0.1155, PenaltySurcharge: 0.2,
+    } as LoanContract;
+    const timeline = buildContractRateTimeline(c, { today: '2026-08-05' });
+    expect(timeline[0].ratePercent).toBeCloseTo(10.4, 10);
+    expect(timeline[1].ratePercent).toBeCloseTo(11.75, 10);
+  });
+
+  it('phụ trội tính theo ĐIỂM phần trăm, không phải tỷ lệ — 0.2 là 0,20% chứ không phải 20%', () => {
+    const c = { ...nen, BaseRate: 0.097, PenaltySurcharge: 0.2 } as LoanContract;
+    expect(buildContractRateTimeline(c)[0].ratePercent).toBeCloseTo(11.25, 10);
+  });
+
+  it('mốc điều chỉnh KHÔNG bị cộng phụ trội lần hai — ratePercent đã gồm sẵn', () => {
+    const c = {
+      ...nen, BaseRate: 0.097, PenaltySurcharge: 0.2,
+      RateHistory: JSON.stringify([
+        { id: '1', effectiveDate: '2026-06-01', baseRatePercent: 10, marginPercent: 1.35, penaltyPercent: 0.2, ratePercent: 11.55 },
+      ]),
+    } as unknown as LoanContract;
+    expect(getEffectiveActiveRate(c, '2026-07-15')).toBeCloseTo(0.1155, 10);
+  });
+
+  it('mốc điều chỉnh chỉ khai cơ sở và biên thì phụ trội của mốc đó vẫn được cộng', () => {
+    const c = {
+      ...nen, BaseRate: 0.097,
+      RateHistory: JSON.stringify([
+        { id: '1', effectiveDate: '2026-06-01', baseRatePercent: 10, marginPercent: 1.35, penaltyPercent: 0.2 },
+      ]),
+    } as unknown as LoanContract;
+    expect(getEffectiveActiveRate(c, '2026-07-15')).toBeCloseTo(0.1155, 10);
+  });
+
+  it('sàn lãi suất áp cho phần định giá, phụ trội cộng lên sau', () => {
+    const c = {
+      ...nen, BaseRate: 0.05, MarginRate: 0.01, RateFloorAnnual: 0.08, PenaltySurcharge: 0.2,
+    } as LoanContract;
+    expect(buildContractRateTimeline(c)[0].ratePercent).toBeCloseTo(8.2, 10);
+  });
+
+  it('không khai phụ trội thì không đổi gì', () => {
+    const c = { ...nen, BaseRate: 0.097 } as LoanContract;
+    expect(buildContractRateTimeline(c)[0].ratePercent).toBeCloseTo(11.05, 10);
+    const c0 = { ...nen, BaseRate: 0.097, PenaltySurcharge: 0 } as LoanContract;
+    expect(buildContractRateTimeline(c0)[0].ratePercent).toBeCloseTo(11.05, 10);
+  });
+});

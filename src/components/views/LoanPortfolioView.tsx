@@ -178,29 +178,27 @@ export const LoanPortfolioView: React.FC = () => {
   const postPrefRate = prefVal + marginVal;
   const normalRate = baseVal + marginVal;
 
-  let isPromoExpired = false;
   const prefMonths = parseInt(ratePreferentialMonths, 10) || 0;
-  const startStr = form.DisbursementDate || form.ContractStartDate;
-  if (startStr && prefMonths > 0) {
-    const parts = startStr.split('-');
-    if (parts.length === 3) {
-      const start = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-      const now = new Date();
-      const diffMonths = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-      if (diffMonths >= prefMonths) {
-        isPromoExpired = true;
-      }
-    }
-  }
 
-  let currentActiveRateDisplay = 0;
-  if (interestRateMode === 'pref' && prefVal > 0) {
-    currentActiveRateDisplay = isPromoExpired ? (postPrefRate + surchargeVal) : (prefVal + surchargeVal);
-  } else if (baseVal > 0) {
-    currentActiveRateDisplay = normalRate + surchargeVal;
-  } else if (prefVal > 0) {
-    currentActiveRateDisplay = prefVal + surchargeVal;
-  }
+  const draftRateContract = useMemo(() => ({
+    DisbursementDate: form.DisbursementDate || form.ContractStartDate || null,
+    PenaltySurcharge: surchargeVal,
+    RateHistory: rateHistory.length > 0 ? rateHistory : null,
+    ...buildRateFields(interestRateMode, {
+      prefPercent: prefVal,
+      prefMonths,
+      basePercent: baseVal,
+      marginPercent: marginVal,
+      floorPercent: rateFloor.trim() === '' ? null : parseFloat(rateFloor) || 0,
+    }),
+  }) as LoanContract, [
+    form.DisbursementDate, form.ContractStartDate, interestRateMode,
+    prefVal, prefMonths, baseVal, marginVal, surchargeVal, rateFloor, rateHistory,
+  ]);
+
+  const currentActiveRateDisplay = (prefVal > 0 || baseVal > 0)
+    ? getEffectiveActiveRate(draftRateContract) * 100
+    : 0;
 
   const creditLimitNum = parseMoneyDecimalInput(formCreditLimit);
   const kunnLoanAmountNum = parseMoneyDecimalInput(formLoanAmount);

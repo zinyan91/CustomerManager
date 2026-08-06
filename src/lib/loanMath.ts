@@ -339,7 +339,7 @@ export interface SchedulePenalty {
 export function computeSchedulePenalty(
   s: Pick<RepaymentSchedule, 'OverdueDays' | 'DueDate' | 'PrincipalAmount' | 'InterestAmount'>,
   annualRate: number,
-  options?: { asOfDateStr?: string; overdueDays?: number }
+  options?: { asOfDateStr?: string; overdueDays?: number; principalPenaltyMultiplier?: number | null }
 ): SchedulePenalty {
   const overdueDays = options?.overdueDays !== undefined && options.overdueDays !== null
     ? Math.max(0, options.overdueDays)
@@ -361,6 +361,7 @@ export function computeSchedulePenalty(
     principalOverdueDays: overdueDays,
     unpaidInterest: s.InterestAmount || 0,
     interestOverdueDays: overdueDays,
+    principalPenaltyMultiplier: options?.principalPenaltyMultiplier,
   });
 
   return {

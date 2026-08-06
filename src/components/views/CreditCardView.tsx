@@ -5,7 +5,7 @@ import {
   fetchCollateralsByCustomerAPI, fetchCollateralsAPI
 } from '../../lib/api';
 import { formatMoneyInput, fmtMoney, parseMoneyInput } from '../../lib/utils';
-import { getEffectiveLtv, assetClassLabel, CARD_STK_LTV_PERCENT } from '../../lib/collateralMath';
+import { getEffectiveLtv, assetClassLabel, CARD_STK_LTV_PERCENT, collateralValue, maxLoanFromCollateral } from '../../lib/collateralMath';
 import { checkCardLimit, cardGrantedLimit, type CardLimitCheck } from '../../lib/creditLimit';
 import { fetchContractsByCustomerAPI } from '../../lib/api';
 import type { CreditCard as CreditCardType, Customer, Collateral, LoanContract as LoanContractType } from '../../types';
@@ -332,9 +332,9 @@ export const CreditCardView: React.FC = () => {
                     <option value="" disabled>KH này chưa có TSBĐ nào</option>
                   ) : (
                     customerCollaterals.map(col => {
-                      const val = col.AppraisedValue || col.Value || 0;
+                      const val = collateralValue(col);
                       const ltv = getEffectiveLtv(col);
-                      const maxL = Math.round(val * ltv / 100);
+                      const maxL = Math.round(maxLoanFromCollateral(col));
                       return (
                         <option key={col.Id} value={col.Id}>
                           🏠 [Mã: {col.AssetCode || `ID#${col.Id}`}] {assetClassLabel(col.AssetType)} — {fmtMoney(val)} (LTV {ltv}% = Max: {fmtMoney(maxL)})
@@ -350,7 +350,7 @@ export const CreditCardView: React.FC = () => {
               <div className="p-3 rounded-md bg-accent-soft  border border-accent/30  flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div className="flex flex-wrap items-center gap-4">
                   <span>Mã/Địa chỉ TSBĐ: <strong className="font-bold text-ink">{selectedCollateralObj.AssetCode || '—'} ({selectedCollateralObj.Address || ''})</strong></span>
-                  <span>Giá trị định giá: <strong className="font-mono text-pos">{fmtMoney(selectedCollateralObj.AppraisedValue || selectedCollateralObj.Value)}</strong></span>
+                  <span>Giá trị định giá: <strong className="font-mono text-pos">{fmtMoney(collateralValue(selectedCollateralObj))}</strong></span>
                   <span>LTV Tối đa: <strong className="font-mono text-accent">{getEffectiveLtv(selectedCollateralObj)}%</strong></span>
                   <span>Cụm tài sản đỡ được: <strong className="font-mono text-ink">{fmtMoney(limitCheck.clusterCapacity)}</strong></span>
                   <span>Đã dùng: <strong className="font-mono text-ink">{fmtMoney(limitCheck.clusterUsed)}</strong></span>
@@ -516,7 +516,7 @@ export const CreditCardView: React.FC = () => {
                         {linkedCol ? (
                           <div className="text-[11px] font-semibold text-accent ">
                             🏠 [Mã: {linkedCol.AssetCode || `ID#${linkedCol.Id}`}] {assetClassLabel(linkedCol.AssetType)}
-                            <div className="text-[10px] text-ink-faint font-mono">Định giá: {fmtMoney(linkedCol.AppraisedValue || linkedCol.Value)}</div>
+                            <div className="text-[10px] text-ink-faint font-mono">Định giá: {fmtMoney(collateralValue(linkedCol))}</div>
                           </div>
                         ) : (
                           <span className="text-ink-faint font-normal">—</span>

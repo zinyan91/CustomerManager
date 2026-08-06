@@ -16,7 +16,7 @@ import {
   getEffectiveActiveRate,
   buildRateFields,
 } from '../../lib/rateResolution';
-import { getEffectiveLtv } from '../../lib/collateralMath';
+import { maxLoanFromCollateral } from '../../lib/collateralMath';
 import { checkKunnAgainstContract, nextKunnNumber, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd } from '../../lib/creditContract';
 import { useWork } from '../../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
@@ -445,11 +445,9 @@ export const LoanPortfolioView: React.FC = () => {
 
   const selectedCollaterals = collaterals.filter(c => selectedCollateralIds.includes(c.Id));
 
-  const maxAllowedLoanLtv = selectedCollaterals.reduce((sum, c) => {
-    const val = c.AppraisedValue || c.Value || 0;
-    const ltv = getEffectiveLtv(c);
-    return sum + (val * ltv / 100);
-  }, 0);
+  const maxAllowedLoanLtv = selectedCollaterals.reduce(
+    (sum, c) => sum + maxLoanFromCollateral(c), 0
+  );
 
   const today = todayIso();
 

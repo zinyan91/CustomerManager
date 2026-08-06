@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { UI } from '../../lib/uiClasses';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
 import { fmtDate, parseAnyDate, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
-import { assetClassLabel } from '../../lib/collateralMath';
+import { assetClassLabel, collateralValue } from '../../lib/collateralMath';
 import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
   monthlyDueInfo, type DueFilter,
@@ -51,7 +51,7 @@ export const DashboardView: React.FC = () => {
   const totalCustomersCount = customers.length;
   const totalDebt = contracts.reduce((acc, c) => acc + duNoCua(c), 0);
   const totalLimit = contracts.reduce((acc, c) => acc + (c.ContractAmount || 0), 0);
-  const totalCollateralVal = collaterals.reduce((acc, c) => acc + (c.AppraisedValue || c.Value || 0), 0);
+  const totalCollateralVal = collaterals.reduce((acc, c) => acc + (collateralValue(c)), 0);
   const weightedLtv = totalCollateralVal > 0 ? (totalDebt / totalCollateralVal) * 100 : 0;
 
   const loanMethodStats = [
@@ -208,7 +208,7 @@ export const DashboardView: React.FC = () => {
       customer?.CifKh || '',
       collateral.AssetCode || collateral.Address || '',
       assetClassLabel(collateral.AssetType),
-      (collateral.AppraisedValue || collateral.Value || 0).toLocaleString('vi-VN') + ' VNĐ',
+      (collateralValue(collateral)).toLocaleString('vi-VN') + ' VNĐ',
       fmtDate(expiryDateStr),
       daysLeft === null || daysLeft === undefined ? ''
         : daysLeft < 0 ? `Đã hết hạn định giá ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`,
@@ -551,7 +551,7 @@ export const DashboardView: React.FC = () => {
             : days >= 1
               ? `Cần chú ý · còn ${days} ngày`
               : `Quá hạn ${Math.abs(days)} ngày`;
-          const val = collateral.AppraisedValue || collateral.Value || 0;
+          const val = collateralValue(collateral);
           return (
             <tr key={collateral.Id} className={`hover:bg-panel-muted transition-colors ${days < 1 ? 'bg-neg-soft' : ''}`}>
               <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>

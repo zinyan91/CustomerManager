@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { fmtMoney } from '../../../lib/utils';
 import type { Collateral } from '../../../types';
+import { collateralValue } from '../../../lib/collateralMath';
 
 export interface KunnCollateralSectionProps {
   sectionBoxBg: string;
@@ -28,7 +29,7 @@ export const KunnCollateralSection: React.FC<KunnCollateralSectionProps> = ({
         {selectedCollaterals.map(col => (
           <span key={col.Id}>
             {col.AssetCode || `TS-${col.Id}`}
-            <span className="text-ink-faint"> · {fmtMoney(col.AppraisedValue || col.Value || 0)}</span>
+            <span className="text-ink-faint"> · {fmtMoney(collateralValue(col))}</span>
           </span>
         ))}
         <span className="text-ink-faint">

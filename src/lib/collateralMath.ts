@@ -51,10 +51,14 @@ export function isLtvException(c?: Pick<Collateral, 'LtvPercent' | 'AssetType'> 
   return isRestrictedAsset(c.AssetType) && getEffectiveLtv(c) > 0;
 }
 
+export function collateralValue(c?: Pick<Collateral, 'AppraisedValue' | 'Value'> | null): number {
+  if (!c) return 0;
+  return c.AppraisedValue || c.Value || 0;
+}
+
 export function maxLoanFromCollateral(c?: Pick<Collateral, 'LtvPercent' | 'AssetType' | 'AppraisedValue' | 'Value'> | null): number {
   if (!c) return 0;
-  const value = c.AppraisedValue || c.Value || 0;
-  return value * getEffectiveLtv(c) / 100;
+  return collateralValue(c) * getEffectiveLtv(c) / 100;
 }
 
 export const CARD_STK_LTV_PERCENT = 90;
@@ -125,8 +129,7 @@ export function usableCapacity(c?: Collateral | null, todayStr?: string): number
 export function cardProductCap(c?: Collateral | null, todayStr?: string): number | null {
   if (!c || !isSavingsPassbook(c.AssetType)) return null;
   if (!isAppraisalUsable(c, todayStr)) return 0;
-  const value = c.AppraisedValue ?? c.Value ?? 0;
-  return value * CARD_STK_LTV_PERCENT / 100;
+  return collateralValue(c) * CARD_STK_LTV_PERCENT / 100;
 }
 
 export function assetClassLabel(assetType?: string | null): string {

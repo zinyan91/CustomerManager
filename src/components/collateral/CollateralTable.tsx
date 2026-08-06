@@ -3,7 +3,7 @@ import { Building2, Trash2, Loader2 } from 'lucide-react';
 import type { Collateral, Customer } from '../../types';
 import type { UiClasses } from '../../lib/uiClasses';
 import { fmtMoney, fmtDate } from '../../lib/utils';
-import { isLtvException, appraisalStatus, appraisalExpiryDate, assetClassLabel } from '../../lib/collateralMath';
+import { isLtvException, appraisalStatus, appraisalExpiryDate, assetClassLabel, collateralValue, maxLoanFromCollateral, getEffectiveLtv } from '../../lib/collateralMath';
 
 interface CollateralTableProps {
   styles: UiClasses;
@@ -15,7 +15,6 @@ interface CollateralTableProps {
   colPage: number;
   setColPage: React.Dispatch<React.SetStateAction<number>>;
   totalPages: number;
-  getEffectiveLtv: (c: Collateral) => number;
   onDelete: (c: Collateral) => void;
   deletingId: number | null;
 }
@@ -30,7 +29,6 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
   colPage,
   setColPage,
   totalPages,
-  getEffectiveLtv,
   onDelete,
   deletingId,
 }) => {
@@ -65,9 +63,9 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
             ) : paginatedCollaterals.map(col => {
               const cust = customers.find(c => c.Id === col.CustomerId);
               const isSelected = selectedCollateral?.Id === col.Id;
-              const val = col.AppraisedValue || col.Value || 0;
+              const val = collateralValue(col);
               const effectiveLtv = getEffectiveLtv(col);
-              const maxLoan = val * effectiveLtv / 100;
+              const maxLoan = maxLoanFromCollateral(col);
               const isException = isLtvException(col);
               const dgStatus = appraisalStatus(col);
 

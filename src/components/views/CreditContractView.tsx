@@ -11,7 +11,7 @@ import { useWork } from '../../context/WorkContext';
 import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { summarizeCreditContracts, canCloseCreditContract } from '../../lib/creditContract';
 import { addMonthsToDate, computeOutstandingBalance } from '../../lib/loanMath';
-import { getEffectiveLtv, usableCapacity, appraisalStatus, appraisalExpiryDate } from '../../lib/collateralMath';
+import { getEffectiveLtv, usableCapacity, appraisalStatus, appraisalExpiryDate, collateralValue } from '../../lib/collateralMath';
 import { allowedPurposes } from '../../lib/loanProductRules';
 import { DateInput } from '../DateInput';
 import type { Customer, CreditContract, LoanContract, Collateral, RepaymentSchedule } from '../../types';
@@ -528,7 +528,7 @@ export const CreditContractView: React.FC = () => {
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                 {collaterals.map(col => {
                   const isChecked = selectedCollateralIds.includes(col.Id);
-                  const val = col.AppraisedValue || col.Value || 0;
+                  const val = collateralValue(col);
                   const ltv = getEffectiveLtv(col);
                   const capacity = usableCapacity(col, today);
                   const tinhTrang = appraisalStatus(col, today);

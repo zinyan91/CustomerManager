@@ -4,6 +4,7 @@ import type { Collateral, Customer } from '../../types';
 import type { UiClasses } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { fmtMoney, parseMoneyInput } from '../../lib/utils';
+import { defaultLtvForAssetType, maxLoanFromCollateral } from '../../lib/collateralMath';
 
 interface CollateralFormProps {
   styles: UiClasses;
@@ -61,8 +62,13 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
   loading,
 }) => {
   const numericAppraisedValue = parseMoneyInput(inputAppraisedValue);
-  const ltvVal = parseFloat(inputLtvPercent) || 80;
-  const maxLoanCapacity = numericAppraisedValue * ltvVal / 100;
+  const parsedLtv = parseFloat(inputLtvPercent);
+  const ltvVal = Number.isNaN(parsedLtv) ? defaultLtvForAssetType(inputAssetType) : parsedLtv;
+  const maxLoanCapacity = maxLoanFromCollateral({
+    AppraisedValue: numericAppraisedValue,
+    LtvPercent: ltvVal,
+    AssetType: inputAssetType,
+  });
 
   return (
     <div className={`${styles.containerCardBg} rounded-lg p-5 space-y-4 border`}>

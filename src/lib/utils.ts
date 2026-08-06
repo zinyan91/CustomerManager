@@ -195,6 +195,7 @@ export function stripLegacyNoteBlobs(note?: string | null): string {
   return note
     .replace(/\[COLLATERAL_IDS:[^\]]*\]/g, '')
     .replace(/\[PENALTY_SURCHARGE:[^\]]*\]/g, '')
+    .replace(/\[PENALTY_RATE:[^\]]*\]/g, '')
     .replace(/\[RATE_HISTORY:[\s\S]*?\]\]/g, '')
     .replace(/\[RATE_HISTORY:[^\]]*\]/g, '')
     .split(/\r?\n/)

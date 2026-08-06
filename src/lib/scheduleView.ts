@@ -42,7 +42,7 @@ export function resolvePenaltyDue(
   return computeSchedulePenalty(
     s,
     getEffectiveActiveRate(contract, s.DueDate),
-    { asOfDateStr }
+    { asOfDateStr, principalPenaltyMultiplier: contract?.PrincipalPenaltyMultiplier }
   ).principalPenalty;
 }
 

@@ -133,7 +133,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   setModalOverdueDaysStr(e.target.value);
                   if (days > 0 && selectedContract) {
                     const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
-                    const calcPen = computeSchedulePenalty(editingSchedule, rate, { overdueDays: days }).principalPenalty;
+                    const calcPen = computeSchedulePenalty(editingSchedule, rate, { overdueDays: days, principalPenaltyMultiplier: selectedContract.PrincipalPenaltyMultiplier }).principalPenalty;
                     setModalOverdueInterestStr(calcPen.toLocaleString('vi-VN'));
                   } else {
                     setModalOverdueInterestStr('0');
@@ -169,7 +169,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     setModalOverdueDaysStr(calcDays.toString());
                     if (calcDays > 0 && selectedContract) {
                       const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
-                      const calcPen = computeSchedulePenalty(editingSchedule, rate, { overdueDays: calcDays }).principalPenalty;
+                      const calcPen = computeSchedulePenalty(editingSchedule, rate, { overdueDays: calcDays, principalPenaltyMultiplier: selectedContract.PrincipalPenaltyMultiplier }).principalPenalty;
                       setModalOverdueInterestStr(calcPen.toLocaleString('vi-VN'));
                     } else {
                       setModalOverdueInterestStr('0');

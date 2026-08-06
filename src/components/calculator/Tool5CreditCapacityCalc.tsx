@@ -38,9 +38,10 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
   const rateAnnual = (parseFloat(interestRateAnnualStr) || 0) / 100;
   const rateMonthly = rateAnnual / 12;
 
+  const customLtv = parseFloat(customLtvStr);
   const activeLtv = selectedAssetKey === 'custom'
-    ? (parseFloat(customLtvStr) || 70) / 100
-    : ASSET_LTV_MAP[selectedAssetKey]?.ltv || 0.70;
+    ? (Number.isNaN(customLtv) ? 70 : customLtv) / 100
+    : ASSET_LTV_MAP[selectedAssetKey]?.ltv ?? 0.70;
 
   const dtiMaxMonthlyPayment = useMemo(
     () => calcDtiMaxMonthlyPayment(monthlyIncome, livingExpense, existingDebt, maxDtiPercent),

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI } from '../../lib/api';
 import { parseAnyDate, fmtDate, parseMoneyInput } from '../../lib/utils';
-import { defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset } from '../../lib/collateralMath';
+import { defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue, maxLoanFromCollateral } from '../../lib/collateralMath';
 import type { Collateral, Customer } from '../../types';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { UI } from '../../lib/uiClasses';
@@ -89,7 +89,7 @@ export const CollateralView: React.FC = () => {
     setInputAssetCode(c.AssetCode || '');
     setInputAssetType(c.AssetType || 'Loại 1');
     setInputAddress(c.Address || '');
-    const val = c.AppraisedValue || c.Value || 0;
+    const val = collateralValue(c);
     setInputAppraisedValue(val ? val.toLocaleString('vi-VN') : '');
     setInputLtvPercent(String(getEffectiveLtv(c)));
     setInputAppraisalDate(c.AppraisalDate || '');
@@ -156,7 +156,7 @@ export const CollateralView: React.FC = () => {
         `TRÌNH NGOẠI LỆ — CẦN PHÊ DUYỆT\n\n` +
         `Tài sản thuộc diện HẠN CHẾ NHẬN, tỷ lệ LTV theo chính sách là 0%.\n` +
         `Bạn đang gán LTV ${ltvNum}%, tương ứng hạn mức cho vay tối đa ` +
-        `${(valNum * ltvNum / 100).toLocaleString('vi-VN')} VNĐ.\n\n` +
+        `${maxLoanFromCollateral({ AppraisedValue: valNum, LtvPercent: ltvNum, AssetType: inputAssetType }).toLocaleString('vi-VN')} VNĐ.\n\n` +
         `Chỉ tiếp tục khi đã có phê duyệt ngoại lệ của cấp có thẩm quyền.\n` +
         `Trường hợp này sẽ được đánh dấu trên danh sách TSĐB.`
       );
@@ -257,7 +257,6 @@ export const CollateralView: React.FC = () => {
         colPage={colPage}
         setColPage={setColPage}
         totalPages={totalPages}
-        getEffectiveLtv={getEffectiveLtv}
         onDelete={handleDelete}
         deletingId={deletingId}
       />

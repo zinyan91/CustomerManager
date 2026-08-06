@@ -13,6 +13,7 @@ import {
   Calendar, Clock, ShieldAlert, FileText, AlertTriangle,
 } from 'lucide-react';
 import { DueSectionPanel, dueBadgeClass, dueBadgeText } from '../dashboard/DueSectionPanel';
+import { KpiCard } from '../dashboard/KpiCard';
 
 export const DashboardView: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -253,58 +254,41 @@ export const DashboardView: React.FC = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className={`${cardBg} p-4 rounded-lg border flex items-center justify-between`}>
-          <div>
-            <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">TỔNG SỐ KHÁCH HÀNG</div>
-            <div className="text-2xl font-extrabold text-accent mt-1">
-              {totalCustomersCount} <span className="text-xs font-normal text-ink-faint">khách hàng</span>
-            </div>
-            <div className="text-[11px] text-ink-faint mt-1">Đang giao dịch & quản lý tín dụng</div>
-          </div>
-          <div className="p-3 bg-accent-soft rounded-md text-accent border border-accent/30">
-            <Users className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className={`${cardBg} p-4 rounded-lg border flex items-center justify-between`}>
-          <div>
-            <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">TỔNG QUY MÔ DƯ NỢ</div>
-            <div className="text-2xl font-extrabold text-pos mt-1">
-              {formatMoney(totalDebt)}
-            </div>
-            <div className="text-[11px] text-ink-faint mt-1">Tổng hạn mức cấp: {formatMoney(totalLimit)}</div>
-          </div>
-          <div className="p-3 bg-pos-soft rounded-md text-pos border border-pos/30">
-            <DollarSign className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className={`${cardBg} p-4 rounded-lg border flex items-center justify-between`}>
-          <div>
-            <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">TỔNG GIÁ TRỊ TSĐB</div>
-            <div className="text-2xl font-extrabold text-warn mt-1">
-              {formatMoney(totalCollateralVal)}
-            </div>
-            <div className="text-[11px] text-ink-faint mt-1">LTV bình quân: <strong className="text-accent">{weightedLtv.toFixed(1)}%</strong> ({collaterals.length} TS)</div>
-          </div>
-          <div className="p-3 bg-warn-soft rounded-md text-warn border border-warn/30">
-            <Building2 className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className={`${cardBg} p-4 rounded-lg border flex items-center justify-between`}>
-          <div>
-            <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">CẢNH BÁO TỚI HẠN</div>
-            <div className="text-2xl font-extrabold text-neg mt-1">
-              {dueInMonthList.length + dueKunnList.length + dueHmtdList.length + dueCollateralList.length} <span className="text-xs font-normal text-ink-faint">hạng mục</span>
-            </div>
-            <div className="text-[11px] text-ink-faint mt-1">Cần theo dõi & xử lý ngay</div>
-          </div>
-          <div className="p-3 bg-neg-soft rounded-md text-neg border border-neg/30">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <KpiCard
+          cardBg={cardBg}
+          tone="accent"
+          icon={Users}
+          label="Tổng số khách hàng"
+          value={totalCustomersCount.toLocaleString('vi-VN')}
+          unit="khách hàng"
+          note="Đang giao dịch & quản lý tín dụng"
+        />
+        <KpiCard
+          cardBg={cardBg}
+          tone="pos"
+          icon={DollarSign}
+          label="Tổng quy mô dư nợ"
+          value={formatMoney(totalDebt)}
+          note={`Tổng hạn mức cấp: ${formatMoney(totalLimit)}`}
+        />
+        <KpiCard
+          cardBg={cardBg}
+          tone="warn"
+          icon={Building2}
+          label="Tổng giá trị TSĐB"
+          value={formatMoney(totalCollateralVal)}
+          note={<>LTV bình quân: <strong className="text-accent">{weightedLtv.toFixed(1)}%</strong> ({collaterals.length} TS)</>}
+        />
+        <KpiCard
+          cardBg={cardBg}
+          tone="neg"
+          icon={AlertCircle}
+          label="Cảnh báo tới hạn"
+          value={(dueInMonthList.length + dueKunnList.length + dueHmtdList.length + dueCollateralList.length).toLocaleString('vi-VN')}
+          unit="hạng mục"
+          note="Cần theo dõi & xử lý ngay"
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -318,9 +302,13 @@ export const DashboardView: React.FC = () => {
               const percent = totalDebt > 0 ? (item.amount / totalDebt) * 100 : 0;
               return (
                 <div key={item.method} className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span>{item.method} ({item.count} khoản)</span>
-                    <span className="font-mono font-bold text-accent">{formatMoney(item.amount)} ({percent.toFixed(1)}%)</span>
+                  <div className="flex items-baseline justify-between gap-3 text-xs font-medium">
+                    <span className="min-w-0 truncate" title={item.method}>
+                      {item.method} <span className="text-ink-faint">({item.count} khoản)</span>
+                    </span>
+                    <span className="font-mono font-bold text-accent shrink-0 whitespace-nowrap">
+                      {formatMoney(item.amount)} <span className="text-ink-faint">{percent.toFixed(1)}%</span>
+                    </span>
                   </div>
                   <div className="w-full h-2 bg-panel-muted rounded-full overflow-hidden">
                     <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${Math.min(100, percent)}%` }} />
@@ -334,7 +322,7 @@ export const DashboardView: React.FC = () => {
         <div className={`${cardBg} p-4 rounded-lg border space-y-3`}>
           <div className="text-xs font-bold text-pos tracking-tight flex items-center space-x-1.5">
             <ShieldAlert className="w-4 h-4" />
-            <span>PHÂN BỔ DƯ NỢ THEO NHÓM NỢ (NHÓM 1 - 5)</span>
+            <span>PHÂN BỔ DƯ NỢ THEO NHÓM NỢ</span>
           </div>
           <div className="space-y-2.5">
             {debtGroupStats.map(item => {
@@ -343,9 +331,13 @@ export const DashboardView: React.FC = () => {
               const textClass = item.group === 1 ? 'text-pos ' : item.group === 2 ? 'text-warn ' : 'text-neg ';
               return (
                 <div key={item.group} className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span>Nhóm {item.group} ({item.count} HĐ)</span>
-                    <span className={`font-mono font-bold ${textClass}`}>{formatMoney(item.amount)} ({percent.toFixed(1)}%)</span>
+                  <div className="flex items-baseline justify-between gap-3 text-xs font-medium">
+                    <span className="min-w-0 truncate">
+                      Nhóm {item.group} <span className="text-ink-faint">({item.count} HĐ)</span>
+                    </span>
+                    <span className={`font-mono font-bold shrink-0 whitespace-nowrap ${textClass}`}>
+                      {formatMoney(item.amount)} <span className="text-ink-faint">{percent.toFixed(1)}%</span>
+                    </span>
                   </div>
                   <div className="w-full h-2 bg-panel-muted rounded-full overflow-hidden">
                     <div className={`h-full ${colorClass} rounded-full transition-all`} style={{ width: `${Math.min(100, percent)}%` }} />

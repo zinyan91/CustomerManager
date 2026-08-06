@@ -237,6 +237,17 @@ export function getEffectiveActiveRate(
   return DEFAULT_RATE_PERCENT / 100;
 }
 
+export type RateMode = 'pref' | 'base';
+
+export function resolveRateModeOf(c?: LoanContract | null): RateMode {
+  if (!c) return 'pref';
+  const pref = toPercent(c.PreferentialRate);
+  const months = c.PreferentialPeriodMonths || 0;
+  if (pref > 0 && months > 0) return 'pref';
+  if (toPercent(c.BaseRate) > 0) return 'base';
+  return 'pref';
+}
+
 export function splitPeriodByRate(
   timeline: RateTimelinePoint[],
   periodStart: string,

@@ -5,6 +5,7 @@ import {
   resolveRateAt,
   splitPeriodByRate,
   getEffectiveActiveRate,
+  resolveRateModeOf,
   weightedRatePercent,
   formatSegmentsLabel,
 } from '../rateResolution';
@@ -410,5 +411,30 @@ describe('getEffectiveActiveRate — bản gộp về dòng thời gian', () => 
   it('mặc định 8.5% khi không có thông tin nào', () => {
     expect(getEffectiveActiveRate({} as LoanContract)).toBeCloseTo(0.085);
     expect(getEffectiveActiveRate(null)).toBeCloseTo(0.085);
+  });
+});
+
+describe('resolveRateModeOf — chế độ lãi suất phải suy lại từ hợp đồng', () => {
+  it('khai lãi ưu đãi kèm số kỳ thì là chế độ ưu đãi', () => {
+    expect(resolveRateModeOf({
+      PreferentialRate: 0.102, PreferentialPeriodMonths: 24, BaseRate: 0.097,
+    } as LoanContract)).toBe('pref');
+  });
+
+  it('chỉ khai lãi cơ sở thì là chế độ thả nổi', () => {
+    expect(resolveRateModeOf({
+      BaseRate: 0.097, MarginRate: 0.0135,
+    } as LoanContract)).toBe('base');
+  });
+
+  it('khai lãi ưu đãi mà bỏ trống số kỳ thì không coi là ưu đãi', () => {
+    expect(resolveRateModeOf({
+      PreferentialRate: 0.102, PreferentialPeriodMonths: 0, BaseRate: 0.097,
+    } as LoanContract)).toBe('base');
+  });
+
+  it('không khai gì thì mặc định ưu đãi, giữ nguyên hành vi form trống', () => {
+    expect(resolveRateModeOf({} as LoanContract)).toBe('pref');
+    expect(resolveRateModeOf(null)).toBe('pref');
   });
 });

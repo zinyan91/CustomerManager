@@ -12,7 +12,7 @@ import {
   isBulletPrincipal, getDaysBetween, redateSchedules
 } from '../../lib/loanMath';
 import {
-  buildContractRateTimeline, splitPeriodByRate, getEffectiveActiveRate,
+  buildContractRateTimeline, splitPeriodByRate, getEffectiveActiveRate, resolveRateModeOf,
   type RateSegment,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
@@ -396,6 +396,8 @@ export const LoanPortfolioView: React.FC = () => {
     setRateBase(rateToInput(c.BaseRate));
     setRateMargin(rateToInput(c.MarginRate));
     setRateFloor(rateToInput(c.RateFloorAnnual));
+
+    setInterestRateMode(resolveRateModeOf(c));
 
     if (c.PenaltySurcharge != null && c.PenaltySurcharge > 0) {
       setRateConditionSurcharge(c.PenaltySurcharge.toString());

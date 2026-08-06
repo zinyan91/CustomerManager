@@ -712,6 +712,12 @@ Màn Quản lý khoản vay đã tách theo mẫu này:
 
 Hook nhận việc cập nhật giao diện qua callback (`onCustomerChanged`, `onContractOpened`, `onSaved`) chứ không tự đụng vào trạng thái của màn hình — nhờ vậy hook không biết gì về bố cục và dùng lại được.
 
+Hai màn khác đã tách theo cùng nguyên tắc:
+
+`DocumentForm` trước đây là một hàm 953 dòng rẽ nhánh theo tám loại biểu mẫu. Nay mỗi loại là một tệp trong `components/documents/forms/` và `DocumentForm` chỉ còn điều hướng. Mỗi biểu mẫu khai báo đúng những trường nó dùng, nên đọc một tệp là biết loại hợp đồng đó cần gì.
+
+`RateQuoteView` giao phần nạp chương trình lãi suất cho `hooks/useRatePrograms`: tải chương trình cùng bậc lãi, phí trả trước, mã FBE, thẩm quyền, tuỳ chọn phí, điều kiện — rồi lọc sẵn theo chương trình đang hiệu lực. Màn hình giữ phần công cụ tính và trình bày.
+
 ---
 
 ## 17. Lệnh thường dùng

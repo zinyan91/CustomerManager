@@ -1,29 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { UI } from '../../lib/uiClasses';
+import { useRatePrograms } from '../../hooks/useRatePrograms';
 import {
   Percent, TrendingDown, PiggyBank, Loader2, AlertTriangle, ShieldAlert,
   FileText, Landmark, Save, RefreshCw, Printer, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { fmtMoney, fmtDate, fmtPercent, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
+import { updateRateProgramTierAPI } from '../../lib/api';
 import {
-  fetchRateProgramsAPI, fetchRateProgramTiersAPI, fetchRateProgramPrepaymentFeesAPI,
-  fetchRateProgramFbeCodesAPI, fetchDepositRateAuthoritiesAPI, updateRateProgramTierAPI,
-  fetchRateProgramFeeOptionsAPI, fetchRateProgramConditionsAPI,
-} from '../../lib/api';
-import {
-  findActiveProgram, resolvePostFixedRate, calcServiceFee, calcDepositInterest,
+  resolvePostFixedRate, calcServiceFee, calcDepositInterest,
   collectQuoteWarnings, hasBlockingWarning,
   PAYOUT_MODE_LABELS, CHANNEL_LABELS, KIND_LABELS, FBE_SCOPE_LABELS,
-  buildDepositRateRows, depositChannelsPresent,
 } from '../../lib/rateQuote';
 import vietbankLogo from '../../assets/vietbank-logo.png?inline';
 import { buildRateSheetHtml, findRateSheetBlockers } from '../../lib/rateSheet';
-import type {
-  RateProgram, RateProgramTier, RateProgramPrepaymentFee,
-  RateProgramFbeCode, DepositRateAuthority, RateProgramKind,
-  RateProgramFeeOption, RateProgramCondition,
-} from '../../lib/rateQuote';
+import type { RateProgramKind } from '../../lib/rateQuote';
 
 export const RateQuoteView: React.FC = () => {
   const { isAdmin } = useAuth();
@@ -31,15 +23,6 @@ export const RateQuoteView: React.FC = () => {
   const [kind, setKind] = useState<RateProgramKind>('cho_vay_ngan_han');
   const [onDate, setOnDate] = useState(todayIso);
 
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
-  const [programs, setPrograms] = useState<RateProgram[]>([]);
-  const [tiers, setTiers] = useState<RateProgramTier[]>([]);
-  const [prepayFees, setPrepayFees] = useState<RateProgramPrepaymentFee[]>([]);
-  const [fbeCodes, setFbeCodes] = useState<RateProgramFbeCode[]>([]);
-  const [authorities, setAuthorities] = useState<DepositRateAuthority[]>([]);
-  const [feeOptions, setFeeOptions] = useState<RateProgramFeeOption[]>([]);
-  const [conditions, setConditions] = useState<RateProgramCondition[]>([]);
   const [preparedBy, setPreparedBy] = useState('');
 
   const [selectedTierId, setSelectedTierId] = useState<number | null>(null);
@@ -57,73 +40,15 @@ export const RateQuoteView: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
 
-  const loadAll = async () => {
-    setLoading(true);
-    setLoadError('');
-    try {
-      const progs = await fetchRateProgramsAPI();
-      setPrograms(progs);
-      const ids = progs.map(p => p.Id);
-      const [t, f, c, a, o, k] = await Promise.all([
-        fetchRateProgramTiersAPI(ids),
-        fetchRateProgramPrepaymentFeesAPI(ids),
-        fetchRateProgramFbeCodesAPI(ids),
-        fetchDepositRateAuthoritiesAPI(ids),
-        fetchRateProgramFeeOptionsAPI(ids),
-        fetchRateProgramConditionsAPI(ids),
-      ]);
-      setTiers(t);
-      setPrepayFees(f);
-      setFbeCodes(c);
-      setAuthorities(a);
-      setFeeOptions(o);
-      setConditions(k);
-    } catch (err: any) {
-      setLoadError(err?.message || 'Không tải được chương trình lãi suất.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadAll(); }, []);
-
-  const program = useMemo(() => findActiveProgram(programs, kind, onDate), [programs, kind, onDate]);
-
-  const programTiers = useMemo(
-    () => (program ? tiers.filter(t => t.ProgramId === program.Id) : []),
-    [tiers, program]
-  );
+  const {
+    loading, loadError, reload: loadAll,
+    setTiers,
+    program, programTiers, programPrepayFees, programFbeCodes,
+    programAuthorities, programFeeOptions, programConditions,
+    depositChannels, depositRows, hasFeeContent,
+  } = useRatePrograms(kind, onDate);
 
   const lendingTiers = programTiers;
-  const depositChannels = useMemo(() => depositChannelsPresent(programTiers), [programTiers]);
-  const depositRows = useMemo(() => buildDepositRateRows(programTiers), [programTiers]);
-
-  const programPrepayFees = useMemo(
-    () => (program ? prepayFees.filter(f => f.ProgramId === program.Id) : []),
-    [prepayFees, program]
-  );
-  const programFbeCodes = useMemo(
-    () => (program ? fbeCodes.filter(c => c.ProgramId === program.Id) : []),
-    [fbeCodes, program]
-  );
-  const programAuthorities = useMemo(
-    () => (program ? authorities.filter(a => a.ProgramId === program.Id) : []),
-    [authorities, program]
-  );
-  const programFeeOptions = useMemo(
-    () => (program ? feeOptions.filter(o => o.ProgramId === program.Id) : []),
-    [feeOptions, program]
-  );
-  const programConditions = useMemo(
-    () => (program ? conditions.filter(c => c.ProgramId === program.Id) : []),
-    [conditions, program]
-  );
-
-  const hasFeeContent = useMemo(
-    () => programFeeOptions.length > 0
-      || programTiers.some(t => t.MinFeeRatio !== null && t.MinFeeRatio !== undefined),
-    [programFeeOptions, programTiers]
-  );
 
   const sheetInput = useMemo(() => (program ? {
     program,

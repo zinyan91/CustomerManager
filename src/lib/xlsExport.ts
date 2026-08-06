@@ -1,5 +1,8 @@
-export function downloadXls(html: string, fileName: string): void {
-  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+export const MIME_XLS = 'application/vnd.ms-excel;charset=utf-8';
+export const MIME_DOC = 'application/msword;charset=utf-8';
+
+export function downloadTextFile(content: string, fileName: string, mimeType: string): void {
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -8,6 +11,10 @@ export function downloadXls(html: string, fileName: string): void {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+export function downloadXls(html: string, fileName: string): void {
+  downloadTextFile(html, fileName, MIME_XLS);
 }
 
 export function xlsShell(title: string, subtitle: string, tableHtml: string, note?: string): string {

@@ -1,4 +1,5 @@
 import { parseAnyDate, daysUntil } from './utils';
+import { printHtmlDoc } from './printHtmlDoc';
 
 export type DueFilter = 'all' | 'upcoming' | 'expired';
 
@@ -139,11 +140,5 @@ export function buildDueListHtml(input: DueListSheetInput): string {
 }
 
 export function openPrintWindow(html: string): boolean {
-  const win = window.open('', '_blank');
-  if (!win) return false;
-  win.document.write(html);
-  win.document.close();
-  win.focus();
-  win.setTimeout(() => win.print(), 300);
-  return true;
+  return printHtmlDoc(html, 'Danh sách theo dõi hạn');
 }

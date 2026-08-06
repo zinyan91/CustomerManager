@@ -18,6 +18,7 @@ import {
 import vietbankLogo from '../../assets/vietbank-logo.png?inline';
 import { buildRateSheetHtml, findRateSheetBlockers } from '../../lib/rateSheet';
 import type { RateProgramKind } from '../../lib/rateQuote';
+import { printHtmlDoc } from '../../lib/printHtmlDoc';
 
 export const RateQuoteView: React.FC = () => {
   const { isAdmin } = useAuth();
@@ -73,15 +74,9 @@ export const RateQuoteView: React.FC = () => {
   const handleExportSheet = () => {
     if (!sheetInput || sheetBlockers.length > 0) return;
     const html = buildRateSheetHtml(sheetInput);
-    const win = window.open('', '_blank');
-    if (!win) {
-      setSaveMsg('Trình duyệt đã chặn cửa sổ mới. Cho phép pop-up rồi thử lại.');
-      return;
+    if (!printHtmlDoc(html, 'Tờ chào lãi suất')) {
+      setSaveMsg('Không mở được bản in. Thử lại hoặc tải trang lại.');
     }
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    win.setTimeout(() => win.print(), 300);
   };
 
   useEffect(() => {

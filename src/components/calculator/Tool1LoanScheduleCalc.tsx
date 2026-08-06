@@ -7,6 +7,7 @@ import { addMonths, buildLoanSchedule, postPromoRateAnnual } from '../../lib/cal
 import type { PrepaymentMode, PrepaymentPlanItem } from '../../lib/calcMath';
 import { buildScheduleDocHtml } from '../../lib/scheduleDocHtml';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
+import { downloadXls } from '../../lib/xlsExport';
 
 function exportToExcelHTML(
   filename: string,
@@ -89,15 +90,7 @@ function exportToExcelHTML(
     </html>
   `;
 
-  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${filename}_${todayIso()}.xls`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadXls(html, `${filename}_${todayIso()}.xls`);
 }
 
 interface PrepaymentRow {

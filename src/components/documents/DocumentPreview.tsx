@@ -1,6 +1,8 @@
 import React from 'react';
 import { Download, Printer } from 'lucide-react';
 import type { UiClasses } from '../../lib/uiClasses';
+import { printHtmlDoc } from '../../lib/printHtmlDoc';
+import { downloadTextFile, MIME_DOC } from '../../lib/xlsExport';
 
 function exportToWordDoc(filename: string, docHtml: string) {
   const wordDocumentHtml = `
@@ -139,21 +141,10 @@ function exportToWordDoc(filename: string, docHtml: string) {
     </html>
   `;
 
-  const blob = new Blob(['\uFEFF' + wordDocumentHtml], { type: 'application/msword;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${filename}.doc`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadTextFile('\uFEFF' + wordDocumentHtml, `${filename}.doc`, MIME_DOC);
 }
 
-function exportToPDFOnly(filename: string, docHtml: string) {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
-
+function exportToPDFOnly(filename: string, docHtml: string): boolean {
   const pdfHtml = `
     <!DOCTYPE html>
     <html>
@@ -190,17 +181,11 @@ function exportToPDFOnly(filename: string, docHtml: string) {
     </head>
     <body>
       ${docHtml}
-      <script>
-        window.onload = function() {
-          window.print();
-        };
-      </script>
     </body>
     </html>
   `;
 
-  printWindow.document.write(pdfHtml);
-  printWindow.document.close();
+  return printHtmlDoc(pdfHtml, filename);
 }
 
 interface DocumentPreviewProps {
@@ -234,7 +219,11 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => exportToPDFOnly(docFilename, docHtml)}
+            onClick={() => {
+              if (!exportToPDFOnly(docFilename, docHtml)) {
+                window.alert('Không mở được bản in. Tải lại trang rồi thử lại.');
+              }
+            }}
             className="flex items-center space-x-1.5 bg-neg hover:opacity-90 text-accent-ink font-bold text-xs px-3.5 py-2 rounded-md transition-colors"
           >
             <Printer className="w-4 h-4" />

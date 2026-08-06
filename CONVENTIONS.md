@@ -677,6 +677,20 @@ Mức cấp và ngày hết hiệu lực là thông tin **cấp HĐTD**, nên v�
 
 `buildDueListHtml` không dùng thư viện ngoài, mở cửa sổ mới rồi để trình duyệt in ra PDF — cùng cách làm với tờ lãi suất. Khổ A4 **ngang** vì các bảng này nhiều cột.
 
+### In và tải file — hai đường duy nhất
+
+**In: `printHtmlDoc` trong `printHtmlDoc.ts`.** Không nơi nào được gọi `window.open` để in.
+
+Trước đây có ba cách cho cùng một việc: `printHtmlDoc` (iframe ẩn, tự dọn theo `afterprint`), `openPrintWindow` trong `dueList.ts` (popup), và một bản popup chép tay trong `RateQuoteView` giống hệt `openPrintWindow`. `DocumentPreview` là cách thứ tư, popup kèm `<script>window.onload = print()`.
+
+Popup sai ở ba điểm. Trình duyệt chặn popup thì lệnh in **im lặng không xảy ra** — `DocumentPreview` còn `return` trắng, người dùng bấm In mà không có gì báo, đúng kiểu nuốt lỗi §1 cấm. `setTimeout(300)` trước khi in là cuộc đua: máy chậm thì in ra trang trắng. Và cửa sổ không bao giờ được dọn.
+
+iframe không dính cái nào: không bị chặn, `document.write` là đồng bộ nên không cần chờ, và `afterprint` dọn ngay. `printHtmlDoc` trả `boolean` — **phải kiểm và báo cho người dùng khi false**.
+
+**Tải file: `downloadTextFile(content, fileName, mimeType)` trong `xlsExport.ts`.** Ba bản Blob + thẻ neo chép tay giống hệt nhau, chỉ khác MIME. `downloadXls` giờ là lớp mỏng gọi nó. Dùng hằng `MIME_XLS` / `MIME_DOC`, đừng gõ lại chuỗi MIME.
+
+Tệp Word phải mở đầu bằng `'\uFEFF'` — thiếu BOM thì Word đọc sai tiếng Việt. Viết bằng dấu escape, đừng dán ký tự BOM thật vào mã nguồn: nó vô hình, người sau sửa sẽ xoá nhầm.
+
 ### `rateSheet.ts` · `dueList.ts` — bảng in
 
 Cả hai dựng tài liệu HTML tự chứa rồi để trình duyệt in ra PDF, **không dùng thư viện ngoài**. Tờ lãi suất khổ A4 dọc; danh sách theo dõi hạn khổ A4 **ngang** vì nhiều cột.

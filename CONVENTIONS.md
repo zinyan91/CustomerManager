@@ -701,6 +701,23 @@ Lưu ý khi đặt tên lớp động: Tailwind quét mã tĩnh, nên `bg-g${n}`
 
 Một tệp làm một việc. Màn hình quá 400 dòng là dấu hiệu logic đang nằm nhầm chỗ: rút phần tính toán thuần về `lib/`, phần trạng thái + luồng về `hooks/`, phần trình bày về component con.
 
+Màn Quản lý khoản vay đã tách theo mẫu này:
+
+| Tệp | Giữ việc gì |
+| :--- | :--- |
+| `lib/kunnForm.ts` | Ánh xạ hai chiều giữa bản ghi KUNN và dữ liệu biểu mẫu: `contractToFormFields`, `blankFormFields`, `buildKunnPayload`, `nextKunnNumberFor`. Thuần, không React, kiểm thử được |
+| `hooks/useCustomerPortfolio.ts` | Tra cứu khách hàng và nạp dữ liệu: danh sách KH, HĐTD, KUNN, TSBĐ, lịch thu nợ; chọn khách, chọn KUNN, xoá tìm kiếm |
+| `hooks/usePaymentModal.ts` | Luồng ghi nhận thu nợ: mở form, dựng bản ghi, lưu, tính lại lịch, trả về dư nợ và nhóm nợ mới |
+| `views/LoanPortfolioView.tsx` | Điều phối: nối ba phần trên với các component trình bày, giữ ràng buộc hạn mức và luồng lưu KUNN |
+
+Hook nhận việc cập nhật giao diện qua callback (`onCustomerChanged`, `onContractOpened`, `onSaved`) chứ không tự đụng vào trạng thái của màn hình — nhờ vậy hook không biết gì về bố cục và dùng lại được.
+
+Hai màn khác đã tách theo cùng nguyên tắc:
+
+`DocumentForm` trước đây là một hàm 953 dòng rẽ nhánh theo tám loại biểu mẫu. Nay mỗi loại là một tệp trong `components/documents/forms/` và `DocumentForm` chỉ còn điều hướng. Mỗi biểu mẫu khai báo đúng những trường nó dùng, nên đọc một tệp là biết loại hợp đồng đó cần gì.
+
+`RateQuoteView` giao phần nạp chương trình lãi suất cho `hooks/useRatePrograms`: tải chương trình cùng bậc lãi, phí trả trước, mã FBE, thẩm quyền, tuỳ chọn phí, điều kiện — rồi lọc sẵn theo chương trình đang hiệu lực. Màn hình giữ phần công cụ tính và trình bày.
+
 ---
 
 ## 17. Lệnh thường dùng

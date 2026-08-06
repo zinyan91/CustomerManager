@@ -97,7 +97,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-3 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(420px,30rem)] gap-3 items-start">
       <div className={`${PANEL} overflow-hidden`}>
         <div className="px-4 py-3 border-b border-line flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-baseline gap-2.5">

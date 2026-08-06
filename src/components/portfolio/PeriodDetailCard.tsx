@@ -34,9 +34,10 @@ export const PeriodDetailCard: React.FC<PeriodDetailCardProps> = ({
     { key: 'penalty', label: t('period.rowPenalty'), ...o.penalty },
   ];
 
-  const collectedPct = o.total.due > 0
+  const pctRounded = o.total.due > 0
     ? Math.round((Math.min(o.total.paid, o.total.due) / o.total.due) * 100)
     : 0;
+  const collectedPct = pctRounded === 0 && o.total.paid > 0 ? '<1' : String(pctRounded);
 
   const cell = `${TABLE_CELL} whitespace-nowrap`;
   const headCell = `px-[var(--row-px)] py-2 ${TABLE_HEAD} font-semibold whitespace-nowrap`;
@@ -47,7 +48,7 @@ export const PeriodDetailCard: React.FC<PeriodDetailCardProps> = ({
         <span className={`${SECTION_LABEL}`}>
           {t('schedule.period')}
         </span>
-        <span className="font-mono text-ink font-bold text-[calc(var(--fs-heading)*1.6)] leading-none">
+        <span className="font-mono num-lead text-ink font-bold">
           {selectedSchedule.PeriodNumber}
         </span>
         <span className="text-xs text-ink-muted">
@@ -64,7 +65,7 @@ export const PeriodDetailCard: React.FC<PeriodDetailCardProps> = ({
         <div className={`${SECTION_LABEL}`}>
           {o.total.unpaid > 0 ? t('period.slabUnpaid') : t('period.slabSettled')}
         </div>
-        <div className={`font-mono font-bold leading-none mt-1.5 text-[calc(var(--fs-heading)*2.2)] ${
+        <div className={`font-mono num-slab font-bold mt-1.5 ${
           o.total.unpaid > 0 ? 'text-neg' : 'text-pos'
         }`}>
           {o.total.unpaid > 0 ? o.total.unpaid.toLocaleString('vi-VN') : o.total.due.toLocaleString('vi-VN')}

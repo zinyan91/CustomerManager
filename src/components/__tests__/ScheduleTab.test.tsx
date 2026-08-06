@@ -95,6 +95,21 @@ describe('ScheduleTab dựng được lên', () => {
     expect(loiRender).toEqual([]);
   });
 
+  it('số tiền trên phiếu dùng lớp num-slab, không dùng cỡ chữ tuỳ biến bị .font-mono ép về 12px', () => {
+    dungLen();
+    const slab = document.querySelector('.num-slab');
+    expect(slab).toBeTruthy();
+    expect(slab!.className).toContain('font-mono');
+    expect(document.querySelector('.num-lead')).toBeTruthy();
+    expect(document.querySelector('[class*="text-[calc("]')).toBeNull();
+  });
+
+  it('đã thu một khoản rất nhỏ thì hiện <1% chứ không hiện 0%', () => {
+    dungLen([ky({ Id: 9, PeriodNumber: 9, DueDate: '2026-07-08', InterestAmount: 4_000_000, ActualPaidInterest: 2_592, OverdueInterestAmount: 0 })]);
+    expect(screen.getByText(/<1%/)).toBeTruthy();
+    expect(loiRender).toEqual([]);
+  });
+
   it('tổng ở chân bảng bằng tổng phần còn nợ của các dòng, kể cả kỳ miễn phạt', () => {
     dungLen();
     const foot = document.querySelector('tfoot')!;

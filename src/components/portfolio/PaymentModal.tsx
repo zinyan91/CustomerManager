@@ -1,7 +1,8 @@
 import React from 'react';
 import { Receipt, X, Save } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { fmtDate, getEffectiveActiveRate, formatMoneyInput } from '../../lib/utils';
+import { fmtDate, formatMoneyInput } from '../../lib/utils';
+import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { calculateOverdueDaysFromDates, computeSchedulePenalty } from '../../lib/loanMath';
 import { DateInput } from '../DateInput';
 

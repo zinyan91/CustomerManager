@@ -1,7 +1,8 @@
 import React from 'react';
 import { Calendar } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { fmtDate, fmtMoney, fmtRate, getEffectiveActiveRate } from '../../lib/utils';
+import { fmtDate, fmtMoney, fmtRate } from '../../lib/utils';
+import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { paidPrincipalOf, computeSchedulePenalty } from '../../lib/loanMath';
 import { formatSegmentsLabel, type RateSegment } from '../../lib/rateResolution';
 import { DebtSummaryCard } from './DebtSummaryCard';

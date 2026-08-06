@@ -1,7 +1,7 @@
 import React from 'react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
 import { computeSchedulePenalty, overdueDaysOfSchedule } from '../../lib/loanMath';
-import { getEffectiveActiveRate } from '../../lib/utils';
+import { getEffectiveActiveRate } from '../../lib/rateResolution';
 
 interface DebtSummaryCardProps {
   selectedContract: LoanContract;

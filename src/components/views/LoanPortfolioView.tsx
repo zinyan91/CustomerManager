@@ -4,7 +4,7 @@ import {
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
   fetchCollateralsByCustomerAPI, deleteRepaymentSchedulesByContractAPI
 } from '../../lib/api';
-import { fmtDate, fmtMoney, getContractRateHistory, getEffectiveActiveRate, getMasterHdtdNumber, parseMoneyDecimalInput, parseMoneyInput, stripLegacyNoteBlobs, toIsoDate, todayIso } from '../../lib/utils';
+import { fmtDate, fmtMoney, getContractRateHistory, getMasterHdtdNumber, parseMoneyDecimalInput, parseMoneyInput, stripLegacyNoteBlobs, toIsoDate, todayIso } from '../../lib/utils';
 import {
   addMonthsToDate, parseKunnTenorMonths,
   generateSchedule, calculateOverdueDaysFromDates,
@@ -12,7 +12,7 @@ import {
   isBulletPrincipal, getDaysBetween, redateSchedules
 } from '../../lib/loanMath';
 import {
-  buildContractRateTimeline, splitPeriodByRate,
+  buildContractRateTimeline, splitPeriodByRate, getEffectiveActiveRate,
   type RateSegment,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';

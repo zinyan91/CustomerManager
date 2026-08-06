@@ -4,6 +4,7 @@ import {
   buildContractRateTimeline,
   resolveRateAt,
   splitPeriodByRate,
+  getEffectiveActiveRate,
   weightedRatePercent,
   formatSegmentsLabel,
 } from '../rateResolution';
@@ -335,5 +336,79 @@ describe('sàn lãi suất', () => {
     } as LoanContract;
     const tl = buildContractRateTimeline(hd, { today: HOM_NAY });
     expect(tl[0].ratePercent).toBeCloseTo(6.5, 10);
+  });
+});
+
+describe('getEffectiveActiveRate — cùng một nguồn với bảng lịch', () => {
+  const kunn = {
+    Id: 1,
+    DisbursementDate: '2026-04-09',
+    InterestRate: 0.1125,
+    BaseRate: 0.072,
+    MarginRate: 0.03,
+  } as LoanContract;
+
+  it('lấy đúng lãi suất mà bảng lịch đang áp, không lấy InterestRate rời', () => {
+    expect(getEffectiveActiveRate(kunn, '2026-05-15')).toBeCloseTo(0.102, 10);
+  });
+
+  it('khớp từng kỳ với splitPeriodByRate — hai nơi không được lệch', () => {
+    const timeline = buildContractRateTimeline(kunn, { today: '2026-08-05' });
+    const seg = splitPeriodByRate(timeline, '2026-04-09', '2026-05-15', 36);
+    expect(seg[0].ratePercent / 100).toBeCloseTo(getEffectiveActiveRate(kunn, '2026-05-15'), 10);
+  });
+
+  it('kỳ ưu đãi: trong kỳ lấy lãi ưu đãi, sau kỳ lấy thả nổi', () => {
+    const uuDai = {
+      ...kunn, PreferentialRate: 0.08, PreferentialPeriodMonths: 3,
+    } as LoanContract;
+    expect(getEffectiveActiveRate(uuDai, '2026-05-15')).toBeCloseTo(0.08, 10);
+    expect(getEffectiveActiveRate(uuDai, '2026-09-15')).toBeCloseTo(0.102, 10);
+  });
+
+  it('mốc điều chỉnh ghi đè kể từ ngày hiệu lực', () => {
+    const dieuChinh = {
+      ...kunn,
+      RateHistory: JSON.stringify([{ effectiveDate: '2026-06-01', ratePercent: 12.5 }]),
+    } as unknown as LoanContract;
+    expect(getEffectiveActiveRate(dieuChinh, '2026-05-15')).toBeCloseTo(0.102, 10);
+    expect(getEffectiveActiveRate(dieuChinh, '2026-07-15')).toBeCloseTo(0.125, 10);
+  });
+
+  it('biên độ âm vẫn được trừ, không bị bỏ quên như bản cũ', () => {
+    const bienAm = { ...kunn, MarginRate: -0.01 } as LoanContract;
+    expect(getEffectiveActiveRate(bienAm, '2026-05-15')).toBeCloseTo(0.062, 10);
+  });
+
+  it('không khai gì thì về mặc định 8,5%', () => {
+    expect(getEffectiveActiveRate({ Id: 1 } as LoanContract, '2026-05-15')).toBeCloseTo(0.085, 10);
+    expect(getEffectiveActiveRate(null)).toBeCloseTo(0.085, 10);
+  });
+});
+
+describe('getEffectiveActiveRate — bản gộp về dòng thời gian', () => {
+  const lichSu = [
+    { id: '1', effectiveDate: '2026-01-01', ratePercent: 8 },
+    { id: '2', effectiveDate: '2026-06-01', ratePercent: 10 },
+  ];
+
+  it('lấy mốc lãi suất có hiệu lực tại thời điểm xét', () => {
+    const c = { RateHistory: lichSu } as LoanContract;
+    expect(getEffectiveActiveRate(c, '2026-03-15')).toBeCloseTo(0.08);
+    expect(getEffectiveActiveRate(c, '2026-07-15')).toBeCloseTo(0.10);
+  });
+
+  it('dùng mốc sớm nhất khi thời điểm xét nằm trước mọi mốc', () => {
+    const c = { RateHistory: lichSu } as LoanContract;
+    expect(getEffectiveActiveRate(c, '2025-01-01')).toBeCloseTo(0.08);
+  });
+
+  it('quay về InterestRate khi không có lịch sử', () => {
+    expect(getEffectiveActiveRate({ InterestRate: 0.095 } as LoanContract)).toBeCloseTo(0.095);
+  });
+
+  it('mặc định 8.5% khi không có thông tin nào', () => {
+    expect(getEffectiveActiveRate({} as LoanContract)).toBeCloseTo(0.085);
+    expect(getEffectiveActiveRate(null)).toBeCloseTo(0.085);
   });
 });

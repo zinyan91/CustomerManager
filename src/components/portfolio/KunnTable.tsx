@@ -1,7 +1,8 @@
 import React from 'react';
 import { Receipt, ChevronRight } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { fmtMoney, fmtRate, fmtDate, getEffectiveActiveRate } from '../../lib/utils';
+import { fmtMoney, fmtRate, fmtDate } from '../../lib/utils';
+import { getEffectiveActiveRate } from '../../lib/rateResolution';
 
 const DEBT_GROUP_COLORS: Record<number, string> = {
   1: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20',

@@ -190,27 +190,6 @@ export function getContractRateHistory(c?: LoanContract | null): RateAdjustmentH
   return [];
 }
 
-export function getEffectiveActiveRate(c?: LoanContract | null, targetDateStr?: string): number {
-  if (!c) return 0.085;
-  const history = getContractRateHistory(c);
-  if (history.length > 0) {
-    const todayStr = targetDateStr || todayIso();
-    const sorted = [...history].sort((a, b) => a.effectiveDate.localeCompare(b.effectiveDate));
-    let active = sorted[0];
-    for (const item of sorted) {
-      if (item.effectiveDate <= todayStr) {
-        active = item;
-      } else {
-        break;
-      }
-    }
-    if (active && active.ratePercent > 0) {
-      return active.ratePercent / 100;
-    }
-  }
-  return c.InterestRate || c.NormalRate || c.PreferentialRate || c.BaseRate || 0.085;
-}
-
 export function stripLegacyNoteBlobs(note?: string | null): string {
   if (!note) return '';
   return note

@@ -12,7 +12,6 @@ import {
   stripLegacyNoteBlobs,
   fmtDate,
   getContractRateHistory,
-  getEffectiveActiveRate,
   getMasterHdtdNumber,
 } from '../utils';
 import type { LoanContract } from '../../types';
@@ -142,32 +141,6 @@ describe('lịch sử điều chỉnh lãi suất', () => {
   });
 });
 
-describe('getEffectiveActiveRate', () => {
-  const lichSu = [
-    { id: '1', effectiveDate: '2026-01-01', ratePercent: 8 },
-    { id: '2', effectiveDate: '2026-06-01', ratePercent: 10 },
-  ];
-
-  it('lấy mốc lãi suất có hiệu lực tại thời điểm xét', () => {
-    const c = { RateHistory: lichSu } as LoanContract;
-    expect(getEffectiveActiveRate(c, '2026-03-15')).toBeCloseTo(0.08);
-    expect(getEffectiveActiveRate(c, '2026-07-15')).toBeCloseTo(0.10);
-  });
-
-  it('dùng mốc sớm nhất khi thời điểm xét nằm trước mọi mốc', () => {
-    const c = { RateHistory: lichSu } as LoanContract;
-    expect(getEffectiveActiveRate(c, '2025-01-01')).toBeCloseTo(0.08);
-  });
-
-  it('quay về InterestRate khi không có lịch sử', () => {
-    expect(getEffectiveActiveRate({ InterestRate: 0.095 } as LoanContract)).toBeCloseTo(0.095);
-  });
-
-  it('mặc định 8.5% khi không có thông tin nào', () => {
-    expect(getEffectiveActiveRate({} as LoanContract)).toBeCloseTo(0.085);
-    expect(getEffectiveActiveRate(null)).toBeCloseTo(0.085);
-  });
-});
 
 describe('toIsoDate — chuẩn hoá ngày lấy từ database về một dạng', () => {
   it('cắt phần giờ khỏi timestamptz, KHÔNG quy đổi múi giờ', () => {

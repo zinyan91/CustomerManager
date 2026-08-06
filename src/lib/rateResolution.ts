@@ -1,6 +1,6 @@
 import type { LoanContract, RateAdjustmentHistoryItem } from '../types';
 import { diffDays } from './calcMath';
-import { getContractRateHistory } from './utils';
+import { getContractRateHistory, todayIso } from './utils';
 
 export type RateSourceKind = 'preferential' | 'floating' | 'adjustment' | 'contract';
 
@@ -181,12 +181,8 @@ function rankOf(kind: RateSourceKind): number {
   return 0;
 }
 
-export function buildContractRateTimeline(
-  c?: LoanContract | null,
-  options?: RateTimelineOptions
-): RateTimelinePoint[] {
-  if (!c) return [];
-  return buildRateTimeline({
+function contractRateInput(c: LoanContract): RateTimelineInput {
+  return {
     startDate: c.DisbursementDate || c.RepaymentStartDate || c.ContractStartDate,
     preferentialRate: c.PreferentialRate,
     preferentialPeriodMonths: c.PreferentialPeriodMonths,
@@ -197,7 +193,15 @@ export function buildContractRateTimeline(
     normalRate: c.NormalRate,
     interestRate: c.InterestRate,
     rateHistory: getContractRateHistory(c),
-  }, options);
+  };
+}
+
+export function buildContractRateTimeline(
+  c?: LoanContract | null,
+  options?: RateTimelineOptions
+): RateTimelinePoint[] {
+  if (!c) return [];
+  return buildRateTimeline(contractRateInput(c), options);
 }
 
 export function resolveRateAt(
@@ -210,6 +214,27 @@ export function resolveRateAt(
     else break;
   }
   return active ?? (timeline.length > 0 ? timeline[0] : null);
+}
+
+export function getEffectiveActiveRate(
+  c?: LoanContract | null,
+  targetDateStr?: string
+): number {
+  if (!c) return DEFAULT_RATE_PERCENT / 100;
+
+  const timeline = buildContractRateTimeline(c);
+  const point = timeline.length > 0
+    ? resolveRateAt(timeline, targetDateStr || todayIso())
+    : null;
+  if (point && point.ratePercent > 0) return point.ratePercent / 100;
+
+  const floating = floatingRate(contractRateInput(c));
+  if (floating.configured && floating.value > 0) return floating.value / 100;
+
+  const pref = toPercent(c.PreferentialRate);
+  if (pref > 0) return pref / 100;
+
+  return DEFAULT_RATE_PERCENT / 100;
 }
 
 export function splitPeriodByRate(

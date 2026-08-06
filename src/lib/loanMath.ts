@@ -1,6 +1,8 @@
 import type { RepaymentSchedule, RateAdjustmentHistoryItem, LoanContract } from '../types';
-import { getEffectiveActiveRate, todayIso } from './utils';
-import { buildContractRateTimeline, buildRateTimeline, splitPeriodByRate } from './rateResolution';
+import { todayIso } from './utils';
+import {
+  buildContractRateTimeline, buildRateTimeline, splitPeriodByRate, getEffectiveActiveRate,
+} from './rateResolution';
 import { calcOverduePenalty } from './stkPledge';
 
 export function addMonthsToDate(dateStr?: string | null, months?: number | null): string {

@@ -396,7 +396,7 @@ export const CreditContractView: React.FC = () => {
                             );
                           })()}
                           <button onClick={e => { e.stopPropagation(); handleDelete(s.contract); }} title="Xoá HĐTD"
-                            className="p-1.5 rounded-lg text-neg hover:bg-neg">
+                            className="p-1.5 rounded-lg text-neg hover:bg-neg-soft">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>

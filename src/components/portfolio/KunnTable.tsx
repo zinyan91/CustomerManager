@@ -112,7 +112,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
                   </td>
                   <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
                     {isSettled && isSettled(c) ? (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-pos text-pos border border-pos/30">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-pos-soft text-pos border border-pos/30">
                         ✓ ĐÃ TẤT TOÁN
                       </span>
                     ) : (

@@ -143,7 +143,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onDelete(col); }}
                       disabled={deletingId === col.Id}
-                      className="p-1.5 rounded-lg border border-transparent text-ink-faint hover:text-neg hover:bg-neg hover:border-neg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 rounded-lg border border-transparent text-ink-faint hover:text-neg hover:bg-neg-soft hover:border-neg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       title="Xoá tài sản bảo đảm"
                     >
                       {deletingId === col.Id

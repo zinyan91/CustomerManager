@@ -596,7 +596,7 @@ export const CustomerListView: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleDeleteCustomer}
-                  className="bg-neg hover:bg-neg text-neg border border-neg/30 font-bold text-xs py-3 px-4 rounded-md transition-colors flex items-center space-x-1"
+                  className="bg-neg hover:bg-neg-soft text-neg border border-neg/30 font-bold text-xs py-3 px-4 rounded-md transition-colors flex items-center space-x-1"
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>XOÁ KH</span>

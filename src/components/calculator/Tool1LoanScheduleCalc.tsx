@@ -479,7 +479,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                       type="button"
                       onClick={() => removePrepayment(p.id)}
                       title="Xoá lần trả trước hạn này"
-                      className="p-2 rounded-md text-neg hover:bg-neg"
+                      className="p-2 rounded-md text-neg hover:bg-neg-soft"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -534,7 +534,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             </thead>
             <tbody className={`divide-y ${'divide-line'}`}>
               {scheduleRows.map(r => (
-                <tr key={r.period} className={`${styles.tableRowHover} ${r.prepayment > 0 ? 'bg-warn  font-bold border-l-4 border-warn' : ''}`}>
+                <tr key={r.period} className={`${styles.tableRowHover} ${r.prepayment > 0 ? 'bg-warn-soft  font-bold border-l-2 border-warn' : ''}`}>
                   <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-bold font-mono">
                     #{r.period}
                     {r.prepayment > 0 && (

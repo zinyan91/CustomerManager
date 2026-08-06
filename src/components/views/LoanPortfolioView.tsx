@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { UI } from '../../lib/uiClasses';
 import {
-  fetchCustomersAPI, fetchContractsByCustomerAPI, saveContractAPI, deleteContractAPI,
+  fetchContractsByCustomerAPI, saveContractAPI, deleteContractAPI,
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
-  fetchCollateralsByCustomerAPI, deleteRepaymentSchedulesByContractAPI
+  deleteRepaymentSchedulesByContractAPI
 } from '../../lib/api';
-import { fmtDate, fmtMoney, getContractRateHistory, getMasterHdtdNumber, parseMoneyDecimalInput, stripLegacyNoteBlobs, toIsoDate, todayIso } from '../../lib/utils';
+import { fmtDate, fmtMoney, getContractRateHistory, getMasterHdtdNumber, parseMoneyDecimalInput, todayIso } from '../../lib/utils';
 import {
   addMonthsToDate, parseKunnTenorMonths,
   generateSchedule,
@@ -13,19 +13,18 @@ import {
   isBulletPrincipal, redateSchedules
 } from '../../lib/loanMath';
 import {
-  getEffectiveActiveRate, resolveRateModeOf,
+  getEffectiveActiveRate,
   buildRateFields,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
 import { checkKunnAgainstContract, nextKunnNumber, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd } from '../../lib/creditContract';
-import { fetchCreditContractsByCustomerAPI } from '../../lib/api';
 import { useWork } from '../../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
 import {
   graceMonthOptions,
   getLoanProductRule,
 } from '../../lib/loanProductRules';
-import type { LoanContract, CreditContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
+import type { LoanContract, CreditContract, RateAdjustmentHistoryItem } from '../../types';
 import { Search, Receipt, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
 import { CustomerSearchBar } from '../portfolio/CustomerSearchBar';
 import { CustomerSummaryHeader } from '../portfolio/CustomerSummaryHeader';
@@ -35,43 +34,47 @@ import { PaymentModal } from '../portfolio/PaymentModal';
 import { KunnForm } from '../portfolio/KunnForm';
 import { ScheduleTab } from '../portfolio/ScheduleTab';
 import { usePaymentModal } from '../../hooks/usePaymentModal';
-
-const LOAN_METHODS = [
-  'Hạn mức tín dụng',
-  'Hạn mức tín dụng từng lần',
-  'Cho vay từng lần',
-  'Hạn mức thẻ tín dụng',
-  'Cầm cố sổ tiết kiệm'
-];
-
-function rateToInput(v?: number | null): string {
-  if (v === null || v === undefined || Number.isNaN(v)) return '';
-  return Number((v * 100).toFixed(4)).toString();
-}
-
-function intToInput(v?: number | null): string {
-  if (v === null || v === undefined || Number.isNaN(v)) return '';
-  return String(v);
-}
+import { useCustomerPortfolio } from '../../hooks/useCustomerPortfolio';
+import {
+  blankFormFields, buildKunnPayload, contractToFormFields,
+  intToInput, nextKunnNumberFor, rateToInput, type KunnFormFields,
+} from '../../lib/kunnForm';
 
 export const LoanPortfolioView: React.FC = () => {
 
-  const [searchCif, setSearchCif] = useState('');
-  const [searchName, setSearchName] = useState('');
-  const [searchContract, setSearchContract] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-
   const { selectedCustomerId, setSelectedCustomerId, disburseRequest, clearDisburseRequest } = useWork();
-  const [creditContracts, setCreditContracts] = useState<CreditContract[]>([]);
-  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
-  const [dropdownQuery, setDropdownQuery] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const [foundCustomer, setFoundCustomer] = useState<Customer | null>(null);
-  const [contracts, setContracts] = useState<LoanContract[]>([]);
-  const [collaterals, setCollaterals] = useState<Collateral[]>([]);
-  const [selectedContract, setSelectedContract] = useState<LoanContract | null>(null);
-  const [schedules, setSchedules] = useState<RepaymentSchedule[]>([]);
+  const showNotify = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
+  };
+
+  const portfolio = useCustomerPortfolio({
+    selectedCustomerId,
+    setSelectedCustomerId,
+    onNotify: showNotify,
+    onCustomerChanged: () => {
+      setSelectedMasterFilter('ALL');
+      setShowForm(false);
+      setMainTab('kunn');
+    },
+    onContractOpened: (c) => {
+      setShowForm(true);
+      populateForm(c);
+    },
+    onContractClosed: () => setShowForm(false),
+  });
+
+  const {
+    searchCif, setSearchCif, searchName, setSearchName, searchContract, setSearchContract,
+    isSearching, allCustomers, dropdownQuery, setDropdownQuery, showDropdown, setShowDropdown,
+    foundCustomer, creditContracts, contracts, setContracts, collaterals,
+    selectedContract, setSelectedContract, schedules, setSchedules,
+    allSchedulesMap, setAllSchedulesMap,
+    pickCustomer: handlePickCustomer, search: handleSearch, selectContract: handleSelectContract,
+  } = portfolio;
+
 
   const [mainTab, setMainTab] = useState<'kunn' | 'schedule'>('kunn');
   const [showForm, setShowForm] = useState(false);
@@ -84,8 +87,6 @@ export const LoanPortfolioView: React.FC = () => {
   const [newAdjReason, setNewAdjReason] = useState('');
 
   const [selectedMasterFilter, setSelectedMasterFilter] = useState<string>('ALL');
-
-  const [allSchedulesMap, setAllSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
 
   const [form, setForm] = useState<Partial<LoanContract>>({});
   const [formHdtdNumber, setFormHdtdNumber] = useState('');
@@ -107,15 +108,7 @@ export const LoanPortfolioView: React.FC = () => {
   const [selectedCollateralIds, setSelectedCollateralIds] = useState<number[]>([]);
 
 
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchCustomersAPI().then(list => {
-      list.sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
-      setAllCustomers(list);
-    }).catch(() => { });
-  }, []);
 
   useEffect(() => {
     const isSingleLoan = form.LoanMethod === 'Cho vay từng lần' || form.LoanMethod === 'Hạn mức tín dụng từng lần';
@@ -201,209 +194,29 @@ export const LoanPortfolioView: React.FC = () => {
       (c.NationalId || '').includes(dropdownQuery)
     );
 
-  useEffect(() => {
-    setSchedules([]);
-    setAllSchedulesMap({});
-    setSelectedContract(null);
-    setSelectedMasterFilter('ALL');
-    setShowForm(false);
-    setMainTab('kunn');
 
-    const id = foundCustomer?.Id;
-    if (!id) {
-      setCreditContracts([]);
-      return;
-    }
-    if (selectedCustomerId !== id) setSelectedCustomerId(id);
-    fetchCreditContractsByCustomerAPI(id).then(setCreditContracts);
-  }, [foundCustomer?.Id]);
-
-  const loadAllSchedulesForContracts = async (cons: LoanContract[]) => {
-    const map: Record<number, RepaymentSchedule[]> = {};
-    await Promise.all(cons.map(async (c) => {
-      try {
-        const schs = await fetchRepaymentSchedulesAPI(c.Id);
-        map[c.Id] = schs;
-      } catch { }
-    }));
-    setAllSchedulesMap(map);
-  };
-
-  const handlePickCustomer = async (c: Customer) => {
-    setShowDropdown(false);
-    setDropdownQuery(c.FullName);
-    setSearchCif(c.CifKh);
-    setSearchName('');
-    setSearchContract('');
-    setFoundCustomer(c);
-    setContracts([]);
-    setSelectedContract(null);
-    setShowForm(false);
-    setMainTab('kunn');
-    const [cons, cols] = await Promise.all([
-      fetchContractsByCustomerAPI(c.Id),
-      fetchCollateralsByCustomerAPI(c.Id)
-    ]);
-    setContracts(cons);
-    setCollaterals(cols);
-    loadAllSchedulesForContracts(cons);
-  };
-
-  useEffect(() => {
-    if (allCustomers.length === 0 || !selectedCustomerId) return;
-    if (foundCustomer?.Id === selectedCustomerId) return;
-    const c = allCustomers.find(x => x.Id === selectedCustomerId);
-    if (c) handlePickCustomer(c);
-  }, [selectedCustomerId, allCustomers]);
-
-  const showNotify = (type: 'success' | 'error', message: string) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000);
-  };
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchCif.trim() && !searchName.trim() && !searchContract.trim()) {
-      showNotify('error', 'Nhập ít nhất một thông tin để tìm kiếm.');
-      return;
-    }
-    setIsSearching(true);
-    setFoundCustomer(null);
-    setContracts([]);
-    setCollaterals([]);
-    setSelectedContract(null);
-    setShowForm(false);
-
-    try {
-      let customers: Customer[] = [];
-      if (searchCif.trim()) {
-        customers = await fetchCustomersAPI({ cif: searchCif.trim() });
-      } else if (searchName.trim()) {
-        customers = await fetchCustomersAPI({ name: searchName.trim() });
-      } else {
-        customers = await fetchCustomersAPI({});
-      }
-
-      let matchedCustomer: Customer | null = null;
-      if (customers.length > 0) {
-        matchedCustomer = customers[0];
-      }
-
-      if (!matchedCustomer && searchContract.trim()) {
-        const allCust = await fetchCustomersAPI({});
-        for (const c of allCust) {
-          const cons = await fetchContractsByCustomerAPI(c.Id);
-          const found = cons.find(con => con.ContractNumber?.toLowerCase().includes(searchContract.toLowerCase()));
-          if (found) { matchedCustomer = c; setContracts(cons); break; }
-        }
-      }
-
-      if (!matchedCustomer) {
-        showNotify('error', 'Không tìm thấy khách hàng phù hợp.');
-      } else {
-        setFoundCustomer(matchedCustomer);
-        setDropdownQuery(matchedCustomer.FullName);
-        setSearchCif(matchedCustomer.CifKh);
-        setSearchName('');
-        const [cons, cols] = await Promise.all([
-          fetchContractsByCustomerAPI(matchedCustomer.Id),
-          fetchCollateralsByCustomerAPI(matchedCustomer.Id),
-        ]);
-        setContracts(cons);
-        setCollaterals(cols);
-        loadAllSchedulesForContracts(cons);
-      }
-    } catch (err: any) {
-      showNotify('error', `Không tìm được: ${err.message}`);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleSelectContract = async (c: LoanContract) => {
-    if (selectedContract?.Id === c.Id) {
-      setSelectedContract(null);
-      setSchedules([]);
-      setShowForm(false);
-      return;
-    }
-    setSelectedContract(c);
-    setShowForm(true);
-    populateForm(c);
-    const s = await fetchRepaymentSchedulesAPI(c.Id);
-    if (s.length > 0) {
-      const recalculated = recalculateSchedules(s, c);
-      setSchedules(recalculated);
-      setAllSchedulesMap(prev => ({ ...prev, [c.Id]: recalculated }));
-    } else {
-      setSchedules(s);
-      setAllSchedulesMap(prev => ({ ...prev, [c.Id]: s }));
-    }
+  const applyFormFields = (fields: KunnFormFields) => {
+    setFormHdtdNumber(fields.hdtdNumber);
+    setFormKunnNumber(fields.kunnNumber);
+    setForm(fields.contract);
+    setFormCreditLimit(fields.creditLimit);
+    setFormCreditLimitCode(fields.creditLimitCode);
+    setFormCreditLimitAmount(fields.creditLimitAmount);
+    setFormLoanAmount(fields.loanAmount);
+    setFormCurrentBalance(fields.currentBalance);
+    setRatePreferential(fields.ratePreferential);
+    setRatePreferentialMonths(fields.ratePreferentialMonths);
+    setRateBase(fields.rateBase);
+    setRateMargin(fields.rateMargin);
+    setRateFloor(fields.rateFloor);
+    setInterestRateMode(fields.rateMode);
+    setRateConditionSurcharge(fields.conditionSurcharge);
+    setRateHistory(fields.rateHistory);
+    setSelectedCollateralIds(fields.collateralIds);
   };
 
   const populateForm = (c: LoanContract) => {
-    setFormHdtdNumber(resolveMasterHdtdNumber(c, creditContracts));
-    setFormKunnNumber(c.ContractNumber || '');
-
-    setForm({
-      Id: c.Id,
-      CustomerId: c.CustomerId,
-      CreditContractId: c.CreditContractId
-        ?? creditContracts.find(cc => cc.HdtdNumber === getMasterHdtdNumber(c))?.Id
-        ?? null,
-      ContractNumber: c.ContractNumber,
-      HdtdDueDate: toIsoDate(c.HdtdDueDate),
-      ContractType: c.ContractType,
-      LoanMethod: c.LoanMethod || LOAN_METHODS[0],
-      DebtGroup: c.DebtGroup ?? 1,
-      ContractStartDate: c.ContractStartDate ?? '',
-      ContractEndDate: c.ContractEndDate ?? '',
-      LoanTenorMonths: c.LoanTenorMonths ?? undefined,
-      DisbursementDate: c.DisbursementDate ?? '',
-      KunnDueDate: c.KunnDueDate ?? '',
-      KunnTenor: c.KunnTenor ?? '',
-      RepaymentStartDate: c.RepaymentStartDate ?? '',
-      LoanPurposeType: c.LoanPurposeType ?? '',
-      LoanPurpose: c.LoanPurpose ?? '',
-      PrincipalRepaymentMethod: c.PrincipalRepaymentMethod || 'Trả đều hàng tháng',
-      InterestRepaymentMethod: c.InterestRepaymentMethod || 'Trả hàng tháng theo dư nợ giảm dần',
-      PrincipalGracePeriodMonths: c.PrincipalGracePeriodMonths ?? 0,
-      InterestGracePeriodMonths: c.InterestGracePeriodMonths ?? 0,
-      IsSettled: c.IsSettled ?? false,
-      IsRestructured: c.IsRestructured ?? false,
-    });
-
-    setFormCreditLimit(c.ContractAmount ? c.ContractAmount.toLocaleString('vi-VN') : '');
-    setFormCreditLimitCode(c.CreditLimitCode || '');
-    setFormCreditLimitAmount(c.CreditLimitAmount ? c.CreditLimitAmount.toLocaleString('vi-VN') : '');
-    setFormLoanAmount(c.LoanAmount ? c.LoanAmount.toLocaleString('vi-VN') : '');
-    setFormCurrentBalance(c.CurrentBalance ? c.CurrentBalance.toLocaleString('vi-VN') : '');
-
-    setRatePreferential(rateToInput(c.PreferentialRate));
-    setRatePreferentialMonths(intToInput(c.PreferentialPeriodMonths));
-    setRateBase(rateToInput(c.BaseRate));
-    setRateMargin(rateToInput(c.MarginRate));
-    setRateFloor(rateToInput(c.RateFloorAnnual));
-
-    setInterestRateMode(resolveRateModeOf(c));
-
-    if (c.PenaltySurcharge != null && c.PenaltySurcharge > 0) {
-      setRateConditionSurcharge(c.PenaltySurcharge.toString());
-    } else {
-      setRateConditionSurcharge('0');
-    }
-
-    const history = getContractRateHistory(c);
-    setRateHistory(history);
-
-    if (c.CollateralIds) {
-      const ids = c.CollateralIds.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-      setSelectedCollateralIds(ids);
-    } else if (c.CollateralId) {
-      setSelectedCollateralIds([c.CollateralId]);
-    } else {
-      setSelectedCollateralIds([]);
-    }
+    applyFormFields(contractToFormFields(c, creditContracts));
   };
 
   const handleNewContract = () => {
@@ -418,19 +231,10 @@ export const LoanPortfolioView: React.FC = () => {
 
     setSelectedContract(null);
     setSchedules([]);
-    setFormLoanAmount('');
-    setFormCurrentBalance('');
-    setForm({
-      CustomerId: foundCustomer?.Id,
-      ContractType: 0,
-      DebtGroup: 1,
-      PrincipalRepaymentMethod: 'Gốc trả cuối kỳ',
-      InterestRepaymentMethod: 'Trả hàng tháng theo dư nợ thực tế',
-      PrincipalGracePeriodMonths: 0,
-      InterestGracePeriodMonths: 0,
-      IsSettled: false,
-      IsRestructured: false,
-    });
+    const blank = blankFormFields(foundCustomer?.Id);
+    setFormLoanAmount(blank.loanAmount);
+    setFormCurrentBalance(blank.currentBalance);
+    setForm(blank.contract);
 
     const preferred = selectedMasterFilter !== 'ALL'
       ? selectableCreditContracts.find(cc => cc.HdtdNumber === selectedMasterFilter)
@@ -458,77 +262,39 @@ export const LoanPortfolioView: React.FC = () => {
         return;
       }
 
-      const hdtd = formHdtdNumber.trim();
-      let kunn = formKunnNumber.trim();
-
-      if (!kunn) {
-        if (hdtd) {
-          const existingCount = contracts.filter(c => getMasterHdtdNumber(c).toLowerCase() === hdtd.toLowerCase()).length;
-          const nextIndex = (existingCount + 1).toString().padStart(2, '0');
-          kunn = `${hdtd}/GNN-${nextIndex}`;
-        } else {
-          kunn = 'HĐTD-01/GNN-01';
-        }
-      }
-
-      const effectiveContractNumber = kunn;
+      const effectiveContractNumber = formKunnNumber.trim()
+        || nextKunnNumberFor(formHdtdNumber, contracts);
 
       const creditLimit = parseMoneyDecimalInput(formCreditLimit);
       const loanAmount = parseMoneyDecimalInput(formLoanAmount);
-      const currentBalInput = parseMoneyDecimalInput(formCurrentBalance);
 
-      const currentBal = currentBalInput || loanAmount;
-
-      const prefDec = prefVal ? prefVal / 100 : undefined;
-      const baseDec = baseVal ? baseVal / 100 : undefined;
-      const normalDec = normalRate ? normalRate / 100 : undefined;
-
-      const activeInterestRate = currentActiveRateDisplay > 0
-        ? currentActiveRateDisplay / 100
-        : ((interestRateMode === 'pref' ? prefDec : normalDec) || prefDec || normalDec || baseDec || undefined);
-
-      let noteText = form.Note || '';
-      noteText = stripLegacyNoteBlobs(noteText);
-
-      const cleanDate = (d?: string | null) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) ? d.trim() : null;
-
-      const payload: Partial<LoanContract> = {
-        ...form,
-        CustomerId: targetCustomerId,
-        ContractNumber: effectiveContractNumber,
-
-        ContractStartDate: cleanDate(form.ContractStartDate),
-        ContractEndDate: cleanDate(form.ContractEndDate),
-        DisbursementDate: cleanDate(form.DisbursementDate),
-        KunnDueDate: cleanDate(form.KunnDueDate),
-        RepaymentStartDate: cleanDate(form.RepaymentStartDate),
-        HdtdDueDate: cleanDate(form.HdtdDueDate),
-
-        Note: noteText || null,
-        RateHistory: rateHistory.length > 0 ? (rateHistory as any) : null,
-        CollateralIds: selectedCollateralIds.length > 0 ? selectedCollateralIds.join(',') : null,
-        PenaltySurcharge: parseFloat(rateConditionSurcharge) || 0,
-
-        ContractAmount: creditLimit,
-        LoanAmount: loanAmount,
-        CurrentBalance: currentBal,
-
-        CreditLimitCode: formCreditLimitCode.trim() || null,
-        CreditLimitAmount: formCreditLimitCode.trim()
-          ? (parseMoneyDecimalInput(formCreditLimitAmount) || null)
-          : null,
-
-        ...buildRateFields(interestRateMode, {
-          prefPercent: prefVal,
-          prefMonths: parseInt(ratePreferentialMonths, 10) || 0,
-          basePercent: baseVal,
-          marginPercent: marginVal,
-          floorPercent: rateFloor.trim() === '' ? null : parseFloat(rateFloor) || 0,
-        }),
-        InterestRate: activeInterestRate,
-
-        CollateralId: selectedCollateralIds.length > 0 ? selectedCollateralIds[0] : null,
-      };
+      const payload = buildKunnPayload({
+        fields: {
+          hdtdNumber: formHdtdNumber,
+          kunnNumber: effectiveContractNumber,
+          contract: form,
+          creditLimit: formCreditLimit,
+          creditLimitCode: formCreditLimitCode,
+          creditLimitAmount: formCreditLimitAmount,
+          loanAmount: formLoanAmount,
+          currentBalance: formCurrentBalance,
+          ratePreferential,
+          ratePreferentialMonths,
+          rateBase,
+          rateMargin,
+          rateFloor,
+          rateMode: interestRateMode,
+          conditionSurcharge: rateConditionSurcharge,
+          rateHistory,
+          collateralIds: selectedCollateralIds,
+        },
+        customerId: targetCustomerId,
+        contractNumber: effectiveContractNumber,
+        prefPercent: prefVal,
+        basePercent: baseVal,
+        marginPercent: marginVal,
+        activeRatePercent: currentActiveRateDisplay,
+      });
 
       if (forceInsert || !selectedContract) {
         delete payload.Id;
@@ -970,9 +736,8 @@ export const LoanPortfolioView: React.FC = () => {
         handleSearch={handleSearch}
         foundCustomer={foundCustomer}
         handleClearSearch={() => {
-          setFoundCustomer(null); setContracts([]); setCollaterals([]); setSelectedContract(null);
-          setShowForm(false); setSearchCif(''); setSearchName('');
-          setSearchContract(''); setDropdownQuery('');
+          portfolio.clearSearch();
+          setShowForm(false);
         }}
         containerCardBg={containerCardBg}
       />

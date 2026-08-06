@@ -78,10 +78,11 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
           className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
       </div>
       <div>
-        <label className={`block mb-1 ${labelStyle}`}>Thời hạn KUNN</label>
+        <label className={`block mb-1 ${labelStyle}`}>Thời hạn KUNN *</label>
         {form.LoanMethod === 'Hạn mức tín dụng' ? (
           <select
-            value={form.KunnTenor || '6 tháng'}
+            required
+            value={form.KunnTenor || ''}
             onChange={e => {
               const val = e.target.value;
               const months = parseKunnTenorMonths(val);
@@ -90,12 +91,13 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
             }}
             className={`w-full rounded-xl p-2.5 text-xs font-bold text-accent ${inputStyle}`}
           >
+            <option value="">— Chọn thời hạn —</option>
             {['0 tháng', '3 tháng', '5 tháng', '6 tháng', '9 tháng', '12 tháng'].map(t => (
               <option key={t} value={t}>{t}</option>
             ))}
           </select>
         ) : (
-          <input type="text" value={form.KunnTenor || ''}
+          <input type="text" required value={form.KunnTenor || ''}
             onChange={e => {
               const val = e.target.value;
               const months = parseKunnTenorMonths(val);

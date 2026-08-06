@@ -186,7 +186,13 @@ Vì dùng số ngày thực tế, **tiền lãi có thể TĂNG so với kỳ tr
 
 Ràng buộc duy nhất: **kỳ 1 phải SAU ngày giải ngân**. Mốc khai sớm hơn thì dịch lên từng tháng, giữ nguyên ngày trong tháng — không đổi ngày khách đã chọn. Để trống `RepaymentStartDate` thì mới mặc định giải ngân + 1 tháng, và đó là **giá trị tạm chờ khai theo chứng từ**, không phải quy tắc nghiệp vụ.
 
-**Kỳ cuối rơi vào ngày đáo hạn** có chốt riêng: chỉ kéo về khi làm vậy không sinh ra một kỳ chỉ 1 ngày. Chốt đó ở `shouldPullLastPeriodToMaturity`, dùng chung cho `buildDueDateSequence` (sinh lịch mới) và `alignLastPeriodToMaturity` (sửa lịch đã có). Hàm thứ hai **chỉ đổi kỳ cuối**, không chạm kỳ nào khác, và bỏ qua khi kỳ cuối đã thu — dùng cho nút bảo trì ở tab Cài đặt thay vì viết SQL sửa hàng loạt.
+**Ngày trong tháng giữ nguyên từ kỳ đầu tới kỳ cuối.** Khách trả ngày 15 thì mọi kỳ đều ngày 15, kể cả kỳ cuối. Ngày đáo hạn KUNN **không** được phép đổi ngày của kỳ nào.
+
+Đã có lúc làm ngược lại và phải trả giá. Ngày 06/08/2026 một chốt "kéo kỳ cuối về ngày đáo hạn" được thêm vào `buildDueDateSequence`, kèm `alignLastPeriodToMaturity` và một nút bảo trì ở tab Cài đặt quét toàn danh mục. Lý lẽ khi đó: *"31/98 KUNN có kỳ cuối không rơi đúng ngày đáo hạn"*. Đó là đọc ngược bằng chứng — 31 khoản cùng theo một khuôn là dấu hiệu **khuôn ấy chính là quy tắc**, không phải dấu hiệu 31 khoản đều hỏng. Không hồ sơ giấy nào được đối chiếu, không banker nào được hỏi.
+
+Nút đó chạy `recalculateSchedules` trên **toàn bộ** các kỳ chứ không riêng kỳ cuối, và với kỳ chưa thu nó ghi đè `InterestAmount` bằng số tự tính — xoá mọi con số banker khai tay. Không xem trước, không xác nhận, không sao lưu. Bấm một cái là ghi thẳng vào danh mục.
+
+Bài học, ghi ở đây để không lặp lại: **một khuôn lặp lại trong dữ liệu là quy tắc cần hỏi, không phải lỗi cần sửa.** Và công cụ ghi hàng loạt phải có bước xem trước liệt kê đúng những gì sắp đổi, trước khi ghi dòng đầu tiên.
 
 Ràng buộc này cài trong **`buildDueDateSequence`** — nguồn duy nhất sinh dãy ngày đến hạn. Có **hai** đường ghi ngày đến nợ và cả hai đều phải đi qua đó: `generateSchedule` khi tạo lịch mới, và `redateSchedules` khi banker sửa mốc trả nợ của một KUNN **đã có lịch**. Cài chốt ở một đường không bịt được đường kia: bản chép tay trong `LoanPortfolioView` từng làm chính điều đó, khiến hồ sơ NGÔ NHỊ ĐẠT tái tạo lại được lỗi cũ sau khi đường tạo mới đã sửa. Thêm đường ghi ngày thứ ba thì cũng phải gọi hàm này, đừng cộng tháng bằng tay.
 

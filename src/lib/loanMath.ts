@@ -123,8 +123,7 @@ function dueDateAtCycle(anchor: DueDateAnchor, n: number): string {
 export function buildDueDateSequence(
   repaymentStartDateStr?: string | null,
   periods?: number | null,
-  disbursementDateStr?: string | null,
-  maturityDateStr?: string | null
+  disbursementDateStr?: string | null
 ): string[] {
   const count = Math.max(0, Math.floor(periods || 0));
   if (count === 0) return [];
@@ -132,67 +131,17 @@ export function buildDueDateSequence(
   const anchor = resolveFirstDueAnchor(repaymentStartDateStr, disbursementDateStr);
   const dates: string[] = [];
   for (let i = 1; i <= count; i++) dates.push(dueDateAtCycle(anchor, i));
-
-  const daoHan = (maturityDateStr || '').trim();
-  if (daoHan) {
-    const kyTruoc = count === 1
-      ? (disbursementDateStr || repaymentStartDateStr || '')
-      : dates[count - 2];
-    if (shouldPullLastPeriodToMaturity(kyTruoc, daoHan)) dates[count - 1] = daoHan;
-  }
-
   return dates;
-}
-
-export function shouldPullLastPeriodToMaturity(
-  prevDueDateStr?: string | null,
-  maturityDateStr?: string | null
-): boolean {
-  const prev = (prevDueDateStr || '').trim();
-  const daoHan = (maturityDateStr || '').trim();
-  if (!prev || !daoHan) return false;
-  return getDaysBetween(prev, daoHan) > 1;
-}
-
-export function alignLastPeriodToMaturity(
-  schedules: RepaymentSchedule[],
-  maturityDateStr?: string | null
-): RepaymentSchedule[] {
-  if (!schedules || schedules.length === 0) return [];
-
-  const sorted = [...schedules].sort((a, b) => a.PeriodNumber - b.PeriodNumber);
-  const last = sorted[sorted.length - 1];
-  const daoHan = (maturityDateStr || '').trim();
-
-  if (!daoHan || last.IsPaid || last.DueDate === daoHan) return sorted;
-
-  const prev = sorted.length === 1 ? last.DueDate : sorted[sorted.length - 2].DueDate;
-  if (!shouldPullLastPeriodToMaturity(prev, daoHan)) return sorted;
-
-  return sorted.map((s, i) =>
-    i === sorted.length - 1 ? { ...s, DueDate: daoHan } : s
-  );
-}
-
-export function needsLastPeriodAlignment(
-  schedules: RepaymentSchedule[],
-  maturityDateStr?: string | null
-): boolean {
-  if (!schedules || schedules.length === 0) return false;
-  const before = [...schedules].sort((a, b) => a.PeriodNumber - b.PeriodNumber);
-  const after = alignLastPeriodToMaturity(schedules, maturityDateStr);
-  return before[before.length - 1].DueDate !== after[after.length - 1].DueDate;
 }
 
 export function redateSchedules(
   schedules: RepaymentSchedule[],
   repaymentStartDateStr?: string | null,
-  disbursementDateStr?: string | null,
-  maturityDateStr?: string | null
+  disbursementDateStr?: string | null
 ): RepaymentSchedule[] {
   if (!schedules || schedules.length === 0) return [];
   const dueDates = buildDueDateSequence(
-    repaymentStartDateStr, schedules.length, disbursementDateStr, maturityDateStr
+    repaymentStartDateStr, schedules.length, disbursementDateStr
   );
   return schedules.map((s, idx) => s.IsPaid
     ? { ...s }
@@ -213,15 +162,12 @@ export function generateSchedule(
   prepaymentPeriod: number = 0,
   prepaymentMode: 'reduce_monthly' | 'shorten_tenor' = 'reduce_monthly',
   rateHistory?: RateAdjustmentHistoryItem[],
-  prefInfo?: { prefRate: number; prefMonths: number; postPrefRate: number },
-  maturityDateStr?: string
+  prefInfo?: { prefRate: number; prefMonths: number; postPrefRate: number }
 ): Partial<RepaymentSchedule>[] {
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
 
-  const dueDates = buildDueDateSequence(
-    repaymentStartDateStr, periods, disbursementDateStr, maturityDateStr
-  );
+  const dueDates = buildDueDateSequence(repaymentStartDateStr, periods, disbursementDateStr);
 
   const defaultAnnualRate = interestRate > 1 ? interestRate / 100 : interestRate;
 

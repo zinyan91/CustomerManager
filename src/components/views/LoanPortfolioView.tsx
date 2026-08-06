@@ -356,8 +356,7 @@ export const LoanPortfolioView: React.FC = () => {
             1,
             'reduce_monthly',
             history,
-            undefined,
-            savedContract.KunnDueDate || savedContract.ContractEndDate || undefined
+            undefined
           );
           await bulkSaveRepaymentSchedulesAPI(generated);
           const newScheds = await fetchRepaymentSchedulesAPI(savedContract.Id);
@@ -367,8 +366,7 @@ export const LoanPortfolioView: React.FC = () => {
           const updatedWithNewDates = redateSchedules(
             existingScheds,
             repayStartDate,
-            savedContract.DisbursementDate || savedContract.ContractStartDate || undefined,
-            savedContract.KunnDueDate || savedContract.ContractEndDate || undefined
+            savedContract.DisbursementDate || savedContract.ContractStartDate || undefined
           );
 
           const recalculated = recalculateSchedules(updatedWithNewDates, savedContract);

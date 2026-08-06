@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useTheme } from './context/ThemeContext';
 import { useAuth } from './context/AuthContext';
 import { useWork } from './context/WorkContext';
 import { LoginView } from './components/LoginView';
@@ -23,21 +22,12 @@ import { PostLoanControlView } from './components/views/PostLoanControlView';
 export function App() {
   const { activeTab, setActiveTab } = useWork();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { theme } = useTheme();
   const { session, loading } = useAuth();
-
-  const bgClass = theme === 'light'
-    ? 'bg-slate-50 text-slate-900'
-    : 'bg-slate-950 text-slate-100';
-
-  const mainClass = theme === 'light'
-    ? 'bg-slate-100'
-    : '';
 
   if (loading) {
     return (
-      <div className={`min-h-screen ${bgClass} flex items-center justify-center`}>
-        <Loader2 className="w-6 h-6 animate-spin text-sky-500" />
+      <div className="min-h-screen bg-surface text-ink flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-accent" />
       </div>
     );
   }
@@ -47,16 +37,16 @@ export function App() {
   }
 
   return (
-    <div className={`min-h-screen ${bgClass} flex flex-col font-sans antialiased transition-colors duration-200`}>
+    <div className="min-h-screen bg-surface text-ink flex flex-col font-sans antialiased">
       <Header onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)} />
-      <div className="flex flex-1 pt-[53px] md:pt-[57px] relative">
+      <div className="flex flex-1 pt-[var(--header-h)] relative">
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           isOpenMobile={isMobileMenuOpen}
           onCloseMobile={() => setIsMobileMenuOpen(false)}
         />
-        <main className={`flex-1 md:ml-60 min-w-0 p-3 sm:p-4 md:p-6 overflow-y-auto ${mainClass}`}>
+        <main className="flex-1 md:ml-60 min-w-0 bg-surface p-3 sm:p-4 md:p-6 overflow-y-auto">
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'customers' && <CustomerListView />}
           {activeTab === 'credit-contracts' && <CreditContractView />}

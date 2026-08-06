@@ -1,6 +1,7 @@
 import React from 'react';
 import { LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings, Calculator, FileSignature, Target, Percent, Landmark, Handshake, X } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
+import { useLang } from '../context/LanguageContext';
+import type { TranslationKey } from '../lib/i18n';
 
 interface SidebarProps {
   activeTab: string;
@@ -9,38 +10,52 @@ interface SidebarProps {
   onCloseMobile?: () => void;
 }
 
+const menuGroups: {
+  groupKey: TranslationKey;
+  items: { id: string; labelKey: TranslationKey; icon: React.ElementType }[];
+}[] = [
+  {
+    groupKey: 'nav.groupOverview',
+    items: [
+      { id: 'dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+    ],
+  },
+  {
+    groupKey: 'nav.groupRecords',
+    items: [
+      { id: 'customers', labelKey: 'nav.customers', icon: Users },
+      { id: 'credit-contracts', labelKey: 'nav.creditContracts', icon: Handshake },
+      { id: 'loans', labelKey: 'nav.loans', icon: FileText },
+      { id: 'collaterals', labelKey: 'nav.collaterals', icon: Building2 },
+      { id: 'credit-cards', labelKey: 'nav.creditCards', icon: CreditCard },
+    ],
+  },
+  {
+    groupKey: 'nav.groupTools',
+    items: [
+      { id: 'calculators', labelKey: 'nav.calculators', icon: Calculator },
+      { id: 'mdsdv', labelKey: 'nav.mdsdv', icon: Target },
+      { id: 'rate-quote', labelKey: 'nav.rateQuote', icon: Percent },
+      { id: 'cof', labelKey: 'nav.cof', icon: Landmark },
+      { id: 'templates', labelKey: 'nav.templates', icon: FileSignature },
+    ],
+  },
+  {
+    groupKey: 'nav.groupControl',
+    items: [
+      { id: 'post-loan', labelKey: 'nav.postLoan', icon: ShieldAlert },
+      { id: 'settings', labelKey: 'nav.settings', icon: Settings },
+    ],
+  },
+];
+
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
   isOpenMobile = false,
   onCloseMobile,
 }) => {
-  const { theme } = useTheme();
-
-  const menuItems = [
-    { id: 'dashboard', label: 'Tổng Quan Dashboard', icon: LayoutDashboard },
-    { id: 'customers', label: 'Danh Sách Khách Hàng', icon: Users },
-    { id: 'credit-contracts', label: 'Hợp Đồng Tín Dụng', icon: Handshake },
-    { id: 'loans', label: 'Quản Lý Khoản Vay (KUNN)', icon: FileText },
-    { id: 'collaterals', label: 'Định Giá TSĐB', icon: Building2 },
-    { id: 'credit-cards', label: 'Thẻ Tín Dụng', icon: CreditCard },
-    { id: 'calculators', label: 'Công Cụ Tính Toán', icon: Calculator },
-    { id: 'mdsdv', label: 'Tra Cứu Mục Đích SDV', icon: Target },
-    { id: 'rate-quote', label: 'Chào Lãi Suất', icon: Percent },
-    { id: 'cof', label: 'Mua Bán Vốn Nội Bộ', icon: Landmark },
-    { id: 'templates', label: 'Soạn Biểu Mẫu HĐ', icon: FileSignature },
-    { id: 'post-loan', label: 'Kiểm Soát Sau Vay', icon: ShieldAlert },
-    { id: 'settings', label: 'Cấu Hình & Cài Đặt', icon: Settings },
-  ];
-
-  const isLight = theme === 'light';
-  const sidebarBg = isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800';
-  const labelColor = isLight ? 'text-slate-400' : 'text-slate-500';
-  const footerBorder = isLight ? 'border-slate-200' : 'border-slate-800';
-  const footerText = isLight ? 'text-slate-400' : 'text-slate-500';
-  const inactiveClass = isLight
-    ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800';
+  const { t } = useLang();
 
   const handleTabClick = (tabId: string) => {
     setActiveTab(tabId);
@@ -49,57 +64,59 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-
       {isOpenMobile && (
         <div
-          className="fixed top-[53px] inset-x-0 bottom-0 bg-slate-950/70 backdrop-blur-xs z-40 md:hidden transition-opacity"
+          className="fixed top-[var(--header-h)] inset-x-0 bottom-0 bg-surface/80 z-40 md:hidden"
           onClick={onCloseMobile}
         />
       )}
 
       <aside
-        className={`fixed top-[53px] md:top-[57px] bottom-0 left-0 z-40 w-64 md:w-60 ${sidebarBg} border-r flex flex-col justify-between p-3 overflow-y-auto shrink-0 transition-transform duration-200 ease-in-out ${
+        className={`fixed top-[var(--header-h)] bottom-0 left-0 z-40 w-64 md:w-60 bg-panel border-r border-line flex flex-col shrink-0 transition-transform duration-200 ease-in-out ${
           isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
         }`}
       >
-        <div className="space-y-1">
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className={`text-[11px] font-bold ${labelColor} uppercase tracking-wider`}>
-              Phân Hệ Chức Năng
-            </span>
-            <button
-              type="button"
-              onClick={onCloseMobile}
-              className="md:hidden text-slate-400 hover:text-slate-200 p-1"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+        <button
+          type="button"
+          onClick={onCloseMobile}
+          className="md:hidden self-end m-2 p-1.5 rounded-md text-ink-faint hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          aria-label={t('header.closeMenu')}
+        >
+          <X className="w-4 h-4" />
+        </button>
 
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleTabClick(item.id)}
-                className={`w-full flex items-center space-x-2.5 px-3 py-2.5 md:py-2 rounded-xl md:rounded-lg font-medium text-xs transition-all ${
-                  isActive
-                    ? 'bg-sky-600 text-white font-semibold shadow-sm'
-                    : inactiveClass
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className="truncate">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        <nav className="flex-1 overflow-y-auto px-2 py-3">
+          {menuGroups.map((group, gi) => (
+            <div key={group.groupKey} className={gi === 0 ? '' : 'mt-5'}>
+              <div className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                {t(group.groupKey)}
+              </div>
+              {group.items.map(item => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabClick(item.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`w-full flex items-center gap-2.5 pl-2.5 pr-3 py-1.5 border-l-2 text-xs text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
+                      isActive
+                        ? 'border-accent bg-accent-soft text-accent font-semibold'
+                        : 'border-transparent text-ink-muted hover:text-ink hover:bg-panel-muted'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-accent' : 'text-ink-faint'}`} />
+                    <span className="truncate">{t(item.labelKey)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
 
-        <div className={`border-t ${footerBorder} pt-3 px-3 text-center`}>
-          <div className={`text-[11px] ${footerText} font-semibold font-mono tracking-wide`}>
-            v2.4.0 • Customer Manager
-          </div>
+        <div className="border-t border-line px-4 py-3 flex items-baseline justify-between">
+          <span className="text-[10px] uppercase tracking-[0.12em] text-ink-faint">{t('header.version')}</span>
+          <span className="font-mono text-ink-muted">2.4.0</span>
         </div>
       </aside>
     </>

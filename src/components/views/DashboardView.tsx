@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { UI } from '../../lib/uiClasses';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
 import { fmtDate, parseAnyDate, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
 import { assetClassLabel } from '../../lib/collateralMath';
@@ -7,16 +8,12 @@ import {
   DUE_FILTER_LABELS, monthlyDueInfo, type DueFilter,
 } from '../../lib/dueList';
 import type { Customer, Collateral, LoanContract } from '../../types';
-import { useTheme } from '../../context/ThemeContext';
 import {
   DollarSign, Users, Building2, AlertCircle, RefreshCw,
   Calendar, Clock, ShieldAlert, FileText, AlertTriangle, Printer
 } from 'lucide-react';
 
 export const DashboardView: React.FC = () => {
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
-
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
   const [contracts, setContracts] = useState<LoanContract[]>([]);
@@ -225,13 +222,13 @@ export const DashboardView: React.FC = () => {
 
   const fmtFullMoney = (val: number) => val.toLocaleString('vi-VN') + ' VNĐ';
 
-  const cardBg = isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100';
-  const tableHeaderBg = isLight ? 'bg-slate-100 text-slate-700' : 'bg-slate-950 text-slate-400';
+  const cardBg = UI.containerCardBg;
+  const tableHeaderBg = 'bg-panel-muted text-ink-muted';
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-sky-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent"></div>
       </div>
     );
   }
@@ -239,16 +236,16 @@ export const DashboardView: React.FC = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
 
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+      <div className="flex items-center justify-between border-b border-line pb-3">
         <div>
-          <h2 className="text-base font-bold uppercase tracking-tight flex items-center space-x-2 text-slate-900 dark:text-slate-100">
-            <Building2 className="w-5 h-5 text-sky-500" />
+          <h2 className="text-base font-bold uppercase tracking-tight flex items-center space-x-2 text-ink">
+            <Building2 className="w-5 h-5 text-accent" />
             <span>BÁO CÁO QUẢN TRỊ DƯ NỢ & HẠN MỨC TÍN DỤNG</span>
           </h2>
         </div>
         <button
           onClick={fetchDashboardData}
-          className="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl flex items-center space-x-1.5 font-bold shadow-sm transition-colors"
+          className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-2 rounded-xl flex items-center space-x-1.5 font-bold shadow-sm transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>CẬP NHẬT DỮ LIỆU</span>
@@ -258,52 +255,52 @@ export const DashboardView: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
           <div>
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TỔNG SỐ KHÁCH HÀNG</div>
-            <div className="text-2xl font-extrabold text-sky-600 dark:text-sky-400 mt-1">
-              {totalCustomersCount} <span className="text-xs font-normal text-slate-500">khách hàng</span>
+            <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">TỔNG SỐ KHÁCH HÀNG</div>
+            <div className="text-2xl font-extrabold text-accent mt-1">
+              {totalCustomersCount} <span className="text-xs font-normal text-ink-faint">khách hàng</span>
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">Đang giao dịch & quản lý tín dụng</div>
+            <div className="text-[11px] text-ink-faint mt-1">Đang giao dịch & quản lý tín dụng</div>
           </div>
-          <div className="p-3 bg-sky-50 dark:bg-sky-950/60 rounded-xl text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+          <div className="p-3 bg-accent-soft rounded-xl text-accent border border-accent/30">
             <Users className="w-6 h-6" />
           </div>
         </div>
 
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
           <div>
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TỔNG QUY MÔ DƯ NỢ</div>
-            <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
+            <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">TỔNG QUY MÔ DƯ NỢ</div>
+            <div className="text-2xl font-extrabold text-pos mt-1">
               {formatMoney(totalDebt)}
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">Tổng hạn mức cấp: {formatMoney(totalLimit)}</div>
+            <div className="text-[11px] text-ink-faint mt-1">Tổng hạn mức cấp: {formatMoney(totalLimit)}</div>
           </div>
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 rounded-xl text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+          <div className="p-3 bg-pos-soft rounded-xl text-pos border border-pos/30">
             <DollarSign className="w-6 h-6" />
           </div>
         </div>
 
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
           <div>
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TỔNG GIÁ TRỊ TSĐB</div>
-            <div className="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">
+            <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">TỔNG GIÁ TRỊ TSĐB</div>
+            <div className="text-2xl font-extrabold text-warn mt-1">
               {formatMoney(totalCollateralVal)}
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">LTV bình quân: <strong className="text-sky-600 dark:text-sky-400">{weightedLtv.toFixed(1)}%</strong> ({collaterals.length} TS)</div>
+            <div className="text-[11px] text-ink-faint mt-1">LTV bình quân: <strong className="text-accent">{weightedLtv.toFixed(1)}%</strong> ({collaterals.length} TS)</div>
           </div>
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/60 rounded-xl text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+          <div className="p-3 bg-warn-soft rounded-xl text-warn border border-warn/30">
             <Building2 className="w-6 h-6" />
           </div>
         </div>
 
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm flex items-center justify-between`}>
           <div>
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">CẢNH BÁO TỚI HẠN</div>
-            <div className="text-2xl font-extrabold text-rose-600 dark:text-rose-400 mt-1">
-              {dueInMonthList.length + dueKunnList.length + dueHmtdList.length + dueCollateralList.length} <span className="text-xs font-normal text-slate-500">hạng mục</span>
+            <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider">CẢNH BÁO TỚI HẠN</div>
+            <div className="text-2xl font-extrabold text-neg mt-1">
+              {dueInMonthList.length + dueKunnList.length + dueHmtdList.length + dueCollateralList.length} <span className="text-xs font-normal text-ink-faint">hạng mục</span>
             </div>
-            <div className="text-[11px] text-slate-500 mt-1">Cần theo dõi & xử lý ngay</div>
+            <div className="text-[11px] text-ink-faint mt-1">Cần theo dõi & xử lý ngay</div>
           </div>
-          <div className="p-3 bg-rose-50 dark:bg-rose-950/60 rounded-xl text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+          <div className="p-3 bg-neg-soft rounded-xl text-neg border border-neg/30">
             <AlertCircle className="w-6 h-6" />
           </div>
         </div>
@@ -311,7 +308,7 @@ export const DashboardView: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm space-y-3`}>
-          <div className="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider flex items-center space-x-1.5">
+          <div className="text-xs font-bold text-accent uppercase tracking-wider flex items-center space-x-1.5">
             <FileText className="w-4 h-4" />
             <span>DƯ NỢ THEO PHƯƠNG THỨC VAY</span>
           </div>
@@ -322,10 +319,10 @@ export const DashboardView: React.FC = () => {
                 <div key={item.method} className="space-y-1">
                   <div className="flex justify-between text-xs font-medium">
                     <span>{item.method} ({item.count} khoản)</span>
-                    <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{formatMoney(item.amount)} ({percent.toFixed(1)}%)</span>
+                    <span className="font-mono font-bold text-accent">{formatMoney(item.amount)} ({percent.toFixed(1)}%)</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-sky-500 rounded-full transition-all" style={{ width: `${Math.min(100, percent)}%` }} />
+                  <div className="w-full h-2 bg-panel-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${Math.min(100, percent)}%` }} />
                   </div>
                 </div>
               );
@@ -334,22 +331,22 @@ export const DashboardView: React.FC = () => {
         </div>
 
         <div className={`${cardBg} p-4 rounded-2xl border shadow-sm space-y-3`}>
-          <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center space-x-1.5">
+          <div className="text-xs font-bold text-pos uppercase tracking-wider flex items-center space-x-1.5">
             <ShieldAlert className="w-4 h-4" />
             <span>PHÂN BỔ DƯ NỢ THEO NHÓM NỢ (NHÓM 1 - 5)</span>
           </div>
           <div className="space-y-2.5">
             {debtGroupStats.map(item => {
               const percent = totalDebt > 0 ? (item.amount / totalDebt) * 100 : 0;
-              const colorClass = item.group === 1 ? 'bg-emerald-500' : item.group === 2 ? 'bg-amber-500' : 'bg-rose-600';
-              const textClass = item.group === 1 ? 'text-emerald-600 dark:text-emerald-400' : item.group === 2 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400';
+              const colorClass = item.group === 1 ? 'bg-pos' : item.group === 2 ? 'bg-warn' : 'bg-neg';
+              const textClass = item.group === 1 ? 'text-pos ' : item.group === 2 ? 'text-warn ' : 'text-neg ';
               return (
                 <div key={item.group} className="space-y-1">
                   <div className="flex justify-between text-xs font-medium">
                     <span>Nhóm {item.group} ({item.count} HĐ)</span>
                     <span className={`font-mono font-bold ${textClass}`}>{formatMoney(item.amount)} ({percent.toFixed(1)}%)</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-panel-muted rounded-full overflow-hidden">
                     <div className={`h-full ${colorClass} rounded-full transition-all`} style={{ width: `${Math.min(100, percent)}%` }} />
                   </div>
                 </div>
@@ -360,17 +357,17 @@ export const DashboardView: React.FC = () => {
       </div>
 
       <div className={`${cardBg} rounded-2xl p-3.5 border shadow-sm flex flex-wrap items-center justify-between gap-3`}>
-        <div className="flex items-center space-x-2 text-xs font-bold text-slate-700 dark:text-slate-200">
-          <ShieldAlert className="w-4 h-4 text-sky-500" />
+        <div className="flex items-center space-x-2 text-xs font-bold text-ink">
+          <ShieldAlert className="w-4 h-4 text-accent" />
           <span>BỘ LỌC BÁO CÁO CẢNH BÁO DƯ NỢ:</span>
         </div>
-        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+        <div className="flex items-center bg-panel-muted p-1 rounded-xl">
           <button
             type="button"
             onClick={() => setOnlyGroup1(true)}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${onlyGroup1
-              ? 'bg-sky-600 text-white shadow-sm'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-accent text-accent-ink shadow-sm'
+              : 'text-ink-faint hover:text-ink'
               }`}
           >
             ✓ Chỉ xem Nợ Nhóm 1 (Chuẩn đủ điều kiện)
@@ -379,8 +376,8 @@ export const DashboardView: React.FC = () => {
             type="button"
             onClick={() => setOnlyGroup1(false)}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${!onlyGroup1
-              ? 'bg-amber-600 text-white shadow-sm'
-              : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-warn text-accent-ink shadow-sm'
+              : 'text-ink-faint hover:text-ink'
               }`}
           >
             Bao gồm cả Nợ Nhóm 2+ (Nợ chú ý & Nợ xấu)
@@ -389,27 +386,27 @@ export const DashboardView: React.FC = () => {
       </div>
 
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+        <div className="flex items-center justify-between border-b border-line pb-2">
           <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4 text-amber-500" />
-            <h3 className="font-bold text-xs uppercase tracking-wider text-amber-600 dark:text-amber-400">
+            <Calendar className="w-4 h-4 text-warn" />
+            <h3 className="font-bold text-xs uppercase tracking-wider text-warn">
               1. KHÁCH HÀNG CHUẨN BỊ ĐÓNG KỲ DUE CỦA THÁNG
             </h3>
           </div>
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-warn-soft text-warn border border-warn/30">
             {dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) >= 0).length} sắp đến · {dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) < 0).length} quá hạn
           </span>
         </div>
 
         {dueInMonthList.length === 0 ? (
-          <div className="text-center py-6 text-xs text-slate-400 italic">
+          <div className="text-center py-6 text-xs text-ink-faint italic">
             Không có khách hàng nào tới hạn hoặc quá hạn đóng kỳ trong kỳ này.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className={`${tableHeaderBg} font-bold border-b border-slate-200 dark:border-slate-800`}>
+                <tr className={`${tableHeaderBg} font-bold border-b border-line`}>
                   <th className="p-2.5">KHÁCH HÀNG VAY</th>
                   <th className="p-2.5">MÃ CIF</th>
                   <th className="p-2.5">SỐ HĐTD / KUNN</th>
@@ -418,25 +415,25 @@ export const DashboardView: React.FC = () => {
                   <th className="p-2.5 text-center">HẠN CÒN LẠI</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-line">
                 {dueInMonthList.map(({ contract, customer, dueInfo }) => {
                   const dl = dueInfo?.daysLeft ?? 0;
                   const isOverdue = dl < 0;
                   const badgeCls = isOverdue
-                    ? 'bg-rose-600 text-white border border-rose-500 font-bold animate-pulse'
+                    ? 'bg-neg text-white border border-neg font-bold animate-pulse'
                     : dl <= 2
-                      ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800'
-                      : 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800';
+                      ? 'bg-neg-soft text-neg border border-neg/30   '
+                      : 'bg-warn-soft text-warn border border-warn/30   ';
                   const badgeText = isOverdue ? `🔴 Quá hạn ${Math.abs(dl)} ngày` : `Còn ${dl} ngày`;
                   return (
-                    <tr key={contract.Id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isOverdue ? 'bg-rose-50/30 dark:bg-rose-950/10' : ''}`}>
+                    <tr key={contract.Id} className={`hover:bg-panel-muted transition-colors ${isOverdue ? 'bg-neg-soft ' : ''}`}>
                       <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
-                      <td className="p-2.5 font-mono text-sky-600 dark:text-sky-400">{customer?.CifKh || 'N/A'}</td>
+                      <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
                       <td className="p-2.5 font-mono">{contract.ContractNumber}</td>
-                      <td className="p-2.5 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                      <td className="p-2.5 text-right font-mono font-bold text-warn">
                         {fmtFullMoney(contract.CurrentBalance ?? contract.LoanAmount ?? contract.ContractAmount ?? 0)}
                       </td>
-                      <td className="p-2.5 text-center font-bold text-sky-600 dark:text-sky-400">{dueInfo?.dueDateStr}</td>
+                      <td className="p-2.5 text-center font-bold text-accent">{dueInfo?.dueDateStr}</td>
                       <td className="p-2.5 text-center">
                         <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${badgeCls}`}>
                           {badgeText}
@@ -452,15 +449,15 @@ export const DashboardView: React.FC = () => {
       </div>
 
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+        <div className="flex items-center justify-between border-b border-line pb-2">
           <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4 text-sky-500" />
-            <h3 className="font-bold text-xs uppercase tracking-wider text-sky-600 dark:text-sky-400">
+            <Clock className="w-4 h-4 text-accent" />
+            <h3 className="font-bold text-xs uppercase tracking-wider text-accent">
               2. DANH SÁCH GIẤY NHẬN NỢ (KUNN) SẮP ĐẾN HẠN KẾT THÚC
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-accent/30">
               {kunnCount.upcoming} sắp đến · {kunnCount.expired} quá hạn
             </span>
           <div className="flex items-center gap-1.5">
@@ -468,16 +465,15 @@ export const DashboardView: React.FC = () => {
               <button key={f} type="button" onClick={() => setKunnFilter(f)}
                 className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors ${
                   kunnFilter === f
-                    ? 'bg-sky-600 text-white'
-                    : isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800'
+                    ? 'bg-accent text-accent-ink'
+                    : 'text-ink-faint hover:bg-panel-muted'
                 }`}>
                 {DUE_FILTER_LABELS[f]}
               </button>
             ))}
             <button type="button" onClick={inKunn}
               className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border ${
-                isLight ? 'bg-white border-slate-300 text-slate-600 hover:border-sky-400'
-                        : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-sky-500'
+                'bg-panel border-line text-ink-muted hover:border-accent hover:text-accent'
               }`}>
               <Printer className="w-3 h-3" />PDF
             </button>
@@ -486,14 +482,14 @@ export const DashboardView: React.FC = () => {
         </div>
 
         {kunnRows.length === 0 ? (
-          <div className="text-center py-6 text-xs text-slate-400 italic">
+          <div className="text-center py-6 text-xs text-ink-faint italic">
             Không có KUNN nào sắp đến hạn hoặc quá hạn kết thúc.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className={`${tableHeaderBg} font-bold border-b border-slate-200 dark:border-slate-800`}>
+                <tr className={`${tableHeaderBg} font-bold border-b border-line`}>
                   <th className="p-2.5">KHÁCH HÀNG VAY</th>
                   <th className="p-2.5">MÃ CIF</th>
                   <th className="p-2.5">SỐ HĐTD / KUNN</th>
@@ -503,25 +499,25 @@ export const DashboardView: React.FC = () => {
                   <th className="p-2.5 text-center">HẠN CÒN LẠI</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-line">
                 {kunnRows.map(({ contract, customer, daysLeft }) => {
                   const dl = daysLeft ?? 0;
                   const isOverdue = dl < 0;
                   const badgeCls = isOverdue
-                    ? 'bg-rose-600 text-white border border-rose-500 font-bold animate-pulse'
+                    ? 'bg-neg text-white border border-neg font-bold animate-pulse'
                     : dl <= 3
-                      ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-800'
-                      : 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800';
+                      ? 'bg-neg-soft text-neg border border-neg/30   '
+                      : 'bg-warn-soft text-warn border border-warn/30   ';
                   const badgeText = isOverdue ? `🔴 Quá hạn ${Math.abs(dl)} ngày` : `Còn ${dl} ngày`;
                   return (
-                    <tr key={contract.Id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isOverdue ? 'bg-rose-50/30 dark:bg-rose-950/10' : ''}`}>
+                    <tr key={contract.Id} className={`hover:bg-panel-muted transition-colors ${isOverdue ? 'bg-neg-soft ' : ''}`}>
                       <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
-                      <td className="p-2.5 font-mono text-sky-600 dark:text-sky-400">{customer?.CifKh || 'N/A'}</td>
+                      <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
                       <td className="p-2.5 font-mono">{contract.ContractNumber}</td>
-                      <td className="p-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      <td className="p-2.5 text-right font-mono font-bold text-pos">
                         {fmtFullMoney(contract.LoanAmount || contract.CurrentBalance || 0)}
                       </td>
-                      <td className="p-2.5 text-center font-bold text-sky-600 dark:text-sky-400">{fmtDate(contract.KunnDueDate)}</td>
+                      <td className="p-2.5 text-center font-bold text-accent">{fmtDate(contract.KunnDueDate)}</td>
                       <td className="p-2.5 text-center font-bold">{contract.KunnTenor || `${contract.LoanTenorMonths}T`}</td>
                       <td className="p-2.5 text-center">
                         <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${badgeCls}`}>
@@ -538,15 +534,15 @@ export const DashboardView: React.FC = () => {
       </div>
 
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+        <div className="flex items-center justify-between border-b border-line pb-2">
           <div className="flex items-center space-x-2">
-            <AlertTriangle className="w-4 h-4 text-purple-500" />
-            <h3 className="font-bold text-xs uppercase tracking-wider text-purple-600 dark:text-purple-400">
+            <AlertTriangle className="w-4 h-4 text-accent" />
+            <h3 className="font-bold text-xs uppercase tracking-wider text-accent">
               3. DANH SÁCH HẠN MỨC TÍN DỤNG (HMTD) SẮP TỚI HẠN KẾT THÚC
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-accent/30">
               {hmtdCount.upcoming} sắp đến · {hmtdCount.expired} quá hạn
             </span>
           <div className="flex items-center gap-1.5">
@@ -554,16 +550,15 @@ export const DashboardView: React.FC = () => {
               <button key={f} type="button" onClick={() => setHmtdFilter(f)}
                 className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors ${
                   hmtdFilter === f
-                    ? 'bg-purple-600 text-white'
-                    : isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800'
+                    ? 'bg-accent text-accent-ink'
+                    : 'text-ink-faint hover:bg-panel-muted'
                 }`}>
                 {DUE_FILTER_LABELS[f]}
               </button>
             ))}
             <button type="button" onClick={inHmtd}
               className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border ${
-                isLight ? 'bg-white border-slate-300 text-slate-600 hover:border-purple-400'
-                        : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-purple-500'
+                'bg-panel border-line text-ink-muted hover:border-accent hover:text-accent'
               }`}>
               <Printer className="w-3 h-3" />PDF
             </button>
@@ -572,14 +567,14 @@ export const DashboardView: React.FC = () => {
         </div>
 
         {hmtdRows.length === 0 ? (
-          <div className="text-center py-6 text-xs text-slate-400 italic">
+          <div className="text-center py-6 text-xs text-ink-faint italic">
             Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className={`${tableHeaderBg} font-bold border-b border-slate-200 dark:border-slate-800`}>
+                <tr className={`${tableHeaderBg} font-bold border-b border-line`}>
                   <th className="p-2.5">KHÁCH HÀNG VAY</th>
                   <th className="p-2.5">MÃ CIF</th>
                   <th className="p-2.5">SỐ HĐTD HẠN MỨC</th>
@@ -588,32 +583,32 @@ export const DashboardView: React.FC = () => {
                   <th className="p-2.5 text-center">TRẠNG THÁI HẠN MỨC (MÀU)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-line">
                 {hmtdRows.map(({ masterNo, contract, customer, endDateStr, daysLeft }) => {
                   const days = daysLeft ?? 0;
                   const isOverdue = days < 0;
                   let badgeStyle = '';
                   let statusText = '';
                   if (isOverdue) {
-                    badgeStyle = 'bg-rose-600 text-white border border-rose-500 font-bold animate-pulse';
+                    badgeStyle = 'bg-neg text-white border border-neg font-bold animate-pulse';
                     statusText = `🔴 Đã hết hạn (${Math.abs(days)} ngày)`;
                   } else if (days >= 21) {
-                    badgeStyle = 'bg-emerald-50 text-emerald-600 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800';
+                    badgeStyle = 'bg-pos-soft text-pos border border-pos/30   ';
                     statusText = `🟢 An toàn (Còn ${days} ngày)`;
                   } else if (days >= 6) {
-                    badgeStyle = 'bg-amber-50 text-amber-600 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800 font-bold';
+                    badgeStyle = 'bg-warn-soft text-warn border border-warn/30    font-bold';
                     statusText = `🟡 Cần chú ý (Còn ${days} ngày)`;
                   } else {
-                    badgeStyle = 'bg-rose-600 text-white border border-rose-500 font-bold animate-pulse';
+                    badgeStyle = 'bg-neg text-white border border-neg font-bold animate-pulse';
                     statusText = `🔴 Khẩn cấp (Còn ${days} ngày)`;
                   }
 
                   return (
-                    <tr key={masterNo} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${isOverdue ? 'bg-rose-50/30 dark:bg-rose-950/10' : ''}`}>
+                    <tr key={masterNo} className={`hover:bg-panel-muted transition-colors ${isOverdue ? 'bg-neg-soft ' : ''}`}>
                       <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
-                      <td className="p-2.5 font-mono text-sky-600 dark:text-sky-400">{customer?.CifKh || 'N/A'}</td>
-                      <td className="p-2.5 font-mono font-bold text-purple-600 dark:text-purple-400">{masterNo}</td>
-                      <td className="p-2.5 text-right font-mono font-bold text-sky-600 dark:text-sky-400">
+                      <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
+                      <td className="p-2.5 font-mono font-bold text-accent">{masterNo}</td>
+                      <td className="p-2.5 text-right font-mono font-bold text-accent">
                         {fmtFullMoney(contract.ContractAmount || 0)}
                       </td>
                       <td className="p-2.5 text-center font-bold">{fmtDate(endDateStr)}</td>
@@ -632,15 +627,15 @@ export const DashboardView: React.FC = () => {
       </div>
 
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+        <div className="flex items-center justify-between border-b border-line pb-2">
           <div className="flex items-center space-x-2">
-            <Building2 className="w-4 h-4 text-emerald-500" />
-            <h3 className="font-bold text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+            <Building2 className="w-4 h-4 text-pos" />
+            <h3 className="font-bold text-xs uppercase tracking-wider text-pos">
               4. DANH SÁCH ĐỊNH GIÁ TÀI SẢN BẢO ĐẢM SẮP TỚI HẠN
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-pos-soft text-pos border border-pos/30">
               {tsbdCount.upcoming} sắp đến · {tsbdCount.expired} quá hạn
             </span>
           <div className="flex items-center gap-1.5">
@@ -648,16 +643,15 @@ export const DashboardView: React.FC = () => {
               <button key={f} type="button" onClick={() => setTsbdFilter(f)}
                 className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors ${
                   tsbdFilter === f
-                    ? 'bg-emerald-600 text-white'
-                    : isLight ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-800'
+                    ? 'bg-pos text-accent-ink'
+                    : 'text-ink-faint hover:bg-panel-muted'
                 }`}>
                 {DUE_FILTER_LABELS[f]}
               </button>
             ))}
             <button type="button" onClick={inTsbd}
               className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border ${
-                isLight ? 'bg-white border-slate-300 text-slate-600 hover:border-emerald-400'
-                        : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-emerald-500'
+                'bg-panel border-line text-ink-muted hover:border-accent hover:text-accent'
               }`}>
               <Printer className="w-3 h-3" />PDF
             </button>
@@ -666,14 +660,14 @@ export const DashboardView: React.FC = () => {
         </div>
 
         {tsbdRows.length === 0 ? (
-          <div className="text-center py-6 text-xs text-slate-400 italic">
+          <div className="text-center py-6 text-xs text-ink-faint italic">
             Không có Định giá TSĐB nào sắp hết hạn trong 30 ngày tới.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className={`${tableHeaderBg} font-bold border-b border-slate-200 dark:border-slate-800`}>
+                <tr className={`${tableHeaderBg} font-bold border-b border-line`}>
                   <th className="p-2.5">CHỦ SỞ HỮU TSĐB</th>
                   <th className="p-2.5">MÃ CIF</th>
                   <th className="p-2.5">MÃ TS / ĐỊA CHỈ</th>
@@ -683,35 +677,35 @@ export const DashboardView: React.FC = () => {
                   <th className="p-2.5 text-center">TRẠNG THÁI (MÀU)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-line">
                 {tsbdRows.map(({ collateral, customer, expiryDateStr, daysLeft }) => {
                   const days = daysLeft ?? 0;
                   let badgeStyle = '';
                   let statusText = '';
                   if (days >= 16) {
-                    badgeStyle = 'bg-emerald-50 text-emerald-600 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800';
+                    badgeStyle = 'bg-pos-soft text-pos border border-pos/30   ';
                     statusText = `🟢 An toàn (Còn ${days} ngày)`;
                   } else if (days >= 1) {
-                    badgeStyle = 'bg-amber-50 text-amber-600 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-800 font-bold';
+                    badgeStyle = 'bg-warn-soft text-warn border border-warn/30    font-bold';
                     statusText = `🟡 Cần chú ý (Còn ${days} ngày)`;
                   } else {
-                    badgeStyle = 'bg-rose-600 text-white border border-rose-500 font-bold animate-pulse';
+                    badgeStyle = 'bg-neg text-white border border-neg font-bold animate-pulse';
                     statusText = `🔴 Đã hết hạn định giá (${Math.abs(days)} ngày quá hạn)`;
                   }
 
                   const val = collateral.AppraisedValue || collateral.Value || 0;
 
                   return (
-                    <tr key={collateral.Id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <tr key={collateral.Id} className="hover:bg-panel-muted transition-colors">
                       <td className="p-2.5 font-bold">{customer?.FullName || 'N/A'}</td>
-                      <td className="p-2.5 font-mono text-sky-600 dark:text-sky-400">{customer?.CifKh || 'N/A'}</td>
+                      <td className="p-2.5 font-mono text-accent">{customer?.CifKh || 'N/A'}</td>
                       <td className="p-2.5 font-medium">{collateral.AssetCode || collateral.Address || 'TSBĐ'}</td>
                       <td className="p-2.5">
-                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-accent-soft text-accent border border-accent/30">
                           {assetClassLabel(collateral.AssetType)}
                         </span>
                       </td>
-                      <td className="p-2.5 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      <td className="p-2.5 text-right font-mono font-bold text-pos">
                         {fmtFullMoney(val)}
                       </td>
                       <td className="p-2.5 text-center font-bold">{expiryDateStr ? fmtDate(expiryDateStr) : 'N/A'}</td>

@@ -640,6 +640,16 @@ Trước đợt này thẻ **hoàn toàn vô hình** với chốt kiểm soát T
 
 Vượt trần thì **chặn lưu**, mở được bằng ô xác nhận ngoại lệ kèm lý do bắt buộc. Dấu vết nằm ở cột riêng `IsLtvException` / `LtvExceptionReason`, **không** nhét vào `Note`.
 
+`CreditCards` từng có **hai cột cùng nghĩa**: `CreditLimit` (web đọc) và `Limit` (WPF ghi, `NOT NULL` không mặc định). `saveCreditCardAPI` bóc `Limit` ra khỏi payload rồi không ghi lại, nên **cấp thẻ mới từ web chưa bao giờ chạy được** — đổ `null value in column "Limit"`. Migration 28 gộp về `CreditLimit` và xoá cột thừa. Đọc hạn mức thẻ dùng `cardGrantedLimit`, đừng viết lại `CreditLimit || Limit` — bẫy `||` khiến hạn mức 0 hợp lệ rơi xuống cột cũ.
+
+### Tàn dư WPF — cái gì đã gỡ, cái gì cố ý giữ
+
+Hệ thống đã chuyển hoàn toàn sang web (06/08/2026), ứng dụng WPF ngừng hoạt động. Migration 28 gỡ: cột `CreditCards.Limit`, và chuỗi `[CollateralId:` trong `Note` (backfill về cột `CollateralId` trước khi xoá, giữ nguyên ghi chú thật của banker).
+
+**`[PENALTY_RATE:` cố ý KHÔNG gỡ.** Đó là lãi suất phạt quá hạn theo từng khoản và **chưa có cột nào chứa** — gỡ đi là mất hẳn con số. `stripLegacyNoteBlobs` cũng cố tình bỏ qua nó. Chờ quyết định "lãi suất phạt có khác 150% theo từng khoản không" ở §1, có cột rồi mới gỡ.
+
+Còn tồn đọng, chưa xử lý trong đợt này: các nhánh đọc `[RATE_HISTORY:` / `[COLLATERAL_IDS:` / `[PENALTY_SURCHARGE:` trong `utils.ts`. Migration 24 đã dọn dữ liệu về 0 nên chúng là mã chết, nhưng chúng đụng vào lịch sử lãi suất nên đáng một đợt riêng có đối chiếu, không gỡ kèm.
+
 ### `creditContract.ts`
 
 | Hàm | Điều phải biết |

@@ -84,11 +84,10 @@ describe('thẻ được tính vào rủi ro của cụm', () => {
     expect(coThe[0].cardNumbers).toEqual(['4532••••1234']);
   });
 
-  it('thẻ đọc được mã tài sản từ chuỗi cũ trong Note', () => {
+  it('thẻ không gắn tài sản thì không vào cụm nào', () => {
     const so = ts({ Id: 9, AssetType: 'Sổ tiết kiệm', AppraisedValue: 100_000_000 });
-    const cards = [the({ CollateralId: null, Note: '[CollateralId:9]', CreditLimit: 50_000_000 })];
-    const kq = checkCollateralCapacity([], [so], undefined, HOM_NAY, cards);
-    expect(kq[0].granted).toBe(50_000_000);
+    const cards = [the({ CollateralId: null, CreditLimit: 50_000_000 })];
+    expect(checkCollateralCapacity([], [so], undefined, HOM_NAY, cards)).toEqual([]);
   });
 });
 
@@ -177,16 +176,16 @@ describe('checkCardLimit — ba trường hợp mở thẻ', () => {
   });
 });
 
-describe('cardGrantedLimit — đọc hạn mức thẻ từ hai cột song song', () => {
-  it('ưu tiên CreditLimit', () => {
-    expect(cardGrantedLimit(the({ CreditLimit: 200_000_000, Limit: 999 }))).toBe(200_000_000);
+describe('cardGrantedLimit', () => {
+  it('đọc hạn mức từ CreditLimit', () => {
+    expect(cardGrantedLimit(the({ CreditLimit: 200_000_000 }))).toBe(200_000_000);
   });
 
-  it('dữ liệu cũ chỉ có Limit thì vẫn đọc được', () => {
-    expect(cardGrantedLimit(the({ CreditLimit: undefined, Limit: 150_000_000 }))).toBe(150_000_000);
+  it('hạn mức 0 là giá trị thật, không phải thiếu dữ liệu', () => {
+    expect(cardGrantedLimit(the({ CreditLimit: 0 }))).toBe(0);
   });
 
-  it('CreditLimit bằng 0 là giá trị thật, không rơi xuống Limit', () => {
-    expect(cardGrantedLimit(the({ CreditLimit: 0, Limit: 999_000_000 }))).toBe(0);
+  it('chưa khai hạn mức thì bằng 0', () => {
+    expect(cardGrantedLimit(the({ CreditLimit: undefined }))).toBe(0);
   });
 });

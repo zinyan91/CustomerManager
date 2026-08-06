@@ -256,13 +256,11 @@ export function parseCollateralIds(c: LoanContract): number[] {
 }
 
 export function cardCollateralId(card: CreditCard): number | null {
-  if (card.CollateralId) return card.CollateralId;
-  const m = String(card.Note || '').match(/\[CollateralId:(\d+)\]/);
-  return m ? parseInt(m[1], 10) : null;
+  return card.CollateralId ?? null;
 }
 
 export function cardGrantedLimit(card: CreditCard): number {
-  return Math.max(0, card.CreditLimit ?? card.Limit ?? 0);
+  return Math.max(0, card.CreditLimit ?? 0);
 }
 
 export function clusterExposure(

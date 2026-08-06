@@ -119,16 +119,7 @@ export const CreditCardView: React.FC = () => {
     setInputNote(card.Note || '');
     setExceptionAck(!!card.IsLtvException);
     setExceptionReason(card.LtvExceptionReason || '');
-    if (card.CollateralId) {
-      setInputCollateralId(card.CollateralId);
-    } else if (card.Note && card.Note.includes('[CollateralId:')) {
-      const match = card.Note.match(/\[CollateralId:(\d+)\]/);
-      if (match && match[1]) {
-        setInputCollateralId(Number(match[1]));
-      }
-    } else {
-      setInputCollateralId('');
-    }
+    setInputCollateralId(card.CollateralId || '');
   };
 
   const handleResetForm = () => {
@@ -179,7 +170,6 @@ export const CreditCardView: React.FC = () => {
       CreditLimit: limitVal,
       IsLtvException: limitCheck.exceeded && exceptionAck,
       LtvExceptionReason: limitCheck.exceeded && exceptionAck ? exceptionReason.trim() : null,
-      Limit: limitVal,
       Note: inputNote.trim() || null,
     };
 
@@ -499,8 +489,7 @@ export const CreditCardView: React.FC = () => {
               ) : (
                 filteredCards.map((card) => {
                   const isSelected = selectedCard?.Id === card.Id;
-                  const linkedCol = allCollaterals.find(c => c.Id === card.CollateralId) ||
-                    (card.Note?.includes('[CollateralId:') ? allCollaterals.find(c => c.Id === Number(card.Note?.match(/\[CollateralId:(\d+)\]/)?.[1])) : null);
+                  const linkedCol = allCollaterals.find(c => c.Id === card.CollateralId) || null;
 
                   return (
                     <tr

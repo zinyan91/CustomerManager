@@ -55,6 +55,10 @@ Trả giá lần thứ hai ngày 05/08/2026 với `reports/05`: câu tìm "kỳ 
 
 Chỉ được kết luận một kỳ thu thiếu khi **có khai tay** ít nhất một trong `ActualPaidPrincipal` / `ActualPaidInterest` mà tổng vẫn dưới nghĩa vụ.
 
+Lần thứ ba, cùng ngày: câu kiểm bất biến Σgốc so `sum(PrincipalAmount)` với `LoanAmount` **trần**, trong khi `generateSchedule`, `recalculateSchedules` và `computeOutstandingBalance` đều dùng `LoanAmount || ContractAmount`. Hồ sơ ĐOÀN NGỌC LÝ `2002/HĐTD/9738792/GNN-01` có `LoanAmount = 0` nên lịch lấy 830.000.000 từ `ContractAmount` — câu sai báo bất biến quan trọng nhất của dự án bị phá. SQL đúng phải là `coalesce(nullif("LoanAmount", 0), "ContractAmount", 0)`.
+
+Chú ý toán tử: `||` cho phép số 0 rơi xuống nhánh sau, `??` thì không. `disbursedOf` trong `creditLimit.ts` dùng `LoanAmount ?? CurrentBalance ?? 0` nên với KUNN có `LoanAmount = 0` nó lấy **0**, khác hẳn ba hàm kia — cho vay từng lần sẽ khai thiếu số đã giải ngân và hạn mức khả dụng ra cao hơn thực tế.
+
 **Rà soát bảo mật liệt kê tài nguyên từ `pg_tables`,** không suy từ mã nguồn. Cách suy từ code từng bỏ sót 7 bảng đang mở.
 
 ---

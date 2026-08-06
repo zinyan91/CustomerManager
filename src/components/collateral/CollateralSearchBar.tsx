@@ -1,9 +1,9 @@
 import React from 'react';
 import { Search } from 'lucide-react';
-import type { ThemeStyles } from '../../lib/themeStyles';
+import type { UiClasses } from '../../lib/uiClasses';
 
 interface CollateralSearchBarProps {
-  styles: ThemeStyles;
+  styles: UiClasses;
   searchCif: string;
   setSearchCif: (val: string) => void;
   searchOwnerName: string;
@@ -25,7 +25,7 @@ export const CollateralSearchBar: React.FC<CollateralSearchBarProps> = ({
 }) => {
   return (
     <div className={`${styles.containerCardBg} rounded-2xl p-4 border flex flex-wrap items-center gap-3`}>
-      <div className="flex items-center space-x-2 text-sky-500 font-bold uppercase tracking-wider text-xs pr-3 border-r border-slate-200 dark:border-slate-800">
+      <div className="flex items-center space-x-2 text-accent font-bold uppercase tracking-wider text-xs pr-3 border-r border-line">
         <Search className="w-4 h-4" />
         <span>LỌC TSBĐ</span>
       </div>

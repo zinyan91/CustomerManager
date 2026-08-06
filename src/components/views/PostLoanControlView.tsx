@@ -13,17 +13,14 @@ import {
 } from '../../lib/postLoanControl';
 import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { assetClassLabel, defaultLtvForAssetType } from '../../lib/collateralMath';
-import { useTheme } from '../../context/ThemeContext';
-import { getThemeStyles } from '../../lib/themeStyles';
+import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 
 type FilterType = 'ALL' | ControlType;
 type FilterStatus = 'pending' | 'overdue' | 'done' | 'ALL';
 
 export const PostLoanControlView: React.FC = () => {
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
-  const styles = getThemeStyles(isLight);
+  const styles = UI;
 
   const [contracts, setContracts] = useState<LoanContract[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
@@ -164,10 +161,10 @@ export const PostLoanControlView: React.FC = () => {
     if (it.status === 'done') {
       const r = it.record?.Result;
       const color = r === 'fail'
-        ? 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-700'
+        ? 'bg-neg-soft text-neg border-neg/30 '
         : r === 'watch'
-          ? 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700'
-          : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700';
+          ? 'bg-warn-soft text-warn border-warn/30 '
+          : 'bg-pos-soft text-pos border-pos/30 ';
       return (
         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${color}`}>
           {r ? CONTROL_RESULT_LABEL[r] : 'Đã thực hiện'}
@@ -176,20 +173,20 @@ export const PostLoanControlView: React.FC = () => {
     }
     if (it.status === 'overdue') {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-700">
+        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-neg-soft text-neg border-neg/30 ">
           Quá hạn {overdueDaysOf(it)} ngày
         </span>
       );
     }
     if (it.status === 'due_soon') {
       return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700">
+        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-warn-soft text-warn border-warn/30 ">
           Còn {it.daysRemaining} ngày
         </span>
       );
     }
     return (
-      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700">
+      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-panel-muted text-ink-faint border-line">
         Còn {it.daysRemaining} ngày
       </span>
     );
@@ -201,18 +198,16 @@ export const PostLoanControlView: React.FC = () => {
     return `TSĐB ${it.assetCode}`;
   };
 
-  const cardBg = isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800';
-  const inputStyle = isLight
-    ? 'bg-white border-slate-300 text-slate-900'
-    : 'bg-slate-800 border-slate-700 text-slate-100';
+  const cardBg = UI.containerCardBg;
+  const inputStyle = UI.inputStyle;
 
   return (
     <div className="space-y-4 text-xs">
       {notification && (
         <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-start space-x-3 text-sm max-w-md ${
           notification.type === 'success'
-            ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
-            : 'bg-red-950/90 border-red-500/40 text-red-300'
+            ? 'bg-pos-soft border-pos/30 text-pos'
+            : 'bg-neg-soft border-neg/30 text-neg'
         }`}>
           {notification.type === 'success'
             ? <CheckCircle className="w-5 h-5 shrink-0" />
@@ -222,11 +217,11 @@ export const PostLoanControlView: React.FC = () => {
       )}
 
       <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center space-x-2">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center space-x-2">
           <ShieldCheck className="w-5 h-5" />
           <span>KIỂM SOÁT SAU VAY & GIÁM SÁT TÍN DỤNG</span>
         </h2>
-        <p className="text-[11px] text-slate-400 mt-1">
+        <p className="text-[11px] text-ink-faint mt-1">
           Mục đích sử dụng vốn: 30 ngày kể từ giải ngân, mỗi KUNN một đợt ·
           Kiểm tra sau vay: 3 tháng một lần, gộp theo HĐTD ·
           Hiện trạng tài sản: {collateralIntervalMonths} tháng một lần kể từ ngày định giá
@@ -235,13 +230,13 @@ export const PostLoanControlView: React.FC = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Quá hạn', value: summary.overdue, color: 'text-rose-600 dark:text-rose-400' },
-          { label: 'Sắp tới hạn', value: summary.dueSoon, color: 'text-amber-600 dark:text-amber-400' },
-          { label: 'Chưa tới hạn', value: summary.upcoming, color: 'text-slate-500' },
-          { label: 'Đã thực hiện', value: summary.done, color: 'text-emerald-600 dark:text-emerald-400' },
+          { label: 'Quá hạn', value: summary.overdue, color: 'text-neg' },
+          { label: 'Sắp tới hạn', value: summary.dueSoon, color: 'text-warn' },
+          { label: 'Chưa tới hạn', value: summary.upcoming, color: 'text-ink-faint' },
+          { label: 'Đã thực hiện', value: summary.done, color: 'text-pos' },
         ].map(s => (
           <div key={s.label} className={`${cardBg} rounded-2xl p-3 border shadow-sm`}>
-            <div className="text-[10px] uppercase text-slate-400 font-semibold">{s.label}</div>
+            <div className="text-[10px] uppercase text-ink-faint font-semibold">{s.label}</div>
             <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
           </div>
         ))}
@@ -258,15 +253,15 @@ export const PostLoanControlView: React.FC = () => {
             <button key={v} type="button" onClick={() => setFilterType(v)}
               className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border transition-colors ${
                 filterType === v
-                  ? 'bg-sky-600 text-white border-sky-500'
-                  : isLight ? 'bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-800 text-slate-300 border-slate-700'
+                  ? 'bg-accent text-accent-ink border-accent'
+                  : 'bg-panel-muted text-ink-muted border-line'
               }`}>
               {label}
             </button>
           ))}
         </div>
 
-        <div className="w-px h-6 bg-slate-300 dark:bg-slate-700 mx-1" />
+        <div className="w-px h-6 bg-panel-muted mx-1" />
 
         <div className="flex items-center gap-1.5 flex-wrap">
           {([
@@ -278,8 +273,8 @@ export const PostLoanControlView: React.FC = () => {
             <button key={v} type="button" onClick={() => setFilterStatus(v)}
               className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border transition-colors ${
                 filterStatus === v
-                  ? 'bg-purple-600 text-white border-purple-500'
-                  : isLight ? 'bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-800 text-slate-300 border-slate-700'
+                  ? 'bg-accent text-accent-ink border-accent'
+                  : 'bg-panel-muted text-ink-muted border-line'
               }`}>
               {label}
             </button>
@@ -287,13 +282,13 @@ export const PostLoanControlView: React.FC = () => {
         </div>
 
         <div className="ml-auto flex items-center gap-1.5">
-          <span className="text-[10px] text-slate-400 uppercase font-semibold">Chu kỳ kiểm tra TSĐB</span>
+          <span className="text-[10px] text-ink-faint uppercase font-semibold">Chu kỳ kiểm tra TSĐB</span>
           {([6, 12] as const).map(m => (
             <button key={m} type="button" onClick={() => setCollateralIntervalMonths(m)}
               className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-colors ${
                 collateralIntervalMonths === m
-                  ? 'bg-emerald-600 text-white border-emerald-500'
-                  : isLight ? 'bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-800 text-slate-300 border-slate-700'
+                  ? 'bg-pos text-accent-ink border-pos'
+                  : 'bg-panel-muted text-ink-muted border-line'
               }`}>
               {m} tháng
             </button>
@@ -302,14 +297,14 @@ export const PostLoanControlView: React.FC = () => {
       </div>
 
       <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
-        <div className={`p-3 border-b flex items-center justify-between ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
+        <div className={`p-3 border-b flex items-center justify-between ${'bg-panel-muted border-line'}`}>
           <span className="font-bold text-xs">DANH SÁCH ĐỢT KIỂM SOÁT ({filtered.length})</span>
-          <span className="text-[11px] text-slate-400">Nhấp "Ghi nhận" để lưu kết quả kiểm tra</span>
+          <span className="text-[11px] text-ink-faint">Nhấp "Ghi nhận" để lưu kết quả kiểm tra</span>
         </div>
 
         {loading ? (
           <div className="p-10 text-center">
-            <Loader2 className="w-6 h-6 animate-spin text-sky-500 mx-auto" />
+            <Loader2 className="w-6 h-6 animate-spin text-accent mx-auto" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -326,30 +321,30 @@ export const PostLoanControlView: React.FC = () => {
                   <th className="p-3 whitespace-nowrap text-center">THAO TÁC</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
+              <tbody className={`divide-y ${'divide-line'}`}>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center p-8 text-slate-400">Không có đợt kiểm soát nào theo bộ lọc hiện tại.</td></tr>
+                  <tr><td colSpan={8} className="text-center p-8 text-ink-faint">Không có đợt kiểm soát nào theo bộ lọc hiện tại.</td></tr>
                 ) : filtered.slice(0, 300).map(it => (
                   <tr key={it.key} className={styles.tableRowHover}>
                     <td className="p-3 whitespace-nowrap">
                       <div className="font-bold">{customerName(it.customerId)}</div>
-                      <div className="text-[10px] font-mono text-sky-600 dark:text-sky-400">
+                      <div className="text-[10px] font-mono text-accent">
                         {customerCif(it.customerId) && `CIF: ${customerCif(it.customerId)}`}
                       </div>
                     </td>
-                    <td className="p-3 whitespace-nowrap text-purple-600 dark:text-purple-400 font-semibold">
+                    <td className="p-3 whitespace-nowrap text-accent font-semibold">
                       {CONTROL_TYPE_LABEL[it.type]}
                     </td>
                     <td className="p-3 font-mono text-[11px]">{scopeOf(it)}</td>
                     <td className="p-3 text-center font-mono">{it.periodIndex}</td>
                     <td className="p-3 text-center font-mono whitespace-nowrap">{fmtDate(it.dueDate)}</td>
                     <td className="p-3 text-center whitespace-nowrap">{statusBadge(it)}</td>
-                    <td className="p-3 text-center font-mono whitespace-nowrap text-slate-500">
+                    <td className="p-3 text-center font-mono whitespace-nowrap text-ink-faint">
                       {it.record ? fmtDate(it.record.PerformedDate) : '—'}
                     </td>
                     <td className="p-3 text-center whitespace-nowrap">
                       <button type="button" onClick={() => openModal(it)}
-                        className="px-2.5 py-1 rounded-lg border text-[11px] font-semibold border-sky-300 dark:border-sky-800 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950">
+                        className="px-2.5 py-1 rounded-lg border text-[11px] font-semibold border-accent/30 text-accent hover:bg-accent-soft ">
                         {it.record ? 'Xem / Sửa' : 'Ghi nhận'}
                       </button>
                     </td>
@@ -358,7 +353,7 @@ export const PostLoanControlView: React.FC = () => {
               </tbody>
             </table>
             {filtered.length > 300 && (
-              <div className="p-3 text-center text-[11px] text-slate-400 border-t border-slate-200 dark:border-slate-800">
+              <div className="p-3 text-center text-[11px] text-ink-faint border-t border-line">
                 Đang hiển thị 300 / {filtered.length} đợt. Dùng bộ lọc để thu hẹp danh sách.
               </div>
             )}
@@ -369,15 +364,15 @@ export const PostLoanControlView: React.FC = () => {
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className={`${cardBg} rounded-2xl border shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto`}>
-            <div className={`p-4 border-b flex items-center justify-between ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+            <div className={`p-4 border-b flex items-center justify-between ${'border-line'}`}>
               <div>
                 <div className="font-bold text-sm">{CONTROL_TYPE_LABEL[editing.type]}</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">
+                <div className="text-[11px] text-ink-faint mt-0.5">
                   {customerName(editing.customerId)} · {scopeOf(editing)} · kỳ {editing.periodIndex} ·
                   đến hạn {fmtDate(editing.dueDate)}
                 </div>
               </div>
-              <button type="button" onClick={closeModal} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+              <button type="button" onClick={closeModal} className="p-1.5 rounded-lg hover:bg-panel-muted">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -385,12 +380,12 @@ export const PostLoanControlView: React.FC = () => {
             <div className="p-4 space-y-3.5">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-1">Ngày thực hiện *</label>
+                  <label className="block text-[11px] font-bold text-ink-faint mb-1">Ngày thực hiện *</label>
                   <DateInput value={modalDate} onChange={setModalDate}
                     className={`w-full rounded-xl p-2.5 text-xs border font-mono ${inputStyle}`} />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-1">Kết luận *</label>
+                  <label className="block text-[11px] font-bold text-ink-faint mb-1">Kết luận *</label>
                   <select value={modalResult} onChange={e => setModalResult(e.target.value as ControlResult)}
                     className={`w-full rounded-xl p-2.5 text-xs border ${inputStyle}`}>
                     <option value="pass">Đạt</option>
@@ -401,15 +396,15 @@ export const PostLoanControlView: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 mb-1">Nội dung ghi nhận</label>
+                <label className="block text-[11px] font-bold text-ink-faint mb-1">Nội dung ghi nhận</label>
                 <textarea value={modalFindings} onChange={e => setModalFindings(e.target.value)} rows={3}
                   placeholder="Tình hình thực tế, vấn đề phát hiện, kiến nghị..."
                   className={`w-full rounded-xl p-2.5 text-xs border ${inputStyle}`} />
               </div>
 
               {editing.type === 'collateral' && editing.collateralId && (
-                <div className={`rounded-xl border p-3 space-y-3 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
-                  <label className="flex items-center gap-2 text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer">
+                <div className={`rounded-xl border p-3 space-y-3 ${'bg-panel-muted border-line'}`}>
+                  <label className="flex items-center gap-2 text-[11px] font-bold text-ink-muted cursor-pointer">
                     <input type="checkbox" checked={modalReappraise}
                       onChange={e => setModalReappraise(e.target.checked)} />
                     Định giá lại tài sản trong đợt kiểm tra này
@@ -418,13 +413,13 @@ export const PostLoanControlView: React.FC = () => {
                   {modalReappraise && (
                     <div className="grid grid-cols-3 gap-2">
                       <div className="col-span-3 md:col-span-1">
-                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Giá trị định giá mới *</label>
+                        <label className="block text-[10px] font-bold text-ink-faint mb-1">Giá trị định giá mới *</label>
                         <input type="text" value={modalValue}
                           onChange={e => setModalValue(formatMoneyInput(e.target.value))}
-                          className={`w-full rounded-xl p-2.5 text-xs border font-mono font-bold text-emerald-600 dark:text-emerald-400 ${inputStyle}`} />
+                          className={`w-full rounded-xl p-2.5 text-xs border font-mono font-bold text-pos ${inputStyle}`} />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Xếp loại</label>
+                        <label className="block text-[10px] font-bold text-ink-faint mb-1">Xếp loại</label>
                         <select value={modalAssetType} onChange={e => setModalAssetType(e.target.value)}
                           className={`w-full rounded-xl p-2.5 text-xs border ${inputStyle}`}>
                           {['Loại 1', 'Loại 2', 'Loại 3', 'Loại 4', 'Hạn chế nhận TS'].map(t => (
@@ -433,7 +428,7 @@ export const PostLoanControlView: React.FC = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Hiệu lực</label>
+                        <label className="block text-[10px] font-bold text-ink-faint mb-1">Hiệu lực</label>
                         <select value={modalTenor} onChange={e => setModalTenor(parseInt(e.target.value) as 6 | 12 | 24)}
                           className={`w-full rounded-xl p-2.5 text-xs border ${inputStyle}`}>
                           <option value={6}>6 tháng</option>
@@ -441,10 +436,10 @@ export const PostLoanControlView: React.FC = () => {
                           <option value={24}>24 tháng</option>
                         </select>
                       </div>
-                      <div className="col-span-3 text-[10px] text-slate-400 leading-snug">
+                      <div className="col-span-3 text-[10px] text-ink-faint leading-snug">
                         LTV áp dụng theo xếp loại: <strong>{defaultLtvForAssetType(modalAssetType)}%</strong> —
                         hạn mức cho vay tối đa{' '}
-                        <strong className="text-sky-600 dark:text-sky-400">
+                        <strong className="text-accent">
                           {fmtMoney((parseMoneyInput(modalValue)) * defaultLtvForAssetType(modalAssetType) / 100)}
                         </strong>.
                         Giá trị này sẽ trở thành định giá hiện hành của tài sản.
@@ -455,13 +450,13 @@ export const PostLoanControlView: React.FC = () => {
               )}
             </div>
 
-            <div className={`p-4 border-t flex items-center justify-end gap-2 ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+            <div className={`p-4 border-t flex items-center justify-end gap-2 ${'border-line'}`}>
               <button type="button" onClick={closeModal}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold border ${isLight ? 'border-slate-300 text-slate-700' : 'border-slate-700 text-slate-300'}`}>
+                className={`px-3 py-2 rounded-xl text-xs font-semibold border ${'border-line text-ink-muted'}`}>
                 Huỷ
               </button>
               <button type="button" onClick={handleSave} disabled={saving}
-                className="px-3 py-2 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white flex items-center gap-1.5 disabled:opacity-60">
+                className="px-3 py-2 rounded-xl text-xs font-bold bg-accent hover:opacity-90 text-accent-ink flex items-center gap-1.5 disabled:opacity-60">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Lưu kết quả
               </button>

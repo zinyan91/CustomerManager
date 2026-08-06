@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { Lock, Mail, LogIn, AlertCircle, Loader2 } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
 export const LoginView: React.FC = () => {
-  const { theme } = useTheme();
   const { signIn } = useAuth();
-  const isLight = theme === 'light';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,20 +31,18 @@ export const LoginView: React.FC = () => {
   };
 
   const inputClass = `w-full pl-10 pr-3 py-2.5 rounded-xl border text-sm outline-none transition-colors ${
-    isLight
-      ? 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-sky-500'
-      : 'bg-slate-800 border-slate-700 text-slate-100 placeholder-slate-500 focus:border-sky-500'
+    'bg-panel border-line text-ink placeholder-ink-faint focus:border-accent'
   }`;
 
   return (
     <div
       className={`min-h-screen flex items-center justify-center p-4 font-sans antialiased ${
-        isLight ? 'bg-slate-100 text-slate-900' : 'bg-slate-950 text-slate-100'
+        'bg-panel-muted text-ink'
       }`}
     >
       <div
         className={`w-full max-w-sm rounded-2xl border shadow-xl p-6 md:p-8 ${
-          isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+          'bg-panel border-line'
         }`}
       >
         <div className="text-center mb-6">
@@ -55,7 +50,7 @@ export const LoginView: React.FC = () => {
           <h1 className="text-base md:text-lg font-bold tracking-tight leading-tight">
             QUẢN LÝ KHÁCH HÀNG
           </h1>
-          <p className={`text-xs mt-1.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+          <p className={`text-xs mt-1.5 ${'text-ink-faint'}`}>
             Đăng nhập để truy cập hệ thống
           </p>
         </div>
@@ -64,7 +59,7 @@ export const LoginView: React.FC = () => {
           <div className="relative">
             <Mail
               className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
-                isLight ? 'text-slate-400' : 'text-slate-500'
+                'text-ink-faint'
               }`}
             />
             <input
@@ -81,7 +76,7 @@ export const LoginView: React.FC = () => {
           <div className="relative">
             <Lock
               className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${
-                isLight ? 'text-slate-400' : 'text-slate-500'
+                'text-ink-faint'
               }`}
             />
             <input
@@ -96,7 +91,7 @@ export const LoginView: React.FC = () => {
           </div>
 
           {error && (
-            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs">
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-neg border border-neg/30 text-neg text-xs">
               <AlertCircle className="w-4 h-4 shrink-0 mt-px" />
               <span>{error}</span>
             </div>
@@ -105,7 +100,7 @@ export const LoginView: React.FC = () => {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-accent-ink text-sm font-semibold transition-colors"
           >
             {submitting ? (
               <>
@@ -121,7 +116,7 @@ export const LoginView: React.FC = () => {
           </button>
         </form>
 
-        <p className={`text-[11px] text-center mt-5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+        <p className={`text-[11px] text-center mt-5 ${'text-ink-faint'}`}>
           Tài khoản do quản trị hệ thống cấp. Không hỗ trợ tự đăng ký.
         </p>
       </div>

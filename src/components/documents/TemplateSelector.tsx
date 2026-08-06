@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ThemeStyles } from '../../lib/themeStyles';
+import type { UiClasses } from '../../lib/uiClasses';
 
 export type TemplateType =
   | 'lease_mb'
@@ -12,8 +12,7 @@ export type TemplateType =
   | 'deposit';
 
 interface TemplateSelectorProps {
-  styles: ThemeStyles;
-  isLight: boolean;
+  styles: UiClasses;
   selectedTemplate: TemplateType;
   setSelectedTemplate: (tpl: TemplateType) => void;
 }
@@ -31,14 +30,13 @@ export const TEMPLATE_LIST: { id: TemplateType; label: string }[] = [
 
 export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   styles,
-  isLight,
   selectedTemplate,
   setSelectedTemplate,
 }) => {
   return (
     <div className={`${styles.containerCardBg} rounded-2xl p-3 border shadow-sm`}>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-2 mr-1 hidden sm:block">
+        <div className="text-xs font-bold text-ink-faint uppercase tracking-wider px-2 mr-1 hidden sm:block">
           Mẫu biểu:
         </div>
         {TEMPLATE_LIST.map((t) => {
@@ -50,10 +48,8 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               onClick={() => setSelectedTemplate(t.id)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 border ${
                 isActive
-                  ? 'bg-sky-600 border-sky-500 text-white shadow-md shadow-sky-600/25 ring-2 ring-sky-500/20'
-                  : isLight
-                    ? 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200/70'
-                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'
+                  ? 'bg-accent border-accent text-accent-ink shadow-md  ring-2 '
+                  : 'bg-panel-muted border-line text-ink-muted hover:bg-panel-muted'
               }`}
             >
               <span>{t.label}</span>

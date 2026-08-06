@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { RefreshCw, Download, Printer, Plus, Trash2 } from 'lucide-react';
-import type { ThemeStyles } from '../../lib/themeStyles';
+import type { UiClasses } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { fmtDate, parseMoneyInput, todayIso } from '../../lib/utils';
 import { addMonths, buildLoanSchedule, postPromoRateAnnual } from '../../lib/calcMath';
@@ -121,11 +121,10 @@ function parseNumOrNull(raw: string): number | null {
 }
 
 interface Tool1LoanScheduleCalcProps {
-  styles: ThemeStyles;
-  isLight: boolean;
+  styles: UiClasses;
 }
 
-export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ styles, isLight }) => {
+export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ styles }) => {
   const [loanAmountStr, setLoanAmountStr] = useState('500.000.000');
   const [interestRateStr, setInterestRateStr] = useState('8.5');
   const [tenorMonths, setTenorMonths] = useState<number>(12);
@@ -278,7 +277,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
     <div className="space-y-4">
 
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4`}>
-        <div className="text-xs font-bold text-sky-500 uppercase tracking-wider flex items-center space-x-2 border-b pb-2 border-slate-200 dark:border-slate-800">
+        <div className="text-xs font-bold text-accent uppercase tracking-wider flex items-center space-x-2 border-b pb-2 border-line">
           <RefreshCw className="w-4 h-4" />
           <span>THÔNG SỐ KHOẢN VAY CẦN TÍNH LỊCH</span>
         </div>
@@ -293,7 +292,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 const digits = e.target.value.replace(/\D/g, '');
                 setLoanAmountStr(digits ? Number(digits).toLocaleString('vi-VN') : '');
               }}
-              className={`w-full rounded-xl p-2.5 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.inputStyle}`}
+              className={`w-full rounded-xl p-2.5 font-mono font-bold text-accent ${styles.inputStyle}`}
             />
           </div>
           <div>
@@ -322,7 +321,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               onChange={val => setFirstPaymentDate(val)}
               className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`}
             />
-            <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+            <div className="mt-1 text-[11px] text-ink-faint">
               {effectiveFirstPaymentDate === firstPaymentDate.trim() && firstPaymentDate.trim()
                 ? `Kỳ 1 đến hạn ${fmtDate(effectiveFirstPaymentDate)}`
                 : `Để trống: kỳ 1 đến hạn ${fmtDate(defaultFirstPaymentDate)}`}
@@ -330,7 +329,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-line">
           <div>
             <label className={`block mb-1 ${styles.labelStyle}`}>Phương thức trả gốc *</label>
             <select
@@ -355,8 +354,8 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-sky-300 dark:border-sky-900/50 bg-sky-50/60 dark:bg-sky-950/20 space-y-3">
-          <div className="text-xs font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider flex items-center justify-between gap-2 border-b pb-1.5 border-sky-200 dark:border-sky-900/40">
+        <div className="p-3.5 rounded-xl border border-accent/30  bg-accent-soft  space-y-3">
+          <div className="text-xs font-bold text-accent uppercase tracking-wider flex items-center justify-between gap-2 border-b pb-1.5 border-accent/30 ">
             <span>🎁 LÃI SUẤT ƯU ĐÃI VÀ LÃI SUẤT SAU ƯU ĐÃI</span>
             {hasPromo && (
               <span className="normal-case font-mono">
@@ -367,7 +366,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div>
-              <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">LS ưu đãi (%/năm) *</label>
+              <label className="block mb-1 font-bold text-accent  text-xs">LS ưu đãi (%/năm) *</label>
               <input
                 type="text"
                 value={interestRateStr}
@@ -376,7 +375,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               />
             </div>
             <div>
-              <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">Số tháng ưu đãi</label>
+              <label className="block mb-1 font-bold text-accent  text-xs">Số tháng ưu đãi</label>
               <input
                 type="number"
                 min={0}
@@ -387,7 +386,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               />
             </div>
             <div>
-              <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">LS cơ sở (%/năm)</label>
+              <label className="block mb-1 font-bold text-accent  text-xs">LS cơ sở (%/năm)</label>
               <input
                 type="text"
                 value={baseRateStr}
@@ -397,7 +396,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               />
             </div>
             <div>
-              <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">Biên độ (%/năm)</label>
+              <label className="block mb-1 font-bold text-accent  text-xs">Biên độ (%/năm)</label>
               <input
                 type="text"
                 value={marginStr}
@@ -407,25 +406,25 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               />
             </div>
             <div>
-              <label className="block mb-1 font-bold text-sky-800 dark:text-sky-300 text-xs">LS sau ưu đãi (%/năm)</label>
+              <label className="block mb-1 font-bold text-accent  text-xs">LS sau ưu đãi (%/năm)</label>
               <input
                 type="text"
                 value={postPromoRateStr}
                 onChange={e => setPostPromoRateStr(e.target.value)}
                 placeholder={hasPromo ? `${postRate.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} (cơ sở + biên độ)` : 'Không áp dụng'}
-                className={`w-full rounded-xl p-2 font-mono font-bold text-sky-600 dark:text-sky-400 ${styles.inputStyle}`}
+                className={`w-full rounded-xl p-2 font-mono font-bold text-accent ${styles.inputStyle}`}
               />
             </div>
           </div>
         </div>
 
-        <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20 space-y-3">
-          <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center justify-between gap-2 border-b pb-1.5 border-amber-200 dark:border-amber-900/40">
+        <div className="p-3.5 rounded-xl border border-warn/30  bg-warn-soft  space-y-3">
+          <div className="text-xs font-bold text-warn uppercase tracking-wider flex items-center justify-between gap-2 border-b pb-1.5 border-warn/30 ">
             <span>⚡ TRẢ NỢ TRƯỚC HẠN NHIỀU KỲ</span>
             <button
               type="button"
               onClick={addPrepayment}
-              className="flex items-center space-x-1 bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] px-2.5 py-1 rounded-lg normal-case"
+              className="flex items-center space-x-1 bg-warn hover:bg-warn text-accent-ink font-bold text-[11px] px-2.5 py-1 rounded-lg normal-case"
             >
               <Plus className="w-3 h-3" />
               <span>Thêm</span>
@@ -433,7 +432,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           </div>
 
           {prepayments.length === 0 ? (
-            <div className="text-[11px] text-amber-800 dark:text-amber-300">
+            <div className="text-[11px] text-warn">
               Chưa khai lần trả trước hạn nào. Bấm “Thêm lần trả trước hạn” để khai một hoặc nhiều lần ở các kỳ khác nhau.
             </div>
           ) : (
@@ -441,7 +440,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               {prepayments.map((p, idx) => (
                 <div key={p.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
                   <div className="md:col-span-2">
-                    <label className="block mb-1 font-bold text-amber-800 dark:text-amber-300 text-[11px]">Lần {idx + 1} — Kỳ số</label>
+                    <label className="block mb-1 font-bold text-warn text-[11px]">Lần {idx + 1} — Kỳ số</label>
                     <input
                       type="number"
                       min={1}
@@ -452,7 +451,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                     />
                   </div>
                   <div className="md:col-span-4">
-                    <label className="block mb-1 font-bold text-amber-800 dark:text-amber-300 text-[11px]">Số tiền trả trước hạn (VNĐ)</label>
+                    <label className="block mb-1 font-bold text-warn text-[11px]">Số tiền trả trước hạn (VNĐ)</label>
                     <input
                       type="text"
                       value={p.amountStr}
@@ -461,11 +460,11 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                         updatePrepayment(p.id, { amountStr: digits ? Number(digits).toLocaleString('vi-VN') : '' });
                       }}
                       placeholder="Nhập số tiền..."
-                      className={`w-full rounded-xl p-2 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${styles.inputStyle}`}
+                      className={`w-full rounded-xl p-2 font-mono font-bold text-pos ${styles.inputStyle}`}
                     />
                   </div>
                   <div className="md:col-span-5">
-                    <label className="block mb-1 font-bold text-amber-800 dark:text-amber-300 text-[11px]">Phương án xử lý sau lần trả này</label>
+                    <label className="block mb-1 font-bold text-warn text-[11px]">Phương án xử lý sau lần trả này</label>
                     <select
                       value={p.mode}
                       onChange={e => updatePrepayment(p.id, { mode: e.target.value as PrepaymentMode })}
@@ -480,7 +479,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                       type="button"
                       onClick={() => removePrepayment(p.id)}
                       title="Xoá lần trả trước hạn này"
-                      className="p-2 rounded-xl text-rose-600 hover:bg-rose-500/10"
+                      className="p-2 rounded-xl text-neg hover:bg-neg"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -493,7 +492,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       </div>
 
       <div className={`${styles.containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
-        <div className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/40 border-slate-800'}`}>
+        <div className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 ${'bg-panel-muted border-line'}`}>
           <span className="font-bold text-xs uppercase flex items-center space-x-2">
             <span>BẢNG LỊCH THU NỢ DỰ KIẾN ({scheduleRows.length} KỲ)</span>
           </span>
@@ -501,7 +500,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <button
               type="button"
               onClick={handleExportExcel}
-              className="flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm"
+              className="flex items-center space-x-1.5 bg-pos hover:opacity-90 text-accent-ink font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Xuất Excel (.xls)</span>
@@ -509,7 +508,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <button
               type="button"
               onClick={handlePrintSchedule}
-              className="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm"
+              className="flex items-center space-x-1.5 bg-accent hover:opacity-90 text-accent-ink font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>In / Xuất PDF</span>
@@ -527,19 +526,19 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 <th className="p-3 text-center whitespace-nowrap">SỐ NGÀY</th>
                 <th className="p-3 text-center whitespace-nowrap">LS ÁP DỤNG</th>
                 <th className="p-3 text-right whitespace-nowrap">DƯ NỢ ĐẦU KỲ</th>
-                <th className="p-3 text-right whitespace-nowrap text-sky-600 dark:text-sky-400">GỐC TRẢ</th>
-                <th className="p-3 text-right whitespace-nowrap text-amber-600 dark:text-amber-400">LÃI THƯỜNG</th>
-                <th className="p-3 text-right whitespace-nowrap text-emerald-600 dark:text-emerald-400">TỔNG TRẢ TRONG KỲ</th>
+                <th className="p-3 text-right whitespace-nowrap text-accent">GỐC TRẢ</th>
+                <th className="p-3 text-right whitespace-nowrap text-warn">LÃI THƯỜNG</th>
+                <th className="p-3 text-right whitespace-nowrap text-pos">TỔNG TRẢ TRONG KỲ</th>
                 <th className="p-3 text-right whitespace-nowrap">DƯ NỢ CUỐI KỲ</th>
               </tr>
             </thead>
-            <tbody className={`divide-y ${isLight ? 'divide-slate-200' : 'divide-slate-800/50'}`}>
+            <tbody className={`divide-y ${'divide-line'}`}>
               {scheduleRows.map(r => (
-                <tr key={r.period} className={`${styles.tableRowHover} ${r.prepayment > 0 ? 'bg-amber-500/10 dark:bg-amber-500/15 font-bold border-l-4 border-amber-500' : ''}`}>
+                <tr key={r.period} className={`${styles.tableRowHover} ${r.prepayment > 0 ? 'bg-warn  font-bold border-l-4 border-warn' : ''}`}>
                   <td className="p-3 text-center font-bold font-mono">
                     #{r.period}
                     {r.prepayment > 0 && (
-                      <span className="block text-[10px] text-amber-600 dark:text-amber-400 font-normal">⚡ Trả trước hạn</span>
+                      <span className="block text-[10px] text-warn font-normal">⚡ Trả trước hạn</span>
                     )}
                   </td>
                   <td className="p-3 text-center font-mono">{fmtDate(r.startDate)}</td>
@@ -547,16 +546,16 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                   <td className="p-3 text-center font-mono">{r.days}d</td>
                   <td className="p-3 text-center font-mono">{r.rateAnnual.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%</td>
                   <td className="p-3 text-right font-mono">{r.beginningBalance.toLocaleString('vi-VN')}</td>
-                  <td className="p-3 text-right font-mono font-bold text-sky-600 dark:text-sky-400">
+                  <td className="p-3 text-right font-mono font-bold text-accent">
                     {r.principal.toLocaleString('vi-VN')}
                     {r.prepayment > 0 && (
-                      <span className="block text-[10px] text-amber-600 dark:text-amber-400">
+                      <span className="block text-[10px] text-warn">
                         (+{r.prepayment.toLocaleString('vi-VN')}đ)
                       </span>
                     )}
                   </td>
-                  <td className="p-3 text-right font-mono font-bold text-amber-600 dark:text-amber-400">{r.interest.toLocaleString('vi-VN')}</td>
-                  <td className="p-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">{r.totalPayment.toLocaleString('vi-VN')}</td>
+                  <td className="p-3 text-right font-mono font-bold text-warn">{r.interest.toLocaleString('vi-VN')}</td>
+                  <td className="p-3 text-right font-mono font-bold text-pos">{r.totalPayment.toLocaleString('vi-VN')}</td>
                   <td className="p-3 text-right font-mono">{r.endingBalance.toLocaleString('vi-VN')}</td>
                 </tr>
               ))}
@@ -564,9 +563,9 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <tfoot className={`border-t sticky bottom-0 font-bold ${styles.tableHeaderStyle}`}>
               <tr>
                 <td colSpan={6} className="p-3 text-center">TỔNG CỘNG LỊCH THU NỢ</td>
-                <td className="p-3 text-right text-sky-600 dark:text-sky-400 font-mono">{totalPrincipalSum.toLocaleString('vi-VN')}</td>
-                <td className="p-3 text-right text-amber-600 dark:text-amber-400 font-mono">{totalInterestSum.toLocaleString('vi-VN')}</td>
-                <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-mono text-sm">{totalObligationSum.toLocaleString('vi-VN')}</td>
+                <td className="p-3 text-right text-accent font-mono">{totalPrincipalSum.toLocaleString('vi-VN')}</td>
+                <td className="p-3 text-right text-warn font-mono">{totalInterestSum.toLocaleString('vi-VN')}</td>
+                <td className="p-3 text-right text-pos font-mono text-sm">{totalObligationSum.toLocaleString('vi-VN')}</td>
                 <td></td>
               </tr>
             </tfoot>

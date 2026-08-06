@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useTheme } from '../../context/ThemeContext';
-import { getThemeStyles } from '../../lib/themeStyles';
+import { UI } from '../../lib/uiClasses';
 import { fmtDate } from '../../lib/utils';
 import { moneyTextToWords, moneyToVietnameseWords } from '../../lib/numberToWords';
 import { TemplateSelector, TEMPLATE_LIST, type TemplateType } from '../documents/TemplateSelector';
@@ -23,9 +22,7 @@ const monthsBetweenLabel = (startIso: string, endIso: string): string => {
 };
 
 export const DocumentTemplateView: React.FC = () => {
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
-  const styles = getThemeStyles(isLight);
+  const styles = UI;
 
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('lease_mb');
 
@@ -816,7 +813,6 @@ export const DocumentTemplateView: React.FC = () => {
 
       <TemplateSelector
         styles={styles}
-        isLight={isLight}
         selectedTemplate={selectedTemplate}
         setSelectedTemplate={setSelectedTemplate}
       />
@@ -895,7 +891,6 @@ export const DocumentTemplateView: React.FC = () => {
         <div className="lg:col-span-7">
           <DocumentPreview
             styles={styles}
-            isLight={isLight}
             docTitle={currentTplInfo.label}
             docFilename={currentTplInfo.id}
             docHtml={generateDocHtml()}

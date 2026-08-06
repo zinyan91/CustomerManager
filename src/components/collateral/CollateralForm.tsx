@@ -1,13 +1,12 @@
 import React from 'react';
 import { Building2, Plus, Save, ChevronUp, ChevronDown } from 'lucide-react';
 import type { Collateral, Customer } from '../../types';
-import type { ThemeStyles } from '../../lib/themeStyles';
+import type { UiClasses } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { fmtMoney, parseMoneyInput } from '../../lib/utils';
 
 interface CollateralFormProps {
-  styles: ThemeStyles;
-  isLight: boolean;
+  styles: UiClasses;
   selectedCollateral: Collateral | null;
   formCollapsed: boolean;
   setFormCollapsed: (val: boolean | ((prev: boolean) => boolean)) => void;
@@ -36,7 +35,6 @@ interface CollateralFormProps {
 
 export const CollateralForm: React.FC<CollateralFormProps> = ({
   styles,
-  isLight,
   selectedCollateral,
   formCollapsed,
   setFormCollapsed,
@@ -68,20 +66,20 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
 
   return (
     <div className={`${styles.containerCardBg} rounded-2xl p-5 space-y-4 border shadow-xl`}>
-      <div className={`flex items-center justify-between pb-3 border-b ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-        <h3 className="font-bold flex items-center space-x-2 text-xs uppercase tracking-wider text-sky-500">
+      <div className={`flex items-center justify-between pb-3 border-b ${'border-line'}`}>
+        <h3 className="font-bold flex items-center space-x-2 text-xs uppercase tracking-wider text-accent">
           <Building2 className="w-4 h-4" />
           <span>{selectedCollateral ? `CẬP NHẬT TÀI SẢN BẢO ĐẢM #${selectedCollateral.Id}` : 'TẠO MỚI TÀI SẢN BẢO ĐẢM'}</span>
         </h3>
         <div className="flex items-center space-x-2">
           {selectedCollateral && (
             <button type="button" onClick={handleReset}
-              className="text-xs text-sky-600 dark:text-sky-400 hover:underline font-semibold mr-2">
+              className="text-xs text-accent hover:underline font-semibold mr-2">
               + Tạo TSBĐ mới
             </button>
           )}
           <button type="button" onClick={() => setFormCollapsed(f => !f)}
-            className="text-slate-400 hover:text-slate-200 transition-colors">
+            className="text-ink-faint hover:text-ink transition-colors">
             {formCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
         </div>
@@ -153,7 +151,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                   setInputAppraisedValue(digits ? Number(digits).toLocaleString('vi-VN') : '');
                 }}
                 placeholder="1.000.000.000"
-                className={`w-full rounded-xl p-2.5 font-mono font-bold text-emerald-600 dark:text-emerald-400 ${styles.inputStyle}`} />
+                className={`w-full rounded-xl p-2.5 font-mono font-bold text-pos ${styles.inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${styles.labelStyle}`}>Tỉ lệ LTV tối đa (%)</label>
@@ -176,14 +174,14 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
 
           <div className={`p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${styles.sectionBoxBg}`}>
             <div>
-              <div className="text-[11px] text-slate-400">Hạn mức cho cấp tín dụng tối đa tính theo LTV ({ltvVal}%):</div>
-              <div className="text-sm font-mono font-extrabold text-sky-600 dark:text-sky-400 mt-0.5">
+              <div className="text-[11px] text-ink-faint">Hạn mức cho cấp tín dụng tối đa tính theo LTV ({ltvVal}%):</div>
+              <div className="text-sm font-mono font-extrabold text-accent mt-0.5">
                 {fmtMoney(maxLoanCapacity)}
               </div>
             </div>
             <div>
-              <div className="text-[11px] text-slate-400">Ngày hết hạn định giá (Tự động):</div>
-              <div className="text-sm font-mono font-bold text-amber-600 dark:text-amber-400 mt-0.5">
+              <div className="text-[11px] text-ink-faint">Ngày hết hạn định giá (Tự động):</div>
+              <div className="text-sm font-mono font-bold text-warn mt-0.5">
                 {inputAppraisalExpiryDate || '—'}
               </div>
             </div>
@@ -191,13 +189,13 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
 
           <div className="flex items-center space-x-3 pt-2">
             <button type="submit" disabled={loading}
-              className="flex-1 bg-sky-600 hover:bg-sky-500 disabled:opacity-60 text-white font-bold py-2.5 px-4 rounded-xl transition-colors shadow-lg shadow-sky-600/30 flex items-center justify-center space-x-2">
+              className="flex-1 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-2.5 px-4 rounded-xl transition-colors shadow-lg  flex items-center justify-center space-x-2">
               {selectedCollateral ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               <span>{loading ? 'Đang lưu...' : selectedCollateral ? 'CẬP NHẬT TÀI SẢN' : '+ LƯU TÀI SẢN BẢO ĐẢM MỚI'}</span>
             </button>
             {selectedCollateral && (
               <button type="button" onClick={handleReset}
-                className="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-2.5 px-4 rounded-xl transition-colors">
+                className="bg-panel-muted hover:bg-panel-muted text-ink-muted font-bold py-2.5 px-4 rounded-xl transition-colors">
                 Hủy
               </button>
             )}

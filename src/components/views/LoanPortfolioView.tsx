@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { UI } from '../../lib/uiClasses';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI, saveContractAPI, deleteContractAPI,
   fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
   fetchCollateralsByCustomerAPI, deleteRepaymentSchedulesByContractAPI
 } from '../../lib/api';
-import { fmtDate, fmtMoney, getContractRateHistory, getMasterHdtdNumber, parseMoneyDecimalInput, parseMoneyInput, stripLegacyNoteBlobs, toIsoDate, todayIso } from '../../lib/utils';
+import { fmtDate, fmtMoney, getContractRateHistory, getMasterHdtdNumber, parseMoneyDecimalInput, stripLegacyNoteBlobs, toIsoDate, todayIso } from '../../lib/utils';
 import {
   addMonthsToDate, parseKunnTenorMonths,
-  generateSchedule, calculateOverdueDaysFromDates,
+  generateSchedule,
   getAutoDebtGroupInfo, recalculateSchedules, computeOutstandingBalance,
-  isBulletPrincipal, getDaysBetween, redateSchedules
+  isBulletPrincipal, redateSchedules
 } from '../../lib/loanMath';
 import {
-  buildContractRateTimeline, splitPeriodByRate, getEffectiveActiveRate, resolveRateModeOf,
+  getEffectiveActiveRate, resolveRateModeOf,
   buildRateFields,
-  type RateSegment,
 } from '../../lib/rateResolution';
 import { getEffectiveLtv } from '../../lib/collateralMath';
 import { checkKunnAgainstContract, nextKunnNumber, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd } from '../../lib/creditContract';
@@ -26,7 +26,6 @@ import {
   getLoanProductRule,
 } from '../../lib/loanProductRules';
 import type { LoanContract, CreditContract, Customer, RepaymentSchedule, Collateral, RateAdjustmentHistoryItem } from '../../types';
-import { useTheme } from '../../context/ThemeContext';
 import { Search, Receipt, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
 import { CustomerSearchBar } from '../portfolio/CustomerSearchBar';
 import { CustomerSummaryHeader } from '../portfolio/CustomerSummaryHeader';
@@ -35,6 +34,7 @@ import { KunnTable } from '../portfolio/KunnTable';
 import { PaymentModal } from '../portfolio/PaymentModal';
 import { KunnForm } from '../portfolio/KunnForm';
 import { ScheduleTab } from '../portfolio/ScheduleTab';
+import { usePaymentModal } from '../../hooks/usePaymentModal';
 
 const LOAN_METHODS = [
   'Hạn mức tín dụng',
@@ -55,8 +55,6 @@ function intToInput(v?: number | null): string {
 }
 
 export const LoanPortfolioView: React.FC = () => {
-  const { theme } = useTheme();
-  const isLight = theme === 'light';
 
   const [searchCif, setSearchCif] = useState('');
   const [searchName, setSearchName] = useState('');
@@ -108,15 +106,6 @@ export const LoanPortfolioView: React.FC = () => {
 
   const [selectedCollateralIds, setSelectedCollateralIds] = useState<number[]>([]);
 
-  const [editingSchedule, setEditingSchedule] = useState<RepaymentSchedule | null>(null);
-  const [modalOverdueDaysStr, setModalOverdueDaysStr] = useState('0');
-  const [modalOverdueInterestStr, setModalOverdueInterestStr] = useState('0');
-  const [modalPrepaidPrincipalStr, setModalPrepaidPrincipalStr] = useState('0');
-  const [modalActualPaidPrincipalStr, setModalActualPaidPrincipalStr] = useState('0');
-  const [modalActualPaidInterestStr, setModalActualPaidInterestStr] = useState('0');
-  const [modalIsPaid, setModalIsPaid] = useState(false);
-  const [modalPaymentDate, setModalPaymentDate] = useState(() => todayIso());
-  const [modalNote, setModalNote] = useState('');
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -671,104 +660,22 @@ export const LoanPortfolioView: React.FC = () => {
     }
   };
 
-  const openPaymentModal = (s: RepaymentSchedule) => {
-    setEditingSchedule(s);
-    const payDate = s.PaymentDate || todayIso();
-    setModalPaymentDate(payDate);
-
-    let overdue = s.OverdueDays;
-    if (overdue === undefined || overdue === null || overdue === 0) {
-      overdue = calculateOverdueDaysFromDates(payDate, s.DueDate);
-    }
-    setModalOverdueDaysStr(overdue.toString());
-
-    let initialPenalty = s.OverdueInterestAmount ?? 0;
-    if (!initialPenalty && overdue > 0 && selectedContract) {
-      const rate = getEffectiveActiveRate(selectedContract, s.DueDate);
-      initialPenalty = Math.round((s.PrincipalAmount || 0) * (rate * 1.5) * (overdue / 365));
-    }
-    setModalOverdueInterestStr(initialPenalty ? initialPenalty.toLocaleString('vi-VN') : '0');
-
-    const prepay = s.PrepaidPrincipalAmount ?? 0;
-    setModalPrepaidPrincipalStr(prepay ? prepay.toLocaleString('vi-VN') : '0');
-
-    const actP = s.ActualPaidPrincipal ?? ((s.PrincipalAmount || 0) + prepay);
-    setModalActualPaidPrincipalStr(actP ? actP.toLocaleString('vi-VN') : '0');
-
-    const actI = s.ActualPaidInterest ?? ((s.InterestAmount || 0) + initialPenalty);
-    setModalActualPaidInterestStr(actI ? actI.toLocaleString('vi-VN') : '0');
-
-    setModalIsPaid(s.IsPaid);
-    setModalNote(s.Note || '');
-  };
-
-  const handleSavePaymentModal = async () => {
-    if (!editingSchedule || !selectedContract) return;
-
-    const overdueDays = parseInt(modalOverdueDaysStr, 10) || 0;
-    const overdueInterest = parseMoneyInput(modalOverdueInterestStr);
-    const prepaidPrincipal = parseMoneyInput(modalPrepaidPrincipalStr);
-    const actualPaidP = parseMoneyInput(modalActualPaidPrincipalStr);
-    const actualPaidI = parseMoneyInput(modalActualPaidInterestStr);
-
-    const updated: RepaymentSchedule = {
-      ...editingSchedule,
-      TotalAmount: (editingSchedule.PrincipalAmount || 0) + (editingSchedule.InterestAmount || 0) + overdueInterest,
-      IsPaid: modalIsPaid,
-      PaymentDate: modalIsPaid ? modalPaymentDate : null,
-      OverdueDays: overdueDays,
-      OverdueInterestAmount: overdueInterest,
-      ActualPaidPrincipal: actualPaidP,
-      ActualPaidInterest: actualPaidI,
-      PrepaidPrincipalAmount: prepaidPrincipal,
-      Note: modalNote || null
-    };
-
-    try {
-      setLoading(true);
-
-      const draftList = schedules.map(s => s.Id === updated.Id ? updated : s);
-      const recalculated = recalculateSchedules(draftList, selectedContract);
-
-      await bulkSaveRepaymentSchedulesAPI(recalculated);
-
-      const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
+  const payment = usePaymentModal({
+    selectedContract,
+    schedules,
+    onLoadingChange: setLoading,
+    onNotify: (type, message) => showNotify(type, message),
+    onSaved: ({ schedules: refreshed, balance, debtGroup }) => {
+      if (!selectedContract) return;
       setSchedules(refreshed);
       setAllSchedulesMap(prev => ({ ...prev, [selectedContract.Id]: refreshed }));
-
-      const autoInfo = getAutoDebtGroupInfo(refreshed);
-
-      const newBal = computeOutstandingBalance(refreshed, selectedContract);
-
-      await saveContractAPI({
-        Id: selectedContract.Id,
-        CustomerId: selectedContract.CustomerId,
-        ContractNumber: selectedContract.ContractNumber,
-        CurrentBalance: newBal,
-        DebtGroup: autoInfo.debtGroup
-      });
-
-      setContracts(prev => prev.map(con => con.Id === selectedContract.Id ? {
-        ...con,
-        CurrentBalance: newBal,
-        DebtGroup: autoInfo.debtGroup
-      } : con));
-
-      setSelectedContract(prev => prev ? {
-        ...prev,
-        CurrentBalance: newBal,
-        DebtGroup: autoInfo.debtGroup
-      } : null);
-
-      setFormCurrentBalance(newBal.toLocaleString('vi-VN'));
-      setEditingSchedule(null);
-      showNotify('success', `✓ Đã cập nhật Kỳ #${editingSchedule.PeriodNumber} & tự động phân bổ lại số tiền gốc cho các kỳ sau!`);
-    } catch (err: any) {
-      showNotify('error', `Không lưu được kỳ trả nợ: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setContracts(prev => prev.map(con => con.Id === selectedContract.Id
+        ? { ...con, CurrentBalance: balance, DebtGroup: debtGroup }
+        : con));
+      setSelectedContract(prev => prev ? { ...prev, CurrentBalance: balance, DebtGroup: debtGroup } : null);
+      setFormCurrentBalance(balance.toLocaleString('vi-VN'));
+    },
+  });
 
   const selectedCollaterals = collaterals.filter(c => selectedCollateralIds.includes(c.Id));
 
@@ -888,27 +795,6 @@ export const LoanPortfolioView: React.FC = () => {
       .filter(w => w.exceeded || w.expiredAppraisals.length > 0),
     [contracts, collaterals, allSchedulesMap]
   );
-
-  const periodRateSegments = useMemo(() => {
-    const map: Record<number, RateSegment[]> = {};
-    if (!selectedContract || schedules.length === 0) return map;
-
-    const timeline = buildContractRateTimeline(selectedContract, { today: today });
-    if (timeline.length === 0) return map;
-
-    let prev = selectedContract.DisbursementDate
-      || selectedContract.RepaymentStartDate
-      || selectedContract.ContractStartDate
-      || '';
-
-    for (const s of [...schedules].sort((a, b) => a.PeriodNumber - b.PeriodNumber)) {
-      if (!s.DueDate) continue;
-      const from = prev || s.DueDate;
-      map[s.Id] = splitPeriodByRate(timeline, from, s.DueDate, getDaysBetween(from, s.DueDate));
-      prev = s.DueDate;
-    }
-    return map;
-  }, [selectedContract, schedules, today]);
 
   const applyCreditContractToForm = (cc: CreditContract, keepKunnNumber = false) => {
     setFormHdtdNumber(cc.HdtdNumber);
@@ -1039,37 +925,25 @@ export const LoanPortfolioView: React.FC = () => {
   const totalKunnAmount = summaryFinancials.totalDisbursed;
   const remainingCreditLimit = summaryFinancials.totalRemaining;
 
-  const containerCardBg = isLight
-    ? 'bg-white border-slate-200 text-slate-900 shadow-sm'
-    : 'bg-slate-900 border-slate-800 text-slate-100 shadow-xl';
+  const containerCardBg = UI.containerCardBg;
 
-  const sectionBoxBg = isLight
-    ? 'bg-slate-50/80 border-slate-200 text-slate-900'
-    : 'bg-slate-950 border-slate-800 text-slate-100';
+  const sectionBoxBg = UI.sectionBoxBg;
 
-  const inputStyle = isLight
-    ? 'bg-white border-slate-300 text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20'
-    : 'bg-slate-950 border-slate-800 text-slate-200 focus:border-sky-500';
+  const inputStyle = UI.inputStyle;
 
-  const readonlyInputStyle = isLight
-    ? 'bg-slate-100 border-slate-200 text-slate-800 font-bold cursor-default'
-    : 'bg-slate-900 border-slate-800 text-slate-100 font-bold cursor-default';
+  const readonlyInputStyle = UI.readonlyInputStyle;
 
-  const tableHeaderStyle = isLight
-    ? 'bg-slate-100 text-slate-700 border-slate-200 font-bold'
-    : 'bg-slate-950 text-slate-400 border-slate-800 font-bold';
+  const tableHeaderStyle = UI.tableHeaderStyle;
 
-  const tableRowHover = isLight ? 'hover:bg-sky-50/50' : 'hover:bg-slate-800/30';
-
-  const labelStyle = isLight ? 'text-slate-700 font-medium' : 'text-slate-400 font-medium';
+  const labelStyle = UI.labelStyle;
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
 
       {notification && (
         <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success'
-          ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300'
-          : 'bg-red-950/90 border-red-500/40 text-red-300'
+          ? 'bg-pos-soft border-pos/30 text-pos'
+          : 'bg-neg-soft border-neg/30 text-neg'
           }`}>
           {notification.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
           <span>{notification.message}</span>
@@ -1077,7 +951,6 @@ export const LoanPortfolioView: React.FC = () => {
       )}
 
       <CustomerSearchBar
-        isLight={isLight}
         inputStyle={inputStyle}
         labelStyle={labelStyle}
         allCustomers={allCustomers}
@@ -1105,8 +978,8 @@ export const LoanPortfolioView: React.FC = () => {
       />
 
       {!foundCustomer && !isSearching && (
-        <div className="flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
-          <Search className="w-12 h-12 text-slate-300 dark:text-slate-700" />
+        <div className="flex flex-col items-center justify-center py-16 text-ink-faint space-y-3">
+          <Search className="w-12 h-12 text-ink-muted" />
           <p className="text-sm">Chọn khách hàng để bắt đầu</p>
         </div>
       )}
@@ -1117,7 +990,6 @@ export const LoanPortfolioView: React.FC = () => {
           <CustomerSummaryHeader
             foundCustomer={foundCustomer}
             collaterals={collaterals}
-            isLight={isLight}
             containerCardBg={containerCardBg}
             selectedMasterFilter={selectedMasterFilter}
             totalCreditLimit={totalCreditLimit}
@@ -1129,22 +1001,22 @@ export const LoanPortfolioView: React.FC = () => {
           />
 
           {capacityWarnings.length > 0 && (
-            <div className="rounded-2xl border border-amber-400/60 bg-amber-50 dark:bg-amber-950/40 p-4 space-y-2">
-              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-xs uppercase tracking-wide">
+            <div className="rounded-2xl border border-warn/30 bg-warn-soft  p-4 space-y-2">
+              <div className="flex items-center gap-2 text-warn font-bold text-xs uppercase tracking-wide">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>Cảnh báo kiểm soát tài sản bảo đảm</span>
               </div>
               {capacityWarnings.map(w => (
-                <div key={w.collateralIds.join('-')} className="text-[11px] text-amber-800 dark:text-amber-300">
+                <div key={w.collateralIds.join('-')} className="text-[11px] text-warn">
                   {w.expiredAppraisals.map(e => (
-                    <div key={e.collateralId} className="text-rose-600 dark:text-rose-400 font-semibold">
+                    <div key={e.collateralId} className="text-neg font-semibold">
                       {e.assetCode}: {e.expiryDate ? `định giá hết hiệu lực ${fmtDate(e.expiryDate)}` : 'chưa có ngày định giá'}
                     </div>
                   ))}
                   {w.exceeded && (
                     <div>
                       <strong className="font-mono">{w.assetCodes.join(', ')}</strong>: bảo đảm {fmtMoney(w.capacity)}, nghĩa vụ {fmtMoney(w.granted)} — vượt{' '}
-                      <strong className="text-rose-600 dark:text-rose-400">{fmtMoney(w.excessAmount)}</strong>
+                      <strong className="text-neg">{fmtMoney(w.excessAmount)}</strong>
                     </div>
                   )}
                 </div>
@@ -1153,7 +1025,6 @@ export const LoanPortfolioView: React.FC = () => {
           )}
 
           <MasterHdtdFilterTabs
-            isLight={isLight}
             masterHdtdGroups={masterHdtdGroups}
             selectedMasterFilter={selectedMasterFilter}
             setSelectedMasterFilter={setSelectedMasterFilter}
@@ -1166,7 +1037,7 @@ export const LoanPortfolioView: React.FC = () => {
               { id: 'schedule' as const, label: 'Lịch Thu Nợ', icon: Calendar },
             ].map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setMainTab(id)}
-                className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${mainTab === id ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${mainTab === id ? 'bg-accent text-accent-ink shadow-sm' : 'text-ink-faint hover:text-ink'
                   }`}>
                 <Icon className="w-3.5 h-3.5" />
                 <span>{label}</span>
@@ -1177,7 +1048,6 @@ export const LoanPortfolioView: React.FC = () => {
           {mainTab === 'kunn' && (
             <div className="space-y-4">
               <KunnTable
-                isLight={isLight}
                 containerCardBg={containerCardBg}
                 tableHeaderStyle={tableHeaderStyle}
                 filteredContracts={filteredContracts}
@@ -1192,7 +1062,6 @@ export const LoanPortfolioView: React.FC = () => {
 
               {showForm && (
                 <KunnForm
-                  isLight={isLight}
                   containerCardBg={containerCardBg}
                   sectionBoxBg={sectionBoxBg}
                   inputStyle={inputStyle}
@@ -1262,44 +1131,38 @@ export const LoanPortfolioView: React.FC = () => {
 
           {mainTab === 'schedule' && (
             <ScheduleTab
-              isLight={isLight}
-              containerCardBg={containerCardBg}
-              tableHeaderStyle={tableHeaderStyle}
-              tableRowHover={tableRowHover}
               contracts={contracts}
               selectedContract={selectedContract}
               handleSelectContract={handleSelectContract}
               schedules={schedules}
-              allSchedulesMap={allSchedulesMap}
-              periodRateSegments={periodRateSegments}
-              openPaymentModal={openPaymentModal}
+              openPaymentModal={payment.open}
             />
           )}
         </div>
       )}
 
-      {editingSchedule && selectedContract && (
+      {payment.editingSchedule && selectedContract && (
         <PaymentModal
-          editingSchedule={editingSchedule}
+          editingSchedule={payment.editingSchedule}
           selectedContract={selectedContract}
           containerCardBg={containerCardBg}
           loading={loading}
-          modalActualPaidPrincipalStr={modalActualPaidPrincipalStr}
-          setModalActualPaidPrincipalStr={setModalActualPaidPrincipalStr}
-          modalActualPaidInterestStr={modalActualPaidInterestStr}
-          setModalActualPaidInterestStr={setModalActualPaidInterestStr}
-          modalPrepaidPrincipalStr={modalPrepaidPrincipalStr}
-          setModalPrepaidPrincipalStr={setModalPrepaidPrincipalStr}
-          modalOverdueDaysStr={modalOverdueDaysStr}
-          setModalOverdueDaysStr={setModalOverdueDaysStr}
-          modalOverdueInterestStr={modalOverdueInterestStr}
-          setModalOverdueInterestStr={setModalOverdueInterestStr}
-          modalPaymentDate={modalPaymentDate}
-          setModalPaymentDate={setModalPaymentDate}
-          modalIsPaid={modalIsPaid}
-          setModalIsPaid={setModalIsPaid}
-          onClose={() => setEditingSchedule(null)}
-          onSave={handleSavePaymentModal}
+          modalActualPaidPrincipalStr={payment.actualPaidPrincipalStr}
+          setModalActualPaidPrincipalStr={payment.setActualPaidPrincipalStr}
+          modalActualPaidInterestStr={payment.actualPaidInterestStr}
+          setModalActualPaidInterestStr={payment.setActualPaidInterestStr}
+          modalPrepaidPrincipalStr={payment.prepaidPrincipalStr}
+          setModalPrepaidPrincipalStr={payment.setPrepaidPrincipalStr}
+          modalOverdueDaysStr={payment.overdueDaysStr}
+          setModalOverdueDaysStr={payment.setOverdueDaysStr}
+          modalOverdueInterestStr={payment.overdueInterestStr}
+          setModalOverdueInterestStr={payment.setOverdueInterestStr}
+          modalPaymentDate={payment.paymentDate}
+          setModalPaymentDate={payment.setPaymentDate}
+          modalIsPaid={payment.isPaid}
+          setModalIsPaid={payment.setIsPaid}
+          onClose={payment.close}
+          onSave={payment.save}
         />
       )}
     </div>

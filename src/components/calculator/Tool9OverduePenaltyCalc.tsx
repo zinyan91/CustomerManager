@@ -6,11 +6,10 @@ import {
   DEFAULT_PRINCIPAL_PENALTY_MULTIPLIER,
   DEFAULT_INTEREST_PENALTY_RATE,
 } from '../../lib/stkPledge';
-import type { ThemeStyles } from '../../lib/themeStyles';
+import type { UiClasses } from '../../lib/uiClasses';
 
 interface Props {
-  styles: ThemeStyles;
-  isLight: boolean;
+  styles: UiClasses;
 }
 
 interface PenaltyRow {
@@ -67,21 +66,21 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
   return (
     <div className="space-y-4">
       <div className={`${styles.containerCardBg} rounded-2xl p-5 border space-y-4 text-xs shadow-sm`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
-          <div className="font-bold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-sm flex items-center space-x-2">
-            <AlertTriangle className="w-4 h-4 text-rose-500" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-2">
+          <div className="font-bold text-accent uppercase tracking-wider text-sm flex items-center space-x-2">
+            <AlertTriangle className="w-4 h-4 text-neg" />
             <span>BẢNG TÍNH TIỀN PHẠT CHẬM TRẢ QUÁ HẠN</span>
           </div>
           <button
             type="button"
             onClick={() => { setRows(prev => [...prev, newRow(nextKey)]); setNextKey(k => k + 1); }}
-            className="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 shadow-sm transition-colors"
+            className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 shadow-sm transition-colors"
           >
             <Plus className="w-3.5 h-3.5" /><span>THÊM HỢP ĐỒNG</span>
           </button>
         </div>
 
-        <div className="text-[11px] text-slate-500">
+        <div className="text-[11px] text-ink-faint">
           Phạt <strong>{(DEFAULT_PRINCIPAL_PENALTY_MULTIPLIER * 100).toFixed(0)}%</strong> lãi suất trong hạn
           trên nợ gốc quá hạn, và <strong>{(DEFAULT_INTEREST_PENALTY_RATE * 100).toFixed(0)}%/năm</strong> trên
           số tiền lãi chậm trả. Tính theo số ngày thực tế chia 365.
@@ -89,7 +88,7 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[11px] border-collapse min-w-[1080px]">
-            <thead className="bg-slate-100 dark:bg-slate-950 font-bold border-b border-slate-200 dark:border-slate-800">
+            <thead className="bg-panel-muted font-bold border-b border-line">
               <tr>
                 <th className="p-2">MÃ HĐ</th>
                 <th className="p-2 text-right min-w-[130px]">DƯ NỢ GỐC QUÁ HẠN</th>
@@ -105,9 +104,9 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
                 <th className="p-2" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+            <tbody className="divide-y divide-line">
               {results.map(({ row, calc }) => (
-                <tr key={row.key} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                <tr key={row.key} className="hover:bg-panel-muted">
                   <td className="p-1.5">
                     <input type="text" value={row.contractCode}
                       onChange={e => patch(row.key, { contractCode: e.target.value })} className={cellCls} />
@@ -122,7 +121,7 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
                       onChange={e => patch(row.key, { normalRateStr: e.target.value })}
                       className={`${cellCls} text-center`} />
                   </td>
-                  <td className="p-2 text-center font-mono font-bold text-rose-600 dark:text-rose-400">
+                  <td className="p-2 text-center font-mono font-bold text-neg">
                     {(calc.principalPenaltyRate * 100).toFixed(2)}%
                   </td>
                   <td className="p-1.5">
@@ -130,7 +129,7 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
                       onChange={e => patch(row.key, { principalDaysStr: e.target.value })}
                       className={`${cellCls} text-center`} />
                   </td>
-                  <td className="p-2 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
+                  <td className="p-2 text-right font-mono font-bold text-neg">
                     {fmtMoney(calc.principalPenalty)}
                   </td>
                   <td className="p-1.5">
@@ -148,10 +147,10 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
                       onChange={e => patch(row.key, { interestDaysStr: e.target.value })}
                       className={`${cellCls} text-center`} />
                   </td>
-                  <td className="p-2 text-right font-mono text-rose-600 dark:text-rose-400">
+                  <td className="p-2 text-right font-mono text-neg">
                     {fmtMoney(calc.interestPenalty)}
                   </td>
-                  <td className="p-2 text-right font-mono font-extrabold text-sky-600 dark:text-sky-400">
+                  <td className="p-2 text-right font-mono font-extrabold text-accent">
                     {fmtMoney(calc.totalDue)}
                   </td>
                   <td className="p-2 text-center">
@@ -159,7 +158,7 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
                       type="button"
                       onClick={() => setRows(prev => (prev.length > 1 ? prev.filter(r => r.key !== row.key) : prev))}
                       disabled={rows.length <= 1}
-                      className="text-slate-400 hover:text-rose-500 disabled:opacity-30 transition-colors"
+                      className="text-ink-faint hover:text-neg disabled:opacity-30 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -167,20 +166,20 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-sky-50 dark:bg-sky-950/40 font-bold border-t-2 border-sky-200 dark:border-sky-800">
+            <tfoot className="bg-accent-soft  font-bold border-t-2 border-accent/30">
               <tr>
                 <td className="p-2" colSpan={5}>TỔNG</td>
-                <td className="p-2 text-right font-mono text-rose-600 dark:text-rose-400">{fmtMoney(totals.principalPenalty)}</td>
+                <td className="p-2 text-right font-mono text-neg">{fmtMoney(totals.principalPenalty)}</td>
                 <td className="p-2" colSpan={3} />
-                <td className="p-2 text-right font-mono text-rose-600 dark:text-rose-400">{fmtMoney(totals.interestPenalty)}</td>
-                <td className="p-2 text-right font-mono text-sky-600 dark:text-sky-400 text-sm">{fmtMoney(totals.totalDue)}</td>
+                <td className="p-2 text-right font-mono text-neg">{fmtMoney(totals.interestPenalty)}</td>
+                <td className="p-2 text-right font-mono text-accent text-sm">{fmtMoney(totals.totalDue)}</td>
                 <td className="p-2" />
               </tr>
             </tfoot>
           </table>
         </div>
 
-        <div className="text-[11px] text-slate-500 space-y-0.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <div className="text-[11px] text-ink-faint space-y-0.5 pt-2 border-t border-line">
           <div>• Tiền phạt gốc = Dư nợ gốc quá hạn × (LS trong hạn × 150%) × Số ngày / 365</div>
           <div>• Tiền phạt lãi = Tiền lãi chậm trả × LS phạt lãi × Số ngày / 365</div>
           <div>• Tổng phải trả = Nợ gốc quá hạn + Lãi chậm trả + Phạt gốc + Phạt lãi</div>

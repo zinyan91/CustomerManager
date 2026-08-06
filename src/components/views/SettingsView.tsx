@@ -8,12 +8,6 @@ import {
   formatDecimalWith, formatPercentWith, formatTimeWith, formatMoneyWith,
 } from '../../lib/formatSettings';
 import { fmtMoney } from '../../lib/utils';
-import {
-  fetchContractsAPI, fetchRepaymentSchedulesAPI, bulkSaveRepaymentSchedulesAPI,
-} from '../../lib/api';
-import {
-  alignLastPeriodToMaturity, needsLastPeriodAlignment, recalculateSchedules,
-} from '../../lib/loanMath';
 import { useFontSettings } from '../../context/FontSettingsContext';
 import {
   FONT_FAMILIES, FONT_SIZE_LIMITS, FONT_PART_LABELS, type FontSettings,
@@ -32,41 +26,6 @@ export const SettingsView: React.FC = () => {
     e.preventDefault();
     setNotifySuccess(true);
     setTimeout(() => setNotifySuccess(false), 3000);
-  };
-
-  const [dongBoDangChay, setDongBoDangChay] = useState(false);
-  const [ketQuaDongBo, setKetQuaDongBo] = useState<string | null>(null);
-
-  const dongBoKyCuoi = async () => {
-    setDongBoDangChay(true);
-    setKetQuaDongBo(null);
-    try {
-      const kunns = (await fetchContractsAPI()).filter(c => c.IsSettled !== true);
-      let daSua = 0;
-      let boQua = 0;
-
-      for (const kunn of kunns) {
-        const daoHan = kunn.KunnDueDate || kunn.ContractEndDate || null;
-        const lich = await fetchRepaymentSchedulesAPI(kunn.Id);
-        if (lich.length === 0) continue;
-
-        if (!needsLastPeriodAlignment(lich, daoHan)) {
-          const kyCuoi = [...lich].sort((a, b) => a.PeriodNumber - b.PeriodNumber).at(-1);
-          if (daoHan && kyCuoi && kyCuoi.DueDate !== daoHan) boQua += 1;
-          continue;
-        }
-
-        const canhLai = alignLastPeriodToMaturity(lich, daoHan);
-        await bulkSaveRepaymentSchedulesAPI(recalculateSchedules(canhLai, kunn));
-        daSua += 1;
-      }
-
-      setKetQuaDongBo(`Đã sửa ${daSua} khoản · bỏ qua ${boQua} khoản`);
-    } catch (err: any) {
-      setKetQuaDongBo(`Không chạy được: ${err.message}`);
-    } finally {
-      setDongBoDangChay(false);
-    }
   };
 
   return (
@@ -371,21 +330,13 @@ export const SettingsView: React.FC = () => {
           <span>BẢO TRÌ DỮ LIỆU</span>
         </h3>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={dongBoKyCuoi}
-            disabled={dongBoDangChay}
-            className="bg-accent hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-accent-ink font-bold text-xs py-2.5 px-5 rounded-md flex items-center space-x-2"
-          >
-            <Wrench className="w-3.5 h-3.5" />
-            <span>{dongBoDangChay ? 'Đang chạy…' : 'Đồng bộ kỳ cuối theo ngày đáo hạn'}</span>
-          </button>
-          {ketQuaDongBo && (
-            <span className="text-xs font-mono font-bold text-ink-muted">
-              {ketQuaDongBo}
-            </span>
-          )}
+        <div className="bg-neg-soft border border-neg/40 rounded-md p-3 text-xs space-y-1.5">
+          <div className="font-bold text-neg">Đã tạm khoá: Đồng bộ kỳ cuối theo ngày đáo hạn</div>
+          <p className="text-ink">
+            Chức năng này lấy nhầm ngày hết hiệu lực HĐTD làm ngày đáo hạn KUNN khi khoản vay
+            bỏ trống ngày đáo hạn, khiến kỳ cuối bị kéo dài và tính lại sai toàn bộ tiền lãi.
+            Đang chờ khắc phục và đối chiếu dữ liệu trước khi mở lại.
+          </p>
         </div>
       </div>
     </div>

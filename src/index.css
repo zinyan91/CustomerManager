@@ -182,6 +182,12 @@ body {
   font-feature-settings: 'tnum' 1;
 }
 
+/* Thoát khỏi ngữ cảnh mono về đúng font người dùng chọn. Không dùng font-sans
+   của Tailwind: nó ép cứng một bộ font riêng, không nghe --app-font. */
+.font-app {
+  font-family: var(--app-font);
+}
+
 /* Số cỡ lớn phải khai ở đây, sau .font-mono. Lớp tiện dụng cỡ chữ của
    Tailwind cùng độ đặc hiệu với .font-mono nên thua theo thứ tự nguồn —
    viết text-[calc(...)] thẳng trong component sẽ bị ép về --fs-mono. */

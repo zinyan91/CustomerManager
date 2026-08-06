@@ -34,11 +34,6 @@ export const PeriodDetailCard: React.FC<PeriodDetailCardProps> = ({
     { key: 'penalty', label: t('period.rowPenalty'), ...o.penalty },
   ];
 
-  const pctRounded = o.total.due > 0
-    ? Math.round((Math.min(o.total.paid, o.total.due) / o.total.due) * 100)
-    : 0;
-  const collectedPct = pctRounded === 0 && o.total.paid > 0 ? '<1' : String(pctRounded);
-
   const cell = `${TABLE_CELL} whitespace-nowrap`;
   const headCell = `px-[var(--row-px)] py-2 ${TABLE_HEAD} font-semibold whitespace-nowrap`;
 
@@ -59,20 +54,6 @@ export const PeriodDetailCard: React.FC<PeriodDetailCardProps> = ({
             {t('period.overdueBadge', { days: o.overdueDays })}
           </span>
         )}
-      </div>
-
-      <div className={`px-4 py-4 border-b border-line ${o.total.unpaid > 0 ? 'bg-neg-soft' : 'bg-pos-soft'}`}>
-        <div className={`${SECTION_LABEL}`}>
-          {o.total.unpaid > 0 ? t('period.slabUnpaid') : t('period.slabSettled')}
-        </div>
-        <div className={`font-mono num-slab font-bold mt-1.5 ${
-          o.total.unpaid > 0 ? 'text-neg' : 'text-pos'
-        }`}>
-          {o.total.unpaid > 0 ? o.total.unpaid.toLocaleString('vi-VN') : o.total.due.toLocaleString('vi-VN')}
-        </div>
-        <div className="text-[10px] text-ink-faint mt-1.5">
-          {t('period.slabSub', { due: o.total.due.toLocaleString('vi-VN'), pct: collectedPct })}
-        </div>
       </div>
 
       <div className="overflow-x-auto">

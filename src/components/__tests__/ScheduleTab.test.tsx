@@ -90,24 +90,20 @@ describe('ScheduleTab dựng được lên', () => {
     const radios = screen.getAllByRole('radio');
     await user.click(radios[2]);
 
-    const slab = screen.getByText('Còn phải thu').parentElement!;
-    expect(within(slab).getByText('504.000.000')).toBeTruthy();
+    expect(document.querySelector('.num-lead')!.textContent).toBe('3');
+
+    const phieu = document.querySelectorAll('tfoot')[1];
+    expect(within(phieu).getAllByText('504.000.000')).toHaveLength(2);
+    expect(within(phieu).getByText('–')).toBeTruthy();
     expect(loiRender).toEqual([]);
   });
 
-  it('số tiền trên phiếu dùng lớp num-slab, không dùng cỡ chữ tuỳ biến bị .font-mono ép về 12px', () => {
+  it('số kỳ dùng lớp num-lead, không dùng cỡ chữ tuỳ biến bị .font-mono ép về 12px', () => {
     dungLen();
-    const slab = document.querySelector('.num-slab');
-    expect(slab).toBeTruthy();
-    expect(slab!.className).toContain('font-mono');
-    expect(document.querySelector('.num-lead')).toBeTruthy();
+    const lead = document.querySelector('.num-lead');
+    expect(lead).toBeTruthy();
+    expect(lead!.className).toContain('font-mono');
     expect(document.querySelector('[class*="text-[calc("]')).toBeNull();
-  });
-
-  it('đã thu một khoản rất nhỏ thì hiện <1% chứ không hiện 0%', () => {
-    dungLen([ky({ Id: 9, PeriodNumber: 9, DueDate: '2026-07-08', InterestAmount: 4_000_000, ActualPaidInterest: 2_592, OverdueInterestAmount: 0 })]);
-    expect(screen.getByText(/<1%/)).toBeTruthy();
-    expect(loiRender).toEqual([]);
   });
 
   it('tổng ở chân bảng bằng tổng phần còn nợ của các dòng, kể cả kỳ miễn phạt', () => {

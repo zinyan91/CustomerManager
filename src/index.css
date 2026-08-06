@@ -185,18 +185,10 @@ body {
 /* Số cỡ lớn phải khai ở đây, sau .font-mono. Lớp tiện dụng cỡ chữ của
    Tailwind cùng độ đặc hiệu với .font-mono nên thua theo thứ tự nguồn —
    viết text-[calc(...)] thẳng trong component sẽ bị ép về --fs-mono. */
-.num-lead,
-.num-slab {
-  line-height: 1;
-  letter-spacing: -0.01em;
-}
-
 .num-lead {
   font-size: calc(var(--fs-mono) * 1.7);
-}
-
-.num-slab {
-  font-size: calc(var(--fs-mono) * 2.6);
+  line-height: 1;
+  letter-spacing: -0.01em;
 }
 
 /* Bản in tự dựng HTML riêng, không ăn theo thiết lập màn hình. */

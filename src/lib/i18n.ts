@@ -78,9 +78,6 @@ const dictionary = {
 
     'period.empty': 'Chọn một kỳ ở bảng trên để xem phân rã khoản trả',
     'period.dueOn': 'đến hạn',
-    'period.slabUnpaid': 'Còn phải thu',
-    'period.slabSettled': 'Đã thu đủ',
-    'period.slabSub': 'trên {due} phải trả · đã thu {pct}%',
     'period.overdueBadge': 'Quá hạn {days} ngày',
     'period.elements': 'Thành phần',
     'period.colDue': 'Phải trả',
@@ -159,9 +156,6 @@ const dictionary = {
 
     'period.empty': 'Select a repayment above to see its breakdown',
     'period.dueOn': 'due',
-    'period.slabUnpaid': 'Still to collect',
-    'period.slabSettled': 'Fully collected',
-    'period.slabSub': 'of {due} due · {pct}% collected',
     'period.overdueBadge': '{days} days overdue',
     'period.elements': 'Element',
     'period.colDue': 'Due',

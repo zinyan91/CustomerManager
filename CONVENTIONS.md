@@ -35,7 +35,7 @@ Rà soát 05/08/2026 tìm ra ba đường ghi vẫn đang **sống**, không ph�
 
 Cái giá đo được: `HĐTD:` có ở 100 KUNN và **lệch số thật ở 2 dòng** (LÊ VĂN CAO ghi `HĐTD-01`/`HĐTD-02`). Vì `getMasterHdtdNumber` đọc `Note` **trước** `ContractNumber`, và `computeLimitGroups` lấy hàm đó làm khoá gom nhóm, `findLimitGroupFor` tra bằng số thật không khớp được — chốt kiểm soát hạn mức của hai KUNN đó rơi về mặc định thay vì chặn theo nhóm. Còn `[TRẢ TRƯỚC HẠN:]` ghi số tiền vào `Note` mà bỏ trống `PrepaidPrincipalAmount`, nên tiền trả trước hạn vô hình với `paidPrincipalOf` và `recalculateSchedules`.
 
-Cả ba đã bịt. Gỡ chuỗi khỏi ghi chú dùng `stripLegacyNoteBlobs` (`utils.ts`) — **giữ nguyên phần ghi chú thật của banker trong cùng ô**. Báo cáo `supabase/reports/02_du_lieu_nghiep_vu_trong_note.sql` đo phần dữ liệu còn lại, migration 24 dọn.
+Cả ba đã bịt, và migration 24 đã dọn dữ liệu (05/08/2026: sáu khối chuỗi về 0, 82 ô ghi chú thành rỗng, đối chiếu bản sao lưu xác nhận không mất ghi chú thật nào). Gỡ chuỗi dùng `stripLegacyNoteBlobs` (`utils.ts`) — **giữ nguyên phần ghi chú thật của banker trong cùng ô**. Báo cáo `supabase/reports/02_du_lieu_nghiep_vu_trong_note.sql` đo lại bất cứ lúc nào.
 
 **Sinh ID do cơ sở dữ liệu đảm nhiệm** qua sequence. Không tính `max(Id)+1` ở client: dưới RLS, client chỉ nhìn thấy phần dữ liệu của mình nên con số đó luôn sai và gây trùng khoá chính.
 

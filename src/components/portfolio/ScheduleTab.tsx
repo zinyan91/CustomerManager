@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
 import { fmtDate, fmtMoney, fmtRate } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
-import {
-  paidPrincipalOf, computeSchedulePenalty, isScheduleFullySettled, schedulePaymentStatus,
-} from '../../lib/loanMath';
+import { isScheduleFullySettled } from '../../lib/loanMath';
+import { periodObligation, sumObligations } from '../../lib/scheduleView';
 import { PeriodDetailCard } from './PeriodDetailCard';
 import { useLang } from '../../context/LanguageContext';
+import { PANEL, SECTION_LABEL, TABLE_CELL, TABLE_HEAD } from '../../lib/uiClasses';
 
 type Density = 'cozy' | 'compact';
 
@@ -44,25 +44,18 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
     }
   }, [selectedContract?.Id, schedules]);
 
-  const getPenaltyForSchedule = (s: RepaymentSchedule) => {
-    if (isScheduleFullySettled(s)) return s.OverdueInterestAmount || 0;
-    return computeSchedulePenalty(
-      s,
-      getEffectiveActiveRate(selectedContract, s.DueDate)
-    ).principalPenalty;
-  };
-
-  const totalPenaltySum = schedules.reduce((a, s) => a + getPenaltyForSchedule(s), 0);
+  const rows = schedules.map(s => ({ s, o: periodObligation(s, selectedContract) }));
+  const grandTotal = sumObligations(rows.map(r => r.o));
   const selectedScheduleObj = schedules.find(s => s.Id === selectedScheduleId) || null;
-  const settledCount = schedules.filter(isScheduleFullySettled).length;
+  const settledCount = rows.filter(r => r.o.isSettled).length;
 
-  const cell = 'px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap';
-  const headCell = 'px-[var(--row-px)] py-2 text-[10px] font-semibold uppercase tracking-[0.09em] text-ink-faint whitespace-nowrap';
+  const cell = `${TABLE_CELL} whitespace-nowrap`;
+  const headCell = `px-[var(--row-px)] py-2 ${TABLE_HEAD} font-semibold whitespace-nowrap`;
 
   return (
     <div className="space-y-3" data-density={density}>
-      <div className="bg-panel border border-line rounded-lg p-4">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint mb-2.5">
+      <div className={`${PANEL} p-4`}>
+        <div className={`${SECTION_LABEL} mb-2.5`}>
           {t('schedule.contracts')}
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -104,10 +97,11 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
         )}
       </div>
 
-      <div className="bg-panel border border-line rounded-lg overflow-hidden">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_400px] gap-3 items-start">
+      <div className={`${PANEL} overflow-hidden`}>
         <div className="px-4 py-3 border-b border-line flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-baseline gap-2.5">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
+            <span className={`${SECTION_LABEL}`}>
               {t('schedule.title')}
             </span>
             {selectedContract && (
@@ -139,7 +133,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
           </div>
         </div>
 
-        <div className="overflow-x-auto max-h-[460px] overflow-y-auto">
+        <div className="overflow-x-auto max-h-[min(70vh,640px)] overflow-y-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead className="sticky top-0 z-10 bg-panel-muted">
               <tr className="border-b border-line">
@@ -161,30 +155,10 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                 <tr><td colSpan={9} className="text-center py-12 text-ink-faint">
                   {t('schedule.emptyNoSchedule')}
                 </td></tr>
-              ) : schedules.map(s => {
-                let autoOverdue = 0;
-                if (!isScheduleFullySettled(s) && s.DueDate) {
-                  const parts = s.DueDate.split('-');
-                  if (parts.length === 3) {
-                    const due = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    due.setHours(0, 0, 0, 0);
-                    const diff = today.getTime() - due.getTime();
-                    if (diff > 0) autoOverdue = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                  }
-                }
-
-                const daThuDu = isScheduleFullySettled(s);
-                const paymentStat = schedulePaymentStatus(s);
-                const effectiveOverdueDays = daThuDu
-                  ? (s.OverdueDays || 0)
-                  : ((s.OverdueDays && s.OverdueDays > 0) ? s.OverdueDays : autoOverdue);
-                const penaltyAmount = s.OverdueInterestAmount ?? getPenaltyForSchedule(s);
-                const isOverdue = effectiveOverdueDays > 0 && !daThuDu;
-                const repaymentDueTotal = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penaltyAmount;
-                const paidTotal = paidPrincipalOf(s) + (daThuDu ? (s.InterestAmount || 0) : paymentStat.collectedInterest) + (daThuDu ? penaltyAmount : 0);
-                const repaymentUnpaidTotal = Math.max(0, repaymentDueTotal - paidTotal);
+              ) : rows.map(({ s, o }) => {
+                const daThuDu = o.isSettled;
+                const isOverdue = o.isOverdue;
+                const effectiveOverdueDays = o.overdueDays;
                 const isSelectedRow = selectedScheduleId === s.Id;
 
                 const rail = isOverdue ? 'border-l-neg' : daThuDu ? 'border-l-pos' : 'border-l-transparent';
@@ -229,9 +203,9 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                     <td className={`${cell} text-right font-mono ${effectiveOverdueDays > 0 ? 'text-neg font-semibold' : 'text-ink-faint'}`}>
                       {effectiveOverdueDays > 0 ? effectiveOverdueDays : '–'}
                     </td>
-                    <td className={`${cell} text-right font-mono text-ink`}>{num(repaymentDueTotal)}</td>
-                    <td className={`${cell} text-right font-mono ${repaymentUnpaidTotal > 0 ? 'text-neg font-semibold' : 'text-ink-faint'}`}>
-                      {num(repaymentUnpaidTotal)}
+                    <td className={`${cell} text-right font-mono text-ink`}>{num(o.total.due)}</td>
+                    <td className={`${cell} text-right font-mono ${o.total.unpaid > 0 ? 'text-neg font-semibold' : 'text-ink-faint'}`}>
+                      {num(o.total.unpaid)}
                     </td>
                     <td className={`${cell} font-mono ${s.PaymentDate ? 'text-ink-muted' : 'text-ink-faint'}`}>
                       {s.PaymentDate ? fmtDate(s.PaymentDate) : '–'}
@@ -256,21 +230,14 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
             {schedules.length > 0 && (
               <tfoot className="sticky bottom-0 bg-panel-muted">
                 <tr className="border-t border-line-strong">
-                  <td className={`${cell} text-[10px] font-semibold uppercase tracking-[0.09em] text-ink-faint`} colSpan={5}>
+                  <td className={`${cell} ${TABLE_HEAD} font-semibold`} colSpan={5}>
                     {t('schedule.total')}
                   </td>
                   <td className={`${cell} text-right font-mono font-bold text-ink`}>
-                    {(schedules.reduce((a, s) => a + (s.PrincipalAmount || 0) + (s.InterestAmount || 0), 0) + totalPenaltySum).toLocaleString('vi-VN')}
+                    {grandTotal.due.toLocaleString('vi-VN')}
                   </td>
-                  <td className={`${cell} text-right font-mono font-bold text-neg`}>
-                    {schedules.reduce((a, s) => {
-                      const penalty = getPenaltyForSchedule(s);
-                      const due = (s.PrincipalAmount || 0) + (s.InterestAmount || 0) + penalty;
-                      const isPaid = isScheduleFullySettled(s);
-                      const pStat = schedulePaymentStatus(s);
-                      const paid = paidPrincipalOf(s) + (isPaid ? (s.InterestAmount || 0) : pStat.collectedInterest) + (isPaid ? penalty : 0);
-                      return a + Math.max(0, due - paid);
-                    }, 0).toLocaleString('vi-VN')}
+                  <td className={`${cell} text-right font-mono font-bold ${grandTotal.unpaid > 0 ? 'text-neg' : 'text-ink-faint'}`}>
+                    {grandTotal.unpaid.toLocaleString('vi-VN')}
                   </td>
                   <td colSpan={2}></td>
                 </tr>
@@ -281,11 +248,14 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
       </div>
 
       {selectedContract && (
-        <PeriodDetailCard
-          selectedContract={selectedContract}
-          selectedSchedule={selectedScheduleObj}
-        />
+        <div className="xl:sticky xl:top-[calc(var(--header-h)+0.75rem)]">
+          <PeriodDetailCard
+            selectedContract={selectedContract}
+            selectedSchedule={selectedScheduleObj}
+          />
+        </div>
       )}
+      </div>
     </div>
   );
 };

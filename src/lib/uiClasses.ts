@@ -32,6 +32,8 @@ export const BTN_DANGER = `${BTN_BASE} border border-neg/30 text-neg hover:bg-ne
 
 export const BTN_GHOST = BTN_SECONDARY;
 
+export const PANEL = `bg-panel border border-line ${RADIUS_PANEL}`;
+
 export const HEADING_SCREEN = 'text-sm font-semibold tracking-tight text-ink';
 
 export const HEADING_PANEL = 'text-xs font-semibold text-ink';

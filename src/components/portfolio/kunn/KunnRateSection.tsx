@@ -79,7 +79,7 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
   setNewAdjReason,
   showNotify,
 }) => (
-  <div className={`rounded-xl p-4 space-y-3 border ${sectionBoxBg}`}>
+  <div className={`rounded-md p-4 space-y-3 border ${sectionBoxBg}`}>
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="text-[11px] font-bold text-neg uppercase tracking-wider">
         CẤU TRÚC LÃI SUẤT
@@ -115,30 +115,30 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
           <input type="number" step="0.01" min={0} value={ratePreferential}
             onChange={e => setRatePreferential(e.target.value)}
             placeholder="7.5"
-            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-neg ${inputStyle}`} />
+            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-neg ${inputStyle}`} />
         </div>
         <div>
           <label className={`block mb-1 ${labelStyle}`}>Thời gian ưu đãi (tháng)</label>
           <input type="number" min={0} value={ratePreferentialMonths}
             onChange={e => setRatePreferentialMonths(e.target.value)}
             placeholder="6, 12..."
-            className={`w-full rounded-xl p-2.5 text-xs ${inputStyle}`} />
+            className={`w-full rounded-md p-2.5 text-xs ${inputStyle}`} />
         </div>
         <div>
           <label className={`block mb-1 ${labelStyle}`}>Biên độ cộng thêm %/năm</label>
           <input type="number" step="0.01" value={rateMargin}
             onChange={e => setRateMargin(e.target.value)}
             placeholder="3.5"
-            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-warn ${inputStyle}`} />
+            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-warn ${inputStyle}`} />
         </div>
-        <div className={`col-span-full space-y-2 p-3 rounded-xl border ${'bg-accent-soft border-accent/30'
+        <div className={`col-span-full space-y-2 p-3 rounded-md border ${'bg-accent-soft border-accent/30'
           }`}>
           <div className="flex items-center justify-between text-xs">
             <span className={labelStyle}>Lãi suất sau ưu đãi:</span>
             <span className="font-mono font-bold text-warn text-sm">{postPrefRate.toFixed(2)} %/năm</span>
           </div>
           <div className="flex items-center justify-between text-xs pt-2 border-t border-accent/30 ">
-            <span className="font-bold text-accent ">👉 LÃI SUẤT ÁP DỤNG (KÈM PHẠT {surchargeVal > 0 ? `+${surchargeVal}%` : '0%'}):</span>
+            <span className="font-bold text-accent ">LÃI SUẤT ÁP DỤNG (KÈM PHẠT {surchargeVal > 0 ? `+${surchargeVal}%` : '0%'}):</span>
             <span className="font-mono font-bold text-neg text-sm">
               {currentActiveRateDisplay.toFixed(2)} %/năm
             </span>
@@ -152,23 +152,23 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
           <input type="number" step="0.01" min={0} value={rateBase}
             onChange={e => setRateBase(e.target.value)}
             placeholder="8.5"
-            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-neg ${inputStyle}`} />
+            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-neg ${inputStyle}`} />
         </div>
         <div>
           <label className={`block mb-1 ${labelStyle}`}>Biên độ cộng thêm %/năm</label>
           <input type="number" step="0.01" value={rateMargin}
             onChange={e => setRateMargin(e.target.value)}
             placeholder="3.5"
-            className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-warn ${inputStyle}`} />
+            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-warn ${inputStyle}`} />
         </div>
-        <div className={`col-span-full space-y-2 p-3 rounded-xl border ${'bg-accent-soft border-accent/30'
+        <div className={`col-span-full space-y-2 p-3 rounded-md border ${'bg-accent-soft border-accent/30'
           }`}>
           <div className="flex items-center justify-between text-xs">
             <span className={labelStyle}>Lãi suất thông thường chuẩn (LSCS + Biên độ):</span>
             <span className="font-mono font-bold text-warn text-sm">{normalRate.toFixed(2)} %/năm</span>
           </div>
           <div className="flex items-center justify-between text-xs pt-2 border-t border-accent/30 ">
-            <span className="font-bold text-accent ">👉 LÃI SUẤT ÁP DỤNG THỰC TẾ (LSCS + BIÊN ĐỘ + PHẠT {surchargeVal > 0 ? `+${surchargeVal}%` : '0%'}):</span>
+            <span className="font-bold text-accent ">LÃI SUẤT ÁP DỤNG THỰC TẾ (LSCS + BIÊN ĐỘ + PHẠT {surchargeVal > 0 ? `+${surchargeVal}%` : '0%'}):</span>
             <span className="font-mono font-bold text-neg text-sm">
               {currentActiveRateDisplay.toFixed(2)} %/năm
             </span>
@@ -183,21 +183,21 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
         <input type="number" step="0.1" min={0} value={rateConditionSurcharge}
           onChange={e => setRateConditionSurcharge(e.target.value)}
           placeholder="0.5 (%/năm)..."
-          className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold text-neg ${inputStyle}`} />
+          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-neg ${inputStyle}`} />
       </div>
       <div>
         <label className={`block mb-1 ${labelStyle}`}>Sàn lãi suất theo hợp đồng (%/năm)</label>
         <input type="number" step="0.01" min={0} value={rateFloor}
           onChange={e => setRateFloor(e.target.value)}
           placeholder="Bỏ trống nếu hợp đồng không quy định"
-          className={`w-full rounded-xl p-2.5 text-xs font-mono font-bold ${inputStyle}`} />
+          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold ${inputStyle}`} />
         <div className="mt-1 text-[11px] text-ink-faint">
           Chặn lãi thả nổi không tụt dưới mức này khi biên độ âm
         </div>
       </div>
       <div>
         <label className={`block mb-1 ${labelStyle}`}>Điều kiện phê duyệt (CASA / BCTC)</label>
-        <div className="text-xs p-2.5 rounded-xl border bg-warn-soft  border-warn/30  text-warn font-medium">
+        <div className="text-xs p-2.5 rounded-md border bg-warn-soft  border-warn/30  text-warn font-medium">
         </div>
       </div>
     </div>
@@ -205,7 +205,7 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
     <div className="pt-3 border-t border-line space-y-3">
       <div className="flex items-center justify-between">
         <div className="font-bold text-accent text-xs uppercase flex items-center space-x-1.5">
-          <span>📈 LỊCH SỬ ĐIỀU CHỈNH LÃI SUẤT</span>
+          <span>LỊCH SỬ ĐIỀU CHỈNH LÃI SUẤT</span>
         </div>
         <span className="text-[11px] text-ink-faint font-mono">
           {rateHistory.length} đợt điều chỉnh đã lưu
@@ -213,33 +213,33 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
       </div>
 
       {rateHistory.length > 0 && (
-        <div className="border rounded-xl overflow-hidden border-line">
+        <div className="border rounded-md overflow-hidden border-line">
           <table className="w-full text-left text-xs">
             <thead className={tableHeaderStyle}>
               <tr>
-                <th className="p-2.5">STT</th>
-                <th className="p-2.5">NGÀY HẠN HIỆU LỰC</th>
-                <th className="p-2.5 text-right">LSCS (%)</th>
-                <th className="p-2.5 text-right">BIÊN ĐỘ (%)</th>
-                <th className="p-2.5 text-right">PHẠT (%)</th>
-                <th className="p-2.5 text-right">LÃI SUẤT ÁP DỤNG (%/NĂM)</th>
-                <th className="p-2.5">NỘI DUNG / LÝ DO ĐIỀU CHỈNH</th>
-                <th className="p-2.5 text-center">XÓA</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)]">STT</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)]">NGÀY HẠN HIỆU LỰC</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">LSCS (%)</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">BIÊN ĐỘ (%)</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">PHẠT (%)</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">LÃI SUẤT ÁP DỤNG (%/NĂM)</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)]">NỘI DUNG / LÝ DO ĐIỀU CHỈNH</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">XÓA</th>
               </tr>
             </thead>
             <tbody className={`divide-y ${'divide-line'}`}>
               {rateHistory.map((item, idx) => (
                 <tr key={item.id} className="hover:bg-panel-muted ">
-                  <td className="p-2.5 font-bold text-center">{idx + 1}</td>
-                  <td className="p-2.5 font-mono font-bold text-accent">{fmtDate(item.effectiveDate)}</td>
-                  <td className="p-2.5 text-right font-mono">{item.baseRatePercent ? `${item.baseRatePercent}%` : '—'}</td>
-                  <td className="p-2.5 text-right font-mono">{item.marginPercent ? `+${item.marginPercent}%` : '—'}</td>
-                  <td className="p-2.5 text-right font-mono text-neg font-bold">{item.penaltyPercent ? `+${item.penaltyPercent}%` : '0%'}</td>
-                  <td className="p-2.5 text-right font-mono font-extrabold text-neg text-sm">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-bold text-center">{idx + 1}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono font-bold text-accent">{fmtDate(item.effectiveDate)}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{item.baseRatePercent ? `${item.baseRatePercent}%` : '—'}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{item.marginPercent ? `+${item.marginPercent}%` : '—'}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-neg font-bold">{item.penaltyPercent ? `+${item.penaltyPercent}%` : '0%'}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-extrabold text-neg text-sm">
                     {item.ratePercent.toFixed(2)} %/năm
                   </td>
-                  <td className="p-2.5 text-ink-muted font-medium">{item.reason || 'Điều chỉnh LSCS'}</td>
-                  <td className="p-2.5 text-center">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-ink-muted font-medium">{item.reason || 'Điều chỉnh LSCS'}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
                     <button type="button" onClick={() => setRateHistory(rateHistory.filter(h => h.id !== item.id))}
                       className="text-neg hover:text-neg">
                       <Trash2 className="w-4 h-4" />
@@ -252,30 +252,30 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
         </div>
       )}
 
-      <div className="p-3 rounded-xl border border-accent/30  bg-accent-soft  space-y-3">
+      <div className="p-3 rounded-md border border-accent/30  bg-accent-soft  space-y-3">
         <div className="font-bold text-accent  text-xs">
           + THÊM ĐỢT ĐIỀU CHỈNH LÃI SUẤT MỚI (KHI NGÂN HÀNG THAY ĐỔI LSCS / THẢ NỔI):
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
           <div>
             <label className={`block mb-1 ${labelStyle}`}>Ngày hiệu lực *</label>
-            <DateInput value={newAdjDate} onChange={setNewAdjDate} className={`w-full rounded-xl p-2 ${inputStyle}`} />
+            <DateInput value={newAdjDate} onChange={setNewAdjDate} className={`w-full rounded-md p-2 ${inputStyle}`} />
           </div>
           <div>
             <label className={`block mb-1 ${labelStyle}`}>LSCS (%)</label>
-            <input type="number" step="0.01" value={newAdjBaseRate} onChange={e => setNewAdjBaseRate(e.target.value)} placeholder="9.2" className={`w-full rounded-xl p-2 font-mono ${inputStyle}`} />
+            <input type="number" step="0.01" value={newAdjBaseRate} onChange={e => setNewAdjBaseRate(e.target.value)} placeholder="9.2" className={`w-full rounded-md p-2 font-mono ${inputStyle}`} />
           </div>
           <div>
             <label className={`block mb-1 ${labelStyle}`}>Biên độ (%)</label>
-            <input type="number" step="0.01" value={newAdjMargin} onChange={e => setNewAdjMargin(e.target.value)} placeholder="1.35" className={`w-full rounded-xl p-2 font-mono ${inputStyle}`} />
+            <input type="number" step="0.01" value={newAdjMargin} onChange={e => setNewAdjMargin(e.target.value)} placeholder="1.35" className={`w-full rounded-md p-2 font-mono ${inputStyle}`} />
           </div>
           <div>
             <label className={`block mb-1 ${labelStyle}`}>Phạt vi phạm (%)</label>
-            <input type="number" step="0.1" value={newAdjPenalty} onChange={e => setNewAdjPenalty(e.target.value)} placeholder="0.5" className={`w-full rounded-xl p-2 font-mono ${inputStyle}`} />
+            <input type="number" step="0.1" value={newAdjPenalty} onChange={e => setNewAdjPenalty(e.target.value)} placeholder="0.5" className={`w-full rounded-md p-2 font-mono ${inputStyle}`} />
           </div>
           <div>
             <label className={`block mb-1 ${labelStyle}`}>Lý do / Nội dung</label>
-            <input type="text" value={newAdjReason} onChange={e => setNewAdjReason(e.target.value)} placeholder="Tăng LSCS T1/2027..." className={`w-full rounded-xl p-2 ${inputStyle}`} />
+            <input type="text" value={newAdjReason} onChange={e => setNewAdjReason(e.target.value)} placeholder="Tăng LSCS T1/2027..." className={`w-full rounded-md p-2 ${inputStyle}`} />
           </div>
         </div>
         <div className="flex justify-end">
@@ -315,7 +315,7 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
             setNewAdjPenalty('');
             setNewAdjReason('');
             showNotify('success', `Đã thêm đợt điều chỉnh LS ${totalRate.toFixed(2)}%/năm từ ngày ${fmtDate(newAdjDate)}`);
-          }} className="bg-accent hover:opacity-90 text-accent-ink font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center space-x-1.5 shadow-sm">
+          }} className="bg-accent hover:opacity-90 text-accent-ink font-bold px-3.5 py-1.5 rounded-md text-xs flex items-center space-x-1.5">
             <span>+ Thêm đợt điều chỉnh LS này</span>
           </button>
         </div>

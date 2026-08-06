@@ -129,7 +129,7 @@ export const CofView: React.FC = () => {
   };
 
   const cardBg = UI.containerCardBg;
-  const inputCls = `w-full p-2 rounded-xl border text-xs font-mono bg-transparent ${
+  const inputCls = `w-full p-2 rounded-md border text-xs font-mono bg-transparent ${
     'border-line'
   }`;
   const cellCls = `w-full p-1 rounded text-[11px] font-mono text-center bg-transparent border ${
@@ -147,37 +147,37 @@ export const CofView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
 
-      <div className={`${cardBg} rounded-2xl p-3 border flex flex-wrap items-center justify-between gap-3`}>
+      <div className={`${cardBg} rounded-lg p-3 border flex flex-wrap items-center justify-between gap-3`}>
         <div className="flex items-center space-x-2">
           <Landmark className="w-5 h-5 text-pos" />
-          <span className="text-sm font-bold uppercase tracking-wider text-accent">
+          <span className="text-sm font-bold tracking-tight text-accent">
             GIÁ MUA VỐN TỪ HỘI SỞ — FTP BÁN (COF)
           </span>
         </div>
         <div className="flex items-center gap-2">
           <label className="text-[11px] font-bold text-ink-faint">Áp dụng ngày</label>
           <input type="date" value={onDate} onChange={e => setOnDate(e.target.value)} className={`${inputCls} w-auto`} />
-          <button type="button" onClick={loadAll} title="Tải lại" className="p-2 rounded-xl text-ink-faint hover:text-accent transition-colors">
+          <button type="button" onClick={loadAll} title="Tải lại" className="p-2 rounded-md text-ink-faint hover:text-accent transition-colors">
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {loadError && (
-        <div className="rounded-2xl border border-neg/30 bg-neg-soft  p-3 text-xs font-bold text-neg">
+        <div className="rounded-lg border border-neg/30 bg-neg-soft  p-3 text-xs font-bold text-neg">
           {loadError}
         </div>
       )}
 
       {!program && !loadError && (
-        <div className="rounded-2xl border border-warn/30 bg-warn-soft  p-4 text-xs font-bold text-warn">
+        <div className="rounded-lg border border-warn/30 bg-warn-soft  p-4 text-xs font-bold text-warn">
           Không có bảng giá mua bán vốn nội bộ nào hiệu lực tại ngày {fmtDate(onDate)}.
         </div>
       )}
 
       {program && (
         <>
-          <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-2`}>
+          <div className={`${cardBg} rounded-lg p-4 border space-y-2`}>
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
               <div>
                 <div className="flex items-center space-x-2">
@@ -197,8 +197,8 @@ export const CofView: React.FC = () => {
             </div>
           </div>
 
-          <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
-            <div className="font-bold text-xs uppercase tracking-wider text-accent border-b border-line pb-2">
+          <div className={`${cardBg} rounded-lg p-4 border space-y-3`}>
+            <div className="font-bold text-xs tracking-tight text-accent border-b border-line pb-2">
               TRA NHANH COF &amp; MARGIN
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -218,7 +218,7 @@ export const CofView: React.FC = () => {
                 <label className="block text-[11px] font-bold text-ink-faint mb-1">Lãi suất cho vay (%/năm)</label>
                 <input type="number" step="0.01" value={lendingRateStr} onChange={e => setLendingRateStr(e.target.value)} className={`${inputCls} font-bold`} />
               </div>
-              <div className="p-3 rounded-xl bg-accent-soft  border border-accent/30 ">
+              <div className="p-3 rounded-md bg-accent-soft  border border-accent/30 ">
                 <div className="text-[10px] font-bold text-ink-faint uppercase">COF → MARGIN</div>
                 <div className="font-mono font-extrabold text-accent mt-0.5">
                   {selectedCof === null ? 'Không có mức' : fmtPercentEmpty(selectedCof)}
@@ -234,9 +234,9 @@ export const CofView: React.FC = () => {
             </div>
           </div>
 
-          <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
+          <div className={`${cardBg} rounded-lg border overflow-hidden`}>
             <div className="p-3 border-b border-line flex flex-wrap items-center justify-between gap-2">
-              <span className="font-bold text-xs uppercase tracking-wider text-accent">
+              <span className="font-bold text-xs tracking-tight text-accent">
                 {COF_SECTION_LABELS.vnd_thong_thuong}
               </span>
               {isAdmin && (
@@ -248,11 +248,11 @@ export const CofView: React.FC = () => {
             </div>
             <div className="overflow-x-auto max-h-[520px]">
               <table className="w-full text-left text-[11px] border-collapse">
-                <thead className="sticky top-0 bg-panel-muted font-bold border-b border-line">
+                <thead className="sticky top-0 bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line">
                   <tr>
-                    <th className="p-2 min-w-[170px]">KỲ HẠN</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[170px]">KỲ HẠN</th>
                     {COF_RATE_COLUMNS.map(c => (
-                      <th key={c.key} className="p-2 text-center min-w-[92px]">
+                      <th key={c.key} className="px-[var(--row-px)] py-[var(--row-py)] text-center min-w-[92px]">
                         {c.label}{c.hint && <span className="text-ink-faint"> {c.hint}</span>}
                       </th>
                     ))}
@@ -261,7 +261,7 @@ export const CofView: React.FC = () => {
                 <tbody className="divide-y divide-line">
                   {standardRates.map(row => (
                     <tr key={row.Id} className="hover:bg-panel-muted">
-                      <td className="p-2 font-semibold">{row.TenorLabel}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] font-semibold">{row.TenorLabel}</td>
                       {COF_RATE_COLUMNS.map(c => {
                         const key = `${row.Id}:${c.key}`;
                         const value = row[c.key];
@@ -313,17 +313,17 @@ export const CofView: React.FC = () => {
             if (sectionItems.length === 0) return null;
             const groups = groupRateItems(sectionItems);
             return (
-              <div key={section} className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
-                <div className="p-3 border-b border-line font-bold text-xs uppercase tracking-wider text-accent">
+              <div key={section} className={`${cardBg} rounded-lg border overflow-hidden`}>
+                <div className="p-3 border-b border-line font-bold text-xs tracking-tight text-accent">
                   {COF_SECTION_LABELS[section]}
                 </div>
                 <div className="overflow-x-auto max-h-[420px]">
                   <table className="w-full text-left text-[11px] border-collapse">
-                    <thead className="sticky top-0 bg-panel-muted font-bold border-b border-line">
+                    <thead className="sticky top-0 bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line">
                       <tr>
-                        <th className="p-2 min-w-[220px]">NỘI DUNG</th>
-                        <th className="p-2 text-center min-w-[110px]">COF (%/NĂM)</th>
-                        <th className="p-2">CÔNG THỨC / GHI CHÚ</th>
+                        <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[220px]">NỘI DUNG</th>
+                        <th className="px-[var(--row-px)] py-[var(--row-py)] text-center min-w-[110px]">COF (%/NĂM)</th>
+                        <th className="px-[var(--row-px)] py-[var(--row-py)]">CÔNG THỨC / GHI CHÚ</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-line">
@@ -331,7 +331,7 @@ export const CofView: React.FC = () => {
                         <React.Fragment key={gi}>
                           {g.group && (
                             <tr className="bg-panel-muted ">
-                              <td colSpan={3} className="p-2 font-bold text-ink-muted">{g.group}</td>
+                              <td colSpan={3} className="px-[var(--row-px)] py-[var(--row-py)] font-bold text-ink-muted">{g.group}</td>
                             </tr>
                           )}
                           {g.items.map(item => {
@@ -339,7 +339,7 @@ export const CofView: React.FC = () => {
                             const blank = item.RateAnnual === null || item.RateAnnual === undefined;
                             return (
                               <tr key={item.Id} className="hover:bg-panel-muted">
-                                <td className="p-2">{item.Label}</td>
+                                <td className="px-[var(--row-px)] py-[var(--row-py)]">{item.Label}</td>
                                 {isAdmin && editing === key ? (
                                   <td className="p-1">
                                     <input
@@ -366,7 +366,7 @@ export const CofView: React.FC = () => {
                                     {blank ? '—' : item.RateAnnual === 0 ? 'Miễn phí' : fmtPercentEmpty(item.RateAnnual)}
                                   </td>
                                 )}
-                                <td className="p-2 text-ink-faint">
+                                <td className="px-[var(--row-px)] py-[var(--row-py)] text-ink-faint">
                                   {item.Formula && <span className="font-mono">{item.Formula}</span>}
                                   {item.Formula && item.Note && <br />}
                                   {item.Note}
@@ -384,14 +384,14 @@ export const CofView: React.FC = () => {
           })}
 
           {saveMsg && (
-            <div className={`${cardBg} rounded-2xl p-3 border text-xs font-bold ${
+            <div className={`${cardBg} rounded-lg p-3 border text-xs font-bold ${
               saveMsg === 'Đã lưu.' ? 'text-pos' : 'text-neg'
             }`}>
               {saveMsg}
             </div>
           )}
 
-          <div className={`${cardBg} rounded-2xl p-4 border shadow-sm text-[11px] text-ink-faint space-y-1`}>
+          <div className={`${cardBg} rounded-lg p-4 border text-[11px] text-ink-faint space-y-1`}>
             <div className="flex items-center space-x-1.5 font-bold text-ink-muted">
               <Info className="w-3.5 h-3.5 text-accent" />
               <span>PHẠM VI ĐÃ NẠP</span>

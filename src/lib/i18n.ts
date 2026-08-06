@@ -7,6 +7,8 @@ export const LANGS: { key: Lang; label: string; htmlLang: string }[] = [
   { key: 'en', label: 'EN', htmlLang: 'en' },
 ];
 
+export const LANG_SWITCH_ENABLED = false;
+
 const dictionary = {
   vi: {
     'nav.groupOverview': 'Tổng quan',

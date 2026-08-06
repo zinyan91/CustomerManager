@@ -72,7 +72,7 @@ export const SettingsView: React.FC = () => {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       {notifySuccess && (
-        <div className="bg-pos-soft border border-pos/30 text-pos p-4 rounded-xl flex items-center space-x-3 text-sm font-medium">
+        <div className="bg-pos-soft border border-pos/30 text-pos p-4 rounded-md flex items-center space-x-3 text-sm font-medium">
           <CheckCircle className="w-5 h-5 text-pos" />
           <span>Đã lưu các thiết lập cá nhân thành công!</span>
         </div>
@@ -80,7 +80,7 @@ export const SettingsView: React.FC = () => {
 
       <div className="flex items-center justify-between border-b border-line pb-3">
         <div>
-          <h2 className="text-base font-bold text-ink uppercase tracking-tight flex items-center space-x-2">
+          <h2 className="text-base font-bold text-ink  tracking-tight flex items-center space-x-2">
             <Settings className="w-4 h-4 text-accent" />
             <span>CÀI ĐẶT ỨNG DỤNG CÁ NHÂN</span>
           </h2>
@@ -90,7 +90,7 @@ export const SettingsView: React.FC = () => {
 
       <form onSubmit={handleSaveSettings} className="space-y-5 text-xs">
 
-        <div className="bg-panel border border-line p-5 rounded-2xl space-y-4">
+        <div className="bg-panel border border-line p-5 rounded-lg space-y-4">
           <h3 className="text-xs font-bold text-accent uppercase flex items-center justify-between border-b border-line pb-2">
             <span className="flex items-center space-x-2">
               <Type className="w-4 h-4" />
@@ -109,7 +109,7 @@ export const SettingsView: React.FC = () => {
                 <div key={f.key}
                   onClick={() => updateFontSettings({ family: f.key })}
                   style={{ fontFamily: f.stack }}
-                  className={`cursor-pointer p-3 rounded-xl border transition-all ${
+                  className={`cursor-pointer p-3 rounded-md border transition-all ${
                     fontSettings.family === f.key
                       ? 'bg-accent-soft border-accent text-accent  font-bold'
                       : 'bg-surface border-line text-ink-faint hover:border-line'
@@ -141,7 +141,7 @@ export const SettingsView: React.FC = () => {
             })}
           </div>
 
-          <div className="rounded-xl border border-line p-3 space-y-1.5">
+          <div className="rounded-md border border-line p-3 space-y-1.5">
             <div className="text-sm font-bold text-ink">Xem trước tiêu đề mục</div>
             <div className="text-xs text-ink-faint">Nội dung bảng và nhãn nhập liệu hiển thị ở cỡ này.</div>
             <div className="text-[11px] text-ink-faint">Nhãn nhỏ, viên trạng thái và ghi chú.</div>
@@ -152,7 +152,7 @@ export const SettingsView: React.FC = () => {
             Thiết lập lưu trên máy này và áp cho mọi màn hình. Bản in PDF giữ cỡ chữ riêng để không vỡ khổ giấy.
           </p>
         </div>
-        <div className="bg-panel border border-line p-5 rounded-2xl space-y-4">
+        <div className="bg-panel border border-line p-5 rounded-lg space-y-4">
           <h3 className="text-xs font-bold text-accent uppercase flex items-center space-x-2 border-b border-line pb-2">
             <Sun className="w-4 h-4" />
             <span>1. CHẾ ĐỘ GIAO DIỆN SÁNG / TỐI (THEME)</span>
@@ -161,9 +161,9 @@ export const SettingsView: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div
               onClick={() => setTheme('dark')}
-              className={`cursor-pointer p-4 rounded-xl border flex items-center space-x-3 transition-all ${
+              className={`cursor-pointer p-4 rounded-md border flex items-center space-x-3 transition-all ${
                 theme === 'dark'
-                  ? 'bg-accent-soft border-accent text-accent  font-bold shadow-md'
+                  ? 'bg-accent-soft border-accent text-accent  font-bold'
                   : 'bg-surface border-line text-ink-faint hover:border-line'
               }`}
             >
@@ -178,9 +178,9 @@ export const SettingsView: React.FC = () => {
 
             <div
               onClick={() => setTheme('light')}
-              className={`cursor-pointer p-4 rounded-xl border flex items-center space-x-3 transition-all ${
+              className={`cursor-pointer p-4 rounded-md border flex items-center space-x-3 transition-all ${
                 theme === 'light'
-                  ? 'bg-accent-soft border-accent text-accent font-bold shadow-md'
+                  ? 'bg-accent-soft border-accent text-accent font-bold'
                   : 'bg-surface border-line text-ink-faint hover:border-line'
               }`}
             >
@@ -195,7 +195,7 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-panel border border-line p-5 rounded-2xl space-y-4">
+        <div className="bg-panel border border-line p-5 rounded-lg space-y-4">
           <h3 className="text-xs font-bold text-accent uppercase flex items-center space-x-2 border-b border-line pb-2">
             <Calendar className="w-4 h-4" />
             <span>2. ĐỊNH DẠNG NGÀY THÁNG NĂM (DATE FORMAT)</span>
@@ -210,9 +210,9 @@ export const SettingsView: React.FC = () => {
               <div
                 key={opt.id}
                 onClick={() => setDateFormat(opt.id as DateFormat)}
-                className={`cursor-pointer p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
+                className={`cursor-pointer p-3.5 rounded-md border flex flex-col justify-between transition-all ${
                   dateFormat === opt.id
-                    ? 'bg-accent-soft border-accent text-accent  font-bold shadow-md'
+                    ? 'bg-accent-soft border-accent text-accent  font-bold'
                     : 'bg-surface border-line text-ink-faint hover:border-line'
                 }`}
               >
@@ -228,7 +228,7 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-panel border border-line p-5 rounded-2xl space-y-4">
+        <div className="bg-panel border border-line p-5 rounded-lg space-y-4">
           <h3 className="text-xs font-bold text-pos uppercase flex items-center space-x-2 border-b border-line pb-2">
             <Sliders className="w-4 h-4" />
             <span>3. ĐỊNH DẠNG SỐ TIỀN & HIỂN THỊ</span>
@@ -245,9 +245,9 @@ export const SettingsView: React.FC = () => {
                 <div
                   key={opt.id}
                   onClick={() => updateFormatSettings({ numberStyle: opt.id })}
-                  className={`cursor-pointer p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
+                  className={`cursor-pointer p-3.5 rounded-md border flex flex-col justify-between transition-all ${
                     formatSettings.numberStyle === opt.id
-                      ? 'bg-pos-soft border-pos text-pos  font-bold shadow-md'
+                      ? 'bg-pos-soft border-pos text-pos  font-bold'
                       : 'bg-surface border-line text-ink-faint hover:border-line'
                   }`}
                 >
@@ -264,7 +264,7 @@ export const SettingsView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="p-3.5 bg-surface border border-line rounded-xl space-y-2">
+            <div className="p-3.5 bg-surface border border-line rounded-md space-y-2">
               <div>
                 <div className="font-bold text-ink text-xs">Số thập phân</div>
                 <div className="text-[11px] text-ink-faint">Số chữ số sau dấu thập phân của các số thường</div>
@@ -272,7 +272,7 @@ export const SettingsView: React.FC = () => {
               <select
                 value={formatSettings.decimalDigits}
                 onChange={(e) => updateFormatSettings({ decimalDigits: parseInt(e.target.value, 10) })}
-                className="w-full rounded-xl p-2 text-xs bg-panel border border-line text-ink"
+                className="w-full rounded-md p-2 text-xs bg-panel border border-line text-ink"
               >
                 {DIGIT_OPTIONS.map((d) => (
                   <option key={d} value={d}>{d} chữ số</option>
@@ -283,7 +283,7 @@ export const SettingsView: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-3.5 bg-surface border border-line rounded-xl space-y-2">
+            <div className="p-3.5 bg-surface border border-line rounded-md space-y-2">
               <div>
                 <div className="font-bold text-ink text-xs">Phần trăm</div>
                 <div className="text-[11px] text-ink-faint">Số chữ số sau dấu thập phân của lãi suất, tỷ lệ</div>
@@ -291,7 +291,7 @@ export const SettingsView: React.FC = () => {
               <select
                 value={formatSettings.percentDigits}
                 onChange={(e) => updateFormatSettings({ percentDigits: parseInt(e.target.value, 10) })}
-                className="w-full rounded-xl p-2 text-xs bg-panel border border-line text-ink"
+                className="w-full rounded-md p-2 text-xs bg-panel border border-line text-ink"
               >
                 {DIGIT_OPTIONS.map((d) => (
                   <option key={d} value={d}>{d} chữ số</option>
@@ -303,7 +303,7 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-3.5 bg-surface border border-line rounded-xl">
+          <div className="flex items-center justify-between p-3.5 bg-surface border border-line rounded-md">
             <div>
               <div className="font-bold text-ink">
                 Tự động phân cách hàng nghìn khi gõ (ví dụ: {formatMoneyWith(960000000, formatSettings)})
@@ -318,13 +318,13 @@ export const SettingsView: React.FC = () => {
             />
           </div>
 
-          <div className="p-3.5 bg-surface border border-line rounded-xl text-[11px] text-ink-faint">
+          <div className="p-3.5 bg-surface border border-line rounded-md text-[11px] text-ink-faint">
             Số tiền luôn hiển thị nguyên đồng, không có phần thập phân — chỉ kiểu phân cách ở trên được áp dụng.
             Ví dụ hiện tại: <span className="font-mono text-pos font-semibold">{fmtMoney(1500000000)}</span>
           </div>
         </div>
 
-        <div className="bg-panel border border-line p-5 rounded-2xl space-y-4">
+        <div className="bg-panel border border-line p-5 rounded-lg space-y-4">
           <h3 className="text-xs font-bold text-accent uppercase flex items-center space-x-2 border-b border-line pb-2">
             <Clock className="w-4 h-4" />
             <span>4. ĐỊNH DẠNG GIỜ (TIME FORMAT)</span>
@@ -338,9 +338,9 @@ export const SettingsView: React.FC = () => {
               <div
                 key={opt.id}
                 onClick={() => updateFormatSettings({ timeFormat: opt.id })}
-                className={`cursor-pointer p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
+                className={`cursor-pointer p-3.5 rounded-md border flex flex-col justify-between transition-all ${
                   formatSettings.timeFormat === opt.id
-                    ? 'bg-accent-soft border-accent text-accent  font-bold shadow-md'
+                    ? 'bg-accent-soft border-accent text-accent  font-bold'
                     : 'bg-surface border-line text-ink-faint hover:border-line'
                 }`}
               >
@@ -358,7 +358,7 @@ export const SettingsView: React.FC = () => {
 
         <button
           type="submit"
-          className="bg-accent hover:opacity-90 text-accent-ink font-bold text-xs py-3 px-6 rounded-xl flex items-center justify-center space-x-2 shadow-lg "
+          className="bg-accent hover:opacity-90 text-accent-ink font-bold text-xs py-3 px-6 rounded-md flex items-center justify-center space-x-2 "
         >
           <Save className="w-4 h-4" />
           <span>LƯU CÀI ĐẶT CÁ NHÂN</span>
@@ -376,7 +376,7 @@ export const SettingsView: React.FC = () => {
             type="button"
             onClick={dongBoKyCuoi}
             disabled={dongBoDangChay}
-            className="bg-warn hover:bg-warn disabled:opacity-50 disabled:cursor-not-allowed text-accent-ink font-bold text-xs py-2.5 px-5 rounded-xl flex items-center space-x-2"
+            className="bg-accent hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-accent-ink font-bold text-xs py-2.5 px-5 rounded-md flex items-center space-x-2"
           >
             <Wrench className="w-3.5 h-3.5" />
             <span>{dongBoDangChay ? 'Đang chạy…' : 'Đồng bộ kỳ cuối theo ngày đáo hạn'}</span>

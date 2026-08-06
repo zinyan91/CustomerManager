@@ -242,7 +242,7 @@ export const CustomerListView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
       {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-md shadow-xl border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success' ? 'bg-pos-soft border-pos text-pos' : 'bg-neg-soft border-neg text-neg'
+        <div className={`fixed top-16 right-6 z-50 p-4 rounded-md border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success' ? 'bg-pos-soft border-pos text-pos' : 'bg-neg-soft border-neg text-neg'
           }`}>
           {notification.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
           <span>{notification.message}</span>
@@ -250,7 +250,7 @@ export const CustomerListView: React.FC = () => {
       )}
 
       <div className={`${containerCardBg} p-4 rounded-lg border space-y-3`}>
-        <div className="text-xs font-bold text-accent uppercase tracking-wider">
+        <div className="text-xs font-bold text-accent tracking-tight">
           TRA CỨU & QUẢN LÝ DANH SÁCH KHÁCH HÀNG
         </div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -316,12 +316,12 @@ export const CustomerListView: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className={tableHeaderStyle}>
                 <tr>
-                  <th className="p-3 whitespace-nowrap">MÃ CIF</th>
-                  <th className="p-3 whitespace-nowrap">HỌ VÀ TÊN KH</th>
-                  <th className="p-3 whitespace-nowrap">CIF KHLQ</th>
-                  <th className="p-3 whitespace-nowrap">KHLQ / NGƯỜI BẢO LÃNH</th>
-                  <th className="p-3 whitespace-nowrap">MỐI QUAN HỆ</th>
-                  <th className="p-3 whitespace-nowrap text-center">THAO TÁC</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">MÃ CIF</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">HỌ VÀ TÊN KH</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">CIF KHLQ</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">KHLQ / NGƯỜI BẢO LÃNH</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">MỐI QUAN HỆ</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">THAO TÁC</th>
                 </tr>
               </thead>
               <tbody className={"divide-y divide-line"}>
@@ -347,17 +347,17 @@ export const CustomerListView: React.FC = () => {
                             : 'border-transparent hover:bg-panel-muted'
                           }`}
                       >
-                        <td className="p-3 font-mono text-ink font-semibold whitespace-nowrap">{cus.CifKh}</td>
-                        <td className="p-3 font-bold whitespace-nowrap">{cus.FullName}</td>
-                        <td className="p-3 font-mono text-ink-muted whitespace-nowrap">{cus.CifKhlq || '–'}</td>
-                        <td className="p-3 whitespace-nowrap">
+                        <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-ink font-semibold whitespace-nowrap">{cus.CifKh}</td>
+                        <td className="px-[var(--row-px)] py-[var(--row-py)] font-bold whitespace-nowrap">{cus.FullName}</td>
+                        <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-ink-muted whitespace-nowrap">{cus.CifKhlq || '–'}</td>
+                        <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
                           {cus.SpouseName ? (
                             <span className="text-ink">{khlqName}</span>
                           ) : (
                             <span className="text-ink-faint">–</span>
                           )}
                         </td>
-                        <td className="p-3 whitespace-nowrap">
+                        <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
                           <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${relation === 'Vợ / Chồng' ? 'bg-accent-soft border-accent/30 text-accent' :
                               relation === 'Người bảo lãnh' ? 'bg-pos-soft border-pos/30 text-pos' :
                                 relation === 'Bên bảo đảm (Chủ TSĐB)' ? 'bg-warn-soft border-warn/30 text-warn' :
@@ -366,7 +366,7 @@ export const CustomerListView: React.FC = () => {
                             {relation}
                           </span>
                         </td>
-                        <td className="p-3 text-center whitespace-nowrap">
+                        <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -388,7 +388,7 @@ export const CustomerListView: React.FC = () => {
           </div>
         </div>
 
-        <div className={`${containerCardBg} lg:col-span-5 rounded-lg p-5 border overflow-y-auto max-h-[calc(100vh-215px)] shadow-xl space-y-4`}>
+        <div className={`${containerCardBg} lg:col-span-5 rounded-lg p-5 border overflow-y-auto max-h-[calc(100vh-215px)] space-y-4`}>
           <div className={`flex items-center justify-between border-b pb-3 border-line`}>
             <h3 className="text-sm font-bold flex items-center space-x-2">
               <UserCheck className="w-4 h-4 text-accent" />

@@ -33,15 +33,15 @@ export const CalculatorView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
 
-      <div className={`${styles.containerCardBg} rounded-2xl p-2 border flex flex-wrap items-center gap-2`}>
+      <div className={`${styles.containerCardBg} rounded-lg p-2 border flex flex-wrap items-center gap-2`}>
         {toolsList.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"
             onClick={() => setActiveTool(id)}
-            className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center space-x-2 px-3.5 py-2 rounded-md text-xs font-bold transition-all ${
               activeTool === id
-                ? 'bg-accent text-accent-ink shadow-md '
+                ? 'bg-accent text-accent-ink '
                 : 'text-ink-muted hover:bg-panel-muted'
             }`}
           >

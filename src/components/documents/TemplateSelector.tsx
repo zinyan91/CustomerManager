@@ -34,9 +34,9 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   setSelectedTemplate,
 }) => {
   return (
-    <div className={`${styles.containerCardBg} rounded-2xl p-3 border shadow-sm`}>
+    <div className={`${styles.containerCardBg} rounded-lg p-3 border`}>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="text-xs font-bold text-ink-faint uppercase tracking-wider px-2 mr-1 hidden sm:block">
+        <div className="text-xs font-bold text-ink-faint tracking-tight px-2 mr-1 hidden sm:block">
           Mẫu biểu:
         </div>
         {TEMPLATE_LIST.map((t) => {
@@ -46,9 +46,9 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               key={t.id}
               type="button"
               onClick={() => setSelectedTemplate(t.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 border ${
+              className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center space-x-2 border ${
                 isActive
-                  ? 'bg-accent border-accent text-accent-ink shadow-md  ring-2 '
+                  ? 'bg-accent border-accent text-accent-ink  ring-2 '
                   : 'bg-panel-muted border-line text-ink-muted hover:bg-panel-muted'
               }`}
             >

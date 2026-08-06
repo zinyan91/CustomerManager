@@ -53,11 +53,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/80 backdrop-blur-sm animate-fadeIn">
-      <div className={`${containerCardBg} w-full max-w-xl rounded-2xl border shadow-2xl p-5 space-y-4`}>
+      <div className={`${containerCardBg} w-full max-w-xl rounded-lg border shadow-2xl p-5 space-y-4`}>
         <div className="flex items-center justify-between border-b border-line pb-3">
           <div className="flex items-center space-x-2">
             <Receipt className="w-5 h-5 text-accent" />
-            <h3 className="font-bold text-sm uppercase tracking-wide text-ink">
+            <h3 className="font-bold text-sm  tracking-wide text-ink">
               GHI NHẬN THANH TOÁN & QUÁ HẠN — KỲ #{editingSchedule.PeriodNumber}
             </h3>
           </div>
@@ -70,7 +70,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           </button>
         </div>
 
-        <div className="p-3 rounded-xl bg-accent-soft  border border-accent/30  grid grid-cols-2 gap-3 text-xs">
+        <div className="p-3 rounded-md bg-accent-soft  border border-accent/30  grid grid-cols-2 gap-3 text-xs">
           <div>Ngày đến hạn kỳ: <strong className="font-mono text-ink">{fmtDate(editingSchedule.DueDate)}</strong></div>
           <div>Gốc quy định: <strong className="font-mono text-accent">{editingSchedule.PrincipalAmount.toLocaleString('vi-VN')} VNĐ</strong></div>
           <div>Lãi quy định: <strong className="font-mono text-warn">{editingSchedule.InterestAmount.toLocaleString('vi-VN')} VNĐ</strong></div>
@@ -88,7 +88,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 value={modalActualPaidPrincipalStr}
                 onChange={e => setModalActualPaidPrincipalStr(formatMoneyInput(e.target.value))}
                 placeholder="0"
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-accent bg-accent-soft  border-accent/30"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-accent bg-accent-soft  border-accent/30"
               />
             </div>
 
@@ -101,7 +101,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 value={modalActualPaidInterestStr}
                 onChange={e => setModalActualPaidInterestStr(formatMoneyInput(e.target.value))}
                 placeholder="0"
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-pos bg-pos-soft  border-pos/30"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-pos bg-pos-soft  border-pos/30"
               />
             </div>
 
@@ -114,7 +114,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 value={modalPrepaidPrincipalStr}
                 onChange={e => setModalPrepaidPrincipalStr(formatMoneyInput(e.target.value))}
                 placeholder="0"
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-warn bg-warn-soft  border-warn/30"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-warn bg-warn-soft  border-warn/30"
               />
             </div>
           </div>
@@ -140,7 +140,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   }
                 }}
                 placeholder="0"
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-neg bg-neg-soft border-neg/30"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-neg bg-neg-soft border-neg/30"
               />
             </div>
 
@@ -152,7 +152,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 type="text"
                 value={modalOverdueInterestStr}
                 onChange={e => setModalOverdueInterestStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-neg bg-neg-soft border-neg/30"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-neg bg-neg-soft border-neg/30"
               />
             </div>
 
@@ -176,7 +176,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     }
                   }
                 }}
-                className="w-full p-2.5 rounded-xl border text-xs bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs bg-transparent border-line"
               />
             </div>
           </div>
@@ -199,7 +199,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-panel-muted hover:bg-panel-muted text-ink-muted"
+              className="px-4 py-2 rounded-md text-xs font-bold bg-panel-muted hover:bg-panel-muted text-ink-muted"
             >
               Hủy
             </button>
@@ -207,7 +207,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               type="button"
               onClick={onSave}
               disabled={loading}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-accent hover:opacity-90 text-accent-ink shadow-md  flex items-center space-x-1.5"
+              className="px-4 py-2 rounded-md text-xs font-bold bg-accent hover:opacity-90 text-accent-ink  flex items-center space-x-1.5"
             >
               <Save className="w-3.5 h-3.5" />
               <span>{loading ? 'Đang lưu...' : 'LƯU CẬP NHẬT KỲ THU NỢ'}</span>

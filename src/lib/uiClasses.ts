@@ -18,14 +18,31 @@ export const UI: UiClasses = {
   labelStyle: 'text-ink-muted font-medium',
 };
 
-export const BTN_PRIMARY =
-  'bg-accent text-accent-ink font-semibold hover:opacity-90 transition-opacity duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+export const RADIUS_PANEL = 'rounded-lg';
+export const RADIUS_CONTROL = 'rounded-md';
 
-export const BTN_GHOST =
-  'border border-line text-ink-muted hover:border-accent hover:text-accent transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+const BTN_BASE =
+  `${RADIUS_CONTROL} font-semibold transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`;
+
+export const BTN_PRIMARY = `${BTN_BASE} bg-accent text-accent-ink hover:opacity-90`;
+
+export const BTN_SECONDARY = `${BTN_BASE} border border-line text-ink-muted hover:border-accent hover:text-accent`;
+
+export const BTN_DANGER = `${BTN_BASE} border border-neg/30 text-neg hover:bg-neg hover:text-surface`;
+
+export const BTN_GHOST = BTN_SECONDARY;
+
+export const HEADING_SCREEN = 'text-sm font-semibold tracking-tight text-ink';
+
+export const HEADING_PANEL = 'text-xs font-semibold text-ink';
 
 export const SECTION_LABEL =
   'text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint';
+
+export const TABLE_HEAD =
+  'bg-panel-muted text-ink-faint text-[10px] uppercase tracking-[0.09em]';
+
+export const TABLE_CELL = 'px-[var(--row-px)] py-[var(--row-py)]';
 
 export const ROW_RAIL_SELECTED = 'border-l-2 border-accent bg-accent-soft';
 export const ROW_RAIL_NEUTRAL = 'border-l-2 border-transparent';

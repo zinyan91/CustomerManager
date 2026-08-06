@@ -20,33 +20,33 @@ export const RateTierTable: React.FC<RateTierTableProps> = ({
   cardBg, kind, program, lendingTiers, depositChannels, depositRows,
   selectedTierId, setSelectedTierId,
 }) => (
-  <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
-    <div className="p-3 border-b border-line font-bold text-xs uppercase tracking-wider text-accent">
+  <div className={`${cardBg} rounded-lg border overflow-hidden`}>
+    <div className="p-3 border-b border-line font-bold text-xs tracking-tight text-accent">
       {kind === 'huy_dong' ? 'BẢNG LÃI SUẤT TIỀN GỬI' : 'BẢNG LÃI SUẤT CHO VAY'}
     </div>
     <div className="overflow-x-auto max-h-[420px]">
       <table className="w-full text-left text-[11px] border-collapse">
-        <thead className="sticky top-0 bg-panel-muted font-bold border-b border-line">
+        <thead className="sticky top-0 bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line">
           <tr>
-            <th className="p-2.5 w-8" />
+            <th className="px-[var(--row-px)] py-[var(--row-py)] w-8" />
             {kind === 'huy_dong' ? (
               <>
-                <th className="p-2.5">BẬC SỐ DƯ / ĐIỀU KIỆN</th>
-                <th className="p-2.5 text-center">KỲ HẠN</th>
-                <th className="p-2.5">CÁCH TRẢ LÃI</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)]">BẬC SỐ DƯ / ĐIỀU KIỆN</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">KỲ HẠN</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)]">CÁCH TRẢ LÃI</th>
                 {depositChannels.map(ch => (
-                  <th key={ch} className="p-2.5 text-right whitespace-nowrap">
+                  <th key={ch} className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap">
                     {CHANNEL_LABELS[ch].toUpperCase()} (%/NĂM)
                   </th>
                 ))}
               </>
             ) : (
               <>
-                <th className="p-2.5 text-center">LỰA CHỌN</th>
-                <th className="p-2.5">GÓI CỐ ĐỊNH</th>
-                <th className="p-2.5 text-center">TG VAY TỐI THIỂU</th>
-                <th className="p-2.5 text-right">LSCV (%/NĂM)</th>
-                <th className="p-2.5 text-right">PHÍ TỐI THIỂU</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">LỰA CHỌN</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)]">GÓI CỐ ĐỊNH</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">TG VAY TỐI THIỂU</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">LSCV (%/NĂM)</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">PHÍ TỐI THIỂU</th>
               </>
             )}
           </tr>
@@ -63,14 +63,14 @@ export const RateTierTable: React.FC<RateTierTableProps> = ({
                 className={`cursor-pointer transition-colors ${
                   active ? 'bg-accent-soft  font-bold' : 'hover:bg-panel-muted'
                 }`}>
-                <td className="p-2.5 text-center">
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
                   <input type="radio" checked={active} onChange={() => setSelectedTierId(firstId)} />
                 </td>
-                <td className="p-2.5">{row.balanceTierLabel || '—'}</td>
-                <td className="p-2.5 text-center font-mono">
+                <td className="px-[var(--row-px)] py-[var(--row-py)]">{row.balanceTierLabel || '—'}</td>
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">
                   {row.tenorMonths ? `${row.tenorMonths} tháng` : '—'}
                 </td>
-                <td className="p-2.5">
+                <td className="px-[var(--row-px)] py-[var(--row-py)]">
                   {row.payoutMode ? PAYOUT_MODE_LABELS[row.payoutMode] : '—'}
                 </td>
                 {depositChannels.map(ch => {
@@ -78,7 +78,7 @@ export const RateTierTable: React.FC<RateTierTableProps> = ({
                   const v = row.byChannel[ch];
                   const thieu = !coKenh || v === null || v === undefined;
                   return (
-                    <td key={ch} className={`p-2.5 text-right font-mono font-bold ${
+                    <td key={ch} className={`px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold ${
                       thieu ? 'text-ink-faint' : 'text-accent'
                     }`}>
                       {thieu ? '—' : fmtPercent(v)}
@@ -101,12 +101,12 @@ export const RateTierTable: React.FC<RateTierTableProps> = ({
                     : 'hover:bg-panel-muted'
                 }`}
               >
-                <td className="p-2.5 text-center">
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
                   <input type="radio" checked={active} onChange={() => setSelectedTierId(t.Id)} />
                 </td>
                 <>
-                    <td className="p-2.5 text-center font-mono font-bold">{t.PackageCode || '—'}</td>
-                    <td className="p-2.5">
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono font-bold">{t.PackageCode || '—'}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)]">
                       {t.Label}
                       {t.Note && (
                         <span className="block text-[10px] text-warn font-normal mt-0.5">
@@ -114,13 +114,13 @@ export const RateTierTable: React.FC<RateTierTableProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="p-2.5 text-center font-mono">
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">
                       {t.MinTenorMonths ? `${t.MinTenorMonths} tháng` : '—'}
                     </td>
-                    <td className={`p-2.5 text-right font-mono font-bold ${missing ? 'text-neg' : 'text-accent'}`}>
+                    <td className={`px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold ${missing ? 'text-neg' : 'text-accent'}`}>
                       {missing ? 'CHƯA CÓ' : fmtPercent(t.RateAnnual)}
                     </td>
-                    <td className="p-2.5 text-right font-mono">{fmtPercent(t.MinFeeRatio)}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{fmtPercent(t.MinFeeRatio)}</td>
                 </>
               </tr>
             );

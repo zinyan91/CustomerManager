@@ -204,7 +204,7 @@ export const PostLoanControlView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs">
       {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-start space-x-3 text-sm max-w-md ${
+        <div className={`fixed top-16 right-6 z-50 p-4 rounded-md border flex items-start space-x-3 text-sm max-w-md ${
           notification.type === 'success'
             ? 'bg-pos-soft border-pos/30 text-pos'
             : 'bg-neg-soft border-neg/30 text-neg'
@@ -216,8 +216,8 @@ export const PostLoanControlView: React.FC = () => {
         </div>
       )}
 
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center space-x-2">
+      <div className={`${cardBg} rounded-lg p-4 border`}>
+        <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
           <ShieldCheck className="w-5 h-5" />
           <span>KIỂM SOÁT SAU VAY & GIÁM SÁT TÍN DỤNG</span>
         </h2>
@@ -235,14 +235,14 @@ export const PostLoanControlView: React.FC = () => {
           { label: 'Chưa tới hạn', value: summary.upcoming, color: 'text-ink-faint' },
           { label: 'Đã thực hiện', value: summary.done, color: 'text-pos' },
         ].map(s => (
-          <div key={s.label} className={`${cardBg} rounded-2xl p-3 border shadow-sm`}>
+          <div key={s.label} className={`${cardBg} rounded-lg p-3 border`}>
             <div className="text-[10px] uppercase text-ink-faint font-semibold">{s.label}</div>
             <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
           </div>
         ))}
       </div>
 
-      <div className={`${cardBg} rounded-2xl p-3 border shadow-sm flex flex-wrap items-center gap-2`}>
+      <div className={`${cardBg} rounded-lg p-3 border flex flex-wrap items-center gap-2`}>
         <div className="flex items-center gap-1.5 flex-wrap">
           {([
             ['ALL', 'Tất cả loại'],
@@ -251,7 +251,7 @@ export const PostLoanControlView: React.FC = () => {
             ['collateral', 'Hiện trạng tài sản'],
           ] as [FilterType, string][]).map(([v, label]) => (
             <button key={v} type="button" onClick={() => setFilterType(v)}
-              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border transition-colors ${
+              className={`px-2.5 py-1.5 rounded-md text-[11px] font-semibold border transition-colors ${
                 filterType === v
                   ? 'bg-accent text-accent-ink border-accent'
                   : 'bg-panel-muted text-ink-muted border-line'
@@ -271,7 +271,7 @@ export const PostLoanControlView: React.FC = () => {
             ['ALL', 'Tất cả'],
           ] as [FilterStatus, string][]).map(([v, label]) => (
             <button key={v} type="button" onClick={() => setFilterStatus(v)}
-              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-semibold border transition-colors ${
+              className={`px-2.5 py-1.5 rounded-md text-[11px] font-semibold border transition-colors ${
                 filterStatus === v
                   ? 'bg-accent text-accent-ink border-accent'
                   : 'bg-panel-muted text-ink-muted border-line'
@@ -285,7 +285,7 @@ export const PostLoanControlView: React.FC = () => {
           <span className="text-[10px] text-ink-faint uppercase font-semibold">Chu kỳ kiểm tra TSĐB</span>
           {([6, 12] as const).map(m => (
             <button key={m} type="button" onClick={() => setCollateralIntervalMonths(m)}
-              className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-colors ${
+              className={`px-2.5 py-1.5 rounded-md text-[11px] font-bold border transition-colors ${
                 collateralIntervalMonths === m
                   ? 'bg-pos text-accent-ink border-pos'
                   : 'bg-panel-muted text-ink-muted border-line'
@@ -296,7 +296,7 @@ export const PostLoanControlView: React.FC = () => {
         </div>
       </div>
 
-      <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
+      <div className={`${cardBg} rounded-lg border overflow-hidden`}>
         <div className={`p-3 border-b flex items-center justify-between ${'bg-panel-muted border-line'}`}>
           <span className="font-bold text-xs">DANH SÁCH ĐỢT KIỂM SOÁT ({filtered.length})</span>
           <span className="text-[11px] text-ink-faint">Nhấp "Ghi nhận" để lưu kết quả kiểm tra</span>
@@ -311,14 +311,14 @@ export const PostLoanControlView: React.FC = () => {
             <table className="w-full text-left text-xs">
               <thead className={styles.tableHeaderStyle}>
                 <tr>
-                  <th className="p-3 whitespace-nowrap">KHÁCH HÀNG / CIF</th>
-                  <th className="p-3 whitespace-nowrap">LOẠI KIỂM TRA</th>
-                  <th className="p-3 whitespace-nowrap">PHẠM VI</th>
-                  <th className="p-3 whitespace-nowrap text-center">KỲ</th>
-                  <th className="p-3 whitespace-nowrap text-center">NGÀY ĐẾN HẠN</th>
-                  <th className="p-3 whitespace-nowrap text-center">TRẠNG THÁI</th>
-                  <th className="p-3 whitespace-nowrap text-center">NGÀY THỰC HIỆN</th>
-                  <th className="p-3 whitespace-nowrap text-center">THAO TÁC</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">KHÁCH HÀNG / CIF</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">LOẠI KIỂM TRA</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">PHẠM VI</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">KỲ</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">NGÀY ĐẾN HẠN</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">TRẠNG THÁI</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">NGÀY THỰC HIỆN</th>
+                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">THAO TÁC</th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${'divide-line'}`}>
@@ -326,23 +326,23 @@ export const PostLoanControlView: React.FC = () => {
                   <tr><td colSpan={8} className="text-center p-8 text-ink-faint">Không có đợt kiểm soát nào theo bộ lọc hiện tại.</td></tr>
                 ) : filtered.slice(0, 300).map(it => (
                   <tr key={it.key} className={styles.tableRowHover}>
-                    <td className="p-3 whitespace-nowrap">
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
                       <div className="font-bold">{customerName(it.customerId)}</div>
                       <div className="text-[10px] font-mono text-accent">
                         {customerCif(it.customerId) && `CIF: ${customerCif(it.customerId)}`}
                       </div>
                     </td>
-                    <td className="p-3 whitespace-nowrap text-accent font-semibold">
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-accent font-semibold">
                       {CONTROL_TYPE_LABEL[it.type]}
                     </td>
-                    <td className="p-3 font-mono text-[11px]">{scopeOf(it)}</td>
-                    <td className="p-3 text-center font-mono">{it.periodIndex}</td>
-                    <td className="p-3 text-center font-mono whitespace-nowrap">{fmtDate(it.dueDate)}</td>
-                    <td className="p-3 text-center whitespace-nowrap">{statusBadge(it)}</td>
-                    <td className="p-3 text-center font-mono whitespace-nowrap text-ink-faint">
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-[11px]">{scopeOf(it)}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">{it.periodIndex}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono whitespace-nowrap">{fmtDate(it.dueDate)}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">{statusBadge(it)}</td>
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono whitespace-nowrap text-ink-faint">
                       {it.record ? fmtDate(it.record.PerformedDate) : '—'}
                     </td>
-                    <td className="p-3 text-center whitespace-nowrap">
+                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
                       <button type="button" onClick={() => openModal(it)}
                         className="px-2.5 py-1 rounded-lg border text-[11px] font-semibold border-accent/30 text-accent hover:bg-accent-soft ">
                         {it.record ? 'Xem / Sửa' : 'Ghi nhận'}
@@ -363,7 +363,7 @@ export const PostLoanControlView: React.FC = () => {
 
       {editing && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className={`${cardBg} rounded-2xl border shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto`}>
+          <div className={`${cardBg} rounded-lg border shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto`}>
             <div className={`p-4 border-b flex items-center justify-between ${'border-line'}`}>
               <div>
                 <div className="font-bold text-sm">{CONTROL_TYPE_LABEL[editing.type]}</div>
@@ -382,12 +382,12 @@ export const PostLoanControlView: React.FC = () => {
                 <div>
                   <label className="block text-[11px] font-bold text-ink-faint mb-1">Ngày thực hiện *</label>
                   <DateInput value={modalDate} onChange={setModalDate}
-                    className={`w-full rounded-xl p-2.5 text-xs border font-mono ${inputStyle}`} />
+                    className={`w-full rounded-md p-2.5 text-xs border font-mono ${inputStyle}`} />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-ink-faint mb-1">Kết luận *</label>
                   <select value={modalResult} onChange={e => setModalResult(e.target.value as ControlResult)}
-                    className={`w-full rounded-xl p-2.5 text-xs border ${inputStyle}`}>
+                    className={`w-full rounded-md p-2.5 text-xs border ${inputStyle}`}>
                     <option value="pass">Đạt</option>
                     <option value="watch">Cần theo dõi</option>
                     <option value="fail">Không đạt</option>
@@ -399,11 +399,11 @@ export const PostLoanControlView: React.FC = () => {
                 <label className="block text-[11px] font-bold text-ink-faint mb-1">Nội dung ghi nhận</label>
                 <textarea value={modalFindings} onChange={e => setModalFindings(e.target.value)} rows={3}
                   placeholder="Tình hình thực tế, vấn đề phát hiện, kiến nghị..."
-                  className={`w-full rounded-xl p-2.5 text-xs border ${inputStyle}`} />
+                  className={`w-full rounded-md p-2.5 text-xs border ${inputStyle}`} />
               </div>
 
               {editing.type === 'collateral' && editing.collateralId && (
-                <div className={`rounded-xl border p-3 space-y-3 ${'bg-panel-muted border-line'}`}>
+                <div className={`rounded-md border p-3 space-y-3 ${'bg-panel-muted border-line'}`}>
                   <label className="flex items-center gap-2 text-[11px] font-bold text-ink-muted cursor-pointer">
                     <input type="checkbox" checked={modalReappraise}
                       onChange={e => setModalReappraise(e.target.checked)} />
@@ -416,12 +416,12 @@ export const PostLoanControlView: React.FC = () => {
                         <label className="block text-[10px] font-bold text-ink-faint mb-1">Giá trị định giá mới *</label>
                         <input type="text" value={modalValue}
                           onChange={e => setModalValue(formatMoneyInput(e.target.value))}
-                          className={`w-full rounded-xl p-2.5 text-xs border font-mono font-bold text-pos ${inputStyle}`} />
+                          className={`w-full rounded-md p-2.5 text-xs border font-mono font-bold text-pos ${inputStyle}`} />
                       </div>
                       <div>
                         <label className="block text-[10px] font-bold text-ink-faint mb-1">Xếp loại</label>
                         <select value={modalAssetType} onChange={e => setModalAssetType(e.target.value)}
-                          className={`w-full rounded-xl p-2.5 text-xs border ${inputStyle}`}>
+                          className={`w-full rounded-md p-2.5 text-xs border ${inputStyle}`}>
                           {['Loại 1', 'Loại 2', 'Loại 3', 'Loại 4', 'Hạn chế nhận TS'].map(t => (
                             <option key={t} value={t}>{assetClassLabel(t)}</option>
                           ))}
@@ -430,7 +430,7 @@ export const PostLoanControlView: React.FC = () => {
                       <div>
                         <label className="block text-[10px] font-bold text-ink-faint mb-1">Hiệu lực</label>
                         <select value={modalTenor} onChange={e => setModalTenor(parseInt(e.target.value) as 6 | 12 | 24)}
-                          className={`w-full rounded-xl p-2.5 text-xs border ${inputStyle}`}>
+                          className={`w-full rounded-md p-2.5 text-xs border ${inputStyle}`}>
                           <option value={6}>6 tháng</option>
                           <option value={12}>12 tháng</option>
                           <option value={24}>24 tháng</option>
@@ -452,11 +452,11 @@ export const PostLoanControlView: React.FC = () => {
 
             <div className={`p-4 border-t flex items-center justify-end gap-2 ${'border-line'}`}>
               <button type="button" onClick={closeModal}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold border ${'border-line text-ink-muted'}`}>
+                className={`px-3 py-2 rounded-md text-xs font-semibold border ${'border-line text-ink-muted'}`}>
                 Huỷ
               </button>
               <button type="button" onClick={handleSave} disabled={saving}
-                className="px-3 py-2 rounded-xl text-xs font-bold bg-accent hover:opacity-90 text-accent-ink flex items-center gap-1.5 disabled:opacity-60">
+                className="px-3 py-2 rounded-md text-xs font-bold bg-accent hover:opacity-90 text-accent-ink flex items-center gap-1.5 disabled:opacity-60">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Lưu kết quả
               </button>

@@ -37,14 +37,14 @@ export const MdsdvLookupView: React.FC = () => {
   };
 
   const cardBg = UI.containerCardBg;
-  const inputCls = 'w-full p-2.5 rounded-xl border text-xs bg-transparent border-line';
+  const inputCls = 'w-full p-2.5 rounded-md border text-xs bg-transparent border-line';
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
 
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-4`}>
+      <div className={`${cardBg} rounded-lg p-4 border space-y-4`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-line pb-2">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center space-x-2">
+          <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
             <Target className="w-5 h-5 text-pos" />
             <span>TRA CỨU MỤC ĐÍCH SỬ DỤNG VỐN (MĐSDV — FBE)</span>
           </h2>
@@ -88,9 +88,9 @@ export const MdsdvLookupView: React.FC = () => {
             <button
               type="button"
               onClick={() => setOverdraftOnly(v => !v)}
-              className={`w-full flex items-center justify-center space-x-1.5 p-2.5 rounded-xl text-[11px] font-bold border transition-colors ${
+              className={`w-full flex items-center justify-center space-x-1.5 p-2.5 rounded-md text-[11px] font-bold border transition-colors ${
                 overdraftOnly
-                  ? 'bg-accent text-accent-ink border-accent shadow-sm'
+                  ? 'bg-accent text-accent-ink border-accent'
                   : 'text-ink-muted border-line hover:bg-panel-muted'
               }`}
             >
@@ -113,42 +113,42 @@ export const MdsdvLookupView: React.FC = () => {
         </div>
       </div>
 
-      <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
+      <div className={`${cardBg} rounded-lg border overflow-hidden`}>
         <div className="overflow-x-auto max-h-[620px]">
           <table className="w-full text-left text-[11px] border-collapse min-w-[1080px]">
-            <thead className="sticky top-0 bg-panel-muted font-bold border-b border-line">
+            <thead className="sticky top-0 bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line">
               <tr>
-                <th className="p-2.5 min-w-[110px]">MÃ MĐSDV (CẤP 6)</th>
-                <th className="p-2.5 min-w-[240px]">TÊN HIỂN THỊ TRÊN FBE</th>
-                <th className="p-2.5 min-w-[220px]">MỤC ĐÍCH CHI TIẾT</th>
-                <th className="p-2.5 min-w-[200px]">NGÀNH CẤP 5</th>
-                <th className="p-2.5 min-w-[180px]">NGÀNH CẤP 1</th>
-                <th className="p-2.5 text-center min-w-[70px]">THẤU CHI</th>
-                <th className="p-2.5 text-center min-w-[50px]" />
+                <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[110px]">MÃ MĐSDV (CẤP 6)</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[240px]">TÊN HIỂN THỊ TRÊN FBE</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[220px]">MỤC ĐÍCH CHI TIẾT</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[200px]">NGÀNH CẤP 5</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[180px]">NGÀNH CẤP 1</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center min-w-[70px]">THẤU CHI</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center min-w-[50px]" />
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {search.items.map(entry => (
                 <tr key={entry.code} className="hover:bg-panel-muted transition-colors align-top">
-                  <td className="p-2.5 font-mono font-bold text-accent whitespace-nowrap">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono font-bold text-accent whitespace-nowrap">
                     {entry.code}
                   </td>
-                  <td className="p-2.5 font-mono">{entry.fbeName}</td>
-                  <td className="p-2.5">{entry.purposeName}</td>
-                  <td className="p-2.5">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono">{entry.fbeName}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)]">{entry.purposeName}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)]">
                     <span className="font-mono text-ink-faint">{entry.level5Code}</span>
                     <span className="block">{entry.level5Name}</span>
                   </td>
-                  <td className="p-2.5">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)]">
                     <span className="font-mono text-ink-faint">{entry.level1Code}</span>
                     <span className="block text-ink-faint">{entry.level1Name}</span>
                   </td>
-                  <td className="p-2.5 text-center">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
                     {entry.allowsOverdraft
                       ? <span className="text-pos font-bold">Có</span>
                       : <span className="text-ink-faint">—</span>}
                   </td>
-                  <td className="p-2.5 text-center">
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
                     <button
                       type="button"
                       onClick={() => handleCopy(entry.code)}
@@ -174,7 +174,7 @@ export const MdsdvLookupView: React.FC = () => {
         </div>
       </div>
 
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-1.5 text-[11px] text-ink-faint`}>
+      <div className={`${cardBg} rounded-lg p-4 border space-y-1.5 text-[11px] text-ink-faint`}>
         <div className="flex items-center space-x-1.5 font-bold text-ink-muted">
           <Info className="w-3.5 h-3.5 text-accent" />
           <span>QUY TẮC CẤU TRÚC MÃ</span>

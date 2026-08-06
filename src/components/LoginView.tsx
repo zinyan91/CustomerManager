@@ -30,7 +30,7 @@ export const LoginView: React.FC = () => {
     }
   };
 
-  const inputClass = `w-full pl-10 pr-3 py-2.5 rounded-xl border text-sm outline-none transition-colors ${
+  const inputClass = `w-full pl-10 pr-3 py-2.5 rounded-md border text-sm outline-none transition-colors ${
     'bg-panel border-line text-ink placeholder-ink-faint focus:border-accent'
   }`;
 
@@ -41,7 +41,7 @@ export const LoginView: React.FC = () => {
       }`}
     >
       <div
-        className={`w-full max-w-sm rounded-2xl border shadow-xl p-6 md:p-8 ${
+        className={`w-full max-w-sm rounded-lg border p-6 md:p-8 ${
           'bg-panel border-line'
         }`}
       >
@@ -91,7 +91,7 @@ export const LoginView: React.FC = () => {
           </div>
 
           {error && (
-            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-neg border border-neg/30 text-neg text-xs">
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-md bg-neg border border-neg/30 text-neg text-xs">
               <AlertCircle className="w-4 h-4 shrink-0 mt-px" />
               <span>{error}</span>
             </div>
@@ -100,7 +100,7 @@ export const LoginView: React.FC = () => {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-accent-ink text-sm font-semibold transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md bg-accent hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed text-accent-ink text-sm font-semibold transition-colors"
           >
             {submitting ? (
               <>

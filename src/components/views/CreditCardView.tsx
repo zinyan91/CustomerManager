@@ -192,7 +192,7 @@ export const CreditCardView: React.FC = () => {
     <div className="space-y-4 text-xs transition-colors duration-200">
 
       {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${
+        <div className={`fixed top-16 right-6 z-50 p-4 rounded-md border flex items-center space-x-3 text-sm font-medium ${
           notification.type === 'success' ? 'bg-pos-soft border-pos/30 text-pos' : 'bg-neg-soft border-neg/30 text-neg'
         }`}>
           {notification.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
@@ -200,26 +200,26 @@ export const CreditCardView: React.FC = () => {
         </div>
       )}
 
-      <div className={`${containerCardBg} p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-4`}>
-        <div className="text-xs font-bold text-accent uppercase tracking-wider flex items-center space-x-2">
+      <div className={`${containerCardBg} p-4 rounded-lg border flex flex-wrap items-center justify-between gap-4`}>
+        <div className="text-xs font-bold text-accent tracking-tight flex items-center space-x-2">
           <CreditCard className="w-5 h-5" />
           <span>QUẢN LÝ PHÁT HÀNH THẺ TÍN DỤNG</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className={`border px-3 py-1.5 rounded-xl text-xs font-semibold ${
+          <div className={`border px-3 py-1.5 rounded-md text-xs font-semibold ${
             'bg-panel-muted border-line text-ink-muted'
           }`}>
             Tổng Thẻ Cấp: <span className="text-accent font-bold">{cards.length} Thẻ</span>
           </div>
 
-          <div className={`border px-3 py-1.5 rounded-xl text-xs font-semibold ${
+          <div className={`border px-3 py-1.5 rounded-md text-xs font-semibold ${
             'bg-accent-soft border-accent/30 text-accent'
           }`}>
             Liên Kết TSBĐ: <span className="font-bold">{totalLinkedCards} Thẻ</span>
           </div>
 
-          <div className={`border px-3 py-1.5 rounded-xl text-xs font-semibold ${
+          <div className={`border px-3 py-1.5 rounded-md text-xs font-semibold ${
             'bg-pos-soft border-pos/30 text-pos'
           }`}>
             Tổng Hạn Mức Cấp: <span className="text-pos font-bold">{fmtMoney(totalLimitSum)}</span>
@@ -227,9 +227,9 @@ export const CreditCardView: React.FC = () => {
         </div>
       </div>
 
-      <div className={`${containerCardBg} rounded-2xl p-5 space-y-4 border shadow-xl`}>
+      <div className={`${containerCardBg} rounded-lg p-5 space-y-4 border`}>
         <div className={`flex items-center justify-between pb-3 border-b ${'border-line'}`}>
-          <h3 className="font-bold flex items-center space-x-2 text-xs uppercase tracking-wider text-accent">
+          <h3 className="font-bold flex items-center space-x-2 text-xs tracking-tight text-accent">
             <CreditCard className="w-4 h-4" />
             <span>{selectedCard ? `CẬP NHẬT THẺ TÍN DỤNG #${selectedCard.CardNumber || selectedCard.Id}` : 'CẤP THẺ TÍN DỤNG MỚI'}</span>
           </h3>
@@ -263,7 +263,7 @@ export const CreditCardView: React.FC = () => {
                   required
                   value={inputCustomerId}
                   onChange={(e) => setInputCustomerId(e.target.value ? Number(e.target.value) : '')}
-                  className={`w-full rounded-xl p-2.5 font-bold ${inputStyle}`}
+                  className={`w-full rounded-md p-2.5 font-bold ${inputStyle}`}
                 >
                   <option value="">-- Chọn Khách hàng --</option>
                   {customers.map((c) => (
@@ -277,7 +277,7 @@ export const CreditCardView: React.FC = () => {
                 <select
                   value={inputClassification}
                   onChange={(e) => setInputClassification(e.target.value)}
-                  className={`w-full rounded-xl p-2.5 font-bold ${inputStyle}`}
+                  className={`w-full rounded-md p-2.5 font-bold ${inputStyle}`}
                 >
                   <option value="Quan hệ tín dụng (Liên kết TSĐB)">Quan hệ tín dụng (Liên kết TSĐB)</option>
                   <option value="Cầm cố sổ tiết kiệm (STK)">Cầm cố sổ tiết kiệm (STK)</option>
@@ -294,7 +294,7 @@ export const CreditCardView: React.FC = () => {
                 <select
                   value={inputCollateralId}
                   onChange={(e) => setInputCollateralId(e.target.value ? Number(e.target.value) : '')}
-                  className={`w-full rounded-xl p-2.5 font-bold text-accent  bg-accent-soft  border-accent/30 ${inputStyle}`}
+                  className={`w-full rounded-md p-2.5 font-bold text-accent  bg-accent-soft  border-accent/30 ${inputStyle}`}
                 >
                   <option value="">-- Không liên kết / Chọn TSBĐ --</option>
                   {customerCollaterals.length === 0 ? (
@@ -316,7 +316,7 @@ export const CreditCardView: React.FC = () => {
             </div>
 
             {selectedCollateralObj && (
-              <div className="p-3 rounded-xl bg-accent-soft  border border-accent/30  flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="p-3 rounded-md bg-accent-soft  border border-accent/30  flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div className="flex flex-wrap items-center gap-4">
                   <span>Mã/Địa chỉ TSBĐ: <strong className="font-bold text-ink">{selectedCollateralObj.AssetCode || '—'} ({selectedCollateralObj.Address || ''})</strong></span>
                   <span>Giá trị định giá: <strong className="font-mono text-pos">{fmtMoney(selectedCollateralObj.AppraisedValue || selectedCollateralObj.Value)}</strong></span>
@@ -327,9 +327,9 @@ export const CreditCardView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setInputLimit(selectedCollateralMaxLimit.toLocaleString('vi-VN'))}
-                    className="px-3 py-1 rounded-lg bg-accent hover:bg-accent text-accent-ink font-bold text-[11px] shadow-sm transition-colors"
+                    className="px-3 py-1 rounded-lg bg-accent hover:bg-accent text-accent-ink font-bold text-[11px] transition-colors"
                   >
-                    ⚡ Áp dụng Hạn mức tối đa này
+                    Áp dụng Hạn mức tối đa này
                   </button>
                 )}
               </div>
@@ -345,7 +345,7 @@ export const CreditCardView: React.FC = () => {
                   placeholder="Ví dụ: 4532...1892"
                   value={inputCardNumber}
                   onChange={(e) => setInputCardNumber(e.target.value)}
-                  className={`w-full rounded-xl p-2.5 font-mono font-bold text-accent ${inputStyle}`}
+                  className={`w-full rounded-md p-2.5 font-mono font-bold text-accent ${inputStyle}`}
                 />
               </div>
 
@@ -357,7 +357,7 @@ export const CreditCardView: React.FC = () => {
                   placeholder="Ví dụ: 50.000.000"
                   value={inputLimit}
                   onChange={(e) => setInputLimit(formatMoneyInput(e.target.value))}
-                  className={`w-full rounded-xl p-2.5 font-mono font-bold text-pos text-sm ${inputStyle}`}
+                  className={`w-full rounded-md p-2.5 font-mono font-bold text-pos text-sm ${inputStyle}`}
                 />
               </div>
             </div>
@@ -365,7 +365,7 @@ export const CreditCardView: React.FC = () => {
             <div className="flex flex-wrap items-center space-x-3 pt-2">
               <button
                 type="submit"
-                className="flex-1 bg-accent hover:opacity-90 text-accent-ink font-bold text-xs py-3 px-4 rounded-xl transition-colors shadow-lg  flex items-center justify-center space-x-2"
+                className="flex-1 bg-accent hover:opacity-90 text-accent-ink font-bold text-xs py-3 px-4 rounded-md transition-colors  flex items-center justify-center space-x-2"
               >
                 <CreditCard className="w-4 h-4" />
                 <span>{selectedCard ? 'CẬP NHẬT THÔNG TIN THẺ' : 'CẤP THẺ TÍN DỤNG MỚI'}</span>
@@ -375,7 +375,7 @@ export const CreditCardView: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleResetForm}
-                  className="bg-panel-muted hover:bg-panel-muted text-ink-muted font-bold text-xs py-3 px-4 rounded-xl transition-colors"
+                  className="bg-panel-muted hover:bg-panel-muted text-ink-muted font-bold text-xs py-3 px-4 rounded-md transition-colors"
                 >
                   HỦY BỎ
                 </button>
@@ -385,7 +385,7 @@ export const CreditCardView: React.FC = () => {
         )}
       </div>
 
-      <div className={`${containerCardBg} rounded-2xl overflow-hidden border shadow-sm`}>
+      <div className={`${containerCardBg} rounded-lg overflow-hidden border`}>
         <div className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${'bg-panel-muted border-line'}`}>
           <span className="text-xs font-bold flex items-center space-x-2">
             <CreditCard className="w-4 h-4 text-accent" />
@@ -399,7 +399,7 @@ export const CreditCardView: React.FC = () => {
               placeholder="Tìm theo Tên KH, CIF, Số thẻ..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className={`w-full pl-8 pr-3 py-1.5 rounded-xl text-xs border ${inputStyle}`}
+              className={`w-full pl-8 pr-3 py-1.5 rounded-md text-xs border ${inputStyle}`}
             />
           </div>
         </div>
@@ -408,12 +408,12 @@ export const CreditCardView: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead className={`sticky top-0 ${tableHeaderStyle}`}>
               <tr>
-                <th className="p-3 whitespace-nowrap">SỐ THẺ (MASK)</th>
-                <th className="p-3 whitespace-nowrap">KHÁCH HÀNG / CIF</th>
-                <th className="p-3 whitespace-nowrap">DIỆN MỞ THẺ</th>
-                <th className="p-3 whitespace-nowrap text-accent">TSBĐ LIÊN KẾT</th>
-                <th className="p-3 whitespace-nowrap text-right">HẠN MỨC CẤP (VNĐ)</th>
-                <th className="p-3 whitespace-nowrap text-center">THAO TÁC</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">SỐ THẺ (MASK)</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">KHÁCH HÀNG / CIF</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">DIỆN MỞ THẺ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-accent">TSBĐ LIÊN KẾT</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-right">HẠN MỨC CẤP (VNĐ)</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">THAO TÁC</th>
               </tr>
             </thead>
             <tbody className={`divide-y ${'divide-line'}`}>
@@ -436,19 +436,19 @@ export const CreditCardView: React.FC = () => {
                           : 'hover:bg-panel-muted'
                       }`}
                     >
-                      <td className="p-3 font-mono text-accent font-bold whitespace-nowrap">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-accent font-bold whitespace-nowrap">
                         {card.CardNumber || '4532••••8888'}
                       </td>
-                      <td className="p-3 whitespace-nowrap">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
                         <div className="font-bold text-ink">{card.customer?.FullName || 'KH'}</div>
                         <div className="text-[10px] font-mono text-accent">CIF: {card.customer?.CifKh || '—'}</div>
                       </td>
-                      <td className="p-3 whitespace-nowrap">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
                         <span className="bg-accent-soft text-accent border border-accent/30 px-2.5 py-1 rounded-lg text-[10px] font-bold">
                           {card.IssuanceType || 'Quan hệ tín dụng'}
                         </span>
                       </td>
-                      <td className="p-3 whitespace-nowrap">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
                         {linkedCol ? (
                           <div className="text-[11px] font-semibold text-accent ">
                             🏠 [Mã: {linkedCol.AssetCode || `ID#${linkedCol.Id}`}] {assetClassLabel(linkedCol.AssetType)}
@@ -458,10 +458,10 @@ export const CreditCardView: React.FC = () => {
                           <span className="text-ink-faint font-normal">—</span>
                         )}
                       </td>
-                      <td className="p-3 font-mono font-bold text-pos text-right text-sm whitespace-nowrap">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono font-bold text-pos text-right text-sm whitespace-nowrap">
                         {fmtMoney(card.CreditLimit || card.Limit || 0)}
                       </td>
-                      <td className="p-3 text-center whitespace-nowrap">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
                         <div className="flex items-center justify-center space-x-2">
                           <button
                             type="button"

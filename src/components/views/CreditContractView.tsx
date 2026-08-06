@@ -235,15 +235,15 @@ export const CreditContractView: React.FC = () => {
   return (
     <div className="space-y-4">
       {notify && (
-        <div className={`p-3 rounded-xl border text-xs font-semibold ${
+        <div className={`p-3 rounded-md border text-xs font-semibold ${
           notify.type === 'success'
             ? 'bg-pos-soft border-pos/30 text-pos '
             : 'bg-neg-soft border-neg/30 text-neg '
         }`}>{notify.message}</div>
       )}
 
-      <div className={`${containerCardBg} rounded-2xl p-4 border space-y-3`}>
-        <div className="flex items-center space-x-2 text-accent font-bold text-xs uppercase tracking-wider">
+      <div className={`${containerCardBg} rounded-lg p-4 border space-y-3`}>
+        <div className="flex items-center space-x-2 text-accent font-bold text-xs tracking-tight">
           <FileText className="w-4 h-4" />
           <span>Quản lý Hợp đồng Tín dụng</span>
         </div>
@@ -257,7 +257,7 @@ export const CreditContractView: React.FC = () => {
               setSelectedCustomerId(c?.Id ?? null);
               loadCustomer(c);
             }}
-            className={`w-full rounded-xl p-2.5 text-sm font-semibold ${inputStyle}`}
+            className={`w-full rounded-md p-2.5 text-sm font-semibold ${inputStyle}`}
           >
             <option value="">— Chọn khách hàng —</option>
             {allCustomers.map(c => (
@@ -268,7 +268,7 @@ export const CreditContractView: React.FC = () => {
       </div>
 
       {customer && (
-        <div className={`${containerCardBg} rounded-2xl border p-3 grid grid-cols-2 md:grid-cols-4 gap-3`}>
+        <div className={`${containerCardBg} rounded-lg border p-3 grid grid-cols-2 md:grid-cols-4 gap-3`}>
           <div>
             <div className="text-[10px] uppercase tracking-wider text-ink-faint">Mã CIF</div>
             <div className="font-mono font-bold text-sm text-accent">{customer.CifKh || '—'}</div>
@@ -300,9 +300,9 @@ export const CreditContractView: React.FC = () => {
       )}
 
       {customer && (
-        <div className={`${containerCardBg} rounded-2xl border overflow-hidden`}>
+        <div className={`${containerCardBg} rounded-lg border overflow-hidden`}>
           <div className="p-4 flex flex-wrap items-center justify-between gap-3 border-b border-line">
-            <div className="text-xs font-bold uppercase tracking-wider text-ink-faint">
+            <div className="text-xs font-bold tracking-tight text-ink-faint">
               Hợp đồng của {customer.FullName} — {visibleSummaries.length} HĐTD
               <span className="ml-2 font-normal normal-case text-[11px] text-ink-faint">
                 Nhấp vào dòng để xem chi tiết
@@ -315,7 +315,7 @@ export const CreditContractView: React.FC = () => {
               )}
             </div>
             <button onClick={openNew}
-              className="flex items-center space-x-1.5 bg-pos hover:opacity-90 text-accent-ink font-bold px-4 py-2 rounded-xl text-xs">
+              className="flex items-center space-x-1.5 bg-accent hover:opacity-90 text-accent-ink font-bold px-4 py-2 rounded-md text-xs">
               <Plus className="w-3.5 h-3.5" /><span>Tạo HĐTD mới</span>
             </button>
           </div>
@@ -329,13 +329,13 @@ export const CreditContractView: React.FC = () => {
               <table className="w-full text-left text-xs">
                 <thead className={'bg-panel-muted text-ink-muted'}>
                   <tr>
-                    <th className="p-3 whitespace-nowrap">SỐ HĐTD</th>
-                    <th className="p-3 whitespace-nowrap">PHƯƠNG THỨC VAY</th>
-                    <th className="p-3 text-right whitespace-nowrap">TỔNG MỨC CẤP</th>
-                    <th className="p-3 text-right whitespace-nowrap">DƯ NỢ KUNN</th>
-                    <th className="p-3 text-center whitespace-nowrap">HIỆU LỰC</th>
-                    <th className="p-3 text-center whitespace-nowrap">KUNN</th>
-                    <th className="p-3 text-center whitespace-nowrap">THAO TÁC</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">SỐ HĐTD</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">PHƯƠNG THỨC VAY</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap">TỔNG MỨC CẤP</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap">DƯ NỢ KUNN</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">HIỆU LỰC</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">KUNN</th>
+                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">THAO TÁC</th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${'divide-line'}`}>
@@ -347,7 +347,7 @@ export const CreditContractView: React.FC = () => {
                           ? 'bg-neg-soft  hover:bg-neg-soft '
                           : 'hover:bg-panel-muted'
                       }`}>
-                      <td className="p-3 font-mono font-bold text-accent">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono font-bold text-accent">
                         {s.contract.HdtdNumber}
                         {s.contract.ApprovalCode && (
                           <div className="text-[10px] font-sans font-normal text-accent mt-0.5">
@@ -355,18 +355,18 @@ export const CreditContractView: React.FC = () => {
                           </div>
                         )}
                       </td>
-                      <td className="p-3">{s.contract.LoanMethod || '—'}</td>
-                      <td className="p-3 text-right font-mono font-bold">{fmtMoney(s.contract.ContractAmount)}</td>
-                      <td className="p-3 text-right font-mono font-bold text-warn">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)]">{s.contract.LoanMethod || '—'}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold">{fmtMoney(s.contract.ContractAmount)}</td>
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-warn">
                         {fmtMoney(s.outstanding)}
                       </td>
-                      <td className="p-3 text-center whitespace-nowrap">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
                         <div className="font-mono">{fmtDate(s.contract.ContractEndDate)}</div>
                         {s.expired && (
                           <div className="text-[10px] font-bold text-neg">HẾT HIỆU LỰC</div>
                         )}
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
                         <span className="font-bold">{s.activeKunnCount}</span>
                         {s.settledKunnCount > 0 && (
                           <span className="text-ink-faint"> +{s.settledKunnCount} đã TT</span>
@@ -375,7 +375,7 @@ export const CreditContractView: React.FC = () => {
                           <div className="text-[10px] text-ink-faint">chưa giải ngân</div>
                         )}
                       </td>
-                      <td className="p-3">
+                      <td className="px-[var(--row-px)] py-[var(--row-py)]">
                         <div className="flex items-center justify-center gap-2">
                           {(() => {
                             const khoaGiaiNgan = !s.canDisburse;
@@ -411,9 +411,9 @@ export const CreditContractView: React.FC = () => {
       )}
 
       {showForm && customer && (
-        <form onSubmit={handleSave} className={`${containerCardBg} rounded-2xl p-4 border space-y-4`}>
+        <form onSubmit={handleSave} className={`${containerCardBg} rounded-lg p-4 border space-y-4`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-pos font-bold text-xs uppercase tracking-wider">
+            <div className="flex items-center space-x-2 text-pos font-bold text-xs tracking-tight">
               <FileText className="w-4 h-4" />
               <span>{editing ? `Sửa HĐTD ${editing.HdtdNumber}` : 'Hợp đồng tín dụng mới'}</span>
             </div>
@@ -428,13 +428,13 @@ export const CreditContractView: React.FC = () => {
               <input type="text" value={form.HdtdNumber || ''}
                 onChange={e => setForm(f => ({ ...f, HdtdNumber: e.target.value }))}
                 placeholder="2002/HĐTD/9653222"
-                className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold ${inputStyle}`} />
+                className={`w-full rounded-md p-2.5 text-sm font-mono font-bold ${inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${labelStyle}`}>Phương thức vay *</label>
               <select value={form.LoanMethod || ''}
                 onChange={e => setForm(f => ({ ...f, LoanMethod: e.target.value, LoanPurposeType: '' }))}
-                className={`w-full rounded-xl p-2.5 text-sm ${inputStyle}`}>
+                className={`w-full rounded-md p-2.5 text-sm ${inputStyle}`}>
                 {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
@@ -443,7 +443,7 @@ export const CreditContractView: React.FC = () => {
               <input type="text" value={formAmount}
                 onChange={e => setFormAmount(formatMoneyInput(e.target.value))}
                 placeholder="4.000.000.000"
-                className={`w-full rounded-xl p-2.5 text-sm font-mono font-bold text-accent ${inputStyle}`} />
+                className={`w-full rounded-md p-2.5 text-sm font-mono font-bold text-accent ${inputStyle}`} />
             </div>
           </div>
 
@@ -452,19 +452,19 @@ export const CreditContractView: React.FC = () => {
               <label className={`block mb-1 ${labelStyle}`}>Ngày HĐ có hiệu lực</label>
               <DateInput value={form.ContractStartDate || ''}
                 onChange={v => setForm(f => ({ ...f, ContractStartDate: v }))}
-                className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
+                className={`w-full rounded-md p-2.5 text-sm font-mono ${inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${labelStyle}`}>Thời hạn HĐTD (tháng)</label>
               <input type="number" min={1} value={form.LoanTenorMonths ?? ''}
                 onChange={e => setForm(f => ({ ...f, LoanTenorMonths: parseInt(e.target.value, 10) || null }))}
-                className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
+                className={`w-full rounded-md p-2.5 text-sm font-mono ${inputStyle}`} />
             </div>
             <div>
               <label className={`block mb-1 ${labelStyle}`}>Ngày kết thúc HĐ</label>
               <DateInput readOnly value={form.ContractEndDate || ''}
                 onChange={v => setForm(f => ({ ...f, ContractEndDate: v }))}
-                className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
+                className={`w-full rounded-md p-2.5 text-sm font-mono ${inputStyle}`} />
             </div>
           </div>
 
@@ -473,7 +473,7 @@ export const CreditContractView: React.FC = () => {
               <label className={`block mb-1 ${labelStyle}`}>Mục đích vay vốn</label>
               <select value={form.LoanPurposeType || ''}
                 onChange={e => setForm(f => ({ ...f, LoanPurposeType: e.target.value }))}
-                className={`w-full rounded-xl p-2.5 text-sm ${inputStyle}`}>
+                className={`w-full rounded-md p-2.5 text-sm ${inputStyle}`}>
                 <option value="">— Chọn —</option>
                 {purposeOptions.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
@@ -482,11 +482,11 @@ export const CreditContractView: React.FC = () => {
               <label className={`block mb-1 ${labelStyle}`}>Mô tả chi tiết mục đích</label>
               <input type="text" value={form.LoanPurpose || ''}
                 onChange={e => setForm(f => ({ ...f, LoanPurpose: e.target.value }))}
-                className={`w-full rounded-xl p-2.5 text-sm ${inputStyle}`} />
+                className={`w-full rounded-md p-2.5 text-sm ${inputStyle}`} />
             </div>
           </div>
 
-          <div className={`rounded-xl p-3 border ${'bg-accent-soft border-accent/30'}`}>
+          <div className={`rounded-md p-3 border ${'bg-accent-soft border-accent/30'}`}>
             <label className="flex items-center space-x-2 cursor-pointer">
               <input type="checkbox" checked={useSharedApproval}
                 onChange={e => setUseSharedApproval(e.target.checked)}
@@ -502,13 +502,13 @@ export const CreditContractView: React.FC = () => {
                   <input type="text" value={form.ApprovalCode || ''}
                     onChange={e => setForm(f => ({ ...f, ApprovalCode: e.target.value }))}
                     placeholder="PD-2026-001"
-                    className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
+                    className={`w-full rounded-md p-2.5 text-sm font-mono ${inputStyle}`} />
                 </div>
                 <div>
                   <label className={`block mb-1 ${labelStyle}`}>Hạn mức được duyệt</label>
                   <input type="text" value={formApprovalAmount}
                     onChange={e => setFormApprovalAmount(formatMoneyInput(e.target.value))}
-                    className={`w-full rounded-xl p-2.5 text-sm font-mono ${inputStyle}`} />
+                    className={`w-full rounded-md p-2.5 text-sm font-mono ${inputStyle}`} />
                 </div>
               </div>
             )}
@@ -534,7 +534,7 @@ export const CreditContractView: React.FC = () => {
                   const tinhTrang = appraisalStatus(col, today);
 
                   return (
-                    <div key={col.Id} className={`p-3 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${
+                    <div key={col.Id} className={`p-3 rounded-md border flex flex-wrap items-center justify-between gap-3 ${
                       isChecked
                         ? ('bg-accent-soft border-accent/30')
                         : ('bg-panel border-line hover:border-accent')
@@ -575,7 +575,7 @@ export const CreditContractView: React.FC = () => {
                 })}
 
                 {selectedCollateralIds.length > 0 && (
-                  <div className={`p-3 rounded-xl border text-xs font-semibold flex flex-wrap items-center justify-between gap-3 ${
+                  <div className={`p-3 rounded-md border text-xs font-semibold flex flex-wrap items-center justify-between gap-3 ${
                     'bg-pos-soft border-pos/30 text-pos'
                   }`}>
                     <span>TỔNG KHẢ NĂNG BẢO ĐẢM ({selectedCollateralIds.length} tài sản)</span>
@@ -584,7 +584,7 @@ export const CreditContractView: React.FC = () => {
                 )}
 
                 {vuotKhaNangBaoDam && (
-                  <div className={`p-3 rounded-xl border text-xs font-bold ${
+                  <div className={`p-3 rounded-md border text-xs font-bold ${
                     'bg-neg-soft border-neg/30 text-neg'
                   }`}>
                     Mức cấp {fmtMoney(parseMoneyInput(formAmount))} vượt khả năng bảo đảm {fmtMoney(tongKhaNangBaoDam)}
@@ -605,7 +605,7 @@ export const CreditContractView: React.FC = () => {
               </span>
             </label>
             <button type="submit" disabled={loading}
-              className="flex items-center space-x-1.5 bg-accent hover:opacity-90 disabled:opacity-50 text-accent-ink font-bold px-5 py-2 rounded-xl text-xs">
+              className="flex items-center space-x-1.5 bg-accent hover:opacity-90 disabled:opacity-50 text-accent-ink font-bold px-5 py-2 rounded-md text-xs">
               <Save className="w-3.5 h-3.5" /><span>{editing ? 'Cập nhật' : 'Tạo HĐTD'}</span>
             </button>
           </div>

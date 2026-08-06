@@ -36,16 +36,16 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
   return (
     <div className="space-y-5">
 
-      <div className={`${cardBg} rounded-2xl p-4 border shadow-sm`}>
-        <h2 className="text-sm font-bold uppercase tracking-wider text-accent flex items-center space-x-2">
+      <div className={`${cardBg} rounded-lg p-4 border`}>
+        <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
           <RefreshCw className="w-5 h-5 text-pos" />
           <span>QUY ĐỔI LÃI SUẤT PHẲNG ↔ LÃI SUẤT DƯ NỢ GIẢM DẦN & LÃI SUẤT HIỆU LỰC (EAR/APR)</span>
         </h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
-          <div className="font-bold text-xs text-accent uppercase tracking-wider flex items-center space-x-1.5 border-b border-line pb-2">
+        <div className={`${cardBg} rounded-lg p-4 border space-y-3.5`}>
+          <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-1.5 border-b border-line pb-2">
             <Percent className="w-4 h-4" />
             <span>1. LÃI PHẲNG (FLAT) → DƯ NỢ GIẢM DẦN</span>
           </div>
@@ -58,7 +58,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
                 step="0.01"
                 value={flatRateMonthlyStr}
                 onChange={e => setFlatRateMonthlyStr(e.target.value)}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-accent bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-accent bg-transparent border-line"
               />
             </div>
 
@@ -69,7 +69,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
                 min={1}
                 value={flatTenorMonths}
                 onChange={e => setFlatTenorMonths(parseInt(e.target.value, 10) || 12)}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
               />
             </div>
 
@@ -79,12 +79,12 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
                 type="text"
                 value={sampleLoanAmtStr}
                 onChange={e => setSampleLoanAmtStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
               />
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-pos-soft  border border-pos/30  space-y-2">
+          <div className="p-3.5 rounded-md bg-pos-soft  border border-pos/30  space-y-2">
             <div className="flex justify-between items-center text-xs">
               <span className="text-ink-muted">Lãi phẳng {flatRateMonthlyStr}%/tháng tương đương:</span>
               <strong className="font-mono text-xl font-extrabold text-pos">
@@ -98,8 +98,8 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
           </div>
         </div>
 
-        <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3.5`}>
-          <div className="font-bold text-xs text-accent uppercase tracking-wider flex items-center space-x-1.5 border-b border-line pb-2">
+        <div className={`${cardBg} rounded-lg p-4 border space-y-3.5`}>
+          <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-1.5 border-b border-line pb-2">
             <RefreshCw className="w-4 h-4" />
             <span>2. LS DANH NGHĨA → LS HIỆU LỰC (EAR / APR)</span>
           </div>
@@ -112,7 +112,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
                 step="0.1"
                 value={nominalRateAnnualStr}
                 onChange={e => setNominalRateAnnualStr(e.target.value)}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold text-accent bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-accent bg-transparent border-line"
               />
             </div>
 
@@ -121,7 +121,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
               <select
                 value={compoundingFreq}
                 onChange={e => setCompoundingFreq(parseInt(e.target.value, 10))}
-                className="w-full p-2.5 rounded-xl border text-xs font-mono font-bold bg-transparent border-line"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
               >
                 <option value={12}>Hàng tháng (12 lần/năm)</option>
                 <option value={4}>Hàng quý (4 lần/năm)</option>
@@ -131,7 +131,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-accent-soft  border border-accent/30  space-y-2">
+          <div className="p-3.5 rounded-md bg-accent-soft  border border-accent/30  space-y-2">
             <div className="flex justify-between items-center text-xs">
               <span className="text-ink-muted">Lãi suất hiệu lực thực tế (EAR):</span>
               <strong className="font-mono text-xl font-extrabold text-accent">

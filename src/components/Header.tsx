@@ -4,7 +4,7 @@ import { Sun, Moon, Menu, LogOut, ShieldCheck, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
-import { LANGS } from '../lib/i18n';
+import { LANGS, LANG_SWITCH_ENABLED } from '../lib/i18n';
 
 interface HeaderProps {
   onToggleMobileMenu?: () => void;
@@ -68,6 +68,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
           </span>
         </span>
 
+        {LANG_SWITCH_ENABLED && (
         <div
           className="hidden sm:inline-flex rounded-md border border-line overflow-hidden"
           role="group"
@@ -87,6 +88,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
             </button>
           ))}
         </div>
+        )}
 
         <button
           type="button"

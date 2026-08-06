@@ -14,7 +14,7 @@ export const KunnCollateralSection: React.FC<KunnCollateralSectionProps> = ({
   selectedCollaterals,
   maxAllowedLoanLtv,
 }) => (
-  <div className={`rounded-xl p-3 border text-[11px] ${sectionBoxBg}`}>
+  <div className={`rounded-md p-3 border text-[11px] ${sectionBoxBg}`}>
     <div className="flex items-center space-x-2 text-[11px] font-bold text-pos uppercase tracking-wider mb-1.5">
       <ShieldCheck className="w-3.5 h-3.5" />
       <span>TÀI SẢN BẢO ĐẢM</span>

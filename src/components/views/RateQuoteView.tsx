@@ -162,7 +162,7 @@ export const RateQuoteView: React.FC = () => {
   };
 
   const cardBg = UI.containerCardBg;
-  const inputCls = `w-full p-2 rounded-xl border text-xs font-mono bg-transparent ${
+  const inputCls = `w-full p-2 rounded-md border text-xs font-mono bg-transparent ${
     'border-line'
   }`;
   const labelCls = 'block text-[11px] font-bold text-ink-faint mb-1';
@@ -184,15 +184,15 @@ export const RateQuoteView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
 
-      <div className={`${cardBg} rounded-2xl p-2 border flex flex-wrap items-center gap-2`}>
+      <div className={`${cardBg} rounded-lg p-2 border flex flex-wrap items-center gap-2`}>
         {kindTabs.map(({ id, icon: Icon }) => (
           <button
             key={id}
             type="button"
             onClick={() => setKind(id)}
-            className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center space-x-2 px-3.5 py-2 rounded-md text-xs font-bold transition-all ${
               kind === id
-                ? 'bg-accent text-accent-ink shadow-md '
+                ? 'bg-accent text-accent-ink '
                 : 'text-ink-muted hover:bg-panel-muted'
             }`}
           >
@@ -212,7 +212,7 @@ export const RateQuoteView: React.FC = () => {
             type="button"
             onClick={loadAll}
             title="Tải lại"
-            className="p-2 rounded-xl text-ink-faint hover:text-accent transition-colors"
+            className="p-2 rounded-md text-ink-faint hover:text-accent transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -220,13 +220,13 @@ export const RateQuoteView: React.FC = () => {
       </div>
 
       {loadError && (
-        <div className="rounded-2xl border border-neg/30 bg-neg-soft  p-3 text-xs font-bold text-neg">
+        <div className="rounded-lg border border-neg/30 bg-neg-soft  p-3 text-xs font-bold text-neg">
           {loadError}
         </div>
       )}
 
       {!program && !loadError && (
-        <div className="rounded-2xl border border-warn/30 bg-warn-soft  p-4 text-xs font-bold text-warn">
+        <div className="rounded-lg border border-warn/30 bg-warn-soft  p-4 text-xs font-bold text-warn">
           Không có chương trình {KIND_LABELS[kind].toLowerCase()} nào hiệu lực tại ngày {fmtDate(onDate)}.
           Admin cần nhập chương trình cho kỳ này trước khi chào lãi suất.
         </div>
@@ -234,7 +234,7 @@ export const RateQuoteView: React.FC = () => {
 
       {program && (
         <>
-          <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-2`}>
+          <div className={`${cardBg} rounded-lg p-4 border space-y-2`}>
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
               <div>
                 <div className="flex items-center space-x-2">
@@ -268,7 +268,7 @@ export const RateQuoteView: React.FC = () => {
           </div>
 
           {(program.ScopeText || program.TargetText) && (
-            <div className={`${cardBg} rounded-2xl p-4 border grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]`}>
+            <div className={`${cardBg} rounded-lg p-4 border grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]`}>
               {program.TargetText && (
                 <div>
                   <div className="font-bold uppercase tracking-wider text-accent mb-1">
@@ -293,7 +293,7 @@ export const RateQuoteView: React.FC = () => {
               {warnings.map((w, i) => (
                 <div
                   key={i}
-                  className={`rounded-2xl border p-3 text-xs font-bold flex items-start space-x-2 ${
+                  className={`rounded-lg border p-3 text-xs font-bold flex items-start space-x-2 ${
                     w.level === 'block'
                       ? 'border-neg/30 bg-neg-soft  text-neg'
                       : 'border-warn/30 bg-warn-soft  text-warn'
@@ -320,8 +320,8 @@ export const RateQuoteView: React.FC = () => {
         />
 
           {isAdmin && selectedTier && (
-            <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-2`}>
-              <div className="font-bold text-xs uppercase tracking-wider text-accent">
+            <div className={`${cardBg} rounded-lg p-4 border space-y-2`}>
+              <div className="font-bold text-xs tracking-tight text-accent">
                 SỬA THÔNG SỐ (CHỈ ADMIN)
               </div>
               <div className="flex flex-wrap items-end gap-3">
@@ -340,7 +340,7 @@ export const RateQuoteView: React.FC = () => {
                   type="button"
                   onClick={handleSaveRate}
                   disabled={saving}
-                  className="bg-pos hover:opacity-90 disabled:opacity-50 text-accent-ink text-xs px-3.5 py-2 rounded-xl font-bold flex items-center space-x-1.5 shadow-sm transition-colors"
+                  className="bg-accent hover:opacity-90 disabled:opacity-50 text-accent-ink text-xs px-3.5 py-2 rounded-md font-bold flex items-center space-x-1.5 transition-colors"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   <span>LƯU</span>
@@ -353,8 +353,8 @@ export const RateQuoteView: React.FC = () => {
             </div>
           )}
 
-          <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-4`}>
-            <div className="font-bold text-xs uppercase tracking-wider text-accent border-b border-line pb-2">
+          <div className={`${cardBg} rounded-lg p-4 border space-y-4`}>
+            <div className="font-bold text-xs tracking-tight text-accent border-b border-line pb-2">
               {kind === 'huy_dong' ? 'TÍNH LÃI TIỀN GỬI DỰ KIẾN' : 'CHÀO LÃI SUẤT & PHÍ DỊCH VỤ'}
             </div>
 
@@ -433,7 +433,7 @@ export const RateQuoteView: React.FC = () => {
 
             {kind === 'huy_dong' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-4 rounded-2xl bg-accent-soft  border border-accent/30 ">
+                <div className="p-4 rounded-lg bg-accent-soft  border border-accent/30 ">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">LÃI SUẤT CHÀO</div>
                   <div className="text-2xl font-extrabold text-accent font-mono mt-1">
                     {selectedTier?.RateAnnual === null || selectedTier?.RateAnnual === undefined
@@ -442,7 +442,7 @@ export const RateQuoteView: React.FC = () => {
                   </div>
                   <div className="text-[11px] text-ink-faint mt-1">{selectedTier?.Label || '—'}</div>
                 </div>
-                <div className="p-4 rounded-2xl bg-pos-soft  border border-pos/30 ">
+                <div className="p-4 rounded-lg bg-pos-soft  border border-pos/30 ">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">TIỀN LÃI DỰ KIẾN</div>
                   <div className="text-2xl font-extrabold text-pos font-mono mt-1">
                     {depositInterest === null ? '—' : fmtMoney(depositInterest)}
@@ -454,7 +454,7 @@ export const RateQuoteView: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="p-4 rounded-2xl bg-accent-soft  border border-accent/30 ">
+                <div className="p-4 rounded-lg bg-accent-soft  border border-accent/30 ">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">LSCV TRONG THỜI GIAN CỐ ĐỊNH</div>
                   <div className="text-2xl font-extrabold text-accent font-mono mt-1">
                     {selectedTier?.RateAnnual === null || selectedTier?.RateAnnual === undefined
@@ -467,7 +467,7 @@ export const RateQuoteView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-warn-soft  border border-warn/30 ">
+                <div className="p-4 rounded-lg bg-warn-soft  border border-warn/30 ">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">LSCV SAU THỜI GIAN CỐ ĐỊNH</div>
                   <div className="text-2xl font-extrabold text-warn font-mono mt-1">
                     {postFixedRate === null ? '—' : `${(postFixedRate * 100).toFixed(2)} %/năm`}
@@ -477,7 +477,7 @@ export const RateQuoteView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-pos-soft  border border-pos/30 ">
+                <div className="p-4 rounded-lg bg-pos-soft  border border-pos/30 ">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">PHÍ DỊCH VỤ TỐI THIỂU</div>
                   <div className="text-2xl font-extrabold text-pos font-mono mt-1">
                     {fee.feeAmount === null ? '—' : fmtMoney(fee.feeAmount)}
@@ -499,14 +499,14 @@ export const RateQuoteView: React.FC = () => {
             )}
 
             {blocked && (
-              <div className="rounded-2xl border border-neg/30 bg-neg-soft  p-3 text-xs font-bold text-neg">
+              <div className="rounded-lg border border-neg/30 bg-neg-soft  p-3 text-xs font-bold text-neg">
                 Không được dùng kết quả trên để chào khách khi còn cảnh báo đỏ ở trên.
               </div>
             )}
           </div>
 
-          <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-3`}>
-            <div className="font-bold text-xs uppercase tracking-wider text-accent border-b border-line pb-2 flex items-center space-x-1.5">
+          <div className={`${cardBg} rounded-lg p-4 border space-y-3`}>
+            <div className="font-bold text-xs tracking-tight text-accent border-b border-line pb-2 flex items-center space-x-1.5">
               <Printer className="w-4 h-4" />
               <span>XUẤT BẢNG LÃI SUẤT GỬI KHÁCH HÀNG</span>
             </div>
@@ -526,7 +526,7 @@ export const RateQuoteView: React.FC = () => {
                 type="button"
                 onClick={handleExportSheet}
                 disabled={sheetBlockers.length > 0}
-                className="bg-accent hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink text-xs px-4 py-2.5 rounded-xl font-bold flex items-center justify-center space-x-1.5 shadow-sm transition-colors"
+                className="bg-accent hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink text-xs px-4 py-2.5 rounded-md font-bold flex items-center justify-center space-x-1.5 transition-colors"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>XUẤT PDF / HÌNH ẢNH</span>
@@ -546,7 +546,7 @@ export const RateQuoteView: React.FC = () => {
             )}
 
             {sheetBlockers.length > 0 ? (
-              <div className="rounded-xl border border-neg/30 bg-neg-soft  p-3 space-y-1">
+              <div className="rounded-md border border-neg/30 bg-neg-soft  p-3 space-y-1">
                 <div className="text-xs font-bold text-neg">
                   Chưa xuất được file cho khách hàng:
                 </div>

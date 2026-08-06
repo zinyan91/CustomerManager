@@ -707,7 +707,7 @@ export const LoanPortfolioView: React.FC = () => {
     <div className="space-y-4 text-xs transition-colors duration-200">
 
       {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-xl shadow-xl border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success'
+        <div className={`fixed top-16 right-6 z-50 p-4 rounded-md border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success'
           ? 'bg-pos-soft border-pos/30 text-pos'
           : 'bg-neg-soft border-neg/30 text-neg'
           }`}>
@@ -766,7 +766,7 @@ export const LoanPortfolioView: React.FC = () => {
           />
 
           {capacityWarnings.length > 0 && (
-            <div className="rounded-2xl border border-warn/30 bg-warn-soft  p-4 space-y-2">
+            <div className="rounded-lg border border-warn/30 bg-warn-soft  p-4 space-y-2">
               <div className="flex items-center gap-2 text-warn font-bold text-xs uppercase tracking-wide">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>Cảnh báo kiểm soát tài sản bảo đảm</span>
@@ -796,13 +796,13 @@ export const LoanPortfolioView: React.FC = () => {
             contractsCount={contracts.length}
           />
 
-          <div className={`flex items-center space-x-1 border rounded-xl p-1 w-fit ${containerCardBg}`}>
+          <div className={`flex items-center space-x-1 border rounded-md p-1 w-fit ${containerCardBg}`}>
             {[
               { id: 'kunn' as const, label: 'Danh sách KUNN', icon: Receipt },
               { id: 'schedule' as const, label: 'Lịch Thu Nợ', icon: Calendar },
             ].map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setMainTab(id)}
-                className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${mainTab === id ? 'bg-accent text-accent-ink shadow-sm' : 'text-ink-faint hover:text-ink'
+                className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${mainTab === id ? 'bg-accent text-accent-ink' : 'text-ink-faint hover:text-ink'
                   }`}>
                 <Icon className="w-3.5 h-3.5" />
                 <span>{label}</span>

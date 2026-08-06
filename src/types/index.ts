@@ -73,7 +73,6 @@ export interface CreditContract {
   MarginRate?: number | null;
   NormalRate?: number | null;
   InterestRate?: number | null;
-  RateHistory?: string | null;
 
   CollateralIds?: string | null;
 

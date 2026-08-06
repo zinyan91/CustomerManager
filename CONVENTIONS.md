@@ -37,6 +37,13 @@ Cái giá đo được: `HĐTD:` có ở 100 KUNN và **lệch số thật ở 2
 
 Cả ba đã bịt, và migration 24 đã dọn dữ liệu (05/08/2026: sáu khối chuỗi về 0, 82 ô ghi chú thành rỗng, đối chiếu bản sao lưu xác nhận không mất ghi chú thật nào). Gỡ chuỗi dùng `stripLegacyNoteBlobs` (`utils.ts`) — **giữ nguyên phần ghi chú thật của banker trong cùng ô**. Báo cáo `supabase/reports/02_du_lieu_nghiep_vu_trong_note.sql` đo lại bất cứ lúc nào.
 
+Rà soát diện rộng bằng `supabase/reports/03_quet_toan_bo_cot_van_ban.sql` (quét **mọi** cột văn bản của **mọi** bảng lấy từ `information_schema`) tìm thêm hai chỗ mà cách đếm sáu khối đã biết không bắt được:
+
+- **`CreditContracts.RateHistory`** — 59 dòng, nội dung là bản sao `Note` cũ (`HĐTD: <số>` kèm `[PENALTY_RATE:N]`), không phải lịch sử lãi suất. Migration 14 copy vào sai cột; ba dòng của ĐOÀN NGỌC LÝ có `HdtdNumber` không khớp số ghi bên trong. Không mã nào đọc — migration 25 xoá cột.
+- **`[PENALTY_RATE:N]`** — khối thứ bảy, là **lãi suất phạt quá hạn theo từng khoản**, và **không có cột nào để chứa**. Không mã nào đọc; mọi khoản đều bị áp `DEFAULT_PRINCIPAL_PENALTY_MULTIPLIER = 1.5` nhúng cứng trong `stkPledge.ts`. KUNN `PNAT.CN.01290824/GNN-01` khai `PENALTY_RATE:0` (miễn phạt) nhưng hệ thống vẫn tính 150%. Chưa gây thiệt hại vì 21/21 kỳ của khoản đó đã thu đúng hạn, nhưng là rủi ro tiềm ẩn. **Chờ quyết định**: lãi suất phạt có khác 150% theo từng khoản không. `calcOverduePenalty` đã nhận sẵn tham số `principalPenaltyMultiplier`, chỉ thiếu cột và đường dẫn dữ liệu.
+
+**Không gỡ một chuỗi khỏi `Note` trước khi giá trị trong đó có chỗ ở.** `stripLegacyNoteBlobs` cố tình **không** gỡ `[PENALTY_RATE:` — đó là bản ghi duy nhất của con số ấy.
+
 **Sinh ID do cơ sở dữ liệu đảm nhiệm** qua sequence. Không tính `max(Id)+1` ở client: dưới RLS, client chỉ nhìn thấy phần dữ liệu của mình nên con số đó luôn sai và gây trùng khoá chính.
 
 **Viết SQL rà soát phải dùng lại đúng quy tắc đã cài trong code.** Một câu SQL cộng `ContractAmount` mà quên gom theo HĐTD gốc đã tạo ra báo động giả 41 tỷ trên dữ liệu vốn đã đúng.

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { Collateral, CreditContract, Customer, LoanContract, RepaymentSchedule } from '../types';
+import type { Collateral, CreditCard, CreditContract, Customer, LoanContract, RepaymentSchedule } from '../types';
 import {
   fetchCollateralsByCustomerAPI, fetchContractsByCustomerAPI, fetchCreditContractsByCustomerAPI,
+  fetchCreditCardsByCustomerAPI,
   fetchCustomersAPI, fetchRepaymentSchedulesAPI,
 } from '../lib/api';
 import { recalculateSchedules } from '../lib/loanMath';
@@ -32,6 +33,7 @@ export function useCustomerPortfolio({
   const [creditContracts, setCreditContracts] = useState<CreditContract[]>([]);
   const [contracts, setContracts] = useState<LoanContract[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
+  const [cards, setCards] = useState<CreditCard[]>([]);
   const [selectedContract, setSelectedContract] = useState<LoanContract | null>(null);
   const [schedules, setSchedules] = useState<RepaymentSchedule[]>([]);
   const [allSchedulesMap, setAllSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
@@ -78,12 +80,14 @@ export function useCustomerPortfolio({
     setContracts([]);
     setSelectedContract(null);
 
-    const [cons, cols] = await Promise.all([
+    const [cons, cols, crds] = await Promise.all([
       fetchContractsByCustomerAPI(c.Id),
       fetchCollateralsByCustomerAPI(c.Id),
+      fetchCreditCardsByCustomerAPI(c.Id),
     ]);
     setContracts(cons);
     setCollaterals(cols);
+    setCards(crds);
     loadAllSchedulesForContracts(cons);
   };
 
@@ -104,6 +108,7 @@ export function useCustomerPortfolio({
     setFoundCustomer(null);
     setContracts([]);
     setCollaterals([]);
+    setCards([]);
     setSelectedContract(null);
 
     try {
@@ -134,12 +139,14 @@ export function useCustomerPortfolio({
         setDropdownQuery(matchedCustomer.FullName);
         setSearchCif(matchedCustomer.CifKh);
         setSearchName('');
-        const [cons, cols] = await Promise.all([
+        const [cons, cols, crds] = await Promise.all([
           fetchContractsByCustomerAPI(matchedCustomer.Id),
           fetchCollateralsByCustomerAPI(matchedCustomer.Id),
+          fetchCreditCardsByCustomerAPI(matchedCustomer.Id),
         ]);
         setContracts(cons);
         setCollaterals(cols);
+        setCards(crds);
         loadAllSchedulesForContracts(cons);
       }
     } catch (err: unknown) {
@@ -154,6 +161,7 @@ export function useCustomerPortfolio({
     setFoundCustomer(null);
     setContracts([]);
     setCollaterals([]);
+    setCards([]);
     setSelectedContract(null);
     setSearchCif('');
     setSearchName('');
@@ -189,6 +197,7 @@ export function useCustomerPortfolio({
     creditContracts, setCreditContracts,
     contracts, setContracts,
     collaterals,
+    cards,
     selectedContract, setSelectedContract,
     schedules, setSchedules,
     allSchedulesMap, setAllSchedulesMap,

@@ -69,7 +69,7 @@ export const LoanPortfolioView: React.FC = () => {
   const {
     searchCif, setSearchCif, searchName, setSearchName, searchContract, setSearchContract,
     isSearching, allCustomers, dropdownQuery, setDropdownQuery, showDropdown, setShowDropdown,
-    foundCustomer, creditContracts, contracts, setContracts, collaterals,
+    foundCustomer, creditContracts, contracts, setContracts, collaterals, cards,
     selectedContract, setSelectedContract, schedules, setSchedules,
     allSchedulesMap, setAllSchedulesMap,
     pickCustomer: handlePickCustomer, search: handleSearch, selectContract: handleSelectContract,
@@ -557,9 +557,9 @@ export const LoanPortfolioView: React.FC = () => {
   const graceOptions = useMemo(() => graceMonthOptions(form.LoanMethod), [form.LoanMethod]);
 
   const capacityWarnings = useMemo(
-    () => checkCollateralCapacity(contracts, collaterals, getEffectiveBalanceForContract, today)
+    () => checkCollateralCapacity(contracts, collaterals, getEffectiveBalanceForContract, today, cards)
       .filter(w => w.exceeded || w.expiredAppraisals.length > 0),
-    [contracts, collaterals, allSchedulesMap]
+    [contracts, collaterals, cards, allSchedulesMap]
   );
 
   const applyCreditContractToForm = (cc: CreditContract, keepKunnNumber = false) => {

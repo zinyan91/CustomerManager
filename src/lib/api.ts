@@ -360,6 +360,12 @@ export async function fetchCreditCardsAPI(): Promise<CreditCard[]> {
   }
 }
 
+export async function fetchCreditCardsByCustomerAPI(customerId: number): Promise<CreditCard[]> {
+  const { data, error } = await supabase.from('CreditCards').select('*').eq('CustomerId', customerId);
+  if (error) throw error;
+  return data || [];
+}
+
 export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<CreditCard> {
   const isUpdate = !!card.Id;
   const rawCardNumber = (card.CardNumber || '').trim();
@@ -395,9 +401,9 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
   if (dbPayload.IssuanceType) {
     cardData.IssuanceType = String(dbPayload.IssuanceType);
   }
-  if (dbPayload.CollateralId) {
-    cardData.CollateralId = Number(dbPayload.CollateralId);
-  }
+  cardData.CollateralId = dbPayload.CollateralId ? Number(dbPayload.CollateralId) : null;
+  cardData.IsLtvException = !!dbPayload.IsLtvException;
+  cardData.LtvExceptionReason = dbPayload.LtvExceptionReason || null;
 
   if (isUpdate) {
     cardData.Id = dbPayload.Id;

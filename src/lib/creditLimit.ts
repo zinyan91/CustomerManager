@@ -1,6 +1,8 @@
-import type { LoanContract, Collateral } from '../types';
+import type { LoanContract, Collateral, CreditCard } from '../types';
 import { getMasterHdtdNumber, toIsoDate } from './utils';
-import { usableCapacity, appraisalStatus, appraisalExpiryDate } from './collateralMath';
+import {
+  usableCapacity, appraisalStatus, appraisalExpiryDate, cardProductCap, isAppraisalUsable,
+} from './collateralMath';
 import { isRevolvingCredit } from './loanProductRules';
 
 export interface SharedLimitGroup {
@@ -237,6 +239,7 @@ export interface CollateralCapacityCheck {
   exceeded: boolean;
   excessAmount: number;
   contractNumbers: string[];
+  cardNumbers: string[];
   expiredAppraisals: { collateralId: number; assetCode: string; expiryDate: string | null }[];
 }
 
@@ -252,9 +255,20 @@ export function parseCollateralIds(c: LoanContract): number[] {
   return Array.from(ids);
 }
 
+export function cardCollateralId(card: CreditCard): number | null {
+  if (card.CollateralId) return card.CollateralId;
+  const m = String(card.Note || '').match(/\[CollateralId:(\d+)\]/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+export function cardGrantedLimit(card: CreditCard): number {
+  return Math.max(0, card.CreditLimit ?? card.Limit ?? 0);
+}
+
 export function clusterExposure(
   contracts: LoanContract[],
-  getOutstanding?: (c: LoanContract) => number
+  getOutstanding?: (c: LoanContract) => number,
+  cards: CreditCard[] = []
 ): number {
   const revolving = contracts.filter(c => isRevolvingCredit(c.LoanMethod));
   const term = contracts.filter(c => !isRevolvingCredit(c.LoanMethod));
@@ -266,14 +280,17 @@ export function clusterExposure(
 
   const termExposure = term.reduce((sum, c) => sum + Math.max(0, outstandingOf(c)), 0);
 
-  return revolvingExposure + termExposure;
+  const cardExposure = cards.reduce((sum, c) => sum + cardGrantedLimit(c), 0);
+
+  return revolvingExposure + termExposure + cardExposure;
 }
 
 export function checkCollateralCapacity(
   contracts: LoanContract[],
   collaterals: Collateral[],
   getOutstanding?: (c: LoanContract) => number,
-  todayStr?: string
+  todayStr?: string,
+  cards: CreditCard[] = []
 ): CollateralCapacityCheck[] {
   const collateralById = new Map(collaterals.map(c => [c.Id, c]));
 
@@ -301,13 +318,33 @@ export function checkCollateralCapacity(
     linkedContracts.push({ key, contract: c, colIds });
   });
 
-  const clusters = new Map<string, { contracts: LoanContract[]; colIds: Set<number> }>();
+  const linkedCards: { key: string; card: CreditCard; colId: number }[] = [];
+
+  cards.forEach((card, i) => {
+    const colId = cardCollateralId(card);
+    if (colId === null || !collateralById.has(colId)) return;
+    const key = `k${i}`;
+    find(key);
+    union(key, `t${colId}`);
+    linkedCards.push({ key, card, colId });
+  });
+
+  const clusters = new Map<string, { contracts: LoanContract[]; cards: CreditCard[]; colIds: Set<number> }>();
+  const clusterAt = (root: string) => {
+    if (!clusters.has(root)) clusters.set(root, { contracts: [], cards: [], colIds: new Set() });
+    return clusters.get(root)!;
+  };
+
   for (const { key, contract, colIds } of linkedContracts) {
-    const root = find(key);
-    if (!clusters.has(root)) clusters.set(root, { contracts: [], colIds: new Set() });
-    const cluster = clusters.get(root)!;
+    const cluster = clusterAt(find(key));
     cluster.contracts.push(contract);
     for (const id of colIds) cluster.colIds.add(id);
+  }
+
+  for (const { key, card, colId } of linkedCards) {
+    const cluster = clusterAt(find(key));
+    cluster.cards.push(card);
+    cluster.colIds.add(colId);
   }
 
   const result: CollateralCapacityCheck[] = [];
@@ -321,7 +358,7 @@ export function checkCollateralCapacity(
         assetCode: col.AssetCode || `#${col.Id}`,
         expiryDate: appraisalExpiryDate(col),
       }));
-    const granted = clusterExposure(cluster.contracts, getOutstanding);
+    const granted = clusterExposure(cluster.contracts, getOutstanding, cluster.cards);
     const excessAmount = Math.max(0, granted - capacity);
 
     result.push({
@@ -332,9 +369,93 @@ export function checkCollateralCapacity(
       exceeded: excessAmount > 0,
       excessAmount,
       contractNumbers: cluster.contracts.map(c => c.ContractNumber),
+      cardNumbers: cluster.cards.map(c => c.CardNumber || `#${c.Id}`),
       expiredAppraisals,
     });
   }
 
   return result;
+}
+
+export type CardLimitBlocker =
+  | 'none'
+  | 'no_collateral'
+  | 'appraisal_unusable'
+  | 'cluster_exceeded'
+  | 'product_cap_exceeded';
+
+export interface CardLimitCheck {
+  maxAllowed: number;
+  clusterCapacity: number;
+  clusterUsed: number;
+  clusterHeadroom: number;
+  productCap: number | null;
+  requested: number;
+  exceeded: boolean;
+  excessAmount: number;
+  blocker: CardLimitBlocker;
+}
+
+export function checkCardLimit(
+  requestedLimit: number,
+  collateral: Collateral | null,
+  contracts: LoanContract[],
+  otherCards: CreditCard[],
+  collaterals: Collateral[],
+  getOutstanding?: (c: LoanContract) => number,
+  todayStr?: string
+): CardLimitCheck {
+  const requested = Math.max(0, requestedLimit);
+
+  const idle: CardLimitCheck = {
+    maxAllowed: 0,
+    clusterCapacity: 0,
+    clusterUsed: 0,
+    clusterHeadroom: 0,
+    productCap: null,
+    requested,
+    exceeded: false,
+    excessAmount: 0,
+    blocker: 'no_collateral',
+  };
+
+  if (!collateral) return { ...idle, exceeded: false };
+
+  if (!isAppraisalUsable(collateral, todayStr)) {
+    return { ...idle, blocker: 'appraisal_unusable', exceeded: requested > 0, excessAmount: requested };
+  }
+
+  const clusters = checkCollateralCapacity(contracts, collaterals, getOutstanding, todayStr, otherCards);
+  const cluster = clusters.find(c => c.collateralIds.includes(collateral.Id));
+
+  const clusterCapacity = cluster
+    ? cluster.capacity
+    : collaterals
+        .filter(c => c.Id === collateral.Id)
+        .reduce((s, c) => s + usableCapacity(c, todayStr), 0);
+  const clusterUsed = cluster ? cluster.granted : 0;
+  const clusterHeadroom = Math.max(0, clusterCapacity - clusterUsed);
+
+  const productCap = cardProductCap(collateral, todayStr);
+
+  const maxAllowed = productCap === null
+    ? clusterHeadroom
+    : Math.min(clusterHeadroom, productCap);
+
+  const excessAmount = Math.max(0, requested - maxAllowed);
+  const blocker: CardLimitBlocker = excessAmount === 0
+    ? 'none'
+    : (productCap !== null && requested > productCap ? 'product_cap_exceeded' : 'cluster_exceeded');
+
+  return {
+    maxAllowed,
+    clusterCapacity,
+    clusterUsed,
+    clusterHeadroom,
+    productCap,
+    requested,
+    exceeded: excessAmount > 0,
+    excessAmount,
+    blocker,
+  };
 }

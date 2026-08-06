@@ -57,6 +57,14 @@ export function maxLoanFromCollateral(c?: Pick<Collateral, 'LtvPercent' | 'Asset
   return value * getEffectiveLtv(c) / 100;
 }
 
+export const CARD_STK_LTV_PERCENT = 90;
+
+export function isSavingsPassbook(assetType?: string | null): boolean {
+  if (!assetType) return false;
+  const cleaned = assetType.replace(/^(BĐS|BDS)\s*-?\s*/i, '').trim();
+  return cleaned.startsWith('Sổ tiết kiệm') || cleaned.startsWith('STK');
+}
+
 export const APPRAISAL_TENOR_DEFAULT_MONTHS = 12;
 export const APPRAISAL_WARN_DAYS = 60;
 
@@ -112,6 +120,13 @@ export function isAppraisalUsable(
 export function usableCapacity(c?: Collateral | null, todayStr?: string): number {
   if (!c) return 0;
   return isAppraisalUsable(c, todayStr) ? maxLoanFromCollateral(c) : 0;
+}
+
+export function cardProductCap(c?: Collateral | null, todayStr?: string): number | null {
+  if (!c || !isSavingsPassbook(c.AssetType)) return null;
+  if (!isAppraisalUsable(c, todayStr)) return 0;
+  const value = c.AppraisedValue ?? c.Value ?? 0;
+  return value * CARD_STK_LTV_PERCENT / 100;
 }
 
 export function assetClassLabel(assetType?: string | null): string {

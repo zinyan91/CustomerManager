@@ -5,9 +5,22 @@ import {
   fetchCollateralsByCustomerAPI, fetchCollateralsAPI
 } from '../../lib/api';
 import { formatMoneyInput, fmtMoney, parseMoneyInput } from '../../lib/utils';
-import { getEffectiveLtv, assetClassLabel } from '../../lib/collateralMath';
-import type { CreditCard as CreditCardType, Customer, Collateral } from '../../types';
+import { getEffectiveLtv, assetClassLabel, CARD_STK_LTV_PERCENT } from '../../lib/collateralMath';
+import { checkCardLimit, type CardLimitCheck } from '../../lib/creditLimit';
+import { fetchContractsByCustomerAPI } from '../../lib/api';
+import type { CreditCard as CreditCardType, Customer, Collateral, LoanContract as LoanContractType } from '../../types';
 import { CreditCard, CheckCircle, AlertCircle, Plus, ChevronUp, ChevronDown, Trash2, Edit3, ShieldCheck, Search } from 'lucide-react';
+
+const LY_DO_CHAN: Record<string, (k: CardLimitCheck) => string> = {
+  none: () => '',
+  no_collateral: () => '',
+  appraisal_unusable: () =>
+    'Định giá tài sản đã hết hiệu lực nên không dùng để cấp hạn mức được. Định giá lại trước khi mở thẻ.',
+  product_cap_exceeded: k =>
+    `Thẻ bảo đảm bằng sổ tiết kiệm chỉ được tối đa ${CARD_STK_LTV_PERCENT}% mệnh giá — ${fmtMoney(k.productCap || 0)}. Đang xin vượt ${fmtMoney(k.excessAmount)}.`,
+  cluster_exceeded: k =>
+    `Cụm tài sản đỡ được ${fmtMoney(k.clusterCapacity)}, đã dùng ${fmtMoney(k.clusterUsed)} cho các khoản vay và thẻ khác. Còn cấp được ${fmtMoney(k.maxAllowed)}, đang xin vượt ${fmtMoney(k.excessAmount)}.`,
+};
 
 export const CreditCardView: React.FC = () => {
 
@@ -15,6 +28,9 @@ export const CreditCardView: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [allCollaterals, setAllCollaterals] = useState<Collateral[]>([]);
   const [customerCollaterals, setCustomerCollaterals] = useState<Collateral[]>([]);
+  const [customerContracts, setCustomerContracts] = useState<LoanContractType[]>([]);
+  const [exceptionAck, setExceptionAck] = useState(false);
+  const [exceptionReason, setExceptionReason] = useState('');
   const [loading, setLoading] = useState(true);
 
   const [selectedCard, setSelectedCard] = useState<CreditCardType | null>(null);
@@ -40,8 +56,12 @@ export const CreditCardView: React.FC = () => {
       fetchCollateralsByCustomerAPI(Number(inputCustomerId))
         .then(cols => setCustomerCollaterals(cols))
         .catch(() => setCustomerCollaterals([]));
+      fetchContractsByCustomerAPI(Number(inputCustomerId))
+        .then(cons => setCustomerContracts(cons))
+        .catch(() => setCustomerContracts([]));
     } else {
       setCustomerCollaterals([]);
+      setCustomerContracts([]);
       setInputCollateralId('');
     }
   }, [inputCustomerId]);
@@ -75,12 +95,18 @@ export const CreditCardView: React.FC = () => {
     return customerCollaterals.find(c => c.Id === Number(inputCollateralId)) || null;
   }, [inputCollateralId, customerCollaterals]);
 
-  const selectedCollateralMaxLimit = useMemo(() => {
-    if (!selectedCollateralObj) return 0;
-    const val = selectedCollateralObj.AppraisedValue || selectedCollateralObj.Value || 0;
-    const ltv = getEffectiveLtv(selectedCollateralObj);
-    return Math.round(val * ltv / 100);
-  }, [selectedCollateralObj]);
+  const limitCheck = useMemo(
+    () => checkCardLimit(
+      parseMoneyInput(inputLimit),
+      selectedCollateralObj,
+      customerContracts,
+      cards.filter(c => c.CustomerId === Number(inputCustomerId) && c.Id !== selectedCard?.Id),
+      customerCollaterals,
+    ),
+    [inputLimit, selectedCollateralObj, customerContracts, customerCollaterals, cards, inputCustomerId, selectedCard]
+  );
+
+  const selectedCollateralMaxLimit = limitCheck.maxAllowed;
 
   const handleSelectCardForEdit = (card: CreditCardType) => {
     setSelectedCard(card);
@@ -91,6 +117,8 @@ export const CreditCardView: React.FC = () => {
     const limit = card.CreditLimit || card.Limit || 0;
     setInputLimit(limit ? limit.toLocaleString('vi-VN') : '');
     setInputNote(card.Note || '');
+    setExceptionAck(!!card.IsLtvException);
+    setExceptionReason(card.LtvExceptionReason || '');
     if (card.CollateralId) {
       setInputCollateralId(card.CollateralId);
     } else if (card.Note && card.Note.includes('[CollateralId:')) {
@@ -111,6 +139,8 @@ export const CreditCardView: React.FC = () => {
     setInputCardNumber('');
     setInputLimit('');
     setInputNote('');
+    setExceptionAck(false);
+    setExceptionReason('');
   };
 
   const handleSaveCard = async (e: React.FormEvent) => {
@@ -126,6 +156,15 @@ export const CreditCardView: React.FC = () => {
       return;
     }
 
+    if (limitCheck.exceeded && !exceptionAck) {
+      showNotify('error', LY_DO_CHAN[limitCheck.blocker](limitCheck));
+      return;
+    }
+    if (limitCheck.exceeded && exceptionAck && exceptionReason.trim().length === 0) {
+      showNotify('error', 'Khai lý do cấp vượt trần trước khi lưu.');
+      return;
+    }
+
     const rawCardNo = inputCardNumber.trim();
     const finalCardNo = rawCardNo.length > 0
       ? rawCardNo
@@ -138,6 +177,8 @@ export const CreditCardView: React.FC = () => {
       CollateralId: inputCollateralId ? Number(inputCollateralId) : null,
       CardNumber: finalCardNo,
       CreditLimit: limitVal,
+      IsLtvException: limitCheck.exceeded && exceptionAck,
+      LtvExceptionReason: limitCheck.exceeded && exceptionAck ? exceptionReason.trim() : null,
       Limit: limitVal,
       Note: inputNote.trim() || null,
     };
@@ -321,7 +362,12 @@ export const CreditCardView: React.FC = () => {
                   <span>Mã/Địa chỉ TSBĐ: <strong className="font-bold text-ink">{selectedCollateralObj.AssetCode || '—'} ({selectedCollateralObj.Address || ''})</strong></span>
                   <span>Giá trị định giá: <strong className="font-mono text-pos">{fmtMoney(selectedCollateralObj.AppraisedValue || selectedCollateralObj.Value)}</strong></span>
                   <span>LTV Tối đa: <strong className="font-mono text-accent">{getEffectiveLtv(selectedCollateralObj)}%</strong></span>
-                  <span>Hạn mức tối đa được cấp: <strong className="font-mono text-accent ">{fmtMoney(selectedCollateralMaxLimit)}</strong></span>
+                  <span>Cụm tài sản đỡ được: <strong className="font-mono text-ink">{fmtMoney(limitCheck.clusterCapacity)}</strong></span>
+                  <span>Đã dùng: <strong className="font-mono text-ink">{fmtMoney(limitCheck.clusterUsed)}</strong></span>
+                  {limitCheck.productCap !== null && (
+                    <span>Trần thẻ trên sổ ({CARD_STK_LTV_PERCENT}%): <strong className="font-mono text-ink">{fmtMoney(limitCheck.productCap)}</strong></span>
+                  )}
+                  <span>Còn cấp được: <strong className="font-mono text-accent">{fmtMoney(selectedCollateralMaxLimit)}</strong></span>
                 </div>
                 {selectedCollateralMaxLimit > 0 && (
                   <button
@@ -331,6 +377,35 @@ export const CreditCardView: React.FC = () => {
                   >
                     Áp dụng Hạn mức tối đa này
                   </button>
+                )}
+              </div>
+            )}
+
+            {limitCheck.exceeded && (
+              <div className="p-3 rounded-md bg-neg-soft border border-neg/40 space-y-2 text-xs">
+                <div className="flex items-start gap-2">
+                  <AlertCircle size={15} className="text-neg shrink-0 mt-px" />
+                  <span className="text-ink">{LY_DO_CHAN[limitCheck.blocker](limitCheck)}</span>
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={exceptionAck}
+                    onChange={e => setExceptionAck(e.target.checked)}
+                    className="w-3.5 h-3.5 accent-neg cursor-pointer"
+                  />
+                  <span className="font-semibold text-neg">Cấp vượt trần theo ngoại lệ đã được phê duyệt</span>
+                </label>
+
+                {exceptionAck && (
+                  <input
+                    type="text"
+                    value={exceptionReason}
+                    onChange={e => setExceptionReason(e.target.value)}
+                    placeholder="Số văn bản phê duyệt và lý do"
+                    className={`w-full p-2 rounded-md border text-xs ${UI.inputStyle}`}
+                  />
                 )}
               </div>
             )}

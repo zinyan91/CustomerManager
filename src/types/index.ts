@@ -179,6 +179,8 @@ export interface CreditCard {
   Limit?: number;
   CurrentBalance?: number;
   CollateralId?: number | null;
+  IsLtvException?: boolean;
+  LtvExceptionReason?: string | null;
   Note?: string | null;
   customer?: Customer;
   collateral?: Collateral;

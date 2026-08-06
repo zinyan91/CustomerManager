@@ -8,21 +8,24 @@ import { FormatSettingsProvider } from './context/FormatSettingsContext.tsx'
 import { AuthProvider } from './context/AuthContext.tsx'
 import { WorkProvider } from './context/WorkContext.tsx'
 import { FontSettingsProvider } from './context/FontSettingsContext.tsx'
+import { LanguageProvider } from './context/LanguageContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <AuthProvider>
-        <DateFormatProvider>
-          <FormatSettingsProvider>
-            <FontSettingsProvider>
-              <WorkProvider>
-                <App />
-              </WorkProvider>
-            </FontSettingsProvider>
-          </FormatSettingsProvider>
-        </DateFormatProvider>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <DateFormatProvider>
+            <FormatSettingsProvider>
+              <FontSettingsProvider>
+                <WorkProvider>
+                  <App />
+                </WorkProvider>
+              </FontSettingsProvider>
+            </FormatSettingsProvider>
+          </DateFormatProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </ThemeProvider>
   </StrictMode>,
 )

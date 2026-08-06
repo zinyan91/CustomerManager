@@ -6,7 +6,7 @@ import {
 } from '../../lib/api';
 import { formatMoneyInput, fmtMoney, parseMoneyInput } from '../../lib/utils';
 import { getEffectiveLtv, assetClassLabel, CARD_STK_LTV_PERCENT } from '../../lib/collateralMath';
-import { checkCardLimit, type CardLimitCheck } from '../../lib/creditLimit';
+import { checkCardLimit, cardGrantedLimit, type CardLimitCheck } from '../../lib/creditLimit';
 import { fetchContractsByCustomerAPI } from '../../lib/api';
 import type { CreditCard as CreditCardType, Customer, Collateral, LoanContract as LoanContractType } from '../../types';
 import { CreditCard, CheckCircle, AlertCircle, Plus, ChevronUp, ChevronDown, Trash2, Edit3, ShieldCheck, Search } from 'lucide-react';
@@ -114,7 +114,7 @@ export const CreditCardView: React.FC = () => {
     setInputCustomerId(card.CustomerId);
     setInputClassification(card.IssuanceType || 'Quan hệ tín dụng (Liên kết TSĐB)');
     setInputCardNumber(card.CardNumber || '');
-    const limit = card.CreditLimit || card.Limit || 0;
+    const limit = cardGrantedLimit(card);
     setInputLimit(limit ? limit.toLocaleString('vi-VN') : '');
     setInputNote(card.Note || '');
     setExceptionAck(!!card.IsLtvException);
@@ -226,7 +226,7 @@ export const CreditCardView: React.FC = () => {
 
   const tableHeaderStyle = UI.tableHeaderStyle;
 
-  const totalLimitSum = cards.reduce((a, b) => a + (b.CreditLimit || b.Limit || 0), 0);
+  const totalLimitSum = cards.reduce((a, b) => a + cardGrantedLimit(b), 0);
   const totalLinkedCards = cards.filter(c => c.CollateralId || c.IssuanceType?.includes('Liên kết') || c.Note?.includes('CollateralId')).length;
 
   return (
@@ -534,7 +534,7 @@ export const CreditCardView: React.FC = () => {
                         )}
                       </td>
                       <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono font-bold text-pos text-right text-sm whitespace-nowrap">
-                        {fmtMoney(card.CreditLimit || card.Limit || 0)}
+                        {fmtMoney(cardGrantedLimit(card))}
                       </td>
                       <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
                         <div className="flex items-center justify-center space-x-2">

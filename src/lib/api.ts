@@ -390,10 +390,13 @@ export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<Cred
 
   const { customer: _customer, Limit, ...dbPayload } = card as any;
 
+  const limitValue = Number(dbPayload.CreditLimit ?? Limit ?? 0);
+
   const cardData: any = {
     CustomerId: Number(dbPayload.CustomerId),
     CardNumber: cardNumber,
-    CreditLimit: Number(dbPayload.CreditLimit || Limit || 0),
+    CreditLimit: limitValue,
+    Limit: limitValue,
     CurrentBalance: Number(dbPayload.CurrentBalance || 0),
     Note: dbPayload.Note || null,
   };

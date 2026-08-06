@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkCardLimit, checkCollateralCapacity, clusterExposure } from '../creditLimit';
+import { checkCardLimit, checkCollateralCapacity, clusterExposure, cardGrantedLimit } from '../creditLimit';
 import { cardProductCap, isSavingsPassbook, CARD_STK_LTV_PERCENT } from '../collateralMath';
 import type { Collateral, CreditCard, LoanContract } from '../../types';
 
@@ -174,5 +174,19 @@ describe('checkCardLimit — ba trường hợp mở thẻ', () => {
     expect(kq.clusterCapacity).toBe(0);
     expect(kq.maxAllowed).toBe(0);
     expect(kq.exceeded).toBe(true);
+  });
+});
+
+describe('cardGrantedLimit — đọc hạn mức thẻ từ hai cột song song', () => {
+  it('ưu tiên CreditLimit', () => {
+    expect(cardGrantedLimit(the({ CreditLimit: 200_000_000, Limit: 999 }))).toBe(200_000_000);
+  });
+
+  it('dữ liệu cũ chỉ có Limit thì vẫn đọc được', () => {
+    expect(cardGrantedLimit(the({ CreditLimit: undefined, Limit: 150_000_000 }))).toBe(150_000_000);
+  });
+
+  it('CreditLimit bằng 0 là giá trị thật, không rơi xuống Limit', () => {
+    expect(cardGrantedLimit(the({ CreditLimit: 0, Limit: 999_000_000 }))).toBe(0);
   });
 });

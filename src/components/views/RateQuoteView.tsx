@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { UI } from '../../lib/uiClasses';
 import { useRatePrograms } from '../../hooks/useRatePrograms';
+import { RateTierTable } from '../rate/RateTierTable';
+import { RateReferenceTables } from '../rate/RateReferenceTables';
 import {
   Percent, TrendingDown, PiggyBank, Loader2, AlertTriangle, ShieldAlert,
-  FileText, Landmark, Save, RefreshCw, Printer, ChevronDown, ChevronUp,
+  FileText, Save, RefreshCw, Printer,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { fmtMoney, fmtDate, fmtPercent, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
@@ -11,7 +13,7 @@ import { updateRateProgramTierAPI } from '../../lib/api';
 import {
   resolvePostFixedRate, calcServiceFee, calcDepositInterest,
   collectQuoteWarnings, hasBlockingWarning,
-  PAYOUT_MODE_LABELS, CHANNEL_LABELS, KIND_LABELS, FBE_SCOPE_LABELS,
+  KIND_LABELS,
 } from '../../lib/rateQuote';
 import vietbankLogo from '../../assets/vietbank-logo.png?inline';
 import { buildRateSheetHtml, findRateSheetBlockers } from '../../lib/rateSheet';
@@ -306,128 +308,16 @@ export const RateQuoteView: React.FC = () => {
             </div>
           )}
 
-          <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
-            <div className="p-3 border-b border-line font-bold text-xs uppercase tracking-wider text-accent">
-              {kind === 'huy_dong' ? 'BẢNG LÃI SUẤT TIỀN GỬI' : 'BẢNG LÃI SUẤT CHO VAY'}
-            </div>
-            <div className="overflow-x-auto max-h-[420px]">
-              <table className="w-full text-left text-[11px] border-collapse">
-                <thead className="sticky top-0 bg-panel-muted font-bold border-b border-line">
-                  <tr>
-                    <th className="p-2.5 w-8" />
-                    {kind === 'huy_dong' ? (
-                      <>
-                        <th className="p-2.5">BẬC SỐ DƯ / ĐIỀU KIỆN</th>
-                        <th className="p-2.5 text-center">KỲ HẠN</th>
-                        <th className="p-2.5">CÁCH TRẢ LÃI</th>
-                        {depositChannels.map(ch => (
-                          <th key={ch} className="p-2.5 text-right whitespace-nowrap">
-                            {CHANNEL_LABELS[ch].toUpperCase()} (%/NĂM)
-                          </th>
-                        ))}
-                      </>
-                    ) : (
-                      <>
-                        <th className="p-2.5 text-center">LỰA CHỌN</th>
-                        <th className="p-2.5">GÓI CỐ ĐỊNH</th>
-                        <th className="p-2.5 text-center">TG VAY TỐI THIỂU</th>
-                        <th className="p-2.5 text-right">LSCV (%/NĂM)</th>
-                        <th className="p-2.5 text-right">PHÍ TỐI THIỂU</th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line">
-                  {kind === 'huy_dong' && depositRows.map(row => {
-                    const firstId = depositChannels
-                      .map(ch => row.tierIdByChannel[ch])
-                      .find(x => x !== undefined) ?? 0;
-                    const active = firstId === selectedTierId;
-                    return (
-                      <tr key={row.key}
-                        onClick={() => setSelectedTierId(firstId)}
-                        className={`cursor-pointer transition-colors ${
-                          active ? 'bg-accent-soft  font-bold' : 'hover:bg-panel-muted'
-                        }`}>
-                        <td className="p-2.5 text-center">
-                          <input type="radio" checked={active} onChange={() => setSelectedTierId(firstId)} />
-                        </td>
-                        <td className="p-2.5">{row.balanceTierLabel || '—'}</td>
-                        <td className="p-2.5 text-center font-mono">
-                          {row.tenorMonths ? `${row.tenorMonths} tháng` : '—'}
-                        </td>
-                        <td className="p-2.5">
-                          {row.payoutMode ? PAYOUT_MODE_LABELS[row.payoutMode] : '—'}
-                        </td>
-                        {depositChannels.map(ch => {
-                          const coKenh = ch in row.byChannel;
-                          const v = row.byChannel[ch];
-                          const thieu = !coKenh || v === null || v === undefined;
-                          return (
-                            <td key={ch} className={`p-2.5 text-right font-mono font-bold ${
-                              thieu ? 'text-ink-faint' : 'text-accent'
-                            }`}>
-                              {thieu ? '—' : fmtPercent(v)}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                  {kind !== 'huy_dong' && lendingTiers.map(t => {
-                    const active = t.Id === selectedTierId;
-                    const missing = t.RateAnnual === null || t.RateAnnual === undefined;
-                    return (
-                      <tr
-                        key={t.Id}
-                        onClick={() => setSelectedTierId(t.Id)}
-                        className={`cursor-pointer transition-colors ${
-                          active
-                            ? 'bg-accent-soft  font-bold'
-                            : 'hover:bg-panel-muted'
-                        }`}
-                      >
-                        <td className="p-2.5 text-center">
-                          <input type="radio" checked={active} onChange={() => setSelectedTierId(t.Id)} />
-                        </td>
-                        <>
-                            <td className="p-2.5 text-center font-mono font-bold">{t.PackageCode || '—'}</td>
-                            <td className="p-2.5">
-                              {t.Label}
-                              {t.Note && (
-                                <span className="block text-[10px] text-warn font-normal mt-0.5">
-                                  ⚠ {t.Note}
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-2.5 text-center font-mono">
-                              {t.MinTenorMonths ? `${t.MinTenorMonths} tháng` : '—'}
-                            </td>
-                            <td className={`p-2.5 text-right font-mono font-bold ${missing ? 'text-neg' : 'text-accent'}`}>
-                              {missing ? 'CHƯA CÓ' : fmtPercent(t.RateAnnual)}
-                            </td>
-                            <td className="p-2.5 text-right font-mono">{fmtPercent(t.MinFeeRatio)}</td>
-                        </>
-                      </tr>
-                    );
-                  })}
-                  {(kind === 'huy_dong' ? depositRows : lendingTiers).length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="p-6 text-center text-ink-faint">
-                        Chương trình chưa có dòng lãi suất nào.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {program.FloatingSpreadAnnual !== null && program.FloatingSpreadAnnual !== undefined && kind !== 'huy_dong' && (
-              <div className="p-3 border-t border-line text-[11px] text-ink-faint">
-                Sau thời gian cố định: <strong>{program.FloatingBaseLabel || 'LSCS'} + biên độ tối thiểu {fmtPercent(program.FloatingSpreadAnnual)}</strong>
-                {program.RateResetMonths ? `, kỳ điều chỉnh ${program.RateResetMonths} tháng/lần.` : '.'}
-              </div>
-            )}
-          </div>
+        <RateTierTable
+          cardBg={cardBg}
+          kind={kind}
+          program={program}
+          lendingTiers={lendingTiers}
+          depositChannels={depositChannels}
+          depositRows={depositRows}
+          selectedTierId={selectedTierId}
+          setSelectedTierId={setSelectedTierId}
+        />
 
           {isAdmin && selectedTier && (
             <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-2`}>
@@ -678,191 +568,16 @@ export const RateQuoteView: React.FC = () => {
             )}
           </div>
 
-          {programFeeOptions.length > 0 && (
-            <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
-              <button
-                type="button"
-                onClick={() => setShowFeeTable(v => !v)}
-                className="w-full p-3 flex items-center justify-between gap-2 font-bold text-xs uppercase tracking-wider text-accent hover:bg-panel-muted transition-colors"
-              >
-                <span>PHÍ DỊCH VỤ THEO PHƯƠNG ÁN ({programFeeOptions.length} phương án)</span>
-                <span className="flex items-center gap-1 normal-case font-medium text-ink-faint">
-                  {showFeeTable ? 'Ẩn bảng' : 'Xem bảng'}
-                  {showFeeTable ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </span>
-              </button>
-              <div className={`overflow-x-auto border-t border-line ${showFeeTable ? '' : 'hidden'}`}>
-                <table className="w-full text-left text-[11px] border-collapse">
-                  <thead className="bg-panel-muted font-bold border-b border-line">
-                    <tr>
-                      <th className="p-2.5">PHƯƠNG ÁN</th>
-                      <th className="p-2.5">NHÓM GÓI CỐ ĐỊNH</th>
-                      <th className="p-2.5 text-right">PHÍ TỐI THIỂU</th>
-                      <th className="p-2.5 text-right">TRONG ĐÓ TẠI QUẦY / TKSĐ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {programFeeOptions.map(o => (
-                      <tr key={o.Id}>
-                        <td className="p-2.5 font-bold">{o.OptionLabel}</td>
-                        <td className="p-2.5">{o.PackageGroup}</td>
-                        <td className="p-2.5 text-right font-mono font-bold text-accent">
-                          {fmtPercent(o.MinFeeRatio)}
-                        </td>
-                        <td className="p-2.5 text-right font-mono">
-                          {o.CounterFeeRatio === null || o.CounterFeeRatio === undefined
-                            ? '—' : fmtPercent(o.CounterFeeRatio)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {programConditions.length > 0 && (
-            <div className={`${cardBg} rounded-2xl p-4 border shadow-sm space-y-1.5`}>
-              <div className="font-bold text-xs uppercase tracking-wider text-accent border-b border-line pb-2">
-                ĐIỀU KIỆN ÁP DỤNG
-              </div>
-              {programConditions.map(c => (
-                <div key={c.Id} className="text-[11px] text-ink-muted">
-                  • {c.Heading && <strong>{c.Heading}: </strong>}{c.Content}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {programPrepayFees.length > 0 && (
-            <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
-              <div className="p-3 border-b border-line font-bold text-xs uppercase tracking-wider text-accent">
-                PHÍ TRẢ NỢ TRƯỚC HẠN
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-[11px] border-collapse">
-                  <thead className="bg-panel-muted font-bold border-b border-line">
-                    <tr>
-                      <th className="p-2.5">NĂM</th>
-                      <th className="p-2.5 text-right">MỨC PHÍ</th>
-                      <th className="p-2.5">GHI CHÚ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {programPrepayFees.map(f => {
-                      const missing = f.FeeRatio === null || f.FeeRatio === undefined;
-                      return (
-                        <tr key={f.Id} className={missing ? 'bg-neg-soft ' : ''}>
-                          <td className="p-2.5 font-mono">
-                            {f.YearTo === null || f.YearTo === undefined
-                              ? `Từ năm ${f.YearFrom} trở đi`
-                              : f.YearFrom === f.YearTo ? `Năm ${f.YearFrom}` : `Năm ${f.YearFrom} – ${f.YearTo}`}
-                          </td>
-                          <td className={`p-2.5 text-right font-mono font-bold ${missing ? 'text-neg' : ''}`}>
-                            {missing ? 'THIẾU SỐ' : f.FeeRatio === 0 ? 'Miễn phí' : fmtPercent(f.FeeRatio)}
-                          </td>
-                          <td className="p-2.5 text-ink-faint">{f.Note || ''}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {programAuthorities.length > 0 && (
-            <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
-              <div className="p-3 border-b border-line font-bold text-xs uppercase tracking-wider text-accent flex items-center space-x-1.5">
-                <Landmark className="w-4 h-4" />
-                <span>THẨM QUYỀN ĐIỀU CHỈNH LÃI SUẤT TIỀN GỬI</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-[11px] border-collapse">
-                  <thead className="bg-panel-muted font-bold border-b border-line">
-                    <tr>
-                      <th className="p-2.5">THẨM QUYỀN</th>
-                      <th className="p-2.5">KỲ HẠN</th>
-                      <th className="p-2.5 text-right">HIỆN TẠI</th>
-                      <th className="p-2.5 text-right">ĐIỀU CHỈNH</th>
-                      <th className="p-2.5 text-right">+/-</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {programAuthorities.map(a => {
-                      const delta =
-                        a.CurrentRate !== null && a.CurrentRate !== undefined
-                        && a.AdjustedRate !== null && a.AdjustedRate !== undefined
-                          ? a.AdjustedRate - a.CurrentRate
-                          : null;
-                      return (
-                        <tr key={a.Id}>
-                          <td className="p-2.5 font-bold">{a.AuthorityLevel}</td>
-                          <td className="p-2.5">{a.TenorLabel}</td>
-                          <td className="p-2.5 text-right font-mono">{fmtPercent(a.CurrentRate)}</td>
-                          <td className="p-2.5 text-right font-mono font-bold text-accent">
-                            {fmtPercent(a.AdjustedRate)}
-                          </td>
-                          <td className="p-2.5 text-right font-mono text-pos">
-                            {delta === null ? '—' : `+${(delta * 100).toFixed(2)}%`}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {programFbeCodes.length > 0 && (
-            <div className={`${cardBg} rounded-2xl border shadow-sm overflow-hidden`}>
-              <div className="p-3 border-b border-line font-bold text-xs uppercase tracking-wider text-accent">
-                HƯỚNG DẪN NHẬP LIỆU TRÊN FBE
-              </div>
-              <div className="overflow-x-auto max-h-[360px]">
-                <table className="w-full text-left text-[11px] border-collapse">
-                  <thead className="sticky top-0 bg-panel-muted font-bold border-b border-line">
-                    <tr>
-                      <th className="p-2.5">ĐỐI TƯỢNG ÁP DỤNG</th>
-                      <th className="p-2.5 text-center">MÃ RATE ID</th>
-                      <th className="p-2.5">DIỄN GIẢI</th>
-                      <th className="p-2.5">RATE ID</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {(['co_dinh_suot_thoi_gian_vay', 'co_dinh_ky_dau', 'data_udf'] as const).map(scope => {
-                      const rows = programFbeCodes.filter(c => c.Scope === scope);
-                      if (rows.length === 0) return null;
-                      return (
-                        <React.Fragment key={scope}>
-                          <tr className="bg-panel-muted ">
-                            <td colSpan={4} className="p-2 font-bold text-ink-muted">
-                              {FBE_SCOPE_LABELS[scope]}
-                            </td>
-                          </tr>
-                          {rows.map(c => (
-                            <tr key={c.Id}>
-                              <td className="p-2.5">{c.Applies}</td>
-                              <td className="p-2.5 text-center font-mono font-bold text-accent">
-                                {c.RateIdCode || '—'}
-                              </td>
-                              <td className="p-2.5 font-mono">{c.Description || '—'}</td>
-                              <td className="p-2.5">{c.RateIdValue || '—'}</td>
-                            </tr>
-                          ))}
-                        </React.Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <div className="p-3 border-t border-line text-[11px] text-ink-faint">
-                Nhập Reset frequency: <strong>Quarterly</strong>. Reset date: gói cố định suốt thời gian vay không nhập;
-                gói cố định kỳ đầu nhập ngày hết hạn áp dụng gói cố định.
-              </div>
-            </div>
-          )}
+        <RateReferenceTables
+          cardBg={cardBg}
+          programFeeOptions={programFeeOptions}
+          programConditions={programConditions}
+          programPrepayFees={programPrepayFees}
+          programAuthorities={programAuthorities}
+          programFbeCodes={programFbeCodes}
+          showFeeTable={showFeeTable}
+          setShowFeeTable={setShowFeeTable}
+        />
         </>
       )}
     </div>

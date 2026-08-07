@@ -11,6 +11,7 @@ import { fetchContractsByCustomerAPI } from '../../lib/api';
 import type { CreditCard as CreditCardType, Customer, Collateral, LoanContract as LoanContractType } from '../../types';
 import { CreditCard, AlertCircle, Plus, ChevronUp, ChevronDown, Trash2, Edit3, ShieldCheck, Search } from 'lucide-react';
 import { Toast } from '../Toast';
+import { AdaptiveTable } from '../AdaptiveTable';
 
 const LY_DO_CHAN: Record<string, (k: CardLimitCheck) => string> = {
   none: () => '',
@@ -214,8 +215,6 @@ export const CreditCardView: React.FC = () => {
   const containerCardBg = UI.containerCardBg;
 
   const inputStyle = UI.inputStyle;
-
-  const tableHeaderStyle = UI.tableHeaderStyle;
 
   const totalLimitSum = cards.reduce((a, b) => a + cardGrantedLimit(b), 0);
   const totalLinkedCards = cards.filter(c => c.CollateralId || c.IssuanceType?.includes('Liên kết') || c.Note?.includes('CollateralId')).length;
@@ -463,89 +462,54 @@ export const CreditCardView: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className={`sticky top-0 ${tableHeaderStyle}`}>
-              <tr>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">SỐ THẺ (MASK)</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">KHÁCH HÀNG / CIF</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">DIỆN MỞ THẺ</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-accent">TSBĐ LIÊN KẾT</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-right">HẠN MỨC CẤP (VNĐ)</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">THAO TÁC</th>
-              </tr>
-            </thead>
-            <tbody className={`divide-y ${'divide-line'}`}>
-              {loading ? (
-                <tr><td colSpan={6} className="text-center p-8 text-ink-faint">Đang tải dữ liệu thẻ tín dụng...</td></tr>
-              ) : filteredCards.length === 0 ? (
-                <tr><td colSpan={6} className="text-center p-8 text-ink-faint">Chưa có thẻ tín dụng nào khớp với tìm kiếm.</td></tr>
-              ) : (
-                filteredCards.map((card) => {
-                  const isSelected = selectedCard?.Id === card.Id;
-                  const linkedCol = allCollaterals.find(c => c.Id === card.CollateralId) || null;
-
-                  return (
-                    <tr
-                      key={card.Id}
-                      className={`transition-colors ${
-                        isSelected
-                          ? 'bg-accent-soft border-l-2 border-l-accent font-semibold'
-                          : 'hover:bg-panel-muted'
-                      }`}
-                    >
-                      <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-accent font-bold whitespace-nowrap">
-                        {card.CardNumber || '4532••••8888'}
-                      </td>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
-                        <div className="font-bold text-ink">{card.customer?.FullName || 'KH'}</div>
-                        <div className="text-[10px] font-mono text-accent">CIF: {card.customer?.CifKh || '—'}</div>
-                      </td>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
-                        <span className="bg-accent-soft text-accent border border-accent/30 px-2.5 py-1 rounded-lg text-[10px] font-bold">
-                          {card.IssuanceType || 'Quan hệ tín dụng'}
-                        </span>
-                      </td>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
-                        {linkedCol ? (
-                          <div className="text-[11px] font-semibold text-accent ">
-                            🏠 [Mã: {linkedCol.AssetCode || `ID#${linkedCol.Id}`}] {assetClassLabel(linkedCol.AssetType)}
-                            <div className="text-[10px] text-ink-faint font-mono">Định giá: {fmtMoney(collateralValue(linkedCol))}</div>
-                          </div>
-                        ) : (
-                          <span className="text-ink-faint font-normal">—</span>
-                        )}
-                      </td>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono font-bold text-pos text-right text-sm whitespace-nowrap">
-                        {fmtMoney(cardGrantedLimit(card))}
-                      </td>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center space-x-2">
-                          <button
-                            type="button"
-                            onClick={() => handleSelectCardForEdit(card)}
-                            className="p-1.5 rounded-lg bg-accent-soft hover:bg-accent-soft text-accent border border-accent/30 transition-colors"
-                            title="Sửa thẻ này"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCard(card)}
-                            className="p-1.5 rounded-lg bg-neg-soft hover:bg-neg-soft text-neg border border-neg/30 transition-colors"
-                            title="Xóa thẻ này"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+        <AdaptiveTable
+              rows={loading ? [] : filteredCards}
+              rowKey={c => c.Id}
+              isSelected={c => selectedCard?.Id === c.Id}
+              emptyText={loading ? 'Đang tải dữ liệu thẻ tín dụng...' : 'Chưa có thẻ tín dụng nào khớp với tìm kiếm.'}
+              cardTitle={c => c.customer?.FullName || 'KH'}
+              cardSubtitle={c => c.CardNumber || '4532••••8888'}
+              actions={c => (
+                <>
+                  <button type="button" onClick={() => handleSelectCardForEdit(c)}
+                    className="p-1.5 rounded-lg bg-accent-soft text-accent border border-accent/30 transition-colors"
+                    title="Sửa thẻ này">
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                  <button type="button" onClick={() => handleDeleteCard(c)}
+                    className="p-1.5 rounded-lg bg-neg-soft text-neg border border-neg/30 transition-colors"
+                    title="Xóa thẻ này">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </>
               )}
-            </tbody>
-          </table>
-        </div>
+              columns={[
+                { key: 'soThe', label: 'Số thẻ (mask)', priority: 3,
+                  render: c => <span className="font-mono text-accent font-bold">{c.CardNumber || '4532••••8888'}</span> },
+                { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: c => (
+                  <>
+                    <div className="font-bold text-ink">{c.customer?.FullName || 'KH'}</div>
+                    <div className="text-[10px] font-mono text-accent">CIF: {c.customer?.CifKh || '—'}</div>
+                  </>
+                ) },
+                { key: 'hanMuc', label: 'Hạn mức cấp', priority: 1, align: 'right',
+                  render: c => <span className="font-mono font-bold text-pos">{fmtMoney(cardGrantedLimit(c))}</span> },
+                { key: 'dien', label: 'Diện mở thẻ', priority: 1, render: c => (
+                  <span className="bg-accent-soft text-accent border border-accent/30 px-2.5 py-1 rounded-lg text-[10px] font-bold">
+                    {c.IssuanceType || 'Quan hệ tín dụng'}
+                  </span>
+                ) },
+                { key: 'tsbd', label: 'TSBĐ liên kết', priority: 2, render: c => {
+                  const col = allCollaterals.find(x => x.Id === c.CollateralId) || null;
+                  return col ? (
+                    <div className="text-[11px] font-semibold text-accent">
+                      🏠 [Mã: {col.AssetCode || `ID#${col.Id}`}] {assetClassLabel(col.AssetType)}
+                      <div className="text-[10px] text-ink-faint font-mono">Định giá: {fmtMoney(collateralValue(col))}</div>
+                    </div>
+                  ) : <span className="text-ink-faint font-normal">—</span>;
+                } },
+              ]}
+            />
       </div>
     </div>
   );

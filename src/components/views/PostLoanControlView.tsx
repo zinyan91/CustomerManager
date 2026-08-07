@@ -16,12 +16,12 @@ import { assetClassLabel, defaultLtvForAssetType } from '../../lib/collateralMat
 import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
+import { AdaptiveTable } from '../AdaptiveTable';
 
 type FilterType = 'ALL' | ControlType;
 type FilterStatus = 'pending' | 'overdue' | 'done' | 'ALL';
 
 export const PostLoanControlView: React.FC = () => {
-  const styles = UI;
 
   const [contracts, setContracts] = useState<LoanContract[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
@@ -298,50 +298,40 @@ export const PostLoanControlView: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className={styles.tableHeaderStyle}>
-                <tr>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">KHÁCH HÀNG / CIF</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">LOẠI KIỂM TRA</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">PHẠM VI</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">KỲ</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">NGÀY ĐẾN HẠN</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">TRẠNG THÁI</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">NGÀY THỰC HIỆN</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">THAO TÁC</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${'divide-line'}`}>
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center p-8 text-ink-faint">Không có đợt kiểm soát nào theo bộ lọc hiện tại.</td></tr>
-                ) : filtered.slice(0, 300).map(it => (
-                  <tr key={it.key} className={styles.tableRowHover}>
-                    <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
-                      <div className="font-bold">{customerName(it.customerId)}</div>
-                      <div className="text-[10px] font-mono text-accent">
-                        {customerCif(it.customerId) && `CIF: ${customerCif(it.customerId)}`}
-                      </div>
-                    </td>
-                    <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-accent font-semibold">
-                      {CONTROL_TYPE_LABEL[it.type]}
-                    </td>
-                    <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-[11px]">{scopeOf(it)}</td>
-                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">{it.periodIndex}</td>
-                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono whitespace-nowrap">{fmtDate(it.dueDate)}</td>
-                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">{statusBadge(it)}</td>
-                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono whitespace-nowrap text-ink-faint">
-                      {it.record ? fmtDate(it.record.PerformedDate) : '—'}
-                    </td>
-                    <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
-                      <button type="button" onClick={() => openModal(it)}
-                        className="px-2.5 py-1 rounded-lg border text-[11px] font-semibold border-accent/30 text-accent hover:bg-accent-soft ">
-                        {it.record ? 'Xem / Sửa' : 'Ghi nhận'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <AdaptiveTable
+              rows={filtered.slice(0, 300)}
+              rowKey={it => it.key}
+              emptyText="Không có đợt kiểm soát nào theo bộ lọc hiện tại."
+              cardTitle={it => customerName(it.customerId)}
+              cardSubtitle={it => customerCif(it.customerId)}
+              actions={it => (
+                <button type="button" onClick={() => openModal(it)}
+                  className="px-2.5 py-1 rounded-lg border text-[11px] font-semibold border-accent/30 text-accent hover:bg-accent-soft">
+                  {it.record ? 'Xem / Sửa' : 'Ghi nhận'}
+                </button>
+              )}
+              columns={[
+                { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: it => (
+                  <>
+                    <div className="font-bold">{customerName(it.customerId)}</div>
+                    <div className="text-[10px] font-mono text-accent">
+                      {customerCif(it.customerId) && `CIF: ${customerCif(it.customerId)}`}
+                    </div>
+                  </>
+                ) },
+                { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: it => statusBadge(it) },
+                { key: 'denHan', label: 'Ngày đến hạn', priority: 1, align: 'center',
+                  render: it => <span className="font-mono">{fmtDate(it.dueDate)}</span> },
+                { key: 'loai', label: 'Loại kiểm tra', priority: 1,
+                  render: it => <span className="text-accent font-semibold">{CONTROL_TYPE_LABEL[it.type]}</span> },
+                { key: 'phamVi', label: 'Phạm vi', priority: 2,
+                  render: it => <span className="font-mono text-[11px]">{scopeOf(it)}</span> },
+                { key: 'ky', label: 'Kỳ', priority: 2, align: 'center',
+                  render: it => <span className="font-mono">{it.periodIndex}</span> },
+                { key: 'thucHien', label: 'Ngày thực hiện', priority: 2, align: 'center',
+                  render: it => <span className="font-mono text-ink-faint">{it.record ? fmtDate(it.record.PerformedDate) : '—'}</span> },
+              ]}
+            />
             {filtered.length > 300 && (
               <div className="p-3 text-center text-[11px] text-ink-faint border-t border-line">
                 Đang hiển thị 300 / {filtered.length} đợt. Dùng bộ lọc để thu hẹp danh sách.

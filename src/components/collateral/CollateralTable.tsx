@@ -4,6 +4,7 @@ import type { Collateral, Customer } from '../../types';
 import type { UiClasses } from '../../lib/uiClasses';
 import { fmtMoney, fmtDate } from '../../lib/utils';
 import { isLtvException, appraisalStatus, appraisalExpiryDate, assetClassLabel, collateralValue, maxLoanFromCollateral, getEffectiveLtv } from '../../lib/collateralMath';
+import { AdaptiveTable } from '../AdaptiveTable';
 
 interface CollateralTableProps {
   styles: UiClasses;
@@ -42,119 +43,83 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
         <span className="text-[11px] text-ink-faint">Nhấp vào dòng để xem chi tiết / chỉnh sửa</span>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className={styles.tableHeaderStyle}>
-            <tr>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">KHÁCH HÀNG / CIF</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">LOẠI TSBĐ</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">MÃ / SỐ GCN / ĐỊA CHỈ</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-right">GIÁ TRỊ ĐỊNH GIÁ</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">TỈ LỆ LTV</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-right">HẠN MỨC CHO VAY TỐI ĐA</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">NGÀY ĐỊNH GIÁ</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">HẠN ĐỊNH GIÁ</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">THAO TÁC</th>
-            </tr>
-          </thead>
-          <tbody className={`divide-y ${'divide-line'}`}>
-            {paginatedCollaterals.length === 0 ? (
-              <tr><td colSpan={9} className="text-center p-8 text-ink-faint">Không tìm thấy tài sản bảo đảm nào.</td></tr>
-            ) : paginatedCollaterals.map(col => {
-              const cust = customers.find(c => c.Id === col.CustomerId);
-              const isSelected = selectedCollateral?.Id === col.Id;
-              const val = collateralValue(col);
-              const effectiveLtv = getEffectiveLtv(col);
-              const maxLoan = maxLoanFromCollateral(col);
-              const isException = isLtvException(col);
-              const dgStatus = appraisalStatus(col);
-
-              return (
-                <tr key={col.Id} onClick={() => handleSelectRow(col)}
-                  className={`cursor-pointer transition-colors ${
-                    isSelected
-                      ? 'bg-accent-soft border-l-2 border-l-accent font-semibold'
-                      : styles.tableRowHover
-                  }`}>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
-                    <div className="font-bold text-ink">{cust ? cust.FullName : `ID #${col.CustomerId}`}</div>
-                    <div className="text-[10px] font-mono text-accent">{cust ? `CIF: ${cust.CifKh}` : ''}</div>
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-semibold text-accent whitespace-nowrap">
-                    {assetClassLabel(col.AssetType)}
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-ink-muted">
-                    <div className="font-bold">{col.AssetCode || '—'}</div>
-                    <div className="text-[10px] text-ink-faint font-app truncate max-w-xs">{col.Address}</div>
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-pos whitespace-nowrap">
-                    {fmtMoney(val)}
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
-                    <span className={`px-2 py-0.5 rounded-md font-mono font-bold text-xs border ${
-                      isException
-                        ? 'bg-warn-soft text-warn border-warn/30 '
-                        : 'bg-accent-soft text-accent border-accent/30'
-                    }`}>
-                      {effectiveLtv}%
-                    </span>
-                    {isException && (
-                      <div
-                        className="mt-1 text-[10px] font-bold text-warn"
-                        title="Tài sản hạn chế nhận nhưng được gán LTV > 0. Cần có phê duyệt ngoại lệ."
-                      >
-                        ⚠ NGOẠI LỆ
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-accent  whitespace-nowrap">
-                    {fmtMoney(maxLoan)}
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap text-ink-faint font-mono">
-                    {fmtDate(col.AppraisalDate)}
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap font-mono">
-                    <span className={
-                      dgStatus === 'expired' ? 'text-neg font-bold'
-                      : dgStatus === 'expiring_soon' ? 'text-warn font-bold'
-                      : 'text-ink-faint'
-                    }>
-                      {fmtDate(col.AppraisalExpiryDate || appraisalExpiryDate(col))}
-                    </span>
-                    {dgStatus === 'expired' && (
-                      <div className="text-[10px] font-bold text-neg"
-                        title="Định giá đã hết hiệu lực, không được tính vào khả năng bảo đảm cho tới khi định giá lại.">
-                        HẾT HIỆU LỰC
-                      </div>
-                    )}
-                    {dgStatus === 'expiring_soon' && (
-                      <div className="text-[10px] font-bold text-warn">
-                        SẮP HẾT HẠN
-                      </div>
-                    )}
-                    {dgStatus === 'missing' && (
-                      <div className="text-[10px] font-bold text-ink-faint">CHƯA ĐỊNH GIÁ</div>
-                    )}
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onDelete(col); }}
-                      disabled={deletingId === col.Id}
-                      className="p-1.5 rounded-lg border border-transparent text-ink-faint hover:text-neg hover:bg-neg-soft hover:border-neg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      title="Xoá tài sản bảo đảm"
-                    >
-                      {deletingId === col.Id
-                        ? <Loader2 className="w-4 h-4 animate-spin" />
-                        : <Trash2 className="w-4 h-4" />}
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <AdaptiveTable
+        rows={paginatedCollaterals}
+        rowKey={c => c.Id}
+        onRowClick={handleSelectRow}
+        isSelected={c => selectedCollateral?.Id === c.Id}
+        emptyText="Không tìm thấy tài sản bảo đảm nào."
+        cardTitle={c => {
+          const cust = customers.find(x => x.Id === c.CustomerId);
+          return cust ? cust.FullName : `ID #${c.CustomerId}`;
+        }}
+        cardSubtitle={c => {
+          const cust = customers.find(x => x.Id === c.CustomerId);
+          return cust ? cust.CifKh : '';
+        }}
+        actions={c => (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(c); }}
+            disabled={deletingId === c.Id}
+            className="p-1.5 rounded-lg border border-transparent text-ink-faint hover:text-neg hover:bg-neg-soft hover:border-neg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            title="Xoá tài sản bảo đảm"
+          >
+            {deletingId === c.Id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+          </button>
+        )}
+        columns={[
+          { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: c => {
+            const cust = customers.find(x => x.Id === c.CustomerId);
+            return (
+              <>
+                <div className="font-bold text-ink">{cust ? cust.FullName : `ID #${c.CustomerId}`}</div>
+                <div className="text-[10px] font-mono text-accent">{cust ? `CIF: ${cust.CifKh}` : ''}</div>
+              </>
+            );
+          } },
+          { key: 'loai', label: 'Loại TSBĐ', priority: 1,
+            render: c => <span className="font-semibold text-accent">{assetClassLabel(c.AssetType)}</span> },
+          { key: 'ma', label: 'Mã / Số GCN / Địa chỉ', priority: 2, render: c => (
+            <div className="font-mono text-ink-muted">
+              <div className="font-bold">{c.AssetCode || '—'}</div>
+              <div className="text-[10px] text-ink-faint font-app truncate max-w-xs">{c.Address}</div>
+            </div>
+          ) },
+          { key: 'giaTri', label: 'Giá trị định giá', priority: 1, align: 'right',
+            render: c => <span className="font-mono font-bold text-pos">{fmtMoney(collateralValue(c))}</span> },
+          { key: 'ltv', label: 'Tỉ lệ LTV', priority: 1, align: 'center', render: c => (
+            <>
+              <span className={`px-2 py-0.5 rounded-md font-mono font-bold text-xs border ${
+                isLtvException(c) ? 'bg-warn-soft text-warn border-warn/30' : 'bg-accent-soft text-accent border-accent/30'
+              }`}>{getEffectiveLtv(c)}%</span>
+              {isLtvException(c) && (
+                <div className="mt-1 text-[10px] font-bold text-warn"
+                  title="Tài sản hạn chế nhận nhưng được gán LTV > 0. Cần có phê duyệt ngoại lệ.">
+                  ⚠ NGOẠI LỆ
+                </div>
+              )}
+            </>
+          ) },
+          { key: 'hanMuc', label: 'Hạn mức cho vay tối đa', priority: 1, align: 'right',
+            render: c => <span className="font-mono font-bold text-accent">{fmtMoney(maxLoanFromCollateral(c))}</span> },
+          { key: 'ngayDG', label: 'Ngày định giá', priority: 3, align: 'center',
+            render: c => <span className="text-ink-faint font-mono">{fmtDate(c.AppraisalDate)}</span> },
+          { key: 'hanDG', label: 'Hạn định giá', priority: 2, align: 'center', render: c => {
+            const st = appraisalStatus(c);
+            return (
+              <div className="font-mono">
+                <span className={st === 'expired' ? 'text-neg font-bold' : st === 'expiring_soon' ? 'text-warn font-bold' : 'text-ink-faint'}>
+                  {fmtDate(c.AppraisalExpiryDate || appraisalExpiryDate(c))}
+                </span>
+                {st === 'expired' && <div className="text-[10px] font-bold text-neg">HẾT HIỆU LỰC</div>}
+                {st === 'expiring_soon' && <div className="text-[10px] font-bold text-warn">SẮP HẾT HẠN</div>}
+                {st === 'missing' && <div className="text-[10px] font-bold text-ink-faint">CHƯA ĐỊNH GIÁ</div>}
+              </div>
+            );
+          } },
+        ]}
+      />
 
       {totalPages > 1 && (
         <div className={`p-3 border-t flex items-center justify-between text-xs ${'bg-panel-muted border-line'}`}>

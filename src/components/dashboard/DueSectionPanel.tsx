@@ -1,6 +1,7 @@
 import React from 'react';
 import { Printer } from 'lucide-react';
 import { DUE_FILTER_LABELS, type DueFilter } from '../../lib/dueList';
+import { AdaptiveTable, type AdaptiveColumn } from '../AdaptiveTable';
 
 export type Tone = 'accent' | 'warn' | 'pos' | 'neg';
 
@@ -25,31 +26,28 @@ const TONE_FILTER_ON: Record<Tone, string> = {
   neg: 'bg-neg text-surface',
 };
 
-export interface DueColumn {
-  label: string;
-  align?: 'left' | 'right' | 'center';
-}
-
-interface DueSectionPanelProps {
+interface DueSectionPanelProps<T> {
   icon: React.ElementType;
   tone: Tone;
   title: string;
   counts: { upcoming: number; expired: number };
-  columns: DueColumn[];
-  isEmpty: boolean;
+  columns: AdaptiveColumn<T>[];
+  rows: T[];
+  rowKey: (row: T) => React.Key;
+  cardTitle: (row: T) => React.ReactNode;
+  cardSubtitle?: (row: T) => React.ReactNode;
   emptyText: string;
   cardBg: string;
-  tableHeaderBg: string;
   filter?: DueFilter;
   onFilterChange?: (f: DueFilter) => void;
   onPrint?: () => void;
-  children: React.ReactNode;
 }
 
-export const DueSectionPanel: React.FC<DueSectionPanelProps> = ({
-  icon: Icon, tone, title, counts, columns, isEmpty, emptyText,
-  cardBg, tableHeaderBg, filter, onFilterChange, onPrint, children,
-}) => (
+export function DueSectionPanel<T>({
+  icon: Icon, tone, title, counts, columns, rows, rowKey, cardTitle, cardSubtitle,
+  emptyText, cardBg, filter, onFilterChange, onPrint,
+}: DueSectionPanelProps<T>) {
+  return (
   <div className={`${cardBg} rounded-lg p-4 border space-y-3`}>
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2">
       <div className="flex items-center space-x-2">
@@ -91,29 +89,17 @@ export const DueSectionPanel: React.FC<DueSectionPanelProps> = ({
       </div>
     </div>
 
-    {isEmpty ? (
-      <div className="text-center py-6 text-xs text-ink-faint italic">{emptyText}</div>
-    ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr className={`${tableHeaderBg} font-bold border-b border-line`}>
-              {columns.map(c => (
-                <th
-                  key={c.label}
-                  className={`p-2.5 whitespace-nowrap ${c.align === 'right' ? 'text-right' : c.align === 'center' ? 'text-center' : ''}`}
-                >
-                  {c.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">{children}</tbody>
-        </table>
-      </div>
-    )}
+    <AdaptiveTable
+      rows={rows}
+      rowKey={rowKey}
+      columns={columns}
+      emptyText={emptyText}
+      cardTitle={cardTitle}
+      cardSubtitle={cardSubtitle}
+    />
   </div>
-);
+  );
+}
 
 export function dueBadgeClass(daysLeft: number, urgentWithinDays: number): string {
   if (daysLeft < 0) return 'bg-neg text-surface border border-neg font-bold';

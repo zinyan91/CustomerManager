@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { UI } from '../../lib/uiClasses';
 import { Search, Target, Copy, Check, Wallet, Info } from 'lucide-react';
+import { AdaptiveTable } from '../AdaptiveTable';
 import {
   searchMdsdv,
   getLevel1Options,
@@ -114,64 +115,43 @@ export const MdsdvLookupView: React.FC = () => {
       </div>
 
       <div className={`${cardBg} rounded-lg border overflow-hidden`}>
-        <div className="overflow-x-auto max-h-[620px]">
-          <table className="w-full text-left text-[11px] border-collapse min-w-[1080px]">
-            <thead className="sticky top-0 bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line">
-              <tr>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[110px]">MÃ MĐSDV (CẤP 6)</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[240px]">TÊN HIỂN THỊ TRÊN FBE</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[220px]">MỤC ĐÍCH CHI TIẾT</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[200px]">NGÀNH CẤP 5</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] min-w-[180px]">NGÀNH CẤP 1</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center min-w-[70px]">THẤU CHI</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center min-w-[50px]" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {search.items.map(entry => (
-                <tr key={entry.code} className="hover:bg-panel-muted transition-colors align-top">
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono font-bold text-accent whitespace-nowrap">
-                    {entry.code}
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono">{entry.fbeName}</td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)]">{entry.purposeName}</td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)]">
-                    <span className="font-mono text-ink-faint">{entry.level5Code}</span>
-                    <span className="block">{entry.level5Name}</span>
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)]">
-                    <span className="font-mono text-ink-faint">{entry.level1Code}</span>
-                    <span className="block text-ink-faint">{entry.level1Name}</span>
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
-                    {entry.allowsOverdraft
-                      ? <span className="text-pos font-bold">Có</span>
-                      : <span className="text-ink-faint">—</span>}
-                  </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(entry.code)}
-                      title="Sao chép mã"
-                      className="text-ink-faint hover:text-accent transition-colors"
-                    >
-                      {copiedCode === entry.code
-                        ? <Check className="w-3.5 h-3.5 text-pos" />
-                        : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {search.items.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="p-8 text-center text-ink-faint">
-                    Không tìm thấy mã MĐSDV nào khớp với điều kiện tra cứu.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <AdaptiveTable
+          rows={search.items}
+          rowKey={e => e.code}
+          emptyText="Không tìm thấy mã MĐSDV nào khớp với điều kiện tra cứu."
+          cardTitle={e => e.purposeName}
+          cardSubtitle={e => e.code}
+          actionsLabel=""
+          actions={e => (
+            <button type="button" onClick={() => handleCopy(e.code)} title="Sao chép mã"
+              className="text-ink-faint hover:text-accent transition-colors">
+              {copiedCode === e.code ? <Check className="w-3.5 h-3.5 text-pos" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+          )}
+          columns={[
+            { key: 'ma', label: 'Mã MĐSDV (cấp 6)', priority: 1,
+              render: e => <span className="font-mono font-bold text-accent">{e.code}</span> },
+            { key: 'fbe', label: 'Tên hiển thị trên FBE', priority: 1,
+              render: e => <span className="font-mono">{e.fbeName}</span> },
+            { key: 'thauChi', label: 'Thấu chi', priority: 1, align: 'center',
+              render: e => e.allowsOverdraft
+                ? <span className="text-pos font-bold">Có</span>
+                : <span className="text-ink-faint">—</span> },
+            { key: 'mucDich', label: 'Mục đích chi tiết', priority: 2, render: e => e.purposeName },
+            { key: 'c5', label: 'Ngành cấp 5', priority: 3, render: e => (
+              <>
+                <span className="font-mono text-ink-faint">{e.level5Code}</span>
+                <span className="block">{e.level5Name}</span>
+              </>
+            ) },
+            { key: 'c1', label: 'Ngành cấp 1', priority: 3, render: e => (
+              <>
+                <span className="font-mono text-ink-faint">{e.level1Code}</span>
+                <span className="block text-ink-faint">{e.level1Name}</span>
+              </>
+            ) },
+          ]}
+        />
       </div>
 
       <div className={`${cardBg} rounded-lg p-4 border space-y-1.5 text-[11px] text-ink-faint`}>

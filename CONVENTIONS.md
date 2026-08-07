@@ -485,13 +485,28 @@ Cờ `AllowRateReduction = false` tồn tại vì Thông báo 2274 **cấm áp d
 | :--- | :--- | :--- |
 | Ngắn hạn `2274/2026/TB-BĐH` | Chính văn bản | **Đã đối chiếu** |
 | Trung dài hạn `1680/2026/TB-TGĐ` | Chính văn bản | **Đã đối chiếu** (migration 10) |
-| Huy động `2279/2026/TB-BĐH` | Chính văn bản | **Đã đối chiếu** (migration 13) |
+| Huy động `2279/2026/TB-BĐH` | Chính văn bản | **Đã đối chiếu** (migration 13) — hết hiệu lực 05/08/2026 |
+| Huy động `2400/2026/TB-BĐH` | Bản quét 7 trang | **Đã đối chiếu** (migration 30) — hiệu lực 06–15/08/2026 |
 
 Bảng tính nội bộ còn **bỏ sót cột "Lãi trả trước" của kỳ hạn 12 tháng** — chỉ chép 3 trong 4 cách trả lãi. Migration 13 bổ sung 3 mức 8,17% / 8,25% / 8,34%.
 
 **Gói cố định 3 tháng của trung dài hạn có LSCV đúng bằng 0%/năm.** Đây là ưu đãi 0% ba tháng đầu, là số liệu đã biết, không phải ô chưa điền. Migration 09 từng để `NULL` vì suy đoán sai từ bảng tính; migration 10 sửa thành `0`. Đừng "sửa" lại thành `NULL`.
 
 Bảng tính nội bộ `Book.xlsx` **sai cả 5 dòng lãi suất ngắn hạn** khi so với văn bản 2274 (một dòng ghi 110,50% thay vì 11,70%; một dòng ghi 0% thay vì 8,45%). Vì vậy số liệu trung dài hạn và huy động lấy từ cùng file đó phải coi là tạm cho tới khi có văn bản gốc. Không sửa `SourceVerified` thành `true` khi chưa thực sự đối chiếu.
+
+### Tuần lễ vàng huy động — bản 2400 thay bản 2279
+
+Thông báo 2400/2026/TB-BĐH ngày 06/08/2026 **điều chỉnh** chương trình chứ không lập mới. Bản 2279 khai hiệu lực tới 07/08/2026, chồng lấn hai ngày với bản mới bắt đầu 06/08/2026 — migration 30 đóng bản cũ ở 05/08/2026. **Không để hai chương trình huy động cùng hiệu lực một ngày**, nếu không `resolveProgramForDate` phải đoán.
+
+Ba điểm của bản 2400 khác cấu trúc bản cũ, đừng chép nhầm khuôn:
+
+- **Năm bậc số dư** thay vì ba: thêm bậc `< 200 triệu` ở dưới và tách `≥ 1 tỷ` cũ thành `1–8 tỷ` với `≥ 8 tỷ`.
+- **Thêm kỳ hạn 07 tháng**, và kỳ hạn này **không có phương án lãi hàng quý** — văn bản để dấu `–`. Lưu `NULL` chứ đừng lưu 0: 0%/năm là một mức lãi có thật, `NULL` mới nghĩa là không có phương án đó.
+- **Thêm kênh `ftp`** — giá bán vốn nội bộ (FTP mua VOF) của riêng chương trình. Kênh này có đủ bốn cách trả lãi ở cả ba kỳ hạn, kể cả 07 tháng hàng quý 9,35%.
+
+Bậc `≥ 8 tỷ` kỳ hạn 06 tháng có **lãi trả trước 8,97% cao hơn lãi cuối kỳ 8,95%**. Trái lẽ thường nhưng đã soi bản quét ở độ phóng cao và đúng là con số trong văn bản; nó cũng khớp bậc thang đều +0,09 của cột trả trước (8,61 → 8,70 → 8,79 → 8,88 → 8,97). Đừng "sửa" thành 8,95.
+
+Mức phân quyền cao hơn (Trưởng bộ phận huy động và dịch vụ, 9,00–9,40%) nằm ở bảng `DepositRateAuthorities`, chỉ áp cho lãi cuối kỳ và chung cho cả ba kỳ hạn.
 
 ### Xuất bảng lãi suất gửi khách hàng
 

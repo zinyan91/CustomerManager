@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { UI } from '../../lib/uiClasses';
 import { fetchCustomersAPI, saveCustomerAPI, deleteCustomerAPI } from '../../lib/api';
 import type { Customer } from '../../types';
-import { Search, Plus, Download, Upload, Eye, Trash2, X, CheckCircle, AlertCircle, UserCheck } from 'lucide-react';
+import { Search, Plus, Download, Upload, Eye, Trash2, X, UserCheck } from 'lucide-react';
+import { Toast } from '../Toast';
 
 export const CustomerListView: React.FC = () => {
 
@@ -241,13 +242,7 @@ export const CustomerListView: React.FC = () => {
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
-      {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-md border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success' ? 'bg-pos-soft border-pos text-pos' : 'bg-neg-soft border-neg text-neg'
-          }`}>
-          {notification.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <span>{notification.message}</span>
-        </div>
-      )}
+      <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
       <div className={`${containerCardBg} p-4 rounded-lg border space-y-3`}>
         <div className="text-xs font-bold text-accent tracking-tight">

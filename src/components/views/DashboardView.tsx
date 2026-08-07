@@ -7,6 +7,7 @@ import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
   monthlyDueInfo, type DueFilter,
 } from '../../lib/dueList';
+import { Toast, useToast } from '../Toast';
 import type { Customer, Collateral, LoanContract } from '../../types';
 import {
   DollarSign, Users, Building2, AlertCircle, RefreshCw,
@@ -16,6 +17,7 @@ import { DueSectionPanel, dueBadgeClass, dueBadgeText } from '../dashboard/DueSe
 import { KpiCard } from '../dashboard/KpiCard';
 
 export const DashboardView: React.FC = () => {
+  const { toast, show, dismiss } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
   const [contracts, setContracts] = useState<LoanContract[]>([]);
@@ -165,7 +167,7 @@ export const DashboardView: React.FC = () => {
   ) => {
     const html = buildDueListHtml({ title, columns, rows, alignRight });
     if (!openPrintWindow(html)) {
-      window.alert('Trình duyệt đã chặn cửa sổ in. Cho phép pop-up rồi thử lại.');
+      show('error', 'Không mở được bản in. Tải lại trang rồi thử lại.');
     }
   };
 
@@ -237,6 +239,7 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
+      <Toast toast={toast} onDismiss={dismiss} />
 
       <div className="flex items-center justify-between border-b border-line pb-3">
         <div>

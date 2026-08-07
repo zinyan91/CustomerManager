@@ -3,11 +3,11 @@ import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollat
 import { parseAnyDate, fmtDate, parseMoneyInput } from '../../lib/utils';
 import { defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue, maxLoanFromCollateral } from '../../lib/collateralMath';
 import type { Collateral, Customer } from '../../types';
-import { CheckCircle, AlertCircle } from 'lucide-react';
 import { UI } from '../../lib/uiClasses';
 import { CollateralSearchBar } from '../collateral/CollateralSearchBar';
 import { CollateralTable } from '../collateral/CollateralTable';
 import { CollateralForm } from '../collateral/CollateralForm';
+import { Toast } from '../Toast';
 
 export const CollateralView: React.FC = () => {
   const styles = UI;
@@ -226,15 +226,7 @@ export const CollateralView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
 
-      {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-md border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success'
-          ? 'bg-pos-soft border-pos/30 text-pos'
-          : 'bg-neg-soft border-neg/30 text-neg'
-          }`}>
-          {notification.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
-          <span>{notification.message}</span>
-        </div>
-      )}
+      <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
       <CollateralSearchBar
         styles={styles}

@@ -3,6 +3,7 @@ import { Download, Printer } from 'lucide-react';
 import type { UiClasses } from '../../lib/uiClasses';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
 import { downloadTextFile, MIME_DOC } from '../../lib/xlsExport';
+import { Toast, useToast } from '../Toast';
 
 function exportToWordDoc(filename: string, docHtml: string) {
   const wordDocumentHtml = `
@@ -201,8 +202,11 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   docFilename,
   docHtml,
 }) => {
+  const { toast, show, dismiss } = useToast();
+
   return (
     <div className={`${styles.containerCardBg} rounded-lg border overflow-hidden`}>
+      <Toast toast={toast} onDismiss={dismiss} />
 
       <div className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${'bg-panel-muted border-line'}`}>
         <div>
@@ -221,7 +225,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
             type="button"
             onClick={() => {
               if (!exportToPDFOnly(docFilename, docHtml)) {
-                window.alert('Không mở được bản in. Tải lại trang rồi thử lại.');
+                show('error', 'Không mở được bản in. Tải lại trang rồi thử lại.');
               }
             }}
             className="flex items-center space-x-1.5 bg-neg hover:opacity-90 text-accent-ink font-bold text-xs px-3.5 py-2 rounded-md transition-colors"

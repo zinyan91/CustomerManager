@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ShieldCheck, CheckCircle, AlertCircle, Loader2, Save, X } from 'lucide-react';
+import { ShieldCheck, Loader2, Save, X } from 'lucide-react';
 import {
   fetchContractsAPI, fetchCollateralsAPI, fetchCustomersAPI,
   fetchPostLoanControlRecordsAPI, savePostLoanControlRecordAPI,
@@ -15,6 +15,7 @@ import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '
 import { assetClassLabel, defaultLtvForAssetType } from '../../lib/collateralMath';
 import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
+import { Toast } from '../Toast';
 
 type FilterType = 'ALL' | ControlType;
 type FilterStatus = 'pending' | 'overdue' | 'done' | 'ALL';
@@ -203,18 +204,7 @@ export const PostLoanControlView: React.FC = () => {
 
   return (
     <div className="space-y-4 text-xs">
-      {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-md border flex items-start space-x-3 text-sm max-w-md ${
-          notification.type === 'success'
-            ? 'bg-pos-soft border-pos/30 text-pos'
-            : 'bg-neg-soft border-neg/30 text-neg'
-        }`}>
-          {notification.type === 'success'
-            ? <CheckCircle className="w-5 h-5 shrink-0" />
-            : <AlertCircle className="w-5 h-5 shrink-0" />}
-          <span>{notification.message}</span>
-        </div>
-      )}
+      <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
       <div className={`${cardBg} rounded-lg p-4 border`}>
         <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">

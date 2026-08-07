@@ -14,6 +14,7 @@ import { addMonthsToDate, computeOutstandingBalance } from '../../lib/loanMath';
 import { getEffectiveLtv, usableCapacity, appraisalStatus, appraisalExpiryDate, collateralValue } from '../../lib/collateralMath';
 import { allowedPurposes } from '../../lib/loanProductRules';
 import { DateInput } from '../DateInput';
+import { Toast } from '../Toast';
 import type { Customer, CreditContract, LoanContract, Collateral, RepaymentSchedule } from '../../types';
 
 const LOAN_METHODS = [
@@ -234,13 +235,7 @@ export const CreditContractView: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {notify && (
-        <div className={`p-3 rounded-md border text-xs font-semibold ${
-          notify.type === 'success'
-            ? 'bg-pos-soft border-pos/30 text-pos '
-            : 'bg-neg-soft border-neg/30 text-neg '
-        }`}>{notify.message}</div>
-      )}
+      <Toast toast={notify} onDismiss={() => setNotify(null)} />
 
       <div className={`${containerCardBg} rounded-lg p-4 border space-y-3`}>
         <div className="flex items-center space-x-2 text-accent font-bold text-xs tracking-tight">

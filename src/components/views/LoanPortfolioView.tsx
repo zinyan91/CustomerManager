@@ -25,7 +25,7 @@ import {
   getLoanProductRule,
 } from '../../lib/loanProductRules';
 import type { LoanContract, CreditContract, RateAdjustmentHistoryItem } from '../../types';
-import { Search, Receipt, Calendar, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, Receipt, Calendar, AlertCircle } from 'lucide-react';
 import { CustomerSearchBar } from '../portfolio/CustomerSearchBar';
 import { CustomerSummaryHeader } from '../portfolio/CustomerSummaryHeader';
 import { MasterHdtdFilterTabs, type MasterHdtdGroup } from '../portfolio/MasterHdtdFilterTabs';
@@ -39,6 +39,7 @@ import {
   blankFormFields, buildKunnPayload, contractToFormFields,
   intToInput, nextKunnNumberFor, rateToInput, type KunnFormFields,
 } from '../../lib/kunnForm';
+import { Toast } from '../Toast';
 
 export const LoanPortfolioView: React.FC = () => {
 
@@ -702,15 +703,7 @@ export const LoanPortfolioView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
 
-      {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-md border flex items-center space-x-3 text-sm font-medium ${notification.type === 'success'
-          ? 'bg-pos-soft border-pos/30 text-pos'
-          : 'bg-neg-soft border-neg/30 text-neg'
-          }`}>
-          {notification.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
-          <span>{notification.message}</span>
-        </div>
-      )}
+      <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
       <CustomerSearchBar
         inputStyle={inputStyle}

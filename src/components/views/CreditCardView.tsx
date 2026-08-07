@@ -9,7 +9,8 @@ import { getEffectiveLtv, assetClassLabel, CARD_STK_LTV_PERCENT, collateralValue
 import { checkCardLimit, cardGrantedLimit, type CardLimitCheck } from '../../lib/creditLimit';
 import { fetchContractsByCustomerAPI } from '../../lib/api';
 import type { CreditCard as CreditCardType, Customer, Collateral, LoanContract as LoanContractType } from '../../types';
-import { CreditCard, CheckCircle, AlertCircle, Plus, ChevronUp, ChevronDown, Trash2, Edit3, ShieldCheck, Search } from 'lucide-react';
+import { CreditCard, AlertCircle, Plus, ChevronUp, ChevronDown, Trash2, Edit3, ShieldCheck, Search } from 'lucide-react';
+import { Toast } from '../Toast';
 
 const LY_DO_CHAN: Record<string, (k: CardLimitCheck) => string> = {
   none: () => '',
@@ -222,14 +223,7 @@ export const CreditCardView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
 
-      {notification && (
-        <div className={`fixed top-16 right-6 z-50 p-4 rounded-md border flex items-center space-x-3 text-sm font-medium ${
-          notification.type === 'success' ? 'bg-pos-soft border-pos/30 text-pos' : 'bg-neg-soft border-neg/30 text-neg'
-        }`}>
-          {notification.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <span>{notification.message}</span>
-        </div>
-      )}
+      <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
       <div className={`${containerCardBg} p-4 rounded-lg border flex flex-wrap items-center justify-between gap-4`}>
         <div className="text-xs font-bold text-accent tracking-tight flex items-center space-x-2">

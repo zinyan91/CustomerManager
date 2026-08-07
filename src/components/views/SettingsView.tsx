@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useDateFormat, type DateFormat } from '../../context/DateFormatContext';
-import { Settings, Sun, Moon, Sliders, Calendar, Clock, Save, CheckCircle, Type, RotateCcw } from 'lucide-react';
+import { Settings, Sun, Moon, Sliders, Calendar, Clock, Type, RotateCcw } from 'lucide-react';
 import { useFormatSettings } from '../../context/FormatSettingsContext';
 import {
   NUMBER_STYLE_SAMPLES, MAX_DIGITS,
@@ -20,22 +20,8 @@ export const SettingsView: React.FC = () => {
   const { dateFormat, setDateFormat } = useDateFormat();
   const { formatSettings, updateFormatSettings } = useFormatSettings();
   const { fontSettings, updateFontSettings, resetFontSettings } = useFontSettings();
-  const [notifySuccess, setNotifySuccess] = useState(false);
-
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    setNotifySuccess(true);
-    setTimeout(() => setNotifySuccess(false), 3000);
-  };
-
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      {notifySuccess && (
-        <div className="bg-pos-soft border border-pos/30 text-pos p-4 rounded-md flex items-center space-x-3 text-sm font-medium">
-          <CheckCircle className="w-5 h-5 text-pos" />
-          <span>Đã lưu các thiết lập cá nhân thành công!</span>
-        </div>
-      )}
 
       <div className="flex items-center justify-between border-b border-line pb-3">
         <div>
@@ -43,11 +29,14 @@ export const SettingsView: React.FC = () => {
             <Settings className="w-4 h-4 text-accent" />
             <span>CÀI ĐẶT ỨNG DỤNG CÁ NHÂN</span>
           </h2>
-          <p className="text-xs text-ink-faint">Tùy chỉnh chế độ hiển thị Sáng/Tối, định dạng số và định dạng ngày tháng năm</p>
+          <p className="text-xs text-ink-faint">
+            Tùy chỉnh chế độ hiển thị Sáng/Tối, định dạng số và định dạng ngày tháng năm.
+            Mọi thay đổi có hiệu lực ngay và tự lưu trên máy này.
+          </p>
         </div>
       </div>
 
-      <form onSubmit={handleSaveSettings} className="space-y-5 text-xs">
+      <div className="space-y-5 text-xs">
 
         <div className="bg-panel border border-line p-5 rounded-lg space-y-4">
           <h3 className="text-xs font-bold text-accent uppercase flex items-center justify-between border-b border-line pb-2">
@@ -315,14 +304,7 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="bg-accent hover:opacity-90 text-accent-ink font-bold text-xs py-3 px-6 rounded-md flex items-center justify-center space-x-2 "
-        >
-          <Save className="w-4 h-4" />
-          <span>LƯU CÀI ĐẶT CÁ NHÂN</span>
-        </button>
-      </form>
+      </div>
     </div>
   );
 };

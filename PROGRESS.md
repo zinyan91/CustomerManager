@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 05/08/2026 (sau khi chốt hai quyết định nghiệp vụ)
+Cập nhật: 07/08/2026
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -118,6 +118,62 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ⬜ | Tên miền riêng | |
 
 
+## Ngày 07/08/2026
+
+### Thẻ tín dụng — ba trường hợp mở thẻ
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Thẻ vào chốt kiểm soát TSĐB | Trước đó `checkCollateralCapacity` chỉ nhận `LoanContract[]`; thẻ tiêu tốn 0đ khả năng bảo đảm nên chốt báo xanh trong khi cụm đã vượt trần |
+| ✅ | Trần sản phẩm 90% cho thẻ trên sổ tiết kiệm | `CARD_STK_LTV_PERCENT`, cố ý đè bảng LTV cho vay |
+| ✅ | Chặn lưu khi vượt trần, mở bằng ô xác nhận ngoại lệ | Cột riêng `IsLtvException` / `LtvExceptionReason`, migration 27 |
+| ✅ | Gỡ bản LTV thứ tư trong `CreditCardView` | Nó nhận cả định giá hết hiệu lực, khác `usableCapacity` |
+| ✅ | Sửa `saveCreditCardAPI` không gỡ được liên kết TSBĐ | `if (dbPayload.CollateralId)` là kiểm falsy nên gán `null` không lưu |
+| ✅ | Sửa cấp thẻ mới luôn hỏng | Cột `Limit` `NOT NULL` không bao giờ được ghi — lỗi có sẵn, cấp thẻ từ web chưa từng chạy |
+
+### Tàn dư ứng dụng WPF
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Gộp `CreditCards.Limit` về `CreditLimit`, xoá cột thừa | Migration 28, backfill trước xoá sau |
+| ✅ | Chuyển `[CollateralId:` từ `Note` về cột thật | Migration 28 |
+| ✅ | Cho `[PENALTY_RATE:` một cột thật | Migration 29 → `PrincipalPenaltyMultiplier`. Dữ liệu chỉ có 150 và 0 nên thực chất là công tắc miễn phạt gốc |
+| ⚠️ | Xác nhận phạm vi miễn phạt | Đang hiểu là **chỉ miễn phạt nợ gốc**; lãi phạt chậm trả lãi 10%/năm vẫn tính. Có test khoá. Nếu nghiệp vụ hiểu khác thì báo |
+| ⬜ | Gỡ ba nhánh đọc `[RATE_HISTORY:` / `[COLLATERAL_IDS:` / `[PENALTY_SURCHARGE:` trong `utils.ts` | Mã chết sau migration 24, nhưng đụng lịch sử lãi suất nên để đợt riêng có đối chiếu |
+
+### Sự cố: nút Đồng bộ kỳ cuối làm hỏng dữ liệu
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Gỡ hẳn nút và mục Bảo trì dữ liệu | Nó lấy `ContractEndDate` (hạn HĐTD) làm ngày đáo hạn KUNN |
+| ✅ | Gỡ quy tắc kéo kỳ cuối về ngày đáo hạn | Quy tắc sai, do đọc ngược bằng chứng — xem `CONVENTIONS.md` §2 |
+| ✅ | Gỡ cùng fallback đó khỏi đường lưu bình thường | Hai chỗ trong `LoanPortfolioView`, hỏng cả khi không bấm nút |
+| ⬜ | Rà dữ liệu đã bị ghi đè | Ngày tháng: tối đa 1 khoản (chỉ 1/100 KUNN thiếu `KunnDueDate`). Số lãi khai tay ở kỳ chưa thu: **không dò được bằng SQL**, cần bản trước đó để đối chiếu |
+
+### Giao diện
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Bảng đổi hình dạng theo thiết bị | `AdaptiveTable`, áp cho 6 màn. 375px: 0 bảng còn tràn |
+| ✅ | Gộp ba kiểu thông báo về `Toast` | Thêm nút đóng, `aria-live`, không tràn mép trên màn hẹp |
+| ✅ | Bỏ nút "Lưu cài đặt cá nhân" | Nó không lưu gì — thiết lập tự ghi khi chạm vào điều khiển |
+| ✅ | Gộp bốn đường in về `printHtmlDoc` | Popup bị chặn thì im lặng, `setTimeout(300)` là cuộc đua, cửa sổ không dọn |
+| ✅ | Gộp ba bản tải file về `downloadTextFile` | |
+| ✅ | Sửa chọn font không đổi được | `App.tsx` bọc cây con trong `font-sans` của Tailwind |
+| ✅ | Sửa số tiền trên phiếu nghĩa vụ bị ép về 12px | `.font-mono` thắng `text-[calc(...)]` theo thứ tự nguồn |
+| ✅ | Dùng từ nghiệp vụ thay khẩu ngữ ở màn thẻ | "đỡ được" → "khả năng bảo đảm" |
+| ⬜ | Thử in tờ chào lãi suất và biểu mẫu hợp đồng | Hai đường vừa đổi sang iframe, chưa ai in thử |
+| ⬜ | Cuộn 300 thẻ ở Tra cứu MĐSDV và Kiểm soát sau vay trên điện thoại thật | Có thể cần phân trang |
+
+### Lịch thu nợ
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Rút công thức nghĩa vụ kỳ về `scheduleView.ts` | Ba bản trong `.tsx` đã trôi dạt: kỳ miễn phạt cho dòng và tổng cột lệch nhau |
+| ✅ | Bố cục hai cột từ `xl`, phiếu chi tiết bám theo | |
+
+---
+
 ## Quyết định nghiệp vụ đã chốt 05/08/2026
 
 | Câu hỏi | Quyết định |
@@ -135,8 +191,7 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ⬜ | Đối chiếu `KunnTenor` nhóm hạn mức với GNN giấy | Gần cả nhóm khai 5 tháng; GNN của ĐOÀN THỊ TUYỂN ghi 06 tháng, đáo hạn 23/10/2026 thay vì 23/09/2026 đang lưu. Ngày đáo hạn là dữ liệu gốc, sai nó thì sinh lại lịch vẫn sai |
 | ⬜ | Sinh lại lịch trả nợ — mở rộng ra toàn bộ danh sách phần 4 của report 01 | Chỉ làm SAU khi `RepaymentStartDate` và `KunnTenor` đã đúng GNN giấy. Phần 4 của `01_thu_vuot_ky_dau.sql` đã liệt kê đầy đủ ~60 dòng lệch đáo hạn trên toàn danh mục — không giới hạn ở nhóm hạn mức. Quyết định "chưa xử lý phần thu vượt" nghĩa là script **không được ghi đè các kỳ đã thanh toán** — chỉ sinh lại kỳ chưa trả |
 | ✅ | Số hiệu KUNN trùng nhau | Mã nguồn đã chống trùng (`assertKunnNumberFree` + `findKunnNumberClash`, 7 test). Migration 20 đã chạy 05/08/2026: bước 1–2 rà soát ra 0 dòng (đã sạch), bước 4 tạo unique index `LoanContracts_ContractNumber_key`, bước 5 xác nhận index tồn tại |
-| 🔄 | **31/98 KUNN có kỳ cuối không rơi đúng ngày đáo hạn** — trước là 77 | Đo lại 05/08/2026 sau khi anh sửa cả ngày: **77 → 31**, và `lech_hon_1_thang = 0` nên nhóm khai sai thời hạn (`KunnTenor` lệch `KunnDueDate`) đã sạch hoàn toàn. Kiểm từng dòng thì **cả 31 đều cùng một loại**: quy tắc "kỳ cuối rơi vào ngày đáo hạn" chưa được áp lúc sinh lịch. Dấu hiệu: mọi `ky_cuoi` rơi **ngày 15** (đúng mốc thu hàng tháng) và `so_ky` bằng đúng `KunnTenor` ở tất cả các dòng. Tôi đã đoán sai ở lượt trước rằng nhóm lệch 1–3 ngày là đúng theo chốt `> 1`: NGUYỄN CÔNG TÂM `2002/HĐTD/9633725/GNN-03` có kỳ trước cách đáo hạn 30 ngày, vượt chốt rất xa mà quy tắc vẫn không áp. Phân bố: 11 dòng lệch 1–3 ngày, 20 dòng lệch 4–31 ngày, 22 dòng kỳ cuối sớm hơn, 9 dòng muộn hơn, biên độ −20 đến +9 ngày. Báo cáo `reports/06`. **Còn phải** sinh lại lịch cho 31 dòng này, và đối chiếu core bank |
-| 🔄 | **31/98 KUNN có kỳ cuối không rơi đúng ngày đáo hạn** — trước là 77 | Đo lại 05/08/2026: **77 → 31**, `lech_hon_1_thang = 0` nên nhóm khai sai thời hạn đã sạch. Cả 31 cùng một loại: quy tắc kỳ cuối chưa được áp lúc sinh lịch — mọi `ky_cuoi` rơi ngày 15 và `so_ky` bằng đúng `KunnTenor`. Đo thêm: **31/31 có kỳ cuối CHƯA thu**, 0 dòng vướng lịch sử, nên sửa được sạch. **Đã thêm nút "Đồng bộ kỳ cuối theo ngày đáo hạn"** ở tab Cài đặt → Bảo trì dữ liệu. Nó quét toàn bộ KUNN chưa tất toán và gọi `alignLastPeriodToMaturity` + `recalculateSchedules` — dùng chung mã với đường lưu bình thường, **không** viết SQL sửa hàng loạt (đúng lý do tôi đã sai ba lần khi dịch quy tắc sang SQL). Hàm chỉ đổi kỳ cuối, không chạm kỳ khác, và tự bỏ qua kỳ đã thu. 9 test. **Còn phải** bấm nút đó rồi chạy lại `reports/06` để xác nhận về 0, và đối chiếu core bank |
+| ✅ | ~~31/98 KUNN có kỳ cuối không rơi đúng ngày đáo hạn~~ — **KHÔNG PHẢI LỖI** | Đóng 07/08/2026. Banker xác nhận: ngày trong tháng giữ nguyên từ kỳ đầu tới kỳ cuối, ngày đáo hạn KUNN không được phép đổi ngày của kỳ nào. Ba mươi mốt khoản cùng theo một khuôn chính là **bằng chứng khuôn ấy là quy tắc**, không phải bằng chứng 31 khoản đều hỏng — tôi đã đọc ngược. Quy tắc tự đặt ra hôm 06/08 cùng nút "Đồng bộ kỳ cuối" đã gỡ hẳn ở `786d0e9`. Nút đó lấy `ContractEndDate` (hạn HĐTD) làm ngày đáo hạn KUNN và **đã làm hỏng dữ liệu thật**. Xem `CONVENTIONS.md` §2 |
 | ⚠️ | `LoanAmount = 0` trên KUNN, hệ thống mượn mức cấp HĐTD làm số tiền vay | Phát hiện 05/08/2026 khi truy nguyên một báo động giả. `generateSchedule`, `recalculateSchedules`, `computeOutstandingBalance` đều dùng `LoanAmount || ContractAmount` nên "trông vẫn đúng", nhưng `disbursedOf` trong `creditLimit.ts` dùng `LoanAmount ?? CurrentBalance ?? 0` — với `LoanAmount = 0` nó lấy **0**, khiến cho vay từng lần khai thiếu số đã giải ngân và **hạn mức khả dụng ra cao hơn thực tế**. Đã biết chắc có ĐOÀN NGỌC LÝ `2002/HĐTD/9738792/GNN-01` (240 kỳ, 830 triệu lấy từ `ContractAmount`). **Cần đếm phạm vi rồi khai lại `LoanAmount` theo GNN giấy** |
 | ✅ | Đổi `HdtdDueDate` từ `timestamptz` sang `date` | Migration 19 đã chạy 05/08/2026. Có backup `_backup_HdtdDueDate_20260805`, kiểm chứng không lệch giá trị giữa bản cũ và bản mới |
 

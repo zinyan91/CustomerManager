@@ -1,6 +1,28 @@
 -- =====================================================================
 -- Rà soát: kỳ cuối của lịch không rơi đúng ngày đáo hạn
 -- =====================================================================
+--
+-- !!! TIỀN ĐỀ CỦA BÁO CÁO NÀY ĐANG BỊ BÁC BỎ — ĐỌC TRƯỚC KHI DÙNG !!!
+--
+-- 07/08/2026 banker khẳng định: ngày trong tháng giữ nguyên từ kỳ đầu tới
+-- kỳ cuối, ngày đáo hạn KUNN KHÔNG được phép đổi ngày của kỳ nào. Theo đó
+-- thì 31 khoản báo cáo này liệt kê là ĐÚNG, không phải lệch.
+--
+-- Quy tắc "kéo kỳ cuối về đáo hạn" cùng nút Đồng bộ ở tab Cài đặt đã gỡ hẳn
+-- (786d0e9). Nút đó lấy ContractEndDate làm ngày đáo hạn KUNN và đã làm hỏng
+-- dữ liệu thật.
+--
+-- MÂU THUẪN CHƯA GIẢI QUYẾT: dòng đầu bản gốc của báo cáo này ghi
+--   GNN ghi "kỳ trả nợ cuối cùng được trả vào NGÀY ĐÁO HẠN"
+-- nhưng KHÔNG dẫn số hiệu GNN nào. Mọi quy tắc khác trong dự án đều dẫn
+-- chứng từ cụ thể (xem quy tắc làm tròn gốc ở CONVENTIONS §2, dẫn GNN
+-- PNAT.CN.03111223/GNN-01 kèm con số 4.170.000đ). Cần mở một GNN giấy ra
+-- đối chiếu để biết câu đó có thật trên chứng từ hay là suy diễn.
+--
+-- Cho tới khi đối chiếu xong: TIN BANKER, giữ nguyên lịch, đừng sửa gì.
+--
+-- Phần bên dưới giữ nguyên để tra cứu lịch sử.
+--
 -- GNN ghi "kỳ trả nợ cuối cùng được trả vào NGÀY ĐÁO HẠN". Đo 05/08/2026
 -- sau khi sinh lại toàn bộ lịch: 77/97 khoản lệch.
 --

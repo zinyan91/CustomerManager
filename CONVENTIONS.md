@@ -194,6 +194,8 @@ Nút đó chạy `recalculateSchedules` trên **toàn bộ** các kỳ chứ kh�
 
 Bài học, ghi ở đây để không lặp lại: **một khuôn lặp lại trong dữ liệu là quy tắc cần hỏi, không phải lỗi cần sửa.** Và công cụ ghi hàng loạt phải có bước xem trước liệt kê đúng những gì sắp đổi, trước khi ghi dòng đầu tiên.
 
+**Một mâu thuẫn chưa giải quyết.** Đầu tệp `supabase/reports/06_ky_cuoi_lech_ngay_dao_han.sql` có câu *GNN ghi "kỳ trả nợ cuối cùng được trả vào NGÀY ĐÁO HẠN"* — trái hẳn với điều banker khẳng định 07/08/2026. Câu đó **không dẫn số hiệu GNN nào**, khác với mọi quy tắc khác trong tài liệu này. Cần mở một GNN giấy ra đối chiếu. Cho tới lúc đó: **tin banker**, giữ nguyên lịch.
+
 Ràng buộc này cài trong **`buildDueDateSequence`** — nguồn duy nhất sinh dãy ngày đến hạn. Có **hai** đường ghi ngày đến nợ và cả hai đều phải đi qua đó: `generateSchedule` khi tạo lịch mới, và `redateSchedules` khi banker sửa mốc trả nợ của một KUNN **đã có lịch**. Cài chốt ở một đường không bịt được đường kia: bản chép tay trong `LoanPortfolioView` từng làm chính điều đó, khiến hồ sơ NGÔ NHỊ ĐẠT tái tạo lại được lỗi cũ sau khi đường tạo mới đã sửa. Thêm đường ghi ngày thứ ba thì cũng phải gọi hàm này, đừng cộng tháng bằng tay.
 
 ### Kỳ chỉ xong khi thu ĐỦ nghĩa vụ
@@ -709,6 +711,10 @@ Trong `<style>` của tờ in bắt buộc có `print-color-adjust: exact` cho `
 
 Chỉ dùng font có sẵn trên máy, **không tải từ CDN**: tải font ngoài kéo theo phụ thuộc mạng và làm chữ nhảy khi trang mới mở, mà hệ thống này chạy trong mạng nội bộ ngân hàng. Mỗi lựa chọn đều có dấu tiếng Việt đầy đủ và font dự phòng phía sau.
 
+**Không dùng `font-sans` của Tailwind ở bất cứ đâu.** Lớp đó ghi `font-family` cứng lên phần tử nên chặn kế thừa từ `body`, vô hiệu hoá `--app-font`. Chọn font trong Cài đặt từng hoàn toàn không ăn vì `App.tsx` bọc cả cây con trong `font-sans`. Cần thoát khỏi ngữ cảnh mono thì dùng `.font-app` — khai trong `index.css` sau `.font-mono`, trỏ thẳng vào `var(--app-font)`.
+
+**Cỡ chữ lớn cũng phải khai trong `index.css`, sau `.font-mono`.** Lớp tiện dụng cỡ chữ của Tailwind cùng độ đặc hiệu `0-1-0` với `.font-mono` nên thua theo thứ tự nguồn: viết `text-[calc(...)]` thẳng trong component sẽ bị ép về `--fs-mono`. Đã có `.num-lead`; thêm cỡ mới thì khai cạnh nó. Test ở `src/components/__tests__/ScheduleTab.test.tsx` khẳng định không còn `text-[calc(` nào trong cây render.
+
 ---
 
 ## 15. Lớp token giao diện & hai ngôn ngữ
@@ -743,11 +749,43 @@ Số tiền luôn `font-mono` — lớp này đã bật `tabular-nums`, cột s�
 
 Toàn bộ giao diện đã chuyển sang token: không còn `isLight` trong mã, không còn lớp màu thô (`slate-*`, `sky-*`, `emerald-*`…) trong `.tsx`, và các khối `!important` ghi đè theo lớp Tailwind trong `index.css` đã gỡ hết — chỉ còn khối `prefers-reduced-motion`.
 
-Chuỗi class dùng chung nằm ở `src/lib/uiClasses.ts` (`UI.containerCardBg`, `UI.inputStyle`, `UI.tableHeaderStyle`, `BTN_PRIMARY`, `DEBT_GROUP_COLOR`…). Đây là nơi duy nhất khai báo; component không tự dựng chuỗi class riêng và **không truyền chuỗi class qua props** nữa. `src/lib/themeStyles.ts` đã xoá.
+Chuỗi class dùng chung nằm ở `src/lib/uiClasses.ts` (`PANEL`, `UI.containerCardBg`, `UI.inputStyle`, `TABLE_HEAD`, `TABLE_CELL`, `SECTION_LABEL`, `BTN_PRIMARY`, `DEBT_GROUP_COLOR`…). Đây là nơi duy nhất khai báo; component không tự dựng chuỗi class riêng và **không truyền chuỗi class qua props** nữa. `src/lib/themeStyles.ts` đã xoá.
 
 Lưu ý khi đặt tên lớp động: Tailwind quét mã tĩnh, nên `bg-g${n}` **không sinh ra lớp nào**. Dùng bảng tra như `DEBT_GROUP_COLOR[n]`.
 
 Đã chuyển sang `t()`: Header, Sidebar, `ScheduleTab`, `PeriodDetailCard`. Các màn còn lại vẫn để chuỗi tiếng Việt cứng — vì vậy **công tắc VI/EN đang tắt** bằng cờ `LANG_SWITCH_ENABLED` trong `i18n.ts`. Bật nửa vời còn tệ hơn không bật: người dùng sẽ thấy thanh điều hướng tiếng Anh nằm cạnh thân màn tiếng Việt. Dịch xong toàn bộ thì bật lại cờ đó.
+
+### Bảng đổi hình dạng theo thiết bị
+
+Điện thoại ưu tiên **tra cứu**, máy tính ưu tiên **nhập liệu** — chốt với banker 07/08/2026.
+
+Bảng 6–12 cột không bao giờ vừa màn 375px. Đo được trước khi sửa: bảng Định giá TSĐB rộng **1311px**, người dùng thấy 29% rồi phải vuốt ngang 936px; bảy màn cùng tình trạng.
+
+**Cách chữa không phải ẩn bớt cột.** Banker mở Lịch thu nợ trên điện thoại chính là để xem còn nợ bao nhiêu — ẩn cột đó thì màn hình thành vô dụng, và không ai đoán được cột nào quan trọng với người đang đứng ở quầy. Cách chữa là đổi **hình dạng** bản ghi: rộng thì bảng, hẹp thì mỗi bản ghi một thẻ dọc. Cùng dữ liệu, không mất gì.
+
+`AdaptiveTable` trong `src/components/AdaptiveTable.tsx` nhận **một** bộ định nghĩa cột rồi dựng ra cả hai hình dạng. Điểm ngắt là `md` (768px).
+
+| `priority` | Trên điện thoại | Đặt cho |
+| :--- | :--- | :--- |
+| `1` | Hiện thẳng trên mặt thẻ | Số tiền, hạn còn lại, trạng thái, ngày đến hạn |
+| `2` | Trong phần bung ra | Số hiệu chứng từ, kỳ hạn, thông tin tra cứu sâu |
+| `3` | Trong phần bung ra, cuối cùng | Thứ đã có ở `cardTitle` / `cardSubtitle` |
+
+Tên khách và mã CIF thường để `priority: 3` vì chúng đã nằm ở tiêu đề thẻ — hiện lại là thừa.
+
+**Đừng viết bảng và thẻ thành hai đoạn mã riêng.** Chúng sẽ trôi dạt: thêm cột vào bảng, quên thêm vào thẻ, và điện thoại thiếu số. Đây đúng cái giá dự án đã trả năm lần với `getEffectiveLtv` ở §1, chỉ khác là lần này trôi dạt về giao diện thay vì công thức.
+
+**Hai chỗ cố ý KHÔNG chuyển.** Lịch trả nợ ở Công cụ tính toán là lưới số 120 kỳ để so sánh dọc — 120 thẻ thì không đọc được nữa. Bảng lãi suất ở Mua bán vốn nội bộ là ma trận hai chiều, tách thành thẻ là phá quan hệ hàng–cột, tức là phá chính thông tin. Hai chỗ đó giữ bảng cuộn ngang là đúng; cần cải thiện thì khoá cột đầu khi cuộn, đừng đổi sang thẻ.
+
+Sửa gì ở đây thì **đo lại trên trình duyệt ở 375px**, đừng tin mắt: đếm phần tử có `getBoundingClientRect().right` vượt `clientWidth` mà tổ tiên không có `overflow-x: auto`.
+
+### Thông báo — một đường duy nhất
+
+`Toast` trong `src/components/Toast.tsx`, kèm hook `useToast`. Không nơi nào được tự dựng khung thông báo hay gọi `window.alert`.
+
+Trước đây có ba kiểu song song: khung nổi góc phải mà **năm màn mỗi màn tự khai lại cùng một chuỗi lớp**, chữ chèn trong luồng trang, và `window.alert`. Toast gộp cả ba, thêm nút đóng, `role="status"` với `aria-live` đổi theo mức độ, và trên màn hẹp trải ngang thay vì tràn khỏi mép phải. Mốc trên bám `--header-h` nên không chui xuống dưới thanh tiêu đề cố định.
+
+**Đừng báo thành công cho việc chưa xảy ra.** Tab Cài đặt từng có nút "LƯU CÀI ĐẶT CÁ NHÂN" không lưu gì cả — cả bốn nhóm thiết lập đều tự ghi `localStorage` ngay khi người dùng chạm vào điều khiển, nút chỉ bật một dòng chữ ở **đầu** trang trong khi nó nằm ở **cuối** trang. Đã gỡ, thay bằng một câu nói thẳng rằng thiết lập tự lưu.
 
 ### Quy tắc hình thức dùng chung
 

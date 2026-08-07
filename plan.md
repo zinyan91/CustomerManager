@@ -1,6 +1,6 @@
 # Kế hoạch nâng cấp giao diện toàn hệ thống
 
-Cập nhật 06/08/2026. Thay thế hoàn toàn bản kế hoạch trước.
+Cập nhật 07/08/2026. Thay thế hoàn toàn bản kế hoạch trước.
 
 ---
 
@@ -22,21 +22,25 @@ grep -roE "(bg|text|border|ring)-(slate|gray|zinc|red|emerald|sky|blue|indigo)-[
 
 Chạy lại bất cứ lúc nào để biết đợt nâng cấp đã đi tới đâu.
 
-| Hạng mục | Số đo 06/08/2026 | Đánh giá |
-| :--- | ---: | :--- |
-| Màu Tailwind cứng ngoài token | **0** | Xong |
-| Hex cứng trong `.tsx` | 44 | Hợp lệ — đều trong chuỗi HTML bản in |
-| File `.tsx` import `uiClasses` | 27 / 57 | Khá |
-| File khai lại lớp dùng chung bằng tay | **0** | Xong (vừa dọn) |
-| **File dùng `useLang`** | **4 / 57** | **Hổng nặng** |
-| **Chuỗi tiếng Việt cứng trong JSX** | **726** | **Hổng nặng** |
-| Khoá i18n đã dịch | 152 | ~5% khối lượng |
-| **File có `focus-visible`** | **3 / 57** | **Dưới sàn chất lượng** |
-| Bảng thiếu `overflow-x-auto` | 5 | Tràn ngang trên màn hẹp |
-| Test dựng component | 2 / 57 | Mỏng |
-| `ROW_RAIL_*` export nhưng được dùng | **0 / 57** | Hằng chết |
+| Hạng mục | 06/08 | 07/08 | Đánh giá |
+| :--- | ---: | ---: | :--- |
+| Màu Tailwind cứng ngoài token | 0 | **0** | Xong |
+| File khai lại lớp dùng chung bằng tay | 0 | **0** | Xong |
+| Khung thông báo viết tay | 5 | **0** | Xong — gộp về `Toast` |
+| `window.alert` | 2 | **0** | Xong |
+| Đường in khác nhau | 4 | **1** | Xong — gộp về `printHtmlDoc` |
+| Bản tải file chép tay | 3 | **1** | Xong — gộp về `downloadTextFile` |
+| Chỗ tự tính LTV trong `.tsx` | 8 | **0** | Xong |
+| Bảng tràn ở khổ 375px | 8 | **2** | Xong phần làm được — xem *Không làm* |
+| **File dùng `useLang`** | 4/57 | **4/59** | **Hổng nặng** |
+| **Chuỗi tiếng Việt cứng trong JSX** | 726 | **688** | **Hổng nặng** |
+| **File có `focus-visible`** | 3/57 | **5/59** | **Dưới sàn chất lượng** |
+| Bảng thiếu `overflow-x-auto` | 5 | 4 | Còn |
+| Test dựng component | 2/57 | 2/59 | Mỏng |
+| `ROW_RAIL_*` được dùng | 0 | **0** | Hằng chết |
+| Tổng test | 813 | **843** | |
 
-Bốn dòng in đậm là toàn bộ nội dung thật của "nâng cấp giao diện". Không phải đổi màu.
+Hai dòng in đậm còn lại là phần lớn khối lượng chưa làm. Không phải đổi màu.
 
 ---
 
@@ -82,6 +86,24 @@ Ngoài rail, không thêm hiệu ứng nào. Không gradient, không đổ bóng
 
 ---
 
+## 2b. Đã làm ngày 07/08/2026
+
+Ngoài kế hoạch ban đầu, do phát hiện trong lúc làm:
+
+**Bảng đổi hình dạng theo thiết bị.** Điện thoại ưu tiên tra cứu, máy tính ưu tiên nhập liệu — chốt với banker. `AdaptiveTable` nhận một bộ định nghĩa cột, dựng bảng ở `md` trở lên và thẻ dọc ở dưới. Áp cho 6 màn: Tổng quan, Danh sách khách hàng, Định giá TSĐB, Thẻ tín dụng, Kiểm soát sau vay, Tra cứu mục đích SDV. Đo lại ở 375px: 0 bảng còn tràn. Xem `CONVENTIONS.md` §15.
+
+**Gộp thông báo.** Ba kiểu song song về một `Toast`. Bỏ nút "Lưu cài đặt cá nhân" — nó không lưu gì, mọi thiết lập đã tự ghi khi chạm vào điều khiển.
+
+**Gộp in và tải file.** Bốn cách in về `printHtmlDoc` (iframe, không popup); ba bản tải file về `downloadTextFile`.
+
+**Sửa font không đổi được.** `App.tsx` bọc cả cây con trong `font-sans` của Tailwind nên chặn kế thừa `--app-font`.
+
+**Gỡ quy tắc kéo kỳ cuối về ngày đáo hạn** và nút bảo trì đi kèm — xem `CONVENTIONS.md` §2, quy tắc do đọc ngược bằng chứng mà ra và đã làm hỏng dữ liệu.
+
+**Thẻ tín dụng vào chốt kiểm soát TSĐB**, ba trường hợp mở thẻ có ràng buộc thật. Xem `CONVENTIONS.md` §13.
+
+---
+
 ## 3. Các đợt
 
 Mỗi đợt một nhánh, một lần gộp, có tiêu chí ra rõ ràng. Không đợt nào được bắt đầu khi đợt trước chưa xanh.
@@ -90,8 +112,8 @@ Mỗi đợt một nhánh, một lần gộp, có tiêu chí ra rõ ràng. Khôn
 
 Nhỏ nhất, rủi ro thấp nhất, giá trị tức thì. Làm trước.
 
-- Đưa `focus-visible:outline-2 outline-offset-2 outline-accent` vào `BTN_BASE`, `UI.inputStyle` và mọi phần tử bấm được. Hiện chỉ **3/57** file có.
-- Bọc `overflow-x-auto` cho 5 bảng đang thiếu: `EstimateForm`, `PaymentRequestForm`, `SaleForm`, `KunnRateSection`, `CustomerListView`.
+- Đưa `focus-visible:outline-2 outline-offset-2 outline-accent` vào `BTN_BASE`, `UI.inputStyle` và mọi phần tử bấm được. Hiện **5/59** file có.
+- Bọc `overflow-x-auto` cho 4 bảng còn thiếu: `EstimateForm`, `PaymentRequestForm`, `SaleForm`, `KunnRateSection`. (`CustomerListView` đã xong qua `AdaptiveTable`.)
 - Gán `aria-label` cho các nút chỉ có biểu tượng.
 - Giết `text-[9px]`.
 
@@ -100,7 +122,7 @@ Nhỏ nhất, rủi ro thấp nhất, giá trị tức thì. Làm trước.
 ### Đợt 2 — Rail trạng thái phủ mọi bảng
 
 - Dùng `ROW_RAIL_*` từ `uiClasses`; xoá bản viết tay trong `ScheduleTab`.
-- Áp cho `KunnTable`, `CollateralTable`, `CustomerListView`, `CreditContractView`, `PostLoanControlView`, `CreditCardView`.
+- Áp cho `KunnTable`, `CreditContractView`, và bên trong `AdaptiveTable` để mọi bảng đã chuyển đều có rail.
 - Phủ công tắc `data-density` ra các bảng đó.
 
 **Ra khi:** `grep -rl "border-l-2 border-neg" src/components` chỉ trả về `uiClasses.ts`.

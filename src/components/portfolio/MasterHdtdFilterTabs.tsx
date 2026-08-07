@@ -57,7 +57,7 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
               }`}
             >
               <span>{g.masterNo}</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-sans">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-app">
                 {g.contracts.length} KUNN
               </span>
             </button>

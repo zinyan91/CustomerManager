@@ -85,7 +85,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                   </td>
                   <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-ink-muted">
                     <div className="font-bold">{col.AssetCode || '—'}</div>
-                    <div className="text-[10px] text-ink-faint font-sans truncate max-w-xs">{col.Address}</div>
+                    <div className="text-[10px] text-ink-faint font-app truncate max-w-xs">{col.Address}</div>
                   </td>
                   <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-pos whitespace-nowrap">
                     {fmtMoney(val)}

@@ -37,7 +37,7 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen bg-surface text-ink flex flex-col font-sans antialiased">
+    <div className="min-h-screen bg-surface text-ink flex flex-col antialiased">
       <Header onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)} />
       <div className="flex flex-1 pt-[var(--header-h)] relative">
         <Sidebar

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useDateFormat, type DateFormat } from '../../context/DateFormatContext';
-import { Settings, Sun, Moon, Sliders, Calendar, Clock, Save, CheckCircle, Type, RotateCcw, Wrench } from 'lucide-react';
+import { Settings, Sun, Moon, Sliders, Calendar, Clock, Save, CheckCircle, Type, RotateCcw } from 'lucide-react';
 import { useFormatSettings } from '../../context/FormatSettingsContext';
 import {
   NUMBER_STYLE_SAMPLES, MAX_DIGITS,
@@ -323,22 +323,6 @@ export const SettingsView: React.FC = () => {
           <span>LƯU CÀI ĐẶT CÁ NHÂN</span>
         </button>
       </form>
-
-      <div className="space-y-3 border-t border-line pt-5">
-        <h3 className="text-xs font-bold text-warn uppercase flex items-center space-x-2 border-b border-line pb-2">
-          <Wrench className="w-3.5 h-3.5" />
-          <span>BẢO TRÌ DỮ LIỆU</span>
-        </h3>
-
-        <div className="bg-neg-soft border border-neg/40 rounded-md p-3 text-xs space-y-1.5">
-          <div className="font-bold text-neg">Đã tạm khoá: Đồng bộ kỳ cuối theo ngày đáo hạn</div>
-          <p className="text-ink">
-            Chức năng này lấy nhầm ngày hết hiệu lực HĐTD làm ngày đáo hạn KUNN khi khoản vay
-            bỏ trống ngày đáo hạn, khiến kỳ cuối bị kéo dài và tính lại sai toàn bộ tiền lãi.
-            Đang chờ khắc phục và đối chiếu dữ liệu trước khi mở lại.
-          </p>
-        </div>
-      </div>
     </div>
   );
 };

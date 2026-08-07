@@ -350,7 +350,7 @@ export const CreditContractView: React.FC = () => {
                       <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono font-bold text-accent">
                         {s.contract.HdtdNumber}
                         {s.contract.ApprovalCode && (
-                          <div className="text-[10px] font-sans font-normal text-accent mt-0.5">
+                          <div className="text-[10px] font-app font-normal text-accent mt-0.5">
                             Hạn mức duyệt: {s.contract.ApprovalCode}
                           </div>
                         )}

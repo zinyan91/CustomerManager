@@ -139,7 +139,7 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
               : 'text-pos'
           }>{fmtMoney(availableBeforeThisKunn)}</strong></span>
           {(formLimitStatus?.settledKunnCount ?? 0) > 0 && (
-            <span className="text-[10px] font-sans font-normal text-ink-faint">
+            <span className="text-[10px] font-app font-normal text-ink-faint">
               (đã loại {formLimitStatus!.settledKunnCount} KUNN đã tất toán)
             </span>
           )}

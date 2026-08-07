@@ -4,6 +4,7 @@ import { fetchCustomersAPI, saveCustomerAPI, deleteCustomerAPI } from '../../lib
 import type { Customer } from '../../types';
 import { Search, Plus, Download, Upload, Eye, Trash2, X, UserCheck } from 'lucide-react';
 import { Toast } from '../Toast';
+import { AdaptiveTable } from '../AdaptiveTable';
 
 export const CustomerListView: React.FC = () => {
 
@@ -238,7 +239,6 @@ export const CustomerListView: React.FC = () => {
 
   const containerCardBg = UI.containerCardBg;
   const inputStyle = UI.inputStyle;
-  const tableHeaderStyle = UI.tableHeaderStyle;
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
@@ -308,78 +308,52 @@ export const CustomerListView: React.FC = () => {
           </div>
 
           <div className="overflow-auto flex-1">
-            <table className="w-full text-left text-xs">
-              <thead className={tableHeaderStyle}>
-                <tr>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">MÃ CIF</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">HỌ VÀ TÊN KH</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">CIF KHLQ</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">KHLQ / NGƯỜI BẢO LÃNH</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">MỐI QUAN HỆ</th>
-                  <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">THAO TÁC</th>
-                </tr>
-              </thead>
-              <tbody className={"divide-y divide-line"}>
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="text-center p-8 text-ink-faint">Đang tải dữ liệu khách hàng...</td>
-                  </tr>
-                ) : customers.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center p-8 text-ink-faint">Không tìm thấy khách hàng nào.</td>
-                  </tr>
-                ) : (
-                  customers.map((cus) => {
-                    const isSelected = selectedCustomer?.Id === cus.Id;
-                    const khlqName = cus.SpouseName || 'Chưa khai báo';
-                    const relation = cus.KhlqRelationship || (cus.MaritalStatus === 'Đã kết hôn' ? 'Vợ / Chồng' : 'Không có');
-                    return (
-                      <tr
-                        key={cus.Id}
-                        onClick={() => handleSelectCustomer(cus)}
-                        className={`cursor-pointer border-l-2 transition-colors duration-150 ${isSelected
-                            ? 'border-accent bg-accent-soft font-semibold'
-                            : 'border-transparent hover:bg-panel-muted'
-                          }`}
-                      >
-                        <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-ink font-semibold whitespace-nowrap">{cus.CifKh}</td>
-                        <td className="px-[var(--row-px)] py-[var(--row-py)] font-bold whitespace-nowrap">{cus.FullName}</td>
-                        <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-ink-muted whitespace-nowrap">{cus.CifKhlq || '–'}</td>
-                        <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
-                          {cus.SpouseName ? (
-                            <span className="text-ink">{khlqName}</span>
-                          ) : (
-                            <span className="text-ink-faint">–</span>
-                          )}
-                        </td>
-                        <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${relation === 'Vợ / Chồng' ? 'bg-accent-soft border-accent/30 text-accent' :
-                              relation === 'Người bảo lãnh' ? 'bg-pos-soft border-pos/30 text-pos' :
-                                relation === 'Bên bảo đảm (Chủ TSĐB)' ? 'bg-warn-soft border-warn/30 text-warn' :
-                                  'bg-panel-muted border-line text-ink-muted'
-                            }`}>
-                            {relation}
-                          </span>
-                        </td>
-                        <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDetailCustomer(cus);
-                              setIsModalOpen(true);
-                            }}
-                            className="border border-line text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-md text-[11px] font-semibold inline-flex items-center space-x-1 transition-colors duration-150"
-                          >
-                            <Eye className="w-3 h-3" />
-                            <span>Xem</span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
+            {loading ? (
+              <div className="text-center p-8 text-ink-faint text-xs">Đang tải dữ liệu khách hàng...</div>
+            ) : (
+              <AdaptiveTable
+                rows={customers}
+                rowKey={c => c.Id}
+                onRowClick={handleSelectCustomer}
+                isSelected={c => selectedCustomer?.Id === c.Id}
+                emptyText="Không tìm thấy khách hàng nào."
+                cardTitle={c => c.FullName}
+                cardSubtitle={c => c.CifKh}
+                actions={c => (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDetailCustomer(c); setIsModalOpen(true); }}
+                    className="border border-line text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-md text-[11px] font-semibold inline-flex items-center space-x-1 transition-colors duration-150"
+                  >
+                    <Eye className="w-3 h-3" />
+                    <span>Xem</span>
+                  </button>
                 )}
-              </tbody>
-            </table>
+                columns={[
+                  { key: 'cif', label: 'Mã CIF', priority: 1,
+                    render: c => <span className="font-mono text-ink font-semibold">{c.CifKh}</span> },
+                  { key: 'ten', label: 'Họ và tên KH', priority: 1,
+                    render: c => <span className="font-bold">{c.FullName}</span> },
+                  { key: 'quanHe', label: 'Mối quan hệ', priority: 1,
+                    render: c => {
+                      const rel = c.KhlqRelationship || (c.MaritalStatus === 'Đã kết hôn' ? 'Vợ / Chồng' : 'Không có');
+                      return (
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                          rel === 'Vợ / Chồng' ? 'bg-accent-soft border-accent/30 text-accent'
+                          : rel === 'Người bảo lãnh' ? 'bg-pos-soft border-pos/30 text-pos'
+                          : rel === 'Bên bảo đảm (Chủ TSĐB)' ? 'bg-warn-soft border-warn/30 text-warn'
+                          : 'bg-panel-muted border-line text-ink-muted'
+                        }`}>{rel}</span>
+                      );
+                    } },
+                  { key: 'cifKhlq', label: 'CIF KHLQ', priority: 2,
+                    render: c => <span className="font-mono text-ink-muted">{c.CifKhlq || '–'}</span> },
+                  { key: 'khlq', label: 'KHLQ / Người bảo lãnh', priority: 2,
+                    render: c => c.SpouseName
+                      ? <span className="text-ink">{c.SpouseName}</span>
+                      : <span className="text-ink-faint">–</span> },
+                ]}
+              />
+            )}
           </div>
         </div>
 

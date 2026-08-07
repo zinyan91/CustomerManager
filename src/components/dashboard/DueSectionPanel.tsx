@@ -57,7 +57,7 @@ export const DueSectionPanel: React.FC<DueSectionPanelProps> = ({
         <h3 className={`font-bold text-xs tracking-tight ${TONE_TEXT[tone]}`}>{title}</h3>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${TONE_CHIP[tone]}`}>
           {counts.upcoming} sắp đến · {counts.expired} quá hạn
         </span>

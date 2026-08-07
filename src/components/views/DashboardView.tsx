@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { UI } from '../../lib/uiClasses';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
-import { fmtDate, parseAnyDate, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
-import { assetClassLabel, collateralValue } from '../../lib/collateralMath';
+import { fmtDate, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
+import { assetClassLabel, collateralValue, appraisalExpiryDate } from '../../lib/collateralMath';
 import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
   monthlyDueInfo, type DueFilter,
 } from '../../lib/dueList';
+import { parseCollateralIds } from '../../lib/creditLimit';
 import { Toast, useToast } from '../Toast';
 import type { Customer, Collateral, LoanContract } from '../../types';
 import {
@@ -123,31 +124,20 @@ export const DashboardView: React.FC = () => {
     .filter(item => item.daysLeft !== null && item.daysLeft <= 45)
     .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
-  const dueCollateralList = collaterals.map(col => {
-    const cus = customers.find(cust => cust.Id === col.CustomerId);
+  const collateralIdsDangTheChap = new Set<number>();
+  chuaTatToan.forEach(c => parseCollateralIds(c).forEach(id => collateralIdsDangTheChap.add(id)));
 
-    let expiryDateStr = '';
-    if (col.AppraisalExpiryDate) {
-      expiryDateStr = col.AppraisalExpiryDate.split('T')[0];
-    } else if (col.AppraisalDate) {
-      const parsed = parseAnyDate(col.AppraisalDate);
-      if (parsed) {
-        const tenor = col.AppraisalTenorMonths || 12;
-        const d = new Date(parsed.year, parsed.month - 1 + tenor, parsed.day);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        expiryDateStr = `${yyyy}-${mm}-${dd}`;
-      }
-    }
-
-    if (!expiryDateStr) return null;
-
-    const daysLeft = daysUntil(expiryDateStr);
-    return { collateral: col, customer: cus, expiryDateStr, daysLeft };
-  }).filter((item): item is NonNullable<typeof item> => {
-    return item !== null && item.daysLeft !== null && item.daysLeft <= 30;
-  }).sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
+  const dueCollateralList = collaterals
+    .filter(col => collateralIdsDangTheChap.has(col.Id))
+    .map(col => {
+      const cus = customers.find(cust => cust.Id === col.CustomerId);
+      const expiryDateStr = appraisalExpiryDate(col);
+      if (!expiryDateStr) return null;
+      return { collateral: col, customer: cus, expiryDateStr, daysLeft: daysUntil(expiryDateStr) };
+    })
+    .filter((item): item is NonNullable<typeof item> =>
+      item !== null && item.daysLeft !== null && item.daysLeft <= 30)
+    .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
   const soNgay = (x: { daysLeft?: number | null }) => x.daysLeft;
 
@@ -394,17 +384,17 @@ export const DashboardView: React.FC = () => {
         emptyText="Không có khách hàng nào tới hạn hoặc quá hạn đóng kỳ trong kỳ này."
         cardBg={cardBg}
         columns={[
-          { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: i => {
-            const dl = i.dueInfo?.daysLeft ?? 0;
-            return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 2)}`}>{dueBadgeText(dl)}</span>;
-          } },
+          { key: 'kh', label: 'Khách hàng vay', priority: 3, render: i => <span className="font-bold">{i.customer?.FullName || 'N/A'}</span> },
+          { key: 'cif', label: 'Mã CIF', priority: 3, render: i => <span className="font-mono text-accent">{i.customer?.CifKh || 'N/A'}</span> },
+          { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: i => <span className="font-mono">{i.contract.ContractNumber}</span> },
           { key: 'duNo', label: 'Dư nợ hiện hữu', priority: 1, align: 'right',
             render: i => <span className="font-mono font-bold text-warn">{fmtFullMoney(i.contract.CurrentBalance ?? i.contract.LoanAmount ?? i.contract.ContractAmount ?? 0)}</span> },
           { key: 'ngayDue', label: 'Ngày đến hạn due', priority: 1, align: 'center',
             render: i => <span className="font-bold text-accent">{i.dueInfo?.dueDateStr}</span> },
-          { key: 'kh', label: 'Khách hàng vay', priority: 3, render: i => <span className="font-bold">{i.customer?.FullName || 'N/A'}</span> },
-          { key: 'cif', label: 'Mã CIF', priority: 3, render: i => <span className="font-mono text-accent">{i.customer?.CifKh || 'N/A'}</span> },
-          { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: i => <span className="font-mono">{i.contract.ContractNumber}</span> },
+          { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: i => {
+            const dl = i.dueInfo?.daysLeft ?? 0;
+            return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 2)}`}>{dueBadgeText(dl)}</span>;
+          } },
         ]}
       />
 
@@ -423,19 +413,19 @@ export const DashboardView: React.FC = () => {
         emptyText="Không có KUNN nào sắp đến hạn hoặc quá hạn kết thúc."
         cardBg={cardBg}
         columns={[
-          { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: r => {
-            const dl = r.daysLeft ?? 0;
-            return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 3)}`}>{dueBadgeText(dl)}</span>;
-          } },
+          { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
+          { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
+          { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: r => <span className="font-mono">{r.contract.ContractNumber}</span> },
           { key: 'soTien', label: 'Số tiền KUNN / dư nợ', priority: 1, align: 'right',
             render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(r.contract.LoanAmount || r.contract.CurrentBalance || 0)}</span> },
           { key: 'ketThuc', label: 'Ngày kết thúc KUNN', priority: 1, align: 'center',
             render: r => <span className="font-bold text-accent">{fmtDate(r.contract.KunnDueDate)}</span> },
-          { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-          { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
-          { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: r => <span className="font-mono">{r.contract.ContractNumber}</span> },
           { key: 'kyHan', label: 'Kỳ hạn KUNN', priority: 2, align: 'center',
             render: r => <span className="font-bold">{r.contract.KunnTenor || `${r.contract.LoanTenorMonths}T`}</span> },
+          { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: r => {
+            const dl = r.daysLeft ?? 0;
+            return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 3)}`}>{dueBadgeText(dl)}</span>;
+          } },
         ]}
       />
 
@@ -454,6 +444,14 @@ export const DashboardView: React.FC = () => {
         emptyText="Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn."
         cardBg={cardBg}
         columns={[
+          { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
+          { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
+          { key: 'soHdtd', label: 'Số HĐTD hạn mức', priority: 2,
+            render: r => <span className="font-mono font-bold text-accent">{r.masterNo}</span> },
+          { key: 'mucCap', label: 'Tổng mức cấp HMTD', priority: 1, align: 'right',
+            render: r => <span className="font-mono font-bold text-accent">{fmtFullMoney(r.contract.ContractAmount || 0)}</span> },
+          { key: 'hetHan', label: 'Ngày hết hạn HĐ', priority: 1, align: 'center',
+            render: r => <span className="font-bold">{fmtDate(r.endDateStr)}</span> },
           { key: 'trangThai', label: 'Trạng thái hạn mức', priority: 1, align: 'center', render: r => {
             const d = r.daysLeft ?? 0;
             const style = d < 0 || d < 6 ? 'bg-neg text-surface border border-neg font-bold'
@@ -465,14 +463,6 @@ export const DashboardView: React.FC = () => {
               : `Khẩn cấp · còn ${d} ngày`;
             return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
           } },
-          { key: 'mucCap', label: 'Tổng mức cấp HMTD', priority: 1, align: 'right',
-            render: r => <span className="font-mono font-bold text-accent">{fmtFullMoney(r.contract.ContractAmount || 0)}</span> },
-          { key: 'hetHan', label: 'Ngày hết hạn HĐ', priority: 1, align: 'center',
-            render: r => <span className="font-bold">{fmtDate(r.endDateStr)}</span> },
-          { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-          { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
-          { key: 'soHdtd', label: 'Số HĐTD hạn mức', priority: 2,
-            render: r => <span className="font-mono font-bold text-accent">{r.masterNo}</span> },
         ]}
       />
 
@@ -491,6 +481,19 @@ export const DashboardView: React.FC = () => {
         emptyText="Không có Định giá TSĐB nào sắp hết hạn trong 30 ngày tới."
         cardBg={cardBg}
         columns={[
+          { key: 'chuSoHuu', label: 'Chủ sở hữu TSĐB', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
+          { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
+          { key: 'maTs', label: 'Mã TS / địa chỉ', priority: 2,
+            render: r => <span className="font-medium">{r.collateral.AssetCode || r.collateral.Address || 'TSBĐ'}</span> },
+          { key: 'xepLoai', label: 'Xếp loại TS', priority: 2, render: r => (
+            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-accent-soft text-accent border border-accent/30">
+              {assetClassLabel(r.collateral.AssetType)}
+            </span>
+          ) },
+          { key: 'giaTri', label: 'Giá trị định giá', priority: 1, align: 'right',
+            render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(collateralValue(r.collateral))}</span> },
+          { key: 'hetHan', label: 'Ngày hết hạn định giá', priority: 1, align: 'center',
+            render: r => <span className="font-bold">{r.expiryDateStr ? fmtDate(r.expiryDateStr) : 'N/A'}</span> },
           { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: r => {
             const d = r.daysLeft ?? 0;
             const style = d >= 16 ? 'bg-pos-soft text-pos border border-pos/30'
@@ -501,19 +504,6 @@ export const DashboardView: React.FC = () => {
               : `Quá hạn ${Math.abs(d)} ngày`;
             return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
           } },
-          { key: 'giaTri', label: 'Giá trị định giá', priority: 1, align: 'right',
-            render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(collateralValue(r.collateral))}</span> },
-          { key: 'hetHan', label: 'Ngày hết hạn định giá', priority: 1, align: 'center',
-            render: r => <span className="font-bold">{r.expiryDateStr ? fmtDate(r.expiryDateStr) : 'N/A'}</span> },
-          { key: 'chuSoHuu', label: 'Chủ sở hữu TSĐB', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-          { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
-          { key: 'maTs', label: 'Mã TS / địa chỉ', priority: 2,
-            render: r => <span className="font-medium">{r.collateral.AssetCode || r.collateral.Address || 'TSBĐ'}</span> },
-          { key: 'xepLoai', label: 'Xếp loại TS', priority: 2, render: r => (
-            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-accent-soft text-accent border border-accent/30">
-              {assetClassLabel(r.collateral.AssetType)}
-            </span>
-          ) },
         ]}
       />
     </div>

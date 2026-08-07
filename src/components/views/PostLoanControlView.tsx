@@ -311,7 +311,7 @@ export const PostLoanControlView: React.FC = () => {
                 </button>
               )}
               columns={[
-                { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: it => (
+          { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: it => (
                   <>
                     <div className="font-bold">{customerName(it.customerId)}</div>
                     <div className="text-[10px] font-mono text-accent">
@@ -319,18 +319,18 @@ export const PostLoanControlView: React.FC = () => {
                     </div>
                   </>
                 ) },
-                { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: it => statusBadge(it) },
-                { key: 'denHan', label: 'Ngày đến hạn', priority: 1, align: 'center',
-                  render: it => <span className="font-mono">{fmtDate(it.dueDate)}</span> },
-                { key: 'loai', label: 'Loại kiểm tra', priority: 1,
+          { key: 'loai', label: 'Loại kiểm tra', priority: 1,
                   render: it => <span className="text-accent font-semibold">{CONTROL_TYPE_LABEL[it.type]}</span> },
-                { key: 'phamVi', label: 'Phạm vi', priority: 2,
+          { key: 'phamVi', label: 'Phạm vi', priority: 2,
                   render: it => <span className="font-mono text-[11px]">{scopeOf(it)}</span> },
-                { key: 'ky', label: 'Kỳ', priority: 2, align: 'center',
+          { key: 'ky', label: 'Kỳ', priority: 2, align: 'center',
                   render: it => <span className="font-mono">{it.periodIndex}</span> },
-                { key: 'thucHien', label: 'Ngày thực hiện', priority: 2, align: 'center',
+          { key: 'denHan', label: 'Ngày đến hạn', priority: 1, align: 'center',
+                  render: it => <span className="font-mono">{fmtDate(it.dueDate)}</span> },
+          { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: it => statusBadge(it) },
+          { key: 'thucHien', label: 'Ngày thực hiện', priority: 2, align: 'center',
                   render: it => <span className="font-mono text-ink-faint">{it.record ? fmtDate(it.record.PerformedDate) : '—'}</span> },
-              ]}
+        ]}
             />
             {filtered.length > 300 && (
               <div className="p-3 text-center text-[11px] text-ink-faint border-t border-line">

@@ -23,6 +23,7 @@ interface AdaptiveTableProps<T> {
   cardSubtitle?: (row: T) => React.ReactNode;
   actions?: (row: T) => React.ReactNode;
   actionsLabel?: string;
+  maxHeight?: string;
 }
 
 const alignClass = (a?: 'left' | 'right' | 'center') =>
@@ -30,7 +31,7 @@ const alignClass = (a?: 'left' | 'right' | 'center') =>
 
 export function AdaptiveTable<T>({
   columns, rows, rowKey, onRowClick, isSelected,
-  emptyText, cardTitle, cardSubtitle, actions, actionsLabel = 'Thao tác',
+  emptyText, cardTitle, cardSubtitle, actions, actionsLabel = 'Thao tác', maxHeight,
 }: AdaptiveTableProps<T>) {
   const [moRong, setMoRong] = React.useState<Set<React.Key>>(new Set());
 
@@ -51,7 +52,10 @@ export function AdaptiveTable<T>({
 
   return (
     <>
-      <ul className="md:hidden divide-y divide-line">
+      <ul
+        className={`md:hidden divide-y divide-line ${maxHeight ? 'overflow-y-auto' : ''}`}
+        style={maxHeight ? { maxHeight } : undefined}
+      >
         {rows.map(row => {
           const k = rowKey(row);
           const mo = moRong.has(k);
@@ -107,9 +111,12 @@ export function AdaptiveTable<T>({
         })}
       </ul>
 
-      <div className="hidden md:block overflow-x-auto">
+      <div
+        className={`hidden md:block overflow-x-auto ${maxHeight ? 'overflow-y-auto' : ''}`}
+        style={maxHeight ? { maxHeight } : undefined}
+      >
         <table className="w-full text-left text-xs border-collapse">
-          <thead className={TABLE_HEAD}>
+          <thead className={`${TABLE_HEAD} ${maxHeight ? 'sticky top-0 z-10' : ''}`}>
             <tr className="border-b border-line">
               {columns.map(c => (
                 <th key={c.key} className={`${TABLE_CELL} font-semibold whitespace-nowrap ${alignClass(c.align)}`}>

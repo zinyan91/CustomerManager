@@ -116,6 +116,7 @@ export const MdsdvLookupView: React.FC = () => {
 
       <div className={`${cardBg} rounded-lg border overflow-hidden`}>
         <AdaptiveTable
+          maxHeight="620px"
           rows={search.items}
           rowKey={e => e.code}
           emptyText="Không tìm thấy mã MĐSDV nào khớp với điều kiện tra cứu."
@@ -129,28 +130,28 @@ export const MdsdvLookupView: React.FC = () => {
             </button>
           )}
           columns={[
-            { key: 'ma', label: 'Mã MĐSDV (cấp 6)', priority: 1,
+          { key: 'ma', label: 'Mã MĐSDV (cấp 6)', priority: 1,
               render: e => <span className="font-mono font-bold text-accent">{e.code}</span> },
-            { key: 'fbe', label: 'Tên hiển thị trên FBE', priority: 1,
+          { key: 'fbe', label: 'Tên hiển thị trên FBE', priority: 1,
               render: e => <span className="font-mono">{e.fbeName}</span> },
-            { key: 'thauChi', label: 'Thấu chi', priority: 1, align: 'center',
-              render: e => e.allowsOverdraft
-                ? <span className="text-pos font-bold">Có</span>
-                : <span className="text-ink-faint">—</span> },
-            { key: 'mucDich', label: 'Mục đích chi tiết', priority: 2, render: e => e.purposeName },
-            { key: 'c5', label: 'Ngành cấp 5', priority: 3, render: e => (
+          { key: 'mucDich', label: 'Mục đích chi tiết', priority: 2, render: e => e.purposeName },
+          { key: 'c5', label: 'Ngành cấp 5', priority: 3, render: e => (
               <>
                 <span className="font-mono text-ink-faint">{e.level5Code}</span>
                 <span className="block">{e.level5Name}</span>
               </>
             ) },
-            { key: 'c1', label: 'Ngành cấp 1', priority: 3, render: e => (
+          { key: 'c1', label: 'Ngành cấp 1', priority: 3, render: e => (
               <>
                 <span className="font-mono text-ink-faint">{e.level1Code}</span>
                 <span className="block text-ink-faint">{e.level1Name}</span>
               </>
             ) },
-          ]}
+          { key: 'thauChi', label: 'Thấu chi', priority: 1, align: 'center',
+              render: e => e.allowsOverdraft
+                ? <span className="text-pos font-bold">Có</span>
+                : <span className="text-ink-faint">—</span> },
+        ]}
         />
       </div>
 

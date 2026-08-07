@@ -329,11 +329,17 @@ export const CustomerListView: React.FC = () => {
                   </button>
                 )}
                 columns={[
-                  { key: 'cif', label: 'Mã CIF', priority: 1,
+          { key: 'cif', label: 'Mã CIF', priority: 1,
                     render: c => <span className="font-mono text-ink font-semibold">{c.CifKh}</span> },
-                  { key: 'ten', label: 'Họ và tên KH', priority: 1,
+          { key: 'ten', label: 'Họ và tên KH', priority: 1,
                     render: c => <span className="font-bold">{c.FullName}</span> },
-                  { key: 'quanHe', label: 'Mối quan hệ', priority: 1,
+          { key: 'cifKhlq', label: 'CIF KHLQ', priority: 2,
+                    render: c => <span className="font-mono text-ink-muted">{c.CifKhlq || '–'}</span> },
+          { key: 'khlq', label: 'KHLQ / Người bảo lãnh', priority: 2,
+                    render: c => c.SpouseName
+                      ? <span className="text-ink">{c.SpouseName}</span>
+                      : <span className="text-ink-faint">–</span> },
+          { key: 'quanHe', label: 'Mối quan hệ', priority: 1,
                     render: c => {
                       const rel = c.KhlqRelationship || (c.MaritalStatus === 'Đã kết hôn' ? 'Vợ / Chồng' : 'Không có');
                       return (
@@ -345,13 +351,7 @@ export const CustomerListView: React.FC = () => {
                         }`}>{rel}</span>
                       );
                     } },
-                  { key: 'cifKhlq', label: 'CIF KHLQ', priority: 2,
-                    render: c => <span className="font-mono text-ink-muted">{c.CifKhlq || '–'}</span> },
-                  { key: 'khlq', label: 'KHLQ / Người bảo lãnh', priority: 2,
-                    render: c => c.SpouseName
-                      ? <span className="text-ink">{c.SpouseName}</span>
-                      : <span className="text-ink-faint">–</span> },
-                ]}
+        ]}
               />
             )}
           </div>

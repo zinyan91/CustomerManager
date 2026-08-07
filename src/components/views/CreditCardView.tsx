@@ -484,22 +484,20 @@ export const CreditCardView: React.FC = () => {
                 </>
               )}
               columns={[
-                { key: 'soThe', label: 'Số thẻ (mask)', priority: 3,
+          { key: 'soThe', label: 'Số thẻ (mask)', priority: 3,
                   render: c => <span className="font-mono text-accent font-bold">{c.CardNumber || '4532••••8888'}</span> },
-                { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: c => (
+          { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: c => (
                   <>
                     <div className="font-bold text-ink">{c.customer?.FullName || 'KH'}</div>
                     <div className="text-[10px] font-mono text-accent">CIF: {c.customer?.CifKh || '—'}</div>
                   </>
                 ) },
-                { key: 'hanMuc', label: 'Hạn mức cấp', priority: 1, align: 'right',
-                  render: c => <span className="font-mono font-bold text-pos">{fmtMoney(cardGrantedLimit(c))}</span> },
-                { key: 'dien', label: 'Diện mở thẻ', priority: 1, render: c => (
+          { key: 'dien', label: 'Diện mở thẻ', priority: 1, render: c => (
                   <span className="bg-accent-soft text-accent border border-accent/30 px-2.5 py-1 rounded-lg text-[10px] font-bold">
                     {c.IssuanceType || 'Quan hệ tín dụng'}
                   </span>
                 ) },
-                { key: 'tsbd', label: 'TSBĐ liên kết', priority: 2, render: c => {
+          { key: 'tsbd', label: 'TSBĐ liên kết', priority: 2, render: c => {
                   const col = allCollaterals.find(x => x.Id === c.CollateralId) || null;
                   return col ? (
                     <div className="text-[11px] font-semibold text-accent">
@@ -508,7 +506,9 @@ export const CreditCardView: React.FC = () => {
                     </div>
                   ) : <span className="text-ink-faint font-normal">—</span>;
                 } },
-              ]}
+          { key: 'hanMuc', label: 'Hạn mức cấp', priority: 1, align: 'right',
+                  render: c => <span className="font-mono font-bold text-pos">{fmtMoney(cardGrantedLimit(c))}</span> },
+        ]}
             />
       </div>
     </div>

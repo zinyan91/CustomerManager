@@ -14,14 +14,17 @@ import {
 import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { assetClassLabel, defaultLtvForAssetType } from '../../lib/collateralMath';
 import { UI } from '../../lib/uiClasses';
+import { useWork } from '../../context/WorkContext';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
-import { AdaptiveTable } from '../AdaptiveTable';
+import { AdaptiveTable, type AdaptiveColumn } from '../AdaptiveTable';
 
 type FilterType = 'ALL' | ControlType;
 type FilterStatus = 'pending' | 'overdue' | 'done' | 'ALL';
 
 export const PostLoanControlView: React.FC = () => {
+
+  const { selectedCustomerId, setSelectedCustomerId } = useWork();
 
   const [contracts, setContracts] = useState<LoanContract[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
@@ -81,15 +84,33 @@ export const PostLoanControlView: React.FC = () => {
     return mergeControlRecords(schedule, records);
   }, [contracts, collaterals, records, collateralIntervalMonths]);
 
-  const summary = useMemo(() => summarizeWithRecords(items), [items]);
+  const scopedItems = useMemo(
+    () => selectedCustomerId ? items.filter(it => it.customerId === selectedCustomerId) : items,
+    [items, selectedCustomerId]
+  );
 
-  const filtered = useMemo(() => items.filter(it => {
+  const summary = useMemo(() => summarizeWithRecords(scopedItems), [scopedItems]);
+  const portfolioOverdue = useMemo(() => summarizeWithRecords(items).overdue, [items]);
+
+  const customerOptions = useMemo(() => {
+    const counts = new Map<number, number>();
+    items.forEach(it => counts.set(it.customerId, (counts.get(it.customerId) || 0) + 1));
+    return customers
+      .filter(c => counts.has(c.Id) || c.Id === selectedCustomerId)
+      .map(c => ({
+        id: c.Id,
+        label: `${c.FullName} — CIF ${c.CifKh || '—'} (${counts.get(c.Id) || 0} đợt)`,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+  }, [items, customers, selectedCustomerId]);
+
+  const filtered = useMemo(() => scopedItems.filter(it => {
     if (filterType !== 'ALL' && it.type !== filterType) return false;
     if (filterStatus === 'pending') return it.status !== 'done';
     if (filterStatus === 'overdue') return it.status === 'overdue';
     if (filterStatus === 'done') return it.status === 'done';
     return true;
-  }), [items, filterType, filterStatus]);
+  }), [scopedItems, filterType, filterStatus]);
 
   const customerName = (id: number) =>
     customers.find(c => c.Id === id)?.FullName || `KH #${id}`;
@@ -199,6 +220,30 @@ export const PostLoanControlView: React.FC = () => {
     return `TSĐB ${it.assetCode}`;
   };
 
+  const allColumns: AdaptiveColumn<ControlItemWithRecord>[] = [
+    { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: it => (
+      <>
+        <div className="font-bold">{customerName(it.customerId)}</div>
+        <div className="text-[10px] font-mono text-accent">
+          {customerCif(it.customerId) && `CIF: ${customerCif(it.customerId)}`}
+        </div>
+      </>
+    ) },
+    { key: 'loai', label: 'Loại kiểm tra', priority: 1,
+      render: it => <span className="text-accent font-semibold">{CONTROL_TYPE_LABEL[it.type]}</span> },
+    { key: 'phamVi', label: 'Phạm vi', priority: 2,
+      render: it => <span className="font-mono text-[11px]">{scopeOf(it)}</span> },
+    { key: 'ky', label: 'Kỳ', priority: 2, align: 'center',
+      render: it => <span className="font-mono">{it.periodIndex}</span> },
+    { key: 'denHan', label: 'Ngày đến hạn', priority: 1, align: 'center',
+      render: it => <span className="font-mono">{fmtDate(it.dueDate)}</span> },
+    { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: it => statusBadge(it) },
+    { key: 'thucHien', label: 'Ngày thực hiện', priority: 2, align: 'center',
+      render: it => <span className="font-mono text-ink-faint">{it.record ? fmtDate(it.record.PerformedDate) : '—'}</span> },
+  ];
+
+  const columns = selectedCustomerId ? allColumns.filter(col => col.key !== 'kh') : allColumns;
+
   const cardBg = UI.containerCardBg;
   const inputStyle = UI.inputStyle;
 
@@ -216,6 +261,36 @@ export const PostLoanControlView: React.FC = () => {
           Kiểm tra sau vay: 3 tháng một lần, gộp theo HĐTD ·
           Hiện trạng tài sản: {collateralIntervalMonths} tháng một lần kể từ ngày định giá
         </p>
+      </div>
+
+      <div className={`${cardBg} rounded-lg p-3 border`}>
+        <label className={`block mb-1 ${UI.labelStyle}`}>
+          Khách hàng ({customerOptions.length} KH có đợt kiểm soát)
+        </label>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedCustomerId ?? ''}
+            onChange={e => setSelectedCustomerId(e.target.value ? parseInt(e.target.value, 10) : null)}
+            className={`flex-1 rounded-md p-2.5 text-xs font-semibold border ${inputStyle}`}
+          >
+            <option value="">— Tất cả khách hàng —</option>
+            {customerOptions.map(o => (
+              <option key={o.id} value={o.id}>{o.label}</option>
+            ))}
+          </select>
+          {selectedCustomerId && (
+            <button type="button" onClick={() => setSelectedCustomerId(null)}
+              className="px-2.5 py-2 rounded-md border text-[11px] font-semibold border-line text-ink-muted hover:bg-panel-muted shrink-0">
+              Bỏ chọn
+            </button>
+          )}
+        </div>
+        {selectedCustomerId && portfolioOverdue > summary.overdue && (
+          <div className="mt-1.5 text-[10px] text-ink-faint">
+            Toàn danh mục còn <strong className="text-neg">{portfolioOverdue}</strong> đợt quá hạn —
+            bỏ chọn khách hàng để xem hết.
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -288,7 +363,10 @@ export const PostLoanControlView: React.FC = () => {
 
       <div className={`${cardBg} rounded-lg border overflow-hidden`}>
         <div className={`p-3 border-b flex items-center justify-between ${'bg-panel-muted border-line'}`}>
-          <span className="font-bold text-xs">DANH SÁCH ĐỢT KIỂM SOÁT ({filtered.length})</span>
+          <span className="font-bold text-xs">
+            DANH SÁCH ĐỢT KIỂM SOÁT ({filtered.length})
+            {selectedCustomerId && ` · ${customerName(selectedCustomerId)}`}
+          </span>
           <span className="text-[11px] text-ink-faint">Nhấp "Ghi nhận" để lưu kết quả kiểm tra</span>
         </div>
 
@@ -311,27 +389,7 @@ export const PostLoanControlView: React.FC = () => {
                   {it.record ? 'Xem / Sửa' : 'Ghi nhận'}
                 </button>
               )}
-              columns={[
-          { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: it => (
-                  <>
-                    <div className="font-bold">{customerName(it.customerId)}</div>
-                    <div className="text-[10px] font-mono text-accent">
-                      {customerCif(it.customerId) && `CIF: ${customerCif(it.customerId)}`}
-                    </div>
-                  </>
-                ) },
-          { key: 'loai', label: 'Loại kiểm tra', priority: 1,
-                  render: it => <span className="text-accent font-semibold">{CONTROL_TYPE_LABEL[it.type]}</span> },
-          { key: 'phamVi', label: 'Phạm vi', priority: 2,
-                  render: it => <span className="font-mono text-[11px]">{scopeOf(it)}</span> },
-          { key: 'ky', label: 'Kỳ', priority: 2, align: 'center',
-                  render: it => <span className="font-mono">{it.periodIndex}</span> },
-          { key: 'denHan', label: 'Ngày đến hạn', priority: 1, align: 'center',
-                  render: it => <span className="font-mono">{fmtDate(it.dueDate)}</span> },
-          { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: it => statusBadge(it) },
-          { key: 'thucHien', label: 'Ngày thực hiện', priority: 2, align: 'center',
-                  render: it => <span className="font-mono text-ink-faint">{it.record ? fmtDate(it.record.PerformedDate) : '—'}</span> },
-        ]}
+              columns={columns}
             />
             {filtered.length > 300 && (
               <div className="p-3 text-center text-[11px] text-ink-faint border-t border-line">

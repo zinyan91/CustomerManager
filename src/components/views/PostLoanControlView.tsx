@@ -299,6 +299,7 @@ export const PostLoanControlView: React.FC = () => {
         ) : (
           <div className="overflow-x-auto">
             <AdaptiveTable
+              maxHeight="620px"
               rows={filtered.slice(0, 300)}
               rowKey={it => it.key}
               emptyText="Không có đợt kiểm soát nào theo bộ lọc hiện tại."

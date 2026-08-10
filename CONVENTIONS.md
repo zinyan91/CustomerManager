@@ -715,11 +715,27 @@ Phần **giá trị** thì ngược lại — bảy lỗi công thức ở trên
 
 **Kiểu ô cũng phải khớp.** Cột STT của `TINH HINH TAI CHINH` và `CapHanMucTinDung` là **số** trong bản gốc, còn của `KET QUA KINH DOANH` là **chữ** (`a`, `b1`…). Mọi ô tiền và tỷ lệ là số thật để Excel tính tiếp được, không phải chuỗi đã định dạng.
 
+**Định dạng cũng là một phần của bản gốc**, không phải trang trí:
+
+| Thứ | Bản gốc |
+| :--- | :--- |
+| Phông | Times New Roman 11 |
+| Khung | Kẻ toàn bộ ô, kể cả ô rỗng — bảng không được thủng |
+| Dòng tiêu đề | In đậm, canh giữa, xuống dòng, nền `DCE6F1` |
+| Dòng tổng | In đậm cả nhãn lẫn số |
+| Dòng con | In nghiêng |
+| Số | `#,##0` cho tiền, `0%` cho tăng/giảm, `#,##0.0` cho vòng quay |
+| Cột | Độ rộng riêng từng cột; cột "Cơ sở xác định" rộng 62 và bật xuống dòng |
+
+Xuất số thô không định dạng thì banker mở ra thấy `908000000` thay vì `908,000,000` — đọc không nổi và khác hẳn tờ họ quen dùng.
+
 ### Xuất ra .xlsx thật, không phải HTML đội lốt Excel
 
 `downloadXls` của dự án ghi HTML rồi đặt tên `.xls`. Excel mở được nhưng **luôn cảnh báo** *"The file format and extension don't match"*, và đổi đuôi thành `.xlsx` chỉ làm hỏng nặng hơn vì `.xlsx` là một tệp ZIP.
 
-`src/lib/xlsxWriter.ts` sinh **tệp OOXML thật**: ZIP dạng store kèm CRC32 tự tính, năm thành phần bắt buộc (`[Content_Types].xml`, `_rels/.rels`, `xl/workbook.xml`, `xl/_rels/workbook.xml.rels`, `xl/worksheets/sheet1.xml`), chuỗi ghi nội tuyến. Không thêm thư viện ngoài — cùng lý lẽ với việc không nhúng thư viện PDF ở §8.
+`src/lib/xlsxWriter.ts` sinh **tệp OOXML thật**: ZIP dạng store kèm CRC32 tự tính, sáu thành phần bắt buộc (`[Content_Types].xml`, `_rels/.rels`, `xl/workbook.xml`, `xl/_rels/workbook.xml.rels`, `xl/styles.xml`, `xl/worksheets/sheet1.xml`), chuỗi ghi nội tuyến. Không thêm thư viện ngoài — cùng lý lẽ với việc không nhúng thư viện PDF ở §8.
+
+`buildStyleSheet` gom kiểu theo khoá nên **mỗi kiểu chỉ đăng ký một lần**. Ba chỗ dễ sai khi sửa: mã định dạng số tuỳ biến phải bắt đầu từ **164** (dưới đó là mã dựng sẵn của Excel), hai ô tô nền đầu tiên trong `fills` là **chỗ dành riêng** của Excel (`none` và `gray125`) nên nền tự khai bắt đầu từ chỉ số 2, và `styles.xml` phải được khai ở **cả** `[Content_Types].xml` lẫn quan hệ của workbook — thiếu một chỗ là Excel đòi sửa file.
 
 Hai điểm bắt buộc khi sửa chỗ này:
 

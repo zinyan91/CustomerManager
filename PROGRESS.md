@@ -183,7 +183,8 @@ trong khi bảng gốc hiện chỉ còn 128. Trong hệ thống là một ngu�
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
 | ✅ | `businessPlan.ts` — toàn bộ công thức | 43 test. Hai kỳ đi qua **cùng một hàm** `computePeriod` nên không thể lệch công thức như file gốc |
-| ✅ | `xlsxWriter.ts` — sinh tệp .xlsx thật | ZIP dạng store + CRC32 tự tính, năm thành phần OOXML, chuỗi nội tuyến kèm `xml:space="preserve"`. Không thêm thư viện ngoài. 19 test, và kiểm chứng bằng cách cho **openpyxl** đọc lại tệp sinh ra. Thay cho HTML đội lốt Excel vốn luôn báo *"format and extension don't match"* |
+| ✅ | `xlsxWriter.ts` — sinh tệp .xlsx thật | ZIP dạng store + CRC32 tự tính, sáu thành phần OOXML kể cả `styles.xml`, chuỗi nội tuyến kèm `xml:space="preserve"`. Không thêm thư viện ngoài. 30 test, và kiểm chứng bằng cách cho **openpyxl** đọc lại tệp sinh ra. Thay cho HTML đội lốt Excel vốn luôn báo *"format and extension don't match"* |
+| ✅ | Định dạng phụ lục khớp bản gốc | Bản đầu xuất ra lưới trơn không khung, không dấu phân cách nghìn — khác hẳn tờ banker quen dùng. Nay có Times New Roman 11, kẻ khung toàn bộ, tiêu đề tô nền `DCE6F1` in đậm, dòng tổng đậm, dòng con nghiêng, `#,##0` · `0%` · `#,##0.0`, độ rộng riêng từng cột, cột "Cơ sở xác định" xuống dòng |
 | ✅ | `businessPlanExport.ts` — ba phụ lục | 27 test trên **mô hình dòng**, không trên chuỗi HTML. File xuất phải **trùng khít bản gốc** vì còn nạp ngược lên hệ thống: nguyên văn nhãn từng dòng (kể cả `b6` ghi "Chi phí khác" nhưng nạp khấu hao), nguyên văn tiêu đề cột (kể cả dấu cách cuối ở `"Tăng/giảm "`), không chèn dòng nào phía trên bảng. Đã phạm một lần và sửa lại trong ngày; test khoá toàn bộ danh sách nhãn |
 | ✅ | Migration 31 — `BusinessPlans` + `BusinessPlanDebts` | Chỉ lưu ô đầu vào. Đã chạy 09/08/2026, kiểm chứng RLS: mỗi bảng đúng một policy `ALL` |
 | ✅ | Tab **Phương án kinh doanh** | Hai chế độ, đơn vị nhập trđ/đồng đổi được, 4 test dựng màn hình |

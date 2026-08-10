@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildXlsx, zipStore, sheetXml, columnLetter, escapeXml, sanitizeSheetName, MIME_XLSX,
+  buildStyleSheet, styleKey, BASE_FONT,
 } from '../xlsxWriter';
 
 const enc = new TextEncoder();
@@ -116,6 +117,75 @@ describe('zipStore', () => {
   });
 });
 
+describe('buildStyleSheet', () => {
+  const rows = [
+    [{ value: 'STT', style: { bold: true, align: 'center' as const, fill: 'DCE6F1' } }],
+    [{ value: 1, numeric: true, style: { numFmt: '#,##0', align: 'right' as const } }],
+    [{ value: 'con', style: { italic: true } }],
+    [{ value: 'dai', style: { wrap: true } }],
+  ];
+  const st = buildStyleSheet(rows);
+
+  it('mọi ô có định dạng đều được kẻ khung', () => {
+    expect(st.xml).toContain('<border><left style="thin">');
+    expect(st.xml).toContain('applyBorder="1"');
+  });
+
+  it('dùng phông chữ chuẩn cho hồ sơ tín dụng', () => {
+    expect(st.xml).toContain(`<name val="${BASE_FONT}"/>`);
+    expect(BASE_FONT).toBe('Times New Roman');
+  });
+
+  it('đăng ký định dạng số tuỳ biến bắt đầu từ mã 164', () => {
+    expect(st.xml).toContain('<numFmt numFmtId="164" formatCode="#,##0"/>');
+  });
+
+  it('có in đậm, in nghiêng và nền tô cho dòng tiêu đề', () => {
+    expect(st.xml).toContain('<b/>');
+    expect(st.xml).toContain('<i/>');
+    expect(st.xml).toContain('<fgColor rgb="FFDCE6F1"/>');
+  });
+
+  it('ô không khai định dạng thì dùng kiểu mặc định số 0', () => {
+    expect(st.indexFor(undefined)).toBe(0);
+    expect(st.indexFor({})).toBe(0);
+  });
+
+  it('cùng một kiểu chỉ đăng ký một lần', () => {
+    const trung = buildStyleSheet([
+      [{ value: 'a', style: { bold: true } }, { value: 'b', style: { bold: true } }],
+    ]);
+    expect(trung.xml).toContain('<cellXfs count="2">');
+  });
+
+  it('khoá kiểu phân biệt được từng thuộc tính', () => {
+    expect(styleKey({ bold: true })).not.toBe(styleKey({ italic: true }));
+    expect(styleKey({ numFmt: '#,##0' })).not.toBe(styleKey({ numFmt: '0%' }));
+    expect(styleKey(undefined)).toBe('');
+  });
+});
+
+describe('sheetXml với định dạng', () => {
+  it('ghi độ rộng từng cột trước phần dữ liệu', () => {
+    const xml = sheetXml({ name: 'S', rows: [[{ value: 'a' }]], colWidths: [5, 30] });
+    expect(xml).toContain('<col min="1" max="1" width="5" customWidth="1"/>');
+    expect(xml).toContain('<col min="2" max="2" width="30" customWidth="1"/>');
+    expect(xml.indexOf('<cols>')).toBeLessThan(xml.indexOf('<sheetData>'));
+  });
+
+  it('gắn chỉ số kiểu vào từng ô', () => {
+    const rows = [[{ value: 'a', style: { bold: true } }]];
+    const st = buildStyleSheet(rows);
+    expect(sheetXml({ name: 'S', rows }, st.indexFor)).toContain('s="1"');
+  });
+
+  it('ô rỗng vẫn giữ khung khi có kiểu, để bảng không thủng', () => {
+    const rows = [[{ value: '', style: { bold: false, align: 'left' as const } }]];
+    const st = buildStyleSheet(rows);
+    expect(sheetXml({ name: 'S', rows }, st.indexFor)).toContain('<c r="A1" s="1"/>');
+  });
+});
+
 describe('buildXlsx', () => {
   const bytes = buildXlsx({
     name: 'KET QUA KINH DOANH',
@@ -127,11 +197,17 @@ describe('buildXlsx', () => {
     expect(readUint32(bytes, bytes.length - 22)).toBe(0x06054b50);
   });
 
-  it('chứa đủ năm thành phần bắt buộc của một workbook', () => {
+  it('chứa đủ sáu thành phần bắt buộc của một workbook có định dạng', () => {
     const text = dec.decode(bytes);
     ['[Content_Types].xml', '_rels/.rels', 'xl/workbook.xml',
-      'xl/_rels/workbook.xml.rels', 'xl/worksheets/sheet1.xml']
+      'xl/_rels/workbook.xml.rels', 'xl/styles.xml', 'xl/worksheets/sheet1.xml']
       .forEach(part => expect(text).toContain(part));
+  });
+
+  it('khai báo styles.xml ở cả bảng kiểu nội dung lẫn quan hệ workbook', () => {
+    const text = dec.decode(bytes);
+    expect(text).toContain('spreadsheetml.styles+xml');
+    expect(text).toContain('relationships/styles');
   });
 
   it('khai đúng kiểu nội dung của workbook', () => {

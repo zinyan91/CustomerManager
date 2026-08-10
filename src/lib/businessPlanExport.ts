@@ -7,6 +7,8 @@ export interface ExportCell {
   text: string;
   align?: CellAlign;
   bold?: boolean;
+  italic?: boolean;
+  wrap?: boolean;
   numFormat?: string;
   numeric?: boolean;
 }
@@ -17,7 +19,10 @@ export interface ExportSheet {
   fileBase: string;
   header: string[];
   rows: ExportRow[];
+  colWidths: number[];
 }
+
+export const HEADER_FILL = 'DCE6F1';
 
 export interface ExportContext {
   customerCif: string;
@@ -40,12 +45,20 @@ function text(value: string, align: CellAlign = 'left'): ExportCell {
   return { text: value, align };
 }
 
+function sub(value: string): ExportCell {
+  return { text: value, align: 'left', italic: true };
+}
+
 function label(value: string): ExportCell {
   return { text: value, align: 'left', bold: true };
 }
 
 function stt(value: number): ExportCell {
   return { text: String(value), align: 'center', numeric: true };
+}
+
+function wrapped(value: string): ExportCell {
+  return { text: value, align: 'left', wrap: true };
 }
 
 function money(value: number, bold = false): ExportCell {
@@ -101,25 +114,26 @@ export function buildFinancialPositionSheet(
   return {
     fileBase: 'TINH HINH TAI CHINH',
     header: ['STT', 'Tài sản', at, 'Nguồn vốn', at],
+    colWidths: [5, 30, 24, 26, 24],
     rows: [
       [stt(1), label('Tài sản ngắn hạn'), money(b.currentAssets, true),
         label('Nợ phải trả'), money(b.totalLiabilities, true)],
-      [stt(2), text('Tiền, tương đương tiền'), money(s.cash),
-        text('Nợ ngắn hạn'), money(s.shortTermDebt)],
-      [stt(3), text('Hàng tồn kho'), money(s.inventory),
-        text('…'), money(s.otherShortTermDebt)],
-      [stt(4), text('Các khoản phải thu'), money(s.receivables),
-        text('Nợ dài hạn'), money(s.longTermDebt)],
-      [stt(5), text('Tài sản ngắn hạn khác'), money(s.otherCurrentAssets),
-        text('…'), money(s.otherLongTermDebt)],
+      [stt(2), sub('Tiền, tương đương tiền'), money(s.cash),
+        sub('Nợ ngắn hạn'), money(s.shortTermDebt)],
+      [stt(3), sub('Hàng tồn kho'), money(s.inventory),
+        sub('…'), money(s.otherShortTermDebt)],
+      [stt(4), sub('Các khoản phải thu'), money(s.receivables),
+        sub('Nợ dài hạn'), money(s.longTermDebt)],
+      [stt(5), sub('Tài sản ngắn hạn khác'), money(s.otherCurrentAssets),
+        sub('…'), money(s.otherLongTermDebt)],
       [stt(6), label('Tài sản dài hạn'), money(b.longTermAssets, true),
         label('Vốn chủ sở hữu'), money(b.ownEquity, true)],
-      [stt(7), text('Các khoản phải thu dài hạn'), money(s.longTermReceivables),
-        text('Vốn góp'), money(0)],
-      [stt(8), text('Tài sản cố định'), money(s.fixedAssets),
-        text('Nguồn kinh phí & quỹ khác'), money(0)],
-      [stt(9), text('Tài sản dài hạn khác'), money(s.otherLongTermAssets),
-        text('…'), money(0)],
+      [stt(7), sub('Các khoản phải thu dài hạn'), money(s.longTermReceivables),
+        sub('Vốn góp'), money(0)],
+      [stt(8), sub('Tài sản cố định'), money(s.fixedAssets),
+        sub('Nguồn kinh phí & quỹ khác'), money(0)],
+      [stt(9), sub('Tài sản dài hạn khác'), money(s.otherLongTermAssets),
+        sub('…'), money(0)],
       [stt(10), label('Tổng tài sản'), money(b.totalAssets, true),
         label('Tổng nguồn vốn'), money(b.totalCapital, true)],
     ],
@@ -133,41 +147,47 @@ export function buildIncomeStatementSheet(r: BusinessPlanResult, ctx: ExportCont
   const rev = p.revenueAnnual;
 
   const line = (
-    stt: string, name: string, monthly: number, annual: number, basis: string, bold = false
-  ): ExportRow => [
-    text(stt, 'center'),
-    bold ? label(name) : text(name),
-    money(monthly, bold),
-    money(annual, bold),
-    text(basis),
-  ];
+    ky: string, name: string, monthly: number, annual: number, basis: string,
+    kieu: 'thuong' | 'dam' | 'nghieng' = 'thuong'
+  ): ExportRow => {
+    const bold = kieu === 'dam';
+    const italic = kieu === 'nghieng';
+    return [
+      { text: ky, align: 'center', italic },
+      bold ? label(name) : italic ? sub(name) : text(name),
+      money(monthly, bold),
+      money(annual, bold),
+      wrapped(basis),
+    ];
+  };
 
   return {
     fileBase: 'KET QUA KINH DOANH',
     header: ['STT', 'Chỉ tiêu', 'Giá trị hàng tháng', 'Giá trị hàng năm', 'Cơ sở xác định'],
+    colWidths: [5, 32, 18, 18, 62],
     rows: [
-      line('a', 'Doanh thu', m.revenue, rev, basisOr(ctx, 'revenue', ''), true),
+      line('a', 'Doanh thu', m.revenue, rev, basisOr(ctx, 'revenue', '')),
       line('b', 'Tổng chi phí', m.costs.total, c.total,
-        basisOr(ctx, 'cogs', shareOfRevenueText(c.total, rev)), true),
+        basisOr(ctx, 'cogs', shareOfRevenueText(c.total, rev)), 'dam'),
       line('b1', 'Chi phí 1: Chi phí giá vốn', m.costs.cogs, c.cogs,
-        shareOfRevenueText(c.cogs, rev)),
+        shareOfRevenueText(c.cogs, rev), 'nghieng'),
       line('b2', 'Chi phí 2: Chi phí nhân công', m.costs.staff, c.staff,
-        basisOr(ctx, 'staff', '')),
+        basisOr(ctx, 'staff', ''), 'nghieng'),
       line('b3', 'Chi phí 3: Chi phí thuê mặt bằng', m.costs.premises, c.premises,
-        basisOr(ctx, 'premises', '')),
+        basisOr(ctx, 'premises', ''), 'nghieng'),
       line('b4', 'Chi phí 4: Chi phí điện nước', m.costs.utilities, c.utilities,
-        basisOr(ctx, 'utilities', '')),
+        basisOr(ctx, 'utilities', ''), 'nghieng'),
       line('b5', 'Chi phí 5: Chi phí lãi vay', m.costs.interest, c.interest,
-        basisOr(ctx, 'interest', shareOfRevenueText(c.interest, rev))),
+        basisOr(ctx, 'interest', shareOfRevenueText(c.interest, rev)), 'nghieng'),
       line('b6', 'Chi phí 6: Chi phí khác', m.costs.depreciation, c.depreciation,
-        basisOr(ctx, 'depreciation', shareOfRevenueText(c.depreciation, rev))),
+        basisOr(ctx, 'depreciation', shareOfRevenueText(c.depreciation, rev)), 'nghieng'),
       line('b7', 'Chi phí 7:…', m.costs.other, c.other,
-        basisOr(ctx, 'other', shareOfRevenueText(c.other, rev))),
+        basisOr(ctx, 'other', shareOfRevenueText(c.other, rev)), 'nghieng'),
       line('c', 'Lợi nhuận', m.profitBeforeTax, p.profitBeforeTax,
-        basisOr(ctx, 'profit', shareOfRevenueText(p.profitBeforeTax, rev)), true),
+        basisOr(ctx, 'profit', shareOfRevenueText(p.profitBeforeTax, rev)), 'dam'),
       line('d', 'Thuế (nếu có)', m.tax, p.tax, basisOr(ctx, 'tax', '')),
       line('e', 'Lợi nhuận sau thuế', m.profitAfterTax, p.profitAfterTax,
-        shareOfRevenueText(p.profitAfterTax, rev), true),
+        shareOfRevenueText(p.profitAfterTax, rev), 'dam'),
     ],
   };
 }
@@ -186,19 +206,22 @@ export function buildCreditLimitSheet(r: BusinessPlanResult, ctx: ExportContext)
   const lp = r.limit.plan;
 
   const row = (
-    so: number, name: string, unit: string, actual: number, plan: number, showChange = true
+    so: number, name: string, unit: string, actual: number, plan: number,
+    showChange = true, bold = false
   ): ExportRow => [
-    stt(so), text(name), text(unit, 'center'),
-    millions(actual), millions(plan),
+    stt(so), bold ? label(name) : text(name), text(unit, 'center'),
+    millions(actual, bold), millions(plan, bold),
     showChange ? percent(changeOf(actual, plan)) : text(''),
   ];
 
   const group = (ky: string, name: string): ExportRow => [
-    text(ky, 'center'), label(name), text(''), text(''), text(''), text(''),
+    { text: ky, align: 'center', bold: true }, label(name),
+    text(''), text(''), text(''), text(''),
   ];
 
   return {
     fileBase: 'CapHanMucTinDung',
+    colWidths: [5, 46, 7, 20, 20, 12],
     header: ['STT', 'Khoảng mục', 'Đvt',
       `Kỳ thực hiện năm ${ctx.actualYear}`, `Năm kế hoạch ${ctx.planYear}`, 'Tăng/giảm\u00a0'],
     rows: [
@@ -216,8 +239,8 @@ export function buildCreditLimitSheet(r: BusinessPlanResult, ctx: ExportContext)
       [stt(2), text('Vòng quay vốn lưu động (c2 = b1 / b7)'), text('vòng', 'center'),
         ratio(la.turnover), ratio(lp.turnover), text('')],
       row(3, 'Nhu cầu vốn lưu động bình quân 1 vòng (c3 = c1/c2)', 'trđ',
-        la.avgWorkingCapitalNeed, lp.avgWorkingCapitalNeed, false),
-      row(4, 'Đề nghị cấp HMTD tại Vietbank', 'trđ', la.requested, lp.requested, false),
+        la.avgWorkingCapitalNeed, lp.avgWorkingCapitalNeed, false, true),
+      row(4, 'Đề nghị cấp HMTD tại Vietbank', 'trđ', la.requested, lp.requested, false, true),
     ],
   };
 }
@@ -236,11 +259,26 @@ export function buildBusinessPlanSheets(
 export function sheetToXlsxModel(sheet: ExportSheet): XlsxSheet {
   return {
     name: sheet.fileBase,
+    colWidths: sheet.colWidths,
     rows: [
-      sheet.header.map(h => ({ value: h })),
+      sheet.header.map(h => ({
+        value: h,
+        style: {
+          bold: true, align: 'center' as const, vAlign: 'center' as const,
+          wrap: true, fill: HEADER_FILL,
+        },
+      })),
       ...sheet.rows.map(row => row.map(cell => ({
         value: cell.numeric ? Number(cell.text) : cell.text,
         numeric: cell.numeric,
+        style: {
+          bold: cell.bold,
+          italic: cell.italic,
+          align: cell.align,
+          vAlign: 'center' as const,
+          wrap: cell.wrap,
+          numFmt: cell.numFormat,
+        },
       }))),
     ],
   };

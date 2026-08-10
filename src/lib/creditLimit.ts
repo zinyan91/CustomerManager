@@ -1,7 +1,7 @@
 import type { LoanContract, Collateral, CreditCard } from '../types';
 import { getMasterHdtdNumber, toIsoDate } from './utils';
 import {
-  usableCapacity, appraisalStatus, appraisalExpiryDate, cardProductCap, isAppraisalUsable,
+  totalUsableCapacity, appraisalStatus, appraisalExpiryDate, cardProductCap, isAppraisalUsable,
 } from './collateralMath';
 import { isRevolvingCredit } from './loanProductRules';
 
@@ -348,7 +348,7 @@ export function checkCollateralCapacity(
   const result: CollateralCapacityCheck[] = [];
   for (const cluster of clusters.values()) {
     const cols = Array.from(cluster.colIds).map(id => collateralById.get(id)!);
-    const capacity = cols.reduce((sum, col) => sum + usableCapacity(col, todayStr), 0);
+    const capacity = totalUsableCapacity(cols, todayStr);
     const expiredAppraisals = cols
       .filter(col => appraisalStatus(col, todayStr) === 'expired' || appraisalStatus(col, todayStr) === 'missing')
       .map(col => ({
@@ -428,9 +428,7 @@ export function checkCardLimit(
 
   const clusterCapacity = cluster
     ? cluster.capacity
-    : collaterals
-        .filter(c => c.Id === collateral.Id)
-        .reduce((s, c) => s + usableCapacity(c, todayStr), 0);
+    : totalUsableCapacity(collaterals.filter(c => c.Id === collateral.Id), todayStr);
   const clusterUsed = cluster ? cluster.granted : 0;
   const clusterHeadroom = Math.max(0, clusterCapacity - clusterUsed);
 

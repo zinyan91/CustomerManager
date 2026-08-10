@@ -101,6 +101,8 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Quy tắc sản phẩm theo phương thức vay | Mục đích, kỳ hạn, ân hạn gốc |
 | ✅ | Đồng bộ nhãn xếp loại TSĐB | Loại 1–4 và Hạn chế, bỏ tiền tố BĐS và phần trăm trong ngoặc, dùng chung ở Dashboard, bảng TSĐB, thẻ tín dụng |
 | ✅ | Phân hệ Kiểm soát sau vay | Ba loại kiểm tra, lịch sinh tự động, ghi nhận kết quả, định giá lại ngay trong đợt kiểm tra hiện trạng tài sản. 29 test cho phần lõi |
+| ✅ | Lọc đợt kiểm soát sau vay theo khách hàng | Dùng chung `selectedCustomerId` của `WorkContext`, mặc định tất cả. Vẫn nhắc số đợt quá hạn toàn danh mục khi đang lọc để không mất khả năng giám sát |
+| ✅ | Phân hệ Phương án kinh doanh & Hạn mức | Thay bộ bốn file Excel của banker. Hai chế độ: cấp hạn mức (xuất 3 phụ lục) và cho vay từng lần (xuất 2). Bảng `BusinessPlans` + `BusinessPlanDebts` (migration 31), 43 test lõi + 24 test phụ lục + 4 test dựng màn hình. Xem mục ngày 09/08/2026 |
 | 🕐 | Màn hình quản trị người dùng | Bỏ qua theo quyết định 05/08/2026: chưa cần cấp tài khoản cho người dùng khác. Khi làm thì **bắt buộc qua Edge Function** — không đưa `service_role` key vào frontend |
 
 ## Kỹ thuật
@@ -117,6 +119,64 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ⬜ | Đồng bộ realtime, bộ nhớ đệm client | Có trong kế hoạch ban đầu, chưa làm |
 | ⬜ | Tên miền riêng | |
 
+
+## Ngày 09/08/2026
+
+### Phương án kinh doanh & Hạn mức — thay bộ bốn file Excel
+
+Banker đang dùng `BẢNG TÍNH HM.xlsx` làm bảng làm việc và ba file `TINH HINH TAI CHINH`,
+`KET QUA KINH DOANH`, `CapHanMucTinDung` làm phụ lục — nhưng ba phụ lục chỉ là **liên kết
+ngoài** trỏ về bảng gốc, và đã trôi khỏi nhau: phụ lục KQKD giữ doanh thu 908 trđ/tháng
+trong khi bảng gốc hiện chỉ còn 128. Trong hệ thống là một nguồn dữ liệu, ba bản in.
+
+Đối tượng là **khách hàng cá nhân và hộ kinh doanh**, không phải doanh nghiệp.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | `businessPlan.ts` — toàn bộ công thức | 43 test. Hai kỳ đi qua **cùng một hàm** `computePeriod` nên không thể lệch công thức như file gốc |
+| ✅ | `businessPlanExport.ts` — ba phụ lục | 24 test trên **mô hình dòng**, không trên chuỗi HTML. Giữ đúng số cột, thứ tự STT chữ (`a`, `b`, `b1`…`b7`, `c`, `d`, `e`) và các dòng `…` bỏ trống của bản gốc |
+| ✅ | Migration 31 — `BusinessPlans` + `BusinessPlanDebts` | Chỉ lưu ô đầu vào. Đã chạy 09/08/2026, kiểm chứng RLS: mỗi bảng đúng một policy `ALL` |
+| ✅ | Tab **Phương án kinh doanh** | Hai chế độ, đơn vị nhập trđ/đồng đổi được, 4 test dựng màn hình |
+| ✅ | Rút `totalUsableCapacity` về `collateralMath.ts` | Đã có 4 chỗ cùng `reduce(usableCapacity)`; gom trước khi thêm chỗ thứ năm |
+
+**Bốn quyết định đã chốt:** vay từng lần lấy `min` của ba giới hạn · lưu vào CSDL gắn khách
+hàng · sửa hết lỗi công thức của file Excel · doanh thu là đầu vào, vòng quay là kết quả.
+
+**Bảy lỗi của file Excel gốc, đã sửa trong hệ thống:**
+
+| # | Lỗi trong file | Cách xử lý |
+| :--- | :--- | :--- |
+| 1 | `D27 = D18+D23+F24` cộng **Vốn góp** (một khoản mục nguồn vốn) vào Tổng tài sản. Không lộ ra vì vốn chủ sở hữu là số dư nên hai vế vẫn cân | Bỏ hẳn Vốn góp khỏi đầu vào. Phụ lục vẫn in dòng đó, giá trị 0 |
+| 2 | Lãi vay có **hai con số không khớp**: `D6` = 48 trđ tính từ bảng dư nợ, còn dòng lãi vay trong bảng chi phí để 0 nhập tay | Bảng `BusinessPlanDebts` là nguồn duy nhất |
+| 3 | LNTT hai kỳ **hai công thức khác nhau**: `E7 = E3-E4-E5-E6-J19-J21` bỏ sót chi phí mặt bằng và chi phí khác | Hai kỳ dùng chung `computePeriod`, có test khoá |
+| 4 | `D3 = D10*3,4` rồi `D13 = D3/D10 = 3,4` — vòng quay là giả định gõ tay chạy ngược, không phải kết quả | Doanh thu là đầu vào, vòng quay tính ra |
+| 5 | Lãi suất 8%/năm nhúng cứng trong `*8/100/12` | Lãi suất theo từng khoản vay |
+| 6 | `ROUNDUP(.../12,0)` làm tròn lên tới hàng triệu ở từng dòng rồi lấy số đã tròn đi tính tỷ trọng và nhân ngược ×12 | Tính trên số gốc, chỉ làm tròn khi hiển thị |
+| 7 | `SUM(C4:C8)` của phụ lục KQKD cộng thiếu dòng chi phí cuối | Tổng gộp đủ bảy dòng, có test |
+
+**Một tính chất phát hiện khi viết test:** `Tổng nhu cầu vốn bằng tiền` **không phụ thuộc lãi
+vay**. Rút gọn `c1 = DTT − KH − LV − LNTT` ra đúng `giá vốn + nhân công + mặt bằng + điện
+nước + chi phí khác` — tức các khoản chi bằng tiền, đúng như tên gọi. Hệ quả: lỗi #2 làm sai
+lợi nhuận trình lên nhưng **không** làm sai hạn mức. Đã khoá bằng test để không ai "sửa" `c1`
+thành phụ thuộc lãi vay.
+
+**Thêm cho khách hàng cá nhân, bảng Excel gốc không có:** khối thu chi hộ gia đình (thu nhập
+ngoài kinh doanh, chi phí sinh hoạt, nghĩa vụ nợ đang trả, trần DTI). Nguồn trả nợ =
+`(LNST + khấu hao)/12 + thu nhập khác − chi phí sinh hoạt`, đưa qua `dtiMaxMonthlyPayment` rồi
+quy ra hạn mức bằng `pvAnnuityFactor` — cả hai hàm đã có sẵn, không viết bản thứ hai.
+
+`MaxDtiPercent = 0` nghĩa là **chưa khai**, và khi đó khả năng vay theo dòng tiền trả về 0 chứ
+không suy đoán. Trần mặc định 60% ở hằng số `DEFAULT_MAX_DTI_PERCENT`, form điền sẵn khi tạo mới.
+
+**Không có cột khả năng bảo đảm của TSĐB.** Con số đó tính bằng `totalUsableCapacity` từ chính
+tài sản của khách và tụt về 0 khi định giá hết hiệu lực; lưu lại là đóng băng một bản sao —
+đúng kiểu sai lầm mà ba phụ lục Excel đang mắc.
+
+Đã kiểm chứng trên trình duyệt thật 09/08/2026: tạo phương án cho LÊ NGỌC QUẾ HÂN, đối chiếu
+tay toàn bộ số (tổng chi phí 81 trđ/tháng, LNTT 19 trđ/tháng, nhu cầu vốn bằng tiền 852 trđ,
+vòng quay 2,7 vòng, nhu cầu một vòng 319,5 trđ), lưu xuống Supabase rồi nạp lại đúng số, đổi
+sang chế độ vay từng lần thấy khối "Số tiền cho vay" và nút xuất đổi thành 2 phụ lục. **Bản
+thử đã xoá khỏi cơ sở dữ liệu.**
 
 ## Ngày 07/08/2026
 

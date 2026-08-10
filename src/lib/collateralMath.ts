@@ -126,6 +126,13 @@ export function usableCapacity(c?: Collateral | null, todayStr?: string): number
   return isAppraisalUsable(c, todayStr) ? maxLoanFromCollateral(c) : 0;
 }
 
+export function totalUsableCapacity(
+  collaterals?: (Collateral | null | undefined)[] | null, todayStr?: string
+): number {
+  if (!collaterals) return 0;
+  return collaterals.reduce((sum, c) => sum + usableCapacity(c, todayStr), 0);
+}
+
 export function cardProductCap(c?: Collateral | null, todayStr?: string): number | null {
   if (!c || !isSavingsPassbook(c.AssetType)) return null;
   if (!isAppraisalUsable(c, todayStr)) return 0;

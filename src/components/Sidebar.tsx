@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings, Calculator, FileSignature, Target, Percent, Landmark, Handshake, X } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings, Calculator, FileSignature, Target, Percent, Landmark, Handshake, ClipboardList, X } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
 import type { TranslationKey } from '../lib/i18n';
 
@@ -34,6 +34,7 @@ const menuGroups: {
     groupKey: 'nav.groupTools',
     items: [
       { id: 'calculators', labelKey: 'nav.calculators', icon: Calculator },
+      { id: 'business-plan', labelKey: 'nav.businessPlan', icon: ClipboardList },
       { id: 'mdsdv', labelKey: 'nav.mdsdv', icon: Target },
       { id: 'rate-quote', labelKey: 'nav.rateQuote', icon: Percent },
       { id: 'cof', labelKey: 'nav.cof', icon: Landmark },

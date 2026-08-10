@@ -1,0 +1,204 @@
+import { describe, it, expect } from 'vitest';
+import { computeBusinessPlan, type BusinessPlanInput } from '../businessPlan';
+import {
+  buildBusinessPlanSheets, buildFinancialPositionSheet, buildIncomeStatementSheet,
+  buildCreditLimitSheet, sheetToXlsHtml, shareOfRevenueText,
+  type ExportContext, type ExportSheet,
+} from '../businessPlanExport';
+
+const M = 1_000_000;
+
+const input: BusinessPlanInput = {
+  kind: 'limit',
+  balanceSheet: {
+    cash: 300 * M, inventory: 100 * M, receivables: 50 * M, otherCurrentAssets: 0,
+    longTermReceivables: 0, fixedAssets: 50 * M, otherLongTermAssets: 0,
+    shortTermDebt: 20 * M, otherShortTermDebt: 0, longTermDebt: 30 * M, otherLongTermDebt: 0,
+  },
+  actual: {
+    revenueAnnual: 1200 * M, cogsRatioPercent: 65, depreciationAnnual: 120 * M, taxAnnual: 0,
+    staffMonthly: 5 * M, premisesMonthly: 2 * M, utilitiesMonthly: 1 * M, otherMonthly: 1 * M,
+  },
+  plan: {
+    revenueAnnual: 1320 * M, cogsRatioPercent: 65, depreciationAnnual: 120 * M, taxAnnual: 0,
+    staffMonthly: 5 * M, premisesMonthly: 2 * M, utilitiesMonthly: 1 * M, otherMonthly: 1 * M,
+  },
+  debts: [
+    { label: 'VB_HM hiện hữu', principal: 600 * M, rateAnnualPercent: 8, scope: 'both' },
+    { label: 'VB_Cấp mới', principal: 400 * M, rateAnnualPercent: 8, scope: 'plan' },
+  ],
+  requestedLimitActual: 300 * M,
+  requestedLimitPlan: 300 * M,
+};
+
+const ctx: ExportContext = {
+  customerName: 'LÊ NGỌC QUẾ HÂN',
+  customerCif: '005236683',
+  balanceSheetDate: '2025-06-30',
+  actualYear: 2025,
+  planYear: 2026,
+};
+
+const result = computeBusinessPlan(input);
+
+function cell(sheet: ExportSheet, row: number, col: number) {
+  return sheet.rows[row][col];
+}
+
+describe('phụ lục tình hình tài chính', () => {
+  const sheet = buildFinancialPositionSheet(input, result, ctx);
+
+  it('giữ đúng năm cột và mười dòng của bản gốc', () => {
+    expect(sheet.header).toHaveLength(5);
+    expect(sheet.rows).toHaveLength(10);
+    sheet.rows.forEach(r => expect(r).toHaveLength(5));
+  });
+
+  it('nhãn cột giá trị ghi tháng/năm của bảng cân đối', () => {
+    expect(sheet.header[2]).toBe('Giá trị tại thời điểm: 06/2025');
+    expect(sheet.header[4]).toBe(sheet.header[2]);
+  });
+
+  it('giữ nguyên các dòng bỏ trống của bản gốc', () => {
+    expect(cell(sheet, 2, 3).text).toBe('…');
+    expect(cell(sheet, 4, 3).text).toBe('…');
+    expect(cell(sheet, 8, 3).text).toBe('…');
+  });
+
+  it('giữ hai dòng vốn góp và quỹ khác nhưng để 0 cho khách hàng cá nhân', () => {
+    expect(cell(sheet, 6, 3).text).toBe('Vốn góp');
+    expect(cell(sheet, 6, 4).text).toBe('0');
+    expect(cell(sheet, 7, 3).text).toBe('Nguồn kinh phí & quỹ khác');
+    expect(cell(sheet, 7, 4).text).toBe('0');
+  });
+
+  it('tổng tài sản không cộng vốn góp', () => {
+    expect(cell(sheet, 9, 2).text).toBe(String(500 * M));
+    expect(cell(sheet, 9, 4).text).toBe(String(500 * M));
+  });
+
+  it('xuất bằng đồng, không phải triệu đồng', () => {
+    expect(cell(sheet, 1, 2).text).toBe(String(300 * M));
+  });
+});
+
+describe('phụ lục kết quả kinh doanh', () => {
+  const sheet = buildIncomeStatementSheet(result, ctx);
+
+  it('giữ đúng năm cột và thứ tự dòng của bản gốc', () => {
+    expect(sheet.header).toEqual([
+      'STT', 'Chỉ tiêu', 'Giá trị hàng tháng', 'Giá trị hàng năm', 'Cơ sở xác định',
+    ]);
+    expect(sheet.rows.map(r => r[0].text)).toEqual([
+      'a', 'b', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'c', 'd', 'e',
+    ]);
+  });
+
+  it('tổng chi phí gộp đủ bảy dòng chi phí', () => {
+    const total = Number(cell(sheet, 1, 3).text);
+    const lines = [2, 3, 4, 5, 6, 7, 8].reduce((s, i) => s + Number(cell(sheet, i, 3).text), 0);
+    expect(total).toBe(lines);
+    expect(total).toBe(1056 * M);
+  });
+
+  it('khấu hao và chi phí khác nằm ở hai dòng riêng', () => {
+    expect(cell(sheet, 7, 1).text).toBe('Chi phí 6: Chi phí khấu hao');
+    expect(cell(sheet, 7, 3).text).toBe(String(120 * M));
+    expect(cell(sheet, 8, 1).text).toBe('Chi phí 7: Chi phí khác');
+    expect(cell(sheet, 8, 3).text).toBe(String(12 * M));
+  });
+
+  it('giá trị hàng tháng bằng đúng một phần mười hai giá trị năm', () => {
+    expect(Number(cell(sheet, 0, 2).text)).toBe(100 * M);
+    expect(Number(cell(sheet, 0, 3).text)).toBe(1200 * M);
+  });
+
+  it('cơ sở xác định do banker nhập đè lên diễn giải tự sinh', () => {
+    const withBasis = buildIncomeStatementSheet(result, {
+      ...ctx, basis: { staff: 'KH thuê 5 nhân viên, lương 5 trđ/người/tháng' },
+    });
+    expect(cell(withBasis, 3, 4).text).toBe('KH thuê 5 nhân viên, lương 5 trđ/người/tháng');
+  });
+
+  it('bỏ trống cơ sở xác định thì tự ghi tỷ trọng trên doanh thu', () => {
+    expect(cell(sheet, 6, 1).text).toBe('Chi phí 5: Chi phí lãi vay');
+    expect(cell(sheet, 6, 4).text).toBe(shareOfRevenueText(48 * M, 1200 * M));
+    expect(cell(sheet, 6, 4).text).toBe('Chiếm 4% doanh thu');
+  });
+});
+
+describe('phụ lục cấp hạn mức', () => {
+  const sheet = buildCreditLimitSheet(result, ctx);
+
+  it('giữ đúng sáu cột và nhãn năm của bản gốc', () => {
+    expect(sheet.header[3]).toBe('Kỳ thực hiện năm 2025');
+    expect(sheet.header[4]).toBe('Năm kế hoạch 2026');
+    expect(sheet.header[5]).toBe('Tăng/giảm');
+  });
+
+  it('có đủ hai nhóm b và c', () => {
+    expect(cell(sheet, 0, 1).text).toBe('Phương án kết quả kinh doanh');
+    expect(cell(sheet, 8, 1).text).toBe('Tính toán nhu cầu cấp tín dụng');
+    expect(sheet.rows).toHaveLength(13);
+  });
+
+  it('xuất bằng triệu đồng', () => {
+    expect(cell(sheet, 1, 3).text).toBe('1200');
+    expect(cell(sheet, 1, 4).text).toBe('1320');
+  });
+
+  it('cột tăng giảm là tỷ lệ so với kỳ thực hiện', () => {
+    expect(Number(cell(sheet, 1, 5).text)).toBeCloseTo(0.1, 6);
+  });
+
+  it('vòng quay giữ một chữ số thập phân', () => {
+    expect(cell(sheet, 10, 2).text).toBe('vòng');
+    expect(Number(cell(sheet, 10, 3).text)).toBeCloseTo(2.7, 6);
+  });
+
+  it('đề nghị cấp hạn mức lấy đúng số banker khai', () => {
+    expect(cell(sheet, 12, 1).text).toBe('Đề nghị cấp HMTD tại Vietbank');
+    expect(cell(sheet, 12, 3).text).toBe('300');
+  });
+});
+
+describe('bộ phụ lục theo loại hồ sơ', () => {
+  it('hồ sơ hạn mức xuất đủ ba phụ lục', () => {
+    const sheets = buildBusinessPlanSheets(input, result, ctx);
+    expect(sheets.map(s => s.fileBase)).toEqual([
+      'TINH HINH TAI CHINH', 'KET QUA KINH DOANH', 'CapHanMucTinDung',
+    ]);
+  });
+
+  it('hồ sơ vay từng lần chỉ xuất hai phụ lục', () => {
+    const eachTime: BusinessPlanInput = { ...input, kind: 'each_time' };
+    const sheets = buildBusinessPlanSheets(eachTime, computeBusinessPlan(eachTime), ctx);
+    expect(sheets.map(s => s.fileBase)).toEqual(['TINH HINH TAI CHINH', 'KET QUA KINH DOANH']);
+  });
+
+  it('không dựng được phụ lục cấp hạn mức từ hồ sơ vay từng lần', () => {
+    const eachTime: BusinessPlanInput = { ...input, kind: 'each_time' };
+    expect(() => buildCreditLimitSheet(computeBusinessPlan(eachTime), ctx)).toThrow();
+  });
+});
+
+describe('sheetToXlsHtml', () => {
+  const html = sheetToXlsHtml(buildFinancialPositionSheet(input, result, ctx));
+
+  it('giữ số thô để Excel đọc thành số, kèm định dạng hiển thị', () => {
+    expect(html).toContain('>300000000<');
+    expect(html).toContain("mso-number-format:'#,##0'");
+  });
+
+  it('có đủ số dòng dữ liệu', () => {
+    expect(html.match(/<tr>/g)?.length).toBe(11);
+  });
+
+  it('thoát ký tự đặc biệt trong tên khách hàng', () => {
+    const risky = sheetToXlsHtml(buildFinancialPositionSheet(input, result, {
+      ...ctx, customerName: 'CÔNG TY <A&B>',
+    }));
+    expect(risky).toContain('CÔNG TY &lt;A&amp;B&gt;');
+    expect(risky).not.toContain('<A&B>');
+  });
+});

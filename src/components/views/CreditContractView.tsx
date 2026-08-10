@@ -11,7 +11,7 @@ import { useWork } from '../../context/WorkContext';
 import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { summarizeCreditContracts, canCloseCreditContract } from '../../lib/creditContract';
 import { addMonthsToDate, computeOutstandingBalance } from '../../lib/loanMath';
-import { getEffectiveLtv, usableCapacity, appraisalStatus, appraisalExpiryDate, collateralValue } from '../../lib/collateralMath';
+import { getEffectiveLtv, usableCapacity, totalUsableCapacity, appraisalStatus, appraisalExpiryDate, collateralValue } from '../../lib/collateralMath';
 import { allowedPurposes } from '../../lib/loanProductRules';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
@@ -224,9 +224,7 @@ export const CreditContractView: React.FC = () => {
   const purposeOptions = useMemo(() => allowedPurposes(form.LoanMethod), [form.LoanMethod]);
 
   const tongKhaNangBaoDam = useMemo(
-    () => collaterals
-      .filter(c => selectedCollateralIds.includes(c.Id))
-      .reduce((s, c) => s + usableCapacity(c, today), 0),
+    () => totalUsableCapacity(collaterals.filter(c => selectedCollateralIds.includes(c.Id)), today),
     [collaterals, selectedCollateralIds, today]
   );
 

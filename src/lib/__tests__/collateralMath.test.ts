@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   defaultLtvForAssetType, getEffectiveLtv, maxLoanFromCollateral,
   isRestrictedAsset, isLtvException,
-  appraisalExpiryDate, appraisalStatus, usableCapacity, assetClassLabel,
+  appraisalExpiryDate, appraisalStatus, usableCapacity, totalUsableCapacity, assetClassLabel,
 } from '../collateralMath';
 import type { Collateral } from '../../types';
 
@@ -180,6 +180,32 @@ describe('Hiệu lực định giá', () => {
 
   it('chưa có ngày định giá thì không tính vào khả năng bảo đảm', () => {
     expect(usableCapacity({ Id: 1, AppraisedValue: 2_000_000_000, LtvPercent: 80 } as Collateral, HOM_NAY)).toBe(0);
+  });
+});
+
+describe('totalUsableCapacity — cộng khả năng bảo đảm của một nhóm tài sản', () => {
+  const HOM_NAY = '2026-08-03';
+  const conHieuLuc = {
+    Id: 1, AppraisedValue: 5_000_000_000, LtvPercent: 80,
+    AppraisalDate: '2026-07-01', AppraisalTenorMonths: 12,
+  } as Collateral;
+  const hetHieuLuc = {
+    Id: 2, AppraisedValue: 5_000_000_000, LtvPercent: 80,
+    AppraisalDate: '2024-01-15', AppraisalTenorMonths: 12,
+  } as Collateral;
+
+  it('cộng đúng phần còn hiệu lực và bỏ phần đã hết hiệu lực', () => {
+    expect(totalUsableCapacity([conHieuLuc, hetHieuLuc], HOM_NAY)).toBe(4_000_000_000);
+  });
+
+  it('danh sách rỗng hoặc chưa nạp thì bằng 0', () => {
+    expect(totalUsableCapacity([], HOM_NAY)).toBe(0);
+    expect(totalUsableCapacity(null, HOM_NAY)).toBe(0);
+    expect(totalUsableCapacity(undefined, HOM_NAY)).toBe(0);
+  });
+
+  it('bỏ qua phần tử rỗng thay vì hỏng cả tổng', () => {
+    expect(totalUsableCapacity([conHieuLuc, null, undefined], HOM_NAY)).toBe(4_000_000_000);
   });
 });
 

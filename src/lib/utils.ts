@@ -1,6 +1,12 @@
 import {
-  loadFormatSettings, formatMoneyWith, formatPercentWith, groupInteger, NUMBER_SEPARATORS,
+  loadFormatSettings, formatMoneyWith, formatNumberWith, formatPercentWith,
+  groupInteger, NUMBER_SEPARATORS,
 } from './formatSettings';
+
+export function fmtDecimals(v?: number | null, digits: number = 1, fallback: string = '—'): string {
+  if (v === undefined || v === null || isNaN(v)) return fallback;
+  return formatNumberWith(v, digits, loadFormatSettings().numberStyle);
+}
 
 export function formatMoneyInput(value: string): string {
   if (!value) return '';

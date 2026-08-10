@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Customer, Collateral, LoanContract, CreditContract, CreditCard, RepaymentSchedule, CollateralAppraisal, PostLoanControlRecord } from '../types';
+import type { Customer, Collateral, LoanContract, CreditContract, CreditCard, RepaymentSchedule, CollateralAppraisal, PostLoanControlRecord, BusinessPlan, BusinessPlanDebt } from '../types';
 import { defaultLtvForAssetType } from './collateralMath';
 import { toIsoDate } from './utils';
 import { findKunnNumberClash } from './creditContract';
@@ -588,6 +588,97 @@ export async function savePostLoanControlRecordAPI(
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function fetchBusinessPlansAPI(customerId: number): Promise<BusinessPlan[]> {
+  if (!customerId) return [];
+  const { data, error } = await supabase
+    .from('BusinessPlans')
+    .select('*')
+    .eq('CustomerId', customerId)
+    .order('CreatedAt', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchBusinessPlanDebtsAPI(planIds: number[]): Promise<BusinessPlanDebt[]> {
+  if (!planIds || planIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from('BusinessPlanDebts')
+    .select('*')
+    .in('PlanId', planIds)
+    .order('SortOrder', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function saveBusinessPlanAPI(
+  plan: Partial<BusinessPlan>, debts: Partial<BusinessPlanDebt>[]
+): Promise<BusinessPlan> {
+  if (!plan.CustomerId) throw new Error('Thiếu khách hàng!');
+  if (!plan.ActualYear || !plan.PlanYear) throw new Error('Vui lòng nhập năm thực hiện và năm kế hoạch!');
+  if (!plan.BalanceSheetDate) throw new Error('Vui lòng nhập thời điểm của bảng cân đối!');
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const payload: Record<string, unknown> = { ...plan };
+  delete payload.CreatedAt;
+  delete payload.UpdatedAt;
+  if (plan.Id) {
+    delete payload.CreatedBy;
+  } else {
+    delete payload.Id;
+    payload.CreatedBy = session?.user?.id ?? null;
+  }
+
+  const { data, error } = await supabase
+    .from('BusinessPlans')
+    .upsert([payload])
+    .select()
+    .single();
+  if (error) throw error;
+  if (!data) throw new Error('Không lưu được phương án: không có dòng nào được ghi.');
+
+  const { error: delError } = await supabase
+    .from('BusinessPlanDebts')
+    .delete()
+    .eq('PlanId', data.Id);
+  if (delError) throw delError;
+
+  const rows = (debts || [])
+    .filter(d => (d.Label || '').trim().length > 0)
+    .map((d, i) => ({
+      PlanId: data.Id,
+      Label: (d.Label || '').trim(),
+      Principal: d.Principal ?? 0,
+      RateAnnualPercent: d.RateAnnualPercent ?? 0,
+      Scope: d.Scope ?? 'both',
+      SortOrder: i,
+    }));
+
+  if (rows.length > 0) {
+    const { data: inserted, error: insError } = await supabase
+      .from('BusinessPlanDebts')
+      .insert(rows)
+      .select();
+    if (insError) throw insError;
+    if (!inserted || inserted.length !== rows.length) {
+      throw new Error('Không lưu được danh sách dư nợ của phương án.');
+    }
+  }
+
+  return data;
+}
+
+export async function deleteBusinessPlanAPI(planId: number): Promise<void> {
+  const { data, error } = await supabase
+    .from('BusinessPlans')
+    .delete()
+    .eq('Id', planId)
+    .select();
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Không xoá được phương án: không có dòng nào bị tác động.');
+  }
 }
 
 export async function fetchRateProgramsAPI(): Promise<RateProgram[]> {

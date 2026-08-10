@@ -18,6 +18,7 @@ import { CofView } from './components/views/CofView';
 import { DocumentTemplateView } from './components/views/DocumentTemplateView';
 import { SettingsView } from './components/views/SettingsView';
 import { PostLoanControlView } from './components/views/PostLoanControlView';
+import { BusinessPlanView } from './components/views/BusinessPlanView';
 
 export function App() {
   const { activeTab, setActiveTab } = useWork();
@@ -54,6 +55,7 @@ export function App() {
           {activeTab === 'collaterals' && <CollateralView />}
           {activeTab === 'credit-cards' && <CreditCardView />}
           {activeTab === 'calculators' && <CalculatorView />}
+          {activeTab === 'business-plan' && <BusinessPlanView />}
           {activeTab === 'mdsdv' && <MdsdvLookupView />}
           {activeTab === 'rate-quote' && <RateQuoteView />}
           {activeTab === 'cof' && <CofView />}

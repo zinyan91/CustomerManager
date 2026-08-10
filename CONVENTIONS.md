@@ -65,7 +65,7 @@ Chú ý toán tử: `||` cho phép số 0 rơi xuống nhánh sau, `??` thì kh�
 
 ## 2. Logic tài chính
 
-Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 707 test tại `src/lib/__tests__/`.
+Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thuộc React, được phủ 902 test tại `src/lib/__tests__/`.
 
 | Tệp | Nội dung |
 | :--- | :--- |
@@ -84,6 +84,8 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 | `loanProductRules.ts` | Ràng buộc theo phương thức vay |
 | `utils.ts` | Định dạng tiền, phần trăm, phân tích ngày đa định dạng, `todayIso`, `daysUntil` |
 | `dueList.ts` | Bộ lọc và bảng in danh sách đến hạn, `monthlyDueInfo` cho mốc thu lãi tháng kế tiếp |
+| `businessPlan.ts` | Phương án kinh doanh: cân đối, kết quả kinh doanh, nhu cầu vốn lưu động, khả năng trả nợ |
+| `businessPlanExport.ts` | Ba phụ lục xuất Excel của phương án kinh doanh |
 
 ### Nơi lưu trữ chung — dùng, đừng chép lại
 
@@ -576,6 +578,61 @@ Văn bản ghi rõ các kỳ này **chỉ áp dụng với khoản vay giải ng
 
 ---
 
+## 10b. Phương án kinh doanh & Hạn mức
+
+Thay bộ bốn file Excel của banker. Logic ở `src/lib/businessPlan.ts`, phụ lục ở `src/lib/businessPlanExport.ts`, dữ liệu ở `BusinessPlans` / `BusinessPlanDebts` (migration 31). Đối tượng là **khách hàng cá nhân và hộ kinh doanh**, không phải doanh nghiệp.
+
+Bốn file gốc không phải bốn bảng: `BẢNG TÍNH HM` là bảng làm việc, ba file kia chỉ là **liên kết ngoài** trỏ về nó. Và chúng đã trôi khỏi nhau trong thực tế — phụ lục KQKD giữ doanh thu 908 trđ/tháng trong khi bảng gốc chỉ còn 128. Trong hệ thống: **một nguồn dữ liệu, ba bản in**.
+
+### Chỉ lưu ô đầu vào
+
+Mọi số dẫn xuất tính lại bằng `computeBusinessPlan`. Lưu kết quả là tạo nguồn thứ hai để trôi — đúng thứ đã xảy ra với ba phụ lục Excel.
+
+Riêng **khả năng bảo đảm của TSĐB không có cột**: con số đó tính bằng `totalUsableCapacity` từ chính tài sản của khách và tụt về 0 khi định giá hết hiệu lực. Giao diện truyền vào lúc tính.
+
+### Bảy lỗi của file Excel gốc — đã sửa, đừng "sửa" ngược lại
+
+| # | Lỗi | Đã xử lý |
+| :--- | :--- | :--- |
+| 1 | `D27 = D18+D23+F24` cộng Vốn góp (nguồn vốn) vào Tổng tài sản | Bỏ Vốn góp khỏi đầu vào; phụ lục vẫn in dòng đó với giá trị 0 |
+| 2 | Lãi vay có hai con số không khớp: `D6` = 48 trđ từ bảng dư nợ, dòng lãi vay trong bảng chi phí = 0 nhập tay | `BusinessPlanDebts` là nguồn duy nhất |
+| 3 | LNTT hai kỳ hai công thức: `E7` bỏ sót chi phí mặt bằng và chi phí khác | Hai kỳ dùng chung `computePeriod` |
+| 4 | `D3 = D10*3,4` rồi `D13 = D3/D10 = 3,4` — vòng quay chạy ngược | Doanh thu là đầu vào, vòng quay là kết quả |
+| 5 | Lãi suất 8%/năm nhúng cứng trong `*8/100/12` | Lãi suất theo từng khoản vay |
+| 6 | `ROUNDUP(.../12,0)` làm tròn lên hàng triệu rồi lấy số đã tròn tính tỷ trọng | Tính trên số gốc, làm tròn khi hiển thị |
+| 7 | `SUM(C4:C8)` của phụ lục KQKD cộng thiếu một dòng chi phí | Tổng gộp đủ bảy dòng |
+
+Lỗi #1 không lộ ra vì vốn chủ sở hữu là **số dư** nên hai vế luôn cân — tổng tài sản bị thổi lên đúng bằng vốn góp mà bảng vẫn trông đúng.
+
+### Nhu cầu vốn bằng tiền không phụ thuộc lãi vay
+
+```
+c1 = DTT − khấu hao − lãi vay − LNTT
+   = giá vốn + nhân công + mặt bằng + điện nước + chi phí khác
+```
+
+Rút gọn ra đúng **các khoản chi bằng tiền**, đúng như tên gọi. Vì vậy lỗi #2 làm sai lợi nhuận trình lên nhưng **không** làm sai hạn mức. Có test khoá tính chất này — đừng sửa `c1` thành phụ thuộc lãi vay.
+
+### Bố cục phụ lục là hợp đồng với người dùng
+
+Xuất giữ **nguyên** số cột, thứ tự STT chữ (`a`, `b`, `b1`…`b7`, `c`, `d`, `e`), các dòng `…` bỏ trống, và đơn vị của từng file: hai phụ lục đầu bằng **VND**, `CapHanMucTinDung` bằng **trđ**. Hai dòng Vốn góp và Nguồn kinh phí & quỹ khác vẫn in ra dù khách hàng cá nhân không có, giá trị 0.
+
+Ô số ghi **số thô** kèm `mso-number-format` để Excel đọc thành số tính toán tiếp được, không ghi chuỗi đã định dạng. Test kiểm trên **mô hình dòng**, không trên chuỗi HTML.
+
+### Vay từng lần lấy min của ba giới hạn
+
+```
+min( chi phí phương án − vốn tự có ;
+     PV(khả năng trả nợ, lãi suất, kỳ hạn) ;
+     totalUsableCapacity(TSĐB) )
+```
+
+Trường `binding` chỉ ra giới hạn nào đang chặn. Nguồn trả nợ = `(LNST + khấu hao)/12 + thu nhập khác − chi phí sinh hoạt`, đưa qua `dtiMaxMonthlyPayment` rồi quy ra hạn mức bằng `pvAnnuityFactor` — cả hai đã có trong `calcMath.ts`.
+
+**`MaxDtiPercent = 0` nghĩa là chưa khai**, và khi đó khả năng vay theo dòng tiền trả về 0 chứ không suy đoán. Trần mặc định ở `DEFAULT_MAX_DTI_PERCENT`, form điền sẵn khi tạo mới — chính sách chỉ có một chỗ, không nhúng vào lược đồ cơ sở dữ liệu.
+
+---
+
 ## 11. Bảo mật
 
 **Khoá `anon` của Supabase nằm công khai** trong gói JavaScript gửi tới trình duyệt. Màn hình đăng nhập chỉ chặn người dùng thông thường. **RLS là lớp phòng thủ duy nhất và thực sự.**
@@ -693,6 +750,16 @@ Cơ sở trừ hạn mức phụ thuộc sản phẩm: **HMTD tuần hoàn** l�
 Mức cấp và ngày hết hiệu lực là thông tin **cấp HĐTD**, nên vẫn ghi nhận từ dòng đang bị `excludeContractId` loại trừ, và ngày hết hiệu lực lấy mốc muộn nhất trong nhóm. Một KUNN thuộc HĐTD đã đóng là đủ để **cả nhóm** hết quyền giải ngân: nhóm dùng chung hạn mức thì hạn mức chỉ có một, không rút qua hợp đồng khác được.
 
 `headroom` là hạn mức trống theo dư nợ, **chưa** xét hiệu lực — giữ lại để đối chiếu. `available` mới là số giải ngân được thật.
+
+### `businessPlan.ts`
+
+| Hàm | Điều phải biết |
+| :--- | :--- |
+| `computeBusinessPlan` | **Nguồn duy nhất** của mọi số dẫn xuất trong phương án. Hai kỳ đi qua cùng `computePeriod` — đó chính là thứ chặn lỗi #3 của file Excel tái sinh. Xem §10b. |
+| `interestAnnualOf` | Chi phí lãi vay **chỉ** sinh từ danh sách khoản vay. Đừng thêm ô nhập lãi vay thứ hai; file Excel gốc có hai con số và chúng đã lệch nhau. |
+| `businessPlanInputFrom` | Chỗ duy nhất dịch dòng cơ sở dữ liệu sang đầu vào tính toán. Khả năng bảo đảm truyền từ ngoài vào, **không** đọc từ dòng phương án. |
+| `emptyBusinessPlan` | Điền sẵn `DEFAULT_MAX_DTI_PERCENT`. Bỏ trống là 0, mà 0 nghĩa là chưa khai → khả năng vay bằng 0. |
+| `totalUsableCapacity` | Ở `collateralMath.ts`. Rút ra 09/08/2026 khi đếm được 4 chỗ cùng `reduce(usableCapacity)`. Cần cộng khả năng bảo đảm thì gọi nó, đừng viết `reduce` thứ năm. |
 
 ### `dueList.ts`
 

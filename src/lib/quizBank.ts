@@ -193,19 +193,6 @@ export function searchQuestions(questions: QuizQuestion[], term: string): QuizQu
   );
 }
 
-export function sourceGroups(questions: QuizQuestion[]): { label: string; count: number }[] {
-  const counts = new Map<string, number>();
-  for (const q of questions) {
-    for (const s of q.Sources) {
-      const label = s.split(' (')[0].trim() || s.trim();
-      counts.set(label, (counts.get(label) || 0) + 1);
-    }
-  }
-  return [...counts.entries()]
-    .map(([label, count]) => ({ label, count }))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'vi'));
-}
-
 export function quizStats(questions: QuizQuestion[]): {
   total: number;
   multiAnswer: number;

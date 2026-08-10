@@ -3,7 +3,7 @@ import quizSeed from '../../data/quiz_bank.json';
 import {
   quizNormalizeText, optionLetter, emptyDraft, relabelOptions,
   findDuplicateQuestion, duplicateClusters, validateQuizDraft, draftToPayload, hasSettledAnswer,
-  isAnswerCorrect, isMultiAnswer, searchQuestions, sourceGroups, quizStats,
+  isAnswerCorrect, isMultiAnswer, searchQuestions, quizStats,
   MIN_DRAFT_OPTIONS, type QuizQuestion, type QuizDraft,
 } from '../quizBank';
 
@@ -248,19 +248,6 @@ describe('searchQuestions', () => {
 
   it('từ khoá rỗng thì trả nguyên bộ', () => {
     expect(searchQuestions(bank, '  ')).toHaveLength(3);
-  });
-});
-
-describe('sourceGroups', () => {
-  it('gom nguồn theo tên tệp, bỏ phần số câu, xếp theo số lượng giảm dần', () => {
-    expect(sourceGroups([
-      q({ Sources: ['PDF1 (Câu 1)'] }),
-      q({ Sources: ['PDF2 (Câu 3)'] }),
-      q({ Sources: ['PDF2 (Câu 4)'] }),
-    ])).toEqual([
-      { label: 'PDF2', count: 2 },
-      { label: 'PDF1', count: 1 },
-    ]);
   });
 });
 

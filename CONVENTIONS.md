@@ -844,6 +844,8 @@ Migration 38 để ràng buộc `array_length("CorrectAnswers", 1) >= 1`, mà m�
 
 **Ba trong chín cụm có đáp án đúng khác nhau** trên cùng một câu hỏi: `(267, 272, 274, 283)`, `(309, 325, 344, 345)`, `(318, 343, 347)`. Ít nhất một bản trong mỗi cụm đang dạy sai. Tab gắn nhãn đỏ từng cụm; hệ thống **không tự chọn bản nào**.
 
+**Màn Tra cứu là để đọc, không phải để tự kiểm tra.** Chốt 11/08/2026: đáp án đúng **tô sẵn** (đậm, nền `bg-pos-soft`), không có nút ẩn/hiện — muốn tự kiểm tra thì sang chế độ Luyện tập. Cũng bỏ luôn dòng nguồn, ô lọc theo nguồn, bảng phân bố số lựa chọn và dòng đếm "n/m câu khớp bộ lọc"; danh sách chia trang 20 câu, vị trí do ô số trang mang. `Sources` vẫn còn trong CSDL và trong khung nhập liệu, chỉ không hiện ở danh sách; `searchQuestions` vẫn tra được theo nguồn.
+
 `quizNormalizeText` trong `src/lib/quizBank.ts` và `public.quiz_normalize_text` trong CSDL phải giống nhau: hạ chữ, gộp khoảng trắng, cắt hai đầu, **giữ nguyên dấu tiếng Việt** — "lãi" và "lai" là hai câu khác nghĩa. Sửa một bên phải sửa bên kia.
 
 Bộ câu hỏi gốc nạp bằng nút trên tab qua hàm `seed_quiz_bank`, không nhét 662 dòng `INSERT` vào migration — 662 dòng thành tệp SQL gần 700KB, dán vào SQL editor là hỏng. Hàm chỉ chạy trên bảng rỗng nên không có đường nạp đè hay nạp hai lần.

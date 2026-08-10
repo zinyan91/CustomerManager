@@ -60,31 +60,43 @@ const openForm = async (user: ReturnType<typeof userEvent.setup>) => {
 describe('QuizBankView — tra cứu', () => {
   it('dựng lên với dữ liệu thật và đếm đúng', async () => {
     render(<QuizBankView />);
-    expect(await screen.findByText(/2 \/ 2 câu khớp bộ lọc/)).toBeTruthy();
-    expect(screen.getByText(/Mức cho vay tối đa/)).toBeTruthy();
+    expect(await screen.findByText(/Mức cho vay tối đa/)).toBeTruthy();
+    expect(screen.getByText(/Tiêu chí nhận diện rủi ro/)).toBeTruthy();
     expect(screen.getByText('nhiều đáp án')).toBeTruthy();
+    expect(screen.getByText(
+      (_, el) => el?.tagName === 'SPAN' && el.textContent === '2 câu'
+    )).toBeTruthy();
   });
 
-  it('đáp án ẩn cho tới khi bấm hiện', async () => {
+  it('đáp án đúng tô sẵn, không phải bấm hiện', async () => {
     render(<QuizBankView />);
-    const user = userEvent.setup();
     await screen.findByText(/Mức cho vay tối đa/);
 
-    const option = screen.getByText('Tối đa 100% phương án, không quá 05 tỷ');
-    expect(option.parentElement?.className).not.toContain('text-pos');
+    expect(screen.queryByRole('button', { name: /Hiện đáp án/ })).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Hiện đáp án câu 1' }));
-    expect(screen.getByText('Tối đa 100% phương án, không quá 05 tỷ').parentElement?.className)
-      .toContain('text-pos');
+    const right = screen.getByText('Tối đa 100% phương án, không quá 05 tỷ');
+    expect(right.parentElement?.className).toContain('text-pos');
+    expect(right.parentElement?.className).toContain('font-bold');
+
+    const wrong = screen.getByText('Tối đa 70% phương án');
+    expect(wrong.parentElement?.className).not.toContain('text-pos');
+  });
+
+  it('không còn dòng nguồn và không còn ô lọc nguồn', async () => {
+    render(<QuizBankView />);
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    expect(screen.queryByText(/PDF1 \(Câu 6\)/)).toBeNull();
+    expect(screen.queryByLabelText('Lọc theo nguồn')).toBeNull();
   });
 
   it('ô tìm kiếm lọc theo nội dung lựa chọn', async () => {
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
 
     await user.type(screen.getByLabelText('Tìm câu hỏi'), 'hành vi');
-    expect(await screen.findByText(/1 \/ 2 câu khớp bộ lọc/)).toBeTruthy();
+    expect(await screen.findByText(/Tiêu chí nhận diện rủi ro/)).toBeTruthy();
     expect(screen.queryByText(/Mức cho vay tối đa/)).toBeNull();
   });
 
@@ -103,11 +115,99 @@ describe('QuizBankView — tra cứu', () => {
   });
 });
 
+describe('QuizBankView — chia trang', () => {
+  const many: QuizQuestion[] = Array.from({ length: 45 }, (_, i) => ({
+    Id: i + 1,
+    QuestionText: `Câu số ${i + 1} của bộ đề`,
+    Options: [{ id: 'A', text: 'Một' }, { id: 'B', text: 'Hai' }],
+    CorrectAnswers: ['A'],
+    Sources: [],
+  }));
+
+  beforeEach(() => {
+    fetchQuizQuestionsAPI.mockResolvedValue(many);
+  });
+
+  it('mỗi trang 20 câu, 45 câu ra 3 trang', async () => {
+    render(<QuizBankView />);
+    await screen.findByText('Câu số 1 của bộ đề');
+
+    expect(screen.getByText('Câu số 20 của bộ đề')).toBeTruthy();
+    expect(screen.queryByText('Câu số 21 của bộ đề')).toBeNull();
+    expect(screen.getByText('/ 3')).toBeTruthy();
+  });
+
+  it('bấm Sau sang trang hai, bấm Trước quay lại', async () => {
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText('Câu số 1 của bộ đề');
+
+    await user.click(screen.getByRole('button', { name: /Sau/ }));
+    expect(screen.getByText('Câu số 21 của bộ đề')).toBeTruthy();
+    expect(screen.queryByText('Câu số 1 của bộ đề')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /Trước/ }));
+    expect(screen.getByText('Câu số 1 của bộ đề')).toBeTruthy();
+  });
+
+  it('trang đầu khoá nút Trước, trang cuối khoá nút Sau', async () => {
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText('Câu số 1 của bộ đề');
+
+    expect(screen.getByRole('button', { name: /Trước/ })).toHaveProperty('disabled', true);
+
+    await user.click(screen.getByRole('button', { name: /Sau/ }));
+    await user.click(screen.getByRole('button', { name: /Sau/ }));
+
+    expect(screen.getByText('Câu số 45 của bộ đề')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Sau/ })).toHaveProperty('disabled', true);
+  });
+
+  it('nhảy tới trang bằng ô số trang, số ngoài khoảng bị kẹp lại', async () => {
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText('Câu số 1 của bộ đề');
+
+    const box = screen.getByLabelText('Số trang');
+    await user.clear(box);
+    await user.type(box, '3');
+    expect(screen.getByText('Câu số 41 của bộ đề')).toBeTruthy();
+
+    await user.clear(box);
+    await user.type(box, '99');
+    expect(screen.getByText('Câu số 41 của bộ đề')).toBeTruthy();
+    expect((box as HTMLInputElement).value).toBe('3');
+  });
+
+  it('tìm kiếm thu hẹp thì về trang một và bỏ luôn phần chia trang', async () => {
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText('Câu số 1 của bộ đề');
+
+    await user.click(screen.getByRole('button', { name: /Sau/ }));
+    expect(screen.getByText('Câu số 21 của bộ đề')).toBeTruthy();
+
+    await user.type(screen.getByLabelText('Tìm câu hỏi'), 'Câu số 7 ');
+    expect(await screen.findByText('Câu số 7 của bộ đề')).toBeTruthy();
+    expect(screen.queryByLabelText('Số trang')).toBeNull();
+  });
+
+  it('không câu nào khớp thì nói rõ, không để trống trơn', async () => {
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText('Câu số 1 của bộ đề');
+
+    await user.type(screen.getByLabelText('Tìm câu hỏi'), 'không có chữ này đâu');
+    expect(await screen.findByText('Không có câu nào khớp từ khoá.')).toBeTruthy();
+  });
+});
+
 describe('QuizBankView — khung nhập liệu', () => {
   it('mặc định 4 lựa chọn, thêm và bớt được', async () => {
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
     await openForm(user);
 
     expect(screen.getByLabelText('Nội dung lựa chọn D')).toBeTruthy();
@@ -123,7 +223,7 @@ describe('QuizBankView — khung nhập liệu', () => {
   it('xoá lựa chọn giữa thì mã dồn lại, nội dung đi theo', async () => {
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
     await openForm(user);
 
     await user.type(screen.getByLabelText('Nội dung lựa chọn A'), 'Một');
@@ -140,7 +240,7 @@ describe('QuizBankView — khung nhập liệu', () => {
     createQuizQuestionAPI.mockResolvedValue({ ...bank[0], Id: 99 });
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
     await openForm(user);
 
     await user.type(screen.getByLabelText(/Nội dung câu hỏi/i), 'Câu hỏi hoàn toàn mới');
@@ -171,7 +271,7 @@ describe('QuizBankView — khung nhập liệu', () => {
   it('chưa chọn đáp án đúng thì không lưu được', async () => {
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
     await openForm(user);
 
     await user.type(screen.getByLabelText(/Nội dung câu hỏi/i), 'Câu chưa có đáp án');
@@ -188,7 +288,7 @@ describe('QuizBankView — chặn trùng khi submit', () => {
   it('câu đã có thì báo trùng ngay lúc nhập và khoá nút lưu', async () => {
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
     await openForm(user);
 
     await user.type(
@@ -210,7 +310,7 @@ describe('QuizBankView — chặn trùng khi submit', () => {
     );
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
     await openForm(user);
 
     await user.type(screen.getByLabelText(/Nội dung câu hỏi/i), 'Câu chưa thấy ở máy này');
@@ -264,7 +364,7 @@ describe('QuizBankView — câu chưa chốt đáp án', () => {
     fetchQuizQuestionsAPI.mockResolvedValue(withUnsettled);
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/3 \/ 3 câu khớp bộ lọc/);
+    await screen.findByText(/Mức cho vay tối đa/);
 
     await user.click(screen.getByRole('button', { name: 'Luyện tập' }));
 
@@ -277,7 +377,7 @@ describe('QuizBankView — câu chưa chốt đáp án', () => {
     createQuizQuestionAPI.mockResolvedValue({ ...bank[0], Id: 99 });
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
     await openForm(user);
 
     await user.type(screen.getByLabelText(/Nội dung câu hỏi/i), 'Câu nào cũng sai — chờ đối chiếu');
@@ -304,7 +404,7 @@ describe('QuizBankView — luyện tập', () => {
   const practice = async () => {
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
     await user.click(screen.getByRole('button', { name: 'Luyện tập' }));
     return user;
   };
@@ -367,7 +467,7 @@ describe('QuizBankView — xoá', () => {
     );
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
 
     await user.click(screen.getByRole('button', { name: 'Xoá câu 1' }));
 
@@ -380,19 +480,20 @@ describe('QuizBankView — xoá', () => {
     deleteQuizQuestionAPI.mockResolvedValue(undefined);
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
 
     await user.click(screen.getByRole('button', { name: 'Xoá câu 1' }));
 
-    expect(await screen.findByText(/1 \/ 1 câu khớp bộ lọc/)).toBeTruthy();
+    expect(await screen.findByText(/Đã xoá câu hỏi số 1/)).toBeTruthy();
     expect(screen.queryByText(/Mức cho vay tối đa/)).toBeNull();
+    expect(screen.getByText(/Tiêu chí nhận diện rủi ro/)).toBeTruthy();
   });
 
   it('bấm huỷ ở hộp xác nhận thì không gọi API', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(<QuizBankView />);
     const user = userEvent.setup();
-    await screen.findByText(/2 \/ 2 câu/);
+    await screen.findByText(/Mức cho vay tối đa/);
 
     await user.click(screen.getByRole('button', { name: 'Xoá câu 1' }));
     expect(deleteQuizQuestionAPI).not.toHaveBeenCalled();

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  GraduationCap, Search, Plus, Loader2, Trash2, Eye, EyeOff, AlertTriangle, Download,
+  GraduationCap, Search, Plus, Loader2, Trash2, AlertTriangle, Download,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import {
   UI, PANEL, BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER,
@@ -8,7 +9,7 @@ import {
 } from '../../lib/uiClasses';
 import {
   emptyDraft, draftToPayload, duplicateClusters, hasSettledAnswer, isAnswerCorrect, isMultiAnswer,
-  quizStats, searchQuestions, sourceGroups,
+  quizStats, searchQuestions,
   type QuizDraft, type QuizQuestion,
 } from '../../lib/quizBank';
 import {
@@ -20,6 +21,8 @@ import quizSeed from '../../data/quiz_bank.json';
 
 type Mode = 'browse' | 'practice';
 
+const PAGE_SIZE = 20;
+
 export const QuizBankView: React.FC = () => {
   const { toast, show, dismiss } = useToast();
 
@@ -29,8 +32,7 @@ export const QuizBankView: React.FC = () => {
 
   const [mode, setMode] = useState<Mode>('browse');
   const [query, setQuery] = useState('');
-  const [source, setSource] = useState('ALL');
-  const [revealed, setRevealed] = useState<Set<number>>(new Set());
+  const [page, setPage] = useState(1);
 
   const [formOpen, setFormOpen] = useState(false);
   const [draft, setDraft] = useState<QuizDraft>(emptyDraft);
@@ -58,7 +60,6 @@ export const QuizBankView: React.FC = () => {
 
   const stats = useMemo(() => quizStats(questions), [questions]);
   const clusters = useMemo(() => duplicateClusters(questions), [questions]);
-  const sources = useMemo(() => sourceGroups(questions), [questions]);
 
   const conflicting = useMemo(() => {
     const byId = new Map(questions.map(q => [q.Id, q]));
@@ -72,22 +73,22 @@ export const QuizBankView: React.FC = () => {
     [conflicting]
   );
 
-  const filtered = useMemo(() => {
-    const found = searchQuestions(questions, query);
-    return source === 'ALL'
-      ? found
-      : found.filter(q => q.Sources.some(s => s.split(' (')[0].trim() === source));
-  }, [questions, query, source]);
+  const filtered = useMemo(() => searchQuestions(questions, query), [questions, query]);
 
   const practiceList = useMemo(() => filtered.filter(hasSettledAnswer), [filtered]);
   const current = practiceList[practiceAt] || null;
   const skippedInPractice = filtered.length - practiceList.length;
 
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   useEffect(() => {
+    setPage(1);
     setPracticeAt(0);
     setPicked([]);
     setChecked(false);
-  }, [query, source, mode]);
+  }, [query, mode]);
 
   const handleSubmit = async () => {
     setSaving(true);
@@ -152,14 +153,6 @@ export const QuizBankView: React.FC = () => {
     setPracticeAt(at => (at + 1) % Math.max(1, practiceList.length));
   };
 
-  const toggleReveal = (id: number) => {
-    setRevealed(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
 
   return (
     <div className="space-y-4 text-xs">
@@ -194,10 +187,6 @@ export const QuizBankView: React.FC = () => {
               {stats.unsettled > 0 && (
                 <span><strong className="text-ink">{stats.unsettled}</strong> câu chưa chốt đáp án</span>
               )}
-              <span>
-                Số lựa chọn:{' '}
-                {stats.optionCounts.map(o => `${o.size} lựa chọn × ${o.count}`).join(' · ') || '—'}
-              </span>
             </div>
 
             {clusters.length > 0 && (
@@ -213,9 +202,6 @@ export const QuizBankView: React.FC = () => {
                     {conflicting.map(c => `(${c.ids.join(', ')})`).join(' · ')}
                   </div>
                 )}
-                <div className="text-ink-faint">
-                  Hệ thống không tự chọn bản nào. Chặn trùng chỉ áp cho câu thêm mới.
-                </div>
               </div>
             )}
 
@@ -244,18 +230,10 @@ export const QuizBankView: React.FC = () => {
               <div className="relative flex-1">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint" />
                 <input type="text" value={query} onChange={e => setQuery(e.target.value)}
-                  placeholder="Tìm trong câu hỏi, lựa chọn, nguồn hoặc chủ đề"
+                  placeholder="Tìm trong câu hỏi, lựa chọn hoặc chủ đề"
                   aria-label="Tìm câu hỏi"
                   className={`w-full rounded-md pl-8 pr-3 py-2 border ${UI.inputStyle}`} />
               </div>
-              <select value={source} onChange={e => setSource(e.target.value)}
-                aria-label="Lọc theo nguồn"
-                className={`rounded-md px-2.5 py-2 border ${UI.inputStyle}`}>
-                <option value="ALL">Mọi nguồn</option>
-                {sources.map(s => (
-                  <option key={s.label} value={s.label}>{s.label} ({s.count})</option>
-                ))}
-              </select>
               <button type="button" onClick={() => setFormOpen(v => !v)}
                 className={`${BTN_PRIMARY} px-3 py-2 flex items-center gap-1.5 shrink-0`}>
                 <Plus className="w-4 h-4" /> Thêm câu hỏi
@@ -347,9 +325,6 @@ export const QuizBankView: React.FC = () => {
                 )}
               </div>
 
-              {current.Sources.length > 0 && (
-                <div className="text-[10px] text-ink-faint">Nguồn: {current.Sources.join(' · ')}</div>
-              )}
             </>
           )}
         </div>
@@ -357,12 +332,7 @@ export const QuizBankView: React.FC = () => {
 
       {!loading && mode === 'browse' && (
         <div className="space-y-2">
-          <div className="text-[11px] text-ink-faint">
-            {filtered.length} / {stats.total} câu khớp bộ lọc
-          </div>
-
-          {filtered.slice(0, 200).map(question => {
-            const isOpen = revealed.has(question.Id);
+          {pageRows.map(question => {
             const isConflicting = conflictingIds.has(question.Id);
             return (
               <div key={question.Id}
@@ -385,11 +355,6 @@ export const QuizBankView: React.FC = () => {
                     <div className="text-ink leading-relaxed">{question.QuestionText}</div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <button type="button" onClick={() => toggleReveal(question.Id)}
-                      aria-label={isOpen ? `Ẩn đáp án câu ${question.Id}` : `Hiện đáp án câu ${question.Id}`}
-                      className={`${BTN_SECONDARY} px-2 py-1.5`}>
-                      {isOpen ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    </button>
                     <button type="button" onClick={() => handleDelete(question)}
                       aria-label={`Xoá câu ${question.Id}`}
                       className={`${BTN_DANGER} px-2 py-1.5`}>
@@ -400,27 +365,58 @@ export const QuizBankView: React.FC = () => {
 
                 <div className="space-y-1 pl-1">
                   {question.Options.map(option => {
-                    const isRight = isOpen && question.CorrectAnswers.includes(option.id);
+                    const isRight = question.CorrectAnswers.includes(option.id);
                     return (
                       <div key={option.id}
-                        className={`flex gap-2 leading-relaxed ${isRight ? 'text-pos font-semibold' : 'text-ink-muted'}`}>
+                        className={`flex gap-2 leading-relaxed rounded-sm ${
+                          isRight
+                            ? 'text-pos font-bold bg-pos-soft px-1.5 -mx-0.5 py-0.5'
+                            : 'text-ink-muted px-1.5 -mx-0.5 py-0.5'
+                        }`}>
                         <span className="font-mono shrink-0">{option.id}</span>
                         <span>{option.text}</span>
                       </div>
                     );
                   })}
                 </div>
-
-                {question.Sources.length > 0 && (
-                  <div className="text-[10px] text-ink-faint">Nguồn: {question.Sources.join(' · ')}</div>
-                )}
               </div>
             );
           })}
 
-          {filtered.length > 200 && (
-            <div className="text-[11px] text-ink-faint">
-              Đang hiện 200 câu đầu. Thu hẹp bằng ô tìm kiếm hoặc bộ lọc nguồn.
+          {pageRows.length === 0 && (
+            <div className={`${PANEL} p-4 text-ink-muted`}>Không có câu nào khớp từ khoá.</div>
+          )}
+
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                className={`${BTN_SECONDARY} px-3 py-1.5 flex items-center gap-1`}>
+                <ChevronLeft className="w-3.5 h-3.5" /> Trước
+              </button>
+
+              <div className="flex items-center gap-2 text-[11px] text-ink-muted">
+                <span>Trang</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={pageCount}
+                  value={safePage}
+                  onChange={e => {
+                    const next = parseInt(e.target.value, 10);
+                    if (!isNaN(next)) setPage(Math.min(pageCount, Math.max(1, next)));
+                  }}
+                  aria-label="Số trang"
+                  className={`w-14 text-center rounded-md px-1.5 py-1 border ${UI.inputStyle}`}
+                />
+                <span>/ {pageCount}</span>
+              </div>
+
+              <button type="button" onClick={() => setPage(p => Math.min(pageCount, p + 1))}
+                disabled={safePage >= pageCount}
+                className={`${BTN_SECONDARY} px-3 py-1.5 flex items-center gap-1`}>
+                Sau <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
         </div>

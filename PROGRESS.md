@@ -884,7 +884,7 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 | :--- | :--- | :--- |
 | ✅ | Migration 38 `QuizQuestions` | Lựa chọn trong `jsonb`, chống trùng bằng **trigger** chứ không unique index. RLS: ai cũng đọc và thêm, sửa/xoá thì admin hoặc người đã thêm |
 | ✅ | `quizBank.ts` — logic thuần | 35 test, trong đó 6 test chạy trên **chính bộ 662 câu trong repo** |
-| ✅ | Tab hai chế độ: Tra cứu và Luyện tập | Chấm đúng câu nhiều đáp án (đủ và không thừa), ẩn/hiện đáp án, lọc theo nguồn |
+| ✅ | Tab hai chế độ: Tra cứu và Luyện tập | Tra cứu **tô sẵn đáp án đúng** (đậm, nền xanh), chia trang 20 câu. Luyện tập chấm đúng câu nhiều đáp án — đủ và không thừa |
 | ✅ | Khung nhập liệu | Số lựa chọn thêm bớt được (2–12), mã dồn lại khi xoá lựa chọn giữa, tích nhiều đáp án đúng. Báo trùng ngay lúc nhập **và** hứng lỗi trùng từ CSDL |
 | ✅ | 20 test dựng màn hình | Gồm đúng ca anh yêu cầu: submit câu đã có thì báo trùng |
 | ✅ | Migration 39 — trạng thái "chưa chốt đáp án" | `CorrectAnswers` rỗng. Hai câu *"CÂU NÀO CŨNG SAI"* (504, 570) để trống theo chốt 10/08/2026. Luyện tập bỏ qua và nói rõ bỏ bao nhiêu |

@@ -32,7 +32,6 @@ const input: BusinessPlanInput = {
 };
 
 const ctx: ExportContext = {
-  customerName: 'LÊ NGỌC QUẾ HÂN',
   customerCif: '005236683',
   balanceSheetDate: '2025-06-30',
   actualYear: 2025,
@@ -101,10 +100,25 @@ describe('phụ lục kết quả kinh doanh', () => {
     expect(total).toBe(1056 * M);
   });
 
-  it('khấu hao và chi phí khác nằm ở hai dòng riêng', () => {
-    expect(cell(sheet, 7, 1).text).toBe('Chi phí 6: Chi phí khấu hao');
+  it('nhãn từng dòng giữ NGUYÊN VĂN bản gốc để file còn nạp lên hệ thống được', () => {
+    expect(sheet.rows.map(r => r[1].text)).toEqual([
+      'Doanh thu',
+      'Tổng chi phí',
+      'Chi phí 1: Chi phí giá vốn',
+      'Chi phí 2: Chi phí nhân công',
+      'Chi phí 3: Chi phí thuê mặt bằng',
+      'Chi phí 4: Chi phí điện nước',
+      'Chi phí 5: Chi phí lãi vay',
+      'Chi phí 6: Chi phí khác',
+      'Chi phí 7:…',
+      'Lợi nhuận',
+      'Thuế (nếu có)',
+      'Lợi nhuận sau thuế',
+    ]);
+  });
+
+  it('khấu hao vào dòng b6 và chi phí khác vào b7, đúng như bản gốc nạp số', () => {
     expect(cell(sheet, 7, 3).text).toBe(String(120 * M));
-    expect(cell(sheet, 8, 1).text).toBe('Chi phí 7: Chi phí khác');
     expect(cell(sheet, 8, 3).text).toBe(String(12 * M));
   });
 
@@ -133,7 +147,25 @@ describe('phụ lục cấp hạn mức', () => {
   it('giữ đúng sáu cột và nhãn năm của bản gốc', () => {
     expect(sheet.header[3]).toBe('Kỳ thực hiện năm 2025');
     expect(sheet.header[4]).toBe('Năm kế hoạch 2026');
-    expect(sheet.header[5]).toBe('Tăng/giảm');
+    expect(sheet.header[5]).toBe('Tăng/giảm\u00a0');
+  });
+
+  it('nhãn từng khoảng mục giữ NGUYÊN VĂN bản gốc', () => {
+    expect(sheet.rows.map(r => r[1].text)).toEqual([
+      'Phương án kết quả kinh doanh',
+      'Doanh thu thuần (DTT)',
+      'Giá vốn hàng bán',
+      'Khấu hao',
+      'Lãi vay (các khoản vay tài trợ cho SXKD)',
+      'Lợi nhuận trước thuế (LNTT)',
+      'Lợi nhuận sau thuế (LNST)',
+      'Tài sản lưu động ',
+      'Tính toán nhu cầu cấp tín dụng',
+      'Tổng nhu cầu vốn bằng tiền (c1 = b1 - b3 - b4 - b5)',
+      'Vòng quay vốn lưu động (c2 = b1 / b7)',
+      'Nhu cầu vốn lưu động bình quân 1 vòng (c3 = c1/c2)',
+      'Đề nghị cấp HMTD tại Vietbank',
+    ]);
   });
 
   it('có đủ hai nhóm b và c', () => {
@@ -194,11 +226,18 @@ describe('sheetToXlsHtml', () => {
     expect(html.match(/<tr>/g)?.length).toBe(11);
   });
 
-  it('thoát ký tự đặc biệt trong tên khách hàng', () => {
-    const risky = sheetToXlsHtml(buildFinancialPositionSheet(input, result, {
-      ...ctx, customerName: 'CÔNG TY <A&B>',
+  it('không chèn thêm dòng tiêu đề nào phía trên bảng', () => {
+    expect(html).not.toContain('<h3');
+    expect(html).not.toContain('<p ');
+    expect(html.indexOf('<table')).toBeLessThan(html.indexOf('STT'));
+  });
+
+  it('thoát ký tự đặc biệt trong phần diễn giải banker nhập', () => {
+    const risky = sheetToXlsHtml(buildIncomeStatementSheet(result, {
+      ...ctx, basis: { staff: 'Thuê 5 NV <mức lương> 5 trđ & phụ cấp' },
     }));
-    expect(risky).toContain('CÔNG TY &lt;A&amp;B&gt;');
-    expect(risky).not.toContain('<A&B>');
+    expect(risky).toContain('&lt;mức lương&gt;');
+    expect(risky).toContain('&amp;');
+    expect(risky).not.toContain('<mức lương>');
   });
 });

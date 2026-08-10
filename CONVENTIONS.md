@@ -655,9 +655,21 @@ c1 = DTT − khấu hao − lãi vay − LNTT
 
 Rút gọn ra đúng **các khoản chi bằng tiền**, đúng như tên gọi. Vì vậy lỗi #2 làm sai lợi nhuận trình lên nhưng **không** làm sai hạn mức. Có test khoá tính chất này — đừng sửa `c1` thành phụ thuộc lãi vay.
 
-### Bố cục phụ lục là hợp đồng với người dùng
+### File xuất ra phải trùng khít bản gốc — nó là template nạp lên hệ thống
 
-Xuất giữ **nguyên** số cột, thứ tự STT chữ (`a`, `b`, `b1`…`b7`, `c`, `d`, `e`), các dòng `…` bỏ trống, và đơn vị của từng file: hai phụ lục đầu bằng **VND**, `CapHanMucTinDung` bằng **trđ**. Hai dòng Vốn góp và Nguồn kinh phí & quỹ khác vẫn in ra dù khách hàng cá nhân không có, giá trị 0.
+Đây là ràng buộc cứng, không phải sở thích trình bày: ba phụ lục còn được **nạp ngược lên hệ thống**, nên bất cứ chữ nào lệch cũng làm file không dùng được.
+
+Giữ **nguyên văn**:
+
+- **Nhãn từng dòng**, kể cả nhãn sai nghĩa. Dòng `b6` của phụ lục KQKD ghi "Chi phí 6: Chi phí khác" nhưng nạp giá trị **khấu hao**, và `b7` là "Chi phí 7:…" nhận chi phí khác — đúng như bản gốc làm. Sửa nhãn cho đúng nghĩa là **phá template**.
+- **Tiêu đề cột**, kể cả ký tự vô hình: cột cuối của `CapHanMucTinDung` là `"Tăng/giảm "` với một dấu cách cuối.
+- **Số cột, thứ tự STT chữ** (`a`, `b`, `b1`…`b7`, `c`, `d`, `e`), các dòng `…` bỏ trống, hai dòng Vốn góp và Nguồn kinh phí & quỹ khác (giá trị 0 cho khách hàng cá nhân).
+- **Đơn vị từng file**: hai phụ lục đầu bằng **VND**, `CapHanMucTinDung` bằng **trđ**.
+- **Không chèn gì phía trên bảng.** Bản gốc bắt đầu ngay ở dòng tiêu đề cột; thêm dòng tiêu đề hay tên khách hàng là đẩy lệch mọi ô.
+
+Đã phạm một lần 09/08/2026: đổi nhãn `b6`/`b7` cho "đúng nghĩa" và thêm hai dòng tiêu đề. Có test khoá **toàn bộ danh sách nhãn** của hai phụ lục để không tái diễn.
+
+Phần **giá trị** thì ngược lại — bảy lỗi công thức ở trên đều đã sửa. Ranh giới: **hình thức giữ nguyên, con số tính đúng**.
 
 Ô số ghi **số thô** kèm `mso-number-format` để Excel đọc thành số tính toán tiếp được, không ghi chuỗi đã định dạng. Test kiểm trên **mô hình dòng**, không trên chuỗi HTML.
 

@@ -13,14 +13,11 @@ export type ExportRow = ExportCell[];
 
 export interface ExportSheet {
   fileBase: string;
-  title: string;
-  subtitle: string;
   header: string[];
   rows: ExportRow[];
 }
 
 export interface ExportContext {
-  customerName: string;
   customerCif: string;
   balanceSheetDate: string;
   actualYear: number;
@@ -88,8 +85,6 @@ export function buildFinancialPositionSheet(
 
   return {
     fileBase: 'TINH HINH TAI CHINH',
-    title: 'TÌNH HÌNH TÀI CHÍNH',
-    subtitle: `${ctx.customerName} · CIF ${ctx.customerCif}`,
     header: ['STT', 'Tài sản', at, 'Nguồn vốn', at],
     rows: [
       [text('1', 'center'), label('Tài sản ngắn hạn'), money(b.currentAssets, true),
@@ -134,8 +129,6 @@ export function buildIncomeStatementSheet(r: BusinessPlanResult, ctx: ExportCont
 
   return {
     fileBase: 'KET QUA KINH DOANH',
-    title: 'KẾT QUẢ KINH DOANH',
-    subtitle: `${ctx.customerName} · CIF ${ctx.customerCif} · kỳ thực hiện năm ${ctx.actualYear}`,
     header: ['STT', 'Chỉ tiêu', 'Giá trị hàng tháng', 'Giá trị hàng năm', 'Cơ sở xác định'],
     rows: [
       line('a', 'Doanh thu', m.revenue, rev, basisOr(ctx, 'revenue', ''), true),
@@ -151,9 +144,9 @@ export function buildIncomeStatementSheet(r: BusinessPlanResult, ctx: ExportCont
         basisOr(ctx, 'utilities', '')),
       line('b5', 'Chi phí 5: Chi phí lãi vay', m.costs.interest, c.interest,
         basisOr(ctx, 'interest', shareOfRevenueText(c.interest, rev))),
-      line('b6', 'Chi phí 6: Chi phí khấu hao', m.costs.depreciation, c.depreciation,
+      line('b6', 'Chi phí 6: Chi phí khác', m.costs.depreciation, c.depreciation,
         basisOr(ctx, 'depreciation', shareOfRevenueText(c.depreciation, rev))),
-      line('b7', 'Chi phí 7: Chi phí khác', m.costs.other, c.other,
+      line('b7', 'Chi phí 7:…', m.costs.other, c.other,
         basisOr(ctx, 'other', shareOfRevenueText(c.other, rev))),
       line('c', 'Lợi nhuận', m.profitBeforeTax, p.profitBeforeTax,
         basisOr(ctx, 'profit', shareOfRevenueText(p.profitBeforeTax, rev)), true),
@@ -191,10 +184,8 @@ export function buildCreditLimitSheet(r: BusinessPlanResult, ctx: ExportContext)
 
   return {
     fileBase: 'CapHanMucTinDung',
-    title: 'TÍNH TOÁN CẤP HẠN MỨC TÍN DỤNG',
-    subtitle: `${ctx.customerName} · CIF ${ctx.customerCif}`,
     header: ['STT', 'Khoảng mục', 'Đvt',
-      `Kỳ thực hiện năm ${ctx.actualYear}`, `Năm kế hoạch ${ctx.planYear}`, 'Tăng/giảm'],
+      `Kỳ thực hiện năm ${ctx.actualYear}`, `Năm kế hoạch ${ctx.planYear}`, 'Tăng/giảm\u00a0'],
     rows: [
       group('b', 'Phương án kết quả kinh doanh'),
       row('1', 'Doanh thu thuần (DTT)', 'trđ', a.revenueAnnual, p.revenueAnnual),
@@ -203,7 +194,7 @@ export function buildCreditLimitSheet(r: BusinessPlanResult, ctx: ExportContext)
       row('4', 'Lãi vay (các khoản vay tài trợ cho SXKD)', 'trđ', a.costs.interest, p.costs.interest),
       row('5', 'Lợi nhuận trước thuế (LNTT)', 'trđ', a.profitBeforeTax, p.profitBeforeTax),
       row('6', 'Lợi nhuận sau thuế (LNST)', 'trđ', a.profitAfterTax, p.profitAfterTax),
-      row('7', 'Tài sản lưu động', 'trđ', a.currentAssets, p.currentAssets),
+      row('7', 'Tài sản lưu động ', 'trđ', a.currentAssets, p.currentAssets),
       group('c', 'Tính toán nhu cầu cấp tín dụng'),
       row('1', 'Tổng nhu cầu vốn bằng tiền (c1 = b1 - b3 - b4 - b5)', 'trđ',
         la.cashNeed, lp.cashNeed, false),
@@ -255,8 +246,6 @@ export function sheetToXlsHtml(sheet: ExportSheet): string {
   th { background-color: #e2e8f0; font-weight: bold; text-align: center; }
 </style></head>
 <body>
-<h3 style="font-family:Arial,sans-serif;">${escapeHtml(sheet.title)}</h3>
-<p style="font-family:Arial,sans-serif;font-size:10pt;">${escapeHtml(sheet.subtitle)}</p>
 <table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>
 </body></html>`;
 }

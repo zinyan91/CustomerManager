@@ -178,7 +178,7 @@ trong khi bảng gốc hiện chỉ còn 128. Trong hệ thống là một ngu�
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
 | ✅ | `businessPlan.ts` — toàn bộ công thức | 43 test. Hai kỳ đi qua **cùng một hàm** `computePeriod` nên không thể lệch công thức như file gốc |
-| ✅ | `businessPlanExport.ts` — ba phụ lục | 24 test trên **mô hình dòng**, không trên chuỗi HTML. Giữ đúng số cột, thứ tự STT chữ (`a`, `b`, `b1`…`b7`, `c`, `d`, `e`) và các dòng `…` bỏ trống của bản gốc |
+| ✅ | `businessPlanExport.ts` — ba phụ lục | 27 test trên **mô hình dòng**, không trên chuỗi HTML. File xuất phải **trùng khít bản gốc** vì còn nạp ngược lên hệ thống: nguyên văn nhãn từng dòng (kể cả `b6` ghi "Chi phí khác" nhưng nạp khấu hao), nguyên văn tiêu đề cột (kể cả dấu cách cuối ở `"Tăng/giảm "`), không chèn dòng nào phía trên bảng. Đã phạm một lần và sửa lại trong ngày; test khoá toàn bộ danh sách nhãn |
 | ✅ | Migration 31 — `BusinessPlans` + `BusinessPlanDebts` | Chỉ lưu ô đầu vào. Đã chạy 09/08/2026, kiểm chứng RLS: mỗi bảng đúng một policy `ALL` |
 | ✅ | Tab **Phương án kinh doanh** | Hai chế độ, đơn vị nhập trđ/đồng đổi được, 4 test dựng màn hình |
 | ✅ | Rút `totalUsableCapacity` về `collateralMath.ts` | Đã có 4 chỗ cùng `reduce(usableCapacity)`; gom trước khi thêm chỗ thứ năm |

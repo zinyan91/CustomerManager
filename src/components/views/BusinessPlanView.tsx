@@ -130,7 +130,6 @@ export const BusinessPlanView: React.FC = () => {
 
   const exportContext: ExportContext | null = draft && customer
     ? {
-      customerName: customer.FullName,
       customerCif: customer.CifKh || '',
       balanceSheetDate: draft.BalanceSheetDate,
       actualYear: draft.ActualYear,

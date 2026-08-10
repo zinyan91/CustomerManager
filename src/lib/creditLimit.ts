@@ -1,4 +1,5 @@
-import type { LoanContract, Collateral, CreditCard } from '../types';
+import type { LoanContract, Collateral, CardContract } from '../types';
+import { cardContractGrantedLimit } from './cardContract';
 import { getMasterHdtdNumber, toIsoDate } from './utils';
 import {
   totalUsableCapacity, appraisalStatus, appraisalExpiryDate, cardProductCap, isAppraisalUsable,
@@ -53,12 +54,18 @@ export interface LimitGroupStatus {
   settledKunnCount: number;
 }
 
+export interface ContractEffectiveDates {
+  startDate: string | null;
+  endDate: string | null;
+}
+
 export interface LimitGroupOptions {
   getOutstanding?: (c: LoanContract) => number;
   excludeContractId?: number | null;
   grantedOverride?: number | null;
   today?: string | null;
   isClosed?: (c: LoanContract) => boolean;
+  getContractDates?: (c: LoanContract) => ContractEffectiveDates | null;
 }
 
 export function computeLimitGroups(
@@ -117,10 +124,14 @@ export function computeLimitGroups(
     }
     if (limitOf(c) > g.granted) g.granted = limitOf(c);
 
-    const end = toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate);
+    const fromParent = options?.getContractDates?.(c) ?? null;
+
+    const end = fromParent
+      ? toIsoDate(fromParent.endDate)
+      : (toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate));
     if (end && (!g.endDate || end > g.endDate)) g.endDate = end;
 
-    const start = toIsoDate(c.ContractStartDate);
+    const start = fromParent ? toIsoDate(fromParent.startDate) : toIsoDate(c.ContractStartDate);
     if (start && (!g.startDate || start < g.startDate)) g.startDate = start;
 
     if (excludeId !== null && c.Id === excludeId) continue;
@@ -255,18 +266,19 @@ export function parseCollateralIds(c: LoanContract): number[] {
   return Array.from(ids);
 }
 
-export function cardCollateralId(card: CreditCard): number | null {
+export function cardCollateralId(card: CardContract): number | null {
   return card.CollateralId ?? null;
 }
 
-export function cardGrantedLimit(card: CreditCard): number {
-  return Math.max(0, card.CreditLimit ?? 0);
+export function cardGrantedLimit(card: CardContract): number {
+  if (card.IsClosed) return 0;
+  return Math.max(0, cardContractGrantedLimit(card));
 }
 
 export function clusterExposure(
   contracts: LoanContract[],
   getOutstanding?: (c: LoanContract) => number,
-  cards: CreditCard[] = []
+  cards: CardContract[] = []
 ): number {
   const revolving = contracts.filter(c => isRevolvingCredit(c.LoanMethod));
   const term = contracts.filter(c => !isRevolvingCredit(c.LoanMethod));
@@ -288,7 +300,7 @@ export function checkCollateralCapacity(
   collaterals: Collateral[],
   getOutstanding?: (c: LoanContract) => number,
   todayStr?: string,
-  cards: CreditCard[] = []
+  cards: CardContract[] = []
 ): CollateralCapacityCheck[] {
   const collateralById = new Map(collaterals.map(c => [c.Id, c]));
 
@@ -316,7 +328,7 @@ export function checkCollateralCapacity(
     linkedContracts.push({ key, contract: c, colIds });
   });
 
-  const linkedCards: { key: string; card: CreditCard; colId: number }[] = [];
+  const linkedCards: { key: string; card: CardContract; colId: number }[] = [];
 
   cards.forEach((card, i) => {
     const colId = cardCollateralId(card);
@@ -327,7 +339,7 @@ export function checkCollateralCapacity(
     linkedCards.push({ key, card, colId });
   });
 
-  const clusters = new Map<string, { contracts: LoanContract[]; cards: CreditCard[]; colIds: Set<number> }>();
+  const clusters = new Map<string, { contracts: LoanContract[]; cards: CardContract[]; colIds: Set<number> }>();
   const clusterAt = (root: string) => {
     if (!clusters.has(root)) clusters.set(root, { contracts: [], cards: [], colIds: new Set() });
     return clusters.get(root)!;
@@ -367,7 +379,7 @@ export function checkCollateralCapacity(
       exceeded: excessAmount > 0,
       excessAmount,
       contractNumbers: cluster.contracts.map(c => c.ContractNumber),
-      cardNumbers: cluster.cards.map(c => c.CardNumber || `#${c.Id}`),
+      cardNumbers: cluster.cards.map(c => c.CardContractNumber || `#${c.Id}`),
       expiredAppraisals,
     });
   }
@@ -398,7 +410,7 @@ export function checkCardLimit(
   requestedLimit: number,
   collateral: Collateral | null,
   contracts: LoanContract[],
-  otherCards: CreditCard[],
+  otherCards: CardContract[],
   collaterals: Collateral[],
   getOutstanding?: (c: LoanContract) => number,
   todayStr?: string

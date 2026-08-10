@@ -17,7 +17,7 @@ import {
   buildRateFields,
 } from '../../lib/rateResolution';
 import { maxLoanFromCollateral } from '../../lib/collateralMath';
-import { checkKunnAgainstContract, nextKunnNumber, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd } from '../../lib/creditContract';
+import { checkKunnAgainstContract, nextKunnNumber, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf } from '../../lib/creditContract';
 import { useWork } from '../../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../../lib/creditLimit';
 import {
@@ -338,6 +338,7 @@ export const LoanPortfolioView: React.FC = () => {
             grantedOverride: creditLimit > 0 ? creditLimit : null,
             today: todayIso(),
             isClosed: kunnOfClosedHdtd,
+            getContractDates: hdtdDatesOf,
           }),
           targetHdtdNo
         );
@@ -489,13 +490,19 @@ export const LoanPortfolioView: React.FC = () => {
     [creditContracts]
   );
 
+  const hdtdDatesOf = useCallback(
+    (c: LoanContract) => hdtdEffectiveDatesOf(c, creditContracts),
+    [creditContracts]
+  );
+
   const limitGroups = useMemo(
     () => computeLimitGroups(contracts, {
       getOutstanding: getEffectiveBalanceForContract,
       today: today,
       isClosed: kunnOfClosedHdtd,
+      getContractDates: hdtdDatesOf,
     }),
-    [contracts, allSchedulesMap, today, kunnOfClosedHdtd]
+    [contracts, allSchedulesMap, today, kunnOfClosedHdtd, hdtdDatesOf]
   );
 
   const masterNoOf = useCallback(
@@ -569,10 +576,11 @@ export const LoanPortfolioView: React.FC = () => {
         grantedOverride: creditLimitNum > 0 ? creditLimitNum : null,
         today: today,
         isClosed: kunnOfClosedHdtd,
+        getContractDates: hdtdDatesOf,
       }),
       effectiveFormHdtdNo
     ),
-    [contracts, allSchedulesMap, selectedContract, creditLimitNum, effectiveFormHdtdNo, today, kunnOfClosedHdtd]
+    [contracts, allSchedulesMap, selectedContract, creditLimitNum, effectiveFormHdtdNo, today, kunnOfClosedHdtd, hdtdDatesOf]
   );
 
   const formGrantedLimit = formLimitStatus?.granted ?? creditLimitNum;

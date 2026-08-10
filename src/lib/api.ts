@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
-import type { Customer, Collateral, LoanContract, CreditContract, CreditCard, RepaymentSchedule, CollateralAppraisal, PostLoanControlRecord } from '../types';
+import type { Customer, Collateral, LoanContract, CreditContract, CardContract, CardSupplementaryHolder, RepaymentSchedule, CollateralAppraisal, PostLoanControlRecord } from '../types';
+import { CARD_TENOR_MONTHS } from './cardContract';
 import { defaultLtvForAssetType } from './collateralMath';
 import { toIsoDate } from './utils';
 import { findKunnNumberClash } from './creditContract';
@@ -103,7 +104,7 @@ export async function fetchCustomerLinkCountsAPI(customerId: number): Promise<Cu
     countRowsFor('LoanContracts', customerId),
     countRowsFor('CreditContracts', customerId),
     countRowsFor('Collaterals', customerId),
-    countRowsFor('CreditCards', customerId),
+    countRowsFor('CardContracts', customerId),
   ]);
   return { kunn, hdtd, collaterals, cards };
 }
@@ -427,77 +428,139 @@ export async function countKunnOfCreditContractAPI(creditContractId: number): Pr
   return count || 0;
 }
 
-export async function fetchCreditCardsAPI(): Promise<CreditCard[]> {
+export async function fetchCardContractsAPI(): Promise<CardContract[]> {
   try {
-    const { data, error } = await supabase.from('CreditCards').select('*, customer:Customers(*)');
+    const { data, error } = await supabase.from('CardContracts').select('*, customer:Customers(*)');
     if (error) throw error;
-    return (data || []).sort((a: any, b: any) => (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
+    return (data || []).sort((a: any, b: any) =>
+      (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
   } catch (err) {
-    console.error("fetchCreditCardsAPI error:", err);
+    console.error('fetchCardContractsAPI error:', err);
     return [];
   }
 }
 
-export async function fetchCreditCardsByCustomerAPI(customerId: number): Promise<CreditCard[]> {
-  const { data, error } = await supabase.from('CreditCards').select('*').eq('CustomerId', customerId);
+export async function fetchCardContractsByCustomerAPI(customerId: number): Promise<CardContract[]> {
+  const { data, error } = await supabase
+    .from('CardContracts')
+    .select('*')
+    .eq('CustomerId', customerId)
+    .order('CardContractNumber', { ascending: true });
   if (error) throw error;
   return data || [];
 }
 
-export async function saveCreditCardAPI(card: Partial<CreditCard>): Promise<CreditCard> {
-  const isUpdate = !!card.Id;
-  const rawCardNumber = (card.CardNumber || '').trim();
-  const autoMaskNumber = `4532••••${Math.floor(1000 + Math.random() * 9000)}`;
-  const cardNumber = rawCardNumber || autoMaskNumber;
-
-  if (!card.CustomerId) {
-    throw new Error('Khách hàng sở hữu thẻ là bắt buộc!');
-  }
-
-  if (rawCardNumber) {
-    const { data: cardCheck } = await supabase
-      .from('CreditCards')
-      .select('Id, CardNumber')
-      .eq('CardNumber', rawCardNumber);
-
-    const duplicateCard = (cardCheck || []).find(c => c.Id !== card.Id);
-    if (duplicateCard) {
-      throw new Error(`Số thẻ tín dụng "${rawCardNumber}" đã tồn tại trên hệ thống!`);
-    }
-  }
-
-  const { customer: _customer, ...dbPayload } = card as any;
-
-  const cardData: any = {
-    CustomerId: Number(dbPayload.CustomerId),
-    CardNumber: cardNumber,
-    CreditLimit: Number(dbPayload.CreditLimit ?? 0),
-    CurrentBalance: Number(dbPayload.CurrentBalance || 0),
-    Note: dbPayload.Note || null,
-  };
-
-  if (dbPayload.IssuanceType) {
-    cardData.IssuanceType = String(dbPayload.IssuanceType);
-  }
-  cardData.CollateralId = dbPayload.CollateralId ? Number(dbPayload.CollateralId) : null;
-  cardData.IsLtvException = !!dbPayload.IsLtvException;
-  cardData.LtvExceptionReason = dbPayload.LtvExceptionReason || null;
-
-  if (isUpdate) {
-    cardData.Id = dbPayload.Id;
-    const { data, error } = await supabase.from('CreditCards').update(cardData).eq('Id', cardData.Id).select().single();
-    if (error) throw error;
-    return data;
-  } else {
-    const { data, error } = await supabase.from('CreditCards').insert([cardData]).select().single();
-    if (error) throw error;
-    return data;
-  }
+export async function fetchCardSupplementaryHoldersAPI(
+  cardContractId: number
+): Promise<CardSupplementaryHolder[]> {
+  const { data, error } = await supabase
+    .from('CardSupplementaryHolders')
+    .select('*')
+    .eq('CardContractId', cardContractId)
+    .order('Id', { ascending: true });
+  if (error) throw error;
+  return data || [];
 }
 
-export async function deleteCreditCardAPI(id: number): Promise<void> {
-  const { error } = await supabase.from('CreditCards').delete().eq('Id', id);
+function cardContractDbError(err: any, contractNumber: string): Error {
+  const msg = String(err?.message || '');
+  if (err?.code === '23505' || err?.code === '23000' || /duplicate key/i.test(msg)) {
+    return new Error(`Số hợp đồng thẻ "${contractNumber}" đã tồn tại trên hệ thống.`);
+  }
+  if (/CardContracts_CoTSBD_phai_gan_tai_san/.test(msg)) {
+    return new Error('Khoản cấp tín dụng có TSBĐ phải gán tài sản bảo đảm.');
+  }
+  if (/CardContracts_ChuThe_hop_le/.test(msg)) {
+    return new Error('Chủ thẻ chỉ nhận giá trị KH hoặc KHLQ.');
+  }
+  if (/CardContracts_LoaiTSBD_hop_le/.test(msg)) {
+    return new Error('Loại TSBĐ không hợp lệ.');
+  }
+  if (err?.code === '23503') {
+    return new Error('Không lưu được: khách hàng hoặc tài sản bảo đảm được tham chiếu không còn tồn tại.');
+  }
+  return err instanceof Error ? err : new Error(msg || 'Không lưu được hợp đồng thẻ.');
+}
+
+export async function saveCardContractAPI(
+  contract: Partial<CardContract>
+): Promise<CardContract> {
+  const isUpdate = !!contract.Id;
+  const contractNumber = (contract.CardContractNumber || '').trim();
+
+  if (!contract.CustomerId) throw new Error('Khách hàng của hợp đồng thẻ là bắt buộc!');
+  if (!contractNumber) throw new Error('Số hợp đồng thẻ là bắt buộc!');
+
+  const { customer: _customer, ...raw } = contract as any;
+
+  const payload: any = {
+    CustomerId: Number(raw.CustomerId),
+    CardContractNumber: contractNumber,
+    CardHolderSide: raw.CardHolderSide || 'KH',
+    CardHolderName: raw.CardHolderName || null,
+    CardProducts: raw.CardProducts || null,
+    GrantedLimit: raw.GrantedLimit === null || raw.GrantedLimit === undefined
+      ? null
+      : Number(raw.GrantedLimit),
+    PolicyCode: raw.PolicyCode || null,
+    CollateralKind: raw.CollateralKind || null,
+    CollateralId: raw.CollateralId ? Number(raw.CollateralId) : null,
+    TenorMonths: Number(raw.TenorMonths ?? CARD_TENOR_MONTHS),
+    IssueDate: raw.IssueDate || null,
+    ExpiryDate: raw.ExpiryDate || null,
+    IsClosed: !!raw.IsClosed,
+    Note: raw.Note || null,
+  };
+
+  const q = isUpdate
+    ? supabase.from('CardContracts').update(payload).eq('Id', raw.Id).select('*, customer:Customers(*)').single()
+    : supabase.from('CardContracts').insert([payload]).select('*, customer:Customers(*)').single();
+
+  const { data, error } = await q;
+  if (error) throw cardContractDbError(error, contractNumber);
+  await unarchiveCustomer(data?.CustomerId);
+  return data;
+}
+
+export async function replaceCardSupplementaryHoldersAPI(
+  cardContractId: number,
+  holders: Pick<CardSupplementaryHolder, 'FullName' | 'Relation' | 'RelationNote' | 'NationalId'>[]
+): Promise<CardSupplementaryHolder[]> {
+  const { error: delErr } = await supabase
+    .from('CardSupplementaryHolders')
+    .delete()
+    .eq('CardContractId', cardContractId);
+  if (delErr) throw delErr;
+
+  if (holders.length === 0) return [];
+
+  const rows = holders.map(h => ({
+    CardContractId: cardContractId,
+    FullName: (h.FullName || '').trim(),
+    Relation: (h.Relation || '').trim(),
+    RelationNote: h.RelationNote || null,
+    NationalId: h.NationalId || null,
+  }));
+
+  const { data, error } = await supabase
+    .from('CardSupplementaryHolders')
+    .insert(rows)
+    .select();
+  if (error) {
+    if (/chi co toi da 2 the phu|tối đa 2 thẻ phụ/i.test(String(error.message))) {
+      throw new Error('Một thẻ chính chỉ có tối đa 2 thẻ phụ.');
+    }
+    throw error;
+  }
+  return data || [];
+}
+
+export async function deleteCardContractAPI(id: number): Promise<void> {
+  const { data, error } = await supabase.from('CardContracts').delete().eq('Id', id).select();
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Xoá thất bại: bạn không có quyền xoá hợp đồng thẻ này, hoặc bản ghi đã bị xoá trước đó.');
+  }
 }
 
 export async function fetchContractsByCustomerAPI(customerId: number): Promise<LoanContract[]> {

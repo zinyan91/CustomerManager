@@ -173,21 +173,6 @@ export interface RateAdjustmentHistoryItem {
   reason?: string;
 }
 
-export interface CreditCard {
-  Id: number;
-  CustomerId: number;
-  IssuanceType?: string;
-  CardNumber?: string | null;
-  CreditLimit?: number;
-  CurrentBalance?: number;
-  CollateralId?: number | null;
-  IsLtvException?: boolean;
-  LtvExceptionReason?: string | null;
-  Note?: string | null;
-  customer?: Customer;
-  collateral?: Collateral;
-}
-
 export interface CollateralAppraisal {
   Id: number;
   CollateralId: number;
@@ -220,4 +205,32 @@ export interface PostLoanControlRecord {
   Findings?: string | null;
   AppraisalId?: number | null;
   CreatedAt?: string;
+}
+
+export interface CardContract {
+  Id: number;
+  CustomerId: number;
+  CardContractNumber: string;
+  CardHolderSide: 'KH' | 'KHLQ';
+  CardHolderName?: string | null;
+  CardProducts?: string | null;
+  GrantedLimit?: number | null;
+  PolicyCode?: string | null;
+  CollateralKind?: 'KHONG_TSBD' | 'TIEN_GUI' | 'CO_TSBD' | null;
+  CollateralId?: number | null;
+  TenorMonths?: number | null;
+  IssueDate?: string | null;
+  ExpiryDate?: string | null;
+  IsClosed?: boolean;
+  Note?: string | null;
+  customer?: Customer;
+}
+
+export interface CardSupplementaryHolder {
+  Id: number;
+  CardContractId: number;
+  FullName: string;
+  Relation: string;
+  RelationNote?: string | null;
+  NationalId?: string | null;
 }

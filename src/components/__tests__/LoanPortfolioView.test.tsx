@@ -43,7 +43,7 @@ vi.mock('../../lib/api', () => ({
   fetchContractsByCustomerAPI: vi.fn(async () => danhSachKunn),
   fetchCollateralsByCustomerAPI: vi.fn(async () => []),
   fetchCreditContractsByCustomerAPI: vi.fn(async () => [hdtd]),
-  fetchCreditCardsByCustomerAPI: vi.fn(async () => []),
+  fetchCardContractsByCustomerAPI: vi.fn(async () => []),
   fetchRepaymentSchedulesAPI: vi.fn(async () => []),
   saveContractAPI: vi.fn(),
   deleteContractAPI: vi.fn(),

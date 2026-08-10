@@ -417,7 +417,7 @@ export const CreditContractView: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className={`block mb-1 ${labelStyle}`}>Số HĐTD * (duy nhất trong khách hàng)</label>
+              <label className={`block mb-1 ${labelStyle}`}>Số HĐTD *</label>
               <input type="text" value={form.HdtdNumber || ''}
                 onChange={e => setForm(f => ({ ...f, HdtdNumber: e.target.value }))}
                 placeholder="2002/HĐTD/9653222"
@@ -432,7 +432,7 @@ export const CreditContractView: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className={`block mb-1 ${labelStyle}`}>Tổng mức cấp (HĐTD) *</label>
+              <label className={`block mb-1 ${labelStyle}`}>Tổng mức cấp *</label>
               <input type="text" value={formAmount}
                 onChange={e => setFormAmount(formatMoneyInput(e.target.value))}
                 placeholder="4.000.000.000"

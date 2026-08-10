@@ -674,3 +674,94 @@ describe('computeLimitGroups — HĐTD chưa tới ngày hiệu lực', () => {
     expect(g.available).toBe(600_000_000);
   });
 });
+
+describe('ngày hiệu lực HĐTD đọc từ HĐTD cha, không đọc bản sao trên KUNN', () => {
+  const CHAU_CAT_LUONG = [
+    hd({ Id: 1, ContractNumber: '2002/HDTD/462912/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+         CreditContractId: 77, ContractAmount: 3_500_000_000,
+         LoanAmount: 1_750_000_000, CurrentBalance: 1_750_000_000,
+         ContractStartDate: '2025-05-28', ContractEndDate: '2026-05-28' }),
+    hd({ Id: 2, ContractNumber: '2002/HDTD/462912/GNN-02', LoanMethod: 'Hạn mức tín dụng',
+         CreditContractId: 77, ContractAmount: 3_500_000_000,
+         LoanAmount: 1_750_000_000, CurrentBalance: 0, IsSettled: true,
+         ContractStartDate: '2025-05-28', ContractEndDate: '2026-05-28' }),
+  ];
+
+  const hanThat = () => ({ startDate: '2025-05-28', endDate: '2027-05-28' });
+
+  it('bản sao trên KUNN cũ hơn: KHÔNG được coi là hết hiệu lực', () => {
+    const [g] = computeLimitGroups(CHAU_CAT_LUONG, {
+      today: '2026-08-10',
+      getContractDates: hanThat,
+    });
+    expect(g.endDate).toBe('2027-05-28');
+    expect(g.expired).toBe(false);
+  });
+
+  it('hạn mức của KUNN đã tất toán được giải phóng, không bị cờ hết hiệu lực che', () => {
+    const [g] = computeLimitGroups(CHAU_CAT_LUONG, {
+      today: '2026-08-10',
+      getContractDates: hanThat,
+    });
+    expect(g.settledKunnCount).toBe(1);
+    expect(g.outstanding).toBe(1_750_000_000);
+    expect(g.headroom).toBe(1_750_000_000);
+    expect(g.available).toBe(1_750_000_000);
+  });
+
+  it('không truyền nguồn ngày thì vẫn đọc bản sao trên KUNN — giữ tương thích', () => {
+    const [g] = computeLimitGroups(CHAU_CAT_LUONG, { today: '2026-08-10' });
+    expect(g.endDate).toBe('2026-05-28');
+    expect(g.expired).toBe(true);
+    expect(g.available).toBe(0);
+  });
+
+  it('CHIỀU NGUY HIỂM: bản sao trên KUNN DÀI hơn hạn thật thì phải chặn', () => {
+    const banSaoDaiHon = CHAU_CAT_LUONG.map(c => ({ ...c, ContractEndDate: '2028-05-28' }));
+    const [g] = computeLimitGroups(banSaoDaiHon, {
+      today: '2026-08-10',
+      getContractDates: () => ({ startDate: '2025-05-28', endDate: '2026-05-28' }),
+    });
+    expect(g.endDate).toBe('2026-05-28');
+    expect(g.expired).toBe(true);
+    expect(g.available).toBe(0);
+  });
+
+  it('ngày hiệu lực cũng đọc từ HĐTD cha', () => {
+    const [g] = computeLimitGroups(CHAU_CAT_LUONG, {
+      today: '2026-08-10',
+      getContractDates: () => ({ startDate: '2026-12-01', endDate: '2027-05-28' }),
+    });
+    expect(g.startDate).toBe('2026-12-01');
+    expect(g.notYetEffective).toBe(true);
+    expect(g.available).toBe(0);
+  });
+
+  it('tra không ra HĐTD cha thì rơi về bản sao, không ném lỗi', () => {
+    const [g] = computeLimitGroups(CHAU_CAT_LUONG, {
+      today: '2026-08-10',
+      getContractDates: () => null,
+    });
+    expect(g.endDate).toBe('2026-05-28');
+    expect(g.expired).toBe(true);
+  });
+
+  it('dư nợ khoá theo đáo hạn KUNN cũng tính trên hạn THẬT', () => {
+    const cs = [
+      hd({ Id: 1, ContractNumber: 'HD01/GNN-01', LoanMethod: 'Hạn mức tín dụng',
+           ContractAmount: 2_000_000_000, LoanAmount: 800_000_000,
+           CurrentBalance: 800_000_000, ContractEndDate: '2026-05-28',
+           KunnDueDate: '2027-01-15' }),
+    ];
+
+    const cu = computeLimitGroups(cs, { today: '2026-08-10' });
+    expect(cu[0].lockedOutstanding).toBe(800_000_000);
+
+    const moi = computeLimitGroups(cs, {
+      today: '2026-08-10',
+      getContractDates: () => ({ startDate: null, endDate: '2027-05-28' }),
+    });
+    expect(moi[0].lockedOutstanding).toBe(0);
+    expect(moi[0].redeployableOutstanding).toBe(800_000_000);
+  });
+});

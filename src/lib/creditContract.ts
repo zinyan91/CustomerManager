@@ -161,6 +161,19 @@ export function isKunnOfClosedHdtd(
   return creditContracts.some(cc => cc.Id === kunn.CreditContractId && cc.IsClosed === true);
 }
 
+export function hdtdEffectiveDatesOf(
+  kunn: Pick<LoanContract, 'CreditContractId'>,
+  creditContracts: Pick<CreditContract, 'Id' | 'ContractStartDate' | 'ContractEndDate'>[]
+): { startDate: string | null; endDate: string | null } | null {
+  if (kunn.CreditContractId === null || kunn.CreditContractId === undefined) return null;
+  const cc = creditContracts.find(x => x.Id === kunn.CreditContractId);
+  if (!cc) return null;
+  return {
+    startDate: toIso(cc.ContractStartDate) || null,
+    endDate: toIso(cc.ContractEndDate) || null,
+  };
+}
+
 export interface CloseCreditContractCheck {
   allowed: boolean;
   unsettledKunnNumbers: string[];

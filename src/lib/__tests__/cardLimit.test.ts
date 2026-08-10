@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { checkCardLimit, checkCollateralCapacity, clusterExposure, cardGrantedLimit } from '../creditLimit';
 import { cardProductCap, isSavingsPassbook, CARD_STK_LTV_PERCENT } from '../collateralMath';
-import type { Collateral, CreditCard, LoanContract } from '../../types';
+import type { CardContract, Collateral, LoanContract } from '../../types';
 
 const HOM_NAY = '2026-08-06';
 
@@ -27,13 +27,18 @@ const vay = (over: Partial<LoanContract>): LoanContract => ({
   ...over,
 } as unknown as LoanContract);
 
-const the = (over: Partial<CreditCard>): CreditCard => ({
-  Id: 500,
-  CustomerId: 1,
-  CardNumber: '4532••••1234',
-  CreditLimit: 0,
-  ...over,
-} as unknown as CreditCard);
+const the = (over: Partial<CardContract> & { CreditLimit?: number }): CardContract => {
+  const { CreditLimit, ...rest } = over;
+  return {
+    Id: 500,
+    CustomerId: 1,
+    CardContractNumber: 'NAT/2026/001',
+    CardHolderSide: 'KH',
+    CardProducts: 'Vietbank Visa Luxury',
+    GrantedLimit: CreditLimit ?? 0,
+    ...rest,
+  } as unknown as CardContract;
+};
 
 describe('isSavingsPassbook', () => {
   it('nhận cả sổ cùng hệ thống lẫn STK khác', () => {
@@ -62,9 +67,28 @@ describe('cardProductCap — thẻ trên sổ luôn 90%, không theo bảng LTV'
 });
 
 describe('thẻ được tính vào rủi ro của cụm', () => {
-  it('clusterExposure cộng hạn mức cấp của thẻ, không cộng dư nợ thẻ', () => {
-    const cards = [the({ CreditLimit: 200_000_000, CurrentBalance: 5_000_000 })];
+  it('clusterExposure cộng HẠN MỨC CẤP của thẻ — mô hình hợp đồng thẻ không có dư nợ để nhầm', () => {
+    const cards = [the({ CreditLimit: 200_000_000 })];
     expect(clusterExposure([], undefined, cards)).toBe(200_000_000);
+  });
+
+  it('ba thương hiệu thẻ trên một hợp đồng chỉ tính hạn mức MỘT lần', () => {
+    const cards = [the({
+      CreditLimit: 200_000_000,
+      CardProducts: 'Vietbank Visa Luxury;Vietbank Mastercard Happy;Vietbank Napas',
+    })];
+    expect(clusterExposure([], undefined, cards)).toBe(200_000_000);
+  });
+
+  it('thẻ ghi nợ không tiêu tốn rủi ro của cụm', () => {
+    const cards = [the({ CreditLimit: 200_000_000, CardProducts: 'Thẻ ghi nợ ATM' })];
+    expect(clusterExposure([], undefined, cards)).toBe(0);
+  });
+
+  it('hợp đồng thẻ đã đóng không tiêu tốn rủi ro của cụm', () => {
+    const cards = [the({ CreditLimit: 200_000_000, IsClosed: true })];
+    expect(cardGrantedLimit(cards[0])).toBe(0);
+    expect(clusterExposure([], undefined, cards)).toBe(0);
   });
 
   it('thẻ trên tài sản đang thế chấp làm cụm vượt trần', () => {
@@ -81,7 +105,7 @@ describe('thẻ được tính vào rủi ro của cụm', () => {
     expect(coThe[0].granted).toBe(900_000_000);
     expect(coThe[0].exceeded).toBe(true);
     expect(coThe[0].excessAmount).toBe(100_000_000);
-    expect(coThe[0].cardNumbers).toEqual(['4532••••1234']);
+    expect(coThe[0].cardNumbers).toEqual(['NAT/2026/001']);
   });
 
   it('thẻ không gắn tài sản thì không vào cụm nào', () => {

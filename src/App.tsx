@@ -10,7 +10,8 @@ import { CustomerListView } from './components/views/CustomerListView';
 import { LoanPortfolioView } from './components/views/LoanPortfolioView';
 import { CreditContractView } from './components/views/CreditContractView';
 import { CollateralView } from './components/views/CollateralView';
-import { CreditCardView } from './components/views/CreditCardView';
+import { CardContractView } from './components/views/CardContractView';
+import { CardPolicyLookupView } from './components/views/CardPolicyLookupView';
 import { CalculatorView } from './components/views/CalculatorView';
 import { MdsdvLookupView } from './components/views/MdsdvLookupView';
 import { RateQuoteView } from './components/views/RateQuoteView';
@@ -53,10 +54,11 @@ export function App() {
           {activeTab === 'credit-contracts' && <CreditContractView />}
           {activeTab === 'loans' && <LoanPortfolioView />}
           {activeTab === 'collaterals' && <CollateralView />}
-          {activeTab === 'credit-cards' && <CreditCardView />}
+          {activeTab === 'credit-cards' && <CardContractView />}
           {activeTab === 'calculators' && <CalculatorView />}
           {activeTab === 'business-plan' && <BusinessPlanView />}
           {activeTab === 'mdsdv' && <MdsdvLookupView />}
+          {activeTab === 'card-policies' && <CardPolicyLookupView />}
           {activeTab === 'rate-quote' && <RateQuoteView />}
           {activeTab === 'cof' && <CofView />}
           {activeTab === 'templates' && <DocumentTemplateView />}

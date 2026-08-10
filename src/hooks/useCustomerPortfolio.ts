@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { Collateral, CreditCard, CreditContract, Customer, LoanContract, RepaymentSchedule } from '../types';
+import type { Collateral, CardContract, CreditContract, Customer, LoanContract, RepaymentSchedule } from '../types';
 import {
   fetchCollateralsByCustomerAPI, fetchContractsByCustomerAPI, fetchCreditContractsByCustomerAPI,
-  fetchCreditCardsByCustomerAPI,
+  fetchCardContractsByCustomerAPI,
   fetchCustomersAPI, fetchRepaymentSchedulesAPI,
 } from '../lib/api';
 import { recalculateSchedules } from '../lib/loanMath';
@@ -33,7 +33,7 @@ export function useCustomerPortfolio({
   const [creditContracts, setCreditContracts] = useState<CreditContract[]>([]);
   const [contracts, setContracts] = useState<LoanContract[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
-  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [cards, setCards] = useState<CardContract[]>([]);
   const [selectedContract, setSelectedContract] = useState<LoanContract | null>(null);
   const [schedules, setSchedules] = useState<RepaymentSchedule[]>([]);
   const [allSchedulesMap, setAllSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
@@ -83,7 +83,7 @@ export function useCustomerPortfolio({
     const [cons, cols, crds] = await Promise.all([
       fetchContractsByCustomerAPI(c.Id),
       fetchCollateralsByCustomerAPI(c.Id),
-      fetchCreditCardsByCustomerAPI(c.Id),
+      fetchCardContractsByCustomerAPI(c.Id),
     ]);
     setContracts(cons);
     setCollaterals(cols);
@@ -117,8 +117,6 @@ export function useCustomerPortfolio({
         customers = await fetchCustomersAPI({ cif: searchCif.trim() });
       } else if (searchName.trim()) {
         customers = await fetchCustomersAPI({ name: searchName.trim() });
-      } else {
-        customers = await fetchCustomersAPI({});
       }
 
       let matchedCustomer: Customer | null = customers.length > 0 ? customers[0] : null;
@@ -142,7 +140,7 @@ export function useCustomerPortfolio({
         const [cons, cols, crds] = await Promise.all([
           fetchContractsByCustomerAPI(matchedCustomer.Id),
           fetchCollateralsByCustomerAPI(matchedCustomer.Id),
-          fetchCreditCardsByCustomerAPI(matchedCustomer.Id),
+          fetchCardContractsByCustomerAPI(matchedCustomer.Id),
         ]);
         setContracts(cons);
         setCollaterals(cols);

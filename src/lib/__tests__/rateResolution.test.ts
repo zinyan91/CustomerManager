@@ -243,7 +243,7 @@ describe('buildContractRateTimeline — đọc từ hợp đồng', () => {
     Id: 1, CustomerId: 1, ContractNumber: 'HD01/GNN-01', ContractType: 0, ...o,
   } as LoanContract);
 
-  it('lấy ngày giải ngân làm mốc và đọc bảng điều chỉnh trong Note', () => {
+  it('lấy ngày giải ngân làm mốc và đọc bảng điều chỉnh từ cột RateHistory', () => {
     const history = [{ id: '1', effectiveDate: '2028-06-15', ratePercent: 13.5 }];
     const t = buildContractRateTimeline(hd({
       DisbursementDate: '2026-04-15',
@@ -251,7 +251,7 @@ describe('buildContractRateTimeline — đọc từ hợp đồng', () => {
       PreferentialPeriodMonths: 12,
       BaseRate: 0.096,
       MarginRate: 0.032,
-      Note: `[RATE_HISTORY:${encodeURIComponent(JSON.stringify(history))}]`,
+      RateHistory: history,
     }));
 
     expect(t).toHaveLength(3);

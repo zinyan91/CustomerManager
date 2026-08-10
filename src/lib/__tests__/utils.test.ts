@@ -176,9 +176,9 @@ describe('lịch sử điều chỉnh lãi suất', () => {
     expect(getContractRateHistory(c)).toEqual(lichSu);
   });
 
-  it('đọc được từ trường Note của bản ghi cũ (chuỗi mã hoá)', () => {
+  it('không còn đọc từ Note, kể cả khi chuỗi cũ sót lại', () => {
     const blob = `[RATE_HISTORY:${encodeURIComponent(JSON.stringify(lichSu))}]`;
-    expect(getContractRateHistory({ Note: blob } as LoanContract)).toEqual(lichSu);
+    expect(getContractRateHistory({ Note: blob } as LoanContract)).toEqual([]);
   });
 
   it('không vỡ khi JSON hỏng, trả mảng rỗng', () => {

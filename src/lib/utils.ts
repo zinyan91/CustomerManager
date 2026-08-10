@@ -188,25 +188,6 @@ export function getContractRateHistory(c?: LoanContract | null): RateAdjustmentH
     }
   }
 
-  if (c.Note) {
-    const encodedMatch = c.Note.match(/\[RATE_HISTORY:([^\]]+)\]/);
-    if (encodedMatch && encodedMatch[1]) {
-      try {
-        const decoded = decodeURIComponent(encodedMatch[1]);
-        const parsed = JSON.parse(decoded);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {}
-    }
-
-    const rawMatch = c.Note.match(/\[RATE_HISTORY:([\s\S]*?)\]\]/) || c.Note.match(/\[RATE_HISTORY:([\s\S]*?)\]/);
-    if (rawMatch && rawMatch[1]) {
-      try {
-        const parsed = JSON.parse(rawMatch[1]);
-        if (Array.isArray(parsed)) return parsed;
-      } catch {}
-    }
-  }
-
   return [];
 }
 

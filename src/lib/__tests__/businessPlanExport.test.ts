@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { computeBusinessPlan, type BusinessPlanInput } from '../businessPlan';
 import {
   buildBusinessPlanSheets, buildFinancialPositionSheet, buildIncomeStatementSheet,
-  buildCreditLimitSheet, sheetToXlsHtml, shareOfRevenueText,
+  buildCreditLimitSheet, sheetToXlsx, sheetToXlsxModel, shareOfRevenueText,
   type ExportContext, type ExportSheet,
 } from '../businessPlanExport';
 
@@ -214,30 +214,44 @@ describe('bộ phụ lục theo loại hồ sơ', () => {
   });
 });
 
-describe('sheetToXlsHtml', () => {
-  const html = sheetToXlsHtml(buildFinancialPositionSheet(input, result, ctx));
+describe('xuất ra tệp xlsx thật', () => {
+  const sheet = buildFinancialPositionSheet(input, result, ctx);
+  const model = sheetToXlsxModel(sheet);
 
-  it('giữ số thô để Excel đọc thành số, kèm định dạng hiển thị', () => {
-    expect(html).toContain('>300000000<');
-    expect(html).toContain("mso-number-format:'#,##0'");
+  it('dòng đầu của bảng tính là dòng tiêu đề cột, không chèn gì phía trên', () => {
+    expect(model.rows[0].map(c => c.value)).toEqual(sheet.header);
+    expect(model.rows).toHaveLength(11);
   });
 
-  it('có đủ số dòng dữ liệu', () => {
-    expect(html.match(/<tr>/g)?.length).toBe(11);
+  it('ô tiền là số thật để Excel tính tiếp được, không phải chuỗi', () => {
+    const o = model.rows[2][2];
+    expect(o.numeric).toBe(true);
+    expect(o.value).toBe(300 * M);
+    expect(typeof o.value).toBe('number');
   });
 
-  it('không chèn thêm dòng tiêu đề nào phía trên bảng', () => {
-    expect(html).not.toContain('<h3');
-    expect(html).not.toContain('<p ');
-    expect(html.indexOf('<table')).toBeLessThan(html.indexOf('STT'));
+  it('ô chữ vẫn là chuỗi', () => {
+    expect(typeof model.rows[1][1].value).toBe('string');
+    expect(model.rows[1][1].numeric).toBeFalsy();
   });
 
-  it('thoát ký tự đặc biệt trong phần diễn giải banker nhập', () => {
-    const risky = sheetToXlsHtml(buildIncomeStatementSheet(result, {
-      ...ctx, basis: { staff: 'Thuê 5 NV <mức lương> 5 trđ & phụ cấp' },
+  it('tên bảng tính lấy theo tên tệp của phụ lục', () => {
+    expect(model.name).toBe('TINH HINH TAI CHINH');
+  });
+
+  it('sinh ra tệp ZIP hợp lệ chứ không phải HTML đội lốt Excel', () => {
+    const bytes = sheetToXlsx(sheet);
+    expect(bytes[0]).toBe(0x50);
+    expect(bytes[1]).toBe(0x4b);
+    expect(new TextDecoder().decode(bytes)).not.toContain('<html');
+  });
+
+  it('phần diễn giải banker nhập được thoát trong XML', () => {
+    const bytes = sheetToXlsx(buildIncomeStatementSheet(result, {
+      ...ctx, basis: { staff: 'Thuê 5 NV <mức lương> & phụ cấp' },
     }));
-    expect(risky).toContain('&lt;mức lương&gt;');
-    expect(risky).toContain('&amp;');
-    expect(risky).not.toContain('<mức lương>');
+    const text = new TextDecoder().decode(bytes);
+    expect(text).toContain('&lt;mức lương&gt;');
+    expect(text).toContain('&amp;');
   });
 });

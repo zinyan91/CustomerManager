@@ -671,7 +671,22 @@ Giữ **nguyên văn**:
 
 Phần **giá trị** thì ngược lại — bảy lỗi công thức ở trên đều đã sửa. Ranh giới: **hình thức giữ nguyên, con số tính đúng**.
 
-Ô số ghi **số thô** kèm `mso-number-format` để Excel đọc thành số tính toán tiếp được, không ghi chuỗi đã định dạng. Test kiểm trên **mô hình dòng**, không trên chuỗi HTML.
+**Kiểu ô cũng phải khớp.** Cột STT của `TINH HINH TAI CHINH` và `CapHanMucTinDung` là **số** trong bản gốc, còn của `KET QUA KINH DOANH` là **chữ** (`a`, `b1`…). Mọi ô tiền và tỷ lệ là số thật để Excel tính tiếp được, không phải chuỗi đã định dạng.
+
+### Xuất ra .xlsx thật, không phải HTML đội lốt Excel
+
+`downloadXls` của dự án ghi HTML rồi đặt tên `.xls`. Excel mở được nhưng **luôn cảnh báo** *"The file format and extension don't match"*, và đổi đuôi thành `.xlsx` chỉ làm hỏng nặng hơn vì `.xlsx` là một tệp ZIP.
+
+`src/lib/xlsxWriter.ts` sinh **tệp OOXML thật**: ZIP dạng store kèm CRC32 tự tính, năm thành phần bắt buộc (`[Content_Types].xml`, `_rels/.rels`, `xl/workbook.xml`, `xl/_rels/workbook.xml.rels`, `xl/worksheets/sheet1.xml`), chuỗi ghi nội tuyến. Không thêm thư viện ngoài — cùng lý lẽ với việc không nhúng thư viện PDF ở §8.
+
+Hai điểm bắt buộc khi sửa chỗ này:
+
+- **`xml:space="preserve"` trên mọi ô chữ.** Không có nó, Excel cắt khoảng trắng đầu/cuối và nhãn `"Tài sản lưu động "` mất dấu cách cuối — đúng thứ template cần giữ.
+- **Ô rỗng thì bỏ hẳn thẻ `<c>`**, đừng ghi ô trắng.
+
+Kiểm chứng không dừng ở test đơn vị: sinh cả ba tệp ra đĩa rồi cho **openpyxl** đọc lại. Một bộ đọc OOXML thật mở được thì Excel mở được. Đã làm 10/08/2026 — ZIP nguyên vẹn, ô đúng địa chỉ, số ra số, nbsp và dấu cách cuối còn nguyên.
+
+Ba tab khác (`Công cụ 1`, `Công cụ 4`, biểu mẫu hợp đồng) **vẫn dùng HTML `.xls`/`.doc`** và vẫn có cảnh báo đó. Chưa chuyển vì chúng cần màu và gộp ô; `xlsxWriter` hiện chỉ làm lưới trơn.
 
 ### Vay từng lần lấy min của ba giới hạn
 

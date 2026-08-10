@@ -17,6 +17,18 @@ export function downloadXls(html: string, fileName: string): void {
   downloadTextFile(html, fileName, MIME_XLS);
 }
 
+export function downloadBytes(bytes: Uint8Array, fileName: string, mimeType: string): void {
+  const blob = new Blob([bytes as unknown as BlobPart], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export function xlsShell(title: string, subtitle: string, tableHtml: string, note?: string): string {
   return `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">

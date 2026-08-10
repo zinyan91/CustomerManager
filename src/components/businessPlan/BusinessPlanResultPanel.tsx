@@ -1,8 +1,9 @@
 import React from 'react';
 import { FileDown, AlertTriangle } from 'lucide-react';
 import type { BusinessPlanInput, BusinessPlanResult } from '../../lib/businessPlan';
-import { buildBusinessPlanSheets, sheetToXlsHtml, type ExportContext } from '../../lib/businessPlanExport';
-import { downloadXls } from '../../lib/xlsExport';
+import { buildBusinessPlanSheets, sheetToXlsx, type ExportContext } from '../../lib/businessPlanExport';
+import { downloadBytes } from '../../lib/xlsExport';
+import { MIME_XLSX } from '../../lib/xlsxWriter';
 import { fmtDecimals, fmtMoney, fmtPercent, todayIso } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 import { Block, ReadOnlyRow } from './fields';
@@ -28,7 +29,11 @@ export const BusinessPlanResultPanel: React.FC<Props> = ({
     const sheets = buildBusinessPlanSheets(input, result, context);
     const stamp = todayIso();
     sheets.forEach(sheet => {
-      downloadXls(sheetToXlsHtml(sheet), `${sheet.fileBase}_${context.customerCif || 'KH'}_${stamp}.xls`);
+      downloadBytes(
+        sheetToXlsx(sheet),
+        `${sheet.fileBase}_${context.customerCif || 'KH'}_${stamp}.xlsx`,
+        MIME_XLSX
+      );
     });
   };
 

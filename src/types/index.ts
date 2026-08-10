@@ -125,6 +125,7 @@ export interface LoanContract {
   InterestRepaymentMethod?: string | null;
   PrincipalGracePeriodMonths?: number | null;
   InterestGracePeriodMonths?: number | null;
+  MonthlyPrincipalAmount?: number | null;
 
   LoanPurpose?: string | null;
   LoanPurposeType?: string | null;

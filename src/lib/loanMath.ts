@@ -370,6 +370,29 @@ export function isBulletPrincipal(
   return (contract.PrincipalRepaymentMethod ?? 'Gốc trả cuối kỳ') === 'Gốc trả cuối kỳ';
 }
 
+export type MonthlyPrincipalContract = Pick<
+  LoanContract,
+  'MonthlyPrincipalAmount' | 'LoanAmount' | 'ContractAmount' | 'PrincipalGracePeriodMonths'
+>;
+
+export function monthlyPrincipalQuotient(
+  contract: MonthlyPrincipalContract,
+  totalPeriods: number
+): number {
+  const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
+  const graceMonths = contract.PrincipalGracePeriodMonths || 0;
+  return loanAmt / Math.max(1, totalPeriods - graceMonths);
+}
+
+export function resolveMonthlyPrincipal(
+  contract: MonthlyPrincipalContract,
+  totalPeriods: number
+): number {
+  const declared = contract.MonthlyPrincipalAmount;
+  if (declared !== null && declared !== undefined && declared > 0) return declared;
+  return roundPrincipalCore(monthlyPrincipalQuotient(contract, totalPeriods));
+}
+
 export function recalculateSchedules(
   schedList: RepaymentSchedule[],
   contract: LoanContract,
@@ -380,8 +403,7 @@ export function recalculateSchedules(
   const isBullet = isBulletPrincipal(contract);
 
   const totalPeriods = schedList.length;
-  const remainingRepayPeriods = Math.max(1, totalPeriods - graceMonths);
-  let baseMonthlyPrincipal = isBullet ? 0 : roundPrincipalCore(loanAmt / remainingRepayPeriods);
+  let baseMonthlyPrincipal = isBullet ? 0 : resolveMonthlyPrincipal(contract, totalPeriods);
 
   let planBalance = loanAmt;
   let actualBalance = loanAmt;

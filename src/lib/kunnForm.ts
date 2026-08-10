@@ -2,6 +2,7 @@ import type { CreditContract, LoanContract, RateAdjustmentHistoryItem } from '..
 import { getContractRateHistory, getMasterHdtdNumber, parseMoneyDecimalInput, stripLegacyNoteBlobs, toIsoDate } from './utils';
 import { buildRateFields, resolveRateModeOf } from './rateResolution';
 import { resolveMasterHdtdNumber } from './creditContract';
+import { isBulletPrincipal, roundPrincipalCore } from './loanMath';
 
 export const LOAN_METHODS = [
   'Hạn mức tín dụng',
@@ -29,6 +30,7 @@ export interface KunnFormFields {
   rateFloor: string;
   rateMode: RateMode;
   conditionSurcharge: string;
+  monthlyPrincipal: string;
   rateHistory: RateAdjustmentHistoryItem[];
   collateralIds: number[];
 }
@@ -94,6 +96,7 @@ export function contractToFormFields(c: LoanContract, creditContracts: CreditCon
     rateFloor: rateToInput(c.RateFloorAnnual),
     rateMode: resolveRateModeOf(c),
     conditionSurcharge: (c.PenaltySurcharge != null && c.PenaltySurcharge > 0) ? c.PenaltySurcharge.toString() : '0',
+    monthlyPrincipal: money(c.MonthlyPrincipalAmount),
     rateHistory: getContractRateHistory(c),
     collateralIds,
   };
@@ -126,6 +129,7 @@ export function blankFormFields(customerId?: number): KunnFormFields {
     rateFloor: '',
     rateMode: 'pref',
     conditionSurcharge: '0',
+    monthlyPrincipal: '',
     rateHistory: [],
     collateralIds: [],
   };
@@ -142,6 +146,58 @@ export function nextKunnNumberFor(hdtdNumber: string, contracts: LoanContract[])
 
 function cleanDate(d?: string | null): string | null {
   return (d && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) ? d.trim() : null;
+}
+
+export const MONTHLY_PRINCIPAL_TOLERANCE = 100_000;
+
+export interface MonthlyPrincipalCheckInput {
+  declared: number | null;
+  loanAmount: number;
+  totalPeriods: number;
+  graceMonths: number;
+  isBullet: boolean;
+}
+
+export interface MonthlyPrincipalCheck {
+  ok: boolean;
+  message?: string;
+  quotient: number;
+  suggested: number;
+}
+
+export function checkMonthlyPrincipal(input: MonthlyPrincipalCheckInput): MonthlyPrincipalCheck {
+  const repayPeriods = Math.max(1, input.totalPeriods - input.graceMonths);
+  const quotient = input.loanAmount > 0 ? input.loanAmount / repayPeriods : 0;
+  const suggested = quotient > 0 ? roundPrincipalCore(quotient) : 0;
+  const base = { quotient, suggested };
+
+  if (input.isBullet) return { ok: true, ...base };
+  if (input.declared === null || input.declared === 0) return { ok: true, ...base };
+
+  if (input.declared < 0) {
+    return { ok: false, message: 'Gốc mỗi kỳ không thể là số âm.', ...base };
+  }
+
+  if (quotient <= 0 || input.totalPeriods <= 0) return { ok: true, ...base };
+
+  const step = MONTHLY_PRINCIPAL_TOLERANCE;
+  const min = Math.floor(quotient / step) * step;
+  const max = Math.ceil(quotient / step) * step;
+
+  if (input.declared < min || input.declared > max) {
+    return {
+      ok: false,
+      message:
+        `Gốc mỗi kỳ ${input.declared.toLocaleString('vi-VN')}đ không khớp với số tiền vay ` +
+        `${input.loanAmount.toLocaleString('vi-VN')}đ chia ${repayPeriods} kỳ trả gốc ` +
+        `(${Math.round(quotient).toLocaleString('vi-VN')}đ/kỳ). ` +
+        `Ba con số này phải nhất quán — kiểm lại GNN xem sai ở số tiền vay, kỳ hạn hay gốc mỗi kỳ. ` +
+        `Hệ thống tự tính ra ${suggested.toLocaleString('vi-VN')}đ.`,
+      ...base,
+    };
+  }
+
+  return { ok: true, ...base };
 }
 
 export interface KunnPayloadInput {
@@ -192,6 +248,10 @@ export function buildKunnPayload({
     ContractAmount: creditLimit,
     LoanAmount: loanAmount,
     CurrentBalance: currentBalance,
+
+    MonthlyPrincipalAmount: isBulletPrincipal(fields.contract)
+      ? null
+      : (parseMoneyDecimalInput(fields.monthlyPrincipal) || null),
 
     CreditLimitCode: fields.creditLimitCode.trim() || null,
     CreditLimitAmount: fields.creditLimitCode.trim()

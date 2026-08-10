@@ -10,7 +10,7 @@ import {
   addMonthsToDate, parseKunnTenorMonths,
   generateSchedule,
   getAutoDebtGroupInfo, recalculateSchedules, computeOutstandingBalance,
-  isBulletPrincipal, redateSchedules
+  isBulletPrincipal, redateSchedules, resolveMonthlyPrincipal
 } from '../../lib/loanMath';
 import {
   getEffectiveActiveRate,
@@ -36,7 +36,7 @@ import { ScheduleTab } from '../portfolio/ScheduleTab';
 import { usePaymentModal } from '../../hooks/usePaymentModal';
 import { useCustomerPortfolio } from '../../hooks/useCustomerPortfolio';
 import {
-  blankFormFields, buildKunnPayload, contractToFormFields,
+  blankFormFields, buildKunnPayload, checkMonthlyPrincipal, contractToFormFields,
   intToInput, nextKunnNumberFor, rateToInput, type KunnFormFields,
 } from '../../lib/kunnForm';
 import { Toast } from '../Toast';
@@ -96,6 +96,7 @@ export const LoanPortfolioView: React.FC = () => {
   const [formCreditLimitCode, setFormCreditLimitCode] = useState('');
   const [formCreditLimitAmount, setFormCreditLimitAmount] = useState('');
   const [formLoanAmount, setFormLoanAmount] = useState('');
+  const [formMonthlyPrincipal, setFormMonthlyPrincipal] = useState('');
   const [formCurrentBalance, setFormCurrentBalance] = useState('');
 
   const [interestRateMode, setInterestRateMode] = useState<'pref' | 'base'>('pref');
@@ -186,6 +187,19 @@ export const LoanPortfolioView: React.FC = () => {
   const creditLimitNum = parseMoneyDecimalInput(formCreditLimit);
   const kunnLoanAmountNum = parseMoneyDecimalInput(formLoanAmount);
 
+  const formTotalPeriods = parseKunnTenorMonths(form.KunnTenor) || form.LoanTenorMonths || 0;
+  const suggestedMonthlyPrincipal = isBulletPrincipal(form)
+    ? 0
+    : resolveMonthlyPrincipal(
+        {
+          MonthlyPrincipalAmount: null,
+          LoanAmount: kunnLoanAmountNum,
+          ContractAmount: undefined,
+          PrincipalGracePeriodMonths: form.PrincipalGracePeriodMonths ?? 0,
+        },
+        formTotalPeriods
+      );
+
   const effectiveFormHdtdNo = formHdtdNumber.trim() || (selectedContract ? resolveMasterHdtdNumber(selectedContract, creditContracts) : '');
   const dropdownFiltered = dropdownQuery.trim().length < 1
     ? allCustomers
@@ -204,6 +218,7 @@ export const LoanPortfolioView: React.FC = () => {
     setFormCreditLimitCode(fields.creditLimitCode);
     setFormCreditLimitAmount(fields.creditLimitAmount);
     setFormLoanAmount(fields.loanAmount);
+    setFormMonthlyPrincipal(fields.monthlyPrincipal);
     setFormCurrentBalance(fields.currentBalance);
     setRatePreferential(fields.ratePreferential);
     setRatePreferentialMonths(fields.ratePreferentialMonths);
@@ -269,6 +284,19 @@ export const LoanPortfolioView: React.FC = () => {
       const creditLimit = parseMoneyDecimalInput(formCreditLimit);
       const loanAmount = parseMoneyDecimalInput(formLoanAmount);
 
+      const principalCheck = checkMonthlyPrincipal({
+        declared: parseMoneyDecimalInput(formMonthlyPrincipal) || null,
+        loanAmount,
+        totalPeriods: formTotalPeriods,
+        graceMonths: form.PrincipalGracePeriodMonths ?? 0,
+        isBullet: isBulletPrincipal(form),
+      });
+      if (!principalCheck.ok) {
+        showNotify('error', principalCheck.message || 'Gốc mỗi kỳ không hợp lệ.');
+        setLoading(false);
+        return;
+      }
+
       const payload = buildKunnPayload({
         fields: {
           hdtdNumber: formHdtdNumber,
@@ -279,6 +307,7 @@ export const LoanPortfolioView: React.FC = () => {
           creditLimitAmount: formCreditLimitAmount,
           loanAmount: formLoanAmount,
           currentBalance: formCurrentBalance,
+          monthlyPrincipal: formMonthlyPrincipal,
           ratePreferential,
           ratePreferentialMonths,
           rateBase,
@@ -351,7 +380,7 @@ export const LoanPortfolioView: React.FC = () => {
             periods,
             isBullet,
             savedContract.DisbursementDate || savedContract.ContractStartDate || undefined,
-            undefined,
+            isBullet ? undefined : (savedContract.MonthlyPrincipalAmount ?? undefined),
             savedContract.PrincipalGracePeriodMonths || 0,
             0,
             1,
@@ -652,6 +681,7 @@ export const LoanPortfolioView: React.FC = () => {
     setFormCreditLimitCode(cc.ApprovalCode || '');
     setFormCreditLimitAmount(cc.ApprovalAmount ? cc.ApprovalAmount.toLocaleString('vi-VN') : '');
     setFormLoanAmount('');
+    setFormMonthlyPrincipal('');
     setFormCurrentBalance('');
     setRatePreferential(rateToInput(cc.PreferentialRate));
     setRatePreferentialMonths(intToInput(cc.PreferentialPeriodMonths));
@@ -844,6 +874,9 @@ export const LoanPortfolioView: React.FC = () => {
                   remainingHmtdLimit={remainingHmtdLimit}
                   formLoanAmount={formLoanAmount}
                   setFormLoanAmount={setFormLoanAmount}
+                  formMonthlyPrincipal={formMonthlyPrincipal}
+                  setFormMonthlyPrincipal={setFormMonthlyPrincipal}
+                  suggestedMonthlyPrincipal={suggestedMonthlyPrincipal}
                   interestRateMode={interestRateMode}
                   setInterestRateMode={setInterestRateMode}
                   ratePreferential={ratePreferential}

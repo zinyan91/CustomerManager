@@ -47,6 +47,10 @@ interface KunnFormProps {
   formLoanAmount: string;
   setFormLoanAmount: (v: string) => void;
 
+  formMonthlyPrincipal: string;
+  setFormMonthlyPrincipal: (v: string) => void;
+  suggestedMonthlyPrincipal: number;
+
   interestRateMode: 'pref' | 'base';
   setInterestRateMode: (v: 'pref' | 'base') => void;
   ratePreferential: string;
@@ -93,6 +97,7 @@ export const KunnForm: React.FC<KunnFormProps> = ({
   formKunnNumber, setFormKunnNumber,
   formLimitStatus, kunnIssues, formGrantedLimit, totalExistingKunnBalance, availableBeforeThisKunn, remainingHmtdLimit,
   formLoanAmount, setFormLoanAmount,
+  formMonthlyPrincipal, setFormMonthlyPrincipal, suggestedMonthlyPrincipal,
   interestRateMode, setInterestRateMode,
   ratePreferential, setRatePreferential, ratePreferentialMonths, setRatePreferentialMonths,
   rateBase, setRateBase, rateMargin, setRateMargin,
@@ -193,6 +198,9 @@ export const KunnForm: React.FC<KunnFormProps> = ({
           form={form}
           setForm={setForm}
           graceOptions={graceOptions}
+          monthlyPrincipal={formMonthlyPrincipal}
+          setMonthlyPrincipal={setFormMonthlyPrincipal}
+          suggestedMonthlyPrincipal={suggestedMonthlyPrincipal}
         />
         <KunnCollateralSection
           sectionBoxBg={sectionBoxBg}

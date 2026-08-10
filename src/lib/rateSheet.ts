@@ -415,7 +415,7 @@ export function buildRateSheetParts(input: RateSheetInput): RateSheetParts {
   html, body, header, th, .meta, tbody tr:nth-child(even) {
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  body {
+  body, .rate-sheet-root {
     font-family: "Segoe UI", Roboto, Arial, sans-serif;
     color: #0f172a; margin: 0; font-size: 9.5pt; line-height: 1.32;
   }

@@ -142,7 +142,7 @@ trên chính hồ sơ, và cố ý gọi là "lưu trữ" chứ không phải "�
 | ✅ | Điện thoại và số tài khoản nhận nhiều số | Một KHLQ có hai số là chuyện thật, không phải lỗi nhập. Tách theo `;` `,` `/` `\|` và xuống dòng, gom về một dạng ngăn cách `" / "`. Luật 10 số áp cho **từng số**. CCCD vẫn một giá trị |
 | ✅ | Tờ chào lãi suất — bỏ dòng đối tượng lặp và khối phạm vi ở tờ cho vay | Tiêu đề đã ghi "dành cho KHCN"; phạm vi của tờ cho vay trùng phần điều kiện ở cuối |
 | ✅ | Tờ chào lãi suất — tên file theo chuẩn | `LS NGAN HAN KHCN` · `LS TDH KHCN` · `LS HUY DONG`, sẵn nhánh `KHDN`. Tên đi vào `<title>` nên hộp thoại in gợi ý đúng tên PDF |
-| ✅ | Tờ chào lãi suất — xuất ra hình ảnh | `htmlToPng.ts` dùng `<foreignObject>` + canvas, **không thêm thư viện ngoài**. Kiểm chứng trên trình duyệt: ngắn hạn 1588×1270, huy động khổ ngang 2246×1204, logo hiện đúng |
+| ✅ | Tờ chào lãi suất — xuất ra hình ảnh | `htmlToPng.ts` dùng `<foreignObject>` + canvas, **không thêm thư viện ngoài**. Ảnh **luôn đúng khổ A4**, nội dung dài hơn trang thì thu nhỏ vừa trang chứ không cắt. Bản đầu bị cắt mất phần cuối vì bộ định dạng khai trên `body` mà trong `foreignObject` không có `body`; sửa bằng lớp `.rate-sheet-root` dùng chung cho cả đo lẫn dựng. 13 test |
 
 **Chốt chống trôi áp cho cả sửa lẫn tạo mới**, không riêng hợp đồng mới như kế hoạch ban
 đầu: sửa một KUNN của khách đang lưu trữ cũng là đang làm việc với khách đó, cờ lúc ấy

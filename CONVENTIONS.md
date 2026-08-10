@@ -518,13 +518,18 @@ Mức phân quyền cao hơn (Trưởng bộ phận huy động và dịch vụ,
 
 **Tờ cho vay bỏ khối "Phạm vi áp dụng"**, chỉ tờ huy động còn giữ. Nội dung phạm vi của tờ cho vay trùng với phần điều kiện áp dụng ở cuối.
 
-**Xuất hình ảnh không dùng thư viện ngoài.** `src/lib/htmlToPng.ts` gói phần thân tờ chào vào `<foreignObject>` của SVG rồi vẽ lên canvas, xuất PNG ở độ phân giải gấp đôi. Ba điều kiện để cách này chạy được, đừng phá:
+**Xuất hình ảnh không dùng thư viện ngoài.** `src/lib/htmlToPng.ts` gói phần thân tờ chào vào `<foreignObject>` của SVG rồi vẽ lên canvas, xuất PNG ở độ phân giải gấp đôi.
+
+**Ảnh luôn đúng khổ A4**, không co theo nội dung: 794×1123 khổ dọc, 1123×794 khổ ngang, lề 11mm/12mm bằng đúng `@page` của bản in. Nội dung dài hơn trang thì `fitScale` **thu nhỏ vừa trang**, không cắt.
+
+Bốn điều kiện để cách này chạy được, đừng phá:
 
 - Nội dung phải **hợp lệ theo XML**: mọi thẻ đóng đủ, `<img/>` tự đóng, không dùng thực thể HTML như `&nbsp;`.
 - Ảnh nhúng phải là **data URI** — logo đã ở dạng đó nhờ `?inline`. Ảnh trỏ ra URL ngoài sẽ không vẽ được và làm bẩn canvas.
-- Chiều cao **đo bằng DOM thật** trước khi dựng SVG; đoán chiều cao là cắt mất phần cuối tờ.
+- Bộ định dạng của tờ chào đặt trên `body`, mà trong `<foreignObject>` **không có `body`**. Vì vậy quy tắc gốc khai là `body, .rate-sheet-root` và khối nội dung mang đúng lớp đó. Bỏ lớp này là cỡ chữ nhảy về mặc định trình duyệt.
+- Chiều cao **đo bằng DOM thật, trong đúng lớp `.rate-sheet-root` và đúng bề rộng vùng nội dung**. Đo ở ngữ cảnh khác thì ra một con số, dựng ra ảnh lại ra con số khác — đó chính là lỗi cắt mất phần cuối tờ ngày 10/08/2026.
 
-Đã kiểm chứng trên trình duyệt 10/08/2026: tờ ngắn hạn ra PNG 1588×1270, tờ huy động khổ ngang 2246×1204, logo hiện đúng.
+Đã kiểm chứng trên trình duyệt 10/08/2026: tờ ngắn hạn nội dung cao 926px trong vùng cho phép 1039px nên tỷ lệ 1.000, ảnh ra 1588×2246 đủ tới dòng cuối phần điều kiện áp dụng; tờ huy động khổ ngang 2246×1588.
 
 `buildRateSheetHtml` dựng một tài liệu HTML **tự chứa, khổ A4 một trang**, mở ở cửa sổ mới rồi gọi `print()` để banker lưu thành PDF. Không dùng thư viện ngoài: trình duyệt đã in ra PDF tốt hơn mọi thư viện nhúng, và thêm phụ thuộc chỉ để đóng gói HTML là không cần thiết.
 

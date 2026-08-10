@@ -93,7 +93,7 @@ export const RateQuoteView: React.FC = () => {
       const blob = await renderHtmlToPngBlob({
         styles: parts.styles,
         bodyHtml: parts.bodyHtml,
-        widthPx: parts.landscape ? A4_LANDSCAPE_PX : A4_PORTRAIT_PX,
+        page: parts.landscape ? A4_LANDSCAPE_PX : A4_PORTRAIT_PX,
       });
       downloadBlob(blob, `${parts.fileBase}.png`);
     } catch (err: any) {

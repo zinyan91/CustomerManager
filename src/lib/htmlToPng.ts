@@ -1,53 +1,88 @@
-export const A4_PORTRAIT_PX = 794;
-export const A4_LANDSCAPE_PX = 1123;
+export const MM_TO_PX = 96 / 25.4;
+
+export const A4_PORTRAIT_PX = { width: 794, height: 1123 };
+export const A4_LANDSCAPE_PX = { width: 1123, height: 794 };
+
+export const SHEET_MARGIN_MM = { vertical: 11, horizontal: 12 };
+
+export const SHEET_ROOT_CLASS = 'rate-sheet-root';
+
+export interface PageSize {
+  width: number;
+  height: number;
+}
 
 export interface HtmlToPngOptions {
   styles: string;
   bodyHtml: string;
-  widthPx: number;
+  page: PageSize;
   scale?: number;
   background?: string;
-  padding?: string;
+}
+
+export function mmToPx(mm: number): number {
+  return Math.round(mm * MM_TO_PX);
+}
+
+export function contentBox(page: PageSize): PageSize {
+  return {
+    width: page.width - mmToPx(SHEET_MARGIN_MM.horizontal) * 2,
+    height: page.height - mmToPx(SHEET_MARGIN_MM.vertical) * 2,
+  };
+}
+
+export function fitScale(naturalHeight: number, availableHeight: number): number {
+  if (naturalHeight <= 0 || availableHeight <= 0) return 1;
+  if (naturalHeight <= availableHeight) return 1;
+  return availableHeight / naturalHeight;
 }
 
 export function buildForeignObjectSvg(
-  bodyHtml: string, styles: string, width: number, height: number,
-  background: string, padding: string
+  bodyHtml: string, styles: string, page: PageSize, background: string, zoom: number
 ): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`
-    + `<foreignObject x="0" y="0" width="${width}" height="${height}">`
-    + `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;background:${background};padding:${padding};">`
+  const box = contentBox(page);
+  const padV = mmToPx(SHEET_MARGIN_MM.vertical);
+  const padH = mmToPx(SHEET_MARGIN_MM.horizontal);
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${page.width}" height="${page.height}" `
+    + `viewBox="0 0 ${page.width} ${page.height}">`
+    + `<foreignObject x="0" y="0" width="${page.width}" height="${page.height}">`
+    + `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${page.width}px;height:${page.height}px;`
+    + `background:${background};padding:${padV}px ${padH}px;overflow:hidden;">`
     + `<style>${styles}</style>`
+    + `<div class="${SHEET_ROOT_CLASS}" style="width:${box.width}px;`
+    + `transform:scale(${zoom});transform-origin:top left;">`
     + bodyHtml
-    + '</div></foreignObject></svg>';
+    + '</div></div></foreignObject></svg>';
 }
 
 export function svgToDataUri(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-function measureHeight(bodyHtml: string, styles: string, width: number, padding: string): number {
+export function measureSheetHeight(bodyHtml: string, styles: string, widthPx: number): number {
   const holder = document.createElement('div');
   holder.style.cssText =
-    `position:fixed;left:-10000px;top:0;width:${width}px;padding:${padding};visibility:hidden;`;
-  holder.innerHTML = `<style>${styles}</style>${bodyHtml}`;
+    `position:fixed;left:-10000px;top:0;width:${widthPx}px;visibility:hidden;`;
+  holder.innerHTML =
+    `<style>${styles}</style>`
+    + `<div class="${SHEET_ROOT_CLASS}" style="width:${widthPx}px;">${bodyHtml}</div>`;
   document.body.appendChild(holder);
-  const height = Math.ceil(holder.getBoundingClientRect().height);
+  const inner = holder.querySelector(`.${SHEET_ROOT_CLASS}`) as HTMLElement | null;
+  const height = Math.ceil(inner ? inner.getBoundingClientRect().height : 0);
   holder.remove();
   return height;
 }
 
 export async function renderHtmlToPngBlob(options: HtmlToPngOptions): Promise<Blob> {
-  const {
-    styles, bodyHtml, widthPx,
-    scale = 2, background = '#ffffff', padding = '24px',
-  } = options;
+  const { styles, bodyHtml, page, scale = 2, background = '#ffffff' } = options;
 
-  const height = Math.max(1, measureHeight(bodyHtml, styles, widthPx, padding));
-  const svg = buildForeignObjectSvg(bodyHtml, styles, widthPx, height, background, padding);
+  const box = contentBox(page);
+  const natural = measureSheetHeight(bodyHtml, styles, box.width);
+  const zoom = fitScale(natural, box.height);
+  const svg = buildForeignObjectSvg(bodyHtml, styles, page, background, zoom);
 
   const image = new Image();
-  image.decoding = 'sync';
   await new Promise<void>((resolve, reject) => {
     image.onload = () => resolve();
     image.onerror = () => reject(new Error('Không dựng được ảnh từ nội dung tờ chào.'));
@@ -55,8 +90,8 @@ export async function renderHtmlToPngBlob(options: HtmlToPngOptions): Promise<Bl
   });
 
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(widthPx * scale);
-  canvas.height = Math.round(height * scale);
+  canvas.width = Math.round(page.width * scale);
+  canvas.height = Math.round(page.height * scale);
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Trình duyệt không hỗ trợ dựng ảnh.');
   ctx.fillStyle = background;

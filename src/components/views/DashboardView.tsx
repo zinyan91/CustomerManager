@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { UI } from '../../lib/uiClasses';
-import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI } from '../../lib/api';
+import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI } from '../../lib/api';
+import { totalCardGrantedLimit } from '../../lib/cardContract';
 import { fmtDate, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
 import { assetClassLabel, collateralValue, appraisalExpiryDate } from '../../lib/collateralMath';
 import {
@@ -9,7 +10,7 @@ import {
 } from '../../lib/dueList';
 import { parseCollateralIds } from '../../lib/creditLimit';
 import { Toast, useToast } from '../Toast';
-import type { Customer, Collateral, LoanContract } from '../../types';
+import type { Customer, Collateral, LoanContract, CardContract } from '../../types';
 import {
   DollarSign, Users, Building2, AlertCircle, RefreshCw,
   Calendar, Clock, ShieldAlert, FileText, AlertTriangle,
@@ -22,6 +23,7 @@ export const DashboardView: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
   const [contracts, setContracts] = useState<LoanContract[]>([]);
+  const [cardContracts, setCardContracts] = useState<CardContract[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,15 +33,17 @@ export const DashboardView: React.FC = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [resCus, resCol, resCon] = await Promise.all([
+      const [resCus, resCol, resCon, resCard] = await Promise.all([
         fetchCustomersAPI(),
         fetchCollateralsAPI(),
         fetchContractsAPI(),
+        fetchCardContractsAPI(),
       ]);
 
       setCustomers(resCus);
       setCollaterals(resCol);
       setContracts(resCon);
+      setCardContracts(resCard);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -57,16 +61,25 @@ export const DashboardView: React.FC = () => {
   const totalCollateralVal = collaterals.reduce((acc, c) => acc + (collateralValue(c)), 0);
   const weightedLtv = totalCollateralVal > 0 ? (totalDebt / totalCollateralVal) * 100 : 0;
 
-  const loanMethodStats = [
+  const theConHieuLuc = cardContracts.filter(c => !c.IsClosed);
+  const hanMucTheDaCap = totalCardGrantedLimit(cardContracts);
+
+  const loanMethodStats: { method: string; count: number; amount: number; isGrantedLimit?: boolean }[] = [
     'Hạn mức tín dụng',
     'Cho vay từng lần',
-    'Hạn mức thẻ tín dụng',
     'Cầm cố sổ tiết kiệm',
     'Hạn mức tín dụng từng lần'
   ].map(method => {
     const matched = chuaTatToan.filter(c => c.LoanMethod === method);
     const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
     return { method, count: matched.length, amount };
+  });
+
+  loanMethodStats.push({
+    method: 'Hạn mức thẻ tín dụng',
+    count: theConHieuLuc.length,
+    amount: hanMucTheDaCap,
+    isGrantedLimit: true,
   });
 
   const debtGroupStats = [1, 2, 3, 4, 5].map(group => {
@@ -291,15 +304,26 @@ export const DashboardView: React.FC = () => {
           </div>
           <div className="space-y-2.5">
             {loanMethodStats.map(item => {
-              const percent = totalDebt > 0 ? (item.amount / totalDebt) * 100 : 0;
+              const percent = item.isGrantedLimit
+                ? 0
+                : (totalDebt > 0 ? (item.amount / totalDebt) * 100 : 0);
               return (
                 <div key={item.method} className="space-y-1">
                   <div className="flex items-baseline justify-between gap-3 text-xs font-medium">
-                    <span className="min-w-0 truncate" title={item.method}>
-                      {item.method} <span className="text-ink-faint">({item.count} khoản)</span>
+                    <span className="min-w-0 truncate">
+                      {item.method}{' '}
+                      <span className="text-ink-faint">
+                        ({item.count} {item.isGrantedLimit ? 'hợp đồng' : 'khoản'})
+                      </span>
+                      {item.isGrantedLimit && (
+                        <span className="text-ink-faint"> · hạn mức đã cấp</span>
+                      )}
                     </span>
                     <span className="font-mono font-bold text-accent shrink-0 whitespace-nowrap">
-                      {formatMoney(item.amount)} <span className="text-ink-faint">{percent.toFixed(1)}%</span>
+                      {formatMoney(item.amount)}{' '}
+                      {!item.isGrantedLimit && (
+                        <span className="text-ink-faint">{percent.toFixed(1)}%</span>
+                      )}
                     </span>
                   </div>
                   <div className="w-full h-2 bg-panel-muted rounded-full overflow-hidden">

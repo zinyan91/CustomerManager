@@ -224,9 +224,27 @@ Sai bất biến này là ngân hàng thu thừa hoặc thu thiếu của khách
 
 ### Làm tròn gốc
 
-Làm tròn **LÊN** theo bước **10.000 đồng**, khai ở `PRINCIPAL_ROUND_MODE`. Kỳ cuối gánh phần dư để đảm bảo bất biến trên.
+Mặc định làm tròn **LÊN** theo bước **10.000 đồng**, khai ở `PRINCIPAL_ROUND_MODE`. Kỳ cuối gánh phần dư để đảm bảo bất biến trên.
 
-Bước này lấy từ chứng từ thật, không phải chọn cho tròn: GNN `PNAT.CN.03111223/GNN-01` cho vay 500.000.000đ chia 120 kỳ ghi gốc mỗi kỳ 4.170.000đ, kỳ cuối 3.770.000đ. `500.000.000 / 120 = 4.166.667`, làm tròn lên bước 10.000 ra đúng 4.170.000. Bước 1.000 dùng trước đây cho 4.167.000đ — lệch **mọi** kỳ so với chứng từ khách đang giữ. Đổi hằng số này là đổi cho toàn hệ thống; migration 18 đã sửa dữ liệu cũ theo bước mới.
+Bước này lấy từ chứng từ thật, không phải chọn cho tròn: GNN `PNAT.CN.03111223/GNN-01` cho vay 500.000.000đ chia 120 kỳ ghi gốc mỗi kỳ 4.170.000đ, kỳ cuối 3.770.000đ. `500.000.000 / 120 = 4.166.667`, làm tròn lên bước 10.000 ra đúng 4.170.000. Bước 1.000 dùng trước đây cho 4.167.000đ — lệch **mọi** kỳ so với chứng từ khách đang giữ. Migration 18 đã sửa dữ liệu cũ theo bước mới.
+
+**Bước 10.000 đã được kiểm chứng trên toàn danh mục** (10/08/2026), không còn là suy luận từ một tờ GNN. Migration 18 chỉ viết lại kỳ **chưa** thu, nên gốc của kỳ **đã** thu còn giữ con số nguyên bản và dùng làm bằng chứng được: 28 khoản tái tạo được bằng bước 10.000 và **không** tái tạo được bằng bước 1.000; 8 khoản chia hết tuyệt đối nên không mang thông tin; **0 khoản nói bước khác**.
+
+Cách đo phải là **tái tạo lại con số** từ thương số, không phải xét chia hết. Phép chia hết cho ra 14 khoản trông như "bước 50.000" — sai, vì một khoản dùng bước 10.000 rơi vào bội số của 50.000 với xác suất 1/5 thuần ngẫu nhiên.
+
+### Gốc mỗi kỳ khai theo GNN — `MonthlyPrincipalAmount`
+
+Bước làm tròn là dữ liệu **của từng giấy nhận nợ**, không phải thiết lập hệ thống. Cột `LoanContracts.MonthlyPrincipalAmount` (migration 36) khai ngoại lệ; `NULL` = tự tính bằng thương số đã làm tròn, **không phải** chưa khai. Đọc bằng `resolveMonthlyPrincipal`, đừng viết `MonthlyPrincipalAmount || <mặc định>`.
+
+Ô nhập là **số tiền**, cố ý **không** phải drop down chọn bước làm tròn. Banker đọc trên GNN con số "4.170.000đ/kỳ" chứ không đọc "bước 10.000"; drop down bắt suy ngược, và đoán sai thì im lặng hoàn toàn — mọi kỳ lệch mà Σgốc vẫn đúng. Số tiền còn diễn tả được ca gốc/kỳ là số thoả thuận, thứ mà không bước làm tròn nào tái tạo được.
+
+Ô chỉ hiện với "Gốc trả đều": với gốc trả cuối kỳ thì `isBullet ? 0` nên không có phép chia nào để làm tròn.
+
+`checkMonthlyPrincipal` chặn lúc lưu nếu số khai lệch quá ±100.000đ so với thương số, và thông báo nêu đủ **ba** con số phải nhất quán (số tiền vay, số kỳ trả gốc, gốc mỗi kỳ) để banker biết sai ở đâu. Cố ý **không** chặn số làm tròn xuống: hướng làm tròn (`Math.ceil`) là giả định thứ hai, độc lập với bước, và chưa đo được.
+
+Sau khi trả trước hạn theo phương án "giảm gốc hàng tháng", số khai tay **không còn áp dụng** — mục đích của phương án đó là gốc/kỳ phải giảm. Hệ thống tính lại theo bước mặc định, và cố ý **không** suy bước từ số đã khai: suy bước từ một con số chính là ngộ nhận chia-hết nói trên.
+
+⚠️ `buildKunnPayload` luôn gửi cột này và `saveContractAPI` không có nhánh dự phòng cho cột lạ — **chưa chạy migration 36 thì mọi lần lưu KUNN đổ lỗi PGRST204**.
 
 ### Phương thức trả gốc
 
@@ -877,11 +895,25 @@ Vượt trần thì **chặn lưu**, mở được bằng ô xác nhận ngoại
 
 ### Tàn dư WPF — cái gì đã gỡ, cái gì cố ý giữ
 
-Hệ thống đã chuyển hoàn toàn sang web (06/08/2026), ứng dụng WPF ngừng hoạt động. Migration 28 gỡ: cột `CreditCards.Limit`, và chuỗi `[CollateralId:` trong `Note` (backfill về cột `CollateralId` trước khi xoá, giữ nguyên ghi chú thật của banker).
+Hệ thống đã chuyển hoàn toàn sang web (06/08/2026), ứng dụng WPF ngừng hoạt động. Mã nguồn WPF bị xoá khỏi repo từ 30/07/2026 (commit `2f4bc10`).
 
-**`[PENALTY_RATE:` cố ý KHÔNG gỡ.** Đó là lãi suất phạt quá hạn theo từng khoản và **chưa có cột nào chứa** — gỡ đi là mất hẳn con số. `stripLegacyNoteBlobs` cũng cố tình bỏ qua nó. Chờ quyết định "lãi suất phạt có khác 150% theo từng khoản không" ở §1, có cột rồi mới gỡ.
+Migration 28 gỡ: cột `CreditCards.Limit`, và chuỗi `[CollateralId:` trong `Note` (backfill về cột `CollateralId` trước khi xoá, giữ nguyên ghi chú thật của banker).
 
-Còn tồn đọng, chưa xử lý trong đợt này: các nhánh đọc `[RATE_HISTORY:` / `[COLLATERAL_IDS:` / `[PENALTY_SURCHARGE:` trong `utils.ts`. Migration 24 đã dọn dữ liệu về 0 nên chúng là mã chết, nhưng chúng đụng vào lịch sử lãi suất nên đáng một đợt riêng có đối chiếu, không gỡ kèm.
+Migration 29 cho `[PENALTY_RATE:` một cột thật — `LoanContracts.PrincipalPenaltyMultiplier`. Trước đó khối này **cố ý không được gỡ** vì chưa có chỗ chứa; nay đã gỡ và `stripLegacyNoteBlobs` gỡ luôn nó. Đọc hệ số phạt gốc từ cột, `NULL` là dùng mặc định 1,5 chứ **không** phải chưa khai — `0` mới là miễn phạt, nên đừng viết `PrincipalPenaltyMultiplier || 1.5`.
+
+Nhánh đọc `[RATE_HISTORY:` từ `Note` trong `getContractRateHistory` đã gỡ 10/08/2026: migration 24 dọn dữ liệu về 0 dòng và `LoanContracts.RateHistory` là cột thật của 18 KUNN còn giữ lịch sử lãi suất. `stripLegacyNoteBlobs` **vẫn giữ** cả sáu biểu thức gỡ chuỗi — nó nằm trên đường ghi và là lớp phòng vệ, không phải mã chết.
+
+**WPF ghi vào bộ bảng riêng, không phải bảng của web app** — đây là chỗ dễ nhầm nhất khi đọc database:
+
+| WPF ghi | Web app dùng |
+| :--- | :--- |
+| `Loans` | `LoanContracts` |
+| `LoanSchedules` | `RepaymentSchedules` |
+| `LoanCollaterals` | `CreditContracts.CollateralIds` |
+| `PostLoanControls` | `PostLoanControlRecords` |
+| `ApprovalConditions` | không có bản thay thế |
+
+Migration 35 xoá cả sáu (kèm `__EFMigrationsHistory`), sau khi `reports/08` đọc trước. Hệ quả cần biết khi truy nguyên dữ liệu cũ: WPF nối database bằng **superuser Postgres nhúng cứng trong `AppDbContext.cs`** nên nó đi vòng qua RLS hoàn toàn — mọi bất thường dữ liệu trước 30/07/2026 đều phải xét khả năng do đường này ghi vào.
 
 ### `creditContract.ts`
 

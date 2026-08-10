@@ -1,4 +1,4 @@
-import type { BusinessPlanInput, BusinessPlanResult } from './businessPlan';
+import type { BasisKey, BusinessPlanInput, BusinessPlanResult } from './businessPlan';
 import { buildXlsx, type XlsxSheet } from './xlsxWriter';
 
 export type CellAlign = 'left' | 'center' | 'right';
@@ -32,9 +32,7 @@ export interface ExportContext {
   basis?: Partial<Record<BasisKey, string | null>>;
 }
 
-export type BasisKey =
-  | 'revenue' | 'cogs' | 'staff' | 'premises' | 'utilities'
-  | 'interest' | 'depreciation' | 'other' | 'tax' | 'profit';
+export type { BasisKey };
 
 const FMT_MONEY = '#,##0';
 const FMT_ONE_DECIMAL = '#,##0.0';

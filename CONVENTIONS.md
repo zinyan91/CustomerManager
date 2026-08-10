@@ -668,11 +668,37 @@ Thay bộ bốn file Excel của banker. Logic ở `src/lib/businessPlan.ts`, ph
 
 Bốn file gốc không phải bốn bảng: `BẢNG TÍNH HM` là bảng làm việc, ba file kia chỉ là **liên kết ngoài** trỏ về nó. Và chúng đã trôi khỏi nhau trong thực tế — phụ lục KQKD giữ doanh thu 908 trđ/tháng trong khi bảng gốc chỉ còn 128. Trong hệ thống: **một nguồn dữ liệu, ba bản in**.
 
-### Chỉ lưu ô đầu vào
+### Đây là máy tính, không phải hồ sơ
 
-Mọi số dẫn xuất tính lại bằng `computeBusinessPlan`. Lưu kết quả là tạo nguồn thứ hai để trôi — đúng thứ đã xảy ra với ba phụ lục Excel.
+Quyết định nghiệp vụ 10/08/2026: bảng tính này là **công cụ nhập liệu cho tờ trình** — không gắn khách hàng, không gắn HĐTD, **không lưu**. Banker nhập, xem kết quả, xuất phụ lục rồi thôi. Migration 34 đã xoá hai bảng mà migration 31 dựng.
 
-Riêng **khả năng bảo đảm của TSĐB không có cột**: con số đó tính bằng `totalUsableCapacity` từ chính tài sản của khách và tụt về 0 khi định giá hết hiệu lực. Giao diện truyền vào lúc tính.
+Hai hệ quả đã chấp nhận: đóng tab là mất số đã nhập, và **khả năng bảo đảm của TSĐB thành ô nhập tay** vì không còn khách hàng để `totalUsableCapacity` đọc tài sản.
+
+Đừng gắn nó trở lại vào khách hàng cho "tiện tra cứu". Nó không phải hồ sơ tín dụng; gắn vào là lại phải trả lời câu hỏi bản nào mới là bản chính thức khi số trên tờ trình đã trình lệch số trong máy.
+
+### Giao diện bám đúng hình dạng bảng tính HM
+
+Năm khối đúng vị trí như file gốc: bảng `b` và khối `c` cùng bảng cân đối bên trái, Tiêu chí/tháng và Dư nợ và Chi phí bên phải. Banker nhìn là biết ô nào ở đâu vì đó là tờ họ dùng hằng ngày.
+
+**Ô nhập chữ xanh, ô công thức nền xám** — quy ước mô hình tài chính áp cho cả màn hình, không riêng file xuất ra.
+
+Bản đầu dựng theo kiểu form xếp dọc từng khối: nhập phải cuộn lên cuộn xuống, mất hẳn cái lợi của bảng tính. Đừng quay lại kiểu đó.
+
+**Khối `b` và khối `c` nằm trong CÙNG MỘT bảng.** Tách thành hai bảng riêng thì cột `Đvt` và các cột số của hai khối lệch nhau vì mỗi bảng tự chia độ rộng. File gốc cũng là một vùng liền — `table-fixed` kèm `colgroup` giữ cột thẳng từ dòng đầu tới dòng cuối.
+
+**Số trong bảng luôn có dấu phân cách nghìn, kể cả ô đang nhập.** `MoneyCell` giữ **chuỗi đang gõ** trong state riêng và chỉ định dạng lại khi rời ô: gõ tới đâu thấy đúng tới đó, rời ô thì số nhảy về dạng `10.896`. Định dạng ngay từng ký tự sẽ ăn mất dấu thập phân đang gõ dở; không định dạng gì thì ô nhập và ô công thức trông như hai bảng khác nhau.
+
+Số chữ số thập phân do `decimalsFor` quyết: tròn trđ thì không hiện phần thập phân, có phần lẻ mới hiện một chữ số. Nhờ vậy `10.896` và `12.160,5` đứng cạnh nhau vẫn gọn.
+
+### Kỳ kế hoạch là dự phóng, không phải bộ nhập thứ hai
+
+`planDriversOf` nhân mọi khoản mục của kỳ thực hiện với **hệ số dự phóng** (mặc định 1,5). Dòng nào cần khác thì gõ đè, lưu ở `planOverrides`; dòng không gõ đè luôn bám hệ số.
+
+Hai chỗ dễ sai: **gõ đè bằng 0 là con số thật**, không được coi là "chưa gõ" rồi rơi về hệ số — đây đúng cái bẫy `||` ở §1, phải kiểm `null`/`undefined`/`NaN` tường minh. Và **lãi vay không nhân hệ số**: nó tính từ danh sách dư nợ thật, nhân lên là bịa ra khoản vay không tồn tại.
+
+### Giá vốn nhập bằng SỐ TIỀN, mọi tỷ lệ đều là công thức
+
+File gốc để `D4 = D3*0,65`, tức tỷ lệ giá vốn mới là ô nhập. Ở đây ngược lại: banker gõ **số tiền** giá vốn như mọi dòng chi phí khác, còn cột `%/DT` và cột `Tăng/giảm` **không có ô nào phải gõ**. Không còn ô phần trăm nào trong bảng ngoài lãi suất từng khoản vay và trần DTI.
 
 ### Bảy lỗi của file Excel gốc — đã sửa, đừng "sửa" ngược lại
 

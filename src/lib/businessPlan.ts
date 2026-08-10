@@ -1,7 +1,7 @@
 import { pvAnnuityFactor, dtiMaxMonthlyPayment } from './calcMath';
-import type { BusinessPlan, BusinessPlanDebt } from '../types';
 
 export const DEFAULT_MAX_DTI_PERCENT = 60;
+export const DEFAULT_GROWTH_FACTOR = 1.5;
 
 export type BusinessPlanKind = 'limit' | 'each_time';
 export type DebtScope = 'both' | 'plan';
@@ -16,7 +16,7 @@ export interface DebtItem {
 
 export interface PeriodDrivers {
   revenueAnnual: number;
-  cogsRatioPercent: number;
+  cogsAnnual: number;
   depreciationAnnual: number;
   taxAnnual: number;
   staffMonthly: number;
@@ -24,6 +24,11 @@ export interface PeriodDrivers {
   utilitiesMonthly: number;
   otherMonthly: number;
 }
+
+export const PERIOD_DRIVER_KEYS: (keyof PeriodDrivers)[] = [
+  'revenueAnnual', 'cogsAnnual', 'depreciationAnnual', 'taxAnnual',
+  'staffMonthly', 'premisesMonthly', 'utilitiesMonthly', 'otherMonthly',
+];
 
 export interface BalanceSheetInput {
   cash: number;
@@ -56,15 +61,24 @@ export interface EachTimeInput {
 
 export interface BusinessPlanInput {
   kind: BusinessPlanKind;
+  actualYear: number;
+  planYear: number;
+  balanceSheetDate: string;
   balanceSheet: BalanceSheetInput;
   actual: PeriodDrivers;
-  plan: PeriodDrivers;
+  growthFactor: number;
+  planOverrides: Partial<PeriodDrivers>;
   debts: DebtItem[];
   requestedLimitActual: number;
   requestedLimitPlan: number;
-  household?: HouseholdInput;
-  eachTime?: EachTimeInput;
+  household: HouseholdInput;
+  eachTime: EachTimeInput;
+  basis: Partial<Record<BasisKey, string>>;
 }
+
+export type BasisKey =
+  | 'revenue' | 'cogs' | 'staff' | 'premises' | 'utilities'
+  | 'interest' | 'depreciation' | 'other' | 'tax' | 'profit';
 
 export interface CostBreakdown {
   cogs: number;
@@ -164,10 +178,24 @@ export function interestAnnualOf(debts: DebtItem[], scope: 'actual' | 'plan'): n
   }, 0);
 }
 
+export function planDriversOf(input: BusinessPlanInput): PeriodDrivers {
+  const factor = num(input.growthFactor);
+  const overrides = input.planOverrides || {};
+  const out = {} as PeriodDrivers;
+
+  for (const key of PERIOD_DRIVER_KEYS) {
+    const daoDe = overrides[key];
+    out[key] = daoDe === null || daoDe === undefined || isNaN(daoDe)
+      ? num(input.actual[key]) * factor
+      : daoDe;
+  }
+  return out;
+}
+
 export function revenueGrowthOf(input: BusinessPlanInput): number {
   const base = num(input.actual.revenueAnnual);
   if (base === 0) return 0;
-  return num(input.plan.revenueAnnual) / base - 1;
+  return num(planDriversOf(input).revenueAnnual) / base - 1;
 }
 
 function ratioOf(value: number, revenue: number): number {
@@ -204,7 +232,7 @@ function ratios(costs: CostBreakdown, revenue: number): CostBreakdown {
 function computePeriod(d: PeriodDrivers, interestAnnual: number, currentAssets: number): PeriodResult {
   const revenueAnnual = num(d.revenueAnnual);
   const costs: CostBreakdown = {
-    cogs: revenueAnnual * num(d.cogsRatioPercent) / 100,
+    cogs: num(d.cogsAnnual),
     staff: num(d.staffMonthly) * MONTHS_PER_YEAR,
     premises: num(d.premisesMonthly) * MONTHS_PER_YEAR,
     utilities: num(d.utilitiesMonthly) * MONTHS_PER_YEAR,
@@ -302,93 +330,38 @@ function computeEachTime(
   };
 }
 
-export function emptyBusinessPlan(customerId: number, todayStr: string): BusinessPlan {
+export function emptyBusinessPlanInput(todayStr: string): BusinessPlanInput {
   const year = parseInt((todayStr || '').slice(0, 4), 10) || new Date().getFullYear();
-  const zeros = {
-    Cash: 0, Inventory: 0, Receivables: 0, OtherCurrentAssets: 0,
-    LongTermReceivables: 0, FixedAssets: 0, OtherLongTermAssets: 0,
-    ShortTermDebt: 0, OtherShortTermDebt: 0, LongTermDebt: 0, OtherLongTermDebt: 0,
-    ActualRevenueAnnual: 0, ActualCogsRatioPercent: 0, ActualDepreciationAnnual: 0, ActualTaxAnnual: 0,
-    ActualStaffMonthly: 0, ActualPremisesMonthly: 0, ActualUtilitiesMonthly: 0, ActualOtherMonthly: 0,
-    PlanRevenueAnnual: 0, PlanCogsRatioPercent: 0, PlanDepreciationAnnual: 0, PlanTaxAnnual: 0,
-    PlanStaffMonthly: 0, PlanPremisesMonthly: 0, PlanUtilitiesMonthly: 0, PlanOtherMonthly: 0,
-    RequestedLimitActual: 0, RequestedLimitPlan: 0,
-    OtherIncomeMonthly: 0, LivingExpenseMonthly: 0, ExistingDebtPaymentMonthly: 0,
-    ProjectCost: 0, OwnFunds: 0, TenorMonths: 0, RateAnnualPercent: 0,
+  const drivers: PeriodDrivers = {
+    revenueAnnual: 0, cogsAnnual: 0, depreciationAnnual: 0, taxAnnual: 0,
+    staffMonthly: 0, premisesMonthly: 0, utilitiesMonthly: 0, otherMonthly: 0,
   };
 
   return {
-    Id: 0,
-    CustomerId: customerId,
-    CreditContractId: null,
-    PlanKind: 'limit',
-    ActualYear: year,
-    PlanYear: year + 1,
-    BalanceSheetDate: todayStr,
-    MaxDtiPercent: DEFAULT_MAX_DTI_PERCENT,
-    ...zeros,
-  };
-}
-
-export function businessPlanInputFrom(
-  plan: BusinessPlan, debts: BusinessPlanDebt[], collateralCapacity: number
-): BusinessPlanInput {
-  return {
-    kind: plan.PlanKind,
+    kind: 'limit',
+    actualYear: year,
+    planYear: year + 1,
+    balanceSheetDate: todayStr,
     balanceSheet: {
-      cash: num(plan.Cash),
-      inventory: num(plan.Inventory),
-      receivables: num(plan.Receivables),
-      otherCurrentAssets: num(plan.OtherCurrentAssets),
-      longTermReceivables: num(plan.LongTermReceivables),
-      fixedAssets: num(plan.FixedAssets),
-      otherLongTermAssets: num(plan.OtherLongTermAssets),
-      shortTermDebt: num(plan.ShortTermDebt),
-      otherShortTermDebt: num(plan.OtherShortTermDebt),
-      longTermDebt: num(plan.LongTermDebt),
-      otherLongTermDebt: num(plan.OtherLongTermDebt),
+      cash: 0, inventory: 0, receivables: 0, otherCurrentAssets: 0,
+      longTermReceivables: 0, fixedAssets: 0, otherLongTermAssets: 0,
+      shortTermDebt: 0, otherShortTermDebt: 0, longTermDebt: 0, otherLongTermDebt: 0,
     },
-    actual: {
-      revenueAnnual: num(plan.ActualRevenueAnnual),
-      cogsRatioPercent: num(plan.ActualCogsRatioPercent),
-      depreciationAnnual: num(plan.ActualDepreciationAnnual),
-      taxAnnual: num(plan.ActualTaxAnnual),
-      staffMonthly: num(plan.ActualStaffMonthly),
-      premisesMonthly: num(plan.ActualPremisesMonthly),
-      utilitiesMonthly: num(plan.ActualUtilitiesMonthly),
-      otherMonthly: num(plan.ActualOtherMonthly),
-    },
-    plan: {
-      revenueAnnual: num(plan.PlanRevenueAnnual),
-      cogsRatioPercent: num(plan.PlanCogsRatioPercent),
-      depreciationAnnual: num(plan.PlanDepreciationAnnual),
-      taxAnnual: num(plan.PlanTaxAnnual),
-      staffMonthly: num(plan.PlanStaffMonthly),
-      premisesMonthly: num(plan.PlanPremisesMonthly),
-      utilitiesMonthly: num(plan.PlanUtilitiesMonthly),
-      otherMonthly: num(plan.PlanOtherMonthly),
-    },
-    debts: (debts || []).map(d => ({
-      label: d.Label,
-      principal: num(d.Principal),
-      rateAnnualPercent: num(d.RateAnnualPercent),
-      scope: d.Scope,
-    })),
-    requestedLimitActual: num(plan.RequestedLimitActual),
-    requestedLimitPlan: num(plan.RequestedLimitPlan),
+    actual: drivers,
+    growthFactor: DEFAULT_GROWTH_FACTOR,
+    planOverrides: {},
+    debts: [],
+    requestedLimitActual: 0,
+    requestedLimitPlan: 0,
     household: {
-      otherIncomeMonthly: num(plan.OtherIncomeMonthly),
-      livingExpenseMonthly: num(plan.LivingExpenseMonthly),
-      existingDebtPaymentMonthly: num(plan.ExistingDebtPaymentMonthly),
-      maxDtiPercent: num(plan.MaxDtiPercent),
+      otherIncomeMonthly: 0, livingExpenseMonthly: 0,
+      existingDebtPaymentMonthly: 0, maxDtiPercent: DEFAULT_MAX_DTI_PERCENT,
     },
     eachTime: {
-      projectCost: num(plan.ProjectCost),
-      ownFunds: num(plan.OwnFunds),
-      tenorMonths: num(plan.TenorMonths),
-      rateAnnualPercent: num(plan.RateAnnualPercent),
-      collateralCapacity: num(collateralCapacity),
+      projectCost: 0, ownFunds: 0, tenorMonths: 0,
+      rateAnnualPercent: 0, collateralCapacity: 0,
     },
+    basis: {},
   };
 }
 
@@ -399,7 +372,9 @@ export function computeBusinessPlan(input: BusinessPlanInput): BusinessPlanResul
     input.actual, interestAnnualOf(input.debts, 'actual'), balance.currentAssets
   );
   const plan = computePeriod(
-    input.plan, interestAnnualOf(input.debts, 'plan'), planCurrentAssets(input, balance.currentAssets)
+    planDriversOf(input),
+    interestAnnualOf(input.debts, 'plan'),
+    planCurrentAssets(input, balance.currentAssets)
   );
 
   const result: BusinessPlanResult = { balance, actual, plan };

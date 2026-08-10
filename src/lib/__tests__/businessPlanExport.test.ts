@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeBusinessPlan, type BusinessPlanInput } from '../businessPlan';
+import { computeBusinessPlan, emptyBusinessPlanInput, type BusinessPlanInput } from '../businessPlan';
 import {
   buildBusinessPlanSheets, buildFinancialPositionSheet, buildIncomeStatementSheet,
   buildCreditLimitSheet, sheetToXlsx, sheetToXlsxModel, shareOfRevenueText,
@@ -9,20 +9,21 @@ import {
 const M = 1_000_000;
 
 const input: BusinessPlanInput = {
+  ...emptyBusinessPlanInput('2025-06-30'),
   kind: 'limit',
+  actualYear: 2025,
+  planYear: 2026,
   balanceSheet: {
     cash: 300 * M, inventory: 100 * M, receivables: 50 * M, otherCurrentAssets: 0,
     longTermReceivables: 0, fixedAssets: 50 * M, otherLongTermAssets: 0,
     shortTermDebt: 20 * M, otherShortTermDebt: 0, longTermDebt: 30 * M, otherLongTermDebt: 0,
   },
   actual: {
-    revenueAnnual: 1200 * M, cogsRatioPercent: 65, depreciationAnnual: 120 * M, taxAnnual: 0,
+    revenueAnnual: 1200 * M, cogsAnnual: 780 * M, depreciationAnnual: 120 * M, taxAnnual: 0,
     staffMonthly: 5 * M, premisesMonthly: 2 * M, utilitiesMonthly: 1 * M, otherMonthly: 1 * M,
   },
-  plan: {
-    revenueAnnual: 1320 * M, cogsRatioPercent: 65, depreciationAnnual: 120 * M, taxAnnual: 0,
-    staffMonthly: 5 * M, premisesMonthly: 2 * M, utilitiesMonthly: 1 * M, otherMonthly: 1 * M,
-  },
+  growthFactor: 1.1,
+  planOverrides: {},
   debts: [
     { label: 'VB_HM hiện hữu', principal: 600 * M, rateAnnualPercent: 8, scope: 'both' },
     { label: 'VB_Cấp mới', principal: 400 * M, rateAnnualPercent: 8, scope: 'plan' },

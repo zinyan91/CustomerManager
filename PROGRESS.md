@@ -122,6 +122,27 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ⬜ | Tên miền riêng | |
 
 
+## Ngày 10/08/2026
+
+### Bảng tính hạn mức — dựng lại theo đúng hình dạng bảng tính HM
+
+Bản đầu là form xếp dọc từng khối, gắn khách hàng, gắn HĐTD và lưu vào cơ sở dữ liệu.
+Banker phản hồi: nhập phải cuộn lên cuộn xuống, mất hẳn cái lợi của bảng tính; và đây chỉ
+là **công cụ nhập liệu cho tờ trình**, không liên quan gì tới hồ sơ tín dụng.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Giao diện dựng lại theo lưới hai cột | Năm khối đúng vị trí file gốc. Khối `b` và `c` trong **cùng một bảng** để cột `Đvt` thẳng hàng; `table-fixed` + `colgroup` |
+| ✅ | Bỏ lưu trữ, bỏ chọn khách hàng và HĐTD | Migration 34 xoá `BusinessPlans`, `BusinessPlanDebts` và hai hàm kèm theo. Trạng thái nằm hết trong component |
+| ✅ | Kỳ kế hoạch dự phóng theo hệ số | `planDriversOf`, mặc định 1,5. Gõ đè từng dòng qua `planOverrides`; gõ đè bằng 0 là con số thật. Lãi vay **không** nhân hệ số |
+| ✅ | Giá vốn nhập bằng số tiền | Mọi cột `%/DT` và `Tăng/giảm` thành công thức. Không còn ô phần trăm nào ngoài lãi suất từng khoản vay và trần DTI |
+| ✅ | Số trong bảng phân cách nhất quán | `MoneyCell` giữ chuỗi đang gõ trong state riêng, định dạng lại khi rời ô. Trước đó ô nhập không có dấu phân cách còn ô công thức thì có |
+
+**Hai hệ quả đã chấp nhận:** đóng tab là mất số đã nhập, và khả năng bảo đảm của TSĐB thành
+ô nhập tay vì không còn khách hàng để `totalUsableCapacity` đọc tài sản.
+
+Ba phụ lục xuất ra **không đổi một dòng nào** — vẫn cùng bộ số, vẫn đúng nguyên bản template.
+
 ## Ngày 09/08/2026
 
 ### Tab Khách hàng — lưu trữ hồ sơ và ba lỗi ở nút xoá

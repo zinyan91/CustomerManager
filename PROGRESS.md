@@ -133,7 +133,7 @@ là **công cụ nhập liệu cho tờ trình**, không liên quan gì tới h�
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
 | ✅ | Giao diện dựng lại theo lưới hai cột | Năm khối đúng vị trí file gốc. Khối `b` và `c` trong **cùng một bảng** để cột `Đvt` thẳng hàng; `table-fixed` + `colgroup` |
-| ✅ | Bỏ lưu trữ, bỏ chọn khách hàng và HĐTD | Migration 34 xoá `BusinessPlans`, `BusinessPlanDebts` và hai hàm kèm theo. Trạng thái nằm hết trong component |
+| ✅ | Bỏ lưu trữ, bỏ chọn khách hàng và HĐTD | Migration 34 xoá `BusinessPlans`, `BusinessPlanDebts` và hai hàm kèm theo. **Đã chạy và kiểm chứng 10/08/2026**: đo trước khi xoá ra 0 phương án / 0 dòng dư nợ, sau khi xoá cả hai bảng và cả hai hàm đều không còn, và **không bảng nào hở RLS**. Trạng thái nằm hết trong component |
 | ✅ | Kỳ kế hoạch dự phóng theo hệ số | `planDriversOf`, mặc định 1,5. Gõ đè từng dòng qua `planOverrides`; gõ đè bằng 0 là con số thật. Lãi vay **không** nhân hệ số |
 | ✅ | Giá vốn nhập bằng số tiền | Mọi cột `%/DT` và `Tăng/giảm` thành công thức. Không còn ô phần trăm nào ngoài lãi suất từng khoản vay và trần DTI |
 | ✅ | Số trong bảng phân cách nhất quán | `MoneyCell` giữ chuỗi đang gõ trong state riêng, định dạng lại khi rời ô. Trước đó ô nhập không có dấu phân cách còn ô công thức thì có |

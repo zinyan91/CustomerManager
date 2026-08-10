@@ -16,7 +16,6 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
-| 🔄 | Chạy migration 36 trước khi dùng bản mã hiện tại | **Hard dependency.** Xem §1 |
 | ⬜ | Khai lại `LoanAmount` cho `2002/HĐTD/9738792/GNN-01` | Đang bằng 0, hạn mức khả dụng ra cao hơn thực tế. Xem §2 |
 | ⬜ | Đối chiếu `KunnTenor` nhóm hạn mức với GNN giấy | ĐOÀN THỊ TUYỂN ghi 06 tháng, hệ thống lưu đáo hạn 23/09 thay vì 23/10/2026 |
 | ⬜ | Sinh lại lịch trả nợ cho ~60 dòng lệch đáo hạn | Chỉ làm SAU khi hai việc trên xong. Xem §3 |
@@ -40,6 +39,9 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
+| ⬜ | Sinh `.docx` OOXML thật cho tab Soạn biểu mẫu | Hiện là HTML đội lốt Word — Word báo *"format and extension don't match"*. Tái dùng phần ZIP + CRC32 của `xlsxWriter.ts`. Xem §26 |
+| ⬜ | Hai trần theo doanh nghiệp của mã thẻ `B3` và `B12` | Hiện chỉ là chữ trong luật, chưa phải chốt chặn. Xem §27 |
+| ⬜ | Dọn 4 dòng `LoanContracts.ContractEndDate` còn lệch trong CSDL | Mã nguồn không đọc nữa nên vô hại, nhưng báo cáo SQL nào đọc cột đó vẫn sai. Cân nhắc xoá hẳn hai cột bản sao |
 | ⬜ | Đo `ContractCollaterals` rồi quyết định xoá | Bảng thứ 20 trong database, web app không gọi `.from()` tới nó. Có thể đang dùng qua khoá ngoại |
 | ⬜ | Rà dữ liệu bị nút "Đồng bộ kỳ cuối" ghi đè | Ngày tháng: tối đa 1 khoản. Số lãi khai tay ở kỳ chưa thu **không dò được bằng SQL**, cần bản trước đó để đối chiếu |
 | ⬜ | Mở rộng test giao diện sang các phân hệ còn lại | Hiện có tab KUNN và khối phương thức trả nợ |
@@ -62,6 +64,12 @@ trước mốc đó đều xem một bản lỗi màu**. Các mục dưới cầ
 | | Việc |
 | :--- | :--- |
 | ⬜ | Ô Gốc mỗi kỳ theo GNN — nhập, lưu, mở lại xem có giữ đúng (cần migration 36 đã chạy) |
+| ⬜ | Hợp đồng thẻ — tạo cho KH và vợ/chồng với hạn mức khác nhau, xem tổng cộng đúng |
+| ⬜ | Hợp đồng thẻ — thẻ ghi nợ ATM: ô hạn mức và ô mã chính sách phải mờ và khoá |
+| ⬜ | Hợp đồng thẻ — chọn mã `A2` rồi để trống TSBĐ: phải bị chặn ở cả form và trigger CSDL |
+| ⬜ | Hợp đồng thẻ — thêm thẻ phụ thứ ba bằng đưỏng SQL: trigger phải chặn |
+| ⬜ | Hợp đồng thẻ — xóa TSBĐ đang gắn cho thẻ: phải bị chặn bởi `ON DELETE RESTRICT` |
+| ⬜ | Tab Tra cứu chính sách thẻ — soi cả hai giao diện sáng/tối, và ở khục 375px |
 | ⬜ | Phân hệ Thẻ tín dụng — tạo thẻ, chọn diện mở thẻ, lưu, mở lại |
 | ⬜ | Luồng nhập Mã HMTD dùng chung — ô hạn mức được duyệt hiện ra và lưu đúng |
 | ⬜ | Lịch thu nợ của hợp đồng hạn mức chọn "Trả đều hàng tháng" — gốc phải chia đều |
@@ -124,7 +132,9 @@ trước mốc đó đều xem một bản lỗi màu**. Các mục dưới cầ
 | ✅ | Kỳ thu nợ được coi là xong khi chưa thu đủ | `schedulePaymentStatus`. Xem §13 |
 | ✅ | Xoá toàn bộ bảng sao lưu `_backup_*` | Migration 26. Kiểm chứng 10/08/2026: danh sách 20 bảng không còn bảng `_backup_` nào |
 | ✅ | Xoá bảng `PostLoanControls` kế thừa từ WPF | Đã không còn trong database khi rà 10/08/2026 |
-| ✅ | Gốc mỗi kỳ khai theo GNN | Cột `MonthlyPrincipalAmount`, migration 36. Xem §1 |
+| ✅ | Gốc mỗi kỳ khai theo GNN | Cột `MonthlyPrincipalAmount`, migration 36 đã chạy. Xem §1 |
+| ✅ | Ngày hiệu lực HĐTD đọc từ hợp đồng cha, không đọc bản sao trên KUNN | Xem §25 |
+| ✅ | Phân hệ hợp đồng thẻ thay `CreditCards` | Migration 37 đã chạy. Xem §26 và §27 |
 
 ## Lỗi tính tiền đã sửa
 
@@ -603,6 +613,129 @@ lập định dạng người dùng) thay bằng bản dùng chung ở `utils.ts
 
 ---
 
+## §25. Ngày hiệu lực HĐTD — một nguồn duy nhất
+
+`computeLimitGroups` đọc `LoanContracts.ContractEndDate` — **bản sao ngày HĐTD nằm trên
+từng dòng KUNN**. `saveCreditContractAPI` chỉ ghi `CreditContracts`, không ghi ngược, nên
+mỗi lần sửa ngày HĐTD là sinh thêm một dòng lệch vĩnh viễn.
+
+Tái hiện 10/08/2026 trên CHÂU CÁT LƯỢNG: tab HĐTD ghi hiệu lực 28/05/2027 trong khi tab
+KUNN ghi 28/05/2026, HMTD còn lại 0 và nhãn đỏ "HĐTD hết hiệu lực".
+
+Đo trên toàn danh mục: **102 KUNN, 4 lệch ngày kết thúc, 1 lệch ngày hiệu lực.**
+
+**Chiều lệch nguy hiểm có thật:** `2002/HĐTD/9647376/GNN-01` (NGUYỄN THANH BÌNH) có hạn
+thật **30/06/2025** nhưng bản sao ghi **30/06/2027** — lệch hai năm. Hệ thống coi HĐTD
+còn hiệu lực suốt hơn một năm và **không nhãn nào cảnh báo**. Đây là lỗi §19 quay lại qua
+cửa khác: chiều bản sao *cũ hơn* thì chặn oan, thấy ngay; chiều bản sao *dài hơn* thì âm
+thầm chào hạn mức trên hợp đồng đã hết hiệu lực.
+
+Sửa: thêm `getContractDates` vào `LimitGroupOptions` (cùng khuôn `isClosed` đã có), tra
+HĐTD cha qua `CreditContractId` bằng `hdtdEffectiveDatesOf` đặt cạnh `isKunnOfClosedHdtd`
+— hai chốt nay dùng **một cách tra**. Cố ý **không** đi hướng ngược lại (ghi đè ngày
+xuống mọi dòng KUNN mỗi lần lưu) vì đó là nhân thêm bản sao, chính là cách sinh ra lỗi này.
+
+7 test khoá cả hai chiều lệch, ca tra không ra HĐTD cha, và tương thích ngược khi không
+truyền nguồn ngày. Kiểm chứng trên trình duyệt: HMTD còn lại đổi từ 0 thành
+1.750.000.000đ, nhãn hết hiệu lực biến mất, khớp tab HĐTD.
+
+**Kèm theo — ô tra "Số Hợp Đồng Tín Dụng" chưa bao giờ hoạt động.** Khi chỉ nhập số HĐTD,
+nhánh `else` gọi `fetchCustomersAPI({})` lấy **toàn bộ 49 khách** rồi gán `customers[0]`,
+nên vòng lặp tra theo số hợp đồng có điều kiện `!matchedCustomer` **không bao giờ chạy**.
+Hệ quả nặng hơn "không tìm thấy": nó **mở sai hồ sơ khách hàng và không báo gì**. Bỏ
+nhánh `else`; kiểm chứng tra `9647376` ra đúng NGUYỄN THANH BÌNH.
+
+## §26. Phân hệ hợp đồng thẻ — `CardContracts`
+
+Thay `CreditCards` bằng `CardContracts` + `CardSupplementaryHolders` (migration 37, đã
+chạy 10/08/2026). Bảng riêng chứ không nhét vào `CreditContracts` vì trường khác gần hết:
+loại thẻ, chủ thẻ, mã chính sách, thẻ phụ, thời hạn cố định 60 tháng — nhét chung là dựng
+một bảng nửa rỗng. Xoá bảng cũ theo quyết định của chủ dự án: dữ liệu ít, khai lại theo mô
+hình mới. Ô "số thẻ" bỏ hẳn vì banker không biết được lúc lập hồ sơ.
+
+**HẠN MỨC DÙNG CHUNG là quyết định quan trọng nhất.** Một hợp đồng phát hành cả Visa,
+Mastercard và Napas trên **cùng một** hạn mức, nên hạn mức nằm ở **hợp đồng**
+(`GrantedLimit`), không nằm ở từng thẻ. Lưu theo từng thẻ rồi cộng lại sẽ tiêu tốn khả
+năng bảo đảm **gấp ba lần thực tế**. Thẻ phụ đồng mức cấp nên bảng thẻ phụ **không có cột
+hạn mức**; tối đa 2 thẻ phụ, chặn bằng **trigger** vì `CHECK` không đếm được qua nhiều dòng.
+
+**Thẻ ghi nợ ATM không có hạn mức tín dụng** nên tiêu tốn 0 khả năng bảo đảm. Chặn cả hai
+chiều: thẻ tín dụng mà hạn mức 0 thì chặn; thẻ ghi nợ mà khai hạn mức thì chặn. Hợp đồng
+lẫn cả hai loại thì **không** coi là ghi nợ.
+
+KH và vợ/chồng là **hai hợp đồng riêng** vì hạn mức khác nhau; tổng thì cộng lại.
+
+Số hợp đồng `NAT/<năm>/<số thứ tự 3 chữ số>`, lấy `MAX` cộng 1 (không đếm số dòng), đếm
+riêng theo năm, unique index trên `lower(btrim(...))` cùng khuôn migration 20.
+
+`creditLimit.ts` đổi sang nhận `CardContract[]`: `cardGrantedLimit` trả 0 cho hợp đồng đã
+đóng và cho thẻ ghi nợ. Dashboard nạp `CardContracts` và cộng qua `totalCardGrantedLimit`
+— dòng thẻ **ghi rõ "hạn mức đã cấp"**, đếm theo "hợp đồng" chứ không "khoản", và **không
+hiện phần trăm** vì nó không thuộc mẫu số tổng dư nợ.
+
+Kiểm chứng đầu-cuối 10/08/2026 (CHÂU CÁT LƯỢNG, bản thử đã xoá): số `NAT/2026/001` tự
+sinh, hết hạn 2031-08-10 đúng 60 tháng; chọn `B2` rồi nhập 200tr thì chặn kèm thông báo
+nêu đủ trần và số đang khai; ba thương hiệu với hạn mức 100tr thì tổng hiển thị **100tr,
+không phải 300tr**; nút "Thêm thẻ phụ" tự biến mất ở thẻ phụ thứ hai.
+
+## §27. Mã chính sách phát hành thẻ — 15 mã, khoá bền
+
+Nguồn: **Phụ lục 02 QĐ 1017/2025/QĐ-TGĐ** (ban hành 26/04/2025, hiệu lực 28/04/2025, lần
+hiệu chính 02), thay thế Phụ lục 01 và 02 của QĐ 2630/2024 và QĐ 3296/2024. Hai tệp PDF là
+**bản scan ảnh thuần** — không có text nào ngoài watermark, phải bóc ảnh nhúng ra đọc bằng mắt.
+
+Chuẩn hoá `TSDB` thành `TSBD` ở B11–B13 (bản gốc khai không nhất quán), có test khoá
+"0 mã còn chứa TSDB".
+
+**Luật hạn mức không cùng một hình dạng** — bốn cấu trúc:
+
+| Cấu trúc | Mã dùng | Ghi chú |
+| :--- | :--- | :--- |
+| Công thức đơn | A1, A2, B4, B9, B11, B12, B13 | `limitRule` + `minLimit`/`maxLimit` |
+| Bảng bậc `tiers` | B1 | 8 bậc theo số dư TG CKH bình quân 6 tháng |
+| Ma trận `matrix` | B3, B5 | Chức danh × xếp hạng doanh nghiệp |
+| Nhánh phụ `brackets` | B6, B7, B8, B10 | B10 có **15 bậc**; B8 có **hai cơ sở song song** (theo chức danh / theo lương) với trần khác nhau |
+
+`A1` là **mã duy nhất không có trần trên** (90% × giá trị tiền gửi, sàn 10tr). Con số 90%
+khớp đúng hằng số `CARD_STK_LTV_PERCENT` đã có từ 07/08 — có test khoá sự khớp này.
+
+**KHOÁ BỀN tách khỏi mã chính thức.** `CardContracts.PolicyCode` lưu `A1`/`A2`/`B1`…`B13`,
+**không** lưu chuỗi dài như `B6_KHCN_KHONG TSBD_THUNHAP_ LUONG QUA VIETBANK`. Mã chính
+thức chỉ để hiển thị và có thể đổi khi Phòng Thẻ ban hành quyết định mới — lưu chuỗi đó là
+mọi hợp đồng cũ trỏ vào chỗ không còn tồn tại.
+
+`cardPolicyOf` tra được **ba đường**: khoá bền, mã chính thức, hoặc mã cũ qua `aliases`.
+`normalizePolicyRef` bỏ khác biệt hoa thường và **dấu cách quanh gạch dưới**. `retiredAt`
+cho mã bãi bỏ **biến khỏi danh sách chọn** (`activeCardPolicies`) nhưng **vẫn tra được**
+cho hồ sơ cũ — đây là chỗ hầu hết hệ thống làm sai.
+
+Dữ liệu để **trong mã nguồn**, không xuống CSDL. Tiền lệ đúng là `mdsdv.json` (danh mục
+tra cứu 9.133 dòng, chỉ đọc) chứ không phải `RatePrograms` (5 bảng, lãi suất đổi theo
+tuần, banker phải sửa). Lý do: bốn hình dạng dữ liệu quan hệ hoá rất đắt mà không được gì;
+mất lớp test khoá cấu trúc; và mỗi bản QĐ mới đổi cả *hình dạng* nên "sửa từ giao diện
+không cần deploy" phần lớn là ảo. Bù lại git cho dấu vết kiểm toán.
+
+Đổi ý sau này **không phải làm lại**: dữ liệu nằm sau ba hàm truy cập, đổi nguồn là sửa ba
+hàm đó.
+
+Tab riêng **Tra cứu chính sách thẻ** (nhóm Công cụ, dưới Tra cứu mục đích SDV): cột MÃ
+riêng, bộ lọc theo loại TSBĐ, nhấp một dòng mở ra bảng bậc / ma trận / nhánh phụ, điều
+kiện, tái đánh giá, hồ sơ bổ sung, và dòng xuất xứ QĐ để banker biết dữ liệu còn mới.
+
+## §28. Hai trần theo doanh nghiệp — chưa chặn được
+
+`B3` và `B12` có trần **cắt ngang nhiều khách hàng cá nhân**, thứ hệ thống chưa biểu diễn
+được vì không có thực thể doanh nghiệp:
+
+- `B3`: tổng hạn mức cấp cho **01 KHDN** không quá 1.000tr (Platinum/Diamond) hoặc 500tr
+  (xếp hạng còn lại).
+- `B12`: tổng hạn mức thẻ được **một doanh nghiệp** bảo lãnh không quá 10% HMTD Vietbank
+  đã cấp và không quá **5 tỉ/doanh nghiệp** — và **cộng gộp cả thẻ đã phát hành theo `B3`**.
+
+Hiện hai trần này chỉ là chữ trong `limitRule` và `matrix.note`, hiện lên tab tra cứu để
+banker tự đối chiếu. Muốn chặn thật thì cần thêm khái niệm doanh nghiệp bảo lãnh — việc đó
+lớn, chưa làm.
+
 # IV. Quyết định nghiệp vụ đã chốt
 
 | Câu hỏi | Quyết định | Ngày |
@@ -624,6 +757,44 @@ lập định dạng người dùng) thay bằng bản dùng chung ở `utils.ts
 # V. Nhật ký theo ngày
 
 ## 10/08/2026
+
+### Phân hệ hợp đồng thẻ — thay `CreditCards`
+
+Bảng cũ không biểu diễn được hợp đồng thẻ: không có số hợp đồng, không có mã chính sách,
+không có thẻ phụ, và ô "số thẻ" là dữ liệu banker không thể biết lúc lập hồ sơ.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Migration 37 — `CardContracts` + `CardSupplementaryHolders` | Đã chạy và kiểm chứng: bảng cũ 0, hai bảng mới, mỗi bảng một policy RLS, `REVOKE anon` |
+| ✅ | `cardContract.ts` — luật nghiệp vụ thẻ | 48 test |
+| ✅ | `cardPolicyRules.ts` — 15 mã kèm luật hạn mức | 24 test. Xem §27 |
+| ✅ | `api.ts` — CRUD hợp đồng thẻ và thẻ phụ | Dịch lỗi ràng buộc CSDL sang tiếng Việt; `.select()` ở `delete` để RLS chặn không báo thành công giả |
+| ✅ | `creditLimit.ts` sang `CardContract` | Thẻ ghi nợ và hợp đồng đã đóng tiêu tốn **0** khả năng bảo đảm |
+| ✅ | `CardContractView` thay `CreditCardView` | Mã chính sách tự lọc theo loại TSBĐ; luật hạn mức hiện ngay khi chọn mã |
+| ✅ | Tab riêng `CardPolicyLookupView` | Nhóm Công cụ, dưới Tra cứu mục đích SDV |
+| ✅ | Dashboard hết hiện 0 ở dòng hạn mức thẻ | Nạp `CardContracts`, cộng qua `totalCardGrantedLimit` |
+| ✅ | Tab Thẻ dùng chung `selectedCustomerId` | Trước đây là tab duy nhất đứng ngoài `WorkContext` |
+| ✅ | Gỡ hai chú thích trong ngoặc ở form HĐTD | `(duy nhất trong khách hàng)` và `(HĐTD)` |
+
+**Thứ tự triển khai quan trọng và ngược với migration 36:** migration 37 `DROP TABLE
+CreditCards` nên phải **sửa mã trước, chạy migration sau**. Bảy tệp đọc bảng cũ đã gỡ hết
+trước khi chạy.
+
+**Một test cũ viết lại thay vì sửa cho qua.** Nó khẳng định `clusterExposure` cộng hạn mức
+cấp *chứ không cộng dư nợ thẻ*. Mô hình mới **không có** cột dư nợ thẻ nên tính chất đó do
+cấu trúc bảo đảm, test mất ý nghĩa. Đổi thành ba khẳng định thật của mô hình mới: ba
+thương hiệu tính một lần, thẻ ghi nợ tính 0, hợp đồng đã đóng tính 0.
+
+### Ngày hiệu lực HĐTD và ô tra số hợp đồng
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | `computeLimitGroups` đọc ngày từ HĐTD cha | Thêm `getContractDates`, tra qua `CreditContractId`. 7 test. Xem §25 |
+| ✅ | Ô tra "Số Hợp Đồng Tín Dụng" chưa bao giờ hoạt động | Nó **mở sai hồ sơ khách hàng** mà không báo gì |
+
+Đo được 4 KUNN lệch ngày kết thúc trên 102 KUNN, trong đó **hai khoản lệch theo chiều nguy
+hiểm**: bản sao dài hơn hạn thật nên hệ thống chào hạn mức trên HĐTD đã hết hiệu lực mà
+không có nhãn nào.
 
 ### Gốc mỗi kỳ khai theo GNN
 

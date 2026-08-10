@@ -893,6 +893,78 @@ Vượt trần thì **chặn lưu**, mở được bằng ô xác nhận ngoại
 
 `CreditCards` từng có **hai cột cùng nghĩa**: `CreditLimit` (web đọc) và `Limit` (WPF ghi, `NOT NULL` không mặc định). `saveCreditCardAPI` bóc `Limit` ra khỏi payload rồi không ghi lại, nên **cấp thẻ mới từ web chưa bao giờ chạy được** — đổ `null value in column "Limit"`. Migration 28 gộp về `CreditLimit` và xoá cột thừa. Đọc hạn mức thẻ dùng `cardGrantedLimit`, đừng viết lại `CreditLimit || Limit` — bẫy `||` khiến hạn mức 0 hợp lệ rơi xuống cột cũ.
 
+### Hợp đồng thẻ — `CardContracts`
+
+Thẻ nằm ở **bảng riêng**, không phải `LoanContracts` và cũng không phải `CreditContracts`.
+Đây là chỗ đã gây lỗi hai lần: thẻ vô hình với chốt kiểm soát TSĐB (07/08/2026) và dashboard
+hiện hạn mức thẻ bằng 0 (10/08/2026) — cả hai đều vì hàm chỉ nhận `LoanContract[]`. Viết
+hàm mới có dính tới thẻ thì kiểm xem nó có nhận `CardContract[]` chưa.
+
+**HẠN MỨC DÙNG CHUNG — điểm dễ làm sai nhất.** Một hợp đồng thẻ phát hành được cả Visa,
+Mastercard và Napas trên **cùng một** hạn mức. Vì vậy hạn mức nằm ở `CardContracts.GrantedLimit`
+(cấp hợp đồng), **không** ở từng thẻ. Đừng dựng bảng "từng thẻ vật lý có hạn mức riêng" rồi
+cộng lại — nó tiêu tốn khả năng bảo đảm **gấp ba lần thực tế**. Thẻ phụ cũng đồng mức cấp
+với thẻ chính nên `CardSupplementaryHolders` **cố ý không có cột hạn mức**.
+
+Đọc hạn mức thẻ bằng `cardContractGrantedLimit` / `totalCardGrantedLimit`, đừng đọc thẳng
+`GrantedLimit`: hai hàm đó đã xử **thẻ ghi nợ trả 0** và **hợp đồng đã đóng trả 0**.
+
+**Thẻ ghi nợ ATM không phải khoản cấp tín dụng.** Nó không có hạn mức nên không được tiêu
+tốn khả năng bảo đảm. `checkCardContract` chặn hai chiều: thẻ tín dụng mà hạn mức 0 thì
+chặn, thẻ ghi nợ mà khai hạn mức thì chặn. Hợp đồng lẫn cả hai loại thì **không** coi là
+ghi nợ (`isDebitCard` yêu cầu *mọi* loại thẻ đều là ghi nợ).
+
+KH và vợ/chồng là **hai hợp đồng riêng** vì hạn mức khác nhau. Đừng gộp thành một bản ghi
+hai chủ thẻ.
+
+Số hợp đồng `NAT/<năm>/<số thứ tự 3 chữ số>`. `nextCardContractNumber` lấy `MAX` cộng 1
+**không đếm số dòng** (đếm dòng sinh trùng ngay khi có hợp đồng bị xoá giữa dãy), đếm riêng
+theo năm. Unique index dưới database đặt trên `lower(btrim(...))` để hai lớp kiểm tra nói
+cùng một chuyện — cùng khuôn `LoanContracts_ContractNumber_key`.
+
+Tối đa 2 thẻ phụ mỗi hợp đồng, chặn bằng **trigger** `trg_chan_qua_hai_the_phu` chứ không
+`CHECK`, vì luật đếm qua nhiều dòng.
+
+### Mã chính sách phát hành thẻ — khoá bền vs mã chính thức
+
+Hai khái niệm khác nhau, đừng lẫn:
+
+| | Khoá bền (`key`) | Mã chính thức (`code`) |
+| :--- | :--- | :--- |
+| Giá trị | `A1`, `A2`, `B1`…`B13` | `B6_KHCN_KHONG TSBD_THUNHAP_ LUONG QUA VIETBANK` |
+| Lưu xuống CSDL | **có** — `CardContracts.PolicyCode` | không |
+| Hiển thị cho banker | không | **có** |
+| Đổi khi có QĐ mới | không bao giờ | có thể |
+
+Lưu chuỗi mã chính thức xuống CSDL là sai: một quyết định mới đổi tên mã thì **mọi hợp
+đồng cũ trỏ vào chỗ không còn tồn tại**.
+
+`cardPolicyOf` tra được cả khoá bền, mã chính thức, và mã cũ qua `aliases`. `normalizePolicyRef`
+bỏ khác biệt hoa thường và **dấu cách quanh gạch dưới** — bản gốc khai không nhất quán
+(`_ LUONG` có dấu cách, `_LUONG` không). Mã bị bãi bỏ đánh `retiredAt`: nó biến khỏi
+`activeCardPolicies()` cho hồ sơ mới nhưng `cardPolicyOf` **vẫn tra được** cho hồ sơ cũ.
+Đừng xoá mã cũ khỏi danh mục.
+
+**Quy trình khi Phòng Thẻ ban hành QĐ mới:** sửa số trong `CARD_POLICY_RULES`, thêm mã cũ
+vào `aliases` nếu tên đổi, đánh `retiredAt` cho mã bãi bỏ, cập nhật `CARD_POLICY_SOURCE`.
+Không đụng CSDL, không đụng hồ sơ đã lưu.
+
+Dữ liệu để **trong mã nguồn**, cố ý không xuống CSDL — xem `PROGRESS.md` §27 cho lý do đầy
+đủ. `CARD_POLICY_SOURCE` khai xuất xứ văn bản và hiện lên tab tra cứu để banker biết dữ
+liệu có còn mới.
+
+Luật hạn mức có **bốn hình dạng** (`limitRule` đơn, `tiers`, `matrix`, `brackets`), mỗi
+hình dạng có hàm tra riêng và test khoá tính chất cấu trúc: bảng bậc phủ liên tục không hở
+không chồng lấn, ma trận không ô rỗng, `maxLimit` của mã bằng đúng ô/nhánh lớn nhất. Nhập
+lệch một ô là test đỏ.
+
+`A1` là **mã duy nhất không có trần trên**. Test khoá riêng ngoại lệ này; mọi mã còn lại
+bắt buộc `maxLimit > 0`.
+
+**Hai trần theo doanh nghiệp chưa chặn được** (`B3` 1.000tr/500tr mỗi KHDN; `B12` 10% HMTD
+và 5 tỉ mỗi DN, cộng gộp cả thẻ `B3`). Hệ thống không có thực thể doanh nghiệp nên chúng
+chỉ là chữ trong `limitRule` và `matrix.note`. Đừng tưởng đã có chốt.
+
 ### Tàn dư WPF — cái gì đã gỡ, cái gì cố ý giữ
 
 Hệ thống đã chuyển hoàn toàn sang web (06/08/2026), ứng dụng WPF ngừng hoạt động. Mã nguồn WPF bị xoá khỏi repo từ 30/07/2026 (commit `2f4bc10`).

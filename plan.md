@@ -1,6 +1,6 @@
 # Kế hoạch nâng cấp giao diện toàn hệ thống
 
-Cập nhật 10/08/2026 (đo lại số liệu). Thay thế hoàn toàn bản kế hoạch trước.
+Cập nhật 10/08/2026, đo lại lần hai sau khi dựng phân hệ thẻ. Thay thế hoàn toàn bản kế hoạch trước.
 
 **Chưa đợt nào bắt đầu.** Toàn bộ phần dưới là việc chưa làm, trừ mục 2b.
 
@@ -33,28 +33,28 @@ Chạy lại bất cứ lúc nào để biết đợt nâng cấp đã đi tới
 | Đường in khác nhau | 4 | 1 | **1** | Xong — gộp về `printHtmlDoc` |
 | Bản tải file chép tay | 3 | 1 | **1** | Xong — gộp về `downloadTextFile` |
 | Chỗ tự tính LTV trong `.tsx` | 8 | 0 | **0** | Xong |
-| **Chuỗi tiếng Việt cứng trong JSX** | 726 | 688 | **770** | **Hổng nặng, đang tăng** |
-| **File dùng `useLang`** | 4/57 | 4/59 | **5/74** | **Hổng nặng, tỷ lệ đang giảm** |
-| **File có `focus-visible`** | 3/57 | 5/59 | **5/74** | **Dưới sàn chất lượng** |
+| **Chuỗi tiếng Việt cứng trong JSX** | 726 | 688 | **789** | **Hổng nặng, đang tăng** |
+| **File dùng `useLang`** | 4/57 | 4/59 | **5/75** | **Hổng nặng, tỷ lệ đang giảm** |
+| **File có `focus-visible`** | 3/57 | 5/59 | **5/75** | **Dưới sàn chất lượng** |
 | **File `.tsx` quá 400 dòng** | — | — | **11** | **Nặng hơn dự tính ban đầu** |
-| Bảng thiếu `overflow-x-auto` | 5 | 4 | **5** | Tăng — `BusinessPlanSheet` mới |
-| Test dựng component | 2/57 | 2/59 | **4/74** | Mỏng |
+| Bảng thiếu `overflow-x-auto` | 5 | 4 | **5** | Chưa sửa |
+| Test dựng component | 2/57 | 2/59 | **4/75** | Mỏng |
 | `ROW_RAIL_*` được dùng | 0 | 0 | **0** | Hằng chết |
 | `text-[9px]` | — | 1 | **1** | Chưa giết |
-| Tổng test | 813 | 843 | **1.066** | |
+| Tổng test | 813 | 843 | **1.148** | |
 
 **Ba dòng đáng chú ý khi đo lại 10/08:**
 
-Chuỗi tiếng Việt cứng **tăng từ 688 lên 770** và tỷ lệ file dùng `useLang` **tụt từ
-4/59 xuống 5/74** — các phân hệ mới (Phương án kinh doanh, Chào lãi suất, ô Gốc mỗi
+Chuỗi tiếng Việt cứng **tăng từ 688 lên 789** và tỷ lệ file dùng `useLang` **tụt từ
+4/59 xuống 5/75** — các phân hệ mới (Phương án kinh doanh, Chào lãi suất, ô Gốc mỗi
 kỳ) đều viết tiếng Việt trực tiếp. Đợt 3 đang lùi ra xa hơn mỗi lần thêm màn hình.
 Số 726 ở bản kế hoạch gốc **không phải mục tiêu cố định** mà là mục tiêu đang chạy.
 
 Số file quá 400 dòng là **11**, không phải 3 như bản kế hoạch ban đầu ước. Tiêu chí
 ra của Đợt 4 vì thế nặng hơn nhiều.
 
-Bảng thiếu `overflow-x-auto` **tăng lại** vì `BusinessPlanSheet` là bảng mới. Sàn
-chất lượng không tự giữ được nếu không có chốt.
+Hai bảng mới của phân hệ thẻ đều có `overflow-x-auto` sẵn, nên con số 5 không tăng thêm.
+Nhưng sàn chất lượng vẫn không tự giữ được nếu không có chốt lint.
 
 ---
 
@@ -126,7 +126,7 @@ Mỗi đợt một nhánh, một lần gộp, có tiêu chí ra rõ ràng. Khôn
 
 Nhỏ nhất, rủi ro thấp nhất, giá trị tức thì. Làm trước.
 
-- Đưa `focus-visible:outline-2 outline-offset-2 outline-accent` vào `BTN_BASE`, `UI.inputStyle` và mọi phần tử bấm được. Hiện **5/74** file có.
+- Đưa `focus-visible:outline-2 outline-offset-2 outline-accent` vào `BTN_BASE`, `UI.inputStyle` và mọi phần tử bấm được. Hiện **5/75** file có.
 - Bọc `overflow-x-auto` cho 5 bảng còn thiếu: `EstimateForm`, `PaymentRequestForm`, `SaleForm`, `KunnRateSection`, `BusinessPlanSheet`. (`CustomerListView` đã xong qua `AdaptiveTable`.)
 - Gán `aria-label` cho các nút chỉ có biểu tượng.
 - Giết `text-[9px]`.
@@ -143,7 +143,7 @@ Nhỏ nhất, rủi ro thấp nhất, giá trị tức thì. Làm trước.
 
 ### Đợt 3 — Dịch xong hai ngôn ngữ
 
-Đợt nặng nhất: **770 chuỗi** (đo 10/08, đang tăng). Đây là lý do thật khiến công tắc ngôn ngữ đang bị tắt sau cờ `LANG_SWITCH_ENABLED` ở [Header.tsx:70](src/components/Header.tsx:70).
+Đợt nặng nhất: **789 chuỗi** (đo 10/08, đang tăng). Đây là lý do thật khiến công tắc ngôn ngữ đang bị tắt sau cờ `LANG_SWITCH_ENABLED` ở [Header.tsx:70](src/components/Header.tsx:70).
 
 Chia theo màn, mỗi màn một lần gộp, theo thứ tự người dùng đụng tới nhiều nhất:
 
@@ -169,7 +169,7 @@ Không phải việc thẩm mỹ, nhưng là điều kiện để đợt 3 và 5
 | `views/CustomerListView.tsx` | 614 |
 | `views/CreditContractView.tsx` | 609 |
 | `calculator/Tool1LoanScheduleCalc.tsx` | 570 |
-| `views/CreditCardView.tsx` | 514 |
+| `views/CardContractView.tsx` | 540 |
 | `views/DashboardView.tsx` | 511 |
 | `views/PostLoanControlView.tsx` | 508 |
 | `businessPlan/BusinessPlanSheet.tsx` | 462 |
@@ -186,7 +186,7 @@ Kèm theo: rút 3 khối HTML bản in trong `Tool1LoanScheduleCalc`, `Tool4Rate
 
 ### Đợt 5 — Lưới an toàn dựng component
 
-Hiện có **4/74** test dựng component (`LoanPortfolioView`, `ScheduleTab`, `BusinessPlanView`, `KunnRepaymentSection`). `CONVENTIONS.md` §1 ghi rõ vì sao cần: ngày 05/08/2026 tab KUNN trắng trang vì một hàm gọi biến khai sau nó — build, lint và 668 test đều xanh.
+Hiện có **4/75** test dựng component (`LoanPortfolioView`, `ScheduleTab`, `BusinessPlanView`, `KunnRepaymentSection`). `CONVENTIONS.md` §1 ghi rõ vì sao cần: ngày 05/08/2026 tab KUNN trắng trang vì một hàm gọi biến khai sau nó — build, lint và 668 test đều xanh.
 
 Mỗi màn một test jsdom, chỉ làm một việc: dựng lên với dữ liệu rỗng / một dòng / dữ liệu biên, khẳng định render tới cùng và `console.error` rỗng. **Không** kiểm công thức tiền ở đây.
 
@@ -209,9 +209,9 @@ Mỗi màn một test jsdom, chỉ làm một việc: dựng lên với dữ li�
 
 ## 5. Rủi ro
 
-**Đợt 3 là nơi dự án dễ chết giữa đường nhất.** 770 chuỗi là khối lượng nhiều tuần. Nếu bỏ dở, hệ thống mắc kẹt ở trạng thái nửa vời và cờ `LANG_SWITCH_ENABLED` nằm đó mãi. Chấp nhận được: dừng hẳn sau một màn hoàn chỉnh, không dừng giữa một màn.
+**Đợt 3 là nơi dự án dễ chết giữa đường nhất.** 789 chuỗi là khối lượng nhiều tuần. Nếu bỏ dở, hệ thống mắc kẹt ở trạng thái nửa vời và cờ `LANG_SWITCH_ENABLED` nằm đó mãi. Chấp nhận được: dừng hẳn sau một màn hoàn chỉnh, không dừng giữa một màn.
 
-**Mục tiêu đang chạy, không cố định.** Số chuỗi cứng tăng 688 → 770 giữa hai lần đo vì phân hệ mới vẫn viết tiếng Việt trực tiếp. Đợt 3 sẽ không bao giờ xong nếu không có chốt chặn chuỗi cứng mới — cân nhắc thêm luật lint trước khi bắt đầu dịch, không phải sau.
+**Mục tiêu đang chạy, không cố định.** Số chuỗi cứng tăng 688 → 789 giữa hai lần đo vì phân hệ mới vẫn viết tiếng Việt trực tiếp. Đợt 3 sẽ không bao giờ xong nếu không có chốt chặn chuỗi cứng mới — cân nhắc thêm luật lint trước khi bắt đầu dịch, không phải sau.
 
 **Đợt 4 đụng vào tiền.** Chẻ `LoanPortfolioView` là chẻ đúng file mà `CONVENTIONS.md` nói đã bốn lần sinh ra số sai. Mọi công thức rút ra phải có test hàm thuần **trước** khi xoá bản cũ, không phải sau.
 

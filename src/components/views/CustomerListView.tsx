@@ -6,10 +6,10 @@ import {
   filterCustomersByStatus, countCustomersByStatus, isCustomerArchived,
   CUSTOMER_STATUS_LABEL, type CustomerStatusFilter,
 } from '../../lib/customerStatus';
-import { fmtDate } from '../../lib/utils';
-import { Search, Plus, Download, Upload, Eye, Trash2, X, UserCheck, Archive, ArchiveRestore } from 'lucide-react';
+import { fmtDate, formatNationalId, parseNationalIdInput } from '../../lib/utils';
+import { Search, Plus, Eye, Trash2, X, UserCheck, Archive, ArchiveRestore } from 'lucide-react';
 import { Toast } from '../Toast';
-import { AdaptiveTable } from '../AdaptiveTable';
+import { AdaptiveTable, type AdaptiveColumn } from '../AdaptiveTable';
 
 export const CustomerListView: React.FC = () => {
 
@@ -191,82 +191,6 @@ export const CustomerListView: React.FC = () => {
     }
   };
 
-  const handleExportCSV = () => {
-    if (customers.length === 0) {
-      showNotify('error', 'Không có dữ liệu để xuất CSV!');
-      return;
-    }
-    const headers = ['CifKh', 'FullName', 'NationalId', 'Phone', 'Email', 'Address', 'AccountNumber', 'MaritalStatus', 'CifKhlq', 'KhlqRelationship', 'SpouseName', 'SpouseNationalId', 'SpousePhone', 'SpouseAccountNumber', 'KhlqAddress'];
-    const rows = customers.map(c => [
-      c.CifKh || '',
-      `"${c.FullName || ''}"`,
-      c.NationalId || '',
-      c.Phone || '',
-      c.Email || '',
-      `"${c.Address || ''}"`,
-      c.AccountNumber || '',
-      c.MaritalStatus || '',
-      c.CifKhlq || '',
-      c.KhlqRelationship || '',
-      `"${c.SpouseName || ''}"`,
-      c.SpouseNationalId || '',
-      c.SpousePhone || '',
-      c.SpouseAccountNumber || '',
-      `"${c.KhlqAddress || ''}"`
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `danh_sach_khach_hang_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const text = evt.target?.result as string;
-        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-        if (lines.length <= 1) return;
-        let count = 0;
-        for (let i = 1; i < lines.length; i++) {
-          const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim());
-          if (cols.length >= 2 && cols[0] && cols[1]) {
-            await saveCustomerAPI({
-              CifKh: cols[0],
-              FullName: cols[1],
-              NationalId: cols[2] || null,
-              Phone: cols[3] || null,
-              Email: cols[4] || null,
-              Address: cols[5] || null,
-              AccountNumber: cols[6] || null,
-              MaritalStatus: cols[7] || 'Độc thân',
-              CifKhlq: cols[8] || null,
-              KhlqRelationship: cols[9] || null,
-              SpouseName: cols[10] || null,
-              SpouseNationalId: cols[11] || null,
-              SpousePhone: cols[12] || null,
-              SpouseAccountNumber: cols[13] || null,
-              KhlqAddress: cols[14] || null,
-            });
-            count++;
-          }
-        }
-        showNotify('success', `Đã nhập thành công ${count} khách hàng từ file CSV!`);
-        fetchCustomers();
-      } catch (err: any) {
-        showNotify('error', `Lỗi đọc file CSV: ${err.message}`);
-      }
-    };
-    reader.readAsText(file);
-  };
-
   const containerCardBg = UI.containerCardBg;
   const inputStyle = UI.inputStyle;
 
@@ -296,8 +220,8 @@ export const CustomerListView: React.FC = () => {
           <input
             type="text"
             placeholder="Số CCCD KH..."
-            value={searchNationalId}
-            onChange={(e) => setSearchNationalId(e.target.value)}
+            value={formatNationalId(searchNationalId)}
+            onChange={(e) => setSearchNationalId(parseNationalIdInput(e.target.value))}
             className={`rounded-md px-3 py-2 text-xs transition-colors ${inputStyle}`}
           />
           <button
@@ -308,23 +232,6 @@ export const CustomerListView: React.FC = () => {
             <span>TÌM KIẾM</span>
           </button>
 
-          <div className="flex items-center space-x-2">
-            <label className={`flex-1 border font-medium text-xs py-2 px-2 rounded-md flex items-center justify-center space-x-1 cursor-pointer transition-colors ${'border-line text-ink-muted hover:border-accent hover:text-accent'
-              }`}>
-              <Upload className="w-3.5 h-3.5 text-ink-faint" />
-              <span>NHẬP CSV</span>
-              <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
-            </label>
-
-            <button
-              onClick={handleExportCSV}
-              className={`flex-1 border font-medium text-xs py-2 px-2 rounded-md flex items-center justify-center space-x-1 transition-colors ${'border-line text-ink-muted hover:border-accent hover:text-accent'
-                }`}
-            >
-              <Download className="w-3.5 h-3.5 text-ink-faint" />
-              <span>XUẤT CSV</span>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -386,13 +293,11 @@ export const CustomerListView: React.FC = () => {
                     </button>
                   </div>
                 )}
-                columns={[
+                columns={([
           { key: 'cif', label: 'Mã CIF', priority: 1,
                     render: c => <span className="font-mono text-ink font-semibold">{c.CifKh}</span> },
           { key: 'ten', label: 'Họ và tên KH', priority: 1,
                     render: c => <span className="font-bold">{c.FullName}</span> },
-          { key: 'cifKhlq', label: 'CIF KHLQ', priority: 2,
-                    render: c => <span className="font-mono text-ink-muted">{c.CifKhlq || '–'}</span> },
           { key: 'khlq', label: 'KHLQ / Người bảo lãnh', priority: 2,
                     render: c => c.SpouseName
                       ? <span className="text-ink">{c.SpouseName}</span>
@@ -417,7 +322,7 @@ export const CustomerListView: React.FC = () => {
                         }`}>{rel}</span>
                       );
                     } },
-        ]}
+        ] as AdaptiveColumn<Customer>[]).filter(col => !(statusFilter === 'active' && col.key === 'luuTru'))}
               />
             )}
           </div>
@@ -452,9 +357,9 @@ export const CustomerListView: React.FC = () => {
                 <label className="block font-medium mb-1">Số CCCD / CMND</label>
                 <input
                   type="text"
-                  placeholder="07009100..."
-                  value={inputNationalId}
-                  onChange={(e) => setInputNationalId(e.target.value)}
+                  placeholder="0700 9100..."
+                  value={formatNationalId(inputNationalId)}
+                  onChange={(e) => setInputNationalId(parseNationalIdInput(e.target.value))}
                   className={`w-full rounded-md p-2.5 font-mono font-bold ${inputStyle}`}
                 />
               </div>
@@ -577,8 +482,8 @@ export const CustomerListView: React.FC = () => {
                       <input
                         type="text"
                         placeholder="Số CCCD..."
-                        value={inputSpouseNationalId}
-                        onChange={(e) => setInputSpouseNationalId(e.target.value)}
+                        value={formatNationalId(inputSpouseNationalId)}
+                        onChange={(e) => setInputSpouseNationalId(parseNationalIdInput(e.target.value))}
                         className={`w-full rounded-md p-2.5 font-mono ${inputStyle}`}
                       />
                     </div>
@@ -664,7 +569,7 @@ export const CustomerListView: React.FC = () => {
               <h4 className="text-xs font-bold text-accent uppercase">1. Thông Tin Pháp Lý & Liên Lạc KH</h4>
               <div className={`border rounded-md p-4 grid grid-cols-2 gap-3 text-xs bg-surface border-line`}>
                 <div><span className="text-ink-faint">Họ và tên:</span> <span className="font-bold text-ink">{detailCustomer.FullName}</span></div>
-                <div><span className="text-ink-faint">Số CCCD:</span> <span className="font-bold font-mono">{detailCustomer.NationalId || 'Chưa khai báo'}</span></div>
+                <div><span className="text-ink-faint">Số CCCD:</span> <span className="font-bold font-mono">{formatNationalId(detailCustomer.NationalId) || 'Chưa khai báo'}</span></div>
                 <div><span className="text-ink-faint">Số tài khoản (STK):</span> <span className="font-bold font-mono text-ink">{detailCustomer.AccountNumber || 'Chưa khai báo'}</span></div>
                 <div><span className="text-ink-faint">Số điện thoại:</span> <span className="font-bold">{detailCustomer.Phone || 'Chưa khai báo'}</span></div>
                 <div className="col-span-2"><span className="text-ink-faint">Địa chỉ:</span> <span>{detailCustomer.Address || 'Chưa khai báo'}</span></div>
@@ -679,7 +584,7 @@ export const CustomerListView: React.FC = () => {
                 <div><span className="text-ink-faint">Mã CIF KHLQ:</span> <span className="font-bold font-mono text-ink">{detailCustomer.CifKhlq || '—'}</span></div>
                 <div><span className="text-ink-faint">Họ tên KHLQ / Bảo lãnh:</span> <span className="font-bold">{detailCustomer.SpouseName || '—'}</span></div>
                 <div><span className="text-ink-faint">STK KHLQ / Bảo lãnh:</span> <span className="font-bold font-mono text-ink">{detailCustomer.SpouseAccountNumber || '—'}</span></div>
-                <div><span className="text-ink-faint">CCCD KHLQ / Bảo lãnh:</span> <span className="font-mono">{detailCustomer.SpouseNationalId || '—'}</span></div>
+                <div><span className="text-ink-faint">CCCD KHLQ / Bảo lãnh:</span> <span className="font-mono">{formatNationalId(detailCustomer.SpouseNationalId) || '—'}</span></div>
                 <div><span className="text-ink-faint">SĐT KHLQ / Bảo lãnh:</span> <span>{detailCustomer.SpousePhone || '—'}</span></div>
                 <div className="col-span-2"><span className="text-ink-faint">Địa chỉ KHLQ / Bảo lãnh:</span> <span>{detailCustomer.KhlqAddress || '—'}</span></div>
               </div>

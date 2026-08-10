@@ -13,8 +13,54 @@ import {
   fmtDate,
   getContractRateHistory,
   getMasterHdtdNumber,
+  formatNationalId,
+  parseNationalIdInput,
 } from '../utils';
 import type { LoanContract } from '../../types';
+
+describe('formatNationalId / parseNationalIdInput', () => {
+  it('CCCD 12 số tách thành ba cụm bốn', () => {
+    expect(formatNationalId('080203009530')).toBe('0802 0300 9530');
+  });
+
+  it('CMND 9 số tách hết mức có thể, cụm cuối ngắn hơn', () => {
+    expect(formatNationalId('012345678')).toBe('0123 4567 8');
+  });
+
+  it('không để lại khoảng trắng thừa ở cuối khi chia hết cho bốn', () => {
+    expect(formatNationalId('12345678')).toBe('1234 5678');
+    expect(formatNationalId('1234')).toBe('1234');
+  });
+
+  it('nhận cả chuỗi đã tách sẵn, không tách chồng lên nhau', () => {
+    expect(formatNationalId('0802 0300 9530')).toBe('0802 0300 9530');
+    expect(formatNationalId('08 020 3009530')).toBe('0802 0300 9530');
+  });
+
+  it('giữ nguyên giấy tờ có chữ, không cắt bừa', () => {
+    expect(formatNationalId('B1234567')).toBe('B1234567');
+    expect(formatNationalId('AB 123456')).toBe('AB 123456');
+  });
+
+  it('rỗng hoặc thiếu thì trả chuỗi rỗng', () => {
+    expect(formatNationalId('')).toBe('');
+    expect(formatNationalId('   ')).toBe('');
+    expect(formatNationalId(null)).toBe('');
+    expect(formatNationalId(undefined)).toBe('');
+  });
+
+  it('đọc ngược về dạng liền để so khớp và lưu trữ', () => {
+    expect(parseNationalIdInput('0802 0300 9530')).toBe('080203009530');
+    expect(parseNationalIdInput('  0802  0300 ')).toBe('08020300');
+    expect(parseNationalIdInput('')).toBe('');
+    expect(parseNationalIdInput(null)).toBe('');
+  });
+
+  it('đọc rồi hiển thị lại ra đúng chuỗi ban đầu', () => {
+    const goc = '079300012345';
+    expect(parseNationalIdInput(formatNationalId(goc))).toBe(goc);
+  });
+});
 
 describe('formatMoneyInput / parseMoneyInput', () => {
   it('định dạng theo chuẩn Việt Nam (dấu chấm ngăn nghìn)', () => {

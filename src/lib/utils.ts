@@ -3,6 +3,20 @@ import {
   groupInteger, NUMBER_SEPARATORS,
 } from './formatSettings';
 
+export function formatNationalId(v?: string | null): string {
+  if (v === null || v === undefined) return '';
+  const raw = String(v).trim();
+  if (!raw) return '';
+  const compact = raw.replace(/\s+/g, '');
+  if (!/^\d+$/.test(compact)) return raw;
+  return compact.replace(/(\d{4})(?=\d)/g, '$1 ');
+}
+
+export function parseNationalIdInput(v?: string | null): string {
+  if (!v) return '';
+  return String(v).replace(/\s+/g, '');
+}
+
 export function fmtDecimals(v?: number | null, digits: number = 1, fallback: string = '—'): string {
   if (v === undefined || v === null || isNaN(v)) return fallback;
   return formatNumberWith(v, digits, loadFormatSettings().numberStyle);

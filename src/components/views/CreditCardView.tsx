@@ -486,12 +486,10 @@ export const CreditCardView: React.FC = () => {
               columns={[
           { key: 'soThe', label: 'Số thẻ (mask)', priority: 3,
                   render: c => <span className="font-mono text-accent font-bold">{c.CardNumber || '4532••••8888'}</span> },
-          { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: c => (
-                  <>
-                    <div className="font-bold text-ink">{c.customer?.FullName || 'KH'}</div>
-                    <div className="text-[10px] font-mono text-accent">CIF: {c.customer?.CifKh || '—'}</div>
-                  </>
-                ) },
+          { key: 'cif', label: 'Mã CIF', priority: 3,
+                  render: c => <span className="font-mono text-accent font-semibold">{c.customer?.CifKh || '—'}</span> },
+          { key: 'kh', label: 'Khách hàng', priority: 3,
+                  render: c => <span className="font-bold text-ink">{c.customer?.FullName || 'KH'}</span> },
           { key: 'dien', label: 'Diện mở thẻ', priority: 1, render: c => (
                   <span className="bg-accent-soft text-accent border border-accent/30 px-2.5 py-1 rounded-lg text-[10px] font-bold">
                     {c.IssuanceType || 'Quan hệ tín dụng'}

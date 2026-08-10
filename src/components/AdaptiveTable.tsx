@@ -124,31 +124,41 @@ export function AdaptiveTable<T>({
                 </th>
               ))}
               {actions && (
-                <th className={`${TABLE_CELL} font-semibold whitespace-nowrap text-center`}>{actionsLabel}</th>
+                <th className={`${TABLE_CELL} font-semibold whitespace-nowrap text-center sticky right-0 z-20 bg-panel-muted border-l border-line`}>
+                  {actionsLabel}
+                </th>
               )}
             </tr>
           </thead>
           <tbody>
-            {rows.map(row => (
-              <tr
-                key={rowKey(row)}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
-                className={`border-b border-line/60 transition-colors duration-150 ${
-                  isSelected?.(row) ? 'bg-accent-soft' : 'hover:bg-panel-muted'
-                } ${onRowClick ? 'cursor-pointer' : ''}`}
-              >
-                {columns.map(c => (
-                  <td key={c.key} className={`${TABLE_CELL} whitespace-nowrap ${alignClass(c.align)}`}>
-                    {c.render(row)}
-                  </td>
-                ))}
-                {actions && (
-                  <td className={`${TABLE_CELL} text-center whitespace-nowrap`} onClick={e => e.stopPropagation()}>
-                    <div className="inline-flex items-center gap-1.5">{actions(row)}</div>
-                  </td>
-                )}
-              </tr>
-            ))}
+            {rows.map(row => {
+              const chon = isSelected?.(row);
+              return (
+                <tr
+                  key={rowKey(row)}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  className={`group border-b border-line/60 transition-colors duration-150 ${
+                    chon ? 'bg-accent-soft' : 'hover:bg-panel-muted'
+                  } ${onRowClick ? 'cursor-pointer' : ''}`}
+                >
+                  {columns.map(c => (
+                    <td key={c.key} className={`${TABLE_CELL} whitespace-nowrap ${alignClass(c.align)}`}>
+                      {c.render(row)}
+                    </td>
+                  ))}
+                  {actions && (
+                    <td
+                      className={`${TABLE_CELL} text-center whitespace-nowrap sticky right-0 z-10 border-l border-line ${
+                        chon ? 'bg-accent-soft' : 'bg-panel group-hover:bg-panel-muted'
+                      }`}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div className="inline-flex items-center gap-1.5">{actions(row)}</div>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

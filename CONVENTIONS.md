@@ -516,6 +516,12 @@ Mức phân quyền cao hơn (Trưởng bộ phận huy động và dịch vụ,
 
 Bố cục đo theo A4 trừ lề: rộng 703px, cao 1039px ở 96dpi. Khi thêm mục vào tờ này phải đo lại chiều cao thật, đừng ước lượng — tràn sang trang 2 làm tờ chào khách mất chuyên nghiệp.
 
+**Hai loại tờ, hai hướng giấy.** Tờ cho vay khổ **dọc** — ít cột, nhiều chữ ở phần điều kiện và phí. Tờ huy động khổ **ngang** (1032px ≈ 273mm) vì nó là ma trận kỳ hạn × hình thức trả lãi: chỉ 3 kỳ hạn × 4 hình thức đã là 12 cột lãi suất. Đo ở khổ dọc: cột "Điều kiện áp dụng" bị bóp còn ~25mm, bậc `500 triệu ≤ Số dư < 1 tỷ đồng; hoặc 1 tỷ đồng ≤ Quy mô KH < 2 tỷ đồng` xuống **8 dòng**. Có test khoá cả hai chiều để đổi một tờ không kéo theo tờ kia.
+
+**Bề rộng cột để trình duyệt tự chia, đừng cố định.** Số cột thay đổi theo từng Thông báo, nên mọi con số cố định chỉ đúng với bộ dữ liệu hôm nay. Các ô lãi suất có `white-space: nowrap` và cùng độ dài nên đã đều sẵn, phần dư tự dồn về cột điều kiện. `table-layout: fixed` còn tệ hơn: cột chứa cả câu dài sẽ bằng đúng cột chứa `8,62%`.
+
+Giới hạn thật của cách bày này là **số kỳ hạn**, không phải bề rộng cột: một Thông báo công bố cả thang 1–36 tháng sẽ thành 44 cột, khổ ngang cũng không cứu được. Gặp ca đó thì tách mỗi kỳ hạn một bảng hoặc đảo trục, chứ đừng chỉnh bề rộng.
+
 **Không xuất file khi còn số liệu thiếu.** `findRateSheetBlockers` chặn bốn trường hợp: chương trình chưa đối chiếu văn bản gốc, chương trình chưa có dòng nào, còn gói chưa có lãi suất, còn bậc phí trả nợ trước hạn chưa có số. Gửi cho khách một bảng lãi suất có ô trống hoặc số chưa kiểm chứng là rủi ro danh tiếng và có thể thành cam kết sai.
 
 Lãi suất `0%` **phải in ra "0%"**, không được in dấu gạch. Đây là lý do `formatRateForCustomer` phân biệt `0` với `null` thay vì dùng `||`.

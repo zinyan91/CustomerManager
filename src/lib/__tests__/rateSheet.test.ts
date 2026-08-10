@@ -421,6 +421,21 @@ describe('buildDepositMatrix', () => {
     expect(html).toContain('8,17%');
   });
 
+  it('in khổ ngang vì ma trận kỳ hạn × hình thức trả lãi rộng hơn khổ dọc', () => {
+    const html = buildRateSheetHtml({
+      program: { ...tdh, Kind: 'huy_dong', Name: 'Lãi suất tiền gửi' },
+      tiers: quay, channel: 'quay',
+    });
+    expect(html).toContain('@page { size: A4 landscape');
+    expect(html).not.toContain('A4 portrait');
+  });
+
+  it('bảng lãi suất cho vay vẫn giữ khổ dọc', () => {
+    const html = buildRateSheetHtml({ program: tdh, tiers: [] });
+    expect(html).toContain('@page { size: A4 portrait');
+    expect(html).not.toContain('A4 landscape');
+  });
+
   it('falls back to a simple two-column table for the online channel', () => {
     const html = buildRateSheetHtml({
       program: { ...tdh, Kind: 'huy_dong', Name: 'Lãi suất tiền gửi' },

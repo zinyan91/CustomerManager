@@ -388,7 +388,7 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
 <meta charset="utf-8" />
 <title>${esc(program.Name)}</title>
 <style>
-  @page { size: A4 portrait; margin: 11mm 12mm; }
+  @page { size: A4 ${isDeposit ? 'landscape' : 'portrait'}; margin: 11mm 12mm; }
   * { box-sizing: border-box; }
   html, body, header, th, .meta, tbody tr:nth-child(even) {
     -webkit-print-color-adjust: exact; print-color-adjust: exact;

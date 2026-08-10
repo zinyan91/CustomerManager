@@ -8,7 +8,7 @@ import {
 } from '../../lib/customerStatus';
 import { fmtDate, formatNationalId, parseNationalIdInput } from '../../lib/utils';
 import {
-  capDigits, validateCustomerForm,
+  capDigits, capNumberList, normalizeNumberList, validateCustomerForm,
   NATIONAL_ID_CCCD_LENGTH, PHONE_LENGTH,
 } from '../../lib/customerValidation';
 import { Search, Plus, Eye, Trash2, X, UserCheck, Archive, ArchiveRestore } from 'lucide-react';
@@ -398,10 +398,9 @@ export const CustomerListView: React.FC = () => {
                 <label className="block font-medium mb-1">Số điện thoại</label>
                 <input
                   type="text"
-                  placeholder="0909123456..."
-                  inputMode="numeric"
+                  placeholder="0909123456 / 0912345678..."
                   value={inputPhone}
-                  onChange={(e) => setInputPhone(capDigits(e.target.value, PHONE_LENGTH))}
+                  onChange={(e) => setInputPhone(capNumberList(e.target.value, PHONE_LENGTH))}
                   className={`w-full rounded-md p-2.5 ${inputStyle}`}
                 />
               </div>
@@ -409,9 +408,9 @@ export const CustomerListView: React.FC = () => {
                 <label className="block font-medium mb-1">Số tài khoản (STK) KH</label>
                 <input
                   type="text"
-                  placeholder="190333..."
+                  placeholder="190333... / 190444..."
                   value={inputAccountNumber}
-                  onChange={(e) => setInputAccountNumber(e.target.value)}
+                  onChange={(e) => setInputAccountNumber(normalizeNumberList(e.target.value))}
                   className={`w-full rounded-md p-2.5 font-mono font-bold text-ink ${inputStyle}`}
                 />
               </div>
@@ -509,10 +508,9 @@ export const CustomerListView: React.FC = () => {
                       <label className="block font-medium mb-1">SĐT KHLQ / Bảo lãnh</label>
                       <input
                         type="text"
-                        placeholder="SĐT..."
-                        inputMode="numeric"
+                        placeholder="SĐT, nhiều số cách nhau bằng /"
                         value={inputSpousePhone}
-                        onChange={(e) => setInputSpousePhone(capDigits(e.target.value, PHONE_LENGTH))}
+                        onChange={(e) => setInputSpousePhone(capNumberList(e.target.value, PHONE_LENGTH))}
                         className={`w-full rounded-md p-2.5 ${inputStyle}`}
                       />
                     </div>
@@ -523,9 +521,9 @@ export const CustomerListView: React.FC = () => {
                       <label className="block font-medium mb-1">STK KHLQ / Bảo lãnh</label>
                       <input
                         type="text"
-                        placeholder="Số tài khoản..."
+                        placeholder="Số tài khoản, nhiều số cách nhau bằng /"
                         value={inputSpouseAccountNumber}
-                        onChange={(e) => setInputSpouseAccountNumber(e.target.value)}
+                        onChange={(e) => setInputSpouseAccountNumber(normalizeNumberList(e.target.value))}
                         className={`w-full rounded-md p-2.5 font-mono font-bold text-ink ${inputStyle}`}
                       />
                     </div>

@@ -49,6 +49,26 @@ export function prepaymentFeeLabel(fee: RateProgramPrepaymentFee): string {
   return formatRateForCustomer(fee.FeeRatio);
 }
 
+const KIND_FILE_BASE: Record<string, string> = {
+  cho_vay_ngan_han: 'LS NGAN HAN',
+  cho_vay_trung_dai_han: 'LS TDH',
+  huy_dong: 'LS HUY DONG',
+};
+
+export function customerSegmentOf(program: Pick<RateProgram, 'TargetText' | 'Name'>): 'KHCN' | 'KHDN' {
+  const text = `${program.TargetText || ''} ${program.Name || ''}`.toUpperCase();
+  if (text.includes('KHDN') || text.includes('DOANH NGHIỆP')) return 'KHDN';
+  return 'KHCN';
+}
+
+export function rateSheetFileBase(
+  program: Pick<RateProgram, 'Kind' | 'TargetText' | 'Name'>
+): string {
+  const base = KIND_FILE_BASE[program.Kind] || 'LS';
+  if (program.Kind === 'huy_dong') return base;
+  return `${base} ${customerSegmentOf(program)}`;
+}
+
 export interface RateSheetBlocker {
   message: string;
 }
@@ -375,19 +395,21 @@ function prepaymentBlock(input: RateSheetInput): string {
     ${notes}`;
 }
 
-export function buildRateSheetHtml(input: RateSheetInput): string {
+export interface RateSheetParts {
+  fileBase: string;
+  styles: string;
+  bodyHtml: string;
+  landscape: boolean;
+}
+
+export function buildRateSheetParts(input: RateSheetInput): RateSheetParts {
   const { program } = input;
   const bankName = input.bankName || 'VIETBANK';
   const isDeposit = program.Kind === 'huy_dong';
 
   const body = isDeposit ? depositRateTable(input) : lendingRateTable(input);
 
-  return `<!doctype html>
-<html lang="vi">
-<head>
-<meta charset="utf-8" />
-<title>${esc(program.Name)}</title>
-<style>
+  const styles = `
   @page { size: A4 ${isDeposit ? 'landscape' : 'portrait'}; margin: 11mm 12mm; }
   * { box-sizing: border-box; }
   html, body, header, th, .meta, tbody tr:nth-child(even) {
@@ -432,19 +454,20 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
     margin-top: 10px; border-top: 1px solid #c9d8e8; padding-top: 5px;
     font-size: 8pt; color: #5a6d84;
   }
-</style>
-</head>
-<body>
+`;
+
+  const bodyHtml = `
   ${input.logoDataUri
     ? `<div class="logobar"><img src="${esc(input.logoDataUri)}" alt="${esc(bankName)}" /></div>`
     : ''}
   <header>
     ${input.logoDataUri ? '' : `<div class="bank">${esc(bankName)}</div>`}
     <h1>${esc(program.Name)}</h1>
-    <div class="sub">${esc(program.TargetText || 'Dành cho Khách hàng cá nhân')}</div>
   </header>
 
-  ${program.ScopeText ? `<section class="scope"><h2>Phạm vi áp dụng</h2><p>${esc(program.ScopeText)}</p></section>` : ''}
+  ${isDeposit && program.ScopeText
+    ? `<section class="scope"><h2>Phạm vi áp dụng</h2><p>${esc(program.ScopeText)}</p></section>`
+    : ''}
 
   ${body}
   ${isDeposit ? '' : tierFeeTable(input)}
@@ -455,6 +478,21 @@ export function buildRateSheetHtml(input: RateSheetInput): string {
   <footer>
     ${input.preparedBy ? `<p><strong>Nhân viên tư vấn:</strong> ${esc(input.preparedBy)}</p>` : ''}
   </footer>
-</body>
+`;
+
+  return { fileBase: rateSheetFileBase(program), styles, bodyHtml, landscape: isDeposit };
+}
+
+export function buildRateSheetHtml(input: RateSheetInput): string {
+  const { fileBase, styles, bodyHtml } = buildRateSheetParts(input);
+
+  return `<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<title>${esc(fileBase)}</title>
+<style>${styles}</style>
+</head>
+<body>${bodyHtml}</body>
 </html>`;
 }

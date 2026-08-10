@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatRateForCustomer, formatMoneyForCustomer, formatDateForCustomer,
   prepaymentYearLabel, prepaymentFeeLabel, findRateSheetBlockers, buildRateSheetHtml,
-  pivotFeeOptions, buildDepositMatrix,
+  pivotFeeOptions, buildDepositMatrix, rateSheetFileBase, customerSegmentOf,
 } from '../rateSheet';
 import type { RateProgram, RateProgramTier, RateProgramPrepaymentFee } from '../rateQuote';
 
@@ -154,6 +154,35 @@ describe('findRateSheetBlockers', () => {
   });
 });
 
+describe('rateSheetFileBase', () => {
+  it('đặt tên theo loại chương trình và nhóm khách hàng', () => {
+    expect(rateSheetFileBase({ ...tdh, Kind: 'cho_vay_ngan_han' })).toBe('LS NGAN HAN KHCN');
+    expect(rateSheetFileBase(tdh)).toBe('LS TDH KHCN');
+    expect(rateSheetFileBase({ ...tdh, Kind: 'huy_dong' })).toBe('LS HUY DONG');
+  });
+
+  it('tờ huy động không gắn nhóm khách hàng', () => {
+    expect(rateSheetFileBase({ ...tdh, Kind: 'huy_dong', Name: 'Ưu đãi huy động KHCN' }))
+      .toBe('LS HUY DONG');
+  });
+
+  it('nhận ra khách hàng doanh nghiệp để dùng cho chương trình sau này', () => {
+    expect(rateSheetFileBase({ ...tdh, Kind: 'cho_vay_ngan_han', Name: 'LSCV ngắn hạn dành cho KHDN' }))
+      .toBe('LS NGAN HAN KHDN');
+    expect(rateSheetFileBase({ ...tdh, TargetText: 'Khách hàng doanh nghiệp' }))
+      .toBe('LS TDH KHDN');
+  });
+
+  it('mặc định là KHCN khi chương trình không nói gì', () => {
+    expect(customerSegmentOf({ Name: 'Chương trình lãi suất', TargetText: null } as any)).toBe('KHCN');
+  });
+
+  it('tên file đi vào tiêu đề tài liệu để hộp thoại in gợi ý đúng tên', () => {
+    const html = buildRateSheetHtml({ program: tdh, tiers: tdhTiers, prepaymentFees: tdhFees });
+    expect(html).toContain('<title>LS TDH KHCN</title>');
+  });
+});
+
 describe('buildRateSheetHtml', () => {
   const html = buildRateSheetHtml({
     program: tdh,
@@ -166,6 +195,20 @@ describe('buildRateSheetHtml', () => {
       { Id: 1, ProgramId: 3, OptionLabel: 'Phương án 1', PackageGroup: 'Gói 24 tháng đầu', MinFeeRatio: 0.015, CounterFeeRatio: 0.01, Note: 'Tại quầy tối thiểu 1%.', SortOrder: 1 },
     ],
     preparedBy: 'Nguyễn Văn A',
+  });
+
+  it('không lặp lại đối tượng khách hàng dưới tiêu đề lớn', () => {
+    expect(html).not.toContain('class="sub"');
+    expect(html).not.toContain('Dành cho Khách hàng cá nhân');
+  });
+
+  it('tờ cho vay bỏ hẳn khối phạm vi áp dụng', () => {
+    const coScope = buildRateSheetHtml({
+      program: { ...tdh, ScopeText: 'Cho vay trung dài hạn. Hết hiệu lực khi hết hạn mức.' },
+      tiers: tdhTiers, prepaymentFees: tdhFees,
+    });
+    expect(coScope).not.toContain('Phạm vi áp dụng');
+    expect(coScope).not.toContain('Hết hiệu lực khi hết hạn mức');
   });
 
   it('is a self-contained printable document sized for A4', () => {
@@ -488,13 +531,14 @@ describe('tờ gửi khách không được chứa số liệu nội bộ', () =
     expect(html).not.toContain('9,4%');
   });
 
-  it('in đối tượng và phạm vi áp dụng khi có', () => {
+  it('tờ huy động giữ phạm vi áp dụng, nhưng không lặp lại dòng đối tượng dưới tiêu đề', () => {
     const html = buildRateSheetHtml({
       program: ct({ TargetText: 'Khách hàng cá nhân mở tiết kiệm mới.', ScopeText: 'Tiết kiệm truyền thống và online có kỳ hạn.' }),
       tiers, prepaymentFees: [], feeOptions: [], conditions: [], channel: null,
     } as any);
-    expect(html).toContain('Khách hàng cá nhân mở tiết kiệm mới.');
     expect(html).toContain('Phạm vi áp dụng');
     expect(html).toContain('Tiết kiệm truyền thống và online có kỳ hạn.');
+    expect(html).not.toContain('Khách hàng cá nhân mở tiết kiệm mới.');
+    expect(html).not.toContain('class="sub"');
   });
 });

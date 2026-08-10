@@ -5,7 +5,7 @@ import { RateTierTable } from '../rate/RateTierTable';
 import { RateReferenceTables } from '../rate/RateReferenceTables';
 import {
   Percent, TrendingDown, PiggyBank, Loader2, AlertTriangle, ShieldAlert,
-  FileText, Save, RefreshCw, Printer,
+  FileText, Save, RefreshCw, Printer, Image as ImageIcon,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { fmtMoney, fmtDate, fmtPercent, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
@@ -16,7 +16,12 @@ import {
   KIND_LABELS,
 } from '../../lib/rateQuote';
 import vietbankLogo from '../../assets/vietbank-logo.png?inline';
-import { buildRateSheetHtml, findRateSheetBlockers } from '../../lib/rateSheet';
+import {
+  buildRateSheetHtml, buildRateSheetParts, findRateSheetBlockers, rateSheetFileBase,
+} from '../../lib/rateSheet';
+import {
+  renderHtmlToPngBlob, downloadBlob, A4_PORTRAIT_PX, A4_LANDSCAPE_PX,
+} from '../../lib/htmlToPng';
 import type { RateProgramKind } from '../../lib/rateQuote';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
 
@@ -27,6 +32,7 @@ export const RateQuoteView: React.FC = () => {
   const [onDate, setOnDate] = useState(todayIso);
 
   const [preparedBy, setPreparedBy] = useState('');
+  const [exportingImage, setExportingImage] = useState(false);
 
   const [selectedTierId, setSelectedTierId] = useState<number | null>(null);
   const [amountStr, setAmountStr] = useState('1.000.000.000');
@@ -74,8 +80,26 @@ export const RateQuoteView: React.FC = () => {
   const handleExportSheet = () => {
     if (!sheetInput || sheetBlockers.length > 0) return;
     const html = buildRateSheetHtml(sheetInput);
-    if (!printHtmlDoc(html, 'Tờ chào lãi suất')) {
+    if (!printHtmlDoc(html, rateSheetFileBase(sheetInput.program))) {
       setSaveMsg('Không mở được bản in. Thử lại hoặc tải trang lại.');
+    }
+  };
+
+  const handleExportImage = async () => {
+    if (!sheetInput || sheetBlockers.length > 0) return;
+    setExportingImage(true);
+    try {
+      const parts = buildRateSheetParts(sheetInput);
+      const blob = await renderHtmlToPngBlob({
+        styles: parts.styles,
+        bodyHtml: parts.bodyHtml,
+        widthPx: parts.landscape ? A4_LANDSCAPE_PX : A4_PORTRAIT_PX,
+      });
+      downloadBlob(blob, `${parts.fileBase}.png`);
+    } catch (err: any) {
+      setSaveMsg(err?.message || 'Không xuất được hình ảnh.');
+    } finally {
+      setExportingImage(false);
     }
   };
 
@@ -517,15 +541,26 @@ export const RateQuoteView: React.FC = () => {
                   className={inputCls}
                 />
               </div>
-              <button
-                type="button"
-                onClick={handleExportSheet}
-                disabled={sheetBlockers.length > 0}
-                className="bg-accent hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink text-xs px-4 py-2.5 rounded-md font-bold flex items-center justify-center space-x-1.5 transition-colors"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>XUẤT PDF / HÌNH ẢNH</span>
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleExportSheet}
+                  disabled={sheetBlockers.length > 0}
+                  className="bg-accent hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed text-accent-ink text-xs px-4 py-2.5 rounded-md font-bold flex items-center justify-center space-x-1.5 transition-colors"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>XUẤT PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportImage}
+                  disabled={sheetBlockers.length > 0 || exportingImage}
+                  className="border border-accent/40 text-accent hover:bg-accent-soft disabled:opacity-40 disabled:cursor-not-allowed text-xs px-4 py-2.5 rounded-md font-bold flex items-center justify-center space-x-1.5 transition-colors"
+                >
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <span>{exportingImage ? 'ĐANG DỰNG…' : 'XUẤT HÌNH ẢNH'}</span>
+                </button>
+              </div>
             </div>
 
             {hasFeeContent && (

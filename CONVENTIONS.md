@@ -512,6 +512,20 @@ Mức phân quyền cao hơn (Trưởng bộ phận huy động và dịch vụ,
 
 ### Xuất bảng lãi suất gửi khách hàng
 
+**Tên file do `rateSheetFileBase` quyết định**, và nó đi thẳng vào `<title>` của tài liệu in — hộp thoại in của trình duyệt lấy tiêu đề làm tên PDF gợi ý, nên đây là chỗ duy nhất cần đặt tên. Quy tắc: `LS NGAN HAN` / `LS TDH` / `LS HUY DONG`, tờ cho vay gắn thêm nhóm khách hàng (`KHCN` mặc định, `KHDN` khi tên chương trình hoặc đối tượng có nhắc tới). Tờ huy động không gắn nhóm vì dùng chung.
+
+**Không lặp lại đối tượng khách hàng dưới tiêu đề lớn.** Tiêu đề chương trình đã ghi "dành cho KHCN" rồi; thêm một dòng "Khách hàng cá nhân (KHCN)" ngay dưới là nói hai lần.
+
+**Tờ cho vay bỏ khối "Phạm vi áp dụng"**, chỉ tờ huy động còn giữ. Nội dung phạm vi của tờ cho vay trùng với phần điều kiện áp dụng ở cuối.
+
+**Xuất hình ảnh không dùng thư viện ngoài.** `src/lib/htmlToPng.ts` gói phần thân tờ chào vào `<foreignObject>` của SVG rồi vẽ lên canvas, xuất PNG ở độ phân giải gấp đôi. Ba điều kiện để cách này chạy được, đừng phá:
+
+- Nội dung phải **hợp lệ theo XML**: mọi thẻ đóng đủ, `<img/>` tự đóng, không dùng thực thể HTML như `&nbsp;`.
+- Ảnh nhúng phải là **data URI** — logo đã ở dạng đó nhờ `?inline`. Ảnh trỏ ra URL ngoài sẽ không vẽ được và làm bẩn canvas.
+- Chiều cao **đo bằng DOM thật** trước khi dựng SVG; đoán chiều cao là cắt mất phần cuối tờ.
+
+Đã kiểm chứng trên trình duyệt 10/08/2026: tờ ngắn hạn ra PNG 1588×1270, tờ huy động khổ ngang 2246×1204, logo hiện đúng.
+
 `buildRateSheetHtml` dựng một tài liệu HTML **tự chứa, khổ A4 một trang**, mở ở cửa sổ mới rồi gọi `print()` để banker lưu thành PDF. Không dùng thư viện ngoài: trình duyệt đã in ra PDF tốt hơn mọi thư viện nhúng, và thêm phụ thuộc chỉ để đóng gói HTML là không cần thiết.
 
 Bố cục đo theo A4 trừ lề: rộng 703px, cao 1039px ở 96dpi. Khi thêm mục vào tờ này phải đo lại chiều cao thật, đừng ước lượng — tràn sang trang 2 làm tờ chào khách mất chuyên nghiệp.
@@ -613,7 +627,13 @@ Luật: CCCD **12 số**, CMND **9 số**, điện thoại **10 số**. Áp cho 
 
 Chỉ chặn ở mức tối đa của **CCCD 12 số** tại ô nhập, không chặn ở 9: gõ CMND 9 số vẫn phải qua được cùng một ô.
 
-Đo trước khi đặt luật (10/08/2026): 14/14 CCCD đang có đều 12 số, 11/11 điện thoại đều 10 số — luật này không khoá ai khỏi sửa hồ sơ cũ. Ngoại lệ duy nhất là `SpousePhone` của ĐẶNG QUỐC KHÁNH chứa **hai số nhét chung một ô**; hồ sơ đó phải tách số trước khi lưu lại được.
+**Điện thoại và số tài khoản nhận NHIỀU số trong một ô.** Một KHLQ có hai số là chuyện thật, không phải lỗi nhập liệu — dữ liệu đang có sẵn một ca như vậy. `splitNumberList` tách theo `;` `,` `/` `|` và xuống dòng, `capNumberList` gom về một dạng ngăn cách duy nhất là `" / "`. Luật 10 số áp cho **từng số**, không áp cho cả chuỗi.
+
+Dấu ngăn đang gõ dở được **giữ lại** để nhập số tiếp theo — cắt nó đi thì không gõ được số thứ hai.
+
+CCCD thì ngược lại: một người **một số**, nên ô đó vẫn chỉ nhận một giá trị.
+
+Đo trước khi đặt luật (10/08/2026): 14/14 CCCD đang có đều 12 số, 11/11 điện thoại đều 10 số — luật này không khoá ai khỏi sửa hồ sơ cũ.
 
 ### Xoá hồ sơ khách hàng
 

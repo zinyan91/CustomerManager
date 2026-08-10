@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   digitsOnly, capDigits, validateNationalId, validatePhone, validateCustomerForm,
+  splitNumberList, capNumberList, normalizeNumberList,
 } from '../customerValidation';
 
 describe('digitsOnly / capDigits', () => {
@@ -20,6 +21,37 @@ describe('digitsOnly / capDigits', () => {
 
   it('chưa đủ số thì giữ nguyên, không tự thêm', () => {
     expect(capDigits('0901', 10)).toBe('0901');
+  });
+});
+
+describe('nhiều số trong một ô', () => {
+  it('tách được theo mọi dấu ngăn banker hay dùng', () => {
+    expect(splitNumberList('0961685842; 0916566506')).toEqual(['0961685842', '0916566506']);
+    expect(splitNumberList('0961685842 / 0916566506')).toEqual(['0961685842', '0916566506']);
+    expect(splitNumberList('0961685842, 0916566506')).toEqual(['0961685842', '0916566506']);
+    expect(splitNumberList('0961685842\n0916566506')).toEqual(['0961685842', '0916566506']);
+  });
+
+  it('gom về một dạng ngăn cách duy nhất', () => {
+    expect(capNumberList('0961685842; 0916566506', 10)).toBe('0961685842 / 0916566506');
+    expect(normalizeNumberList('190333;190444')).toBe('190333 / 190444');
+  });
+
+  it('cắt từng số theo mức tối đa, không cắt cả chuỗi', () => {
+    expect(capNumberList('09616858421234 / 09165665069999', 10))
+      .toBe('0961685842 / 0916566506');
+  });
+
+  it('giữ dấu ngăn đang gõ dở để nhập số tiếp theo được', () => {
+    expect(capNumberList('0961685842 /', 10)).toBe('0961685842 / ');
+    expect(normalizeNumberList('190333 /')).toBe('190333 / ');
+  });
+
+  it('rỗng thì trả chuỗi rỗng', () => {
+    expect(splitNumberList('')).toEqual([]);
+    expect(splitNumberList(null)).toEqual([]);
+    expect(capNumberList('', 10)).toBe('');
+    expect(normalizeNumberList('  ')).toBe('');
   });
 });
 
@@ -72,9 +104,15 @@ describe('validatePhone', () => {
     expect(validatePhone('09012345678', 'Số điện thoại')).toContain('đang có 11 số');
   });
 
-  it('hai số điện thoại nhét chung một ô bị bắt', () => {
-    expect(validatePhone('0961685842; 0916566506', 'Số điện thoại KHLQ / Bảo lãnh'))
-      .toContain('đang có 20 số');
+  it('nhiều số cách nhau bằng dấu ngăn đều hợp lệ nếu số nào cũng đủ 10', () => {
+    expect(validatePhone('0961685842; 0916566506', 'Số điện thoại KHLQ / Bảo lãnh')).toBeNull();
+    expect(validatePhone('0961685842 / 0916566506 / 0987654321', 'Số điện thoại')).toBeNull();
+  });
+
+  it('trong danh sách có số sai thì nêu rõ có mấy số sai', () => {
+    const loi = validatePhone('0961685842 / 09165', 'Số điện thoại KHLQ / Bảo lãnh');
+    expect(loi).toContain('còn 1 số chưa đúng');
+    expect(loi).toContain('5 số');
   });
 });
 

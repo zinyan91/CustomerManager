@@ -185,6 +185,13 @@ export function isMultiAnswer(question: Pick<QuizQuestion, 'CorrectAnswers'>): b
 export function searchQuestions(questions: QuizQuestion[], term: string): QuizQuestion[] {
   const key = quizNormalizeText(term);
   if (!key) return questions;
+
+  const byId = /^#(\d+)$/.exec(key);
+  if (byId) {
+    const id = parseInt(byId[1], 10);
+    return questions.filter(q => q.Id === id);
+  }
+
   return questions.filter(q =>
     quizNormalizeText(q.QuestionText).includes(key)
     || q.Options.some(o => quizNormalizeText(o.text).includes(key))
@@ -214,4 +221,126 @@ export function quizStats(questions: QuizQuestion[]): {
       .sort((a, b) => a.size - b.size),
     duplicateClusters: duplicateClusters(questions).length,
   };
+}
+
+export interface QuizImportRow {
+  question: string;
+  options: QuizOption[];
+  correct_answers: string[];
+  sources: string[];
+  topic: string | null;
+}
+
+export interface QuizImportParse {
+  rows: QuizImportRow[];
+  skipped: { at: number; reason: string }[];
+}
+
+function pick(source: Record<string, unknown>, keys: string[]): unknown {
+  for (const key of keys) {
+    if (source[key] !== undefined && source[key] !== null) return source[key];
+  }
+  return undefined;
+}
+
+function asStringList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map(v => String(v).trim()).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value.split(/[,;]/).map(v => v.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function asOptions(value: unknown): QuizOption[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((raw, i) => {
+      if (typeof raw === 'string') {
+        return { id: optionLetter(i), text: raw.trim() };
+      }
+      if (raw && typeof raw === 'object') {
+        const entry = raw as Record<string, unknown>;
+        const text = pick(entry, ['text', 'content', 'noi_dung', 'label']);
+        const id = pick(entry, ['id', 'ma', 'key']);
+        return {
+          id: id === undefined ? optionLetter(i) : String(id).trim(),
+          text: text === undefined ? '' : String(text).trim(),
+        };
+      }
+      return { id: optionLetter(i), text: '' };
+    })
+    .filter(o => o.id !== '' && o.text !== '');
+}
+
+export function parseQuizImportFile(text: string): QuizImportParse {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('Tệp không phải JSON hợp lệ.');
+  }
+
+  const list = Array.isArray(parsed)
+    ? parsed
+    : (parsed && typeof parsed === 'object'
+      && Array.isArray((parsed as Record<string, unknown>).questions)
+      ? (parsed as { questions: unknown[] }).questions
+      : null);
+
+  if (!list) {
+    throw new Error('Tệp phải là một mảng câu hỏi, hoặc một object có khoá "questions".');
+  }
+
+  const rows: QuizImportRow[] = [];
+  const skipped: { at: number; reason: string }[] = [];
+
+  list.forEach((raw, index) => {
+    const at = index + 1;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      skipped.push({ at, reason: 'Không phải một object câu hỏi.' });
+      return;
+    }
+    const entry = raw as Record<string, unknown>;
+
+    const question = String(pick(entry, ['question', 'cau_hoi', 'noi_dung']) ?? '').trim();
+    if (!question) {
+      skipped.push({ at, reason: 'Thiếu nội dung câu hỏi.' });
+      return;
+    }
+
+    const options = asOptions(pick(entry, ['options', 'lua_chon', 'choices']));
+    if (options.length < 1) {
+      skipped.push({ at, reason: 'Không đọc được lựa chọn nào.' });
+      return;
+    }
+    if (new Set(options.map(o => o.id)).size !== options.length) {
+      skipped.push({ at, reason: 'Mã lựa chọn bị lặp trong cùng một câu.' });
+      return;
+    }
+
+    const ids = new Set(options.map(o => o.id));
+    const correct = asStringList(
+      pick(entry, ['correct_answers', 'dap_an', 'answer', 'answers'])
+    );
+    const outside = correct.filter(id => !ids.has(id));
+    if (outside.length > 0) {
+      skipped.push({
+        at,
+        reason: `Đáp án ${outside.join(', ')} không nằm trong danh sách lựa chọn.`,
+      });
+      return;
+    }
+
+    rows.push({
+      question,
+      options,
+      correct_answers: correct,
+      sources: asStringList(pick(entry, ['sources', 'nguon', 'source'])),
+      topic: String(pick(entry, ['topic', 'chu_de']) ?? '').trim() || null,
+    });
+  });
+
+  return { rows, skipped };
 }

@@ -976,3 +976,22 @@ export async function seedQuizBankAPI(questions: unknown[]): Promise<number> {
   if (error) throw quizDbError(error);
   return Number(data) || 0;
 }
+
+export interface QuizImportReport {
+  da_nap: number;
+  trung_trong_ngan_hang: { cau: string; id_co_san: number }[];
+  trung_trong_file: { cau: string }[];
+  khong_hop_le: { cau: string; ly_do: string }[];
+  lech_dap_an: {
+    cau: string;
+    id_co_san: number;
+    dap_an_co_san: string[];
+    dap_an_trong_file: string[];
+  }[];
+}
+
+export async function importQuizQuestionsAPI(rows: unknown[]): Promise<QuizImportReport> {
+  const { data, error } = await supabase.rpc('import_quiz_questions', { p_questions: rows });
+  if (error) throw quizDbError(error);
+  return data as QuizImportReport;
+}

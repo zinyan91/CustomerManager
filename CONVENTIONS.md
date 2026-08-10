@@ -848,6 +848,14 @@ Migration 38 để ràng buộc `array_length("CorrectAnswers", 1) >= 1`, mà m�
 
 `quizNormalizeText` trong `src/lib/quizBank.ts` và `public.quiz_normalize_text` trong CSDL phải giống nhau: hạ chữ, gộp khoảng trắng, cắt hai đầu, **giữ nguyên dấu tiếng Việt** — "lãi" và "lai" là hai câu khác nghĩa. Sửa một bên phải sửa bên kia.
 
+**Hai đường nạp, không dùng lẫn.** `seed_quiz_bank` chỉ chạy trên bảng **rỗng** và cố ý **bỏ qua** chống trùng — đó là đường duy nhất mang được 9 cụm trùng có sẵn của bộ gốc vào. `import_quiz_questions` (migration 40) là đường nạp thêm khi bảng **đã có** dữ liệu và **bỏ** câu trùng.
+
+`import_quiz_questions` chạy **vòng lặp với `BEGIN…EXCEPTION` từng dòng**, không phải một câu `INSERT`. Lý do: trigger chống trùng nổ exception, mà một exception làm đổ cả câu `INSERT` — nạp 500 câu có 30 câu trùng thì mất cả 500. `plpgsql` tự đặt savepoint quanh khối `EXCEPTION` nên một dòng lỗi chỉ mất dòng đó. Hàm **không tắt trigger**: nó tự lọc trước để trigger không phải nổ, còn nếu có nổ (đua ghi) thì khối `EXCEPTION` hứng và ghi vào báo cáo.
+
+Hàm trả báo cáo tách **bốn loại**, không gộp thành một con số: `da_nap`, `trung_trong_ngan_hang`, `trung_trong_file` (tệp tự trùng với chính nó, giữ bản đầu), `khong_hop_le`. Và riêng `lech_dap_an` — câu trùng nội dung nhưng **đáp án khác bản đang có**. Câu đó **bị bỏ, không ghi đè**, và nêu cả hai đáp án cạnh nhau để người có thẩm quyền quyết — cùng nguyên tắc với 3 cụm lệch đáp án của bộ gốc. Bỏ âm thầm là để người dùng tưởng đã nạp.
+
+Ô tìm kiếm nhận `#12` để nhảy tới đúng câu số 12 — có nó thì báo cáo nạp thêm mới dùng được, vì báo cáo nêu số hiệu câu đang có.
+
 Bộ câu hỏi gốc nạp bằng nút trên tab qua hàm `seed_quiz_bank`, không nhét 662 dòng `INSERT` vào migration — 662 dòng thành tệp SQL gần 700KB, dán vào SQL editor là hỏng. Hàm chỉ chạy trên bảng rỗng nên không có đường nạp đè hay nạp hai lần.
 
 ### Vay từng lần lấy min của ba giới hạn

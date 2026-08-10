@@ -14,9 +14,11 @@ import {
 } from '../../lib/quizBank';
 import {
   fetchQuizQuestionsAPI, createQuizQuestionAPI, deleteQuizQuestionAPI, seedQuizBankAPI,
+  importQuizQuestionsAPI,
 } from '../../lib/api';
 import { Toast, useToast } from '../Toast';
 import { QuizQuestionForm } from '../quiz/QuizQuestionForm';
+import { QuizImportPanel } from '../quiz/QuizImportPanel';
 import quizSeed from '../../data/quiz_bank.json';
 
 type Mode = 'browse' | 'practice';
@@ -230,7 +232,7 @@ export const QuizBankView: React.FC = () => {
               <div className="relative flex-1">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint" />
                 <input type="text" value={query} onChange={e => setQuery(e.target.value)}
-                  placeholder="Tìm trong câu hỏi, lựa chọn hoặc chủ đề"
+                  placeholder="Tìm trong câu hỏi, lựa chọn hoặc chủ đề — gõ #12 để tới đúng câu số 12"
                   aria-label="Tìm câu hỏi"
                   className={`w-full rounded-md pl-8 pr-3 py-2 border ${UI.inputStyle}`} />
               </div>
@@ -239,6 +241,14 @@ export const QuizBankView: React.FC = () => {
                 <Plus className="w-4 h-4" /> Thêm câu hỏi
               </button>
             </div>
+
+            {stats.total > 0 && (
+              <QuizImportPanel
+                onImport={importQuizQuestionsAPI}
+                onImported={load}
+                onError={message => show('error', message)}
+              />
+            )}
           </>
         )}
       </div>

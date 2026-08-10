@@ -822,6 +822,29 @@ câu, 15 bản dư. Sáu cụm trùng vô hại (cùng đáp án). **Ba cụm d�
 Hệ thống **không tự chọn** — tab gắn nhãn đỏ *"trùng câu, lệch đáp án"* trên từng câu để
 người có thẩm quyền mở văn bản gốc ra đối chiếu rồi xoá bản sai.
 
+## §33. Nạp thêm bộ câu hỏi từ tệp JSON
+
+Chốt 11/08/2026. Trước đó chỉ có `seed_quiz_bank`, mà hàm ấy **chỉ chạy trên bảng rỗng** nên
+không thêm được bộ thứ hai; và trigger chống trùng nổ exception làm **đổ cả câu `INSERT`**,
+nên nạp 500 câu có 30 câu trùng là mất cả 500.
+
+`import_quiz_questions` (migration 40) chạy vòng lặp, mỗi dòng một khối `BEGIN…EXCEPTION` —
+`plpgsql` tự đặt savepoint quanh khối đó nên một dòng lỗi chỉ mất dòng đó. **Không tắt
+trigger**: hàm tự lọc trước để trigger không phải nổ, còn nếu có nổ thì khối `EXCEPTION` hứng.
+
+Lọc trùng ở **hai chiều**: với bảng đang có, và với chính tệp (tệp tự trùng thì giữ bản đầu).
+
+**Câu trùng nội dung mà đáp án khác bản đang có** — ca đáng chú ý nhất, vì bộ gốc đã có 3 cụm
+như vậy (xem §31). Xử lý: **bỏ, không ghi đè**, và liệt kê riêng ở `lech_dap_an` kèm cả hai
+đáp án cạnh nhau. Hệ thống không tự chọn bản nào. Muốn lấy bản trong tệp thì xoá bản cũ rồi
+nạp lại — ô tìm kiếm nhận `#12` để lần từ số hiệu trong báo cáo về đúng câu đó.
+
+Phía client `parseQuizImportFile` đọc tệp trước khi gửi: nhận dạng của `quiz_bank.json`, nhận
+cả lựa chọn dạng mảng chuỗi (tự đánh mã A, B, C), nhận khoá tiếng Việt (`cau_hoi`, `lua_chon`,
+`dap_an`, `nguon`, `chu_de`), nhận đáp án viết liền `"A, B"`, và nhận object bọc ngoài có khoá
+`questions`. Khoá `id` trong tệp **bị bỏ** — CSDL tự cấp số. Dòng nào không đọc được thì báo
+kèm **số dòng và lý do** trước khi gửi, không nuốt.
+
 ## §32. Xuất biểu mẫu ra `.docx` thật
 
 Tab **Soạn biểu mẫu** trước 10/08/2026 ghi HTML kèm chỉ thị `mso-` rồi đặt tên `.doc`. Word
@@ -887,6 +910,7 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 | ✅ | Tab hai chế độ: Tra cứu và Luyện tập | Tra cứu **tô sẵn đáp án đúng** (đậm, nền xanh), chia trang 20 câu. Luyện tập chấm đúng câu nhiều đáp án — đủ và không thừa |
 | ✅ | Khung nhập liệu | Số lựa chọn thêm bớt được (2–12), mã dồn lại khi xoá lựa chọn giữa, tích nhiều đáp án đúng. Báo trùng ngay lúc nhập **và** hứng lỗi trùng từ CSDL |
 | ✅ | 20 test dựng màn hình | Gồm đúng ca anh yêu cầu: submit câu đã có thì báo trùng |
+| ✅ | Migration 40 — nạp thêm tệp JSON, tự bỏ trùng | Nạp được vào bảng đã có dữ liệu. Báo cáo tách 4 loại; câu trùng mà **khác đáp án** thì bỏ, không ghi đè, nêu cả hai đáp án. Xem §33 |
 | ✅ | Migration 39 — trạng thái "chưa chốt đáp án" | `CorrectAnswers` rỗng. Hai câu *"CÂU NÀO CŨNG SAI"* (504, 570) để trống theo chốt 10/08/2026. Luyện tập bỏ qua và nói rõ bỏ bao nhiêu |
 | ⚠️ | Ba cụm trùng có đáp án khác nhau | `(267,272,274,283)`, `(309,325,344,345)`, `(318,343,347)`. Ít nhất một bản mỗi cụm đang dạy sai. Xem §31 |
 

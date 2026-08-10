@@ -3,7 +3,7 @@ import quizSeed from '../../data/quiz_bank.json';
 import {
   quizNormalizeText, optionLetter, emptyDraft, relabelOptions,
   findDuplicateQuestion, duplicateClusters, validateQuizDraft, draftToPayload, hasSettledAnswer,
-  isAnswerCorrect, isMultiAnswer, searchQuestions, quizStats,
+  isAnswerCorrect, isMultiAnswer, searchQuestions, quizStats, parseQuizImportFile,
   MIN_DRAFT_OPTIONS, type QuizQuestion, type QuizDraft,
 } from '../quizBank';
 
@@ -246,6 +246,12 @@ describe('searchQuestions', () => {
     expect(searchQuestions(bank, 'tsbđ').map(x => x.Id)).toEqual([3]);
   });
 
+  it('tra #id thì ra đúng một câu — để lần từ báo cáo nạp thêm về câu đang có', () => {
+    expect(searchQuestions(bank, '#3').map(x => x.Id)).toEqual([3]);
+    expect(searchQuestions(bank, ' #3 ').map(x => x.Id)).toEqual([3]);
+    expect(searchQuestions(bank, '#999')).toEqual([]);
+  });
+
   it('từ khoá rỗng thì trả nguyên bộ', () => {
     expect(searchQuestions(bank, '  ')).toHaveLength(3);
   });
@@ -331,5 +337,101 @@ describe('ngân hàng câu hỏi có thật trong repo', () => {
   it('mã lựa chọn trong một câu không lặp', () => {
     const lap = bank.filter(x => new Set(x.Options.map(o => o.id)).size !== x.Options.length);
     expect(lap).toEqual([]);
+  });
+});
+
+describe('parseQuizImportFile', () => {
+  const file = (rows: unknown) => JSON.stringify(rows);
+
+  it('đọc đúng dạng của quiz_bank.json', () => {
+    const { rows, skipped } = parseQuizImportFile(file([{
+      id: 9,
+      question: '  Hạn mức thẻ Platinum là bao nhiêu?  ',
+      options: [{ id: 'A', text: ' 100tr ' }, { id: 'B', text: '500tr' }],
+      correct_answers: ['B'],
+      sources: [' PDF3 (Câu 2) '],
+    }]));
+
+    expect(skipped).toEqual([]);
+    expect(rows).toEqual([{
+      question: 'Hạn mức thẻ Platinum là bao nhiêu?',
+      options: [{ id: 'A', text: '100tr' }, { id: 'B', text: '500tr' }],
+      correct_answers: ['B'],
+      sources: ['PDF3 (Câu 2)'],
+      topic: null,
+    }]);
+  });
+
+  it('bỏ qua khoá id của tệp — CSDL tự cấp số', () => {
+    const { rows } = parseQuizImportFile(file([{
+      id: 999, question: 'A?', options: ['Một', 'Hai'], correct_answers: ['A'],
+    }]));
+    expect(rows[0]).not.toHaveProperty('id');
+  });
+
+  it('lựa chọn dạng mảng chuỗi thì tự đánh mã A, B, C', () => {
+    const { rows } = parseQuizImportFile(file([{
+      question: 'A?', options: ['Một', 'Hai', 'Ba'], correct_answers: 'B',
+    }]));
+    expect(rows[0].options).toEqual([
+      { id: 'A', text: 'Một' }, { id: 'B', text: 'Hai' }, { id: 'C', text: 'Ba' },
+    ]);
+    expect(rows[0].correct_answers).toEqual(['B']);
+  });
+
+  it('nhận khoá tiếng Việt và đáp án viết liền bằng dấu phẩy', () => {
+    const { rows } = parseQuizImportFile(file([{
+      cau_hoi: 'A?', lua_chon: ['Một', 'Hai'], dap_an: 'A, B', chu_de: ' Thẻ ', nguon: 'PDF4',
+    }]));
+    expect(rows[0].correct_answers).toEqual(['A', 'B']);
+    expect(rows[0].topic).toBe('Thẻ');
+    expect(rows[0].sources).toEqual(['PDF4']);
+  });
+
+  it('object bọc ngoài có khoá questions cũng đọc được', () => {
+    const { rows } = parseQuizImportFile(JSON.stringify({
+      questions: [{ question: 'A?', options: ['Một', 'Hai'], correct_answers: ['A'] }],
+    }));
+    expect(rows).toHaveLength(1);
+  });
+
+  it('câu chưa chốt đáp án nạp được — mảng đáp án rỗng', () => {
+    const { rows, skipped } = parseQuizImportFile(file([{
+      question: 'Câu nào cũng sai', options: ['Một', 'Hai'], correct_answers: [],
+    }]));
+    expect(skipped).toEqual([]);
+    expect(rows[0].correct_answers).toEqual([]);
+  });
+
+  it('báo từng dòng bỏ qua kèm số dòng và lý do, không nuốt', () => {
+    const { rows, skipped } = parseQuizImportFile(file([
+      { question: '  ', options: ['Một', 'Hai'] },
+      { question: 'A?', options: [] },
+      { question: 'B?', options: ['Một', 'Hai'], correct_answers: ['Z'] },
+      { question: 'C?', options: [{ id: 'A', text: 'Một' }, { id: 'A', text: 'Hai' }] },
+      'không phải object',
+      { question: 'D?', options: ['Một', 'Hai'], correct_answers: ['A'] },
+    ]));
+
+    expect(rows.map(r => r.question)).toEqual(['D?']);
+    expect(skipped).toEqual([
+      { at: 1, reason: 'Thiếu nội dung câu hỏi.' },
+      { at: 2, reason: 'Không đọc được lựa chọn nào.' },
+      { at: 3, reason: 'Đáp án Z không nằm trong danh sách lựa chọn.' },
+      { at: 4, reason: 'Mã lựa chọn bị lặp trong cùng một câu.' },
+      { at: 5, reason: 'Không phải một object câu hỏi.' },
+    ]);
+  });
+
+  it('tệp không phải JSON thì báo rõ', () => {
+    expect(() => parseQuizImportFile('{ hỏng')).toThrow('Tệp không phải JSON hợp lệ.');
+  });
+
+  it('JSON hợp lệ nhưng không phải mảng câu hỏi thì báo rõ', () => {
+    expect(() => parseQuizImportFile('{"a":1}')).toThrow(/mảng câu hỏi/);
+  });
+
+  it('tệp rỗng ra không câu nào, không nổ', () => {
+    expect(parseQuizImportFile('[]')).toEqual({ rows: [], skipped: [] });
   });
 });

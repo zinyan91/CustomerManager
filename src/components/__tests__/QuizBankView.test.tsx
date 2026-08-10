@@ -9,12 +9,14 @@ const fetchQuizQuestionsAPI = vi.fn();
 const createQuizQuestionAPI = vi.fn();
 const deleteQuizQuestionAPI = vi.fn();
 const seedQuizBankAPI = vi.fn();
+const importQuizQuestionsAPI = vi.fn();
 
 vi.mock('../../lib/api', () => ({
   fetchQuizQuestionsAPI: (...args: unknown[]) => fetchQuizQuestionsAPI(...args),
   createQuizQuestionAPI: (...args: unknown[]) => createQuizQuestionAPI(...args),
   deleteQuizQuestionAPI: (...args: unknown[]) => deleteQuizQuestionAPI(...args),
   seedQuizBankAPI: (...args: unknown[]) => seedQuizBankAPI(...args),
+  importQuizQuestionsAPI: (...args: unknown[]) => importQuizQuestionsAPI(...args),
 }));
 
 const { QuizBankView } = await import('../views/QuizBankView');
@@ -49,6 +51,7 @@ beforeEach(() => {
   createQuizQuestionAPI.mockReset();
   deleteQuizQuestionAPI.mockReset();
   seedQuizBankAPI.mockReset();
+  importQuizQuestionsAPI.mockReset();
 });
 
 afterEach(cleanup);
@@ -505,5 +508,156 @@ describe('QuizBankView — lỗi đọc', () => {
     fetchQuizQuestionsAPI.mockRejectedValue(new Error('relation "QuizQuestions" does not exist'));
     render(<QuizBankView />);
     expect(await screen.findByText(/does not exist/)).toBeTruthy();
+  });
+});
+
+describe('QuizBankView — nạp thêm từ tệp JSON', () => {
+  const upload = async (
+    user: ReturnType<typeof userEvent.setup>,
+    rows: unknown,
+    name = 'bo-cau-hoi-2.json'
+  ) => {
+    const file = new File([JSON.stringify(rows)], name, { type: 'application/json' });
+    await user.upload(screen.getByLabelText('Tệp JSON câu hỏi'), file);
+  };
+
+  const emptyReport = {
+    da_nap: 0,
+    trung_trong_ngan_hang: [],
+    trung_trong_file: [],
+    khong_hop_le: [],
+    lech_dap_an: [],
+  };
+
+  it('bảng đã có dữ liệu thì hiện nút nạp thêm; bảng rỗng thì không', async () => {
+    render(<QuizBankView />);
+    expect(await screen.findByRole('button', { name: /Nạp thêm từ tệp JSON/i })).toBeTruthy();
+
+    cleanup();
+    fetchQuizQuestionsAPI.mockResolvedValue([]);
+    render(<QuizBankView />);
+    await screen.findByRole('button', { name: /Nạp bộ câu hỏi gốc/i });
+    expect(screen.queryByRole('button', { name: /Nạp thêm từ tệp JSON/i })).toBeNull();
+  });
+
+  it('gửi câu đã chuẩn hoá lên CSDL và báo số đã nạp', async () => {
+    importQuizQuestionsAPI.mockResolvedValue({ ...emptyReport, da_nap: 2 });
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await upload(user, [
+      { question: 'Câu mới một', options: ['Một', 'Hai'], correct_answers: ['A'] },
+      { question: 'Câu mới hai', options: ['Một', 'Hai'], correct_answers: ['B'] },
+    ]);
+
+    expect(importQuizQuestionsAPI).toHaveBeenCalledTimes(1);
+    expect(importQuizQuestionsAPI.mock.calls[0][0]).toHaveLength(2);
+    expect(await screen.findByText(
+      (_, el) => el?.tagName === 'DIV'
+        && el.textContent === 'bo-cau-hoi-2.json: đã nạp 2 câu'
+    )).toBeTruthy();
+  });
+
+  it('CÂU TRÙNG MÀ ĐÁP ÁN KHÁC: bỏ, không ghi đè, và nêu cả hai đáp án', async () => {
+    importQuizQuestionsAPI.mockResolvedValue({
+      da_nap: 1,
+      trung_trong_ngan_hang: [{ cau: 'Tiêu chí nhận diện rủi ro gồm những gì?', id_co_san: 2 }],
+      trung_trong_file: [],
+      khong_hop_le: [],
+      lech_dap_an: [{
+        cau: 'Tiêu chí nhận diện rủi ro gồm những gì?',
+        id_co_san: 2,
+        dap_an_co_san: ['A', 'B'],
+        dap_an_trong_file: ['C'],
+      }],
+    });
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await upload(user, [
+      { question: 'Tiêu chí nhận diện rủi ro gồm những gì?', options: ['x', 'y', 'z'], correct_answers: ['C'] },
+      { question: 'Câu mới', options: ['Một', 'Hai'], correct_answers: ['A'] },
+    ]);
+
+    expect(await screen.findByText(/1 câu trùng nội dung nhưng ĐÁP ÁN KHÁC bản đang có/)).toBeTruthy();
+    expect(screen.getByText(/đã bỏ, không ghi đè/)).toBeTruthy();
+    const dong = screen.getByText(
+      (_, el) => el?.tagName === 'LI' && (el.textContent || '').startsWith('#2 đang là')
+    );
+    expect(dong.textContent).toContain('#2 đang là A, B');
+    expect(dong.textContent).toContain('tệp ghi C');
+  });
+
+  it('báo riêng ba loại bị bỏ: trùng bảng, tệp tự trùng, không hợp lệ', async () => {
+    importQuizQuestionsAPI.mockResolvedValue({
+      da_nap: 5,
+      trung_trong_ngan_hang: [{ cau: 'x', id_co_san: 1 }, { cau: 'y', id_co_san: 2 }],
+      trung_trong_file: [{ cau: 'z' }],
+      khong_hop_le: [{ cau: 'w', ly_do: 'Đáp án đúng Z không nằm trong danh sách lựa chọn A, B' }],
+      lech_dap_an: [],
+    });
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await upload(user, [{ question: 'Câu mới', options: ['Một', 'Hai'], correct_answers: ['A'] }]);
+
+    expect(await screen.findByText('bỏ 2 câu đã có trong ngân hàng')).toBeTruthy();
+    expect(screen.getByText('bỏ 1 câu tệp tự trùng')).toBeTruthy();
+    expect(screen.getByText('bỏ 1 câu không hợp lệ')).toBeTruthy();
+  });
+
+  it('dòng tệp không đọc được thì báo trước khi gửi, kèm số dòng', async () => {
+    importQuizQuestionsAPI.mockResolvedValue({ ...emptyReport, da_nap: 1 });
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await upload(user, [
+      { question: '   ', options: ['Một', 'Hai'] },
+      { question: 'Câu mới', options: ['Một', 'Hai'], correct_answers: ['A'] },
+    ]);
+
+    expect(await screen.findByText(/1 dòng trong tệp không đọc được/)).toBeTruthy();
+    expect(screen.getByText(/Dòng 1: Thiếu nội dung câu hỏi/)).toBeTruthy();
+    expect(importQuizQuestionsAPI.mock.calls[0][0]).toHaveLength(1);
+  });
+
+  it('tệp không có câu nào hợp lệ thì không gọi CSDL', async () => {
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await upload(user, [{ question: '  ', options: [] }]);
+
+    expect(importQuizQuestionsAPI).not.toHaveBeenCalled();
+    expect(await screen.findByText(/Không đọc được câu nào hợp lệ/)).toBeTruthy();
+  });
+
+  it('tệp hỏng thì báo rõ, không nuốt', async () => {
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    const file = new File(['{ hỏng'], 'hong.json', { type: 'application/json' });
+    await user.upload(screen.getByLabelText('Tệp JSON câu hỏi'), file);
+
+    expect(await screen.findByText('Tệp không phải JSON hợp lệ.')).toBeTruthy();
+    expect(importQuizQuestionsAPI).not.toHaveBeenCalled();
+  });
+
+  it('nạp xong thì đọc lại ngân hàng để thấy câu mới', async () => {
+    importQuizQuestionsAPI.mockResolvedValue({ ...emptyReport, da_nap: 1 });
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+    expect(fetchQuizQuestionsAPI).toHaveBeenCalledTimes(1);
+
+    await upload(user, [{ question: 'Câu mới', options: ['Một', 'Hai'], correct_answers: ['A'] }]);
+
+    expect(await screen.findByText(/đã nạp/)).toBeTruthy();
+    expect(fetchQuizQuestionsAPI).toHaveBeenCalledTimes(2);
   });
 });

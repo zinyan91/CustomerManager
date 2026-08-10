@@ -20,6 +20,7 @@ import { DocumentTemplateView } from './components/views/DocumentTemplateView';
 import { SettingsView } from './components/views/SettingsView';
 import { PostLoanControlView } from './components/views/PostLoanControlView';
 import { BusinessPlanView } from './components/views/BusinessPlanView';
+import { QuizBankView } from './components/views/QuizBankView';
 
 export function App() {
   const { activeTab, setActiveTab } = useWork();
@@ -62,6 +63,7 @@ export function App() {
           {activeTab === 'rate-quote' && <RateQuoteView />}
           {activeTab === 'cof' && <CofView />}
           {activeTab === 'templates' && <DocumentTemplateView />}
+          {activeTab === 'quiz-bank' && <QuizBankView />}
           {activeTab === 'settings' && <SettingsView />}
           {activeTab === 'post-loan' && <PostLoanControlView />}
         </main>

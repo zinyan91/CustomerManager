@@ -1,5 +1,4 @@
 export const MIME_XLS = 'application/vnd.ms-excel;charset=utf-8';
-export const MIME_DOC = 'application/msword;charset=utf-8';
 
 export function downloadTextFile(content: string, fileName: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType });

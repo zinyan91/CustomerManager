@@ -788,7 +788,65 @@ Hai điểm bắt buộc khi sửa chỗ này:
 
 Kiểm chứng không dừng ở test đơn vị: sinh cả ba tệp ra đĩa rồi cho **openpyxl** đọc lại. Một bộ đọc OOXML thật mở được thì Excel mở được. Đã làm 10/08/2026 — ZIP nguyên vẹn, ô đúng địa chỉ, số ra số, nbsp và dấu cách cuối còn nguyên.
 
-Ba tab khác (`Công cụ 1`, `Công cụ 4`, biểu mẫu hợp đồng) **vẫn dùng HTML `.xls`/`.doc`** và vẫn có cảnh báo đó. Chưa chuyển vì chúng cần màu và gộp ô; `xlsxWriter` hiện chỉ làm lưới trơn.
+Hai tab còn lại (`Công cụ 1`, `Công cụ 4`) **vẫn dùng HTML `.xls`** và vẫn có cảnh báo đó. Chưa chuyển vì chúng cần màu và gộp ô; `xlsxWriter` hiện chỉ làm lưới trơn.
+
+Phần ZIP dùng chung — bảng CRC32, `zipStore`, `escapeXml`, khai báo XML — nằm ở `src/lib/ooxml.ts` từ 10/08/2026, khi `docxWriter` thành chỗ dùng thứ hai. `xlsxWriter` xuất lại `escapeXml`/`zipStore` để nơi gọi cũ không phải sửa.
+
+### Xuất biểu mẫu ra .docx thật
+
+`src/lib/docxWriter.ts` đổi HTML của tab **Soạn biểu mẫu** thành WordprocessingML rồi gói năm thành phần (`[Content_Types].xml`, `_rels/.rels`, `word/document.xml`, `word/_rels/document.xml.rels`, `word/styles.xml`). Trước 10/08/2026 tab này ghi HTML kèm chỉ thị `mso-` rồi đặt tên `.doc` — Word mở được nhưng luôn cảnh báo lệch định dạng.
+
+Bộ chuyển không phải bộ dựng HTML tổng quát: nó chỉ hiểu đúng từ vựng mà `documentHtml.ts` sinh ra — `h1`/`h2`, `p`, `div`, `table`/`thead`/`tbody`/`tr`/`th`/`td`, `strong`, `em`, `span`, `br`, cùng các lớp `clause-p`, `item-p`, `no-indent`, `text-center`/`right`, `font-bold`, `font-italic`, `uppercase`, `text-[Npt]`, `pt-*`/`pb-*`/`pl-*`, `table-doc`, `sig-table`, `sig-space`. **Thêm lớp hay thẻ mới vào biểu mẫu thì phải khai ở đây**, không thì nó lặng lẽ rơi về định dạng mặc định.
+
+Bốn chỗ dễ sai:
+
+- **`w:tblPr` phải xếp đúng thứ tự lược đồ**: `tblW` → `tblBorders` → `tblLayout` → `tblCellMar`. Đặt `tblCellMar` trước `tblLayout` thì Word từ chối mở. `w:pPr` là `spacing` → `ind` → `jc`; `w:rPr` là `b` → `i` → `spacing` → `sz`. Sai thứ tự là sai lược đồ, không phải chuyện thẩm mỹ.
+- **Mỗi ô bảng phải có ít nhất một `w:p`**, kể cả ô rỗng. Sau mỗi `w:tbl` cũng phải có một `w:p` trống.
+- **`xml:space="preserve"` trên mọi `w:t`** — cùng lý do như bên `.xlsx`.
+- **Gộp khoảng trắng theo lối HTML nhưng giữ nguyên nbsp** (`/[^\S ]+/g`). `\s` của JavaScript bao cả nbsp, viết thiếu là nbsp biến thành dấu cách thường.
+
+Con số bám đúng **bản xem trước trên màn hình**, không bám bản `.doc` cũ: giãn dòng 1,5 (bản cũ 1,35) và chữ trong bảng 12pt (bản cũ 11pt). Bản in PDF vốn đã dùng hai con số này; giờ cả ba mặt khớp nhau.
+
+Kiểm chứng ngoài test đơn vị: sinh cả tám biểu mẫu ra đĩa rồi cho **python-docx** đọc lại, đối chiếu từng ký tự phần chữ với `textContent` của bản xem trước. Đã làm 10/08/2026 — tám tệp mở được, khổ A4 lề 25/20/20/30mm đúng, khớp chữ cả tám. Bản đối chiếu đó nay là test thường trực `src/components/__tests__/DocumentTemplateExport.test.tsx`, chạy trong bộ test bình thường và không ghi ra đĩa.
+
+### Xuất slide ra .pptx thật
+
+`src/lib/pptxWriter.ts` dựng bộ slide từ mô hình `{ title, subtitle, bullets, table }`; phần theme, slide master và slide layout tối thiểu nằm riêng ở `pptxTheme.ts` vì chúng là hằng, không phụ thuộc nội dung.
+
+**Chưa màn nào gọi tới** — đây là thư viện dựng trước theo yêu cầu 10/08/2026, để lần sau cần slide thì không phải làm lại từ đầu như đã từng làm với `.xls` và `.doc` HTML.
+
+Bốn thứ PowerPoint bắt buộc mà thiếu là không mở được tệp:
+
+- **Đủ chín thành phần khung**: `presentation.xml` + rels, `theme1.xml`, `slideMaster1.xml` + rels, `slideLayout1.xml` + rels, và mỗi slide một tệp kèm một tệp rels trỏ về layout. Slide không có rels trỏ layout là slide PowerPoint bỏ.
+- **`a:clrScheme` đúng 12 màu đúng thứ tự** `dk1, lt1, dk2, lt2, accent1…6, hlink, folHlink`; `a:fmtScheme` đủ bốn danh sách, mỗi danh sách ba phần tử.
+- **`a:pPr` xếp `buFont` trước `buChar`**, và `a:rPr` xếp `latin` trước `cs` — cùng loại lỗi thứ tự lược đồ như `w:tblCellMar` bên `.docx`.
+- **Mã hình `p:cNvPr id` không lặp trong một slide**, và mọi hàng của bảng phải đủ số ô (hàng thiếu ô thì bù ô rỗng).
+
+Đơn vị đo là EMU: 914.400 EMU một inch, 12.700 EMU một điểm. Khổ 16:9 là 12.192.000 × 6.858.000.
+
+Kiểm chứng bằng **python-pptx**: đọc lại đúng khổ, đúng số slide, đúng cấp bậc gạch đầu dòng, đúng kích thước bảng. Nhưng python-pptx **dễ tính hơn PowerPoint** — nó đọc được cả tệp sai thứ tự lược đồ, đúng như lỗi `tblCellMar` bên `.docx` mà nó không bắt. Chưa mở được bằng PowerPoint thật trên máy này.
+
+### Ngân hàng câu hỏi — chống trùng bằng trigger, không bằng unique index
+
+`QuizQuestions` (migration 38) là dữ liệu tham chiếu dùng chung, không gắn khách hàng nào — cùng loại với `RatePrograms`, không phải hồ sơ tín dụng. RLS: ai đăng nhập cũng đọc và thêm được, nhưng sửa/xoá thì chỉ admin hoặc chính người đã thêm.
+
+**Lựa chọn để trong `jsonb`, không tách bảng con.** Lựa chọn là dữ liệu trình bày có thứ tự, không bao giờ được tra riêng. Ràng buộc thật sự cần — "đáp án đúng phải nằm trong danh sách lựa chọn" — đã chốt bằng trigger.
+
+**Số lựa chọn không cố định 4, số đáp án đúng không cố định 1.** Đo trên bộ 662 câu: lựa chọn phân bố 1→5, đáp án đúng phân bố 1→5 (21 câu nhiều đáp án).
+
+**Mảng `CorrectAnswers` rỗng nghĩa là CHƯA CHỐT ĐÁP ÁN**, không phải dữ liệu lỗi. Hai câu trong đề ghi thẳng *"CÂU NÀO CŨNG SAI"* (id 504 Tiết kiệm Phát Lộc, id 570 vốn lưu động ròng); bản dọn sẵn đánh cả bốn lựa chọn là đúng, nhưng đó là ghi chú của người soạn chứ không phải đáp án. Chốt 10/08/2026: để trống. Chế độ Luyện tập bỏ qua các câu này và nói rõ đã bỏ bao nhiêu; `isAnswerCorrect` trả `false` **kể cả khi không chọn gì**, nếu không thì bỏ trắng lại thành "đúng".
+
+**Vẫn không đặt ràng buộc "không được đánh đúng mọi lựa chọn".** Bốn câu có mọi lựa chọn đều đúng một cách hợp lệ — 176, 194, 195, 198, trong đó hai câu ghi thẳng trong đề *"(cho phép lựa chọn nhiều đáp án)"*. Thứ cần biểu diễn là "chưa chốt đáp án" và nó biểu diễn bằng mảng rỗng, không bằng việc đánh đúng tất cả.
+
+Migration 38 để ràng buộc `array_length("CorrectAnswers", 1) >= 1`, mà mảng rỗng vẫn đi qua được vì `array_length('{}', 1)` trả `NULL` và CHECK của Postgres chỉ đổ khi biểu thức ra `FALSE`. Migration 39 viết lại cho đúng ý định thay vì dựa vào chỗ ăn may đó.
+
+**Chống trùng phải là trigger.** Bộ 662 câu vốn đã có 9 cụm trùng nội dung (24 câu, 15 bản dư) và chủ dự án chốt giữ nguyên, nên unique index không dựng nổi — build đổ ngay trên dữ liệu nạp vào. Trigger cho đường nạp gốc đi qua bằng cờ phiên `app.quiz_seed`, chặn mọi đường ghi khác.
+
+**Ba trong chín cụm có đáp án đúng khác nhau** trên cùng một câu hỏi: `(267, 272, 274, 283)`, `(309, 325, 344, 345)`, `(318, 343, 347)`. Ít nhất một bản trong mỗi cụm đang dạy sai. Tab gắn nhãn đỏ từng cụm; hệ thống **không tự chọn bản nào**.
+
+`quizNormalizeText` trong `src/lib/quizBank.ts` và `public.quiz_normalize_text` trong CSDL phải giống nhau: hạ chữ, gộp khoảng trắng, cắt hai đầu, **giữ nguyên dấu tiếng Việt** — "lãi" và "lai" là hai câu khác nghĩa. Sửa một bên phải sửa bên kia.
+
+Bộ câu hỏi gốc nạp bằng nút trên tab qua hàm `seed_quiz_bank`, không nhét 662 dòng `INSERT` vào migration — 662 dòng thành tệp SQL gần 700KB, dán vào SQL editor là hỏng. Hàm chỉ chạy trên bảng rỗng nên không có đường nạp đè hay nạp hai lần.
 
 ### Vay từng lần lấy min của ba giới hạn
 
@@ -1034,7 +1092,7 @@ Popup sai ở ba điểm. Trình duyệt chặn popup thì lệnh in **im lặng
 
 iframe không dính cái nào: không bị chặn, `document.write` là đồng bộ nên không cần chờ, và `afterprint` dọn ngay. `printHtmlDoc` trả `boolean` — **phải kiểm và báo cho người dùng khi false**.
 
-**Tải file: `downloadTextFile(content, fileName, mimeType)` trong `xlsExport.ts`.** Ba bản Blob + thẻ neo chép tay giống hệt nhau, chỉ khác MIME. `downloadXls` giờ là lớp mỏng gọi nó. Dùng hằng `MIME_XLS` / `MIME_DOC`, đừng gõ lại chuỗi MIME.
+**Tải file: `downloadTextFile(content, fileName, mimeType)` trong `xlsExport.ts`.** Ba bản Blob + thẻ neo chép tay giống hệt nhau, chỉ khác MIME. `downloadXls` giờ là lớp mỏng gọi nó. Dùng hằng `MIME_XLS` / `MIME_XLSX` / `MIME_DOCX`, đừng gõ lại chuỗi MIME. `MIME_DOC` đã gỡ cùng lúc bỏ bản `.doc` HTML. Tệp nhị phân đi qua `downloadBytes`, không qua `downloadTextFile`.
 
 Tệp Word phải mở đầu bằng `'\uFEFF'` — thiếu BOM thì Word đọc sai tiếng Việt. Viết bằng dấu escape, đừng dán ký tự BOM thật vào mã nguồn: nó vô hình, người sau sửa sẽ xoá nhầm.
 

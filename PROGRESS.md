@@ -39,9 +39,14 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
-| ⬜ | Sinh `.docx` OOXML thật cho tab Soạn biểu mẫu | Hiện là HTML đội lốt Word — Word báo *"format and extension don't match"*. Tái dùng phần ZIP + CRC32 của `xlsxWriter.ts`. Xem §26 |
-| ⬜ | Hai trần theo doanh nghiệp của mã thẻ `B3` và `B12` | Hiện chỉ là chữ trong luật, chưa phải chốt chặn. Xem §27 |
-| ⬜ | Dọn 4 dòng `LoanContracts.ContractEndDate` còn lệch trong CSDL | Mã nguồn không đọc nữa nên vô hại, nhưng báo cáo SQL nào đọc cột đó vẫn sai. Cân nhắc xoá hẳn hai cột bản sao |
+| ⬜ | Hai trần theo doanh nghiệp của mã thẻ `B3` và `B12` | Hiện chỉ là chữ trong luật, chưa phải chốt chặn. Xem §28 |
+| ⚠️ | Xoá hai cột bản sao `LoanContracts.ContractStartDate` / `ContractEndDate` | **Không vô hại như ghi trước đây** — form KUNN vẫn ghi hai cột, và 7 chỗ còn đọc chúng làm đường dự phòng khi KUNN không trỏ được về HĐTD cha. Chạy `reports/10` §3 trước. Xem §29 |
+| ⬜ | Gỡ 7 chỗ đọc bản sao ngày HĐTD + 2 ô trên form KUNN | Điều kiện để xoá được hai cột. Xem §29 |
+| ⬜ | Đọc `.xlsx` / `.docx` / `.pptx` | Cần `DecompressionStream('deflate-raw')`. Chưa rõ cần nạp cái gì vào đâu. Xem §30 |
+| ⬜ | Câu 640 bị bóc lỗi từ PDF | Cả bốn lựa chọn dồn vào một ô `"25 B.50 C.75 D.80"` nên không trả lời được. Cần mở nguồn ra tách lại |
+| ⬜ | `xlsxWriter` học gộp ô và màu nền theo ô | Điều kiện để chuyển Công cụ 1 và Công cụ 4 khỏi HTML đội lốt `.xls`. Xem §30 |
+| ⬜ | Tìm chỗ dùng cho `pptxWriter` | Thư viện đã xong, chưa màn nào gọi |
+| ⚠️ | Ba cụm câu hỏi trùng mà đáp án khác nhau | Ít nhất một bản mỗi cụm đang dạy sai. Cần mở văn bản gốc đối chiếu. Xem §31 |
 | ⬜ | Đo `ContractCollaterals` rồi quyết định xoá | Bảng thứ 20 trong database, web app không gọi `.from()` tới nó. Có thể đang dùng qua khoá ngoại |
 | ⬜ | Rà dữ liệu bị nút "Đồng bộ kỳ cuối" ghi đè | Ngày tháng: tối đa 1 khoản. Số lãi khai tay ở kỳ chưa thu **không dò được bằng SQL**, cần bản trước đó để đối chiếu |
 | ⬜ | Mở rộng test giao diện sang các phân hệ còn lại | Hiện có tab KUNN và khối phương thức trả nợ |
@@ -736,6 +741,119 @@ Hiện hai trần này chỉ là chữ trong `limitRule` và `matrix.note`, hi�
 banker tự đối chiếu. Muốn chặn thật thì cần thêm khái niệm doanh nghiệp bảo lãnh — việc đó
 lớn, chưa làm.
 
+## §29. Hai cột bản sao ngày HĐTD — chưa xoá được
+
+Đo lại 10/08/2026 sau khi §25 xong. Ghi chú cũ nói "mã nguồn không đọc nữa nên vô hại"
+**là sai**. Thực tế:
+
+- `src/lib/kunnForm.ts` vẫn nạp hai cột lên form KUNN và vẫn ghi xuống khi lưu.
+- Bảy chỗ còn đọc chúng làm **đường dự phòng** khi KUNN không trỏ được về HĐTD cha
+  (`CreditContractId` rỗng hoặc trỏ vào hợp đồng không tồn tại): `creditLimit.ts`,
+  `postLoanControl.ts`, `loanMath.ts`, `rateResolution.ts`, `DashboardView`, `ScheduleTab`,
+  `KunnTable`.
+
+§25 chỉ đổi **thứ tự ưu tiên** — tra HĐTD cha trước, bản sao sau — chứ không cắt bản sao.
+Nên xoá cột không phải dọn dữ liệu mà là gỡ một đường dự phòng đang chạy.
+
+`supabase/reports/10_ban_sao_ngay_hdtd_trong_kunn.sql` §3 đếm số KUNN sẽ **mất ngày** nếu
+xoá cột. Khác 0 thì phải gỡ bảy chỗ dự phòng và bỏ hai ô khỏi form KUNN trước, rồi mới xoá
+cột. Bằng 0 thì xoá cột an toàn ngay.
+
+§4 của cùng báo cáo là câu `update` sửa 4 dòng lệch cho khớp hợp đồng cha — hướng giữ cột.
+Đang comment, chỉ mở khi chọn hướng đó.
+
+## §30. Bộ công cụ tệp — còn ba việc, một việc bị chặn
+
+Yêu cầu 10/08/2026: dựng sẵn bộ công cụ đọc/ghi Word · Excel · PowerPoint · PDF · ảnh để
+lần sau phát sinh thì không phải làm lại hay dùng HTML đội lốt. Hiện trạng sau đợt này:
+
+| Định dạng | Ghi | Đọc |
+| :--- | :--- | :--- |
+| `.xlsx` | ✅ `xlsxWriter.ts` — lưới trơn, chưa gộp ô, chưa màu tuỳ ý | ⬜ |
+| `.docx` | ✅ `docxWriter.ts` | ⬜ |
+| `.pptx` | ✅ `pptxWriter.ts` | ⬜ |
+| Ảnh PNG | ✅ `htmlToPng.ts` | — |
+| PDF | ✅ hộp thoại In của trình duyệt rồi lưu thành PDF — **chốt 10/08/2026 dừng ở đây** | ⬜ |
+
+**PDF: quyết định KHÔNG làm, chốt 10/08/2026.** Dùng hộp thoại In của trình duyệt rồi lưu
+thành PDF là đủ. Lý lẽ để không làm còn giữ lại đây vì nó là thứ chặn: sinh PDF thật có chữ
+tiếng Việt **buộc phải nhúng phông**. Mười bốn phông dựng sẵn của PDF (Helvetica, Times,
+Courier…) mã hoá WinAnsi, **không có ký tự tiếng Việt có dấu** — dùng chúng thì "Điều" ra
+"iu". Nhúng phông thì cần một tệp `.ttf` nằm trong repo, mà Times New Roman của Windows
+không được phép phát hành lại; phải chọn một phông tự do đủ tiếng Việt và thêm 200–800KB vào
+gói giao diện. Cái giá đó không đáng so với một cú bấm In. **Nếu sau này cần PDF sinh tự
+động ở phía máy chủ** (gửi email, đính kèm) thì việc này quay lại, vì lúc đó không có trình
+duyệt nào để bấm In.
+
+**Đọc tệp chưa làm.** `.xlsx`/`.docx`/`.pptx` ngoài đời nén DEFLATE chứ không lưu thô như
+tệp ta sinh ra, nên phải giải nén. Trình duyệt có `DecompressionStream('deflate-raw')` nên
+làm được không cần thư viện ngoài. Chưa làm vì chưa rõ cần nạp cái gì vào đâu — nạp danh mục
+từ Excel, nạp ngân hàng câu hỏi từ tệp, hay cả hai.
+
+**Công cụ 1 và Công cụ 4 vẫn là HTML đội lốt `.xls`.** Chuyển được thì `xlsxWriter` phải học
+gộp ô (`mergeCells`) và màu nền tuỳ ý theo ô. Đó là việc trong `xlsxWriter`, không phải việc
+trong hai tab.
+
+## §31. Chất lượng bộ 662 câu — ba loại vấn đề
+
+**Loại 1 — hai câu đề ghi "CÂU NÀO CŨNG SAI" (504, 570).** Bản dọn sẵn đánh cả bốn lựa chọn
+là đáp án đúng. Đó là cách người soạn ghi chú, không phải đáp án. Chốt 10/08/2026: để trống
+đáp án; `CorrectAnswers` rỗng là trạng thái thật *"chưa chốt đáp án"*, có ràng buộc CSDL
+(migration 39) và có nhãn trên tab. Luyện tập bỏ qua chúng vì không chấm được.
+
+Quan trọng: **không vì hai câu này mà đặt ràng buộc "không được đánh đúng mọi lựa chọn"**.
+Bốn câu 176, 194, 195, 198 đúng là mọi lựa chọn đều đúng, và hai câu trong đó ghi thẳng trong
+đề *"(cho phép lựa chọn nhiều đáp án)"*. Ràng buộc ấy sẽ khoá dữ liệu thật ra ngoài.
+
+**Loại 2 — một câu bị bóc lỗi từ PDF (640).** Cả bốn lựa chọn dồn vào một ô duy nhất:
+`"25 B.50 C.75 D.80"`. Câu này không trả lời được, cần mở nguồn ra tách lại. Chưa sửa vì
+không biết đáp án đúng là con nào.
+
+**Loại 3 — ba cụm trùng câu mà đáp án khác nhau.** Đo trên 662 câu: 9 cụm trùng nội dung, 24
+câu, 15 bản dư. Sáu cụm trùng vô hại (cùng đáp án). **Ba cụm dưới đây khác:**
+
+| Cụm | Đáp án từng bản |
+| :--- | :--- |
+| 267, 272, 274, 283 | B · B · D · D |
+| 309, 325, 344, 345 | D · C · D · B |
+| 318, 343, 347 | A · C · B |
+
+Ít nhất một bản trong mỗi cụm đang dạy sai, và người ôn tập gặp bản nào thì học theo bản đó.
+Hệ thống **không tự chọn** — tab gắn nhãn đỏ *"trùng câu, lệch đáp án"* trên từng câu để
+người có thẩm quyền mở văn bản gốc ra đối chiếu rồi xoá bản sai.
+
+## §32. Xuất biểu mẫu ra `.docx` thật
+
+Tab **Soạn biểu mẫu** trước 10/08/2026 ghi HTML kèm chỉ thị `mso-` rồi đặt tên `.doc`. Word
+mở được nhưng luôn cảnh báo lệch định dạng — cùng bệnh với `.xls` HTML đã sửa ở phần Phương
+án kinh doanh.
+
+`src/lib/docxWriter.ts` đọc chính HTML mà `documentHtml.ts` sinh ra rồi dịch sang
+WordprocessingML: `DOMParser` dựng cây, cây thành mô hình đoạn/bảng, mô hình thành XML, gói
+năm thành phần OOXML. Phần ZIP + CRC32 rút về `src/lib/ooxml.ts` cho `xlsxWriter` và
+`docxWriter` dùng chung, theo quy tắc "dùng ở hai nơi thì rút về `src/lib/`".
+
+Không phải bộ dịch HTML tổng quát — nó chỉ hiểu từ vựng của tám biểu mẫu hiện có. Thêm lớp
+CSS hay thẻ mới vào biểu mẫu thì phải khai ở `docxWriter`, xem CONVENTIONS.
+
+**Con số bám bản xem trước, không bám bản `.doc` cũ:** giãn dòng 1,5 (cũ 1,35), chữ trong
+bảng 12pt (cũ 11pt). Bản in PDF vốn đã dùng hai con số này, nên giờ ba mặt — màn hình, PDF,
+Word — khớp nhau thay vì mỗi mặt một kiểu.
+
+**Một lỗi lược đồ bắt được nhờ đọc kỹ CT_TblPr:** bản đầu đặt `w:tblCellMar` trước
+`w:tblLayout`. Lược đồ đòi thứ tự `tblW` → `tblBorders` → `tblLayout` → `tblCellMar`, sai
+là Word từ chối mở — mà python-docx vẫn đọc bình thường, nên test đọc lại **không** bắt
+được. Đã sửa và khoá bằng test thứ tự thẻ.
+
+41 test đơn vị cho bộ dịch, 8 test tích hợp dựng cả màn hình rồi bấm nút tải và đối chiếu
+từng ký tự phần chữ trong `word/document.xml` với `textContent` của bản xem trước. Kiểm
+chứng ngoài test: sinh tám tệp ra đĩa, **python-docx** mở được cả tám, khổ A4 lề
+25/20/20/30mm đúng, khoảng chừa chỗ ký 1500 twips đúng, bảng dự toán kẻ khung còn bảng ký
+thì không.
+
+Không kiểm chứng được trên trình duyệt: app đòi đăng nhập, tôi không nhập thông tin đăng
+nhập. Bằng chứng nằm ở test tích hợp và python-docx.
+
 # IV. Quyết định nghiệp vụ đã chốt
 
 | Câu hỏi | Quyết định | Ngày |
@@ -751,12 +869,56 @@ lớn, chưa làm.
 | `[PENALTY_RATE:N]` là gì | **Công tắc miễn phạt gốc**, không phải thang lãi suất. Xem §5 | 07/08 |
 | Bảng tính hạn mức có gắn khách hàng không | **Không.** Đây là công cụ nhập liệu cho tờ trình, không liên quan hồ sơ tín dụng | 10/08 |
 | Bước làm tròn gốc mỗi kỳ | **Theo từng giấy nhận nợ.** Mặc định 10.000 (28 tờ GNN xác nhận), khai ngoại lệ bằng ô số tiền. Xem §1 và §4 | 10/08 |
+| Có sinh PDF thật không | **Không.** Bấm In của trình duyệt rồi lưu thành PDF là đủ; không đáng nhúng phông tiếng Việt 200–800KB vào gói. Việc này chỉ quay lại nếu cần sinh PDF phía máy chủ. Xem §30 | 10/08 |
+| Câu hỏi mà đề ghi "câu nào cũng sai" | **Để trống đáp án**, không đánh đúng cả bốn lựa chọn. Đó là ghi chú của người soạn, không phải đáp án — và không được vì nó mà phá luật "mọi lựa chọn đều đúng là hợp lệ". Xem §31 | 10/08 |
 
 ---
 
 # V. Nhật ký theo ngày
 
 ## 10/08/2026
+
+### Tab Ôn tập nghiệp vụ — 662 câu hỏi
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Migration 38 `QuizQuestions` | Lựa chọn trong `jsonb`, chống trùng bằng **trigger** chứ không unique index. RLS: ai cũng đọc và thêm, sửa/xoá thì admin hoặc người đã thêm |
+| ✅ | `quizBank.ts` — logic thuần | 35 test, trong đó 6 test chạy trên **chính bộ 662 câu trong repo** |
+| ✅ | Tab hai chế độ: Tra cứu và Luyện tập | Chấm đúng câu nhiều đáp án (đủ và không thừa), ẩn/hiện đáp án, lọc theo nguồn |
+| ✅ | Khung nhập liệu | Số lựa chọn thêm bớt được (2–12), mã dồn lại khi xoá lựa chọn giữa, tích nhiều đáp án đúng. Báo trùng ngay lúc nhập **và** hứng lỗi trùng từ CSDL |
+| ✅ | 20 test dựng màn hình | Gồm đúng ca anh yêu cầu: submit câu đã có thì báo trùng |
+| ✅ | Migration 39 — trạng thái "chưa chốt đáp án" | `CorrectAnswers` rỗng. Hai câu *"CÂU NÀO CŨNG SAI"* (504, 570) để trống theo chốt 10/08/2026. Luyện tập bỏ qua và nói rõ bỏ bao nhiêu |
+| ⚠️ | Ba cụm trùng có đáp án khác nhau | `(267,272,274,283)`, `(309,325,344,345)`, `(318,343,347)`. Ít nhất một bản mỗi cụm đang dạy sai. Xem §31 |
+
+Hai ràng buộc tôi định đặt rồi **bỏ vì dữ liệu thật bác bỏ**: sàn 4 lựa chọn (bộ thật có câu 1, 2, 3, 5 lựa chọn) và "không được đánh đúng mọi lựa chọn" — bốn câu (176, 194, 195, 198) đúng là mọi lựa chọn đều đúng, hai trong đó ghi thẳng trong đề *"(cho phép lựa chọn nhiều đáp án)"*. Thứ cần biểu diễn là "chưa chốt đáp án", và nó biểu diễn bằng mảng rỗng chứ không bằng việc đánh đúng tất cả.
+
+### Xuất slide ra `.pptx` thật
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | `pptxWriter.ts` + `pptxTheme.ts` | Tiêu đề, gạch đầu dòng nhiều cấp, bảng kẻ khung, khổ 16:9 và 4:3. 28 test |
+| ✅ | Kiểm chứng bằng **python-pptx** | Đúng khổ, đúng số slide, đúng cấp bậc, đúng kích thước bảng |
+| ⬜ | Chưa màn nào gọi tới | Thư viện dựng trước theo yêu cầu; chờ biết cần slide ở đâu |
+
+### Biểu mẫu hợp đồng xuất ra `.docx` thật
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | `ooxml.ts` — rút phần ZIP dùng chung | Bảng CRC32, `zipStore`, `escapeXml`, khai báo XML. `xlsxWriter` xuất lại `escapeXml`/`zipStore` nên nơi gọi cũ không phải sửa |
+| ✅ | `docxWriter.ts` — HTML sang WordprocessingML | 41 test. Bắt được lỗi thứ tự thẻ `w:tblCellMar` trước `w:tblLayout` — Word sẽ từ chối mở mà python-docx vẫn đọc được, nên test đọc lại không bắt nổi |
+| ✅ | Tab Soạn biểu mẫu tải `.docx`, gỡ bản `.doc` HTML | Gỡ luôn `MIME_DOC` và 138 dòng CSS `mso-` |
+| ✅ | Test tích hợp tám biểu mẫu | Dựng cả màn hình, bấm nút tải, đối chiếu từng ký tự với bản xem trước. Không ghi ra đĩa |
+| ✅ | Kiểm chứng bằng **python-docx** | Tám tệp mở được, A4 lề 25/20/20/30mm, khoảng ký 1500 twips, bảng dự toán kẻ khung — bảng ký thì không |
+
+Xem §32. Giãn dòng và cỡ chữ trong bảng đổi theo **bản xem trước** (1,5 và 12pt) chứ không
+theo bản `.doc` cũ (1,35 và 11pt); PDF vốn đã dùng con số của bản xem trước.
+
+### Hai cột bản sao ngày HĐTD — đo lại thì chưa xoá được
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | `reports/10` — đo trước khi xoá cột | Bốn truy vấn: phân bố, 4 dòng lệch, **chặn xoá** (KUNN không cha mà đang dựa vào bản sao), và câu `update` cho hướng giữ cột |
+| ⚠️ | Bác bỏ ghi chú "mã nguồn không đọc nữa" | Form KUNN vẫn ghi hai cột; 7 chỗ còn đọc làm đường dự phòng. §25 chỉ đổi thứ tự ưu tiên, không cắt bản sao. Xem §29 |
 
 ### Phân hệ hợp đồng thẻ — thay `CreditCards`
 

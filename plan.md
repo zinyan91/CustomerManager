@@ -186,7 +186,7 @@ Kèm theo: rút 3 khối HTML bản in trong `Tool1LoanScheduleCalc`, `Tool4Rate
 
 ### Đợt 5 — Lưới an toàn dựng component
 
-Hiện có **4/75** test dựng component (`LoanPortfolioView`, `ScheduleTab`, `BusinessPlanView`, `KunnRepaymentSection`). `CONVENTIONS.md` §1 ghi rõ vì sao cần: ngày 05/08/2026 tab KUNN trắng trang vì một hàm gọi biến khai sau nó — build, lint và 668 test đều xanh.
+Hiện có **5** test dựng component (`LoanPortfolioView`, `ScheduleTab`, `BusinessPlanView`, `KunnRepaymentSection`, `DocumentTemplateExport`) trên 38 tệp test. `CONVENTIONS.md` §1 ghi rõ vì sao cần: ngày 05/08/2026 tab KUNN trắng trang vì một hàm gọi biến khai sau nó — build, lint và 668 test đều xanh.
 
 Mỗi màn một test jsdom, chỉ làm một việc: dựng lên với dữ liệu rỗng / một dòng / dữ liệu biên, khẳng định render tới cùng và `console.error` rỗng. **Không** kiểm công thức tiền ở đây.
 

@@ -28,6 +28,7 @@ const dictionary = {
     'nav.rateQuote': 'Chào lãi suất',
     'nav.cof': 'Mua bán vốn nội bộ',
     'nav.templates': 'Soạn biểu mẫu HĐ',
+    'nav.quizBank': 'Ôn tập nghiệp vụ',
     'nav.postLoan': 'Kiểm soát sau vay',
     'nav.settings': 'Cấu hình & cài đặt',
 
@@ -108,6 +109,7 @@ const dictionary = {
     'nav.rateQuote': 'Rate quotes',
     'nav.cof': 'Funds transfer pricing',
     'nav.templates': 'Contract templates',
+    'nav.quizBank': 'Knowledge quiz',
     'nav.postLoan': 'Post-loan monitoring',
     'nav.settings': 'Settings',
 

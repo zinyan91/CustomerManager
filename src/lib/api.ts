@@ -13,6 +13,7 @@ import type {
   RateProgramFeeOption, RateProgramCondition,
 } from './rateQuote';
 import type { CofProgram, CofStandardRate, CofRateItem, CofRateColumnKey } from './cof';
+import type { QuizQuestion, QuizOption } from './quizBank';
 
 export async function fetchCustomersAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
   try {
@@ -906,4 +907,72 @@ export async function updateCofRateItemAPI(
     throw new Error('Không cập nhật được. Chỉ admin có quyền sửa bảng giá mua bán vốn nội bộ.');
   }
   return data[0];
+}
+
+export async function fetchQuizQuestionsAPI(): Promise<QuizQuestion[]> {
+  const { data, error } = await supabase
+    .from('QuizQuestions')
+    .select('*')
+    .order('Id', { ascending: true })
+    .limit(5000);
+  if (error) throw error;
+  return (data || []).map((row: any) => ({
+    ...row,
+    Options: Array.isArray(row.Options) ? row.Options : [],
+    CorrectAnswers: row.CorrectAnswers || [],
+    Sources: row.Sources || [],
+  }));
+}
+
+function quizDbError(err: any): Error {
+  const msg = String(err?.message || '');
+  const already = /đã có trong ngân hàng \(Id=(\d+)\)/.exec(msg);
+  if (already) {
+    return new Error(`Câu hỏi này đã có trong ngân hàng (số ${already[1]}).`);
+  }
+  if (/không nằm trong danh sách lựa chọn/.test(msg)
+    || /Mã lựa chọn bị lặp/.test(msg)
+    || /phải có mã/.test(msg)) {
+    return new Error(msg);
+  }
+  if (err?.code === '42501' || /row-level security/i.test(msg)) {
+    return new Error('Không có quyền ghi vào ngân hàng câu hỏi.');
+  }
+  return new Error(msg || 'Không lưu được câu hỏi.');
+}
+
+export async function createQuizQuestionAPI(
+  payload: {
+    QuestionText: string;
+    Options: QuizOption[];
+    CorrectAnswers: string[];
+    Sources: string[];
+    Topic: string | null;
+  }
+): Promise<QuizQuestion> {
+  const { data: auth } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('QuizQuestions')
+    .insert({ ...payload, CreatedBy: auth?.user?.id ?? null })
+    .select();
+  if (error) throw quizDbError(error);
+  if (!data || data.length === 0) throw new Error('Không lưu được câu hỏi.');
+  return data[0];
+}
+
+export async function deleteQuizQuestionAPI(id: number): Promise<void> {
+  const { error, count } = await supabase
+    .from('QuizQuestions')
+    .delete({ count: 'exact' })
+    .eq('Id', id);
+  if (error) throw quizDbError(error);
+  if (count === 0) {
+    throw new Error('Không xoá được. Chỉ admin hoặc người đã thêm câu hỏi mới xoá được.');
+  }
+}
+
+export async function seedQuizBankAPI(questions: unknown[]): Promise<number> {
+  const { data, error } = await supabase.rpc('seed_quiz_bank', { p_questions: questions });
+  if (error) throw quizDbError(error);
+  return Number(data) || 0;
 }

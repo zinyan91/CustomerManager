@@ -2,147 +2,12 @@ import React from 'react';
 import { Download, Printer } from 'lucide-react';
 import type { UiClasses } from '../../lib/uiClasses';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
-import { downloadTextFile, MIME_DOC } from '../../lib/xlsExport';
+import { downloadBytes } from '../../lib/xlsExport';
+import { htmlToDocx, MIME_DOCX } from '../../lib/docxWriter';
 import { Toast, useToast } from '../Toast';
 
-function exportToWordDoc(filename: string, docHtml: string) {
-  const wordDocumentHtml = `
-    <html xmlns:v="urn:schemas-microsoft-com:vml"
-          xmlns:o="urn:schemas-microsoft-com:office:office"
-          xmlns:w="urn:schemas-microsoft-com:office:word"
-          xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
-          xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-      <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-      <title>${filename}</title>
-      <!--[if gte mso 9]>
-      <xml>
-        <w:WordDocument>
-          <w:View>Print</w:View>
-          <w:Zoom>100</w:Zoom>
-          <w:DoNotOptimizeForBrowser/>
-          <w:ValidateAgainstSchemas/>
-          <w:SaveIfXMLInvalid>false</w:SaveIfXMLInvalid>
-          <w:IgnoreMixedContent>false</w:IgnoreMixedContent>
-          <w:AlwaysShowPlaceholderText>false</w:AlwaysShowPlaceholderText>
-          <w:Compatibility>
-            <w:BreakWrappedTables/>
-            <w:SnapToGridInCell/>
-            <w:WrapTextWithPunct/>
-            <w:UseAsianBreakRules/>
-            <w:UseWord2010TableStyleRules/>
-          </w:Compatibility>
-        </w:WordDocument>
-      </xml>
-      <![endif]-->
-      <style>
-        @page {
-          size: 210mm 297mm;
-          margin: 25mm 20mm 20mm 30mm;
-          mso-header-margin: 36.0pt;
-          mso-footer-margin: 36.0pt;
-          mso-paper-source: 0;
-        }
-        @page WordSection1 {
-          size: 210mm 297mm;
-          margin: 25mm 20mm 20mm 30mm;
-        }
-        div.WordSection1 { page: WordSection1; }
-        body, p, td, th, div, span {
-          font-family: 'Times New Roman', Times, serif !important;
-          font-size: 13.0pt;
-          line-height: 1.35;
-          color: #000000;
-        }
-        h1 {
-          text-align: center !important;
-          font-size: 16.0pt !important;
-          font-weight: bold !important;
-          text-transform: uppercase !important;
-          margin-top: 14.0pt !important;
-          margin-bottom: 12.0pt !important;
-          font-family: 'Times New Roman', Times, serif !important;
-        }
-        h2 {
-          font-size: 13.0pt !important;
-          font-weight: bold !important;
-          text-transform: uppercase !important;
-          margin-top: 12.0pt !important;
-          margin-bottom: 6.0pt !important;
-          text-align: left !important;
-          font-family: 'Times New Roman', Times, serif !important;
-        }
-        p {
-          margin-top: 3.0pt;
-          margin-bottom: 6.0pt;
-          line-height: 1.35;
-        }
-        p.clause-p {
-          margin-top: 4.0pt !important;
-          margin-bottom: 6.0pt !important;
-          text-align: justify !important;
-          text-indent: 36.0pt !important;
-          line-height: 1.35 !important;
-        }
-        .no-indent { text-indent: 0pt !important; }
-        p.item-p {
-          text-indent: 0pt !important;
-          margin-top: 2.0pt !important;
-          margin-bottom: 2.0pt !important;
-          margin-left: 14.0pt !important;
-          text-align: justify !important;
-          line-height: 1.5 !important;
-        }
-        .text-center { text-align: center !important; }
-        .text-right { text-align: right !important; }
-        .font-bold { font-weight: bold !important; }
-        .font-italic { font-style: italic !important; }
-        table {
-          border-collapse: collapse !important;
-          mso-table-lspace: 0pt !important;
-          mso-table-rspace: 0pt !important;
-        }
-        table.table-doc {
-          width: 100% !important;
-          margin-top: 10.0pt !important;
-          margin-bottom: 10.0pt !important;
-          border-collapse: collapse !important;
-        }
-        table.table-doc th, table.table-doc td {
-          border: 1.0pt solid #000000 !important;
-          padding: 4.0pt 6.0pt !important;
-          font-size: 11.0pt !important;
-          vertical-align: middle !important;
-        }
-        table.sig-table {
-          width: 100% !important;
-          margin-top: 20.0pt !important;
-          border-collapse: collapse !important;
-          border: none !important;
-        }
-        div.sig-space {
-          line-height: 1.25 !important;
-          mso-line-height-rule: exactly;
-        }
-        table.sig-table td {
-          line-height: 1.25 !important;
-          width: 50% !important;
-          text-align: center !important;
-          vertical-align: top !important;
-          border: none !important;
-          padding: 4.0pt !important;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="WordSection1">
-        ${docHtml}
-      </div>
-    </body>
-    </html>
-  `;
-
-  downloadTextFile('\uFEFF' + wordDocumentHtml, `${filename}.doc`, MIME_DOC);
+function exportToWordDocx(filename: string, docHtml: string) {
+  downloadBytes(htmlToDocx(docHtml), `${filename}.docx`, MIME_DOCX);
 }
 
 function exportToPDFOnly(filename: string, docHtml: string): boolean {
@@ -215,11 +80,11 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
         <div className="flex items-center space-x-2">
           <button
             type="button"
-            onClick={() => exportToWordDoc(docFilename, docHtml)}
+            onClick={() => exportToWordDocx(docFilename, docHtml)}
             className="flex items-center space-x-1.5 bg-accent hover:bg-accent text-accent-ink font-bold text-xs px-3.5 py-2 rounded-md transition-colors"
           >
             <Download className="w-4 h-4" />
-            <span>Tải Word (.doc)</span>
+            <span>Tải Word (.docx)</span>
           </button>
           <button
             type="button"

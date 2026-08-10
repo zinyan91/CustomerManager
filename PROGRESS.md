@@ -155,12 +155,16 @@ Kiểm chứng trên dữ liệu thật: CHÂU CÁT LƯỢNG (2 KUNN, 1 HĐTD, 1
 thông báo nêu đủ bốn số lượng; hồ sơ nháp không ràng buộc thì xoá được, 50 → 49. Chốt chống
 trôi cờ cũng kiểm chứng có chủ đích: lưu trữ → lưu HĐTD → cờ tự bỏ (48/1 → 49/0).
 
-**Hai việc còn treo, cố ý chưa làm vì ngoài phạm vi:**
+**Hai việc phát hiện thêm, đã làm nốt cùng ngày:**
 
-- `LoanContracts.CreditContractId` có hai ràng buộc mâu thuẫn: migration 14 đặt
-  `ON DELETE SET NULL`, migration 23 đặt `SET NOT NULL`. Xoá HĐTD còn KUNN thì Postgres cố
-  gán `NULL` vào cột `NOT NULL` và văng lỗi tiếng Anh. `ON DELETE RESTRICT` mới đúng ý định.
-- `deleteContractAPI` thiếu `.select()` y hệt lỗi #3.
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Migration 33 — `LoanContracts.CreditContractId` đổi sang `ON DELETE RESTRICT` | Migration 14 đặt `ON DELETE SET NULL`, migration 23 đặt `SET NOT NULL` — nhánh `SET NULL` **không bao giờ chạy được**, chỉ để lại lỗi 23502 tiếng Anh. `RESTRICT` mới đúng ý định đã có ở migration 22 và ở `CreditContractView` |
+| ✅ | `deleteContractAPI` thêm `.select()` | Cùng lỗi #3 của nút xoá KH, chỉ khác là ở nút xoá KUNN |
+| ✅ | Dịch lỗi 23503 sang tiếng Việt | `deleteCreditContractAPI` nêu đúng số KUNN đang vướng; `deleteCustomerAPI` nhắc nạp lại danh sách |
+
+Tên khoá ngoại do Postgres tự đặt lúc `ADD COLUMN ... REFERENCES` nên migration 33 **tra theo
+quan hệ rồi mới xoá**, không viết cứng tên vào script.
 
 ### Phương án kinh doanh & Hạn mức — thay bộ bốn file Excel
 

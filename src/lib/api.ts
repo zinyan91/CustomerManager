@@ -117,7 +117,14 @@ export async function deleteCustomerAPI(id: number): Promise<void> {
   if (blocked) throw new Error(blocked);
 
   const { data, error } = await supabase.from('Customers').delete().eq('Id', id).select();
-  if (error) throw error;
+  if (error) {
+    if (error.code === '23503') {
+      throw new Error(
+        'Không xoá được hồ sơ: vẫn còn bản ghi tín dụng gắn với khách hàng này. Nạp lại danh sách rồi thử lại.'
+      );
+    }
+    throw error;
+  }
   if (!data || data.length === 0) {
     throw new Error('Xoá thất bại: bạn không có quyền xoá hồ sơ này, hoặc hồ sơ đã bị xoá trước đó.');
   }
@@ -399,7 +406,13 @@ export async function deleteCreditContractAPI(id: number): Promise<void> {
     .delete()
     .eq('Id', id)
     .select('Id');
-  if (error) throw error;
+  if (error) {
+    if (error.code === '23503') {
+      const n = await countKunnOfCreditContractAPI(id);
+      throw new Error(`Không xoá được HĐTD: còn ${n} KUNN đang gắn với hợp đồng này. Xoá KUNN trước.`);
+    }
+    throw error;
+  }
   if (!data || data.length === 0) {
     throw new Error('Không xoá được HĐTD: không có quyền hoặc hợp đồng đã bị xoá.');
   }
@@ -503,8 +516,17 @@ export async function fetchContractsByCustomerAPI(customerId: number): Promise<L
 }
 
 export async function deleteContractAPI(contractId: number): Promise<void> {
-  const { error } = await supabase.from('LoanContracts').delete().eq('Id', contractId);
+  if (!contractId) throw new Error('Thiếu khoản vay!');
+
+  const { data, error } = await supabase
+    .from('LoanContracts')
+    .delete()
+    .eq('Id', contractId)
+    .select('Id');
   if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Xoá thất bại: bạn không có quyền xoá KUNN này, hoặc khoản vay đã bị xoá trước đó.');
+  }
 }
 
 export async function fetchRepaymentSchedulesAPI(contractId: number): Promise<RepaymentSchedule[]> {

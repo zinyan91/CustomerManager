@@ -608,6 +608,16 @@ Ba điều kiện, thiếu một là hỏng, và cả ba từng cùng hỏng m�
 
 Điểm 3 nghe như chuyện thẩm mỹ nhưng cùng một gốc với §1: **một quy tắc chỉ cài ở một nơi**, kể cả quy tắc màu.
 
+### Xoá HĐTD — lớp bảo vệ thật nằm ở khoá ngoại
+
+`LoanContracts.CreditContractId` là `ON DELETE RESTRICT` (migration 33). Trước đó nó mang hai ràng buộc chọi nhau: migration 14 đặt `ON DELETE SET NULL`, migration 23 đặt `SET NOT NULL` — nên nhánh `SET NULL` **không bao giờ chạy được**, xoá HĐTD còn KUNN chỉ nhận lỗi 23502 bằng tiếng Anh.
+
+Ý định vốn đã rõ ở ba nơi khác: migration 22 chặn *đóng* HĐTD khi còn dư nợ, migration 23 buộc mọi KUNN gắn HĐTD, `CreditContractView` chặn *xoá* khi còn KUNN. Khoá ngoại chỉ là lớp cuối cùng nói lại đúng điều đó — chốt ở giao diện không phải lớp bảo vệ, cùng lý lẽ với RLS và unique index số KUNN.
+
+Lỗi `23503` từ ràng buộc này được dịch sang tiếng Việt kèm **số KUNN đang vướng**, không để lộ thông báo gốc của Postgres.
+
+Xoá khách hàng đi qua đây gián tiếp: `CreditContracts.CustomerId` là `ON DELETE CASCADE`, nên xoá khách kéo theo xoá HĐTD rồi chạm `RESTRICT`. Chốt đếm ràng buộc ở `deleteCustomerAPI` chặn trước, khoá ngoại đỡ phần còn lại.
+
 ---
 
 ## 10b. Phương án kinh doanh & Hạn mức

@@ -138,6 +138,7 @@ trên chính hồ sơ, và cố ý gọi là "lưu trữ" chứ không phải "�
 | ✅ | Bộ lọc ở tab Khách hàng | *Đang làm việc / Đã lưu trữ / Tất cả*, mặc định nhóm đầu, kèm số đếm; nút lưu trữ trên từng dòng |
 | ✅ | Chốt chống trôi cờ ở `api.ts` | `saveContractAPI` và `saveCreditContractAPI` tự xoá `ArchivedAt` khi ghi hợp đồng cho khách đang lưu trữ |
 | ✅ | Nút xoá KH — sửa ba lỗi | Xem bên dưới |
+| ✅ | Ràng buộc số liệu trên hồ sơ | CCCD 12 số, CMND 9 số, điện thoại 10 số, áp cho cả trường KHLQ. Chặn hai tầng: ô nhập không gõ thừa được, lúc lưu gom đủ mọi lỗi một lượt. 17 test. Đo trước khi đặt luật: dữ liệu hiện có 14/14 CCCD và 11/11 điện thoại đều đúng chuẩn |
 
 **Chốt chống trôi áp cho cả sửa lẫn tạo mới**, không riêng hợp đồng mới như kế hoạch ban
 đầu: sửa một KUNN của khách đang lưu trữ cũng là đang làm việc với khách đó, cờ lúc ấy

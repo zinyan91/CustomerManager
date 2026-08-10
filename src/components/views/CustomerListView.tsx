@@ -7,6 +7,10 @@ import {
   CUSTOMER_STATUS_LABEL, type CustomerStatusFilter,
 } from '../../lib/customerStatus';
 import { fmtDate, formatNationalId, parseNationalIdInput } from '../../lib/utils';
+import {
+  capDigits, validateCustomerForm,
+  NATIONAL_ID_CCCD_LENGTH, PHONE_LENGTH,
+} from '../../lib/customerValidation';
 import { Search, Plus, Eye, Trash2, X, UserCheck, Archive, ArchiveRestore } from 'lucide-react';
 import { Toast } from '../Toast';
 import { AdaptiveTable, type AdaptiveColumn } from '../AdaptiveTable';
@@ -144,6 +148,17 @@ export const CustomerListView: React.FC = () => {
 
     if (inputMaritalStatus === 'Đã kết hôn' && inputKhlqRelationship === 'Vợ / Chồng' && !inputSpouseName.trim()) {
       showNotify('error', 'Trạng thái "Đã kết hôn" yêu cầu nhập Họ tên Vợ / Chồng!');
+      return;
+    }
+
+    const loiSoLieu = validateCustomerForm({
+      nationalId: inputNationalId,
+      phone: inputPhone,
+      spouseNationalId: inputSpouseNationalId,
+      spousePhone: inputSpousePhone,
+    });
+    if (loiSoLieu.length > 0) {
+      showNotify('error', loiSoLieu.join(' '));
       return;
     }
 
@@ -358,8 +373,9 @@ export const CustomerListView: React.FC = () => {
                 <input
                   type="text"
                   placeholder="0700 9100..."
+                  inputMode="numeric"
                   value={formatNationalId(inputNationalId)}
-                  onChange={(e) => setInputNationalId(parseNationalIdInput(e.target.value))}
+                  onChange={(e) => setInputNationalId(capDigits(e.target.value, NATIONAL_ID_CCCD_LENGTH))}
                   className={`w-full rounded-md p-2.5 font-mono font-bold ${inputStyle}`}
                 />
               </div>
@@ -383,8 +399,9 @@ export const CustomerListView: React.FC = () => {
                 <input
                   type="text"
                   placeholder="0909123456..."
+                  inputMode="numeric"
                   value={inputPhone}
-                  onChange={(e) => setInputPhone(e.target.value)}
+                  onChange={(e) => setInputPhone(capDigits(e.target.value, PHONE_LENGTH))}
                   className={`w-full rounded-md p-2.5 ${inputStyle}`}
                 />
               </div>
@@ -482,8 +499,9 @@ export const CustomerListView: React.FC = () => {
                       <input
                         type="text"
                         placeholder="Số CCCD..."
+                        inputMode="numeric"
                         value={formatNationalId(inputSpouseNationalId)}
-                        onChange={(e) => setInputSpouseNationalId(parseNationalIdInput(e.target.value))}
+                        onChange={(e) => setInputSpouseNationalId(capDigits(e.target.value, NATIONAL_ID_CCCD_LENGTH))}
                         className={`w-full rounded-md p-2.5 font-mono ${inputStyle}`}
                       />
                     </div>
@@ -492,8 +510,9 @@ export const CustomerListView: React.FC = () => {
                       <input
                         type="text"
                         placeholder="SĐT..."
+                        inputMode="numeric"
                         value={inputSpousePhone}
-                        onChange={(e) => setInputSpousePhone(e.target.value)}
+                        onChange={(e) => setInputSpousePhone(capDigits(e.target.value, PHONE_LENGTH))}
                         className={`w-full rounded-md p-2.5 ${inputStyle}`}
                       />
                     </div>

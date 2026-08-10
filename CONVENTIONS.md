@@ -598,6 +598,23 @@ Hệ quả: tab này **không thể tự nhận ra ai đã tất toán**, nên t
 
 `ArchivedAt` là chuỗi rỗng đọc thành **chưa lưu trữ**, không phải đã lưu trữ — hồ sơ thà nằm lại danh sách làm việc còn hơn âm thầm biến mất.
 
+### Ràng buộc số liệu trên hồ sơ
+
+`src/lib/customerValidation.ts`. Hai tầng, cả hai đều cần:
+
+| Tầng | Làm gì |
+| :--- | :--- |
+| **Ô nhập** | `capDigits` lọc bỏ ký tự không phải số và cắt ở mức tối đa — gõ thừa không vào được, lỗi bị chặn ngay lúc phát sinh |
+| **Lúc lưu** | `validateCustomerForm` gom **đủ mọi lỗi một lượt**, nêu tên trường và **đang có bao nhiêu số**, không bắt banker sửa từng cái rồi lưu lại |
+
+Luật: CCCD **12 số**, CMND **9 số**, điện thoại **10 số**. Áp cho cả trường của KHLQ / Bảo lãnh.
+
+**Bỏ trống là hợp lệ** — đây không phải trường bắt buộc, chỉ khi có nhập mới xét độ dài. Nhầm chỗ này là chặn banker lưu hồ sơ mới chưa đủ giấy tờ.
+
+Chỉ chặn ở mức tối đa của **CCCD 12 số** tại ô nhập, không chặn ở 9: gõ CMND 9 số vẫn phải qua được cùng một ô.
+
+Đo trước khi đặt luật (10/08/2026): 14/14 CCCD đang có đều 12 số, 11/11 điện thoại đều 10 số — luật này không khoá ai khỏi sửa hồ sơ cũ. Ngoại lệ duy nhất là `SpousePhone` của ĐẶNG QUỐC KHÁNH chứa **hai số nhét chung một ô**; hồ sơ đó phải tách số trước khi lưu lại được.
+
 ### Xoá hồ sơ khách hàng
 
 Ba điều kiện, thiếu một là hỏng, và cả ba từng cùng hỏng một lúc:

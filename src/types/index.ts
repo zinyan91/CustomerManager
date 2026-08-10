@@ -22,6 +22,7 @@ export interface Customer {
   CreditRating?: string;
   CreditScore?: number;
   CicStatus?: string;
+  ArchivedAt?: string | null;
 }
 
 export interface Collateral {

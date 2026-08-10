@@ -1,8 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { UI } from '../../lib/uiClasses';
-import { fetchCustomersAPI, saveCustomerAPI, deleteCustomerAPI } from '../../lib/api';
+import React, { useEffect, useMemo, useState } from 'react';
+import { UI, BTN_DANGER } from '../../lib/uiClasses';
+import { fetchCustomersAPI, saveCustomerAPI, deleteCustomerAPI, setCustomerArchivedAPI } from '../../lib/api';
 import type { Customer } from '../../types';
-import { Search, Plus, Download, Upload, Eye, Trash2, X, UserCheck } from 'lucide-react';
+import {
+  filterCustomersByStatus, countCustomersByStatus, isCustomerArchived,
+  CUSTOMER_STATUS_LABEL, type CustomerStatusFilter,
+} from '../../lib/customerStatus';
+import { fmtDate } from '../../lib/utils';
+import { Search, Plus, Download, Upload, Eye, Trash2, X, UserCheck, Archive, ArchiveRestore } from 'lucide-react';
 import { Toast } from '../Toast';
 import { AdaptiveTable } from '../AdaptiveTable';
 
@@ -35,11 +40,36 @@ export const CustomerListView: React.FC = () => {
   const [inputSpouseAccountNumber, setInputSpouseAccountNumber] = useState('');
   const [inputKhlqAddress, setInputKhlqAddress] = useState('');
 
+  const [statusFilter, setStatusFilter] = useState<CustomerStatusFilter>('active');
+  const [archiving, setArchiving] = useState<number | null>(null);
+
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  const statusCounts = useMemo(() => countCustomersByStatus(customers), [customers]);
+  const visibleCustomers = useMemo(
+    () => filterCustomersByStatus(customers, statusFilter),
+    [customers, statusFilter]
+  );
+
+  const toggleArchived = async (cus: Customer) => {
+    const archived = isCustomerArchived(cus);
+    setArchiving(cus.Id);
+    try {
+      const saved = await setCustomerArchivedAPI(cus.Id, !archived);
+      setCustomers(prev => prev.map(c => (c.Id === cus.Id ? { ...c, ArchivedAt: saved.ArchivedAt } : c)));
+      showNotify('success', archived
+        ? `Đã đưa hồ sơ ${cus.FullName} trở lại danh sách làm việc.`
+        : `Đã lưu trữ hồ sơ ${cus.FullName}.`);
+    } catch (err: any) {
+      showNotify('error', err.message || 'Không đổi được trạng thái lưu trữ.');
+    } finally {
+      setArchiving(null);
+    }
+  };
 
   const showNotify = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -300,11 +330,25 @@ export const CustomerListView: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className={`${containerCardBg} lg:col-span-7 rounded-lg overflow-hidden border flex flex-col h-[calc(100vh-215px)]`}>
-          <div className={`p-3 border-b flex items-center justify-between bg-panel border-line`}>
-            <span className="text-xs font-bold">
-              DANH SÁCH KHÁCH HÀNG ({customers.length})
-            </span>
-            <span className="text-[11px] text-ink-faint">Bấm vào dòng để chọn/chỉnh sửa</span>
+          <div className={`p-3 border-b space-y-2 bg-panel border-line`}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold">
+                DANH SÁCH KHÁCH HÀNG ({visibleCustomers.length})
+              </span>
+              <span className="text-[11px] text-ink-faint">Bấm vào dòng để chọn/chỉnh sửa</span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {(['active', 'archived', 'ALL'] as CustomerStatusFilter[]).map(s => (
+                <button key={s} type="button" onClick={() => setStatusFilter(s)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold border transition-colors ${
+                    statusFilter === s
+                      ? 'bg-accent text-accent-ink border-accent'
+                      : 'bg-panel-muted text-ink-muted border-line'
+                  }`}>
+                  {CUSTOMER_STATUS_LABEL[s]} ({statusCounts[s]})
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="overflow-auto flex-1">
@@ -312,21 +356,35 @@ export const CustomerListView: React.FC = () => {
               <div className="text-center p-8 text-ink-faint text-xs">Đang tải dữ liệu khách hàng...</div>
             ) : (
               <AdaptiveTable
-                rows={customers}
+                rows={visibleCustomers}
                 rowKey={c => c.Id}
                 onRowClick={handleSelectCustomer}
                 isSelected={c => selectedCustomer?.Id === c.Id}
-                emptyText="Không tìm thấy khách hàng nào."
+                emptyText={statusFilter === 'archived'
+                  ? 'Chưa có hồ sơ nào được lưu trữ.'
+                  : 'Không tìm thấy khách hàng nào.'}
                 cardTitle={c => c.FullName}
                 cardSubtitle={c => c.CifKh}
                 actions={c => (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDetailCustomer(c); setIsModalOpen(true); }}
-                    className="border border-line text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-md text-[11px] font-semibold inline-flex items-center space-x-1 transition-colors duration-150"
-                  >
-                    <Eye className="w-3 h-3" />
-                    <span>Xem</span>
-                  </button>
+                  <div className="inline-flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDetailCustomer(c); setIsModalOpen(true); }}
+                      className="border border-line text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-md text-[11px] font-semibold inline-flex items-center space-x-1 transition-colors duration-150"
+                    >
+                      <Eye className="w-3 h-3" />
+                      <span>Xem</span>
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleArchived(c); }}
+                      disabled={archiving === c.Id}
+                      title={isCustomerArchived(c) ? 'Bỏ lưu trữ' : 'Lưu trữ hồ sơ'}
+                      className="border border-line text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-md text-[11px] font-semibold inline-flex items-center transition-colors duration-150 disabled:opacity-60"
+                    >
+                      {isCustomerArchived(c)
+                        ? <ArchiveRestore className="w-3 h-3" />
+                        : <Archive className="w-3 h-3" />}
+                    </button>
+                  </div>
                 )}
                 columns={[
           { key: 'cif', label: 'Mã CIF', priority: 1,
@@ -338,6 +396,14 @@ export const CustomerListView: React.FC = () => {
           { key: 'khlq', label: 'KHLQ / Người bảo lãnh', priority: 2,
                     render: c => c.SpouseName
                       ? <span className="text-ink">{c.SpouseName}</span>
+                      : <span className="text-ink-faint">–</span> },
+          { key: 'luuTru', label: 'Lưu trữ', priority: 2, align: 'center',
+                    render: c => isCustomerArchived(c)
+                      ? (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-panel-muted border-line text-ink-faint whitespace-nowrap">
+                          {fmtDate(String(c.ArchivedAt).slice(0, 10))}
+                        </span>
+                      )
                       : <span className="text-ink-faint">–</span> },
           { key: 'quanHe', label: 'Mối quan hệ', priority: 1,
                     render: c => {
@@ -565,7 +631,7 @@ export const CustomerListView: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleDeleteCustomer}
-                  className="bg-neg hover:bg-neg-soft text-neg border border-neg/30 font-bold text-xs py-3 px-4 rounded-md transition-colors flex items-center space-x-1"
+                  className={`${BTN_DANGER} text-xs py-3 px-4 flex items-center space-x-1`}
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>XOÁ KH</span>

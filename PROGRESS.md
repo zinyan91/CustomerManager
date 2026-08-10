@@ -102,6 +102,8 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 | ✅ | Đồng bộ nhãn xếp loại TSĐB | Loại 1–4 và Hạn chế, bỏ tiền tố BĐS và phần trăm trong ngoặc, dùng chung ở Dashboard, bảng TSĐB, thẻ tín dụng |
 | ✅ | Phân hệ Kiểm soát sau vay | Ba loại kiểm tra, lịch sinh tự động, ghi nhận kết quả, định giá lại ngay trong đợt kiểm tra hiện trạng tài sản. 29 test cho phần lõi |
 | ✅ | Lọc đợt kiểm soát sau vay theo khách hàng | Dùng chung `selectedCustomerId` của `WorkContext`, mặc định tất cả. Vẫn nhắc số đợt quá hạn toàn danh mục khi đang lọc để không mất khả năng giám sát |
+| ✅ | Lưu trữ hồ sơ khách hàng | Cột `Customers.ArchivedAt` (migration 32), bộ lọc ba nhóm ở tab Khách hàng. Cờ thủ công, KHÔNG suy từ dư nợ — tab Khách hàng cố ý không nạp KUNN/HĐTD |
+| ✅ | Nút xoá KH — ba lỗi | Chữ đỏ trên nền đỏ nên vô hình; không kiểm tra ràng buộc trước khi xoá; thiếu `.select()` nên RLS chặn vẫn báo thành công |
 | ✅ | Phân hệ Phương án kinh doanh & Hạn mức | Thay bộ bốn file Excel của banker. Hai chế độ: cấp hạn mức (xuất 3 phụ lục) và cho vay từng lần (xuất 2). Bảng `BusinessPlans` + `BusinessPlanDebts` (migration 31), 43 test lõi + 24 test phụ lục + 4 test dựng màn hình. Xem mục ngày 09/08/2026 |
 | 🕐 | Màn hình quản trị người dùng | Bỏ qua theo quyết định 05/08/2026: chưa cần cấp tài khoản cho người dùng khác. Khi làm thì **bắt buộc qua Edge Function** — không đưa `service_role` key vào frontend |
 
@@ -121,6 +123,44 @@ Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có c
 
 
 ## Ngày 09/08/2026
+
+### Tab Khách hàng — lưu trữ hồ sơ và ba lỗi ở nút xoá
+
+Câu hỏi ban đầu: tách hồ sơ khách hàng đã tất toán ra khỏi danh sách. Chốt lại là
+**không** kéo dư nợ vào tab Khách hàng — nó là danh bạ hồ sơ, thêm KUNN và HĐTD vào
+là biến nó thành bản sao của tab Khoản vay. Vì vậy trạng thái này là **cờ thủ công**
+trên chính hồ sơ, và cố ý gọi là "lưu trữ" chứ không phải "đã tất toán".
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Migration 32 — `Customers.ArchivedAt` | Một cột mang cả cờ lẫn ngày. `NULL` là đang làm việc. Đã chạy và kiểm chứng 09/08/2026: `timestamp with time zone`, nullable, 49 đang làm việc / 0 đã lưu trữ |
+| ✅ | `customerStatus.ts` | Lọc và đếm ba nhóm, 17 test |
+| ✅ | Bộ lọc ở tab Khách hàng | *Đang làm việc / Đã lưu trữ / Tất cả*, mặc định nhóm đầu, kèm số đếm; nút lưu trữ trên từng dòng |
+| ✅ | Chốt chống trôi cờ ở `api.ts` | `saveContractAPI` và `saveCreditContractAPI` tự xoá `ArchivedAt` khi ghi hợp đồng cho khách đang lưu trữ |
+| ✅ | Nút xoá KH — sửa ba lỗi | Xem bên dưới |
+
+**Chốt chống trôi áp cho cả sửa lẫn tạo mới**, không riêng hợp đồng mới như kế hoạch ban
+đầu: sửa một KUNN của khách đang lưu trữ cũng là đang làm việc với khách đó, cờ lúc ấy
+đã sai rồi.
+
+**Ba lỗi ở nút xoá KH**, cả ba đều thật và độc lập nhau:
+
+| # | Lỗi | Nguyên nhân |
+| :--- | :--- | :--- |
+| 1 | Nút hiện ra là khối đỏ đặc, không đọc được chữ | `bg-neg` ghép với `text-neg` — nền và chữ cùng một token màu. Icon dùng `currentColor` nên cũng vô hình. Dự án đã có `BTN_DANGER` làm đúng việc này, nút tự viết lại lớp màu bằng tay |
+| 2 | Không kiểm tra ràng buộc nào trước khi xoá | `deleteCollateralAPI` ngay bên cạnh thì chặn khi tài sản đang thế chấp; nút xoá KH bị bỏ quên khỏi khuôn đó |
+| 3 | Báo "Đã xoá thành công" khi thực ra không xoá được gì | Thiếu `.select()` — đúng cái bẫy RLS ghi ở `CONVENTIONS.md` §1: Supabase trả mảng rỗng mà không báo lỗi |
+
+Kiểm chứng trên dữ liệu thật: CHÂU CÁT LƯỢNG (2 KUNN, 1 HĐTD, 1 TSĐB, 1 thẻ) bị chặn kèm
+thông báo nêu đủ bốn số lượng; hồ sơ nháp không ràng buộc thì xoá được, 50 → 49. Chốt chống
+trôi cờ cũng kiểm chứng có chủ đích: lưu trữ → lưu HĐTD → cờ tự bỏ (48/1 → 49/0).
+
+**Hai việc còn treo, cố ý chưa làm vì ngoài phạm vi:**
+
+- `LoanContracts.CreditContractId` có hai ràng buộc mâu thuẫn: migration 14 đặt
+  `ON DELETE SET NULL`, migration 23 đặt `SET NOT NULL`. Xoá HĐTD còn KUNN thì Postgres cố
+  gán `NULL` vào cột `NOT NULL` và văng lỗi tiếng Anh. `ON DELETE RESTRICT` mới đúng ý định.
+- `deleteContractAPI` thiếu `.select()` y hệt lỗi #3.
 
 ### Phương án kinh doanh & Hạn mức — thay bộ bốn file Excel
 

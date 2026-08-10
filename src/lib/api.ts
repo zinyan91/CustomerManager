@@ -3,6 +3,9 @@ import type { Customer, Collateral, LoanContract, CreditContract, CreditCard, Re
 import { defaultLtvForAssetType } from './collateralMath';
 import { toIsoDate } from './utils';
 import { findKunnNumberClash } from './creditContract';
+import {
+  customerDeleteBlockers, customerDeleteBlockedMessage, type CustomerLinkCounts,
+} from './customerStatus';
 import type {
   RateProgram, RateProgramTier, RateProgramPrepaymentFee,
   RateProgramFbeCode, DepositRateAuthority,
@@ -86,9 +89,38 @@ export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Cust
   }
 }
 
-export async function deleteCustomerAPI(id: number): Promise<void> {
-  const { error } = await supabase.from('Customers').delete().eq('Id', id);
+async function countRowsFor(table: string, customerId: number): Promise<number> {
+  const { count, error } = await supabase
+    .from(table)
+    .select('Id', { count: 'exact', head: true })
+    .eq('CustomerId', customerId);
   if (error) throw error;
+  return count || 0;
+}
+
+export async function fetchCustomerLinkCountsAPI(customerId: number): Promise<CustomerLinkCounts> {
+  const [kunn, hdtd, collaterals, cards] = await Promise.all([
+    countRowsFor('LoanContracts', customerId),
+    countRowsFor('CreditContracts', customerId),
+    countRowsFor('Collaterals', customerId),
+    countRowsFor('CreditCards', customerId),
+  ]);
+  return { kunn, hdtd, collaterals, cards };
+}
+
+export async function deleteCustomerAPI(id: number): Promise<void> {
+  if (!id) throw new Error('Thiếu khách hàng!');
+
+  const blocked = customerDeleteBlockedMessage(
+    customerDeleteBlockers(await fetchCustomerLinkCountsAPI(id))
+  );
+  if (blocked) throw new Error(blocked);
+
+  const { data, error } = await supabase.from('Customers').delete().eq('Id', id).select();
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw new Error('Xoá thất bại: bạn không có quyền xoá hồ sơ này, hoặc hồ sơ đã bị xoá trước đó.');
+  }
 }
 
 export async function fetchCollateralsAPI(): Promise<Collateral[]> {
@@ -244,6 +276,7 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
       .select('*, customer:Customers(*)')
       .single();
     if (error) throw kunnNumberError(error, contractNumber);
+    await unarchiveCustomer(data?.CustomerId);
     return data;
   } else {
     const { data, error } = await supabase
@@ -252,8 +285,39 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
       .select('*, customer:Customers(*)')
       .single();
     if (error) throw kunnNumberError(error, contractNumber);
+    await unarchiveCustomer(data?.CustomerId);
     return data;
   }
+}
+
+export async function setCustomerArchivedAPI(
+  customerId: number, archived: boolean
+): Promise<Customer> {
+  if (!customerId) throw new Error('Thiếu khách hàng!');
+
+  const { data, error } = await supabase
+    .from('Customers')
+    .update({ ArchivedAt: archived ? new Date().toISOString() : null })
+    .eq('Id', customerId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  if (!data) {
+    throw new Error(archived
+      ? 'Không lưu trữ được hồ sơ: không có dòng nào bị tác động.'
+      : 'Không bỏ lưu trữ được hồ sơ: không có dòng nào bị tác động.');
+  }
+  return data;
+}
+
+async function unarchiveCustomer(customerId?: number | null): Promise<void> {
+  if (!customerId) return;
+  await supabase
+    .from('Customers')
+    .update({ ArchivedAt: null })
+    .eq('Id', customerId)
+    .not('ArchivedAt', 'is', null);
 }
 
 async function assertKunnNumberFree(contractNumber: string, selfId?: number | null): Promise<void> {
@@ -325,6 +389,7 @@ export async function saveCreditContractAPI(cc: Partial<CreditContract>): Promis
     }
     throw error;
   }
+  await unarchiveCustomer(data?.CustomerId);
   return data;
 }
 

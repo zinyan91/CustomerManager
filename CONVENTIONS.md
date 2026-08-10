@@ -584,6 +584,32 @@ Văn bản ghi rõ các kỳ này **chỉ áp dụng với khoản vay giải ng
 
 ---
 
+## 9b. Lưu trữ hồ sơ khách hàng
+
+Tab Khách hàng là **danh bạ hồ sơ**. Nó cố ý chỉ nạp bảng `Customers` — không KUNN, không HĐTD, không thẻ. Kéo dư nợ vào đó là biến nó thành bản sao của tab Khoản vay.
+
+Hệ quả: tab này **không thể tự nhận ra ai đã tất toán**, nên trạng thái ấy là cờ thủ công `Customers.ArchivedAt` (migration 32) do banker đánh dấu.
+
+**Gọi là "lưu trữ", không gọi là "đã tất toán".** Cờ do người gõ tay không bảo đảm được điều gì về nợ; gắn nhãn "đã tất toán" lên nó là tạo nguồn thứ hai mâu thuẫn với dư nợ thật — đúng lỗi mà `isKunnSettled` từng gây ra khi suy trạng thái tất toán từ `IsClosed` của HĐTD (§2). "Lưu trữ" thì trung thực: *hồ sơ này tôi không làm việc nữa*, không nói gì về nợ.
+
+**Một cột mang cả cờ lẫn ngày.** `NULL` là đang làm việc. Hai cột `IsArchived` + ngày sẽ tạo ra trạng thái vô lý "cờ bật mà ngày rỗng".
+
+**Chốt chống trôi nằm ở `api.ts`, không ở tab Khách hàng.** `saveContractAPI` và `saveCreditContractAPI` tự xoá `ArchivedAt` khi ghi hợp đồng cho khách đang lưu trữ — áp cho **cả sửa lẫn tạo mới**, vì sửa một KUNN của khách đang lưu trữ cũng là đang làm việc với khách đó. Đặt ở lớp dữ liệu thì tab Khách hàng vẫn sạch mà cờ không mâu thuẫn được với thực tế. Dữ liệu nhập thẳng bằng SQL thì không đi qua đây; migration 32 có sẵn câu rà soát.
+
+`ArchivedAt` là chuỗi rỗng đọc thành **chưa lưu trữ**, không phải đã lưu trữ — hồ sơ thà nằm lại danh sách làm việc còn hơn âm thầm biến mất.
+
+### Xoá hồ sơ khách hàng
+
+Ba điều kiện, thiếu một là hỏng, và cả ba từng cùng hỏng một lúc:
+
+1. **Kiểm tra ràng buộc trước.** Còn KUNN, HĐTD, TSĐB hay thẻ thì chặn, nêu **số lượng từng loại** để banker biết gỡ từ đâu — cùng khuôn với `deleteCollateralAPI`. Thông báo chỉ luôn lối thoát là **lưu trữ**, vì phần lớn trường hợp bấm xoá thực ra chỉ muốn hồ sơ biến khỏi danh sách.
+2. **`.select()` rồi đếm số dòng.** RLS chặn thì Supabase trả mảng rỗng **không kèm lỗi**, và giao diện sẽ báo "Đã xoá thành công" trên một hồ sơ vẫn còn nguyên.
+3. **Nút phải đọc được.** Bản cũ ghép `bg-neg` với `text-neg` — nền và chữ cùng token màu nên nút là khối đỏ đặc, icon `currentColor` cũng biến mất. Dùng `BTN_DANGER` trong `uiClasses.ts`, đừng tự viết lại lớp màu.
+
+Điểm 3 nghe như chuyện thẩm mỹ nhưng cùng một gốc với §1: **một quy tắc chỉ cài ở một nơi**, kể cả quy tắc màu.
+
+---
+
 ## 10b. Phương án kinh doanh & Hạn mức
 
 Thay bộ bốn file Excel của banker. Logic ở `src/lib/businessPlan.ts`, phụ lục ở `src/lib/businessPlanExport.ts`, dữ liệu ở `BusinessPlans` / `BusinessPlanDebts` (migration 31). Đối tượng là **khách hàng cá nhân và hộ kinh doanh**, không phải doanh nghiệp.

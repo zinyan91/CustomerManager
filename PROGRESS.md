@@ -834,6 +834,16 @@ trigger**: hàm tự lọc trước để trigger không phải nổ, còn nếu
 
 Lọc trùng ở **hai chiều**: với bảng đang có, và với chính tệp (tệp tự trùng thì giữ bản đầu).
 
+**Migration 41 gỡ `SECURITY DEFINER` khỏi hàm này.** Tôi đặt nó theo quán tính khi chép khuôn
+từ `seed_quiz_bank`, nhưng `import_quiz_questions` chỉ làm đúng những gì RLS vốn cho phép
+người đăng nhập làm — bằng chứng: màn hình vẫn `INSERT` thẳng từ client và chạy được. Không
+phải lỗ hổng, nhưng là đặc quyền thừa: nếu hàm về sau có lỗi thì lỗi ấy leo quyền theo.
+`seed_quiz_bank` giữ nguyên vì nó thật sự cần bật cờ `app.quiz_seed`.
+
+Bẫy đi kèm: bản cũ kiểm tra đăng nhập bằng `SELECT 1 FROM auth.users`. Dưới `SECURITY DEFINER`
+thì chạy được vì chủ sở hữu đọc được bảng đó; đổi sang `SECURITY INVOKER` là hàm **đổ ngay
+dòng đầu** vì `authenticated` không chắc đọc được `auth.users`. Thay bằng `auth.uid() IS NULL`.
+
 **Câu trùng nội dung mà đáp án khác bản đang có** — ca đáng chú ý nhất, vì bộ gốc đã có 3 cụm
 như vậy (xem §31). Xử lý: **bỏ, không ghi đè**, và liệt kê riêng ở `lech_dap_an` kèm cả hai
 đáp án cạnh nhau. Hệ thống không tự chọn bản nào. Muốn lấy bản trong tệp thì xoá bản cũ rồi

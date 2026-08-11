@@ -850,6 +850,10 @@ Migration 38 để ràng buộc `array_length("CorrectAnswers", 1) >= 1`, mà m�
 
 **Hai đường nạp, không dùng lẫn.** `seed_quiz_bank` chỉ chạy trên bảng **rỗng** và cố ý **bỏ qua** chống trùng — đó là đường duy nhất mang được 9 cụm trùng có sẵn của bộ gốc vào. `import_quiz_questions` (migration 40) là đường nạp thêm khi bảng **đã có** dữ liệu và **bỏ** câu trùng.
 
+**Chỉ `seed_quiz_bank` là `SECURITY DEFINER`**, vì nó phải bật cờ phiên `app.quiz_seed` — đặc quyền có lý do. `import_quiz_questions` là `SECURITY INVOKER` (migration 41): nó chỉ làm đúng những gì RLS vốn cho phép người đăng nhập làm, nên `SECURITY DEFINER` không mua thêm gì mà để lại một hàm chạy dưới quyền chủ sở hữu.
+
+Kèm theo đó một bẫy phải nhớ: **hàm `SECURITY INVOKER` không được kiểm tra đăng nhập bằng `SELECT … FROM auth.users`** — `authenticated` không chắc đọc được bảng đó, và hàm sẽ đổ ngay dòng đầu. Hỏi `auth.uid() IS NULL` thay vào.
+
 `import_quiz_questions` chạy **vòng lặp với `BEGIN…EXCEPTION` từng dòng**, không phải một câu `INSERT`. Lý do: trigger chống trùng nổ exception, mà một exception làm đổ cả câu `INSERT` — nạp 500 câu có 30 câu trùng thì mất cả 500. `plpgsql` tự đặt savepoint quanh khối `EXCEPTION` nên một dòng lỗi chỉ mất dòng đó. Hàm **không tắt trigger**: nó tự lọc trước để trigger không phải nổ, còn nếu có nổ (đua ghi) thì khối `EXCEPTION` hứng và ghi vào báo cáo.
 
 Hàm trả báo cáo tách **bốn loại**, không gộp thành một con số: `da_nap`, `trung_trong_ngan_hang`, `trung_trong_file` (tệp tự trùng với chính nó, giữ bản đầu), `khong_hop_le`. Và riêng `lech_dap_an` — câu trùng nội dung nhưng **đáp án khác bản đang có**. Câu đó **bị bỏ, không ghi đè**, và nêu cả hai đáp án cạnh nhau để người có thẩm quyền quyết — cùng nguyên tắc với 3 cụm lệch đáp án của bộ gốc. Bỏ âm thầm là để người dùng tưởng đã nạp.

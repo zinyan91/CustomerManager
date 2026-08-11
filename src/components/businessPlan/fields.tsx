@@ -36,18 +36,29 @@ export const MoneyField: React.FC<FieldProps & { unit: MoneyUnit }> = ({
   );
 };
 
-export const PercentField: React.FC<FieldProps> = ({ label, value, onChange, hint }) => (
-  <label className="block">
-    <span className={`block mb-1 text-[11px] ${UI.labelStyle}`}>{label}</span>
-    <div className="relative">
-      <input type="text" inputMode="decimal" value={value === 0 ? '' : String(value)}
-        onChange={e => onChange(parseMoneyDecimalInput(e.target.value))}
-        className={`${baseInput} pr-6`} />
-      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-ink-faint">%</span>
-    </div>
-    {hint && <span className="block mt-0.5 text-[10px] text-ink-faint">{hint}</span>}
-  </label>
-);
+export const PercentField: React.FC<FieldProps> = ({ label, value, onChange, hint }) => {
+  const [dangGo, setDangGo] = React.useState<string | null>(null);
+  return (
+    <label className="block">
+      <span className={`block mb-1 text-[11px] ${UI.labelStyle}`}>{label}</span>
+      <div className="relative">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={dangGo ?? (value === 0 ? '' : String(value))}
+          onChange={e => {
+            setDangGo(e.target.value);
+            onChange(parseMoneyDecimalInput(e.target.value));
+          }}
+          onBlur={() => setDangGo(null)}
+          className={`${baseInput} pr-6`}
+        />
+        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-ink-faint">%</span>
+      </div>
+      {hint && <span className="block mt-0.5 text-[10px] text-ink-faint">{hint}</span>}
+    </label>
+  );
+};
 
 export const CountField: React.FC<FieldProps & { suffix?: string }> = ({
   label, value, onChange, suffix, hint,

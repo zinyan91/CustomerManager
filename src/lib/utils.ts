@@ -37,15 +37,48 @@ export function parseMoneyInput(value: string): number {
   return parseFloat(digits) || 0;
 }
 
-export function parseMoneyDecimalInput(value: string): number {
+export function parseDecimalNumber(value: string): number {
   if (!value) return 0;
-  const sep = NUMBER_SEPARATORS[loadFormatSettings().numberStyle] ?? NUMBER_SEPARATORS.vi;
-  const cleaned = value
-    .split(sep.group).join('')
-    .replace(sep.decimal, '.')
-    .replace(/[^\d.-]/g, '');
+  const s = String(value).trim();
+  if (!s) return 0;
+
+  const hasDot = s.includes('.');
+  const hasComma = s.includes(',');
+
+  let cleaned = '';
+  if (hasDot && hasComma) {
+    const lastDot = s.lastIndexOf('.');
+    const lastComma = s.lastIndexOf(',');
+    if (lastDot > lastComma) {
+      cleaned = s.replace(/,/g, '');
+    } else {
+      cleaned = s.replace(/\./g, '').replace(',', '.');
+    }
+  } else if (hasDot) {
+    const dotCount = (s.match(/\./g) || []).length;
+    if (dotCount === 1) {
+      cleaned = s;
+    } else {
+      cleaned = s.replace(/\./g, '');
+    }
+  } else if (hasComma) {
+    const commaCount = (s.match(/,/g) || []).length;
+    if (commaCount === 1) {
+      cleaned = s.replace(',', '.');
+    } else {
+      cleaned = s.replace(/,/g, '');
+    }
+  } else {
+    cleaned = s;
+  }
+
+  cleaned = cleaned.replace(/[^\d.-]/g, '');
   const n = parseFloat(cleaned);
   return isNaN(n) ? 0 : n;
+}
+
+export function parseMoneyDecimalInput(value: string): number {
+  return parseDecimalNumber(value);
 }
 
 export function fmtMoney(v?: number | null): string {

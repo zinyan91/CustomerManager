@@ -15,6 +15,8 @@ import {
   getMasterHdtdNumber,
   formatNationalId,
   parseNationalIdInput,
+  parseDecimalNumber,
+  parseMoneyDecimalInput,
 } from '../utils';
 import type { LoanContract } from '../../types';
 
@@ -344,5 +346,32 @@ describe('stripLegacyNoteBlobs', () => {
 
   it('gỡ nhiều dòng trống còn lại, không để lại khoảng trắng thừa', () => {
     expect(stripLegacyNoteBlobs('HĐTD: X\n\n\nGhi chú\n\n')).toBe('Ghi chú');
+  });
+});
+
+describe('parseDecimalNumber / parseMoneyDecimalInput', () => {
+  it('đọc đúng số thập phân có dấu chấm (vd hệ số dự phóng 1.2, 1.25)', () => {
+    expect(parseDecimalNumber('1.2')).toBe(1.2);
+    expect(parseDecimalNumber('1.25')).toBe(1.25);
+    expect(parseMoneyDecimalInput('1.2')).toBe(1.2);
+  });
+
+  it('đọc đúng số thập phân có dấu phẩy (vd 1,2 hoặc 1,25)', () => {
+    expect(parseDecimalNumber('1,2')).toBe(1.2);
+    expect(parseDecimalNumber('1,25')).toBe(1.25);
+    expect(parseMoneyDecimalInput('1,2')).toBe(1.2);
+  });
+
+  it('đọc đúng số nguyên và số 0', () => {
+    expect(parseDecimalNumber('1')).toBe(1);
+    expect(parseDecimalNumber('0')).toBe(0);
+    expect(parseDecimalNumber('')).toBe(0);
+  });
+
+  it('đọc đúng số tiền lớn có phân cách hàng ngàn bằng dấu chấm hoặc phẩy', () => {
+    expect(parseDecimalNumber('1.000.000')).toBe(1000000);
+    expect(parseDecimalNumber('1,000,000')).toBe(1000000);
+    expect(parseDecimalNumber('1.234,56')).toBe(1234.56);
+    expect(parseDecimalNumber('1,234.56')).toBe(1234.56);
   });
 });

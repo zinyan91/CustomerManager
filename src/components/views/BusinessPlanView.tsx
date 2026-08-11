@@ -63,9 +63,18 @@ export const BusinessPlanView: React.FC = () => {
     }
   };
 
+  const [growthFactorStr, setGrowthFactorStr] = useState<string | null>(null);
+
   const reset = () => {
-    setInput(emptyBusinessPlanInput(todayIso()));
+    const fresh = emptyBusinessPlanInput(todayIso());
+    setInput(fresh);
+    setGrowthFactorStr(null);
     showNotify('success', 'Đã làm mới bảng tính.');
+  };
+
+  const handleGrowthFactorChange = (raw: string) => {
+    setGrowthFactorStr(raw);
+    patch({ growthFactor: parseMoneyDecimalInput(raw) });
   };
 
   const labelCls = `block mb-1 text-[10px] uppercase tracking-wide ${UI.labelStyle}`;
@@ -111,8 +120,10 @@ export const BusinessPlanView: React.FC = () => {
 
           <label className="block">
             <span className={labelCls}>Hệ số dự phóng</span>
-            <input type="text" inputMode="decimal" value={input.growthFactor || ''}
-              onChange={e => patch({ growthFactor: parseMoneyDecimalInput(e.target.value) })}
+            <input type="text" inputMode="decimal"
+              value={growthFactorStr ?? (input.growthFactor ? String(input.growthFactor) : '')}
+              onChange={e => handleGrowthFactorChange(e.target.value)}
+              onBlur={() => setGrowthFactorStr(null)}
               className={`${controlCls} font-mono text-right`} />
           </label>
 

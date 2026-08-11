@@ -51,20 +51,27 @@ export const MoneyCell: React.FC<{
 
 export const PercentCell: React.FC<{ value: number; onChange: (v: number) => void }> = ({
   value, onChange,
-}) => (
-  <td className={CELL}>
-    <div className="flex items-center justify-end gap-0.5">
-      <input
-        type="text"
-        inputMode="decimal"
-        value={value === 0 ? '' : String(value)}
-        onChange={e => onChange(parseMoneyDecimalInput(e.target.value))}
-        className={INPUT}
-      />
-      <span className="text-[10px] text-ink-faint shrink-0">%</span>
-    </div>
-  </td>
-);
+}) => {
+  const [dangGo, setDangGo] = React.useState<string | null>(null);
+  return (
+    <td className={CELL}>
+      <div className="flex items-center justify-end gap-0.5">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={dangGo ?? (value === 0 ? '' : String(value))}
+          onChange={e => {
+            setDangGo(e.target.value);
+            onChange(parseMoneyDecimalInput(e.target.value));
+          }}
+          onBlur={() => setDangGo(null)}
+          className={INPUT}
+        />
+        <span className="text-[10px] text-ink-faint shrink-0">%</span>
+      </div>
+    </td>
+  );
+};
 
 export const TextCell: React.FC<{
   value: string; onChange: (v: string) => void; placeholder?: string;

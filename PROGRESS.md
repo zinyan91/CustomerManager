@@ -822,6 +822,11 @@ câu, 15 bản dư. Sáu cụm trùng vô hại (cùng đáp án). **Ba cụm d�
 Hệ thống **không tự chọn** — tab gắn nhãn đỏ *"trùng câu, lệch đáp án"* trên từng câu để
 người có thẩm quyền mở văn bản gốc ra đối chiếu rồi xoá bản sai.
 
+**Đường sửa, bổ sung 11/08/2026.** Cảnh báo trên đầu tab hiện mỗi cụm thành một nút; bấm vào
+là ô tìm kiếm nhận `#267,272,274,283` và danh sách lọc còn đúng bốn câu đó, đáp án tô sẵn
+nên đọc là thấy ngay bản nào lệch. Sửa tại chỗ bằng nút bút chì, hoặc xoá bản sai. Xoá xong
+cụm tự hết cảnh báo — có test khoá.
+
 ## §33. Nạp thêm bộ câu hỏi từ tệp JSON
 
 Chốt 11/08/2026. Trước đó chỉ có `seed_quiz_bank`, mà hàm ấy **chỉ chạy trên bảng rỗng** nên
@@ -919,7 +924,8 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 | ✅ | `quizBank.ts` — logic thuần | 35 test, trong đó 6 test chạy trên **chính bộ 662 câu trong repo** |
 | ✅ | Tab hai chế độ: Tra cứu và Luyện tập | Tra cứu **tô sẵn đáp án đúng** (đậm, nền xanh), chia trang 20 câu. Luyện tập chấm đúng câu nhiều đáp án — đủ và không thừa |
 | ✅ | Khung nhập liệu | Số lựa chọn thêm bớt được (2–12), mã dồn lại khi xoá lựa chọn giữa, tích nhiều đáp án đúng. Báo trùng ngay lúc nhập **và** hứng lỗi trùng từ CSDL |
-| ✅ | 20 test dựng màn hình | Gồm đúng ca anh yêu cầu: submit câu đã có thì báo trùng |
+| ✅ | Sửa câu hỏi tại chỗ | Nút bút chì mỗi dòng. Khi sửa thì **không tự coi mình là trùng**, nhưng sửa thành trùng câu KHÁC thì vẫn chặn |
+| ✅ | 47 test dựng màn hình | Gồm đúng ca yêu cầu: submit câu đã có thì báo trùng |
 | ✅ | Migration 40 — nạp thêm tệp JSON, tự bỏ trùng | Nạp được vào bảng đã có dữ liệu. Báo cáo tách 4 loại; câu trùng mà **khác đáp án** thì bỏ, không ghi đè, nêu cả hai đáp án. Xem §33 |
 | ✅ | Migration 39 — trạng thái "chưa chốt đáp án" | `CorrectAnswers` rỗng. Hai câu *"CÂU NÀO CŨNG SAI"* (504, 570) để trống theo chốt 10/08/2026. Luyện tập bỏ qua và nói rõ bỏ bao nhiêu |
 | ⚠️ | Ba cụm trùng có đáp án khác nhau | `(267,272,274,283)`, `(309,325,344,345)`, `(318,343,347)`. Ít nhất một bản mỗi cụm đang dạy sai. Xem §31 |

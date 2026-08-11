@@ -858,7 +858,11 @@ Kèm theo đó một bẫy phải nhớ: **hàm `SECURITY INVOKER` không đư�
 
 Hàm trả báo cáo tách **bốn loại**, không gộp thành một con số: `da_nap`, `trung_trong_ngan_hang`, `trung_trong_file` (tệp tự trùng với chính nó, giữ bản đầu), `khong_hop_le`. Và riêng `lech_dap_an` — câu trùng nội dung nhưng **đáp án khác bản đang có**. Câu đó **bị bỏ, không ghi đè**, và nêu cả hai đáp án cạnh nhau để người có thẩm quyền quyết — cùng nguyên tắc với 3 cụm lệch đáp án của bộ gốc. Bỏ âm thầm là để người dùng tưởng đã nạp.
 
-Ô tìm kiếm nhận `#12` để nhảy tới đúng câu số 12 — có nó thì báo cáo nạp thêm mới dùng được, vì báo cáo nêu số hiệu câu đang có.
+**Sửa thì phải loại chính nó ra khỏi phép so trùng.** `validateQuizDraft` và `findDuplicateQuestion` nhận `excludeId`; thiếu nó thì mở một câu ra sửa dấu phẩy cũng bị báo "câu này đã có trong ngân hàng". Nhưng sửa nội dung thành trùng câu **khác** thì vẫn chặn — cả hai chiều đều có test.
+
+Quyền sửa/xoá là **admin hoặc chính người đã thêm** (policy migration 38). Hệ quả thực tế: 662 câu của bộ gốc mang `CreatedBy` của người bấm nút nạp, nên chỉ người đó và admin sửa được — người khác bấm sửa sẽ nhận đúng câu báo lỗi, không im lặng.
+
+Ô tìm kiếm nhận `#12` để nhảy tới đúng câu số 12, và `#267,272,274,283` để mở nguyên một cụm trùng — có nó thì báo cáo nạp thêm mới dùng được, vì báo cáo nêu số hiệu câu đang có.
 
 Bộ câu hỏi gốc nạp bằng nút trên tab qua hàm `seed_quiz_bank`, không nhét 662 dòng `INSERT` vào migration — 662 dòng thành tệp SQL gần 700KB, dán vào SQL editor là hỏng. Hàm chỉ chạy trên bảng rỗng nên không có đường nạp đè hay nạp hai lần.
 

@@ -995,3 +995,25 @@ export async function importQuizQuestionsAPI(rows: unknown[]): Promise<QuizImpor
   if (error) throw quizDbError(error);
   return data as QuizImportReport;
 }
+
+export async function updateQuizQuestionAPI(
+  id: number,
+  payload: {
+    QuestionText: string;
+    Options: QuizOption[];
+    CorrectAnswers: string[];
+    Sources: string[];
+    Topic: string | null;
+  }
+): Promise<QuizQuestion> {
+  const { data, error } = await supabase
+    .from('QuizQuestions')
+    .update(payload)
+    .eq('Id', id)
+    .select();
+  if (error) throw quizDbError(error);
+  if (!data || data.length === 0) {
+    throw new Error('Không sửa được. Chỉ admin hoặc người đã thêm câu hỏi mới sửa được.');
+  }
+  return data[0];
+}

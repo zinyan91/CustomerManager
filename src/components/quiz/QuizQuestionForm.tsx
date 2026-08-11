@@ -14,13 +14,14 @@ interface QuizQuestionFormProps {
   saving: boolean;
   onSubmit: () => void;
   onCancel: () => void;
+  editingId?: number;
 }
 
 export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
-  draft, setDraft, questions, saving, onSubmit, onCancel,
+  draft, setDraft, questions, saving, onSubmit, onCancel, editingId,
 }) => {
-  const errors = validateQuizDraft(draft, questions);
-  const duplicate = findDuplicateQuestion(draft.questionText, questions);
+  const errors = validateQuizDraft(draft, questions, editingId);
+  const duplicate = findDuplicateQuestion(draft.questionText, questions, editingId);
 
   const setOptionText = (index: number, text: string) => {
     setDraft({
@@ -200,7 +201,8 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
           disabled={saving || errors.length > 0}
           className={`${BTN_PRIMARY} px-3.5 py-2 flex items-center gap-1.5`}
         >
-          <Save className="w-4 h-4" /> {saving ? 'Đang lưu…' : 'Lưu câu hỏi'}
+          <Save className="w-4 h-4" />
+          {saving ? 'Đang lưu…' : editingId ? `Lưu câu ${editingId}` : 'Lưu câu hỏi'}
         </button>
         <button
           type="button"

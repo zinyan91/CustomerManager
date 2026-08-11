@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  GraduationCap, Search, Plus, Loader2, Trash2, AlertTriangle, Download,
+  GraduationCap, Search, Plus, Loader2, Trash2, Pencil, AlertTriangle, Download,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import {
@@ -9,12 +9,12 @@ import {
 } from '../../lib/uiClasses';
 import {
   emptyDraft, draftToPayload, duplicateClusters, hasSettledAnswer, isAnswerCorrect, isMultiAnswer,
-  quizStats, searchQuestions,
+  questionToDraft, quizStats, searchQuestions,
   type QuizDraft, type QuizQuestion,
 } from '../../lib/quizBank';
 import {
-  fetchQuizQuestionsAPI, createQuizQuestionAPI, deleteQuizQuestionAPI, seedQuizBankAPI,
-  importQuizQuestionsAPI,
+  fetchQuizQuestionsAPI, createQuizQuestionAPI, updateQuizQuestionAPI, deleteQuizQuestionAPI,
+  seedQuizBankAPI, importQuizQuestionsAPI,
 } from '../../lib/api';
 import { Toast, useToast } from '../Toast';
 import { QuizQuestionForm } from '../quiz/QuizQuestionForm';
@@ -37,6 +37,7 @@ export const QuizBankView: React.FC = () => {
   const [page, setPage] = useState(1);
 
   const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState<QuizDraft>(emptyDraft);
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
@@ -92,14 +93,32 @@ export const QuizBankView: React.FC = () => {
     setChecked(false);
   }, [query, mode]);
 
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingId(null);
+    setDraft(emptyDraft());
+  };
+
+  const startEdit = (question: QuizQuestion) => {
+    setEditingId(question.Id);
+    setDraft(questionToDraft(question));
+    setFormOpen(true);
+  };
+
   const handleSubmit = async () => {
     setSaving(true);
     try {
-      const saved = await createQuizQuestionAPI(draftToPayload(draft));
-      setQuestions(prev => [...prev, saved]);
-      setDraft(emptyDraft());
-      setFormOpen(false);
-      show('success', `Đã thêm câu hỏi số ${saved.Id}.`);
+      const payload = draftToPayload(draft);
+      if (editingId === null) {
+        const saved = await createQuizQuestionAPI(payload);
+        setQuestions(prev => [...prev, saved]);
+        show('success', `Đã thêm câu hỏi số ${saved.Id}.`);
+      } else {
+        const saved = await updateQuizQuestionAPI(editingId, payload);
+        setQuestions(prev => prev.map(q => (q.Id === saved.Id ? saved : q)));
+        show('success', `Đã sửa câu hỏi số ${saved.Id}.`);
+      }
+      closeForm();
     } catch (err: any) {
       show('error', err?.message || 'Không lưu được câu hỏi.');
     } finally {
@@ -198,10 +217,23 @@ export const QuizBankView: React.FC = () => {
                   {clusters.length} cụm câu hỏi trùng nội dung, gồm {clusters.reduce((s, c) => s + c.ids.length, 0)} câu
                 </div>
                 {conflicting.length > 0 && (
-                  <div className="text-neg font-semibold">
-                    {conflicting.length} cụm trong đó có ĐÁP ÁN ĐÚNG KHÁC NHAU trên cùng một câu hỏi —
-                    ít nhất một bản đang dạy sai:{' '}
-                    {conflicting.map(c => `(${c.ids.join(', ')})`).join(' · ')}
+                  <div className="space-y-1">
+                    <div className="text-neg font-semibold">
+                      {conflicting.length} cụm trong đó có ĐÁP ÁN ĐÚNG KHÁC NHAU trên cùng một câu
+                      hỏi — ít nhất một bản đang dạy sai. Mở cụm ra rồi sửa hoặc xoá bản sai:
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {conflicting.map(c => (
+                        <button
+                          key={c.ids.join(',')}
+                          type="button"
+                          onClick={() => { setMode('browse'); setQuery(`#${c.ids.join(',')}`); }}
+                          className={`${BTN_SECONDARY} px-2 py-1 font-mono text-[11px] border-neg text-neg`}
+                        >
+                          {c.ids.join(', ')}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -236,7 +268,11 @@ export const QuizBankView: React.FC = () => {
                   aria-label="Tìm câu hỏi"
                   className={`w-full rounded-md pl-8 pr-3 py-2 border ${UI.inputStyle}`} />
               </div>
-              <button type="button" onClick={() => setFormOpen(v => !v)}
+              <button type="button"
+                onClick={() => {
+                  if (formOpen && editingId === null) closeForm();
+                  else { setEditingId(null); setDraft(emptyDraft()); setFormOpen(true); }
+                }}
                 className={`${BTN_PRIMARY} px-3 py-2 flex items-center gap-1.5 shrink-0`}>
                 <Plus className="w-4 h-4" /> Thêm câu hỏi
               </button>
@@ -255,14 +291,17 @@ export const QuizBankView: React.FC = () => {
 
       {formOpen && (
         <div className={`${PANEL} p-4`}>
-          <div className={`${SECTION_LABEL} mb-2`}>Thêm câu hỏi mới</div>
+          <div className={`${SECTION_LABEL} mb-2`}>
+            {editingId === null ? 'Thêm câu hỏi mới' : `Sửa câu hỏi số ${editingId}`}
+          </div>
           <QuizQuestionForm
             draft={draft}
             setDraft={setDraft}
             questions={questions}
             saving={saving}
+            editingId={editingId ?? undefined}
             onSubmit={handleSubmit}
-            onCancel={() => { setFormOpen(false); setDraft(emptyDraft()); }}
+            onCancel={closeForm}
           />
         </div>
       )}
@@ -365,6 +404,11 @@ export const QuizBankView: React.FC = () => {
                     <div className="text-ink leading-relaxed">{question.QuestionText}</div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onClick={() => startEdit(question)}
+                      aria-label={`Sửa câu ${question.Id}`}
+                      className={`${BTN_SECONDARY} px-2 py-1.5`}>
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
                     <button type="button" onClick={() => handleDelete(question)}
                       aria-label={`Xoá câu ${question.Id}`}
                       className={`${BTN_DANGER} px-2 py-1.5`}>

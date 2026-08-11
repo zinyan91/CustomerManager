@@ -56,6 +56,17 @@ export function hasSettledAnswer(question: Pick<QuizQuestion, 'CorrectAnswers'>)
   return question.CorrectAnswers.length > 0;
 }
 
+export function questionToDraft(question: QuizQuestion): QuizDraft {
+  return {
+    questionText: question.QuestionText,
+    options: question.Options.map(o => ({ id: o.id, text: o.text })),
+    correctAnswers: [...question.CorrectAnswers],
+    sources: [...question.Sources],
+    topic: question.Topic || '',
+    answerUnsettled: !hasSettledAnswer(question),
+  };
+}
+
 export function relabelOptions(options: QuizOption[], correctAnswers: string[]): {
   options: QuizOption[];
   correctAnswers: string[];
@@ -186,10 +197,12 @@ export function searchQuestions(questions: QuizQuestion[], term: string): QuizQu
   const key = quizNormalizeText(term);
   if (!key) return questions;
 
-  const byId = /^#(\d+)$/.exec(key);
+  const byId = /^#([\d\s,]+)$/.exec(key);
   if (byId) {
-    const id = parseInt(byId[1], 10);
-    return questions.filter(q => q.Id === id);
+    const ids = new Set(
+      byId[1].split(/[\s,]+/).filter(Boolean).map(n => parseInt(n, 10))
+    );
+    if (ids.size > 0) return questions.filter(q => ids.has(q.Id));
   }
 
   return questions.filter(q =>

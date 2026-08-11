@@ -3,7 +3,7 @@ import quizSeed from '../../data/quiz_bank.json';
 import {
   quizNormalizeText, optionLetter, emptyDraft, relabelOptions,
   findDuplicateQuestion, duplicateClusters, validateQuizDraft, draftToPayload, hasSettledAnswer,
-  isAnswerCorrect, isMultiAnswer, searchQuestions, quizStats, parseQuizImportFile,
+  isAnswerCorrect, isMultiAnswer, searchQuestions, quizStats, parseQuizImportFile, questionToDraft,
   MIN_DRAFT_OPTIONS, type QuizQuestion, type QuizDraft,
 } from '../quizBank';
 
@@ -187,6 +187,36 @@ describe('draftToPayload', () => {
   });
 });
 
+describe('questionToDraft', () => {
+  it('dựng bản nháp đúng từ câu đang có', () => {
+    expect(questionToDraft(q({ Topic: 'Thẻ', Sources: ['PDF1'] }))).toEqual({
+      questionText: 'Mức cho vay tối đa là bao nhiêu?',
+      options: [{ id: 'A', text: 'Tối đa 70%' }, { id: 'B', text: 'Tối đa 100%' }],
+      correctAnswers: ['B'],
+      sources: ['PDF1'],
+      topic: 'Thẻ',
+      answerUnsettled: false,
+    });
+  });
+
+  it('câu chưa chốt đáp án thì bật sẵn answerUnsettled', () => {
+    expect(questionToDraft(q({ CorrectAnswers: [] })).answerUnsettled).toBe(true);
+  });
+
+  it('chủ đề null thành chuỗi rỗng, không thành chữ null', () => {
+    expect(questionToDraft(q({ Topic: null })).topic).toBe('');
+  });
+
+  it('không dùng chung mảng với câu gốc — sửa nháp không đụng dữ liệu đang hiển thị', () => {
+    const goc = q();
+    const nhap = questionToDraft(goc);
+    nhap.correctAnswers.push('A');
+    nhap.options[0].text = 'đổi rồi';
+    expect(goc.CorrectAnswers).toEqual(['B']);
+    expect(goc.Options[0].text).toBe('Tối đa 70%');
+  });
+});
+
 describe('relabelOptions', () => {
   it('xoá lựa chọn giữa thì mã dồn lại và đáp án đúng đi theo', () => {
     const { options, correctAnswers } = relabelOptions(
@@ -250,6 +280,11 @@ describe('searchQuestions', () => {
     expect(searchQuestions(bank, '#3').map(x => x.Id)).toEqual([3]);
     expect(searchQuestions(bank, ' #3 ').map(x => x.Id)).toEqual([3]);
     expect(searchQuestions(bank, '#999')).toEqual([]);
+  });
+
+  it('tra #a,b,c thì ra đúng cụm đó — dùng cho nút mở cụm lệch đáp án', () => {
+    expect(searchQuestions(bank, '#1,3').map(x => x.Id)).toEqual([1, 3]);
+    expect(searchQuestions(bank, '#1, 2 ,3').map(x => x.Id)).toEqual([1, 2, 3]);
   });
 
   it('từ khoá rỗng thì trả nguyên bộ', () => {

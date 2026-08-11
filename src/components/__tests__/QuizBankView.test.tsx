@@ -10,6 +10,7 @@ const createQuizQuestionAPI = vi.fn();
 const deleteQuizQuestionAPI = vi.fn();
 const seedQuizBankAPI = vi.fn();
 const importQuizQuestionsAPI = vi.fn();
+const updateQuizQuestionAPI = vi.fn();
 
 vi.mock('../../lib/api', () => ({
   fetchQuizQuestionsAPI: (...args: unknown[]) => fetchQuizQuestionsAPI(...args),
@@ -17,6 +18,7 @@ vi.mock('../../lib/api', () => ({
   deleteQuizQuestionAPI: (...args: unknown[]) => deleteQuizQuestionAPI(...args),
   seedQuizBankAPI: (...args: unknown[]) => seedQuizBankAPI(...args),
   importQuizQuestionsAPI: (...args: unknown[]) => importQuizQuestionsAPI(...args),
+  updateQuizQuestionAPI: (...args: unknown[]) => updateQuizQuestionAPI(...args),
 }));
 
 const { QuizBankView } = await import('../views/QuizBankView');
@@ -52,6 +54,7 @@ beforeEach(() => {
   deleteQuizQuestionAPI.mockReset();
   seedQuizBankAPI.mockReset();
   importQuizQuestionsAPI.mockReset();
+  updateQuizQuestionAPI.mockReset();
 });
 
 afterEach(cleanup);
@@ -336,7 +339,7 @@ describe('QuizBankView — chặn trùng khi submit', () => {
 
     expect(await screen.findByText(/2 cụm câu hỏi trùng nội dung, gồm 4 câu/)).toBeTruthy();
     expect(screen.getByText(/1 cụm trong đó có ĐÁP ÁN ĐÚNG KHÁC NHAU/)).toBeTruthy();
-    expect(screen.getByText(/\(10, 11\)/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: '10, 11' })).toBeTruthy();
     expect(screen.getAllByText('trùng câu, lệch đáp án')).toHaveLength(2);
   });
 });
@@ -659,5 +662,155 @@ describe('QuizBankView — nạp thêm từ tệp JSON', () => {
 
     expect(await screen.findByText(/đã nạp/)).toBeTruthy();
     expect(fetchQuizQuestionsAPI).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('QuizBankView — sửa câu hỏi', () => {
+  it('bấm sửa thì nạp sẵn nội dung, lựa chọn và đáp án của câu đó', async () => {
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await user.click(screen.getByRole('button', { name: 'Sửa câu 2' }));
+
+    expect(screen.getByText('Sửa câu hỏi số 2')).toBeTruthy();
+    expect((screen.getByLabelText(/Nội dung câu hỏi/i) as HTMLTextAreaElement).value)
+      .toBe('Tiêu chí nhận diện rủi ro gồm những gì?');
+    expect((screen.getByLabelText('Nội dung lựa chọn C') as HTMLInputElement).value)
+      .toBe('Kết quả');
+    expect(screen.getByLabelText('Lựa chọn A là đáp án đúng')).toHaveProperty('checked', true);
+    expect(screen.getByLabelText('Lựa chọn B là đáp án đúng')).toHaveProperty('checked', true);
+    expect(screen.getByLabelText('Lựa chọn C là đáp án đúng')).toHaveProperty('checked', false);
+  });
+
+  it('KHÔNG tự coi mình là trùng khi sửa mà giữ nguyên nội dung', async () => {
+    updateQuizQuestionAPI.mockResolvedValue({ ...bank[1], CorrectAnswers: ['C'] });
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await user.click(screen.getByRole('button', { name: 'Sửa câu 2' }));
+
+    expect(screen.queryByText(/Đã có câu này trong ngân hàng/)).toBeNull();
+    expect(screen.getByRole('button', { name: /Lưu câu 2/ })).toHaveProperty('disabled', false);
+  });
+
+  it('vẫn chặn khi sửa nội dung thành trùng câu KHÁC', async () => {
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await user.click(screen.getByRole('button', { name: 'Sửa câu 2' }));
+    const box = screen.getByLabelText(/Nội dung câu hỏi/i);
+    await user.clear(box);
+    await user.type(box, 'Mức cho vay tối đa của sản phẩm Đầu tư thông minh là bao nhiêu?');
+
+    expect(screen.getByText(/Đã có câu này trong ngân hàng — số 1/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Lưu câu 2/ })).toHaveProperty('disabled', true);
+  });
+
+  it('sửa đáp án rồi lưu thì gửi đúng payload và cập nhật tại chỗ', async () => {
+    updateQuizQuestionAPI.mockResolvedValue({
+      ...bank[1], CorrectAnswers: ['C'],
+    });
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await user.click(screen.getByRole('button', { name: 'Sửa câu 2' }));
+    await user.click(screen.getByLabelText('Lựa chọn A là đáp án đúng'));
+    await user.click(screen.getByLabelText('Lựa chọn B là đáp án đúng'));
+    await user.click(screen.getByLabelText('Lựa chọn C là đáp án đúng'));
+    await user.click(screen.getByRole('button', { name: /Lưu câu 2/ }));
+
+    expect(updateQuizQuestionAPI).toHaveBeenCalledTimes(1);
+    expect(updateQuizQuestionAPI.mock.calls[0][0]).toBe(2);
+    expect(updateQuizQuestionAPI.mock.calls[0][1]).toMatchObject({
+      QuestionText: 'Tiêu chí nhận diện rủi ro gồm những gì?',
+      CorrectAnswers: ['C'],
+    });
+    expect(await screen.findByText(/Đã sửa câu hỏi số 2/)).toBeTruthy();
+    expect(screen.getByText('Kết quả').parentElement?.className).toContain('text-pos');
+  });
+
+  it('không có quyền sửa thì báo rõ, không im lặng', async () => {
+    updateQuizQuestionAPI.mockRejectedValue(
+      new Error('Không sửa được. Chỉ admin hoặc người đã thêm câu hỏi mới sửa được.')
+    );
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await user.click(screen.getByRole('button', { name: 'Sửa câu 1' }));
+    await user.click(screen.getByLabelText('Lựa chọn A là đáp án đúng'));
+    await user.click(screen.getByRole('button', { name: /Lưu câu 1/ }));
+
+    expect(await screen.findByText(/Chỉ admin hoặc người đã thêm câu hỏi mới sửa được/))
+      .toBeTruthy();
+  });
+
+  it('bỏ giữa chừng thì không đụng gì, và nút Thêm quay về chế độ thêm mới', async () => {
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await user.click(screen.getByRole('button', { name: 'Sửa câu 2' }));
+    await user.click(screen.getByRole('button', { name: 'Bỏ' }));
+    expect(screen.queryByText('Sửa câu hỏi số 2')).toBeNull();
+    expect(updateQuizQuestionAPI).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Sửa câu 2' }));
+    await user.click(screen.getByRole('button', { name: /Thêm câu hỏi/ }));
+    expect(screen.getByText('Thêm câu hỏi mới')).toBeTruthy();
+    expect((screen.getByLabelText(/Nội dung câu hỏi/i) as HTMLTextAreaElement).value).toBe('');
+  });
+
+  it('sửa câu chưa chốt đáp án thì ô đánh dấu bật sẵn', async () => {
+    fetchQuizQuestionsAPI.mockResolvedValue([{ ...bank[0], CorrectAnswers: [] }]);
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+
+    await user.click(screen.getByRole('button', { name: 'Sửa câu 1' }));
+    expect(screen.getByLabelText('Chưa chốt đáp án')).toHaveProperty('checked', true);
+  });
+});
+
+describe('QuizBankView — mở thẳng cụm lệch đáp án', () => {
+  const cluster: QuizQuestion[] = [
+    { Id: 10, QuestionText: 'Câu X', Options: [{ id: 'A', text: 'Một' }, { id: 'B', text: 'Hai' }], CorrectAnswers: ['A'], Sources: [] },
+    { Id: 11, QuestionText: 'câu x', Options: [{ id: 'A', text: 'Một' }, { id: 'B', text: 'Hai' }], CorrectAnswers: ['B'], Sources: [] },
+    { Id: 12, QuestionText: 'Câu Z', Options: [{ id: 'A', text: 'Một' }, { id: 'B', text: 'Hai' }], CorrectAnswers: ['A'], Sources: [] },
+  ];
+
+  it('bấm nút cụm thì lọc còn đúng các câu của cụm đó', async () => {
+    fetchQuizQuestionsAPI.mockResolvedValue(cluster);
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText('Câu Z');
+
+    await user.click(screen.getByRole('button', { name: '10, 11' }));
+
+    expect((screen.getByLabelText('Tìm câu hỏi') as HTMLInputElement).value).toBe('#10,11');
+    expect(screen.getByText('Câu X')).toBeTruthy();
+    expect(screen.getByText('câu x')).toBeTruthy();
+    expect(screen.queryByText('Câu Z')).toBeNull();
+  });
+
+  it('xoá bản sai xong thì cụm hết cảnh báo', async () => {
+    fetchQuizQuestionsAPI.mockResolvedValue(cluster);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    deleteQuizQuestionAPI.mockResolvedValue(undefined);
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText('Câu Z');
+
+    expect(screen.getByRole('button', { name: '10, 11' })).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Xoá câu 11' }));
+
+    expect(await screen.findByText(/Đã xoá câu hỏi số 11/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: '10, 11' })).toBeNull();
+    expect(screen.queryByText('trùng câu, lệch đáp án')).toBeNull();
   });
 });

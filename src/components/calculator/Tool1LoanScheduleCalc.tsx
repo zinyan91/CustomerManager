@@ -7,9 +7,10 @@ import { addMonths, buildLoanSchedule, postPromoRateAnnual } from '../../lib/cal
 import type { PrepaymentMode, PrepaymentPlanItem } from '../../lib/calcMath';
 import { buildScheduleDocHtml } from '../../lib/scheduleDocHtml';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
-import { downloadXls } from '../../lib/xlsExport';
+import { downloadBytes } from '../../lib/xlsExport';
+import { buildXlsx, MIME_XLSX, type XlsxCell, type XlsxSheet } from '../../lib/xlsxWriter';
 
-function exportToExcelHTML(
+function exportToXlsxFile(
   filename: string,
   title: string,
   params: { label: string; value: string }[],
@@ -17,80 +18,106 @@ function exportToExcelHTML(
   rows: (string | number)[][],
   footerRow?: (string | number)[]
 ) {
-  let paramRowsHtml = '';
+  const HEADER_FILL = 'DCE6F1';
+  const PARAM_LABEL_FILL = 'F1F5F9';
+  const FOOTER_FILL = 'E0F2FE';
+
+  const xlsxRows: XlsxCell[][] = [];
+
+  // Title Row
+  xlsxRows.push([
+    {
+      value: title,
+      style: { bold: true, align: 'center', vAlign: 'center', fill: HEADER_FILL }
+    }
+  ]);
+
+  // Empty Row
+  xlsxRows.push([]);
+
+  // Parameter Rows (Pairs of Label + Value)
   for (let i = 0; i < params.length; i += 2) {
     const p1 = params[i];
     const p2 = params[i + 1];
-    paramRowsHtml += `
-      <tr>
-        <td class="param-label">${p1 ? p1.label : ''}</td>
-        <td class="param-val">${p1 ? p1.value : ''}</td>
-        <td class="param-label">${p2 ? p2.label : ''}</td>
-        <td class="param-val">${p2 ? p2.value : ''}</td>
-      </tr>
-    `;
+    const rowCells: XlsxCell[] = [];
+
+    if (p1) {
+      rowCells.push({ value: p1.label, style: { bold: true, fill: PARAM_LABEL_FILL, align: 'left' } });
+      rowCells.push({ value: p1.value, style: { align: 'left' } });
+    } else {
+      rowCells.push({ value: '' }, { value: '' });
+    }
+
+    if (p2) {
+      rowCells.push({ value: p2.label, style: { bold: true, fill: PARAM_LABEL_FILL, align: 'left' } });
+      rowCells.push({ value: p2.value, style: { align: 'left' } });
+    }
+
+    xlsxRows.push(rowCells);
   }
 
-  const headerHtml = headers.map(h => `<th>${h}</th>`).join('');
+  // Empty Row before table
+  xlsxRows.push([]);
 
-  const bodyHtml = rows.map((r, idx) => {
-    const bgClass = idx % 2 === 0 ? 'row-even' : 'row-odd';
-    const cellsHtml = r.map((c, colIdx) => {
+  // Table Headers
+  xlsxRows.push(
+    headers.map(h => ({
+      value: h,
+      style: {
+        bold: true,
+        align: 'center' as const,
+        vAlign: 'center' as const,
+        wrap: true,
+        fill: HEADER_FILL,
+      },
+    }))
+  );
+
+  // Table Data Rows
+  rows.forEach(r => {
+    const rowCells: XlsxCell[] = r.map((c, colIdx) => {
       const isNum = typeof c === 'number';
-      const alignClass = colIdx === 0 ? 'text-center text-bold' : isNum ? 'text-right font-mono' : 'text-center';
-      const formatted = isNum ? c.toLocaleString('vi-VN') : c;
-      return `<td class="${alignClass}">${formatted}</td>`;
-    }).join('');
-    return `<tr class="${bgClass}">${cellsHtml}</tr>`;
-  }).join('');
+      return {
+        value: c,
+        numeric: isNum,
+        style: {
+          align: colIdx === 0 ? 'center' : isNum ? 'right' : 'center',
+          vAlign: 'center' as const,
+          numFmt: isNum ? '#,##0' : undefined,
+        },
+      };
+    });
+    xlsxRows.push(rowCells);
+  });
 
-  let footerHtml = '';
+  // Footer Row
   if (footerRow) {
-    const footerCells = footerRow.map((c, colIdx) => {
-      const isNum = typeof c === 'number';
-      const alignClass = colIdx === 0 ? 'text-center' : isNum ? 'text-right font-mono' : 'text-center';
-      const formatted = isNum ? c.toLocaleString('vi-VN') : c;
-      return `<td class="${alignClass}">${formatted}</td>`;
-    }).join('');
-    footerHtml = `<tfoot><tr class="footer-row">${footerCells}</tr></tfoot>`;
+    xlsxRows.push(
+      footerRow.map((c, colIdx) => {
+        const isNum = typeof c === 'number';
+        return {
+          value: isNum ? c : (c || ''),
+          numeric: isNum,
+          style: {
+            bold: true,
+            align: colIdx === 0 ? 'center' : isNum ? 'right' : 'center',
+            vAlign: 'center' as const,
+            fill: FOOTER_FILL,
+            numFmt: isNum ? '#,##0' : undefined,
+          },
+        };
+      })
+    );
   }
 
-  const html = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-      <meta charset="utf-8" />
-      <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12px; color: #1e293b; background-color: #ffffff; }
-        .title { text-align: center; font-size: 16px; font-weight: bold; color: #0284c7; padding: 10px 0; text-transform: uppercase; }
-        .param-table { width: 100%; margin-bottom: 15px; border-collapse: collapse; background-color: #f8fafc; border: 1px solid #cbd5e1; }
-        .param-table td { padding: 6px 10px; border: 1px solid #e2e8f0; font-size: 11px; }
-        .param-label { font-weight: bold; color: #475569; width: 20%; background-color: #f1f5f9; }
-        .param-val { color: #0f172a; width: 30%; font-weight: 600; }
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .data-table th { background-color: #0284c7; color: #ffffff; font-weight: bold; padding: 8px; border: 1px solid #0369a1; text-align: center; font-size: 11px; }
-        .data-table td { padding: 6px 8px; border: 1px solid #cbd5e1; font-size: 11px; }
-        .row-even { background-color: #ffffff; }
-        .row-odd { background-color: #f8fafc; }
-        .footer-row td { background-color: #e0f2fe; color: #0369a1; font-weight: bold; font-size: 12px; border: 1px solid #7dd3fc; }
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .text-bold { font-weight: bold; }
-        .font-mono { font-family: 'Courier New', Courier, monospace; font-weight: bold; }
-      </style>
-    </head>
-    <body>
-      <div class="title">${title}</div>
-      <table class="param-table">${paramRowsHtml}</table>
-      <table class="data-table">
-        <thead><tr>${headerHtml}</tr></thead>
-        <tbody>${bodyHtml}</tbody>
-        ${footerHtml}
-      </table>
-    </body>
-    </html>
-  `;
+  const sheet: XlsxSheet = {
+    name: 'Lịch thu nợ',
+    rows: xlsxRows,
+    colWidths: [10, 14, 14, 10, 18, 20, 20, 20, 22, 20],
+  };
 
-  downloadXls(html, `${filename}_${todayIso()}.xls`);
+  const bytes = buildXlsx(sheet);
+  downloadBytes(bytes, `${filename}_${todayIso()}.xlsx`, MIME_XLSX);
 }
 
 interface PrepaymentRow {
@@ -252,7 +279,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       r.endingBalance,
     ]);
     const footer = ['TỔNG CỘNG', '', '', '', '', '', totalPrincipalSum, totalInterestSum, totalObligationSum, 0];
-    exportToExcelHTML('Lich_Thu_No_Vay', 'BẢNG CHI TIẾT LỊCH THU NỢ DỰ KIẾN KHOẢN VAY', loanInfoPairs, headers, rows, footer);
+    exportToXlsxFile('Lich_Thu_No_Vay', 'BẢNG CHI TIẾT LỊCH THU NỢ DỰ KIẾN KHOẢN VAY', loanInfoPairs, headers, rows, footer);
   };
 
   const handlePrintSchedule = () => {
@@ -496,7 +523,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               className="flex items-center space-x-1.5 font-bold text-xs px-3 py-1.5 rounded-md border border-line text-ink-muted hover:border-accent hover:text-accent"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Xuất Excel (.xls)</span>
+              <span>Xuất Excel (.xlsx)</span>
             </button>
             <button
               type="button"

@@ -9,7 +9,8 @@ import {
 } from '../../lib/rateReduction';
 import type { UiClasses } from '../../lib/uiClasses';
 import { UI } from '../../lib/uiClasses';
-import { downloadXls, xlsShell } from '../../lib/xlsExport';
+import { downloadBytes } from '../../lib/xlsExport';
+import { buildXlsx, MIME_XLSX, type XlsxCell, type XlsxSheet } from '../../lib/xlsxWriter';
 
 interface Tool4Props {
   styles: UiClasses;
@@ -133,129 +134,178 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
   }, [tdhScheduleRows]);
 
   const handleExportTdh = () => {
-    const headerHtml = `
-      <tr style="background-color:#0284c7;color:#ffffff;font-weight:bold;text-align:center;">
-        <th>Kỳ (Tháng)</th>
-        <th>Ngày thanh toán</th>
-        <th>Số ngày thực tế</th>
-        <th>Dư nợ đầu kỳ (VND)</th>
-        <th>Gốc trả kỳ (VND)</th>
-        <th>LS quy định (%/năm)</th>
-        <th>LS giảm chốt (%/năm)</th>
-        <th>Chênh lệch ΔLS (%)</th>
-        <th>Tiền giảm lãi kỳ (VND)</th>
-        <th>Lãi chưa giảm (VND)</th>
-        <th>Lãi sau giảm (VND)</th>
-        <th>Dư nợ cuối kỳ (VND)</th>
-      </tr>
-    `;
+    const HEADER_FILL = 'DCE6F1';
+    const HIGHLIGHT_FILL = 'F0FDF4';
+    const FOOTER_FILL = 'E0F2FE';
 
-    const bodyHtml = tdhScheduleRows.map(r => `
-      <tr style="${r.isReduced ? 'background-color:#f0fdf4;' : ''}">
-        <td style="text-align:center;font-weight:bold;">${r.month}</td>
-        <td style="text-align:center;">${fmtDate(r.paymentDate)}</td>
-        <td style="text-align:center;">${r.daysInPeriod}</td>
-        <td style="text-align:right;">${r.beginningBalance.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right;">${r.principalPayment.toLocaleString('vi-VN')}</td>
-        <td style="text-align:center;">${fmtPercent(r.standardRateAnnual)}</td>
-        <td style="text-align:center;font-weight:bold;color:${r.isReduced ? '#16a34a' : '#000'};">${fmtPercent(r.reducedRateAnnual)}</td>
-        <td style="text-align:center;color:#dc2626;">${fmtPercent(r.deltaRateAnnual)}</td>
-        <td style="text-align:right;font-weight:bold;color:#16a34a;">${r.interestReduced.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right;">${r.interestOriginal.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right;font-weight:bold;">${r.interestFinal.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right;">${r.endingBalance.toLocaleString('vi-VN')}</td>
-      </tr>
-    `).join('');
+    const xlsxRows: XlsxCell[][] = [];
 
-    const footerHtml = `
-      <tr style="background-color:#e0f2fe;font-weight:bold;">
-        <td colspan="4" style="text-align:right;color:#0369a1;">TỔNG</td>
-        <td style="text-align:right;">${tdhSummary.totalPrincipal.toLocaleString('vi-VN')}</td>
-        <td colspan="3" style="text-align:right;color:#0369a1;">TỔNG TIỀN GIẢM LÃI DỰ KIẾN:</td>
-        <td style="text-align:right;color:#16a34a;">${tdhSummary.totalInterestReduced.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right;">${tdhSummary.totalInterestOriginal.toLocaleString('vi-VN')}</td>
-        <td style="text-align:right;color:#0369a1;">${tdhSummary.totalInterestFinal.toLocaleString('vi-VN')}</td>
-        <td></td>
-      </tr>
-    `;
+    // Title Row
+    xlsxRows.push([
+      {
+        value: 'BẢNG TÍNH GIẢM LÃI SUẤT VAY TRUNG DÀI HẠN (GỐC ĐỀU, ACTUAL/365)',
+        style: { bold: true, align: 'center', vAlign: 'center', fill: HEADER_FILL }
+      }
+    ]);
 
-    const subtitle = [
-      `<strong>Số tiền vay:</strong> ${tdhLoanAmt.toLocaleString('vi-VN')} VNĐ`,
-      `<strong>Thời hạn:</strong> ${tdhTenorMonths} tháng`,
-      `<strong>LS ưu đãi:</strong> ${fmtPercent(tdhPrefRate)} (${tdhPrefMonths} tháng)`,
-      `<strong>LS sau ưu đãi:</strong> ${fmtPercent(tdhPostPrefRate)}`,
-      `<strong>Áp dụng giảm:</strong> tháng ${tdhStartMonth} → ${tdhStartMonth + tdhNumMonthsReduce - 1}`,
+    // Subtitle
+    const subtitleText = [
+      `Số tiền vay: ${tdhLoanAmt.toLocaleString('vi-VN')} VNĐ`,
+      `Thời hạn: ${tdhTenorMonths} tháng`,
+      `LS ưu đãi: ${fmtPercent(tdhPrefRate)} (${tdhPrefMonths} tháng)`,
+      `LS sau ưu đãi: ${fmtPercent(tdhPostPrefRate)}`,
+      `Áp dụng giảm: tháng ${tdhStartMonth} → ${tdhStartMonth + tdhNumMonthsReduce - 1}`,
     ].join(' | ');
 
-    downloadXls(
-      xlsShell(
-        'BẢNG TÍNH GIẢM LÃI SUẤT VAY TRUNG DÀI HẠN (GỐC ĐỀU, ACTUAL/365)',
-        subtitle,
-        `<table><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody><tfoot>${footerHtml}</tfoot></table>`
-      ),
-      `BANG_TINH_GIAM_LAI_TDH_${todayIso()}.xls`
+    xlsxRows.push([{ value: subtitleText, style: { italic: true, align: 'center' } }]);
+    xlsxRows.push([]);
+
+    // Headers
+    const headers = [
+      'Kỳ (Tháng)', 'Ngày thanh toán', 'Số ngày thực tế', 'Dư nợ đầu kỳ (VND)',
+      'Gốc trả kỳ (VND)', 'LS quy định (%/năm)', 'LS giảm chốt (%/năm)',
+      'Chênh lệch ΔLS (%)', 'Tiền giảm lãi kỳ (VND)', 'Lãi chưa giảm (VND)',
+      'Lãi sau giảm (VND)', 'Dư nợ cuối kỳ (VND)'
+    ];
+
+    xlsxRows.push(
+      headers.map(h => ({
+        value: h,
+        style: { bold: true, align: 'center' as const, vAlign: 'center' as const, wrap: true, fill: HEADER_FILL }
+      }))
     );
+
+    // Data rows
+    tdhScheduleRows.forEach(r => {
+      const fill = r.isReduced ? HIGHLIGHT_FILL : undefined;
+      xlsxRows.push([
+        { value: r.month, numeric: true, style: { bold: true, align: 'center', fill } },
+        { value: fmtDate(r.paymentDate), style: { align: 'center', fill } },
+        { value: r.daysInPeriod, numeric: true, style: { align: 'right', numFmt: '#,##0', fill } },
+        { value: r.beginningBalance, numeric: true, style: { align: 'right', numFmt: '#,##0', fill } },
+        { value: r.principalPayment, numeric: true, style: { align: 'right', numFmt: '#,##0', fill } },
+        { value: r.standardRateAnnual / 100, numeric: true, style: { align: 'right', numFmt: '0.00"%"', fill } },
+        { value: r.reducedRateAnnual / 100, numeric: true, style: { bold: true, align: 'right', numFmt: '0.00"%"', fill } },
+        { value: r.deltaRateAnnual / 100, numeric: true, style: { align: 'right', numFmt: '0.00"%"', fill } },
+        { value: r.interestReduced, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill } },
+        { value: r.interestOriginal, numeric: true, style: { align: 'right', numFmt: '#,##0', fill } },
+        { value: r.interestFinal, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill } },
+        { value: r.endingBalance, numeric: true, style: { align: 'right', numFmt: '#,##0', fill } },
+      ]);
+    });
+
+    // Footer
+    xlsxRows.push([
+      { value: 'TỔNG', style: { bold: true, align: 'center', fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: tdhSummary.totalPrincipal, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: 'TỔNG GIẢM LÃI:', style: { bold: true, align: 'right', fill: FOOTER_FILL } },
+      { value: tdhSummary.totalInterestReduced, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+      { value: tdhSummary.totalInterestOriginal, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+      { value: tdhSummary.totalInterestFinal, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+    ]);
+
+    const sheet: XlsxSheet = {
+      name: 'Giảm lãi trung dài hạn',
+      rows: xlsxRows,
+      colWidths: [10, 14, 12, 18, 18, 16, 16, 14, 18, 18, 18, 18],
+    };
+
+    const bytes = buildXlsx(sheet);
+    downloadBytes(bytes, `BANG_TINH_GIAM_LAI_TDH_${todayIso()}.xlsx`, MIME_XLSX);
   };
 
   const handleExportQuick = () => {
-    const headerHtml = `
-      <tr style="background-color:#0284c7;color:#ffffff;font-weight:bold;text-align:center;">
-        <th>STT</th>
-        <th>Khoản vay</th>
-        <th>Tài khoản vay</th>
-        <th>Thời hạn khoản vay</th>
-        <th>Số dư (VND)</th>
-        <th>HSRR</th>
-        <th>LSCV theo quy định (%/năm)</th>
-        <th>LS đề xuất (%/năm)</th>
-        <th>Chênh lệch LS (%/năm)</th>
-        <th>Thời hạn áp dụng</th>
-        <th>Số ngày áp dụng (Actual/365)</th>
-        <th>Tiền giảm lãi dự kiến (VND)</th>
-        <th>COF (%/năm)</th>
-        <th>Margin (%/năm)</th>
-        <th>Margin đề xuất (%/năm)</th>
-      </tr>
-    `;
+    const HEADER_FILL = 'DCE6F1';
+    const FOOTER_FILL = 'E0F2FE';
 
-    const bodyHtml = quickResults.map((q, idx) => `
-      <tr>
-        <td style="text-align:center;">${idx + 1}</td>
-        <td>${q.row.name}</td>
-        <td style="text-align:center;">${q.row.account}</td>
-        <td style="text-align:center;">${q.row.tenorLabel}</td>
-        <td style="text-align:right;">${q.balance.toLocaleString('vi-VN')}</td>
-        <td style="text-align:center;">${q.row.riskCoefficientStr}</td>
-        <td style="text-align:center;">${q.row.standardRateStr}</td>
-        <td style="text-align:center;">${q.row.proposedRateStr}</td>
-        <td style="text-align:center;color:#dc2626;">${fmtPercent(q.result.deltaRateAnnual)}</td>
-        <td style="text-align:center;">${q.row.applyLabel}</td>
-        <td style="text-align:center;">${q.row.daysStr}</td>
-        <td style="text-align:right;font-weight:bold;color:#16a34a;">${q.result.interestReduced.toLocaleString('vi-VN')}</td>
-        <td style="text-align:center;">${q.row.cofStr}</td>
-        <td style="text-align:center;">${q.result.marginCurrentAnnual === null ? '—' : fmtPercent(q.result.marginCurrentAnnual)}</td>
-        <td style="text-align:center;">${q.result.marginProposedAnnual === null ? '—' : fmtPercent(q.result.marginProposedAnnual)}</td>
-      </tr>
-    `).join('');
+    const xlsxRows: XlsxCell[][] = [];
 
-    const footerHtml = `
-      <tr style="background-color:#e0f2fe;font-weight:bold;">
-        <td colspan="4" style="text-align:right;color:#0369a1;">Tổng</td>
-        <td style="text-align:right;">${quickTotalBalance.toLocaleString('vi-VN')}</td>
-        <td colspan="6"></td>
-        <td style="text-align:right;color:#16a34a;">${quickTotalReduced.toLocaleString('vi-VN')}</td>
-        <td colspan="3"></td>
-      </tr>
-    `;
+    // Title
+    xlsxRows.push([
+      {
+        value: 'BẢNG TÍNH GIẢM LÃI SUẤT VAY (NGẮN HẠN / HẠN MỨC)',
+        style: { bold: true, align: 'center', vAlign: 'center', fill: HEADER_FILL }
+      }
+    ]);
 
-    downloadXls(
-      xlsShell(
-        'BẢNG TÍNH GIẢM LÃI SUẤT VAY (NGẮN HẠN / HẠN MỨC)',
-        `<strong>Số khoản vay:</strong> ${quickResults.length} | <strong>Tổng số dư:</strong> ${quickTotalBalance.toLocaleString('vi-VN')} VNĐ`,
-        `<table><thead>${headerHtml}</thead><tbody>${bodyHtml}</tbody><tfoot>${footerHtml}</tfoot></table>`
-      ),
-      `BANG_TINH_GIAM_LAI_NGAN_HAN_${todayIso()}.xls`
+    // Subtitle
+    xlsxRows.push([
+      {
+        value: `Số khoản vay: ${quickResults.length} | Tổng số dư: ${quickTotalBalance.toLocaleString('vi-VN')} VNĐ`,
+        style: { italic: true, align: 'center' }
+      }
+    ]);
+    xlsxRows.push([]);
+
+    // Headers
+    const headers = [
+      'STT', 'Khoản vay', 'Tài khoản vay', 'Thời hạn khoản vay', 'Số dư (VND)',
+      'HSRR', 'LSCV theo quy định (%/năm)', 'LS đề xuất (%/năm)', 'Chênh lệch LS (%/năm)',
+      'Thời hạn áp dụng', 'Số ngày áp dụng (Actual/365)', 'Tiền giảm lãi dự kiến (VND)',
+      'COF (%/năm)', 'Margin (%/năm)', 'Margin đề xuất (%/năm)'
+    ];
+
+    xlsxRows.push(
+      headers.map(h => ({
+        value: h,
+        style: { bold: true, align: 'center' as const, vAlign: 'center' as const, wrap: true, fill: HEADER_FILL }
+      }))
     );
+
+    // Data rows
+    quickResults.forEach((q, idx) => {
+      xlsxRows.push([
+        { value: idx + 1, numeric: true, style: { align: 'center' } },
+        { value: q.row.name, style: { align: 'left' } },
+        { value: q.row.account, style: { align: 'center' } },
+        { value: q.row.tenorLabel, style: { align: 'center' } },
+        { value: q.balance, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+        { value: q.row.riskCoefficientStr, style: { align: 'center' } },
+        { value: q.row.standardRateStr, style: { align: 'center' } },
+        { value: q.row.proposedRateStr, style: { align: 'center' } },
+        { value: q.result.deltaRateAnnual / 100, numeric: true, style: { align: 'right', numFmt: '0.00"%"' } },
+        { value: q.row.applyLabel, style: { align: 'left' } },
+        { value: q.row.daysStr, style: { align: 'center' } },
+        { value: q.result.interestReduced, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
+        { value: q.row.cofStr, style: { align: 'center' } },
+        { value: q.result.marginCurrentAnnual === null ? '—' : q.result.marginCurrentAnnual / 100, numeric: q.result.marginCurrentAnnual !== null, style: { align: 'right', numFmt: q.result.marginCurrentAnnual !== null ? '0.00"%"' : undefined } },
+        { value: q.result.marginProposedAnnual === null ? '—' : q.result.marginProposedAnnual / 100, numeric: q.result.marginProposedAnnual !== null, style: { align: 'right', numFmt: q.result.marginProposedAnnual !== null ? '0.00"%"' : undefined } },
+      ]);
+    });
+
+    // Footer
+    xlsxRows.push([
+      { value: 'TỔNG', style: { bold: true, align: 'center', fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: quickTotalBalance, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: 'TỔNG GIẢM LÃI:', style: { bold: true, align: 'right', fill: FOOTER_FILL } },
+      { value: quickTotalReduced, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+      { value: '', style: { fill: FOOTER_FILL } },
+    ]);
+
+    const sheet: XlsxSheet = {
+      name: 'Giảm lãi ngắn hạn',
+      rows: xlsxRows,
+      colWidths: [6, 22, 16, 14, 18, 8, 16, 16, 14, 16, 12, 20, 12, 14, 14],
+    };
+
+    const bytes = buildXlsx(sheet);
+    downloadBytes(bytes, `BANG_TINH_GIAM_LAI_NGAN_HAN_${todayIso()}.xlsx`, MIME_XLSX);
   };
 
   const cardBg = UI.containerCardBg;

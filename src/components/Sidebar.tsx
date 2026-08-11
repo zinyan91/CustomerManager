@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  BookOpen, LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings, Calculator, FileSignature, Target, Percent, Landmark, Handshake, ClipboardList, GraduationCap, X } from 'lucide-react';
+  BookOpen, LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings, Calculator, FileSignature, Target, Percent, Landmark, Handshake, ClipboardList, GraduationCap, Boxes, X } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
 import type { TranslationKey } from '../lib/i18n';
 
@@ -36,6 +36,7 @@ const menuGroups: {
     items: [
       { id: 'calculators', labelKey: 'nav.calculators', icon: Calculator },
       { id: 'business-plan', labelKey: 'nav.businessPlan', icon: ClipboardList },
+      { id: 'inventory', labelKey: 'nav.inventory', icon: Boxes },
       { id: 'mdsdv', labelKey: 'nav.mdsdv', icon: Target },
       { id: 'card-policies', labelKey: 'nav.cardPolicies', icon: BookOpen },
       { id: 'rate-quote', labelKey: 'nav.rateQuote', icon: Percent },

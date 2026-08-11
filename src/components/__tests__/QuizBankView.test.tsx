@@ -301,13 +301,33 @@ describe('QuizBankView — chặn trùng khi submit', () => {
       screen.getByLabelText(/Nội dung câu hỏi/i),
       '  tiêu chí NHẬN DIỆN rủi ro gồm những gì?  '
     );
-    await user.type(screen.getByLabelText('Nội dung lựa chọn A'), 'Một');
-    await user.type(screen.getByLabelText('Nội dung lựa chọn B'), 'Hai');
+    await user.type(screen.getByLabelText('Nội dung lựa chọn A'), ' THÁI độ ');
+    await user.type(screen.getByLabelText('Nội dung lựa chọn B'), 'Hành vi');
+    await user.type(screen.getByLabelText('Nội dung lựa chọn C'), 'Kết quả');
     await user.click(screen.getByLabelText('Lựa chọn A là đáp án đúng'));
 
     expect(screen.getByText(/Đã có câu này trong ngân hàng — số 2/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Lưu câu hỏi/i })).toHaveProperty('disabled', true);
     expect(createQuizQuestionAPI).not.toHaveBeenCalled();
+  });
+
+  it('CÙNG CÂU DẪN nhưng bộ lựa chọn khác thì cho lưu — như cụm 267/274 của bộ gốc', async () => {
+    createQuizQuestionAPI.mockResolvedValue({ ...bank[1], Id: 99 });
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText(/Mức cho vay tối đa/);
+    await openForm(user);
+
+    await user.type(
+      screen.getByLabelText(/Nội dung câu hỏi/i),
+      'Tiêu chí nhận diện rủi ro gồm những gì?'
+    );
+    await user.type(screen.getByLabelText('Nội dung lựa chọn A'), 'Quy trình');
+    await user.type(screen.getByLabelText('Nội dung lựa chọn B'), 'Đạo đức nghề nghiệp');
+    await user.click(screen.getByLabelText('Lựa chọn A là đáp án đúng'));
+
+    expect(screen.queryByText(/Đã có câu này trong ngân hàng/)).toBeNull();
+    expect(screen.getByRole('button', { name: /Lưu câu hỏi/i })).toHaveProperty('disabled', false);
   });
 
   it('trùng do người khác vừa thêm — báo lỗi từ CSDL, không nuốt', async () => {
@@ -695,15 +715,29 @@ describe('QuizBankView — sửa câu hỏi', () => {
     expect(screen.getByRole('button', { name: /Lưu câu 2/ })).toHaveProperty('disabled', false);
   });
 
-  it('vẫn chặn khi sửa nội dung thành trùng câu KHÁC', async () => {
+  it('vẫn chặn khi sửa thành trùng câu KHÁC — cả câu dẫn lẫn bộ lựa chọn', async () => {
     render(<QuizBankView />);
     const user = userEvent.setup();
     await screen.findByText(/Mức cho vay tối đa/);
 
     await user.click(screen.getByRole('button', { name: 'Sửa câu 2' }));
+
     const box = screen.getByLabelText(/Nội dung câu hỏi/i);
     await user.clear(box);
     await user.type(box, 'Mức cho vay tối đa của sản phẩm Đầu tư thông minh là bao nhiêu?');
+
+    // Đổi câu dẫn thôi thì chưa phải trùng — bộ lựa chọn vẫn khác.
+    expect(screen.queryByText(/Đã có câu này trong ngân hàng/)).toBeNull();
+
+    for (const [ma, chu] of [
+      ['A', 'Tối đa 70% phương án'],
+      ['B', 'Tối đa 100% phương án, không quá 05 tỷ'],
+    ] as const) {
+      const o = screen.getByLabelText(`Nội dung lựa chọn ${ma}`);
+      await user.clear(o);
+      await user.type(o, chu);
+    }
+    await user.click(screen.getByRole('button', { name: 'Xoá lựa chọn C' }));
 
     expect(screen.getByText(/Đã có câu này trong ngân hàng — số 1/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Lưu câu 2/ })).toHaveProperty('disabled', true);

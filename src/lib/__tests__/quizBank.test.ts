@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import quizSeed from '../../data/quiz_bank.json';
 import {
-  quizNormalizeText, optionLetter, emptyDraft, relabelOptions,
+  quizNormalizeText, quizDuplicateKey, optionLetter, emptyDraft, relabelOptions,
   findDuplicateQuestion, duplicateClusters, validateQuizDraft, draftToPayload, hasSettledAnswer,
   isAnswerCorrect, isMultiAnswer, searchQuestions, quizStats, parseQuizImportFile, questionToDraft,
   MIN_DRAFT_OPTIONS, type QuizQuestion, type QuizDraft,
@@ -52,23 +52,67 @@ describe('optionLetter', () => {
   });
 });
 
+describe('quizDuplicateKey', () => {
+  const opts = (...texts: string[]) => texts.map((text, i) => ({ id: optionLetter(i), text }));
+
+  it('cùng câu hỏi cùng lựa chọn thì cùng khoá, dù lệch hoa thường và khoảng trắng', () => {
+    expect(quizDuplicateKey('  Câu   HỎI ', opts('Một', 'Hai')))
+      .toBe(quizDuplicateKey('câu hỏi', opts('MỘT', ' hai ')));
+  });
+
+  it('CÙNG CÂU HỎI NHƯNG KHÁC BỘ LỰA CHỌN thì KHÁC khoá', () => {
+    expect(quizDuplicateKey('Câu hỏi', opts('Một', 'Hai')))
+      .not.toBe(quizDuplicateKey('Câu hỏi', opts('Ba', 'Bốn')));
+  });
+
+  it('đảo thứ tự lựa chọn vẫn là một câu', () => {
+    expect(quizDuplicateKey('Câu hỏi', opts('Một', 'Hai', 'Ba')))
+      .toBe(quizDuplicateKey('Câu hỏi', opts('Ba', 'Một', 'Hai')));
+  });
+
+  it('mã lựa chọn không tính vào khoá — chỉ nội dung mới tính', () => {
+    expect(quizDuplicateKey('Câu hỏi', [{ id: 'A', text: 'Một' }, { id: 'B', text: 'Hai' }]))
+      .toBe(quizDuplicateKey('Câu hỏi', [{ id: 'X', text: 'Một' }, { id: 'Y', text: 'Hai' }]));
+  });
+
+  it('thêm một lựa chọn thì đổi khoá', () => {
+    expect(quizDuplicateKey('Câu hỏi', opts('Một', 'Hai')))
+      .not.toBe(quizDuplicateKey('Câu hỏi', opts('Một', 'Hai', 'Ba')));
+  });
+});
+
 describe('findDuplicateQuestion', () => {
+  const twoOptions = [{ id: 'A', text: 'Tối đa 70%' }, { id: 'B', text: 'Tối đa 100%' }];
   const bank = [q({ Id: 7, QuestionText: 'Mức cho vay tối đa là bao nhiêu?' })];
 
   it('bắt trùng dù lệch hoa thường và khoảng trắng', () => {
-    expect(findDuplicateQuestion('  mức CHO vay   tối đa là bao nhiêu?  ', bank)?.Id).toBe(7);
+    expect(findDuplicateQuestion(
+      '  mức CHO vay   tối đa là bao nhiêu?  ', twoOptions, bank
+    )?.Id).toBe(7);
   });
 
   it('không coi câu khác là trùng', () => {
-    expect(findDuplicateQuestion('Mức cho vay tối thiểu là bao nhiêu?', bank)).toBeNull();
+    expect(findDuplicateQuestion(
+      'Mức cho vay tối thiểu là bao nhiêu?', twoOptions, bank
+    )).toBeNull();
+  });
+
+  it('CÙNG CÂU DẪN nhưng khác bộ lựa chọn thì KHÔNG phải trùng', () => {
+    expect(findDuplicateQuestion(
+      'Mức cho vay tối đa là bao nhiêu?',
+      [{ id: 'A', text: 'Ba tỷ' }, { id: 'B', text: 'Năm tỷ' }],
+      bank
+    )).toBeNull();
   });
 
   it('bỏ qua chính dòng đang sửa', () => {
-    expect(findDuplicateQuestion('Mức cho vay tối đa là bao nhiêu?', bank, 7)).toBeNull();
+    expect(findDuplicateQuestion(
+      'Mức cho vay tối đa là bao nhiêu?', twoOptions, bank, 7
+    )).toBeNull();
   });
 
   it('chuỗi rỗng không tính là trùng', () => {
-    expect(findDuplicateQuestion('   ', bank)).toBeNull();
+    expect(findDuplicateQuestion('   ', twoOptions, bank)).toBeNull();
   });
 });
 
@@ -82,6 +126,22 @@ describe('duplicateClusters', () => {
     ]);
     expect(clusters).toHaveLength(1);
     expect(clusters[0].ids).toEqual([1, 3]);
+  });
+
+  it('cùng câu dẫn mà hai bộ lựa chọn thì thành HAI cụm, không phải một', () => {
+    const bo1 = [{ id: 'A', text: 'Một' }, { id: 'B', text: 'Hai' }];
+    const bo2 = [{ id: 'A', text: 'Ba' }, { id: 'B', text: 'Bốn' }];
+    const chung = 'Các trường hợp sau đây hạn chế nhận thế chấp';
+
+    const clusters = duplicateClusters([
+      q({ Id: 267, QuestionText: chung, Options: bo1, CorrectAnswers: ['B'] }),
+      q({ Id: 272, QuestionText: chung, Options: bo1, CorrectAnswers: ['B'] }),
+      q({ Id: 274, QuestionText: chung, Options: bo2, CorrectAnswers: ['D'] }),
+      q({ Id: 283, QuestionText: chung, Options: bo2, CorrectAnswers: ['D'] }),
+    ]);
+
+    expect(clusters.map(c => c.ids).sort((a, b) => a[0] - b[0]))
+      .toEqual([[267, 272], [274, 283]]);
   });
 });
 
@@ -119,12 +179,23 @@ describe('validateQuizDraft', () => {
     expect(errors.some(e => e.includes('bị nhập hai lần'))).toBe(true);
   });
 
-  it('câu hỏi đã có trong ngân hàng', () => {
+  it('câu hỏi đã có trong ngân hàng — trùng cả câu dẫn lẫn bộ lựa chọn', () => {
     const errors = validateQuizDraft(
       draft({ questionText: 'Đã có rồi' }),
-      [q({ Id: 42, QuestionText: 'đã CÓ rồi' })]
+      [q({
+        Id: 42,
+        QuestionText: 'đã CÓ rồi',
+        Options: [{ id: 'A', text: ' một ' }, { id: 'B', text: 'HAI' }],
+      })]
     );
     expect(errors).toContain('Câu hỏi này đã có trong ngân hàng (số 42).');
+  });
+
+  it('cùng câu dẫn nhưng bộ lựa chọn khác thì KHÔNG chặn', () => {
+    expect(validateQuizDraft(
+      draft({ questionText: 'Đã có rồi' }),
+      [q({ Id: 42, QuestionText: 'đã CÓ rồi' })]
+    )).toEqual([]);
   });
 
   it('KHÔNG chặn câu mà mọi lựa chọn đều đúng — ngân hàng có 4 câu như vậy', () => {
@@ -323,13 +394,13 @@ describe('ngân hàng câu hỏi có thật trong repo', () => {
     ]);
   });
 
-  it('9 cụm trùng nội dung gồm 24 câu — giữ nguyên theo quyết định 10/08/2026', () => {
+  it('6 cụm trùng gồm 12 câu — so bằng câu hỏi VÀ bộ lựa chọn', () => {
     const clusters = duplicateClusters(bank);
-    expect(clusters).toHaveLength(9);
-    expect(clusters.reduce((s, c) => s + c.ids.length, 0)).toBe(24);
+    expect(clusters).toHaveLength(6);
+    expect(clusters.reduce((s, c) => s + c.ids.length, 0)).toBe(12);
   });
 
-  it('ba cụm trùng có đáp án đúng KHÁC NHAU — không phải trùng vô hại', () => {
+  it('KHÔNG cụm nào lệch đáp án — cảnh báo "3 cụm dạy sai" trước đây là báo động giả', () => {
     const byId = new Map(bank.map(x => [x.Id, x]));
     const conflicting = duplicateClusters(bank).filter(c => {
       const keys = new Set(c.ids.map(id =>
@@ -337,11 +408,22 @@ describe('ngân hàng câu hỏi có thật trong repo', () => {
       ));
       return keys.size > 1;
     });
-    expect(conflicting.map(c => c.ids)).toEqual([
-      [267, 272, 274, 283],
-      [309, 325, 344, 345],
-      [318, 343, 347],
-    ]);
+    expect(conflicting).toEqual([]);
+  });
+
+  it('267/272 và 274/283 là HAI câu khác nhau dùng chung một câu dẫn', () => {
+    const byId = new Map(bank.map(x => [x.Id, x]));
+    const key = (id: number) => {
+      const x = byId.get(id) as QuizQuestion;
+      return quizDuplicateKey(x.QuestionText, x.Options);
+    };
+
+    expect(byId.get(267)?.QuestionText).toBe(byId.get(274)?.QuestionText);
+    expect(key(267)).toBe(key(272));
+    expect(key(274)).toBe(key(283));
+    expect(key(267)).not.toBe(key(274));
+    expect(byId.get(267)?.CorrectAnswers).toEqual(['B']);
+    expect(byId.get(274)?.CorrectAnswers).toEqual(['D']);
   });
 
   it('mọi đáp án đúng đều nằm trong danh sách lựa chọn — cùng luật với trigger CSDL', () => {

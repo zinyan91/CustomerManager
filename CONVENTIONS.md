@@ -840,13 +840,28 @@ Kiểm chứng bằng **python-pptx**: đọc lại đúng khổ, đúng số sl
 
 Migration 38 để ràng buộc `array_length("CorrectAnswers", 1) >= 1`, mà mảng rỗng vẫn đi qua được vì `array_length('{}', 1)` trả `NULL` và CHECK của Postgres chỉ đổ khi biểu thức ra `FALSE`. Migration 39 viết lại cho đúng ý định thay vì dựa vào chỗ ăn may đó.
 
-**Chống trùng phải là trigger.** Bộ 662 câu vốn đã có 9 cụm trùng nội dung (24 câu, 15 bản dư) và chủ dự án chốt giữ nguyên, nên unique index không dựng nổi — build đổ ngay trên dữ liệu nạp vào. Trigger cho đường nạp gốc đi qua bằng cờ phiên `app.quiz_seed`, chặn mọi đường ghi khác.
+**Trùng = trùng CẢ câu hỏi LẪN bộ lựa chọn**, chốt 11/08/2026 (migration 42). Khoá so trùng là `quizDuplicateKey` / `quiz_duplicate_key`: nội dung câu hỏi + các lựa chọn đã chuẩn hoá và **sắp thứ tự** (đảo thứ tự lựa chọn vẫn là một câu; mã A/B/C không tính vào khoá).
 
-**Ba trong chín cụm có đáp án đúng khác nhau** trên cùng một câu hỏi: `(267, 272, 274, 283)`, `(309, 325, 344, 345)`, `(318, 343, 347)`. Ít nhất một bản trong mỗi cụm đang dạy sai. Tab gắn nhãn đỏ từng cụm; hệ thống **không tự chọn bản nào**.
+Lý do phải có bộ lựa chọn trong khoá — và đây là **một kết luận sai tôi từng đưa ra**: bộ đề có những câu dẫn chung chung mà nội dung thật nằm ở bốn lựa chọn. *"Các trường hợp sau đây theo quy định hiện hành VietBank hạn chế nhận thế chấp"* xuất hiện ở bốn câu (267, 272, 274, 283) với **hai bộ lựa chọn khác hẳn nhau**. Luật cũ so bằng câu hỏi suông đã gom cả bốn thành một cụm rồi kết luận *"đáp án đúng khác nhau, ít nhất một bản đang dạy sai"*. **Kết luận đó sai**: 267/272 là một câu (đáp án B), 274/283 là câu khác (đáp án D), mỗi đáp án đúng cho bộ lựa chọn của nó.
+
+Đo lại trên 662 câu ngày 11/08/2026:
+
+| Luật | Cụm | Câu | Bản dư | Cụm lệch đáp án |
+| :--- | ---: | ---: | ---: | ---: |
+| Chỉ câu hỏi (sai) | 9 | 24 | 15 | 3 |
+| Câu hỏi + lựa chọn | 6 | 12 | 6 | **0** |
+
+Bài học: **so trùng trên một phần của bản ghi thì sinh ra kết luận về phần còn lại**. Cảnh báo "dạy sai" ấy trông rất thuyết phục vì nó dẫn số hiệu câu cụ thể, nhưng nó chỉ là hệ quả của việc bỏ mất bộ lựa chọn khỏi khoá.
+
+Cơ chế cảnh báo lệch đáp án **giữ nguyên trong mã** — nó vẫn là chốt đúng nếu về sau có hai bản thật sự trùng cả câu lẫn lựa chọn mà khác đáp án. Chỉ là trên dữ liệu hiện tại nó không bắn.
+
+**Chống trùng phải là trigger, không phải unique index.** Bộ gốc vẫn còn 6 cụm trùng thật (6 bản dư) mà chủ dự án chốt giữ nguyên, nên unique index không dựng nổi — build đổ ngay trên dữ liệu nạp vào. Trigger cho đường nạp gốc đi qua bằng cờ phiên `app.quiz_seed`, chặn mọi đường ghi khác.
+
+**`COLLATE "C"` khi sắp lựa chọn trong khoá SQL.** TypeScript sắp bằng `Array.prototype.sort` — thứ tự mã ký tự. Sắp theo collation mặc định của CSDL ra thứ tự khác với tiếng Việt, làm client và CSDL tính ra hai khoá khác nhau: client bảo không trùng, CSDL bảo trùng. `COLLATE "C"` là thứ tự byte UTF-8, khớp với thứ tự mã ký tự cho toàn bộ chữ tiếng Việt.
 
 **Màn Tra cứu là để đọc, không phải để tự kiểm tra.** Chốt 11/08/2026: đáp án đúng **tô sẵn** (đậm, nền `bg-pos-soft`), không có nút ẩn/hiện — muốn tự kiểm tra thì sang chế độ Luyện tập. Cũng bỏ luôn dòng nguồn, ô lọc theo nguồn, bảng phân bố số lựa chọn và dòng đếm "n/m câu khớp bộ lọc"; danh sách chia trang 20 câu, vị trí do ô số trang mang. `Sources` vẫn còn trong CSDL và trong khung nhập liệu, chỉ không hiện ở danh sách; `searchQuestions` vẫn tra được theo nguồn.
 
-`quizNormalizeText` trong `src/lib/quizBank.ts` và `public.quiz_normalize_text` trong CSDL phải giống nhau: hạ chữ, gộp khoảng trắng, cắt hai đầu, **giữ nguyên dấu tiếng Việt** — "lãi" và "lai" là hai câu khác nghĩa. Sửa một bên phải sửa bên kia.
+`quizNormalizeText`/`quizDuplicateKey` trong `src/lib/quizBank.ts` và `public.quiz_normalize_text`/`public.quiz_duplicate_key` trong CSDL phải giống nhau: hạ chữ, gộp khoảng trắng, cắt hai đầu, **giữ nguyên dấu tiếng Việt** — "lãi" và "lai" là hai câu khác nghĩa. Sửa một bên phải sửa bên kia.
 
 **Hai đường nạp, không dùng lẫn.** `seed_quiz_bank` chỉ chạy trên bảng **rỗng** và cố ý **bỏ qua** chống trùng — đó là đường duy nhất mang được 9 cụm trùng có sẵn của bộ gốc vào. `import_quiz_questions` (migration 40) là đường nạp thêm khi bảng **đã có** dữ liệu và **bỏ** câu trùng.
 

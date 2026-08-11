@@ -30,6 +30,17 @@ export function quizNormalizeText(text: string): string {
   return (text || '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
+const KEY_FIELD_SEP = '\u0001';
+const KEY_OPTION_SEP = '\u0002';
+
+export function quizDuplicateKey<T extends { text: string }>(
+  questionText: string,
+  options: readonly T[]
+): string {
+  const parts = options.map(o => quizNormalizeText(o.text)).sort();
+  return quizNormalizeText(questionText) + KEY_FIELD_SEP + parts.join(KEY_OPTION_SEP);
+}
+
 export function optionLetter(index: number): string {
   let n = index + 1;
   let out = '';
@@ -83,25 +94,28 @@ export function relabelOptions(options: QuizOption[], correctAnswers: string[]):
   };
 }
 
-export function findDuplicateQuestion(
+export type DuplicateCandidate = Pick<QuizQuestion, 'Id' | 'QuestionText' | 'Options'>;
+
+export function findDuplicateQuestion<T extends { text: string }>(
   questionText: string,
-  questions: Pick<QuizQuestion, 'Id' | 'QuestionText'>[],
+  options: readonly T[],
+  questions: DuplicateCandidate[],
   excludeId?: number
-): Pick<QuizQuestion, 'Id' | 'QuestionText'> | null {
-  const key = quizNormalizeText(questionText);
-  if (!key) return null;
+): DuplicateCandidate | null {
+  if (!quizNormalizeText(questionText)) return null;
+  const key = quizDuplicateKey(questionText, options);
   return questions.find(q =>
-    q.Id !== excludeId && quizNormalizeText(q.QuestionText) === key
+    q.Id !== excludeId && quizDuplicateKey(q.QuestionText, q.Options) === key
   ) || null;
 }
 
 export function duplicateClusters(
-  questions: Pick<QuizQuestion, 'Id' | 'QuestionText'>[]
+  questions: DuplicateCandidate[]
 ): { key: string; ids: number[] }[] {
   const groups = new Map<string, number[]>();
   for (const q of questions) {
-    const key = quizNormalizeText(q.QuestionText);
-    if (!key) continue;
+    if (!quizNormalizeText(q.QuestionText)) continue;
+    const key = quizDuplicateKey(q.QuestionText, q.Options);
     const at = groups.get(key);
     if (at) at.push(q.Id);
     else groups.set(key, [q.Id]);
@@ -113,7 +127,7 @@ export function duplicateClusters(
 
 export function validateQuizDraft(
   draft: QuizDraft,
-  questions: Pick<QuizQuestion, 'Id' | 'QuestionText'>[],
+  questions: DuplicateCandidate[],
   excludeId?: number
 ): string[] {
   const errors: string[] = [];
@@ -146,7 +160,7 @@ export function validateQuizDraft(
     errors.push('Đã đánh dấu chưa chốt đáp án thì không chọn đáp án đúng nào được.');
   }
 
-  const duplicate = findDuplicateQuestion(draft.questionText, questions, excludeId);
+  const duplicate = findDuplicateQuestion(draft.questionText, filled, questions, excludeId);
   if (duplicate) {
     errors.push(`Câu hỏi này đã có trong ngân hàng (số ${duplicate.Id}).`);
   }

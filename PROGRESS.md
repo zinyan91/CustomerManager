@@ -809,23 +809,33 @@ Bốn câu 176, 194, 195, 198 đúng là mọi lựa chọn đều đúng, và h
 `"25 B.50 C.75 D.80"`. Câu này không trả lời được, cần mở nguồn ra tách lại. Chưa sửa vì
 không biết đáp án đúng là con nào.
 
-**Loại 3 — ba cụm trùng câu mà đáp án khác nhau.** Đo trên 662 câu: 9 cụm trùng nội dung, 24
-câu, 15 bản dư. Sáu cụm trùng vô hại (cùng đáp án). **Ba cụm dưới đây khác:**
+**Loại 3 — RÚT LẠI. "Ba cụm đang dạy sai" là kết luận sai của tôi.** Chủ dự án chỉ ra ngày
+11/08/2026: câu 267 và 274 tuy chung câu dẫn nhưng **bộ lựa chọn khác hẳn nhau**. Kiểm lại thì
+đúng — luật so trùng của tôi chỉ so phần câu hỏi, mà bộ đề có những câu dẫn chung chung
+(*"Các trường hợp sau đây theo quy định hiện hành VietBank hạn chế nhận thế chấp"*) dùng lại
+cho nhiều bộ lựa chọn. 267/272 là một câu (đáp án B), 274/283 là câu khác (đáp án D), mỗi đáp
+án đúng cho bộ lựa chọn của nó. Không bản nào dạy sai.
 
-| Cụm | Đáp án từng bản |
-| :--- | :--- |
-| 267, 272, 274, 283 | B · B · D · D |
-| 309, 325, 344, 345 | D · C · D · B |
-| 318, 343, 347 | A · C · B |
+Đo lại cả bộ:
 
-Ít nhất một bản trong mỗi cụm đang dạy sai, và người ôn tập gặp bản nào thì học theo bản đó.
-Hệ thống **không tự chọn** — tab gắn nhãn đỏ *"trùng câu, lệch đáp án"* trên từng câu để
-người có thẩm quyền mở văn bản gốc ra đối chiếu rồi xoá bản sai.
+| Luật so trùng | Cụm | Câu | Bản dư | Cụm lệch đáp án |
+| :--- | ---: | ---: | ---: | ---: |
+| Chỉ câu hỏi (sai) | 9 | 24 | 15 | 3 |
+| Câu hỏi + bộ lựa chọn | 6 | 12 | 6 | **0** |
+
+Migration 42 sửa luật ở cả CSDL lẫn mã nguồn. Luật mới **lỏng hơn** luật cũ nên không dòng nào
+đang nằm trong bảng bị coi là phạm — không phải dọn dữ liệu, chỉ đổi cách so.
+
+Cơ chế cảnh báo lệch đáp án **giữ nguyên** — nó vẫn đúng nếu về sau có hai bản trùng cả câu
+lẫn lựa chọn mà khác đáp án. Trên dữ liệu hiện tại nó không bắn nữa.
+
+**Bài học.** So trùng trên một phần của bản ghi thì sinh ra kết luận về phần còn lại. Cảnh báo
+ấy trông thuyết phục vì nó dẫn số hiệu câu cụ thể, nhưng số hiệu đúng không làm cho kết luận
+đúng. Đáng lẽ phải mở hai câu ra đọc trước khi viết chữ "đang dạy sai" vào tài liệu.
 
 **Đường sửa, bổ sung 11/08/2026.** Cảnh báo trên đầu tab hiện mỗi cụm thành một nút; bấm vào
-là ô tìm kiếm nhận `#267,272,274,283` và danh sách lọc còn đúng bốn câu đó, đáp án tô sẵn
-nên đọc là thấy ngay bản nào lệch. Sửa tại chỗ bằng nút bút chì, hoặc xoá bản sai. Xoá xong
-cụm tự hết cảnh báo — có test khoá.
+là ô tìm kiếm nhận `#267,272` và danh sách lọc còn đúng các câu đó, đáp án tô sẵn nên đọc là
+thấy ngay. Sửa tại chỗ bằng nút bút chì, hoặc xoá bản dư. Xoá xong cụm tự hết cảnh báo.
 
 ## §33. Nạp thêm bộ câu hỏi từ tệp JSON
 
@@ -926,6 +936,7 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 | ✅ | Khung nhập liệu | Số lựa chọn thêm bớt được (2–12), mã dồn lại khi xoá lựa chọn giữa, tích nhiều đáp án đúng. Báo trùng ngay lúc nhập **và** hứng lỗi trùng từ CSDL |
 | ✅ | Sửa câu hỏi tại chỗ | Nút bút chì mỗi dòng. Khi sửa thì **không tự coi mình là trùng**, nhưng sửa thành trùng câu KHÁC thì vẫn chặn |
 | ✅ | 47 test dựng màn hình | Gồm đúng ca yêu cầu: submit câu đã có thì báo trùng |
+| ✅ | Migration 42 — sửa luật so trùng | So bằng câu hỏi **+ bộ lựa chọn**. Rút lại cảnh báo "3 cụm dạy sai" — đó là báo động giả do luật cũ quá thô. Xem §31 |
 | ✅ | Migration 40 — nạp thêm tệp JSON, tự bỏ trùng | Nạp được vào bảng đã có dữ liệu. Báo cáo tách 4 loại; câu trùng mà **khác đáp án** thì bỏ, không ghi đè, nêu cả hai đáp án. Xem §33 |
 | ✅ | Migration 39 — trạng thái "chưa chốt đáp án" | `CorrectAnswers` rỗng. Hai câu *"CÂU NÀO CŨNG SAI"* (504, 570) để trống theo chốt 10/08/2026. Luyện tập bỏ qua và nói rõ bỏ bao nhiêu |
 | ⚠️ | Ba cụm trùng có đáp án khác nhau | `(267,272,274,283)`, `(309,325,344,345)`, `(318,343,347)`. Ít nhất một bản mỗi cụm đang dạy sai. Xem §31 |

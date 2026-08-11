@@ -4,13 +4,13 @@ import { UI, BTN_PRIMARY, BTN_SECONDARY, SECTION_LABEL } from '../../lib/uiClass
 import {
   optionLetter, relabelOptions, validateQuizDraft, findDuplicateQuestion,
   MIN_DRAFT_OPTIONS, MAX_DRAFT_OPTIONS,
-  type QuizDraft, type QuizQuestion,
+  type QuizDraft, type DuplicateCandidate,
 } from '../../lib/quizBank';
 
 interface QuizQuestionFormProps {
   draft: QuizDraft;
   setDraft: (next: QuizDraft) => void;
-  questions: Pick<QuizQuestion, 'Id' | 'QuestionText'>[];
+  questions: DuplicateCandidate[];
   saving: boolean;
   onSubmit: () => void;
   onCancel: () => void;
@@ -21,7 +21,12 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
   draft, setDraft, questions, saving, onSubmit, onCancel, editingId,
 }) => {
   const errors = validateQuizDraft(draft, questions, editingId);
-  const duplicate = findDuplicateQuestion(draft.questionText, questions, editingId);
+  const duplicate = findDuplicateQuestion(
+    draft.questionText,
+    draft.options.filter(o => o.text.trim() !== ''),
+    questions,
+    editingId
+  );
 
   const setOptionText = (index: number, text: string) => {
     setDraft({

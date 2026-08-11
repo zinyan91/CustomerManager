@@ -14,6 +14,7 @@ import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
 import { BusinessPlanSheet } from '../businessPlan/BusinessPlanSheet';
+import { ToiLoanCalcSection } from '../businessPlan/ToiLoanCalcSection';
 import { UNIT_LABEL, type MoneyUnit } from '../businessPlan/units';
 
 const BASIS_FIELDS: { key: BasisKey; label: string }[] = [
@@ -32,6 +33,7 @@ const BASIS_FIELDS: { key: BasisKey; label: string }[] = [
 export const BusinessPlanView: React.FC = () => {
   const [input, setInput] = useState<BusinessPlanInput>(() => emptyBusinessPlanInput(todayIso()));
   const [unit, setUnit] = useState<MoneyUnit>('million');
+  const [activeSubTab, setActiveSubTab] = useState<'sheet' | 'toi'>('sheet');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const result = useMemo(() => computeBusinessPlan(input), [input]);
@@ -84,14 +86,44 @@ export const BusinessPlanView: React.FC = () => {
     <div className="space-y-3 text-xs pb-4">
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
-      <div className={`${UI.containerCardBg} rounded-lg p-3 border`}>
-        <div className="flex items-center gap-2 mb-3">
-          <ClipboardList className="w-5 h-5 text-accent" />
-          <h2 className="text-sm font-bold tracking-tight text-accent">BẢNG TÍNH HẠN MỨC</h2>
-          <span className="text-[11px] text-ink-faint">
-            Bảng nhập liệu cho tờ trình · không lưu, đóng tab là mất
-          </span>
-        </div>
+      {/* Sub-tab navigation */}
+      <div className="flex border-b border-line gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('sheet')}
+          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors ${
+            activeSubTab === 'sheet'
+              ? 'border-accent text-accent bg-accent-soft/30'
+              : 'border-transparent text-ink-muted hover:text-ink'
+          }`}
+        >
+          Bảng Phương án & Hạn mức
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('toi')}
+          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors ${
+            activeSubTab === 'toi'
+              ? 'border-accent text-accent bg-accent-soft/30'
+              : 'border-transparent text-ink-muted hover:text-ink'
+          }`}
+        >
+          Dự phóng Thu nhập TOI (Tín dụng VNĐ)
+        </button>
+      </div>
+
+      {activeSubTab === 'toi' ? (
+        <ToiLoanCalcSection />
+      ) : (
+        <>
+          <div className={`${UI.containerCardBg} rounded-lg p-3 border`}>
+            <div className="flex items-center gap-2 mb-3">
+              <ClipboardList className="w-5 h-5 text-accent" />
+              <h2 className="text-sm font-bold tracking-tight text-accent">BẢNG TÍNH HẠN MỨC</h2>
+              <span className="text-[11px] text-ink-faint">
+                Bảng nhập liệu cho tờ trình · không lưu, đóng tab là mất
+              </span>
+            </div>
 
         <div className="grid grid-cols-2 md:grid-cols-7 gap-2 items-end">
           <label className="block col-span-2">
@@ -177,14 +209,19 @@ export const BusinessPlanView: React.FC = () => {
           {BASIS_FIELDS.map(({ key, label }) => (
             <label key={key} className="block">
               <span className={labelCls}>{label}</span>
-              <textarea rows={2} value={input.basis[key] || ''}
+              <textarea
+                rows={2}
+                value={input.basis[key] || ''}
                 onChange={e => patch({ basis: { ...input.basis, [key]: e.target.value } })}
                 placeholder="Bỏ trống thì phụ lục tự ghi tỷ trọng trên doanh thu"
-                className={controlCls} />
+                className={controlCls}
+              />
             </label>
           ))}
         </div>
       </div>
-    </div>
+    </>
+  )}
+</div>
   );
 };

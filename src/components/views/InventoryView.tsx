@@ -16,6 +16,29 @@ import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
 
+const QtyCellInput: React.FC<{
+  value: number;
+  onChange: (v: number) => void;
+  className?: string;
+}> = ({ value, onChange, className }) => {
+  const [dangGo, setDangGo] = useState<string | null>(null);
+  const shown = dangGo ?? (value === 0 ? '' : value.toLocaleString('vi-VN'));
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={shown}
+      onChange={e => {
+        setDangGo(e.target.value);
+        onChange(parseMoneyDecimalInput(e.target.value));
+      }}
+      onBlur={() => setDangGo(null)}
+      className={className}
+    />
+  );
+};
+
 export const InventoryView: React.FC = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('htk-lúa-gạo');
   const [categoryName, setCategoryName] = useState<string>('HTK Lúa Gạo');
@@ -50,7 +73,7 @@ export const InventoryView: React.FC = () => {
     if (tpl) {
       setCategoryName(tpl.name);
       setItems(tpl.items.map(it => ({ ...it, id: nextItemId() })));
-      showNotify('success', `Đã nạp danh mục mẫu: ${tpl.name} (${tpl.items.length} mặt hàng).`);
+      showNotify('success', `Đã nạp danh mục mẫu: ${tpl.name}.`);
     }
   };
 
@@ -220,7 +243,7 @@ export const InventoryView: React.FC = () => {
             >
               {INVENTORY_TEMPLATES.map(t => (
                 <option key={t.id} value={t.id}>
-                  {t.name} ({t.items.length} mặt hàng)
+                  {t.name}
                 </option>
               ))}
             </select>
@@ -404,7 +427,7 @@ export const InventoryView: React.FC = () => {
         </div>
 
         <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-          <table className="w-full text-left text-xs border-collapse min-w-[1100px]">
+          <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
             <thead className="sticky top-0 bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line z-10">
               <tr>
                 <th className="p-2 text-center w-24" rowSpan={2}>MÃ HÀNG</th>
@@ -413,8 +436,7 @@ export const InventoryView: React.FC = () => {
                 <th className="p-1.5 text-center border-l border-line bg-panel-muted/80" colSpan={2}>ĐẦU KỲ</th>
                 <th className="p-1.5 text-center border-l border-line bg-panel-muted/80" colSpan={2}>NHẬP KHO</th>
                 <th className="p-1.5 text-center border-l border-line bg-panel-muted/80" colSpan={2}>XUẤT KHO</th>
-                <th className="p-1.5 text-center border-l border-line bg-accent-soft text-accent" colSpan={2}>CUỐI KỲ</th>
-                <th className="p-2 text-right w-28 border-l border-line" rowSpan={2}>ĐƠN GIÁ (VND)</th>
+                <th className="p-1.5 text-center border-l border-line bg-pos-soft text-pos font-bold" colSpan={2}>CUỐI KỲ</th>
                 <th className="p-2 text-center w-10" rowSpan={2}></th>
               </tr>
               <tr>
@@ -424,8 +446,8 @@ export const InventoryView: React.FC = () => {
                 <th className="p-1.5 text-right">GIÁ TRỊ (VND)</th>
                 <th className="p-1.5 text-right border-l border-line">SỐ LƯỢNG</th>
                 <th className="p-1.5 text-right">GIÁ TRỊ (VND)</th>
-                <th className="p-1.5 text-right border-l border-line bg-accent-soft text-accent">SỐ LƯỢNG</th>
-                <th className="p-1.5 text-right bg-accent-soft text-accent">GIÁ TRỊ (VND)</th>
+                <th className="p-1.5 text-right border-l border-line bg-pos-soft text-pos font-bold">SỐ LƯỢNG</th>
+                <th className="p-1.5 text-right bg-pos-soft text-pos font-bold">GIÁ TRỊ (VND)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -460,11 +482,9 @@ export const InventoryView: React.FC = () => {
 
                     {/* Đầu kỳ */}
                     <td className="p-1 border-l border-line">
-                      <input
-                        type="text"
-                        inputMode="decimal"
+                      <QtyCellInput
                         value={r.beginningQty}
-                        onChange={e => updateItem(r.id, { beginningQty: parseMoneyDecimalInput(e.target.value) })}
+                        onChange={v => updateItem(r.id, { beginningQty: v })}
                         className={`${cellInputCls} text-right`}
                       />
                     </td>
@@ -474,11 +494,9 @@ export const InventoryView: React.FC = () => {
 
                     {/* Nhập kho */}
                     <td className="p-1 border-l border-line">
-                      <input
-                        type="text"
-                        inputMode="decimal"
+                      <QtyCellInput
                         value={r.importQty}
-                        onChange={e => updateItem(r.id, { importQty: parseMoneyDecimalInput(e.target.value) })}
+                        onChange={v => updateItem(r.id, { importQty: v })}
                         className={`${cellInputCls} text-right`}
                       />
                     </td>
@@ -488,11 +506,9 @@ export const InventoryView: React.FC = () => {
 
                     {/* Xuất kho */}
                     <td className="p-1 border-l border-line">
-                      <input
-                        type="text"
-                        inputMode="decimal"
+                      <QtyCellInput
                         value={r.exportQty}
-                        onChange={e => updateItem(r.id, { exportQty: parseMoneyDecimalInput(e.target.value) })}
+                        onChange={v => updateItem(r.id, { exportQty: v })}
                         className={`${cellInputCls} text-right`}
                       />
                     </td>
@@ -501,22 +517,11 @@ export const InventoryView: React.FC = () => {
                     </td>
 
                     {/* Cuối kỳ */}
-                    <td className="p-2 text-right font-mono font-bold text-pos border-l border-line bg-pos-soft/30">
+                    <td className="p-2 text-right font-mono font-bold text-pos border-l border-line bg-pos-soft/40">
                       {r.endingQty.toLocaleString('vi-VN')}
                     </td>
-                    <td className="p-2 text-right font-mono font-bold text-pos bg-pos-soft/30">
+                    <td className="p-2 text-right font-mono font-bold text-pos bg-pos-soft/40">
                       {fmtMoney(r.endingValue)}
-                    </td>
-
-                    {/* Đơn giá */}
-                    <td className="p-1 border-l border-line">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={r.unitPrice}
-                        onChange={e => updateItem(r.id, { unitPrice: parseMoneyDecimalInput(e.target.value) })}
-                        className={`${cellInputCls} text-right font-bold`}
-                      />
                     </td>
 
                     <td className="p-1 text-center">
@@ -543,9 +548,8 @@ export const InventoryView: React.FC = () => {
                 <td className="p-2 text-right font-mono">{fmtMoney(summary.totalImportValue)}</td>
                 <td className="p-2 text-right font-mono border-l border-line">{summary.totalExportQty.toLocaleString('vi-VN')}</td>
                 <td className="p-2 text-right font-mono">{fmtMoney(summary.totalExportValue)}</td>
-                <td className="p-2 text-right font-mono border-l border-line text-pos text-sm">{summary.totalEndingQty.toLocaleString('vi-VN')}</td>
-                <td className="p-2 text-right font-mono text-pos text-sm">{fmtMoney(summary.totalEndingValue)}</td>
-                <td className="p-2 border-l border-line"></td>
+                <td className="p-2 text-right font-mono border-l border-line text-pos text-sm bg-pos-soft/60">{summary.totalEndingQty.toLocaleString('vi-VN')}</td>
+                <td className="p-2 text-right font-mono text-pos text-sm bg-pos-soft/60">{fmtMoney(summary.totalEndingValue)}</td>
                 <td className="p-2"></td>
               </tr>
             </tfoot>

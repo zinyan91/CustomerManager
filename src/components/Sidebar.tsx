@@ -32,15 +32,20 @@ const menuGroups: {
     ],
   },
   {
-    groupKey: 'nav.groupTools',
+    groupKey: 'nav.groupBusinessTools',
     items: [
       { id: 'calculators', labelKey: 'nav.calculators', icon: Calculator },
       { id: 'business-plan', labelKey: 'nav.businessPlan', icon: ClipboardList },
       { id: 'inventory', labelKey: 'nav.inventory', icon: Boxes },
-      { id: 'mdsdv', labelKey: 'nav.mdsdv', icon: Target },
-      { id: 'card-policies', labelKey: 'nav.cardPolicies', icon: BookOpen },
       { id: 'rate-quote', labelKey: 'nav.rateQuote', icon: Percent },
       { id: 'cof', labelKey: 'nav.cof', icon: Landmark },
+    ],
+  },
+  {
+    groupKey: 'nav.groupLookup',
+    items: [
+      { id: 'mdsdv', labelKey: 'nav.mdsdv', icon: Target },
+      { id: 'card-policies', labelKey: 'nav.cardPolicies', icon: BookOpen },
       { id: 'templates', labelKey: 'nav.templates', icon: FileSignature },
       { id: 'quiz-bank', labelKey: 'nav.quizBank', icon: GraduationCap },
     ],

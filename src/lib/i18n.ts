@@ -13,7 +13,9 @@ const dictionary = {
   vi: {
     'nav.groupOverview': 'Tổng quan',
     'nav.groupRecords': 'Hồ sơ tín dụng',
-    'nav.groupTools': 'Công cụ',
+    'nav.groupTools': 'Công cụ & Phương án',
+    'nav.groupBusinessTools': 'Công cụ & Phương án',
+    'nav.groupLookup': 'Tra cứu & Biểu mẫu',
     'nav.groupControl': 'Kiểm soát',
     'nav.dashboard': 'Tổng quan',
     'nav.customers': 'Danh sách khách hàng',
@@ -95,7 +97,9 @@ const dictionary = {
   en: {
     'nav.groupOverview': 'Overview',
     'nav.groupRecords': 'Credit records',
-    'nav.groupTools': 'Tools',
+    'nav.groupTools': 'Business & Analysis',
+    'nav.groupBusinessTools': 'Business & Analysis',
+    'nav.groupLookup': 'Reference & Resources',
     'nav.groupControl': 'Control',
     'nav.dashboard': 'Dashboard',
     'nav.customers': 'Customers',

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Calculator, TrendingUp, DollarSign, Percent, Copy, Check, ShieldCheck } from 'lucide-react';
+import { Calculator, TrendingUp, DollarSign, Percent, ShieldCheck } from 'lucide-react';
 import {
   defaultToiLoanInputs, computeToiLoanSummary, type ToiLoanMonthInput,
 } from '../../lib/toiMath';
@@ -8,33 +8,53 @@ import { UI } from '../../lib/uiClasses';
 
 export const ToiLoanCalcSection: React.FC = () => {
   const [inputs, setInputs] = useState<ToiLoanMonthInput[]>(defaultToiLoanInputs);
-  const [copiedSuccess, setCopiedSuccess] = useState(false);
 
-  // Global rates controls for fast editing across 12 months
+  // Master controls for instant real-time sync to all 12 months
+  const [globalShortBal, setGlobalShortBal] = useState<string>('1250');
   const [globalShortRate, setGlobalShortRate] = useState<string>('9.0');
   const [globalShortFtp, setGlobalShortFtp] = useState<string>('8.0');
+
+  const [globalLongBal, setGlobalLongBal] = useState<string>('0');
   const [globalLongRate, setGlobalLongRate] = useState<string>('10.5');
   const [globalLongFtp, setGlobalLongFtp] = useState<string>('8.5');
 
   const summary = useMemo(() => computeToiLoanSummary(inputs), [inputs]);
 
-  const applyGlobalRatesToAllMonths = () => {
-    const sRate = parseMoneyDecimalInput(globalShortRate);
-    const sFtp = parseMoneyDecimalInput(globalShortFtp);
-    const lRate = parseMoneyDecimalInput(globalLongRate);
-    const lFtp = parseMoneyDecimalInput(globalLongFtp);
+  // Master update handlers (Real-time auto sync across 12 months)
+  const updateMasterShortBal = (valStr: string) => {
+    setGlobalShortBal(valStr);
+    const num = parseMoneyDecimalInput(valStr);
+    setInputs(prev => prev.map(it => ({ ...it, shortTermBal: num })));
+  };
 
-    setInputs(prev =>
-      prev.map(it => ({
-        ...it,
-        shortTermRate: sRate,
-        shortTermFtp: sFtp,
-        longTermRate: lRate,
-        longTermFtp: lFtp,
-      }))
-    );
-    setCopiedSuccess(true);
-    setTimeout(() => setCopiedSuccess(false), 3000);
+  const updateMasterShortRate = (valStr: string) => {
+    setGlobalShortRate(valStr);
+    const num = parseMoneyDecimalInput(valStr);
+    setInputs(prev => prev.map(it => ({ ...it, shortTermRate: num })));
+  };
+
+  const updateMasterShortFtp = (valStr: string) => {
+    setGlobalShortFtp(valStr);
+    const num = parseMoneyDecimalInput(valStr);
+    setInputs(prev => prev.map(it => ({ ...it, shortTermFtp: num })));
+  };
+
+  const updateMasterLongBal = (valStr: string) => {
+    setGlobalLongBal(valStr);
+    const num = parseMoneyDecimalInput(valStr);
+    setInputs(prev => prev.map(it => ({ ...it, longTermBal: num })));
+  };
+
+  const updateMasterLongRate = (valStr: string) => {
+    setGlobalLongRate(valStr);
+    const num = parseMoneyDecimalInput(valStr);
+    setInputs(prev => prev.map(it => ({ ...it, longTermRate: num })));
+  };
+
+  const updateMasterLongFtp = (valStr: string) => {
+    setGlobalLongFtp(valStr);
+    const num = parseMoneyDecimalInput(valStr);
+    setInputs(prev => prev.map(it => ({ ...it, longTermFtp: num })));
   };
 
   const updateMonthInput = (monthIdx: number, patch: Partial<ToiLoanMonthInput>) => {
@@ -43,43 +63,110 @@ export const ToiLoanCalcSection: React.FC = () => {
     );
   };
 
-  const copyShortBalToAllMonths = (val: number) => {
-    setInputs(prev => prev.map(it => ({ ...it, shortTermBal: val })));
-  };
-
-  const copyLongBalToAllMonths = (val: number) => {
-    setInputs(prev => prev.map(it => ({ ...it, longTermBal: val })));
-  };
-
   const cellInputCls =
     'w-full bg-transparent text-xs p-1 text-right rounded border border-transparent hover:border-line focus:border-accent focus:bg-panel outline-none transition-colors font-mono';
 
   return (
     <div className={`${UI.containerCardBg} rounded-lg p-4 border space-y-4`}>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-line pb-3">
-        <div className="flex items-center space-x-2.5">
-          <div className="p-2 bg-accent-soft rounded-lg text-accent">
-            <Calculator className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-accent tracking-tight uppercase">
-              DỰ PHÓNG THU NHẬP TOI CHO VAY (TÍN DỤNG VNĐ)
-            </h2>
-            <p className="text-xs text-ink-faint">
-              Tính toán tổng thu nhập hoạt động (Total Operating Income) từ dư nợ cho vay VND 12 tháng dựa trên Margin (Lãi suất KH − Giá vốn FTP)
-            </p>
-          </div>
+      {/* Header (No subtitle text) */}
+      <div className="flex items-center space-x-2.5 border-b border-line pb-3">
+        <div className="p-2 bg-accent-soft rounded-lg text-accent">
+          <Calculator className="w-5 h-5" />
+        </div>
+        <div>
+          <h2 className="text-sm font-bold text-accent tracking-tight uppercase">
+            DỰ PHÓNG THU NHẬP TOI CHO VAY (TÍN DỤNG VNĐ)
+          </h2>
+        </div>
+      </div>
+
+      {/* Master Input Control Box (Auto-syncs all 12 months) */}
+      <div className="bg-panel-muted/50 rounded-lg p-3.5 border border-line space-y-3">
+        <div className="text-[11px] font-bold text-ink uppercase tracking-wide flex items-center justify-between border-b border-line pb-2">
+          <span className="flex items-center space-x-1.5 text-accent">
+            <ShieldCheck className="w-4 h-4" />
+            <span>Thông số chung (Tự động cập nhật 12 tháng)</span>
+          </span>
+          <span className="text-[10px] font-normal text-ink-faint lowercase">
+            (thay đổi thông số tại đây sẽ áp dụng ngay cho toàn bộ 12 tháng)
+          </span>
         </div>
 
-        <button
-          type="button"
-          onClick={applyGlobalRatesToAllMonths}
-          className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded font-bold flex items-center space-x-1.5 transition-colors self-end sm:self-auto"
-        >
-          {copiedSuccess ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-          <span>Áp dụng lãi suất cho 12 tháng</span>
-        </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Ngắn hạn */}
+          <div className="bg-panel rounded-md p-2.5 border border-line space-y-2">
+            <div className="text-xs font-bold text-accent uppercase">Cho vay Ngắn hạn (VND)</div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">DNBQ (Triệu VNĐ)</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={globalShortBal}
+                  onChange={e => updateMasterShortBal(e.target.value)}
+                  className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right font-bold text-accent`}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">Lãi suất (%/năm)</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={globalShortRate}
+                  onChange={e => updateMasterShortRate(e.target.value)}
+                  className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right font-bold`}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">FTP (%/năm)</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={globalShortFtp}
+                  onChange={e => updateMasterShortFtp(e.target.value)}
+                  className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right font-bold`}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Trung dài hạn */}
+          <div className="bg-panel rounded-md p-2.5 border border-line space-y-2">
+            <div className="text-xs font-bold text-accent uppercase">Cho vay Trung dài hạn (VND)</div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">DNBQ (Triệu VNĐ)</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={globalLongBal}
+                  onChange={e => updateMasterLongBal(e.target.value)}
+                  className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right font-bold text-accent`}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">Lãi suất (%/năm)</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={globalLongRate}
+                  onChange={e => updateMasterLongRate(e.target.value)}
+                  className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right font-bold`}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">FTP (%/năm)</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={globalLongFtp}
+                  onChange={e => updateMasterLongFtp(e.target.value)}
+                  className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right font-bold`}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -130,56 +217,6 @@ export const ToiLoanCalcSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Global Rates Control Box */}
-      <div className="bg-panel-muted/40 rounded-lg p-3 border border-line space-y-2">
-        <div className="text-[11px] font-bold text-ink uppercase tracking-wide flex items-center space-x-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-          <span>Thông số Lãi suất & FTP áp dụng chung</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">LS Ngắn hạn (%/năm)</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={globalShortRate}
-              onChange={e => setGlobalShortRate(e.target.value)}
-              className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right font-bold`}
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">FTP Ngắn hạn (%/năm)</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={globalShortFtp}
-              onChange={e => setGlobalShortFtp(e.target.value)}
-              className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right font-bold`}
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">LS Trung dài hạn (%/năm)</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={globalLongRate}
-              onChange={e => setGlobalLongRate(e.target.value)}
-              className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right font-bold`}
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">FTP Trung dài hạn (%/năm)</label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={globalLongFtp}
-              onChange={e => setGlobalLongFtp(e.target.value)}
-              className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right font-bold`}
-            />
-          </div>
-        </div>
-      </div>
-
       {/* 12 Months Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse min-w-[850px]">
@@ -217,7 +254,6 @@ export const ToiLoanCalcSection: React.FC = () => {
                       onChange={e => {
                         const val = parseMoneyDecimalInput(e.target.value);
                         updateMonthInput(idx, { shortTermBal: val });
-                        if (idx === 0) copyShortBalToAllMonths(val);
                       }}
                       className={`${cellInputCls} font-bold`}
                       placeholder="0"
@@ -239,7 +275,6 @@ export const ToiLoanCalcSection: React.FC = () => {
                       onChange={e => {
                         const val = parseMoneyDecimalInput(e.target.value);
                         updateMonthInput(idx, { longTermBal: val });
-                        if (idx === 0) copyLongBalToAllMonths(val);
                       }}
                       className={`${cellInputCls} font-bold`}
                       placeholder="0"

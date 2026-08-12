@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, Search, Users, Upload } from 'lucide-react';
+import { Plus, Trash2, Search, Users } from 'lucide-react';
 import {
-  computeReceivableItemRow, computeReceivableSummary, nextDebtItemId, parseReceivableText,
+  computeReceivableItemRow, computeReceivableSummary, nextDebtItemId,
   type ReceivableItem,
 } from '../../lib/debt';
 import { fmtMoney, parseMoneyDecimalInput } from '../../lib/utils';
@@ -82,28 +82,6 @@ export const DebtReceivableTab: React.FC<DebtReceivableTabProps> = ({
     onChangeReceivables(receivables.filter(it => it.id !== id));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const text = evt.target?.result as string;
-        const parsed = parseReceivableText(text);
-        if (parsed.length > 0) {
-          onChangeReceivables(parsed);
-          showNotify('success', `Đã nạp ${parsed.length} khách hàng công nợ từ tệp ${file.name}`);
-        } else {
-          showNotify('error', 'Không tìm thấy dữ liệu công nợ hợp lệ trong tệp.');
-        }
-      } catch (err: any) {
-        showNotify('error', 'Lỗi khi đọc tệp: ' + (err?.message || 'Định dạng tệp không hỗ trợ'));
-      }
-    };
-    reader.readAsText(file);
-  };
-
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return receivables;
     const term = searchTerm.toLowerCase().trim();
@@ -117,7 +95,7 @@ export const DebtReceivableTab: React.FC<DebtReceivableTabProps> = ({
 
   return (
     <div className="space-y-4 text-xs">
-      {/* Top Controls & Upload */}
+      {/* Top Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
           <div className="p-2 bg-accent-soft rounded-lg text-accent">
@@ -132,12 +110,6 @@ export const DebtReceivableTab: React.FC<DebtReceivableTabProps> = ({
             </p>
           </div>
         </div>
-
-        <label className="bg-panel-muted hover:bg-line text-ink text-xs px-3 py-1.5 rounded-md font-bold flex items-center space-x-1.5 cursor-pointer border border-line transition-colors">
-          <Upload className="w-3.5 h-3.5" />
-          <span>Nạp tệp Excel/CSV Phải thu</span>
-          <input type="file" accept=".xlsx,.xls,.csv,.tsv,.txt" onChange={handleFileUpload} className="hidden" />
-        </label>
       </div>
 
       {/* KPI Cards */}

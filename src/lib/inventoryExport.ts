@@ -392,29 +392,52 @@ export function buildPurchaseStatementXlsx(
   const rows: XlsxCell[][] = [];
   const merges: string[] = [];
 
+  // Row 1: Quốc hiệu
   rows.push([{ value: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', style: { bold: true, align: 'center' } }]);
-  merges.push('A1:I1');
+  merges.push('A1:J1');
+
+  // Row 2: Tiêu ngữ
   rows.push([{ value: 'Độc lập - Tự do - Hạnh Phúc', style: { bold: true, align: 'center' } }]);
-  merges.push('A2:I2');
+  merges.push('A2:J2');
+
+  // Row 3: Dấu sao
   rows.push([{ value: '*************', style: { align: 'center' } }]);
-  merges.push('A3:I3');
+  merges.push('A3:J3');
+
+  // Row 4: Trống
   rows.push([]);
+
+  // Row 5: Tiêu đề Bảng kê
   rows.push([{ value: 'BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ', style: { bold: true, align: 'center' } }]);
-  merges.push('A5:I5');
+  merges.push('A5:J5');
+
+  // Row 6: Trống
   rows.push([]);
 
+  // Row 7: Bên bán hàng
+  const sellerIdText = [info.sellerIdCard, info.sellerBankAcc].filter(Boolean).join(' - ');
   rows.push([{ value: `Bên bán hàng: ${info.sellerName || ''}`, style: { bold: true } }]);
-  merges.push('A7:I7');
-  rows.push([{ value: `CMND/CCCD/STK: ${info.sellerIdCard || ''} ${info.sellerBankAcc || ''}` }]);
-  merges.push('A8:I8');
-  rows.push([]);
-  rows.push([{ value: `Bên mua hàng: ${info.buyerName || ''}`, style: { bold: true } }]);
-  merges.push('A10:I10');
-  rows.push([{ value: `CMND/CCCD số: ${info.buyerIdCard || ''}` }]);
-  merges.push('A11:I11');
+  merges.push('A7:J7');
+
+  // Row 8: CMND/CCCD Bên bán
+  rows.push([{ value: `CMND/CCCD số: ${sellerIdText || ''}` }]);
+  merges.push('A8:J8');
+
+  // Row 9: Trống
   rows.push([]);
 
-  // Table Header Row 1 (Row 13 in Excel)
+  // Row 10: Bên mua hàng
+  rows.push([{ value: `Bên mua hàng: ${info.buyerName || ''}`, style: { bold: true } }]);
+  merges.push('A10:J10');
+
+  // Row 11: CMND/CCCD Bên mua
+  rows.push([{ value: `CMND/CCCD số: ${info.buyerIdCard || ''}` }]);
+  merges.push('A11:J11');
+
+  // Row 12: Trống
+  rows.push([]);
+
+  // Table Header Row 1 (Row 13)
   rows.push([
     { value: 'Ngày, tháng,\nnăm', style: { bold: true, align: 'center', vAlign: 'center' } },
     { value: 'Người bán', style: { bold: true, align: 'center' } },
@@ -424,20 +447,22 @@ export function buildPurchaseStatementXlsx(
     { value: '' },
     { value: '' },
     { value: '' },
+    { value: '' },
     { value: 'Ghi chú', style: { bold: true, align: 'center', vAlign: 'center' } },
   ]);
   merges.push('A13:A14');
   merges.push('B13:D13');
-  merges.push('E13:H13');
-  merges.push('I13:I14');
+  merges.push('E13:I13');
+  merges.push('J13:J14');
 
-  // Table Header Row 2 (Row 14 in Excel)
+  // Table Header Row 2 (Row 14)
   rows.push([
     { value: '' },
     { value: 'Tên người bán', style: { bold: true, align: 'center' } },
     { value: 'Địa chỉ', style: { bold: true, align: 'center' } },
     { value: 'Số CMND/CCCD/\nSTK', style: { bold: true, align: 'center' } },
     { value: 'Tên hàng hóa, dịch vụ', style: { bold: true, align: 'center' } },
+    { value: 'ĐVT', style: { bold: true, align: 'center' } },
     { value: 'Số lượng\n(kg)', style: { bold: true, align: 'center' } },
     { value: 'Đơn giá\n(kg)', style: { bold: true, align: 'center' } },
     { value: 'Thành tiền', style: { bold: true, align: 'center' } },
@@ -461,8 +486,9 @@ export function buildPurchaseStatementXlsx(
       { value: idx === 0 ? (c.dateStr || '…../…../2024') : '', style: { align: 'center', vAlign: 'center' } },
       { value: idx === 0 ? (info.sellerName || '') : '', style: { vAlign: 'center' } },
       { value: idx === 0 ? (info.sellerAddress || '') : '', style: { vAlign: 'center' } },
-      { value: idx === 0 ? (`${info.sellerIdCard || ''} ${info.sellerBankAcc || ''}`.trim()) : '', style: { vAlign: 'center' } },
+      { value: idx === 0 ? sellerIdText : '', style: { vAlign: 'center' } },
       { value: c.itemName, style: { bold: true } },
+      { value: c.unit || 'Cái', style: { align: 'center' } },
       { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
       { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
       { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
@@ -480,15 +506,49 @@ export function buildPurchaseStatementXlsx(
     { value: '' },
     { value: '' },
     { value: '' },
+    { value: '' },
     { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
     { value: '' },
   ]);
-  merges.push(`A${totalRowIndex}:G${totalRowIndex}`);
+  merges.push(`A${totalRowIndex}:H${totalRowIndex}`);
+
+  // Date & Signature Footer Rows
+  rows.push([]); // totalRowIndex + 1
+  const dateRowIndex = totalRowIndex + 2;
+  rows.push([
+    { value: '' }, { value: '' }, { value: '' }, { value: '' }, { value: '' },
+    { value: 'Tp. HCM, ngày ….. tháng …... năm 2024', style: { align: 'center' } },
+    { value: '' }, { value: '' }, { value: '' }, { value: '' },
+  ]);
+  merges.push(`F${dateRowIndex}:H${dateRowIndex}`);
+
+  const sigTitleRowIndex = dateRowIndex + 2;
+  rows.push([
+    { value: 'Bên bán hàng', style: { bold: true, align: 'center' } },
+    { value: '' }, { value: '' }, { value: '' }, { value: '' },
+    { value: 'Bên mua hàng', style: { bold: true, align: 'center' } },
+    { value: '' }, { value: '' }, { value: '' }, { value: '' },
+  ]);
+  merges.push(`A${sigTitleRowIndex}:C${sigTitleRowIndex}`);
+  merges.push(`F${sigTitleRowIndex}:H${sigTitleRowIndex}`);
+
+  // 5 empty rows for signature space
+  rows.push([]); rows.push([]); rows.push([]); rows.push([]); rows.push([]);
+
+  const sigNameRowIndex = sigTitleRowIndex + 6;
+  rows.push([
+    { value: (info.sellerName || '').toUpperCase(), style: { bold: true, align: 'center' } },
+    { value: '' }, { value: '' }, { value: '' }, { value: '' },
+    { value: (info.buyerName || '').toUpperCase(), style: { bold: true, align: 'center' } },
+    { value: '' }, { value: '' }, { value: '' }, { value: '' },
+  ]);
+  merges.push(`A${sigNameRowIndex}:C${sigNameRowIndex}`);
+  merges.push(`F${sigNameRowIndex}:H${sigNameRowIndex}`);
 
   const sheet: XlsxSheet = {
     name: 'BẢNG KÊ MUA BÁN',
     rows,
-    colWidths: [14, 22, 20, 24, 30, 14, 16, 20, 14],
+    colWidths: [14, 20, 18, 26, 28, 10, 14, 16, 20, 14],
     merges,
   };
 
@@ -501,6 +561,7 @@ export function buildPurchaseStatementDocHtml(
 ): string {
   const summary = computeStatementSummary(items);
   const n = items.length;
+  const sellerIdText = [info.sellerIdCard, info.sellerBankAcc].filter(Boolean).join(' - ');
 
   const itemRows = items.map((it, idx) => {
     const c = computeStatementItem(it);
@@ -510,9 +571,10 @@ export function buildPurchaseStatementDocHtml(
           <td rowspan="${n}" class="text-center">${c.dateStr || '…../…../2024'}</td>
           <td rowspan="${n}">${info.sellerName || ''}</td>
           <td rowspan="${n}">${info.sellerAddress || ''}</td>
-          <td rowspan="${n}">${info.sellerIdCard || ''} ${info.sellerBankAcc ? `<br/><small>${info.sellerBankAcc}</small>` : ''}</td>
+          <td rowspan="${n}">${sellerIdText}</td>
         ` : ''}
         <td class="font-bold">${c.itemName}</td>
+        <td class="text-center">${c.unit || 'Cái'}</td>
         <td class="text-right font-mono">${c.qty.toLocaleString('vi-VN')}</td>
         <td class="text-right font-mono">${c.unitPrice.toLocaleString('vi-VN')}</td>
         <td class="text-right font-mono font-bold">${c.amount.toLocaleString('vi-VN')}</td>
@@ -555,7 +617,7 @@ export function buildPurchaseStatementDocHtml(
 
       <div class="party-box">
         <strong>Bên bán hàng:</strong> ${info.sellerName || '....................................'}<br/>
-        <strong>CMND/CCCD số:</strong> ${info.sellerIdCard || '....................................'} ${info.sellerBankAcc ? `(${info.sellerBankAcc})` : ''}<br/>
+        <strong>CMND/CCCD số:</strong> ${sellerIdText || '....................................'}<br/>
         <br/>
         <strong>Bên mua hàng:</strong> ${info.buyerName || '....................................'}<br/>
         <strong>CMND/CCCD số:</strong> ${info.buyerIdCard || '....................................'}
@@ -566,7 +628,7 @@ export function buildPurchaseStatementDocHtml(
           <tr>
             <th rowspan="2">Ngày, tháng, năm</th>
             <th colspan="3">Người bán</th>
-            <th colspan="4">Hàng hóa mua vào</th>
+            <th colspan="5">Hàng hóa mua vào</th>
             <th rowspan="2">Ghi chú</th>
           </tr>
           <tr>
@@ -574,6 +636,7 @@ export function buildPurchaseStatementDocHtml(
             <th>Địa chỉ</th>
             <th>Số CMND/CCCD/STK</th>
             <th>Tên hàng hóa, dịch vụ</th>
+            <th>ĐVT</th>
             <th>Số lượng (kg)</th>
             <th>Đơn giá (kg)</th>
             <th>Thành tiền</th>
@@ -582,7 +645,7 @@ export function buildPurchaseStatementDocHtml(
         <tbody>
           ${itemRows}
           <tr style="font-weight: bold;">
-            <td colspan="7" class="text-center">Tổng cộng</td>
+            <td colspan="8" class="text-center">Tổng cộng</td>
             <td class="text-right font-mono font-bold">${summary.totalAmount.toLocaleString('vi-VN')}</td>
             <td></td>
           </tr>
@@ -594,13 +657,13 @@ export function buildPurchaseStatementDocHtml(
           <strong>BÊN BÁN HÀNG</strong><br/>
           <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
           <div style="height: 65px;"></div>
-          <strong>${info.sellerName || ''}</strong>
+          <strong>${(info.sellerName || '').toUpperCase()}</strong>
         </div>
         <div class="sig-box">
           <strong>BÊN MUA HÀNG</strong><br/>
           <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
           <div style="height: 65px;"></div>
-          <strong>${info.buyerName || ''}</strong>
+          <strong>${(info.buyerName || '').toUpperCase()}</strong>
         </div>
       </div>
     </body>
@@ -614,14 +677,27 @@ export function buildRetailInvoiceXlsx(
 ): Uint8Array {
   const summary = computeRetailInvoiceSummary(items);
   const rows: XlsxCell[][] = [];
+  const merges: string[] = [];
 
+  // Row 1: Title
   rows.push([{ value: (header.shopName || 'HÓA ĐƠN BÁN LẺ').toUpperCase(), style: { bold: true, align: 'center' } }]);
-  rows.push([]);
-  rows.push([{ value: `Họ tên người mua hàng: ${header.buyerName || ''}`, style: { bold: true } }]);
-  rows.push([{ value: `Địa chỉ: ${header.buyerAddress || ''}` }]);
-  rows.push([{ value: `Ngày lập: ${header.invoiceDateStr || fmtDate(todayIso())}` }]);
+  merges.push('A1:F1');
+
+  // Row 2: Empty
   rows.push([]);
 
+  // Row 3: Buyer name
+  rows.push([{ value: `Họ tên người mua hàng: ${header.buyerName || ''}`, style: { bold: true } }]);
+  merges.push('A3:F3');
+
+  // Row 4: Address
+  rows.push([{ value: `Địa chỉ: ${header.buyerAddress || ''}` }]);
+  merges.push('A4:F4');
+
+  // Row 5: Empty
+  rows.push([]);
+
+  // Row 6: Headers
   rows.push([
     { value: 'STT', style: { bold: true, align: 'center' } },
     { value: 'Tên hàng hóa', style: { bold: true, align: 'center' } },
@@ -643,19 +719,54 @@ export function buildRetailInvoiceXlsx(
     ]);
   });
 
+  // Empty placeholder rows matching Excel
+  for (let i = items.length + 1; i <= 10; i++) {
+    rows.push([
+      { value: i, numeric: true, style: { align: 'center' } },
+      { value: '' }, { value: '' }, { value: '' }, { value: '' },
+      { value: 0, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+    ]);
+  }
+
+  const startRowIndex = 7;
+  const totalRowIndex = startRowIndex + Math.max(10, items.length);
+
+  // Total Summary Row
   rows.push([
-    { value: 'TỔNG CỘNG', style: { bold: true, align: 'center' } },
-    { value: `${summary.totalItems} sản phẩm`, style: { bold: true } },
     { value: '' },
-    { value: summary.totalQty, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
+    { value: 'TỔNG CỘNG', style: { bold: true, align: 'left' } },
+    { value: '' },
+    { value: '' },
     { value: '' },
     { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
   ]);
+  merges.push(`B${totalRowIndex}:E${totalRowIndex}`);
+
+  // Date & Signature Rows
+  rows.push([]); rows.push([]); rows.push([]);
+  const dateRowIndex = totalRowIndex + 4;
+  rows.push([
+    { value: '' }, { value: '' }, { value: '' },
+    { value: '…., Ngày …. Tháng …. Năm ….', style: { align: 'center' } },
+    { value: '' }, { value: '' },
+  ]);
+  merges.push(`D${dateRowIndex}:F${dateRowIndex}`);
+
+  const sigTitleRowIndex = dateRowIndex + 1;
+  rows.push([
+    { value: 'KHÁCH HÀNG', style: { bold: true, align: 'center' } },
+    { value: '' }, { value: '' },
+    { value: 'NGƯỜI BÁN HÀNG', style: { bold: true, align: 'center' } },
+    { value: '' }, { value: '' },
+  ]);
+  merges.push(`A${sigTitleRowIndex}:B${sigTitleRowIndex}`);
+  merges.push(`D${sigTitleRowIndex}:F${sigTitleRowIndex}`);
 
   const sheet: XlsxSheet = {
-    name: 'HÓA ĐƠN BÁN LẺ',
+    name: 'Sheet1',
     rows,
     colWidths: [8, 36, 12, 14, 18, 22],
+    merges,
   };
 
   return buildXlsx(sheet);
@@ -727,9 +838,7 @@ export function buildRetailInvoiceDocHtml(
         <tbody>
           ${rowsHtml}
           <tr style="font-weight: bold;">
-            <td colspan="3" class="text-center">TỔNG CỘNG</td>
-            <td class="text-right font-mono">${summary.totalQty.toLocaleString('vi-VN')}</td>
-            <td></td>
+            <td colspan="5" class="text-center">TỔNG CỘNG</td>
             <td class="text-right font-mono font-bold">${summary.totalAmount.toLocaleString('vi-VN')}</td>
           </tr>
         </tbody>

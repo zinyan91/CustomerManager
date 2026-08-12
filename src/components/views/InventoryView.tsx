@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import {
-  Package, Download, Printer, Plus, Trash2, Upload, RefreshCw, Search, Boxes, FileSpreadsheet,
+  Package, Download, Printer, Plus, Trash2, RefreshCw, Search, Boxes, FileSpreadsheet,
   Settings2, Users, Link2,
 } from 'lucide-react';
 import {
-  computeItemRow, computeInventorySummary, nextItemId, parseInventoryText,
+  computeItemRow, computeInventorySummary, nextItemId,
   type InventoryItem,
 } from '../../lib/inventory';
 import {
@@ -178,29 +178,6 @@ export const InventoryView: React.FC = () => {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const text = evt.target?.result as string;
-        const parsed = parseInventoryText(text);
-        if (parsed.length > 0) {
-          setItems(parsed);
-          setCategoryName(file.name.replace(/\.[^/.]+$/, ''));
-          showNotify('success', `Đã đọc thành công ${parsed.length} mặt hàng từ tệp ${file.name}`);
-        } else {
-          showNotify('error', 'Không tìm thấy dữ liệu mặt hàng hợp lệ trong tệp.');
-        }
-      } catch (err: any) {
-        showNotify('error', 'Lỗi khi đọc tệp: ' + (err?.message || 'Định dạng tệp không hỗ trợ'));
-      }
-    };
-    reader.readAsText(file);
-  };
-
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return items;
     const term = searchTerm.toLowerCase().trim();
@@ -267,11 +244,6 @@ export const InventoryView: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <label className="bg-panel-muted hover:bg-line text-ink text-xs px-3 py-1.5 rounded-md font-bold flex items-center space-x-1.5 cursor-pointer border border-line transition-colors">
-              <Upload className="w-3.5 h-3.5" />
-              <span>Nạp tệp Excel/CSV</span>
-              <input type="file" accept=".xlsx,.xls,.csv,.tsv,.txt" onChange={handleFileUpload} className="hidden" />
-            </label>
             <button
               type="button"
               onClick={handleExportExcel}

@@ -393,51 +393,50 @@ export function buildPurchaseStatementXlsx(
   const merges: string[] = [];
 
   // Row 1: Quốc hiệu
-  rows.push([{ value: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', style: { bold: true, align: 'center' } }]);
-  merges.push('A1:J1');
+  rows.push([{ value: 'CÔNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', style: { bold: true, align: 'center' } }]);
+  merges.push('A1:I1');
 
   // Row 2: Tiêu ngữ
   rows.push([{ value: 'Độc lập - Tự do - Hạnh Phúc', style: { bold: true, align: 'center' } }]);
-  merges.push('A2:J2');
+  merges.push('A2:I2');
 
   // Row 3: Dấu sao
   rows.push([{ value: '*************', style: { align: 'center' } }]);
-  merges.push('A3:J3');
+  merges.push('A3:I3');
 
   // Row 4: Trống
   rows.push([]);
 
   // Row 5: Tiêu đề Bảng kê
   rows.push([{ value: 'BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ', style: { bold: true, align: 'center' } }]);
-  merges.push('A5:J5');
+  merges.push('A5:I5');
 
   // Row 6: Trống
   rows.push([]);
 
   // Row 7: Bên bán hàng
-  const sellerIdText = [info.sellerIdCard, info.sellerBankAcc].filter(Boolean).join(' - ');
   rows.push([{ value: `Bên bán hàng: ${info.sellerName || ''}`, style: { bold: true } }]);
-  merges.push('A7:J7');
+  merges.push('A7:I7');
 
-  // Row 8: CMND/CCCD Bên bán
-  rows.push([{ value: `CMND/CCCD số: ${sellerIdText || ''}` }]);
-  merges.push('A8:J8');
+  // Row 8: CMND/CCCD Bên bán (chỉ CMND/CCCD số)
+  rows.push([{ value: `CMND/CCCD số: ${info.sellerIdCard || ''}` }]);
+  merges.push('A8:I8');
 
   // Row 9: Trống
   rows.push([]);
 
   // Row 10: Bên mua hàng
   rows.push([{ value: `Bên mua hàng: ${info.buyerName || ''}`, style: { bold: true } }]);
-  merges.push('A10:J10');
+  merges.push('A10:I10');
 
   // Row 11: CMND/CCCD Bên mua
   rows.push([{ value: `CMND/CCCD số: ${info.buyerIdCard || ''}` }]);
-  merges.push('A11:J11');
+  merges.push('A11:I11');
 
   // Row 12: Trống
   rows.push([]);
 
-  // Table Header Row 1 (Row 13)
+  // Table Header Row 1 (Row 13 in Excel)
   rows.push([
     { value: 'Ngày, tháng,\nnăm', style: { bold: true, align: 'center', vAlign: 'center' } },
     { value: 'Người bán', style: { bold: true, align: 'center' } },
@@ -447,22 +446,20 @@ export function buildPurchaseStatementXlsx(
     { value: '' },
     { value: '' },
     { value: '' },
-    { value: '' },
     { value: 'Ghi chú', style: { bold: true, align: 'center', vAlign: 'center' } },
   ]);
   merges.push('A13:A14');
   merges.push('B13:D13');
-  merges.push('E13:I13');
-  merges.push('J13:J14');
+  merges.push('E13:H13');
+  merges.push('I13:I14');
 
-  // Table Header Row 2 (Row 14)
+  // Table Header Row 2 (Row 14 in Excel)
   rows.push([
     { value: '' },
     { value: 'Tên người bán', style: { bold: true, align: 'center' } },
     { value: 'Địa chỉ', style: { bold: true, align: 'center' } },
     { value: 'Số CMND/CCCD/\nSTK', style: { bold: true, align: 'center' } },
     { value: 'Tên hàng hóa, dịch vụ', style: { bold: true, align: 'center' } },
-    { value: 'ĐVT', style: { bold: true, align: 'center' } },
     { value: 'Số lượng\n(kg)', style: { bold: true, align: 'center' } },
     { value: 'Đơn giá\n(kg)', style: { bold: true, align: 'center' } },
     { value: 'Thành tiền', style: { bold: true, align: 'center' } },
@@ -480,15 +477,16 @@ export function buildPurchaseStatementXlsx(
     merges.push(`D${startRow}:D${endRow}`);
   }
 
+  const stkText = info.sellerBankAcc ? `STK: ${info.sellerBankAcc}` : (info.sellerIdCard || '');
+
   items.forEach((it, idx) => {
     const c = computeStatementItem(it);
     rows.push([
       { value: idx === 0 ? (c.dateStr || '…../…../2024') : '', style: { align: 'center', vAlign: 'center' } },
       { value: idx === 0 ? (info.sellerName || '') : '', style: { vAlign: 'center' } },
       { value: idx === 0 ? (info.sellerAddress || '') : '', style: { vAlign: 'center' } },
-      { value: idx === 0 ? sellerIdText : '', style: { vAlign: 'center' } },
+      { value: idx === 0 ? stkText : '', style: { vAlign: 'center' } },
       { value: c.itemName, style: { bold: true } },
-      { value: c.unit || 'Cái', style: { align: 'center' } },
       { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
       { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
       { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
@@ -496,11 +494,13 @@ export function buildPurchaseStatementXlsx(
     ]);
   });
 
-  // Total Summary Row
-  const totalRowIndex = endRow + 1;
+  // Empty row between item rows and total row (Row 15+N)
+  rows.push([]);
+
+  // Total Summary Row (Row 15+N+1)
+  const totalRowIndex = endRow + 2;
   rows.push([
     { value: ' Tổng cộng', style: { bold: true, align: 'left' } },
-    { value: '' },
     { value: '' },
     { value: '' },
     { value: '' },
@@ -510,37 +510,44 @@ export function buildPurchaseStatementXlsx(
     { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
     { value: '' },
   ]);
-  merges.push(`A${totalRowIndex}:H${totalRowIndex}`);
+  merges.push(`A${totalRowIndex}:G${totalRowIndex}`);
 
-  // Date & Signature Footer Rows
-  rows.push([]); // totalRowIndex + 1
+  // Empty row (Row 15+N+2)
+  rows.push([]);
+
+  // Date Footer Row (Row 15+N+3)
   const dateRowIndex = totalRowIndex + 2;
   rows.push([
     { value: '' }, { value: '' }, { value: '' }, { value: '' }, { value: '' },
     { value: 'Tp. HCM, ngày ….. tháng …... năm 2024', style: { align: 'center' } },
-    { value: '' }, { value: '' }, { value: '' }, { value: '' },
+    { value: '' }, { value: '' }, { value: '' },
   ]);
   merges.push(`F${dateRowIndex}:H${dateRowIndex}`);
 
+  // Empty row (Row 15+N+4)
+  rows.push([]);
+
+  // Signature titles Row (Row 15+N+5)
   const sigTitleRowIndex = dateRowIndex + 2;
   rows.push([
     { value: 'Bên bán hàng', style: { bold: true, align: 'center' } },
     { value: '' }, { value: '' }, { value: '' }, { value: '' },
     { value: 'Bên mua hàng', style: { bold: true, align: 'center' } },
-    { value: '' }, { value: '' }, { value: '' }, { value: '' },
+    { value: '' }, { value: '' }, { value: '' },
   ]);
   merges.push(`A${sigTitleRowIndex}:C${sigTitleRowIndex}`);
   merges.push(`F${sigTitleRowIndex}:H${sigTitleRowIndex}`);
 
-  // 5 empty rows for signature space
+  // 5 empty rows for signature space (Rows 15+N+6..10)
   rows.push([]); rows.push([]); rows.push([]); rows.push([]); rows.push([]);
 
+  // Signature names Row (Row 15+N+11)
   const sigNameRowIndex = sigTitleRowIndex + 6;
   rows.push([
     { value: (info.sellerName || '').toUpperCase(), style: { bold: true, align: 'center' } },
     { value: '' }, { value: '' }, { value: '' }, { value: '' },
     { value: (info.buyerName || '').toUpperCase(), style: { bold: true, align: 'center' } },
-    { value: '' }, { value: '' }, { value: '' }, { value: '' },
+    { value: '' }, { value: '' }, { value: '' },
   ]);
   merges.push(`A${sigNameRowIndex}:C${sigNameRowIndex}`);
   merges.push(`F${sigNameRowIndex}:H${sigNameRowIndex}`);
@@ -548,7 +555,7 @@ export function buildPurchaseStatementXlsx(
   const sheet: XlsxSheet = {
     name: 'Bảng 1',
     rows,
-    colWidths: [14, 20, 18, 26, 28, 10, 14, 16, 20, 14],
+    colWidths: [14, 20, 18, 30, 28, 14, 16, 20, 14],
     merges,
   };
 
@@ -763,7 +770,7 @@ export function buildRetailInvoiceXlsx(
   merges.push(`D${sigTitleRowIndex}:F${sigTitleRowIndex}`);
 
   const sheet: XlsxSheet = {
-    name: 'Sheet1',
+    name: 'Sheet1 (5)',
     rows,
     colWidths: [8, 36, 12, 14, 18, 22],
     merges,

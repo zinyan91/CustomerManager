@@ -546,7 +546,7 @@ export function buildPurchaseStatementXlsx(
   merges.push(`F${sigNameRowIndex}:H${sigNameRowIndex}`);
 
   const sheet: XlsxSheet = {
-    name: 'BẢNG KÊ MUA BÁN',
+    name: 'Bảng 1',
     rows,
     colWidths: [14, 20, 18, 26, 28, 10, 14, 16, 20, 14],
     merges,

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Package, Download, Printer, Plus, Trash2, RefreshCw, Search, Boxes, FileSpreadsheet,
-  Settings2, Users, Link2,
+  Settings2, Users,
 } from 'lucide-react';
 import {
   computeItemRow, computeInventorySummary, nextItemId,
@@ -12,7 +12,7 @@ import {
   deleteInventoryTemplate, resetInventoryTemplates,
 } from '../../lib/templateStore';
 import { type InventoryCategoryTemplate, type TemplateItem } from '../../data/inventoryTemplates';
-import { SAMPLE_RECEIVABLES, computeReceivableSummary, type ReceivableItem } from '../../lib/debt';
+import { SAMPLE_RECEIVABLES, type ReceivableItem } from '../../lib/debt';
 import { buildFullInventoryAndDebtXlsx, buildInventoryDocHtml } from '../../lib/inventoryExport';
 import { downloadBytes } from '../../lib/xlsExport';
 import { MIME_XLSX } from '../../lib/xlsxWriter';
@@ -22,7 +22,7 @@ import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
 import { DebtReceivableTab } from '../inventory/DebtReceivableTab';
-import { WorkingCapitalSummaryTab } from '../inventory/WorkingCapitalSummaryTab';
+import { DebtPayableTab } from '../inventory/DebtPayableTab';
 import { TemplateManagerModal } from '../inventory/TemplateManagerModal';
 
 const QtyCellInput: React.FC<{
@@ -49,7 +49,7 @@ const QtyCellInput: React.FC<{
 };
 
 export const InventoryView: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'inventory' | 'receivables' | 'summary' | 'statement' | 'invoice'>('inventory');
+  const [activeSubTab, setActiveSubTab] = useState<'inventory' | 'receivables' | 'payables'>('inventory');
 
   // Industry Templates State
   const [templates, setTemplates] = useState<InventoryCategoryTemplate[]>(loadInventoryTemplates);
@@ -69,6 +69,28 @@ export const InventoryView: React.FC = () => {
 
   // Accounts Receivable items (TK 131)
   const [receivables, setReceivables] = useState<ReceivableItem[]>(SAMPLE_RECEIVABLES);
+
+  // Accounts Payable items (TK 331)
+  const [payables, setPayables] = useState<ReceivableItem[]>([
+    {
+      id: 'pay-1',
+      code: 'NCC01',
+      name: 'Công ty TNHH Xi măng Hà Tiên',
+      beginningDebit: 0,
+      beginningCredit: 150000000,
+      occurredDebit: 50000000,
+      occurredCredit: 80000000,
+    },
+    {
+      id: 'pay-2',
+      code: 'NCC02',
+      name: 'Nhà máy Thép Hòa Phát',
+      beginningDebit: 0,
+      beginningCredit: 320000000,
+      occurredDebit: 120000000,
+      occurredCredit: 200000000,
+    },
+  ]);
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -187,7 +209,6 @@ export const InventoryView: React.FC = () => {
   }, [items, searchTerm]);
 
   const summary = useMemo(() => computeInventorySummary(items), [items]);
-  const recSummary = useMemo(() => computeReceivableSummary(receivables), [receivables]);
 
   const handleExportExcel = () => {
     if (items.length === 0 && receivables.length === 0) {
@@ -217,7 +238,10 @@ export const InventoryView: React.FC = () => {
       customerName,
       recordDate,
     }, receivables);
-    printHtmlDoc(html);
+    const title = customerName
+      ? `BẢNG KIỂM KÊ HÀNG TỒN KHO - ${customerName}`
+      : `BẢNG KIỂM KÊ HÀNG TỒN KHO - ${categoryName || 'DANH MỤC'}`;
+    printHtmlDoc(html, title);
   };
 
   const cellInputCls = 'w-full bg-transparent text-xs p-1 rounded border border-transparent hover:border-line focus:border-accent focus:bg-panel outline-none transition-colors font-mono';
@@ -361,15 +385,15 @@ export const InventoryView: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => setActiveSubTab('summary')}
+          onClick={() => setActiveSubTab('payables')}
           className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 whitespace-nowrap ${
-            activeSubTab === 'summary'
+            activeSubTab === 'payables'
               ? 'border-accent text-accent bg-accent-soft/30'
               : 'border-transparent text-ink-muted hover:text-ink'
           }`}
         >
-          <Link2 className="w-4 h-4" />
-          <span>Liên kết Vốn lưu động</span>
+          <Users className="w-4 h-4 text-neg" />
+          <span>Công nợ Phải trả (TK 331) ({payables.length})</span>
         </button>
       </div>
 
@@ -382,10 +406,11 @@ export const InventoryView: React.FC = () => {
         />
       )}
 
-      {activeSubTab === 'summary' && (
-        <WorkingCapitalSummaryTab
-          invSummary={summary}
-          recSummary={recSummary}
+      {activeSubTab === 'payables' && (
+        <DebtPayableTab
+          payables={payables}
+          onChangePayables={setPayables}
+          showNotify={showNotify}
         />
       )}
 

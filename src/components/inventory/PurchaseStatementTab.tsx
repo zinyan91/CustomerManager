@@ -151,7 +151,8 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
       return;
     }
     const html = buildPurchaseStatementDocHtml(items, sellerInfo);
-    printHtmlDoc(html);
+    const title = sellerInfo.sellerName ? `BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ - ${sellerInfo.sellerName}` : 'BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ';
+    printHtmlDoc(html, title);
   };
 
   const cellInputCls = 'w-full bg-transparent text-xs p-1 rounded border border-transparent hover:border-line focus:border-accent focus:bg-panel outline-none transition-colors font-mono';

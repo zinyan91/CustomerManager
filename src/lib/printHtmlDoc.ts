@@ -1,8 +1,11 @@
 export function printHtmlDoc(html: string, title?: string): boolean {
   if (typeof document === 'undefined') return false;
 
+  const originalTitle = document.title;
+  const printTitle = title || 'Bản_In_Chung';
+
   const frame = document.createElement('iframe');
-  frame.setAttribute('title', title ?? 'Bản in');
+  frame.setAttribute('title', printTitle);
   frame.setAttribute('aria-hidden', 'true');
   frame.style.position = 'fixed';
   frame.style.right = '0';
@@ -20,9 +23,11 @@ export function printHtmlDoc(html: string, title?: string): boolean {
   }
 
   const cleanup = () => {
+    document.title = originalTitle;
     if (frame.parentNode) frame.remove();
   };
 
+  document.title = printTitle;
   doc.open();
   doc.write(html);
   doc.close();

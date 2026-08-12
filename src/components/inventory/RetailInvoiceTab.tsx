@@ -144,7 +144,8 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
       return;
     }
     const html = buildRetailInvoiceDocHtml(items, headerInfo);
-    printHtmlDoc(html);
+    const title = headerInfo.buyerName ? `HÓA ĐƠN BÁN LẺ - ${headerInfo.buyerName}` : 'HÓA ĐƠN BÁN LẺ';
+    printHtmlDoc(html, title);
   };
 
   const cellInputCls = 'w-full bg-transparent text-xs p-1 rounded border border-transparent hover:border-line focus:border-accent focus:bg-panel outline-none transition-colors font-mono';

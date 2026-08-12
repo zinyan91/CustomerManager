@@ -1,6 +1,10 @@
 import { buildMultiSheetXlsx, buildXlsx, type XlsxCell, type XlsxSheet } from './xlsxWriter';
 import { computeItemRow, computeInventorySummary, type InventoryItem } from './inventory';
 import { computeReceivableItemRow, computeReceivableSummary, type ReceivableItem } from './debt';
+import {
+  computeStatementItem, computeStatementSummary, computeRetailInvoiceItem, computeRetailInvoiceSummary,
+  type StatementItem, type StatementSellerInfo, type RetailInvoiceItem, type RetailInvoiceHeader,
+} from './statement';
 import { fmtDate, todayIso } from './utils';
 
 export interface InventoryExportContext {
@@ -379,3 +383,336 @@ export function buildInventoryDocHtml(
     </html>
   `;
 }
+
+export function buildPurchaseStatementXlsx(
+  items: StatementItem[],
+  info: StatementSellerInfo
+): Uint8Array {
+  const summary = computeStatementSummary(items);
+  const rows: XlsxCell[][] = [];
+
+  rows.push([{ value: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', style: { bold: true, align: 'center' } }]);
+  rows.push([{ value: 'Độc lập - Tự do - Hạnh Phúc', style: { bold: true, align: 'center' } }]);
+  rows.push([]);
+  rows.push([{ value: 'BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ', style: { bold: true, align: 'center', fill: HEADER_FILL } }]);
+  rows.push([]);
+
+  rows.push([{ value: `Bên bán hàng: ${info.sellerName || ''}`, style: { bold: true } }]);
+  rows.push([{ value: `Địa chỉ: ${info.sellerAddress || ''}` }]);
+  rows.push([{ value: `CMND/CCCD/STK: ${info.sellerIdCard || ''} ${info.sellerBankAcc || ''}` }]);
+  rows.push([{ value: `Bên mua hàng: ${info.buyerName || ''}`, style: { bold: true } }]);
+  rows.push([{ value: `CMND/CCCD số: ${info.buyerIdCard || ''}` }]);
+  rows.push([]);
+
+  // Headers
+  rows.push([
+    { value: 'Ngày tháng', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Tên người bán', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Địa chỉ', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Số CMND/STK', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Tên hàng hóa, dịch vụ', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'ĐVT', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Số lượng', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Đơn giá (VND)', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Thành tiền (VND)', style: { bold: true, align: 'center', fill: HEADER_CUOI_KY_FILL } },
+    { value: 'Ghi chú', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+  ]);
+
+  items.forEach(it => {
+    const c = computeStatementItem(it);
+    rows.push([
+      { value: c.dateStr || '' },
+      { value: info.sellerName || '' },
+      { value: info.sellerAddress || '' },
+      { value: info.sellerIdCard || '' },
+      { value: c.itemName, style: { bold: true } },
+      { value: c.unit, style: { align: 'center' } },
+      { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+      { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+      { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: CELL_CUOI_KY_FILL } },
+      { value: c.note || '' },
+    ]);
+  });
+
+  // Summary Row
+  rows.push([
+    { value: 'TỔNG CỘNG', style: { bold: true, align: 'center', fill: FOOTER_FILL } },
+    { value: '', style: { fill: FOOTER_FILL } },
+    { value: '', style: { fill: FOOTER_FILL } },
+    { value: '', style: { fill: FOOTER_FILL } },
+    { value: `${summary.totalItems} mặt hàng`, style: { bold: true, fill: FOOTER_FILL } },
+    { value: '', style: { fill: FOOTER_FILL } },
+    { value: summary.totalQty, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+    { value: '', style: { fill: FOOTER_FILL } },
+    { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_CUOI_KY_FILL } },
+    { value: '', style: { fill: FOOTER_FILL } },
+  ]);
+
+  const sheet: XlsxSheet = {
+    name: 'BẢNG KÊ MUA BÁN',
+    rows,
+    colWidths: [14, 24, 24, 20, 30, 10, 14, 18, 20, 16],
+  };
+
+  return buildXlsx(sheet);
+}
+
+export function buildPurchaseStatementDocHtml(
+  items: StatementItem[],
+  info: StatementSellerInfo
+): string {
+  const summary = computeStatementSummary(items);
+  const itemRows = items.map(it => {
+    const c = computeStatementItem(it);
+    return `
+      <tr>
+        <td class="text-center">${c.dateStr || ''}</td>
+        <td>${info.sellerName || ''}</td>
+        <td>${info.sellerAddress || ''}</td>
+        <td>${info.sellerIdCard || ''} ${info.sellerBankAcc ? `<br/><small>${info.sellerBankAcc}</small>` : ''}</td>
+        <td class="font-bold">${c.itemName}</td>
+        <td class="text-center">${c.unit}</td>
+        <td class="text-right font-mono">${c.qty.toLocaleString('vi-VN')}</td>
+        <td class="text-right font-mono">${c.unitPrice.toLocaleString('vi-VN')}</td>
+        <td class="text-right font-mono font-bold bg-pos-cell">${c.amount.toLocaleString('vi-VN')}</td>
+        <td>${c.note || ''}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8"/>
+      <title>Bảng kê mua bán hàng hóa dịch vụ</title>
+      <style>
+        @page { size: A4 landscape; margin: 12mm; }
+        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #0f172a; margin: 0; padding: 15px; }
+        .nation-header { text-align: center; font-weight: bold; margin-bottom: 15px; }
+        .doc-title { text-align: center; font-size: 16px; font-weight: bold; color: #0284c7; text-transform: uppercase; margin-bottom: 15px; }
+        .party-box { margin-bottom: 15px; font-size: 11px; line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
+        th { background-color: #0284c7; color: #ffffff; font-weight: bold; border: 1px solid #0369a1; padding: 6px 4px; text-align: center; }
+        td { border: 1px solid #cbd5e1; padding: 5px 4px; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+        .font-mono { font-family: monospace; }
+        .bg-sum { background-color: #e0f2fe; font-weight: bold; color: #0369a1; }
+        .bg-pos-cell { background-color: #f0fdf4; color: #16a34a; }
+        .sig-grid { display: flex; justify-content: space-between; margin-top: 30px; page-break-inside: avoid; }
+        .sig-box { width: 40%; text-align: center; }
+      </style>
+    </head>
+    <body>
+      <div class="nation-header">
+        CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br/>
+        <small>Độc lập - Tự do - Hạnh phúc</small>
+      </div>
+
+      <div class="doc-title">BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ</div>
+
+      <div class="party-box">
+        <strong>Bên bán hàng:</strong> ${info.sellerName || '....................................'}<br/>
+        <strong>Địa chỉ:</strong> ${info.sellerAddress || '....................................'}<br/>
+        <strong>CMND/CCCD/STK:</strong> ${info.sellerIdCard || ''} ${info.sellerBankAcc || ''}<br/>
+        <strong>Bên mua hàng:</strong> ${info.buyerName || '....................................'}<br/>
+        <strong>CMND/CCCD số:</strong> ${info.buyerIdCard || '....................................'}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Ngày tháng</th>
+            <th>Tên người bán</th>
+            <th>Địa chỉ</th>
+            <th>Số CMND/STK</th>
+            <th>Tên hàng hóa, dịch vụ</th>
+            <th>ĐVT</th>
+            <th>Số lượng</th>
+            <th>Đơn giá (VND)</th>
+            <th>Thành tiền (VND)</th>
+            <th>Ghi chú</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemRows}
+          <tr class="bg-sum">
+            <td colspan="4" class="text-center">TỔNG CỘNG</td>
+            <td>${summary.totalItems} mặt hàng</td>
+            <td></td>
+            <td class="text-right font-mono">${summary.totalQty.toLocaleString('vi-VN')}</td>
+            <td></td>
+            <td class="text-right font-mono font-bold bg-pos-cell">${summary.totalAmount.toLocaleString('vi-VN')}</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="sig-grid">
+        <div class="sig-box">
+          <strong>BÊN BÁN HÀNG</strong><br/>
+          <small>(Ký và ghi rõ họ tên)</small>
+          <div style="height: 60px;"></div>
+          <strong>${info.sellerName || ''}</strong>
+        </div>
+        <div class="sig-box">
+          <strong>BÊN MUA HÀNG</strong><br/>
+          <small>(Ký và ghi rõ họ tên)</small>
+          <div style="height: 60px;"></div>
+          <strong>${info.buyerName || ''}</strong>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+export function buildRetailInvoiceXlsx(
+  items: RetailInvoiceItem[],
+  header: RetailInvoiceHeader
+): Uint8Array {
+  const summary = computeRetailInvoiceSummary(items);
+  const rows: XlsxCell[][] = [];
+
+  rows.push([{ value: (header.shopName || 'HÓA ĐƠN BÁN LẺ').toUpperCase(), style: { bold: true, align: 'center', fill: HEADER_FILL } }]);
+  rows.push([]);
+  rows.push([{ value: `Khách hàng: ${header.buyerName || ''}`, style: { bold: true } }]);
+  rows.push([{ value: `Địa chỉ: ${header.buyerAddress || ''}` }]);
+  rows.push([{ value: `Ngày lập: ${header.invoiceDateStr || fmtDate(todayIso())}` }]);
+  rows.push([]);
+
+  rows.push([
+    { value: 'STT', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Tên hàng hóa / dịch vụ', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'ĐVT', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Số lượng', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Đơn giá (VND)', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Thành tiền (VND)', style: { bold: true, align: 'center', fill: HEADER_CUOI_KY_FILL } },
+  ]);
+
+  items.forEach((it, idx) => {
+    const c = computeRetailInvoiceItem(it);
+    rows.push([
+      { value: idx + 1, numeric: true, style: { align: 'center' } },
+      { value: c.itemName, style: { bold: true } },
+      { value: c.unit, style: { align: 'center' } },
+      { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+      { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+      { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: CELL_CUOI_KY_FILL } },
+    ]);
+  });
+
+  rows.push([
+    { value: 'TỔNG CỘNG', style: { bold: true, align: 'center', fill: FOOTER_FILL } },
+    { value: `${summary.totalItems} sản phẩm/dịch vụ`, style: { bold: true, fill: FOOTER_FILL } },
+    { value: '', style: { fill: FOOTER_FILL } },
+    { value: summary.totalQty, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+    { value: '', style: { fill: FOOTER_FILL } },
+    { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_CUOI_KY_FILL } },
+  ]);
+
+  const sheet: XlsxSheet = {
+    name: 'HÓA ĐƠN BÁN LẺ',
+    rows,
+    colWidths: [8, 36, 12, 14, 18, 22],
+  };
+
+  return buildXlsx(sheet);
+}
+
+export function buildRetailInvoiceDocHtml(
+  items: RetailInvoiceItem[],
+  header: RetailInvoiceHeader
+): string {
+  const summary = computeRetailInvoiceSummary(items);
+  const rowsHtml = items.map((it, idx) => {
+    const c = computeRetailInvoiceItem(it);
+    return `
+      <tr>
+        <td class="text-center">${idx + 1}</td>
+        <td class="font-bold">${c.itemName}</td>
+        <td class="text-center">${c.unit}</td>
+        <td class="text-right font-mono">${c.qty.toLocaleString('vi-VN')}</td>
+        <td class="text-right font-mono">${c.unitPrice.toLocaleString('vi-VN')}</td>
+        <td class="text-right font-mono font-bold bg-pos-cell">${c.amount.toLocaleString('vi-VN')}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8"/>
+      <title>Hóa đơn bán lẻ - ${header.shopName || ''}</title>
+      <style>
+        @page { size: A4 portrait; margin: 15mm; }
+        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 12px; color: #0f172a; margin: 0; padding: 20px; }
+        .shop-name { text-align: center; font-size: 18px; font-weight: bold; color: #0284c7; text-transform: uppercase; margin-bottom: 5px; }
+        .doc-subtitle { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 20px; }
+        .info-block { margin-bottom: 15px; font-size: 12px; line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
+        th { background-color: #0284c7; color: #ffffff; font-weight: bold; border: 1px solid #0369a1; padding: 7px 5px; text-align: center; }
+        td { border: 1px solid #cbd5e1; padding: 6px 5px; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+        .font-mono { font-family: monospace; }
+        .bg-sum { background-color: #e0f2fe; font-weight: bold; color: #0369a1; }
+        .bg-pos-cell { background-color: #f0fdf4; color: #16a34a; }
+        .sig-grid { display: flex; justify-content: space-between; margin-top: 35px; page-break-inside: avoid; }
+        .sig-box { width: 45%; text-align: center; }
+      </style>
+    </head>
+    <body>
+      <div class="shop-name">${header.shopName || 'CỬA HÀNG BÁN LẺ'}</div>
+      <div class="doc-subtitle">HÓA ĐƠN BÁN LẺ</div>
+
+      <div class="info-block">
+        <strong>Họ tên người mua hàng:</strong> ${header.buyerName || '....................................'}<br/>
+        <strong>Địa chỉ:</strong> ${header.buyerAddress || '....................................'}<br/>
+        <strong>Ngày lập hóa đơn:</strong> ${header.invoiceDateStr || fmtDate(todayIso())}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 40px;">STT</th>
+            <th>Tên hàng hóa / dịch vụ</th>
+            <th style="width: 60px;">ĐVT</th>
+            <th style="width: 70px;">Số lượng</th>
+            <th style="width: 100px;">Đơn giá</th>
+            <th style="width: 120px;">Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+          <tr class="bg-sum">
+            <td colspan="3" class="text-center">TỔNG CỘNG THÀNH TIỀN</td>
+            <td class="text-right font-mono">${summary.totalQty.toLocaleString('vi-VN')}</td>
+            <td></td>
+            <td class="text-right font-mono font-bold bg-pos-cell text-sm">${summary.totalAmount.toLocaleString('vi-VN')} VND</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="sig-grid">
+        <div class="sig-box">
+          <strong>KHÁCH HÀNG</strong><br/>
+          <small>(Ký và ghi rõ họ tên)</small>
+          <div style="height: 60px;"></div>
+          <strong>${header.buyerName || ''}</strong>
+        </div>
+        <div class="sig-box">
+          <strong>NGƯỜI BÁN HÀNG</strong><br/>
+          <small>(Ký và ghi rõ họ tên)</small>
+          <div style="height: 60px;"></div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+

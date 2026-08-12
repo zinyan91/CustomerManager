@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Package, Download, Printer, Plus, Trash2, Upload, RefreshCw, Search, Boxes, FileSpreadsheet,
-  Settings2, Users, Link2,
+  Settings2, Users, Link2, FileText, Receipt,
 } from 'lucide-react';
 import {
   computeItemRow, computeInventorySummary, nextItemId, parseInventoryText,
@@ -24,6 +24,8 @@ import { Toast } from '../Toast';
 import { DebtReceivableTab } from '../inventory/DebtReceivableTab';
 import { WorkingCapitalSummaryTab } from '../inventory/WorkingCapitalSummaryTab';
 import { TemplateManagerModal } from '../inventory/TemplateManagerModal';
+import { PurchaseStatementTab } from '../inventory/PurchaseStatementTab';
+import { RetailInvoiceTab } from '../inventory/RetailInvoiceTab';
 
 const QtyCellInput: React.FC<{
   value: number;
@@ -49,7 +51,7 @@ const QtyCellInput: React.FC<{
 };
 
 export const InventoryView: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'inventory' | 'receivables' | 'summary'>('inventory');
+  const [activeSubTab, setActiveSubTab] = useState<'inventory' | 'receivables' | 'summary' | 'statement' | 'invoice'>('inventory');
 
   // Industry Templates State
   const [templates, setTemplates] = useState<InventoryCategoryTemplate[]>(loadInventoryTemplates);
@@ -258,10 +260,10 @@ export const InventoryView: React.FC = () => {
             </div>
             <div>
               <h1 className="text-base font-bold text-accent tracking-tight uppercase">
-                KIỂM KÊ TỒN KHO & CÔNG NỢ PHẢI THU (TK 131)
+                TỒN KHO - CÔNG NỢ - BẢNG KÊ & HÓA ĐƠN
               </h1>
               <p className="text-xs text-ink-faint">
-                Quản lý kiểm kê hàng hóa tồn kho, công nợ phải thu và liên kết phân tích Tài sản ngắn hạn
+                Quản lý tồn kho, đối soát công nợ phải thu, lập bảng kê mua bán và hóa đơn bán lẻ đa ngành hàng
               </p>
             </div>
           </div>
@@ -296,7 +298,7 @@ export const InventoryView: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className={`block text-[10px] uppercase tracking-wide ${UI.labelStyle}`}>
-                Mẫu ngành hàng chuẩn ({templates.length})
+                Mẫu ngành hàng tồn kho ({templates.length})
               </label>
               <button
                 type="button"
@@ -360,11 +362,11 @@ export const InventoryView: React.FC = () => {
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex border-b border-line gap-2">
+      <div className="flex border-b border-line gap-1 overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveSubTab('inventory')}
-          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 ${
+          className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 whitespace-nowrap ${
             activeSubTab === 'inventory'
               ? 'border-accent text-accent bg-accent-soft/30'
               : 'border-transparent text-ink-muted hover:text-ink'
@@ -377,20 +379,20 @@ export const InventoryView: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveSubTab('receivables')}
-          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 ${
+          className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 whitespace-nowrap ${
             activeSubTab === 'receivables'
               ? 'border-accent text-accent bg-accent-soft/30'
               : 'border-transparent text-ink-muted hover:text-ink'
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Công nợ Phải thu TK 131 ({receivables.length})</span>
+          <span>Công nợ Phải thu (TK 131) ({receivables.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveSubTab('summary')}
-          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 ${
+          className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 whitespace-nowrap ${
             activeSubTab === 'summary'
               ? 'border-accent text-accent bg-accent-soft/30'
               : 'border-transparent text-ink-muted hover:text-ink'
@@ -398,6 +400,32 @@ export const InventoryView: React.FC = () => {
         >
           <Link2 className="w-4 h-4" />
           <span>Liên kết Vốn lưu động</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('statement')}
+          className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 whitespace-nowrap ${
+            activeSubTab === 'statement'
+              ? 'border-accent text-accent bg-accent-soft/30'
+              : 'border-transparent text-ink-muted hover:text-ink'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>📜 Bảng kê mua bán</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('invoice')}
+          className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 whitespace-nowrap ${
+            activeSubTab === 'invoice'
+              ? 'border-accent text-accent bg-accent-soft/30'
+              : 'border-transparent text-ink-muted hover:text-ink'
+          }`}
+        >
+          <Receipt className="w-4 h-4" />
+          <span>🧾 Hóa đơn bán lẻ</span>
         </button>
       </div>
 
@@ -415,6 +443,14 @@ export const InventoryView: React.FC = () => {
           invSummary={summary}
           recSummary={recSummary}
         />
+      )}
+
+      {activeSubTab === 'statement' && (
+        <PurchaseStatementTab showNotify={showNotify} />
+      )}
+
+      {activeSubTab === 'invoice' && (
+        <RetailInvoiceTab showNotify={showNotify} />
       )}
 
       {activeSubTab === 'inventory' && (

@@ -910,13 +910,26 @@ export async function updateCofRateItemAPI(
 }
 
 export async function fetchQuizQuestionsAPI(): Promise<QuizQuestion[]> {
-  const { data, error } = await supabase
-    .from('QuizQuestions')
-    .select('*')
-    .order('Id', { ascending: true })
-    .limit(5000);
-  if (error) throw error;
-  return (data || []).map((row: any) => ({
+  const allRows: any[] = [];
+  let from = 0;
+  const step = 1000;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('QuizQuestions')
+      .select('*')
+      .order('Id', { ascending: true })
+      .range(from, from + step - 1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+
+    allRows.push(...data);
+    if (data.length < step) break;
+    from += step;
+  }
+
+  return allRows.map((row: any) => ({
     ...row,
     Options: Array.isArray(row.Options) ? row.Options : [],
     CorrectAnswers: row.CorrectAnswers || [],

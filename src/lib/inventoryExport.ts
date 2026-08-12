@@ -394,7 +394,7 @@ export function buildPurchaseStatementXlsx(
   rows.push([{ value: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', style: { bold: true, align: 'center' } }]);
   rows.push([{ value: 'Độc lập - Tự do - Hạnh Phúc', style: { bold: true, align: 'center' } }]);
   rows.push([]);
-  rows.push([{ value: 'BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ', style: { bold: true, align: 'center', fill: HEADER_FILL } }]);
+  rows.push([{ value: 'BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ', style: { bold: true, align: 'center' } }]);
   rows.push([]);
 
   rows.push([{ value: `Bên bán hàng: ${info.sellerName || ''}`, style: { bold: true } }]);
@@ -406,16 +406,16 @@ export function buildPurchaseStatementXlsx(
 
   // Headers
   rows.push([
-    { value: 'Ngày tháng', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'Tên người bán', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'Địa chỉ', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'Số CMND/STK', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'Tên hàng hóa, dịch vụ', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'ĐVT', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'Số lượng', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'Đơn giá (VND)', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'Thành tiền (VND)', style: { bold: true, align: 'center', fill: HEADER_CUOI_KY_FILL } },
-    { value: 'Ghi chú', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Ngày tháng', style: { bold: true, align: 'center' } },
+    { value: 'Tên người bán', style: { bold: true, align: 'center' } },
+    { value: 'Địa chỉ', style: { bold: true, align: 'center' } },
+    { value: 'Số CMND/STK', style: { bold: true, align: 'center' } },
+    { value: 'Tên hàng hóa, dịch vụ', style: { bold: true, align: 'center' } },
+    { value: 'ĐVT', style: { bold: true, align: 'center' } },
+    { value: 'Số lượng', style: { bold: true, align: 'center' } },
+    { value: 'Đơn giá (VND)', style: { bold: true, align: 'center' } },
+    { value: 'Thành tiền (VND)', style: { bold: true, align: 'center' } },
+    { value: 'Ghi chú', style: { bold: true, align: 'center' } },
   ]);
 
   items.forEach(it => {
@@ -429,23 +429,23 @@ export function buildPurchaseStatementXlsx(
       { value: c.unit, style: { align: 'center' } },
       { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
       { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
-      { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: CELL_CUOI_KY_FILL } },
+      { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
       { value: c.note || '' },
     ]);
   });
 
   // Summary Row
   rows.push([
-    { value: 'TỔNG CỘNG', style: { bold: true, align: 'center', fill: FOOTER_FILL } },
-    { value: '', style: { fill: FOOTER_FILL } },
-    { value: '', style: { fill: FOOTER_FILL } },
-    { value: '', style: { fill: FOOTER_FILL } },
-    { value: `${summary.totalItems} mặt hàng`, style: { bold: true, fill: FOOTER_FILL } },
-    { value: '', style: { fill: FOOTER_FILL } },
-    { value: summary.totalQty, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
-    { value: '', style: { fill: FOOTER_FILL } },
-    { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_CUOI_KY_FILL } },
-    { value: '', style: { fill: FOOTER_FILL } },
+    { value: 'TỔNG CỘNG', style: { bold: true, align: 'center' } },
+    { value: '' },
+    { value: '' },
+    { value: '' },
+    { value: `${summary.totalItems} mặt hàng`, style: { bold: true } },
+    { value: '' },
+    { value: summary.totalQty, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
+    { value: '' },
+    { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
+    { value: '' },
   ]);
 
   const sheet: XlsxSheet = {
@@ -474,7 +474,7 @@ export function buildPurchaseStatementDocHtml(
         <td class="text-center">${c.unit}</td>
         <td class="text-right font-mono">${c.qty.toLocaleString('vi-VN')}</td>
         <td class="text-right font-mono">${c.unitPrice.toLocaleString('vi-VN')}</td>
-        <td class="text-right font-mono font-bold bg-pos-cell">${c.amount.toLocaleString('vi-VN')}</td>
+        <td class="text-right font-mono font-bold">${c.amount.toLocaleString('vi-VN')}</td>
         <td>${c.note || ''}</td>
       </tr>
     `;
@@ -488,19 +488,17 @@ export function buildPurchaseStatementDocHtml(
       <title>Bảng kê mua bán hàng hóa dịch vụ</title>
       <style>
         @page { size: A4 landscape; margin: 12mm; }
-        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #0f172a; margin: 0; padding: 15px; }
-        .nation-header { text-align: center; font-weight: bold; margin-bottom: 15px; }
-        .doc-title { text-align: center; font-size: 16px; font-weight: bold; color: #0284c7; text-transform: uppercase; margin-bottom: 15px; }
-        .party-box { margin-bottom: 15px; font-size: 11px; line-height: 1.6; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
-        th { background-color: #0284c7; color: #ffffff; font-weight: bold; border: 1px solid #0369a1; padding: 6px 4px; text-align: center; }
-        td { border: 1px solid #cbd5e1; padding: 5px 4px; }
+        body { font-family: 'Times New Roman', Times, serif, sans-serif; font-size: 13px; color: #000000; margin: 0; padding: 15px; }
+        .nation-header { text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px; }
+        .doc-title { text-align: center; font-size: 18px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; }
+        .party-box { margin-bottom: 15px; font-size: 13px; line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th { background-color: #ffffff; color: #000000; font-weight: bold; border: 1px solid #000000; padding: 6px 4px; text-align: center; }
+        td { border: 1px solid #000000; padding: 6px 4px; }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
-        .font-mono { font-family: monospace; }
-        .bg-sum { background-color: #e0f2fe; font-weight: bold; color: #0369a1; }
-        .bg-pos-cell { background-color: #f0fdf4; color: #16a34a; }
+        .font-mono { font-family: 'Courier New', monospace; }
         .sig-grid { display: flex; justify-content: space-between; margin-top: 30px; page-break-inside: avoid; }
         .sig-box { width: 40%; text-align: center; }
       </style>
@@ -508,7 +506,7 @@ export function buildPurchaseStatementDocHtml(
     <body>
       <div class="nation-header">
         CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br/>
-        <small>Độc lập - Tự do - Hạnh phúc</small>
+        <small style="font-weight: normal; font-style: italic;">Độc lập - Tự do - Hạnh phúc</small>
       </div>
 
       <div class="doc-title">BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ</div>
@@ -538,13 +536,13 @@ export function buildPurchaseStatementDocHtml(
         </thead>
         <tbody>
           ${itemRows}
-          <tr class="bg-sum">
+          <tr style="font-weight: bold;">
             <td colspan="4" class="text-center">TỔNG CỘNG</td>
             <td>${summary.totalItems} mặt hàng</td>
             <td></td>
             <td class="text-right font-mono">${summary.totalQty.toLocaleString('vi-VN')}</td>
             <td></td>
-            <td class="text-right font-mono font-bold bg-pos-cell">${summary.totalAmount.toLocaleString('vi-VN')}</td>
+            <td class="text-right font-mono font-bold">${summary.totalAmount.toLocaleString('vi-VN')}</td>
             <td></td>
           </tr>
         </tbody>
@@ -553,13 +551,13 @@ export function buildPurchaseStatementDocHtml(
       <div class="sig-grid">
         <div class="sig-box">
           <strong>BÊN BÁN HÀNG</strong><br/>
-          <small>(Ký và ghi rõ họ tên)</small>
+          <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
           <div style="height: 60px;"></div>
           <strong>${info.sellerName || ''}</strong>
         </div>
         <div class="sig-box">
           <strong>BÊN MUA HÀNG</strong><br/>
-          <small>(Ký và ghi rõ họ tên)</small>
+          <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
           <div style="height: 60px;"></div>
           <strong>${info.buyerName || ''}</strong>
         </div>
@@ -576,20 +574,20 @@ export function buildRetailInvoiceXlsx(
   const summary = computeRetailInvoiceSummary(items);
   const rows: XlsxCell[][] = [];
 
-  rows.push([{ value: (header.shopName || 'HÓA ĐƠN BÁN LẺ').toUpperCase(), style: { bold: true, align: 'center', fill: HEADER_FILL } }]);
+  rows.push([{ value: (header.shopName || 'HÓA ĐƠN BÁN LẺ').toUpperCase(), style: { bold: true, align: 'center' } }]);
   rows.push([]);
-  rows.push([{ value: `Khách hàng: ${header.buyerName || ''}`, style: { bold: true } }]);
+  rows.push([{ value: `Họ tên người mua hàng: ${header.buyerName || ''}`, style: { bold: true } }]);
   rows.push([{ value: `Địa chỉ: ${header.buyerAddress || ''}` }]);
   rows.push([{ value: `Ngày lập: ${header.invoiceDateStr || fmtDate(todayIso())}` }]);
   rows.push([]);
 
   rows.push([
-    { value: 'STT', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'Tên hàng hóa / dịch vụ', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'ĐVT', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'Số lượng', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'Đơn giá (VND)', style: { bold: true, align: 'center', fill: HEADER_FILL } },
-    { value: 'Thành tiền (VND)', style: { bold: true, align: 'center', fill: HEADER_CUOI_KY_FILL } },
+    { value: 'STT', style: { bold: true, align: 'center' } },
+    { value: 'Tên hàng hóa', style: { bold: true, align: 'center' } },
+    { value: 'ĐVT', style: { bold: true, align: 'center' } },
+    { value: 'Số lượng', style: { bold: true, align: 'center' } },
+    { value: 'Đơn giá', style: { bold: true, align: 'center' } },
+    { value: 'Thành tiền', style: { bold: true, align: 'center' } },
   ]);
 
   items.forEach((it, idx) => {
@@ -600,17 +598,17 @@ export function buildRetailInvoiceXlsx(
       { value: c.unit, style: { align: 'center' } },
       { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
       { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
-      { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: CELL_CUOI_KY_FILL } },
+      { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
     ]);
   });
 
   rows.push([
-    { value: 'TỔNG CỘNG', style: { bold: true, align: 'center', fill: FOOTER_FILL } },
-    { value: `${summary.totalItems} sản phẩm/dịch vụ`, style: { bold: true, fill: FOOTER_FILL } },
-    { value: '', style: { fill: FOOTER_FILL } },
-    { value: summary.totalQty, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
-    { value: '', style: { fill: FOOTER_FILL } },
-    { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_CUOI_KY_FILL } },
+    { value: 'TỔNG CỘNG', style: { bold: true, align: 'center' } },
+    { value: `${summary.totalItems} sản phẩm`, style: { bold: true } },
+    { value: '' },
+    { value: summary.totalQty, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
+    { value: '' },
+    { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
   ]);
 
   const sheet: XlsxSheet = {
@@ -636,7 +634,7 @@ export function buildRetailInvoiceDocHtml(
         <td class="text-center">${c.unit}</td>
         <td class="text-right font-mono">${c.qty.toLocaleString('vi-VN')}</td>
         <td class="text-right font-mono">${c.unitPrice.toLocaleString('vi-VN')}</td>
-        <td class="text-right font-mono font-bold bg-pos-cell">${c.amount.toLocaleString('vi-VN')}</td>
+        <td class="text-right font-mono font-bold">${c.amount.toLocaleString('vi-VN')}</td>
       </tr>
     `;
   }).join('');
@@ -649,19 +647,17 @@ export function buildRetailInvoiceDocHtml(
       <title>Hóa đơn bán lẻ - ${header.shopName || ''}</title>
       <style>
         @page { size: A4 portrait; margin: 15mm; }
-        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 12px; color: #0f172a; margin: 0; padding: 20px; }
-        .shop-name { text-align: center; font-size: 18px; font-weight: bold; color: #0284c7; text-transform: uppercase; margin-bottom: 5px; }
-        .doc-subtitle { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 20px; }
-        .info-block { margin-bottom: 15px; font-size: 12px; line-height: 1.6; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
-        th { background-color: #0284c7; color: #ffffff; font-weight: bold; border: 1px solid #0369a1; padding: 7px 5px; text-align: center; }
-        td { border: 1px solid #cbd5e1; padding: 6px 5px; }
+        body { font-family: 'Times New Roman', Times, serif, sans-serif; font-size: 13px; color: #000000; margin: 0; padding: 20px; }
+        .shop-name { text-align: center; font-size: 20px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+        .doc-subtitle { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 20px; }
+        .info-block { margin-bottom: 15px; font-size: 13px; line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th { background-color: #ffffff; color: #000000; font-weight: bold; border: 1px solid #000000; padding: 7px 5px; text-align: center; }
+        td { border: 1px solid #000000; padding: 6px 5px; }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
-        .font-mono { font-family: monospace; }
-        .bg-sum { background-color: #e0f2fe; font-weight: bold; color: #0369a1; }
-        .bg-pos-cell { background-color: #f0fdf4; color: #16a34a; }
+        .font-mono { font-family: 'Courier New', monospace; }
         .sig-grid { display: flex; justify-content: space-between; margin-top: 35px; page-break-inside: avoid; }
         .sig-box { width: 45%; text-align: center; }
       </style>
@@ -673,14 +669,14 @@ export function buildRetailInvoiceDocHtml(
       <div class="info-block">
         <strong>Họ tên người mua hàng:</strong> ${header.buyerName || '....................................'}<br/>
         <strong>Địa chỉ:</strong> ${header.buyerAddress || '....................................'}<br/>
-        <strong>Ngày lập hóa đơn:</strong> ${header.invoiceDateStr || fmtDate(todayIso())}
+        <strong>Ngày lập:</strong> ${header.invoiceDateStr || fmtDate(todayIso())}
       </div>
 
       <table>
         <thead>
           <tr>
             <th style="width: 40px;">STT</th>
-            <th>Tên hàng hóa / dịch vụ</th>
+            <th>Tên hàng hóa</th>
             <th style="width: 60px;">ĐVT</th>
             <th style="width: 70px;">Số lượng</th>
             <th style="width: 100px;">Đơn giá</th>
@@ -689,11 +685,11 @@ export function buildRetailInvoiceDocHtml(
         </thead>
         <tbody>
           ${rowsHtml}
-          <tr class="bg-sum">
-            <td colspan="3" class="text-center">TỔNG CỘNG THÀNH TIỀN</td>
+          <tr style="font-weight: bold;">
+            <td colspan="3" class="text-center">TỔNG CỘNG</td>
             <td class="text-right font-mono">${summary.totalQty.toLocaleString('vi-VN')}</td>
             <td></td>
-            <td class="text-right font-mono font-bold bg-pos-cell text-sm">${summary.totalAmount.toLocaleString('vi-VN')} VND</td>
+            <td class="text-right font-mono font-bold">${summary.totalAmount.toLocaleString('vi-VN')}</td>
           </tr>
         </tbody>
       </table>
@@ -701,13 +697,13 @@ export function buildRetailInvoiceDocHtml(
       <div class="sig-grid">
         <div class="sig-box">
           <strong>KHÁCH HÀNG</strong><br/>
-          <small>(Ký và ghi rõ họ tên)</small>
+          <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
           <div style="height: 60px;"></div>
           <strong>${header.buyerName || ''}</strong>
         </div>
         <div class="sig-box">
           <strong>NGƯỜI BÁN HÀNG</strong><br/>
-          <small>(Ký và ghi rõ họ tên)</small>
+          <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
           <div style="height: 60px;"></div>
         </div>
       </div>
@@ -715,4 +711,5 @@ export function buildRetailInvoiceDocHtml(
     </html>
   `;
 }
+
 

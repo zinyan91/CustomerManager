@@ -1,5 +1,6 @@
-import { buildXlsx, type XlsxCell, type XlsxSheet } from './xlsxWriter';
+import { buildMultiSheetXlsx, buildXlsx, type XlsxCell, type XlsxSheet } from './xlsxWriter';
 import { computeItemRow, computeInventorySummary, type InventoryItem } from './inventory';
+import { computeReceivableItemRow, computeReceivableSummary, type ReceivableItem } from './debt';
 import { fmtDate, todayIso } from './utils';
 
 export interface InventoryExportContext {
@@ -14,10 +15,10 @@ const FOOTER_FILL = 'E0F2FE';
 const FOOTER_CUOI_KY_FILL = 'BBF7D0';
 const CELL_CUOI_KY_FILL = 'F0FDF4';
 
-export function buildInventoryXlsx(
+export function buildInventorySheet(
   items: InventoryItem[],
   ctx: InventoryExportContext
-): Uint8Array {
+): XlsxSheet {
   const summary = computeInventorySummary(items);
   const xlsxRows: XlsxCell[][] = [];
 
@@ -101,20 +102,117 @@ export function buildInventoryXlsx(
     ]);
   });
 
-  const sheet: XlsxSheet = {
-    name: 'Hàng tồn kho',
+  return {
+    name: 'HÀNG TỒN KHO',
     rows: xlsxRows,
     colWidths: [14, 32, 10, 14, 18, 14, 18, 14, 18, 16, 20],
   };
+}
 
+export function buildReceivableSheet(
+  receivables: ReceivableItem[],
+  ctx: InventoryExportContext
+): XlsxSheet {
+  const summary = computeReceivableSummary(receivables);
+  const xlsxRows: XlsxCell[][] = [];
+
+  xlsxRows.push([
+    {
+      value: 'BẢNG TỔNG HỢP CÔNG NỢ PHẢI THU (TK 131)',
+      style: { bold: true, align: 'center', vAlign: 'center', fill: HEADER_FILL },
+    },
+  ]);
+
+  const subText = [
+    ctx.customerName ? `Khách hàng: ${ctx.customerName}` : '',
+    `Ngày đối soát: ${fmtDate(ctx.recordDate || todayIso())}`,
+  ].filter(Boolean).join(' | ');
+
+  xlsxRows.push([{ value: subText, style: { italic: true, align: 'center' } }]);
+  xlsxRows.push([]);
+
+  // Header Row 1
+  xlsxRows.push([
+    { value: 'Mã khách hàng', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Tên khách hàng', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'SỐ DƯ ĐẦU KỲ', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: '', style: { fill: HEADER_FILL } },
+    { value: 'PHÁT SINH TRONG KỲ', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: '', style: { fill: HEADER_FILL } },
+    { value: 'SỐ DƯ CUỐI KỲ', style: { bold: true, align: 'center', fill: HEADER_CUOI_KY_FILL } },
+    { value: '', style: { fill: HEADER_CUOI_KY_FILL } },
+  ]);
+
+  // Header Row 2
+  xlsxRows.push([
+    { value: '', style: { fill: HEADER_FILL } },
+    { value: '', style: { fill: HEADER_FILL } },
+    { value: 'Nợ (VND)', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Có (VND)', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Nợ (VND)', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Có (VND)', style: { bold: true, align: 'center', fill: HEADER_FILL } },
+    { value: 'Nợ (VND)', style: { bold: true, align: 'center', fill: HEADER_CUOI_KY_FILL } },
+    { value: 'Có (VND)', style: { bold: true, align: 'center', fill: HEADER_CUOI_KY_FILL } },
+  ]);
+
+  // Summary Row
+  xlsxRows.push([
+    { value: 'TỔNG CỘNG', style: { bold: true, align: 'center', fill: FOOTER_FILL } },
+    { value: `${summary.totalItems} khách hàng`, style: { bold: true, align: 'left', fill: FOOTER_FILL } },
+    { value: summary.totalBeginningDebit, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+    { value: summary.totalBeginningCredit, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+    { value: summary.totalOccurredDebit, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+    { value: summary.totalOccurredCredit, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_FILL } },
+    { value: summary.totalEndingDebit, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_CUOI_KY_FILL } },
+    { value: summary.totalEndingCredit, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: FOOTER_CUOI_KY_FILL } },
+  ]);
+
+  receivables.forEach(it => {
+    const c = computeReceivableItemRow(it);
+    xlsxRows.push([
+      { value: c.code, style: { bold: true, align: 'center' } },
+      { value: c.name, style: { align: 'left' } },
+      { value: c.beginningDebit, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+      { value: c.beginningCredit, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+      { value: c.occurredDebit, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+      { value: c.occurredCredit, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+      { value: c.endingDebit, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: CELL_CUOI_KY_FILL } },
+      { value: c.endingCredit, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', fill: CELL_CUOI_KY_FILL } },
+    ]);
+  });
+
+  return {
+    name: 'CÔNG NỢ PHẢI THU',
+    rows: xlsxRows,
+    colWidths: [18, 36, 18, 18, 18, 18, 20, 20],
+  };
+}
+
+export function buildInventoryXlsx(
+  items: InventoryItem[],
+  ctx: InventoryExportContext
+): Uint8Array {
+  const sheet = buildInventorySheet(items, ctx);
   return buildXlsx(sheet);
+}
+
+export function buildFullInventoryAndDebtXlsx(
+  items: InventoryItem[],
+  receivables: ReceivableItem[],
+  ctx: InventoryExportContext
+): Uint8Array {
+  const invSheet = buildInventorySheet(items, ctx);
+  const recSheet = buildReceivableSheet(receivables, ctx);
+  return buildMultiSheetXlsx([invSheet, recSheet]);
 }
 
 export function buildInventoryDocHtml(
   items: InventoryItem[],
-  ctx: InventoryExportContext
+  ctx: InventoryExportContext,
+  receivables?: ReceivableItem[]
 ): string {
   const summary = computeInventorySummary(items);
+  const recSummary = receivables ? computeReceivableSummary(receivables) : null;
 
   const rowsHtml = items.map(rawItem => {
     const r = computeItemRow(rawItem);
@@ -135,12 +233,71 @@ export function buildInventoryDocHtml(
     `;
   }).join('');
 
+  let recSectionHtml = '';
+  if (receivables && recSummary) {
+    const recRows = receivables.map(it => {
+      const c = computeReceivableItemRow(it);
+      return `
+        <tr>
+          <td class="text-center font-bold">${c.code}</td>
+          <td>${c.name}</td>
+          <td class="text-right font-mono">${c.beginningDebit.toLocaleString('vi-VN')}</td>
+          <td class="text-right font-mono">${c.beginningCredit.toLocaleString('vi-VN')}</td>
+          <td class="text-right font-mono">${c.occurredDebit.toLocaleString('vi-VN')}</td>
+          <td class="text-right font-mono">${c.occurredCredit.toLocaleString('vi-VN')}</td>
+          <td class="text-right font-mono font-bold bg-pos-cell">${c.endingDebit.toLocaleString('vi-VN')}</td>
+          <td class="text-right font-mono font-bold bg-pos-cell">${c.endingCredit.toLocaleString('vi-VN')}</td>
+        </tr>
+      `;
+    }).join('');
+
+    recSectionHtml = `
+      <div style="page-break-before: always;"></div>
+      <div class="header-title">BẢNG TỔNG HỢP CÔNG NỢ PHẢI THU (TK 131)</div>
+      <div class="meta-line">
+        ${ctx.customerName ? `<strong>Khách hàng:</strong> ${ctx.customerName} | ` : ''}<strong>Ngày kiểm kê:</strong> ${fmtDate(ctx.recordDate || todayIso())}
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2">Mã KH</th>
+            <th rowspan="2">Tên khách hàng</th>
+            <th colspan="2">SỐ DƯ ĐẦU KỲ</th>
+            <th colspan="2">PHÁT SINH TRONG KỲ</th>
+            <th colspan="2" class="th-cuoi-ky">SỐ DƯ CUỐI KỲ</th>
+          </tr>
+          <tr>
+            <th>Nợ (VND)</th>
+            <th>Có (VND)</th>
+            <th>Nợ (VND)</th>
+            <th>Có (VND)</th>
+            <th class="th-cuoi-ky">Nợ (VND)</th>
+            <th class="th-cuoi-ky">Có (VND)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="bg-sum">
+            <td class="text-center">TỔNG CỘNG</td>
+            <td>${recSummary.totalItems} khách hàng</td>
+            <td class="text-right font-mono">${recSummary.totalBeginningDebit.toLocaleString('vi-VN')}</td>
+            <td class="text-right font-mono">${recSummary.totalBeginningCredit.toLocaleString('vi-VN')}</td>
+            <td class="text-right font-mono">${recSummary.totalOccurredDebit.toLocaleString('vi-VN')}</td>
+            <td class="text-right font-mono">${recSummary.totalOccurredCredit.toLocaleString('vi-VN')}</td>
+            <td class="text-right font-mono bg-sum-cuoi-ky">${recSummary.totalEndingDebit.toLocaleString('vi-VN')}</td>
+            <td class="text-right font-mono bg-sum-cuoi-ky">${recSummary.totalEndingCredit.toLocaleString('vi-VN')}</td>
+          </tr>
+          ${recRows}
+        </tbody>
+      </table>
+    `;
+  }
+
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8" />
-      <title>Bảng kiểm kê hàng tồn kho</title>
+      <title>Bảng kiểm kê hàng tồn kho & công nợ</title>
       <style>
         @page { size: A4 landscape; margin: 12mm; }
         body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #0f172a; margin: 0; padding: 15px; }
@@ -208,6 +365,8 @@ export function buildInventoryDocHtml(
           ${rowsHtml}
         </tbody>
       </table>
+
+      ${recSectionHtml}
 
       <div class="signature-grid">
         <div class="sig-box">

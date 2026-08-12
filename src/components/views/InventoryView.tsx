@@ -1,13 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import {
   Package, Download, Printer, Plus, Trash2, Upload, RefreshCw, Search, Boxes, FileSpreadsheet,
+  Settings2, Users, Link2,
 } from 'lucide-react';
 import {
   computeItemRow, computeInventorySummary, nextItemId, parseInventoryText,
   type InventoryItem,
 } from '../../lib/inventory';
-import { INVENTORY_TEMPLATES } from '../../data/inventoryTemplates';
-import { buildInventoryXlsx, buildInventoryDocHtml } from '../../lib/inventoryExport';
+import {
+  loadInventoryTemplates, addInventoryTemplate, updateInventoryTemplate,
+  deleteInventoryTemplate, resetInventoryTemplates,
+} from '../../lib/templateStore';
+import { type InventoryCategoryTemplate, type TemplateItem } from '../../data/inventoryTemplates';
+import { SAMPLE_RECEIVABLES, computeReceivableSummary, type ReceivableItem } from '../../lib/debt';
+import { buildFullInventoryAndDebtXlsx, buildInventoryDocHtml } from '../../lib/inventoryExport';
 import { downloadBytes } from '../../lib/xlsExport';
 import { MIME_XLSX } from '../../lib/xlsxWriter';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
@@ -15,6 +21,9 @@ import { fmtMoney, parseMoneyDecimalInput, todayIso } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
+import { DebtReceivableTab } from '../inventory/DebtReceivableTab';
+import { WorkingCapitalSummaryTab } from '../inventory/WorkingCapitalSummaryTab';
+import { TemplateManagerModal } from '../inventory/TemplateManagerModal';
 
 const QtyCellInput: React.FC<{
   value: number;
@@ -40,15 +49,26 @@ const QtyCellInput: React.FC<{
 };
 
 export const InventoryView: React.FC = () => {
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('htk-lúa-gạo');
+  const [activeSubTab, setActiveSubTab] = useState<'inventory' | 'receivables' | 'summary'>('inventory');
+
+  // Industry Templates State
+  const [templates, setTemplates] = useState<InventoryCategoryTemplate[]>(loadInventoryTemplates);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(() => templates[0]?.id || 'htk-lúa-gạo');
+
+  // Customer & Context State
   const [categoryName, setCategoryName] = useState<string>('HTK Lúa Gạo');
   const [customerName, setCustomerName] = useState<string>('');
   const [recordDate, setRecordDate] = useState<string>(() => todayIso());
 
+  // Inventory items
   const [items, setItems] = useState<InventoryItem[]>(() => {
-    const tpl = INVENTORY_TEMPLATES.find(t => t.id === 'htk-lúa-gạo') || INVENTORY_TEMPLATES[0];
-    return tpl.items.map(it => ({ ...it, id: nextItemId() }));
+    const tpl = templates.find(t => t.id === 'htk-lúa-gạo') || templates[0];
+    return tpl ? tpl.items.map(it => ({ ...it, id: nextItemId() })) : [];
   });
+
+  // Accounts Receivable items (TK 131)
+  const [receivables, setReceivables] = useState<ReceivableItem[]>(SAMPLE_RECEIVABLES);
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -69,12 +89,52 @@ export const InventoryView: React.FC = () => {
 
   const handleSelectTemplate = (templateId: string) => {
     setSelectedTemplateId(templateId);
-    const tpl = INVENTORY_TEMPLATES.find(t => t.id === templateId);
+    const tpl = templates.find(t => t.id === templateId);
     if (tpl) {
       setCategoryName(tpl.name);
       setItems(tpl.items.map(it => ({ ...it, id: nextItemId() })));
       showNotify('success', `Đã nạp danh mục mẫu: ${tpl.name}.`);
     }
+  };
+
+  // Template CRUD actions
+  const handleSaveTemplate = (name: string, tplItems: TemplateItem[], templateId?: string) => {
+    let updated: InventoryCategoryTemplate[];
+    if (templateId) {
+      updated = updateInventoryTemplate(templateId, name, tplItems);
+      showNotify('success', `Đã cập nhật Mẫu ngành hàng: ${name}`);
+    } else {
+      const res = addInventoryTemplate(name, tplItems);
+      updated = res.templates;
+      setSelectedTemplateId(res.newTemplate.id);
+      setCategoryName(res.newTemplate.name);
+      setItems(res.newTemplate.items.map(it => ({ ...it, id: nextItemId() })));
+      showNotify('success', `Đã tạo mới Mẫu ngành hàng: ${name}`);
+    }
+    setTemplates(updated);
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    const updated = deleteInventoryTemplate(id);
+    setTemplates(updated);
+    if (selectedTemplateId === id) {
+      const first = updated[0];
+      if (first) {
+        setSelectedTemplateId(first.id);
+        setCategoryName(first.name);
+        setItems(first.items.map(it => ({ ...it, id: nextItemId() })));
+      }
+    }
+    showNotify('success', 'Đã xóa ngành hàng chuẩn.');
+  };
+
+  const handleResetTemplates = () => {
+    const defaultTpls = resetInventoryTemplates();
+    setTemplates(defaultTpls);
+    setSelectedTemplateId(defaultTpls[0].id);
+    setCategoryName(defaultTpls[0].name);
+    setItems(defaultTpls[0].items.map(it => ({ ...it, id: nextItemId() })));
+    showNotify('success', 'Đã khôi phục về danh mục 8 ngành hàng mặc định.');
   };
 
   const handleAddItem = (e: React.FormEvent) => {
@@ -150,20 +210,21 @@ export const InventoryView: React.FC = () => {
   }, [items, searchTerm]);
 
   const summary = useMemo(() => computeInventorySummary(items), [items]);
+  const recSummary = useMemo(() => computeReceivableSummary(receivables), [receivables]);
 
   const handleExportExcel = () => {
-    if (items.length === 0) {
-      showNotify('error', 'Chưa có mặt hàng nào để xuất Excel.');
+    if (items.length === 0 && receivables.length === 0) {
+      showNotify('error', 'Chưa có dữ liệu nào để xuất Excel.');
       return;
     }
     try {
-      const bytes = buildInventoryXlsx(items, {
+      const bytes = buildFullInventoryAndDebtXlsx(items, receivables, {
         categoryName,
         customerName,
         recordDate,
       });
-      downloadBytes(bytes, `BANG_KIEM_KE_HTK_${todayIso()}.xlsx`, MIME_XLSX);
-      showNotify('success', 'Đã xuất tệp Excel thành công.');
+      downloadBytes(bytes, `HTK_PHAI_THU_${todayIso()}.xlsx`, MIME_XLSX);
+      showNotify('success', 'Đã xuất tệp Excel thành công (2 Sheet).');
     } catch (err: any) {
       showNotify('error', 'Không xuất được tệp Excel: ' + (err?.message || 'Lỗi hệ thống'));
     }
@@ -178,7 +239,7 @@ export const InventoryView: React.FC = () => {
       categoryName,
       customerName,
       recordDate,
-    });
+    }, receivables);
     printHtmlDoc(html);
   };
 
@@ -196,11 +257,11 @@ export const InventoryView: React.FC = () => {
               <Boxes className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-accent tracking-tight">
-                KIỂM KÊ VÀ ĐỊNH GIÁ HÀNG TỒN KHO
+              <h1 className="text-base font-bold text-accent tracking-tight uppercase">
+                KIỂM KÊ TỒN KHO & CÔNG NỢ PHẢI THU (TK 131)
               </h1>
               <p className="text-xs text-ink-faint">
-                Bảng quản lý, kiểm kê và định giá giá trị hàng hóa tồn kho của khách hàng
+                Quản lý kiểm kê hàng hóa tồn kho, công nợ phải thu và liên kết phân tích Tài sản ngắn hạn
               </p>
             </div>
           </div>
@@ -230,18 +291,28 @@ export const InventoryView: React.FC = () => {
           </div>
         </div>
 
-        {/* Industry Templates & Info Bar */}
+        {/* Info & Industry Templates Controls */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-1">
           <div>
-            <label className={`block mb-1 text-[10px] uppercase tracking-wide ${UI.labelStyle}`}>
-              Mẫu ngành hàng chuẩn ({INVENTORY_TEMPLATES.length})
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className={`block text-[10px] uppercase tracking-wide ${UI.labelStyle}`}>
+                Mẫu ngành hàng chuẩn ({templates.length})
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsTemplateModalOpen(true)}
+                className="text-[11px] font-bold text-accent hover:underline flex items-center space-x-1"
+              >
+                <Settings2 className="w-3 h-3" />
+                <span>Quản lý mẫu</span>
+              </button>
+            </div>
             <select
               value={selectedTemplateId}
               onChange={e => handleSelectTemplate(e.target.value)}
               className={`w-full rounded-md p-2 text-xs border ${UI.inputStyle} font-semibold`}
             >
-              {INVENTORY_TEMPLATES.map(t => (
+              {templates.map(t => (
                 <option key={t.id} value={t.id}>
                   {t.name}
                 </option>
@@ -277,7 +348,7 @@ export const InventoryView: React.FC = () => {
 
           <div>
             <label className={`block mb-1 text-[10px] uppercase tracking-wide ${UI.labelStyle}`}>
-              Ngày kiểm kê
+              Ngày kiểm kê / Đối soát
             </label>
             <DateInput
               value={recordDate}
@@ -288,274 +359,346 @@ export const InventoryView: React.FC = () => {
         </div>
       </div>
 
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className={`${UI.containerCardBg} rounded-lg p-3 border flex items-center justify-between`}>
-          <div>
-            <div className="text-[10px] font-bold text-ink-faint uppercase">TỔNG MẶT HÀNG</div>
-            <div className="text-xl font-extrabold text-accent mt-0.5 font-mono">
-              {summary.totalItems} <span className="text-xs font-normal text-ink-faint">sản phẩm</span>
-            </div>
-          </div>
-          <div className="p-2.5 bg-accent-soft rounded-lg text-accent">
-            <Package className="w-5 h-5" />
-          </div>
-        </div>
+      {/* Navigation Sub-Tabs */}
+      <div className="flex border-b border-line gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('inventory')}
+          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 ${
+            activeSubTab === 'inventory'
+              ? 'border-accent text-accent bg-accent-soft/30'
+              : 'border-transparent text-ink-muted hover:text-ink'
+          }`}
+        >
+          <Boxes className="w-4 h-4" />
+          <span>Hàng tồn kho ({items.length})</span>
+        </button>
 
-        <div className={`${UI.containerCardBg} rounded-lg p-3 border flex items-center justify-between`}>
-          <div>
-            <div className="text-[10px] font-bold text-ink-faint uppercase">GIÁ TRỊ ĐẦU KỲ</div>
-            <div className="text-lg font-extrabold text-ink mt-0.5 font-mono">
-              {fmtMoney(summary.totalBeginningValue)}
-            </div>
-          </div>
-          <div className="p-2.5 bg-panel-muted rounded-lg text-ink-faint">
-            <FileSpreadsheet className="w-5 h-5" />
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('receivables')}
+          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 ${
+            activeSubTab === 'receivables'
+              ? 'border-accent text-accent bg-accent-soft/30'
+              : 'border-transparent text-ink-muted hover:text-ink'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Công nợ Phải thu TK 131 ({receivables.length})</span>
+        </button>
 
-        <div className={`${UI.containerCardBg} rounded-lg p-3 border flex items-center justify-between`}>
-          <div>
-            <div className="text-[10px] font-bold text-ink-faint uppercase">TỔNG NHẬP − XUẤT KHO</div>
-            <div className="text-sm font-bold text-ink mt-0.5 font-mono">
-              + {fmtMoney(summary.totalImportValue)}
-            </div>
-            <div className="text-xs font-semibold text-neg font-mono">
-              − {fmtMoney(summary.totalExportValue)}
-            </div>
-          </div>
-          <div className="p-2.5 bg-warn-soft rounded-lg text-warn">
-            <RefreshCw className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="rounded-lg p-3 border border-pos/30 bg-pos-soft flex items-center justify-between">
-          <div>
-            <div className="text-[10px] font-extrabold text-pos uppercase tracking-wide">
-              GIÁ TRỊ TỒN KHO CUỐI KỲ
-            </div>
-            <div className="text-xl font-black text-pos mt-0.5 font-mono">
-              {fmtMoney(summary.totalEndingValue)}
-            </div>
-          </div>
-          <div className="p-2.5 bg-pos/20 rounded-lg text-pos">
-            <Boxes className="w-5 h-5" />
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('summary')}
+          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 ${
+            activeSubTab === 'summary'
+              ? 'border-accent text-accent bg-accent-soft/30'
+              : 'border-transparent text-ink-muted hover:text-ink'
+          }`}
+        >
+          <Link2 className="w-4 h-4" />
+          <span>Liên kết Vốn lưu động</span>
+        </button>
       </div>
 
-      {/* Add Item Form */}
-      <form onSubmit={handleAddItem} className={`${UI.containerCardBg} rounded-lg p-3 border space-y-2`}>
-        <div className="text-xs font-bold text-accent uppercase tracking-wide flex items-center space-x-1.5">
-          <Plus className="w-4 h-4" />
-          <span>Thêm mặt hàng mới vào danh mục</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-          <input
-            type="text"
-            placeholder="Mã hàng (VD: SP01)"
-            value={newCode}
-            onChange={e => setNewCode(e.target.value)}
-            className={`rounded p-1.5 text-xs border ${UI.inputStyle} font-mono`}
-          />
-          <input
-            type="text"
-            placeholder="Tên sản phẩm *"
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            className={`rounded p-1.5 text-xs border ${UI.inputStyle} lg:col-span-2`}
-          />
-          <input
-            type="text"
-            placeholder="ĐVT (Kg, Chai, Bộ...)"
-            value={newUnit}
-            onChange={e => setNewUnit(e.target.value)}
-            className={`rounded p-1.5 text-xs border ${UI.inputStyle}`}
-          />
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="Đơn giá / SP (VND)"
-            value={newPriceStr}
-            onChange={e => setNewPriceStr(e.target.value)}
-            className={`rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right`}
-          />
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="Số lượng đầu kỳ"
-            value={newBegQtyStr}
-            onChange={e => setNewBegQtyStr(e.target.value)}
-            className={`rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right`}
-          />
-          <button
-            type="submit"
-            className="bg-accent hover:opacity-90 text-accent-ink text-xs font-bold px-3 py-1.5 rounded flex items-center justify-center space-x-1 transition-colors col-span-2 sm:col-span-1"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm</span>
-          </button>
-        </div>
-      </form>
+      {/* Tab Content Rendering */}
+      {activeSubTab === 'receivables' && (
+        <DebtReceivableTab
+          receivables={receivables}
+          onChangeReceivables={setReceivables}
+          showNotify={showNotify}
+        />
+      )}
 
-      {/* Main Table Card */}
-      <div className={`${UI.containerCardBg} rounded-lg p-3 border space-y-3`}>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-line pb-2">
-          <div className="relative w-full sm:w-72">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm mã, tên mặt hàng, ĐVT..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className={`w-full pl-8 pr-3 py-1.5 rounded-md text-xs border ${UI.inputStyle}`}
-            />
+      {activeSubTab === 'summary' && (
+        <WorkingCapitalSummaryTab
+          invSummary={summary}
+          recSummary={recSummary}
+        />
+      )}
+
+      {activeSubTab === 'inventory' && (
+        <>
+          {/* Summary KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className={`${UI.containerCardBg} rounded-lg p-3 border flex items-center justify-between`}>
+              <div>
+                <div className="text-[10px] font-bold text-ink-faint uppercase">TỔNG MẶT HÀNG</div>
+                <div className="text-xl font-extrabold text-accent mt-0.5 font-mono">
+                  {summary.totalItems} <span className="text-xs font-normal text-ink-faint">sản phẩm</span>
+                </div>
+              </div>
+              <div className="p-2.5 bg-accent-soft rounded-lg text-accent">
+                <Package className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className={`${UI.containerCardBg} rounded-lg p-3 border flex items-center justify-between`}>
+              <div>
+                <div className="text-[10px] font-bold text-ink-faint uppercase">GIÁ TRỊ ĐẦU KỲ</div>
+                <div className="text-lg font-extrabold text-ink mt-0.5 font-mono">
+                  {fmtMoney(summary.totalBeginningValue)}
+                </div>
+              </div>
+              <div className="p-2.5 bg-panel-muted rounded-lg text-ink-faint">
+                <FileSpreadsheet className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className={`${UI.containerCardBg} rounded-lg p-3 border flex items-center justify-between`}>
+              <div>
+                <div className="text-[10px] font-bold text-ink-faint uppercase">TỔNG NHẬP − XUẤT KHO</div>
+                <div className="text-sm font-bold text-ink mt-0.5 font-mono">
+                  + {fmtMoney(summary.totalImportValue)}
+                </div>
+                <div className="text-xs font-semibold text-neg font-mono">
+                  − {fmtMoney(summary.totalExportValue)}
+                </div>
+              </div>
+              <div className="p-2.5 bg-warn-soft rounded-lg text-warn">
+                <RefreshCw className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="rounded-lg p-3 border border-pos/30 bg-pos-soft flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-extrabold text-pos uppercase tracking-wide">
+                  GIÁ TRỊ TỒN KHO CUỐI KỲ
+                </div>
+                <div className="text-xl font-black text-pos mt-0.5 font-mono">
+                  {fmtMoney(summary.totalEndingValue)}
+                </div>
+              </div>
+              <div className="p-2.5 bg-pos/20 rounded-lg text-pos">
+                <Boxes className="w-5 h-5" />
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2 text-xs text-ink-faint">
-            <span>Đang hiển thị <strong>{filteredItems.length}</strong> / <strong>{items.length}</strong> mặt hàng</span>
-            {items.length > 0 && (
+          {/* Add Item Form */}
+          <form onSubmit={handleAddItem} className={`${UI.containerCardBg} rounded-lg p-3 border space-y-2`}>
+            <div className="text-xs font-bold text-accent uppercase tracking-wide flex items-center space-x-1.5">
+              <Plus className="w-4 h-4" />
+              <span>Thêm mặt hàng mới vào danh mục</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+              <input
+                type="text"
+                placeholder="Mã hàng (VD: SP01)"
+                value={newCode}
+                onChange={e => setNewCode(e.target.value)}
+                className={`rounded p-1.5 text-xs border ${UI.inputStyle} font-mono`}
+              />
+              <input
+                type="text"
+                placeholder="Tên sản phẩm *"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                className={`rounded p-1.5 text-xs border ${UI.inputStyle} lg:col-span-2`}
+              />
+              <input
+                type="text"
+                placeholder="ĐVT (Kg, Chai, Bộ...)"
+                value={newUnit}
+                onChange={e => setNewUnit(e.target.value)}
+                className={`rounded p-1.5 text-xs border ${UI.inputStyle}`}
+              />
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="Đơn giá / SP (VND)"
+                value={newPriceStr}
+                onChange={e => setNewPriceStr(e.target.value)}
+                className={`rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right`}
+              />
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="Số lượng đầu kỳ"
+                value={newBegQtyStr}
+                onChange={e => setNewBegQtyStr(e.target.value)}
+                className={`rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right`}
+              />
               <button
-                type="button"
-                onClick={clearAllItems}
-                className="text-neg hover:underline font-semibold ml-2"
+                type="submit"
+                className="bg-accent hover:opacity-90 text-accent-ink text-xs font-bold px-3 py-1.5 rounded flex items-center justify-center space-x-1 transition-colors col-span-2 sm:col-span-1"
               >
-                Xóa tất cả
+                <Plus className="w-3.5 h-3.5" />
+                <span>Thêm</span>
               </button>
-            )}
-          </div>
-        </div>
+            </div>
+          </form>
 
-        <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-          <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
-            <thead className="sticky top-0 bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line z-10">
-              <tr>
-                <th className="p-2 text-center w-24" rowSpan={2}>MÃ HÀNG</th>
-                <th className="p-2 min-w-[200px]" rowSpan={2}>TÊN SẢN PHẨM</th>
-                <th className="p-2 text-center w-16" rowSpan={2}>ĐVT</th>
-                <th className="p-1.5 text-center border-l border-line bg-panel-muted/80" colSpan={2}>ĐẦU KỲ</th>
-                <th className="p-1.5 text-center border-l border-line bg-panel-muted/80" colSpan={2}>NHẬP KHO</th>
-                <th className="p-1.5 text-center border-l border-line bg-panel-muted/80" colSpan={2}>XUẤT KHO</th>
-                <th className="p-1.5 text-center border-l border-line bg-pos-soft text-pos font-bold" colSpan={2}>CUỐI KỲ</th>
-                <th className="p-2 text-center w-10" rowSpan={2}></th>
-              </tr>
-              <tr>
-                <th className="p-1.5 text-right border-l border-line">SỐ LƯỢNG</th>
-                <th className="p-1.5 text-right">GIÁ TRỊ (VND)</th>
-                <th className="p-1.5 text-right border-l border-line">SỐ LƯỢNG</th>
-                <th className="p-1.5 text-right">GIÁ TRỊ (VND)</th>
-                <th className="p-1.5 text-right border-l border-line">SỐ LƯỢNG</th>
-                <th className="p-1.5 text-right">GIÁ TRỊ (VND)</th>
-                <th className="p-1.5 text-right border-l border-line bg-pos-soft text-pos font-bold">SỐ LƯỢNG</th>
-                <th className="p-1.5 text-right bg-pos-soft text-pos font-bold">GIÁ TRỊ (VND)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {filteredItems.map(rawItem => {
-                const r = computeItemRow(rawItem);
-                return (
-                  <tr key={r.id} className="hover:bg-panel-muted/50 transition-colors">
-                    <td className="p-1">
-                      <input
-                        type="text"
-                        value={r.code}
-                        onChange={e => updateItem(r.id, { code: e.target.value })}
-                        className={`${cellInputCls} text-center font-bold`}
-                      />
-                    </td>
-                    <td className="p-1">
-                      <input
-                        type="text"
-                        value={r.name}
-                        onChange={e => updateItem(r.id, { name: e.target.value })}
-                        className={`${cellInputCls} font-semibold`}
-                      />
-                    </td>
-                    <td className="p-1">
-                      <input
-                        type="text"
-                        value={r.unit}
-                        onChange={e => updateItem(r.id, { unit: e.target.value })}
-                        className={`${cellInputCls} text-center`}
-                      />
-                    </td>
+          {/* Main Table Card */}
+          <div className={`${UI.containerCardBg} rounded-lg p-3 border space-y-3`}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-line pb-2">
+              <div className="relative w-full sm:w-72">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm mã, tên mặt hàng, ĐVT..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className={`w-full pl-8 pr-3 py-1.5 rounded-md text-xs border ${UI.inputStyle}`}
+                />
+              </div>
 
-                    {/* Đầu kỳ */}
-                    <td className="p-1 border-l border-line">
-                      <QtyCellInput
-                        value={r.beginningQty}
-                        onChange={v => updateItem(r.id, { beginningQty: v })}
-                        className={`${cellInputCls} text-right`}
-                      />
-                    </td>
-                    <td className="p-2 text-right font-mono text-ink-faint">
-                      {fmtMoney(r.beginningValue)}
-                    </td>
+              <div className="flex items-center space-x-2 text-xs text-ink-faint">
+                <span>Đang hiển thị <strong>{filteredItems.length}</strong> / <strong>{items.length}</strong> mặt hàng</span>
+                {items.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearAllItems}
+                    className="text-neg hover:underline font-semibold ml-2"
+                  >
+                    Xóa tất cả
+                  </button>
+                )}
+              </div>
+            </div>
 
-                    {/* Nhập kho */}
-                    <td className="p-1 border-l border-line">
-                      <QtyCellInput
-                        value={r.importQty}
-                        onChange={v => updateItem(r.id, { importQty: v })}
-                        className={`${cellInputCls} text-right`}
-                      />
-                    </td>
-                    <td className="p-2 text-right font-mono text-ink-faint">
-                      {fmtMoney(r.importValue)}
-                    </td>
-
-                    {/* Xuất kho */}
-                    <td className="p-1 border-l border-line">
-                      <QtyCellInput
-                        value={r.exportQty}
-                        onChange={v => updateItem(r.id, { exportQty: v })}
-                        className={`${cellInputCls} text-right`}
-                      />
-                    </td>
-                    <td className="p-2 text-right font-mono text-ink-faint">
-                      {fmtMoney(r.exportValue)}
-                    </td>
-
-                    {/* Cuối kỳ */}
-                    <td className="p-2 text-right font-mono font-bold text-pos border-l border-line bg-pos-soft/40">
-                      {r.endingQty.toLocaleString('vi-VN')}
-                    </td>
-                    <td className="p-2 text-right font-mono font-bold text-pos bg-pos-soft/40">
-                      {fmtMoney(r.endingValue)}
-                    </td>
-
-                    <td className="p-1 text-center">
-                      <button
-                        type="button"
-                        onClick={() => removeItem(r.id)}
-                        className="text-ink-faint hover:text-neg transition-colors p-1"
-                        title="Xóa mặt hàng"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+              <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
+                <thead className="sticky top-0 bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line z-10">
+                  <tr>
+                    <th className="p-2 text-center w-24" rowSpan={2}>MÃ HÀNG</th>
+                    <th className="p-2 min-w-[200px]" rowSpan={2}>TÊN SẢN PHẨM</th>
+                    <th className="p-2 text-center w-16" rowSpan={2}>ĐVT</th>
+                    <th className="p-1.5 text-center border-l border-line bg-panel-muted/80" colSpan={2}>ĐẦU KỲ</th>
+                    <th className="p-1.5 text-center border-l border-line bg-panel-muted/80" colSpan={2}>NHẬP KHO</th>
+                    <th className="p-1.5 text-center border-l border-line bg-panel-muted/80" colSpan={2}>XUẤT KHO</th>
+                    <th className="p-1.5 text-center border-l border-line bg-pos-soft text-pos font-bold" colSpan={2}>CUỐI KỲ</th>
+                    <th className="p-2 text-center w-10" rowSpan={2}></th>
                   </tr>
-                );
-              })}
-            </tbody>
-            <tfoot className="bg-accent-soft font-bold border-t-2 border-accent/30 sticky bottom-0 z-10">
-              <tr>
-                <td className="p-2 text-center" colSpan={2}>TỔNG CỘNG ({summary.totalItems} MẶT HÀNG)</td>
-                <td className="p-2"></td>
-                <td className="p-2 text-right font-mono border-l border-line">{summary.totalBeginningQty.toLocaleString('vi-VN')}</td>
-                <td className="p-2 text-right font-mono">{fmtMoney(summary.totalBeginningValue)}</td>
-                <td className="p-2 text-right font-mono border-l border-line">{summary.totalImportQty.toLocaleString('vi-VN')}</td>
-                <td className="p-2 text-right font-mono">{fmtMoney(summary.totalImportValue)}</td>
-                <td className="p-2 text-right font-mono border-l border-line">{summary.totalExportQty.toLocaleString('vi-VN')}</td>
-                <td className="p-2 text-right font-mono">{fmtMoney(summary.totalExportValue)}</td>
-                <td className="p-2 text-right font-mono border-l border-line text-pos text-sm bg-pos-soft/60">{summary.totalEndingQty.toLocaleString('vi-VN')}</td>
-                <td className="p-2 text-right font-mono text-pos text-sm bg-pos-soft/60">{fmtMoney(summary.totalEndingValue)}</td>
-                <td className="p-2"></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
+                  <tr>
+                    <th className="p-1.5 text-right border-l border-line">SỐ LƯỢNG</th>
+                    <th className="p-1.5 text-right">GIÁ TRỊ (VND)</th>
+                    <th className="p-1.5 text-right border-l border-line">SỐ LƯỢNG</th>
+                    <th className="p-1.5 text-right">GIÁ TRỊ (VND)</th>
+                    <th className="p-1.5 text-right border-l border-line">SỐ LƯỢNG</th>
+                    <th className="p-1.5 text-right">GIÁ TRỊ (VND)</th>
+                    <th className="p-1.5 text-right border-l border-line bg-pos-soft text-pos font-bold">SỐ LƯỢNG</th>
+                    <th className="p-1.5 text-right bg-pos-soft text-pos font-bold">GIÁ TRỊ (VND)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {filteredItems.map(rawItem => {
+                    const r = computeItemRow(rawItem);
+                    return (
+                      <tr key={r.id} className="hover:bg-panel-muted/50 transition-colors">
+                        <td className="p-1">
+                          <input
+                            type="text"
+                            value={r.code}
+                            onChange={e => updateItem(r.id, { code: e.target.value })}
+                            className={`${cellInputCls} text-center font-bold`}
+                          />
+                        </td>
+                        <td className="p-1">
+                          <input
+                            type="text"
+                            value={r.name}
+                            onChange={e => updateItem(r.id, { name: e.target.value })}
+                            className={`${cellInputCls} font-semibold`}
+                          />
+                        </td>
+                        <td className="p-1">
+                          <input
+                            type="text"
+                            value={r.unit}
+                            onChange={e => updateItem(r.id, { unit: e.target.value })}
+                            className={`${cellInputCls} text-center`}
+                          />
+                        </td>
+
+                        {/* Đầu kỳ */}
+                        <td className="p-1 border-l border-line">
+                          <QtyCellInput
+                            value={r.beginningQty}
+                            onChange={v => updateItem(r.id, { beginningQty: v })}
+                            className={`${cellInputCls} text-right`}
+                          />
+                        </td>
+                        <td className="p-2 text-right font-mono text-ink-faint">
+                          {fmtMoney(r.beginningValue)}
+                        </td>
+
+                        {/* Nhập kho */}
+                        <td className="p-1 border-l border-line">
+                          <QtyCellInput
+                            value={r.importQty}
+                            onChange={v => updateItem(r.id, { importQty: v })}
+                            className={`${cellInputCls} text-right`}
+                          />
+                        </td>
+                        <td className="p-2 text-right font-mono text-ink-faint">
+                          {fmtMoney(r.importValue)}
+                        </td>
+
+                        {/* Xuất kho */}
+                        <td className="p-1 border-l border-line">
+                          <QtyCellInput
+                            value={r.exportQty}
+                            onChange={v => updateItem(r.id, { exportQty: v })}
+                            className={`${cellInputCls} text-right`}
+                          />
+                        </td>
+                        <td className="p-2 text-right font-mono text-ink-faint">
+                          {fmtMoney(r.exportValue)}
+                        </td>
+
+                        {/* Cuối kỳ */}
+                        <td className="p-2 text-right font-mono font-bold text-pos border-l border-line bg-pos-soft/40">
+                          {r.endingQty.toLocaleString('vi-VN')}
+                        </td>
+                        <td className="p-2 text-right font-mono font-bold text-pos bg-pos-soft/40">
+                          {fmtMoney(r.endingValue)}
+                        </td>
+
+                        <td className="p-1 text-center">
+                          <button
+                            type="button"
+                            onClick={() => removeItem(r.id)}
+                            className="text-ink-faint hover:text-neg transition-colors p-1"
+                            title="Xóa mặt hàng"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="bg-accent-soft font-bold border-t-2 border-accent/30 sticky bottom-0 z-10">
+                  <tr>
+                    <td className="p-2 text-center" colSpan={2}>TỔNG CỘNG ({summary.totalItems} MẶT HÀNG)</td>
+                    <td className="p-2"></td>
+                    <td className="p-2 text-right font-mono border-l border-line">{summary.totalBeginningQty.toLocaleString('vi-VN')}</td>
+                    <td className="p-2 text-right font-mono">{fmtMoney(summary.totalBeginningValue)}</td>
+                    <td className="p-2 text-right font-mono border-l border-line">{summary.totalImportQty.toLocaleString('vi-VN')}</td>
+                    <td className="p-2 text-right font-mono">{fmtMoney(summary.totalImportValue)}</td>
+                    <td className="p-2 text-right font-mono border-l border-line">{summary.totalExportQty.toLocaleString('vi-VN')}</td>
+                    <td className="p-2 text-right font-mono">{fmtMoney(summary.totalExportValue)}</td>
+                    <td className="p-2 text-right font-mono border-l border-line text-pos text-sm bg-pos-soft/60">{summary.totalEndingQty.toLocaleString('vi-VN')}</td>
+                    <td className="p-2 text-right font-mono text-pos text-sm bg-pos-soft/60">{fmtMoney(summary.totalEndingValue)}</td>
+                    <td className="p-2"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Industry Template Manager Modal */}
+      <TemplateManagerModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        templates={templates}
+        onSaveTemplate={handleSaveTemplate}
+        onDeleteTemplate={handleDeleteTemplate}
+        onResetTemplates={handleResetTemplates}
+      />
     </div>
   );
 };

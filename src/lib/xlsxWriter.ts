@@ -251,3 +251,60 @@ export function buildXlsx(sheet: XlsxSheet): Uint8Array {
     { name: 'xl/worksheets/sheet1.xml', data: utf8(sheetXml({ ...sheet, name }, styles.indexFor)) },
   ]);
 }
+
+export function buildMultiSheetXlsx(sheets: XlsxSheet[]): Uint8Array {
+  if (sheets.length <= 1) {
+    return buildXlsx(sheets[0] || { name: 'Sheet1', rows: [] });
+  }
+
+  const allRows = sheets.flatMap(s => s.rows);
+  const styles = buildStyleSheet(allRows);
+
+  const zipEntries: { name: string; data: Uint8Array }[] = [];
+
+  let contentTypesXml = XML_DECL
+    + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    + '<Default Extension="xml" ContentType="application/xml"/>'
+    + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+    + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
+
+  sheets.forEach((_, idx) => {
+    contentTypesXml += `<Override PartName="/xl/worksheets/sheet${idx + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`;
+  });
+  contentTypesXml += '</Types>';
+  zipEntries.push({ name: '[Content_Types].xml', data: utf8(contentTypesXml) });
+
+  zipEntries.push({ name: '_rels/.rels', data: utf8(ROOT_RELS) });
+
+  let wbXml = XML_DECL
+    + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+    + '<sheets>';
+  sheets.forEach((s, idx) => {
+    const sName = sanitizeSheetName(s.name);
+    wbXml += `<sheet name="${escapeXml(sName)}" sheetId="${idx + 1}" r:id="rId${idx + 1}"/>`;
+  });
+  wbXml += '</sheets></workbook>';
+  zipEntries.push({ name: 'xl/workbook.xml', data: utf8(wbXml) });
+
+  let wbRelsXml = XML_DECL
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+  sheets.forEach((_, idx) => {
+    wbRelsXml += `<Relationship Id="rId${idx + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${idx + 1}.xml"/>`;
+  });
+  wbRelsXml += `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`;
+  wbRelsXml += '</Relationships>';
+  zipEntries.push({ name: 'xl/_rels/workbook.xml.rels', data: utf8(wbRelsXml) });
+
+  zipEntries.push({ name: 'xl/styles.xml', data: utf8(styles.xml) });
+
+  sheets.forEach((s, idx) => {
+    const sName = sanitizeSheetName(s.name);
+    zipEntries.push({
+      name: `xl/worksheets/sheet${idx + 1}.xml`,
+      data: utf8(sheetXml({ ...s, name: sName }, styles.indexFor)),
+    });
+  });
+
+  return zipStore(zipEntries);
+}

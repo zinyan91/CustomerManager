@@ -390,43 +390,79 @@ export function buildPurchaseStatementXlsx(
 ): Uint8Array {
   const summary = computeStatementSummary(items);
   const rows: XlsxCell[][] = [];
+  const merges: string[] = [];
 
   rows.push([{ value: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', style: { bold: true, align: 'center' } }]);
+  merges.push('A1:I1');
   rows.push([{ value: 'Độc lập - Tự do - Hạnh Phúc', style: { bold: true, align: 'center' } }]);
+  merges.push('A2:I2');
+  rows.push([{ value: '*************', style: { align: 'center' } }]);
+  merges.push('A3:I3');
   rows.push([]);
   rows.push([{ value: 'BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ', style: { bold: true, align: 'center' } }]);
+  merges.push('A5:I5');
   rows.push([]);
 
   rows.push([{ value: `Bên bán hàng: ${info.sellerName || ''}`, style: { bold: true } }]);
-  rows.push([{ value: `Địa chỉ: ${info.sellerAddress || ''}` }]);
+  merges.push('A7:I7');
   rows.push([{ value: `CMND/CCCD/STK: ${info.sellerIdCard || ''} ${info.sellerBankAcc || ''}` }]);
+  merges.push('A8:I8');
+  rows.push([]);
   rows.push([{ value: `Bên mua hàng: ${info.buyerName || ''}`, style: { bold: true } }]);
+  merges.push('A10:I10');
   rows.push([{ value: `CMND/CCCD số: ${info.buyerIdCard || ''}` }]);
+  merges.push('A11:I11');
   rows.push([]);
 
-  // Headers
+  // Table Header Row 1 (Row 13 in Excel)
   rows.push([
-    { value: 'Ngày tháng', style: { bold: true, align: 'center' } },
+    { value: 'Ngày, tháng,\nnăm', style: { bold: true, align: 'center', vAlign: 'center' } },
+    { value: 'Người bán', style: { bold: true, align: 'center' } },
+    { value: '' },
+    { value: '' },
+    { value: 'Hàng hóa mua vào', style: { bold: true, align: 'center' } },
+    { value: '' },
+    { value: '' },
+    { value: '' },
+    { value: 'Ghi chú', style: { bold: true, align: 'center', vAlign: 'center' } },
+  ]);
+  merges.push('A13:A14');
+  merges.push('B13:D13');
+  merges.push('E13:H13');
+  merges.push('I13:I14');
+
+  // Table Header Row 2 (Row 14 in Excel)
+  rows.push([
+    { value: '' },
     { value: 'Tên người bán', style: { bold: true, align: 'center' } },
     { value: 'Địa chỉ', style: { bold: true, align: 'center' } },
-    { value: 'Số CMND/STK', style: { bold: true, align: 'center' } },
+    { value: 'Số CMND/CCCD/\nSTK', style: { bold: true, align: 'center' } },
     { value: 'Tên hàng hóa, dịch vụ', style: { bold: true, align: 'center' } },
-    { value: 'ĐVT', style: { bold: true, align: 'center' } },
-    { value: 'Số lượng', style: { bold: true, align: 'center' } },
-    { value: 'Đơn giá (VND)', style: { bold: true, align: 'center' } },
-    { value: 'Thành tiền (VND)', style: { bold: true, align: 'center' } },
-    { value: 'Ghi chú', style: { bold: true, align: 'center' } },
+    { value: 'Số lượng\n(kg)', style: { bold: true, align: 'center' } },
+    { value: 'Đơn giá\n(kg)', style: { bold: true, align: 'center' } },
+    { value: 'Thành tiền', style: { bold: true, align: 'center' } },
+    { value: '' },
   ]);
 
-  items.forEach(it => {
+  const n = Math.max(1, items.length);
+  const startRow = 15;
+  const endRow = startRow + n - 1;
+
+  if (items.length > 0) {
+    merges.push(`A${startRow}:A${endRow}`);
+    merges.push(`B${startRow}:B${endRow}`);
+    merges.push(`C${startRow}:C${endRow}`);
+    merges.push(`D${startRow}:D${endRow}`);
+  }
+
+  items.forEach((it, idx) => {
     const c = computeStatementItem(it);
     rows.push([
-      { value: c.dateStr || '' },
-      { value: info.sellerName || '' },
-      { value: info.sellerAddress || '' },
-      { value: info.sellerIdCard || '' },
+      { value: idx === 0 ? (c.dateStr || '…../…../2024') : '', style: { align: 'center', vAlign: 'center' } },
+      { value: idx === 0 ? (info.sellerName || '') : '', style: { vAlign: 'center' } },
+      { value: idx === 0 ? (info.sellerAddress || '') : '', style: { vAlign: 'center' } },
+      { value: idx === 0 ? (`${info.sellerIdCard || ''} ${info.sellerBankAcc || ''}`.trim()) : '', style: { vAlign: 'center' } },
       { value: c.itemName, style: { bold: true } },
-      { value: c.unit, style: { align: 'center' } },
       { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
       { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
       { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
@@ -434,24 +470,26 @@ export function buildPurchaseStatementXlsx(
     ]);
   });
 
-  // Summary Row
+  // Total Summary Row
+  const totalRowIndex = endRow + 1;
   rows.push([
-    { value: 'TỔNG CỘNG', style: { bold: true, align: 'center' } },
+    { value: ' Tổng cộng', style: { bold: true, align: 'left' } },
     { value: '' },
     { value: '' },
     { value: '' },
-    { value: `${summary.totalItems} mặt hàng`, style: { bold: true } },
     { value: '' },
-    { value: summary.totalQty, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
+    { value: '' },
     { value: '' },
     { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
     { value: '' },
   ]);
+  merges.push(`A${totalRowIndex}:G${totalRowIndex}`);
 
   const sheet: XlsxSheet = {
     name: 'BẢNG KÊ MUA BÁN',
     rows,
-    colWidths: [14, 24, 24, 20, 30, 10, 14, 18, 20, 16],
+    colWidths: [14, 22, 20, 24, 30, 14, 16, 20, 14],
+    merges,
   };
 
   return buildXlsx(sheet);
@@ -462,16 +500,19 @@ export function buildPurchaseStatementDocHtml(
   info: StatementSellerInfo
 ): string {
   const summary = computeStatementSummary(items);
-  const itemRows = items.map(it => {
+  const n = items.length;
+
+  const itemRows = items.map((it, idx) => {
     const c = computeStatementItem(it);
     return `
       <tr>
-        <td class="text-center">${c.dateStr || ''}</td>
-        <td>${info.sellerName || ''}</td>
-        <td>${info.sellerAddress || ''}</td>
-        <td>${info.sellerIdCard || ''} ${info.sellerBankAcc ? `<br/><small>${info.sellerBankAcc}</small>` : ''}</td>
+        ${idx === 0 ? `
+          <td rowspan="${n}" class="text-center">${c.dateStr || '…../…../2024'}</td>
+          <td rowspan="${n}">${info.sellerName || ''}</td>
+          <td rowspan="${n}">${info.sellerAddress || ''}</td>
+          <td rowspan="${n}">${info.sellerIdCard || ''} ${info.sellerBankAcc ? `<br/><small>${info.sellerBankAcc}</small>` : ''}</td>
+        ` : ''}
         <td class="font-bold">${c.itemName}</td>
-        <td class="text-center">${c.unit}</td>
         <td class="text-right font-mono">${c.qty.toLocaleString('vi-VN')}</td>
         <td class="text-right font-mono">${c.unitPrice.toLocaleString('vi-VN')}</td>
         <td class="text-right font-mono font-bold">${c.amount.toLocaleString('vi-VN')}</td>
@@ -489,7 +530,7 @@ export function buildPurchaseStatementDocHtml(
       <style>
         @page { size: A4 landscape; margin: 12mm; }
         body { font-family: 'Times New Roman', Times, serif, sans-serif; font-size: 13px; color: #000000; margin: 0; padding: 15px; }
-        .nation-header { text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px; }
+        .nation-header { text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 14px; }
         .doc-title { text-align: center; font-size: 18px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; }
         .party-box { margin-bottom: 15px; font-size: 13px; line-height: 1.6; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
@@ -506,15 +547,16 @@ export function buildPurchaseStatementDocHtml(
     <body>
       <div class="nation-header">
         CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br/>
-        <small style="font-weight: normal; font-style: italic;">Độc lập - Tự do - Hạnh phúc</small>
+        <small style="font-weight: normal; font-style: italic;">Độc lập - Tự do - Hạnh phúc</small><br/>
+        <span style="font-size:11px;">*************</span>
       </div>
 
       <div class="doc-title">BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ</div>
 
       <div class="party-box">
         <strong>Bên bán hàng:</strong> ${info.sellerName || '....................................'}<br/>
-        <strong>Địa chỉ:</strong> ${info.sellerAddress || '....................................'}<br/>
-        <strong>CMND/CCCD/STK:</strong> ${info.sellerIdCard || ''} ${info.sellerBankAcc || ''}<br/>
+        <strong>CMND/CCCD số:</strong> ${info.sellerIdCard || '....................................'} ${info.sellerBankAcc ? `(${info.sellerBankAcc})` : ''}<br/>
+        <br/>
         <strong>Bên mua hàng:</strong> ${info.buyerName || '....................................'}<br/>
         <strong>CMND/CCCD số:</strong> ${info.buyerIdCard || '....................................'}
       </div>
@@ -522,26 +564,25 @@ export function buildPurchaseStatementDocHtml(
       <table>
         <thead>
           <tr>
-            <th>Ngày tháng</th>
+            <th rowspan="2">Ngày, tháng, năm</th>
+            <th colspan="3">Người bán</th>
+            <th colspan="4">Hàng hóa mua vào</th>
+            <th rowspan="2">Ghi chú</th>
+          </tr>
+          <tr>
             <th>Tên người bán</th>
             <th>Địa chỉ</th>
-            <th>Số CMND/STK</th>
+            <th>Số CMND/CCCD/STK</th>
             <th>Tên hàng hóa, dịch vụ</th>
-            <th>ĐVT</th>
-            <th>Số lượng</th>
-            <th>Đơn giá (VND)</th>
-            <th>Thành tiền (VND)</th>
-            <th>Ghi chú</th>
+            <th>Số lượng (kg)</th>
+            <th>Đơn giá (kg)</th>
+            <th>Thành tiền</th>
           </tr>
         </thead>
         <tbody>
           ${itemRows}
           <tr style="font-weight: bold;">
-            <td colspan="4" class="text-center">TỔNG CỘNG</td>
-            <td>${summary.totalItems} mặt hàng</td>
-            <td></td>
-            <td class="text-right font-mono">${summary.totalQty.toLocaleString('vi-VN')}</td>
-            <td></td>
+            <td colspan="7" class="text-center">Tổng cộng</td>
             <td class="text-right font-mono font-bold">${summary.totalAmount.toLocaleString('vi-VN')}</td>
             <td></td>
           </tr>
@@ -552,13 +593,13 @@ export function buildPurchaseStatementDocHtml(
         <div class="sig-box">
           <strong>BÊN BÁN HÀNG</strong><br/>
           <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
-          <div style="height: 60px;"></div>
+          <div style="height: 65px;"></div>
           <strong>${info.sellerName || ''}</strong>
         </div>
         <div class="sig-box">
           <strong>BÊN MUA HÀNG</strong><br/>
           <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
-          <div style="height: 60px;"></div>
+          <div style="height: 65px;"></div>
           <strong>${info.buyerName || ''}</strong>
         </div>
       </div>

@@ -25,6 +25,32 @@ export interface XlsxSheet {
   name: string;
   rows: XlsxCell[][];
   colWidths?: number[];
+  merges?: string[];
+}
+
+function mergeCellsXml(merges?: string[]): string {
+  if (!merges || merges.length === 0) return '';
+  const list = merges.map(m => `<mergeCell ref="${m}"/>`).join('');
+  return `<mergeCells count="${merges.length}">${list}</mergeCells>`;
+}
+
+export function sheetXml(sheet: XlsxSheet, indexFor?: (style?: XlsxStyle) => number): string {
+  const styleIndex = indexFor || (() => 0);
+
+  const rows = sheet.rows.map((row, r) => {
+    const cells = row
+      .map((cell, c) => cellXml(cell, `${columnLetter(c)}${r + 1}`, styleIndex(cell.style)))
+      .filter(Boolean)
+      .join('');
+    return `<row r="${r + 1}">${cells}</row>`;
+  }).join('');
+
+  return XML_DECL
+    + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    + colsXml(sheet.colWidths)
+    + `<sheetData>${rows}</sheetData>`
+    + mergeCellsXml(sheet.merges)
+    + '</worksheet>';
 }
 
 export const BASE_FONT = 'Times New Roman';
@@ -181,23 +207,7 @@ function colsXml(widths?: number[]): string {
   return `<cols>${cols}</cols>`;
 }
 
-export function sheetXml(sheet: XlsxSheet, indexFor?: (style?: XlsxStyle) => number): string {
-  const styleIndex = indexFor || (() => 0);
 
-  const rows = sheet.rows.map((row, r) => {
-    const cells = row
-      .map((cell, c) => cellXml(cell, `${columnLetter(c)}${r + 1}`, styleIndex(cell.style)))
-      .filter(Boolean)
-      .join('');
-    return `<row r="${r + 1}">${cells}</row>`;
-  }).join('');
-
-  return XML_DECL
-    + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-    + colsXml(sheet.colWidths)
-    + `<sheetData>${rows}</sheetData>`
-    + '</worksheet>';
-}
 
 function workbookXml(sheetName: string): string {
   return XML_DECL

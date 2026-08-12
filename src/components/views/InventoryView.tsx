@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Package, Download, Printer, Plus, Trash2, Upload, RefreshCw, Search, Boxes, FileSpreadsheet,
-  Settings2, Users, Link2, FileText, Receipt,
+  Settings2, Users, Link2,
 } from 'lucide-react';
 import {
   computeItemRow, computeInventorySummary, nextItemId, parseInventoryText,
@@ -24,8 +24,6 @@ import { Toast } from '../Toast';
 import { DebtReceivableTab } from '../inventory/DebtReceivableTab';
 import { WorkingCapitalSummaryTab } from '../inventory/WorkingCapitalSummaryTab';
 import { TemplateManagerModal } from '../inventory/TemplateManagerModal';
-import { PurchaseStatementTab } from '../inventory/PurchaseStatementTab';
-import { RetailInvoiceTab } from '../inventory/RetailInvoiceTab';
 
 const QtyCellInput: React.FC<{
   value: number;
@@ -401,32 +399,6 @@ export const InventoryView: React.FC = () => {
           <Link2 className="w-4 h-4" />
           <span>Liên kết Vốn lưu động</span>
         </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('statement')}
-          className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 whitespace-nowrap ${
-            activeSubTab === 'statement'
-              ? 'border-accent text-accent bg-accent-soft/30'
-              : 'border-transparent text-ink-muted hover:text-ink'
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          <span>📜 Bảng kê mua bán</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('invoice')}
-          className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 whitespace-nowrap ${
-            activeSubTab === 'invoice'
-              ? 'border-accent text-accent bg-accent-soft/30'
-              : 'border-transparent text-ink-muted hover:text-ink'
-          }`}
-        >
-          <Receipt className="w-4 h-4" />
-          <span>🧾 Hóa đơn bán lẻ</span>
-        </button>
       </div>
 
       {/* Tab Content Rendering */}
@@ -443,14 +415,6 @@ export const InventoryView: React.FC = () => {
           invSummary={summary}
           recSummary={recSummary}
         />
-      )}
-
-      {activeSubTab === 'statement' && (
-        <PurchaseStatementTab showNotify={showNotify} />
-      )}
-
-      {activeSubTab === 'invoice' && (
-        <RetailInvoiceTab showNotify={showNotify} />
       )}
 
       {activeSubTab === 'inventory' && (

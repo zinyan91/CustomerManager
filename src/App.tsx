@@ -21,6 +21,8 @@ import { SettingsView } from './components/views/SettingsView';
 import { PostLoanControlView } from './components/views/PostLoanControlView';
 import { BusinessPlanView } from './components/views/BusinessPlanView';
 import { InventoryView } from './components/views/InventoryView';
+import { PurchaseStatementView } from './components/views/PurchaseStatementView';
+import { RetailInvoiceView } from './components/views/RetailInvoiceView';
 import { QuizBankView } from './components/views/QuizBankView';
 
 export function App() {
@@ -60,6 +62,8 @@ export function App() {
           {activeTab === 'calculators' && <CalculatorView />}
           {activeTab === 'business-plan' && <BusinessPlanView />}
           {activeTab === 'inventory' && <InventoryView />}
+          {activeTab === 'purchase-statement' && <PurchaseStatementView />}
+          {activeTab === 'retail-invoice' && <RetailInvoiceView />}
           {activeTab === 'mdsdv' && <MdsdvLookupView />}
           {activeTab === 'card-policies' && <CardPolicyLookupView />}
           {activeTab === 'rate-quote' && <RateQuoteView />}

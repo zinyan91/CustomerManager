@@ -7,6 +7,9 @@ export interface CardFeeProfile {
   note?: string;
 }
 
+export const COMMON_FEE_NOTE =
+  'Không áp dụng đồng thời các ưu đãi chương trình khác và các đối tượng sau:\n- KH phát hành thẻ dưới dạng CBNV, VietbankAMC, CIH, Hoa Lâm, Gia An 115\n- KH đóng thẻ tín dụng và phát hành lại trong vòng 6 tháng kể từ ngày đóng thẻ\n- KH hiện hữu đã có thẻ Vietbank và phát hành thêm thẻ tín dụng';
+
 export const CARD_FEE_GROUPS = [
   'KH thông thường',
   'Khách hàng, Hoa Lâm, Gia An, CIH',
@@ -21,7 +24,6 @@ export const CARD_FEE_PROFILES: CardFeeProfile[] = [
     cardType: 'Visa Mystyle',
     productMan: 'MS - VISA_TIN DUNG MYSTYLE',
     feeIntProfile: 'MS_PREL2_VISA_MS 33% MIEN PHI TN 1 NAM',
-    note: 'Không áp dụng đồng thời các ưu đãi chương trình khác và các đối tượng sau:\n- KH phát hành thẻ dưới dạng CBNV, VietbankAMC, CIH, Hoa Lâm, Gia An 115\n- KH đóng thẻ tín dụng và phát hành lại trong vòng 6 tháng kể từ ngày đóng thẻ\n- KH hiện hữu đã có thẻ Vietbank và phát hành thêm thẻ tín dụng',
   },
   {
     id: 'fee-2',
@@ -29,7 +31,6 @@ export const CARD_FEE_PROFILES: CardFeeProfile[] = [
     cardType: 'Visa Luxury',
     productMan: 'LU - VISA_TIN DUNG LUXURY',
     feeIntProfile: 'LUX_PRFL2_VISA_LUX 33% MIEN PHI TN 1 NAM',
-    note: 'Không áp dụng đồng thời các ưu đãi chương trình khác và các đối tượng sau:\n- KH phát hành thẻ dưới dạng CBNV, VietbankAMC, CIH, Hoa Lâm, Gia An 115\n- KH đóng thẻ tín dụng và phát hành lại trong vòng 6 tháng kể từ ngày đóng thẻ\n- KH hiện hữu đã có thẻ Vietbank và phát hành thêm thẻ tín dụng',
   },
   {
     id: 'fee-3',
@@ -37,7 +38,6 @@ export const CARD_FEE_PROFILES: CardFeeProfile[] = [
     cardType: 'Mastercard Credit Lifecare',
     productMan: 'MCCR_PL - MASTERCARD CREDIT PLATINUM',
     feeIntProfile: 'MCCP_PRF05_MCCR_PL 33% MIEN PHI PH, TN 1 NAM',
-    note: 'Không áp dụng đồng thời các ưu đãi chương trình khác và các đối tượng sau:\n- KH phát hành thẻ dưới dạng CBNV, VietbankAMC, CIH, Hoa Lâm, Gia An 115\n- KH đóng thẻ tín dụng và phát hành lại trong vòng 6 tháng kể từ ngày đóng thẻ\n- KH hiện hữu đã có thẻ Vietbank và phát hành thêm thẻ tín dụng',
   },
   {
     id: 'fee-4',
@@ -45,7 +45,6 @@ export const CARD_FEE_PROFILES: CardFeeProfile[] = [
     cardType: 'Mastercard Credit Happy',
     productMan: 'MCCR_STAND - MASTERCARD CREDIT STAND',
     feeIntProfile: 'MCCS_PRF05_MCCR_STAND 33% MIEN PHI PH, TN 1 NAM',
-    note: 'Không áp dụng đồng thời các ưu đãi chương trình khác và các đối tượng sau:\n- KH phát hành thẻ dưới dạng CBNV, VietbankAMC, CIH, Hoa Lâm, Gia An 115\n- KH đóng thẻ tín dụng và phát hành lại trong vòng 6 tháng kể từ ngày đóng thẻ\n- KH hiện hữu đã có thẻ Vietbank và phát hành thêm thẻ tín dụng',
   },
   {
     id: 'fee-5',
@@ -53,7 +52,6 @@ export const CARD_FEE_PROFILES: CardFeeProfile[] = [
     cardType: 'Napas',
     productMan: 'NPC_STAND - NP TIN DUNG NOI DIA CHUAN',
     feeIntProfile: 'NPC_PRFL1_NAPAS TIN DUNG 18% THU PHI TN',
-    note: 'Không áp dụng đồng thời các ưu đãi chương trình khác và các đối tượng sau:\n- KH phát hành thẻ dưới dạng CBNV, VietbankAMC, CIH, Hoa Lâm, Gia An 115\n- KH đóng thẻ tín dụng và phát hành lại trong vòng 6 tháng kể từ ngày đóng thẻ\n- KH hiện hữu đã có thẻ Vietbank và phát hành thêm thẻ tín dụng',
   },
 
   // 2. Khách hàng, Hoa Lâm, Gia An, CIH

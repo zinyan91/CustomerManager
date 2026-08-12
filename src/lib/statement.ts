@@ -7,6 +7,8 @@ export interface StatementSellerInfo {
   buyerName: string;
   buyerIdCard: string;
   statementDateStr: string;
+  paymentMethod?: 'transfer' | 'cash';
+  customStkText?: string;
 }
 
 export interface StatementItem {

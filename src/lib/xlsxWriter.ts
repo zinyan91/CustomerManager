@@ -55,7 +55,7 @@ export function sheetXml(sheet: XlsxSheet, indexFor?: (style?: XlsxStyle) => num
 
 export const BASE_FONT = 'Times New Roman';
 export const BASE_FONT_SIZE = 11;
-export const BORDER_COLOR = 'FF8EA9DB';
+export const BORDER_COLOR = 'FF000000';
 
 export const MIME_XLSX =
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';

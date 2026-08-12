@@ -223,9 +223,9 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
             </select>
           </div>
 
-          <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
-              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">Bên bán hàng (Họ tên / Doanh nghiệp)</label>
+              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">Bên bán hàng (Họ tên)</label>
               <input
                 type="text"
                 value={sellerInfo.sellerName}
@@ -234,7 +234,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
               />
             </div>
             <div>
-              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">CMND/CCCD / STK Bên bán</label>
+              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">CMND/CCCD số Bên bán</label>
               <input
                 type="text"
                 value={sellerInfo.sellerIdCard}
@@ -242,6 +242,32 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
                 className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono`}
               />
             </div>
+            <div>
+              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">Hình thức thanh toán</label>
+              <select
+                value={sellerInfo.paymentMethod || 'transfer'}
+                onChange={e => setSellerInfo({ ...sellerInfo, paymentMethod: e.target.value as 'transfer' | 'cash' })}
+                className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-bold`}
+              >
+                <option value="transfer">Chuyển khoản (Có STK)</option>
+                <option value="cash">Tiền mặt</option>
+              </select>
+            </div>
+
+            {sellerInfo.paymentMethod !== 'cash' && (
+              <div className="sm:col-span-3">
+                <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
+                  Thông tin STK / Ngân hàng (Hiển thị tại ô D15 trong bảng)
+                </label>
+                <input
+                  type="text"
+                  placeholder="VD: STK: 9975639612 - Ngân hàng Techcombank CN HCM"
+                  value={sellerInfo.sellerBankAcc}
+                  onChange={e => setSellerInfo({ ...sellerInfo, sellerBankAcc: e.target.value, customStkText: undefined })}
+                  className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono`}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

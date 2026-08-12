@@ -1,4 +1,4 @@
-import { buildMultiSheetXlsx, buildXlsx, type XlsxCell, type XlsxSheet } from './xlsxWriter';
+import { buildMultiSheetXlsx, buildXlsx, type XlsxCell, type XlsxSheet, type XlsxStyle } from './xlsxWriter';
 import { computeItemRow, computeInventorySummary, type InventoryItem } from './inventory';
 import { computeReceivableItemRow, computeReceivableSummary, type ReceivableItem } from './debt';
 import {
@@ -437,16 +437,17 @@ export function buildPurchaseStatementXlsx(
   rows.push([]);
 
   // Table Header Row 1 (Row 13 in Excel)
+  const bHeaderStyle: XlsxStyle = { bold: true, align: 'center', vAlign: 'center', border: true };
   rows.push([
-    { value: 'Ngày, tháng,\nnăm', style: { bold: true, align: 'center', vAlign: 'center' } },
-    { value: 'Người bán', style: { bold: true, align: 'center' } },
-    { value: '' },
-    { value: '' },
-    { value: 'Hàng hóa mua vào', style: { bold: true, align: 'center' } },
-    { value: '' },
-    { value: '' },
-    { value: '' },
-    { value: 'Ghi chú', style: { bold: true, align: 'center', vAlign: 'center' } },
+    { value: 'Ngày, tháng,\nnăm', style: bHeaderStyle },
+    { value: 'Người bán', style: bHeaderStyle },
+    { value: '', style: bHeaderStyle },
+    { value: '', style: bHeaderStyle },
+    { value: 'Hàng hóa mua vào', style: bHeaderStyle },
+    { value: '', style: bHeaderStyle },
+    { value: '', style: bHeaderStyle },
+    { value: '', style: bHeaderStyle },
+    { value: 'Ghi chú', style: bHeaderStyle },
   ]);
   merges.push('A13:A14');
   merges.push('B13:D13');
@@ -455,15 +456,15 @@ export function buildPurchaseStatementXlsx(
 
   // Table Header Row 2 (Row 14 in Excel)
   rows.push([
-    { value: '' },
-    { value: 'Tên người bán', style: { bold: true, align: 'center' } },
-    { value: 'Địa chỉ', style: { bold: true, align: 'center' } },
-    { value: 'Số CMND/CCCD/\nSTK', style: { bold: true, align: 'center' } },
-    { value: 'Tên hàng hóa, dịch vụ', style: { bold: true, align: 'center' } },
-    { value: 'Số lượng\n(kg)', style: { bold: true, align: 'center' } },
-    { value: 'Đơn giá\n(kg)', style: { bold: true, align: 'center' } },
-    { value: 'Thành tiền', style: { bold: true, align: 'center' } },
-    { value: '' },
+    { value: '', style: bHeaderStyle },
+    { value: 'Tên người bán', style: bHeaderStyle },
+    { value: 'Địa chỉ', style: bHeaderStyle },
+    { value: 'Số CMND/CCCD/\nSTK', style: bHeaderStyle },
+    { value: 'Tên hàng hóa, dịch vụ', style: bHeaderStyle },
+    { value: 'Số lượng\n(kg)', style: bHeaderStyle },
+    { value: 'Đơn giá\n(kg)', style: bHeaderStyle },
+    { value: 'Thành tiền', style: bHeaderStyle },
+    { value: '', style: bHeaderStyle },
   ]);
 
   const n = Math.max(1, items.length);
@@ -477,45 +478,52 @@ export function buildPurchaseStatementXlsx(
     merges.push(`D${startRow}:D${endRow}`);
   }
 
-  const stkText = info.sellerBankAcc ? `STK: ${info.sellerBankAcc}` : (info.sellerIdCard || '');
+  const stkText = info.customStkText
+    ? info.customStkText
+    : info.paymentMethod === 'cash'
+    ? (info.sellerIdCard || 'Tiền mặt')
+    : (info.sellerBankAcc ? `STK: ${info.sellerBankAcc}` : (info.sellerIdCard || ''));
+
+  const bCellStyle: XlsxStyle = { border: true };
+  const bCenterStyle: XlsxStyle = { align: 'center', vAlign: 'center', border: true };
+  const bValignStyle: XlsxStyle = { vAlign: 'center', border: true };
 
   items.forEach((it, idx) => {
     const c = computeStatementItem(it);
     rows.push([
-      { value: idx === 0 ? (c.dateStr || '…../…../2024') : '', style: { align: 'center', vAlign: 'center' } },
-      { value: idx === 0 ? (info.sellerName || '') : '', style: { vAlign: 'center' } },
-      { value: idx === 0 ? (info.sellerAddress || '') : '', style: { vAlign: 'center' } },
-      { value: idx === 0 ? stkText : '', style: { vAlign: 'center' } },
-      { value: c.itemName, style: { bold: true } },
-      { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
-      { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
-      { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
-      { value: c.note || '' },
+      { value: idx === 0 ? (c.dateStr || '…../…../2024') : '', style: bCenterStyle },
+      { value: idx === 0 ? (info.sellerName || '') : '', style: bValignStyle },
+      { value: idx === 0 ? (info.sellerAddress || '') : '', style: bValignStyle },
+      { value: idx === 0 ? stkText : '', style: bValignStyle },
+      { value: c.itemName, style: { bold: true, border: true } },
+      { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0', border: true } },
+      { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0', border: true } },
+      { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', border: true } },
+      { value: c.note || '', style: bCellStyle },
     ]);
   });
 
-  // Empty row between item rows and total row (Row 15+N)
-  rows.push([]);
+  // Total Summary Row IMMEDIATELY after endRow (NO empty row before Total)
+  const totalRowIndex = endRow + 1;
+  const bTotalStyle: XlsxStyle = { bold: true, border: true };
 
-  // Total Summary Row (Row 15+N+1)
-  const totalRowIndex = endRow + 2;
   rows.push([
-    { value: ' Tổng cộng', style: { bold: true, align: 'left' } },
-    { value: '' },
-    { value: '' },
-    { value: '' },
-    { value: '' },
-    { value: '' },
-    { value: '' },
-    { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
-    { value: '' },
+    { value: ' Tổng cộng', style: { bold: true, align: 'left', border: true } },
+    { value: '', style: bTotalStyle },
+    { value: '', style: bTotalStyle },
+    { value: '', style: bTotalStyle },
+    { value: '', style: bTotalStyle },
+    { value: '', style: bTotalStyle },
+    { value: '', style: bTotalStyle },
+    { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', border: true } },
+    { value: '', style: bTotalStyle },
   ]);
   merges.push(`A${totalRowIndex}:G${totalRowIndex}`);
 
-  // Empty row (Row 15+N+2)
+  // Empty row (Row totalRowIndex + 1)
   rows.push([]);
 
-  // Date Footer Row (Row 15+N+3)
+  // Date Footer Row (Row totalRowIndex + 2)
   const dateRowIndex = totalRowIndex + 2;
   rows.push([
     { value: '' }, { value: '' }, { value: '' }, { value: '' }, { value: '' },
@@ -524,10 +532,10 @@ export function buildPurchaseStatementXlsx(
   ]);
   merges.push(`F${dateRowIndex}:H${dateRowIndex}`);
 
-  // Empty row (Row 15+N+4)
+  // Empty row (Row dateRowIndex + 1)
   rows.push([]);
 
-  // Signature titles Row (Row 15+N+5)
+  // Signature titles Row (Row dateRowIndex + 2)
   const sigTitleRowIndex = dateRowIndex + 2;
   rows.push([
     { value: 'Bên bán hàng', style: { bold: true, align: 'center' } },
@@ -538,10 +546,10 @@ export function buildPurchaseStatementXlsx(
   merges.push(`A${sigTitleRowIndex}:C${sigTitleRowIndex}`);
   merges.push(`F${sigTitleRowIndex}:H${sigTitleRowIndex}`);
 
-  // 5 empty rows for signature space (Rows 15+N+6..10)
+  // 5 empty rows for signature space
   rows.push([]); rows.push([]); rows.push([]); rows.push([]); rows.push([]);
 
-  // Signature names Row (Row 15+N+11)
+  // Signature names Row
   const sigNameRowIndex = sigTitleRowIndex + 6;
   rows.push([
     { value: (info.sellerName || '').toUpperCase(), style: { bold: true, align: 'center' } },
@@ -705,33 +713,38 @@ export function buildRetailInvoiceXlsx(
   rows.push([]);
 
   // Row 6: Headers
+  const invHeaderStyle: XlsxStyle = { bold: true, align: 'center', border: true };
   rows.push([
-    { value: 'STT', style: { bold: true, align: 'center' } },
-    { value: 'Tên hàng hóa', style: { bold: true, align: 'center' } },
-    { value: 'ĐVT', style: { bold: true, align: 'center' } },
-    { value: 'Số lượng', style: { bold: true, align: 'center' } },
-    { value: 'Đơn giá', style: { bold: true, align: 'center' } },
-    { value: 'Thành tiền', style: { bold: true, align: 'center' } },
+    { value: 'STT', style: invHeaderStyle },
+    { value: 'Tên hàng hóa', style: invHeaderStyle },
+    { value: 'ĐVT', style: invHeaderStyle },
+    { value: 'Số lượng', style: invHeaderStyle },
+    { value: 'Đơn giá', style: invHeaderStyle },
+    { value: 'Thành tiền', style: invHeaderStyle },
   ]);
 
   items.forEach((it, idx) => {
     const c = computeRetailInvoiceItem(it);
     rows.push([
-      { value: idx + 1, numeric: true, style: { align: 'center' } },
-      { value: c.itemName, style: { bold: true } },
-      { value: c.unit, style: { align: 'center' } },
-      { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
-      { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
-      { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
+      { value: idx + 1, numeric: true, style: { align: 'center', border: true } },
+      { value: c.itemName, style: { bold: true, border: true } },
+      { value: c.unit, style: { align: 'center', border: true } },
+      { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0', border: true } },
+      { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0', border: true } },
+      { value: c.amount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', border: true } },
     ]);
   });
 
   // Empty placeholder rows matching Excel
+  const bEmptyStyle: XlsxStyle = { border: true };
   for (let i = items.length + 1; i <= 10; i++) {
     rows.push([
-      { value: i, numeric: true, style: { align: 'center' } },
-      { value: '' }, { value: '' }, { value: '' }, { value: '' },
-      { value: 0, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+      { value: i, numeric: true, style: { align: 'center', border: true } },
+      { value: '', style: bEmptyStyle },
+      { value: '', style: bEmptyStyle },
+      { value: '', style: bEmptyStyle },
+      { value: '', style: bEmptyStyle },
+      { value: 0, numeric: true, style: { align: 'right', numFmt: '#,##0', border: true } },
     ]);
   }
 
@@ -739,13 +752,14 @@ export function buildRetailInvoiceXlsx(
   const totalRowIndex = startRowIndex + Math.max(10, items.length);
 
   // Total Summary Row
+  const bTotStyle: XlsxStyle = { bold: true, border: true };
   rows.push([
-    { value: '' },
-    { value: 'TỔNG CỘNG', style: { bold: true, align: 'left' } },
-    { value: '' },
-    { value: '' },
-    { value: '' },
-    { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
+    { value: '', style: bTotStyle },
+    { value: 'TỔNG CỘNG', style: { bold: true, align: 'left', border: true } },
+    { value: '', style: bTotStyle },
+    { value: '', style: bTotStyle },
+    { value: '', style: bTotStyle },
+    { value: summary.totalAmount, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0', border: true } },
   ]);
   merges.push(`B${totalRowIndex}:E${totalRowIndex}`);
 

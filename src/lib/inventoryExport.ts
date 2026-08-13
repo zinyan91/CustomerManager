@@ -482,7 +482,7 @@ export function buildPurchaseStatementXlsx(
     ? info.customStkText
     : info.paymentMethod === 'cash'
     ? (info.sellerIdCard || 'Tiền mặt')
-    : (info.sellerBankAcc ? `STK: ${info.sellerBankAcc}` : (info.sellerIdCard || ''));
+    : (info.sellerBankAcc ? (info.sellerBankAcc.startsWith('STK:') ? info.sellerBankAcc : `STK: ${info.sellerBankAcc}`) : (info.sellerIdCard || ''));
 
   const bCellStyle: XlsxStyle = { border: true };
   const bCenterStyle: XlsxStyle = { align: 'center', vAlign: 'center', border: true };

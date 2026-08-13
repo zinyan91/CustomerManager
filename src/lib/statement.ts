@@ -8,6 +8,10 @@ export interface StatementSellerInfo {
   buyerIdCard: string;
   statementDateStr: string;
   paymentMethod?: 'transfer' | 'cash';
+  bankAccNo?: string;
+  bankName?: string;
+  bankOwner?: string;
+  bankBranch?: string;
   customStkText?: string;
 }
 

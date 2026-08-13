@@ -3,7 +3,7 @@ import {
   FileText, Plus, Trash2, Download, Printer, Settings2, Search,
 } from 'lucide-react';
 import {
-  computeStatementItem, computeStatementSummary, nextStatementId,
+  computeStatementItem, computeStatementSummary, nextStatementId, getComputedBankAccText,
   type StatementItem, type StatementSellerInfo, type StatementTemplate,
 } from '../../lib/statement';
 import {
@@ -306,23 +306,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
                       type="text"
                       placeholder="Tên chủ TK"
                       value={sellerInfo.bankOwner !== undefined ? sellerInfo.bankOwner : sellerInfo.sellerName}
-                      onChange={e => {
-                        const newOwner = e.target.value;
-                        const acc = sellerInfo.bankAccNo || '';
-                        const bank = sellerInfo.bankName || '';
-                        const branch = sellerInfo.bankBranch || '';
-                        const formatted = [
-                          acc ? `STK: ${acc}` : '',
-                          bank ? `Ngân hàng ${bank}${branch ? ` CN ${branch}` : ''}` : '',
-                          newOwner ? `(Chủ TK: ${newOwner})` : '',
-                        ].filter(Boolean).join(' - ') || sellerInfo.sellerBankAcc;
-
-                        setSellerInfo({
-                          ...sellerInfo,
-                          bankOwner: newOwner,
-                          sellerBankAcc: formatted,
-                        });
-                      }}
+                      onChange={e => setSellerInfo({ ...sellerInfo, bankOwner: e.target.value })}
                       className={`w-full rounded-md p-2 font-bold ${UI.inputStyle}`}
                     />
                   </div>
@@ -335,23 +319,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
                       type="text"
                       placeholder="VD: 9975639612"
                       value={sellerInfo.bankAccNo !== undefined ? sellerInfo.bankAccNo : ''}
-                      onChange={e => {
-                        const newAcc = e.target.value;
-                        const owner = sellerInfo.bankOwner !== undefined ? sellerInfo.bankOwner : sellerInfo.sellerName;
-                        const bank = sellerInfo.bankName || '';
-                        const branch = sellerInfo.bankBranch || '';
-                        const formatted = [
-                          newAcc ? `STK: ${newAcc}` : '',
-                          bank ? `Ngân hàng ${bank}${branch ? ` CN ${branch}` : ''}` : '',
-                          owner ? `(Chủ TK: ${owner})` : '',
-                        ].filter(Boolean).join(' - ') || sellerInfo.sellerBankAcc;
-
-                        setSellerInfo({
-                          ...sellerInfo,
-                          bankAccNo: newAcc,
-                          sellerBankAcc: formatted,
-                        });
-                      }}
+                      onChange={e => setSellerInfo({ ...sellerInfo, bankAccNo: e.target.value })}
                       className={`w-full rounded-md p-2 font-mono font-bold text-accent ${UI.inputStyle}`}
                     />
                   </div>
@@ -362,23 +330,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
                     </label>
                     <select
                       value={sellerInfo.bankName || ''}
-                      onChange={e => {
-                        const newBank = e.target.value;
-                        const owner = sellerInfo.bankOwner !== undefined ? sellerInfo.bankOwner : sellerInfo.sellerName;
-                        const acc = sellerInfo.bankAccNo || '';
-                        const branch = sellerInfo.bankBranch || '';
-                        const formatted = [
-                          acc ? `STK: ${acc}` : '',
-                          newBank ? `Ngân hàng ${newBank}${branch ? ` CN ${branch}` : ''}` : '',
-                          owner ? `(Chủ TK: ${owner})` : '',
-                        ].filter(Boolean).join(' - ') || sellerInfo.sellerBankAcc;
-
-                        setSellerInfo({
-                          ...sellerInfo,
-                          bankName: newBank,
-                          sellerBankAcc: formatted,
-                        });
-                      }}
+                      onChange={e => setSellerInfo({ ...sellerInfo, bankName: e.target.value })}
                       className={`w-full rounded-md p-2 ${UI.inputStyle}`}
                     >
                       <option value="">-- Chọn Ngân hàng --</option>
@@ -396,38 +348,22 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
                       type="text"
                       placeholder="VD: CN TP.HCM"
                       value={sellerInfo.bankBranch || ''}
-                      onChange={e => {
-                        const newBranch = e.target.value;
-                        const owner = sellerInfo.bankOwner !== undefined ? sellerInfo.bankOwner : sellerInfo.sellerName;
-                        const acc = sellerInfo.bankAccNo || '';
-                        const bank = sellerInfo.bankName || '';
-                        const formatted = [
-                          acc ? `STK: ${acc}` : '',
-                          bank ? `Ngân hàng ${bank}${newBranch ? ` CN ${newBranch}` : ''}` : '',
-                          owner ? `(Chủ TK: ${owner})` : '',
-                        ].filter(Boolean).join(' - ') || sellerInfo.sellerBankAcc;
-
-                        setSellerInfo({
-                          ...sellerInfo,
-                          bankBranch: newBranch,
-                          sellerBankAcc: formatted,
-                        });
-                      }}
+                      onChange={e => setSellerInfo({ ...sellerInfo, bankBranch: e.target.value })}
                       className={`w-full rounded-md p-2 ${UI.inputStyle}`}
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
-                    Chuỗi thông tin Chuyển khoản đầy đủ (Hiển thị tại ô D15 trong bảng Excel & PDF)
-                  </label>
-                  <input
-                    type="text"
-                    value={sellerInfo.sellerBankAcc}
-                    onChange={e => setSellerInfo({ ...sellerInfo, sellerBankAcc: e.target.value })}
-                    className={`w-full rounded-md p-2 font-mono text-emerald-600 dark:text-emerald-400 font-bold ${UI.inputStyle}`}
-                  />
+                {/* Auto-assembled Preview Tag for Cell D15 */}
+                <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-mono">
+                    <span className="font-bold text-[10px] uppercase text-emerald-600 dark:text-emerald-400">
+                      👁 Chuỗi tự động xuất ô D15 (Excel & PDF):
+                    </span>
+                    <span className="font-bold">
+                      {getComputedBankAccText(sellerInfo)}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}

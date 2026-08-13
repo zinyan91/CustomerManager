@@ -15,6 +15,27 @@ export interface StatementSellerInfo {
   customStkText?: string;
 }
 
+export function getComputedBankAccText(info: StatementSellerInfo): string {
+  if (info.customStkText) return info.customStkText;
+  if (info.paymentMethod === 'cash') {
+    return info.sellerIdCard || 'Tiền mặt';
+  }
+  const acc = info.bankAccNo || '';
+  const bank = info.bankName || '';
+  const branch = info.bankBranch || '';
+  const owner = info.bankOwner !== undefined ? info.bankOwner : info.sellerName;
+
+  if (acc || bank || owner) {
+    const parts = [];
+    if (acc) parts.push(`STK: ${acc}`);
+    if (bank) parts.push(`Ngân hàng ${bank}${branch ? ` CN ${branch}` : ''}`);
+    if (owner) parts.push(`(Chủ TK: ${owner})`);
+    return parts.join(' - ');
+  }
+
+  return info.sellerBankAcc || info.sellerIdCard || 'STK: .....';
+}
+
 export interface StatementItem {
   id: string;
   dateStr: string;

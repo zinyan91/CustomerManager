@@ -2,7 +2,7 @@ import { buildMultiSheetXlsx, buildXlsx, type XlsxCell, type XlsxSheet, type Xls
 import { computeItemRow, computeInventorySummary, type InventoryItem } from './inventory';
 import { computeReceivableItemRow, computeReceivableSummary, type ReceivableItem } from './debt';
 import {
-  computeStatementItem, computeStatementSummary, computeRetailInvoiceItem, computeRetailInvoiceSummary,
+  computeStatementItem, computeStatementSummary, computeRetailInvoiceItem, computeRetailInvoiceSummary, getComputedBankAccText,
   type StatementItem, type StatementSellerInfo, type RetailInvoiceItem, type RetailInvoiceHeader,
 } from './statement';
 import { fmtDate, todayIso } from './utils';
@@ -478,11 +478,7 @@ export function buildPurchaseStatementXlsx(
     merges.push(`D${startRow}:D${endRow}`);
   }
 
-  const stkText = info.customStkText
-    ? info.customStkText
-    : info.paymentMethod === 'cash'
-    ? (info.sellerIdCard || 'Tiền mặt')
-    : (info.sellerBankAcc ? (info.sellerBankAcc.startsWith('STK:') ? info.sellerBankAcc : `STK: ${info.sellerBankAcc}`) : (info.sellerIdCard || ''));
+  const stkText = getComputedBankAccText(info);
 
   const bCellStyle: XlsxStyle = { border: true };
   const bCenterStyle: XlsxStyle = { align: 'center', vAlign: 'center', border: true };
@@ -576,11 +572,7 @@ export function buildPurchaseStatementDocHtml(
 ): string {
   const summary = computeStatementSummary(items);
   const n = items.length;
-  const sellerIdText = info.customStkText
-    ? info.customStkText
-    : info.paymentMethod === 'cash'
-    ? (info.sellerIdCard || 'Tiền mặt')
-    : (info.sellerBankAcc || info.sellerIdCard || '');
+  const sellerIdText = getComputedBankAccText(info);
 
   const itemRows = items.map((it, idx) => {
     const c = computeStatementItem(it);

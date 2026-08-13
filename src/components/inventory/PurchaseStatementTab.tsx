@@ -199,7 +199,8 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
 
         {/* Information & Payment Method Controls (Matching SaleForm.tsx style) */}
         <div className="p-3.5 rounded-md border border-line bg-panel-muted space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Seller Legal Identity Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
                 Bên bán hàng (Họ tên)
@@ -211,6 +212,20 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
                 className={`w-full rounded-md p-2 font-bold ${UI.inputStyle}`}
               />
             </div>
+
+            <div>
+              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
+                Số CMND / CCCD số Bên bán
+              </label>
+              <input
+                type="text"
+                placeholder="Nhập số CMND/CCCD"
+                value={sellerInfo.sellerIdCard}
+                onChange={e => setSellerInfo({ ...sellerInfo, sellerIdCard: e.target.value })}
+                className={`w-full rounded-md p-2 font-mono font-bold text-accent ${UI.inputStyle}`}
+              />
+            </div>
+
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-[10px] text-ink-faint uppercase font-bold">
@@ -237,6 +252,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
             </div>
           </div>
 
+          {/* Payment Method Selector & Dynamic Payment Details */}
           <div className="pt-2 border-t border-line space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="font-bold text-warn text-[11px] uppercase">
@@ -266,36 +282,16 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
               </div>
             </div>
 
-            {/* Cash Mode: Only Show CCCD & Address */}
+            {/* Cash Mode Preview */}
             {sellerInfo.paymentMethod === 'cash' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
-                    Số CMND / CCCD số Bên bán
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Nhập số CMND/CCCD"
-                    value={sellerInfo.sellerIdCard}
-                    onChange={e => setSellerInfo({ ...sellerInfo, sellerIdCard: e.target.value })}
-                    className={`w-full rounded-md p-2 font-mono font-bold text-accent ${UI.inputStyle}`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
-                    Địa chỉ Bên bán (Nếu có)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="VD: TP.HCM"
-                    value={sellerInfo.sellerAddress}
-                    onChange={e => setSellerInfo({ ...sellerInfo, sellerAddress: e.target.value })}
-                    className={`w-full rounded-md p-2 ${UI.inputStyle}`}
-                  />
-                </div>
+              <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-mono">
+                <span className="font-bold text-[10px] uppercase text-amber-600 dark:text-amber-400">
+                  Thông tin thanh toán hiển thị trên chứng từ:
+                </span>{' '}
+                <span className="font-bold">{sellerInfo.sellerIdCard || 'Tiền mặt'}</span>
               </div>
             ) : (
-              /* Transfer Mode: Structured Bank Details matching SaleForm.tsx */
+              /* Transfer Mode Details */
               <div className="space-y-2.5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                   <div>

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-  FileText, Plus, Trash2, Download, Printer, Settings2, Search,
+  FileText, Plus, Trash2, Download, Printer, Settings2, Search, Save, History,
 } from 'lucide-react';
 import {
   computeStatementItem, computeStatementSummary, nextStatementId, getComputedBankAccText,
@@ -10,6 +10,10 @@ import {
   loadStatementTemplates, addStatementTemplate, updateStatementTemplate,
   deleteStatementTemplate, resetStatementTemplates,
 } from '../../lib/statementStore';
+import {
+  fetchPurchaseStatementsDb, savePurchaseStatementDb, deletePurchaseStatementDb,
+  type SavedPurchaseStatement,
+} from '../../lib/statementDb';
 import { buildPurchaseStatementXlsx, buildPurchaseStatementDocHtml } from '../../lib/inventoryExport';
 import { downloadBytes } from '../../lib/xlsExport';
 import { MIME_XLSX } from '../../lib/xlsxWriter';
@@ -43,14 +47,60 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
     return tpl ? tpl.items.map(it => ({ ...it, id: nextStatementId() })) : [];
   });
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [savedStatements, setSavedStatements] = useState<SavedPurchaseStatement[]>([]);
+  const [currentStmtId, setCurrentStmtId] = useState<string>(() => nextStatementId());
+  const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
 
-  // Form states
+  const [searchTerm, setSearchTerm] = useState('');
   const [newItemName, setNewItemName] = useState('');
   const [newUnit, setNewUnit] = useState('Chai');
   const [newQtyStr, setNewQtyStr] = useState('');
   const [newPriceStr, setNewPriceStr] = useState('');
   const [newNote, setNewNote] = useState('');
+
+  // Fetch saved statements from Database on mount
+  React.useEffect(() => {
+    fetchPurchaseStatementsDb().then(dbStmts => {
+      if (dbStmts && dbStmts.length > 0) {
+        setSavedStatements(dbStmts);
+      }
+    });
+  }, []);
+
+  const handleSaveToDb = async () => {
+    if (!sellerInfo.sellerName.trim()) {
+      showNotify('error', 'Vui lòng nhập tên Bên bán hàng.');
+      return;
+    }
+    const stmtToSave: SavedPurchaseStatement = {
+      id: currentStmtId,
+      sellerInfo,
+      items,
+      statementDate: sellerInfo.statementDateStr || todayIso(),
+    };
+    await savePurchaseStatementDb(stmtToSave);
+    const updatedList = await fetchPurchaseStatementsDb();
+    setSavedStatements(updatedList);
+    showNotify('success', `Đã lưu Bảng kê mua bán của "${sellerInfo.sellerName}" vào CSDL thành công!`);
+  };
+
+  const handleLoadStatement = (stmt: SavedPurchaseStatement) => {
+    setCurrentStmtId(stmt.id);
+    setSellerInfo(stmt.sellerInfo);
+    setItems(stmt.items);
+    setShowHistoryModal(false);
+    showNotify('success', `Đã nạp Bảng kê của "${stmt.sellerInfo.sellerName}" từ CSDL.`);
+  };
+
+  const handleDeleteStatement = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Bạn có chắc chắn muốn xóa Bảng kê này khỏi CSDL?')) {
+      await deletePurchaseStatementDb(id);
+      const updatedList = await fetchPurchaseStatementsDb();
+      setSavedStatements(updatedList);
+      showNotify('success', 'Đã xóa Bảng kê khỏi CSDL.');
+    }
+  };
 
   const handleSelectTemplate = (id: string) => {
     setSelectedTemplateId(id);
@@ -177,14 +227,32 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+            <button
+              type="button"
+              onClick={handleSaveToDb}
+              title="Lưu chứng từ Bảng kê vào CSDL Supabase"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors shadow-sm"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>Lưu CSDL</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowHistoryModal(true)}
+              title="Xem danh sách các Bảng kê đã lưu trong CSDL"
+              className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors relative"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Lịch sử ({savedStatements.length})</span>
+            </button>
             <button
               type="button"
               onClick={handleExportExcel}
               className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Xuất Excel (.xlsx)</span>
+              <span>Xuất Excel</span>
             </button>
             <button
               type="button"
@@ -192,7 +260,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
               className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>In / Xuất PDF</span>
+              <span>In / PDF</span>
             </button>
           </div>
         </div>
@@ -550,6 +618,67 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
         onDeleteTemplate={handleDeleteTemplate}
         onResetTemplates={handleResetTemplates}
       />
+
+      {/* History Modal for Saved Statements from DB */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className={`${UI.containerCardBg} rounded-xl max-w-2xl w-full p-5 border space-y-4 max-h-[85vh] flex flex-col shadow-xl`}>
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="flex items-center space-x-2">
+                <History className="w-5 h-5 text-accent" />
+                <h3 className="text-sm font-bold text-ink uppercase">Lịch sử Bảng Kê Mua Bán đã lưu trong CSDL</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="text-ink-faint hover:text-ink font-bold text-sm px-2"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 space-y-2">
+              {savedStatements.length === 0 ? (
+                <div className="text-center text-ink-faint py-8 text-xs">
+                  Chưa có Bảng kê nào được lưu trong CSDL. Bấm nút <strong>"Lưu CSDL"</strong> để lưu bảng kê hiện tại.
+                </div>
+              ) : (
+                savedStatements.map(stmt => (
+                  <div
+                    key={stmt.id}
+                    onClick={() => handleLoadStatement(stmt)}
+                    className="p-3 border rounded-lg hover:border-accent hover:bg-accent-soft/20 cursor-pointer flex items-center justify-between transition-colors text-xs"
+                  >
+                    <div className="space-y-1">
+                      <div className="font-bold text-ink text-sm">
+                        Bên bán: {stmt.sellerInfo.sellerName || 'Chưa đặt tên'}
+                      </div>
+                      <div className="text-ink-faint flex items-center space-x-3">
+                        <span>Ngày lập: {stmt.statementDate}</span>
+                        <span>•</span>
+                        <span>Bên mua: {stmt.sellerInfo.buyerName || '---'}</span>
+                        <span>•</span>
+                        <span>{stmt.items.length} mặt hàng</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteStatement(stmt.id, e)}
+                        className="text-ink-faint hover:text-neg p-1.5 rounded hover:bg-neg-soft/30 transition-colors"
+                        title="Xóa Bảng kê này"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

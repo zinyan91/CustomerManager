@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-  Receipt, Plus, Trash2, Download, Printer, Settings2, Search,
+  Receipt, Plus, Trash2, Download, Printer, Settings2, Search, Save, History,
 } from 'lucide-react';
 import {
   computeRetailInvoiceItem, computeRetailInvoiceSummary, nextInvoiceId,
@@ -10,6 +10,10 @@ import {
   loadRetailInvoiceTemplates, addRetailInvoiceTemplate, updateRetailInvoiceTemplate,
   deleteRetailInvoiceTemplate, resetRetailInvoiceTemplates,
 } from '../../lib/statementStore';
+import {
+  fetchRetailInvoicesDb, saveRetailInvoiceDb, deleteRetailInvoiceDb,
+  type SavedRetailInvoice,
+} from '../../lib/statementDb';
 import { buildRetailInvoiceXlsx, buildRetailInvoiceDocHtml } from '../../lib/inventoryExport';
 import { downloadBytes } from '../../lib/xlsExport';
 import { MIME_XLSX } from '../../lib/xlsxWriter';
@@ -38,6 +42,55 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
     const tpl = templates[0];
     return tpl ? tpl.items.map(it => ({ ...it, id: nextInvoiceId() })) : [];
   });
+
+  const [savedInvoices, setSavedInvoices] = useState<SavedRetailInvoice[]>([]);
+  const [currentInvId, setCurrentInvId] = useState<string>(() => nextInvoiceId());
+  const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+
+  // Fetch saved invoices from Database on mount
+  React.useEffect(() => {
+    fetchRetailInvoicesDb().then(dbInvs => {
+      if (dbInvs && dbInvs.length > 0) {
+        setSavedInvoices(dbInvs);
+      }
+    });
+  }, []);
+
+  const handleSaveToDb = async () => {
+    if (!headerInfo.buyerName.trim()) {
+      showNotify('error', 'Vui lòng nhập tên Khách hàng.');
+      return;
+    }
+    const invToSave: SavedRetailInvoice = {
+      id: currentInvId,
+      invoiceNo: currentInvId,
+      invoiceDate: todayIso(),
+      headerInfo,
+      items,
+    };
+    await saveRetailInvoiceDb(invToSave);
+    const updatedList = await fetchRetailInvoicesDb();
+    setSavedInvoices(updatedList);
+    showNotify('success', `Đã lưu Hóa đơn bán lẻ của "${headerInfo.buyerName}" vào CSDL thành công!`);
+  };
+
+  const handleLoadInvoice = (inv: SavedRetailInvoice) => {
+    setCurrentInvId(inv.id);
+    setHeaderInfo(inv.headerInfo);
+    setItems(inv.items);
+    setShowHistoryModal(false);
+    showNotify('success', `Đã nạp Hóa đơn của "${inv.headerInfo.buyerName}" từ CSDL.`);
+  };
+
+  const handleDeleteInvoice = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Bạn có chắc chắn muốn xóa Hóa đơn này khỏi CSDL?')) {
+      await deleteRetailInvoiceDb(id);
+      const updatedList = await fetchRetailInvoicesDb();
+      setSavedInvoices(updatedList);
+      showNotify('success', 'Đã xóa Hóa đơn khỏi CSDL.');
+    }
+  };
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -169,14 +222,32 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+            <button
+              type="button"
+              onClick={handleSaveToDb}
+              title="Lưu chứng từ Hóa đơn bán lẻ vào CSDL Supabase"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors shadow-sm"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>Lưu CSDL</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowHistoryModal(true)}
+              title="Xem danh sách Hóa đơn bán lẻ đã lưu trong CSDL"
+              className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors relative"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Lịch sử ({savedInvoices.length})</span>
+            </button>
             <button
               type="button"
               onClick={handleExportExcel}
               className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Xuất Excel (.xlsx)</span>
+              <span>Xuất Excel</span>
             </button>
             <button
               type="button"
@@ -184,7 +255,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
               className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>In Hóa đơn A4/A5</span>
+              <span>In Hóa đơn</span>
             </button>
           </div>
         </div>
@@ -425,6 +496,67 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
         onDeleteTemplate={handleDeleteTemplate}
         onResetTemplates={handleResetTemplates}
       />
+
+      {/* History Modal for Saved Invoices from DB */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className={`${UI.containerCardBg} rounded-xl max-w-2xl w-full p-5 border space-y-4 max-h-[85vh] flex flex-col shadow-xl`}>
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="flex items-center space-x-2">
+                <History className="w-5 h-5 text-accent" />
+                <h3 className="text-sm font-bold text-ink uppercase">Lịch sử Hóa Đơn Bán Lẻ đã lưu trong CSDL</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHistoryModal(false)}
+                className="text-ink-faint hover:text-ink font-bold text-sm px-2"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 space-y-2">
+              {savedInvoices.length === 0 ? (
+                <div className="text-center text-ink-faint py-8 text-xs">
+                  Chưa có Hóa đơn nào được lưu trong CSDL. Bấm nút <strong>"Lưu CSDL"</strong> để lưu hóa đơn hiện tại.
+                </div>
+              ) : (
+                savedInvoices.map(inv => (
+                  <div
+                    key={inv.id}
+                    onClick={() => handleLoadInvoice(inv)}
+                    className="p-3 border rounded-lg hover:border-accent hover:bg-accent-soft/20 cursor-pointer flex items-center justify-between transition-colors text-xs"
+                  >
+                    <div className="space-y-1">
+                      <div className="font-bold text-ink text-sm">
+                        Khách hàng: {inv.headerInfo.buyerName || 'Chưa đặt tên'}
+                      </div>
+                      <div className="text-ink-faint flex items-center space-x-3">
+                        <span>Ngày lập: {inv.invoiceDate}</span>
+                        <span>•</span>
+                        <span>Cửa hàng: {inv.headerInfo.shopName || '---'}</span>
+                        <span>•</span>
+                        <span>{inv.items.length} mặt hàng</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteInvoice(inv.id, e)}
+                        className="text-ink-faint hover:text-neg p-1.5 rounded hover:bg-neg-soft/30 transition-colors"
+                        title="Xóa Hóa đơn này"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

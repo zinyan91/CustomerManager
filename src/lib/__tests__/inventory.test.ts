@@ -51,7 +51,7 @@ describe('Inventory Calculation & Logic', () => {
   it('bộ mẫu chuẩn 8 ngành hàng nạp đầy đủ và chính xác', () => {
     expect(INVENTORY_TEMPLATES.length).toBe(8);
 
-    const luaGao = INVENTORY_TEMPLATES.find(t => t.id === 'htk-lúa-gạo');
+    const luaGao = INVENTORY_TEMPLATES.find(t => t.id === 'htk-lua-gao' || t.id === 'htk-lúa-gạo');
     expect(luaGao).toBeDefined();
     expect(luaGao?.items.length).toBeGreaterThan(50);
     expect(luaGao?.items[0].code).toBe('RICE001');

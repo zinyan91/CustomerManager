@@ -16,7 +16,7 @@ export interface InventoryCategoryTemplate {
 
 export const INVENTORY_TEMPLATES: InventoryCategoryTemplate[] = [
   {
-    "id": "htk-lúa-gạo",
+    "id": "htk-lua-gao",
     "name": "HTK Lúa Gạo",
     "items": [
       {
@@ -1396,7 +1396,7 @@ export const INVENTORY_TEMPLATES: InventoryCategoryTemplate[] = [
     ]
   },
   {
-    "id": "htk-tạp-hoá",
+    "id": "htk-tap-hoa",
     "name": "HTK Tạp Hoá",
     "items": [
       {
@@ -2122,7 +2122,7 @@ export const INVENTORY_TEMPLATES: InventoryCategoryTemplate[] = [
     ]
   },
   {
-    "id": "htk-quần-áo-nữ",
+    "id": "htk-quan-ao-nu",
     "name": "HTK Quần Áo Nữ",
     "items": [
       {
@@ -2848,7 +2848,7 @@ export const INVENTORY_TEMPLATES: InventoryCategoryTemplate[] = [
     ]
   },
   {
-    "id": "htk-quần-áo-nam",
+    "id": "htk-quan-ao-nam",
     "name": "HTK Quần Áo Nam",
     "items": [
       {
@@ -4300,7 +4300,7 @@ export const INVENTORY_TEMPLATES: InventoryCategoryTemplate[] = [
     ]
   },
   {
-    "id": "htk-thùng-carton",
+    "id": "htk-thung-carton",
     "name": "HTK Thùng Carton",
     "items": [
       {

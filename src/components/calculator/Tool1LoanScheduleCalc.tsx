@@ -9,6 +9,7 @@ import { buildScheduleDocHtml } from '../../lib/scheduleDocHtml';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
 import { downloadBytes } from '../../lib/xlsExport';
 import { buildXlsx, MIME_XLSX, type XlsxCell, type XlsxSheet } from '../../lib/xlsxWriter';
+import { exportScheduleWithFormulas } from '../../lib/scheduleFormulaExport';
 
 function exportToXlsxFile(
   filename: string,
@@ -282,6 +283,18 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
     exportToXlsxFile('Lich_Thu_No_Vay', 'BẢNG CHI TIẾT LỊCH THU NỢ DỰ KIẾN KHOẢN VAY', loanInfoPairs, headers, rows, footer);
   };
 
+  const handleExportExcelWithFormulas = () => {
+    if (scheduleRows.length === 0) return;
+    exportScheduleWithFormulas({
+      loanAmount: loanAmt,
+      tenorMonths: tenorMonths,
+      annualRate: rateAnnual,
+      repayMethod: repayMethod,
+      disbursementDateStr: disbursementDate,
+      scheduleRows,
+    });
+  };
+
   const handlePrintSchedule = () => {
     if (scheduleRows.length === 0) return;
     const html = buildScheduleDocHtml({
@@ -520,10 +533,20 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <button
               type="button"
               onClick={handleExportExcel}
+              title="Xuất bảng Excel chứa các giá trị số tĩnh"
               className="flex items-center space-x-1.5 font-bold text-xs px-3 py-1.5 rounded-md border border-line text-ink-muted hover:border-accent hover:text-accent"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Xuất Excel (.xlsx)</span>
+              <span>Excel (Giá trị)</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportExcelWithFormulas}
+              title="Xuất bảng Excel có chứa công thức tính toán tự động từng cột"
+              className="flex items-center space-x-1.5 font-bold text-xs px-3 py-1.5 rounded-md border border-accent bg-accent-soft text-accent hover:opacity-90"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Excel (Có công thức)</span>
             </button>
             <button
               type="button"

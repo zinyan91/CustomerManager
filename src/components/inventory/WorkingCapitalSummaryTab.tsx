@@ -32,7 +32,7 @@ export const WorkingCapitalSummaryTab: React.FC<WorkingCapitalSummaryTabProps> =
             BẢNG TỔNG HỢP LIÊN KẾT TÀI SẢN NGẮN HẠN & CÔNG NỢ PHẢI THU
           </h2>
           <p className="text-xs text-ink-faint">
-            Tổng hợp dữ liệu liên kết giữa Giá trị Hàng tồn kho và Công nợ Phải thu Khách hàng (TK 131)
+            Tổng hợp dữ liệu liên kết giữa Giá trị Hàng tồn kho và Công nợ Phải thu Khách hàng
           </p>
         </div>
       </div>

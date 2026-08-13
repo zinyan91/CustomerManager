@@ -103,7 +103,7 @@ export const DebtReceivableTab: React.FC<DebtReceivableTabProps> = ({
           </div>
           <div>
             <h2 className="text-sm font-bold text-accent tracking-tight uppercase">
-              BẢNG CÔNG NỢ PHẢI THU (TK 131)
+              BẢNG CÔNG NỢ PHẢI THU
             </h2>
             <p className="text-xs text-ink-faint">
               Theo dõi và kiểm kê các khoản công nợ phải thu từ Khách hàng kinh doanh

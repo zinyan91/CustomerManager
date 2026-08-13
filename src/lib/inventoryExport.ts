@@ -122,7 +122,7 @@ export function buildReceivableSheet(
 
   xlsxRows.push([
     {
-      value: 'BẢNG TỔNG HỢP CÔNG NỢ PHẢI THU (TK 131)',
+      value: 'BẢNG TỔNG HỢP CÔNG NỢ PHẢI THU',
       style: { bold: true, align: 'center', vAlign: 'center', fill: HEADER_FILL },
     },
   ]);
@@ -257,7 +257,7 @@ export function buildInventoryDocHtml(
 
     recSectionHtml = `
       <div style="page-break-before: always;"></div>
-      <div class="header-title">BẢNG TỔNG HỢP CÔNG NỢ PHẢI THU (TK 131)</div>
+      <div class="header-title">BẢNG TỔNG HỢP CÔNG NỢ PHẢI THU</div>
       <div class="meta-line">
         ${ctx.customerName ? `<strong>Khách hàng:</strong> ${ctx.customerName} | ` : ''}<strong>Ngày kiểm kê:</strong> ${fmtDate(ctx.recordDate || todayIso())}
       </div>

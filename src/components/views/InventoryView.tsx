@@ -11,6 +11,9 @@ import {
   loadInventoryTemplates, addInventoryTemplate, updateInventoryTemplate,
   deleteInventoryTemplate, resetInventoryTemplates,
 } from '../../lib/templateStore';
+import {
+  fetchInventoryItemsDb, saveInventoryItemDb, saveAllInventoryItemsDb, deleteInventoryItemDb,
+} from '../../lib/inventoryDb';
 import { type InventoryCategoryTemplate, type TemplateItem } from '../../data/inventoryTemplates';
 import { SAMPLE_RECEIVABLES, type ReceivableItem } from '../../lib/debt';
 import { buildFullInventoryAndDebtXlsx, buildInventoryDocHtml } from '../../lib/inventoryExport';
@@ -109,12 +112,25 @@ export const InventoryView: React.FC = () => {
     setTimeout(() => setNotification(null), type === 'error' ? 8000 : 4000);
   };
 
+  // Fetch Inventory items from Database on mount or category change
+  React.useEffect(() => {
+    let active = true;
+    fetchInventoryItemsDb(categoryName).then(dbItems => {
+      if (active && dbItems && dbItems.length > 0) {
+        setItems(dbItems);
+      }
+    });
+    return () => { active = false; };
+  }, [categoryName]);
+
   const handleSelectTemplate = (templateId: string) => {
     setSelectedTemplateId(templateId);
     const tpl = templates.find(t => t.id === templateId);
     if (tpl) {
       setCategoryName(tpl.name);
-      setItems(tpl.items.map(it => ({ ...it, id: nextItemId() })));
+      const newItems = tpl.items.map(it => ({ ...it, id: nextItemId() }));
+      setItems(newItems);
+      saveAllInventoryItemsDb(newItems, tpl.name);
       showNotify('success', `Đã nạp danh mục mẫu: ${tpl.name}.`);
     }
   };
@@ -130,7 +146,9 @@ export const InventoryView: React.FC = () => {
       updated = res.templates;
       setSelectedTemplateId(res.newTemplate.id);
       setCategoryName(res.newTemplate.name);
-      setItems(res.newTemplate.items.map(it => ({ ...it, id: nextItemId() })));
+      const newItems = res.newTemplate.items.map(it => ({ ...it, id: nextItemId() }));
+      setItems(newItems);
+      saveAllInventoryItemsDb(newItems, res.newTemplate.name);
       showNotify('success', `Đã tạo mới Mẫu ngành hàng: ${name}`);
     }
     setTemplates(updated);
@@ -144,7 +162,9 @@ export const InventoryView: React.FC = () => {
       if (first) {
         setSelectedTemplateId(first.id);
         setCategoryName(first.name);
-        setItems(first.items.map(it => ({ ...it, id: nextItemId() })));
+        const newItems = first.items.map(it => ({ ...it, id: nextItemId() }));
+        setItems(newItems);
+        saveAllInventoryItemsDb(newItems, first.name);
       }
     }
     showNotify('success', 'Đã xóa ngành hàng chuẩn.');
@@ -155,7 +175,9 @@ export const InventoryView: React.FC = () => {
     setTemplates(defaultTpls);
     setSelectedTemplateId(defaultTpls[0].id);
     setCategoryName(defaultTpls[0].name);
-    setItems(defaultTpls[0].items.map(it => ({ ...it, id: nextItemId() })));
+    const newItems = defaultTpls[0].items.map(it => ({ ...it, id: nextItemId() }));
+    setItems(newItems);
+    saveAllInventoryItemsDb(newItems, defaultTpls[0].name);
     showNotify('success', 'Đã khôi phục về danh mục 8 ngành hàng mặc định.');
   };
 
@@ -176,27 +198,40 @@ export const InventoryView: React.FC = () => {
       exportQty: parseMoneyDecimalInput(newExpQtyStr),
     };
     setItems(prev => [item, ...prev]);
+    saveInventoryItemDb(item, categoryName);
     setNewCode('');
     setNewName('');
     setNewPriceStr('');
     setNewBegQtyStr('');
     setNewImpQtyStr('');
     setNewExpQtyStr('');
-    showNotify('success', `Đã thêm mặt hàng: ${item.name}`);
+    showNotify('success', `Đã thêm mặt hàng (đã lưu CSDL): ${item.name}`);
   };
 
   const updateItem = (id: string, patch: Partial<InventoryItem>) => {
-    setItems(prev => prev.map(it => (it.id === id ? { ...it, ...patch } : it)));
+    setItems(prev => {
+      const next = prev.map(it => {
+        if (it.id === id) {
+          const updated = { ...it, ...patch };
+          saveInventoryItemDb(updated, categoryName);
+          return updated;
+        }
+        return it;
+      });
+      return next;
+    });
   };
 
   const removeItem = (id: string) => {
     setItems(prev => prev.filter(it => it.id !== id));
+    deleteInventoryItemDb(id);
   };
 
   const clearAllItems = () => {
     if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ mặt hàng khỏi danh mục này?')) {
+      items.forEach(it => deleteInventoryItemDb(it.id));
       setItems([]);
-      showNotify('success', 'Đã xóa toàn bộ bảng dữ liệu.');
+      showNotify('success', 'Đã xóa toàn bộ bảng dữ liệu trong CSDL.');
     }
   };
 

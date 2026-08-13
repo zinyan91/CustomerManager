@@ -628,8 +628,9 @@ export function buildPurchaseStatementDocHtml(
 
       <div class="party-box">
         <strong>Bên bán hàng:</strong> ${info.sellerName || '....................................'}<br/>
-        ${info.sellerIdCard ? `<strong>CMND/CCCD số:</strong> ${info.sellerIdCard}<br/>` : ''}
-        ${info.paymentMethod === 'transfer' ? `<strong>Thông tin chuyển khoản:</strong> ${getComputedBankAccText(info)}<br/>` : (!info.sellerIdCard ? `<strong>CMND/CCCD số:</strong> Tiền mặt<br/>` : '')}
+        ${info.paymentMethod === 'transfer' 
+          ? `<strong>Thông tin chuyển khoản:</strong> ${getComputedBankAccText(info)}<br/>` 
+          : `<strong>CMND/CCCD số:</strong> ${info.sellerIdCard || '....................................'}<br/>`}
         <br/>
         <strong>Bên mua hàng:</strong> ${info.buyerName || '....................................'}<br/>
         <strong>CMND/CCCD số:</strong> ${info.buyerIdCard || '....................................'}

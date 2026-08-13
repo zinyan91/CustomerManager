@@ -200,7 +200,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
         {/* Information & Payment Method Controls (Matching SaleForm.tsx style) */}
         <div className="p-3.5 rounded-md border border-line bg-panel-muted space-y-3">
           {/* Seller Legal Identity Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className={`grid grid-cols-1 ${sellerInfo.paymentMethod === 'cash' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
             <div>
               <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
                 Bên bán hàng (Họ tên)
@@ -213,18 +213,20 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
               />
             </div>
 
-            <div>
-              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
-                Số CMND / CCCD số Bên bán
-              </label>
-              <input
-                type="text"
-                placeholder="Nhập số CMND/CCCD"
-                value={sellerInfo.sellerIdCard}
-                onChange={e => setSellerInfo({ ...sellerInfo, sellerIdCard: e.target.value })}
-                className={`w-full rounded-md p-2 font-mono font-bold text-accent ${UI.inputStyle}`}
-              />
-            </div>
+            {sellerInfo.paymentMethod === 'cash' && (
+              <div>
+                <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
+                  Số CMND / CCCD số Bên bán
+                </label>
+                <input
+                  type="text"
+                  placeholder="Nhập số CMND/CCCD"
+                  value={sellerInfo.sellerIdCard}
+                  onChange={e => setSellerInfo({ ...sellerInfo, sellerIdCard: e.target.value })}
+                  className={`w-full rounded-md p-2 font-mono font-bold text-accent ${UI.inputStyle}`}
+                />
+              </div>
+            )}
 
             <div>
               <div className="flex items-center justify-between mb-1">

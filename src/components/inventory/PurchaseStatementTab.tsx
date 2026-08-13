@@ -354,11 +354,11 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
                   </div>
                 </div>
 
-                {/* Auto-assembled Preview Tag for Cell D15 */}
+                {/* Auto-assembled Preview Tag for Transfer Info */}
                 <div className="p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-between">
                   <div className="flex items-center gap-1.5 font-mono">
                     <span className="font-bold text-[10px] uppercase text-emerald-600 dark:text-emerald-400">
-                      👁 Chuỗi tự động xuất ô D15 (Excel & PDF):
+                      Thông tin chuyển khoản hiển thị trên chứng từ:
                     </span>
                     <span className="font-bold">
                       {getComputedBankAccText(sellerInfo)}

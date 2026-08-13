@@ -576,7 +576,11 @@ export function buildPurchaseStatementDocHtml(
 ): string {
   const summary = computeStatementSummary(items);
   const n = items.length;
-  const sellerIdText = [info.sellerIdCard, info.sellerBankAcc].filter(Boolean).join(' - ');
+  const sellerIdText = info.customStkText
+    ? info.customStkText
+    : info.paymentMethod === 'cash'
+    ? (info.sellerIdCard || 'Tiền mặt')
+    : (info.sellerBankAcc || info.sellerIdCard || '');
 
   const itemRows = items.map((it, idx) => {
     const c = computeStatementItem(it);

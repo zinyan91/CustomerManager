@@ -196,26 +196,27 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
           </div>
         </div>
 
-        {/* Info & Industry Template Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Compact Info & Industry Template Selection (Single 4-column row) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          {/* Col 1: Mẫu ngành hàng */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className={`block text-[10px] uppercase tracking-wide ${UI.labelStyle}`}>
-                Chọn mẫu ngành hàng ({templates.length})
+              <label className={`block text-[10px] uppercase font-bold tracking-wide ${UI.labelStyle}`}>
+                Mẫu ngành hàng ({templates.length})
               </label>
               <button
                 type="button"
                 onClick={() => setIsTemplateModalOpen(true)}
-                className="text-[11px] font-bold text-accent hover:underline flex items-center space-x-1"
+                className="text-[10px] font-bold text-accent hover:underline flex items-center space-x-1"
               >
                 <Settings2 className="w-3 h-3" />
-                <span>Quản lý ngành hàng</span>
+                <span>Quản lý</span>
               </button>
             </div>
             <select
               value={selectedTemplateId}
               onChange={e => handleSelectTemplate(e.target.value)}
-              className={`w-full rounded-md p-2 text-xs border ${UI.inputStyle} font-bold`}
+              className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-bold`}
             >
               {templates.map(t => (
                 <option key={t.id} value={t.id}>{t.name}</option>
@@ -223,52 +224,58 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
             </select>
           </div>
 
-          <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {/* Col 2: Họ tên Bên bán */}
+          <div>
+            <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">Bên bán hàng (Họ tên)</label>
+            <input
+              type="text"
+              value={sellerInfo.sellerName}
+              onChange={e => setSellerInfo({ ...sellerInfo, sellerName: e.target.value })}
+              className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-bold`}
+            />
+          </div>
+
+          {/* Col 3: Hình thức thanh toán */}
+          <div>
+            <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">Hình thức thanh toán</label>
+            <select
+              value={sellerInfo.paymentMethod || 'transfer'}
+              onChange={e => setSellerInfo({ ...sellerInfo, paymentMethod: e.target.value as 'transfer' | 'cash' })}
+              className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-bold`}
+            >
+              <option value="transfer">Chuyển khoản (Dùng STK)</option>
+              <option value="cash">Tiền mặt (Dùng số CCCD)</option>
+            </select>
+          </div>
+
+          {/* Col 4: Khung duy nhất theo Lựa chọn (Tiền mặt -> CCCD | Chuyển khoản -> STK) */}
+          {sellerInfo.paymentMethod === 'cash' ? (
             <div>
-              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">Bên bán hàng (Họ tên)</label>
+              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
+                Số CMND / CCCD (Tiền mặt)
+              </label>
               <input
                 type="text"
-                value={sellerInfo.sellerName}
-                onChange={e => setSellerInfo({ ...sellerInfo, sellerName: e.target.value })}
-                className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-bold`}
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">CMND/CCCD số Bên bán</label>
-              <input
-                type="text"
+                placeholder="Nhập số CMND/CCCD"
                 value={sellerInfo.sellerIdCard}
                 onChange={e => setSellerInfo({ ...sellerInfo, sellerIdCard: e.target.value })}
-                className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono`}
+                className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono font-bold text-accent`}
               />
             </div>
+          ) : (
             <div>
-              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">Hình thức thanh toán</label>
-              <select
-                value={sellerInfo.paymentMethod || 'transfer'}
-                onChange={e => setSellerInfo({ ...sellerInfo, paymentMethod: e.target.value as 'transfer' | 'cash' })}
-                className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-bold`}
-              >
-                <option value="transfer">Chuyển khoản (Có STK)</option>
-                <option value="cash">Tiền mặt</option>
-              </select>
+              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
+                Thông tin STK / Ngân hàng (Chuyển khoản)
+              </label>
+              <input
+                type="text"
+                placeholder="STK: 9975639612 - Techcombank CN HCM"
+                value={sellerInfo.sellerBankAcc}
+                onChange={e => setSellerInfo({ ...sellerInfo, sellerBankAcc: e.target.value, customStkText: undefined })}
+                className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono font-bold text-emerald-600 dark:text-emerald-400`}
+              />
             </div>
-
-            {sellerInfo.paymentMethod !== 'cash' && (
-              <div className="sm:col-span-3">
-                <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
-                  Thông tin STK / Ngân hàng (Hiển thị tại ô D15 trong bảng)
-                </label>
-                <input
-                  type="text"
-                  placeholder="VD: STK: 9975639612 - Ngân hàng Techcombank CN HCM"
-                  value={sellerInfo.sellerBankAcc}
-                  onChange={e => setSellerInfo({ ...sellerInfo, sellerBankAcc: e.target.value, customStkText: undefined })}
-                  className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-mono`}
-                />
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
 

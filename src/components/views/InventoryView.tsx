@@ -25,6 +25,7 @@ import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
 import { DebtReceivableTab } from '../inventory/DebtReceivableTab';
+import { DebtPayableTab } from '../inventory/DebtPayableTab';
 import { TemplateManagerModal } from '../inventory/TemplateManagerModal';
 
 const QtyCellInput: React.FC<{
@@ -51,7 +52,7 @@ const QtyCellInput: React.FC<{
 };
 
 export const InventoryView: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'inventory' | 'receivables'>('inventory');
+  const [activeSubTab, setActiveSubTab] = useState<'inventory' | 'receivables' | 'payables'>('inventory');
 
   // Industry Templates State
   const [templates, setTemplates] = useState<InventoryCategoryTemplate[]>(loadInventoryTemplates);
@@ -71,6 +72,28 @@ export const InventoryView: React.FC = () => {
 
   // Accounts Receivable items (TK 131)
   const [receivables, setReceivables] = useState<ReceivableItem[]>(SAMPLE_RECEIVABLES);
+
+  // Accounts Payable items (TK 331)
+  const [payables, setPayables] = useState<ReceivableItem[]>([
+    {
+      id: 'pay-1',
+      code: 'NCC01',
+      name: 'Công ty TNHH Xi măng Hà Tiên',
+      beginningDebit: 0,
+      beginningCredit: 150000000,
+      occurredDebit: 50000000,
+      occurredCredit: 80000000,
+    },
+    {
+      id: 'pay-2',
+      code: 'NCC02',
+      name: 'Nhà máy Thép Hòa Phát',
+      beginningDebit: 0,
+      beginningCredit: 320000000,
+      occurredDebit: 120000000,
+      occurredCredit: 200000000,
+    },
+  ]);
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -392,7 +415,20 @@ export const InventoryView: React.FC = () => {
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Công nợ Phải thu (TK 131)</span>
+          <span>Công nợ Phải thu</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('payables')}
+          className={`px-3.5 py-2 text-xs font-bold border-b-2 transition-colors flex items-center space-x-1.5 whitespace-nowrap ${
+            activeSubTab === 'payables'
+              ? 'border-accent text-accent bg-accent-soft/30'
+              : 'border-transparent text-ink-muted hover:text-ink'
+          }`}
+        >
+          <Users className="w-4 h-4 text-neg" />
+          <span>Công nợ Phải trả</span>
         </button>
       </div>
 
@@ -401,6 +437,14 @@ export const InventoryView: React.FC = () => {
         <DebtReceivableTab
           receivables={receivables}
           onChangeReceivables={setReceivables}
+          showNotify={showNotify}
+        />
+      )}
+
+      {activeSubTab === 'payables' && (
+        <DebtPayableTab
+          payables={payables}
+          onChangePayables={setPayables}
           showNotify={showNotify}
         />
       )}

@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { Lock, Mail, LogIn, AlertCircle, Loader2, Eye, EyeOff, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-// Custom Custom Vector Banking Emblem SVG Logo
+// Custom Vector Banking Emblem SVG Logo
 const BankEmblemLogo: React.FC<{ className?: string }> = ({ className = 'w-12 h-12' }) => (
   <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#4F46E5" />
+        <stop offset="0%" stopColor="#3B82F6" />
         <stop offset="50%" stopColor="#2563EB" />
-        <stop offset="100%" stopColor="#0284C7" />
+        <stop offset="100%" stopColor="#1D4ED8" />
       </linearGradient>
       <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="0%" stopColor="#F59E0B" />
@@ -29,8 +29,8 @@ const BankEmblemLogo: React.FC<{ className?: string }> = ({ className = 'w-12 h-
     {/* Inner Shield Overlay */}
     <path
       d="M32 8L12 16.3V30C12 42.8 20.5 53.7 32 56.8C43.5 53.7 52 42.8 52 30V16.3L32 8Z"
-      fill="#0F172A"
-      fillOpacity="0.4"
+      fill="#0B132B"
+      fillOpacity="0.5"
     />
     {/* Bank Pillars Architecture */}
     <path d="M20 22H44V25H20V22Z" fill="#FFFFFF" />
@@ -72,40 +72,42 @@ export const LoginView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-surface text-ink antialiased selection:bg-accent selection:text-accent-ink">
-      {/* LEFT PANEL - Hero Banking Branding (Visible on Desktop lg+) */}
-      <div className="hidden lg:flex lg:w-7/12 relative overflow-hidden bg-slate-950 p-12 flex-col justify-between border-r border-line">
-        {/* Background Decorative Mesh & Glow Orbs */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(59,130,246,0.25),rgba(255,255,255,0))]" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-pos/15 rounded-full blur-3xl" />
-        
-        {/* Geometric Grid Pattern */}
-        <div 
-          className="absolute inset-0 opacity-[0.03] pointer-events-none"
-          style={{
-            backgroundImage: `radial-gradient(#ffffff 1px, transparent 1px)`,
-            backgroundSize: '24px 24px'
-          }}
-        />
+    <div className="min-h-screen w-full flex bg-gradient-to-br from-[#0B132B] via-[#1C2541] to-[#0D1B2A] text-slate-100 antialiased selection:bg-blue-500 selection:text-white relative overflow-hidden">
+      
+      {/* Dynamic Background Ambient Glowing Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/25 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-cyan-500/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[40%] right-[30%] w-[350px] h-[350px] bg-indigo-600/15 rounded-full blur-[100px] pointer-events-none" />
 
+      {/* Geometric Grid Pattern Overlay */}
+      <div 
+        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        style={{
+          backgroundImage: `radial-gradient(#ffffff 1px, transparent 1px)`,
+          backgroundSize: '32px 32px'
+        }}
+      />
+
+      {/* LEFT PANEL - Hero Banking Branding (Visible on Desktop lg+) */}
+      <div className="hidden lg:flex lg:w-7/12 relative z-10 p-12 lg:p-16 flex-col justify-between border-r border-slate-800/80">
+        
         {/* Top Header Logo */}
-        <div className="relative z-10 flex items-center space-x-3">
-          <BankEmblemLogo className="w-10 h-10" />
+        <div className="flex items-center space-x-3.5">
+          <BankEmblemLogo className="w-11 h-11" />
           <div>
-            <div className="font-extrabold text-lg tracking-wider text-white uppercase font-mono">
+            <div className="font-extrabold text-xl tracking-wider text-white uppercase font-mono">
               CUSTOMER MANAGER
             </div>
-            <div className="text-[11px] text-slate-400 font-medium tracking-wide">
+            <div className="text-xs text-blue-200/80 font-medium tracking-wide">
               Hệ thống Quản lý Khách hàng & Tín dụng Ngân hàng
             </div>
           </div>
         </div>
 
         {/* Center Hero Copy */}
-        <div className="relative z-10 space-y-6 max-w-xl my-auto">
-          <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/30 text-accent text-xs font-semibold">
-            <ShieldCheck className="w-4 h-4" />
+        <div className="space-y-6 max-w-xl my-auto">
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-300 text-xs font-semibold backdrop-blur-md">
+            <ShieldCheck className="w-4 h-4 text-blue-400" />
             <span>Nền tảng Thẩm định & Giám sát Tín dụng Chuẩn Quốc tế</span>
           </div>
 
@@ -119,19 +121,19 @@ export const LoginView: React.FC = () => {
           </p>
 
           {/* Key Platform Highlights */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-            <div className="flex items-start space-x-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 backdrop-blur-xs">
-              <CheckCircle2 className="w-5 h-5 text-pos shrink-0 mt-0.5" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div className="flex items-start space-x-3 p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
               <div>
-                <div className="font-bold text-xs text-slate-200">Xác thực Bảo mật SSL</div>
+                <div className="font-bold text-xs text-slate-100">Xác thực Bảo mật SSL</div>
                 <div className="text-[11px] text-slate-400">Mã hóa Supabase Auth Engine</div>
               </div>
             </div>
 
-            <div className="flex items-start space-x-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 backdrop-blur-xs">
-              <CheckCircle2 className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+            <div className="flex items-start space-x-3 p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md">
+              <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
               <div>
-                <div className="font-bold text-xs text-slate-200">Dư nợ & HMTD Thời gian thực</div>
+                <div className="font-bold text-xs text-slate-100">Dư nợ & HMTD Thời gian thực</div>
                 <div className="text-[11px] text-slate-400">Tự động tính toán hạn mức khả dụng</div>
               </div>
             </div>
@@ -139,80 +141,80 @@ export const LoginView: React.FC = () => {
         </div>
 
         {/* Bottom Footer Info */}
-        <div className="relative z-10 text-xs text-slate-500 border-t border-slate-800/80 pt-4 flex justify-between items-center">
+        <div className="text-xs text-slate-400 border-t border-slate-800/80 pt-4 flex justify-between items-center">
           <span>© 2026 CustomerManager • Bản quyền Thuộc Ngân hàng</span>
           <span className="font-mono text-[11px]">v2.5.0 • Build Stable</span>
         </div>
       </div>
 
-      {/* RIGHT PANEL - Authentication Form Console */}
-      <div className="w-full lg:w-5/12 flex items-center justify-center p-6 sm:p-12 bg-surface relative">
-        <div className="w-full max-w-md space-y-8">
+      {/* RIGHT PANEL - Authentication Form Console Card */}
+      <div className="w-full lg:w-5/12 flex items-center justify-center p-6 sm:p-12 relative z-10">
+        <div className="w-full max-w-md bg-slate-900/80 border border-slate-700/60 shadow-2xl backdrop-blur-xl rounded-3xl p-8 sm:p-10 space-y-7">
           
           {/* Mobile Logo Branding (Visible only on mobile/tablet) */}
-          <div className="lg:hidden text-center space-y-2 mb-6">
-            <div className="inline-flex p-3 rounded-2xl bg-accent-soft border border-accent/20 mb-2">
+          <div className="lg:hidden text-center space-y-2 mb-4">
+            <div className="inline-flex p-3.5 rounded-2xl bg-blue-500/10 border border-blue-400/20 mb-2">
               <BankEmblemLogo className="w-10 h-10" />
             </div>
-            <h1 className="text-lg font-bold tracking-tight text-ink uppercase">
+            <h1 className="text-lg font-bold tracking-tight text-white uppercase font-mono">
               QUẢN LÝ KHÁCH HÀNG
             </h1>
-            <p className="text-xs text-ink-faint">
+            <p className="text-xs text-blue-200/70">
               Hệ thống Quản lý Khách hàng & Tín dụng Ngân hàng
             </p>
           </div>
 
           {/* Form Header */}
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold tracking-tight text-ink">
+          <div className="space-y-1.5">
+            <h2 className="text-2xl font-extrabold tracking-tight text-white">
               Đăng nhập Cán bộ
             </h2>
-            <p className="text-xs text-ink-faint leading-relaxed">
-              Nhập email công vụ và mật khẩu được cấp để truy cập hệ thống nghiệp vụ.
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Nhập email công vụ và mật khẩu để truy cập hệ thống.
             </p>
           </div>
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Field */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-ink-muted">
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-300">
                 Email công vụ
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint transition-colors" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors" />
                 <input
                   type="email"
                   autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="canbo@bank.com.vn"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-line bg-panel text-ink text-xs font-medium placeholder-ink-faint outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:opacity-60"
+                  placeholder=""
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-700 bg-slate-950/80 text-white text-xs font-medium outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 disabled:opacity-60"
                   disabled={submitting}
                 />
               </div>
             </div>
 
             {/* Password Field with Eye Toggle */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-ink-muted">
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-300">
                 Mật khẩu
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint transition-colors" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full pl-10 pr-11 py-3 rounded-xl border border-line bg-panel text-ink text-xs font-mono placeholder-ink-faint outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/20 disabled:opacity-60"
+                  placeholder=""
+                  className="w-full pl-10 pr-11 py-3 rounded-xl border border-slate-700 bg-slate-950/80 text-white text-xs font-mono outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 disabled:opacity-60"
                   disabled={submitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-accent transition-colors p-1"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-400 transition-colors p-1"
                   title={showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -222,8 +224,8 @@ export const LoginView: React.FC = () => {
 
             {/* Error Notification Alert */}
             {error && (
-              <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-neg-soft/80 border border-neg/40 text-neg text-xs font-semibold animate-in fade-in zoom-in-95">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-950/80 border border-red-800/60 text-red-300 text-xs font-semibold animate-in fade-in zoom-in-95">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
                 <span>{error}</span>
               </div>
             )}
@@ -232,7 +234,7 @@ export const LoginView: React.FC = () => {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-accent hover:opacity-90 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed text-accent-ink text-xs font-bold transition-all shadow-sm"
+              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-lg shadow-blue-900/40"
             >
               {submitting ? (
                 <>
@@ -247,14 +249,6 @@ export const LoginView: React.FC = () => {
               )}
             </button>
           </form>
-
-          {/* Footer Warning & Security Notice */}
-          <div className="pt-4 border-t border-line text-center space-y-2">
-            <p className="text-[11px] text-ink-faint leading-relaxed">
-              🔒 Tài khoản công vụ được cấp và phân quyền bởi Quản trị viên Ngân hàng. 
-              Mọi hành vi truy cập trái phép đều được ghi vết nhật ký.
-            </p>
-          </div>
 
         </div>
       </div>

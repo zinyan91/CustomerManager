@@ -5,7 +5,10 @@ import {
   filterCustomersByStatus, countCustomersByStatus, isCustomerArchived,
   type CustomerStatusFilter,
 } from '../lib/customerStatus';
-import { validateCustomerForm, NATIONAL_ID_CCCD_LENGTH, PHONE_LENGTH, capDigits, capNumberList, normalizeNumberList } from '../lib/customerValidation';
+import {
+  validateCustomerForm, NATIONAL_ID_CCCD_LENGTH, PHONE_LENGTH,
+  capDigits, capNumberList, normalizeNumberList, parseRawCustomerText,
+} from '../lib/customerValidation';
 
 export function useCustomerListController() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -134,8 +137,26 @@ export function useCustomerListController() {
     setIsDrawerOpen(true);
   }, []);
 
-  const handleSaveCustomer = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
+  const parseAndApplySnippet = useCallback((raw: string) => {
+    const parsed = parseRawCustomerText(raw);
+    let appliedCount = 0;
+    if (parsed.cif) { setInputCif(parsed.cif); appliedCount++; }
+    if (parsed.fullName) { setInputFullName(parsed.fullName.toUpperCase()); appliedCount++; }
+    if (parsed.nationalId) { setInputNationalId(capDigits(parsed.nationalId, NATIONAL_ID_CCCD_LENGTH)); appliedCount++; }
+    if (parsed.phone) { setInputPhone(capNumberList(parsed.phone, PHONE_LENGTH)); appliedCount++; }
+    if (parsed.email) { setInputEmail(parsed.email); appliedCount++; }
+    if (parsed.accountNumber) { setInputAccountNumber(normalizeNumberList(parsed.accountNumber)); appliedCount++; }
+    if (parsed.address) { setInputAddress(parsed.address); appliedCount++; }
+
+    if (appliedCount > 0) {
+      showNotify('success', `Đã tự động nhận diện và điền ${appliedCount} trường thông tin!`);
+    } else {
+      showNotify('error', 'Không nhận diện được định dạng thông tin từ văn bản.');
+    }
+  }, [showNotify]);
+
+  const handleSaveCustomer = useCallback(async (e?: React.FormEvent, options?: { continueAdding?: boolean }) => {
+    if (e) e.preventDefault();
     if (!inputCif.trim() || !inputFullName.trim()) {
       showNotify('error', 'Mã CIF và Họ tên khách hàng là bắt buộc!');
       return;
@@ -160,7 +181,7 @@ export function useCustomerListController() {
     const payload: Partial<Customer> = {
       Id: selectedCustomer?.Id,
       CifKh: inputCif.trim(),
-      FullName: inputFullName.trim(),
+      FullName: inputFullName.trim().toUpperCase(),
       NationalId: inputNationalId.trim() || null,
       Phone: inputPhone.trim() || null,
       Email: inputEmail.trim() || null,
@@ -169,7 +190,7 @@ export function useCustomerListController() {
       MaritalStatus: inputMaritalStatus,
       CifKhlq: inputCifKhlq.trim() || null,
       KhlqRelationship: inputKhlqRelationship || null,
-      SpouseName: inputSpouseName.trim() || null,
+      SpouseName: inputSpouseName.trim().toUpperCase() || null,
       SpouseNationalId: inputSpouseNationalId.trim() || null,
       SpousePhone: inputSpousePhone.trim() || null,
       SpouseAccountNumber: inputSpouseAccountNumber.trim() || null,
@@ -178,9 +199,13 @@ export function useCustomerListController() {
 
     try {
       await saveCustomerAPI(payload);
-      showNotify('success', selectedCustomer ? 'Đã cập nhật hồ sơ KH!' : 'Đã lưu KH mới thành công!');
-      setIsDrawerOpen(false);
-      clearForm();
+      showNotify('success', selectedCustomer ? 'Đã CẬP NHẬT thành công hồ sơ!' : 'Đã TẠO MỚI thành công hồ sơ KH!');
+      if (options?.continueAdding) {
+        clearForm();
+      } else {
+        setIsDrawerOpen(false);
+        clearForm();
+      }
       fetchCustomers();
     } catch (err: any) {
       showNotify('error', `Lỗi lưu trữ KH: ${err.message}`);
@@ -223,17 +248,24 @@ export function useCustomerListController() {
     searchNationalId,
     setSearchNationalId,
     formState: {
-      inputCif, setInputCif,
-      inputFullName, setInputFullName,
+      inputCif, setInputCif: (v: string) => setInputCif(v.replace(/\s+/g, '')),
+      inputFullName, setInputFullName: (v: string) => setInputFullName(v.toUpperCase()),
       inputNationalId, setInputNationalId: (v: string) => setInputNationalId(capDigits(v, NATIONAL_ID_CCCD_LENGTH)),
       inputPhone, setInputPhone: (v: string) => setInputPhone(capNumberList(v, PHONE_LENGTH)),
       inputEmail, setInputEmail,
       inputAddress, setInputAddress,
       inputAccountNumber, setInputAccountNumber: (v: string) => setInputAccountNumber(normalizeNumberList(v)),
-      inputMaritalStatus, setInputMaritalStatus,
-      inputCifKhlq, setInputCifKhlq,
+      inputMaritalStatus, setInputMaritalStatus: (v: string) => {
+        setInputMaritalStatus(v);
+        if (v === 'Đã kết hôn' && inputKhlqRelationship === 'Không có KHLQ') {
+          setInputKhlqRelationship('Vợ / Chồng');
+        } else if (v === 'Độc thân' && inputKhlqRelationship === 'Vợ / Chồng') {
+          setInputKhlqRelationship('Không có KHLQ');
+        }
+      },
+      inputCifKhlq, setInputCifKhlq: (v: string) => setInputCifKhlq(v.replace(/\s+/g, '')),
       inputKhlqRelationship, setInputKhlqRelationship,
-      inputSpouseName, setInputSpouseName,
+      inputSpouseName, setInputSpouseName: (v: string) => setInputSpouseName(v.toUpperCase()),
       inputSpouseNationalId, setInputSpouseNationalId: (v: string) => setInputSpouseNationalId(capDigits(v, NATIONAL_ID_CCCD_LENGTH)),
       inputSpousePhone, setInputSpousePhone: (v: string) => setInputSpousePhone(capNumberList(v, PHONE_LENGTH)),
       inputSpouseAccountNumber, setInputSpouseAccountNumber: (v: string) => setInputSpouseAccountNumber(normalizeNumberList(v)),
@@ -252,5 +284,6 @@ export function useCustomerListController() {
     openDrawerForEdit,
     handleSaveCustomer,
     handleDeleteCustomer,
+    parseAndApplySnippet,
   };
 }

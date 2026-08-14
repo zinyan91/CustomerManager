@@ -37,6 +37,7 @@ export const CustomerListView: React.FC = () => {
     openDrawerForEdit,
     handleSaveCustomer,
     handleDeleteCustomer,
+    parseAndApplySnippet,
   } = useCustomerListController();
 
   const containerCardBg = UI.containerCardBg;
@@ -194,7 +195,7 @@ export const CustomerListView: React.FC = () => {
         </div>
       </div>
 
-      {/* Drawer Form Component */}
+      {/* Customer Modal Form Component */}
       <CustomerDrawerForm
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
@@ -204,6 +205,7 @@ export const CustomerListView: React.FC = () => {
         formState={formState}
         onSave={handleSaveCustomer}
         onDelete={handleDeleteCustomer}
+        onParseSnippet={parseAndApplySnippet}
       />
     </div>
   );

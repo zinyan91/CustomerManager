@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   digitsOnly, capDigits, validateNationalId, validatePhone, validateCustomerForm,
-  splitNumberList, capNumberList, normalizeNumberList,
+  splitNumberList, capNumberList, normalizeNumberList, parseRawCustomerText,
 } from '../customerValidation';
 
 describe('digitsOnly / capDigits', () => {
@@ -144,5 +144,33 @@ describe('validateCustomerForm', () => {
     const loi = validateCustomerForm({ phone: '090', spousePhone: '098' });
     expect(loi[0]).toContain('Số điện thoại phải');
     expect(loi[1]).toContain('Số điện thoại KHLQ');
+  });
+});
+
+describe('parseRawCustomerText (Smart Paste)', () => {
+  it('nhận diện đầy đủ các trường từ văn bản có nhãn', () => {
+    const raw = 'CIF: 005299617 - KH: NGUYEN VAN AN - CCCD: 079090001234 - SDT: 0909123456 - STK: 190333444555 - ĐC: 123 Lê Lợi, Q1, TPHCM';
+    const parsed = parseRawCustomerText(raw);
+    expect(parsed.cif).toBe('005299617');
+    expect(parsed.fullName).toBe('NGUYEN VAN AN');
+    expect(parsed.nationalId).toBe('079090001234');
+    expect(parsed.phone).toBe('0909123456');
+    expect(parsed.accountNumber).toBe('190333444555');
+    expect(parsed.address).toBe('123 Lê Lợi, Q1, TPHCM');
+  });
+
+  it('nhận diện từ chuỗi phân cách bởi ký tự |', () => {
+    const raw = '005299617 | LÊ THỊ MAI | 079198004567 | 0987654321 | mai.le@gmail.com';
+    const parsed = parseRawCustomerText(raw);
+    expect(parsed.cif).toBe('005299617');
+    expect(parsed.fullName).toBe('LÊ THỊ MAI');
+    expect(parsed.nationalId).toBe('079198004567');
+    expect(parsed.phone).toBe('0987654321');
+    expect(parsed.email).toBe('mai.le@gmail.com');
+  });
+
+  it('xử lý an toàn khi văn bản rỗng hoặc không khớp', () => {
+    expect(parseRawCustomerText('')).toEqual({});
+    expect(parseRawCustomerText('   ')).toEqual({});
   });
 });

@@ -81,3 +81,78 @@ export function validateCustomerForm(values: CustomerFormValues): string[] {
     validatePhone(values.spousePhone, 'Số điện thoại KHLQ / Bảo lãnh'),
   ].filter((m): m is string => m !== null);
 }
+
+export interface ParsedCustomerSnippet {
+  cif?: string;
+  fullName?: string;
+  nationalId?: string;
+  phone?: string;
+  email?: string;
+  accountNumber?: string;
+  address?: string;
+}
+
+export function parseRawCustomerText(raw: string): ParsedCustomerSnippet {
+  if (!raw || !raw.trim()) return {};
+  const text = raw.trim();
+  const res: ParsedCustomerSnippet = {};
+
+  const cifMatch = text.match(/(?:cif|mã cif|ma cif)[\s:=-]+([0-9]{6,12})/i);
+  if (cifMatch) {
+    res.cif = cifMatch[1].trim();
+  }
+
+  const cccdMatch = text.match(/(?:cccd|cmnd|số cccd|so cccd|số cmnd|so cmnd|căn cước)[\s:=-]+([0-9\s]{9,16})/i);
+  if (cccdMatch) {
+    res.nationalId = digitsOnly(cccdMatch[1]);
+  }
+
+  const phoneMatch = text.match(/(?:sđt|sdt|đt|dt|phone|tel|di động|di dong)[\s:=-]+([0-9\s/;,.-]{10,30})/i);
+  if (phoneMatch) {
+    res.phone = capNumberList(phoneMatch[1], PHONE_LENGTH);
+  }
+
+  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  if (emailMatch) {
+    res.email = emailMatch[0].trim();
+  }
+
+  const stkMatch = text.match(/(?:stk|số tk|so tk|tài khoản|tai khoan|acct|account)[\s:=-]+([0-9\s/;,.-]{8,40})/i);
+  if (stkMatch) {
+    res.accountNumber = normalizeNumberList(stkMatch[1]);
+  }
+
+  const nameMatch = text.match(/(?:họ và tên|họ tên|ho ten|tên kh|ten kh|khách hàng|khach hang|kh)[\s:=-]+([^\n,;|–-]+)/i);
+  if (nameMatch) {
+    res.fullName = nameMatch[1].trim().toUpperCase();
+  }
+
+  const addrMatch = text.match(/(?:địa chỉ|dia chi|đc|dc|address)[\s:=-]+([^\n;]+)/i);
+  if (addrMatch) {
+    res.address = addrMatch[1].trim();
+  }
+
+  // Fallback: If not labeled, split by pipe or tab
+  if (!res.cif && !res.fullName) {
+    const parts = text.split(/[|\t]+/).map(p => p.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      for (const part of parts) {
+        const d = digitsOnly(part);
+        if (!res.cif && d.length >= 6 && d.length <= 9) {
+          res.cif = d;
+        } else if (!res.nationalId && (d.length === 9 || d.length === 12)) {
+          res.nationalId = d;
+        } else if (!res.phone && d.length === 10 && (d.startsWith('09') || d.startsWith('08') || d.startsWith('07') || d.startsWith('03') || d.startsWith('05'))) {
+          res.phone = d;
+        } else if (!res.fullName && /[a-zA-ZÀ-ỹ\s]{3,}/.test(part) && !part.includes('@')) {
+          res.fullName = part.toUpperCase();
+        } else if (!res.email && part.includes('@')) {
+          res.email = part;
+        }
+      }
+    }
+  }
+
+  return res;
+}
+

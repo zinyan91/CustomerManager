@@ -1,8 +1,7 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { UI } from '../../lib/uiClasses';
-import {
-  Calculator, Layers, TrendingUp, TrendingDown, ShieldCheck, Award, RefreshCw, BarChart2, AlertTriangle, FileText, PiggyBank, Percent, Loader2
-} from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { useCalculatorController } from '../../hooks/useCalculatorController';
 
 const Tool1LoanScheduleCalc = lazy(() => import('../calculator/Tool1LoanScheduleCalc').then(m => ({ default: m.Tool1LoanScheduleCalc })));
 const Tool2StkSingleCalc = lazy(() => import('../calculator/Tool2StkSingleCalc').then(m => ({ default: m.Tool2StkSingleCalc })));
@@ -14,48 +13,6 @@ const Tool7RepaymentMethodCompareCalc = lazy(() => import('../calculator/Tool7Re
 const Tool8InterestRateConversionCalc = lazy(() => import('../calculator/Tool8InterestRateConversionCalc').then(m => ({ default: m.Tool8InterestRateConversionCalc })));
 const Tool9OverduePenaltyCalc = lazy(() => import('../calculator/Tool9OverduePenaltyCalc').then(m => ({ default: m.Tool9OverduePenaltyCalc })));
 
-type ToolId = 'loan' | 'stk_single' | 'stk_multi' | 'rate_reduction' | 'credit_capacity' | 'prepayment_analysis' | 'repayment_compare' | 'rate_conversion' | 'overdue_penalty';
-
-interface ToolCategory {
-  id: 'credit' | 'stk' | 'rate';
-  label: string;
-  icon: React.ElementType;
-  tools: { id: ToolId; label: string; icon: React.ElementType }[];
-}
-
-const CATEGORIES: ToolCategory[] = [
-  {
-    id: 'credit',
-    label: '1. Khoản Vay & Thu Nợ',
-    icon: FileText,
-    tools: [
-      { id: 'loan', label: '1. Tính Lịch Thu Nợ Khoản Vay', icon: Calculator },
-      { id: 'credit_capacity', label: '5. Thẩm Định Hạn Mức (DTI/LTV)', icon: ShieldCheck },
-      { id: 'prepayment_analysis', label: '6. Phân Tích Trả Nợ Trước Hạn', icon: Award },
-      { id: 'repayment_compare', label: '7. So Sánh Gốc Đều vs Niên Kim', icon: BarChart2 },
-    ],
-  },
-  {
-    id: 'stk',
-    label: '2. Cho Vay Cầm Cố STK',
-    icon: PiggyBank,
-    tools: [
-      { id: 'stk_single', label: '2. Tính Cầm Cố STK Đơn', icon: Layers },
-      { id: 'stk_multi', label: '3. Tính Cầm Cố STK Tái Tục', icon: TrendingUp },
-    ],
-  },
-  {
-    id: 'rate',
-    label: '3. Lãi Suất & Phạt Quá Hạn',
-    icon: Percent,
-    tools: [
-      { id: 'rate_reduction', label: '4. Tính Giảm Lãi Suất Vay', icon: TrendingDown },
-      { id: 'rate_conversion', label: '8. Quy Đổi Lãi Phẳng & EAR', icon: RefreshCw },
-      { id: 'overdue_penalty', label: '9. Tính Phạt Chậm Trả Quá Hạn', icon: AlertTriangle },
-    ],
-  },
-];
-
 const ToolFallback = () => (
   <div className="flex items-center justify-center p-12 text-ink-muted bg-panel-muted/40 rounded-xl border border-line">
     <Loader2 className="w-5 h-5 animate-spin text-accent mr-2" />
@@ -65,26 +22,21 @@ const ToolFallback = () => (
 
 export const CalculatorView: React.FC = () => {
   const styles = UI;
-
-  const [activeCategory, setActiveCategory] = useState<'credit' | 'stk' | 'rate'>('credit');
-  const [activeTool, setActiveTool] = useState<ToolId>('loan');
-
-  const currentCategory = CATEGORIES.find(c => c.id === activeCategory) || CATEGORIES[0];
-
-  const handleSelectCategory = (catId: 'credit' | 'stk' | 'rate') => {
-    setActiveCategory(catId);
-    const cat = CATEGORIES.find(c => c.id === catId);
-    if (cat && cat.tools.length > 0) {
-      setActiveTool(cat.tools[0].id);
-    }
-  };
+  const {
+    activeCategory,
+    activeTool,
+    setActiveTool,
+    currentCategory,
+    handleSelectCategory,
+    categories,
+  } = useCalculatorController();
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
       {/* Category Tabs Top Bar */}
       <div className={`${styles.containerCardBg} rounded-xl p-2 border border-line shadow-sm flex flex-wrap items-center justify-between gap-3`}>
         <div className="flex items-center gap-2 flex-wrap">
-          {CATEGORIES.map(({ id, label, icon: Icon, tools }) => (
+          {categories.map(({ id, label, icon: Icon, tools }) => (
             <button
               key={id}
               type="button"

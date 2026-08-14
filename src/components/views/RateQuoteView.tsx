@@ -1,196 +1,84 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React from 'react';
 import { UI } from '../../lib/uiClasses';
-import { useRatePrograms } from '../../hooks/useRatePrograms';
 import { RateTierTable } from '../rate/RateTierTable';
 import { RateReferenceTables } from '../rate/RateReferenceTables';
 import {
   Percent, TrendingDown, PiggyBank, Loader2, AlertTriangle, ShieldAlert,
   FileText, Save, RefreshCw, Printer, Image as ImageIcon,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { fmtMoney, fmtDate, fmtPercent, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
-import { updateRateProgramTierAPI } from '../../lib/api';
-import {
-  resolvePostFixedRate, calcServiceFee, calcDepositInterest,
-  collectQuoteWarnings, hasBlockingWarning,
-  KIND_LABELS,
-} from '../../lib/rateQuote';
-import vietbankLogo from '../../assets/vietbank-logo.png?inline';
-import {
-  buildRateSheetHtml, buildRateSheetParts, findRateSheetBlockers, rateSheetFileBase,
-} from '../../lib/rateSheet';
-import {
-  renderHtmlToPngBlob, downloadBlob, A4_PORTRAIT_PX, A4_LANDSCAPE_PX,
-} from '../../lib/htmlToPng';
-import type { RateProgramKind } from '../../lib/rateQuote';
-import { printHtmlDoc } from '../../lib/printHtmlDoc';
+import { fmtMoney, fmtDate, fmtPercent, formatMoneyInput } from '../../lib/utils';
+import { KIND_LABELS, type RateProgramKind } from '../../lib/rateQuote';
+import { useRateQuoteController } from '../../hooks/useRateQuoteController';
+
+const KIND_TABS: { id: RateProgramKind; icon: React.ElementType }[] = [
+  { id: 'cho_vay_ngan_han', icon: Percent },
+  { id: 'cho_vay_trung_dai_han', icon: TrendingDown },
+  { id: 'huy_dong', icon: PiggyBank },
+];
 
 export const RateQuoteView: React.FC = () => {
-  const { isAdmin } = useAuth();
-
-  const [kind, setKind] = useState<RateProgramKind>('cho_vay_ngan_han');
-  const [onDate, setOnDate] = useState(todayIso);
-
-  const [preparedBy, setPreparedBy] = useState('');
-  const [exportingImage, setExportingImage] = useState(false);
-
-  const [selectedTierId, setSelectedTierId] = useState<number | null>(null);
-  const [amountStr, setAmountStr] = useState('1.000.000.000');
-  const [tenorStr, setTenorStr] = useState('6');
-  const [baseRateStr, setBaseRateStr] = useState('7.50');
-  const [casaStr, setCasaStr] = useState('');
-  const [isNewCustomer, setIsNewCustomer] = useState(false);
-  const [depositDaysStr, setDepositDaysStr] = useState('180');
-
-  const [showFeeTable, setShowFeeTable] = useState(false);
-  const [includeFeeInSheet, setIncludeFeeInSheet] = useState(true);
-
-  const [editRateStr, setEditRateStr] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState('');
-
   const {
-    loading, loadError, reload: loadAll,
-    setTiers,
-    program, programTiers, programPrepayFees, programFbeCodes,
-    programAuthorities, programFeeOptions, programConditions,
-    depositChannels, depositRows, hasFeeContent,
-  } = useRatePrograms(kind, onDate);
-
-  const lendingTiers = programTiers;
-
-  const sheetInput = useMemo(() => (program ? {
+    isAdmin,
+    kind,
+    setKind,
+    onDate,
+    setOnDate,
+    preparedBy,
+    setPreparedBy,
+    exportingImage,
+    selectedTierId,
+    setSelectedTierId,
+    amountStr,
+    setAmountStr,
+    tenorStr,
+    setTenorStr,
+    baseRateStr,
+    setBaseRateStr,
+    casaStr,
+    setCasaStr,
+    isNewCustomer,
+    setIsNewCustomer,
+    depositDaysStr,
+    setDepositDaysStr,
+    showFeeTable,
+    setShowFeeTable,
+    includeFeeInSheet,
+    setIncludeFeeInSheet,
+    editRateStr,
+    setEditRateStr,
+    saving,
+    saveMsg,
+    loading,
+    loadError,
+    loadAll,
     program,
-    tiers: programTiers,
-    prepaymentFees: programPrepayFees,
-    feeOptions: programFeeOptions,
-    conditions: programConditions,
-    preparedBy: preparedBy.trim() || undefined,
-    logoDataUri: vietbankLogo,
-    channel: null,
-    includeFees: includeFeeInSheet,
-  } : null), [program, programTiers, programPrepayFees, programFeeOptions, programConditions,
-    preparedBy, includeFeeInSheet, kind]);
-
-  const sheetBlockers = useMemo(
-    () => (sheetInput ? findRateSheetBlockers(sheetInput) : []),
-    [sheetInput]
-  );
-
-  const handleExportSheet = () => {
-    if (!sheetInput || sheetBlockers.length > 0) return;
-    const html = buildRateSheetHtml(sheetInput);
-    if (!printHtmlDoc(html, rateSheetFileBase(sheetInput.program))) {
-      setSaveMsg('Không mở được bản in. Thử lại hoặc tải trang lại.');
-    }
-  };
-
-  const handleExportImage = async () => {
-    if (!sheetInput || sheetBlockers.length > 0) return;
-    setExportingImage(true);
-    try {
-      const parts = buildRateSheetParts(sheetInput);
-      const blob = await renderHtmlToPngBlob({
-        styles: parts.styles,
-        bodyHtml: parts.bodyHtml,
-        page: parts.landscape ? A4_LANDSCAPE_PX : A4_PORTRAIT_PX,
-      });
-      downloadBlob(blob, `${parts.fileBase}.png`);
-    } catch (err: any) {
-      setSaveMsg(err?.message || 'Không xuất được hình ảnh.');
-    } finally {
-      setExportingImage(false);
-    }
-  };
-
-  useEffect(() => {
-    const pool = kind === 'huy_dong' ? programTiers : lendingTiers;
-    if (pool.length === 0) { setSelectedTierId(null); return; }
-    if (!pool.some(t => t.Id === selectedTierId)) setSelectedTierId(pool[0].Id);
-  }, [kind, programTiers, lendingTiers, selectedTierId]);
-
-  const selectedTier = useMemo(
-    () => programTiers.find(t => t.Id === selectedTierId) ?? null,
-    [programTiers, selectedTierId]
-  );
-
-  useEffect(() => {
-    setEditRateStr(
-      selectedTier && selectedTier.RateAnnual !== null && selectedTier.RateAnnual !== undefined
-        ? (selectedTier.RateAnnual * 100).toFixed(2)
-        : ''
-    );
-    setSaveMsg('');
-  }, [selectedTier]);
-
-  const amount = parseMoneyInput(amountStr);
-  const tenorMonths = parseInt(tenorStr, 10) || 0;
-  const baseRate = baseRateStr.trim() === '' ? null : (parseFloat(baseRateStr) || 0) / 100;
-  const casaAverage = casaStr.trim() === '' ? null : parseMoneyInput(casaStr);
-  const depositDays = parseInt(depositDaysStr, 10) || 0;
-
-  const warnings = useMemo(
-    () => collectQuoteWarnings({ program, tier: selectedTier, onDate, loanTenorMonths: tenorMonths }),
-    [program, selectedTier, onDate, tenorMonths]
-  );
-  const blocked = hasBlockingWarning(warnings);
-
-  const postFixedRate = useMemo(
-    () => resolvePostFixedRate(baseRate, program?.FloatingSpreadAnnual),
-    [baseRate, program]
-  );
-
-  const fee = useMemo(() => calcServiceFee({
-    disbursementAmount: amount,
-    feeRatio: selectedTier?.MinFeeRatio,
-    minFeeAmountVnd: program?.MinFeeAmountVnd,
-    casaAverage,
-    casaMinRatio: program?.CasaMinRatio,
-    casaShortfallAddon: program?.CasaShortfallFeeAddon,
-    newCustomerDiscount: isNewCustomer ? program?.NewCustomerFeeDiscount : 0,
-  }), [amount, selectedTier, program, casaAverage, isNewCustomer]);
-
-  const depositInterest = useMemo(
-    () => calcDepositInterest(amount, selectedTier?.RateAnnual, depositDays),
-    [amount, selectedTier, depositDays]
-  );
-
-  const handleSaveRate = async () => {
-    if (!selectedTier) return;
-    setSaving(true);
-    setSaveMsg('');
-    try {
-      const trimmed = editRateStr.trim();
-      const parsed = trimmed === '' ? null : parseFloat(trimmed);
-      if (trimmed !== '' && (parsed === null || isNaN(parsed))) {
-        throw new Error('Lãi suất không hợp lệ.');
-      }
-      if (parsed !== null && (parsed < 0 || parsed > 100)) {
-        throw new Error('Lãi suất phải trong khoảng 0 – 100 %/năm.');
-      }
-      const updated = await updateRateProgramTierAPI(selectedTier.Id, {
-        RateAnnual: parsed === null ? null : parsed / 100,
-      });
-      setTiers(prev => prev.map(t => (t.Id === updated.Id ? { ...t, ...updated } : t)));
-      setSaveMsg('Đã lưu.');
-    } catch (err: any) {
-      setSaveMsg(err?.message || 'Lưu thất bại.');
-    } finally {
-      setSaving(false);
-    }
-  };
+    programPrepayFees,
+    programFbeCodes,
+    programAuthorities,
+    programFeeOptions,
+    programConditions,
+    depositChannels,
+    depositRows,
+    hasFeeContent,
+    lendingTiers,
+    sheetBlockers,
+    handleExportSheet,
+    handleExportImage,
+    selectedTier,
+    amount,
+    baseRate,
+    depositDays,
+    warnings,
+    blocked,
+    postFixedRate,
+    fee,
+    depositInterest,
+    handleSaveRate,
+  } = useRateQuoteController();
 
   const cardBg = UI.containerCardBg;
-  const inputCls = `w-full p-2 rounded-md border text-xs font-mono bg-transparent ${
-    'border-line'
-  }`;
+  const inputCls = `w-full p-2 rounded-md border text-xs font-mono bg-transparent border-line`;
   const labelCls = 'block text-[11px] font-bold text-ink-faint mb-1';
-
-  const kindTabs: { id: RateProgramKind; icon: React.ElementType }[] = [
-    { id: 'cho_vay_ngan_han', icon: Percent },
-    { id: 'cho_vay_trung_dai_han', icon: TrendingDown },
-    { id: 'huy_dong', icon: PiggyBank },
-  ];
 
   if (loading) {
     return (
@@ -202,9 +90,9 @@ export const RateQuoteView: React.FC = () => {
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
-
+      {/* Program Selector Bar */}
       <div className={`${cardBg} rounded-xl p-2 border border-line shadow-sm flex flex-wrap items-center gap-2`}>
-        {kindTabs.map(({ id, icon: Icon }) => (
+        {KIND_TABS.map(({ id, icon: Icon }) => (
           <button
             key={id}
             type="button"
@@ -239,13 +127,13 @@ export const RateQuoteView: React.FC = () => {
       </div>
 
       {loadError && (
-        <div className="rounded-lg border border-neg/30 bg-neg-soft  p-3 text-xs font-bold text-neg">
+        <div className="rounded-lg border border-neg/30 bg-neg-soft p-3 text-xs font-bold text-neg">
           {loadError}
         </div>
       )}
 
       {!program && !loadError && (
-        <div className="rounded-lg border border-warn/30 bg-warn-soft  p-4 text-xs font-bold text-warn">
+        <div className="rounded-lg border border-warn/30 bg-warn-soft p-4 text-xs font-bold text-warn">
           Không có chương trình {KIND_LABELS[kind].toLowerCase()} nào hiệu lực tại ngày {fmtDate(onDate)}.
           Admin cần nhập chương trình cho kỳ này trước khi chào lãi suất.
         </div>
@@ -253,6 +141,7 @@ export const RateQuoteView: React.FC = () => {
 
       {program && (
         <>
+          {/* Program Header */}
           <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-2`}>
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
               <div>
@@ -286,6 +175,7 @@ export const RateQuoteView: React.FC = () => {
             </div>
           </div>
 
+          {/* Scope and Target */}
           {(program.ScopeText || program.TargetText) && (
             <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]`}>
               {program.TargetText && (
@@ -307,6 +197,7 @@ export const RateQuoteView: React.FC = () => {
             </div>
           )}
 
+          {/* Warnings */}
           {warnings.length > 0 && (
             <div className="space-y-2">
               {warnings.map((w, i) => (
@@ -314,8 +205,8 @@ export const RateQuoteView: React.FC = () => {
                   key={i}
                   className={`rounded-lg border p-3 text-xs font-bold flex items-start space-x-2 ${
                     w.level === 'block'
-                      ? 'border-neg/30 bg-neg-soft  text-neg'
-                      : 'border-warn/30 bg-warn-soft  text-warn'
+                      ? 'border-neg/30 bg-neg-soft text-neg'
+                      : 'border-warn/30 bg-warn-soft text-warn'
                   }`}
                 >
                   {w.level === 'block'
@@ -327,17 +218,19 @@ export const RateQuoteView: React.FC = () => {
             </div>
           )}
 
-        <RateTierTable
-          cardBg={cardBg}
-          kind={kind}
-          program={program}
-          lendingTiers={lendingTiers}
-          depositChannels={depositChannels}
-          depositRows={depositRows}
-          selectedTierId={selectedTierId}
-          setSelectedTierId={setSelectedTierId}
-        />
+          {/* Rate Tier Table */}
+          <RateTierTable
+            cardBg={cardBg}
+            kind={kind}
+            program={program}
+            lendingTiers={lendingTiers}
+            depositChannels={depositChannels}
+            depositRows={depositRows}
+            selectedTierId={selectedTierId}
+            setSelectedTierId={setSelectedTierId}
+          />
 
+          {/* Admin Rate Edit */}
           {isAdmin && selectedTier && (
             <div className={`${cardBg} rounded-lg p-4 border space-y-2`}>
               <div className="font-bold text-xs tracking-tight text-accent">
@@ -372,6 +265,7 @@ export const RateQuoteView: React.FC = () => {
             </div>
           )}
 
+          {/* Quote & Calculator Panel */}
           <div className={`${cardBg} rounded-lg p-4 border space-y-4`}>
             <div className="font-bold text-xs tracking-tight text-accent border-b border-line pb-2">
               {kind === 'huy_dong' ? 'TÍNH LÃI TIỀN GỬI DỰ KIẾN' : 'CHÀO LÃI SUẤT & PHÍ DỊCH VỤ'}
@@ -452,7 +346,7 @@ export const RateQuoteView: React.FC = () => {
 
             {kind === 'huy_dong' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-4 rounded-lg bg-accent-soft  border border-accent/30 ">
+                <div className="p-4 rounded-lg bg-accent-soft border border-accent/30">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">LÃI SUẤT CHÀO</div>
                   <div className="text-2xl font-extrabold text-accent font-mono mt-1">
                     {selectedTier?.RateAnnual === null || selectedTier?.RateAnnual === undefined
@@ -461,7 +355,7 @@ export const RateQuoteView: React.FC = () => {
                   </div>
                   <div className="text-[11px] text-ink-faint mt-1">{selectedTier?.Label || '—'}</div>
                 </div>
-                <div className="p-4 rounded-lg bg-pos-soft  border border-pos/30 ">
+                <div className="p-4 rounded-lg bg-pos-soft border border-pos/30">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">TIỀN LÃI DỰ KIẾN</div>
                   <div className="text-2xl font-extrabold text-pos font-mono mt-1">
                     {depositInterest === null ? '—' : fmtMoney(depositInterest)}
@@ -473,7 +367,7 @@ export const RateQuoteView: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="p-4 rounded-lg bg-accent-soft  border border-accent/30 ">
+                <div className="p-4 rounded-lg bg-accent-soft border border-accent/30">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">LSCV TRONG THỜI GIAN CỐ ĐỊNH</div>
                   <div className="text-2xl font-extrabold text-accent font-mono mt-1">
                     {selectedTier?.RateAnnual === null || selectedTier?.RateAnnual === undefined
@@ -486,7 +380,7 @@ export const RateQuoteView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-lg bg-warn-soft  border border-warn/30 ">
+                <div className="p-4 rounded-lg bg-warn-soft border border-warn/30">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">LSCV SAU THỜI GIAN CỐ ĐỊNH</div>
                   <div className="text-2xl font-extrabold text-warn font-mono mt-1">
                     {postFixedRate === null ? '—' : `${(postFixedRate * 100).toFixed(2)} %/năm`}
@@ -496,7 +390,7 @@ export const RateQuoteView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-lg bg-pos-soft  border border-pos/30 ">
+                <div className="p-4 rounded-lg bg-pos-soft border border-pos/30">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">PHÍ DỊCH VỤ TỐI THIỂU</div>
                   <div className="text-2xl font-extrabold text-pos font-mono mt-1">
                     {fee.feeAmount === null ? '—' : fmtMoney(fee.feeAmount)}
@@ -518,12 +412,13 @@ export const RateQuoteView: React.FC = () => {
             )}
 
             {blocked && (
-              <div className="rounded-lg border border-neg/30 bg-neg-soft  p-3 text-xs font-bold text-neg">
+              <div className="rounded-lg border border-neg/30 bg-neg-soft p-3 text-xs font-bold text-neg">
                 Không được dùng kết quả trên để chào khách khi còn cảnh báo đỏ ở trên.
               </div>
             )}
           </div>
 
+          {/* Export Panel */}
           <div className={`${cardBg} rounded-lg p-4 border space-y-3`}>
             <div className="font-bold text-xs tracking-tight text-accent border-b border-line pb-2 flex items-center space-x-1.5">
               <Printer className="w-4 h-4" />
@@ -576,7 +471,7 @@ export const RateQuoteView: React.FC = () => {
             )}
 
             {sheetBlockers.length > 0 ? (
-              <div className="rounded-md border border-neg/30 bg-neg-soft  p-3 space-y-1">
+              <div className="rounded-md border border-neg/30 bg-neg-soft p-3 space-y-1">
                 <div className="text-xs font-bold text-neg">
                   Chưa xuất được file cho khách hàng:
                 </div>
@@ -598,16 +493,17 @@ export const RateQuoteView: React.FC = () => {
             )}
           </div>
 
-        <RateReferenceTables
-          cardBg={cardBg}
-          programFeeOptions={programFeeOptions}
-          programConditions={programConditions}
-          programPrepayFees={programPrepayFees}
-          programAuthorities={programAuthorities}
-          programFbeCodes={programFbeCodes}
-          showFeeTable={showFeeTable}
-          setShowFeeTable={setShowFeeTable}
-        />
+          {/* Reference Tables */}
+          <RateReferenceTables
+            cardBg={cardBg}
+            programFeeOptions={programFeeOptions}
+            programConditions={programConditions}
+            programPrepayFees={programPrepayFees}
+            programAuthorities={programAuthorities}
+            programFbeCodes={programFbeCodes}
+            showFeeTable={showFeeTable}
+            setShowFeeTable={setShowFeeTable}
+          />
         </>
       )}
     </div>

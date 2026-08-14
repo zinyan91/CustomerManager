@@ -1,140 +1,47 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React from 'react';
 import { UI } from '../../lib/uiClasses';
 import { Landmark, Loader2, RefreshCw, FileText, Save, Info } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { fmtDate, fmtPercent, todayIso } from '../../lib/utils';
+import { fmtDate, fmtPercent } from '../../lib/utils';
+import {
+  COF_RATE_COLUMNS, COF_SECTION_LABELS, groupRateItems,
+  type CofRateColumnKey,
+} from '../../lib/cof';
+import { useCofController, ITEM_SECTIONS } from '../../hooks/useCofController';
 
 const fmtPercentEmpty = (v?: number | null) => fmtPercent(v, '');
-import {
-  fetchCofProgramsAPI, fetchCofStandardRatesAPI, fetchCofRateItemsAPI,
-  updateCofStandardRateAPI, updateCofRateItemAPI,
-} from '../../lib/api';
-import {
-  findActiveCofProgram, groupRateItems, calcMarginOverCof,
-  COF_RATE_COLUMNS, COF_SECTION_LABELS,
-} from '../../lib/cof';
-import type {
-  CofProgram, CofStandardRate, CofRateItem, CofRateColumnKey, CofSection,
-} from '../../lib/cof';
-
-const ITEM_SECTIONS: CofSection[] = [
-  'cam_co_stk_vnd', 'san_pham_dac_thu', 'tat_toan_truoc_han', 'no_qua_han', 'thanh_khoan',
-];
 
 export const CofView: React.FC = () => {
-  const { isAdmin } = useAuth();
-
-  const [onDate, setOnDate] = useState(todayIso);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
-  const [programs, setPrograms] = useState<CofProgram[]>([]);
-  const [rates, setRates] = useState<CofStandardRate[]>([]);
-  const [items, setItems] = useState<CofRateItem[]>([]);
-
-  const [editing, setEditing] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [saveMsg, setSaveMsg] = useState('');
-
-  const [lendingRateStr, setLendingRateStr] = useState('13.25');
-  const [tenorLabel, setTenorLabel] = useState('');
-  const [column, setColumn] = useState<CofRateColumnKey>('FixedRate');
-
-  const program = useMemo(() => findActiveCofProgram(programs, onDate), [programs, onDate]);
-
-  const loadAll = async () => {
-    setLoading(true);
-    setLoadError('');
-    try {
-      const progs = await fetchCofProgramsAPI();
-      setPrograms(progs);
-      const active = findActiveCofProgram(progs, onDate);
-      if (!active) { setRates([]); setItems([]); return; }
-      const [r, i] = await Promise.all([
-        fetchCofStandardRatesAPI(active.Id),
-        fetchCofRateItemsAPI(active.Id),
-      ]);
-      setRates(r);
-      setItems(i);
-    } catch (err: any) {
-      setLoadError(err?.message || 'Không tải được bảng giá mua bán vốn nội bộ.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadAll(); }, []);
-
-  const standardRates = useMemo(
-    () => rates.filter(r => r.Section === 'vnd_thong_thuong'),
-    [rates]
-  );
-
-  useEffect(() => {
-    if (standardRates.length === 0) return;
-    if (!standardRates.some(r => r.TenorLabel === tenorLabel)) {
-      setTenorLabel(standardRates[0].TenorLabel);
-    }
-  }, [standardRates, tenorLabel]);
-
-  const selectedCof = useMemo(() => {
-    const row = standardRates.find(r => r.TenorLabel === tenorLabel);
-    if (!row) return null;
-    const v = row[column];
-    return v === null || v === undefined || isNaN(v) ? null : v;
-  }, [standardRates, tenorLabel, column]);
-
-  const lendingRate = lendingRateStr.trim() === '' ? null : (parseFloat(lendingRateStr) || 0) / 100;
-  const margin = calcMarginOverCof(lendingRate, selectedCof);
-
-  const beginEdit = (key: string, value?: number | null) => {
-    setEditing(key);
-    setEditValue(value === null || value === undefined || isNaN(value) ? '' : (value * 100).toFixed(2));
-    setSaveMsg('');
-  };
-
-  const commitRate = async (row: CofStandardRate, col: CofRateColumnKey) => {
-    const trimmed = editValue.trim();
-    const parsed = trimmed === '' ? null : parseFloat(trimmed);
-    if (trimmed !== '' && (parsed === null || isNaN(parsed) || parsed < 0 || parsed > 100)) {
-      setSaveMsg('Giá trị phải trong khoảng 0 – 100 %/năm.');
-      return;
-    }
-    try {
-      const updated = await updateCofStandardRateAPI(row.Id, { [col]: parsed === null ? null : parsed / 100 });
-      setRates(prev => prev.map(r => (r.Id === updated.Id ? { ...r, ...updated } : r)));
-      setSaveMsg('Đã lưu.');
-    } catch (err: any) {
-      setSaveMsg(err?.message || 'Lưu thất bại.');
-    } finally {
-      setEditing(null);
-    }
-  };
-
-  const commitItem = async (item: CofRateItem) => {
-    const trimmed = editValue.trim();
-    const parsed = trimmed === '' ? null : parseFloat(trimmed);
-    if (trimmed !== '' && (parsed === null || isNaN(parsed) || parsed < 0 || parsed > 100)) {
-      setSaveMsg('Giá trị phải trong khoảng 0 – 100 %/năm.');
-      return;
-    }
-    try {
-      const updated = await updateCofRateItemAPI(item.Id, { RateAnnual: parsed === null ? null : parsed / 100 });
-      setItems(prev => prev.map(i => (i.Id === updated.Id ? { ...i, ...updated } : i)));
-      setSaveMsg('Đã lưu.');
-    } catch (err: any) {
-      setSaveMsg(err?.message || 'Lưu thất bại.');
-    } finally {
-      setEditing(null);
-    }
-  };
+  const {
+    isAdmin,
+    onDate,
+    setOnDate,
+    loading,
+    loadError,
+    loadAll,
+    program,
+    items,
+    standardRates,
+    editing,
+    setEditing,
+    editValue,
+    setEditValue,
+    saveMsg,
+    lendingRateStr,
+    setLendingRateStr,
+    tenorLabel,
+    setTenorLabel,
+    column,
+    setColumn,
+    selectedCof,
+    margin,
+    beginEdit,
+    commitRate,
+    commitItem,
+  } = useCofController();
 
   const cardBg = UI.containerCardBg;
-  const inputCls = `w-full p-2 rounded-md border text-xs font-mono bg-transparent ${
-    'border-line'
-  }`;
-  const cellCls = `w-full p-1 rounded text-[11px] font-mono text-center bg-transparent border ${
-    'border-accent/30'
-  }`;
+  const inputCls = `w-full p-2 rounded-md border text-xs font-mono bg-transparent border-line`;
+  const cellCls = `w-full p-1 rounded text-[11px] font-mono text-center bg-transparent border border-accent/30`;
 
   if (loading) {
     return (
@@ -146,7 +53,7 @@ export const CofView: React.FC = () => {
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
-
+      {/* Header Banner */}
       <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm flex flex-wrap items-center justify-between gap-3`}>
         <div className="flex items-center space-x-2">
           <Landmark className="w-5 h-5 text-accent" />
@@ -156,8 +63,18 @@ export const CofView: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <label className="text-[11px] font-bold text-ink-faint">Áp dụng ngày</label>
-          <input type="date" value={onDate} onChange={e => setOnDate(e.target.value)} className={`${inputCls} w-auto font-mono font-bold`} />
-          <button type="button" onClick={loadAll} title="Tải lại" className="p-2 rounded-lg bg-panel-muted text-ink-faint hover:text-accent transition-all">
+          <input
+            type="date"
+            value={onDate}
+            onChange={e => setOnDate(e.target.value)}
+            className={`${inputCls} w-auto font-mono font-bold`}
+          />
+          <button
+            type="button"
+            onClick={loadAll}
+            title="Tải lại"
+            className="p-2 rounded-lg bg-panel-muted text-ink-faint hover:text-accent transition-all"
+          >
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
@@ -177,6 +94,7 @@ export const CofView: React.FC = () => {
 
       {program && (
         <>
+          {/* Program Header */}
           <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-2`}>
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
               <div>
@@ -197,6 +115,7 @@ export const CofView: React.FC = () => {
             </div>
           </div>
 
+          {/* Quick COF & Margin Lookup */}
           <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-3`}>
             <div className="font-bold text-xs tracking-tight text-accent border-b border-line pb-2 flex items-center space-x-2">
               <Info className="w-4 h-4 text-accent" />
@@ -205,21 +124,39 @@ export const CofView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div>
                 <label className="block text-[11px] font-bold text-ink-faint mb-1">Kỳ hạn</label>
-                <select value={tenorLabel} onChange={e => setTenorLabel(e.target.value)} className={`${inputCls} ${'bg-panel'}`}>
-                  {standardRates.map(r => <option key={r.Id} value={r.TenorLabel}>{r.TenorLabel}</option>)}
+                <select
+                  value={tenorLabel}
+                  onChange={e => setTenorLabel(e.target.value)}
+                  className={`${inputCls} bg-panel`}
+                >
+                  {standardRates.map(r => (
+                    <option key={r.Id} value={r.TenorLabel}>{r.TenorLabel}</option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-ink-faint mb-1">Kỳ điều chỉnh lãi suất</label>
-                <select value={column} onChange={e => setColumn(e.target.value as CofRateColumnKey)} className={`${inputCls} ${'bg-panel'}`}>
-                  {COF_RATE_COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+                <select
+                  value={column}
+                  onChange={e => setColumn(e.target.value as CofRateColumnKey)}
+                  className={`${inputCls} bg-panel`}
+                >
+                  {COF_RATE_COLUMNS.map(c => (
+                    <option key={c.key} value={c.key}>{c.label}</option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-ink-faint mb-1">Lãi suất cho vay (%/năm)</label>
-                <input type="number" step="0.01" value={lendingRateStr} onChange={e => setLendingRateStr(e.target.value)} className={`${inputCls} font-bold`} />
+                <input
+                  type="number"
+                  step="0.01"
+                  value={lendingRateStr}
+                  onChange={e => setLendingRateStr(e.target.value)}
+                  className={`${inputCls} font-bold`}
+                />
               </div>
-              <div className="p-3 rounded-md bg-accent-soft  border border-accent/30 ">
+              <div className="p-3 rounded-md bg-accent-soft border border-accent/30">
                 <div className="text-[10px] font-bold text-ink-faint uppercase">COF → MARGIN</div>
                 <div className="font-mono font-extrabold text-accent mt-0.5">
                   {selectedCof === null ? 'Không có mức' : fmtPercentEmpty(selectedCof)}
@@ -235,6 +172,7 @@ export const CofView: React.FC = () => {
             </div>
           </div>
 
+          {/* Standard Rates Table */}
           <div className={`${cardBg} rounded-lg border overflow-hidden`}>
             <div className="p-3 border-b border-line flex flex-wrap items-center justify-between gap-2">
               <span className="font-bold text-xs tracking-tight text-accent">
@@ -291,7 +229,7 @@ export const CofView: React.FC = () => {
                             key={c.key}
                             onClick={() => isAdmin && beginEdit(key, value)}
                             className={`p-2 text-center font-mono ${blank ? 'text-ink-faint' : 'font-bold text-accent'} ${
-                              isAdmin ? 'cursor-pointer hover:bg-accent-soft ' : ''
+                              isAdmin ? 'cursor-pointer hover:bg-accent-soft' : ''
                             }`}
                           >
                             {blank ? '—' : fmtPercentEmpty(value)}
@@ -309,6 +247,7 @@ export const CofView: React.FC = () => {
             </div>
           </div>
 
+          {/* Special Item Sections */}
           {ITEM_SECTIONS.map(section => {
             const sectionItems = items.filter(i => i.Section === section);
             if (sectionItems.length === 0) return null;
@@ -331,7 +270,7 @@ export const CofView: React.FC = () => {
                       {groups.map((g, gi) => (
                         <React.Fragment key={gi}>
                           {g.group && (
-                            <tr className="bg-panel-muted ">
+                            <tr className="bg-panel-muted">
                               <td colSpan={3} className="px-[var(--row-px)] py-[var(--row-py)] font-bold text-ink-muted">{g.group}</td>
                             </tr>
                           )}
@@ -362,7 +301,7 @@ export const CofView: React.FC = () => {
                                     onClick={() => isAdmin && beginEdit(key, item.RateAnnual)}
                                     className={`p-2 text-center font-mono ${
                                       blank ? 'text-ink-faint' : 'font-bold text-accent'
-                                    } ${isAdmin ? 'cursor-pointer hover:bg-accent-soft ' : ''}`}
+                                    } ${isAdmin ? 'cursor-pointer hover:bg-accent-soft' : ''}`}
                                   >
                                     {blank ? '—' : item.RateAnnual === 0 ? 'Miễn phí' : fmtPercentEmpty(item.RateAnnual)}
                                   </td>
@@ -392,6 +331,7 @@ export const CofView: React.FC = () => {
             </div>
           )}
 
+          {/* Scope Footer Info */}
           <div className={`${cardBg} rounded-lg p-4 border text-[11px] text-ink-faint space-y-1`}>
             <div className="flex items-center space-x-1.5 font-bold text-ink-muted">
               <Info className="w-3.5 h-3.5 text-accent" />

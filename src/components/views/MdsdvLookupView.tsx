@@ -1,48 +1,31 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { UI } from '../../lib/uiClasses';
 import { Search, Target, Copy, Check, Wallet, Info } from 'lucide-react';
 import { AdaptiveTable } from '../AdaptiveTable';
-import {
-  searchMdsdv,
-  getLevel1Options,
-  countMdsdvEntries,
-  MDSDV_VERSION,
-} from '../../lib/mdsdv';
-
-const RESULT_LIMIT = 300;
+import { MDSDV_VERSION } from '../../lib/mdsdv';
+import { useMdsdvController, RESULT_LIMIT } from '../../hooks/useMdsdvController';
 
 export const MdsdvLookupView: React.FC = () => {
-
-  const [query, setQuery] = useState('');
-  const [level1Code, setLevel1Code] = useState('');
-  const [overdraftOnly, setOverdraftOnly] = useState(false);
-  const [copiedCode, setCopiedCode] = useState('');
-
-  const level1Options = useMemo(() => getLevel1Options(), []);
-  const totalEntries = useMemo(() => countMdsdvEntries(), []);
-
-  const search = useMemo(
-    () => searchMdsdv({ query, level1Code, overdraftOnly, limit: RESULT_LIMIT }),
-    [query, level1Code, overdraftOnly]
-  );
-
-  const handleCopy = (code: string) => {
-    if (!navigator.clipboard) return;
-    navigator.clipboard.writeText(code).then(
-      () => {
-        setCopiedCode(code);
-        window.setTimeout(() => setCopiedCode(''), 1500);
-      },
-      () => setCopiedCode('')
-    );
-  };
+  const {
+    query,
+    setQuery,
+    level1Code,
+    setLevel1Code,
+    overdraftOnly,
+    setOverdraftOnly,
+    copiedCode,
+    level1Options,
+    totalEntries,
+    search,
+    handleCopy,
+  } = useMdsdvController();
 
   const cardBg = UI.containerCardBg;
   const inputCls = 'w-full p-2.5 rounded-md border text-xs bg-transparent border-line';
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
-
+      {/* Header & Filter Controls */}
       <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-4`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-line pb-3">
           <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
@@ -76,7 +59,7 @@ export const MdsdvLookupView: React.FC = () => {
             <select
               value={level1Code}
               onChange={e => setLevel1Code(e.target.value)}
-              className={`${inputCls} ${'bg-panel'}`}
+              className={`${inputCls} bg-panel`}
             >
               <option value="">Tất cả ngành</option>
               {level1Options.map(o => (
@@ -100,72 +83,109 @@ export const MdsdvLookupView: React.FC = () => {
             </button>
           </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-faint">
-          <span>
-            Tìm thấy{' '}
-            <strong className="text-accent font-mono">
-              {search.total.toLocaleString('vi-VN')}
-            </strong>{' '}
-            mã
-            {search.truncated && ` — đang hiển thị ${search.items.length.toLocaleString('vi-VN')} mã đầu tiên`}
-          </span>
-          {search.truncated && <span>Thu hẹp từ khoá để xem đủ kết quả.</span>}
-        </div>
       </div>
 
+      {/* Results Table */}
       <div className={`${cardBg} rounded-lg border overflow-hidden`}>
+        <div className="p-3 border-b border-line flex items-center justify-between">
+          <span className="font-bold text-xs tracking-tight text-accent">
+            KẾT QUẢ ({search.totalMatches.toLocaleString('vi-VN')} MÃ PHÙ HỢP)
+          </span>
+          {search.truncated && (
+            <span className="text-[11px] text-ink-faint">
+              Chỉ hiển thị {RESULT_LIMIT} kết quả đầu — gõ thêm từ khoá để thu hẹp
+            </span>
+          )}
+        </div>
+
         <AdaptiveTable
-          maxHeight="620px"
+          maxHeight="560px"
           rows={search.items}
-          rowKey={e => e.code}
-          emptyText="Không tìm thấy mã MĐSDV nào khớp với điều kiện tra cứu."
-          cardTitle={e => e.purposeName}
-          cardSubtitle={e => e.code}
-          actionsLabel=""
-          actions={e => (
-            <button type="button" onClick={() => handleCopy(e.code)} title="Sao chép mã"
-              className="text-ink-faint hover:text-accent transition-colors">
-              {copiedCode === e.code ? <Check className="w-3.5 h-3.5 text-pos" /> : <Copy className="w-3.5 h-3.5" />}
+          rowKey={item => item.code}
+          emptyText="Không tìm thấy mục đích sử dụng vốn nào phù hợp."
+          cardTitle={item => item.name}
+          cardSubtitle={item => (
+            <div className="font-mono text-accent flex items-center gap-1.5 mt-0.5">
+              <span>{item.code}</span>
+              {item.isOverdraft && (
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-sans font-bold bg-accent-soft text-accent border border-accent/30">
+                  Thấu chi
+                </span>
+              )}
+            </div>
+          )}
+          actions={item => (
+            <button
+              type="button"
+              onClick={() => handleCopy(item.code)}
+              className="p-1.5 rounded-lg border border-line text-ink-faint hover:text-accent hover:bg-panel-muted transition-colors"
+              title="Sao chép mã"
+            >
+              {copiedCode === item.code ? <Check className="w-3.5 h-3.5 text-pos" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
           )}
           columns={[
-          { key: 'ma', label: 'Mã MĐSDV (cấp 6)', priority: 1,
-              render: e => <span className="font-mono font-bold text-accent">{e.code}</span> },
-          { key: 'fbe', label: 'Tên hiển thị trên FBE', priority: 1,
-              render: e => <span className="font-mono">{e.fbeName}</span> },
-          { key: 'mucDich', label: 'Mục đích chi tiết', priority: 2, render: e => e.purposeName },
-          { key: 'c5', label: 'Ngành cấp 5', priority: 3, render: e => (
-              <>
-                <span className="font-mono text-ink-faint">{e.level5Code}</span>
-                <span className="block">{e.level5Name}</span>
-              </>
-            ) },
-          { key: 'c1', label: 'Ngành cấp 1', priority: 3, render: e => (
-              <>
-                <span className="font-mono text-ink-faint">{e.level1Code}</span>
-                <span className="block text-ink-faint">{e.level1Name}</span>
-              </>
-            ) },
-          { key: 'thauChi', label: 'Thấu chi', priority: 1, align: 'center',
-              render: e => e.allowsOverdraft
-                ? <span className="text-pos font-bold">Có</span>
-                : <span className="text-ink-faint">—</span> },
-        ]}
+            {
+              key: 'code',
+              label: 'MÃ CẤP 6 (FBE)',
+              priority: 1,
+              render: item => (
+                <div className="flex items-center space-x-1.5">
+                  <span className="font-mono font-bold text-accent">{item.code}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(item.code)}
+                    className="p-1 rounded text-ink-faint hover:text-accent hover:bg-panel-muted transition-colors"
+                    title="Sao chép mã"
+                  >
+                    {copiedCode === item.code ? <Check className="w-3 h-3 text-pos" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+              ),
+            },
+            {
+              key: 'name',
+              label: 'TÊN MỤC ĐÍCH SỬ DỤNG VỐN',
+              priority: 1,
+              render: item => (
+                <div className="space-y-0.5">
+                  <div className="font-bold text-ink">{item.name}</div>
+                  <div className="text-[11px] text-ink-faint">
+                    {item.level1Name} → {item.level2Name}
+                  </div>
+                </div>
+              ),
+            },
+            {
+              key: 'tag',
+              label: 'ĐẶC THÙ',
+              priority: 2,
+              align: 'center',
+              render: item => (
+                item.isOverdraft ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent-soft text-accent border border-accent/30 font-mono">
+                    THẤU CHI
+                  </span>
+                ) : (
+                  <span className="text-ink-faint font-mono">—</span>
+                )
+              ),
+            },
+          ]}
         />
       </div>
 
-      <div className={`${cardBg} rounded-lg p-4 border space-y-1.5 text-[11px] text-ink-faint`}>
-        <div className="flex items-center space-x-1.5 font-bold text-ink-muted">
-          <Info className="w-3.5 h-3.5 text-accent" />
-          <span>QUY TẮC CẤU TRÚC MÃ</span>
+      {/* Footer Info */}
+      <div className={`${cardBg} rounded-lg p-3 border text-[11px] text-ink-faint flex items-start space-x-2`}>
+        <Info className="w-4 h-4 shrink-0 mt-0.5 text-accent" />
+        <div className="space-y-0.5">
+          <div>
+            • Tra cứu hỗ trợ tìm theo <strong>mã</strong> (vd <code>CEA0111001</code>) hoặc <strong>tên ngành</strong> không dấu.
+          </div>
+          <div>
+            • Mã cấp 6 dùng để nhập vào hệ thống core banking khi lập hồ sơ vay vốn, khế ước nhận nợ hoặc mở tài khoản thấu chi.
+          </div>
         </div>
-        <div>• Mã MĐSDV ngành cấp 1 = CE + mã ngành cấp 1 theo VSIC.</div>
-        <div>• Mã MĐSDV ngành cấp 2–5 = CE + mã ngành cấp 1 + mã ngành cấp 2–5 tương ứng.</div>
-        <div>• Mã MĐSDV chi tiết (cấp 6) = mã MĐSDV ngành cấp 5 + mã chi tiết.</div>
-        <div>• Vay tiêu dùng phục vụ đời sống: mã MĐSDV chi tiết = CET00000 + mã chi tiết.</div>
-        <div>• Tên hiển thị trên FBE = 8 ký tự cuối của mã cấp 6 + tên mục đích chi tiết.</div>
-        <div>• Cột “Thấu chi” đánh dấu các mã có trong danh mục tra cứu dành cho tài khoản thấu chi.</div>
       </div>
     </div>
   );

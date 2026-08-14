@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI } from '../../lib/api';
-import { parseAnyDate, fmtDate, parseMoneyInput } from '../../lib/utils';
-import { defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue, maxLoanFromCollateral } from '../../lib/collateralMath';
+import { parseAnyDate, fmtDate, parseMoneyInput, fmtMoney } from '../../lib/utils';
+import { defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue, maxLoanFromCollateral, appraisalStatus } from '../../lib/collateralMath';
 import type { Collateral, Customer } from '../../types';
 import { UI } from '../../lib/uiClasses';
 import { CollateralSearchBar } from '../collateral/CollateralSearchBar';
@@ -223,10 +223,48 @@ export const CollateralView: React.FC = () => {
     if (colPage > totalPages) setColPage(totalPages);
   }, [colPage, totalPages]);
 
+  const totalCollateralVal = collaterals.reduce((sum, c) => sum + collateralValue(c), 0);
+  const totalMaxLoanVal = collaterals.reduce((sum, c) => sum + maxLoanFromCollateral(c), 0);
+  const weightedLtvVal = totalCollateralVal > 0 ? (totalMaxLoanVal / totalCollateralVal) * 100 : 0;
+  const alertCollateralsCount = collaterals.filter(c => {
+    const st = appraisalStatus(c);
+    return st === 'expired' || st === 'expiring_soon' || st === 'missing';
+  }).length;
+
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
-
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
+
+      {/* Collateral KPI Header */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className={`${styles.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-accent" />
+          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng giá trị TSĐB</div>
+          <div className="font-mono font-bold text-base text-accent">{fmtMoney(totalCollateralVal)}</div>
+          <div className="text-[11px] text-ink-faint">{collaterals.length} Tài sản bảo đảm đang quản lý</div>
+        </div>
+
+        <div className={`${styles.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-pos" />
+          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Sức cấp tín dụng tối đa</div>
+          <div className="font-mono font-bold text-base text-pos">{fmtMoney(totalMaxLoanVal)}</div>
+          <div className="text-[11px] text-ink-faint">Hạn mức tối đa theo giá trị LTV</div>
+        </div>
+
+        <div className={`${styles.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-warn" />
+          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">LTV Bình quân danh mục</div>
+          <div className="font-mono font-bold text-base text-warn">{weightedLtvVal.toFixed(1)}%</div>
+          <div className="text-[11px] text-ink-faint">Tỉ lệ tài trợ tín dụng an toàn</div>
+        </div>
+
+        <div className={`${styles.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-neg" />
+          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Cảnh báo định giá</div>
+          <div className="font-mono font-bold text-base text-neg">{alertCollateralsCount} Tài sản</div>
+          <div className="text-[11px] text-ink-faint">Sắp hết hạn / Quá hạn / Chưa định giá</div>
+        </div>
+      </div>
 
       <CollateralSearchBar
         styles={styles}

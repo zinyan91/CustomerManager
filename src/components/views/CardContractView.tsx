@@ -256,17 +256,36 @@ export const CardContractView: React.FC = () => {
         </div>
 
         {customer && (
-          <div className="flex items-center gap-6 text-xs flex-wrap">
-            <span className={UI.labelStyle}>
-              Số hợp đồng thẻ: <strong className="text-ink">{contracts.length}</strong>
-            </span>
-            <span className={UI.labelStyle}>
-              Tổng hạn mức thẻ đang hiệu lực: <strong className="text-accent font-mono">{fmtMoney(totalGranted)}</strong>
-            </span>
-            <button type="button" className={`${BTN_PRIMARY} px-3 py-1.5 text-xs flex items-center gap-1.5`}
-              onClick={() => resetForm()}>
-              <Plus size={14} /> Thêm hợp đồng thẻ
-            </button>
+          <div className="pt-2 border-t border-line grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Mã CIF & Khách hàng</div>
+              <div className="font-mono font-bold text-sm text-accent">{customer.CifKh || '—'}</div>
+              <div className="font-bold text-xs truncate text-ink">{customer.FullName}</div>
+            </div>
+
+            <div className="space-y-1 border-l border-line pl-4">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng HĐ thẻ đã cấp</div>
+              <div className="font-mono font-bold text-sm text-ink">{contracts.length} HĐ</div>
+              <div className="text-[11px] text-ink-faint">
+                {contracts.filter(c => !c.IsClosed).length} Thẻ đang mở hiệu lực
+              </div>
+            </div>
+
+            <div className="space-y-1 border-l border-line pl-4">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng hạn mức thẻ đã cấp</div>
+              <div className="font-mono font-bold text-sm text-accent">{fmtMoney(totalGranted)}</div>
+              <div className="text-[11px] text-ink-faint">Quy mô hạn mức tín dụng thẻ</div>
+            </div>
+
+            <div className="space-y-1 border-l border-line pl-4 flex items-center justify-end">
+              <button
+                type="button"
+                className={`${BTN_PRIMARY} px-4 py-2 text-xs flex items-center gap-1.5 font-bold shadow-xs`}
+                onClick={() => resetForm()}
+              >
+                <Plus size={14} /> Thêm hợp đồng thẻ mới
+              </button>
+            </div>
           </div>
         )}
       </div>

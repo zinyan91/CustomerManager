@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
 import {
-  CARD_COLLATERAL_KINDS,
   activeCardPolicies, searchCardPolicies,
   type CardCollateralKind,
 } from '../lib/cardContract';

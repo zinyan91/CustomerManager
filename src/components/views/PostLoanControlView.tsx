@@ -1,6 +1,6 @@
 import React from 'react';
 import { ShieldCheck, Loader2, Save, X } from 'lucide-react';
-import { CONTROL_TYPE_LABEL, type ControlItemWithRecord } from '../../lib/postLoanControl';
+import { CONTROL_TYPE_LABEL, CONTROL_RESULT_LABEL, overdueDaysOf, type ControlItemWithRecord } from '../../lib/postLoanControl';
 import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
 import { assetClassLabel, defaultLtvForAssetType } from '../../lib/collateralMath';
 import { UI } from '../../lib/uiClasses';
@@ -52,9 +52,43 @@ export const PostLoanControlView: React.FC = () => {
     openModal,
     closeModal,
     handleSave,
-    statusBadge,
     scopeOf,
   } = usePostLoanControlController();
+
+  const statusBadge = (it: ControlItemWithRecord) => {
+    if (it.status === 'done') {
+      const r = it.record?.Result;
+      const color = r === 'fail'
+        ? 'bg-neg-soft text-neg border-neg/30 '
+        : r === 'watch'
+          ? 'bg-warn-soft text-warn border-warn/30 '
+          : 'bg-pos-soft text-pos border-pos/30 ';
+      return (
+        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${color}`}>
+          {r ? CONTROL_RESULT_LABEL[r] : 'Đã thực hiện'}
+        </span>
+      );
+    }
+    if (it.status === 'overdue') {
+      return (
+        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-neg-soft text-neg border-neg/30 ">
+          Quá hạn {overdueDaysOf(it)} ngày
+        </span>
+      );
+    }
+    if (it.status === 'due_soon') {
+      return (
+        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-warn-soft text-warn border-warn/30 ">
+          Còn {it.daysRemaining} ngày
+        </span>
+      );
+    }
+    return (
+      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-panel-muted text-ink-faint border-line">
+        Còn {it.daysRemaining} ngày
+      </span>
+    );
+  };
 
   const allColumns: AdaptiveColumn<ControlItemWithRecord>[] = [
     { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: it => (

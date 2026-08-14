@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useWork } from '../context/WorkContext';
 import {
   fetchContractsAPI, fetchCollateralsAPI, fetchCustomersAPI,
@@ -8,7 +8,6 @@ import {
 import type { Collateral, Customer, LoanContract, PostLoanControlRecord, ControlResult } from '../types';
 import {
   generateControlSchedule, mergeControlRecords, summarizeWithRecords,
-  CONTROL_RESULT_LABEL, overdueDaysOf,
   type ControlItemWithRecord, type ControlType,
 } from '../lib/postLoanControl';
 import { parseMoneyInput, todayIso } from '../lib/utils';
@@ -176,41 +175,6 @@ export function usePostLoanControlController() {
     }
   }, [editing, modalDate, modalReappraise, modalValue, modalTenor, modalAssetType, modalResult, modalFindings, showNotify, closeModal, loadAll]);
 
-  const statusBadge = useCallback((it: ControlItemWithRecord) => {
-    if (it.status === 'done') {
-      const r = it.record?.Result;
-      const color = r === 'fail'
-        ? 'bg-neg-soft text-neg border-neg/30 '
-        : r === 'watch'
-          ? 'bg-warn-soft text-warn border-warn/30 '
-          : 'bg-pos-soft text-pos border-pos/30 ';
-      return (
-        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${color}`}>
-          {r ? CONTROL_RESULT_LABEL[r] : 'Đã thực hiện'}
-        </span>
-      );
-    }
-    if (it.status === 'overdue') {
-      return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-neg-soft text-neg border-neg/30 ">
-          Quá hạn {overdueDaysOf(it)} ngày
-        </span>
-      );
-    }
-    if (it.status === 'due_soon') {
-      return (
-        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-warn-soft text-warn border-warn/30 ">
-          Còn {it.daysRemaining} ngày
-        </span>
-      );
-    }
-    return (
-      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-panel-muted text-ink-faint border-line">
-        Còn {it.daysRemaining} ngày
-      </span>
-    );
-  }, []);
-
   const scopeOf = useCallback((it: ControlItemWithRecord) => {
     if (it.type === 'purpose') return it.contractNumbers[0] || '—';
     if (it.type === 'periodic') return `${it.masterHdtd} · ${it.contractNumbers.length} KUNN`;
@@ -263,7 +227,6 @@ export function usePostLoanControlController() {
     openModal,
     closeModal,
     handleSave,
-    statusBadge,
     scopeOf,
   };
 }

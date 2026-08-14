@@ -8,7 +8,7 @@ import {
   HEADING_SCREEN, SECTION_LABEL, ROW_RAIL_ALERT, ROW_RAIL_NEUTRAL,
 } from '../../lib/uiClasses';
 import {
-  emptyDraft, hasSettledAnswer, isAnswerCorrect, isMultiAnswer,
+  hasSettledAnswer, isAnswerCorrect, isMultiAnswer,
 } from '../../lib/quizBank';
 import { importQuizQuestionsAPI } from '../../lib/api';
 import { Toast } from '../Toast';
@@ -32,7 +32,6 @@ export const QuizBankView: React.FC = () => {
     setQuery,
     setPage,
     formOpen,
-    setFormOpen,
     editingId,
     draft,
     setDraft,

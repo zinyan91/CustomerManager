@@ -14,7 +14,7 @@ import {
   getEffectiveActiveRate,
   buildRateFields,
 } from '../lib/rateResolution';
-import { maxLoanFromCollateral } from '../lib/collateralMath';
+import { totalUsableCapacity } from '../lib/collateralMath';
 import { checkKunnAgainstContract, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf } from '../lib/creditContract';
 import { useWork } from '../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../lib/creditLimit';
@@ -321,7 +321,7 @@ export function useLoanPortfolioController() {
   );
 
   const matchedHdtdAmount = activeGroupForForm?.granted || creditLimitNum || 0;
-  const maxAllowedLoanLtv = maxLoanFromCollateral(collaterals.filter(c => selectedCollateralIds.includes(c.Id)), todayIso());
+  const maxAllowedLoanLtv = totalUsableCapacity(collaterals.filter(c => selectedCollateralIds.includes(c.Id)), todayIso());
   const currentMaxAllowedLoan = Math.min(
     matchedHdtdAmount > 0 ? matchedHdtdAmount : Infinity,
     maxAllowedLoanLtv

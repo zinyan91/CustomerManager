@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI } from '../lib/api';
 import { parseAnyDate, fmtDate, parseMoneyInput } from '../lib/utils';
 import {
-  defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue, maxLoanFromCollateral,
+  defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue, maxLoanFromCollateral, appraisalStatus,
 } from '../lib/collateralMath';
 import type { Collateral, Customer } from '../types';
 

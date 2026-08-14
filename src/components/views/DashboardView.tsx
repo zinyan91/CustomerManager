@@ -64,8 +64,6 @@ export const DashboardView: React.FC = () => {
     totalLimit,
     totalCollateralVal,
     weightedLtv,
-    theConHieuLuc,
-    hanMucTheDaCap,
     loanMethodStats,
     debtGroupStats,
   } = useMemo(() => {

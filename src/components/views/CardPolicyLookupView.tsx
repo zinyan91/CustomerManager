@@ -221,21 +221,23 @@ export const CardPolicyLookupView: React.FC = () => {
                 className={`w-full rounded-md pl-8 pr-3 py-2 border ${UI.inputStyle}`} />
             </div>
 
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap pt-1">
               {([['ALL', 'Tất cả'], ...CARD_COLLATERAL_KINDS.map(k => [k.value, k.label] as const)] as
                 [KindFilter, string][]).map(([value, label]) => (
                 <button key={value} type="button"
                   onClick={() => setKind(value)}
-                  className={`${BTN_SECONDARY} px-2.5 py-1 text-[11px] ${
-                    kind === value ? 'border-accent text-accent' : ''
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                    kind === value
+                      ? 'bg-accent text-accent-ink border-accent shadow-xs'
+                      : 'bg-panel-muted text-ink-muted border-line hover:border-accent hover:text-accent'
                   }`}>
-                  {label} <span className="text-ink-faint">({countOf(value)})</span>
+                  {label} <span className="font-mono font-normal opacity-75">({countOf(value)})</span>
                 </button>
               ))}
             </div>
 
-            <div className="text-[10px] text-ink-faint">
-              Hiện {rows.length}/{total} mã. Nhấp vào một dòng để xem điều kiện và hồ sơ bổ sung.
+            <div className="text-[11px] text-ink-faint pt-1">
+              Hiện {rows.length}/{total} mã chính sách phát hành thẻ. Nhấp vào dòng để xem chi tiết điều kiện.
             </div>
           </div>
 

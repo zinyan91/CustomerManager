@@ -116,13 +116,51 @@ export const BusinessPlanView: React.FC = () => {
         <ToiLoanCalcSection />
       ) : (
         <>
-          <div className={`${UI.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-3`}>
-            <div className="flex items-center gap-2 mb-3">
-              <ClipboardList className="w-5 h-5 text-accent" />
-              <h2 className="text-sm font-bold tracking-tight text-accent">BẢNG TÍNH HẠN MỨC</h2>
-              <span className="text-[11px] text-ink-faint">
-                Bảng nhập liệu cho tờ trình · không lưu, đóng tab là mất
-              </span>
+          <div className={`${UI.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-4`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-3">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-accent" />
+                <div>
+                  <h2 className="text-sm font-bold tracking-tight text-accent uppercase">BẢNG TÍNH HẠN MỨC TÍN DỤNG</h2>
+                  <p className="text-[11px] text-ink-faint">
+                    Thẩm định phương án kinh doanh & nhu cầu vốn lưu động
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={exportSheets}
+                  className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all shadow-xs"
+                >
+                  <FileDown className="w-3.5 h-3.5" />
+                  <span>Xuất Excel Tờ trình (.xlsx)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Financial Health KPI Header */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Doanh thu kế hoạch năm</div>
+                <div className="font-mono font-bold text-sm text-accent">{result.plan.revenueAnnual.toLocaleString('vi-VN')} {UNIT_LABEL[unit]}</div>
+                <div className="text-[11px] text-ink-faint">Quy mô doanh thu dự kiến</div>
+              </div>
+
+              <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Lợi nhuận ròng kế hoạch</div>
+                <div className="font-mono font-bold text-sm text-pos">{result.plan.profitAfterTax.toLocaleString('vi-VN')} {UNIT_LABEL[unit]}</div>
+                <div className="text-[11px] text-ink-faint">Lợi nhuận sau thuế năm</div>
+              </div>
+
+              <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Hạn mức đề xuất cấp</div>
+                <div className="font-mono font-bold text-sm text-warn">
+                  {(result.limit ? result.limit.plan.avgWorkingCapitalNeed : result.eachTime ? result.eachTime.recommended : 0).toLocaleString('vi-VN')} {UNIT_LABEL[unit]}
+                </div>
+                <div className="text-[11px] text-ink-faint">Nhu cầu vốn lưu động bình quân</div>
+              </div>
             </div>
 
         <div className="grid grid-cols-2 md:grid-cols-7 gap-2 items-end">

@@ -293,18 +293,34 @@ export const PostLoanControlView: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: 'Quá hạn', value: summary.overdue, color: 'text-neg' },
-          { label: 'Sắp tới hạn', value: summary.dueSoon, color: 'text-warn' },
-          { label: 'Chưa tới hạn', value: summary.upcoming, color: 'text-ink-faint' },
-          { label: 'Đã thực hiện', value: summary.done, color: 'text-pos' },
-        ].map(s => (
-          <div key={s.label} className={`${cardBg} rounded-lg p-3 border`}>
-            <div className="text-[10px] uppercase text-ink-faint font-semibold">{s.label}</div>
-            <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-neg" />
+          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Đợt kiểm soát quá hạn</div>
+          <div className="font-mono font-bold text-base text-neg">{summary.overdue} Đợt</div>
+          <div className="text-[11px] text-ink-faint">Cần tiến hành kiểm tra khẩn cấp</div>
+        </div>
+
+        <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-warn" />
+          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Đợt kiểm soát sắp tới hạn</div>
+          <div className="font-mono font-bold text-base text-warn">{summary.dueSoon} Đợt</div>
+          <div className="text-[11px] text-ink-faint">Cần gửi thông báo nhắc lịch</div>
+        </div>
+
+        <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-accent" />
+          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Chưa tới hạn kiểm tra</div>
+          <div className="font-mono font-bold text-base text-accent">{summary.upcoming} Đợt</div>
+          <div className="text-[11px] text-ink-faint">Theo dõi lịch đợt định kỳ</div>
+        </div>
+
+        <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-pos" />
+          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Đã hoàn thành kiểm soát</div>
+          <div className="font-mono font-bold text-base text-pos">{summary.done} Đợt</div>
+          <div className="text-[11px] text-ink-faint">Đã ghi nhận biên bản kiểm tra</div>
+        </div>
       </div>
 
       <div className={`${cardBg} rounded-lg p-3 border flex flex-wrap items-center gap-2`}>

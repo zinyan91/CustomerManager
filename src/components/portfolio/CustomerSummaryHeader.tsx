@@ -29,7 +29,7 @@ export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
   handleNewContract,
 }) => {
   return (
-    <div className={`${containerCardBg} rounded-lg p-4 flex flex-wrap items-center justify-between gap-4 border`}>
+    <div className={`${containerCardBg} rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 border border-line shadow-sm`}>
       <div className="flex items-center space-x-3">
         <div className="bg-accent rounded-full p-2.5 ">
           <User className="w-5 h-5 text-accent-ink" />

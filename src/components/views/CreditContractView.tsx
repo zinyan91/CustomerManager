@@ -122,6 +122,7 @@ export const CreditContractView: React.FC = () => {
   );
 
   const closedCount = summaries.filter(s => s.contract.IsClosed).length;
+  const openContractsCount = summaries.filter(s => !s.contract.IsClosed).length;
 
   const closeCheck = useMemo(
     () => editing
@@ -261,32 +262,47 @@ export const CreditContractView: React.FC = () => {
       </div>
 
       {customer && (
-        <div className={`${containerCardBg} rounded-lg border p-3 grid grid-cols-2 md:grid-cols-4 gap-3`}>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-ink-faint">Mã CIF</div>
+        <div className={`${containerCardBg} rounded-xl border border-line shadow-sm p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4`}>
+          <div className="space-y-1">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Mã CIF & Khách hàng</div>
             <div className="font-mono font-bold text-sm text-accent">{customer.CifKh || '—'}</div>
+            <div className="font-bold text-xs truncate text-ink" title={customer.FullName}>{customer.FullName}</div>
           </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-ink-faint">Khách hàng</div>
-            <div className="font-bold text-sm truncate" title={customer.FullName}>{customer.FullName}</div>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-ink-faint">Số HĐTD đang chọn</div>
-            <div className="font-mono font-bold text-sm text-accent truncate">
-              {showForm
-                ? (form.HdtdNumber?.trim() || (editing ? editing.HdtdNumber : 'HĐTD mới — chưa nhập số'))
-                : '— chưa chọn —'}
+
+          <div className="space-y-1 border-l border-line pl-4">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng hạn mức đã cấp</div>
+            <div className="font-mono font-bold text-sm text-accent">
+              {fmtMoney(summaries.reduce((sum, s) => sum + (s.contract.ContractAmount || 0), 0))}
+            </div>
+            <div className="text-[11px] text-ink-faint">
+              {openContractsCount} HĐTD mở / {summaries.length} Tổng HĐ
             </div>
           </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-ink-faint">Số HĐTD của KH</div>
-            <div className="font-bold text-sm">
-              {summaries.length} HĐTD
-              {closedCount > 0 && (
-                <span className="ml-1 text-[11px] font-normal text-ink-faint">
-                  ({closedCount} đã đóng)
-                </span>
-              )}
+
+          <div className="space-y-1 border-l border-line pl-4">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Dư nợ KUNN hiện hữu</div>
+            <div className="font-mono font-bold text-sm text-warn">
+              {fmtMoney(summaries.reduce((sum, s) => sum + s.outstanding, 0))}
+            </div>
+            <div className="text-[11px] text-ink-faint">
+              Quy mô đang lưu nợ
+            </div>
+          </div>
+
+          <div className="space-y-1 border-l border-line pl-4">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Hạn mức khả dụng</div>
+            <div className="font-mono font-bold text-sm text-pos">
+              {fmtMoney(Math.max(0, summaries.reduce((sum, s) => sum + (s.contract.ContractAmount || 0), 0) - summaries.reduce((sum, s) => sum + s.outstanding, 0)))}
+            </div>
+            <div className="text-[11px] text-ink-faint">Sẵn sàng giải ngân mới</div>
+          </div>
+
+          <div className="space-y-1 border-l border-line pl-4 flex flex-col justify-center">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Đang chọn HĐTD</div>
+            <div className="font-mono font-bold text-xs text-accent truncate">
+              {showForm
+                ? (form.HdtdNumber?.trim() || (editing ? editing.HdtdNumber : 'HĐTD mới'))
+                : '— chưa chọn —'}
             </div>
           </div>
         </div>

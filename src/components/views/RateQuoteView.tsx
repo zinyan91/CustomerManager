@@ -253,7 +253,7 @@ export const RateQuoteView: React.FC = () => {
 
       {program && (
         <>
-          <div className={`${cardBg} rounded-lg p-4 border space-y-2`}>
+          <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-2`}>
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
               <div>
                 <div className="flex items-center space-x-2">
@@ -269,17 +269,17 @@ export const RateQuoteView: React.FC = () => {
               </div>
               <div className="flex flex-col items-start md:items-end gap-1">
                 {program.SourceVerified ? (
-                  <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-pos-soft text-pos">
-                    ĐÃ ĐỐI CHIẾU VĂN BẢN GỐC
+                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-pos-soft text-pos border border-pos/30">
+                    ✓ ĐÃ ĐỐI CHIẾU VĂN BẢN GỐC
                   </span>
                 ) : (
-                  <span className="px-2 py-1 rounded-lg text-[10px] font-bold bg-neg-soft text-neg">
+                  <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-neg-soft text-neg border border-neg/30">
                     ⚠ CHƯA ĐỐI CHIẾU VĂN BẢN GỐC
                   </span>
                 )}
                 {program.QuotaVnd !== null && program.QuotaVnd !== undefined && (
-                  <span className="text-[11px] text-ink-faint">
-                    Hạn mức chương trình: <strong>{fmtMoney(program.QuotaVnd)}</strong>
+                  <span className="text-[11px] text-ink-faint font-mono">
+                    Hạn mức chương trình: <strong className="text-accent">{fmtMoney(program.QuotaVnd)}</strong>
                   </span>
                 )}
               </div>
@@ -287,7 +287,7 @@ export const RateQuoteView: React.FC = () => {
           </div>
 
           {(program.ScopeText || program.TargetText) && (
-            <div className={`${cardBg} rounded-lg p-4 border grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]`}>
+            <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]`}>
               {program.TargetText && (
                 <div>
                   <div className="font-bold uppercase tracking-wider text-accent mb-1">

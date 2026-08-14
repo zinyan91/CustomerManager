@@ -286,7 +286,7 @@ export const InventoryView: React.FC = () => {
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
       {/* Top Header Card */}
-      <div className={`${UI.containerCardBg} rounded-lg p-4 border space-y-3`}>
+      <div className={`${UI.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-3`}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-line pb-3">
           <div className="flex items-center space-x-2.5">
             <div className="p-2 bg-accent-soft rounded-lg text-accent">

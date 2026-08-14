@@ -18,13 +18,13 @@ export const UI: UiClasses = {
   labelStyle: 'text-ink-muted font-medium',
 };
 
-export const RADIUS_PANEL = 'rounded-lg';
-export const RADIUS_CONTROL = 'rounded-md';
+export const RADIUS_PANEL = 'rounded-xl';
+export const RADIUS_CONTROL = 'rounded-lg';
 
 const BTN_BASE =
   `${RADIUS_CONTROL} font-semibold transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`;
 
-export const BTN_PRIMARY = `${BTN_BASE} bg-accent text-accent-ink hover:opacity-90`;
+export const BTN_PRIMARY = `${BTN_BASE} bg-accent text-accent-ink hover:opacity-90 shadow-xs`;
 
 export const BTN_SECONDARY = `${BTN_BASE} border border-line text-ink-muted hover:border-accent hover:text-accent`;
 
@@ -32,7 +32,7 @@ export const BTN_DANGER = `${BTN_BASE} border border-neg/30 text-neg hover:bg-ne
 
 export const BTN_GHOST = BTN_SECONDARY;
 
-export const PANEL = `bg-panel border border-line ${RADIUS_PANEL}`;
+export const PANEL = `bg-panel border border-line shadow-sm ${RADIUS_PANEL}`;
 
 export const HEADING_SCREEN = 'text-sm font-semibold tracking-tight text-ink';
 

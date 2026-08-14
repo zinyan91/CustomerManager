@@ -203,16 +203,16 @@ export const RateQuoteView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
 
-      <div className={`${cardBg} rounded-lg p-2 border flex flex-wrap items-center gap-2`}>
+      <div className={`${cardBg} rounded-xl p-2 border border-line shadow-sm flex flex-wrap items-center gap-2`}>
         {kindTabs.map(({ id, icon: Icon }) => (
           <button
             key={id}
             type="button"
             onClick={() => setKind(id)}
-            className={`flex items-center space-x-2 px-3.5 py-2 rounded-md text-xs font-bold transition-all ${
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
               kind === id
-                ? 'bg-accent text-accent-ink '
-                : 'text-ink-muted hover:bg-panel-muted'
+                ? 'bg-accent text-accent-ink shadow-xs'
+                : 'text-ink-muted hover:bg-panel-muted/80 hover:text-ink'
             }`}
           >
             <Icon className="w-4 h-4" />

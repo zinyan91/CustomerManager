@@ -251,27 +251,27 @@ export const PostLoanControlView: React.FC = () => {
     <div className="space-y-4 text-xs">
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
-      <div className={`${cardBg} rounded-lg p-4 border`}>
+      <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-1`}>
         <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
-          <ShieldCheck className="w-5 h-5" />
+          <ShieldCheck className="w-5 h-5 text-accent" />
           <span>KIỂM SOÁT SAU VAY & GIÁM SÁT TÍN DỤNG</span>
         </h2>
-        <p className="text-[11px] text-ink-faint mt-1">
+        <p className="text-[11px] text-ink-faint">
           Mục đích sử dụng vốn: 30 ngày kể từ giải ngân, mỗi KUNN một đợt ·
           Kiểm tra sau vay: 3 tháng một lần, gộp theo HĐTD ·
           Hiện trạng tài sản: {collateralIntervalMonths} tháng một lần kể từ ngày định giá
         </p>
       </div>
 
-      <div className={`${cardBg} rounded-lg p-3 border`}>
-        <label className={`block mb-1 ${UI.labelStyle}`}>
+      <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-2`}>
+        <label className={`block text-xs ${UI.labelStyle}`}>
           Khách hàng ({customerOptions.length} KH có đợt kiểm soát)
         </label>
         <div className="flex items-center gap-2">
           <select
             value={selectedCustomerId ?? ''}
             onChange={e => setSelectedCustomerId(e.target.value ? parseInt(e.target.value, 10) : null)}
-            className={`flex-1 rounded-md p-2.5 text-xs font-semibold border ${inputStyle}`}
+            className={`flex-1 rounded-lg p-2.5 text-xs font-semibold border border-line ${inputStyle}`}
           >
             <option value="">— Tất cả khách hàng —</option>
             {customerOptions.map(o => (

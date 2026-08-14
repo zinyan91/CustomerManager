@@ -38,7 +38,7 @@ export const SettingsView: React.FC = () => {
 
       <div className="space-y-5 text-xs">
 
-        <div className="bg-panel border border-line p-5 rounded-lg space-y-4">
+        <div className="bg-panel border border-line p-5 rounded-xl shadow-sm space-y-4">
           <h3 className="text-xs font-bold text-accent uppercase flex items-center justify-between border-b border-line pb-2">
             <span className="flex items-center space-x-2">
               <Type className="w-4 h-4" />
@@ -100,7 +100,7 @@ export const SettingsView: React.FC = () => {
             Thiết lập lưu trên máy này và áp cho mọi màn hình. Bản in PDF giữ cỡ chữ riêng để không vỡ khổ giấy.
           </p>
         </div>
-        <div className="bg-panel border border-line p-5 rounded-lg space-y-4">
+        <div className="bg-panel border border-line p-5 rounded-xl shadow-sm space-y-4">
           <h3 className="text-xs font-bold text-accent uppercase flex items-center space-x-2 border-b border-line pb-2">
             <Sun className="w-4 h-4" />
             <span>1. CHẾ ĐỘ GIAO DIỆN SÁNG / TỐI (THEME)</span>
@@ -143,7 +143,7 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-panel border border-line p-5 rounded-lg space-y-4">
+        <div className="bg-panel border border-line p-5 rounded-xl shadow-sm space-y-4">
           <h3 className="text-xs font-bold text-accent uppercase flex items-center space-x-2 border-b border-line pb-2">
             <Calendar className="w-4 h-4" />
             <span>2. ĐỊNH DẠNG NGÀY THÁNG NĂM (DATE FORMAT)</span>
@@ -176,7 +176,7 @@ export const SettingsView: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-panel border border-line p-5 rounded-lg space-y-4">
+        <div className="bg-panel border border-line p-5 rounded-xl shadow-sm space-y-4">
           <h3 className="text-xs font-bold text-pos uppercase flex items-center space-x-2 border-b border-line pb-2">
             <Sliders className="w-4 h-4" />
             <span>3. ĐỊNH DẠNG SỐ TIỀN & HIỂN THỊ</span>

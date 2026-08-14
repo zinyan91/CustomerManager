@@ -9,6 +9,7 @@ import { usableCapacity, collateralValue } from '../../lib/collateralMath';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
 import { useCreditContractController, LOAN_METHODS } from '../../hooks/useCreditContractController';
+import { isRevolvingCredit } from '../../lib/loanProductRules';
 
 export const CreditContractView: React.FC = () => {
   const {
@@ -224,12 +225,23 @@ export const CreditContractView: React.FC = () => {
                   const contractKunns = getKunnsForContract(cc);
 
                   const granted = cc.ContractAmount || 0;
-                  const utilPercent = granted > 0 ? Math.min(100, (outstanding / granted) * 100) : 0;
+                  const isRevolving = isRevolvingCredit(cc.LoanMethod);
+                  const totalDisbursed = contractKunns.reduce((s, k) => s + (k.LoanAmount || k.ContractAmount || 0), 0);
 
-                  const isExpired = cc.ContractEndDate && cc.ContractEndDate < today;
-                  const isExpiringSoon = !isExpired && cc.ContractEndDate && (
+                  const isExpired = !!(cc.ContractEndDate && cc.ContractEndDate < today);
+                  const isExpiringSoon = !isExpired && !!(cc.ContractEndDate && (
                     (new Date(cc.ContractEndDate).getTime() - new Date(today).getTime()) / (1000 * 3600 * 24) <= 30
-                  );
+                  ));
+
+                  const canDisburse = !cc.IsClosed && !isExpired && available > 0;
+                  const canDelete = kunnCount === 0;
+
+                  // Progress bar utilization percent
+                  const utilPercent = granted > 0
+                    ? isRevolving
+                      ? Math.min(100, (outstanding / granted) * 100)
+                      : (available <= 0 || totalDisbursed >= granted ? 100 : Math.min(100, (totalDisbursed / granted) * 100))
+                    : 0;
 
                   return (
                     <div
@@ -297,16 +309,29 @@ export const CreditContractView: React.FC = () => {
                           </div>
 
                           <div className="flex items-center space-x-2 shrink-0">
-                            {!cc.IsClosed && (
-                              <button
-                                type="button"
-                                onClick={() => handleDisburseRequest(cc)}
-                                className="bg-accent text-accent-ink hover:opacity-90 font-bold text-xs py-1.5 px-3 rounded-lg flex items-center space-x-1.5 transition-all shadow-xs"
-                              >
-                                <Banknote className="w-3.5 h-3.5" />
-                                <span>Giải ngân từ HĐTD</span>
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              disabled={!canDisburse}
+                              onClick={() => handleDisburseRequest(cc)}
+                              className={`font-bold text-xs py-1.5 px-3 rounded-lg flex items-center space-x-1.5 transition-all shadow-xs ${
+                                canDisburse
+                                  ? 'bg-accent text-accent-ink hover:opacity-90'
+                                  : 'bg-panel-muted border border-line text-ink-faint cursor-not-allowed opacity-60'
+                              }`}
+                              title={
+                                cc.IsClosed
+                                  ? 'HĐTD đã đóng tất toán'
+                                  : isExpired
+                                  ? 'HĐTD đã hết hạn hiệu lực'
+                                  : available <= 0
+                                  ? (isRevolving ? 'Dư nợ đã đạt tối đa hạn mức' : 'Cho vay từng lần: Đã giải ngân đủ hạn mức')
+                                  : 'Giải ngân KUNN mới từ HĐTD này'
+                              }
+                            >
+                              <Banknote className="w-3.5 h-3.5" />
+                              <span>{available <= 0 ? 'Hết khả dụng' : isExpired ? 'Hết hạn HĐTD' : 'Giải ngân từ HĐTD'}</span>
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => openEdit(cc)}
@@ -316,9 +341,18 @@ export const CreditContractView: React.FC = () => {
                             </button>
                             <button
                               type="button"
+                              disabled={!canDelete}
                               onClick={() => handleDelete(cc)}
-                              className="border border-line bg-panel text-ink-faint hover:text-neg hover:border-neg p-1.5 rounded-lg transition-colors"
-                              title="Xoá HĐTD"
+                              className={`p-1.5 rounded-lg border transition-colors ${
+                                canDelete
+                                  ? 'border-line bg-panel text-ink-faint hover:text-neg hover:border-neg'
+                                  : 'border-line bg-panel-muted/50 text-ink-faint/40 cursor-not-allowed'
+                              }`}
+                              title={
+                                canDelete
+                                  ? 'Xóa HĐTD'
+                                  : `Không thể xóa: Có ${kunnCount} KUNN liên kết (Ràng buộc Postgres RESTRICT)`
+                              }
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -338,7 +372,9 @@ export const CreditContractView: React.FC = () => {
                             </div>
                             <div>
                               <div className="text-[10px] text-ink-faint font-semibold uppercase">Khả dụng giải ngân</div>
-                              <div className="font-mono font-bold text-pos">{fmtMoney(available)}</div>
+                              <div className={`font-mono font-bold ${available > 0 ? 'text-pos' : 'text-ink-faint'}`}>
+                                {fmtMoney(available)}
+                              </div>
                             </div>
                             <div>
                               <div className="text-[10px] text-ink-faint font-semibold uppercase">Quy mô KUNN</div>
@@ -351,14 +387,24 @@ export const CreditContractView: React.FC = () => {
                             <div className="w-full bg-panel-muted rounded-full h-2 overflow-hidden flex border border-line">
                               <div
                                 className={`h-full transition-all duration-300 ${
-                                  utilPercent > 90 ? 'bg-neg' : utilPercent > 70 ? 'bg-warn' : 'bg-pos'
+                                  utilPercent >= 100 || available <= 0
+                                    ? 'bg-neg'
+                                    : utilPercent > 80
+                                    ? 'bg-warn'
+                                    : 'bg-pos'
                                 }`}
                                 style={{ width: `${utilPercent}%` }}
                               />
                             </div>
                             <div className="flex items-center justify-between text-[10px] text-ink-faint">
-                              <span>Đã sử dụng {utilPercent.toFixed(1)}%</span>
-                              <span>Còn trống {fmtMoney(available)}</span>
+                              <span>
+                                {isRevolving
+                                  ? `Hạn mức quay vòng: Đã sử dụng ${utilPercent.toFixed(1)}%`
+                                  : `Cho vay từng lần: Đã giải ngân ${fmtMoney(totalDisbursed)} / ${fmtMoney(granted)}`}
+                              </span>
+                              <span>
+                                {available > 0 ? `Còn trống ${fmtMoney(available)}` : 'Hết hạn mức giải ngân (0 VNĐ)'}
+                              </span>
                             </div>
                           </div>
                         </div>

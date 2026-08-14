@@ -154,7 +154,7 @@ export const DashboardView: React.FC = () => {
       item !== null && item.daysLeft !== null && item.daysLeft <= 30)
     .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
-  const soNgay = (x: { daysLeft?: number | null }) => x.daysLeft;
+  const soNgay = <T extends { daysLeft?: number | null }>(x: T) => x.daysLeft;
 
   const kunnRows = filterByDue(dueKunnList, kunnFilter, soNgay);
   const hmtdRows = filterByDue(dueHmtdList, hmtdFilter, soNgay);

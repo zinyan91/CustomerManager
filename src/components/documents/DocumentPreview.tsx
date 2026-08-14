@@ -20,7 +20,7 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
       <style>
         @page {
           size: A4 portrait;
-          margin: 25mm 20mm 20mm 30mm;
+          margin: 0;
         }
         body {
           font-family: 'Times New Roman', Times, serif;
@@ -28,7 +28,7 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           line-height: 1.5;
           color: #000000;
           margin: 0;
-          padding: 0;
+          padding: 25mm 20mm 20mm 30mm;
         }
         h1 { text-align: center; font-size: 16pt; font-weight: bold; text-transform: uppercase; margin-top: 14pt; margin-bottom: 12pt; }
         h2 { text-align: left; font-size: 13pt; font-weight: bold; text-transform: uppercase; margin-top: 12pt; margin-bottom: 6pt; }

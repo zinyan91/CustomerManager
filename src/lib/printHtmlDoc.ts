@@ -27,7 +27,6 @@ export function printHtmlDoc(html: string, title?: string): boolean {
     if (frame.parentNode) frame.remove();
   };
 
-  document.title = printTitle;
   doc.open();
   doc.write(html);
   doc.close();

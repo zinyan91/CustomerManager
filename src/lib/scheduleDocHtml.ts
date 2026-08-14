@@ -23,8 +23,8 @@ export interface ScheduleDocInput {
 }
 
 const DOC_CSS = `
-  @page { size: A4 landscape; margin: 12mm 10mm; }
-  body { font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; color: #0f172a; }
+  @page { size: A4 landscape; margin: 0; }
+  body { font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; color: #0f172a; margin: 0; padding: 12mm 10mm; }
   .doc-head { text-align: center; margin-bottom: 10px; }
   .doc-title { font-size: 17px; font-weight: bold; text-transform: uppercase; margin-top: 6px; }
   .doc-sub { font-size: 11px; font-style: italic; margin-top: 3px; }

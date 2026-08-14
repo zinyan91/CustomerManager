@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo, type ReactNode, type ElementType } from 'react';
 import type { Tone } from './DueSectionPanel';
 
 const TONE_VALUE: Record<Tone, string> = {
@@ -25,14 +25,14 @@ const TONE_GRADIENT: Record<Tone, string> = {
 interface KpiCardProps {
   cardBg: string;
   tone: Tone;
-  icon: React.ElementType;
+  icon: ElementType;
   label: string;
   value: string;
   unit?: string;
-  note: React.ReactNode;
+  note: ReactNode;
 }
 
-export const KpiCard: React.FC<KpiCardProps> = ({
+export const KpiCard = memo<KpiCardProps>(({
   cardBg, tone, icon: Icon, label, value, unit, note,
 }) => (
   <div className={`${cardBg} relative overflow-hidden p-4 rounded-xl border border-line flex items-start justify-between gap-3 shadow-sm hover:shadow-md transition-all duration-200 group`}>
@@ -53,5 +53,6 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       <Icon className="w-5 h-5" />
     </div>
   </div>
-);
+));
 
+KpiCard.displayName = 'KpiCard';

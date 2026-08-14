@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { ClipboardList, FileDown, RotateCcw } from 'lucide-react';
+import React, { useMemo, useState, lazy, Suspense } from 'react';
+import { ClipboardList, FileDown, RotateCcw, Loader2 } from 'lucide-react';
 import {
   computeBusinessPlan, emptyBusinessPlanInput,
   type BusinessPlanInput, type BasisKey,
@@ -14,8 +14,16 @@ import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
 import { BusinessPlanSheet } from '../businessPlan/BusinessPlanSheet';
-import { ToiLoanCalcSection } from '../businessPlan/ToiLoanCalcSection';
 import { UNIT_LABEL, type MoneyUnit } from '../businessPlan/units';
+
+const ToiLoanCalcSection = lazy(() => import('../businessPlan/ToiLoanCalcSection').then(m => ({ default: m.ToiLoanCalcSection })));
+
+const TabFallback = () => (
+  <div className="flex items-center justify-center p-8 text-ink-muted">
+    <Loader2 className="w-5 h-5 animate-spin text-accent mr-2" />
+    <span className="text-xs">Đang tải phân hệ TOI...</span>
+  </div>
+);
 
 const BASIS_FIELDS: { key: BasisKey; label: string }[] = [
   { key: 'revenue', label: 'Doanh thu' },
@@ -113,7 +121,9 @@ export const BusinessPlanView: React.FC = () => {
       </div>
 
       {activeSubTab === 'toi' ? (
-        <ToiLoanCalcSection />
+        <Suspense fallback={<TabFallback />}>
+          <ToiLoanCalcSection />
+        </Suspense>
       ) : (
         <>
           <div className={`${UI.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-4`}>

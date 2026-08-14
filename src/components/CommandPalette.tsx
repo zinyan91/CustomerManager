@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from 'react';
 import {
   Search,
   LayoutDashboard,
@@ -61,7 +61,7 @@ const COMMAND_ITEMS: CommandItem[] = [
   { id: 'settings', labelKey: 'nav.settings', groupKey: 'nav.groupControl', icon: Settings, keywords: ['cai dat', 'he thong', 'settings', 'config'] },
 ];
 
-export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
+export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) => {
   const { setActiveTab } = useWork();
   const { t } = useLang();
   const [query, setQuery] = useState('');
@@ -76,22 +76,24 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
     }
   }, [isOpen]);
 
-  const filteredItems = COMMAND_ITEMS.filter((item) => {
-    if (!query.trim()) return true;
+  const filteredItems = useMemo(() => {
+    if (!query.trim()) return COMMAND_ITEMS;
     const q = query.toLowerCase().trim();
-    const label = t(item.labelKey).toLowerCase();
-    const group = t(item.groupKey).toLowerCase();
-    return label.includes(q) || group.includes(q) || item.keywords.some((kw) => kw.includes(q));
-  });
+    return COMMAND_ITEMS.filter((item) => {
+      const label = t(item.labelKey).toLowerCase();
+      const group = t(item.groupKey).toLowerCase();
+      return label.includes(q) || group.includes(q) || item.keywords.some((kw) => kw.includes(q));
+    });
+  }, [query, t]);
 
   useEffect(() => {
     setSelectedIndex(0);
   }, [query]);
 
-  const handleSelect = (id: string) => {
+  const handleSelect = useCallback((id: string) => {
     setActiveTab(id);
     onClose();
-  };
+  }, [setActiveTab, onClose]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -200,4 +202,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
       </div>
     </div>
   );
-};
+});
+
+CommandPalette.displayName = 'CommandPalette';

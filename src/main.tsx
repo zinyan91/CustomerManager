@@ -1,31 +1,34 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
-import { ThemeProvider } from './context/ThemeContext.tsx'
-import { DateFormatProvider } from './context/DateFormatContext.tsx'
-import { FormatSettingsProvider } from './context/FormatSettingsContext.tsx'
-import { AuthProvider } from './context/AuthContext.tsx'
-import { WorkProvider } from './context/WorkContext.tsx'
-import { FontSettingsProvider } from './context/FontSettingsContext.tsx'
-import { LanguageProvider } from './context/LanguageContext.tsx'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App.tsx';
+import { ProviderComposer } from './components/ProviderComposer';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { ThemeProvider } from './context/ThemeContext.tsx';
+import { LanguageProvider } from './context/LanguageContext.tsx';
+import { AuthProvider } from './context/AuthContext.tsx';
+import { DateFormatProvider } from './context/DateFormatContext.tsx';
+import { FormatSettingsProvider } from './context/FormatSettingsContext.tsx';
+import { FontSettingsProvider } from './context/FontSettingsContext.tsx';
+import { WorkProvider } from './context/WorkContext.tsx';
+
+const providers = [
+  ThemeProvider,
+  LanguageProvider,
+  AuthProvider,
+  DateFormatProvider,
+  FormatSettingsProvider,
+  FontSettingsProvider,
+  WorkProvider,
+];
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <DateFormatProvider>
-            <FormatSettingsProvider>
-              <FontSettingsProvider>
-                <WorkProvider>
-                  <App />
-                </WorkProvider>
-              </FontSettingsProvider>
-            </FormatSettingsProvider>
-          </DateFormatProvider>
-        </AuthProvider>
-      </LanguageProvider>
-    </ThemeProvider>
+    <ErrorBoundary title="Ứng dụng gặp sự cố khởi chạy">
+      <ProviderComposer providers={providers}>
+        <App />
+      </ProviderComposer>
+    </ErrorBoundary>
   </StrictMode>,
-)
+);
+

@@ -1,236 +1,55 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React from 'react';
 import { UI } from '../../lib/uiClasses';
 import { FileText, Plus, Trash2, Save, X, Banknote, AlertTriangle, Building2 } from 'lucide-react';
-import {
-  fetchCustomersAPI, fetchContractsByCustomerAPI,
-  fetchCreditContractsByCustomerAPI, saveCreditContractAPI,
-  deleteCreditContractAPI, countKunnOfCreditContractAPI,
-  fetchCollateralsByCustomerAPI, fetchRepaymentSchedulesAPI,
-} from '../../lib/api';
-import { useWork } from '../../context/WorkContext';
-import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
-import { summarizeCreditContracts, canCloseCreditContract } from '../../lib/creditContract';
-import { addMonthsToDate, computeOutstandingBalance } from '../../lib/loanMath';
-import { getEffectiveLtv, usableCapacity, totalUsableCapacity, appraisalStatus, appraisalExpiryDate, collateralValue } from '../../lib/collateralMath';
-import { allowedPurposes } from '../../lib/loanProductRules';
+import { fmtMoney, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
+import { usableCapacity, collateralValue } from '../../lib/collateralMath';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
-import type { Customer, CreditContract, LoanContract, Collateral, RepaymentSchedule } from '../../types';
-
-const LOAN_METHODS = [
-  'Hạn mức tín dụng',
-  'Hạn mức tín dụng từng lần',
-  'Cho vay từng lần',
-  'Hạn mức thẻ tín dụng',
-  'Cầm cố sổ tiết kiệm',
-];
+import { useCreditContractController, LOAN_METHODS } from '../../hooks/useCreditContractController';
 
 export const CreditContractView: React.FC = () => {
-  const { selectedCustomerId, setSelectedCustomerId, requestDisburse } = useWork();
-
-  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [contracts, setContracts] = useState<CreditContract[]>([]);
-  const [kunns, setKunns] = useState<LoanContract[]>([]);
-  const [collaterals, setCollaterals] = useState<Collateral[]>([]);
-  const [schedulesMap, setSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
-  const [loading, setLoading] = useState(false);
-  const [notify, setNotify] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<CreditContract | null>(null);
-  const [form, setForm] = useState<Partial<CreditContract>>({});
-  const [formAmount, setFormAmount] = useState('');
-  const [formApprovalAmount, setFormApprovalAmount] = useState('');
-  const [useSharedApproval, setUseSharedApproval] = useState(false);
-  const [selectedCollateralIds, setSelectedCollateralIds] = useState<number[]>([]);
-  const [showSettled, setShowSettled] = useState(false);
-
-  const today = todayIso();
+  const {
+    allCustomers,
+    customer,
+    collaterals,
+    loading,
+    notify,
+    setNotify,
+    showForm,
+    setShowForm,
+    editing,
+    form,
+    setForm,
+    formAmount,
+    setFormAmount,
+    formApprovalAmount,
+    setFormApprovalAmount,
+    useSharedApproval,
+    setUseSharedApproval,
+    selectedCollateralIds,
+    setSelectedCollateralIds,
+    showSettled,
+    setShowSettled,
+    summaries,
+    visibleSummaries,
+    closedCount,
+    openContractsCount,
+    closeCheck,
+    purposeOptions,
+    tongKhaNangBaoDam,
+    vuotKhaNangBaoDam,
+    setSelectedCustomerId,
+    handleDisburseRequest,
+    loadCustomer,
+    openNew,
+    openEdit,
+    handleSave,
+    handleDelete,
+  } = useCreditContractController();
 
   const containerCardBg = UI.containerCardBg;
   const inputStyle = UI.inputStyle;
   const labelStyle = UI.labelStyle;
-
-  const showNotify = (type: 'success' | 'error', message: string) => {
-    setNotify({ type, message });
-    setTimeout(() => setNotify(null), 5000);
-  };
-
-  useEffect(() => {
-    fetchCustomersAPI({}).then(setAllCustomers);
-  }, []);
-
-  const loadCustomer = async (c: Customer | null) => {
-    setCustomer(c);
-    setShowForm(false);
-    setEditing(null);
-    if (!c) {
-      setContracts([]); setKunns([]); setCollaterals([]); setSchedulesMap({});
-      return;
-    }
-    setLoading(true);
-    try {
-      const [ccs, ks, cols] = await Promise.all([
-        fetchCreditContractsByCustomerAPI(c.Id),
-        fetchContractsByCustomerAPI(c.Id),
-        fetchCollateralsByCustomerAPI(c.Id),
-      ]);
-      setContracts(ccs);
-      setKunns(ks);
-      setCollaterals(cols);
-
-      const map: Record<number, RepaymentSchedule[]> = {};
-      await Promise.all(ks.map(async k => {
-        try { map[k.Id] = await fetchRepaymentSchedulesAPI(k.Id); } catch {}
-      }));
-      setSchedulesMap(map);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (allCustomers.length === 0) return;
-    if (selectedCustomerId && selectedCustomerId !== customer?.Id) {
-      const c = allCustomers.find(x => x.Id === selectedCustomerId);
-      if (c) loadCustomer(c);
-    }
-  }, [selectedCustomerId, allCustomers]);
-
-  useEffect(() => {
-    if (!form.ContractStartDate || !form.LoanTenorMonths) return;
-    const calculatedEnd = addMonthsToDate(form.ContractStartDate, form.LoanTenorMonths);
-    if (calculatedEnd && calculatedEnd !== form.ContractEndDate) {
-      setForm(prev => ({ ...prev, ContractEndDate: calculatedEnd }));
-    }
-  }, [form.ContractStartDate, form.LoanTenorMonths]);
-
-  const outstandingOf = (k: LoanContract) => computeOutstandingBalance(schedulesMap[k.Id], k);
-
-  const summaries = useMemo(
-    () => summarizeCreditContracts(contracts, kunns, {
-      getOutstanding: outstandingOf,
-      today: today,
-    }),
-    [contracts, kunns, schedulesMap, today]
-  );
-
-  const visibleSummaries = useMemo(
-    () => showSettled ? summaries : summaries.filter(s => !s.contract.IsClosed),
-    [summaries, showSettled]
-  );
-
-  const closedCount = summaries.filter(s => s.contract.IsClosed).length;
-  const openContractsCount = summaries.filter(s => !s.contract.IsClosed).length;
-
-  const closeCheck = useMemo(
-    () => editing
-      ? canCloseCreditContract(editing, kunns)
-      : { allowed: true, unsettledKunnNumbers: [] },
-    [editing, kunns]
-  );
-
-  const openNew = () => {
-    setEditing(null);
-    setForm({
-      CustomerId: customer?.Id,
-      LoanMethod: LOAN_METHODS[0],
-      LoanTenorMonths: 12,
-      IsClosed: false,
-    });
-    setFormAmount('');
-    setFormApprovalAmount('');
-    setUseSharedApproval(false);
-    setSelectedCollateralIds([]);
-    setShowForm(true);
-  };
-
-  const openEdit = (cc: CreditContract) => {
-    setEditing(cc);
-    setForm({ ...cc });
-    setFormAmount(cc.ContractAmount ? cc.ContractAmount.toLocaleString('vi-VN') : '');
-    setFormApprovalAmount(cc.ApprovalAmount ? cc.ApprovalAmount.toLocaleString('vi-VN') : '');
-    setUseSharedApproval(!!(cc.ApprovalCode || '').trim());
-    setSelectedCollateralIds(
-      (cc.CollateralIds || '').split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n))
-    );
-    setShowForm(true);
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customer) return;
-
-    const hdtd = (form.HdtdNumber || '').trim();
-    if (!hdtd) {
-      showNotify('error', 'Nhập số HĐTD.');
-      return;
-    }
-    if (selectedCollateralIds.length === 0) {
-      showNotify('error', 'Chọn ít nhất 01 tài sản bảo đảm cho HĐTD.');
-      return;
-    }
-    if (form.IsClosed && editing) {
-      const check = canCloseCreditContract(editing, kunns);
-      if (!check.allowed) {
-        showNotify('error',
-          `Chưa tất toán: ${check.unsettledKunnNumbers.join(', ')}.`);
-        return;
-      }
-    }
-
-    setLoading(true);
-    try {
-      const payload: Partial<CreditContract> = {
-        ...form,
-        Id: editing?.Id,
-        CustomerId: customer.Id,
-        HdtdNumber: hdtd,
-        ContractAmount: parseMoneyInput(formAmount) || null,
-        ApprovalCode: useSharedApproval ? (form.ApprovalCode || '').trim() || null : null,
-        ApprovalAmount: useSharedApproval ? (parseMoneyInput(formApprovalAmount) || null) : null,
-        CollateralIds: selectedCollateralIds.join(','),
-      };
-      await saveCreditContractAPI(payload);
-      showNotify('success', editing ? 'Đã cập nhật HĐTD.' : 'Đã tạo HĐTD mới.');
-      setShowForm(false);
-      await loadCustomer(customer);
-    } catch (err: any) {
-      showNotify('error', err.message || 'Không lưu được HĐTD.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (cc: CreditContract) => {
-    const n = await countKunnOfCreditContractAPI(cc.Id);
-    if (n > 0) {
-      showNotify('error', `HĐTD ${cc.HdtdNumber} còn ${n} KUNN. Xoá KUNN trước.`);
-      return;
-    }
-    if (!window.confirm(`Xoá HĐTD "${cc.HdtdNumber}"?\nHành động này không thể hoàn tác.`)) return;
-    setLoading(true);
-    try {
-      await deleteCreditContractAPI(cc.Id);
-      showNotify('success', `Đã xoá HĐTD ${cc.HdtdNumber}`);
-      await loadCustomer(customer);
-    } catch (err: any) {
-      showNotify('error', err.message || 'Không xoá được HĐTD.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const purposeOptions = useMemo(() => allowedPurposes(form.LoanMethod), [form.LoanMethod]);
-
-  const tongKhaNangBaoDam = useMemo(
-    () => totalUsableCapacity(collaterals.filter(c => selectedCollateralIds.includes(c.Id)), today),
-    [collaterals, selectedCollateralIds, today]
-  );
-
-  const vuotKhaNangBaoDam = tongKhaNangBaoDam > 0
-    && parseMoneyInput(formAmount) > tongKhaNangBaoDam;
 
   return (
     <div className="space-y-4">
@@ -298,327 +117,385 @@ export const CreditContractView: React.FC = () => {
           </div>
 
           <div className="space-y-1 border-l border-line pl-4 flex flex-col justify-center">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Đang chọn HĐTD</div>
-            <div className="font-mono font-bold text-xs text-accent truncate">
-              {showForm
-                ? (form.HdtdNumber?.trim() || (editing ? editing.HdtdNumber : 'HĐTD mới'))
-                : '— chưa chọn —'}
-            </div>
+            <button
+              onClick={openNew}
+              className="bg-accent hover:opacity-90 text-accent-ink font-bold text-xs py-2 px-3 rounded-lg flex items-center justify-center space-x-1 transition-all shadow-xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Tạo HĐTD mới</span>
+            </button>
           </div>
         </div>
       )}
 
       {customer && (
-        <div className={`${containerCardBg} rounded-lg border overflow-hidden`}>
-          <div className="p-4 flex flex-wrap items-center justify-between gap-3 border-b border-line">
-            <div className="text-xs font-bold tracking-tight text-ink-faint">
-              Hợp đồng của {customer.FullName} — {visibleSummaries.length} HĐTD
-              <span className="ml-2 font-normal normal-case text-[11px] text-ink-faint">
-                Nhấp vào dòng để xem chi tiết
-              </span>
-              {closedCount > 0 && (
-                <button onClick={() => setShowSettled(v => !v)}
-                  className="ml-3 font-normal normal-case text-[11px] text-accent hover:underline">
-                  {showSettled ? 'Ẩn' : 'Hiện'} {closedCount} HĐTD đã đóng
-                </button>
-              )}
+        <div className={`${containerCardBg} rounded-xl border border-line shadow-sm overflow-hidden`}>
+          <div className="p-3.5 border-b border-line bg-panel flex items-center justify-between flex-wrap gap-2">
+            <div className="font-bold text-xs text-ink tracking-tight">
+              Danh sách HĐTD của {customer.FullName} ({visibleSummaries.length})
             </div>
-            <button onClick={openNew}
-              className="flex items-center space-x-1.5 bg-accent hover:opacity-90 text-accent-ink font-bold px-4 py-2 rounded-md text-xs">
-              <Plus className="w-3.5 h-3.5" /><span>Tạo HĐTD mới</span>
-            </button>
+            {closedCount > 0 && (
+              <label className="text-[11px] font-semibold text-ink-muted flex items-center space-x-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showSettled}
+                  onChange={e => setShowSettled(e.target.checked)}
+                  className="rounded border-line"
+                />
+                <span>Hiện {closedCount} HĐTD đã đóng</span>
+              </label>
+            )}
           </div>
 
-          {visibleSummaries.length === 0 ? (
-            <div className="p-8 text-center text-ink-faint text-sm">
-              {loading ? 'Đang tải…' : 'Khách hàng chưa có HĐTD nào.'}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className={'bg-panel-muted text-ink-muted'}>
-                  <tr>
-                    <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">SỐ HĐTD</th>
-                    <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">PHƯƠNG THỨC VAY</th>
-                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap">TỔNG MỨC CẤP</th>
-                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap">DƯ NỢ KUNN</th>
-                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">HIỆU LỰC</th>
-                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">KUNN</th>
-                    <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">THAO TÁC</th>
-                  </tr>
-                </thead>
-                <tbody className={`divide-y ${'divide-line'}`}>
-                  {visibleSummaries.map(s => (
-                    <tr key={s.contract.Id}
-                      onClick={() => openEdit(s.contract)}
-                      className={`cursor-pointer transition-colors ${
-                        s.expired
-                          ? 'bg-neg-soft  hover:bg-neg-soft '
-                          : 'hover:bg-panel-muted'
-                      }`}>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono font-bold text-accent">
-                        {s.contract.HdtdNumber}
-                        {s.contract.ApprovalCode && (
-                          <div className="text-[10px] font-app font-normal text-accent mt-0.5">
-                            Hạn mức duyệt: {s.contract.ApprovalCode}
+          <div className="p-4 space-y-3">
+            {visibleSummaries.length === 0 ? (
+              <div className="text-center py-8 text-ink-faint text-xs">
+                {showSettled
+                  ? 'Chưa có Hợp đồng tín dụng nào.'
+                  : 'Không có HĐTD đang mở. Bấm "Tạo HĐTD mới" hoặc tích "Hiện HĐTD đã đóng".'}
+              </div>
+            ) : (
+              visibleSummaries.map(({ contract: cc, outstanding, available, kunnCount, activeKunnCount }) => {
+                const assignedCols = collaterals.filter(c =>
+                  (cc.CollateralIds || '').split(',').map(x => parseInt(x.trim(), 10)).includes(c.Id)
+                );
+                return (
+                  <div
+                    key={cc.Id}
+                    className={`rounded-xl border p-4 transition-all ${
+                      cc.IsClosed ? 'bg-panel-muted/40 border-line opacity-75' : 'bg-panel border-line hover:border-accent/40 shadow-xs'
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="space-y-1 min-w-[240px]">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono font-bold text-sm text-accent">{cc.HdtdNumber}</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            cc.IsClosed
+                              ? 'bg-panel-muted border border-line text-ink-faint'
+                              : 'bg-pos-soft border border-pos/30 text-pos'
+                          }`}>
+                            {cc.IsClosed ? 'ĐÃ ĐÓNG' : 'ĐANG HIỆU LỰC'}
+                          </span>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-panel-muted border border-line text-ink-muted">
+                            {cc.LoanMethod || 'HĐTD'}
+                          </span>
+                        </div>
+                        {cc.ApprovalCode && (
+                          <div className="text-[11px] text-ink-muted font-mono">
+                            Tờ trình phê duyệt: <span className="font-bold text-accent">{cc.ApprovalCode}</span>
+                            {cc.ApprovalAmount && ` (${fmtMoney(cc.ApprovalAmount)})`}
                           </div>
                         )}
-                      </td>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)]">{s.contract.LoanMethod || '—'}</td>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold">{fmtMoney(s.contract.ContractAmount)}</td>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-warn">
-                        {fmtMoney(s.outstanding)}
-                      </td>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">
-                        <div className="font-mono">{fmtDate(s.contract.ContractEndDate)}</div>
-                        {s.expired && (
-                          <div className="text-[10px] font-bold text-neg">HẾT HIỆU LỰC</div>
+                        {cc.LoanPurpose && (
+                          <div className="text-[11px] text-ink-faint">Mục đích: {cc.LoanPurpose}</div>
                         )}
-                      </td>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
-                        <span className="font-bold">{s.activeKunnCount}</span>
-                        {s.settledKunnCount > 0 && (
-                          <span className="text-ink-faint"> +{s.settledKunnCount} đã TT</span>
-                        )}
-                        {s.kunnCount === 0 && (
-                          <div className="text-[10px] text-ink-faint">chưa giải ngân</div>
-                        )}
-                      </td>
-                      <td className="px-[var(--row-px)] py-[var(--row-py)]">
-                        <div className="flex items-center justify-center gap-2">
-                          {(() => {
-                            const khoaGiaiNgan = !s.canDisburse;
-                            return (
-                              <button
-                                disabled={khoaGiaiNgan}
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  if (!khoaGiaiNgan) requestDisburse({ creditContractId: s.contract.Id, customerId: customer.Id });
-                                }}
-                                className={`flex items-center space-x-1 font-bold px-2.5 py-1.5 rounded-lg text-[11px] ${
-                                  khoaGiaiNgan
-                                    ? 'bg-panel-muted text-ink-faint cursor-not-allowed'
-                                    : 'bg-accent hover:opacity-90 text-accent-ink'
-                                }`}>
-                                <Banknote className="w-3 h-3" /><span>Giải ngân</span>
-                              </button>
-                            );
-                          })()}
-                          <button onClick={e => { e.stopPropagation(); handleDelete(s.contract); }} title="Xoá HĐTD"
-                            className="p-1.5 rounded-lg text-neg hover:bg-neg-soft">
-                            <Trash2 className="w-3.5 h-3.5" />
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        {!cc.IsClosed && (
+                          <button
+                            onClick={() => handleDisburseRequest(cc)}
+                            className="bg-accent text-accent-ink hover:opacity-90 font-bold text-xs py-1.5 px-3 rounded-lg flex items-center space-x-1 transition-all shadow-xs"
+                          >
+                            <Banknote className="w-3.5 h-3.5" />
+                            <span>Giải ngân từ HĐTD</span>
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                        )}
+                        <button
+                          onClick={() => openEdit(cc)}
+                          className="border border-line bg-panel text-ink hover:border-accent font-semibold text-xs py-1.5 px-3 rounded-lg transition-colors"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          onClick={() => handleDelete(cc)}
+                          className="border border-line bg-panel text-ink-faint hover:text-neg hover:border-neg p-1.5 rounded-lg transition-colors"
+                          title="Xoá HĐTD"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-line grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                      <div>
+                        <div className="text-[10px] text-ink-faint font-semibold uppercase">Hạn mức cấp</div>
+                        <div className="font-mono font-bold text-ink">{fmtMoney(cc.ContractAmount || 0)}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-ink-faint font-semibold uppercase">Dư nợ hiện tại</div>
+                        <div className="font-mono font-bold text-warn">{fmtMoney(outstanding)}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-ink-faint font-semibold uppercase">Khả dụng giải ngân</div>
+                        <div className="font-mono font-bold text-pos">{fmtMoney(available)}</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-ink-faint font-semibold uppercase">Quy mô KUNN</div>
+                        <div className="font-semibold text-ink">{activeKunnCount} mở / {kunnCount} tổng KUNN</div>
+                      </div>
+                    </div>
+
+                    {assignedCols.length > 0 && (
+                      <div className="mt-3 pt-2.5 border-t border-line/60 flex items-center space-x-2 text-[11px] text-ink-muted">
+                        <Building2 className="w-3.5 h-3.5 text-accent shrink-0" />
+                        <span>TSBĐ thế chấp ({assignedCols.length}):</span>
+                        <span className="font-semibold text-ink truncate">
+                          {assignedCols.map(c => `${c.AssetCode || c.AssetType || 'TSBĐ'} (${fmtMoney(collateralValue(c))})`).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       )}
 
-      {showForm && customer && (
-        <form onSubmit={handleSave} className={`${containerCardBg} rounded-lg p-4 border space-y-4`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-pos font-bold text-xs tracking-tight">
-              <FileText className="w-4 h-4" />
-              <span>{editing ? `Sửa HĐTD ${editing.HdtdNumber}` : 'Hợp đồng tín dụng mới'}</span>
+      {showForm && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className={`${containerCardBg} rounded-xl border border-line shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150`}>
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <h3 className="font-bold text-sm text-ink">
+                {editing ? `Sửa Hợp đồng Tín dụng "${editing.HdtdNumber}"` : 'Tạo Hợp đồng Tín dụng Mới'}
+              </h3>
+              <button onClick={() => setShowForm(false)} className="text-ink-faint hover:text-ink">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <button type="button" onClick={() => setShowForm(false)} className="p-1 text-ink-faint hover:text-ink-muted">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className={`block mb-1 ${labelStyle}`}>Số HĐTD *</label>
-              <input type="text" value={form.HdtdNumber || ''}
-                onChange={e => setForm(f => ({ ...f, HdtdNumber: e.target.value }))}
-                placeholder="2002/HĐTD/9653222"
-                className={`w-full rounded-md p-2.5 text-sm font-mono font-bold ${inputStyle}`} />
-            </div>
-            <div>
-              <label className={`block mb-1 ${labelStyle}`}>Phương thức vay *</label>
-              <select value={form.LoanMethod || ''}
-                onChange={e => setForm(f => ({ ...f, LoanMethod: e.target.value, LoanPurposeType: '' }))}
-                className={`w-full rounded-md p-2.5 text-sm ${inputStyle}`}>
-                {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={`block mb-1 ${labelStyle}`}>Tổng mức cấp *</label>
-              <input type="text" value={formAmount}
-                onChange={e => setFormAmount(formatMoneyInput(e.target.value))}
-                placeholder="4.000.000.000"
-                className={`w-full rounded-md p-2.5 text-sm font-mono font-bold text-accent ${inputStyle}`} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className={`block mb-1 ${labelStyle}`}>Ngày HĐ có hiệu lực</label>
-              <DateInput value={form.ContractStartDate || ''}
-                onChange={v => setForm(f => ({ ...f, ContractStartDate: v }))}
-                className={`w-full rounded-md p-2.5 text-sm font-mono ${inputStyle}`} />
-            </div>
-            <div>
-              <label className={`block mb-1 ${labelStyle}`}>Thời hạn HĐTD (tháng)</label>
-              <input type="number" min={1} value={form.LoanTenorMonths ?? ''}
-                onChange={e => setForm(f => ({ ...f, LoanTenorMonths: parseInt(e.target.value, 10) || null }))}
-                className={`w-full rounded-md p-2.5 text-sm font-mono ${inputStyle}`} />
-            </div>
-            <div>
-              <label className={`block mb-1 ${labelStyle}`}>Ngày kết thúc HĐ</label>
-              <DateInput readOnly value={form.ContractEndDate || ''}
-                onChange={v => setForm(f => ({ ...f, ContractEndDate: v }))}
-                className={`w-full rounded-md p-2.5 text-sm font-mono ${inputStyle}`} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className={`block mb-1 ${labelStyle}`}>Mục đích vay vốn</label>
-              <select value={form.LoanPurposeType || ''}
-                onChange={e => setForm(f => ({ ...f, LoanPurposeType: e.target.value }))}
-                className={`w-full rounded-md p-2.5 text-sm ${inputStyle}`}>
-                <option value="">— Chọn —</option>
-                {purposeOptions.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={`block mb-1 ${labelStyle}`}>Mô tả chi tiết mục đích</label>
-              <input type="text" value={form.LoanPurpose || ''}
-                onChange={e => setForm(f => ({ ...f, LoanPurpose: e.target.value }))}
-                className={`w-full rounded-md p-2.5 text-sm ${inputStyle}`} />
-            </div>
-          </div>
-
-          <div className={`rounded-md p-3 border ${'bg-accent-soft border-accent/30'}`}>
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input type="checkbox" checked={useSharedApproval}
-                onChange={e => setUseSharedApproval(e.target.checked)}
-                className="w-4 h-4 accent-accent" />
-              <span className="text-xs font-semibold">
-                HĐTD này dùng chung hạn mức phê duyệt với HĐTD khác
-              </span>
-            </label>
-            {useSharedApproval && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+            <form onSubmit={handleSave} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className={`block mb-1 ${labelStyle}`}>Số phê duyệt / Mã hạn mức được duyệt</label>
-                  <input type="text" value={form.ApprovalCode || ''}
-                    onChange={e => setForm(f => ({ ...f, ApprovalCode: e.target.value }))}
-                    placeholder="PD-2026-001"
-                    className={`w-full rounded-md p-2.5 text-sm font-mono ${inputStyle}`} />
+                  <label className={`block mb-1 ${labelStyle}`}>Số HĐTD *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="VD: HĐTD-2026/001..."
+                    value={form.HdtdNumber || ''}
+                    onChange={e => setForm({ ...form, HdtdNumber: e.target.value })}
+                    className={`w-full rounded-md p-2 font-mono font-bold text-accent ${inputStyle}`}
+                  />
                 </div>
+
                 <div>
-                  <label className={`block mb-1 ${labelStyle}`}>Hạn mức được duyệt</label>
-                  <input type="text" value={formApprovalAmount}
-                    onChange={e => setFormApprovalAmount(formatMoneyInput(e.target.value))}
-                    className={`w-full rounded-md p-2.5 text-sm font-mono ${inputStyle}`} />
+                  <label className={`block mb-1 ${labelStyle}`}>Phương thức cho vay *</label>
+                  <select
+                    value={form.LoanMethod || LOAN_METHODS[0]}
+                    onChange={e => setForm({ ...form, LoanMethod: e.target.value })}
+                    className={`w-full rounded-md p-2 font-semibold ${inputStyle}`}
+                  >
+                    {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
                 </div>
               </div>
-            )}
-          </div>
 
-          <div>
-            <div className={`mb-2 flex items-center space-x-2 ${labelStyle}`}>
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Tài sản bảo đảm cho HĐTD *</span>
-            </div>
-            {collaterals.length === 0 ? (
-              <div className="text-xs text-neg flex items-center space-x-1.5">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>Chưa có TSBĐ. Thêm ở tab Định Giá TSĐB.</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={`block mb-1 ${labelStyle}`}>Hạn mức cấp HĐTD (VNĐ) *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="VD: 1,000,000,000"
+                    value={formAmount}
+                    onChange={e => setFormAmount(formatMoneyInput(e.target.value))}
+                    className={`w-full rounded-md p-2 font-mono font-bold text-sm text-accent ${inputStyle}`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block mb-1 ${labelStyle}`}>Thời hạn vay tối đa (Tháng)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={360}
+                    value={form.LoanTenorMonths ?? 12}
+                    onChange={e => setForm({ ...form, LoanTenorMonths: parseInt(e.target.value, 10) || 12 })}
+                    className={`w-full rounded-md p-2 font-mono font-bold ${inputStyle}`}
+                  />
+                </div>
               </div>
-            ) : (
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {collaterals.map(col => {
-                  const isChecked = selectedCollateralIds.includes(col.Id);
-                  const val = collateralValue(col);
-                  const ltv = getEffectiveLtv(col);
-                  const capacity = usableCapacity(col, today);
-                  const tinhTrang = appraisalStatus(col, today);
 
-                  return (
-                    <div key={col.Id} className={`p-3 rounded-md border flex flex-wrap items-center justify-between gap-3 ${
-                      isChecked
-                        ? ('bg-accent-soft border-accent/30')
-                        : ('bg-panel border-line hover:border-accent')
-                    }`}>
-                      <div className="flex items-start space-x-3 flex-1 min-w-[220px]">
-                        <input type="checkbox" checked={isChecked}
-                          onChange={e => setSelectedCollateralIds(prev =>
-                            e.target.checked ? [...prev, col.Id] : prev.filter(x => x !== col.Id))}
-                          className="w-4 h-4 rounded text-accent mt-0.5" />
-                        <div>
-                          <div className="font-bold text-xs">
-                            {col.AssetType || 'TSBĐ'} — {col.Address || col.AssetCode}
-                          </div>
-                          <div className="text-[11px] text-ink-faint mt-0.5 flex flex-wrap items-center gap-3">
-                            <span>Định giá: <strong>{fmtMoney(val)}</strong></span>
-                            <span>LTV: <strong className="font-mono text-accent">{ltv}%</strong></span>
-                            <span>Ngày định giá: <span className="font-mono">{fmtDate(col.AppraisalDate)}</span></span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-[10px] text-ink-faint block uppercase">Khả năng bảo đảm</span>
-                        <span className={`text-xs font-mono font-bold ${
-                          capacity > 0 ? 'text-pos' : 'text-neg'
-                        }`}>
-                          {fmtMoney(capacity)}
-                        </span>
-                        {capacity === 0 && (
-                          <span className="block text-[10px] font-semibold text-neg">
-                            {tinhTrang === 'expired'
-                              ? `Định giá hết hiệu lực ${fmtDate(appraisalExpiryDate(col))}`
-                              : 'Chưa có ngày định giá'}
-                          </span>
-                        )}
-                      </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={`block mb-1 ${labelStyle}`}>Ngày bắt đầu hiệu lực HĐTD</label>
+                  <DateInput
+                    value={form.ContractStartDate}
+                    onChange={d => setForm({ ...form, ContractStartDate: d })}
+                    className={`w-full rounded-md p-2 ${inputStyle}`}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block mb-1 ${labelStyle}`}>Ngày hết hạn HĐTD</label>
+                  <DateInput
+                    value={form.ContractEndDate}
+                    onChange={d => setForm({ ...form, ContractEndDate: d })}
+                    className={`w-full rounded-md p-2 ${inputStyle}`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={`block mb-1 ${labelStyle}`}>Mục đích sử dụng vốn</label>
+                <select
+                  value={form.LoanPurpose || ''}
+                  onChange={e => setForm({ ...form, LoanPurpose: e.target.value })}
+                  className={`w-full rounded-md p-2 font-medium ${inputStyle}`}
+                >
+                  <option value="">— Chọn mục đích sử dụng vốn —</option>
+                  {purposeOptions.map(p => (
+                    <option key={p.value} value={p.value}>{p.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-line">
+                <label className="text-xs font-bold text-ink flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useSharedApproval}
+                    onChange={e => setUseSharedApproval(e.target.checked)}
+                    className="rounded border-line"
+                  />
+                  <span>Dùng Tờ trình Phê duyệt chung (Gắn mã Tờ trình phê duyệt hạn mức)</span>
+                </label>
+
+                {useSharedApproval && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6">
+                    <div>
+                      <label className={`block mb-1 ${labelStyle}`}>Mã Tờ trình phê duyệt</label>
+                      <input
+                        type="text"
+                        placeholder="VD: TT-2026/999"
+                        value={form.ApprovalCode || ''}
+                        onChange={e => setForm({ ...form, ApprovalCode: e.target.value })}
+                        className={`w-full rounded-md p-2 font-mono ${inputStyle}`}
+                      />
                     </div>
-                  );
-                })}
-
-                {selectedCollateralIds.length > 0 && (
-                  <div className={`p-3 rounded-md border text-xs font-semibold flex flex-wrap items-center justify-between gap-3 ${
-                    'bg-pos-soft border-pos/30 text-pos'
-                  }`}>
-                    <span>TỔNG KHẢ NĂNG BẢO ĐẢM ({selectedCollateralIds.length} tài sản)</span>
-                    <span className="font-mono">{fmtMoney(tongKhaNangBaoDam)}</span>
+                    <div>
+                      <label className={`block mb-1 ${labelStyle}`}>Tổng hạn mức phê duyệt chung (VNĐ)</label>
+                      <input
+                        type="text"
+                        placeholder="VD: 5,000,000,000"
+                        value={formApprovalAmount}
+                        onChange={e => setFormApprovalAmount(formatMoneyInput(e.target.value))}
+                        className={`w-full rounded-md p-2 font-mono ${inputStyle}`}
+                      />
+                    </div>
                   </div>
                 )}
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-line">
+                <div className="flex items-center justify-between">
+                  <label className={`block font-bold text-ink ${labelStyle}`}>
+                    Tài sản Bảo đảm Thế chấp cho HĐTD ({selectedCollateralIds.length} TSBĐ chọn) *
+                  </label>
+                  {tongKhaNangBaoDam > 0 && (
+                    <span className="text-[11px] font-bold text-pos font-mono">
+                      Khả năng bảo đảm khả dụng: {fmtMoney(tongKhaNangBaoDam)}
+                    </span>
+                  )}
+                </div>
 
                 {vuotKhaNangBaoDam && (
-                  <div className={`p-3 rounded-md border text-xs font-bold ${
-                    'bg-neg-soft border-neg/30 text-neg'
-                  }`}>
-                    Mức cấp {fmtMoney(parseMoneyInput(formAmount))} vượt khả năng bảo đảm {fmtMoney(tongKhaNangBaoDam)}
+                  <div className="p-2.5 rounded-lg bg-warn-soft border border-warn/30 text-warn text-xs font-semibold flex items-center space-x-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>Cảnh báo: Hạn mức cấp ({fmtMoney(parseMoneyInput(formAmount))}) vượt quá Khả năng bảo đảm khả dụng của các TSBĐ được gán ({fmtMoney(tongKhaNangBaoDam)}).</span>
                   </div>
                 )}
-              </div>
-            )}
-          </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-line">
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input type="checkbox" checked={form.IsClosed ?? false}
-                disabled={!closeCheck.allowed}
-                onChange={e => setForm(f => ({ ...f, IsClosed: e.target.checked }))}
-                className="w-4 h-4 accent-accent disabled:opacity-40" />
-              <span className={`text-xs font-medium ${closeCheck.allowed ? '' : 'text-ink-faint'}`}>
-                HĐTD đã đóng
-              </span>
-            </label>
-            <button type="submit" disabled={loading}
-              className="flex items-center space-x-1.5 bg-accent hover:opacity-90 disabled:opacity-50 text-accent-ink font-bold px-5 py-2 rounded-md text-xs">
-              <Save className="w-3.5 h-3.5" /><span>{editing ? 'Cập nhật' : 'Tạo HĐTD'}</span>
-            </button>
+                <div className="max-h-48 overflow-y-auto space-y-1.5 p-2 rounded-md border border-line bg-panel-muted/30">
+                  {collaterals.length === 0 ? (
+                    <div className="text-center py-3 text-ink-faint text-xs">
+                      Khách hàng chưa có TSBĐ nào. Vui lòng thêm TSBĐ ở phân hệ Tài sản bảo đảm trước.
+                    </div>
+                  ) : (
+                    collaterals.map(c => {
+                      const isSelected = selectedCollateralIds.includes(c.Id);
+                      const val = collateralValue(c);
+                      const cap = usableCapacity(c, '2026-08-14');
+
+                      return (
+                        <label
+                          key={c.Id}
+                          className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                            isSelected ? 'bg-accent-soft border-accent/40 text-ink' : 'bg-panel border-line text-ink-muted hover:border-line-strong'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2.5 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setSelectedCollateralIds([...selectedCollateralIds, c.Id]);
+                                } else {
+                                  setSelectedCollateralIds(selectedCollateralIds.filter(x => x !== c.Id));
+                                }
+                              }}
+                              className="rounded border-line"
+                            />
+                            <div className="truncate">
+                              <span className="font-bold text-ink">{c.AssetCode || c.AssetType || 'TSBĐ'}</span>
+                              <span className="text-[10px] text-ink-faint ml-2">({c.AssetType || 'Khác'})</span>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0 font-mono text-[11px] space-x-3">
+                            <span>Giá trị: <strong className="text-accent">{fmtMoney(val)}</strong></span>
+                            <span>Khả dụng: <strong className="text-pos">{fmtMoney(cap)}</strong></span>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {editing && (
+                <div className="space-y-2 pt-2 border-t border-line">
+                  <label className="text-xs font-bold text-ink flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.IsClosed ?? false}
+                      onChange={e => setForm({ ...form, IsClosed: e.target.checked })}
+                      className="rounded border-line"
+                    />
+                    <span>Đánh dấu HĐTD ĐÃ ĐÓNG / TẤT TOÁN</span>
+                  </label>
+
+                  {!closeCheck.allowed && form.IsClosed && (
+                    <div className="p-2.5 rounded-lg bg-neg-soft border border-neg/30 text-neg text-xs font-semibold">
+                      Chưa thể đóng HĐTD: còn {closeCheck.unsettledKunnNumbers.length} KUNN chưa tất toán ({closeCheck.unsettledKunnNumbers.join(', ')}). Tất toán các KUNN trước.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-line flex items-center justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 rounded-lg border border-line text-ink-muted hover:text-ink font-semibold"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-accent hover:opacity-90 text-accent-ink font-bold py-2 px-4 rounded-lg flex items-center space-x-1.5 shadow-xs disabled:opacity-60"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{editing ? 'Lưu thay đổi' : 'Tạo HĐTD Mới'}</span>
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
+        </div>
       )}
     </div>
   );

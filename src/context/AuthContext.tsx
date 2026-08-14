@@ -12,7 +12,7 @@ interface AuthContextType {
   isAdmin: boolean;
 
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (usernameOrEmail: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -70,17 +70,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [userId]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (usernameOrEmail: string, password: string) => {
+    const cleanInput = usernameOrEmail.trim();
+    let emailToUse = cleanInput;
+    if (!cleanInput.includes('@')) {
+      emailToUse = `${cleanInput.toLowerCase()}@app.local`;
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: emailToUse,
       password,
     });
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
-        throw new Error('Email hoặc mật khẩu không đúng.');
+        throw new Error('Tên đăng nhập / Email hoặc mật khẩu không chính xác.');
       }
       if (error.message.includes('Email not confirmed')) {
-        throw new Error('Tài khoản chưa xác nhận email. Vui lòng liên hệ quản trị hệ thống.');
+        throw new Error('Tài khoản chưa xác nhận. Vui lòng liên hệ quản trị hệ thống.');
       }
       throw new Error(error.message);
     }

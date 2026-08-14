@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { Calendar } from 'lucide-react';
 import { useDateFormat, type DateFormat } from '../context/DateFormatContext';
 import { parseAnyDate } from '../lib/utils';
@@ -15,6 +15,10 @@ export interface DateInputProps {
   name?: string;
   format?: DateFormat;
 }
+
+const REGEX_YYYY_MM_DD = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/;
+const REGEX_SLASH_DATE = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+const REGEX_NON_DIGITS = /\D/g;
 
 export function dateToDisplay(v?: string | null, format: DateFormat = 'dd/mm/yyyy'): string {
   if (!v) return '';
@@ -39,21 +43,21 @@ export function displayToIso(displayStr: string, format: DateFormat = 'dd/mm/yyy
   let year: number | null = null;
 
   if (format === 'yyyy-mm-dd') {
-    const match = clean.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    const match = clean.match(REGEX_YYYY_MM_DD);
     if (match) {
       year = parseInt(match[1], 10);
       month = parseInt(match[2], 10);
       day = parseInt(match[3], 10);
     }
   } else if (format === 'mm/dd/yyyy') {
-    const match = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const match = clean.match(REGEX_SLASH_DATE);
     if (match) {
       month = parseInt(match[1], 10);
       day = parseInt(match[2], 10);
       year = parseInt(match[3], 10);
     }
   } else {
-    const match = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const match = clean.match(REGEX_SLASH_DATE);
     if (match) {
       day = parseInt(match[1], 10);
       month = parseInt(match[2], 10);
@@ -96,7 +100,7 @@ function autoFormatDisplayDate(input: string, prev: string, format: DateFormat):
   }
 
   if (format === 'yyyy-mm-dd') {
-    const digits = input.replace(/\D/g, '').slice(0, 8);
+    const digits = input.replace(REGEX_NON_DIGITS, '').slice(0, 8);
     if (!digits) return '';
     if (digits.length <= 4) return digits;
     if (digits.length <= 6) return `${digits.slice(0, 4)}-${digits.slice(4)}`;
@@ -113,7 +117,7 @@ function autoFormatDisplayDate(input: string, prev: string, format: DateFormat):
     }
   }
 
-  const digits = input.replace(/\D/g, '').slice(0, 8);
+  const digits = input.replace(REGEX_NON_DIGITS, '').slice(0, 8);
   if (!digits) return '';
 
   if (digits.length <= 2) return digits;
@@ -121,7 +125,7 @@ function autoFormatDisplayDate(input: string, prev: string, format: DateFormat):
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
-export const DateInput: React.FC<DateInputProps> = ({
+export const DateInput = memo<DateInputProps>(({
   value,
   onChange,
   className = '',
@@ -185,7 +189,7 @@ export const DateInput: React.FC<DateInputProps> = ({
     }
   };
 
-  const handleCalendarClick = () => {
+  const handleCalendarClick = useCallback(() => {
     if (disabled || readOnly) return;
     if (hiddenDateRef.current) {
       if (typeof hiddenDateRef.current.showPicker === 'function') {
@@ -198,7 +202,7 @@ export const DateInput: React.FC<DateInputProps> = ({
         hiddenDateRef.current.focus();
       }
     }
-  };
+  }, [disabled, readOnly]);
 
   const handleNativePickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newIso = e.target.value;
@@ -243,4 +247,6 @@ export const DateInput: React.FC<DateInputProps> = ({
       />
     </div>
   );
-};
+});
+
+DateInput.displayName = 'DateInput';

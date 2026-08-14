@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, memo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon, Menu, LogOut, ShieldCheck, User, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -11,26 +11,32 @@ interface HeaderProps {
   onOpenCommandPalette?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, onOpenCommandPalette }) => {
+export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPalette }) => {
   const { theme, toggleTheme } = useTheme();
   const { user, role, fullName, isAdmin, signOut } = useAuth();
   const { lang, setLang, t } = useLang();
   const [isOnline, setIsOnline] = useState<boolean | null>(true);
 
-  useEffect(() => {
-    checkConnection();
-    const interval = setInterval(checkConnection, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const checkConnection = async () => {
+  const checkConnection = useCallback(async () => {
     try {
       const { error } = await supabase.from('Customers').select('Id').limit(1);
       setIsOnline(!error);
     } catch {
       setIsOnline(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkConnection();
+    const interval = setInterval(checkConnection, 30000);
+    return () => clearInterval(interval);
+  }, [checkConnection]);
+
+  const handleSignOut = useCallback(() => {
+    if (window.confirm(t('header.signOutConfirm'))) {
+      signOut();
+    }
+  }, [t, signOut]);
 
   const roleLabel = role === 'admin'
     ? t('header.roleAdmin')
@@ -85,25 +91,25 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, onOpenComman
         </span>
 
         {LANG_SWITCH_ENABLED && (
-        <div
-          className="hidden sm:inline-flex rounded-md border border-line overflow-hidden"
-          role="group"
-          aria-label={t('header.language')}
-        >
-          {LANGS.map(l => (
-            <button
-              key={l.key}
-              type="button"
-              onClick={() => setLang(l.key)}
-              aria-pressed={lang === l.key}
-              className={`px-2 py-1 text-[10px] font-bold tracking-[0.08em] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
-                lang === l.key ? 'bg-accent-soft text-accent' : 'text-ink-faint hover:text-ink'
-              }`}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
+          <div
+            className="hidden sm:inline-flex rounded-md border border-line overflow-hidden"
+            role="group"
+            aria-label={t('header.language')}
+          >
+            {LANGS.map(l => (
+              <button
+                key={l.key}
+                type="button"
+                onClick={() => setLang(l.key)}
+                aria-pressed={lang === l.key}
+                className={`px-2 py-1 text-[10px] font-bold tracking-[0.08em] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
+                  lang === l.key ? 'bg-accent-soft text-accent' : 'text-ink-faint hover:text-ink'
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
         )}
 
         <button
@@ -126,11 +132,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, onOpenComman
 
         <button
           type="button"
-          onClick={() => {
-            if (window.confirm(t('header.signOutConfirm'))) {
-              signOut();
-            }
-          }}
+          onClick={handleSignOut}
           className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-ink-muted hover:text-neg transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <LogOut className="w-3.5 h-3.5" />
@@ -139,5 +141,6 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, onOpenComman
       </div>
     </header>
   );
-};
+});
 
+Header.displayName = 'Header';

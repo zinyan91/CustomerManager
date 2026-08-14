@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, memo } from 'react';
 import { TABLE_CELL, TABLE_HEAD } from '../lib/uiClasses';
 
 export type FieldPriority = 1 | 2 | 3;
@@ -29,11 +29,11 @@ interface AdaptiveTableProps<T> {
 const alignClass = (a?: 'left' | 'right' | 'center') =>
   a === 'right' ? 'text-right' : a === 'center' ? 'text-center' : 'text-left';
 
-export function AdaptiveTable<T>({
+function AdaptiveTableImpl<T>({
   columns, rows, rowKey, onRowClick, isSelected,
   emptyText, cardTitle, cardSubtitle, actions, actionsLabel = 'Thao tác', maxHeight,
 }: AdaptiveTableProps<T>) {
-  const [moRong, setMoRong] = React.useState<Set<React.Key>>(new Set());
+  const [moRong, setMoRong] = useState<Set<React.Key>>(new Set());
 
   const toggle = (k: React.Key) =>
     setMoRong(prev => {
@@ -165,3 +165,5 @@ export function AdaptiveTable<T>({
     </>
   );
 }
+
+export const AdaptiveTable = memo(AdaptiveTableImpl) as typeof AdaptiveTableImpl;

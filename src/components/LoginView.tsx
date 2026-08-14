@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, LogIn, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, LogIn, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 // Custom Vector Banking Emblem SVG Logo
@@ -46,7 +46,7 @@ const BankEmblemLogo: React.FC<{ className?: string }> = ({ className = 'w-14 h-
 export const LoginView: React.FC = () => {
   const { signIn } = useAuth();
 
-  const [email, setEmail] = useState('');
+  const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,14 +56,14 @@ export const LoginView: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (!email.trim() || !password) {
-      setError('Vui lòng nhập đầy đủ email và mật khẩu công vụ.');
+    if (!usernameOrEmail.trim() || !password) {
+      setError('Vui lòng nhập đầy đủ tên đăng nhập / email và mật khẩu công vụ.');
       return;
     }
 
     setSubmitting(true);
     try {
-      await signIn(email, password);
+      await signIn(usernameOrEmail, password);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Đăng nhập thất bại.');
     } finally {
@@ -135,18 +135,18 @@ export const LoginView: React.FC = () => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-5 pt-1">
           
-          {/* Email Input Field */}
+          {/* Username / Email Input Field */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-slate-300">
-              Email công vụ
+              Tên đăng nhập / Email công vụ
             </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors" />
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 transition-colors" />
               <input
-                type="email"
+                type="text"
                 autoComplete="username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={usernameOrEmail}
+                onChange={(e) => setUsernameOrEmail(e.target.value)}
                 placeholder=""
                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-700 bg-slate-950/80 text-white text-xs font-medium outline-none transition-all focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/30 disabled:opacity-60"
                 disabled={submitting}

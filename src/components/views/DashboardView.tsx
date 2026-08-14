@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { UI } from '../../lib/uiClasses';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI } from '../../lib/api';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
@@ -52,42 +52,72 @@ export const DashboardView: React.FC = () => {
     }
   };
 
-  const duNoCua = (c: LoanContract) =>
-    c.IsSettled ? 0 : (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0);
-  const chuaTatToan = contracts.filter(c => !c.IsSettled);
+  const customerMap = useMemo(
+    () => new Map(customers.map(c => [c.Id, c])),
+    [customers]
+  );
 
-  const totalCustomersCount = customers.length;
-  const totalDebt = contracts.reduce((acc, c) => acc + duNoCua(c), 0);
-  const totalLimit = contracts.reduce((acc, c) => acc + (c.ContractAmount || 0), 0);
-  const totalCollateralVal = collaterals.reduce((acc, c) => acc + (collateralValue(c)), 0);
-  const weightedLtv = totalCollateralVal > 0 ? (totalDebt / totalCollateralVal) * 100 : 0;
+  const {
+    chuaTatToan,
+    totalCustomersCount,
+    totalDebt,
+    totalLimit,
+    totalCollateralVal,
+    weightedLtv,
+    theConHieuLuc,
+    hanMucTheDaCap,
+    loanMethodStats,
+    debtGroupStats,
+  } = useMemo(() => {
+    const duNoCua = (c: LoanContract) =>
+      c.IsSettled ? 0 : (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0);
+    const unSettled = contracts.filter(c => !c.IsSettled);
 
-  const theConHieuLuc = cardContracts.filter(c => !c.IsClosed);
-  const hanMucTheDaCap = totalCardGrantedLimit(cardContracts);
+    const debt = contracts.reduce((acc, c) => acc + duNoCua(c), 0);
+    const limit = contracts.reduce((acc, c) => acc + (c.ContractAmount || 0), 0);
+    const colVal = collaterals.reduce((acc, c) => acc + collateralValue(c), 0);
+    const ltv = colVal > 0 ? (debt / colVal) * 100 : 0;
 
-  const loanMethodStats: { method: string; count: number; amount: number; isGrantedLimit?: boolean }[] = [
-    'Hạn mức tín dụng',
-    'Cho vay từng lần',
-    'Cầm cố sổ tiết kiệm',
-    'Hạn mức tín dụng từng lần'
-  ].map(method => {
-    const matched = chuaTatToan.filter(c => c.LoanMethod === method);
-    const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
-    return { method, count: matched.length, amount };
-  });
+    const validCards = cardContracts.filter(c => !c.IsClosed);
+    const cardLimit = totalCardGrantedLimit(cardContracts);
 
-  loanMethodStats.push({
-    method: 'Hạn mức thẻ tín dụng',
-    count: theConHieuLuc.length,
-    amount: hanMucTheDaCap,
-    isGrantedLimit: true,
-  });
+    const methodStats: { method: string; count: number; amount: number; isGrantedLimit?: boolean }[] = [
+      'Hạn mức tín dụng',
+      'Cho vay từng lần',
+      'Cầm cố sổ tiết kiệm',
+      'Hạn mức tín dụng từng lần'
+    ].map(method => {
+      const matched = unSettled.filter(c => c.LoanMethod === method);
+      const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
+      return { method, count: matched.length, amount };
+    });
 
-  const debtGroupStats = [1, 2, 3, 4, 5].map(group => {
-    const matched = chuaTatToan.filter(c => (c.DebtGroup ?? 1) === group);
-    const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
-    return { group, count: matched.length, amount };
-  });
+    methodStats.push({
+      method: 'Hạn mức thẻ tín dụng',
+      count: validCards.length,
+      amount: cardLimit,
+      isGrantedLimit: true,
+    });
+
+    const groupStats = [1, 2, 3, 4, 5].map(group => {
+      const matched = unSettled.filter(c => (c.DebtGroup ?? 1) === group);
+      const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
+      return { group, count: matched.length, amount };
+    });
+
+    return {
+      chuaTatToan: unSettled,
+      totalCustomersCount: customers.length,
+      totalDebt: debt,
+      totalLimit: limit,
+      totalCollateralVal: colVal,
+      weightedLtv: ltv,
+      theConHieuLuc: validCards,
+      hanMucTheDaCap: cardLimit,
+      loanMethodStats: methodStats,
+      debtGroupStats: groupStats,
+    };
+  }, [customers, contracts, collaterals, cardContracts]);
 
   const [onlyGroup1, setOnlyGroup1] = useState(true);
   const [kunnFilter, setKunnFilter] = useState<DueFilter>('all');
@@ -95,64 +125,78 @@ export const DashboardView: React.FC = () => {
   const [tsbdFilter, setTsbdFilter] = useState<DueFilter>('all');
   const [alertConsoleTab, setAlertConsoleTab] = useState<'due_month' | 'kunn' | 'hmtd' | 'tsbd'>('due_month');
 
-  const activeContracts = chuaTatToan.filter(c => !onlyGroup1 || (c.DebtGroup ?? 1) === 1);
+  const {
+    dueInMonthList,
+    dueKunnList,
+    dueHmtdList,
+    dueCollateralList,
+  } = useMemo(() => {
+    const activeContracts = chuaTatToan.filter(c => !onlyGroup1 || (c.DebtGroup ?? 1) === 1);
 
-  const dueInMonthList = activeContracts.map(c => {
-    const cus = customers.find(cust => cust.Id === c.CustomerId);
-    const dueInfo = monthlyDueInfo(c.RepaymentStartDate || c.DisbursementDate || c.ContractStartDate);
-    return { contract: c, customer: cus, dueInfo };
-  }).filter(item => item.dueInfo && item.dueInfo.daysLeft <= 5)
-    .sort((a, b) => (a.dueInfo?.daysLeft ?? 0) - (b.dueInfo?.daysLeft ?? 0));
+    const monthList = activeContracts.map(c => {
+      const cus = customerMap.get(c.CustomerId);
+      const dueInfo = monthlyDueInfo(c.RepaymentStartDate || c.DisbursementDate || c.ContractStartDate);
+      return { contract: c, customer: cus, dueInfo };
+    }).filter(item => item.dueInfo && item.dueInfo.daysLeft <= 5)
+      .sort((a, b) => (a.dueInfo?.daysLeft ?? 0) - (b.dueInfo?.daysLeft ?? 0));
 
-  const dueKunnList = activeContracts.map(c => {
-    const cus = customers.find(cust => cust.Id === c.CustomerId);
-    const daysLeft = daysUntil(c.KunnDueDate);
-    return { contract: c, customer: cus, daysLeft };
-  }).filter(item => item.daysLeft !== null && item.daysLeft <= 10)
-    .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
+    const kunnList = activeContracts.map(c => {
+      const cus = customerMap.get(c.CustomerId);
+      const daysLeft = daysUntil(c.KunnDueDate);
+      return { contract: c, customer: cus, daysLeft };
+    }).filter(item => item.daysLeft !== null && item.daysLeft <= 10)
+      .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
-  const hmtdMap: Record<string, { masterNo: string; contract: LoanContract; customer?: Customer; endDateStr: string; daysLeft: number | null }> = {};
+    const hmtdMap: Record<string, { masterNo: string; contract: LoanContract; customer?: Customer; endDateStr: string; daysLeft: number | null }> = {};
 
-  activeContracts.forEach(c => {
-    const isHmtd = c.LoanMethod === 'Hạn mức tín dụng' || c.LoanMethod?.includes('Hạn mức');
-    if (!isHmtd) return;
+    activeContracts.forEach(c => {
+      const isHmtd = c.LoanMethod === 'Hạn mức tín dụng' || c.LoanMethod?.includes('Hạn mức');
+      if (!isHmtd) return;
 
-    const masterNo = getMasterHdtdNumber(c);
-    const cus = customers.find(cust => cust.Id === c.CustomerId);
+      const masterNo = getMasterHdtdNumber(c);
+      const cus = customerMap.get(c.CustomerId);
 
-    const endDateStr = toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate) || '';
+      const endDateStr = toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate) || '';
 
-    const daysLeft = daysUntil(endDateStr);
+      const daysLeft = daysUntil(endDateStr);
 
-    if (!hmtdMap[masterNo] || (c.ContractAmount && c.ContractAmount > (hmtdMap[masterNo].contract.ContractAmount || 0))) {
-      hmtdMap[masterNo] = {
-        masterNo,
-        contract: c,
-        customer: cus,
-        endDateStr,
-        daysLeft
-      };
-    }
-  });
+      if (!hmtdMap[masterNo] || (c.ContractAmount && c.ContractAmount > (hmtdMap[masterNo].contract.ContractAmount || 0))) {
+        hmtdMap[masterNo] = {
+          masterNo,
+          contract: c,
+          customer: cus,
+          endDateStr,
+          daysLeft
+        };
+      }
+    });
 
-  const dueHmtdList = Object.values(hmtdMap)
-    .filter(item => item.daysLeft !== null && item.daysLeft <= 45)
-    .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
+    const hmtdList = Object.values(hmtdMap)
+      .filter(item => item.daysLeft !== null && item.daysLeft <= 45)
+      .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
-  const collateralIdsDangTheChap = new Set<number>();
-  chuaTatToan.forEach(c => parseCollateralIds(c).forEach(id => collateralIdsDangTheChap.add(id)));
+    const collateralIdsDangTheChap = new Set<number>();
+    chuaTatToan.forEach(c => parseCollateralIds(c).forEach(id => collateralIdsDangTheChap.add(id)));
 
-  const dueCollateralList = collaterals
-    .filter(col => collateralIdsDangTheChap.has(col.Id))
-    .map(col => {
-      const cus = customers.find(cust => cust.Id === col.CustomerId);
-      const expiryDateStr = appraisalExpiryDate(col);
-      if (!expiryDateStr) return null;
-      return { collateral: col, customer: cus, expiryDateStr, daysLeft: daysUntil(expiryDateStr) };
-    })
-    .filter((item): item is NonNullable<typeof item> =>
-      item !== null && item.daysLeft !== null && item.daysLeft <= 30)
-    .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
+    const colList = collaterals
+      .filter(col => collateralIdsDangTheChap.has(col.Id))
+      .map(col => {
+        const cus = customerMap.get(col.CustomerId);
+        const expiryDateStr = appraisalExpiryDate(col);
+        if (!expiryDateStr) return null;
+        return { collateral: col, customer: cus, expiryDateStr, daysLeft: daysUntil(expiryDateStr) };
+      })
+      .filter((item): item is NonNullable<typeof item> =>
+        item !== null && item.daysLeft !== null && item.daysLeft <= 30)
+      .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
+
+    return {
+      dueInMonthList: monthList,
+      dueKunnList: kunnList,
+      dueHmtdList: hmtdList,
+      dueCollateralList: colList,
+    };
+  }, [chuaTatToan, onlyGroup1, customerMap, collaterals]);
 
   const soNgay = <T extends { daysLeft?: number | null }>(x: T) => x.daysLeft;
 

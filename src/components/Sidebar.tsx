@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo, useCallback, type ElementType } from 'react';
 import {
   BookOpen, LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings, Calculator, FileSignature, Target, Percent, Landmark, Handshake, ClipboardList, GraduationCap, Boxes, Receipt, X } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
@@ -13,7 +13,7 @@ interface SidebarProps {
 
 const menuGroups: {
   groupKey: TranslationKey;
-  items: { id: string; labelKey: TranslationKey; icon: React.ElementType }[];
+  items: { id: string; labelKey: TranslationKey; icon: ElementType }[];
 }[] = [
   {
     groupKey: 'nav.groupOverview',
@@ -61,7 +61,7 @@ const menuGroups: {
   },
 ];
 
-export const Sidebar: React.FC<SidebarProps> = ({
+export const Sidebar = memo<SidebarProps>(({
   activeTab,
   setActiveTab,
   isOpenMobile = false,
@@ -69,10 +69,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useLang();
 
-  const handleTabClick = (tabId: string) => {
+  const handleTabClick = useCallback((tabId: string) => {
     setActiveTab(tabId);
     if (onCloseMobile) onCloseMobile();
-  };
+  }, [setActiveTab, onCloseMobile]);
 
   return (
     <>
@@ -133,4 +133,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </aside>
     </>
   );
-};
+});
+
+Sidebar.displayName = 'Sidebar';

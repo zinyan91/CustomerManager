@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { UI } from '../../lib/uiClasses';
 import {
-  Calculator, Layers, TrendingUp, TrendingDown, ShieldCheck, Award, RefreshCw, BarChart2, AlertTriangle, FileText, PiggyBank, Percent
+  Calculator, Layers, TrendingUp, TrendingDown, ShieldCheck, Award, RefreshCw, BarChart2, AlertTriangle, FileText, PiggyBank, Percent, Loader2
 } from 'lucide-react';
-import { Tool1LoanScheduleCalc } from '../calculator/Tool1LoanScheduleCalc';
-import { Tool2StkSingleCalc } from '../calculator/Tool2StkSingleCalc';
-import { Tool3StkMultiCycleCalc } from '../calculator/Tool3StkMultiCycleCalc';
-import { Tool4RateReductionCalc } from '../calculator/Tool4RateReductionCalc';
-import { Tool5CreditCapacityCalc } from '../calculator/Tool5CreditCapacityCalc';
-import { Tool6PrepaymentAnalysisCalc } from '../calculator/Tool6PrepaymentAnalysisCalc';
-import { Tool7RepaymentMethodCompareCalc } from '../calculator/Tool7RepaymentMethodCompareCalc';
-import { Tool8InterestRateConversionCalc } from '../calculator/Tool8InterestRateConversionCalc';
-import { Tool9OverduePenaltyCalc } from '../calculator/Tool9OverduePenaltyCalc';
+
+const Tool1LoanScheduleCalc = lazy(() => import('../calculator/Tool1LoanScheduleCalc').then(m => ({ default: m.Tool1LoanScheduleCalc })));
+const Tool2StkSingleCalc = lazy(() => import('../calculator/Tool2StkSingleCalc').then(m => ({ default: m.Tool2StkSingleCalc })));
+const Tool3StkMultiCycleCalc = lazy(() => import('../calculator/Tool3StkMultiCycleCalc').then(m => ({ default: m.Tool3StkMultiCycleCalc })));
+const Tool4RateReductionCalc = lazy(() => import('../calculator/Tool4RateReductionCalc').then(m => ({ default: m.Tool4RateReductionCalc })));
+const Tool5CreditCapacityCalc = lazy(() => import('../calculator/Tool5CreditCapacityCalc').then(m => ({ default: m.Tool5CreditCapacityCalc })));
+const Tool6PrepaymentAnalysisCalc = lazy(() => import('../calculator/Tool6PrepaymentAnalysisCalc').then(m => ({ default: m.Tool6PrepaymentAnalysisCalc })));
+const Tool7RepaymentMethodCompareCalc = lazy(() => import('../calculator/Tool7RepaymentMethodCompareCalc').then(m => ({ default: m.Tool7RepaymentMethodCompareCalc })));
+const Tool8InterestRateConversionCalc = lazy(() => import('../calculator/Tool8InterestRateConversionCalc').then(m => ({ default: m.Tool8InterestRateConversionCalc })));
+const Tool9OverduePenaltyCalc = lazy(() => import('../calculator/Tool9OverduePenaltyCalc').then(m => ({ default: m.Tool9OverduePenaltyCalc })));
 
 type ToolId = 'loan' | 'stk_single' | 'stk_multi' | 'rate_reduction' | 'credit_capacity' | 'prepayment_analysis' | 'repayment_compare' | 'rate_conversion' | 'overdue_penalty';
 
@@ -54,6 +55,13 @@ const CATEGORIES: ToolCategory[] = [
     ],
   },
 ];
+
+const ToolFallback = () => (
+  <div className="flex items-center justify-center p-12 text-ink-muted bg-panel-muted/40 rounded-xl border border-line">
+    <Loader2 className="w-5 h-5 animate-spin text-accent mr-2" />
+    <span className="text-xs">Đang tải công cụ tính toán...</span>
+  </div>
+);
 
 export const CalculatorView: React.FC = () => {
   const styles = UI;
@@ -121,15 +129,17 @@ export const CalculatorView: React.FC = () => {
       </div>
 
       {/* Calculator Render Area */}
-      {activeTool === 'loan' && <Tool1LoanScheduleCalc styles={styles} />}
-      {activeTool === 'stk_single' && <Tool2StkSingleCalc styles={styles} />}
-      {activeTool === 'stk_multi' && <Tool3StkMultiCycleCalc styles={styles} />}
-      {activeTool === 'rate_reduction' && <Tool4RateReductionCalc styles={styles} />}
-      {activeTool === 'credit_capacity' && <Tool5CreditCapacityCalc styles={styles} />}
-      {activeTool === 'prepayment_analysis' && <Tool6PrepaymentAnalysisCalc styles={styles} />}
-      {activeTool === 'repayment_compare' && <Tool7RepaymentMethodCompareCalc styles={styles} />}
-      {activeTool === 'rate_conversion' && <Tool8InterestRateConversionCalc styles={styles} />}
-      {activeTool === 'overdue_penalty' && <Tool9OverduePenaltyCalc styles={styles} />}
+      <Suspense fallback={<ToolFallback />}>
+        {activeTool === 'loan' && <Tool1LoanScheduleCalc styles={styles} />}
+        {activeTool === 'stk_single' && <Tool2StkSingleCalc styles={styles} />}
+        {activeTool === 'stk_multi' && <Tool3StkMultiCycleCalc styles={styles} />}
+        {activeTool === 'rate_reduction' && <Tool4RateReductionCalc styles={styles} />}
+        {activeTool === 'credit_capacity' && <Tool5CreditCapacityCalc styles={styles} />}
+        {activeTool === 'prepayment_analysis' && <Tool6PrepaymentAnalysisCalc styles={styles} />}
+        {activeTool === 'repayment_compare' && <Tool7RepaymentMethodCompareCalc styles={styles} />}
+        {activeTool === 'rate_conversion' && <Tool8InterestRateConversionCalc styles={styles} />}
+        {activeTool === 'overdue_penalty' && <Tool9OverduePenaltyCalc styles={styles} />}
+      </Suspense>
     </div>
   );
 };

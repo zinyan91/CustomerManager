@@ -34,7 +34,7 @@ export const DAYS_IN_MONTHS_DEFAULT = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 3
 export function computeToiLoanMonth(input: ToiLoanMonthInput): ToiLoanMonthResult {
   const days = input.days || 30;
   const shortBal = Math.max(0, input.shortTermBal || 0);
-  const shortMargin = (input.shortTermRate || 0) - (input.shortTermFtp || 0); // in % e.g. 1.0 means 1%
+  const shortMargin = (input.shortTermRate || 0) - (input.shortTermFtp || 0);
   const shortIncome = (shortBal * (shortMargin / 100) * days) / 360;
 
   const longBal = Math.max(0, input.longTermBal || 0);
@@ -85,9 +85,9 @@ export function defaultToiLoanInputs(): ToiLoanMonthInput[] {
   return DAYS_IN_MONTHS_DEFAULT.map((days, idx) => ({
     month: idx + 1,
     days,
-    shortTermBal: 1250, // default sample 1,250 triệu VNĐ
-    shortTermRate: 9.0, // 9.0% / năm
-    shortTermFtp: 8.0,  // 8.0% / năm (Margin 1.0%)
+    shortTermBal: 1250,
+    shortTermRate: 9.0,
+    shortTermFtp: 8.0,
     longTermBal: 0,
     longTermRate: 10.5,
     longTermFtp: 8.5,

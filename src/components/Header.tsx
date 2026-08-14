@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Sun, Moon, Menu, LogOut, ShieldCheck, User } from 'lucide-react';
+import { Sun, Moon, Menu, LogOut, ShieldCheck, User, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
@@ -8,9 +8,10 @@ import { LANGS, LANG_SWITCH_ENABLED } from '../lib/i18n';
 
 interface HeaderProps {
   onToggleMobileMenu?: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
+export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, onOpenCommandPalette }) => {
   const { theme, toggleTheme } = useTheme();
   const { user, role, fullName, isAdmin, signOut } = useAuth();
   const { lang, setLang, t } = useLang();
@@ -38,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
   const ghostButton = 'p-1.5 rounded-md text-ink-faint hover:text-ink hover:bg-panel-muted transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-[var(--header-h)] px-3 md:px-5 flex items-center justify-between bg-panel border-b border-line">
+    <header className="fixed top-0 left-0 right-0 z-50 h-[var(--header-h)] px-3 md:px-5 flex items-center justify-between bg-panel/90 backdrop-blur-md border-b border-line shadow-sm">
       <div className="flex items-center gap-3 min-w-0">
         <button
           type="button"
@@ -49,7 +50,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
           <Menu className="w-4 h-4" />
         </button>
 
-        <span className="hidden sm:flex items-center justify-center w-7 h-7 rounded-md border border-line-strong font-mono text-[11px] font-bold text-ink">
+        <span className="hidden sm:flex items-center justify-center w-7 h-7 rounded-md border border-line-strong font-mono text-[11px] font-bold text-ink bg-panel-muted/60">
           CM
         </span>
         <h1 className="text-xs font-semibold uppercase tracking-[0.14em] text-ink truncate">
@@ -57,7 +58,22 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
         </h1>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4">
+      <div className="flex items-center gap-2 md:gap-3">
+        {onOpenCommandPalette && (
+          <button
+            type="button"
+            onClick={onOpenCommandPalette}
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-line bg-panel-muted/60 text-xs text-ink-muted hover:text-ink hover:border-line-strong transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            title="Tìm kiếm nhanh (Ctrl + K)"
+          >
+            <Search className="w-3.5 h-3.5 text-accent" />
+            <span className="hidden sm:inline text-[11px]">Tìm kiếm...</span>
+            <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded border border-line bg-panel text-[10px] font-mono text-ink-faint">
+              Ctrl K
+            </kbd>
+          </button>
+        )}
+
         <span className="hidden md:flex items-center gap-1.5 text-xs">
           <span
             className={`w-1.5 h-1.5 rounded-full ${isOnline === false ? 'bg-neg' : 'bg-pos'}`}
@@ -124,3 +140,4 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
     </header>
   );
 };
+

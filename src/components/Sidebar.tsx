@@ -111,13 +111,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     key={item.id}
                     onClick={() => handleTabClick(item.id)}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`w-full flex items-center gap-2.5 pl-2.5 pr-3 py-1.5 border-l-2 text-xs text-left transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
+                    className={`w-full flex items-center gap-2.5 pl-3 pr-3 py-1.5 rounded-r-lg border-l-2 text-xs text-left transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
                       isActive
-                        ? 'border-accent bg-accent-soft text-accent font-semibold'
-                        : 'border-transparent text-ink-muted hover:text-ink hover:bg-panel-muted'
+                        ? 'border-accent bg-accent-soft text-accent font-semibold shadow-xs'
+                        : 'border-transparent text-ink-muted hover:text-ink hover:bg-panel-muted/80'
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-accent' : 'text-ink-faint'}`} />
+                    <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors duration-150 ${isActive ? 'text-accent' : 'text-ink-faint'}`} />
                     <span className="truncate">{t(item.labelKey)}</span>
                   </button>
                 );

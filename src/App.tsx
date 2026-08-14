@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 import { useWork } from './context/WorkContext';
 import { LoginView } from './components/LoginView';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
+import { CommandPalette } from './components/CommandPalette';
 import { DashboardView } from './components/views/DashboardView';
 import { CustomerListView } from './components/views/CustomerListView';
 import { LoanPortfolioView } from './components/views/LoanPortfolioView';
@@ -28,7 +29,19 @@ import { QuizBankView } from './components/views/QuizBankView';
 export function App() {
   const { activeTab, setActiveTab } = useWork();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const { session, loading } = useAuth();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   if (loading) {
     return (
@@ -44,7 +57,10 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-surface text-ink flex flex-col antialiased">
-      <Header onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)} />
+      <Header
+        onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+      />
       <div className="flex flex-1 pt-[var(--header-h)] relative">
         <Sidebar
           activeTab={activeTab}
@@ -74,8 +90,14 @@ export function App() {
           {activeTab === 'post-loan' && <PostLoanControlView />}
         </main>
       </div>
+
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+      />
     </div>
   );
 }
 
 export default App;
+

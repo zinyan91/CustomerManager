@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { DueSectionPanel, dueBadgeClass, dueBadgeText } from '../dashboard/DueSectionPanel';
 import { KpiCard } from '../dashboard/KpiCard';
+import type { AdaptiveColumn } from '../AdaptiveTable';
 
 export const DashboardView: React.FC = () => {
   const { toast, show, dismiss } = useToast();
@@ -162,6 +163,88 @@ export const DashboardView: React.FC = () => {
   const kunnCount = countByDue(dueKunnList, soNgay);
   const hmtdCount = countByDue(dueHmtdList, soNgay);
   const tsbdCount = countByDue(dueCollateralList, soNgay);
+
+  type DueInMonthItem = (typeof dueInMonthList)[number];
+  const dueInMonthColumns: AdaptiveColumn<DueInMonthItem>[] = [
+    { key: 'kh', label: 'Khách hàng vay', priority: 3, render: i => <span className="font-bold">{i.customer?.FullName || 'N/A'}</span> },
+    { key: 'cif', label: 'Mã CIF', priority: 3, render: i => <span className="font-mono text-accent">{i.customer?.CifKh || 'N/A'}</span> },
+    { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: i => <span className="font-mono">{i.contract.ContractNumber}</span> },
+    { key: 'duNo', label: 'Dư nợ hiện hữu', priority: 1, align: 'right',
+      render: i => <span className="font-mono font-bold text-warn">{fmtFullMoney(i.contract.CurrentBalance ?? i.contract.LoanAmount ?? i.contract.ContractAmount ?? 0)}</span> },
+    { key: 'ngayDue', label: 'Ngày đến hạn due', priority: 1, align: 'center',
+      render: i => <span className="font-bold text-accent">{i.dueInfo?.dueDateStr}</span> },
+    { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: i => {
+      const dl = i.dueInfo?.daysLeft ?? 0;
+      return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 2)}`}>{dueBadgeText(dl)}</span>;
+    } },
+  ];
+
+  type KunnRowItem = (typeof kunnRows)[number];
+  const kunnColumns: AdaptiveColumn<KunnRowItem>[] = [
+    { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
+    { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
+    { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: r => <span className="font-mono">{r.contract.ContractNumber}</span> },
+    { key: 'soTien', label: 'Số tiền KUNN / dư nợ', priority: 1, align: 'right',
+      render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(r.contract.LoanAmount || r.contract.CurrentBalance || 0)}</span> },
+    { key: 'ketThuc', label: 'Ngày kết thúc KUNN', priority: 1, align: 'center',
+      render: r => <span className="font-bold text-accent">{fmtDate(r.contract.KunnDueDate)}</span> },
+    { key: 'kyHan', label: 'Kỳ hạn KUNN', priority: 2, align: 'center',
+      render: r => <span className="font-bold">{r.contract.KunnTenor || `${r.contract.LoanTenorMonths}T`}</span> },
+    { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: r => {
+      const dl = r.daysLeft ?? 0;
+      return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 3)}`}>{dueBadgeText(dl)}</span>;
+    } },
+  ];
+
+  type HmtdRowItem = (typeof hmtdRows)[number];
+  const hmtdColumns: AdaptiveColumn<HmtdRowItem>[] = [
+    { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
+    { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
+    { key: 'soHdtd', label: 'Số HĐTD hạn mức', priority: 2,
+      render: r => <span className="font-mono font-bold text-accent">{r.masterNo}</span> },
+    { key: 'mucCap', label: 'Tổng mức cấp HMTD', priority: 1, align: 'right',
+      render: r => <span className="font-mono font-bold text-accent">{fmtFullMoney(r.contract.ContractAmount || 0)}</span> },
+    { key: 'hetHan', label: 'Ngày hết hạn HĐ', priority: 1, align: 'center',
+      render: r => <span className="font-bold">{fmtDate(r.endDateStr)}</span> },
+    { key: 'trangThai', label: 'Trạng thái hạn mức', priority: 1, align: 'center', render: r => {
+      const d = r.daysLeft ?? 0;
+      const style = d < 0 || d < 6 ? 'bg-neg text-surface border border-neg font-bold'
+        : d >= 21 ? 'bg-pos-soft text-pos border border-pos/30'
+        : 'bg-warn-soft text-warn border border-warn/30 font-bold';
+      const txt = d < 0 ? `Đã hết hạn ${Math.abs(d)} ngày`
+        : d >= 21 ? `An toàn · còn ${d} ngày`
+        : d >= 6 ? `Cần chú ý · còn ${d} ngày`
+        : `Khẩn cấp · còn ${d} ngày`;
+      return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
+    } },
+  ];
+
+  type TsbdRowItem = (typeof tsbdRows)[number];
+  const tsbdColumns: AdaptiveColumn<TsbdRowItem>[] = [
+    { key: 'chuSoHuu', label: 'Chủ sở hữu TSĐB', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
+    { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
+    { key: 'maTs', label: 'Mã TS / địa chỉ', priority: 2,
+      render: r => <span className="font-medium">{r.collateral.AssetCode || r.collateral.Address || 'TSBĐ'}</span> },
+    { key: 'xepLoai', label: 'Xếp loại TS', priority: 2, render: r => (
+      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-accent-soft text-accent border border-accent/30">
+        {assetClassLabel(r.collateral.AssetType)}
+      </span>
+    ) },
+    { key: 'giaTri', label: 'Giá trị định giá', priority: 1, align: 'right',
+      render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(collateralValue(r.collateral))}</span> },
+    { key: 'hetHan', label: 'Ngày hết hạn định giá', priority: 1, align: 'center',
+      render: r => <span className="font-bold">{r.expiryDateStr ? fmtDate(r.expiryDateStr) : 'N/A'}</span> },
+    { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: r => {
+      const d = r.daysLeft ?? 0;
+      const style = d >= 16 ? 'bg-pos-soft text-pos border border-pos/30'
+        : d >= 1 ? 'bg-warn-soft text-warn border border-warn/30 font-bold'
+        : 'bg-neg text-surface border border-neg font-bold';
+      const txt = d >= 16 ? `An toàn · còn ${d} ngày`
+        : d >= 1 ? `Cần chú ý · còn ${d} ngày`
+        : `Quá hạn ${Math.abs(d)} ngày`;
+      return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
+    } },
+  ];
 
   const inDanhSach = (
     title: string,
@@ -478,19 +561,7 @@ export const DashboardView: React.FC = () => {
             cardSubtitle={i => i.customer?.CifKh || ''}
             emptyText="Không có khách hàng nào tới hạn hoặc quá hạn đóng kỳ trong kỳ này."
             cardBg={cardBg}
-            columns={[
-              { key: 'kh', label: 'Khách hàng vay', priority: 3, render: i => <span className="font-bold">{i.customer?.FullName || 'N/A'}</span> },
-              { key: 'cif', label: 'Mã CIF', priority: 3, render: i => <span className="font-mono text-accent">{i.customer?.CifKh || 'N/A'}</span> },
-              { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: i => <span className="font-mono">{i.contract.ContractNumber}</span> },
-              { key: 'duNo', label: 'Dư nợ hiện hữu', priority: 1, align: 'right',
-                render: i => <span className="font-mono font-bold text-warn">{fmtFullMoney(i.contract.CurrentBalance ?? i.contract.LoanAmount ?? i.contract.ContractAmount ?? 0)}</span> },
-              { key: 'ngayDue', label: 'Ngày đến hạn due', priority: 1, align: 'center',
-                render: i => <span className="font-bold text-accent">{i.dueInfo?.dueDateStr}</span> },
-              { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: i => {
-                const dl = i.dueInfo?.daysLeft ?? 0;
-                return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 2)}`}>{dueBadgeText(dl)}</span>;
-              } },
-            ]}
+            columns={dueInMonthColumns}
           />
         )}
 
@@ -509,21 +580,7 @@ export const DashboardView: React.FC = () => {
             cardSubtitle={r => r.customer?.CifKh || ''}
             emptyText="Không có KUNN nào sắp đến hạn hoặc quá hạn kết thúc."
             cardBg={cardBg}
-            columns={[
-              { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-              { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
-              { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: r => <span className="font-mono">{r.contract.ContractNumber}</span> },
-              { key: 'soTien', label: 'Số tiền KUNN / dư nợ', priority: 1, align: 'right',
-                render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(r.contract.LoanAmount || r.contract.CurrentBalance || 0)}</span> },
-              { key: 'ketThuc', label: 'Ngày kết thúc KUNN', priority: 1, align: 'center',
-                render: r => <span className="font-bold text-accent">{fmtDate(r.contract.KunnDueDate)}</span> },
-              { key: 'kyHan', label: 'Kỳ hạn KUNN', priority: 2, align: 'center',
-                render: r => <span className="font-bold">{r.contract.KunnTenor || `${r.contract.LoanTenorMonths}T`}</span> },
-              { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: r => {
-                const dl = r.daysLeft ?? 0;
-                return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 3)}`}>{dueBadgeText(dl)}</span>;
-              } },
-            ]}
+            columns={kunnColumns}
           />
         )}
 
@@ -542,27 +599,7 @@ export const DashboardView: React.FC = () => {
             cardSubtitle={r => r.customer?.CifKh || ''}
             emptyText="Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn."
             cardBg={cardBg}
-            columns={[
-              { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-              { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
-              { key: 'soHdtd', label: 'Số HĐTD hạn mức', priority: 2,
-                render: r => <span className="font-mono font-bold text-accent">{r.masterNo}</span> },
-              { key: 'mucCap', label: 'Tổng mức cấp HMTD', priority: 1, align: 'right',
-                render: r => <span className="font-mono font-bold text-accent">{fmtFullMoney(r.contract.ContractAmount || 0)}</span> },
-              { key: 'hetHan', label: 'Ngày hết hạn HĐ', priority: 1, align: 'center',
-                render: r => <span className="font-bold">{fmtDate(r.endDateStr)}</span> },
-              { key: 'trangThai', label: 'Trạng thái hạn mức', priority: 1, align: 'center', render: r => {
-                const d = r.daysLeft ?? 0;
-                const style = d < 0 || d < 6 ? 'bg-neg text-surface border border-neg font-bold'
-                  : d >= 21 ? 'bg-pos-soft text-pos border border-pos/30'
-                  : 'bg-warn-soft text-warn border border-warn/30 font-bold';
-                const txt = d < 0 ? `Đã hết hạn ${Math.abs(d)} ngày`
-                  : d >= 21 ? `An toàn · còn ${d} ngày`
-                  : d >= 6 ? `Cần chú ý · còn ${d} ngày`
-                  : `Khẩn cấp · còn ${d} ngày`;
-                return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
-              } },
-            ]}
+            columns={hmtdColumns}
           />
         )}
 
@@ -581,35 +618,12 @@ export const DashboardView: React.FC = () => {
             cardSubtitle={r => r.customer?.CifKh || ''}
             emptyText="Không có Định giá TSĐB nào sắp hết hạn trong 30 ngày tới."
             cardBg={cardBg}
-            columns={[
-              { key: 'chuSoHuu', label: 'Chủ sở hữu TSĐB', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-              { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
-              { key: 'maTs', label: 'Mã TS / địa chỉ', priority: 2,
-                render: r => <span className="font-medium">{r.collateral.AssetCode || r.collateral.Address || 'TSBĐ'}</span> },
-              { key: 'xepLoai', label: 'Xếp loại TS', priority: 2, render: r => (
-                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-accent-soft text-accent border border-accent/30">
-                  {assetClassLabel(r.collateral.AssetType)}
-                </span>
-              ) },
-              { key: 'giaTri', label: 'Giá trị định giá', priority: 1, align: 'right',
-                render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(collateralValue(r.collateral))}</span> },
-              { key: 'hetHan', label: 'Ngày hết hạn định giá', priority: 1, align: 'center',
-                render: r => <span className="font-bold">{r.expiryDateStr ? fmtDate(r.expiryDateStr) : 'N/A'}</span> },
-              { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: r => {
-                const d = r.daysLeft ?? 0;
-                const style = d >= 16 ? 'bg-pos-soft text-pos border border-pos/30'
-                  : d >= 1 ? 'bg-warn-soft text-warn border border-warn/30 font-bold'
-                  : 'bg-neg text-surface border border-neg font-bold';
-                const txt = d >= 16 ? `An toàn · còn ${d} ngày`
-                  : d >= 1 ? `Cần chú ý · còn ${d} ngày`
-                  : `Quá hạn ${Math.abs(d)} ngày`;
-                return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
-              } },
-            ]}
+            columns={tsbdColumns}
           />
         )}
       </div>
     </div>
   );
 };
+
 

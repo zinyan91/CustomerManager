@@ -192,7 +192,7 @@ export const QuizBankView: React.FC = () => {
                   ? 'bg-accent text-accent-ink border-accent shadow-xs'
                   : 'bg-panel-muted text-ink-muted border-line hover:border-accent hover:text-accent'
               }`}>
-              Tra cứu câu hỏi
+              Tra cứu
             </button>
             <button type="button" onClick={() => setMode('practice')}
               className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${
@@ -200,7 +200,7 @@ export const QuizBankView: React.FC = () => {
                   ? 'bg-accent text-accent-ink border-accent shadow-xs'
                   : 'bg-panel-muted text-ink-muted border-line hover:border-accent hover:text-accent'
               }`}>
-              Luyện tập trắc nghiệm
+              Luyện tập
             </button>
           </div>
         </div>
@@ -230,6 +230,14 @@ export const QuizBankView: React.FC = () => {
                 <div className="font-mono font-bold text-sm text-warn">{stats.unsettled} Câu hỏi</div>
                 <div className="text-[11px] text-ink-faint">Cần rà soát và duyệt chính thức</div>
               </div>
+            </div>
+
+            <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-ink-muted">
+              <span><strong className="text-ink">{stats.total}</strong> câu</span>
+              <span><strong className="text-ink">{stats.multiAnswer}</strong> câu nhiều đáp án</span>
+              {stats.unsettled > 0 && (
+                <span><strong className="text-ink">{stats.unsettled}</strong> câu chưa chốt đáp án</span>
+              )}
             </div>
 
             {clusters.length > 0 && (

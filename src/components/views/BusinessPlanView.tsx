@@ -121,7 +121,7 @@ export const BusinessPlanView: React.FC = () => {
               <div className="flex items-center gap-2">
                 <ClipboardList className="w-5 h-5 text-accent" />
                 <div>
-                  <h2 className="text-sm font-bold tracking-tight text-accent uppercase">BẢNG TÍNH HẠN MỨC TÍN DỤNG</h2>
+                  <h2 className="text-sm font-bold tracking-tight text-accent uppercase">BẢNG TÍNH HẠN MỨC</h2>
                   <p className="text-[11px] text-ink-faint">
                     Thẩm định phương án kinh doanh & nhu cầu vốn lưu động
                   </p>

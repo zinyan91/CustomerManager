@@ -31,53 +31,53 @@
 
 :root,
 :root.dark {
-  --t-surface: #0a0d12;
-  --t-panel: #11151c;
-  --t-panel-muted: #171d26;
-  --t-line: #232b37;
-  --t-line-strong: #35404f;
-  --t-ink: #e9edf3;
-  --t-ink-muted: #9aa6b6;
-  --t-ink-faint: #838e9b;
-  --t-accent: #6c8fff;
-  --t-accent-ink: #0a0d12;
-  --t-accent-soft: #17203a;
-  --t-pos: #3ecf8e;
-  --t-pos-soft: #10281f;
-  --t-neg: #ff7062;
-  --t-neg-soft: #2b1512;
-  --t-warn: #e3a94a;
-  --t-warn-soft: #2a200e;
-  --t-g1: #3ecf8e;
-  --t-g2: #d9b84a;
-  --t-g3: #f0954a;
-  --t-g4: #ff7062;
-  --t-g5: #ff4d4d;
+  --t-surface: #070B14;
+  --t-panel: #0F172A;
+  --t-panel-muted: #1E293B;
+  --t-line: #334155;
+  --t-line-strong: #475569;
+  --t-ink: #F8FAFC;
+  --t-ink-muted: #94A3B8;
+  --t-ink-faint: #64748B;
+  --t-accent: #38BDF8;
+  --t-accent-ink: #0F172A;
+  --t-accent-soft: #0C4A6E;
+  --t-pos: #34D399;
+  --t-pos-soft: #064E3B;
+  --t-neg: #F87171;
+  --t-neg-soft: #7F1D1D;
+  --t-warn: #FBBF24;
+  --t-warn-soft: #78350F;
+  --t-g1: #34D399;
+  --t-g2: #FBBF24;
+  --t-g3: #FB923C;
+  --t-g4: #F87171;
+  --t-g5: #EF4444;
 }
 
 :root.light {
-  --t-surface: #f4f6f9;
-  --t-panel: #ffffff;
-  --t-panel-muted: #edf0f5;
-  --t-line: #dce2eb;
-  --t-line-strong: #b9c2d0;
-  --t-ink: #0d1420;
-  --t-ink-muted: #4a5568;
-  --t-ink-faint: #5c6675;
-  --t-accent: #1f3fa8;
-  --t-accent-ink: #ffffff;
-  --t-accent-soft: #e8edfb;
-  --t-pos: #0b6b45;
-  --t-pos-soft: #e3f3eb;
-  --t-neg: #b02318;
-  --t-neg-soft: #fbe9e7;
-  --t-warn: #8a5300;
-  --t-warn-soft: #fbf0dc;
-  --t-g1: #0b6b45;
-  --t-g2: #8a6b00;
-  --t-g3: #a35a00;
-  --t-g4: #b02318;
-  --t-g5: #7f1410;
+  --t-surface: #F1F5F9;
+  --t-panel: #FFFFFF;
+  --t-panel-muted: #E2E8F0;
+  --t-line: #CBD5E1;
+  --t-line-strong: #94A3B8;
+  --t-ink: #0F172A;
+  --t-ink-muted: #334155;
+  --t-ink-faint: #64748B;
+  --t-accent: #0284C7;
+  --t-accent-ink: #FFFFFF;
+  --t-accent-soft: #E0F2FE;
+  --t-pos: #059669;
+  --t-pos-soft: #D1FAE5;
+  --t-neg: #DC2626;
+  --t-neg-soft: #FEE2E2;
+  --t-warn: #D97706;
+  --t-warn-soft: #FEF3C7;
+  --t-g1: #059669;
+  --t-g2: #D97706;
+  --t-g3: #EA580C;
+  --t-g4: #DC2626;
+  --t-g5: #991B1B;
 }
 
 :root {

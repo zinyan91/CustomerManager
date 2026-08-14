@@ -170,29 +170,29 @@ export const CardPolicyLookupView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs">
       {/* Sub-tab Navigation */}
-      <div className="flex gap-2 border-b border-line pb-2">
+      <div className="flex gap-2 border-b border-line pb-3">
         <button
           type="button"
           onClick={() => setMainTab('issuance')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-md font-bold text-xs transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
             mainTab === 'issuance'
-              ? 'bg-accent text-white shadow-sm'
-              : 'bg-card border border-line text-ink-muted hover:text-ink'
+              ? 'bg-accent text-accent-ink shadow-sm'
+              : 'bg-panel border border-line text-ink-muted hover:text-ink hover:bg-panel-muted'
           }`}
         >
-          <CreditCard size={14} /> Mã chính sách phát hành thẻ ({total})
+          <CreditCard size={15} /> Mã chính sách phát hành thẻ ({total})
         </button>
 
         <button
           type="button"
           onClick={() => setMainTab('fee-codes')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-md font-bold text-xs transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
             mainTab === 'fee-codes'
-              ? 'bg-accent text-white shadow-sm'
-              : 'bg-card border border-line text-ink-muted hover:text-ink'
+              ? 'bg-accent text-accent-ink shadow-sm'
+              : 'bg-panel border border-line text-ink-muted hover:text-ink hover:bg-panel-muted'
           }`}
         >
-          <Tag size={14} /> Tra cứu Mã phí thẻ (Product Man & Fee Int Profile) ({feeProfiles.length})
+          <Tag size={15} /> Tra cứu Mã phí thẻ (Product Man & Fee Int Profile) ({feeProfiles.length})
         </button>
       </div>
 

@@ -92,6 +92,7 @@ export const DashboardView: React.FC = () => {
   const [kunnFilter, setKunnFilter] = useState<DueFilter>('all');
   const [hmtdFilter, setHmtdFilter] = useState<DueFilter>('all');
   const [tsbdFilter, setTsbdFilter] = useState<DueFilter>('all');
+  const [alertConsoleTab, setAlertConsoleTab] = useState<'due_month' | 'kunn' | 'hmtd' | 'tsbd'>('due_month');
 
   const activeContracts = chuaTatToan.filter(c => !onlyGroup1 || (c.DebtGroup ?? 1) === 1);
 
@@ -238,8 +239,6 @@ export const DashboardView: React.FC = () => {
       </div>
     );
   }
-
-  const [alertConsoleTab, setAlertConsoleTab] = useState<'due_month' | 'kunn' | 'hmtd' | 'tsbd'>('due_month');
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">

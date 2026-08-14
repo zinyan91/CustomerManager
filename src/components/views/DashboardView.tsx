@@ -239,20 +239,22 @@ export const DashboardView: React.FC = () => {
     );
   }
 
+  const [alertConsoleTab, setAlertConsoleTab] = useState<'due_month' | 'kunn' | 'hmtd' | 'tsbd'>('due_month');
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
       <Toast toast={toast} onDismiss={dismiss} />
 
       <div className="flex items-center justify-between border-b border-line pb-3">
         <div>
-          <h2 className="text-base font-bold  tracking-tight flex items-center space-x-2 text-ink">
+          <h2 className="text-base font-bold tracking-tight flex items-center space-x-2 text-ink">
             <Building2 className="w-5 h-5 text-accent" />
             <span>BÁO CÁO QUẢN TRỊ DƯ NỢ & HẠN MỨC TÍN DỤNG</span>
           </h2>
         </div>
         <button
           onClick={fetchDashboardData}
-          className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-2 rounded-md flex items-center space-x-1.5 font-bold transition-colors"
+          className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-2 rounded-lg flex items-center space-x-1.5 font-bold transition-all shadow-xs"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>CẬP NHẬT DỮ LIỆU</span>
@@ -297,7 +299,7 @@ export const DashboardView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`${cardBg} p-4 rounded-lg border space-y-3`}>
+        <div className={`${cardBg} p-4 rounded-xl border border-line shadow-sm space-y-3`}>
           <div className="text-xs font-bold text-accent tracking-tight flex items-center space-x-1.5">
             <FileText className="w-4 h-4" />
             <span>DƯ NỢ THEO PHƯƠNG THỨC VAY</span>
@@ -335,7 +337,7 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        <div className={`${cardBg} p-4 rounded-lg border space-y-3`}>
+        <div className={`${cardBg} p-4 rounded-xl border border-line shadow-sm space-y-3`}>
           <div className="text-xs font-bold text-pos tracking-tight flex items-center space-x-1.5">
             <ShieldAlert className="w-4 h-4" />
             <span>PHÂN BỔ DƯ NỢ THEO NHÓM NỢ</span>
@@ -365,17 +367,17 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      <div className={`${cardBg} rounded-lg p-3.5 border flex flex-wrap items-center justify-between gap-3`}>
+      <div className={`${cardBg} rounded-xl p-3.5 border border-line shadow-sm flex flex-wrap items-center justify-between gap-3`}>
         <div className="flex items-center space-x-2 text-xs font-bold text-ink">
           <ShieldAlert className="w-4 h-4 text-accent" />
           <span>BỘ LỌC BÁO CÁO CẢNH BÁO DƯ NỢ:</span>
         </div>
-        <div className="flex items-center bg-panel-muted p-1 rounded-md">
+        <div className="flex items-center bg-panel-muted p-1 rounded-lg">
           <button
             type="button"
             onClick={() => setOnlyGroup1(true)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${onlyGroup1
-              ? 'bg-accent text-accent-ink'
+            className={`px-3.5 py-1.5 rounded-md text-xs font-bold transition-all ${onlyGroup1
+              ? 'bg-accent text-accent-ink shadow-xs'
               : 'text-ink-faint hover:text-ink'
               }`}
           >
@@ -384,8 +386,8 @@ export const DashboardView: React.FC = () => {
           <button
             type="button"
             onClick={() => setOnlyGroup1(false)}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${!onlyGroup1
-              ? 'bg-accent text-accent-ink'
+            className={`px-3.5 py-1.5 rounded-md text-xs font-bold transition-all ${!onlyGroup1
+              ? 'bg-accent text-accent-ink shadow-xs'
               : 'text-ink-faint hover:text-ink'
               }`}
           >
@@ -393,143 +395,222 @@ export const DashboardView: React.FC = () => {
           </button>
         </div>
       </div>
-      <DueSectionPanel
-        icon={Calendar}
-        tone="warn"
-        title="1. Khách hàng chuẩn bị đóng kỳ due của tháng"
-        counts={{
-          upcoming: dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) >= 0).length,
-          expired: dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) < 0).length,
-        }}
-        rows={dueInMonthList}
-        rowKey={i => i.contract.Id}
-        cardTitle={i => i.customer?.FullName || 'N/A'}
-        cardSubtitle={i => i.customer?.CifKh || ''}
-        emptyText="Không có khách hàng nào tới hạn hoặc quá hạn đóng kỳ trong kỳ này."
-        cardBg={cardBg}
-        columns={[
-          { key: 'kh', label: 'Khách hàng vay', priority: 3, render: i => <span className="font-bold">{i.customer?.FullName || 'N/A'}</span> },
-          { key: 'cif', label: 'Mã CIF', priority: 3, render: i => <span className="font-mono text-accent">{i.customer?.CifKh || 'N/A'}</span> },
-          { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: i => <span className="font-mono">{i.contract.ContractNumber}</span> },
-          { key: 'duNo', label: 'Dư nợ hiện hữu', priority: 1, align: 'right',
-            render: i => <span className="font-mono font-bold text-warn">{fmtFullMoney(i.contract.CurrentBalance ?? i.contract.LoanAmount ?? i.contract.ContractAmount ?? 0)}</span> },
-          { key: 'ngayDue', label: 'Ngày đến hạn due', priority: 1, align: 'center',
-            render: i => <span className="font-bold text-accent">{i.dueInfo?.dueDateStr}</span> },
-          { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: i => {
-            const dl = i.dueInfo?.daysLeft ?? 0;
-            return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 2)}`}>{dueBadgeText(dl)}</span>;
-          } },
-        ]}
-      />
 
-      <DueSectionPanel
-        icon={Clock}
-        tone="accent"
-        title="2. Danh sách giấy nhận nợ (KUNN) sắp đến hạn kết thúc"
-        counts={kunnCount}
-        filter={kunnFilter}
-        onFilterChange={setKunnFilter}
-        onPrint={inKunn}
-        rows={kunnRows}
-        rowKey={r => r.contract.Id}
-        cardTitle={r => r.customer?.FullName || 'N/A'}
-        cardSubtitle={r => r.customer?.CifKh || ''}
-        emptyText="Không có KUNN nào sắp đến hạn hoặc quá hạn kết thúc."
-        cardBg={cardBg}
-        columns={[
-          { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-          { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
-          { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: r => <span className="font-mono">{r.contract.ContractNumber}</span> },
-          { key: 'soTien', label: 'Số tiền KUNN / dư nợ', priority: 1, align: 'right',
-            render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(r.contract.LoanAmount || r.contract.CurrentBalance || 0)}</span> },
-          { key: 'ketThuc', label: 'Ngày kết thúc KUNN', priority: 1, align: 'center',
-            render: r => <span className="font-bold text-accent">{fmtDate(r.contract.KunnDueDate)}</span> },
-          { key: 'kyHan', label: 'Kỳ hạn KUNN', priority: 2, align: 'center',
-            render: r => <span className="font-bold">{r.contract.KunnTenor || `${r.contract.LoanTenorMonths}T`}</span> },
-          { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: r => {
-            const dl = r.daysLeft ?? 0;
-            return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 3)}`}>{dueBadgeText(dl)}</span>;
-          } },
-        ]}
-      />
-
-      <DueSectionPanel
-        icon={AlertTriangle}
-        tone="accent"
-        title="3. Danh sách hạn mức tín dụng (HMTD) sắp tới hạn kết thúc"
-        counts={hmtdCount}
-        filter={hmtdFilter}
-        onFilterChange={setHmtdFilter}
-        onPrint={inHmtd}
-        rows={hmtdRows}
-        rowKey={r => r.masterNo}
-        cardTitle={r => r.customer?.FullName || 'N/A'}
-        cardSubtitle={r => r.customer?.CifKh || ''}
-        emptyText="Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn."
-        cardBg={cardBg}
-        columns={[
-          { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-          { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
-          { key: 'soHdtd', label: 'Số HĐTD hạn mức', priority: 2,
-            render: r => <span className="font-mono font-bold text-accent">{r.masterNo}</span> },
-          { key: 'mucCap', label: 'Tổng mức cấp HMTD', priority: 1, align: 'right',
-            render: r => <span className="font-mono font-bold text-accent">{fmtFullMoney(r.contract.ContractAmount || 0)}</span> },
-          { key: 'hetHan', label: 'Ngày hết hạn HĐ', priority: 1, align: 'center',
-            render: r => <span className="font-bold">{fmtDate(r.endDateStr)}</span> },
-          { key: 'trangThai', label: 'Trạng thái hạn mức', priority: 1, align: 'center', render: r => {
-            const d = r.daysLeft ?? 0;
-            const style = d < 0 || d < 6 ? 'bg-neg text-surface border border-neg font-bold'
-              : d >= 21 ? 'bg-pos-soft text-pos border border-pos/30'
-              : 'bg-warn-soft text-warn border border-warn/30 font-bold';
-            const txt = d < 0 ? `Đã hết hạn ${Math.abs(d)} ngày`
-              : d >= 21 ? `An toàn · còn ${d} ngày`
-              : d >= 6 ? `Cần chú ý · còn ${d} ngày`
-              : `Khẩn cấp · còn ${d} ngày`;
-            return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
-          } },
-        ]}
-      />
-
-      <DueSectionPanel
-        icon={Building2}
-        tone="pos"
-        title="4. Danh sách định giá tài sản bảo đảm sắp tới hạn"
-        counts={tsbdCount}
-        filter={tsbdFilter}
-        onFilterChange={setTsbdFilter}
-        onPrint={inTsbd}
-        rows={tsbdRows}
-        rowKey={r => r.collateral.Id}
-        cardTitle={r => r.customer?.FullName || 'N/A'}
-        cardSubtitle={r => r.customer?.CifKh || ''}
-        emptyText="Không có Định giá TSĐB nào sắp hết hạn trong 30 ngày tới."
-        cardBg={cardBg}
-        columns={[
-          { key: 'chuSoHuu', label: 'Chủ sở hữu TSĐB', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-          { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
-          { key: 'maTs', label: 'Mã TS / địa chỉ', priority: 2,
-            render: r => <span className="font-medium">{r.collateral.AssetCode || r.collateral.Address || 'TSBĐ'}</span> },
-          { key: 'xepLoai', label: 'Xếp loại TS', priority: 2, render: r => (
-            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-accent-soft text-accent border border-accent/30">
-              {assetClassLabel(r.collateral.AssetType)}
+      {/* Smart Alert Console Tab Navigation */}
+      <div className="space-y-3">
+        <div className={`${cardBg} rounded-xl p-1.5 border border-line shadow-sm flex flex-wrap items-center gap-2`}>
+          <button
+            type="button"
+            onClick={() => setAlertConsoleTab('due_month')}
+            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
+              alertConsoleTab === 'due_month'
+                ? 'bg-accent text-accent-ink shadow-xs'
+                : 'text-ink-muted hover:bg-panel-muted/80 hover:text-ink'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>1. Kỳ Due Tháng</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-panel-muted/80 text-ink font-mono">
+              {dueInMonthList.length}
             </span>
-          ) },
-          { key: 'giaTri', label: 'Giá trị định giá', priority: 1, align: 'right',
-            render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(collateralValue(r.collateral))}</span> },
-          { key: 'hetHan', label: 'Ngày hết hạn định giá', priority: 1, align: 'center',
-            render: r => <span className="font-bold">{r.expiryDateStr ? fmtDate(r.expiryDateStr) : 'N/A'}</span> },
-          { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: r => {
-            const d = r.daysLeft ?? 0;
-            const style = d >= 16 ? 'bg-pos-soft text-pos border border-pos/30'
-              : d >= 1 ? 'bg-warn-soft text-warn border border-warn/30 font-bold'
-              : 'bg-neg text-surface border border-neg font-bold';
-            const txt = d >= 16 ? `An toàn · còn ${d} ngày`
-              : d >= 1 ? `Cần chú ý · còn ${d} ngày`
-              : `Quá hạn ${Math.abs(d)} ngày`;
-            return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
-          } },
-        ]}
-      />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAlertConsoleTab('kunn')}
+            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
+              alertConsoleTab === 'kunn'
+                ? 'bg-accent text-accent-ink shadow-xs'
+                : 'text-ink-muted hover:bg-panel-muted/80 hover:text-ink'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            <span>2. KUNN Đến Hạn</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-panel-muted/80 text-ink font-mono">
+              {dueKunnList.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAlertConsoleTab('hmtd')}
+            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
+              alertConsoleTab === 'hmtd'
+                ? 'bg-accent text-accent-ink shadow-xs'
+                : 'text-ink-muted hover:bg-panel-muted/80 hover:text-ink'
+            }`}
+          >
+            <AlertTriangle className="w-4 h-4" />
+            <span>3. HMTD Hết Hạn</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-panel-muted/80 text-ink font-mono">
+              {dueHmtdList.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAlertConsoleTab('tsbd')}
+            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
+              alertConsoleTab === 'tsbd'
+                ? 'bg-accent text-accent-ink shadow-xs'
+                : 'text-ink-muted hover:bg-panel-muted/80 hover:text-ink'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>4. Định Giá TSĐB</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] bg-panel-muted/80 text-ink font-mono">
+              {dueCollateralList.length}
+            </span>
+          </button>
+        </div>
+
+        {alertConsoleTab === 'due_month' && (
+          <DueSectionPanel
+            icon={Calendar}
+            tone="warn"
+            title="1. Khách hàng chuẩn bị đóng kỳ due của tháng"
+            counts={{
+              upcoming: dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) >= 0).length,
+              expired: dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) < 0).length,
+            }}
+            rows={dueInMonthList}
+            rowKey={i => i.contract.Id}
+            cardTitle={i => i.customer?.FullName || 'N/A'}
+            cardSubtitle={i => i.customer?.CifKh || ''}
+            emptyText="Không có khách hàng nào tới hạn hoặc quá hạn đóng kỳ trong kỳ này."
+            cardBg={cardBg}
+            columns={[
+              { key: 'kh', label: 'Khách hàng vay', priority: 3, render: i => <span className="font-bold">{i.customer?.FullName || 'N/A'}</span> },
+              { key: 'cif', label: 'Mã CIF', priority: 3, render: i => <span className="font-mono text-accent">{i.customer?.CifKh || 'N/A'}</span> },
+              { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: i => <span className="font-mono">{i.contract.ContractNumber}</span> },
+              { key: 'duNo', label: 'Dư nợ hiện hữu', priority: 1, align: 'right',
+                render: i => <span className="font-mono font-bold text-warn">{fmtFullMoney(i.contract.CurrentBalance ?? i.contract.LoanAmount ?? i.contract.ContractAmount ?? 0)}</span> },
+              { key: 'ngayDue', label: 'Ngày đến hạn due', priority: 1, align: 'center',
+                render: i => <span className="font-bold text-accent">{i.dueInfo?.dueDateStr}</span> },
+              { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: i => {
+                const dl = i.dueInfo?.daysLeft ?? 0;
+                return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 2)}`}>{dueBadgeText(dl)}</span>;
+              } },
+            ]}
+          />
+        )}
+
+        {alertConsoleTab === 'kunn' && (
+          <DueSectionPanel
+            icon={Clock}
+            tone="accent"
+            title="2. Danh sách giấy nhận nợ (KUNN) sắp đến hạn kết thúc"
+            counts={kunnCount}
+            filter={kunnFilter}
+            onFilterChange={setKunnFilter}
+            onPrint={inKunn}
+            rows={kunnRows}
+            rowKey={r => r.contract.Id}
+            cardTitle={r => r.customer?.FullName || 'N/A'}
+            cardSubtitle={r => r.customer?.CifKh || ''}
+            emptyText="Không có KUNN nào sắp đến hạn hoặc quá hạn kết thúc."
+            cardBg={cardBg}
+            columns={[
+              { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
+              { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
+              { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: r => <span className="font-mono">{r.contract.ContractNumber}</span> },
+              { key: 'soTien', label: 'Số tiền KUNN / dư nợ', priority: 1, align: 'right',
+                render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(r.contract.LoanAmount || r.contract.CurrentBalance || 0)}</span> },
+              { key: 'ketThuc', label: 'Ngày kết thúc KUNN', priority: 1, align: 'center',
+                render: r => <span className="font-bold text-accent">{fmtDate(r.contract.KunnDueDate)}</span> },
+              { key: 'kyHan', label: 'Kỳ hạn KUNN', priority: 2, align: 'center',
+                render: r => <span className="font-bold">{r.contract.KunnTenor || `${r.contract.LoanTenorMonths}T`}</span> },
+              { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: r => {
+                const dl = r.daysLeft ?? 0;
+                return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 3)}`}>{dueBadgeText(dl)}</span>;
+              } },
+            ]}
+          />
+        )}
+
+        {alertConsoleTab === 'hmtd' && (
+          <DueSectionPanel
+            icon={AlertTriangle}
+            tone="accent"
+            title="3. Danh sách hạn mức tín dụng (HMTD) sắp tới hạn kết thúc"
+            counts={hmtdCount}
+            filter={hmtdFilter}
+            onFilterChange={setHmtdFilter}
+            onPrint={inHmtd}
+            rows={hmtdRows}
+            rowKey={r => r.masterNo}
+            cardTitle={r => r.customer?.FullName || 'N/A'}
+            cardSubtitle={r => r.customer?.CifKh || ''}
+            emptyText="Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn."
+            cardBg={cardBg}
+            columns={[
+              { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
+              { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
+              { key: 'soHdtd', label: 'Số HĐTD hạn mức', priority: 2,
+                render: r => <span className="font-mono font-bold text-accent">{r.masterNo}</span> },
+              { key: 'mucCap', label: 'Tổng mức cấp HMTD', priority: 1, align: 'right',
+                render: r => <span className="font-mono font-bold text-accent">{fmtFullMoney(r.contract.ContractAmount || 0)}</span> },
+              { key: 'hetHan', label: 'Ngày hết hạn HĐ', priority: 1, align: 'center',
+                render: r => <span className="font-bold">{fmtDate(r.endDateStr)}</span> },
+              { key: 'trangThai', label: 'Trạng thái hạn mức', priority: 1, align: 'center', render: r => {
+                const d = r.daysLeft ?? 0;
+                const style = d < 0 || d < 6 ? 'bg-neg text-surface border border-neg font-bold'
+                  : d >= 21 ? 'bg-pos-soft text-pos border border-pos/30'
+                  : 'bg-warn-soft text-warn border border-warn/30 font-bold';
+                const txt = d < 0 ? `Đã hết hạn ${Math.abs(d)} ngày`
+                  : d >= 21 ? `An toàn · còn ${d} ngày`
+                  : d >= 6 ? `Cần chú ý · còn ${d} ngày`
+                  : `Khẩn cấp · còn ${d} ngày`;
+                return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
+              } },
+            ]}
+          />
+        )}
+
+        {alertConsoleTab === 'tsbd' && (
+          <DueSectionPanel
+            icon={Building2}
+            tone="pos"
+            title="4. Danh sách định giá tài sản bảo đảm sắp tới hạn"
+            counts={tsbdCount}
+            filter={tsbdFilter}
+            onFilterChange={setTsbdFilter}
+            onPrint={inTsbd}
+            rows={tsbdRows}
+            rowKey={r => r.collateral.Id}
+            cardTitle={r => r.customer?.FullName || 'N/A'}
+            cardSubtitle={r => r.customer?.CifKh || ''}
+            emptyText="Không có Định giá TSĐB nào sắp hết hạn trong 30 ngày tới."
+            cardBg={cardBg}
+            columns={[
+              { key: 'chuSoHuu', label: 'Chủ sở hữu TSĐB', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
+              { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
+              { key: 'maTs', label: 'Mã TS / địa chỉ', priority: 2,
+                render: r => <span className="font-medium">{r.collateral.AssetCode || r.collateral.Address || 'TSBĐ'}</span> },
+              { key: 'xepLoai', label: 'Xếp loại TS', priority: 2, render: r => (
+                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-accent-soft text-accent border border-accent/30">
+                  {assetClassLabel(r.collateral.AssetType)}
+                </span>
+              ) },
+              { key: 'giaTri', label: 'Giá trị định giá', priority: 1, align: 'right',
+                render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(collateralValue(r.collateral))}</span> },
+              { key: 'hetHan', label: 'Ngày hết hạn định giá', priority: 1, align: 'center',
+                render: r => <span className="font-bold">{r.expiryDateStr ? fmtDate(r.expiryDateStr) : 'N/A'}</span> },
+              { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: r => {
+                const d = r.daysLeft ?? 0;
+                const style = d >= 16 ? 'bg-pos-soft text-pos border border-pos/30'
+                  : d >= 1 ? 'bg-warn-soft text-warn border border-warn/30 font-bold'
+                  : 'bg-neg text-surface border border-neg font-bold';
+                const txt = d >= 16 ? `An toàn · còn ${d} ngày`
+                  : d >= 1 ? `Cần chú ý · còn ${d} ngày`
+                  : `Quá hạn ${Math.abs(d)} ngày`;
+                return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
+              } },
+            ]}
+          />
+        )}
+      </div>
     </div>
   );
 };
+

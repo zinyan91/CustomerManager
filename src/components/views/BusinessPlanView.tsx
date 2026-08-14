@@ -30,6 +30,7 @@ export const BusinessPlanView: React.FC = () => {
     notification,
     setNotification,
     growthFactorStr,
+    setGrowthFactorStr,
     result,
     patch,
     exportSheets,

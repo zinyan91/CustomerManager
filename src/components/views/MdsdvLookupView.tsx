@@ -89,7 +89,7 @@ export const MdsdvLookupView: React.FC = () => {
       <div className={`${cardBg} rounded-lg border overflow-hidden`}>
         <div className="p-3 border-b border-line flex items-center justify-between">
           <span className="font-bold text-xs tracking-tight text-accent">
-            KẾT QUẢ ({search.totalMatches.toLocaleString('vi-VN')} MÃ PHÙ HỢP)
+            KẾT QUẢ ({search.total.toLocaleString('vi-VN')} MÃ PHÙ HỢP)
           </span>
           {search.truncated && (
             <span className="text-[11px] text-ink-faint">
@@ -103,11 +103,11 @@ export const MdsdvLookupView: React.FC = () => {
           rows={search.items}
           rowKey={item => item.code}
           emptyText="Không tìm thấy mục đích sử dụng vốn nào phù hợp."
-          cardTitle={item => item.name}
+          cardTitle={item => item.purposeName}
           cardSubtitle={item => (
             <div className="font-mono text-accent flex items-center gap-1.5 mt-0.5">
               <span>{item.code}</span>
-              {item.isOverdraft && (
+              {item.allowsOverdraft && (
                 <span className="px-1.5 py-0.2 rounded text-[10px] font-sans font-bold bg-accent-soft text-accent border border-accent/30">
                   Thấu chi
                 </span>
@@ -149,9 +149,9 @@ export const MdsdvLookupView: React.FC = () => {
               priority: 1,
               render: item => (
                 <div className="space-y-0.5">
-                  <div className="font-bold text-ink">{item.name}</div>
+                  <div className="font-bold text-ink">{item.purposeName}</div>
                   <div className="text-[11px] text-ink-faint">
-                    {item.level1Name} → {item.level2Name}
+                    {item.level1Name} → {item.level2Name || item.fbeName}
                   </div>
                 </div>
               ),
@@ -162,7 +162,7 @@ export const MdsdvLookupView: React.FC = () => {
               priority: 2,
               align: 'center',
               render: item => (
-                item.isOverdraft ? (
+                item.allowsOverdraft ? (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent-soft text-accent border border-accent/30 font-mono">
                     THẤU CHI
                   </span>

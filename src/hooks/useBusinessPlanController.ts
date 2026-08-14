@@ -84,6 +84,7 @@ export function useBusinessPlanController() {
     notification,
     setNotification,
     growthFactorStr,
+    setGrowthFactorStr,
     result,
     patch,
     showNotify,

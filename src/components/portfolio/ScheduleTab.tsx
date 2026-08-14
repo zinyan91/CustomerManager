@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
 import { fmtDate, fmtMoney, fmtRate } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
-import { isScheduleFullySettled } from '../../lib/loanMath';
+import { isScheduleFullySettled, isBulletPrincipal } from '../../lib/loanMath';
 import { periodObligation, sumObligations } from '../../lib/scheduleView';
 import { PeriodDetailCard } from './PeriodDetailCard';
 import { useLang } from '../../context/LanguageContext';
@@ -181,7 +181,16 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                         className="w-3.5 h-3.5 accent-accent cursor-pointer align-middle"
                       />
                     </td>
-                    <td className={`${cell} text-right font-mono font-semibold text-ink`}>{s.PeriodNumber}</td>
+                    <td className={`${cell} text-right font-mono font-semibold text-ink`}>
+                      <span className="inline-flex items-center gap-1">
+                        <span>{s.PeriodNumber}</span>
+                        {s.PeriodNumber === schedules.length && isBulletPrincipal(selectedContract) && (
+                          <span className="px-1 py-0.2 rounded text-[9px] font-sans font-bold bg-accent-soft text-accent border border-accent/30" title="Kỳ đáo hạn / Tất toán gốc KUNN">
+                            Đáo hạn
+                          </span>
+                        )}
+                      </span>
+                    </td>
                     <td className={cell}>
                       {daThuDu ? (
                         <span className="inline-flex items-center gap-1.5 text-pos font-semibold">

@@ -3,6 +3,7 @@ import type { RepaymentSchedule, LoanContract } from '../../types';
 import { periodObligation } from '../../lib/scheduleView';
 import { fmtDate } from '../../lib/utils';
 import { useLang } from '../../context/LanguageContext';
+import { isBulletPrincipal } from '../../lib/loanMath';
 import { PANEL, SECTION_LABEL, TABLE_CELL, TABLE_HEAD } from '../../lib/uiClasses';
 
 interface PeriodDetailCardProps {
@@ -49,6 +50,11 @@ export const PeriodDetailCard: React.FC<PeriodDetailCardProps> = ({
         <span className="text-xs text-ink-muted">
           {t('period.dueOn')} <span className="font-mono text-ink">{fmtDate(selectedSchedule.DueDate)}</span>
         </span>
+        {selectedSchedule.PrincipalAmount > 0 && selectedContract && isBulletPrincipal(selectedContract) && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded bg-accent-soft text-accent border border-accent/30 font-bold text-[10px] uppercase">
+            Kỳ Đáo Hạn / Tất toán gốc
+          </span>
+        )}
         {o.isOverdue && (
           <span className="ml-auto inline-flex items-center px-1.5 py-0.5 rounded bg-neg text-surface font-bold text-[10px] uppercase tracking-[0.06em]">
             {t('period.overdueBadge', { days: o.overdueDays })}

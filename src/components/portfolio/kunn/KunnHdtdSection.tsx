@@ -133,11 +133,18 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
         <div className="flex items-center space-x-4 font-mono">
           <span>Tổng mức cấp: <strong className="text-accent">{fmtMoney(formGrantedLimit)}</strong></span>
           <span>• Dư nợ KUNN còn hiệu lực: <strong className="text-warn">{fmtMoney(totalExistingKunnBalance)}</strong></span>
-          <span>• Khả năng giải ngân còn lại: <strong className={
-            formLimitStatus?.expired
-              ? 'text-neg line-through'
-              : 'text-pos'
-          }>{fmtMoney(availableBeforeThisKunn)}</strong></span>
+          <span>• Khả năng giải ngân còn lại: {formLimitStatus?.expired ? (
+            <strong className="text-neg font-bold inline-flex items-center">
+              0 VND
+              <span className="text-[10px] font-normal font-app px-1.5 py-0.2 rounded bg-neg/10 text-neg border border-neg/30 ml-1.5">
+                HĐTD hết hạn
+              </span>
+            </strong>
+          ) : (
+            <strong className={availableBeforeThisKunn <= 0 ? 'text-neg' : 'text-pos'}>
+              {fmtMoney(availableBeforeThisKunn)}
+            </strong>
+          )}</span>
           {(formLimitStatus?.settledKunnCount ?? 0) > 0 && (
             <span className="text-[10px] font-app font-normal text-ink-faint">
               (đã loại {formLimitStatus!.settledKunnCount} KUNN đã tất toán)
@@ -145,8 +152,13 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
           )}
         </div>
         {formLimitStatus?.expired && (
-          <div className="w-full mt-2 pt-2 border-t border-neg/30  text-[11px] font-bold text-neg">
-            ⚠️ HĐTD hết hiệu lực ngày {fmtDate(formLimitStatus.endDate)}
+          <div className="w-full mt-2 pt-2 border-t border-neg/30 text-[11px] font-bold text-neg flex items-center justify-between">
+            <span>⚠️ HĐTD hết hiệu lực từ ngày {fmtDate(formLimitStatus.endDate)} — Không thể rút vốn thêm.</span>
+            {availableBeforeThisKunn > 0 && (
+              <span className="text-[10px] font-normal text-ink-muted">
+                (Dư địa trên sổ sách: {fmtMoney(availableBeforeThisKunn)})
+              </span>
+            )}
           </div>
         )}
       </div>

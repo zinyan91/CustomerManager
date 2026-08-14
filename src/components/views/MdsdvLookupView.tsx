@@ -43,13 +43,13 @@ export const MdsdvLookupView: React.FC = () => {
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
 
-      <div className={`${cardBg} rounded-lg p-4 border space-y-4`}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-line pb-2">
+      <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-4`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-line pb-3">
           <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
-            <Target className="w-5 h-5 text-pos" />
-            <span>TRA CỨU MỤC ĐÍCH SỬ DỤNG VỐN (MĐSDV — FBE)</span>
+            <Target className="w-5 h-5 text-accent" />
+            <span className="uppercase">TRA CỨU MỤC ĐÍCH SỬ DỤNG VỐN (MĐSDV — FBE)</span>
           </h2>
-          <div className="text-[11px] text-ink-faint font-mono">
+          <div className="text-[11px] text-ink-faint font-mono bg-panel-muted px-3 py-1 rounded-lg border border-line">
             {totalEntries.toLocaleString('vi-VN')} mã cấp 6 • PL01/PL02 ngày {MDSDV_VERSION.slice(0, 2)}/{MDSDV_VERSION.slice(2, 4)}/{MDSDV_VERSION.slice(4)}
           </div>
         </div>

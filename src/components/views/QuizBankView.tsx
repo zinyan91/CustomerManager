@@ -179,35 +179,57 @@ export const QuizBankView: React.FC = () => {
     <div className="space-y-4 text-xs">
       <Toast toast={toast} onDismiss={dismiss} />
 
-      <div className={`${PANEL} p-4 space-y-3`}>
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <div className={`${HEADING_SCREEN} flex items-center gap-2`}>
-            <GraduationCap size={16} /> NGÂN HÀNG CÂU HỎI NGHIỆP VỤ
+      <div className={`${PANEL} p-4 space-y-4`}>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
+          <div className={`${HEADING_SCREEN} flex items-center gap-2 text-accent`}>
+            <GraduationCap size={18} className="text-accent" />
+            <span className="uppercase">NGÂN HÀNG CÂU HỎI & CHẾ ĐỘ LUYỆN TẬP</span>
           </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setMode('browse')}
-              className={`${BTN_SECONDARY} px-2.5 py-1 text-[11px] ${mode === 'browse' ? 'border-accent text-accent' : ''}`}>
-              Tra cứu
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${
+                mode === 'browse'
+                  ? 'bg-accent text-accent-ink border-accent shadow-xs'
+                  : 'bg-panel-muted text-ink-muted border-line hover:border-accent hover:text-accent'
+              }`}>
+              Tra cứu câu hỏi
             </button>
             <button type="button" onClick={() => setMode('practice')}
-              className={`${BTN_SECONDARY} px-2.5 py-1 text-[11px] ${mode === 'practice' ? 'border-accent text-accent' : ''}`}>
-              Luyện tập
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${
+                mode === 'practice'
+                  ? 'bg-accent text-accent-ink border-accent shadow-xs'
+                  : 'bg-panel-muted text-ink-muted border-line hover:border-accent hover:text-accent'
+              }`}>
+              Luyện tập trắc nghiệm
             </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-ink-muted">
-            <Loader2 className="w-4 h-4 animate-spin" /> Đang đọc ngân hàng câu hỏi…
+          <div className="flex items-center gap-2 text-ink-muted py-4">
+            <Loader2 className="w-4 h-4 animate-spin text-accent" /> Đang tải ngân hàng câu hỏi nghiệp vụ…
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-ink-muted">
-              <span><strong className="text-ink">{stats.total}</strong> câu</span>
-              <span><strong className="text-ink">{stats.multiAnswer}</strong> câu nhiều đáp án</span>
-              {stats.unsettled > 0 && (
-                <span><strong className="text-ink">{stats.unsettled}</strong> câu chưa chốt đáp án</span>
-              )}
+            {/* Quiz Mastery KPI Header */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng ngân hàng câu hỏi</div>
+                <div className="font-mono font-bold text-sm text-accent">{stats.total} Câu hỏi</div>
+                <div className="text-[11px] text-ink-faint">Phục vụ kiểm tra nghiệp vụ</div>
+              </div>
+
+              <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Câu hỏi nhiều đáp án</div>
+                <div className="font-mono font-bold text-sm text-pos">{stats.multiAnswer} Câu hỏi</div>
+                <div className="text-[11px] text-ink-faint">Dạng trắc nghiệm lựa chọn tổ hợp</div>
+              </div>
+
+              <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Câu chưa chốt đáp án</div>
+                <div className="font-mono font-bold text-sm text-warn">{stats.unsettled} Câu hỏi</div>
+                <div className="text-[11px] text-ink-faint">Cần rà soát và duyệt chính thức</div>
+              </div>
             </div>
 
             {clusters.length > 0 && (

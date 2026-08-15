@@ -1,4 +1,5 @@
 import type { SaleItem } from '../components/documents/DocumentForm';
+import { supabase } from './supabase';
 
 export interface SaleCatalogProfile {
   id: string;
@@ -140,6 +141,12 @@ export function saveSaleCatalog(profile: SaleCatalogProfile): SaleCatalogProfile
   if (storage) {
     storage.setItem(STORAGE_KEY, JSON.stringify(updated));
   }
+
+  // Đồng bộ lên Supabase Cloud trong background (non-blocking)
+  saveSaleCatalogToCloud(profile).catch(err => {
+    console.warn('Lưu Supabase sale catalog background:', err);
+  });
+
   return updated;
 }
 
@@ -150,6 +157,12 @@ export function deleteSaleCatalog(id: string): SaleCatalogProfile[] {
   if (storage) {
     storage.setItem(STORAGE_KEY, JSON.stringify(updated));
   }
+
+  // Xóa trên Supabase Cloud trong background
+  deleteSaleCatalogFromCloud(id).catch(err => {
+    console.warn('Xóa Supabase sale catalog background:', err);
+  });
+
   return updated;
 }
 
@@ -159,4 +172,78 @@ export function resetSaleCatalogs(): SaleCatalogProfile[] {
     storage.setItem(STORAGE_KEY, JSON.stringify(BUILTIN_SALE_CATALOGS));
   }
   return BUILTIN_SALE_CATALOGS;
+}
+
+// --- Cloud Sync Helpers (Supabase PostgreSQL) ---
+
+export async function fetchSaleCatalogsFromCloud(): Promise<SaleCatalogProfile[]> {
+  try {
+    const { data, error } = await supabase
+      .from('SaleCatalogProfiles')
+      .select('*')
+      .order('CreatedAt', { ascending: true });
+
+    if (error) throw error;
+    if (!data || data.length === 0) return loadSaleCatalogs();
+
+    const cloudList: SaleCatalogProfile[] = data.map(row => ({
+      id: row.Id,
+      name: row.Name,
+      category: row.Category,
+      isBuiltin: row.IsBuiltin,
+      items: Array.isArray(row.Items) ? row.Items : [],
+    }));
+
+    // Hợp nhất dữ liệu đám mây với các mẫu mặc định
+    const currentLocal = loadSaleCatalogs();
+    const mergedMap = new Map<string, SaleCatalogProfile>();
+
+    // Nạp builtin trước
+    BUILTIN_SALE_CATALOGS.forEach(c => mergedMap.set(c.id, c));
+    // Nạp local
+    currentLocal.forEach(c => mergedMap.set(c.id, c));
+    // Nạp cloud đè lên
+    cloudList.forEach(c => mergedMap.set(c.id, c));
+
+    const finalMerged = Array.from(mergedMap.values());
+    const storage = getStorage();
+    if (storage) {
+      storage.setItem(STORAGE_KEY, JSON.stringify(finalMerged));
+    }
+    return finalMerged;
+  } catch (err) {
+    console.warn('fetchSaleCatalogsFromCloud fallback to local:', err);
+    return loadSaleCatalogs();
+  }
+}
+
+export async function saveSaleCatalogToCloud(profile: SaleCatalogProfile): Promise<void> {
+  try {
+    const payload = {
+      Id: profile.id,
+      Name: profile.name,
+      Category: profile.category,
+      IsBuiltin: profile.isBuiltin ?? false,
+      Items: profile.items,
+      UpdatedAt: new Date().toISOString(),
+    };
+    const { error } = await supabase
+      .from('SaleCatalogProfiles')
+      .upsert([payload]);
+    if (error) throw error;
+  } catch (err) {
+    console.warn('saveSaleCatalogToCloud error:', err);
+  }
+}
+
+export async function deleteSaleCatalogFromCloud(id: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('SaleCatalogProfiles')
+      .delete()
+      .eq('Id', id);
+    if (error) throw error;
+  } catch (err) {
+    console.warn('deleteSaleCatalogFromCloud error:', err);
+  }
 }

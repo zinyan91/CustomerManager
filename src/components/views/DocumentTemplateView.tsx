@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UI } from '../../lib/uiClasses';
 import { TemplateSelector, TEMPLATE_LIST, type TemplateType } from '../documents/TemplateSelector';
 import { DocumentForm, type SaleItem } from '../documents/DocumentForm';
@@ -10,6 +10,7 @@ import {
   saveSaleCatalog,
   deleteSaleCatalog,
   resetSaleCatalogs,
+  fetchSaleCatalogsFromCloud,
   type SaleCatalogProfile,
 } from '../../lib/saleCatalogStore';
 import { SaleCatalogModal } from '../documents/SaleCatalogModal';
@@ -127,6 +128,16 @@ export const DocumentTemplateView: React.FC = () => {
     return 'spa-cosmetics';
   });
   const [catalogModalOpen, setCatalogModalOpen] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchSaleCatalogsFromCloud().then(cloudList => {
+      if (isMounted && cloudList && cloudList.length > 0) {
+        setCatalogs(cloudList);
+      }
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   const [saleItems, setSaleItems] = useState<SaleItem[]>(() => {
     const all = loadSaleCatalogs();

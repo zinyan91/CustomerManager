@@ -3,11 +3,12 @@ import { UI } from '../../lib/uiClasses';
 import type { Customer } from '../../types';
 import { isCustomerArchived, CUSTOMER_STATUS_LABEL, type CustomerStatusFilter } from '../../lib/customerStatus';
 import { fmtDate, formatNationalId, parseNationalIdInput } from '../../lib/utils';
-import { Search, Plus, UserCheck, Archive, ArchiveRestore, Edit3 } from 'lucide-react';
+import { Search, Plus, UserCheck, Archive, ArchiveRestore, Edit3, FileText, Banknote, Building2 } from 'lucide-react';
 import { Toast } from '../Toast';
 import { AdaptiveTable, type AdaptiveColumn } from '../AdaptiveTable';
 import { useCustomerListController } from '../../hooks/useCustomerListController';
 import { CustomerDrawerForm } from '../customer/CustomerDrawerForm';
+import { useWork } from '../../context/WorkContext';
 
 export const CustomerListView: React.FC = () => {
   const {
@@ -39,6 +40,8 @@ export const CustomerListView: React.FC = () => {
     handleDeleteCustomer,
     parseAndApplySnippet,
   } = useCustomerListController();
+
+  const { setActiveTab, setSelectedCustomerId } = useWork();
 
   const containerCardBg = UI.containerCardBg;
   const inputStyle = UI.inputStyle;
@@ -136,17 +139,58 @@ export const CustomerListView: React.FC = () => {
               actions={c => (
                 <div className="inline-flex items-center gap-1.5">
                   <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedCustomerId(c.Id);
+                      setActiveTab('credit-contracts');
+                    }}
+                    title="Xem Hợp đồng tín dụng & hạn mức của KH này"
+                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
+                  >
+                    <FileText className="w-3 h-3 text-accent" />
+                    <span>HĐTD</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedCustomerId(c.Id);
+                      setActiveTab('loans');
+                    }}
+                    title="Xem Danh mục Khoản vay & Lịch thu nợ của KH này"
+                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
+                  >
+                    <Banknote className="w-3 h-3 text-pos" />
+                    <span>Vay</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedCustomerId(c.Id);
+                      setActiveTab('collaterals');
+                    }}
+                    title="Xem Tài sản bảo đảm thế chấp của KH này"
+                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
+                  >
+                    <Building2 className="w-3 h-3 text-warn" />
+                    <span>TSBĐ</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); openDrawerForEdit(c); }}
-                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
+                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
                   >
                     <Edit3 className="w-3 h-3 text-accent" />
                     <span>Sửa</span>
                   </button>
                   <button
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); toggleArchived(c); }}
                     disabled={archiving === c.Id}
                     title={isCustomerArchived(c) ? 'Bỏ lưu trữ' : 'Lưu trữ hồ sơ'}
-                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center transition-all duration-150 disabled:opacity-60"
+                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center transition-all duration-150 disabled:opacity-60"
                   >
                     {isCustomerArchived(c)
                       ? <ArchiveRestore className="w-3 h-3 text-pos" />

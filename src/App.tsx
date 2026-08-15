@@ -29,12 +29,7 @@ const PurchaseStatementView = lazy(() => import('./components/views/PurchaseStat
 const RetailInvoiceView = lazy(() => import('./components/views/RetailInvoiceView').then(m => ({ default: m.RetailInvoiceView })));
 const QuizBankView = lazy(() => import('./components/views/QuizBankView').then(m => ({ default: m.QuizBankView })));
 
-const ViewFallback = () => (
-  <div className="flex items-center justify-center h-64 text-ink/50">
-    <Loader2 className="w-6 h-6 animate-spin text-accent mr-2" />
-    <span className="text-xs">Đang tải giao diện...</span>
-  </div>
-);
+import { ViewSkeleton } from './components/SkeletonLoader';
 
 export function App() {
   const { activeTab, setActiveTab } = useWork();
@@ -96,7 +91,7 @@ export function App() {
         />
         <main className="flex-1 md:ml-60 min-w-0 bg-surface p-3 sm:p-4 md:p-6 overflow-y-auto">
           <ErrorBoundary title="Lỗi khi tải giao diện màn hình">
-            <Suspense fallback={<ViewFallback />}>
+            <Suspense fallback={<ViewSkeleton />}>
               {activeTab === 'dashboard' && <DashboardView />}
               {activeTab === 'customers' && <CustomerListView />}
               {activeTab === 'credit-contracts' && <CreditContractView />}

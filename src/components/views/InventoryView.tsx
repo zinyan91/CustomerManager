@@ -1,7 +1,7 @@
 import React, { useState, lazy, Suspense } from 'react';
 import {
   Package, Printer, Plus, Trash2, Search, Boxes, FileSpreadsheet,
-  Settings2, Users, Loader2, Pencil, X, Save,
+  Settings2, Users, Pencil, X, Save,
 } from 'lucide-react';
 import { computeItemRow, type InventoryItem } from '../../lib/inventory';
 import { parseMoneyDecimalInput, fmtMoney, fmtNumber, formatMoneyInput } from '../../lib/utils';
@@ -14,12 +14,9 @@ const DebtReceivableTab = lazy(() => import('../inventory/DebtReceivableTab').th
 const DebtPayableTab = lazy(() => import('../inventory/DebtPayableTab').then(m => ({ default: m.DebtPayableTab })));
 const TemplateManagerModal = lazy(() => import('../inventory/TemplateManagerModal').then(m => ({ default: m.TemplateManagerModal })));
 
-const TabFallback = () => (
-  <div className="flex items-center justify-center p-8 text-ink-muted">
-    <Loader2 className="w-5 h-5 animate-spin text-accent mr-2" />
-    <span className="text-xs">Đang tải phân hệ...</span>
-  </div>
-);
+import { ViewSkeleton } from '../SkeletonLoader';
+
+const TabFallback = () => <ViewSkeleton tableRows={4} hasKpi={false} />;
 
 const EditInventoryItemModal: React.FC<{
   item: InventoryItem;

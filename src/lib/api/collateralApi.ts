@@ -4,9 +4,12 @@ import { defaultLtvForAssetType } from '../collateralMath';
 
 export async function fetchCollateralsAPI(): Promise<Collateral[]> {
   try {
-    const { data, error } = await supabase.from('Collaterals').select('*, customer:Customers(*)');
+    const { data, error } = await supabase
+      .from('Collaterals')
+      .select('*')
+      .order('Id', { ascending: false });
     if (error) throw error;
-    return (data || []).sort((a: any, b: any) => (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
+    return (data || []) as Collateral[];
   } catch (err) {
     console.error("fetchCollateralsAPI error:", err);
     return [];

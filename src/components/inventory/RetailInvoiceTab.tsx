@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Receipt, Plus, Trash2, Download, Printer, Settings2, Search, Save, History,
+  Pencil, X,
 } from 'lucide-react';
 import {
   computeRetailInvoiceItem, computeRetailInvoiceSummary, nextInvoiceId,
@@ -26,6 +27,125 @@ interface RetailInvoiceTabProps {
   showNotify: (type: 'success' | 'error', message: string) => void;
 }
 
+const EditRetailItemModal: React.FC<{
+  item: RetailInvoiceItem;
+  onSave: (updated: RetailInvoiceItem) => void;
+  onClose: () => void;
+}> = ({ item, onSave, onClose }) => {
+  const [itemName, setItemName] = useState(item.itemName);
+  const [unit, setUnit] = useState(item.unit);
+  const [qtyStr, setQtyStr] = useState(item.qty ? formatMoneyInput(String(item.qty)) : '');
+  const [priceStr, setPriceStr] = useState(item.unitPrice ? formatMoneyInput(String(item.unitPrice)) : '');
+
+  const qty = parseMoneyDecimalInput(qtyStr);
+  const unitPrice = parseMoneyDecimalInput(priceStr);
+  const amount = qty * unitPrice;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!itemName.trim()) return;
+    onSave({
+      ...item,
+      itemName: itemName.trim(),
+      unit: unit.trim() || 'Lần',
+      qty,
+      unitPrice,
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150" onClick={onClose}>
+      <div
+        className={`${UI.containerCardBg} rounded-xl border border-line-strong shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150 text-xs`}
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => {
+          if (e.key === 'Escape') onClose();
+        }}
+      >
+        <div className="p-3.5 border-b border-line bg-panel-muted/70 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Pencil className="w-4 h-4 text-accent" />
+            <h3 className="font-bold text-sm text-ink uppercase">SỬA MẶT HÀNG HÓA ĐƠN</h3>
+          </div>
+          <button type="button" onClick={onClose} className="p-1 rounded text-ink-faint hover:text-ink hover:bg-panel">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-3">
+          <div>
+            <label className={`block mb-1 ${UI.labelStyle}`}>Tên hàng hóa / dịch vụ *</label>
+            <input
+              type="text"
+              value={itemName}
+              required
+              onChange={e => setItemName(e.target.value)}
+              className={`w-full p-2 rounded-lg font-bold text-ink ${UI.inputStyle}`}
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 pt-1 border-t border-line">
+            <div>
+              <label className={`block mb-1 ${UI.labelStyle}`}>Đơn vị tính</label>
+              <input
+                type="text"
+                value={unit}
+                onChange={e => setUnit(e.target.value)}
+                className={`w-full p-2 rounded-lg text-center ${UI.inputStyle}`}
+              />
+            </div>
+            <div>
+              <label className={`block mb-1 ${UI.labelStyle}`}>Số lượng</label>
+              <input
+                type="text"
+                value={qtyStr}
+                onChange={e => setQtyStr(formatMoneyInput(e.target.value))}
+                className={`w-full p-2 rounded-lg font-mono text-right font-bold ${UI.inputStyle}`}
+              />
+            </div>
+            <div>
+              <label className={`block mb-1 ${UI.labelStyle}`}>Đơn giá (VNĐ)</label>
+              <input
+                type="text"
+                value={priceStr}
+                onChange={e => setPriceStr(formatMoneyInput(e.target.value))}
+                className={`w-full p-2 rounded-lg font-mono text-right font-bold text-accent ${UI.inputStyle}`}
+              />
+            </div>
+          </div>
+
+          {/* Live Preview Box */}
+          <div className="p-2.5 rounded-lg bg-pos-soft/50 border border-pos/30 flex items-center justify-between">
+            <div className="text-[10px] text-pos uppercase font-bold">THÀNH TIỀN DỰ TÍNH</div>
+            <div className="font-mono font-black text-pos text-base">
+              {fmtMoney(amount)}
+            </div>
+          </div>
+
+          {/* Modal Actions */}
+          <div className="pt-3 border-t border-line flex items-center justify-end space-x-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-2 rounded-lg border border-line text-ink-muted hover:bg-panel-muted text-xs font-semibold transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg bg-accent text-accent-ink font-bold text-xs flex items-center space-x-1.5 hover:opacity-90 shadow-xs transition-opacity"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>Lưu thay đổi</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }) => {
   const [templates, setTemplates] = useState<RetailInvoiceTemplate[]>(loadRetailInvoiceTemplates);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(() => templates[0]?.id || 'ret-hair-spa');
@@ -46,6 +166,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
   const [savedInvoices, setSavedInvoices] = useState<SavedRetailInvoice[]>([]);
   const [currentInvId, setCurrentInvId] = useState<string>(() => nextInvoiceId());
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
+  const [editingItem, setEditingItem] = useState<RetailInvoiceItem | null>(null);
 
   // Fetch saved invoices from Database on mount
   React.useEffect(() => {
@@ -200,8 +321,6 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
     const title = headerInfo.buyerName ? `HÓA ĐƠN BÁN LẺ - ${headerInfo.buyerName}` : 'HÓA ĐƠN BÁN LẺ';
     printHtmlDoc(html, title);
   };
-
-  const cellInputCls = 'w-full bg-transparent text-xs p-1 rounded border border-transparent hover:border-line focus:border-accent focus:bg-panel outline-none transition-colors font-mono';
 
   return (
     <div className="space-y-4 text-xs">
@@ -413,66 +532,73 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
           <table className="w-full text-left text-xs border-collapse min-w-[750px]">
             <thead className="sticky top-0 bg-panel-muted text-[10px] uppercase text-ink-faint border-b border-line z-10">
               <tr>
-                <th className="p-2 text-center w-12">STT</th>
-                <th className="p-2 min-w-[220px]">TÊN HÀNG HÓA / DỊCH VỤ</th>
-                <th className="p-2 text-center w-20">ĐVT</th>
-                <th className="p-2 text-right w-28">SỐ LƯỢNG</th>
-                <th className="p-2 text-right w-36">ĐƠN GIÁ (VND)</th>
-                <th className="p-2 text-right w-40 bg-pos-soft text-pos font-bold">THÀNH TIỀN (VND)</th>
-                <th className="p-2 text-center w-10"></th>
+                <th className="p-2.5 text-center w-12">STT</th>
+                <th className="p-2.5 min-w-[220px]">TÊN HÀNG HÓA / DỊCH VỤ</th>
+                <th className="p-2.5 text-center w-20">ĐVT</th>
+                <th className="p-2.5 text-right w-28">SỐ LƯỢNG</th>
+                <th className="p-2.5 text-right w-36">ĐƠN GIÁ (VND)</th>
+                <th className="p-2.5 text-right w-40 bg-pos-soft text-pos font-bold">THÀNH TIỀN (VND)</th>
+                <th className="p-2.5 text-center w-20">THAO TÁC</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-line font-mono">
               {filteredItems.map((rawItem, idx) => {
                 const c = computeRetailInvoiceItem(rawItem);
                 return (
-                  <tr key={c.id} className="hover:bg-panel-muted/50 transition-colors">
-                    <td className="p-2 text-center font-mono font-bold text-ink-faint">{idx + 1}</td>
-                    <td className="p-1">
-                      <input
-                        type="text"
-                        value={c.itemName}
-                        onChange={e => updateItem(c.id, { itemName: e.target.value })}
-                        className={`${cellInputCls} font-bold`}
-                      />
+                  <tr
+                    key={c.id}
+                    onDoubleClick={() => setEditingItem(rawItem)}
+                    className="hover:bg-panel-muted/50 transition-colors cursor-pointer group"
+                    title="Nhấp đúp hoặc bấm nút Sửa để chỉnh sửa"
+                  >
+                    <td className="p-2.5 text-center font-mono font-bold text-ink-faint">{idx + 1}</td>
+                    <td className="p-2.5 font-semibold text-ink font-app">{c.itemName}</td>
+                    <td className="p-2.5 text-center text-ink-muted">{c.unit}</td>
+                    <td className="p-2.5 text-right font-bold text-ink">
+                      {c.qty > 0 ? fmtNumber(c.qty) : '0'}
                     </td>
-                    <td className="p-1">
-                      <input
-                        type="text"
-                        value={c.unit}
-                        onChange={e => updateItem(c.id, { unit: e.target.value })}
-                        className={`${cellInputCls} text-center`}
-                      />
+                    <td className="p-2.5 text-right font-bold text-accent">
+                      {c.unitPrice > 0 ? fmtNumber(c.unitPrice) : '0'}
                     </td>
-                    <td className="p-1">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={formatMoneyInput(String(c.qty))}
-                        onChange={e => updateItem(c.id, { qty: parseMoneyDecimalInput(e.target.value) })}
-                        className={`${cellInputCls} text-right`}
-                      />
-                    </td>
-                    <td className="p-1">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={formatMoneyInput(String(c.unitPrice))}
-                        onChange={e => updateItem(c.id, { unitPrice: parseMoneyDecimalInput(e.target.value) })}
-                        className={`${cellInputCls} text-right`}
-                      />
-                    </td>
-                    <td className="p-2 text-right font-mono font-bold text-pos bg-pos-soft/40">
+                    <td className="p-2.5 text-right font-mono font-black text-pos bg-pos-soft/40">
                       {fmtMoney(c.amount)}
                     </td>
-                    <td className="p-1 text-center">
-                      <button type="button" onClick={() => removeItem(c.id)} className="text-ink-faint hover:text-neg p-1">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <td className="p-2.5 text-center">
+                      <div className="flex items-center justify-center space-x-1">
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setEditingItem(rawItem);
+                          }}
+                          className="p-1 rounded text-ink-faint hover:text-accent hover:bg-accent-soft transition-colors"
+                          title="Sửa mặt hàng này"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={e => {
+                            e.stopPropagation();
+                            removeItem(c.id);
+                          }}
+                          className="p-1 rounded text-ink-faint hover:text-neg hover:bg-neg-soft transition-colors"
+                          title="Xóa mặt hàng này"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
               })}
+              {filteredItems.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-ink-faint italic font-app">
+                    Chưa có mặt hàng nào trong Hóa đơn.
+                  </td>
+                </tr>
+              )}
             </tbody>
             <tfoot className="bg-accent-soft font-bold border-t-2 border-accent/30 sticky bottom-0 z-10">
               <tr>
@@ -486,6 +612,18 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
           </table>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingItem && (
+        <EditRetailItemModal
+          item={editingItem}
+          onSave={updated => {
+            updateItem(updated.id, updated);
+            showNotify('success', `Đã cập nhật mặt hàng "${updated.itemName}" thành công.`);
+          }}
+          onClose={() => setEditingItem(null)}
+        />
+      )}
 
       <StatementTemplateModal
         isOpen={isTemplateModalOpen}

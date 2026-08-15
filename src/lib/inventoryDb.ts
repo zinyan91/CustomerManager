@@ -28,8 +28,22 @@ export async function fetchInventoryItemsDb(categoryName?: string): Promise<Inve
         importQty: Number(d.ImportQty || 0),
         exportQty: Number(d.ExportQty || 0),
       }));
-      // Backup to local storage for offline support
+
+      // Merge with local items that may have been created locally
       const storage = safeLocalStorage();
+      const cachedStr = storage ? storage.getItem(INVENTORY_STORAGE_KEY) : null;
+      if (cachedStr) {
+        try {
+          const localItems: InventoryItem[] = JSON.parse(cachedStr);
+          for (const loc of localItems) {
+            if (!items.some(it => it.id === loc.id)) {
+              items.push(loc);
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
       if (storage) storage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(items));
       return items;
     }

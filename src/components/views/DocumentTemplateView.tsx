@@ -115,17 +115,31 @@ export const DocumentTemplateView: React.FC = () => {
   const [salePaymentStage1, setSalePaymentStage1] = useState('93.600.000');
 
   // --- Sale Catalogs State ---
+  const LAST_CATALOG_KEY = 'CUSTOMER_MANAGER_LAST_SALE_CATALOG_ID';
   const [catalogs, setCatalogs] = useState<SaleCatalogProfile[]>(() => loadSaleCatalogs());
-  const [currentCatalogId, setCurrentCatalogId] = useState<string>('spa-cosmetics');
+  const [currentCatalogId, setCurrentCatalogId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('CUSTOMER_MANAGER_LAST_SALE_CATALOG_ID');
+      if (saved && loadSaleCatalogs().some(c => c.id === saved)) {
+        return saved;
+      }
+    }
+    return 'spa-cosmetics';
+  });
   const [catalogModalOpen, setCatalogModalOpen] = useState(false);
 
   const [saleItems, setSaleItems] = useState<SaleItem[]>(() => {
-    const initial = loadSaleCatalogs().find(c => c.id === 'spa-cosmetics');
+    const all = loadSaleCatalogs();
+    const savedId = typeof window !== 'undefined' ? localStorage.getItem('CUSTOMER_MANAGER_LAST_SALE_CATALOG_ID') : null;
+    const initial = (savedId && all.find(c => c.id === savedId)) || all.find(c => c.id === 'spa-cosmetics') || all[0];
     return initial ? initial.items : [];
   });
 
   const handleSelectCatalogId = (id: string) => {
     setCurrentCatalogId(id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LAST_CATALOG_KEY, id);
+    }
     const selected = catalogs.find(c => c.id === id);
     if (selected) {
       setSaleItems([...selected.items]);
@@ -142,6 +156,9 @@ export const DocumentTemplateView: React.FC = () => {
     const updated = saveSaleCatalog(newProfile);
     setCatalogs(updated);
     setCurrentCatalogId(newProfile.id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LAST_CATALOG_KEY, newProfile.id);
+    }
     setSaleItems([...items]);
   };
 
@@ -150,6 +167,9 @@ export const DocumentTemplateView: React.FC = () => {
     setCatalogs(updated);
     if (currentCatalogId === id && updated.length > 0) {
       setCurrentCatalogId(updated[0].id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(LAST_CATALOG_KEY, updated[0].id);
+      }
       setSaleItems([...updated[0].items]);
     }
   };
@@ -158,6 +178,9 @@ export const DocumentTemplateView: React.FC = () => {
     const resetList = resetSaleCatalogs();
     setCatalogs(resetList);
     setCurrentCatalogId(resetList[0].id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LAST_CATALOG_KEY, resetList[0].id);
+    }
     setSaleItems([...resetList[0].items]);
   };
 

@@ -4,8 +4,9 @@ import {
   FileText, Plus, Trash2, Save, X, Banknote, AlertTriangle, Building2,
   Calendar, ChevronDown, ChevronUp, UserCheck, Clock
 } from 'lucide-react';
-import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
+import { fmtDate, fmtMoney, fmtRate, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { usableCapacity, collateralValue } from '../../lib/collateralMath';
+import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
 import { useCreditContractController, LOAN_METHODS } from '../../hooks/useCreditContractController';
@@ -482,8 +483,8 @@ export const CreditContractView: React.FC = () => {
                                         <td className="py-2 font-mono font-bold text-right text-warn">
                                           {fmtMoney(kunnBalance)}
                                         </td>
-                                        <td className="py-2 font-mono text-center text-ink">
-                                          {k.InterestRate ? `${k.InterestRate}%` : '—'}
+                                        <td className="py-2 font-mono text-center text-accent font-semibold">
+                                          {fmtRate(getEffectiveActiveRate(k))}
                                         </td>
                                         <td className="py-2 font-mono text-ink-faint">
                                           {k.DisbursementDate ? fmtDate(k.DisbursementDate) : (k.ContractStartDate ? fmtDate(k.ContractStartDate) : '—')} → {k.KunnDueDate ? fmtDate(k.KunnDueDate) : (k.ContractEndDate ? fmtDate(k.ContractEndDate) : '—')}

@@ -107,20 +107,19 @@ d:\CustomerManager\src\
    - Mọi hàm giao tiếp CSDL trong `src/lib/*Db.ts` đều được bọc `try...catch` cẩn thận.
    - Khi mất mạng, lỗi kết nối hoặc Supabase chưa được cấp quyền RLS, hệ thống tự động fallback đọc/ghi vào `localStorage` cục bộ, đảm bảo người dùng **không bao giờ bị gián đoạn công việc hay mất dữ liệu**.
    - Khi kết nối lại, hệ thống tự động merge dữ liệu cục bộ với dữ liệu đám mây.
-2. **Thiết Kế Schema Bám Sát Nghiệp Vụ Tín Dụng**:
-   - Cấu trúc bảng phân định rõ ràng các thực thể: `Customers`, `CreditContracts`, `KunnContracts`, `Collaterals`, `InventoryItems`, `PurchaseStatements`, `RetailInvoices`, `QuizQuestions`.
+2. **Thiết Kế Schema Bám Sát Nghiệp Vụ Tín Dụng & Strongly-Typed TypeScript**:
+   - Cấu trúc bảng phân định rõ ràng các thực thể: `Customers`, `CreditContracts`, `LoanContracts`, `Collaterals`, `InventoryItems`, `PurchaseStatements`, `RetailInvoices`, `QuizQuestions`.
+   - File `src/types/database.types.ts` định nghĩa kiểu tĩnh khớp 100% schema Supabase PostgreSQL.
+3. **Chỉ Mục (B-Tree & GIN Indexes) & Khóa Ngoại (Foreign Keys) Đã Hoạt Động (100%)**:
+   - Đã thực thi trực tiếp qua migration `44_production_indexes_and_constraints.sql`.
+   - B-Tree indexes trên tất cả các cột tra cứu (`CifKh`, `NationalId`, `Phone`, `ContractNumber`, `IsSettled`, `CategoryName`...).
+   - GIN indexes trên các trường JSONB (`Items`, `Options`).
+   - Ràng buộc khóa ngoại `fk_loan_contracts_credit_contract` (`ON DELETE RESTRICT`) và `fk_collaterals_customer` (`ON DELETE CASCADE`).
+4. **Bảo Mật Cấp Hàng (Row Level Security - RLS) & Multi-Tenancy Đã Kích Hoạt**:
+   - Toàn bộ 25 bảng CSDL trên Supabase đều đã bật `rowsecurity = true`.
+   - Hàm bảo mật `can_access_customer(cid)` và `can_access_contract(contract_id)` đảm bảo mỗi Cán bộ tín dụng (RM) chỉ truy cập hồ sơ khách hàng của mình, tài khoản Admin có quyền quản trị toàn diện qua `is_admin()`.
 
-### ⚠️ Nhược điểm & Điểm cần cải thiện:
-1. **Quy Chuẩn Đặt Tên (Naming Convention Mismatch)**:
-   - Cột trong Postgres / Supabase đang dùng PascalCase (`CategoryName`, `UnitPrice`, `BeginningQty`, `CreatedAt`), trong khi TypeScript frontend dùng camelCase (`categoryName`, `unitPrice`, `beginningQty`).
-   - Hiện tại code đang phải map thủ công ở nhiều hàm `fetch*Db`.
-   - *Đề xuất:* Chuẩn hóa migration script Postgres với `snake_case` chuẩn quốc tế (`category_name`, `unit_price`) hoặc sử dụng Supabase CLI sinh tự động TypeScript types (`supabase gen types typescript`).
-2. **Thiếu RLS (Row Level Security) & Phân Quyền Multi-tenancy**:
-   - Hiện tại các bảng đang mở quyền truy cập chung hoặc cần bảo mật cấp người dùng (`user_id = auth.uid()`).
-   - *Đề xuất:* Thiết lập các chính sách RLS trên Supabase để mỗi Cán bộ tín dụng chỉ xem và quản lý danh mục khách hàng thuộc chi nhánh/phòng ban của mình.
-3. **Chỉ Mục (Indexes) & Ràng Buộc Khóa Ngoại (Foreign Keys)**:
-   - Cần bổ sung các Indexes trên các cột thường xuyên tìm kiếm và lọc: `Customers(CifNumber)`, `CreditContracts(CustomerId)`, `KunnContracts(ContractId)`, `InventoryItems(CategoryName)`.
-   - Bổ sung `ON DELETE CASCADE` giữa HĐTD và các KUNN con để đảm bảo tính toàn vẹn dữ liệu.
+---
 
 ---
 

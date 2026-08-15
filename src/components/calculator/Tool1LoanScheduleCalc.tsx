@@ -457,14 +457,14 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <button
               type="button"
               onClick={addPrepayment}
-              className="px-2.5 py-1 rounded bg-warn text-warn-ink text-xs font-bold flex items-center space-x-1 hover:opacity-90 transition-opacity"
+              className="px-3 py-1.5 rounded-lg bg-warn text-white text-xs font-bold flex items-center space-x-1.5 hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Thêm kỳ trả trước hạn</span>
+              <Plus className="w-4 h-4 text-white" />
+              <span>+ Thêm kỳ trả trước hạn</span>
             </button>
           </div>
 
-          {prepaymentPlan.length === 0 ? (
+          {prepayments.length === 0 ? (
             <div className="text-xs text-ink-faint italic py-1">
               Chưa thiết lập lần trả trước hạn nào. Bấm <strong>"+ Thêm kỳ trả trước hạn"</strong> nếu khách hàng muốn trả bớt gốc ở một hoặc nhiều kỳ bất kỳ.
             </div>

@@ -308,8 +308,9 @@ export const MdsdvLookupView: React.FC = () => {
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="bg-panel/40 border-b border-line text-[11px] font-bold text-ink-faint uppercase">
                       <tr>
-                        <th className="py-2.5 px-4 w-44">MÃ CẤP 6 (FBE)</th>
-                        <th className="py-2.5 px-4">TÊN MỤC ĐÍCH SỬ DỤNG VỐN</th>
+                        <th className="py-2.5 px-4 w-44">MÃ CẤP 6</th>
+                        <th className="py-2.5 px-4 min-w-[220px]">TÊN MỤC ĐÍCH SỬ DỤNG VỐN</th>
+                        <th className="py-2.5 px-4 min-w-[240px]">QUY ƯỚC FBE (CORE BANKING)</th>
                         <th className="py-2.5 px-4 w-36 text-center">ĐẶC THÙ</th>
                         <th className="py-2.5 px-4 w-32 text-right">SAO CHÉP</th>
                       </tr>
@@ -338,13 +339,15 @@ export const MdsdvLookupView: React.FC = () => {
 
                             {/* Tên mục đích */}
                             <td className="py-2.5 px-4">
-                              <div className="space-y-0.5">
-                                <div className="font-semibold text-ink text-xs leading-snug">
-                                  {item.purposeName}
-                                </div>
-                                <div className="font-mono text-[10px] text-ink-faint">
-                                  Quy ước FBE: <span className="text-ink-muted">{item.fbeName}</span>
-                                </div>
+                              <div className="font-semibold text-ink text-xs leading-snug">
+                                {item.purposeName}
+                              </div>
+                            </td>
+
+                            {/* Quy ước FBE riêng 1 cột */}
+                            <td className="py-2.5 px-4 font-mono">
+                              <div className="inline-flex items-center gap-1 bg-panel-muted px-2 py-0.5 rounded border border-line text-[11px] text-ink font-medium max-w-full">
+                                <span className="truncate" title={item.fbeName}>{item.fbeName}</span>
                               </div>
                             </td>
 
@@ -408,9 +411,10 @@ export const MdsdvLookupView: React.FC = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-panel-muted/90 backdrop-blur-xs sticky top-0 z-10 border-b border-line text-[11px] font-bold text-ink-faint uppercase">
                 <tr>
-                  <th className="py-2.5 px-4 w-44">MÃ CẤP 6 (FBE)</th>
-                  <th className="py-2.5 px-4 w-60">NGÀNH NGHỀ (CẤP 5)</th>
-                  <th className="py-2.5 px-4">TÊN MỤC ĐÍCH SỬ DỤNG VỐN</th>
+                  <th className="py-2.5 px-4 w-44">MÃ CẤP 6</th>
+                  <th className="py-2.5 px-4 w-56">NGÀNH NGHỀ (CẤP 5)</th>
+                  <th className="py-2.5 px-4 min-w-[200px]">TÊN MỤC ĐÍCH SỬ DỤNG VỐN</th>
+                  <th className="py-2.5 px-4 min-w-[220px]">QUY ƯỚC FBE</th>
                   <th className="py-2.5 px-4 w-32 text-center">ĐẶC THÙ</th>
                   <th className="py-2.5 px-4 w-28 text-right">SAO CHÉP</th>
                 </tr>
@@ -451,13 +455,15 @@ export const MdsdvLookupView: React.FC = () => {
 
                       {/* Tên Mục Đích */}
                       <td className="py-2.5 px-4">
-                        <div className="space-y-0.5">
-                          <div className="font-semibold text-ink text-xs leading-snug">
-                            {item.purposeName}
-                          </div>
-                          <div className="font-mono text-[10px] text-ink-faint">
-                            {item.fbeName}
-                          </div>
+                        <div className="font-semibold text-ink text-xs leading-snug">
+                          {item.purposeName}
+                        </div>
+                      </td>
+
+                      {/* Quy ước FBE */}
+                      <td className="py-2.5 px-4 font-mono">
+                        <div className="inline-flex items-center gap-1 bg-panel-muted px-2 py-0.5 rounded border border-line text-[11px] text-ink font-medium">
+                          <span>{item.fbeName}</span>
                         </div>
                       </td>
 

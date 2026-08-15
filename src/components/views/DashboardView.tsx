@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { UI } from '../../lib/uiClasses';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI } from '../../lib/api';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
-import { fmtDate, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
+import { fmtDate, fmtMoney, fmtNumber, fmtPercent, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
 import { assetClassLabel, collateralValue, appraisalExpiryDate } from '../../lib/collateralMath';
 import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
@@ -307,7 +307,7 @@ export const DashboardView: React.FC = () => {
       customer?.FullName || '',
       customer?.CifKh || '',
       contract.ContractNumber || '',
-      (contract.LoanAmount || contract.CurrentBalance || 0).toLocaleString('vi-VN') + ' VNĐ',
+      fmtMoney(contract.LoanAmount || contract.CurrentBalance || 0),
       fmtDate(contract.KunnDueDate),
       contract.KunnTenor || '',
       daysLeft === null || daysLeft === undefined ? ''
@@ -323,7 +323,7 @@ export const DashboardView: React.FC = () => {
       customer?.FullName || '',
       customer?.CifKh || '',
       masterNo || '',
-      (contract.ContractAmount || 0).toLocaleString('vi-VN') + ' VNĐ',
+      fmtMoney(contract.ContractAmount || 0),
       fmtDate(endDateStr),
       daysLeft === null || daysLeft === undefined ? ''
         : daysLeft < 0 ? `Đã hết hạn ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`,
@@ -339,7 +339,7 @@ export const DashboardView: React.FC = () => {
       customer?.CifKh || '',
       collateral.AssetCode || collateral.Address || '',
       assetClassLabel(collateral.AssetType),
-      (collateralValue(collateral)).toLocaleString('vi-VN') + ' VNĐ',
+      fmtMoney(collateralValue(collateral)),
       fmtDate(expiryDateStr),
       daysLeft === null || daysLeft === undefined ? ''
         : daysLeft < 0 ? `Đã hết hạn định giá ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`,
@@ -350,10 +350,10 @@ export const DashboardView: React.FC = () => {
   const formatMoney = (val: number) => {
     if (val >= 1e9) return (val / 1e9).toFixed(2) + ' Tỷ';
     if (val >= 1e6) return (val / 1e6).toFixed(0) + ' Trđ';
-    return val.toLocaleString('vi-VN') + ' VNĐ';
+    return fmtMoney(val);
   };
 
-  const fmtFullMoney = (val: number) => val.toLocaleString('vi-VN') + ' VNĐ';
+  const fmtFullMoney = (val: number) => fmtMoney(val);
 
   const cardBg = UI.containerCardBg;
 
@@ -391,7 +391,7 @@ export const DashboardView: React.FC = () => {
           tone="accent"
           icon={Users}
           label="Tổng số khách hàng"
-          value={totalCustomersCount.toLocaleString('vi-VN')}
+          value={fmtNumber(totalCustomersCount)}
           unit="khách hàng"
           note="Đang giao dịch & quản lý tín dụng"
         />
@@ -409,14 +409,14 @@ export const DashboardView: React.FC = () => {
           icon={Building2}
           label="Tổng giá trị TSĐB"
           value={formatMoney(totalCollateralVal)}
-          note={<>LTV bình quân: <strong className="text-accent">{weightedLtv.toFixed(1)}%</strong> ({collaterals.length} TS)</>}
+          note={<>LTV bình quân: <strong className="text-accent">{fmtPercent(weightedLtv > 1 ? weightedLtv / 100 : weightedLtv)}</strong> ({fmtNumber(collaterals.length)} TS)</>}
         />
         <KpiCard
           cardBg={cardBg}
           tone="neg"
           icon={AlertCircle}
           label="Cảnh báo tới hạn"
-          value={(dueInMonthList.length + dueKunnList.length + dueHmtdList.length + dueCollateralList.length).toLocaleString('vi-VN')}
+          value={fmtNumber(dueInMonthList.length + dueKunnList.length + dueHmtdList.length + dueCollateralList.length)}
           unit="hạng mục"
           note="Cần theo dõi & xử lý ngay"
         />

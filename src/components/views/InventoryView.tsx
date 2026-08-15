@@ -4,7 +4,7 @@ import {
   Settings2, Users, Loader2,
 } from 'lucide-react';
 import { computeItemRow } from '../../lib/inventory';
-import { parseMoneyDecimalInput } from '../../lib/utils';
+import { parseMoneyDecimalInput, fmtMoney, fmtNumber, formatMoneyInput } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
@@ -27,7 +27,7 @@ const QtyCellInput: React.FC<{
   className?: string;
 }> = ({ value, onChange, className }) => {
   const [dangGo, setDangGo] = useState<string | null>(null);
-  const shown = dangGo ?? (value === 0 ? '' : value.toLocaleString('vi-VN'));
+  const shown = dangGo ?? (value === 0 ? '' : formatMoneyInput(String(value)));
 
   return (
     <input
@@ -137,7 +137,7 @@ export const InventoryView: React.FC = () => {
             }`}
           >
             <Boxes className="w-4 h-4" />
-            <span>I. Bảng Kiểm kê Hàng tồn kho ({summary.totalEndingValue.toLocaleString('vi-VN')} VNĐ)</span>
+            <span>I. Bảng Kiểm kê Hàng tồn kho ({fmtMoney(summary.totalEndingValue)})</span>
           </button>
 
           <button
@@ -308,8 +308,8 @@ export const InventoryView: React.FC = () => {
               </div>
 
               <div className="flex items-center space-x-3 text-xs">
-                <span className="text-ink-faint">Tồn cuối kỳ: <strong className="text-accent font-mono">{summary.totalEndingQty.toLocaleString('vi-VN')}</strong> sản phẩm</span>
-                <span className="text-ink-faint">Tổng giá trị: <strong className="text-pos font-mono text-sm">{summary.totalEndingValue.toLocaleString('vi-VN')}</strong> VNĐ</span>
+                <span className="text-ink-faint">Tồn cuối kỳ: <strong className="text-accent font-mono">{fmtNumber(summary.totalEndingQty)}</strong> sản phẩm</span>
+                <span className="text-ink-faint">Tổng giá trị: <strong className="text-pos font-mono text-sm">{fmtMoney(summary.totalEndingValue)}</strong></span>
                 <button
                   onClick={clearAllItems}
                   className="text-neg hover:underline text-xs flex items-center space-x-1 font-semibold ml-2"
@@ -405,10 +405,10 @@ export const InventoryView: React.FC = () => {
                               />
                             </td>
                             <td className="p-2 text-right font-bold text-accent bg-accent-soft/30">
-                              {row.endingQty.toLocaleString('vi-VN')}
+                              {fmtNumber(row.endingQty)}
                             </td>
                             <td className="p-2 text-right font-bold text-pos bg-accent-soft/30">
-                              {row.endingValue.toLocaleString('vi-VN')}
+                              {fmtNumber(row.endingValue)}
                             </td>
                             <td className="p-2 text-center">
                               <button
@@ -427,11 +427,11 @@ export const InventoryView: React.FC = () => {
                   <tfoot className="border-t-2 border-line bg-panel-muted font-bold text-xs">
                     <tr>
                       <td colSpan={5} className="p-3 text-right font-app text-ink">TỔNG CỘNG HÀNG TỒN KHO:</td>
-                      <td className="p-3 text-right font-mono">{summary.totalBeginningQty.toLocaleString('vi-VN')}</td>
-                      <td className="p-3 text-right font-mono text-pos">{summary.totalImportQty.toLocaleString('vi-VN')}</td>
-                      <td className="p-3 text-right font-mono text-warn">{summary.totalExportQty.toLocaleString('vi-VN')}</td>
-                      <td className="p-3 text-right font-mono text-accent bg-accent-soft">{summary.totalEndingQty.toLocaleString('vi-VN')}</td>
-                      <td className="p-3 text-right font-mono text-pos bg-accent-soft text-sm">{summary.totalEndingValue.toLocaleString('vi-VN')}</td>
+                      <td className="p-3 text-right font-mono">{fmtNumber(summary.totalBeginningQty)}</td>
+                      <td className="p-3 text-right font-mono text-pos">{fmtNumber(summary.totalImportQty)}</td>
+                      <td className="p-3 text-right font-mono text-warn">{fmtNumber(summary.totalExportQty)}</td>
+                      <td className="p-3 text-right font-mono text-accent bg-accent-soft">{fmtNumber(summary.totalEndingQty)}</td>
+                      <td className="p-3 text-right font-mono text-pos bg-accent-soft text-sm">{fmtMoney(summary.totalEndingValue)}</td>
                       <td></td>
                     </tr>
                   </tfoot>

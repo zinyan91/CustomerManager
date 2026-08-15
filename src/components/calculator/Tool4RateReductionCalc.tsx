@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Percent, TrendingDown, Download, FileSpreadsheet, Calculator, Calendar, Plus, Trash2 } from 'lucide-react';
-import { fmtMoney, fmtDate, fmtPercent, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
+import { fmtMoney, fmtNumber, fmtDate, fmtPercent, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import {
   calcRateReductionForLoan,
   sumInterestReduced,
@@ -150,7 +150,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
 
     // Subtitle
     const subtitleText = [
-      `Số tiền vay: ${tdhLoanAmt.toLocaleString('vi-VN')} VNĐ`,
+      `Số tiền vay: ${fmtMoney(tdhLoanAmt)}`,
       `Thời hạn: ${tdhTenorMonths} tháng`,
       `LS ưu đãi: ${fmtPercent(tdhPrefRate)} (${tdhPrefMonths} tháng)`,
       `LS sau ưu đãi: ${fmtPercent(tdhPostPrefRate)}`,
@@ -237,7 +237,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
     // Subtitle
     xlsxRows.push([
       {
-        value: `Số khoản vay: ${quickResults.length} | Tổng số dư: ${quickTotalBalance.toLocaleString('vi-VN')} VNĐ`,
+        value: `Số khoản vay: ${fmtNumber(quickResults.length)} | Tổng số dư: ${fmtMoney(quickTotalBalance)}`,
         style: { italic: true, align: 'center' }
       }
     ]);

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus, Trash2, Edit3, RotateCcw, Check } from 'lucide-react';
 import type { InventoryCategoryTemplate, TemplateItem } from '../../data/inventoryTemplates';
 import { UI } from '../../lib/uiClasses';
-import { parseMoneyDecimalInput } from '../../lib/utils';
+import { parseMoneyDecimalInput, fmtNumber } from '../../lib/utils';
 
 interface TemplateManagerModalProps {
   isOpen: boolean;
@@ -187,7 +187,7 @@ export const TemplateManagerModal: React.FC<TemplateManagerModalProps> = ({
                         <td className="p-1.5 font-bold font-mono">{it.code}</td>
                         <td className="p-1.5">{it.name}</td>
                         <td className="p-1.5 text-center">{it.unit}</td>
-                        <td className="p-1.5 text-right font-mono">{it.unitPrice.toLocaleString('vi-VN')}</td>
+                        <td className="p-1.5 text-right font-mono">{fmtNumber(it.unitPrice)}</td>
                         <td className="p-1.5 text-center">
                           <button type="button" onClick={() => handleRemoveItem(idx)} className="text-neg hover:underline">
                             <Trash2 className="w-3.5 h-3.5" />

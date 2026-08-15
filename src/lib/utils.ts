@@ -3,6 +3,8 @@ import {
   groupInteger, NUMBER_SEPARATORS,
 } from './formatSettings';
 
+export { formatMoneyWith, formatNumberWith, formatPercentWith } from './formatSettings';
+
 export function formatNationalId(v?: string | null): string {
   if (v === null || v === undefined) return '';
   const raw = String(v).trim();
@@ -84,6 +86,11 @@ export function parseMoneyDecimalInput(value: string): number {
 export function fmtMoney(v?: number | null): string {
   if (v === undefined || v === null || isNaN(v)) return '—';
   return `${formatMoneyWith(v)} VNĐ`;
+}
+
+export function fmtNumber(v?: number | null, fallback: string = '—'): string {
+  if (v === undefined || v === null || isNaN(v)) return fallback;
+  return formatMoneyWith(v);
 }
 
 export function fmtRate(v?: number | null): string {

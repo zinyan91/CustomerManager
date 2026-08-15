@@ -7,7 +7,7 @@ import {
   fetchCollateralsByCustomerAPI, fetchRepaymentSchedulesAPI,
 } from '../lib/api';
 import { useWork } from '../context/WorkContext';
-import { todayIso, parseMoneyInput, getMasterHdtdNumber } from '../lib/utils';
+import { todayIso, parseMoneyInput, formatMoneyInput, getMasterHdtdNumber } from '../lib/utils';
 import { summarizeCreditContracts, canCloseCreditContract } from '../lib/creditContract';
 import { addMonthsToDate, computeOutstandingBalance } from '../lib/loanMath';
 import { totalUsableCapacity } from '../lib/collateralMath';
@@ -144,8 +144,8 @@ export function useCreditContractController() {
   const openEdit = useCallback((cc: CreditContract) => {
     setEditing(cc);
     setForm({ ...cc });
-    setFormAmount(cc.ContractAmount ? cc.ContractAmount.toLocaleString('vi-VN') : '');
-    setFormApprovalAmount(cc.ApprovalAmount ? cc.ApprovalAmount.toLocaleString('vi-VN') : '');
+    setFormAmount(cc.ContractAmount ? formatMoneyInput(String(cc.ContractAmount)) : '');
+    setFormApprovalAmount(cc.ApprovalAmount ? formatMoneyInput(String(cc.ApprovalAmount)) : '');
     setUseSharedApproval(!!(cc.ApprovalCode || '').trim());
     setSelectedCollateralIds(
       (cc.CollateralIds || '').split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n))

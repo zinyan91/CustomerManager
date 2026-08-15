@@ -1,7 +1,7 @@
 import React from 'react';
 import type { RepaymentSchedule, LoanContract } from '../../types';
 import { periodObligation } from '../../lib/scheduleView';
-import { fmtDate } from '../../lib/utils';
+import { fmtDate, fmtNumber } from '../../lib/utils';
 import { useLang } from '../../context/LanguageContext';
 import { isBulletPrincipal } from '../../lib/loanMath';
 import { PANEL, SECTION_LABEL, TABLE_CELL, TABLE_HEAD } from '../../lib/uiClasses';
@@ -11,7 +11,7 @@ interface PeriodDetailCardProps {
   selectedSchedule: RepaymentSchedule | null;
 }
 
-const money = (v: number) => (v > 0 ? v.toLocaleString('vi-VN') : '–');
+const money = (v: number) => (v > 0 ? fmtNumber(v) : '–');
 
 export const PeriodDetailCard: React.FC<PeriodDetailCardProps> = ({
   selectedContract,

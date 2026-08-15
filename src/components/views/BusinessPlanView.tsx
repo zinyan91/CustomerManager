@@ -6,6 +6,7 @@ import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
 import { BusinessPlanSheet } from '../businessPlan/BusinessPlanSheet';
 import { UNIT_LABEL, type MoneyUnit } from '../businessPlan/units';
+import { fmtNumber } from '../../lib/utils';
 import {
   useBusinessPlanController,
   BASIS_FIELDS,
@@ -105,20 +106,20 @@ export const BusinessPlanView: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Doanh thu kế hoạch năm</div>
-                <div className="font-mono font-bold text-sm text-accent">{result.plan.revenueAnnual.toLocaleString('vi-VN')} {UNIT_LABEL[unit]}</div>
+                <div className="font-mono font-bold text-sm text-accent">{fmtNumber(result.plan.revenueAnnual)} {UNIT_LABEL[unit]}</div>
                 <div className="text-[11px] text-ink-faint">Quy mô doanh thu dự kiến</div>
               </div>
 
               <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Lợi nhuận ròng kế hoạch</div>
-                <div className="font-mono font-bold text-sm text-pos">{result.plan.profitAfterTax.toLocaleString('vi-VN')} {UNIT_LABEL[unit]}</div>
+                <div className="font-mono font-bold text-sm text-pos">{fmtNumber(result.plan.profitAfterTax)} {UNIT_LABEL[unit]}</div>
                 <div className="text-[11px] text-ink-faint">Lợi nhuận sau thuế năm</div>
               </div>
 
               <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Hạn mức đề xuất cấp</div>
                 <div className="font-mono font-bold text-sm text-warn">
-                  {(result.limit ? result.limit.plan.avgWorkingCapitalNeed : result.eachTime ? result.eachTime.recommended : 0).toLocaleString('vi-VN')} {UNIT_LABEL[unit]}
+                  {fmtNumber(result.limit ? result.limit.plan.avgWorkingCapitalNeed : result.eachTime ? result.eachTime.recommended : 0)} {UNIT_LABEL[unit]}
                 </div>
                 <div className="text-[11px] text-ink-faint">Nhu cầu vốn lưu động bình quân</div>
               </div>

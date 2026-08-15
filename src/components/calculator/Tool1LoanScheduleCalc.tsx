@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { RefreshCw, Download, Printer, Plus, Trash2 } from 'lucide-react';
 import type { UiClasses } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
-import { fmtDate, parseMoneyInput, todayIso } from '../../lib/utils';
+import { fmtDate, fmtMoney, fmtNumber, fmtPercent, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { addMonths, buildLoanSchedule, postPromoRateAnnual } from '../../lib/calcMath';
 import type { PrepaymentMode, PrepaymentPlanItem } from '../../lib/calcMath';
 import { buildScheduleDocHtml } from '../../lib/scheduleDocHtml';
@@ -234,18 +234,18 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
     : defaultFirstPaymentDate;
 
   const loanInfoPairs = [
-    { label: 'Số tiền vay:', value: `${loanAmt.toLocaleString('vi-VN')} VNĐ` },
+    { label: 'Số tiền vay:', value: fmtMoney(loanAmt) },
     {
       label: hasPromo ? 'Lãi suất ưu đãi:' : 'Lãi suất áp dụng:',
-      value: hasPromo ? `${rateAnnual}%/năm trong ${promoMonths} tháng đầu` : `${rateAnnual}%/năm`,
+      value: hasPromo ? `${fmtPercent(rateAnnual > 1 ? rateAnnual / 100 : rateAnnual)}/năm trong ${promoMonths} tháng đầu` : `${fmtPercent(rateAnnual > 1 ? rateAnnual / 100 : rateAnnual)}/năm`,
     },
     ...(hasPromo
       ? [{
         label: 'Lãi suất sau ưu đãi:',
-        value: `${postRate.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%/năm`
+        value: `${fmtPercent(postRate > 1 ? postRate / 100 : postRate)}/năm`
           + (postPromoRateOverride === null && (baseRateAnnual !== null || marginAnnual !== null)
-            ? ` (cơ sở ${(baseRateAnnual === null ? rateAnnual : baseRateAnnual).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`
-              + ` + biên độ ${(marginAnnual === null ? 0 : marginAnnual).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%)`
+            ? ` (cơ sở ${fmtPercent((baseRateAnnual === null ? rateAnnual : baseRateAnnual) > 1 ? (baseRateAnnual === null ? rateAnnual : baseRateAnnual) / 100 : (baseRateAnnual === null ? rateAnnual : baseRateAnnual))}`
+              + ` + biên độ ${fmtPercent((marginAnnual === null ? 0 : marginAnnual) > 1 ? (marginAnnual === null ? 0 : marginAnnual) / 100 : (marginAnnual === null ? 0 : marginAnnual))})`
             : ''),
       }]
       : []),
@@ -258,7 +258,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       ? [{
         label: 'Trả nợ trước hạn:',
         value: prepaymentPlan
-          .map(p => `Kỳ ${p.period}: ${p.amount.toLocaleString('vi-VN')}đ`)
+          .map(p => `Kỳ ${p.period}: ${fmtMoney(p.amount)}`)
           .join('; '),
       }]
       : []),
@@ -272,7 +272,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       fmtDate(r.startDate),
       fmtDate(r.dueDate),
       r.days,
-      r.rateAnnual.toLocaleString('vi-VN', { maximumFractionDigits: 2 }),
+      fmtPercent(r.rateAnnual > 1 ? r.rateAnnual / 100 : r.rateAnnual),
       r.beginningBalance,
       r.principal,
       r.interest,
@@ -321,10 +321,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <input
               type="text"
               value={loanAmountStr}
-              onChange={e => {
-                const digits = e.target.value.replace(/\D/g, '');
-                setLoanAmountStr(digits ? Number(digits).toLocaleString('vi-VN') : '');
-              }}
+              onChange={e => setLoanAmountStr(formatMoneyInput(e.target.value))}
               className={`w-full rounded-md p-2.5 font-mono font-bold text-accent ${styles.inputStyle}`}
             />
           </div>
@@ -392,7 +389,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <span>🎁 LÃI SUẤT ƯU ĐÃI VÀ LÃI SUẤT SAU ƯU ĐÃI</span>
             {hasPromo && (
               <span className="normal-case font-mono">
-                Kỳ 1–{promoMonths}: {rateAnnual.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%/năm → từ kỳ {(promoMonths as number) + 1}: {postRate.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%/năm
+                Kỳ 1–{promoMonths}: {fmtPercent(rateAnnual > 1 ? rateAnnual / 100 : rateAnnual)}/năm → từ kỳ {(promoMonths as number) + 1}: {fmtPercent(postRate > 1 ? postRate / 100 : postRate)}/năm
               </span>
             )}
           </div>
@@ -444,7 +441,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 type="text"
                 value={postPromoRateStr}
                 onChange={e => setPostPromoRateStr(e.target.value)}
-                placeholder={hasPromo ? `${postRate.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} (cơ sở + biên độ)` : 'Không áp dụng'}
+                placeholder={hasPromo ? `${fmtPercent(postRate > 1 ? postRate / 100 : postRate)} (cơ sở + biên độ)` : 'Không áp dụng'}
                 className={`w-full rounded-md p-2 font-mono font-bold text-accent ${styles.inputStyle}`}
               />
             </div>
@@ -453,27 +450,30 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
 
         <div className="p-3.5 rounded-md border border-warn/30  bg-warn-soft  space-y-3">
           <div className="text-xs font-bold text-warn tracking-tight flex items-center justify-between gap-2 border-b pb-1.5 border-warn/30 ">
-            <span>TRẢ NỢ TRƯỚC HẠN NHIỀU KỲ</span>
+            <div className="flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-warn"></span>
+              <span>💵 KẾ HOẠCH TRẢ NỢ TRƯỚC HẠN (TÙY CHỌN NHIỀU KỲ)</span>
+            </div>
             <button
               type="button"
               onClick={addPrepayment}
-              className="flex items-center space-x-1 bg-accent hover:opacity-90 text-accent-ink font-bold text-[11px] px-2.5 py-1 rounded-lg normal-case"
+              className="px-2.5 py-1 rounded bg-warn text-warn-ink text-xs font-bold flex items-center space-x-1 hover:opacity-90 transition-opacity"
             >
-              <Plus className="w-3 h-3" />
-              <span>Thêm</span>
+              <Plus className="w-3.5 h-3.5" />
+              <span>Thêm kỳ trả trước hạn</span>
             </button>
           </div>
 
-          {prepayments.length === 0 ? (
-            <div className="text-[11px] text-warn">
-              Chưa khai lần trả trước hạn nào. Bấm “Thêm lần trả trước hạn” để khai một hoặc nhiều lần ở các kỳ khác nhau.
+          {prepaymentPlan.length === 0 ? (
+            <div className="text-xs text-ink-faint italic py-1">
+              Chưa thiết lập lần trả trước hạn nào. Bấm <strong>"+ Thêm kỳ trả trước hạn"</strong> nếu khách hàng muốn trả bớt gốc ở một hoặc nhiều kỳ bất kỳ.
             </div>
           ) : (
-            <div className="space-y-2">
-              {prepayments.map((p, idx) => (
-                <div key={p.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
+            <div className="space-y-2.5">
+              {prepayments.map(p => (
+                <div key={p.id} className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end p-2.5 rounded bg-panel border border-warn/30">
                   <div className="md:col-span-2">
-                    <label className="block mb-1 font-bold text-warn text-[11px]">Lần {idx + 1} — Kỳ số</label>
+                    <label className="block mb-1 font-bold text-warn text-[11px]">Kỳ trả nợ</label>
                     <input
                       type="number"
                       min={1}
@@ -488,10 +488,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                     <input
                       type="text"
                       value={p.amountStr}
-                      onChange={e => {
-                        const digits = e.target.value.replace(/\D/g, '');
-                        updatePrepayment(p.id, { amountStr: digits ? Number(digits).toLocaleString('vi-VN') : '' });
-                      }}
+                      onChange={e => updatePrepayment(p.id, { amountStr: formatMoneyInput(e.target.value) })}
                       placeholder="Nhập số tiền..."
                       className={`w-full rounded-md p-2 font-mono font-bold text-pos ${styles.inputStyle}`}
                     />
@@ -524,58 +521,58 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
         </div>
       </div>
 
-      <div className={`${styles.containerCardBg} rounded-lg overflow-hidden border`}>
-        <div className={`p-3 border-b flex flex-wrap items-center justify-between gap-3 ${'bg-panel-muted border-line'}`}>
-          <span className="font-bold text-xs uppercase flex items-center space-x-2">
-            <span>BẢNG LỊCH THU NỢ DỰ KIẾN ({scheduleRows.length} KỲ)</span>
-          </span>
-          <div className="flex items-center space-x-2">
+      {/* Schedule Table Preview */}
+      <div className={`p-4 rounded-xl shadow-xs border ${styles.containerCardBg}`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 pb-3 border-b border-line">
+          <div>
+            <h3 className="text-sm font-bold text-ink">BẢNG TÍNH LỊCH THU NỢ DỰ KIẾN ({scheduleRows.length} KỲ)</h3>
+            <p className="text-xs text-ink-faint">
+              Công thức Actual/365 chuẩn NHNN: Tiền lãi = Dư nợ × Lãi suất × Số ngày thực tế / 365
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              type="button"
               onClick={handleExportExcel}
-              title="Xuất bảng Excel chứa các giá trị số tĩnh"
-              className="flex items-center space-x-1.5 font-bold text-xs px-3 py-1.5 rounded-md border border-line text-ink-muted hover:border-accent hover:text-accent"
+              className="px-3 py-1.5 rounded-lg border border-accent/30 text-accent hover:bg-accent-soft text-xs font-bold flex items-center space-x-1.5"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Excel (Giá trị)</span>
+              <Download className="w-4 h-4" />
+              <span>XUẤT EXCEL</span>
             </button>
             <button
-              type="button"
               onClick={handleExportExcelWithFormulas}
-              title="Xuất bảng Excel có chứa công thức tính toán tự động từng cột"
-              className="flex items-center space-x-1.5 font-bold text-xs px-3 py-1.5 rounded-md border border-accent bg-accent-soft text-accent hover:opacity-90"
+              className="px-3 py-1.5 rounded-lg border border-accent/30 text-accent hover:bg-accent-soft text-xs font-bold flex items-center space-x-1.5"
+              title="Xuất bảng tính giữ nguyên các công thức tính lãi, gốc, tổng thu từng kỳ để kiểm toán"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Excel (Có công thức)</span>
+              <Download className="w-4 h-4" />
+              <span>XUẤT EXCEL (KÈM CÔNG THỨC)</span>
             </button>
             <button
-              type="button"
               onClick={handlePrintSchedule}
-              className="flex items-center space-x-1.5 font-bold text-xs px-3 py-1.5 rounded-md border border-line text-ink-muted hover:border-accent hover:text-accent"
+              className="px-3 py-1.5 rounded-lg bg-accent text-accent-ink hover:opacity-90 text-xs font-bold flex items-center space-x-1.5 shadow-xs"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>In / Xuất PDF</span>
+              <Printer className="w-4 h-4" />
+              <span>IN / LƯU PDF</span>
             </button>
           </div>
         </div>
 
-        <div className="overflow-x-auto max-h-[550px] overflow-y-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className={`sticky top-0 ${styles.tableHeaderStyle}`}>
+        <div className="overflow-x-auto max-h-[600px] border border-line rounded-lg">
+          <table className="w-full text-xs text-left">
+            <thead className={`sticky top-0 z-10 ${styles.tableHeaderStyle}`}>
               <tr>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">KỲ</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">NGÀY BẮT ĐẦU</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-center">NGÀY ĐẾN HẠN</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">SỐ NGÀY</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center whitespace-nowrap">LS ÁP DỤNG</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap">DƯ NỢ ĐẦU KỲ</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap text-accent">GỐC TRẢ</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap text-warn">LÃI THƯỜNG</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap text-pos">TỔNG TRẢ TRONG KỲ</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right whitespace-nowrap">DƯ NỢ CUỐI KỲ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-12">KỲ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">NGÀY BẮT ĐẦU</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">NGÀY ĐẾN HẠN</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-14">SỐ NGÀY</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center">LS ÁP DỤNG</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">DƯ NỢ ĐẦU KỲ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">GỐC TRẢ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">LÃI THƯỜNG</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">TỔNG TRẢ TRONG KỲ</th>
+                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">DƯ NỢ CUỐI KỲ</th>
               </tr>
             </thead>
-            <tbody className={`divide-y ${'divide-line'}`}>
+            <tbody className="divide-y divide-line">
               {scheduleRows.map(r => (
                 <tr key={r.period} className={`${styles.tableRowHover} ${r.prepayment > 0 ? 'bg-warn-soft  font-bold border-l-2 border-warn' : ''}`}>
                   <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-bold font-mono">
@@ -587,28 +584,28 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                   <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">{fmtDate(r.startDate)}</td>
                   <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono font-bold">{fmtDate(r.dueDate)}</td>
                   <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">{r.days}d</td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">{r.rateAnnual.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%</td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{r.beginningBalance.toLocaleString('vi-VN')}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono">{fmtPercent(r.rateAnnual > 1 ? r.rateAnnual / 100 : r.rateAnnual)}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{fmtNumber(r.beginningBalance)}</td>
                   <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-accent">
-                    {r.principal.toLocaleString('vi-VN')}
+                    {fmtNumber(r.principal)}
                     {r.prepayment > 0 && (
                       <span className="block text-[10px] text-warn">
-                        (+{r.prepayment.toLocaleString('vi-VN')}đ)
+                        (+{fmtNumber(r.prepayment)}đ)
                       </span>
                     )}
                   </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-warn">{r.interest.toLocaleString('vi-VN')}</td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-pos">{r.totalPayment.toLocaleString('vi-VN')}</td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{r.endingBalance.toLocaleString('vi-VN')}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-warn">{fmtNumber(r.interest)}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-pos">{fmtNumber(r.totalPayment)}</td>
+                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono">{fmtNumber(r.endingBalance)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot className={`border-t sticky bottom-0 font-bold ${styles.tableHeaderStyle}`}>
               <tr>
                 <td colSpan={6} className="px-[var(--row-px)] py-[var(--row-py)] text-center">TỔNG CỘNG LỊCH THU NỢ</td>
-                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right text-accent font-mono">{totalPrincipalSum.toLocaleString('vi-VN')}</td>
-                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right text-warn font-mono">{totalInterestSum.toLocaleString('vi-VN')}</td>
-                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right text-pos font-mono text-sm">{totalObligationSum.toLocaleString('vi-VN')}</td>
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right text-accent font-mono">{fmtNumber(totalPrincipalSum)}</td>
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right text-warn font-mono">{fmtNumber(totalInterestSum)}</td>
+                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right text-pos font-mono text-sm">{fmtNumber(totalObligationSum)}</td>
                 <td></td>
               </tr>
             </tfoot>

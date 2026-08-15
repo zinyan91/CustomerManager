@@ -3,6 +3,7 @@ import { UI } from '../../lib/uiClasses';
 import { Search, Target, Copy, Check, Wallet, Info } from 'lucide-react';
 import { AdaptiveTable } from '../AdaptiveTable';
 import { MDSDV_VERSION } from '../../lib/mdsdv';
+import { fmtNumber } from '../../lib/utils';
 import { useMdsdvController, RESULT_LIMIT } from '../../hooks/useMdsdvController';
 
 export const MdsdvLookupView: React.FC = () => {
@@ -21,19 +22,19 @@ export const MdsdvLookupView: React.FC = () => {
   } = useMdsdvController();
 
   const cardBg = UI.containerCardBg;
-  const inputCls = 'w-full p-2.5 rounded-md border text-xs bg-transparent border-line';
+  const inputCls = UI.inputStyle;
 
   return (
-    <div className="space-y-4 text-xs transition-colors duration-200">
-      {/* Header & Filter Controls */}
-      <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-4`}>
+    <div className="space-y-4">
+      {/* Search Header */}
+      <div className={`${cardBg} rounded-lg p-4 border space-y-4`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-line pb-3">
           <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
             <Target className="w-5 h-5 text-accent" />
             <span className="uppercase">TRA CỨU MỤC ĐÍCH SỬ DỤNG VỐN (MĐSDV — FBE)</span>
           </h2>
           <div className="text-[11px] text-ink-faint font-mono bg-panel-muted px-3 py-1 rounded-lg border border-line">
-            {totalEntries.toLocaleString('vi-VN')} mã cấp 6 • PL01/PL02 ngày {MDSDV_VERSION.slice(0, 2)}/{MDSDV_VERSION.slice(2, 4)}/{MDSDV_VERSION.slice(4)}
+            {fmtNumber(totalEntries)} mã cấp 6 • PL01/PL02 ngày {MDSDV_VERSION.slice(0, 2)}/{MDSDV_VERSION.slice(2, 4)}/{MDSDV_VERSION.slice(4)}
           </div>
         </div>
 
@@ -89,11 +90,11 @@ export const MdsdvLookupView: React.FC = () => {
       <div className={`${cardBg} rounded-lg border overflow-hidden`}>
         <div className="p-3 border-b border-line flex items-center justify-between">
           <span className="font-bold text-xs tracking-tight text-accent">
-            KẾT QUẢ ({search.total.toLocaleString('vi-VN')} MÃ PHÙ HỢP)
+            KẾT QUẢ ({fmtNumber(search.total)} MÃ PHÙ HỢP)
           </span>
           {search.truncated && (
             <span className="text-[11px] text-ink-faint">
-              Chỉ hiển thị {RESULT_LIMIT} kết quả đầu — gõ thêm từ khoá để thu hẹp
+              Chỉ hiển thị {fmtNumber(RESULT_LIMIT)} kết quả đầu — gõ thêm từ khoá để thu hẹp
             </span>
           )}
         </div>

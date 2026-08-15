@@ -4,7 +4,7 @@ import {
   computeReceivableItemRow, computeReceivableSummary, nextDebtItemId,
   type ReceivableItem,
 } from '../../lib/debt';
-import { fmtMoney, parseMoneyDecimalInput } from '../../lib/utils';
+import { fmtMoney, fmtNumber, parseMoneyDecimalInput, formatMoneyInput } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 
 interface DebtReceivableTabProps {
@@ -19,7 +19,7 @@ const MoneyCellInput: React.FC<{
   className?: string;
 }> = ({ value, onChange, className }) => {
   const [dangGo, setDangGo] = useState<string | null>(null);
-  const shown = dangGo ?? (value === 0 ? '' : value.toLocaleString('vi-VN'));
+  const shown = dangGo ?? (value === 0 ? '' : formatMoneyInput(String(value)));
 
   return (
     <input
@@ -286,10 +286,10 @@ export const DebtReceivableTab: React.FC<DebtReceivableTabProps> = ({
                       />
                     </td>
                     <td className="p-2 text-right font-mono font-bold text-pos border-l border-line bg-pos-soft/40">
-                      {c.endingDebit > 0 ? c.endingDebit.toLocaleString('vi-VN') : 0}
+                      {c.endingDebit > 0 ? fmtNumber(c.endingDebit) : 0}
                     </td>
                     <td className="p-2 text-right font-mono font-bold text-pos bg-pos-soft/40">
-                      {c.endingCredit > 0 ? c.endingCredit.toLocaleString('vi-VN') : 0}
+                      {c.endingCredit > 0 ? fmtNumber(c.endingCredit) : 0}
                     </td>
                     <td className="p-1 text-center">
                       <button
@@ -307,13 +307,13 @@ export const DebtReceivableTab: React.FC<DebtReceivableTabProps> = ({
             </tbody>
             <tfoot className="bg-accent-soft font-bold border-t-2 border-accent/30 sticky bottom-0 z-10">
               <tr>
-                <td className="p-2 text-center" colSpan={2}>TỔNG CỘNG ({summary.totalItems} KHÁCH HÀNG)</td>
-                <td className="p-2 text-right font-mono border-l border-line">{summary.totalBeginningDebit.toLocaleString('vi-VN')}</td>
-                <td className="p-2 text-right font-mono">{summary.totalBeginningCredit.toLocaleString('vi-VN')}</td>
-                <td className="p-2 text-right font-mono border-l border-line">{summary.totalOccurredDebit.toLocaleString('vi-VN')}</td>
-                <td className="p-2 text-right font-mono">{summary.totalOccurredCredit.toLocaleString('vi-VN')}</td>
-                <td className="p-2 text-right font-mono border-l border-line text-pos text-sm bg-pos-soft/60">{summary.totalEndingDebit.toLocaleString('vi-VN')}</td>
-                <td className="p-2 text-right font-mono text-pos text-sm bg-pos-soft/60">{summary.totalEndingCredit.toLocaleString('vi-VN')}</td>
+                <td className="p-2 text-center" colSpan={2}>TỔNG CỘNG ({fmtNumber(summary.totalItems)} KHÁCH HÀNG)</td>
+                <td className="p-2 text-right font-mono border-l border-line">{fmtNumber(summary.totalBeginningDebit)}</td>
+                <td className="p-2 text-right font-mono">{fmtNumber(summary.totalBeginningCredit)}</td>
+                <td className="p-2 text-right font-mono border-l border-line">{fmtNumber(summary.totalOccurredDebit)}</td>
+                <td className="p-2 text-right font-mono">{fmtNumber(summary.totalOccurredCredit)}</td>
+                <td className="p-2 text-right font-mono border-l border-line text-pos text-sm bg-pos-soft/60">{fmtNumber(summary.totalEndingDebit)}</td>
+                <td className="p-2 text-right font-mono text-pos text-sm bg-pos-soft/60">{fmtNumber(summary.totalEndingCredit)}</td>
                 <td className="p-2"></td>
               </tr>
             </tfoot>

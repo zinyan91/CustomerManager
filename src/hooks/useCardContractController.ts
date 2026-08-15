@@ -13,7 +13,7 @@ import {
   type CardCollateralKind, type CardHolderSide,
 } from '../lib/cardContract';
 import { cardPolicyRuleOf, checkCardLimitAgainstPolicy } from '../lib/cardPolicyRules';
-import { parseMoneyDecimalInput, todayIso } from '../lib/utils';
+import { parseMoneyDecimalInput, formatMoneyInput, todayIso } from '../lib/utils';
 import { addMonthsToDate } from '../lib/loanMath';
 import { useWork } from '../context/WorkContext';
 
@@ -101,7 +101,7 @@ export function useCardContractController() {
       setFHolderSide((openFor.CardHolderSide as CardHolderSide) || 'KH');
       setFHolderName(openFor.CardHolderName || '');
       setFProducts((openFor.CardProducts || '').split(';').map(s => s.trim()).filter(Boolean));
-      setFLimit(openFor.GrantedLimit ? openFor.GrantedLimit.toLocaleString('vi-VN') : '');
+      setFLimit(openFor.GrantedLimit ? formatMoneyInput(String(openFor.GrantedLimit)) : '');
       setFCollateralKind((openFor.CollateralKind as CardCollateralKind) || 'KHONG_TSBD');
       setFPolicyKey(openFor.PolicyCode || '');
       setFCollateralId(openFor.CollateralId ?? '');

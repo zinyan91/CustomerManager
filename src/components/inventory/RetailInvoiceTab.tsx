@@ -18,7 +18,7 @@ import { buildRetailInvoiceXlsx, buildRetailInvoiceDocHtml } from '../../lib/inv
 import { downloadBytes } from '../../lib/xlsExport';
 import { MIME_XLSX } from '../../lib/xlsxWriter';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
-import { fmtMoney, parseMoneyDecimalInput, todayIso, fmtDate } from '../../lib/utils';
+import { fmtMoney, fmtNumber, formatMoneyInput, parseMoneyDecimalInput, todayIso, fmtDate } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 import { StatementTemplateModal } from './StatementTemplateModal';
 
@@ -327,13 +327,13 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
         <div className={`${UI.containerCardBg} rounded-lg p-3 border`}>
           <div className="text-[10px] font-bold text-ink-faint uppercase">MẶT HÀNG TRÊN HÓA ĐƠN</div>
           <div className="text-xl font-extrabold text-accent mt-0.5 font-mono">
-            {summary.totalItems} <span className="text-xs font-normal text-ink-faint">sản phẩm/dịch vụ</span>
+            {fmtNumber(summary.totalItems)} <span className="text-xs font-normal text-ink-faint">sản phẩm/dịch vụ</span>
           </div>
         </div>
         <div className={`${UI.containerCardBg} rounded-lg p-3 border`}>
           <div className="text-[10px] font-bold text-ink-faint uppercase">TỔNG SỐ LƯỢNG SẢN PHẨM</div>
           <div className="text-xl font-extrabold text-ink mt-0.5 font-mono">
-            {summary.totalQty.toLocaleString('vi-VN')}
+            {fmtNumber(summary.totalQty)}
           </div>
         </div>
         <div className="rounded-lg p-3 border border-pos/40 bg-pos-soft">
@@ -360,7 +360,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
           />
           <input
             type="text"
-            placeholder="ĐVT (Chai, Hộp...)"
+            placeholder="ĐVT (Cái, Hộp...)"
             value={newUnit}
             onChange={e => setNewUnit(e.target.value)}
             className={`rounded p-1.5 text-xs border ${UI.inputStyle}`}
@@ -370,7 +370,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
             inputMode="decimal"
             placeholder="Số lượng"
             value={newQtyStr}
-            onChange={e => setNewQtyStr(e.target.value)}
+            onChange={e => setNewQtyStr(formatMoneyInput(e.target.value))}
             className={`rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right`}
           />
           <input
@@ -378,7 +378,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
             inputMode="decimal"
             placeholder="Đơn giá (VND)"
             value={newPriceStr}
-            onChange={e => setNewPriceStr(e.target.value)}
+            onChange={e => setNewPriceStr(formatMoneyInput(e.target.value))}
             className={`rounded p-1.5 text-xs border ${UI.inputStyle} font-mono text-right`}
           />
         </div>
@@ -448,7 +448,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
                       <input
                         type="text"
                         inputMode="decimal"
-                        value={c.qty.toLocaleString('vi-VN')}
+                        value={formatMoneyInput(String(c.qty))}
                         onChange={e => updateItem(c.id, { qty: parseMoneyDecimalInput(e.target.value) })}
                         className={`${cellInputCls} text-right`}
                       />
@@ -457,7 +457,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
                       <input
                         type="text"
                         inputMode="decimal"
-                        value={c.unitPrice.toLocaleString('vi-VN')}
+                        value={formatMoneyInput(String(c.unitPrice))}
                         onChange={e => updateItem(c.id, { unitPrice: parseMoneyDecimalInput(e.target.value) })}
                         className={`${cellInputCls} text-right`}
                       />
@@ -477,7 +477,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
             <tfoot className="bg-accent-soft font-bold border-t-2 border-accent/30 sticky bottom-0 z-10">
               <tr>
                 <td className="p-2 text-center" colSpan={3}>TỔNG CỘNG THÀNH TIỀN</td>
-                <td className="p-2 text-right font-mono">{summary.totalQty.toLocaleString('vi-VN')}</td>
+                <td className="p-2 text-right font-mono">{fmtNumber(summary.totalQty)}</td>
                 <td className="p-2"></td>
                 <td className="p-2 text-right font-mono text-pos text-sm bg-pos-soft/60">{fmtMoney(summary.totalAmount)}</td>
                 <td className="p-2"></td>

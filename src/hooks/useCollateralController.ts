@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI } from '../lib/api';
-import { parseAnyDate, fmtDate, parseMoneyInput } from '../lib/utils';
+import { parseAnyDate, fmtDate, parseMoneyInput, formatMoneyInput } from '../lib/utils';
 import {
   defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue, maxLoanFromCollateral, appraisalStatus,
 } from '../lib/collateralMath';
@@ -85,7 +85,7 @@ export function useCollateralController() {
     setInputAssetType(c.AssetType || 'Loại 1');
     setInputAddress(c.Address || '');
     const val = collateralValue(c);
-    setInputAppraisedValue(val ? val.toLocaleString('vi-VN') : '');
+    setInputAppraisedValue(val ? formatMoneyInput(String(val)) : '');
     setInputLtvPercent(String(getEffectiveLtv(c)));
     setInputAppraisalDate(c.AppraisalDate || '');
     setInputAppraisalTenorMonths(c.AppraisalTenorMonths || 12);

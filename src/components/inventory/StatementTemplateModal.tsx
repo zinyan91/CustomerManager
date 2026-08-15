@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Trash2, Edit3, RotateCcw, Check } from 'lucide-react';
 import { UI } from '../../lib/uiClasses';
-import { parseMoneyDecimalInput } from '../../lib/utils';
+import { parseMoneyDecimalInput, fmtNumber } from '../../lib/utils';
 
 interface ModalItem {
   itemName: string;
@@ -183,7 +183,7 @@ export const StatementTemplateModal: React.FC<StatementTemplateModalProps> = ({
                         <td className="p-1.5 text-center font-mono">{idx + 1}</td>
                         <td className="p-1.5 font-bold">{it.itemName}</td>
                         <td className="p-1.5 text-center">{it.unit}</td>
-                        <td className="p-1.5 text-right font-mono">{(it.unitPrice || 0).toLocaleString('vi-VN')}</td>
+                        <td className="p-1.5 text-right font-mono">{fmtNumber(it.unitPrice || 0)}</td>
                         <td className="p-1.5 text-center">
                           <button type="button" onClick={() => handleRemoveItem(idx)} className="text-neg hover:underline">
                             <Trash2 className="w-3.5 h-3.5" />

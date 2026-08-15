@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { LoanContract, RepaymentSchedule } from '../types';
-import { parseMoneyInput, todayIso } from '../lib/utils';
+import { parseMoneyInput, formatMoneyInput, todayIso } from '../lib/utils';
 import {
   calculateOverdueDaysFromDates, computeOutstandingBalance,
   getAutoDebtGroupInfo, recalculateSchedules,
@@ -51,16 +51,16 @@ export function usePaymentModal({
       const rate = getEffectiveActiveRate(selectedContract, s.DueDate);
       initialPenalty = Math.round((s.PrincipalAmount || 0) * (rate * 1.5) * (overdue / 365));
     }
-    setOverdueInterestStr(initialPenalty ? initialPenalty.toLocaleString('vi-VN') : '0');
+    setOverdueInterestStr(initialPenalty ? formatMoneyInput(String(initialPenalty)) : '0');
 
     const prepay = s.PrepaidPrincipalAmount ?? 0;
-    setPrepaidPrincipalStr(prepay ? prepay.toLocaleString('vi-VN') : '0');
+    setPrepaidPrincipalStr(prepay ? formatMoneyInput(String(prepay)) : '0');
 
     const actP = s.ActualPaidPrincipal ?? ((s.PrincipalAmount || 0) + prepay);
-    setActualPaidPrincipalStr(actP ? actP.toLocaleString('vi-VN') : '0');
+    setActualPaidPrincipalStr(actP ? formatMoneyInput(String(actP)) : '0');
 
     const actI = s.ActualPaidInterest ?? ((s.InterestAmount || 0) + initialPenalty);
-    setActualPaidInterestStr(actI ? actI.toLocaleString('vi-VN') : '0');
+    setActualPaidInterestStr(actI ? formatMoneyInput(String(actI)) : '0');
 
     setIsPaid(s.IsPaid);
     setNote(s.Note || '');

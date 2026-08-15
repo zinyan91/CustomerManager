@@ -1,5 +1,5 @@
 import type { CreditContract, LoanContract, RateAdjustmentHistoryItem } from '../types';
-import { getContractRateHistory, getMasterHdtdNumber, parseMoneyDecimalInput, stripLegacyNoteBlobs, toIsoDate } from './utils';
+import { getContractRateHistory, getMasterHdtdNumber, parseMoneyDecimalInput, formatMoneyInput, formatMoneyWith, stripLegacyNoteBlobs, toIsoDate } from './utils';
 import { buildRateFields, resolveRateModeOf } from './rateResolution';
 import { resolveMasterHdtdNumber } from './creditContract';
 import { isBulletPrincipal, roundPrincipalCore } from './loanMath';
@@ -46,7 +46,7 @@ export function intToInput(v?: number | null): string {
 }
 
 function money(v?: number | null): string {
-  return v ? v.toLocaleString('vi-VN') : '';
+  return v ? formatMoneyInput(String(v)) : '';
 }
 
 export function contractToFormFields(c: LoanContract, creditContracts: CreditContract[]): KunnFormFields {
@@ -188,11 +188,11 @@ export function checkMonthlyPrincipal(input: MonthlyPrincipalCheckInput): Monthl
     return {
       ok: false,
       message:
-        `Gốc mỗi kỳ ${input.declared.toLocaleString('vi-VN')}đ không khớp với số tiền vay ` +
-        `${input.loanAmount.toLocaleString('vi-VN')}đ chia ${repayPeriods} kỳ trả gốc ` +
-        `(${Math.round(quotient).toLocaleString('vi-VN')}đ/kỳ). ` +
+        `Gốc mỗi kỳ ${formatMoneyWith(input.declared)}đ không khớp với số tiền vay ` +
+        `${formatMoneyWith(input.loanAmount)}đ chia ${repayPeriods} kỳ trả gốc ` +
+        `(${formatMoneyWith(Math.round(quotient))}đ/kỳ). ` +
         `Ba con số này phải nhất quán — kiểm lại GNN xem sai ở số tiền vay, kỳ hạn hay gốc mỗi kỳ. ` +
-        `Hệ thống tự tính ra ${suggested.toLocaleString('vi-VN')}đ.`,
+        `Hệ thống tự tính ra ${formatMoneyWith(suggested)}đ.`,
       ...base,
     };
   }

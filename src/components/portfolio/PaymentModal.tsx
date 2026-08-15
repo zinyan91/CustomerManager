@@ -1,7 +1,7 @@
 import React from 'react';
 import { Receipt, X, Save } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { fmtDate, formatMoneyInput } from '../../lib/utils';
+import { fmtDate, fmtMoney, formatMoneyInput } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { calculateOverdueDaysFromDates, computeSchedulePenalty } from '../../lib/loanMath';
 import { DateInput } from '../DateInput';
@@ -72,9 +72,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
         <div className="p-3 rounded-md bg-accent-soft  border border-accent/30  grid grid-cols-2 gap-3 text-xs">
           <div>Ngày đến hạn kỳ: <strong className="font-mono text-ink">{fmtDate(editingSchedule.DueDate)}</strong></div>
-          <div>Gốc quy định: <strong className="font-mono text-accent">{editingSchedule.PrincipalAmount.toLocaleString('vi-VN')} VNĐ</strong></div>
-          <div>Lãi quy định: <strong className="font-mono text-warn">{editingSchedule.InterestAmount.toLocaleString('vi-VN')} VNĐ</strong></div>
-          <div>Tổng nghĩa vụ chuẩn: <strong className="font-mono text-pos">{(editingSchedule.PrincipalAmount + editingSchedule.InterestAmount).toLocaleString('vi-VN')} VNĐ</strong></div>
+          <div>Gốc quy định: <strong className="font-mono text-accent">{fmtMoney(editingSchedule.PrincipalAmount)}</strong></div>
+          <div>Lãi quy định: <strong className="font-mono text-warn">{fmtMoney(editingSchedule.InterestAmount)}</strong></div>
+          <div>Tổng nghĩa vụ chuẩn: <strong className="font-mono text-pos">{fmtMoney(editingSchedule.PrincipalAmount + editingSchedule.InterestAmount)}</strong></div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -88,12 +88,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 value={modalActualPaidPrincipalStr}
                 onChange={e => setModalActualPaidPrincipalStr(formatMoneyInput(e.target.value))}
                 placeholder="0"
-                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-accent bg-accent-soft  border-accent/30"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-accent bg-transparent border-line"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-pos mb-1">
+              <label className="block text-[11px] font-bold text-warn mb-1">
                 Lãi đã đóng kỳ này (VNĐ)
               </label>
               <input
@@ -101,32 +101,35 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 value={modalActualPaidInterestStr}
                 onChange={e => setModalActualPaidInterestStr(formatMoneyInput(e.target.value))}
                 placeholder="0"
-                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-pos bg-pos-soft  border-pos/30"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-warn bg-transparent border-line"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-warn mb-1">
-                Trả nợ gốc trước hạn kỳ này (VNĐ)
+              <label className="block text-[11px] font-bold text-pos mb-1">
+                Trả trước hạn gốc (Gốc thu thêm) (VNĐ)
               </label>
               <input
                 type="text"
                 value={modalPrepaidPrincipalStr}
                 onChange={e => setModalPrepaidPrincipalStr(formatMoneyInput(e.target.value))}
                 placeholder="0"
-                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-warn bg-warn-soft  border-warn/30"
+                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-pos bg-transparent border-line"
               />
+              <span className="text-[10px] text-ink-faint">
+                Nhập số tiền gốc khách muốn trả sớm ngoài phần gốc định kỳ.
+              </span>
             </div>
           </div>
 
           <div className="space-y-3">
             <div>
               <label className="block text-[11px] font-bold text-neg mb-1">
-                Số ngày quá hạn (ngày)
+                Số ngày quá hạn (Ngày)
               </label>
               <input
                 type="number"
-                min={0}
+                min="0"
                 value={modalOverdueDaysStr}
                 onChange={e => {
                   const days = parseInt(e.target.value, 10) || 0;
@@ -134,7 +137,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   if (days > 0 && selectedContract) {
                     const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
                     const calcPen = computeSchedulePenalty(editingSchedule, rate, { overdueDays: days, principalPenaltyMultiplier: selectedContract.PrincipalPenaltyMultiplier }).principalPenalty;
-                    setModalOverdueInterestStr(calcPen.toLocaleString('vi-VN'));
+                    setModalOverdueInterestStr(formatMoneyInput(String(calcPen)));
                   } else {
                     setModalOverdueInterestStr('0');
                   }
@@ -170,7 +173,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     if (calcDays > 0 && selectedContract) {
                       const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
                       const calcPen = computeSchedulePenalty(editingSchedule, rate, { overdueDays: calcDays, principalPenaltyMultiplier: selectedContract.PrincipalPenaltyMultiplier }).principalPenalty;
-                      setModalOverdueInterestStr(calcPen.toLocaleString('vi-VN'));
+                      setModalOverdueInterestStr(formatMoneyInput(String(calcPen)));
                     } else {
                       setModalOverdueInterestStr('0');
                     }

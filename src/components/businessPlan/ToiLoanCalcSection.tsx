@@ -3,7 +3,7 @@ import { Calculator, TrendingUp, DollarSign, Percent, ShieldCheck } from 'lucide
 import {
   defaultToiLoanInputs, computeToiLoanSummary, type ToiLoanMonthInput,
 } from '../../lib/toiMath';
-import { fmtMoney, parseMoneyDecimalInput } from '../../lib/utils';
+import { fmtMoney, fmtNumber, formatMoneyInput, parseMoneyDecimalInput } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 
 export const ToiLoanCalcSection: React.FC = () => {
@@ -178,7 +178,7 @@ export const ToiLoanCalcSection: React.FC = () => {
               {fmtMoney(summary.avgBalanceAnnual * 1000000)}
             </div>
             <div className="text-[11px] text-ink-faint font-mono mt-0.5">
-              ({summary.avgBalanceAnnual.toLocaleString('vi-VN')} triệu VNĐ)
+              ({fmtNumber(summary.avgBalanceAnnual)} triệu VNĐ)
             </div>
           </div>
           <div className="p-2 bg-panel rounded-md text-ink-faint border border-line">
@@ -250,7 +250,7 @@ export const ToiLoanCalcSection: React.FC = () => {
                     <input
                       type="text"
                       inputMode="decimal"
-                      value={inp.shortTermBal === 0 ? '' : inp.shortTermBal.toLocaleString('vi-VN')}
+                      value={inp.shortTermBal === 0 ? '' : formatMoneyInput(String(inp.shortTermBal))}
                       onChange={e => {
                         const val = parseMoneyDecimalInput(e.target.value);
                         updateMonthInput(idx, { shortTermBal: val });
@@ -271,7 +271,7 @@ export const ToiLoanCalcSection: React.FC = () => {
                     <input
                       type="text"
                       inputMode="decimal"
-                      value={inp.longTermBal === 0 ? '' : inp.longTermBal.toLocaleString('vi-VN')}
+                      value={inp.longTermBal === 0 ? '' : formatMoneyInput(String(inp.longTermBal))}
                       onChange={e => {
                         const val = parseMoneyDecimalInput(e.target.value);
                         updateMonthInput(idx, { longTermBal: val });
@@ -299,7 +299,7 @@ export const ToiLoanCalcSection: React.FC = () => {
             <tr>
               <td className="p-2 text-center" colSpan={2}>TỔNG CỘNG 12 THÁNG</td>
               <td className="p-2 text-right font-mono border-l border-line text-accent">
-                DNBQ: {summary.avgBalanceAnnual.toLocaleString('vi-VN')}
+                DNBQ: {fmtNumber(summary.avgBalanceAnnual)}
               </td>
               <td className="p-2"></td>
               <td className="p-2 text-right font-mono text-accent">{summary.totalShortTermIncome.toFixed(3)}</td>

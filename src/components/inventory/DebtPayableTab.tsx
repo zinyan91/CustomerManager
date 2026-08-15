@@ -4,7 +4,7 @@ import {
   computeReceivableItemRow, computeReceivableSummary, nextDebtItemId,
   type ReceivableItem,
 } from '../../lib/debt';
-import { fmtMoney, parseMoneyDecimalInput } from '../../lib/utils';
+import { fmtMoney, fmtNumber, parseMoneyDecimalInput, formatMoneyInput } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 
 interface DebtPayableTabProps {
@@ -18,14 +18,14 @@ const MoneyCellInput: React.FC<{
   onChange: (v: number) => void;
   className?: string;
 }> = ({ value, onChange, className }) => {
-  const [valStr, setValStr] = useState<string>(value ? value.toLocaleString('vi-VN') : '');
+  const [valStr, setValStr] = useState<string>(value ? formatMoneyInput(String(value)) : '');
   const [isEditing, setIsEditing] = useState(false);
 
   const handleBlur = () => {
     setIsEditing(false);
     const parsed = parseMoneyDecimalInput(valStr);
     onChange(parsed);
-    setValStr(parsed ? parsed.toLocaleString('vi-VN') : '');
+    setValStr(parsed ? formatMoneyInput(String(parsed)) : '');
   };
 
   const handleFocus = () => {
@@ -37,7 +37,7 @@ const MoneyCellInput: React.FC<{
     <input
       type="text"
       inputMode="decimal"
-      value={isEditing ? valStr : value ? value.toLocaleString('vi-VN') : ''}
+      value={isEditing ? valStr : value ? formatMoneyInput(String(value)) : ''}
       onChange={e => setValStr(e.target.value)}
       onFocus={handleFocus}
       onBlur={handleBlur}
@@ -308,12 +308,12 @@ export const DebtPayableTab: React.FC<DebtPayableTabProps> = ({
                     </td>
                     <td className="p-1 border-l border-line">
                       <span className="font-mono text-right block px-1 text-ink-muted">
-                        {c.endingDebit ? c.endingDebit.toLocaleString('vi-VN') : '-'}
+                        {c.endingDebit ? fmtNumber(c.endingDebit) : '-'}
                       </span>
                     </td>
                     <td className="p-1 bg-pos-soft/30 font-bold text-pos">
                       <span className="font-mono text-right block px-1">
-                        {c.endingCredit ? c.endingCredit.toLocaleString('vi-VN') : '-'}
+                        {c.endingCredit ? fmtNumber(c.endingCredit) : '-'}
                       </span>
                     </td>
                     <td className="p-1 text-center">
@@ -340,12 +340,12 @@ export const DebtPayableTab: React.FC<DebtPayableTabProps> = ({
             <tfoot className="bg-panel-muted border-t-2 border-line font-bold">
               <tr>
                 <td colSpan={2} className="p-2 text-right uppercase">TỔNG CỘNG TK 331:</td>
-                <td className="p-2 text-right font-mono border-l border-line">{summary.totalBeginningDebit ? summary.totalBeginningDebit.toLocaleString('vi-VN') : '0'}</td>
-                <td className="p-2 text-right font-mono">{summary.totalBeginningCredit ? summary.totalBeginningCredit.toLocaleString('vi-VN') : '0'}</td>
-                <td className="p-2 text-right font-mono border-l border-line">{summary.totalOccurredDebit ? summary.totalOccurredDebit.toLocaleString('vi-VN') : '0'}</td>
-                <td className="p-2 text-right font-mono">{summary.totalOccurredCredit ? summary.totalOccurredCredit.toLocaleString('vi-VN') : '0'}</td>
-                <td className="p-2 text-right font-mono border-l border-line">{summary.totalEndingDebit ? summary.totalEndingDebit.toLocaleString('vi-VN') : '0'}</td>
-                <td className="p-2 text-right font-mono text-pos bg-pos-soft">{summary.totalEndingCredit ? summary.totalEndingCredit.toLocaleString('vi-VN') : '0'}</td>
+                <td className="p-2 text-right font-mono border-l border-line">{summary.totalBeginningDebit ? fmtNumber(summary.totalBeginningDebit) : '0'}</td>
+                <td className="p-2 text-right font-mono">{summary.totalBeginningCredit ? fmtNumber(summary.totalBeginningCredit) : '0'}</td>
+                <td className="p-2 text-right font-mono border-l border-line">{summary.totalOccurredDebit ? fmtNumber(summary.totalOccurredDebit) : '0'}</td>
+                <td className="p-2 text-right font-mono">{summary.totalOccurredCredit ? fmtNumber(summary.totalOccurredCredit) : '0'}</td>
+                <td className="p-2 text-right font-mono border-l border-line">{summary.totalEndingDebit ? fmtNumber(summary.totalEndingDebit) : '0'}</td>
+                <td className="p-2 text-right font-mono text-pos bg-pos-soft">{summary.totalEndingCredit ? fmtNumber(summary.totalEndingCredit) : '0'}</td>
                 <td></td>
               </tr>
             </tfoot>

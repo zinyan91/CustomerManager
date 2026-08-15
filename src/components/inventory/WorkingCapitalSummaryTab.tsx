@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link2, Boxes, Users, TrendingUp, ShieldCheck } from 'lucide-react';
 import type { InventorySummary } from '../../lib/inventory';
 import type { ReceivableSummary } from '../../lib/debt';
-import { fmtMoney, parseMoneyDecimalInput } from '../../lib/utils';
+import { fmtMoney, fmtPercent, formatMoneyInput, parseMoneyDecimalInput } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 
 interface WorkingCapitalSummaryTabProps {
@@ -102,8 +102,8 @@ export const WorkingCapitalSummaryTab: React.FC<WorkingCapitalSummaryTabProps> =
             <input
               type="text"
               inputMode="decimal"
-              value={parseMoneyDecimalInput(creditLimitStr).toLocaleString('vi-VN')}
-              onChange={e => setCreditLimitStr(e.target.value)}
+              value={formatMoneyInput(creditLimitStr)}
+              onChange={e => setCreditLimitStr(formatMoneyInput(e.target.value))}
               className={`w-full rounded p-2 text-xs border ${UI.inputStyle} font-mono text-right font-bold text-accent`}
             />
           </div>
@@ -111,7 +111,7 @@ export const WorkingCapitalSummaryTab: React.FC<WorkingCapitalSummaryTabProps> =
           <div className="bg-panel-muted/50 rounded-lg p-3 border border-line">
             <div className="text-[10px] font-bold text-ink-faint uppercase">TỶ LỆ BAO PHỦ TÀI SẢN / HẠN MỨC</div>
             <div className="text-xl font-black text-accent mt-0.5 font-mono">
-              {coverageRatio.toFixed(1)}%
+              {fmtPercent(coverageRatio > 1 ? coverageRatio / 100 : coverageRatio)}
             </div>
             <div className="text-xs text-ink-faint mt-0.5">
               (Tổng TS ngắn hạn / Hạn mức vay đề xuất)

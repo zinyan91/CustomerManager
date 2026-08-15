@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { fmtDate, fmtMoney, fmtRate } from '../../lib/utils';
+import { fmtDate, fmtMoney, fmtNumber, fmtRate } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { isScheduleFullySettled, isBulletPrincipal } from '../../lib/loanMath';
 import { periodObligation, sumObligations } from '../../lib/scheduleView';
@@ -20,7 +20,7 @@ interface ScheduleTabProps {
 
 const DENSITY_KEY = 'schedule_density';
 
-const num = (v: number) => (v > 0 ? v.toLocaleString('vi-VN') : '–');
+const num = (v: number) => (v > 0 ? fmtNumber(v) : '–');
 
 export const ScheduleTab: React.FC<ScheduleTabProps> = ({
   contracts, selectedContract, handleSelectContract, schedules, openPaymentModal,
@@ -243,10 +243,10 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                     {t('schedule.total')}
                   </td>
                   <td className={`${cell} text-right font-mono font-bold text-ink`}>
-                    {grandTotal.due.toLocaleString('vi-VN')}
+                    {fmtNumber(grandTotal.due)}
                   </td>
                   <td className={`${cell} text-right font-mono font-bold ${grandTotal.unpaid > 0 ? 'text-neg' : 'text-ink-faint'}`}>
-                    {grandTotal.unpaid.toLocaleString('vi-VN')}
+                    {fmtNumber(grandTotal.unpaid)}
                   </td>
                   <td colSpan={2}></td>
                 </tr>

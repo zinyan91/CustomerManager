@@ -104,7 +104,7 @@ export const InventoryView: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
           <div className="flex items-center space-x-2">
             <Package className="w-5 h-5 text-accent" />
-            <span className="font-bold text-sm text-ink">Quản lý Kiểm kê Hàng tồn kho & Công nợ (TK 131/331)</span>
+            <span className="font-bold text-sm text-ink">Quản lý Kiểm kê Hàng tồn kho & Công nợ</span>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -113,7 +113,7 @@ export const InventoryView: React.FC = () => {
               className="bg-pos hover:opacity-90 text-white font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-all shadow-xs"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              <span>Xuất Excel Đầy đủ (XLSX)</span>
+              <span>Xuất Excel</span>
             </button>
 
             <button
@@ -121,7 +121,7 @@ export const InventoryView: React.FC = () => {
               className="bg-accent hover:opacity-90 text-accent-ink font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-all shadow-xs"
             >
               <Printer className="w-4 h-4" />
-              <span>In Biên bản Kiểm kê (PDF/HTML)</span>
+              <span>In / Xuất PDF</span>
             </button>
           </div>
         </div>
@@ -149,7 +149,7 @@ export const InventoryView: React.FC = () => {
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>II. Sổ Chi tiết Nợ Phải thu Khách hàng (TK 131) ({receivables.length} KH)</span>
+            <span>II. Sổ Chi tiết Nợ Phải thu Khách hàng ({receivables.length} KH)</span>
           </button>
 
           <button
@@ -161,7 +161,7 @@ export const InventoryView: React.FC = () => {
             }`}
           >
             <Users className="w-4 h-4 text-warn" />
-            <span>III. Sổ Chi tiết Nợ Phải trả Nhà cung cấp (TK 331) ({payables.length} NCC)</span>
+            <span>III. Sổ Chi tiết Nợ Phải trả Nhà cung cấp ({payables.length} NCC)</span>
           </button>
         </div>
 

@@ -245,7 +245,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
         value: `${fmtPercent(postRate > 1 ? postRate / 100 : postRate)}/năm`
           + (postPromoRateOverride === null && (baseRateAnnual !== null || marginAnnual !== null)
             ? ` (cơ sở ${fmtPercent((baseRateAnnual === null ? rateAnnual : baseRateAnnual) > 1 ? (baseRateAnnual === null ? rateAnnual : baseRateAnnual) / 100 : (baseRateAnnual === null ? rateAnnual : baseRateAnnual))}`
-              + ` + biên độ ${fmtPercent((marginAnnual === null ? 0 : marginAnnual) > 1 ? (marginAnnual === null ? 0 : marginAnnual) / 100 : (marginAnnual === null ? 0 : marginAnnual))})`
+            + ` + biên độ ${fmtPercent((marginAnnual === null ? 0 : marginAnnual) > 1 ? (marginAnnual === null ? 0 : marginAnnual) / 100 : (marginAnnual === null ? 0 : marginAnnual))})`
             : ''),
       }]
       : []),
@@ -466,7 +466,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
 
           {prepayments.length === 0 ? (
             <div className="text-xs text-ink-faint italic py-1">
-              Chưa thiết lập lần trả trước hạn nào. Bấm <strong>"+ Thêm kỳ trả trước hạn"</strong> nếu khách hàng muốn trả bớt gốc ở một hoặc nhiều kỳ bất kỳ.
+              Chưa thiết lập lần trả trước hạn nào. Bấm <strong>"Thêm kỳ trả trước hạn"</strong> nếu khách hàng muốn trả bớt gốc ở một hoặc nhiều kỳ bất kỳ.
             </div>
           ) : (
             <div className="space-y-2.5">

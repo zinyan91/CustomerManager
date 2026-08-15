@@ -339,7 +339,7 @@ export const DebtPayableTab: React.FC<DebtPayableTabProps> = ({
             </tbody>
             <tfoot className="bg-panel-muted border-t-2 border-line font-bold">
               <tr>
-                <td colSpan={2} className="p-2 text-right uppercase">TỔNG CỘNG TK 331:</td>
+                <td colSpan={2} className="p-2 text-right uppercase">TỔNG CỘNG:</td>
                 <td className="p-2 text-right font-mono border-l border-line">{summary.totalBeginningDebit ? fmtNumber(summary.totalBeginningDebit) : '0'}</td>
                 <td className="p-2 text-right font-mono">{summary.totalBeginningCredit ? fmtNumber(summary.totalBeginningCredit) : '0'}</td>
                 <td className="p-2 text-right font-mono border-l border-line">{summary.totalOccurredDebit ? fmtNumber(summary.totalOccurredDebit) : '0'}</td>

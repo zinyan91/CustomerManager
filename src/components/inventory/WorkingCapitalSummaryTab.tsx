@@ -56,7 +56,7 @@ export const WorkingCapitalSummaryTab: React.FC<WorkingCapitalSummaryTabProps> =
 
         <div className={`${UI.containerCardBg} rounded-lg p-3.5 border flex items-center justify-between`}>
           <div>
-            <div className="text-[10px] font-bold text-ink-faint uppercase">2. CÔNG NỢ PHẢI THU (TK 131)</div>
+            <div className="text-[10px] font-bold text-ink-faint uppercase">2. CÔNG NỢ PHẢI THU</div>
             <div className="text-lg font-black text-ink mt-1 font-mono">
               {fmtMoney(recSummary.totalEndingDebit)}
             </div>
@@ -78,7 +78,7 @@ export const WorkingCapitalSummaryTab: React.FC<WorkingCapitalSummaryTabProps> =
               {fmtMoney(totalAssets)}
             </div>
             <div className="text-xs font-semibold text-pos mt-0.5 font-mono">
-              (Tồn kho + Phải thu 131)
+              (Tồn kho + Phải thu)
             </div>
           </div>
           <div className="p-2.5 bg-pos/20 rounded-lg text-pos">
@@ -161,7 +161,7 @@ export const WorkingCapitalSummaryTab: React.FC<WorkingCapitalSummaryTabProps> =
               <tr>
                 <td className="p-2 font-bold flex items-center space-x-2">
                   <Users className="w-4 h-4 text-accent" />
-                  <span>2. Công nợ Phải thu Khách hàng (TK 131)</span>
+                  <span>2. Công nợ Phải thu Khách hàng</span>
                 </td>
                 <td className="p-2 text-center font-mono">{recSummary.totalItems} KH</td>
                 <td className="p-2 text-right font-mono">{fmtMoney(recSummary.totalBeginningDebit)}</td>

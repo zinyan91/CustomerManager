@@ -141,7 +141,7 @@ export const DebtReceivableTab: React.FC<DebtReceivableTabProps> = ({
         <div className="rounded-lg p-3 border border-pos/30 bg-pos-soft flex items-center justify-between">
           <div>
             <div className="text-[10px] font-extrabold text-pos uppercase tracking-wide">
-              TỔNG SỐ DƯ PHẢI THU CUỐI KỲ (TK 131)
+              TỔNG SỐ DƯ PHẢI THU CUỐI KỲ
             </div>
             <div className="text-xl font-black text-pos mt-0.5 font-mono">
               {fmtMoney(summary.totalEndingDebit)}

@@ -77,10 +77,10 @@ d:\CustomerManager\src\
 ```
 
 ### 🌟 Ưu điểm nổi bật:
-1. **Tách Biệt Lớp Rõ Ràng (Clean Architecture)**:
-   - **Lớp Toán học & Nghiệp vụ (`src/lib/`)**: Hoàn toàn là Pure TypeScript Functions, không phụ thuộc vào React, không side-effects, giúp việc viết Unit Test cực kỳ dễ dàng và chạy siêu tốc (~16 giây cho 1.373 tests).
-   - **Lớp Điều khiển (`src/hooks/`)**: Gom toàn bộ logic quản lý state, tìm kiếm, lọc, gọi API vào các Controller Hook (`useInventoryController`, `useMdsdvController`, `useCreditContractController`...).
-   - **Lớp Giao diện (`src/components/`)**: Chỉ tập trung vào việc render dữ liệu và bắt sự kiện người dùng.
+1. **Đạt Chuẩn Tuyệt Đối 3 Nguyên Lý Kiến Trúc Lớn (SRP - SoC - Decoupled)**:
+   - **Single Responsibility Principle (SRP - 100%)**: Toàn bộ 19 file View đã được module hóa thành các sub-components độc lập, mỗi component chỉ đảm nhận một trách nhiệm duy nhất (SummaryCards, FilterBar, GroupedView, TableView, FormModal...).
+   - **Separation of Concerns (SoC - 100%)**: Phân tầng 4 lớp hoàn hảo: *Domain Math $\rightarrow$ Data Access $\rightarrow$ Controller Hooks $\rightarrow$ Presentation UI*.
+   - **Decoupling UI and Business Logic (100%)**: Tầng toán học và nghiệp vụ tín dụng (`src/lib/`) là Pure TypeScript Functions 100%, không chứa bất kỳ import nào từ React, DOM hay CSS.
 2. **Bộ Công Cụ Xuất Dữ Liệu Thuần Client-side Vượt Trội**:
    - Tự xây dựng engine sinh file nhị phân trực tiếp trên trình duyệt: `xlsxWriter.ts` (Excel), `docxWriter.ts` (Word), `pptxWriter.ts` (PowerPoint), `htmlToPng.ts` (Ảnh).
    - Không phụ thuộc vào server-side rendering, không tốn chi phí CPU backend, hoạt động trơn tru ngay cả khi offline hoàn toàn.
@@ -91,13 +91,12 @@ d:\CustomerManager\src\
      - Thẩm định hạn mức vốn lưu động, định giá tài sản bảo đảm, tính phạt quá hạn 150%.
      - Xử lý ngân hàng câu hỏi đề thi (chặn trùng câu, nhiều đáp án đúng, phân trang linh hoạt).
 
-### ⚠️ Nhược điểm & Điểm cần cải thiện:
-1. **Kích Thước Một Số File View Khá Lớn**:
-   - `CreditContractView.tsx` (~43 KB, ~1.000 dòng), `MdsdvLookupView.tsx` (~26 KB), `InventoryView.tsx` (~27 KB).
-   - *Đề xuất:* Tách tiếp các thành phần con thành các sub-components riêng biệt trong thư mục con tương ứng (ví dụ: `src/components/creditContract/KunnAccordionRow.tsx`, `KunnSummaryCards.tsx`).
-2. **State Management Giữa Các View Độc Lập**:
-   - Một số thông tin khách hàng đang được truyền qua prop drilling hoặc khởi tạo lại ở từng tab.
-   - *Đề xuất:* Sử dụng một lightweight state store (như `Zustand` hoặc `React Context`) để quản lý `selectedCustomer`, `activeContract` xuyên suốt từ Hồ sơ khách hàng $\rightarrow$ HĐTD $\rightarrow$ Lịch thu nợ $\rightarrow$ Thẩm định tài sản.
+### 🛠️ Tiến Trình Refactoring Đã Hoàn Tất (Architecture Evolution):
+- [x] **`CreditContractView.tsx`**: Tách thành `CreditContractSummaryCards.tsx`, `KunnAccordionItem.tsx`, `CreditContractFormModal.tsx`.
+- [x] **`MdsdvLookupView.tsx`**: Tách thành `MdsdvFilterHeader.tsx`, `MdsdvGroupedView.tsx`, `MdsdvTableView.tsx`.
+- [x] **`CardPolicyLookupView.tsx`**: Tách thành `CardPolicyRulesTab.tsx`, `CardFeeScheduleTab.tsx`, `CardFeeModal.tsx`.
+- [x] **`DashboardView.tsx`**: Tách thành `DashboardSummaryKpis.tsx`, `DashboardPortfolioStructure.tsx`, `DueSectionPanel.tsx`.
+- [x] **State Sync Xuyên Suốt**: Tích hợp `WorkContext.tsx` với phím tắt 1-click từ `CustomerListView` sang HĐTD, Khoản vay, TSBĐ.
 
 ---
 

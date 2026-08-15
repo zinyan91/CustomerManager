@@ -16,7 +16,7 @@ CREATE INDEX IF NOT EXISTS idx_credit_contracts_is_closed ON public."CreditContr
 CREATE INDEX IF NOT EXISTS idx_loan_contracts_customer_id ON public."LoanContracts" ("CustomerId");
 CREATE INDEX IF NOT EXISTS idx_loan_contracts_credit_contract_id ON public."LoanContracts" ("CreditContractId");
 CREATE INDEX IF NOT EXISTS idx_loan_contracts_contract_number ON public."LoanContracts" ("ContractNumber");
-CREATE INDEX IF NOT EXISTS idx_loan_contracts_is_closed ON public."LoanContracts" ("IsClosed");
+CREATE INDEX IF NOT EXISTS idx_loan_contracts_is_settled ON public."LoanContracts" ("IsSettled");
 
 CREATE INDEX IF NOT EXISTS idx_collaterals_customer_id ON public."Collaterals" ("CustomerId");
 CREATE INDEX IF NOT EXISTS idx_collaterals_asset_code ON public."Collaterals" ("AssetCode");
@@ -27,7 +27,7 @@ CREATE INDEX IF NOT EXISTS idx_inventory_items_code ON public."InventoryItems" (
 CREATE INDEX IF NOT EXISTS idx_purchase_statements_date ON public."PurchaseStatements" ("StatementDate");
 CREATE INDEX IF NOT EXISTS idx_retail_invoices_date ON public."RetailInvoices" ("InvoiceDate");
 
-CREATE INDEX IF NOT EXISTS idx_quiz_questions_category ON public."QuizQuestions" ("Category");
+CREATE INDEX IF NOT EXISTS idx_quiz_questions_topic ON public."QuizQuestions" ("Topic");
 
 -- 2. GIN Index cho các trường JSONB
 CREATE INDEX IF NOT EXISTS idx_purchase_statements_items_gin ON public."PurchaseStatements" USING gin ("Items");

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { UI } from '../../lib/uiClasses';
 import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI } from '../../lib/api';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
-import { fmtDate, fmtMoney, fmtNumber, fmtPercent, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
+import { fmtDate, fmtMoney, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
 import { assetClassLabel, collateralValue, appraisalExpiryDate } from '../../lib/collateralMath';
 import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
@@ -12,11 +12,12 @@ import { parseCollateralIds } from '../../lib/creditLimit';
 import { Toast, useToast } from '../Toast';
 import type { Customer, Collateral, LoanContract, CardContract } from '../../types';
 import {
-  DollarSign, Users, Building2, AlertCircle, RefreshCw,
-  Calendar, Clock, ShieldAlert, FileText, AlertTriangle,
+  Building2, RefreshCw, Calendar, Clock, ShieldAlert,
+  AlertTriangle
 } from 'lucide-react';
 import { DueSectionPanel, dueBadgeClass, dueBadgeText } from '../dashboard/DueSectionPanel';
-import { KpiCard } from '../dashboard/KpiCard';
+import { DashboardSummaryKpis } from '../dashboard/DashboardSummaryKpis';
+import { DashboardPortfolioStructure } from '../dashboard/DashboardPortfolioStructure';
 import type { AdaptiveColumn } from '../AdaptiveTable';
 
 export const DashboardView: React.FC = () => {
@@ -64,6 +65,8 @@ export const DashboardView: React.FC = () => {
     totalLimit,
     totalCollateralVal,
     weightedLtv,
+    theConHieuLuc,
+    hanMucTheDaCap,
     loanMethodStats,
     debtGroupStats,
   } = useMemo(() => {
@@ -79,7 +82,7 @@ export const DashboardView: React.FC = () => {
     const validCards = cardContracts.filter(c => !c.IsClosed);
     const cardLimit = totalCardGrantedLimit(cardContracts);
 
-    const methodStats: { method: string; count: number; amount: number; isGrantedLimit?: boolean }[] = [
+    const methodStats = [
       'Hạn mức tín dụng',
       'Cho vay từng lần',
       'Cầm cố sổ tiết kiệm',
@@ -87,7 +90,7 @@ export const DashboardView: React.FC = () => {
     ].map(method => {
       const matched = unSettled.filter(c => c.LoanMethod === method);
       const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
-      return { method, count: matched.length, amount };
+      return { method, count: matched.length, amount, isGrantedLimit: false };
     });
 
     methodStats.push({
@@ -153,9 +156,7 @@ export const DashboardView: React.FC = () => {
 
       const masterNo = getMasterHdtdNumber(c);
       const cus = customerMap.get(c.CustomerId);
-
       const endDateStr = toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate) || '';
-
       const daysLeft = daysUntil(endDateStr);
 
       if (!hmtdMap[masterNo] || (c.ContractAmount && c.ContractAmount > (hmtdMap[masterNo].contract.ContractAmount || 0))) {
@@ -212,7 +213,7 @@ export const DashboardView: React.FC = () => {
     { key: 'cif', label: 'Mã CIF', priority: 3, render: i => <span className="font-mono text-accent">{i.customer?.CifKh || 'N/A'}</span> },
     { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: i => <span className="font-mono">{i.contract.ContractNumber}</span> },
     { key: 'duNo', label: 'Dư nợ hiện hữu', priority: 1, align: 'right',
-      render: i => <span className="font-mono font-bold text-warn">{fmtFullMoney(i.contract.CurrentBalance ?? i.contract.LoanAmount ?? i.contract.ContractAmount ?? 0)}</span> },
+      render: i => <span className="font-mono font-bold text-warn">{fmtMoney(i.contract.CurrentBalance ?? i.contract.LoanAmount ?? i.contract.ContractAmount ?? 0)}</span> },
     { key: 'ngayDue', label: 'Ngày đến hạn due', priority: 1, align: 'center',
       render: i => <span className="font-bold text-accent">{i.dueInfo?.dueDateStr}</span> },
     { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: i => {
@@ -227,7 +228,7 @@ export const DashboardView: React.FC = () => {
     { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
     { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: r => <span className="font-mono">{r.contract.ContractNumber}</span> },
     { key: 'soTien', label: 'Số tiền KUNN / dư nợ', priority: 1, align: 'right',
-      render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(r.contract.LoanAmount || r.contract.CurrentBalance || 0)}</span> },
+      render: r => <span className="font-mono font-bold text-pos">{fmtMoney(r.contract.LoanAmount || r.contract.CurrentBalance || 0)}</span> },
     { key: 'ketThuc', label: 'Ngày kết thúc KUNN', priority: 1, align: 'center',
       render: r => <span className="font-bold text-accent">{fmtDate(r.contract.KunnDueDate)}</span> },
     { key: 'kyHan', label: 'Kỳ hạn KUNN', priority: 2, align: 'center',
@@ -245,7 +246,7 @@ export const DashboardView: React.FC = () => {
     { key: 'soHdtd', label: 'Số HĐTD hạn mức', priority: 2,
       render: r => <span className="font-mono font-bold text-accent">{r.masterNo}</span> },
     { key: 'mucCap', label: 'Tổng mức cấp HMTD', priority: 1, align: 'right',
-      render: r => <span className="font-mono font-bold text-accent">{fmtFullMoney(r.contract.ContractAmount || 0)}</span> },
+      render: r => <span className="font-mono font-bold text-accent">{fmtMoney(r.contract.ContractAmount || 0)}</span> },
     { key: 'hetHan', label: 'Ngày hết hạn HĐ', priority: 1, align: 'center',
       render: r => <span className="font-bold">{fmtDate(r.endDateStr)}</span> },
     { key: 'trangThai', label: 'Trạng thái hạn mức', priority: 1, align: 'center', render: r => {
@@ -273,7 +274,7 @@ export const DashboardView: React.FC = () => {
       </span>
     ) },
     { key: 'giaTri', label: 'Giá trị định giá', priority: 1, align: 'right',
-      render: r => <span className="font-mono font-bold text-pos">{fmtFullMoney(collateralValue(r.collateral))}</span> },
+      render: r => <span className="font-mono font-bold text-pos">{fmtMoney(collateralValue(r.collateral))}</span> },
     { key: 'hetHan', label: 'Ngày hết hạn định giá', priority: 1, align: 'center',
       render: r => <span className="font-bold">{r.expiryDateStr ? fmtDate(r.expiryDateStr) : 'N/A'}</span> },
     { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: r => {
@@ -353,8 +354,6 @@ export const DashboardView: React.FC = () => {
     return fmtMoney(val);
   };
 
-  const fmtFullMoney = (val: number) => fmtMoney(val);
-
   const cardBg = UI.containerCardBg;
 
   if (loading) {
@@ -369,6 +368,7 @@ export const DashboardView: React.FC = () => {
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
       <Toast toast={toast} onDismiss={dismiss} />
 
+      {/* Top Header */}
       <div className="flex items-center justify-between border-b border-line pb-3">
         <div>
           <h2 className="text-base font-bold tracking-tight flex items-center space-x-2 text-ink">
@@ -385,112 +385,31 @@ export const DashboardView: React.FC = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard
-          cardBg={cardBg}
-          tone="accent"
-          icon={Users}
-          label="Tổng số khách hàng"
-          value={fmtNumber(totalCustomersCount)}
-          unit="khách hàng"
-          note="Đang giao dịch & quản lý tín dụng"
-        />
-        <KpiCard
-          cardBg={cardBg}
-          tone="pos"
-          icon={DollarSign}
-          label="Tổng quy mô dư nợ"
-          value={formatMoney(totalDebt)}
-          note={`Tổng hạn mức cấp: ${formatMoney(totalLimit)}`}
-        />
-        <KpiCard
-          cardBg={cardBg}
-          tone="warn"
-          icon={Building2}
-          label="Tổng giá trị TSĐB"
-          value={formatMoney(totalCollateralVal)}
-          note={<>LTV bình quân: <strong className="text-accent">{fmtPercent(weightedLtv > 1 ? weightedLtv / 100 : weightedLtv)}</strong> ({fmtNumber(collaterals.length)} TS)</>}
-        />
-        <KpiCard
-          cardBg={cardBg}
-          tone="neg"
-          icon={AlertCircle}
-          label="Cảnh báo tới hạn"
-          value={fmtNumber(dueInMonthList.length + dueKunnList.length + dueHmtdList.length + dueCollateralList.length)}
-          unit="hạng mục"
-          note="Cần theo dõi & xử lý ngay"
-        />
-      </div>
+      {/* Top 4 KPI Metrics */}
+      <DashboardSummaryKpis
+        cardBg={cardBg}
+        totalDebt={totalDebt}
+        totalLimit={totalLimit}
+        totalCustomersCount={totalCustomersCount}
+        theConHieuLucCount={theConHieuLuc.length}
+        hanMucTheDaCap={hanMucTheDaCap}
+        totalCollateralVal={totalCollateralVal}
+        collateralsCount={collaterals.length}
+        weightedLtv={weightedLtv}
+        dueAlertsTotal={dueInMonthList.length + dueKunnList.length + dueHmtdList.length + dueCollateralList.length}
+        formatMoney={formatMoney}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`${cardBg} p-4 rounded-xl border border-line shadow-sm space-y-3`}>
-          <div className="text-xs font-bold text-accent tracking-tight flex items-center space-x-1.5">
-            <FileText className="w-4 h-4" />
-            <span>DƯ NỢ THEO PHƯƠNG THỨC VAY</span>
-          </div>
-          <div className="space-y-2.5">
-            {loanMethodStats.map(item => {
-              const percent = item.isGrantedLimit
-                ? 0
-                : (totalDebt > 0 ? (item.amount / totalDebt) * 100 : 0);
-              return (
-                <div key={item.method} className="space-y-1">
-                  <div className="flex items-baseline justify-between gap-3 text-xs font-medium">
-                    <span className="min-w-0 truncate">
-                      {item.method}{' '}
-                      <span className="text-ink-faint">
-                        ({item.count} {item.isGrantedLimit ? 'hợp đồng' : 'khoản'})
-                      </span>
-                      {item.isGrantedLimit && (
-                        <span className="text-ink-faint"> · hạn mức đã cấp</span>
-                      )}
-                    </span>
-                    <span className="font-mono font-bold text-accent shrink-0 whitespace-nowrap">
-                      {formatMoney(item.amount)}{' '}
-                      {!item.isGrantedLimit && (
-                        <span className="text-ink-faint">{percent.toFixed(1)}%</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="w-full h-2 bg-panel-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${Math.min(100, percent)}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Portfolio Breakdown Structure Section */}
+      <DashboardPortfolioStructure
+        cardBg={cardBg}
+        totalDebt={totalDebt}
+        loanMethodStats={loanMethodStats}
+        debtGroupStats={debtGroupStats}
+        formatMoney={formatMoney}
+      />
 
-        <div className={`${cardBg} p-4 rounded-xl border border-line shadow-sm space-y-3`}>
-          <div className="text-xs font-bold text-pos tracking-tight flex items-center space-x-1.5">
-            <ShieldAlert className="w-4 h-4" />
-            <span>PHÂN BỔ DƯ NỢ THEO NHÓM NỢ</span>
-          </div>
-          <div className="space-y-2.5">
-            {debtGroupStats.map(item => {
-              const percent = totalDebt > 0 ? (item.amount / totalDebt) * 100 : 0;
-              const colorClass = item.group === 1 ? 'bg-pos' : item.group === 2 ? 'bg-warn' : 'bg-neg';
-              const textClass = item.group === 1 ? 'text-pos ' : item.group === 2 ? 'text-warn ' : 'text-neg ';
-              return (
-                <div key={item.group} className="space-y-1">
-                  <div className="flex items-baseline justify-between gap-3 text-xs font-medium">
-                    <span className="min-w-0 truncate">
-                      Nhóm {item.group} <span className="text-ink-faint">({item.count} HĐ)</span>
-                    </span>
-                    <span className={`font-mono font-bold shrink-0 whitespace-nowrap ${textClass}`}>
-                      {formatMoney(item.amount)} <span className="text-ink-faint">{percent.toFixed(1)}%</span>
-                    </span>
-                  </div>
-                  <div className="w-full h-2 bg-panel-muted rounded-full overflow-hidden">
-                    <div className={`h-full ${colorClass} rounded-full transition-all`} style={{ width: `${Math.min(100, percent)}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
+      {/* Filter Control Bar */}
       <div className={`${cardBg} rounded-xl p-3.5 border border-line shadow-sm flex flex-wrap items-center justify-between gap-3`}>
         <div className="flex items-center space-x-2 text-xs font-bold text-ink">
           <ShieldAlert className="w-4 h-4 text-accent" />
@@ -667,5 +586,3 @@ export const DashboardView: React.FC = () => {
     </div>
   );
 };
-
-

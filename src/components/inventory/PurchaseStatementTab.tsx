@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   FileText, Plus, Trash2, Download, Printer, Settings2, Search, Save, History,
   Pencil, X,
@@ -9,7 +9,7 @@ import {
 } from '../../lib/statement';
 import {
   loadStatementTemplates, addStatementTemplate, updateStatementTemplate,
-  deleteStatementTemplate, resetStatementTemplates,
+  deleteStatementTemplate, resetStatementTemplates, fetchStatementTemplatesFromCloud,
 } from '../../lib/statementStore';
 import {
   fetchPurchaseStatementsDb, savePurchaseStatementDb, deletePurchaseStatementDb,
@@ -192,8 +192,19 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
   const [newPriceStr, setNewPriceStr] = useState('');
   const [newNote, setNewNote] = useState('');
 
+  // Fetch Statement Templates from Supabase Cloud on mount
+  useEffect(() => {
+    let active = true;
+    fetchStatementTemplatesFromCloud().then(cloudList => {
+      if (active && cloudList && cloudList.length > 0) {
+        setTemplates(cloudList);
+      }
+    });
+    return () => { active = false; };
+  }, []);
+
   // Fetch saved statements from Database on mount
-  React.useEffect(() => {
+  useEffect(() => {
     fetchPurchaseStatementsDb().then(dbStmts => {
       if (dbStmts && dbStmts.length > 0) {
         setSavedStatements(dbStmts);

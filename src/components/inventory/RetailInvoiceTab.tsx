@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Receipt, Plus, Trash2, Download, Printer, Settings2, Search, Save, History,
   Pencil, X,
@@ -9,7 +9,7 @@ import {
 } from '../../lib/statement';
 import {
   loadRetailInvoiceTemplates, addRetailInvoiceTemplate, updateRetailInvoiceTemplate,
-  deleteRetailInvoiceTemplate, resetRetailInvoiceTemplates,
+  deleteRetailInvoiceTemplate, resetRetailInvoiceTemplates, fetchRetailInvoiceTemplatesFromCloud,
 } from '../../lib/statementStore';
 import {
   fetchRetailInvoicesDb, saveRetailInvoiceDb, deleteRetailInvoiceDb,
@@ -168,8 +168,19 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<RetailInvoiceItem | null>(null);
 
+  // Fetch Retail Invoice Templates from Supabase Cloud on mount
+  useEffect(() => {
+    let active = true;
+    fetchRetailInvoiceTemplatesFromCloud().then(cloudList => {
+      if (active && cloudList && cloudList.length > 0) {
+        setTemplates(cloudList);
+      }
+    });
+    return () => { active = false; };
+  }, []);
+
   // Fetch saved invoices from Database on mount
-  React.useEffect(() => {
+  useEffect(() => {
     fetchRetailInvoicesDb().then(dbInvs => {
       if (dbInvs && dbInvs.length > 0) {
         setSavedInvoices(dbInvs);

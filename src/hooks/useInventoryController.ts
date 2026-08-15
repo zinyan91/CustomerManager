@@ -5,7 +5,7 @@ import {
 } from '../lib/inventory';
 import {
   loadInventoryTemplates, addInventoryTemplate, updateInventoryTemplate,
-  deleteInventoryTemplate, resetInventoryTemplates,
+  deleteInventoryTemplate, resetInventoryTemplates, fetchInventoryTemplatesFromCloud,
 } from '../lib/templateStore';
 import {
   fetchInventoryItemsDb, saveInventoryItemDb, saveAllInventoryItemsDb, deleteInventoryItemDb,
@@ -77,6 +77,17 @@ export function useInventoryController() {
   const showNotify = useCallback((type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), type === 'error' ? 8000 : 4000);
+  }, []);
+
+  // Fetch Industry Templates from Database / Supabase Cloud on mount
+  useEffect(() => {
+    let active = true;
+    fetchInventoryTemplatesFromCloud().then(cloudList => {
+      if (active && cloudList && cloudList.length > 0) {
+        setTemplates(cloudList);
+      }
+    });
+    return () => { active = false; };
   }, []);
 
   // Fetch Inventory items from Database on mount or category change

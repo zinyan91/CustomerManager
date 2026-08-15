@@ -115,9 +115,9 @@ export function buildDueListHtml(input: DueListSheetInput): string {
 <meta charset="utf-8" />
 <title>${esc(input.title)}</title>
 <style>
-  @page { size: A4 landscape; margin: 0; }
+  @page { size: A4 landscape; margin: 10mm 10mm 10mm 10mm; }
   * { box-sizing: border-box; }
-  body { font-family: "Segoe UI", Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 10mm; font-size: 9pt; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 0; font-size: 9pt; }
   h1 { font-size: 13pt; color: #0b5cab; margin: 0 0 8px; }
   table { width: 100%; border-collapse: collapse; }
   th, td { border: 1px solid #c9d9e8; padding: 4px 6px; text-align: left; vertical-align: top; }

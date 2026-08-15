@@ -13,36 +13,109 @@ function exportToWordDocx(filename: string, docHtml: string) {
 function exportToPDFOnly(filename: string, docHtml: string): boolean {
   const pdfHtml = `
     <!DOCTYPE html>
-    <html>
+    <html lang="vi">
     <head>
       <meta charset="utf-8" />
       <title>${filename}</title>
       <style>
         @page {
           size: A4 portrait;
-          margin: 0;
+          margin: 20mm 15mm 20mm 25mm; /* Chuẩn văn bản: Trên 20mm, Dưới 20mm, Phải 15mm, Trái 25mm */
+        }
+        * {
+          box-sizing: border-box;
         }
         body {
           font-family: 'Times New Roman', Times, serif;
           font-size: 13pt;
-          line-height: 1.5;
+          line-height: 1.45;
           color: #000000;
           margin: 0;
-          padding: 25mm 20mm 20mm 30mm;
+          padding: 0;
+          background: #ffffff;
+          text-align: justify;
         }
-        h1 { text-align: center; font-size: 16pt; font-weight: bold; text-transform: uppercase; margin-top: 14pt; margin-bottom: 12pt; }
-        h2 { text-align: left; font-size: 13pt; font-weight: bold; text-transform: uppercase; margin-top: 12pt; margin-bottom: 6pt; }
-        p.clause-p { margin-top: 3pt; margin-bottom: 6pt; text-align: justify; text-indent: 1.27cm; line-height: 1.5; }
+        h1 { 
+          text-align: center; 
+          font-size: 15pt; 
+          font-weight: bold; 
+          text-transform: uppercase; 
+          margin-top: 10pt; 
+          margin-bottom: 8pt; 
+          page-break-after: avoid;
+        }
+        h2 { 
+          text-align: left; 
+          font-size: 13pt; 
+          font-weight: bold; 
+          text-transform: uppercase; 
+          margin-top: 10pt; 
+          margin-bottom: 4pt; 
+          page-break-after: avoid;
+        }
+        h3 {
+          font-size: 13pt;
+          font-weight: bold;
+          margin-top: 8pt;
+          margin-bottom: 4pt;
+          page-break-after: avoid;
+        }
+        p {
+          margin-top: 3pt;
+          margin-bottom: 4pt;
+          text-align: justify;
+          line-height: 1.45;
+        }
+        p.clause-p { 
+          margin-top: 4pt; 
+          margin-bottom: 5pt; 
+          text-align: justify; 
+          text-indent: 1.27cm; 
+          line-height: 1.45; 
+        }
         .no-indent { text-indent: 0 !important; }
-        p.item-p { text-indent: 0; margin: 2pt 0 2pt 14pt; text-align: justify; line-height: 1.5; }
+        p.item-p { 
+          text-indent: 0; 
+          margin: 2pt 0 3pt 18pt; 
+          text-align: justify; 
+          line-height: 1.45; 
+        }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
+        .text-left { text-align: left; }
         .font-bold { font-weight: bold; }
-        .table-doc { border-collapse: collapse; width: 100%; margin-top: 10pt; margin-bottom: 10pt; }
-        .table-doc th, .table-doc td { border: 1px solid #000; padding: 6pt 8pt; font-size: 12pt; }
-        .sig-table { width: 100%; margin-top: 30pt; border-collapse: collapse; border: none; }
-        .sig-table td { width: 50%; text-align: center; vertical-align: top; border: none; padding: 0; line-height: 1.25; }
-        .sig-space { height: 100px; line-height: 1.25; }
+        .italic { font-style: italic; }
+        .table-doc { 
+          border-collapse: collapse; 
+          width: 100%; 
+          margin-top: 8pt; 
+          margin-bottom: 8pt; 
+          page-break-inside: auto;
+        }
+        .table-doc th, .table-doc td { 
+          border: 1px solid #000; 
+          padding: 5pt 7pt; 
+          font-size: 12pt; 
+        }
+        .table-doc tr {
+          page-break-inside: avoid;
+        }
+        .sig-table { 
+          width: 100%; 
+          margin-top: 20pt; 
+          border-collapse: collapse; 
+          border: none; 
+          page-break-inside: avoid;
+        }
+        .sig-table td { 
+          width: 50%; 
+          text-align: center; 
+          vertical-align: top; 
+          border: none; 
+          padding: 0; 
+          line-height: 1.25; 
+        }
+        .sig-space { height: 90px; line-height: 1.25; }
       </style>
     </head>
     <body>

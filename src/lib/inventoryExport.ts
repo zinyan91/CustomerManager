@@ -303,8 +303,8 @@ export function buildInventoryDocHtml(
       <meta charset="utf-8" />
       <title>Bảng kiểm kê hàng tồn kho & công nợ</title>
       <style>
-        @page { size: A4 landscape; margin: 0; }
-        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #0f172a; margin: 0; padding: 12mm; }
+        @page { size: A4 landscape; margin: 10mm 10mm 10mm 10mm; }
+        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #0f172a; margin: 0; padding: 0; }
         .header-title { text-align: center; font-size: 16px; font-weight: bold; color: #0284c7; text-transform: uppercase; margin-bottom: 5px; }
         .meta-line { text-align: center; font-size: 11px; color: #475569; margin-bottom: 15px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px; }
@@ -601,8 +601,8 @@ export function buildPurchaseStatementDocHtml(
       <meta charset="utf-8"/>
       <title>Bảng kê mua bán hàng hóa dịch vụ</title>
       <style>
-        @page { size: A4 landscape; margin: 0; }
-        body { font-family: 'Times New Roman', Times, serif, sans-serif; font-size: 13px; color: #000000; margin: 0; padding: 12mm; }
+        @page { size: A4 landscape; margin: 12mm 10mm 12mm 15mm; }
+        body { font-family: 'Times New Roman', Times, serif, sans-serif; font-size: 13px; color: #000000; margin: 0; padding: 0; }
         .nation-header { text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 14px; }
         .doc-title { text-align: center; font-size: 18px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; }
         .party-box { margin-bottom: 15px; font-size: 13px; line-height: 1.6; }
@@ -817,8 +817,8 @@ export function buildRetailInvoiceDocHtml(
       <meta charset="utf-8"/>
       <title>Hóa đơn bán lẻ - ${header.shopName || ''}</title>
       <style>
-        @page { size: A4 portrait; margin: 0; }
-        body { font-family: 'Times New Roman', Times, serif, sans-serif; font-size: 13px; color: #000000; margin: 0; padding: 15mm; }
+        @page { size: A4 portrait; margin: 15mm 15mm 15mm 20mm; }
+        body { font-family: 'Times New Roman', Times, serif, sans-serif; font-size: 13px; color: #000000; margin: 0; padding: 0; }
         .shop-name { text-align: center; font-size: 20px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
         .doc-subtitle { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 20px; }
         .info-block { margin-bottom: 15px; font-size: 13px; line-height: 1.6; }

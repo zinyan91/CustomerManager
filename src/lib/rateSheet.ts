@@ -410,14 +410,14 @@ export function buildRateSheetParts(input: RateSheetInput): RateSheetParts {
   const body = isDeposit ? depositRateTable(input) : lendingRateTable(input);
 
   const styles = `
-  @page { size: A4 ${isDeposit ? 'landscape' : 'portrait'}; margin: 0; }
+  @page { size: A4 ${isDeposit ? 'landscape' : 'portrait'}; margin: 10mm 10mm 10mm 10mm; }
   * { box-sizing: border-box; }
   html, body, header, th, .meta, tbody tr:nth-child(even) {
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
   body, .rate-sheet-root {
     font-family: "Segoe UI", Roboto, Arial, sans-serif;
-    color: #0f172a; margin: 0; padding: 11mm 12mm; font-size: 9.5pt; line-height: 1.32;
+    color: #0f172a; margin: 0; padding: 0; font-size: 9.5pt; line-height: 1.32;
   }
   .logobar { margin-bottom: 6px; }
   .logobar img { height: 34px; width: auto; display: block; }

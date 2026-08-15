@@ -91,6 +91,10 @@ export interface DocumentFormProps {
   salePaymentStage1: string; setSalePaymentStage1: (v: string) => void;
   saleItems: SaleItem[]; setSaleItems: React.Dispatch<React.SetStateAction<SaleItem[]>>;
   handleAddSaleItem: () => void;
+  catalogs?: import('../../lib/saleCatalogStore').SaleCatalogProfile[];
+  currentCatalogId?: string;
+  onSelectCatalogId?: (id: string) => void;
+  onOpenCatalogModal?: () => void;
 
   payMethodType?: 'cash' | 'transfer';
   setPayMethodType?: (v: 'cash' | 'transfer') => void;

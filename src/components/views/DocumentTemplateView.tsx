@@ -5,6 +5,14 @@ import { DocumentForm, type SaleItem } from '../documents/DocumentForm';
 import { DEFAULT_DEPOSIT_CONTRACT, type DepositContractData } from '../documents/depositContract';
 import { DocumentPreview } from '../documents/DocumentPreview';
 import { buildDocumentHtml } from '../../lib/documentHtml';
+import {
+  loadSaleCatalogs,
+  saveSaleCatalog,
+  deleteSaleCatalog,
+  resetSaleCatalogs,
+  type SaleCatalogProfile,
+} from '../../lib/saleCatalogStore';
+import { SaleCatalogModal } from '../documents/SaleCatalogModal';
 
 const monthsBetweenLabel = (startIso: string, endIso: string): string => {
   const a = startIso?.split('-'), b = endIso?.split('-');
@@ -106,21 +114,52 @@ export const DocumentTemplateView: React.FC = () => {
   const [saleEndDate, setSaleEndDate] = useState('2026-05-09');
   const [salePaymentStage1, setSalePaymentStage1] = useState('93.600.000');
 
-  const [saleItems, setSaleItems] = useState<SaleItem[]>([
-    { id: '1', name: 'Dầu gội phục hồi', unit: 'Chai', quantity: 100, price: 250000 },
-    { id: '2', name: 'Dầu xả chuyên dụng', unit: 'Chai', quantity: 120, price: 250000 },
-    { id: '3', name: 'Thuốc nhuộm tóc', unit: 'Tuýp', quantity: 120, price: 120000 },
-    { id: '4', name: 'Thuốc uốn tóc', unit: 'Lọ', quantity: 100, price: 150000 },
-    { id: '5', name: 'Thuốc duỗi tóc', unit: 'Lọ', quantity: 120, price: 180000 },
-    { id: '6', name: 'Hấp dầu / kem ủ tóc', unit: 'Hũ', quantity: 250, price: 350000 },
-    { id: '7', name: 'Serum dưỡng tóc', unit: 'Chai', quantity: 250, price: 450000 },
-    { id: '8', name: 'Gôm xịt tóc', unit: 'Chai', quantity: 260, price: 120000 },
-    { id: '9', name: 'Lược chải tóc chuyên dụng', unit: 'Cái', quantity: 260, price: 50000 },
-    { id: '10', name: 'Sữa rửa mặt dưỡng ẩm', unit: 'Tuýp', quantity: 170, price: 200000 },
-    { id: '11', name: 'Toner làm dịu da', unit: 'Chai', quantity: 200, price: 380000 },
-    { id: '12', name: 'Serum dưỡng trắng da', unit: 'Chai', quantity: 230, price: 380000 },
-    { id: '13', name: 'Mặt nạ giấy dưỡng da', unit: 'Hộp', quantity: 230, price: 200000 },
-  ]);
+  // --- Sale Catalogs State ---
+  const [catalogs, setCatalogs] = useState<SaleCatalogProfile[]>(() => loadSaleCatalogs());
+  const [currentCatalogId, setCurrentCatalogId] = useState<string>('spa-cosmetics');
+  const [catalogModalOpen, setCatalogModalOpen] = useState(false);
+
+  const [saleItems, setSaleItems] = useState<SaleItem[]>(() => {
+    const initial = loadSaleCatalogs().find(c => c.id === 'spa-cosmetics');
+    return initial ? initial.items : [];
+  });
+
+  const handleSelectCatalogId = (id: string) => {
+    setCurrentCatalogId(id);
+    const selected = catalogs.find(c => c.id === id);
+    if (selected) {
+      setSaleItems([...selected.items]);
+    }
+  };
+
+  const handleSaveNewCatalog = (name: string, category: string, items: SaleItem[]) => {
+    const newProfile: SaleCatalogProfile = {
+      id: `custom-${Date.now()}`,
+      name,
+      category,
+      items,
+    };
+    const updated = saveSaleCatalog(newProfile);
+    setCatalogs(updated);
+    setCurrentCatalogId(newProfile.id);
+    setSaleItems([...items]);
+  };
+
+  const handleDeleteCatalog = (id: string) => {
+    const updated = deleteSaleCatalog(id);
+    setCatalogs(updated);
+    if (currentCatalogId === id && updated.length > 0) {
+      setCurrentCatalogId(updated[0].id);
+      setSaleItems([...updated[0].items]);
+    }
+  };
+
+  const handleResetCatalogs = () => {
+    const resetList = resetSaleCatalogs();
+    setCatalogs(resetList);
+    setCurrentCatalogId(resetList[0].id);
+    setSaleItems([...resetList[0].items]);
+  };
 
   const handleAddSaleItem = () => {
     setSaleItems([
@@ -288,6 +327,10 @@ export const DocumentTemplateView: React.FC = () => {
             salePaymentStage1={salePaymentStage1} setSalePaymentStage1={setSalePaymentStage1}
             saleItems={saleItems} setSaleItems={setSaleItems}
             handleAddSaleItem={handleAddSaleItem}
+            catalogs={catalogs}
+            currentCatalogId={currentCatalogId}
+            onSelectCatalogId={handleSelectCatalogId}
+            onOpenCatalogModal={() => setCatalogModalOpen(true)}
             payMethodType={payMethodType} setPayMethodType={setPayMethodType}
             payCashName={payCashName} setPayCashName={setPayCashName}
             payCashCccd={payCashCccd} setPayCashCccd={setPayCashCccd}
@@ -312,6 +355,19 @@ export const DocumentTemplateView: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Modal Quản lý / Thêm mới bộ mẫu danh mục hàng hóa */}
+      <SaleCatalogModal
+        isOpen={catalogModalOpen}
+        onClose={() => setCatalogModalOpen(false)}
+        catalogs={catalogs}
+        currentCatalogId={currentCatalogId}
+        onSelectCatalog={(cat) => handleSelectCatalogId(cat.id)}
+        onSaveNewCatalog={handleSaveNewCatalog}
+        onDeleteCatalog={handleDeleteCatalog}
+        onResetDefaults={handleResetCatalogs}
+        currentSaleItems={saleItems}
+      />
     </div>
   );
 };

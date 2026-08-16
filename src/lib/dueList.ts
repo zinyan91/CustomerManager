@@ -29,10 +29,8 @@ export function monthlyDueInfo(
     return new Date(year, monthIdx, Math.min(origin.day, daysInMonth));
   };
 
-  let due = clampedDueIn(now.getFullYear(), now.getMonth());
-  if (due.getTime() < now.getTime()) {
-    due = clampedDueIn(now.getFullYear(), now.getMonth() + 1);
-  }
+  // Kỳ trả nợ của tháng hiện tại (không tự ý nhảy sang tháng sau khi quá hạn)
+  const due = clampedDueIn(now.getFullYear(), now.getMonth());
 
   const yyyy = due.getFullYear();
   const mm = String(due.getMonth() + 1).padStart(2, '0');

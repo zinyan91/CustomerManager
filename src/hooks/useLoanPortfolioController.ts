@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   saveContractAPI, deleteContractAPI,
-  bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI
+  bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI,
+  deleteRepaymentSchedulesByIdsAPI, fetchRepaymentSchedulesAPI
 } from '../lib/api';
 import { parseMoneyDecimalInput, todayIso } from '../lib/utils';
+import { scheduleRowsForContract, reconcileScheduleRows } from '../lib/scheduleSync';
 import {
   addMonthsToDate, parseKunnTenorMonths,
   generateSchedule, recalculateSchedules, computeOutstandingBalance,
@@ -18,7 +20,7 @@ import { totalUsableCapacity } from '../lib/collateralMath';
 import { checkKunnAgainstContract, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf } from '../lib/creditContract';
 import { useWork } from '../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../lib/creditLimit';
-import type { LoanContract, CreditContract, RateAdjustmentHistoryItem, RepaymentSchedule } from '../types';
+import type { LoanContract, CreditContract, RateAdjustmentHistoryItem } from '../types';
 import { usePaymentModal } from './usePaymentModal';
 import { useCustomerPortfolio } from './useCustomerPortfolio';
 import {
@@ -491,24 +493,26 @@ export function useLoanPortfolioController() {
         savedContract.PrincipalGracePeriodMonths || 0
       );
 
-      const genSchedules: RepaymentSchedule[] = rawGen.map((s, idx) => ({
-        Id: s.Id || idx + 1,
-        ContractId: savedContract.Id,
-        PeriodNumber: s.PeriodNumber || idx + 1,
-        DueDate: s.DueDate || '',
-        PrincipalAmount: s.PrincipalAmount || 0,
-        InterestAmount: s.InterestAmount || 0,
-        TotalAmount: s.TotalAmount || 0,
-        IsPaid: !!s.IsPaid,
-        PaymentDate: s.PaymentDate || null,
-        ActualPaidAmount: s.ActualPaidAmount || 0,
-        OverdueDays: s.OverdueDays || 0,
-        OverdueInterestAmount: s.OverdueInterestAmount || 0,
-        ActualPaidPrincipal: s.ActualPaidPrincipal || 0,
-        ActualPaidInterest: s.ActualPaidInterest || 0,
-        PrepaidPrincipalAmount: s.PrepaidPrincipalAmount || 0,
-        Note: s.Note || null,
-      }));
+      const rowsMoi = scheduleRowsForContract(rawGen, savedContract.Id);
+      const lichHienCo = await fetchRepaymentSchedulesAPI(savedContract.Id);
+      const doiChieu = reconcileScheduleRows(lichHienCo, rowsMoi);
+
+      if (doiChieu.ambiguousPeriods.length > 0) {
+        throw new Error(
+          `Lịch trả nợ đang có kỳ trùng nhau (kỳ ${doiChieu.ambiguousPeriods.join(', ')}). `
+          + 'Dọn các kỳ trùng trước khi lưu, hệ thống không tự chọn bản nào là đúng.'
+        );
+      }
+      if (doiChieu.blockedPaidPeriods.length > 0) {
+        throw new Error(
+          `Rút ngắn kỳ hạn sẽ bỏ kỳ ${doiChieu.blockedPaidPeriods.join(', ')} vốn đã ghi nhận thu tiền. `
+          + 'Xử lý các kỳ đó trước, hệ thống không tự xoá lịch sử thu.'
+        );
+      }
+
+      await bulkSaveRepaymentSchedulesAPI(doiChieu.toUpsert);
+      await deleteRepaymentSchedulesByIdsAPI(doiChieu.toDeleteIds);
+      const genSchedules = await fetchRepaymentSchedulesAPI(savedContract.Id);
 
       const autoDebt = getAutoDebtGroupInfo(genSchedules, todayIso());
       if (savedContract.DebtGroup !== autoDebt.debtGroup) {
@@ -516,7 +520,6 @@ export function useLoanPortfolioController() {
         await saveContractAPI(savedContract);
       }
 
-      await bulkSaveRepaymentSchedulesAPI(genSchedules);
       setSchedules(genSchedules);
       setAllSchedulesMap(prev => ({ ...prev, [savedContract.Id]: genSchedules }));
 
@@ -580,27 +583,11 @@ export function useLoanPortfolioController() {
         selectedContract.PrincipalGracePeriodMonths || 0
       );
 
-      const freshSchedules: RepaymentSchedule[] = rawGen.map((s, idx) => ({
-        Id: s.Id || idx + 1,
-        ContractId: selectedContract.Id,
-        PeriodNumber: s.PeriodNumber || idx + 1,
-        DueDate: s.DueDate || '',
-        PrincipalAmount: s.PrincipalAmount || 0,
-        InterestAmount: s.InterestAmount || 0,
-        TotalAmount: s.TotalAmount || 0,
-        IsPaid: !!s.IsPaid,
-        PaymentDate: s.PaymentDate || null,
-        ActualPaidAmount: s.ActualPaidAmount || 0,
-        OverdueDays: s.OverdueDays || 0,
-        OverdueInterestAmount: s.OverdueInterestAmount || 0,
-        ActualPaidPrincipal: s.ActualPaidPrincipal || 0,
-        ActualPaidInterest: s.ActualPaidInterest || 0,
-        PrepaidPrincipalAmount: s.PrepaidPrincipalAmount || 0,
-        Note: s.Note || null,
-      }));
+      const rowsMoi = scheduleRowsForContract(rawGen, selectedContract.Id);
 
       await deleteRepaymentSchedulesByContractAPI(selectedContract.Id);
-      await bulkSaveRepaymentSchedulesAPI(freshSchedules);
+      await bulkSaveRepaymentSchedulesAPI(rowsMoi);
+      const freshSchedules = await fetchRepaymentSchedulesAPI(selectedContract.Id);
       setSchedules(freshSchedules);
       setAllSchedulesMap(prev => ({ ...prev, [selectedContract.Id]: freshSchedules }));
 

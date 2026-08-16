@@ -926,6 +926,15 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 
 ## 16/08/2026
 
+### Lịch trả nợ nhảy loạn khi đổi kỳ hạn — hỏng dữ liệu
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Bỏ khoá chính do client bịa | `Id: s.Id \|\| idx + 1` sinh Id 1, 2, 3… rồi `bulkSave` chạy `upsert(onConflict: 'Id')` — Id là khoá chính **toàn bảng**. Nay để CSDL cấp, nạp lại sau khi ghi |
+| ✅ | `scheduleSync.ts` — đối chiếu lịch theo số kỳ | Kỳ cũ giữ nguyên **dấu đã thu**, chỉ cập nhật phần tính toán. Kỳ mới thì thêm, kỳ dư chưa thu thì xoá. 11 test |
+| ✅ | Chặn hai tình huống thay vì đoán | Kỳ dư mà **đã thu** → chặn, không tự xoá lịch sử tiền. Kỳ **trùng nhau** → chặn, không tự chọn bản đúng |
+| ⚠️ | Hợp đồng 1014 còn 5 dòng rác | `2002HĐTD/9606118/GNN-03`. Hai bộ song song: 272–276 giữ lịch sử thu, 1–6 là rác do phép thử đổi 5→6 tháng. Quét toàn bảng 8.675 dòng, **chỉ 1 hợp đồng** bị. Chờ chốt trước khi xoá |
+
 ### Panel due trên dashboard đọc theo lịch trả nợ thật
 
 | | Việc | Ghi chú |

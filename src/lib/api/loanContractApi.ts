@@ -215,6 +215,12 @@ export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<Repayment
   }
 }
 
+export async function deleteRepaymentSchedulesByIdsAPI(ids: number[]): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await supabase.from('RepaymentSchedules').delete().in('Id', ids);
+  if (error) throw error;
+}
+
 export async function deleteRepaymentSchedulesByContractAPI(contractId: number): Promise<void> {
   const { error } = await supabase.from('RepaymentSchedules').delete().eq('ContractId', contractId);
   if (error) throw error;

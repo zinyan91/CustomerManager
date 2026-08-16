@@ -949,7 +949,9 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 | ⬜ | Bỏ bộ đếm "hợp đồng chưa có lịch trả nợ" | Đánh đổi của việc lọc ở máy chủ: không còn biết hợp đồng nào không có dòng lịch nào. Đo ngày 16/08 là 0 hợp đồng. Muốn có lại thì phải thêm một truy vấn đếm riêng |
 | ⬜ | Bắt kỳ thu thiếu | Chưa làm được: `ActualPaidAmount` bằng 0 trên cả 836 kỳ đã trả, không có màn hình nào cho banker nhập số thực thu. Xem `docs/superpowers/specs/2026-08-16-dashboard-due-theo-lich-tra-no-design.md` |
 | ⬜ | `s.ActualPaidAmount \|\| 0` ghi đè `null` thành `0` | `useLoanPortfolioController.ts:504` và `:593`. Xoá ranh giới "chưa nhập" với "thu 0đ", cản đúng việc trên |
-| ⚠️ | HĐTD `2002/HDTD/9653222` lưu hết hạn 23/07/2026 | Chủ dự án nói 24/07. Lệch một ngày, chưa rõ do dữ liệu hay do khai. Panel đọc thẳng `ContractEndDate` |
+| ✅ | HĐTD `2002/HDTD/9653222` lệch một ngày | Đo 68 HĐTD: 66 cái theo đúng ngày bắt đầu cộng kỳ hạn, chỉ dòng này lệch. Đã sửa dữ liệu về 24/07/2026 trên cả dòng HĐTD lẫn ba KUNN con |
+| ✅ | Ngày hết hạn HĐTD chỉ đọc từ một nguồn | Dashboard từng đọc bản chép trên KUNN nên lệch với màn KUNN. Nay tra dòng HĐTD cha theo `CreditContractId` |
+| ⬜ | Bỏ bản chép ngày hết hạn HĐTD khỏi KUNN | Gốc rễ: ngày này nằm ở bốn chỗ và form KUNN tự tính lại rồi ghi đè khi lưu, nên các bản sao còn trôi lệch tiếp. Cần migration, tách ra làm riêng |
 
 ## 10/08/2026
 

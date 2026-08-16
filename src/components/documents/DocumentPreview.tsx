@@ -158,11 +158,18 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
   return printHtmlDoc(pdfHtml, filename);
 }
 
+export interface DocumentAttachment {
+  title: string;
+  filename: string;
+  html: string;
+}
+
 interface DocumentPreviewProps {
   styles: UiClasses;
   docTitle: string;
   docFilename: string;
   docHtml: string;
+  attachment?: DocumentAttachment;
 }
 
 export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
@@ -170,6 +177,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   docTitle,
   docFilename,
   docHtml,
+  attachment,
 }) => {
   const { toast, show, dismiss } = useToast();
 
@@ -202,6 +210,31 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
             <Printer className="w-4 h-4" />
             <span>In / Xuất PDF</span>
           </button>
+          {attachment && (
+            <>
+              <span className="text-ink-faint text-[11px] px-1">kèm theo</span>
+              <button
+                type="button"
+                onClick={() => exportToWordDocx(attachment.filename, attachment.html)}
+                className="flex items-center space-x-1.5 bg-panel border border-accent text-accent font-bold text-xs px-3.5 py-2 rounded-md transition-colors hover:bg-accent-soft"
+              >
+                <Download className="w-4 h-4" />
+                <span>{attachment.title} (.docx)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!exportToPDFOnly(attachment.filename, attachment.html)) {
+                    show('error', 'Không mở được bản in. Tải lại trang rồi thử lại.');
+                  }
+                }}
+                className="flex items-center space-x-1.5 bg-panel border border-line text-ink-muted font-bold text-xs px-3.5 py-2 rounded-md transition-colors hover:border-accent hover:text-accent"
+              >
+                <Printer className="w-4 h-4" />
+                <span>In</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 

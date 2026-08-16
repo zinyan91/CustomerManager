@@ -12,7 +12,7 @@ function ngayThangNam(iso: string): string {
   return `ngày ${m[3]} tháng ${m[2]} năm ${m[1]}`;
 }
 
-function giayCamKetHtml(input: {
+export function buildGiayCamKetHtml(input: {
   hoTen: string;
   cccd: string;
   ngayCap: string;
@@ -723,13 +723,6 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
             </tr>
           </tbody>
         </table>
-        ${salePayMethod === 'cash' ? giayCamKetHtml({
-          hoTen: saleSellerName,
-          cccd: saleSellerCccd,
-          ngayCap: saleSellerCccdDate,
-          noiCap: saleSellerCccdPlace,
-          ngayLap: saleContractDate,
-        }) : ''}
       `;
     }
 

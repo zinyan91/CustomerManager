@@ -4,7 +4,7 @@ import { TemplateSelector, TEMPLATE_LIST, type TemplateType } from '../documents
 import { DocumentForm, type SaleItem } from '../documents/DocumentForm';
 import { DEFAULT_DEPOSIT_CONTRACT, type DepositContractData } from '../documents/depositContract';
 import { DocumentPreview } from '../documents/DocumentPreview';
-import { buildDocumentHtml } from '../../lib/documentHtml';
+import { buildDocumentHtml, buildGiayCamKetHtml } from '../../lib/documentHtml';
 import {
   loadSaleCatalogs,
   saveSaleCatalog,
@@ -386,6 +386,21 @@ export const DocumentTemplateView: React.FC = () => {
             docTitle={currentTplInfo.label}
             docFilename={currentTplInfo.id}
             docHtml={generateDocHtml()}
+            attachment={
+              selectedTemplate === 'sale_contract' && salePayMethod === 'cash'
+                ? {
+                  title: 'Giấy cam kết',
+                  filename: 'giay_cam_ket',
+                  html: buildGiayCamKetHtml({
+                    hoTen: saleSellerName,
+                    cccd: saleSellerCccd,
+                    ngayCap: saleSellerCccdDate,
+                    noiCap: saleSellerCccdPlace,
+                    ngayLap: saleContractDate,
+                  }),
+                }
+                : undefined
+            }
           />
         </div>
       </div>

@@ -6,8 +6,6 @@ import { BM04_FONT, BM04_FOOTER_TEXT, BM04_LOGO_CX, BM04_LOGO_CY } from '../bm04
 import { bm04LogoBytes } from '../bm04Logo';
 
 const HTML_CO_BM04 = `
-  <h1>HỢP ĐỒNG MUA BÁN</h1>
-  <p class="clause-p">Nội dung hợp đồng.</p>
   <div data-doc-section="bm04">
     <p class="text-center no-indent font-bold text-[14pt]">GIẤY CAM KẾT</p>
     <p class="no-indent font-bold">BÊN CAM KẾT</p>
@@ -32,31 +30,19 @@ const docLa = (bytes: Uint8Array) => {
   };
 };
 
-describe('parseDocumentHtml — khối BM04', () => {
-  it('chèn ngắt section trước giấy cam kết', () => {
-    const blocks = parseDocumentHtml(HTML_CO_BM04);
-    const at = blocks.findIndex(b => b.kind === 'sect');
-    expect(at).toBeGreaterThan(0);
+describe('parseDocumentHtml — giấy cam kết là tài liệu riêng', () => {
+  it('không chèn đoạn ngắt section thừa ở đầu tài liệu', () => {
+    expect(parseDocumentHtml(HTML_CO_BM04).some(b => b.kind === 'sect')).toBe(false);
   });
 
-  it('không có khối BM04 thì không có ngắt section', () => {
-    expect(parseDocumentHtml(HTML_KHONG_BM04).some(b => b.kind === 'sect')).toBe(false);
-  });
-
-  it('chữ trong giấy cam kết mang phông Arial Unicode MS', () => {
-    const blocks = parseDocumentHtml(HTML_CO_BM04);
-    const at = blocks.findIndex(b => b.kind === 'sect');
-    const sau = blocks.slice(at + 1);
-    const runs = sau.flatMap(b => (b.kind === 'p' ? b.runs : []));
+  it('toàn bộ chữ mang phông Arial Unicode MS', () => {
+    const runs = parseDocumentHtml(HTML_CO_BM04).flatMap(b => (b.kind === 'p' ? b.runs : []));
     expect(runs.length).toBeGreaterThan(0);
     expect(runs.every(r => r.font === BM04_FONT)).toBe(true);
   });
 
-  it('chữ trong hợp đồng KHÔNG bị đổi phông', () => {
-    const blocks = parseDocumentHtml(HTML_CO_BM04);
-    const at = blocks.findIndex(b => b.kind === 'sect');
-    const truoc = blocks.slice(0, at);
-    const runs = truoc.flatMap(b => (b.kind === 'p' ? b.runs : []));
+  it('tài liệu hợp đồng KHÔNG bị đổi phông', () => {
+    const runs = parseDocumentHtml(HTML_KHONG_BM04).flatMap(b => (b.kind === 'p' ? b.runs : []));
     expect(runs.every(r => r.font === undefined)).toBe(true);
   });
 });
@@ -84,9 +70,9 @@ describe('htmlToDocx — gói tài liệu có giấy cam kết', () => {
     expect(goi.co('NUMPAGES   \\* MERGEFORMAT')).toBe(true);
   });
 
-  it('lề trang giấy cam kết là 1440 đều bốn phía, khác lề hợp đồng', () => {
+  it('lề trang là 1440 đều bốn phía, không dùng lề của hợp đồng', () => {
     expect(goi.co('w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"')).toBe(true);
-    expect(goi.co('w:top="1417"')).toBe(true);
+    expect(goi.co('w:top="1417"')).toBe(false);
   });
 
   it('logo giữ đúng kích thước bản gốc', () => {

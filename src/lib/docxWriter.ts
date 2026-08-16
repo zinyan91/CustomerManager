@@ -437,7 +437,8 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
 
 export function parseDocumentHtml(html: string): DocxBlock[] {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
-  return walkBlocks(doc.body, {});
+  const blocks = walkBlocks(doc.body, {});
+  return blocks[0] && blocks[0].kind === 'sect' ? blocks.slice(1) : blocks;
 }
 
 function runXml(run: DocxRun): string {
@@ -715,7 +716,8 @@ export const BM04_SECTION_VALUE = 'bm04';
 
 export function htmlToDocx(html: string): Uint8Array {
   const blocks = parseDocumentHtml(html);
-  const coBm04 = blocks.some(b => b.kind === 'sect');
+  const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+  const coBm04 = !!doc.querySelector(`[${BM04_SECTION_ATTR}="${BM04_SECTION_VALUE}"]`);
   if (!coBm04) return buildDocx(blocks);
 
   return buildDocx(blocks, {

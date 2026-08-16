@@ -132,6 +132,14 @@ describe('checkKunnAgainstContract', () => {
     expect(r).toEqual([]);
   });
 
+  it('đáo KUNN ĐÚNG ngày cuối hiệu lực HĐTD là hợp lệ, kỳ mới vượt qua ngày đó cũng vậy', () => {
+    const r = checkKunnAgainstContract(
+      kunn({ DisbursementDate: '2025-06-30', KunnDueDate: '2025-12-30' }),
+      cc({ HdtdNumber: '2002/HĐTD/9647376', ContractStartDate: '2024-06-30', ContractEndDate: '2025-06-30' })
+    );
+    expect(r).toEqual([]);
+  });
+
   it('giải ngân trước ngày hiệu lực và sau ngày hết hiệu lực', () => {
     expect(checkKunnAgainstContract(
       kunn({ DisbursementDate: '2025-01-01' }),

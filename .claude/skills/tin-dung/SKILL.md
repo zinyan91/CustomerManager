@@ -215,6 +215,20 @@ Cụm có cả hai loại thì cộng: mức cấp của phần hạn mức + d�
 
 ---
 
+### Đáo KUNN trong ngày cuối hiệu lực là hợp lệ
+
+Ngày ghi ở `ContractEndDate` là **ngày cuối HĐTD còn hoạt động**, không phải ngày đã đóng. Giải ngân hoặc đáo KUNN **đúng ngày đó** là bình thường.
+
+Khế ước mới sinh ra từ lần đáo đó chạy theo kỳ hạn của nó và **được phép đáo hạn sau khi HĐTD đã đóng**. Đây là thực tế nghiệp vụ, không phải vi phạm.
+
+Ca thật: `2002/HĐTD/9647376` hiệu lực 30/06/2024 → 30/06/2025. Đúng ngày 30/06/2025 KUNN cũ tới hạn và được đáo ngay trong ngày, khế ước mới đáo hạn 30/12/2025.
+
+`checkKunnAgainstContract` vì vậy chỉ cảnh báo khi giải ngân **trước** ngày hiệu lực hoặc **sau** ngày hết hạn — dấu lớn hơn ngặt, không phải lớn hơn hoặc bằng. Không có luật nào ràng ngày đáo hạn KUNN vào trong hiệu lực HĐTD. Có test khoá cả ba ranh giới này.
+
+Phân biệt với chuyện khác: HĐTD hết hiệu lực thì **không rút thêm vốn mới** được. Đó là hạn chế cho lần giải ngân sau, không đụng tới khế ước đã phát sinh.
+
+---
+
 ### Ngày hiệu lực HĐTD chỉ có một nguồn
 
 Ngày hiệu lực nằm ở **bốn chỗ**: một dòng `CreditContracts` và bản chép `ContractStartDate` / `ContractEndDate` trên từng KUNN con.

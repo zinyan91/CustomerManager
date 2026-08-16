@@ -115,9 +115,9 @@ describe('QuizBankView — tra cứu', () => {
     const seedButton = await screen.findByRole('button', { name: /Nạp bộ câu hỏi gốc/i });
     await user.click(seedButton);
 
+    expect(await screen.findByText(/Đã nạp 662 câu hỏi/)).toBeTruthy();
     expect(seedQuizBankAPI).toHaveBeenCalledTimes(1);
     expect((seedQuizBankAPI.mock.calls[0][0] as unknown[]).length).toBe(662);
-    expect(await screen.findByText(/Đã nạp 662 câu hỏi/)).toBeTruthy();
   });
 });
 

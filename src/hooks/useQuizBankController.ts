@@ -9,7 +9,6 @@ import {
   seedQuizBankAPI,
 } from '../lib/api';
 import { useToast } from '../components/Toast';
-import quizSeed from '../data/quiz_bank.json';
 
 export type QuizMode = 'browse' | 'practice';
 
@@ -138,6 +137,7 @@ export function useQuizBankController() {
   const handleSeed = useCallback(async () => {
     setSeeding(true);
     try {
+      const { default: quizSeed } = await import('../data/quiz_bank.json');
       const count = await seedQuizBankAPI(quizSeed as unknown[]);
       show('success', `Đã nạp ${count} câu hỏi từ quiz_bank.json.`);
       await load();

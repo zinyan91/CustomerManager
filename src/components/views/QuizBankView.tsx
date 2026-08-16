@@ -14,7 +14,6 @@ import { importQuizQuestionsAPI } from '../../lib/api';
 import { Toast } from '../Toast';
 import { QuizQuestionForm } from '../quiz/QuizQuestionForm';
 import { QuizImportPanel } from '../quiz/QuizImportPanel';
-import quizSeed from '../../data/quiz_bank.json';
 import { useQuizBankController } from '../../hooks/useQuizBankController';
 
 export const QuizBankView: React.FC = () => {
@@ -165,7 +164,7 @@ export const QuizBankView: React.FC = () => {
             {stats.total === 0 && !loadError && (
               <div className="space-y-2 border border-line rounded-md p-3 bg-panel-muted">
                 <div className="text-[11px] text-ink-muted">
-                  Ngân hàng chưa có câu nào. Nạp {(quizSeed as unknown[]).length} câu từ{' '}
+                  Ngân hàng chưa có câu nào. Nạp bộ câu hỏi gốc từ{' '}
                   <code className="font-mono">src/data/quiz_bank.json</code> — chỉ chạy được một lần,
                   trên bảng rỗng.
                 </div>

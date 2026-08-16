@@ -1,0 +1,5378 @@
+[
+  {
+    "id": "htk-lua-gao",
+    "name": "HTK Lúa Gạo",
+    "items": [
+      {
+        "code": "RICE001",
+        "name": "Gạo ST25",
+        "unit": "Kg",
+        "unitPrice": 32000,
+        "beginningQty": 4096,
+        "importQty": 1510,
+        "exportQty": 1081
+      },
+      {
+        "code": "RICE002",
+        "name": "Gạo tám thơm Hải Hậu",
+        "unit": "Kg",
+        "unitPrice": 25000,
+        "beginningQty": 1146,
+        "importQty": 1042,
+        "exportQty": 297
+      },
+      {
+        "code": "RICE003",
+        "name": "Gạo nếp cái hoa vàng Yên Bái",
+        "unit": "Kg",
+        "unitPrice": 28000,
+        "beginningQty": 3808,
+        "importQty": 1428,
+        "exportQty": 889
+      },
+      {
+        "code": "RICE004",
+        "name": "Gạo lứt đỏ Quảng Trị",
+        "unit": "Kg",
+        "unitPrice": 35000,
+        "beginningQty": 4927,
+        "importQty": 1425,
+        "exportQty": 307
+      },
+      {
+        "code": "RICE005",
+        "name": "Gạo Jasmine Thái",
+        "unit": "Kg",
+        "unitPrice": 27000,
+        "beginningQty": 953,
+        "importQty": 1421,
+        "exportQty": 395
+      },
+      {
+        "code": "RICE006",
+        "name": "Gạo Hương Lài An Giang",
+        "unit": "Kg",
+        "unitPrice": 26000,
+        "beginningQty": 3163,
+        "importQty": 1469,
+        "exportQty": 4129
+      },
+      {
+        "code": "RICE007",
+        "name": "Gạo Bắc Hương Hà Nam",
+        "unit": "Kg",
+        "unitPrice": 24000,
+        "beginningQty": 2017,
+        "importQty": 548,
+        "exportQty": 1630
+      },
+      {
+        "code": "RICE008",
+        "name": "Gạo Đài Loan xuất khẩu",
+        "unit": "Kg",
+        "unitPrice": 29000,
+        "beginningQty": 3235,
+        "importQty": 1452,
+        "exportQty": 3398
+      },
+      {
+        "code": "RICE009",
+        "name": "Gạo nếp than Sóc Trăng",
+        "unit": "Kg",
+        "unitPrice": 32000,
+        "beginningQty": 1612,
+        "importQty": 556,
+        "exportQty": 1399
+      },
+      {
+        "code": "RICE010",
+        "name": "Gạo tấm Long An",
+        "unit": "Kg",
+        "unitPrice": 20000,
+        "beginningQty": 2505,
+        "importQty": 466,
+        "exportQty": 1179
+      },
+      {
+        "code": "RICE011",
+        "name": "Gạo hữu cơ VinEco",
+        "unit": "Kg",
+        "unitPrice": 40000,
+        "beginningQty": 2222,
+        "importQty": 568,
+        "exportQty": 1138
+      },
+      {
+        "code": "RICE012",
+        "name": "Gạo trắng thông thường",
+        "unit": "Kg",
+        "unitPrice": 22000,
+        "beginningQty": 2794,
+        "importQty": 1141,
+        "exportQty": 830
+      },
+      {
+        "code": "RICE013",
+        "name": "Gạo Nhật nhập khẩu",
+        "unit": "Kg",
+        "unitPrice": 45000,
+        "beginningQty": 3574,
+        "importQty": 514,
+        "exportQty": 2962
+      },
+      {
+        "code": "RICE014",
+        "name": "Gạo Campuchia đặc sản",
+        "unit": "Kg",
+        "unitPrice": 30000,
+        "beginningQty": 4666,
+        "importQty": 1900,
+        "exportQty": 2784
+      },
+      {
+        "code": "RICE015",
+        "name": "Gạo nếp lứt Hà Nội",
+        "unit": "Kg",
+        "unitPrice": 34000,
+        "beginningQty": 2552,
+        "importQty": 1843,
+        "exportQty": 2812
+      },
+      {
+        "code": "RICE016",
+        "name": "Gạo tẻ dẻo Thái Bình",
+        "unit": "Kg",
+        "unitPrice": 26000,
+        "beginningQty": 754,
+        "importQty": 679,
+        "exportQty": 1288
+      },
+      {
+        "code": "RICE017",
+        "name": "Gạo Thái Hom Mali",
+        "unit": "Kg",
+        "unitPrice": 38000,
+        "beginningQty": 1095,
+        "importQty": 372,
+        "exportQty": 592
+      },
+      {
+        "code": "RICE018",
+        "name": "Gạo hữu cơ Sông Hồng",
+        "unit": "Kg",
+        "unitPrice": 42000,
+        "beginningQty": 3863,
+        "importQty": 1965,
+        "exportQty": 4073
+      },
+      {
+        "code": "RICE019",
+        "name": "Gạo Điện Biên",
+        "unit": "Kg",
+        "unitPrice": 23000,
+        "beginningQty": 3884,
+        "importQty": 1495,
+        "exportQty": 779
+      },
+      {
+        "code": "RICE020",
+        "name": "Gạo thơm Đặc Sản Cần Thơ",
+        "unit": "Kg",
+        "unitPrice": 27000,
+        "beginningQty": 1044,
+        "importQty": 920,
+        "exportQty": 366
+      },
+      {
+        "code": "RICE021",
+        "name": "Gạo lứt tím Huế",
+        "unit": "Kg",
+        "unitPrice": 36000,
+        "beginningQty": 1272,
+        "importQty": 1370,
+        "exportQty": 1367
+      },
+      {
+        "code": "RICE022",
+        "name": "Gạo nếp cái hoa vàng Bắc Ninh",
+        "unit": "Kg",
+        "unitPrice": 28000,
+        "beginningQty": 4132,
+        "importQty": 1478,
+        "exportQty": 2962
+      },
+      {
+        "code": "RICE023",
+        "name": "Gạo ST24",
+        "unit": "Kg",
+        "unitPrice": 31000,
+        "beginningQty": 4880,
+        "importQty": 1011,
+        "exportQty": 5214
+      },
+      {
+        "code": "RICE024",
+        "name": "Gạo Hương Sen",
+        "unit": "Kg",
+        "unitPrice": 29000,
+        "beginningQty": 837,
+        "importQty": 1395,
+        "exportQty": 2071
+      },
+      {
+        "code": "RICE025",
+        "name": "Gạo tẻ thường",
+        "unit": "Kg",
+        "unitPrice": 21000,
+        "beginningQty": 4622,
+        "importQty": 471,
+        "exportQty": 4539
+      },
+      {
+        "code": "RICE026",
+        "name": "Gạo nếp trắng miền Tây",
+        "unit": "Kg",
+        "unitPrice": 26000,
+        "beginningQty": 2733,
+        "importQty": 1508,
+        "exportQty": 1150
+      },
+      {
+        "code": "RICE027",
+        "name": "Gạo lứt đen",
+        "unit": "Kg",
+        "unitPrice": 37000,
+        "beginningQty": 3324,
+        "importQty": 1724,
+        "exportQty": 1242
+      },
+      {
+        "code": "RICE028",
+        "name": "Gạo nương Tây Bắc",
+        "unit": "Kg",
+        "unitPrice": 33000,
+        "beginningQty": 658,
+        "importQty": 713,
+        "exportQty": 762
+      },
+      {
+        "code": "RICE029",
+        "name": "Gạo Nàng Hương Chợ Đào",
+        "unit": "Kg",
+        "unitPrice": 35000,
+        "beginningQty": 1569,
+        "importQty": 895,
+        "exportQty": 894
+      },
+      {
+        "code": "RICE030",
+        "name": "Gạo thơm Sóc Trăng",
+        "unit": "Kg",
+        "unitPrice": 27000,
+        "beginningQty": 2067,
+        "importQty": 384,
+        "exportQty": 1426
+      },
+      {
+        "code": "RICE031",
+        "name": "Gạo Nhật Japonica",
+        "unit": "Kg",
+        "unitPrice": 46000,
+        "beginningQty": 2142,
+        "importQty": 1218,
+        "exportQty": 1554
+      },
+      {
+        "code": "RICE032",
+        "name": "Gạo nếp Thái",
+        "unit": "Kg",
+        "unitPrice": 29000,
+        "beginningQty": 1488,
+        "importQty": 1158,
+        "exportQty": 232
+      },
+      {
+        "code": "RICE033",
+        "name": "Gạo ST21",
+        "unit": "Kg",
+        "unitPrice": 30000,
+        "beginningQty": 4373,
+        "importQty": 697,
+        "exportQty": 431
+      },
+      {
+        "code": "RICE034",
+        "name": "Gạo thơm Vĩnh Long",
+        "unit": "Kg",
+        "unitPrice": 27500,
+        "beginningQty": 1150,
+        "importQty": 977,
+        "exportQty": 1240
+      },
+      {
+        "code": "RICE035",
+        "name": "Gạo hữu cơ Cà Mau",
+        "unit": "Kg",
+        "unitPrice": 41500,
+        "beginningQty": 2283,
+        "importQty": 760,
+        "exportQty": 552
+      },
+      {
+        "code": "RICE036",
+        "name": "Gạo nếp Bắc Giang",
+        "unit": "Kg",
+        "unitPrice": 28500,
+        "beginningQty": 4475,
+        "importQty": 1895,
+        "exportQty": 4229
+      },
+      {
+        "code": "RICE037",
+        "name": "Gạo Basmati Ấn Độ",
+        "unit": "Kg",
+        "unitPrice": 48000,
+        "beginningQty": 3550,
+        "importQty": 1704,
+        "exportQty": 2244
+      },
+      {
+        "code": "RICE038",
+        "name": "Gạo Koshihikari Nhật",
+        "unit": "Kg",
+        "unitPrice": 47000,
+        "beginningQty": 4080,
+        "importQty": 620,
+        "exportQty": 3754
+      },
+      {
+        "code": "RICE039",
+        "name": "Gạo Jasmine Việt Nam",
+        "unit": "Kg",
+        "unitPrice": 26500,
+        "beginningQty": 2545,
+        "importQty": 986,
+        "exportQty": 105
+      },
+      {
+        "code": "RICE040",
+        "name": "Gạo lứt đỏ hữu cơ",
+        "unit": "Kg",
+        "unitPrice": 36500,
+        "beginningQty": 3389,
+        "importQty": 559,
+        "exportQty": 3444
+      },
+      {
+        "code": "RICE041",
+        "name": "Gạo ST22",
+        "unit": "Kg",
+        "unitPrice": 30500,
+        "beginningQty": 2272,
+        "importQty": 393,
+        "exportQty": 2186
+      },
+      {
+        "code": "RICE042",
+        "name": "Gạo trắng miền Trung",
+        "unit": "Kg",
+        "unitPrice": 23000,
+        "beginningQty": 2510,
+        "importQty": 1370,
+        "exportQty": 953
+      },
+      {
+        "code": "RICE043",
+        "name": "Gạo đỏ Điện Biên",
+        "unit": "Kg",
+        "unitPrice": 35500,
+        "beginningQty": 3159,
+        "importQty": 1719,
+        "exportQty": 4326
+      },
+      {
+        "code": "RICE044",
+        "name": "Gạo Đài Thơm 8",
+        "unit": "Kg",
+        "unitPrice": 25500,
+        "beginningQty": 4627,
+        "importQty": 889,
+        "exportQty": 3096
+      },
+      {
+        "code": "RICE045",
+        "name": "Gạo trắng Long An",
+        "unit": "Kg",
+        "unitPrice": 23500,
+        "beginningQty": 3739,
+        "importQty": 1768,
+        "exportQty": 1940
+      },
+      {
+        "code": "RICE046",
+        "name": "Gạo nếp nương Sơn La",
+        "unit": "Kg",
+        "unitPrice": 34500,
+        "beginningQty": 522,
+        "importQty": 358,
+        "exportQty": 442
+      },
+      {
+        "code": "RICE047",
+        "name": "Gạo dẻo Thái Bình",
+        "unit": "Kg",
+        "unitPrice": 27500,
+        "beginningQty": 1531,
+        "importQty": 313,
+        "exportQty": 406
+      },
+      {
+        "code": "RICE048",
+        "name": "Gạo Hương Lài Campuchia",
+        "unit": "Kg",
+        "unitPrice": 31500,
+        "beginningQty": 936,
+        "importQty": 1703,
+        "exportQty": 459
+      },
+      {
+        "code": "RICE049",
+        "name": "Gạo nếp than Lào Cai",
+        "unit": "Kg",
+        "unitPrice": 32500,
+        "beginningQty": 584,
+        "importQty": 1266,
+        "exportQty": 602
+      },
+      {
+        "code": "RICE050",
+        "name": "Gạo thơm Mỹ",
+        "unit": "Kg",
+        "unitPrice": 29000,
+        "beginningQty": 3864,
+        "importQty": 507,
+        "exportQty": 2947
+      },
+      {
+        "code": "RICE051",
+        "name": "Gạo ST19",
+        "unit": "Kg",
+        "unitPrice": 29500,
+        "beginningQty": 4522,
+        "importQty": 1555,
+        "exportQty": 3782
+      },
+      {
+        "code": "RICE052",
+        "name": "Gạo tấm Thái Lan",
+        "unit": "Kg",
+        "unitPrice": 22500,
+        "beginningQty": 1777,
+        "importQty": 1103,
+        "exportQty": 1570
+      },
+      {
+        "code": "RICE053",
+        "name": "Gạo dẻo Hà Tĩnh",
+        "unit": "Kg",
+        "unitPrice": 26500,
+        "beginningQty": 4739,
+        "importQty": 1780,
+        "exportQty": 1275
+      },
+      {
+        "code": "RICE054",
+        "name": "Gạo lứt tím than",
+        "unit": "Kg",
+        "unitPrice": 37500,
+        "beginningQty": 2869,
+        "importQty": 1493,
+        "exportQty": 3175
+      },
+      {
+        "code": "RICE055",
+        "name": "Gạo hữu cơ Đồng Tháp",
+        "unit": "Kg",
+        "unitPrice": 42500,
+        "beginningQty": 2702,
+        "importQty": 205,
+        "exportQty": 1463
+      },
+      {
+        "code": "RICE056",
+        "name": "Gạo ST18",
+        "unit": "Kg",
+        "unitPrice": 28500,
+        "beginningQty": 1540,
+        "importQty": 1005,
+        "exportQty": 486
+      },
+      {
+        "code": "RICE057",
+        "name": "Gạo nếp cái Bắc Kạn",
+        "unit": "Kg",
+        "unitPrice": 29000,
+        "beginningQty": 2492,
+        "importQty": 694,
+        "exportQty": 784
+      },
+      {
+        "code": "RICE058",
+        "name": "Gạo ST15",
+        "unit": "Kg",
+        "unitPrice": 27500,
+        "beginningQty": 4290,
+        "importQty": 701,
+        "exportQty": 3320
+      },
+      {
+        "code": "RICE059",
+        "name": "Gạo hữu cơ Quảng Nam",
+        "unit": "Kg",
+        "unitPrice": 41000,
+        "beginningQty": 1310,
+        "importQty": 1921,
+        "exportQty": 2208
+      },
+      {
+        "code": "RICE060",
+        "name": "Gạo tám Điện Biên",
+        "unit": "Kg",
+        "unitPrice": 24500,
+        "beginningQty": 2116,
+        "importQty": 930,
+        "exportQty": 615
+      },
+      {
+        "code": "RICE061",
+        "name": "Gạo đỏ hữu cơ Huế",
+        "unit": "Kg",
+        "unitPrice": 35000,
+        "beginningQty": 4382,
+        "importQty": 1289,
+        "exportQty": 1015
+      },
+      {
+        "code": "RICE062",
+        "name": "Gạo trắng An Giang",
+        "unit": "Kg",
+        "unitPrice": 24000,
+        "beginningQty": 3384,
+        "importQty": 1818,
+        "exportQty": 3482
+      },
+      {
+        "code": "RICE063",
+        "name": "Gạo lứt vàng",
+        "unit": "Kg",
+        "unitPrice": 36000,
+        "beginningQty": 3671,
+        "importQty": 978,
+        "exportQty": 2340
+      },
+      {
+        "code": "RICE064",
+        "name": "Gạo thơm Lào",
+        "unit": "Kg",
+        "unitPrice": 30000,
+        "beginningQty": 3518,
+        "importQty": 893,
+        "exportQty": 2245
+      },
+      {
+        "code": "RICE065",
+        "name": "Gạo ST14",
+        "unit": "Kg",
+        "unitPrice": 26500,
+        "beginningQty": 1029,
+        "importQty": 366,
+        "exportQty": 464
+      },
+      {
+        "code": "RICE066",
+        "name": "Gạo thơm Bắc Giang",
+        "unit": "Kg",
+        "unitPrice": 27500,
+        "beginningQty": 4478,
+        "importQty": 674,
+        "exportQty": 1410
+      },
+      {
+        "code": "RICE067",
+        "name": "Gạo hữu cơ Bình Định",
+        "unit": "Kg",
+        "unitPrice": 40500,
+        "beginningQty": 1226,
+        "importQty": 1736,
+        "exportQty": 815
+      },
+      {
+        "code": "RICE068",
+        "name": "Gạo Đài Loan hữu cơ",
+        "unit": "Kg",
+        "unitPrice": 49000,
+        "beginningQty": 2696,
+        "importQty": 1475,
+        "exportQty": 3376
+      },
+      {
+        "code": "RICE069",
+        "name": "Gạo ST12",
+        "unit": "Kg",
+        "unitPrice": 26000,
+        "beginningQty": 2357,
+        "importQty": 1683,
+        "exportQty": 1098
+      },
+      {
+        "code": "RICE070",
+        "name": "Gạo trắng Hậu Giang",
+        "unit": "Kg",
+        "unitPrice": 23500,
+        "beginningQty": 4008,
+        "importQty": 1337,
+        "exportQty": 2878
+      },
+      {
+        "code": "RICE071",
+        "name": "Gạo nếp than Đắk Lắk",
+        "unit": "Kg",
+        "unitPrice": 33000,
+        "beginningQty": 4731,
+        "importQty": 240,
+        "exportQty": 1041
+      },
+      {
+        "code": "RICE072",
+        "name": "Gạo trắng Tiền Giang",
+        "unit": "Kg",
+        "unitPrice": 24500,
+        "beginningQty": 4343,
+        "importQty": 508,
+        "exportQty": 4055
+      }
+    ]
+  },
+  {
+    "id": "htk-spa",
+    "name": "HTK Spa",
+    "items": [
+      {
+        "code": "SPA001",
+        "name": "Tinh dầu oải hương",
+        "unit": "Chai",
+        "unitPrice": 150000,
+        "beginningQty": 79,
+        "importQty": 38,
+        "exportQty": 86
+      },
+      {
+        "code": "SPA002",
+        "name": "Muối tắm Himalaya",
+        "unit": "Gói",
+        "unitPrice": 120000,
+        "beginningQty": 65,
+        "importQty": 44,
+        "exportQty": 44
+      },
+      {
+        "code": "SPA003",
+        "name": "Sáp dưỡng thể",
+        "unit": "Hộp",
+        "unitPrice": 180000,
+        "beginningQty": 37,
+        "importQty": 11,
+        "exportQty": 6
+      },
+      {
+        "code": "SPA004",
+        "name": "Nến thơm hương trà xanh",
+        "unit": "Hũ",
+        "unitPrice": 100000,
+        "beginningQty": 45,
+        "importQty": 44,
+        "exportQty": 27
+      },
+      {
+        "code": "SPA005",
+        "name": "Sữa tắm dưỡng ẩm",
+        "unit": "Chai",
+        "unitPrice": 200000,
+        "beginningQty": 92,
+        "importQty": 49,
+        "exportQty": 53
+      },
+      {
+        "code": "SPA006",
+        "name": "Dầu massage",
+        "unit": "Chai",
+        "unitPrice": 250000,
+        "beginningQty": 21,
+        "importQty": 38,
+        "exportQty": 29
+      },
+      {
+        "code": "SPA007",
+        "name": "Kem dưỡng da ban đêm",
+        "unit": "Hũ",
+        "unitPrice": 300000,
+        "beginningQty": 66,
+        "importQty": 27,
+        "exportQty": 68
+      },
+      {
+        "code": "SPA008",
+        "name": "Mặt nạ đất sét",
+        "unit": "Hũ",
+        "unitPrice": 220000,
+        "beginningQty": 30,
+        "importQty": 44,
+        "exportQty": 30
+      },
+      {
+        "code": "SPA009",
+        "name": "Serum vitamin C",
+        "unit": "Chai",
+        "unitPrice": 350000,
+        "beginningQty": 55,
+        "importQty": 11,
+        "exportQty": 29
+      },
+      {
+        "code": "SPA010",
+        "name": "Bông tẩy trang",
+        "unit": "Gói",
+        "unitPrice": 50000,
+        "beginningQty": 79,
+        "importQty": 40,
+        "exportQty": 44
+      },
+      {
+        "code": "SPA011",
+        "name": "Sữa rửa mặt dịu nhẹ",
+        "unit": "Chai",
+        "unitPrice": 180000,
+        "beginningQty": 39,
+        "importQty": 12,
+        "exportQty": 38
+      },
+      {
+        "code": "SPA012",
+        "name": "Tẩy tế bào chết",
+        "unit": "Hũ",
+        "unitPrice": 200000,
+        "beginningQty": 30,
+        "importQty": 7,
+        "exportQty": 24
+      },
+      {
+        "code": "SPA013",
+        "name": "Kem chống nắng SPF50+",
+        "unit": "Chai",
+        "unitPrice": 320000,
+        "beginningQty": 29,
+        "importQty": 25,
+        "exportQty": 32
+      },
+      {
+        "code": "SPA014",
+        "name": "Dầu gội thảo dược",
+        "unit": "Chai",
+        "unitPrice": 210000,
+        "beginningQty": 63,
+        "importQty": 30,
+        "exportQty": 48
+      },
+      {
+        "code": "SPA015",
+        "name": "Tinh dầu tràm",
+        "unit": "Chai",
+        "unitPrice": 160000,
+        "beginningQty": 70,
+        "importQty": 25,
+        "exportQty": 37
+      },
+      {
+        "code": "SPA016",
+        "name": "Mặt nạ giấy dưỡng ẩm",
+        "unit": "Hộp",
+        "unitPrice": 90000,
+        "beginningQty": 74,
+        "importQty": 7,
+        "exportQty": 75
+      },
+      {
+        "code": "SPA017",
+        "name": "Sáp thơm phòng",
+        "unit": "Hũ",
+        "unitPrice": 120000,
+        "beginningQty": 20,
+        "importQty": 46,
+        "exportQty": 31
+      },
+      {
+        "code": "SPA018",
+        "name": "Găng tay tẩy tế bào chết",
+        "unit": "Cặp",
+        "unitPrice": 80000,
+        "beginningQty": 18,
+        "importQty": 37,
+        "exportQty": 25
+      },
+      {
+        "code": "SPA019",
+        "name": "Kem dưỡng mắt",
+        "unit": "Hũ",
+        "unitPrice": 280000,
+        "beginningQty": 83,
+        "importQty": 18,
+        "exportQty": 4
+      },
+      {
+        "code": "SPA020",
+        "name": "Nước hoa hồng",
+        "unit": "Chai",
+        "unitPrice": 230000,
+        "beginningQty": 75,
+        "importQty": 5,
+        "exportQty": 34
+      },
+      {
+        "code": "SPA021",
+        "name": "Dầu dừa nguyên chất",
+        "unit": "Chai",
+        "unitPrice": 180000,
+        "beginningQty": 80,
+        "importQty": 5,
+        "exportQty": 43
+      },
+      {
+        "code": "SPA022",
+        "name": "Máy xông mặt",
+        "unit": "Chiếc",
+        "unitPrice": 700000,
+        "beginningQty": 57,
+        "importQty": 16,
+        "exportQty": 37
+      },
+      {
+        "code": "SPA023",
+        "name": "Đá massage nóng",
+        "unit": "Bộ",
+        "unitPrice": 400000,
+        "beginningQty": 43,
+        "importQty": 27,
+        "exportQty": 16
+      },
+      {
+        "code": "SPA024",
+        "name": "Muối ngâm chân",
+        "unit": "Gói",
+        "unitPrice": 150000,
+        "beginningQty": 58,
+        "importQty": 30,
+        "exportQty": 82
+      },
+      {
+        "code": "SPA025",
+        "name": "Dụng cụ massage mặt",
+        "unit": "Chiếc",
+        "unitPrice": 300000,
+        "beginningQty": 93,
+        "importQty": 31,
+        "exportQty": 78
+      },
+      {
+        "code": "SPA026",
+        "name": "Gel lột mụn",
+        "unit": "Tuýp",
+        "unitPrice": 90000,
+        "beginningQty": 48,
+        "importQty": 28,
+        "exportQty": 63
+      },
+      {
+        "code": "SPA027",
+        "name": "Xịt khoáng dưỡng ẩm",
+        "unit": "Chai",
+        "unitPrice": 250000,
+        "beginningQty": 76,
+        "importQty": 49,
+        "exportQty": 29
+      },
+      {
+        "code": "SPA028",
+        "name": "Lotion dưỡng thể",
+        "unit": "Chai",
+        "unitPrice": 270000,
+        "beginningQty": 95,
+        "importQty": 25,
+        "exportQty": 22
+      },
+      {
+        "code": "SPA029",
+        "name": "Kem ủ tóc",
+        "unit": "Hũ",
+        "unitPrice": 220000,
+        "beginningQty": 59,
+        "importQty": 34,
+        "exportQty": 41
+      },
+      {
+        "code": "SPA030",
+        "name": "Son dưỡng môi",
+        "unit": "Thỏi",
+        "unitPrice": 150000,
+        "beginningQty": 77,
+        "importQty": 11,
+        "exportQty": 8
+      },
+      {
+        "code": "SPA031",
+        "name": "Tinh dầu oải hương",
+        "unit": "Chai",
+        "unitPrice": 150000,
+        "beginningQty": 35,
+        "importQty": 30,
+        "exportQty": 37
+      },
+      {
+        "code": "SPA032",
+        "name": "Muối tắm Himalaya",
+        "unit": "Gói",
+        "unitPrice": 120000,
+        "beginningQty": 43,
+        "importQty": 21,
+        "exportQty": 40
+      },
+      {
+        "code": "SPA033",
+        "name": "Sáp dưỡng thể",
+        "unit": "Hộp",
+        "unitPrice": 180000,
+        "beginningQty": 74,
+        "importQty": 11,
+        "exportQty": 10
+      },
+      {
+        "code": "SPA034",
+        "name": "Nến thơm hương trà xanh",
+        "unit": "Hũ",
+        "unitPrice": 100000,
+        "beginningQty": 35,
+        "importQty": 36,
+        "exportQty": 40
+      },
+      {
+        "code": "SPA035",
+        "name": "Sữa tắm dưỡng ẩm",
+        "unit": "Chai",
+        "unitPrice": 200000,
+        "beginningQty": 61,
+        "importQty": 17,
+        "exportQty": 20
+      },
+      {
+        "code": "SPA036",
+        "name": "Dầu massage",
+        "unit": "Chai",
+        "unitPrice": 250000,
+        "beginningQty": 45,
+        "importQty": 17,
+        "exportQty": 24
+      },
+      {
+        "code": "SPA037",
+        "name": "Kem dưỡng da ban đêm",
+        "unit": "Hũ",
+        "unitPrice": 300000,
+        "beginningQty": 51,
+        "importQty": 38,
+        "exportQty": 33
+      },
+      {
+        "code": "SPA038",
+        "name": "Mặt nạ đất sét",
+        "unit": "Hũ",
+        "unitPrice": 220000,
+        "beginningQty": 73,
+        "importQty": 16,
+        "exportQty": 4
+      },
+      {
+        "code": "SPA039",
+        "name": "Serum vitamin C",
+        "unit": "Chai",
+        "unitPrice": 350000,
+        "beginningQty": 45,
+        "importQty": 35,
+        "exportQty": 65
+      },
+      {
+        "code": "SPA040",
+        "name": "Bông tẩy trang",
+        "unit": "Gói",
+        "unitPrice": 50000,
+        "beginningQty": 88,
+        "importQty": 8,
+        "exportQty": 15
+      },
+      {
+        "code": "SPA041",
+        "name": "Sữa rửa mặt dịu nhẹ",
+        "unit": "Chai",
+        "unitPrice": 180000,
+        "beginningQty": 50,
+        "importQty": 9,
+        "exportQty": 44
+      },
+      {
+        "code": "SPA042",
+        "name": "Tẩy tế bào chết",
+        "unit": "Hũ",
+        "unitPrice": 200000,
+        "beginningQty": 10,
+        "importQty": 23,
+        "exportQty": 21
+      },
+      {
+        "code": "SPA043",
+        "name": "Kem chống nắng SPF50+",
+        "unit": "Chai",
+        "unitPrice": 320000,
+        "beginningQty": 53,
+        "importQty": 9,
+        "exportQty": 33
+      },
+      {
+        "code": "SPA044",
+        "name": "Dầu gội thảo dược",
+        "unit": "Chai",
+        "unitPrice": 210000,
+        "beginningQty": 58,
+        "importQty": 21,
+        "exportQty": 24
+      },
+      {
+        "code": "SPA045",
+        "name": "Tinh dầu tràm",
+        "unit": "Chai",
+        "unitPrice": 160000,
+        "beginningQty": 77,
+        "importQty": 32,
+        "exportQty": 8
+      },
+      {
+        "code": "SPA046",
+        "name": "Mặt nạ giấy dưỡng ẩm",
+        "unit": "Hộp",
+        "unitPrice": 90000,
+        "beginningQty": 45,
+        "importQty": 9,
+        "exportQty": 23
+      },
+      {
+        "code": "SPA047",
+        "name": "Sáp thơm phòng",
+        "unit": "Hũ",
+        "unitPrice": 120000,
+        "beginningQty": 44,
+        "importQty": 12,
+        "exportQty": 6
+      },
+      {
+        "code": "SPA048",
+        "name": "Găng tay tẩy tế bào chết",
+        "unit": "Cặp",
+        "unitPrice": 80000,
+        "beginningQty": 97,
+        "importQty": 14,
+        "exportQty": 39
+      },
+      {
+        "code": "SPA049",
+        "name": "Kem dưỡng mắt",
+        "unit": "Hũ",
+        "unitPrice": 280000,
+        "beginningQty": 63,
+        "importQty": 14,
+        "exportQty": 23
+      },
+      {
+        "code": "SPA050",
+        "name": "Nước hoa hồng",
+        "unit": "Chai",
+        "unitPrice": 230000,
+        "beginningQty": 69,
+        "importQty": 27,
+        "exportQty": 73
+      },
+      {
+        "code": "SPA051",
+        "name": "Dầu dừa nguyên chất",
+        "unit": "Chai",
+        "unitPrice": 180000,
+        "beginningQty": 36,
+        "importQty": 30,
+        "exportQty": 12
+      },
+      {
+        "code": "SPA052",
+        "name": "Máy xông mặt",
+        "unit": "Chiếc",
+        "unitPrice": 700000,
+        "beginningQty": 65,
+        "importQty": 47,
+        "exportQty": 5
+      },
+      {
+        "code": "SPA053",
+        "name": "Đá massage nóng",
+        "unit": "Bộ",
+        "unitPrice": 400000,
+        "beginningQty": 75,
+        "importQty": 6,
+        "exportQty": 45
+      },
+      {
+        "code": "SPA054",
+        "name": "Muối ngâm chân",
+        "unit": "Gói",
+        "unitPrice": 150000,
+        "beginningQty": 90,
+        "importQty": 35,
+        "exportQty": 27
+      },
+      {
+        "code": "SPA055",
+        "name": "Dụng cụ massage mặt",
+        "unit": "Chiếc",
+        "unitPrice": 300000,
+        "beginningQty": 17,
+        "importQty": 38,
+        "exportQty": 48
+      },
+      {
+        "code": "SPA056",
+        "name": "Gel lột mụn",
+        "unit": "Tuýp",
+        "unitPrice": 90000,
+        "beginningQty": 23,
+        "importQty": 28,
+        "exportQty": 16
+      },
+      {
+        "code": "SPA057",
+        "name": "Xịt khoáng dưỡng ẩm",
+        "unit": "Chai",
+        "unitPrice": 250000,
+        "beginningQty": 52,
+        "importQty": 38,
+        "exportQty": 16
+      },
+      {
+        "code": "SPA058",
+        "name": "Lotion dưỡng thể",
+        "unit": "Chai",
+        "unitPrice": 270000,
+        "beginningQty": 82,
+        "importQty": 21,
+        "exportQty": 26
+      },
+      {
+        "code": "SPA059",
+        "name": "Kem ủ tóc",
+        "unit": "Hũ",
+        "unitPrice": 220000,
+        "beginningQty": 65,
+        "importQty": 16,
+        "exportQty": 65
+      },
+      {
+        "code": "SPA060",
+        "name": "Son dưỡng môi",
+        "unit": "Thỏi",
+        "unitPrice": 150000,
+        "beginningQty": 70,
+        "importQty": 20,
+        "exportQty": 60
+      },
+      {
+        "code": "SPA061",
+        "name": "Tinh dầu oải hương",
+        "unit": "Chai",
+        "unitPrice": 150000,
+        "beginningQty": 53,
+        "importQty": 22,
+        "exportQty": 25
+      },
+      {
+        "code": "SPA062",
+        "name": "Muối tắm Himalaya",
+        "unit": "Gói",
+        "unitPrice": 120000,
+        "beginningQty": 61,
+        "importQty": 9,
+        "exportQty": 42
+      },
+      {
+        "code": "SPA063",
+        "name": "Sáp dưỡng thể",
+        "unit": "Hộp",
+        "unitPrice": 180000,
+        "beginningQty": 28,
+        "importQty": 14,
+        "exportQty": 14
+      },
+      {
+        "code": "SPA064",
+        "name": "Nến thơm hương trà xanh",
+        "unit": "Hũ",
+        "unitPrice": 100000,
+        "beginningQty": 95,
+        "importQty": 41,
+        "exportQty": 91
+      },
+      {
+        "code": "SPA065",
+        "name": "Sữa tắm dưỡng ẩm",
+        "unit": "Chai",
+        "unitPrice": 200000,
+        "beginningQty": 40,
+        "importQty": 46,
+        "exportQty": 47
+      },
+      {
+        "code": "SPA066",
+        "name": "Dầu massage",
+        "unit": "Chai",
+        "unitPrice": 250000,
+        "beginningQty": 13,
+        "importQty": 42,
+        "exportQty": 12
+      },
+      {
+        "code": "SPA067",
+        "name": "Kem dưỡng da ban đêm",
+        "unit": "Hũ",
+        "unitPrice": 300000,
+        "beginningQty": 54,
+        "importQty": 40,
+        "exportQty": 88
+      },
+      {
+        "code": "SPA068",
+        "name": "Mặt nạ đất sét",
+        "unit": "Hũ",
+        "unitPrice": 220000,
+        "beginningQty": 59,
+        "importQty": 35,
+        "exportQty": 39
+      },
+      {
+        "code": "SPA069",
+        "name": "Serum vitamin C",
+        "unit": "Chai",
+        "unitPrice": 350000,
+        "beginningQty": 95,
+        "importQty": 40,
+        "exportQty": 22
+      },
+      {
+        "code": "SPA070",
+        "name": "Bông tẩy trang",
+        "unit": "Gói",
+        "unitPrice": 50000,
+        "beginningQty": 44,
+        "importQty": 38,
+        "exportQty": 14
+      },
+      {
+        "code": "SPA071",
+        "name": "Sữa rửa mặt dịu nhẹ",
+        "unit": "Chai",
+        "unitPrice": 180000,
+        "beginningQty": 16,
+        "importQty": 25,
+        "exportQty": 4
+      },
+      {
+        "code": "SPA072",
+        "name": "Tẩy tế bào chết",
+        "unit": "Hũ",
+        "unitPrice": 200000,
+        "beginningQty": 18,
+        "importQty": 19,
+        "exportQty": 26
+      },
+      {
+        "code": "SPA073",
+        "name": "Kem chống nắng SPF50+",
+        "unit": "Chai",
+        "unitPrice": 320000,
+        "beginningQty": 75,
+        "importQty": 11,
+        "exportQty": 35
+      },
+      {
+        "code": "SPA074",
+        "name": "Dầu gội thảo dược",
+        "unit": "Chai",
+        "unitPrice": 210000,
+        "beginningQty": 18,
+        "importQty": 35,
+        "exportQty": 9
+      },
+      {
+        "code": "SPA075",
+        "name": "Tinh dầu tràm",
+        "unit": "Chai",
+        "unitPrice": 160000,
+        "beginningQty": 58,
+        "importQty": 47,
+        "exportQty": 9
+      },
+      {
+        "code": "SPA076",
+        "name": "Mặt nạ giấy dưỡng ẩm",
+        "unit": "Hộp",
+        "unitPrice": 90000,
+        "beginningQty": 49,
+        "importQty": 11,
+        "exportQty": 53
+      },
+      {
+        "code": "SPA077",
+        "name": "Sáp thơm phòng",
+        "unit": "Hũ",
+        "unitPrice": 120000,
+        "beginningQty": 21,
+        "importQty": 46,
+        "exportQty": 11
+      },
+      {
+        "code": "SPA078",
+        "name": "Găng tay tẩy tế bào chết",
+        "unit": "Cặp",
+        "unitPrice": 80000,
+        "beginningQty": 30,
+        "importQty": 31,
+        "exportQty": 36
+      },
+      {
+        "code": "SPA079",
+        "name": "Kem dưỡng mắt",
+        "unit": "Hũ",
+        "unitPrice": 280000,
+        "beginningQty": 55,
+        "importQty": 27,
+        "exportQty": 77
+      },
+      {
+        "code": "SPA080",
+        "name": "Nước hoa hồng",
+        "unit": "Chai",
+        "unitPrice": 230000,
+        "beginningQty": 56,
+        "importQty": 22,
+        "exportQty": 57
+      }
+    ]
+  },
+  {
+    "id": "htk-tap-hoa",
+    "name": "HTK Tạp Hoá",
+    "items": [
+      {
+        "code": "TPH001",
+        "name": "Gạo ST25",
+        "unit": "Kg",
+        "unitPrice": 28000,
+        "beginningQty": 60,
+        "importQty": 122,
+        "exportQty": 85
+      },
+      {
+        "code": "TPH002",
+        "name": "Nước mắm Nam Ngư",
+        "unit": "Chai",
+        "unitPrice": 20000,
+        "beginningQty": 86,
+        "importQty": 117,
+        "exportQty": 167
+      },
+      {
+        "code": "TPH003",
+        "name": "Dầu ăn Tường An",
+        "unit": "Lít",
+        "unitPrice": 45000,
+        "beginningQty": 211,
+        "importQty": 132,
+        "exportQty": 178
+      },
+      {
+        "code": "TPH004",
+        "name": "Bột ngọt Ajinomoto",
+        "unit": "Gói",
+        "unitPrice": 35000,
+        "beginningQty": 295,
+        "importQty": 147,
+        "exportQty": 329
+      },
+      {
+        "code": "TPH005",
+        "name": "Đường cát trắng",
+        "unit": "Kg",
+        "unitPrice": 25000,
+        "beginningQty": 246,
+        "importQty": 113,
+        "exportQty": 114
+      },
+      {
+        "code": "TPH006",
+        "name": "Muối i-ốt",
+        "unit": "Kg",
+        "unitPrice": 10000,
+        "beginningQty": 253,
+        "importQty": 69,
+        "exportQty": 180
+      },
+      {
+        "code": "TPH007",
+        "name": "Sữa tươi Vinamilk",
+        "unit": "Hộp",
+        "unitPrice": 15000,
+        "beginningQty": 175,
+        "importQty": 79,
+        "exportQty": 110
+      },
+      {
+        "code": "TPH008",
+        "name": "Bánh quy Cosy",
+        "unit": "Gói",
+        "unitPrice": 40000,
+        "beginningQty": 106,
+        "importQty": 74,
+        "exportQty": 125
+      },
+      {
+        "code": "TPH009",
+        "name": "Mì gói Hảo Hảo",
+        "unit": "Thùng",
+        "unitPrice": 110000,
+        "beginningQty": 72,
+        "importQty": 83,
+        "exportQty": 55
+      },
+      {
+        "code": "TPH010",
+        "name": "Cà phê G7",
+        "unit": "Hộp",
+        "unitPrice": 70000,
+        "beginningQty": 300,
+        "importQty": 133,
+        "exportQty": 277
+      },
+      {
+        "code": "TPH011",
+        "name": "Trà xanh Lipton",
+        "unit": "Hộp",
+        "unitPrice": 55000,
+        "beginningQty": 158,
+        "importQty": 124,
+        "exportQty": 19
+      },
+      {
+        "code": "TPH012",
+        "name": "Nước ngọt Coca-Cola",
+        "unit": "Chai",
+        "unitPrice": 12000,
+        "beginningQty": 243,
+        "importQty": 121,
+        "exportQty": 160
+      },
+      {
+        "code": "TPH013",
+        "name": "Bột giặt Omo",
+        "unit": "Gói",
+        "unitPrice": 75000,
+        "beginningQty": 289,
+        "importQty": 149,
+        "exportQty": 208
+      },
+      {
+        "code": "TPH014",
+        "name": "Nước rửa chén Sunlight",
+        "unit": "Chai",
+        "unitPrice": 30000,
+        "beginningQty": 113,
+        "importQty": 48,
+        "exportQty": 115
+      },
+      {
+        "code": "TPH015",
+        "name": "Kem đánh răng P/S",
+        "unit": "Tuýp",
+        "unitPrice": 25000,
+        "beginningQty": 80,
+        "importQty": 83,
+        "exportQty": 153
+      },
+      {
+        "code": "TPH016",
+        "name": "Băng vệ sinh Diana",
+        "unit": "Gói",
+        "unitPrice": 40000,
+        "beginningQty": 215,
+        "importQty": 97,
+        "exportQty": 181
+      },
+      {
+        "code": "TPH017",
+        "name": "Dầu gội Clear Men",
+        "unit": "Chai",
+        "unitPrice": 99000,
+        "beginningQty": 299,
+        "importQty": 40,
+        "exportQty": 48
+      },
+      {
+        "code": "TPH018",
+        "name": "Sữa đặc Ông Thọ",
+        "unit": "Lon",
+        "unitPrice": 25000,
+        "beginningQty": 280,
+        "importQty": 25,
+        "exportQty": 102
+      },
+      {
+        "code": "TPH019",
+        "name": "Trứng gà ta",
+        "unit": "Chục",
+        "unitPrice": 40000,
+        "beginningQty": 300,
+        "importQty": 114,
+        "exportQty": 195
+      },
+      {
+        "code": "TPH020",
+        "name": "Nước suối Lavie",
+        "unit": "Chai",
+        "unitPrice": 5000,
+        "beginningQty": 144,
+        "importQty": 48,
+        "exportQty": 38
+      },
+      {
+        "code": "TPH021",
+        "name": "Giấy vệ sinh Pulppy",
+        "unit": "Cuộn",
+        "unitPrice": 12000,
+        "beginningQty": 164,
+        "importQty": 40,
+        "exportQty": 86
+      },
+      {
+        "code": "TPH022",
+        "name": "Chanh tươi",
+        "unit": "Kg",
+        "unitPrice": 25000,
+        "beginningQty": 141,
+        "importQty": 142,
+        "exportQty": 110
+      },
+      {
+        "code": "TPH023",
+        "name": "Hành tím",
+        "unit": "Kg",
+        "unitPrice": 35000,
+        "beginningQty": 204,
+        "importQty": 26,
+        "exportQty": 89
+      },
+      {
+        "code": "TPH024",
+        "name": "Tỏi Lý Sơn",
+        "unit": "Kg",
+        "unitPrice": 55000,
+        "beginningQty": 227,
+        "importQty": 94,
+        "exportQty": 100
+      },
+      {
+        "code": "TPH025",
+        "name": "Bột mì đa dụng",
+        "unit": "Gói",
+        "unitPrice": 30000,
+        "beginningQty": 156,
+        "importQty": 132,
+        "exportQty": 257
+      },
+      {
+        "code": "TPH026",
+        "name": "Sốt mayonnaise",
+        "unit": "Chai",
+        "unitPrice": 45000,
+        "beginningQty": 210,
+        "importQty": 127,
+        "exportQty": 262
+      },
+      {
+        "code": "TPH027",
+        "name": "Dầu hào Maggi",
+        "unit": "Chai",
+        "unitPrice": 40000,
+        "beginningQty": 141,
+        "importQty": 74,
+        "exportQty": 103
+      },
+      {
+        "code": "TPH028",
+        "name": "Mắm tôm Thanh Hương",
+        "unit": "Chai",
+        "unitPrice": 30000,
+        "beginningQty": 52,
+        "importQty": 103,
+        "exportQty": 48
+      },
+      {
+        "code": "TPH029",
+        "name": "Bột cacao Nestle",
+        "unit": "Hộp",
+        "unitPrice": 90000,
+        "beginningQty": 116,
+        "importQty": 51,
+        "exportQty": 106
+      },
+      {
+        "code": "TPH030",
+        "name": "Ngũ cốc Calbee",
+        "unit": "Gói",
+        "unitPrice": 120000,
+        "beginningQty": 197,
+        "importQty": 24,
+        "exportQty": 103
+      },
+      {
+        "code": "TPH031",
+        "name": "Gạo ST25",
+        "unit": "Kg",
+        "unitPrice": 28000,
+        "beginningQty": 68,
+        "importQty": 142,
+        "exportQty": 108
+      },
+      {
+        "code": "TPH032",
+        "name": "Nước mắm Nam Ngư",
+        "unit": "Chai",
+        "unitPrice": 20000,
+        "beginningQty": 224,
+        "importQty": 146,
+        "exportQty": 238
+      },
+      {
+        "code": "TPH033",
+        "name": "Dầu ăn Tường An",
+        "unit": "Lít",
+        "unitPrice": 45000,
+        "beginningQty": 60,
+        "importQty": 88,
+        "exportQty": 81
+      },
+      {
+        "code": "TPH034",
+        "name": "Bột ngọt Ajinomoto",
+        "unit": "Gói",
+        "unitPrice": 35000,
+        "beginningQty": 187,
+        "importQty": 78,
+        "exportQty": 187
+      },
+      {
+        "code": "TPH035",
+        "name": "Đường cát trắng",
+        "unit": "Kg",
+        "unitPrice": 25000,
+        "beginningQty": 90,
+        "importQty": 35,
+        "exportQty": 98
+      },
+      {
+        "code": "TPH036",
+        "name": "Muối i-ốt",
+        "unit": "Kg",
+        "unitPrice": 10000,
+        "beginningQty": 290,
+        "importQty": 60,
+        "exportQty": 152
+      },
+      {
+        "code": "TPH037",
+        "name": "Sữa tươi Vinamilk",
+        "unit": "Hộp",
+        "unitPrice": 15000,
+        "beginningQty": 138,
+        "importQty": 37,
+        "exportQty": 66
+      },
+      {
+        "code": "TPH038",
+        "name": "Bánh quy Cosy",
+        "unit": "Gói",
+        "unitPrice": 40000,
+        "beginningQty": 237,
+        "importQty": 50,
+        "exportQty": 249
+      },
+      {
+        "code": "TPH039",
+        "name": "Mì gói Hảo Hảo",
+        "unit": "Thùng",
+        "unitPrice": 110000,
+        "beginningQty": 238,
+        "importQty": 20,
+        "exportQty": 203
+      },
+      {
+        "code": "TPH040",
+        "name": "Cà phê G7",
+        "unit": "Hộp",
+        "unitPrice": 70000,
+        "beginningQty": 74,
+        "importQty": 56,
+        "exportQty": 90
+      },
+      {
+        "code": "TPH041",
+        "name": "Trà xanh Lipton",
+        "unit": "Hộp",
+        "unitPrice": 55000,
+        "beginningQty": 287,
+        "importQty": 60,
+        "exportQty": 283
+      },
+      {
+        "code": "TPH042",
+        "name": "Nước ngọt Coca-Cola",
+        "unit": "Chai",
+        "unitPrice": 12000,
+        "beginningQty": 118,
+        "importQty": 95,
+        "exportQty": 67
+      },
+      {
+        "code": "TPH043",
+        "name": "Bột giặt Omo",
+        "unit": "Gói",
+        "unitPrice": 75000,
+        "beginningQty": 116,
+        "importQty": 94,
+        "exportQty": 69
+      },
+      {
+        "code": "TPH044",
+        "name": "Nước rửa chén Sunlight",
+        "unit": "Chai",
+        "unitPrice": 30000,
+        "beginningQty": 190,
+        "importQty": 99,
+        "exportQty": 190
+      },
+      {
+        "code": "TPH045",
+        "name": "Kem đánh răng P/S",
+        "unit": "Tuýp",
+        "unitPrice": 25000,
+        "beginningQty": 87,
+        "importQty": 145,
+        "exportQty": 192
+      },
+      {
+        "code": "TPH046",
+        "name": "Băng vệ sinh Diana",
+        "unit": "Gói",
+        "unitPrice": 40000,
+        "beginningQty": 266,
+        "importQty": 103,
+        "exportQty": 119
+      },
+      {
+        "code": "TPH047",
+        "name": "Dầu gội Clear Men",
+        "unit": "Chai",
+        "unitPrice": 99000,
+        "beginningQty": 192,
+        "importQty": 34,
+        "exportQty": 70
+      },
+      {
+        "code": "TPH048",
+        "name": "Sữa đặc Ông Thọ",
+        "unit": "Lon",
+        "unitPrice": 25000,
+        "beginningQty": 289,
+        "importQty": 113,
+        "exportQty": 101
+      },
+      {
+        "code": "TPH049",
+        "name": "Trứng gà ta",
+        "unit": "Chục",
+        "unitPrice": 40000,
+        "beginningQty": 99,
+        "importQty": 115,
+        "exportQty": 118
+      },
+      {
+        "code": "TPH050",
+        "name": "Nước suối Lavie",
+        "unit": "Chai",
+        "unitPrice": 5000,
+        "beginningQty": 293,
+        "importQty": 52,
+        "exportQty": 188
+      },
+      {
+        "code": "TPH051",
+        "name": "Giấy vệ sinh Pulppy",
+        "unit": "Cuộn",
+        "unitPrice": 12000,
+        "beginningQty": 95,
+        "importQty": 36,
+        "exportQty": 48
+      },
+      {
+        "code": "TPH052",
+        "name": "Chanh tươi",
+        "unit": "Kg",
+        "unitPrice": 25000,
+        "beginningQty": 243,
+        "importQty": 143,
+        "exportQty": 195
+      },
+      {
+        "code": "TPH053",
+        "name": "Hành tím",
+        "unit": "Kg",
+        "unitPrice": 35000,
+        "beginningQty": 279,
+        "importQty": 50,
+        "exportQty": 215
+      },
+      {
+        "code": "TPH054",
+        "name": "Tỏi Lý Sơn",
+        "unit": "Kg",
+        "unitPrice": 55000,
+        "beginningQty": 263,
+        "importQty": 137,
+        "exportQty": 216
+      },
+      {
+        "code": "TPH055",
+        "name": "Bột mì đa dụng",
+        "unit": "Gói",
+        "unitPrice": 30000,
+        "beginningQty": 300,
+        "importQty": 54,
+        "exportQty": 285
+      },
+      {
+        "code": "TPH056",
+        "name": "Sốt mayonnaise",
+        "unit": "Chai",
+        "unitPrice": 45000,
+        "beginningQty": 235,
+        "importQty": 149,
+        "exportQty": 165
+      },
+      {
+        "code": "TPH057",
+        "name": "Dầu hào Maggi",
+        "unit": "Chai",
+        "unitPrice": 40000,
+        "beginningQty": 143,
+        "importQty": 75,
+        "exportQty": 110
+      },
+      {
+        "code": "TPH058",
+        "name": "Mắm tôm Thanh Hương",
+        "unit": "Chai",
+        "unitPrice": 30000,
+        "beginningQty": 197,
+        "importQty": 82,
+        "exportQty": 199
+      },
+      {
+        "code": "TPH059",
+        "name": "Bột cacao Nestle",
+        "unit": "Hộp",
+        "unitPrice": 90000,
+        "beginningQty": 56,
+        "importQty": 70,
+        "exportQty": 52
+      },
+      {
+        "code": "TPH060",
+        "name": "Ngũ cốc Calbee",
+        "unit": "Gói",
+        "unitPrice": 120000,
+        "beginningQty": 106,
+        "importQty": 27,
+        "exportQty": 111
+      },
+      {
+        "code": "TPH061",
+        "name": "Gạo ST25",
+        "unit": "Kg",
+        "unitPrice": 28000,
+        "beginningQty": 138,
+        "importQty": 52,
+        "exportQty": 89
+      },
+      {
+        "code": "TPH062",
+        "name": "Nước mắm Nam Ngư",
+        "unit": "Chai",
+        "unitPrice": 20000,
+        "beginningQty": 164,
+        "importQty": 116,
+        "exportQty": 55
+      },
+      {
+        "code": "TPH063",
+        "name": "Dầu ăn Tường An",
+        "unit": "Lít",
+        "unitPrice": 45000,
+        "beginningQty": 243,
+        "importQty": 102,
+        "exportQty": 152
+      },
+      {
+        "code": "TPH064",
+        "name": "Bột ngọt Ajinomoto",
+        "unit": "Gói",
+        "unitPrice": 35000,
+        "beginningQty": 93,
+        "importQty": 84,
+        "exportQty": 88
+      },
+      {
+        "code": "TPH065",
+        "name": "Đường cát trắng",
+        "unit": "Kg",
+        "unitPrice": 25000,
+        "beginningQty": 162,
+        "importQty": 112,
+        "exportQty": 88
+      },
+      {
+        "code": "TPH066",
+        "name": "Muối i-ốt",
+        "unit": "Kg",
+        "unitPrice": 10000,
+        "beginningQty": 236,
+        "importQty": 62,
+        "exportQty": 210
+      },
+      {
+        "code": "TPH067",
+        "name": "Sữa tươi Vinamilk",
+        "unit": "Hộp",
+        "unitPrice": 15000,
+        "beginningQty": 99,
+        "importQty": 100,
+        "exportQty": 57
+      },
+      {
+        "code": "TPH068",
+        "name": "Bánh quy Cosy",
+        "unit": "Gói",
+        "unitPrice": 40000,
+        "beginningQty": 277,
+        "importQty": 23,
+        "exportQty": 118
+      },
+      {
+        "code": "TPH069",
+        "name": "Mì gói Hảo Hảo",
+        "unit": "Thùng",
+        "unitPrice": 110000,
+        "beginningQty": 252,
+        "importQty": 141,
+        "exportQty": 319
+      },
+      {
+        "code": "TPH070",
+        "name": "Cà phê G7",
+        "unit": "Hộp",
+        "unitPrice": 70000,
+        "beginningQty": 243,
+        "importQty": 132,
+        "exportQty": 244
+      },
+      {
+        "code": "TPH071",
+        "name": "Trà xanh Lipton",
+        "unit": "Hộp",
+        "unitPrice": 55000,
+        "beginningQty": 161,
+        "importQty": 146,
+        "exportQty": 98
+      },
+      {
+        "code": "TPH072",
+        "name": "Nước ngọt Coca-Cola",
+        "unit": "Chai",
+        "unitPrice": 12000,
+        "beginningQty": 249,
+        "importQty": 107,
+        "exportQty": 248
+      },
+      {
+        "code": "TPH073",
+        "name": "Bột giặt Omo",
+        "unit": "Gói",
+        "unitPrice": 75000,
+        "beginningQty": 207,
+        "importQty": 111,
+        "exportQty": 269
+      },
+      {
+        "code": "TPH074",
+        "name": "Nước rửa chén Sunlight",
+        "unit": "Chai",
+        "unitPrice": 30000,
+        "beginningQty": 56,
+        "importQty": 71,
+        "exportQty": 36
+      },
+      {
+        "code": "TPH075",
+        "name": "Kem đánh răng P/S",
+        "unit": "Tuýp",
+        "unitPrice": 25000,
+        "beginningQty": 151,
+        "importQty": 117,
+        "exportQty": 199
+      },
+      {
+        "code": "TPH076",
+        "name": "Băng vệ sinh Diana",
+        "unit": "Gói",
+        "unitPrice": 40000,
+        "beginningQty": 245,
+        "importQty": 68,
+        "exportQty": 96
+      },
+      {
+        "code": "TPH077",
+        "name": "Dầu gội Clear Men",
+        "unit": "Chai",
+        "unitPrice": 99000,
+        "beginningQty": 179,
+        "importQty": 53,
+        "exportQty": 98
+      },
+      {
+        "code": "TPH078",
+        "name": "Sữa đặc Ông Thọ",
+        "unit": "Lon",
+        "unitPrice": 25000,
+        "beginningQty": 202,
+        "importQty": 96,
+        "exportQty": 139
+      },
+      {
+        "code": "TPH079",
+        "name": "Trứng gà ta",
+        "unit": "Chục",
+        "unitPrice": 40000,
+        "beginningQty": 172,
+        "importQty": 134,
+        "exportQty": 134
+      },
+      {
+        "code": "TPH080",
+        "name": "Nước suối Lavie",
+        "unit": "Chai",
+        "unitPrice": 5000,
+        "beginningQty": 152,
+        "importQty": 34,
+        "exportQty": 34
+      }
+    ]
+  },
+  {
+    "id": "htk-quan-ao-nu",
+    "name": "HTK Quần Áo Nữ",
+    "items": [
+      {
+        "code": "CLTNU001",
+        "name": "Đầm suông họa tiết",
+        "unit": "Chiếc",
+        "unitPrice": 350000,
+        "beginningQty": 62,
+        "importQty": 50,
+        "exportQty": 34
+      },
+      {
+        "code": "CLTNU002",
+        "name": "Đầm ôm body",
+        "unit": "Chiếc",
+        "unitPrice": 420000,
+        "beginningQty": 27,
+        "importQty": 36,
+        "exportQty": 42
+      },
+      {
+        "code": "CLTNU003",
+        "name": "Chân váy xếp ly",
+        "unit": "Chiếc",
+        "unitPrice": 250000,
+        "beginningQty": 23,
+        "importQty": 31,
+        "exportQty": 43
+      },
+      {
+        "code": "CLTNU004",
+        "name": "Chân váy jean",
+        "unit": "Chiếc",
+        "unitPrice": 270000,
+        "beginningQty": 34,
+        "importQty": 21,
+        "exportQty": 48
+      },
+      {
+        "code": "CLTNU005",
+        "name": "Chân váy midi",
+        "unit": "Chiếc",
+        "unitPrice": 290000,
+        "beginningQty": 108,
+        "importQty": 67,
+        "exportQty": 156
+      },
+      {
+        "code": "CLTNU006",
+        "name": "Áo sơ mi nữ công sở",
+        "unit": "Chiếc",
+        "unitPrice": 260000,
+        "beginningQty": 146,
+        "importQty": 46,
+        "exportQty": 99
+      },
+      {
+        "code": "CLTNU007",
+        "name": "Áo sơ mi nữ tay phồng",
+        "unit": "Chiếc",
+        "unitPrice": 280000,
+        "beginningQty": 125,
+        "importQty": 63,
+        "exportQty": 178
+      },
+      {
+        "code": "CLTNU008",
+        "name": "Áo thun nữ crop-top",
+        "unit": "Chiếc",
+        "unitPrice": 200000,
+        "beginningQty": 116,
+        "importQty": 71,
+        "exportQty": 176
+      },
+      {
+        "code": "CLTNU009",
+        "name": "Áo thun nữ oversize",
+        "unit": "Chiếc",
+        "unitPrice": 180000,
+        "beginningQty": 148,
+        "importQty": 78,
+        "exportQty": 107
+      },
+      {
+        "code": "CLTNU010",
+        "name": "Quần jean nữ baggy",
+        "unit": "Chiếc",
+        "unitPrice": 390000,
+        "beginningQty": 123,
+        "importQty": 29,
+        "exportQty": 46
+      },
+      {
+        "code": "CLTNU011",
+        "name": "Quần jean nữ skinny",
+        "unit": "Chiếc",
+        "unitPrice": 360000,
+        "beginningQty": 106,
+        "importQty": 69,
+        "exportQty": 82
+      },
+      {
+        "code": "CLTNU012",
+        "name": "Quần short nữ năng động",
+        "unit": "Chiếc",
+        "unitPrice": 190000,
+        "beginningQty": 35,
+        "importQty": 80,
+        "exportQty": 45
+      },
+      {
+        "code": "CLTNU013",
+        "name": "Áo khoác len nữ dáng dài",
+        "unit": "Chiếc",
+        "unitPrice": 420000,
+        "beginningQty": 22,
+        "importQty": 55,
+        "exportQty": 24
+      },
+      {
+        "code": "CLTNU014",
+        "name": "Áo khoác dạ nữ",
+        "unit": "Chiếc",
+        "unitPrice": 750000,
+        "beginningQty": 37,
+        "importQty": 60,
+        "exportQty": 44
+      },
+      {
+        "code": "CLTNU015",
+        "name": "Áo blazer nữ sang trọng",
+        "unit": "Chiếc",
+        "unitPrice": 650000,
+        "beginningQty": 88,
+        "importQty": 33,
+        "exportQty": 45
+      },
+      {
+        "code": "CLTNU016",
+        "name": "Váy maxi đi biển",
+        "unit": "Chiếc",
+        "unitPrice": 550000,
+        "beginningQty": 134,
+        "importQty": 63,
+        "exportQty": 27
+      },
+      {
+        "code": "CLTNU017",
+        "name": "Váy xòe công chúa",
+        "unit": "Chiếc",
+        "unitPrice": 480000,
+        "beginningQty": 59,
+        "importQty": 68,
+        "exportQty": 29
+      },
+      {
+        "code": "CLTNU018",
+        "name": "Bộ đồ thể thao nữ",
+        "unit": "Bộ",
+        "unitPrice": 450000,
+        "beginningQty": 124,
+        "importQty": 59,
+        "exportQty": 146
+      },
+      {
+        "code": "CLTNU019",
+        "name": "Bộ vest nữ công sở",
+        "unit": "Bộ",
+        "unitPrice": 1200000,
+        "beginningQty": 83,
+        "importQty": 27,
+        "exportQty": 10
+      },
+      {
+        "code": "CLTNU020",
+        "name": "Áo len cổ lọ nữ",
+        "unit": "Chiếc",
+        "unitPrice": 320000,
+        "beginningQty": 34,
+        "importQty": 12,
+        "exportQty": 6
+      },
+      {
+        "code": "CLTNU021",
+        "name": "Áo khoác gió nữ",
+        "unit": "Chiếc",
+        "unitPrice": 370000,
+        "beginningQty": 64,
+        "importQty": 67,
+        "exportQty": 98
+      },
+      {
+        "code": "CLTNU022",
+        "name": "Đầm babydoll dễ thương",
+        "unit": "Chiếc",
+        "unitPrice": 320000,
+        "beginningQty": 107,
+        "importQty": 29,
+        "exportQty": 38
+      },
+      {
+        "code": "CLTNU023",
+        "name": "Áo sơ mi voan nữ",
+        "unit": "Chiếc",
+        "unitPrice": 280000,
+        "beginningQty": 47,
+        "importQty": 40,
+        "exportQty": 57
+      },
+      {
+        "code": "CLTNU024",
+        "name": "Áo kiểu nữ trễ vai",
+        "unit": "Chiếc",
+        "unitPrice": 290000,
+        "beginningQty": 47,
+        "importQty": 66,
+        "exportQty": 51
+      },
+      {
+        "code": "CLTNU025",
+        "name": "Quần culottes nữ",
+        "unit": "Chiếc",
+        "unitPrice": 350000,
+        "beginningQty": 59,
+        "importQty": 10,
+        "exportQty": 10
+      },
+      {
+        "code": "CLTNU026",
+        "name": "Áo khoác cardigan nữ",
+        "unit": "Chiếc",
+        "unitPrice": 340000,
+        "beginningQty": 95,
+        "importQty": 65,
+        "exportQty": 100
+      },
+      {
+        "code": "CLTNU027",
+        "name": "Áo khoác phao nữ",
+        "unit": "Chiếc",
+        "unitPrice": 850000,
+        "beginningQty": 147,
+        "importQty": 56,
+        "exportQty": 121
+      },
+      {
+        "code": "CLTNU028",
+        "name": "Áo giữ nhiệt nữ",
+        "unit": "Chiếc",
+        "unitPrice": 260000,
+        "beginningQty": 70,
+        "importQty": 63,
+        "exportQty": 46
+      },
+      {
+        "code": "CLTNU029",
+        "name": "Đầm dự tiệc cao cấp",
+        "unit": "Chiếc",
+        "unitPrice": 1500000,
+        "beginningQty": 125,
+        "importQty": 46,
+        "exportQty": 60
+      },
+      {
+        "code": "CLTNU030",
+        "name": "Áo blazer nữ kẻ caro",
+        "unit": "Chiếc",
+        "unitPrice": 680000,
+        "beginningQty": 23,
+        "importQty": 40,
+        "exportQty": 29
+      },
+      {
+        "code": "CLTNU031",
+        "name": "Đầm suông họa tiết",
+        "unit": "Chiếc",
+        "unitPrice": 350000,
+        "beginningQty": 136,
+        "importQty": 51,
+        "exportQty": 46
+      },
+      {
+        "code": "CLTNU032",
+        "name": "Đầm ôm body",
+        "unit": "Chiếc",
+        "unitPrice": 420000,
+        "beginningQty": 33,
+        "importQty": 72,
+        "exportQty": 48
+      },
+      {
+        "code": "CLTNU033",
+        "name": "Chân váy xếp ly",
+        "unit": "Chiếc",
+        "unitPrice": 250000,
+        "beginningQty": 90,
+        "importQty": 34,
+        "exportQty": 90
+      },
+      {
+        "code": "CLTNU034",
+        "name": "Chân váy jean",
+        "unit": "Chiếc",
+        "unitPrice": 270000,
+        "beginningQty": 132,
+        "importQty": 52,
+        "exportQty": 89
+      },
+      {
+        "code": "CLTNU035",
+        "name": "Chân váy midi",
+        "unit": "Chiếc",
+        "unitPrice": 290000,
+        "beginningQty": 35,
+        "importQty": 48,
+        "exportQty": 26
+      },
+      {
+        "code": "CLTNU036",
+        "name": "Áo sơ mi nữ công sở",
+        "unit": "Chiếc",
+        "unitPrice": 260000,
+        "beginningQty": 53,
+        "importQty": 27,
+        "exportQty": 18
+      },
+      {
+        "code": "CLTNU037",
+        "name": "Áo sơ mi nữ tay phồng",
+        "unit": "Chiếc",
+        "unitPrice": 280000,
+        "beginningQty": 77,
+        "importQty": 60,
+        "exportQty": 28
+      },
+      {
+        "code": "CLTNU038",
+        "name": "Áo thun nữ crop-top",
+        "unit": "Chiếc",
+        "unitPrice": 200000,
+        "beginningQty": 146,
+        "importQty": 78,
+        "exportQty": 19
+      },
+      {
+        "code": "CLTNU039",
+        "name": "Áo thun nữ oversize",
+        "unit": "Chiếc",
+        "unitPrice": 180000,
+        "beginningQty": 72,
+        "importQty": 10,
+        "exportQty": 73
+      },
+      {
+        "code": "CLTNU040",
+        "name": "Quần jean nữ baggy",
+        "unit": "Chiếc",
+        "unitPrice": 390000,
+        "beginningQty": 94,
+        "importQty": 13,
+        "exportQty": 29
+      },
+      {
+        "code": "CLTNU041",
+        "name": "Quần jean nữ skinny",
+        "unit": "Chiếc",
+        "unitPrice": 360000,
+        "beginningQty": 110,
+        "importQty": 63,
+        "exportQty": 99
+      },
+      {
+        "code": "CLTNU042",
+        "name": "Quần short nữ năng động",
+        "unit": "Chiếc",
+        "unitPrice": 190000,
+        "beginningQty": 86,
+        "importQty": 72,
+        "exportQty": 73
+      },
+      {
+        "code": "CLTNU043",
+        "name": "Áo khoác len nữ dáng dài",
+        "unit": "Chiếc",
+        "unitPrice": 420000,
+        "beginningQty": 40,
+        "importQty": 54,
+        "exportQty": 35
+      },
+      {
+        "code": "CLTNU044",
+        "name": "Áo khoác dạ nữ",
+        "unit": "Chiếc",
+        "unitPrice": 750000,
+        "beginningQty": 70,
+        "importQty": 74,
+        "exportQty": 60
+      },
+      {
+        "code": "CLTNU045",
+        "name": "Áo blazer nữ sang trọng",
+        "unit": "Chiếc",
+        "unitPrice": 650000,
+        "beginningQty": 34,
+        "importQty": 58,
+        "exportQty": 29
+      },
+      {
+        "code": "CLTNU046",
+        "name": "Váy maxi đi biển",
+        "unit": "Chiếc",
+        "unitPrice": 550000,
+        "beginningQty": 105,
+        "importQty": 21,
+        "exportQty": 62
+      },
+      {
+        "code": "CLTNU047",
+        "name": "Váy xòe công chúa",
+        "unit": "Chiếc",
+        "unitPrice": 480000,
+        "beginningQty": 71,
+        "importQty": 42,
+        "exportQty": 62
+      },
+      {
+        "code": "CLTNU048",
+        "name": "Bộ đồ thể thao nữ",
+        "unit": "Bộ",
+        "unitPrice": 450000,
+        "beginningQty": 88,
+        "importQty": 27,
+        "exportQty": 66
+      },
+      {
+        "code": "CLTNU049",
+        "name": "Bộ vest nữ công sở",
+        "unit": "Bộ",
+        "unitPrice": 1200000,
+        "beginningQty": 122,
+        "importQty": 76,
+        "exportQty": 94
+      },
+      {
+        "code": "CLTNU050",
+        "name": "Áo len cổ lọ nữ",
+        "unit": "Chiếc",
+        "unitPrice": 320000,
+        "beginningQty": 130,
+        "importQty": 28,
+        "exportQty": 142
+      },
+      {
+        "code": "CLTNU051",
+        "name": "Áo khoác gió nữ",
+        "unit": "Chiếc",
+        "unitPrice": 370000,
+        "beginningQty": 82,
+        "importQty": 71,
+        "exportQty": 113
+      },
+      {
+        "code": "CLTNU052",
+        "name": "Đầm babydoll dễ thương",
+        "unit": "Chiếc",
+        "unitPrice": 320000,
+        "beginningQty": 33,
+        "importQty": 11,
+        "exportQty": 14
+      },
+      {
+        "code": "CLTNU053",
+        "name": "Áo sơ mi voan nữ",
+        "unit": "Chiếc",
+        "unitPrice": 280000,
+        "beginningQty": 121,
+        "importQty": 80,
+        "exportQty": 86
+      },
+      {
+        "code": "CLTNU054",
+        "name": "Áo kiểu nữ trễ vai",
+        "unit": "Chiếc",
+        "unitPrice": 290000,
+        "beginningQty": 99,
+        "importQty": 65,
+        "exportQty": 28
+      },
+      {
+        "code": "CLTNU055",
+        "name": "Quần culottes nữ",
+        "unit": "Chiếc",
+        "unitPrice": 350000,
+        "beginningQty": 141,
+        "importQty": 19,
+        "exportQty": 23
+      },
+      {
+        "code": "CLTNU056",
+        "name": "Áo khoác cardigan nữ",
+        "unit": "Chiếc",
+        "unitPrice": 340000,
+        "beginningQty": 94,
+        "importQty": 35,
+        "exportQty": 120
+      },
+      {
+        "code": "CLTNU057",
+        "name": "Áo khoác phao nữ",
+        "unit": "Chiếc",
+        "unitPrice": 850000,
+        "beginningQty": 127,
+        "importQty": 54,
+        "exportQty": 67
+      },
+      {
+        "code": "CLTNU058",
+        "name": "Áo giữ nhiệt nữ",
+        "unit": "Chiếc",
+        "unitPrice": 260000,
+        "beginningQty": 110,
+        "importQty": 70,
+        "exportQty": 114
+      },
+      {
+        "code": "CLTNU059",
+        "name": "Đầm dự tiệc cao cấp",
+        "unit": "Chiếc",
+        "unitPrice": 1500000,
+        "beginningQty": 128,
+        "importQty": 38,
+        "exportQty": 37
+      },
+      {
+        "code": "CLTNU060",
+        "name": "Áo blazer nữ kẻ caro",
+        "unit": "Chiếc",
+        "unitPrice": 680000,
+        "beginningQty": 75,
+        "importQty": 77,
+        "exportQty": 58
+      },
+      {
+        "code": "CLTNU061",
+        "name": "Đầm suông họa tiết",
+        "unit": "Chiếc",
+        "unitPrice": 350000,
+        "beginningQty": 93,
+        "importQty": 52,
+        "exportQty": 112
+      },
+      {
+        "code": "CLTNU062",
+        "name": "Đầm ôm body",
+        "unit": "Chiếc",
+        "unitPrice": 420000,
+        "beginningQty": 68,
+        "importQty": 76,
+        "exportQty": 50
+      },
+      {
+        "code": "CLTNU063",
+        "name": "Chân váy xếp ly",
+        "unit": "Chiếc",
+        "unitPrice": 250000,
+        "beginningQty": 47,
+        "importQty": 12,
+        "exportQty": 21
+      },
+      {
+        "code": "CLTNU064",
+        "name": "Chân váy jean",
+        "unit": "Chiếc",
+        "unitPrice": 270000,
+        "beginningQty": 54,
+        "importQty": 70,
+        "exportQty": 25
+      },
+      {
+        "code": "CLTNU065",
+        "name": "Chân váy midi",
+        "unit": "Chiếc",
+        "unitPrice": 290000,
+        "beginningQty": 73,
+        "importQty": 36,
+        "exportQty": 79
+      },
+      {
+        "code": "CLTNU066",
+        "name": "Áo sơ mi nữ công sở",
+        "unit": "Chiếc",
+        "unitPrice": 260000,
+        "beginningQty": 71,
+        "importQty": 13,
+        "exportQty": 57
+      },
+      {
+        "code": "CLTNU067",
+        "name": "Áo sơ mi nữ tay phồng",
+        "unit": "Chiếc",
+        "unitPrice": 280000,
+        "beginningQty": 105,
+        "importQty": 44,
+        "exportQty": 129
+      },
+      {
+        "code": "CLTNU068",
+        "name": "Áo thun nữ crop-top",
+        "unit": "Chiếc",
+        "unitPrice": 200000,
+        "beginningQty": 51,
+        "importQty": 31,
+        "exportQty": 32
+      },
+      {
+        "code": "CLTNU069",
+        "name": "Áo thun nữ oversize",
+        "unit": "Chiếc",
+        "unitPrice": 180000,
+        "beginningQty": 21,
+        "importQty": 63,
+        "exportQty": 53
+      },
+      {
+        "code": "CLTNU070",
+        "name": "Quần jean nữ baggy",
+        "unit": "Chiếc",
+        "unitPrice": 390000,
+        "beginningQty": 121,
+        "importQty": 24,
+        "exportQty": 135
+      },
+      {
+        "code": "CLTNU071",
+        "name": "Quần jean nữ skinny",
+        "unit": "Chiếc",
+        "unitPrice": 360000,
+        "beginningQty": 117,
+        "importQty": 52,
+        "exportQty": 153
+      },
+      {
+        "code": "CLTNU072",
+        "name": "Quần short nữ năng động",
+        "unit": "Chiếc",
+        "unitPrice": 190000,
+        "beginningQty": 126,
+        "importQty": 44,
+        "exportQty": 21
+      },
+      {
+        "code": "CLTNU073",
+        "name": "Áo khoác len nữ dáng dài",
+        "unit": "Chiếc",
+        "unitPrice": 420000,
+        "beginningQty": 120,
+        "importQty": 61,
+        "exportQty": 124
+      },
+      {
+        "code": "CLTNU074",
+        "name": "Áo khoác dạ nữ",
+        "unit": "Chiếc",
+        "unitPrice": 750000,
+        "beginningQty": 96,
+        "importQty": 50,
+        "exportQty": 61
+      },
+      {
+        "code": "CLTNU075",
+        "name": "Áo blazer nữ sang trọng",
+        "unit": "Chiếc",
+        "unitPrice": 650000,
+        "beginningQty": 94,
+        "importQty": 65,
+        "exportQty": 64
+      },
+      {
+        "code": "CLTNU076",
+        "name": "Váy maxi đi biển",
+        "unit": "Chiếc",
+        "unitPrice": 550000,
+        "beginningQty": 53,
+        "importQty": 37,
+        "exportQty": 68
+      },
+      {
+        "code": "CLTNU077",
+        "name": "Váy xòe công chúa",
+        "unit": "Chiếc",
+        "unitPrice": 480000,
+        "beginningQty": 81,
+        "importQty": 78,
+        "exportQty": 138
+      },
+      {
+        "code": "CLTNU078",
+        "name": "Bộ đồ thể thao nữ",
+        "unit": "Bộ",
+        "unitPrice": 450000,
+        "beginningQty": 73,
+        "importQty": 23,
+        "exportQty": 50
+      },
+      {
+        "code": "CLTNU079",
+        "name": "Bộ vest nữ công sở",
+        "unit": "Bộ",
+        "unitPrice": 1200000,
+        "beginningQty": 58,
+        "importQty": 57,
+        "exportQty": 10
+      },
+      {
+        "code": "CLTNU080",
+        "name": "Áo len cổ lọ nữ",
+        "unit": "Chiếc",
+        "unitPrice": 320000,
+        "beginningQty": 103,
+        "importQty": 27,
+        "exportQty": 17
+      }
+    ]
+  },
+  {
+    "id": "htk-quan-ao-nam",
+    "name": "HTK Quần Áo Nam",
+    "items": [
+      {
+        "code": "CLTN001",
+        "name": "Áo thun nam basic",
+        "unit": "Chiếc",
+        "unitPrice": 120000,
+        "beginningQty": 54,
+        "importQty": 53,
+        "exportQty": 13
+      },
+      {
+        "code": "CLTN002",
+        "name": "Áo thun nam cổ tròn",
+        "unit": "Chiếc",
+        "unitPrice": 150000,
+        "beginningQty": 36,
+        "importQty": 50,
+        "exportQty": 34
+      },
+      {
+        "code": "CLTN003",
+        "name": "Áo thun nam thể thao",
+        "unit": "Chiếc",
+        "unitPrice": 180000,
+        "beginningQty": 118,
+        "importQty": 43,
+        "exportQty": 54
+      },
+      {
+        "code": "CLTN004",
+        "name": "Áo sơ mi nam dài tay",
+        "unit": "Chiếc",
+        "unitPrice": 250000,
+        "beginningQty": 94,
+        "importQty": 60,
+        "exportQty": 7
+      },
+      {
+        "code": "CLTN005",
+        "name": "Áo sơ mi nam ngắn tay",
+        "unit": "Chiếc",
+        "unitPrice": 230000,
+        "beginningQty": 127,
+        "importQty": 40,
+        "exportQty": 89
+      },
+      {
+        "code": "CLTN006",
+        "name": "Áo polo nam cotton",
+        "unit": "Chiếc",
+        "unitPrice": 200000,
+        "beginningQty": 24,
+        "importQty": 22,
+        "exportQty": 18
+      },
+      {
+        "code": "CLTN007",
+        "name": "Áo polo nam cao cấp",
+        "unit": "Chiếc",
+        "unitPrice": 280000,
+        "beginningQty": 66,
+        "importQty": 54,
+        "exportQty": 33
+      },
+      {
+        "code": "CLTN008",
+        "name": "Quần jeans nam slim fit",
+        "unit": "Chiếc",
+        "unitPrice": 350000,
+        "beginningQty": 70,
+        "importQty": 53,
+        "exportQty": 91
+      },
+      {
+        "code": "CLTN009",
+        "name": "Quần jeans nam ống suông",
+        "unit": "Chiếc",
+        "unitPrice": 370000,
+        "beginningQty": 142,
+        "importQty": 64,
+        "exportQty": 131
+      },
+      {
+        "code": "CLTN010",
+        "name": "Quần kaki nam ống đứng",
+        "unit": "Chiếc",
+        "unitPrice": 320000,
+        "beginningQty": 56,
+        "importQty": 18,
+        "exportQty": 58
+      },
+      {
+        "code": "CLTN011",
+        "name": "Quần kaki nam co giãn",
+        "unit": "Chiếc",
+        "unitPrice": 340000,
+        "beginningQty": 88,
+        "importQty": 17,
+        "exportQty": 58
+      },
+      {
+        "code": "CLTN012",
+        "name": "Quần short nam thể thao",
+        "unit": "Chiếc",
+        "unitPrice": 180000,
+        "beginningQty": 146,
+        "importQty": 42,
+        "exportQty": 82
+      },
+      {
+        "code": "CLTN013",
+        "name": "Quần short nam jean",
+        "unit": "Chiếc",
+        "unitPrice": 210000,
+        "beginningQty": 34,
+        "importQty": 80,
+        "exportQty": 65
+      },
+      {
+        "code": "CLTN014",
+        "name": "Áo khoác bomber nam",
+        "unit": "Chiếc",
+        "unitPrice": 450000,
+        "beginningQty": 72,
+        "importQty": 54,
+        "exportQty": 113
+      },
+      {
+        "code": "CLTN015",
+        "name": "Áo khoác jean nam",
+        "unit": "Chiếc",
+        "unitPrice": 480000,
+        "beginningQty": 133,
+        "importQty": 27,
+        "exportQty": 102
+      },
+      {
+        "code": "CLTN016",
+        "name": "Áo khoác da nam",
+        "unit": "Chiếc",
+        "unitPrice": 850000,
+        "beginningQty": 108,
+        "importQty": 62,
+        "exportQty": 33
+      },
+      {
+        "code": "CLTN017",
+        "name": "Áo hoodie nam có nón",
+        "unit": "Chiếc",
+        "unitPrice": 420000,
+        "beginningQty": 91,
+        "importQty": 60,
+        "exportQty": 52
+      },
+      {
+        "code": "CLTN018",
+        "name": "Áo hoodie nam trơn",
+        "unit": "Chiếc",
+        "unitPrice": 400000,
+        "beginningQty": 140,
+        "importQty": 72,
+        "exportQty": 174
+      },
+      {
+        "code": "CLTN019",
+        "name": "Áo len nam cổ tròn",
+        "unit": "Chiếc",
+        "unitPrice": 320000,
+        "beginningQty": 136,
+        "importQty": 51,
+        "exportQty": 109
+      },
+      {
+        "code": "CLTN020",
+        "name": "Áo vest nam công sở",
+        "unit": "Chiếc",
+        "unitPrice": 890000,
+        "beginningQty": 150,
+        "importQty": 47,
+        "exportQty": 16
+      },
+      {
+        "code": "CLTN021",
+        "name": "Bộ đồ thể thao nam",
+        "unit": "Bộ",
+        "unitPrice": 550000,
+        "beginningQty": 100,
+        "importQty": 33,
+        "exportQty": 127
+      },
+      {
+        "code": "CLTN022",
+        "name": "Bộ vest nam cao cấp",
+        "unit": "Bộ",
+        "unitPrice": 1500000,
+        "beginningQty": 86,
+        "importQty": 29,
+        "exportQty": 16
+      },
+      {
+        "code": "CLTN023",
+        "name": "Quần tây nam công sở",
+        "unit": "Chiếc",
+        "unitPrice": 400000,
+        "beginningQty": 40,
+        "importQty": 69,
+        "exportQty": 101
+      },
+      {
+        "code": "CLTN024",
+        "name": "Áo giữ nhiệt nam",
+        "unit": "Chiếc",
+        "unitPrice": 270000,
+        "beginningQty": 143,
+        "importQty": 11,
+        "exportQty": 16
+      },
+      {
+        "code": "CLTN025",
+        "name": "Áo khoác gió nam",
+        "unit": "Chiếc",
+        "unitPrice": 380000,
+        "beginningQty": 94,
+        "importQty": 16,
+        "exportQty": 8
+      },
+      {
+        "code": "CLTN026",
+        "name": "Áo sơ mi flannel nam",
+        "unit": "Chiếc",
+        "unitPrice": 260000,
+        "beginningQty": 44,
+        "importQty": 16,
+        "exportQty": 5
+      },
+      {
+        "code": "CLTN027",
+        "name": "Áo ba lỗ nam",
+        "unit": "Chiếc",
+        "unitPrice": 140000,
+        "beginningQty": 54,
+        "importQty": 40,
+        "exportQty": 38
+      },
+      {
+        "code": "CLTN028",
+        "name": "Áo blazer nam lịch lãm",
+        "unit": "Chiếc",
+        "unitPrice": 980000,
+        "beginningQty": 93,
+        "importQty": 35,
+        "exportQty": 87
+      },
+      {
+        "code": "CLTN029",
+        "name": "Quần jogger nam",
+        "unit": "Chiếc",
+        "unitPrice": 310000,
+        "beginningQty": 83,
+        "importQty": 58,
+        "exportQty": 79
+      },
+      {
+        "code": "CLTN030",
+        "name": "Áo khoác dù nam",
+        "unit": "Chiếc",
+        "unitPrice": 450000,
+        "beginningQty": 33,
+        "importQty": 80,
+        "exportQty": 19
+      },
+      {
+        "code": "CLTN031",
+        "name": "Áo thun nam basic",
+        "unit": "Chiếc",
+        "unitPrice": 120000,
+        "beginningQty": 66,
+        "importQty": 15,
+        "exportQty": 66
+      },
+      {
+        "code": "CLTN032",
+        "name": "Áo thun nam cổ tròn",
+        "unit": "Chiếc",
+        "unitPrice": 150000,
+        "beginningQty": 100,
+        "importQty": 11,
+        "exportQty": 8
+      },
+      {
+        "code": "CLTN033",
+        "name": "Áo thun nam thể thao",
+        "unit": "Chiếc",
+        "unitPrice": 180000,
+        "beginningQty": 144,
+        "importQty": 70,
+        "exportQty": 86
+      },
+      {
+        "code": "CLTN034",
+        "name": "Áo sơ mi nam dài tay",
+        "unit": "Chiếc",
+        "unitPrice": 250000,
+        "beginningQty": 33,
+        "importQty": 10,
+        "exportQty": 24
+      },
+      {
+        "code": "CLTN035",
+        "name": "Áo sơ mi nam ngắn tay",
+        "unit": "Chiếc",
+        "unitPrice": 230000,
+        "beginningQty": 86,
+        "importQty": 10,
+        "exportQty": 67
+      },
+      {
+        "code": "CLTN036",
+        "name": "Áo polo nam cotton",
+        "unit": "Chiếc",
+        "unitPrice": 200000,
+        "beginningQty": 57,
+        "importQty": 24,
+        "exportQty": 41
+      },
+      {
+        "code": "CLTN037",
+        "name": "Áo polo nam cao cấp",
+        "unit": "Chiếc",
+        "unitPrice": 280000,
+        "beginningQty": 134,
+        "importQty": 25,
+        "exportQty": 64
+      },
+      {
+        "code": "CLTN038",
+        "name": "Quần jeans nam slim fit",
+        "unit": "Chiếc",
+        "unitPrice": 350000,
+        "beginningQty": 100,
+        "importQty": 50,
+        "exportQty": 82
+      },
+      {
+        "code": "CLTN039",
+        "name": "Quần jeans nam ống suông",
+        "unit": "Chiếc",
+        "unitPrice": 370000,
+        "beginningQty": 83,
+        "importQty": 27,
+        "exportQty": 23
+      },
+      {
+        "code": "CLTN040",
+        "name": "Quần kaki nam ống đứng",
+        "unit": "Chiếc",
+        "unitPrice": 320000,
+        "beginningQty": 93,
+        "importQty": 57,
+        "exportQty": 91
+      },
+      {
+        "code": "CLTN041",
+        "name": "Quần kaki nam co giãn",
+        "unit": "Chiếc",
+        "unitPrice": 340000,
+        "beginningQty": 110,
+        "importQty": 78,
+        "exportQty": 165
+      },
+      {
+        "code": "CLTN042",
+        "name": "Quần short nam thể thao",
+        "unit": "Chiếc",
+        "unitPrice": 180000,
+        "beginningQty": 90,
+        "importQty": 49,
+        "exportQty": 104
+      },
+      {
+        "code": "CLTN043",
+        "name": "Quần short nam jean",
+        "unit": "Chiếc",
+        "unitPrice": 210000,
+        "beginningQty": 127,
+        "importQty": 64,
+        "exportQty": 165
+      },
+      {
+        "code": "CLTN044",
+        "name": "Áo khoác bomber nam",
+        "unit": "Chiếc",
+        "unitPrice": 450000,
+        "beginningQty": 125,
+        "importQty": 68,
+        "exportQty": 125
+      },
+      {
+        "code": "CLTN045",
+        "name": "Áo khoác jean nam",
+        "unit": "Chiếc",
+        "unitPrice": 480000,
+        "beginningQty": 91,
+        "importQty": 10,
+        "exportQty": 35
+      },
+      {
+        "code": "CLTN046",
+        "name": "Áo khoác da nam",
+        "unit": "Chiếc",
+        "unitPrice": 850000,
+        "beginningQty": 40,
+        "importQty": 58,
+        "exportQty": 38
+      },
+      {
+        "code": "CLTN047",
+        "name": "Áo hoodie nam có nón",
+        "unit": "Chiếc",
+        "unitPrice": 420000,
+        "beginningQty": 123,
+        "importQty": 53,
+        "exportQty": 65
+      },
+      {
+        "code": "CLTN048",
+        "name": "Áo hoodie nam trơn",
+        "unit": "Chiếc",
+        "unitPrice": 400000,
+        "beginningQty": 52,
+        "importQty": 78,
+        "exportQty": 59
+      },
+      {
+        "code": "CLTN049",
+        "name": "Áo len nam cổ tròn",
+        "unit": "Chiếc",
+        "unitPrice": 320000,
+        "beginningQty": 29,
+        "importQty": 69,
+        "exportQty": 44
+      },
+      {
+        "code": "CLTN050",
+        "name": "Áo vest nam công sở",
+        "unit": "Chiếc",
+        "unitPrice": 890000,
+        "beginningQty": 62,
+        "importQty": 37,
+        "exportQty": 10
+      },
+      {
+        "code": "CLTN051",
+        "name": "Bộ đồ thể thao nam",
+        "unit": "Bộ",
+        "unitPrice": 550000,
+        "beginningQty": 43,
+        "importQty": 25,
+        "exportQty": 7
+      },
+      {
+        "code": "CLTN052",
+        "name": "Bộ vest nam cao cấp",
+        "unit": "Bộ",
+        "unitPrice": 1500000,
+        "beginningQty": 137,
+        "importQty": 68,
+        "exportQty": 71
+      },
+      {
+        "code": "CLTN053",
+        "name": "Quần tây nam công sở",
+        "unit": "Chiếc",
+        "unitPrice": 400000,
+        "beginningQty": 135,
+        "importQty": 30,
+        "exportQty": 77
+      },
+      {
+        "code": "CLTN054",
+        "name": "Áo giữ nhiệt nam",
+        "unit": "Chiếc",
+        "unitPrice": 270000,
+        "beginningQty": 90,
+        "importQty": 74,
+        "exportQty": 42
+      },
+      {
+        "code": "CLTN055",
+        "name": "Áo khoác gió nam",
+        "unit": "Chiếc",
+        "unitPrice": 380000,
+        "beginningQty": 139,
+        "importQty": 13,
+        "exportQty": 33
+      },
+      {
+        "code": "CLTN056",
+        "name": "Áo sơ mi flannel nam",
+        "unit": "Chiếc",
+        "unitPrice": 260000,
+        "beginningQty": 94,
+        "importQty": 42,
+        "exportQty": 68
+      },
+      {
+        "code": "CLTN057",
+        "name": "Áo ba lỗ nam",
+        "unit": "Chiếc",
+        "unitPrice": 140000,
+        "beginningQty": 140,
+        "importQty": 13,
+        "exportQty": 105
+      },
+      {
+        "code": "CLTN058",
+        "name": "Áo blazer nam lịch lãm",
+        "unit": "Chiếc",
+        "unitPrice": 980000,
+        "beginningQty": 96,
+        "importQty": 25,
+        "exportQty": 99
+      },
+      {
+        "code": "CLTN059",
+        "name": "Quần jogger nam",
+        "unit": "Chiếc",
+        "unitPrice": 310000,
+        "beginningQty": 69,
+        "importQty": 27,
+        "exportQty": 73
+      },
+      {
+        "code": "CLTN060",
+        "name": "Áo khoác dù nam",
+        "unit": "Chiếc",
+        "unitPrice": 450000,
+        "beginningQty": 136,
+        "importQty": 68,
+        "exportQty": 151
+      },
+      {
+        "code": "CLTN061",
+        "name": "Áo thun nam basic",
+        "unit": "Chiếc",
+        "unitPrice": 120000,
+        "beginningQty": 105,
+        "importQty": 43,
+        "exportQty": 12
+      },
+      {
+        "code": "CLTN062",
+        "name": "Áo thun nam cổ tròn",
+        "unit": "Chiếc",
+        "unitPrice": 150000,
+        "beginningQty": 88,
+        "importQty": 44,
+        "exportQty": 63
+      },
+      {
+        "code": "CLTN063",
+        "name": "Áo thun nam thể thao",
+        "unit": "Chiếc",
+        "unitPrice": 180000,
+        "beginningQty": 42,
+        "importQty": 43,
+        "exportQty": 12
+      },
+      {
+        "code": "CLTN064",
+        "name": "Áo sơ mi nam dài tay",
+        "unit": "Chiếc",
+        "unitPrice": 250000,
+        "beginningQty": 112,
+        "importQty": 41,
+        "exportQty": 78
+      },
+      {
+        "code": "CLTN065",
+        "name": "Áo sơ mi nam ngắn tay",
+        "unit": "Chiếc",
+        "unitPrice": 230000,
+        "beginningQty": 24,
+        "importQty": 46,
+        "exportQty": 23
+      },
+      {
+        "code": "CLTN066",
+        "name": "Áo polo nam cotton",
+        "unit": "Chiếc",
+        "unitPrice": 200000,
+        "beginningQty": 50,
+        "importQty": 33,
+        "exportQty": 36
+      },
+      {
+        "code": "CLTN067",
+        "name": "Áo polo nam cao cấp",
+        "unit": "Chiếc",
+        "unitPrice": 280000,
+        "beginningQty": 23,
+        "importQty": 48,
+        "exportQty": 41
+      },
+      {
+        "code": "CLTN068",
+        "name": "Quần jeans nam slim fit",
+        "unit": "Chiếc",
+        "unitPrice": 350000,
+        "beginningQty": 82,
+        "importQty": 61,
+        "exportQty": 13
+      },
+      {
+        "code": "CLTN069",
+        "name": "Quần jeans nam ống suông",
+        "unit": "Chiếc",
+        "unitPrice": 370000,
+        "beginningQty": 73,
+        "importQty": 47,
+        "exportQty": 96
+      },
+      {
+        "code": "CLTN070",
+        "name": "Quần kaki nam ống đứng",
+        "unit": "Chiếc",
+        "unitPrice": 320000,
+        "beginningQty": 149,
+        "importQty": 51,
+        "exportQty": 11
+      },
+      {
+        "code": "CLTN071",
+        "name": "Quần kaki nam co giãn",
+        "unit": "Chiếc",
+        "unitPrice": 340000,
+        "beginningQty": 148,
+        "importQty": 40,
+        "exportQty": 114
+      },
+      {
+        "code": "CLTN072",
+        "name": "Quần short nam thể thao",
+        "unit": "Chiếc",
+        "unitPrice": 180000,
+        "beginningQty": 72,
+        "importQty": 13,
+        "exportQty": 45
+      },
+      {
+        "code": "CLTN073",
+        "name": "Quần short nam jean",
+        "unit": "Chiếc",
+        "unitPrice": 210000,
+        "beginningQty": 144,
+        "importQty": 62,
+        "exportQty": 107
+      },
+      {
+        "code": "CLTN074",
+        "name": "Áo khoác bomber nam",
+        "unit": "Chiếc",
+        "unitPrice": 450000,
+        "beginningQty": 106,
+        "importQty": 54,
+        "exportQty": 29
+      },
+      {
+        "code": "CLTN075",
+        "name": "Áo khoác jean nam",
+        "unit": "Chiếc",
+        "unitPrice": 480000,
+        "beginningQty": 150,
+        "importQty": 78,
+        "exportQty": 34
+      },
+      {
+        "code": "CLTN076",
+        "name": "Áo khoác da nam",
+        "unit": "Chiếc",
+        "unitPrice": 850000,
+        "beginningQty": 92,
+        "importQty": 51,
+        "exportQty": 75
+      },
+      {
+        "code": "CLTN077",
+        "name": "Áo hoodie nam có nón",
+        "unit": "Chiếc",
+        "unitPrice": 420000,
+        "beginningQty": 138,
+        "importQty": 33,
+        "exportQty": 12
+      },
+      {
+        "code": "CLTN078",
+        "name": "Áo hoodie nam trơn",
+        "unit": "Chiếc",
+        "unitPrice": 400000,
+        "beginningQty": 70,
+        "importQty": 66,
+        "exportQty": 49
+      },
+      {
+        "code": "CLTN079",
+        "name": "Áo len nam cổ tròn",
+        "unit": "Chiếc",
+        "unitPrice": 320000,
+        "beginningQty": 99,
+        "importQty": 46,
+        "exportQty": 37
+      },
+      {
+        "code": "CLTN080",
+        "name": "Áo vest nam công sở",
+        "unit": "Chiếc",
+        "unitPrice": 890000,
+        "beginningQty": 139,
+        "importQty": 24,
+        "exportQty": 149
+      }
+    ]
+  },
+  {
+    "id": "htk-vlxd",
+    "name": "HTK VLXD",
+    "items": [
+      {
+        "code": "VLXD001",
+        "name": "Xi măng Hà Tiên PCB40",
+        "unit": "Tấn",
+        "unitPrice": 1700000,
+        "beginningQty": 75,
+        "importQty": 53,
+        "exportQty": 115
+      },
+      {
+        "code": "VLXD002",
+        "name": "Xi măng INSEE",
+        "unit": "Tấn",
+        "unitPrice": 1750000,
+        "beginningQty": 144,
+        "importQty": 27,
+        "exportQty": 63
+      },
+      {
+        "code": "VLXD003",
+        "name": "Xi măng Vicem Hoàng Thạch",
+        "unit": "Tấn",
+        "unitPrice": 1650000,
+        "beginningQty": 272,
+        "importQty": 99,
+        "exportQty": 293
+      },
+      {
+        "code": "VLXD004",
+        "name": "Cát xây tô loại 1",
+        "unit": "m³",
+        "unitPrice": 210000,
+        "beginningQty": 301,
+        "importQty": 31,
+        "exportQty": 100
+      },
+      {
+        "code": "VLXD005",
+        "name": "Cát bê tông rửa",
+        "unit": "m³",
+        "unitPrice": 275000,
+        "beginningQty": 59,
+        "importQty": 95,
+        "exportQty": 117
+      },
+      {
+        "code": "VLXD006",
+        "name": "Đá mi bụi",
+        "unit": "m³",
+        "unitPrice": 260000,
+        "beginningQty": 369,
+        "importQty": 45,
+        "exportQty": 397
+      },
+      {
+        "code": "VLXD007",
+        "name": "Đá 4x6",
+        "unit": "m³",
+        "unitPrice": 310000,
+        "beginningQty": 426,
+        "importQty": 90,
+        "exportQty": 20
+      },
+      {
+        "code": "VLXD008",
+        "name": "Đá xanh đen 1x2",
+        "unit": "m³",
+        "unitPrice": 330000,
+        "beginningQty": 295,
+        "importQty": 67,
+        "exportQty": 192
+      },
+      {
+        "code": "VLXD009",
+        "name": "Gạch Tuynel Bình Dương",
+        "unit": "Viên",
+        "unitPrice": 1300,
+        "beginningQty": 241,
+        "importQty": 44,
+        "exportQty": 12
+      },
+      {
+        "code": "VLXD010",
+        "name": "Gạch Đồng Nai",
+        "unit": "Viên",
+        "unitPrice": 1200,
+        "beginningQty": 352,
+        "importQty": 20,
+        "exportQty": 210
+      },
+      {
+        "code": "VLXD011",
+        "name": "Gạch block",
+        "unit": "Viên",
+        "unitPrice": 1500,
+        "beginningQty": 413,
+        "importQty": 26,
+        "exportQty": 397
+      },
+      {
+        "code": "VLXD012",
+        "name": "Thép cuộn Pomina Ø6",
+        "unit": "Kg",
+        "unitPrice": 16500,
+        "beginningQty": 341,
+        "importQty": 32,
+        "exportQty": 315
+      },
+      {
+        "code": "VLXD013",
+        "name": "Thép cây Việt Nhật Ø12",
+        "unit": "Kg",
+        "unitPrice": 17000,
+        "beginningQty": 363,
+        "importQty": 68,
+        "exportQty": 20
+      },
+      {
+        "code": "VLXD014",
+        "name": "Thép Hòa Phát Ø8",
+        "unit": "Kg",
+        "unitPrice": 16000,
+        "beginningQty": 208,
+        "importQty": 73,
+        "exportQty": 199
+      },
+      {
+        "code": "VLXD015",
+        "name": "Thép ống mạ kẽm 2 inch",
+        "unit": "Cây",
+        "unitPrice": 280000,
+        "beginningQty": 286,
+        "importQty": 41,
+        "exportQty": 62
+      },
+      {
+        "code": "VLXD016",
+        "name": "Tôn lạnh màu Hoa Sen",
+        "unit": "Tấm",
+        "unitPrice": 150000,
+        "beginningQty": 59,
+        "importQty": 70,
+        "exportQty": 72
+      },
+      {
+        "code": "VLXD017",
+        "name": "Tôn kẽm Đông Á",
+        "unit": "Tấm",
+        "unitPrice": 140000,
+        "beginningQty": 488,
+        "importQty": 52,
+        "exportQty": 460
+      },
+      {
+        "code": "VLXD018",
+        "name": "Sơn Jotun Essence",
+        "unit": "Lít",
+        "unitPrice": 280000,
+        "beginningQty": 335,
+        "importQty": 49,
+        "exportQty": 147
+      },
+      {
+        "code": "VLXD019",
+        "name": "Sơn Dulux Weathershield",
+        "unit": "Lít",
+        "unitPrice": 350000,
+        "beginningQty": 276,
+        "importQty": 21,
+        "exportQty": 50
+      },
+      {
+        "code": "VLXD020",
+        "name": "Ngói màu SCG",
+        "unit": "Viên",
+        "unitPrice": 12000,
+        "beginningQty": 485,
+        "importQty": 50,
+        "exportQty": 93
+      },
+      {
+        "code": "VLXD021",
+        "name": "Ngói Đồng Tâm",
+        "unit": "Viên",
+        "unitPrice": 11000,
+        "beginningQty": 315,
+        "importQty": 98,
+        "exportQty": 379
+      },
+      {
+        "code": "VLXD022",
+        "name": "Xi măng trắng Sông Gianh",
+        "unit": "Tấn",
+        "unitPrice": 1900000,
+        "beginningQty": 188,
+        "importQty": 80,
+        "exportQty": 83
+      },
+      {
+        "code": "VLXD023",
+        "name": "Cát đen san lấp",
+        "unit": "m³",
+        "unitPrice": 180000,
+        "beginningQty": 376,
+        "importQty": 38,
+        "exportQty": 186
+      },
+      {
+        "code": "VLXD024",
+        "name": "Sơn Nippon Matex",
+        "unit": "Lít",
+        "unitPrice": 260000,
+        "beginningQty": 51,
+        "importQty": 83,
+        "exportQty": 72
+      },
+      {
+        "code": "VLXD025",
+        "name": "Gỗ ván ép công nghiệp",
+        "unit": "Tấm",
+        "unitPrice": 320000,
+        "beginningQty": 212,
+        "importQty": 85,
+        "exportQty": 112
+      },
+      {
+        "code": "VLXD026",
+        "name": "Gỗ MDF phủ melamine",
+        "unit": "Tấm",
+        "unitPrice": 450000,
+        "beginningQty": 122,
+        "importQty": 99,
+        "exportQty": 64
+      },
+      {
+        "code": "VLXD027",
+        "name": "Ống nhựa Bình Minh Ø90",
+        "unit": "Mét",
+        "unitPrice": 55000,
+        "beginningQty": 188,
+        "importQty": 34,
+        "exportQty": 30
+      },
+      {
+        "code": "VLXD028",
+        "name": "Ống nhựa Tiền Phong Ø110",
+        "unit": "Mét",
+        "unitPrice": 65000,
+        "beginningQty": 381,
+        "importQty": 30,
+        "exportQty": 259
+      },
+      {
+        "code": "VLXD029",
+        "name": "Keo dán gạch Weber",
+        "unit": "Bao",
+        "unitPrice": 250000,
+        "beginningQty": 375,
+        "importQty": 39,
+        "exportQty": 244
+      },
+      {
+        "code": "VLXD030",
+        "name": "Kính cường lực 8mm",
+        "unit": "M²",
+        "unitPrice": 750000,
+        "beginningQty": 169,
+        "importQty": 33,
+        "exportQty": 133
+      },
+      {
+        "code": "VLXD031",
+        "name": "Xi măng Nghi Sơn",
+        "unit": "Tấn",
+        "unitPrice": 1800000,
+        "beginningQty": 478,
+        "importQty": 20,
+        "exportQty": 463
+      },
+      {
+        "code": "VLXD032",
+        "name": "Xi măng Bút Sơn",
+        "unit": "Tấn",
+        "unitPrice": 1720000,
+        "beginningQty": 264,
+        "importQty": 96,
+        "exportQty": 101
+      },
+      {
+        "code": "VLXD033",
+        "name": "Gạch không nung",
+        "unit": "Viên",
+        "unitPrice": 1400,
+        "beginningQty": 180,
+        "importQty": 74,
+        "exportQty": 87
+      },
+      {
+        "code": "VLXD034",
+        "name": "Cát vàng hạt lớn",
+        "unit": "m³",
+        "unitPrice": 290000,
+        "beginningQty": 408,
+        "importQty": 78,
+        "exportQty": 233
+      },
+      {
+        "code": "VLXD035",
+        "name": "Đá 0x4",
+        "unit": "m³",
+        "unitPrice": 280000,
+        "beginningQty": 444,
+        "importQty": 64,
+        "exportQty": 12
+      },
+      {
+        "code": "VLXD036",
+        "name": "Gạch bê tông nhẹ",
+        "unit": "Viên",
+        "unitPrice": 1600,
+        "beginningQty": 429,
+        "importQty": 49,
+        "exportQty": 125
+      },
+      {
+        "code": "VLXD037",
+        "name": "Thép hộp vuông 50x50",
+        "unit": "Cây",
+        "unitPrice": 290000,
+        "beginningQty": 139,
+        "importQty": 79,
+        "exportQty": 189
+      },
+      {
+        "code": "VLXD038",
+        "name": "Thép hộp chữ nhật 60x120",
+        "unit": "Cây",
+        "unitPrice": 480000,
+        "beginningQty": 357,
+        "importQty": 48,
+        "exportQty": 394
+      },
+      {
+        "code": "VLXD039",
+        "name": "Tôn lạnh mạ màu BlueScope",
+        "unit": "Tấm",
+        "unitPrice": 160000,
+        "beginningQty": 82,
+        "importQty": 84,
+        "exportQty": 114
+      },
+      {
+        "code": "VLXD040",
+        "name": "Tôn sóng ngói",
+        "unit": "Tấm",
+        "unitPrice": 190000,
+        "beginningQty": 123,
+        "importQty": 67,
+        "exportQty": 104
+      },
+      {
+        "code": "VLXD041",
+        "name": "Sơn Kova chống thấm",
+        "unit": "Lít",
+        "unitPrice": 380000,
+        "beginningQty": 305,
+        "importQty": 79,
+        "exportQty": 248
+      },
+      {
+        "code": "VLXD042",
+        "name": "Sơn Jotun Majestic",
+        "unit": "Lít",
+        "unitPrice": 400000,
+        "beginningQty": 142,
+        "importQty": 27,
+        "exportQty": 80
+      },
+      {
+        "code": "VLXD043",
+        "name": "Ngói màu Nhật Bản",
+        "unit": "Viên",
+        "unitPrice": 12500,
+        "beginningQty": 211,
+        "importQty": 56,
+        "exportQty": 28
+      },
+      {
+        "code": "VLXD044",
+        "name": "Ngói đất nung",
+        "unit": "Viên",
+        "unitPrice": 10500,
+        "beginningQty": 417,
+        "importQty": 99,
+        "exportQty": 506
+      },
+      {
+        "code": "VLXD045",
+        "name": "Ống thép đen Ø114",
+        "unit": "Mét",
+        "unitPrice": 75000,
+        "beginningQty": 488,
+        "importQty": 61,
+        "exportQty": 209
+      },
+      {
+        "code": "VLXD046",
+        "name": "Ống thép mạ kẽm Ø168",
+        "unit": "Mét",
+        "unitPrice": 120000,
+        "beginningQty": 241,
+        "importQty": 73,
+        "exportQty": 242
+      },
+      {
+        "code": "VLXD047",
+        "name": "Cửa nhôm Xingfa",
+        "unit": "Bộ",
+        "unitPrice": 3200000,
+        "beginningQty": 313,
+        "importQty": 45,
+        "exportQty": 243
+      },
+      {
+        "code": "VLXD048",
+        "name": "Cửa kính cường lực 10mm",
+        "unit": "M²",
+        "unitPrice": 850000,
+        "beginningQty": 67,
+        "importQty": 63,
+        "exportQty": 36
+      },
+      {
+        "code": "VLXD049",
+        "name": "Ván gỗ công nghiệp MFC",
+        "unit": "Tấm",
+        "unitPrice": 420000,
+        "beginningQty": 81,
+        "importQty": 77,
+        "exportQty": 124
+      },
+      {
+        "code": "VLXD050",
+        "name": "Tấm ốp tường PVC",
+        "unit": "Tấm",
+        "unitPrice": 600000,
+        "beginningQty": 495,
+        "importQty": 63,
+        "exportQty": 485
+      },
+      {
+        "code": "VLXD051",
+        "name": "Tấm cách nhiệt XPS",
+        "unit": "Tấm",
+        "unitPrice": 720000,
+        "beginningQty": 351,
+        "importQty": 62,
+        "exportQty": 55
+      },
+      {
+        "code": "VLXD052",
+        "name": "Lưới thép hàn D4",
+        "unit": "M²",
+        "unitPrice": 45000,
+        "beginningQty": 140,
+        "importQty": 63,
+        "exportQty": 154
+      },
+      {
+        "code": "VLXD053",
+        "name": "Lưới thép hàn D6",
+        "unit": "M²",
+        "unitPrice": 85000,
+        "beginningQty": 417,
+        "importQty": 21,
+        "exportQty": 58
+      },
+      {
+        "code": "VLXD054",
+        "name": "Keo chống thấm Sika",
+        "unit": "Lít",
+        "unitPrice": 290000,
+        "beginningQty": 194,
+        "importQty": 70,
+        "exportQty": 159
+      },
+      {
+        "code": "VLXD055",
+        "name": "Gỗ lim Nam Phi",
+        "unit": "M³",
+        "unitPrice": 18000000,
+        "beginningQty": 98,
+        "importQty": 21,
+        "exportQty": 69
+      },
+      {
+        "code": "VLXD056",
+        "name": "Gỗ căm xe",
+        "unit": "M³",
+        "unitPrice": 20000000,
+        "beginningQty": 413,
+        "importQty": 95,
+        "exportQty": 215
+      },
+      {
+        "code": "VLXD057",
+        "name": "Gạch men 60x60",
+        "unit": "M²",
+        "unitPrice": 185000,
+        "beginningQty": 243,
+        "importQty": 83,
+        "exportQty": 292
+      },
+      {
+        "code": "VLXD058",
+        "name": "Gạch giả đá 30x60",
+        "unit": "M²",
+        "unitPrice": 200000,
+        "beginningQty": 450,
+        "importQty": 26,
+        "exportQty": 307
+      },
+      {
+        "code": "VLXD059",
+        "name": "Gạch mosaic thủy tinh",
+        "unit": "M²",
+        "unitPrice": 650000,
+        "beginningQty": 77,
+        "importQty": 48,
+        "exportQty": 63
+      },
+      {
+        "code": "VLXD060",
+        "name": "Đá granite tự nhiên",
+        "unit": "M²",
+        "unitPrice": 1250000,
+        "beginningQty": 244,
+        "importQty": 79,
+        "exportQty": 142
+      },
+      {
+        "code": "VLXD061",
+        "name": "Đá marble nhập khẩu",
+        "unit": "M²",
+        "unitPrice": 2300000,
+        "beginningQty": 229,
+        "importQty": 53,
+        "exportQty": 176
+      },
+      {
+        "code": "VLXD062",
+        "name": "Vật liệu cách âm Rockwool",
+        "unit": "M³",
+        "unitPrice": 1450000,
+        "beginningQty": 205,
+        "importQty": 46,
+        "exportQty": 58
+      },
+      {
+        "code": "VLXD063",
+        "name": "Xốp cách nhiệt EPS",
+        "unit": "M³",
+        "unitPrice": 1100000,
+        "beginningQty": 200,
+        "importQty": 82,
+        "exportQty": 148
+      },
+      {
+        "code": "VLXD064",
+        "name": "Bulong neo M16",
+        "unit": "Kg",
+        "unitPrice": 65000,
+        "beginningQty": 162,
+        "importQty": 98,
+        "exportQty": 32
+      },
+      {
+        "code": "VLXD065",
+        "name": "Bulong nở sắt M12",
+        "unit": "Cái",
+        "unitPrice": 18000,
+        "beginningQty": 458,
+        "importQty": 28,
+        "exportQty": 302
+      },
+      {
+        "code": "VLXD066",
+        "name": "Bulong hóa chất Hilti",
+        "unit": "Cái",
+        "unitPrice": 95000,
+        "beginningQty": 302,
+        "importQty": 30,
+        "exportQty": 31
+      },
+      {
+        "code": "VLXD067",
+        "name": "Phụ kiện nhôm kính",
+        "unit": "Bộ",
+        "unitPrice": 550000,
+        "beginningQty": 131,
+        "importQty": 50,
+        "exportQty": 25
+      },
+      {
+        "code": "VLXD068",
+        "name": "Sàn gỗ công nghiệp 12mm",
+        "unit": "M²",
+        "unitPrice": 320000,
+        "beginningQty": 355,
+        "importQty": 48,
+        "exportQty": 333
+      },
+      {
+        "code": "VLXD069",
+        "name": "Sàn nhựa giả gỗ SPC",
+        "unit": "M²",
+        "unitPrice": 280000,
+        "beginningQty": 454,
+        "importQty": 75,
+        "exportQty": 390
+      },
+      {
+        "code": "VLXD070",
+        "name": "Bê tông thương phẩm M250",
+        "unit": "M³",
+        "unitPrice": 1450000,
+        "beginningQty": 291,
+        "importQty": 49,
+        "exportQty": 66
+      },
+      {
+        "code": "VLXD071",
+        "name": "Bê tông thương phẩm M300",
+        "unit": "M³",
+        "unitPrice": 1550000,
+        "beginningQty": 500,
+        "importQty": 67,
+        "exportQty": 546
+      },
+      {
+        "code": "VLXD072",
+        "name": "Bê tông nhẹ EPS",
+        "unit": "M³",
+        "unitPrice": 1800000,
+        "beginningQty": 343,
+        "importQty": 53,
+        "exportQty": 90
+      },
+      {
+        "code": "VLXD073",
+        "name": "Tấm xi măng Cemboard 12mm",
+        "unit": "Tấm",
+        "unitPrice": 520000,
+        "beginningQty": 67,
+        "importQty": 64,
+        "exportQty": 59
+      },
+      {
+        "code": "VLXD074",
+        "name": "Tấm trần thạch cao Gyproc",
+        "unit": "Tấm",
+        "unitPrice": 230000,
+        "beginningQty": 419,
+        "importQty": 45,
+        "exportQty": 34
+      },
+      {
+        "code": "VLXD075",
+        "name": "Bông khoáng Rockwool",
+        "unit": "M³",
+        "unitPrice": 1650000,
+        "beginningQty": 158,
+        "importQty": 62,
+        "exportQty": 100
+      },
+      {
+        "code": "VLXD076",
+        "name": "Bông thủy tinh cách nhiệt",
+        "unit": "M³",
+        "unitPrice": 1450000,
+        "beginningQty": 355,
+        "importQty": 45,
+        "exportQty": 94
+      },
+      {
+        "code": "VLXD077",
+        "name": "Sơn epoxy chống trượt",
+        "unit": "Lít",
+        "unitPrice": 450000,
+        "beginningQty": 250,
+        "importQty": 72,
+        "exportQty": 137
+      },
+      {
+        "code": "VLXD078",
+        "name": "Sơn chống cháy Jotun",
+        "unit": "Lít",
+        "unitPrice": 750000,
+        "beginningQty": 369,
+        "importQty": 68,
+        "exportQty": 32
+      },
+      {
+        "code": "VLXD079",
+        "name": "Cọc bê tông ly tâm D300",
+        "unit": "Mét",
+        "unitPrice": 450000,
+        "beginningQty": 476,
+        "importQty": 52,
+        "exportQty": 484
+      },
+      {
+        "code": "VLXD080",
+        "name": "Cọc bê tông ly tâm D400",
+        "unit": "Mét",
+        "unitPrice": 650000,
+        "beginningQty": 277,
+        "importQty": 100,
+        "exportQty": 138
+      }
+    ]
+  },
+  {
+    "id": "htk-thung-carton",
+    "name": "HTK Thùng Carton",
+    "items": [
+      {
+        "code": "CT001",
+        "name": "Carton sóng B 25x20x15cm",
+        "unit": "Cái",
+        "unitPrice": 48629,
+        "beginningQty": 619,
+        "importQty": 309,
+        "exportQty": 53
+      },
+      {
+        "code": "CT002",
+        "name": "Carton 5 lớp 50x40x30cm",
+        "unit": "Cái",
+        "unitPrice": 39606,
+        "beginningQty": 706,
+        "importQty": 38,
+        "exportQty": 512
+      },
+      {
+        "code": "CT003",
+        "name": "Carton chịu lực 45x35x25cm",
+        "unit": "Cái",
+        "unitPrice": 6560,
+        "beginningQty": 113,
+        "importQty": 265,
+        "exportQty": 365
+      },
+      {
+        "code": "CT004",
+        "name": "Thùng carton in logo 50x40x35cm",
+        "unit": "Cái",
+        "unitPrice": 8867,
+        "beginningQty": 560,
+        "importQty": 330,
+        "exportQty": 546
+      },
+      {
+        "code": "CT005",
+        "name": "Thùng carton ghép nối 60x50x45cm",
+        "unit": "Cái",
+        "unitPrice": 33005,
+        "beginningQty": 91,
+        "importQty": 127,
+        "exportQty": 148
+      },
+      {
+        "code": "CT006",
+        "name": "Carton sóng A 60x50x40cm",
+        "unit": "Cái",
+        "unitPrice": 48673,
+        "beginningQty": 582,
+        "importQty": 403,
+        "exportQty": 985
+      },
+      {
+        "code": "CT007",
+        "name": "Carton 3 lớp 30x20x15cm",
+        "unit": "Cái",
+        "unitPrice": 25970,
+        "beginningQty": 871,
+        "importQty": 158,
+        "exportQty": 715
+      },
+      {
+        "code": "CT008",
+        "name": "Thùng carton có quai 35x30x25cm",
+        "unit": "Cái",
+        "unitPrice": 5672,
+        "beginningQty": 467,
+        "importQty": 379,
+        "exportQty": 568
+      },
+      {
+        "code": "CT009",
+        "name": "Hộp carton nắp gài 30x25x20cm",
+        "unit": "Cái",
+        "unitPrice": 34745,
+        "beginningQty": 816,
+        "importQty": 114,
+        "exportQty": 584
+      },
+      {
+        "code": "CT010",
+        "name": "Carton 3 lớp 20x15x10cm",
+        "unit": "Cái",
+        "unitPrice": 27487,
+        "beginningQty": 917,
+        "importQty": 31,
+        "exportQty": 272
+      },
+      {
+        "code": "CT011",
+        "name": "Carton chống thấm 55x45x35cm",
+        "unit": "Cái",
+        "unitPrice": 21303,
+        "beginningQty": 675,
+        "importQty": 459,
+        "exportQty": 953
+      },
+      {
+        "code": "CT012",
+        "name": "Carton 3 lớp 40x30x20cm",
+        "unit": "Cái",
+        "unitPrice": 10663,
+        "beginningQty": 210,
+        "importQty": 48,
+        "exportQty": 196
+      },
+      {
+        "code": "CT013",
+        "name": "Carton sóng B 25x20x15cm",
+        "unit": "Cái",
+        "unitPrice": 38718,
+        "beginningQty": 704,
+        "importQty": 304,
+        "exportQty": 382
+      },
+      {
+        "code": "CT014",
+        "name": "Carton 5 lớp 50x40x30cm",
+        "unit": "Cái",
+        "unitPrice": 10013,
+        "beginningQty": 442,
+        "importQty": 259,
+        "exportQty": 336
+      },
+      {
+        "code": "CT015",
+        "name": "Carton chịu lực 45x35x25cm",
+        "unit": "Cái",
+        "unitPrice": 16246,
+        "beginningQty": 896,
+        "importQty": 213,
+        "exportQty": 163
+      },
+      {
+        "code": "CT016",
+        "name": "Thùng carton in logo 50x40x35cm",
+        "unit": "Cái",
+        "unitPrice": 19477,
+        "beginningQty": 642,
+        "importQty": 440,
+        "exportQty": 22
+      },
+      {
+        "code": "CT017",
+        "name": "Thùng carton ghép nối 60x50x45cm",
+        "unit": "Cái",
+        "unitPrice": 36553,
+        "beginningQty": 292,
+        "importQty": 366,
+        "exportQty": 254
+      },
+      {
+        "code": "CT018",
+        "name": "Carton sóng A 60x50x40cm",
+        "unit": "Cái",
+        "unitPrice": 12703,
+        "beginningQty": 477,
+        "importQty": 269,
+        "exportQty": 131
+      },
+      {
+        "code": "CT019",
+        "name": "Carton 3 lớp 30x20x15cm",
+        "unit": "Cái",
+        "unitPrice": 35853,
+        "beginningQty": 207,
+        "importQty": 299,
+        "exportQty": 54
+      },
+      {
+        "code": "CT020",
+        "name": "Thùng carton có quai 35x30x25cm",
+        "unit": "Cái",
+        "unitPrice": 6555,
+        "beginningQty": 90,
+        "importQty": 369,
+        "exportQty": 154
+      },
+      {
+        "code": "CT021",
+        "name": "Hộp carton nắp gài 30x25x20cm",
+        "unit": "Cái",
+        "unitPrice": 14878,
+        "beginningQty": 483,
+        "importQty": 458,
+        "exportQty": 37
+      },
+      {
+        "code": "CT022",
+        "name": "Carton 3 lớp 20x15x10cm",
+        "unit": "Cái",
+        "unitPrice": 37844,
+        "beginningQty": 506,
+        "importQty": 282,
+        "exportQty": 777
+      },
+      {
+        "code": "CT023",
+        "name": "Carton chống thấm 55x45x35cm",
+        "unit": "Cái",
+        "unitPrice": 35920,
+        "beginningQty": 876,
+        "importQty": 203,
+        "exportQty": 332
+      },
+      {
+        "code": "CT024",
+        "name": "Carton 3 lớp 40x30x20cm",
+        "unit": "Cái",
+        "unitPrice": 32506,
+        "beginningQty": 198,
+        "importQty": 265,
+        "exportQty": 165
+      },
+      {
+        "code": "CT025",
+        "name": "Carton sóng B 25x20x15cm",
+        "unit": "Cái",
+        "unitPrice": 35054,
+        "beginningQty": 845,
+        "importQty": 448,
+        "exportQty": 1001
+      },
+      {
+        "code": "CT026",
+        "name": "Carton 5 lớp 50x40x30cm",
+        "unit": "Cái",
+        "unitPrice": 19474,
+        "beginningQty": 569,
+        "importQty": 424,
+        "exportQty": 450
+      },
+      {
+        "code": "CT027",
+        "name": "Carton chịu lực 45x35x25cm",
+        "unit": "Cái",
+        "unitPrice": 15325,
+        "beginningQty": 232,
+        "importQty": 108,
+        "exportQty": 140
+      },
+      {
+        "code": "CT028",
+        "name": "Thùng carton in logo 50x40x35cm",
+        "unit": "Cái",
+        "unitPrice": 23326,
+        "beginningQty": 656,
+        "importQty": 154,
+        "exportQty": 190
+      },
+      {
+        "code": "CT029",
+        "name": "Thùng carton ghép nối 60x50x45cm",
+        "unit": "Cái",
+        "unitPrice": 29364,
+        "beginningQty": 867,
+        "importQty": 250,
+        "exportQty": 111
+      },
+      {
+        "code": "CT030",
+        "name": "Carton sóng A 60x50x40cm",
+        "unit": "Cái",
+        "unitPrice": 30611,
+        "beginningQty": 624,
+        "importQty": 264,
+        "exportQty": 34
+      },
+      {
+        "code": "CT031",
+        "name": "Carton 3 lớp 30x20x15cm",
+        "unit": "Cái",
+        "unitPrice": 20603,
+        "beginningQty": 804,
+        "importQty": 129,
+        "exportQty": 109
+      },
+      {
+        "code": "CT032",
+        "name": "Thùng carton có quai 35x30x25cm",
+        "unit": "Cái",
+        "unitPrice": 48442,
+        "beginningQty": 518,
+        "importQty": 58,
+        "exportQty": 574
+      },
+      {
+        "code": "CT033",
+        "name": "Hộp carton nắp gài 30x25x20cm",
+        "unit": "Cái",
+        "unitPrice": 16834,
+        "beginningQty": 863,
+        "importQty": 285,
+        "exportQty": 679
+      },
+      {
+        "code": "CT034",
+        "name": "Carton 3 lớp 20x15x10cm",
+        "unit": "Cái",
+        "unitPrice": 12994,
+        "beginningQty": 659,
+        "importQty": 220,
+        "exportQty": 265
+      },
+      {
+        "code": "CT035",
+        "name": "Carton chống thấm 55x45x35cm",
+        "unit": "Cái",
+        "unitPrice": 27502,
+        "beginningQty": 869,
+        "importQty": 272,
+        "exportQty": 1059
+      },
+      {
+        "code": "CT036",
+        "name": "Carton 3 lớp 40x30x20cm",
+        "unit": "Cái",
+        "unitPrice": 47360,
+        "beginningQty": 797,
+        "importQty": 290,
+        "exportQty": 30
+      },
+      {
+        "code": "CT037",
+        "name": "Carton sóng B 25x20x15cm",
+        "unit": "Cái",
+        "unitPrice": 23668,
+        "beginningQty": 608,
+        "importQty": 241,
+        "exportQty": 597
+      },
+      {
+        "code": "CT038",
+        "name": "Carton 5 lớp 50x40x30cm",
+        "unit": "Cái",
+        "unitPrice": 15424,
+        "beginningQty": 840,
+        "importQty": 214,
+        "exportQty": 544
+      },
+      {
+        "code": "CT039",
+        "name": "Carton chịu lực 45x35x25cm",
+        "unit": "Cái",
+        "unitPrice": 40831,
+        "beginningQty": 107,
+        "importQty": 74,
+        "exportQty": 7
+      },
+      {
+        "code": "CT040",
+        "name": "Thùng carton in logo 50x40x35cm",
+        "unit": "Cái",
+        "unitPrice": 49295,
+        "beginningQty": 867,
+        "importQty": 452,
+        "exportQty": 1026
+      },
+      {
+        "code": "CT041",
+        "name": "Thùng carton ghép nối 60x50x45cm",
+        "unit": "Cái",
+        "unitPrice": 15219,
+        "beginningQty": 599,
+        "importQty": 82,
+        "exportQty": 183
+      },
+      {
+        "code": "CT042",
+        "name": "Carton sóng A 60x50x40cm",
+        "unit": "Cái",
+        "unitPrice": 9010,
+        "beginningQty": 127,
+        "importQty": 123,
+        "exportQty": 25
+      },
+      {
+        "code": "CT043",
+        "name": "Carton 3 lớp 30x20x15cm",
+        "unit": "Cái",
+        "unitPrice": 13506,
+        "beginningQty": 85,
+        "importQty": 225,
+        "exportQty": 233
+      },
+      {
+        "code": "CT044",
+        "name": "Thùng carton có quai 35x30x25cm",
+        "unit": "Cái",
+        "unitPrice": 14260,
+        "beginningQty": 372,
+        "importQty": 112,
+        "exportQty": 273
+      },
+      {
+        "code": "CT045",
+        "name": "Hộp carton nắp gài 30x25x20cm",
+        "unit": "Cái",
+        "unitPrice": 33850,
+        "beginningQty": 173,
+        "importQty": 199,
+        "exportQty": 284
+      },
+      {
+        "code": "CT046",
+        "name": "Carton 3 lớp 20x15x10cm",
+        "unit": "Cái",
+        "unitPrice": 30061,
+        "beginningQty": 732,
+        "importQty": 70,
+        "exportQty": 11
+      },
+      {
+        "code": "CT047",
+        "name": "Carton chống thấm 55x45x35cm",
+        "unit": "Cái",
+        "unitPrice": 25564,
+        "beginningQty": 840,
+        "importQty": 489,
+        "exportQty": 723
+      },
+      {
+        "code": "CT048",
+        "name": "Carton 3 lớp 40x30x20cm",
+        "unit": "Cái",
+        "unitPrice": 40055,
+        "beginningQty": 367,
+        "importQty": 153,
+        "exportQty": 155
+      },
+      {
+        "code": "CT049",
+        "name": "Carton sóng B 25x20x15cm",
+        "unit": "Cái",
+        "unitPrice": 11033,
+        "beginningQty": 871,
+        "importQty": 62,
+        "exportQty": 104
+      },
+      {
+        "code": "CT050",
+        "name": "Carton 5 lớp 50x40x30cm",
+        "unit": "Cái",
+        "unitPrice": 9125,
+        "beginningQty": 804,
+        "importQty": 53,
+        "exportQty": 0
+      },
+      {
+        "code": "CT051",
+        "name": "Carton chịu lực 45x35x25cm",
+        "unit": "Cái",
+        "unitPrice": 18545,
+        "beginningQty": 54,
+        "importQty": 352,
+        "exportQty": 190
+      },
+      {
+        "code": "CT052",
+        "name": "Thùng carton in logo 50x40x35cm",
+        "unit": "Cái",
+        "unitPrice": 30746,
+        "beginningQty": 834,
+        "importQty": 156,
+        "exportQty": 645
+      },
+      {
+        "code": "CT053",
+        "name": "Thùng carton ghép nối 60x50x45cm",
+        "unit": "Cái",
+        "unitPrice": 21436,
+        "beginningQty": 273,
+        "importQty": 125,
+        "exportQty": 240
+      },
+      {
+        "code": "CT054",
+        "name": "Carton sóng A 60x50x40cm",
+        "unit": "Cái",
+        "unitPrice": 32912,
+        "beginningQty": 975,
+        "importQty": 206,
+        "exportQty": 1042
+      },
+      {
+        "code": "CT055",
+        "name": "Carton 3 lớp 30x20x15cm",
+        "unit": "Cái",
+        "unitPrice": 14124,
+        "beginningQty": 555,
+        "importQty": 383,
+        "exportQty": 11
+      },
+      {
+        "code": "CT056",
+        "name": "Thùng carton có quai 35x30x25cm",
+        "unit": "Cái",
+        "unitPrice": 19841,
+        "beginningQty": 549,
+        "importQty": 324,
+        "exportQty": 386
+      },
+      {
+        "code": "CT057",
+        "name": "Hộp carton nắp gài 30x25x20cm",
+        "unit": "Cái",
+        "unitPrice": 12548,
+        "beginningQty": 523,
+        "importQty": 340,
+        "exportQty": 66
+      },
+      {
+        "code": "CT058",
+        "name": "Carton 3 lớp 20x15x10cm",
+        "unit": "Cái",
+        "unitPrice": 40237,
+        "beginningQty": 575,
+        "importQty": 103,
+        "exportQty": 631
+      },
+      {
+        "code": "CT059",
+        "name": "Carton chống thấm 55x45x35cm",
+        "unit": "Cái",
+        "unitPrice": 21193,
+        "beginningQty": 841,
+        "importQty": 268,
+        "exportQty": 268
+      },
+      {
+        "code": "CT060",
+        "name": "Carton 3 lớp 40x30x20cm",
+        "unit": "Cái",
+        "unitPrice": 28394,
+        "beginningQty": 605,
+        "importQty": 451,
+        "exportQty": 360
+      }
+    ]
+  },
+  {
+    "id": "htk-laptop",
+    "name": "HTK Laptop",
+    "items": [
+      {
+        "code": "LT001",
+        "name": "Acer Nitro 5",
+        "unit": "Bộ",
+        "unitPrice": 18745355,
+        "beginningQty": 37,
+        "importQty": 32,
+        "exportQty": 38
+      },
+      {
+        "code": "LT002",
+        "name": "Dell XPS 13",
+        "unit": "Bộ",
+        "unitPrice": 53868557,
+        "beginningQty": 32,
+        "importQty": 19,
+        "exportQty": 40
+      },
+      {
+        "code": "LT003",
+        "name": "Lenovo IdeaPad 5",
+        "unit": "Bộ",
+        "unitPrice": 36475908,
+        "beginningQty": 50,
+        "importQty": 1,
+        "exportQty": 43
+      },
+      {
+        "code": "LT004",
+        "name": "Toshiba Dynabook Tecra A50",
+        "unit": "Bộ",
+        "unitPrice": 46219016,
+        "beginningQty": 56,
+        "importQty": 14,
+        "exportQty": 16
+      },
+      {
+        "code": "LT005",
+        "name": "MacBook Air M1",
+        "unit": "Bộ",
+        "unitPrice": 22639786,
+        "beginningQty": 67,
+        "importQty": 0,
+        "exportQty": 39
+      },
+      {
+        "code": "LT006",
+        "name": "Microsoft Surface Pro 9",
+        "unit": "Bộ",
+        "unitPrice": 36379117,
+        "beginningQty": 39,
+        "importQty": 6,
+        "exportQty": 13
+      },
+      {
+        "code": "LT007",
+        "name": "Acer Chromebook Spin 713",
+        "unit": "Bộ",
+        "unitPrice": 16872773,
+        "beginningQty": 95,
+        "importQty": 14,
+        "exportQty": 43
+      },
+      {
+        "code": "LT008",
+        "name": "Gigabyte Aero 16",
+        "unit": "Bộ",
+        "unitPrice": 34988008,
+        "beginningQty": 35,
+        "importQty": 45,
+        "exportQty": 1
+      },
+      {
+        "code": "LT009",
+        "name": "Razer Blade 15",
+        "unit": "Bộ",
+        "unitPrice": 45307144,
+        "beginningQty": 33,
+        "importQty": 43,
+        "exportQty": 53
+      },
+      {
+        "code": "LT010",
+        "name": "Dell XPS 15",
+        "unit": "Bộ",
+        "unitPrice": 19529944,
+        "beginningQty": 43,
+        "importQty": 47,
+        "exportQty": 27
+      },
+      {
+        "code": "LT011",
+        "name": "MSI Stealth 15M",
+        "unit": "Bộ",
+        "unitPrice": 26422339,
+        "beginningQty": 43,
+        "importQty": 33,
+        "exportQty": 55
+      },
+      {
+        "code": "LT012",
+        "name": "Microsoft Surface Laptop 5",
+        "unit": "Bộ",
+        "unitPrice": 45916160,
+        "beginningQty": 44,
+        "importQty": 2,
+        "exportQty": 30
+      },
+      {
+        "code": "LT013",
+        "name": "MSI GE76 Raider",
+        "unit": "Bộ",
+        "unitPrice": 34102621,
+        "beginningQty": 27,
+        "importQty": 21,
+        "exportQty": 39
+      },
+      {
+        "code": "LT014",
+        "name": "Huawei MateBook X Pro",
+        "unit": "Bộ",
+        "unitPrice": 47568610,
+        "beginningQty": 81,
+        "importQty": 41,
+        "exportQty": 121
+      },
+      {
+        "code": "LT015",
+        "name": "MSI Katana GF66",
+        "unit": "Bộ",
+        "unitPrice": 16017699,
+        "beginningQty": 39,
+        "importQty": 26,
+        "exportQty": 19
+      },
+      {
+        "code": "LT016",
+        "name": "Lenovo Legion 5",
+        "unit": "Bộ",
+        "unitPrice": 41305314,
+        "beginningQty": 18,
+        "importQty": 2,
+        "exportQty": 5
+      },
+      {
+        "code": "LT017",
+        "name": "Acer Predator Helios 300",
+        "unit": "Bộ",
+        "unitPrice": 19043184,
+        "beginningQty": 40,
+        "importQty": 38,
+        "exportQty": 58
+      },
+      {
+        "code": "LT018",
+        "name": "Gigabyte Aorus 17",
+        "unit": "Bộ",
+        "unitPrice": 19186830,
+        "beginningQty": 23,
+        "importQty": 31,
+        "exportQty": 46
+      },
+      {
+        "code": "LT019",
+        "name": "Samsung Galaxy Book3 Pro",
+        "unit": "Bộ",
+        "unitPrice": 21898550,
+        "beginningQty": 6,
+        "importQty": 21,
+        "exportQty": 13
+      },
+      {
+        "code": "LT020",
+        "name": "HP Spectre x360",
+        "unit": "Bộ",
+        "unitPrice": 52757745,
+        "beginningQty": 23,
+        "importQty": 40,
+        "exportQty": 0
+      },
+      {
+        "code": "LT021",
+        "name": "LG Gram 14",
+        "unit": "Bộ",
+        "unitPrice": 33805559,
+        "beginningQty": 97,
+        "importQty": 28,
+        "exportQty": 79
+      },
+      {
+        "code": "LT022",
+        "name": "Alienware x15 R2",
+        "unit": "Bộ",
+        "unitPrice": 46356866,
+        "beginningQty": 98,
+        "importQty": 28,
+        "exportQty": 37
+      },
+      {
+        "code": "LT023",
+        "name": "MSI Summit E13 Flip",
+        "unit": "Bộ",
+        "unitPrice": 45356583,
+        "beginningQty": 76,
+        "importQty": 44,
+        "exportQty": 8
+      },
+      {
+        "code": "LT024",
+        "name": "Asus TUF Gaming F15",
+        "unit": "Bộ",
+        "unitPrice": 21755746,
+        "beginningQty": 33,
+        "importQty": 0,
+        "exportQty": 18
+      },
+      {
+        "code": "LT025",
+        "name": "Huawei MateBook D16",
+        "unit": "Bộ",
+        "unitPrice": 42524255,
+        "beginningQty": 16,
+        "importQty": 35,
+        "exportQty": 11
+      },
+      {
+        "code": "LT026",
+        "name": "Acer TravelMate P2",
+        "unit": "Bộ",
+        "unitPrice": 35559495,
+        "beginningQty": 29,
+        "importQty": 0,
+        "exportQty": 6
+      },
+      {
+        "code": "LT027",
+        "name": "Dell Latitude 7420",
+        "unit": "Bộ",
+        "unitPrice": 43765896,
+        "beginningQty": 54,
+        "importQty": 35,
+        "exportQty": 2
+      },
+      {
+        "code": "LT028",
+        "name": "Razer Blade Stealth 13",
+        "unit": "Bộ",
+        "unitPrice": 54162437,
+        "beginningQty": 67,
+        "importQty": 1,
+        "exportQty": 63
+      },
+      {
+        "code": "LT029",
+        "name": "Samsung Notebook 9 Pro",
+        "unit": "Bộ",
+        "unitPrice": 37460000,
+        "beginningQty": 76,
+        "importQty": 6,
+        "exportQty": 11
+      },
+      {
+        "code": "LT030",
+        "name": "Acer Swift 5",
+        "unit": "Bộ",
+        "unitPrice": 20529262,
+        "beginningQty": 85,
+        "importQty": 42,
+        "exportQty": 84
+      },
+      {
+        "code": "LT031",
+        "name": "LG Gram 16",
+        "unit": "Bộ",
+        "unitPrice": 35803436,
+        "beginningQty": 57,
+        "importQty": 29,
+        "exportQty": 20
+      },
+      {
+        "code": "LT032",
+        "name": "MacBook Pro M2",
+        "unit": "Bộ",
+        "unitPrice": 25588199,
+        "beginningQty": 6,
+        "importQty": 9,
+        "exportQty": 1
+      },
+      {
+        "code": "LT033",
+        "name": "Acer Aspire 7",
+        "unit": "Bộ",
+        "unitPrice": 27917078,
+        "beginningQty": 37,
+        "importQty": 31,
+        "exportQty": 37
+      },
+      {
+        "code": "LT034",
+        "name": "Asus ExpertBook B9",
+        "unit": "Bộ",
+        "unitPrice": 19354221,
+        "beginningQty": 10,
+        "importQty": 20,
+        "exportQty": 24
+      },
+      {
+        "code": "LT035",
+        "name": "Samsung Galaxy Book2 360",
+        "unit": "Bộ",
+        "unitPrice": 51293362,
+        "beginningQty": 97,
+        "importQty": 7,
+        "exportQty": 43
+      },
+      {
+        "code": "LT036",
+        "name": "Lenovo ThinkPad X1 Carbon",
+        "unit": "Bộ",
+        "unitPrice": 30066746,
+        "beginningQty": 43,
+        "importQty": 0,
+        "exportQty": 30
+      },
+      {
+        "code": "LT037",
+        "name": "Samsung Galaxy Book Go",
+        "unit": "Bộ",
+        "unitPrice": 23503448,
+        "beginningQty": 5,
+        "importQty": 13,
+        "exportQty": 7
+      },
+      {
+        "code": "LT038",
+        "name": "HP Elite Dragonfly",
+        "unit": "Bộ",
+        "unitPrice": 29497110,
+        "beginningQty": 58,
+        "importQty": 11,
+        "exportQty": 53
+      },
+      {
+        "code": "LT039",
+        "name": "Asus Vivobook 15",
+        "unit": "Bộ",
+        "unitPrice": 37443595,
+        "beginningQty": 6,
+        "importQty": 37,
+        "exportQty": 21
+      },
+      {
+        "code": "LT040",
+        "name": "HP ZBook Fury 16",
+        "unit": "Bộ",
+        "unitPrice": 27258142,
+        "beginningQty": 49,
+        "importQty": 3,
+        "exportQty": 41
+      },
+      {
+        "code": "LT041",
+        "name": "MacBook Pro M1",
+        "unit": "Bộ",
+        "unitPrice": 52241331,
+        "beginningQty": 68,
+        "importQty": 43,
+        "exportQty": 45
+      },
+      {
+        "code": "LT042",
+        "name": "Panasonic Toughbook 55",
+        "unit": "Bộ",
+        "unitPrice": 57369659,
+        "beginningQty": 17,
+        "importQty": 32,
+        "exportQty": 37
+      },
+      {
+        "code": "LT043",
+        "name": "Dell Inspiron 14",
+        "unit": "Bộ",
+        "unitPrice": 35152199,
+        "beginningQty": 15,
+        "importQty": 50,
+        "exportQty": 27
+      },
+      {
+        "code": "LT044",
+        "name": "Vaio SX14",
+        "unit": "Bộ",
+        "unitPrice": 39944477,
+        "beginningQty": 46,
+        "importQty": 5,
+        "exportQty": 13
+      },
+      {
+        "code": "LT045",
+        "name": "Razer Blade 14",
+        "unit": "Bộ",
+        "unitPrice": 17654209,
+        "beginningQty": 59,
+        "importQty": 13,
+        "exportQty": 25
+      },
+      {
+        "code": "LT046",
+        "name": "HP Envy 13",
+        "unit": "Bộ",
+        "unitPrice": 21300962,
+        "beginningQty": 14,
+        "importQty": 44,
+        "exportQty": 26
+      },
+      {
+        "code": "LT047",
+        "name": "HP Omen 16",
+        "unit": "Bộ",
+        "unitPrice": 53775861,
+        "beginningQty": 72,
+        "importQty": 48,
+        "exportQty": 94
+      },
+      {
+        "code": "LT048",
+        "name": "Alienware m17 R5",
+        "unit": "Bộ",
+        "unitPrice": 37753729,
+        "beginningQty": 10,
+        "importQty": 40,
+        "exportQty": 45
+      },
+      {
+        "code": "LT049",
+        "name": "Lenovo IdeaPad Gaming 3",
+        "unit": "Bộ",
+        "unitPrice": 15987942,
+        "beginningQty": 97,
+        "importQty": 7,
+        "exportQty": 13
+      },
+      {
+        "code": "LT050",
+        "name": "MSI Creator Z16",
+        "unit": "Bộ",
+        "unitPrice": 52407773,
+        "beginningQty": 72,
+        "importQty": 26,
+        "exportQty": 15
+      },
+      {
+        "code": "LT051",
+        "name": "Asus Zenbook 14 OLED",
+        "unit": "Bộ",
+        "unitPrice": 32668519,
+        "beginningQty": 41,
+        "importQty": 30,
+        "exportQty": 33
+      },
+      {
+        "code": "LT052",
+        "name": "MSI Modern 14",
+        "unit": "Bộ",
+        "unitPrice": 35535218,
+        "beginningQty": 8,
+        "importQty": 26,
+        "exportQty": 2
+      },
+      {
+        "code": "LT053",
+        "name": "MacBook Air M2",
+        "unit": "Bộ",
+        "unitPrice": 20181489,
+        "beginningQty": 23,
+        "importQty": 37,
+        "exportQty": 54
+      },
+      {
+        "code": "LT054",
+        "name": "HP Pavilion 15",
+        "unit": "Bộ",
+        "unitPrice": 49430766,
+        "beginningQty": 72,
+        "importQty": 36,
+        "exportQty": 1
+      },
+      {
+        "code": "LT055",
+        "name": "Asus ROG Zephyrus G14",
+        "unit": "Bộ",
+        "unitPrice": 15716691,
+        "beginningQty": 63,
+        "importQty": 47,
+        "exportQty": 82
+      },
+      {
+        "code": "LT056",
+        "name": "Fujitsu Lifebook U9311",
+        "unit": "Bộ",
+        "unitPrice": 26895093,
+        "beginningQty": 9,
+        "importQty": 33,
+        "exportQty": 26
+      },
+      {
+        "code": "LT057",
+        "name": "Asus ProArt Studiobook 16",
+        "unit": "Bộ",
+        "unitPrice": 25737052,
+        "beginningQty": 65,
+        "importQty": 19,
+        "exportQty": 58
+      },
+      {
+        "code": "LT058",
+        "name": "Lenovo Yoga 9i",
+        "unit": "Bộ",
+        "unitPrice": 44382091,
+        "beginningQty": 15,
+        "importQty": 48,
+        "exportQty": 11
+      },
+      {
+        "code": "LT059",
+        "name": "Razer Book 13",
+        "unit": "Bộ",
+        "unitPrice": 35080168,
+        "beginningQty": 55,
+        "importQty": 26,
+        "exportQty": 9
+      },
+      {
+        "code": "LT060",
+        "name": "Lenovo ThinkPad T14",
+        "unit": "Bộ",
+        "unitPrice": 40277787,
+        "beginningQty": 21,
+        "importQty": 5,
+        "exportQty": 7
+      }
+    ]
+  }
+]

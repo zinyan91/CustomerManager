@@ -92,10 +92,10 @@ describe('monthlyDueInfo', () => {
     expect(r!.daysLeft).toBe(10);
   });
 
-  it('nhảy sang tháng sau khi mốc trong tháng này đã qua', () => {
+  it('giữ mốc tháng này khi đã qua ngày, báo âm ngày', () => {
     const r = monthlyDueInfo('2025-03-01', '2026-08-05');
-    expect(r!.dueDateIso).toBe('2026-09-01');
-    expect(r!.daysLeft).toBe(27);
+    expect(r!.dueDateIso).toBe('2026-08-01');
+    expect(r!.daysLeft).toBe(-4);
   });
 
   it('coi đến hạn hôm nay là còn 0 ngày, chưa nhảy tháng', () => {
@@ -114,9 +114,10 @@ describe('monthlyDueInfo', () => {
     expect(r!.dueDateIso).toBe('2026-02-28');
   });
 
-  it('vắt qua năm khi mốc tháng 12 đã qua', () => {
+  it('không vắt sang năm sau khi mốc tháng 12 đã qua', () => {
     const r = monthlyDueInfo('2025-05-01', '2026-12-15');
-    expect(r!.dueDateIso).toBe('2027-01-01');
+    expect(r!.dueDateIso).toBe('2026-12-01');
+    expect(r!.daysLeft).toBe(-14);
   });
 
   it('trả null khi thiếu ngày gốc', () => {

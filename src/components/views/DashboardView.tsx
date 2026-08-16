@@ -1,12 +1,16 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { UI } from '../../lib/uiClasses';
-import { fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI } from '../../lib/api';
+import {
+  fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI,
+  fetchSchedulesForContractsAPI,
+} from '../../lib/api';
+import { contractDueState, type DuePeriodRow } from '../../lib/duePeriod';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
 import { fmtDate, fmtMoney, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
 import { assetClassLabel, collateralValue, appraisalExpiryDate } from '../../lib/collateralMath';
 import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
-  monthlyDueInfo, type DueFilter,
+  type DueFilter,
 } from '../../lib/dueList';
 import { parseCollateralIds } from '../../lib/creditLimit';
 import { Toast, useToast } from '../Toast';
@@ -26,6 +30,8 @@ export const DashboardView: React.FC = () => {
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
   const [contracts, setContracts] = useState<LoanContract[]>([]);
   const [cardContracts, setCardContracts] = useState<CardContract[]>([]);
+  const [duePeriods, setDuePeriods] = useState<DuePeriodRow[]>([]);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,6 +52,15 @@ export const DashboardView: React.FC = () => {
       setCollaterals(resCol);
       setContracts(resCon);
       setCardContracts(resCard);
+
+      const idsChuaTatToan = resCon.filter(c => !c.IsSettled).map(c => c.Id);
+      try {
+        setDuePeriods(await fetchSchedulesForContractsAPI(idsChuaTatToan));
+        setScheduleError(null);
+      } catch (err) {
+        setDuePeriods([]);
+        setScheduleError(err instanceof Error ? err.message : 'Không nạp được lịch trả nợ.');
+      }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -57,6 +72,16 @@ export const DashboardView: React.FC = () => {
     () => new Map(customers.map(c => [c.Id, c])),
     [customers]
   );
+
+  const periodsByContract = useMemo(() => {
+    const map = new Map<number, DuePeriodRow[]>();
+    duePeriods.forEach(p => {
+      const at = map.get(p.ContractId);
+      if (at) at.push(p);
+      else map.set(p.ContractId, [p]);
+    });
+    return map;
+  }, [duePeriods]);
 
   const {
     chuaTatToan,
@@ -121,6 +146,7 @@ export const DashboardView: React.FC = () => {
   }, [customers, contracts, collaterals, cardContracts]);
 
   const [onlyGroup1, setOnlyGroup1] = useState(true);
+  const [dueMonthFilter, setDueMonthFilter] = useState<DueFilter>('all');
   const [kunnFilter, setKunnFilter] = useState<DueFilter>('all');
   const [hmtdFilter, setHmtdFilter] = useState<DueFilter>('all');
   const [tsbdFilter, setTsbdFilter] = useState<DueFilter>('all');
@@ -128,6 +154,7 @@ export const DashboardView: React.FC = () => {
 
   const {
     dueInMonthList,
+    hopDongThieuLich,
     dueKunnList,
     dueHmtdList,
     dueCollateralList,
@@ -136,10 +163,13 @@ export const DashboardView: React.FC = () => {
 
     const monthList = activeContracts.map(c => {
       const cus = customerMap.get(c.CustomerId);
-      const dueInfo = monthlyDueInfo(c.RepaymentStartDate || c.DisbursementDate || c.ContractStartDate);
-      return { contract: c, customer: cus, dueInfo };
-    }).filter(item => item.dueInfo && item.dueInfo.daysLeft <= 5)
-      .sort((a, b) => (a.dueInfo?.daysLeft ?? 0) - (b.dueInfo?.daysLeft ?? 0));
+      const state = contractDueState(periodsByContract.get(c.Id) || []);
+      return { contract: c, customer: cus, state };
+    }).filter(item => item.state.kind !== 'none')
+      .sort((a, b) => (a.state.daysLeft ?? 0) - (b.state.daysLeft ?? 0));
+
+    const thieuLich = activeContracts
+      .filter(c => (periodsByContract.get(c.Id) || []).length === 0).length;
 
     const kunnList = activeContracts.map(c => {
       const cus = customerMap.get(c.CustomerId);
@@ -191,13 +221,17 @@ export const DashboardView: React.FC = () => {
 
     return {
       dueInMonthList: monthList,
+      hopDongThieuLich: thieuLich,
       dueKunnList: kunnList,
       dueHmtdList: hmtdList,
       dueCollateralList: colList,
     };
-  }, [chuaTatToan, onlyGroup1, customerMap, collaterals]);
+  }, [chuaTatToan, onlyGroup1, customerMap, collaterals, periodsByContract]);
 
   const soNgay = <T extends { daysLeft?: number | null }>(x: T) => x.daysLeft;
+
+  const dueMonthRows = filterByDue(dueInMonthList, dueMonthFilter, i => i.state.daysLeft);
+  const dueMonthCount = countByDue(dueInMonthList, i => i.state.daysLeft);
 
   const kunnRows = filterByDue(dueKunnList, kunnFilter, soNgay);
   const hmtdRows = filterByDue(dueHmtdList, hmtdFilter, soNgay);
@@ -212,12 +246,16 @@ export const DashboardView: React.FC = () => {
     { key: 'kh', label: 'Khách hàng vay', priority: 3, render: i => <span className="font-bold">{i.customer?.FullName || 'N/A'}</span> },
     { key: 'cif', label: 'Mã CIF', priority: 3, render: i => <span className="font-mono text-accent">{i.customer?.CifKh || 'N/A'}</span> },
     { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: i => <span className="font-mono">{i.contract.ContractNumber}</span> },
+    { key: 'ky', label: 'Kỳ số', priority: 2, align: 'center',
+      render: i => <span className="font-mono font-bold">{i.state.period?.PeriodNumber ?? ''}</span> },
+    { key: 'tienKy', label: 'Số tiền kỳ này', priority: 1, align: 'right',
+      render: i => <span className="font-mono font-bold text-warn">{fmtMoney(i.state.period?.TotalAmount ?? 0)}</span> },
     { key: 'duNo', label: 'Dư nợ hiện hữu', priority: 1, align: 'right',
-      render: i => <span className="font-mono font-bold text-warn">{fmtMoney(i.contract.CurrentBalance ?? i.contract.LoanAmount ?? i.contract.ContractAmount ?? 0)}</span> },
+      render: i => <span className="font-mono">{fmtMoney(i.contract.CurrentBalance ?? i.contract.LoanAmount ?? i.contract.ContractAmount ?? 0)}</span> },
     { key: 'ngayDue', label: 'Ngày đến hạn due', priority: 1, align: 'center',
-      render: i => <span className="font-bold text-accent">{i.dueInfo?.dueDateStr}</span> },
+      render: i => <span className="font-bold text-accent">{fmtDate(i.state.dueDateIso)}</span> },
     { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: i => {
-      const dl = i.dueInfo?.daysLeft ?? 0;
+      const dl = i.state.daysLeft ?? 0;
       return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 2)}`}>{dueBadgeText(dl)}</span>;
     } },
   ];
@@ -512,15 +550,21 @@ export const DashboardView: React.FC = () => {
             icon={Calendar}
             tone="warn"
             title="1. Khách hàng chuẩn bị đóng kỳ due của tháng"
-            counts={{
-              upcoming: dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) >= 0).length,
-              expired: dueInMonthList.filter(i => (i.dueInfo?.daysLeft ?? 0) < 0).length,
-            }}
-            rows={dueInMonthList}
+            counts={dueMonthCount}
+            filter={dueMonthFilter}
+            onFilterChange={setDueMonthFilter}
+            notice={
+              scheduleError
+                ? `Không nạp được lịch trả nợ: ${scheduleError}. Danh sách bên dưới chưa đầy đủ.`
+                : hopDongThieuLich > 0
+                  ? `${hopDongThieuLich} hợp đồng chưa có lịch trả nợ, không xét được.`
+                  : undefined
+            }
+            rows={dueMonthRows}
             rowKey={i => i.contract.Id}
             cardTitle={i => i.customer?.FullName || 'N/A'}
             cardSubtitle={i => i.customer?.CifKh || ''}
-            emptyText="Không có khách hàng nào tới hạn hoặc quá hạn đóng kỳ trong kỳ này."
+            emptyText="Không có kỳ trả nợ nào đang quá hạn hoặc sắp đến hạn."
             cardBg={cardBg}
             columns={dueInMonthColumns}
           />

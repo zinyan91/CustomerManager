@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { UI } from '../../lib/uiClasses';
 import {
   fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI,
-  fetchOutstandingSchedulesAPI,
+  fetchOutstandingSchedulesAPI, fetchAllCreditContractsAPI,
 } from '../../lib/api';
 import { contractDueState, dueCutoffIso, type DuePeriodRow } from '../../lib/duePeriod';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
@@ -14,7 +14,7 @@ import {
 } from '../../lib/dueList';
 import { parseCollateralIds } from '../../lib/creditLimit';
 import { Toast, useToast } from '../Toast';
-import type { Customer, Collateral, LoanContract, CardContract } from '../../types';
+import type { Customer, Collateral, LoanContract, CardContract, CreditContract } from '../../types';
 import {
   Building2, RefreshCw, Calendar, Clock, ShieldAlert,
   AlertTriangle
@@ -31,6 +31,7 @@ export const DashboardView: React.FC = () => {
   const [contracts, setContracts] = useState<LoanContract[]>([]);
   const [cardContracts, setCardContracts] = useState<CardContract[]>([]);
   const [duePeriods, setDuePeriods] = useState<DuePeriodRow[]>([]);
+  const [creditContracts, setCreditContracts] = useState<CreditContract[]>([]);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,17 +42,19 @@ export const DashboardView: React.FC = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [resCus, resCol, resCon, resCard] = await Promise.all([
+      const [resCus, resCol, resCon, resCard, resCc] = await Promise.all([
         fetchCustomersAPI(),
         fetchCollateralsAPI(),
         fetchContractsAPI(),
         fetchCardContractsAPI(),
+        fetchAllCreditContractsAPI(),
       ]);
 
       setCustomers(resCus);
       setCollaterals(resCol);
       setContracts(resCon);
       setCardContracts(resCard);
+      setCreditContracts(resCc);
 
       const idsChuaTatToan = resCon.filter(c => !c.IsSettled).map(c => c.Id);
       try {
@@ -71,6 +74,16 @@ export const DashboardView: React.FC = () => {
   const customerMap = useMemo(
     () => new Map(customers.map(c => [c.Id, c])),
     [customers]
+  );
+
+  const hdtdById = useMemo(
+    () => new Map(creditContracts.map(cc => [cc.Id, cc])),
+    [creditContracts]
+  );
+
+  const hdtdByNumber = useMemo(
+    () => new Map(creditContracts.map(cc => [cc.HdtdNumber, cc])),
+    [creditContracts]
   );
 
   const periodsByContract = useMemo(() => {
@@ -182,7 +195,10 @@ export const DashboardView: React.FC = () => {
 
       const masterNo = getMasterHdtdNumber(c);
       const cus = customerMap.get(c.CustomerId);
-      const endDateStr = toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate) || '';
+      const hdtdCha = (c.CreditContractId ? hdtdById.get(c.CreditContractId) : undefined)
+        || hdtdByNumber.get(masterNo);
+      const endDateStr = toIsoDate(hdtdCha?.ContractEndDate)
+        || toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate) || '';
       const daysLeft = daysUntil(endDateStr);
 
       if (!hmtdMap[masterNo] || (c.ContractAmount && c.ContractAmount > (hmtdMap[masterNo].contract.ContractAmount || 0))) {
@@ -221,7 +237,7 @@ export const DashboardView: React.FC = () => {
       dueHmtdList: hmtdList,
       dueCollateralList: colList,
     };
-  }, [chuaTatToan, onlyGroup1, customerMap, collaterals, periodsByContract]);
+  }, [chuaTatToan, onlyGroup1, customerMap, collaterals, periodsByContract, hdtdById, hdtdByNumber]);
 
   const soNgay = <T extends { daysLeft?: number | null }>(x: T) => x.daysLeft;
 

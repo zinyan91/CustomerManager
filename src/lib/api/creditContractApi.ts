@@ -17,6 +17,15 @@ export async function fetchCreditContractsByCustomerAPI(customerId: number): Pro
   }
 }
 
+export async function fetchAllCreditContractsAPI(): Promise<CreditContract[]> {
+  const { data, error } = await supabase
+    .from('CreditContracts')
+    .select('*')
+    .order('HdtdNumber', { ascending: true });
+  if (error) throw new Error(`Không nạp được danh sách HĐTD: ${error.message}`);
+  return data || [];
+}
+
 export async function saveCreditContractAPI(cc: Partial<CreditContract>): Promise<CreditContract> {
   const isUpdate = !!cc.Id;
   const hdtdNumber = (cc.HdtdNumber || '').trim();

@@ -28,6 +28,8 @@ Mã nguồn **không có chú thích**. Mọi giải thích "vì sao" nằm ở 
 | Việc | Tệp |
 | :--- | :--- |
 | Lãi, gốc, lịch trả nợ, quá hạn, nhóm nợ | `src/lib/loanMath.ts` |
+| Đối chiếu lịch khi đổi kỳ hạn | `src/lib/scheduleSync.ts` |
+| Trạng thái kỳ đến hạn cho dashboard | `src/lib/duePeriod.ts` |
 | Chính sách LTV | `src/lib/collateralMath.ts` |
 | Tổng mức cấp, chốt kiểm soát TSĐB | `src/lib/creditLimit.ts` |
 | Ràng buộc theo phương thức vay | `src/lib/loanProductRules.ts` |
@@ -106,6 +108,46 @@ Theo số ngày quá hạn lớn nhất trong các kỳ **chưa thanh toán**:
 
 ---
 
+## Lịch trả nợ và ghi nhận thu
+
+### Khoá chính do cơ sở dữ liệu cấp
+
+`RepaymentSchedules."Id"` là **khoá chính toàn bảng**, không phải số thứ tự trong hợp đồng. Tuyệt đối không sinh `Id` ở client.
+
+Lỗi đã xảy ra ngày 16/08/2026: `Id: s.Id || idx + 1` sinh ra Id 1, 2, 3… rồi `bulkSaveRepaymentSchedulesAPI` đẩy vào nhánh `upsert(onConflict: 'Id')`. Các dòng đó chen thẳng vào chỗ của hợp đồng khác. Hợp đồng 1014 kết cục có **hai bộ kỳ song song**, cùng số kỳ mà khác trạng thái trả, nạp lại thì thứ tự xáo trộn.
+
+Sinh lịch mới thì để trống `Id`, ghi xong **nạp lại từ CSDL** rồi mới đưa lên giao diện.
+
+### Đổi kỳ hạn thì đối chiếu, không xoá rồi ghi lại
+
+Xoá sạch lịch cũ rồi sinh lại là **mất toàn bộ dấu đã thu**. `reconcileScheduleRows` đối chiếu theo **số kỳ**:
+
+| Tình huống | Xử lý |
+| :--- | :--- |
+| Kỳ đã có | Cập nhật ngày và số tiền, **giữ nguyên phần đã thu** |
+| Kỳ mới (5 → 6 tháng) | Thêm |
+| Kỳ dư, chưa thu | Xoá |
+| Kỳ dư, **đã thu** | **Chặn** |
+| Kỳ **trùng số** | **Chặn** |
+
+Hai trường hợp cuối chặn chứ không đoán: hệ thống không tự xoá lịch sử tiền, cũng không tự chọn bản nào là đúng.
+
+### `ActualPaidAmount` đang rỗng, đừng dựa vào nó
+
+Đo ngày 16/08/2026: **836/836 kỳ đã trả đều mang giá trị 0**. Không màn hình nào cho banker nhập số tiền thực thu, nên cột này chưa bao giờ có số thật. Muốn biết một kỳ đã thu hay chưa thì đọc `IsPaid`; đối chiếu số tiền sẽ biến mọi kỳ đã thu thành còn nợ.
+
+Kèm theo, `s.ActualPaidAmount || 0` ở `useLoanPortfolioController.ts` ghi đè `null` thành `0`, xoá mất ranh giới giữa "chưa nhập" và "thu 0đ".
+
+### Panel đến hạn đọc kỳ thật, không suy từ ngày kỷ niệm
+
+Dashboard từng tính ngày đến hạn bằng ngày kỷ niệm của `RepaymentStartDate`, nên báo quá hạn cho khách đã đóng tiền. Nay lấy **kỳ chưa trả sớm nhất** trong `RepaymentSchedules` qua `contractDueState`.
+
+Truy vấn lọc ngay ở máy chủ (`IsPaid` chưa trả **và** `DueDate <= hôm nay + 5`). Kéo đủ 6.705 dòng về rồi mới lọc làm dashboard chậm từ 1,2 giây lên 8,8 giây.
+
+Điều kiện `IsPaid` phải dùng `or(IsPaid.is.null, IsPaid.eq.false)` — `eq(false)` bỏ sót dòng NULL trong khi hàm thuần coi NULL là còn nợ.
+
+---
+
 ## Chính sách LTV
 
 | Phân loại | LTV | | Phân loại | LTV |
@@ -173,6 +215,18 @@ Cụm có cả hai loại thì cộng: mức cấp của phần hạn mức + d�
 
 ---
 
+### Ngày hiệu lực HĐTD chỉ có một nguồn
+
+Ngày hiệu lực nằm ở **bốn chỗ**: một dòng `CreditContracts` và bản chép `ContractStartDate` / `ContractEndDate` trên từng KUNN con.
+
+**Nguồn đúng là dòng HĐTD cha.** Đọc qua `hdtdEffectiveDatesOf`, tra theo `CreditContractId`. Bản chép trên KUNN chỉ là lưới an toàn khi tra không ra cha, và có test khoá hành vi đó.
+
+Form KUNN tự tính lại `ngày bắt đầu + kỳ hạn` mỗi lần mở. Khi lưu, `buildKunnPayload` ghi bản chép bằng **ngày của cha**, không bằng số form tự tính — nếu không, các bản sao sẽ trôi lệch. Hợp đồng `2002/HDTD/9653222` từng có ba KUNN ghi hai ngày khác nhau vì chuyện này.
+
+Cột `HdtdDueDate` **đã xoá** ở migration 48: rỗng toàn bộ 103 KUNN trong khi mã vẫn dự phòng vào nó.
+
+---
+
 ## Sản phẩm vay
 
 ### Hạn mức tín dụng — ngắn hạn
@@ -226,7 +280,7 @@ Không nhét dữ liệu nghiệp vụ vào `Note` — mỗi thông tin một c�
 
 ```bash
 npm run dev      # máy chủ phát triển
-npm test         # 246 test logic tài chính
+npm test         # toàn bộ test, hiện 1.465 ca
 npm run build    # typecheck + đóng gói
 npm run lint
 ```
@@ -240,4 +294,5 @@ npm run lint
 3. Sửa code trong `src/lib/`, không viết logic trong component
 4. `npm test && npm run build`
 5. Nếu có migration: chạy SQL trước, deploy sau
-6. Cập nhật `PROGRESS.md`
+6. Kiểm chứng ngoài test đơn vị: tệp xuất ra thì mở lại đối chiếu, màn hình thì chụp xem, ràng buộc CSDL thì thử hành vi
+7. Cập nhật `PROGRESS.md`

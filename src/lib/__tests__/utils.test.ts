@@ -230,12 +230,12 @@ describe('getMasterHdtdNumber', () => {
     const c = {
       ContractNumber: 'HD777/GNN-01',
       HdtdDueDate: '2026-05-28T00:00:00+00:00',
-    } as LoanContract;
+    } as unknown as LoanContract;
     expect(getMasterHdtdNumber(c)).toBe('HD777');
   });
 
   it('bỏ qua HdtdDueDate kể cả khi đó là ngày dạng ngắn', () => {
-    const c = { ContractNumber: 'HD777', HdtdDueDate: '2026-08-03' } as LoanContract;
+    const c = { ContractNumber: 'HD777', HdtdDueDate: '2026-08-03' } as unknown as LoanContract;
     expect(getMasterHdtdNumber(c)).toBe('HD777');
   });
 

@@ -198,7 +198,7 @@ export const DashboardView: React.FC = () => {
       const hdtdCha = (c.CreditContractId ? hdtdById.get(c.CreditContractId) : undefined)
         || hdtdByNumber.get(masterNo);
       const endDateStr = toIsoDate(hdtdCha?.ContractEndDate)
-        || toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate) || '';
+        || toIsoDate(c.ContractEndDate) || '';
       const daysLeft = daysUntil(endDateStr);
 
       if (!hmtdMap[masterNo] || (c.ContractAmount && c.ContractAmount > (hmtdMap[masterNo].contract.ContractAmount || 0))) {

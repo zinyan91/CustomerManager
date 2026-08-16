@@ -103,7 +103,6 @@ export interface LoanContract {
   ContractStartDate?: string | null;
   ContractEndDate?: string | null;
   LoanTenorMonths?: number | null;
-  HdtdDueDate?: string | null;
 
   LoanAmount?: number | null;
   CurrentBalance?: number | null;

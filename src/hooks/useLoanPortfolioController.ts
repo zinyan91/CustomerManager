@@ -465,6 +465,7 @@ export function useLoanPortfolioController() {
         basePercent: baseVal,
         marginPercent: marginVal,
         activeRatePercent: currentActiveRateDisplay,
+        creditContracts,
       });
 
       const matchedCc = creditContracts.find(

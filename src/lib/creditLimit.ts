@@ -128,7 +128,7 @@ export function computeLimitGroups(
 
     const end = fromParent
       ? toIsoDate(fromParent.endDate)
-      : (toIsoDate(c.ContractEndDate) || toIsoDate(c.HdtdDueDate));
+      : toIsoDate(c.ContractEndDate);
     if (end && (!g.endDate || end > g.endDate)) g.endDate = end;
 
     const start = fromParent ? toIsoDate(fromParent.startDate) : toIsoDate(c.ContractStartDate);

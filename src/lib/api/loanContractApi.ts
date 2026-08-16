@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { toIsoDate, chunk } from '../utils';
+import { chunk } from '../utils';
 import type { DuePeriodRow } from '../duePeriod';
 import { findKunnNumberClash } from '../creditContract';
 import { unarchiveCustomer } from './customerApi';
@@ -79,9 +79,6 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   delete cleanContract.collateral;
   delete cleanContract.contractCollaterals;
 
-  if ('HdtdDueDate' in cleanContract) {
-    cleanContract.HdtdDueDate = toIsoDate(cleanContract.HdtdDueDate);
-  }
 
   if (!isUpdate) {
     delete cleanContract.Id;

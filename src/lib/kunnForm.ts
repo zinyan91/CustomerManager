@@ -1,7 +1,7 @@
 import type { CreditContract, LoanContract, RateAdjustmentHistoryItem } from '../types';
-import { getContractRateHistory, getMasterHdtdNumber, parseMoneyDecimalInput, formatMoneyInput, formatMoneyWith, stripLegacyNoteBlobs, toIsoDate } from './utils';
+import { getContractRateHistory, getMasterHdtdNumber, parseMoneyDecimalInput, formatMoneyInput, formatMoneyWith, stripLegacyNoteBlobs } from './utils';
 import { buildRateFields, resolveRateModeOf } from './rateResolution';
-import { resolveMasterHdtdNumber } from './creditContract';
+import { resolveMasterHdtdNumber, hdtdEffectiveDatesOf } from './creditContract';
 import { isBulletPrincipal, roundPrincipalCore } from './loanMath';
 
 export const LOAN_METHODS = [
@@ -64,7 +64,6 @@ export function contractToFormFields(c: LoanContract, creditContracts: CreditCon
         ?? creditContracts.find(cc => cc.HdtdNumber === getMasterHdtdNumber(c))?.Id
         ?? null,
       ContractNumber: c.ContractNumber,
-      HdtdDueDate: toIsoDate(c.HdtdDueDate),
       ContractType: c.ContractType,
       LoanMethod: c.LoanMethod || LOAN_METHODS[0],
       DebtGroup: c.DebtGroup ?? 1,
@@ -208,12 +207,18 @@ export interface KunnPayloadInput {
   basePercent: number;
   marginPercent: number;
   activeRatePercent: number;
+  creditContracts?: Pick<CreditContract, 'Id' | 'ContractStartDate' | 'ContractEndDate'>[];
 }
 
 export function buildKunnPayload({
   fields, customerId, contractNumber,
   prefPercent, basePercent, marginPercent, activeRatePercent,
+  creditContracts,
 }: KunnPayloadInput): Partial<LoanContract> {
+  const hanHdtd = hdtdEffectiveDatesOf(
+    { CreditContractId: fields.contract.CreditContractId ?? null },
+    creditContracts || []
+  );
   const creditLimit = parseMoneyDecimalInput(fields.creditLimit);
   const loanAmount = parseMoneyDecimalInput(fields.loanAmount);
   const currentBalance = parseMoneyDecimalInput(fields.currentBalance) || loanAmount;
@@ -233,12 +238,11 @@ export function buildKunnPayload({
     CustomerId: customerId,
     ContractNumber: contractNumber,
 
-    ContractStartDate: cleanDate(fields.contract.ContractStartDate),
-    ContractEndDate: cleanDate(fields.contract.ContractEndDate),
+    ContractStartDate: hanHdtd?.startDate ?? cleanDate(fields.contract.ContractStartDate),
+    ContractEndDate: hanHdtd?.endDate ?? cleanDate(fields.contract.ContractEndDate),
     DisbursementDate: cleanDate(fields.contract.DisbursementDate),
     KunnDueDate: cleanDate(fields.contract.KunnDueDate),
     RepaymentStartDate: cleanDate(fields.contract.RepaymentStartDate),
-    HdtdDueDate: cleanDate(fields.contract.HdtdDueDate),
 
     Note: noteText || null,
     RateHistory: fields.rateHistory.length > 0 ? fields.rateHistory : null,

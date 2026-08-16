@@ -150,35 +150,49 @@ const SCHEDULE_COLUMNS = 'Id, ContractId, PeriodNumber, DueDate, TotalAmount, Is
 const SCHEDULE_PAGE = 1000;
 const CONTRACT_LOT = 200;
 
+async function fetchScheduleLot(lot: number[]): Promise<DuePeriodRow[]> {
+  const { count, error: countErr } = await supabase
+    .from('RepaymentSchedules')
+    .select('Id', { count: 'exact', head: true })
+    .in('ContractId', lot);
+
+  if (countErr) {
+    throw new Error(`Không đếm được lịch trả nợ: ${countErr.message}`);
+  }
+  if (count === null || count === 0) return [];
+
+  const trang = Array.from(
+    { length: Math.ceil(count / SCHEDULE_PAGE) },
+    (_, i) => i * SCHEDULE_PAGE
+  );
+
+  const ketQua = await Promise.all(trang.map(async from => {
+    const { data, error } = await supabase
+      .from('RepaymentSchedules')
+      .select(SCHEDULE_COLUMNS)
+      .in('ContractId', lot)
+      .order('Id', { ascending: true })
+      .range(from, from + SCHEDULE_PAGE - 1);
+
+    if (error) {
+      throw new Error(`Không nạp được lịch trả nợ: ${error.message}`);
+    }
+    return (data || []) as unknown as DuePeriodRow[];
+  }));
+
+  return ketQua.flat();
+}
+
 export async function fetchSchedulesForContractsAPI(
   contractIds: number[]
 ): Promise<DuePeriodRow[]> {
   if (contractIds.length === 0) return [];
 
-  const all: DuePeriodRow[] = [];
+  const theoLo = await Promise.all(
+    chunk(contractIds, CONTRACT_LOT).map(fetchScheduleLot)
+  );
 
-  for (const lot of chunk(contractIds, CONTRACT_LOT)) {
-    let from = 0;
-    while (true) {
-      const { data, error } = await supabase
-        .from('RepaymentSchedules')
-        .select(SCHEDULE_COLUMNS)
-        .in('ContractId', lot)
-        .order('Id', { ascending: true })
-        .range(from, from + SCHEDULE_PAGE - 1);
-
-      if (error) {
-        throw new Error(`Không nạp được lịch trả nợ: ${error.message}`);
-      }
-      if (!data || data.length === 0) break;
-
-      all.push(...(data as unknown as DuePeriodRow[]));
-      if (data.length < SCHEDULE_PAGE) break;
-      from += SCHEDULE_PAGE;
-    }
-  }
-
-  return all;
+  return theoLo.flat();
 }
 
 export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<RepaymentSchedule>[]): Promise<void> {

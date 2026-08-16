@@ -124,36 +124,40 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
     )}
 
     {form.LoanMethod === 'Hạn mức tín dụng' && (
-      <div className={`p-3 rounded-md border flex flex-wrap items-center justify-between text-xs font-semibold ${'bg-accent-soft border-accent/30 text-accent'
-        }`}>
-        <div className="flex items-center space-x-2">
-          <Building2 className="w-4 h-4 text-accent" />
-          <span>TÌNH TRẠNG HẠN MỨC TÍN DỤNG:</span>
-        </div>
-        <div className="flex items-center space-x-4 font-mono">
-          <span>Tổng mức cấp: <strong className="text-accent">{fmtMoney(formGrantedLimit)}</strong></span>
-          <span>• Dư nợ KUNN còn hiệu lực: <strong className="text-warn">{fmtMoney(totalExistingKunnBalance)}</strong></span>
-          <span>• Khả năng giải ngân còn lại: {formLimitStatus?.expired ? (
-            <strong className="text-neg font-bold inline-flex items-center">
-              0 VND
-              <span className="text-[10px] font-normal font-app px-1.5 py-0.2 rounded bg-neg/10 text-neg border border-neg/30 ml-1.5">
-                HĐTD hết hạn
-              </span>
-            </strong>
-          ) : (
-            <strong className={availableBeforeThisKunn <= 0 ? 'text-neg' : 'text-pos'}>
-              {fmtMoney(availableBeforeThisKunn)}
-            </strong>
-          )}</span>
+      <div className="p-3 rounded-md border bg-panel border-line">
+        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
+          <Building2 className="w-3.5 h-3.5" />
+          <span>Tình trạng hạn mức tín dụng</span>
           {(formLimitStatus?.settledKunnCount ?? 0) > 0 && (
-            <span className="text-[10px] font-app font-normal text-ink-faint">
+            <span className="normal-case tracking-normal font-normal">
               (đã loại {formLimitStatus!.settledKunnCount} KUNN đã tất toán)
             </span>
           )}
         </div>
+
+        <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-2">
+          <div>
+            <div className="text-[10px] text-ink-faint">Tổng mức cấp</div>
+            <div className="font-mono font-bold text-xs text-ink">{fmtMoney(formGrantedLimit)}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-ink-faint">Dư nợ KUNN còn hiệu lực</div>
+            <div className="font-mono font-bold text-xs text-ink">{fmtMoney(totalExistingKunnBalance)}</div>
+          </div>
+          <div>
+            <div className="text-[10px] text-ink-faint">Khả năng giải ngân còn lại</div>
+            {formLimitStatus?.expired ? (
+              <div className="font-mono font-bold text-xs text-neg">0 VNĐ</div>
+            ) : (
+              <div className={`font-mono font-bold text-xs ${availableBeforeThisKunn <= 0 ? 'text-neg' : 'text-ink'}`}>
+                {fmtMoney(availableBeforeThisKunn)}
+              </div>
+            )}
+          </div>
+        </div>
         {formLimitStatus?.expired && (
-          <div className="w-full mt-2 pt-2 border-t border-neg/30 text-[11px] font-bold text-neg flex items-center justify-between">
-            <span>⚠️ HĐTD hết hiệu lực từ ngày {fmtDate(formLimitStatus.endDate)} — Không thể rút vốn thêm.</span>
+          <div className="mt-2 pt-2 border-t border-line text-[11px] font-semibold text-neg flex flex-wrap items-center justify-between gap-2">
+            <span>HĐTD hết hiệu lực từ ngày {fmtDate(formLimitStatus.endDate)}, không rút thêm vốn được.</span>
             {availableBeforeThisKunn > 0 && (
               <span className="text-[10px] font-normal text-ink-muted">
                 (Dư địa trên sổ sách: {fmtMoney(availableBeforeThisKunn)})

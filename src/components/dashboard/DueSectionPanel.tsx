@@ -37,6 +37,7 @@ interface DueSectionPanelProps<T> {
   cardTitle: (row: T) => React.ReactNode;
   cardSubtitle?: (row: T) => React.ReactNode;
   emptyText: string;
+  notice?: React.ReactNode;
   cardBg: string;
   filter?: DueFilter;
   onFilterChange?: (f: DueFilter) => void;
@@ -45,7 +46,7 @@ interface DueSectionPanelProps<T> {
 
 function DueSectionPanelImpl<T>({
   icon: Icon, tone, title, counts, columns, rows, rowKey, cardTitle, cardSubtitle,
-  emptyText, cardBg, filter, onFilterChange, onPrint,
+  emptyText, notice, cardBg, filter, onFilterChange, onPrint,
 }: DueSectionPanelProps<T>) {
   return (
     <div className={`${cardBg} rounded-lg p-4 border space-y-3`}>
@@ -88,6 +89,10 @@ function DueSectionPanelImpl<T>({
           )}
         </div>
       </div>
+
+      {notice && (
+        <div className="text-[11px] text-warn font-semibold">{notice}</div>
+      )}
 
       <AdaptiveTable
         rows={rows}

@@ -32,7 +32,6 @@ export const CreditContractView: React.FC = () => {
     summaries,
     visibleSummaries,
     closedCount,
-    openContractsCount,
     purposeOptions,
     tongKhaNangBaoDam,
     vuotKhaNangBaoDam,
@@ -123,8 +122,6 @@ export const CreditContractView: React.FC = () => {
             totalGranted={totalGranted}
             totalOutstanding={totalOutstanding}
             totalAvailable={totalAvailable}
-            openContractsCount={openContractsCount}
-            totalContractsCount={summaries.length}
           />
 
           {/* Main Contract List Card */}

@@ -8,8 +8,6 @@ interface CreditContractSummaryCardsProps {
   totalGranted: number;
   totalOutstanding: number;
   totalAvailable: number;
-  openContractsCount: number;
-  totalContractsCount: number;
 }
 
 export const CreditContractSummaryCards: React.FC<CreditContractSummaryCardsProps> = ({
@@ -17,8 +15,6 @@ export const CreditContractSummaryCards: React.FC<CreditContractSummaryCardsProp
   totalGranted,
   totalOutstanding,
   totalAvailable,
-  openContractsCount,
-  totalContractsCount,
 }) => {
   const containerCardBg = UI.containerCardBg;
 
@@ -37,9 +33,6 @@ export const CreditContractSummaryCards: React.FC<CreditContractSummaryCardsProp
         <div className="absolute top-0 left-0 right-0 h-1 bg-accent" />
         <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng hạn mức đã cấp</div>
         <div className="font-mono font-bold text-base text-ink">{fmtMoney(totalGranted)}</div>
-        <div className="text-[11px] text-ink-faint font-semibold">
-          {openContractsCount} HĐTD đang mở / {totalContractsCount} Tổng HĐ
-        </div>
       </div>
 
       {/* 3. Dư nợ KUNN hiện hữu */}
@@ -47,9 +40,6 @@ export const CreditContractSummaryCards: React.FC<CreditContractSummaryCardsProp
         <div className="absolute top-0 left-0 right-0 h-1 bg-warn" />
         <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Dư nợ KUNN hiện hữu</div>
         <div className="font-mono font-bold text-base text-warn">{fmtMoney(totalOutstanding)}</div>
-        <div className="text-[11px] text-ink-faint">
-          Tỷ lệ sử dụng: {totalGranted > 0 ? ((totalOutstanding / totalGranted) * 100).toFixed(1) : '0.0'}%
-        </div>
       </div>
 
       {/* 4. Hạn mức khả dụng */}
@@ -57,7 +47,6 @@ export const CreditContractSummaryCards: React.FC<CreditContractSummaryCardsProp
         <div className="absolute top-0 left-0 right-0 h-1 bg-pos" />
         <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Hạn mức khả dụng</div>
         <div className="font-mono font-bold text-base text-pos">{fmtMoney(totalAvailable)}</div>
-        <div className="text-[11px] text-ink-faint">Sẵn sàng cấp/giải ngân KUNN mới</div>
       </div>
     </div>
   );

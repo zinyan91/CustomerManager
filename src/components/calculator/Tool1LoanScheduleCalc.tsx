@@ -147,16 +147,16 @@ interface Tool1LoanScheduleCalcProps {
 
 export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ styles }) => {
   const [loanAmountStr, setLoanAmountStr] = useState('500.000.000');
-  const [interestRateStr, setInterestRateStr] = useState('8.5');
-  const [tenorMonths, setTenorMonths] = useState<number>(12);
+  const [interestRateStr, setInterestRateStr] = useState('9.5');
+  const [tenorMonths, setTenorMonths] = useState<number>(120);
   const [disbursementDate, setDisbursementDate] = useState(() => todayIso());
   const [firstPaymentDate, setFirstPaymentDate] = useState('');
   const [repayMethod, setRepayMethod] = useState<'equal_principal' | 'bullet'>('equal_principal');
   const [principalGraceMonths, setPrincipalGraceMonths] = useState<number>(0);
 
-  const [promoMonthsStr, setPromoMonthsStr] = useState('0');
-  const [baseRateStr, setBaseRateStr] = useState('');
-  const [marginStr, setMarginStr] = useState('');
+  const [promoMonthsStr, setPromoMonthsStr] = useState('12');
+  const [baseRateStr, setBaseRateStr] = useState('9.7');
+  const [marginStr, setMarginStr] = useState('3.75');
   const [postPromoRateStr, setPostPromoRateStr] = useState('');
 
   const [prepayments, setPrepayments] = useState<PrepaymentRow[]>([]);
@@ -351,11 +351,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               onChange={val => setFirstPaymentDate(val)}
               className={`w-full rounded-md p-2.5 ${styles.inputStyle}`}
             />
-            <div className="mt-1 text-[11px] text-ink-faint">
-              {effectiveFirstPaymentDate === firstPaymentDate.trim() && firstPaymentDate.trim()
-                ? `Kỳ 1 đến hạn ${fmtDate(effectiveFirstPaymentDate)}`
-                : `Để trống: kỳ 1 đến hạn ${fmtDate(defaultFirstPaymentDate)}`}
-            </div>
+
           </div>
         </div>
 
@@ -452,7 +448,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           <div className="text-xs font-bold text-warn tracking-tight flex items-center justify-between gap-2 border-b pb-1.5 border-warn/30 ">
             <div className="flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-warn"></span>
-              <span>💵 KẾ HOẠCH TRẢ NỢ TRƯỚC HẠN (TÙY CHỌN NHIỀU KỲ)</span>
+              <span>💵 KẾ HOẠCH TRẢ NỢ TRƯỚC HẠN</span>
             </div>
             <button
               type="button"
@@ -460,7 +456,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               className="px-3 py-1.5 rounded-lg bg-warn text-white text-xs font-bold flex items-center space-x-1.5 hover:opacity-90 active:scale-95 transition-all shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4 text-white" />
-              <span>+ Thêm kỳ trả trước hạn</span>
+              <span>Thêm kỳ trả trước hạn</span>
             </button>
           </div>
 
@@ -526,9 +522,6 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 pb-3 border-b border-line">
           <div>
             <h3 className="text-sm font-bold text-ink">BẢNG TÍNH LỊCH THU NỢ DỰ KIẾN ({scheduleRows.length} KỲ)</h3>
-            <p className="text-xs text-ink-faint">
-              Công thức Actual/365 chuẩn NHNN: Tiền lãi = Dư nợ × Lãi suất × Số ngày thực tế / 365
-            </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button

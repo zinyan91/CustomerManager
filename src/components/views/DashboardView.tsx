@@ -556,7 +556,7 @@ export const DashboardView: React.FC = () => {
           <DueSectionPanel
             icon={Calendar}
             tone="warn"
-            title="1. Khách hàng chuẩn bị đóng kỳ due của tháng"
+            title="Khách hàng chuẩn bị đóng kỳ due của tháng"
             counts={dueMonthCount}
             filter={dueMonthFilter}
             onFilterChange={setDueMonthFilter}
@@ -579,7 +579,7 @@ export const DashboardView: React.FC = () => {
           <DueSectionPanel
             icon={Clock}
             tone="accent"
-            title="2. Danh sách giấy nhận nợ (KUNN) sắp đến hạn kết thúc"
+            title="Giấy nhận nợ (KUNN) sắp đến hạn kết thúc"
             counts={kunnCount}
             filter={kunnFilter}
             onFilterChange={setKunnFilter}
@@ -598,7 +598,7 @@ export const DashboardView: React.FC = () => {
           <DueSectionPanel
             icon={AlertTriangle}
             tone="accent"
-            title="3. Danh sách hạn mức tín dụng (HMTD) sắp tới hạn kết thúc"
+            title="Hạn mức tín dụng (HMTD) sắp tới hạn kết thúc"
             counts={hmtdCount}
             filter={hmtdFilter}
             onFilterChange={setHmtdFilter}
@@ -617,7 +617,7 @@ export const DashboardView: React.FC = () => {
           <DueSectionPanel
             icon={Building2}
             tone="pos"
-            title="4. Danh sách định giá tài sản bảo đảm sắp tới hạn"
+            title="Định giá tài sản bảo đảm sắp tới hạn"
             counts={tsbdCount}
             filter={tsbdFilter}
             onFilterChange={setTsbdFilter}

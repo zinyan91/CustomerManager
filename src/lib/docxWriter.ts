@@ -1,4 +1,8 @@
 import { utf8, escapeXml, zipStore, XML_DECL } from './ooxml';
+import {
+  BM04_FONT, BM04_SIZE, bm04SectPr, bm04HeaderXml, bm04FooterXml,
+} from './bm04CommitmentDocx';
+import { bm04LogoBytes } from './bm04Logo';
 
 export const MIME_DOCX =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -24,6 +28,8 @@ export type DocxAlign = 'left' | 'center' | 'right' | 'justify';
 
 export interface DocxRun {
   text: string;
+  tab?: boolean;
+  font?: string;
   bold?: boolean;
   italic?: boolean;
   size?: number;
@@ -41,6 +47,9 @@ export interface DocxParagraph {
   after?: number;
   line?: number;
   spacer?: boolean;
+  tabs?: { pos: number; leader?: string }[];
+  numId?: number;
+  hanging?: number;
 }
 
 export interface DocxCell {
@@ -55,9 +64,15 @@ export interface DocxTable {
   bordered: boolean;
 }
 
-export type DocxBlock = DocxParagraph | DocxTable;
+export interface DocxSectionBreak {
+  kind: 'sect';
+  sectPr: string;
+}
+
+export type DocxBlock = DocxParagraph | DocxTable | DocxSectionBreak;
 
 interface InlineCtx {
+  font?: string;
   bold?: boolean;
   italic?: boolean;
   size?: number;
@@ -136,6 +151,7 @@ function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
       if (text !== '') {
         runs.push({
           text,
+          font: ctx.font,
           bold: ctx.bold,
           italic: ctx.italic,
           size: ctx.size,
@@ -148,6 +164,10 @@ function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
     const el = child as Element;
     if (el.tagName.toLowerCase() === 'br') {
       runs.push({ text: '', lineBreak: true });
+      continue;
+    }
+    if (el.classList && el.classList.contains('doc-tab')) {
+      runs.push({ text: '', tab: true });
       continue;
     }
     collectRuns(el, inlineCtxOf(el, ctx), runs);
@@ -233,6 +253,27 @@ function baseParagraph(tag: string, el: Element): DocxParagraph {
     p.align = 'justify';
     p.firstLine = CLAUSE_INDENT;
     p.before = ptToTwips(4);
+  }
+  if (el.classList.contains('bm04-name')) {
+    p.align = 'justify';
+    p.firstLine = 0;
+    p.tabs = [{ pos: 9180, leader: 'dot' }];
+  }
+  if (el.classList.contains('bm04-fill')) {
+    p.align = 'justify';
+    p.firstLine = 0;
+    p.tabs = [
+      { pos: 3420, leader: 'dot' },
+      { pos: 5760, leader: 'dot' },
+      { pos: 9180, leader: 'dot' },
+    ];
+  }
+  if (el.classList.contains('bm04-bullet')) {
+    p.align = 'justify';
+    p.numId = BM04_NUM_ID;
+    p.left = 720;
+    p.hanging = 360;
+    p.firstLine = 0;
   }
   if (el.classList.contains('item-p')) {
     p.align = 'justify';
@@ -337,7 +378,7 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
     if (child.nodeType === 3) {
       const text = normalizeText(child.nodeValue || '', ctx.upper);
       if (text.trim() !== '') {
-        pending.push({ text, bold: ctx.bold, italic: ctx.italic, size: ctx.size });
+        pending.push({ text, font: ctx.font, bold: ctx.bold, italic: ctx.italic, size: ctx.size });
       }
       continue;
     }
@@ -345,6 +386,13 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
 
     const el = child as Element;
     const tag = el.tagName.toLowerCase();
+
+    if (el.getAttribute && el.getAttribute(BM04_SECTION_ATTR) === BM04_SECTION_VALUE) {
+      flush();
+      out.push({ kind: 'sect', sectPr: SECT_PR });
+      out.push(...walkBlocks(el, { ...ctx, font: BM04_FONT, size: BM04_SIZE }));
+      continue;
+    }
 
     if (!BLOCK_TAGS.has(tag)) {
       collectRuns(el, inlineCtxOf(el, ctx), pending);
@@ -394,8 +442,14 @@ export function parseDocumentHtml(html: string): DocxBlock[] {
 
 function runXml(run: DocxRun): string {
   if (run.lineBreak) return '<w:r><w:br/></w:r>';
+  if (run.tab) return '<w:r><w:tab/></w:r>';
 
   const props: string[] = [];
+  if (run.font) {
+    props.push(
+      `<w:rFonts w:ascii="${run.font}" w:eastAsia="${run.font}" w:hAnsi="${run.font}" w:cs="${run.font}"/>`
+    );
+  }
   if (run.bold) props.push('<w:b/><w:bCs/>');
   if (run.italic) props.push('<w:i/><w:iCs/>');
   if (run.letterSpacing) props.push(`<w:spacing w:val="${run.letterSpacing}"/>`);
@@ -421,8 +475,20 @@ export function paragraphXml(p: DocxParagraph): string {
   if (p.line !== undefined) spacingParts.push(`w:line="${p.line}" w:lineRule="auto"`);
   if (spacingParts.length > 0) props.push(`<w:spacing ${spacingParts.join(' ')}/>`);
 
+  if (p.numId !== undefined) {
+    props.push(`<w:numPr><w:ilvl w:val="0"/><w:numId w:val="${p.numId}"/></w:numPr>`);
+  }
+
+  if (p.tabs && p.tabs.length > 0) {
+    const tabs = p.tabs
+      .map(t => `<w:tab w:val="left"${t.leader ? ` w:leader="${t.leader}"` : ''} w:pos="${t.pos}"/>`)
+      .join('');
+    props.push(`<w:tabs>${tabs}</w:tabs>`);
+  }
+
   const indParts: string[] = [];
   if (p.left) indParts.push(`w:left="${p.left}"`);
+  if (p.hanging) indParts.push(`w:hanging="${p.hanging}"`);
   if (p.firstLine) indParts.push(`w:firstLine="${p.firstLine}"`);
   if (indParts.length > 0) props.push(`<w:ind ${indParts.join(' ')}/>`);
 
@@ -496,23 +562,24 @@ export function tableXml(table: DocxTable): string {
   return `<w:tbl>${props}${gridXml}${rowsXml}</w:tbl>`;
 }
 
-const SECT_PR = '<w:sectPr>'
+export const SECT_PR = '<w:sectPr>'
   + `<w:pgSz w:w="${PAGE_WIDTH}" w:h="${PAGE_HEIGHT}"/>`
   + `<w:pgMar w:top="${MARGIN_TOP}" w:right="${MARGIN_RIGHT}"`
   + ` w:bottom="${MARGIN_BOTTOM}" w:left="${MARGIN_LEFT}"`
   + ' w:header="720" w:footer="720" w:gutter="0"/>'
   + '</w:sectPr>';
 
-export function documentXml(blocks: DocxBlock[]): string {
-  const body = blocks.map(block => (
-    block.kind === 'table'
-      ? tableXml(block) + '<w:p/>'
-      : paragraphXml(block)
-  )).join('');
+export function documentXml(blocks: DocxBlock[], finalSectPr: string = SECT_PR): string {
+  const body = blocks.map(block => {
+    if (block.kind === 'table') return tableXml(block) + '<w:p/>';
+    if (block.kind === 'sect') return `<w:p><w:pPr>${block.sectPr}</w:pPr></w:p>`;
+    return paragraphXml(block);
+  }).join('');
 
   return XML_DECL
-    + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-    + `<w:body>${body}${SECT_PR}</w:body>`
+    + '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+    + ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+    + `<w:body>${body}${finalSectPr}</w:body>`
     + '</w:document>';
 }
 
@@ -530,15 +597,32 @@ const STYLES_XML = XML_DECL
   + '<w:name w:val="Normal"/><w:qFormat/></w:style>'
   + '</w:styles>';
 
-const CONTENT_TYPES = XML_DECL
-  + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-  + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-  + '<Default Extension="xml" ContentType="application/xml"/>'
-  + '<Override PartName="/word/document.xml"'
-  + ' ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
-  + '<Override PartName="/word/styles.xml"'
-  + ' ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
-  + '</Types>';
+function contentTypesXml(extra: DocxPackageExtras): string {
+  const hasHeader = !!extra.headerXml;
+  const hasFooter = !!extra.footerXml;
+  return XML_DECL
+    + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    + '<Default Extension="xml" ContentType="application/xml"/>'
+    + (extra.image ? '<Default Extension="png" ContentType="image/png"/>' : '')
+    + '<Override PartName="/word/document.xml"'
+    + ' ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+    + '<Override PartName="/word/styles.xml"'
+    + ' ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
+    + (hasHeader
+      ? '<Override PartName="/word/header1.xml"'
+        + ' ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>'
+      : '')
+    + (hasFooter
+      ? '<Override PartName="/word/footer1.xml"'
+        + ' ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>'
+      : '')
+    + (extra.numbering
+      ? '<Override PartName="/word/numbering.xml"'
+        + ' ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>'
+      : '')
+    + '</Types>';
+}
 
 const ROOT_RELS = XML_DECL
   + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
@@ -547,23 +631,98 @@ const ROOT_RELS = XML_DECL
   + ' Target="word/document.xml"/>'
   + '</Relationships>';
 
-const DOCUMENT_RELS = XML_DECL
-  + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-  + '<Relationship Id="rId1"'
-  + ' Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"'
-  + ' Target="styles.xml"/>'
-  + '</Relationships>';
+const REL_BASE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 
-export function buildDocx(blocks: DocxBlock[]): Uint8Array {
-  return zipStore([
-    { name: '[Content_Types].xml', data: utf8(CONTENT_TYPES) },
-    { name: '_rels/.rels', data: utf8(ROOT_RELS) },
-    { name: 'word/document.xml', data: utf8(documentXml(blocks)) },
-    { name: 'word/_rels/document.xml.rels', data: utf8(DOCUMENT_RELS) },
-    { name: 'word/styles.xml', data: utf8(STYLES_XML) },
-  ]);
+export const HEADER_REL_ID = 'rId2';
+export const FOOTER_REL_ID = 'rId3';
+export const IMAGE_REL_ID = 'rId4';
+export const NUMBERING_REL_ID = 'rId5';
+
+function documentRelsXml(extra: DocxPackageExtras): string {
+  return XML_DECL
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + `<Relationship Id="rId1" Type="${REL_BASE}/styles" Target="styles.xml"/>`
+    + (extra.headerXml
+      ? `<Relationship Id="${HEADER_REL_ID}" Type="${REL_BASE}/header" Target="header1.xml"/>` : '')
+    + (extra.footerXml
+      ? `<Relationship Id="${FOOTER_REL_ID}" Type="${REL_BASE}/footer" Target="footer1.xml"/>` : '')
+    + (extra.numbering
+      ? `<Relationship Id="${NUMBERING_REL_ID}" Type="${REL_BASE}/numbering" Target="numbering.xml"/>` : '')
+    + '</Relationships>';
 }
 
+function headerRelsXml(extra: DocxPackageExtras): string {
+  return XML_DECL
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + (extra.image
+      ? `<Relationship Id="${IMAGE_REL_ID}" Type="${REL_BASE}/image" Target="media/${extra.image.name}"/>` : '')
+    + '</Relationships>';
+}
+
+export const BM04_NUM_ID = 1;
+
+const NUMBERING_XML = XML_DECL
+  + '<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+  + '<w:abstractNum w:abstractNumId="0">'
+  + '<w:lvl w:ilvl="0">'
+  + '<w:start w:val="1"/>'
+  + '<w:numFmt w:val="bullet"/>'
+  + '<w:lvlText w:val="-"/>'
+  + '<w:lvlJc w:val="left"/>'
+  + '<w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr>'
+  + `<w:rPr><w:rFonts w:ascii="${BM04_FONT}" w:hAnsi="${BM04_FONT}" w:cs="${BM04_FONT}" w:hint="default"/></w:rPr>`
+  + '</w:lvl>'
+  + '</w:abstractNum>'
+  + `<w:num w:numId="${BM04_NUM_ID}"><w:abstractNumId w:val="0"/></w:num>`
+  + '</w:numbering>';
+
+export interface DocxPackageExtras {
+  finalSectPr?: string;
+  numbering?: boolean;
+  headerXml?: string;
+  footerXml?: string;
+  image?: { name: string; bytes: Uint8Array };
+}
+
+export function buildDocx(blocks: DocxBlock[], extra: DocxPackageExtras = {}): Uint8Array {
+  const parts: { name: string; data: Uint8Array }[] = [
+    { name: '[Content_Types].xml', data: utf8(contentTypesXml(extra)) },
+    { name: '_rels/.rels', data: utf8(ROOT_RELS) },
+    { name: 'word/document.xml', data: utf8(documentXml(blocks, extra.finalSectPr)) },
+    { name: 'word/_rels/document.xml.rels', data: utf8(documentRelsXml(extra)) },
+    { name: 'word/styles.xml', data: utf8(STYLES_XML) },
+  ];
+
+  if (extra.headerXml) {
+    parts.push({ name: 'word/header1.xml', data: utf8(extra.headerXml) });
+    parts.push({ name: 'word/_rels/header1.xml.rels', data: utf8(headerRelsXml(extra)) });
+  }
+  if (extra.footerXml) {
+    parts.push({ name: 'word/footer1.xml', data: utf8(extra.footerXml) });
+  }
+  if (extra.image) {
+    parts.push({ name: `word/media/${extra.image.name}`, data: extra.image.bytes });
+  }
+  if (extra.numbering) {
+    parts.push({ name: 'word/numbering.xml', data: utf8(NUMBERING_XML) });
+  }
+
+  return zipStore(parts);
+}
+
+export const BM04_SECTION_ATTR = 'data-doc-section';
+export const BM04_SECTION_VALUE = 'bm04';
+
 export function htmlToDocx(html: string): Uint8Array {
-  return buildDocx(parseDocumentHtml(html));
+  const blocks = parseDocumentHtml(html);
+  const coBm04 = blocks.some(b => b.kind === 'sect');
+  if (!coBm04) return buildDocx(blocks);
+
+  return buildDocx(blocks, {
+    finalSectPr: bm04SectPr(HEADER_REL_ID, FOOTER_REL_ID),
+    numbering: true,
+    headerXml: bm04HeaderXml(IMAGE_REL_ID),
+    footerXml: bm04FooterXml(),
+    image: { name: 'image1.png', bytes: bm04LogoBytes() },
+  });
 }

@@ -116,6 +116,37 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           line-height: 1.25; 
         }
         .sig-space { height: 90px; line-height: 1.25; }
+
+        .bm04-sheet {
+          page-break-before: always;
+          font-family: 'Arial Unicode MS', 'Arial', sans-serif;
+          font-size: 10pt;
+          line-height: 1.35;
+        }
+        .bm04-sheet p { margin: 0 0 4pt 0; text-indent: 0; text-align: justify; }
+        .bm04-name { }
+        .bm04-fill { }
+        .bm04-fill .doc-tab {
+          display: inline-block;
+          min-width: 40pt;
+          border-bottom: 1px dotted #000;
+          margin: 0 4pt;
+        }
+        .bm04-bullet { padding-left: 36pt; text-indent: -18pt; }
+        .bm04-bullet::before { content: '-'; padding-right: 9pt; }
+        .bm04-sig {
+          width: 100%;
+          margin-top: 12pt;
+          border-collapse: collapse;
+          border: none;
+          page-break-inside: avoid;
+        }
+        .bm04-sig td {
+          width: 50%;
+          vertical-align: top;
+          border: none;
+          padding: 0;
+        }
       </style>
     </head>
     <body>

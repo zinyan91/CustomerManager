@@ -6,6 +6,47 @@ import type { DepositContractData } from '../components/documents/depositContrac
 
 const nfc = (str: string) => (str ? str.normalize('NFC') : '');
 
+function ngayThangNam(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((iso || '').trim());
+  if (!m) return iso || '';
+  return `ngày ${m[3]} tháng ${m[2]} năm ${m[1]}`;
+}
+
+function giayCamKetHtml(input: {
+  hoTen: string;
+  cccd: string;
+  ngayCap: string;
+  noiCap: string;
+  ngayLap: string;
+}): string {
+  return `
+    <div data-doc-section="bm04" class="bm04-sheet">
+      <p class="text-right no-indent">TP.HCM, ${ngayThangNam(input.ngayLap)}</p>
+      <p class="no-indent">&nbsp;</p>
+      <p class="text-center no-indent font-bold text-[14pt]">GIẤY CAM KẾT</p>
+      <p class="no-indent font-bold">BÊN CAM KẾT</p>
+      <p class="bm04-name">Tôi tên là: ${nfc(input.hoTen)}</p>
+      <p class="bm04-fill">Số CCCD/CC: ${nfc(input.cccd)}<span class="doc-tab"></span>cấp ngày: ${nfc(input.ngayCap)}<span class="doc-tab"></span>Nơi cấp: ${nfc(input.noiCap)}</p>
+      <p class="no-indent">Nay, Tôi cam kết các nội dung sau:</p>
+      <p class="bm04-bullet">Tôi không có tài khoản thanh toán tại bất kỳ tổ chức cung ứng dịch vụ thanh toán nào.</p>
+      <p class="bm04-bullet">Tôi cam kết chịu trách nhiệm trước pháp luật về tính chính xác, trung thực của các thông tin, hồ sơ và chứng từ đã cung cấp cho Vietbank.</p>
+      <p class="no-indent">&nbsp;</p>
+      <table class="bm04-sig">
+        <tbody>
+          <tr>
+            <td>&nbsp;</td>
+            <td class="text-center">
+              <div class="font-bold">BÊN CAM KẾT</div>
+              <div>(Ký, ghi rõ họ tên)</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+
 export interface DocumentDraft {
   mbContractDate: string;
   mbPartyAName: string;
@@ -682,6 +723,13 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
             </tr>
           </tbody>
         </table>
+        ${salePayMethod === 'cash' ? giayCamKetHtml({
+          hoTen: saleSellerName,
+          cccd: saleSellerCccd,
+          ngayCap: saleSellerCccdDate,
+          noiCap: saleSellerCccdPlace,
+          ngayLap: saleContractDate,
+        }) : ''}
       `;
     }
 

@@ -69,9 +69,8 @@ describe('QuizBankView — tra cứu', () => {
     expect(await screen.findByText(/Mức cho vay tối đa/)).toBeTruthy();
     expect(screen.getByText(/Tiêu chí nhận diện rủi ro/)).toBeTruthy();
     expect(screen.getByText('nhiều đáp án')).toBeTruthy();
-    expect(screen.getByText(
-      (_, el) => el?.tagName === 'SPAN' && el.textContent === '2 câu'
-    )).toBeTruthy();
+    expect(screen.getByText('Tổng ngân hàng câu hỏi').parentElement!.textContent)
+      .toContain('2 Câu hỏi');
   });
 
   it('đáp án đúng tô sẵn, không phải bấm hiện', async () => {
@@ -121,6 +120,36 @@ describe('QuizBankView — tra cứu', () => {
   });
 });
 
+describe('QuizBankView — số thứ tự', () => {
+  const khuyetId: QuizQuestion[] = [5, 9, 40].map(id => ({
+    Id: id,
+    QuestionText: `Câu mang số hiệu ${id}`,
+    Options: [{ id: 'A', text: 'Một' }, { id: 'B', text: 'Hai' }],
+    CorrectAnswers: ['A'],
+    Sources: [],
+  }));
+
+  it('chạy liền mạch dù số hiệu khuyết, số hiệu gốc vẫn giữ', async () => {
+    fetchQuizQuestionsAPI.mockResolvedValue(khuyetId);
+    render(<QuizBankView />);
+    await screen.findByText('Câu mang số hiệu 5');
+
+    expect(screen.getByText('#5').parentElement!.textContent).toMatch(/^1#5/);
+    expect(screen.getByText('#9').parentElement!.textContent).toMatch(/^2#9/);
+    expect(screen.getByText('#40').parentElement!.textContent).toMatch(/^3#40/);
+  });
+
+  it('đánh lại theo kết quả lọc, không giữ số của cả kho', async () => {
+    fetchQuizQuestionsAPI.mockResolvedValue(khuyetId);
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText('Câu mang số hiệu 5');
+
+    await user.type(screen.getByLabelText('Tìm câu hỏi'), 'số hiệu 40');
+    expect((await screen.findByText('#40')).parentElement!.textContent).toMatch(/^1#40/);
+  });
+});
+
 describe('QuizBankView — chia trang', () => {
   const many: QuizQuestion[] = Array.from({ length: 45 }, (_, i) => ({
     Id: i + 1,
@@ -141,6 +170,15 @@ describe('QuizBankView — chia trang', () => {
     expect(screen.getByText('Câu số 20 của bộ đề')).toBeTruthy();
     expect(screen.queryByText('Câu số 21 của bộ đề')).toBeNull();
     expect(screen.getByText('/ 3')).toBeTruthy();
+  });
+
+  it('số thứ tự chạy tiếp sang trang sau, không quay về 1', async () => {
+    render(<QuizBankView />);
+    const user = userEvent.setup();
+    await screen.findByText('Câu số 1 của bộ đề');
+
+    await user.click(screen.getByRole('button', { name: /Sau/ }));
+    expect(screen.getByText('#21').parentElement!.textContent).toMatch(/^21#21/);
   });
 
   it('bấm Sau sang trang hai, bấm Trước quay lại', async () => {
@@ -380,9 +418,8 @@ describe('QuizBankView — câu chưa chốt đáp án', () => {
     fetchQuizQuestionsAPI.mockResolvedValue(withUnsettled);
     render(<QuizBankView />);
 
-    expect(await screen.findByText(
-      (_, el) => el?.tagName === 'SPAN' && el.textContent === '1 câu chưa chốt đáp án'
-    )).toBeTruthy();
+    const card = (await screen.findByText('Câu chưa chốt đáp án')).parentElement;
+    expect(card!.textContent).toContain('1 Câu hỏi');
     expect(screen.getByText('chưa chốt đáp án')).toBeTruthy();
   });
 
@@ -554,13 +591,13 @@ describe('QuizBankView — nạp thêm từ tệp JSON', () => {
 
   it('bảng đã có dữ liệu thì hiện nút nạp thêm; bảng rỗng thì không', async () => {
     render(<QuizBankView />);
-    expect(await screen.findByRole('button', { name: /Nạp thêm từ tệp JSON/i })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /Nạp thêm/i })).toBeTruthy();
 
     cleanup();
     fetchQuizQuestionsAPI.mockResolvedValue([]);
     render(<QuizBankView />);
     await screen.findByRole('button', { name: /Nạp bộ câu hỏi gốc/i });
-    expect(screen.queryByRole('button', { name: /Nạp thêm từ tệp JSON/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Nạp thêm/i })).toBeNull();
   });
 
   it('gửi câu đã chuẩn hoá lên CSDL và báo số đã nạp', async () => {

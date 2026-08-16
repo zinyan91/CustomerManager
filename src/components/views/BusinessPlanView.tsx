@@ -51,24 +51,22 @@ export const BusinessPlanView: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveSubTab('sheet')}
-          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors ${
-            activeSubTab === 'sheet'
-              ? 'border-accent text-accent bg-accent-soft/30'
-              : 'border-transparent text-ink-muted hover:text-ink'
-          }`}
+          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors ${activeSubTab === 'sheet'
+            ? 'border-accent text-accent bg-accent-soft/30'
+            : 'border-transparent text-ink-muted hover:text-ink'
+            }`}
         >
           Bảng Phương án & Hạn mức
         </button>
         <button
           type="button"
           onClick={() => setActiveSubTab('toi')}
-          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors ${
-            activeSubTab === 'toi'
-              ? 'border-accent text-accent bg-accent-soft/30'
-              : 'border-transparent text-ink-muted hover:text-ink'
-          }`}
+          className={`px-4 py-2 text-xs font-bold border-b-2 transition-colors ${activeSubTab === 'toi'
+            ? 'border-accent text-accent bg-accent-soft/30'
+            : 'border-transparent text-ink-muted hover:text-ink'
+            }`}
         >
-          Dự phóng Thu nhập TOI (Tín dụng VNĐ)
+          Dự phóng Thu nhập TOI
         </button>
       </div>
 
@@ -84,9 +82,6 @@ export const BusinessPlanView: React.FC = () => {
                 <ClipboardList className="w-5 h-5 text-accent" />
                 <div>
                   <h2 className="text-sm font-bold tracking-tight text-accent uppercase">BẢNG TÍNH HẠN MỨC</h2>
-                  <p className="text-[11px] text-ink-faint">
-                    Thẩm định phương án kinh doanh & nhu cầu vốn lưu động
-                  </p>
                 </div>
               </div>
 
@@ -171,9 +166,8 @@ export const BusinessPlanView: React.FC = () => {
                 <div className="flex gap-1">
                   {(['million', 'vnd'] as MoneyUnit[]).map(x => (
                     <button key={x} type="button" onClick={() => setUnit(x)}
-                      className={`flex-1 px-2 py-2 rounded-md text-[11px] font-bold border transition-colors ${
-                        unit === x ? 'bg-accent text-accent-ink border-accent' : 'bg-panel-muted text-ink-muted border-line'
-                      }`}>
+                      className={`flex-1 px-2 py-2 rounded-md text-[11px] font-bold border transition-colors ${unit === x ? 'bg-accent text-accent-ink border-accent' : 'bg-panel-muted text-ink-muted border-line'
+                        }`}>
                       {UNIT_LABEL[x]}
                     </button>
                   ))}
@@ -182,9 +176,6 @@ export const BusinessPlanView: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-line">
-              <p className="text-[11px] text-ink-faint">
-                Ô chữ xanh là ô nhập · ô nền xám là công thức · cột kế hoạch tự nhân hệ số, gõ đè được từng dòng
-              </p>
               <div className="flex items-center gap-2 shrink-0">
                 <button type="button" onClick={reset}
                   className="flex items-center gap-1.5 px-2.5 py-2 rounded-md border border-line text-ink-muted text-[11px] font-semibold hover:border-accent hover:text-accent">

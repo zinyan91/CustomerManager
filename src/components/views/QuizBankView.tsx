@@ -14,7 +14,7 @@ import { importQuizQuestionsAPI } from '../../lib/api';
 import { Toast } from '../Toast';
 import { QuizQuestionForm } from '../quiz/QuizQuestionForm';
 import { QuizImportPanel } from '../quiz/QuizImportPanel';
-import { useQuizBankController } from '../../hooks/useQuizBankController';
+import { useQuizBankController, PAGE_SIZE } from '../../hooks/useQuizBankController';
 
 export const QuizBankView: React.FC = () => {
   const {
@@ -73,19 +73,17 @@ export const QuizBankView: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => setMode('browse')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${
-                mode === 'browse'
-                  ? 'bg-accent text-accent-ink border-accent shadow-xs'
-                  : 'bg-panel-muted text-ink-muted border-line hover:border-accent hover:text-accent'
-              }`}>
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${mode === 'browse'
+                ? 'bg-accent text-accent-ink border-accent shadow-xs'
+                : 'bg-panel-muted text-ink-muted border-line hover:border-accent hover:text-accent'
+                }`}>
               Tra cứu
             </button>
             <button type="button" onClick={() => setMode('practice')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${
-                mode === 'practice'
-                  ? 'bg-accent text-accent-ink border-accent shadow-xs'
-                  : 'bg-panel-muted text-ink-muted border-line hover:border-accent hover:text-accent'
-              }`}>
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all border ${mode === 'practice'
+                ? 'bg-accent text-accent-ink border-accent shadow-xs'
+                : 'bg-panel-muted text-ink-muted border-line hover:border-accent hover:text-accent'
+                }`}>
               Luyện tập
             </button>
           </div>
@@ -102,28 +100,17 @@ export const QuizBankView: React.FC = () => {
               <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng ngân hàng câu hỏi</div>
                 <div className="font-mono font-bold text-sm text-accent">{stats.total} Câu hỏi</div>
-                <div className="text-[11px] text-ink-faint">Phục vụ kiểm tra nghiệp vụ</div>
               </div>
 
               <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Câu hỏi nhiều đáp án</div>
                 <div className="font-mono font-bold text-sm text-pos">{stats.multiAnswer} Câu hỏi</div>
-                <div className="text-[11px] text-ink-faint">Dạng trắc nghiệm lựa chọn tổ hợp</div>
               </div>
 
               <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Câu chưa chốt đáp án</div>
                 <div className="font-mono font-bold text-sm text-warn">{stats.unsettled} Câu hỏi</div>
-                <div className="text-[11px] text-ink-faint">Cần rà soát và duyệt chính thức</div>
               </div>
-            </div>
-
-            <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-ink-muted">
-              <span><strong className="text-ink">{stats.total}</strong> câu</span>
-              <span><strong className="text-ink">{stats.multiAnswer}</strong> câu nhiều đáp án</span>
-              {stats.unsettled > 0 && (
-                <span><strong className="text-ink">{stats.unsettled}</strong> câu chưa chốt đáp án</span>
-              )}
             </div>
 
             {clusters.length > 0 && (
@@ -180,7 +167,7 @@ export const QuizBankView: React.FC = () => {
               <div className="relative flex-1">
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint" />
                 <input type="text" value={query} onChange={e => setQuery(e.target.value)}
-                  placeholder="Tìm trong câu hỏi, lựa chọn hoặc chủ đề — gõ #12 để tới đúng câu số 12"
+                  placeholder="Tìm kiếm"
                   aria-label="Tìm câu hỏi"
                   className={`w-full rounded-md pl-8 pr-3 py-2 border ${UI.inputStyle}`} />
               </div>
@@ -296,14 +283,16 @@ export const QuizBankView: React.FC = () => {
 
       {!loading && mode === 'browse' && (
         <div className="space-y-2">
-          {pageRows.map(question => {
+          {pageRows.map((question, rowIndex) => {
             const isConflicting = conflictingIds.has(question.Id);
+            const stt = (safePage - 1) * PAGE_SIZE + rowIndex + 1;
             return (
               <div key={question.Id}
                 className={`${PANEL} p-3 space-y-2 ${isConflicting ? ROW_RAIL_ALERT : ROW_RAIL_NEUTRAL}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2 text-[10px] text-ink-faint">
+                      <span className="font-mono font-bold text-ink">{stt}</span>
                       <span className="font-mono">#{question.Id}</span>
                       {question.Topic && <span>{question.Topic}</span>}
                       {isMultiAnswer(question) && (
@@ -337,11 +326,10 @@ export const QuizBankView: React.FC = () => {
                     const isRight = question.CorrectAnswers.includes(option.id);
                     return (
                       <div key={option.id}
-                        className={`flex gap-2 leading-relaxed rounded-sm ${
-                          isRight
-                            ? 'text-pos font-bold bg-pos-soft px-1.5 -mx-0.5 py-0.5'
-                            : 'text-ink-muted px-1.5 -mx-0.5 py-0.5'
-                        }`}>
+                        className={`flex gap-2 leading-relaxed rounded-sm ${isRight
+                          ? 'text-pos font-bold bg-pos-soft px-1.5 -mx-0.5 py-0.5'
+                          : 'text-ink-muted px-1.5 -mx-0.5 py-0.5'
+                          }`}>
                         <span className="font-mono shrink-0">{option.id}</span>
                         <span>{option.text}</span>
                       </div>

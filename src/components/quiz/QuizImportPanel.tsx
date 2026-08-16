@@ -62,11 +62,8 @@ export const QuizImportPanel: React.FC<QuizImportPanelProps> = ({
           className={`${BTN_SECONDARY} px-3 py-1.5 flex items-center gap-1.5`}
         >
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-          {busy ? 'Đang nạp…' : 'Nạp thêm từ tệp JSON'}
+          {busy ? 'Đang nạp…' : 'Nạp thêm'}
         </button>
-        <span className="text-[10px] text-ink-faint">
-          Câu trùng nội dung sẽ bị bỏ, không ghi đè câu đang có.
-        </span>
       </div>
 
       {parseSkipped.length > 0 && (

@@ -1,30 +1,35 @@
 import { memo, type ReactNode, type ElementType } from 'react';
 import type { Tone } from './DueSectionPanel';
 
-const TONE_VALUE: Record<Tone, string> = {
+export type KpiTone = Tone | 'neutral';
+
+const TONE_VALUE: Record<KpiTone, string> = {
+  neutral: 'text-ink',
   accent: 'text-accent',
   pos: 'text-pos',
   warn: 'text-warn',
   neg: 'text-neg',
 };
 
-const TONE_TILE: Record<Tone, string> = {
+const TONE_TILE: Record<KpiTone, string> = {
+  neutral: 'bg-panel-muted text-ink-muted border-line',
   accent: 'bg-accent-soft text-accent border-accent/30',
   pos: 'bg-pos-soft text-pos border-pos/30',
   warn: 'bg-warn-soft text-warn border-warn/30',
   neg: 'bg-neg-soft text-neg border-neg/30',
 };
 
-const TONE_GRADIENT: Record<Tone, string> = {
-  accent: 'from-accent/60 via-accent/20 to-transparent',
-  pos: 'from-pos/60 via-pos/20 to-transparent',
-  warn: 'from-warn/60 via-warn/20 to-transparent',
-  neg: 'from-neg/60 via-neg/20 to-transparent',
+const TONE_RAIL: Record<KpiTone, string> = {
+  neutral: '',
+  accent: 'bg-accent',
+  pos: 'bg-pos',
+  warn: 'bg-warn',
+  neg: 'bg-neg',
 };
 
 interface KpiCardProps {
   cardBg: string;
-  tone: Tone;
+  tone: KpiTone;
   icon: ElementType;
   label: string;
   value: string;
@@ -36,7 +41,9 @@ export const KpiCard = memo<KpiCardProps>(({
   cardBg, tone, icon: Icon, label, value, unit, note,
 }) => (
   <div className={`${cardBg} relative overflow-hidden p-4 rounded-xl border border-line flex items-start justify-between gap-3 shadow-sm hover:shadow-md transition-all duration-200 group`}>
-    <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${TONE_GRADIENT[tone]}`} />
+    {TONE_RAIL[tone] && (
+      <div className={`absolute top-0 left-0 right-0 h-0.5 ${TONE_RAIL[tone]}`} />
+    )}
     <div className="min-w-0">
       <div className="text-[11px] font-bold text-ink-faint uppercase tracking-wider text-balance">
         {label}

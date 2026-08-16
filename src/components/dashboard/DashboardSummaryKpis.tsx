@@ -34,7 +34,7 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <KpiCard
         cardBg={cardBg}
-        tone="accent"
+        tone="neutral"
         icon={Users}
         label="Tổng số khách hàng"
         value={fmtNumber(totalCustomersCount)}
@@ -43,7 +43,7 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
       />
       <KpiCard
         cardBg={cardBg}
-        tone="pos"
+        tone="neutral"
         icon={DollarSign}
         label="Tổng quy mô dư nợ"
         value={formatMoney(totalDebt)}
@@ -51,7 +51,7 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
       />
       <KpiCard
         cardBg={cardBg}
-        tone="warn"
+        tone="neutral"
         icon={Building2}
         label="Tổng giá trị TSĐB"
         value={formatMoney(totalCollateralVal)}

@@ -935,6 +935,9 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 | ✅ | Panel due tách hai nhóm | Dùng bộ lọc `Tất cả / Sắp đến hạn / Đã hết hạn` sẵn có ở ba panel kia. Đo: 77 = 2 sắp đến + 75 quá hạn |
 | ✅ | Thêm cột Kỳ số và Số tiền kỳ này | Bỏ cột Mã CIF ở cả bốn bảng trên dashboard cho gọn; bản in **giữ nguyên** cột CIF |
 | ✅ | Kiểm chứng ca gốc ĐẶNG BÁ NHÂN | Đã đóng kỳ tháng 8 → **hết báo quá hạn 15 ngày**. Vẫn hiện ở panel KUNN (25/08, còn 9 ngày) và HMTD (đã hết hạn 24 ngày) |
+| ✅ | Lọc kỳ còn nợ ngay ở máy chủ | Dashboard từng chậm hẳn: khối lịch trả nợ mất **8,8 giây**. Nguyên nhân là kéo đủ 6.705 dòng về rồi mới lọc. Lọc `IsPaid` và `DueDate <= hôm nay + 5` ở máy chủ: còn **1 truy vấn, 0,5 giây**, toàn dashboard xong ở **1,25 giây**. Đối chiếu logic cũ trên cùng dữ liệu: cả hai ra 76 hợp đồng, ngữ nghĩa không đổi |
+| ✅ | Điều kiện `IsPaid` bao cả NULL | Dùng `or(IsPaid.is.null, IsPaid.eq.false)`. `eq(false)` bỏ sót dòng NULL, trong khi hàm thuần coi NULL là còn nợ |
+| ⬜ | Bỏ bộ đếm "hợp đồng chưa có lịch trả nợ" | Đánh đổi của việc lọc ở máy chủ: không còn biết hợp đồng nào không có dòng lịch nào. Đo ngày 16/08 là 0 hợp đồng. Muốn có lại thì phải thêm một truy vấn đếm riêng |
 | ⬜ | Bắt kỳ thu thiếu | Chưa làm được: `ActualPaidAmount` bằng 0 trên cả 836 kỳ đã trả, không có màn hình nào cho banker nhập số thực thu. Xem `docs/superpowers/specs/2026-08-16-dashboard-due-theo-lich-tra-no-design.md` |
 | ⬜ | `s.ActualPaidAmount \|\| 0` ghi đè `null` thành `0` | `useLoanPortfolioController.ts:504` và `:593`. Xoá ranh giới "chưa nhập" với "thu 0đ", cản đúng việc trên |
 | ⚠️ | HĐTD `2002/HDTD/9653222` lưu hết hạn 23/07/2026 | Chủ dự án nói 24/07. Lệch một ngày, chưa rõ do dữ liệu hay do khai. Panel đọc thẳng `ContractEndDate` |

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isPeriodOutstanding, contractDueState, type DuePeriodRow } from '../duePeriod';
+import { isPeriodOutstanding, contractDueState, dueCutoffIso, type DuePeriodRow } from '../duePeriod';
 
 const ky = (over: Partial<DuePeriodRow> & { PeriodNumber: number; DueDate: string }): DuePeriodRow => ({
   Id: over.PeriodNumber,
@@ -16,6 +16,28 @@ describe('isPeriodOutstanding', () => {
 
   it('đã đánh dấu trả thì xong', () => {
     expect(isPeriodOutstanding({ IsPaid: true })).toBe(false);
+  });
+});
+
+describe('dueCutoffIso', () => {
+  it('lấy mốc 5 ngày sau hôm nay', () => {
+    expect(dueCutoffIso('2026-08-16')).toBe('2026-08-21');
+  });
+
+  it('vắt sang tháng sau', () => {
+    expect(dueCutoffIso('2026-08-30')).toBe('2026-09-04');
+  });
+
+  it('vắt sang năm sau', () => {
+    expect(dueCutoffIso('2026-12-30')).toBe('2027-01-04');
+  });
+
+  it('đúng cả năm nhuận', () => {
+    expect(dueCutoffIso('2028-02-26')).toBe('2028-03-02');
+  });
+
+  it('không rơi vào bẫy múi giờ khi truyền dd/mm/yyyy', () => {
+    expect(dueCutoffIso('16/08/2026')).toBe('2026-08-21');
   });
 });
 

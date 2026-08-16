@@ -1,5 +1,5 @@
 import type { RepaymentSchedule } from '../types';
-import { daysUntil, toIsoDate } from './utils';
+import { daysUntil, toIsoDate, parseAnyDate } from './utils';
 
 export type DuePeriodRow = Pick<
   RepaymentSchedule,
@@ -23,6 +23,21 @@ const KHONG_HIEN: ContractDueState = {
   dueDateIso: null,
   daysLeft: null,
 };
+
+export function dueCutoffIso(todayIso?: string): string {
+  const p = todayIso ? parseAnyDate(todayIso) : null;
+  const base = p
+    ? Date.UTC(p.year, p.month - 1, p.day)
+    : (() => {
+        const d = new Date();
+        return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+      })();
+
+  const moc = new Date(base + UPCOMING_DAYS * 86400000);
+  const mm = String(moc.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(moc.getUTCDate()).padStart(2, '0');
+  return `${moc.getUTCFullYear()}-${mm}-${dd}`;
+}
 
 export function isPeriodOutstanding(period: Pick<DuePeriodRow, 'IsPaid'>): boolean {
   return !period.IsPaid;

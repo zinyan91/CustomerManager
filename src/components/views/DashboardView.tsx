@@ -2,9 +2,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { UI } from '../../lib/uiClasses';
 import {
   fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI,
-  fetchSchedulesForContractsAPI,
+  fetchOutstandingSchedulesAPI,
 } from '../../lib/api';
-import { contractDueState, type DuePeriodRow } from '../../lib/duePeriod';
+import { contractDueState, dueCutoffIso, type DuePeriodRow } from '../../lib/duePeriod';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
 import { fmtDate, fmtMoney, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
 import { assetClassLabel, collateralValue, appraisalExpiryDate } from '../../lib/collateralMath';
@@ -55,7 +55,7 @@ export const DashboardView: React.FC = () => {
 
       const idsChuaTatToan = resCon.filter(c => !c.IsSettled).map(c => c.Id);
       try {
-        setDuePeriods(await fetchSchedulesForContractsAPI(idsChuaTatToan));
+        setDuePeriods(await fetchOutstandingSchedulesAPI(idsChuaTatToan, dueCutoffIso()));
         setScheduleError(null);
       } catch (err) {
         setDuePeriods([]);
@@ -154,7 +154,6 @@ export const DashboardView: React.FC = () => {
 
   const {
     dueInMonthList,
-    hopDongThieuLich,
     dueKunnList,
     dueHmtdList,
     dueCollateralList,
@@ -167,9 +166,6 @@ export const DashboardView: React.FC = () => {
       return { contract: c, customer: cus, state };
     }).filter(item => item.state.kind !== 'none')
       .sort((a, b) => (a.state.daysLeft ?? 0) - (b.state.daysLeft ?? 0));
-
-    const thieuLich = activeContracts
-      .filter(c => (periodsByContract.get(c.Id) || []).length === 0).length;
 
     const kunnList = activeContracts.map(c => {
       const cus = customerMap.get(c.CustomerId);
@@ -221,7 +217,6 @@ export const DashboardView: React.FC = () => {
 
     return {
       dueInMonthList: monthList,
-      hopDongThieuLich: thieuLich,
       dueKunnList: kunnList,
       dueHmtdList: hmtdList,
       dueCollateralList: colList,
@@ -552,9 +547,7 @@ export const DashboardView: React.FC = () => {
             notice={
               scheduleError
                 ? `Không nạp được lịch trả nợ: ${scheduleError}. Danh sách bên dưới chưa đầy đủ.`
-                : hopDongThieuLich > 0
-                  ? `${hopDongThieuLich} hợp đồng chưa có lịch trả nợ, không xét được.`
-                  : undefined
+                : undefined
             }
             rows={dueMonthRows}
             rowKey={i => i.contract.Id}

@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 10/08/2026
+Cập nhật: 16/08/2026
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -923,6 +923,21 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 ---
 
 # V. Nhật ký theo ngày
+
+## 16/08/2026
+
+### Panel due trên dashboard đọc theo lịch trả nợ thật
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | `duePeriod.ts` — hàm thuần `contractDueState` | 13 test. Lấy **kỳ chưa trả sớm nhất** theo `DueDate`, thay cho ngày kỷ niệm suy từ hợp đồng |
+| ✅ | `fetchSchedulesForContractsAPI` — nạp lịch nhiều hợp đồng | Chia lô 200 hợp đồng, **phân trang 1000 dòng**. Đo thật: 7 trang, offset 0→6000 cho 6.705 dòng. Ném lỗi thay vì trả mảng rỗng |
+| ✅ | Panel due tách hai nhóm | Dùng bộ lọc `Tất cả / Sắp đến hạn / Đã hết hạn` sẵn có ở ba panel kia. Đo: 77 = 2 sắp đến + 75 quá hạn |
+| ✅ | Thêm cột Kỳ số và Số tiền kỳ này | Bỏ cột Mã CIF ở cả bốn bảng trên dashboard cho gọn; bản in **giữ nguyên** cột CIF |
+| ✅ | Kiểm chứng ca gốc ĐẶNG BÁ NHÂN | Đã đóng kỳ tháng 8 → **hết báo quá hạn 15 ngày**. Vẫn hiện ở panel KUNN (25/08, còn 9 ngày) và HMTD (đã hết hạn 24 ngày) |
+| ⬜ | Bắt kỳ thu thiếu | Chưa làm được: `ActualPaidAmount` bằng 0 trên cả 836 kỳ đã trả, không có màn hình nào cho banker nhập số thực thu. Xem `docs/superpowers/specs/2026-08-16-dashboard-due-theo-lich-tra-no-design.md` |
+| ⬜ | `s.ActualPaidAmount \|\| 0` ghi đè `null` thành `0` | `useLoanPortfolioController.ts:504` và `:593`. Xoá ranh giới "chưa nhập" với "thu 0đ", cản đúng việc trên |
+| ⚠️ | HĐTD `2002/HDTD/9653222` lưu hết hạn 23/07/2026 | Chủ dự án nói 24/07. Lệch một ngày, chưa rõ do dữ liệu hay do khai. Panel đọc thẳng `ContractEndDate` |
 
 ## 10/08/2026
 

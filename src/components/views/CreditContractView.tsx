@@ -74,9 +74,6 @@ export const CreditContractView: React.FC = () => {
             </div>
             <div>
               <span className="uppercase font-bold">HỢP ĐỒNG TÍN DỤNG & QUẢN TRỊ HẠN MỨC</span>
-              <p className="text-[11px] font-normal text-ink-faint">
-                Quản lý hạn mức cấp, thế chấp TSBĐ, tờ trình phê duyệt và giải ngân KUNN
-              </p>
             </div>
           </div>
 

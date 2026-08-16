@@ -244,7 +244,6 @@ export const DashboardView: React.FC = () => {
   type DueInMonthItem = (typeof dueInMonthList)[number];
   const dueInMonthColumns: AdaptiveColumn<DueInMonthItem>[] = [
     { key: 'kh', label: 'Khách hàng vay', priority: 3, render: i => <span className="font-bold">{i.customer?.FullName || 'N/A'}</span> },
-    { key: 'cif', label: 'Mã CIF', priority: 3, render: i => <span className="font-mono text-accent">{i.customer?.CifKh || 'N/A'}</span> },
     { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: i => <span className="font-mono">{i.contract.ContractNumber}</span> },
     { key: 'ky', label: 'Kỳ số', priority: 2, align: 'center',
       render: i => <span className="font-mono font-bold">{i.state.period?.PeriodNumber ?? ''}</span> },
@@ -263,7 +262,6 @@ export const DashboardView: React.FC = () => {
   type KunnRowItem = (typeof kunnRows)[number];
   const kunnColumns: AdaptiveColumn<KunnRowItem>[] = [
     { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-    { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
     { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: r => <span className="font-mono">{r.contract.ContractNumber}</span> },
     { key: 'soTien', label: 'Số tiền KUNN / dư nợ', priority: 1, align: 'right',
       render: r => <span className="font-mono font-bold text-pos">{fmtMoney(r.contract.LoanAmount || r.contract.CurrentBalance || 0)}</span> },
@@ -280,7 +278,6 @@ export const DashboardView: React.FC = () => {
   type HmtdRowItem = (typeof hmtdRows)[number];
   const hmtdColumns: AdaptiveColumn<HmtdRowItem>[] = [
     { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-    { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
     { key: 'soHdtd', label: 'Số HĐTD hạn mức', priority: 2,
       render: r => <span className="font-mono font-bold text-accent">{r.masterNo}</span> },
     { key: 'mucCap', label: 'Tổng mức cấp HMTD', priority: 1, align: 'right',
@@ -303,7 +300,6 @@ export const DashboardView: React.FC = () => {
   type TsbdRowItem = (typeof tsbdRows)[number];
   const tsbdColumns: AdaptiveColumn<TsbdRowItem>[] = [
     { key: 'chuSoHuu', label: 'Chủ sở hữu TSĐB', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
-    { key: 'cif', label: 'Mã CIF', priority: 3, render: r => <span className="font-mono text-accent">{r.customer?.CifKh || 'N/A'}</span> },
     { key: 'maTs', label: 'Mã TS / địa chỉ', priority: 2,
       render: r => <span className="font-medium">{r.collateral.AssetCode || r.collateral.Address || 'TSBĐ'}</span> },
     { key: 'xepLoai', label: 'Xếp loại TS', priority: 2, render: r => (

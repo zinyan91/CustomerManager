@@ -117,7 +117,6 @@ export function useCreditContractController() {
   );
 
   const closedCount = useMemo(() => summaries.filter(s => s.contract.IsClosed).length, [summaries]);
-  const openContractsCount = useMemo(() => summaries.filter(s => !s.contract.IsClosed).length, [summaries]);
 
   const closeCheck = useMemo(
     () => editing
@@ -276,7 +275,6 @@ export function useCreditContractController() {
     summaries,
     visibleSummaries,
     closedCount,
-    openContractsCount,
     closeCheck,
     purposeOptions,
     tongKhaNangBaoDam,

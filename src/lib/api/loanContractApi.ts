@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { toIsoDate } from '../utils';
+import { toIsoDate, chunk } from '../utils';
+import type { DuePeriodRow } from '../duePeriod';
 import { findKunnNumberClash } from '../creditContract';
 import { unarchiveCustomer } from './customerApi';
 
@@ -143,6 +144,41 @@ export async function fetchRepaymentSchedulesAPI(contractId: number): Promise<Re
     console.error('fetchRepaymentSchedulesAPI error:', err);
     return [];
   }
+}
+
+const SCHEDULE_COLUMNS = 'Id, ContractId, PeriodNumber, DueDate, TotalAmount, IsPaid';
+const SCHEDULE_PAGE = 1000;
+const CONTRACT_LOT = 200;
+
+export async function fetchSchedulesForContractsAPI(
+  contractIds: number[]
+): Promise<DuePeriodRow[]> {
+  if (contractIds.length === 0) return [];
+
+  const all: DuePeriodRow[] = [];
+
+  for (const lot of chunk(contractIds, CONTRACT_LOT)) {
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('RepaymentSchedules')
+        .select(SCHEDULE_COLUMNS)
+        .in('ContractId', lot)
+        .order('Id', { ascending: true })
+        .range(from, from + SCHEDULE_PAGE - 1);
+
+      if (error) {
+        throw new Error(`Không nạp được lịch trả nợ: ${error.message}`);
+      }
+      if (!data || data.length === 0) break;
+
+      all.push(...(data as unknown as DuePeriodRow[]));
+      if (data.length < SCHEDULE_PAGE) break;
+      from += SCHEDULE_PAGE;
+    }
+  }
+
+  return all;
 }
 
 export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<RepaymentSchedule>[]): Promise<void> {

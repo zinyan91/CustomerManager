@@ -254,3 +254,13 @@ export function getMasterHdtdNumber(c?: LoanContract | null): string {
   }
   return c.ContractNumber?.trim() || 'HĐTD-CHÍNH';
 }
+
+export function chunk<T>(items: T[], size: number): T[][] {
+  if (items.length === 0) return [];
+  if (!Number.isFinite(size) || size <= 0) return [items];
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(items.slice(i, i + size));
+  }
+  return out;
+}

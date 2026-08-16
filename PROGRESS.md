@@ -951,7 +951,11 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 | ⬜ | `s.ActualPaidAmount \|\| 0` ghi đè `null` thành `0` | `useLoanPortfolioController.ts:504` và `:593`. Xoá ranh giới "chưa nhập" với "thu 0đ", cản đúng việc trên |
 | ✅ | HĐTD `2002/HDTD/9653222` lệch một ngày | Đo 68 HĐTD: 66 cái theo đúng ngày bắt đầu cộng kỳ hạn, chỉ dòng này lệch. Đã sửa dữ liệu về 24/07/2026 trên cả dòng HĐTD lẫn ba KUNN con |
 | ✅ | Ngày hết hạn HĐTD chỉ đọc từ một nguồn | Dashboard từng đọc bản chép trên KUNN nên lệch với màn KUNN. Nay tra dòng HĐTD cha theo `CreditContractId` |
-| ⬜ | Bỏ bản chép ngày hết hạn HĐTD khỏi KUNN | Gốc rễ: ngày này nằm ở bốn chỗ và form KUNN tự tính lại rồi ghi đè khi lưu, nên các bản sao còn trôi lệch tiếp. Cần migration, tách ra làm riêng |
+| ✅ | Chặn đường làm bản chép ngày HĐTD trôi lệch | `buildKunnPayload` lấy ngày thẳng từ hợp đồng cha, chỉ giữ số trên form khi không tra ra cha. 5 test khoá |
+| ✅ | Xoá cột chết `LoanContracts.HdtdDueDate` | Đo 103 KUNN: rỗng toàn bộ, trong khi mã vẫn dự phòng vào nó. Migration 48, có chốt chặn nếu còn dữ liệu. Đã chạy 16/08 |
+| ⚠️ | `2002/HĐTD/9647376` — cha và con lệch 2 năm | Cha 30/06/2024→30/06/2025, KUNN con 30/06/2026→30/06/2027, giải ngân 30/06/2025, chưa tất toán. Chờ chốt ngày đúng |
+| ⚠️ | `2002/HĐTD/9632128` — không có ngày hiệu lực | Cả ngày bắt đầu lẫn kết thúc đều trống |
+| ⬜ | Xoá hẳn `ContractStartDate`/`ContractEndDate` khỏi KUNN | Chỉ làm sau khi chốt hai dòng trên. Lưu ý hai cột này đang là lưới an toàn khi tra không ra cha, có test khoá — xem `reports/10` |
 
 ## 10/08/2026
 

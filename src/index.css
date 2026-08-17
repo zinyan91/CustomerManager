@@ -27,6 +27,9 @@
   --color-g3: var(--t-g3);
   --color-g4: var(--t-g4);
   --color-g5: var(--t-g5);
+  --color-kpi-cust: var(--t-kpi-cust);
+  --color-kpi-collateral: var(--t-kpi-collateral);
+  --color-kpi-card: var(--t-kpi-card);
 }
 
 :root,
@@ -53,6 +56,9 @@
   --t-g3: #FB923C;
   --t-g4: #F87171;
   --t-g5: #F15E5E;
+  --t-kpi-cust: #A78BFA;
+  --t-kpi-collateral: #2DD4BF;
+  --t-kpi-card: #F472B6;
 }
 
 :root.light {
@@ -78,6 +84,9 @@
   --t-g3: #B24309;
   --t-g4: #CA2121;
   --t-g5: #991B1B;
+  --t-kpi-cust: #6D28D9;
+  --t-kpi-collateral: #0F766E;
+  --t-kpi-card: #BE185D;
 }
 
 :root {

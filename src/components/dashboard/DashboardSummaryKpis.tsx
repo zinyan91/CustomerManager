@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, Users, Building2, AlertCircle } from 'lucide-react';
+import { DollarSign, Users, Building2, AlertCircle, CreditCard } from 'lucide-react';
 import { fmtNumber, fmtPercent } from '../../lib/utils';
 import { KpiCard } from './KpiCard';
 
@@ -8,6 +8,7 @@ interface DashboardSummaryKpisProps {
   totalDebt: number;
   totalLimit: number;
   totalCustomersCount: number;
+  customersWithDebtCount: number;
   theConHieuLucCount: number;
   hanMucTheDaCap: number;
   totalCollateralVal: number;
@@ -22,6 +23,7 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
   totalDebt,
   totalLimit,
   totalCustomersCount,
+  customersWithDebtCount,
   theConHieuLucCount,
   hanMucTheDaCap,
   totalCollateralVal,
@@ -31,21 +33,19 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
   formatMoney,
 }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-4">
       <KpiCard
         cardBg={cardBg}
-        tone="neutral"
-        iconTone="accent"
+        hue="cust"
         icon={Users}
         label="Tổng số khách hàng"
         value={fmtNumber(totalCustomersCount)}
         unit="khách hàng"
-        note={`Thẻ tín dụng: ${theConHieuLucCount} (${formatMoney(hanMucTheDaCap)})`}
+        note={`Trong đó ${fmtNumber(customersWithDebtCount)} khách hàng có dư nợ`}
       />
       <KpiCard
         cardBg={cardBg}
-        tone="neutral"
-        iconTone="accent"
+        hue="debt"
         icon={DollarSign}
         label="Tổng quy mô dư nợ"
         value={formatMoney(totalDebt)}
@@ -53,20 +53,28 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
       />
       <KpiCard
         cardBg={cardBg}
-        tone="neutral"
-        iconTone="accent"
+        hue="collateral"
         icon={Building2}
         label="Tổng giá trị TSĐB"
         value={formatMoney(totalCollateralVal)}
         note={
           <>
-            LTV bình quân: <strong className="text-accent">{fmtPercent(weightedLtv > 1 ? weightedLtv / 100 : weightedLtv)}</strong> ({fmtNumber(collateralsCount)} TS)
+            LTV bình quân: <strong className="text-[var(--kpi-hue)]">{fmtPercent(weightedLtv > 1 ? weightedLtv / 100 : weightedLtv)}</strong> ({fmtNumber(collateralsCount)} TS)
           </>
         }
       />
       <KpiCard
         cardBg={cardBg}
-        tone="neg"
+        hue="card"
+        icon={CreditCard}
+        label="Thẻ tín dụng"
+        value={fmtNumber(theConHieuLucCount)}
+        unit="thẻ"
+        note={`Hạn mức đã cấp: ${formatMoney(hanMucTheDaCap)}`}
+      />
+      <KpiCard
+        cardBg={cardBg}
+        hue="alert"
         icon={AlertCircle}
         label="Cảnh báo tới hạn"
         value={fmtNumber(dueAlertsTotal)}

@@ -99,6 +99,7 @@ export const DashboardView: React.FC = () => {
   const {
     chuaTatToan,
     totalCustomersCount,
+    customersWithDebtCount,
     totalDebt,
     totalLimit,
     totalCollateralVal,
@@ -147,6 +148,9 @@ export const DashboardView: React.FC = () => {
     return {
       chuaTatToan: unSettled,
       totalCustomersCount: customers.length,
+      customersWithDebtCount: new Set(
+        unSettled.filter(c => duNoCua(c) > 0).map(c => c.CustomerId)
+      ).size,
       totalDebt: debt,
       totalLimit: limit,
       totalCollateralVal: colVal,
@@ -436,6 +440,7 @@ export const DashboardView: React.FC = () => {
         totalDebt={totalDebt}
         totalLimit={totalLimit}
         totalCustomersCount={totalCustomersCount}
+        customersWithDebtCount={customersWithDebtCount}
         theConHieuLucCount={theConHieuLuc.length}
         hanMucTheDaCap={hanMucTheDaCap}
         totalCollateralVal={totalCollateralVal}

@@ -580,19 +580,28 @@ export function isScheduleFullySettled(
   return schedulePaymentStatus(s).status === 'da_thu_du';
 }
 
-export function computeOutstandingBalance(
-  schedules: RepaymentSchedule[] | undefined,
-  contract: LoanContract
+export function outstandingOf(
+  contract: LoanContract,
+  paidPrincipal: number | null | undefined
 ): number {
   if (contract.IsSettled === true) return 0;
 
   const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
-  if (!schedules || schedules.length === 0) {
+  if (paidPrincipal === null || paidPrincipal === undefined || Number.isNaN(paidPrincipal)) {
     return contract.CurrentBalance ?? loanAmt;
   }
+
+  return Math.max(0, loanAmt - paidPrincipal);
+}
+
+export function computeOutstandingBalance(
+  schedules: RepaymentSchedule[] | undefined,
+  contract: LoanContract
+): number {
+  if (!schedules || schedules.length === 0) return outstandingOf(contract, null);
 
   let repaid = 0;
   for (const s of schedules) repaid += paidPrincipalOf(s);
 
-  return Math.max(0, loanAmt - repaid);
+  return outstandingOf(contract, repaid);
 }

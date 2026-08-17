@@ -649,3 +649,20 @@ describe('totalsOfCreditContracts — ba con số trên đầu màn hình', () =
     expect(r.available).toBe(0);
   });
 });
+
+describe('mức cấp KHÔNG được cộng theo dòng KUNN', () => {
+  it('một HĐTD 2 tỷ có 4 KUNN vẫn là 2 tỷ, không phải 8 tỷ', () => {
+    const r = totalsOfCreditContracts(summarizeCreditContracts(
+      [cc({ Id: 7, HdtdNumber: 'HD-A', ContractAmount: 2_000_000_000 })],
+      [1, 2, 3, 4].map(i => kunn({
+        Id: i, CreditContractId: 7,
+        ContractAmount: 2_000_000_000,
+        LoanAmount: 300_000_000, CurrentBalance: 300_000_000,
+      })),
+      { today: HOM_NAY }
+    ));
+    expect(r.granted).toBe(2_000_000_000);
+    expect(r.outstanding).toBe(1_200_000_000);
+    expect(r.available).toBe(800_000_000);
+  });
+});

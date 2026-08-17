@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { UI } from '../../lib/uiClasses';
 import {
   fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI,
-  fetchOutstandingSchedulesAPI, fetchAllCreditContractsAPI,
+  fetchOutstandingSchedulesAPI, fetchAllCreditContractsAPI, fetchPaidPrincipalMapAPI,
 } from '../../lib/api';
 import { contractDueState, dueCutoffIso, type DuePeriodRow } from '../../lib/duePeriod';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
@@ -13,6 +13,8 @@ import {
   type DueFilter,
 } from '../../lib/dueList';
 import { parseCollateralIds } from '../../lib/creditLimit';
+import { outstandingOf } from '../../lib/loanMath';
+import { summarizeCreditContracts, totalsOfCreditContracts } from '../../lib/creditContract';
 import { Toast, useToast } from '../Toast';
 import type { Customer, Collateral, LoanContract, CardContract, CreditContract } from '../../types';
 import {
@@ -32,6 +34,7 @@ export const DashboardView: React.FC = () => {
   const [cardContracts, setCardContracts] = useState<CardContract[]>([]);
   const [duePeriods, setDuePeriods] = useState<DuePeriodRow[]>([]);
   const [creditContracts, setCreditContracts] = useState<CreditContract[]>([]);
+  const [paidPrincipalMap, setPaidPrincipalMap] = useState<Record<number, number>>({});
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,12 +45,13 @@ export const DashboardView: React.FC = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [resCus, resCol, resCon, resCard, resCc] = await Promise.all([
+      const [resCus, resCol, resCon, resCard, resCc, resPaid] = await Promise.all([
         fetchCustomersAPI(),
         fetchCollateralsAPI(),
         fetchContractsAPI(),
         fetchCardContractsAPI(),
         fetchAllCreditContractsAPI(),
+        fetchPaidPrincipalMapAPI().catch(() => ({} as Record<number, number>)),
       ]);
 
       setCustomers(resCus);
@@ -55,6 +59,7 @@ export const DashboardView: React.FC = () => {
       setContracts(resCon);
       setCardContracts(resCard);
       setCreditContracts(resCc);
+      setPaidPrincipalMap(resPaid);
 
       const idsChuaTatToan = resCon.filter(c => !c.IsSettled).map(c => c.Id);
       try {
@@ -109,12 +114,14 @@ export const DashboardView: React.FC = () => {
     loanMethodStats,
     debtGroupStats,
   } = useMemo(() => {
-    const duNoCua = (c: LoanContract) =>
-      c.IsSettled ? 0 : (c.CurrentBalance ?? c.LoanAmount ?? c.ContractAmount ?? 0);
+    const duNoCua = (c: LoanContract) => outstandingOf(c, paidPrincipalMap[c.Id]);
     const unSettled = contracts.filter(c => !c.IsSettled);
 
-    const debt = contracts.reduce((acc, c) => acc + duNoCua(c), 0);
-    const limit = contracts.reduce((acc, c) => acc + (c.ContractAmount || 0), 0);
+    const tongHopDong = totalsOfCreditContracts(
+      summarizeCreditContracts(creditContracts, contracts, { getOutstanding: duNoCua })
+    );
+    const debt = tongHopDong.outstanding;
+    const limit = tongHopDong.granted;
     const colVal = collaterals.reduce((acc, c) => acc + collateralValue(c), 0);
     const ltv = colVal > 0 ? (debt / colVal) * 100 : 0;
 
@@ -160,7 +167,7 @@ export const DashboardView: React.FC = () => {
       loanMethodStats: methodStats,
       debtGroupStats: groupStats,
     };
-  }, [customers, contracts, collaterals, cardContracts]);
+  }, [customers, contracts, collaterals, cardContracts, creditContracts, paidPrincipalMap]);
 
   const [onlyGroup1, setOnlyGroup1] = useState(true);
   const [dueMonthFilter, setDueMonthFilter] = useState<DueFilter>('all');

@@ -10,7 +10,26 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 ---
 
-# 0. Bộ lọc khoản đã tất toán ở tab Khoản vay — 17/08/2026
+# 0. Dashboard: hạn mức thổi phồng và hai định nghĩa dư nợ — 18/08/2026
+
+Chủ dự án yêu cầu rà lại dashboard sau đợt bật cờ tất toán. Test **1.572 → 1.580**, kèm migration 51.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | **Tổng hạn mức cấp 235,74 Tỷ → 99,83 Tỷ** | Cộng `ContractAmount` trên từng dòng KUNN, mà cột đó lặp mức cấp HĐTD. Đúng cái bẫy "báo động giả 41 tỷ" đã ghi cho SQL nhưng chưa ai áp vào dashboard. Thừa 135,9 tỷ |
+| ✅ | Dashboard đi qua `totalsOfCreditContracts` như hai tab kia | Cả mức cấp lẫn dư nợ cùng một nguồn |
+| ✅ | Rút `outstandingOf` — một định nghĩa dư nợ | `computeOutstandingBalance` nay chỉ là lớp bọc gọi nó khi có sẵn lịch. Dashboard gọi thẳng với số từ view |
+| ✅ | Migration 51 — view `ContractPaidPrincipal` | Dashboard trước đọc `CurrentBalance` gõ tay, hai tab suy từ lịch: lệch **151,2 triệu** trên 10 hồ sơ. Dư nợ nay 81,02 → **81,68 Tỷ**, khớp lịch |
+
+**Bài học tốc độ, ghi để không lặp:** view viết theo lối thẳng chạy **909 ms** — planner đẩy `can_access_contract` xuống Seq Scan thành bộ lọc **từng dòng**, 8.659 lần gọi. `EXPLAIN ANALYZE` cho thấy aggregate trần chỉ **3,5 ms**. Thêm `AS MATERIALIZED` làm hàng rào tối ưu, hàm chỉ chạy trên 122 nhóm đã gộp: **21 ms**. Đo qua REST từ trình duyệt: **1.336 ms → 170 ms**. Toàn dashboard nạp xong trong **974 ms**, và view không còn là truy vấn chậm nhất trang.
+
+Kiểm chứng phân quyền: khoá `anon` gọi view bị trả `42501 permission denied`. View chạy quyền chủ sở hữu nên mệnh đề `WHERE can_access_contract` **là** hàng rào — ghi cảnh báo ngay trong tệp migration.
+
+**Còn tồn đọng:** 3 hồ sơ có `CurrentBalance` lệch với lịch, nay dashboard theo lịch nên số đã đúng, nhưng dữ liệu gốc vẫn mâu thuẫn — nặng nhất là `2002/HĐTD/9738792/GNN-01` khai `LoanAmount = 0` trong khi lịch mang 830 triệu gốc.
+
+---
+
+# 0.0. Bộ lọc khoản đã tất toán ở tab Khoản vay — 17/08/2026
 
 KUNN tất toán vốn không bị ẩn, chỉ đổi nhãn sang viên xanh `✓ ĐÃ TẤT TOÁN`. Nay thêm nút chọn **Tất cả / Đang vay**. Test **1.565 → 1.571**.
 

@@ -19,6 +19,8 @@ import {
   buildDueDateSequence,
   applyMaturityToDueDates,
   maturityDateOf,
+  outstandingOf,
+  computeOutstandingBalance as _cob,
 } from '../loanMath';
 import type { RepaymentSchedule, LoanContract } from '../../types';
 
@@ -1359,5 +1361,49 @@ describe('applyMaturityToDueDates — phép biến đổi thuần', () => {
     expect(applyMaturityToDueDates(goc, '')).toEqual(goc);
     expect(applyMaturityToDueDates(goc, 'không phải ngày')).toEqual(goc);
     expect(applyMaturityToDueDates(goc, null)).toEqual(goc);
+  });
+});
+
+describe('outstandingOf — một định nghĩa dư nợ cho mọi màn hình', () => {
+  const hd = (over: Record<string, unknown> = {}) =>
+    ({ LoanAmount: 1_000_000_000, CurrentBalance: 900_000_000, ...over }) as never;
+
+  it('tất toán thì bằng 0 bất kể số liệu khác', () => {
+    expect(outstandingOf(hd({ IsSettled: true }), 0)).toBe(0);
+    expect(outstandingOf(hd({ IsSettled: true }), null)).toBe(0);
+  });
+
+  it('biết gốc đã thu thì lấy số tiền vay trừ đi, KHÔNG đọc CurrentBalance', () => {
+    expect(outstandingOf(hd(), 250_000_000)).toBe(750_000_000);
+  });
+
+  it('gốc đã thu bằng 0 vẫn là con số hợp lệ, không rơi về CurrentBalance', () => {
+    expect(outstandingOf(hd(), 0)).toBe(1_000_000_000);
+  });
+
+  it('chưa biết gốc đã thu thì mới lùi về CurrentBalance', () => {
+    expect(outstandingOf(hd(), null)).toBe(900_000_000);
+    expect(outstandingOf(hd(), undefined)).toBe(900_000_000);
+  });
+
+  it('không có cả CurrentBalance thì lùi tiếp về số tiền vay', () => {
+    expect(outstandingOf(hd({ CurrentBalance: null }), null)).toBe(1_000_000_000);
+  });
+
+  it('thu quá số tiền vay thì kẹp ở 0, không trả số âm', () => {
+    expect(outstandingOf(hd(), 1_500_000_000)).toBe(0);
+  });
+
+  it('số tiền vay để trống thì lấy mức cấp hợp đồng', () => {
+    expect(outstandingOf(hd({ LoanAmount: 0, ContractAmount: 830_000_000 }), 6_920_000))
+      .toBe(823_080_000);
+  });
+
+  it('computeOutstandingBalance đi qua đúng hàm này', () => {
+    const lich = [
+      { IsPaid: true, PrincipalAmount: 100_000_000 },
+      { IsPaid: false, PrincipalAmount: 100_000_000 },
+    ] as never;
+    expect(_cob(lich, hd())).toBe(outstandingOf(hd(), 100_000_000));
   });
 });

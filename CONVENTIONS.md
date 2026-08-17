@@ -99,6 +99,7 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 | Số ngày còn lại tới một mốc | `daysUntil` (`utils.ts`) |
 | Mốc thu lãi hàng tháng kế tiếp | `monthlyDueInfo` (`dueList.ts`) |
 | Ba con số mức cấp / dư nợ / khả dụng của một khách hàng | `totalsOfCreditContracts` (`creditContract.ts`) |
+| Dư nợ của một khoản vay | `outstandingOf` (`loanMath.ts`) — `computeOutstandingBalance` chỉ là lớp bọc khi có sẵn lịch |
 | Hiển thị phần trăm từ tỷ lệ thập phân | `fmtPercent` (`utils.ts`) |
 | Hiển thị số tiền | `fmtMoney` (`utils.ts`) |
 | Đọc số tiền từ ô nhập chỉ có chữ số | `parseMoneyInput` (`utils.ts`) |

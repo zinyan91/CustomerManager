@@ -187,6 +187,20 @@ export async function fetchOutstandingSchedulesAPI(
   return theoLo.flat();
 }
 
+export async function fetchPaidPrincipalMapAPI(): Promise<Record<number, number>> {
+  const { data, error } = await supabase
+    .from('ContractPaidPrincipal')
+    .select('ContractId, PaidPrincipal');
+  if (error) throw error;
+
+  const map: Record<number, number> = {};
+  for (const row of data || []) {
+    const paid = Number(row.PaidPrincipal);
+    if (Number.isFinite(paid)) map[row.ContractId] = paid;
+  }
+  return map;
+}
+
 export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<RepaymentSchedule>[]): Promise<void> {
   if (schedules.length === 0) return;
 

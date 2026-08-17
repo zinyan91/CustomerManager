@@ -3,8 +3,8 @@ import { RefreshCw, Download, Printer, Plus, Trash2 } from 'lucide-react';
 import type { UiClasses } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { fmtDate, fmtMoney, fmtNumber, fmtPercent, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
-import { addMonths, buildLoanSchedule, postPromoRateAnnual } from '../../lib/calcMath';
-import type { PrepaymentMode, PrepaymentPlanItem } from '../../lib/calcMath';
+import { addMonths, buildLoanSchedule, postPromoRateAnnual, REPAY_METHOD_LABEL } from '../../lib/calcMath';
+import type { PrepaymentMode, PrepaymentPlanItem, PrincipalRepayMethod } from '../../lib/calcMath';
 import { buildScheduleDocHtml } from '../../lib/scheduleDocHtml';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
 import { downloadBytes } from '../../lib/xlsExport';
@@ -151,7 +151,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   const [tenorMonths, setTenorMonths] = useState<number>(120);
   const [disbursementDate, setDisbursementDate] = useState(() => todayIso());
   const [firstPaymentDate, setFirstPaymentDate] = useState('');
-  const [repayMethod, setRepayMethod] = useState<'equal_principal' | 'bullet'>('equal_principal');
+  const [repayMethod, setRepayMethod] = useState<PrincipalRepayMethod>('equal_principal');
   const [principalGraceMonths, setPrincipalGraceMonths] = useState<number>(0);
 
   const [promoMonthsStr, setPromoMonthsStr] = useState('12');
@@ -169,7 +169,9 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   const marginAnnual = parseNumOrNull(marginStr);
   const postPromoRateOverride = parseNumOrNull(postPromoRateStr);
 
-  const hasPromo = promoMonths !== null && promoMonths > 0;
+  const isAnnuity = repayMethod === 'equal_installment';
+  const effectiveGraceMonths = isAnnuity ? 0 : principalGraceMonths;
+  const hasPromo = !isAnnuity && promoMonths !== null && promoMonths > 0;
   const postRate = postPromoRateAnnual({
     promoRateAnnual: rateAnnual,
     baseRateAnnual,
@@ -250,10 +252,13 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       }]
       : []),
     { label: 'Thời hạn vay:', value: `${tenorMonths} tháng` },
-    { label: 'Ân hạn gốc:', value: `${principalGraceMonths} tháng` },
+    ...(isAnnuity ? [] : [{ label: 'Ân hạn gốc:', value: `${effectiveGraceMonths} tháng` }]),
     { label: 'Ngày giải ngân:', value: fmtDate(disbursementDate) },
     { label: 'Ngày bắt đầu trả nợ:', value: fmtDate(effectiveFirstPaymentDate) },
-    { label: 'Phương thức trả gốc:', value: repayMethod === 'bullet' ? 'Gốc trả cuối kỳ' : 'Gốc trả đều hàng tháng' },
+    { label: 'Phương thức trả gốc:', value: REPAY_METHOD_LABEL[repayMethod] },
+    ...(isAnnuity && scheduleRows.length > 0
+      ? [{ label: 'Số tiền trả đều mỗi kỳ:', value: fmtMoney(scheduleRows[0].totalPayment) }]
+      : []),
     ...(prepaymentPlan.length > 0
       ? [{
         label: 'Trả nợ trước hạn:',
@@ -289,8 +294,16 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       loanAmount: loanAmt,
       tenorMonths: tenorMonths,
       annualRate: rateAnnual,
+      promoMonths: hasPromo ? (promoMonths as number) : 0,
+      baseRateAnnual: baseRateAnnual === null ? rateAnnual : baseRateAnnual,
+      marginAnnual: marginAnnual === null ? 0 : marginAnnual,
+      postPromoRate: postRate,
+      postPromoRateFixed: postPromoRateOverride !== null,
+      principalGraceMonths: effectiveGraceMonths,
       repayMethod: repayMethod,
       disbursementDateStr: disbursementDate,
+      firstPaymentDateStr: effectiveFirstPaymentDate,
+      prepayments: prepaymentPlan,
       scheduleRows,
     });
   };
@@ -360,11 +373,12 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
             <label className={`block mb-1 ${styles.labelStyle}`}>Phương thức trả gốc *</label>
             <select
               value={repayMethod}
-              onChange={e => setRepayMethod(e.target.value as any)}
+              onChange={e => setRepayMethod(e.target.value as PrincipalRepayMethod)}
               className={`w-full rounded-md p-2.5 font-bold ${styles.inputStyle}`}
             >
-              <option value="equal_principal">Gốc trả đều hàng tháng (Dư nợ giảm dần)</option>
-              <option value="bullet">Gốc trả cuối kỳ (Bullet Payment)</option>
+              <option value="equal_principal">{REPAY_METHOD_LABEL.equal_principal}</option>
+              <option value="bullet">{REPAY_METHOD_LABEL.bullet}</option>
+              <option value="equal_installment">{REPAY_METHOD_LABEL.equal_installment}</option>
             </select>
           </div>
           <div>
@@ -373,9 +387,10 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               type="number"
               min={0}
               max={tenorMonths - 1}
-              value={principalGraceMonths}
+              value={effectiveGraceMonths}
+              disabled={isAnnuity}
               onChange={e => setPrincipalGraceMonths(Math.max(0, parseInt(e.target.value, 10) || 0))}
-              className={`w-full rounded-md p-2.5 ${styles.inputStyle}`}
+              className={`w-full rounded-md p-2.5 ${styles.inputStyle} disabled:opacity-50 disabled:cursor-not-allowed`}
             />
           </div>
         </div>
@@ -383,6 +398,11 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
         <div className="p-3.5 rounded-md border border-accent/30  bg-accent-soft  space-y-3">
           <div className="text-xs font-bold text-accent tracking-tight flex items-center justify-between gap-2 border-b pb-1.5 border-accent/30 ">
             <span>🎁 LÃI SUẤT ƯU ĐÃI VÀ LÃI SUẤT SAU ƯU ĐÃI</span>
+            {isAnnuity && (
+              <span className="normal-case font-mono">
+                Trả đều mỗi tháng dùng một lãi suất cố định suốt kỳ vay
+              </span>
+            )}
             {hasPromo && (
               <span className="normal-case font-mono">
                 Kỳ 1–{promoMonths}: {fmtPercent(rateAnnual > 1 ? rateAnnual / 100 : rateAnnual)}/năm → từ kỳ {(promoMonths as number) + 1}: {fmtPercent(postRate > 1 ? postRate / 100 : postRate)}/năm
@@ -392,7 +412,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div>
-              <label className="block mb-1 font-bold text-accent  text-xs">LS ưu đãi (%/năm) *</label>
+              <label className="block mb-1 font-bold text-accent  text-xs">{isAnnuity ? 'LS áp dụng (%/năm) *' : 'LS ưu đãi (%/năm) *'}</label>
               <input
                 type="text"
                 value={interestRateStr}
@@ -406,39 +426,43 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
                 type="number"
                 min={0}
                 max={tenorMonths}
-                value={promoMonthsStr}
+                value={isAnnuity ? '' : promoMonthsStr}
+                disabled={isAnnuity}
                 onChange={e => setPromoMonthsStr(e.target.value)}
-                className={`w-full rounded-md p-2 font-mono font-bold ${styles.inputStyle}`}
+                className={`w-full rounded-md p-2 font-mono font-bold ${styles.inputStyle} disabled:opacity-50 disabled:cursor-not-allowed`}
               />
             </div>
             <div>
               <label className="block mb-1 font-bold text-accent  text-xs">LS cơ sở (%/năm)</label>
               <input
                 type="text"
-                value={baseRateStr}
+                value={isAnnuity ? '' : baseRateStr}
+                disabled={isAnnuity}
                 onChange={e => setBaseRateStr(e.target.value)}
                 placeholder="VD: 9.9"
-                className={`w-full rounded-md p-2 font-mono font-bold ${styles.inputStyle}`}
+                className={`w-full rounded-md p-2 font-mono font-bold ${styles.inputStyle} disabled:opacity-50 disabled:cursor-not-allowed`}
               />
             </div>
             <div>
               <label className="block mb-1 font-bold text-accent  text-xs">Biên độ (%/năm)</label>
               <input
                 type="text"
-                value={marginStr}
+                value={isAnnuity ? '' : marginStr}
+                disabled={isAnnuity}
                 onChange={e => setMarginStr(e.target.value)}
                 placeholder="VD: 3.5"
-                className={`w-full rounded-md p-2 font-mono font-bold ${styles.inputStyle}`}
+                className={`w-full rounded-md p-2 font-mono font-bold ${styles.inputStyle} disabled:opacity-50 disabled:cursor-not-allowed`}
               />
             </div>
             <div>
               <label className="block mb-1 font-bold text-accent  text-xs">LS sau ưu đãi (%/năm)</label>
               <input
                 type="text"
-                value={postPromoRateStr}
+                value={isAnnuity ? '' : postPromoRateStr}
+                disabled={isAnnuity}
                 onChange={e => setPostPromoRateStr(e.target.value)}
                 placeholder={hasPromo ? `${fmtPercent(postRate > 1 ? postRate / 100 : postRate)} (cơ sở + biên độ)` : 'Không áp dụng'}
-                className={`w-full rounded-md p-2 font-mono font-bold text-accent ${styles.inputStyle}`}
+                className={`w-full rounded-md p-2 font-mono font-bold text-accent ${styles.inputStyle} disabled:opacity-50 disabled:cursor-not-allowed`}
               />
             </div>
           </div>

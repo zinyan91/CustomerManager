@@ -7,6 +7,7 @@ import {
   checkKunnAgainstContract,
   kunnRevolvingStatus,
   summarizeCreditContracts,
+  totalsOfCreditContracts,
   resolveMasterHdtdNumber,
   isKunnSettled,
   isKunnOfClosedHdtd,
@@ -594,5 +595,57 @@ describe('hdtdLifecycle — một nhãn trạng thái duy nhất cho HĐTD', () 
       expect(status === 'expired').toBe(s.expired);
       expect(status === 'not_yet_effective').toBe(s.notYetEffective);
     }
+  });
+});
+
+describe('totalsOfCreditContracts — ba con số trên đầu màn hình', () => {
+  const bo = () => summarizeCreditContracts(
+    [
+      cc({ Id: 4, HdtdNumber: 'HD-A', ContractAmount: 960_000_000, ContractEndDate: '2036-05-05' }),
+      cc({ Id: 5, HdtdNumber: 'HD-B', ContractAmount: 500_000_000, ContractEndDate: '2036-05-05' }),
+    ],
+    [
+      kunn({ Id: 1, CreditContractId: 4, LoanAmount: 960_000_000, CurrentBalance: 944_000_000 }),
+      kunn({ Id: 2, CreditContractId: 5, LoanAmount: 500_000_000, CurrentBalance: 483_320_000 }),
+    ],
+    { today: HOM_NAY }
+  );
+
+  it('cộng mức cấp của MỌI HĐTD, không phải của một hợp đồng', () => {
+    expect(totalsOfCreditContracts(bo()).granted).toBe(1_460_000_000);
+  });
+
+  it('dư nợ trừ gốc đã trả, KHÔNG cộng số tiền giải ngân ban đầu', () => {
+    expect(totalsOfCreditContracts(bo()).outstanding).toBe(1_427_320_000);
+  });
+
+  it('khả dụng là hiệu của hai số trên', () => {
+    expect(totalsOfCreditContracts(bo()).available).toBe(32_680_000);
+  });
+
+  it('lọc theo một HĐTD thì chỉ tính hợp đồng đó', () => {
+    const r = totalsOfCreditContracts(bo(), 'HD-B');
+    expect(r.granted).toBe(500_000_000);
+    expect(r.outstanding).toBe(483_320_000);
+    expect(r.available).toBe(16_680_000);
+  });
+
+  it('lọc trúng HĐTD không tồn tại thì trả 0, không trả tổng', () => {
+    expect(totalsOfCreditContracts(bo(), 'KHONG-CO')).toEqual({
+      granted: 0, outstanding: 0, available: 0,
+    });
+  });
+
+  it('không có hợp đồng nào thì cả ba số bằng 0', () => {
+    expect(totalsOfCreditContracts([])).toEqual({ granted: 0, outstanding: 0, available: 0 });
+  });
+
+  it('dư nợ vượt mức cấp thì khả dụng bằng 0, không âm', () => {
+    const r = totalsOfCreditContracts(summarizeCreditContracts(
+      [cc({ Id: 4, HdtdNumber: 'HD-A', ContractAmount: 100_000_000 })],
+      [kunn({ Id: 1, CreditContractId: 4, CurrentBalance: 150_000_000 })],
+      { today: HOM_NAY }
+    ));
+    expect(r.available).toBe(0);
   });
 });

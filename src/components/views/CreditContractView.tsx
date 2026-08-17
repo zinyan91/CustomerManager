@@ -4,6 +4,7 @@ import { FileText, Plus, UserCheck } from 'lucide-react';
 import { Toast } from '../Toast';
 import { useCreditContractController } from '../../hooks/useCreditContractController';
 import { CreditContractSummaryCards } from '../creditContract/CreditContractSummaryCards';
+import { totalsOfCreditContracts } from '../../lib/creditContract';
 import { CreditContractFormModal } from '../creditContract/CreditContractFormModal';
 import { KunnAccordionItem } from '../creditContract/KunnAccordionItem';
 
@@ -56,9 +57,8 @@ export const CreditContractView: React.FC = () => {
 
   const containerCardBg = UI.containerCardBg;
 
-  const totalGranted = summaries.reduce((sum, s) => sum + (s.contract.ContractAmount || 0), 0);
-  const totalOutstanding = summaries.reduce((sum, s) => sum + s.outstanding, 0);
-  const totalAvailable = Math.max(0, totalGranted - totalOutstanding);
+  const { granted: totalGranted, outstanding: totalOutstanding, available: totalAvailable } =
+    totalsOfCreditContracts(summaries);
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">

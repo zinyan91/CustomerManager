@@ -17,7 +17,7 @@ import {
   buildRateFields,
 } from '../lib/rateResolution';
 import { totalUsableCapacity } from '../lib/collateralMath';
-import { checkKunnAgainstContract, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf } from '../lib/creditContract';
+import { checkKunnAgainstContract, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf, summarizeCreditContracts, totalsOfCreditContracts } from '../lib/creditContract';
 import { checkKunnTenor } from '../lib/loanProductRules';
 import { useWork } from '../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../lib/creditLimit';
@@ -327,6 +327,14 @@ export function useLoanPortfolioController() {
     () => findLimitGroupFor(limitGroups, String(effectiveFormHdtdNo || '')),
     [effectiveFormHdtdNo, limitGroups]
   );
+
+  const customerLimitTotals = useMemo(() => totalsOfCreditContracts(
+    summarizeCreditContracts(creditContracts, contracts, {
+      getOutstanding: (k) => computeOutstandingBalance(allSchedulesMap[k.Id], k),
+      today: todayIso(),
+    }),
+    selectedMasterFilter === 'ALL' ? null : selectedMasterFilter
+  ), [creditContracts, contracts, allSchedulesMap, selectedMasterFilter]);
 
   const matchedHdtdAmount = activeGroupForForm?.granted || creditLimitNum || 0;
   const maxAllowedLoanLtv = totalUsableCapacity(collaterals.filter(c => selectedCollateralIds.includes(c.Id)), todayIso());
@@ -814,6 +822,7 @@ export function useLoanPortfolioController() {
     draftRateContract,
     currentActiveRateDisplay,
     creditLimitNum,
+    customerLimitTotals,
     kunnLoanAmountNum,
     formTotalPeriods,
     suggestedMonthlyPrincipal,

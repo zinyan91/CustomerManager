@@ -97,7 +97,7 @@ export const LoanPortfolioView: React.FC = () => {
     normalRate,
     surchargeVal,
     currentActiveRateDisplay,
-    creditLimitNum,
+    customerLimitTotals,
     kunnLoanAmountNum,
     suggestedMonthlyPrincipal,
     dropdownFiltered,
@@ -116,8 +116,6 @@ export const LoanPortfolioView: React.FC = () => {
     setSelectedCustomerId,
   } = useLoanPortfolioController();
 
-  const totalKunnAmount = contracts.reduce((sum, c) => sum + (c.LoanAmount || 0), 0);
-  const remainingCreditLimit = Math.max(0, creditLimitNum - totalKunnAmount);
   const selectedCollaterals = collaterals.filter(c => selectedCollateralIds.includes(c.Id));
 
   const totalExistingKunnBal = activeGroupForForm?.outstanding || activeGroupForForm?.used || 0;
@@ -164,9 +162,9 @@ export const LoanPortfolioView: React.FC = () => {
           collaterals={collaterals}
           containerCardBg={UI.containerCardBg}
           selectedMasterFilter={selectedMasterFilter}
-          totalCreditLimit={creditLimitNum}
-          totalKunnAmount={totalKunnAmount}
-          remainingCreditLimit={remainingCreditLimit}
+          totalCreditLimit={customerLimitTotals.granted}
+          totalKunnAmount={customerLimitTotals.outstanding}
+          remainingCreditLimit={customerLimitTotals.available}
           handleNewContract={handleNewContract}
         />
       )}

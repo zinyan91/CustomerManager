@@ -247,6 +247,20 @@ export interface CreditContractSummary {
   isEmpty: boolean;
 }
 
+export function totalsOfCreditContracts(
+  summaries: CreditContractSummary[],
+  hdtdNumber?: string | null
+): { granted: number; outstanding: number; available: number } {
+  const wanted = (hdtdNumber || '').trim().toLowerCase();
+  const scoped = wanted
+    ? summaries.filter(s => (s.contract.HdtdNumber || '').trim().toLowerCase() === wanted)
+    : summaries;
+
+  const granted = scoped.reduce((sum, s) => sum + (s.contract.ContractAmount || 0), 0);
+  const outstanding = scoped.reduce((sum, s) => sum + s.outstanding, 0);
+  return { granted, outstanding, available: Math.max(0, granted - outstanding) };
+}
+
 export function summarizeCreditContracts(
   contracts: CreditContract[],
   kunns: LoanContract[],

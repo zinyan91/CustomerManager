@@ -110,6 +110,24 @@ Theo số ngày quá hạn lớn nhất trong các kỳ **chưa thanh toán**:
 
 ## Lịch trả nợ và ghi nhận thu
 
+### Ngày đáo hạn là chốt chặn của dãy kỳ
+
+Nợ chấm dứt ở ngày đáo hạn, nên dãy kỳ cũng phải chấm dứt ở đó. Áp cho **cả hai loại vay**, chỉ khác nhau ở chỗ lấy ngày đáo hạn của cái gì: hạn mức lấy đáo hạn **KUNN** (HĐTD chỉ cấp quyền rút vốn, KUNN được phép sống qua ngày HĐTD hết hạn); vay từng lần lấy đáo hạn **khoản vay** vì HĐTD và KUNN là một.
+
+| Ngày due cuối so với ngày đáo hạn | Kết quả |
+| :--- | :--- |
+| **Sau** | Huỷ kỳ due cố định, dời về đúng ngày đáo hạn. Thu toàn bộ gốc còn lại + lãi thực tế. Số kỳ không đổi |
+| **Trùng** | Không đổi gì |
+| **Trước** | Kỳ due đóng như thường, rồi mở thêm **một kỳ** tới ngày đáo hạn thu nốt gốc còn lại + lãi số ngày lẻ |
+
+Cài ở `applyMaturityToDueDates`: bỏ mọi ngày due **sau** ngày đáo hạn rồi nối ngày đáo hạn vào cuối nếu chưa có. Một phép biến đổi lo cả ba trường hợp, và **luỹ đẳng** — chạy lại trên dãy đã có kỳ phụ ra đúng dãy cũ, nên `redateSchedules` không đẻ thêm kỳ mỗi lần bấm "Tính lại lịch".
+
+**Kỳ phụ chỉ sinh ra khi thật sự còn nợ.** Hạn mức trả gốc cuối kỳ nên dư nợ nguyên vẹn tới đáo hạn, kỳ phụ luôn có và **gốc dồn vào chính kỳ đó**. Vay từng lần thì gốc trả đều làm tròn **lên** bước 10.000đ, dư nợ về 0 tại hoặc trước kỳ due cuối, nên kỳ phụ rỗng cả gốc lẫn lãi và không được sinh ra — hệ quả của quy tắc làm tròn, không phải quy tắc riêng.
+
+Nguồn ngày đáo hạn là `maturityDateOf`: `KunnDueDate`, thiếu thì suy `DisbursementDate + KunnTenor`. **Không** đọc `ContractEndDate` — lấy hạn HĐTD làm hạn khoản vay là lỗi đã gỡ ngày 07/08/2026, có test khoá riêng.
+
+Đo ngày 17/08/2026 trên 101 khoản đang chạy: 68 đã khớp sẵn, 26 còn kỳ chưa thu sẽ đổi khi lưu lại, 7 đã thu hết. Tiền đi hai chiều — 13 khoản giảm lãi ~26,9 trđ, 13 khoản tăng ~17,8 trđ. **Lịch đang lưu không tự đổi**, chỉ dựng lại khi banker lưu lại KUNN hoặc bấm "Tính lại lịch".
+
 ### Khoá chính do cơ sở dữ liệu cấp
 
 `RepaymentSchedules."Id"` là **khoá chính toàn bảng**, không phải số thứ tự trong hợp đồng. Tuyệt đối không sinh `Id` ở client.
@@ -213,6 +231,20 @@ Dùng mức cấp gốc cho vay từng lần sẽ báo động giả suốt vòn
 
 Cụm có cả hai loại thì cộng: mức cấp của phần hạn mức + dư nợ của phần vay từng lần.
 
+### Vòng đời hạn mức quay vòng
+
+Hạn mức là **vay – trả – tự phục hồi**. Trả gốc vào thì hạn mức khả dụng tăng lên ngay, và khách ký được KUNN mới trên chính số gốc vừa trả, dù KUNN cũ không giải ngân thêm. Ba điều kiện cài ở `computeLimitGroups`:
+
+| Nguyên tắc | Cách cài |
+| :--- | :--- |
+| Trả gốc thì hạn mức phục hồi | `used = dư nợ` khi quay vòng, **không** phải luỹ kế giải ngân |
+| HĐTD còn hạn → đáo hạn KUNN xong giải ngân lại được | `available = granted − used` |
+| HĐTD hết hạn → phải trả đứt gốc, không giải ngân mới | `available = 0`, và dư nợ của KUNN đáo hạn **sau** ngày HĐTD hết hạn tách riêng thành `lockedOutstanding` |
+
+Cho vay từng lần thì ngược lại: `used = luỹ kế giải ngân`, gốc trả vào **không** mở lại hạn mức, vì không có hạn mức để mở lại.
+
+KUNN mới rút trên phần gốc vừa trả **không** cần bổ sung TSBĐ, vì cụm hạn mức đối chiếu tài sản theo mức cấp chứ không theo dư nợ.
+
 ---
 
 ### Đáo KUNN trong ngày cuối hiệu lực là hợp lệ
@@ -243,14 +275,18 @@ Cột `HdtdDueDate` **đã xoá** ở migration 48: rỗng toàn bộ 103 KUNN t
 
 ## Sản phẩm vay
 
-### Hạn mức tín dụng — ngắn hạn
+### Hạn mức tín dụng — ngắn hạn, bổ sung vốn lưu động
 - Mục đích **cố định** "Sản xuất kinh doanh", ô chọn bị khoá
-- Kỳ hạn 12 – 24 tháng
+- **Hai kỳ hạn khác nhau, đừng lẫn:** HĐTD 12 – 24 tháng là *thời gian được phép rút vốn*; KUNN 3 – 12 tháng là *thời hạn phải trả nợ* của từng lần rút
+- Lãi trả hàng tháng theo dư nợ và số ngày thực tế; gốc trả **một lần** vào ngày đáo hạn KUNN
 - **Không** có ân hạn gốc
 
-### Cho vay từng lần — dài hạn
+Hai thước đo, hai hàm: `checkTenor` đo kỳ hạn **HĐTD** (`tenor`), `checkKunnTenor` đo kỳ hạn **KUNN** (`kunnTenor`). Sản phẩm không tách hai cấp thì `kunnTenor` để trống và `checkKunnTenor` dùng chung thước với khoản vay. Trước 17/08/2026 chỉ có một hàm đo bằng thước 12–24 tháng của HĐTD, nên mọi KUNN hạn mức (thực tế khai 5–6 tháng) đều bị cảnh báo sai — chưa lộ ra vì hàm đó chưa nối vào màn hình nào.
+
+### Cho vay từng lần — trung/dài hạn, mua sắm tài sản
 - Mục đích: tiêu dùng phục vụ đời sống, xây/sửa chữa nhà, mua nhà
-- Kỳ hạn 60 – 360 tháng (5 – 30 năm)
+- HĐTD và KUNN **gộp làm một**, chung một thời hạn 60 – 360 tháng (5 – 30 năm)
+- Gốc trả đều hàng tháng, lãi theo dư nợ giảm dần
 - Ân hạn gốc: 6 / 12 / 15 / 18 / 24 / 36 tháng
 
 Sai lệch → **cảnh báo, không chặn lưu**. Nghiệp vụ ngân hàng luôn có ngoại lệ được phê duyệt; chặn cứng khiến banker tìm cách lách.

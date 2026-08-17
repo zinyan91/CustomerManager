@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 17/08/2026 — công cụ tính lịch thu nợ khoản vay
+Cập nhật: 17/08/2026 — hàng KPI dashboard, chốt chặn ngày đáo hạn
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -10,7 +10,63 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 ---
 
-# 0. Bàn giao — 17/08/2026
+# 0. Hàng KPI dashboard — năm ô, năm sắc — 17/08/2026
+
+Chủ dự án: ba ô KPI trung tính "không có màu thì nhìn chả khác gì thông tin bình thường", và thẻ tín dụng không có lý do gì nằm trong ô khách hàng. Test **1.546 → 1.552**.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Tách ô **Thẻ tín dụng** riêng | Nó vốn là dòng `note` của ô "Tổng số khách hàng" vì lưới 4 cột đã kín — không có lý do nghiệp vụ. Ô khách hàng đọc ra ba đại lượng của hai nghiệp vụ khác nhau |
+| ✅ | Dòng dưới mỗi ô nay dẫn xuất từ chính con số lớn của ô đó | Ô khách hàng: *trong đó N khách hàng có dư nợ*. Giống ô dư nợ (hạn mức cấp) và ô TSĐB (LTV bình quân) |
+| ✅ | Lớp **sắc định danh** tách khỏi lớp sắc ngữ nghĩa | `--t-kpi-cust` tím, `--t-kpi-collateral` ngọc, `--t-kpi-card` hồng. Không trùng `pos` lục hay `warn` hổ phách — ngay dưới hàng KPI là bốn panel cảnh báo dùng đúng bốn sắc đó |
+| ✅ | `KpiCard` nhận **một** biến `--kpi-hue` thay ba bảng `Record` | Số lớn, ô biểu tượng, vạch trên đều đọc từ nó. Thêm sắc = thêm một dòng token |
+| ✅ | Số lớn `text-2xl xl:text-3xl`, vạch trên `h-1` | Ô vẫn nổi khi in đen trắng, không phụ thuộc màu |
+| ✅ | Lưới `lg:grid-cols-3 2xl:grid-cols-5` | Nhồi 5 ô vào 1280px làm nhãn xuống ba dòng. Ba cột ở khổ đó dễ đọc hơn |
+
+**Ngoại lệ có ranh giới, ghi ở `CONVENTIONS.md`:** đây là lần đầu dự án dùng màu **không** mang nghĩa. Token `--t-kpi-*` chỉ dùng cho hàng KPI; chỗ khác cần phân biệt thì phân biệt bằng chữ và bố cục.
+
+Đo tương phản bằng script trong trình duyệt, không ước lượng bằng mắt — **tối** 6.45 → 9.59, **sáng** 5.47 → 7.10. Chụp màn hình đối chiếu cả hai chế độ.
+
+---
+
+# 0.1. Ngày đáo hạn là chốt chặn của dãy kỳ — 17/08/2026
+
+Giải quyết mâu thuẫn treo từ 07/08 giữa `supabase/reports/06_ky_cuoi_lech_ngay_dao_han.sql` và lời banker. Chủ dự án mô tả lại toàn cảnh hai loại vay và chốt: quy tắc áp cho **cả hai**, chỉ khác nhau ở chỗ lấy ngày đáo hạn của KUNN hay của khoản vay. Test **1.521 → 1.540**, build sạch.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | `applyMaturityToDueDates` trong `loanMath.ts` | Bỏ ngày due sau đáo hạn rồi nối ngày đáo hạn — một phép biến đổi lo cả ba tình huống (trước / trùng / sau) và **luỹ đẳng**, nên bấm "Tính lại lịch" nhiều lần không đẻ thêm kỳ |
+| ✅ | Áp qua `buildDueDateSequence` — nguồn duy nhất | `generateSchedule` và `redateSchedules` đều đi qua đó, không có đường vòng |
+| ✅ | `maturityDateOf`: `KunnDueDate`, thiếu thì suy `DisbursementDate + KunnTenor` | **Không** đọc `ContractEndDate`; lấy hạn HĐTD làm hạn khoản vay chính là lỗi đã gỡ 07/08. Có test khoá riêng điều này |
+| ✅ | `generateSchedule` chạy theo số kỳ THỰC của dãy ngày | Trước đó lặp theo tham số `periods`, nên kỳ phụ sinh ra sẽ không được gán gốc — vỡ bất biến Σ(gốc) = số tiền vay |
+| ✅ | Chạy `supabase/reports/11_ky_cuoi_so_voi_dao_han.sql` trên dữ liệu thật | 101 khoản đang chạy, **68 đã khớp sẵn**, 33 sẽ đổi. Không khoản nào thiếu `KunnDueDate` |
+| ✅ | Kiểm chứng ngoài test đơn vị: chạy hàm thật trên tham số thật của 3 khoản | 1062 NGUYỄN THỊ QUYÊN, 1046 NGÔ NHỊ ĐẠT, 1117 ĐOÀN NGỌC LÝ. Kết quả khớp tính tay |
+| ✅ | Tách `checkKunnTenor` khỏi `checkTenor` | `tenor` 12–24 tháng là kỳ hạn **HĐTD**, nhưng hàm cũ đem đo số kỳ **KUNN** — mọi KUNN hạn mức (thực tế 5–6 tháng) đều bị cảnh báo sai. Chưa lộ ra vì hàm chưa nối vào màn hình nào |
+| ✅ | Nối cảnh báo kỳ hạn KUNN vào form | Đi chung danh sách `kunnIssues` đã có ở `KunnHdtdSection`, mức `warn` — cảnh báo, không chặn lưu |
+
+**Đo trên dữ liệu thật (101 khoản đang chạy, 17/08/2026).**
+
+| Nhóm | Số khoản | Ghi chú |
+| :--- | ---: | :--- |
+| Đã khớp sẵn — không đổi gì | 68 | Gồm **40/46 khoản vay từng lần** |
+| Còn kỳ chưa thu, sẽ đổi khi lưu lại | 26 | 13 cắt về đáo hạn, 13 mở thêm kỳ |
+| Đã thu hết, chỉ báo cáo | 7 | Toàn bộ là hạn mức, `IsSettled` chưa bật |
+
+Phân bố `KunnTenor` đo cùng lúc, để đặt ngưỡng cho `checkKunnTenor` thay vì đoán: hạn mức chỉ có **5 tháng** (27 khoản) và **6 tháng** (23 khoản), `LoanTenorMonths` 12 hoặc 24 — đúng hai cấp. Vay từng lần 60 → 240 tháng. Ngưỡng KUNN 3–12 tháng không đụng khoản nào đang có.
+
+Riêng nhóm hạn mức còn kỳ chưa thu: 13 khoản **giảm** lãi tổng ~26,9 trđ (đang tính lãi quá ngày đáo hạn), 7 khoản **tăng** lãi tổng ~17,8 trđ (đang bỏ sót quãng ngày lẻ). Ca đo tay: KUNN 1062 NGUYỄN THỊ QUYÊN, kỳ 5 chuyển từ 15/09 về 07/09, lãi từ 13.608.151đ xuống 10.096.370đ — hàm thật cho đúng con số đó.
+
+Một khoản có **kỳ đã thu nằm sau ngày đáo hạn**: 1113 ĐOÀN NGỌC LÝ, thu gốc 15/08 trong khi KUNN đáo hạn 09/08. Khoản đã trả hết, dư nợ 0, chỉ chờ bật `IsSettled`. Theo tiền lệ NGÔ NHỊ ĐẠT: **chỉ báo cáo, không xử lý**.
+
+**Một tính chất phát hiện khi viết test.** Kỳ phụ chỉ sinh ra khi thật sự còn nợ, vì vòng lặp dừng khi dư nợ về 0. Hạn mức trả gốc cuối kỳ nên luôn có kỳ phụ và gốc dồn vào đó. Cho vay từng lần thì gốc trả đều **làm tròn lên** bước 10.000đ, dư nợ về 0 tại hoặc trước kỳ due cuối, nên kỳ phụ rỗng cả gốc lẫn lãi và không được sinh ra. Đây là hệ quả của quy tắc làm tròn có sẵn, không phải quy tắc riêng — khoá bằng test trên ba số tiền vay khác nhau.
+
+Đối chiếu lại phần hạn mức quay vòng: `computeLimitGroups` đã đúng sẵn — gốc trả vào làm hạn mức khả dụng tăng (`used = dư nợ` khi quay vòng), hết hiệu lực HĐTD thì `available = 0`, và dư nợ của KUNN đáo hạn sau ngày HĐTD hết hạn tách riêng thành `lockedOutstanding`. Không phải sửa gì.
+
+Lịch đang lưu **không** tự đổi. Nó chỉ dựng lại khi banker lưu lại KUNN hoặc bấm "Tính lại lịch".
+
+---
+
+# 0.2. Bàn giao — 17/08/2026
 
 Tám commit trên `main`, từ `9af9266` tới `89e0171`. Cây làm việc sạch, đồng bộ với remote. Test **1.466 → 1.509**, build và lint sạch.
 
@@ -30,7 +86,7 @@ Kèm theo: thẻ `<f>` trong OOXML thôi mang dấu bằng thừa — lỗi này
 
 ---
 
-# 0.1. Bàn giao — 16/08/2026
+# 0.3. Bàn giao — 16/08/2026
 
 Phiên làm việc 16/08 đóng lại với **16 commit** trên `main`, từ `e218ffa` tới `e43b29f`. Cây làm việc sạch, đồng bộ với remote. Test **246 → 1.466**, build và lint sạch.
 

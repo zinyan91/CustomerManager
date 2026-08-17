@@ -188,7 +188,7 @@ Vì dùng số ngày thực tế, **tiền lãi có thể TĂNG so với kỳ tr
 
 Ràng buộc duy nhất: **kỳ 1 phải SAU ngày giải ngân**. Mốc khai sớm hơn thì dịch lên từng tháng, giữ nguyên ngày trong tháng — không đổi ngày khách đã chọn. Để trống `RepaymentStartDate` thì mới mặc định giải ngân + 1 tháng, và đó là **giá trị tạm chờ khai theo chứng từ**, không phải quy tắc nghiệp vụ.
 
-**Ngày trong tháng giữ nguyên từ kỳ đầu tới kỳ cuối.** Khách trả ngày 15 thì mọi kỳ đều ngày 15, kể cả kỳ cuối. Ngày đáo hạn KUNN **không** được phép đổi ngày của kỳ nào.
+**Ngày trong tháng giữ nguyên từ kỳ đầu tới kỳ cuối.** Khách trả ngày 15 thì mọi kỳ đều ngày 15. Ngày đáo hạn KUNN **không** đổi ngày của kỳ nào ở giữa; nó chỉ quyết định **kỳ cuối kết thúc ở đâu**, và chỉ với hạn mức tín dụng — xem mục dưới.
 
 Đã có lúc làm ngược lại và phải trả giá. Ngày 06/08/2026 một chốt "kéo kỳ cuối về ngày đáo hạn" được thêm vào `buildDueDateSequence`, kèm `alignLastPeriodToMaturity` và một nút bảo trì ở tab Cài đặt quét toàn danh mục. Lý lẽ khi đó: *"31/98 KUNN có kỳ cuối không rơi đúng ngày đáo hạn"*. Đó là đọc ngược bằng chứng — 31 khoản cùng theo một khuôn là dấu hiệu **khuôn ấy chính là quy tắc**, không phải dấu hiệu 31 khoản đều hỏng. Không hồ sơ giấy nào được đối chiếu, không banker nào được hỏi.
 
@@ -196,7 +196,33 @@ Nút đó chạy `recalculateSchedules` trên **toàn bộ** các kỳ chứ kh�
 
 Bài học, ghi ở đây để không lặp lại: **một khuôn lặp lại trong dữ liệu là quy tắc cần hỏi, không phải lỗi cần sửa.** Và công cụ ghi hàng loạt phải có bước xem trước liệt kê đúng những gì sắp đổi, trước khi ghi dòng đầu tiên.
 
-**Một mâu thuẫn chưa giải quyết.** Đầu tệp `supabase/reports/06_ky_cuoi_lech_ngay_dao_han.sql` có câu *GNN ghi "kỳ trả nợ cuối cùng được trả vào NGÀY ĐÁO HẠN"* — trái hẳn với điều banker khẳng định 07/08/2026. Câu đó **không dẫn số hiệu GNN nào**, khác với mọi quy tắc khác trong tài liệu này. Cần mở một GNN giấy ra đối chiếu. Cho tới lúc đó: **tin banker**, giữ nguyên lịch.
+### Ngày đáo hạn là chốt chặn của dãy kỳ
+
+Chốt 17/08/2026, thay cho mâu thuẫn treo từ 07/08 giữa `supabase/reports/06_ky_cuoi_lech_ngay_dao_han.sql` và lời banker. Áp cho **cả hai loại vay** — chỉ khác nhau ở chỗ lấy ngày đáo hạn của cái gì:
+
+| Loại vay | Chốt chặn | Vì sao |
+| :--- | :--- | :--- |
+| **Hạn mức tín dụng** | Ngày đáo hạn **KUNN** | HĐTD chỉ cấp quyền rút vốn; nghĩa vụ trả nợ thuộc về từng KUNN, và KUNN được phép sống qua ngày HĐTD hết hạn |
+| **Cho vay từng lần** | Ngày đáo hạn **khoản vay** | HĐTD và KUNN là một, cùng thời hạn |
+
+Nợ chấm dứt ở ngày đáo hạn, nên dãy kỳ cũng phải chấm dứt ở đó — không sớm hơn để khỏi thu thiếu lãi, không muộn hơn để khỏi thu lãi trên khoản đã hết hạn:
+
+| Ngày due cuối so với ngày đáo hạn | Kết quả |
+| :--- | :--- |
+| **Sau** | Huỷ kỳ due cố định, dời về đúng ngày đáo hạn. Thu toàn bộ gốc còn lại + lãi thực tế. Số kỳ không đổi |
+| **Trùng** | Không đổi gì |
+| **Trước** | Kỳ due đóng như thường, rồi mở thêm **một kỳ** tới ngày đáo hạn thu nốt gốc còn lại + lãi số ngày lẻ |
+
+Cài ở `applyMaturityToDueDates`: bỏ mọi ngày due **sau** ngày đáo hạn rồi nối ngày đáo hạn vào cuối nếu chưa có. Một phép biến đổi lo cả ba trường hợp, và **luỹ đẳng** — chạy lại trên dãy đã có kỳ phụ ra đúng dãy cũ, nên `redateSchedules` không đẻ thêm kỳ mỗi lần bấm "Tính lại lịch". Có test khoá tính chất này.
+
+**Kỳ phụ chỉ sinh ra khi thật sự còn nợ.** `generateSchedule` dừng vòng lặp khi dư nợ về 0, nên:
+
+- **Hạn mức**: gốc trả cuối kỳ, dư nợ vẫn nguyên tới ngày đáo hạn → kỳ phụ luôn có, và **gốc dồn vào chính kỳ đó**, không phải kỳ due tháng trước.
+- **Từng lần**: gốc trả đều **làm tròn lên** bước 10.000đ nên dư nợ về 0 tại hoặc trước kỳ due cuối. Kỳ phụ nếu có sẽ rỗng cả gốc lẫn lãi, và không được sinh ra. Đây là hệ quả của quy tắc làm tròn, không phải quy tắc riêng — có test khoá trên ba số tiền vay khác nhau.
+
+Nguồn ngày đáo hạn là `maturityDateOf`: `KunnDueDate` đã khai, thiếu thì suy ra `DisbursementDate + KunnTenor` (hoặc `LoanTenorMonths`). **Không** đọc `ContractEndDate` — lấy hạn HĐTD làm hạn khoản vay chính là lỗi đã gỡ ở trên, và có test khoá riêng cho điều đó.
+
+Điều bị gỡ ngày 07/08 và **vẫn còn bị gỡ**: kéo kỳ cuối về ngày đáo hạn cho **mọi** loại vay, cộng nút bảo trì quét toàn danh mục ghi đè `InterestAmount` không xem trước.
 
 Ràng buộc này cài trong **`buildDueDateSequence`** — nguồn duy nhất sinh dãy ngày đến hạn. Có **hai** đường ghi ngày đến nợ và cả hai đều phải đi qua đó: `generateSchedule` khi tạo lịch mới, và `redateSchedules` khi banker sửa mốc trả nợ của một KUNN **đã có lịch**. Cài chốt ở một đường không bịt được đường kia: bản chép tay trong `LoanPortfolioView` từng làm chính điều đó, khiến hồ sơ NGÔ NHỊ ĐẠT tái tạo lại được lỗi cũ sau khi đường tạo mới đã sửa. Thêm đường ghi ngày thứ ba thì cũng phải gọi hàm này, đừng cộng tháng bằng tay.
 
@@ -1164,6 +1190,10 @@ Nay màu khai báo **một chỗ** trong `index.css`: biến `--t-*` đổi theo
 | Trạng thái | `text-pos` `text-neg` `text-warn` (+ `-soft`) | đã thu, quá hạn / còn nợ, cảnh báo |
 
 **Quy tắc: màu chỉ được mang nghĩa.** Khung giao diện đi màu trung tính; `pos` / `neg` / `warn` chỉ dùng cho trạng thái nghiệp vụ, `accent` chỉ cho hành động và lựa chọn hiện hành. Không tô màu để trang trí — banker học được ý nghĩa của màu thì mới quét bảng nhanh.
+
+**Một ngoại lệ có ranh giới: sắc định danh của hàng KPI.** Chủ dự án chốt 17/08/2026 rằng năm ô KPI trên dashboard phải nhận ra được từng ô bằng màu. Nếu mượn `pos` / `warn` cho việc đó thì cùng một màn hình sẽ có hai nghĩa của một màu — ngay dưới hàng KPI là bốn panel cảnh báo đang dùng đúng bốn sắc ngữ nghĩa. Nên sắc định danh sống ở **namespace riêng**: `--t-kpi-cust`, `--t-kpi-collateral`, `--t-kpi-card` (tím, ngọc, hồng), không sắc nào trùng `pos` lục hay `warn` hổ phách. Ô dư nợ dùng `accent`, ô cảnh báo giữ `neg` vì đỏ ở đó **có nghĩa thật**.
+
+Ranh giới: token `--t-kpi-*` **chỉ** dùng cho hàng KPI. Cần phân biệt các mục ở chỗ khác thì phân biệt bằng chữ và bố cục, đừng thêm sắc định danh thứ tư. `KpiCard` nhận **một** biến `--kpi-hue`; số lớn, ô biểu tượng và vạch trên đều đọc từ biến đó, nên thêm sắc là thêm một dòng token chứ không phải sửa ba bảng `Record` như bản cũ.
 
 Mọi cặp màu đã đo tương phản ở cả hai giao diện, thấp nhất **5.09** (nhãn cột `ink-faint` trên `panel-muted`). Đổi giá trị `--t-*` thì đo lại, đừng ước lượng bằng mắt: chữ 10–11px không có chỗ để hụt tương phản. Riêng viên "Quá hạn" nền đặc phải dùng `text-surface` chứ không `text-white` — ở giao diện tối nền đỏ sáng, chữ trắng chỉ đạt 2.71.
 

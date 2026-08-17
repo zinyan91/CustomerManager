@@ -17,6 +17,8 @@ import {
   redateSchedules,
   schedulePaymentStatus,
   buildDueDateSequence,
+  applyMaturityToDueDates,
+  maturityDateOf,
 } from '../loanMath';
 import type { RepaymentSchedule, LoanContract } from '../../types';
 
@@ -752,7 +754,7 @@ describe('tất toán thì hết nợ', () => {
 });
 
 describe('generateSchedule — ngày trong tháng giữ nguyên tới kỳ cuối', () => {
-  it('kỳ cuối đi theo ngày khách chọn, KHÔNG bị kéo về ngày đáo hạn', () => {
+  it('không khai ngày đáo hạn thì kỳ cuối đi theo ngày khách chọn', () => {
     const s = generateSchedule(1, 960_000_000, 9.5, '2026-05-15', 120, false, '2026-05-05');
     expect(s.length).toBe(120);
     expect(s[118].DueDate).toBe('2036-03-15');
@@ -1187,3 +1189,175 @@ describe('kỳ thu một phần vẫn bị đếm quá hạn và tính phạt', 
   });
 });
 
+
+describe('kỳ cuối bám ngày đáo hạn — chốt chặn cho cả hai loại vay', () => {
+
+  it('đáo hạn TRƯỚC kỳ due tháng cuối: kỳ cuối rút về ngày đáo hạn', () => {
+    expect(buildDueDateSequence('2026-06-15', 6, '2026-05-05', '2026-11-05'))
+      .toEqual([
+        '2026-06-15', '2026-07-15', '2026-08-15',
+        '2026-09-15', '2026-10-15', '2026-11-05',
+      ]);
+  });
+
+  it('đáo hạn SAU kỳ due tháng cuối: đóng kỳ due cuối rồi mở thêm kỳ tới ngày đáo hạn', () => {
+    expect(buildDueDateSequence('2026-05-15', 6, '2026-05-05', '2026-11-05'))
+      .toEqual([
+        '2026-05-15', '2026-06-15', '2026-07-15', '2026-08-15',
+        '2026-09-15', '2026-10-15', '2026-11-05',
+      ]);
+  });
+
+  it('đáo hạn TRÙNG kỳ due tháng cuối thì không đổi gì', () => {
+    expect(buildDueDateSequence('2026-05-15', 6, '2026-05-05', '2026-10-15'))
+      .toEqual([
+        '2026-05-15', '2026-06-15', '2026-07-15',
+        '2026-08-15', '2026-09-15', '2026-10-15',
+      ]);
+  });
+
+  it('không khai ngày đáo hạn thì giữ nguyên dãy theo tháng', () => {
+    expect(buildDueDateSequence('2026-05-15', 3, '2026-05-05', null))
+      .toEqual(['2026-05-15', '2026-06-15', '2026-07-15']);
+  });
+
+  it('sinh lại lịch cho dãy đã có kỳ phụ thì không trôi thêm kỳ nữa', () => {
+    const lan1 = buildDueDateSequence('2026-05-15', 6, '2026-05-05', '2026-11-05');
+    const lan2 = buildDueDateSequence('2026-05-15', lan1.length, '2026-05-05', '2026-11-05');
+    expect(lan2).toEqual(lan1);
+  });
+
+  it('kỳ phụ chỉ thu lãi từ kỳ due cuối tới ngày đáo hạn, gốc dồn vào kỳ đó', () => {
+    const s = generateSchedule(
+      1, 1_000_000_000, 9, '2026-05-15', 6, true, '2026-05-05',
+      undefined, 0, 0, 0, 'reduce_monthly', undefined, undefined,
+      '2026-11-05'
+    );
+    expect(s.length).toBe(7);
+    expect(s[6].DueDate).toBe('2026-11-05');
+    expect(s[5].PrincipalAmount).toBe(0);
+    expect(s[6].PrincipalAmount).toBe(1_000_000_000);
+    expect(s[6].InterestAmount).toBe(Math.round(1_000_000_000 * 0.09 * 21 / 365));
+    expect(s.reduce((a, k) => a + (k.PrincipalAmount || 0), 0)).toBe(1_000_000_000);
+  });
+
+  it('đáo hạn tới trước thì lãi kỳ cuối tính tới đúng ngày đáo hạn', () => {
+    const s = generateSchedule(
+      1, 1_000_000_000, 9, '2026-06-15', 6, true, '2026-05-05',
+      undefined, 0, 0, 0, 'reduce_monthly', undefined, undefined,
+      '2026-11-05'
+    );
+    expect(s.length).toBe(6);
+    expect(s[5].DueDate).toBe('2026-11-05');
+    expect(s[5].PrincipalAmount).toBe(1_000_000_000);
+    expect(s[5].InterestAmount).toBe(Math.round(1_000_000_000 * 0.09 * 21 / 365));
+    expect(s.reduce((a, k) => a + (k.PrincipalAmount || 0), 0)).toBe(1_000_000_000);
+  });
+
+  it('redateSchedules giữ ngày đáo hạn ở kỳ cuối', () => {
+    const goc = Array.from({ length: 7 }, (_, i) => ({
+      Id: 500 + i, ContractId: 9, PeriodNumber: i + 1,
+      DueDate: '2026-01-01', PrincipalAmount: 0, InterestAmount: 0, IsPaid: false,
+    })) as any;
+    const r = redateSchedules(goc, '2026-05-15', '2026-05-05', '2026-11-05');
+    expect(r[5].DueDate).toBe('2026-10-15');
+    expect(r[6].DueDate).toBe('2026-11-05');
+  });
+});
+
+describe('chốt chặn ngày đáo hạn cho vay từng lần', () => {
+  it('đáo hạn SAU kỳ due cuối mà gốc đã trả hết thì KHÔNG mở kỳ rỗng', () => {
+    const s = generateSchedule(
+      1, 960_000_000, 9.5, '2026-05-15', 120, false, '2026-05-05',
+      undefined, 0, 0, 0, 'reduce_monthly', undefined, undefined,
+      '2036-05-05'
+    );
+    expect(s.length).toBe(120);
+    expect(s[119].DueDate).toBe('2036-04-15');
+    expect(s.reduce((a, k) => a + (k.PrincipalAmount || 0), 0)).toBe(960_000_000);
+  });
+
+  it('gốc trả đều làm tròn LÊN nên không bao giờ còn gốc rớt lại sau kỳ due cuối', () => {
+    for (const von of [960_000_000, 1_000_000_000, 777_777_777]) {
+      const s = generateSchedule(
+        1, von, 9.5, '2026-05-15', 120, false, '2026-05-05',
+        undefined, 0, 0, 0, 'reduce_monthly', undefined, undefined,
+        '2036-05-05'
+      );
+      expect(s[s.length - 1].DueDate! <= '2036-04-15').toBe(true);
+      expect(s.reduce((a, k) => a + (k.PrincipalAmount || 0), 0)).toBe(von);
+    }
+  });
+
+  it('đáo hạn TRƯỚC kỳ due cuối: kỳ cuối rút về ngày đáo hạn, dư nợ vẫn về 0', () => {
+    const s = generateSchedule(
+      1, 960_000_000, 9.5, '2026-06-15', 120, false, '2026-05-05',
+      undefined, 0, 0, 0, 'reduce_monthly', undefined, undefined,
+      '2036-05-05'
+    );
+    expect(s.length).toBe(120);
+    expect(s[118].DueDate).toBe('2036-04-15');
+    expect(s[119].DueDate).toBe('2036-05-05');
+    expect(s.reduce((a, k) => a + (k.PrincipalAmount || 0), 0)).toBe(960_000_000);
+  });
+
+  it('kỳ cuối rút về đáo hạn thì lãi tính theo số ngày lẻ thực tế', () => {
+    const s = generateSchedule(
+      1, 960_000_000, 9.5, '2026-06-15', 120, false, '2026-05-05',
+      undefined, 0, 0, 0, 'reduce_monthly', undefined, undefined,
+      '2036-05-05'
+    );
+    const cuoi = s[119];
+    const truoc = s[118];
+    const duNoDauKy = 960_000_000 - s.slice(0, 119).reduce((a, k) => a + (k.PrincipalAmount || 0), 0);
+    expect(getDaysBetween(truoc.DueDate!, cuoi.DueDate!)).toBe(20);
+    expect(cuoi.InterestAmount).toBe(Math.round(duNoDauKy * 0.095 * 20 / 365));
+    expect(cuoi.PrincipalAmount).toBe(duNoDauKy);
+  });
+});
+
+describe('maturityDateOf — nguồn ngày đáo hạn', () => {
+  it('ưu tiên KunnDueDate đã khai', () => {
+    expect(maturityDateOf({ KunnDueDate: '2026-11-05', KunnTenor: '6 tháng', DisbursementDate: '2026-05-05' } as any))
+      .toBe('2026-11-05');
+  });
+
+  it('chưa khai thì suy từ ngày giải ngân + kỳ hạn KUNN', () => {
+    expect(maturityDateOf({ KunnTenor: '6 tháng', DisbursementDate: '2026-05-05' } as any))
+      .toBe('2026-11-05');
+  });
+
+  it('không có kỳ hạn KUNN thì dùng kỳ hạn khoản vay', () => {
+    expect(maturityDateOf({ LoanTenorMonths: 120, DisbursementDate: '2026-05-05' } as any))
+      .toBe('2036-05-05');
+  });
+
+  it('KHÔNG bao giờ lấy ngày hết hiệu lực HĐTD làm ngày đáo hạn', () => {
+    expect(maturityDateOf({ ContractEndDate: '2027-06-30' } as any)).toBe(null);
+  });
+
+  it('thiếu dữ liệu thì trả null chứ không đoán', () => {
+    expect(maturityDateOf(null)).toBe(null);
+    expect(maturityDateOf({ KunnTenor: '6 tháng' } as any)).toBe(null);
+  });
+});
+
+describe('applyMaturityToDueDates — phép biến đổi thuần', () => {
+  it('luỹ đẳng: chạy lại trên kết quả cũ ra đúng kết quả cũ', () => {
+    const goc = ['2026-05-15', '2026-06-15', '2026-07-15'];
+    const lan1 = applyMaturityToDueDates(goc, '2026-08-05');
+    expect(applyMaturityToDueDates(lan1, '2026-08-05')).toEqual(lan1);
+  });
+
+  it('đáo hạn trước cả kỳ đầu thì chỉ còn một kỳ duy nhất', () => {
+    expect(applyMaturityToDueDates(['2026-05-15', '2026-06-15'], '2026-05-01'))
+      .toEqual(['2026-05-01']);
+  });
+
+  it('ngày đáo hạn rỗng hoặc sai định dạng thì trả nguyên dãy', () => {
+    const goc = ['2026-05-15', '2026-06-15'];
+    expect(applyMaturityToDueDates(goc, '')).toEqual(goc);
+    expect(applyMaturityToDueDates(goc, 'không phải ngày')).toEqual(goc);
+    expect(applyMaturityToDueDates(goc, null)).toEqual(goc);
+  });
+});

@@ -120,10 +120,28 @@ function dueDateAtCycle(anchor: DueDateAnchor, n: number): string {
   return `${y}-${String(mIdx + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
+export function maturityDateOf(c?: LoanContract | null): string | null {
+  if (!c) return null;
+  const declared = (c.KunnDueDate || '').trim();
+  if (parseDateParts(declared)) return declared;
+  const months = parseKunnTenorMonths(c.KunnTenor) || c.LoanTenorMonths || 0;
+  const derived = addMonthsToDate(c.DisbursementDate, months);
+  return parseDateParts(derived) ? derived : null;
+}
+
+export function applyMaturityToDueDates(dates: string[], maturityIso?: string | null): string[] {
+  const cutoff = (maturityIso || '').trim();
+  if (!parseDateParts(cutoff) || dates.length === 0) return dates;
+  const kept = dates.filter(d => d <= cutoff);
+  if (kept[kept.length - 1] !== cutoff) kept.push(cutoff);
+  return kept;
+}
+
 export function buildDueDateSequence(
   repaymentStartDateStr?: string | null,
   periods?: number | null,
-  disbursementDateStr?: string | null
+  disbursementDateStr?: string | null,
+  maturityIso?: string | null
 ): string[] {
   const count = Math.max(0, Math.floor(periods || 0));
   if (count === 0) return [];
@@ -131,17 +149,18 @@ export function buildDueDateSequence(
   const anchor = resolveFirstDueAnchor(repaymentStartDateStr, disbursementDateStr);
   const dates: string[] = [];
   for (let i = 1; i <= count; i++) dates.push(dueDateAtCycle(anchor, i));
-  return dates;
+  return applyMaturityToDueDates(dates, maturityIso);
 }
 
 export function redateSchedules(
   schedules: RepaymentSchedule[],
   repaymentStartDateStr?: string | null,
-  disbursementDateStr?: string | null
+  disbursementDateStr?: string | null,
+  maturityIso?: string | null
 ): RepaymentSchedule[] {
   if (!schedules || schedules.length === 0) return [];
   const dueDates = buildDueDateSequence(
-    repaymentStartDateStr, schedules.length, disbursementDateStr
+    repaymentStartDateStr, schedules.length, disbursementDateStr, maturityIso
   );
   return schedules.map((s, idx) => s.IsPaid
     ? { ...s }
@@ -162,12 +181,16 @@ export function generateSchedule(
   prepaymentPeriod: number = 0,
   prepaymentMode: 'reduce_monthly' | 'shorten_tenor' = 'reduce_monthly',
   rateHistory?: RateAdjustmentHistoryItem[],
-  prefInfo?: { prefRate: number; prefMonths: number; postPrefRate: number }
+  prefInfo?: { prefRate: number; prefMonths: number; postPrefRate: number },
+  maturityIso?: string | null
 ): Partial<RepaymentSchedule>[] {
   const schedules: Partial<RepaymentSchedule>[] = [];
   let balance = loanAmount;
 
-  const dueDates = buildDueDateSequence(repaymentStartDateStr, periods, disbursementDateStr);
+  const dueDates = buildDueDateSequence(
+    repaymentStartDateStr, periods, disbursementDateStr, maturityIso
+  );
+  const totalPeriods = dueDates.length;
 
   const defaultAnnualRate = interestRate > 1 ? interestRate / 100 : interestRate;
 
@@ -189,7 +212,7 @@ export function generateSchedule(
     rateHistory,
   });
 
-  for (let i = 1; i <= periods; i++) {
+  for (let i = 1; i <= totalPeriods; i++) {
     if (balance <= 0) break;
 
     const dueDateStr = dueDates[i - 1];
@@ -202,11 +225,11 @@ export function generateSchedule(
 
     let normalPrincipal = 0;
     if (isBulletPrincipal) {
-      normalPrincipal = (i === periods) ? balance : 0;
+      normalPrincipal = (i === totalPeriods) ? balance : 0;
     } else {
       if (i <= principalGraceMonths) {
         normalPrincipal = 0;
-      } else if (i === periods) {
+      } else if (i === totalPeriods) {
         normalPrincipal = balance;
       } else {
         normalPrincipal = Math.min(balance, defaultMonthlyPrincipal);
@@ -240,7 +263,7 @@ export function generateSchedule(
     const endingBal = Math.max(0, balance - totalPrincipalInPeriod);
 
     if (periodPrepay > 0 && prepaymentMode === 'reduce_monthly' && !isBulletPrincipal) {
-      const remainingPeriods = periods - i;
+      const remainingPeriods = totalPeriods - i;
       if (remainingPeriods > 0 && endingBal > 0) {
         defaultMonthlyPrincipal = roundPrincipalCore(endingBal / remainingPeriods);
       }

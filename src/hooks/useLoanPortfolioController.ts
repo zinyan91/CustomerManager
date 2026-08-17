@@ -10,7 +10,7 @@ import {
   addMonthsToDate, parseKunnTenorMonths,
   generateSchedule, recalculateSchedules, computeOutstandingBalance,
   isBulletPrincipal, redateSchedules, resolveMonthlyPrincipal,
-  getAutoDebtGroupInfo
+  getAutoDebtGroupInfo, maturityDateOf
 } from '../lib/loanMath';
 import {
   getEffectiveActiveRate,
@@ -18,6 +18,7 @@ import {
 } from '../lib/rateResolution';
 import { totalUsableCapacity } from '../lib/collateralMath';
 import { checkKunnAgainstContract, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf } from '../lib/creditContract';
+import { checkKunnTenor } from '../lib/loanProductRules';
 import { useWork } from '../context/WorkContext';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../lib/creditLimit';
 import type { LoanContract, CreditContract, RateAdjustmentHistoryItem } from '../types';
@@ -254,8 +255,13 @@ export function useLoanPortfolioController() {
       matchedCc || { HdtdNumber: rawNo, ContractStartDate: dates?.startDate || null, ContractEndDate: dates?.endDate || null, IsClosed: false }
     );
 
+    const tenorCheck = checkKunnTenor(form.LoanMethod, parseKunnTenorMonths(form.KunnTenor));
+    if (!tenorCheck.ok && tenorCheck.message) {
+      issues.push({ level: 'warn', field: 'KunnTenor', message: tenorCheck.message });
+    }
+
     return { matchedCc, dates, existingKunnCount: existingKunns.length, issues };
-  }, [formHdtdNumber, creditContracts, contracts, form.DisbursementDate, form.KunnDueDate, kunnLoanAmountNum]);
+  }, [formHdtdNumber, creditContracts, contracts, form.DisbursementDate, form.KunnDueDate, form.LoanMethod, form.KunnTenor, kunnLoanAmountNum]);
 
   const isFormMasterHdtdClosed = !!masterHdtdInfo?.matchedCc?.IsClosed;
 
@@ -491,7 +497,9 @@ export function useLoanPortfolioController() {
         isBulletPrincipal(savedContract),
         savedContract.DisbursementDate || undefined,
         savedContract.MonthlyPrincipalAmount || undefined,
-        savedContract.PrincipalGracePeriodMonths || 0
+        savedContract.PrincipalGracePeriodMonths || 0,
+        0, 0, 'reduce_monthly', undefined, undefined,
+        maturityDateOf(savedContract)
       );
 
       const rowsMoi = scheduleRowsForContract(rawGen, savedContract.Id);
@@ -581,7 +589,9 @@ export function useLoanPortfolioController() {
         isBulletPrincipal(selectedContract),
         selectedContract.DisbursementDate || undefined,
         selectedContract.MonthlyPrincipalAmount || undefined,
-        selectedContract.PrincipalGracePeriodMonths || 0
+        selectedContract.PrincipalGracePeriodMonths || 0,
+        0, 0, 'reduce_monthly', undefined, undefined,
+        maturityDateOf(selectedContract)
       );
 
       const rowsMoi = scheduleRowsForContract(rawGen, selectedContract.Id);
@@ -610,7 +620,10 @@ export function useLoanPortfolioController() {
     if (!selectedContract || schedules.length === 0) return;
     setLoading(true);
     try {
-      const redated = redateSchedules(schedules, selectedContract.RepaymentStartDate, selectedContract.DisbursementDate);
+      const redated = redateSchedules(
+        schedules, selectedContract.RepaymentStartDate, selectedContract.DisbursementDate,
+        maturityDateOf(selectedContract)
+      );
       const recalculated = recalculateSchedules(redated, selectedContract);
       await bulkSaveRepaymentSchedulesAPI(recalculated);
       setSchedules(recalculated);

@@ -191,7 +191,7 @@ export function buildStyleSheet(rows: XlsxCell[][]): StyleSheetResult {
 function cellXml(cell: XlsxCell, ref: string, styleIndex: number): string {
   const s = styleIndex > 0 ? ` s="${styleIndex}"` : '';
   if (cell.formula) {
-    const fEsc = escapeXml(cell.formula);
+    const fEsc = escapeXml(cell.formula.replace(/^=/, ''));
     if (cell.numeric) {
       const n = typeof cell.value === 'number' ? cell.value : parseFloat(String(cell.value));
       const v = isFinite(n) ? `<v>${n}</v>` : '';

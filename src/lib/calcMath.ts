@@ -45,7 +45,13 @@ export function diffDays(startDateStr: string, endDateStr: string): number {
   }
 }
 
-export type PrincipalRepayMethod = 'equal_principal' | 'bullet';
+export type PrincipalRepayMethod = 'equal_principal' | 'bullet' | 'equal_installment';
+
+export const REPAY_METHOD_LABEL: Record<PrincipalRepayMethod, string> = {
+  equal_principal: 'Gốc trả đều hàng tháng (dư nợ giảm dần)',
+  bullet: 'Gốc trả cuối kỳ (Bullet)',
+  equal_installment: 'Gốc lãi trả đều mỗi tháng cố định',
+};
 export type PrepaymentMode = 'reduce_monthly' | 'shorten_tenor';
 
 export interface PrepaymentPlanItem {
@@ -145,31 +151,49 @@ export function scheduleDueDate(period: number, params: LoanScheduleParams): str
   return theoKy;
 }
 
+export function annuityInstallment(balance: number, rateAnnual: number, periods: number): number {
+  if (!balance || balance <= 0 || periods <= 0) return 0;
+  return roundPrincipalCore(balance * emiFactor(rateAnnual / 100 / 12, periods), '1k');
+}
+
 export function buildLoanSchedule(params: LoanScheduleParams): LoanScheduleRow[] {
   const { loanAmount, tenorMonths, disbursementDate, repayMethod } = params;
   if (!loanAmount || loanAmount <= 0 || !tenorMonths || tenorMonths < 1 || !disbursementDate) return [];
 
+  const isAnnuity = repayMethod === 'equal_installment';
   const graceRaw = numOrNull(params.principalGraceMonths);
-  const graceMonths = graceRaw === null ? 0 : Math.max(0, Math.min(tenorMonths - 1, Math.trunc(graceRaw)));
+  const graceMonths = isAnnuity || graceRaw === null
+    ? 0
+    : Math.max(0, Math.min(tenorMonths - 1, Math.trunc(graceRaw)));
   const plan = mergePrepayments(params.prepayments ?? []);
+  const annuityRateAnnual = params.promoRateAnnual;
 
   const rows: LoanScheduleRow[] = [];
   let balance = loanAmount;
   let prevDate = disbursementDate;
-  let stepPrincipal = repayMethod === 'bullet'
-    ? 0
-    : roundPrincipalCore(loanAmount / Math.max(1, tenorMonths - graceMonths));
+  let stepPrincipal = repayMethod === 'equal_principal'
+    ? roundPrincipalCore(loanAmount / Math.max(1, tenorMonths - graceMonths))
+    : 0;
+  let installment = isAnnuity ? annuityInstallment(loanAmount, annuityRateAnnual, tenorMonths) : 0;
 
   for (let i = 1; i <= tenorMonths; i++) {
     if (balance <= 0) break;
 
     const dueDate = scheduleDueDate(i, params);
     const days = diffDays(prevDate, dueDate);
-    const rateAnnual = periodRateAnnual(i, params);
+    const rateAnnual = isAnnuity ? annuityRateAnnual : periodRateAnnual(i, params);
+
+    const interest = isAnnuity
+      ? Math.round(balance * (rateAnnual / 100) / 12)
+      : Math.round(balance * (rateAnnual / 100) * (days / 365));
 
     let scheduledPrincipal = 0;
     if (repayMethod === 'bullet') {
       scheduledPrincipal = i === tenorMonths ? balance : 0;
+    } else if (isAnnuity) {
+      scheduledPrincipal = i === tenorMonths
+        ? balance
+        : Math.min(balance, Math.max(0, installment - interest));
     } else if (i <= graceMonths) {
       scheduledPrincipal = 0;
     } else if (i === tenorMonths) {
@@ -185,7 +209,6 @@ export function buildLoanSchedule(params: LoanScheduleParams): LoanScheduleRow[]
     }
 
     const principal = Math.min(balance, scheduledPrincipal + prepayment);
-    const interest = Math.round(balance * (rateAnnual / 100) * (days / 365));
     const endingBalance = Math.max(0, balance - principal);
 
     rows.push({
@@ -206,7 +229,11 @@ export function buildLoanSchedule(params: LoanScheduleParams): LoanScheduleRow[]
     if (prepayment > 0 && planned && planned.mode === 'reduce_monthly' && repayMethod !== 'bullet') {
       const remainingPeriods = tenorMonths - Math.max(i, graceMonths);
       if (remainingPeriods > 0 && endingBalance > 0) {
-        stepPrincipal = roundPrincipalCore(endingBalance / remainingPeriods);
+        if (isAnnuity) {
+          installment = annuityInstallment(endingBalance, annuityRateAnnual, remainingPeriods);
+        } else {
+          stepPrincipal = roundPrincipalCore(endingBalance / remainingPeriods);
+        }
       }
     }
 

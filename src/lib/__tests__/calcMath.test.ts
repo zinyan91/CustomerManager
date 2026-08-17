@@ -287,6 +287,91 @@ describe('buildLoanSchedule', () => {
     expect(rows[0].interest).toBe(Math.round(960_000_000 * 0.095 * 31 / 365));
   });
 
+  describe('gốc lãi trả đều mỗi tháng cố định', () => {
+    const annuity = { ...base, repayMethod: 'equal_installment' as const, tenorMonths: 24 };
+
+    it('BẤT BIẾN: tổng gốc các kỳ bằng số tiền vay', () => {
+      const cases = [
+        annuity,
+        { ...annuity, tenorMonths: 120 },
+        { ...annuity, promoRateAnnual: 0 },
+        { ...annuity, tenorMonths: 60, prepayments: [{ period: 12, amount: 200_000_000, mode: 'reduce_monthly' as const }] },
+        { ...annuity, tenorMonths: 60, prepayments: [{ period: 12, amount: 200_000_000, mode: 'shorten_tenor' as const }] },
+      ];
+      for (const c of cases) {
+        const rows = buildLoanSchedule(c);
+        expect(rows.reduce((a, r) => a + r.principal, 0)).toBe(c.loanAmount);
+      }
+    });
+
+    it('tổng trả mỗi kỳ bằng nhau ở mọi kỳ trừ kỳ cuối', () => {
+      const rows = buildLoanSchedule(annuity);
+      const middle = rows.slice(0, -1).map(r => r.totalPayment);
+      expect(new Set(middle).size).toBe(1);
+    });
+
+    it('lãi tính theo tháng (năm/12), không theo số ngày thực tế', () => {
+      const rows = buildLoanSchedule(annuity);
+      expect(rows[0].interest).toBe(Math.round(960_000_000 * 9.5 / 100 / 12));
+      expect(rows[0].days).toBe(31);
+      expect(rows[9].days).toBe(28);
+      expect(rows[9].interest).toBe(Math.round(rows[9].beginningBalance * 9.5 / 100 / 12));
+    });
+
+    it('gốc tăng dần, lãi giảm dần', () => {
+      const rows = buildLoanSchedule(annuity).slice(0, -1);
+      for (let i = 1; i < rows.length; i++) {
+        expect(rows[i].principal).toBeGreaterThan(rows[i - 1].principal);
+        expect(rows[i].interest).toBeLessThan(rows[i - 1].interest);
+      }
+    });
+
+    it('kỳ cuối quét sạch dư nợ', () => {
+      const rows = buildLoanSchedule(annuity);
+      expect(rows[rows.length - 1].endingBalance).toBe(0);
+    });
+
+    it('bỏ qua ân hạn gốc: kỳ đầu đã trả gốc', () => {
+      const rows = buildLoanSchedule({ ...annuity, principalGraceMonths: 6 });
+      expect(rows[0].principal).toBeGreaterThan(0);
+    });
+
+    it('bỏ qua lãi suất ưu đãi: mọi kỳ một lãi suất', () => {
+      const rows = buildLoanSchedule({
+        ...annuity, promoMonths: 6, baseRateAnnual: 12, marginAnnual: 3,
+      });
+      expect(rows.every(r => r.rateAnnual === 9.5)).toBe(true);
+    });
+
+    it('lãi suất 0%: gốc chia đều, không có lãi', () => {
+      const rows = buildLoanSchedule({ ...annuity, promoRateAnnual: 0, tenorMonths: 12 });
+      expect(rows.every(r => r.interest === 0)).toBe(true);
+      expect(rows.reduce((a, r) => a + r.principal, 0)).toBe(960_000_000);
+    });
+
+    it('trả trước hạn giảm gốc kỳ: số tiền trả đều giảm xuống rồi giữ mức mới', () => {
+      const rows = buildLoanSchedule({
+        ...annuity, tenorMonths: 60,
+        prepayments: [{ period: 12, amount: 200_000_000, mode: 'reduce_monthly' }],
+      });
+      expect(rows.length).toBe(60);
+      const truoc = rows[10].totalPayment;
+      const sau = rows[12].totalPayment;
+      expect(sau).toBeLessThan(truoc);
+      expect(rows.slice(12, -1).every(r => r.totalPayment === sau)).toBe(true);
+    });
+
+    it('trả trước hạn rút ngắn kỳ hạn: giữ mức trả đều, lịch kết thúc sớm', () => {
+      const rows = buildLoanSchedule({
+        ...annuity, tenorMonths: 60,
+        prepayments: [{ period: 12, amount: 200_000_000, mode: 'shorten_tenor' }],
+      });
+      expect(rows.length).toBeLessThan(60);
+      expect(rows[12].totalPayment).toBe(rows[10].totalPayment);
+      expect(rows[rows.length - 1].endingBalance).toBe(0);
+    });
+  });
+
   it('ân hạn gốc: các kỳ trong thời gian ân hạn không trả gốc', () => {
     const rows = buildLoanSchedule({ ...base, tenorMonths: 12, principalGraceMonths: 3 });
     expect(rows.slice(0, 3).every(r => r.principal === 0)).toBe(true);

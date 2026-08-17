@@ -51,6 +51,8 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
 
   const cell = `${TABLE_CELL} whitespace-nowrap`;
   const headCell = `px-[var(--row-px)] py-2 ${TABLE_HEAD} font-semibold whitespace-nowrap`;
+  const stickyHead = 'sticky right-0 z-20 bg-panel-muted border-l border-line';
+  const stickyCell = 'sticky right-0 z-10 border-l border-line';
 
   return (
     <div className="space-y-3" data-density={density}>
@@ -137,22 +139,21 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
           <table className="w-full text-left text-xs border-collapse">
             <thead className="sticky top-0 z-10 bg-panel-muted">
               <tr className="border-b border-line">
-                <th className={`${headCell} w-9`}><span className="sr-only">{t('schedule.selectPeriod')}</span></th>
-                <th className={`${headCell} text-right w-14`}>{t('schedule.period')}</th>
+                <th className={`${headCell} w-20`}>{t('schedule.period')}</th>
                 <th className={headCell}>{t('schedule.status')}</th>
                 <th className={headCell}>{t('schedule.dueDate')}</th>
                 <th className={`${headCell} text-right`}>{t('schedule.overdueDays')}</th>
                 <th className={`${headCell} text-right`}>{t('schedule.due')}</th>
                 <th className={`${headCell} text-right`}>{t('schedule.unpaid')}</th>
                 <th className={headCell}>{t('schedule.paymentDate')}</th>
-                <th className={`${headCell} text-right`}>{t('schedule.actions')}</th>
+                <th className={`${headCell} text-right ${stickyHead}`}>{t('schedule.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {!selectedContract ? (
-                <tr><td colSpan={9} className="text-center py-12 text-ink-faint">{t('schedule.emptyNoContract')}</td></tr>
+                <tr><td colSpan={8} className="text-center py-12 text-ink-faint">{t('schedule.emptyNoContract')}</td></tr>
               ) : schedules.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-12 text-ink-faint">
+                <tr><td colSpan={8} className="text-center py-12 text-ink-faint">
                   {t('schedule.emptyNoSchedule')}
                 </td></tr>
               ) : rows.map(({ s, o }) => {
@@ -171,18 +172,17 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                       isSelectedRow ? 'bg-accent-soft' : 'hover:bg-panel-muted'
                     }`}
                   >
-                    <td className={`${cell} text-center`} onClick={(e) => e.stopPropagation()}>
-                      <input
-                        type="radio"
-                        name="selectedSchedulePeriod"
-                        checked={isSelectedRow}
-                        onChange={() => setSelectedScheduleId(s.Id)}
-                        aria-label={`${t('schedule.viewPeriod')} ${s.PeriodNumber}`}
-                        className="w-3.5 h-3.5 accent-accent cursor-pointer align-middle"
-                      />
-                    </td>
-                    <td className={`${cell} text-right font-mono font-semibold text-ink`}>
-                      <span className="inline-flex items-center gap-1">
+                    <td className={`${cell} font-mono font-semibold text-ink`}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          name="selectedSchedulePeriod"
+                          checked={isSelectedRow}
+                          onChange={() => setSelectedScheduleId(s.Id)}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`${t('schedule.viewPeriod')} ${s.PeriodNumber}`}
+                          className="w-3.5 h-3.5 accent-accent cursor-pointer align-middle"
+                        />
                         <span>{s.PeriodNumber}</span>
                         {s.PeriodNumber === schedules.length && isBulletPrincipal(selectedContract) && (
                           <span className="px-1 py-0.2 rounded text-[9px] font-sans font-bold bg-accent-soft text-accent border border-accent/30" title="Kỳ đáo hạn / Tất toán gốc KUNN">
@@ -219,7 +219,10 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                     <td className={`${cell} font-mono ${s.PaymentDate ? 'text-ink-muted' : 'text-ink-faint'}`}>
                       {s.PaymentDate ? fmtDate(s.PaymentDate) : '–'}
                     </td>
-                    <td className={`${cell} text-right`} onClick={(e) => e.stopPropagation()}>
+                    <td
+                      className={`${cell} text-right ${stickyCell} ${isSelectedRow ? 'bg-accent-soft' : 'bg-panel'}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <button
                         type="button"
                         onClick={(e) => {
@@ -239,7 +242,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
             {schedules.length > 0 && (
               <tfoot className="sticky bottom-0 bg-panel-muted">
                 <tr className="border-t border-line-strong">
-                  <td className={`${cell} ${TABLE_HEAD} font-semibold`} colSpan={5}>
+                  <td className={`${cell} ${TABLE_HEAD} font-semibold`} colSpan={4}>
                     {t('schedule.total')}
                   </td>
                   <td className={`${cell} text-right font-mono font-bold text-ink`}>
@@ -248,7 +251,8 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                   <td className={`${cell} text-right font-mono font-bold ${grandTotal.unpaid > 0 ? 'text-neg' : 'text-ink-faint'}`}>
                     {fmtNumber(grandTotal.unpaid)}
                   </td>
-                  <td colSpan={2}></td>
+                  <td></td>
+                  <td className={`${stickyCell} bg-panel-muted`}></td>
                 </tr>
               </tfoot>
             )}

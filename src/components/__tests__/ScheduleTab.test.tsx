@@ -113,3 +113,70 @@ describe('ScheduleTab dựng được lên', () => {
     expect(loiRender).toEqual([]);
   });
 });
+
+describe('cột Ghi nhận luôn với tới được, không cần kéo ngang', () => {
+  it('ô Thao tác dán bên phải ở cả đầu bảng, thân bảng và chân bảng', () => {
+    dungLen();
+    const table = document.querySelector('table')!;
+
+    const th = [...table.querySelectorAll('thead th')].pop()!;
+    expect(th.className).toContain('sticky');
+    expect(th.className).toContain('right-0');
+
+    const td = [...table.querySelectorAll('tbody tr')][0].querySelector('td:last-child')!;
+    expect(td.className).toContain('sticky');
+    expect(td.className).toContain('right-0');
+
+    const tfootCell = table.querySelector('tfoot tr')!.querySelector('td:last-child')!;
+    expect(tfootCell.className).toContain('sticky');
+  });
+
+  it('ô dán phải có nền đặc để dòng cuộn qua không lộ ra dưới nút', () => {
+    dungLen();
+    const table = document.querySelector('table')!;
+    const cells = [...table.querySelectorAll('tbody tr')].map(r => r.querySelector('td:last-child')!);
+    for (const c of cells) {
+      expect(c.className).toMatch(/bg-(panel|accent-soft)/);
+    }
+  });
+
+  it('bảng còn 8 cột — ô chọn kỳ gộp vào cột Kỳ, không chiếm cột riêng', () => {
+    dungLen();
+    const table = document.querySelector('table')!;
+    expect(table.querySelectorAll('thead th')).toHaveLength(8);
+    const cot1 = table.querySelector('tbody tr td:first-child')!;
+    expect(cot1.querySelector('input[type=radio]')).toBeTruthy();
+    expect(cot1.textContent).toContain('1');
+  });
+
+  it('vẫn chọn được kỳ bằng ô radio sau khi gộp cột', async () => {
+    const user = userEvent.setup();
+    dungLen();
+    const radios = screen.getAllByRole('radio');
+    expect(radios).toHaveLength(3);
+    await user.click(radios[1]);
+    expect(document.querySelector('.num-lead')!.textContent).toBe('2');
+  });
+
+  it('mỗi dòng có đúng một nút Ghi nhận và bấm được', async () => {
+    const user = userEvent.setup();
+    const goi: number[] = [];
+    render(
+      <ThemeProvider>
+        <LanguageProvider>
+          <ScheduleTab
+            contracts={[kunn]}
+            selectedContract={kunn}
+            handleSelectContract={() => {}}
+            schedules={lich}
+            openPaymentModal={(s: RepaymentSchedule) => goi.push(s.PeriodNumber)}
+          />
+        </LanguageProvider>
+      </ThemeProvider>
+    );
+    const nut = screen.getAllByRole('button', { name: 'Ghi nhận' });
+    expect(nut).toHaveLength(3);
+    await user.click(nut[2]);
+    expect(goi).toEqual([3]);
+  });
+});

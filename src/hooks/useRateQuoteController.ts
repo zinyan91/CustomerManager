@@ -43,7 +43,7 @@ export function useRateQuoteController() {
 
   const {
     loading, loadError, reload: loadAll,
-    setTiers,
+    setTiers, programs,
     program, programTiers, programPrepayFees, programFbeCodes,
     programAuthorities, programFeeOptions, programConditions,
     depositChannels, depositRows, hasFeeContent,
@@ -207,6 +207,7 @@ export function useRateQuoteController() {
     loading,
     loadError,
     loadAll,
+    programs,
     program,
     programTiers,
     programPrepayFees,

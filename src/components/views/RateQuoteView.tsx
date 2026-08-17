@@ -2,6 +2,7 @@ import React from 'react';
 import { UI } from '../../lib/uiClasses';
 import { RateTierTable } from '../rate/RateTierTable';
 import { RateReferenceTables } from '../rate/RateReferenceTables';
+import { RateProgramAdminPanel } from '../rate/RateProgramAdminPanel';
 import {
   Percent, TrendingDown, PiggyBank, Loader2, AlertTriangle, ShieldAlert,
   FileText, Save, RefreshCw, Printer, Image as ImageIcon,
@@ -51,6 +52,7 @@ export const RateQuoteView: React.FC = () => {
     loading,
     loadError,
     loadAll,
+    programs,
     program,
     programPrepayFees,
     programFbeCodes,
@@ -135,8 +137,22 @@ export const RateQuoteView: React.FC = () => {
       {!program && !loadError && (
         <div className="rounded-lg border border-warn/30 bg-warn-soft p-4 text-xs font-bold text-warn">
           Không có chương trình {KIND_LABELS[kind].toLowerCase()} nào hiệu lực tại ngày {fmtDate(onDate)}.
-          Admin cần nhập chương trình cho kỳ này trước khi chào lãi suất.
+          {isAdmin
+            ? ' Gia hạn kỳ cũ hoặc nhân bản sang kỳ mới ở khối quản trị bên dưới.'
+            : ' Admin cần nhập chương trình cho kỳ này trước khi chào lãi suất.'}
         </div>
+      )}
+
+      {isAdmin && !loadError && (
+        <RateProgramAdminPanel
+          cardBg={cardBg}
+          labelCls={labelCls}
+          inputCls={inputCls}
+          programs={programs}
+          kind={kind}
+          activeProgram={program}
+          reload={loadAll}
+        />
       )}
 
       {program && (

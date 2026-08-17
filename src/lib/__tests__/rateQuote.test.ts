@@ -10,6 +10,8 @@ import {
   hasBlockingWarning,
   buildDepositRateRows,
   depositChannelsPresent,
+  findOverlappingPrograms,
+  checkProgramPeriod,
 } from '../rateQuote';
 import type { RateProgram, RateProgramTier, RateProgramPrepaymentFee } from '../rateQuote';
 
@@ -356,5 +358,80 @@ describe('buildDepositRateRows — gộp bảng huy động theo cột kênh', (
     expect(depositChannelsPresent([
       t({ Channel: 'quay' }), t({ Channel: 'ftp' }),
     ])).toEqual(['quay']);
+  });
+});
+
+describe('checkProgramPeriod — chặn hai chương trình cùng loại chồng lấn ngày', () => {
+  const pool = [shortTerm, previous, unverifiedTdh];
+
+  it('khoảng ngày hợp lệ, không chồng lấn thì cho qua', () => {
+    const r = checkProgramPeriod(pool, {
+      kind: 'cho_vay_ngan_han', effectiveFrom: '2026-10-01', effectiveTo: '2026-12-31',
+    });
+    expect(r.ok).toBe(true);
+    expect(r.message).toBe('');
+  });
+
+  it('thiếu ngày bắt đầu thì chặn', () => {
+    expect(checkProgramPeriod(pool, {
+      kind: 'cho_vay_ngan_han', effectiveFrom: '', effectiveTo: '2026-12-31',
+    }).ok).toBe(false);
+  });
+
+  it('ngày hết hiệu lực trước ngày bắt đầu thì chặn', () => {
+    const r = checkProgramPeriod(pool, {
+      kind: 'cho_vay_ngan_han', effectiveFrom: '2026-10-01', effectiveTo: '2026-09-30',
+    });
+    expect(r.ok).toBe(false);
+    expect(r.message).toContain('trước ngày bắt đầu');
+  });
+
+  it('chồng lấn với chương trình cùng loại thì chặn và nêu số văn bản', () => {
+    const r = checkProgramPeriod(pool, {
+      kind: 'cho_vay_ngan_han', effectiveFrom: '2026-09-15', effectiveTo: '2026-12-31',
+    });
+    expect(r.ok).toBe(false);
+    expect(r.message).toContain('2274/2026/TB-BĐH');
+  });
+
+  it('chồng lấn với chương trình KHÁC loại thì không sao', () => {
+    const r = checkProgramPeriod(pool, {
+      kind: 'huy_dong', effectiveFrom: '2026-07-22', effectiveTo: '2026-12-31',
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it('bỏ qua chính nó khi đang sửa ngày của chương trình đang có', () => {
+    const period = {
+      kind: 'cho_vay_ngan_han' as const,
+      effectiveFrom: '2026-07-28',
+      effectiveTo: '2026-12-31',
+    };
+    expect(checkProgramPeriod(pool, period).ok).toBe(false);
+    expect(checkProgramPeriod(pool, { ...period, id: 1 }).ok).toBe(true);
+  });
+
+  it('kề nhau không tính là chồng lấn', () => {
+    expect(checkProgramPeriod(pool, {
+      kind: 'cho_vay_ngan_han', effectiveFrom: '2026-10-01', effectiveTo: null,
+    }).ok).toBe(true);
+    expect(checkProgramPeriod(pool, {
+      kind: 'cho_vay_ngan_han', effectiveFrom: '2026-09-30', effectiveTo: null,
+    }).ok).toBe(false);
+  });
+
+  it('chương trình để ngỏ ngày kết thúc thì chặn mọi thứ sau nó', () => {
+    const r = checkProgramPeriod(pool, {
+      kind: 'cho_vay_trung_dai_han', effectiveFrom: '2030-01-01', effectiveTo: null,
+    });
+    expect(r.ok).toBe(false);
+    expect(r.message).toContain('TAM-TDH-2026');
+  });
+
+  it('findOverlappingPrograms trả về đúng danh sách chương trình vướng', () => {
+    const found = findOverlappingPrograms(pool, {
+      kind: 'cho_vay_ngan_han', effectiveFrom: '2026-06-01', effectiveTo: '2026-12-31',
+    });
+    expect(found.map(p => p.Id).sort()).toEqual([1, 2]);
   });
 });

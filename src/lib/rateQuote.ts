@@ -124,6 +124,65 @@ export function findActiveProgram(
   );
 }
 
+export interface ProgramPeriod {
+  id?: number | null;
+  kind: RateProgramKind;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+}
+
+function fmtVn(d?: string | null): string {
+  const p = (d || '').split('-');
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : (d || 'không giới hạn');
+}
+
+export function findOverlappingPrograms(
+  programs: RateProgram[],
+  period: ProgramPeriod
+): RateProgram[] {
+  const from = (period.effectiveFrom || '').trim();
+  if (!from) return [];
+  const to = (period.effectiveTo || '').trim() || null;
+
+  return (programs || []).filter(p => {
+    if (p.Kind !== period.kind) return false;
+    if (period.id !== null && period.id !== undefined && p.Id === period.id) return false;
+
+    const otherTo = (p.EffectiveTo || '').trim() || null;
+    const startsBeforeOtherEnds = otherTo === null || from <= otherTo;
+    const otherStartsBeforeThisEnds = to === null || p.EffectiveFrom <= to;
+    return startsBeforeOtherEnds && otherStartsBeforeThisEnds;
+  });
+}
+
+export function checkProgramPeriod(
+  programs: RateProgram[],
+  period: ProgramPeriod
+): { ok: boolean; message: string } {
+  const from = (period.effectiveFrom || '').trim();
+  const to = (period.effectiveTo || '').trim() || null;
+
+  if (!from) {
+    return { ok: false, message: 'Phải khai ngày bắt đầu hiệu lực.' };
+  }
+  if (to !== null && to < from) {
+    return { ok: false, message: 'Ngày hết hiệu lực không được trước ngày bắt đầu.' };
+  }
+
+  const clash = findOverlappingPrograms(programs, period);
+  if (clash.length > 0) {
+    const names = clash
+      .map(p => `${p.DocumentNumber} (${fmtVn(p.EffectiveFrom)} → ${fmtVn(p.EffectiveTo)})`)
+      .join('; ');
+    return {
+      ok: false,
+      message: `Chồng lấn với chương trình cùng loại: ${names}. Đóng chương trình đó lại trước khi mở kỳ mới.`,
+    };
+  }
+
+  return { ok: true, message: '' };
+}
+
 export function isProgramExpired(program: RateProgram | null, onDate: string): boolean {
   if (!program || !onDate) return false;
   return !!program.EffectiveTo && program.EffectiveTo < onDate;

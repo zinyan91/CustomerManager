@@ -90,6 +90,29 @@ export async function updateRateProgramAPI(
   return data[0];
 }
 
+export async function cloneRateProgramAPI(params: {
+  sourceId: number;
+  documentNumber: string;
+  name: string;
+  documentDate: string | null;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+}): Promise<number> {
+  const { data, error } = await supabase.rpc('clone_rate_program', {
+    p_source_id: params.sourceId,
+    p_document_number: params.documentNumber,
+    p_name: params.name,
+    p_document_date: params.documentDate,
+    p_effective_from: params.effectiveFrom,
+    p_effective_to: params.effectiveTo,
+  });
+  if (error) throw new Error(error.message || 'Không nhân bản được chương trình.');
+  if (typeof data !== 'number') {
+    throw new Error('Không nhân bản được chương trình. Chỉ admin có quyền.');
+  }
+  return data;
+}
+
 export async function fetchRateProgramFeeOptionsAPI(programIds: number[]): Promise<RateProgramFeeOption[]> {
   if (!programIds || programIds.length === 0) return [];
   const { data, error } = await supabase

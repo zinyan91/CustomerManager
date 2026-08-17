@@ -3,6 +3,8 @@
 > **Phiên bản hệ thống:** v2.4.0 (Production Ready)  
 > **Phạm vi đánh giá:** Giao diện người dùng (UI/UX), Kiến trúc Code Frontend (React & TypeScript), Cơ sở dữ liệu (PostgreSQL / Supabase), Thiết kế API, Độ bao phủ Kiểm thử (Automated Tests), và Giá trị Sản phẩm Nghiệp vụ Ngân hàng (Product Management).
 
+> ⚠️ **Số liệu trong báo cáo này chốt ngày 15/08/2026 và đã cũ.** Tính tới 16/08: test 1.373 → **1.466**, và mục 4 (Cơ sở dữ liệu) đã đổi đáng kể — ngày hiệu lực HĐTD về một nguồn, cột `HdtdDueDate` đã xoá, lịch trả nợ hết bịa khoá chính. Trạng thái hiện hành xem `PROGRESS.md` mục 0.
+
 ---
 
 ## MỤC LỤC

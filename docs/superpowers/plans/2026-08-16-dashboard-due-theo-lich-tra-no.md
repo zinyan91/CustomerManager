@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Trạng thái: ĐÃ THỰC HIỆN XONG ngày 16/08/2026.** Kèm một thay đổi ngoài kế hoạch: sau khi đo lại thấy nạp đủ 6.705 dòng làm dashboard chậm 8,8 giây, nên chuyển sang lọc `IsPaid` và `DueDate` ngay ở máy chủ. Bộ đếm "hợp đồng chưa có lịch" bị bỏ vì lọc ở máy chủ không phân biệt được nữa.
+
 **Goal:** Panel "đóng kỳ due của tháng" trên dashboard ngừng suy ngày đến hạn từ ngày kỷ niệm hợp đồng, chuyển sang đọc kỳ chưa trả sớm nhất trong `RepaymentSchedules`.
 
 **Architecture:** Một hàm thuần trong `src/lib/duePeriod.ts` quy một mảng kỳ trả nợ về một trạng thái (`overdue` / `upcoming` / `none`). Một hàm API mới nạp lịch trả nợ của nhiều hợp đồng cùng lúc, có phân trang. `DashboardView` gọi hai thứ đó thay cho `monthlyDueInfo`.
@@ -54,7 +56,7 @@
   - `function contractDueState(periods: DuePeriodRow[], todayIso?: string): ContractDueState`
   - `interface ContractDueState { kind: 'overdue' | 'upcoming' | 'none'; period: DuePeriodRow | null; dueDateIso: string | null; daysLeft: number | null }`
 
-- [ ] **Bước 1: Viết test trước**
+- [x] **Bước 1: Viết test trước**
 
 Tạo `src/lib/__tests__/duePeriod.test.ts`:
 
@@ -176,13 +178,13 @@ describe('contractDueState', () => {
 });
 ```
 
-- [ ] **Bước 2: Chạy test để chắc chắn nó đỏ**
+- [x] **Bước 2: Chạy test để chắc chắn nó đỏ**
 
 Chạy: `npx vitest run src/lib/__tests__/duePeriod.test.ts`
 
 Kỳ vọng: FAIL — không tìm thấy module `../duePeriod`.
 
-- [ ] **Bước 3: Viết bản cài đặt tối thiểu**
+- [x] **Bước 3: Viết bản cài đặt tối thiểu**
 
 Tạo `src/lib/duePeriod.ts`:
 
@@ -240,13 +242,13 @@ export function contractDueState(
 }
 ```
 
-- [ ] **Bước 4: Chạy test để chắc chắn nó xanh**
+- [x] **Bước 4: Chạy test để chắc chắn nó xanh**
 
 Chạy: `npx vitest run src/lib/__tests__/duePeriod.test.ts`
 
 Kỳ vọng: PASS, 13 test.
 
-- [ ] **Bước 5: Commit**
+- [x] **Bước 5: Commit**
 
 ```bash
 git add src/lib/duePeriod.ts src/lib/__tests__/duePeriod.test.ts
@@ -270,7 +272,7 @@ git commit -m "feat(dashboard): hàm thuần quy hợp đồng về trạng thá
 
 Hàm này phải phân trang. Supabase trả tối đa 1000 dòng mỗi truy vấn, dữ liệu thật đang có 6.705 dòng lịch của hợp đồng chưa tất toán — không phân trang là mất dữ liệu âm thầm, hợp đồng sẽ hiện sai thành "chưa có lịch".
 
-- [ ] **Bước 1: Viết test trước cho `chunk`**
+- [x] **Bước 1: Viết test trước cho `chunk`**
 
 Tạo `src/lib/__tests__/chunk.test.ts`:
 
@@ -298,13 +300,13 @@ describe('chunk', () => {
 });
 ```
 
-- [ ] **Bước 2: Chạy test để chắc chắn nó đỏ**
+- [x] **Bước 2: Chạy test để chắc chắn nó đỏ**
 
 Chạy: `npx vitest run src/lib/__tests__/chunk.test.ts`
 
 Kỳ vọng: FAIL — `chunk` không được export từ `../utils`.
 
-- [ ] **Bước 3: Thêm `chunk` vào `src/lib/utils.ts`**
+- [x] **Bước 3: Thêm `chunk` vào `src/lib/utils.ts`**
 
 Thêm vào cuối tệp:
 
@@ -320,13 +322,13 @@ export function chunk<T>(items: T[], size: number): T[][] {
 }
 ```
 
-- [ ] **Bước 4: Chạy test để chắc chắn nó xanh**
+- [x] **Bước 4: Chạy test để chắc chắn nó xanh**
 
 Chạy: `npx vitest run src/lib/__tests__/chunk.test.ts`
 
 Kỳ vọng: PASS, 4 test.
 
-- [ ] **Bước 5: Thêm hàm API**
+- [x] **Bước 5: Thêm hàm API**
 
 Trong `src/lib/api/loanContractApi.ts`, thêm import ở đầu tệp:
 
@@ -376,13 +378,13 @@ export async function fetchSchedulesForContractsAPI(
 
 Hàm này **ném lỗi** thay vì trả mảng rỗng như `fetchRepaymentSchedulesAPI` bên trên. Trả mảng rỗng khi hỏng sẽ khiến dashboard hiểu nhầm là mọi hợp đồng đều chưa có lịch — báo sai mà không ai biết. Task 4 bắt lỗi này và hiện ra cho người dùng.
 
-- [ ] **Bước 6: Kiểm tra biên dịch**
+- [x] **Bước 6: Kiểm tra biên dịch**
 
 Chạy: `npm run build`
 
 Kỳ vọng: build sạch, không lỗi kiểu.
 
-- [ ] **Bước 7: Commit**
+- [x] **Bước 7: Commit**
 
 ```bash
 git add src/lib/utils.ts src/lib/__tests__/chunk.test.ts src/lib/api/loanContractApi.ts
@@ -401,7 +403,7 @@ git commit -m "feat(api): nạp lịch trả nợ nhiều hợp đồng, chia l�
 
 Panel hiện không có chỗ nào để nói "N hợp đồng chưa có lịch trả nợ" hay "không nạp được lịch". Không có chỗ đó thì hai tình huống này biến mất không dấu vết.
 
-- [ ] **Bước 1: Thêm prop vào interface**
+- [x] **Bước 1: Thêm prop vào interface**
 
 Trong `src/components/dashboard/DueSectionPanel.tsx`, thêm vào `DueSectionPanelProps<T>` (sau `emptyText`):
 
@@ -409,11 +411,11 @@ Trong `src/components/dashboard/DueSectionPanel.tsx`, thêm vào `DueSectionPane
   notice?: React.ReactNode;
 ```
 
-- [ ] **Bước 2: Nhận prop trong tham số hàm**
+- [x] **Bước 2: Nhận prop trong tham số hàm**
 
 Thêm `notice,` vào danh sách tham số được rã ra của `DueSectionPanel`.
 
-- [ ] **Bước 3: Hiển thị**
+- [x] **Bước 3: Hiển thị**
 
 Ngay sau khối `</div>` đóng thanh tiêu đề (khối `border-b border-line pb-2`), thêm:
 
@@ -423,13 +425,13 @@ Ngay sau khối `</div>` đóng thanh tiêu đề (khối `border-b border-line 
       )}
 ```
 
-- [ ] **Bước 4: Kiểm tra không làm hỏng panel đang có**
+- [x] **Bước 4: Kiểm tra không làm hỏng panel đang có**
 
 Chạy: `npm run build && npx vitest run src/components/__tests__`
 
 Kỳ vọng: build sạch, mọi test component đang có vẫn xanh. Ba panel KUNN / HĐTD / TSBĐ không truyền `notice` nên không đổi gì.
 
-- [ ] **Bước 5: Commit**
+- [x] **Bước 5: Commit**
 
 ```bash
 git add src/components/dashboard/DueSectionPanel.tsx
@@ -447,7 +449,7 @@ git commit -m "feat(dashboard): chỗ hiện ghi chú trên panel danh sách đ�
 - Consumes: `contractDueState`, `DuePeriodRow` (Task 1); `fetchSchedulesForContractsAPI` (Task 2); prop `notice` (Task 3); `filterByDue`, `countByDue` có sẵn trong `src/lib/dueList.ts`.
 - Produces: không có gì cho task sau.
 
-- [ ] **Bước 1: Thêm import và state**
+- [x] **Bước 1: Thêm import và state**
 
 Thêm vào cụm import:
 
@@ -466,7 +468,7 @@ Thêm state cạnh các state đang có (khoảng dòng 29):
   const [dueMonthFilter, setDueMonthFilter] = useState<DueFilter>('all');
 ```
 
-- [ ] **Bước 2: Nạp lịch trả nợ trong `fetchDashboardData`**
+- [x] **Bước 2: Nạp lịch trả nợ trong `fetchDashboardData`**
 
 Trong `fetchDashboardData`, sau `setCardContracts(resCard);`, thêm:
 
@@ -486,7 +488,7 @@ Trong `fetchDashboardData`, sau `setCardContracts(resCard);`, thêm:
 
 Đặt trong `try` riêng để lịch trả nợ hỏng không kéo sập cả dashboard, nhưng vẫn báo ra chứ không im lặng.
 
-- [ ] **Bước 3: Gom lịch theo hợp đồng**
+- [x] **Bước 3: Gom lịch theo hợp đồng**
 
 Thêm cạnh `customerMap` (khoảng dòng 56):
 
@@ -502,7 +504,7 @@ Thêm cạnh `customerMap` (khoảng dòng 56):
   }, [duePeriods]);
 ```
 
-- [ ] **Bước 4: Thay cách dựng `dueInMonthList`**
+- [x] **Bước 4: Thay cách dựng `dueInMonthList`**
 
 Trong khối `useMemo` dựng bốn danh sách, thay đoạn `monthList` hiện tại bằng:
 
@@ -526,7 +528,7 @@ Thêm `thieuLich` vào giá trị trả về của `useMemo` (cạnh `dueInMonth
 
 Thêm `hopDongThieuLich` vào danh sách rã ra ở đầu `useMemo`, và thêm `periodsByContract` vào mảng phụ thuộc của `useMemo` này.
 
-- [ ] **Bước 5: Đổi định nghĩa cột**
+- [x] **Bước 5: Đổi định nghĩa cột**
 
 Thay `dueInMonthColumns` bằng:
 
@@ -551,7 +553,7 @@ Thay `dueInMonthColumns` bằng:
   ];
 ```
 
-- [ ] **Bước 6: Lọc và đếm**
+- [x] **Bước 6: Lọc và đếm**
 
 Cạnh `kunnRows` / `kunnCount`, thêm:
 
@@ -560,7 +562,7 @@ Cạnh `kunnRows` / `kunnCount`, thêm:
   const dueMonthCount = countByDue(dueInMonthList, i => i.state.daysLeft);
 ```
 
-- [ ] **Bước 7: Cập nhật panel**
+- [x] **Bước 7: Cập nhật panel**
 
 Thay khối `alertConsoleTab === 'due_month'` bằng:
 
@@ -591,7 +593,7 @@ Thay khối `alertConsoleTab === 'due_month'` bằng:
         )}
 ```
 
-- [ ] **Bước 8: Chạy đủ test và build**
+- [x] **Bước 8: Chạy đủ test và build**
 
 Chạy: `npm test && npm run build && npm run lint`
 
@@ -599,7 +601,7 @@ Kỳ vọng: mọi test xanh, build sạch, lint 0 error.
 
 Nếu có test nào đỏ vì bám vào cột cũ của panel due, sửa test theo giao diện mới — đừng sửa ngược code cho khớp test cũ.
 
-- [ ] **Bước 9: Commit**
+- [x] **Bước 9: Commit**
 
 ```bash
 git add src/components/views/DashboardView.tsx
@@ -614,33 +616,33 @@ git commit -m "fix(dashboard): panel due đọc kỳ chưa trả thật thay vì
 
 Test đơn vị chỉ chứng minh hàm đúng. Nó không chứng minh dashboard hiển thị đúng, không chứng minh truy vấn nạp đủ 6.705 dòng, và không chứng minh RLS cho banker thấy đúng phần của mình.
 
-- [ ] **Bước 1: Mở dashboard**
+- [x] **Bước 1: Mở dashboard**
 
 Dùng `preview_start` với cấu hình dev server của dự án, mở tab dashboard.
 
-- [ ] **Bước 2: Kiểm tra không có lỗi**
+- [x] **Bước 2: Kiểm tra không có lỗi**
 
 Đọc console và network của trang. Kỳ vọng: không có lỗi đỏ, các truy vấn `RepaymentSchedules` trả 200.
 
-- [ ] **Bước 3: Đối chiếu ca gốc**
+- [x] **Bước 3: Đối chiếu ca gốc**
 
 Tìm khách hàng **Đặng Bá Nhân** trên panel số 1.
 
 Kỳ vọng: **không xuất hiện** ở panel due (đã đóng kỳ tháng 8). Vẫn xuất hiện ở panel KUNN với hạn 25/08/2026 và panel HĐTD với trạng thái đã hết hạn từ 24/07/2026.
 
-- [ ] **Bước 4: Kiểm tra số dòng nạp về**
+- [x] **Bước 4: Kiểm tra số dòng nạp về**
 
 Trong console trang: `performance.getEntriesByType('resource').filter(r => r.name.includes('RepaymentSchedules')).length`
 
 Kỳ vọng: có ít nhất 7 lượt gọi phân trang (6.705 dòng ÷ 1000). Nếu chỉ có 1 lượt, phân trang không chạy — quay lại Task 2.
 
-- [ ] **Bước 5: Thử bộ lọc**
+- [x] **Bước 5: Thử bộ lọc**
 
 Bấm lần lượt `Tất cả` / `Sắp đến hạn` / `Đã hết hạn`. Kỳ vọng: số dòng đổi theo, tổng hai nhóm bằng nhóm `Tất cả`.
 
-- [ ] **Bước 6: Chụp màn hình panel due** để đính kèm khi báo cáo xong việc.
+- [x] **Bước 6: Chụp màn hình panel due** để đính kèm khi báo cáo xong việc.
 
-- [ ] **Bước 7: Cập nhật `PROGRESS.md`** theo quy trình sửa logic tiền của dự án, rồi commit.
+- [x] **Bước 7: Cập nhật `PROGRESS.md`** theo quy trình sửa logic tiền của dự án, rồi commit.
 
 ```bash
 git add PROGRESS.md

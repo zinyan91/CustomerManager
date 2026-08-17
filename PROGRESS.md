@@ -1,12 +1,39 @@
 # Tiến độ công việc
 
-Cập nhật: 16/08/2026
+Cập nhật: 16/08/2026 — bàn giao cuối ngày
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
 **Cách đọc tài liệu này.** Bảng chỉ ghi **một dòng** mỗi việc. Việc nào cần kể dài
 thì có mục riêng ở phần [Ghi chú chi tiết](#ghi-chú-chi-tiết), đánh số §1, §2…
 và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó là thứ cần biết trước.
+
+---
+
+# 0. Bàn giao — 16/08/2026
+
+Phiên làm việc 16/08 đóng lại với **16 commit** trên `main`, từ `e218ffa` tới `e43b29f`. Cây làm việc sạch, đồng bộ với remote. Test **246 → 1.466**, build và lint sạch.
+
+**Ba việc lớn đã xong:**
+
+| Việc | Kết quả kiểm chứng |
+| :--- | :--- |
+| Panel due dashboard đọc lịch trả nợ thật | Hết báo quá hạn oan cho khách đã đóng tiền. Thời gian tải **8,8 giây → 1,25 giây** sau khi lọc ở máy chủ |
+| Lịch trả nợ thôi hỏng khi đổi kỳ hạn | Khoá chính do CSDL cấp; đổi 5→6 tháng giữ nguyên dấu đã thu; kỳ dư đã thu hoặc kỳ trùng thì chặn. Diễn lại đúng kịch bản gốc trên dữ liệu thật |
+| Giấy cam kết BM04 xuất thành file riêng | 8 đoạn khớp bản gốc từng chữ và mốc tab, logo trùng md5 |
+
+Kèm theo: ngày hiệu lực HĐTD về một nguồn, 13 token màu đạt WCAG AA có test khoá, màn đăng nhập hết lạc điệu, thẻ KPI thôi gán nghĩa màu sai.
+
+**Ba việc chặn đường, cần người có thẩm quyền nghiệp vụ quyết:**
+
+1. **HĐTD `9632128` chưa có ngày hiệu lực** — đang chặn việc xoá hai cột bản sao ngày HĐTD khỏi KUNN
+2. **Lớp song ngữ** — mới phủ khoảng 5%, công tắc đang tắt; cần trả lời "ai đọc bản tiếng Anh" trước khi làm tiếp hay gỡ bỏ
+3. Ba mục cũ ở phần *Chặn đường* bên dưới vẫn nguyên, chưa đụng tới trong phiên này
+
+**Hai điều tôi làm sai trong phiên, ghi lại để người sau tránh:**
+
+- Đo **số dòng** rồi kết luận "nhẹ" mà không đo **thời gian truy vấn** — làm dashboard chậm gấp 7 lần, chỉ phát hiện vì chủ dự án thấy chậm
+- Gọi HĐTD `9647376` là dữ liệu bất thường trong khi đó là nghiệp vụ bình thường (đáo KUNN trong ngày cuối hiệu lực). Luật đã ghi vào skill `tin-dung`
 
 ---
 
@@ -27,6 +54,8 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 | ⚠️ | Thu thừa 197.945đ của TRẦN THỊ KIM CHI | Áp chung quyết định "chưa xử lý, chỉ báo cáo" như nhóm NGÔ NHỊ ĐẠT, hay xử riêng |
 | ⚠️ | Phạm vi miễn phạt của `PrincipalPenaltyMultiplier = 0` | Đang hiểu là **chỉ miễn phạt nợ gốc**; lãi phạt chậm trả lãi 10%/năm vẫn tính. Có test khoá. Nghiệp vụ hiểu khác thì báo |
 | ⚠️ | Hướng làm tròn gốc mỗi kỳ | `roundPrincipalCore` luôn làm tròn **lên** (`Math.ceil`). Chưa đo được core bank có làm tròn xuống ở đâu không. Xem §4 |
+| ⚠️ | HĐTD `2002/HĐTD/9632128` chưa có ngày hiệu lực | Cả `ContractStartDate` lẫn `ContractEndDate` đều trống, trong khi KUNN con đã giải ngân 06/11/2025, đáo hạn 06/05/2026, chưa tất toán, mức cấp 1,6 tỷ **đã dùng hết**. Khách NGUYỄN ĐĂNG TRƯỜNG, CIF 005306795. Cần tra tờ trình lấy hai ngày rồi `update` theo `Id = 43` |
+| ⚠️ | Lớp song ngữ: làm tiếp hay gỡ bỏ | Từ điển `i18n.ts` có 81 khoá cân cả hai ngôn ngữ, nhưng **chỉ 5 tệp gọi `t()`** trong khi còn ~1.700 chuỗi tiếng Việt cứng ở `components` và `hooks`. `LANG_SWITCH_ENABLED = false` nên nút chuyển đang ẩn. Bật lên lúc này thì người chọn EN chỉ thấy thanh điều hướng và màn Lịch thu nợ đổi ngôn ngữ. Câu hỏi quyết định: **ai đọc bản tiếng Anh**. Không dịch nội dung hợp đồng và chính sách thẻ — đó là văn bản pháp lý |
 
 ## Đang làm
 
@@ -40,9 +69,12 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
 | ⬜ | Hai trần theo doanh nghiệp của mã thẻ `B3` và `B12` | Hiện chỉ là chữ trong luật, chưa phải chốt chặn. Xem §28 |
-| ⚠️ | Xoá hai cột bản sao `LoanContracts.ContractStartDate` / `ContractEndDate` | **Không vô hại như ghi trước đây** — form KUNN vẫn ghi hai cột, và 7 chỗ còn đọc chúng làm đường dự phòng khi KUNN không trỏ được về HĐTD cha. Chạy `reports/10` §3 trước. Xem §29 |
-| ⬜ | Gỡ 7 chỗ đọc bản sao ngày HĐTD + 2 ô trên form KUNN | Điều kiện để xoá được hai cột. Xem §29 |
+| ⚠️ | Xoá hai cột bản sao `LoanContracts.ContractStartDate` / `ContractEndDate` | Đã bớt rủi ro nhưng **chưa xoá được**. Cập nhật 16/08: form KUNN nay ghi bản sao bằng đúng ngày của HĐTD cha nên không còn trôi lệch (đo: 0/103 lệch), dashboard đã đọc từ cha. Hai cột vẫn là **lưới an toàn có chủ ý** khi tra không ra cha, có test khoá ở `creditLimit.test.ts:740`. Chặn cuối: HĐTD `9632128` chưa có ngày hiệu lực |
+| ⬜ | Gỡ các chỗ còn đọc bản sao ngày HĐTD | Còn `creditLimit.ts`, `postLoanControl.ts`, `KunnTable`, `ScheduleTab`, `KunnAccordionItem`. Điều kiện để xoá được hai cột |
 | ⬜ | Đọc `.xlsx` / `.docx` / `.pptx` | Cần `DecompressionStream('deflate-raw')`. Chưa rõ cần nạp cái gì vào đâu. Xem §30 |
+| ⬜ | Màn hình nhập số tiền thực thu từng kỳ | `ActualPaidAmount` rỗng trên cả 836 kỳ đã trả vì không có đường nhập. Là điều kiện để bắt được kỳ thu thiếu |
+| ⬜ | Xem bản in Giấy cam kết BM04 trong Word | Máy phát triển không có LibreOffice; mới đối chiếu được cấu trúc XML và byte ảnh, chưa nhìn bản in |
+| ⬜ | Bản sao `de_thi_1_593_cau.json` trong `public/` | Đã xoá bản trong `src/data`, bản `public/` 516 KB vẫn còn, không nơi nào tham chiếu |
 | ⬜ | Câu 640 bị bóc lỗi từ PDF | Cả bốn lựa chọn dồn vào một ô `"25 B.50 C.75 D.80"` nên không trả lời được. Cần mở nguồn ra tách lại |
 | ⬜ | `xlsxWriter` học gộp ô và màu nền theo ô | Điều kiện để chuyển Công cụ 1 và Công cụ 4 khỏi HTML đội lốt `.xls`. Xem §30 |
 | ⬜ | Tìm chỗ dùng cho `pptxWriter` | Thư viện đã xong, chưa màn nào gọi |
@@ -933,7 +965,7 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 | ✅ | Bỏ khoá chính do client bịa | `Id: s.Id \|\| idx + 1` sinh Id 1, 2, 3… rồi `bulkSave` chạy `upsert(onConflict: 'Id')` — Id là khoá chính **toàn bảng**. Nay để CSDL cấp, nạp lại sau khi ghi |
 | ✅ | `scheduleSync.ts` — đối chiếu lịch theo số kỳ | Kỳ cũ giữ nguyên **dấu đã thu**, chỉ cập nhật phần tính toán. Kỳ mới thì thêm, kỳ dư chưa thu thì xoá. 11 test |
 | ✅ | Chặn hai tình huống thay vì đoán | Kỳ dư mà **đã thu** → chặn, không tự xoá lịch sử tiền. Kỳ **trùng nhau** → chặn, không tự chọn bản đúng |
-| ⚠️ | Hợp đồng 1014 còn 5 dòng rác | `2002HĐTD/9606118/GNN-03`. Hai bộ song song: 272–276 giữ lịch sử thu, 1–6 là rác do phép thử đổi 5→6 tháng. Quét toàn bảng 8.675 dòng, **chỉ 1 hợp đồng** bị. Chờ chốt trước khi xoá |
+| ✅ | Hợp đồng 1014 đã dọn 5 dòng rác | `2002HĐTD/9606118/GNN-03` từng có hai bộ kỳ song song do phép thử đổi 5→6 tháng. Đã xoá bộ rác Id 1–6, giữ 272–276 có lịch sử thu. Diễn lại kịch bản 5→6 tháng sau khi vá: kỳ 1–4 giữ nguyên dấu đã thu, kỳ 6 mới mang Id 10104 do CSDL cấp |
 
 ### Panel due trên dashboard đọc theo lịch trả nợ thật
 
@@ -953,9 +985,39 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 | ✅ | Ngày hết hạn HĐTD chỉ đọc từ một nguồn | Dashboard từng đọc bản chép trên KUNN nên lệch với màn KUNN. Nay tra dòng HĐTD cha theo `CreditContractId` |
 | ✅ | Chặn đường làm bản chép ngày HĐTD trôi lệch | `buildKunnPayload` lấy ngày thẳng từ hợp đồng cha, chỉ giữ số trên form khi không tra ra cha. 5 test khoá |
 | ✅ | Xoá cột chết `LoanContracts.HdtdDueDate` | Đo 103 KUNN: rỗng toàn bộ, trong khi mã vẫn dự phòng vào nó. Migration 48, có chốt chặn nếu còn dữ liệu. Đã chạy 16/08 |
-| ⚠️ | `2002/HĐTD/9647376` — cha và con lệch 2 năm | Cha 30/06/2024→30/06/2025, KUNN con 30/06/2026→30/06/2027, giải ngân 30/06/2025, chưa tất toán. Chờ chốt ngày đúng |
+| ✅ | `2002/HĐTD/9647376` — **không phải lỗi** | Tôi đã hiểu sai. Chủ dự án xác nhận: ngày ở `ContractEndDate` là ngày cuối HĐTD còn hoạt động, đáo KUNN ngay hôm đó là hợp lệ, khế ước mới đáo hạn sau khi HĐTD đóng cũng không vi phạm. Dữ liệu nay khớp cha con. Đã ghi luật vào skill `tin-dung` và thêm test cho đúng ca này |
 | ⚠️ | `2002/HĐTD/9632128` — không có ngày hiệu lực | Cả ngày bắt đầu lẫn kết thúc đều trống |
 | ⬜ | Xoá hẳn `ContractStartDate`/`ContractEndDate` khỏi KUNN | Chỉ làm sau khi chốt hai dòng trên. Lưu ý hai cột này đang là lưới an toàn khi tra không ra cha, có test khoá — xem `reports/10` |
+
+### Biểu mẫu Giấy cam kết BM04
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Mở rộng `docxWriter` cho tài liệu nhiều định dạng | Ngắt section mang `sectPr` riêng, phông theo từng run, mốc tab có dấu chấm dẫn, danh sách gạch đầu dòng thật, đóng gói thêm `header1.xml`, `footer1.xml`, `numbering.xml` và ảnh |
+| ✅ | Giấy cam kết là **file riêng**, không dán vào hợp đồng | Hợp đồng mua bán chọn nhận tiền mặt thì hiện thêm nút tải và in riêng. Dữ liệu tự điền từ bên bán |
+| ✅ | Đối chiếu với bản gốc | 8 đoạn khớp hoàn toàn về chữ, mốc tab, gạch đầu dòng; logo trùng md5 từng byte; lề 25,4mm; chân trang giữ nguyên dấu chấm ở số quyết định |
+| ⬜ | Chưa xem bản in bằng mắt | Máy không có LibreOffice nên không dựng được PDF. Bằng chứng hiện có là so cấu trúc XML và byte ảnh |
+
+### Giao diện
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | 13 token màu đạt chuẩn tương phản WCAG AA | 18 cặp chữ trên nền không đạt 4,5:1. Nặng nhất `--t-ink-faint` nền tối chỉ 3,07 mà có mặt ở 495 chỗ, 290 trong đó là chữ 10–11px. Nền sáng thì `--t-warn` chỉ 2,58 — màu cảnh báo lại khó đọc nhất |
+| ✅ | Test khoá tương phản | `tokenContrast.test.ts` đọc thẳng `src/index.css`, 36 ca cho cả hai chế độ. Làm nhạt lại token là test đỏ ngay |
+| ✅ | Màn đăng nhập dùng chung hệ token | Trước đó là chỗ duy nhất có gradient, kèm bốn quả cầu mờ, SVG mạch điện, lưới chấm, và **màu ghi cứng nên không theo được chế độ sáng** |
+| ✅ | Thẻ KPI thôi gán nghĩa màu sai | Dư nợ đang xanh lá (= tốt), TSĐB đang hổ phách (= cảnh báo). Nay trung tính, chỉ còn thẻ Cảnh báo tới hạn giữ đỏ |
+| ✅ | Thẻ HĐTD và khối tình trạng hạn mức | Cùng lỗi trên. Riêng hạn mức khả dụng chuyển đỏ khi bằng 0 vì lúc đó nó chặn giải ngân. Khối tình trạng bỏ nền xanh, ba con số bày lưới ba cột thay cho flex có dấu chấm gõ tay bị vỡ khi xuống dòng |
+| ✅ | Bỏ số thứ tự lặp ở tiêu đề bốn bảng cảnh báo | Tab đã ghi số rồi |
+
+### Dọn dẹp
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Gỡ `openContractsCount` | Chết từ lúc bỏ dòng phụ đề dưới thẻ tóm tắt. Lint không bắt vì nó nằm trong object trả về |
+| ✅ | Xoá `src/data/de_thi_1_593_cau.json` | 516 KB, không nơi nào tham chiếu. **Lưu ý: bản sao trong `public/` vẫn còn** |
+| ✅ | Seed ngân hàng câu hỏi tải động | `quiz_bank.json` 537 KB chỉ dùng cho thao tác nạp một lần nhưng import tĩnh. Chunk QuizBankView 433 KB → 29 KB |
+| ✅ | Dữ liệu mẫu kho hàng tách khỏi mã nguồn | `inventoryTemplates.ts` 5.394 dòng → 20 dòng, dữ liệu sang JSON |
+| ✅ | Cập nhật skill `tin-dung` | Thêm mục lịch trả nợ, ngày hiệu lực HĐTD một nguồn, luật đáo KUNN ngày cuối. Số test 246 → 1.466 |
 
 ## 10/08/2026
 

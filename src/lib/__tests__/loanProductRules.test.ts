@@ -5,6 +5,7 @@ import {
   isPurposeLocked,
   graceMonthOptions,
   checkTenor,
+  checkKunnTenor,
   checkPurpose,
   checkGrace,
   purposeLabel,
@@ -31,16 +32,32 @@ describe('Hạn mức tín dụng — vay ngắn hạn sản xuất kinh doanh',
     expect(checkGrace(M, 0).ok).toBe(true);
   });
 
-  it('kỳ hạn 12 và 24 tháng là hợp lệ', () => {
+  it('kỳ hạn HĐTD 12 và 24 tháng là hợp lệ', () => {
     expect(checkTenor(M, 12).ok).toBe(true);
     expect(checkTenor(M, 24).ok).toBe(true);
     expect(checkTenor(M, 18).ok).toBe(true);
   });
 
-  it('cảnh báo khi kỳ hạn ngoài 12–24 tháng', () => {
+  it('cảnh báo khi kỳ hạn HĐTD ngoài 12–24 tháng', () => {
     expect(checkTenor(M, 6).ok).toBe(false);
     expect(checkTenor(M, 36).ok).toBe(false);
     expect(checkTenor(M, 240).ok).toBe(false);
+  });
+
+  it('kỳ hạn KUNN 3–12 tháng là hợp lệ, KHÔNG bị đo bằng thước HĐTD', () => {
+    for (const thang of [3, 5, 6, 12]) {
+      expect(checkKunnTenor(M, thang).ok).toBe(true);
+    }
+  });
+
+  it('cảnh báo khi kỳ hạn KUNN ngoài 3–12 tháng', () => {
+    expect(checkKunnTenor(M, 2).ok).toBe(false);
+    expect(checkKunnTenor(M, 24).ok).toBe(false);
+  });
+
+  it('hai lời cảnh báo gọi đúng tên cấp hợp đồng', () => {
+    expect(checkTenor(M, 6).message).toContain('HĐTD');
+    expect(checkKunnTenor(M, 24).message).toContain('KUNN');
   });
 
   it('cảnh báo khi mục đích không phải kinh doanh', () => {
@@ -143,5 +160,21 @@ describe('purposeLabel', () => {
   it('giá trị lạ thì hiển thị nguyên văn, không làm mất dữ liệu cũ', () => {
     expect(purposeLabel('Mục đích cũ nào đó')).toBe('Mục đích cũ nào đó');
     expect(purposeLabel(null)).toBe('');
+  });
+});
+
+describe('kỳ hạn KUNN khi sản phẩm không tách hai cấp', () => {
+  it('cho vay từng lần: KUNN dùng chung thước với khoản vay', () => {
+    expect(checkKunnTenor('Cho vay từng lần', 120).ok).toBe(true);
+    expect(checkKunnTenor('Cho vay từng lần', 12).ok).toBe(false);
+  });
+
+  it('sản phẩm chưa khai ràng buộc thì không cảnh báo', () => {
+    expect(checkKunnTenor('Cầm cố sổ tiết kiệm', 3).ok).toBe(true);
+    expect(checkKunnTenor(null, 5).ok).toBe(true);
+  });
+
+  it('chưa khai kỳ hạn thì không cảnh báo', () => {
+    expect(checkKunnTenor('Hạn mức tín dụng', 0).ok).toBe(true);
   });
 });

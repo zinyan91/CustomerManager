@@ -20,6 +20,8 @@ export interface LoanProductRule {
 
   tenor: { min: number; max: number; typical?: number[] };
 
+  kunnTenor?: { min: number; max: number };
+
   graceMonths: number[];
   revolving: boolean;
   defaultPrincipalMethod: string;
@@ -44,11 +46,12 @@ const RULES: Record<string, LoanProductRule> = {
     defaultPurpose: 'Kinh doanh',
     lockPurpose: true,
     tenor: { min: 12, max: 24, typical: [12, 24] },
+    kunnTenor: { min: 3, max: 12 },
     graceMonths: [],
     revolving: true,
     defaultPrincipalMethod: 'Gốc trả cuối kỳ',
     defaultInterestMethod: 'Trả hàng tháng theo dư nợ thực tế',
-    note: 'Vay ngắn hạn phục vụ sản xuất kinh doanh. Kỳ hạn thường 12 hoặc 24 tháng.',
+    note: 'Vay ngắn hạn phục vụ sản xuất kinh doanh. HĐTD 12 hoặc 24 tháng, mỗi KUNN 3 đến 12 tháng.',
   },
 
   'Cho vay từng lần': {
@@ -118,21 +121,34 @@ export interface RuleCheck {
   message?: string;
 }
 
+function checkTenorRange(
+  loanMethod: string | null | undefined,
+  months: number,
+  range: { min: number; max: number },
+  capName: string
+): RuleCheck {
+  if (!months || months <= 0) return { ok: true };
+  if (months >= range.min && months <= range.max) return { ok: true };
+  const namMin = range.min % 12 === 0 ? ` (${range.min / 12} năm)` : '';
+  const namMax = range.max % 12 === 0 ? ` (${range.max / 12} năm)` : '';
+  return {
+    ok: false,
+    message:
+      `Kỳ hạn ${capName} ${months} tháng nằm ngoài khoảng thông thường của "${loanMethod}": ` +
+      `${range.min}${namMin} đến ${range.max} tháng${namMax}. ` +
+      `Chỉ tiếp tục khi đã có phê duyệt ngoại lệ.`,
+  };
+}
+
 export function checkTenor(loanMethod: string | null | undefined, months: number): RuleCheck {
   const rule = getLoanProductRule(loanMethod);
-  if (!months || months <= 0) return { ok: true };
-  if (months < rule.tenor.min || months > rule.tenor.max) {
-    const namMin = rule.tenor.min % 12 === 0 ? ` (${rule.tenor.min / 12} năm)` : '';
-    const namMax = rule.tenor.max % 12 === 0 ? ` (${rule.tenor.max / 12} năm)` : '';
-    return {
-      ok: false,
-      message:
-        `Kỳ hạn ${months} tháng nằm ngoài khoảng thông thường của "${loanMethod}": ` +
-        `${rule.tenor.min}${namMin} đến ${rule.tenor.max} tháng${namMax}. ` +
-        `Chỉ tiếp tục khi đã có phê duyệt ngoại lệ.`,
-    };
-  }
-  return { ok: true };
+  return checkTenorRange(loanMethod, months, rule.tenor, rule.kunnTenor ? 'HĐTD' : 'khoản vay');
+}
+
+export function checkKunnTenor(loanMethod: string | null | undefined, months: number): RuleCheck {
+  const rule = getLoanProductRule(loanMethod);
+  if (!rule.kunnTenor) return checkTenor(loanMethod, months);
+  return checkTenorRange(loanMethod, months, rule.kunnTenor, 'KUNN');
 }
 
 export function checkPurpose(loanMethod: string | null | undefined, purpose?: string | null): RuleCheck {

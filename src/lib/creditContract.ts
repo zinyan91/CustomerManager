@@ -60,7 +60,7 @@ export type KunnIssueLevel = 'block' | 'warn';
 
 export interface KunnIssue {
   level: KunnIssueLevel;
-  field: 'KunnDueDate' | 'DisbursementDate' | 'LoanAmount';
+  field: 'KunnDueDate' | 'DisbursementDate' | 'LoanAmount' | 'KunnTenor';
   message: string;
 }
 

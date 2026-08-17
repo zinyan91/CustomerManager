@@ -1,6 +1,8 @@
 import React from 'react';
+import { User, Landmark, Wallet, CircleDollarSign } from 'lucide-react';
 import { UI } from '../../lib/uiClasses';
 import { fmtMoney } from '../../lib/utils';
+import { KpiCard } from '../dashboard/KpiCard';
 import type { Customer } from '../../types';
 
 interface CreditContractSummaryCardsProps {
@@ -16,37 +18,42 @@ export const CreditContractSummaryCards: React.FC<CreditContractSummaryCardsProp
   totalOutstanding,
   totalAvailable,
 }) => {
-  const containerCardBg = UI.containerCardBg;
+  const cardBg = UI.containerCardBg;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 animate-in fade-in duration-150">
-      {/* 1. Khách hàng */}
-      <div className={`${containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
-        <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Khách hàng / Mã CIF</div>
-        <div className="font-mono font-bold text-base text-accent">{customer.CifKh || '—'}</div>
-        <div className="text-xs font-bold truncate text-ink" title={customer.FullName}>{customer.FullName}</div>
-      </div>
-
-      {/* 2. Tổng hạn mức cấp */}
-      <div className={`${containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
-        <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng hạn mức đã cấp</div>
-        <div className="font-mono font-bold text-base text-ink">{fmtMoney(totalGranted)}</div>
-      </div>
-
-      {/* 3. Dư nợ KUNN hiện hữu */}
-      <div className={`${containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
-        <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Dư nợ KUNN hiện hữu</div>
-        <div className="font-mono font-bold text-base text-ink">{fmtMoney(totalOutstanding)}</div>
-      </div>
-
-      {/* 4. Hạn mức khả dụng */}
-      <div className={`${containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
-        {totalAvailable <= 0 && <div className="absolute top-0 left-0 right-0 h-1 bg-neg" />}
-        <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Hạn mức khả dụng</div>
-        <div className={`font-mono font-bold text-base ${totalAvailable <= 0 ? 'text-neg' : 'text-ink'}`}>
-          {fmtMoney(totalAvailable)}
-        </div>
-      </div>
+      <KpiCard
+        cardBg={cardBg}
+        hue="cust"
+        icon={User}
+        label="Khách hàng / Mã CIF"
+        value={customer.CifKh || '—'}
+        note={customer.FullName}
+      />
+      <KpiCard
+        cardBg={cardBg}
+        hue="debt"
+        icon={Landmark}
+        label="Tổng hạn mức đã cấp"
+        value={fmtMoney(totalGranted)}
+        note="Cộng mức cấp của mọi HĐTD"
+      />
+      <KpiCard
+        cardBg={cardBg}
+        hue="collateral"
+        icon={Wallet}
+        label="Dư nợ KUNN hiện hữu"
+        value={fmtMoney(totalOutstanding)}
+        note="Đã trừ gốc khách đã trả"
+      />
+      <KpiCard
+        cardBg={cardBg}
+        hue={totalAvailable <= 0 ? 'alert' : 'card'}
+        icon={CircleDollarSign}
+        label="Hạn mức khả dụng"
+        value={fmtMoney(totalAvailable)}
+        note={totalAvailable <= 0 ? 'Hết room giải ngân' : 'Còn giải ngân được'}
+      />
     </div>
   );
 };

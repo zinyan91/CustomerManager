@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 16/08/2026 — bàn giao cuối ngày
+Cập nhật: 17/08/2026 — công cụ tính lịch thu nợ khoản vay
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -10,7 +10,25 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 ---
 
-# 0. Bàn giao — 16/08/2026
+# 0. Bàn giao — 17/08/2026
+
+Ba commit trên `main`, từ `9af9266` tới `19a86fa`. Cây làm việc sạch, đồng bộ với remote. Test **1.466 → 1.491**, build sạch. Toàn bộ phiên xoay quanh **Công cụ 1 — Tính lịch thu nợ khoản vay**.
+
+| Việc | Kết quả kiểm chứng |
+| :--- | :--- |
+| Bản xuất Excel kèm công thức thiếu 4 nhóm tham số | Công thức dựng trên tham số thiếu nên **sai**, không chỉ thiếu thông tin. Nay đủ 9 tham số, sửa 4 công thức. Xem §34 |
+| Cộng đôi khoản trả trước hạn ở giá trị cache | `principal` của `calcMath` đã gồm `prepayment`, bản xuất cộng thêm lần nữa. Ai đọc file bằng script (không tính lại công thức) sẽ đọc ra số sai |
+| Thêm phương thức **gốc lãi trả đều mỗi tháng cố định** | Lãi theo tháng (năm/12), một lãi suất suốt kỳ, không kết hợp ân hạn — ba điều do chủ dự án chốt. Xem §35 |
+
+Kèm theo: thẻ `<f>` trong OOXML thôi mang dấu bằng thừa — lỗi này có ở **mọi** bản xuất công thức của dự án, sửa một chỗ ở `xlsxWriter`.
+
+**Cách kiểm chứng đã dùng, nên dùng lại:** `openpyxl` chỉ đọc được chuỗi công thức và giá trị cache do chính mình ghi, đọc thấy đúng **không** chứng minh công thức đúng. Cách chứng minh: `load_workbook()` rồi `save()` ngay (xoá sạch cache, chỉ còn công thức), sau đó `soffice --headless --convert-to csv` buộc tính lại từ đầu, rồi đối chiếu CSV với lịch do hàm lõi sinh ra. Kết quả 7 kịch bản: **0 ô lệch trên 2.844 ô**.
+
+**Một điều tôi làm sai trong phiên:** báo "máy phát triển không có LibreOffice" ở bản giao 16/08 mà không kiểm — LibreOffice **có sẵn** ở `C:\Program Files\LibreOffice\program\soffice.exe`. Việc "xem bản in BM04 trong Word" vì thế bị hoãn oan.
+
+---
+
+# 0.1. Bàn giao — 16/08/2026
 
 Phiên làm việc 16/08 đóng lại với **16 commit** trên `main`, từ `e218ffa` tới `e43b29f`. Cây làm việc sạch, đồng bộ với remote. Test **246 → 1.466**, build và lint sạch.
 
@@ -73,10 +91,10 @@ Kèm theo: ngày hiệu lực HĐTD về một nguồn, 13 token màu đạt WCA
 | ⬜ | Gỡ các chỗ còn đọc bản sao ngày HĐTD | Còn `creditLimit.ts`, `postLoanControl.ts`, `KunnTable`, `ScheduleTab`, `KunnAccordionItem`. Điều kiện để xoá được hai cột |
 | ⬜ | Đọc `.xlsx` / `.docx` / `.pptx` | Cần `DecompressionStream('deflate-raw')`. Chưa rõ cần nạp cái gì vào đâu. Xem §30 |
 | ⬜ | Màn hình nhập số tiền thực thu từng kỳ | `ActualPaidAmount` rỗng trên cả 836 kỳ đã trả vì không có đường nhập. Là điều kiện để bắt được kỳ thu thiếu |
-| ⬜ | Xem bản in Giấy cam kết BM04 trong Word | Máy phát triển không có LibreOffice; mới đối chiếu được cấu trúc XML và byte ảnh, chưa nhìn bản in |
+| ⬜ | Xem bản in Giấy cam kết BM04 trong Word | Mới đối chiếu được cấu trúc XML và byte ảnh, chưa nhìn bản in. **Sửa lại nhận định 16/08:** máy phát triển **có** LibreOffice ở `C:\Program Files\LibreOffice\program\soffice.exe`, dựng bản in được, chỉ là chưa làm |
 | ⬜ | Bản sao `de_thi_1_593_cau.json` trong `public/` | Đã xoá bản trong `src/data`, bản `public/` 516 KB vẫn còn, không nơi nào tham chiếu |
 | ⬜ | Câu 640 bị bóc lỗi từ PDF | Cả bốn lựa chọn dồn vào một ô `"25 B.50 C.75 D.80"` nên không trả lời được. Cần mở nguồn ra tách lại |
-| ⬜ | `xlsxWriter` học gộp ô và màu nền theo ô | Điều kiện để chuyển Công cụ 1 và Công cụ 4 khỏi HTML đội lốt `.xls`. Xem §30 |
+| ⬜ | Đo lại xem mục "`xlsxWriter` học gộp ô và màu nền" còn mở không | Đọc mã ngày 17/08 thì `XlsxSheet.merges` và `XlsxStyle.fill` đều đã có và Công cụ 1 đang dùng `buildXlsx` thật. Có vẻ đã xong nhưng chưa ai gạch; cần soi Công cụ 4 rồi đóng mục. Xem §30 |
 | ⬜ | Tìm chỗ dùng cho `pptxWriter` | Thư viện đã xong, chưa màn nào gọi |
 | ⚠️ | Ba cụm câu hỏi trùng mà đáp án khác nhau | Ít nhất một bản mỗi cụm đang dạy sai. Cần mở văn bản gốc đối chiếu. Xem §31 |
 | ⬜ | Đo `ContractCollaterals` rồi quyết định xoá | Bảng thứ 20 trong database, web app không gọi `.from()` tới nó. Có thể đang dùng qua khoá ngoại |
@@ -202,6 +220,8 @@ trước mốc đó đều xem một bản lỗi màu**. Các mục dưới cầ
 | ✅ | Gốc mỗi kỳ lệch chứng từ vì làm tròn bước 1.000đ | Gom về `PRINCIPAL_ROUND_MODE`, migration 18 sửa dữ liệu cũ |
 | ✅ | Định giá hết hiệu lực vẫn được tính vào khả năng bảo đảm | Hết hạn thì khả năng bảo đảm bằng 0 và báo cần định giá lại |
 | ✅ | Trả trước hạn trong ân hạn làm gốc đều sau ân hạn bị tính hụt | Xem §22 |
+| ✅ | Bản xuất Excel kèm công thức cộng đôi khoản trả trước hạn | Giá trị cache ghi `principal + prepayment` trong khi `principal` đã gồm sẵn. Mở bằng Excel thì tự tính lại đúng, đọc bằng script thì ra số sai |
+| ✅ | Bản xuất Excel kèm công thức tính sai mức gốc đều | `ROUND(B3/D3, 0)` bỏ qua ân hạn gốc và làm tròn sai bước — `roundPrincipalCore` làm tròn **lên** bội 10.000. Xem §34 |
 
 ## Lỗi giao diện đã sửa
 
@@ -228,6 +248,8 @@ trước mốc đó đều xem một bản lỗi màu**. Các mục dưới cầ
 | ✅ | Công cụ 1 — lãi suất theo giai đoạn | Ưu tiên: LS sau ưu đãi khai tay > cơ sở + biên độ > LS ưu đãi + biên độ |
 | ✅ | Công cụ 1 — ngày bắt đầu trả nợ | Kỳ 1 tính lãi theo số ngày thực tế từ ngày giải ngân |
 | ✅ | Công cụ 1 — cột ngày bắt đầu và LS áp dụng từng kỳ | Có ở màn hình, bản Excel và bản in |
+| ✅ | Công cụ 1 — phương thức gốc lãi trả đều mỗi tháng cố định | Phương thức thứ ba. Ràng buộc "không ưu đãi, không ân hạn" ép ngay trong `buildLoanSchedule`, không chỉ khoá ở giao diện. Xem §35 |
+| ✅ | Công cụ 1 — bản xuất công thức mang đủ tham số của màn hình | 5 → 9 tham số; cột trả trước hạn tách riêng thay vì nối số vào chuỗi công thức. Xem §34 |
 | ✅ | Sàn lãi suất theo hợp đồng | Cột `RateFloorAnnual`, migration 17. Không khai sàn thì vẫn chặn ở 0% |
 | ✅ | Xoá tài sản bảo đảm | Chặn khi tài sản đang thế chấp cho khoản vay |
 | ✅ | Luồng trình ngoại lệ cho tài sản hạn chế nhận | Cảnh báo + nhãn `⚠ NGOẠI LỆ` |
@@ -934,6 +956,41 @@ thì không.
 Không kiểm chứng được trên trình duyệt: app đòi đăng nhập, tôi không nhập thông tin đăng
 nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 
+## §34. Bản xuất Excel kèm công thức của Công cụ 1 — thiếu tham số nên công thức sai
+
+Nút **XUẤT EXCEL (KÈM CÔNG THỨC)** chỉ nhận 5 tham số trong khi màn hình có 9. Đây không phải chuyện thiếu thông tin để đọc: các công thức trong bảng **dựng trên chính khối tham số đó**, thiếu ô nào thì công thức tham chiếu tới ô ấy sai theo.
+
+Bốn nhóm bị thiếu: số tháng ưu đãi, lãi suất cơ sở + biên độ + lãi suất sau ưu đãi, ân hạn gốc, ngày bắt đầu trả nợ. Kế hoạch trả trước hạn thì bị **nối số tiền cứng vào chuỗi công thức** và mất hẳn `mode`.
+
+Hậu quả trên công thức, đã sửa hết:
+
+| Công thức | Trước | Sau |
+| :--- | :--- | :--- |
+| Mức gốc đều | `ROUND($B$3/$D$3, 0)` | `CEILING($B$3/($D$3-$D$6), 10000)` — đúng cách làm tròn **lên** bội 10.000 của `roundPrincipalCore`, và trừ ân hạn |
+| Gốc theo lịch | hằng số mọi kỳ | `IF(kỳ<=ân hạn, 0, IF(kỳ=thời hạn, dư nợ đầu kỳ, MIN(dư nợ, mức gốc đều)))` — kỳ cuối quét sạch dư nợ |
+| LS áp dụng từng kỳ | số tĩnh | trỏ về ô tham số, sửa `B4`/`B5`/`D5` là cả bảng đổi theo |
+| Kỳ sau khi trả trước hạn kiểu giảm gốc kỳ | không có | mức gốc đều tính lại từ dư nợ còn lại |
+
+Bảng nay 13 cột (trước 10): tách riêng **TRẢ TRƯỚC HẠN** và **MỨC GỐC ĐỀU ÁP DỤNG**, nên `TỔNG GỐC TRẢ = MIN(dư nợ, gốc theo lịch + trả trước hạn)`.
+
+Kèm theo một lỗi có ở **mọi** bản xuất công thức của dự án: thẻ `<f>` trong OOXML chứa công thức **không** mang dấu bằng dẫn đầu, nhưng cả dự án ghi `<f>=SUM(...)</f>`. Cắt ở `xlsxWriter.cellXml` nên các nơi khác được vá theo.
+
+## §35. Công cụ 1 — phương thức gốc lãi trả đều mỗi tháng cố định
+
+Phương thức thứ ba (`equal_installment`) bên cạnh gốc trả đều và gốc trả cuối kỳ. Dùng lại `emiFactor` sẵn có trong `calcMath`.
+
+Ba điều chủ dự án chốt ngày 17/08 — mỗi điều đều làm lệch số tiền nên không được tự quyết:
+
+1. **Lãi tính theo tháng (năm/12)**, khác hai phương thức kia vốn tính actual/365. Lý do: có vậy tổng trả mỗi kỳ mới cố định thật; kỳ 28 ngày và kỳ 31 ngày ra lãi bằng nhau là **đúng** với phương thức này.
+2. **Không áp lãi suất ưu đãi** — một lãi suất duy nhất suốt kỳ vay, nên không phải tính lại PMT giữa chừng.
+3. **Không kết hợp ân hạn gốc.**
+
+Hai ràng buộc cuối ép ngay trong `buildLoanSchedule`, không chỉ khoá ở giao diện — gọi hàm lõi thẳng với `principalGraceMonths` hay `promoMonths` thì chúng bị bỏ qua, không phải bị cảnh báo.
+
+Số tiền trả đều làm tròn **lên** bội 1.000đ theo chuẩn core banking; kỳ cuối gánh phần dư để giữ bất biến `Σ(gốc) = số tiền vay`. Trả trước hạn: *giảm gốc kỳ* thì tính lại PMT trên dư nợ và số kỳ còn lại, *rút ngắn kỳ hạn* thì giữ mức trả và lịch kết thúc sớm.
+
+Đo thật trên màn hình (500 triệu, 120 tháng, 9,5%/năm): tổng trả 6.470.000đ ở cả 119 kỳ đầu, kỳ 120 là 6.445.690đ và dư nợ cuối kỳ về 0, tổng gốc đúng 500.000.000đ.
+
 # IV. Quyết định nghiệp vụ đã chốt
 
 | Câu hỏi | Quyết định | Ngày |
@@ -951,10 +1008,40 @@ nhập. Bằng chứng nằm ở test tích hợp và python-docx.
 | Bước làm tròn gốc mỗi kỳ | **Theo từng giấy nhận nợ.** Mặc định 10.000 (28 tờ GNN xác nhận), khai ngoại lệ bằng ô số tiền. Xem §1 và §4 | 10/08 |
 | Có sinh PDF thật không | **Không.** Bấm In của trình duyệt rồi lưu thành PDF là đủ; không đáng nhúng phông tiếng Việt 200–800KB vào gói. Việc này chỉ quay lại nếu cần sinh PDF phía máy chủ. Xem §30 | 10/08 |
 | Câu hỏi mà đề ghi "câu nào cũng sai" | **Để trống đáp án**, không đánh đúng cả bốn lựa chọn. Đó là ghi chú của người soạn, không phải đáp án — và không được vì nó mà phá luật "mọi lựa chọn đều đúng là hợp lệ". Xem §31 | 10/08 |
+| Cơ sở tính lãi của phương thức gốc lãi trả đều | **Theo tháng (năm/12)**, không theo số ngày thực tế như hai phương thức kia. Có vậy số tiền trả mỗi kỳ mới cố định thật. Xem §35 | 17/08 |
+| Gốc lãi trả đều có kết hợp ưu đãi / ân hạn không | **Không, cả hai.** Một lãi suất duy nhất suốt kỳ vay, ân hạn gốc ép về 0. Ràng buộc đặt ở hàm lõi. Xem §35 | 17/08 |
 
 ---
 
 # V. Nhật ký theo ngày
+
+## 17/08/2026
+
+### Công cụ 1 — bản xuất Excel kèm công thức
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Khối tham số đủ 9 trường thay vì 5 | Thêm số tháng ưu đãi, LS cơ sở, biên độ, LS sau ưu đãi, ân hạn gốc, ngày bắt đầu trả nợ, kế hoạch trả trước hạn. Xem §34 |
+| ✅ | Sửa 4 công thức tính sai theo | Mức gốc đều, gốc theo lịch, LS từng kỳ, mức gốc đều sau khi trả trước hạn |
+| ✅ | Thôi cộng đôi khoản trả trước hạn ở giá trị cache | `principal` của `calcMath` đã gồm `prepayment` sẵn |
+| ✅ | Tách cột trả trước hạn và mức gốc đều áp dụng | Thay cho việc nối số tiền cứng vào chuỗi công thức, và giữ được cả `mode` |
+| ✅ | `<f>` thôi mang dấu bằng thừa | Lỗi có ở **mọi** bản xuất công thức, sửa một chỗ ở `xlsxWriter.cellXml` |
+
+### Công cụ 1 — phương thức gốc lãi trả đều mỗi tháng cố định
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | `equal_installment` trong `buildLoanSchedule` | Dùng lại `emiFactor`. Lãi theo tháng, làm tròn PMT lên bội 1.000đ, kỳ cuối gánh dư. Xem §35 |
+| ✅ | Ràng buộc "không ưu đãi, không ân hạn" đặt ở hàm lõi | Giao diện khoá và làm trống các ô tương ứng, nhưng chốt chặn thật nằm ở `calcMath` |
+| ✅ | Nhãn ba phương thức gom về `REPAY_METHOD_LABEL` | Giao diện, bản in và hai bản xuất Excel thôi lệch chữ nhau |
+| ✅ | 26 test mới | Trong đó có bất biến Σ(gốc) = số tiền vay cho cả 5 biến thể của phương thức mới |
+
+### Kiểm chứng
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Xoá cache rồi bắt LibreOffice tính lại, 7 kịch bản | **0 ô lệch trên 2.844 ô.** Phủ ân hạn + ưu đãi + trả trước hạn, bullet, không ưu đãi, rút ngắn kỳ hạn, và ba kịch bản trả đều |
+| ✅ | Soi màn hình thật, cả giao diện sáng và tối | Ô ân hạn và bốn ô ưu đãi mờ đúng lúc; đổi ngược phương thức thì giá trị cũ còn nguyên; bảng 120 kỳ khớp số đã tính |
 
 ## 16/08/2026
 

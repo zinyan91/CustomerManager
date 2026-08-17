@@ -584,9 +584,10 @@ describe('bảng FTP mua (VOF) — chỉ in khi được tick', () => {
     expect(html).toContain('Lãi hàng quý');
   });
 
-  it('bảng FTP mang cảnh báo nội bộ, không gửi khách hàng', () => {
+  it('bảng FTP không kèm dòng đơn vị tính', () => {
     const html = dungTo(true);
-    expect(html).toContain('NỘI BỘ');
+    const sau = html.slice(html.indexOf('FTP mua (VOF)'));
+    expect(sau).not.toContain('Đơn vị tính');
   });
 
   it('vẫn in đủ bảng tại quầy và online khi có FTP', () => {

@@ -490,22 +490,14 @@ export const RateQuoteView: React.FC = () => {
             )}
 
             {hasFtpContent && (
-              <label className="flex items-start gap-2 cursor-pointer select-none">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={includeFtpInSheet}
                   onChange={e => setIncludeFtpInSheet(e.target.checked)}
-                  className="w-4 h-4 mt-0.5 accent-accent"
+                  className="w-4 h-4 accent-accent"
                 />
-                <span className="text-[11px] font-bold">
-                  Kèm bảng FTP mua (VOF) chương trình
-                  <span className="ml-1.5 px-1.5 py-0.5 rounded bg-warn-soft text-warn border border-warn/30 text-[10px]">
-                    NỘI BỘ
-                  </span>
-                  <span className="block font-normal text-ink-faint mt-0.5">
-                    Đây là giá vốn nội bộ. Bật lên thì bản in không được gửi khách hàng.
-                  </span>
-                </span>
+                <span className="text-[11px] font-bold">Kèm bảng FTP mua (VOF) chương trình</span>
               </label>
             )}
 

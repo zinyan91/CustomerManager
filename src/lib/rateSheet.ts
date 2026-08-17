@@ -320,12 +320,11 @@ function ftpRateTable(input: RateSheetInput): string {
     </tr>`).join('');
 
   return `
-    <h2>FTP mua (VOF) chương trình — NỘI BỘ</h2>
+    <h2>FTP mua (VOF) chương trình</h2>
     <table>
       <thead><tr><th>Kỳ hạn</th>${head}</tr></thead>
       <tbody>${body}</tbody>
-    </table>
-    <p class="note">Đơn vị tính: %/năm. Bảng NỘI BỘ dùng cho định giá vốn, KHÔNG gửi khách hàng.</p>`;
+    </table>`;
 }
 
 interface FtpMatrix {

@@ -542,3 +542,73 @@ describe('tờ gửi khách không được chứa số liệu nội bộ', () =
     expect(html).not.toContain('class="sub"');
   });
 });
+
+describe('bảng FTP mua (VOF) — chỉ in khi được tick', () => {
+  const ct: RateProgram = {
+    Id: 1, Kind: 'huy_dong', Name: 'Ưu đãi huy động', DocumentNumber: '2500/2026/TB-BĐH',
+    EffectiveFrom: '2026-08-17', AllowRateReduction: false, AllowPrepayFeeWaive: false,
+    SourceVerified: true,
+  } as RateProgram;
+
+  const bac = (o: Partial<RateProgramTier>): RateProgramTier => ({
+    Id: 0, ProgramId: 1, Label: '', SortOrder: 0, ...o,
+  } as RateProgramTier);
+
+  const tiers = [
+    bac({ Id: 1, Channel: 'quay', BalanceTierLabel: 'Số dư < 200 triệu đồng', TenorMonths: 6, PayoutMode: 'cuoi_ky', RateAnnual: 0.09, SortOrder: 1 }),
+    bac({ Id: 2, Channel: 'online', TenorMonths: 6, PayoutMode: 'cuoi_ky', RateAnnual: 0.0895, SortOrder: 2 }),
+    bac({ Id: 3, Channel: 'ftp', TenorMonths: 6, PayoutMode: 'cuoi_ky', RateAnnual: 0.095, SortOrder: 3 }),
+    bac({ Id: 4, Channel: 'ftp', TenorMonths: 6, PayoutMode: 'hang_quy', RateAnnual: 0.0939, SortOrder: 4 }),
+    bac({ Id: 5, Channel: 'ftp', TenorMonths: 12, PayoutMode: 'cuoi_ky', RateAnnual: 0.095, SortOrder: 5 }),
+    bac({ Id: 6, Channel: 'ftp', TenorMonths: 12, PayoutMode: 'hang_quy', RateAnnual: 0.0918, SortOrder: 6 }),
+  ];
+
+  const dungTo = (includeFtp?: boolean) => buildRateSheetHtml({
+    program: ct, tiers, prepaymentFees: [], feeOptions: [], conditions: [],
+    channel: null, includeFtp,
+  } as any);
+
+  it('mặc định KHÔNG in — giữ nguyên hành vi cũ', () => {
+    const html = dungTo();
+    expect(html.toLowerCase()).not.toContain('ftp');
+    expect(html).not.toContain('9,39%');
+  });
+
+  it('tick rồi thì in bảng FTP với đủ kỳ hạn và cách trả lãi', () => {
+    const html = dungTo(true);
+    expect(html).toContain('FTP mua (VOF)');
+    expect(html).toContain('9,5%');
+    expect(html).toContain('9,39%');
+    expect(html).toContain('9,18%');
+    expect(html).toContain('Lãi cuối kỳ');
+    expect(html).toContain('Lãi hàng quý');
+  });
+
+  it('bảng FTP mang cảnh báo nội bộ, không gửi khách hàng', () => {
+    const html = dungTo(true);
+    expect(html).toContain('NỘI BỘ');
+  });
+
+  it('vẫn in đủ bảng tại quầy và online khi có FTP', () => {
+    const html = dungTo(true);
+    expect(html).toContain('9%');
+    expect(html).toContain('8,95%');
+  });
+
+  it('chương trình không có dòng FTP thì tick cũng không sinh bảng rỗng', () => {
+    const html = buildRateSheetHtml({
+      program: ct,
+      tiers: tiers.filter(t => t.Channel !== 'ftp'),
+      prepaymentFees: [], feeOptions: [], conditions: [], channel: null, includeFtp: true,
+    } as any);
+    expect(html.toLowerCase()).not.toContain('ftp');
+  });
+
+  it('tờ cho vay không đụng tới lựa chọn này', () => {
+    const html = buildRateSheetHtml({
+      program: tdh, tiers: tdhTiers, prepaymentFees: tdhFees,
+      feeOptions: [], conditions: [], channel: null, includeFtp: true,
+    } as any);
+    expect(html.toLowerCase()).not.toContain('ftp');
+  });
+});

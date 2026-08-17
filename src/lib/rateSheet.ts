@@ -84,6 +84,7 @@ export interface RateSheetInput {
   channel?: DepositChannel | null;
   logoDataUri?: string | null;
   includeFees?: boolean;
+  includeFtp?: boolean;
 }
 
 export function findRateSheetBlockers(input: RateSheetInput): RateSheetBlocker[] {
@@ -302,6 +303,61 @@ function depositRateTable(input: RateSheetInput): string {
   }).join('');
 }
 
+function ftpRateTable(input: RateSheetInput): string {
+  if (!input.includeFtp) return '';
+  if (input.program.Kind !== 'huy_dong') return '';
+
+  const m = buildDepositMatrixByTenor(input.tiers, 'ftp');
+  if (m.tenors.length === 0 || m.payoutModes.length === 0) return '';
+
+  const head = m.payoutModes
+    .map(mo => `<th class="num">${esc(PAYOUT_MODE_LABELS[mo])}</th>`)
+    .join('');
+  const body = m.tenors.map((t, i) => `
+    <tr>
+      <td class="c1">Kỳ hạn ${String(t).padStart(2, '0')} tháng</td>
+      ${m.rows[i].map(c => `<td class="num strong">${c === null ? '—' : formatRateForCustomer(c)}</td>`).join('')}
+    </tr>`).join('');
+
+  return `
+    <h2>FTP mua (VOF) chương trình — NỘI BỘ</h2>
+    <table>
+      <thead><tr><th>Kỳ hạn</th>${head}</tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+    <p class="note">Đơn vị tính: %/năm. Bảng NỘI BỘ dùng cho định giá vốn, KHÔNG gửi khách hàng.</p>`;
+}
+
+interface FtpMatrix {
+  tenors: number[];
+  payoutModes: DepositPayoutMode[];
+  rows: (number | null)[][];
+}
+
+function buildDepositMatrixByTenor(
+  tiers: RateProgramTier[],
+  channel: DepositChannel
+): FtpMatrix {
+  const rows = tiers.filter(t => t.Channel === channel);
+
+  const tenors: number[] = [];
+  for (const t of rows) {
+    if (isNum(t.TenorMonths) && !tenors.includes(t.TenorMonths)) tenors.push(t.TenorMonths);
+  }
+  tenors.sort((a, b) => a - b);
+
+  const payoutModes = PAYOUT_ORDER.filter(m => rows.some(t => t.PayoutMode === m));
+
+  return {
+    tenors,
+    payoutModes,
+    rows: tenors.map(tenor => payoutModes.map(mode => {
+      const hit = rows.find(t => t.TenorMonths === tenor && t.PayoutMode === mode);
+      return hit && isNum(hit.RateAnnual) ? hit.RateAnnual : null;
+    })),
+  };
+}
+
 function conditionsBlock(input: RateSheetInput): string {
   const conditions = input.conditions || [];
   if (conditions.length === 0) return '';
@@ -407,7 +463,9 @@ export function buildRateSheetParts(input: RateSheetInput): RateSheetParts {
   const bankName = input.bankName || 'VIETBANK';
   const isDeposit = program.Kind === 'huy_dong';
 
-  const body = isDeposit ? depositRateTable(input) : lendingRateTable(input);
+  const body = isDeposit
+    ? depositRateTable(input) + ftpRateTable(input)
+    : lendingRateTable(input);
 
   const styles = `
   @page { size: A4 ${isDeposit ? 'landscape' : 'portrait'}; margin: 10mm 10mm 10mm 10mm; }

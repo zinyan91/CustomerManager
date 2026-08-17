@@ -36,6 +36,7 @@ export function useRateQuoteController() {
 
   const [showFeeTable, setShowFeeTable] = useState(false);
   const [includeFeeInSheet, setIncludeFeeInSheet] = useState(true);
+  const [includeFtpInSheet, setIncludeFtpInSheet] = useState(false);
 
   const [editRateStr, setEditRateStr] = useState('');
   const [saving, setSaving] = useState(false);
@@ -61,8 +62,14 @@ export function useRateQuoteController() {
     logoDataUri: vietbankLogo,
     channel: null,
     includeFees: includeFeeInSheet,
+    includeFtp: includeFtpInSheet,
   } : null), [program, programTiers, programPrepayFees, programFeeOptions, programConditions,
-    preparedBy, includeFeeInSheet]);
+    preparedBy, includeFeeInSheet, includeFtpInSheet]);
+
+  const hasFtpContent = useMemo(
+    () => programTiers.some(t => t.Channel === 'ftp'),
+    [programTiers]
+  );
 
   const sheetBlockers = useMemo(
     () => (sheetInput ? findRateSheetBlockers(sheetInput) : []),
@@ -199,6 +206,9 @@ export function useRateQuoteController() {
     setShowFeeTable,
     includeFeeInSheet,
     setIncludeFeeInSheet,
+    includeFtpInSheet,
+    setIncludeFtpInSheet,
+    hasFtpContent,
     editRateStr,
     setEditRateStr,
     saving,

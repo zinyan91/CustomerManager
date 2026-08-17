@@ -11,6 +11,8 @@ import {
   isKunnSettled,
   isKunnOfClosedHdtd,
   canCloseCreditContract,
+  hdtdLifecycle,
+  HDTD_LIFECYCLE_LABEL,
 } from '../creditContract';
 import type { CreditContract, LoanContract } from '../../types';
 
@@ -533,5 +535,64 @@ describe('summarizeCreditContracts — HĐTD chưa tới ngày hiệu lực', ()
     const [s] = summarizeCreditContracts([hd], [], { today: '2026-10-01' });
     expect(s.notYetEffective).toBe(false);
     expect(s.available).toBe(1_000_000_000);
+  });
+});
+
+describe('hdtdLifecycle — một nhãn trạng thái duy nhất cho HĐTD', () => {
+  const hieuLuc = { ContractStartDate: '2026-01-01', ContractEndDate: '2026-12-31' };
+
+  it('trong khoảng hiệu lực và chưa đóng', () => {
+    expect(hdtdLifecycle(cc(hieuLuc), HOM_NAY)).toBe('active');
+  });
+
+  it('quá ngày hết hạn nhưng CHƯA đóng vẫn là hết hiệu lực', () => {
+    expect(hdtdLifecycle(cc({ ...hieuLuc, ContractEndDate: '2026-05-28' }), HOM_NAY)).toBe('expired');
+  });
+
+  it('đúng ngày hết hạn vẫn còn hiệu lực', () => {
+    expect(hdtdLifecycle(cc({ ...hieuLuc, ContractEndDate: HOM_NAY }), HOM_NAY)).toBe('expiring_soon');
+  });
+
+  it('chưa tới ngày hiệu lực', () => {
+    expect(hdtdLifecycle(cc({ ContractStartDate: '2026-10-01', ContractEndDate: '2027-10-01' }), HOM_NAY))
+      .toBe('not_yet_effective');
+  });
+
+  it('sắp hết hạn khi còn 30 ngày trở xuống', () => {
+    expect(hdtdLifecycle(cc({ ...hieuLuc, ContractEndDate: '2026-09-02' }), HOM_NAY)).toBe('expiring_soon');
+    expect(hdtdLifecycle(cc({ ...hieuLuc, ContractEndDate: '2026-09-04' }), HOM_NAY)).toBe('active');
+  });
+
+  it('đã đóng thì đè lên mọi tình trạng ngày', () => {
+    expect(hdtdLifecycle(cc({ ...hieuLuc, IsClosed: true }), HOM_NAY)).toBe('closed');
+    expect(hdtdLifecycle(cc({ ...hieuLuc, ContractEndDate: '2026-05-28', IsClosed: true }), HOM_NAY))
+      .toBe('closed');
+  });
+
+  it('thiếu ngày thì không suy bừa, coi như đang hiệu lực', () => {
+    expect(hdtdLifecycle(cc({}), HOM_NAY)).toBe('active');
+    expect(hdtdLifecycle(cc({ ContractEndDate: '' }), HOM_NAY)).toBe('active');
+  });
+
+  it('mỗi tình trạng có đúng một nhãn tiếng Việt', () => {
+    expect(HDTD_LIFECYCLE_LABEL.closed).toBe('ĐÃ ĐÓNG');
+    expect(HDTD_LIFECYCLE_LABEL.expired).toBe('HẾT HIỆU LỰC');
+    expect(HDTD_LIFECYCLE_LABEL.not_yet_effective).toBe('CHƯA HIỆU LỰC');
+    expect(HDTD_LIFECYCLE_LABEL.expiring_soon).toBe('SẮP HẾT HẠN');
+    expect(HDTD_LIFECYCLE_LABEL.active).toBe('ĐANG HIỆU LỰC');
+  });
+
+  it('khớp với expired / notYetEffective của summarizeCreditContracts', () => {
+    const cases = [
+      cc({ ...hieuLuc }),
+      cc({ ...hieuLuc, ContractEndDate: '2026-05-28' }),
+      cc({ ContractStartDate: '2026-10-01', ContractEndDate: '2027-10-01' }),
+    ];
+    for (const hd of cases) {
+      const [s] = summarizeCreditContracts([hd], [], { today: HOM_NAY });
+      const status = hdtdLifecycle(hd, HOM_NAY);
+      expect(status === 'expired').toBe(s.expired);
+      expect(status === 'not_yet_effective').toBe(s.notYetEffective);
+    }
   });
 });

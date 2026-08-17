@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { type ElementType } from 'react';
 import {
   Banknote, AlertTriangle, Building2, Calendar, ChevronDown, ChevronUp, Trash2, Clock
 } from 'lucide-react';
@@ -6,7 +6,24 @@ import { fmtDate, fmtMoney, fmtRate, todayIso } from '../../lib/utils';
 import { collateralValue } from '../../lib/collateralMath';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { isRevolvingCredit } from '../../lib/loanProductRules';
+import { hdtdLifecycle, HDTD_LIFECYCLE_LABEL, type HdtdLifecycle } from '../../lib/creditContract';
 import type { Collateral, CreditContract, LoanContract } from '../../types';
+
+const LIFECYCLE_BADGE: Record<HdtdLifecycle, string> = {
+  closed: 'bg-panel-muted border border-line text-ink-faint',
+  expired: 'bg-neg-soft border border-neg/30 text-neg',
+  not_yet_effective: 'bg-warn-soft border border-warn/30 text-warn',
+  expiring_soon: 'bg-warn-soft border border-warn/30 text-warn',
+  active: 'bg-pos-soft border border-pos/30 text-pos',
+};
+
+const LIFECYCLE_ICON: Record<HdtdLifecycle, ElementType | null> = {
+  closed: null,
+  expired: AlertTriangle,
+  not_yet_effective: Clock,
+  expiring_soon: Clock,
+  active: null,
+};
 
 interface KunnAccordionItemProps {
   contractSummary: {
@@ -47,12 +64,11 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
   const isRevolving = isRevolvingCredit(cc.LoanMethod);
   const totalDisbursed = contractKunns.reduce((s, k) => s + (k.LoanAmount || k.ContractAmount || 0), 0);
 
-  const isExpired = !!(cc.ContractEndDate && cc.ContractEndDate < today);
-  const isExpiringSoon = !isExpired && !!(cc.ContractEndDate && (
-    (new Date(cc.ContractEndDate).getTime() - new Date(today).getTime()) / (1000 * 3600 * 24) <= 30
-  ));
+  const lifecycle = hdtdLifecycle(cc, today);
+  const LifecycleIcon = LIFECYCLE_ICON[lifecycle];
 
-  const canDisburse = !cc.IsClosed && !isExpired && available > 0;
+  const canDisburse = lifecycle !== 'closed' && lifecycle !== 'expired'
+    && lifecycle !== 'not_yet_effective' && available > 0;
   const canDelete = kunnCount === 0;
 
   // Progress bar utilization percent
@@ -78,26 +94,13 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
               <span className="font-mono font-bold text-sm text-accent tracking-tight">
                 {cc.HdtdNumber}
               </span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                cc.IsClosed
-                  ? 'bg-panel-muted border border-line text-ink-faint'
-                  : 'bg-pos-soft border border-pos/30 text-pos'
-              }`}>
-                {cc.IsClosed ? 'ĐÃ ĐÓNG' : 'ĐANG HIỆU LỰC'}
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 ${LIFECYCLE_BADGE[lifecycle]}`}>
+                {LifecycleIcon && <LifecycleIcon className="w-3 h-3" />}
+                {HDTD_LIFECYCLE_LABEL[lifecycle]}
               </span>
               <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-panel-muted border border-line text-ink-muted">
                 {cc.LoanMethod || 'HĐTD'}
               </span>
-              {isExpired && !cc.IsClosed && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-neg-soft text-neg border border-neg/30 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" /> HẾT HẠN HIỆU LỰC
-                </span>
-              )}
-              {isExpiringSoon && !cc.IsClosed && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-warn-soft text-warn border border-warn/30 flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> SẮP HẾT HẠN
-                </span>
-              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-faint">
@@ -137,17 +140,29 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
                   : 'bg-panel-muted border border-line text-ink-faint cursor-not-allowed opacity-60'
               }`}
               title={
-                cc.IsClosed
+                lifecycle === 'closed'
                   ? 'HĐTD đã đóng tất toán'
-                  : isExpired
-                  ? 'HĐTD đã hết hạn hiệu lực'
+                  : lifecycle === 'expired'
+                  ? `HĐTD hết hiệu lực ${fmtDate(cc.ContractEndDate)}, không rút thêm vốn được`
+                  : lifecycle === 'not_yet_effective'
+                  ? `HĐTD có hiệu lực từ ${fmtDate(cc.ContractStartDate)}`
                   : available <= 0
                   ? (isRevolving ? 'Dư nợ đã đạt tối đa hạn mức' : 'Cho vay từng lần: Đã giải ngân đủ hạn mức')
                   : 'Giải ngân KUNN mới từ HĐTD này'
               }
             >
               <Banknote className="w-3.5 h-3.5" />
-              <span>{available <= 0 ? 'Hết khả dụng' : isExpired ? 'Hết hạn HĐTD' : 'Giải ngân từ HĐTD'}</span>
+              <span>
+                {lifecycle === 'closed'
+                  ? 'Đã đóng'
+                  : lifecycle === 'expired'
+                  ? 'Hết hiệu lực'
+                  : lifecycle === 'not_yet_effective'
+                  ? 'Chưa hiệu lực'
+                  : available <= 0
+                  ? 'Hết khả dụng'
+                  : 'Giải ngân từ HĐTD'}
+              </span>
             </button>
 
             <button

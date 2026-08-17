@@ -73,6 +73,45 @@ function fmt(d: string): string {
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
 }
 
+export type HdtdLifecycle =
+  | 'closed'
+  | 'expired'
+  | 'not_yet_effective'
+  | 'expiring_soon'
+  | 'active';
+
+export const HDTD_LIFECYCLE_LABEL: Record<HdtdLifecycle, string> = {
+  closed: 'ĐÃ ĐÓNG',
+  expired: 'HẾT HIỆU LỰC',
+  not_yet_effective: 'CHƯA HIỆU LỰC',
+  expiring_soon: 'SẮP HẾT HẠN',
+  active: 'ĐANG HIỆU LỰC',
+};
+
+export const HDTD_EXPIRING_SOON_DAYS = 30;
+
+export function hdtdLifecycle(
+  contract: Pick<CreditContract, 'ContractStartDate' | 'ContractEndDate' | 'IsClosed'>,
+  today: string,
+  expiringSoonDays: number = HDTD_EXPIRING_SOON_DAYS
+): HdtdLifecycle {
+  if (contract.IsClosed) return 'closed';
+
+  const now = toIso(today);
+  const start = toIso(contract.ContractStartDate);
+  const end = toIso(contract.ContractEndDate);
+
+  if (now && end && end < now) return 'expired';
+  if (now && start && start > now) return 'not_yet_effective';
+
+  if (now && end) {
+    const days = (new Date(end).getTime() - new Date(now).getTime()) / 86400000;
+    if (days <= expiringSoonDays) return 'expiring_soon';
+  }
+
+  return 'active';
+}
+
 export function checkKunnAgainstContract(
   kunn: Pick<LoanContract, 'DisbursementDate' | 'KunnDueDate' | 'LoanAmount'>,
   contract?: Pick<CreditContract, 'HdtdNumber' | 'ContractStartDate' | 'ContractEndDate' | 'IsClosed'> | null

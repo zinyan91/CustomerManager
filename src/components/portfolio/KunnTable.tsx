@@ -31,6 +31,10 @@ interface KunnTableProps {
   getMasterHdtdNumber: (c: LoanContract) => string;
   isSettled?: (c: LoanContract) => boolean;
   getEffectiveBalanceForContract: (c: LoanContract) => number;
+  settledCount?: number;
+  hiddenCount?: number;
+  showSettled?: boolean;
+  onToggleShowSettled?: (v: boolean) => void;
 }
 
 export const KunnTable: React.FC<KunnTableProps> = ({
@@ -44,15 +48,44 @@ export const KunnTable: React.FC<KunnTableProps> = ({
   getMasterHdtdNumber,
   isSettled,
   getEffectiveBalanceForContract,
+  settledCount = 0,
+  hiddenCount = 0,
+  showSettled = true,
+  onToggleShowSettled,
 }) => {
+  const rows = filteredContracts;
+
   return (
     <div className={`${containerCardBg} rounded-lg overflow-hidden border`}>
       <div className={`p-3 border-b flex items-center justify-between ${'bg-panel-muted border-line'}`}>
         <span className="font-bold flex items-center space-x-2 text-xs">
           <Receipt className="w-4 h-4 text-warn" />
-          <span>DANH SÁCH GIẤY NHẬN NỢ (KUNN) — {filteredContracts.length} KHOẢN VAY</span>
+          <span>DANH SÁCH GIẤY NHẬN NỢ (KUNN) — {rows.length} KHOẢN VAY</span>
         </span>
-        <span className="text-[11px] text-ink-faint">Nhấp vào dòng để xem chi tiết / cập nhật HĐTD</span>
+        {settledCount > 0 && onToggleShowSettled ? (
+          <div className="flex items-center bg-panel p-0.5 rounded-lg border border-line">
+            <button
+              type="button"
+              onClick={() => onToggleShowSettled(true)}
+              className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all ${showSettled
+                ? 'bg-accent text-accent-ink shadow-xs'
+                : 'text-ink-faint hover:text-ink'}`}
+            >
+              Tất cả
+            </button>
+            <button
+              type="button"
+              onClick={() => onToggleShowSettled(false)}
+              className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all ${!showSettled
+                ? 'bg-accent text-accent-ink shadow-xs'
+                : 'text-ink-faint hover:text-ink'}`}
+            >
+              Đang vay
+            </button>
+          </div>
+        ) : (
+          <span className="text-[11px] text-ink-faint">Nhấp vào dòng để xem chi tiết / cập nhật HĐTD</span>
+        )}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
@@ -70,11 +103,13 @@ export const KunnTable: React.FC<KunnTableProps> = ({
             </tr>
           </thead>
           <tbody className={`divide-y ${'divide-line'}`}>
-            {filteredContracts.length === 0 ? (
+            {rows.length === 0 ? (
               <tr><td colSpan={9} className="text-center p-8 text-ink-faint">
-                Chưa có Giấy Nhận Nợ nào trong bộ lọc HĐTD này. Nhấn "Tạo HĐTD mới" để nhập khoản vay.
+                {hiddenCount > 0
+                  ? `${hiddenCount} khoản đã tất toán đang ẩn. Bấm "Tất cả" để xem lại.`
+                  : 'Chưa có Giấy Nhận Nợ nào trong bộ lọc HĐTD này. Nhấn "Tạo HĐTD mới" để nhập khoản vay.'}
               </td></tr>
-            ) : filteredContracts.map(c => {
+            ) : rows.map(c => {
               const isSelected = selectedContract?.Id === c.Id;
               const cSchedules = allSchedulesMap[c.Id] || [];
               const autoDebt = getAutoDebtGroupInfo(cSchedules);

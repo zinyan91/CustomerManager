@@ -105,6 +105,10 @@ export const LoanPortfolioView: React.FC = () => {
     selectableCreditContracts,
     masterHdtdGroups,
     visibleContracts,
+    settledInScopeCount,
+    hiddenSettledCount,
+    showSettledKunn,
+    setShowSettledKunn,
     activeGroupForForm,
     matchedHdtdAmount,
     maxAllowedLoanLtv,
@@ -213,6 +217,10 @@ export const LoanPortfolioView: React.FC = () => {
           getAutoDebtGroupInfo={(schs) => getAutoDebtGroupInfo(schs || [], todayIso())}
           getMasterHdtdNumber={(c) => getMasterHdtdNumber(c)}
           isSettled={isKunnSettled}
+          settledCount={settledInScopeCount}
+          hiddenCount={hiddenSettledCount}
+          showSettled={showSettledKunn}
+          onToggleShowSettled={setShowSettledKunn}
           getEffectiveBalanceForContract={(c) => computeOutstandingBalance(allSchedulesMap[c.Id], c)}
         />
       )}

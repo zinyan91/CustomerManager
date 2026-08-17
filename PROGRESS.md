@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 17/08/2026 — ba con số tab Khoản vay, hàng KPI, chốt chặn ngày đáo hạn
+Cập nhật: 17/08/2026 — bộ lọc KUNN tất toán, ba con số tab Khoản vay, hàng KPI
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -10,7 +10,25 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 ---
 
-# 0. Ba con số sai ở đầu tab Khoản vay — 17/08/2026
+# 0. Bộ lọc khoản đã tất toán ở tab Khoản vay — 17/08/2026
+
+KUNN tất toán vốn không bị ẩn, chỉ đổi nhãn sang viên xanh `✓ ĐÃ TẤT TOÁN`. Nay thêm nút chọn **Tất cả / Đang vay**. Test **1.565 → 1.571**.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Mặc định **hiện tất cả**, lọc là tuỳ chọn | Đo trước khi chốt: PHẠM VĂN THẬT có **2/2** KUNN đã tất toán — ẩn mặc định thì mở khách đó ra là màn hình trống, banker tưởng mất dữ liệu |
+| ✅ | Nút chỉ hiện khi khách **có** khoản đã tất toán | 46/48 khách chưa có khoản nào; bày nút không đổi được gì là rác màn hình |
+| ✅ | Quy tắc lọc nằm ở controller, `KunnTable` chỉ hiển thị | Bản đầu tôi lọc trong component, thành hai nơi cùng biết luật khi tính số đếm trên nút tab — đúng lỗi vừa sửa ở ba con số. Dời về một chỗ |
+| ✅ | Bảng rỗng vì lọc thì **báo rõ**, không để trắng | *"2 khoản đã tất toán đang ẩn. Bấm Tất cả để xem lại."* Phân biệt hẳn với thông báo "chưa có KUNN nào" |
+| ✅ | Đổi khách hàng thì bộ lọc về "Tất cả" | Phát hiện khi kiểm chứng trên trình duyệt: bộ lọc dính lại qua khách mới, trái với mặc định đã chốt |
+
+**Ẩn dòng không được đụng tiền.** Mức cấp, dư nợ, hạn mức khả dụng đi qua `summarizeCreditContracts` vốn đã loại KUNN tất toán từ trước, độc lập hoàn toàn với bộ lọc hiển thị. Kiểm chứng thật trên PHẠM VĂN THẬT: lọc "Đang vay" ra bảng rỗng mà ba con số vẫn 3.000.000.000 / 0 / 3.000.000.000.
+
+Kiểm chứng trên trình duyệt ba ca: **PHẠM VĂN THẬT** 2/2 tất toán (ca xấu nhất), **NGUYỄN VƯƠNG VŨ** 1/6 (ca hỗn hợp), **CHÂU CÁT LƯỢNG** 0/2 (nút không hiện).
+
+---
+
+# 0.0. Ba con số sai ở đầu tab Khoản vay — 17/08/2026
 
 Chủ dự án phát hiện qua LÊ NGỌC QUẾ HÂN: tab Hợp đồng hiện đúng, tab Khoản vay hiện sai cả ba số. Test **1.552 → 1.565**.
 
@@ -23,13 +41,13 @@ Chủ dự án phát hiện qua LÊ NGỌC QUẾ HÂN: tab Hợp đồng hiện 
 
 Kiểm chứng trên dữ liệu thật ĐOÀN NGỌC LÝ (5 HĐTD): 4.990.000.000 mức cấp, 4.860.750.000 dư nợ, 129.250.000 khả dụng — **hai tab ra cùng con số**, khớp SQL. Lọc riêng `2002/HĐTD/9726613`: 300 / 280 / 20 triệu, cũng khớp.
 
-# 0.0. Tab Hợp đồng dùng lại KpiCard — 17/08/2026
+# 0.1. Tab Hợp đồng dùng lại KpiCard — 17/08/2026
 
 Bốn ô tóm tắt vốn là bản sao bố cục của `KpiCard`, trắng trơn không sắc. Nay dùng chính `KpiCard` với lớp sắc định danh vừa dựng, không tạo bộ màu thứ hai. Ô **Hạn mức khả dụng** chuyển sang `neg` khi bằng 0 — chỗ duy nhất màu mang nghĩa: hết room giải ngân. Tương phản sáng 5.47 → 7.10.
 
 ---
 
-# 0.1. Hàng KPI dashboard — năm ô, năm sắc — 17/08/2026
+# 0.2. Hàng KPI dashboard — năm ô, năm sắc — 17/08/2026
 
 Chủ dự án: ba ô KPI trung tính "không có màu thì nhìn chả khác gì thông tin bình thường", và thẻ tín dụng không có lý do gì nằm trong ô khách hàng. Test **1.546 → 1.552**.
 
@@ -48,7 +66,7 @@ Chủ dự án: ba ô KPI trung tính "không có màu thì nhìn chả khác g�
 
 ---
 
-# 0.2. Ngày đáo hạn là chốt chặn của dãy kỳ — 17/08/2026
+# 0.3. Ngày đáo hạn là chốt chặn của dãy kỳ — 17/08/2026
 
 Giải quyết mâu thuẫn treo từ 07/08 giữa `supabase/reports/06_ky_cuoi_lech_ngay_dao_han.sql` và lời banker. Chủ dự án mô tả lại toàn cảnh hai loại vay và chốt: quy tắc áp cho **cả hai**, chỉ khác nhau ở chỗ lấy ngày đáo hạn của KUNN hay của khoản vay. Test **1.521 → 1.540**, build sạch.
 
@@ -85,7 +103,7 @@ Lịch đang lưu **không** tự đổi. Nó chỉ dựng lại khi banker lưu
 
 ---
 
-# 0.3. Bàn giao — 17/08/2026
+# 0.4. Bàn giao — 17/08/2026
 
 Tám commit trên `main`, từ `9af9266` tới `89e0171`. Cây làm việc sạch, đồng bộ với remote. Test **1.466 → 1.509**, build và lint sạch.
 
@@ -105,7 +123,7 @@ Kèm theo: thẻ `<f>` trong OOXML thôi mang dấu bằng thừa — lỗi này
 
 ---
 
-# 0.4. Bàn giao — 16/08/2026
+# 0.5. Bàn giao — 16/08/2026
 
 Phiên làm việc 16/08 đóng lại với **16 commit** trên `main`, từ `e218ffa` tới `e43b29f`. Cây làm việc sạch, đồng bộ với remote. Test **246 → 1.466**, build và lint sạch.
 

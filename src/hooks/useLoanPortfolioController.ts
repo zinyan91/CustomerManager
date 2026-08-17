@@ -43,6 +43,7 @@ export function useLoanPortfolioController() {
   const [mainTab, setMainTab] = useState<'kunn' | 'schedule'>('kunn');
   const [showForm, setShowForm] = useState(false);
   const [selectedMasterFilter, setSelectedMasterFilter] = useState<string>('ALL');
+  const [showSettledKunn, setShowSettledKunn] = useState(true);
 
   const [form, setForm] = useState<Partial<LoanContract>>({});
   const [formHdtdNumber, setFormHdtdNumber] = useState('');
@@ -102,6 +103,7 @@ export function useLoanPortfolioController() {
     onNotify: showNotify,
     onCustomerChanged: () => {
       setSelectedMasterFilter('ALL');
+      setShowSettledKunn(true);
       setShowForm(false);
       setMainTab('kunn');
     },
@@ -301,7 +303,7 @@ export function useLoanPortfolioController() {
     });
   }, [contracts, creditContracts]);
 
-  const visibleContracts = useMemo(() => {
+  const contractsInHdtdScope = useMemo(() => {
     if (selectedMasterFilter === 'ALL') return contracts;
     if (selectedMasterFilter === 'KHONG_HDTD') {
       return contracts.filter(k => !resolveMasterHdtdNumber(k, creditContracts));
@@ -310,6 +312,18 @@ export function useLoanPortfolioController() {
       k => (resolveMasterHdtdNumber(k, creditContracts) || '').toLowerCase() === selectedMasterFilter.toLowerCase()
     );
   }, [contracts, selectedMasterFilter, creditContracts]);
+
+  const settledInScopeCount = useMemo(
+    () => contractsInHdtdScope.filter(isKunnSettled).length,
+    [contractsInHdtdScope]
+  );
+
+  const visibleContracts = useMemo(
+    () => showSettledKunn ? contractsInHdtdScope : contractsInHdtdScope.filter(k => !isKunnSettled(k)),
+    [contractsInHdtdScope, showSettledKunn]
+  );
+
+  const hiddenSettledCount = contractsInHdtdScope.length - visibleContracts.length;
 
   const unsettledCount = useMemo(() => contracts.filter(k => !isKunnSettled(k)).length, [contracts]);
   const closedHdtdCount = useMemo(
@@ -833,6 +847,10 @@ export function useLoanPortfolioController() {
     selectableCreditContracts,
     masterHdtdGroups,
     visibleContracts,
+    settledInScopeCount,
+    hiddenSettledCount,
+    showSettledKunn,
+    setShowSettledKunn,
     unsettledCount,
     closedHdtdCount,
     limitGroups,

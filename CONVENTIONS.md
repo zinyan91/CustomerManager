@@ -98,6 +98,7 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 | Ngày hôm nay dạng `YYYY-MM-DD` | `todayIso` (`utils.ts`) |
 | Số ngày còn lại tới một mốc | `daysUntil` (`utils.ts`) |
 | Mốc thu lãi hàng tháng kế tiếp | `monthlyDueInfo` (`dueList.ts`) |
+| Ba con số mức cấp / dư nợ / khả dụng của một khách hàng | `totalsOfCreditContracts` (`creditContract.ts`) |
 | Hiển thị phần trăm từ tỷ lệ thập phân | `fmtPercent` (`utils.ts`) |
 | Hiển thị số tiền | `fmtMoney` (`utils.ts`) |
 | Đọc số tiền từ ô nhập chỉ có chữ số | `parseMoneyInput` (`utils.ts`) |

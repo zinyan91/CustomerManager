@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 17/08/2026 — hàng KPI dashboard, chốt chặn ngày đáo hạn
+Cập nhật: 17/08/2026 — ba con số tab Khoản vay, hàng KPI, chốt chặn ngày đáo hạn
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -10,7 +10,26 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 ---
 
-# 0. Hàng KPI dashboard — năm ô, năm sắc — 17/08/2026
+# 0. Ba con số sai ở đầu tab Khoản vay — 17/08/2026
+
+Chủ dự án phát hiện qua LÊ NGỌC QUẾ HÂN: tab Hợp đồng hiện đúng, tab Khoản vay hiện sai cả ba số. Test **1.552 → 1.565**.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | "Tổng Mức Cấp (Tất cả)" vốn là **mức cấp của form đang mở** | `creditLimitNum = parseMoneyDecimalInput(formCreditLimit)`. Chưa mở KUNN nào thì hiện 0; bấm vào một dòng thì nhảy lên. Một con số tổng không thể phụ thuộc việc có mở form hay không |
+| ✅ | "Tổng Dư Nợ KUNN" vốn cộng `LoanAmount` | Số tiền giải ngân ban đầu, không trừ gốc đã trả, không loại KUNN đã tất toán |
+| ✅ | Rút `totalsOfCreditContracts` về `creditContract.ts` | Tab Hợp đồng đã có đường đúng nhưng viết bằng ba dòng `reduce` trong `.tsx`. Nay cả hai tab gọi cùng một hàm — bản sao thứ hai bị xoá trước khi kịp trôi |
+| ✅ | Lọc theo một HĐTD thì ba số thu hẹp theo | Nhãn "Mức Cấp HĐTD" nay đúng nghĩa |
+
+Kiểm chứng trên dữ liệu thật ĐOÀN NGỌC LÝ (5 HĐTD): 4.990.000.000 mức cấp, 4.860.750.000 dư nợ, 129.250.000 khả dụng — **hai tab ra cùng con số**, khớp SQL. Lọc riêng `2002/HĐTD/9726613`: 300 / 280 / 20 triệu, cũng khớp.
+
+# 0.0. Tab Hợp đồng dùng lại KpiCard — 17/08/2026
+
+Bốn ô tóm tắt vốn là bản sao bố cục của `KpiCard`, trắng trơn không sắc. Nay dùng chính `KpiCard` với lớp sắc định danh vừa dựng, không tạo bộ màu thứ hai. Ô **Hạn mức khả dụng** chuyển sang `neg` khi bằng 0 — chỗ duy nhất màu mang nghĩa: hết room giải ngân. Tương phản sáng 5.47 → 7.10.
+
+---
+
+# 0.1. Hàng KPI dashboard — năm ô, năm sắc — 17/08/2026
 
 Chủ dự án: ba ô KPI trung tính "không có màu thì nhìn chả khác gì thông tin bình thường", và thẻ tín dụng không có lý do gì nằm trong ô khách hàng. Test **1.546 → 1.552**.
 
@@ -29,7 +48,7 @@ Chủ dự án: ba ô KPI trung tính "không có màu thì nhìn chả khác g�
 
 ---
 
-# 0.1. Ngày đáo hạn là chốt chặn của dãy kỳ — 17/08/2026
+# 0.2. Ngày đáo hạn là chốt chặn của dãy kỳ — 17/08/2026
 
 Giải quyết mâu thuẫn treo từ 07/08 giữa `supabase/reports/06_ky_cuoi_lech_ngay_dao_han.sql` và lời banker. Chủ dự án mô tả lại toàn cảnh hai loại vay và chốt: quy tắc áp cho **cả hai**, chỉ khác nhau ở chỗ lấy ngày đáo hạn của KUNN hay của khoản vay. Test **1.521 → 1.540**, build sạch.
 
@@ -66,7 +85,7 @@ Lịch đang lưu **không** tự đổi. Nó chỉ dựng lại khi banker lưu
 
 ---
 
-# 0.2. Bàn giao — 17/08/2026
+# 0.3. Bàn giao — 17/08/2026
 
 Tám commit trên `main`, từ `9af9266` tới `89e0171`. Cây làm việc sạch, đồng bộ với remote. Test **1.466 → 1.509**, build và lint sạch.
 
@@ -86,7 +105,7 @@ Kèm theo: thẻ `<f>` trong OOXML thôi mang dấu bằng thừa — lỗi này
 
 ---
 
-# 0.3. Bàn giao — 16/08/2026
+# 0.4. Bàn giao — 16/08/2026
 
 Phiên làm việc 16/08 đóng lại với **16 commit** trên `main`, từ `e218ffa` tới `e43b29f`. Cây làm việc sạch, đồng bộ với remote. Test **246 → 1.466**, build và lint sạch.
 

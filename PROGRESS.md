@@ -12,15 +12,17 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 # 0. Bàn giao — 17/08/2026
 
-Ba commit trên `main`, từ `9af9266` tới `19a86fa`. Cây làm việc sạch, đồng bộ với remote. Test **1.466 → 1.491**, build sạch. Toàn bộ phiên xoay quanh **Công cụ 1 — Tính lịch thu nợ khoản vay**.
+Tám commit trên `main`, từ `9af9266` tới `89e0171`. Cây làm việc sạch, đồng bộ với remote. Test **1.466 → 1.509**, build và lint sạch.
 
 | Việc | Kết quả kiểm chứng |
 | :--- | :--- |
 | Bản xuất Excel kèm công thức thiếu 4 nhóm tham số | Công thức dựng trên tham số thiếu nên **sai**, không chỉ thiếu thông tin. Nay đủ 9 tham số, sửa 4 công thức. Xem §34 |
 | Cộng đôi khoản trả trước hạn ở giá trị cache | `principal` của `calcMath` đã gồm `prepayment`, bản xuất cộng thêm lần nữa. Ai đọc file bằng script (không tính lại công thức) sẽ đọc ra số sai |
 | Thêm phương thức **gốc lãi trả đều mỗi tháng cố định** | Lãi theo tháng (năm/12), một lãi suất suốt kỳ, không kết hợp ân hạn — ba điều do chủ dự án chốt. Xem §35 |
+| Thẻ HĐTD bày hai nhãn cãi nhau | `ĐANG HIỆU LỰC` đọc cờ `IsClosed`, `HẾT HẠN HIỆU LỰC` đọc ngày — HĐTD hết hạn mà chưa đóng mang cả hai. Nay một nhãn duy nhất. Xem §36 |
+| Chào lãi suất không có đường nhập chương trình | Màn hình bảo "Admin cần nhập chương trình" mà ứng dụng không cho làm. Nay gia hạn và nhân bản được ngay trên màn. Xem §37 |
 
-Kèm theo: thẻ `<f>` trong OOXML thôi mang dấu bằng thừa — lỗi này có ở **mọi** bản xuất công thức của dự án, sửa một chỗ ở `xlsxWriter`.
+Kèm theo: thẻ `<f>` trong OOXML thôi mang dấu bằng thừa — lỗi này có ở **mọi** bản xuất công thức của dự án, sửa một chỗ ở `xlsxWriter`. Ba thẻ KPI trung tính trên dashboard lấy lại sắc ở ô biểu tượng (dùng `accent`, màu duy nhất không mang nghĩa trạng thái) trong khi chữ số vẫn để màu mực. Bảng danh sách khách hàng bỏ hai cột Số CCCD và Số tài khoản.
 
 **Cách kiểm chứng đã dùng, nên dùng lại:** `openpyxl` chỉ đọc được chuỗi công thức và giá trị cache do chính mình ghi, đọc thấy đúng **không** chứng minh công thức đúng. Cách chứng minh: `load_workbook()` rồi `save()` ngay (xoá sạch cache, chỉ còn công thức), sau đó `soffice --headless --convert-to csv` buộc tính lại từ đầu, rồi đối chiếu CSV với lịch do hàm lõi sinh ra. Kết quả 7 kịch bản: **0 ô lệch trên 2.844 ô**.
 
@@ -94,6 +96,10 @@ Kèm theo: ngày hiệu lực HĐTD về một nguồn, 13 token màu đạt WCA
 | ⬜ | Xem bản in Giấy cam kết BM04 trong Word | Mới đối chiếu được cấu trúc XML và byte ảnh, chưa nhìn bản in. **Sửa lại nhận định 16/08:** máy phát triển **có** LibreOffice ở `C:\Program Files\LibreOffice\program\soffice.exe`, dựng bản in được, chỉ là chưa làm |
 | ⬜ | Bản sao `de_thi_1_593_cau.json` trong `public/` | Đã xoá bản trong `src/data`, bản `public/` 516 KB vẫn còn, không nơi nào tham chiếu |
 | ⬜ | Câu 640 bị bóc lỗi từ PDF | Cả bốn lựa chọn dồn vào một ô `"25 B.50 C.75 D.80"` nên không trả lời được. Cần mở nguồn ra tách lại |
+| ⬜ | Nhập chương trình lãi suất mới hoàn toàn qua giao diện | Nay đã gia hạn và nhân bản được. Còn thiếu đường nạp kỳ đầu tiên của một loại. Nên làm dạng dán bảng từ Excel có màn đối chiếu, **không** làm form gõ tay 70 ô. Xem §37 |
+| ⚠️ | Tra chứng từ hai KUNN hạn mức có dư nợ lệch | `9603103/GNN-11` lệch 660 triệu, `9561768/GNN-18` lệch 5 triệu. Khách đã trả thật thì ghi vào lịch thành trả nợ trước hạn; không phải thì nắn cột lưu. Xem §38 |
+| ⬜ | Dashboard và các màn khác dùng chung một nguồn dư nợ | Chỉ làm SAU khi xong hai mục trên và khai lại `LoanAmount` cho `9738792/GNN-01`. Xem §38 |
+| ⬜ | Màn hình ghi nhận trả bớt gốc cho KUNN hạn mức | Gốc trả cuối kỳ nên lịch không có kỳ nào để đánh dấu; hiện phải sửa thẳng cột `CurrentBalance`. Xem §38 |
 | ⬜ | Đo lại xem mục "`xlsxWriter` học gộp ô và màu nền" còn mở không | Đọc mã ngày 17/08 thì `XlsxSheet.merges` và `XlsxStyle.fill` đều đã có và Công cụ 1 đang dùng `buildXlsx` thật. Có vẻ đã xong nhưng chưa ai gạch; cần soi Công cụ 4 rồi đóng mục. Xem §30 |
 | ⬜ | Tìm chỗ dùng cho `pptxWriter` | Thư viện đã xong, chưa màn nào gọi |
 | ⚠️ | Ba cụm câu hỏi trùng mà đáp án khác nhau | Ít nhất một bản mỗi cụm đang dạy sai. Cần mở văn bản gốc đối chiếu. Xem §31 |
@@ -991,6 +997,47 @@ Số tiền trả đều làm tròn **lên** bội 1.000đ theo chuẩn core ban
 
 Đo thật trên màn hình (500 triệu, 120 tháng, 9,5%/năm): tổng trả 6.470.000đ ở cả 119 kỳ đầu, kỳ 120 là 6.445.690đ và dư nợ cuối kỳ về 0, tổng gốc đúng 500.000.000đ.
 
+## §36. Thẻ HĐTD bày hai nhãn cùng nói "hiệu lực" mà căn cứ khác nhau
+
+Nhãn xanh `ĐANG HIỆU LỰC` chỉ đọc cờ `IsClosed`, không đụng tới ngày. Nhãn đỏ `HẾT HẠN HIỆU LỰC` đọc `ContractEndDate`. HĐTD đã quá hạn mà chưa ai bấm đóng vì vậy mang **cả hai** — đọc vào là mâu thuẫn. Ca thật: `2002/HĐTD/462912` của CHÂU CÁT LƯỢNG, hiệu lực 28/05/2025 → 28/05/2026, tới 17/08/2026 vẫn hiện "đang hiệu lực".
+
+Thêm hàm thuần `hdtdLifecycle` trong `creditContract.ts` trả về đúng một tình trạng theo thứ tự ưu tiên: **đã đóng → hết hiệu lực → chưa hiệu lực → sắp hết hạn → đang hiệu lực**. Dùng cùng cách tính `expired` / `notYetEffective` của `summarizeCreditContracts`, có test khoá hai bên phải khớp nhau.
+
+Kèm theo một lỗi nhỏ lộ ra khi sửa: nút giải ngân trước đó chỉ chặn khi đã đóng hoặc hết hạn, **không** biết trường hợp chưa tới ngày hiệu lực. Thực tế vẫn bị chặn qua đường `available = 0` nhưng lý do hiện ra sai.
+
+## §37. Chào lãi suất — đường nhập và gia hạn chương trình
+
+Màn hình bảo *"Admin cần nhập chương trình cho kỳ này"* trong khi ứng dụng **không có** đường nào làm việc đó. Toàn bộ giao diện chỉ cho sửa một ô lãi suất của một dòng tier. Mỗi kỳ mới phải viết migration tay. Hàm `updateRateProgramAPI` sửa được `EffectiveTo` đã viết sẵn từ trước nhưng không nơi nào gọi — code chết.
+
+Nay có khối **QUẢN TRỊ CHƯƠNG TRÌNH (CHỈ ADMIN)**, hiện cả khi không có chương trình nào hiệu lực — đó chính là lúc cần tới nó:
+
+- **Gia hạn** — sửa khoảng hiệu lực của chương trình đang có.
+- **Nhân bản sang kỳ mới** — chép cả 6 bảng con qua hàm `clone_rate_program` (migration 49). Là hàm trong CSDL chứ không phải 7 lệnh insert từ trình duyệt: bản sao đứt giữa chừng sẽ để lại chương trình thiếu dòng lãi suất mà vẫn được coi là hiệu lực. `SECURITY INVOKER` nên RLS vẫn áp, chỉ admin chạy được. Bản sao luôn mang `SourceVerified = false`.
+
+Chặn chồng lấn ở hai tầng — hàm thuần `checkProgramPeriod` trước khi gọi API, và hàm trong CSDL chặn lần nữa. Cần chặn vì `findActiveProgram` gặp hai chương trình cùng loại cùng hiệu lực thì **lặng lẽ** lấy cái có `EffectiveFrom` mới hơn, không báo lỗi.
+
+**Việc còn lại:** nhập chương trình mới hoàn toàn qua giao diện. Không nên làm dạng form gõ tay — bắt điền 70 ô lãi suất trên web dễ sai hơn viết SQL, mà đây là số phải khớp bản gốc từng chữ. Nếu làm thì làm dạng dán bảng từ Excel rồi máy bóc thành các dòng tier, có màn đối chiếu trước khi ghi.
+
+## §38. Dư nợ hiện hữu — hai nguồn, lệch theo cả hai chiều
+
+Dư nợ được tính ở hai nơi khác nhau: màn KUNN, màn HĐTD và phần kiểm tra TSBĐ **tính lại từ lịch thu nợ** qua `computeOutstandingBalance`; dashboard thì **đọc cột lưu** `CurrentBalance` (`DashboardView.tsx:112`). Cột lưu chỉ được ghi qua đúng một đường — nút ghi nhận thu nợ; không có trigger CSDL nào ghi nó.
+
+Đo ngày 17/08/2026 trên toàn bộ KUNN chưa tất toán, **9 khoản lệch**, chia ba nhóm khác hẳn nhau:
+
+| Nhóm | Loại vay | Số KUNN | Tổng lệch |
+| :--- | :--- | ---: | ---: |
+| Thiếu `LoanAmount` | Cho vay từng lần | 1 | 823.080.000 |
+| Cột lưu **thấp hơn** lịch | Hạn mức tín dụng | 2 | −665.000.000 |
+| Cột lưu **cao hơn** lịch | Cho vay từng lần | 6 | 577.802 |
+
+Nhóm "không có lịch" ra **0 dòng** — mục §10 (14 KUNN chưa tất toán thiếu lịch) nay đã hết.
+
+Ba kết luận:
+
+1. **Đừng cho dashboard tính lại từ lịch.** KUNN `2002/HĐTD/9738792/GNN-01` khai `LoanAmount = 0` nên tính lại ra dư nợ **0** — làm vậy là 823 triệu biến mất khỏi báo cáo. Ngoài ra kéo 6.705 dòng lịch về máy khách đã từng làm dashboard chậm gấp 7 lần.
+2. **KUNN hạn mức trả gốc cuối kỳ thì lịch không ghi được khoản trả bớt gốc giữa chừng** — không có kỳ nào để đánh dấu. Nhưng lịch **có sẵn** ô `PrepaidPrincipalAmount` và `paidPrincipalOf` đã cộng nó, nên đây là dữ liệu cần nắn (nhiều khả năng do đợt nhập từ ứng dụng WPF mang thẳng số dư sang), **không phải công thức cần tách theo loại vay**.
+3. Chờ tra chứng từ hai khoản `9603103/GNN-11` (660 triệu) và `9561768/GNN-18` (5 triệu): nếu khách đã trả thật thì ghi vào lịch thành trả nợ trước hạn, nếu không thì nắn cột lưu về theo lịch.
+
 # IV. Quyết định nghiệp vụ đã chốt
 
 | Câu hỏi | Quyết định | Ngày |
@@ -1010,6 +1057,8 @@ Số tiền trả đều làm tròn **lên** bội 1.000đ theo chuẩn core ban
 | Câu hỏi mà đề ghi "câu nào cũng sai" | **Để trống đáp án**, không đánh đúng cả bốn lựa chọn. Đó là ghi chú của người soạn, không phải đáp án — và không được vì nó mà phá luật "mọi lựa chọn đều đúng là hợp lệ". Xem §31 | 10/08 |
 | Cơ sở tính lãi của phương thức gốc lãi trả đều | **Theo tháng (năm/12)**, không theo số ngày thực tế như hai phương thức kia. Có vậy số tiền trả mỗi kỳ mới cố định thật. Xem §35 | 17/08 |
 | Gốc lãi trả đều có kết hợp ưu đãi / ân hạn không | **Không, cả hai.** Một lãi suất duy nhất suốt kỳ vay, ân hạn gốc ép về 0. Ràng buộc đặt ở hàm lõi. Xem §35 | 17/08 |
+| Cho vay từng lần trả bớt gốc có mở lại hạn mức không | **Không.** Khả dụng = mức cấp − lũy kế đã giải ngân, giải ngân hết là khoá. Nhưng **dư nợ hiện hữu vẫn phải giảm** — đó là hai chuyện khác nhau. Xem §38 | 17/08 |
+| Thông báo huy động 2500 có bậc phân quyền cao hơn 9,40% không | **Không.** Năm mức 9,00 – 9,40 theo bậc số dư đã là trần. Khác Thông báo 2400 vốn có bậc phân quyền riêng cho Trưởng bộ phận huy động, nên `DepositRateAuthorities` của kỳ 2500 để trống | 17/08 |
 
 ---
 
@@ -1042,6 +1091,22 @@ Số tiền trả đều làm tròn **lên** bội 1.000đ theo chuẩn core ban
 | :--- | :--- | :--- |
 | ✅ | Xoá cache rồi bắt LibreOffice tính lại, 7 kịch bản | **0 ô lệch trên 2.844 ô.** Phủ ân hạn + ưu đãi + trả trước hạn, bullet, không ưu đãi, rút ngắn kỳ hạn, và ba kịch bản trả đều |
 | ✅ | Soi màn hình thật, cả giao diện sáng và tối | Ô ân hạn và bốn ô ưu đãi mờ đúng lúc; đổi ngược phương thức thì giá trị cũ còn nguyên; bảng 120 kỳ khớp số đã tính |
+
+### Hợp đồng tín dụng và giao diện
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | `hdtdLifecycle` — một nhãn trạng thái duy nhất cho HĐTD | Hết hai nhãn cãi nhau trên cùng một thẻ. 9 test. Xem §36 |
+| ✅ | Ba thẻ KPI trung tính lấy lại sắc ở ô biểu tượng | Tách `iconTone` khỏi `tone`; dùng `accent` là màu duy nhất không mang nghĩa trạng thái, chữ số vẫn để màu mực |
+| ✅ | Bảng danh sách KH bỏ cột Số CCCD và Số tài khoản | Ô tìm theo CCCD ở thanh tra cứu giữ nguyên |
+
+### Chào lãi suất
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Khối quản trị chương trình — gia hạn và nhân bản | Migration 49 thêm hàm `clone_rate_program`. Xem §37 |
+| ✅ | Nạp Thông báo 2500/2026/TB-BĐH, kỳ 17/08 → 05/09 | Migration 50. Văn bản tự gọi là gia hạn nhưng 15 mức lãi cuối kỳ tại quầy đổi từ 8,95% sang thang 9,00–9,40 nên phải là chương trình mới. Đóng kỳ 2400 ở 16/08 |
+| ✅ | Đo dư nợ hiện hữu trên toàn danh mục | 9 KUNN lệch, chia ba nhóm khác hẳn nhau. Xem §38 |
 
 ## 16/08/2026
 

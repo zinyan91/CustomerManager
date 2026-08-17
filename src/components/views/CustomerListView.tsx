@@ -203,12 +203,8 @@ export const CustomerListView: React.FC = () => {
                   render: c => <span className="font-mono text-accent font-bold">{c.CifKh}</span> },
                 { key: 'ten', label: 'Họ và tên KH', priority: 1,
                   render: c => <span className="font-bold text-ink text-xs">{c.FullName}</span> },
-                { key: 'cccd', label: 'Số CCCD/CMND', priority: 1,
-                  render: c => <span className="font-mono text-ink-muted">{formatNationalId(c.NationalId) || '—'}</span> },
                 { key: 'sdt', label: 'Số điện thoại', priority: 2,
                   render: c => <span className="font-mono">{c.Phone || '—'}</span> },
-                { key: 'stk', label: 'Số tài khoản (STK)', priority: 2,
-                  render: c => <span className="font-mono text-ink-muted">{c.AccountNumber || '—'}</span> },
                 { key: 'khlq', label: 'KHLQ / Vợ chồng', priority: 2,
                   render: c => c.SpouseName
                     ? <span className="text-ink font-semibold">{c.SpouseName}</span>

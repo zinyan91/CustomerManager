@@ -584,10 +584,9 @@ describe('bảng FTP mua (VOF) — chỉ in khi được tick', () => {
     expect(html).toContain('Lãi hàng quý');
   });
 
-  it('bảng FTP không kèm dòng đơn vị tính', () => {
-    const html = dungTo(true);
-    const sau = html.slice(html.indexOf('FTP mua (VOF)'));
-    expect(sau).not.toContain('Đơn vị tính');
+  it('tờ huy động không còn dòng đơn vị tính ở bảng nào', () => {
+    expect(dungTo(true)).not.toContain('Đơn vị tính');
+    expect(dungTo(false)).not.toContain('Đơn vị tính');
   });
 
   it('vẫn in đủ bảng tại quầy và online khi có FTP', () => {

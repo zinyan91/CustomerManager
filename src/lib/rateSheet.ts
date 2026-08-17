@@ -298,8 +298,7 @@ function depositRateTable(input: RateSheetInput): string {
           <tr>${modeHead}</tr>
         </thead>
         <tbody>${body}</tbody>
-      </table>
-      <p class="note">Đơn vị tính: %/năm.</p>`;
+      </table>`;
   }).join('');
 }
 

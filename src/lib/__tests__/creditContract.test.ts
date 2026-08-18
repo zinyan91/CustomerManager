@@ -619,15 +619,73 @@ describe('totalsOfCreditContracts — ba con số trên đầu màn hình', () =
     expect(totalsOfCreditContracts(bo()).outstanding).toBe(1_427_320_000);
   });
 
-  it('khả dụng là hiệu của hai số trên', () => {
-    expect(totalsOfCreditContracts(bo()).available).toBe(32_680_000);
+  it('vay từng lần đã giải ngân hết: gốc đã trả KHÔNG thành khả dụng', () => {
+    expect(totalsOfCreditContracts(bo()).available).toBe(0);
+  });
+
+  it('hạn mức quay vòng thì gốc đã trả phục hồi thành khả dụng', () => {
+    const r = totalsOfCreditContracts(summarizeCreditContracts(
+      [cc({
+        Id: 4, HdtdNumber: 'HD-A', LoanMethod: 'Hạn mức tín dụng',
+        ContractAmount: 960_000_000, ContractEndDate: '2036-05-05',
+      })],
+      [kunn({ Id: 1, CreditContractId: 4, LoanAmount: 960_000_000, CurrentBalance: 944_000_000 })],
+      { today: HOM_NAY }
+    ));
+    expect(r.available).toBe(16_000_000);
+  });
+
+  it('HĐTD hết hiệu lực không góp gì vào khả dụng, dù mức cấp vẫn tính', () => {
+    const r = totalsOfCreditContracts(summarizeCreditContracts(
+      [cc({ Id: 4, HdtdNumber: 'HD-A', ContractAmount: 4_000_000_000, ContractEndDate: '2026-07-24' })],
+      [],
+      { today: HOM_NAY }
+    ));
+    expect(r.granted).toBe(4_000_000_000);
+    expect(r.outstanding).toBe(0);
+    expect(r.available).toBe(0);
+  });
+
+  it('HĐTD đã đóng không góp gì vào khả dụng', () => {
+    const r = totalsOfCreditContracts(summarizeCreditContracts(
+      [cc({ Id: 4, HdtdNumber: 'HD-A', ContractAmount: 800_000_000, IsClosed: true })],
+      [],
+      { today: HOM_NAY }
+    ));
+    expect(r.available).toBe(0);
+  });
+
+  it('HĐTD chưa tới ngày hiệu lực không góp gì vào khả dụng', () => {
+    const r = totalsOfCreditContracts(summarizeCreditContracts(
+      [cc({
+        Id: 4, HdtdNumber: 'HD-A', ContractAmount: 600_000_000,
+        ContractStartDate: '2026-09-01', ContractEndDate: '2027-09-01',
+      })],
+      [],
+      { today: HOM_NAY }
+    ));
+    expect(r.available).toBe(0);
+  });
+
+  it('trộn một HĐTD còn hạn và một đã hết: chỉ HĐTD còn hạn góp vào khả dụng', () => {
+    const r = totalsOfCreditContracts(summarizeCreditContracts(
+      [
+        cc({ Id: 4, HdtdNumber: 'HD-A', ContractAmount: 4_000_000_000, ContractEndDate: '2026-07-24' }),
+        cc({ Id: 5, HdtdNumber: 'HD-B', ContractAmount: 600_000_000, ContractEndDate: '2026-12-05' }),
+      ],
+      [kunn({ Id: 2, CreditContractId: 5, LoanAmount: 400_000_000, CurrentBalance: 400_000_000 })],
+      { today: HOM_NAY }
+    ));
+    expect(r.granted).toBe(4_600_000_000);
+    expect(r.outstanding).toBe(400_000_000);
+    expect(r.available).toBe(200_000_000);
   });
 
   it('lọc theo một HĐTD thì chỉ tính hợp đồng đó', () => {
     const r = totalsOfCreditContracts(bo(), 'HD-B');
     expect(r.granted).toBe(500_000_000);
     expect(r.outstanding).toBe(483_320_000);
-    expect(r.available).toBe(16_680_000);
+    expect(r.available).toBe(0);
   });
 
   it('lọc trúng HĐTD không tồn tại thì trả 0, không trả tổng', () => {

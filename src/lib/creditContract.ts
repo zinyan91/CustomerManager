@@ -259,7 +259,8 @@ export function totalsOfCreditContracts(
 
   const granted = scoped.reduce((sum, s) => sum + (s.contract.ContractAmount || 0), 0);
   const outstanding = scoped.reduce((sum, s) => sum + s.outstanding, 0);
-  return { granted, outstanding, available: Math.max(0, granted - outstanding) };
+  const available = scoped.reduce((sum, s) => sum + s.available, 0);
+  return { granted, outstanding, available };
 }
 
 export function summarizeCreditContracts(

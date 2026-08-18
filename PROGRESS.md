@@ -15,7 +15,7 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 `summarizeCreditContracts` trả về đủ `canDisburse`, `blockReason`, `revolving`,
 `disbursedCumulative` và có ~10 ca test khoá lại, nhưng `KunnAccordionItem` thu hẹp
 prop còn 5 trường rồi tự dựng lại tất cả. Bản chạy thật là bản chép, không test nào
-chạm tới. Test **1.607 → 1.614**.
+chạm tới. Test **1.607 → 1.619**.
 
 | | Việc | Ghi chú |
 | :--- | :--- | :--- |
@@ -23,7 +23,7 @@ chạm tới. Test **1.607 → 1.614**.
 | ✅ | Bỏ ba nhánh lifecycle thừa trong `disabled` | `available` đã bằng 0 ở cả đóng / hết hiệu lực / chưa hiệu lực |
 | ✅ | Truyền `today` từ controller xuống thẻ | Trước đó thẻ gọi `todayIso()` riêng, lệch mốc với lib khi qua nửa đêm |
 | ✅ | `getKunnsForContract` chỉ khớp `CreditContractId` | Bỏ nhánh khớp theo tiền tố số HĐTD. Cột vốn đã NOT NULL, 70/70 số hiệu khác nhau nên nhánh đó không bao giờ chạy |
-| ✅ | 7 test component mới | Dựng summary bằng chính `summarizeCreditContracts` nên khoá được sự đồng thuận lib ↔ giao diện, không hardcode chuỗi |
+| ✅ | 7 test component mới + 6 test cho thẻ KPI khả dụng | Dựng summary bằng chính `summarizeCreditContracts` nên khoá được sự đồng thuận lib ↔ giao diện, không hardcode chuỗi |
 
 **Test đơn vị không đủ.** 1.614 ca xanh mà trình duyệt vẫn báo `kunnPrincipal is not
 defined`. Hoá ra là rác HMR từ trạng thái dở, không phải lỗi thật — nhưng `const
@@ -35,10 +35,27 @@ Kiểm chứng trên ứng dụng thật: `2002/HDTD/9653222` của ĐẶNG BÁ 
 1,4 + 1,4 + 1,2 = 4 tỷ khớp mức cấp. `2002/HĐTD/9629301` của NGUYỄN MINH HÙNG —
 nút sáng, 600tr cấp / 400tr dư nợ / 200tr khả dụng, đã dùng 66,7%.
 
-**Còn mở:** thẻ KPI **HẠN MỨC KHẢ DỤNG** dùng `totalsOfCreditContracts` tính
-`granted − outstanding`, **không xét hiệu lực**. Với ĐẶNG BÁ NHÂN nó hiện *4 tỷ —
-Còn giải ngân được* ngay trên một HĐTD đã hết hiệu lực có `available = 0`. Định
-nghĩa thứ tư của "khả dụng", chưa sửa.
+## Thẻ KPI khả dụng — hai lỗi trong một công thức
+
+`totalsOfCreditContracts` tính `available = granted − outstanding`. Nay cộng
+`s.available` của từng HĐTD. Một dòng sửa, gỡ hai lỗi khác nhau:
+
+| Lỗi | Biểu hiện |
+| :--- | :--- |
+| Không xét hiệu lực | ĐẶNG BÁ NHÂN hiện *4 tỷ — Còn giải ngân được* trên HĐTD đã hết hiệu lực 24/07/2026, ngay cạnh thẻ hợp đồng ghi 0 và nút đã khoá |
+| Không phân biệt loại vay | Vay từng lần đã giải ngân hết vẫn hiện gốc khách đã trả thành "khả dụng". Skill nói rõ gốc trả vào **không** mở lại hạn mức khi không quay vòng |
+
+Lỗi thứ hai lộ ra khi hai test cũ đỏ: fixture không khai `LoanMethod` nên
+`revolving: false`, công thức cũ ra 32,68 trđ "còn khả dụng" — đúng bằng gốc đã
+trả. Đã thay bằng cặp test khoá riêng hai loại vay.
+
+`DashboardView` gọi `summarizeCreditContracts` mà không truyền `today` nên
+`available` ở đó bỏ qua hiệu lực; màn đó chỉ đọc `granted` và `outstanding` nên
+chưa hại, đã truyền `today` cho khỏi thành bẫy.
+
+Kiểm chứng: ĐẶNG BÁ NHÂN nay hiện **0 VNĐ — Hết room giải ngân**, khớp thẻ hợp
+đồng và nút. NGUYỄN MINH HÙNG (quay vòng, còn hạn) vẫn **200.000.000 VNĐ — Còn
+giải ngân được**. Màn Tổng quan không đổi.
 
 ---
 

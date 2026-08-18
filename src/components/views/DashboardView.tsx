@@ -122,7 +122,10 @@ export const DashboardView: React.FC = () => {
     const unSettled = contracts.filter(c => !c.IsSettled);
 
     const tongHopDong = totalsOfCreditContracts(
-      summarizeCreditContracts(creditContracts, contracts, { getOutstanding: duNoCua })
+      summarizeCreditContracts(creditContracts, contracts, {
+        getOutstanding: duNoCua,
+        today: todayIso(),
+      })
     );
     const debt = tongHopDong.outstanding;
     const limit = tongHopDong.granted;

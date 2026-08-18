@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 18/08/2026 — số tiền vay KUNN không còn mượn mức cấp HĐTD
+Cập nhật: 18/08/2026 — nút giải ngân KUNN đọc quyết định từ lib
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -10,7 +10,39 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 ---
 
-# 0. Số tiền vay KUNN mượn mức cấp HĐTD — 18/08/2026
+# 0. Nút giải ngân KUNN tự quyết, không đọc lib — 18/08/2026
+
+`summarizeCreditContracts` trả về đủ `canDisburse`, `blockReason`, `revolving`,
+`disbursedCumulative` và có ~10 ca test khoá lại, nhưng `KunnAccordionItem` thu hẹp
+prop còn 5 trường rồi tự dựng lại tất cả. Bản chạy thật là bản chép, không test nào
+chạm tới. Test **1.607 → 1.614**.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Prop nhận nguyên `CreditContractSummary` | Nút đọc `canDisburse`, tooltip đọc `blockReason`, thanh tiến độ đọc `disbursedCumulative` |
+| ✅ | Bỏ ba nhánh lifecycle thừa trong `disabled` | `available` đã bằng 0 ở cả đóng / hết hiệu lực / chưa hiệu lực |
+| ✅ | Truyền `today` từ controller xuống thẻ | Trước đó thẻ gọi `todayIso()` riêng, lệch mốc với lib khi qua nửa đêm |
+| ✅ | `getKunnsForContract` chỉ khớp `CreditContractId` | Bỏ nhánh khớp theo tiền tố số HĐTD. Cột vốn đã NOT NULL, 70/70 số hiệu khác nhau nên nhánh đó không bao giờ chạy |
+| ✅ | 7 test component mới | Dựng summary bằng chính `summarizeCreditContracts` nên khoá được sự đồng thuận lib ↔ giao diện, không hardcode chuỗi |
+
+**Test đơn vị không đủ.** 1.614 ca xanh mà trình duyệt vẫn báo `kunnPrincipal is not
+defined`. Hoá ra là rác HMR từ trạng thái dở, không phải lỗi thật — nhưng `const
+disbursedOf = kunnPrincipal` ở phạm vi module là cách viết dễ gãy khi HMR nạp lại
+`loanMath`, nay đổi thành hàm bọc.
+
+Kiểm chứng trên ứng dụng thật: `2002/HDTD/9653222` của ĐẶNG BÁ NHÂN (hết hiệu lực
+24/07/2026) — nút khoá, tooltip đúng chuỗi `blockReason`, 3 KUNN vẫn liệt kê đủ
+1,4 + 1,4 + 1,2 = 4 tỷ khớp mức cấp. `2002/HĐTD/9629301` của NGUYỄN MINH HÙNG —
+nút sáng, 600tr cấp / 400tr dư nợ / 200tr khả dụng, đã dùng 66,7%.
+
+**Còn mở:** thẻ KPI **HẠN MỨC KHẢ DỤNG** dùng `totalsOfCreditContracts` tính
+`granted − outstanding`, **không xét hiệu lực**. Với ĐẶNG BÁ NHÂN nó hiện *4 tỷ —
+Còn giải ngân được* ngay trên một HĐTD đã hết hiệu lực có `available = 0`. Định
+nghĩa thứ tư của "khả dụng", chưa sửa.
+
+---
+
+# 0.1. Số tiền vay KUNN mượn mức cấp HĐTD — 18/08/2026
 
 Rà nút giải ngân KUNN so với skill `tin-dung` thì lộ ra `LoanAmount || ContractAmount` nằm ở **bảy chỗ**, ba trong số đó ở `loanMath.ts`. Trên dòng KUNN, `ContractAmount` là **mức cấp HĐTD lặp lại** (TH1), nên khoản nào bỏ trống số tiền vay sẽ được tính bằng nguyên hạn mức — lịch trả nợ lấy sai gốc, bất biến `Σ(gốc) = số tiền vay` vỡ. Test **1.602 → 1.607**.
 
@@ -29,7 +61,7 @@ Rà nút giải ngân KUNN so với skill `tin-dung` thì lộ ra `LoanAmount ||
 
 ---
 
-# 0.1. Lãi suất 8,5% không ai khai mà vẫn thu — 18/08/2026
+# 0.2. Lãi suất 8,5% không ai khai mà vẫn thu — 18/08/2026
 
 Chủ dự án hỏi: nhập ưu đãi 7,5 không nhập thời gian và biên độ, sao lãi suất áp dụng ra 8,5? Test **1.595 → 1.597**.
 

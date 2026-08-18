@@ -29,7 +29,9 @@ function limitOf(c: LoanContract): number {
   return c.ContractAmount || c.LoanAmount || 0;
 }
 
-const disbursedOf = kunnPrincipal;
+function disbursedOf(c: LoanContract): number {
+  return kunnPrincipal(c);
+}
 
 export interface LimitGroupStatus {
   key: string;

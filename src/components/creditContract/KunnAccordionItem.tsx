@@ -5,9 +5,11 @@ import {
 import { fmtDate, fmtMoney, fmtRate, todayIso } from '../../lib/utils';
 import { collateralValue } from '../../lib/collateralMath';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
-import { isRevolvingCredit } from '../../lib/loanProductRules';
 import { kunnPrincipal } from '../../lib/loanMath';
-import { hdtdLifecycle, HDTD_LIFECYCLE_LABEL, type HdtdLifecycle } from '../../lib/creditContract';
+import {
+  hdtdLifecycle, HDTD_LIFECYCLE_LABEL,
+  type HdtdLifecycle, type CreditContractSummary,
+} from '../../lib/creditContract';
 import type { Collateral, CreditContract, LoanContract } from '../../types';
 
 const LIFECYCLE_BADGE: Record<HdtdLifecycle, string> = {
@@ -27,13 +29,7 @@ const LIFECYCLE_ICON: Record<HdtdLifecycle, ElementType | null> = {
 };
 
 interface KunnAccordionItemProps {
-  contractSummary: {
-    contract: CreditContract;
-    outstanding: number;
-    available: number;
-    kunnCount: number;
-    activeKunnCount: number;
-  };
+  contractSummary: CreditContractSummary;
   collaterals: Collateral[];
   isExpanded: boolean;
   onToggleExpand: () => void;
@@ -42,10 +38,11 @@ interface KunnAccordionItemProps {
   onDisburse: (cc: CreditContract) => void;
   onEdit: (cc: CreditContract) => void;
   onDelete: (cc: CreditContract) => void;
+  today?: string;
 }
 
 export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
-  contractSummary: { contract: cc, outstanding, available, kunnCount, activeKunnCount },
+  contractSummary,
   collaterals,
   isExpanded,
   onToggleExpand,
@@ -54,25 +51,25 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
   onDisburse,
   onEdit,
   onDelete,
+  today,
 }) => {
-  const today = todayIso();
+  const {
+    contract: cc, outstanding, available, kunnCount, activeKunnCount,
+    canDisburse, blockReason, revolving: isRevolving, disbursedCumulative: totalDisbursed,
+  } = contractSummary;
+
   const assignedCols = collaterals.filter(c =>
     (cc.CollateralIds || '').split(',').map(x => parseInt(x.trim(), 10)).includes(c.Id)
   );
   const contractKunns = getKunnsForContract(cc);
 
   const granted = cc.ContractAmount || 0;
-  const isRevolving = isRevolvingCredit(cc.LoanMethod);
-  const totalDisbursed = contractKunns.reduce((s, k) => s + kunnPrincipal(k), 0);
 
-  const lifecycle = hdtdLifecycle(cc, today);
+  const lifecycle = hdtdLifecycle(cc, today || todayIso());
   const LifecycleIcon = LIFECYCLE_ICON[lifecycle];
 
-  const canDisburse = lifecycle !== 'closed' && lifecycle !== 'expired'
-    && lifecycle !== 'not_yet_effective' && available > 0;
   const canDelete = kunnCount === 0;
 
-  // Progress bar utilization percent
   const utilPercent = granted > 0
     ? isRevolving
       ? Math.min(100, (outstanding / granted) * 100)
@@ -140,17 +137,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
                   ? 'bg-accent text-accent-ink hover:opacity-90'
                   : 'bg-panel-muted border border-line text-ink-faint cursor-not-allowed opacity-60'
               }`}
-              title={
-                lifecycle === 'closed'
-                  ? 'HĐTD đã đóng tất toán'
-                  : lifecycle === 'expired'
-                  ? `HĐTD hết hiệu lực ${fmtDate(cc.ContractEndDate)}, không rút thêm vốn được`
-                  : lifecycle === 'not_yet_effective'
-                  ? `HĐTD có hiệu lực từ ${fmtDate(cc.ContractStartDate)}`
-                  : available <= 0
-                  ? (isRevolving ? 'Dư nợ đã đạt tối đa hạn mức' : 'Cho vay từng lần: Đã giải ngân đủ hạn mức')
-                  : 'Giải ngân KUNN mới từ HĐTD này'
-              }
+              title={blockReason || 'Giải ngân KUNN mới từ HĐTD này'}
             >
               <Banknote className="w-3.5 h-3.5" />
               <span>

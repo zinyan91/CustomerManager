@@ -7,7 +7,7 @@ import {
   fetchCollateralsByCustomerAPI, fetchRepaymentSchedulesAPI,
 } from '../lib/api';
 import { useWork } from '../context/WorkContext';
-import { todayIso, parseMoneyInput, formatMoneyInput, getMasterHdtdNumber } from '../lib/utils';
+import { todayIso, parseMoneyInput, formatMoneyInput } from '../lib/utils';
 import { summarizeCreditContracts, canCloseCreditContract } from '../lib/creditContract';
 import { addMonthsToDate, computeOutstandingBalance } from '../lib/loanMath';
 import { totalUsableCapacity } from '../lib/collateralMath';
@@ -234,18 +234,10 @@ export function useCreditContractController() {
     });
   }, [customer, requestDisburse]);
 
-  const getKunnsForContract = useCallback((cc: CreditContract) => {
-    const target = (cc.HdtdNumber || '').trim().toLowerCase();
-    return kunns.filter(k => {
-      const master = (getMasterHdtdNumber(k) || '').trim().toLowerCase();
-      const contractNo = (k.ContractNumber || '').trim().toLowerCase();
-      return (
-        k.CreditContractId === cc.Id ||
-        master === target ||
-        (!master && contractNo === target)
-      );
-    });
-  }, [kunns]);
+  const getKunnsForContract = useCallback(
+    (cc: CreditContract) => kunns.filter(k => k.CreditContractId === cc.Id),
+    [kunns]
+  );
 
   return {
     allCustomers,
@@ -276,6 +268,7 @@ export function useCreditContractController() {
     visibleSummaries,
     closedCount,
     closeCheck,
+    today,
     purposeOptions,
     tongKhaNangBaoDam,
     vuotKhaNangBaoDam,

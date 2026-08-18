@@ -33,6 +33,7 @@ export const CreditContractView: React.FC = () => {
     summaries,
     visibleSummaries,
     closedCount,
+    today,
     purposeOptions,
     tongKhaNangBaoDam,
     vuotKhaNangBaoDam,
@@ -189,6 +190,7 @@ export const CreditContractView: React.FC = () => {
                     onDisburse={handleDisburseRequest}
                     onEdit={openEdit}
                     onDelete={handleDelete}
+                    today={today}
                   />
                 ))
               )}

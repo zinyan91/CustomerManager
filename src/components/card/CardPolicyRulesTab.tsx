@@ -15,7 +15,6 @@ interface CardPolicyRulesTabProps {
   openKey: string | null;
   setOpenKey: (key: string | null) => void;
   rows: CardPolicy[];
-  total: number;
   countOf: (kind: KindFilter) => number;
 }
 
@@ -27,7 +26,6 @@ export const CardPolicyRulesTab: React.FC<CardPolicyRulesTabProps> = ({
   openKey,
   setOpenKey,
   rows,
-  total,
   countOf,
 }) => {
   return (
@@ -51,19 +49,14 @@ export const CardPolicyRulesTab: React.FC<CardPolicyRulesTabProps> = ({
               key={value}
               type="button"
               onClick={() => setKind(value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                kind === value
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${kind === value
                   ? 'bg-accent text-accent-ink border-accent shadow-xs'
                   : 'bg-panel-muted text-ink-muted border-line hover:border-accent hover:text-accent'
-              }`}
+                }`}
             >
               {label} <span className="font-mono font-normal opacity-75">({countOf(value)})</span>
             </button>
           ))}
-        </div>
-
-        <div className="text-[11px] text-ink-faint pt-1">
-          Hiện {rows.length}/{total} mã chính sách phát hành thẻ. Nhấp vào dòng để xem chi tiết điều kiện.
         </div>
       </div>
 
@@ -100,11 +93,10 @@ export const CardPolicyRulesTab: React.FC<CardPolicyRulesTabProps> = ({
                     </td>
                     <td className="px-3 py-2.5 text-ink-muted align-top">{p.group}</td>
                     <td className="px-3 py-2.5 align-top">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                        isCollateral
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${isCollateral
                           ? 'bg-warn-soft border-warn/30 text-warn'
                           : 'bg-accent-soft border-accent/30 text-accent'
-                      }`}>
+                        }`}>
                         {collateralLabel}
                       </span>
                     </td>

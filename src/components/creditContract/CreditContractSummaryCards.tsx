@@ -36,7 +36,6 @@ export const CreditContractSummaryCards: React.FC<CreditContractSummaryCardsProp
         icon={Landmark}
         label="Tổng hạn mức đã cấp"
         value={fmtMoney(totalGranted)}
-        note="Cộng mức cấp của mọi HĐTD"
       />
       <KpiCard
         cardBg={cardBg}
@@ -44,7 +43,6 @@ export const CreditContractSummaryCards: React.FC<CreditContractSummaryCardsProp
         icon={Wallet}
         label="Dư nợ KUNN hiện hữu"
         value={fmtMoney(totalOutstanding)}
-        note="Đã trừ gốc khách đã trả"
       />
       <KpiCard
         cardBg={cardBg}
@@ -52,7 +50,6 @@ export const CreditContractSummaryCards: React.FC<CreditContractSummaryCardsProp
         icon={CircleDollarSign}
         label="Hạn mức khả dụng"
         value={fmtMoney(totalAvailable)}
-        note={totalAvailable <= 0 ? 'Hết room giải ngân' : 'Còn giải ngân được'}
       />
     </div>
   );

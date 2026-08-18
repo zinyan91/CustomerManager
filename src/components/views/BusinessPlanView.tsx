@@ -102,13 +102,11 @@ export const BusinessPlanView: React.FC = () => {
               <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Doanh thu kế hoạch năm</div>
                 <div className="font-mono font-bold text-sm text-accent">{fmtNumber(result.plan.revenueAnnual)} {UNIT_LABEL[unit]}</div>
-                <div className="text-[11px] text-ink-faint">Quy mô doanh thu dự kiến</div>
               </div>
 
               <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Lợi nhuận ròng kế hoạch</div>
                 <div className="font-mono font-bold text-sm text-pos">{fmtNumber(result.plan.profitAfterTax)} {UNIT_LABEL[unit]}</div>
-                <div className="text-[11px] text-ink-faint">Lợi nhuận sau thuế năm</div>
               </div>
 
               <div className="bg-panel-muted rounded-lg p-3 border border-line space-y-0.5">
@@ -116,7 +114,6 @@ export const BusinessPlanView: React.FC = () => {
                 <div className="font-mono font-bold text-sm text-warn">
                   {fmtNumber(result.limit ? result.limit.plan.avgWorkingCapitalNeed : result.eachTime ? result.eachTime.recommended : 0)} {UNIT_LABEL[unit]}
                 </div>
-                <div className="text-[11px] text-ink-faint">Nhu cầu vốn lưu động bình quân</div>
               </div>
             </div>
 

@@ -1,8 +1,6 @@
 import React from 'react';
 import { UI } from '../../lib/uiClasses';
 import { Search, Target, Wallet, Check, X } from 'lucide-react';
-import { MDSDV_VERSION } from '../../lib/mdsdv';
-import { fmtNumber } from '../../lib/utils';
 
 interface MdsdvFilterHeaderProps {
   query: string;
@@ -12,7 +10,6 @@ interface MdsdvFilterHeaderProps {
   overdraftOnly: boolean;
   setOverdraftOnly: React.Dispatch<React.SetStateAction<boolean>>;
   level1Options: Array<{ code: string; name: string }>;
-  totalEntries: number;
 }
 
 export const MdsdvFilterHeader: React.FC<MdsdvFilterHeaderProps> = ({
@@ -23,7 +20,6 @@ export const MdsdvFilterHeader: React.FC<MdsdvFilterHeaderProps> = ({
   overdraftOnly,
   setOverdraftOnly,
   level1Options,
-  totalEntries,
 }) => {
   const cardBg = UI.containerCardBg;
   const inputCls = UI.inputStyle;
@@ -38,18 +34,8 @@ export const MdsdvFilterHeader: React.FC<MdsdvFilterHeaderProps> = ({
           </div>
           <div>
             <h2 className="text-sm font-bold tracking-tight text-ink uppercase flex items-center gap-2">
-              TRA CỨU MỤC ĐÍCH SỬ DỤNG VỐN (MĐSDV — FBE)
+              TRA CỨU MỤC ĐÍCH SỬ DỤNG VỐN
             </h2>
-            <p className="text-[11px] text-ink-faint">
-              Phân cấp mã Cấp 5 (Ngành nghề) và Cấp 6 (Mục đích vay/thấu chi) theo chuẩn SBV & Core Banking
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <div className="text-[11px] text-ink-faint font-mono bg-panel-muted px-2.5 py-1 rounded-md border border-line flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-pos animate-pulse" />
-            <strong>{fmtNumber(totalEntries)}</strong> mã cấp 6 • PL01/PL02 ({MDSDV_VERSION.slice(0, 2)}/{MDSDV_VERSION.slice(2, 4)}/{MDSDV_VERSION.slice(4)})
           </div>
         </div>
       </div>
@@ -110,11 +96,10 @@ export const MdsdvFilterHeader: React.FC<MdsdvFilterHeaderProps> = ({
           <button
             type="button"
             onClick={() => setOverdraftOnly(v => !v)}
-            className={`w-full h-10 flex items-center justify-center space-x-1.5 px-3 rounded-lg text-xs font-bold border transition-all ${
-              overdraftOnly
-                ? 'bg-accent text-accent-ink border-accent shadow-xs'
-                : 'bg-panel text-ink-muted border-line hover:bg-panel-muted hover:text-ink'
-            }`}
+            className={`w-full h-10 flex items-center justify-center space-x-1.5 px-3 rounded-lg text-xs font-bold border transition-all ${overdraftOnly
+              ? 'bg-accent text-accent-ink border-accent shadow-xs'
+              : 'bg-panel text-ink-muted border-line hover:bg-panel-muted hover:text-ink'
+              }`}
           >
             <Wallet className="w-3.5 h-3.5" />
             <span>CHỈ TK THẤU CHI</span>
@@ -129,9 +114,8 @@ export const MdsdvFilterHeader: React.FC<MdsdvFilterHeaderProps> = ({
         <button
           type="button"
           onClick={() => setLevel1Code('')}
-          className={`px-2 py-0.5 rounded-md border shrink-0 transition-colors ${
-            !level1Code ? 'bg-accent-soft text-accent border-accent/40 font-bold' : 'bg-panel-muted text-ink-faint border-line hover:text-ink'
-          }`}
+          className={`px-2 py-0.5 rounded-md border shrink-0 transition-colors ${!level1Code ? 'bg-accent-soft text-accent border-accent/40 font-bold' : 'bg-panel-muted text-ink-faint border-line hover:text-ink'
+            }`}
         >
           Tất cả
         </button>
@@ -140,9 +124,8 @@ export const MdsdvFilterHeader: React.FC<MdsdvFilterHeaderProps> = ({
             key={o.code}
             type="button"
             onClick={() => setLevel1Code(level1Code === o.code ? '' : o.code)}
-            className={`px-2 py-0.5 rounded-md border shrink-0 transition-colors ${
-              level1Code === o.code ? 'bg-accent text-accent-ink border-accent font-bold' : 'bg-panel text-ink-faint border-line hover:text-ink hover:bg-panel-muted'
-            }`}
+            className={`px-2 py-0.5 rounded-md border shrink-0 transition-colors ${level1Code === o.code ? 'bg-accent text-accent-ink border-accent font-bold' : 'bg-panel text-ink-faint border-line hover:text-ink hover:bg-panel-muted'
+              }`}
             title={o.name}
           >
             {o.code}: {o.name.length > 20 ? `${o.name.slice(0, 20)}...` : o.name}

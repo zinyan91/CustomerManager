@@ -19,7 +19,6 @@ export const MdsdvLookupView: React.FC = () => {
     viewMode,
     setViewMode,
     level1Options,
-    totalEntries,
     search,
     groupedResults,
     handleCopyCode,
@@ -40,7 +39,6 @@ export const MdsdvLookupView: React.FC = () => {
         overdraftOnly={overdraftOnly}
         setOverdraftOnly={setOverdraftOnly}
         level1Options={level1Options}
-        totalEntries={totalEntries}
       />
 
       {/* Results Header & View Mode Switcher */}

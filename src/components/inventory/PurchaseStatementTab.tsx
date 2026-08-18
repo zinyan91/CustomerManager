@@ -364,9 +364,6 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
               <h2 className="text-sm font-bold text-accent tracking-tight uppercase">
                 BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ
               </h2>
-              <p className="text-xs text-ink-faint">
-                Lập chứng từ Bảng kê mua bán hàng hóa dịch vụ theo chuẩn pháp lý ngân hàng
-              </p>
             </div>
           </div>
 

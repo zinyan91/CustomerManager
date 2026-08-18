@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 18/08/2026 — nút giải ngân KUNN đọc quyết định từ lib
+Cập nhật: 19/08/2026 — dọn note giải thích, sửa LTV bình quân tính thiếu định giá hết hạn
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -10,7 +10,47 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 ---
 
-# 0. Nút giải ngân KUNN tự quyết, không đọc lib — 18/08/2026
+# 0. Dọn note giải thích, cảnh báo về đúng chỗ, sửa LTV bình quân — 19/08/2026
+
+Phản hồi trực tiếp: bỏ các dòng note diễn giải lại số liệu (kiểu "Cộng mức cấp
+của mọi HĐTD", "Đã trừ gốc khách đã trả"), đưa cảnh báo đối chiếu HĐTD về ngay
+dưới trường ngày giải ngân thay vì một hộp riêng phía trên, bỏ ba trường không
+cần thiết trên đầu trang KUNN (CIF KHLQ, điện thoại, TSBĐ hiện có), bỏ dòng "N
+Khách hàng sẵn có", tách cảnh báo định giá thành 3 mục, và soát lại LTV bình
+quân. Hai memory mới: `ui-khong-note-giai-thich`, `canh-bao-tai-cho-khong-note-rieng`.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Bỏ note diễn giải ở 4 màn hình | `CreditContractSummaryCards`, `CustomerSummaryHeader`, `CollateralView`, `BusinessPlanView`. `KpiCard.note` nay optional |
+| ✅ | Cảnh báo `checkKunnAgainstContract` chuyển về inline | Trước: hộp "ĐỐI CHIẾU VỚI HĐTD" ở `KunnHdtdSection` render TRƯỚC trường `DisbursementDate` gây ra nó, ở `KunnAmountSection` render SAU — banker thấy cảnh báo trước khi thấy trường. Nay lọc theo `KunnIssue.field`, hiện ngay dưới từng trường (`DisbursementDate`, `LoanAmount`, `KunnTenor`, `KunnDueDate`) |
+| ✅ | Bỏ CIF KHLQ / điện thoại / "TSBĐ hiện có" trên đầu tab KUNN | `CustomerSummaryHeader` — dữ liệu không cần cho quyết định giải ngân tại màn này |
+| ✅ | Bỏ dòng "(N Khách hàng sẵn có)" | `CustomerSearchBar` |
+| ✅ | **LTV bình quân danh mục tính sai — 21/59 tài sản định giá đã hết hạn vẫn được tính đủ** | Xem §0.1 |
+| ✅ | Cảnh báo định giá tách 3 thẻ riêng | Hết hiệu lực (21) / Sắp hết hạn (5) / Chưa định giá (0), thay vì gộp "26 tài sản" mập mờ |
+
+## §0.1 — LTV bình quân: dùng `maxLoanFromCollateral` thay vì `totalUsableCapacity`
+
+`CollateralView` tự tính `totalMaxLoanVal = Σ maxLoanFromCollateral(c)` — công
+thức thô, **không trừ** tài sản có định giá hết hiệu lực. Trong khi
+`totalUsableCapacity` (đã có sẵn trong `collateralMath.ts`, dùng đúng ở chốt
+kiểm soát TSBĐ của `creditLimit.ts`) trả 0 cho tài sản đó — đúng quy tắc đã
+ghi trong skill `tin-dung`. Vết xe đổ cũ: hàm đúng có sẵn, một màn hình tự viết
+lại bằng công thức khác.
+
+Đo trên dữ liệu thật (19/08/2026): 21/59 tài sản định giá đã hết hạn, mang
+33,64 tỷ trong tổng 140,03 tỷ "sức cấp tối đa" thô — **24% con số là ảo**.
+
+| | Trước | Sau |
+| :--- | ---: | ---: |
+| Sức cấp tín dụng tối đa | 140.029.550.000 | 106.389.700.000 |
+| LTV Bình quân danh mục | 76,2% | 57,9% |
+
+Kiểm chứng trên ứng dụng: tab Định giá TSĐB hiện đúng hai số trên, cùng ba thẻ
+cảnh báo riêng biệt 21/5/0.
+
+---
+
+# 0.1. Nút giải ngân KUNN tự quyết, không đọc lib — 18/08/2026
 
 `summarizeCreditContracts` trả về đủ `canDisburse`, `blockReason`, `revolving`,
 `disbursedCumulative` và có ~10 ca test khoá lại, nhưng `KunnAccordionItem` thu hẹp
@@ -59,7 +99,7 @@ giải ngân được**. Màn Tổng quan không đổi.
 
 ---
 
-# 0.1. Số tiền vay KUNN mượn mức cấp HĐTD — 18/08/2026
+# 0.2. Số tiền vay KUNN mượn mức cấp HĐTD — 18/08/2026
 
 Rà nút giải ngân KUNN so với skill `tin-dung` thì lộ ra `LoanAmount || ContractAmount` nằm ở **bảy chỗ**, ba trong số đó ở `loanMath.ts`. Trên dòng KUNN, `ContractAmount` là **mức cấp HĐTD lặp lại** (TH1), nên khoản nào bỏ trống số tiền vay sẽ được tính bằng nguyên hạn mức — lịch trả nợ lấy sai gốc, bất biến `Σ(gốc) = số tiền vay` vỡ. Test **1.602 → 1.607**.
 
@@ -78,7 +118,7 @@ Rà nút giải ngân KUNN so với skill `tin-dung` thì lộ ra `LoanAmount ||
 
 ---
 
-# 0.2. Lãi suất 8,5% không ai khai mà vẫn thu — 18/08/2026
+# 0.3. Lãi suất 8,5% không ai khai mà vẫn thu — 18/08/2026
 
 Chủ dự án hỏi: nhập ưu đãi 7,5 không nhập thời gian và biên độ, sao lãi suất áp dụng ra 8,5? Test **1.595 → 1.597**.
 

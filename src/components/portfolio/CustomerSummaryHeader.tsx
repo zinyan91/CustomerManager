@@ -1,11 +1,10 @@
 import React from 'react';
 import { User, Plus } from 'lucide-react';
-import type { Customer, Collateral } from '../../types';
+import type { Customer } from '../../types';
 import { fmtMoney } from '../../lib/utils';
 
 interface CustomerSummaryHeaderProps {
   foundCustomer: Customer;
-  collaterals: Collateral[];
   containerCardBg: string;
   selectedMasterFilter: string;
   totalCreditLimit: number;
@@ -18,7 +17,6 @@ interface CustomerSummaryHeaderProps {
 
 export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
   foundCustomer,
-  collaterals,
   containerCardBg,
   selectedMasterFilter,
   totalCreditLimit,
@@ -40,11 +38,6 @@ export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
             <span className="text-xs font-mono font-normal bg-accent-soft text-accent border border-accent/30 px-2 py-0.5 rounded-md">
               CIF: {foundCustomer.CifKh}
             </span>
-          </div>
-          <div className="text-[11px] flex flex-wrap items-center gap-3 mt-1 text-ink-faint">
-            {foundCustomer.CifKhlq && <span>CIF KHLQ: <span className="text-accent font-mono font-bold">{foundCustomer.CifKhlq}</span></span>}
-            {foundCustomer.Phone && <span>📞 {foundCustomer.Phone}</span>}
-            <span>TSBĐ hiện có: <span className="text-pos font-bold">{collaterals.length} tài sản</span></span>
           </div>
         </div>
       </div>

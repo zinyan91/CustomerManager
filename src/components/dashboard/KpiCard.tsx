@@ -22,7 +22,7 @@ interface KpiCardProps {
   label: string;
   value: string;
   unit?: string;
-  note: ReactNode;
+  note?: ReactNode;
 }
 
 export const KpiCard = memo<KpiCardProps>(({
@@ -44,7 +44,7 @@ export const KpiCard = memo<KpiCardProps>(({
         </span>
         {unit && <span className="text-xs font-medium text-ink-faint whitespace-nowrap">{unit}</span>}
       </div>
-      <div className="text-[11px] text-ink-muted mt-1.5 text-balance">{note}</div>
+      {note && <div className="text-[11px] text-ink-muted mt-1.5 text-balance">{note}</div>}
     </div>
     <div className="hidden sm:flex items-center justify-center shrink-0 w-11 h-11 rounded-lg border border-[color-mix(in_srgb,var(--kpi-hue)_40%,transparent)] bg-[color-mix(in_srgb,var(--kpi-hue)_14%,transparent)] text-[var(--kpi-hue)] transition-transform duration-200 group-hover:scale-105">
       <Icon className="w-5 h-5" />

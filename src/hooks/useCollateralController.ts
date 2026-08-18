@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI } from '../lib/api';
 import { parseAnyDate, fmtDate, parseMoneyInput, formatMoneyInput } from '../lib/utils';
 import {
-  defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue, maxLoanFromCollateral, appraisalStatus,
+  defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue,
+  maxLoanFromCollateral, totalUsableCapacity, appraisalStatus,
 } from '../lib/collateralMath';
 import type { Collateral, Customer } from '../types';
 
@@ -229,14 +230,18 @@ export function useCollateralController() {
     [collaterals]
   );
   const totalMaxLoanVal = useMemo(
-    () => collaterals.reduce((sum, c) => sum + maxLoanFromCollateral(c), 0),
+    () => totalUsableCapacity(collaterals),
     [collaterals]
   );
   const weightedLtvVal = totalCollateralVal > 0 ? (totalMaxLoanVal / totalCollateralVal) * 100 : 0;
-  const alertCollateralsCount = useMemo(() => collaterals.filter(c => {
-    const st = appraisalStatus(c);
-    return st === 'expired' || st === 'expiring_soon' || st === 'missing';
-  }).length, [collaterals]);
+  const appraisalStatusCounts = useMemo(() => {
+    const counts = { expired: 0, expiring_soon: 0, missing: 0 };
+    for (const c of collaterals) {
+      const st = appraisalStatus(c);
+      if (st === 'expired' || st === 'expiring_soon' || st === 'missing') counts[st] += 1;
+    }
+    return counts;
+  }, [collaterals]);
 
   return {
     collaterals,
@@ -285,6 +290,6 @@ export function useCollateralController() {
     totalCollateralVal,
     totalMaxLoanVal,
     weightedLtvVal,
-    alertCollateralsCount,
+    appraisalStatusCounts,
   };
 }

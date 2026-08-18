@@ -274,38 +274,35 @@ export const InventoryView: React.FC = () => {
         <div className="flex space-x-2 border-b border-line pb-2">
           <button
             onClick={() => setActiveSubTab('inventory')}
-            className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center space-x-2 transition-all ${
-              activeSubTab === 'inventory'
-                ? 'bg-accent text-accent-ink shadow-xs'
-                : 'bg-panel-muted text-ink-muted hover:text-ink'
-            }`}
+            className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center space-x-2 transition-all ${activeSubTab === 'inventory'
+              ? 'bg-accent text-accent-ink shadow-xs'
+              : 'bg-panel-muted text-ink-muted hover:text-ink'
+              }`}
           >
             <Boxes className="w-4 h-4" />
-            <span>I. Bảng Kiểm kê Hàng tồn kho ({fmtMoney(summary.totalEndingValue)})</span>
+            <span>I. Bảng Kiểm kê Hàng tồn kho</span>
           </button>
 
           <button
             onClick={() => setActiveSubTab('receivables')}
-            className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center space-x-2 transition-all ${
-              activeSubTab === 'receivables'
-                ? 'bg-accent text-accent-ink shadow-xs'
-                : 'bg-panel-muted text-ink-muted hover:text-ink'
-            }`}
+            className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center space-x-2 transition-all ${activeSubTab === 'receivables'
+              ? 'bg-accent text-accent-ink shadow-xs'
+              : 'bg-panel-muted text-ink-muted hover:text-ink'
+              }`}
           >
             <Users className="w-4 h-4" />
-            <span>II. Sổ Chi tiết Nợ Phải thu Khách hàng ({receivables.length} KH)</span>
+            <span>II. Sổ Chi tiết Nợ Phải thu Khách hàng</span>
           </button>
 
           <button
             onClick={() => setActiveSubTab('payables')}
-            className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center space-x-2 transition-all ${
-              activeSubTab === 'payables'
-                ? 'bg-accent text-accent-ink shadow-xs'
-                : 'bg-panel-muted text-ink-muted hover:text-ink'
-            }`}
+            className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center space-x-2 transition-all ${activeSubTab === 'payables'
+              ? 'bg-accent text-accent-ink shadow-xs'
+              : 'bg-panel-muted text-ink-muted hover:text-ink'
+              }`}
           >
             <Users className="w-4 h-4 text-warn" />
-            <span>III. Sổ Chi tiết Nợ Phải trả Nhà cung cấp ({payables.length} NCC)</span>
+            <span>III. Sổ Chi tiết Nợ Phải trả Nhà cung cấp</span>
           </button>
         </div>
 

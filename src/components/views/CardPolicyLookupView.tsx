@@ -34,7 +34,6 @@ export const CardPolicyLookupView: React.FC = () => {
     noteForm,
     setNoteForm,
     rows,
-    total,
     countOf,
     groupedProfiles,
     handleCopy,
@@ -95,7 +94,6 @@ export const CardPolicyLookupView: React.FC = () => {
           openKey={openKey}
           setOpenKey={setOpenKey}
           rows={rows}
-          total={total}
           countOf={countOf}
         />
       )}

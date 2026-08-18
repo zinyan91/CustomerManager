@@ -54,7 +54,7 @@ export const CollateralView: React.FC = () => {
     totalCollateralVal,
     totalMaxLoanVal,
     weightedLtvVal,
-    alertCollateralsCount,
+    appraisalStatusCounts,
   } = useCollateralController();
 
   return (
@@ -62,33 +62,42 @@ export const CollateralView: React.FC = () => {
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
       {/* Collateral KPI Header */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <div className={`${styles.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
           <div className="absolute top-0 left-0 right-0 h-1 bg-accent" />
           <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng giá trị TSĐB</div>
           <div className="font-mono font-bold text-base text-accent">{fmtMoney(totalCollateralVal)}</div>
-          <div className="text-[11px] text-ink-faint">{collaterals.length} Tài sản bảo đảm đang quản lý</div>
+          <div className="text-[11px] text-ink-faint">{collaterals.length} tài sản</div>
         </div>
 
         <div className={`${styles.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
           <div className="absolute top-0 left-0 right-0 h-1 bg-pos" />
           <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Sức cấp tín dụng tối đa</div>
           <div className="font-mono font-bold text-base text-pos">{fmtMoney(totalMaxLoanVal)}</div>
-          <div className="text-[11px] text-ink-faint">Hạn mức tối đa theo giá trị LTV</div>
         </div>
 
         <div className={`${styles.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
           <div className="absolute top-0 left-0 right-0 h-1 bg-warn" />
           <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">LTV Bình quân danh mục</div>
           <div className="font-mono font-bold text-base text-warn">{weightedLtvVal.toFixed(1)}%</div>
-          <div className="text-[11px] text-ink-faint">Tỉ lệ tài trợ tín dụng an toàn</div>
         </div>
 
         <div className={`${styles.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
           <div className="absolute top-0 left-0 right-0 h-1 bg-neg" />
-          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Cảnh báo định giá</div>
-          <div className="font-mono font-bold text-base text-neg">{alertCollateralsCount} Tài sản</div>
-          <div className="text-[11px] text-ink-faint">Sắp hết hạn / Quá hạn / Chưa định giá</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Hết hiệu lực định giá</div>
+          <div className="font-mono font-bold text-base text-neg">{appraisalStatusCounts.expired} tài sản</div>
+        </div>
+
+        <div className={`${styles.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-warn" />
+          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Sắp hết hạn định giá</div>
+          <div className="font-mono font-bold text-base text-warn">{appraisalStatusCounts.expiring_soon} tài sản</div>
+        </div>
+
+        <div className={`${styles.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>
+          <div className="absolute top-0 left-0 right-0 h-1 bg-neg" />
+          <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Chưa định giá</div>
+          <div className="font-mono font-bold text-base text-neg">{appraisalStatusCounts.missing} tài sản</div>
         </div>
       </div>
 

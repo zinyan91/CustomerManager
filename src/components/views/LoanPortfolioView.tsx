@@ -163,7 +163,6 @@ export const LoanPortfolioView: React.FC = () => {
       {foundCustomer && (
         <CustomerSummaryHeader
           foundCustomer={foundCustomer}
-          collaterals={collaterals}
           containerCardBg={UI.containerCardBg}
           selectedMasterFilter={selectedMasterFilter}
           totalCreditLimit={customerLimitTotals.granted}

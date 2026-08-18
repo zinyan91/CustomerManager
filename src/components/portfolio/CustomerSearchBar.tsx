@@ -55,9 +55,8 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
       </div>
 
       <div className="mb-3 relative">
-        <label className={`block mb-1 text-[11px] uppercase tracking-wide flex items-center justify-between ${'text-ink-muted font-bold'}`}>
-          <span>CHỌN KHÁCH HÀNG TỪ DANH SÁCH</span>
-          <span className="text-[10px] text-accent font-normal">({allCustomers.length} Khách hàng sẵn có)</span>
+        <label className={`block mb-1 text-[11px] uppercase tracking-wide ${'text-ink-muted font-bold'}`}>
+          CHỌN KHÁCH HÀNG TỪ DANH SÁCH
         </label>
         <div className="relative">
           <input

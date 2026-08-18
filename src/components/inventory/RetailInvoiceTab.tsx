@@ -344,11 +344,8 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
             </div>
             <div>
               <h2 className="text-sm font-bold text-accent tracking-tight uppercase">
-                HÓA ĐƠN BÁN LẺ (TIỆM TÓC, SPA, CỬA HÀNG...)
+                HÓA ĐƠN BÁN LẺ
               </h2>
-              <p className="text-xs text-ink-faint">
-                Lập hóa đơn bán lẻ sản phẩm & dịch vụ trực quan cho cửa hàng kinh doanh
-              </p>
             </div>
           </div>
 

@@ -136,7 +136,6 @@ export const KunnForm: React.FC<KunnFormProps> = ({
           formKunnNumber={formKunnNumber}
           setFormKunnNumber={setFormKunnNumber}
           formLimitStatus={formLimitStatus}
-          kunnIssues={kunnIssues}
           formGrantedLimit={formGrantedLimit}
           totalExistingKunnBalance={totalExistingKunnBalance}
           availableBeforeThisKunn={availableBeforeThisKunn}
@@ -153,6 +152,7 @@ export const KunnForm: React.FC<KunnFormProps> = ({
           remainingHmtdLimit={remainingHmtdLimit}
           formLoanAmount={formLoanAmount}
           setFormLoanAmount={setFormLoanAmount}
+          kunnIssues={kunnIssues}
         />
         <KunnRateSection
           sectionBoxBg={sectionBoxBg}

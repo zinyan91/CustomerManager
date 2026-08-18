@@ -1,5 +1,6 @@
 import React from 'react';
 import type { LimitGroupStatus } from '../../../lib/creditLimit';
+import type { KunnIssue } from '../../../lib/creditContract';
 import { addMonthsToDate, parseKunnTenorMonths } from '../../../lib/loanMath';
 import { DollarSign } from 'lucide-react';
 import { DateInput } from '../../DateInput';
@@ -18,7 +19,20 @@ export interface KunnAmountSectionProps {
   remainingHmtdLimit: number;
   formLoanAmount: string;
   setFormLoanAmount: (v: string) => void;
+  kunnIssues: KunnIssue[];
 }
+
+const issuesFor = (issues: KunnIssue[], field: KunnIssue['field']) =>
+  issues.filter(x => x.field === field);
+
+const FieldIssues: React.FC<{ issues: KunnIssue[] }> = ({ issues }) =>
+  issues.length === 0 ? null : (
+    <div className="mt-1 space-y-0.5">
+      {issues.map((x, i) => (
+        <div key={i} className="text-[10px] font-semibold text-warn">{x.message}</div>
+      ))}
+    </div>
+  );
 
 export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
   sectionBoxBg,
@@ -32,6 +46,7 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
   remainingHmtdLimit,
   formLoanAmount,
   setFormLoanAmount,
+  kunnIssues,
 }) => (
   <div className={`rounded-md p-4 space-y-4 border ${sectionBoxBg}`}>
     <div className="text-[11px] font-bold text-pos uppercase tracking-wider flex items-center space-x-2">
@@ -48,6 +63,7 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
           onChange={e => setFormLoanAmount(formatMoneyInput(e.target.value))}
           placeholder="650.000.000"
           className={`w-full rounded-md p-2.5 text-sm font-mono font-bold text-pos ${inputStyle}`} />
+        <FieldIssues issues={issuesFor(kunnIssues, 'LoanAmount')} />
       </div>
       <div>
         <label className={`block mb-1 ${labelStyle}`}>
@@ -76,6 +92,7 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
             setForm(f => ({ ...f, DisbursementDate: disDate, KunnDueDate: kunnEnd || f.KunnDueDate }));
           }}
           className={`w-full rounded-md p-2.5 text-xs ${inputStyle}`} />
+        <FieldIssues issues={issuesFor(kunnIssues, 'DisbursementDate')} />
       </div>
       <div>
         <label className={`block mb-1 ${labelStyle}`}>Thời hạn KUNN *</label>
@@ -107,6 +124,7 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
             placeholder="5T / 12 tháng..."
             className={`w-full rounded-md p-2.5 text-xs ${inputStyle}`} />
         )}
+        <FieldIssues issues={issuesFor(kunnIssues, 'KunnTenor')} />
       </div>
       <div>
         <label className={`block mb-1 ${labelStyle}`}>
@@ -114,6 +132,7 @@ export const KunnAmountSection: React.FC<KunnAmountSectionProps> = ({
         </label>
         <DateInput readOnly value={form.KunnDueDate || ''}
           className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-accent border ${readonlyInputStyle}`} />
+        <FieldIssues issues={issuesFor(kunnIssues, 'KunnDueDate')} />
       </div>
       <div>
         <label className={`block mb-1 ${labelStyle}`}>Ngày bắt đầu trả nợ</label>

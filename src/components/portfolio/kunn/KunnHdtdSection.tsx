@@ -1,7 +1,6 @@
 import React from 'react';
 import type { LimitGroupStatus } from '../../../lib/creditLimit';
-import type { KunnIssue } from '../../../lib/creditContract';
-import { FileText, AlertTriangle, Building2 } from 'lucide-react';
+import { FileText, Building2 } from 'lucide-react';
 import { fmtMoney, fmtDate } from '../../../lib/utils';
 import type { LoanContract, CreditContract, Customer } from '../../../types';
 
@@ -20,7 +19,6 @@ export interface KunnHdtdSectionProps {
   formKunnNumber: string;
   setFormKunnNumber: (v: string) => void;
   formLimitStatus: LimitGroupStatus | undefined;
-  kunnIssues: KunnIssue[];
   formGrantedLimit: number;
   totalExistingKunnBalance: number;
   availableBeforeThisKunn: number;
@@ -41,7 +39,6 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
   formKunnNumber,
   setFormKunnNumber,
   formLimitStatus,
-  kunnIssues,
   formGrantedLimit,
   totalExistingKunnBalance,
   availableBeforeThisKunn,
@@ -109,17 +106,6 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
             <span className="text-ink-faint">Mục đích: {formCreditContract.LoanPurposeType}</span>
           )}
         </div>
-      </div>
-    )}
-
-    {kunnIssues.length > 0 && (
-      <div className={`p-3 rounded-md border text-[11px] font-semibold space-y-1 ${'bg-warn-soft border-warn/30 text-warn'
-        }`}>
-        <div className="flex items-center space-x-1.5 uppercase tracking-wide">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          <span>Đối chiếu với HĐTD {formCreditContract?.HdtdNumber}</span>
-        </div>
-        {kunnIssues.map((x, i) => <div key={i}>• {x.message}</div>)}
       </div>
     )}
 

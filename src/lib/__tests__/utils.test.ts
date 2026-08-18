@@ -96,6 +96,10 @@ describe('fmtRate', () => {
     expect(fmtRate(undefined)).toBe('—');
     expect(fmtRate(NaN)).toBe('—');
   });
+
+  it('lãi suất 0 là CHƯA KHAI, không phải cho vay không lãi', () => {
+    expect(fmtRate(0)).toBe('— chưa khai');
+  });
 });
 
 describe('formatAssetType', () => {

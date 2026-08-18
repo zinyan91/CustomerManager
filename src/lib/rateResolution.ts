@@ -40,7 +40,6 @@ export interface RateTimelineOptions {
   today?: string | null;
 }
 
-const DEFAULT_RATE_PERCENT = 8.5;
 
 function toPercent(v?: number | null): number {
   if (v === undefined || v === null || isNaN(v)) return 0;
@@ -134,16 +133,18 @@ export function buildRateTimeline(
         forecast: !!(today && afterPref > today),
       });
     } else {
-      const opening = floating.configured
-        ? floating.value
-        : (prefRate > 0 ? prefRate : DEFAULT_RATE_PERCENT);
-      points.push({
-        fromDate: start,
-        ratePercent: opening + surcharge,
-        kind: floating.configured ? 'floating' : 'contract',
-        label: floating.configured ? 'Thả nổi (base + biên)' : 'Lãi suất hợp đồng',
-        forecast: false,
-      });
+      const opening = floating.configured ? floating.value : prefRate;
+      if (floating.configured || prefRate > 0) {
+        points.push({
+          fromDate: start,
+          ratePercent: opening + surcharge,
+          kind: floating.configured ? 'floating' : 'contract',
+          label: floating.configured
+            ? 'Thả nổi (base + biên)'
+            : (prefMonths > 0 ? 'Lãi suất hợp đồng' : 'Lãi suất cố định suốt kỳ vay'),
+          forecast: false,
+        });
+      }
     }
   }
 
@@ -230,7 +231,7 @@ export function getEffectiveActiveRate(
   c?: LoanContract | null,
   targetDateStr?: string
 ): number {
-  if (!c) return DEFAULT_RATE_PERCENT / 100;
+  if (!c) return 0;
 
   const timeline = buildContractRateTimeline(c);
   const point = timeline.length > 0
@@ -247,7 +248,7 @@ export function getEffectiveActiveRate(
   const pref = toPercent(c.PreferentialRate);
   if (pref > 0) return (pref + surcharge) / 100;
 
-  return DEFAULT_RATE_PERCENT / 100;
+  return 0;
 }
 
 export type RateMode = 'pref' | 'base';
@@ -287,14 +288,15 @@ export function buildRateFields(mode: RateMode, input: RateFieldsInput): RateFie
   const floor = input.floorPercent && input.floorPercent > 0 ? input.floorPercent : 0;
 
   const usePref = mode === 'pref' && pref > 0 && months > 0;
+  const prefPhang = mode === 'pref' && pref > 0 && months <= 0;
 
   return {
-    PreferentialRate: usePref ? pref / 100 : null,
+    PreferentialRate: usePref || prefPhang ? pref / 100 : null,
     PreferentialPeriodMonths: usePref ? months : null,
     PostPreferentialRate: usePref ? (pref + margin) / 100 : null,
-    BaseRate: usePref ? null : (base > 0 ? base / 100 : null),
-    MarginRate: margin !== 0 ? margin / 100 : null,
-    NormalRate: usePref ? null : (base > 0 ? (base + margin) / 100 : null),
+    BaseRate: usePref || prefPhang ? null : (base > 0 ? base / 100 : null),
+    MarginRate: prefPhang ? null : (margin !== 0 ? margin / 100 : null),
+    NormalRate: usePref || prefPhang ? null : (base > 0 ? (base + margin) / 100 : null),
     RateFloorAnnual: floor > 0 ? floor / 100 : null,
   };
 }

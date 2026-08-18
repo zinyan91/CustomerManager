@@ -382,9 +382,9 @@ describe('getEffectiveActiveRate — cùng một nguồn với bảng lịch', (
     expect(getEffectiveActiveRate(bienAm, '2026-05-15')).toBeCloseTo(0.062, 10);
   });
 
-  it('không khai gì thì về mặc định 8,5%', () => {
-    expect(getEffectiveActiveRate({ Id: 1 } as LoanContract, '2026-05-15')).toBeCloseTo(0.085, 10);
-    expect(getEffectiveActiveRate(null)).toBeCloseTo(0.085, 10);
+  it('không khai gì thì trả 0, KHÔNG bịa ra lãi suất', () => {
+    expect(getEffectiveActiveRate({ Id: 1 } as LoanContract, '2026-05-15')).toBe(0);
+    expect(getEffectiveActiveRate(null)).toBe(0);
   });
 });
 
@@ -409,9 +409,9 @@ describe('getEffectiveActiveRate — bản gộp về dòng thời gian', () => 
     expect(getEffectiveActiveRate({ InterestRate: 0.095 } as LoanContract)).toBeCloseTo(0.095);
   });
 
-  it('mặc định 8.5% khi không có thông tin nào', () => {
-    expect(getEffectiveActiveRate({} as LoanContract)).toBeCloseTo(0.085);
-    expect(getEffectiveActiveRate(null)).toBeCloseTo(0.085);
+  it('không có thông tin nào thì trả 0 để màn hình báo "chưa khai"', () => {
+    expect(getEffectiveActiveRate({} as LoanContract)).toBe(0);
+    expect(getEffectiveActiveRate(null)).toBe(0);
   });
 });
 
@@ -480,10 +480,22 @@ describe('buildRateFields — hai chế độ lãi suất loại trừ nhau', ()
     expect(getEffectiveActiveRate(c, '2028-06-15')).toBeCloseTo(0.1155, 10);
   });
 
-  it('chế độ ưu đãi mà bỏ trống số kỳ thì không lưu ưu đãi, tránh tạo mâu thuẫn', () => {
-    const r = buildRateFields('pref', { ...nhap, prefMonths: 0 });
-    expect(r.PreferentialRate).toBeNull();
+  it('ưu đãi bỏ trống số kỳ = lãi suất CỐ ĐỊNH suốt kỳ vay, không vứt con số đi', () => {
+    const r = buildRateFields('pref', { prefPercent: 7.5, prefMonths: 0, marginPercent: 0 });
+    expect(r.PreferentialRate).toBeCloseTo(0.075, 10);
     expect(r.PreferentialPeriodMonths).toBeNull();
+    expect(r.PostPreferentialRate).toBeNull();
+    expect(r.BaseRate).toBeNull();
+    expect(r.NormalRate).toBeNull();
+  });
+
+  it('lãi suất cố định đó đi thẳng vào lịch, không rơi về hằng số nào', () => {
+    const c = {
+      DisbursementDate: '2026-04-09',
+      ...buildRateFields('pref', { prefPercent: 7.5, prefMonths: 0, marginPercent: 0 }),
+    } as LoanContract;
+    expect(getEffectiveActiveRate(c, '2026-05-15')).toBeCloseTo(0.075, 10);
+    expect(getEffectiveActiveRate(c, '2030-05-15')).toBeCloseTo(0.075, 10);
   });
 
   it('giữ sàn lãi suất khi có khai', () => {

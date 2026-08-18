@@ -95,6 +95,7 @@ export function fmtNumber(v?: number | null, fallback: string = '—'): string {
 
 export function fmtRate(v?: number | null): string {
   if (v === undefined || v === null || isNaN(v)) return '—';
+  if (v === 0) return '— chưa khai';
   const ratio = v > 1 ? v / 100 : v;
   return `${formatPercentWith(ratio)}/năm`;
 }

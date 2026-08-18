@@ -10,7 +10,29 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 ---
 
-# 0. Bảng kỳ due: bỏ dư nợ, thêm CIF, thu nhanh tại chỗ — 18/08/2026
+# 0. Lãi suất 8,5% không ai khai mà vẫn thu — 18/08/2026
+
+Chủ dự án hỏi: nhập ưu đãi 7,5 không nhập thời gian và biên độ, sao lãi suất áp dụng ra 8,5? Test **1.595 → 1.597**.
+
+**Chuỗi sự việc.** `buildRateFields` đòi `pref > 0 && months > 0`; thiếu kỳ hạn thì `usePref = false` và **cả sáu cột lãi suất được ghi `null`** — con số 7,5 bị vứt, không cảnh báo. Đọc lại thì `getEffectiveActiveRate` không thấy gì nên rơi xuống `DEFAULT_RATE_PERCENT = 8.5`. Con số đó chảy tiếp vào `InterestRate` khi lưu, rồi vào lịch trả nợ.
+
+**Hồ sơ thật đã dính.** `PNAT.CN.01061223/GNN-01` của PHAN THỊ NGỌC QUÝ, vay 900 triệu: sáu cột lãi suất đều `null`, riêng `InterestRate` = 0,0850. Lịch đang thu kỳ 2 là 6.497.260đ trên 900 triệu cho 31 ngày — giải ngược ra đúng **8,500%**. Hai hồ sơ của PHẠM VĂN ĐÀN có triệu chứng gần giống.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Ưu đãi bỏ trống thời gian = **lãi suất cố định suốt kỳ vay** | Chủ dự án chốt. `buildRateFields` giữ `PreferentialRate`, để `PreferentialPeriodMonths` trống |
+| ✅ | **Gỡ hẳn `DEFAULT_RATE_PERCENT`** | Chưa khai thì trả 0, `fmtRate(0)` hiện `— chưa khai`. Hằng số dự phòng không được đóng vai số liệu hợp đồng |
+| ✅ | Sửa 3 test đang khoá hành vi cũ | Trong đó có test tên *"chế độ ưu đãi mà bỏ trống số kỳ thì không lưu ưu đãi, tránh tạo mâu thuẫn"* — quyết định cũ, nay đã bị thay |
+
+`buildRateTimeline` hoá ra **đã** xử lý đúng ưu đãi phẳng từ trước; lỗi chỉ nằm ở chỗ `buildRateFields` xoá mất 7,5 trước khi nó kịp được lưu.
+
+Kiểm chứng trên ứng dụng: mở KUNN, nhập ưu đãi 7,5, để trống thời gian và biên độ — ô **LÃI SUẤT ÁP DỤNG** hiện **7,50 %/năm**. Không lưu, đã bỏ form.
+
+**Còn tồn đọng:** 3 hồ sơ trên vẫn mang lãi suất 8,5 và 11,2 trong `InterestRate`, cần khai lại theo GNN giấy. Tôi không đoán lãi suất.
+
+---
+
+# 0.0. Bảng kỳ due: bỏ dư nợ, thêm CIF, thu nhanh tại chỗ — 18/08/2026
 
 Test **1.580 → 1.595**.
 

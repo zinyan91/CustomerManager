@@ -100,6 +100,10 @@ Toàn bộ nằm trong `src/lib/` dưới dạng hàm thuần, không phụ thu�
 | Mốc thu lãi hàng tháng kế tiếp | `monthlyDueInfo` (`dueList.ts`) |
 | Ba con số mức cấp / dư nợ / khả dụng của một khách hàng | `totalsOfCreditContracts` (`creditContract.ts`) |
 | Dư nợ của một khoản vay | `outstandingOf` (`loanMath.ts`) — `computeOutstandingBalance` chỉ là lớp bọc khi có sẵn lịch |
+
+**Không có lãi suất mặc định.** `getEffectiveActiveRate` trả **0** khi hợp đồng chưa khai lãi suất, và `fmtRate(0)` hiện `— chưa khai`. Trước 18/08/2026 nó rơi về hằng số `DEFAULT_RATE_PERCENT = 8.5` — con số đó đã chảy vào `InterestRate` của hồ sơ thật rồi vào lịch trả nợ, thu lãi 8,5% trên một khoản chưa ai khai lãi suất. Một hằng số dự phòng **không bao giờ** được đóng vai số liệu hợp đồng: thiếu thì phải nói là thiếu.
+
+**Ưu đãi bỏ trống thời gian = lãi suất cố định suốt kỳ vay.** Banker gõ 7,5 rồi thôi nghĩa là không có giai đoạn sau ưu đãi. Bản cũ đòi `pref > 0 && months > 0`, không đủ thì **vứt luôn con số 7,5** và ghi `null` vào cả sáu cột lãi suất — im lặng, màn hình vẫn báo lưu thành công. Nay `buildRateFields` giữ lại `PreferentialRate` và để `PreferentialPeriodMonths` trống.
 | Hiển thị phần trăm từ tỷ lệ thập phân | `fmtPercent` (`utils.ts`) |
 | Hiển thị số tiền | `fmtMoney` (`utils.ts`) |
 | Đọc số tiền từ ô nhập chỉ có chữ số | `parseMoneyInput` (`utils.ts`) |

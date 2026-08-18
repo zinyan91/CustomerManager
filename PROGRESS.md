@@ -25,7 +25,15 @@ Chủ dự án yêu cầu rà lại dashboard sau đợt bật cờ tất toán.
 
 Kiểm chứng phân quyền: khoá `anon` gọi view bị trả `42501 permission denied`. View chạy quyền chủ sở hữu nên mệnh đề `WHERE can_access_contract` **là** hàng rào — ghi cảnh báo ngay trong tệp migration.
 
-**Còn tồn đọng:** 3 hồ sơ có `CurrentBalance` lệch với lịch, nay dashboard theo lịch nên số đã đúng, nhưng dữ liệu gốc vẫn mâu thuẫn — nặng nhất là `2002/HĐTD/9738792/GNN-01` khai `LoanAmount = 0` trong khi lịch mang 830 triệu gốc.
+**Dọn nốt dữ liệu, 18/08/2026 — nay `CurrentBalance` khớp lịch ở 100% hồ sơ đang chạy:**
+
+| Hồ sơ | Sửa gì | Căn cứ |
+| :--- | :--- | :--- |
+| `2002/HĐTD/9738792/GNN-01` ĐOÀN NGỌC LÝ | `LoanAmount` 0 → 830.000.000 | Bốn nguồn độc lập cùng chỉ một số: `ContractAmount` của KUNN, mức cấp HĐTD, Σ gốc 240 kỳ trong lịch, và `CurrentBalance` + gốc đã thu |
+| `2002/HĐTD/9603103/GNN-11` NGUYỄN VĂN DÀO | `CurrentBalance` 400.000.000 → 1.060.000.000 | Chủ dự án chốt sau khi đối chiếu. Khoản gốc trả cuối kỳ, giải ngân 13/07/2026, chưa tới kỳ trả gốc nào — 400 triệu là gõ nhầm |
+| 4 hồ sơ lệch dưới 1 triệu | Đồng bộ `CurrentBalance` theo lịch | Số lấy từ chính lịch trả nợ, không có con số nào nghĩ ra. Câu lệnh đặt ngưỡng 1 triệu để không chạm được ca lớn |
+
+**Một đính chính:** danh sách "10 hồ sơ lệch" báo ngày 18/08 có **5 ca là ảo**. Truy vấn rà soát lúc đó cộng `PrincipalAmount` ở kỳ `IsPaid`, trong khi `paidPrincipalOf` có **ba nhánh** và tính cả `ActualPaidPrincipal` lẫn `PrepaidPrincipalAmount` — hai cột đó có số thật ở 9 dòng. Viết view mới lộ ra. Bài học: **truy vấn rà soát phải lặp đúng công thức của mã, không được rút gọn** — rút gọn thì báo động giả.
 
 ---
 

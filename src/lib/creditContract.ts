@@ -1,5 +1,6 @@
 import type { CreditContract, LoanContract } from '../types';
 import { isRevolvingCredit } from './loanProductRules';
+import { kunnPrincipal } from './loanMath';
 import { getMasterHdtdNumber } from './utils';
 
 export const GNN_SEPARATOR = '/GNN-';
@@ -276,9 +277,7 @@ export function summarizeCreditContracts(
     const end = toIso(cc.ContractEndDate);
 
     const outstanding = active.reduce((s, k) => s + Math.max(0, outstandingOf(k)), 0);
-    const disbursedCumulative = own.reduce(
-      (s, k) => s + Math.max(0, k.LoanAmount ?? k.CurrentBalance ?? 0), 0
-    );
+    const disbursedCumulative = own.reduce((s, k) => s + kunnPrincipal(k), 0);
 
     const granted = cc.ContractAmount || 0;
     const revolving = isRevolvingCredit(cc.LoanMethod);

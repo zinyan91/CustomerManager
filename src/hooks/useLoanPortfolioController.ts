@@ -10,7 +10,7 @@ import {
   addMonthsToDate, parseKunnTenorMonths,
   generateSchedule, recalculateSchedules, computeOutstandingBalance,
   isBulletPrincipal, redateSchedules, resolveMonthlyPrincipal,
-  getAutoDebtGroupInfo, maturityDateOf
+  getAutoDebtGroupInfo, maturityDateOf, kunnPrincipal
 } from '../lib/loanMath';
 import {
   getEffectiveActiveRate,
@@ -25,7 +25,7 @@ import type { LoanContract, CreditContract, RateAdjustmentHistoryItem } from '..
 import { usePaymentModal } from './usePaymentModal';
 import { useCustomerPortfolio } from './useCustomerPortfolio';
 import {
-  blankFormFields, buildKunnPayload, checkMonthlyPrincipal, contractToFormFields,
+  blankFormFields, buildKunnPayload, checkLoanAmount, checkMonthlyPrincipal, contractToFormFields,
   nextKunnNumberFor, type KunnFormFields,
 } from '../lib/kunnForm';
 import type { MasterHdtdGroup } from '../components/portfolio/MasterHdtdFilterTabs';
@@ -220,7 +220,7 @@ export function useLoanPortfolioController() {
         {
           MonthlyPrincipalAmount: null,
           LoanAmount: kunnLoanAmountNum,
-          ContractAmount: undefined,
+          CurrentBalance: undefined,
           PrincipalGracePeriodMonths: form.PrincipalGracePeriodMonths ?? 0,
         },
         formTotalPeriods
@@ -290,7 +290,7 @@ export function useLoanPortfolioController() {
     return Array.from(map.entries()).map(([masterNo, groupContracts]) => {
       const cc = creditContracts.find(x => x.HdtdNumber === masterNo);
       const totalCreditLimit = cc?.ContractAmount || 0;
-      const totalKunnDisbursed = groupContracts.reduce((sum, k) => sum + (k.LoanAmount || 0), 0);
+      const totalKunnDisbursed = groupContracts.reduce((sum, k) => sum + kunnPrincipal(k), 0);
       const remainingLimit = totalCreditLimit > 0 ? Math.max(0, totalCreditLimit - totalKunnDisbursed) : 0;
       return {
         masterNo,
@@ -449,6 +449,13 @@ export function useLoanPortfolioController() {
         || nextKunnNumberFor(formHdtdNumber, contracts);
 
       const loanAmount = parseMoneyDecimalInput(formLoanAmount);
+
+      const amountCheck = checkLoanAmount(loanAmount);
+      if (!amountCheck.ok) {
+        showNotify('error', amountCheck.message || 'Số tiền vay không hợp lệ.');
+        setLoading(false);
+        return;
+      }
 
       const principalCheck = checkMonthlyPrincipal({
         declared: parseMoneyDecimalInput(formMonthlyPrincipal) || null,

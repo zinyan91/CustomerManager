@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { blankFormFields, buildKunnPayload } from '../kunnForm';
+import { blankFormFields, buildKunnPayload, checkLoanAmount } from '../kunnForm';
 import type { CreditContract } from '../../types';
 
 const hdtdCha: CreditContract[] = [
@@ -75,5 +75,26 @@ describe('buildKunnPayload — ngày hiệu lực HĐTD', () => {
   it('không còn ghi cột HdtdDueDate đã chết', () => {
     const p = dungPayload({ CreditContractId: 7 });
     expect('HdtdDueDate' in p).toBe(false);
+  });
+});
+
+describe('checkLoanAmount — số tiền vay KUNN', () => {
+  it('bỏ trống thì chặn', () => {
+    const r = checkLoanAmount(0);
+    expect(r.ok).toBe(false);
+    expect(r.message).toContain('Số tiền vay');
+  });
+
+  it('số âm thì chặn', () => {
+    expect(checkLoanAmount(-1_000_000).ok).toBe(false);
+  });
+
+  it('không phải số thì chặn', () => {
+    expect(checkLoanAmount(NaN).ok).toBe(false);
+  });
+
+  it('số dương thì cho qua', () => {
+    expect(checkLoanAmount(100_000_000).ok).toBe(true);
+    expect(checkLoanAmount(1).ok).toBe(true);
   });
 });

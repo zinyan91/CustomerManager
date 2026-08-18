@@ -10,6 +10,7 @@ import {
   calculateOverdueDaysFromDates,
   getAutoDebtGroupInfo,
   recalculateSchedules,
+  kunnPrincipal,
   computeOutstandingBalance,
   isBulletPrincipal,
   overdueDaysOfSchedule,
@@ -1397,8 +1398,8 @@ describe('outstandingOf — một định nghĩa dư nợ cho mọi màn hình',
     expect(outstandingOf(hd(), 1_500_000_000)).toBe(0);
   });
 
-  it('số tiền vay để trống thì lấy mức cấp hợp đồng', () => {
-    expect(outstandingOf(hd({ LoanAmount: 0, ContractAmount: 830_000_000 }), 6_920_000))
+  it('số tiền vay để trống thì lùi về CurrentBalance, không lấy mức cấp HĐTD', () => {
+    expect(outstandingOf(hd({ LoanAmount: 0, CurrentBalance: 830_000_000, ContractAmount: 5_000_000_000 }), 6_920_000))
       .toBe(823_080_000);
   });
 
@@ -1462,5 +1463,30 @@ describe('thu nhanh một kỳ đúng lịch', () => {
     const r = markSchedulePaidOnTime(ky({ PrincipalAmount: 0 }), '2026-09-12');
     expect(paidPrincipalOf(r)).toBe(0);
     expect(r.TotalAmount).toBe(2_000_000);
+  });
+});
+
+describe('kunnPrincipal — số tiền vay của KUNN không bao giờ là mức cấp HĐTD', () => {
+  it('có LoanAmount thì lấy LoanAmount', () => {
+    expect(kunnPrincipal({ LoanAmount: 500_000_000, ContractAmount: 5_000_000_000 } as any))
+      .toBe(500_000_000);
+  });
+
+  it('LoanAmount rỗng thì lùi về CurrentBalance, KHÔNG lấy ContractAmount', () => {
+    expect(kunnPrincipal({ LoanAmount: null, CurrentBalance: 300_000_000, ContractAmount: 5_000_000_000 } as any))
+      .toBe(300_000_000);
+  });
+
+  it('LoanAmount bằng 0 cũng không được rơi vào mức cấp HĐTD', () => {
+    expect(kunnPrincipal({ LoanAmount: 0, CurrentBalance: 0, ContractAmount: 5_000_000_000 } as any))
+      .toBe(0);
+  });
+
+  it('không khai gì thì bằng 0, không phải hạn mức', () => {
+    expect(kunnPrincipal({ ContractAmount: 5_000_000_000 } as any)).toBe(0);
+  });
+
+  it('số âm không được lọt xuống công thức tiền', () => {
+    expect(kunnPrincipal({ LoanAmount: -1_000_000 } as any)).toBe(0);
   });
 });

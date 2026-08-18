@@ -5,6 +5,7 @@ import {
   totalUsableCapacity, appraisalStatus, appraisalExpiryDate, cardProductCap, isAppraisalUsable,
 } from './collateralMath';
 import { isRevolvingCredit } from './loanProductRules';
+import { kunnPrincipal } from './loanMath';
 
 export interface SharedLimitGroup {
   code: string;
@@ -28,9 +29,7 @@ function limitOf(c: LoanContract): number {
   return c.ContractAmount || c.LoanAmount || 0;
 }
 
-function disbursedOf(c: LoanContract): number {
-  return c.LoanAmount ?? c.CurrentBalance ?? 0;
-}
+const disbursedOf = kunnPrincipal;
 
 export interface LimitGroupStatus {
   key: string;

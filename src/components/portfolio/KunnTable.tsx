@@ -3,6 +3,7 @@ import { Receipt, ChevronRight } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
 import { fmtMoney, fmtRate, fmtDate } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
+import { kunnPrincipal } from '../../lib/loanMath';
 
 const DEBT_GROUP_COLORS: Record<number, string> = {
   1: 'bg-pos-soft  text-pos border border-pos/30 ',
@@ -132,7 +133,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
                     {masterNo}
                   </td>
                   <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-bold text-pos whitespace-nowrap">
-                    {fmtMoney(c.LoanAmount || c.ContractAmount)}
+                    {fmtMoney(kunnPrincipal(c))}
                   </td>
                   <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-bold text-warn whitespace-nowrap">
                     {fmtMoney(getEffectiveBalanceForContract(c))}

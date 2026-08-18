@@ -147,6 +147,18 @@ function cleanDate(d?: string | null): string | null {
   return (d && /^\d{4}-\d{2}-\d{2}$/.test(d.trim())) ? d.trim() : null;
 }
 
+export interface LoanAmountCheck {
+  ok: boolean;
+  message?: string;
+}
+
+export function checkLoanAmount(loanAmount: number): LoanAmountCheck {
+  if (!Number.isFinite(loanAmount) || loanAmount <= 0) {
+    return { ok: false, message: 'Số tiền vay (KUNN) phải lớn hơn 0.' };
+  }
+  return { ok: true };
+}
+
 export const MONTHLY_PRINCIPAL_TOLERANCE = 100_000;
 
 export interface MonthlyPrincipalCheckInput {

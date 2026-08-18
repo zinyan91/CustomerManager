@@ -13,6 +13,7 @@ import {
   type DueFilter,
 } from '../../lib/dueList';
 import { parseCollateralIds } from '../../lib/creditLimit';
+import { kunnPrincipal } from '../../lib/loanMath';
 import { outstandingOf, canQuickSettle } from '../../lib/loanMath';
 import { useQuickSettle } from '../../hooks/useQuickSettle';
 import { useWork } from '../../context/WorkContext';
@@ -340,7 +341,7 @@ export const DashboardView: React.FC = () => {
     { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
     { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: r => <span className="font-mono">{r.contract.ContractNumber}</span> },
     { key: 'soTien', label: 'Số tiền KUNN / dư nợ', priority: 1, align: 'right',
-      render: r => <span className="font-mono font-bold text-pos">{fmtMoney(r.contract.LoanAmount || r.contract.CurrentBalance || 0)}</span> },
+      render: r => <span className="font-mono font-bold text-pos">{fmtMoney(kunnPrincipal(r.contract))}</span> },
     { key: 'ketThuc', label: 'Ngày kết thúc KUNN', priority: 1, align: 'center',
       render: r => <span className="font-bold text-accent">{fmtDate(r.contract.KunnDueDate)}</span> },
     { key: 'kyHan', label: 'Kỳ hạn KUNN', priority: 2, align: 'center',
@@ -418,7 +419,7 @@ export const DashboardView: React.FC = () => {
       customer?.FullName || '',
       customer?.CifKh || '',
       contract.ContractNumber || '',
-      fmtMoney(contract.LoanAmount || contract.CurrentBalance || 0),
+      fmtMoney(kunnPrincipal(contract)),
       fmtDate(contract.KunnDueDate),
       contract.KunnTenor || '',
       daysLeft === null || daysLeft === undefined ? ''

@@ -395,14 +395,26 @@ export function isBulletPrincipal(
 
 export type MonthlyPrincipalContract = Pick<
   LoanContract,
-  'MonthlyPrincipalAmount' | 'LoanAmount' | 'ContractAmount' | 'PrincipalGracePeriodMonths'
+  'MonthlyPrincipalAmount' | 'LoanAmount' | 'CurrentBalance' | 'PrincipalGracePeriodMonths'
 >;
+
+export function kunnPrincipal(
+  contract: Pick<LoanContract, 'LoanAmount' | 'CurrentBalance'>
+): number {
+  const declared = contract.LoanAmount;
+  if (Number.isFinite(declared as number) && (declared as number) > 0) return declared as number;
+
+  const balance = contract.CurrentBalance;
+  if (Number.isFinite(balance as number) && (balance as number) > 0) return balance as number;
+
+  return 0;
+}
 
 export function monthlyPrincipalQuotient(
   contract: MonthlyPrincipalContract,
   totalPeriods: number
 ): number {
-  const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
+  const loanAmt = kunnPrincipal(contract);
   const graceMonths = contract.PrincipalGracePeriodMonths || 0;
   return loanAmt / Math.max(1, totalPeriods - graceMonths);
 }
@@ -421,7 +433,7 @@ export function recalculateSchedules(
   contract: LoanContract,
   todayStr?: string
 ): RepaymentSchedule[] {
-  const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
+  const loanAmt = kunnPrincipal(contract);
   const graceMonths = contract.PrincipalGracePeriodMonths || 0;
   const isBullet = isBulletPrincipal(contract);
 
@@ -624,7 +636,7 @@ export function outstandingOf(
 ): number {
   if (contract.IsSettled === true) return 0;
 
-  const loanAmt = contract.LoanAmount || contract.ContractAmount || 0;
+  const loanAmt = kunnPrincipal(contract);
   if (paidPrincipal === null || paidPrincipal === undefined || Number.isNaN(paidPrincipal)) {
     return contract.CurrentBalance ?? loanAmt;
   }

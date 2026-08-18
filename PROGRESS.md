@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 17/08/2026 — bộ lọc KUNN tất toán, ba con số tab Khoản vay, hàng KPI
+Cập nhật: 18/08/2026 — số tiền vay KUNN không còn mượn mức cấp HĐTD
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -10,7 +10,26 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 ---
 
-# 0. Lãi suất 8,5% không ai khai mà vẫn thu — 18/08/2026
+# 0. Số tiền vay KUNN mượn mức cấp HĐTD — 18/08/2026
+
+Rà nút giải ngân KUNN so với skill `tin-dung` thì lộ ra `LoanAmount || ContractAmount` nằm ở **bảy chỗ**, ba trong số đó ở `loanMath.ts`. Trên dòng KUNN, `ContractAmount` là **mức cấp HĐTD lặp lại** (TH1), nên khoản nào bỏ trống số tiền vay sẽ được tính bằng nguyên hạn mức — lịch trả nợ lấy sai gốc, bất biến `Σ(gốc) = số tiền vay` vỡ. Test **1.602 → 1.607**.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Gộp bảy bản sao về `kunnPrincipal` trong `loanMath.ts` | Lấy `LoanAmount`, thiếu thì `CurrentBalance`, **không bao giờ** `ContractAmount`. `limitOf` giữ nguyên — đó là mức cấp, khái niệm khác |
+| ✅ | `checkLoanAmount` chặn ở form | Trước đó `parseMoneyDecimalInput('')` trả 0 và lưu thẳng, không gì cản |
+| ✅ | Migration 52: `LoanAmount` NOT NULL + `CHECK > 0` | Đã áp. Thử hành vi thật: 0 / NULL / âm đều bị chặn, dương vào được, quay lui sạch |
+| ✅ | Viết lại 2 test đang khoá hành vi cũ | Xem lý do bên dưới |
+
+**Vì sao đổi được hai test đó.** Chúng khoá đúng hành vi mượn `ContractAmount`. Truy `7e7590c` thì thấy fallback là miếng vá cho một khoản hỏng dữ liệu: `2002/HĐTD/9738792/GNN-01` có `LoanAmount = 0`, và chính commit đó ghi *"chưa sửa — số tiền vay là dữ liệu gốc, phải đối chiếu GNN giấy trước"*. Đo lại 18/08/2026: khoản đó nay có `LoanAmount = 830.000.000`, và 106/106 KUNN đều dương. Lý do của miếng vá đã hết.
+
+**Đo trước khi sửa.** 106 KUNN / 70 HĐTD: 0 khoản thiếu số tiền, 0 khoản chưa gán `CreditContractId` (cột vốn đã NOT NULL), 0 tiền tố lệch số HĐTD cha. Nên đây là bịt lỗ trước khi thủng, không phải chữa cháy.
+
+**Ngoài phạm vi:** `mobile/` có bản sao riêng, `usePortfolioData.ts` còn lùi tới `ContractAmount`. Codebase tách riêng, không dùng chung `src/lib/`.
+
+---
+
+# 0.1. Lãi suất 8,5% không ai khai mà vẫn thu — 18/08/2026
 
 Chủ dự án hỏi: nhập ưu đãi 7,5 không nhập thời gian và biên độ, sao lãi suất áp dụng ra 8,5? Test **1.595 → 1.597**.
 

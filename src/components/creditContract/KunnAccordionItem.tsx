@@ -6,6 +6,7 @@ import { fmtDate, fmtMoney, fmtRate, todayIso } from '../../lib/utils';
 import { collateralValue } from '../../lib/collateralMath';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { isRevolvingCredit } from '../../lib/loanProductRules';
+import { kunnPrincipal } from '../../lib/loanMath';
 import { hdtdLifecycle, HDTD_LIFECYCLE_LABEL, type HdtdLifecycle } from '../../lib/creditContract';
 import type { Collateral, CreditContract, LoanContract } from '../../types';
 
@@ -62,7 +63,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
 
   const granted = cc.ContractAmount || 0;
   const isRevolving = isRevolvingCredit(cc.LoanMethod);
-  const totalDisbursed = contractKunns.reduce((s, k) => s + (k.LoanAmount || k.ContractAmount || 0), 0);
+  const totalDisbursed = contractKunns.reduce((s, k) => s + kunnPrincipal(k), 0);
 
   const lifecycle = hdtdLifecycle(cc, today);
   const LifecycleIcon = LIFECYCLE_ICON[lifecycle];
@@ -310,7 +311,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
                           {k.ContractNumber}
                         </td>
                         <td className="py-2 font-mono font-semibold text-right text-ink">
-                          {fmtMoney(k.LoanAmount || k.ContractAmount || 0)}
+                          {fmtMoney(kunnPrincipal(k))}
                         </td>
                         <td className="py-2 font-mono font-bold text-right text-warn">
                           {fmtMoney(kunnBalance)}

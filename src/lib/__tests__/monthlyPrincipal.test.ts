@@ -33,8 +33,13 @@ describe('monthlyPrincipalQuotient', () => {
     expect(monthlyPrincipalQuotient(c, 120)).toBeCloseTo(960_000_000 / 102, 1);
   });
 
-  it('mượn ContractAmount khi LoanAmount trống', () => {
+  it('KHÔNG mượn ContractAmount khi LoanAmount trống', () => {
     const c = hd({ LoanAmount: null, ContractAmount: 240_000_000 });
+    expect(monthlyPrincipalQuotient(c, 60)).toBe(0);
+  });
+
+  it('LoanAmount trống thì lùi về CurrentBalance', () => {
+    const c = hd({ LoanAmount: null, CurrentBalance: 240_000_000, ContractAmount: 5_000_000_000 });
     expect(monthlyPrincipalQuotient(c, 60)).toBe(4_000_000);
   });
 

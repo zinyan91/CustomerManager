@@ -6,14 +6,16 @@ import {
 } from '../../lib/api';
 import { contractDueState, dueCutoffIso, type DuePeriodRow } from '../../lib/duePeriod';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
-import { fmtDate, fmtMoney, getMasterHdtdNumber, toIsoDate, daysUntil } from '../../lib/utils';
+import { fmtDate, fmtMoney, getMasterHdtdNumber, toIsoDate, daysUntil, todayIso } from '../../lib/utils';
 import { assetClassLabel, collateralValue, appraisalExpiryDate } from '../../lib/collateralMath';
 import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
   type DueFilter,
 } from '../../lib/dueList';
 import { parseCollateralIds } from '../../lib/creditLimit';
-import { outstandingOf } from '../../lib/loanMath';
+import { outstandingOf, canQuickSettle } from '../../lib/loanMath';
+import { useQuickSettle } from '../../hooks/useQuickSettle';
+import { useWork } from '../../context/WorkContext';
 import { summarizeCreditContracts, totalsOfCreditContracts } from '../../lib/creditContract';
 import { Toast, useToast } from '../Toast';
 import type { Customer, Collateral, LoanContract, CardContract, CreditContract } from '../../types';
@@ -28,6 +30,7 @@ import type { AdaptiveColumn } from '../AdaptiveTable';
 
 export const DashboardView: React.FC = () => {
   const { toast, show, dismiss } = useToast();
+  const { setActiveTab, setSelectedCustomerId } = useWork();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
   const [contracts, setContracts] = useState<LoanContract[]>([]);
@@ -252,6 +255,16 @@ export const DashboardView: React.FC = () => {
 
   const soNgay = <T extends { daysLeft?: number | null }>(x: T) => x.daysLeft;
 
+  const moLichTraNo = (customerId: number) => {
+    setSelectedCustomerId(customerId);
+    setActiveTab('loans');
+  };
+
+  const { settle, busyScheduleId } = useQuickSettle({
+    onNotify: show,
+    onDone: fetchDashboardData,
+  });
+
   const dueMonthRows = filterByDue(dueInMonthList, dueMonthFilter, i => i.state.daysLeft);
   const dueMonthCount = countByDue(dueInMonthList, i => i.state.daysLeft);
 
@@ -266,18 +279,59 @@ export const DashboardView: React.FC = () => {
   type DueInMonthItem = (typeof dueInMonthList)[number];
   const dueInMonthColumns: AdaptiveColumn<DueInMonthItem>[] = [
     { key: 'kh', label: 'Khách hàng vay', priority: 3, render: i => <span className="font-bold">{i.customer?.FullName || 'N/A'}</span> },
+    { key: 'cif', label: 'Mã CIF', priority: 2,
+      render: i => <span className="font-mono text-ink-muted">{i.customer?.CifKh || '—'}</span> },
     { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: i => <span className="font-mono">{i.contract.ContractNumber}</span> },
     { key: 'ky', label: 'Kỳ số', priority: 2, align: 'center',
       render: i => <span className="font-mono font-bold">{i.state.period?.PeriodNumber ?? ''}</span> },
     { key: 'tienKy', label: 'Số tiền kỳ này', priority: 1, align: 'right',
       render: i => <span className="font-mono font-bold text-warn">{fmtMoney(i.state.period?.TotalAmount ?? 0)}</span> },
-    { key: 'duNo', label: 'Dư nợ hiện hữu', priority: 1, align: 'right',
-      render: i => <span className="font-mono">{fmtMoney(i.contract.CurrentBalance ?? i.contract.LoanAmount ?? i.contract.ContractAmount ?? 0)}</span> },
     { key: 'ngayDue', label: 'Ngày đến hạn due', priority: 1, align: 'center',
       render: i => <span className="font-bold text-accent">{fmtDate(i.state.dueDateIso)}</span> },
     { key: 'han', label: 'Hạn còn lại', priority: 1, align: 'center', render: i => {
       const dl = i.state.daysLeft ?? 0;
       return <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${dueBadgeClass(dl, 2)}`}>{dueBadgeText(dl)}</span>;
+    } },
+    { key: 'ghiThu', label: 'Ghi nhận thu', priority: 1, align: 'center', render: i => {
+      const ky = i.state.period;
+      if (!ky) return null;
+      const dangGhi = busyScheduleId === ky.Id;
+      const thuNhanhDuoc = canQuickSettle(
+        { IsPaid: ky.IsPaid, DueDate: ky.DueDate },
+        todayIso()
+      ).ok;
+
+      if (!thuNhanhDuoc) {
+        return (
+          <button
+            type="button"
+            onClick={() => moLichTraNo(i.contract.CustomerId)}
+            className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-panel-muted text-ink-muted hover:text-ink border border-line"
+          >
+            Ghi nhận thu…
+          </button>
+        );
+      }
+
+      return (
+        <button
+          type="button"
+          disabled={dangGhi}
+          onClick={() => settle(i.contract, ky as never,
+            `Ghi nhận ĐÃ THU kỳ ${ky.PeriodNumber} của ${i.contract.ContractNumber}?
+
+`
+            + `Số tiền: ${fmtMoney(ky.TotalAmount ?? 0)}
+`
+            + `Ngày thu: ${fmtDate(todayIso())}
+
+`
+            + 'Thu đúng lịch, không lãi phạt, không trả trước hạn.')}
+          className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-pos-soft text-pos border border-pos/30 hover:opacity-80 disabled:opacity-40"
+        >
+          {dangGhi ? 'Đang ghi…' : '✓ Thu đủ hôm nay'}
+        </button>
+      );
     } },
   ];
 

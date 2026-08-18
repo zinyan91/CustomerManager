@@ -521,6 +521,44 @@ export function paidPrincipalOf(s: RepaymentSchedule): number {
   return prepaid;
 }
 
+export interface QuickSettleCheck {
+  ok: boolean;
+  reason?: string;
+}
+
+type QuickSettleInput = Pick<RepaymentSchedule, 'IsPaid' | 'DueDate'>
+  & Partial<Pick<RepaymentSchedule,
+      'PrepaidPrincipalAmount' | 'ActualPaidPrincipal' | 'ActualPaidInterest'>>;
+
+export function canQuickSettle(s: QuickSettleInput, todayIsoStr: string): QuickSettleCheck {
+  if (s.IsPaid) return { ok: false, reason: 'Kỳ này đã ghi nhận thu.' };
+
+  if (s.DueDate && todayIsoStr > s.DueDate) {
+    return { ok: false, reason: 'Kỳ này đã quá hạn, lãi phạt phải do người quyết.' };
+  }
+  if ((s.PrepaidPrincipalAmount ?? 0) > 0) {
+    return { ok: false, reason: 'Kỳ này có khai trả trước hạn.' };
+  }
+  if ((s.ActualPaidPrincipal ?? 0) !== 0 || (s.ActualPaidInterest ?? 0) !== 0) {
+    return { ok: false, reason: 'Kỳ này đã khai số thu thật.' };
+  }
+  return { ok: true };
+}
+
+export function markSchedulePaidOnTime(
+  s: RepaymentSchedule,
+  paymentDateIso: string
+): RepaymentSchedule {
+  return {
+    ...s,
+    IsPaid: true,
+    PaymentDate: paymentDateIso,
+    OverdueDays: 0,
+    OverdueInterestAmount: 0,
+    TotalAmount: (s.PrincipalAmount || 0) + (s.InterestAmount || 0),
+  };
+}
+
 export const PENALTY_COUNTS_TOWARD_SETTLEMENT = true;
 
 export type SchedulePaymentState = 'chua_thu' | 'thu_mot_phan' | 'da_thu_du';

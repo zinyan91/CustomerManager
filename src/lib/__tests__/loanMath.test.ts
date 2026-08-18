@@ -16,10 +16,13 @@ import {
   computeSchedulePenalty,
   redateSchedules,
   schedulePaymentStatus,
+  paidPrincipalOf,
   buildDueDateSequence,
   applyMaturityToDueDates,
   maturityDateOf,
   outstandingOf,
+  canQuickSettle,
+  markSchedulePaidOnTime,
   computeOutstandingBalance as _cob,
 } from '../loanMath';
 import type { RepaymentSchedule, LoanContract } from '../../types';
@@ -1405,5 +1408,59 @@ describe('outstandingOf — một định nghĩa dư nợ cho mọi màn hình',
       { IsPaid: false, PrincipalAmount: 100_000_000 },
     ] as never;
     expect(_cob(lich, hd())).toBe(outstandingOf(hd(), 100_000_000));
+  });
+});
+
+describe('thu nhanh một kỳ đúng lịch', () => {
+  const ky = (over: Record<string, unknown> = {}) => ({
+    Id: 5, ContractId: 9, PeriodNumber: 3, DueDate: '2026-09-15',
+    PrincipalAmount: 10_000_000, InterestAmount: 2_000_000, IsPaid: false,
+    ...over,
+  }) as never;
+
+  it('cho phép khi chưa tới hạn và chưa có gì khai tay', () => {
+    expect(canQuickSettle(ky(), '2026-09-10').ok).toBe(true);
+    expect(canQuickSettle(ky(), '2026-09-15').ok).toBe(true);
+  });
+
+  it('CHẶN khi đã quá hạn — lãi phạt phải do người quyết', () => {
+    const r = canQuickSettle(ky(), '2026-09-16');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toContain('quá hạn');
+  });
+
+  it('CHẶN khi kỳ có khai trả trước hạn', () => {
+    expect(canQuickSettle(ky({ PrepaidPrincipalAmount: 5_000_000 }), '2026-09-10').ok).toBe(false);
+  });
+
+  it('CHẶN khi kỳ đã khai số thu thật', () => {
+    expect(canQuickSettle(ky({ ActualPaidPrincipal: 1 }), '2026-09-10').ok).toBe(false);
+    expect(canQuickSettle(ky({ ActualPaidInterest: 1 }), '2026-09-10').ok).toBe(false);
+  });
+
+  it('CHẶN khi kỳ đã thu rồi', () => {
+    expect(canQuickSettle(ky({ IsPaid: true }), '2026-09-10').ok).toBe(false);
+  });
+
+  it('ghi nhận: đánh dấu đã thu, không phạt, tổng đúng gốc cộng lãi', () => {
+    const r = markSchedulePaidOnTime(ky(), '2026-09-12');
+    expect(r.IsPaid).toBe(true);
+    expect(r.PaymentDate).toBe('2026-09-12');
+    expect(r.OverdueDays).toBe(0);
+    expect(r.OverdueInterestAmount).toBe(0);
+    expect(r.TotalAmount).toBe(12_000_000);
+  });
+
+  it('KHÔNG tự khai số thu thật, để nhánh "đã thu đủ theo lịch" tự tính', () => {
+    const r = markSchedulePaidOnTime(ky(), '2026-09-12');
+    expect(r.ActualPaidPrincipal ?? null).toBe(null);
+    expect(r.ActualPaidInterest ?? null).toBe(null);
+    expect(paidPrincipalOf(r)).toBe(10_000_000);
+  });
+
+  it('kỳ chỉ có lãi thì gốc đã thu vẫn là 0', () => {
+    const r = markSchedulePaidOnTime(ky({ PrincipalAmount: 0 }), '2026-09-12');
+    expect(paidPrincipalOf(r)).toBe(0);
+    expect(r.TotalAmount).toBe(2_000_000);
   });
 });

@@ -10,7 +10,28 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 ---
 
-# 0. Dashboard: hạn mức thổi phồng và hai định nghĩa dư nợ — 18/08/2026
+# 0. Bảng kỳ due: bỏ dư nợ, thêm CIF, thu nhanh tại chỗ — 18/08/2026
+
+Test **1.580 → 1.595**.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Bỏ cột **Dư nợ hiện hữu**, thêm **Mã CIF** | Cột đó cũng là chỗ cuối cùng trên dashboard còn đọc `CurrentBalance` theo lối cũ |
+| ✅ | Nút ghi nhận thu ngay trên dòng, **có điều kiện** | Chưa quá hạn → `✓ Thu đủ hôm nay`, bấm phát ăn ngay. Đã quá hạn → `Ghi nhận thu…`, mở màn khoản vay của khách đó |
+
+**Vì sao không làm một nút cho mọi dòng.** Ghi nhận thu là **năm** thao tác, không phải một: cờ đã thu, lãi phạt theo số ngày trễ, số thu thật, phân bổ lại gốc các kỳ sau, rồi cập nhật dư nợ và nhóm nợ. Nút ăn ngay buộc phải giả định trả đúng hôm nay, đúng số theo lịch, không trả trước, **không phạt**. Giả định cuối là chỗ chết người: bảng này đang có **0 sắp đến hạn, 37 quá hạn** — nút ngây thơ sẽ ghi lãi phạt bằng 0 cho **100% số dòng đang hiển thị**, ngân hàng thu thiếu mà số 0 trông như bình thường.
+
+`canQuickSettle` vì vậy chặn bốn trường hợp: đã quá hạn, đã thu rồi, có khai trả trước hạn, đã khai số thu thật. Ba cái sau là để không đè lên con số banker đã gõ tay.
+
+**Kiểm lại trên dữ liệu thật trước khi ghi.** Nút chỉ đọc `DuePeriodRow` rút gọn, nên `useQuickSettle` nạp lại lịch từ CSDL rồi **chạy `canQuickSettle` lần nữa** trên dòng thật. Ai đó vừa thu kỳ đó ở máy khác thì dừng, không ghi đè.
+
+Đường ghi đi qua đúng `recalculateSchedules` + `computeOutstandingBalance` như hộp thoại cũ, không viết đường thứ hai.
+
+Nhánh nút xanh **chưa kiểm chứng được trên trình duyệt** vì dữ liệu thật không còn dòng nào chưa quá hạn, và tôi không tạo dữ liệu giả trên production. Thay bằng 7 test cho `useQuickSettle` với API giả: chặn quá hạn, huỷ thì không ghi, kỳ vừa bị người khác thu thì dừng, kỳ biến mất thì báo lỗi, lỗi mạng không bị nuốt.
+
+---
+
+# 0.0. Dashboard: hạn mức thổi phồng và hai định nghĩa dư nợ — 18/08/2026
 
 Chủ dự án yêu cầu rà lại dashboard sau đợt bật cờ tất toán. Test **1.572 → 1.580**, kèm migration 51.
 

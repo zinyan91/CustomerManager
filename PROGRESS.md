@@ -1,6 +1,6 @@
 # Tiến độ công việc
 
-Cập nhật: 19/08/2026 — dọn note giải thích, sửa LTV bình quân tính thiếu định giá hết hạn
+Cập nhật: 19/08/2026 — bảng tính lãi cầm cố: số ngày lên khung, thêm tổng gốc + lãi sổ
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
@@ -10,7 +10,30 @@ và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó l
 
 ---
 
-# 0. Dọn note giải thích, cảnh báo về đúng chỗ, sửa LTV bình quân — 19/08/2026
+# 0. Bảng tính lãi cầm cố STK: số ngày lên khung nhập — 19/08/2026
+
+Số ngày gửi sổ và số ngày vay trước đây chỉ nằm chìm trong dòng công thức dưới
+ô tổng hợp (`450.000.000 × 8.2% × 184 ngày / 365`). Nay là trường riêng trong
+đúng khung của nó, và dòng công thức bỏ hẳn theo `ui-khong-note-giai-thich`.
+Test **1.619 → 1.621**.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | "Số ngày gửi sổ" lên khung THÔNG TIN SỔ TIẾT KIỆM | Trường chỉ đọc, cạnh ngày đáo hạn sổ |
+| ✅ | "Số ngày vay" lên khung THÔNG TIN KHOẢN VAY CẦM CỐ | Trường chỉ đọc, cạnh ngày đáo hạn vay |
+| ✅ | Thêm ô **TỔNG GỐC + LÃI SỔ NHẬN ĐƯỢC** | `savingsTotal` mới trong `stkPledge.ts`, test trước |
+| ✅ | Nâng "Tổng tiền trả nợ khi đáo hạn" từ dòng chú thích thành ô riêng | Số liệu thật, không phải diễn giải — giữ lại khi bỏ dòng chú thích của ô CHÊNH LỆCH |
+
+Bốn ô tổng hợp nay xếp 2×2: hai ô sổ tiết kiệm (vàng), hai ô khoản vay (xanh),
+rồi ô CHÊNH LỆCH bên dưới.
+
+Kiểm chứng trên ứng dụng: mẫu 450tr/8,2%/6 tháng — 184 ngày gửi, 116 ngày vay,
+tổng gốc + lãi 468.601.644, tổng trả nợ 155.243.836. Đổi kỳ hạn sang 12 tháng
+thì liên động đúng: 365 / 297 ngày, tổng gốc + lãi 486.900.000. Console sạch.
+
+---
+
+# 0.1. Dọn note giải thích, cảnh báo về đúng chỗ, sửa LTV bình quân — 19/08/2026
 
 Phản hồi trực tiếp: bỏ các dòng note diễn giải lại số liệu (kiểu "Cộng mức cấp
 của mọi HĐTD", "Đã trừ gốc khách đã trả"), đưa cảnh báo đối chiếu HĐTD về ngay
@@ -50,7 +73,7 @@ cảnh báo riêng biệt 21/5/0.
 
 ---
 
-# 0.1. Nút giải ngân KUNN tự quyết, không đọc lib — 18/08/2026
+# 0.2. Nút giải ngân KUNN tự quyết, không đọc lib — 18/08/2026
 
 `summarizeCreditContracts` trả về đủ `canDisburse`, `blockReason`, `revolving`,
 `disbursedCumulative` và có ~10 ca test khoá lại, nhưng `KunnAccordionItem` thu hẹp
@@ -99,7 +122,7 @@ giải ngân được**. Màn Tổng quan không đổi.
 
 ---
 
-# 0.2. Số tiền vay KUNN mượn mức cấp HĐTD — 18/08/2026
+# 0.3. Số tiền vay KUNN mượn mức cấp HĐTD — 18/08/2026
 
 Rà nút giải ngân KUNN so với skill `tin-dung` thì lộ ra `LoanAmount || ContractAmount` nằm ở **bảy chỗ**, ba trong số đó ở `loanMath.ts`. Trên dòng KUNN, `ContractAmount` là **mức cấp HĐTD lặp lại** (TH1), nên khoản nào bỏ trống số tiền vay sẽ được tính bằng nguyên hạn mức — lịch trả nợ lấy sai gốc, bất biến `Σ(gốc) = số tiền vay` vỡ. Test **1.602 → 1.607**.
 
@@ -118,7 +141,7 @@ Rà nút giải ngân KUNN so với skill `tin-dung` thì lộ ra `LoanAmount ||
 
 ---
 
-# 0.3. Lãi suất 8,5% không ai khai mà vẫn thu — 18/08/2026
+# 0.4. Lãi suất 8,5% không ai khai mà vẫn thu — 18/08/2026
 
 Chủ dự án hỏi: nhập ưu đãi 7,5 không nhập thời gian và biên độ, sao lãi suất áp dụng ra 8,5? Test **1.595 → 1.597**.
 

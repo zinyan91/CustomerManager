@@ -57,6 +57,7 @@ export interface StkPledgeResult {
   savingsDueDate: string;
   savingsDays: number;
   savingsInterest: number;
+  savingsTotal: number;
   loanDueDate: string;
   loanDays: number;
   loanInterest: number;
@@ -90,6 +91,7 @@ export function calcStkPledge(input: StkPledgeInput): StkPledgeResult {
     savingsDueDate,
     savingsDays,
     savingsInterest,
+    savingsTotal: savingsAmount + savingsInterest,
     loanDueDate,
     loanDays,
     loanInterest,

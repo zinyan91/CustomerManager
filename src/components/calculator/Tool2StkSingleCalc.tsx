@@ -89,6 +89,12 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
                 {result.savingsDueDate ? fmtDate(result.savingsDueDate) : '—'}
               </div>
             </div>
+            <div>
+              <label className={labelCls}>Số ngày gửi sổ</label>
+              <div className={`${inputCls} font-mono font-bold text-warn`}>
+                {result.savingsDays > 0 ? `${result.savingsDays} ngày` : '—'}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -117,7 +123,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
               <label className={labelCls}>Ngày giải ngân</label>
               <input type="date" value={disbursementDate} onChange={e => setDisbursementDate(e.target.value)} className={`${inputCls} font-mono`} />
             </div>
-            <div className="sm:col-span-2">
+            <div>
               <label className={labelCls}>Ngày đáo hạn vay</label>
               <div className="flex items-center gap-2">
                 <label className="flex items-center space-x-1.5 cursor-pointer whitespace-nowrap">
@@ -129,6 +135,12 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
                 ) : (
                   <div className={`${inputCls} font-mono`}>{result.loanDueDate ? fmtDate(result.loanDueDate) : '—'}</div>
                 )}
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Số ngày vay</label>
+              <div className={`${inputCls} font-mono font-bold text-accent`}>
+                {result.loanDays > 0 ? `${result.loanDays} ngày` : '—'}
               </div>
             </div>
           </div>
@@ -146,8 +158,12 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
             <div className="text-xl font-extrabold text-warn font-mono mt-1">
               {fmtMoney(result.savingsInterest)}
             </div>
-            <div className="text-[11px] text-ink-faint mt-0.5">
-              {fmtMoney(savingsAmount)} × {savingsRateStr}% × {result.savingsDays} ngày / 365
+          </div>
+
+          <div className="p-4 rounded-lg bg-warn-soft  border border-warn/30 ">
+            <div className="text-[11px] font-bold text-ink-faint uppercase">TỔNG GỐC + LÃI SỔ NHẬN ĐƯỢC</div>
+            <div className="text-xl font-extrabold text-warn font-mono mt-1">
+              {fmtMoney(result.savingsTotal)}
             </div>
           </div>
 
@@ -156,8 +172,12 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
             <div className="text-xl font-extrabold text-accent font-mono mt-1">
               {fmtMoney(result.loanInterest)}
             </div>
-            <div className="text-[11px] text-ink-faint mt-0.5">
-              {fmtMoney(result.loanAmount)} × {loanRateStr}% × {result.loanDays} ngày / 365
+          </div>
+
+          <div className="p-4 rounded-lg bg-accent-soft  border border-accent/30 ">
+            <div className="text-[11px] font-bold text-ink-faint uppercase">TỔNG TIỀN TRẢ NỢ KHI ĐÁO HẠN</div>
+            <div className="text-xl font-extrabold text-accent font-mono mt-1">
+              {fmtMoney(result.totalRepayment)}
             </div>
           </div>
         </div>
@@ -181,11 +201,6 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
             }`}>
               {fmtMoney(result.netGain)}
             </span>
-          </div>
-          <div className="text-[11px] text-ink-faint mt-2 pt-2 border-t border-line">
-            Lãi sổ {fmtMoney(result.savingsInterest)} − Lãi vay {fmtMoney(result.loanInterest)}.
-            Tổng tiền trả nợ khi đáo hạn: <strong className="font-mono">{fmtMoney(result.totalRepayment)}</strong>
-            {' '}(gốc vay {fmtMoney(result.loanAmount)} + lãi vay {fmtMoney(result.loanInterest)}).
           </div>
         </div>
       </div>

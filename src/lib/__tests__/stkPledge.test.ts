@@ -70,6 +70,10 @@ describe('calcStkPledge — đối chiếu bảng tính mẫu', () => {
     expect(sample.totalRepayment).toBe(155_243_836);
   });
 
+  it('tổng gốc + lãi sổ nhận được khi đáo hạn', () => {
+    expect(sample.savingsTotal).toBe(450_000_000 + 18_601_644);
+  });
+
   it('falls back to the savings maturity when no loan due date is given', () => {
     const r = calcStkPledge({
       savingsAmount: 450_000_000, pledgeRatio: 1 / 3,
@@ -78,6 +82,17 @@ describe('calcStkPledge — đối chiếu bảng tính mẫu', () => {
       disbursementDate: '2026-07-27',
     });
     expect(r.loanDueDate).toBe('2026-11-20');
+  });
+
+  it('sổ chưa sinh lãi thì tổng gốc + lãi bằng đúng gốc', () => {
+    const r = calcStkPledge({
+      savingsAmount: 450_000_000, pledgeRatio: 1 / 3,
+      depositDate: '2026-05-20', tenor: 0, tenorUnit: 'thang',
+      savingsRateAnnual: 0.082, loanRateAnnual: 0.11,
+      disbursementDate: '2026-07-27',
+    });
+    expect(r.savingsInterest).toBe(0);
+    expect(r.savingsTotal).toBe(450_000_000);
   });
 
   it('reports a negative gain when the loan costs more than the savings earn', () => {

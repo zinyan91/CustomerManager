@@ -80,3 +80,40 @@ describe('cssVariablesFor', () => {
     expect(v['--fs-table']).toBe(`${FONT_SIZE_LIMITS.table.min}px`);
   });
 });
+
+describe('cssVariablesFor — thang chữ ngữ nghĩa', () => {
+  it('mặc định rơi đúng thang spec đã chốt', () => {
+    const v = cssVariablesFor(DEFAULT_FONT_SETTINGS);
+    expect(v['--fs-screen']).toBe('18px');
+    expect(v['--fs-title']).toBe('15px');
+    expect(v['--fs-body']).toBe('13px');
+    expect(v['--fs-dense']).toBe('12px');
+    expect(v['--fs-label']).toBe('11px');
+    expect(v['--fs-num']).toBe('24px');
+  });
+
+  it('chữ thân bảng luôn lớn hơn chữ bảng dày đúng 1px', () => {
+    const v = cssVariablesFor({ family: 'system', heading: 14, table: 16, small: 11, mono: 12 });
+    expect(v['--fs-dense']).toBe('16px');
+    expect(v['--fs-body']).toBe('17px');
+  });
+
+  it('kéo thanh trượt Tiêu đề thì cả hai cỡ tiêu đề cùng đổi', () => {
+    const v = cssVariablesFor({ family: 'system', heading: 18, table: 12, small: 11, mono: 12 });
+    expect(v['--fs-screen']).toBe('22px');
+    expect(v['--fs-title']).toBe('19px');
+  });
+
+  it('biến cũ giữ nguyên để màn chưa chuyển vẫn chạy', () => {
+    const v = cssVariablesFor(DEFAULT_FONT_SETTINGS);
+    expect(v['--fs-heading']).toBe('14px');
+    expect(v['--fs-table']).toBe('12px');
+    expect(v['--fs-small']).toBe('11px');
+    expect(v['--fs-mono']).toBe('12px');
+  });
+
+  it('giá trị vượt khoảng bị kẹp trước khi sinh biến ngữ nghĩa', () => {
+    const v = cssVariablesFor({ family: 'system', heading: 999, table: 12, small: 11, mono: 12 } as never);
+    expect(v['--fs-screen']).toBe(`${FONT_SIZE_LIMITS.heading.max + 4}px`);
+  });
+});

@@ -92,10 +92,18 @@ export function cssVariablesFor(s: FontSettings): Record<string, string> {
   const n = normalizeFontSettings(s);
   return {
     '--app-font': fontStackOf(n.family),
+
     '--fs-heading': `${n.heading}px`,
     '--fs-table': `${n.table}px`,
     '--fs-small': `${n.small}px`,
     '--fs-mono': `${n.mono}px`,
+
+    '--fs-screen': `${n.heading + 4}px`,
+    '--fs-title': `${n.heading + 1}px`,
+    '--fs-body': `${n.table + 1}px`,
+    '--fs-dense': `${n.table}px`,
+    '--fs-label': `${n.small}px`,
+    '--fs-num': `${n.mono * 2}px`,
   };
 }
 

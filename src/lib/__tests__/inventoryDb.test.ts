@@ -1,6 +1,24 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fetchInventoryItemsDb, saveInventoryItemDb, deleteInventoryItemDb } from '../inventoryDb';
 import type { InventoryItem } from '../inventory';
+
+vi.mock('../supabase', () => {
+  const dbError = { message: 'CSDL khong kha dung trong moi truong test' };
+  const failResult = { data: null, error: dbError };
+  const chain: any = {
+    select: () => chain,
+    eq: () => chain,
+    delete: () => chain,
+    upsert: () => Promise.resolve(failResult),
+    then: (onFulfilled: any, onRejected?: any) =>
+      Promise.resolve(failResult).then(onFulfilled, onRejected),
+  };
+  return {
+    supabase: {
+      from: () => chain,
+    },
+  };
+});
 
 describe('inventoryDb store and API fallback', () => {
   const store: Record<string, string> = {};

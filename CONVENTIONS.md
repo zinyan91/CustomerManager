@@ -1260,9 +1260,9 @@ Số tiền luôn `font-mono` — lớp này đã bật `tabular-nums`, cột s�
 
 **Không viết song ngữ chồng dòng** (nhãn tiếng Anh kèm nhãn tiếng Việt bên dưới). Một màn hình chỉ nói một thứ tiếng tại một thời điểm; muốn thấy tiếng kia thì bật công tắc.
 
-Toàn bộ giao diện đã chuyển sang token: không còn `isLight` trong mã, không còn lớp màu thô (`slate-*`, `sky-*`, `emerald-*`…) trong `.tsx`, và các khối `!important` ghi đè theo lớp Tailwind trong `index.css` đã gỡ hết — chỉ còn khối `prefers-reduced-motion`.
+Toàn bộ giao diện đã chuyển sang token: không còn `isLight` trong mã, và các khối `!important` ghi đè theo lớp Tailwind trong `index.css` đã gỡ hết — chỉ còn khối `prefers-reduced-motion`. Lớp màu thô (`slate-*`, `sky-*`, `emerald-*`…) trong `.tsx` chưa hết hẳn: rà soát 19/08/2026 còn đếm được **26 lớp** ở `src/components/ErrorBoundary.tsx`, `src/components/inventory/PurchaseStatementTab.tsx`, `src/components/inventory/RetailInvoiceTab.tsx`.
 
-Chuỗi class dùng chung nằm ở `src/lib/uiClasses.ts` (`PANEL`, `UI.containerCardBg`, `UI.inputStyle`, `TABLE_HEAD`, `TABLE_CELL`, `SECTION_LABEL`, `BTN_PRIMARY`, `DEBT_GROUP_COLOR`…). Đây là nơi duy nhất khai báo; component không tự dựng chuỗi class riêng. `src/lib/themeStyles.ts` đã xoá.
+Chuỗi class dùng chung nằm ở `src/lib/uiClasses.ts` (`PANEL`, `UI.containerCardBg`, `UI.inputStyle`, `TABLE_HEAD`, `TABLE_CELL`, `SECTION_LABEL`, `BTN_PRIMARY`, `DEBT_GROUP_COLOR`…). Đây là nơi duy nhất khai báo — đích, chưa phải hiện trạng: rà soát 19/08/2026 đếm được **44 chuỗi** `bg-accent text-accent-ink` tự dựng ở **27 tệp** `.tsx`, và **16 chuỗi** `bg-panel border border-line` tự dựng ở **8 tệp**. `src/lib/themeStyles.ts` đã xoá.
 
 Component **không được** truyền chuỗi class qua props. Đây là đích, chưa phải
 hiện trạng: rà soát 19/08/2026 đếm được **69 tệp** vẫn truyền

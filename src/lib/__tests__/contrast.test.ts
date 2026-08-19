@@ -29,6 +29,38 @@ describe('contrastRatio', () => {
 
 const THEMES: ThemeName[] = ['dark', 'light'];
 
+describe('dữ liệu đầu vào phải ổn định', () => {
+  it('CONTRAST_PAIRS có đúng 15 phần tử', () => {
+    expect(CONTRAST_PAIRS).toHaveLength(15);
+  });
+
+  it('THEME_TOKENS.dark có đúng 25 token', () => {
+    expect(Object.keys(THEME_TOKENS.dark)).toHaveLength(25);
+  });
+
+  it('THEME_TOKENS.light có đúng 25 token', () => {
+    expect(Object.keys(THEME_TOKENS.light)).toHaveLength(25);
+  });
+
+  it('dark và light có cùng bộ tên token', () => {
+    const darkKeys = Object.keys(THEME_TOKENS.dark).sort();
+    const lightKeys = Object.keys(THEME_TOKENS.light).sort();
+    expect(darkKeys).toEqual(lightKeys);
+  });
+
+  it('mọi fg và bg trong CONTRAST_PAIRS đều tồn tại ở cả hai giao diện', () => {
+    const darkTokens = Object.keys(THEME_TOKENS.dark);
+    const lightTokens = Object.keys(THEME_TOKENS.light);
+
+    for (const pair of CONTRAST_PAIRS) {
+      expect(darkTokens, `thiếu token ${pair.fg} trong dark`).toContain(pair.fg);
+      expect(darkTokens, `thiếu token ${pair.bg} trong dark`).toContain(pair.bg);
+      expect(lightTokens, `thiếu token ${pair.fg} trong light`).toContain(pair.fg);
+      expect(lightTokens, `thiếu token ${pair.bg} trong light`).toContain(pair.bg);
+    }
+  });
+});
+
 describe('bảng màu đạt ngưỡng tương phản WCAG AA', () => {
   for (const theme of THEMES) {
     for (const pair of CONTRAST_PAIRS) {

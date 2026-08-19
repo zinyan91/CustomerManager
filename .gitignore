@@ -33,3 +33,6 @@ supabase/.temp/
 
 # Superpowers brainstorm (mockup tạm)
 .superpowers/
+
+# Ảnh mốc đối chiếu khi rebuild giao diện
+docs/superpowers/anh-moc/

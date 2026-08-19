@@ -45,3 +45,27 @@ describe('index.css và themeTokens.ts phải khớp nhau', () => {
     });
   }
 });
+
+describe('ba token bán kính --r-panel, --r-control, --r-pill', () => {
+  const RADIUS_CSS: [name: string, value: string][] = [
+    ['--r-panel', '12px'],
+    ['--r-control', '8px'],
+    ['--r-pill', '999px'],
+  ];
+
+  for (const [name, value] of RADIUS_CSS) {
+    it(`index.css khai ${name}: ${value}`, () => {
+      const re = new RegExp(`${name}\\s*:\\s*${value}\\s*;`);
+      expect(re.test(css), `không tìm thấy "${name}: ${value};" trong index.css`).toBe(true);
+    });
+  }
+
+  it('uiClasses.ts có RADIUS_PANEL, RADIUS_CONTROL, RADIUS_PILL trỏ đúng vào ba biến CSS trên', () => {
+    const uiClassesPath = resolve(dirname(fileURLToPath(import.meta.url)), '../uiClasses.ts');
+    const uiClasses = readFileSync(uiClassesPath, 'utf8').replace(/\r\n/g, '\n');
+
+    expect(uiClasses).toMatch(/RADIUS_PANEL\s*=\s*['"`][^'"`]*var\(--r-panel\)[^'"`]*['"`]/);
+    expect(uiClasses).toMatch(/RADIUS_CONTROL\s*=\s*['"`][^'"`]*var\(--r-control\)[^'"`]*['"`]/);
+    expect(uiClasses).toMatch(/RADIUS_PILL\s*=\s*['"`][^'"`]*var\(--r-pill\)[^'"`]*['"`]/);
+  });
+});

@@ -59,6 +59,12 @@ describe('dữ liệu đầu vào phải ổn định', () => {
       expect(lightTokens, `thiếu token ${pair.bg} trong light`).toContain(pair.bg);
     }
   });
+
+  it('không cặp nào trong CONTRAST_PAIRS được hạ min xuống dưới 4.5 (ngưỡng WCAG AA)', () => {
+    for (const pair of CONTRAST_PAIRS) {
+      expect(pair.min, `${pair.fg} trên ${pair.bg} có min = ${pair.min}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
 });
 
 describe('bảng màu đạt ngưỡng tương phản WCAG AA', () => {

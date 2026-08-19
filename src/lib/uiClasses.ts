@@ -18,8 +18,9 @@ export const UI: UiClasses = {
   labelStyle: 'text-ink-muted font-medium',
 };
 
-export const RADIUS_PANEL = 'rounded-xl';
-export const RADIUS_CONTROL = 'rounded-lg';
+export const RADIUS_PANEL = 'rounded-[var(--r-panel)]';
+export const RADIUS_CONTROL = 'rounded-[var(--r-control)]';
+export const RADIUS_PILL = 'rounded-[var(--r-pill)]';
 
 const BTN_BASE =
   `${RADIUS_CONTROL} font-semibold transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`;

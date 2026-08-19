@@ -91,6 +91,9 @@
 
 :root {
   --header-h: 52px;
+  --r-panel: 12px;
+  --r-control: 8px;
+  --r-pill: 999px;
 }
 
 @media (min-width: 768px) {

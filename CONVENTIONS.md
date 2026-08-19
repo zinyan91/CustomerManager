@@ -1239,6 +1239,12 @@ cho xanh** — chỉnh lại giá trị màu.
 | `--fs-label` | `small` | 11px | nhãn cột, nhãn KPI, chú thích |
 | `--fs-num` | `mono × 2` | 24px | số trên thẻ KPI |
 
+Cột "Dùng cho" là **đích của đợt 3–7, chưa phải hiện trạng**: sáu biến đã sinh
+ra nhưng chưa component hay quy tắc CSS nào đọc `var(--fs-*)`. Các màn vẫn ăn
+theo bốn biến cũ qua khối ghi đè ở cuối `index.css`. Ví dụ: đổi `--fs-num` lúc
+này **không** làm số trên thẻ KPI đổi theo, vì `KpiCard` đang khai cứng
+`text-2xl xl:text-3xl`.
+
 Bốn biến cũ `--fs-heading`, `--fs-table`, `--fs-small`, `--fs-mono` cùng khối
 ghi đè lớp Tailwind ở cuối `index.css` là **cầu tạm** cho các màn chưa chuyển.
 Gỡ ở đợt 7 khi màn cuối cùng đã dùng biến ngữ nghĩa. Mã mới dùng biến ngữ

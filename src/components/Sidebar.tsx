@@ -1,8 +1,7 @@
-import { memo, useCallback, type ElementType } from 'react';
-import {
-  BookOpen, LayoutDashboard, Users, FileText, Building2, CreditCard, ShieldAlert, Settings, Calculator, FileSignature, Target, Percent, Landmark, Handshake, ClipboardList, GraduationCap, Boxes, Receipt, X } from 'lucide-react';
+import { memo, useCallback } from 'react';
+import { X } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
-import type { TranslationKey } from '../lib/i18n';
+import { NAV_GROUPS } from '../lib/navigation';
 
 interface SidebarProps {
   activeTab: string;
@@ -10,56 +9,6 @@ interface SidebarProps {
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
 }
-
-const menuGroups: {
-  groupKey: TranslationKey;
-  items: { id: string; labelKey: TranslationKey; icon: ElementType }[];
-}[] = [
-  {
-    groupKey: 'nav.groupOverview',
-    items: [
-      { id: 'dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
-    ],
-  },
-  {
-    groupKey: 'nav.groupRecords',
-    items: [
-      { id: 'customers', labelKey: 'nav.customers', icon: Users },
-      { id: 'credit-contracts', labelKey: 'nav.creditContracts', icon: Handshake },
-      { id: 'loans', labelKey: 'nav.loans', icon: FileText },
-      { id: 'collaterals', labelKey: 'nav.collaterals', icon: Building2 },
-      { id: 'credit-cards', labelKey: 'nav.creditCards', icon: CreditCard },
-    ],
-  },
-  {
-    groupKey: 'nav.groupBusinessTools',
-    items: [
-      { id: 'calculators', labelKey: 'nav.calculators', icon: Calculator },
-      { id: 'business-plan', labelKey: 'nav.businessPlan', icon: ClipboardList },
-      { id: 'inventory', labelKey: 'nav.inventory', icon: Boxes },
-      { id: 'purchase-statement', labelKey: 'nav.purchaseStatement', icon: FileText },
-      { id: 'retail-invoice', labelKey: 'nav.retailInvoice', icon: Receipt },
-      { id: 'rate-quote', labelKey: 'nav.rateQuote', icon: Percent },
-      { id: 'cof', labelKey: 'nav.cof', icon: Landmark },
-    ],
-  },
-  {
-    groupKey: 'nav.groupLookup',
-    items: [
-      { id: 'mdsdv', labelKey: 'nav.mdsdv', icon: Target },
-      { id: 'card-policies', labelKey: 'nav.cardPolicies', icon: BookOpen },
-      { id: 'templates', labelKey: 'nav.templates', icon: FileSignature },
-      { id: 'quiz-bank', labelKey: 'nav.quizBank', icon: GraduationCap },
-    ],
-  },
-  {
-    groupKey: 'nav.groupControl',
-    items: [
-      { id: 'post-loan', labelKey: 'nav.postLoan', icon: ShieldAlert },
-      { id: 'settings', labelKey: 'nav.settings', icon: Settings },
-    ],
-  },
-];
 
 export const Sidebar = memo<SidebarProps>(({
   activeTab,
@@ -98,7 +47,7 @@ export const Sidebar = memo<SidebarProps>(({
         </button>
 
         <nav className="flex-1 overflow-y-auto px-2 py-3">
-          {menuGroups.map((group, gi) => (
+          {NAV_GROUPS.map((group, gi) => (
             <div key={group.groupKey} className={gi === 0 ? '' : 'mt-5'}>
               <div className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
                 {t(group.groupKey)}

@@ -1,65 +1,13 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from 'react';
-import {
-  Search,
-  LayoutDashboard,
-  Users,
-  Handshake,
-  FileText,
-  Building2,
-  CreditCard,
-  Calculator,
-  ClipboardList,
-  Boxes,
-  Receipt,
-  Percent,
-  Landmark,
-  Target,
-  BookOpen,
-  FileSignature,
-  GraduationCap,
-  ShieldAlert,
-  Settings,
-  X,
-  ChevronRight,
-} from 'lucide-react';
+import { Search, X, ChevronRight } from 'lucide-react';
 import { useWork } from '../context/WorkContext';
 import { useLang } from '../context/LanguageContext';
-import type { TranslationKey } from '../lib/i18n';
+import { NAV_ITEMS } from '../lib/navigation';
 
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-interface CommandItem {
-  id: string;
-  labelKey: TranslationKey;
-  groupKey: TranslationKey;
-  icon: React.ElementType;
-  keywords: string[];
-}
-
-const COMMAND_ITEMS: CommandItem[] = [
-  { id: 'dashboard', labelKey: 'nav.dashboard', groupKey: 'nav.groupOverview', icon: LayoutDashboard, keywords: ['overview', 'tong quan', 'dashboard', 'danh muc'] },
-  { id: 'customers', labelKey: 'nav.customers', groupKey: 'nav.groupRecords', icon: Users, keywords: ['khach hang', 'danh sach', 'customer', 'cif'] },
-  { id: 'credit-contracts', labelKey: 'nav.creditContracts', groupKey: 'nav.groupRecords', icon: Handshake, keywords: ['hop dong tin dung', 'hdtd', 'tin dung', 'contract'] },
-  { id: 'loans', labelKey: 'nav.loans', groupKey: 'nav.groupRecords', icon: FileText, keywords: ['khoan vay', 'du no', 'loan', 'portfolio'] },
-  { id: 'collaterals', labelKey: 'nav.collaterals', groupKey: 'nav.groupRecords', icon: Building2, keywords: ['tai san bao dam', 'tsbd', 'collateral', 'bat dong san'] },
-  { id: 'credit-cards', labelKey: 'nav.creditCards', groupKey: 'nav.groupRecords', icon: CreditCard, keywords: ['the tin dung', 'card', 'han muc'] },
-  { id: 'calculators', labelKey: 'nav.calculators', groupKey: 'nav.groupBusinessTools', icon: Calculator, keywords: ['tinh toan', 'lai suat', 'calculator', 'tra no'] },
-  { id: 'business-plan', labelKey: 'nav.businessPlan', groupKey: 'nav.groupBusinessTools', icon: ClipboardList, keywords: ['phuong an kinh doanh', 'pakd', 'phuong an'] },
-  { id: 'inventory', labelKey: 'nav.inventory', groupKey: 'nav.groupBusinessTools', icon: Boxes, keywords: ['ton kho', 'hang hoa', 'inventory'] },
-  { id: 'purchase-statement', labelKey: 'nav.purchaseStatement', groupKey: 'nav.groupBusinessTools', icon: FileText, keywords: ['bang ke mua hang', 'hoa don', 'purchase'] },
-  { id: 'retail-invoice', labelKey: 'nav.retailInvoice', groupKey: 'nav.groupBusinessTools', icon: Receipt, keywords: ['hoa don ban le', 'ban le', 'invoice'] },
-  { id: 'rate-quote', labelKey: 'nav.rateQuote', groupKey: 'nav.groupBusinessTools', icon: Percent, keywords: ['dinh gia lai suat', 'lai suat', 'quote'] },
-  { id: 'cof', labelKey: 'nav.cof', groupKey: 'nav.groupBusinessTools', icon: Landmark, keywords: ['gia von', 'cof', 'cost of funds'] },
-  { id: 'mdsdv', labelKey: 'nav.mdsdv', groupKey: 'nav.groupLookup', icon: Target, keywords: ['muc dich su dung von', 'mdsdv', 'vaye'] },
-  { id: 'card-policies', labelKey: 'nav.cardPolicies', groupKey: 'nav.groupLookup', icon: BookOpen, keywords: ['chinh sach the', 'quy dinh', 'policy'] },
-  { id: 'templates', labelKey: 'nav.templates', groupKey: 'nav.groupLookup', icon: FileSignature, keywords: ['bieu mau', 'chung tu', 'template'] },
-  { id: 'quiz-bank', labelKey: 'nav.quizBank', groupKey: 'nav.groupLookup', icon: GraduationCap, keywords: ['ngan hang cau hoi', 'quiz', 'khiem tra'] },
-  { id: 'post-loan', labelKey: 'nav.postLoan', groupKey: 'nav.groupControl', icon: ShieldAlert, keywords: ['kiem soat sau vay', 'kssv', 'post loan', 'kiem tra'] },
-  { id: 'settings', labelKey: 'nav.settings', groupKey: 'nav.groupControl', icon: Settings, keywords: ['cai dat', 'he thong', 'settings', 'config'] },
-];
 
 export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) => {
   const { setActiveTab } = useWork();
@@ -77,9 +25,9 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) =>
   }, [isOpen]);
 
   const filteredItems = useMemo(() => {
-    if (!query.trim()) return COMMAND_ITEMS;
+    if (!query.trim()) return NAV_ITEMS;
     const q = query.toLowerCase().trim();
-    return COMMAND_ITEMS.filter((item) => {
+    return NAV_ITEMS.filter((item) => {
       const label = t(item.labelKey).toLowerCase();
       const group = t(item.groupKey).toLowerCase();
       return label.includes(q) || group.includes(q) || item.keywords.some((kw) => kw.includes(q));

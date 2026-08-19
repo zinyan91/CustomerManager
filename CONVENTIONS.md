@@ -1195,13 +1195,54 @@ Nay màu khai báo **một chỗ** trong `index.css`: biến `--t-*` đổi theo
 | Hành động | `bg-accent` `text-accent` `bg-accent-soft` `text-accent-ink` | nút chính, dòng đang chọn |
 | Trạng thái | `text-pos` `text-neg` `text-warn` (+ `-soft`) | đã thu, quá hạn / còn nợ, cảnh báo |
 
-**Quy tắc: màu chỉ được mang nghĩa.** Khung giao diện đi màu trung tính; `pos` / `neg` / `warn` chỉ dùng cho trạng thái nghiệp vụ, `accent` chỉ cho hành động và lựa chọn hiện hành. Không tô màu để trang trí — banker học được ý nghĩa của màu thì mới quét bảng nhanh.
+**Quy tắc: màu tô ở đúng năm chỗ, không tô chỗ khác.** Chốt 19/08/2026, thay
+quy tắc "màu chỉ mang nghĩa" trước đây.
 
-**Một ngoại lệ có ranh giới: sắc định danh của hàng KPI.** Chủ dự án chốt 17/08/2026 rằng năm ô KPI trên dashboard phải nhận ra được từng ô bằng màu. Nếu mượn `pos` / `warn` cho việc đó thì cùng một màn hình sẽ có hai nghĩa của một màu — ngay dưới hàng KPI là bốn panel cảnh báo đang dùng đúng bốn sắc ngữ nghĩa. Nên sắc định danh sống ở **namespace riêng**: `--t-kpi-cust`, `--t-kpi-collateral`, `--t-kpi-card` (tím, ngọc, hồng), không sắc nào trùng `pos` lục hay `warn` hổ phách. Ô dư nợ dùng `accent`, ô cảnh báo giữ `neg` vì đỏ ở đó **có nghĩa thật**.
+| Vị trí | Màu |
+| :--- | :--- |
+| Năm ô KPI | năm sắc định danh: `accent`, `kpi-cust`, `kpi-collateral`, `kpi-card`, `neg` |
+| Số tiền trong bảng | `pos` |
+| Ngày tháng trong bảng | `accent` |
+| Trạng thái, hạn còn lại | viên nền `pos-soft` / `warn-soft` / `neg-soft`; quá hạn dùng `bg-neg` + `text-surface` |
+| Tiêu đề, nhãn, khung | trung tính — không tô |
+
+Dòng cuối là ràng buộc thật: tiêu đề panel **không** được tô màu. Trước đây
+"DƯ NỢ THEO PHƯƠNG THỨC VAY" tô xanh dương nằm ngay cạnh "PHÂN BỔ DƯ NỢ THEO
+NHÓM NỢ" tô xanh lá — hai màu trang trí không mang nghĩa gì, đặt cạnh bốn panel
+cảnh báo đang dùng đúng bốn sắc ngữ nghĩa.
+
+**Sắc định danh của hàng KPI vẫn giữ ranh giới cũ.** Chủ dự án chốt 17/08/2026 rằng năm ô KPI trên dashboard phải nhận ra được từng ô bằng màu. Nếu mượn `pos` / `warn` cho việc đó thì cùng một màn hình sẽ có hai nghĩa của một màu — ngay dưới hàng KPI là bốn panel cảnh báo đang dùng đúng bốn sắc ngữ nghĩa. Nên sắc định danh sống ở **namespace riêng**: `--t-kpi-cust`, `--t-kpi-collateral`, `--t-kpi-card` (tím, ngọc, hồng), không sắc nào trùng `pos` lục hay `warn` hổ phách. Ô dư nợ dùng `accent`, ô cảnh báo giữ `neg` vì đỏ ở đó **có nghĩa thật**.
 
 Ranh giới: token `--t-kpi-*` **chỉ** dùng cho hàng KPI. Cần phân biệt các mục ở chỗ khác thì phân biệt bằng chữ và bố cục, đừng thêm sắc định danh thứ tư. `KpiCard` nhận **một** biến `--kpi-hue`; số lớn, ô biểu tượng và vạch trên đều đọc từ biến đó, nên thêm sắc là thêm một dòng token chứ không phải sửa ba bảng `Record` như bản cũ.
 
-Mọi cặp màu đã đo tương phản ở cả hai giao diện, thấp nhất **5.09** (nhãn cột `ink-faint` trên `panel-muted`). Đổi giá trị `--t-*` thì đo lại, đừng ước lượng bằng mắt: chữ 10–11px không có chỗ để hụt tương phản. Riêng viên "Quá hạn" nền đặc phải dùng `text-surface` chứ không `text-white` — ở giao diện tối nền đỏ sáng, chữ trắng chỉ đạt 2.71.
+Mọi cặp màu đã đo tương phản ở cả hai giao diện, thấp nhất **4,50** (`accent` trên `panel-muted`, giao diện sáng). Đổi giá trị `--t-*` thì đo lại, đừng ước lượng bằng mắt: chữ 10–11px không có chỗ để hụt tương phản. Riêng viên "Quá hạn" nền đặc phải dùng `text-surface` chứ không `text-white` — ở giao diện tối nền đỏ sáng, chữ trắng chỉ đạt 2.71.
+
+Ngưỡng này nay có test giữ: `src/lib/__tests__/contrast.test.ts` đo mọi cặp màu
+ngữ nghĩa ở cả hai giao diện và bắt buộc đạt WCAG AA (4,5). Đổi giá trị `--t-*`
+mà làm rơi xuống dưới ngưỡng thì test đỏ ngay. **Đừng hạ ngưỡng trong test để
+cho xanh** — chỉnh lại giá trị màu.
+
+`src/lib/themeTokens.ts` giữ bản sao bảng màu ở dạng TypeScript để test đọc
+được; `src/lib/__tests__/themeTokens.test.ts` chặn nó trôi khỏi `index.css`.
+
+### Thang chữ
+
+`src/lib/fontSettings.ts` sinh ra sáu biến ngữ nghĩa, dẫn xuất từ bốn nhóm
+điều chỉnh của màn Cài đặt:
+
+| Biến | Dẫn xuất | Mặc định | Dùng cho |
+| :--- | :--- | ---: | :--- |
+| `--fs-screen` | `heading + 4` | 18px | tiêu đề màn |
+| `--fs-title` | `heading + 1` | 15px | tiêu đề thẻ |
+| `--fs-body` | `table + 1` | 13px | ô bảng thường, chữ thân, ô nhập |
+| `--fs-dense` | `table` | 12px | bảng dày: lịch trả nợ 120 kỳ, ma trận COF |
+| `--fs-label` | `small` | 11px | nhãn cột, nhãn KPI, chú thích |
+| `--fs-num` | `mono × 2` | 24px | số trên thẻ KPI |
+
+Bốn biến cũ `--fs-heading`, `--fs-table`, `--fs-small`, `--fs-mono` cùng khối
+ghi đè lớp Tailwind ở cuối `index.css` là **cầu tạm** cho các màn chưa chuyển.
+Gỡ ở đợt 7 khi màn cuối cùng đã dùng biến ngữ nghĩa. Mã mới dùng biến ngữ
+nghĩa, đừng dùng bốn biến cũ.
 
 Mật độ dòng đi qua `data-density="cozy" | "compact"` đặt ở khối bao ngoài, ô bảng dùng `px-[var(--row-px)] py-[var(--row-py)]`. Bảng lịch thu nợ 40 kỳ và bảng tra cứu không cần cùng chiều cao dòng.
 
@@ -1215,7 +1256,14 @@ Số tiền luôn `font-mono` — lớp này đã bật `tabular-nums`, cột s�
 
 Toàn bộ giao diện đã chuyển sang token: không còn `isLight` trong mã, không còn lớp màu thô (`slate-*`, `sky-*`, `emerald-*`…) trong `.tsx`, và các khối `!important` ghi đè theo lớp Tailwind trong `index.css` đã gỡ hết — chỉ còn khối `prefers-reduced-motion`.
 
-Chuỗi class dùng chung nằm ở `src/lib/uiClasses.ts` (`PANEL`, `UI.containerCardBg`, `UI.inputStyle`, `TABLE_HEAD`, `TABLE_CELL`, `SECTION_LABEL`, `BTN_PRIMARY`, `DEBT_GROUP_COLOR`…). Đây là nơi duy nhất khai báo; component không tự dựng chuỗi class riêng và **không truyền chuỗi class qua props** nữa. `src/lib/themeStyles.ts` đã xoá.
+Chuỗi class dùng chung nằm ở `src/lib/uiClasses.ts` (`PANEL`, `UI.containerCardBg`, `UI.inputStyle`, `TABLE_HEAD`, `TABLE_CELL`, `SECTION_LABEL`, `BTN_PRIMARY`, `DEBT_GROUP_COLOR`…). Đây là nơi duy nhất khai báo; component không tự dựng chuỗi class riêng. `src/lib/themeStyles.ts` đã xoá.
+
+Component **không được** truyền chuỗi class qua props. Đây là đích, chưa phải
+hiện trạng: rà soát 19/08/2026 đếm được **69 tệp** vẫn truyền
+`containerCardBg`, `inputStyle`, `labelStyle`, `tableHeaderStyle`,
+`sectionBoxBg`, `styles`, `cardBg`. Đợt 2 của lần rebuild giao diện dựng bộ
+component đọc token trực tiếp; đợt 3–7 gỡ dần các props này theo từng màn. Mã
+mới **không được thêm** props kiểu này.
 
 Lưu ý khi đặt tên lớp động: Tailwind quét mã tĩnh, nên `bg-g${n}` **không sinh ra lớp nào**. Dùng bảng tra như `DEBT_GROUP_COLOR[n]`.
 
@@ -1259,13 +1307,13 @@ Ba thứ dưới đây khai báo ở `src/lib/uiClasses.ts`, đừng dựng lạ
 
 | Hạng mục | Quy tắc |
 | :--- | :--- |
-| Bo góc | `RADIUS_PANEL` (`rounded-lg`) cho thẻ và bảng; `RADIUS_CONTROL` (`rounded-md`) cho nút, ô nhập, viên trạng thái. Chỉ hai bán kính, không có bán kính thứ ba |
+| Bo góc | Ba bán kính, khai bằng biến CSS: `--r-panel` 12px cho thẻ, bảng, hộp thoại; `--r-control` 8px cho nút, ô nhập, tab; `--r-pill` 999px cho viên trạng thái. Dùng qua `RADIUS_PANEL`, `RADIUS_CONTROL`, `RADIUS_PILL` ở `uiClasses.ts`, không viết `rounded-*` thô |
 | Nút | `BTN_PRIMARY` nền màu nhấn — **mỗi màn chỉ một nút chính**; `BTN_SECONDARY` viền mờ cho thao tác phụ như xuất Excel, in, nhập CSV; `BTN_DANGER` cho thao tác xoá |
 | Tiêu đề | `HEADING_SCREEN` cho tiêu đề màn, `HEADING_PANEL` cho tiêu đề thẻ, `SECTION_LABEL` cho nhãn nhỏ. **Chữ in hoa chỉ dùng cho nhãn 10–11px**; tiêu đề cỡ `text-sm` trở lên viết thường |
 
 Màu nền đặc của trạng thái (`bg-neg`, `bg-warn`, `bg-pos`) đi kèm chữ `text-surface`, không phải `text-white`: ở giao diện tối nền đỏ sáng với chữ trắng chỉ đạt tương phản 2,71.
 
-Bảng dữ liệu dùng `TABLE_HEAD` cho hàng tiêu đề và `TABLE_CELL` cho ô. Ô lấy giãn cách từ biến `--row-px` / `--row-py` nên mọi bảng đổi mật độ cùng lúc; `data-density="compact"` đặt ở khối bao ngoài để thu gọn một vùng cụ thể. Các màn còn lại vẫn để chuỗi tiếng Việt cứng trong mã, chuyển dần theo từng đợt cùng lúc dọn `isLight`. Giá trị dữ liệu lấy từ CSDL (`KunnTenor`, `PrincipalRepaymentMethod`, tên nhóm nợ) **không dịch** — đó là dữ liệu nghiệp vụ, không phải giao diện.
+Bảng dữ liệu dùng `TABLE_HEAD` cho hàng tiêu đề và `TABLE_CELL` cho ô. Ô lấy giãn cách từ biến `--row-px` / `--row-py` nên mọi bảng đổi mật độ cùng lúc; `data-density="compact"` đặt ở khối bao ngoài để thu gọn một vùng cụ thể. Các màn còn lại vẫn để chuỗi tiếng Việt cứng trong mã, dịch dần theo từng đợt — xem "Hai ngôn ngữ" ở trên. Giá trị dữ liệu lấy từ CSDL (`KunnTenor`, `PrincipalRepaymentMethod`, tên nhóm nợ) **không dịch** — đó là dữ liệu nghiệp vụ, không phải giao diện.
 
 ---
 
@@ -1305,6 +1353,6 @@ Hai màn khác đã tách theo cùng nguyên tắc:
 ```bash
 npm run dev        # Máy chủ phát triển
 npm run build      # Kiểm tra kiểu + đóng gói
-npm test           # 739 test: 736 logic tài chính + 3 khói giao diện
+npm test           # 1.686 test
 npm run lint       # Kiểm tra mã nguồn
 ```

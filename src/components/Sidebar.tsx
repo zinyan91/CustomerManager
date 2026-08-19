@@ -2,6 +2,7 @@ import { memo, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
 import { NAV_GROUPS } from '../lib/navigation';
+import { APP_VERSION } from '../lib/appVersion';
 
 interface SidebarProps {
   activeTab: string;
@@ -77,7 +78,7 @@ export const Sidebar = memo<SidebarProps>(({
 
         <div className="border-t border-line px-4 py-3 flex items-baseline justify-between">
           <span className="text-[10px] uppercase tracking-[0.12em] text-ink-faint">{t('header.version')}</span>
-          <span className="font-mono text-ink-muted">2.4.0</span>
+          <span className="font-mono text-ink-muted">{APP_VERSION}</span>
         </div>
       </aside>
     </>

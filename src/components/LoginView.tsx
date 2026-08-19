@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Lock, User, LogIn, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { UI, PANEL, BTN_PRIMARY, RADIUS_CONTROL } from '../lib/uiClasses';
+import { APP_VERSION } from '../lib/appVersion';
 
 const BankEmblemLogo: React.FC<{ className?: string }> = ({ className = 'w-12 h-12' }) => (
   <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -141,7 +142,7 @@ export const LoginView: React.FC = () => {
 
         <div className="border-t border-line pt-3 text-center">
           <span className="text-[10px] text-ink-faint font-mono">
-            © 2026 CustomerManager · v2.5.0 Stable
+            © 2026 CustomerManager · v{APP_VERSION}
           </span>
         </div>
 

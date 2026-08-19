@@ -85,30 +85,26 @@ Thêm hai dòng vào cuối `.gitignore`:
 docs/superpowers/anh-moc/
 ```
 
-- [ ] **Step 3: Chạy ứng dụng và chụp bốn màn ở cả hai giao diện**
+- [ ] **Step 3: Chụp màn đăng nhập ở cả hai giao diện**
 
-Chạy: `npm run dev`
+Chạy: `npm run dev`, mở ở bề rộng cửa sổ **1440px**.
 
-Chụp ở bề rộng cửa sổ **1440px**, mỗi màn hai ảnh (giao diện tối và sáng, đổi bằng nút trên Header):
+Màn đăng nhập là màn duy nhất thấy được mà không cần tài khoản, và Task 4 đụng đúng vào bo góc của nó, nên đây là mốc quan trọng nhất chụp được ở đây.
 
-| Màn | Tên tệp |
-| :--- | :--- |
-| Tổng quan | `tong-quan-toi.png`, `tong-quan-sang.png` |
-| Danh sách khách hàng | `khach-hang-toi.png`, `khach-hang-sang.png` |
-| Quản lý khoản vay (đã chọn một khách có KUNN) | `khoan-vay-toi.png`, `khoan-vay-sang.png` |
-| Cài đặt | `cai-dat-toi.png`, `cai-dat-sang.png` |
+Chụp `dang-nhap-toi.png` rồi `dang-nhap-sang.png` vào `docs/superpowers/anh-moc/dot-0/`. Đổi giao diện bằng cách chạy trong bảng điều khiển của trình duyệt:
 
-Lưu vào `docs/superpowers/anh-moc/dot-0/`.
+```js
+document.documentElement.classList.remove('dark');
+document.documentElement.classList.add('light');
+```
 
-- [ ] **Step 4: Chụp thêm màn đăng nhập**
+- [ ] **Step 4: Chụp màn đăng nhập ở bề rộng 375px**
 
-Đăng xuất, chụp `dang-nhap-toi.png` và `dang-nhap-sang.png`. Task 4 đụng vào bo góc của đúng màn này nên cần mốc riêng.
+Thu cửa sổ về 375px, chụp `dang-nhap-375-toi.png`.
 
-- [ ] **Step 5: Chụp một màn ở bề rộng 375px**
+**Các màn sau đăng nhập không chụp trong task này.** Ứng dụng xác thực qua Supabase và không có đường vòng cho môi trường phát triển, nên không có tài khoản thì không vào được. Mốc thị giác của những màn đó không mất: đợt 0 nằm trọn trên nhánh `rebuild-giao-dien`, dựng lại mốc bất cứ lúc nào bằng `git checkout 855f456`. Bước "Kết thúc đợt 0" giao phần đối chiếu đó cho chủ dự án.
 
-Thu cửa sổ về 375px, mở Quản lý khoản vay, chụp `khoan-vay-375-toi.png`. Đây là mốc cho quy tắc bảng đổi hình dạng ở §15.
-
-- [ ] **Step 6: Ghi lại số đo hiện trạng**
+- [ ] **Step 5: Ghi lại số đo hiện trạng**
 
 ```bash
 grep -rl "containerCardBg\|inputStyle\|labelStyle\|tableHeaderStyle\|sectionBoxBg\|readonlyInputStyle\|styles=" --include=*.tsx src | wc -l
@@ -118,7 +114,7 @@ npm test 2>&1 | grep -oE "Tests +[0-9]+ passed" | tail -1
 
 Ghi ba kết quả vào `docs/superpowers/anh-moc/dot-0/so-do-truoc.txt`. Kỳ vọng lúc này: 69 tệp, 7 biến thể bo góc, 1.621 test.
 
-- [ ] **Step 7: Commit phần `.gitignore`**
+- [ ] **Step 6: Commit phần `.gitignore`**
 
 ```bash
 git add .gitignore
@@ -845,18 +841,71 @@ Trong `filteredItems`, đổi `COMMAND_ITEMS` thành `NAV_ITEMS` ở cả hai ch
 Chạy: `npm run build && npm test && npm run lint`
 Kỳ vọng: cả ba xanh. `npm run lint` sẽ bắt được import biểu tượng còn thừa nếu xoá sót.
 
-- [ ] **Step 8: Kiểm bằng mắt**
+- [ ] **Step 8: Kiểm bằng test rằng hai component vẫn dựng ra đúng 19 mục**
 
-Chạy: `npm run dev`
+Không kiểm bằng mắt được vì cả hai component chỉ hiện sau khi đăng nhập, mà ứng dụng xác thực qua Supabase và không có đường vòng cho môi trường phát triển. Kiểm bằng test thay thế.
 
-Kiểm hai chỗ:
-1. Thanh bên trái vẫn đủ 5 nhóm và 19 mục, đúng thứ tự cũ.
-2. Bấm `Ctrl + K`, bảng lệnh vẫn liệt kê đủ 19 mục; gõ `tsbd` vẫn ra "Định giá TSĐB".
+Tạo `src/components/__tests__/Sidebar.test.tsx`:
 
-- [ ] **Step 9: Commit**
+```tsx
+// @vitest-environment jsdom
+
+import { describe, it, expect, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
+import { Sidebar } from '../Sidebar';
+import { LanguageProvider } from '../../context/LanguageContext';
+import { NAV_ITEMS, NAV_GROUPS } from '../../lib/navigation';
+import { translate } from '../../lib/i18n';
+
+afterEach(cleanup);
+
+function dungLen() {
+  return render(
+    <LanguageProvider>
+      <Sidebar activeTab="dashboard" setActiveTab={() => {}} />
+    </LanguageProvider>
+  );
+}
+
+describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
+  it('hiện đủ 19 mục, mỗi mục một nút', () => {
+    dungLen();
+    for (const item of NAV_ITEMS) {
+      expect(
+        screen.getByText(translate('vi', item.labelKey)),
+        `thiếu mục ${item.id}`
+      ).toBeTruthy();
+    }
+  });
+
+  it('hiện đủ 5 tiêu đề nhóm', () => {
+    dungLen();
+    const nhom = [...new Set(NAV_GROUPS.map(g => g.groupKey))];
+    expect(nhom).toHaveLength(5);
+    for (const key of nhom) {
+      expect(screen.getAllByText(translate('vi', key)).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('mục đang mở được đánh dấu aria-current', () => {
+    dungLen();
+    const nut = screen.getByText(translate('vi', 'nav.dashboard')).closest('button');
+    expect(nut?.getAttribute('aria-current')).toBe('page');
+  });
+});
+```
+
+- [ ] **Step 9: Chạy test mới**
+
+Chạy: `npx vitest run src/components/__tests__/Sidebar.test.tsx`
+Kỳ vọng: PASS, 3 test.
+
+Nếu `getByText` báo tìm thấy nhiều phần tử cho một nhãn, đổi sang `getAllByText(...).length` như test tiêu đề nhóm — một vài nhãn nhóm trùng nhãn mục.
+
+- [ ] **Step 10: Commit**
 
 ```bash
-git add src/lib/navigation.ts src/lib/__tests__/navigation.test.ts src/components/Sidebar.tsx src/components/CommandPalette.tsx
+git add src/lib/navigation.ts src/lib/__tests__/navigation.test.ts src/components/Sidebar.tsx src/components/CommandPalette.tsx src/components/__tests__/Sidebar.test.tsx
 git commit -m "refactor(dieu-huong): danh sach man khai mot cho thay ba noi"
 ```
 
@@ -1126,15 +1175,17 @@ git commit -m "docs(quy-uoc): sua §15 va §17 cho khop ma nguon va chinh sach m
 npm test && npm run build && npm run lint
 ```
 
-- [ ] **Xác nhận không màn nào đổi diện mạo**
+- [ ] **Xác nhận màn đăng nhập không đổi diện mạo**
 
-Chạy `npm run dev`, chụp lại đúng 11 ảnh mà Task 0 đã chụp — cùng bề rộng cửa sổ, cùng màn, cùng giao diện — rồi đối chiếu từng cặp với ảnh trong `docs/superpowers/anh-moc/dot-0/`.
+Chạy `npm run dev`, chụp lại ba ảnh Task 0 đã chụp — cùng bề rộng cửa sổ, cùng giao diện — rồi đối chiếu từng cặp với ảnh trong `docs/superpowers/anh-moc/dot-0/`.
 
-Phải **không thấy khác biệt nào**. Đây là tiêu chí đỗ/trượt của cả đợt: thấy khác là có gì đó sai, tìm cho ra rồi mới đi tiếp. Chỗ đáng ngờ nhất là màn đăng nhập, vì Task 4 đụng vào bo góc của đúng màn đó.
+Phải **không thấy khác biệt nào**. Màn này là chỗ đáng ngờ nhất của cả đợt vì Task 4 đụng đúng vào bo góc của nó.
 
-- [ ] **Thử tính năng chỉnh cỡ chữ**
+- [ ] **Bàn giao phần kiểm các màn sau đăng nhập cho chủ dự án**
 
-Vào Cài đặt, kéo cả bốn thanh trượt cỡ chữ và đổi phông. Giao diện phải phản ứng y như trước đợt 0.
+Các màn cần tài khoản không kiểm được trong phiên thi công. Ghi vào phần mô tả pull request đúng câu này để chủ dự án tự làm:
+
+> Mở Tổng quan, Danh sách khách hàng, Quản lý khoản vay và Cài đặt ở cả hai giao diện, so với `git checkout 855f456` (commit ngay trước đợt 0). Phải không thấy khác biệt nào. Vào Cài đặt kéo cả bốn thanh trượt cỡ chữ và đổi phông — phải phản ứng y như trước.
 
 - [ ] **Đo lại số liệu và so với mốc Task 0**
 

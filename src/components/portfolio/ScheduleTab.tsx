@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
 import { fmtDate, fmtMoney, fmtNumber, fmtRate } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
-import { isScheduleFullySettled, isBulletPrincipal, kunnPrincipal } from '../../lib/loanMath';
+import { isScheduleFullySettled, isBulletPrincipal, kunnPrincipal, computeOutstandingBalance } from '../../lib/loanMath';
 import { periodObligation, sumObligations } from '../../lib/scheduleView';
 import { PeriodDetailCard } from './PeriodDetailCard';
 import { useLang } from '../../context/LanguageContext';
@@ -82,9 +82,10 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
         </div>
 
         {selectedContract && (
-          <dl className="grid grid-cols-2 md:grid-cols-5 gap-x-6 gap-y-3 mt-4 pt-4 border-t border-line">
+          <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3 mt-4 pt-4 border-t border-line">
             {[
               { k: t('schedule.loanAmount'), v: fmtMoney(kunnPrincipal(selectedContract)), mono: true },
+              { k: t('schedule.currentBalance'), v: fmtMoney(computeOutstandingBalance(schedules, selectedContract)), mono: true },
               { k: t('schedule.activeRate'), v: fmtRate(getEffectiveActiveRate(selectedContract)), mono: true },
               { k: t('schedule.tenor'), v: selectedContract.KunnTenor || `${selectedContract.LoanTenorMonths || 12} ${t('schedule.months')}`, mono: false },
               { k: t('schedule.principalMethod'), v: selectedContract.PrincipalRepaymentMethod || t('schedule.defaultMethod'), mono: false },

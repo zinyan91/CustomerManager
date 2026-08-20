@@ -55,6 +55,7 @@ const dictionary = {
 
     'schedule.contracts': 'Hợp đồng tín dụng',
     'schedule.loanAmount': 'Số tiền KUNN',
+    'schedule.currentBalance': 'Dư nợ hiện hữu',
     'schedule.activeRate': 'Lãi suất hiện hành',
     'schedule.tenor': 'Thời hạn KUNN',
     'schedule.months': 'tháng',
@@ -141,6 +142,7 @@ const dictionary = {
 
     'schedule.contracts': 'Credit contracts',
     'schedule.loanAmount': 'Loan amount',
+    'schedule.currentBalance': 'Current balance',
     'schedule.activeRate': 'Active rate',
     'schedule.tenor': 'Tenor',
     'schedule.months': 'months',

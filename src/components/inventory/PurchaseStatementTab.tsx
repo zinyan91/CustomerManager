@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   FileText, Plus, Trash2, Download, Printer, Search, Save, History,
-  Pencil, X, Package, RotateCcw,
+  Pencil, X, Package,
 } from 'lucide-react';
 import {
   computeStatementItem, computeStatementSummary, nextStatementId, getComputedBankAccText,
@@ -319,7 +319,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
       return;
     }
     const bytes = buildPurchaseStatementXlsx(items, sellerInfo);
-    downloadBytes(`Bang_Ke_Mua_Ban_${sellerInfo.sellerName.replace(/\s+/g, '_')}_${todayIso()}.xlsx`, bytes, MIME_XLSX);
+    downloadBytes(bytes, `Bang_Ke_Mua_Ban_${sellerInfo.sellerName.replace(/\s+/g, '_')}_${todayIso()}.xlsx`, MIME_XLSX);
     showNotify('success', 'Đã xuất file Excel Bảng kê mua bán thành công!');
   };
 

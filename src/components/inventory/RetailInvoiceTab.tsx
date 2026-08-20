@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Receipt, Plus, Trash2, Download, Printer, Search, Save, History,
-  Pencil, X, Package, RotateCcw,
+  Pencil, X, Package,
 } from 'lucide-react';
 import {
   computeRetailInvoiceItem, computeRetailInvoiceSummary, nextInvoiceId,
@@ -297,7 +297,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
       return;
     }
     const bytes = buildRetailInvoiceXlsx(items, headerInfo);
-    downloadBytes(`Hoa_Don_Ban_Le_${headerInfo.shopName.replace(/\s+/g, '_')}_${todayIso()}.xlsx`, bytes, MIME_XLSX);
+    downloadBytes(bytes, `Hoa_Don_Ban_Le_${headerInfo.shopName.replace(/\s+/g, '_')}_${todayIso()}.xlsx`, MIME_XLSX);
     showNotify('success', 'Đã xuất file Excel Hóa đơn bán lẻ thành công!');
   };
 

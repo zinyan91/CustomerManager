@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router';
+import { useSearchParams, useParams } from 'react-router';
 import {
   saveContractAPI, deleteContractAPI,
   bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI,
@@ -39,6 +39,8 @@ export function useLoanPortfolioController() {
     const raw = searchParams.get('disburse');
     return raw && /^\d+$/.test(raw) ? Number(raw) : null;
   })();
+  const { kunnId: kunnIdParam } = useParams<{ kunnId: string }>();
+  const deepKunnId = kunnIdParam && /^\d+$/.test(kunnIdParam) ? Number(kunnIdParam) : null;
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -48,6 +50,7 @@ export function useLoanPortfolioController() {
   }, []);
 
   const [mainTab, setMainTab] = useState<'kunn' | 'schedule'>('kunn');
+  const [daApDeepKunn, setDaApDeepKunn] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [selectedMasterFilter, setSelectedMasterFilter] = useState<string>('ALL');
   const [showSettledKunn, setShowSettledKunn] = useState(true);
@@ -129,6 +132,15 @@ export function useLoanPortfolioController() {
     allSchedulesMap, setAllSchedulesMap,
     pickCustomer: handlePickCustomer, search: handleSearch, selectContract: handleSelectContract,
   } = portfolio;
+
+  useEffect(() => {
+    if (deepKunnId === null || daApDeepKunn) return;
+    const k = portfolio.contracts.find(c => c.Id === deepKunnId);
+    if (!k) return;
+    setDaApDeepKunn(true);
+    portfolio.selectContract(k);
+    setMainTab('schedule');
+  }, [deepKunnId, daApDeepKunn, portfolio.contracts, portfolio.selectContract]);
 
   const paymentModalProps = usePaymentModal({
     selectedContract,

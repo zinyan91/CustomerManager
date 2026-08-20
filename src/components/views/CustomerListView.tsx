@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { UI } from '../../lib/uiClasses';
 import type { Customer } from '../../types';
@@ -9,7 +9,8 @@ import { Toast } from '../Toast';
 import { AdaptiveTable, type AdaptiveColumn } from '../AdaptiveTable';
 import { useCustomerListController } from '../../hooks/useCustomerListController';
 import { CustomerDrawerForm } from '../customer/CustomerDrawerForm';
-import { customerPath } from '../../lib/customerRoutes';
+import { customerPath, customerProfilePath } from '../../lib/customerRoutes';
+import { useSelectedCustomerId } from '../../hooks/useSelectedCustomerId';
 
 export const CustomerListView: React.FC = () => {
   const {
@@ -43,6 +44,20 @@ export const CustomerListView: React.FC = () => {
   } = useCustomerListController();
 
   const navigate = useNavigate();
+  const profileCustomerId = useSelectedCustomerId();
+  const [profileAppliedFor, setProfileAppliedFor] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (profileCustomerId === null) {
+      if (profileAppliedFor !== null) setProfileAppliedFor(null);
+      return;
+    }
+    if (profileAppliedFor === profileCustomerId) return;
+    const c = visibleCustomers.find(x => x.Id === profileCustomerId);
+    if (!c) return;
+    setProfileAppliedFor(profileCustomerId);
+    openDrawerForEdit(c);
+  }, [profileCustomerId, profileAppliedFor, visibleCustomers, openDrawerForEdit]);
 
   const containerCardBg = UI.containerCardBg;
   const inputStyle = UI.inputStyle;
@@ -177,7 +192,7 @@ export const CustomerListView: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); openDrawerForEdit(c); }}
+                    onClick={(e) => { e.stopPropagation(); navigate(customerProfilePath(c.Id)); }}
                     className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
                   >
                     <Edit3 className="w-3 h-3 text-accent" />

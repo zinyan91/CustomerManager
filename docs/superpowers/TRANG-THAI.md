@@ -3,7 +3,7 @@
 > Tệp này để **bắt lại mạch khi mở phiên trò chuyện mới**. Cập nhật sau mỗi task xong.
 > Sổ chi tiết của phiên đang chạy nằm ở `.superpowers/sdd/<tên-kế-hoạch>/progress.md`, nhưng thư mục đó bị `.gitignore` bỏ qua và bị xoá khi đóng đợt — nên mọi thứ cần sống lâu phải nằm ở đây.
 
-**Cập nhật lần cuối:** 2026-08-20, sau Task 3 của đợt 1a.
+**Cập nhật lần cuối:** 2026-08-20, sau khi đợt 1a hoàn tất và rà soát toàn nhánh xong.
 
 ---
 
@@ -13,9 +13,9 @@
 | :--- | :--- |
 | Nhánh hiện tại | `rebuild-giao-dien-dot-1` |
 | Kế hoạch đang chạy | `docs/superpowers/plans/2026-08-20-rebuild-giao-dien-dot-1a-dinh-tuyen.md` |
-| Task vừa xong | Task 3 — thanh bên dùng liên kết thật (`ebf27fa`), đang rà soát |
-| Task kế tiếp | Task 4 — Header thôi ping cơ sở dữ liệu · rồi Task 5 — đối chiếu và ghi quy ước |
-| Tổng test | 1.708 xanh, 0 đỏ |
+| Đợt vừa xong | **1a — định tuyến**, 21 commit, rà soát toàn nhánh sạch, chờ gộp |
+| Đợt kế tiếp | **1b — ngữ cảnh khách hàng**, chưa lập kế hoạch |
+| Tổng test | 1.732 xanh, 0 đỏ |
 
 **URL đã chạy thật.** Bấm mục thanh bên → đường dẫn đổi; F5 → giữ nguyên chỗ; Back → quay về màn trước; đường dẫn lạ → về `/dashboard`. Đã tự kiểm cả 19 màn trên giao diện thật, không màn nào trắng, không lỗi console.
 
@@ -31,7 +31,9 @@
 
 Đợt 1b sẽ lồng sáu màn hồ sơ vào `/customers/:id/…`.
 
-**Cầu tạm cần gỡ ở đợt 3–7:** `WorkContext.activeTab` và `setActiveTab` giữ nguyên chữ ký cũ nhưng đọc/ghi URL, để 19 màn chưa viết lại vẫn chạy. Màn nào được viết lại thì chuyển sang `useNavigate` và bỏ `setActiveTab` khỏi tệp đó.
+**Cầu tạm cần gỡ ở đợt 3–7:** chỉ còn `WorkContext.setActiveTab` — nó giữ chữ ký cũ `(t: string) => void` nhưng ghi bằng `navigate(ROUTE_OF[tab])`. `activeTab` **đã gỡ hẳn** ở đợt 1a vì không component nào đọc nó mà lại buộc `WorkProvider` gọi `useLocation()`, khiến cả cây provider render lại mỗi lần điều hướng. Ba tệp còn gọi `setActiveTab`: `WorkContext.tsx` (nội bộ ở `requestDisburse`), `CustomerListView.tsx`, `DashboardView.tsx`.
+
+**Thêm màn phải sửa BA chỗ**, không phải hai: `routes.ts` · `navigation.ts` · `App.tsx`. Quên chỗ thứ ba thì mục menu vẫn hiện nhưng bấm vào lặng lẽ về `/dashboard`. `routing.test.tsx` nay bắt được lỗi đó.
 
 **Ba lỗi tôi từng viết sai trong kế hoạch đợt 1a, đã sửa — ghi lại để đợt sau tránh:**
 1. `BrowserRouter` phải bọc **ra ngoài** `ProviderComposer`. `ProviderComposer` dựng cây bằng `reduceRight` nên `WorkProvider` là lớp trong cùng; đặt ngược thì `useLocation()` ném lỗi lúc khởi động.
@@ -66,7 +68,7 @@ Chủ dự án đã chốt trong phiên brainstorm ngày 19/08/2026:
 | Đợt | Nội dung | Trạng thái |
 | :--- | :--- | :--- |
 | **0** | Token, thang chữ, bo góc, `navigation.ts`, dọn rác, viết lại §15 §17 | ✅ **xong, đã gộp vào `main`** (`c5ebd57`) |
-| **1a** | `react-router`, khung `AppLayout`, Sidebar, CommandPalette, Header thôi ping CSDL | 🔄 **đang làm** — xong Task 3/5 |
+| **1a** | `react-router`, khung `AppLayout`, Sidebar, CommandPalette, Header thôi ping CSDL | ✅ **xong**, 21 commit, chờ gộp |
 | **1b** | `useSelectedCustomer` đọc `:id`, thanh ngữ cảnh khách hàng, chuyển 4 controller, luồng giải ngân qua URL | chưa lập kế hoạch |
 | **2** | Bộ component + `Dialog`/`ConfirmDialog` — thay 15 modal và 13 tệp `window.confirm` | chưa |
 | **3** | Hồ sơ tín dụng: Khách hàng, HĐTD, Khoản vay, TSĐB, Thẻ. **Nặng nhất** — gỡ 65 props của `KunnForm` | chưa |
@@ -123,6 +125,10 @@ Những điều dưới đây đã quyết rồi, đừng quyết lại:
 | `CONTRAST_PAIRS` bỏ sót cặp `fg` trên nền `*-soft` | trung bình | Ví dụ `accent` trên `accent-soft` (49 tệp dùng). Đo thử đều đạt AA nhưng sát |
 | Bẫy thứ tự nguồn CSS cho đợt 3–7 | **quan trọng** | Khối ghi đè `.text-xs` ở cuối `index.css` nằm SAU tầng utilities, nên nó **thắng** mọi lớp `text-[var(--fs-body)]` sinh sau. Màn nào chuyển sang biến ngữ nghĩa mà còn giữ `text-xs` sẽ âm thầm giữ cỡ cũ |
 | Thứ tự hiển thị Sidebar không có test giữ | thấp | Đảo hai mục thì mọi test vẫn xanh |
+| **Header mới làm nửa spec §6.3** | **quan trọng — đợt 1b** | Có `navigator.onLine`, **thiếu** "cờ lỗi từ lần gọi API thật gần nhất". Hệ quả: chấm vẫn xanh "Trực tuyến" khi Supabase không với tới được (token hết hạn, rớt VPN). Với hệ tín dụng, chấm xanh lúc lệnh lưu đang hỏng là tín hiệu sai. Cần một kênh ghi nhận lỗi API dùng chung — nằm trong `src/lib/api/`, thư mục đợt 1a bị cấm đụng |
+| `screenIdOfPath` lệch bộ định tuyến ở URL không chuẩn tắc | thấp | `/DASHBOARD` render đúng nhưng `screenIdOfPath` trả `null`. Vô hại hôm nay vì không ai đọc kết quả đó |
+| `SCREEN_OF_PATH` xuất ra chỉ để test của chính nó dùng | thấp | Đợt 1b sẽ dùng thật khi đọc `/customers/:id/...` |
+| Back xoá âm thầm biểu mẫu KUNN đang điền dở | trung bình — đợt 3 | Sau khi "Giải ngân từ HĐTD" nhảy sang `/loans` với form điền sẵn, một lần Back là mất. Không phải hồi quy, nhưng Back nay là nút sống nên dễ bấm nhầm. Cần chốt "chưa lưu" |
 
 ---
 
@@ -143,6 +149,6 @@ Những điều dưới đây đã quyết rồi, đừng quyết lại:
 ```bash
 npm run dev        # máy chủ phát triển — dùng mcp__Claude_Browser__preview_start, đừng chạy qua Bash
 npm run build      # kiểm kiểu + đóng gói
-npm test           # 1.708 test
+npm test           # 1.732 test
 npm run lint
 ```

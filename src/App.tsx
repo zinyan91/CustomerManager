@@ -48,6 +48,13 @@ export function App() {
         <Route path={ROUTE_OF['quiz-bank']} element={<Suspense fallback={<ViewSkeleton />}><QuizBankView /></Suspense>} />
         <Route path={ROUTE_OF['post-loan']} element={<Suspense fallback={<ViewSkeleton />}><PostLoanControlView /></Suspense>} />
         <Route path={ROUTE_OF.settings} element={<Suspense fallback={<ViewSkeleton />}><SettingsView /></Suspense>} />
+        <Route path={`/customers/:customerId${ROUTE_OF['credit-contracts']}`} element={<Suspense fallback={<ViewSkeleton />}><CreditContractView /></Suspense>} />
+        <Route path={`/customers/:customerId${ROUTE_OF.loans}`} element={<Suspense fallback={<ViewSkeleton />}><LoanPortfolioView /></Suspense>} />
+        <Route path={`/customers/:customerId${ROUTE_OF.loans}/:kunnId/schedule`} element={<Suspense fallback={<ViewSkeleton />}><LoanPortfolioView /></Suspense>} />
+        <Route path={`/customers/:customerId${ROUTE_OF.collaterals}`} element={<Suspense fallback={<ViewSkeleton />}><CollateralView /></Suspense>} />
+        <Route path={`/customers/:customerId${ROUTE_OF['credit-cards']}`} element={<Suspense fallback={<ViewSkeleton />}><CardContractView /></Suspense>} />
+        <Route path={`/customers/:customerId${ROUTE_OF['post-loan']}`} element={<Suspense fallback={<ViewSkeleton />}><PostLoanControlView /></Suspense>} />
+        <Route path="/customers/:customerId/profile" element={<Suspense fallback={<ViewSkeleton />}><CustomerListView /></Suspense>} />
         <Route path="*" element={<Navigate to={DEFAULT_ROUTE} replace />} />
       </Route>
     </Routes>

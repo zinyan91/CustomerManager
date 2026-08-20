@@ -113,3 +113,42 @@ describe('App thật — mỗi đường dẫn trong ROUTE_OF dựng đúng màn
     expect(await screen.findByText(`MAN:${id}`)).toBeTruthy();
   });
 });
+
+describe('tuyến lồng theo khách hàng', () => {
+  function dungAppO(duongDan: string) {
+    return render(
+      <MemoryRouter initialEntries={[duongDan]}>
+        <ThemeProvider>
+          <LanguageProvider>
+            <WorkProvider>
+              <AppThatDuoiTest />
+            </WorkProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+  }
+
+  const CAP = [
+    ['/customers/55/credit-contracts', 'credit-contracts'],
+    ['/customers/55/loans', 'loans'],
+    ['/customers/55/collaterals', 'collaterals'],
+    ['/customers/55/credit-cards', 'credit-cards'],
+    ['/customers/55/post-loan-control', 'post-loan'],
+  ] as const;
+
+  it.each(CAP)('%s dựng đúng màn %s', async (path, id) => {
+    dungAppO(path);
+    expect(await screen.findByText(`MAN:${id}`)).toBeTruthy();
+  });
+
+  it('đường lồng lạ vẫn về Tổng quan, không màn trắng', async () => {
+    dungAppO('/customers/55/khong-co-man-nay');
+    expect(await screen.findByText('MAN:dashboard')).toBeTruthy();
+  });
+
+  it('Id không phải số thì màn vẫn dựng, ở trạng thái chưa chọn khách', async () => {
+    dungAppO('/customers/abc/loans');
+    expect(await screen.findByText('MAN:loans')).toBeTruthy();
+  });
+});

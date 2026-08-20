@@ -3,6 +3,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React, { useEffect } from 'react';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import type { Customer, LoanContract, CreditContract } from '../../types';
 
 const khach: Customer = {
@@ -63,12 +64,14 @@ const ChonKhachHang: React.FC<{ id: number }> = ({ id }) => {
 
 function dungLen(customerId?: number) {
   return render(
-    <ThemeProvider>
-      <WorkProvider>
-        {customerId ? <ChonKhachHang id={customerId} /> : null}
-        <LoanPortfolioView />
-      </WorkProvider>
-    </ThemeProvider>
+    <MemoryRouter>
+      <ThemeProvider>
+        <WorkProvider>
+          {customerId ? <ChonKhachHang id={customerId} /> : null}
+          <LoanPortfolioView />
+        </WorkProvider>
+      </ThemeProvider>
+    </MemoryRouter>
   );
 }
 

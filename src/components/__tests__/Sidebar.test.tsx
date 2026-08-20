@@ -2,6 +2,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { Sidebar } from '../Sidebar';
 import { LanguageProvider } from '../../context/LanguageContext';
 import { translate } from '../../lib/i18n';
@@ -10,9 +11,11 @@ afterEach(cleanup);
 
 function dungLen() {
   return render(
-    <LanguageProvider>
-      <Sidebar activeTab="dashboard" setActiveTab={() => {}} />
-    </LanguageProvider>
+    <MemoryRouter>
+      <LanguageProvider>
+        <Sidebar activeTab="dashboard" setActiveTab={() => {}} />
+      </LanguageProvider>
+    </MemoryRouter>
   );
 }
 

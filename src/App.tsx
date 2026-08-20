@@ -1,14 +1,9 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { Loader2 } from 'lucide-react';
-import { useAuth } from './context/AuthContext';
-import { useWork } from './context/WorkContext';
-import { LoginView } from './components/LoginView';
-import { Header } from './components/Header';
-import { Sidebar } from './components/Sidebar';
-import { CommandPalette } from './components/CommandPalette';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { lazy, Suspense } from 'react';
+import { Routes, Route, Navigate } from 'react-router';
+import { AppLayout } from './components/AppLayout';
+import { ViewSkeleton } from './components/SkeletonLoader';
+import { ROUTE_OF, DEFAULT_ROUTE } from './lib/routes';
 
-// Dynamic Lazy Imports for All Views
 const DashboardView = lazy(() => import('./components/views/DashboardView').then(m => ({ default: m.DashboardView })));
 const CustomerListView = lazy(() => import('./components/views/CustomerListView').then(m => ({ default: m.CustomerListView })));
 const LoanPortfolioView = lazy(() => import('./components/views/LoanPortfolioView').then(m => ({ default: m.LoanPortfolioView })));
@@ -29,98 +24,33 @@ const PurchaseStatementView = lazy(() => import('./components/views/PurchaseStat
 const RetailInvoiceView = lazy(() => import('./components/views/RetailInvoiceView').then(m => ({ default: m.RetailInvoiceView })));
 const QuizBankView = lazy(() => import('./components/views/QuizBankView').then(m => ({ default: m.QuizBankView })));
 
-import { ViewSkeleton } from './components/SkeletonLoader';
-
 export function App() {
-  const { activeTab, setActiveTab } = useWork();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const { session, loading } = useAuth();
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setIsCommandPaletteOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const handleToggleMobileMenu = useCallback(() => {
-    setIsMobileMenuOpen(prev => !prev);
-  }, []);
-
-  const handleOpenCommandPalette = useCallback(() => {
-    setIsCommandPaletteOpen(true);
-  }, []);
-
-  const handleCloseMobileMenu = useCallback(() => {
-    setIsMobileMenuOpen(false);
-  }, []);
-
-  const handleCloseCommandPalette = useCallback(() => {
-    setIsCommandPaletteOpen(false);
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-surface text-ink flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-accent" />
-      </div>
-    );
-  }
-
-  if (!session) {
-    return <LoginView />;
-  }
-
   return (
-    <div className="min-h-screen bg-surface text-ink flex flex-col antialiased">
-      <Header
-        onToggleMobileMenu={handleToggleMobileMenu}
-        onOpenCommandPalette={handleOpenCommandPalette}
-      />
-      <div className="flex flex-1 pt-[var(--header-h)] relative">
-        <Sidebar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          isOpenMobile={isMobileMenuOpen}
-          onCloseMobile={handleCloseMobileMenu}
-        />
-        <main className="flex-1 md:ml-60 min-w-0 bg-surface p-3 sm:p-4 md:p-6 overflow-y-auto">
-          <ErrorBoundary title="Lỗi khi tải giao diện màn hình">
-            <Suspense fallback={<ViewSkeleton />}>
-              {activeTab === 'dashboard' && <DashboardView />}
-              {activeTab === 'customers' && <CustomerListView />}
-              {activeTab === 'credit-contracts' && <CreditContractView />}
-              {activeTab === 'loans' && <LoanPortfolioView />}
-              {activeTab === 'collaterals' && <CollateralView />}
-              {activeTab === 'credit-cards' && <CardContractView />}
-              {activeTab === 'calculators' && <CalculatorView />}
-              {activeTab === 'business-plan' && <BusinessPlanView />}
-              {activeTab === 'inventory' && <InventoryView />}
-              {activeTab === 'purchase-statement' && <PurchaseStatementView />}
-              {activeTab === 'retail-invoice' && <RetailInvoiceView />}
-              {activeTab === 'mdsdv' && <MdsdvLookupView />}
-              {activeTab === 'card-policies' && <CardPolicyLookupView />}
-              {activeTab === 'rate-quote' && <RateQuoteView />}
-              {activeTab === 'cof' && <CofView />}
-              {activeTab === 'templates' && <DocumentTemplateView />}
-              {activeTab === 'quiz-bank' && <QuizBankView />}
-              {activeTab === 'settings' && <SettingsView />}
-              {activeTab === 'post-loan' && <PostLoanControlView />}
-            </Suspense>
-          </ErrorBoundary>
-        </main>
-      </div>
-
-      <CommandPalette
-        isOpen={isCommandPaletteOpen}
-        onClose={handleCloseCommandPalette}
-      />
-    </div>
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route index element={<Navigate to={DEFAULT_ROUTE} replace />} />
+        <Route path={ROUTE_OF.dashboard} element={<Suspense fallback={<ViewSkeleton />}><DashboardView /></Suspense>} />
+        <Route path={ROUTE_OF.customers} element={<Suspense fallback={<ViewSkeleton />}><CustomerListView /></Suspense>} />
+        <Route path={ROUTE_OF['credit-contracts']} element={<Suspense fallback={<ViewSkeleton />}><CreditContractView /></Suspense>} />
+        <Route path={ROUTE_OF.loans} element={<Suspense fallback={<ViewSkeleton />}><LoanPortfolioView /></Suspense>} />
+        <Route path={ROUTE_OF.collaterals} element={<Suspense fallback={<ViewSkeleton />}><CollateralView /></Suspense>} />
+        <Route path={ROUTE_OF['credit-cards']} element={<Suspense fallback={<ViewSkeleton />}><CardContractView /></Suspense>} />
+        <Route path={ROUTE_OF.calculators} element={<Suspense fallback={<ViewSkeleton />}><CalculatorView /></Suspense>} />
+        <Route path={ROUTE_OF['business-plan']} element={<Suspense fallback={<ViewSkeleton />}><BusinessPlanView /></Suspense>} />
+        <Route path={ROUTE_OF.inventory} element={<Suspense fallback={<ViewSkeleton />}><InventoryView /></Suspense>} />
+        <Route path={ROUTE_OF['purchase-statement']} element={<Suspense fallback={<ViewSkeleton />}><PurchaseStatementView /></Suspense>} />
+        <Route path={ROUTE_OF['retail-invoice']} element={<Suspense fallback={<ViewSkeleton />}><RetailInvoiceView /></Suspense>} />
+        <Route path={ROUTE_OF['rate-quote']} element={<Suspense fallback={<ViewSkeleton />}><RateQuoteView /></Suspense>} />
+        <Route path={ROUTE_OF.cof} element={<Suspense fallback={<ViewSkeleton />}><CofView /></Suspense>} />
+        <Route path={ROUTE_OF.mdsdv} element={<Suspense fallback={<ViewSkeleton />}><MdsdvLookupView /></Suspense>} />
+        <Route path={ROUTE_OF['card-policies']} element={<Suspense fallback={<ViewSkeleton />}><CardPolicyLookupView /></Suspense>} />
+        <Route path={ROUTE_OF.templates} element={<Suspense fallback={<ViewSkeleton />}><DocumentTemplateView /></Suspense>} />
+        <Route path={ROUTE_OF['quiz-bank']} element={<Suspense fallback={<ViewSkeleton />}><QuizBankView /></Suspense>} />
+        <Route path={ROUTE_OF['post-loan']} element={<Suspense fallback={<ViewSkeleton />}><PostLoanControlView /></Suspense>} />
+        <Route path={ROUTE_OF.settings} element={<Suspense fallback={<ViewSkeleton />}><SettingsView /></Suspense>} />
+        <Route path="*" element={<Navigate to={DEFAULT_ROUTE} replace />} />
+      </Route>
+    </Routes>
   );
 }
 

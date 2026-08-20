@@ -13,41 +13,43 @@ export function CustomerContextBar() {
 
   if (customerId === null) return null;
 
-  const nhom = summary?.debtGroup ?? 1;
+  const khach = loading ? null : customer;
+  const tomTat = loading ? null : summary;
+  const nhom = tomTat?.debtGroup ?? 1;
 
   return (
     <div data-testid="thanh-ngu-canh" className={`${PANEL} px-4 py-2.5 mb-4 flex flex-wrap items-center gap-x-6 gap-y-2`}>
       <div className="min-w-0">
         <div className={SECTION_LABEL}>Khách hàng</div>
         <div className="text-sm font-semibold text-ink truncate">
-          {customer?.FullName ?? (loading ? '…' : '—')}
+          {khach?.FullName ?? (loading ? '…' : '—')}
         </div>
       </div>
 
       <div className="text-xs text-ink-muted">
-        CIF <span className="font-mono text-ink">{customer?.CifKh ?? '—'}</span>
+        CIF <span className="font-mono text-ink">{khach?.CifKh ?? '—'}</span>
         {' · '}
-        <span className="font-mono text-ink">{customer?.Phone || '—'}</span>
+        <span className="font-mono text-ink">{khach?.Phone || '—'}</span>
       </div>
 
       <div>
         <div className={SECTION_LABEL}>Dư nợ</div>
         <div className="text-sm font-semibold text-pos tabular-nums">
-          {summary ? fmtMoney(summary.outstanding) : '…'}
+          {tomTat ? fmtMoney(tomTat.outstanding) : '…'}
         </div>
       </div>
 
       <div>
         <div className={SECTION_LABEL}>Hạn mức khả dụng</div>
         <div className="text-sm font-semibold text-ink tabular-nums">
-          {summary ? fmtMoney(summary.available) : '…'}
+          {tomTat ? fmtMoney(tomTat.available) : '…'}
         </div>
       </div>
 
-      {summary && (
+      {tomTat && (
         <span className={`${RADIUS_PILL} ${DEBT_GROUP_COLOR[nhom]} text-surface px-2.5 py-0.5 text-[11px] font-semibold`}>
           Nhóm {nhom}
-          {summary.maxOverdueDays > 0 && ` · quá hạn ${summary.maxOverdueDays} ngày`}
+          {tomTat.maxOverdueDays > 0 && ` · quá hạn ${tomTat.maxOverdueDays} ngày`}
         </span>
       )}
 

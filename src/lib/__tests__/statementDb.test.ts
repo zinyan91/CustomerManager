@@ -1,9 +1,28 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   fetchPurchaseStatementsDb, savePurchaseStatementDb, deletePurchaseStatementDb,
   fetchRetailInvoicesDb, saveRetailInvoiceDb, deleteRetailInvoiceDb,
   type SavedPurchaseStatement, type SavedRetailInvoice,
 } from '../statementDb';
+
+vi.mock('../supabase', () => {
+  const dbError = { message: 'CSDL khong kha dung trong moi truong test' };
+  const failResult = { data: null, error: dbError };
+  const chain: any = {
+    select: () => chain,
+    order: () => Promise.resolve(failResult),
+    delete: () => chain,
+    eq: () => Promise.resolve(failResult),
+    upsert: () => Promise.resolve(failResult),
+    then: (onFulfilled: any, onRejected?: any) =>
+      Promise.resolve(failResult).then(onFulfilled, onRejected),
+  };
+  return {
+    supabase: {
+      from: () => chain,
+    },
+  };
+});
 
 describe('statementDb store and Supabase fallback', () => {
   const store: Record<string, string> = {};

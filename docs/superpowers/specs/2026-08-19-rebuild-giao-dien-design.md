@@ -167,28 +167,31 @@ Hai chỗ **cố ý giữ bảng cuộn ngang**, không chuyển sang thẻ dọ
 
 `react-router` v7. Đường dẫn dùng `Id` số của khách hàng, không dùng CIF: CIF là định danh khách hàng thật và sẽ nằm trong lịch sử trình duyệt, log máy chủ, cùng mọi link dán vào tin nhắn. `Id` là khoá chính nội bộ, dẫn đường đủ tốt mà không phơi định danh ra ngoài.
 
+Chủ dự án chốt ngày 20/08/2026: đường dẫn viết **tiếng Anh**, không phải tiếng Việt như bảng cũ dưới đây từng ghi — tránh rắc rối mã hoá và công cụ (dấu, khoảng trắng URL-encode, không gõ được trên một số bàn phím). Bảng dưới là bảng thật đang chạy sau đợt 1a, khớp `src/lib/routes.ts`:
+
 ```
-/tong-quan
-/khach-hang
-/khach-hang/:id/ho-so                          thông tin nhân thân, KHLQ — nội dung
-                                               của CustomerDrawerForm hiện nay
-/khach-hang/:id/hop-dong-tin-dung
-/khach-hang/:id/khoan-vay
-/khach-hang/:id/khoan-vay/:kunnId/lich-tra-no
-/khach-hang/:id/tsdb
-/khach-hang/:id/the-tin-dung
-/khach-hang/:id/kiem-soat-sau-vay
-/cong-cu/tinh-toan/:congCu
-/cong-cu/phuong-an-kinh-doanh
-/cong-cu/hang-ton-kho
-/cong-cu/chao-lai-suat
-/cong-cu/mua-ban-von
-/tra-cuu/muc-dich-su-dung-von
-/tra-cuu/chinh-sach-the
-/tra-cuu/bieu-mau
-/tra-cuu/on-tap
-/cai-dat
+/dashboard
+/customers
+/credit-contracts                      (đợt 1b lồng vào /customers/:id/credit-contracts)
+/loans                                 (đợt 1b lồng vào /customers/:id/loans)
+/collaterals                           (đợt 1b lồng vào /customers/:id/collaterals)
+/credit-cards                          (đợt 1b lồng vào /customers/:id/credit-cards)
+/post-loan-control                     (đợt 1b lồng vào /customers/:id/post-loan-control)
+/tools/calculators
+/tools/business-plan
+/tools/inventory
+/tools/purchase-statement              (đợt 1b gộp vào /tools/inventory theo §6.5)
+/tools/retail-invoice                  (đợt 1b gộp vào /tools/inventory theo §6.5)
+/tools/rate-quote
+/tools/cost-of-funds
+/reference/loan-purpose
+/reference/card-policies
+/reference/templates
+/reference/quiz
+/settings
 ```
+
+Hiện trạng đợt 1a: sáu màn hồ sơ khách hàng (HĐTD, Khoản vay, TSĐB, Thẻ tín dụng, Kiểm soát sau vay — cộng bản thân `/customers`) **đang** dùng đường dẫn phẳng, không có tiền tố `:id`; `selectedCustomerId` vẫn còn trong `WorkContext`. Đợt 1b mới lồng năm màn còn lại vào `/customers/:id/...` (kèm `/customers/:id/profile` và `/customers/:id/loans/:kunnId/schedule` như thiết kế) và xoá `selectedCustomerId` như §6.2 mô tả. `/tools/calculators` cũng chưa nhận tham số `:tool` trên URL — `CalculatorView` tự quản lý lựa chọn công cụ bằng state nội bộ.
 
 ### 6.2 Thanh ngữ cảnh khách hàng
 
@@ -201,6 +204,8 @@ Hiện khi URL có `:id`, dùng chung cho sáu màn hồ sơ. Nội dung: tên, 
 ### 6.3 Header thôi ping cơ sở dữ liệu
 
 `Header` hiện chạy `supabase.from('Customers').select('Id').limit(1)` **mỗi 30 giây, ở mọi màn, suốt phiên làm việc**, chỉ để hiện chấm "Trực tuyến". Thay bằng `navigator.onLine` cộng cờ lỗi từ lần gọi API thật gần nhất — không tốn truy vấn nào.
+
+Đợt 1a **mới làm nửa đầu**: bỏ được vòng lặp truy vấn 30 giây, `Header` giờ chỉ đọc `navigator.onLine`. Nửa sau — cờ lỗi từ lần gọi API thật gần nhất — **chưa làm**. Hệ quả: chấm vẫn hiện "Trực tuyến" (xanh) khi máy có mạng nhưng Supabase không với tới được (dự án tạm ngưng, RLS chặn, hết phiên...) — `navigator.onLine` chỉ biết máy có kết nối mạng, không biết API có trả lời hay không. Việc gắn cờ lỗi từ lần gọi API thật gần nhất là của đợt 1b.
 
 ### 6.4 Danh sách màn gom về một chỗ
 

@@ -1257,8 +1257,12 @@ Số tiền luôn `font-mono` — lớp này đã bật `tabular-nums`, cột s�
 ### Định tuyến
 
 `react-router` v7. Bảng đường dẫn khai một chỗ ở `src/lib/routes.ts`; `src/lib/navigation.ts`
-đọc từ đó nên thanh bên, bảng lệnh và bộ định tuyến không thể lệch nhau. Thêm màn là sửa
-hai tệp đó, không sửa `App.tsx`.
+đọc từ đó nên thanh bên và bảng lệnh không thể lệch đường dẫn. Nhưng `App.tsx` viết cứng
+21 thẻ `<Route>` và không đọc `NAV_ITEMS` hay `NAV_GROUPS` — thêm màn phải sửa **ba** chỗ:
+`routes.ts` (đường dẫn), `navigation.ts` (mục thanh bên) và `App.tsx` (tuyến đường cùng
+import `lazy`). Quên chỗ thứ ba: mục menu vẫn hiện đủ trên thanh bên, nhưng bấm vào thì
+lặng lẽ nhảy về `/dashboard` — không lỗi, không cảnh báo, và không test nào bắt được ngoài
+`src/components/__tests__/routing.test.tsx` (dựng `App` thật, không phải `AppLayout` giả).
 
 `vercel.json` đã có sẵn rewrite `/(.*) → /index.html`, nên F5 ở đường dẫn con không ra 404
 trên bản đã triển khai. Đừng gỡ dòng đó.

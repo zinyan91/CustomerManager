@@ -39,7 +39,6 @@ export const CreditContractView: React.FC = () => {
     vuotKhaNangBaoDam,
     setSelectedCustomerId,
     handleDisburseRequest,
-    loadCustomer,
     openNew,
     openEdit,
     handleSave,
@@ -81,10 +80,8 @@ export const CreditContractView: React.FC = () => {
             <select
               value={customer?.Id ?? ''}
               onChange={e => {
-                const id = parseInt(e.target.value, 10);
-                const c = allCustomers.find(x => x.Id === id) || null;
-                setSelectedCustomerId(c?.Id ?? null);
-                loadCustomer(c);
+                const raw = e.target.value;
+                setSelectedCustomerId(raw ? parseInt(raw, 10) : null);
               }}
               className={`w-full rounded-lg p-2 font-bold text-ink ${UI.inputStyle}`}
             >

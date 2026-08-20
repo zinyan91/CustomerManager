@@ -7,6 +7,7 @@ import {
   fetchCollateralsByCustomerAPI, fetchRepaymentSchedulesAPI,
 } from '../lib/api';
 import { useWork } from '../context/WorkContext';
+import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
 import { todayIso, parseMoneyInput, formatMoneyInput } from '../lib/utils';
 import { summarizeCreditContracts, canCloseCreditContract } from '../lib/creditContract';
 import { addMonthsToDate, computeOutstandingBalance } from '../lib/loanMath';
@@ -22,7 +23,9 @@ export const LOAN_METHODS = [
 ];
 
 export function useCreditContractController() {
-  const { selectedCustomerId, setSelectedCustomerId, requestDisburse } = useWork();
+  const { requestDisburse } = useWork();
+  const selectedCustomerId = useSelectedCustomerId();
+  const setSelectedCustomerId = useCustomerNavigate();
 
   const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -84,7 +87,11 @@ export function useCreditContractController() {
 
   useEffect(() => {
     if (allCustomers.length === 0) return;
-    if (selectedCustomerId && selectedCustomerId !== customer?.Id) {
+    if (selectedCustomerId === null) {
+      if (customer !== null) loadCustomer(null);
+      return;
+    }
+    if (selectedCustomerId !== customer?.Id) {
       const c = allCustomers.find(x => x.Id === selectedCustomerId);
       if (c) loadCustomer(c);
     }

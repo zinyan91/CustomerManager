@@ -3,7 +3,7 @@
 > Tệp này để **bắt lại mạch khi mở phiên trò chuyện mới**. Cập nhật sau mỗi task xong.
 > Sổ chi tiết của phiên đang chạy nằm ở `.superpowers/sdd/<tên-kế-hoạch>/progress.md`, nhưng thư mục đó bị `.gitignore` bỏ qua và bị xoá khi đóng đợt — nên mọi thứ cần sống lâu phải nằm ở đây.
 
-**Cập nhật lần cuối:** 2026-08-20, sau khi Task 1 đợt 1a được rà soát sạch.
+**Cập nhật lần cuối:** 2026-08-20, sau Task 3 của đợt 1a.
 
 ---
 
@@ -13,11 +13,30 @@
 | :--- | :--- |
 | Nhánh hiện tại | `rebuild-giao-dien-dot-1` |
 | Kế hoạch đang chạy | `docs/superpowers/plans/2026-08-20-rebuild-giao-dien-dot-1a-dinh-tuyen.md` |
-| Task vừa xong | Task 1 — bảng đường dẫn (`c37c025`), rà soát sạch |
-| Task kế tiếp | Task 2 — bộ định tuyến. **Nặng nhất đợt này** |
-| Tổng test | 1.701 xanh, 0 đỏ |
+| Task vừa xong | Task 3 — thanh bên dùng liên kết thật (`ebf27fa`), đang rà soát |
+| Task kế tiếp | Task 4 — Header thôi ping cơ sở dữ liệu · rồi Task 5 — đối chiếu và ghi quy ước |
+| Tổng test | 1.708 xanh, 0 đỏ |
 
-**Cảnh báo cho Task 2:** `BrowserRouter` phải bọc **ra ngoài** `ProviderComposer` trong `src/main.tsx`. `ProviderComposer` dựng cây bằng `reduceRight` nên `WorkProvider` là lớp trong cùng; đặt ngược thì `useLocation()` trong `WorkProvider` ném lỗi ngay lúc khởi động. Kế hoạch bản đầu ghi sai chỗ này, đã sửa ở `880999d`.
+**URL đã chạy thật.** Bấm mục thanh bên → đường dẫn đổi; F5 → giữ nguyên chỗ; Back → quay về màn trước; đường dẫn lạ → về `/dashboard`. Đã tự kiểm cả 19 màn trên giao diện thật, không màn nào trắng, không lỗi console.
+
+**Đường dẫn viết tiếng Anh** — chủ dự án chốt 20/08/2026 để tránh rắc rối mã hoá và công cụ:
+
+| Nhóm | Đường dẫn |
+| :--- | :--- |
+| Tổng quan | `/dashboard` |
+| Hồ sơ tín dụng | `/customers` · `/credit-contracts` · `/loans` · `/collaterals` · `/credit-cards` |
+| Công cụ | `/tools/calculators` · `/tools/business-plan` · `/tools/inventory` · `/tools/purchase-statement` · `/tools/retail-invoice` · `/tools/rate-quote` · `/tools/cost-of-funds` |
+| Tra cứu | `/reference/loan-purpose` · `/reference/card-policies` · `/reference/templates` · `/reference/quiz` |
+| Kiểm soát | `/post-loan-control` · `/settings` |
+
+Đợt 1b sẽ lồng sáu màn hồ sơ vào `/customers/:id/…`.
+
+**Cầu tạm cần gỡ ở đợt 3–7:** `WorkContext.activeTab` và `setActiveTab` giữ nguyên chữ ký cũ nhưng đọc/ghi URL, để 19 màn chưa viết lại vẫn chạy. Màn nào được viết lại thì chuyển sang `useNavigate` và bỏ `setActiveTab` khỏi tệp đó.
+
+**Ba lỗi tôi từng viết sai trong kế hoạch đợt 1a, đã sửa — ghi lại để đợt sau tránh:**
+1. `BrowserRouter` phải bọc **ra ngoài** `ProviderComposer`. `ProviderComposer` dựng cây bằng `reduceRight` nên `WorkProvider` là lớp trong cùng; đặt ngược thì `useLocation()` ném lỗi lúc khởi động.
+2. Test dựng `AppLayout` phải giả lập `AuthContext`, kẻo nó render màn đăng nhập chứ không phải thanh bên.
+3. Test dựng `AppLayout` còn cần `WorkProvider` và `ThemeProvider` bao ngoài.
 
 **Cách bắt lại mạch:** đọc bản thiết kế, rồi kế hoạch đang chạy, rồi mục "Phán quyết còn hiệu lực" bên dưới. Thi công theo skill `superpowers:subagent-driven-development` — giao subagent từng task, rà soát giữa các task.
 
@@ -47,7 +66,7 @@ Chủ dự án đã chốt trong phiên brainstorm ngày 19/08/2026:
 | Đợt | Nội dung | Trạng thái |
 | :--- | :--- | :--- |
 | **0** | Token, thang chữ, bo góc, `navigation.ts`, dọn rác, viết lại §15 §17 | ✅ **xong, đã gộp vào `main`** (`c5ebd57`) |
-| **1a** | `react-router`, khung `AppLayout`, Sidebar, CommandPalette, Header thôi ping CSDL | 🔄 **đang làm** — xong Task 1/5 |
+| **1a** | `react-router`, khung `AppLayout`, Sidebar, CommandPalette, Header thôi ping CSDL | 🔄 **đang làm** — xong Task 3/5 |
 | **1b** | `useSelectedCustomer` đọc `:id`, thanh ngữ cảnh khách hàng, chuyển 4 controller, luồng giải ngân qua URL | chưa lập kế hoạch |
 | **2** | Bộ component + `Dialog`/`ConfirmDialog` — thay 15 modal và 13 tệp `window.confirm` | chưa |
 | **3** | Hồ sơ tín dụng: Khách hàng, HĐTD, Khoản vay, TSĐB, Thẻ. **Nặng nhất** — gỡ 65 props của `KunnForm` | chưa |
@@ -124,6 +143,6 @@ Những điều dưới đây đã quyết rồi, đừng quyết lại:
 ```bash
 npm run dev        # máy chủ phát triển — dùng mcp__Claude_Browser__preview_start, đừng chạy qua Bash
 npm run build      # kiểm kiểu + đóng gói
-npm test           # 1.701 test
+npm test           # 1.708 test
 npm run lint
 ```

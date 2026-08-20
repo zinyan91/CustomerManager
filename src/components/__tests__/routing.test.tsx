@@ -5,7 +5,6 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { LanguageProvider } from '../../context/LanguageContext';
 import { ThemeProvider } from '../../context/ThemeContext';
-import { WorkProvider } from '../../context/WorkContext';
 import { ROUTE_OF, DEFAULT_ROUTE, screenIdOfPath } from '../../lib/routes';
 
 vi.mock('../../context/AuthContext', () => ({
@@ -66,14 +65,12 @@ describe('AppLayout dựng được trong bộ định tuyến', () => {
       <MemoryRouter initialEntries={[duongDan]}>
         <ThemeProvider>
           <LanguageProvider>
-            <WorkProvider>
-              <Routes>
-                <Route element={<AppLayoutDuoiTest />}>
-                  <Route path={ROUTE_OF.dashboard} element={<div>NOI DUNG MAN</div>} />
-                  <Route path={ROUTE_OF.settings} element={<div>NOI DUNG MAN</div>} />
-                </Route>
-              </Routes>
-            </WorkProvider>
+            <Routes>
+              <Route element={<AppLayoutDuoiTest />}>
+                <Route path={ROUTE_OF.dashboard} element={<div>NOI DUNG MAN</div>} />
+                <Route path={ROUTE_OF.settings} element={<div>NOI DUNG MAN</div>} />
+              </Route>
+            </Routes>
           </LanguageProvider>
         </ThemeProvider>
       </MemoryRouter>
@@ -99,9 +96,7 @@ describe('App thật — mỗi đường dẫn trong ROUTE_OF dựng đúng màn
       <MemoryRouter initialEntries={[duongDan]}>
         <ThemeProvider>
           <LanguageProvider>
-            <WorkProvider>
-              <AppThatDuoiTest />
-            </WorkProvider>
+            <AppThatDuoiTest />
           </LanguageProvider>
         </ThemeProvider>
       </MemoryRouter>
@@ -120,9 +115,7 @@ describe('tuyến lồng theo khách hàng', () => {
       <MemoryRouter initialEntries={[duongDan]}>
         <ThemeProvider>
           <LanguageProvider>
-            <WorkProvider>
-              <AppThatDuoiTest />
-            </WorkProvider>
+            <AppThatDuoiTest />
           </LanguageProvider>
         </ThemeProvider>
       </MemoryRouter>

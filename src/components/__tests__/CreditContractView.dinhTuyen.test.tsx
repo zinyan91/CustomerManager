@@ -18,7 +18,6 @@ vi.mock('../../lib/api', () => ({
   countKunnOfCreditContractAPI: async () => 0,
 }));
 
-import { WorkProvider } from '../../context/WorkContext';
 import { CreditContractView } from '../views/CreditContractView';
 
 function ViTri() {
@@ -31,12 +30,10 @@ afterEach(cleanup);
 function dungLenO(duongDan: string) {
   return render(
     <MemoryRouter initialEntries={[duongDan]}>
-      <WorkProvider>
-        <Routes>
-          <Route path="/credit-contracts" element={<><CreditContractView /><ViTri /></>} />
-          <Route path="/customers/:customerId/credit-contracts" element={<><CreditContractView /><ViTri /></>} />
-        </Routes>
-      </WorkProvider>
+      <Routes>
+        <Route path="/credit-contracts" element={<><CreditContractView /><ViTri /></>} />
+        <Route path="/customers/:customerId/credit-contracts" element={<><CreditContractView /><ViTri /></>} />
+      </Routes>
     </MemoryRouter>
   );
 }

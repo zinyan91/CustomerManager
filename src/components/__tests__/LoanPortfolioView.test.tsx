@@ -52,7 +52,6 @@ vi.mock('../../lib/api', () => ({
 }));
 
 import { LoanPortfolioView } from '../views/LoanPortfolioView';
-import { WorkProvider } from '../../context/WorkContext';
 import { ThemeProvider } from '../../context/ThemeContext';
 
 function dungLen(customerId?: number) {
@@ -60,12 +59,10 @@ function dungLen(customerId?: number) {
   return render(
     <MemoryRouter initialEntries={[duongDan]}>
       <ThemeProvider>
-        <WorkProvider>
-          <Routes>
-            <Route path="/loans" element={<LoanPortfolioView />} />
-            <Route path="/customers/:customerId/loans" element={<LoanPortfolioView />} />
-          </Routes>
-        </WorkProvider>
+        <Routes>
+          <Route path="/loans" element={<LoanPortfolioView />} />
+          <Route path="/customers/:customerId/loans" element={<LoanPortfolioView />} />
+        </Routes>
       </ThemeProvider>
     </MemoryRouter>
   );

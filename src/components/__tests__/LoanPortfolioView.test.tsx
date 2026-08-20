@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import React, { useEffect } from 'react';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import type { Customer, LoanContract, CreditContract } from '../../types';
 
 const khach: Customer = {
@@ -53,22 +52,19 @@ vi.mock('../../lib/api', () => ({
 }));
 
 import { LoanPortfolioView } from '../views/LoanPortfolioView';
-import { WorkProvider, useWork } from '../../context/WorkContext';
+import { WorkProvider } from '../../context/WorkContext';
 import { ThemeProvider } from '../../context/ThemeContext';
 
-const ChonKhachHang: React.FC<{ id: number }> = ({ id }) => {
-  const { setSelectedCustomerId } = useWork();
-  useEffect(() => { setSelectedCustomerId(id); }, [id, setSelectedCustomerId]);
-  return null;
-};
-
 function dungLen(customerId?: number) {
+  const duongDan = customerId ? `/customers/${customerId}/loans` : '/loans';
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[duongDan]}>
       <ThemeProvider>
         <WorkProvider>
-          {customerId ? <ChonKhachHang id={customerId} /> : null}
-          <LoanPortfolioView />
+          <Routes>
+            <Route path="/loans" element={<LoanPortfolioView />} />
+            <Route path="/customers/:customerId/loans" element={<LoanPortfolioView />} />
+          </Routes>
         </WorkProvider>
       </ThemeProvider>
     </MemoryRouter>

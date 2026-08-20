@@ -20,6 +20,7 @@ import { totalUsableCapacity } from '../lib/collateralMath';
 import { checkKunnAgainstContract, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf, summarizeCreditContracts, totalsOfCreditContracts } from '../lib/creditContract';
 import { checkKunnTenor } from '../lib/loanProductRules';
 import { useWork } from '../context/WorkContext';
+import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../lib/creditLimit';
 import type { LoanContract, CreditContract, RateAdjustmentHistoryItem } from '../types';
 import { usePaymentModal } from './usePaymentModal';
@@ -31,7 +32,9 @@ import {
 import type { MasterHdtdGroup } from '../components/portfolio/MasterHdtdFilterTabs';
 
 export function useLoanPortfolioController() {
-  const { selectedCustomerId, setSelectedCustomerId, disburseRequest, clearDisburseRequest } = useWork();
+  const { disburseRequest, clearDisburseRequest } = useWork();
+  const selectedCustomerId = useSelectedCustomerId();
+  const setSelectedCustomerId = useCustomerNavigate();
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 

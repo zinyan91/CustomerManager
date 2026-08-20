@@ -119,9 +119,9 @@ Task này chỉ tạo tệp trong thư mục đã bị `.gitignore` bỏ qua. Ch
 
 Bảng đường dẫn tách riêng khỏi React để kiểm thử được, và để nơi nào cần dựng một đường dẫn cũng lấy từ một chỗ. Task này **chưa nối vào ứng dụng** — chỉ tạo dữ liệu và test.
 
-Đường dẫn dùng tiếng Việt không dấu, khớp cách đặt tên trong `CONVENTIONS.md`.
+**Đường dẫn viết tiếng Anh.** Chủ dự án chốt 20/08/2026, để tránh rắc rối về mã hoá và về công cụ. Đường dẫn bám sát chính `ScreenId` đã có, cộng tiền tố nhóm cho hai nhóm công cụ và tra cứu — nhờ vậy nhìn đường dẫn là đoán được id màn và ngược lại.
 
-**Lưu ý về sáu màn hồ sơ khách hàng:** spec §6.1 định hình cuối là `/khach-hang/:id/...`. Đợt 1a **chưa làm phần `:id`** — đó là việc của đợt 1b. Ở đợt này sáu màn đó dùng đường dẫn phẳng, và đợt 1b sẽ lồng chúng vào dưới `/khach-hang/:id/`. Chỉ sáu đường dẫn này đổi giữa hai đợt; mười ba đường dẫn còn lại đã là hình cuối.
+**Lưu ý về sáu màn hồ sơ khách hàng:** spec §6.1 định hình cuối là `/customers/:id/...`. Đợt 1a **chưa làm phần `:id`** — đó là việc của đợt 1b. Ở đợt này sáu màn đó dùng đường dẫn phẳng, và đợt 1b sẽ lồng chúng vào dưới `/customers/:id/`. Chỉ sáu đường dẫn này đổi giữa hai đợt; mười ba đường dẫn còn lại đã là hình cuối.
 
 **Files:**
 - Create: `src/lib/routes.ts`
@@ -181,12 +181,12 @@ describe('bảng đường dẫn', () => {
   });
 
   it('đường dẫn lạ trả về null, không ném lỗi', () => {
-    expect(screenIdOfPath('/khong-co-man-nay')).toBeNull();
+    expect(screenIdOfPath('/khong-co-duong-dan-nay')).toBeNull();
     expect(screenIdOfPath('')).toBeNull();
   });
 
   it('bỏ qua gạch chéo thừa ở cuối khi tra', () => {
-    expect(screenIdOfPath('/tong-quan/')).toBe('dashboard');
+    expect(screenIdOfPath('/dashboard/')).toBe('dashboard');
   });
 
   it('màn mặc định là Tổng quan', () => {
@@ -206,29 +206,29 @@ Kỳ vọng: FAIL — không nhập được `../routes`.
 import type { ScreenId } from './navigation';
 
 export const ROUTE_OF: Record<ScreenId, string> = {
-  dashboard: '/tong-quan',
+  dashboard: '/dashboard',
 
-  customers: '/khach-hang',
-  'credit-contracts': '/hop-dong-tin-dung',
-  loans: '/khoan-vay',
-  collaterals: '/tsdb',
-  'credit-cards': '/the-tin-dung',
+  customers: '/customers',
+  'credit-contracts': '/credit-contracts',
+  loans: '/loans',
+  collaterals: '/collaterals',
+  'credit-cards': '/credit-cards',
 
-  calculators: '/cong-cu/tinh-toan',
-  'business-plan': '/cong-cu/phuong-an-kinh-doanh',
-  inventory: '/cong-cu/hang-ton-kho',
-  'purchase-statement': '/cong-cu/bang-ke-mua-ban',
-  'retail-invoice': '/cong-cu/hoa-don-ban-le',
-  'rate-quote': '/cong-cu/chao-lai-suat',
-  cof: '/cong-cu/mua-ban-von',
+  calculators: '/tools/calculators',
+  'business-plan': '/tools/business-plan',
+  inventory: '/tools/inventory',
+  'purchase-statement': '/tools/purchase-statement',
+  'retail-invoice': '/tools/retail-invoice',
+  'rate-quote': '/tools/rate-quote',
+  cof: '/tools/cost-of-funds',
 
-  mdsdv: '/tra-cuu/muc-dich-su-dung-von',
-  'card-policies': '/tra-cuu/chinh-sach-the',
-  templates: '/tra-cuu/bieu-mau',
-  'quiz-bank': '/tra-cuu/on-tap',
+  mdsdv: '/reference/loan-purpose',
+  'card-policies': '/reference/card-policies',
+  templates: '/reference/templates',
+  'quiz-bank': '/reference/quiz',
 
-  'post-loan': '/kiem-soat-sau-vay',
-  settings: '/cai-dat',
+  'post-loan': '/post-loan-control',
+  settings: '/settings',
 };
 
 export const DEFAULT_ROUTE = ROUTE_OF.dashboard;
@@ -376,7 +376,7 @@ describe('bảng đường dẫn', () => {
   });
 
   it('màn mặc định là Tổng quan', () => {
-    expect(DEFAULT_ROUTE).toBe('/tong-quan');
+    expect(DEFAULT_ROUTE).toBe('/dashboard');
   });
 });
 
@@ -652,7 +652,7 @@ Kiểm bốn điều, ghi kết quả vào báo cáo:
 1. Bấm một mục trong thanh bên → thanh địa chỉ đổi thành đường dẫn tương ứng. Đọc `location.pathname` qua `javascript_tool` để xác nhận.
 2. Chạy `location.reload()` → **vẫn ở đúng màn đó**, không quay về Tổng quan. Đây là thứ đợt này sinh ra để sửa.
 3. Chạy `history.back()` → quay về màn trước, không thoát khỏi ứng dụng.
-4. Đi thẳng tới một đường dẫn lạ như `/khong-co-man-nay` → chuyển hướng về `/tong-quan`, không trắng màn.
+4. Đi thẳng tới một đường dẫn lạ như `/khong-co-duong-dan-nay` → chuyển hướng về `/dashboard`, không trắng màn.
 
 - [ ] **Step 12: Kiểm thanh bên không đổi hình thức**
 
@@ -706,26 +706,26 @@ describe('Sidebar dùng liên kết thật', () => {
   it('liên kết trỏ đúng đường dẫn của màn', () => {
     const { container } = dungLen();
     const href = [...container.querySelectorAll('nav a')].map(a => a.getAttribute('href'));
-    expect(href).toContain('/tong-quan');
-    expect(href).toContain('/khach-hang');
-    expect(href).toContain('/cai-dat');
+    expect(href).toContain('/dashboard');
+    expect(href).toContain('/customers');
+    expect(href).toContain('/settings');
   });
 
   it('mục ứng với đường dẫn hiện tại được đánh dấu aria-current', () => {
     const { container } = render(
-      <MemoryRouter initialEntries={['/cai-dat']}>
+      <MemoryRouter initialEntries={['/settings']}>
         <LanguageProvider>
           <Sidebar />
         </LanguageProvider>
       </MemoryRouter>
     );
     const dangMo = container.querySelector('[aria-current="page"]');
-    expect(dangMo?.getAttribute('href')).toBe('/cai-dat');
+    expect(dangMo?.getAttribute('href')).toBe('/settings');
   });
 });
 ```
 
-Đồng thời sửa `dungLen()` bỏ hai prop `activeTab` và `setActiveTab`, và sửa test `aria-current` cũ cho khớp: nó phải dựng ở `initialEntries={['/tong-quan']}`.
+Đồng thời sửa `dungLen()` bỏ hai prop `activeTab` và `setActiveTab`, và sửa test `aria-current` cũ cho khớp: nó phải dựng ở `initialEntries={['/dashboard']}`.
 
 - [ ] **Step 2: Chạy test, xác nhận đỏ**
 
@@ -957,7 +957,7 @@ hai tệp đó, không sửa `App.tsx`.
 `vercel.json` đã có sẵn rewrite `/(.*) → /index.html`, nên F5 ở đường dẫn con không ra 404
 trên bản đã triển khai. Đừng gỡ dòng đó.
 
-Đường dẫn viết tiếng Việt không dấu, chữ thường, không có gạch chéo ở cuối. Test
+Đường dẫn viết **tiếng Anh**, chữ thường, không có gạch chéo ở cuối — chốt 20/08/2026 để tránh rắc rối mã hoá và công cụ. Chúng bám sát `ScreenId`, cộng tiền tố nhóm `/tools/` và `/reference/`. Test
 `src/lib/__tests__/routes.test.ts` giữ ba quy tắc đó.
 
 **Cầu tạm cần gỡ.** `WorkContext.activeTab` và `setActiveTab` giữ nguyên chữ ký cũ nhưng nay
@@ -965,8 +965,8 @@ trên bản đã triển khai. Đừng gỡ dòng đó.
 được viết lại ở đợt 3–7 thì chuyển sang `useNavigate` và bỏ `setActiveTab` khỏi tệp đó. Khi màn
 cuối cùng chuyển xong, gỡ hai thứ này khỏi `WorkContext`.
 
-Sáu màn hồ sơ khách hàng hiện dùng đường dẫn phẳng (`/khoan-vay`, `/tsdb`…). Đợt 1b lồng chúng
-vào `/khach-hang/:id/` theo spec §6.1. Mười ba đường dẫn còn lại đã là hình cuối.
+Sáu màn hồ sơ khách hàng hiện dùng đường dẫn phẳng (`/loans`, `/collaterals`…). Đợt 1b lồng chúng
+vào `/customers/:id/` theo spec §6.1. Mười ba đường dẫn còn lại đã là hình cuối.
 ```
 
 - [ ] **Step 4: Sửa mục nói về Header nếu có**

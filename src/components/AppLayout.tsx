@@ -7,6 +7,7 @@ import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
+import { CustomerContextBar } from './CustomerContextBar';
 
 export function AppLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -53,6 +54,7 @@ export function AppLayout() {
           onCloseMobile={handleCloseMobileMenu}
         />
         <main className="flex-1 md:ml-60 min-w-0 bg-surface p-3 sm:p-4 md:p-6 overflow-y-auto">
+          <CustomerContextBar />
           <ErrorBoundary title="Lỗi khi tải giao diện màn hình">
             <Outlet />
           </ErrorBoundary>

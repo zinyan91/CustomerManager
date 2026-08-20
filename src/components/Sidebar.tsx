@@ -4,6 +4,8 @@ import { X } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
 import { NAV_GROUPS } from '../lib/navigation';
 import { APP_VERSION } from '../lib/appVersion';
+import { useSelectedCustomerId } from '../hooks/useSelectedCustomerId';
+import { screenPathFor } from '../lib/customerRoutes';
 
 interface SidebarProps {
   isOpenMobile?: boolean;
@@ -15,6 +17,7 @@ export const Sidebar = memo<SidebarProps>(({
   onCloseMobile,
 }) => {
   const { t } = useLang();
+  const customerId = useSelectedCustomerId();
 
   return (
     <>
@@ -47,10 +50,13 @@ export const Sidebar = memo<SidebarProps>(({
               </div>
               {group.items.map(item => {
                 const Icon = item.icon;
+                const to = screenPathFor(item.id, customerId);
+                const ketThuc = item.id === 'customers';
                 return (
                   <NavLink
                     key={item.id}
-                    to={item.path}
+                    to={to}
+                    end={ketThuc}
                     onClick={onCloseMobile}
                     className={({ isActive }) => `w-full flex items-center gap-2.5 pl-3 pr-3 py-1.5 rounded-r-lg border-l-2 text-xs text-left transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
                       isActive

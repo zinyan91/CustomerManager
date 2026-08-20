@@ -2,7 +2,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Routes, Route } from 'react-router';
 import { Sidebar } from '../Sidebar';
 import { LanguageProvider } from '../../context/LanguageContext';
 import { translate } from '../../lib/i18n';
@@ -112,5 +112,51 @@ describe('Sidebar dùng liên kết thật', () => {
     );
     const dangMo = container.querySelector('[aria-current="page"]');
     expect(dangMo?.getAttribute('href')).toBe('/settings');
+  });
+});
+
+describe('Sidebar giữ ngữ cảnh khách hàng', () => {
+  function dungLenO(duongDan: string) {
+    return render(
+      <MemoryRouter initialEntries={[duongDan]}>
+        <LanguageProvider>
+          <Routes>
+            <Route path="*" element={<Sidebar />} />
+          </Routes>
+        </LanguageProvider>
+      </MemoryRouter>
+    );
+  }
+
+  it('đang có khách thì mục màn hồ sơ trỏ tới đường lồng', () => {
+    const { container } = dungLenO('/customers/55/loans');
+    const link = container.querySelector('a[href="/customers/55/collaterals"]');
+    expect(link).toBeTruthy();
+  });
+
+  it('đang có khách thì mục ngoài phạm vi khách vẫn trỏ đường phẳng', () => {
+    const { container } = dungLenO('/customers/55/loans');
+    expect(container.querySelector('a[href="/dashboard"]')).toBeTruthy();
+    expect(container.querySelector('a[href="/settings"]')).toBeTruthy();
+  });
+
+  it('chưa có khách thì mọi mục trỏ đường phẳng', () => {
+    const { container } = dungLenO('/loans');
+    expect(container.querySelector('a[href="/collaterals"]')).toBeTruthy();
+    expect(container.querySelector('a[href^="/customers/"]')).toBeNull();
+  });
+
+  it('ở đường lồng thì mục sáng là màn đó, không phải mục Khách hàng', () => {
+    const { container } = dungLenO('/customers/55/loans');
+    const dangMo = container.querySelectorAll('[aria-current="page"]');
+    expect(dangMo.length).toBe(1);
+    expect(dangMo[0].getAttribute('href')).toBe('/customers/55/loans');
+  });
+
+  it('ở /customers thì mục Khách hàng sáng', () => {
+    const { container } = dungLenO('/customers');
+    const dangMo = container.querySelectorAll('[aria-current="page"]');
+    expect(dangMo.length).toBe(1);
+    expect(dangMo[0].getAttribute('href')).toBe('/customers');
   });
 });

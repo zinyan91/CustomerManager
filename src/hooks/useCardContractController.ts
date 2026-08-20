@@ -15,7 +15,7 @@ import {
 import { cardPolicyRuleOf, checkCardLimitAgainstPolicy } from '../lib/cardPolicyRules';
 import { parseMoneyInput, formatMoneyInput, todayIso } from '../lib/utils';
 import { addMonthsToDate } from '../lib/loanMath';
-import { useWork } from '../context/WorkContext';
+import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
 
 export interface SupRow {
   FullName: string;
@@ -26,7 +26,8 @@ export interface SupRow {
 export const blankSup = (): SupRow => ({ FullName: '', Relation: SUPPLEMENTARY_RELATIONS[0], RelationNote: '' });
 
 export function useCardContractController() {
-  const { selectedCustomerId, setSelectedCustomerId } = useWork();
+  const selectedCustomerId = useSelectedCustomerId();
+  const setSelectedCustomerId = useCustomerNavigate();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [contracts, setContracts] = useState<CardContract[]>([]);

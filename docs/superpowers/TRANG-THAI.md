@@ -26,7 +26,7 @@
 | Nhánh hiện tại | `main` — sạch, khớp `origin/main` |
 | Việc đang dở | không có. Hai đợt đã đóng gọn |
 | Đợt vừa xong | **1a — định tuyến**, 21 commit, đã gộp và đẩy (`c5ebd57..b0b6653`) |
-| Đợt kế tiếp | **1b — ngữ cảnh khách hàng**, chưa lập kế hoạch |
+| Đợt kế tiếp | **1b — ngữ cảnh khách hàng**, [đã lập kế hoạch](plans/2026-08-20-rebuild-giao-dien-dot-1b-ngu-canh-khach-hang.md) 20/08/2026, chưa thi công |
 | Tổng test | **1.732** xanh, 0 đỏ · 72 tệp test |
 | Cảnh báo lint | 62, toàn bộ có sẵn từ trước |
 
@@ -41,7 +41,22 @@ Theo bản thiết kế §6.2. Chưa lập kế hoạch — cần lập trước
 - `disburseRequest` chuyển sang điều hướng URL
 - Bù nốt nửa spec §6.3 còn thiếu ở Header (xem việc còn treo)
 
-**Phải đo trước khi lập kế hoạch:** thanh ngữ cảnh cần dư nợ và hạn mức khả dụng, hai số đó tính từ `summarizeCreditContracts` trên hợp đồng tín dụng + khoản vay + lịch trả nợ. Bốn controller hiện mỗi cái tự nạp một bản riêng. **Đo độ trễ truy vấn thật trước khi quyết** nạp chung hay nạp riêng — dự án đã một lần đếm 6.705 dòng rồi tưởng nhẹ và làm dashboard chậm gấp bảy lần.
+**Đã đo xong 20/08/2026, đừng đo lại.** `EXPLAIN (ANALYZE)` trên CSDL thật, đặt `role authenticated` + `request.jwt.claims` để RLS thực sự chạy, khách nặng nhất là `CustomerId` 55 (6 KUNN, 1.420 dòng lịch; toàn bảng 10.350 dòng / 112 KUNN / 51 khách):
+
+| Truy vấn | Thời gian | Dòng |
+| :--- | ---: | ---: |
+| `RepaymentSchedules` theo **một** `ContractId`, `select *` — cách bốn controller đang dùng | 66,2 → 30,7 ms | 240 |
+| ×6 KUNN của một khách, tuần tự | ~180–400 ms + 6 lượt mạng | 1.420 |
+| `RepaymentSchedules` gộp `in(6 ContractId)` | 174,5 ms | 1.420 |
+| **`ContractPaidPrincipal` lọc `in(6 ContractId)`** | **11,1 / 11,8 ms** | **6** |
+| Lịch quá hạn, cột hẹp, `DueDate <` hôm nay | 1,9 ms | 0 |
+| `CreditContracts` / `LoanContracts` theo khách | 3,3 / 2,5 ms | 1 / 6 |
+
+**Nguyên nhân chênh 20 lần:** RLS gắn `can_access_contract("ContractId")` thành bộ lọc **từng dòng** trên `RepaymentSchedules` — đọc 1.420 dòng là gọi hàm 1.420 lần. View `ContractPaidPrincipal` gộp trong CTE `MATERIALIZED` trước rồi mới lọc, nên chỉ gọi 130 lần.
+
+**Phán quyết:** thanh ngữ cảnh **nạp riêng**, bốn truy vấn chia hai lượt song song ≈ 21 ms DB. Không dùng chung đường nạp lịch trả nợ của controller.
+
+**Ngã rẽ chủ dự án chốt 20/08/2026:** giữ **cả hai** họ đường dẫn. Đường phẳng = chưa chọn khách (`/post-loan-control` vẫn hiện toàn danh mục), đường lồng `/customers/:customerId/…` = đã chọn khách. Hai họ render cùng một component.
 
 **URL đã chạy thật.** Bấm mục thanh bên → đường dẫn đổi; F5 → giữ nguyên chỗ; Back → quay về màn trước; đường dẫn lạ → về `/dashboard`. Đã tự kiểm cả 19 màn trên giao diện thật, không màn nào trắng, không lỗi console.
 
@@ -77,6 +92,7 @@ Theo bản thiết kế §6.2. Chưa lập kế hoạch — cần lập trước
 | `docs/superpowers/plans/2026-08-19-dot-0-so-tien-do.md` | Sổ tiến độ đợt 0 — 11 phán quyết |
 | `docs/superpowers/plans/2026-08-20-rebuild-giao-dien-dot-1a-dinh-tuyen.md` | Kế hoạch đợt 1a |
 | `docs/superpowers/plans/2026-08-20-dot-1a-so-tien-do.md` | Sổ tiến độ đợt 1a — 7 phán quyết |
+| `docs/superpowers/plans/2026-08-20-rebuild-giao-dien-dot-1b-ngu-canh-khach-hang.md` | **Kế hoạch đợt 1b — 17 task, chưa thi công** |
 | `CONVENTIONS.md` §15 | Quy ước giao diện: token, thang chữ, bo góc, màu, định tuyến |
 
 ---
@@ -106,7 +122,7 @@ Chủ dự án đã chốt trong phiên brainstorm ngày 19/08/2026:
 | :--- | :--- | :--- |
 | **0** | Token, thang chữ, bo góc, `navigation.ts`, dọn rác, viết lại §15 §17 | ✅ **xong, đã gộp vào `main`** (`c5ebd57`) |
 | **1a** | `react-router`, khung `AppLayout`, Sidebar, CommandPalette, Header thôi ping CSDL | ✅ **xong, đã gộp vào `main`** (`b0b6653`) |
-| **1b** | `useSelectedCustomer` đọc `:id`, thanh ngữ cảnh khách hàng, chuyển 4 controller, luồng giải ngân qua URL | ⬅️ **kế tiếp**, chưa lập kế hoạch |
+| **1b** | `useSelectedCustomer` đọc `:id`, thanh ngữ cảnh khách hàng, chuyển 4 controller, luồng giải ngân qua URL | ⬅️ **kế tiếp**, kế hoạch xong, chưa thi công |
 | **2** | Bộ component + `Dialog`/`ConfirmDialog` — thay 15 modal và 13 tệp `window.confirm` | chưa |
 | **3** | Hồ sơ tín dụng: Khách hàng, HĐTD, Khoản vay, TSĐB, Thẻ. **Nặng nhất** — gỡ 65 props của `KunnForm` | chưa |
 | **4** | Tổng quan, Kiểm soát sau vay | chưa |

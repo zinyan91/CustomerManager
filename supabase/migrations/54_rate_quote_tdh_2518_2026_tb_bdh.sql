@@ -1,4 +1,4 @@
--- Migration 15: Cập nhật Lãi suất cho vay trung dài hạn theo Thông báo 2518/2026/TB-BĐH ngày 19/08/2026
+-- Migration 54: Cập nhật Lãi suất cho vay trung dài hạn theo Thông báo 2518/2026/TB-BĐH ngày 19/08/2026
 -- Thay thế Thông báo 1680/2026/TB-TGĐ ngày 19/06/2026
 
 DO $$

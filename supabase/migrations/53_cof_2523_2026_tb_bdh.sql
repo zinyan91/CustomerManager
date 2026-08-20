@@ -1,10 +1,9 @@
--- Migration 14: Cập nhật Lãi suất mua bán vốn nội bộ theo Thông báo số 2523/2026/TB-BĐH ngày 18/08/2026 (hiệu lực 21/08/2026)
+-- Migration 53: Cập nhật Lãi suất mua bán vốn nội bộ theo Thông báo số 2523/2026/TB-BĐH ngày 18/08/2026 (hiệu lực 21/08/2026)
 -- Thay thế Thông báo 2294/2026/TB-BĐH ngày 27/07/2026
 
 DO $$
 DECLARE
   pid integer;
-  old_pid integer;
 BEGIN
   -- 1. Cập nhật ngày hết hiệu lực của thông báo cũ 2294/2026/TB-BĐH
   UPDATE public."CofPrograms"

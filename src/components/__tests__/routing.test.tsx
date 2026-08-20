@@ -34,7 +34,7 @@ describe('bảng đường dẫn', () => {
   });
 
   it('màn mặc định là Tổng quan', () => {
-    expect(DEFAULT_ROUTE).toBe('/tong-quan');
+    expect(DEFAULT_ROUTE).toBe('/dashboard');
   });
 });
 

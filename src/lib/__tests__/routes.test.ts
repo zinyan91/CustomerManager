@@ -35,12 +35,12 @@ describe('bảng đường dẫn', () => {
   });
 
   it('đường dẫn lạ trả về null, không ném lỗi', () => {
-    expect(screenIdOfPath('/khong-co-man-nay')).toBeNull();
+    expect(screenIdOfPath('/not-a-real-screen')).toBeNull();
     expect(screenIdOfPath('')).toBeNull();
   });
 
   it('bỏ qua gạch chéo thừa ở cuối khi tra', () => {
-    expect(screenIdOfPath('/tong-quan/')).toBe('dashboard');
+    expect(screenIdOfPath('/dashboard/')).toBe('dashboard');
   });
 
   it('màn mặc định là Tổng quan', () => {

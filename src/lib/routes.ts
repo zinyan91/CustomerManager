@@ -1,29 +1,29 @@
 import type { ScreenId } from './navigation';
 
 export const ROUTE_OF: Record<ScreenId, string> = {
-  dashboard: '/tong-quan',
+  dashboard: '/dashboard',
 
-  customers: '/khach-hang',
-  'credit-contracts': '/hop-dong-tin-dung',
-  loans: '/khoan-vay',
-  collaterals: '/tsdb',
-  'credit-cards': '/the-tin-dung',
+  customers: '/customers',
+  'credit-contracts': '/credit-contracts',
+  loans: '/loans',
+  collaterals: '/collaterals',
+  'credit-cards': '/credit-cards',
 
-  calculators: '/cong-cu/tinh-toan',
-  'business-plan': '/cong-cu/phuong-an-kinh-doanh',
-  inventory: '/cong-cu/hang-ton-kho',
-  'purchase-statement': '/cong-cu/bang-ke-mua-ban',
-  'retail-invoice': '/cong-cu/hoa-don-ban-le',
-  'rate-quote': '/cong-cu/chao-lai-suat',
-  cof: '/cong-cu/mua-ban-von',
+  calculators: '/tools/calculators',
+  'business-plan': '/tools/business-plan',
+  inventory: '/tools/inventory',
+  'purchase-statement': '/tools/purchase-statement',
+  'retail-invoice': '/tools/retail-invoice',
+  'rate-quote': '/tools/rate-quote',
+  cof: '/tools/cost-of-funds',
 
-  mdsdv: '/tra-cuu/muc-dich-su-dung-von',
-  'card-policies': '/tra-cuu/chinh-sach-the',
-  templates: '/tra-cuu/bieu-mau',
-  'quiz-bank': '/tra-cuu/on-tap',
+  mdsdv: '/reference/loan-purpose',
+  'card-policies': '/reference/card-policies',
+  templates: '/reference/templates',
+  'quiz-bank': '/reference/quiz',
 
-  'post-loan': '/kiem-soat-sau-vay',
-  settings: '/cai-dat',
+  'post-loan': '/post-loan-control',
+  settings: '/settings',
 };
 
 export const DEFAULT_ROUTE = ROUTE_OF.dashboard;

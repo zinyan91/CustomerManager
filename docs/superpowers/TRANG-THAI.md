@@ -3,7 +3,19 @@
 > Tệp này để **bắt lại mạch khi mở phiên trò chuyện mới**. Cập nhật sau mỗi task xong.
 > Sổ chi tiết của phiên đang chạy nằm ở `.superpowers/sdd/<tên-kế-hoạch>/progress.md`, nhưng thư mục đó bị `.gitignore` bỏ qua và bị xoá khi đóng đợt — nên mọi thứ cần sống lâu phải nằm ở đây.
 
-**Cập nhật lần cuối:** 2026-08-20, sau khi đợt 1a hoàn tất và rà soát toàn nhánh xong.
+**Cập nhật lần cuối:** 2026-08-20, sau khi đợt 1a đã gộp và đẩy lên `main`.
+
+---
+
+## Bắt đầu phiên mới thì làm gì
+
+1. Đọc hết tệp này.
+2. Đọc bản thiết kế `docs/superpowers/specs/2026-08-19-rebuild-giao-dien-design.md`.
+3. Hỏi chủ dự án muốn vào **đợt 1b** hay xử **việc còn treo** trước (xem hai mục dưới).
+4. Lập kế hoạch bằng skill `superpowers:writing-plans`, thi công bằng skill `superpowers:subagent-driven-development` — giao subagent từng task, rà soát giữa các task.
+5. Cập nhật tệp này sau mỗi task xong.
+
+**Đừng hỏi lại chủ dự án những câu đã có đáp án** trong mục "Quyết định đã chốt" và "Phán quyết còn hiệu lực" bên dưới.
 
 ---
 
@@ -11,11 +23,25 @@
 
 | | |
 | :--- | :--- |
-| Nhánh hiện tại | `rebuild-giao-dien-dot-1` |
-| Kế hoạch đang chạy | `docs/superpowers/plans/2026-08-20-rebuild-giao-dien-dot-1a-dinh-tuyen.md` |
-| Đợt vừa xong | **1a — định tuyến**, 21 commit, rà soát toàn nhánh sạch, chờ gộp |
+| Nhánh hiện tại | `main` — sạch, khớp `origin/main` |
+| Việc đang dở | không có. Hai đợt đã đóng gọn |
+| Đợt vừa xong | **1a — định tuyến**, 21 commit, đã gộp và đẩy (`c5ebd57..b0b6653`) |
 | Đợt kế tiếp | **1b — ngữ cảnh khách hàng**, chưa lập kế hoạch |
-| Tổng test | 1.732 xanh, 0 đỏ |
+| Tổng test | **1.732** xanh, 0 đỏ · 72 tệp test |
+| Cảnh báo lint | 62, toàn bộ có sẵn từ trước |
+
+## Đợt 1b sẽ làm gì
+
+Theo bản thiết kế §6.2. Chưa lập kế hoạch — cần lập trước khi thi công.
+
+- `useSelectedCustomer()` đọc `:id` từ URL; **xoá `selectedCustomerId` khỏi `WorkContext`**, URL thành nguồn sự thật duy nhất
+- Thanh ngữ cảnh khách hàng: tên · CIF · điện thoại · dư nợ · hạn mức khả dụng · nhóm nợ · nút đổi khách
+- Lồng sáu màn hồ sơ vào `/customers/:id/…`
+- Chuyển bốn controller khỏi `WorkContext.selectedCustomerId`: `useCardContractController`, `useCreditContractController`, `useLoanPortfolioController`, `usePostLoanControlController`
+- `disburseRequest` chuyển sang điều hướng URL
+- Bù nốt nửa spec §6.3 còn thiếu ở Header (xem việc còn treo)
+
+**Phải đo trước khi lập kế hoạch:** thanh ngữ cảnh cần dư nợ và hạn mức khả dụng, hai số đó tính từ `summarizeCreditContracts` trên hợp đồng tín dụng + khoản vay + lịch trả nợ. Bốn controller hiện mỗi cái tự nạp một bản riêng. **Đo độ trễ truy vấn thật trước khi quyết** nạp chung hay nạp riêng — dự án đã một lần đếm 6.705 dòng rồi tưởng nhẹ và làm dashboard chậm gấp bảy lần.
 
 **URL đã chạy thật.** Bấm mục thanh bên → đường dẫn đổi; F5 → giữ nguyên chỗ; Back → quay về màn trước; đường dẫn lạ → về `/dashboard`. Đã tự kiểm cả 19 màn trên giao diện thật, không màn nào trắng, không lỗi console.
 
@@ -40,7 +66,18 @@
 2. Test dựng `AppLayout` phải giả lập `AuthContext`, kẻo nó render màn đăng nhập chứ không phải thanh bên.
 3. Test dựng `AppLayout` còn cần `WorkProvider` và `ThemeProvider` bao ngoài.
 
-**Cách bắt lại mạch:** đọc bản thiết kế, rồi kế hoạch đang chạy, rồi mục "Phán quyết còn hiệu lực" bên dưới. Thi công theo skill `superpowers:subagent-driven-development` — giao subagent từng task, rà soát giữa các task.
+---
+
+## Hồ sơ đã có, đọc khi cần
+
+| Tệp | Nội dung |
+| :--- | :--- |
+| `docs/superpowers/specs/2026-08-19-rebuild-giao-dien-design.md` | Bản thiết kế — **thẩm quyền cao nhất** |
+| `docs/superpowers/plans/2026-08-19-rebuild-giao-dien-dot-0.md` | Kế hoạch đợt 0 |
+| `docs/superpowers/plans/2026-08-19-dot-0-so-tien-do.md` | Sổ tiến độ đợt 0 — 11 phán quyết |
+| `docs/superpowers/plans/2026-08-20-rebuild-giao-dien-dot-1a-dinh-tuyen.md` | Kế hoạch đợt 1a |
+| `docs/superpowers/plans/2026-08-20-dot-1a-so-tien-do.md` | Sổ tiến độ đợt 1a — 7 phán quyết |
+| `CONVENTIONS.md` §15 | Quy ước giao diện: token, thang chữ, bo góc, màu, định tuyến |
 
 ---
 
@@ -68,8 +105,8 @@ Chủ dự án đã chốt trong phiên brainstorm ngày 19/08/2026:
 | Đợt | Nội dung | Trạng thái |
 | :--- | :--- | :--- |
 | **0** | Token, thang chữ, bo góc, `navigation.ts`, dọn rác, viết lại §15 §17 | ✅ **xong, đã gộp vào `main`** (`c5ebd57`) |
-| **1a** | `react-router`, khung `AppLayout`, Sidebar, CommandPalette, Header thôi ping CSDL | ✅ **xong**, 21 commit, chờ gộp |
-| **1b** | `useSelectedCustomer` đọc `:id`, thanh ngữ cảnh khách hàng, chuyển 4 controller, luồng giải ngân qua URL | chưa lập kế hoạch |
+| **1a** | `react-router`, khung `AppLayout`, Sidebar, CommandPalette, Header thôi ping CSDL | ✅ **xong, đã gộp vào `main`** (`b0b6653`) |
+| **1b** | `useSelectedCustomer` đọc `:id`, thanh ngữ cảnh khách hàng, chuyển 4 controller, luồng giải ngân qua URL | ⬅️ **kế tiếp**, chưa lập kế hoạch |
 | **2** | Bộ component + `Dialog`/`ConfirmDialog` — thay 15 modal và 13 tệp `window.confirm` | chưa |
 | **3** | Hồ sơ tín dụng: Khách hàng, HĐTD, Khoản vay, TSĐB, Thẻ. **Nặng nhất** — gỡ 65 props của `KunnForm` | chưa |
 | **4** | Tổng quan, Kiểm soát sau vay | chưa |

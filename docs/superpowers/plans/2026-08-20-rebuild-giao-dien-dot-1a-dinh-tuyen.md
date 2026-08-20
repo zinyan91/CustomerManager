@@ -568,17 +568,21 @@ export default App;
 
 - [ ] **Step 6: Bọc ứng dụng trong `BrowserRouter`**
 
-Trong `src/main.tsx`, thêm `import { BrowserRouter } from 'react-router';` rồi bọc `<App />`:
+Trong `src/main.tsx`, thêm `import { BrowserRouter } from 'react-router';` rồi bọc **ra ngoài** `ProviderComposer`:
 
 ```tsx
-<ProviderComposer providers={providers}>
+<ErrorBoundary title="Ứng dụng gặp sự cố khởi chạy">
   <BrowserRouter>
-    <App />
+    <ProviderComposer providers={providers}>
+      <App />
+    </ProviderComposer>
   </BrowserRouter>
-</ProviderComposer>
+</ErrorBoundary>
 ```
 
-`BrowserRouter` phải nằm **bên trong** `ProviderComposer` vì `WorkProvider` sắp dùng hook của router.
+**Thứ tự này bắt buộc, đặt ngược là ứng dụng vỡ ngay lúc khởi động.** `ProviderComposer` dựng cây bằng `reduceRight`, nên provider cuối mảng — `WorkProvider` — thành lớp trong cùng, bọc quanh `children`. Nếu `BrowserRouter` nằm bên trong `ProviderComposer` thì `WorkProvider` ở **ngoài** router, và `useLocation()` mà Step 7 sắp thêm vào nó sẽ ném lỗi.
+
+Kiểm nhanh sau khi sửa: chạy `npm run dev`, mở trang, bảng điều khiển trình duyệt không được có lỗi kiểu `useLocation() may be used only in the context of a <Router> component`.
 
 - [ ] **Step 7: Đổi ruột `WorkContext`**
 

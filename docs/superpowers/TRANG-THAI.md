@@ -11,7 +11,7 @@
 
 1. Đọc hết tệp này.
 2. Đọc bản thiết kế `docs/superpowers/specs/2026-08-19-rebuild-giao-dien-design.md`.
-3. Hỏi chủ dự án muốn vào **đợt 1b** hay xử **việc còn treo** trước (xem hai mục dưới).
+3. Hỏi chủ dự án muốn vào **đợt 2** hay xử **việc còn treo** trước (xem hai mục dưới).
 4. Lập kế hoạch bằng skill `superpowers:writing-plans`, thi công bằng skill `superpowers:subagent-driven-development` — giao subagent từng task, rà soát giữa các task.
 5. Cập nhật tệp này sau mỗi task xong.
 
@@ -71,7 +71,12 @@ một component (chi tiết ở `CONVENTIONS.md` §15 "Định tuyến"). Hai đ
 
 **Ngã rẽ chủ dự án chốt 20/08/2026:** giữ **cả hai** họ đường dẫn. Đường phẳng = chưa chọn khách (`/post-loan-control` vẫn hiện toàn danh mục), đường lồng `/customers/:customerId/…` = đã chọn khách. Hai họ render cùng một component.
 
-**URL đã chạy thật.** Bấm mục thanh bên → đường dẫn đổi; F5 → giữ nguyên chỗ; Back → quay về màn trước; đường dẫn lạ → về `/dashboard`. Đã tự kiểm cả 19 màn trên giao diện thật, không màn nào trắng, không lỗi console.
+**URL đã chạy thật — nhưng đó là phạm vi đợt 1a, không phải 1b.** Bấm mục thanh bên → đường dẫn
+đổi; F5 → giữ nguyên chỗ; Back → quay về màn trước; đường dẫn lạ → về `/dashboard`. Đợt 1a đã tự
+kiểm cả 19 màn trên giao diện thật lúc đó (trước khi có `/customers/:id/…`, thanh ngữ cảnh, hay
+luồng giải ngân qua URL), không màn nào trắng, không lỗi console. Việc đó **không** bao gồm những
+gì đợt 1b thêm vào — tự kiểm riêng cho đợt 1b vẫn chưa làm, xem dòng "Tự kiểm trên giao diện
+thật" ở bảng "Đang ở đâu" và mục "Việc còn treo".
 
 **Đường dẫn viết tiếng Anh** — chủ dự án chốt 20/08/2026 để tránh rắc rối mã hoá và công cụ:
 
@@ -108,7 +113,7 @@ bấm vào lặng lẽ về `/dashboard` hoặc không đổi theo khách. `rout
 | `docs/superpowers/plans/2026-08-19-dot-0-so-tien-do.md` | Sổ tiến độ đợt 0 — 11 phán quyết |
 | `docs/superpowers/plans/2026-08-20-rebuild-giao-dien-dot-1a-dinh-tuyen.md` | Kế hoạch đợt 1a |
 | `docs/superpowers/plans/2026-08-20-dot-1a-so-tien-do.md` | Sổ tiến độ đợt 1a — 7 phán quyết |
-| `docs/superpowers/plans/2026-08-20-rebuild-giao-dien-dot-1b-ngu-canh-khach-hang.md` | **Kế hoạch đợt 1b — 17 task, chưa thi công** |
+| `docs/superpowers/plans/2026-08-20-rebuild-giao-dien-dot-1b-ngu-canh-khach-hang.md` | **Kế hoạch đợt 1b — 17 task, xong, 20 commit, đã gộp vào `main`** |
 | `CONVENTIONS.md` §15 | Quy ước giao diện: token, thang chữ, bo góc, màu, định tuyến |
 
 ---

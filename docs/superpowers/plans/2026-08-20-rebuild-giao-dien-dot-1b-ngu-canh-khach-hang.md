@@ -1418,8 +1418,8 @@ describe('CustomerContextBar', () => {
     expect(screen.getByText('Trần Thị B')).toBeTruthy();
     expect(screen.getByText(/900055/)).toBeTruthy();
     expect(screen.getByText(/0900000055/)).toBeTruthy();
-    expect(screen.getByText('250.000.000')).toBeTruthy();
-    expect(screen.getByText('750.000.000')).toBeTruthy();
+    expect(screen.getByText(/250\.000\.000/)).toBeTruthy();
+    expect(screen.getByText(/750\.000\.000/)).toBeTruthy();
     expect(screen.getByText(/Nhóm 1/)).toBeTruthy();
   });
 
@@ -1432,7 +1432,7 @@ describe('CustomerContextBar', () => {
   it('đang nạp thì hiện khung chờ, không hiện số cũ', () => {
     dungHook.mockReturnValue({ ...DAY_DU, loading: true, summary: null });
     dungLenO('/customers/55/loans');
-    expect(screen.queryByText('250.000.000')).toBeNull();
+    expect(screen.queryByText(/250\.000\.000/)).toBeNull();
     expect(screen.getByTestId('thanh-ngu-canh')).toBeTruthy();
   });
 
@@ -1557,7 +1557,7 @@ import { CustomerContextBar } from './CustomerContextBar';
 npx vitest run src/components/__tests__/CustomerContextBar.test.tsx src/hooks/__tests__/useSelectedCustomerId.test.tsx src/components/__tests__/routing.test.tsx && npm run build
 ```
 
-Kỳ vọng: XANH. Nếu `fmtMoney` in ra chuỗi khác `250.000.000`, sửa kỳ vọng test cho khớp `fmtMoney` — định dạng tiền do §9 quy định, đừng đổi.
+Kỳ vọng: XANH. `fmtMoney` trả kèm hậu tố ` VNĐ` (`'250.000.000 VNĐ'`) — vì thế test dùng regex chứ không so chuỗi tuyệt đối. Giữ `fmtMoney` cho nhất quán với toàn ứng dụng, đừng dựng định dạng riêng cho thanh này.
 
 - [ ] **Bước 6: Commit**
 
@@ -2263,8 +2263,8 @@ vi.mock('../../lib/api', () => ({
 import { useCollateralController } from '../../hooks/useCollateralController';
 
 function Probe() {
-  const { visibleCollaterals } = useCollateralController();
-  return <span data-testid="ma">{visibleCollaterals.map(c => c.AssetCode).join(',')}</span>;
+  const { filteredCollaterals } = useCollateralController();
+  return <span data-testid="ma">{filteredCollaterals.map(c => c.AssetCode).join(',')}</span>;
 }
 
 function dungLenO(duongDan: string) {
@@ -2294,7 +2294,7 @@ describe('CollateralView theo phạm vi khách', () => {
 });
 ```
 
-Nếu controller chưa xuất `visibleCollaterals` mà tên khác, dùng đúng tên hiện có; đừng đổi tên đang chạy.
+`filteredCollaterals` là tên thật controller đang xuất (`src/hooks/useCollateralController.ts:287`) — đừng đổi tên đang chạy.
 
 - [ ] **Bước 2: Chạy để chắc nó đỏ**
 
@@ -2306,28 +2306,37 @@ Kỳ vọng: ĐỎ ở test thứ hai (đường lồng vẫn hiện cả hai).
 
 - [ ] **Bước 3: Sửa `src/hooks/useCollateralController.ts`**
 
-Thêm:
+Thêm import:
 
 ```ts
 import { useSelectedCustomerId } from './useSelectedCustomerId';
 ```
 
+Trong thân hook:
+
 ```ts
   const scopedCustomerId = useSelectedCustomerId();
 ```
 
-Bọc danh sách hiển thị bằng một `useMemo` lọc trước mọi bộ lọc khác:
+`filteredCollaterals` ở dòng ~205 đã là **một** `useMemo` duy nhất, và `totalPages` cùng `paginatedCollaterals` đều đọc từ nó. Vì vậy chỉ cần chèn một điều kiện làm dòng đầu trong hàm lọc, không dựng biến trung gian nào:
 
 ```ts
-  const collateralsTrongPhamVi = useMemo(
-    () => scopedCustomerId === null
-      ? collaterals
-      : collaterals.filter(c => c.CustomerId === scopedCustomerId),
-    [collaterals, scopedCustomerId]
-  );
+  const filteredCollaterals = useMemo(() => collaterals.filter(col => {
+    if (scopedCustomerId !== null && col.CustomerId !== scopedCustomerId) return false;
+    const cust = customers.find(c => c.Id === col.CustomerId);
+    if (searchCif.trim() && !cust?.CifKh.toLowerCase().includes(searchCif.trim().toLowerCase())) return false;
+    if (searchOwnerName.trim() && !cust?.FullName.toLowerCase().includes(searchOwnerName.trim().toLowerCase())) return false;
+    if (searchAssetCode.trim()) {
+      const q = searchAssetCode.trim().toLowerCase();
+      const code = (col.AssetCode || '').toLowerCase();
+      const addr = (col.Address || '').toLowerCase();
+      if (!code.includes(q) && !addr.includes(q)) return false;
+    }
+    return true;
+  }), [collaterals, customers, scopedCustomerId, searchCif, searchOwnerName, searchAssetCode]);
 ```
 
-Rồi thay `collaterals` bằng `collateralsTrongPhamVi` ở **mọi** `useMemo` dựng danh sách hiển thị, phân trang và số tổng. Đừng thay ở chỗ ghi (`saveCollateralAPI`) — nó dùng `inputCustomerId` riêng.
+Đừng đụng chỗ ghi (`saveCollateralAPI`) — nó dùng `inputCustomerId` riêng.
 
 Khi có `scopedCustomerId`, đặt sẵn `inputCustomerId` cho form thêm mới:
 
@@ -2624,7 +2633,7 @@ Hiện chấm vẫn xanh "Trực tuyến" khi máy có mạng nhưng Supabase kh
 
 **Giao diện:**
 - Sản xuất:
-  - `interface ApiHealthState { reachable: boolean; lastFailureAt: number | null }`
+  - `interface ApiHealthState { reachable: boolean }` — chỉ một cờ, đúng như §6.3 đòi. Không thêm `lastFailureAt` hay trường nào khác: hôm nay không ai đọc chúng
   - `recordApiSuccess(): void`
   - `recordApiFailure(): void`
   - `getApiHealth(): ApiHealthState` — **trả cùng một tham chiếu** khi chưa đổi, để `useSyncExternalStore` không vòng lặp vô hạn
@@ -2647,13 +2656,11 @@ beforeEach(() => resetApiHealth());
 describe('apiHealth', () => {
   it('mặc định coi là với tới được', () => {
     expect(getApiHealth().reachable).toBe(true);
-    expect(getApiHealth().lastFailureAt).toBeNull();
   });
 
   it('ghi nhận lỗi thì chuyển sang không với tới được', () => {
     recordApiFailure();
     expect(getApiHealth().reachable).toBe(false);
-    expect(getApiHealth().lastFailureAt).not.toBeNull();
   });
 
   it('lần gọi thành công tiếp theo gỡ cờ', () => {
@@ -2701,26 +2708,26 @@ Kỳ vọng: ĐỎ.
 ```ts
 export interface ApiHealthState {
   reachable: boolean;
-  lastFailureAt: number | null;
 }
 
-const BAN_DAU: ApiHealthState = Object.freeze({ reachable: true, lastFailureAt: null });
+const VOI_TOI_DUOC: ApiHealthState = Object.freeze({ reachable: true });
+const KHONG_VOI_TOI: ApiHealthState = Object.freeze({ reachable: false });
 
-let state: ApiHealthState = BAN_DAU;
+let state: ApiHealthState = VOI_TOI_DUOC;
 const listeners = new Set<() => void>();
 
 function dat(next: ApiHealthState): void {
-  if (next.reachable === state.reachable) return;
-  state = Object.freeze(next);
+  if (next === state) return;
+  state = next;
   listeners.forEach(fn => fn());
 }
 
 export function recordApiSuccess(): void {
-  dat({ reachable: true, lastFailureAt: state.lastFailureAt });
+  dat(VOI_TOI_DUOC);
 }
 
 export function recordApiFailure(): void {
-  dat({ reachable: false, lastFailureAt: Date.now() });
+  dat(KHONG_VOI_TOI);
 }
 
 export function getApiHealth(): ApiHealthState {
@@ -2733,7 +2740,7 @@ export function subscribeApiHealth(listener: () => void): () => void {
 }
 
 export function resetApiHealth(): void {
-  state = BAN_DAU;
+  state = VOI_TOI_DUOC;
   listeners.clear();
 }
 ```

@@ -3,13 +3,13 @@ name: tin-dung
 description: Kiến thức nghiệp vụ, quy ước kỹ thuật, mô hình bảo mật, công thức tài chính và hướng dẫn phát triển của hệ thống CustomerManager. Dùng khi làm bất cứ việc gì liên quan tới lãi, gốc, lịch trả nợ, LTV, tài sản bảo đảm, hạn mức tín dụng, cho vay từng lần, phân nhóm nợ, sản phẩm vay, giải ngân theo tiến độ, phí phạt trả trước, bảo mật RLS, kiến trúc dự án hoặc thiết lập môi trường trong codebase này.
 ---
 
-# Hướng Dẫn & Nghiệp Vụ Tín Dụng — CustomerManager
+# Cẩm Nang & Nghiệp Vụ Tín Dụng — CustomerManager
 
 Ứng dụng web quản lý hồ sơ tín dụng ngân hàng: khách hàng, hợp đồng tín dụng (HĐTD), giấy nhận nợ (KUNN), tài sản bảo đảm (TSĐB), thẻ tín dụng, lịch trả nợ và các công cụ tính toán phục vụ tư vấn.
 
-Mã nguồn **không chứa chú thích trực tiếp**. Toàn bộ quy ước, mô hình bảo mật, kiến trúc và công thức tài chính được tập trung tại tài liệu này và file `CONVENTIONS.md`.
+Mã nguồn **không chứa chú thích trực tiếp trong code**. Toàn bộ giải thích kiến trúc, mô hình bảo mật, quy ước kỹ thuật và công thức tài chính được tập trung tại tài liệu này và file `CONVENTIONS.md`.
 
-> **Quy tắc bất biến:** Đọc tài liệu này trước khi sửa bất cứ thứ gì liên quan tới tiền, lãi, gốc, LTV, hạn mức hoặc bảo mật cơ sở dữ liệu.
+> **Quy tắc bất biến:** Đọc kỹ tài liệu này trước khi sửa bất cứ thứ gì liên quan tới tiền, lãi, gốc, LTV, hạn mức hoặc bảo mật cơ sở dữ liệu.
 
 ---
 
@@ -78,6 +78,7 @@ supabase/migrations/  Các script SQL migration chạy theo thứ tự
 | `src/lib/collateralMath.ts` | Chính sách LTV theo phân loại tài sản, kiểm tra hiệu lực định giá |
 | `src/lib/creditLimit.ts` | Tổng mức cấp, kiểm soát hạn mức theo tài sản và theo nhóm HĐTD |
 | `src/lib/calcMath.ts` | Công thức cho 8 công cụ tính toán (EMI, EAR, DTI, phí phạt tất toán sớm) |
+| `src/lib/rateResolution.ts` | Xác định lãi suất hiệu lực, dựng cột lãi suất cho form |
 | `src/lib/rateQuote.ts` | Chào lãi suất theo chương trình từng thời kỳ, phí dịch vụ, điều kiện thẻ |
 | `src/lib/cof.ts` | Biểu lãi suất mua bán vốn nội bộ (FTP bán - COF / FTP mua - VOF) |
 | `src/lib/stkPledge.ts` | Cầm cố sổ tiết kiệm, tái tục nhiều kỳ, phạt chậm trả |
@@ -86,14 +87,56 @@ supabase/migrations/  Các script SQL migration chạy theo thứ tự
 
 Toàn bộ logic tính toán tài chính **bắt buộc phải là hàm thuần trong `src/lib/`**, tuyệt đối không viết công thức tính tiền trực tiếp trong các component React (`.tsx`).
 
+### Danh bạ hàm nghiệp vụ dùng chung — gọi, không chép lại
+
+| Nhu cầu | Hàm dùng chung | Tệp |
+| :--- | :--- | :--- |
+| Tiền phạt quá hạn (150% gốc + 10% lãi) | `computeSchedulePenalty` | `loanMath.ts` |
+| Số ngày quá hạn thực tế của một kỳ | `overdueDaysOfSchedule` | `loanMath.ts` |
+| Ngày hôm nay chuẩn múi giờ VN (YYYY-MM-DD) | `todayIso` | `utils.ts` |
+| Số ngày còn lại tới một mốc | `daysUntil` | `utils.ts` |
+| Mốc thu lãi hàng tháng kế tiếp | `monthlyDueInfo` | `dueList.ts` |
+| Tổng mức cấp / dư nợ / khả dụng của khách | `totalsOfCreditContracts` | `creditContract.ts` |
+| Dư nợ của một khoản vay | `outstandingOf` | `loanMath.ts` |
+| Lãi suất đang áp dụng | `getEffectiveActiveRate` | `rateResolution.ts` |
+| Đọc số tiền từ ô nhập (chỉ chữ số) | `parseMoneyInput` | `utils.ts` |
+| Đọc số tiền lẻ đồng | `parseMoneyDecimalInput` | `utils.ts` |
+| In tài liệu sạch qua iframe ẩn | `printHtmlDoc` | `printHtmlDoc.ts` |
+
 ---
 
-## 3. Bốn nguyên tắc bắt buộc khi phát triển
+## 3. Các bài học kỹ thuật xương máu từ `CONVENTIONS.md`
 
-1. **Một quy tắc nghiệp vụ chỉ cài ở MỘT nơi.** Cần dùng lại thì import, tuyệt đối không copy hàm sang file khác để tránh trôi dạt logic.
-2. **Không dùng `||` khi số 0 là giá trị hợp lệ.** `parseFloat('0') || 80` sẽ cho ra `80`. Luôn dùng kiểm tra `null`/`undefined`/`NaN` tường minh.
-3. **Không nuốt lỗi.** Bắt lỗi rồi lưu lại sau khi xoá bớt trường sẽ khiến giao diện báo thành công trong khi dữ liệu bị mất.
-4. **Sửa gì liên quan tới tiền thì viết test trước.** Đảm bảo bất biến tài chính không bị phá vỡ trước khi commit.
+### 1. Không dùng `||` khi `0` là giá trị hợp lệ
+- **Lỗi từng xảy ra**: `parseFloat('0') || 80` cho ra `80`, biến tài sản "Hạn chế nhận TS" (LTV chính sách 0%) thành tài sản bậc cao nhất (80%).
+- **Quy tắc**: Luôn kiểm tra `null`/`undefined`/`NaN` tường minh. Phân biệt rõ `0` (con số có thật) và `null` (chưa khai).
+
+### 2. Cấm dùng `toISOString().split('T')[0]` lấy ngày hôm nay
+- **Lỗi từng xảy ra**: `toISOString()` lấy giờ UTC, trước 07:00 sáng tại Việt Nam (UTC+7) luôn trả về **ngày hôm qua**, dẫn tới tính sai mốc điều chỉnh lãi suất và xét nhầm hiệu lực HĐTD.
+- **Quy tắc**: Luôn dùng `todayIso()` từ `src/lib/utils.ts`.
+
+### 3. Không nuốt lỗi và không tự đoán ý
+- Bắt lỗi rồi lưu lại sau khi xoá bớt trường sẽ khiến giao diện báo thành công trong khi dữ liệu bị mất.
+- Không tự ý sinh lại số KUNN mà không kiểm tra DB. Trùng số phải báo lỗi rõ ràng để banker tra chứng từ.
+
+### 4. Không nhét dữ liệu nghiệp vụ vào trường ghi chú (`Note`)
+- Mỗi thông tin nghiệp vụ bắt buộc phải có cột riêng trong CSDL.
+- Nhét vào `Note` không truy vấn được, không kiểm toán được, và tạo ra nguồn thứ hai trôi dạt khỏi cột thật.
+
+### 5. Hai chế độ lãi suất loại trừ nhau (Ưu đãi vs Thông thường)
+- Một KUNN chỉ thuộc một trong hai chế độ:
+  - **Chế độ Ưu đãi**: Lưu `PreferentialRate`, `PreferentialPeriodMonths`, `PostPreferentialRate`, `MarginRate`; để trống `BaseRate`, `NormalRate`.
+  - **Chế độ Thông thường**: Lưu `BaseRate`, `MarginRate`, `NormalRate`; để trống `PreferentialRate`, `PreferentialPeriodMonths`.
+- Khi banker chọn chế độ này thì nhánh kia phải xoá hoàn toàn, không lưu song song.
+
+### 6. Phụ trội điều kiện (`PenaltySurcharge`)
+- Lưu theo **điểm phần trăm** (`0.2` = 0,20%), **không** được đưa qua `toPercent()` (sẽ biến thành 20%).
+- Sàn lãi suất áp cho phần định giá trước, sau đó phụ trội cộng lên sau: `applyRateFloor(BaseRate + MarginRate) + PenaltySurcharge`.
+
+### 7. Đóng HĐTD khác với hết hạn hiệu lực
+- Đóng HĐTD chỉ là **dừng quyền giải ngân mới** (`available = 0`), **không phải xoá nợ**.
+- KUNN còn nợ vẫn tiếp tục trả theo lịch cho tới khi tất toán (`isKunnSettled` chỉ đọc cờ `IsSettled` của chính KUNN).
+- Không được phép đóng HĐTD nếu còn KUNN chưa tất toán (được bảo vệ bởi trigger CSDL).
 
 ---
 
@@ -112,7 +155,7 @@ Toàn bộ logic tính toán tài chính **bắt buộc phải là hàm thuần 
 - RLS được bật trên **100% các bảng**.
 - Khoá `anon` nằm công khai trên client, nên RLS là lớp phòng thủ duy nhất.
 - Bảng chưa dùng tới được bật RLS **không kèm policy** (ngăn chặn truy cập mặc định).
-- **Sinh ID**: Phải do CSDL đảm nhiệm qua sequence. Không tính `max(Id)+1` ở phía client vì dưới RLS client chỉ thấy một phần dữ liệu.
+- **Sinh ID**: Phải do CSDL đảm nhiệm qua sequence. Không tính `max(Id)+1` ở phía client vì dưới RLS client chỉ thấy một phần dữ liệu của mình.
 - `service_role` key **tuyệt đối không đưa vào mã nguồn client**, chỉ sử dụng qua Supabase Edge Functions khi cần.
 
 ---
@@ -134,9 +177,9 @@ Toàn bộ logic tính toán tài chính **bắt buộc phải là hàm thuần 
 
 ---
 
-## 6. Công thức & Quy chuẩn nghiệp vụ
+## 6. Công thức & Quy chuẩn tài chính
 
-### Tính lãi theo số ngày thực tế
+### Tính lãi theo số ngày thực tế (Actual/365)
 
 ```
 Tiền lãi = Dư nợ đầu kỳ × Lãi suất năm × Số ngày thực tế trong kỳ / 365
@@ -154,7 +197,7 @@ Bất biến này phải đúng ở **mọi phương thức trả nợ** (trả 
 
 ### Làm tròn tiền gốc
 
-Làm tròn **LÊN** bước 1.000đ hoặc 10.000đ theo chuẩn core banking. Kỳ cuối cùng gánh phần lẻ dư để đảm bảo khớp đúng tổng số tiền vay.
+Làm tròn **LÊN** bước 10.000đ theo chuẩn core banking (`PRINCIPAL_ROUND_MODE`). Kỳ cuối cùng gánh phần lẻ dư để đảm bảo khớp đúng tổng số tiền vay. Nếu KUNN có thoả thuận gốc cố định, dùng `MonthlyPrincipalAmount` (migration 36).
 
 ### Trả góp đều (EMI)
 
@@ -187,6 +230,7 @@ r_giảm_dần ≈ (r_phẳng × 2 × n) / (n + 1)
 | Hàng hóa, Quyền tài sản | 50% |
 
 - **Hiệu lực định giá**: Chứng thư định giá chỉ có giá trị tính hạn mức trong thời hạn hiệu lực (6, 12 hoặc 24 tháng). Khi hết hiệu lực, `usableCapacity` trả về **0** và hệ thống cảnh báo cần định giá lại.
+- **So khớp mã tài sản**: Khi lọc `CollateralIds` (dạng `"1,5,12"`), bắt buộc tách theo dấu phẩy rồi so từng phần tử, không dùng `LIKE '%1%'` vì sẽ khớp nhầm `10`, `21`.
 
 ### Phân nhóm nợ tự động
 
@@ -217,6 +261,9 @@ Phê duyệt HMTD  →  Hợp đồng tín dụng (HĐTD)  →  Giấy nhận n�
 3. **Chốt chặn ngày đáo hạn**:
    - Dãy kỳ trả nợ kết thúc tại ngày đáo hạn của KUNN/khoản vay.
    - Đổi kỳ hạn phải dùng cơ chế đối chiếu (`reconcileScheduleRows`), không xoá trắng lịch cũ để bảo toàn lịch sử thu nợ.
+4. **Viết SQL thống kê rà soát hạn mức**:
+   - Phải gom theo tiền tố HĐTD gốc trước khi cộng mức cấp: `coalesce(nullif("LoanAmount", 0), "ContractAmount", 0)`.
+   - Không cộng thẳng từng dòng KUNN vì sẽ nhân ảo mức cấp lên gấp nhiều lần.
 
 ---
 

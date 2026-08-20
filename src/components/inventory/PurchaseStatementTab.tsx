@@ -1,20 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  FileText, Plus, Trash2, Download, Printer, Settings2, Search, Save, History,
-  Pencil, X,
+  FileText, Plus, Trash2, Download, Printer, Search, Save, History,
+  Pencil, X, Package, RotateCcw,
 } from 'lucide-react';
 import {
   computeStatementItem, computeStatementSummary, nextStatementId, getComputedBankAccText,
-  type StatementItem, type StatementSellerInfo, type StatementTemplate,
+  type StatementItem, type StatementSellerInfo,
 } from '../../lib/statement';
-import {
-  loadStatementTemplates, addStatementTemplate, updateStatementTemplate,
-  deleteStatementTemplate, resetStatementTemplates, fetchStatementTemplatesFromCloud,
-} from '../../lib/statementStore';
 import {
   fetchPurchaseStatementsDb, savePurchaseStatementDb, deletePurchaseStatementDb,
   type SavedPurchaseStatement,
 } from '../../lib/statementDb';
+import { fetchInventoryItemsDb } from '../../lib/inventoryDb';
+import type { InventoryItem } from '../../lib/inventory';
 import { buildPurchaseStatementXlsx, buildPurchaseStatementDocHtml } from '../../lib/inventoryExport';
 import { downloadBytes } from '../../lib/xlsExport';
 import { MIME_XLSX } from '../../lib/xlsxWriter';
@@ -22,7 +20,7 @@ import { printHtmlDoc } from '../../lib/printHtmlDoc';
 import { fmtMoney, fmtNumber, parseMoneyDecimalInput, formatMoneyInput, todayIso } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 import { BANK_LIST } from '../../lib/documentOptions';
-import { StatementTemplateModal } from './StatementTemplateModal';
+import { InventoryItemPickerModal, type SelectedInventoryItemPayload } from './InventoryItemPickerModal';
 
 interface PurchaseStatementTabProps {
   showNotify: (type: 'success' | 'error', message: string) => void;
@@ -99,50 +97,50 @@ const EditPurchaseItemModal: React.FC<{
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 pt-1 border-t border-line">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={`block mb-1 ${UI.labelStyle}`}>Đơn vị tính</label>
               <input
                 type="text"
                 value={unit}
                 onChange={e => setUnit(e.target.value)}
-                className={`w-full p-2 rounded-lg text-center ${UI.inputStyle}`}
+                placeholder="Kg, Chai, m2..."
+                className={`w-full p-2 rounded-lg ${UI.inputStyle}`}
               />
             </div>
             <div>
               <label className={`block mb-1 ${UI.labelStyle}`}>Số lượng</label>
               <input
                 type="text"
+                inputMode="decimal"
                 value={qtyStr}
                 onChange={e => setQtyStr(formatMoneyInput(e.target.value))}
-                className={`w-full p-2 rounded-lg font-mono text-right font-bold ${UI.inputStyle}`}
+                className={`w-full p-2 rounded-lg font-mono font-bold text-right ${UI.inputStyle}`}
               />
             </div>
             <div>
-              <label className={`block mb-1 ${UI.labelStyle}`}>Đơn giá (VNĐ)</label>
+              <label className={`block mb-1 ${UI.labelStyle}`}>Đơn giá (VND)</label>
               <input
                 type="text"
+                inputMode="decimal"
                 value={priceStr}
                 onChange={e => setPriceStr(formatMoneyInput(e.target.value))}
-                className={`w-full p-2 rounded-lg font-mono text-right font-bold text-accent ${UI.inputStyle}`}
+                className={`w-full p-2 rounded-lg font-mono font-bold text-right text-accent ${UI.inputStyle}`}
               />
             </div>
           </div>
 
-          {/* Live Preview Box */}
-          <div className="p-2.5 rounded-lg bg-pos-soft/50 border border-pos/30 flex items-center justify-between">
-            <div className="text-[10px] text-pos uppercase font-bold">THÀNH TIỀN DỰ TÍNH</div>
-            <div className="font-mono font-black text-pos text-base">
-              {fmtMoney(amount)}
-            </div>
+          {/* Thành tiền auto-calc */}
+          <div className="p-3 rounded-lg bg-pos-soft/40 border border-pos/30 flex items-center justify-between">
+            <span className="font-bold text-[11px] text-pos uppercase">Thành tiền tính tự động:</span>
+            <span className="font-mono font-black text-sm text-pos">{fmtMoney(amount)}</span>
           </div>
 
-          {/* Modal Actions */}
-          <div className="pt-3 border-t border-line flex items-center justify-end space-x-2">
+          <div className="flex items-center justify-end space-x-2 pt-2 border-t border-line">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 rounded-lg border border-line text-ink-muted hover:bg-panel-muted text-xs font-semibold transition-colors"
+              className="px-4 py-2 rounded-lg border border-line text-ink-faint hover:text-ink hover:bg-panel font-semibold text-xs transition-colors"
             >
               Hủy
             </button>
@@ -161,9 +159,8 @@ const EditPurchaseItemModal: React.FC<{
 };
 
 export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ showNotify }) => {
-  const [templates, setTemplates] = useState<StatementTemplate[]>(loadStatementTemplates);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(() => templates[0]?.id || 'stmt-nuoc-hoa');
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [isInventoryPickerOpen, setIsInventoryPickerOpen] = useState(false);
 
   const [sellerInfo, setSellerInfo] = useState<StatementSellerInfo>({
     sellerName: 'LÊ THỊ HOÀNG ÂN',
@@ -175,11 +172,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
     statementDateStr: todayIso(),
   });
 
-  const [items, setItems] = useState<StatementItem[]>(() => {
-    const tpl = templates[0];
-    return tpl ? tpl.items.map(it => ({ ...it, id: nextStatementId() })) : [];
-  });
-
+  const [items, setItems] = useState<StatementItem[]>([]);
   const [savedStatements, setSavedStatements] = useState<SavedPurchaseStatement[]>([]);
   const [currentStmtId, setCurrentStmtId] = useState<string>(() => nextStatementId());
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
@@ -187,20 +180,16 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
 
   const [searchTerm, setSearchTerm] = useState('');
   const [newItemName, setNewItemName] = useState('');
-  const [newUnit, setNewUnit] = useState('Chai');
+  const [newUnit, setNewUnit] = useState('Kg');
   const [newQtyStr, setNewQtyStr] = useState('');
   const [newPriceStr, setNewPriceStr] = useState('');
   const [newNote, setNewNote] = useState('');
 
-  // Fetch Statement Templates from Supabase Cloud on mount
+  // Fetch Inventory items on mount & when picker opens
   useEffect(() => {
-    let active = true;
-    fetchStatementTemplatesFromCloud().then(cloudList => {
-      if (active && cloudList && cloudList.length > 0) {
-        setTemplates(cloudList);
-      }
+    fetchInventoryItemsDb().then(invs => {
+      setInventoryItems(invs);
     });
-    return () => { active = false; };
   }, []);
 
   // Fetch saved statements from Database on mount
@@ -247,49 +236,40 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
     }
   };
 
-  const handleSelectTemplate = (id: string) => {
-    setSelectedTemplateId(id);
-    const tpl = templates.find(t => t.id === id);
-    if (tpl) {
-      if (tpl.sellerInfo) {
-        setSellerInfo(prev => ({ ...prev, ...tpl.sellerInfo }));
+  const handleAddFromInventory = (selected: SelectedInventoryItemPayload[]) => {
+    const newStmtItems: StatementItem[] = selected.map(it => ({
+      id: nextStatementId(),
+      dateStr: sellerInfo.statementDateStr || todayIso(),
+      itemName: it.name,
+      unit: it.unit || 'Kg',
+      qty: it.qty,
+      unitPrice: it.unitPrice,
+      note: '',
+    }));
+    setItems(prev => [...newStmtItems, ...prev]);
+    showNotify('success', `Đã thêm ${selected.length} mặt hàng từ Kho vào Bảng kê.`);
+  };
+
+  const handleClearAllItems = () => {
+    if (items.length === 0) return;
+    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ mặt hàng trong bảng kê hiện tại?')) {
+      setItems([]);
+      showNotify('success', 'Đã xóa toàn bộ mặt hàng.');
+    }
+  };
+
+  const handleItemNameChange = (val: string) => {
+    setNewItemName(val);
+    const matched = inventoryItems.find(
+      i => i.name.toLowerCase().trim() === val.toLowerCase().trim()
+    );
+    if (matched) {
+      if (matched.unit) setNewUnit(matched.unit);
+      if (matched.unitPrice) setNewPriceStr(formatMoneyInput(String(matched.unitPrice)));
+      if (matched.importQty > 0 && !newQtyStr) {
+        setNewQtyStr(formatMoneyInput(String(matched.importQty)));
       }
-      setItems(tpl.items.map(it => ({ ...it, id: nextStatementId() })));
-      showNotify('success', `Đã nạp Mẫu bảng kê: ${tpl.name}`);
     }
-  };
-
-  const handleSaveTemplate = (name: string, tplItems: any[], templateId?: string) => {
-    let updated: StatementTemplate[];
-    if (templateId) {
-      updated = updateStatementTemplate(templateId, name, sellerInfo, tplItems);
-      showNotify('success', `Đã cập nhật Mẫu bảng kê: ${name}`);
-    } else {
-      const res = addStatementTemplate(name, sellerInfo, tplItems);
-      updated = res.templates;
-      setSelectedTemplateId(res.newTemplate.id);
-      setItems(res.newTemplate.items.map(it => ({ ...it, id: nextStatementId() })));
-      showNotify('success', `Đã tạo Mẫu bảng kê mới: ${name}`);
-    }
-    setTemplates(updated);
-  };
-
-  const handleDeleteTemplate = (id: string) => {
-    const updated = deleteStatementTemplate(id);
-    setTemplates(updated);
-    if (selectedTemplateId === id && updated[0]) {
-      setSelectedTemplateId(updated[0].id);
-      setItems(updated[0].items.map(it => ({ ...it, id: nextStatementId() })));
-    }
-    showNotify('success', 'Đã xóa ngành hàng mẫu.');
-  };
-
-  const handleResetTemplates = () => {
-    const defaults = resetStatementTemplates();
-    setTemplates(defaults);
-    setSelectedTemplateId(defaults[0].id);
-    setItems(defaults[0].items.map(it => ({ ...it, id: nextStatementId() })));
-    showNotify('success', 'Đã khôi phục về ngành hàng mặc định.');
   };
 
   const handleAddItem = (e: React.FormEvent) => {
@@ -300,9 +280,9 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
     }
     const item: StatementItem = {
       id: nextStatementId(),
-      dateStr: '…../…../2024',
+      dateStr: sellerInfo.statementDateStr || todayIso(),
       itemName: newItemName.trim(),
-      unit: newUnit.trim() || 'Cái',
+      unit: newUnit.trim() || 'Kg',
       qty: parseMoneyDecimalInput(newQtyStr) || 1,
       unitPrice: parseMoneyDecimalInput(newPriceStr),
       note: newNote.trim(),
@@ -328,34 +308,35 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return items;
     const term = searchTerm.toLowerCase().trim();
-    return items.filter(it => it.itemName.toLowerCase().includes(term));
+    return items.filter(
+      it => it.itemName.toLowerCase().includes(term) || (it.note && it.note.toLowerCase().includes(term))
+    );
   }, [items, searchTerm]);
 
   const handleExportExcel = () => {
     if (items.length === 0) {
-      showNotify('error', 'Chưa có dữ liệu nào để xuất Excel.');
+      showNotify('error', 'Vui lòng thêm ít nhất một mặt hàng để xuất Excel.');
       return;
     }
     const bytes = buildPurchaseStatementXlsx(items, sellerInfo);
-    downloadBytes(bytes, `BANG_KE_MUA_BAN_${todayIso()}.xlsx`, MIME_XLSX);
-    showNotify('success', 'Đã xuất Bảng kê mua bán (.xlsx).');
+    downloadBytes(`Bang_Ke_Mua_Ban_${sellerInfo.sellerName.replace(/\s+/g, '_')}_${todayIso()}.xlsx`, bytes, MIME_XLSX);
+    showNotify('success', 'Đã xuất file Excel Bảng kê mua bán thành công!');
   };
 
   const handlePrint = () => {
     if (items.length === 0) {
-      showNotify('error', 'Chưa có mặt hàng nào để in.');
+      showNotify('error', 'Vui lòng thêm ít nhất một mặt hàng để in.');
       return;
     }
     const html = buildPurchaseStatementDocHtml(items, sellerInfo);
-    const title = sellerInfo.sellerName ? `BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ - ${sellerInfo.sellerName}` : 'BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ';
-    printHtmlDoc(html, title);
+    printHtmlDoc(html, `Bang_Ke_${sellerInfo.sellerName}`);
   };
 
   return (
-    <div className="space-y-4 text-xs">
-      {/* Header Controls */}
-      <div className={`${UI.containerCardBg} rounded-lg p-4 border space-y-3`}>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-line pb-3">
+    <div className="space-y-4">
+      {/* Header Info & Actions */}
+      <div className={`${UI.containerCardBg} rounded-xl p-4 border space-y-4`}>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
           <div className="flex items-center space-x-2.5">
             <div className="p-2 bg-accent-soft rounded-lg text-accent">
               <FileText className="w-5 h-5" />
@@ -372,7 +353,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
               type="button"
               onClick={handleSaveToDb}
               title="Lưu chứng từ Bảng kê vào CSDL Supabase"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors shadow-sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors shadow-sm cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               <span>Lưu CSDL</span>
@@ -381,15 +362,15 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
               type="button"
               onClick={() => setShowHistoryModal(true)}
               title="Xem danh sách các Bảng kê đã lưu trong CSDL"
-              className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors relative"
+              className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors relative cursor-pointer"
             >
               <History className="w-3.5 h-3.5" />
-              <span>Lịch sử ({savedStatements.length})</span>
+              <span>Lịch sử</span>
             </button>
             <button
               type="button"
               onClick={handleExportExcel}
-              className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors"
+              className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Xuất Excel</span>
@@ -397,7 +378,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
             <button
               type="button"
               onClick={handlePrint}
-              className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors"
+              className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>In / PDF</span>
@@ -405,10 +386,10 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
           </div>
         </div>
 
-        {/* Information & Payment Method Controls (Matching SaleForm.tsx style) */}
+        {/* Information & Payment Method Controls */}
         <div className="p-3.5 rounded-md border border-line bg-panel-muted space-y-3">
           {/* Seller Legal Identity Section */}
-          <div className={`grid grid-cols-1 ${sellerInfo.paymentMethod === 'cash' ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
                 Bên bán hàng (Họ tên)
@@ -421,44 +402,84 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
               />
             </div>
 
-            {sellerInfo.paymentMethod === 'cash' && (
-              <div>
-                <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
-                  Số CMND / CCCD số Bên bán
-                </label>
-                <input
-                  type="text"
-                  placeholder="Nhập số CMND/CCCD"
-                  value={sellerInfo.sellerIdCard}
-                  onChange={e => setSellerInfo({ ...sellerInfo, sellerIdCard: e.target.value })}
-                  className={`w-full rounded-md p-2 font-mono font-bold text-accent ${UI.inputStyle}`}
-                />
-              </div>
-            )}
+            <div>
+              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
+                Địa chỉ Bên bán
+              </label>
+              <input
+                type="text"
+                value={sellerInfo.sellerAddress}
+                onChange={e => setSellerInfo({ ...sellerInfo, sellerAddress: e.target.value })}
+                className={`w-full rounded-md p-2 ${UI.inputStyle}`}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
+                Số CMND / CCCD số Bên bán
+              </label>
+              <input
+                type="text"
+                placeholder="Nhập số CMND/CCCD"
+                value={sellerInfo.sellerIdCard}
+                onChange={e => setSellerInfo({ ...sellerInfo, sellerIdCard: e.target.value })}
+                className={`w-full rounded-md p-2 font-mono font-bold text-accent ${UI.inputStyle}`}
+              />
+            </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-[10px] text-ink-faint uppercase font-bold">
-                  Chọn mẫu ngành hàng ({templates.length})
-                </label>
+              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
+                Bên mua hàng (Họ tên)
+              </label>
+              <input
+                type="text"
+                value={sellerInfo.buyerName}
+                onChange={e => setSellerInfo({ ...sellerInfo, buyerName: e.target.value })}
+                className={`w-full rounded-md p-2 font-bold ${UI.inputStyle}`}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
+                Ngày lập bảng kê
+              </label>
+              <input
+                type="text"
+                value={sellerInfo.statementDateStr}
+                onChange={e => setSellerInfo({ ...sellerInfo, statementDateStr: e.target.value })}
+                className={`w-full rounded-md p-2 font-mono ${UI.inputStyle}`}
+              />
+            </div>
+          </div>
+
+          {/* Action Button: Nạp từ Kho hàng */}
+          <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  fetchInventoryItemsDb().then(setInventoryItems);
+                  setIsInventoryPickerOpen(true);
+                }}
+                className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-all shadow-xs cursor-pointer"
+              >
+                <Package className="w-3.5 h-3.5" />
+                <span>📥 Chọn từ Kho hàng</span>
+              </button>
+
+              {items.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setIsTemplateModalOpen(true)}
-                  className="text-[10px] font-bold text-accent hover:underline flex items-center space-x-1"
+                  onClick={handleClearAllItems}
+                  className="bg-panel hover:bg-neg-soft text-neg text-xs px-2.5 py-1.5 rounded-md font-semibold flex items-center space-x-1 border border-line hover:border-neg transition-colors cursor-pointer"
+                  title="Xóa toàn bộ mặt hàng trong bảng kê"
                 >
-                  <Settings2 className="w-3 h-3" />
-                  <span>Quản lý</span>
+                  <Trash2 className="w-3 h-3" />
+                  <span>Xóa hết mặt hàng</span>
                 </button>
-              </div>
-              <select
-                value={selectedTemplateId}
-                onChange={e => handleSelectTemplate(e.target.value)}
-                className={`w-full rounded-md p-2 font-bold ${UI.inputStyle}`}
-              >
-                {templates.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
+              )}
             </div>
           </div>
 
@@ -498,25 +519,12 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
                 <span className="font-bold text-[10px] uppercase text-amber-600 dark:text-amber-400">
                   Thông tin thanh toán hiển thị trên chứng từ:
                 </span>{' '}
-                <span className="font-bold">{sellerInfo.sellerIdCard || 'Tiền mặt'}</span>
+                <span className="font-bold">{sellerInfo.sellerIdCard ? `CCCD: ${sellerInfo.sellerIdCard}` : 'Tiền mặt'}</span>
               </div>
             ) : (
-              /* Transfer Mode Details */
-              <div className="space-y-2.5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                  <div>
-                    <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
-                      Họ tên chủ tài khoản
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Tên chủ TK"
-                      value={sellerInfo.bankOwner !== undefined ? sellerInfo.bankOwner : sellerInfo.sellerName}
-                      onChange={e => setSellerInfo({ ...sellerInfo, bankOwner: e.target.value })}
-                      className={`w-full rounded-md p-2 font-bold ${UI.inputStyle}`}
-                    />
-                  </div>
-
+              /* Bank Transfer Fields */
+              <div className="space-y-2 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">
                       Số tài khoản (STK)
@@ -601,18 +609,32 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
 
       {/* Form Add Item */}
       <form onSubmit={handleAddItem} className={`${UI.containerCardBg} rounded-lg p-3 border space-y-2`}>
-        <div className="text-xs font-bold text-accent uppercase tracking-wide flex items-center space-x-1.5">
-          <Plus className="w-4 h-4" />
-          <span>Thêm mặt hàng mua bán</span>
+        <div className="text-xs font-bold text-accent uppercase tracking-wide flex items-center justify-between">
+          <div className="flex items-center space-x-1.5">
+            <Plus className="w-4 h-4" />
+            <span>Thêm mặt hàng mua bán</span>
+          </div>
+          <span className="text-[10px] text-ink-faint font-normal">
+            (Gõ tên để tự động gợi ý giá & ĐVT từ Kho hàng)
+          </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <input
             type="text"
+            list="statement-inventory-datalist"
             placeholder="Tên hàng hóa / dịch vụ *"
             value={newItemName}
-            onChange={e => setNewItemName(e.target.value)}
+            onChange={e => handleItemNameChange(e.target.value)}
             className={`rounded p-1.5 text-xs border ${UI.inputStyle} sm:col-span-2`}
           />
+          <datalist id="statement-inventory-datalist">
+            {inventoryItems.map(it => (
+              <option key={it.id} value={it.name}>
+                {it.code} - {fmtMoney(it.unitPrice)}/{it.unit}
+              </option>
+            ))}
+          </datalist>
+
           <input
             type="text"
             placeholder="ĐVT (Kg, Chai, m2...)"
@@ -640,7 +662,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
         <div className="flex justify-end pt-1">
           <button
             type="submit"
-            className="bg-accent hover:opacity-90 text-accent-ink text-xs font-bold px-4 py-1.5 rounded flex items-center space-x-1"
+            className="bg-accent hover:opacity-90 text-accent-ink text-xs font-bold px-4 py-1.5 rounded flex items-center space-x-1 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Thêm vào Bảng kê</span>
@@ -731,7 +753,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
               {filteredItems.length === 0 && (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-ink-faint italic font-app">
-                    Chưa có mặt hàng nào trong Bảng kê.
+                    Chưa có mặt hàng nào trong Bảng kê. Bấm nút <strong>"📥 Chọn từ Kho hàng"</strong> hoặc nhập vào form trên.
                   </td>
                 </tr>
               )}
@@ -761,14 +783,13 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
         />
       )}
 
-      <StatementTemplateModal
-        isOpen={isTemplateModalOpen}
-        onClose={() => setIsTemplateModalOpen(false)}
-        title="Bảng kê mua bán"
-        templates={templates}
-        onSaveTemplate={handleSaveTemplate}
-        onDeleteTemplate={handleDeleteTemplate}
-        onResetTemplates={handleResetTemplates}
+      {/* Inventory Item Picker Modal */}
+      <InventoryItemPickerModal
+        isOpen={isInventoryPickerOpen}
+        onClose={() => setIsInventoryPickerOpen(false)}
+        onSelectItems={handleAddFromInventory}
+        title="CHỌN MẶT HÀNG TỪ KHO VÀO BẢNG KÊ MUA BÁN"
+        defaultQtyType="import"
       />
 
       {/* History Modal for Saved Statements from DB */}
@@ -783,7 +804,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
               <button
                 type="button"
                 onClick={() => setShowHistoryModal(false)}
-                className="text-ink-faint hover:text-ink font-bold text-sm px-2"
+                className="text-ink-faint hover:text-ink font-bold text-sm px-2 cursor-pointer"
               >
                 ✕
               </button>
@@ -818,7 +839,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
                       <button
                         type="button"
                         onClick={(e) => handleDeleteStatement(stmt.id, e)}
-                        className="text-ink-faint hover:text-neg p-1.5 rounded hover:bg-neg-soft/30 transition-colors"
+                        className="text-ink-faint hover:text-neg p-1.5 rounded hover:bg-neg-soft/30 transition-colors cursor-pointer"
                         title="Xóa Bảng kê này"
                       >
                         <Trash2 className="w-4 h-4" />

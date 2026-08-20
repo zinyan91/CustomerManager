@@ -1,27 +1,25 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Receipt, Plus, Trash2, Download, Printer, Settings2, Search, Save, History,
-  Pencil, X,
+  Receipt, Plus, Trash2, Download, Printer, Search, Save, History,
+  Pencil, X, Package, RotateCcw,
 } from 'lucide-react';
 import {
   computeRetailInvoiceItem, computeRetailInvoiceSummary, nextInvoiceId,
-  type RetailInvoiceItem, type RetailInvoiceHeader, type RetailInvoiceTemplate,
+  type RetailInvoiceItem, type RetailInvoiceHeader,
 } from '../../lib/statement';
-import {
-  loadRetailInvoiceTemplates, addRetailInvoiceTemplate, updateRetailInvoiceTemplate,
-  deleteRetailInvoiceTemplate, resetRetailInvoiceTemplates, fetchRetailInvoiceTemplatesFromCloud,
-} from '../../lib/statementStore';
 import {
   fetchRetailInvoicesDb, saveRetailInvoiceDb, deleteRetailInvoiceDb,
   type SavedRetailInvoice,
 } from '../../lib/statementDb';
+import { fetchInventoryItemsDb } from '../../lib/inventoryDb';
+import type { InventoryItem } from '../../lib/inventory';
 import { buildRetailInvoiceXlsx, buildRetailInvoiceDocHtml } from '../../lib/inventoryExport';
 import { downloadBytes } from '../../lib/xlsExport';
 import { MIME_XLSX } from '../../lib/xlsxWriter';
 import { printHtmlDoc } from '../../lib/printHtmlDoc';
 import { fmtMoney, fmtNumber, formatMoneyInput, parseMoneyDecimalInput, todayIso, fmtDate } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
-import { StatementTemplateModal } from './StatementTemplateModal';
+import { InventoryItemPickerModal, type SelectedInventoryItemPayload } from './InventoryItemPickerModal';
 
 interface RetailInvoiceTabProps {
   showNotify: (type: 'success' | 'error', message: string) => void;
@@ -68,7 +66,7 @@ const EditRetailItemModal: React.FC<{
             <Pencil className="w-4 h-4 text-accent" />
             <h3 className="font-bold text-sm text-ink uppercase">SỬA MẶT HÀNG HÓA ĐƠN</h3>
           </div>
-          <button type="button" onClick={onClose} className="p-1 rounded text-ink-faint hover:text-ink hover:bg-panel">
+          <button type="button" onClick={onClose} className="p-1 rounded text-ink-faint hover:text-ink hover:bg-panel cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -128,13 +126,13 @@ const EditRetailItemModal: React.FC<{
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 rounded-lg border border-line text-ink-muted hover:bg-panel-muted text-xs font-semibold transition-colors"
+              className="px-3.5 py-2 rounded-lg border border-line text-ink-muted hover:bg-panel-muted text-xs font-semibold transition-colors cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-accent text-accent-ink font-bold text-xs flex items-center space-x-1.5 hover:opacity-90 shadow-xs transition-opacity"
+              className="px-4 py-2 rounded-lg bg-accent text-accent-ink font-bold text-xs flex items-center space-x-1.5 hover:opacity-90 shadow-xs transition-opacity cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               <span>Lưu thay đổi</span>
@@ -147,9 +145,8 @@ const EditRetailItemModal: React.FC<{
 };
 
 export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }) => {
-  const [templates, setTemplates] = useState<RetailInvoiceTemplate[]>(loadRetailInvoiceTemplates);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(() => templates[0]?.id || 'ret-hair-spa');
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [isInventoryPickerOpen, setIsInventoryPickerOpen] = useState(false);
 
   const [headerInfo, setHeaderInfo] = useState<RetailInvoiceHeader>({
     buyerName: 'Chị Tâm',
@@ -158,25 +155,23 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
     invoiceDateStr: fmtDate(todayIso()),
   });
 
-  const [items, setItems] = useState<RetailInvoiceItem[]>(() => {
-    const tpl = templates[0];
-    return tpl ? tpl.items.map(it => ({ ...it, id: nextInvoiceId() })) : [];
-  });
-
+  const [items, setItems] = useState<RetailInvoiceItem[]>([]);
   const [savedInvoices, setSavedInvoices] = useState<SavedRetailInvoice[]>([]);
   const [currentInvId, setCurrentInvId] = useState<string>(() => nextInvoiceId());
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<RetailInvoiceItem | null>(null);
 
-  // Fetch Retail Invoice Templates from Supabase Cloud on mount
+  const [searchTerm, setSearchTerm] = useState('');
+  const [newItemName, setNewItemName] = useState('');
+  const [newUnit, setNewUnit] = useState('Cái');
+  const [newQtyStr, setNewQtyStr] = useState('');
+  const [newPriceStr, setNewPriceStr] = useState('');
+
+  // Fetch Inventory items on mount & when picker opens
   useEffect(() => {
-    let active = true;
-    fetchRetailInvoiceTemplatesFromCloud().then(cloudList => {
-      if (active && cloudList && cloudList.length > 0) {
-        setTemplates(cloudList);
-      }
+    fetchInventoryItemsDb().then(invs => {
+      setInventoryItems(invs);
     });
-    return () => { active = false; };
   }, []);
 
   // Fetch saved invoices from Database on mount
@@ -224,63 +219,44 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
     }
   };
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const handleAddFromInventory = (selected: SelectedInventoryItemPayload[]) => {
+    const newInvItems: RetailInvoiceItem[] = selected.map(it => ({
+      id: nextInvoiceId(),
+      itemName: it.name,
+      unit: it.unit || 'Cái',
+      qty: it.qty,
+      unitPrice: it.unitPrice,
+    }));
+    setItems(prev => [...newInvItems, ...prev]);
+    showNotify('success', `Đã thêm ${selected.length} mặt hàng từ Kho vào Hóa đơn.`);
+  };
 
-  // Form inputs
-  const [newItemName, setNewItemName] = useState('');
-  const [newUnit, setNewUnit] = useState('Chai');
-  const [newQtyStr, setNewQtyStr] = useState('');
-  const [newPriceStr, setNewPriceStr] = useState('');
+  const handleClearAllItems = () => {
+    if (items.length === 0) return;
+    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ mặt hàng trong hóa đơn hiện tại?')) {
+      setItems([]);
+      showNotify('success', 'Đã xóa toàn bộ mặt hàng.');
+    }
+  };
 
-  const handleSelectTemplate = (id: string) => {
-    setSelectedTemplateId(id);
-    const tpl = templates.find(t => t.id === id);
-    if (tpl) {
-      if (tpl.headerInfo) {
-        setHeaderInfo(prev => ({ ...prev, ...tpl.headerInfo }));
+  const handleItemNameChange = (val: string) => {
+    setNewItemName(val);
+    const matched = inventoryItems.find(
+      i => i.name.toLowerCase().trim() === val.toLowerCase().trim()
+    );
+    if (matched) {
+      if (matched.unit) setNewUnit(matched.unit);
+      if (matched.unitPrice) setNewPriceStr(formatMoneyInput(String(matched.unitPrice)));
+      if (matched.exportQty > 0 && !newQtyStr) {
+        setNewQtyStr(formatMoneyInput(String(matched.exportQty)));
       }
-      setItems(tpl.items.map(it => ({ ...it, id: nextInvoiceId() })));
-      showNotify('success', `Đã nạp Hóa đơn mẫu: ${tpl.name}`);
     }
-  };
-
-  const handleSaveTemplate = (name: string, tplItems: any[], templateId?: string) => {
-    let updated: RetailInvoiceTemplate[];
-    if (templateId) {
-      updated = updateRetailInvoiceTemplate(templateId, name, headerInfo, tplItems);
-      showNotify('success', `Đã cập nhật Hóa đơn mẫu: ${name}`);
-    } else {
-      const res = addRetailInvoiceTemplate(name, headerInfo, tplItems);
-      updated = res.templates;
-      setSelectedTemplateId(res.newTemplate.id);
-      setItems(res.newTemplate.items.map(it => ({ ...it, id: nextInvoiceId() })));
-      showNotify('success', `Đã tạo Hóa đơn mẫu mới: ${name}`);
-    }
-    setTemplates(updated);
-  };
-
-  const handleDeleteTemplate = (id: string) => {
-    const updated = deleteRetailInvoiceTemplate(id);
-    setTemplates(updated);
-    if (selectedTemplateId === id && updated[0]) {
-      setSelectedTemplateId(updated[0].id);
-      setItems(updated[0].items.map(it => ({ ...it, id: nextInvoiceId() })));
-    }
-    showNotify('success', 'Đã xóa ngành hàng mẫu.');
-  };
-
-  const handleResetTemplates = () => {
-    const defaults = resetRetailInvoiceTemplates();
-    setTemplates(defaults);
-    setSelectedTemplateId(defaults[0].id);
-    setItems(defaults[0].items.map(it => ({ ...it, id: nextInvoiceId() })));
-    showNotify('success', 'Đã khôi phục về ngành hàng mặc định.');
   };
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemName.trim()) {
-      showNotify('error', 'Vui lòng nhập tên hàng hóa / dịch vụ.');
+      showNotify('error', 'Vui lòng nhập tên hàng hóa, dịch vụ.');
       return;
     }
     const item: RetailInvoiceItem = {
@@ -310,34 +286,35 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return items;
     const term = searchTerm.toLowerCase().trim();
-    return items.filter(it => it.itemName.toLowerCase().includes(term));
+    return items.filter(
+      it => it.itemName.toLowerCase().includes(term)
+    );
   }, [items, searchTerm]);
 
   const handleExportExcel = () => {
     if (items.length === 0) {
-      showNotify('error', 'Chưa có dữ liệu nào để xuất Excel.');
+      showNotify('error', 'Vui lòng thêm ít nhất một mặt hàng để xuất Excel.');
       return;
     }
     const bytes = buildRetailInvoiceXlsx(items, headerInfo);
-    downloadBytes(bytes, `HOA_DON_BAN_LE_${todayIso()}.xlsx`, MIME_XLSX);
-    showNotify('success', 'Đã xuất Hóa đơn bán lẻ (.xlsx).');
+    downloadBytes(`Hoa_Don_Ban_Le_${headerInfo.shopName.replace(/\s+/g, '_')}_${todayIso()}.xlsx`, bytes, MIME_XLSX);
+    showNotify('success', 'Đã xuất file Excel Hóa đơn bán lẻ thành công!');
   };
 
   const handlePrint = () => {
     if (items.length === 0) {
-      showNotify('error', 'Chưa có mặt hàng nào để in.');
+      showNotify('error', 'Vui lòng thêm ít nhất một mặt hàng để in.');
       return;
     }
     const html = buildRetailInvoiceDocHtml(items, headerInfo);
-    const title = headerInfo.buyerName ? `HÓA ĐƠN BÁN LẺ - ${headerInfo.buyerName}` : 'HÓA ĐƠN BÁN LẺ';
-    printHtmlDoc(html, title);
+    printHtmlDoc(html, `Hoa_Don_${headerInfo.shopName}`);
   };
 
   return (
-    <div className="space-y-4 text-xs">
-      {/* Header Controls */}
-      <div className={`${UI.containerCardBg} rounded-lg p-4 border space-y-3`}>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-line pb-3">
+    <div className="space-y-4">
+      {/* Header Info & Actions */}
+      <div className={`${UI.containerCardBg} rounded-xl p-4 border space-y-4`}>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
           <div className="flex items-center space-x-2.5">
             <div className="p-2 bg-accent-soft rounded-lg text-accent">
               <Receipt className="w-5 h-5" />
@@ -353,8 +330,8 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
             <button
               type="button"
               onClick={handleSaveToDb}
-              title="Lưu chứng từ Hóa đơn bán lẻ vào CSDL Supabase"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors shadow-sm"
+              title="Lưu chứng từ Hóa đơn vào CSDL Supabase"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors shadow-sm cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               <span>Lưu CSDL</span>
@@ -362,16 +339,16 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
             <button
               type="button"
               onClick={() => setShowHistoryModal(true)}
-              title="Xem danh sách Hóa đơn bán lẻ đã lưu trong CSDL"
-              className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors relative"
+              title="Xem danh sách các Hóa đơn đã lưu trong CSDL"
+              className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors relative cursor-pointer"
             >
               <History className="w-3.5 h-3.5" />
-              <span>Lịch sử ({savedInvoices.length})</span>
+              <span>Lịch sử</span>
             </button>
             <button
               type="button"
               onClick={handleExportExcel}
-              className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors"
+              className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Xuất Excel</span>
@@ -379,41 +356,16 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
             <button
               type="button"
               onClick={handlePrint}
-              className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors"
+              className="bg-panel-muted hover:bg-line text-ink text-xs px-3.5 py-1.5 rounded-md font-bold flex items-center space-x-1.5 border border-line transition-colors cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>In Hóa đơn</span>
+              <span>In / PDF</span>
             </button>
           </div>
         </div>
 
-        {/* Form Header Info & Template selector */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className={`block text-[10px] uppercase tracking-wide ${UI.labelStyle}`}>
-                Ngành hàng mẫu ({templates.length})
-              </label>
-              <button
-                type="button"
-                onClick={() => setIsTemplateModalOpen(true)}
-                className="text-[11px] font-bold text-accent hover:underline flex items-center space-x-1"
-              >
-                <Settings2 className="w-3 h-3" />
-                <span>Quản lý</span>
-              </button>
-            </div>
-            <select
-              value={selectedTemplateId}
-              onChange={e => handleSelectTemplate(e.target.value)}
-              className={`w-full rounded-md p-2 text-xs border ${UI.inputStyle} font-bold`}
-            >
-              {templates.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
-
+        {/* Invoice Parameters Form */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-md border border-line bg-panel-muted">
           <div>
             <label className="block text-[10px] text-ink-faint uppercase font-bold mb-1">Tên Cửa hàng / Tiệm</label>
             <input
@@ -421,7 +373,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
               value={headerInfo.shopName}
               onChange={e => setHeaderInfo({ ...headerInfo, shopName: e.target.value })}
               placeholder="VD: SALON & SPA MINH THƯ"
-              className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle} font-bold`}
+              className={`w-full rounded p-2 text-xs border ${UI.inputStyle} font-bold`}
             />
           </div>
 
@@ -432,7 +384,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
               value={headerInfo.buyerName}
               onChange={e => setHeaderInfo({ ...headerInfo, buyerName: e.target.value })}
               placeholder="VD: Chị Tâm"
-              className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle}`}
+              className={`w-full rounded p-2 text-xs border ${UI.inputStyle} font-bold`}
             />
           </div>
 
@@ -443,8 +395,37 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
               value={headerInfo.buyerAddress}
               onChange={e => setHeaderInfo({ ...headerInfo, buyerAddress: e.target.value })}
               placeholder="VD: Phường 1, Tây Ninh"
-              className={`w-full rounded p-1.5 text-xs border ${UI.inputStyle}`}
+              className={`w-full rounded p-2 text-xs border ${UI.inputStyle}`}
             />
+          </div>
+        </div>
+
+        {/* Action Button: Nạp từ Kho hàng */}
+        <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                fetchInventoryItemsDb().then(setInventoryItems);
+                setIsInventoryPickerOpen(true);
+              }}
+              className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-all shadow-xs cursor-pointer"
+            >
+              <Package className="w-3.5 h-3.5" />
+              <span>📥 Chọn từ Kho hàng</span>
+            </button>
+
+            {items.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearAllItems}
+                className="bg-panel hover:bg-neg-soft text-neg text-xs px-2.5 py-1.5 rounded-md font-semibold flex items-center space-x-1 border border-line hover:border-neg transition-colors cursor-pointer"
+                title="Xóa toàn bộ mặt hàng trong hóa đơn"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Xóa hết mặt hàng</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -473,18 +454,32 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
 
       {/* Add Item Form */}
       <form onSubmit={handleAddItem} className={`${UI.containerCardBg} rounded-lg p-3 border space-y-2`}>
-        <div className="text-xs font-bold text-accent uppercase tracking-wide flex items-center space-x-1.5">
-          <Plus className="w-4 h-4" />
-          <span>Thêm mặt hàng / dịch vụ vào hóa đơn</span>
+        <div className="text-xs font-bold text-accent uppercase tracking-wide flex items-center justify-between">
+          <div className="flex items-center space-x-1.5">
+            <Plus className="w-4 h-4" />
+            <span>Thêm mặt hàng / dịch vụ vào hóa đơn</span>
+          </div>
+          <span className="text-[10px] text-ink-faint font-normal">
+            (Gõ tên để tự động gợi ý giá & ĐVT từ Kho hàng)
+          </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <input
             type="text"
+            list="retail-inventory-datalist"
             placeholder="Tên hàng hóa, dịch vụ *"
             value={newItemName}
-            onChange={e => setNewItemName(e.target.value)}
+            onChange={e => handleItemNameChange(e.target.value)}
             className={`rounded p-1.5 text-xs border ${UI.inputStyle} sm:col-span-2`}
           />
+          <datalist id="retail-inventory-datalist">
+            {inventoryItems.map(it => (
+              <option key={it.id} value={it.name}>
+                {it.code} - {fmtMoney(it.unitPrice)}/{it.unit}
+              </option>
+            ))}
+          </datalist>
+
           <input
             type="text"
             placeholder="ĐVT (Cái, Hộp...)"
@@ -512,7 +507,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
         <div className="flex justify-end pt-1">
           <button
             type="submit"
-            className="bg-accent hover:opacity-90 text-accent-ink text-xs font-bold px-4 py-1.5 rounded flex items-center space-x-1"
+            className="bg-accent hover:opacity-90 text-accent-ink text-xs font-bold px-4 py-1.5 rounded flex items-center space-x-1 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Thêm vào Hóa đơn</span>
@@ -520,29 +515,29 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
         </div>
       </form>
 
-      {/* Items Table */}
+      {/* Main Table */}
       <div className={`${UI.containerCardBg} rounded-lg p-3 border space-y-3`}>
         <div className="flex items-center justify-between border-b border-line pb-2">
           <div className="relative w-full sm:w-72">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint" />
             <input
               type="text"
-              placeholder="Tìm kiếm sản phẩm..."
+              placeholder="Tìm kiếm mặt hàng..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className={`w-full pl-8 pr-3 py-1.5 rounded-md text-xs border ${UI.inputStyle}`}
             />
           </div>
-          <div className="text-xs text-ink-faint">Hiển thị {filteredItems.length} sản phẩm</div>
+          <div className="text-xs text-ink-faint">Hiển thị {filteredItems.length} mặt hàng</div>
         </div>
 
         <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-          <table className="w-full text-left text-xs border-collapse min-w-[750px]">
+          <table className="w-full text-left text-xs border-collapse min-w-[700px]">
             <thead className="sticky top-0 bg-panel-muted text-[10px] uppercase text-ink-faint border-b border-line z-10">
               <tr>
-                <th className="p-2.5 text-center w-12">STT</th>
+                <th className="p-2.5 text-center w-14">STT</th>
                 <th className="p-2.5 min-w-[220px]">TÊN HÀNG HÓA / DỊCH VỤ</th>
-                <th className="p-2.5 text-center w-20">ĐVT</th>
+                <th className="p-2.5 text-center w-24">ĐVT</th>
                 <th className="p-2.5 text-right w-28">SỐ LƯỢNG</th>
                 <th className="p-2.5 text-right w-36">ĐƠN GIÁ (VND)</th>
                 <th className="p-2.5 text-right w-40 bg-pos-soft text-pos font-bold">THÀNH TIỀN (VND)</th>
@@ -559,18 +554,12 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
                     className="hover:bg-panel-muted/50 transition-colors cursor-pointer group"
                     title="Nhấp đúp hoặc bấm nút Sửa để chỉnh sửa"
                   >
-                    <td className="p-2.5 text-center font-mono font-bold text-ink-faint">{idx + 1}</td>
+                    <td className="p-2.5 text-center font-bold text-ink-muted">{idx + 1}</td>
                     <td className="p-2.5 font-semibold text-ink font-app">{c.itemName}</td>
                     <td className="p-2.5 text-center text-ink-muted">{c.unit}</td>
-                    <td className="p-2.5 text-right font-bold text-ink">
-                      {c.qty > 0 ? fmtNumber(c.qty) : '0'}
-                    </td>
-                    <td className="p-2.5 text-right font-bold text-accent">
-                      {c.unitPrice > 0 ? fmtNumber(c.unitPrice) : '0'}
-                    </td>
-                    <td className="p-2.5 text-right font-mono font-black text-pos bg-pos-soft/40">
-                      {fmtMoney(c.amount)}
-                    </td>
+                    <td className="p-2.5 text-right font-bold text-ink">{fmtNumber(c.qty)}</td>
+                    <td className="p-2.5 text-right font-bold text-accent">{fmtMoney(c.unitPrice)}</td>
+                    <td className="p-2.5 text-right font-mono font-black text-pos bg-pos-soft/40">{fmtMoney(c.amount)}</td>
                     <td className="p-2.5 text-center">
                       <div className="flex items-center justify-center space-x-1">
                         <button
@@ -579,7 +568,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
                             e.stopPropagation();
                             setEditingItem(rawItem);
                           }}
-                          className="p-1 rounded text-ink-faint hover:text-accent hover:bg-accent-soft transition-colors"
+                          className="p-1 rounded text-ink-faint hover:text-accent hover:bg-accent-soft transition-colors cursor-pointer"
                           title="Sửa mặt hàng này"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -590,7 +579,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
                             e.stopPropagation();
                             removeItem(c.id);
                           }}
-                          className="p-1 rounded text-ink-faint hover:text-neg hover:bg-neg-soft transition-colors"
+                          className="p-1 rounded text-ink-faint hover:text-neg hover:bg-neg-soft transition-colors cursor-pointer"
                           title="Xóa mặt hàng này"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -603,7 +592,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
               {filteredItems.length === 0 && (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-ink-faint italic font-app">
-                    Chưa có mặt hàng nào trong Hóa đơn.
+                    Chưa có mặt hàng nào trong Hóa đơn. Bấm nút <strong>"📥 Chọn từ Kho hàng"</strong> hoặc nhập vào form trên.
                   </td>
                 </tr>
               )}
@@ -633,14 +622,13 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
         />
       )}
 
-      <StatementTemplateModal
-        isOpen={isTemplateModalOpen}
-        onClose={() => setIsTemplateModalOpen(false)}
-        title="Hóa đơn bán lẻ"
-        templates={templates}
-        onSaveTemplate={handleSaveTemplate}
-        onDeleteTemplate={handleDeleteTemplate}
-        onResetTemplates={handleResetTemplates}
+      {/* Inventory Item Picker Modal */}
+      <InventoryItemPickerModal
+        isOpen={isInventoryPickerOpen}
+        onClose={() => setIsInventoryPickerOpen(false)}
+        onSelectItems={handleAddFromInventory}
+        title="CHỌN MẶT HÀNG TỪ KHO VÀO HÓA ĐƠN BÁN LẺ"
+        defaultQtyType="export"
       />
 
       {/* History Modal for Saved Invoices from DB */}
@@ -655,7 +643,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
               <button
                 type="button"
                 onClick={() => setShowHistoryModal(false)}
-                className="text-ink-faint hover:text-ink font-bold text-sm px-2"
+                className="text-ink-faint hover:text-ink font-bold text-sm px-2 cursor-pointer"
               >
                 ✕
               </button>
@@ -690,7 +678,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
                       <button
                         type="button"
                         onClick={(e) => handleDeleteInvoice(inv.id, e)}
-                        className="text-ink-faint hover:text-neg p-1.5 rounded hover:bg-neg-soft/30 transition-colors"
+                        className="text-ink-faint hover:text-neg p-1.5 rounded hover:bg-neg-soft/30 transition-colors cursor-pointer"
                         title="Xóa Hóa đơn này"
                       >
                         <Trash2 className="w-4 h-4" />

@@ -3,7 +3,7 @@
 > Tệp này để **bắt lại mạch khi mở phiên trò chuyện mới**. Cập nhật sau mỗi task xong.
 > Sổ chi tiết của phiên đang chạy nằm ở `.superpowers/sdd/<tên-kế-hoạch>/progress.md`, nhưng thư mục đó bị `.gitignore` bỏ qua và bị xoá khi đóng đợt — nên mọi thứ cần sống lâu phải nằm ở đây.
 
-**Cập nhật lần cuối:** 2026-08-20, sau Task 1 của đợt 1a.
+**Cập nhật lần cuối:** 2026-08-20, sau khi Task 1 đợt 1a được rà soát sạch.
 
 ---
 
@@ -13,9 +13,11 @@
 | :--- | :--- |
 | Nhánh hiện tại | `rebuild-giao-dien-dot-1` |
 | Kế hoạch đang chạy | `docs/superpowers/plans/2026-08-20-rebuild-giao-dien-dot-1a-dinh-tuyen.md` |
-| Task vừa xong | Task 1 — bảng đường dẫn (`c37c025`) |
-| Task kế tiếp | Task 2 — bộ định tuyến |
+| Task vừa xong | Task 1 — bảng đường dẫn (`c37c025`), rà soát sạch |
+| Task kế tiếp | Task 2 — bộ định tuyến. **Nặng nhất đợt này** |
 | Tổng test | 1.701 xanh, 0 đỏ |
+
+**Cảnh báo cho Task 2:** `BrowserRouter` phải bọc **ra ngoài** `ProviderComposer` trong `src/main.tsx`. `ProviderComposer` dựng cây bằng `reduceRight` nên `WorkProvider` là lớp trong cùng; đặt ngược thì `useLocation()` trong `WorkProvider` ném lỗi ngay lúc khởi động. Kế hoạch bản đầu ghi sai chỗ này, đã sửa ở `880999d`.
 
 **Cách bắt lại mạch:** đọc bản thiết kế, rồi kế hoạch đang chạy, rồi mục "Phán quyết còn hiệu lực" bên dưới. Thi công theo skill `superpowers:subagent-driven-development` — giao subagent từng task, rà soát giữa các task.
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useWork } from '../context/WorkContext';
+import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
 import {
   fetchContractsAPI, fetchCollateralsAPI, fetchCustomersAPI,
   fetchPostLoanControlRecordsAPI, savePostLoanControlRecordAPI,
@@ -17,7 +17,8 @@ export type FilterType = 'ALL' | ControlType;
 export type FilterStatus = 'pending' | 'overdue' | 'done' | 'ALL';
 
 export function usePostLoanControlController() {
-  const { selectedCustomerId, setSelectedCustomerId } = useWork();
+  const selectedCustomerId = useSelectedCustomerId();
+  const setSelectedCustomerId = useCustomerNavigate();
 
   const [contracts, setContracts] = useState<LoanContract[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);

@@ -3,7 +3,7 @@
 > Tệp này để **bắt lại mạch khi mở phiên trò chuyện mới**. Cập nhật sau mỗi task xong.
 > Sổ chi tiết của phiên đang chạy nằm ở `.superpowers/sdd/<tên-kế-hoạch>/progress.md`, nhưng thư mục đó bị `.gitignore` bỏ qua và bị xoá khi đóng đợt — nên mọi thứ cần sống lâu phải nằm ở đây.
 
-**Cập nhật lần cuối:** 2026-08-20, sau khi đợt 1a đã gộp và đẩy lên `main`.
+**Cập nhật lần cuối:** 2026-08-21, sau khi đợt 1b đã gộp và đẩy lên `main`.
 
 ---
 
@@ -25,21 +25,34 @@
 | :--- | :--- |
 | Nhánh hiện tại | `main` — sạch, khớp `origin/main` |
 | Việc đang dở | không có. Hai đợt đã đóng gọn |
-| Đợt vừa xong | **1a — định tuyến**, 21 commit, đã gộp và đẩy (`c5ebd57..b0b6653`) |
-| Đợt kế tiếp | **1b — ngữ cảnh khách hàng**, [đã lập kế hoạch](plans/2026-08-20-rebuild-giao-dien-dot-1b-ngu-canh-khach-hang.md) 20/08/2026, chưa thi công |
-| Tổng test | **1.732** xanh, 0 đỏ · 72 tệp test |
-| Cảnh báo lint | 62, toàn bộ có sẵn từ trước |
+| Đợt vừa xong | **1b — ngữ cảnh khách hàng**, 20 commit, đã gộp và đẩy (`f02c153..a5c91a7`) |
+| Đợt kế tiếp | **2 — bộ component + `Dialog`/`ConfirmDialog`**, chưa lập kế hoạch |
+| Tổng test | **1.825** xanh, 0 đỏ · 86 tệp test (một phần tăng là việc song song của chủ dự án, không phải toàn bộ thuộc đợt 1b) |
+| Cảnh báo lint | 64 (baseline đợt 1a là 62; 1 cảnh báo mới thuộc đợt 1b — `src/hooks/useLoanPortfolioController.ts:145`, `missing dependency: 'portfolio'`, từ hiệu ứng deep-link Task 15) |
+| Tự kiểm trên giao diện thật | **chưa làm** — xem "Việc còn treo" |
 
-## Đợt 1b sẽ làm gì
+## Đợt 1b đã tạo ra gì
 
-Theo bản thiết kế §6.2. Chưa lập kế hoạch — cần lập trước khi thi công.
+Gộp vào `main`, 20 commit `f02c153..a5c91a7`.
 
-- `useSelectedCustomer()` đọc `:id` từ URL; **xoá `selectedCustomerId` khỏi `WorkContext`**, URL thành nguồn sự thật duy nhất
-- Thanh ngữ cảnh khách hàng: tên · CIF · điện thoại · dư nợ · hạn mức khả dụng · nhóm nợ · nút đổi khách
-- Lồng sáu màn hồ sơ vào `/customers/:id/…`
-- Chuyển bốn controller khỏi `WorkContext.selectedCustomerId`: `useCardContractController`, `useCreditContractController`, `useLoanPortfolioController`, `usePostLoanControlController`
-- `disburseRequest` chuyển sang điều hướng URL
-- Bù nốt nửa spec §6.3 còn thiếu ở Header (xem việc còn treo)
+| Tệp | Ở đâu | Dùng để làm gì |
+| :--- | :--- | :--- |
+| `customerRoutes.ts` | `src/lib/` | Nơi duy nhất dựng/đọc đường dẫn có `:customerId` — `customerPath`, `customerProfilePath`, `kunnSchedulePath`, `parseCustomerPath`, `CUSTOMER_SCOPED_SCREENS` |
+| `useSelectedCustomerId.ts` | `src/hooks/` | Đọc khách đang chọn từ URL (`useParams` trước, rơi xuống `parseCustomerPath(pathname)` cho component ở tuyến cha); `useCustomerNavigate()` điều hướng khi đổi khách |
+| `customerContext.ts` | `src/lib/` | Dựng `CustomerContextSummary` (tên, CIF, điện thoại, dư nợ, hạn mức khả dụng, nhóm nợ) từ dữ liệu đã nạp |
+| `useCustomerContext.ts` | `src/hooks/` | Nạp riêng dữ liệu cho thanh ngữ cảnh, tách khỏi đường nạp lịch trả nợ của controller |
+| `CustomerContextBar.tsx` | `src/components/` | Thanh ngữ cảnh: tên · CIF · điện thoại · dư nợ · hạn mức khả dụng · nhóm nợ (kèm số ngày quá hạn nếu >0) · nút đổi khách |
+| `apiHealth.ts` | `src/lib/` | Cờ lỗi từ lần gọi API thật gần nhất — nửa sau spec §6.3 mà Header còn thiếu ở đợt 1a |
+| `useApiHealth.ts` | `src/hooks/` | Hook đọc cờ trên cho Header |
+
+`WorkContext` đã xoá hẳn — không còn `setActiveTab`, không còn `selectedCustomerId` trong context.
+Bốn controller (`useCardContractController`, `useCreditContractController`,
+`useLoanPortfolioController`, `usePostLoanControlController`) đọc khách từ URL qua
+`useSelectedCustomerId`. `disburseRequest` chuyển thành `?disburse=` trên URL.
+
+Năm màn hồ sơ tín dụng nay có cả bản phẳng lẫn bản lồng `/customers/:customerId/…`, cùng render
+một component (chi tiết ở `CONVENTIONS.md` §15 "Định tuyến"). Hai đường sâu mới:
+`/customers/:customerId/profile` và `/customers/:customerId/loans/:kunnId/schedule`.
 
 **Đã đo xong 20/08/2026, đừng đo lại.** `EXPLAIN (ANALYZE)` trên CSDL thật, đặt `role authenticated` + `request.jwt.claims` để RLS thực sự chạy, khách nặng nhất là `CustomerId` 55 (6 KUNN, 1.420 dòng lịch; toàn bảng 10.350 dòng / 112 KUNN / 51 khách):
 
@@ -70,11 +83,14 @@ Theo bản thiết kế §6.2. Chưa lập kế hoạch — cần lập trước
 | Tra cứu | `/reference/loan-purpose` · `/reference/card-policies` · `/reference/templates` · `/reference/quiz` |
 | Kiểm soát | `/post-loan-control` · `/settings` |
 
-Đợt 1b sẽ lồng sáu màn hồ sơ vào `/customers/:id/…`.
+Đợt 1b (xong, 20/08–21/08/2026) đã lồng năm màn hồ sơ tín dụng vào `/customers/:id/…` và xoá
+hẳn `WorkContext` — không còn cầu tạm nào. Chi tiết đường dẫn, cách thêm màn, hai đường sâu
+`/profile` và `/loans/:kunnId/schedule` nằm ở `CONVENTIONS.md` §15 "Định tuyến".
 
-**Cầu tạm cần gỡ ở đợt 3–7:** chỉ còn `WorkContext.setActiveTab` — nó giữ chữ ký cũ `(t: string) => void` nhưng ghi bằng `navigate(ROUTE_OF[tab])`. `activeTab` **đã gỡ hẳn** ở đợt 1a vì không component nào đọc nó mà lại buộc `WorkProvider` gọi `useLocation()`, khiến cả cây provider render lại mỗi lần điều hướng. Ba tệp còn gọi `setActiveTab`: `WorkContext.tsx` (nội bộ ở `requestDisburse`), `CustomerListView.tsx`, `DashboardView.tsx`.
-
-**Thêm màn phải sửa BA chỗ**, không phải hai: `routes.ts` · `navigation.ts` · `App.tsx`. Quên chỗ thứ ba thì mục menu vẫn hiện nhưng bấm vào lặng lẽ về `/dashboard`. `routing.test.tsx` nay bắt được lỗi đó.
+**Thêm màn phải sửa BA chỗ** (bốn nếu màn có phạm vi khách): `routes.ts` · `navigation.ts` ·
+`App.tsx` · (`customerRoutes.ts` nếu có phạm vi khách). Quên một chỗ thì mục menu vẫn hiện nhưng
+bấm vào lặng lẽ về `/dashboard` hoặc không đổi theo khách. `routing.test.tsx` bắt được lỗi tuyến
+đường; xem `CONVENTIONS.md` để biết đủ bốn chỗ.
 
 **Ba lỗi tôi từng viết sai trong kế hoạch đợt 1a, đã sửa — ghi lại để đợt sau tránh:**
 1. `BrowserRouter` phải bọc **ra ngoài** `ProviderComposer`. `ProviderComposer` dựng cây bằng `reduceRight` nên `WorkProvider` là lớp trong cùng; đặt ngược thì `useLocation()` ném lỗi lúc khởi động.
@@ -122,8 +138,8 @@ Chủ dự án đã chốt trong phiên brainstorm ngày 19/08/2026:
 | :--- | :--- | :--- |
 | **0** | Token, thang chữ, bo góc, `navigation.ts`, dọn rác, viết lại §15 §17 | ✅ **xong, đã gộp vào `main`** (`c5ebd57`) |
 | **1a** | `react-router`, khung `AppLayout`, Sidebar, CommandPalette, Header thôi ping CSDL | ✅ **xong, đã gộp vào `main`** (`b0b6653`) |
-| **1b** | `useSelectedCustomer` đọc `:id`, thanh ngữ cảnh khách hàng, chuyển 4 controller, luồng giải ngân qua URL | ⬅️ **kế tiếp**, kế hoạch xong, chưa thi công |
-| **2** | Bộ component + `Dialog`/`ConfirmDialog` — thay 15 modal và 13 tệp `window.confirm` | chưa |
+| **1b** | `useSelectedCustomerId` đọc `:id`, thanh ngữ cảnh khách hàng, chuyển 4 controller, luồng giải ngân qua URL | ✅ **xong, đã gộp vào `main`** (`f02c153..a5c91a7`) |
+| **2** | Bộ component + `Dialog`/`ConfirmDialog` — thay 15 modal và 13 tệp `window.confirm` | ⬅️ **kế tiếp**, chưa lập kế hoạch |
 | **3** | Hồ sơ tín dụng: Khách hàng, HĐTD, Khoản vay, TSĐB, Thẻ. **Nặng nhất** — gỡ 65 props của `KunnForm` | chưa |
 | **4** | Tổng quan, Kiểm soát sau vay | chưa |
 | **5** | Công cụ & Phương án — 5 màn sau khi gộp tồn kho | chưa |
@@ -178,10 +194,15 @@ Những điều dưới đây đã quyết rồi, đừng quyết lại:
 | `CONTRAST_PAIRS` bỏ sót cặp `fg` trên nền `*-soft` | trung bình | Ví dụ `accent` trên `accent-soft` (49 tệp dùng). Đo thử đều đạt AA nhưng sát |
 | Bẫy thứ tự nguồn CSS cho đợt 3–7 | **quan trọng** | Khối ghi đè `.text-xs` ở cuối `index.css` nằm SAU tầng utilities, nên nó **thắng** mọi lớp `text-[var(--fs-body)]` sinh sau. Màn nào chuyển sang biến ngữ nghĩa mà còn giữ `text-xs` sẽ âm thầm giữ cỡ cũ |
 | Thứ tự hiển thị Sidebar không có test giữ | thấp | Đảo hai mục thì mọi test vẫn xanh |
-| **Header mới làm nửa spec §6.3** | **quan trọng — đợt 1b** | Có `navigator.onLine`, **thiếu** "cờ lỗi từ lần gọi API thật gần nhất". Hệ quả: chấm vẫn xanh "Trực tuyến" khi Supabase không với tới được (token hết hạn, rớt VPN). Với hệ tín dụng, chấm xanh lúc lệnh lưu đang hỏng là tín hiệu sai. Cần một kênh ghi nhận lỗi API dùng chung — nằm trong `src/lib/api/`, thư mục đợt 1a bị cấm đụng |
 | `screenIdOfPath` lệch bộ định tuyến ở URL không chuẩn tắc | thấp | `/DASHBOARD` render đúng nhưng `screenIdOfPath` trả `null`. Vô hại hôm nay vì không ai đọc kết quả đó |
-| `SCREEN_OF_PATH` xuất ra chỉ để test của chính nó dùng | thấp | Đợt 1b sẽ dùng thật khi đọc `/customers/:id/...` |
 | Back xoá âm thầm biểu mẫu KUNN đang điền dở | trung bình — đợt 3 | Sau khi "Giải ngân từ HĐTD" nhảy sang `/loans` với form điền sẵn, một lần Back là mất. Không phải hồi quy, nhưng Back nay là nút sống nên dễ bấm nhầm. Cần chốt "chưa lưu" |
+| RLS gọi `can_access_contract` từng dòng trên `RepaymentSchedules` | **quan trọng** | Bốn controller vẫn đọc lịch trả nợ thô, 31–66 ms mỗi KUNN, 180–400 ms cho khách 6 KUNN. Cách chữa là đổi hàm RLS sang lọc theo tập hợp thay vì gọi theo dòng, hoặc thêm view gộp — đụng CSDL sản xuất, cần chủ dự án duyệt. Xem `ContractPaidPrincipal` ở `CONVENTIONS.md` §15 cho hướng đã dùng |
+| Tự kiểm đợt 1b trên giao diện thật **chưa làm** | **quan trọng** | Danh sách 19 màn, deep-link, F5, Back, giải ngân qua URL nằm ở Task 17 trong kế hoạch đợt 1b — chưa có phiên nào chạy qua trình duyệt thật để xác nhận |
+| `?disburse=` không hợp lệ không bị dọn khỏi URL | trung bình | Nằm lại trong lịch sử trình duyệt và link chia sẻ. Cố ý hoãn: dọn sớm rủi ro xoá mất tham số hợp lệ trước khi `creditContracts` nạp xong, đổi rác URL vô hại lấy nguy cơ hỏng luồng giải ngân |
+| URL lồng dị dạng (`/customers/abc/collaterals`) cho `customerId = null` | trung bình | Màn lặng lẽ hiện dữ liệu của **mọi** khách thay vì báo lỗi hay chuyển hướng. Áp cho cả năm màn có phạm vi khách |
+| `fetchCustomersAPI()` nạp tới 1000 khách rồi tìm ở trình duyệt | thấp | Không lọc theo Id ở máy chủ. Khách nằm sau mốc 1000 sẽ lặng lẽ hiện "không tìm thấy" |
+| `/customers/:id/profile` cho khách không có trong danh sách đã nạp | thấp | Mắc kẹt ở `/profile` — không ngăn kéo, không chuyển hướng |
+| `AbortError` từ fetch bị huỷ bị tính như mất kết nối thật | thấp | Cờ lỗi API mới (`apiHealth.ts`) chưa phân biệt fetch bị huỷ với máy chủ thật sự không với tới được. Suy đoán, chưa gặp thật |
 
 ---
 
@@ -195,6 +216,14 @@ Những điều dưới đây đã quyết rồi, đừng quyết lại:
 
 **Chẩn đoán từ triệu chứng.** Tôi từng xếp `inventoryDb.test.ts` là "test chập chờn" vì nó đỏ khi chạy chung, xanh khi chạy riêng — mà không truy tới nguyên nhân. Nguyên nhân thật là nó gọi mạng.
 
+**Test tự khẳng định chính nó, phiên bản thứ tư.** Đợt 1b lặp lại đúng lỗi của đợt 0, bốn lần
+khác nhau, và cả bốn đều bắt nguồn từ kế hoạch tôi viết chứ không phải từ tay implementer: một
+test dựng view đã `vi.mock` nên không hề gọi hook đang kiểm; một assertion `.bg-g3` trong jsdom
+không phân biệt được bảng tra hợp lệ với chuỗi lớp dựng động sai; một test cho `replace: true`
+vẫn xanh khi bỏ hẳn `replace`; một test trạng thái đang tải mô phỏng tổ hợp mà hook thật không
+bao giờ phát ra. Cách duy nhất bắt được cả bốn: **phá mã có chủ đích và bắt buộc thấy đỏ trước
+khi chấp nhận test là xanh vì đúng lý do**. Đọc test và thấy nó "có vẻ đúng" không đủ.
+
 ---
 
 ## Lệnh thường dùng
@@ -202,6 +231,6 @@ Những điều dưới đây đã quyết rồi, đừng quyết lại:
 ```bash
 npm run dev        # máy chủ phát triển — dùng mcp__Claude_Browser__preview_start, đừng chạy qua Bash
 npm run build      # kiểm kiểu + đóng gói
-npm test           # 1.732 test
+npm test           # 1.825 test
 npm run lint
 ```

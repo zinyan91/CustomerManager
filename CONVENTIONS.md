@@ -1272,19 +1272,71 @@ trên bản đã triển khai. Đừng gỡ dòng đó.
 tránh rắc rối mã hoá và công cụ. Chúng bám sát `ScreenId`, cộng tiền tố nhóm `/tools/` và
 `/reference/`. Test `src/lib/__tests__/routes.test.ts` giữ ba quy tắc đó.
 
-**Cầu tạm cần gỡ.** `WorkContext.setActiveTab` giữ nguyên chữ ký cũ `(t: string) => void` nhưng nay
-ghi bằng `navigate(ROUTE_OF[tab])`, không còn state riêng — `activeTab` đã gỡ hết khỏi
-`WorkContext` vì không component nào đọc nó, chỉ buộc `WorkProvider` gọi `useLocation()` khiến cả
-cây provider render lại mỗi lần điều hướng. Rà soát 20/08/2026: chỉ còn **3 tệp** gọi
-`setActiveTab` — `WorkContext.tsx` (dùng nội bộ ở `requestDisburse`), `CustomerListView.tsx` và
-`DashboardView.tsx` (mỗi màn nhảy sang HĐTD / Khoản vay / TSĐB ngay sau khi chọn một khách
-hàng). Đây là **đích chưa xong**: hai màn đó nên gọi `useNavigate` trực tiếp thay vì qua cầu
-— chuyển nốt ở đợt 3–7, xong thì gỡ `setActiveTab` khỏi `WorkContext`.
+**`WorkContext` đã xoá hẳn** (đợt 1b, 20/08/2026). Không còn `setActiveTab`, không còn
+`selectedCustomerId` trong context nào — URL là nguồn sự thật duy nhất cho khách đang chọn. Rà
+soát toàn `src/`: không còn dấu vết `useWork`, `WorkProvider`, `WorkContext`.
 
-Sáu màn hồ sơ khách hàng hiện dùng đường dẫn phẳng (`/loans`, `/collaterals`…). Đợt 1b lồng
-chúng vào `/customers/:id/` theo spec §6.1. Còn những đường dẫn công cụ sẽ thay đổi: `/tools/calculators`
-thêm đoạn `:tool` theo §6.1, `/tools/purchase-statement` và `/tools/retail-invoice` biến mất vào
-`/tools/inventory` ở đợt 5 khi gộp ba màn tồn kho.
+**Hai họ đường dẫn, cùng render một component.** Đợt 1b (20 commit `f02c153..a5c91a7`, đã gộp vào
+`main`) lồng năm màn hồ sơ tín dụng vào `/customers/:customerId/…` theo spec §6.1 §6.2:
+
+| Họ | Ví dụ | Ý nghĩa |
+| :--- | :--- | :--- |
+| Phẳng | `/loans`, `/credit-contracts`, `/collaterals`, `/credit-cards`, `/post-loan-control` | Chưa chọn khách |
+| Lồng | `/customers/:customerId/loans`, `/customers/:customerId/credit-contracts`, … | Đang xem một khách cụ thể |
+
+`App.tsx` khai hai `<Route>` riêng cho mỗi màn — một phẳng, một lồng — trỏ **cùng** component
+(`LoanPortfolioView`, `CreditContractView`…). `/post-loan-control` ở dạng phẳng cố ý vẫn hiện
+toàn danh mục, không phải màn lỗi thời cần thay: kiểm soát sau vay nhìn theo danh mục, không
+theo khách.
+
+Hai đường lồng sâu hơn, cả hai chỉ tồn tại ở dạng lồng — không có bản phẳng: `/customers/:customerId/profile`
+(mở ngăn kéo hồ sơ khách trên nền `CustomerListView`) và `/customers/:customerId/loans/:kunnId/schedule`
+(mở lịch trả nợ của một KUNN trên nền `LoanPortfolioView`).
+
+`src/lib/customerRoutes.ts` là **nơi duy nhất** dựng và đọc đường dẫn có `:customerId`:
+`customerPath(screen, customerId)` dựng đường lồng cho một trong năm màn liệt kê trong
+`CUSTOMER_SCOPED_SCREENS` (`credit-contracts`, `loans`, `collaterals`, `credit-cards`, `post-loan`),
+`customerProfilePath` và `kunnSchedulePath` dựng hai đường sâu, `parseCustomerPath(pathname)` đọc
+ngược một chuỗi đường dẫn thành `{ customerId, screen, kunnId }` hoặc `null` nếu không khớp.
+Không nơi nào khác được nối chuỗi `/customers/${id}/...` bằng tay.
+
+`src/hooks/useSelectedCustomerId.ts` là nơi duy nhất **đọc** khách đang chọn từ URL. Nó thử
+`useParams<{ customerId }>()` trước; nếu rỗng (component không nằm dưới một `<Route>` có
+`:customerId` — ví dụ `AppLayout` và `Sidebar` mount ở tuyến cha, `useParams` ở đó luôn rỗng dù
+đường dẫn đang là `/customers/55/loans`) thì mới rơi xuống `parseCustomerPath(pathname)`. Đây
+không phải hai cách làm dự phòng nhau tuỳ tiện — `useParams` là đường nhanh khi có, việc phân
+tích `pathname` là đường bắt buộc khi component không có, và cả hai đọc qua đúng một hàm
+`parseCustomerPath` nên không thể lệch quy tắc phân tích. Cùng tệp có `useCustomerNavigate()`,
+hook điều hướng dùng khi đổi khách mà giữ nguyên màn đang xem.
+
+**Thêm màn vẫn sửa ba chỗ**: `routes.ts` (đường dẫn), `navigation.ts` (mục thanh bên), `App.tsx`
+(tuyến đường cùng import `lazy`). **Thêm màn có phạm vi khách sửa thêm chỗ thứ tư**: liệt kê màn
+đó vào `CUSTOMER_SCOPED_SCREENS` trong `customerRoutes.ts`, rồi thêm dòng `<Route>` lồng tương
+ứng trong `App.tsx`. Quên chỗ thứ tư: đường phẳng vẫn chạy, nhưng thanh ngữ cảnh không biết
+màn đó là customer-scoped nên đổi khách sẽ không điều hướng đúng.
+
+**RLS trên `RepaymentSchedules` gọi hàm lọc theo từng dòng.** Đo được 20/08/2026:
+`can_access_contract("ContractId")` chạy trên mỗi dòng khi đọc `RepaymentSchedules` — đọc 1.420
+dòng của một khách 6 KUNN là 1.420 lượt gọi hàm, 66→30 ms cho một KUNN, 180–400 ms cho cả sáu.
+View `ContractPaidPrincipal` gộp trong CTE `MATERIALIZED` trước rồi mới lọc, nên cùng dữ liệu chỉ
+mất 11 ms. **Quy tắc:** chỉ cần gốc đã trả (không cần từng kỳ) thì đọc `ContractPaidPrincipal`,
+đừng đọc `RepaymentSchedules` thô rồi cộng tay.
+
+Còn ngoài phạm vi đợt 1b, chưa đổi: `/tools/calculators` sẽ thêm đoạn `:tool` theo §6.1;
+`/tools/purchase-statement` và `/tools/retail-invoice` biến mất vào `/tools/inventory` ở đợt 5
+khi gộp ba màn tồn kho.
+
+**Hai khuôn mẫu chốt ở đợt 1b, để đợt sau theo:**
+- **Guard cho effect chạy theo route phải khoá bằng chính id nó áp dụng, không phải một boolean
+  trần.** Task 15 từng viết `daApDeepKunn` là boolean toàn cục cho hiệu ứng mở deep-link
+  `:kunnId` — sau lần đầu, cờ bật vĩnh viễn nên **mọi** deep link kế tiếp bị nuốt lặng lẽ, kể cả
+  sang KUNN khác hay khách khác. Sửa bằng cách khoá cờ theo `kunnId` cụ thể (so `kunnId` đã áp
+  với `kunnId` hiện tại), không so một cờ đã-chạy-hay-chưa.
+- **Màn đọc số liệu qua tải bất đồng bộ phải để trống lúc đang tải, không giữ số của khách cũ.**
+  `useCustomerContext` từng chỉ xoá state khi `customerId` về `null`, không xoá khi **đổi** từ
+  khách A sang khách B — nên thanh ngữ cảnh hiện tên/CIF/điện thoại/dư nợ/hạn mức của khách CŨ
+  suốt lúc khách MỚI đang nạp. Số liệu tài chính sai chủ thể là lỗi nặng, không phải nhấp nháy vô
+  hại; gate hiển thị theo `loading`, đừng giữ giá trị cũ làm placeholder.
 
 ### Hai ngôn ngữ
 

@@ -1254,6 +1254,30 @@ Mật độ dòng đi qua `data-density="cozy" | "compact"` đặt ở khối ba
 
 Số tiền luôn `font-mono` — lớp này đã bật `tabular-nums`, cột số mới thẳng hàng. Số 0 in thành `–`: bảng ngân hàng đầy số 0 thì mắt không tìm ra số thật.
 
+### Định tuyến
+
+`react-router` v7. Bảng đường dẫn khai một chỗ ở `src/lib/routes.ts`; `src/lib/navigation.ts`
+đọc từ đó nên thanh bên, bảng lệnh và bộ định tuyến không thể lệch nhau. Thêm màn là sửa
+hai tệp đó, không sửa `App.tsx`.
+
+`vercel.json` đã có sẵn rewrite `/(.*) → /index.html`, nên F5 ở đường dẫn con không ra 404
+trên bản đã triển khai. Đừng gỡ dòng đó.
+
+Đường dẫn viết **tiếng Anh**, chữ thường, không có gạch chéo ở cuối — chốt 20/08/2026 để
+tránh rắc rối mã hoá và công cụ. Chúng bám sát `ScreenId`, cộng tiền tố nhóm `/tools/` và
+`/reference/`. Test `src/lib/__tests__/routes.test.ts` giữ ba quy tắc đó.
+
+**Cầu tạm cần gỡ.** `WorkContext.activeTab` / `setActiveTab` giữ nguyên chữ ký cũ nhưng nay
+đọc từ `screenIdOfPath(location.pathname)` và ghi bằng `navigate(ROUTE_OF[tab])` — không còn
+state riêng. Rà soát 20/08/2026: chỉ còn **3 tệp** gọi `setActiveTab`, không phải cả 19 màn —
+`WorkContext.tsx` (dùng nội bộ ở `requestDisburse`), `CustomerListView.tsx` và
+`DashboardView.tsx` (mỗi màn nhảy sang HĐTD / Khoản vay / TSĐB ngay sau khi chọn một khách
+hàng). Đây là **đích chưa xong**: hai màn đó nên gọi `useNavigate` trực tiếp thay vì qua cầu
+— chuyển nốt ở đợt 3–7, xong thì gỡ `activeTab` / `setActiveTab` khỏi `WorkContext`.
+
+Sáu màn hồ sơ khách hàng hiện dùng đường dẫn phẳng (`/loans`, `/collaterals`…). Đợt 1b lồng
+chúng vào `/customers/:id/` theo spec §6.1. Mười ba đường dẫn còn lại đã là hình cuối.
+
 ### Hai ngôn ngữ
 
 `src/lib/i18n.ts` giữ từ điển `vi` / `en`, `LanguageContext` cấp hàm `t()` và ghi `app_lang` vào localStorage kèm thuộc tính `lang` trên `<html>`. Công tắc VI/EN nằm ở Header.

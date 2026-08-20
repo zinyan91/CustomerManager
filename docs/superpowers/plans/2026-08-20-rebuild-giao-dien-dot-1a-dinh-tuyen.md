@@ -181,7 +181,7 @@ describe('bảng đường dẫn', () => {
   });
 
   it('đường dẫn lạ trả về null, không ném lỗi', () => {
-    expect(screenIdOfPath('/khong-co-duong-dan-nay')).toBeNull();
+    expect(screenIdOfPath('/not-a-real-screen')).toBeNull();
     expect(screenIdOfPath('')).toBeNull();
   });
 
@@ -652,7 +652,7 @@ Kiểm bốn điều, ghi kết quả vào báo cáo:
 1. Bấm một mục trong thanh bên → thanh địa chỉ đổi thành đường dẫn tương ứng. Đọc `location.pathname` qua `javascript_tool` để xác nhận.
 2. Chạy `location.reload()` → **vẫn ở đúng màn đó**, không quay về Tổng quan. Đây là thứ đợt này sinh ra để sửa.
 3. Chạy `history.back()` → quay về màn trước, không thoát khỏi ứng dụng.
-4. Đi thẳng tới một đường dẫn lạ như `/khong-co-duong-dan-nay` → chuyển hướng về `/dashboard`, không trắng màn.
+4. Đi thẳng tới một đường dẫn lạ như `/not-a-real-screen` → chuyển hướng về `/dashboard`, không trắng màn.
 
 - [ ] **Step 12: Kiểm thanh bên không đổi hình thức**
 

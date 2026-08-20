@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, memo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon, Menu, LogOut, ShieldCheck, User, Search } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import { LANGS, LANG_SWITCH_ENABLED } from '../lib/i18n';
@@ -15,22 +14,18 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
   const { theme, toggleTheme } = useTheme();
   const { user, role, fullName, isAdmin, signOut } = useAuth();
   const { lang, setLang, t } = useLang();
-  const [isOnline, setIsOnline] = useState<boolean | null>(true);
-
-  const checkConnection = useCallback(async () => {
-    try {
-      const { error } = await supabase.from('Customers').select('Id').limit(1);
-      setIsOnline(!error);
-    } catch {
-      setIsOnline(false);
-    }
-  }, []);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
-    checkConnection();
-    const interval = setInterval(checkConnection, 30000);
-    return () => clearInterval(interval);
-  }, [checkConnection]);
+    const len = () => setIsOnline(true);
+    const xuong = () => setIsOnline(false);
+    window.addEventListener('online', len);
+    window.addEventListener('offline', xuong);
+    return () => {
+      window.removeEventListener('online', len);
+      window.removeEventListener('offline', xuong);
+    };
+  }, []);
 
   const handleSignOut = useCallback(() => {
     if (window.confirm(t('header.signOutConfirm'))) {
@@ -82,11 +77,11 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
 
         <span className="hidden md:flex items-center gap-1.5 text-xs">
           <span
-            className={`w-1.5 h-1.5 rounded-full ${isOnline === false ? 'bg-neg' : 'bg-pos'}`}
+            className={`w-1.5 h-1.5 rounded-full ${!isOnline ? 'bg-neg' : 'bg-pos'}`}
             aria-hidden="true"
           />
-          <span className={isOnline === false ? 'text-neg font-semibold' : 'text-ink-muted'}>
-            {isOnline === false ? t('header.offline') : t('header.online')}
+          <span className={!isOnline ? 'text-neg font-semibold' : 'text-ink-muted'}>
+            {!isOnline ? t('header.offline') : t('header.online')}
           </span>
         </span>
 

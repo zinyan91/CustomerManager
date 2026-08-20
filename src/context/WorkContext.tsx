@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router';
-import { ROUTE_OF, screenIdOfPath } from '../lib/routes';
+import { useNavigate } from 'react-router';
+import { ROUTE_OF } from '../lib/routes';
 
 interface DisburseRequest {
   creditContractId: number;
@@ -8,7 +8,6 @@ interface DisburseRequest {
 }
 
 interface WorkContextValue {
-  activeTab: string;
   setActiveTab: (t: string) => void;
 
   selectedCustomerId: number | null;
@@ -22,9 +21,7 @@ interface WorkContextValue {
 const WorkContext = createContext<WorkContextValue | null>(null);
 
 export const WorkProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const activeTab = screenIdOfPath(location.pathname) ?? 'dashboard';
   const setActiveTab = useCallback((tab: string) => {
     const path = ROUTE_OF[tab as keyof typeof ROUTE_OF];
     if (path) navigate(path);
@@ -40,7 +37,7 @@ export const WorkProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <WorkContext.Provider value={{
-      activeTab, setActiveTab,
+      setActiveTab,
       selectedCustomerId, setSelectedCustomerId,
       disburseRequest, requestDisburse,
       clearDisburseRequest: () => setDisburseRequest(null),

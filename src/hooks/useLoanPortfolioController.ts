@@ -50,7 +50,7 @@ export function useLoanPortfolioController() {
   }, []);
 
   const [mainTab, setMainTab] = useState<'kunn' | 'schedule'>('kunn');
-  const [daApDeepKunn, setDaApDeepKunn] = useState(false);
+  const [daApDeepKunnFor, setDaApDeepKunnFor] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedMasterFilter, setSelectedMasterFilter] = useState<string>('ALL');
   const [showSettledKunn, setShowSettledKunn] = useState(true);
@@ -134,13 +134,17 @@ export function useLoanPortfolioController() {
   } = portfolio;
 
   useEffect(() => {
-    if (deepKunnId === null || daApDeepKunn) return;
+    if (deepKunnId === null) {
+      if (daApDeepKunnFor !== null) setDaApDeepKunnFor(null);
+      return;
+    }
+    if (daApDeepKunnFor === deepKunnId) return;
     const k = portfolio.contracts.find(c => c.Id === deepKunnId);
     if (!k) return;
-    setDaApDeepKunn(true);
+    setDaApDeepKunnFor(deepKunnId);
     portfolio.selectContract(k);
     setMainTab('schedule');
-  }, [deepKunnId, daApDeepKunn, portfolio.contracts, portfolio.selectContract]);
+  }, [deepKunnId, daApDeepKunnFor, portfolio.contracts, portfolio.selectContract]);
 
   const paymentModalProps = usePaymentModal({
     selectedContract,

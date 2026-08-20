@@ -11,6 +11,7 @@ import { useCustomerListController } from '../../hooks/useCustomerListController
 import { CustomerDrawerForm } from '../customer/CustomerDrawerForm';
 import { customerPath, customerProfilePath } from '../../lib/customerRoutes';
 import { useSelectedCustomerId } from '../../hooks/useSelectedCustomerId';
+import { ROUTE_OF } from '../../lib/routes';
 
 export const CustomerListView: React.FC = () => {
   const {
@@ -58,6 +59,13 @@ export const CustomerListView: React.FC = () => {
     setProfileAppliedFor(profileCustomerId);
     openDrawerForEdit(c);
   }, [profileCustomerId, profileAppliedFor, visibleCustomers, openDrawerForEdit]);
+
+  useEffect(() => {
+    if (profileCustomerId === null) return;
+    if (profileAppliedFor !== profileCustomerId) return;
+    if (isDrawerOpen) return;
+    navigate(ROUTE_OF.customers, { replace: true });
+  }, [profileCustomerId, profileAppliedFor, isDrawerOpen, navigate]);
 
   const containerCardBg = UI.containerCardBg;
   const inputStyle = UI.inputStyle;

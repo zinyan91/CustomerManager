@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NAV_GROUPS, NAV_ITEMS } from '../navigation';
+import { ROUTE_OF } from '../routes';
 
 describe('navigation', () => {
   it('có đúng 19 màn', () => {
@@ -48,5 +49,19 @@ describe('navigation', () => {
       'loans', 'mdsdv', 'post-loan', 'purchase-statement', 'quiz-bank',
       'rate-quote', 'retail-invoice', 'settings', 'templates',
     ]);
+  });
+});
+
+describe('navigation — đường dẫn', () => {
+  it('mọi mục đều có đường dẫn khớp bảng đường dẫn', () => {
+    for (const item of NAV_ITEMS) {
+      expect(item.path, `${item.id} thiếu path`).toBeTruthy();
+      expect(item.path).toBe(ROUTE_OF[item.id]);
+    }
+  });
+
+  it('không hai mục nào chung một đường dẫn', () => {
+    const paths = NAV_ITEMS.map(i => i.path);
+    expect(new Set(paths).size).toBe(paths.length);
   });
 });

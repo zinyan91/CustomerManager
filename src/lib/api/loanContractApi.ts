@@ -201,7 +201,7 @@ export async function fetchPaidPrincipalMapAPI(): Promise<Record<number, number>
   return map;
 }
 
-const OVERDUE_COLUMNS =
+export const OVERDUE_COLUMNS =
   'ContractId, DueDate, IsPaid, PrincipalAmount, InterestAmount, OverdueInterestAmount, ActualPaidPrincipal, ActualPaidInterest, PrepaidPrincipalAmount';
 
 export async function fetchPaidPrincipalForContractsAPI(

@@ -10,8 +10,13 @@ vi.mock('../../supabase', () => ({
 }));
 
 import {
-  fetchPaidPrincipalForContractsAPI, fetchOverdueSchedulesAPI,
+  fetchPaidPrincipalForContractsAPI, fetchOverdueSchedulesAPI, OVERDUE_COLUMNS,
 } from '../loanContractApi';
+
+const REQUIRED_OVERDUE_COLUMNS = [
+  'ContractId', 'DueDate', 'IsPaid', 'PrincipalAmount', 'InterestAmount',
+  'OverdueInterestAmount', 'ActualPaidPrincipal', 'ActualPaidInterest', 'PrepaidPrincipalAmount',
+];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -37,6 +42,7 @@ describe('fetchPaidPrincipalForContractsAPI', () => {
     const map = await fetchPaidPrincipalForContractsAPI([1135, 1136]);
 
     expect(fromMock).toHaveBeenCalledWith('ContractPaidPrincipal');
+    expect(selectMock).toHaveBeenCalledWith('ContractId, PaidPrincipal');
     expect(inMock).toHaveBeenCalledWith('ContractId', [1135, 1136]);
     expect(map).toEqual({ 1135: 1500000, 1136: 0 });
   });
@@ -62,6 +68,10 @@ describe('fetchOverdueSchedulesAPI', () => {
     const rows = await fetchOverdueSchedulesAPI([1135], '2026-08-20');
 
     expect(fromMock).toHaveBeenCalledWith('RepaymentSchedules');
+    expect(selectMock).toHaveBeenCalledWith(OVERDUE_COLUMNS);
+    for (const column of REQUIRED_OVERDUE_COLUMNS) {
+      expect(OVERDUE_COLUMNS.split(', ')).toContain(column);
+    }
     expect(orMock).toHaveBeenCalledWith('IsPaid.is.null,IsPaid.eq.false');
     expect(ltMock).toHaveBeenCalledWith('DueDate', '2026-08-20');
     expect(rows).toHaveLength(1);

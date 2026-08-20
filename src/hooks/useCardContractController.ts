@@ -13,7 +13,7 @@ import {
   type CardCollateralKind, type CardHolderSide,
 } from '../lib/cardContract';
 import { cardPolicyRuleOf, checkCardLimitAgainstPolicy } from '../lib/cardPolicyRules';
-import { parseMoneyDecimalInput, formatMoneyInput, todayIso } from '../lib/utils';
+import { parseMoneyInput, formatMoneyInput, todayIso } from '../lib/utils';
 import { addMonthsToDate } from '../lib/loanMath';
 import { useWork } from '../context/WorkContext';
 
@@ -82,7 +82,7 @@ export function useCardContractController() {
     [customers, selectedCustomerId]
   );
 
-  const limitNum = parseMoneyDecimalInput(fLimit);
+  const limitNum = parseMoneyInput(fLimit);
   const laGhiNo = isDebitCard({ CardProducts: fProducts.join(';') } as CardContract);
   const policy = cardPolicyOf(fPolicyKey);
   const rule = cardPolicyRuleOf(fPolicyKey);

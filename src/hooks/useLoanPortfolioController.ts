@@ -4,7 +4,7 @@ import {
   bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI,
   deleteRepaymentSchedulesByIdsAPI, fetchRepaymentSchedulesAPI
 } from '../lib/api';
-import { parseMoneyDecimalInput, todayIso } from '../lib/utils';
+import { parseMoneyInput, todayIso } from '../lib/utils';
 import { scheduleRowsForContract, reconcileScheduleRows } from '../lib/scheduleSync';
 import {
   addMonthsToDate, parseKunnTenorMonths,
@@ -210,8 +210,8 @@ export function useLoanPortfolioController() {
     ? getEffectiveActiveRate(draftRateContract) * 100
     : 0;
 
-  const creditLimitNum = parseMoneyDecimalInput(formCreditLimit);
-  const kunnLoanAmountNum = parseMoneyDecimalInput(formLoanAmount);
+  const creditLimitNum = parseMoneyInput(formCreditLimit);
+  const kunnLoanAmountNum = parseMoneyInput(formLoanAmount);
 
   const formTotalPeriods = parseKunnTenorMonths(form.KunnTenor) || form.LoanTenorMonths || 0;
   const suggestedMonthlyPrincipal = isBulletPrincipal(form)
@@ -448,7 +448,7 @@ export function useLoanPortfolioController() {
       const effectiveContractNumber = formKunnNumber.trim()
         || nextKunnNumberFor(formHdtdNumber, contracts);
 
-      const loanAmount = parseMoneyDecimalInput(formLoanAmount);
+      const loanAmount = parseMoneyInput(formLoanAmount);
 
       const amountCheck = checkLoanAmount(loanAmount);
       if (!amountCheck.ok) {
@@ -458,7 +458,7 @@ export function useLoanPortfolioController() {
       }
 
       const principalCheck = checkMonthlyPrincipal({
-        declared: parseMoneyDecimalInput(formMonthlyPrincipal) || null,
+        declared: parseMoneyInput(formMonthlyPrincipal) || null,
         loanAmount,
         totalPeriods: formTotalPeriods,
         graceMonths: form.PrincipalGracePeriodMonths ?? 0,

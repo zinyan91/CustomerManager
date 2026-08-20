@@ -1,6 +1,6 @@
 ---
 name: tin-dung
-description: Kiến thức nghiệp vụ và công thức của hệ thống quản lý tín dụng CustomerManager. Dùng khi làm bất cứ việc gì liên quan tới lãi, gốc, lịch trả nợ, LTV, tài sản bảo đảm, hạn mức tín dụng, phân nhóm nợ, sản phẩm vay, hoặc phân quyền RLS trong dự án này.
+description: Kiến thức nghiệp vụ và công thức của hệ thống quản lý tín dụng CustomerManager. Dùng khi làm bất cứ việc gì liên quan tới lãi, gốc, lịch trả nợ, LTV, tài sản bảo đảm, hạn mức tín dụng, cho vay từng lần, phân nhóm nợ, sản phẩm vay, giải ngân theo tiến độ, phí phạt trả trước, hoặc phân quyền RLS trong dự án này.
 ---
 
 # Nghiệp vụ tín dụng — CustomerManager
@@ -13,13 +13,24 @@ Mã nguồn **không có chú thích**. Mọi giải thích "vì sao" nằm ở 
 
 ## Bốn nguyên tắc bắt buộc
 
-**1. Một quy tắc nghiệp vụ chỉ cài ở MỘT nơi.** Dự án đã trả giá 5 lần: `getEffectiveLtv` từng có 4 bản khác nhau khiến cùng một tài sản cho ba hạn mức khác nhau ở ba màn hình. Cần dùng lại thì import, không copy.
+1. **Một quy tắc nghiệp vụ chỉ cài ở MỘT nơi.** Dự án đã trả giá 5 lần: `getEffectiveLtv` từng có 4 bản khác nhau khiến cùng một tài sản cho ba hạn mức khác nhau ở ba màn hình. Cần dùng lại thì import, không copy.
+2. **Không dùng `||` khi số 0 là giá trị hợp lệ.** `parseFloat('0') || 80` cho ra `80` — chính lỗi này từng biến tài sản "Hạn chế nhận TS" (LTV 0%) thành 80%. Kiểm tra `null`/`undefined`/`NaN` tường minh.
+3. **Không nuốt lỗi.** Bắt lỗi rồi lưu lại sau khi xoá bớt trường → giao diện báo thành công trong khi dữ liệu đã mất.
+4. **Sửa gì liên quan tới tiền thì viết test trước.** Ba lỗi mất tiền của dự án đều do test phát hiện, không ai thấy bằng mắt.
 
-**2. Không dùng `||` khi số 0 là giá trị hợp lệ.** `parseFloat('0') || 80` cho ra `80` — chính lỗi này từng biến tài sản "Hạn chế nhận TS" (LTV 0%) thành 80%. Kiểm tra `null`/`undefined`/`NaN` tường minh.
+---
 
-**3. Không nuốt lỗi.** Bắt lỗi rồi lưu lại sau khi xoá bớt trường → giao diện báo thành công trong khi dữ liệu đã mất.
+## Thuật ngữ và Ký hiệu viết tắt
 
-**4. Sửa gì liên quan tới tiền thì viết test trước.** Ba lỗi mất tiền của dự án đều do test phát hiện, không ai thấy bằng mắt.
+| Ký hiệu | Tên đầy đủ | Giải thích nghiệp vụ |
+| :--- | :--- | :--- |
+| **HMTD** | Hạn mức tín dụng | Khoản cấp tín dụng tuần hoàn bổ sung vốn lưu động (vay – trả – tự phục hồi hạn mức). |
+| **TL** | Cho vay từng lần | Khoản vay không tuần hoàn đầu tư tài sản/tiêu dùng (dư nợ giảm dần, trả hết là tất toán). |
+| **HĐTD** | Hợp đồng tín dụng | Hợp đồng khung (đối với HMTD) hoặc hợp đồng vay cụ thể (đối với TL). |
+| **GNN / KUNN** | Giấy nhận nợ / Khế ước nhận nợ | Văn bản xác nhận số tiền, thời hạn và lãi suất của từng lần rút vốn/giải ngân cụ thể. |
+| **GN** | Giải ngân | Hành động xuất tiền từ ngân hàng chuyển cho bên vay hoặc bên thụ hưởng. |
+| **LS** | Lãi suất | Tỷ lệ phần trăm tính tiền lãi (%/năm). |
+| **TSBĐ / TSĐB** | Tài sản bảo đảm | Tài sản thế chấp/cầm cố để đảm bảo cho nghĩa vụ trả nợ. |
 
 ---
 
@@ -32,8 +43,8 @@ Mã nguồn **không có chú thích**. Mọi giải thích "vì sao" nằm ở 
 | Trạng thái kỳ đến hạn cho dashboard | `src/lib/duePeriod.ts` |
 | Chính sách LTV | `src/lib/collateralMath.ts` |
 | Tổng mức cấp, chốt kiểm soát TSĐB | `src/lib/creditLimit.ts` |
-| Ràng buộc theo phương thức vay | `src/lib/loanProductRules.ts` |
-| Công thức 8 công cụ tính toán | `src/lib/calcMath.ts` |
+| Ràng buộc theo phương thức vay, giải ngân theo tiến độ | `src/lib/loanProductRules.ts` |
+| Công thức 8 công cụ tính toán, phí phạt tất toán sớm | `src/lib/calcMath.ts` |
 | Định dạng tiền, phân tích ngày | `src/lib/utils.ts` |
 | Truy vấn Supabase | `src/lib/api.ts` |
 | Test | `src/lib/__tests__/` |
@@ -58,7 +69,7 @@ Số ngày là **thực tế giữa hai mốc**, không phải 30. Vì vậy **l
 Σ(gốc các kỳ) = Số tiền vay
 ```
 
-Đúng ở **mọi** phương thức: trả đều, gốc cuối kỳ, có ân hạn, có trả trước hạn. Sai bất biến này là ngân hàng thu thừa hoặc thu thiếu. Đây là bài test đã bắt được lỗi trừ đôi tiền trả trước hạn.
+Đúng ở **mọi** phương thức: trả đều, gốc cuối kỳ, có ân hạn, giải ngân theo tiến độ, có trả trước hạn. Sai bất biến này là ngân hàng thu thừa hoặc thu thiếu. Đây là bài test đã bắt được lỗi trừ đôi tiền trả trước hạn.
 
 ### Làm tròn gốc
 
@@ -86,6 +97,15 @@ r_giảm_dần ≈ (r_phẳng × 2 × n) / (n + 1)
 ```
 Lãi dư nợ giảm dần **luôn cao hơn** lãi phẳng tương đương — điểm khách hàng hay hiểu nhầm.
 
+### Phí phạt trả nợ trước hạn (Prepayment Penalty)
+
+```
+Phí phạt = Số tiền gốc trả trước hạn × Tỷ lệ phí phạt (%)
+```
+
+- **HMTD**: Thường 0% (miễn phí), hỗ trợ doanh nghiệp quay vòng vốn linh hoạt.
+- **Vay từng lần (TL)**: Áp dụng trong 5 năm đầu (tỷ lệ phổ biến từ 1% – 4% giảm dần tuỳ số năm đã vay); từ năm thứ 6 trở đi mới miễn phí.
+
 ### Hạn mức theo tài sản
 
 ```
@@ -112,7 +132,9 @@ Theo số ngày quá hạn lớn nhất trong các kỳ **chưa thanh toán**:
 
 ### Ngày đáo hạn là chốt chặn của dãy kỳ
 
-Nợ chấm dứt ở ngày đáo hạn, nên dãy kỳ cũng phải chấm dứt ở đó. Áp cho **cả hai loại vay**, chỉ khác nhau ở chỗ lấy ngày đáo hạn của cái gì: hạn mức lấy đáo hạn **KUNN** (HĐTD chỉ cấp quyền rút vốn, KUNN được phép sống qua ngày HĐTD hết hạn); vay từng lần lấy đáo hạn **khoản vay** vì HĐTD và KUNN là một.
+Nợ chấm dứt ở ngày đáo hạn, nên dãy kỳ cũng phải chấm dứt ở đó. Áp cho **cả hai loại vay**, chỉ khác nhau ở chỗ lấy ngày đáo hạn của cái gì:
+- **Hạn mức tín dụng**: Lấy ngày đáo hạn **KUNN** (HĐTD chỉ cấp quyền rút vốn, KUNN được phép sống qua ngày HĐTD hết hạn).
+- **Cho vay từng lần**: Lấy ngày đáo hạn **khoản vay / HĐTD** vì HĐTD và KUNN là một thể thống nhất.
 
 | Ngày due cuối so với ngày đáo hạn | Kết quả |
 | :--- | :--- |
@@ -122,7 +144,9 @@ Nợ chấm dứt ở ngày đáo hạn, nên dãy kỳ cũng phải chấm dứ
 
 Cài ở `applyMaturityToDueDates`: bỏ mọi ngày due **sau** ngày đáo hạn rồi nối ngày đáo hạn vào cuối nếu chưa có. Một phép biến đổi lo cả ba trường hợp, và **luỹ đẳng** — chạy lại trên dãy đã có kỳ phụ ra đúng dãy cũ, nên `redateSchedules` không đẻ thêm kỳ mỗi lần bấm "Tính lại lịch".
 
-**Kỳ phụ chỉ sinh ra khi thật sự còn nợ.** Hạn mức trả gốc cuối kỳ nên dư nợ nguyên vẹn tới đáo hạn, kỳ phụ luôn có và **gốc dồn vào chính kỳ đó**. Vay từng lần thì gốc trả đều làm tròn **lên** bước 10.000đ, dư nợ về 0 tại hoặc trước kỳ due cuối, nên kỳ phụ rỗng cả gốc lẫn lãi và không được sinh ra — hệ quả của quy tắc làm tròn, không phải quy tắc riêng.
+**Kỳ phụ chỉ sinh ra khi thật sự còn nợ.**
+- **Hạn mức**: Trả gốc cuối kỳ nên dư nợ nguyên vẹn tới đáo hạn, kỳ phụ luôn có và **gốc dồn vào chính kỳ đó**.
+- **Vay từng lần**: Gốc trả đều làm tròn **lên** bước 10.000đ, dư nợ về 0 tại hoặc trước kỳ due cuối, nên kỳ phụ rỗng cả gốc lẫn lãi và không được sinh ra — hệ quả của quy tắc làm tròn, không phải quy tắc riêng.
 
 Nguồn ngày đáo hạn là `maturityDateOf`: `KunnDueDate`, thiếu thì suy `DisbursementDate + KunnTenor`. **Không** đọc `ContractEndDate` — lấy hạn HĐTD làm hạn khoản vay là lỗi đã gỡ ngày 07/08/2026, có test khoá riêng.
 
@@ -225,7 +249,7 @@ Số HĐTD gốc nằm ở **tiền tố `ContractNumber`** (`HD123/GNN-01`). C�
 | Loại vay | Cơ sở đối chiếu | Lý do |
 | :--- | :--- | :--- |
 | **Hạn mức tín dụng** (tái sử dụng) | **Mức cấp** | Khách hàng rút lại được bất cứ lúc nào, tài sản phải đỡ đủ hạn mức |
-| **Cho vay từng lần** | **Dư nợ hiện hữu** | Giải ngân một lần rồi giảm dần, không rút lại được |
+| **Cho vay từng lần** | **Dư nợ hiện hữu** | Giải ngân một lần (hoặc theo tiến độ) rồi giảm dần, không rút lại được |
 
 Dùng mức cấp gốc cho vay từng lần sẽ báo động giả suốt vòng đời khoản vay, vì gốc trả vào thì LTV của khoản vay giảm theo. Tính chất tái sử dụng khai ở `revolving` trong `loanProductRules.ts`, tra bằng `isRevolvingCredit`.
 
@@ -261,6 +285,17 @@ Phân biệt với chuyện khác: HĐTD hết hiệu lực thì **không rút t
 
 ---
 
+### Tái cấp hạn mức định kỳ (Annual Review) cho HMTD
+
+HĐTD HMTD thường có thời hạn 12 tháng (tối đa 24 tháng). Định kỳ hàng năm (thường 30–45 ngày trước khi HĐTD hết hạn), ngân hàng thực hiện quy trình Tái cấp hạn mức:
+1. Đánh giá lại năng lực tài chính, kết quả kinh doanh, doanh thu qua tài khoản.
+2. Rà soát lịch sử trả nợ (không có nợ quá hạn nhóm 2 trở lên).
+3. Định giá lại TSBĐ (nếu chứng thư hết hạn).
+4. **Nếu đạt yêu cầu**: Ký Phụ lục gia hạn hoặc ký HĐTD mới.
+5. **Nếu không đạt yêu cầu**: Không gia hạn, toàn bộ dư nợ các KUNN còn lại chuyển sang chế độ thu hồi nợ (trả đứt gốc khi đến hạn, không được rút mới).
+
+---
+
 ### Ngày hiệu lực HĐTD chỉ có một nguồn
 
 Ngày hiệu lực nằm ở **bốn chỗ**: một dòng `CreditContracts` và bản chép `ContractStartDate` / `ContractEndDate` trên từng KUNN con.
@@ -275,19 +310,29 @@ Cột `HdtdDueDate` **đã xoá** ở migration 48: rỗng toàn bộ 103 KUNN t
 
 ## Sản phẩm vay
 
-### Hạn mức tín dụng — ngắn hạn, bổ sung vốn lưu động
-- Mục đích **cố định** "Sản xuất kinh doanh", ô chọn bị khoá
-- **Hai kỳ hạn khác nhau, đừng lẫn:** HĐTD 12 – 24 tháng là *thời gian được phép rút vốn*; KUNN 3 – 12 tháng là *thời hạn phải trả nợ* của từng lần rút
-- Lãi trả hàng tháng theo dư nợ và số ngày thực tế; gốc trả **một lần** vào ngày đáo hạn KUNN
-- **Không** có ân hạn gốc
+### 1. Hạn mức tín dụng (HMTD) — ngắn hạn, bổ sung vốn lưu động
+
+- **Mục đích**: Cố định "Sản xuất kinh doanh", ô chọn bị khoá.
+- **Hai kỳ hạn khác nhau, đừng lẫn**: HĐTD 12 – 24 tháng là *thời gian được phép rút vốn*; KUNN 3 – 12 tháng là *thời hạn phải trả nợ* của từng lần rút.
+- **Phương thức trả nợ**: Lãi trả hàng tháng theo dư nợ và số ngày thực tế; gốc trả **một lần** vào ngày đáo hạn KUNN.
+- **Không** có ân hạn gốc.
+- **Kiểm soát giải ngân**: Chuyển khoản thanh toán tiền mua hàng/nguyên vật liệu cho nhà cung cấp dựa trên Hóa đơn GTGT, Hợp đồng kinh tế đầu vào.
 
 Hai thước đo, hai hàm: `checkTenor` đo kỳ hạn **HĐTD** (`tenor`), `checkKunnTenor` đo kỳ hạn **KUNN** (`kunnTenor`). Sản phẩm không tách hai cấp thì `kunnTenor` để trống và `checkKunnTenor` dùng chung thước với khoản vay. Trước 17/08/2026 chỉ có một hàm đo bằng thước 12–24 tháng của HĐTD, nên mọi KUNN hạn mức (thực tế khai 5–6 tháng) đều bị cảnh báo sai — chưa lộ ra vì hàm đó chưa nối vào màn hình nào.
 
-### Cho vay từng lần — trung/dài hạn, mua sắm tài sản
-- Mục đích: tiêu dùng phục vụ đời sống, xây/sửa chữa nhà, mua nhà
-- HĐTD và KUNN **gộp làm một**, chung một thời hạn 60 – 360 tháng (5 – 30 năm)
-- Gốc trả đều hàng tháng, lãi theo dư nợ giảm dần
-- Ân hạn gốc: 6 / 12 / 15 / 18 / 24 / 36 tháng
+### 2. Cho vay từng lần (TL) — trung/dài hạn, mua sắm tài sản / dự án
+
+- **Mục đích**: Tiêu dùng phục vụ đời sống, xây/sửa chữa nhà, mua bất động sản/nhà dự án, mua ô tô, đầu tư TSCĐ.
+- **Cấu trúc**: HĐTD và KUNN **gộp làm một**, chung một thời hạn 60 – 360 tháng (5 – 30 năm).
+- **Cơ chế giải ngân theo tiến độ**:
+  - Được chia làm nhiều đợt rút vốn dựa trên tiến độ xây dựng / tiến độ thanh toán HĐMB với Chủ đầu tư.
+  - Tổng các đợt giải ngân $\le$ Mức phê duyệt ban đầu.
+  - Gốc trả vào không phục hồi hạn mức (không quay vòng).
+- **Phương thức trả nợ**:
+  - **Giai đoạn giải ngân theo tiến độ**: Thường được ân hạn nợ gốc (6 / 12 / 15 / 18 / 24 / 36 tháng tùy dự án). Trong thời gian ân hạn, chỉ tính và thu tiền lãi trên dư nợ thực tế đã giải ngân.
+  - **Sau khi hoàn tất giải ngân / hết ân hạn**: Gốc trả đều hàng tháng (làm tròn lên 1.000đ); Lãi trả hàng tháng tính theo dư nợ giảm dần.
+- **Cơ chế Lãi suất (LS)**: Thường áp dụng lãi suất cố định ưu đãi thời gian đầu (12, 24, 36 tháng) $\rightarrow$ Thả nổi theo công thức: *LS cơ sở / LS tiết kiệm 12T + Biên độ*.
+- **Kiểm soát dòng tiền & Giải ngân**: Thường giải ngân phong tỏa vào tài khoản bên bán (Chủ đầu tư / Bên bán xe). Ngân hàng chỉ giải tỏa khi nhận đủ chứng từ hoặc hoàn tất đăng ký biện pháp bảo đảm.
 
 Sai lệch → **cảnh báo, không chặn lưu**. Nghiệp vụ ngân hàng luôn có ngoại lệ được phê duyệt; chặn cứng khiến banker tìm cách lách.
 
@@ -330,7 +375,7 @@ Không nhét dữ liệu nghiệp vụ vào `Note` — mỗi thông tin một c�
 
 ```bash
 npm run dev      # máy chủ phát triển
-npm test         # toàn bộ test, hiện 1.465 ca
+npm test         # toàn bộ test, hiện 1.754 ca
 npm run build    # typecheck + đóng gói
 npm run lint
 ```

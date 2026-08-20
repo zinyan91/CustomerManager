@@ -373,6 +373,7 @@ describe('parseDecimalNumber / parseMoneyDecimalInput', () => {
   });
 
   it('đọc đúng số tiền lớn có phân cách hàng ngàn bằng dấu chấm hoặc phẩy', () => {
+    expect(parseDecimalNumber('1.000')).toBe(1000);
     expect(parseDecimalNumber('1.000.000')).toBe(1000000);
     expect(parseDecimalNumber('1,000,000')).toBe(1000000);
     expect(parseDecimalNumber('1.234,56')).toBe(1234.56);

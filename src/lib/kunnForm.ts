@@ -1,5 +1,5 @@
 import type { CreditContract, LoanContract, RateAdjustmentHistoryItem } from '../types';
-import { getContractRateHistory, getMasterHdtdNumber, parseMoneyDecimalInput, formatMoneyInput, formatMoneyWith, stripLegacyNoteBlobs } from './utils';
+import { getContractRateHistory, getMasterHdtdNumber, parseMoneyInput, formatMoneyInput, formatMoneyWith, stripLegacyNoteBlobs } from './utils';
 import { buildRateFields, resolveRateModeOf } from './rateResolution';
 import { resolveMasterHdtdNumber, hdtdEffectiveDatesOf } from './creditContract';
 import { isBulletPrincipal, roundPrincipalCore } from './loanMath';
@@ -231,9 +231,9 @@ export function buildKunnPayload({
     { CreditContractId: fields.contract.CreditContractId ?? null },
     creditContracts || []
   );
-  const creditLimit = parseMoneyDecimalInput(fields.creditLimit);
-  const loanAmount = parseMoneyDecimalInput(fields.loanAmount);
-  const currentBalance = parseMoneyDecimalInput(fields.currentBalance) || loanAmount;
+  const creditLimit = parseMoneyInput(fields.creditLimit);
+  const loanAmount = parseMoneyInput(fields.loanAmount);
+  const currentBalance = parseMoneyInput(fields.currentBalance) || loanAmount;
 
   const prefDec = prefPercent ? prefPercent / 100 : undefined;
   const baseDec = basePercent ? basePercent / 100 : undefined;
@@ -267,11 +267,11 @@ export function buildKunnPayload({
 
     MonthlyPrincipalAmount: isBulletPrincipal(fields.contract)
       ? null
-      : (parseMoneyDecimalInput(fields.monthlyPrincipal) || null),
+      : (parseMoneyInput(fields.monthlyPrincipal) || null),
 
     CreditLimitCode: fields.creditLimitCode.trim() || null,
     CreditLimitAmount: fields.creditLimitCode.trim()
-      ? (parseMoneyDecimalInput(fields.creditLimitAmount) || null)
+      ? (parseMoneyInput(fields.creditLimitAmount) || null)
       : null,
 
     ...buildRateFields(fields.rateMode, {

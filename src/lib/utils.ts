@@ -59,7 +59,11 @@ export function parseDecimalNumber(value: string): number {
   } else if (hasDot) {
     const dotCount = (s.match(/\./g) || []).length;
     if (dotCount === 1) {
-      cleaned = s;
+      if (/^\d{1,3}\.\d{3}$/.test(s)) {
+        cleaned = s.replace(/\./g, '');
+      } else {
+        cleaned = s;
+      }
     } else {
       cleaned = s.replace(/\./g, '');
     }

@@ -147,7 +147,7 @@ describe('tuyến lồng theo khách hàng', () => {
     expect(await screen.findByText('MAN:dashboard')).toBeTruthy();
   });
 
-  it('Id không phải số thì màn vẫn dựng, ở trạng thái chưa chọn khách', async () => {
+  it('Id không phải số vẫn khớp tuyến lồng, không rơi về Tổng quan', async () => {
     dungAppO('/customers/abc/loans');
     expect(await screen.findByText('MAN:loans')).toBeTruthy();
   });

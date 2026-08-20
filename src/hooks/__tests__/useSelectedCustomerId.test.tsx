@@ -26,6 +26,8 @@ function dungLen(duongDan: string) {
     <MemoryRouter initialEntries={[duongDan]}>
       <Routes>
         <Route path="/loans" element={<Probe />} />
+        <Route path="/settings" element={<Probe />} />
+        <Route path="/dashboard" element={<Probe />} />
         <Route path="/customers/:customerId/loans" element={<Probe />} />
       </Routes>
     </MemoryRouter>
@@ -53,6 +55,11 @@ describe('useSelectedCustomerId', () => {
     );
     expect(screen.getByTestId('id').textContent).toBe('55');
   });
+
+  it('Id không phải số thì không có khách', () => {
+    dungLen('/customers/abc/loans');
+    expect(screen.getByTestId('id').textContent).toBe('null');
+  });
 });
 
 describe('useCustomerNavigate', () => {
@@ -72,5 +79,17 @@ describe('useCustomerNavigate', () => {
     dungLen('/customers/55/loans');
     fireEvent.click(screen.getByText('bo-khach'));
     expect(screen.getByTestId('path').textContent).toBe('/loans');
+  });
+
+  it('từ màn không thuộc phạm vi khách, đổi khách nhảy sang màn vay của khách đó', () => {
+    dungLen('/settings');
+    fireEvent.click(screen.getByText('doi-sang-77'));
+    expect(screen.getByTestId('path').textContent).toBe('/customers/77/loans');
+  });
+
+  it('từ màn không thuộc phạm vi khách, bỏ khách về Tổng quan', () => {
+    dungLen('/settings');
+    fireEvent.click(screen.getByText('bo-khach'));
+    expect(screen.getByTestId('path').textContent).toBe('/dashboard');
   });
 });

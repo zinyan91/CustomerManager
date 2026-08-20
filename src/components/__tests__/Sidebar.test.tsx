@@ -13,7 +13,7 @@ function dungLen() {
   return render(
     <MemoryRouter>
       <LanguageProvider>
-        <Sidebar activeTab="dashboard" setActiveTab={() => {}} />
+        <Sidebar />
       </LanguageProvider>
     </MemoryRouter>
   );
@@ -58,9 +58,9 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
     }
   });
 
-  it('dựng đúng 19 nút trong nav', () => {
+  it('dựng đúng 19 liên kết trong nav', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav button').length).toBe(19);
+    expect(container.querySelectorAll('nav a').length).toBe(19);
   });
 
   it('hiện đủ 5 tiêu đề nhóm', () => {
@@ -72,11 +72,45 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
   });
 
   it('mục đang mở được đánh dấu aria-current', () => {
-    dungLen();
-    const nut = screen
+    render(
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <LanguageProvider>
+          <Sidebar />
+        </LanguageProvider>
+      </MemoryRouter>
+    );
+    const lienKet = screen
       .getAllByText(translate('vi', 'nav.dashboard'))
-      .map(el => el.closest('button'))
+      .map(el => el.closest('a'))
       .find(Boolean);
-    expect(nut?.getAttribute('aria-current')).toBe('page');
+    expect(lienKet?.getAttribute('aria-current')).toBe('page');
+  });
+});
+
+describe('Sidebar dùng liên kết thật', () => {
+  it('mỗi mục là một thẻ liên kết, không phải nút', () => {
+    const { container } = dungLen();
+    expect(container.querySelectorAll('nav a')).toHaveLength(19);
+    expect(container.querySelectorAll('nav button')).toHaveLength(0);
+  });
+
+  it('liên kết trỏ đúng đường dẫn của màn', () => {
+    const { container } = dungLen();
+    const href = [...container.querySelectorAll('nav a')].map(a => a.getAttribute('href'));
+    expect(href).toContain('/dashboard');
+    expect(href).toContain('/customers');
+    expect(href).toContain('/settings');
+  });
+
+  it('mục ứng với đường dẫn hiện tại được đánh dấu aria-current', () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={['/settings']}>
+        <LanguageProvider>
+          <Sidebar />
+        </LanguageProvider>
+      </MemoryRouter>
+    );
+    const dangMo = container.querySelector('[aria-current="page"]');
+    expect(dangMo?.getAttribute('href')).toBe('/settings');
   });
 });

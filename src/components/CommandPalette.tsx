@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from 'react';
 import { Search, X, ChevronRight } from 'lucide-react';
-import { useWork } from '../context/WorkContext';
+import { useNavigate } from 'react-router';
 import { useLang } from '../context/LanguageContext';
 import { NAV_ITEMS } from '../lib/navigation';
 
@@ -10,7 +10,7 @@ interface CommandPaletteProps {
 }
 
 export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) => {
-  const { setActiveTab } = useWork();
+  const navigate = useNavigate();
   const { t } = useLang();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -38,10 +38,10 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) =>
     setSelectedIndex(0);
   }, [query]);
 
-  const handleSelect = useCallback((id: string) => {
-    setActiveTab(id);
+  const handleSelect = useCallback((path: string) => {
+    navigate(path);
     onClose();
-  }, [setActiveTab, onClose]);
+  }, [navigate, onClose]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -53,7 +53,7 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) =>
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (filteredItems[selectedIndex]) {
-        handleSelect(filteredItems[selectedIndex].id);
+        handleSelect(filteredItems[selectedIndex].path);
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
@@ -105,7 +105,7 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) =>
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => handleSelect(item.id)}
+                  onClick={() => handleSelect(item.path)}
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs transition-colors duration-150 text-left ${
                     isSelected

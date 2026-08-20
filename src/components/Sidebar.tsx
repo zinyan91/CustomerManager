@@ -1,28 +1,20 @@
-import { memo, useCallback } from 'react';
+import { memo } from 'react';
+import { NavLink } from 'react-router';
 import { X } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
 import { NAV_GROUPS } from '../lib/navigation';
 import { APP_VERSION } from '../lib/appVersion';
 
 interface SidebarProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
 }
 
 export const Sidebar = memo<SidebarProps>(({
-  activeTab,
-  setActiveTab,
   isOpenMobile = false,
   onCloseMobile,
 }) => {
   const { t } = useLang();
-
-  const handleTabClick = useCallback((tabId: string) => {
-    setActiveTab(tabId);
-    if (onCloseMobile) onCloseMobile();
-  }, [setActiveTab, onCloseMobile]);
 
   return (
     <>
@@ -55,21 +47,24 @@ export const Sidebar = memo<SidebarProps>(({
               </div>
               {group.items.map(item => {
                 const Icon = item.icon;
-                const isActive = activeTab === item.id;
                 return (
-                  <button
+                  <NavLink
                     key={item.id}
-                    onClick={() => handleTabClick(item.id)}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={`w-full flex items-center gap-2.5 pl-3 pr-3 py-1.5 rounded-r-lg border-l-2 text-xs text-left transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
+                    to={item.path}
+                    onClick={onCloseMobile}
+                    className={({ isActive }) => `w-full flex items-center gap-2.5 pl-3 pr-3 py-1.5 rounded-r-lg border-l-2 text-xs text-left transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
                       isActive
                         ? 'border-accent bg-accent-soft text-accent font-semibold shadow-xs'
                         : 'border-transparent text-ink-muted hover:text-ink hover:bg-panel-muted/80'
                     }`}
                   >
-                    <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors duration-150 ${isActive ? 'text-accent' : 'text-ink-faint'}`} />
-                    <span className="truncate">{t(item.labelKey)}</span>
-                  </button>
+                    {({ isActive }) => (
+                      <>
+                        <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors duration-150 ${isActive ? 'text-accent' : 'text-ink-faint'}`} />
+                        <span className="truncate">{t(item.labelKey)}</span>
+                      </>
+                    )}
+                  </NavLink>
                 );
               })}
             </div>

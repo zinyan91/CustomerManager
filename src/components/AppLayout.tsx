@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Outlet } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useWork } from '../context/WorkContext';
 import { LoginView } from './LoginView';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
@@ -10,7 +9,6 @@ import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
 
 export function AppLayout() {
-  const { activeTab, setActiveTab } = useWork();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const { session, loading } = useAuth();
@@ -51,8 +49,6 @@ export function AppLayout() {
       />
       <div className="flex flex-1 pt-[var(--header-h)] relative">
         <Sidebar
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
           isOpenMobile={isMobileMenuOpen}
           onCloseMobile={handleCloseMobileMenu}
         />

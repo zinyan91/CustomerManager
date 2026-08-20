@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router';
 import {
   saveContractAPI, deleteContractAPI,
   bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByContractAPI,
@@ -19,7 +20,6 @@ import {
 import { totalUsableCapacity } from '../lib/collateralMath';
 import { checkKunnAgainstContract, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf, summarizeCreditContracts, totalsOfCreditContracts, computeRemainingTenorMonths } from '../lib/creditContract';
 import { checkKunnTenor, getLoanProductRule } from '../lib/loanProductRules';
-import { useWork } from '../context/WorkContext';
 import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../lib/creditLimit';
 import type { LoanContract, CreditContract, RateAdjustmentHistoryItem } from '../types';
@@ -32,9 +32,13 @@ import {
 import type { MasterHdtdGroup } from '../components/portfolio/MasterHdtdFilterTabs';
 
 export function useLoanPortfolioController() {
-  const { disburseRequest, clearDisburseRequest } = useWork();
   const selectedCustomerId = useSelectedCustomerId();
   const setSelectedCustomerId = useCustomerNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const disburseCreditContractId = (() => {
+    const raw = searchParams.get('disburse');
+    return raw && /^\d+$/.test(raw) ? Number(raw) : null;
+  })();
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -771,15 +775,18 @@ export function useLoanPortfolioController() {
   }, [selectedContract, newAdjBaseRate, newAdjMargin, newAdjPenalty, newAdjDate, newAdjReason, rateHistory, setContracts, schedules, setSchedules, setAllSchedulesMap, setSelectedContract, showNotify]);
 
   useEffect(() => {
-    if (disburseRequest && allCustomers.length > 0) {
-      const cc = creditContracts.find(x => x.Id === disburseRequest.creditContractId);
-      if (cc) {
-        handleNewContract();
-        applyCreditContractToForm(cc);
-        clearDisburseRequest();
-      }
-    }
-  }, [disburseRequest, allCustomers, creditContracts, handleNewContract, applyCreditContractToForm, clearDisburseRequest]);
+    if (disburseCreditContractId === null) return;
+    if (allCustomers.length === 0) return;
+    const cc = creditContracts.find(x => x.Id === disburseCreditContractId);
+    if (!cc) return;
+    handleNewContract();
+    applyCreditContractToForm(cc);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete('disburse');
+      return next;
+    }, { replace: true });
+  }, [disburseCreditContractId, allCustomers, creditContracts, handleNewContract, applyCreditContractToForm, setSearchParams]);
 
   return {
     selectedCustomerId,

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router';
 import { UI } from '../../lib/uiClasses';
 import type { Customer } from '../../types';
 import { isCustomerArchived, CUSTOMER_STATUS_LABEL, type CustomerStatusFilter } from '../../lib/customerStatus';
@@ -8,7 +9,7 @@ import { Toast } from '../Toast';
 import { AdaptiveTable, type AdaptiveColumn } from '../AdaptiveTable';
 import { useCustomerListController } from '../../hooks/useCustomerListController';
 import { CustomerDrawerForm } from '../customer/CustomerDrawerForm';
-import { useWork } from '../../context/WorkContext';
+import { customerPath } from '../../lib/customerRoutes';
 
 export const CustomerListView: React.FC = () => {
   const {
@@ -41,7 +42,7 @@ export const CustomerListView: React.FC = () => {
     parseAndApplySnippet,
   } = useCustomerListController();
 
-  const { setActiveTab, setSelectedCustomerId } = useWork();
+  const navigate = useNavigate();
 
   const containerCardBg = UI.containerCardBg;
   const inputStyle = UI.inputStyle;
@@ -142,8 +143,7 @@ export const CustomerListView: React.FC = () => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedCustomerId(c.Id);
-                      setActiveTab('credit-contracts');
+                      navigate(customerPath('credit-contracts', c.Id));
                     }}
                     title="Xem Hợp đồng tín dụng & hạn mức của KH này"
                     className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
@@ -155,8 +155,7 @@ export const CustomerListView: React.FC = () => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedCustomerId(c.Id);
-                      setActiveTab('loans');
+                      navigate(customerPath('loans', c.Id));
                     }}
                     title="Xem Danh mục Khoản vay & Lịch thu nợ của KH này"
                     className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
@@ -168,8 +167,7 @@ export const CustomerListView: React.FC = () => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedCustomerId(c.Id);
-                      setActiveTab('collaterals');
+                      navigate(customerPath('collaterals', c.Id));
                     }}
                     title="Xem Tài sản bảo đảm thế chấp của KH này"
                     className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"

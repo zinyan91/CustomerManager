@@ -16,7 +16,8 @@ import { parseCollateralIds } from '../../lib/creditLimit';
 import { kunnPrincipal } from '../../lib/loanMath';
 import { outstandingOf, canQuickSettle } from '../../lib/loanMath';
 import { useQuickSettle } from '../../hooks/useQuickSettle';
-import { useWork } from '../../context/WorkContext';
+import { useNavigate } from 'react-router';
+import { customerPath } from '../../lib/customerRoutes';
 import { summarizeCreditContracts, totalsOfCreditContracts } from '../../lib/creditContract';
 import { Toast, useToast } from '../Toast';
 import type { Customer, Collateral, LoanContract, CardContract, CreditContract } from '../../types';
@@ -31,7 +32,7 @@ import type { AdaptiveColumn } from '../AdaptiveTable';
 
 export const DashboardView: React.FC = () => {
   const { toast, show, dismiss } = useToast();
-  const { setActiveTab, setSelectedCustomerId } = useWork();
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
   const [contracts, setContracts] = useState<LoanContract[]>([]);
@@ -260,8 +261,7 @@ export const DashboardView: React.FC = () => {
   const soNgay = <T extends { daysLeft?: number | null }>(x: T) => x.daysLeft;
 
   const moLichTraNo = (customerId: number) => {
-    setSelectedCustomerId(customerId);
-    setActiveTab('loans');
+    navigate(customerPath('loans', customerId));
   };
 
   const { settle, busyScheduleId } = useQuickSettle({

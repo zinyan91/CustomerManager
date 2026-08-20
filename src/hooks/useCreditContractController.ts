@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router';
 import type { Customer, CreditContract, LoanContract, Collateral, RepaymentSchedule } from '../types';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI,
@@ -6,7 +7,7 @@ import {
   deleteCreditContractAPI, countKunnOfCreditContractAPI,
   fetchCollateralsByCustomerAPI, fetchRepaymentSchedulesAPI,
 } from '../lib/api';
-import { useWork } from '../context/WorkContext';
+import { customerPath } from '../lib/customerRoutes';
 import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
 import { todayIso, parseMoneyInput, formatMoneyInput } from '../lib/utils';
 import { summarizeCreditContracts, canCloseCreditContract } from '../lib/creditContract';
@@ -23,7 +24,7 @@ export const LOAN_METHODS = [
 ];
 
 export function useCreditContractController() {
-  const { requestDisburse } = useWork();
+  const navigate = useNavigate();
   const selectedCustomerId = useSelectedCustomerId();
   const setSelectedCustomerId = useCustomerNavigate();
 
@@ -235,11 +236,8 @@ export function useCreditContractController() {
 
   const handleDisburseRequest = useCallback((cc: CreditContract) => {
     if (!customer) return;
-    requestDisburse({
-      creditContractId: cc.Id,
-      customerId: customer.Id,
-    });
-  }, [customer, requestDisburse]);
+    navigate(`${customerPath('loans', customer.Id)}?disburse=${cc.Id}`);
+  }, [customer, navigate]);
 
   const getKunnsForContract = useCallback(
     (cc: CreditContract) => kunns.filter(k => k.CreditContractId === cc.Id),

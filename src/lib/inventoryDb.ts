@@ -15,7 +15,10 @@ export async function fetchInventoryItemsDb(categoryName?: string): Promise<Inve
     if (categoryName) {
       query = query.eq('CategoryName', categoryName);
     }
-    const { data, error } = await query;
+    const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
+      setTimeout(() => reject(new Error('Supabase fetch timeout')), 1500)
+    );
+    const { data, error } = (await Promise.race([query, timeoutPromise])) as any;
     if (error) throw error;
     if (data && data.length > 0) {
       const items: InventoryItem[] = data.map((d: any) => ({

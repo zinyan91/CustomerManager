@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { X, Search, CheckSquare, Square, Package, Plus, Layers } from 'lucide-react';
 import { fetchInventoryItemsDb } from '../../lib/inventoryDb';
 import { loadInventoryTemplates } from '../../lib/templateStore';
@@ -23,6 +23,19 @@ export interface InventoryItemPickerModalProps {
   defaultQtyType?: 'import' | 'export' | 'ending';
 }
 
+function getTemplateItems(tpl: InventoryCategoryTemplate): InventoryItem[] {
+  return tpl.items.map((it, idx) => ({
+    id: `tpl_${tpl.id}_${idx}`,
+    code: it.code,
+    name: it.name,
+    unit: it.unit,
+    unitPrice: it.unitPrice,
+    beginningQty: it.beginningQty,
+    importQty: it.importQty,
+    exportQty: it.exportQty,
+  }));
+}
+
 export const InventoryItemPickerModal: React.FC<InventoryItemPickerModalProps> = ({
   isOpen,
   onClose,
@@ -30,96 +43,94 @@ export const InventoryItemPickerModal: React.FC<InventoryItemPickerModalProps> =
   title = 'CHỌN MẶT HÀNG TỪ KHO',
   defaultQtyType = 'import',
 }) => {
-  const [templates, setTemplates] = useState<InventoryCategoryTemplate[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
-  const [inventoryList, setInventoryList] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [templates, setTemplates] = useState<InventoryCategoryTemplate[]>(() => loadInventoryTemplates());
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(() => templates[0]?.id || 'all');
+  const [inventoryList, setInventoryList] = useState<InventoryItem[]>(() => {
+    const tpls = loadInventoryTemplates();
+    return tpls[0] ? getTemplateItems(tpls[0]) : [];
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
-  const [customQuantities, setCustomQuantities] = useState<Record<string, string>>({});
+  const [customQuantities, setCustomQuantities] = useState<Record<string, string>>(() => {
+    const tpls = loadInventoryTemplates();
+    const initialItems = tpls[0] ? getTemplateItems(tpls[0]) : [];
+    const initialQty: Record<string, string> = {};
+    initialItems.forEach(it => {
+      let defaultQty = 1;
+      if (defaultQtyType === 'import' && it.importQty > 0) defaultQty = it.importQty;
+      else if (defaultQtyType === 'export' && it.exportQty > 0) defaultQty = it.exportQty;
+      else if (it.beginningQty > 0) defaultQty = it.beginningQty;
+      initialQty[it.id] = formatMoneyInput(String(defaultQty));
+    });
+    return initialQty;
+  });
+
+  const syncCategoryItems = useCallback((catId: string, tpls: InventoryCategoryTemplate[]) => {
+    if (catId === 'all') {
+      const allTplItems: InventoryItem[] = [];
+      tpls.forEach(t => {
+        t.items.forEach((it, iIdx) => {
+          allTplItems.push({
+            id: `tpl_${t.id}_${iIdx}`,
+            code: it.code,
+            name: it.name,
+            unit: it.unit,
+            unitPrice: it.unitPrice,
+            beginningQty: it.beginningQty,
+            importQty: it.importQty,
+            exportQty: it.exportQty,
+          });
+        });
+      });
+      setInventoryList(allTplItems);
+      initQuantities(allTplItems);
+    } else {
+      const found = tpls.find(t => t.id === catId);
+      if (found) {
+        const catItems = getTemplateItems(found);
+        setInventoryList(catItems);
+        initQuantities(catItems);
+      }
+    }
+  }, [defaultQtyType]);
+
+  const initQuantities = (items: InventoryItem[]) => {
+    const initialQty: Record<string, string> = {};
+    items.forEach(it => {
+      let defaultQty = 1;
+      if (defaultQtyType === 'import' && it.importQty > 0) defaultQty = it.importQty;
+      else if (defaultQtyType === 'export' && it.exportQty > 0) defaultQty = it.exportQty;
+      else if (it.beginningQty > 0) defaultQty = it.beginningQty;
+      initialQty[it.id] = formatMoneyInput(String(defaultQty));
+    });
+    setCustomQuantities(initialQty);
+  };
 
   useEffect(() => {
     if (isOpen) {
-      setLoading(true);
       const tpls = loadInventoryTemplates();
       setTemplates(tpls);
+      const initialCat = selectedCategoryId !== 'all' ? selectedCategoryId : (tpls[0]?.id || 'all');
+      setSelectedCategoryId(initialCat);
+      setSelectedIds({});
+      syncCategoryItems(initialCat, tpls);
 
       fetchInventoryItemsDb()
         .then(dbItems => {
-          // If DB has items, use them; if empty, provide items from all templates
-          let itemsToShow: InventoryItem[] = dbItems || [];
-          if (itemsToShow.length === 0 && tpls.length > 0) {
-            const allTplItems: InventoryItem[] = [];
-            tpls.forEach((t, tIdx) => {
-              t.items.forEach((it, iIdx) => {
-                allTplItems.push({
-                  id: `tpl_${tIdx}_${iIdx}`,
-                  code: it.code,
-                  name: it.name,
-                  unit: it.unit,
-                  unitPrice: it.unitPrice,
-                  beginningQty: it.beginningQty,
-                  importQty: it.importQty,
-                  exportQty: it.exportQty,
-                });
-              });
-            });
-            itemsToShow = allTplItems;
+          if (dbItems && dbItems.length > 0) {
+            setInventoryList(dbItems);
+            initQuantities(dbItems);
           }
-
-          setInventoryList(itemsToShow);
-          setSelectedIds({});
-          const initialQty: Record<string, string> = {};
-          itemsToShow.forEach(it => {
-            let defaultQty = 1;
-            if (defaultQtyType === 'import' && it.importQty > 0) defaultQty = it.importQty;
-            else if (defaultQtyType === 'export' && it.exportQty > 0) defaultQty = it.exportQty;
-            else if (it.beginningQty > 0) defaultQty = it.beginningQty;
-            initialQty[it.id] = formatMoneyInput(String(defaultQty));
-          });
-          setCustomQuantities(initialQty);
-          setLoading(false);
         })
-        .catch(() => {
-          setLoading(false);
-        });
+        .catch(() => {});
     }
-  }, [isOpen, defaultQtyType]);
+  }, [isOpen, syncCategoryItems]);
 
   // Handle changing category / industry
   const handleCategoryChange = (catId: string) => {
     setSelectedCategoryId(catId);
-    if (catId === 'all') {
-      fetchInventoryItemsDb().then(dbItems => {
-        if (dbItems && dbItems.length > 0) {
-          setInventoryList(dbItems);
-        }
-      });
-    } else {
-      const found = templates.find(t => t.id === catId);
-      if (found) {
-        const catItems: InventoryItem[] = found.items.map((it, idx) => ({
-          id: `tpl_${found.id}_${idx}`,
-          code: it.code,
-          name: it.name,
-          unit: it.unit,
-          unitPrice: it.unitPrice,
-          beginningQty: it.beginningQty,
-          importQty: it.importQty,
-          exportQty: it.exportQty,
-        }));
-        setInventoryList(catItems);
-        const initialQty: Record<string, string> = {};
-        catItems.forEach(it => {
-          let defaultQty = 1;
-          if (defaultQtyType === 'import' && it.importQty > 0) defaultQty = it.importQty;
-          else if (defaultQtyType === 'export' && it.exportQty > 0) defaultQty = it.exportQty;
-          else if (it.beginningQty > 0) defaultQty = it.beginningQty;
-          initialQty[it.id] = formatMoneyInput(String(defaultQty));
-        });
-        setCustomQuantities(initialQty);
-      }
-    }
+    setSelectedIds({});
+    syncCategoryItems(catId, templates);
   };
 
   const filteredItems = useMemo(() => {
@@ -199,12 +210,12 @@ export const InventoryItemPickerModal: React.FC<InventoryItemPickerModalProps> =
               onChange={e => handleCategoryChange(e.target.value)}
               className={`w-full py-1.5 px-2.5 rounded-md font-bold text-xs ${UI.inputStyle}`}
             >
-              <option value="all">Tất cả danh mục kho</option>
               {templates.map(tpl => (
                 <option key={tpl.id} value={tpl.id}>
                   {tpl.name}
                 </option>
               ))}
+              <option value="all">Tất cả danh mục kho</option>
             </select>
           </div>
 
@@ -233,9 +244,7 @@ export const InventoryItemPickerModal: React.FC<InventoryItemPickerModalProps> =
 
         {/* Product List Table */}
         <div className="flex-1 overflow-y-auto p-2">
-          {loading ? (
-            <div className="text-center py-12 text-ink-faint">Đang nạp danh sách kho hàng...</div>
-          ) : filteredItems.length === 0 ? (
+          {filteredItems.length === 0 ? (
             <div className="text-center py-12 text-ink-faint">
               Không tìm thấy sản phẩm nào khớp với tìm kiếm.
             </div>

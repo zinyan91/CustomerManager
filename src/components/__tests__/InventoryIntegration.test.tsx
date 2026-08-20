@@ -42,6 +42,35 @@ vi.mock('../../lib/statementDb', () => ({
   deleteRetailInvoiceDb: vi.fn().mockImplementation(() => Promise.resolve()),
 }));
 
+vi.mock('../../lib/templateStore', () => ({
+  loadInventoryTemplates: vi.fn().mockReturnValue([
+    {
+      id: 'cat-my-pham',
+      name: 'Mỹ phẩm & Nước hoa',
+      items: [
+        {
+          code: 'SP01',
+          name: 'Nước hoa Chanel No.5',
+          unit: 'Chai',
+          unitPrice: 3500000,
+          beginningQty: 10,
+          importQty: 20,
+          exportQty: 5,
+        },
+        {
+          code: 'SP02',
+          name: 'Son dưỡng Dior Lip Glow',
+          unit: 'Cây',
+          unitPrice: 850000,
+          beginningQty: 15,
+          importQty: 30,
+          exportQty: 12,
+        },
+      ],
+    },
+  ]),
+}));
+
 import { InventoryItemPickerModal } from '../inventory/InventoryItemPickerModal';
 import { PurchaseStatementTab } from '../inventory/PurchaseStatementTab';
 import { RetailInvoiceTab } from '../inventory/RetailInvoiceTab';

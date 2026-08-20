@@ -218,11 +218,15 @@ h3, h4, h5, h6 {
 }
 
 .text-xl {
-  font-size: calc(var(--fs-heading) * 1.4);
+  font-size: calc(var(--fs-heading) * 1.2);
 }
 
 .text-2xl {
-  font-size: calc(var(--fs-heading) * 1.65);
+  font-size: calc(var(--fs-heading) * 1.35);
+}
+
+.text-3xl {
+  font-size: calc(var(--fs-heading) * 1.5);
 }
 
 .text-title {
@@ -254,30 +258,35 @@ h3, h4, h5, h6 {
    Tailwind cùng độ đặc hiệu với .font-mono nên thua theo thứ tự nguồn —
    viết text-[calc(...)] thẳng trong component sẽ bị ép về --fs-mono. */
 .num-lead {
-  font-size: calc(var(--fs-mono) * 1.7);
-  line-height: 1;
+  font-size: calc(var(--fs-mono) * 1.4);
+  line-height: 1.1;
   letter-spacing: -0.01em;
 }
 
-/* Các trường hợp số lớn font-mono trong thẻ KPI / Báo giá / Tính toán */
+/* Các trường hợp số lớn font-mono trong thẻ KPI / Báo giá / Tính toán - tinh chỉnh gọn gàng chuẩn ngân hàng */
+.font-mono.text-base,
+.text-base.font-mono {
+  font-size: var(--fs-title);
+}
+
 .font-mono.text-lg,
 .text-lg.font-mono {
-  font-size: calc(var(--fs-mono) * 1.35);
+  font-size: var(--fs-screen);
 }
 
 .font-mono.text-xl,
 .text-xl.font-mono {
-  font-size: calc(var(--fs-mono) * 1.55);
+  font-size: calc(var(--fs-mono) * 1.25);
 }
 
 .font-mono.text-2xl,
 .text-2xl.font-mono {
-  font-size: calc(var(--fs-mono) * 1.85);
+  font-size: calc(var(--fs-mono) * 1.45);
 }
 
 .font-mono.text-3xl,
 .text-3xl.font-mono {
-  font-size: calc(var(--fs-mono) * 2.2);
+  font-size: calc(var(--fs-mono) * 1.65);
 }
 
 /* Bản in tự dựng HTML riêng, không ăn theo thiết lập màn hình. */

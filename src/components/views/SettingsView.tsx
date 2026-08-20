@@ -233,14 +233,27 @@ export const SettingsView: React.FC = () => {
             </div>
 
             {/* Live Preview Box */}
-            <div className="p-3 bg-surface border border-line rounded-lg space-y-1">
-              <div className="text-xs font-bold text-ink flex items-center justify-between">
-                <span>Xem trước trực quan</span>
-                <span className="text-[10px] text-ink-faint font-normal">Tự động áp dụng</span>
+            <div className="p-3.5 bg-surface border border-line rounded-lg space-y-2">
+              <div className="flex items-center justify-between border-b border-line/60 pb-1.5">
+                <span className="text-[10px] text-ink-faint font-semibold uppercase tracking-wider">Xem trước trực quan</span>
+                <span className="text-[10px] text-pos font-semibold">Tự động áp dụng tức thì</span>
               </div>
-              <p className="text-xs text-ink-muted">
-                Dư nợ tín dụng: <span className="font-bold text-accent font-mono">4.250.000.000 VNĐ</span> · Lãi suất: <span className="font-bold text-pos font-mono">9,50%/năm</span>
-              </p>
+              <div>
+                <h4 className="text-base font-bold text-ink flex items-center gap-1.5">
+                  <span>TIÊU ĐỀ: BẢO LÃNH &amp; TÍN DỤNG DOANH NGHIỆP</span>
+                </h4>
+                <p className="text-sm font-semibold text-accent mt-0.5">
+                  Phụ đề &amp; Nhóm danh mục chức năng
+                </p>
+              </div>
+              <div className="text-xs text-ink-muted flex flex-wrap items-center gap-x-3 gap-y-1 pt-1.5 border-t border-line/40">
+                <span>Nội dung bảng &amp; văn bản thường</span>
+                <span>Dư nợ: <strong className="font-mono font-bold text-accent">4.250.000.000 VNĐ</strong></span>
+                <span>Lãi suất: <strong className="font-mono font-bold text-pos">9,50%/năm</strong></span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-semibold border border-accent/20">
+                  Đang vay
+                </span>
+              </div>
             </div>
           </div>
         </div>

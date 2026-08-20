@@ -54,7 +54,7 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
         <span className="hidden sm:flex items-center justify-center w-7 h-7 rounded-md border border-line-strong font-mono text-[11px] font-bold text-ink bg-panel-muted/60">
           CM
         </span>
-        <h1 className="text-xs font-semibold uppercase tracking-[0.14em] text-ink truncate">
+        <h1 className="text-sm font-semibold uppercase tracking-[0.14em] text-ink truncate">
           {t('header.title')}
         </h1>
       </div>

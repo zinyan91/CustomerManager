@@ -167,25 +167,73 @@ body {
   --fs-table: 12px;
   --fs-small: 11px;
   --fs-mono: 12px;
+  --fs-screen: 18px;
+  --fs-title: 15px;
+  --fs-body: 13px;
+  --fs-dense: 12px;
+  --fs-label: 11px;
+  --fs-num: 24px;
 }
 
 body {
   font-family: var(--app-font);
 }
 
-.text-xs {
-  font-size: var(--fs-table);
+/* Các thẻ tiêu đề mặc định */
+h1 {
+  font-size: var(--fs-screen);
+}
+
+h2 {
+  font-size: var(--fs-title);
+}
+
+h3, h4, h5, h6 {
+  font-size: var(--fs-heading);
+}
+
+/* Thang kích cỡ chữ hệ thống đồng bộ theo thiết lập người dùng */
+.text-\[10px\] {
+  font-size: var(--fs-small);
 }
 
 .text-\[11px\] {
   font-size: var(--fs-small);
 }
 
-.text-\[10px\] {
-  font-size: var(--fs-small);
+.text-xs {
+  font-size: var(--fs-table);
 }
 
 .text-sm {
+  font-size: var(--fs-heading);
+}
+
+.text-base {
+  font-size: var(--fs-title);
+}
+
+.text-lg {
+  font-size: var(--fs-screen);
+}
+
+.text-xl {
+  font-size: calc(var(--fs-heading) * 1.4);
+}
+
+.text-2xl {
+  font-size: calc(var(--fs-heading) * 1.65);
+}
+
+.text-title {
+  font-size: var(--fs-title);
+}
+
+.text-screen {
+  font-size: var(--fs-screen);
+}
+
+.text-heading {
   font-size: var(--fs-heading);
 }
 
@@ -209,6 +257,27 @@ body {
   font-size: calc(var(--fs-mono) * 1.7);
   line-height: 1;
   letter-spacing: -0.01em;
+}
+
+/* Các trường hợp số lớn font-mono trong thẻ KPI / Báo giá / Tính toán */
+.font-mono.text-lg,
+.text-lg.font-mono {
+  font-size: calc(var(--fs-mono) * 1.35);
+}
+
+.font-mono.text-xl,
+.text-xl.font-mono {
+  font-size: calc(var(--fs-mono) * 1.55);
+}
+
+.font-mono.text-2xl,
+.text-2xl.font-mono {
+  font-size: calc(var(--fs-mono) * 1.85);
+}
+
+.font-mono.text-3xl,
+.text-3xl.font-mono {
+  font-size: calc(var(--fs-mono) * 2.2);
 }
 
 /* Bản in tự dựng HTML riêng, không ăn theo thiết lập màn hình. */

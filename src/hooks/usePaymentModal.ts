@@ -121,6 +121,62 @@ export function usePaymentModal({
     }
   };
 
+  const quickSettleAllDue = async () => {
+    if (!selectedContract || schedules.length === 0) return;
+
+    const today = todayIso();
+    const dueUnpaidSchedules = schedules.filter(s => !s.IsPaid && s.DueDate && s.DueDate <= today);
+    if (dueUnpaidSchedules.length === 0) {
+      onNotify('error', 'Không có kỳ nào đến hạn cần thu nhanh.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Xác nhận thu nhanh ${dueUnpaidSchedules.length} kỳ đến hạn theo đúng ngày đến hạn của từng kỳ?`);
+    if (!confirmed) return;
+
+    try {
+      onLoadingChange(true);
+      const draftList = schedules.map(s => {
+        if (!s.IsPaid && s.DueDate && s.DueDate <= today) {
+          return {
+            ...s,
+            IsPaid: true,
+            PaymentDate: s.DueDate,
+            OverdueDays: 0,
+            OverdueInterestAmount: 0,
+            ActualPaidPrincipal: s.ActualPaidPrincipal || (s.PrincipalAmount || 0),
+            ActualPaidInterest: s.ActualPaidInterest || (s.InterestAmount || 0),
+            TotalAmount: (s.PrincipalAmount || 0) + (s.InterestAmount || 0),
+          };
+        }
+        return s;
+      });
+
+      const recalculated = recalculateSchedules(draftList, selectedContract);
+      await bulkSaveRepaymentSchedulesAPI(recalculated);
+
+      const refreshed = await fetchRepaymentSchedulesAPI(selectedContract.Id);
+      const autoInfo = getAutoDebtGroupInfo(refreshed);
+      const newBal = computeOutstandingBalance(refreshed, selectedContract);
+
+      await saveContractAPI({
+        Id: selectedContract.Id,
+        CustomerId: selectedContract.CustomerId,
+        ContractNumber: selectedContract.ContractNumber,
+        CurrentBalance: newBal,
+        DebtGroup: autoInfo.debtGroup,
+      });
+
+      onSaved({ schedules: refreshed, balance: newBal, debtGroup: autoInfo.debtGroup });
+      onNotify('success', `✓ Đã ghi nhận thu nhanh ${dueUnpaidSchedules.length} kỳ đến hạn!`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      onNotify('error', `Không ghi nhận được: ${message}`);
+    } finally {
+      onLoadingChange(false);
+    }
+  };
+
   return {
     editingSchedule,
     overdueDaysStr, setOverdueDaysStr,
@@ -134,5 +190,6 @@ export function usePaymentModal({
     open,
     close,
     save,
+    quickSettleAllDue,
   };
 }

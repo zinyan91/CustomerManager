@@ -233,12 +233,13 @@ export const LoanPortfolioView: React.FC = () => {
             handleSelectContract={handleSelectContract}
             schedules={schedules}
             openPaymentModal={paymentModalProps.open}
+            onQuickSettleAll={paymentModalProps.quickSettleAllDue}
           />
         </Suspense>
       )}
 
       {/* Drawer / Modal Form for KUNN */}
-      {showForm && foundCustomer && (
+      {showForm && foundCustomer && mainTab === 'kunn' && (
         <Suspense fallback={<ComponentFallback />}>
           <KunnForm
             containerCardBg={UI.containerCardBg}

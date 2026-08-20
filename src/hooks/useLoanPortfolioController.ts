@@ -17,8 +17,8 @@ import {
   buildRateFields,
 } from '../lib/rateResolution';
 import { totalUsableCapacity } from '../lib/collateralMath';
-import { checkKunnAgainstContract, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf, summarizeCreditContracts, totalsOfCreditContracts } from '../lib/creditContract';
-import { checkKunnTenor } from '../lib/loanProductRules';
+import { checkKunnAgainstContract, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf, summarizeCreditContracts, totalsOfCreditContracts, computeRemainingTenorMonths } from '../lib/creditContract';
+import { checkKunnTenor, getLoanProductRule } from '../lib/loanProductRules';
 import { useWork } from '../context/WorkContext';
 import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../lib/creditLimit';
@@ -145,7 +145,7 @@ export function useLoanPortfolioController() {
   useEffect(() => {
     const isSingleLoan = form.LoanMethod === 'Cho vay từng lần' || form.LoanMethod === 'Hạn mức tín dụng từng lần';
     if (isSingleLoan) {
-      if (form.LoanTenorMonths) {
+      if (form.LoanTenorMonths && !form.ContractEndDate) {
         const kunnTenorStr = `${form.LoanTenorMonths} tháng`;
         setForm(prev => {
           if (prev.KunnTenor !== kunnTenorStr) {
@@ -161,19 +161,37 @@ export function useLoanPortfolioController() {
         LoanPurpose: prev.LoanPurpose || 'Cho vay Phục vụ Hoạt động Kinh doanh'
       }));
     }
-  }, [form.LoanMethod, form.LoanTenorMonths]);
+  }, [form.LoanMethod, form.LoanTenorMonths, form.ContractEndDate]);
 
   useEffect(() => {
-    if (form.ContractStartDate && form.LoanTenorMonths) {
+    if (form.ContractStartDate && form.LoanTenorMonths && !form.ContractEndDate) {
       const calculatedEnd = addMonthsToDate(form.ContractStartDate, form.LoanTenorMonths);
       if (calculatedEnd && calculatedEnd !== form.ContractEndDate) {
         setForm(prev => ({ ...prev, ContractEndDate: calculatedEnd }));
       }
     }
-  }, [form.ContractStartDate, form.LoanTenorMonths]);
+  }, [form.ContractStartDate, form.LoanTenorMonths, form.ContractEndDate]);
 
   useEffect(() => {
     if (form.DisbursementDate) {
+      if (form.ContractEndDate && form.LoanMethod !== 'Hạn mức tín dụng') {
+        const remaining = computeRemainingTenorMonths(form.DisbursementDate, form.ContractEndDate);
+        if (remaining > 0) {
+          const kunnTenorStr = `${remaining} tháng`;
+          setForm(prev => {
+            if (prev.KunnTenor !== kunnTenorStr || prev.KunnDueDate !== prev.ContractEndDate || prev.LoanTenorMonths !== remaining) {
+              return {
+                ...prev,
+                KunnTenor: kunnTenorStr,
+                LoanTenorMonths: remaining,
+                KunnDueDate: prev.ContractEndDate || prev.KunnDueDate,
+              };
+            }
+            return prev;
+          });
+          return;
+        }
+      }
       const months = parseKunnTenorMonths(form.KunnTenor) || form.LoanTenorMonths || 0;
       if (months > 0) {
         const calculatedKunnEnd = addMonthsToDate(form.DisbursementDate, months);
@@ -182,7 +200,7 @@ export function useLoanPortfolioController() {
         }
       }
     }
-  }, [form.DisbursementDate, form.KunnTenor, form.LoanTenorMonths]);
+  }, [form.DisbursementDate, form.ContractEndDate, form.LoanMethod, form.KunnTenor, form.LoanTenorMonths]);
 
   const prefVal = parseFloat(ratePreferential) || 0;
   const baseVal = parseFloat(rateBase) || 0;
@@ -388,19 +406,33 @@ export function useLoanPortfolioController() {
     setFormKunnNumber(generatedKunnNo);
 
     const isRevolving = cc.LoanMethod === 'Hạn mức tín dụng';
+    const rule = getLoanProductRule(cc.LoanMethod);
+    const disbDate = todayIso();
+    let calculatedTenorMonths = cc.LoanTenorMonths || 12;
+    let kunnDueDate = cc.ContractEndDate || '';
+
+    if (cc.ContractEndDate && !isRevolving) {
+      const remainingMonths = computeRemainingTenorMonths(disbDate, cc.ContractEndDate);
+      if (remainingMonths > 0) {
+        calculatedTenorMonths = remainingMonths;
+        kunnDueDate = cc.ContractEndDate;
+      }
+    }
+
     setForm(prev => ({
       ...prev,
       CreditContractId: cc.Id,
-      LoanMethod: cc.LoanMethod || 'Hạn mức tín dụng',
+      LoanMethod: cc.LoanMethod || 'Cho vay từng lần',
       LoanPurpose: cc.LoanPurpose || prev.LoanPurpose,
       ContractStartDate: cc.ContractStartDate || prev.ContractStartDate,
       ContractEndDate: cc.ContractEndDate || prev.ContractEndDate,
-      LoanTenorMonths: cc.LoanTenorMonths || prev.LoanTenorMonths || 12,
-      KunnTenor: `${cc.LoanTenorMonths || 12} tháng`,
-      DisbursementDate: todayIso(),
+      LoanTenorMonths: calculatedTenorMonths,
+      KunnTenor: `${calculatedTenorMonths} tháng`,
+      KunnDueDate: kunnDueDate || prev.KunnDueDate,
+      DisbursementDate: disbDate,
       PenaltySurcharge: 0,
       PrincipalGracePeriodMonths: isRevolving ? 0 : prev.PrincipalGracePeriodMonths,
-      PrincipalRepaymentMethod: isRevolving ? 'Gốc trả cuối kỳ' : prev.PrincipalRepaymentMethod,
+      PrincipalRepaymentMethod: isRevolving ? 'Gốc trả cuối kỳ' : (rule.defaultPrincipalMethod || 'Trả đều hàng tháng'),
       InterestRepaymentMethod: 'Trả hàng tháng theo dư nợ thực tế',
     }));
   }, [contracts]);

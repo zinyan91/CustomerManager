@@ -14,6 +14,7 @@ import {
   canCloseCreditContract,
   hdtdLifecycle,
   HDTD_LIFECYCLE_LABEL,
+  computeRemainingTenorMonths,
 } from '../creditContract';
 import type { CreditContract, LoanContract } from '../../types';
 
@@ -722,5 +723,30 @@ describe('mức cấp KHÔNG được cộng theo dòng KUNN', () => {
     expect(r.granted).toBe(2_000_000_000);
     expect(r.outstanding).toBe(1_200_000_000);
     expect(r.available).toBe(800_000_000);
+  });
+});
+
+describe('computeRemainingTenorMonths — tính số kỳ KUNN còn lại theo tiến độ HĐTD', () => {
+  it('giải ngân đợt đầu đúng ngày bắt đầu 20 năm: ra đúng 240 kỳ', () => {
+    expect(computeRemainingTenorMonths('2026-01-01', '2046-01-01')).toBe(240);
+  });
+
+  it('giải ngân đợt 2 ngày 20/08/2026 với HĐTD đáo hạn 01/01/2046: ra đúng 233 kỳ', () => {
+    expect(computeRemainingTenorMonths('2026-08-20', '2046-01-01')).toBe(233);
+  });
+
+  it('giải ngân ngày 01/01/2026 với HĐTD 1 năm đáo hạn 31/12/2026: ra 12 kỳ', () => {
+    expect(computeRemainingTenorMonths('2026-01-01', '2026-12-31')).toBe(12);
+  });
+
+  it('ngày giải ngân trùng hoặc sau ngày đáo hạn thì trả về 0', () => {
+    expect(computeRemainingTenorMonths('2046-01-01', '2046-01-01')).toBe(0);
+    expect(computeRemainingTenorMonths('2046-02-01', '2046-01-01')).toBe(0);
+  });
+
+  it('đầu vào rỗng hoặc sai định dạng trả về 0', () => {
+    expect(computeRemainingTenorMonths(null, '2046-01-01')).toBe(0);
+    expect(computeRemainingTenorMonths('2026-01-01', '')).toBe(0);
+    expect(computeRemainingTenorMonths('invalid', '2046-01-01')).toBe(0);
   });
 });

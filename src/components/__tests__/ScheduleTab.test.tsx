@@ -114,31 +114,7 @@ describe('ScheduleTab dựng được lên', () => {
   });
 });
 
-describe('cột Ghi nhận luôn với tới được, không cần kéo ngang', () => {
-  it('ô Thao tác dán bên phải ở cả đầu bảng, thân bảng và chân bảng', () => {
-    dungLen();
-    const table = document.querySelector('table')!;
-
-    const th = [...table.querySelectorAll('thead th')].pop()!;
-    expect(th.className).toContain('sticky');
-    expect(th.className).toContain('right-0');
-
-    const td = [...table.querySelectorAll('tbody tr')][0].querySelector('td:last-child')!;
-    expect(td.className).toContain('sticky');
-    expect(td.className).toContain('right-0');
-
-    const tfootCell = table.querySelector('tfoot tr')!.querySelector('td:last-child')!;
-    expect(tfootCell.className).toContain('sticky');
-  });
-
-  it('ô dán phải có nền đặc để dòng cuộn qua không lộ ra dưới nút', () => {
-    dungLen();
-    const table = document.querySelector('table')!;
-    const cells = [...table.querySelectorAll('tbody tr')].map(r => r.querySelector('td:last-child')!);
-    for (const c of cells) {
-      expect(c.className).toMatch(/bg-(panel|accent-soft)/);
-    }
-  });
+describe('cột Ghi nhận và thao tác', () => {
 
   it('bảng còn 8 cột — ô chọn kỳ gộp vào cột Kỳ, không chiếm cột riêng', () => {
     dungLen();
@@ -178,5 +154,56 @@ describe('cột Ghi nhận luôn với tới được, không cần kéo ngang',
     expect(nut).toHaveLength(3);
     await user.click(nut[2]);
     expect(goi).toEqual([3]);
+  });
+
+  it('nút Thu nhanh sáng khi có kỳ đến hạn chưa thanh toán và bấm được', async () => {
+    const user = userEvent.setup();
+    const onQuickSettleAll = vi.fn();
+    render(
+      <ThemeProvider>
+        <LanguageProvider>
+          <ScheduleTab
+            contracts={[kunn]}
+            selectedContract={kunn}
+            handleSelectContract={() => {}}
+            schedules={lich}
+            openPaymentModal={() => {}}
+            onQuickSettleAll={onQuickSettleAll}
+          />
+        </LanguageProvider>
+      </ThemeProvider>
+    );
+
+    const nutThuNhanh = screen.getByRole('button', { name: /Thu nhanh/ });
+    expect(nutThuNhanh).toBeTruthy();
+    expect((nutThuNhanh as HTMLButtonElement).disabled).toBe(false);
+
+    await user.click(nutThuNhanh);
+    expect(onQuickSettleAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('nút Thu nhanh bị disable khi toàn bộ kỳ đã thu hoặc chưa tới hạn', () => {
+    const allPaid = [
+      ky({ Id: 1, PeriodNumber: 1, DueDate: '2026-02-08', IsPaid: true }),
+      ky({ Id: 2, PeriodNumber: 2, DueDate: '2026-07-08', IsPaid: true }),
+    ];
+
+    render(
+      <ThemeProvider>
+        <LanguageProvider>
+          <ScheduleTab
+            contracts={[kunn]}
+            selectedContract={kunn}
+            handleSelectContract={() => {}}
+            schedules={allPaid}
+            openPaymentModal={() => {}}
+            onQuickSettleAll={vi.fn()}
+          />
+        </LanguageProvider>
+      </ThemeProvider>
+    );
+
+    const nutThuNhanh = screen.getByRole('button', { name: /Thu nhanh/ });
+    expect((nutThuNhanh as HTMLButtonElement).disabled).toBe(true);
   });
 });

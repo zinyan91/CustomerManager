@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { fmtDate, fmtMoney, fmtNumber, fmtRate } from '../../lib/utils';
+import { fmtDate, fmtMoney, fmtNumber, fmtRate, todayIso } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { isScheduleFullySettled, isBulletPrincipal, kunnPrincipal, computeOutstandingBalance } from '../../lib/loanMath';
 import { periodObligation, sumObligations } from '../../lib/scheduleView';
@@ -16,6 +16,7 @@ interface ScheduleTabProps {
   handleSelectContract: (c: LoanContract) => void;
   schedules: RepaymentSchedule[];
   openPaymentModal: (s: RepaymentSchedule) => void;
+  onQuickSettleAll?: () => void;
 }
 
 const DENSITY_KEY = 'schedule_density';
@@ -23,7 +24,7 @@ const DENSITY_KEY = 'schedule_density';
 const num = (v: number) => (v > 0 ? fmtNumber(v) : '–');
 
 export const ScheduleTab: React.FC<ScheduleTabProps> = ({
-  contracts, selectedContract, handleSelectContract, schedules, openPaymentModal,
+  contracts, selectedContract, handleSelectContract, schedules, openPaymentModal, onQuickSettleAll,
 }) => {
   const { t } = useLang();
   const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null);
@@ -51,8 +52,6 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
 
   const cell = `${TABLE_CELL} whitespace-nowrap`;
   const headCell = `px-[var(--row-px)] py-2 ${TABLE_HEAD} font-semibold whitespace-nowrap`;
-  const stickyHead = 'sticky right-0 z-20 bg-panel-muted border-l border-line';
-  const stickyCell = 'sticky right-0 z-10 border-l border-line';
 
   return (
     <div className="space-y-3" data-density={density}>
@@ -119,20 +118,39 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
             )}
           </div>
 
-          <div className="inline-flex rounded-md border border-line overflow-hidden" role="group" aria-label={t('schedule.density')}>
-            {(['cozy', 'compact'] as Density[]).map(d => (
+          <div className="flex items-center gap-2">
+            {onQuickSettleAll && (
               <button
-                key={d}
                 type="button"
-                onClick={() => setDensity(d)}
-                aria-pressed={density === d}
-                className={`px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
-                  density === d ? 'bg-accent-soft text-accent' : 'text-ink-faint hover:text-ink'
+                onClick={onQuickSettleAll}
+                disabled={!selectedContract || !schedules.some(s => !s.IsPaid && s.DueDate && s.DueDate <= todayIso())}
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-all duration-150 flex items-center gap-1.5 ${
+                  selectedContract && schedules.some(s => !s.IsPaid && s.DueDate && s.DueDate <= todayIso())
+                    ? 'bg-accent text-white border-accent hover:opacity-90 shadow-xs cursor-pointer'
+                    : 'bg-panel-muted text-ink-faint border-line opacity-60 cursor-not-allowed'
                 }`}
+                title={selectedContract && schedules.some(s => !s.IsPaid && s.DueDate && s.DueDate <= todayIso()) ? 'Tự động ghi nhận tất cả các kỳ đến hạn theo đúng ngày đến hạn' : 'Không có kỳ nào đến hạn cần thu'}
               >
-                {d === 'cozy' ? t('schedule.densityCozy') : t('schedule.densityCompact')}
+                <span className="text-xs">⚡</span>
+                <span>Thu nhanh</span>
               </button>
-            ))}
+            )}
+
+            <div className="inline-flex rounded-md border border-line overflow-hidden" role="group" aria-label={t('schedule.density')}>
+              {(['cozy', 'compact'] as Density[]).map(d => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDensity(d)}
+                  aria-pressed={density === d}
+                  className={`px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
+                    density === d ? 'bg-accent-soft text-accent' : 'text-ink-faint hover:text-ink'
+                  }`}
+                >
+                  {d === 'cozy' ? t('schedule.densityCozy') : t('schedule.densityCompact')}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -147,7 +165,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                 <th className={`${headCell} text-right`}>{t('schedule.due')}</th>
                 <th className={`${headCell} text-right`}>{t('schedule.unpaid')}</th>
                 <th className={headCell}>{t('schedule.paymentDate')}</th>
-                <th className={`${headCell} text-right ${stickyHead}`}>{t('schedule.actions')}</th>
+                <th className={`${headCell} text-right`}>{t('schedule.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -221,7 +239,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                       {s.PaymentDate ? fmtDate(s.PaymentDate) : '–'}
                     </td>
                     <td
-                      className={`${cell} text-right ${stickyCell} ${isSelectedRow ? 'bg-accent-soft' : 'bg-panel'}`}
+                      className={`${cell} text-right`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
@@ -252,8 +270,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                   <td className={`${cell} text-right font-mono font-bold ${grandTotal.unpaid > 0 ? 'text-neg' : 'text-ink-faint'}`}>
                     {fmtNumber(grandTotal.unpaid)}
                   </td>
-                  <td></td>
-                  <td className={`${stickyCell} bg-panel-muted`}></td>
+                  <td colSpan={2}></td>
                 </tr>
               </tfoot>
             )}

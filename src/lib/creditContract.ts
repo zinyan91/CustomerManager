@@ -113,6 +113,29 @@ export function hdtdLifecycle(
   return 'active';
 }
 
+export function computeRemainingTenorMonths(
+  disbursementDate?: string | null,
+  maturityDate?: string | null
+): number {
+  const disb = toIso(disbursementDate);
+  const end = toIso(maturityDate);
+  if (!disb || !end || disb >= end) return 0;
+
+  const d1 = new Date(disb + 'T00:00:00Z');
+  const d2 = new Date(end + 'T00:00:00Z');
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return 0;
+
+  const yDiff = d2.getUTCFullYear() - d1.getUTCFullYear();
+  const mDiff = d2.getUTCMonth() - d1.getUTCMonth();
+  let totalMonths = yDiff * 12 + mDiff;
+
+  if (d2.getUTCDate() > d1.getUTCDate()) {
+    totalMonths += 1;
+  }
+
+  return Math.max(1, totalMonths);
+}
+
 export function checkKunnAgainstContract(
   kunn: Pick<LoanContract, 'DisbursementDate' | 'KunnDueDate' | 'LoanAmount'>,
   contract?: Pick<CreditContract, 'HdtdNumber' | 'ContractStartDate' | 'ContractEndDate' | 'IsClosed'> | null

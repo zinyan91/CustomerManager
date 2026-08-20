@@ -70,9 +70,13 @@ describe('Hạn mức tín dụng — vay ngắn hạn sản xuất kinh doanh',
 describe('Cho vay từng lần — vay dài hạn phục vụ đời sống', () => {
   const M = 'Cho vay từng lần';
 
-  it('có ba mục đích: tiêu dùng, xây/sửa nhà, mua nhà', () => {
+  it('có bốn mục đích: tiêu dùng, xây/sửa nhà, mua nhà, mua nhà hình thành tương lai', () => {
     expect(allowedPurposes(M).map(p => p.value))
-      .toEqual(['Tiêu dùng', 'Sửa chữa nhà', 'Mua bất động sản']);
+      .toEqual(['Tiêu dùng', 'Sửa chữa nhà', 'Mua bất động sản', 'Mua nhà ở hình thành trong tương lai']);
+  });
+
+  it('mặc định phương thức trả gốc là Trả đều hàng tháng', () => {
+    expect(getLoanProductRule(M).defaultPrincipalMethod).toBe('Trả đều hàng tháng');
   });
 
   it('KHÔNG khoá ô mục đích vay', () => {
@@ -82,6 +86,10 @@ describe('Cho vay từng lần — vay dài hạn phục vụ đời sống', ()
   it('không cho chọn mục đích kinh doanh', () => {
     expect(allowedPurposes(M).map(p => p.value)).not.toContain('Kinh doanh');
     expect(checkPurpose(M, 'Kinh doanh').ok).toBe(false);
+  });
+
+  it('cho phép chọn mục đích Mua nhà ở hình thành trong tương lai', () => {
+    expect(checkPurpose(M, 'Mua nhà ở hình thành trong tương lai').ok).toBe(true);
   });
 
   it('ân hạn gốc đúng các mức 6/12/15/18/24/36 tháng', () => {
@@ -114,7 +122,7 @@ describe('Cho vay từng lần — vay dài hạn phục vụ đời sống', ()
 
 describe('Các sản phẩm chưa khai báo ràng buộc riêng', () => {
   it('giữ nguyên hành vi thoáng — không giới hạn mục đích', () => {
-    expect(allowedPurposes('Hạn mức tín dụng từng lần')).toHaveLength(5);
+    expect(allowedPurposes('Hạn mức tín dụng từng lần')).toHaveLength(6);
     expect(isPurposeLocked('Hạn mức tín dụng từng lần')).toBe(false);
   });
 
@@ -124,7 +132,7 @@ describe('Các sản phẩm chưa khai báo ràng buộc riêng', () => {
   });
 
   it('phương thức vay chưa xác định cũng không vỡ', () => {
-    expect(allowedPurposes(null)).toHaveLength(5);
+    expect(allowedPurposes(null)).toHaveLength(6);
     expect(checkTenor(null, 100).ok).toBe(true);
     expect(checkGrace(undefined, 0).ok).toBe(true);
   });
@@ -155,6 +163,7 @@ describe('purposeLabel', () => {
     expect(purposeLabel('Tiêu dùng')).toBe('Tiêu dùng phục vụ đời sống');
     expect(purposeLabel('Sửa chữa nhà')).toBe('Xây / sửa chữa nhà');
     expect(purposeLabel('Mua bất động sản')).toBe('Mua nhà / bất động sản');
+    expect(purposeLabel('Mua nhà ở hình thành trong tương lai')).toBe('Mua nhà ở hình thành trong tương lai (căn hộ/chung cư)');
   });
 
   it('giá trị lạ thì hiển thị nguyên văn, không làm mất dữ liệu cũ', () => {

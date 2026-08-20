@@ -1,9 +1,10 @@
 export const LOAN_PURPOSES: ReadonlyArray<{ value: string; label: string }> = [
-  { value: 'Kinh doanh',          label: 'Sản xuất kinh doanh' },
-  { value: 'Tiêu dùng',           label: 'Tiêu dùng phục vụ đời sống' },
-  { value: 'Sửa chữa nhà',        label: 'Xây / sửa chữa nhà' },
-  { value: 'Mua bất động sản',    label: 'Mua nhà / bất động sản' },
-  { value: 'Khác',                label: 'Khác' },
+  { value: 'Kinh doanh',                             label: 'Sản xuất kinh doanh' },
+  { value: 'Tiêu dùng',                              label: 'Tiêu dùng phục vụ đời sống' },
+  { value: 'Sửa chữa nhà',                           label: 'Xây / sửa chữa nhà' },
+  { value: 'Mua bất động sản',                       label: 'Mua nhà / bất động sản' },
+  { value: 'Mua nhà ở hình thành trong tương lai',   label: 'Mua nhà ở hình thành trong tương lai (căn hộ/chung cư)' },
+  { value: 'Khác',                                   label: 'Khác' },
 ];
 
 export function purposeLabel(value?: string | null): string {
@@ -55,7 +56,7 @@ const RULES: Record<string, LoanProductRule> = {
   },
 
   'Cho vay từng lần': {
-    purposes: ['Tiêu dùng', 'Sửa chữa nhà', 'Mua bất động sản'],
+    purposes: ['Tiêu dùng', 'Sửa chữa nhà', 'Mua bất động sản', 'Mua nhà ở hình thành trong tương lai'],
     defaultPurpose: 'Tiêu dùng',
     lockPurpose: false,
     tenor: { min: 60, max: 360 },

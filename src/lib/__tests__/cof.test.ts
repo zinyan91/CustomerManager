@@ -5,14 +5,18 @@ import {
 } from '../cof';
 import type { CofProgram, CofRateItem, CofStandardRate } from '../cof';
 
-const current: CofProgram = {
-  Id: 1, Name: 'COF hiện hành', DocumentNumber: '2294/2026/TB-BĐH',
-  DocumentDate: '2026-07-17', EffectiveFrom: '2026-07-28', EffectiveTo: null,
+const prog2294: CofProgram = {
+  Id: 1, Name: 'COF 2294', DocumentNumber: '2294/2026/TB-BĐH',
+  DocumentDate: '2026-07-17', EffectiveFrom: '2026-07-28', EffectiveTo: '2026-08-20',
   SourceVerified: true,
 };
-const previous: CofProgram = {
-  ...current, Id: 2, DocumentNumber: '1299/2026/TB-TGĐ',
+const prog1299: CofProgram = {
+  ...prog2294, Id: 2, DocumentNumber: '1299/2026/TB-TGĐ',
   EffectiveFrom: '2026-05-11', EffectiveTo: '2026-07-27',
+};
+const prog2523: CofProgram = {
+  ...prog2294, Id: 3, DocumentNumber: '2523/2026/TB-BĐH',
+  DocumentDate: '2026-08-18', EffectiveFrom: '2026-08-21', EffectiveTo: null,
 };
 
 const rates: CofStandardRate[] = [
@@ -24,22 +28,24 @@ const rates: CofStandardRate[] = [
 
 describe('findActiveCofProgram', () => {
   it('picks the notice in force on the date', () => {
-    expect(findActiveCofProgram([previous, current], '2026-08-04')?.DocumentNumber)
+    expect(findActiveCofProgram([prog1299, prog2294, prog2523], '2026-08-04')?.DocumentNumber)
       .toBe('2294/2026/TB-BĐH');
   });
 
   it('falls back to the earlier notice before the new one starts', () => {
-    expect(findActiveCofProgram([previous, current], '2026-07-20')?.DocumentNumber)
+    expect(findActiveCofProgram([prog1299, prog2294, prog2523], '2026-07-20')?.DocumentNumber)
       .toBe('1299/2026/TB-TGĐ');
   });
 
-  it('includes the first day of effect', () => {
-    expect(findActiveCofProgram([previous, current], '2026-07-28')?.DocumentNumber)
-      .toBe('2294/2026/TB-BĐH');
+  it('picks the newest 2523 notice from 2026-08-21', () => {
+    expect(findActiveCofProgram([prog1299, prog2294, prog2523], '2026-08-21')?.DocumentNumber)
+      .toBe('2523/2026/TB-BĐH');
+    expect(findActiveCofProgram([prog1299, prog2294, prog2523], '2026-09-01')?.DocumentNumber)
+      .toBe('2523/2026/TB-BĐH');
   });
 
   it('returns null before any notice applies', () => {
-    expect(findActiveCofProgram([previous, current], '2026-01-01')).toBeNull();
+    expect(findActiveCofProgram([prog1299, prog2294, prog2523], '2026-01-01')).toBeNull();
     expect(findActiveCofProgram([], '2026-08-04')).toBeNull();
   });
 });

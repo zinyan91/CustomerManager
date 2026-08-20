@@ -1258,11 +1258,12 @@ Số tiền luôn `font-mono` — lớp này đã bật `tabular-nums`, cột s�
 
 `react-router` v7. Bảng đường dẫn khai một chỗ ở `src/lib/routes.ts`; `src/lib/navigation.ts`
 đọc từ đó nên thanh bên và bảng lệnh không thể lệch đường dẫn. Nhưng `App.tsx` viết cứng
-21 thẻ `<Route>` và không đọc `NAV_ITEMS` hay `NAV_GROUPS` — thêm màn phải sửa **ba** chỗ:
-`routes.ts` (đường dẫn), `navigation.ts` (mục thanh bên) và `App.tsx` (tuyến đường cùng
-import `lazy`). Quên chỗ thứ ba: mục menu vẫn hiện đủ trên thanh bên, nhưng bấm vào thì
-lặng lẽ nhảy về `/dashboard` — không lỗi, không cảnh báo, và không test nào bắt được ngoài
-`src/components/__tests__/routing.test.tsx` (dựng `App` thật, không phải `AppLayout` giả).
+một thẻ `<Route>` cho mỗi màn, cộng tuyến gốc và tuyến bắt đường dẫn lạ, và nó không đọc
+`NAV_ITEMS` hay `NAV_GROUPS` — thêm màn phải sửa **ba** chỗ: `routes.ts` (đường dẫn),
+`navigation.ts` (mục thanh bên) và `App.tsx` (tuyến đường cùng import `lazy`). Quên chỗ
+thứ ba: mục menu vẫn hiện đủ trên thanh bên, nhưng bấm vào thì lặng lẽ nhảy về `/dashboard`
+— không lỗi, không cảnh báo, và không test nào bắt được ngoài `src/components/__tests__/routing.test.tsx`
+(dựng `App` thật, không phải `AppLayout` giả).
 
 `vercel.json` đã có sẵn rewrite `/(.*) → /index.html`, nên F5 ở đường dẫn con không ra 404
 trên bản đã triển khai. Đừng gỡ dòng đó.
@@ -1271,16 +1272,19 @@ trên bản đã triển khai. Đừng gỡ dòng đó.
 tránh rắc rối mã hoá và công cụ. Chúng bám sát `ScreenId`, cộng tiền tố nhóm `/tools/` và
 `/reference/`. Test `src/lib/__tests__/routes.test.ts` giữ ba quy tắc đó.
 
-**Cầu tạm cần gỡ.** `WorkContext.activeTab` / `setActiveTab` giữ nguyên chữ ký cũ nhưng nay
-đọc từ `screenIdOfPath(location.pathname)` và ghi bằng `navigate(ROUTE_OF[tab])` — không còn
-state riêng. Rà soát 20/08/2026: chỉ còn **3 tệp** gọi `setActiveTab`, không phải cả 19 màn —
-`WorkContext.tsx` (dùng nội bộ ở `requestDisburse`), `CustomerListView.tsx` và
+**Cầu tạm cần gỡ.** `WorkContext.setActiveTab` giữ nguyên chữ ký cũ `(t: string) => void` nhưng nay
+ghi bằng `navigate(ROUTE_OF[tab])`, không còn state riêng — `activeTab` đã gỡ hết khỏi
+`WorkContext` vì không component nào đọc nó, chỉ buộc `WorkProvider` gọi `useLocation()` khiến cả
+cây provider render lại mỗi lần điều hướng. Rà soát 20/08/2026: chỉ còn **3 tệp** gọi
+`setActiveTab` — `WorkContext.tsx` (dùng nội bộ ở `requestDisburse`), `CustomerListView.tsx` và
 `DashboardView.tsx` (mỗi màn nhảy sang HĐTD / Khoản vay / TSĐB ngay sau khi chọn một khách
 hàng). Đây là **đích chưa xong**: hai màn đó nên gọi `useNavigate` trực tiếp thay vì qua cầu
-— chuyển nốt ở đợt 3–7, xong thì gỡ `activeTab` / `setActiveTab` khỏi `WorkContext`.
+— chuyển nốt ở đợt 3–7, xong thì gỡ `setActiveTab` khỏi `WorkContext`.
 
 Sáu màn hồ sơ khách hàng hiện dùng đường dẫn phẳng (`/loans`, `/collaterals`…). Đợt 1b lồng
-chúng vào `/customers/:id/` theo spec §6.1. Mười ba đường dẫn còn lại đã là hình cuối.
+chúng vào `/customers/:id/` theo spec §6.1. Còn những đường dẫn công cụ sẽ thay đổi: `/tools/calculators`
+thêm đoạn `:tool` theo §6.1, `/tools/purchase-statement` và `/tools/retail-invoice` biến mất vào
+`/tools/inventory` ở đợt 5 khi gộp ba màn tồn kho.
 
 ### Hai ngôn ngữ
 

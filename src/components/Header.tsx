@@ -4,6 +4,7 @@ import { Sun, Moon, Menu, LogOut, ShieldCheck, User, Search } from 'lucide-react
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import { LANGS, LANG_SWITCH_ENABLED } from '../lib/i18n';
+import { useApiHealth } from '../hooks/useApiHealth';
 
 interface HeaderProps {
   onToggleMobileMenu?: () => void;
@@ -15,6 +16,7 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
   const { user, role, fullName, isAdmin, signOut } = useAuth();
   const { lang, setLang, t } = useLang();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const { reachable } = useApiHealth();
 
   useEffect(() => {
     const len = () => setIsOnline(true);
@@ -77,11 +79,11 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
 
         <span className="hidden md:flex items-center gap-1.5 text-xs">
           <span
-            className={`w-1.5 h-1.5 rounded-full ${!isOnline ? 'bg-neg' : 'bg-pos'}`}
+            className={`w-1.5 h-1.5 rounded-full ${!isOnline ? 'bg-neg' : !reachable ? 'bg-warn' : 'bg-pos'}`}
             aria-hidden="true"
           />
-          <span className={!isOnline ? 'text-neg font-semibold' : 'text-ink-muted'}>
-            {!isOnline ? t('header.offline') : t('header.online')}
+          <span className={!isOnline ? 'text-neg font-semibold' : !reachable ? 'text-warn font-semibold' : 'text-ink-muted'}>
+            {!isOnline ? t('header.offline') : !reachable ? t('header.serverUnreachable') : t('header.online')}
           </span>
         </span>
 

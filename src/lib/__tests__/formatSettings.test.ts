@@ -3,7 +3,7 @@ import {
   DEFAULT_FORMAT_SETTINGS, STORAGE_KEYS, NUMBER_SEPARATORS,
   loadFormatSettings, saveFormatSettings, resetFormatSettingsCache,
   groupInteger, formatNumberWith, formatMoneyWith, formatDecimalWith,
-  formatPercentWith, formatTimeWith,
+  formatPercentWith, formatTimeWith, parseNumberWith, parseMoneyWith,
 } from '../formatSettings';
 import type { FormatSettings } from '../formatSettings';
 
@@ -220,3 +220,45 @@ describe('NUMBER_SEPARATORS', () => {
     }
   });
 });
+
+describe('parseNumberWith', () => {
+  it('đọc đúng định dạng kiểu Việt Nam (vi: chấm ngăn nghìn, phẩy thập phân)', () => {
+    expect(parseNumberWith('1.234.567,89', 'vi')).toBe(1234567.89);
+    expect(parseNumberWith('350.000', 'vi')).toBe(350000);
+    expect(parseNumberWith('329.000', 'vi')).toBe(329000);
+    expect(parseNumberWith('74.484.800', 'vi')).toBe(74484800);
+    expect(parseNumberWith('1,25', 'vi')).toBe(1.25);
+    expect(parseNumberWith('1.25', 'vi')).toBe(1.25); // fallback dot on numpad
+  });
+
+  it('đọc đúng định dạng kiểu Quốc tế (en: phẩy ngăn nghìn, chấm thập phân)', () => {
+    expect(parseNumberWith('1,234,567.89', 'en')).toBe(1234567.89);
+    expect(parseNumberWith('350,000', 'en')).toBe(350000);
+    expect(parseNumberWith('74,484,800', 'en')).toBe(74484800);
+    expect(parseNumberWith('1.25', 'en')).toBe(1.25);
+  });
+
+  it('đọc đúng định dạng khoảng trắng (space: khoảng trắng ngăn nghìn, phẩy thập phân)', () => {
+    expect(parseNumberWith('1 234 567,89', 'space')).toBe(1234567.89);
+    expect(parseNumberWith('350 000', 'space')).toBe(350000);
+    expect(parseNumberWith('74 484 800', 'space')).toBe(74484800);
+  });
+
+  it('xử lý các giá trị rỗng hoặc không hợp lệ', () => {
+    expect(parseNumberWith('', 'vi')).toBe(0);
+    expect(parseNumberWith(null, 'vi')).toBe(0);
+    expect(parseNumberWith(undefined, 'vi')).toBe(0);
+    expect(parseNumberWith('abc', 'vi')).toBe(0);
+  });
+});
+
+describe('parseMoneyWith', () => {
+  it('đọc tiền nguyên và làm tròn theo setting', () => {
+    expect(parseMoneyWith('350.000', vi)).toBe(350000);
+    expect(parseMoneyWith('350,000', en)).toBe(350000);
+    expect(parseMoneyWith('350 000', space)).toBe(350000);
+    expect(parseMoneyWith('74.484.800', vi)).toBe(74484800);
+    expect(parseMoneyWith('1234.56', vi)).toBe(1235);
+  });
+});
+

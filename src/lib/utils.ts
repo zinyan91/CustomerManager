@@ -1,9 +1,10 @@
 import {
   loadFormatSettings, formatMoneyWith, formatNumberWith, formatPercentWith,
+  parseNumberWith, parseMoneyWith,
   groupInteger, NUMBER_SEPARATORS,
 } from './formatSettings';
 
-export { formatMoneyWith, formatNumberWith, formatPercentWith } from './formatSettings';
+export { formatMoneyWith, formatNumberWith, formatPercentWith, parseNumberWith, parseMoneyWith } from './formatSettings';
 
 export function formatNationalId(v?: string | null): string {
   if (v === null || v === undefined) return '';
@@ -34,57 +35,15 @@ export function formatMoneyInput(value: string): string {
 }
 
 export function parseMoneyInput(value: string): number {
-  if (!value) return 0;
-  const digits = value.replace(/\D/g, '');
-  return parseFloat(digits) || 0;
+  return parseMoneyWith(value, loadFormatSettings());
 }
 
 export function parseDecimalNumber(value: string): number {
-  if (!value) return 0;
-  const s = String(value).trim();
-  if (!s) return 0;
-
-  const hasDot = s.includes('.');
-  const hasComma = s.includes(',');
-
-  let cleaned = '';
-  if (hasDot && hasComma) {
-    const lastDot = s.lastIndexOf('.');
-    const lastComma = s.lastIndexOf(',');
-    if (lastDot > lastComma) {
-      cleaned = s.replace(/,/g, '');
-    } else {
-      cleaned = s.replace(/\./g, '').replace(',', '.');
-    }
-  } else if (hasDot) {
-    const dotCount = (s.match(/\./g) || []).length;
-    if (dotCount === 1) {
-      if (/^\d{1,3}\.\d{3}$/.test(s)) {
-        cleaned = s.replace(/\./g, '');
-      } else {
-        cleaned = s;
-      }
-    } else {
-      cleaned = s.replace(/\./g, '');
-    }
-  } else if (hasComma) {
-    const commaCount = (s.match(/,/g) || []).length;
-    if (commaCount === 1) {
-      cleaned = s.replace(',', '.');
-    } else {
-      cleaned = s.replace(/,/g, '');
-    }
-  } else {
-    cleaned = s;
-  }
-
-  cleaned = cleaned.replace(/[^\d.-]/g, '');
-  const n = parseFloat(cleaned);
-  return isNaN(n) ? 0 : n;
+  return parseNumberWith(value, loadFormatSettings().numberStyle);
 }
 
 export function parseMoneyDecimalInput(value: string): number {
-  return parseDecimalNumber(value);
+  return parseNumberWith(value, loadFormatSettings().numberStyle);
 }
 
 export function fmtMoney(v?: number | null): string {

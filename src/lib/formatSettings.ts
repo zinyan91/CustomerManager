@@ -176,8 +176,84 @@ export function formatTimeWith(
   return `${String(h12).padStart(2, '0')}:${mm} ${suffix}`;
 }
 
+export function parseNumberWith(
+  value: string | number | null | undefined,
+  style: NumberStyle = loadFormatSettings().numberStyle
+): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return isNaN(value) ? 0 : value;
+
+  const s = String(value).trim();
+  if (!s) return 0;
+
+  const hasDot = s.includes('.');
+  const hasComma = s.includes(',');
+  const hasSpace = /\s/.test(s);
+
+  let cleaned = s;
+
+  if (hasSpace) {
+    cleaned = cleaned.replace(/\s+/g, '');
+  }
+
+  if (hasDot && hasComma) {
+    const lastDot = cleaned.lastIndexOf('.');
+    const lastComma = cleaned.lastIndexOf(',');
+    if (lastDot > lastComma) {
+      cleaned = cleaned.replace(/,/g, '');
+    } else {
+      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+    }
+  } else if (hasDot) {
+    const dotCount = (cleaned.match(/\./g) || []).length;
+    if (dotCount > 1) {
+      cleaned = cleaned.replace(/\./g, '');
+    } else {
+      const afterDot = cleaned.split('.')[1] || '';
+      if (style === 'en') {
+        cleaned = cleaned;
+      } else if (afterDot.length === 3) {
+        cleaned = cleaned.replace(/\./g, '');
+      } else {
+        cleaned = cleaned;
+      }
+    }
+  } else if (hasComma) {
+    const commaCount = (cleaned.match(/,/g) || []).length;
+    if (commaCount > 1) {
+      cleaned = cleaned.replace(/,/g, '');
+    } else {
+      const afterComma = cleaned.split(',')[1] || '';
+      if (style === 'en' && afterComma.length === 3) {
+        cleaned = cleaned.replace(/,/g, '');
+      } else {
+        cleaned = cleaned.replace(',', '.');
+      }
+    }
+  }
+
+  cleaned = cleaned.replace(/[^\d.-]/g, '');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+export function parseMoneyWith(
+  value: string | number | null | undefined,
+  settings: FormatSettings = loadFormatSettings()
+): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return isNaN(value) ? 0 : Math.round(value);
+
+  const s = String(value).trim();
+  if (!s) return 0;
+
+  const n = parseNumberWith(s, settings.numberStyle);
+  return Math.round(n);
+}
+
 export const NUMBER_STYLE_SAMPLES: Record<NumberStyle, string> = {
   vi: '1.234.567,89',
   en: '1,234,567.89',
   space: '1 234 567,89',
 };
+

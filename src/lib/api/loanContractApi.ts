@@ -201,6 +201,50 @@ export async function fetchPaidPrincipalMapAPI(): Promise<Record<number, number>
   return map;
 }
 
+const OVERDUE_COLUMNS =
+  'ContractId, DueDate, IsPaid, PrincipalAmount, InterestAmount, OverdueInterestAmount, ActualPaidPrincipal, ActualPaidInterest, PrepaidPrincipalAmount';
+
+export async function fetchPaidPrincipalForContractsAPI(
+  contractIds: number[]
+): Promise<Record<number, number>> {
+  if (contractIds.length === 0) return {};
+
+  const map: Record<number, number> = {};
+  for (const lot of chunk(contractIds, CONTRACT_LOT)) {
+    const { data, error } = await supabase
+      .from('ContractPaidPrincipal')
+      .select('ContractId, PaidPrincipal')
+      .in('ContractId', lot);
+    if (error) throw new Error(error.message);
+
+    for (const row of data || []) {
+      const paid = Number(row.PaidPrincipal);
+      if (Number.isFinite(paid)) map[row.ContractId] = paid;
+    }
+  }
+  return map;
+}
+
+export async function fetchOverdueSchedulesAPI(
+  contractIds: number[],
+  todayIso: string
+): Promise<RepaymentSchedule[]> {
+  if (contractIds.length === 0) return [];
+
+  const all: RepaymentSchedule[] = [];
+  for (const lot of chunk(contractIds, CONTRACT_LOT)) {
+    const { data, error } = await supabase
+      .from('RepaymentSchedules')
+      .select(OVERDUE_COLUMNS)
+      .in('ContractId', lot)
+      .or('IsPaid.is.null,IsPaid.eq.false')
+      .lt('DueDate', todayIso);
+    if (error) throw new Error(error.message);
+    all.push(...((data || []) as unknown as RepaymentSchedule[]));
+  }
+  return all;
+}
+
 export async function bulkSaveRepaymentSchedulesAPI(schedules: Partial<RepaymentSchedule>[]): Promise<void> {
   if (schedules.length === 0) return;
 

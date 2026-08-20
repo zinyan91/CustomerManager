@@ -24,6 +24,28 @@ vi.mock('../../context/AuthContext', () => ({
 
 import { AppLayout as AppLayoutDuoiTest } from '../AppLayout';
 
+vi.mock('../views/DashboardView', () => ({ DashboardView: () => <div>MAN:dashboard</div> }));
+vi.mock('../views/CustomerListView', () => ({ CustomerListView: () => <div>MAN:customers</div> }));
+vi.mock('../views/LoanPortfolioView', () => ({ LoanPortfolioView: () => <div>MAN:loans</div> }));
+vi.mock('../views/CreditContractView', () => ({ CreditContractView: () => <div>MAN:credit-contracts</div> }));
+vi.mock('../views/CollateralView', () => ({ CollateralView: () => <div>MAN:collaterals</div> }));
+vi.mock('../views/CardContractView', () => ({ CardContractView: () => <div>MAN:credit-cards</div> }));
+vi.mock('../views/CardPolicyLookupView', () => ({ CardPolicyLookupView: () => <div>MAN:card-policies</div> }));
+vi.mock('../views/CalculatorView', () => ({ CalculatorView: () => <div>MAN:calculators</div> }));
+vi.mock('../views/MdsdvLookupView', () => ({ MdsdvLookupView: () => <div>MAN:mdsdv</div> }));
+vi.mock('../views/RateQuoteView', () => ({ RateQuoteView: () => <div>MAN:rate-quote</div> }));
+vi.mock('../views/CofView', () => ({ CofView: () => <div>MAN:cof</div> }));
+vi.mock('../views/DocumentTemplateView', () => ({ DocumentTemplateView: () => <div>MAN:templates</div> }));
+vi.mock('../views/SettingsView', () => ({ SettingsView: () => <div>MAN:settings</div> }));
+vi.mock('../views/PostLoanControlView', () => ({ PostLoanControlView: () => <div>MAN:post-loan</div> }));
+vi.mock('../views/BusinessPlanView', () => ({ BusinessPlanView: () => <div>MAN:business-plan</div> }));
+vi.mock('../views/InventoryView', () => ({ InventoryView: () => <div>MAN:inventory</div> }));
+vi.mock('../views/PurchaseStatementView', () => ({ PurchaseStatementView: () => <div>MAN:purchase-statement</div> }));
+vi.mock('../views/RetailInvoiceView', () => ({ RetailInvoiceView: () => <div>MAN:retail-invoice</div> }));
+vi.mock('../views/QuizBankView', () => ({ QuizBankView: () => <div>MAN:quiz-bank</div> }));
+
+import { App as AppThatDuoiTest } from '../../App';
+
 afterEach(cleanup);
 
 describe('bảng đường dẫn', () => {
@@ -68,5 +90,26 @@ describe('AppLayout dựng được trong bộ định tuyến', () => {
     const { container } = dungLen(ROUTE_OF.settings);
     const dangMo = container.querySelector('[aria-current="page"]');
     expect(dangMo).toBeTruthy();
+  });
+});
+
+describe('App thật — mỗi đường dẫn trong ROUTE_OF dựng đúng màn tương ứng', () => {
+  function dungAppO(duongDan: string) {
+    return render(
+      <MemoryRouter initialEntries={[duongDan]}>
+        <ThemeProvider>
+          <LanguageProvider>
+            <WorkProvider>
+              <AppThatDuoiTest />
+            </WorkProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+  }
+
+  it.each(Object.entries(ROUTE_OF))('đường dẫn %s dựng đúng màn', async (id, path) => {
+    dungAppO(path);
+    expect(await screen.findByText(`MAN:${id}`)).toBeTruthy();
   });
 });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from 'react';
 import { Search, X, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import { useLang } from '../context/LanguageContext';
 import { NAV_ITEMS } from '../lib/navigation';
 
@@ -11,6 +11,7 @@ interface CommandPaletteProps {
 
 export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useLang();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -39,9 +40,9 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) =>
   }, [query]);
 
   const handleSelect = useCallback((path: string) => {
-    navigate(path);
+    navigate(path, { replace: path === location.pathname });
     onClose();
-  }, [navigate, onClose]);
+  }, [navigate, location.pathname, onClose]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {

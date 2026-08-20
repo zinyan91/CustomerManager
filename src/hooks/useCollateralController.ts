@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI } from '../lib/api';
 import { parseAnyDate, fmtDate, parseMoneyInput, formatMoneyInput } from '../lib/utils';
+import { useSelectedCustomerId } from './useSelectedCustomerId';
 import {
   defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue,
   maxLoanFromCollateral, totalUsableCapacity, appraisalStatus,
@@ -10,6 +11,7 @@ import type { Collateral, Customer } from '../types';
 export const COL_PAGE_SIZE = 10;
 
 export function useCollateralController() {
+  const scopedCustomerId = useSelectedCustomerId();
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +60,10 @@ export function useCollateralController() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (scopedCustomerId !== null) setInputCustomerId(scopedCustomerId);
+  }, [scopedCustomerId]);
 
   useEffect(() => {
     if (inputAppraisalDate && inputAppraisalTenorMonths) {
@@ -203,6 +209,7 @@ export function useCollateralController() {
   ]);
 
   const filteredCollaterals = useMemo(() => collaterals.filter(col => {
+    if (scopedCustomerId !== null && col.CustomerId !== scopedCustomerId) return false;
     const cust = customers.find(c => c.Id === col.CustomerId);
     if (searchCif.trim() && !cust?.CifKh.toLowerCase().includes(searchCif.trim().toLowerCase())) return false;
     if (searchOwnerName.trim() && !cust?.FullName.toLowerCase().includes(searchOwnerName.trim().toLowerCase())) return false;
@@ -213,7 +220,7 @@ export function useCollateralController() {
       if (!code.includes(q) && !addr.includes(q)) return false;
     }
     return true;
-  }), [collaterals, customers, searchCif, searchOwnerName, searchAssetCode]);
+  }), [collaterals, customers, scopedCustomerId, searchCif, searchOwnerName, searchAssetCode]);
 
   const totalPages = Math.ceil(filteredCollaterals.length / COL_PAGE_SIZE) || 1;
   const paginatedCollaterals = useMemo(() =>

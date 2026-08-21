@@ -3,14 +3,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor, act, fireEvent } from '@testing-library/react';
 
-const fetchCustomers = vi.fn();
+const fetchCustomerById = vi.fn();
 const fetchCreditContracts = vi.fn();
 const fetchContracts = vi.fn();
 const fetchPaid = vi.fn();
 const fetchOverdue = vi.fn();
 
 vi.mock('../../lib/api', () => ({
-  fetchCustomersAPI: (...a: unknown[]) => fetchCustomers(...a),
+  fetchCustomerByIdAPI: (...a: unknown[]) => fetchCustomerById(...a),
   fetchCreditContractsByCustomerAPI: (...a: unknown[]) => fetchCreditContracts(...a),
   fetchContractsByCustomerAPI: (...a: unknown[]) => fetchContracts(...a),
   fetchPaidPrincipalForContractsAPI: (...a: unknown[]) => fetchPaid(...a),
@@ -42,7 +42,7 @@ function Probe({ id }: { id: number | null }) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  fetchCustomers.mockResolvedValue([{ Id: 55, FullName: 'Trần Thị B', CifKh: '900055', Phone: '0900000055' }]);
+  fetchCustomerById.mockResolvedValue({ Id: 55, FullName: 'Trần Thị B', CifKh: '900055', Phone: '0900000055' });
   fetchCreditContracts.mockResolvedValue([{
     Id: 1, CustomerId: 55, HdtdNumber: 'HDTD-01', LoanMethod: 'Hạn mức tín dụng',
     ContractAmount: 1_000_000_000, ContractStartDate: '2026-01-01',
@@ -62,7 +62,7 @@ describe('useCustomerContext', () => {
   it('chưa có khách thì không gọi truy vấn nào', async () => {
     render(<Probe id={null} />);
     await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'));
-    expect(fetchCustomers).not.toHaveBeenCalled();
+    expect(fetchCustomerById).not.toHaveBeenCalled();
     expect(fetchCreditContracts).not.toHaveBeenCalled();
     expect(screen.getByTestId('ten').textContent).toBe('—');
   });
@@ -97,15 +97,15 @@ describe('useCustomerContext', () => {
   });
 
   it('đổi khách khi đang nạp thì phản hồi cũ không được đè lên khách mới', async () => {
-    const khach55 = taoTriHoan<Array<{ Id: number; FullName: string; CifKh: string; Phone: string }>>();
+    const khach55 = taoTriHoan<{ Id: number; FullName: string; CifKh: string; Phone: string } | null>();
     const hdtd55 = taoTriHoan<Array<Record<string, unknown>>>();
     const kunn55 = taoTriHoan<Array<Record<string, unknown>>>();
 
-    fetchCustomers.mockImplementationOnce(() => khach55.hua);
+    fetchCustomerById.mockImplementationOnce(() => khach55.hua);
     fetchCreditContracts.mockImplementationOnce(() => hdtd55.hua);
     fetchContracts.mockImplementationOnce(() => kunn55.hua);
 
-    fetchCustomers.mockResolvedValueOnce([{ Id: 77, FullName: 'Lê Văn C', CifKh: '900077', Phone: '0900000077' }]);
+    fetchCustomerById.mockResolvedValueOnce({ Id: 77, FullName: 'Lê Văn C', CifKh: '900077', Phone: '0900000077' });
     fetchCreditContracts.mockResolvedValueOnce([{
       Id: 2, CustomerId: 77, HdtdNumber: 'HDTD-02', LoanMethod: 'Hạn mức tín dụng',
       ContractAmount: 500_000_000, ContractStartDate: '2026-01-01',
@@ -114,14 +114,14 @@ describe('useCustomerContext', () => {
     fetchContracts.mockResolvedValueOnce([]);
 
     const { rerender } = render(<Probe id={55} />);
-    await waitFor(() => expect(fetchCustomers).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(fetchCustomerById).toHaveBeenCalledTimes(1));
 
     rerender(<Probe id={77} />);
     await waitFor(() => expect(screen.getByTestId('ten').textContent).toBe('Lê Văn C'));
     expect(screen.getByTestId('du-no').textContent).toBe('0');
 
     await act(async () => {
-      khach55.phatDong([{ Id: 55, FullName: 'Trần Thị B', CifKh: '900055', Phone: '0900000055' }]);
+      khach55.phatDong({ Id: 55, FullName: 'Trần Thị B', CifKh: '900055', Phone: '0900000055' });
       hdtd55.phatDong([{
         Id: 1, CustomerId: 55, HdtdNumber: 'HDTD-01', LoanMethod: 'Hạn mức tín dụng',
         ContractAmount: 1_000_000_000, ContractStartDate: '2026-01-01',
@@ -144,13 +144,22 @@ describe('useCustomerContext', () => {
   it('reload() nạp lại và làm mới số liệu', async () => {
     render(<Probe id={55} />);
     await waitFor(() => expect(screen.getByTestId('du-no').textContent).toBe('250000000'));
-    expect(fetchCustomers).toHaveBeenCalledTimes(1);
+    expect(fetchCustomerById).toHaveBeenCalledTimes(1);
 
     fetchPaid.mockResolvedValueOnce({ 100: 350_000_000 });
 
     fireEvent.click(screen.getByTestId('nap-lai'));
 
     await waitFor(() => expect(screen.getByTestId('du-no').textContent).toBe('50000000'));
-    expect(fetchCustomers).toHaveBeenCalledTimes(2);
+    expect(fetchCustomerById).toHaveBeenCalledTimes(2);
+  });
+
+  it('khách không có trong danh sách (không quyền truy cập) thì báo lỗi, không dựng số 0', async () => {
+    fetchCustomerById.mockResolvedValue(null);
+    render(<Probe id={999} />);
+    await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'));
+    expect(screen.getByTestId('loi').textContent).toBe('Không tìm thấy khách hàng hoặc bạn không có quyền truy cập.');
+    expect(screen.getByTestId('du-no').textContent).toBe('—');
+    expect(screen.getByTestId('ten').textContent).toBe('—');
   });
 });

@@ -94,9 +94,14 @@ export function useCreditContractController() {
     }
     if (selectedCustomerId !== customer?.Id) {
       const c = allCustomers.find(x => x.Id === selectedCustomerId);
-      if (c) loadCustomer(c);
+      if (c) {
+        loadCustomer(c);
+      } else {
+        loadCustomer(null);
+        showNotify('error', 'Không tìm thấy khách hàng hoặc bạn không có quyền truy cập.');
+      }
     }
-  }, [selectedCustomerId, allCustomers, customer, loadCustomer]);
+  }, [selectedCustomerId, allCustomers, customer, loadCustomer, showNotify]);
 
   useEffect(() => {
     if (!form.ContractStartDate || !form.LoanTenorMonths) return;

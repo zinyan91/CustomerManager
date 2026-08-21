@@ -19,6 +19,12 @@ export async function fetchCustomersAPI(filters?: { cif?: string; name?: string;
   }
 }
 
+export async function fetchCustomerByIdAPI(id: number): Promise<Customer | null> {
+  const { data, error } = await supabase.from('Customers').select('*').eq('Id', id).maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
 export async function saveCustomerAPI(customer: Partial<Customer>): Promise<Customer> {
   const isUpdate = !!customer.Id;
   const cif = (customer.CifKh || '').trim();

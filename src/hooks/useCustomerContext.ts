@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Customer } from '../types';
 import {
   fetchContractsByCustomerAPI, fetchCreditContractsByCustomerAPI,
-  fetchCustomersAPI, fetchOverdueSchedulesAPI, fetchPaidPrincipalForContractsAPI,
+  fetchCustomerByIdAPI, fetchOverdueSchedulesAPI, fetchPaidPrincipalForContractsAPI,
 } from '../lib/api';
 import { buildCustomerContext, type CustomerContextSummary } from '../lib/customerContext';
 import { todayIso } from '../lib/utils';
@@ -41,12 +41,19 @@ export function useCustomerContext(customerId: number | null): CustomerContextSt
 
     (async () => {
       try {
-        const [dsKhach, hdtds, kunns] = await Promise.all([
-          fetchCustomersAPI(),
+        const [khach, hdtds, kunns] = await Promise.all([
+          fetchCustomerByIdAPI(customerId),
           fetchCreditContractsByCustomerAPI(customerId),
           fetchContractsByCustomerAPI(customerId),
         ]);
         if (huy) return;
+
+        if (!khach) {
+          setCustomer(null);
+          setSummary(null);
+          setError('Không tìm thấy khách hàng hoặc bạn không có quyền truy cập.');
+          return;
+        }
 
         const kunnIds = kunns.map(k => k.Id);
         const [paidPrincipal, overdueSchedules] = kunnIds.length === 0
@@ -57,7 +64,7 @@ export function useCustomerContext(customerId: number | null): CustomerContextSt
             ]);
         if (huy) return;
 
-        setCustomer(dsKhach.find(c => c.Id === customerId) ?? null);
+        setCustomer(khach);
         setSummary(buildCustomerContext({
           creditContracts: hdtds, kunns, paidPrincipal, overdueSchedules, today,
         }));

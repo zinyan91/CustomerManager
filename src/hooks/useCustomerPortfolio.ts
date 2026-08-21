@@ -95,7 +95,15 @@ export function useCustomerPortfolio({
     if (allCustomers.length === 0 || !selectedCustomerId) return;
     if (foundCustomer?.Id === selectedCustomerId) return;
     const c = allCustomers.find(x => x.Id === selectedCustomerId);
-    if (c) pickCustomer(c);
+    if (c) {
+      pickCustomer(c);
+    } else {
+      setFoundCustomer(null);
+      setContracts([]);
+      setCollaterals([]);
+      setCards([]);
+      onNotify('error', 'Không tìm thấy khách hàng hoặc bạn không có quyền truy cập.');
+    }
   }, [selectedCustomerId, allCustomers]);
 
   const search = async (e: React.FormEvent) => {

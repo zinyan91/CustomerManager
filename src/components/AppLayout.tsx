@@ -54,8 +54,8 @@ export function AppLayout() {
           onCloseMobile={handleCloseMobileMenu}
         />
         <main className="flex-1 md:ml-60 min-w-0 bg-surface p-3 sm:p-4 md:p-6 overflow-y-auto">
-          <CustomerContextBar />
           <ErrorBoundary title="Lỗi khi tải giao diện màn hình">
+            <CustomerContextBar />
             <Outlet />
           </ErrorBoundary>
         </main>

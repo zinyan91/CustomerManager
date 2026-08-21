@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { DEFAULT_ROUTE, screenIdOfPath } from '../lib/routes';
 import {
-  isCustomerScopedScreen, parseCustomerPath, screenPathFor,
+  isCustomerScopedScreen, parseCustomerPath, parseNumericId, screenPathFor,
   type CustomerScopedScreen,
 } from '../lib/customerRoutes';
 
@@ -10,7 +10,8 @@ export function useSelectedCustomerId(): number | null {
   const { customerId } = useParams<{ customerId: string }>();
   const { pathname } = useLocation();
 
-  if (customerId && /^\d+$/.test(customerId)) return Number(customerId);
+  const fromParam = parseNumericId(customerId);
+  if (fromParam !== null) return fromParam;
   return parseCustomerPath(pathname)?.customerId ?? null;
 }
 

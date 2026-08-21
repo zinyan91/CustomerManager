@@ -84,4 +84,20 @@ describe('giải ngân qua URL', () => {
     expect(setSearchParamsCalls.length).toBeGreaterThan(0);
     expect(setSearchParamsCalls[setSearchParamsCalls.length - 1]).toEqual({ replace: true });
   });
+
+  it('?disburse không phải số thì bị dọn khỏi URL ngay, không đợi HĐTD nạp xong', async () => {
+    render(
+      <MemoryRouter initialEntries={['/customers/55/loans?disburse=abc']}>
+        <Routes>
+          <Route path="/customers/:customerId/loans" element={<Probe />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(screen.getByTestId('query').textContent).toBe(''));
+
+    expect(setSearchParamsCalls.length).toBeGreaterThan(0);
+    expect(setSearchParamsCalls[setSearchParamsCalls.length - 1]).toEqual({ replace: true });
+    expect(screen.getByTestId('mo-form').textContent).toBe('false');
+  });
+
 });

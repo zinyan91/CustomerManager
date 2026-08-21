@@ -21,6 +21,7 @@ import { totalUsableCapacity } from '../lib/collateralMath';
 import { checkKunnAgainstContract, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf, summarizeCreditContracts, totalsOfCreditContracts, computeRemainingTenorMonths } from '../lib/creditContract';
 import { checkKunnTenor, getLoanProductRule } from '../lib/loanProductRules';
 import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
+import { parseNumericId } from '../lib/customerRoutes';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../lib/creditLimit';
 import type { LoanContract, CreditContract, RateAdjustmentHistoryItem } from '../types';
 import { usePaymentModal } from './usePaymentModal';
@@ -35,12 +36,10 @@ export function useLoanPortfolioController() {
   const selectedCustomerId = useSelectedCustomerId();
   const setSelectedCustomerId = useCustomerNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const disburseCreditContractId = (() => {
-    const raw = searchParams.get('disburse');
-    return raw && /^\d+$/.test(raw) ? Number(raw) : null;
-  })();
+  const rawDisburse = searchParams.get('disburse');
+  const disburseCreditContractId = parseNumericId(rawDisburse);
   const { kunnId: kunnIdParam } = useParams<{ kunnId: string }>();
-  const deepKunnId = kunnIdParam && /^\d+$/.test(kunnIdParam) ? Number(kunnIdParam) : null;
+  const deepKunnId = parseNumericId(kunnIdParam);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -457,14 +456,14 @@ export function useLoanPortfolioController() {
     }));
   }, [contracts]);
 
-  const handleNewContract = useCallback(() => {
+  const handleNewContract = useCallback((): boolean => {
     if (creditContracts.length === 0) {
       showNotify('error', 'Khách hàng chưa có HĐTD. Tạo ở tab Hợp Đồng Tín Dụng trước.');
-      return;
+      return false;
     }
     if (selectableCreditContracts.length === 0) {
       showNotify('error', 'Mọi HĐTD đã hết hiệu lực hoặc đã đóng.');
-      return;
+      return false;
     }
 
     setSelectedContract(null);
@@ -481,6 +480,7 @@ export function useLoanPortfolioController() {
 
     setMainTab('kunn');
     setShowForm(true);
+    return true;
   }, [creditContracts, selectableCreditContracts, setSelectedContract, setSchedules, foundCustomer, selectedMasterFilter, applyCreditContractToForm, showNotify]);
 
   const handleSaveContract = useCallback(async (e: React.FormEvent, forceInsert: boolean = false) => {
@@ -795,7 +795,7 @@ export function useLoanPortfolioController() {
     if (allCustomers.length === 0) return;
     const cc = creditContracts.find(x => x.Id === disburseCreditContractId);
     if (!cc) return;
-    handleNewContract();
+    if (!handleNewContract()) return;
     applyCreditContractToForm(cc);
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
@@ -803,6 +803,17 @@ export function useLoanPortfolioController() {
       return next;
     }, { replace: true });
   }, [disburseCreditContractId, allCustomers, creditContracts, handleNewContract, applyCreditContractToForm, setSearchParams]);
+
+  useEffect(() => {
+    if (rawDisburse === null) return;
+    if (disburseCreditContractId !== null) return;
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete('disburse');
+      return next;
+    }, { replace: true });
+  }, [rawDisburse, disburseCreditContractId, setSearchParams]);
+
 
   return {
     selectedCustomerId,

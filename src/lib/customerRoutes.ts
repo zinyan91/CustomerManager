@@ -21,6 +21,10 @@ export function isCustomerScopedScreen(id: ScreenId): id is CustomerScopedScreen
   return (CUSTOMER_SCOPED_SCREENS as readonly string[]).includes(id);
 }
 
+export function parseNumericId(raw?: string | null): number | null {
+  return raw && /^\d+$/.test(raw) ? Number(raw) : null;
+}
+
 export function customerPath(screen: CustomerScopedScreen, customerId: number): string {
   return `/customers/${customerId}${ROUTE_OF[screen]}`;
 }
@@ -45,8 +49,8 @@ export function parseCustomerPath(pathname: string): ParsedCustomerPath | null {
   const parts = pathname.replace(/\/+$/, '').split('/').filter(Boolean);
   if (parts.length < 3 || parts[0] !== 'customers') return null;
 
-  if (!/^\d+$/.test(parts[1])) return null;
-  const customerId = Number(parts[1]);
+  const customerId = parseNumericId(parts[1]);
+  if (customerId === null) return null;
 
   if (parts[2] === 'profile') {
     return parts.length === 3 ? { customerId, screen: 'profile', kunnId: null } : null;
@@ -57,8 +61,9 @@ export function parseCustomerPath(pathname: string): ParsedCustomerPath | null {
 
   if (parts.length === 3) return { customerId, screen, kunnId: null };
 
-  if (screen === 'loans' && parts.length === 5 && parts[4] === 'schedule' && /^\d+$/.test(parts[3])) {
-    return { customerId, screen, kunnId: Number(parts[3]) };
+  const kunnId = parts.length === 5 ? parseNumericId(parts[3]) : null;
+  if (screen === 'loans' && parts.length === 5 && parts[4] === 'schedule' && kunnId !== null) {
+    return { customerId, screen, kunnId };
   }
 
   return null;

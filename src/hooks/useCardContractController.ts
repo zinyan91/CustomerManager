@@ -69,13 +69,16 @@ export function useCardContractController() {
       setCollaterals([]);
       return;
     }
+    let huy = false;
     Promise.all([
       fetchCardContractsByCustomerAPI(selectedCustomerId),
       fetchCollateralsByCustomerAPI(selectedCustomerId),
     ]).then(([cs, cols]) => {
+      if (huy) return;
       setContracts(cs);
       setCollaterals(cols);
     }).catch(() => { });
+    return () => { huy = true; };
   }, [selectedCustomerId]);
 
   const customer = useMemo(

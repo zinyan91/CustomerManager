@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import type { Customer, CreditContract, LoanContract, Collateral, RepaymentSchedule } from '../types';
 import {
@@ -57,7 +57,10 @@ export function useCreditContractController() {
     fetchCustomersAPI({}).then(setAllCustomers);
   }, []);
 
+  const loadTokenRef = useRef(0);
+
   const loadCustomer = useCallback(async (c: Customer | null) => {
+    const token = ++loadTokenRef.current;
     setCustomer(c);
     setShowForm(false);
     setEditing(null);
@@ -72,6 +75,7 @@ export function useCreditContractController() {
         fetchContractsByCustomerAPI(c.Id),
         fetchCollateralsByCustomerAPI(c.Id),
       ]);
+      if (loadTokenRef.current !== token) return;
       setContracts(ccs);
       setKunns(ks);
       setCollaterals(cols);
@@ -80,9 +84,10 @@ export function useCreditContractController() {
       await Promise.all(ks.map(async k => {
         try { map[k.Id] = await fetchRepaymentSchedulesAPI(k.Id); } catch {}
       }));
+      if (loadTokenRef.current !== token) return;
       setSchedulesMap(map);
     } finally {
-      setLoading(false);
+      if (loadTokenRef.current === token) setLoading(false);
     }
   }, []);
 

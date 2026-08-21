@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Collateral, CardContract, CreditContract, Customer, LoanContract, RepaymentSchedule } from '../types';
 import {
   fetchCollateralsByCustomerAPI, fetchContractsByCustomerAPI, fetchCreditContractsByCustomerAPI,
@@ -60,6 +60,8 @@ export function useCustomerPortfolio({
     fetchCreditContractsByCustomerAPI(id).then(setCreditContracts);
   }, [foundCustomer?.Id]);
 
+  const pickTokenRef = useRef(0);
+
   const loadAllSchedulesForContracts = async (cons: LoanContract[]) => {
     const map: Record<number, RepaymentSchedule[]> = {};
     await Promise.all(cons.map(async (c) => {
@@ -71,6 +73,7 @@ export function useCustomerPortfolio({
   };
 
   const pickCustomer = async (c: Customer) => {
+    const token = ++pickTokenRef.current;
     setShowDropdown(false);
     setDropdownQuery(c.FullName);
     setSearchCif(c.CifKh);
@@ -85,6 +88,7 @@ export function useCustomerPortfolio({
       fetchCollateralsByCustomerAPI(c.Id),
       fetchCardContractsByCustomerAPI(c.Id),
     ]);
+    if (pickTokenRef.current !== token) return;
     setContracts(cons);
     setCollaterals(cols);
     setCards(crds);

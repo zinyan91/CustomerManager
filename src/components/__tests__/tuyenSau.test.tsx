@@ -3,7 +3,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route, useNavigate } from 'react-router';
+import { MemoryRouter, Routes, Route, useNavigate, useLocation } from 'react-router';
 
 vi.mock('../../lib/api', () => ({
   fetchCustomersAPI: async () => ([{ Id: 55, FullName: 'Trần Thị B', CifKh: '900055' }]),
@@ -60,6 +60,25 @@ function ProbeNav() {
   );
 }
 
+function ProbeToggleThenReenter() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { mainTab, selectedContract } = useLoanPortfolioController();
+  return (
+    <div>
+      <button type="button" onClick={() => navigate('/customers/55/loans')}>
+        rời khỏi tuyến sâu
+      </button>
+      <button type="button" onClick={() => navigate('/customers/55/loans/912/schedule')}>
+        quay lại tuyến sâu KUNN-912
+      </button>
+      <span data-testid="duong-dan">{pathname}</span>
+      <span data-testid="tab">{mainTab}</span>
+      <span data-testid="kunn">{selectedContract?.ContractNumber ?? '—'}</span>
+    </div>
+  );
+}
+
 afterEach(cleanup);
 
 describe('tuyến sâu lịch trả nợ', () => {
@@ -89,6 +108,26 @@ describe('tuyến sâu lịch trả nợ', () => {
 
     await waitFor(() => expect(screen.getByTestId('kunn').textContent).toBe('KUNN-913'));
     expect(screen.getByTestId('tab').textContent).toBe('schedule');
+  });
+
+  it('KUNN đã được chọn sẵn thì quay lại tuyến sâu của chính nó không bị bỏ chọn', async () => {
+    render(
+      <MemoryRouter initialEntries={['/customers/55/loans/912/schedule']}>
+        <Routes>
+          <Route path="/customers/:customerId/loans" element={<ProbeToggleThenReenter />} />
+          <Route path="/customers/:customerId/loans/:kunnId/schedule" element={<ProbeToggleThenReenter />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(screen.getByTestId('kunn').textContent).toBe('KUNN-912'));
+
+    await userEvent.click(screen.getByText('rời khỏi tuyến sâu'));
+    await waitFor(() => expect(screen.getByTestId('duong-dan').textContent).toBe('/customers/55/loans'));
+
+    await userEvent.click(screen.getByText('quay lại tuyến sâu KUNN-912'));
+
+    await waitFor(() => expect(screen.getByTestId('tab').textContent).toBe('schedule'));
+    expect(screen.getByTestId('kunn').textContent).toBe('KUNN-912');
   });
 });
 

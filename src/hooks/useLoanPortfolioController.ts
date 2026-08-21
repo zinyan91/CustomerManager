@@ -142,9 +142,9 @@ export function useLoanPortfolioController() {
     const k = portfolio.contracts.find(c => c.Id === deepKunnId);
     if (!k) return;
     setDaApDeepKunnFor(deepKunnId);
-    portfolio.selectContract(k);
+    portfolio.openContract(k);
     setMainTab('schedule');
-  }, [deepKunnId, daApDeepKunnFor, portfolio.contracts, portfolio.selectContract]);
+  }, [deepKunnId, daApDeepKunnFor, portfolio.contracts, portfolio.openContract]);
 
   const paymentModalProps = usePaymentModal({
     selectedContract,

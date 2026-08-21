@@ -175,13 +175,7 @@ export function useCustomerPortfolio({
     setDropdownQuery('');
   };
 
-  const selectContract = async (c: LoanContract) => {
-    if (selectedContract?.Id === c.Id) {
-      setSelectedContract(null);
-      setSchedules([]);
-      onContractClosed();
-      return;
-    }
+  const openContract = async (c: LoanContract) => {
     setSelectedContract(c);
     onContractOpened(c);
 
@@ -189,6 +183,16 @@ export function useCustomerPortfolio({
     const next = loaded.length > 0 ? recalculateSchedules(loaded, c) : loaded;
     setSchedules(next);
     setAllSchedulesMap(prev => ({ ...prev, [c.Id]: next }));
+  };
+
+  const selectContract = async (c: LoanContract) => {
+    if (selectedContract?.Id === c.Id) {
+      setSelectedContract(null);
+      setSchedules([]);
+      onContractClosed();
+      return;
+    }
+    await openContract(c);
   };
 
   return {
@@ -211,6 +215,7 @@ export function useCustomerPortfolio({
     pickCustomer,
     search,
     selectContract,
+    openContract,
     clearSearch,
   };
 }

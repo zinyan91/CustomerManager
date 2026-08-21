@@ -3,7 +3,10 @@
 > Tệp này để **bắt lại mạch khi mở phiên trò chuyện mới**. Cập nhật sau mỗi task xong.
 > Sổ chi tiết của phiên đang chạy nằm ở `.superpowers/sdd/<tên-kế-hoạch>/progress.md`, nhưng thư mục đó bị `.gitignore` bỏ qua và bị xoá khi đóng đợt — nên mọi thứ cần sống lâu phải nằm ở đây.
 
-**Cập nhật lần cuối:** 2026-08-21, sau khi đợt 1b đã gộp và đẩy lên `main`.
+**Cập nhật lần cuối:** 2026-08-21, sau khi áp xong đợt sửa cuối cùng từ rà soát toàn nhánh 1b
+(C1/I1/I2/I3/I5/T6 + bốn sửa nhỏ M1–M4). Báo cáo chi tiết:
+`.superpowers/sdd/2026-08-20-rebuild-giao-dien-dot-1b-ngu-canh-khach-hang/final-fix-report.md`
+(thư mục `.superpowers/sdd/` bị `.gitignore` bỏ qua, chỉ tồn tại cục bộ).
 
 ---
 
@@ -24,10 +27,10 @@
 | | |
 | :--- | :--- |
 | Nhánh hiện tại | `main` — sạch, khớp `origin/main` |
-| Việc đang dở | không có. Hai đợt đã đóng gọn |
-| Đợt vừa xong | **1b — ngữ cảnh khách hàng**, 20 commit, đã gộp và đẩy (`f02c153..a5c91a7`) |
+| Việc đang dở | không có. Hai đợt đã đóng gọn, cộng một đợt sửa theo rà soát cuối 1b (5 commit, chưa đẩy remote) |
+| Đợt vừa xong | **1b — ngữ cảnh khách hàng**, 20 commit gốc + 5 commit sửa theo rà soát toàn nhánh (2026-08-21), đã gộp local trên `main` |
 | Đợt kế tiếp | **2 — bộ component + `Dialog`/`ConfirmDialog`**, chưa lập kế hoạch |
-| Tổng test | **1.825** xanh, 0 đỏ · 86 tệp test (một phần tăng là việc song song của chủ dự án, không phải toàn bộ thuộc đợt 1b) |
+| Tổng test | **1.850** xanh, 0 đỏ · 90 tệp test (tăng từ 1.825/86 sau đợt sửa cuối 1b — thêm test cho C1/I1/I2/I3/I5/T6/M1/M4) |
 | Cảnh báo lint | 64 (baseline đợt 1a là 62; 1 cảnh báo mới thuộc đợt 1b — `src/hooks/useLoanPortfolioController.ts:145`, `missing dependency: 'portfolio'`, từ hiệu ứng deep-link Task 15) |
 | Tự kiểm trên giao diện thật | **chưa làm** — xem "Việc còn treo" |
 
@@ -203,9 +206,9 @@ Những điều dưới đây đã quyết rồi, đừng quyết lại:
 | Back xoá âm thầm biểu mẫu KUNN đang điền dở | trung bình — đợt 3 | Sau khi "Giải ngân từ HĐTD" nhảy sang `/loans` với form điền sẵn, một lần Back là mất. Không phải hồi quy, nhưng Back nay là nút sống nên dễ bấm nhầm. Cần chốt "chưa lưu" |
 | RLS gọi `can_access_contract` từng dòng trên `RepaymentSchedules` | **quan trọng** | Bốn controller vẫn đọc lịch trả nợ thô, 31–66 ms mỗi KUNN, 180–400 ms cho khách 6 KUNN. Cách chữa là đổi hàm RLS sang lọc theo tập hợp thay vì gọi theo dòng, hoặc thêm view gộp — đụng CSDL sản xuất, cần chủ dự án duyệt. Xem `ContractPaidPrincipal` ở `CONVENTIONS.md` §15 cho hướng đã dùng |
 | Tự kiểm đợt 1b trên giao diện thật **chưa làm** | **quan trọng** | Danh sách 19 màn, deep-link, F5, Back, giải ngân qua URL nằm ở Task 17 trong kế hoạch đợt 1b — chưa có phiên nào chạy qua trình duyệt thật để xác nhận |
-| `?disburse=` không hợp lệ không bị dọn khỏi URL | trung bình | Nằm lại trong lịch sử trình duyệt và link chia sẻ. Cố ý hoãn: dọn sớm rủi ro xoá mất tham số hợp lệ trước khi `creditContracts` nạp xong, đổi rác URL vô hại lấy nguy cơ hỏng luồng giải ngân |
+| `?disburse=` hợp lệ về số nhưng không tìm thấy HĐTD không bị dọn khỏi URL | trung bình | Cố ý hoãn: dọn sớm rủi ro xoá mất tham số hợp lệ trước khi `creditContracts` nạp xong. Riêng trường hợp `?disburse=` **phi số** (vd `abc`) đã dọn ngay — sửa ở đợt rà soát cuối 1b (2026-08-21) |
 | URL lồng dị dạng (`/customers/abc/collaterals`) cho `customerId = null` | trung bình | Màn lặng lẽ hiện dữ liệu của **mọi** khách thay vì báo lỗi hay chuyển hướng. Áp cho cả năm màn có phạm vi khách |
-| `fetchCustomersAPI()` nạp tới 1000 khách rồi tìm ở trình duyệt | thấp | Không lọc theo Id ở máy chủ. Khách nằm sau mốc 1000 sẽ lặng lẽ hiện "không tìm thấy" |
+| `fetchCustomersAPI()` nạp tới 1000 khách rồi tìm ở trình duyệt | thấp | Đã thêm `fetchCustomerByIdAPI` và dùng trong `useCustomerContext` (2026-08-21). `useCreditContractController` và `useCustomerPortfolio` vẫn dùng `fetchCustomersAPI()` cho danh sách dropdown/allCustomers — chưa đổi, vì đó là danh sách chọn khách chứ không phải tra một khách theo id |
 | `/customers/:id/profile` cho khách không có trong danh sách đã nạp | thấp | Mắc kẹt ở `/profile` — không ngăn kéo, không chuyển hướng |
 | `AbortError` từ fetch bị huỷ bị tính như mất kết nối thật | thấp | Cờ lỗi API mới (`apiHealth.ts`) chưa phân biệt fetch bị huỷ với máy chủ thật sự không với tới được. Suy đoán, chưa gặp thật |
 

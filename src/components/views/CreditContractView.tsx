@@ -57,8 +57,7 @@ export const CreditContractView: React.FC = () => {
 
   const containerCardBg = UI.containerCardBg;
 
-  const { granted: totalGranted, outstanding: totalOutstanding, available: totalAvailable } =
-    totalsOfCreditContracts(summaries);
+  const { granted: totalGranted } = totalsOfCreditContracts(summaries);
 
   return (
     <div className="space-y-4 text-xs transition-colors duration-200">
@@ -114,12 +113,8 @@ export const CreditContractView: React.FC = () => {
       {/* When customer is selected */}
       {customer && (
         <>
-          {/* Top 4 KPI Metrics Header Cards */}
           <CreditContractSummaryCards
-            customer={customer}
             totalGranted={totalGranted}
-            totalOutstanding={totalOutstanding}
-            totalAvailable={totalAvailable}
           />
 
           {/* Main Contract List Card */}

@@ -6,7 +6,7 @@ import { isScheduleFullySettled, isBulletPrincipal, kunnPrincipal, computeOutsta
 import { periodObligation, sumObligations } from '../../lib/scheduleView';
 import { PeriodDetailCard } from './PeriodDetailCard';
 import { useLang } from '../../context/LanguageContext';
-import { PANEL, SECTION_LABEL, TABLE_CELL, TABLE_HEAD } from '../../lib/uiClasses';
+import { PANEL, SECTION_LABEL, TABLE_CELL } from '../../lib/uiClasses';
 
 type Density = 'cozy' | 'compact';
 
@@ -51,7 +51,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
   const settledCount = rows.filter(r => r.o.isSettled).length;
 
   const cell = `${TABLE_CELL} whitespace-nowrap`;
-  const headCell = `px-[var(--row-px)] py-2 ${TABLE_HEAD} font-semibold whitespace-nowrap`;
+  const headCell = `px-[var(--row-px)] py-2.5 bg-surface/90 backdrop-blur-md text-ink-faint text-[10px] uppercase font-bold tracking-[0.11em] whitespace-nowrap`;
 
   return (
     <div className="space-y-3" data-density={density}>
@@ -156,8 +156,8 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
 
         <div className="overflow-x-auto max-h-[min(70vh,640px)] overflow-y-auto">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 z-10 bg-panel-muted">
-              <tr className="border-b border-line">
+            <thead className="sticky top-0 z-20 bg-surface/90 backdrop-blur-md shadow-2xs">
+              <tr className="border-b border-line/80">
                 <th className={`${headCell} w-20`}>{t('schedule.period')}</th>
                 <th className={headCell}>{t('schedule.status')}</th>
                 <th className={headCell}>{t('schedule.dueDate')}</th>
@@ -187,8 +187,8 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                   <tr
                     key={s.Id}
                     onClick={() => setSelectedScheduleId(s.Id)}
-                    className={`border-b border-line/60 border-l-2 ${rail} cursor-pointer transition-colors duration-150 ${
-                      isSelectedRow ? 'bg-accent-soft' : 'hover:bg-panel-muted'
+                    className={`border-b border-line/40 border-l-2 ${rail} cursor-pointer transition-colors duration-150 ${
+                      isSelectedRow ? 'bg-accent-soft/80 font-medium' : 'hover:bg-accent/[0.04]'
                     }`}
                   >
                     <td className={`${cell} font-mono font-semibold text-ink`}>
@@ -259,9 +259,9 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
               })}
             </tbody>
             {schedules.length > 0 && (
-              <tfoot className="sticky bottom-0 bg-panel-muted">
-                <tr className="border-t border-line-strong">
-                  <td className={`${cell} ${TABLE_HEAD} font-semibold`} colSpan={4}>
+              <tfoot className="sticky bottom-0 bg-surface/95 backdrop-blur-md border-t-2 border-line/80 shadow-md z-10">
+                <tr className="border-t border-line-strong font-bold">
+                  <td className={`${cell} text-ink-faint uppercase tracking-wider text-[11px]`} colSpan={4}>
                     {t('schedule.total')}
                   </td>
                   <td className={`${cell} text-right font-mono font-bold text-ink`}>

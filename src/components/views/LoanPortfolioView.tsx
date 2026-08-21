@@ -171,33 +171,37 @@ export const LoanPortfolioView: React.FC = () => {
 
       {/* Main Tab Controls & Master HDTD Filter */}
       {foundCustomer && (
-        <div className={`${UI.containerCardBg} rounded-xl border p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs`}>
+        <div className={`${UI.containerCardBg} rounded-2xl border border-line/70 bg-panel/80 backdrop-blur-md p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3.5 shadow-xs specular-card animate-in fade-in duration-150`}>
+          <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() => setMainTab('kunn')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+                mainTab === 'kunn' ? 'bg-accent text-accent-ink shadow-xs' : 'bg-surface/80 border border-line/70 text-ink-muted hover:text-ink hover:bg-surface'
+              }`}
+            >
+              Danh sách KUNN ({visibleContracts.length})
+            </button>
+            <button
+              type="button"
+              disabled={!selectedContract}
+              onClick={() => setMainTab('schedule')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs ${
+                mainTab === 'schedule'
+                  ? 'bg-accent text-accent-ink shadow-xs'
+                  : 'bg-surface/80 border border-line/70 text-ink-muted hover:text-ink hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed'
+              }`}
+            >
+              Lịch trả nợ KUNN {selectedContract ? `(#${selectedContract.ContractNumber})` : ''}
+            </button>
+          </div>
+
           <MasterHdtdFilterTabs
             masterHdtdGroups={masterHdtdGroups}
             selectedMasterFilter={selectedMasterFilter}
             setSelectedMasterFilter={setSelectedMasterFilter}
             contractsCount={contracts.length}
           />
-
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setMainTab('kunn')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                mainTab === 'kunn' ? 'bg-accent text-accent-ink shadow-xs' : 'bg-panel-muted text-ink-muted hover:text-ink'
-              }`}
-            >
-              Danh sách KUNN ({visibleContracts.length})
-            </button>
-            <button
-              disabled={!selectedContract}
-              onClick={() => setMainTab('schedule')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-40 ${
-                mainTab === 'schedule' ? 'bg-accent text-accent-ink shadow-xs' : 'bg-panel-muted text-ink-muted hover:text-ink'
-              }`}
-            >
-              Lịch trả nợ KUNN {selectedContract ? `(#${selectedContract.ContractNumber})` : ''}
-            </button>
-          </div>
         </div>
       )}
 

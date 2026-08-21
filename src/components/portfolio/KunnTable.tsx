@@ -57,18 +57,18 @@ export const KunnTable: React.FC<KunnTableProps> = ({
   const rows = filteredContracts;
 
   return (
-    <div className={`${containerCardBg} rounded-lg overflow-hidden border`}>
-      <div className={`p-3 border-b flex items-center justify-between ${'bg-panel-muted border-line'}`}>
-        <span className="font-bold flex items-center space-x-2 text-xs">
+    <div className={`${containerCardBg} rounded-2xl overflow-hidden border border-line/70 shadow-xs specular-card`}>
+      <div className="p-3.5 border-b border-line/70 flex items-center justify-between bg-surface/80 backdrop-blur-md">
+        <span className="font-bold flex items-center space-x-2 text-xs text-ink">
           <Receipt className="w-4 h-4 text-warn" />
-          <span>DANH SÁCH GIẤY NHẬN NỢ (KUNN) — {rows.length} KHOẢN VAY</span>
+          <span className="tracking-tight">DANH SÁCH GIẤY NHẬN NỢ (KUNN) — {rows.length} KHOẢN VAY</span>
         </span>
         {settledCount > 0 && onToggleShowSettled ? (
-          <div className="flex items-center bg-panel p-0.5 rounded-lg border border-line">
+          <div className="flex items-center bg-panel p-0.5 rounded-xl border border-line/70">
             <button
               type="button"
               onClick={() => onToggleShowSettled(true)}
-              className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all ${showSettled
+              className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${showSettled
                 ? 'bg-accent text-accent-ink shadow-xs'
                 : 'text-ink-faint hover:text-ink'}`}
             >
@@ -77,7 +77,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
             <button
               type="button"
               onClick={() => onToggleShowSettled(false)}
-              className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all ${!showSettled
+              className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all ${!showSettled
                 ? 'bg-accent text-accent-ink shadow-xs'
                 : 'text-ink-faint hover:text-ink'}`}
             >
@@ -89,21 +89,21 @@ export const KunnTable: React.FC<KunnTableProps> = ({
         )}
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className={tableHeaderStyle}>
+        <table className="w-full text-left text-xs border-collapse">
+          <thead className={tableHeaderStyle || 'bg-surface/90 backdrop-blur-md border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.11em] text-ink-faint'}>
             <tr>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">SỐ KUNN (GNN)</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">SỐ HĐTD GỐC</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-right">SỐ TIỀN NHẬN NỢ</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap text-right">DƯ NỢ HIỆN HỮU</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">LÃI SUẤT AP</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">NGÀY GIẢI NGÂN</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">NGÀY KẾT THÚC</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">PHƯƠNG THỨC VAY</th>
-              <th className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">NHÓM NỢ</th>
+              <th className="px-4 py-3 whitespace-nowrap">SỐ KUNN (GNN)</th>
+              <th className="px-4 py-3 whitespace-nowrap">SỐ HĐTD GỐC</th>
+              <th className="px-4 py-3 whitespace-nowrap text-right">SỐ TIỀN NHẬN NỢ</th>
+              <th className="px-4 py-3 whitespace-nowrap text-right">DƯ NỢ HIỆN HỮU</th>
+              <th className="px-4 py-3 whitespace-nowrap">LÃI SUẤT AP</th>
+              <th className="px-4 py-3 whitespace-nowrap">NGÀY GIẢI NGÂN</th>
+              <th className="px-4 py-3 whitespace-nowrap">NGÀY KẾT THÚC</th>
+              <th className="px-4 py-3 whitespace-nowrap">PHƯƠNG THỨC VAY</th>
+              <th className="px-4 py-3 whitespace-nowrap">NHÓM NỢ</th>
             </tr>
           </thead>
-          <tbody className={`divide-y ${'divide-line'}`}>
+          <tbody className="divide-y divide-line/40">
             {rows.length === 0 ? (
               <tr><td colSpan={9} className="text-center p-8 text-ink-faint">
                 {hiddenCount > 0
@@ -119,34 +119,34 @@ export const KunnTable: React.FC<KunnTableProps> = ({
               return (
                 <tr key={c.Id}
                   onClick={() => handleSelectContract(c)}
-                  className={`cursor-pointer transition-colors ${isSelected
-                    ? 'bg-accent-soft border-l-2 border-l-accent font-semibold'
-                    : 'hover:bg-panel-muted'
+                  className={`cursor-pointer transition-colors duration-150 border-b border-line/40 ${isSelected
+                    ? 'bg-accent-soft/80 border-l-2 border-l-accent font-semibold'
+                    : 'hover:bg-accent/[0.04]'
                   }`}>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-accent font-bold whitespace-nowrap">
+                  <td className="px-4 py-3 font-mono text-accent font-bold whitespace-nowrap">
                     <div className="flex items-center space-x-1">
                       {isSelected && <ChevronRight className="w-3.5 h-3.5 text-accent" />}
                       <span>{c.ContractNumber}</span>
                     </div>
                   </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] font-mono text-accent font-semibold whitespace-nowrap text-[11px]">
+                  <td className="px-4 py-3 font-mono text-accent font-semibold whitespace-nowrap text-[11px]">
                     {masterNo}
                   </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-bold text-pos whitespace-nowrap">
+                  <td className="px-4 py-3 text-right font-mono font-bold text-pos whitespace-nowrap">
                     {fmtMoney(kunnPrincipal(c))}
                   </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-bold text-warn whitespace-nowrap">
+                  <td className="px-4 py-3 text-right font-mono font-bold text-warn whitespace-nowrap">
                     {fmtMoney(getEffectiveBalanceForContract(c))}
                   </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-accent  font-mono font-bold whitespace-nowrap">{fmtRate(getEffectiveActiveRate(c))}</td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-ink-muted whitespace-nowrap">{fmtDate(c.DisbursementDate || c.ContractStartDate)}</td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-ink-muted whitespace-nowrap">{fmtDate(c.KunnDueDate || c.ContractEndDate)}</td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-accent-soft  text-accent  border border-accent/30">
+                  <td className="px-4 py-3 text-accent font-mono font-bold whitespace-nowrap">{fmtRate(getEffectiveActiveRate(c))}</td>
+                  <td className="px-4 py-3 text-ink-muted whitespace-nowrap">{fmtDate(c.DisbursementDate || c.ContractStartDate)}</td>
+                  <td className="px-4 py-3 text-ink-muted whitespace-nowrap">{fmtDate(c.KunnDueDate || c.ContractEndDate)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-accent-soft text-accent border border-accent/30">
                       {c.LoanMethod || (c.ContractType === 0 ? 'Hạn mức tín dụng' : 'Cho vay từng lần')}
                     </span>
                   </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] whitespace-nowrap">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     {isSettled && isSettled(c) ? (
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-pos-soft text-pos border border-pos/30">
                         ✓ ĐÃ TẤT TOÁN

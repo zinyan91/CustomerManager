@@ -60,15 +60,18 @@ export const CardContractView: React.FC = () => {
   } = useCardContractController();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 font-app">
       {notification && (
         <Toast toast={notification} onDismiss={() => setNotification(null)} />
       )}
 
-      <div className={`${PANEL} p-4 space-y-3`}>
+      <div className={`${PANEL} rounded-2xl p-4 sm:p-5 space-y-3 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150`}>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className={`${HEADING_SCREEN} flex items-center gap-2`}>
-            <CreditCard size={16} /> HỢP ĐỒNG THẺ
+            <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0">
+              <CreditCard className="w-4 h-4" />
+            </div>
+            <span className="font-bold tracking-wider text-xs uppercase">HỢP ĐỒNG THẺ</span>
           </div>
           <span className="text-[10px] text-ink-faint">
             Mã chính sách theo QĐ {CARD_POLICY_SOURCE.decision} · tra cứu chi tiết ở tab Tra cứu chính sách thẻ
@@ -76,11 +79,11 @@ export const CardContractView: React.FC = () => {
         </div>
 
         <div>
-          <label className={`block mb-1 text-xs ${UI.labelStyle}`}>Khách hàng</label>
+          <label className={`block mb-1 text-[11px] font-semibold text-ink-muted ${UI.labelStyle}`}>Khách hàng</label>
           <select
             value={selectedCustomerId ?? ''}
             onChange={e => setSelectedCustomerId(e.target.value ? Number(e.target.value) : null)}
-            className={`w-full rounded-md p-2.5 text-sm border ${UI.inputStyle}`}
+            className={`w-full rounded-xl p-2.5 text-xs border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
           >
             <option value="">— Chọn khách hàng —</option>
             {customers.map(c => (
@@ -90,15 +93,15 @@ export const CardContractView: React.FC = () => {
         </div>
 
         {customer && (
-          <div className="flex items-center justify-between pt-2 border-t border-line flex-wrap gap-2 text-xs">
+          <div className="flex items-center justify-between pt-3 border-t border-line/60 flex-wrap gap-2 text-xs">
             <div>
-              Tổng hạn mức thẻ tín dụng đã cấp: <strong className="text-accent">{fmtMoney(totalGranted)}</strong>
+              Tổng hạn mức thẻ tín dụng đã cấp: <strong className="text-accent font-mono font-bold">{fmtMoney(totalGranted)}</strong>
               {' '}· {contracts.length} hợp đồng ({contracts.filter(x => !x.IsClosed).length} đang mở)
             </div>
             <button
               type="button"
               onClick={() => resetForm()}
-              className={`${BTN_PRIMARY} text-xs py-1.5 px-3 flex items-center gap-1`}
+              className={`${BTN_PRIMARY} text-xs py-2 px-3.5 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs`}
             >
               <Plus size={14} /> Thêm hợp đồng thẻ mới
             </button>
@@ -107,7 +110,7 @@ export const CardContractView: React.FC = () => {
       </div>
 
       {customer && (
-        <div className={`${PANEL} p-4 space-y-3`}>
+        <div className={`${PANEL} rounded-2xl p-4 sm:p-5 space-y-3 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150`}>
           <div className={`${SECTION_LABEL} text-xs font-bold`}>Danh sách hợp đồng thẻ của {customer.FullName}</div>
 
           {contracts.length === 0 ? (
@@ -119,20 +122,20 @@ export const CardContractView: React.FC = () => {
                 return (
                   <div
                     key={c.Id}
-                    className={`p-3.5 rounded-xl border text-xs space-y-2 transition-all ${
-                      c.IsClosed ? 'bg-panel-muted/40 border-line opacity-75' : 'bg-panel border-line hover:border-accent/40 shadow-xs'
+                    className={`p-4 rounded-xl border text-xs space-y-2.5 transition-all specular-card interactive-card ${
+                      c.IsClosed ? 'bg-panel-muted/40 border-line/50 opacity-75' : 'bg-panel/80 border-line/65 hover:border-accent/40 shadow-xs'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2 flex-wrap">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                           <span className="font-mono font-bold text-accent text-sm">{c.CardContractNumber}</span>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            c.IsClosed ? 'bg-panel-muted border text-ink-faint' : 'bg-pos-soft border text-pos'
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            c.IsClosed ? 'bg-panel-muted border border-line text-ink-faint' : 'bg-pos-soft border border-pos/30 text-pos'
                           }`}>
                             {c.IsClosed ? 'ĐÃ ĐÓNG' : 'HIỆU LỰC'}
                           </span>
-                          <span className="text-[10px] text-ink-muted bg-panel-muted px-2 py-0.5 rounded border">
+                          <span className="text-[10px] text-ink-muted bg-surface/80 px-2 py-0.5 rounded-full border border-line/60">
                             {c.CardHolderSide === 'KHLQ' ? 'Chủ thẻ KHLQ' : 'Chủ thẻ KH'}
                           </span>
                         </div>
@@ -143,21 +146,21 @@ export const CardContractView: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => resetForm(c)}
-                          className={`${BTN_SECONDARY} text-[11px] py-1 px-2.5`}
+                          className={`${BTN_SECONDARY} text-[11px] py-1.5 px-3 rounded-lg cursor-pointer`}
                         >
                           Sửa
                         </button>
                         <button
                           type="button"
                           onClick={() => remove(c)}
-                          className={`${BTN_DANGER} text-[11px] py-1 px-2.5 flex items-center gap-1`}
+                          className={`${BTN_DANGER} text-[11px] py-1.5 px-3 rounded-lg flex items-center gap-1 cursor-pointer`}
                         >
                           <Trash2 size={12} /> Xoá
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-line/60 text-[11px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2.5 border-t border-line/50 text-[11px]">
                       <div>
                         Sản phẩm: <strong className="text-ink">{c.CardProducts || 'Chưa chọn'}</strong>
                       </div>
@@ -179,13 +182,13 @@ export const CardContractView: React.FC = () => {
       {/* Form Drawer / Modal */}
       {showForm && customer && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`${PANEL} max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150`}>
-            <div className="flex items-center justify-between border-b border-line pb-3">
+          <div className={`${PANEL} max-w-2xl w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 rounded-2xl border border-line/70 bg-panel/95 backdrop-blur-2xl shadow-2xl specular-card animate-in zoom-in-95 duration-150`}>
+            <div className="flex items-center justify-between border-b border-line/60 pb-3">
               <h3 className="font-bold text-sm text-ink">
                 {editingId ? `Sửa hợp đồng thẻ ${fNumber}` : 'Thêm hợp đồng thẻ mới'}
               </h3>
-              <button type="button" onClick={() => setShowForm(false)} className="text-ink-faint hover:text-ink">
-                X
+              <button type="button" onClick={() => setShowForm(false)} className="p-1 rounded-lg border border-line/60 text-ink-faint hover:text-ink hover:bg-surface cursor-pointer">
+                ✕
               </button>
             </div>
 

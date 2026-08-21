@@ -33,7 +33,7 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
   formatMoney,
 }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 2xl:gap-4">
       <KpiCard
         cardBg={cardBg}
         hue="cust"
@@ -59,7 +59,7 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
         value={formatMoney(totalCollateralVal)}
         note={
           <>
-            LTV bình quân: <strong className="text-[var(--kpi-hue)]">{fmtPercent(weightedLtv > 1 ? weightedLtv / 100 : weightedLtv)}</strong> ({fmtNumber(collateralsCount)} TS)
+            LTV bình quân: <strong className="text-[var(--kpi-hue)] font-bold">{fmtPercent(weightedLtv > 1 ? weightedLtv / 100 : weightedLtv)}</strong> ({fmtNumber(collateralsCount)} TS)
           </>
         }
       />

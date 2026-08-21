@@ -1,5 +1,5 @@
 import React, { useState, memo } from 'react';
-import { TABLE_CELL, TABLE_HEAD } from '../lib/uiClasses';
+import { TABLE_HEAD } from '../lib/uiClasses';
 
 export type FieldPriority = 1 | 2 | 3;
 
@@ -53,53 +53,60 @@ function AdaptiveTableImpl<T>({
   return (
     <>
       <ul
-        className={`md:hidden divide-y divide-line ${maxHeight ? 'overflow-y-auto' : ''}`}
+        className={`md:hidden space-y-2.5 ${maxHeight ? 'overflow-y-auto' : ''}`}
         style={maxHeight ? { maxHeight } : undefined}
       >
         {rows.map(row => {
           const k = rowKey(row);
           const mo = moRong.has(k);
           return (
-            <li key={k} className={isSelected?.(row) ? 'bg-accent-soft' : ''}>
+            <li
+              key={k}
+              className={`rounded-xl border transition-all p-3.5 space-y-2.5 shadow-2xs ${
+                isSelected?.(row)
+                  ? 'border-accent bg-accent-soft/70 shadow-xs'
+                  : 'border-line/70 bg-panel/75 hover:bg-panel hover:border-line-strong'
+              }`}
+            >
               <div
-                className={`px-3 py-3 space-y-2 ${onRowClick ? 'cursor-pointer' : ''}`}
+                className={`space-y-2 ${onRowClick ? 'cursor-pointer' : ''}`}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
-                <div className="flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline justify-between gap-2 pb-1.5 border-b border-line/40">
                   <span className="font-bold text-ink text-sm">{cardTitle(row)}</span>
                   {cardSubtitle && (
-                    <span className="font-mono text-xs text-ink-muted shrink-0">{cardSubtitle(row)}</span>
+                    <span className="font-mono text-xs text-accent font-semibold shrink-0">{cardSubtitle(row)}</span>
                   )}
                 </div>
 
                 <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                   {chinh.map(c => (
                     <div key={c.key} className="min-w-0">
-                      <dt className={`${TABLE_HEAD} bg-transparent font-semibold`}>{c.label}</dt>
-                      <dd className="text-xs text-ink truncate">{c.render(row)}</dd>
+                      <dt className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">{c.label}</dt>
+                      <dd className="text-xs text-ink font-medium truncate mt-0.5">{c.render(row)}</dd>
                     </div>
                   ))}
                 </dl>
 
                 {mo && (phu.length > 0 || an.length > 0) && (
-                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 pt-1.5 border-t border-line">
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 pt-2 border-t border-line/40">
                     {[...phu, ...an].map(c => (
                       <div key={c.key} className="min-w-0">
-                        <dt className={`${TABLE_HEAD} bg-transparent font-semibold`}>{c.label}</dt>
-                        <dd className="text-xs text-ink truncate">{c.render(row)}</dd>
+                        <dt className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">{c.label}</dt>
+                        <dd className="text-xs text-ink font-medium truncate mt-0.5">{c.render(row)}</dd>
                       </div>
                     ))}
                   </dl>
                 )}
               </div>
 
-              <div className="px-3 pb-2.5 flex items-center justify-between gap-2">
+              <div className="pt-1.5 flex items-center justify-between gap-2 border-t border-line/30">
                 {(phu.length > 0 || an.length > 0) ? (
                   <button
                     type="button"
                     onClick={() => toggle(k)}
                     aria-expanded={mo}
-                    className="text-[11px] font-semibold text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent rounded"
+                    className="text-[11px] font-bold text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent rounded"
                   >
                     {mo ? 'Thu gọn' : `Xem thêm ${phu.length + an.length} mục`}
                   </button>
@@ -112,19 +119,19 @@ function AdaptiveTableImpl<T>({
       </ul>
 
       <div
-        className={`hidden md:block overflow-x-auto ${maxHeight ? 'overflow-y-auto' : ''}`}
+        className={`hidden md:block overflow-x-auto rounded-xl border border-line/70 bg-panel/40 backdrop-blur-md ${maxHeight ? 'overflow-y-auto' : ''}`}
         style={maxHeight ? { maxHeight } : undefined}
       >
         <table className="w-full text-left text-xs border-collapse">
-          <thead className={`${TABLE_HEAD} ${maxHeight ? 'sticky top-0 z-10' : ''}`}>
-            <tr className="border-b border-line">
+          <thead className={`${TABLE_HEAD} ${maxHeight ? 'sticky top-0 z-20 shadow-2xs' : ''}`}>
+            <tr className="border-b border-line/80">
               {columns.map(c => (
-                <th key={c.key} className={`${TABLE_CELL} font-semibold whitespace-nowrap ${alignClass(c.align)}`}>
+                <th key={c.key} className={`px-4 py-3 font-bold whitespace-nowrap text-ink-faint ${alignClass(c.align)}`}>
                   {c.label}
                 </th>
               ))}
               {actions && (
-                <th className={`${TABLE_CELL} font-semibold whitespace-nowrap text-center sticky right-0 z-20 bg-panel-muted border-l border-line`}>
+                <th className="px-4 py-3 font-bold whitespace-nowrap text-center sticky right-0 z-20 bg-surface/95 backdrop-blur-md border-l border-line/70 text-ink-faint">
                   {actionsLabel}
                 </th>
               )}
@@ -137,19 +144,19 @@ function AdaptiveTableImpl<T>({
                 <tr
                   key={rowKey(row)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={`group border-b border-line/60 transition-colors duration-150 ${
-                    chon ? 'bg-accent-soft' : 'hover:bg-panel-muted'
+                  className={`group border-b border-line/40 transition-colors duration-150 ${
+                    chon ? 'bg-accent-soft/70 border-l-2 border-l-accent font-medium' : 'hover:bg-accent/[0.04]'
                   } ${onRowClick ? 'cursor-pointer' : ''}`}
                 >
                   {columns.map(c => (
-                    <td key={c.key} className={`${TABLE_CELL} whitespace-nowrap ${alignClass(c.align)}`}>
+                    <td key={c.key} className={`px-4 py-3 whitespace-nowrap text-ink ${alignClass(c.align)}`}>
                       {c.render(row)}
                     </td>
                   ))}
                   {actions && (
                     <td
-                      className={`${TABLE_CELL} text-center whitespace-nowrap sticky right-0 z-10 border-l border-line ${
-                        chon ? 'bg-accent-soft' : 'bg-panel group-hover:bg-panel-muted'
+                      className={`px-4 py-2.5 text-center whitespace-nowrap sticky right-0 z-10 border-l border-line/50 transition-colors ${
+                        chon ? 'bg-accent-soft/80' : 'bg-panel/95 group-hover:bg-surface/95'
                       }`}
                       onClick={e => e.stopPropagation()}
                     >

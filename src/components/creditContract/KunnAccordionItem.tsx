@@ -78,25 +78,25 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
 
   return (
     <div
-      className={`rounded-xl border transition-all duration-150 overflow-hidden ${
+      className={`rounded-2xl border transition-all duration-150 overflow-hidden specular-card ${
         cc.IsClosed
-          ? 'bg-panel-muted/30 border-line opacity-75'
-          : 'bg-panel border-line hover:border-accent/40 shadow-xs'
+          ? 'bg-panel/50 border-line/60 opacity-75'
+          : 'bg-panel/85 backdrop-blur-xl border-line/70 hover:border-accent/40 shadow-xs'
       }`}
     >
       {/* Top Row: Info & Action Buttons */}
-      <div className="p-4 space-y-3">
+      <div className="p-4 sm:p-5 space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1 min-w-[240px]">
+          <div className="space-y-1.5 min-w-[240px]">
             <div className="flex items-center flex-wrap gap-2">
-              <span className="font-mono font-bold text-sm text-accent tracking-tight">
+              <span className="font-mono font-bold text-sm sm:text-base text-accent tracking-tight">
                 {cc.HdtdNumber}
               </span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 ${LIFECYCLE_BADGE[lifecycle]}`}>
+              <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-2xs ${LIFECYCLE_BADGE[lifecycle]}`}>
                 {LifecycleIcon && <LifecycleIcon className="w-3 h-3" />}
                 {HDTD_LIFECYCLE_LABEL[lifecycle]}
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-panel-muted border border-line text-ink-muted">
+              <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-surface border border-line/70 text-ink-muted">
                 {cc.LoanMethod || 'HĐTD'}
               </span>
             </div>
@@ -132,9 +132,9 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
               type="button"
               disabled={!canDisburse}
               onClick={() => onDisburse(cc)}
-              className={`font-bold text-xs py-1.5 px-3 rounded-lg flex items-center space-x-1.5 transition-all shadow-xs ${
+              className={`font-bold text-xs py-1.5 px-3 rounded-xl flex items-center space-x-1.5 transition-all shadow-xs ${
                 canDisburse
-                  ? 'bg-accent text-accent-ink hover:opacity-90'
+                  ? 'bg-accent text-accent-ink hover:opacity-90 cursor-pointer'
                   : 'bg-panel-muted border border-line text-ink-faint cursor-not-allowed opacity-60'
               }`}
               title={blockReason || 'Giải ngân KUNN mới từ HĐTD này'}
@@ -156,7 +156,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
             <button
               type="button"
               onClick={() => onEdit(cc)}
-              className="border border-line bg-panel text-ink hover:border-accent font-semibold text-xs py-1.5 px-3 rounded-lg transition-colors"
+              className="border border-line/70 bg-surface/80 hover:bg-surface text-ink hover:border-accent font-semibold text-xs py-1.5 px-3 rounded-xl transition-colors cursor-pointer shadow-2xs"
             >
               Sửa
             </button>
@@ -164,9 +164,9 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
               type="button"
               disabled={!canDelete}
               onClick={() => onDelete(cc)}
-              className={`p-1.5 rounded-lg border transition-colors ${
+              className={`p-1.5 rounded-xl border transition-colors ${
                 canDelete
-                  ? 'border-line bg-panel text-ink-faint hover:text-neg hover:border-neg'
+                  ? 'border-line/70 bg-surface/80 text-ink-faint hover:text-neg hover:border-neg cursor-pointer shadow-2xs'
                   : 'border-line bg-panel-muted/50 text-ink-faint/40 cursor-not-allowed'
               }`}
               title={
@@ -251,11 +251,11 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
       </div>
 
       {/* Accordion Toggle Footer */}
-      <div className="border-t border-line bg-panel-muted/40 px-4 py-2 flex items-center justify-between">
+      <div className="border-t border-line/60 bg-surface/50 px-4 sm:px-5 py-2.5 flex items-center justify-between">
         <button
           type="button"
           onClick={onToggleExpand}
-          className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1.5"
+          className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1.5 cursor-pointer"
         >
           {isExpanded ? (
             <><span>Thu gọn danh sách KUNN</span><ChevronUp className="w-3.5 h-3.5" /></>
@@ -264,52 +264,52 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
           )}
         </button>
 
-        <span className="text-[10px] text-ink-faint">
+        <span className="text-[10px] font-mono text-ink-faint font-semibold">
           {contractKunns.filter(k => !k.IsSettled).length} KUNN đang lưu nợ
         </span>
       </div>
 
       {/* Expanded KUNN Table */}
       {isExpanded && (
-        <div className="p-3 bg-panel-muted/20 border-t border-line animate-in fade-in-50 duration-150">
+        <div className="p-3 sm:p-4 bg-surface/30 border-t border-line/60 animate-in fade-in-50 duration-150">
           {contractKunns.length === 0 ? (
-            <div className="text-center py-3 text-ink-faint text-xs">
+            <div className="text-center py-4 text-ink-faint text-xs">
               Chưa có KUNN nào được giải ngân dưới HĐTD này.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-[11px]">
-                <thead>
-                  <tr className="text-ink-faint uppercase border-b border-line text-left">
-                    <th className="pb-1.5 font-bold">Số KUNN</th>
-                    <th className="pb-1.5 font-bold text-right">Số tiền vay</th>
-                    <th className="pb-1.5 font-bold text-right">Dư nợ hiện tại</th>
-                    <th className="pb-1.5 font-bold text-center">Lãi suất</th>
-                    <th className="pb-1.5 font-bold">Ngày vay → Đáo hạn</th>
-                    <th className="pb-1.5 font-bold text-center">Trạng thái</th>
+            <div className="overflow-x-auto rounded-xl border border-line/70 bg-panel/60 backdrop-blur-md">
+              <table className="w-full text-xs border-collapse">
+                <thead className="bg-surface/90 backdrop-blur-md border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.11em] text-ink-faint">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left font-bold whitespace-nowrap">Số KUNN</th>
+                    <th className="px-4 py-2.5 text-right font-bold whitespace-nowrap">Số tiền vay</th>
+                    <th className="px-4 py-2.5 text-right font-bold whitespace-nowrap">Dư nợ hiện tại</th>
+                    <th className="px-4 py-2.5 text-center font-bold whitespace-nowrap">Lãi suất</th>
+                    <th className="px-4 py-2.5 text-left font-bold whitespace-nowrap">Ngày vay → Đáo hạn</th>
+                    <th className="px-4 py-2.5 text-center font-bold whitespace-nowrap">Trạng thái</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-line/60">
+                <tbody className="divide-y divide-line/40">
                   {contractKunns.map(k => {
                     const kunnBalance = outstandingOf(k);
                     return (
-                      <tr key={k.Id} className="hover:bg-panel-muted/60 transition-colors">
-                        <td className="py-2 font-mono font-bold text-accent">
+                      <tr key={k.Id} className="hover:bg-accent/[0.04] transition-colors border-b border-line/30">
+                        <td className="px-4 py-2.5 font-mono font-bold text-accent whitespace-nowrap">
                           {k.ContractNumber}
                         </td>
-                        <td className="py-2 font-mono font-semibold text-right text-ink">
+                        <td className="px-4 py-2.5 font-mono font-semibold text-right text-ink whitespace-nowrap">
                           {fmtMoney(kunnPrincipal(k))}
                         </td>
-                        <td className="py-2 font-mono font-bold text-right text-warn">
+                        <td className="px-4 py-2.5 font-mono font-bold text-right text-warn whitespace-nowrap">
                           {fmtMoney(kunnBalance)}
                         </td>
-                        <td className="py-2 font-mono text-center text-accent font-semibold">
+                        <td className="px-4 py-2.5 font-mono text-center text-accent font-semibold whitespace-nowrap">
                           {fmtRate(getEffectiveActiveRate(k))}
                         </td>
-                        <td className="py-2 font-mono text-ink-faint">
+                        <td className="px-4 py-2.5 font-mono text-ink-muted text-[11px] whitespace-nowrap">
                           {k.DisbursementDate ? fmtDate(k.DisbursementDate) : (k.ContractStartDate ? fmtDate(k.ContractStartDate) : '—')} → {k.KunnDueDate ? fmtDate(k.KunnDueDate) : (k.ContractEndDate ? fmtDate(k.ContractEndDate) : '—')}
                         </td>
-                        <td className="py-2 text-center">
+                        <td className="px-4 py-2.5 text-center whitespace-nowrap">
                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
                             k.IsSettled
                               ? 'bg-panel-muted text-ink-faint border border-line'

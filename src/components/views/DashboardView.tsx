@@ -10,7 +10,7 @@ import { fmtDate, fmtMoney, getMasterHdtdNumber, toIsoDate, daysUntil, todayIso 
 import { assetClassLabel, collateralValue, appraisalExpiryDate } from '../../lib/collateralMath';
 import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
-  type DueFilter,
+  DUE_FILTER_LABELS, type DueFilter,
 } from '../../lib/dueList';
 import { parseCollateralIds } from '../../lib/creditLimit';
 import { kunnPrincipal } from '../../lib/loanMath';
@@ -22,9 +22,11 @@ import { summarizeCreditContracts, totalsOfCreditContracts } from '../../lib/cre
 import { Toast, useToast } from '../Toast';
 import type { Customer, Collateral, LoanContract, CardContract, CreditContract } from '../../types';
 import {
-  Building2, RefreshCw, Calendar, Clock, ShieldAlert,
-  AlertTriangle
+  Building2, RefreshCw, Calendar, Clock,
+  AlertTriangle, Printer, Search, FileSpreadsheet, X
 } from 'lucide-react';
+import { buildXlsx, MIME_XLSX, type XlsxCell, type XlsxStyle } from '../../lib/xlsxWriter';
+import { downloadBytes } from '../../lib/xlsExport';
 import { DueSectionPanel, dueBadgeClass, dueBadgeText } from '../dashboard/DueSectionPanel';
 import { DashboardSummaryKpis } from '../dashboard/DashboardSummaryKpis';
 import { DashboardPortfolioStructure } from '../dashboard/DashboardPortfolioStructure';
@@ -178,6 +180,7 @@ export const DashboardView: React.FC = () => {
   }, [customers, contracts, collaterals, cardContracts, creditContracts, paidPrincipalMap]);
 
   const [onlyGroup1, setOnlyGroup1] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [dueMonthFilter, setDueMonthFilter] = useState<DueFilter>('all');
   const [kunnFilter, setKunnFilter] = useState<DueFilter>('all');
   const [hmtdFilter, setHmtdFilter] = useState<DueFilter>('all');
@@ -216,7 +219,7 @@ export const DashboardView: React.FC = () => {
       const cus = customerMap.get(c.CustomerId);
       const hdtdCha = (c.CreditContractId ? hdtdById.get(c.CreditContractId) : undefined)
         || hdtdByNumber.get(masterNo);
-      const endDateStr = toIsoDate(hdtdCha?.ContractEndDate)
+      const endDateStr = (hdtdCha && toIsoDate(hdtdCha.ContractEndDate))
         || toIsoDate(c.ContractEndDate) || '';
       const daysLeft = daysUntil(endDateStr);
 
@@ -279,6 +282,45 @@ export const DashboardView: React.FC = () => {
   const kunnCount = countByDue(dueKunnList, soNgay);
   const hmtdCount = countByDue(dueHmtdList, soNgay);
   const tsbdCount = countByDue(dueCollateralList, soNgay);
+
+  const q = searchQuery.trim().toLowerCase();
+
+  const filteredDueMonthRows = useMemo(() => {
+    if (!q) return dueMonthRows;
+    return dueMonthRows.filter(i =>
+      (i.customer?.FullName || '').toLowerCase().includes(q) ||
+      (i.customer?.CifKh || '').toLowerCase().includes(q) ||
+      (i.contract.ContractNumber || '').toLowerCase().includes(q)
+    );
+  }, [dueMonthRows, q]);
+
+  const filteredKunnRows = useMemo(() => {
+    if (!q) return kunnRows;
+    return kunnRows.filter(r =>
+      (r.customer?.FullName || '').toLowerCase().includes(q) ||
+      (r.customer?.CifKh || '').toLowerCase().includes(q) ||
+      (r.contract.ContractNumber || '').toLowerCase().includes(q)
+    );
+  }, [kunnRows, q]);
+
+  const filteredHmtdRows = useMemo(() => {
+    if (!q) return hmtdRows;
+    return hmtdRows.filter(r =>
+      (r.customer?.FullName || '').toLowerCase().includes(q) ||
+      (r.customer?.CifKh || '').toLowerCase().includes(q) ||
+      (r.masterNo || '').toLowerCase().includes(q)
+    );
+  }, [hmtdRows, q]);
+
+  const filteredTsbdRows = useMemo(() => {
+    if (!q) return tsbdRows;
+    return tsbdRows.filter(r =>
+      (r.customer?.FullName || '').toLowerCase().includes(q) ||
+      (r.customer?.CifKh || '').toLowerCase().includes(q) ||
+      (r.collateral.AssetCode || '').toLowerCase().includes(q) ||
+      (r.collateral.Address || '').toLowerCase().includes(q)
+    );
+  }, [tsbdRows, q]);
 
   type DueInMonthItem = (typeof dueInMonthList)[number];
   const dueInMonthColumns: AdaptiveColumn<DueInMonthItem>[] = [
@@ -462,6 +504,115 @@ export const DashboardView: React.FC = () => {
     [4]
   );
 
+  const exportActiveTabExcel = () => {
+    const headerCenter: XlsxStyle = { bold: true, align: 'center' };
+    const headerLeft: XlsxStyle = { bold: true, align: 'left' };
+    const headerRight: XlsxStyle = { bold: true, align: 'right' };
+    const textCenter: XlsxStyle = { align: 'center' };
+    const textLeft: XlsxStyle = { align: 'left' };
+    const numRight: XlsxStyle = { align: 'right', numFmt: '#,##0' };
+
+    if (alertConsoleTab === 'due_month') {
+      const rows: XlsxCell[][] = [
+        [
+          { value: 'STT', style: headerCenter },
+          { value: 'Khách hàng vay', style: headerLeft },
+          { value: 'Mã CIF', style: headerCenter },
+          { value: 'Số HĐTD / KUNN', style: headerCenter },
+          { value: 'Kỳ số', style: headerCenter },
+          { value: 'Số tiền kỳ này', style: headerRight },
+          { value: 'Ngày đến hạn due', style: headerCenter },
+          { value: 'Hạn còn lại', style: headerCenter },
+        ],
+        ...filteredDueMonthRows.map((item, idx) => [
+          { value: idx + 1, style: textCenter },
+          { value: item.customer?.FullName || '—', style: textLeft },
+          { value: item.customer?.CifKh || '—', style: textCenter },
+          { value: item.contract.ContractNumber || '—', style: textCenter },
+          { value: item.state.period?.PeriodNumber ?? '', style: textCenter },
+          { value: item.state.period?.TotalAmount ?? 0, numeric: true, style: numRight },
+          { value: fmtDate(item.state.dueDateIso), style: textCenter },
+          { value: dueBadgeText(item.state.daysLeft ?? 0), style: textCenter },
+        ]),
+      ];
+      const bytes = buildXlsx({ name: 'Ky_Due_Thang', rows, colWidths: [8, 28, 14, 20, 10, 20, 16, 18] });
+      downloadBytes(bytes, `Bao_Cao_Ky_Due_${todayIso()}.xlsx`, MIME_XLSX);
+    } else if (alertConsoleTab === 'kunn') {
+      const rows: XlsxCell[][] = [
+        [
+          { value: 'STT', style: headerCenter },
+          { value: 'Khách hàng vay', style: headerLeft },
+          { value: 'Mã CIF', style: headerCenter },
+          { value: 'Số HĐTD / KUNN', style: headerCenter },
+          { value: 'Dư nợ KUNN', style: headerRight },
+          { value: 'Ngày kết thúc', style: headerCenter },
+          { value: 'Kỳ hạn', style: headerCenter },
+          { value: 'Hạn còn lại', style: headerCenter },
+        ],
+        ...filteredKunnRows.map(({ contract, customer, daysLeft }, idx) => [
+          { value: idx + 1, style: textCenter },
+          { value: customer?.FullName || '—', style: textLeft },
+          { value: customer?.CifKh || '—', style: textCenter },
+          { value: contract.ContractNumber || '—', style: textCenter },
+          { value: kunnPrincipal(contract), numeric: true, style: numRight },
+          { value: fmtDate(contract.KunnDueDate), style: textCenter },
+          { value: contract.KunnTenor || '—', style: textCenter },
+          { value: daysLeft === null || daysLeft === undefined ? '—' : daysLeft < 0 ? `Quá hạn ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`, style: textCenter },
+        ]),
+      ];
+      const bytes = buildXlsx({ name: 'KUNN_Den_Han', rows, colWidths: [8, 28, 14, 20, 20, 16, 14, 18] });
+      downloadBytes(bytes, `Bao_Cao_KUNN_Den_Han_${todayIso()}.xlsx`, MIME_XLSX);
+    } else if (alertConsoleTab === 'hmtd') {
+      const rows: XlsxCell[][] = [
+        [
+          { value: 'STT', style: headerCenter },
+          { value: 'Khách hàng vay', style: headerLeft },
+          { value: 'Mã CIF', style: headerCenter },
+          { value: 'Số HĐTD hạn mức', style: headerCenter },
+          { value: 'Tổng mức cấp', style: headerRight },
+          { value: 'Ngày hết hạn HĐ', style: headerCenter },
+          { value: 'Hạn còn lại', style: headerCenter },
+        ],
+        ...filteredHmtdRows.map(({ masterNo, contract, customer, endDateStr, daysLeft }, idx) => [
+          { value: idx + 1, style: textCenter },
+          { value: customer?.FullName || '—', style: textLeft },
+          { value: customer?.CifKh || '—', style: textCenter },
+          { value: masterNo || '—', style: textCenter },
+          { value: contract.ContractAmount || 0, numeric: true, style: numRight },
+          { value: fmtDate(endDateStr), style: textCenter },
+          { value: daysLeft === null || daysLeft === undefined ? '—' : daysLeft < 0 ? `Đã hết hạn ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`, style: textCenter },
+        ]),
+      ];
+      const bytes = buildXlsx({ name: 'HMTD_Het_Han', rows, colWidths: [8, 28, 14, 22, 20, 16, 18] });
+      downloadBytes(bytes, `Bao_Cao_HMTD_Het_Han_${todayIso()}.xlsx`, MIME_XLSX);
+    } else if (alertConsoleTab === 'tsbd') {
+      const rows: XlsxCell[][] = [
+        [
+          { value: 'STT', style: headerCenter },
+          { value: 'Chủ sở hữu TSBĐ', style: headerLeft },
+          { value: 'Mã CIF', style: headerCenter },
+          { value: 'Mã TS / Địa chỉ', style: headerLeft },
+          { value: 'Xếp loại TS', style: headerCenter },
+          { value: 'Giá trị định giá', style: headerRight },
+          { value: 'Ngày hết hạn ĐG', style: headerCenter },
+          { value: 'Trạng thái', style: headerCenter },
+        ],
+        ...filteredTsbdRows.map(({ collateral, customer, expiryDateStr, daysLeft }, idx) => [
+          { value: idx + 1, style: textCenter },
+          { value: customer?.FullName || '—', style: textLeft },
+          { value: customer?.CifKh || '—', style: textCenter },
+          { value: collateral.AssetCode || collateral.Address || '—', style: textLeft },
+          { value: assetClassLabel(collateral.AssetType), style: textCenter },
+          { value: collateralValue(collateral), numeric: true, style: numRight },
+          { value: fmtDate(expiryDateStr), style: textCenter },
+          { value: daysLeft === null || daysLeft === undefined ? '—' : daysLeft < 0 ? `Đã hết hạn ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`, style: textCenter },
+        ]),
+      ];
+      const bytes = buildXlsx({ name: 'TSBD_Het_Han_DG', rows, colWidths: [8, 28, 14, 28, 18, 20, 16, 18] });
+      downloadBytes(bytes, `Bao_Cao_Dinh_Gia_TSBD_${todayIso()}.xlsx`, MIME_XLSX);
+    }
+  };
+
   const formatMoney = (val: number) => {
     if (val >= 1e9) return (val / 1e9).toFixed(2) + ' Tỷ';
     if (val >= 1e6) return (val / 1e6).toFixed(0) + ' Trđ';
@@ -469,6 +620,48 @@ export const DashboardView: React.FC = () => {
   };
 
   const cardBg = UI.containerCardBg;
+
+  const currentActiveFilter =
+    alertConsoleTab === 'due_month' ? dueMonthFilter
+    : alertConsoleTab === 'kunn' ? kunnFilter
+    : alertConsoleTab === 'hmtd' ? hmtdFilter
+    : tsbdFilter;
+
+  const setCurrentActiveFilter = (f: DueFilter) => {
+    if (alertConsoleTab === 'due_month') setDueMonthFilter(f);
+    else if (alertConsoleTab === 'kunn') setKunnFilter(f);
+    else if (alertConsoleTab === 'hmtd') setHmtdFilter(f);
+    else setTsbdFilter(f);
+  };
+
+  const currentPrintHandler =
+    alertConsoleTab === 'kunn' ? inKunn
+    : alertConsoleTab === 'hmtd' ? inHmtd
+    : alertConsoleTab === 'tsbd' ? inTsbd
+    : undefined;
+
+  const urgentOverdueCount =
+    dueInMonthList.filter(item => (item.state.daysLeft ?? 0) < 0).length +
+    dueKunnList.filter(item => (item.daysLeft ?? 0) < 0).length +
+    dueHmtdList.filter(item => (item.daysLeft ?? 0) < 0).length;
+
+  const urgentOverdueAmount =
+    dueInMonthList.filter(item => (item.state.daysLeft ?? 0) < 0).reduce((s, i) => s + (i.state.period?.TotalAmount ?? 0), 0) +
+    dueKunnList.filter(item => (item.daysLeft ?? 0) < 0).reduce((s, i) => s + kunnPrincipal(i.contract), 0);
+
+  const upcoming7DaysCount =
+    dueInMonthList.filter(item => (item.state.daysLeft ?? 0) >= 0 && (item.state.daysLeft ?? 0) <= 7).length +
+    dueKunnList.filter(item => (item.daysLeft ?? 0) >= 0 && (item.daysLeft ?? 0) <= 7).length;
+
+  const upcoming7DaysAmount =
+    dueInMonthList.filter(item => (item.state.daysLeft ?? 0) >= 0 && (item.state.daysLeft ?? 0) <= 7).reduce((s, i) => s + (i.state.period?.TotalAmount ?? 0), 0) +
+    dueKunnList.filter(item => (item.daysLeft ?? 0) >= 0 && (item.daysLeft ?? 0) <= 7).reduce((s, i) => s + kunnPrincipal(i.contract), 0);
+
+  const expiringCollateralCount =
+    dueCollateralList.filter(item => (item.daysLeft ?? 0) <= 30).length;
+
+  const expiringCollateralVal =
+    dueCollateralList.filter(item => (item.daysLeft ?? 0) <= 30).reduce((s, i) => s + collateralValue(i.collateral), 0);
 
   if (loading) {
     return (
@@ -479,27 +672,32 @@ export const DashboardView: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+    <div className="space-y-4 md:space-y-4.5 w-full pb-8">
       <Toast toast={toast} onDismiss={dismiss} />
 
-      {/* Top Header */}
-      <div className="flex items-center justify-between border-b border-line pb-3">
-        <div>
-          <h2 className="text-base font-bold tracking-tight flex items-center space-x-2 text-ink">
-            <Building2 className="w-5 h-5 text-accent" />
-            <span>BÁO CÁO QUẢN TRỊ DƯ NỢ & HẠN MỨC TÍN DỤNG</span>
+      {/* Sleek Action Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-line/60">
+        <div className="flex items-center gap-3">
+          <span className="p-2 rounded-xl bg-accent-soft text-accent shadow-xs">
+            <Building2 className="w-5 h-5" />
+          </span>
+          <h2 className="text-base sm:text-lg font-bold tracking-tight text-ink">
+            Báo Cáo Quản Trị Dư Nợ & Hạn Mức Tín Dụng
           </h2>
         </div>
-        <button
-          onClick={fetchDashboardData}
-          className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-2 rounded-lg flex items-center space-x-1.5 font-bold transition-all shadow-xs"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>CẬP NHẬT DỮ LIỆU</span>
-        </button>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={fetchDashboardData}
+            className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-2 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Cập nhật số liệu</span>
+          </button>
+        </div>
       </div>
 
-      {/* Top 4 KPI Metrics */}
+      {/* 1. Tầng Vĩ Mô: Top 5 Thẻ KPI Bento */}
       <DashboardSummaryKpis
         cardBg={cardBg}
         totalDebt={totalDebt}
@@ -515,7 +713,7 @@ export const DashboardView: React.FC = () => {
         formatMoney={formatMoney}
       />
 
-      {/* Portfolio Breakdown Structure Section */}
+      {/* 2. Tầng Cơ Cấu: Phân Bổ Phương Thức & Nhóm Nợ */}
       <DashboardPortfolioStructure
         cardBg={cardBg}
         totalDebt={totalDebt}
@@ -524,183 +722,350 @@ export const DashboardView: React.FC = () => {
         formatMoney={formatMoney}
       />
 
-      {/* Filter Control Bar */}
-      <div className={`${cardBg} rounded-xl p-3.5 border border-line shadow-sm flex flex-wrap items-center justify-between gap-3`}>
-        <div className="flex items-center space-x-2 text-xs font-bold text-ink">
-          <ShieldAlert className="w-4 h-4 text-accent" />
-          <span>BỘ LỌC BÁO CÁO CẢNH BÁO DƯ NỢ:</span>
+      {/* 3. Tầng Tác Nghiệp: Khung Trung Tâm Cảnh Báo & Xử Lý Nợ Tập Trung */}
+      <div className="space-y-3.5">
+        {/* 3 Thẻ Điểm Nóng Rủi Ro Tương Tác (Quick-Action Filter Hotspots) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          {/* Hotspot 1: Quá hạn thu nợ */}
+          <div
+            onClick={() => {
+              setAlertConsoleTab('due_month');
+              setDueMonthFilter('expired');
+            }}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
+              urgentOverdueCount > 0
+                ? 'bg-neg-soft/30 border-neg/40 hover:border-neg hover:shadow-lg'
+                : 'bg-panel/80 border-line/70 hover:border-accent/40'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${urgentOverdueCount > 0 ? 'bg-neg animate-pulse' : 'bg-pos'}`} />
+                1. Quá hạn thu nợ
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint group-hover:text-neg transition-colors">
+                Xem ngay →
+              </span>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${urgentOverdueCount > 0 ? 'text-neg drop-shadow-xs' : 'text-pos'}`}>
+                {urgentOverdueCount > 0 ? `${urgentOverdueCount} khoản nợ` : '0 khoản nợ'}
+              </span>
+              <span className="text-xs text-ink-muted font-semibold">
+                {urgentOverdueCount > 0 ? `Quá hạn: ${formatMoney(urgentOverdueAmount)}` : 'Đúng hạn chuẩn'}
+              </span>
+            </div>
+          </div>
+
+          {/* Hotspot 2: Đến hạn 7 ngày tới */}
+          <div
+            onClick={() => {
+              setAlertConsoleTab('due_month');
+              setDueMonthFilter('upcoming');
+            }}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
+              upcoming7DaysCount > 0
+                ? 'bg-warn-soft/30 border-warn/40 hover:border-warn hover:shadow-lg'
+                : 'bg-panel/80 border-line/70 hover:border-accent/40'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${upcoming7DaysCount > 0 ? 'bg-warn' : 'bg-pos'}`} />
+                2. Đến hạn 7 ngày tới
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint group-hover:text-warn transition-colors">
+                Lên lịch nhắc →
+              </span>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${upcoming7DaysCount > 0 ? 'text-warn' : 'text-ink-muted'}`}>
+                {upcoming7DaysCount} kỳ trả nợ
+              </span>
+              <span className="text-xs text-ink-muted font-semibold">
+                {upcoming7DaysCount > 0 ? `Cần thu: ${formatMoney(upcoming7DaysAmount)}` : 'Không có nợ đến hạn'}
+              </span>
+            </div>
+          </div>
+
+          {/* Hotspot 3: Định giá TSBĐ tới hạn */}
+          <div
+            onClick={() => {
+              setAlertConsoleTab('tsbd');
+              setTsbdFilter('upcoming');
+            }}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
+              expiringCollateralCount > 0
+                ? 'bg-accent-soft/30 border-accent/40 hover:border-accent hover:shadow-lg'
+                : 'bg-panel/80 border-line/70 hover:border-accent/40'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${expiringCollateralCount > 0 ? 'bg-accent' : 'bg-pos'}`} />
+                3. Định giá TSBĐ tới hạn
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint group-hover:text-accent transition-colors">
+                Xem TSBĐ →
+              </span>
+            </div>
+            <div className="mt-2.5 flex items-baseline justify-between">
+              <span className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${expiringCollateralCount > 0 ? 'text-accent' : 'text-ink-muted'}`}>
+                {expiringCollateralCount} tài sản
+              </span>
+              <span className="text-xs text-ink-muted font-semibold">
+                {expiringCollateralCount > 0 ? `Giá trị: ${formatMoney(expiringCollateralVal)}` : 'Định giá còn hạn'}
+              </span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center bg-panel-muted p-1 rounded-lg">
-          <button
-            type="button"
-            onClick={() => setOnlyGroup1(true)}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-bold transition-all ${onlyGroup1
-              ? 'bg-accent text-accent-ink shadow-xs'
-              : 'text-ink-faint hover:text-ink'
-              }`}
-          >
-            ✓ Chỉ xem Nợ Nhóm 1 (Chuẩn đủ điều kiện)
-          </button>
-          <button
-            type="button"
-            onClick={() => setOnlyGroup1(false)}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-bold transition-all ${!onlyGroup1
-              ? 'bg-accent text-accent-ink shadow-xs'
-              : 'text-ink-faint hover:text-ink'
-              }`}
-          >
-            Bao gồm cả Nợ Nhóm 2+ (Nợ chú ý & Nợ xấu)
-          </button>
+
+        {/* Khung Bảng Chi Tiết Console */}
+        <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/70 bg-panel/80 backdrop-blur-md shadow-xs space-y-4`}>
+          {/* Unified Command Toolbar: Tab chuyển nghiệp vụ + Tìm kiếm nhanh + Bộ lọc Nhóm nợ + Bộ lọc Thời gian + Nút Xuất Excel/PDF */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 pb-3 border-b border-line/50">
+            {/* Trái: 4 Tabs Danh Mục Cảnh Báo */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-surface/80 border border-line/50">
+              <button
+                type="button"
+                onClick={() => setAlertConsoleTab('due_month')}
+                className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  alertConsoleTab === 'due_month'
+                    ? 'bg-accent text-accent-ink shadow-xs'
+                    : 'text-ink-muted hover:text-ink hover:bg-panel-muted/60'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>1. Kỳ Due Tháng</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                  alertConsoleTab === 'due_month' ? 'bg-accent-ink/20 text-accent-ink font-bold' : 'bg-panel-muted text-ink-faint'
+                }`}>
+                  {dueInMonthList.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAlertConsoleTab('kunn')}
+                className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  alertConsoleTab === 'kunn'
+                    ? 'bg-accent text-accent-ink shadow-xs'
+                    : 'text-ink-muted hover:text-ink hover:bg-panel-muted/60'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>2. KUNN Đến Hạn</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                  alertConsoleTab === 'kunn' ? 'bg-accent-ink/20 text-accent-ink font-bold' : 'bg-panel-muted text-ink-faint'
+                }`}>
+                  {dueKunnList.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAlertConsoleTab('hmtd')}
+                className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  alertConsoleTab === 'hmtd'
+                    ? 'bg-accent text-accent-ink shadow-xs'
+                    : 'text-ink-muted hover:text-ink hover:bg-panel-muted/60'
+                }`}
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>3. HMTD Hết Hạn</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                  alertConsoleTab === 'hmtd' ? 'bg-accent-ink/20 text-accent-ink font-bold' : 'bg-panel-muted text-ink-faint'
+                }`}>
+                  {dueHmtdList.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAlertConsoleTab('tsbd')}
+                className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  alertConsoleTab === 'tsbd'
+                    ? 'bg-accent text-accent-ink shadow-xs'
+                    : 'text-ink-muted hover:text-ink hover:bg-panel-muted/60'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>4. Định Giá TSBĐ</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                  alertConsoleTab === 'tsbd' ? 'bg-accent-ink/20 text-accent-ink font-bold' : 'bg-panel-muted text-ink-faint'
+                }`}>
+                  {dueCollateralList.length}
+                </span>
+              </button>
+            </div>
+
+            {/* Phải: Ô Tìm Kiếm + Bộ Lọc Nhóm Nợ + Lọc Trạng Thái + In PDF & Xuất Excel */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Ô Tìm Kiếm Nhanh */}
+              <div className="relative flex-1 sm:max-w-xs min-w-[190px]">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-faint" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Tìm KH, CIF, Số HĐ..."
+                  className="w-full pl-8 pr-7 py-1.5 rounded-xl border border-line/60 bg-surface/70 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Lọc Chất Lượng Nợ */}
+              <div className="flex items-center bg-surface/80 p-0.5 rounded-xl border border-line/50">
+                <button
+                  type="button"
+                  onClick={() => setOnlyGroup1(true)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${onlyGroup1
+                    ? 'bg-accent text-accent-ink shadow-xs font-bold'
+                    : 'text-ink-faint hover:text-ink'
+                  }`}
+                >
+                  ✓ Chỉ Nợ Nhóm 1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOnlyGroup1(false)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${!onlyGroup1
+                    ? 'bg-accent text-accent-ink shadow-xs font-bold'
+                    : 'text-ink-faint hover:text-ink'
+                  }`}
+                >
+                  Gồm Nhóm 2+
+                </button>
+              </div>
+
+              {/* Lọc Trạng Thái Đến Hạn / Quá Hạn */}
+              <div className="flex items-center gap-1 bg-surface/80 p-0.5 rounded-xl border border-line/50">
+                {(['all', 'upcoming', 'expired'] as DueFilter[]).map(f => {
+                  const isActive = currentActiveFilter === f;
+                  return (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setCurrentActiveFilter(f)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all ${
+                        isActive
+                          ? alertConsoleTab === 'due_month'
+                            ? 'bg-warn text-surface shadow-xs font-bold'
+                            : alertConsoleTab === 'tsbd'
+                              ? 'bg-pos text-surface shadow-xs font-bold'
+                              : 'bg-accent text-accent-ink shadow-xs font-bold'
+                          : 'text-ink-faint hover:text-ink hover:bg-panel-muted/60'
+                      }`}
+                    >
+                      {DUE_FILTER_LABELS[f]}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Nút Xuất Excel & In PDF */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={exportActiveTabExcel}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-panel border-line text-ink-muted hover:border-pos hover:text-pos transition-colors"
+                >
+                  <FileSpreadsheet className="w-3 h-3 text-pos" />
+                  <span>Excel</span>
+                </button>
+
+                {currentPrintHandler && (
+                  <button
+                    type="button"
+                    onClick={currentPrintHandler}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-panel border-line text-ink-muted hover:border-accent hover:text-accent transition-colors"
+                  >
+                    <Printer className="w-3 h-3" />
+                    <span>PDF</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Nội dung bảng nghiệp vụ tương ứng */}
+          {alertConsoleTab === 'due_month' && (
+            <DueSectionPanel
+              icon={Calendar}
+              tone="warn"
+              title="Khách hàng chuẩn bị đóng kỳ due của tháng"
+              counts={dueMonthCount}
+              notice={
+                scheduleError
+                  ? `Không nạp được lịch trả nợ: ${scheduleError}. Danh sách bên dưới chưa đầy đủ.`
+                  : undefined
+              }
+              rows={filteredDueMonthRows}
+              rowKey={i => i.contract.Id}
+              cardTitle={i => i.customer?.FullName || 'N/A'}
+              cardSubtitle={i => i.customer?.CifKh || ''}
+              emptyText="Không có kỳ trả nợ nào đang quá hạn hoặc sắp đến hạn."
+              cardBg=""
+              columns={dueInMonthColumns}
+            />
+          )}
+
+          {alertConsoleTab === 'kunn' && (
+            <DueSectionPanel
+              icon={Clock}
+              tone="accent"
+              title="Giấy nhận nợ (KUNN) sắp đến hạn kết thúc"
+              counts={kunnCount}
+              rows={filteredKunnRows}
+              rowKey={r => r.contract.Id}
+              cardTitle={r => r.customer?.FullName || 'N/A'}
+              cardSubtitle={r => r.customer?.CifKh || ''}
+              emptyText="Không có KUNN nào sắp đến hạn hoặc quá hạn kết thúc."
+              cardBg=""
+              columns={kunnColumns}
+            />
+          )}
+
+          {alertConsoleTab === 'hmtd' && (
+            <DueSectionPanel
+              icon={AlertTriangle}
+              tone="accent"
+              title="Hạn mức tín dụng (HMTD) sắp tới hạn kết thúc"
+              counts={hmtdCount}
+              rows={filteredHmtdRows}
+              rowKey={r => r.masterNo}
+              cardTitle={r => r.customer?.FullName || 'N/A'}
+              cardSubtitle={r => r.customer?.CifKh || ''}
+              emptyText="Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn."
+              cardBg=""
+              columns={hmtdColumns}
+            />
+          )}
+
+          {alertConsoleTab === 'tsbd' && (
+            <DueSectionPanel
+              icon={Building2}
+              tone="pos"
+              title="Định giá tài sản bảo đảm sắp tới hạn"
+              counts={tsbdCount}
+              rows={filteredTsbdRows}
+              rowKey={r => r.collateral.Id}
+              cardTitle={r => r.customer?.FullName || 'N/A'}
+              cardSubtitle={r => r.customer?.CifKh || ''}
+              emptyText="Không có Định giá TSĐB nào sắp hết hạn trong 30 ngày tới."
+              cardBg=""
+              columns={tsbdColumns}
+            />
+          )}
         </div>
-      </div>
-
-      {/* Smart Alert Console Tab Navigation */}
-      <div className="space-y-3">
-        <div className={`${cardBg} rounded-xl p-1.5 border border-line shadow-sm flex flex-wrap items-center gap-2`}>
-          <button
-            type="button"
-            onClick={() => setAlertConsoleTab('due_month')}
-            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
-              alertConsoleTab === 'due_month'
-                ? 'bg-accent text-accent-ink shadow-xs'
-                : 'text-ink-muted hover:bg-panel-muted/80 hover:text-ink'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span>1. Kỳ Due Tháng</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-panel-muted/80 text-ink font-mono">
-              {dueInMonthList.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setAlertConsoleTab('kunn')}
-            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
-              alertConsoleTab === 'kunn'
-                ? 'bg-accent text-accent-ink shadow-xs'
-                : 'text-ink-muted hover:bg-panel-muted/80 hover:text-ink'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            <span>2. KUNN Đến Hạn</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-panel-muted/80 text-ink font-mono">
-              {dueKunnList.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setAlertConsoleTab('hmtd')}
-            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
-              alertConsoleTab === 'hmtd'
-                ? 'bg-accent text-accent-ink shadow-xs'
-                : 'text-ink-muted hover:bg-panel-muted/80 hover:text-ink'
-            }`}
-          >
-            <AlertTriangle className="w-4 h-4" />
-            <span>3. HMTD Hết Hạn</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-panel-muted/80 text-ink font-mono">
-              {dueHmtdList.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setAlertConsoleTab('tsbd')}
-            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all ${
-              alertConsoleTab === 'tsbd'
-                ? 'bg-accent text-accent-ink shadow-xs'
-                : 'text-ink-muted hover:bg-panel-muted/80 hover:text-ink'
-            }`}
-          >
-            <Building2 className="w-4 h-4" />
-            <span>4. Định Giá TSĐB</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] bg-panel-muted/80 text-ink font-mono">
-              {dueCollateralList.length}
-            </span>
-          </button>
-        </div>
-
-        {alertConsoleTab === 'due_month' && (
-          <DueSectionPanel
-            icon={Calendar}
-            tone="warn"
-            title="Khách hàng chuẩn bị đóng kỳ due của tháng"
-            counts={dueMonthCount}
-            filter={dueMonthFilter}
-            onFilterChange={setDueMonthFilter}
-            notice={
-              scheduleError
-                ? `Không nạp được lịch trả nợ: ${scheduleError}. Danh sách bên dưới chưa đầy đủ.`
-                : undefined
-            }
-            rows={dueMonthRows}
-            rowKey={i => i.contract.Id}
-            cardTitle={i => i.customer?.FullName || 'N/A'}
-            cardSubtitle={i => i.customer?.CifKh || ''}
-            emptyText="Không có kỳ trả nợ nào đang quá hạn hoặc sắp đến hạn."
-            cardBg={cardBg}
-            columns={dueInMonthColumns}
-          />
-        )}
-
-        {alertConsoleTab === 'kunn' && (
-          <DueSectionPanel
-            icon={Clock}
-            tone="accent"
-            title="Giấy nhận nợ (KUNN) sắp đến hạn kết thúc"
-            counts={kunnCount}
-            filter={kunnFilter}
-            onFilterChange={setKunnFilter}
-            onPrint={inKunn}
-            rows={kunnRows}
-            rowKey={r => r.contract.Id}
-            cardTitle={r => r.customer?.FullName || 'N/A'}
-            cardSubtitle={r => r.customer?.CifKh || ''}
-            emptyText="Không có KUNN nào sắp đến hạn hoặc quá hạn kết thúc."
-            cardBg={cardBg}
-            columns={kunnColumns}
-          />
-        )}
-
-        {alertConsoleTab === 'hmtd' && (
-          <DueSectionPanel
-            icon={AlertTriangle}
-            tone="accent"
-            title="Hạn mức tín dụng (HMTD) sắp tới hạn kết thúc"
-            counts={hmtdCount}
-            filter={hmtdFilter}
-            onFilterChange={setHmtdFilter}
-            onPrint={inHmtd}
-            rows={hmtdRows}
-            rowKey={r => r.masterNo}
-            cardTitle={r => r.customer?.FullName || 'N/A'}
-            cardSubtitle={r => r.customer?.CifKh || ''}
-            emptyText="Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn."
-            cardBg={cardBg}
-            columns={hmtdColumns}
-          />
-        )}
-
-        {alertConsoleTab === 'tsbd' && (
-          <DueSectionPanel
-            icon={Building2}
-            tone="pos"
-            title="Định giá tài sản bảo đảm sắp tới hạn"
-            counts={tsbdCount}
-            filter={tsbdFilter}
-            onFilterChange={setTsbdFilter}
-            onPrint={inTsbd}
-            rows={tsbdRows}
-            rowKey={r => r.collateral.Id}
-            cardTitle={r => r.customer?.FullName || 'N/A'}
-            cardSubtitle={r => r.customer?.CifKh || ''}
-            emptyText="Không có Định giá TSĐB nào sắp hết hạn trong 30 ngày tới."
-            cardBg={cardBg}
-            columns={tsbdColumns}
-          />
-        )}
       </div>
     </div>
   );

@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { UI } from '../../lib/uiClasses';
 import type { Customer } from '../../types';
 import { isCustomerArchived, CUSTOMER_STATUS_LABEL, type CustomerStatusFilter } from '../../lib/customerStatus';
 import { fmtDate, formatNationalId, parseNationalIdInput } from '../../lib/utils';
-import { Search, Plus, UserCheck, Archive, ArchiveRestore, Edit3, FileText, Banknote, Building2 } from 'lucide-react';
+import {
+  Search, Plus, UserCheck, Users, Archive, ArchiveRestore,
+  Edit3, Phone, ShieldCheck, HeartHandshake, X
+} from 'lucide-react';
 import { Toast } from '../Toast';
 import { AdaptiveTable, type AdaptiveColumn } from '../AdaptiveTable';
 import { useCustomerListController } from '../../hooks/useCustomerListController';
 import { CustomerDrawerForm } from '../customer/CustomerDrawerForm';
-import { customerPath, customerProfilePath } from '../../lib/customerRoutes';
+import { customerProfilePath } from '../../lib/customerRoutes';
 import { useSelectedCustomerId } from '../../hooks/useSelectedCustomerId';
 import { ROUTE_OF } from '../../lib/routes';
 
@@ -67,88 +70,252 @@ export const CustomerListView: React.FC = () => {
     navigate(ROUTE_OF.customers, { replace: true });
   }, [profileCustomerId, profileAppliedFor, isDrawerOpen, navigate]);
 
-  const containerCardBg = UI.containerCardBg;
-  const inputStyle = UI.inputStyle;
+  const khlqCount = useMemo(() => {
+    return visibleCustomers.filter(c => !!c.SpouseName || !!c.CifKhlq).length;
+  }, [visibleCustomers]);
+
+  const getInitials = (name: string) => {
+    if (!name) return 'KH';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const cardBg = UI.containerCardBg;
 
   return (
-    <div className="space-y-4 text-xs transition-colors duration-200">
+    <div className="space-y-4 md:space-y-4.5 w-full pb-8">
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
-      {/* Header Tra cứu & Hành động */}
-      <div className={`${containerCardBg} p-4 rounded-xl border border-line shadow-sm space-y-3`}>
-        <div className="flex items-center justify-between">
-          <div className="text-xs font-bold text-accent tracking-tight flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-accent" />
-            <span>TRA CỨU & QUẢN LÝ DANH SÁCH KHÁCH HÀNG</span>
-          </div>
+      {/* 1. Sleek Action Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-line/60">
+        <div className="flex items-center gap-3">
+          <span className="p-2 rounded-xl bg-accent-soft text-accent shadow-xs">
+            <UserCheck className="w-5 h-5" />
+          </span>
+          <h2 className="text-base sm:text-lg font-bold tracking-tight text-ink">
+            Quản Lý & Tra Cứu Danh Sách Khách Hàng
+          </h2>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={openDrawerForCreate}
-            className="bg-accent hover:opacity-90 text-accent-ink font-bold text-xs py-2 px-3.5 rounded-lg flex items-center space-x-1.5 transition-all duration-150 shadow-xs"
+            className="bg-accent hover:opacity-90 text-accent-ink text-xs px-4 py-2 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>THÊM KHÁCH HÀNG MỚI</span>
           </button>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <input
-            type="text"
-            placeholder="Mã CIF KH..."
-            value={searchCif}
-            onChange={(e) => setSearchCif(e.target.value)}
-            className={`rounded-lg px-3 py-2 text-xs transition-colors ${inputStyle}`}
-          />
-          <input
-            type="text"
-            placeholder="Họ tên Khách hàng..."
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-            className={`rounded-lg px-3 py-2 text-xs transition-colors ${inputStyle}`}
-          />
-          <input
-            type="text"
-            placeholder="Số CCCD KH..."
-            value={formatNationalId(searchNationalId)}
-            onChange={(e) => setSearchNationalId(parseNationalIdInput(e.target.value))}
-            className={`rounded-lg px-3 py-2 text-xs transition-colors ${inputStyle}`}
-          />
-          <button
-            onClick={fetchCustomers}
-            className="bg-panel-muted hover:bg-line border border-line text-ink font-semibold text-xs py-2 px-3 rounded-lg flex items-center justify-center space-x-1.5 transition-all duration-150"
-          >
-            <Search className="w-3.5 h-3.5 text-accent" />
-            <span>TÌM KIẾM HỒ SƠ</span>
-          </button>
+      {/* 2. Top Bento KPI Cards Strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* Card 1: Tổng khách hàng */}
+        <div
+          onClick={() => setStatusFilter('ALL')}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
+            statusFilter === 'ALL'
+              ? 'bg-accent-soft/40 border-accent/60 shadow-md'
+              : 'bg-panel/80 border-line/70 hover:border-accent/40'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-accent" />
+              Tổng hồ sơ
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint group-hover:text-accent transition-colors">
+              Tất cả
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-ink">
+              {statusCounts.ALL}
+            </span>
+            <span className="text-xs text-ink-muted font-medium">Khách hàng</span>
+          </div>
+        </div>
+
+        {/* Card 2: Đang hoạt động */}
+        <div
+          onClick={() => setStatusFilter('active')}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
+            statusFilter === 'active'
+              ? 'bg-pos-soft/40 border-pos/60 shadow-md'
+              : 'bg-panel/80 border-line/70 hover:border-pos/40'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-pos" />
+              Đang hoạt động
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint group-hover:text-pos transition-colors">
+              Đang phục vụ
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-pos">
+              {statusCounts.active}
+            </span>
+            <span className="text-xs text-ink-muted font-medium">Hồ sơ mở</span>
+          </div>
+        </div>
+
+        {/* Card 3: Đã lưu trữ */}
+        <div
+          onClick={() => setStatusFilter('archived')}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
+            statusFilter === 'archived'
+              ? 'bg-panel-muted border-ink/40 shadow-md'
+              : 'bg-panel/80 border-line/70 hover:border-ink/40'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
+              <Archive className="w-3.5 h-3.5 text-ink-muted" />
+              Hồ sơ lưu trữ
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint group-hover:text-ink transition-colors">
+              Tất toán / Đóng
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-ink-muted">
+              {statusCounts.archived}
+            </span>
+            <span className="text-xs text-ink-muted font-medium">Đã lưu kho</span>
+          </div>
+        </div>
+
+        {/* Card 4: KHLQ / Hôn phối */}
+        <div className="p-4 rounded-2xl border bg-panel/80 border-line/70 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
+              <HeartHandshake className="w-3.5 h-3.5 text-accent" />
+              Có KHLQ / Hôn phối
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint">
+              Gia đình
+            </span>
+          </div>
+          <div className="mt-2.5 flex items-baseline justify-between">
+            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-accent">
+              {khlqCount}
+            </span>
+            <span className="text-xs text-ink-muted font-medium">Hồ sơ liên quan</span>
+          </div>
         </div>
       </div>
 
-      {/* Bảng Dữ Liệu Full-Width */}
-      <div className={`${containerCardBg} rounded-xl overflow-hidden border border-line shadow-sm flex flex-col`}>
-        <div className={`p-3.5 border-b space-y-2.5 bg-panel border-line flex flex-wrap items-center justify-between gap-3`}>
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-ink tracking-tight">
-              DANH SÁCH KHÁCH HÀNG ({visibleCustomers.length})
-            </span>
-            <div className="flex items-center gap-1.5">
-              {(['active', 'archived', 'ALL'] as CustomerStatusFilter[]).map(s => (
-                <button key={s} type="button" onClick={() => setStatusFilter(s)}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-semibold border transition-all duration-150 ${
-                    statusFilter === s
-                      ? 'bg-accent text-accent-ink border-accent shadow-xs'
-                      : 'bg-panel-muted text-ink-muted border-line hover:text-ink hover:border-line-strong'
-                  }`}>
-                  {CUSTOMER_STATUS_LABEL[s]} ({statusCounts[s]})
+      {/* 3. Khung Tìm Kiếm & Bảng Dữ Liệu Khách Hàng */}
+      <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/70 bg-panel/80 backdrop-blur-md shadow-xs space-y-4`}>
+        {/* Unified Command Toolbar: Tìm kiếm đa tiêu chí + Bộ lọc Trạng thái */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 pb-3 border-b border-line/50">
+          {/* Cụm Tìm Kiếm Tinh Gọn */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              fetchCustomers();
+            }}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 flex-1 max-w-2xl"
+          >
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+              <input
+                type="text"
+                placeholder="Mã CIF..."
+                value={searchCif}
+                onChange={(e) => setSearchCif(e.target.value)}
+                className="w-full pl-8 pr-7 py-2 rounded-xl border border-line/60 bg-surface/70 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
+              />
+              {searchCif && (
+                <button
+                  type="button"
+                  onClick={() => setSearchCif('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink"
+                >
+                  <X className="w-3 h-3" />
                 </button>
-              ))}
+              )}
             </div>
+
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Họ tên Khách hàng..."
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-line/60 bg-surface/70 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
+              />
+              {searchName && (
+                <button
+                  type="button"
+                  onClick={() => setSearchName('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="Số CCCD..."
+                  value={formatNationalId(searchNationalId)}
+                  onChange={(e) => setSearchNationalId(parseNationalIdInput(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl border border-line/60 bg-surface/70 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
+                />
+                {searchNationalId && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchNationalId('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="bg-accent hover:opacity-90 text-accent-ink px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1 shrink-0 transition-all cursor-pointer shadow-xs"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>Tìm</span>
+              </button>
+            </div>
+          </form>
+
+          {/* Phải: Bộ Lọc Trạng Thái Switcher */}
+          <div className="flex items-center bg-surface/80 p-0.5 rounded-xl border border-line/50 shrink-0">
+            {(['active', 'archived', 'ALL'] as CustomerStatusFilter[]).map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  statusFilter === s
+                    ? 'bg-accent text-accent-ink shadow-xs font-bold'
+                    : 'text-ink-faint hover:text-ink hover:bg-panel-muted/60'
+                }`}
+              >
+                {CUSTOMER_STATUS_LABEL[s]} ({statusCounts[s]})
+              </button>
+            ))}
           </div>
-          <span className="text-[11px] text-ink-faint">Bấm nút "Chỉnh sửa" để cập nhật thông tin</span>
         </div>
 
+        {/* Bảng Dữ Liệu Khách Hàng Adaptive Table */}
         <div className="overflow-auto min-h-[420px]">
           {loading ? (
-            <div className="text-center p-12 text-ink-faint text-xs">Đang tải dữ liệu khách hàng...</div>
+            <div className="flex items-center justify-center p-16 text-ink-faint text-xs">
+              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-accent mr-3"></div>
+              <span>Đang tải dữ liệu khách hàng...</span>
+            </div>
           ) : (
             <AdaptiveTable
               rows={visibleCustomers}
@@ -166,52 +333,23 @@ export const CustomerListView: React.FC = () => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(customerPath('credit-contracts', c.Id));
+                      navigate(customerProfilePath(c.Id));
                     }}
-                    title="Xem Hợp đồng tín dụng & hạn mức của KH này"
-                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
+                    className="border border-line/80 bg-panel-muted/80 hover:bg-accent hover:text-accent-ink hover:border-accent text-ink px-2.5 py-1 rounded-lg text-[11px] font-bold inline-flex items-center space-x-1 transition-all shadow-2xs cursor-pointer"
                   >
-                    <FileText className="w-3 h-3 text-accent" />
-                    <span>HĐTD</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(customerPath('loans', c.Id));
-                    }}
-                    title="Xem Danh mục Khoản vay & Lịch thu nợ của KH này"
-                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
-                  >
-                    <Banknote className="w-3 h-3 text-pos" />
-                    <span>Vay</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(customerPath('collaterals', c.Id));
-                    }}
-                    title="Xem Tài sản bảo đảm thế chấp của KH này"
-                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
-                  >
-                    <Building2 className="w-3 h-3 text-warn" />
-                    <span>TSBĐ</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); navigate(customerProfilePath(c.Id)); }}
-                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center space-x-1 transition-all duration-150 shadow-xs"
-                  >
-                    <Edit3 className="w-3 h-3 text-accent" />
+                    <Edit3 className="w-3 h-3" />
                     <span>Sửa</span>
                   </button>
+
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); toggleArchived(c); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleArchived(c);
+                    }}
                     disabled={archiving === c.Id}
                     title={isCustomerArchived(c) ? 'Bỏ lưu trữ' : 'Lưu trữ hồ sơ'}
-                    className="border border-line bg-panel text-ink-muted hover:border-accent hover:text-accent px-2 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center transition-all duration-150 disabled:opacity-60"
+                    className="border border-line/80 bg-panel-muted/80 hover:border-ink/40 text-ink-muted hover:text-ink p-1.5 rounded-lg text-[11px] font-semibold inline-flex items-center transition-all disabled:opacity-60 cursor-pointer shadow-2xs"
                   >
                     {isCustomerArchived(c)
                       ? <ArchiveRestore className="w-3 h-3 text-pos" />
@@ -220,17 +358,72 @@ export const CustomerListView: React.FC = () => {
                 </div>
               )}
               columns={([
-                { key: 'cif', label: 'Mã CIF', priority: 1,
-                  render: c => <span className="font-mono text-accent font-bold">{c.CifKh}</span> },
-                { key: 'ten', label: 'Họ và tên KH', priority: 1,
-                  render: c => <span className="font-bold text-ink text-xs">{c.FullName}</span> },
-                { key: 'sdt', label: 'Số điện thoại', priority: 2,
-                  render: c => <span className="font-mono">{c.Phone || '—'}</span> },
-                { key: 'khlq', label: 'KHLQ / Vợ chồng', priority: 2,
-                  render: c => c.SpouseName
-                    ? <span className="text-ink font-semibold">{c.SpouseName}</span>
-                    : <span className="text-ink-faint">–</span> },
-                { key: 'quanHe', label: 'Phân loại KHLQ', priority: 1,
+                {
+                  key: 'kh',
+                  label: 'Khách hàng & Mã CIF',
+                  priority: 1,
+                  render: c => (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-accent-soft text-accent font-bold flex items-center justify-center text-xs shadow-2xs shrink-0 border border-accent/20">
+                        {getInitials(c.FullName)}
+                      </div>
+                      <div>
+                        <div className="font-bold text-ink text-xs group-hover:text-accent transition-colors">
+                          {c.FullName}
+                        </div>
+                        <div className="font-mono text-[11px] text-accent font-semibold tracking-tight">
+                          {c.CifKh}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  key: 'sdt',
+                  label: 'Số điện thoại',
+                  priority: 2,
+                  render: c => c.Phone ? (
+                    <a
+                      href={`tel:${c.Phone}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-mono text-ink-muted hover:text-accent flex items-center gap-1 text-xs"
+                    >
+                      <Phone className="w-3 h-3 text-ink-faint" />
+                      <span>{c.Phone}</span>
+                    </a>
+                  ) : (
+                    <span className="text-ink-faint font-mono">—</span>
+                  )
+                },
+                {
+                  key: 'cccd',
+                  label: 'Số CCCD / Định danh',
+                  priority: 2,
+                  render: c => (
+                    <span className="font-mono text-ink-muted text-xs">
+                      {formatNationalId(c.NationalId) || '—'}
+                    </span>
+                  )
+                },
+                {
+                  key: 'khlq',
+                  label: 'KHLQ / Vợ chồng',
+                  priority: 2,
+                  render: c => c.SpouseName ? (
+                    <div>
+                      <div className="text-ink font-semibold text-xs">{c.SpouseName}</div>
+                      {c.CifKhlq && (
+                        <div className="font-mono text-[10px] text-ink-faint">CIF: {c.CifKhlq}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-ink-faint">–</span>
+                  )
+                },
+                {
+                  key: 'quanHe',
+                  label: 'Phân loại KHLQ',
+                  priority: 1,
                   render: c => {
                     const rel = c.KhlqRelationship || (c.MaritalStatus === 'Đã kết hôn' ? 'Vợ / Chồng' : 'Không có');
                     return (
@@ -239,17 +432,25 @@ export const CustomerListView: React.FC = () => {
                         : rel === 'Người bảo lãnh' ? 'bg-pos-soft border-pos/30 text-pos'
                         : rel === 'Bên bảo đảm (Chủ TSĐB)' ? 'bg-warn-soft border-warn/30 text-warn'
                         : 'bg-panel-muted border-line text-ink-muted'
-                      }`}>{rel}</span>
-                    );
-                  } },
-                { key: 'luuTru', label: 'Ngày lưu trữ', priority: 2, align: 'center',
-                  render: c => isCustomerArchived(c)
-                    ? (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-panel-muted border-line text-ink-faint whitespace-nowrap">
-                        {fmtDate(String(c.ArchivedAt).slice(0, 10))}
+                      }`}>
+                        {rel}
                       </span>
-                    )
-                    : <span className="text-ink-faint">–</span> },
+                    );
+                  }
+                },
+                {
+                  key: 'luuTru',
+                  label: 'Ngày lưu trữ',
+                  priority: 2,
+                  align: 'center',
+                  render: c => isCustomerArchived(c) ? (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border bg-panel-muted border-line text-ink-faint whitespace-nowrap">
+                      {fmtDate(String(c.ArchivedAt).slice(0, 10))}
+                    </span>
+                  ) : (
+                    <span className="text-ink-faint">–</span>
+                  )
+                },
               ] as AdaptiveColumn<Customer>[]).filter(col => !(statusFilter === 'active' && col.key === 'luuTru'))}
             />
           )}

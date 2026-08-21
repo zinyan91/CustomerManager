@@ -34,11 +34,13 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
   deletingId,
 }) => {
   return (
-    <div className={`${styles.containerCardBg} rounded-lg overflow-hidden border`}>
-      <div className={`p-3 border-b flex items-center justify-between ${'bg-panel-muted border-line'}`}>
+    <div className={`${styles.containerCardBg} rounded-2xl overflow-hidden border border-line/70 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150`}>
+      <div className="p-3.5 sm:p-4 border-b border-line/60 bg-surface/60 backdrop-blur-md flex items-center justify-between">
         <span className="font-bold flex items-center space-x-2 text-xs">
-          <Building2 className="w-4 h-4 text-accent" />
-          <span>DANH SÁCH TÀI SẢN BẢO ĐẢM ({filteredCollaterals.length} TẢI SẢN)</span>
+          <div className="p-1 rounded-md bg-accent-soft text-accent">
+            <Building2 className="w-3.5 h-3.5" />
+          </div>
+          <span className="uppercase tracking-wider text-[11px]">DANH SÁCH TÀI SẢN BẢO ĐẢM ({filteredCollaterals.length} TÀI SẢN)</span>
         </span>
         <span className="text-[11px] text-ink-faint">Nhấp vào dòng để xem chi tiết / chỉnh sửa</span>
       </div>

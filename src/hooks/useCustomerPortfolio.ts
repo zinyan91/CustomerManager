@@ -62,13 +62,14 @@ export function useCustomerPortfolio({
 
   const pickTokenRef = useRef(0);
 
-  const loadAllSchedulesForContracts = async (cons: LoanContract[]) => {
+  const loadAllSchedulesForContracts = async (cons: LoanContract[], token: number) => {
     const map: Record<number, RepaymentSchedule[]> = {};
     await Promise.all(cons.map(async (c) => {
       try {
         map[c.Id] = await fetchRepaymentSchedulesAPI(c.Id);
       } catch { }
     }));
+    if (pickTokenRef.current !== token) return;
     setAllSchedulesMap(map);
   };
 
@@ -92,7 +93,7 @@ export function useCustomerPortfolio({
     setContracts(cons);
     setCollaterals(cols);
     setCards(crds);
-    loadAllSchedulesForContracts(cons);
+    loadAllSchedulesForContracts(cons, token);
   };
 
   useEffect(() => {
@@ -102,6 +103,7 @@ export function useCustomerPortfolio({
     if (c) {
       pickCustomer(c);
     } else {
+      pickTokenRef.current++;
       setFoundCustomer(null);
       setContracts([]);
       setCollaterals([]);
@@ -116,6 +118,7 @@ export function useCustomerPortfolio({
       onNotify('error', 'Nhập ít nhất một thông tin để tìm kiếm.');
       return;
     }
+    const token = ++pickTokenRef.current;
     setIsSearching(true);
     setFoundCustomer(null);
     setContracts([]);
@@ -136,11 +139,15 @@ export function useCustomerPortfolio({
       if (!matchedCustomer && searchContract.trim()) {
         const allCust = await fetchCustomersAPI({});
         for (const c of allCust) {
+          if (pickTokenRef.current !== token) return;
           const cons = await fetchContractsByCustomerAPI(c.Id);
+          if (pickTokenRef.current !== token) return;
           const found = cons.find(con => con.ContractNumber?.toLowerCase().includes(searchContract.toLowerCase()));
           if (found) { matchedCustomer = c; setContracts(cons); break; }
         }
       }
+
+      if (pickTokenRef.current !== token) return;
 
       if (!matchedCustomer) {
         onNotify('error', 'Không tìm thấy khách hàng phù hợp.');
@@ -154,10 +161,11 @@ export function useCustomerPortfolio({
           fetchCollateralsByCustomerAPI(matchedCustomer.Id),
           fetchCardContractsByCustomerAPI(matchedCustomer.Id),
         ]);
+        if (pickTokenRef.current !== token) return;
         setContracts(cons);
         setCollaterals(cols);
         setCards(crds);
-        loadAllSchedulesForContracts(cons);
+        loadAllSchedulesForContracts(cons, token);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -168,6 +176,7 @@ export function useCustomerPortfolio({
   };
 
   const clearSearch = () => {
+    pickTokenRef.current++;
     setFoundCustomer(null);
     setContracts([]);
     setCollaterals([]);

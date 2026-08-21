@@ -58,6 +58,7 @@ export function useCreditContractController() {
   }, []);
 
   const loadTokenRef = useRef(0);
+  const notifiedInvalidIdRef = useRef<number | null>(null);
 
   const loadCustomer = useCallback(async (c: Customer | null) => {
     const token = ++loadTokenRef.current;
@@ -95,13 +96,16 @@ export function useCreditContractController() {
     if (allCustomers.length === 0) return;
     if (selectedCustomerId === null) {
       if (customer !== null) loadCustomer(null);
+      notifiedInvalidIdRef.current = null;
       return;
     }
     if (selectedCustomerId !== customer?.Id) {
       const c = allCustomers.find(x => x.Id === selectedCustomerId);
       if (c) {
+        notifiedInvalidIdRef.current = null;
         loadCustomer(c);
-      } else {
+      } else if (notifiedInvalidIdRef.current !== selectedCustomerId) {
+        notifiedInvalidIdRef.current = selectedCustomerId;
         loadCustomer(null);
         showNotify('error', 'Không tìm thấy khách hàng hoặc bạn không có quyền truy cập.');
       }

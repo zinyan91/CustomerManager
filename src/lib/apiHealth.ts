@@ -33,5 +33,22 @@ export function subscribeApiHealth(listener: () => void): () => void {
 
 export function resetApiHealth(): void {
   state = REACHABLE;
-  listeners.clear();
+}
+
+export function isUnreachableResponseStatus(status: number): boolean {
+  return status >= 500 || status === 401;
+}
+
+export function wrapFetchWithHealthTracking(fetchImpl: typeof fetch): typeof fetch {
+  return async (input, init) => {
+    try {
+      const res = await fetchImpl(input, init);
+      if (isUnreachableResponseStatus(res.status)) recordApiFailure();
+      else recordApiSuccess();
+      return res;
+    } catch (err) {
+      recordApiFailure();
+      throw err;
+    }
+  };
 }

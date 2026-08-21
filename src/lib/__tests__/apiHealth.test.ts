@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
-  getApiHealth, recordApiFailure, recordApiSuccess, resetApiHealth, subscribeApiHealth,
+  getApiHealth, isUnreachableResponseStatus, recordApiFailure, recordApiSuccess,
+  resetApiHealth, subscribeApiHealth, wrapFetchWithHealthTracking,
 } from '../apiHealth';
 
 beforeEach(() => resetApiHealth());
@@ -45,3 +46,47 @@ describe('apiHealth', () => {
     expect(nghe).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('isUnreachableResponseStatus', () => {
+  it.each([
+    [200, false],
+    [400, false],
+    [401, true],
+    [403, false],
+    [404, false],
+    [500, true],
+    [503, true],
+  ])('mã %i trả %s', (status, expected) => {
+    expect(isUnreachableResponseStatus(status)).toBe(expected);
+  });
+});
+
+describe('wrapFetchWithHealthTracking', () => {
+  it.each([
+    [200, true],
+    [400, true],
+    [401, false],
+    [403, true],
+    [404, true],
+    [500, false],
+    [503, false],
+  ])('status %i ghi nhận reachable=%s', async (status, expectedReachable) => {
+    const fakeFetch = vi.fn(async () => new Response(null, { status })) as unknown as typeof fetch;
+    const tracked = wrapFetchWithHealthTracking(fakeFetch);
+
+    await tracked('https://example.test');
+
+    expect(getApiHealth().reachable).toBe(expectedReachable);
+  });
+
+  it('fetch ném lỗi (mất mạng) thì ghi nhận mất kết nối và ném lại lỗi', async () => {
+    recordApiSuccess();
+    const loi = new Error('network down');
+    const fakeFetch = vi.fn(async () => { throw loi; }) as unknown as typeof fetch;
+    const tracked = wrapFetchWithHealthTracking(fakeFetch);
+
+    await expect(tracked('https://example.test')).rejects.toThrow('network down');
+    expect(getApiHealth().reachable).toBe(false);
+  });
+});
+

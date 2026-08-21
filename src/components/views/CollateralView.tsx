@@ -10,7 +10,6 @@ import { useCollateralController } from '../../hooks/useCollateralController';
 export const CollateralView: React.FC = () => {
   const styles = UI;
   const {
-    collaterals,
     customers,
     loading,
     selectedCollateral,
@@ -51,6 +50,7 @@ export const CollateralView: React.FC = () => {
     filteredCollaterals,
     paginatedCollaterals,
     totalPages,
+    customerScopedCollateralCount,
     totalCollateralVal,
     totalMaxLoanVal,
     weightedLtvVal,
@@ -67,7 +67,7 @@ export const CollateralView: React.FC = () => {
           <div className="absolute top-0 left-0 right-0 h-1 bg-accent" />
           <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng giá trị TSĐB</div>
           <div className="font-mono font-bold text-base text-accent">{fmtMoney(totalCollateralVal)}</div>
-          <div className="text-[11px] text-ink-faint">{collaterals.length} tài sản</div>
+          <div className="text-[11px] text-ink-faint">{customerScopedCollateralCount} tài sản</div>
         </div>
 
         <div className={`${styles.containerCardBg} rounded-xl p-4 border border-line shadow-sm space-y-1 relative overflow-hidden`}>

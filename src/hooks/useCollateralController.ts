@@ -208,8 +208,14 @@ export function useCollateralController() {
     inputAssetCode, inputAddress, showNotify, handleResetForm, fetchData,
   ]);
 
-  const filteredCollaterals = useMemo(() => collaterals.filter(col => {
-    if (scopedCustomerId !== null && col.CustomerId !== scopedCustomerId) return false;
+  const customerScopedCollaterals = useMemo(
+    () => scopedCustomerId === null
+      ? collaterals
+      : collaterals.filter(col => col.CustomerId === scopedCustomerId),
+    [collaterals, scopedCustomerId]
+  );
+
+  const filteredCollaterals = useMemo(() => customerScopedCollaterals.filter(col => {
     const cust = customers.find(c => c.Id === col.CustomerId);
     if (searchCif.trim() && !cust?.CifKh.toLowerCase().includes(searchCif.trim().toLowerCase())) return false;
     if (searchOwnerName.trim() && !cust?.FullName.toLowerCase().includes(searchOwnerName.trim().toLowerCase())) return false;
@@ -220,7 +226,7 @@ export function useCollateralController() {
       if (!code.includes(q) && !addr.includes(q)) return false;
     }
     return true;
-  }), [collaterals, customers, scopedCustomerId, searchCif, searchOwnerName, searchAssetCode]);
+  }), [customerScopedCollaterals, customers, searchCif, searchOwnerName, searchAssetCode]);
 
   const totalPages = Math.ceil(filteredCollaterals.length / COL_PAGE_SIZE) || 1;
   const paginatedCollaterals = useMemo(() =>
@@ -233,25 +239,24 @@ export function useCollateralController() {
   }, [colPage, totalPages]);
 
   const totalCollateralVal = useMemo(
-    () => collaterals.reduce((sum, c) => sum + collateralValue(c), 0),
-    [collaterals]
+    () => customerScopedCollaterals.reduce((sum, c) => sum + collateralValue(c), 0),
+    [customerScopedCollaterals]
   );
   const totalMaxLoanVal = useMemo(
-    () => totalUsableCapacity(collaterals),
-    [collaterals]
+    () => totalUsableCapacity(customerScopedCollaterals),
+    [customerScopedCollaterals]
   );
   const weightedLtvVal = totalCollateralVal > 0 ? (totalMaxLoanVal / totalCollateralVal) * 100 : 0;
   const appraisalStatusCounts = useMemo(() => {
     const counts = { expired: 0, expiring_soon: 0, missing: 0 };
-    for (const c of collaterals) {
+    for (const c of customerScopedCollaterals) {
       const st = appraisalStatus(c);
       if (st === 'expired' || st === 'expiring_soon' || st === 'missing') counts[st] += 1;
     }
     return counts;
-  }, [collaterals]);
+  }, [customerScopedCollaterals]);
 
   return {
-    collaterals,
     customers,
     loading,
     selectedCollateral,
@@ -294,6 +299,7 @@ export function useCollateralController() {
     filteredCollaterals,
     paginatedCollaterals,
     totalPages,
+    customerScopedCollateralCount: customerScopedCollaterals.length,
     totalCollateralVal,
     totalMaxLoanVal,
     weightedLtvVal,

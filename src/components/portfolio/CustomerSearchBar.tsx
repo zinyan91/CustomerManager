@@ -48,7 +48,7 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
   containerCardBg,
 }) => {
   return (
-    <div className={`${containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5`}>
+    <div className={`${containerCardBg} relative z-30 rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5`}>
       <div className="text-xs font-bold text-accent tracking-tight flex items-center space-x-2">
         <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0">
           <Search className="w-4 h-4" />
@@ -74,16 +74,26 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
           <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint pointer-events-none" />
         </div>
         {showDropdown && dropdownFiltered.length > 0 && (
-          <div className="absolute z-40 w-full mt-1.5 border border-line/80 rounded-xl shadow-2xl max-h-60 overflow-y-auto bg-panel/95 backdrop-blur-xl text-ink divide-y divide-line/40">
+          <div className="absolute left-0 right-0 top-full z-50 mt-1.5 border border-line/80 rounded-2xl shadow-2xl max-h-72 overflow-y-auto bg-panel/95 backdrop-blur-2xl text-ink divide-y divide-line/40 ring-1 ring-black/10">
             {dropdownFiltered.map(c => (
               <button
                 key={c.Id}
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); handlePickCustomer(c); }}
-                className="w-full text-left px-4 py-2.5 transition-colors flex items-center justify-between group hover:bg-accent/[0.06] cursor-pointer"
+                className="w-full text-left px-4 py-3 transition-colors flex items-center justify-between group hover:bg-accent/[0.08] cursor-pointer"
               >
-                <span className="font-semibold text-ink group-hover:text-accent transition-colors">{c.FullName}</span>
-                <span className="font-mono text-accent font-bold text-[11px] shrink-0 ml-3 bg-accent-soft px-2 py-0.5 rounded-full border border-accent/20">{c.CifKh}</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-accent-soft text-accent flex items-center justify-center font-bold text-xs shrink-0">
+                    {c.FullName ? c.FullName.charAt(0).toUpperCase() : 'KH'}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="font-semibold text-ink group-hover:text-accent transition-colors block truncate text-xs">{c.FullName}</span>
+                    {c.Phone && <span className="text-[10px] text-ink-muted block">{c.Phone}</span>}
+                  </div>
+                </div>
+                <span className="font-mono text-accent font-bold text-[11px] shrink-0 ml-3 bg-accent-soft px-2.5 py-0.5 rounded-full border border-accent/20">
+                  CIF: {c.CifKh}
+                </span>
               </button>
             ))}
           </div>

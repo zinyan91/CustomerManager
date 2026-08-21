@@ -3,8 +3,9 @@
 > Tệp này để **bắt lại mạch khi mở phiên trò chuyện mới**. Cập nhật sau mỗi task xong.
 > Sổ chi tiết của phiên đang chạy nằm ở `.superpowers/sdd/<tên-kế-hoạch>/progress.md`, nhưng thư mục đó bị `.gitignore` bỏ qua và bị xoá khi đóng đợt — nên mọi thứ cần sống lâu phải nằm ở đây.
 
-**Cập nhật lần cuối:** 2026-08-21, sau khi áp xong đợt sửa cuối cùng từ rà soát toàn nhánh 1b
-(C1/I1/I2/I3/I5/T6 + bốn sửa nhỏ M1–M4). Báo cáo chi tiết:
+**Cập nhật lần cuối:** 2026-08-21, sau khi áp xong đợt sửa cuối từ rà soát toàn nhánh 1b
+(C1/I1/I2/I3/I5/T6 + M1–M4), ba finding tồn dư của lượt re-review, và tự kiểm trên giao diện
+thật. Báo cáo chi tiết:
 `.superpowers/sdd/2026-08-20-rebuild-giao-dien-dot-1b-ngu-canh-khach-hang/final-fix-report.md`
 (thư mục `.superpowers/sdd/` bị `.gitignore` bỏ qua, chỉ tồn tại cục bộ).
 
@@ -27,12 +28,12 @@
 | | |
 | :--- | :--- |
 | Nhánh hiện tại | `main` — sạch, khớp `origin/main` |
-| Việc đang dở | không có. Hai đợt đã đóng gọn, cộng một đợt sửa theo rà soát cuối 1b (5 commit, chưa đẩy remote) |
-| Đợt vừa xong | **1b — ngữ cảnh khách hàng**, 20 commit gốc + 5 commit sửa theo rà soát toàn nhánh (2026-08-21), đã gộp local trên `main` |
+| Việc đang dở | không có. Đợt 1b đã đóng trọn: 20 commit gốc + 5 commit sửa theo rà soát toàn nhánh + 2 commit đóng finding tồn dư. Chưa đẩy remote |
+| Đợt vừa xong | **1b — ngữ cảnh khách hàng**, 27 commit, đã gộp local trên `main` (`f02c153..a985f49`) |
 | Đợt kế tiếp | **2 — bộ component + `Dialog`/`ConfirmDialog`**, chưa lập kế hoạch |
-| Tổng test | **1.850** xanh, 0 đỏ · 90 tệp test (tăng từ 1.825/86 sau đợt sửa cuối 1b — thêm test cho C1/I1/I2/I3/I5/T6/M1/M4) |
+| Tổng test | **1.853** xanh, 0 đỏ · 90 tệp test (tăng từ 1.825/86 qua đợt sửa cuối 1b và ba finding tồn dư) |
 | Cảnh báo lint | 64 (baseline đợt 1a là 62; 1 cảnh báo mới thuộc đợt 1b — `src/hooks/useLoanPortfolioController.ts:145`, `missing dependency: 'portfolio'`, từ hiệu ứng deep-link Task 15) |
-| Tự kiểm trên giao diện thật | **chưa làm** — xem "Việc còn treo" |
+| Tự kiểm trên giao diện thật | **đã làm 21/08/2026** trên `localhost:5173`, phiên đăng nhập của chủ dự án — xem mục ngay dưới |
 
 ## Đợt 1b đã tạo ra gì
 
@@ -78,8 +79,24 @@ một component (chi tiết ở `CONVENTIONS.md` §15 "Định tuyến"). Hai đ
 đổi; F5 → giữ nguyên chỗ; Back → quay về màn trước; đường dẫn lạ → về `/dashboard`. Đợt 1a đã tự
 kiểm cả 19 màn trên giao diện thật lúc đó (trước khi có `/customers/:id/…`, thanh ngữ cảnh, hay
 luồng giải ngân qua URL), không màn nào trắng, không lỗi console. Việc đó **không** bao gồm những
-gì đợt 1b thêm vào — tự kiểm riêng cho đợt 1b vẫn chưa làm, xem dòng "Tự kiểm trên giao diện
-thật" ở bảng "Đang ở đâu" và mục "Việc còn treo".
+gì đợt 1b thêm vào. Tự kiểm riêng cho đợt 1b đã chạy 21/08/2026 — xem mục dưới.
+
+**Tự kiểm đợt 1b trên giao diện thật, 21/08/2026** (`localhost:5173`, phiên đăng nhập của chủ dự án):
+
+| Việc | Kết quả |
+| :--- | :--- |
+| `/customers/55/credit-contracts` | Thanh ngữ cảnh hiện đủ: KHU HOÀNG THÔNG · CIF 005184807 · 0909091813 · dư nợ 1.828.011.300 · hạn mức khả dụng 895.095.600 · Nhóm 1 |
+| **Đang ở khách 55, nhảy sang `/customers/999999/…`** | Thanh dọn về `—`, báo "Không tìm thấy khách hàng hoặc bạn không có quyền truy cập", **không còn dữ liệu khách 55** (tên chỉ còn trong `<option>` của ô chọn khách, không phải dữ liệu tồn đọng). Đây là lỗi C1 — đã đóng thật |
+| Thanh bên ở `/customers/55/loans` | Đúng **một** mục sáng, là Khoản vay chứ không phải Khách hàng; 5 link lồng giữ id 55, 14 link phẳng |
+| `/customers/55/loans/1135/schedule` | Mở đúng tab Lịch trả nợ, 243 dòng |
+| Rời ra rồi **vào lại chính deep link đó** | Vẫn mở đúng, không bị bỏ chọn — lỗi I1 đã đóng |
+| `/post-loan-control` phẳng | 300 dòng của 33 khách khác nhau — màn toàn danh mục giữ nguyên |
+| "Giải ngân từ HĐTD" | Về `/customers/55/loans`, form điền sẵn khách + số HĐTD, **`?disburse=` đã biến khỏi URL** |
+| Back ngay sau giải ngân | Về `/customers/55/credit-contracts`, **form không mở lại** |
+| Chấm trạng thái Header | `bg-pos` / "Trực tuyến" |
+| Console suốt phiên | Không lỗi |
+
+**Chưa kiểm được:** chấm chuyển vàng "Mất kết nối máy chủ" — cần thật sự làm Supabase không với tới được (rớt mạng, hết phiên). Bộ phân loại 200/400/401/403/404/500/503 + fetch ném lỗi đã có test đơn vị, nhưng chuỗi fetch → phân loại → store → Header chưa ai thấy chạy thật.
 
 **Đường dẫn viết tiếng Anh** — chủ dự án chốt 20/08/2026 để tránh rắc rối mã hoá và công cụ:
 
@@ -205,7 +222,7 @@ Những điều dưới đây đã quyết rồi, đừng quyết lại:
 | `screenIdOfPath` lệch bộ định tuyến ở URL không chuẩn tắc | thấp | `/DASHBOARD` render đúng nhưng `screenIdOfPath` trả `null`. Vô hại hôm nay vì không ai đọc kết quả đó |
 | Back xoá âm thầm biểu mẫu KUNN đang điền dở | trung bình — đợt 3 | Sau khi "Giải ngân từ HĐTD" nhảy sang `/loans` với form điền sẵn, một lần Back là mất. Không phải hồi quy, nhưng Back nay là nút sống nên dễ bấm nhầm. Cần chốt "chưa lưu" |
 | RLS gọi `can_access_contract` từng dòng trên `RepaymentSchedules` | **quan trọng** | Bốn controller vẫn đọc lịch trả nợ thô, 31–66 ms mỗi KUNN, 180–400 ms cho khách 6 KUNN. Cách chữa là đổi hàm RLS sang lọc theo tập hợp thay vì gọi theo dòng, hoặc thêm view gộp — đụng CSDL sản xuất, cần chủ dự án duyệt. Xem `ContractPaidPrincipal` ở `CONVENTIONS.md` §15 cho hướng đã dùng |
-| Tự kiểm đợt 1b trên giao diện thật **chưa làm** | **quan trọng** | Danh sách 19 màn, deep-link, F5, Back, giải ngân qua URL nằm ở Task 17 trong kế hoạch đợt 1b — chưa có phiên nào chạy qua trình duyệt thật để xác nhận |
+| Chấm "Mất kết nối máy chủ" chưa thấy chạy thật | trung bình | Tự kiểm 21/08/2026 đã phủ phần còn lại của đợt 1b (xem mục "Tự kiểm đợt 1b"), nhưng trạng thái vàng cần thật sự làm Supabase không với tới được mới quan sát được |
 | `?disburse=` hợp lệ về số nhưng không tìm thấy HĐTD không bị dọn khỏi URL | trung bình | Cố ý hoãn: dọn sớm rủi ro xoá mất tham số hợp lệ trước khi `creditContracts` nạp xong. Riêng trường hợp `?disburse=` **phi số** (vd `abc`) đã dọn ngay — sửa ở đợt rà soát cuối 1b (2026-08-21) |
 | URL lồng dị dạng (`/customers/abc/collaterals`) cho `customerId = null` | trung bình | Màn lặng lẽ hiện dữ liệu của **mọi** khách thay vì báo lỗi hay chuyển hướng. Áp cho cả năm màn có phạm vi khách |
 | `fetchCustomersAPI()` nạp tới 1000 khách rồi tìm ở trình duyệt | thấp | Đã thêm `fetchCustomerByIdAPI` và dùng trong `useCustomerContext` (2026-08-21). `useCreditContractController` và `useCustomerPortfolio` vẫn dùng `fetchCustomersAPI()` cho danh sách dropdown/allCustomers — chưa đổi, vì đó là danh sách chọn khách chứ không phải tra một khách theo id |
@@ -239,6 +256,6 @@ khi chấp nhận test là xanh vì đúng lý do**. Đọc test và thấy nó 
 ```bash
 npm run dev        # máy chủ phát triển — dùng mcp__Claude_Browser__preview_start, đừng chạy qua Bash
 npm run build      # kiểm kiểu + đóng gói
-npm test           # 1.825 test
+npm test           # 1.853 test
 npm run lint
 ```

@@ -186,4 +186,62 @@ describe('I5: phản hồi cũ không được đè lên khách mới', () => {
 
     expect(screen.getByTestId('kunn').textContent).toBe('KUNN-77');
   });
+
+  it('useCustomerPortfolio: lịch trả nợ của khách cũ không đè lên khách mới dù về sau', async () => {
+    fetchCustomers.mockResolvedValue([]);
+    fetchCreditContracts.mockResolvedValue([]);
+    fetchCollaterals.mockResolvedValue([]);
+    fetchCards.mockResolvedValue([]);
+
+    fetchContracts.mockResolvedValueOnce([{ Id: 910, CustomerId: 55, ContractNumber: 'KUNN-55' }]);
+    fetchContracts.mockResolvedValueOnce([{ Id: 920, CustomerId: 77, ContractNumber: 'KUNN-77' }]);
+
+    const lich55 = taoTriHoan<Array<Record<string, unknown>>>();
+    fetchSchedules.mockImplementationOnce(() => lich55.hua);
+    fetchSchedules.mockResolvedValueOnce([{ Id: 1, LoanContractId: 920 }]);
+
+    function Probe() {
+      const portfolio = useCustomerPortfolio({
+        selectedCustomerId: null,
+        setSelectedCustomerId: () => {},
+        onNotify: () => {},
+        onCustomerChanged: () => {},
+        onContractOpened: () => {},
+        onContractClosed: () => {},
+      });
+      return (
+        <div>
+          <span data-testid="co-910">{portfolio.allSchedulesMap[910] ? 'co' : 'khong'}</span>
+          <span data-testid="co-920">{portfolio.allSchedulesMap[920] ? 'co' : 'khong'}</span>
+          <button onClick={() => portfolio.pickCustomer(KH55)}>chon-55</button>
+          <button onClick={() => portfolio.pickCustomer(KH77)}>chon-77</button>
+        </div>
+      );
+    }
+
+    render(<Probe />);
+
+    await act(async () => {
+      screen.getByText('chon-55').click();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      screen.getByText('chon-77').click();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(screen.getByTestId('co-920').textContent).toBe('co'));
+    expect(screen.getByTestId('co-910').textContent).toBe('khong');
+
+    await act(async () => {
+      lich55.phatDong([{ Id: 2, LoanContractId: 910 }]);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByTestId('co-910').textContent).toBe('khong');
+    expect(screen.getByTestId('co-920').textContent).toBe('co');
+  });
 });

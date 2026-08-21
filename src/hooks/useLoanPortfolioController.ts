@@ -18,6 +18,7 @@ import {
   buildRateFields,
 } from '../lib/rateResolution';
 import { totalUsableCapacity } from '../lib/collateralMath';
+import { useConfirm } from '../context/ConfirmContext';
 import { checkKunnAgainstContract, resolveMasterHdtdNumber, isKunnSettled, isKunnOfClosedHdtd, hdtdEffectiveDatesOf, summarizeCreditContracts, totalsOfCreditContracts, computeRemainingTenorMonths } from '../lib/creditContract';
 import { checkKunnTenor, getLoanProductRule } from '../lib/loanProductRules';
 import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
@@ -639,8 +640,16 @@ export function useLoanPortfolioController() {
     }
   }, [foundCustomer, form, selectedCollateralIds, formKunnNumber, formHdtdNumber, contracts, formCreditLimit, formLoanAmount, formMonthlyPrincipal, formTotalPeriods, formCurrentBalance, interestRateMode, prefVal, prefMonths, baseVal, marginVal, surchargeVal, rateFloor, rateHistory, selectedContract, creditContracts, setSchedules, setAllSchedulesMap, setContracts, setSelectedContract, populateForm, showNotify, currentActiveRateDisplay, formCreditLimitAmount, formCreditLimitCode, ratePreferential, ratePreferentialMonths, rateBase, rateMargin, rateConditionSurcharge]);
 
+  const confirm = useConfirm();
+
   const handleDeleteContract = useCallback(async (c: LoanContract) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa KUNN "${c.ContractNumber}"?`)) return;
+    const ok = await confirm({
+      title: 'Xoá Khế ước nhận nợ',
+      message: `Bạn có chắc muốn xóa KUNN "${c.ContractNumber}"?`,
+      confirmText: 'Xoá KUNN',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setLoading(true);
     try {
       await deleteRepaymentSchedulesByContractAPI(c.Id);

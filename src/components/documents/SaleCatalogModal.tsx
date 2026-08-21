@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { PANEL, BTN_PRIMARY, BTN_SECONDARY, UI } from '../../lib/uiClasses';
-import { X, Plus, Trash2, FolderPlus, RefreshCw, Check, Sparkles } from 'lucide-react';
+import { BTN_PRIMARY, BTN_SECONDARY, UI } from '../../lib/uiClasses';
+import { Plus, Trash2, FolderPlus, RefreshCw, Check, Sparkles } from 'lucide-react';
 import type { SaleCatalogProfile } from '../../lib/saleCatalogStore';
 import type { SaleItem } from './DocumentForm';
 
@@ -15,6 +15,9 @@ interface SaleCatalogModalProps {
   onResetDefaults: () => void;
   currentSaleItems: SaleItem[];
 }
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
+import { Button } from '../ui/Button';
 
 export const SaleCatalogModal: React.FC<SaleCatalogModalProps> = ({
   isOpen,
@@ -32,8 +35,6 @@ export const SaleCatalogModal: React.FC<SaleCatalogModalProps> = ({
   const [newCategory, setNewCategory] = useState('Bách hóa / Tiêu dùng');
   const [copyCurrentItems, setCopyCurrentItems] = useState(true);
 
-  if (!isOpen) return null;
-
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCatalogName.trim()) return;
@@ -50,28 +51,29 @@ export const SaleCatalogModal: React.FC<SaleCatalogModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className={`${PANEL} max-w-lg w-full p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150`}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent size="lg" className="p-5 space-y-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-line pb-3">
+        <DialogHeader className="p-0 border-b border-line/60 pb-3 flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-2">
-            <Sparkles size={16} className="text-accent" />
-            <h3 className="font-bold text-sm text-ink">Quản Lý Bộ Danh Mục Hàng Hóa</h3>
+            <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0">
+              <Sparkles size={16} />
+            </div>
+            <DialogTitle className="font-bold text-sm text-ink uppercase tracking-tight">
+              Quản Lý Bộ Danh Mục Hàng Hóa
+            </DialogTitle>
           </div>
-          <button type="button" onClick={onClose} className="text-ink-faint hover:text-ink">
-            <X size={16} />
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* Tab switcher */}
-        <div className="flex gap-2 border-b border-line pb-2">
+        <div className="flex gap-2 border-b border-line/60 pb-2.5">
           <button
             type="button"
             onClick={() => setTab('create')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               tab === 'create'
-                ? 'bg-accent text-accent-ink shadow-xs'
-                : 'bg-panel-muted text-ink-muted hover:text-ink'
+                ? 'bg-accent text-accent-ink shadow-md shadow-accent/20'
+                : 'bg-surface hover:bg-surface-elevated text-ink-muted border border-line/70'
             }`}
           >
             <FolderPlus size={13} className="inline mr-1.5" />
@@ -80,10 +82,10 @@ export const SaleCatalogModal: React.FC<SaleCatalogModalProps> = ({
           <button
             type="button"
             onClick={() => setTab('manage')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               tab === 'manage'
-                ? 'bg-accent text-accent-ink shadow-xs'
-                : 'bg-panel-muted text-ink-muted hover:text-ink'
+                ? 'bg-accent text-accent-ink shadow-md shadow-accent/20'
+                : 'bg-surface hover:bg-surface-elevated text-ink-muted border border-line/70'
             }`}
           >
             Danh sách bộ mẫu ({catalogs.length})
@@ -101,7 +103,7 @@ export const SaleCatalogModal: React.FC<SaleCatalogModalProps> = ({
                 placeholder="VD: 🔩 Tiệm Kim Khí - Điện Nước, 👗 Shop Thời Trang..."
                 value={newCatalogName}
                 onChange={e => setNewCatalogName(e.target.value)}
-                className={`w-full rounded-md p-2 border ${UI.inputStyle}`}
+                className={`w-full rounded-xl p-2.5 border ${UI.inputStyle}`}
                 autoFocus
               />
             </div>
@@ -113,39 +115,39 @@ export const SaleCatalogModal: React.FC<SaleCatalogModalProps> = ({
                 placeholder="VD: Kim khí, Thời trang, Phụ tùng, Nông nghiệp..."
                 value={newCategory}
                 onChange={e => setNewCategory(e.target.value)}
-                className={`w-full rounded-md p-2 border ${UI.inputStyle}`}
+                className={`w-full rounded-xl p-2.5 border ${UI.inputStyle}`}
               />
             </div>
 
-            <div className="p-3 rounded-lg border border-line bg-panel-muted/40 space-y-2">
-              <label className="flex items-center gap-2 cursor-pointer font-medium text-ink">
+            <div className="p-3.5 rounded-xl border border-line/70 bg-surface/60 space-y-2 shadow-2xs">
+              <label className="flex items-center gap-2 cursor-pointer font-semibold text-ink select-none">
                 <input
                   type="checkbox"
                   checked={copyCurrentItems}
                   onChange={e => setCopyCurrentItems(e.target.checked)}
-                  className="rounded text-accent focus:ring-accent"
+                  className="rounded text-accent focus:ring-accent w-4 h-4"
                 />
                 <span>Lưu {currentSaleItems.length} mặt hàng đang nhập trên màn hình vào bộ mẫu này</span>
               </label>
               {copyCurrentItems && currentSaleItems.length > 0 && (
-                <div className="text-[11px] text-ink-faint pl-5">
+                <div className="text-[11px] text-ink-faint pl-6">
                   Bộ mẫu mới sẽ bao gồm toàn bộ đơn giá, số lượng và tên mặt hàng bạn vừa chỉnh sửa.
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-line">
+            <div className="flex justify-end gap-2 pt-3 border-t border-line/60">
               <button
                 type="button"
                 onClick={onClose}
-                className={`${BTN_SECONDARY} text-xs py-2 px-3`}
+                className={`${BTN_SECONDARY} text-xs py-2 px-3.5 rounded-xl cursor-pointer`}
               >
                 Hủy bỏ
               </button>
               <button
                 type="submit"
                 disabled={!newCatalogName.trim()}
-                className={`${BTN_PRIMARY} text-xs py-2 px-4 flex items-center gap-1.5 disabled:opacity-50`}
+                className={`${BTN_PRIMARY} text-xs py-2 px-4 rounded-xl flex items-center gap-1.5 disabled:opacity-50 shadow-md shadow-accent/20 cursor-pointer`}
               >
                 <Plus size={14} /> Lưu & Áp dụng ngay
               </button>
@@ -156,21 +158,21 @@ export const SaleCatalogModal: React.FC<SaleCatalogModalProps> = ({
         {/* Tab 2: Manage Existing Catalogs */}
         {tab === 'manage' && (
           <div className="space-y-3 text-xs">
-            <div className="max-h-72 overflow-y-auto divide-y divide-line pr-1 space-y-1">
+            <div className="max-h-72 overflow-y-auto divide-y divide-line/60 pr-1 space-y-1">
               {catalogs.map(cat => {
                 const isSelected = cat.id === currentCatalogId;
                 return (
                   <div
                     key={cat.id}
-                    className={`p-2.5 rounded-lg flex items-center justify-between transition-colors ${
-                      isSelected ? 'bg-accent-soft border border-accent/40' : 'hover:bg-panel-muted/60'
+                    className={`p-2.5 rounded-xl flex items-center justify-between transition-colors ${
+                      isSelected ? 'bg-accent-soft border border-accent/40' : 'hover:bg-surface/80'
                     }`}
                   >
                     <div className="space-y-0.5">
                       <div className="font-bold text-ink flex items-center gap-1.5">
                         <span>{cat.name}</span>
                         {cat.isBuiltin && (
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-panel-muted text-ink-faint border border-line">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-surface text-ink-faint border border-line/70">
                             Mẫu chuẩn
                           </span>
                         )}
@@ -193,7 +195,7 @@ export const SaleCatalogModal: React.FC<SaleCatalogModalProps> = ({
                             onSelectCatalog(cat);
                             onClose();
                           }}
-                          className={`${BTN_SECONDARY} text-[11px] py-1 px-2.5`}
+                          className={`${BTN_SECONDARY} text-[11px] py-1 px-3 rounded-xl cursor-pointer`}
                         >
                           Chọn
                         </button>
@@ -202,7 +204,7 @@ export const SaleCatalogModal: React.FC<SaleCatalogModalProps> = ({
                         <button
                           type="button"
                           onClick={() => onDeleteCatalog(cat.id)}
-                          className="p-1.5 rounded hover:bg-panel text-ink-faint hover:text-neg transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-neg-soft text-ink-faint hover:text-neg transition-colors cursor-pointer"
                           title="Xóa bộ mẫu này"
                         >
                           <Trash2 size={13} />
@@ -214,27 +216,27 @@ export const SaleCatalogModal: React.FC<SaleCatalogModalProps> = ({
               })}
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-line">
+            <div className="flex items-center justify-between pt-3 border-t border-line/60">
               <button
                 type="button"
                 onClick={onResetDefaults}
-                className="text-ink-faint hover:text-ink text-[11px] flex items-center gap-1"
+                className="text-ink-faint hover:text-ink text-[11px] flex items-center gap-1 cursor-pointer"
                 title="Khôi phục danh sách mẫu gốc"
               >
                 <RefreshCw size={12} /> Khôi phục mẫu gốc
               </button>
 
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={onClose}
-                className={`${BTN_SECONDARY} text-xs py-1.5 px-3`}
               >
                 Đóng
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

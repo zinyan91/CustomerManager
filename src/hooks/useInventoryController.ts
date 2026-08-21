@@ -17,6 +17,7 @@ import { downloadBytes } from '../lib/xlsExport';
 import { MIME_XLSX } from '../lib/xlsxWriter';
 import { printHtmlDoc } from '../lib/printHtmlDoc';
 import { parseMoneyDecimalInput, todayIso } from '../lib/utils';
+import { useConfirm } from '../context/ConfirmContext';
 
 export function useInventoryController() {
   const [activeSubTab, setActiveSubTab] = useState<'inventory' | 'receivables' | 'payables'>('inventory');
@@ -205,13 +206,21 @@ export function useInventoryController() {
     deleteInventoryItemDb(id);
   }, []);
 
-  const clearAllItems = useCallback(() => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ mặt hàng khỏi danh mục này?')) {
+  const confirm = useConfirm();
+
+  const clearAllItems = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Xóa toàn bộ mặt hàng',
+      message: 'Bạn có chắc chắn muốn xóa toàn bộ mặt hàng khỏi danh mục này?',
+      confirmText: 'Xóa toàn bộ',
+      tone: 'danger',
+    });
+    if (ok) {
       items.forEach(it => deleteInventoryItemDb(it.id));
       setItems([]);
       showNotify('success', 'Đã xóa toàn bộ bảng dữ liệu trong CSDL.');
     }
-  }, [items, showNotify]);
+  }, [confirm, items, showNotify]);
 
   const filteredItems = useMemo(() => {
     if (!searchTerm.trim()) return items;

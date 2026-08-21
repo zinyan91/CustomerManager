@@ -9,6 +9,7 @@ import {
   seedQuizBankAPI,
 } from '../lib/api';
 import { useToast } from '../components/Toast';
+import { useConfirm } from '../context/ConfirmContext';
 
 export type QuizMode = 'browse' | 'practice';
 
@@ -123,8 +124,16 @@ export function useQuizBankController() {
     }
   }, [draft, editingId, show, closeForm]);
 
+  const confirm = useConfirm();
+
   const handleDelete = useCallback(async (question: QuizQuestion) => {
-    if (!window.confirm(`Xoá câu hỏi số ${question.Id}?`)) return;
+    const ok = await confirm({
+      title: 'Xoá câu hỏi nghiệp vụ',
+      message: `Xoá câu hỏi số ${question.Id}?`,
+      confirmText: 'Xoá câu hỏi',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await deleteQuizQuestionAPI(question.Id);
       setQuestions(prev => prev.filter(q => q.Id !== question.Id));
@@ -132,7 +141,7 @@ export function useQuizBankController() {
     } catch (err: any) {
       show('error', err?.message || 'Không xoá được câu hỏi.');
     }
-  }, [show]);
+  }, [confirm, show]);
 
   const handleSeed = useCallback(async () => {
     setSeeding(true);

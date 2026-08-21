@@ -1,5 +1,4 @@
 import React, { useState, memo } from 'react';
-import { TABLE_HEAD } from '../lib/uiClasses';
 
 export type FieldPriority = 1 | 2 | 3;
 
@@ -53,7 +52,7 @@ function AdaptiveTableImpl<T>({
   return (
     <>
       <ul
-        className={`md:hidden space-y-2.5 ${maxHeight ? 'overflow-y-auto' : ''}`}
+        className={`md:hidden space-y-3 ${maxHeight ? 'overflow-y-auto' : ''}`}
         style={maxHeight ? { maxHeight } : undefined}
       >
         {rows.map(row => {
@@ -62,24 +61,24 @@ function AdaptiveTableImpl<T>({
           return (
             <li
               key={k}
-              className={`rounded-xl border transition-all p-3.5 space-y-2.5 shadow-2xs ${
+              className={`rounded-2xl border transition-all p-4 space-y-3 shadow-xs specular-card backdrop-blur-xl ${
                 isSelected?.(row)
-                  ? 'border-accent bg-accent-soft/70 shadow-xs'
-                  : 'border-line/70 bg-panel/75 hover:bg-panel hover:border-line-strong'
+                  ? 'border-accent/50 bg-accent-soft/70 shadow-sm ring-1 ring-accent/30'
+                  : 'border-line/65 bg-panel/85 hover:bg-panel hover:border-line-strong'
               }`}
             >
               <div
-                className={`space-y-2 ${onRowClick ? 'cursor-pointer' : ''}`}
+                className={`space-y-2.5 ${onRowClick ? 'cursor-pointer' : ''}`}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
-                <div className="flex items-baseline justify-between gap-2 pb-1.5 border-b border-line/40">
-                  <span className="font-bold text-ink text-sm">{cardTitle(row)}</span>
+                <div className="flex items-baseline justify-between gap-2 pb-2 border-b border-line/50">
+                  <span className="font-bold text-ink text-sm tracking-tight">{cardTitle(row)}</span>
                   {cardSubtitle && (
-                    <span className="font-mono text-xs text-accent font-semibold shrink-0">{cardSubtitle(row)}</span>
+                    <span className="font-mono text-xs text-accent font-bold shrink-0">{cardSubtitle(row)}</span>
                   )}
                 </div>
 
-                <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
                   {chinh.map(c => (
                     <div key={c.key} className="min-w-0">
                       <dt className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">{c.label}</dt>
@@ -89,7 +88,7 @@ function AdaptiveTableImpl<T>({
                 </dl>
 
                 {mo && (phu.length > 0 || an.length > 0) && (
-                  <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 pt-2 border-t border-line/40">
+                  <dl className="grid grid-cols-2 gap-x-3 gap-y-2 pt-2.5 border-t border-line/40 animate-in fade-in duration-150">
                     {[...phu, ...an].map(c => (
                       <div key={c.key} className="min-w-0">
                         <dt className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">{c.label}</dt>
@@ -100,13 +99,13 @@ function AdaptiveTableImpl<T>({
                 )}
               </div>
 
-              <div className="pt-1.5 flex items-center justify-between gap-2 border-t border-line/30">
+              <div className="pt-2 flex items-center justify-between gap-2 border-t border-line/40">
                 {(phu.length > 0 || an.length > 0) ? (
                   <button
                     type="button"
                     onClick={() => toggle(k)}
                     aria-expanded={mo}
-                    className="text-[11px] font-bold text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent rounded"
+                    className="text-[11px] font-bold text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent rounded cursor-pointer"
                   >
                     {mo ? 'Thu gọn' : `Xem thêm ${phu.length + an.length} mục`}
                   </button>
@@ -119,32 +118,32 @@ function AdaptiveTableImpl<T>({
       </ul>
 
       <div
-        className={`hidden md:block overflow-x-auto rounded-xl border border-line/70 bg-panel/40 backdrop-blur-md ${maxHeight ? 'overflow-y-auto' : ''}`}
+        className={`hidden md:block overflow-x-auto rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card ${maxHeight ? 'overflow-y-auto' : ''}`}
         style={maxHeight ? { maxHeight } : undefined}
       >
-        <table className="w-full text-left text-xs border-collapse">
-          <thead className={`${TABLE_HEAD} ${maxHeight ? 'sticky top-0 z-20 shadow-2xs' : ''}`}>
-            <tr className="border-b border-line/80">
+        <table className="w-full text-left text-xs border-collapse font-app">
+          <thead className={`sticky top-0 z-20 bg-surface/95 backdrop-blur-md border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint ${maxHeight ? 'shadow-2xs' : ''}`}>
+            <tr>
               {columns.map(c => (
-                <th key={c.key} className={`px-4 py-3 font-bold whitespace-nowrap text-ink-faint ${alignClass(c.align)}`}>
+                <th key={c.key} className={`px-4 py-3 whitespace-nowrap text-ink-faint ${alignClass(c.align)}`}>
                   {c.label}
                 </th>
               ))}
               {actions && (
-                <th className="px-4 py-3 font-bold whitespace-nowrap text-center sticky right-0 z-20 bg-surface/95 backdrop-blur-md border-l border-line/70 text-ink-faint">
+                <th className="px-4 py-3 whitespace-nowrap text-center sticky right-0 z-20 bg-surface/95 backdrop-blur-md border-l border-line/70 text-ink-faint">
                   {actionsLabel}
                 </th>
               )}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-line/40">
             {rows.map(row => {
               const chon = isSelected?.(row);
               return (
                 <tr
                   key={rowKey(row)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={`group border-b border-line/40 transition-colors duration-150 ${
+                  className={`group transition-colors duration-150 ${
                     chon ? 'bg-accent-soft/70 border-l-2 border-l-accent font-medium' : 'hover:bg-accent/[0.04]'
                   } ${onRowClick ? 'cursor-pointer' : ''}`}
                 >

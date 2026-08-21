@@ -32,52 +32,64 @@ export const CalculatorView: React.FC = () => {
   } = useCalculatorController();
 
   return (
-    <div className="space-y-4 text-xs transition-colors duration-200">
-      {/* Category Tabs Top Bar */}
-      <div className={`${styles.containerCardBg} rounded-xl p-2 border border-line shadow-sm flex flex-wrap items-center justify-between gap-3`}>
-        <div className="flex items-center gap-2 flex-wrap">
-          {categories.map(({ id, label, icon: Icon, tools }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => handleSelectCategory(id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-bold transition-all duration-150 ${
-                activeCategory === id
-                  ? 'bg-accent text-accent-ink shadow-xs'
-                  : 'bg-panel-muted text-ink-muted border border-line hover:text-ink hover:border-line-strong'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{label}</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-panel-muted/60 text-ink font-mono ml-1">
-                {tools.length}
-              </span>
-            </button>
-          ))}
+    <div className="space-y-4 text-xs transition-colors duration-200 font-app">
+      {/* Unified Calculator Cockpit Navigation */}
+      <div className={`${styles.containerCardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
+        {/* Major Category Tabs (Tầng trên) */}
+        <div className="p-3 sm:px-4 sm:py-3.5 bg-surface/75 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            {categories.map(({ id, label, icon: Icon, tools }) => {
+              const isActive = activeCategory === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => handleSelectCategory(id)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer shadow-2xs ${
+                    isActive
+                      ? 'bg-accent text-accent-ink shadow-md shadow-accent/25 ring-1 ring-accent/40'
+                      : 'bg-surface border border-line/70 text-ink-muted hover:text-ink hover:border-accent/40 hover:bg-surface-elevated'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-accent-ink' : 'text-accent'}`} />
+                  <span>{label}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ml-1 font-bold ${
+                    isActive ? 'bg-accent-ink/20 text-accent-ink' : 'bg-accent-soft text-accent border border-accent/20'
+                  }`}>
+                    {tools.length}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="text-[11px] text-ink-faint hidden lg:flex items-center gap-1.5 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+            <span>9 module tính toán tài chính & tín dụng ngân hàng</span>
+          </div>
         </div>
 
-        <div className="text-[11px] text-ink-faint hidden md:block font-medium">
-          Chọn phân nhóm công cụ nghiệp vụ để tính toán
+        {/* Sub-Tools Ribbon (Tầng dưới - gắn liền) */}
+        <div className="p-2.5 sm:px-3.5 sm:py-2.5 border-t border-line/60 bg-panel/50 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {currentCategory.tools.map(({ id, label, icon: Icon }) => {
+            const isToolActive = activeTool === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTool(id)}
+                className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer shrink-0 ${
+                  isToolActive
+                    ? 'bg-accent-soft border border-accent/40 text-accent font-bold shadow-2xs'
+                    : 'text-ink-muted border border-transparent hover:bg-surface/80 hover:text-ink hover:border-line/60'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${isToolActive ? 'text-accent' : 'text-ink-faint'}`} />
+                <span>{label}</span>
+              </button>
+            );
+          })}
         </div>
-      </div>
-
-      {/* Sub-Tool Selector Bar */}
-      <div className={`${styles.containerCardBg} rounded-xl p-2 border border-line shadow-sm flex flex-wrap items-center gap-1.5`}>
-        {currentCategory.tools.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setActiveTool(id)}
-            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-150 ${
-              activeTool === id
-                ? 'bg-accent-soft border border-accent/40 text-accent font-bold shadow-xs'
-                : 'text-ink-muted hover:bg-panel-muted/80 hover:text-ink'
-            }`}
-          >
-            <Icon className="w-4 h-4" />
-            <span>{label}</span>
-          </button>
-        ))}
       </div>
 
       {/* Calculator Render Area */}

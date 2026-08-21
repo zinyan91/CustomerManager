@@ -8,14 +8,16 @@ import {
 } from '../lib/loanMath';
 import { todayIso } from '../lib/utils';
 import type { LoanContract, RepaymentSchedule } from '../types';
+import { useConfirm } from '../context/ConfirmContext';
 
 interface QuickSettleParams {
   onNotify: (type: 'success' | 'error', message: string) => void;
   onDone: () => void;
-  confirm?: (message: string) => boolean;
+  confirm?: (message: string) => boolean | Promise<boolean>;
 }
 
 export function useQuickSettle({ onNotify, onDone, confirm }: QuickSettleParams) {
+  const globalConfirm = useConfirm();
   const [busyScheduleId, setBusyScheduleId] = useState<number | null>(null);
 
   const settle = useCallback(async (
@@ -30,8 +32,14 @@ export function useQuickSettle({ onNotify, onDone, confirm }: QuickSettleParams)
       return;
     }
 
-    const hoi = confirm ?? ((m: string) => window.confirm(m));
-    if (!hoi(label)) return;
+    const hoi = confirm ?? ((m: string) => globalConfirm({
+      title: 'Xác nhận thu nhanh',
+      message: m,
+      confirmText: 'Thu nhanh',
+      tone: 'primary',
+    }));
+    const chapNhan = await hoi(label);
+    if (!chapNhan) return;
 
     setBusyScheduleId(period.Id);
     try {

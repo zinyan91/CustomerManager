@@ -1,15 +1,17 @@
 import React from 'react';
-import { Receipt, X, Save } from 'lucide-react';
+import { Receipt, Save } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
 import { fmtDate, fmtMoney, formatMoneyInput } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { calculateOverdueDaysFromDates, computeSchedulePenalty } from '../../lib/loanMath';
 import { DateInput } from '../DateInput';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
+import { Button } from '../ui/Button';
 
 interface PaymentModalProps {
   editingSchedule: RepaymentSchedule;
   selectedContract: LoanContract;
-  containerCardBg: string;
+  containerCardBg?: string;
   loading: boolean;
   modalActualPaidPrincipalStr: string;
   setModalActualPaidPrincipalStr: (v: string) => void;
@@ -32,7 +34,6 @@ interface PaymentModalProps {
 export const PaymentModal: React.FC<PaymentModalProps> = ({
   editingSchedule,
   selectedContract,
-  containerCardBg,
   loading,
   modalActualPaidPrincipalStr,
   setModalActualPaidPrincipalStr,
@@ -51,147 +52,137 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const annualRate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface/80 backdrop-blur-sm animate-fadeIn">
-      <div className={`${containerCardBg} w-full max-w-xl rounded-lg border shadow-2xl p-5 space-y-4`}>
-        <div className="flex items-center justify-between border-b border-line pb-3">
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent size="lg" className="p-0 overflow-hidden max-h-[90vh]">
+        <DialogHeader className="p-4 sm:p-5 bg-surface/40 flex-row items-center justify-between space-y-0">
           <div className="flex items-center space-x-2">
-            <Receipt className="w-5 h-5 text-accent" />
-            <h3 className="font-bold text-sm  tracking-wide text-ink">
-              GHI NHẬN THANH TOÁN & QUÁ HẠN — KỲ #{editingSchedule.PeriodNumber}
-            </h3>
+            <div className="p-2 rounded-xl bg-accent-soft text-accent shrink-0">
+              <Receipt className="w-5 h-5" />
+            </div>
+            <DialogTitle className="font-bold text-sm tracking-wide text-ink">
+              Thu nợ Kỳ #{editingSchedule.PeriodNumber} · {selectedContract.ContractNumber}
+            </DialogTitle>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-panel-muted text-ink-faint"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
-        <div className="p-3 rounded-md bg-accent-soft  border border-accent/30  grid grid-cols-2 gap-3 text-xs">
-          <div>Ngày đến hạn kỳ: <strong className="font-mono text-ink">{fmtDate(editingSchedule.DueDate)}</strong></div>
-          <div>Gốc quy định: <strong className="font-mono text-accent">{fmtMoney(editingSchedule.PrincipalAmount)}</strong></div>
-          <div>Lãi quy định: <strong className="font-mono text-warn">{fmtMoney(editingSchedule.InterestAmount)}</strong></div>
-          <div>Tổng nghĩa vụ chuẩn: <strong className="font-mono text-pos">{fmtMoney(editingSchedule.PrincipalAmount + editingSchedule.InterestAmount)}</strong></div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <div className="space-y-3">
+        <div className="p-4 sm:p-5 space-y-4 text-xs overflow-y-auto custom-scrollbar flex-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-surface/60 rounded-[var(--r-control)] border border-line/60">
             <div>
-              <label className="block text-[11px] font-bold text-accent mb-1">
-                Gốc đã đóng kỳ này (VNĐ)
+              <div className="text-[10px] text-ink-faint uppercase font-bold">Ngày đến hạn</div>
+              <div className="font-mono font-bold text-ink">{fmtDate(editingSchedule.DueDate)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-ink-faint uppercase font-bold">Gốc phải thu</div>
+              <div className="font-mono font-bold text-pos">{fmtMoney(editingSchedule.PrincipalAmount)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-ink-faint uppercase font-bold">Lãi phải thu</div>
+              <div className="font-mono font-bold text-warn">{fmtMoney(editingSchedule.InterestAmount)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-ink-faint uppercase font-bold">Lãi suất áp dụng</div>
+              <div className="font-mono font-bold text-accent">{(annualRate * 100).toFixed(2)}%/năm</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+                Ngày thực trả
+              </label>
+              <DateInput
+                value={modalPaymentDate}
+                onChange={v => {
+                  setModalPaymentDate(v);
+                  if (v && editingSchedule.DueDate) {
+                    const days = calculateOverdueDaysFromDates(v, editingSchedule.DueDate);
+                    setModalOverdueDaysStr(days.toString());
+                    const pen = computeSchedulePenalty(editingSchedule, annualRate, { overdueDays: days });
+                    setModalOverdueInterestStr(pen.total.toString());
+                  }
+                }}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+                Số ngày quá hạn
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={modalOverdueDaysStr}
+                onChange={e => {
+                  setModalOverdueDaysStr(e.target.value);
+                  const days = parseInt(e.target.value, 10) || 0;
+                  const pen = computeSchedulePenalty(editingSchedule, annualRate, { overdueDays: days });
+                  setModalOverdueInterestStr(pen.total.toString());
+                }}
+                className="w-full p-2 rounded-[var(--r-control)] border border-line/70 bg-surface/80 text-xs font-mono font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+                Gốc thực thu (VNĐ)
               </label>
               <input
                 type="text"
                 value={modalActualPaidPrincipalStr}
                 onChange={e => setModalActualPaidPrincipalStr(formatMoneyInput(e.target.value))}
-                placeholder="0"
-                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-accent bg-transparent border-line"
+                className="w-full p-2 rounded-[var(--r-control)] border border-line/70 bg-surface/80 text-xs font-mono font-bold text-pos"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-warn mb-1">
-                Lãi đã đóng kỳ này (VNĐ)
+              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+                Lãi thường thực thu (VNĐ)
               </label>
               <input
                 type="text"
                 value={modalActualPaidInterestStr}
                 onChange={e => setModalActualPaidInterestStr(formatMoneyInput(e.target.value))}
-                placeholder="0"
-                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-warn bg-transparent border-line"
+                className="w-full p-2 rounded-[var(--r-control)] border border-line/70 bg-surface/80 text-xs font-mono font-bold text-warn"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-pos mb-1">
-                Trả trước hạn gốc (Gốc thu thêm) (VNĐ)
+              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+                Gốc trả trước hạn (VNĐ)
               </label>
               <input
                 type="text"
                 value={modalPrepaidPrincipalStr}
                 onChange={e => setModalPrepaidPrincipalStr(formatMoneyInput(e.target.value))}
-                placeholder="0"
-                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-pos bg-transparent border-line"
-              />
-              <span className="text-[10px] text-ink-faint">
-                Nhập số tiền gốc khách muốn trả sớm ngoài phần gốc định kỳ.
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="block text-[11px] font-bold text-neg mb-1">
-                Số ngày quá hạn (Ngày)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={modalOverdueDaysStr}
-                onChange={e => {
-                  const days = parseInt(e.target.value, 10) || 0;
-                  setModalOverdueDaysStr(e.target.value);
-                  if (days > 0 && selectedContract) {
-                    const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
-                    const calcPen = computeSchedulePenalty(editingSchedule, rate, { overdueDays: days, principalPenaltyMultiplier: selectedContract.PrincipalPenaltyMultiplier }).principalPenalty;
-                    setModalOverdueInterestStr(formatMoneyInput(String(calcPen)));
-                  } else {
-                    setModalOverdueInterestStr('0');
-                  }
-                }}
-                placeholder="0"
-                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-neg bg-neg-soft border-neg/30"
+                className="w-full p-2 rounded-[var(--r-control)] border border-line/70 bg-surface/80 text-xs font-mono font-bold text-accent"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-neg mb-1">
-                Lãi phạt quá hạn 150% (VNĐ)
+              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+                Lãi phạt quá hạn (VNĐ)
               </label>
               <input
                 type="text"
                 value={modalOverdueInterestStr}
                 onChange={e => setModalOverdueInterestStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-neg bg-neg-soft border-neg/30"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-ink-faint mb-1">
-                Ngày thanh toán thực tế
-              </label>
-              <DateInput
-                value={modalPaymentDate}
-                onChange={(newDate) => {
-                  setModalPaymentDate(newDate);
-                  if (editingSchedule && newDate) {
-                    const calcDays = calculateOverdueDaysFromDates(newDate, editingSchedule.DueDate);
-                    setModalOverdueDaysStr(calcDays.toString());
-                    if (calcDays > 0 && selectedContract) {
-                      const rate = getEffectiveActiveRate(selectedContract, editingSchedule.DueDate);
-                      const calcPen = computeSchedulePenalty(editingSchedule, rate, { overdueDays: calcDays, principalPenaltyMultiplier: selectedContract.PrincipalPenaltyMultiplier }).principalPenalty;
-                      setModalOverdueInterestStr(formatMoneyInput(String(calcPen)));
-                    } else {
-                      setModalOverdueInterestStr('0');
-                    }
-                  }
-                }}
-                className="w-full p-2.5 rounded-md border text-xs bg-transparent border-line"
+                className="w-full p-2 rounded-[var(--r-control)] border border-line/70 bg-surface/80 text-xs font-mono font-bold text-neg"
               />
             </div>
           </div>
         </div>
 
-        <div className="pt-2 border-t border-line flex items-center justify-between">
-          <label className="flex items-center space-x-2 cursor-pointer">
+        <div className="p-4 bg-surface/40 border-t border-line/60 flex items-center justify-between flex-wrap gap-2">
+          <label className="flex items-center space-x-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={modalIsPaid}
               onChange={e => setModalIsPaid(e.target.checked)}
-              className="w-4 h-4 rounded text-pos "
+              className="w-4 h-4 rounded border-line text-pos focus:ring-pos cursor-pointer"
             />
             <span className="text-xs font-bold text-ink-muted">
               Xác nhận Kỳ #{editingSchedule.PeriodNumber} đã thanh toán
@@ -199,25 +190,25 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           </label>
 
           <div className="flex items-center space-x-2">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={onClose}
-              className="px-4 py-2 rounded-md text-xs font-bold bg-panel-muted hover:bg-panel-muted text-ink-muted"
             >
               Hủy
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              loading={loading}
               onClick={onSave}
-              disabled={loading}
-              className="px-4 py-2 rounded-md text-xs font-bold bg-accent hover:opacity-90 text-accent-ink  flex items-center space-x-1.5"
+              leftIcon={<Save className="w-3.5 h-3.5" />}
             >
-              <Save className="w-3.5 h-3.5" />
-              <span>{loading ? 'Đang lưu...' : 'LƯU CẬP NHẬT KỲ THU NỢ'}</span>
-            </button>
+              {loading ? 'Đang lưu...' : 'LƯU KỲ THU NỢ'}
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -61,104 +61,132 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
     totalDue: a.totalDue + x.calc.totalDue,
   }), { principalPenalty: 0, interestPenalty: 0, totalDue: 0 });
 
-  const cellCls = `w-full rounded-lg p-1.5 text-[11px] font-mono ${styles.inputStyle}`;
+  const cellCls = `w-full rounded-lg p-1.5 text-[11px] font-mono border border-line/70 bg-surface/90 focus:border-accent ${styles.inputStyle}`;
 
   return (
-    <div className="space-y-4">
-      <div className={`${styles.containerCardBg} rounded-lg p-5 border space-y-4 text-xs`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-2">
-          <div className="font-bold text-accent uppercase tracking-wider text-sm flex items-center space-x-2">
-            <AlertTriangle className="w-4 h-4 text-neg" />
+    <div className="space-y-4 font-app">
+      <div className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 text-xs animate-in fade-in duration-150`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line/60 pb-3">
+          <div className="font-bold text-accent uppercase tracking-wider text-xs flex items-center space-x-2">
+            <div className="p-1.5 rounded-lg bg-neg-soft text-neg shrink-0 shadow-2xs">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
             <span>BẢNG TÍNH TIỀN PHẠT CHẬM TRẢ QUÁ HẠN</span>
           </div>
           <button
             type="button"
             onClick={() => { setRows(prev => [...prev, newRow(nextKey)]); setNextKey(k => k + 1); }}
-            className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3 py-1.5 rounded-md font-bold flex items-center space-x-1.5 transition-colors"
+            className="bg-accent hover:opacity-95 text-accent-ink text-xs px-3.5 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 shadow-md shadow-accent/25 cursor-pointer transition-all active:scale-98"
           >
-            <Plus className="w-3.5 h-3.5" /><span>THÊM HỢP ĐỒNG</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>THÊM HỢP ĐỒNG</span>
           </button>
         </div>
 
         <div className="text-[11px] text-ink-faint">
-          Phạt <strong>{(DEFAULT_PRINCIPAL_PENALTY_MULTIPLIER * 100).toFixed(0)}%</strong> lãi suất trong hạn
-          trên nợ gốc quá hạn, và <strong>{(DEFAULT_INTEREST_PENALTY_RATE * 100).toFixed(0)}%/năm</strong> trên
-          số tiền lãi chậm trả. Tính theo số ngày thực tế chia 365.
+          Phạt <strong className="text-ink">{(DEFAULT_PRINCIPAL_PENALTY_MULTIPLIER * 100).toFixed(0)}%</strong> lãi suất trong hạn trên nợ gốc quá hạn, và <strong className="text-ink">{(DEFAULT_INTEREST_PENALTY_RATE * 100).toFixed(0)}%/năm</strong> trên số tiền lãi chậm trả. Tính theo số ngày thực tế chia 365.
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto border border-line/70 rounded-xl">
           <table className="w-full text-left text-[11px] border-collapse min-w-[1080px]">
-            <thead className="bg-panel-muted text-[10px] uppercase tracking-[0.09em] text-ink-faint border-b border-line">
+            <thead className="sticky top-0 z-10 bg-surface/95 backdrop-blur-md text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint border-b border-line/80">
               <tr>
-                <th className="px-[var(--row-px)] py-[var(--row-py)]">MÃ HĐ</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right min-w-[130px]">DƯ NỢ GỐC QUÁ HẠN</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-24">LS TRONG HẠN</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-24">LS PHẠT GỐC</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-20">SỐ NGÀY</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">TIỀN PHẠT GỐC</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right min-w-[120px]">LÃI CHẬM TRẢ</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-24">LS PHẠT LÃI</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-center w-20">SỐ NGÀY</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right">TIỀN PHẠT LÃI</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)] text-right min-w-[140px]">TỔNG PHẢI TRẢ</th>
-                <th className="px-[var(--row-px)] py-[var(--row-py)]" />
+                <th className="px-3 py-2.5">MÃ HĐ</th>
+                <th className="px-3 py-2.5 text-right min-w-[130px]">DƯ NỢ GỐC QUÁ HẠN</th>
+                <th className="px-3 py-2.5 text-center w-24">LS TRONG HẠN</th>
+                <th className="px-3 py-2.5 text-center w-24">LS PHẠT GỐC</th>
+                <th className="px-3 py-2.5 text-center w-20">SỐ NGÀY</th>
+                <th className="px-3 py-2.5 text-right">TIỀN PHẠT GỐC</th>
+                <th className="px-3 py-2.5 text-right min-w-[120px]">LÃI CHẬM TRẢ</th>
+                <th className="px-3 py-2.5 text-center w-24">LS PHẠT LÃI</th>
+                <th className="px-3 py-2.5 text-center w-20">SỐ NGÀY</th>
+                <th className="px-3 py-2.5 text-right">TIỀN PHẠT LÃI</th>
+                <th className="px-3 py-2.5 text-right min-w-[140px]">TỔNG PHẢI TRẢ</th>
+                <th className="px-3 py-2.5" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-line/40">
               {results.map(({ row, calc }) => (
-                <tr key={row.key} className="hover:bg-panel-muted">
+                <tr key={row.key} className="hover:bg-accent/[0.04] transition-colors">
                   <td className="p-1.5">
-                    <input type="text" value={row.contractCode}
-                      onChange={e => patch(row.key, { contractCode: e.target.value })} className={cellCls} />
+                    <input
+                      type="text"
+                      value={row.contractCode}
+                      onChange={e => patch(row.key, { contractCode: e.target.value })}
+                      className={cellCls}
+                    />
                   </td>
                   <td className="p-1.5">
-                    <input type="text" value={row.overduePrincipalStr}
+                    <input
+                      type="text"
+                      value={row.overduePrincipalStr}
                       onChange={e => patch(row.key, { overduePrincipalStr: formatMoneyInput(e.target.value) })}
-                      className={`${cellCls} text-right font-bold`} />
+                      className={`${cellCls} text-right font-bold text-ink`}
+                    />
                   </td>
                   <td className="p-1.5">
-                    <input type="number" step="0.01" value={row.normalRateStr}
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={row.normalRateStr}
                       onChange={e => patch(row.key, { normalRateStr: e.target.value })}
-                      className={`${cellCls} text-center`} />
+                      className={`${cellCls} text-center`}
+                    />
                   </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center font-mono font-bold text-neg">
+                  <td className="px-3 py-2.5 text-center font-mono font-bold text-neg">
                     {(calc.principalPenaltyRate * 100).toFixed(2)}%
                   </td>
                   <td className="p-1.5">
-                    <input type="number" min={0} value={row.principalDaysStr}
+                    <input
+                      type="number"
+                      min={0}
+                      value={row.principalDaysStr}
                       onChange={e => patch(row.key, { principalDaysStr: e.target.value })}
-                      className={`${cellCls} text-center`} />
+                      className={`${cellCls} text-center font-mono`}
+                    />
                   </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-bold text-neg">
+                  <td className="px-3 py-2.5 text-right font-mono font-bold text-neg">
                     {fmtMoney(calc.principalPenalty)}
                   </td>
                   <td className="p-1.5">
-                    <input type="text" value={row.unpaidInterestStr}
+                    <input
+                      type="text"
+                      value={row.unpaidInterestStr}
                       onChange={e => patch(row.key, { unpaidInterestStr: formatMoneyInput(e.target.value) })}
-                      className={`${cellCls} text-right`} />
+                      className={`${cellCls} text-right text-warn font-bold`}
+                    />
                   </td>
                   <td className="p-1.5">
-                    <input type="number" step="0.01" value={row.interestPenaltyRateStr}
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={row.interestPenaltyRateStr}
                       onChange={e => patch(row.key, { interestPenaltyRateStr: e.target.value })}
-                      className={`${cellCls} text-center`} />
+                      className={`${cellCls} text-center`}
+                    />
                   </td>
                   <td className="p-1.5">
-                    <input type="number" min={0} value={row.interestDaysStr}
+                    <input
+                      type="number"
+                      min={0}
+                      value={row.interestDaysStr}
                       onChange={e => patch(row.key, { interestDaysStr: e.target.value })}
-                      className={`${cellCls} text-center`} />
+                      className={`${cellCls} text-center font-mono`}
+                    />
                   </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-neg">
+                  <td className="px-3 py-2.5 text-right font-mono text-neg font-bold">
                     {fmtMoney(calc.interestPenalty)}
                   </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono font-extrabold text-accent">
+                  <td className="px-3 py-2.5 text-right font-mono font-extrabold text-accent">
                     {fmtMoney(calc.totalDue)}
                   </td>
-                  <td className="px-[var(--row-px)] py-[var(--row-py)] text-center">
+                  <td className="px-3 py-2.5 text-center">
                     <button
                       type="button"
                       onClick={() => setRows(prev => (prev.length > 1 ? prev.filter(r => r.key !== row.key) : prev))}
                       disabled={rows.length <= 1}
-                      className="text-ink-faint hover:text-neg disabled:opacity-30 transition-colors"
+                      className="p-1.5 rounded-lg text-ink-faint hover:text-neg hover:bg-neg-soft disabled:opacity-30 transition-colors cursor-pointer"
+                      title="Xóa hợp đồng này"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -166,20 +194,22 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-accent-soft  font-bold border-t-2 border-accent/30">
+            <tfoot className="bg-surface/95 backdrop-blur-md font-bold border-t-2 border-line/80 text-ink text-xs">
               <tr>
-                <td className="px-[var(--row-px)] py-[var(--row-py)]" colSpan={5}>TỔNG</td>
-                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-neg">{fmtMoney(totals.principalPenalty)}</td>
-                <td className="px-[var(--row-px)] py-[var(--row-py)]" colSpan={3} />
-                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-neg">{fmtMoney(totals.interestPenalty)}</td>
-                <td className="px-[var(--row-px)] py-[var(--row-py)] text-right font-mono text-accent text-sm">{fmtMoney(totals.totalDue)}</td>
-                <td className="px-[var(--row-px)] py-[var(--row-py)]" />
+                <td className="px-3 py-2.5 uppercase tracking-wider text-[10px] text-ink-faint" colSpan={5}>
+                  TỔNG CỘNG TIỀN PHẠT QUÁ HẠN
+                </td>
+                <td className="px-3 py-2.5 text-right font-mono text-neg font-bold">{fmtMoney(totals.principalPenalty)}</td>
+                <td className="px-3 py-2.5" colSpan={3} />
+                <td className="px-3 py-2.5 text-right font-mono text-neg font-bold">{fmtMoney(totals.interestPenalty)}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-accent text-sm font-extrabold">{fmtMoney(totals.totalDue)}</td>
+                <td className="px-3 py-2.5" />
               </tr>
             </tfoot>
           </table>
         </div>
 
-        <div className="text-[11px] text-ink-faint space-y-0.5 pt-2 border-t border-line">
+        <div className="text-[11px] text-ink-faint space-y-1 pt-3 border-t border-line/50">
           <div>• Tiền phạt gốc = Dư nợ gốc quá hạn × (LS trong hạn × 150%) × Số ngày / 365</div>
           <div>• Tiền phạt lãi = Tiền lãi chậm trả × LS phạt lãi × Số ngày / 365</div>
           <div>• Tổng phải trả = Nợ gốc quá hạn + Lãi chậm trả + Phạt gốc + Phạt lãi</div>

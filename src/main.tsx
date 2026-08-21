@@ -11,6 +11,7 @@ import { AuthProvider } from './context/AuthContext.tsx';
 import { DateFormatProvider } from './context/DateFormatContext.tsx';
 import { FormatSettingsProvider } from './context/FormatSettingsContext.tsx';
 import { FontSettingsProvider } from './context/FontSettingsContext.tsx';
+import { ConfirmProvider } from './context/ConfirmContext.tsx';
 
 const providers = [
   ThemeProvider,
@@ -19,6 +20,7 @@ const providers = [
   DateFormatProvider,
   FormatSettingsProvider,
   FontSettingsProvider,
+  ConfirmProvider,
 ];
 
 createRoot(document.getElementById('root')!).render(

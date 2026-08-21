@@ -48,7 +48,10 @@ describe('CreditContractView lấy khách từ URL', () => {
 
   it('bỏ chọn khách thì về đường phẳng', async () => {
     dungLenO('/customers/55/credit-contracts');
-    const o = await screen.findByRole('combobox');
+    await waitFor(() => {
+      expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('55');
+    });
+    const o = screen.getByRole('combobox');
     fireEvent.change(o, { target: { value: '' } });
     await waitFor(() => expect(screen.getByTestId('path').textContent).toBe('/credit-contracts'));
   });

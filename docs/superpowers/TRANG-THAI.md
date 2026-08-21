@@ -3,11 +3,8 @@
 > Tệp này để **bắt lại mạch khi mở phiên trò chuyện mới**. Cập nhật sau mỗi task xong.
 > Sổ chi tiết của phiên đang chạy nằm ở `.superpowers/sdd/<tên-kế-hoạch>/progress.md`, nhưng thư mục đó bị `.gitignore` bỏ qua và bị xoá khi đóng đợt — nên mọi thứ cần sống lâu phải nằm ở đây.
 
-**Cập nhật lần cuối:** 2026-08-21, sau khi áp xong đợt sửa cuối từ rà soát toàn nhánh 1b
-(C1/I1/I2/I3/I5/T6 + M1–M4), ba finding tồn dư của lượt re-review, và tự kiểm trên giao diện
-thật. Báo cáo chi tiết:
-`.superpowers/sdd/2026-08-20-rebuild-giao-dien-dot-1b-ngu-canh-khach-hang/final-fix-report.md`
-(thư mục `.superpowers/sdd/` bị `.gitignore` bỏ qua, chỉ tồn tại cục bộ).
+**Cập nhật lần cuối:** 2026-08-21, sau khi hoàn tất 100% Đợt 2 (Bộ Component Dùng Chung & `Dialog` / `ConfirmDialog`).
+Kế hoạch chi tiết: `docs/superpowers/plans/2026-08-21-rebuild-giao-dien-dot-2-bo-component.md`.
 
 ---
 
@@ -15,9 +12,8 @@ thật. Báo cáo chi tiết:
 
 1. Đọc hết tệp này.
 2. Đọc bản thiết kế `docs/superpowers/specs/2026-08-19-rebuild-giao-dien-design.md`.
-3. Hỏi chủ dự án muốn vào **đợt 2** hay xử **việc còn treo** trước (xem hai mục dưới).
-4. Lập kế hoạch bằng skill `superpowers:writing-plans`, thi công bằng skill `superpowers:subagent-driven-development` — giao subagent từng task, rà soát giữa các task.
-5. Cập nhật tệp này sau mỗi task xong.
+3. Lập kế hoạch đợt 3 bằng skill `superpowers:writing-plans`.
+4. Cập nhật tệp này sau mỗi task xong.
 
 **Đừng hỏi lại chủ dự án những câu đã có đáp án** trong mục "Quyết định đã chốt" và "Phán quyết còn hiệu lực" bên dưới.
 
@@ -27,27 +23,32 @@ thật. Báo cáo chi tiết:
 
 | | |
 | :--- | :--- |
-| Nhánh hiện tại | `main` — sạch, khớp `origin/main` |
-| Việc đang dở | không có. Đợt 1b đã đóng trọn: 20 commit gốc + 5 commit sửa theo rà soát toàn nhánh + 2 commit đóng finding tồn dư. Chưa đẩy remote |
-| Đợt vừa xong | **1b — ngữ cảnh khách hàng**, 27 commit, đã gộp local trên `main` (`f02c153..a985f49`) |
-| Đợt kế tiếp | **2 — bộ component + `Dialog`/`ConfirmDialog`**, chưa lập kế hoạch |
-| Tổng test | **1.853** xanh, 0 đỏ · 90 tệp test (tăng từ 1.825/86 qua đợt sửa cuối 1b và ba finding tồn dư) |
-| Cảnh báo lint | 64 (baseline đợt 1a là 62; 1 cảnh báo mới thuộc đợt 1b — `src/hooks/useLoanPortfolioController.ts:145`, `missing dependency: 'portfolio'`, từ hiệu ứng deep-link Task 15) |
-| Tự kiểm trên giao diện thật | **đã làm 21/08/2026** trên `localhost:5173`, phiên đăng nhập của chủ dự án — xem mục ngay dưới |
+| Nhánh hiện tại | `main` — local working tree có toàn bộ Đợt 1b & Đợt 2 (Chưa commit và chưa push theo lệnh của người dùng) |
+| Việc đang dở | Không có. Đợt 2 đã hoàn tất 13/13 tasks. |
+| Đợt vừa xong | **2 — bộ component dùng chung & `Dialog`/`ConfirmDialog`** (Radix UI, Button, StatusPill, Panel, KpiCard, Field, Dialog, ConfirmDialog, Tabs, DataTable, FeedbackStates, CustomerPicker, thay thế toàn bộ `window.confirm` và migrate các modal sang Dialog). |
+| Đợt kế tiếp | **3 — Rebuild giao diện từng màn hình chuyên sâu** (theo spec §7). |
+| Tổng test | **1.884** xanh, 0 đỏ · 103 tệp test (100% pass) |
+| TypeScript build | `npx tsc -b` sạch 100%, 0 lỗi |
+| Ràng buộc đặc biệt | **Tuyệt đối không chạy commit và push** trừ khi người dùng ra lệnh trực tiếp. |
 
-## Đợt 1b đã tạo ra gì
-
-Gộp vào `main`, 20 commit `f02c153..a5c91a7`.
+## Đợt 2 đã tạo ra gì
 
 | Tệp | Ở đâu | Dùng để làm gì |
 | :--- | :--- | :--- |
-| `customerRoutes.ts` | `src/lib/` | Nơi duy nhất dựng/đọc đường dẫn có `:customerId` — `customerPath`, `customerProfilePath`, `kunnSchedulePath`, `parseCustomerPath`, `CUSTOMER_SCOPED_SCREENS` |
-| `useSelectedCustomerId.ts` | `src/hooks/` | Đọc khách đang chọn từ URL (`useParams` trước, rơi xuống `parseCustomerPath(pathname)` cho component ở tuyến cha); `useCustomerNavigate()` điều hướng khi đổi khách |
-| `customerContext.ts` | `src/lib/` | Dựng `CustomerContextSummary` (tên, CIF, điện thoại, dư nợ, hạn mức khả dụng, nhóm nợ) từ dữ liệu đã nạp |
-| `useCustomerContext.ts` | `src/hooks/` | Nạp riêng dữ liệu cho thanh ngữ cảnh, tách khỏi đường nạp lịch trả nợ của controller |
-| `CustomerContextBar.tsx` | `src/components/` | Thanh ngữ cảnh: tên · CIF · điện thoại · dư nợ · hạn mức khả dụng · nhóm nợ (kèm số ngày quá hạn nếu >0) · nút đổi khách |
-| `apiHealth.ts` | `src/lib/` | Cờ lỗi từ lần gọi API thật gần nhất — nửa sau spec §6.3 mà Header còn thiếu ở đợt 1a |
-| `useApiHealth.ts` | `src/hooks/` | Hook đọc cờ trên cho Header |
+| `Button.tsx` | `src/components/ui/` | Button nguyên tử đa biến thể (`primary`, `secondary`, `outline`, `ghost`, `danger`, `success`), 4 kích thước, loading spinner |
+| `StatusPill.tsx` | `src/components/ui/` | StatusPill huy hiệu trạng thái tài chính (5 nhóm nợ CIC, trạng thái hợp đồng, kết luận kiểm soát, bảo đảm tương phản WCAG AA) |
+| `Panel.tsx` | `src/components/ui/` | Thẻ khung giao diện chuẩn hóa bo góc `--r-panel: 12px` (`Panel`, `PanelHeader`) |
+| `KpiCard.tsx` | `src/components/ui/` | Card chỉ số tài chính vi mô, số liệu cố định `--fs-num: 24px` với 5 sắc thái ngữ nghĩa |
+| `Field.tsx` | `src/components/ui/` | Bộ điều khiển nhập liệu form (`Field`, `Input`, `Select`, `Textarea`) tích hợp nhãn, thông báo lỗi inline, bo góc `--r-control: 8px` |
+| `Dialog.tsx` | `src/components/ui/` | Hộp thoại Radix UI accessible (hỗ trợ cả modal trung tâm lẫn slide-over `variant="drawer"`, bẫy focus, phím Escape) |
+| `ConfirmDialog.tsx` | `src/components/ui/` | Hộp thoại xác nhận bất đồng bộ accessible |
+| `ConfirmContext.tsx` | `src/context/` | Hook `useConfirm()` thay thế toàn bộ `window.confirm` chặn luồng của trình duyệt |
+| `Tabs.tsx` | `src/components/ui/` | Bộ tab Radix UI accessible (`Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`) |
+| `DataTable.tsx` | `src/components/ui/` | Bảng dữ liệu tự thích ứng đa cấp ưu tiên cột và chuyển đổi card view trên màn hình hẹp |
+| `FeedbackStates.tsx` | `src/components/ui/` | Bộ 3 trạng thái phản hồi chuẩn (`LoadingState`, `EmptyState`, `ErrorState`) |
+| `CustomerPicker.tsx` | `src/components/ui/` | Popover chọn khách hàng có tìm kiếm trực tiếp |
+| Các modal đã migrate sang `Dialog` | `src/components/` | `CreditContractFormModal`, `CardContractModal`, `CustomerDrawerForm`, `SaleCatalogModal`, `PaymentModal`, `PostLoanControlView (Record Modal)` |
+| Thay thế `window.confirm` | 13 hooks / components | 100% `window.confirm` đã được thay bằng `useConfirm()` |
 
 `WorkContext` đã xoá hẳn — không còn `setActiveTab`, không còn `selectedCustomerId` trong context.
 Bốn controller (`useCardContractController`, `useCreditContractController`,

@@ -41,43 +41,71 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
   ]);
 
   const overPledged = savingsAmount > 0 && loanAmount > savingsAmount;
-  const labelCls = `block mb-1 ${styles.labelStyle}`;
-  const inputCls = `w-full rounded-md p-2 ${styles.inputStyle}`;
+  const labelCls = `block mb-1 text-[11px] font-semibold text-ink-muted ${styles.labelStyle}`;
+  const inputCls = `w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent text-xs ${styles.inputStyle}`;
 
   return (
     <div className="space-y-4">
-      <div className={`${styles.containerCardBg} rounded-lg p-5 border space-y-4 text-xs`}>
-        <div className="font-bold text-accent uppercase tracking-wider text-sm flex items-center space-x-2 border-b border-line pb-2">
-          <Layers className="w-4 h-4" />
+      <div className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 text-xs animate-in fade-in duration-150`}>
+        <div className="font-bold text-accent uppercase tracking-wider text-xs flex items-center space-x-2 border-b border-line/60 pb-3">
+          <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
+            <Layers className="w-4 h-4" />
+          </div>
           <span>BẢNG TÍNH LÃI CẦM CỐ SỔ TIẾT KIỆM (ACTUAL/365)</span>
         </div>
 
-        <div className="p-3.5 rounded-md border border-line  bg-panel-muted  space-y-2.5">
-          <div className="font-bold text-warn text-[11px] uppercase">THÔNG TIN SỔ TIẾT KIỆM</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        {/* Thông tin Sổ Tiết Kiệm */}
+        <div className="p-4 rounded-2xl border border-line/60 bg-surface/60 backdrop-blur-md space-y-3 shadow-2xs">
+          <div className="font-bold text-warn text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-warn" />
+            <span>THÔNG TIN SỔ TIẾT KIỆM</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>Giá trị sổ tiết kiệm (VNĐ)</label>
-              <input type="text" value={savingsAmountStr}
+              <input
+                type="text"
+                value={savingsAmountStr}
                 onChange={e => setSavingsAmountStr(formatMoneyInput(e.target.value))}
-                className={`${inputCls} font-mono font-bold text-warn`} />
+                className={`${inputCls} font-mono font-bold text-warn`}
+              />
             </div>
             <div>
               <label className={labelCls}>Ngày gửi sổ</label>
-              <input type="date" value={depositDate} onChange={e => setDepositDate(e.target.value)} className={`${inputCls} font-mono`} />
+              <input
+                type="date"
+                value={depositDate}
+                onChange={e => setDepositDate(e.target.value)}
+                className={`${inputCls} font-mono`}
+              />
             </div>
             <div>
               <label className={labelCls}>Lãi suất sổ (%/năm)</label>
-              <input type="number" step="0.01" value={savingsRateStr}
+              <input
+                type="number"
+                step="0.01"
+                value={savingsRateStr}
                 onChange={e => setSavingsRateStr(e.target.value)}
-                className={`${inputCls} font-mono font-bold`} />
+                className={`${inputCls} font-mono font-bold`}
+              />
             </div>
             <div>
               <label className={labelCls}>Kỳ hạn</label>
-              <input type="number" min={1} value={tenorStr} onChange={e => setTenorStr(e.target.value)} className={`${inputCls} font-mono`} />
+              <input
+                type="number"
+                min={1}
+                value={tenorStr}
+                onChange={e => setTenorStr(e.target.value)}
+                className={`${inputCls} font-mono`}
+              />
             </div>
             <div>
               <label className={labelCls}>Đơn vị kỳ hạn</label>
-              <select value={tenorUnit} onChange={e => setTenorUnit(e.target.value as TenorUnit)} className={inputCls}>
+              <select
+                value={tenorUnit}
+                onChange={e => setTenorUnit(e.target.value as TenorUnit)}
+                className={`${inputCls} font-bold`}
+              >
                 {(Object.keys(TENOR_UNIT_LABELS) as TenorUnit[]).map(u => (
                   <option key={u} value={u}>{TENOR_UNIT_LABELS[u]}</option>
                 ))}
@@ -85,61 +113,89 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
             </div>
             <div>
               <label className={labelCls}>Ngày đáo hạn sổ</label>
-              <div className={`${inputCls} font-mono font-bold text-warn`}>
+              <div className={`${inputCls} font-mono font-bold text-warn flex items-center`}>
                 {result.savingsDueDate ? fmtDate(result.savingsDueDate) : '—'}
               </div>
             </div>
             <div>
               <label className={labelCls}>Số ngày gửi sổ</label>
-              <div className={`${inputCls} font-mono font-bold text-warn`}>
+              <div className={`${inputCls} font-mono font-bold text-warn flex items-center`}>
                 {result.savingsDays > 0 ? `${result.savingsDays} ngày` : '—'}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="p-3.5 rounded-md border border-line  bg-panel-muted  space-y-2.5">
-          <div className="font-bold text-accent text-[11px] uppercase">THÔNG TIN KHOẢN VAY CẦM CỐ</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        {/* Thông tin Khoản Vay Cầm Cố */}
+        <div className="p-4 rounded-2xl border border-line/60 bg-surface/60 backdrop-blur-md space-y-3 shadow-2xs">
+          <div className="font-bold text-accent text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-accent" />
+            <span>THÔNG TIN KHOẢN VAY CẦM CỐ</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>Số tiền vay (VNĐ)</label>
-              <input type="text" value={loanAmountStr}
+              <input
+                type="text"
+                value={loanAmountStr}
                 onChange={e => setLoanAmountStr(formatMoneyInput(e.target.value))}
-                className={`${inputCls} font-mono font-bold text-accent`} />
+                className={`${inputCls} font-mono font-bold text-accent`}
+              />
             </div>
             <div>
               <label className={labelCls}>Tỷ lệ cầm cố</label>
-              <div className={`${inputCls} font-mono font-bold ${overPledged ? 'text-neg' : ''}`}>
+              <div className={`${inputCls} font-mono font-bold flex items-center ${overPledged ? 'text-neg bg-neg-soft/30 border-neg/40' : 'text-accent'}`}>
                 {savingsAmount > 0 ? `${(pledgeRatio * 100).toFixed(2)}%` : '—'}
               </div>
             </div>
             <div>
               <label className={labelCls}>Lãi suất vay (%/năm)</label>
-              <input type="number" step="0.01" value={loanRateStr}
+              <input
+                type="number"
+                step="0.01"
+                value={loanRateStr}
                 onChange={e => setLoanRateStr(e.target.value)}
-                className={`${inputCls} font-mono font-bold text-accent`} />
+                className={`${inputCls} font-mono font-bold text-accent`}
+              />
             </div>
             <div>
               <label className={labelCls}>Ngày giải ngân</label>
-              <input type="date" value={disbursementDate} onChange={e => setDisbursementDate(e.target.value)} className={`${inputCls} font-mono`} />
+              <input
+                type="date"
+                value={disbursementDate}
+                onChange={e => setDisbursementDate(e.target.value)}
+                className={`${inputCls} font-mono`}
+              />
             </div>
             <div>
               <label className={labelCls}>Ngày đáo hạn vay</label>
               <div className="flex items-center gap-2">
                 <label className="flex items-center space-x-1.5 cursor-pointer whitespace-nowrap">
-                  <input type="checkbox" checked={useOwnLoanDue} onChange={e => setUseOwnLoanDue(e.target.checked)} />
-                  <span className="text-[11px]">Khác ngày đáo hạn sổ</span>
+                  <input
+                    type="checkbox"
+                    checked={useOwnLoanDue}
+                    onChange={e => setUseOwnLoanDue(e.target.checked)}
+                    className="rounded border-line text-accent focus:ring-accent"
+                  />
+                  <span className="text-[11px] text-ink-muted">Khác ngày đáo hạn sổ</span>
                 </label>
                 {useOwnLoanDue ? (
-                  <input type="date" value={loanDueDate} onChange={e => setLoanDueDate(e.target.value)} className={`${inputCls} font-mono`} />
+                  <input
+                    type="date"
+                    value={loanDueDate}
+                    onChange={e => setLoanDueDate(e.target.value)}
+                    className={`${inputCls} font-mono`}
+                  />
                 ) : (
-                  <div className={`${inputCls} font-mono`}>{result.loanDueDate ? fmtDate(result.loanDueDate) : '—'}</div>
+                  <div className={`${inputCls} font-mono flex items-center`}>
+                    {result.loanDueDate ? fmtDate(result.loanDueDate) : '—'}
+                  </div>
                 )}
               </div>
             </div>
             <div>
               <label className={labelCls}>Số ngày vay</label>
-              <div className={`${inputCls} font-mono font-bold text-accent`}>
+              <div className={`${inputCls} font-mono font-bold text-accent flex items-center`}>
                 {result.loanDays > 0 ? `${result.loanDays} ngày` : '—'}
               </div>
             </div>
@@ -147,58 +203,64 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
         </div>
 
         {overPledged && (
-          <div className="rounded-md border border-neg/30 bg-neg-soft  p-3 text-[11px] font-bold text-neg">
-            ⚠ Số tiền vay lớn hơn giá trị sổ tiết kiệm — tỷ lệ cầm cố vượt 100%.
+          <div className="rounded-xl border border-neg/30 bg-neg-soft/30 p-3 text-xs font-bold text-neg flex items-center gap-2">
+            <span>⚠</span>
+            <span>Số tiền vay lớn hơn giá trị sổ tiết kiệm — tỷ lệ cầm cố vượt 100%.</span>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="p-4 rounded-lg bg-warn-soft  border border-warn/30 ">
-            <div className="text-[11px] font-bold text-ink-faint uppercase">LÃI SỔ TIẾT KIỆM NHẬN ĐƯỢC</div>
-            <div className="text-xl font-extrabold text-warn font-mono mt-1">
+        {/* Kết quả tính toán Telemetry Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="p-4 rounded-2xl bg-warn-soft/25 border border-warn/30 specular-card shadow-xs flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Lãi sổ tiết kiệm nhận được</span>
+            <div className="text-base sm:text-lg font-bold text-warn font-mono mt-1">
               {fmtMoney(result.savingsInterest)}
             </div>
           </div>
 
-          <div className="p-4 rounded-lg bg-warn-soft  border border-warn/30 ">
-            <div className="text-[11px] font-bold text-ink-faint uppercase">TỔNG GỐC + LÃI SỔ NHẬN ĐƯỢC</div>
-            <div className="text-xl font-extrabold text-warn font-mono mt-1">
+          <div className="p-4 rounded-2xl bg-warn-soft/25 border border-warn/30 specular-card shadow-xs flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Tổng gốc + lãi sổ nhận được</span>
+            <div className="text-base sm:text-lg font-bold text-warn font-mono mt-1">
               {fmtMoney(result.savingsTotal)}
             </div>
           </div>
 
-          <div className="p-4 rounded-lg bg-accent-soft  border border-accent/30 ">
-            <div className="text-[11px] font-bold text-ink-faint uppercase">TIỀN LÃI VAY PHẢI TRẢ</div>
-            <div className="text-xl font-extrabold text-accent font-mono mt-1">
+          <div className="p-4 rounded-2xl bg-accent-soft/25 border border-accent/30 specular-card shadow-xs flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Tiền lãi vay phải trả</span>
+            <div className="text-base sm:text-lg font-bold text-accent font-mono mt-1">
               {fmtMoney(result.loanInterest)}
             </div>
           </div>
 
-          <div className="p-4 rounded-lg bg-accent-soft  border border-accent/30 ">
-            <div className="text-[11px] font-bold text-ink-faint uppercase">TỔNG TIỀN TRẢ NỢ KHI ĐÁO HẠN</div>
-            <div className="text-xl font-extrabold text-accent font-mono mt-1">
+          <div className="p-4 rounded-2xl bg-accent-soft/25 border border-accent/30 specular-card shadow-xs flex flex-col justify-between">
+            <span className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Tổng tiền trả nợ khi đáo hạn</span>
+            <div className="text-base sm:text-lg font-bold text-accent font-mono mt-1">
               {fmtMoney(result.totalRepayment)}
             </div>
           </div>
         </div>
 
-        <div className={`p-4 rounded-lg border ${
+        {/* Chênh lệch net banner */}
+        <div className={`p-4 sm:p-5 rounded-2xl border specular-card shadow-xs ${
           result.netGain >= 0
-            ? 'bg-pos-soft  border-pos/30 '
-            : 'bg-neg-soft  border-neg/30 '
+            ? 'bg-pos-soft/30 border-pos/30 text-pos'
+            : 'bg-neg-soft/30 border-neg/30 text-neg'
         }`}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center space-x-2">
-              {result.netGain >= 0
-                ? <TrendingUp className="w-5 h-5 text-pos" />
-                : <TrendingDown className="w-5 h-5 text-neg" />}
-              <span className="text-xs font-bold tracking-tight text-ink-muted">
-                {result.netGain >= 0 ? 'CHÊNH LỆCH — KHÁCH HÀNG CÒN LỢI' : 'CHÊNH LỆCH — KHÁCH HÀNG CHỊU THIỆT'}
-              </span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-2.5">
+              <div className={`p-2 rounded-xl shrink-0 ${result.netGain >= 0 ? 'bg-pos-soft text-pos' : 'bg-neg-soft text-neg'}`}>
+                {result.netGain >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+              </div>
+              <div>
+                <div className="text-xs font-bold tracking-wider uppercase">
+                  {result.netGain >= 0 ? 'CHÊNH LỆCH — KHÁCH HÀNG CÒN LỢI NHUẬN' : 'CHÊNH LỆCH — KHÁCH HÀNG CHỊU CHI PHÍ THIỆT HẠI'}
+                </div>
+                <div className="text-[11px] text-ink-faint mt-0.5">
+                  (Tiền lãi sổ tiết kiệm thu về trừ Tổng tiền lãi vay phải trả)
+                </div>
+              </div>
             </div>
-            <span className={`text-2xl font-extrabold font-mono ${
-              result.netGain >= 0 ? 'text-pos' : 'text-neg'
-            }`}>
+            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight">
               {fmtMoney(result.netGain)}
             </span>
           </div>

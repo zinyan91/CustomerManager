@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Loader2, Save, X } from 'lucide-react';
+import { ShieldCheck, Loader2, Save } from 'lucide-react';
 import { CONTROL_TYPE_LABEL, CONTROL_RESULT_LABEL, overdueDaysOf, type ControlItemWithRecord } from '../../lib/postLoanControl';
 import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
 import { assetClassLabel, defaultLtvForAssetType } from '../../lib/collateralMath';
@@ -12,6 +12,8 @@ import {
   type FilterType,
   type FilterStatus,
 } from '../../hooks/usePostLoanControlController';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/Dialog';
+import { Button } from '../ui/Button';
 import type { ControlResult } from '../../types';
 
 export const PostLoanControlView: React.FC = () => {
@@ -292,22 +294,20 @@ export const PostLoanControlView: React.FC = () => {
 
       {/* Record Modal */}
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className={`${cardBg} rounded-lg border shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto`}>
-            <div className="p-4 border-b flex items-center justify-between border-line">
+        <Dialog open={true} onOpenChange={(open) => !open && closeModal()}>
+          <DialogContent size="lg" className="p-0 overflow-hidden max-h-[90vh]">
+            <DialogHeader className="p-4 sm:p-5 bg-surface/40 flex-row items-center justify-between space-y-0">
               <div>
-                <div className="font-bold text-sm">{CONTROL_TYPE_LABEL[editing.type]}</div>
-                <div className="text-[11px] text-ink-faint mt-0.5">
-                  {customerName(editing.customerId)} · {scopeOf(editing)} · kỳ {editing.periodIndex} ·
-                  đến hạn {fmtDate(editing.dueDate)}
-                </div>
+                <DialogTitle className="font-bold text-sm text-ink">
+                  {CONTROL_TYPE_LABEL[editing.type]}
+                </DialogTitle>
+                <DialogDescription className="text-[11px] text-ink-faint mt-0.5">
+                  {customerName(editing.customerId)} · {scopeOf(editing)} · kỳ {editing.periodIndex} · đến hạn {fmtDate(editing.dueDate)}
+                </DialogDescription>
               </div>
-              <button type="button" onClick={closeModal} className="p-1.5 rounded-lg hover:bg-panel-muted">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            </DialogHeader>
 
-            <div className="p-4 space-y-3.5">
+            <div className="p-4 sm:p-5 space-y-3.5 flex-1 overflow-y-auto custom-scrollbar text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-ink-faint mb-1">Ngày thực hiện *</label>
@@ -380,19 +380,22 @@ export const PostLoanControlView: React.FC = () => {
               )}
             </div>
 
-            <div className="p-4 border-t flex items-center justify-end gap-2 border-line">
-              <button type="button" onClick={closeModal}
-                className="px-3 py-2 rounded-md text-xs font-semibold border border-line text-ink-muted">
+            <div className="p-4 bg-surface/40 border-t border-line/60 flex items-center justify-end gap-2">
+              <Button variant="secondary" size="sm" onClick={closeModal}>
                 Huỷ
-              </button>
-              <button type="button" onClick={handleSave} disabled={saving}
-                className="px-3 py-2 rounded-md text-xs font-bold bg-accent hover:opacity-90 text-accent-ink flex items-center gap-1.5 disabled:opacity-60">
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSave}
+                loading={saving}
+                leftIcon={<Save className="w-4 h-4" />}
+              >
                 Lưu kết quả
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

@@ -55,7 +55,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
 
   return (
     <div className="space-y-3" data-density={density}>
-      <div className={`${PANEL} p-4`}>
+      <div className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card`}>
         <div className={`${SECTION_LABEL} mb-2.5`}>
           {t('schedule.contracts')}
         </div>
@@ -99,21 +99,21 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(420px,30rem)] gap-3 items-start">
-      <div className={`${PANEL} overflow-hidden`}>
-        <div className="px-4 py-3 border-b border-line flex flex-wrap items-center justify-between gap-3">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(420px,30rem)] gap-3 items-start font-app">
+      <div className={`${PANEL} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
+        <div className="px-4 py-3.5 border-b border-line/60 flex flex-wrap items-center justify-between gap-3 bg-surface/75 backdrop-blur-md">
           <div className="flex items-baseline gap-2.5">
-            <span className={`${SECTION_LABEL}`}>
+            <span className={`${SECTION_LABEL} uppercase tracking-wider text-[11px]`}>
               {t('schedule.title')}
             </span>
             {selectedContract && (
-              <span className="font-mono text-ink font-semibold">{selectedContract.ContractNumber}</span>
+              <span className="font-mono text-accent font-bold text-xs">{selectedContract.ContractNumber}</span>
             )}
             {schedules.length > 0 && (
               <span className="text-xs text-ink-muted">
-                <span className="font-mono text-pos">{settledCount}</span>
+                <span className="font-mono text-pos font-bold">{settledCount}</span>
                 <span className="text-ink-faint">/</span>
-                <span className="font-mono">{schedules.length}</span> {t('schedule.settledCount')}
+                <span className="font-mono font-bold">{schedules.length}</span> {t('schedule.settledCount')}
               </span>
             )}
           </div>
@@ -124,10 +124,10 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                 type="button"
                 onClick={onQuickSettleAll}
                 disabled={!selectedContract || !schedules.some(s => !s.IsPaid && s.DueDate && s.DueDate <= todayIso())}
-                className={`px-2.5 py-1 text-[11px] font-semibold rounded-md border transition-all duration-150 flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 text-[11px] font-bold rounded-xl border transition-all duration-150 flex items-center gap-1.5 shadow-md shadow-accent/20 cursor-pointer ${
                   selectedContract && schedules.some(s => !s.IsPaid && s.DueDate && s.DueDate <= todayIso())
-                    ? 'bg-accent text-white border-accent hover:opacity-90 shadow-xs cursor-pointer'
-                    : 'bg-panel-muted text-ink-faint border-line opacity-60 cursor-not-allowed'
+                    ? 'bg-accent text-accent-ink border-accent hover:opacity-95'
+                    : 'bg-surface text-ink-faint border-line/60 opacity-60 cursor-not-allowed'
                 }`}
                 title={selectedContract && schedules.some(s => !s.IsPaid && s.DueDate && s.DueDate <= todayIso()) ? 'Tự động ghi nhận tất cả các kỳ đến hạn theo đúng ngày đến hạn' : 'Không có kỳ nào đến hạn cần thu'}
               >
@@ -136,15 +136,15 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
               </button>
             )}
 
-            <div className="inline-flex rounded-md border border-line overflow-hidden" role="group" aria-label={t('schedule.density')}>
+            <div className="inline-flex rounded-xl bg-surface p-0.5 border border-line/70 shadow-2xs" role="group" aria-label={t('schedule.density')}>
               {(['cozy', 'compact'] as Density[]).map(d => (
                 <button
                   key={d}
                   type="button"
                   onClick={() => setDensity(d)}
                   aria-pressed={density === d}
-                  className={`px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${
-                    density === d ? 'bg-accent-soft text-accent' : 'text-ink-faint hover:text-ink'
+                  className={`px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase tracking-[0.08em] transition-all cursor-pointer ${
+                    density === d ? 'bg-accent text-accent-ink shadow-xs' : 'text-ink-faint hover:text-ink'
                   }`}
                 >
                   {d === 'cozy' ? t('schedule.densityCozy') : t('schedule.densityCompact')}
@@ -155,9 +155,9 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
         </div>
 
         <div className="overflow-x-auto max-h-[min(70vh,640px)] overflow-y-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 z-20 bg-surface/90 backdrop-blur-md shadow-2xs">
-              <tr className="border-b border-line/80">
+          <table className="w-full text-left text-xs border-collapse font-app">
+            <thead className="sticky top-0 z-20 bg-surface/95 backdrop-blur-md border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint shadow-2xs">
+              <tr>
                 <th className={`${headCell} w-20`}>{t('schedule.period')}</th>
                 <th className={headCell}>{t('schedule.status')}</th>
                 <th className={headCell}>{t('schedule.dueDate')}</th>
@@ -168,7 +168,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
                 <th className={`${headCell} text-right`}>{t('schedule.actions')}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-line/40">
               {!selectedContract ? (
                 <tr><td colSpan={8} className="text-center py-12 text-ink-faint">{t('schedule.emptyNoContract')}</td></tr>
               ) : schedules.length === 0 ? (

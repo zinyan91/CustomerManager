@@ -64,8 +64,8 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-1">
+    <div className="space-y-4 font-app">
+      <div className="space-y-1.5">
         <label htmlFor="quiz-question" className={SECTION_LABEL}>Nội dung câu hỏi</label>
         <textarea
           id="quiz-question"
@@ -73,21 +73,21 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
           value={draft.questionText}
           onChange={e => setDraft({ ...draft, questionText: e.target.value })}
           placeholder="Dán nguyên văn câu hỏi, kể cả số hiệu quyết định"
-          className={`w-full rounded-md px-3 py-2 border resize-y ${UI.inputStyle}`}
+          className={`w-full rounded-xl p-3 border resize-y ${UI.inputStyle}`}
         />
         {duplicate && (
-          <div role="alert" className="text-[11px] text-neg font-semibold">
+          <div role="alert" className="text-[11px] text-neg font-semibold pt-1">
             Đã có câu này trong ngân hàng — số {duplicate.Id}. Sửa nội dung hoặc bỏ qua.
           </div>
         )}
       </div>
 
-      <div className="space-y-1.5">
-        <div className="flex items-baseline justify-between gap-2">
+      <div className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
+        <div className="flex items-baseline justify-between gap-2 border-b border-line/60 pb-1.5">
           <span className={SECTION_LABEL}>
             Lựa chọn — tích vào ô vuông ở những đáp án đúng
           </span>
-          <span className="text-[10px] text-ink-faint">
+          <span className="text-[10px] text-ink-faint font-semibold uppercase">
             {draft.answerUnsettled
               ? 'Chưa chốt đáp án'
               : draft.correctAnswers.length > 1 ? 'Câu nhiều đáp án' : 'Câu một đáp án'}
@@ -98,16 +98,16 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
           const isCorrect = draft.correctAnswers.includes(option.id);
           return (
             <div key={option.id} className="flex items-center gap-2">
-              <label className="flex items-center gap-1.5 shrink-0 w-14">
+              <label className="flex items-center gap-1.5 shrink-0 w-14 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={isCorrect}
                   disabled={draft.answerUnsettled}
                   onChange={() => toggleCorrect(option.id)}
                   aria-label={`Lựa chọn ${option.id} là đáp án đúng`}
-                  className="accent-accent"
+                  className="accent-accent w-4 h-4 rounded"
                 />
-                <span className={`font-mono text-[11px] ${isCorrect ? 'text-pos font-bold' : 'text-ink-faint'}`}>
+                <span className={`font-mono text-xs ${isCorrect ? 'text-pos font-bold' : 'text-ink-faint'}`}>
                   {option.id}
                 </span>
               </label>
@@ -117,14 +117,14 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
                 onChange={e => setOptionText(index, e.target.value)}
                 aria-label={`Nội dung lựa chọn ${option.id}`}
                 placeholder={index < MIN_DRAFT_OPTIONS ? 'Bắt buộc' : 'Để trống thì bỏ qua'}
-                className={`flex-1 min-w-0 rounded-md px-2.5 py-1.5 border ${UI.inputStyle}`}
+                className={`flex-1 min-w-0 rounded-xl px-3 py-2 border ${UI.inputStyle}`}
               />
               <button
                 type="button"
                 onClick={() => removeOption(index)}
                 disabled={draft.options.length <= MIN_DRAFT_OPTIONS}
                 aria-label={`Xoá lựa chọn ${option.id}`}
-                className={`${BTN_SECONDARY} px-1.5 py-1.5 shrink-0`}
+                className="p-2 rounded-xl text-ink-faint hover:text-neg hover:bg-neg-soft transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -132,17 +132,17 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
           );
         })}
 
-        <div className="flex flex-wrap items-center gap-3 pt-0.5">
+        <div className="flex flex-wrap items-center gap-3 pt-1">
           <button
             type="button"
             onClick={addOption}
             disabled={draft.options.length >= MAX_DRAFT_OPTIONS}
-            className={`${BTN_SECONDARY} px-2.5 py-1 text-[11px] flex items-center gap-1`}
+            className={`${BTN_SECONDARY} px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer`}
           >
-            <Plus className="w-3 h-3" /> Thêm lựa chọn
+            <Plus className="w-3.5 h-3.5" /> Thêm lựa chọn
           </button>
 
-          <label className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+          <label className="flex items-center gap-2 text-xs text-ink-muted cursor-pointer select-none font-semibold">
             <input
               type="checkbox"
               checked={draft.answerUnsettled}
@@ -151,22 +151,22 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
                 answerUnsettled: !draft.answerUnsettled,
                 correctAnswers: draft.answerUnsettled ? draft.correctAnswers : [],
               })}
-              className="accent-accent"
+              className="accent-accent w-4 h-4 rounded"
             />
             Chưa chốt đáp án
           </label>
         </div>
 
         {draft.answerUnsettled && (
-          <div className="text-[10px] text-ink-faint leading-relaxed">
-            Dùng cho câu mà đề ghi "câu nào cũng sai", hoặc câu còn phải đối chiếu văn bản gốc.
+          <div className="text-[11px] text-ink-faint leading-relaxed pt-1">
+            💡 Dùng cho câu mà đề ghi "câu nào cũng sai", hoặc câu còn phải đối chiếu văn bản gốc.
             Chế độ Luyện tập sẽ bỏ qua câu này vì không chấm được.
           </div>
         )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <label htmlFor="quiz-topic" className={SECTION_LABEL}>Chủ đề</label>
           <input
             id="quiz-topic"
@@ -174,10 +174,10 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
             value={draft.topic}
             onChange={e => setDraft({ ...draft, topic: e.target.value })}
             placeholder="Thẻ, TSBĐ, sản phẩm cho vay…"
-            className={`w-full rounded-md px-2.5 py-1.5 border ${UI.inputStyle}`}
+            className={`w-full rounded-xl px-3 py-2 border ${UI.inputStyle}`}
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <label htmlFor="quiz-sources" className={SECTION_LABEL}>Nguồn</label>
           <input
             id="quiz-sources"
@@ -188,7 +188,7 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
               sources: e.target.value.split(';').map(s => s.trim()).filter(Boolean),
             })}
             placeholder="PDF1 (Câu 12); QĐ 3032/2023/QĐ-TDCN"
-            className={`w-full rounded-md px-2.5 py-1.5 border ${UI.inputStyle}`}
+            className={`w-full rounded-xl px-3 py-2 border ${UI.inputStyle}`}
           />
         </div>
       </div>
@@ -199,12 +199,12 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
         </ul>
       )}
 
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex items-center gap-2 pt-2 border-t border-line/60">
         <button
           type="button"
           onClick={onSubmit}
           disabled={saving || errors.length > 0}
-          className={`${BTN_PRIMARY} px-3.5 py-2 flex items-center gap-1.5`}
+          className={`${BTN_PRIMARY} px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-md shadow-accent/20 cursor-pointer disabled:opacity-50`}
         >
           <Save className="w-4 h-4" />
           {saving ? 'Đang lưu…' : editingId ? `Lưu câu ${editingId}` : 'Lưu câu hỏi'}
@@ -212,7 +212,7 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
         <button
           type="button"
           onClick={onCancel}
-          className={`${BTN_SECONDARY} px-3 py-2 flex items-center gap-1.5`}
+          className={`${BTN_SECONDARY} px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-2xs cursor-pointer`}
         >
           <X className="w-4 h-4" /> Bỏ
         </button>

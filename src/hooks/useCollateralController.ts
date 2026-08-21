@@ -7,6 +7,7 @@ import {
   maxLoanFromCollateral, totalUsableCapacity, appraisalStatus,
 } from '../lib/collateralMath';
 import type { Collateral, Customer } from '../types';
+import { useConfirm } from '../context/ConfirmContext';
 
 export const COL_PAGE_SIZE = 10;
 
@@ -113,15 +114,17 @@ export function useCollateralController() {
     setInputAppraisalExpiryDate('');
   }, []);
 
+  const confirm = useConfirm();
+
   const handleDelete = useCallback(async (c: Collateral) => {
     const label = c.AssetCode || c.Address || `#${c.Id}`;
     const owner = customers.find(x => x.Id === c.CustomerId);
-    const confirmed = window.confirm(
-      `XOÁ VĨNH VIỄN tài sản bảo đảm?\n\n` +
-      `Mã TSĐB : ${label}\n` +
-      `Chủ sở hữu: ${owner?.FullName || `ID #${c.CustomerId}`}\n\n` +
-      `Hành động này KHÔNG THỂ hoàn tác.`
-    );
+    const confirmed = await confirm({
+      title: 'Xoá Tài sản bảo đảm',
+      message: `XOÁ VĨNH VIỄN tài sản bảo đảm?\n\nMã TSĐB : ${label}\nChủ sở hữu: ${owner?.FullName || `ID #${c.CustomerId}`}\n\nHành động này KHÔNG THỂ hoàn tác.`,
+      confirmText: 'Xoá TSBĐ',
+      tone: 'danger',
+    });
     if (!confirmed) return;
 
     setDeletingId(c.Id);
@@ -136,7 +139,7 @@ export function useCollateralController() {
     } finally {
       setDeletingId(null);
     }
-  }, [customers, selectedCollateral, handleResetForm, fetchData, showNotify]);
+  }, [confirm, customers, selectedCollateral, handleResetForm, fetchData, showNotify]);
 
   const handleSave = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,14 +158,12 @@ export function useCollateralController() {
       : parseFloat(inputLtvPercent);
 
     if (isRestrictedAsset(inputAssetType) && ltvNum > 0) {
-      const confirmed = window.confirm(
-        `TRÌNH NGOẠI LỆ — CẦN PHÊ DUYỆT\n\n` +
-        `Tài sản thuộc diện HẠN CHẾ NHẬN, tỷ lệ LTV theo chính sách là 0%.\n` +
-        `Bạn đang gán LTV ${ltvNum}%, tương ứng hạn mức cho vay tối đa ` +
-        `${maxLoanFromCollateral({ AppraisedValue: valNum, LtvPercent: ltvNum, AssetType: inputAssetType }).toLocaleString('vi-VN')} VNĐ.\n\n` +
-        `Chỉ tiếp tục khi đã có phê duyệt ngoại lệ của cấp có thẩm quyền.\n` +
-        `Trường hợp này sẽ được đánh dấu trên danh sách TSĐB.`
-      );
+      const confirmed = await confirm({
+        title: 'Trình ngoại lệ — Cần phê duyệt',
+        message: `Tài sản thuộc diện HẠN CHẾ NHẬN, tỷ lệ LTV theo chính sách là 0%.\nBạn đang gán LTV ${ltvNum}%, tương ứng hạn mức cho vay tối đa ${maxLoanFromCollateral({ AppraisedValue: valNum, LtvPercent: ltvNum, AssetType: inputAssetType }).toLocaleString('vi-VN')} VNĐ.\n\nChỉ tiếp tục khi đã có phê duyệt ngoại lệ của cấp có thẩm quyền.\nTrường hợp này sẽ được đánh dấu trên danh sách TSĐB.`,
+        confirmText: 'Tiếp tục ghi nhận',
+        tone: 'danger',
+      });
       if (!confirmed) return;
     }
 

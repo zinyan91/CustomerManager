@@ -14,6 +14,7 @@ import { summarizeCreditContracts, canCloseCreditContract } from '../lib/creditC
 import { addMonthsToDate, computeOutstandingBalance } from '../lib/loanMath';
 import { totalUsableCapacity } from '../lib/collateralMath';
 import { allowedPurposes } from '../lib/loanProductRules';
+import { useConfirm } from '../context/ConfirmContext';
 
 export const LOAN_METHODS = [
   'Hạn mức tín dụng',
@@ -219,13 +220,21 @@ export function useCreditContractController() {
     }
   }, [customer, form, selectedCollateralIds, editing, kunns, formAmount, useSharedApproval, formApprovalAmount, showNotify, loadCustomer]);
 
+  const confirm = useConfirm();
+
   const handleDelete = useCallback(async (cc: CreditContract) => {
     const n = await countKunnOfCreditContractAPI(cc.Id);
     if (n > 0) {
       showNotify('error', `HĐTD ${cc.HdtdNumber} còn ${n} KUNN. Xoá KUNN trước.`);
       return;
     }
-    if (!window.confirm(`Xoá HĐTD "${cc.HdtdNumber}"?\nHành động này không thể hoàn tác.`)) return;
+    const ok = await confirm({
+      title: 'Xoá Hợp đồng tín dụng',
+      message: `Xoá HĐTD "${cc.HdtdNumber}"?\nHành động này không thể hoàn tác.`,
+      confirmText: 'Xoá HĐTD',
+      tone: 'danger',
+    });
+    if (!ok) return;
     setLoading(true);
     try {
       await deleteCreditContractAPI(cc.Id);

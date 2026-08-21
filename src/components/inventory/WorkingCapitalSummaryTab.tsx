@@ -132,49 +132,55 @@ export const WorkingCapitalSummaryTab: React.FC<WorkingCapitalSummaryTabProps> =
       </div>
 
       {/* Summary Table */}
-      <div className={`${UI.containerCardBg} rounded-lg p-3 border space-y-2`}>
-        <div className="font-bold text-accent uppercase text-xs">Bảng Tổng hợp Liên kết Tài sản & Công nợ</div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-panel-muted text-[10px] uppercase text-ink-faint border-b border-line">
+      <div className={`${UI.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3 font-app animate-in fade-in duration-150`}>
+        <div className="font-bold text-accent uppercase tracking-wider text-xs flex items-center gap-2">
+          <span>Bảng Tổng hợp Liên kết Tài sản & Công nợ</span>
+        </div>
+        <div className="overflow-x-auto border border-line/70 rounded-xl">
+          <table className="w-full text-left text-xs border-collapse font-app">
+            <thead className="bg-surface/95 backdrop-blur-md text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint border-b border-line/80">
               <tr>
-                <th className="p-2">HẠNG MỤC TÀI SẢN KINH DOANH</th>
-                <th className="p-2 text-center w-24">SỐ LƯỢNG</th>
-                <th className="p-2 text-right w-40">GIÁ TRỊ ĐẦU KỲ (VND)</th>
-                <th className="p-2 text-right w-40">PHÁT SINH KỲ (VND)</th>
-                <th className="p-2 text-right w-48 bg-pos-soft text-pos font-bold">GIÁ TRỊ CUỐI KỲ (VND)</th>
+                <th className="px-3.5 py-3">HẠNG MỤC TÀI SẢN KINH DOANH</th>
+                <th className="px-3.5 py-3 text-center w-24">SỐ LƯỢNG</th>
+                <th className="px-3.5 py-3 text-right w-44">GIÁ TRỊ ĐẦU KỲ (VND)</th>
+                <th className="px-3.5 py-3 text-right w-48">PHÁT SINH KỲ (VND)</th>
+                <th className="px-3.5 py-3 text-right w-48 bg-pos-soft/30 text-pos font-bold">GIÁ TRỊ CUỐI KỲ (VND)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
-              <tr>
-                <td className="p-2 font-bold flex items-center space-x-2">
-                  <Boxes className="w-4 h-4 text-accent" />
+            <tbody className="divide-y divide-line/40 font-mono">
+              <tr className="hover:bg-accent/[0.04] transition-colors">
+                <td className="px-3.5 py-3 font-bold flex items-center space-x-2 font-app text-ink">
+                  <div className="p-1 rounded bg-accent-soft text-accent">
+                    <Boxes className="w-3.5 h-3.5" />
+                  </div>
                   <span>1. Hàng tồn kho</span>
                 </td>
-                <td className="p-2 text-center font-mono">{invSummary.totalItems} SP</td>
-                <td className="p-2 text-right font-mono">{fmtMoney(invSummary.totalBeginningValue)}</td>
-                <td className="p-2 text-right font-mono text-ink-faint">
+                <td className="px-3.5 py-3 text-center font-mono font-semibold text-ink-muted">{invSummary.totalItems} SP</td>
+                <td className="px-3.5 py-3 text-right font-mono text-ink">{fmtMoney(invSummary.totalBeginningValue)}</td>
+                <td className="px-3.5 py-3 text-right font-mono text-ink-faint text-[11px]">
                   + {fmtMoney(invSummary.totalImportValue)} / − {fmtMoney(invSummary.totalExportValue)}
                 </td>
-                <td className="p-2 text-right font-mono font-bold text-pos bg-pos-soft/30">{fmtMoney(invSummary.totalEndingValue)}</td>
+                <td className="px-3.5 py-3 text-right font-mono font-bold text-pos bg-pos-soft/20">{fmtMoney(invSummary.totalEndingValue)}</td>
               </tr>
-              <tr>
-                <td className="p-2 font-bold flex items-center space-x-2">
-                  <Users className="w-4 h-4 text-accent" />
+              <tr className="hover:bg-accent/[0.04] transition-colors">
+                <td className="px-3.5 py-3 font-bold flex items-center space-x-2 font-app text-ink">
+                  <div className="p-1 rounded bg-accent-soft text-accent">
+                    <Users className="w-3.5 h-3.5" />
+                  </div>
                   <span>2. Công nợ Phải thu Khách hàng</span>
                 </td>
-                <td className="p-2 text-center font-mono">{recSummary.totalItems} KH</td>
-                <td className="p-2 text-right font-mono">{fmtMoney(recSummary.totalBeginningDebit)}</td>
-                <td className="p-2 text-right font-mono text-ink-faint">
+                <td className="px-3.5 py-3 text-center font-mono font-semibold text-ink-muted">{recSummary.totalItems} KH</td>
+                <td className="px-3.5 py-3 text-right font-mono text-ink">{fmtMoney(recSummary.totalBeginningDebit)}</td>
+                <td className="px-3.5 py-3 text-right font-mono text-ink-faint text-[11px]">
                   + {fmtMoney(recSummary.totalOccurredDebit)} / − {fmtMoney(recSummary.totalOccurredCredit)}
                 </td>
-                <td className="p-2 text-right font-mono font-bold text-pos bg-pos-soft/30">{fmtMoney(recSummary.totalEndingDebit)}</td>
+                <td className="px-3.5 py-3 text-right font-mono font-bold text-pos bg-pos-soft/20">{fmtMoney(recSummary.totalEndingDebit)}</td>
               </tr>
             </tbody>
-            <tfoot className="bg-accent-soft font-bold border-t-2 border-accent/30">
+            <tfoot className="bg-surface/95 backdrop-blur-md font-bold border-t-2 border-line/80">
               <tr>
-                <td className="p-2 text-accent" colSpan={4}>TỔNG TÀI SẢN KINH DOANH NGẮN HẠN (1 + 2)</td>
-                <td className="p-2 text-right font-mono text-pos text-sm bg-pos-soft/60 font-black">{fmtMoney(totalAssets)}</td>
+                <td className="px-3.5 py-3 uppercase tracking-wider text-[10px] text-accent font-bold" colSpan={4}>TỔNG TÀI SẢN KINH DOANH NGẮN HẠN (1 + 2)</td>
+                <td className="px-3.5 py-3 text-right font-mono text-pos text-sm bg-pos-soft/30 font-extrabold">{fmtMoney(totalAssets)}</td>
               </tr>
             </tfoot>
           </table>

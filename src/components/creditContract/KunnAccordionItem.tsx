@@ -181,49 +181,49 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
         </div>
 
         {/* Financial Metrics & Visual Utilization Progress Bar */}
-        <div className="space-y-2 pt-2 border-t border-line">
+        <div className="space-y-2.5 pt-3 border-t border-line/60">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div>
-              <div className="text-[10px] text-ink-faint font-semibold uppercase">Hạn mức cấp</div>
-              <div className="font-mono font-bold text-ink">{fmtMoney(cc.ContractAmount || 0)}</div>
+            <div className="p-2.5 rounded-xl bg-surface/60 border border-line/60">
+              <div className="text-[10px] text-ink-faint font-bold uppercase tracking-wider">Hạn mức cấp</div>
+              <div className="font-mono font-bold text-accent text-sm">{fmtMoney(cc.ContractAmount || 0)}</div>
             </div>
-            <div>
-              <div className="text-[10px] text-ink-faint font-semibold uppercase">Dư nợ hiện tại</div>
-              <div className="font-mono font-bold text-warn">{fmtMoney(outstanding)}</div>
+            <div className="p-2.5 rounded-xl bg-surface/60 border border-line/60">
+              <div className="text-[10px] text-ink-faint font-bold uppercase tracking-wider">Dư nợ hiện tại</div>
+              <div className="font-mono font-bold text-warn text-sm">{fmtMoney(outstanding)}</div>
             </div>
-            <div>
-              <div className="text-[10px] text-ink-faint font-semibold uppercase">Khả dụng giải ngân</div>
-              <div className={`font-mono font-bold ${available > 0 ? 'text-pos' : 'text-ink-faint'}`}>
+            <div className="p-2.5 rounded-xl bg-surface/60 border border-line/60">
+              <div className="text-[10px] text-ink-faint font-bold uppercase tracking-wider">Khả dụng giải ngân</div>
+              <div className={`font-mono font-bold text-sm ${available > 0 ? 'text-pos' : 'text-ink-faint'}`}>
                 {fmtMoney(available)}
               </div>
             </div>
-            <div>
-              <div className="text-[10px] text-ink-faint font-semibold uppercase">Quy mô KUNN</div>
-              <div className="font-semibold text-ink">{activeKunnCount} mở / {kunnCount} tổng KUNN</div>
+            <div className="p-2.5 rounded-xl bg-surface/60 border border-line/60">
+              <div className="text-[10px] text-ink-faint font-bold uppercase tracking-wider">Quy mô KUNN</div>
+              <div className="font-bold text-ink text-sm">{activeKunnCount} mở / {kunnCount} tổng</div>
             </div>
           </div>
 
           {/* Visual Headroom Progress Bar */}
-          <div className="space-y-1">
-            <div className="w-full bg-panel-muted rounded-full h-2 overflow-hidden flex border border-line">
+          <div className="space-y-1.5 p-2.5 rounded-xl bg-surface/40 border border-line/60">
+            <div className="w-full bg-panel-muted rounded-full h-2 overflow-hidden flex border border-line/60">
               <div
                 className={`h-full transition-all duration-300 ${
                   utilPercent >= 100 || available <= 0
-                    ? 'bg-neg'
+                    ? 'bg-neg shadow-xs shadow-neg/50'
                     : utilPercent > 80
-                    ? 'bg-warn'
-                    : 'bg-pos'
+                    ? 'bg-warn shadow-xs shadow-warn/50'
+                    : 'bg-pos shadow-xs shadow-pos/50'
                 }`}
                 style={{ width: `${utilPercent}%` }}
               />
             </div>
-            <div className="flex items-center justify-between text-[10px] text-ink-faint">
+            <div className="flex items-center justify-between text-[10px] text-ink-faint font-medium">
               <span>
                 {isRevolving
                   ? `Hạn mức quay vòng: Đã sử dụng ${utilPercent.toFixed(1)}%`
                   : `Cho vay từng lần: Đã giải ngân ${fmtMoney(totalDisbursed)} / ${fmtMoney(granted)}`}
               </span>
-              <span>
+              <span className={available > 0 ? 'text-pos font-bold' : 'text-neg font-bold'}>
                 {available > 0 ? `Còn trống ${fmtMoney(available)}` : 'Hết hạn mức giải ngân (0 VNĐ)'}
               </span>
             </div>
@@ -232,17 +232,17 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
 
         {/* Collateral Tag Badges */}
         {assignedCols.length > 0 && (
-          <div className="pt-2 border-t border-line/60 flex flex-wrap items-center gap-2 text-[11px] text-ink-muted">
-            <span className="flex items-center gap-1 font-semibold text-ink-faint shrink-0">
+          <div className="pt-2.5 border-t border-line/60 flex flex-wrap items-center gap-2 text-[11px] text-ink-muted">
+            <span className="flex items-center gap-1 font-bold text-ink-faint text-xs shrink-0">
               <Building2 className="w-3.5 h-3.5 text-accent" />
               TSBĐ thế chấp ({assignedCols.length}):
             </span>
             {assignedCols.map(c => (
               <span
                 key={c.Id}
-                className="px-2 py-0.5 rounded-md bg-panel-muted border border-line text-ink font-mono text-[10px] flex items-center gap-1.5"
+                className="px-2.5 py-1 rounded-lg bg-surface border border-line/70 text-ink font-mono text-[10px] flex items-center gap-1.5 shadow-2xs"
               >
-                <strong>{c.AssetCode || c.AssetType || 'TSBĐ'}</strong>
+                <strong className="text-accent">{c.AssetCode || c.AssetType || 'TSBĐ'}</strong>
                 <span className="text-ink-faint">({fmtMoney(collateralValue(c))})</span>
               </span>
             ))}
@@ -255,16 +255,16 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
         <button
           type="button"
           onClick={onToggleExpand}
-          className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1.5 cursor-pointer"
+          className="text-xs font-bold text-accent hover:underline flex items-center gap-1.5 cursor-pointer"
         >
           {isExpanded ? (
-            <><span>Thu gọn danh sách KUNN</span><ChevronUp className="w-3.5 h-3.5" /></>
+            <><span>Thu gọn danh sách KUNN</span><ChevronUp className="w-4 h-4" /></>
           ) : (
-            <><span>Xem chi tiết {contractKunns.length} Khế ước nhận nợ (KUNN)</span><ChevronDown className="w-3.5 h-3.5" /></>
+            <><span>Xem chi tiết {contractKunns.length} Khế ước nhận nợ (KUNN)</span><ChevronDown className="w-4 h-4" /></>
           )}
         </button>
 
-        <span className="text-[10px] font-mono text-ink-faint font-semibold">
+        <span className="text-xs font-mono text-ink-faint font-semibold">
           {contractKunns.filter(k => !k.IsSettled).length} KUNN đang lưu nợ
         </span>
       </div>
@@ -273,20 +273,20 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
       {isExpanded && (
         <div className="p-3 sm:p-4 bg-surface/30 border-t border-line/60 animate-in fade-in-50 duration-150">
           {contractKunns.length === 0 ? (
-            <div className="text-center py-4 text-ink-faint text-xs">
+            <div className="text-center py-6 text-ink-faint text-xs italic">
               Chưa có KUNN nào được giải ngân dưới HĐTD này.
             </div>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-line/70 bg-panel/60 backdrop-blur-md">
-              <table className="w-full text-xs border-collapse">
-                <thead className="bg-surface/90 backdrop-blur-md border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.11em] text-ink-faint">
+              <table className="w-full text-xs border-collapse min-w-[750px] font-app">
+                <thead className="sticky top-0 bg-surface/95 backdrop-blur-md border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint">
                   <tr>
-                    <th className="px-4 py-2.5 text-left font-bold whitespace-nowrap">Số KUNN</th>
-                    <th className="px-4 py-2.5 text-right font-bold whitespace-nowrap">Số tiền vay</th>
-                    <th className="px-4 py-2.5 text-right font-bold whitespace-nowrap">Dư nợ hiện tại</th>
-                    <th className="px-4 py-2.5 text-center font-bold whitespace-nowrap">Lãi suất</th>
-                    <th className="px-4 py-2.5 text-left font-bold whitespace-nowrap">Ngày vay → Đáo hạn</th>
-                    <th className="px-4 py-2.5 text-center font-bold whitespace-nowrap">Trạng thái</th>
+                    <th className="px-4 py-3 text-left font-bold whitespace-nowrap">SỐ KUNN</th>
+                    <th className="px-4 py-3 text-right font-bold whitespace-nowrap">SỐ TIỀN VAY</th>
+                    <th className="px-4 py-3 text-right font-bold whitespace-nowrap">DƯ NỢ HIỆN TẠI</th>
+                    <th className="px-4 py-3 text-center font-bold whitespace-nowrap">LÃI SUẤT</th>
+                    <th className="px-4 py-3 text-left font-bold whitespace-nowrap">NGÀY VAY → ĐÁO HẠN</th>
+                    <th className="px-4 py-3 text-center font-bold whitespace-nowrap">TRẠNG THÁI</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line/40">
@@ -294,23 +294,23 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
                     const kunnBalance = outstandingOf(k);
                     return (
                       <tr key={k.Id} className="hover:bg-accent/[0.04] transition-colors border-b border-line/30">
-                        <td className="px-4 py-2.5 font-mono font-bold text-accent whitespace-nowrap">
+                        <td className="px-4 py-3 font-mono font-bold text-accent whitespace-nowrap">
                           {k.ContractNumber}
                         </td>
-                        <td className="px-4 py-2.5 font-mono font-semibold text-right text-ink whitespace-nowrap">
+                        <td className="px-4 py-3 font-mono font-semibold text-right text-ink whitespace-nowrap">
                           {fmtMoney(kunnPrincipal(k))}
                         </td>
-                        <td className="px-4 py-2.5 font-mono font-bold text-right text-warn whitespace-nowrap">
+                        <td className="px-4 py-3 font-mono font-bold text-right text-warn whitespace-nowrap">
                           {fmtMoney(kunnBalance)}
                         </td>
-                        <td className="px-4 py-2.5 font-mono text-center text-accent font-semibold whitespace-nowrap">
+                        <td className="px-4 py-3 font-mono text-center text-accent font-semibold whitespace-nowrap">
                           {fmtRate(getEffectiveActiveRate(k))}
                         </td>
-                        <td className="px-4 py-2.5 font-mono text-ink-muted text-[11px] whitespace-nowrap">
+                        <td className="px-4 py-3 font-mono text-ink-muted text-xs whitespace-nowrap">
                           {k.DisbursementDate ? fmtDate(k.DisbursementDate) : (k.ContractStartDate ? fmtDate(k.ContractStartDate) : '—')} → {k.KunnDueDate ? fmtDate(k.KunnDueDate) : (k.ContractEndDate ? fmtDate(k.ContractEndDate) : '—')}
                         </td>
-                        <td className="px-4 py-2.5 text-center whitespace-nowrap">
-                          <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                        <td className="px-4 py-3 text-center whitespace-nowrap">
+                          <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold ${
                             k.IsSettled
                               ? 'bg-panel-muted text-ink-faint border border-line'
                               : 'bg-pos-soft text-pos border border-pos/30'

@@ -109,18 +109,26 @@ export const KunnForm: React.FC<KunnFormProps> = ({
   graceOptions, selectedCollaterals, maxAllowedLoanLtv,
 }) => {
   return (
-    <div className={`${containerCardBg} rounded-lg p-5 space-y-5 border`}>
-      <div className={`flex items-center justify-between pb-3 border-b ${'border-line'}`}>
-        <h3 className="font-bold flex items-center space-x-2 text-sm">
-          <FileText className="w-4 h-4 text-accent" />
-          <span>{selectedContract ? `THÔNG TIN GIẤY NHẬN NỢ: ${selectedContract.ContractNumber}` : 'GIẢI NGÂN KUNN MỚI'}</span>
+    <div className={`${containerCardBg} rounded-2xl p-4 sm:p-5 space-y-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150 font-app`}>
+      <div className="flex items-center justify-between pb-3 border-b border-line/60">
+        <h3 className="font-bold flex items-center space-x-2.5 text-sm text-accent">
+          <div className="p-1.5 rounded-lg bg-accent-soft text-accent">
+            <FileText className="w-4 h-4" />
+          </div>
+          <span className="tracking-tight uppercase">
+            {selectedContract ? `THÔNG TIN GIẤY NHẬN NỢ: ${selectedContract.ContractNumber}` : 'GIẢI NGÂN KUNN MỚI'}
+          </span>
         </h3>
-        <button onClick={() => setShowForm(false)} className="text-ink-faint hover:text-ink-muted transition-colors">
+        <button
+          type="button"
+          onClick={() => setShowForm(false)}
+          className="p-1 rounded-lg border border-line/60 text-ink-faint hover:text-ink hover:bg-surface cursor-pointer transition-colors"
+        >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      <form onSubmit={handleSaveContract} className="space-y-6">
+      <form onSubmit={handleSaveContract} className="space-y-5">
         <KunnHdtdSection
           sectionBoxBg={sectionBoxBg}
           inputStyle={inputStyle}
@@ -208,53 +216,60 @@ export const KunnForm: React.FC<KunnFormProps> = ({
           maxAllowedLoanLtv={maxAllowedLoanLtv}
         />
 
-      <div className="flex items-center space-x-6">
-        <label className="flex items-center space-x-2 cursor-pointer">
-          <input type="checkbox" checked={form.IsSettled ?? false}
-            onChange={e => setForm(f => ({ ...f, IsSettled: e.target.checked }))}
-            className="w-4 h-4 rounded text-accent" />
-          <span className={`font-medium ${'text-ink'}`}>Hợp đồng đã tất toán</span>
-        </label>
-        <label className="flex items-center space-x-2 cursor-pointer">
-          <input type="checkbox" checked={form.IsRestructured ?? false}
-            onChange={e => setForm(f => ({ ...f, IsRestructured: e.target.checked }))}
-            className="w-4 h-4 rounded text-accent" />
-          <span className={`font-medium ${'text-ink'}`}>Hợp đồng đã tái cơ cấu nợ</span>
-        </label>
-      </div>
-      <div className="flex flex-col md:flex-row items-center gap-3 pt-2">
-        <button
-          type="button"
-          onClick={(e) => handleSaveContract(e, true)}
-          disabled={loading}
-          className="flex-1 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-3 px-4 rounded-md transition-colors  text-xs flex items-center justify-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>{loading ? 'Đang lưu...' : 'THÊM MỚI'}</span>
-        </button>
-        {selectedContract && (
-          <>
-            <button
-              type="button"
-              onClick={(e) => handleSaveContract(e, false)}
-              disabled={loading}
-              className="flex-1 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-3 px-4 rounded-md transition-colors  text-xs flex items-center justify-center space-x-2"
-            >
-              <Save className="w-4 h-4" />
-              <span>{loading ? 'Đang lưu...' : 'CẬP NHẬT KUNN NÀY'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={(e) => handleDeleteContract(e, selectedContract.Id, selectedContract.ContractNumber)}
-              disabled={loading}
-              className="bg-neg hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-3 px-4 rounded-md transition-colors  text-xs flex items-center justify-center space-x-2"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>XOÁ KUNN</span>
-            </button>
-          </>
-        )}
-      </div>
+        <div className="flex items-center space-x-6 pt-1">
+          <label className="flex items-center space-x-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={form.IsSettled ?? false}
+              onChange={e => setForm(f => ({ ...f, IsSettled: e.target.checked }))}
+              className="w-4 h-4 rounded text-accent"
+            />
+            <span className="font-semibold text-xs text-ink">Hợp đồng đã tất toán</span>
+          </label>
+          <label className="flex items-center space-x-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={form.IsRestructured ?? false}
+              onChange={e => setForm(f => ({ ...f, IsRestructured: e.target.checked }))}
+              className="w-4 h-4 rounded text-accent"
+            />
+            <span className="font-semibold text-xs text-ink">Hợp đồng đã tái cơ cấu nợ</span>
+          </label>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-3 border-t border-line/60">
+          <button
+            type="button"
+            onClick={(e) => handleSaveContract(e, true)}
+            disabled={loading}
+            className="w-full sm:flex-1 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-2.5 px-4 rounded-xl transition-all text-xs flex items-center justify-center space-x-2 shadow-md shadow-accent/20 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{loading ? 'Đang lưu...' : 'THÊM MỚI KUNN'}</span>
+          </button>
+          {selectedContract && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => handleSaveContract(e, false)}
+                disabled={loading}
+                className="w-full sm:flex-1 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-2.5 px-4 rounded-xl transition-all text-xs flex items-center justify-center space-x-2 shadow-md shadow-accent/20 cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>{loading ? 'Đang lưu...' : 'CẬP NHẬT KUNN NÀY'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={(e) => handleDeleteContract(e, selectedContract.Id, selectedContract.ContractNumber)}
+                disabled={loading}
+                className="w-full sm:w-auto bg-neg hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold py-2.5 px-4 rounded-xl transition-all text-xs flex items-center justify-center space-x-2 shadow-2xs cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>XOÁ KUNN</span>
+              </button>
+            </>
+          )}
+        </div>
       </form>
     </div>
   );

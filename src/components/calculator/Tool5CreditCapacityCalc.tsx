@@ -60,60 +60,73 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
   const cardBg = UI.containerCardBg;
 
   return (
-    <div className="space-y-5">
-
-      <div className={`${cardBg} rounded-lg p-4 border`}>
-        <h2 className="text-sm font-bold tracking-tight text-accent flex items-center space-x-2">
-          <ShieldCheck className="w-5 h-5 text-accent" />
-          <span>TÍNH HẠN MỨC VAY TỐI ĐA THEO THU NHẬP (DTI/DSR) & TÀI SẢN BẢO ĐẢM (LTV)</span>
-        </h2>
+    <div className="space-y-4 font-app">
+      {/* Title Header Card */}
+      <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150`}>
+        <div className="text-xs font-bold tracking-tight text-accent flex items-center space-x-2">
+          <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
+            <ShieldCheck className="w-4 h-4" />
+          </div>
+          <span className="uppercase tracking-wider text-xs">
+            TÍNH HẠN MỨC VAY TỐI ĐA THEO THU NHẬP (DTI/DSR) & TÀI SẢN BẢO ĐẢM (LTV)
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className={`${cardBg} rounded-lg p-4 border space-y-3.5`}>
-          <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-1.5 border-b border-line pb-2">
-            <DollarSign className="w-4 h-4" />
-            <span>1. NĂNG LỰC TÀI CHÍNH & THU NHẬP (DTI)</span>
+        {/* Cột 1: DTI & Thu nhập */}
+        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
+          <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-2 border-b border-line/60 pb-3">
+            <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
+              <DollarSign className="w-3.5 h-3.5" />
+            </div>
+            <span className="uppercase tracking-wider text-[11px]">1. NĂNG LỰC TÀI CHÍNH & THU NHẬP (DTI)</span>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             <div>
-              <label className="block text-[11px] font-bold text-ink-faint mb-1">Thu nhập thực tế hàng tháng (VND) *</label>
+              <label className="block text-[11px] font-semibold text-ink-muted mb-1">
+                Thu nhập thực tế hàng tháng (VND) *
+              </label>
               <input
                 type="text"
                 value={monthlyIncomeStr}
                 onChange={e => setMonthlyIncomeStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-pos bg-transparent border-line"
+                className="w-full p-2.5 rounded-xl border border-line/70 text-xs font-mono font-bold text-pos bg-surface/80 focus:border-accent"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-ink-faint mb-1">Chi phí sinh hoạt gia đình hàng tháng (VND)</label>
+              <label className="block text-[11px] font-semibold text-ink-muted mb-1">
+                Chi phí sinh hoạt gia đình hàng tháng (VND)
+              </label>
               <input
                 type="text"
                 value={livingExpenseStr}
                 onChange={e => setLivingExpenseStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-md border text-xs font-mono bg-transparent border-line"
+                className="w-full p-2.5 rounded-xl border border-line/70 text-xs font-mono bg-surface/80 focus:border-accent"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-ink-faint mb-1">Nghĩa vụ trả nợ khác hàng tháng (nếu có)</label>
+              <label className="block text-[11px] font-semibold text-ink-muted mb-1">
+                Nghĩa vụ trả nợ khác hàng tháng (nếu có)
+              </label>
               <input
                 type="text"
                 value={existingDebtStr}
                 onChange={e => setExistingDebtStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-md border text-xs font-mono text-neg bg-transparent border-line"
+                className="w-full p-2.5 rounded-xl border border-line/70 text-xs font-mono text-neg bg-surface/80 focus:border-accent"
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <div>
-                <label className="block text-[11px] font-bold text-ink-faint mb-1">Tỷ lệ DTI tối đa (%)</label>
+                <label className="block text-[11px] font-semibold text-ink-muted mb-1">Tỷ lệ DTI tối đa (%)</label>
                 <select
                   value={maxDtiPercent}
                   onChange={e => setMaxDtiPercent(parseInt(e.target.value, 10))}
-                  className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
+                  className="w-full p-2.5 rounded-xl border border-line/70 text-xs font-mono font-bold bg-surface/80 focus:border-accent"
                 >
                   <option value={50}>50% (An toàn)</option>
                   <option value={60}>60% (Chuẩn)</option>
@@ -122,64 +135,71 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-ink-faint mb-1">Thời hạn dự kiến</label>
+                <label className="block text-[11px] font-semibold text-ink-muted mb-1">Thời hạn dự kiến</label>
                 <input
                   type="number"
                   min={1}
                   value={loanTenorMonths}
                   onChange={e => setLoanTenorMonths(parseInt(e.target.value, 10) || 12)}
-                  className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
+                  className="w-full p-2.5 rounded-xl border border-line/70 text-xs font-mono font-bold bg-surface/80 focus:border-accent"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-ink-faint mb-1">Lãi suất (%/năm)</label>
+                <label className="block text-[11px] font-semibold text-ink-muted mb-1">Lãi suất (%/năm)</label>
                 <input
                   type="number"
                   step="0.1"
                   value={interestRateAnnualStr}
                   onChange={e => setInterestRateAnnualStr(e.target.value)}
-                  className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-warn bg-transparent border-line"
+                  className="w-full p-2.5 rounded-xl border border-line/70 text-xs font-mono font-bold text-warn bg-surface/80 focus:border-accent"
                 />
               </div>
             </div>
           </div>
 
-          <div className="p-3 rounded-md bg-accent-soft  border border-accent/30  space-y-1">
-            <div className="flex justify-between text-xs">
-              <span className="text-ink-muted">Khả năng trả nợ nợ gốc+lãi hàng tháng:</span>
-              <strong className="font-mono text-accent">{fmtMoney(dtiMaxMonthlyPayment)} / tháng</strong>
+          <div className="p-4 rounded-2xl bg-accent-soft/25 border border-accent/30 space-y-2 shadow-2xs">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-ink-muted text-[11px]">Khả năng trả nợ gốc+lãi hàng tháng:</span>
+              <strong className="font-mono text-accent font-bold">{fmtMoney(dtiMaxMonthlyPayment)} / tháng</strong>
             </div>
-            <div className="flex justify-between text-xs pt-1 border-t border-accent/30 ">
-              <span className="font-bold text-accent ">HẠN MỨC VAY TỐI ĐA THEO DTI:</span>
+            <div className="flex justify-between items-center text-xs pt-2 border-t border-accent/25">
+              <span className="font-bold text-accent text-[11px] uppercase tracking-wider">HẠN MỨC VAY TỐI ĐA THEO DTI:</span>
               <strong className="font-mono font-extrabold text-accent text-sm">{fmtMoney(maxLoanAmountByDti)}</strong>
             </div>
           </div>
         </div>
 
-        <div className={`${cardBg} rounded-lg p-4 border space-y-3.5`}>
-          <div className="font-bold text-xs text-warn tracking-tight flex items-center space-x-1.5 border-b border-line pb-2">
-            <Building2 className="w-4 h-4" />
-            <span>2. TÀI SẢN BẢO ĐẢM & TỶ LỆ LTV</span>
+        {/* Cột 2: TSBĐ & LTV */}
+        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
+          <div className="font-bold text-xs text-warn tracking-tight flex items-center space-x-2 border-b border-line/60 pb-3">
+            <div className="p-1.5 rounded-lg bg-warn-soft text-warn shrink-0 shadow-2xs">
+              <Building2 className="w-3.5 h-3.5" />
+            </div>
+            <span className="uppercase tracking-wider text-[11px]">2. TÀI SẢN BẢO ĐẢM & TỶ LỆ LTV</span>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             <div>
-              <label className="block text-[11px] font-bold text-ink-faint mb-1">Giá trị định giá TSBĐ (VND) *</label>
+              <label className="block text-[11px] font-semibold text-ink-muted mb-1">
+                Giá trị định giá TSBĐ (VND) *
+              </label>
               <input
                 type="text"
                 value={assetValueStr}
                 onChange={e => setAssetValueStr(formatMoneyInput(e.target.value))}
-                className="w-full p-2.5 rounded-md border text-xs font-mono font-bold text-warn bg-transparent border-line"
+                className="w-full p-2.5 rounded-xl border border-line/70 text-xs font-mono font-bold text-warn bg-surface/80 focus:border-accent"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-ink-faint mb-1">Phân loại TSBĐ theo quy định</label>
+              <label className="block text-[11px] font-semibold text-ink-muted mb-1">
+                Phân loại TSBĐ theo quy định
+              </label>
               <select
                 value={selectedAssetKey}
                 onChange={e => setSelectedAssetKey(e.target.value)}
-                className="w-full p-2.5 rounded-md border text-xs font-medium bg-transparent border-line"
+                className="w-full p-2.5 rounded-xl border border-line/70 text-xs font-medium bg-surface/80 focus:border-accent"
               >
                 {Object.entries(ASSET_LTV_MAP).map(([k, v]) => (
                   <option key={k} value={k}>
@@ -192,49 +212,54 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
 
             {selectedAssetKey === 'custom' && (
               <div>
-                <label className="block text-[11px] font-bold text-ink-faint mb-1">Nhập Tỷ lệ LTV tùy chỉnh (%)</label>
+                <label className="block text-[11px] font-semibold text-ink-muted mb-1">
+                  Nhập Tỷ lệ LTV tùy chỉnh (%)
+                </label>
                 <input
                   type="number"
                   min={10}
                   max={100}
                   value={customLtvStr}
                   onChange={e => setCustomLtvStr(e.target.value)}
-                  className="w-full p-2.5 rounded-md border text-xs font-mono font-bold bg-transparent border-line"
+                  className="w-full p-2.5 rounded-xl border border-line/70 text-xs font-mono font-bold bg-surface/80 focus:border-accent"
                 />
               </div>
             )}
           </div>
 
-          <div className="p-3 rounded-md bg-warn-soft  border border-warn/30  space-y-1">
-            <div className="flex justify-between text-xs">
-              <span className="text-ink-muted">Tỷ lệ LTV áp dụng:</span>
-              <strong className="font-mono text-warn">{(activeLtv * 100).toFixed(0)}% Giá trị TS</strong>
+          <div className="p-4 rounded-2xl bg-warn-soft/25 border border-warn/30 space-y-2 shadow-2xs">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-ink-muted text-[11px]">Tỷ lệ LTV áp dụng:</span>
+              <strong className="font-mono text-warn font-bold">{(activeLtv * 100).toFixed(0)}% Giá trị TS</strong>
             </div>
-            <div className="flex justify-between text-xs pt-1 border-t border-warn/30 ">
-              <span className="font-bold text-warn">HẠN MỨC VAY TỐI ĐA THEO TSBĐ:</span>
+            <div className="flex justify-between items-center text-xs pt-2 border-t border-warn/25">
+              <span className="font-bold text-warn text-[11px] uppercase tracking-wider">HẠN MỨC VAY TỐI ĐA THEO TSBĐ:</span>
               <strong className="font-mono font-extrabold text-warn text-sm">{fmtMoney(maxLoanAmountByLtv)}</strong>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-4 rounded-lg bg-pos-soft  border border-pos/30  space-y-2">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-          <div className="flex items-center space-x-2">
-            <CheckCircle2 className="w-5 h-5 text-pos flex-shrink-0" />
+      {/* Final Recommendation Banner */}
+      <div className="p-5 rounded-2xl bg-pos-soft/30 border border-pos/35 specular-card shadow-xs space-y-2">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-xl bg-pos-soft text-pos shrink-0 shadow-2xs">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
             <div>
-              <div className="text-xs font-bold text-pos tracking-tight">
+              <div className="text-xs font-bold text-pos tracking-tight uppercase">
                 ĐỀ XUẤT HẠN MỨC CẤP TÍN DỤNG TỐI ĐA AN TOÀN (MIN DTI & LTV):
               </div>
-              <div className="text-2xl font-extrabold text-pos font-mono mt-0.5">
+              <div className="text-2xl sm:text-3xl font-black text-pos font-mono mt-0.5 tracking-tight">
                 {fmtMoney(finalRecommendedLimit)}
               </div>
             </div>
           </div>
 
-          <div className="text-right text-xs text-pos space-y-0.5">
-            <div>• Theo DTI (Thu nhập): <strong className="font-mono">{fmtMoney(maxLoanAmountByDti)}</strong></div>
-            <div>• Theo LTV (TSBĐ): <strong className="font-mono">{fmtMoney(maxLoanAmountByLtv)}</strong></div>
+          <div className="text-right text-xs text-ink-muted space-y-1">
+            <div>• Theo DTI (Thu nhập): <strong className="font-mono text-ink">{fmtMoney(maxLoanAmountByDti)}</strong></div>
+            <div>• Theo LTV (TSBĐ): <strong className="font-mono text-ink">{fmtMoney(maxLoanAmountByLtv)}</strong></div>
           </div>
         </div>
       </div>

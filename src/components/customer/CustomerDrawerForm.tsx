@@ -1,5 +1,5 @@
 import React, { memo, useState } from 'react';
-import { UserCheck, X, User, Users, Trash2, Sparkles, Plus, Check, Phone, ChevronDown, ChevronUp } from 'lucide-react';
+import { UserCheck, User, Users, Trash2, Sparkles, Plus, Check, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Customer } from '../../types';
 import { UI, BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '../../lib/uiClasses';
 import { formatNationalId } from '../../lib/utils';
@@ -32,6 +32,8 @@ interface CustomerDrawerFormProps {
   onParseSnippet?: (raw: string) => void;
 }
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/Dialog';
+
 export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
   isOpen,
   onClose,
@@ -44,8 +46,6 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
   const [smartPasteOpen, setSmartPasteOpen] = useState(false);
   const [smartPasteText, setSmartPasteText] = useState('');
   const [showKhlqManualToggle, setShowKhlqManualToggle] = useState(false);
-
-  if (!isOpen) return null;
 
   const inputStyle = UI.inputStyle;
 
@@ -62,62 +62,41 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
   const shouldShowKhlqSection = isMarried || hasKhlqRelation || showKhlqManualToggle;
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-150"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-3xl bg-panel border border-line-strong rounded-2xl shadow-2xl flex flex-col max-h-[92vh] text-xs animate-in zoom-in-95 duration-150 overflow-hidden"
-        onClick={e => e.stopPropagation()}
-        onKeyDown={e => {
-          if (e.key === 'Escape') onClose();
-          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-            e.preventDefault();
-            onSave(e);
-          }
-        }}
-      >
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent size="2xl" className="p-0 overflow-hidden max-h-[92vh]">
         {/* Modal Header */}
-        <div className="p-4 sm:px-6 border-b border-line bg-panel-muted/40 flex items-center justify-between shrink-0">
+        <DialogHeader className="p-4 sm:px-6 bg-surface/40 flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-accent-soft border border-accent/30 text-accent">
+            <div className="p-2.5 rounded-xl bg-accent-soft border border-accent/30 text-accent shrink-0">
               <UserCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-ink uppercase tracking-tight flex items-center gap-2">
+              <DialogTitle className="text-sm font-bold text-ink uppercase tracking-tight flex items-center gap-2">
                 <span>{selectedCustomer ? `HỒ SƠ KHÁCH HÀNG: ${selectedCustomer.FullName}` : 'TẠO HỒ SƠ KHÁCH HÀNG MỚI'}</span>
-              </h3>
-              <p className="text-[11px] text-ink-faint">
+              </DialogTitle>
+              <DialogDescription className="text-[11px] text-ink-faint">
                 {selectedCustomer ? `Mã CIF: ${selectedCustomer.CifKh}` : 'Điền thông tin hoặc dùng tính năng Dán nhanh để tự động nhận diện'}
-              </p>
+              </DialogDescription>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pr-6">
             {!selectedCustomer && onParseSnippet && (
               <button
                 type="button"
                 onClick={() => setSmartPasteOpen(prev => !prev)}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                   smartPasteOpen
                     ? 'bg-accent text-accent-ink border-accent shadow-xs'
                     : 'bg-panel-muted text-accent border-accent/30 hover:bg-accent-soft'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Dán nhanh thông tin</span>
+                <span>Dán nhanh</span>
               </button>
             )}
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-ink-faint hover:text-ink hover:bg-panel transition-colors"
-              title="Đóng (Esc)"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
-        </div>
+        </DialogHeader>
 
         {/* Smart Paste Expandable Area */}
         {smartPasteOpen && (
@@ -453,15 +432,15 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
 
               <button
                 type="submit"
-                className="bg-accent hover:opacity-90 text-accent-ink font-bold text-xs py-2 px-5 rounded-lg transition-all shadow-xs"
+                className="bg-accent hover:opacity-90 text-accent-ink font-bold text-xs py-2 px-5 rounded-lg transition-all shadow-xs cursor-pointer"
               >
                 {selectedCustomer ? 'CẬP NHẬT HỒ SƠ' : 'LƯU HỒ SƠ KH'}
               </button>
             </div>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 });
 

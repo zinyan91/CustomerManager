@@ -182,18 +182,19 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   const { toast, show, dismiss } = useToast();
 
   return (
-    <div className={`${styles.containerCardBg} rounded-lg border overflow-hidden`}>
+    <div className={`${styles.containerCardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150 font-app`}>
       <Toast toast={toast} onDismiss={dismiss} />
 
-      <div className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${'bg-panel-muted border-line'}`}>
+      <div className="p-4 sm:p-5 border-b border-line/60 bg-surface/75 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-bold text-sm text-accent tracking-tight">{docTitle}</h2>
+          <span className="text-[10px] uppercase font-bold text-ink-faint tracking-wider block mb-0.5">XEM TRƯỚC VĂN BẢN</span>
+          <h2 className="font-bold text-sm sm:text-base text-accent tracking-tight">{docTitle}</h2>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => exportToWordDocx(docFilename, docHtml)}
-            className="flex items-center space-x-1.5 bg-accent hover:bg-accent text-accent-ink font-bold text-xs px-3.5 py-2 rounded-md transition-colors"
+            className="flex items-center space-x-1.5 bg-accent hover:opacity-90 text-accent-ink font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-md shadow-accent/20 cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Tải Word (.docx)</span>
@@ -205,20 +206,20 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
                 show('error', 'Không mở được bản in. Tải lại trang rồi thử lại.');
               }
             }}
-            className="flex items-center space-x-1.5 bg-neg hover:opacity-90 text-accent-ink font-bold text-xs px-3.5 py-2 rounded-md transition-colors"
+            className="flex items-center space-x-1.5 bg-neg hover:opacity-90 text-accent-ink font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-xs cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>In / Xuất PDF</span>
           </button>
           {attachment && (
-            <>
-              <span className="text-ink-faint text-[11px] px-1">kèm theo</span>
+            <div className="flex items-center gap-1.5 pl-2 border-l border-line/60">
+              <span className="text-ink-faint text-[10px] uppercase font-bold tracking-wider mr-1">Kèm:</span>
               <button
                 type="button"
                 onClick={() => exportToWordDocx(attachment.filename, attachment.html)}
-                className="flex items-center space-x-1.5 bg-panel border border-accent text-accent font-bold text-xs px-3.5 py-2 rounded-md transition-colors hover:bg-accent-soft"
+                className="flex items-center space-x-1.5 bg-surface border border-accent/60 text-accent font-bold text-xs px-3 py-2 rounded-xl transition-all hover:bg-accent-soft shadow-2xs cursor-pointer"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-3.5 h-3.5" />
                 <span>{attachment.title} (.docx)</span>
               </button>
               <button
@@ -228,17 +229,17 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
                     show('error', 'Không mở được bản in. Tải lại trang rồi thử lại.');
                   }
                 }}
-                className="flex items-center space-x-1.5 bg-panel border border-line text-ink-muted font-bold text-xs px-3.5 py-2 rounded-md transition-colors hover:border-accent hover:text-accent"
+                className="flex items-center space-x-1.5 bg-surface border border-line/70 text-ink-muted font-bold text-xs px-3 py-2 rounded-xl transition-all hover:border-accent hover:text-accent shadow-2xs cursor-pointer"
               >
-                <Printer className="w-4 h-4" />
+                <Printer className="w-3.5 h-3.5" />
                 <span>In</span>
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="p-3 sm:p-4 overflow-x-auto bg-panel-muted flex justify-center">
+      <div className="p-4 sm:p-6 overflow-x-auto bg-surface-elevated/40 flex justify-center">
 
         <style>{`
           .a4-sheet-container {

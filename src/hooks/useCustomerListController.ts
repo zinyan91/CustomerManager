@@ -9,6 +9,7 @@ import {
   validateCustomerForm, NATIONAL_ID_CCCD_LENGTH, PHONE_LENGTH,
   capDigits, capNumberList, normalizeNumberList, parseRawCustomerText,
 } from '../lib/customerValidation';
+import { useConfirm } from '../context/ConfirmContext';
 
 export function useCustomerListController() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -217,11 +218,17 @@ export function useCustomerListController() {
     showNotify, clearForm, fetchCustomers,
   ]);
 
+  const confirm = useConfirm();
+
   const handleDeleteCustomer = useCallback(async () => {
     if (!selectedCustomer) return;
-    if (!window.confirm(`Bạn có chắc chắn muốn xoá Khách hàng "${selectedCustomer.FullName}" (CIF: ${selectedCustomer.CifKh})?`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Xoá Khách hàng',
+      message: `Bạn có chắc chắn muốn xoá Khách hàng "${selectedCustomer.FullName}" (CIF: ${selectedCustomer.CifKh})?`,
+      confirmText: 'Xoá vĩnh viễn',
+      tone: 'danger',
+    });
+    if (!ok) return;
     try {
       await deleteCustomerAPI(selectedCustomer.Id);
       showNotify('success', 'Đã xoá khách hàng thành công!');

@@ -3,6 +3,7 @@ import { X, Plus, Trash2, Edit3, RotateCcw, Check } from 'lucide-react';
 import type { InventoryCategoryTemplate, TemplateItem } from '../../data/inventoryTemplates';
 import { UI } from '../../lib/uiClasses';
 import { parseMoneyDecimalInput, fmtNumber } from '../../lib/utils';
+import { useConfirm } from '../../context/ConfirmContext';
 
 interface TemplateManagerModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const TemplateManagerModal: React.FC<TemplateManagerModalProps> = ({
   onDeleteTemplate,
   onResetTemplates,
 }) => {
+  const confirm = useConfirm();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState<string>('');
   const [items, setItems] = useState<TemplateItem[]>([]);
@@ -254,8 +256,14 @@ export const TemplateManagerModal: React.FC<TemplateManagerModalProps> = ({
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (window.confirm(`Bạn có chắc chắn muốn xóa mẫu: ${tpl.name}?`)) {
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: 'Xóa mẫu danh mục',
+                            message: `Bạn có chắc chắn muốn xóa mẫu: ${tpl.name}?`,
+                            confirmText: 'Xóa mẫu',
+                            tone: 'danger',
+                          });
+                          if (ok) {
                             onDeleteTemplate(tpl.id);
                           }
                         }}

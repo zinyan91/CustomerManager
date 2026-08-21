@@ -46,26 +46,31 @@ export const CardPolicyLookupView: React.FC = () => {
   } = useCardPolicyController();
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-10 text-xs">
+    <div className="space-y-4 w-full font-app animate-in fade-in duration-150">
       {/* Top Header & Tab Switcher */}
-      <div className={`${PANEL} p-4 space-y-3`}>
+      <div className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className={`${HEADING_SCREEN} flex items-center gap-2`}>
-            <BookOpen size={16} /> TRA CỨU QUY ĐỊNH PHÁT HÀNH & BIỂU PHÍ THẺ TÍN DỤNG
+          <div className={`${HEADING_SCREEN} flex items-center gap-2.5`}>
+            <div className="p-2 bg-accent-soft rounded-xl text-accent">
+              <BookOpen size={18} />
+            </div>
+            <span className="text-sm sm:text-base font-bold text-accent tracking-tight">
+              TRA CỨU QUY ĐỊNH PHÁT HÀNH & BIỂU PHÍ THẺ TÍN DỤNG
+            </span>
           </div>
-          <div className="text-[11px] text-ink-faint">
+          <div className="text-xs text-ink-faint">
             Nguồn: <span className="font-semibold text-ink">QĐ {CARD_POLICY_SOURCE.decision} ({CARD_POLICY_SOURCE.issuedDate})</span>
           </div>
         </div>
 
-        <div className="flex gap-2 border-b border-line pt-2">
+        <div className="flex gap-2 border-b border-line/60 pt-2">
           <button
             type="button"
             onClick={() => setMainTab('issuance')}
-            className={`px-4 py-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 ${
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 cursor-pointer ${
               mainTab === 'issuance'
                 ? 'border-accent text-accent'
-                : 'border-transparent text-ink-muted hover:text-ink'
+                : 'border-transparent text-ink-muted hover:text-ink hover:border-line'
             }`}
           >
             <BookOpen size={14} /> Chính sách & Hạn mức phát hành
@@ -73,10 +78,10 @@ export const CardPolicyLookupView: React.FC = () => {
           <button
             type="button"
             onClick={() => setMainTab('fee-codes')}
-            className={`px-4 py-2 text-xs font-bold transition-all border-b-2 flex items-center gap-1.5 ${
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 cursor-pointer ${
               mainTab === 'fee-codes'
                 ? 'border-accent text-accent'
-                : 'border-transparent text-ink-muted hover:text-ink'
+                : 'border-transparent text-ink-muted hover:text-ink hover:border-line'
             }`}
           >
             <Tag size={14} /> Mã Phí Thẻ (Fee Int Profile)

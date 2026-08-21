@@ -8,6 +8,7 @@ import {
   loadCardFeeProfiles, addCardFeeProfile, updateCardFeeProfile,
   deleteCardFeeProfile, resetCardFeeProfiles, loadCommonFeeNote, saveCommonFeeNote,
 } from '../lib/cardFeeStore';
+import { useConfirm } from '../context/ConfirmContext';
 
 export type MainTab = 'issuance' | 'fee-codes';
 export type KindFilter = 'ALL' | CardCollateralKind;
@@ -138,21 +139,35 @@ export function useCardPolicyController() {
     setModalOpen(false);
   }, [formData, editingItem]);
 
-  const handleDeleteProfile = useCallback((id: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xoá mã phí thẻ này?')) {
+  const confirm = useConfirm();
+
+  const handleDeleteProfile = useCallback(async (id: string) => {
+    const ok = await confirm({
+      title: 'Xoá mã phí thẻ',
+      message: 'Bạn có chắc chắn muốn xoá mã phí thẻ này?',
+      confirmText: 'Xoá',
+      tone: 'danger',
+    });
+    if (ok) {
       const updated = deleteCardFeeProfile(id);
       setFeeProfiles(updated);
     }
-  }, []);
+  }, [confirm]);
 
-  const handleResetDefaults = useCallback(() => {
-    if (window.confirm('Khôi phục danh mục mã phí thẻ về dữ liệu gốc ban đầu? các chỉnh sửa cá nhân sẽ bị xoá.')) {
+  const handleResetDefaults = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Khôi phục danh mục mã phí gốc',
+      message: 'Khôi phục danh mục mã phí thẻ về dữ liệu gốc ban đầu? Các chỉnh sửa cá nhân sẽ bị xoá.',
+      confirmText: 'Khôi phục gốc',
+      tone: 'danger',
+    });
+    if (ok) {
       const { profiles, note } = resetCardFeeProfiles();
       setFeeProfiles(profiles);
       setCommonNote(note);
       setNoteForm(note);
     }
-  }, []);
+  }, [confirm]);
 
   const handleSaveNote = useCallback(() => {
     saveCommonFeeNote(noteForm);

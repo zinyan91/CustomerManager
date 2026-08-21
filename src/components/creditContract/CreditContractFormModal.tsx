@@ -1,6 +1,6 @@
 import React from 'react';
 import { UI } from '../../lib/uiClasses';
-import { FileText, Save, X, AlertTriangle } from 'lucide-react';
+import { FileText, Save, AlertTriangle } from 'lucide-react';
 import { fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { usableCapacity, collateralValue } from '../../lib/collateralMath';
 import { DateInput } from '../DateInput';
@@ -28,6 +28,9 @@ interface CreditContractFormModalProps {
   onClose: () => void;
 }
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/Dialog';
+import { Button } from '../ui/Button';
+
 export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = ({
   isOpen,
   editing,
@@ -48,46 +51,29 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
   onSave,
   onClose,
 }) => {
-  if (!isOpen) return null;
-
-  const containerCardBg = UI.containerCardBg;
   const inputStyle = UI.inputStyle;
   const labelStyle = UI.labelStyle;
   const today = todayIso();
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150"
-      onClick={onClose}
-    >
-      <div
-        className={`${containerCardBg} rounded-2xl border border-line shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 text-xs`}
-        onClick={e => e.stopPropagation()}
-      >
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent size="2xl" className="p-0 overflow-hidden max-h-[90vh]">
         {/* Header */}
-        <div className="p-4 border-b border-line bg-panel-muted/70 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="p-1.5 rounded-lg bg-accent-soft text-accent border border-accent/30">
-              <FileText className="w-4 h-4" />
+        <DialogHeader className="p-4 sm:p-5 bg-surface/40 flex-row items-center justify-between space-y-0">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-xl bg-accent-soft text-accent shrink-0">
+              <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-ink uppercase">
+              <DialogTitle className="font-bold text-sm sm:text-base text-ink tracking-tight uppercase">
                 {editing ? 'CHỈNH SỬA HỢP ĐỒNG TÍN DỤNG' : 'TẠO MỚI HỢP ĐỒNG TÍN DỤNG'}
-              </h3>
-              <p className="text-[11px] text-ink-faint">
+              </DialogTitle>
+              <DialogDescription className="text-[11px] text-ink-faint">
                 {editing ? `HĐTD số: ${editing.HdtdNumber}` : 'Thiết lập hạn mức cấp và thế chấp TSBĐ'}
-              </p>
+              </DialogDescription>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-ink-faint hover:text-ink hover:bg-panel transition-colors"
-            title="Đóng (Esc)"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* Modal Form Body */}
         <form onSubmit={onSave} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar">
@@ -103,7 +89,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
                 placeholder="VD: HĐTD-2026/001..."
                 value={form.HdtdNumber || ''}
                 onChange={e => setForm({ ...form, HdtdNumber: e.target.value })}
-                className={`w-full rounded-lg p-2.5 font-mono font-bold text-accent ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 font-mono font-bold text-accent ${inputStyle}`}
               />
             </div>
 
@@ -114,7 +100,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
               <select
                 value={form.LoanMethod || LOAN_METHODS[0]}
                 onChange={e => setForm({ ...form, LoanMethod: e.target.value })}
-                className={`w-full rounded-lg p-2.5 font-semibold ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 font-semibold ${inputStyle}`}
               >
                 {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
@@ -132,7 +118,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
                 placeholder="VD: 1.000.000.000"
                 value={formAmount}
                 onChange={e => setFormAmount(formatMoneyInput(e.target.value))}
-                className={`w-full rounded-lg p-2.5 font-mono font-bold text-sm text-accent ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 font-mono font-bold text-sm text-accent ${inputStyle}`}
               />
             </div>
 
@@ -144,7 +130,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
                 max={360}
                 value={form.LoanTenorMonths ?? 12}
                 onChange={e => setForm({ ...form, LoanTenorMonths: parseInt(e.target.value, 10) || 12 })}
-                className={`w-full rounded-lg p-2.5 font-mono font-bold ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 font-mono font-bold ${inputStyle}`}
               />
             </div>
           </div>
@@ -155,7 +141,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
               <DateInput
                 value={form.ContractStartDate}
                 onChange={d => setForm({ ...form, ContractStartDate: d })}
-                className={`w-full rounded-lg p-2.5 ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 ${inputStyle}`}
               />
             </div>
 
@@ -164,7 +150,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
               <DateInput
                 value={form.ContractEndDate}
                 onChange={d => setForm({ ...form, ContractEndDate: d })}
-                className={`w-full rounded-lg p-2.5 ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 ${inputStyle}`}
               />
             </div>
           </div>
@@ -174,7 +160,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
             <select
               value={form.LoanPurpose || ''}
               onChange={e => setForm({ ...form, LoanPurpose: e.target.value })}
-              className={`w-full rounded-lg p-2.5 font-medium ${inputStyle}`}
+              className={`w-full rounded-xl p-2.5 font-medium ${inputStyle}`}
             >
               <option value="">— Chọn mục đích sử dụng vốn —</option>
               {purposeOptions.map(p => (
@@ -184,7 +170,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
           </div>
 
           {/* Tờ trình phê duyệt chung */}
-          <div className="space-y-2 pt-2 border-t border-line">
+          <div className="space-y-2 pt-2 border-t border-line/60">
             <label className="text-xs font-bold text-ink flex items-center space-x-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -204,7 +190,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
                     placeholder="VD: TT-2026/999"
                     value={form.ApprovalCode || ''}
                     onChange={e => setForm({ ...form, ApprovalCode: e.target.value })}
-                    className={`w-full rounded-lg p-2.5 font-mono ${inputStyle}`}
+                    className={`w-full rounded-xl p-2.5 font-mono ${inputStyle}`}
                   />
                 </div>
                 <div>
@@ -214,7 +200,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
                     placeholder="VD: 5.000.000.000"
                     value={formApprovalAmount}
                     onChange={e => setFormApprovalAmount(formatMoneyInput(e.target.value))}
-                    className={`w-full rounded-lg p-2.5 font-mono ${inputStyle}`}
+                    className={`w-full rounded-xl p-2.5 font-mono ${inputStyle}`}
                   />
                 </div>
               </div>
@@ -222,7 +208,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
           </div>
 
           {/* Gán TSBĐ */}
-          <div className="space-y-2 pt-2 border-t border-line">
+          <div className="space-y-2 pt-2 border-t border-line/60">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <label className={`block font-bold text-ink ${labelStyle}`}>
                 Tài sản Bảo đảm Thế chấp cho HĐTD ({selectedCollateralIds.length} đã chọn) <span className="text-neg">*</span>
@@ -235,7 +221,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
             </div>
 
             {vuotKhaNangBaoDam && (
-              <div className="p-2.5 rounded-lg bg-warn-soft border border-warn/30 text-warn text-xs font-semibold flex items-center space-x-2">
+              <div className="p-3 rounded-xl bg-warn-soft border border-warn/30 text-warn text-xs font-semibold flex items-center space-x-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>
                   Cảnh báo: Hạn mức cấp ({fmtMoney(parseMoneyInput(formAmount))}) vượt quá Khả năng bảo đảm khả dụng của TSBĐ ({fmtMoney(tongKhaNangBaoDam)}).
@@ -243,7 +229,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
               </div>
             )}
 
-            <div className="max-h-48 overflow-y-auto space-y-1.5 p-2 rounded-xl border border-line bg-panel-muted/30 custom-scrollbar">
+            <div className="max-h-52 overflow-y-auto space-y-2 p-2.5 rounded-xl border border-line/70 bg-surface/60 custom-scrollbar">
               {collaterals.length === 0 ? (
                 <div className="text-center py-4 text-ink-faint text-xs">
                   Khách hàng chưa có TSBĐ nào. Vui lòng thêm TSBĐ ở phân hệ Tài sản bảo đảm trước.
@@ -257,13 +243,13 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
                   return (
                     <label
                       key={c.Id}
-                      className={`flex items-center justify-between p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${
+                      className={`flex items-center justify-between p-3 rounded-xl border text-xs cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-accent-soft border-accent/40 text-ink shadow-xs'
-                          : 'bg-panel border-line text-ink-muted hover:border-line-strong'
+                          ? 'bg-accent-soft/40 border-accent/50 text-ink shadow-xs'
+                          : 'bg-panel/70 border-line/60 text-ink-muted hover:border-line-strong'
                       }`}
                     >
-                      <div className="flex items-center space-x-2.5 min-w-0">
+                      <div className="flex items-center space-x-3 min-w-0">
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -280,7 +266,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
                           <span className="font-bold text-ink">{c.AssetCode || c.AssetType || 'TSBĐ'}</span>
                           <span className="text-[10px] text-ink-faint ml-2">({c.AssetType || 'Khác'})</span>
                           {c.Address && (
-                            <p className="text-[10px] text-ink-faint truncate">{c.Address}</p>
+                            <p className="text-[10px] text-ink-faint truncate mt-0.5">{c.Address}</p>
                           )}
                         </div>
                       </div>
@@ -303,29 +289,30 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
               placeholder="Ghi chú điều kiện cấp tín dụng, phê duyệt..."
               value={form.Note || ''}
               onChange={e => setForm({ ...form, Note: e.target.value })}
-              className={`w-full rounded-lg p-2.5 ${inputStyle}`}
+              className={`w-full rounded-xl p-2.5 ${inputStyle}`}
             />
           </div>
 
           {/* Modal Footer Actions */}
-          <div className="pt-3 border-t border-line flex items-center justify-end space-x-2">
-            <button
-              type="button"
+          <div className="pt-3 border-t border-line/60 flex items-center justify-end space-x-2">
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-line text-ink-muted hover:bg-panel-muted text-xs font-semibold transition-colors"
             >
               Hủy
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="px-5 py-2 rounded-lg bg-accent text-accent-ink font-bold text-xs flex items-center space-x-1.5 hover:opacity-90 shadow-xs transition-opacity"
+              variant="primary"
+              size="sm"
+              leftIcon={<Save className="w-4 h-4" />}
             >
-              <Save className="w-4 h-4" />
-              <span>{editing ? 'Lưu cập nhật HĐTD' : 'Tạo mới HĐTD'}</span>
-            </button>
+              {editing ? 'Lưu cập nhật HĐTD' : 'Tạo mới HĐTD'}
+            </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

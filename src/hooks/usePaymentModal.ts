@@ -7,6 +7,7 @@ import {
 } from '../lib/loanMath';
 import { getEffectiveActiveRate } from '../lib/rateResolution';
 import { bulkSaveRepaymentSchedulesAPI, fetchRepaymentSchedulesAPI, saveContractAPI } from '../lib/api';
+import { useConfirm } from '../context/ConfirmContext';
 
 export interface PaymentSaveResult {
   schedules: RepaymentSchedule[];
@@ -25,6 +26,7 @@ interface UsePaymentModalParams {
 export function usePaymentModal({
   selectedContract, schedules, onSaved, onNotify, onLoadingChange,
 }: UsePaymentModalParams) {
+  const confirm = useConfirm();
   const [editingSchedule, setEditingSchedule] = useState<RepaymentSchedule | null>(null);
   const [overdueDaysStr, setOverdueDaysStr] = useState('0');
   const [overdueInterestStr, setOverdueInterestStr] = useState('0');
@@ -131,7 +133,12 @@ export function usePaymentModal({
       return;
     }
 
-    const confirmed = window.confirm(`Xác nhận thu nhanh ${dueUnpaidSchedules.length} kỳ đến hạn theo đúng ngày đến hạn của từng kỳ?`);
+    const confirmed = await confirm({
+      title: 'Thu nợ nhanh các kỳ đến hạn',
+      message: `Xác nhận thu nhanh ${dueUnpaidSchedules.length} kỳ đến hạn theo đúng ngày đến hạn của từng kỳ?`,
+      confirmText: 'Thu nợ nhanh',
+      tone: 'primary',
+    });
     if (!confirmed) return;
 
     try {

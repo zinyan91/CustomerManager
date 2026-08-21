@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import { LANGS, LANG_SWITCH_ENABLED } from '../lib/i18n';
 import { useApiHealth } from '../hooks/useApiHealth';
+import { useConfirm } from '../context/ConfirmContext';
 
 interface HeaderProps {
   onToggleMobileMenu?: () => void;
@@ -17,6 +18,7 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
   const { lang, setLang, t } = useLang();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { reachable } = useApiHealth();
+  const confirm = useConfirm();
 
   useEffect(() => {
     const len = () => setIsOnline(true);
@@ -29,11 +31,17 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
     };
   }, []);
 
-  const handleSignOut = useCallback(() => {
-    if (window.confirm(t('header.signOutConfirm'))) {
+  const handleSignOut = useCallback(async () => {
+    const ok = await confirm({
+      title: t('header.signOut'),
+      message: t('header.signOutConfirm'),
+      confirmText: t('header.signOut'),
+      tone: 'danger',
+    });
+    if (ok) {
       signOut();
     }
-  }, [t, signOut]);
+  }, [confirm, t, signOut]);
 
   const roleLabel = role === 'admin'
     ? t('header.roleAdmin')

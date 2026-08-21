@@ -21,6 +21,7 @@ export function useCollateralController() {
   const [searchCif, setSearchCif] = useState('');
   const [searchOwnerName, setSearchOwnerName] = useState('');
   const [searchAssetCode, setSearchAssetCode] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'expired' | 'expiring_soon' | 'valid' | 'missing'>('all');
 
   const [inputCustomerId, setInputCustomerId] = useState<number | ''>('');
   const [inputAssetCode, setInputAssetCode] = useState('');
@@ -225,8 +226,15 @@ export function useCollateralController() {
       const addr = (col.Address || '').toLowerCase();
       if (!code.includes(q) && !addr.includes(q)) return false;
     }
+    if (statusFilter !== 'all') {
+      const st = appraisalStatus(col);
+      if (statusFilter === 'expired' && st !== 'expired') return false;
+      if (statusFilter === 'expiring_soon' && st !== 'expiring_soon') return false;
+      if (statusFilter === 'missing' && st !== 'missing') return false;
+      if (statusFilter === 'valid' && st !== 'valid') return false;
+    }
     return true;
-  }), [customerScopedCollaterals, customers, searchCif, searchOwnerName, searchAssetCode]);
+  }), [customerScopedCollaterals, customers, searchCif, searchOwnerName, searchAssetCode, statusFilter]);
 
   const totalPages = Math.ceil(filteredCollaterals.length / COL_PAGE_SIZE) || 1;
   const paginatedCollaterals = useMemo(() =>
@@ -268,6 +276,8 @@ export function useCollateralController() {
     setSearchOwnerName,
     searchAssetCode,
     setSearchAssetCode,
+    statusFilter,
+    setStatusFilter,
     inputCustomerId,
     setInputCustomerId,
     inputAssetCode,

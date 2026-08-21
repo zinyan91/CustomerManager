@@ -48,16 +48,16 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
   containerCardBg,
 }) => {
   return (
-    <div className={`${containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/70 bg-panel/80 backdrop-blur-md shadow-xs specular-card`}>
-      <div className="text-xs font-bold text-accent tracking-tight mb-3 flex items-center space-x-2">
-        <div className="p-1.5 rounded-lg bg-accent-soft text-accent">
+    <div className={`${containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5`}>
+      <div className="text-xs font-bold text-accent tracking-tight flex items-center space-x-2">
+        <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0">
           <Search className="w-4 h-4" />
         </div>
         <span className="uppercase tracking-wider text-[11px]">TRA CỨU THÔNG TIN KHOẢN VAY KHÁCH HÀNG</span>
       </div>
 
-      <div className="mb-3 relative">
-        <label className={`block mb-1 text-[11px] uppercase tracking-wide text-ink-muted font-bold`}>
+      <div className="relative">
+        <label className="block mb-1 text-[10px] uppercase tracking-wider text-ink-muted font-bold">
           CHỌN KHÁCH HÀNG TỪ DANH SÁCH
         </label>
         <div className="relative">
@@ -74,7 +74,7 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
           <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint pointer-events-none" />
         </div>
         {showDropdown && dropdownFiltered.length > 0 && (
-          <div className="absolute z-40 w-full mt-1 border border-line/80 rounded-xl shadow-2xl max-h-60 overflow-y-auto bg-panel/95 backdrop-blur-xl text-ink divide-y divide-line/40">
+          <div className="absolute z-40 w-full mt-1.5 border border-line/80 rounded-xl shadow-2xl max-h-60 overflow-y-auto bg-panel/95 backdrop-blur-xl text-ink divide-y divide-line/40">
             {dropdownFiltered.map(c => (
               <button
                 key={c.Id}
@@ -90,7 +90,7 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
         )}
       </div>
 
-      <div className="flex items-center space-x-2 mb-3">
+      <div className="flex items-center space-x-2">
         <div className="flex-1 h-px bg-line/60"></div>
         <span className="text-[10px] uppercase tracking-wider px-2 text-ink-faint font-semibold">hoặc tìm kiếm nâng cao</span>
         <div className="flex-1 h-px bg-line/60"></div>
@@ -98,32 +98,32 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
 
       <form onSubmit={handleSearch} className="flex flex-wrap gap-3 items-end">
         <div className="flex-1 min-w-[140px]">
-          <label className={`block mb-1 text-[11px] font-semibold text-ink-muted ${labelStyle}`}>Mã CIF Khách hàng</label>
+          <label className={`block mb-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider ${labelStyle}`}>Mã CIF</label>
           <input type="text" value={searchCif} onChange={e => setSearchCif(e.target.value)}
             placeholder="005236683..."
             className={`w-full rounded-xl px-3 py-2 text-xs transition-colors border border-line/70 bg-surface/80 focus:border-accent ${inputStyle}`} />
         </div>
         <div className="flex-1 min-w-[140px]">
-          <label className={`block mb-1 text-[11px] font-semibold text-ink-muted ${labelStyle}`}>Họ tên Khách hàng</label>
+          <label className={`block mb-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider ${labelStyle}`}>Họ tên Khách hàng</label>
           <input type="text" value={searchName} onChange={e => setSearchName(e.target.value)}
             placeholder="Lê Ngọc Quế Hân..."
             className={`w-full rounded-xl px-3 py-2 text-xs transition-colors border border-line/70 bg-surface/80 focus:border-accent ${inputStyle}`} />
         </div>
         <div className="flex-1 min-w-[140px]">
-          <label className={`block mb-1 text-[11px] font-semibold text-ink-muted ${labelStyle}`}>Số Hợp Đồng Tín Dụng</label>
+          <label className={`block mb-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider ${labelStyle}`}>Số Hợp Đồng Tín Dụng</label>
           <input type="text" value={searchContract} onChange={e => setSearchContract(e.target.value)}
             placeholder="HDTL-005236683..."
             className={`w-full rounded-xl px-3 py-2 text-xs transition-colors border border-line/70 bg-surface/80 focus:border-accent ${inputStyle}`} />
         </div>
         <button type="submit" disabled={isSearching}
-          className="flex items-center space-x-2 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold px-5 py-2 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs">
-          <Search className="w-4 h-4" />
+          className="flex items-center space-x-2 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold px-4.5 py-2 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs">
+          <Search className="w-3.5 h-3.5" />
           <span>{isSearching ? 'Đang tìm...' : 'TÌM KIẾM'}</span>
         </button>
         {foundCustomer && (
           <button type="button" onClick={handleClearSearch}
             className="flex items-center space-x-1 text-ink-faint hover:text-ink px-3 py-2 rounded-xl transition-colors cursor-pointer border border-line/60 bg-surface/60 hover:bg-surface">
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
             <span>Xóa bộ lọc</span>
           </button>
         )}

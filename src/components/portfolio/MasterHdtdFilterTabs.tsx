@@ -27,7 +27,7 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
   if (masterHdtdGroups.length === 0) return null;
 
   return (
-    <div className="w-full border-t pt-3.5 mt-2 border-line/60 flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-150">
+    <div className="flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-150">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[10px] font-bold text-ink-faint uppercase tracking-wider flex items-center space-x-1.5 mr-1">
           <FileText className="w-3.5 h-3.5 text-accent" />

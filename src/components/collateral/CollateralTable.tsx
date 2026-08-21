@@ -80,14 +80,15 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
               <th className="px-4 py-3 whitespace-nowrap text-center">TỶ LỆ LTV</th>
               <th className="px-4 py-3 whitespace-nowrap text-right">SỨC CẤP TỐI ĐA</th>
               <th className="px-4 py-3 whitespace-nowrap text-center">NGÀY ĐỊNH GIÁ</th>
-              <th className="px-4 py-3 whitespace-nowrap text-center">HẠN HIỆU LỰC</th>
+              <th className="px-4 py-3 whitespace-nowrap text-center">HẠN ĐỊNH GIÁ</th>
+              <th className="px-4 py-3 whitespace-nowrap text-center">TRẠNG THÁI</th>
               <th className="px-4 py-3 whitespace-nowrap text-center">THAO TÁC</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line/40">
             {paginatedCollaterals.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-12 px-4 text-ink-faint">
+                <td colSpan={10} className="text-center py-12 px-4 text-ink-faint">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <Building2 className="w-8 h-8 text-ink-faint opacity-50" />
                     <span className="text-xs font-semibold">Không tìm thấy tài sản bảo đảm nào phù hợp bộ lọc.</span>
@@ -203,41 +204,36 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                       {fmtDate(c.AppraisalDate) || '—'}
                     </td>
 
-                    {/* Hạn hiệu lực & Đếm ngược */}
+                    {/* Hạn định giá */}
+                    <td className="px-4 py-3.5 text-center whitespace-nowrap font-mono text-ink text-xs font-semibold">
+                      {fmtDate(expDate) || '—'}
+                    </td>
+
+                    {/* Trạng thái hiệu lực (Tách riêng 1 cột độc lập) */}
                     <td className="px-4 py-3.5 text-center whitespace-nowrap">
-                      <div className="font-mono text-xs">
-                        <span
-                          className={
-                            st === 'expired'
-                              ? 'text-neg font-bold'
-                              : st === 'expiring_soon'
-                              ? 'text-warn font-bold'
-                              : 'text-ink-faint'
-                          }
-                        >
-                          {fmtDate(expDate) || '—'}
+                      {st === 'expired' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-neg-soft text-neg border border-neg/30 shadow-2xs">
+                          <ShieldAlert className="w-3 h-3 shrink-0" />
+                          <span>Hết hiệu lực</span>
                         </span>
-                        {st === 'expired' && (
-                          <div className="inline-flex items-center gap-0.5 text-[10px] font-bold text-neg bg-neg-soft px-1.5 py-0.2 rounded-md border border-neg/30 mt-0.5">
-                            <ShieldAlert className="w-2.5 h-2.5" /> HẾT HẠN
-                          </div>
-                        )}
-                        {st === 'expiring_soon' && (
-                          <div className="inline-flex items-center gap-0.5 text-[10px] font-bold text-warn bg-warn-soft px-1.5 py-0.2 rounded-md border border-warn/30 mt-0.5">
-                            <Clock className="w-2.5 h-2.5" /> SẮP HẾT HẠN
-                          </div>
-                        )}
-                        {st === 'missing' && (
-                          <div className="text-[10px] font-bold text-ink-faint bg-surface px-1.5 py-0.2 rounded-md border border-line/60 mt-0.5">
-                            CHƯA ĐỊNH GIÁ
-                          </div>
-                        )}
-                        {st === 'valid' && (
-                          <div className="text-[10px] text-pos font-semibold flex items-center justify-center gap-0.5 mt-0.5">
-                            <CheckCircle2 className="w-2.5 h-2.5" /> Hiệu lực
-                          </div>
-                        )}
-                      </div>
+                      )}
+                      {st === 'expiring_soon' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-warn-soft text-warn border border-warn/30 shadow-2xs">
+                          <Clock className="w-3 h-3 shrink-0" />
+                          <span>Sắp hết hạn</span>
+                        </span>
+                      )}
+                      {st === 'missing' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface text-ink-faint border border-line/60 shadow-2xs">
+                          <span>Chưa định giá</span>
+                        </span>
+                      )}
+                      {st === 'valid' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-pos-soft text-pos border border-pos/30 shadow-2xs">
+                          <CheckCircle2 className="w-3 h-3 shrink-0" />
+                          <span>Đang hiệu lực</span>
+                        </span>
+                      )}
                     </td>
 
                     {/* Thao tác */}
@@ -292,7 +288,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                 <td className="px-4 py-3 text-right font-mono font-bold text-accent text-xs">
                   {fmtMoney(pageTotalMaxLoan)}
                 </td>
-                <td colSpan={3} className="px-4 py-3 text-center text-ink-faint text-[10px]">
+                <td colSpan={4} className="px-4 py-3 text-center text-ink-faint text-[10px]">
                   Hiển thị {paginatedCollaterals.length} / {filteredCollaterals.length} TSBĐ
                 </td>
               </tr>

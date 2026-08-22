@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { UI } from '../../lib/uiClasses';
 import type { Customer } from '../../types';
 import { isCustomerArchived, CUSTOMER_STATUS_LABEL, type CustomerStatusFilter } from '../../lib/customerStatus';
 import { fmtDate, formatNationalId, parseNationalIdInput } from '../../lib/utils';
@@ -9,7 +8,7 @@ import {
   Edit3, Phone, ShieldCheck, HeartHandshake, X
 } from 'lucide-react';
 import { Toast } from '../Toast';
-import { AdaptiveTable, type AdaptiveColumn } from '../AdaptiveTable';
+import { DataTable, type ColumnDef } from '../ui/DataTable';
 import { useCustomerListController } from '../../hooks/useCustomerListController';
 import { CustomerDrawerForm } from '../customer/CustomerDrawerForm';
 import { customerProfilePath } from '../../lib/customerRoutes';
@@ -80,8 +79,6 @@ export const CustomerListView: React.FC = () => {
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
-
-  const cardBg = UI.containerCardBg;
 
   return (
     <div className="space-y-4 md:space-y-4.5 w-full pb-8">
@@ -211,7 +208,7 @@ export const CustomerListView: React.FC = () => {
       </div>
 
       {/* 3. Khung Tìm Kiếm & Bảng Dữ Liệu Khách Hàng */}
-      <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/70 bg-panel/80 backdrop-blur-md shadow-xs space-y-4`}>
+      <div className="rounded-2xl p-4 sm:p-5 border border-line/70 bg-panel/80 backdrop-blur-md shadow-xs space-y-4">
         {/* Unified Command Toolbar: Tìm kiếm đa tiêu chí + Bộ lọc Trạng thái */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 pb-3 border-b border-line/50">
           {/* Cụm Tìm Kiếm Tinh Gọn */}
@@ -317,7 +314,7 @@ export const CustomerListView: React.FC = () => {
               <span>Đang tải dữ liệu khách hàng...</span>
             </div>
           ) : (
-            <AdaptiveTable
+            <DataTable
               rows={visibleCustomers}
               rowKey={c => c.Id}
               onRowClick={openDrawerForEdit}
@@ -451,7 +448,7 @@ export const CustomerListView: React.FC = () => {
                     <span className="text-ink-faint">–</span>
                   )
                 },
-              ] as AdaptiveColumn<Customer>[]).filter(col => !(statusFilter === 'active' && col.key === 'luuTru'))}
+              ] as ColumnDef<Customer>[]).filter(col => !(statusFilter === 'active' && col.key === 'luuTru'))}
             />
           )}
         </div>

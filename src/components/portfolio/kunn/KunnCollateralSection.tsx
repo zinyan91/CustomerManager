@@ -1,21 +1,19 @@
-import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { fmtMoney } from '../../../lib/utils';
 import type { Collateral } from '../../../types';
 import { collateralValue } from '../../../lib/collateralMath';
+import { UI } from '../../../lib/uiClasses';
 
 export interface KunnCollateralSectionProps {
-  sectionBoxBg: string;
   selectedCollaterals: Collateral[];
   maxAllowedLoanLtv: number;
 }
 
 export const KunnCollateralSection: React.FC<KunnCollateralSectionProps> = ({
-  sectionBoxBg,
   selectedCollaterals,
   maxAllowedLoanLtv,
 }) => (
-  <div className={`rounded-md p-3 border text-[11px] ${sectionBoxBg}`}>
+  <div className={`rounded-md p-3 border text-[11px] ${UI.sectionBoxBg}`}>
     <div className="flex items-center space-x-2 text-[11px] font-bold text-pos uppercase tracking-wider mb-1.5">
       <ShieldCheck className="w-3.5 h-3.5" />
       <span>TÀI SẢN BẢO ĐẢM</span>

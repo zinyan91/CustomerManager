@@ -1,7 +1,5 @@
-import React from 'react';
 import { ShieldCheck, Coins, Percent, AlertOctagon, Clock, HelpCircle } from 'lucide-react';
 import { fmtMoney } from '../../lib/utils';
-import { UI } from '../../lib/uiClasses';
 import { CollateralSearchBar } from '../collateral/CollateralSearchBar';
 import { CollateralTable } from '../collateral/CollateralTable';
 import { CollateralForm } from '../collateral/CollateralForm';
@@ -9,7 +7,6 @@ import { Toast } from '../Toast';
 import { useCollateralController } from '../../hooks/useCollateralController';
 
 export const CollateralView: React.FC = () => {
-  const styles = UI;
   const {
     customers,
     loading,
@@ -184,7 +181,6 @@ export const CollateralView: React.FC = () => {
       </div>
 
       <CollateralSearchBar
-        styles={styles}
         searchCif={searchCif}
         setSearchCif={setSearchCif}
         searchOwnerName={searchOwnerName}
@@ -196,7 +192,6 @@ export const CollateralView: React.FC = () => {
       />
 
       <CollateralTable
-        styles={styles}
         filteredCollaterals={filteredCollaterals}
         paginatedCollaterals={paginatedCollaterals}
         customers={customers}
@@ -210,7 +205,6 @@ export const CollateralView: React.FC = () => {
       />
 
       <CollateralForm
-        styles={styles}
         selectedCollateral={selectedCollateral}
         formCollapsed={formCollapsed}
         setFormCollapsed={setFormCollapsed}

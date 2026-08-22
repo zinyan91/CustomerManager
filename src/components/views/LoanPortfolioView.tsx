@@ -1,5 +1,4 @@
 import React, { lazy, Suspense } from 'react';
-import { UI } from '../../lib/uiClasses';
 import { Loader2 } from 'lucide-react';
 import { getAutoDebtGroupInfo, computeOutstandingBalance } from '../../lib/loanMath';
 import { getMasterHdtdNumber, todayIso } from '../../lib/utils';
@@ -132,8 +131,6 @@ export const LoanPortfolioView: React.FC = () => {
 
       {/* Customer Search Section */}
       <CustomerSearchBar
-        inputStyle={UI.inputStyle}
-        labelStyle={UI.labelStyle}
         allCustomers={allCustomers}
         dropdownQuery={dropdownQuery}
         setDropdownQuery={setDropdownQuery}
@@ -156,13 +153,11 @@ export const LoanPortfolioView: React.FC = () => {
           setSearchContract('');
           setSelectedCustomerId(null);
         }}
-        containerCardBg={UI.containerCardBg}
       />
 
       {/* Summary Header & Navigation Cockpit */}
       {foundCustomer && (
         <CustomerSummaryHeader
-          containerCardBg={UI.containerCardBg}
           selectedMasterFilter={selectedMasterFilter}
           totalCreditLimit={customerLimitTotals.granted}
           handleNewContract={handleNewContract}
@@ -205,8 +200,6 @@ export const LoanPortfolioView: React.FC = () => {
       {/* Tab Content 1: KUNN List */}
       {foundCustomer && mainTab === 'kunn' && (
         <KunnTable
-          containerCardBg={UI.containerCardBg}
-          tableHeaderStyle={UI.tableHeaderStyle}
           filteredContracts={visibleContracts}
           selectedContract={selectedContract}
           handleSelectContract={handleSelectContract}
@@ -240,12 +233,6 @@ export const LoanPortfolioView: React.FC = () => {
       {showForm && foundCustomer && mainTab === 'kunn' && (
         <Suspense fallback={<ComponentFallback />}>
           <KunnForm
-            containerCardBg={UI.containerCardBg}
-            sectionBoxBg={UI.sectionBoxBg}
-            inputStyle={UI.inputStyle}
-            readonlyInputStyle={UI.readonlyInputStyle}
-            labelStyle={UI.labelStyle}
-            tableHeaderStyle={UI.tableHeaderStyle}
             selectedContract={selectedContract}
             foundCustomer={foundCustomer}
             setShowForm={setShowForm}
@@ -263,47 +250,55 @@ export const LoanPortfolioView: React.FC = () => {
             formCreditContract={masterHdtdInfo?.matchedCc || null}
             formKunnNumber={formKunnNumber}
             setFormKunnNumber={setFormKunnNumber}
-            formLimitStatus={activeGroupForForm}
-            kunnIssues={masterHdtdInfo?.issues || []}
-            formGrantedLimit={matchedHdtdAmount}
-            totalExistingKunnBalance={totalExistingKunnBal}
-            availableBeforeThisKunn={availBeforeThisKunn}
-            remainingHmtdLimit={remainingHmtd}
-            formLoanAmount={formLoanAmount}
-            setFormLoanAmount={setFormLoanAmount}
-            formMonthlyPrincipal={formMonthlyPrincipal}
-            setFormMonthlyPrincipal={setFormMonthlyPrincipal}
-            suggestedMonthlyPrincipal={suggestedMonthlyPrincipal}
-            interestRateMode={interestRateMode}
-            setInterestRateMode={setInterestRateMode}
-            ratePreferential={ratePreferential}
-            setRatePreferential={setRatePreferential}
-            ratePreferentialMonths={ratePreferentialMonths}
-            setRatePreferentialMonths={setRatePreferentialMonths}
-            rateBase={rateBase}
-            setRateBase={setRateBase}
-            rateMargin={rateMargin}
-            setRateMargin={setRateMargin}
-            postPrefRate={postPrefRate}
-            normalRate={normalRate}
-            surchargeVal={surchargeVal}
-            currentActiveRateDisplay={currentActiveRateDisplay}
-            rateConditionSurcharge={rateConditionSurcharge}
-            setRateConditionSurcharge={setRateConditionSurcharge}
-            rateFloor={rateFloor}
-            setRateFloor={setRateFloor}
-            rateHistory={rateHistory}
-            setRateHistory={setRateHistory}
-            newAdjDate={newAdjDate}
-            setNewAdjDate={setNewAdjDate}
-            newAdjBaseRate={newAdjBaseRate}
-            setNewAdjBaseRate={setNewAdjBaseRate}
-            newAdjMargin={newAdjMargin}
-            setNewAdjMargin={setNewAdjMargin}
-            newAdjPenalty={newAdjPenalty}
-            setNewAdjPenalty={setNewAdjPenalty}
-            newAdjReason={newAdjReason}
-            setNewAdjReason={setNewAdjReason}
+            limit={{
+              formLimitStatus: activeGroupForForm,
+              kunnIssues: masterHdtdInfo?.issues || [],
+              formGrantedLimit: matchedHdtdAmount,
+              totalExistingKunnBalance: totalExistingKunnBal,
+              availableBeforeThisKunn: availBeforeThisKunn,
+              remainingHmtdLimit: remainingHmtd,
+            }}
+            amount={{
+              formLoanAmount,
+              setFormLoanAmount,
+              formMonthlyPrincipal,
+              setFormMonthlyPrincipal,
+              suggestedMonthlyPrincipal,
+            }}
+            rate={{
+              interestRateMode,
+              setInterestRateMode,
+              ratePreferential,
+              setRatePreferential,
+              ratePreferentialMonths,
+              setRatePreferentialMonths,
+              rateBase,
+              setRateBase,
+              rateMargin,
+              setRateMargin,
+              postPrefRate,
+              normalRate,
+              surchargeVal,
+              currentActiveRateDisplay,
+              rateConditionSurcharge,
+              setRateConditionSurcharge,
+              rateFloor,
+              setRateFloor,
+              rateHistory,
+              setRateHistory,
+            }}
+            adjustment={{
+              newAdjDate,
+              setNewAdjDate,
+              newAdjBaseRate,
+              setNewAdjBaseRate,
+              newAdjMargin,
+              setNewAdjMargin,
+              newAdjPenalty,
+              setNewAdjPenalty,
+              newAdjReason,
+              setNewAdjReason,
+            }}
             showNotify={showNotify}
             graceOptions={graceMonthOptions(form.LoanMethod)}
             selectedCollaterals={selectedCollaterals}
@@ -318,7 +313,6 @@ export const LoanPortfolioView: React.FC = () => {
           <PaymentModal
             editingSchedule={paymentModalProps.editingSchedule}
             selectedContract={selectedContract}
-            containerCardBg={UI.containerCardBg}
             loading={loading}
             modalActualPaidPrincipalStr={paymentModalProps.actualPaidPrincipalStr}
             setModalActualPaidPrincipalStr={paymentModalProps.setActualPaidPrincipalStr}

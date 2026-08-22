@@ -1369,12 +1369,9 @@ Toàn bộ giao diện đã chuyển sang token: không còn `isLight` trong mã
 
 Chuỗi class dùng chung nằm ở `src/lib/uiClasses.ts` (`PANEL`, `UI.containerCardBg`, `UI.inputStyle`, `TABLE_HEAD`, `TABLE_CELL`, `SECTION_LABEL`, `BTN_PRIMARY`, `DEBT_GROUP_COLOR`…). Đây là nơi duy nhất khai báo — đích, chưa phải hiện trạng: rà soát 19/08/2026 đếm được **44 chuỗi** `bg-accent text-accent-ink` tự dựng ở **27 tệp** `.tsx`, và **16 chuỗi** `bg-panel border border-line` tự dựng ở **8 tệp**. `src/lib/themeStyles.ts` đã xoá.
 
-Component **không được** truyền chuỗi class qua props. Đây là đích, chưa phải
-hiện trạng: rà soát 19/08/2026 đếm được **69 tệp** vẫn truyền
-`containerCardBg`, `inputStyle`, `labelStyle`, `tableHeaderStyle`,
-`sectionBoxBg`, `styles`, `cardBg`. Đợt 2 của lần rebuild giao diện dựng bộ
-component đọc token trực tiếp; đợt 3–7 gỡ dần các props này theo từng màn. Mã
-mới **không được thêm** props kiểu này.
+Component **không được** truyền chuỗi class qua props. Cây hồ sơ tín dụng Đợt 3 (20 tệp: `KunnForm`, 5 section KUNN, `Collateral*`, `CreditContract*`, 4 màn chính) đã gỡ sạch 100% chuỗi class props và đọc token trực tiếp từ `src/lib/uiClasses.ts`. `KunnForm` đã gom từ 65 props xuống còn đúng **22 props** (thông qua `limit`, `amount`, `rate`, `adjustment`). Mã mới **không được thêm** props truyền chuỗi class.
+
+**Chưa sạch toàn dự án.** Đo 22/08/2026: còn **7 tệp** khai chuỗi class trong `interface ...Props` — **4** ở `src/components/dashboard/` (dọn ở đợt 4) và **3** ở `src/components/rate/` (đợt 5). Lưu ý cách đếm kẻo hoảng nhầm: 78 tệp còn *nhắc tên* `inputStyle` / `containerCardBg`…, nhưng phần lớn là biến cục bộ `const inputStyle = UI.inputStyle` — luật này cấm **nhận qua props**, không cấm dùng tên.
 
 Lưu ý khi đặt tên lớp động: Tailwind quét mã tĩnh, nên `bg-g${n}` **không sinh ra lớp nào**. Dùng bảng tra như `DEBT_GROUP_COLOR[n]`.
 
@@ -1388,7 +1385,7 @@ Bảng 6–12 cột không bao giờ vừa màn 375px. Đo được trước khi
 
 **Cách chữa không phải ẩn bớt cột.** Banker mở Lịch thu nợ trên điện thoại chính là để xem còn nợ bao nhiêu — ẩn cột đó thì màn hình thành vô dụng, và không ai đoán được cột nào quan trọng với người đang đứng ở quầy. Cách chữa là đổi **hình dạng** bản ghi: rộng thì bảng, hẹp thì mỗi bản ghi một thẻ dọc. Cùng dữ liệu, không mất gì.
 
-`AdaptiveTable` trong `src/components/AdaptiveTable.tsx` nhận **một** bộ định nghĩa cột rồi dựng ra cả hai hình dạng. Điểm ngắt là `md` (768px).
+`DataTable` trong `src/components/ui/DataTable.tsx` nhận **một** bộ định nghĩa cột (`columns` kèm `priority: 1 | 2 | 3`) rồi dựng ra cả hai hình dạng (bảng trên máy tính, thẻ trên điện thoại). `AdaptiveTable` cũ đã xoá bỏ hoàn toàn. Điểm ngắt là `md` (768px).
 
 | `priority` | Trên điện thoại | Đặt cho |
 | :--- | :--- | :--- |

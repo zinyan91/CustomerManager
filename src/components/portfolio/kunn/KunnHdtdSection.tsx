@@ -3,11 +3,10 @@ import type { LimitGroupStatus } from '../../../lib/creditLimit';
 import { FileText, Building2 } from 'lucide-react';
 import { fmtMoney, fmtDate } from '../../../lib/utils';
 import type { LoanContract, CreditContract, Customer } from '../../../types';
+import { UI } from '../../../lib/uiClasses';
+import { isRevolvingCredit } from '../../../lib/kunnFormRules';
 
 export interface KunnHdtdSectionProps {
-  sectionBoxBg: string;
-  inputStyle: string;
-  labelStyle: string;
   selectedContract: LoanContract | null;
   foundCustomer: Customer | null;
   form: Partial<LoanContract>;
@@ -25,9 +24,6 @@ export interface KunnHdtdSectionProps {
 }
 
 export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
-  sectionBoxBg,
-  inputStyle,
-  labelStyle,
   selectedContract,
   foundCustomer,
   form,
@@ -43,7 +39,7 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
   totalExistingKunnBalance,
   availableBeforeThisKunn,
 }) => (
-  <div className={`rounded-md p-4 space-y-4 border ${sectionBoxBg}`}>
+  <div className={`rounded-md p-4 space-y-4 border ${UI.sectionBoxBg}`}>
     <div className="text-[11px] font-bold text-accent uppercase tracking-wider flex items-center space-x-2">
       <FileText className="w-4 h-4" />
       <span>HỢP ĐỒNG TÍN DỤNG CHA & PHÂN LOẠI NỢ</span>
@@ -51,7 +47,7 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
 
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
-        <label className={`block mb-1 ${labelStyle}`}>Hợp đồng tín dụng (HĐTD) *</label>
+        <label className={`block mb-1 ${UI.labelStyle}`}>Hợp đồng tín dụng (HĐTD) *</label>
         <select
           value={form.CreditContractId ?? ''}
           onChange={e => {
@@ -59,7 +55,7 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
             const cc = creditContracts.find(x => x.Id === id);
             if (cc) applyCreditContractToForm(cc, !!selectedContract);
           }}
-          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-accent ${inputStyle}`}>
+          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-accent ${UI.inputStyle}`}>
           <option value="">— Chọn HĐTD —</option>
           {selectableCreditContracts.map(cc => (
             <option key={cc.Id} value={cc.Id}>{cc.HdtdNumber}</option>
@@ -72,17 +68,17 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
         )}
       </div>
       <div>
-        <label className={`block mb-1 ${labelStyle}`}>Số KUNN (GNN) *</label>
+        <label className={`block mb-1 ${UI.labelStyle}`}>Số KUNN (GNN) *</label>
         <input type="text" value={formKunnNumber}
           onChange={e => setFormKunnNumber(e.target.value)}
           placeholder="2002/HDTD/9634078/GNN-01"
-          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-pos ${inputStyle}`} />
+          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-pos ${UI.inputStyle}`} />
       </div>
       <div>
-        <label className={`block mb-1 ${labelStyle}`}>Phân loại Nhóm nợ</label>
+        <label className={`block mb-1 ${UI.labelStyle}`}>Phân loại Nhóm nợ</label>
         <select value={form.DebtGroup ?? 1}
           onChange={e => setForm(f => ({ ...f, DebtGroup: Number(e.target.value) }))}
-          className={`w-full rounded-md p-2.5 text-xs font-bold ${inputStyle}`}>
+          className={`w-full rounded-md p-2.5 text-xs font-bold ${UI.inputStyle}`}>
           {[1, 2, 3, 4, 5].map(g => (
             <option key={g} value={g}>
               Nhóm {g} ({g === 1 ? 'Nợ đủ tiêu chuẩn <10 ngày' : g === 2 ? 'Nợ cần chú ý 10-90 ngày' : g === 3 ? 'Nợ dưới tiêu chuẩn 91-180 ngày' : g === 4 ? 'Nợ nghi ngờ 181-360 ngày' : 'Nợ có khả năng mất vốn >360 ngày'})
@@ -109,7 +105,7 @@ export const KunnHdtdSection: React.FC<KunnHdtdSectionProps> = ({
       </div>
     )}
 
-    {form.LoanMethod === 'Hạn mức tín dụng' && (
+    {isRevolvingCredit(form.LoanMethod) && (
       <div className="p-3 rounded-md border bg-panel border-line">
         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
           <Building2 className="w-3.5 h-3.5" />

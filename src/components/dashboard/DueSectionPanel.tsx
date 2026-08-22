@@ -1,16 +1,9 @@
 import React, { memo, type ElementType } from 'react';
 import { Printer } from 'lucide-react';
 import { DUE_FILTER_LABELS, type DueFilter } from '../../lib/dueList';
-import { AdaptiveTable, type AdaptiveColumn } from '../AdaptiveTable';
+import { DataTable, type ColumnDef } from '../ui/DataTable';
 
 export type Tone = 'accent' | 'warn' | 'pos' | 'neg';
-
-const TONE_TEXT: Record<Tone, string> = {
-  accent: 'text-accent',
-  warn: 'text-warn',
-  pos: 'text-pos',
-  neg: 'text-neg',
-};
 
 const TONE_CHIP: Record<Tone, string> = {
   accent: 'bg-accent-soft text-accent border-accent/30',
@@ -31,7 +24,7 @@ interface DueSectionPanelProps<T> {
   tone: Tone;
   title: string;
   counts: { upcoming: number; expired: number };
-  columns: AdaptiveColumn<T>[];
+  columns: ColumnDef<T>[];
   rows: T[];
   rowKey: (row: T) => React.Key;
   cardTitle: (row: T) => React.ReactNode;
@@ -48,31 +41,58 @@ function DueSectionPanelImpl<T>({
   icon: Icon, tone, title, counts, columns, rows, rowKey, cardTitle, cardSubtitle,
   emptyText, notice, cardBg, filter, onFilterChange, onPrint,
 }: DueSectionPanelProps<T>) {
+  const expiredFilter: DueFilter = 'expired';
+  const upcomingFilter: DueFilter = 'upcoming';
+
   return (
-    <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/70 bg-panel/80 backdrop-blur-md shadow-xs space-y-3.5`}>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/50 pb-3">
-        <div className="flex items-center space-x-2.5">
-          <span className={`p-1.5 rounded-lg ${TONE_CHIP[tone]}`}>
+    <div className={`${cardBg} rounded-2xl border p-4 sm:p-5 space-y-3.5 transition-all duration-150`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line/60 pb-3">
+        <div className="flex items-center space-x-2">
+          <div className={`p-2 rounded-xl ${TONE_CHIP[tone]}`}>
             <Icon className="w-4 h-4" />
-          </span>
-          <h3 className={`font-bold text-xs uppercase tracking-wider ${TONE_TEXT[tone]}`}>{title}</h3>
+          </div>
+          <div>
+            <h3 className="font-bold text-sm text-ink">{title}</h3>
+            <span className="text-[11px] text-ink-faint">Theo dõi và nhắc hạn tác nghiệp</span>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap shadow-2xs ${TONE_CHIP[tone]}`}>
-            {counts.upcoming} sắp đến · {counts.expired} quá hạn
-          </span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => onFilterChange?.(filter === expiredFilter ? 'all' : expiredFilter)}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors duration-150 ${
+              filter === expiredFilter
+                ? TONE_FILTER_ON[tone]
+                : 'border-neg/40 bg-neg-soft text-neg hover:border-neg'
+            }`}
+          >
+            Đã quá hạn ({counts.expired})
+          </button>
 
-          {onFilterChange && filter && (
-            <div className="flex items-center gap-1 bg-surface/60 p-0.5 rounded-xl border border-line/50">
-              {(['all', 'upcoming', 'expired'] as DueFilter[]).map(f => (
+          <button
+            type="button"
+            onClick={() => onFilterChange?.(filter === upcomingFilter ? 'all' : upcomingFilter)}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors duration-150 ${
+              filter === upcomingFilter
+                ? TONE_FILTER_ON[tone]
+                : 'border-warn/40 bg-warn-soft text-warn hover:border-warn'
+            }`}
+          >
+            Sắp tới hạn ({counts.upcoming})
+          </button>
+
+          {onFilterChange && (
+            <div className="flex items-center gap-1">
+              {(['all', 'urgent', 'month'] as DueFilter[]).map(f => (
                 <button
                   key={f}
                   type="button"
                   onClick={() => onFilterChange(f)}
-                  aria-pressed={filter === f}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all duration-150 ${
-                    filter === f ? `${TONE_FILTER_ON[tone]} shadow-xs` : 'text-ink-faint hover:text-ink hover:bg-panel-muted/60'
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors duration-150 ${
+                    filter === f
+                      ? 'bg-panel-muted border-accent text-accent font-bold'
+                      : 'bg-panel border-line text-ink-muted hover:border-line-strong'
                   }`}
                 >
                   {DUE_FILTER_LABELS[f]}
@@ -96,7 +116,7 @@ function DueSectionPanelImpl<T>({
         <div className="text-[11px] text-warn font-semibold bg-warn-soft/40 border border-warn/20 rounded-xl px-3 py-2">{notice}</div>
       )}
 
-      <AdaptiveTable
+      <DataTable
         rows={rows}
         rowKey={rowKey}
         columns={columns}

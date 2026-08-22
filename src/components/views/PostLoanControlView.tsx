@@ -6,7 +6,7 @@ import { assetClassLabel, defaultLtvForAssetType } from '../../lib/collateralMat
 import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { Toast } from '../Toast';
-import { AdaptiveTable, type AdaptiveColumn } from '../AdaptiveTable';
+import { DataTable, type ColumnDef } from '../ui/DataTable';
 import {
   usePostLoanControlController,
   type FilterType,
@@ -92,7 +92,7 @@ export const PostLoanControlView: React.FC = () => {
     );
   };
 
-  const allColumns: AdaptiveColumn<ControlItemWithRecord>[] = [
+  const allColumns: ColumnDef<ControlItemWithRecord>[] = [
     { key: 'kh', label: 'Khách hàng / CIF', priority: 3, render: it => (
       <>
         <div className="font-bold">{customerName(it.customerId)}</div>
@@ -268,7 +268,7 @@ export const PostLoanControlView: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <AdaptiveTable
+            <DataTable
               maxHeight="620px"
               rows={filtered.slice(0, 300)}
               rowKey={it => it.key}

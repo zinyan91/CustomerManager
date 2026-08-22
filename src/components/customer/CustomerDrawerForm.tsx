@@ -47,7 +47,6 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
   const [smartPasteText, setSmartPasteText] = useState('');
   const [showKhlqManualToggle, setShowKhlqManualToggle] = useState(false);
 
-  const inputStyle = UI.inputStyle;
 
   const handleApplySmartPaste = () => {
     if (onParseSnippet && smartPasteText.trim()) {
@@ -119,7 +118,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
               value={smartPasteText}
               onChange={e => setSmartPasteText(e.target.value)}
               placeholder="Ví dụ: CIF: 005299617 - KH: NGUYEN VAN AN - CCCD: 079090001234 - SDT: 0909123456 - STK: 190333444555 - ĐC: 123 Lê Lợi, Q1, TPHCM"
-              className={`w-full p-2.5 rounded-lg text-xs font-mono border ${inputStyle}`}
+              className={`w-full p-2.5 rounded-lg text-xs font-mono border ${UI.inputStyle}`}
             />
             <div className="flex justify-end gap-2">
               <button
@@ -166,7 +165,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                   placeholder="005299617..."
                   value={formState.inputCif}
                   onChange={(e) => formState.setInputCif(e.target.value)}
-                  className={`w-full rounded-lg p-2.5 font-mono font-bold text-accent ${inputStyle}`}
+                  className={`w-full rounded-lg p-2.5 font-mono font-bold text-accent ${UI.inputStyle}`}
                 />
               </div>
 
@@ -180,7 +179,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                   placeholder="NGUYỄN VĂN AN..."
                   value={formState.inputFullName}
                   onChange={(e) => formState.setInputFullName(e.target.value)}
-                  className={`w-full rounded-lg p-2.5 font-bold text-sm text-ink ${inputStyle}`}
+                  className={`w-full rounded-lg p-2.5 font-bold text-sm text-ink ${UI.inputStyle}`}
                 />
               </div>
             </div>
@@ -194,7 +193,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                   inputMode="numeric"
                   value={formatNationalId(formState.inputNationalId)}
                   onChange={(e) => formState.setInputNationalId(e.target.value)}
-                  className={`w-full rounded-lg p-2.5 font-mono font-semibold ${inputStyle}`}
+                  className={`w-full rounded-lg p-2.5 font-mono font-semibold ${UI.inputStyle}`}
                 />
               </div>
 
@@ -203,7 +202,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                 <select
                   value={formState.inputMaritalStatus}
                   onChange={(e) => formState.setInputMaritalStatus(e.target.value)}
-                  className={`w-full rounded-lg p-2.5 font-semibold ${inputStyle}`}
+                  className={`w-full rounded-lg p-2.5 font-semibold ${UI.inputStyle}`}
                 >
                   <option value="Độc thân">Độc thân</option>
                   <option value="Đã kết hôn">Đã kết hôn (Kèm thông tin Vợ/Chồng)</option>
@@ -229,7 +228,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                   placeholder="0909123456..."
                   value={formState.inputPhone}
                   onChange={(e) => formState.setInputPhone(e.target.value)}
-                  className={`w-full rounded-lg p-2.5 font-mono ${inputStyle}`}
+                  className={`w-full rounded-lg p-2.5 font-mono ${UI.inputStyle}`}
                 />
               </div>
 
@@ -240,7 +239,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                   placeholder="190333444555..."
                   value={formState.inputAccountNumber}
                   onChange={(e) => formState.setInputAccountNumber(e.target.value)}
-                  className={`w-full rounded-lg p-2.5 font-mono font-bold text-ink ${inputStyle}`}
+                  className={`w-full rounded-lg p-2.5 font-mono font-bold text-ink ${UI.inputStyle}`}
                 />
               </div>
 
@@ -251,7 +250,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                   placeholder="khachhang@gmail.com..."
                   value={formState.inputEmail}
                   onChange={(e) => formState.setInputEmail(e.target.value)}
-                  className={`w-full rounded-lg p-2.5 ${inputStyle}`}
+                  className={`w-full rounded-lg p-2.5 ${UI.inputStyle}`}
                 />
               </div>
             </div>
@@ -263,7 +262,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                 placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
                 value={formState.inputAddress}
                 onChange={(e) => formState.setInputAddress(e.target.value)}
-                className={`w-full rounded-lg p-2.5 ${inputStyle}`}
+                className={`w-full rounded-lg p-2.5 ${UI.inputStyle}`}
               />
             </div>
           </div>
@@ -299,7 +298,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                     <select
                       value={formState.inputKhlqRelationship}
                       onChange={(e) => formState.setInputKhlqRelationship(e.target.value)}
-                      className={`w-full rounded-lg p-2.5 font-bold text-accent ${inputStyle}`}
+                      className={`w-full rounded-lg p-2.5 font-bold text-accent ${UI.inputStyle}`}
                     >
                       <option value="Vợ / Chồng">Vợ / Chồng</option>
                       <option value="Người bảo lãnh">Người bảo lãnh thanh toán</option>
@@ -321,7 +320,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                       placeholder="NGUYỄN THỊ MAI..."
                       value={formState.inputSpouseName}
                       onChange={(e) => formState.setInputSpouseName(e.target.value)}
-                      className={`w-full rounded-lg p-2.5 font-bold text-ink ${inputStyle}`}
+                      className={`w-full rounded-lg p-2.5 font-bold text-ink ${UI.inputStyle}`}
                     />
                   </div>
                 </div>
@@ -334,7 +333,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                       placeholder="005236684..."
                       value={formState.inputCifKhlq}
                       onChange={(e) => formState.setInputCifKhlq(e.target.value)}
-                      className={`w-full rounded-lg p-2.5 font-mono font-bold text-accent ${inputStyle}`}
+                      className={`w-full rounded-lg p-2.5 font-mono font-bold text-accent ${UI.inputStyle}`}
                     />
                   </div>
 
@@ -346,7 +345,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                       inputMode="numeric"
                       value={formatNationalId(formState.inputSpouseNationalId)}
                       onChange={(e) => formState.setInputSpouseNationalId(e.target.value)}
-                      className={`w-full rounded-lg p-2.5 font-mono ${inputStyle}`}
+                      className={`w-full rounded-lg p-2.5 font-mono ${UI.inputStyle}`}
                     />
                   </div>
 
@@ -357,7 +356,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                       placeholder="0912345678..."
                       value={formState.inputSpousePhone}
                       onChange={(e) => formState.setInputSpousePhone(e.target.value)}
-                      className={`w-full rounded-lg p-2.5 font-mono ${inputStyle}`}
+                      className={`w-full rounded-lg p-2.5 font-mono ${UI.inputStyle}`}
                     />
                   </div>
                 </div>
@@ -370,7 +369,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                       placeholder="Số tài khoản..."
                       value={formState.inputSpouseAccountNumber}
                       onChange={(e) => formState.setInputSpouseAccountNumber(e.target.value)}
-                      className={`w-full rounded-lg p-2.5 font-mono font-bold text-ink ${inputStyle}`}
+                      className={`w-full rounded-lg p-2.5 font-mono font-bold text-ink ${UI.inputStyle}`}
                     />
                   </div>
 
@@ -381,7 +380,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                       placeholder="Địa chỉ..."
                       value={formState.inputKhlqAddress}
                       onChange={(e) => formState.setInputKhlqAddress(e.target.value)}
-                      className={`w-full rounded-lg p-2.5 ${inputStyle}`}
+                      className={`w-full rounded-lg p-2.5 ${UI.inputStyle}`}
                     />
                   </div>
                 </div>

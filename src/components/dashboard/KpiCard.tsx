@@ -16,7 +16,7 @@ const HUE_VAR: Record<KpiHue, string> = {
 };
 
 interface KpiCardProps {
-  cardBg: string;
+  cardBg?: string;
   hue: KpiHue;
   icon: ElementType;
   label: string;
@@ -26,7 +26,7 @@ interface KpiCardProps {
 }
 
 export const KpiCard = memo<KpiCardProps>(({
-  cardBg, hue, icon: Icon, label, value, unit, note,
+  cardBg = 'bg-panel/85 backdrop-blur-xl border border-line/65 text-ink specular-card', hue, icon: Icon, label, value, unit, note,
 }) => (
   <div
     data-kpi-hue={hue}

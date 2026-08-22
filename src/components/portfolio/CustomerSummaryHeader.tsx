@@ -3,7 +3,6 @@ import { Plus, Landmark } from 'lucide-react';
 import { fmtMoney } from '../../lib/utils';
 
 interface CustomerSummaryHeaderProps {
-  containerCardBg: string;
   selectedMasterFilter: string;
   totalCreditLimit: number;
   canDisburse?: boolean;
@@ -12,7 +11,6 @@ interface CustomerSummaryHeaderProps {
 }
 
 export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
-  containerCardBg,
   selectedMasterFilter,
   totalCreditLimit,
   canDisburse = true,
@@ -20,7 +18,7 @@ export const CustomerSummaryHeader: React.FC<CustomerSummaryHeaderProps> = ({
   children,
 }) => {
   return (
-    <div className={`${containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150 space-y-3.5`}>
+    <div className="rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150 space-y-3.5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
           <div className="p-2.5 rounded-xl bg-accent-soft text-accent shrink-0 shadow-2xs">

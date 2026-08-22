@@ -26,8 +26,6 @@ const dung = (over: {
 } = {}) =>
   render(
     <KunnTable
-      containerCardBg=""
-      tableHeaderStyle=""
       filteredContracts={over.contracts ?? []}
       selectedContract={null}
       handleSelectContract={vi.fn()}

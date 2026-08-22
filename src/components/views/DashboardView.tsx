@@ -30,7 +30,7 @@ import { downloadBytes } from '../../lib/xlsExport';
 import { DueSectionPanel, dueBadgeClass, dueBadgeText } from '../dashboard/DueSectionPanel';
 import { DashboardSummaryKpis } from '../dashboard/DashboardSummaryKpis';
 import { DashboardPortfolioStructure } from '../dashboard/DashboardPortfolioStructure';
-import type { AdaptiveColumn } from '../AdaptiveTable';
+import type { ColumnDef } from '../ui/DataTable';
 
 export const DashboardView: React.FC = () => {
   const { toast, show, dismiss } = useToast();
@@ -323,7 +323,7 @@ export const DashboardView: React.FC = () => {
   }, [tsbdRows, q]);
 
   type DueInMonthItem = (typeof dueInMonthList)[number];
-  const dueInMonthColumns: AdaptiveColumn<DueInMonthItem>[] = [
+  const dueInMonthColumns: ColumnDef<DueInMonthItem>[] = [
     { key: 'kh', label: 'Khách hàng vay', priority: 3, render: i => <span className="font-bold">{i.customer?.FullName || 'N/A'}</span> },
     { key: 'cif', label: 'Mã CIF', priority: 2,
       render: i => <span className="font-mono text-ink-muted">{i.customer?.CifKh || '—'}</span> },
@@ -382,7 +382,7 @@ export const DashboardView: React.FC = () => {
   ];
 
   type KunnRowItem = (typeof kunnRows)[number];
-  const kunnColumns: AdaptiveColumn<KunnRowItem>[] = [
+  const kunnColumns: ColumnDef<KunnRowItem>[] = [
     { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
     { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: r => <span className="font-mono">{r.contract.ContractNumber}</span> },
     { key: 'soTien', label: 'Số tiền KUNN / dư nợ', priority: 1, align: 'right',
@@ -398,7 +398,7 @@ export const DashboardView: React.FC = () => {
   ];
 
   type HmtdRowItem = (typeof hmtdRows)[number];
-  const hmtdColumns: AdaptiveColumn<HmtdRowItem>[] = [
+  const hmtdColumns: ColumnDef<HmtdRowItem>[] = [
     { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
     { key: 'soHdtd', label: 'Số HĐTD hạn mức', priority: 2,
       render: r => <span className="font-mono font-bold text-accent">{r.masterNo}</span> },
@@ -420,7 +420,7 @@ export const DashboardView: React.FC = () => {
   ];
 
   type TsbdRowItem = (typeof tsbdRows)[number];
-  const tsbdColumns: AdaptiveColumn<TsbdRowItem>[] = [
+  const tsbdColumns: ColumnDef<TsbdRowItem>[] = [
     { key: 'chuSoHuu', label: 'Chủ sở hữu TSĐB', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
     { key: 'maTs', label: 'Mã TS / địa chỉ', priority: 2,
       render: r => <span className="font-medium">{r.collateral.AssetCode || r.collateral.Address || 'TSBĐ'}</span> },

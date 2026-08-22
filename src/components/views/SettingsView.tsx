@@ -3,6 +3,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useDateFormat, type DateFormat } from '../../context/DateFormatContext';
 import { useFormatSettings } from '../../context/FormatSettingsContext';
 import { useFontSettings } from '../../context/FontSettingsContext';
+import { Panel } from '../ui/Panel';
 import {
   Settings,
   Sun,
@@ -82,7 +83,7 @@ export const SettingsView: React.FC = () => {
         {/* ========================================================================= */}
         <div className="space-y-5">
           {/* Theme Selector */}
-          <div className="bg-panel border border-line p-4 sm:p-5 rounded-xl shadow-xs space-y-3.5">
+          <Panel className="space-y-3.5">
             <div className="flex items-center justify-between border-b border-line/60 pb-2.5">
               <h3 className="text-xs font-bold text-accent uppercase flex items-center gap-2">
                 <Palette className="w-4 h-4" />
@@ -154,10 +155,10 @@ export const SettingsView: React.FC = () => {
                 )}
               </button>
             </div>
-          </div>
+          </Panel>
 
           {/* Typography & Font Sizes */}
-          <div className="bg-panel border border-line p-4 sm:p-5 rounded-xl shadow-xs space-y-4">
+          <Panel className="space-y-4">
             <div className="flex items-center justify-between border-b border-line/60 pb-2.5">
               <h3 className="text-xs font-bold text-accent uppercase flex items-center gap-2">
                 <Type className="w-4 h-4" />
@@ -255,7 +256,7 @@ export const SettingsView: React.FC = () => {
                 </span>
               </div>
             </div>
-          </div>
+          </Panel>
         </div>
 
         {/* ========================================================================= */}
@@ -263,7 +264,7 @@ export const SettingsView: React.FC = () => {
         {/* ========================================================================= */}
         <div className="space-y-5">
           {/* Date & Time Formats */}
-          <div className="bg-panel border border-line p-4 sm:p-5 rounded-xl shadow-xs space-y-4">
+          <Panel className="space-y-4">
             <div className="flex items-center justify-between border-b border-line/60 pb-2.5">
               <h3 className="text-xs font-bold text-accent uppercase flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
@@ -330,10 +331,10 @@ export const SettingsView: React.FC = () => {
                 })}
               </div>
             </div>
-          </div>
+          </Panel>
 
           {/* Number & Currency Formats */}
-          <div className="bg-panel border border-line p-4 sm:p-5 rounded-xl shadow-xs space-y-4">
+          <Panel className="space-y-4">
             <div className="flex items-center justify-between border-b border-line/60 pb-2.5">
               <h3 className="text-xs font-bold text-pos uppercase flex items-center gap-2">
                 <Sliders className="w-4 h-4" />
@@ -430,7 +431,7 @@ export const SettingsView: React.FC = () => {
                 className="w-4 h-4 accent-accent rounded cursor-pointer shrink-0"
               />
             </label>
-          </div>
+          </Panel>
         </div>
       </div>
     </div>

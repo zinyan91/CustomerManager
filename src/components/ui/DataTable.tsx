@@ -161,18 +161,16 @@ function DataTableImpl<T>({
 
       {/* Desktop Table (hidden md:block) */}
       <div
-        className={`hidden md:block overflow-x-auto ${maxHeight ? 'overflow-y-auto' : ''}`}
+        className={`hidden md:block overflow-x-auto rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card ${maxHeight ? 'overflow-y-auto' : ''}`}
         style={maxHeight ? { maxHeight } : undefined}
       >
-        <table className="w-full text-left border-collapse text-[var(--fs-body)] text-ink">
-          <thead>
-            <tr className="border-b border-line/70 bg-surface/60">
+        <table className="w-full text-left text-xs border-collapse font-app">
+          <thead className={`${stickyHeader ? 'sticky top-0 z-20 bg-surface/95 backdrop-blur-md' : 'bg-surface/95'} border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint ${maxHeight ? 'shadow-2xs' : ''}`}>
+            <tr>
               {columns.map((c) => (
                 <th
                   key={c.key}
-                  className={`py-3 px-3.5 text-[var(--fs-label)] uppercase font-bold text-ink-faint tracking-wider whitespace-nowrap ${
-                    stickyHeader ? 'sticky top-0 bg-surface/90 backdrop-blur-sm z-10' : ''
-                  } ${alignClass(c.align)}`}
+                  className={`px-4 py-3 whitespace-nowrap text-ink-faint ${alignClass(c.align)}`}
                   style={c.width ? { width: c.width } : undefined}
                 >
                   {c.label}
@@ -180,9 +178,7 @@ function DataTableImpl<T>({
               ))}
               {actions && (
                 <th
-                  className={`py-3 px-3.5 text-[var(--fs-label)] uppercase font-bold text-ink-faint tracking-wider text-right whitespace-nowrap ${
-                    stickyHeader ? 'sticky top-0 bg-surface/90 backdrop-blur-sm z-10' : ''
-                  }`}
+                  className="px-4 py-3 whitespace-nowrap text-center sticky right-0 z-20 bg-surface/95 backdrop-blur-md border-l border-line/70 text-ink-faint"
                 >
                   {actionsLabel}
                 </th>
@@ -198,25 +194,26 @@ function DataTableImpl<T>({
                 <tr
                   key={k}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={`transition-colors duration-100 ${
-                    onRowClick ? 'cursor-pointer' : ''
-                  } ${
-                    selected
-                      ? 'bg-accent-soft/80 hover:bg-accent-soft text-ink font-semibold'
-                      : 'hover:bg-surface/50'
-                  }`}
+                  className={`group transition-colors duration-150 ${
+                    selected ? 'bg-accent-soft/70 border-l-2 border-l-accent font-medium' : 'hover:bg-accent/[0.04]'
+                  } ${onRowClick ? 'cursor-pointer' : ''}`}
                 >
                   {columns.map((c) => (
                     <td
                       key={c.key}
-                      className={`py-3 px-3.5 align-middle ${alignClass(c.align)}`}
+                      className={`px-4 py-3 whitespace-nowrap text-ink ${alignClass(c.align)}`}
                     >
                       {c.render(row)}
                     </td>
                   ))}
                   {actions && (
-                    <td className="py-3 px-3.5 align-middle text-right whitespace-nowrap">
-                      {actions(row)}
+                    <td
+                      className={`px-4 py-2.5 text-center whitespace-nowrap sticky right-0 z-10 border-l border-line/50 transition-colors ${
+                        selected ? 'bg-accent-soft/80' : 'bg-panel/95 group-hover:bg-surface/95'
+                      }`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="inline-flex items-center gap-1.5">{actions(row)}</div>
                     </td>
                   )}
                 </tr>

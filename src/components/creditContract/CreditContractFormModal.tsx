@@ -51,8 +51,6 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
   onSave,
   onClose,
 }) => {
-  const inputStyle = UI.inputStyle;
-  const labelStyle = UI.labelStyle;
   const today = todayIso();
 
   return (
@@ -79,7 +77,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
         <form onSubmit={onSave} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className={`block mb-1 font-semibold ${labelStyle}`}>
+              <label className={`block mb-1 font-semibold ${UI.labelStyle}`}>
                 Số Hợp đồng Tín dụng <span className="text-neg">*</span>
               </label>
               <input
@@ -89,18 +87,18 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
                 placeholder="VD: HĐTD-2026/001..."
                 value={form.HdtdNumber || ''}
                 onChange={e => setForm({ ...form, HdtdNumber: e.target.value })}
-                className={`w-full rounded-xl p-2.5 font-mono font-bold text-accent ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 font-mono font-bold text-accent ${UI.inputStyle}`}
               />
             </div>
 
             <div>
-              <label className={`block mb-1 font-semibold ${labelStyle}`}>
+              <label className={`block mb-1 font-semibold ${UI.labelStyle}`}>
                 Phương thức cho vay <span className="text-neg">*</span>
               </label>
               <select
                 value={form.LoanMethod || LOAN_METHODS[0]}
                 onChange={e => setForm({ ...form, LoanMethod: e.target.value })}
-                className={`w-full rounded-xl p-2.5 font-semibold ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 font-semibold ${UI.inputStyle}`}
               >
                 {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
@@ -109,7 +107,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className={`block mb-1 font-semibold ${labelStyle}`}>
+              <label className={`block mb-1 font-semibold ${UI.labelStyle}`}>
                 Hạn mức cấp HĐTD (VNĐ) <span className="text-neg">*</span>
               </label>
               <input
@@ -118,49 +116,49 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
                 placeholder="VD: 1.000.000.000"
                 value={formAmount}
                 onChange={e => setFormAmount(formatMoneyInput(e.target.value))}
-                className={`w-full rounded-xl p-2.5 font-mono font-bold text-sm text-accent ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 font-mono font-bold text-sm text-accent ${UI.inputStyle}`}
               />
             </div>
 
             <div>
-              <label className={`block mb-1 font-semibold ${labelStyle}`}>Thời hạn vay tối đa (Tháng)</label>
+              <label className={`block mb-1 font-semibold ${UI.labelStyle}`}>Thời hạn vay tối đa (Tháng)</label>
               <input
                 type="number"
                 min={1}
                 max={360}
                 value={form.LoanTenorMonths ?? 12}
                 onChange={e => setForm({ ...form, LoanTenorMonths: parseInt(e.target.value, 10) || 12 })}
-                className={`w-full rounded-xl p-2.5 font-mono font-bold ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 font-mono font-bold ${UI.inputStyle}`}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className={`block mb-1 font-semibold ${labelStyle}`}>Ngày bắt đầu hiệu lực</label>
+              <label className={`block mb-1 font-semibold ${UI.labelStyle}`}>Ngày bắt đầu hiệu lực</label>
               <DateInput
                 value={form.ContractStartDate}
                 onChange={d => setForm({ ...form, ContractStartDate: d })}
-                className={`w-full rounded-xl p-2.5 ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 ${UI.inputStyle}`}
               />
             </div>
 
             <div>
-              <label className={`block mb-1 font-semibold ${labelStyle}`}>Ngày hết hạn hiệu lực</label>
+              <label className={`block mb-1 font-semibold ${UI.labelStyle}`}>Ngày hết hạn hiệu lực</label>
               <DateInput
                 value={form.ContractEndDate}
                 onChange={d => setForm({ ...form, ContractEndDate: d })}
-                className={`w-full rounded-xl p-2.5 ${inputStyle}`}
+                className={`w-full rounded-xl p-2.5 ${UI.inputStyle}`}
               />
             </div>
           </div>
 
           <div>
-            <label className={`block mb-1 font-semibold ${labelStyle}`}>Mục đích sử dụng vốn</label>
+            <label className={`block mb-1 font-semibold ${UI.labelStyle}`}>Mục đích sử dụng vốn</label>
             <select
               value={form.LoanPurpose || ''}
               onChange={e => setForm({ ...form, LoanPurpose: e.target.value })}
-              className={`w-full rounded-xl p-2.5 font-medium ${inputStyle}`}
+              className={`w-full rounded-xl p-2.5 font-medium ${UI.inputStyle}`}
             >
               <option value="">— Chọn mục đích sử dụng vốn —</option>
               {purposeOptions.map(p => (
@@ -184,23 +182,23 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
             {useSharedApproval && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6 animate-in slide-in-from-top-1 duration-150">
                 <div>
-                  <label className={`block mb-1 font-semibold ${labelStyle}`}>Mã Tờ trình phê duyệt</label>
+                  <label className={`block mb-1 font-semibold ${UI.labelStyle}`}>Mã Tờ trình phê duyệt</label>
                   <input
                     type="text"
                     placeholder="VD: TT-2026/999"
                     value={form.ApprovalCode || ''}
                     onChange={e => setForm({ ...form, ApprovalCode: e.target.value })}
-                    className={`w-full rounded-xl p-2.5 font-mono ${inputStyle}`}
+                    className={`w-full rounded-xl p-2.5 font-mono ${UI.inputStyle}`}
                   />
                 </div>
                 <div>
-                  <label className={`block mb-1 font-semibold ${labelStyle}`}>Tổng hạn mức phê duyệt chung (VNĐ)</label>
+                  <label className={`block mb-1 font-semibold ${UI.labelStyle}`}>Tổng hạn mức phê duyệt chung (VNĐ)</label>
                   <input
                     type="text"
                     placeholder="VD: 5.000.000.000"
                     value={formApprovalAmount}
                     onChange={e => setFormApprovalAmount(formatMoneyInput(e.target.value))}
-                    className={`w-full rounded-xl p-2.5 font-mono ${inputStyle}`}
+                    className={`w-full rounded-xl p-2.5 font-mono ${UI.inputStyle}`}
                   />
                 </div>
               </div>
@@ -210,7 +208,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
           {/* Gán TSBĐ */}
           <div className="space-y-2 pt-2 border-t border-line/60">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <label className={`block font-bold text-ink ${labelStyle}`}>
+              <label className={`block font-bold text-ink ${UI.labelStyle}`}>
                 Tài sản Bảo đảm Thế chấp cho HĐTD ({selectedCollateralIds.length} đã chọn) <span className="text-neg">*</span>
               </label>
               {tongKhaNangBaoDam > 0 && (
@@ -283,13 +281,13 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
           </div>
 
           <div>
-            <label className={`block mb-1 font-semibold ${labelStyle}`}>Ghi chú bổ sung</label>
+            <label className={`block mb-1 font-semibold ${UI.labelStyle}`}>Ghi chú bổ sung</label>
             <textarea
               rows={2}
               placeholder="Ghi chú điều kiện cấp tín dụng, phê duyệt..."
               value={form.Note || ''}
               onChange={e => setForm({ ...form, Note: e.target.value })}
-              className={`w-full rounded-xl p-2.5 ${inputStyle}`}
+              className={`w-full rounded-xl p-2.5 ${UI.inputStyle}`}
             />
           </div>
 

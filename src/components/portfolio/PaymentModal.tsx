@@ -11,7 +11,6 @@ import { Button } from '../ui/Button';
 interface PaymentModalProps {
   editingSchedule: RepaymentSchedule;
   selectedContract: LoanContract;
-  containerCardBg?: string;
   loading: boolean;
   modalActualPaidPrincipalStr: string;
   setModalActualPaidPrincipalStr: (v: string) => void;

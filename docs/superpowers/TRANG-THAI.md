@@ -3,8 +3,8 @@
 > Tệp này để **bắt lại mạch khi mở phiên trò chuyện mới**. Cập nhật sau mỗi task xong.
 > Sổ chi tiết của phiên đang chạy nằm ở `.superpowers/sdd/<tên-kế-hoạch>/progress.md`, nhưng thư mục đó bị `.gitignore` bỏ qua và bị xoá khi đóng đợt — nên mọi thứ cần sống lâu phải nằm ở đây.
 
-**Cập nhật lần cuối:** 2026-08-21, sau khi hoàn tất 100% Đợt 2 (Bộ Component Dùng Chung & `Dialog` / `ConfirmDialog`).
-Kế hoạch chi tiết: `docs/superpowers/plans/2026-08-21-rebuild-giao-dien-dot-2-bo-component.md`.
+**Cập nhật lần cuối:** 2026-08-22, sau đợt 3 (Nợ cấu trúc nhóm hồ sơ tín dụng & rút gọn `KunnForm`) — **8/9 task, chưa commit**.
+Kế hoạch chi tiết: `docs/superpowers/plans/2026-08-21-rebuild-giao-dien-dot-3-no-cau-truc.md`.
 
 ---
 
@@ -12,7 +12,7 @@ Kế hoạch chi tiết: `docs/superpowers/plans/2026-08-21-rebuild-giao-dien-do
 
 1. Đọc hết tệp này.
 2. Đọc bản thiết kế `docs/superpowers/specs/2026-08-19-rebuild-giao-dien-design.md`.
-3. Lập kế hoạch đợt 3 bằng skill `superpowers:writing-plans`.
+3. Lập kế hoạch đợt 4 bằng skill `superpowers:writing-plans`.
 4. Cập nhật tệp này sau mỗi task xong.
 
 **Đừng hỏi lại chủ dự án những câu đã có đáp án** trong mục "Quyết định đã chốt" và "Phán quyết còn hiệu lực" bên dưới.
@@ -23,12 +23,14 @@ Kế hoạch chi tiết: `docs/superpowers/plans/2026-08-21-rebuild-giao-dien-do
 
 | | |
 | :--- | :--- |
-| Nhánh hiện tại | `main` — local working tree có toàn bộ Đợt 1b & Đợt 2 (Chưa commit và chưa push theo lệnh của người dùng) |
-| Việc đang dở | Không có. Đợt 2 đã hoàn tất 13/13 tasks. |
-| Đợt vừa xong | **2 — bộ component dùng chung & `Dialog`/`ConfirmDialog`** (Radix UI, Button, StatusPill, Panel, KpiCard, Field, Dialog, ConfirmDialog, Tabs, DataTable, FeedbackStates, CustomerPicker, thay thế toàn bộ `window.confirm` và migrate các modal sang Dialog). |
-| Đợt kế tiếp | **3 — Rebuild giao diện từng màn hình chuyên sâu** (theo spec §7). |
-| Tổng test | **1.884** xanh, 0 đỏ · 103 tệp test (100% pass) |
-| TypeScript build | `npx tsc -b` sạch 100%, 0 lỗi |
+| Nhánh hiện tại | `main` @ `10e1211` — **toàn bộ đợt 3 còn nằm trong cây làm việc, CHƯA commit** (35 tệp đang đổi) |
+| Việc đang dở | Đợt 3 xong 8/9 task. **Task 8 cố ý làm dở**: trong 6 chỗ tự dựng `bg-panel border border-line`, chỉ `SettingsView` thay được bằng `Panel`; 5 chỗ còn lại (`sheetCells`, `CommandPalette`, `MdsdvGroupedView`, `Sidebar`, `InventoryView`) khác `Panel` về chất — thiếu opacity/blur/shadow/bán kính, hoặc là `<span>`/`<select>`/`<form>` chứ không phải `div`. Thay vào sẽ **đổi diện mạo**, trái ràng buộc số một của đợt. Chờ chủ dự án quyết |
+| Đợt vừa xong | **3 — Nợ cấu trúc nhóm hồ sơ tín dụng** (`AdaptiveTable` → `DataTable` và xoá bản cũ; gỡ chuỗi class khỏi 20 tệp cây hồ sơ tín dụng; gom `KunnForm` 65 props → 22 props qua 4 nhóm `limit`, `amount`, `rate`, `adjustment`; rút luật nghiệp vụ sang `kunnFormRules.ts` kèm unit test; chuẩn hoá `Panel` trong `SettingsView`). |
+| Đợt kế tiếp | **4 — Tổng quan, Kiểm soát sau vay** (theo spec §7). |
+| Tổng test | **1.898** xanh, 0 đỏ · 104 tệp test (100% pass) |
+| TypeScript build | `npm run build` sạch, 0 lỗi |
+| Cảnh báo lint | 70 (tập trung ở `src/hooks/useRatePrograms.ts` và `mobile/`), 0 lỗi |
+| `window.confirm` còn lại | **1 tệp** — `src/context/ConfirmContext.tsx`, là fallback có chủ đích khi gọi `useConfirm()` ngoài Provider |
 | Ràng buộc đặc biệt | **Tuyệt đối không chạy commit và push** trừ khi người dùng ra lệnh trực tiếp. |
 
 ## Đợt 2 đã tạo ra gì
@@ -165,9 +167,9 @@ Chủ dự án đã chốt trong phiên brainstorm ngày 19/08/2026:
 | **0** | Token, thang chữ, bo góc, `navigation.ts`, dọn rác, viết lại §15 §17 | ✅ **xong, đã gộp vào `main`** (`c5ebd57`) |
 | **1a** | `react-router`, khung `AppLayout`, Sidebar, CommandPalette, Header thôi ping CSDL | ✅ **xong, đã gộp vào `main`** (`b0b6653`) |
 | **1b** | `useSelectedCustomerId` đọc `:id`, thanh ngữ cảnh khách hàng, chuyển 4 controller, luồng giải ngân qua URL | ✅ **xong, đã gộp vào `main`** (`f02c153..a5c91a7`) |
-| **2** | Bộ component + `Dialog`/`ConfirmDialog` — thay 15 modal và 13 tệp `window.confirm` | ⬅️ **kế tiếp**, chưa lập kế hoạch |
-| **3** | Hồ sơ tín dụng: Khách hàng, HĐTD, Khoản vay, TSĐB, Thẻ. **Nặng nhất** — gỡ 65 props của `KunnForm` | chưa |
-| **4** | Tổng quan, Kiểm soát sau vay | chưa |
+| **2** | Bộ component + `Dialog`/`ConfirmDialog` — thay 15 modal và 13 tệp `window.confirm` | ✅ **xong, đã gộp và đẩy** (`10e1211`) |
+| **3** | Hồ sơ tín dụng: Khách hàng, HĐTD, Khoản vay, TSĐB, Thẻ. **Nợ cấu trúc** — `AdaptiveTable` → `DataTable`, gỡ chuỗi class khỏi 20 tệp, gom 65 props của `KunnForm` xuống 22, rút luật nghiệp vụ sang `kunnFormRules.ts` | ✅ **xong, 104/104 tệp test xanh** |
+| **4** | Tổng quan, Kiểm soát sau vay | ⬅️ **kế tiếp**, chưa lập kế hoạch |
 | **5** | Công cụ & Phương án — 5 màn sau khi gộp tồn kho | chưa |
 | **6** | Tra cứu & Biểu mẫu — 4 màn, gỡ 65 `useState` của `DocumentTemplateView` | chưa |
 | **7** | Cài đặt, dọn nốt cầu tạm | chưa |
@@ -229,6 +231,12 @@ Những điều dưới đây đã quyết rồi, đừng quyết lại:
 | `fetchCustomersAPI()` nạp tới 1000 khách rồi tìm ở trình duyệt | thấp | Đã thêm `fetchCustomerByIdAPI` và dùng trong `useCustomerContext` (2026-08-21). `useCreditContractController` và `useCustomerPortfolio` vẫn dùng `fetchCustomersAPI()` cho danh sách dropdown/allCustomers — chưa đổi, vì đó là danh sách chọn khách chứ không phải tra một khách theo id |
 | `/customers/:id/profile` cho khách không có trong danh sách đã nạp | thấp | Mắc kẹt ở `/profile` — không ngăn kéo, không chuyển hướng |
 | `AbortError` từ fetch bị huỷ bị tính như mất kết nối thật | thấp | Cờ lỗi API mới (`apiHealth.ts`) chưa phân biệt fetch bị huỷ với máy chủ thật sự không với tới được. Suy đoán, chưa gặp thật |
+| Thang chữ ngữ nghĩa `--fs-*` chưa ai tiêu thụ | trung bình | Sáu biến `--fs-*` đợt 0 mới dùng 16 lần toàn dự án; cây hồ sơ đợt 3 giữ `text-xs` 145 lần để bảo toàn giao diện |
+| 7 tệp ngoài cây đợt 3 còn khai chuỗi class trong `Props` | trung bình — đợt 4–5 | Đo 22/08/2026: **4** ở `dashboard/` (đợt 4) và **3** ở `rate/` (đợt 5). Cây đợt 3 sạch 100%. Lưu ý cách đếm: 78 tệp còn *nhắc tên* `inputStyle`/`containerCardBg`… nhưng phần lớn là biến cục bộ `const inputStyle = UI.inputStyle`, không phải vi phạm — luật §5 cấm **nhận qua props** |
+| `className` của `DataTable` là prop chuỗi class | thấp | Cần rà soát chuẩn hoá trong đợt tiếp theo |
+| `DataTable` bị đổi ngược từ `--fs-*` về cỡ chữ cứng | trung bình — đợt 4 | Đợt 2 viết `DataTable` bằng `text-[var(--fs-body)]` / `text-[var(--fs-label)]`; đợt 3 đổi thành `text-xs` / `text-[10px]` để nó render giống hệt `AdaptiveTable` mà nó thay, giữ đúng ràng buộc không đổi diện mạo. Hệ quả: bảng dùng chung của dự án nay **không** tiêu thụ thang chữ ngữ nghĩa nữa, đi ngược hướng đợt 0 đặt ra. Gắn với mục "thang chữ `--fs-*` chưa ai tiêu thụ" ở trên |
+| `KpiCard` mới hạ `cardBg` thành tuỳ chọn chứ chưa gỡ hẳn | thấp — đợt 4 | Prop vẫn còn trong `interface`, chỉ thêm giá trị mặc định. Vẫn tính là 1 trong 4 tệp `dashboard/` vi phạm luật §5 |
+| Vân tay `getComputedStyle` phải sắp xếp trước khi băm | thấp | Bản không sắp xếp trong kế hoạch đợt 3 đo cùng một màn ba lần ra ba hash khác nhau, và lệch 5 ký tự giữa hai tab chạy cùng một mã — suýt kết luận sai là refactor đổi giao diện. Đã sửa `out.sort()` vào kế hoạch |
 
 ---
 

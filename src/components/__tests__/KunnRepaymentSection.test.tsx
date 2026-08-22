@@ -16,9 +16,6 @@ const dung = (over: {
 } = {}) =>
   render(
     <KunnRepaymentSection
-      sectionBoxBg=""
-      inputStyle=""
-      labelStyle=""
       form={{ PrincipalRepaymentMethod: 'Trả đều hàng tháng', ...over.form }}
       setForm={vi.fn()}
       graceOptions={[]}

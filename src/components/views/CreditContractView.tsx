@@ -55,8 +55,6 @@ export const CreditContractView: React.FC = () => {
     );
   };
 
-  const containerCardBg = UI.containerCardBg;
-
   const { granted: totalGranted } = totalsOfCreditContracts(summaries);
   const activeContractCount = summaries.filter(s => !s.contract.IsClosed).length;
 
@@ -66,7 +64,7 @@ export const CreditContractView: React.FC = () => {
 
       {/* Case 1: Chưa chọn Khách hàng — 1 Khung chọn Khách hàng trung tâm duy nhất */}
       {!customer ? (
-        <div className={`${containerCardBg} rounded-2xl p-6 sm:p-8 border border-line/70 bg-panel/85 backdrop-blur-xl shadow-xs space-y-6 specular-card max-w-2xl mx-auto my-6 text-center`}>
+        <div className={`${UI.containerCardBg} rounded-2xl p-6 sm:p-8 border border-line/70 bg-panel/85 backdrop-blur-xl shadow-xs space-y-6 specular-card max-w-2xl mx-auto my-6 text-center`}>
           <div className="w-14 h-14 rounded-2xl bg-accent-soft text-accent flex items-center justify-center mx-auto shadow-xs">
             <FileText className="w-7 h-7" />
           </div>
@@ -109,7 +107,7 @@ export const CreditContractView: React.FC = () => {
         /* Case 2: Đã chọn Khách hàng — Giao diện Tác nghiệp Tinh gọn, Không lặp lại thông tin */
         <>
           {/* Header Action & Portfolio Telemetry Card */}
-          <div className={`${containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/70 bg-panel/85 backdrop-blur-xl shadow-xs space-y-4 specular-card`}>
+          <div className={`${UI.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/70 bg-panel/85 backdrop-blur-xl shadow-xs space-y-4 specular-card`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
               <div className="flex items-center space-x-3 text-accent font-bold text-xs tracking-tight">
                 <div className="p-2 rounded-xl bg-accent-soft text-accent shadow-xs">
@@ -167,7 +165,7 @@ export const CreditContractView: React.FC = () => {
           </div>
 
           {/* Main Contract List Card */}
-          <div className={`${containerCardBg} rounded-2xl border border-line/70 bg-panel/85 backdrop-blur-xl shadow-xs overflow-hidden specular-card space-y-4 p-4 sm:p-5`}>
+          <div className={`${UI.containerCardBg} rounded-2xl border border-line/70 bg-panel/85 backdrop-blur-xl shadow-xs overflow-hidden specular-card space-y-4 p-4 sm:p-5`}>
             {/* Action / Filter Bar */}
             {closedCount > 0 && (
               <div className="flex items-center justify-end pb-2 border-b border-line/50">

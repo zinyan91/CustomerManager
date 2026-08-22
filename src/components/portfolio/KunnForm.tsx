@@ -1,24 +1,36 @@
 import React from 'react';
 import { KunnHdtdSection } from './kunn/KunnHdtdSection';
 import { KunnAmountSection } from './kunn/KunnAmountSection';
-import { KunnRateSection } from './kunn/KunnRateSection';
+import { KunnRateSection, type KunnRateProps, type KunnAdjustmentProps } from './kunn/KunnRateSection';
 import { KunnRepaymentSection } from './kunn/KunnRepaymentSection';
 import { KunnCollateralSection } from './kunn/KunnCollateralSection';
 import { FileText, X, Plus, Save, Trash2 } from 'lucide-react';
 import type { LimitGroupStatus } from '../../lib/creditLimit';
 import type { KunnIssue } from '../../lib/creditContract';
 import type {
-  LoanContract, CreditContract, Customer, Collateral, RateAdjustmentHistoryItem,
+  LoanContract, CreditContract, Customer, Collateral,
 } from '../../types';
 
-interface KunnFormProps {
-  containerCardBg: string;
-  sectionBoxBg: string;
-  inputStyle: string;
-  readonlyInputStyle: string;
-  labelStyle: string;
-  tableHeaderStyle: string;
+export type { KunnRateProps, KunnAdjustmentProps };
 
+export interface KunnLimitProps {
+  formLimitStatus: LimitGroupStatus | undefined;
+  kunnIssues: KunnIssue[];
+  formGrantedLimit: number;
+  totalExistingKunnBalance: number;
+  availableBeforeThisKunn: number;
+  remainingHmtdLimit: number;
+}
+
+export interface KunnAmountProps {
+  formLoanAmount: string;
+  setFormLoanAmount: (v: string) => void;
+  formMonthlyPrincipal: string;
+  setFormMonthlyPrincipal: (v: string) => void;
+  suggestedMonthlyPrincipal: number;
+}
+
+export interface KunnFormProps {
   selectedContract: LoanContract | null;
   foundCustomer: Customer | null;
   setShowForm: (v: boolean) => void;
@@ -37,51 +49,10 @@ interface KunnFormProps {
   formKunnNumber: string;
   setFormKunnNumber: (v: string) => void;
 
-  formLimitStatus: LimitGroupStatus | undefined;
-  kunnIssues: KunnIssue[];
-  formGrantedLimit: number;
-  totalExistingKunnBalance: number;
-  availableBeforeThisKunn: number;
-  remainingHmtdLimit: number;
-
-  formLoanAmount: string;
-  setFormLoanAmount: (v: string) => void;
-
-  formMonthlyPrincipal: string;
-  setFormMonthlyPrincipal: (v: string) => void;
-  suggestedMonthlyPrincipal: number;
-
-  interestRateMode: 'pref' | 'base';
-  setInterestRateMode: (v: 'pref' | 'base') => void;
-  ratePreferential: string;
-  setRatePreferential: (v: string) => void;
-  ratePreferentialMonths: string;
-  setRatePreferentialMonths: (v: string) => void;
-  rateBase: string;
-  setRateBase: (v: string) => void;
-  rateMargin: string;
-  setRateMargin: (v: string) => void;
-  postPrefRate: number;
-  normalRate: number;
-  surchargeVal: number;
-  currentActiveRateDisplay: number;
-  rateConditionSurcharge: string;
-  setRateConditionSurcharge: (v: string) => void;
-  rateFloor: string;
-  setRateFloor: (v: string) => void;
-
-  rateHistory: RateAdjustmentHistoryItem[];
-  setRateHistory: (v: RateAdjustmentHistoryItem[]) => void;
-  newAdjDate: string;
-  setNewAdjDate: (v: string) => void;
-  newAdjBaseRate: string;
-  setNewAdjBaseRate: (v: string) => void;
-  newAdjMargin: string;
-  setNewAdjMargin: (v: string) => void;
-  newAdjPenalty: string;
-  setNewAdjPenalty: (v: string) => void;
-  newAdjReason: string;
-  setNewAdjReason: (v: string) => void;
+  limit: KunnLimitProps;
+  amount: KunnAmountProps;
+  rate: KunnRateProps;
+  adjustment: KunnAdjustmentProps;
   showNotify: (type: 'success' | 'error', message: string) => void;
 
   graceOptions: number[];
@@ -90,26 +61,19 @@ interface KunnFormProps {
 }
 
 export const KunnForm: React.FC<KunnFormProps> = ({
-  containerCardBg, sectionBoxBg, inputStyle, readonlyInputStyle, labelStyle, tableHeaderStyle,
   selectedContract, foundCustomer, setShowForm,
   form, setForm, handleSaveContract, handleDeleteContract, loading,
   creditContracts, selectableCreditContracts, applyCreditContractToForm, formCreditContract,
   formKunnNumber, setFormKunnNumber,
-  formLimitStatus, kunnIssues, formGrantedLimit, totalExistingKunnBalance, availableBeforeThisKunn, remainingHmtdLimit,
-  formLoanAmount, setFormLoanAmount,
-  formMonthlyPrincipal, setFormMonthlyPrincipal, suggestedMonthlyPrincipal,
-  interestRateMode, setInterestRateMode,
-  ratePreferential, setRatePreferential, ratePreferentialMonths, setRatePreferentialMonths,
-  rateBase, setRateBase, rateMargin, setRateMargin,
-  postPrefRate, normalRate, surchargeVal, currentActiveRateDisplay,
-  rateConditionSurcharge, setRateConditionSurcharge, rateFloor, setRateFloor,
-  rateHistory, setRateHistory,
-  newAdjDate, setNewAdjDate, newAdjBaseRate, setNewAdjBaseRate, newAdjMargin, setNewAdjMargin,
-  newAdjPenalty, setNewAdjPenalty, newAdjReason, setNewAdjReason, showNotify,
+  limit,
+  amount,
+  rate,
+  adjustment,
+  showNotify,
   graceOptions, selectedCollaterals, maxAllowedLoanLtv,
 }) => {
   return (
-    <div className={`${containerCardBg} rounded-2xl p-4 sm:p-5 space-y-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150 font-app`}>
+    <div className="rounded-2xl p-4 sm:p-5 space-y-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150 font-app">
       <div className="flex items-center justify-between pb-3 border-b border-line/60">
         <h3 className="font-bold flex items-center space-x-2.5 text-sm text-accent">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent">
@@ -130,9 +94,6 @@ export const KunnForm: React.FC<KunnFormProps> = ({
 
       <form onSubmit={handleSaveContract} className="space-y-5">
         <KunnHdtdSection
-          sectionBoxBg={sectionBoxBg}
-          inputStyle={inputStyle}
-          labelStyle={labelStyle}
           selectedContract={selectedContract}
           foundCustomer={foundCustomer}
           form={form}
@@ -143,75 +104,35 @@ export const KunnForm: React.FC<KunnFormProps> = ({
           formCreditContract={formCreditContract}
           formKunnNumber={formKunnNumber}
           setFormKunnNumber={setFormKunnNumber}
-          formLimitStatus={formLimitStatus}
-          formGrantedLimit={formGrantedLimit}
-          totalExistingKunnBalance={totalExistingKunnBalance}
-          availableBeforeThisKunn={availableBeforeThisKunn}
+          formLimitStatus={limit.formLimitStatus}
+          formGrantedLimit={limit.formGrantedLimit}
+          totalExistingKunnBalance={limit.totalExistingKunnBalance}
+          availableBeforeThisKunn={limit.availableBeforeThisKunn}
         />
         <KunnAmountSection
-          sectionBoxBg={sectionBoxBg}
-          inputStyle={inputStyle}
-          readonlyInputStyle={readonlyInputStyle}
-          labelStyle={labelStyle}
           form={form}
           setForm={setForm}
-          formLimitStatus={formLimitStatus}
-          totalExistingKunnBalance={totalExistingKunnBalance}
-          remainingHmtdLimit={remainingHmtdLimit}
-          formLoanAmount={formLoanAmount}
-          setFormLoanAmount={setFormLoanAmount}
-          kunnIssues={kunnIssues}
+          formLimitStatus={limit.formLimitStatus}
+          totalExistingKunnBalance={limit.totalExistingKunnBalance}
+          remainingHmtdLimit={limit.remainingHmtdLimit}
+          formLoanAmount={amount.formLoanAmount}
+          setFormLoanAmount={amount.setFormLoanAmount}
+          kunnIssues={limit.kunnIssues}
         />
         <KunnRateSection
-          sectionBoxBg={sectionBoxBg}
-          inputStyle={inputStyle}
-          labelStyle={labelStyle}
-          tableHeaderStyle={tableHeaderStyle}
-          interestRateMode={interestRateMode}
-          setInterestRateMode={setInterestRateMode}
-          ratePreferential={ratePreferential}
-          setRatePreferential={setRatePreferential}
-          ratePreferentialMonths={ratePreferentialMonths}
-          setRatePreferentialMonths={setRatePreferentialMonths}
-          rateBase={rateBase}
-          setRateBase={setRateBase}
-          rateMargin={rateMargin}
-          setRateMargin={setRateMargin}
-          postPrefRate={postPrefRate}
-          normalRate={normalRate}
-          surchargeVal={surchargeVal}
-          currentActiveRateDisplay={currentActiveRateDisplay}
-          rateConditionSurcharge={rateConditionSurcharge}
-          setRateConditionSurcharge={setRateConditionSurcharge}
-          rateFloor={rateFloor}
-          setRateFloor={setRateFloor}
-          rateHistory={rateHistory}
-          setRateHistory={setRateHistory}
-          newAdjDate={newAdjDate}
-          setNewAdjDate={setNewAdjDate}
-          newAdjBaseRate={newAdjBaseRate}
-          setNewAdjBaseRate={setNewAdjBaseRate}
-          newAdjMargin={newAdjMargin}
-          setNewAdjMargin={setNewAdjMargin}
-          newAdjPenalty={newAdjPenalty}
-          setNewAdjPenalty={setNewAdjPenalty}
-          newAdjReason={newAdjReason}
-          setNewAdjReason={setNewAdjReason}
+          rate={rate}
+          adjustment={adjustment}
           showNotify={showNotify}
         />
         <KunnRepaymentSection
-          sectionBoxBg={sectionBoxBg}
-          inputStyle={inputStyle}
-          labelStyle={labelStyle}
           form={form}
           setForm={setForm}
           graceOptions={graceOptions}
-          monthlyPrincipal={formMonthlyPrincipal}
-          setMonthlyPrincipal={setFormMonthlyPrincipal}
-          suggestedMonthlyPrincipal={suggestedMonthlyPrincipal}
+          monthlyPrincipal={amount.formMonthlyPrincipal}
+          setMonthlyPrincipal={amount.setFormMonthlyPrincipal}
+          suggestedMonthlyPrincipal={amount.suggestedMonthlyPrincipal}
         />
         <KunnCollateralSection
-          sectionBoxBg={sectionBoxBg}
           selectedCollaterals={selectedCollaterals}
           maxAllowedLoanLtv={maxAllowedLoanLtv}
         />

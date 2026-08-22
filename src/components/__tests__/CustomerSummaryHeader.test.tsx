@@ -10,7 +10,6 @@ afterEach(cleanup);
 const dung = (props: Partial<Parameters<typeof CustomerSummaryHeader>[0]> = {}) =>
   render(
     <CustomerSummaryHeader
-      containerCardBg="bg-panel"
       selectedMasterFilter="ALL"
       totalCreditLimit={1_460_000_000}
       handleNewContract={vi.fn()}

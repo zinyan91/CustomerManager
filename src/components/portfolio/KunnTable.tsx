@@ -22,8 +22,6 @@ const DEBT_GROUP_LABELS: Record<number, string> = {
 };
 
 interface KunnTableProps {
-  containerCardBg: string;
-  tableHeaderStyle: string;
   filteredContracts: LoanContract[];
   selectedContract: LoanContract | null;
   handleSelectContract: (c: LoanContract) => void;
@@ -39,8 +37,6 @@ interface KunnTableProps {
 }
 
 export const KunnTable: React.FC<KunnTableProps> = ({
-  containerCardBg,
-  tableHeaderStyle,
   filteredContracts,
   selectedContract,
   handleSelectContract,
@@ -57,7 +53,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
   const rows = filteredContracts;
 
   return (
-    <div className={`${containerCardBg} rounded-2xl overflow-hidden border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150`}>
+    <div className="rounded-2xl overflow-hidden border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150">
       <div className="p-3.5 sm:p-4 border-b border-line/60 flex flex-wrap items-center justify-between gap-3 bg-surface/75 backdrop-blur-md">
         <span className="font-bold flex items-center space-x-2 text-xs text-ink">
           <div className="p-1.5 rounded-lg bg-warn-soft text-warn shrink-0 shadow-2xs">
@@ -92,7 +88,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse font-app">
-          <thead className={tableHeaderStyle || 'sticky top-0 z-10 bg-surface/95 backdrop-blur-md border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.11em] text-ink-faint'}>
+          <thead className="sticky top-0 z-10 bg-surface/95 backdrop-blur-md border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.11em] text-ink-faint">
             <tr>
               <th className="px-4 py-3.5 whitespace-nowrap">SỐ KUNN (GNN)</th>
               <th className="px-4 py-3.5 whitespace-nowrap">SỐ HĐTD GỐC</th>

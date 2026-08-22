@@ -3,12 +3,9 @@ import { Trash2 } from 'lucide-react';
 import { DateInput } from '../../DateInput';
 import { fmtDate } from '../../../lib/utils';
 import type { RateAdjustmentHistoryItem } from '../../../types';
+import { UI } from '../../../lib/uiClasses';
 
-export interface KunnRateSectionProps {
-  sectionBoxBg: string;
-  inputStyle: string;
-  labelStyle: string;
-  tableHeaderStyle: string;
+export interface KunnRateProps {
   interestRateMode: 'pref' | 'base';
   setInterestRateMode: (v: 'pref' | 'base') => void;
   ratePreferential: string;
@@ -29,6 +26,9 @@ export interface KunnRateSectionProps {
   setRateFloor: (v: string) => void;
   rateHistory: RateAdjustmentHistoryItem[];
   setRateHistory: (v: RateAdjustmentHistoryItem[]) => void;
+}
+
+export interface KunnAdjustmentProps {
   newAdjDate: string;
   setNewAdjDate: (v: string) => void;
   newAdjBaseRate: string;
@@ -39,47 +39,52 @@ export interface KunnRateSectionProps {
   setNewAdjPenalty: (v: string) => void;
   newAdjReason: string;
   setNewAdjReason: (v: string) => void;
+}
+
+export interface KunnRateSectionProps {
+  rate: KunnRateProps;
+  adjustment: KunnAdjustmentProps;
   showNotify: (type: 'success' | 'error', message: string) => void;
 }
 
 export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
-  sectionBoxBg,
-  inputStyle,
-  labelStyle,
-  tableHeaderStyle,
-  interestRateMode,
-  setInterestRateMode,
-  ratePreferential,
-  setRatePreferential,
-  ratePreferentialMonths,
-  setRatePreferentialMonths,
-  rateBase,
-  setRateBase,
-  rateMargin,
-  setRateMargin,
-  postPrefRate,
-  normalRate,
-  surchargeVal,
-  currentActiveRateDisplay,
-  rateConditionSurcharge,
-  setRateConditionSurcharge,
-  rateFloor,
-  setRateFloor,
-  rateHistory,
-  setRateHistory,
-  newAdjDate,
-  setNewAdjDate,
-  newAdjBaseRate,
-  setNewAdjBaseRate,
-  newAdjMargin,
-  setNewAdjMargin,
-  newAdjPenalty,
-  setNewAdjPenalty,
-  newAdjReason,
-  setNewAdjReason,
+  rate: {
+    interestRateMode,
+    setInterestRateMode,
+    ratePreferential,
+    setRatePreferential,
+    ratePreferentialMonths,
+    setRatePreferentialMonths,
+    rateBase,
+    setRateBase,
+    rateMargin,
+    setRateMargin,
+    postPrefRate,
+    normalRate,
+    surchargeVal,
+    currentActiveRateDisplay,
+    rateConditionSurcharge,
+    setRateConditionSurcharge,
+    rateFloor,
+    setRateFloor,
+    rateHistory,
+    setRateHistory,
+  },
+  adjustment: {
+    newAdjDate,
+    setNewAdjDate,
+    newAdjBaseRate,
+    setNewAdjBaseRate,
+    newAdjMargin,
+    setNewAdjMargin,
+    newAdjPenalty,
+    setNewAdjPenalty,
+    newAdjReason,
+    setNewAdjReason,
+  },
   showNotify,
 }) => (
-  <div className={`rounded-md p-4 space-y-3 border ${sectionBoxBg}`}>
+  <div className={`rounded-md p-4 space-y-3 border ${UI.sectionBoxBg}`}>
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="text-[11px] font-bold text-neg uppercase tracking-wider">
         CẤU TRÚC LÃI SUẤT
@@ -111,30 +116,30 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
     {interestRateMode === 'pref' ? (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
         <div>
-          <label className={`block mb-1 ${labelStyle}`}>Lãi suất ưu đãi (LSUD) %/năm</label>
+          <label className={`block mb-1 ${UI.labelStyle}`}>Lãi suất ưu đãi (LSUD) %/năm</label>
           <input type="number" step="0.01" min={0} value={ratePreferential}
             onChange={e => setRatePreferential(e.target.value)}
             placeholder="7.5"
-            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-neg ${inputStyle}`} />
+            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-neg ${UI.inputStyle}`} />
         </div>
         <div>
-          <label className={`block mb-1 ${labelStyle}`}>Thời gian ưu đãi (tháng)</label>
+          <label className={`block mb-1 ${UI.labelStyle}`}>Thời gian ưu đãi (tháng)</label>
           <input type="number" min={0} value={ratePreferentialMonths}
             onChange={e => setRatePreferentialMonths(e.target.value)}
             placeholder="6, 12..."
-            className={`w-full rounded-md p-2.5 text-xs ${inputStyle}`} />
+            className={`w-full rounded-md p-2.5 text-xs ${UI.inputStyle}`} />
         </div>
         <div>
-          <label className={`block mb-1 ${labelStyle}`}>Biên độ cộng thêm %/năm</label>
+          <label className={`block mb-1 ${UI.labelStyle}`}>Biên độ cộng thêm %/năm</label>
           <input type="number" step="0.01" value={rateMargin}
             onChange={e => setRateMargin(e.target.value)}
             placeholder="3.5"
-            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-warn ${inputStyle}`} />
+            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-warn ${UI.inputStyle}`} />
         </div>
         <div className={`col-span-full space-y-2 p-3 rounded-md border ${'bg-accent-soft border-accent/30'
           }`}>
           <div className="flex items-center justify-between text-xs">
-            <span className={labelStyle}>Lãi suất sau ưu đãi:</span>
+            <span className={UI.labelStyle}>Lãi suất sau ưu đãi:</span>
             <span className="font-mono font-bold text-warn text-sm">{postPrefRate.toFixed(2)} %/năm</span>
           </div>
           <div className="flex items-center justify-between text-xs pt-2 border-t border-accent/30 ">
@@ -148,23 +153,23 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
     ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
         <div>
-          <label className={`block mb-1 ${labelStyle}`}>Lãi suất cơ sở (LSCS) %/năm</label>
+          <label className={`block mb-1 ${UI.labelStyle}`}>Lãi suất cơ sở (LSCS) %/năm</label>
           <input type="number" step="0.01" min={0} value={rateBase}
             onChange={e => setRateBase(e.target.value)}
             placeholder="8.5"
-            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-neg ${inputStyle}`} />
+            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-neg ${UI.inputStyle}`} />
         </div>
         <div>
-          <label className={`block mb-1 ${labelStyle}`}>Biên độ cộng thêm %/năm</label>
+          <label className={`block mb-1 ${UI.labelStyle}`}>Biên độ cộng thêm %/năm</label>
           <input type="number" step="0.01" value={rateMargin}
             onChange={e => setRateMargin(e.target.value)}
             placeholder="3.5"
-            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-warn ${inputStyle}`} />
+            className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-warn ${UI.inputStyle}`} />
         </div>
         <div className={`col-span-full space-y-2 p-3 rounded-md border ${'bg-accent-soft border-accent/30'
           }`}>
           <div className="flex items-center justify-between text-xs">
-            <span className={labelStyle}>Lãi suất thông thường chuẩn (LSCS + Biên độ):</span>
+            <span className={UI.labelStyle}>Lãi suất thông thường chuẩn (LSCS + Biên độ):</span>
             <span className="font-mono font-bold text-warn text-sm">{normalRate.toFixed(2)} %/năm</span>
           </div>
           <div className="flex items-center justify-between text-xs pt-2 border-t border-accent/30 ">
@@ -179,24 +184,24 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
 
     <div className="pt-3 border-t border-line grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
-        <label className={`block mb-1 ${labelStyle}`}>Phạt cộng thêm do vi phạm điều kiện (+%/năm)</label>
+        <label className={`block mb-1 ${UI.labelStyle}`}>Phạt cộng thêm do vi phạm điều kiện (+%/năm)</label>
         <input type="number" step="0.1" min={0} value={rateConditionSurcharge}
           onChange={e => setRateConditionSurcharge(e.target.value)}
           placeholder="0.5 (%/năm)..."
-          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-neg ${inputStyle}`} />
+          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold text-neg ${UI.inputStyle}`} />
       </div>
       <div>
-        <label className={`block mb-1 ${labelStyle}`}>Sàn lãi suất theo hợp đồng (%/năm)</label>
+        <label className={`block mb-1 ${UI.labelStyle}`}>Sàn lãi suất theo hợp đồng (%/năm)</label>
         <input type="number" step="0.01" min={0} value={rateFloor}
           onChange={e => setRateFloor(e.target.value)}
           placeholder="Bỏ trống nếu hợp đồng không quy định"
-          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold ${inputStyle}`} />
+          className={`w-full rounded-md p-2.5 text-xs font-mono font-bold ${UI.inputStyle}`} />
         <div className="mt-1 text-[11px] text-ink-faint">
           Chặn lãi thả nổi không tụt dưới mức này khi biên độ âm
         </div>
       </div>
       <div>
-        <label className={`block mb-1 ${labelStyle}`}>Điều kiện phê duyệt (CASA / BCTC)</label>
+        <label className={`block mb-1 ${UI.labelStyle}`}>Điều kiện phê duyệt (CASA / BCTC)</label>
         <div className="text-xs p-2.5 rounded-md border bg-warn-soft  border-warn/30  text-warn font-medium">
         </div>
       </div>
@@ -215,7 +220,7 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
       {rateHistory.length > 0 && (
         <div className="border rounded-md overflow-hidden border-line">
           <table className="w-full text-left text-xs">
-            <thead className={tableHeaderStyle}>
+            <thead className={UI.tableHeaderStyle}>
               <tr>
                 <th className="px-[var(--row-px)] py-[var(--row-py)]">STT</th>
                 <th className="px-[var(--row-px)] py-[var(--row-py)]">NGÀY HẠN HIỆU LỰC</th>
@@ -258,24 +263,24 @@ export const KunnRateSection: React.FC<KunnRateSectionProps> = ({
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
           <div>
-            <label className={`block mb-1 ${labelStyle}`}>Ngày hiệu lực *</label>
-            <DateInput value={newAdjDate} onChange={setNewAdjDate} className={`w-full rounded-md p-2 ${inputStyle}`} />
+            <label className={`block mb-1 ${UI.labelStyle}`}>Ngày hiệu lực *</label>
+            <DateInput value={newAdjDate} onChange={setNewAdjDate} className={`w-full rounded-md p-2 ${UI.inputStyle}`} />
           </div>
           <div>
-            <label className={`block mb-1 ${labelStyle}`}>LSCS (%)</label>
-            <input type="number" step="0.01" value={newAdjBaseRate} onChange={e => setNewAdjBaseRate(e.target.value)} placeholder="9.2" className={`w-full rounded-md p-2 font-mono ${inputStyle}`} />
+            <label className={`block mb-1 ${UI.labelStyle}`}>LSCS (%)</label>
+            <input type="number" step="0.01" value={newAdjBaseRate} onChange={e => setNewAdjBaseRate(e.target.value)} placeholder="9.2" className={`w-full rounded-md p-2 font-mono ${UI.inputStyle}`} />
           </div>
           <div>
-            <label className={`block mb-1 ${labelStyle}`}>Biên độ (%)</label>
-            <input type="number" step="0.01" value={newAdjMargin} onChange={e => setNewAdjMargin(e.target.value)} placeholder="1.35" className={`w-full rounded-md p-2 font-mono ${inputStyle}`} />
+            <label className={`block mb-1 ${UI.labelStyle}`}>Biên độ (%)</label>
+            <input type="number" step="0.01" value={newAdjMargin} onChange={e => setNewAdjMargin(e.target.value)} placeholder="1.35" className={`w-full rounded-md p-2 font-mono ${UI.inputStyle}`} />
           </div>
           <div>
-            <label className={`block mb-1 ${labelStyle}`}>Phạt vi phạm (%)</label>
-            <input type="number" step="0.1" value={newAdjPenalty} onChange={e => setNewAdjPenalty(e.target.value)} placeholder="0.5" className={`w-full rounded-md p-2 font-mono ${inputStyle}`} />
+            <label className={`block mb-1 ${UI.labelStyle}`}>Phạt vi phạm (%)</label>
+            <input type="number" step="0.1" value={newAdjPenalty} onChange={e => setNewAdjPenalty(e.target.value)} placeholder="0.5" className={`w-full rounded-md p-2 font-mono ${UI.inputStyle}`} />
           </div>
           <div>
-            <label className={`block mb-1 ${labelStyle}`}>Lý do / Nội dung</label>
-            <input type="text" value={newAdjReason} onChange={e => setNewAdjReason(e.target.value)} placeholder="Tăng LSCS T1/2027..." className={`w-full rounded-md p-2 ${inputStyle}`} />
+            <label className={`block mb-1 ${UI.labelStyle}`}>Lý do / Nội dung</label>
+            <input type="text" value={newAdjReason} onChange={e => setNewAdjReason(e.target.value)} placeholder="Tăng LSCS T1/2027..." className={`w-full rounded-md p-2 ${UI.inputStyle}`} />
           </div>
         </div>
         <div className="flex justify-end">

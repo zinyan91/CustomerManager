@@ -4,7 +4,6 @@ import {
   Loader2, AlertTriangle, CheckCircle2, Clock, ShieldAlert, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import type { Collateral, Customer } from '../../types';
-import type { UiClasses } from '../../lib/uiClasses';
 import { fmtMoney, fmtDate } from '../../lib/utils';
 import {
   isLtvException, appraisalStatus, appraisalExpiryDate, assetClassLabel,
@@ -12,7 +11,6 @@ import {
 } from '../../lib/collateralMath';
 
 interface CollateralTableProps {
-  styles: UiClasses;
   filteredCollaterals: Collateral[];
   paginatedCollaterals: Collateral[];
   customers: Customer[];
@@ -36,7 +34,6 @@ function getAssetIcon(type: string) {
 }
 
 export const CollateralTable: React.FC<CollateralTableProps> = ({
-  styles,
   filteredCollaterals,
   paginatedCollaterals,
   customers,
@@ -52,7 +49,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
   const pageTotalMaxLoan = paginatedCollaterals.reduce((sum, c) => sum + maxLoanFromCollateral(c), 0);
 
   return (
-    <div className={`${styles.containerCardBg} rounded-2xl overflow-hidden border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150`}>
+    <div className="rounded-2xl overflow-hidden border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150">
       {/* Table Header Bar */}
       <div className="p-3.5 sm:p-4 border-b border-line/60 bg-surface/75 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
         <span className="font-bold flex items-center space-x-2 text-xs text-ink">

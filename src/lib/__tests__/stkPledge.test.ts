@@ -104,6 +104,177 @@ describe('calcStkPledge — đối chiếu bảng tính mẫu', () => {
     });
     expect(r.netGain).toBeLessThan(0);
   });
+
+  describe('Quy chế TSBĐ: 1. Tiền gửi (TG) VND', () => {
+    it('Lãnh lãi cuối kỳ: Thỏa mãn P + I_vay <= Gốc + I_gửi - Thu hồi', () => {
+      const r = calcStkPledge({
+        depositType: 'tg_vnd',
+        interestPaymentMethod: 'end_term',
+        savingsAmount: 500_000_000,
+        depositDate: '2026-01-01',
+        tenor: 6,
+        tenorUnit: 'thang',
+        savingsRateAnnual: 0.06,
+        loanRateAnnual: 0.08,
+        disbursementDate: '2026-01-01',
+        loanDueDate: '2026-07-01',
+        clawbackAmount: 2_000_000,
+        customLoanAmount: 480_000_000,
+      });
+
+      expect(r.maxPrincipalCap).toBe(500_000_000);
+      expect(r.isSameMaturity).toBe(true);
+      expect(r.savingsProjectedInterest).toBe(Math.round(500_000_000 * 0.06 * 181 / 365));
+      expect(r.maxRecoveryBound).toBe(500_000_000 + r.savingsProjectedInterest - 2_000_000);
+      expect(r.totalObligation).toBe(480_000_000 + r.loanInterest);
+      expect(r.isValidLoan).toBe(true);
+      expect(r.exceedsPrincipalCap).toBe(false);
+      expect(r.exceedsRecoveryBound).toBe(false);
+    });
+
+    it('Lãnh lãi trước / định kỳ: Thỏa mãn P + I_vay <= Gốc - I_đã chi - I_gửi - Thu hồi', () => {
+      const r = calcStkPledge({
+        depositType: 'tg_vnd',
+        interestPaymentMethod: 'upfront',
+        savingsAmount: 1_000_000_000,
+        depositDate: '2026-01-01',
+        tenor: 12,
+        tenorUnit: 'thang',
+        savingsRateAnnual: 0.07,
+        loanRateAnnual: 0.09,
+        disbursementDate: '2026-01-01',
+        loanDueDate: '2027-01-01',
+        paidInterest: 70_000_000,
+        clawbackAmount: 5_000_000,
+        customLoanAmount: 900_000_000,
+      });
+
+      // Trần bảo đảm: 1.000.000.000 - 70.000.000 - 70.000.000 (lãi dự kiến) - 5.000.000 = 855.000.000
+      expect(r.maxRecoveryBound).toBe(1_000_000_000 - 70_000_000 - r.savingsProjectedInterest - 5_000_000);
+      // Vay 900 triệu + lãi vay ~ 81 triệu = 981 triệu > 855 triệu -> vi phạm
+      expect(r.exceedsRecoveryBound).toBe(true);
+      expect(r.isValidLoan).toBe(false);
+      expect(r.maxAllowableLoan).toBeLessThan(800_000_000);
+    });
+  });
+
+  describe('Quy chế TSBĐ: 2. Tiền gửi ngoại tệ', () => {
+    it('Quy đổi tỷ giá và thỏa mãn LTV + P_VND + I_vay_VND <= Gốc quy đổi VND', () => {
+      const r = calcStkPledge({
+        depositType: 'tg_foreign',
+        currency: 'USD',
+        exchangeRate: 25_450,
+        savingsAmount: 20_000, // 20.000 USD
+        depositDate: '2026-03-01',
+        tenor: 6,
+        tenorUnit: 'thang',
+        savingsRateAnnual: 0.01,
+        loanRateAnnual: 0.08,
+        disbursementDate: '2026-03-01',
+        loanDueDate: '2026-09-01',
+        customLtvPercent: 90,
+      });
+
+      const expectedVnd = 20_000 * 25_450; // 509.000.000
+      expect(r.savingsPrincipalVnd).toBe(expectedVnd);
+      expect(r.maxPrincipalCap).toBe(Math.round(expectedVnd * 0.9)); // 458.100.000
+      expect(r.maxRecoveryBound).toBe(expectedVnd); // 509.000.000
+      expect(r.loanAmount).toBe(r.maxAllowableLoan);
+      expect(r.totalObligation).toBeLessThanOrEqual(r.maxRecoveryBound);
+      expect(r.loanAmount).toBeLessThanOrEqual(r.maxPrincipalCap);
+      expect(r.isValidLoan).toBe(true);
+    });
+  });
+
+  describe('Quy chế TSBĐ: 3. Chứng chỉ tiền gửi (CCTG)', () => {
+    it('CCTG lãnh lãi trước / định kỳ áp dụng công thức khấu trừ lãi đã chi và thu hồi', () => {
+      const r = calcStkPledge({
+        depositType: 'cctg',
+        interestPaymentMethod: 'periodic',
+        savingsAmount: 300_000_000,
+        depositDate: '2026-01-15',
+        tenor: 12,
+        tenorUnit: 'thang',
+        savingsRateAnnual: 0.075,
+        loanRateAnnual: 0.095,
+        disbursementDate: '2026-01-15',
+        loanDueDate: '2027-01-15',
+        paidInterest: 11_250_000,
+        clawbackAmount: 1_000_000,
+      });
+
+      expect(r.maxPrincipalCap).toBe(300_000_000);
+      expect(r.maxRecoveryBound).toBe(300_000_000 - 11_250_000 - r.savingsProjectedInterest - 1_000_000);
+      expect(r.maxAllowableLoan).toBeLessThan(300_000_000);
+    });
+  });
+
+  describe('Quy chế TSBĐ: Lãi gửi dự kiến khi lệch ngày đáo hạn (Lãi suất không kỳ hạn)', () => {
+    it('Chuyển sang tính lãi suất không kỳ hạn khi ngày đáo hạn vay khác ngày đáo hạn sổ', () => {
+      const r = calcStkPledge({
+        depositType: 'tg_vnd',
+        interestPaymentMethod: 'end_term',
+        savingsAmount: 200_000_000,
+        depositDate: '2026-01-01',
+        tenor: 12,
+        tenorUnit: 'thang', // Đáo hạn sổ: 2027-01-01 (365 ngày)
+        savingsRateAnnual: 0.07, // 7%/năm
+        nonTermRateAnnual: 0.002, // 0.2%/năm
+        loanRateAnnual: 0.09,
+        disbursementDate: '2026-01-01',
+        loanDueDate: '2026-04-01', // Vay 3 tháng (90 ngày)
+      });
+
+      expect(r.isSameMaturity).toBe(false);
+      expect(r.appliedSavingsRate).toBe(0.002);
+      expect(r.savingsProjectedDays).toBe(90);
+      expect(r.savingsProjectedInterest).toBe(Math.round(200_000_000 * 0.002 * 90 / 365));
+      expect(r.savingsInterest).toBe(r.savingsProjectedInterest);
+      expect(r.savingsNetReceived).toBe(200_000_000 + r.savingsInterest);
+    });
+  });
+
+  describe('Cầm cố nhiều khoản vay trên cùng 1 sổ tiết kiệm', () => {
+    it('Tính tổng tiền vay, tổng lãi vay và kiểm tra hạn mức theo tổng các khoản', () => {
+      const r = calcStkPledge({
+        depositType: 'tg_vnd',
+        interestPaymentMethod: 'end_term',
+        savingsAmount: 1_000_000_000,
+        depositDate: '2026-01-01',
+        tenor: 12,
+        tenorUnit: 'thang',
+        savingsRateAnnual: 0.07,
+        loans: [
+          {
+            id: 'loan-1',
+            name: 'Khoản 1',
+            loanAmount: 400_000_000,
+            loanRateAnnual: 0.085,
+            disbursementDate: '2026-01-01',
+            loanDueDate: '2026-07-01',
+          },
+          {
+            id: 'loan-2',
+            name: 'Khoản 2',
+            loanAmount: 300_000_000,
+            loanRateAnnual: 0.09,
+            disbursementDate: '2026-03-01',
+            loanDueDate: '2027-01-01',
+          },
+        ],
+      });
+
+      expect(r.maxPrincipalCap).toBe(1_000_000_000);
+      expect(r.loanAmount).toBe(700_000_000);
+      expect(r.loanItems.length).toBe(2);
+      expect(r.loanItems[0].loanAmount).toBe(400_000_000);
+      expect(r.loanItems[1].loanAmount).toBe(300_000_000);
+      expect(r.loanInterest).toBe(r.loanItems[0].loanInterest + r.loanItems[1].loanInterest);
+      expect(r.totalRepayment).toBe(700_000_000 + r.loanInterest);
+      expect(r.remainingLoanCapacity).toBe(300_000_000);
+      expect(r.isValidLoan).toBe(true);
+    });
+  });
 });
 
 describe('buildStkRollover — đối chiếu bảng tính mẫu', () => {

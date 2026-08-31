@@ -25,16 +25,16 @@ export function useInventoryController() {
   // Industry Templates State
   const [templates, setTemplates] = useState<InventoryCategoryTemplate[]>(loadInventoryTemplates);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(() => templates[0]?.id || 'htk-lúa-gạo');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(() => templates[0]?.id || 'htk-lua-gao');
 
   // Customer & Context State
-  const [categoryName, setCategoryName] = useState<string>('HTK Lúa Gạo');
+  const [categoryName, setCategoryName] = useState<string>(() => templates[0]?.name || 'HTK Lúa Gạo');
   const [customerName, setCustomerName] = useState<string>('');
   const [recordDate, setRecordDate] = useState<string>(() => todayIso());
 
   // Inventory items
   const [items, setItems] = useState<InventoryItem[]>(() => {
-    const tpl = templates.find(t => t.id === 'htk-lúa-gạo') || templates[0];
+    const tpl = templates.find(t => t.id === 'htk-lua-gao') || templates[0];
     return tpl ? tpl.items.map(it => ({ ...it, id: nextItemId() })) : [];
   });
 
@@ -86,10 +86,14 @@ export function useInventoryController() {
     fetchInventoryTemplatesFromCloud().then(cloudList => {
       if (active && cloudList && cloudList.length > 0) {
         setTemplates(cloudList);
+        if (!cloudList.some(t => t.id === selectedTemplateId)) {
+          setSelectedTemplateId(cloudList[0].id);
+          setCategoryName(cloudList[0].name);
+        }
       }
     });
     return () => { active = false; };
-  }, []);
+  }, [selectedTemplateId]);
 
   // Fetch Inventory items from Database on mount or category change
   useEffect(() => {
@@ -107,10 +111,16 @@ export function useInventoryController() {
     const tpl = templates.find(t => t.id === templateId);
     if (tpl) {
       setCategoryName(tpl.name);
-      const newItems = tpl.items.map(it => ({ ...it, id: nextItemId() }));
-      setItems(newItems);
-      saveAllInventoryItemsDb(newItems, tpl.name);
-      showNotify('success', `Đã nạp danh mục mẫu: ${tpl.name}.`);
+      fetchInventoryItemsDb(tpl.name).then(dbItems => {
+        if (dbItems && dbItems.length > 0) {
+          setItems(dbItems);
+        } else {
+          const newItems = tpl.items.map(it => ({ ...it, id: nextItemId() }));
+          setItems(newItems);
+          saveAllInventoryItemsDb(newItems, tpl.name);
+        }
+      });
+      showNotify('success', `Đã nạp danh mục: ${tpl.name}.`);
     }
   }, [templates, showNotify]);
 
@@ -141,22 +151,32 @@ export function useInventoryController() {
       if (first) {
         setSelectedTemplateId(first.id);
         setCategoryName(first.name);
-        const newItems = first.items.map(it => ({ ...it, id: nextItemId() }));
-        setItems(newItems);
-        saveAllInventoryItemsDb(newItems, first.name);
+        fetchInventoryItemsDb(first.name).then(dbItems => {
+          if (dbItems && dbItems.length > 0) {
+            setItems(dbItems);
+          } else {
+            const newItems = first.items.map(it => ({ ...it, id: nextItemId() }));
+            setItems(newItems);
+            saveAllInventoryItemsDb(newItems, first.name);
+          }
+        });
+      } else {
+        setItems([]);
       }
     }
-    showNotify('success', 'Đã xóa ngành hàng chuẩn.');
+    showNotify('success', 'Đã xóa ngành hàng.');
   }, [selectedTemplateId, showNotify]);
 
   const handleResetTemplates = useCallback(() => {
     const defaultTpls = resetInventoryTemplates();
     setTemplates(defaultTpls);
-    setSelectedTemplateId(defaultTpls[0].id);
-    setCategoryName(defaultTpls[0].name);
-    const newItems = defaultTpls[0].items.map(it => ({ ...it, id: nextItemId() }));
-    setItems(newItems);
-    saveAllInventoryItemsDb(newItems, defaultTpls[0].name);
+    if (defaultTpls[0]) {
+      setSelectedTemplateId(defaultTpls[0].id);
+      setCategoryName(defaultTpls[0].name);
+      const newItems = defaultTpls[0].items.map(it => ({ ...it, id: nextItemId() }));
+      setItems(newItems);
+      saveAllInventoryItemsDb(newItems, defaultTpls[0].name);
+    }
     showNotify('success', 'Đã khôi phục về danh mục 8 ngành hàng mặc định.');
   }, [showNotify]);
 

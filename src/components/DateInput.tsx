@@ -18,7 +18,6 @@ export interface DateInputProps {
 
 const REGEX_YYYY_MM_DD = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/;
 const REGEX_SLASH_DATE = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
-const REGEX_NON_DIGITS = /\D/g;
 
 export function dateToDisplay(v?: string | null, format: DateFormat = 'dd/mm/yyyy'): string {
   if (!v) return '';
@@ -94,37 +93,6 @@ export function displayToIso(displayStr: string, format: DateFormat = 'dd/mm/yyy
   return `${year}-${mmStr}-${ddStr}`;
 }
 
-function autoFormatDisplayDate(input: string, prev: string, format: DateFormat): string {
-  if (input.length < prev.length) {
-    return input;
-  }
-
-  if (format === 'yyyy-mm-dd') {
-    const digits = input.replace(REGEX_NON_DIGITS, '').slice(0, 8);
-    if (!digits) return '';
-    if (digits.length <= 4) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-    return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6)}`;
-  }
-
-  if (input.includes('/')) {
-    const parts = input.split('/');
-    if (parts.length === 3 && parts[2].length === 4) {
-      const p1 = parts[0].padStart(2, '0');
-      const p2 = parts[1].padStart(2, '0');
-      const y = parts[2];
-      return `${p1}/${p2}/${y}`;
-    }
-  }
-
-  const digits = input.replace(REGEX_NON_DIGITS, '').slice(0, 8);
-  if (!digits) return '';
-
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-}
-
 export const DateInput = memo<DateInputProps>(({
   value,
   onChange,
@@ -156,14 +124,13 @@ export const DateInput = memo<DateInputProps>(({
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawVal = e.target.value;
-    const formatted = autoFormatDisplayDate(rawVal, displayText, activeFormat);
-    setDisplayText(formatted);
+    setDisplayText(rawVal);
 
-    const iso = displayToIso(formatted, activeFormat);
+    const iso = displayToIso(rawVal, activeFormat);
     if (iso !== null) {
       isInternalChange.current = true;
       onChange?.(iso);
-    } else if (formatted.trim() === '') {
+    } else if (rawVal.trim() === '') {
       isInternalChange.current = true;
       onChange?.('');
     }

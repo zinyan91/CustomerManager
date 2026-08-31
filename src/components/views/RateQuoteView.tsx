@@ -8,6 +8,7 @@ import {
   FileText, Save, RefreshCw, Printer, Image as ImageIcon,
 } from 'lucide-react';
 import { fmtMoney, fmtDate, fmtPercent, formatMoneyInput } from '../../lib/utils';
+import { DateInput } from '../DateInput';
 import { KIND_LABELS, type RateProgramKind } from '../../lib/rateQuote';
 import { useRateQuoteController } from '../../hooks/useRateQuoteController';
 
@@ -114,11 +115,10 @@ export const RateQuoteView: React.FC = () => {
         ))}
         <div className="ml-auto flex items-center gap-2 pr-1">
           <label className="text-[11px] font-bold text-ink-faint">Áp dụng ngày</label>
-          <input
-            type="date"
+          <DateInput
             value={onDate}
-            onChange={e => setOnDate(e.target.value)}
-            className={`${inputCls} w-auto`}
+            onChange={setOnDate}
+            className={`${inputCls} w-36`}
           />
           <button
             type="button"

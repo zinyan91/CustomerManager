@@ -16,11 +16,11 @@ export async function fetchInventoryItemsDb(categoryName?: string): Promise<Inve
       query = query.eq('CategoryName', categoryName);
     }
     const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
-      setTimeout(() => reject(new Error('Supabase fetch timeout')), 1500)
+      setTimeout(() => reject(new Error('Supabase fetch timeout')), 2500)
     );
     const { data, error } = (await Promise.race([query, timeoutPromise])) as any;
     if (error) throw error;
-    if (data && data.length > 0) {
+    if (data) {
       const items: InventoryItem[] = data.map((d: any) => ({
         id: d.Id,
         code: d.Code || `SP${d.Id}`,
@@ -32,29 +32,19 @@ export async function fetchInventoryItemsDb(categoryName?: string): Promise<Inve
         exportQty: Number(d.ExportQty || 0),
       }));
 
-      // Merge with local items that may have been created locally
       const storage = safeLocalStorage();
-      const cachedStr = storage ? storage.getItem(INVENTORY_STORAGE_KEY) : null;
-      if (cachedStr) {
-        try {
-          const localItems: InventoryItem[] = JSON.parse(cachedStr);
-          for (const loc of localItems) {
-            if (!items.some(it => it.id === loc.id)) {
-              items.push(loc);
-            }
-          }
-        } catch {
-          // ignore
+      if (storage) {
+        if (!categoryName) {
+          storage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(items));
         }
       }
-      if (storage) storage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(items));
       return items;
     }
   } catch (err) {
     console.warn('Supabase fetchInventoryItemsDb warning (using local fallback):', err);
   }
 
-  // Fallback to local storage if network or DB table not yet created
+  // Fallback to local storage if network or DB table not yet reachable
   const storage = safeLocalStorage();
   const cached = storage ? storage.getItem(INVENTORY_STORAGE_KEY) : null;
   if (cached) {
@@ -67,17 +57,23 @@ export async function fetchInventoryItemsDb(categoryName?: string): Promise<Inve
   return [];
 }
 
-export async function saveInventoryItemDb(item: InventoryItem, categoryName = 'Lúa Gạo'): Promise<void> {
-  // Update local cache first
-  const current = await fetchInventoryItemsDb();
-  const idx = current.findIndex(i => i.id === item.id);
-  if (idx >= 0) {
-    current[idx] = item;
-  } else {
-    current.push(item);
-  }
+export async function saveInventoryItemDb(item: InventoryItem, categoryName = 'HTK Lúa Gạo'): Promise<void> {
   const storage = safeLocalStorage();
-  if (storage) storage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(current));
+  if (storage) {
+    try {
+      const cached = storage.getItem(INVENTORY_STORAGE_KEY);
+      const current: InventoryItem[] = cached ? JSON.parse(cached) : [];
+      const idx = current.findIndex(i => i.id === item.id);
+      if (idx >= 0) {
+        current[idx] = item;
+      } else {
+        current.push(item);
+      }
+      storage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(current));
+    } catch {
+      // ignore
+    }
+  }
 
   // Sync to Supabase Database
   try {
@@ -101,9 +97,11 @@ export async function saveInventoryItemDb(item: InventoryItem, categoryName = 'L
   }
 }
 
-export async function saveAllInventoryItemsDb(items: InventoryItem[], categoryName = 'Lúa Gạo'): Promise<void> {
+export async function saveAllInventoryItemsDb(items: InventoryItem[], categoryName = 'HTK Lúa Gạo'): Promise<void> {
   const storage = safeLocalStorage();
-  if (storage) storage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(items));
+  if (storage) {
+    storage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(items));
+  }
 
   try {
     const payload = items.map(item => ({
@@ -127,10 +125,19 @@ export async function saveAllInventoryItemsDb(items: InventoryItem[], categoryNa
 }
 
 export async function deleteInventoryItemDb(itemId: string): Promise<void> {
-  const current = await fetchInventoryItemsDb();
-  const updated = current.filter(i => i.id !== itemId);
   const storage = safeLocalStorage();
-  if (storage) storage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(updated));
+  if (storage) {
+    try {
+      const cached = storage.getItem(INVENTORY_STORAGE_KEY);
+      if (cached) {
+        const current: InventoryItem[] = JSON.parse(cached);
+        const updated = current.filter(i => i.id !== itemId);
+        storage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(updated));
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   try {
     const { error } = await supabase.from('InventoryItems').delete().eq('Id', itemId);

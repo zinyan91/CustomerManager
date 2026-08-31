@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Percent, TrendingDown, Download, FileSpreadsheet, Calculator, Calendar, Plus, Trash2 } from 'lucide-react';
 import { fmtMoney, fmtNumber, fmtDate, fmtPercent, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
+import { DateInput } from '../DateInput';
 import {
   calcRateReductionForLoan,
   sumInterestReduced,
@@ -330,24 +331,22 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
           <button
             type="button"
             onClick={() => setCalcMode('tdh')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              calcMode === 'tdh'
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${calcMode === 'tdh'
                 ? 'bg-accent text-accent-ink shadow-xs'
                 : 'text-ink-muted hover:text-ink'
-            }`}
+              }`}
           >
             1. Vay Trung Dài Hạn (Gốc Đều)
           </button>
           <button
             type="button"
             onClick={() => setCalcMode('quick')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              calcMode === 'quick'
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${calcMode === 'quick'
                 ? 'bg-accent text-accent-ink shadow-xs'
                 : 'text-ink-muted hover:text-ink'
-            }`}
+              }`}
           >
-            2. Ngắn Hạn / Hạn Mức (Nhiều Khoản)
+            2. Ngắn Hạn / Hạn Mức
           </button>
         </div>
       </div>
@@ -385,10 +384,9 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                 </div>
                 <div>
                   <label className={labelCls}>Ngày thanh toán kỳ 1 *</label>
-                  <input
-                    type="date"
+                  <DateInput
                     value={tdhStartDate}
-                    onChange={e => setTdhStartDate(e.target.value)}
+                    onChange={setTdhStartDate}
                     className={inputCls}
                   />
                 </div>
@@ -604,9 +602,8 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
                   {tdhScheduleRows.map(r => (
                     <tr
                       key={r.month}
-                      className={`hover:bg-accent/[0.04] transition-colors ${
-                        r.isReduced ? 'bg-pos-soft/30 font-semibold' : ''
-                      }`}
+                      className={`hover:bg-accent/[0.04] transition-colors ${r.isReduced ? 'bg-pos-soft/30 font-semibold' : ''
+                        }`}
                     >
                       <td className="px-3 py-2.5 text-center font-bold">{r.month}</td>
                       <td className="px-3 py-2.5 text-accent">{fmtDate(r.paymentDate)}</td>

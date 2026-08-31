@@ -10,6 +10,7 @@ import type { Collateral } from '../../types';
 import type { SupRow } from '../../hooks/useCardContractController';
 import { blankSup } from '../../hooks/useCardContractController';
 import { fmtMoney, formatMoneyInput } from '../../lib/utils';
+import { DateInput } from '../DateInput';
 import { Plus, ShieldCheck } from 'lucide-react';
 
 interface CardContractModalProps {
@@ -234,10 +235,9 @@ export const CardContractModal: React.FC<CardContractModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold mb-1">Ngày phát hành thẻ</label>
-              <input
-                type="date"
+              <DateInput
                 value={fIssueDate}
-                onChange={e => setFIssueDate(e.target.value)}
+                onChange={setFIssueDate}
                 className={`w-full rounded-xl p-2 border ${UI.inputStyle}`}
               />
             </div>

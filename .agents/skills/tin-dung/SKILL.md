@@ -258,6 +258,86 @@ Căn cứ số ngày quá hạn lớn nhất của các kỳ chưa thanh toán:
 - **Nhóm 4 (Nghi ngờ)**: Quá hạn từ 181 đến 360 ngày.
 - **Nhóm 5 (Có khả năng mất vốn)**: Quá hạn trên 360 ngày.
 
+### Nghiệp vụ Cầm cố Tiền gửi (TG) & Chứng chỉ tiền gửi (CCTG)
+
+Quy tắc xác định mức cho vay tối đa và trần bảo đảm an toàn thu hồi nợ (Gốc + Lãi) từ TSBĐ:
+
+1. **Đối với Tài sản bảo đảm là Tiền gửi (TG) VND**:
+   - **Mức cho vay tối đa theo gốc**: Tối đa **100%** số tiền gốc của TG ($P_{\text{vay, max 1}} = \text{Gốc TG}$).
+   - **Với TG lãnh lãi cuối kỳ**:
+     $$\text{Số tiền cho vay } (P) + \text{Số tiền lãi vay phát sinh } (I_{\text{vay}}) \le \text{Số tiền gốc của TG} + \text{Số tiền lãi gửi dự kiến} - \text{Khoản phải thu hồi}$$
+   - **Với TG lãnh lãi định kỳ hoặc lãnh lãi trước**:
+     $$\text{Số tiền cho vay } (P) + \text{Số tiền lãi vay phát sinh } (I_{\text{vay}}) \le \text{Số tiền gốc của TG} - \text{Số tiền lãi gửi Ngân hàng đã chi cho KH} - \text{Số tiền lãi gửi dự kiến} - \text{Khoản phải thu hồi}$$
+
+2. **Đối với Tài sản bảo đảm là Tiền gửi ngoại tệ (USD, EUR...)**:
+   - **Tỷ lệ cấp tín dụng (LTV)**: Tuân theo quy định tại Quy chế nhận TSBĐ (mặc định 90% – 95%).
+   - **Quy đổi ra VND**: $\text{Gốc quy đổi (VND)} = \text{Gốc ngoại tệ} \times \text{Tỷ giá quy đổi VND}$.
+   - **Mức cho vay tối đa theo LTV**: $P_{\text{vay, max 1}} = \text{Gốc quy đổi (VND)} \times \text{LTV}\%$.
+   - **Đồng thời phải thỏa mãn**:
+     $$\text{Số tiền cho vay (VND)} + \text{Số tiền lãi vay phát sinh (VND)} \le \text{Số tiền gốc của TG sau khi đã quy đổi tương đương ra VND}$$
+
+3. **Đối với Tài sản bảo đảm là Chứng chỉ tiền gửi (CCTG)**:
+   - **Mức cho vay tối đa theo gốc**: Tối đa **100%** số tiền gốc của CCTG.
+   - **Trường hợp CCTG lãnh lãi trước hoặc lãnh lãi định kỳ**:
+     $$\text{Số tiền cho vay } (P) + \text{Số tiền lãi vay phát sinh } (I_{\text{vay}}) \le \text{Số tiền gốc của CCTG} - \text{Số tiền lãi gửi Ngân hàng đã chi cho KH} - \text{Số tiền lãi gửi dự kiến} - \text{Khoản phải thu hồi}$$
+   - **Trường hợp CCTG lãnh lãi cuối kỳ**:
+     $$\text{Số tiền cho vay } (P) + \text{Số tiền lãi vay phát sinh } (I_{\text{vay}}) \le \text{Số tiền gốc của CCTG} + \text{Số tiền lãi gửi dự kiến} - \text{Khoản phải thu hồi}$$
+
+4. **Quy tắc tính Lãi gửi dự kiến & Khoản phải thu hồi**:
+   - **Khoản phải thu hồi**: Bao gồm toàn bộ giá trị khuyến mãi, quà tặng, ưu đãi khách hàng đã nhận trước đó.
+   - **Số tiền lãi gửi dự kiến**:
+     - *Trùng ngày đáo hạn* ($\text{Ngày đáo hạn vay} = \text{Ngày đáo hạn TG/CCTG}$): Tính theo lãi suất có kỳ hạn trên sổ cho toàn bộ kỳ gửi.
+     - *Khác ngày đáo hạn* ($\text{Ngày đáo hạn vay} \ne \text{Ngày đáo hạn TG/CCTG}$, khách hàng rút tất toán trước hạn): Áp dụng **lãi suất không kỳ hạn** (Non-term rate, mặc định 0,20%/năm) tính từ ngày gửi đến ngày đáo hạn khoản vay.
+   - **Mức cho vay tối đa an toàn**:
+     $$P_{\text{vay, max}} = \min\left(\text{Trần theo Gốc/LTV}, \left\lfloor \frac{\text{Trần bảo đảm an toàn}}{1 + r_{\text{loan}} \times \frac{t_{\text{loan}}}{365}} \right\rfloor\right)$$
+
+5. **Cầm cố một sổ cho nhiều khoản vay (Multi-loans pledge)**:
+   - Khách hàng có thể cầm cố một sổ tiết kiệm / hợp đồng tiền gửi / CCTG để đảm bảo cho **nhiều khoản vay / KUNN** khác nhau (vay từng lần hoặc bổ sung vốn theo từng đợt).
+   - **Điều kiện ràng buộc**: Tổng số tiền vay gốc của tất cả các khoản vay không được vượt quá hạn mức cho vay tối đa cho phép:
+     $$\sum_{i=1}^{n} P_i \le P_{\text{vay, max}}$$
+   - **Tổng tiền thực nhận từ sổ (Gốc + Lãi sổ nhận)**:
+     $$\text{Tổng gốc lãi sổ nhận} = \text{Gốc TG quy đổi} + I_{\text{gửi dự kiến}} - I_{\text{đã chi}} - \text{Khoản phải thu hồi}$$
+   - **Tổng nghĩa vụ trả nợ (Tổng trả nợ)**:
+     $$\text{Tổng trả nợ} = \sum_{i=1}^{n} (P_i + I_{\text{vay}, i}) = \sum_{i=1}^{n} P_i + \sum_{i=1}^{n} \left(P_i \times r_i \times \frac{d_i}{365}\right)$$
+
+---
+
+### Cơ chế Tính phạt Quá hạn, Chuyển nợ quá hạn toàn bộ & Thứ tự thu nợ (Waterfall)
+
+#### 1. Giai đoạn 1: Mới trễ hạn (Thường là dưới 10 ngày — Nhóm 1 trễ hạn)
+Hệ thống chỉ trích xuất đúng số tiền của kỳ đang bị trễ hạn (ví dụ kỳ 34) để tính phạt. Dư nợ của các kỳ tương lai (từ kỳ 35 đến 120) vẫn nằm trong hạn và tính lãi bình thường.
+
+- **A. Phạt trên phần Gốc đến hạn (Kỳ 34)**:
+  Số tiền gốc của kỳ 34 chưa thanh toán chuyển sang "Nợ gốc quá hạn". Lãi suất áp dụng phạt lên mức tối đa bằng **150% lãi suất trong hạn**:
+  $$\text{Tiền lãi gốc quá hạn} = \text{Gốc kỳ 34} \times (\text{LS trong hạn} \times 150\%) \times \frac{\text{Số ngày quá hạn}}{365}$$
+- **B. Phạt trên phần Lãi đến hạn (Kỳ 34)**:
+  Số tiền lãi của kỳ 34 chưa thanh toán treo vào tài khoản "Lãi chậm trả". Lãi suất phạt bị khống chế trần theo quy định NHNN tối đa **10%/năm**:
+  $$\text{Tiền phạt lãi chậm trả} = \text{Lãi kỳ 34} \times 10\% \times \frac{\text{Số ngày chậm trả}}{365}$$
+
+*Ví dụ bằng số*:
+- Gốc kỳ 34: 10.000.000đ; Lãi kỳ 34: 5.000.000đ; LS trong hạn: 10%/năm $\to$ LS quá hạn: 15%/năm.
+- Khách trễ 5 ngày:
+  $$\text{Tổng tiền phạt} = \left(10.000.000 \times 15\% \times \frac{5}{365}\right) + \left(5.000.000 \times 10\% \times \frac{5}{365}\right) = 20.548\text{đ} + 6.849\text{đ} = 27.397\text{đ}$$
+
+#### 2. Giai đoạn 2: Vượt ngưỡng "Chuyển nợ quá hạn toàn bộ" (Cross-default / Acceleration)
+Đây là điểm khác biệt sống còn của Vay Từng Lần. Khi khách hàng vi phạm thời gian trả nợ vượt quá ngưỡng quy định (thường từ ngày thứ 10 trở đi — chuyển sang Nợ nhóm 2, hoặc theo điều khoản thu hồi nợ trước hạn trong HĐTD), ngân hàng có quyền đơn phương chấm dứt hợp đồng tín dụng.
+
+- **Thao tác Chuyển quá hạn toàn bộ (Acceleration)**:
+  Toàn bộ dư nợ gốc còn lại của các kỳ chưa đến hạn (Kỳ 35 $\to$ 120) bị kéo dồn về kỳ hiện tại và biến thành **Gốc quá hạn**.
+- **Áp dụng lãi phạt 150% trên 100% dư nợ còn lại**:
+  Kể từ ngày chuyển quá hạn toàn bộ, toàn bộ 100% dư nợ gốc còn lại của khoản vay bị áp dụng mức lãi phạt 150%:
+  $$\text{Tổng lãi phạt phát sinh mỗi ngày} = \text{Toàn bộ dư nợ (Kỳ 34} \to \text{120)} \times (\text{LS trong hạn} \times 150\%) \times \frac{1}{365}$$
+- **Lưu ý**: Tiền phạt lãi chậm trả (tối đa 10%/năm) vẫn tiếp tục tính trên các khoản lãi đã đến hạn mà khách hàng chưa thanh toán.
+
+#### 3. Thứ tự thu nợ (Waterfall Rule)
+Khi khách hàng nộp tiền thanh toán sau $N$ ngày trễ hạn, hệ thống Core Banking tự động gạch nợ theo thứ tự ưu tiên bảo vệ an toàn vốn ngân hàng:
+1. **Nợ gốc quá hạn** *(Ưu tiên thu gốc trước để giảm rủi ro mất vốn tín dụng)*.
+2. **Lãi trên nợ gốc quá hạn** *(Lãi phạt 150% trên gốc quá hạn)*.
+3. **Tiền lãi đến hạn chưa trả** *(Lãi kỳ quá hạn ban đầu)*.
+4. **Phạt lãi chậm trả** *(Phạt tối đa 10%/năm trên phần lãi chậm trả)*.
+5. **Lãi trong hạn** *(Nếu có kỳ mới phát sinh)*.
+6. **Gốc trong hạn** *(Kỳ đến hạn tiếp theo hoặc thanh toán trước hạn)*.
+
 ---
 
 ## 7. Ba tầng hạn mức tín dụng & Vòng đời khoản vay
@@ -293,3 +373,19 @@ Phê duyệt HMTD  →  Hợp đồng tín dụng (HĐTD)  →  Giấy nhận n�
 5. Nếu có thay đổi CSDL: Tạo migration trong `supabase/migrations/`, **áp dụng migration trên Supabase trước khi deploy mã nguồn**.
 6. Kiểm chứng thực tế: Kiểm tra file xuất, giao diện trực quan và phản hồi từ CSDL.
 7. Cập nhật tiến độ vào `PROGRESS.md`.
+
+---
+
+## 9. Quy ước UX/UI & Nhập liệu Ngày tháng / Số liệu
+
+1. **Nguyên tắc Không can thiệp khi đang gõ (No auto-format during typing)**:
+   - **Tuyệt đối không tự động chèn ký tự phân tách (như `/` hoặc `-`) hoặc tự động reformat chuỗi khi người dùng đang bấm phím dở dang trong ô ngày tháng hoặc số**.
+   - Việc tự động format trên sự kiện `onChange` làm giật/nhảy con trỏ văn bản về cuối dòng hoặc làm sai lệch nội dung người dùng đang chỉnh sửa.
+   - **Chuẩn xử lý**:
+     - Trong lúc gõ (`onChange`): Nhận chuỗi thô của người dùng, chỉ parse ngầm nếu chuỗi đã thành ngày hợp lệ.
+     - Khi rời ô (`onBlur`) hoặc chọn từ lịch (`DatePicker`): Mới chuẩn hóa hiển thị về định dạng chuẩn (`dd/mm/yyyy` hoặc format cấu hình).
+2. **Thiết kế Tinh gọn, Không Note rườm rà (`ui-khong-note-giai-thich`)**:
+   - Giao diện tài chính / công cụ tính toán phải ưu tiên sự sắc nét, trực quan và các con số trọng tâm.
+   - Tránh các dòng chữ giải thích dài dòng, text chú thích dưới đáy ô (`Trần LTV: ...`, `Áp dụng: ...`, `Lưu ý: ...`), các banner cảnh báo chữ thừa.
+   - Sử dụng các thẻ KPI lớn, rõ ràng (như *Tổng gốc lãi sổ nhận*, *Tổng trả nợ*, *Lợi nhuận ròng / Chi phí ròng*).
+

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TrendingUp, TrendingDown, Plus, Trash2 } from 'lucide-react';
 import { fmtMoney, fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
+import { DateInput } from '../DateInput';
 import { buildStkRollover, TENOR_UNIT_LABELS } from '../../lib/stkPledge';
 import type { TenorUnit, StkCycleInput } from '../../lib/stkPledge';
 import type { UiClasses } from '../../lib/uiClasses';
@@ -95,20 +96,18 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
             </div>
             <div>
               <label className={labelCls}>Ngày giải ngân</label>
-              <input
-                type="date"
+              <DateInput
                 value={disbursementDate}
-                onChange={e => setDisbursementDate(e.target.value)}
-                className={`${inputCls} font-mono`}
+                onChange={setDisbursementDate}
+                className={inputCls}
               />
             </div>
             <div>
               <label className={labelCls}>Ngày đáo hạn vay</label>
-              <input
-                type="date"
+              <DateInput
                 value={loanDueDate}
-                onChange={e => setLoanDueDate(e.target.value)}
-                className={`${inputCls} font-mono`}
+                onChange={setLoanDueDate}
+                className={inputCls}
               />
             </div>
           </div>
@@ -137,11 +136,10 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
             </div>
             <div>
               <label className={labelCls}>Ngày gửi kỳ đầu</label>
-              <input
-                type="date"
+              <DateInput
                 value={firstDepositDate}
-                onChange={e => setFirstDepositDate(e.target.value)}
-                className={`${inputCls} font-mono`}
+                onChange={setFirstDepositDate}
+                className={inputCls}
               />
             </div>
           </div>

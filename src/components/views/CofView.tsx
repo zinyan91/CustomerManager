@@ -2,6 +2,7 @@ import React from 'react';
 import { UI } from '../../lib/uiClasses';
 import { Landmark, Loader2, RefreshCw, FileText, Save, Info } from 'lucide-react';
 import { fmtDate, fmtPercent } from '../../lib/utils';
+import { DateInput } from '../DateInput';
 import {
   COF_RATE_COLUMNS, COF_SECTION_LABELS, groupRateItems,
   type CofRateColumnKey,
@@ -63,11 +64,10 @@ export const CofView: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <label className="text-[11px] font-bold text-ink-faint">Áp dụng ngày</label>
-          <input
-            type="date"
+          <DateInput
             value={onDate}
-            onChange={e => setOnDate(e.target.value)}
-            className={`${inputCls} w-auto font-mono font-bold`}
+            onChange={setOnDate}
+            className={`${inputCls} w-36 font-mono font-bold`}
           />
           <button
             type="button"

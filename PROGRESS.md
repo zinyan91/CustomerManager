@@ -1,12 +1,99 @@
 # Tiến độ công việc
 
-Cập nhật: 19/08/2026 — bảng tính lãi cầm cố: số ngày lên khung, thêm tổng gốc + lãi sổ
+Cập nhật: 27/08/2026 — nạp chương trình ưu đãi lãi suất huy động Tuần lễ vàng theo Thông báo 2605/2026/TB-BĐH
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
 **Cách đọc tài liệu này.** Bảng chỉ ghi **một dòng** mỗi việc. Việc nào cần kể dài
 thì có mục riêng ở phần [Ghi chú chi tiết](#ghi-chú-chi-tiết), đánh số §1, §2…
 và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó là thứ cần biết trước.
+
+---
+
+# 0. Sửa lỗi & Nâng cấp toàn diện Tool 6: Phân Tích Trả Nợ Trước Hạn — 28/08/2026
+
+1. **Khắc phục lỗi logic & nhập liệu**:
+   - Tách pure logic vào module riêng `src/lib/prepaymentAnalysis.ts`.
+   - Sửa lỗi fallback tiền tệ khi người dùng gõ số 0 hoặc xóa trống (không bị tự động ép ngược về dư nợ gốc).
+   - Ngăn chặn việc thay đổi dư nợ gốc tự động ghi đè số tiền trả trước đang nhập.
+   - Hỗ trợ đầy đủ 3 phương thức trả nợ: Gốc đều (Dư nợ giảm dần), Niên kim (Gốc + Lãi đều), và Gốc cuối kỳ (Bullet).
+   - Hỗ trợ 2 chế độ tính phí phạt: Theo năm vay hợp đồng (Năm 1, Năm 2, Năm 3, Từ năm 4+) hoặc Nhập % trực tiếp.
+   - Bổ sung mức phí phạt tối thiểu (minPenaltyFee) nếu hợp đồng có quy định.
+2. **Tinh gọn giao diện chuẩn `ui-khong-note-giai-thich`**:
+   - Bỏ toàn bộ dòng kết luận tư vấn dài dòng `💡 Kết luận tư vấn: ...`, bỏ các text giải thích thừa.
+   - Bổ sung **4 Thẻ KPI lớn trực quan**:
+     1. **TỔNG TIỀN NỘP ĐỢT NÀY** (Gốc trả trước + Phí phạt).
+     2. **PHÍ PHẠT TRẢ TRƯỚC** (với % áp dụng).
+     3. **TỔNG LÃI TIẾT KIỆM** (trong toàn bộ thời gian còn lại).
+     4. **LỢI ÍCH RÒNG** (Lãi tiết kiệm - Phí phạt).
+   - Thêm nút tiện ích **"⚡ Tất toán 100%"**.
+3. **Bộ kiểm thử & Build**:
+   - 107 test files, **1.918 tests passed 100%**, build production pass hoàn toàn.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Module logic `prepaymentAnalysis.ts` | Tính toán chính xác theo Gốc đều / Niên kim / Bullet |
+| ✅ | Nâng cấp UI `Tool6PrepaymentAnalysisCalc.tsx` | 4 KPI Cards, Tinh gọn, Tất toán 100%, 2 chế độ tính phí |
+| ✅ | Bộ unit test & component test Tool 6 | `prepaymentAnalysis.test.ts` & `Tool6PrepaymentAnalysisCalc.test.tsx` (9/9 tests pass) |
+
+---
+
+# 0. Tinh gọn UI Cầm Cố STK, Hỗ trợ Nhiều khoản vay & Đồng bộ DateInput toàn hệ thống — 27/08/2026
+
+1. **Tinh gọn giao diện theo nguyên tắc `ui-khong-note-giai-thich`**:
+   - Bỏ toàn bộ dòng kết luận kiểm tra, bỏ banner kết luận compliance.
+   - Bỏ dòng lưu ý đáo hạn, bỏ accordion công thức áp dụng và các ghi chú text thừa dưới ô input.
+   - Thêm 2 ô KPI trực quan nổi bật: **TỔNG GỐC LÃI SỔ NHẬN** và **TỔNG TRẢ NỢ (GỐC + LÃI VAY)**.
+2. **Hỗ trợ Cầm cố nhiều khoản vay trên cùng 1 sổ**:
+   - Khách hàng có thể thêm nhiều khoản vay cầm cố ($\sum P_i \le \text{Hạn mức gốc tối đa}$).
+   - Tự động tính thời gian vay, lãi vay và tổng nghĩa vụ trả nợ từng khoản và tổng hợp.
+3. **Đồng bộ DateInput & Khắc phục định dạng ngày tháng theo Settings**:
+   - Thay thế toàn bộ `<input type="date">` thuần của trình duyệt bằng component `<DateInput />` trên toàn bộ các công cụ tính toán ([Tool2StkSingleCalc.tsx](file:///d:/CustomerManager/src/components/calculator/Tool2StkSingleCalc.tsx), [Tool3StkMultiCycleCalc.tsx](file:///d:/CustomerManager/src/components/calculator/Tool3StkMultiCycleCalc.tsx), [Tool4RateReductionCalc.tsx](file:///d:/CustomerManager/src/components/calculator/Tool4RateReductionCalc.tsx), [RateQuoteView.tsx](file:///d:/CustomerManager/src/components/views/RateQuoteView.tsx), [CofView.tsx](file:///d:/CustomerManager/src/components/views/CofView.tsx), [CardContractModal.tsx](file:///d:/CustomerManager/src/components/card/CardContractModal.tsx)).
+   - Nhờ vậy, khi người dùng đổi sang `dd/mm/yyyy` trong **Cài đặt (Settings)**, toàn bộ các ô nhập ngày tháng trên toàn hệ thống lập tức hiển thị chuẩn `dd/mm/yyyy` và không bị trình duyệt ép `mm/dd/yyyy`.
+   - Ghi chú đầy đủ quy ước nghiệp vụ & UX vào [SKILL.md](file:///d:/CustomerManager/.agents/skills/tin-dung/SKILL.md).
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Giao diện Tinh gọn & 2 Ô KPI mới | `Tool2StkSingleCalc.tsx` (Tổng gốc lãi sổ nhận, Tổng trả nợ) |
+| ✅ | Đa khoản vay cầm cố (Multi-loans) | `stkPledge.ts` & `Tool2StkSingleCalc.tsx` (+ Thêm / Xóa khoản vay) |
+| ✅ | Đồng bộ DateInput toàn hệ thống theo Settings | Thay thế toàn bộ native `type="date"` bằng `DateInput` |
+| ✅ | Cập nhật bộ kiểm thử & Skill tin-dung | 1.909 tests passed 100%, build pass |
+
+---
+
+# 0. Nạp chương trình ưu đãi lãi suất huy động "Tuần lễ vàng" 2605/2026/TB-BĐH — 27/08/2026
+
+Cập nhật và áp dụng toàn bộ biểu lãi suất huy động điều chỉnh từ Thông báo số **2605/2026/TB-BĐH** ngày 27/08/2026 (hiệu lực 28/08/2026 → 20/09/2026):
+1. **Tại quầy (66 dòng biểu lãi)**: Tách bậc số dư $1\text{ tỷ} \le \text{Số dư} < 8\text{ tỷ}$ thành 2 bậc riêng biệt ($1\text{ tỷ} \le \text{Số dư} < 3\text{ tỷ}$ và $3\text{ tỷ} \le \text{Số dư} < 8\text{ tỷ}$), nâng lãi suất cuối kỳ bậc $\ge 8\text{ tỷ}$ lên 9.50%/năm (6M, 7M) và 9.40%/năm (12M).
+2. **Kênh Online (6 dòng biểu lãi)**: Phân theo 2 giai đoạn (28/08–05/09/2026: 9.20% cho 6M/7M, 8.95% cho 12M; 06/09–20/09/2026: 8.95% cho cả 3 kỳ hạn).
+3. **Giá bán vốn nội bộ VOF / FTP mua (12 dòng biểu lãi)**: Nâng biểu giá bán vốn nội bộ VOF theo kỳ hạn 6, 7, 12 tháng.
+4. **Cơ sở dữ liệu Supabase**: Tạo và apply migration `55_huy_dong_tuan_le_vang_2605.sql`, cập nhật đóng kỳ 2500 vào ngày 27/08/2026. Tổng cộng 84 dòng biểu lãi suất.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Migration `55_huy_dong_tuan_le_vang_2605.sql` | 84 dòng (66 quầy + 6 online + 12 VOF) |
+| ✅ | Đóng hiệu lực chương trình 2500 vào 27/08/2026 | Không trùng lặp hiệu lực ngày |
+| ✅ | Đồng bộ cơ sở dữ liệu Supabase `RatePrograms` & `RateProgramTiers` | Đã apply và verify dữ liệu thực tế |
+
+---
+
+# 0. Nâng cấp Bảng tính cầm cố STK đơn — 27/08/2026
+
+Nâng cấp toàn diện công cụ `Tool2StkSingleCalc.tsx` & `src/lib/stkPledge.ts` theo đúng 3 nhóm TSBĐ và các công thức bảo toàn thu hồi nợ (Gốc + Lãi) từ quy chế Vietbank:
+1. **Tiền gửi (TG) VND**: Mức cho vay tối đa 100% gốc. Phân biệt công thức tính trần bảo đảm thu hồi giữa Lãnh lãi cuối kỳ ($P + I_{\text{vay}} \le \text{Gốc} + I_{\text{gửi dự kiến}} - \text{Thu hồi}$) và Lãnh lãi định kỳ/trước ($P + I_{\text{vay}} \le \text{Gốc} - I_{\text{đã chi}} - I_{\text{gửi dự kiến}} - \text{Thu hồi}$).
+2. **Tiền gửi ngoại tệ (USD, EUR...)**: Quy đổi tỷ giá ra VND, LTV Phụ lục 04, thỏa mãn $P_{\text{VND}} + I_{\text{vay, VND}} \le \text{Gốc TG quy đổi VND}$.
+3. **Chứng chỉ tiền gửi (CCTG)**: Mức cho vay tối đa 100% gốc, khấu trừ lãi đã chi và thu hồi ưu đãi khi nhận lãi trước / định kỳ.
+4. **Lãi gửi dự kiến khi lệch ngày đáo hạn**: Tự động áp dụng lãi suất không kỳ hạn khi rút gốc sớm.
+5. **Thanh kiểm soát Vietbank & Nút tính mức vay tối đa an toàn**: Tự động tính $\text{maxAllowableLoan}$ và cảnh báo vi phạm.
+Test suite: **1.898 → 1.908 tests passed**.
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Phân hệ 3 loại TSBĐ & 3 phương thức lãnh lãi | `stkPledge.ts` (`PledgeDepositType`, `DepositInterestPaymentMethod`) |
+| ✅ | Tính mức cho vay tối đa an toàn & kiểm soát 2 vế điều kiện | `calcStkPledge` (`maxPrincipalCap`, `maxRecoveryBound`, `maxAllowableLoan`) |
+| ✅ | Lãi suất không kỳ hạn khi lệch kỳ hạn | `appliedSavingsRate = isSameMaturity ? regularRate : nonTermRate` |
+| ✅ | Nút "Vay tối đa theo quy định" & Bảng kiểm toán công thức | `Tool2StkSingleCalc.tsx` giao diện Glassmorphism hiện đại |
+| ✅ | Bộ kiểm thử tự động Vitest | 32 tests pure function + 5 tests component UI |
 
 ---
 

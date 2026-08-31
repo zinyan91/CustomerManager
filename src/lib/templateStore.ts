@@ -47,9 +47,8 @@ export function addInventoryTemplate(
   const updated = [...current, newTemplate];
   saveInventoryTemplates(updated);
 
-  // Sync to Supabase in background
   saveInventoryTemplateToCloud(newTemplate).catch(err => {
-    console.warn('saveInventoryTemplateToCloud background error:', err);
+    console.warn('saveInventoryTemplateToCloud error:', err);
   });
 
   return { templates: updated, newTemplate };
@@ -73,7 +72,7 @@ export function updateInventoryTemplate(
 
   if (updatedTemplate) {
     saveInventoryTemplateToCloud(updatedTemplate).catch(err => {
-      console.warn('saveInventoryTemplateToCloud background error:', err);
+      console.warn('saveInventoryTemplateToCloud error:', err);
     });
   }
 
@@ -83,12 +82,11 @@ export function updateInventoryTemplate(
 export function deleteInventoryTemplate(id: string): InventoryCategoryTemplate[] {
   const current = loadInventoryTemplates();
   const updated = current.filter(t => t.id !== id);
-  const result = updated.length > 0 ? updated : INVENTORY_TEMPLATES;
+  const result = updated.length > 0 ? updated : [];
   saveInventoryTemplates(result);
 
-  // Delete from Supabase in background
   deleteInventoryTemplateFromCloud(id).catch(err => {
-    console.warn('deleteInventoryTemplateFromCloud background error:', err);
+    console.warn('deleteInventoryTemplateFromCloud error:', err);
   });
 
   return result;
@@ -97,12 +95,33 @@ export function deleteInventoryTemplate(id: string): InventoryCategoryTemplate[]
 export function resetInventoryTemplates(): InventoryCategoryTemplate[] {
   const storage = getStorage();
   if (storage) {
-    storage.removeItem(STORAGE_KEY);
+    storage.setItem(STORAGE_KEY, JSON.stringify(INVENTORY_TEMPLATES));
   }
+  resetInventoryTemplatesToCloud().catch(err => {
+    console.warn('resetInventoryTemplatesToCloud error:', err);
+  });
   return INVENTORY_TEMPLATES;
 }
 
-// --- Cloud Sync Helpers (Supabase PostgreSQL) ---
+// --- Cloud Sync Helpers (Supabase PostgreSQL SSOT) ---
+
+export async function seedDefaultTemplatesToCloud(): Promise<void> {
+  try {
+    const payloads = INVENTORY_TEMPLATES.map(tpl => ({
+      Id: tpl.id,
+      Name: tpl.name,
+      Items: tpl.items,
+      CreatedAt: new Date().toISOString(),
+      UpdatedAt: new Date().toISOString(),
+    }));
+    const { error } = await supabase
+      .from('InventoryCategoryTemplates')
+      .upsert(payloads);
+    if (error) throw error;
+  } catch (err) {
+    console.warn('seedDefaultTemplatesToCloud error:', err);
+  }
+}
 
 export async function fetchInventoryTemplatesFromCloud(): Promise<InventoryCategoryTemplate[]> {
   try {
@@ -112,27 +131,21 @@ export async function fetchInventoryTemplatesFromCloud(): Promise<InventoryCateg
       .order('CreatedAt', { ascending: true });
 
     if (error) throw error;
-    if (!data || data.length === 0) return loadInventoryTemplates();
 
-    const cloudList: InventoryCategoryTemplate[] = data.map(row => ({
-      id: row.Id,
-      name: row.Name,
-      items: Array.isArray(row.Items) ? row.Items : [],
-    }));
+    if (data && data.length > 0) {
+      const cloudList: InventoryCategoryTemplate[] = data.map(row => ({
+        id: row.Id,
+        name: row.Name,
+        items: Array.isArray(row.Items) ? row.Items : [],
+      }));
+      saveInventoryTemplates(cloudList);
+      return cloudList;
+    }
 
-    const currentLocal = loadInventoryTemplates();
-    const map = new Map<string, InventoryCategoryTemplate>();
-
-    // Builtin first
-    INVENTORY_TEMPLATES.forEach(t => map.set(t.id, t));
-    // Local
-    currentLocal.forEach(t => map.set(t.id, t));
-    // Cloud
-    cloudList.forEach(t => map.set(t.id, t));
-
-    const finalMerged = Array.from(map.values());
-    saveInventoryTemplates(finalMerged);
-    return finalMerged;
+    // If Supabase table is empty, seed defaults and return them
+    await seedDefaultTemplatesToCloud();
+    saveInventoryTemplates(INVENTORY_TEMPLATES);
+    return INVENTORY_TEMPLATES;
   } catch (err) {
     console.warn('fetchInventoryTemplatesFromCloud fallback to local:', err);
     return loadInventoryTemplates();
@@ -165,5 +178,19 @@ export async function deleteInventoryTemplateFromCloud(id: string): Promise<void
     if (error) throw error;
   } catch (err) {
     console.warn('deleteInventoryTemplateFromCloud error:', err);
+  }
+}
+
+export async function resetInventoryTemplatesToCloud(): Promise<void> {
+  try {
+    const { error: delError } = await supabase
+      .from('InventoryCategoryTemplates')
+      .delete()
+      .neq('Id', '__none__');
+    if (delError) throw delError;
+
+    await seedDefaultTemplatesToCloud();
+  } catch (err) {
+    console.warn('resetInventoryTemplatesToCloud error:', err);
   }
 }

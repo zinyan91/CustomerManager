@@ -62,11 +62,6 @@ export const CalculatorView: React.FC = () => {
               );
             })}
           </div>
-
-          <div className="text-[11px] text-ink-faint hidden lg:flex items-center gap-1.5 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-            <span>9 module tính toán tài chính & tín dụng ngân hàng</span>
-          </div>
         </div>
 
         {/* Sub-Tools Ribbon (Tầng dưới - gắn liền) */}

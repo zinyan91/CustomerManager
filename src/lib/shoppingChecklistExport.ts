@@ -201,12 +201,14 @@ export function exportShoppingChecklistToExcel(preset: ShoppingPreset, filename?
 export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
   const grandTotal = computePresetTotal(preset);
   const totalItems = countPresetItems(preset);
+  const totalRooms = preset.floors.reduce((s, f) => s + f.rooms.length, 0);
 
   let globalIdx = 1;
-  const floorsDetailHtml = preset.floors
-    .map((floor, fIdx) => {
-      const fTot = computeFloorTotal(floor);
-      const roomsHtml = floor.rooms
+
+  // Build each room's compact table for the 2-column flow
+  const roomsBlocksHtml = preset.floors
+    .map(floor => {
+      return floor.rooms
         .map(room => {
           const rTot = computeRoomTotal(room);
           const itemsRows = room.items
@@ -214,56 +216,63 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
               const amt = computeItemAmount(it);
               return `
                 <tr>
-                  <td style="text-align: center;">${globalIdx++}</td>
-                  <td>${it.name}</td>
-                  <td style="text-align: center;">${it.unit || 'Bộ/Cái'}</td>
-                  <td style="text-align: right;">${it.quantity.toLocaleString('vi-VN')}</td>
+                  <td style="text-align: center; color: #64748b;">${globalIdx++}</td>
+                  <td style="font-weight: 500; text-align: left;">${it.name}</td>
+                  <td style="text-align: center; color: #64748b;">${it.unit || 'Bộ/Cái'}</td>
+                  <td style="text-align: right; font-weight: 600;">${it.quantity.toLocaleString('vi-VN')}</td>
                   <td style="text-align: right;">${it.unitPrice.toLocaleString('vi-VN')}</td>
-                  <td style="text-align: right; font-weight: bold;">${amt.toLocaleString('vi-VN')}</td>
-                  <td style="font-size: 10pt; color: #555;">${it.note || ''}</td>
+                  <td style="text-align: right; font-weight: bold; color: #0f172a;">${amt.toLocaleString('vi-VN')}</td>
                 </tr>
               `;
             })
             .join('');
 
           return `
-            <tr style="background-color: #f8fafc; font-weight: bold;">
-              <td colspan="4" style="padding-left: 12px; color: #1e3a8a;">${room.name}</td>
-              <td style="text-align: right; font-style: italic; font-size: 10pt;">Cộng phòng:</td>
-              <td style="text-align: right; color: #1e3a8a;">${rTot.toLocaleString('vi-VN')}</td>
-              <td></td>
-            </tr>
-            ${itemsRows}
+            <div class="room-box">
+              <table class="item-table">
+                <thead>
+                  <tr class="room-title-row">
+                    <th colspan="6">
+                      <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>${floor.name.toUpperCase()} – ${room.name.toUpperCase()}</span>
+                        <span style="color: #fef08a;">Cộng: ${rTot.toLocaleString('vi-VN')} đ</span>
+                      </div>
+                    </th>
+                  </tr>
+                  <tr class="col-head-row">
+                    <th style="width: 20px; text-align: center;">STT</th>
+                    <th style="text-align: left;">HẠNG MỤC / VẬT DỤNG</th>
+                    <th style="width: 32px; text-align: center;">ĐVT</th>
+                    <th style="width: 22px; text-align: right;">SL</th>
+                    <th style="width: 66px; text-align: right;">ĐƠN GIÁ</th>
+                    <th style="width: 74px; text-align: right;">THÀNH TIỀN</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsRows}
+                </tbody>
+              </table>
+            </div>
           `;
         })
         .join('');
-
-      return `
-        <tr style="background-color: #e2e8f0; font-weight: bold; font-size: 11pt;">
-          <td style="text-align: center;">${fIdx + 1}</td>
-          <td colspan="4" style="color: #0f172a;">${floor.name.toUpperCase()}</td>
-          <td style="text-align: right; color: #0f172a;">${fTot.toLocaleString('vi-VN')}</td>
-          <td></td>
-        </tr>
-        ${roomsHtml}
-      `;
     })
     .join('');
 
-  const summaryRowsHtml = preset.floors
-    .map((f, idx) => {
+  // 2-row horizontal summary table
+  const summaryColsHeader = preset.floors
+    .map(f => `<th style="border: 1px solid #cbd5e1; padding: 1.5px 3px;">${f.name}</th>`)
+    .join('');
+
+  const summaryColsData = preset.floors
+    .map(f => {
       const fTot = computeFloorTotal(f);
-      const fItems = f.rooms.reduce((s, r) => s + r.items.length, 0);
-      const pct = grandTotal > 0 ? (fTot / grandTotal) * 100 : 0;
+      const pct = grandTotal > 0 ? ((fTot / grandTotal) * 100).toFixed(1) : '0';
       return `
-        <tr>
-          <td style="text-align: center;">${idx + 1}</td>
-          <td style="font-weight: bold;">${f.name}</td>
-          <td style="text-align: center;">${f.rooms.length}</td>
-          <td style="text-align: center;">${fItems}</td>
-          <td style="text-align: right; font-weight: bold;">${fTot.toLocaleString('vi-VN')} đ</td>
-          <td style="text-align: right;">${pct.toFixed(2)}%</td>
-        </tr>
+        <td style="border: 1px solid #cbd5e1; padding: 1.5px 3px; text-align: right;">
+          <strong>${fTot.toLocaleString('vi-VN')} đ</strong>
+          <span style="color: #64748b; font-size: 7pt;">(${pct}%)</span>
+        </td>
       `;
     })
     .join('');
@@ -273,181 +282,186 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
     <html lang="vi">
     <head>
       <meta charset="utf-8">
-      <title>DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA</title>
+      <title></title>
       <style>
         @page {
           size: A4 landscape;
-          margin: 8mm 10mm;
+          margin: 0 !important;
         }
         @media print {
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          html, body {
+            margin: 0 !important;
+            padding: 5mm 6mm !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           thead { display: table-header-group; }
           tr { page-break-inside: avoid; }
         }
         body {
-          font-family: 'Times New Roman', Times, serif;
-          font-size: 9.5pt;
+          font-family: Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+          font-size: 7.8pt;
           color: #0f172a;
           margin: 0;
-          padding: 0;
-          line-height: 1.25;
+          padding: 5mm 6mm;
+          line-height: 1.15;
+          background: #fff;
         }
-        .doc-header {
+        .top-banner {
           display: flex;
           justify-content: space-between;
           align-items: flex-end;
           border-bottom: 2px solid #1e3a8a;
-          padding-bottom: 5px;
-          margin-bottom: 8px;
+          padding-bottom: 2px;
+          margin-bottom: 3px;
         }
         .doc-title {
-          font-size: 14pt;
-          font-weight: bold;
+          font-size: 13pt;
+          font-weight: 800;
           text-transform: uppercase;
           color: #1e3a8a;
-          letter-spacing: 0.5px;
-          margin: 0 0 2px 0;
+          letter-spacing: 0.3px;
+          margin: 0;
         }
-        .doc-meta {
-          font-size: 9pt;
+        .doc-sub {
+          font-size: 8pt;
           color: #475569;
+          margin-top: 1px;
         }
-        .doc-meta strong {
-          color: #0f172a;
-        }
-        .doc-kpi {
-          text-align: right;
-        }
-        .doc-kpi-date {
-          font-size: 8.5pt;
-          color: #64748b;
-        }
-        .doc-kpi-total {
+        .doc-total-tag {
           font-size: 11pt;
-          font-weight: bold;
+          font-weight: 800;
           color: #b91c1c;
-          margin-top: 2px;
         }
-        .section-heading {
-          font-weight: bold;
-          font-size: 9.5pt;
-          text-transform: uppercase;
-          color: #1e3a8a;
-          margin: 6px 0 3px 0;
-        }
-        table {
+        .summary-grid {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 6px;
-          font-size: 9pt;
+          font-size: 7.2pt;
+          margin-bottom: 2px;
         }
-        th, td {
-          border: 1px solid #cbd5e1;
-          padding: 3px 5px;
-          vertical-align: middle;
-        }
-        th {
-          background-color: #f1f5f9;
-          font-weight: bold;
+        .summary-grid th {
+          background: #f1f5f9;
+          color: #334155;
+          font-weight: 700;
           text-align: center;
-          color: #1e293b;
-          font-size: 8.5pt;
-          text-transform: uppercase;
         }
-        .total-row {
-          background-color: #fef3c7;
-          font-weight: bold;
-          font-size: 9pt;
+        .summary-words {
+          font-size: 7.2pt;
+          font-style: italic;
+          color: #475569;
+          margin-bottom: 5px;
         }
-        .sig-block {
+        .two-cols-wrapper {
+          column-count: 2;
+          column-gap: 5mm;
+          column-fill: auto;
+        }
+        .room-box {
+          break-inside: auto;
+          margin-bottom: 3px;
+        }
+        .item-table {
+          width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;
+          font-size: 7.5pt;
+        }
+        .item-table th, .item-table td {
+          border: 1px solid #cbd5e1;
+          padding: 1px 3px;
+          vertical-align: middle;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .item-table td:nth-child(2) {
+          white-space: normal;
+          word-break: break-word;
+        }
+        .room-title-row th {
+          background: #1e3a8a;
+          color: #ffffff;
+          font-size: 7.5pt;
+          font-weight: 700;
+          padding: 2px 4px;
+        }
+        .col-head-row th {
+          background: #f8fafc;
+          color: #475569;
+          font-size: 6.8pt;
+          font-weight: 700;
+          padding: 1px 2px;
+        }
+        .sig-row {
           display: flex;
           justify-content: space-between;
-          margin-top: 15px;
+          margin-top: 10px;
+          break-inside: avoid;
           page-break-inside: avoid;
         }
         .sig-col {
-          width: 40%;
+          width: 45%;
           text-align: center;
+          font-size: 7.5pt;
         }
         .sig-space {
-          height: 45px;
+          height: 35px;
         }
       </style>
     </head>
     <body>
-      <div class="doc-header">
+      <!-- Top Title Banner -->
+      <div class="top-banner">
         <div>
           <h1 class="doc-title">DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA</h1>
-          <div class="doc-meta">
-            Công trình / Bản dựng: <strong>${preset.name}</strong> &nbsp;•&nbsp; Quy mô: <strong>${preset.floors.length} tầng</strong>, <strong>${preset.floors.reduce((s, f) => s + f.rooms.length, 0)} phòng</strong>, <strong>${totalItems} hạng mục</strong>
+          <div class="doc-sub">
+            Công trình / Bản dựng: <strong>${preset.name}</strong> • Quy mô: <strong>${preset.floors.length} tầng</strong>, <strong>${totalRooms} phòng</strong>, <strong>${totalItems} hạng mục</strong>
           </div>
         </div>
-        <div class="doc-kpi">
-          <div class="doc-kpi-date">Ngày lập: ${fmtDate(todayIso())}</div>
-          <div class="doc-kpi-total">Tổng dự toán: ${grandTotal.toLocaleString('vi-VN')} VNĐ</div>
+        <div style="text-align: right; white-space: nowrap;">
+          <div style="font-size: 7pt; color: #64748b;">Ngày lập: ${fmtDate(todayIso())}</div>
+          <div class="doc-total-tag">TỔNG DỰ TOÁN: ${grandTotal.toLocaleString('vi-VN')} VNĐ</div>
         </div>
       </div>
 
-      <div class="section-heading">I. BẢNG TỔNG HỢP CHI PHÍ THEO TẦNG</div>
-      <table>
+      <!-- Compact 2-Row Summary Table -->
+      <table class="summary-grid">
         <thead>
           <tr>
-            <th style="width: 4%;">STT</th>
-            <th style="width: 36%;">Tầng / Khu vực</th>
-            <th style="width: 12%; text-align: center;">Số phòng</th>
-            <th style="width: 12%; text-align: center;">Số hạng mục</th>
-            <th style="width: 20%; text-align: right;">Tổng chi phí (VNĐ)</th>
-            <th style="width: 16%; text-align: right;">Tỷ trọng (%)</th>
+            <th style="border: 1px solid #cbd5e1; padding: 1.5px 4px; text-align: left; width: 105px;">TỔNG HỢP THEO TẦNG</th>
+            ${summaryColsHeader}
+            <th style="border: 1px solid #cbd5e1; padding: 1.5px 4px; background: #fef3c7; color: #b91c1c;">TỔNG CỘNG</th>
           </tr>
         </thead>
         <tbody>
-          ${summaryRowsHtml}
-          <tr class="total-row">
-            <td style="text-align: center;">Σ</td>
-            <td style="font-weight: bold;">TỔNG CỘNG TOÀN BỘ CÔNG TRÌNH</td>
-            <td style="text-align: center;">${preset.floors.reduce((s, f) => s + f.rooms.length, 0)} phòng</td>
-            <td style="text-align: center;">${totalItems} món</td>
-            <td style="text-align: right; color: #b91c1c; font-weight: bold;">${grandTotal.toLocaleString('vi-VN')} VNĐ</td>
-            <td style="text-align: right;">100.00%</td>
+          <tr>
+            <td style="border: 1px solid #cbd5e1; padding: 1.5px 4px; font-weight: bold;">Chi phí & Tỷ trọng:</td>
+            ${summaryColsData}
+            <td style="border: 1px solid #cbd5e1; padding: 1.5px 4px; text-align: right; font-weight: 800; background: #fef3c7; color: #b91c1c;">
+              ${grandTotal.toLocaleString('vi-VN')} VNĐ
+            </td>
           </tr>
         </tbody>
       </table>
-      <div style="font-style: italic; font-size: 8.5pt; color: #475569; margin-bottom: 8px;">
+      <div class="summary-words">
         (Bằng chữ: <strong>${moneyToVietnameseWords(grandTotal)}</strong>)
       </div>
 
-      <div class="section-heading">II. BẢNG CHI TIẾT VẬT DỤNG THEO TỪNG TẦNG & PHÒNG</div>
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 4%;">STT</th>
-            <th style="width: 36%;">Hạng mục / Tên vật dụng</th>
-            <th style="width: 7%; text-align: center;">ĐVT</th>
-            <th style="width: 6%; text-align: right;">SL</th>
-            <th style="width: 15%; text-align: right;">Đơn giá (VNĐ)</th>
-            <th style="width: 16%; text-align: right;">Thành tiền (VNĐ)</th>
-            <th style="width: 16%;">Ghi chú</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${floorsDetailHtml}
-          <tr class="total-row">
-            <td colspan="5" style="text-align: right; font-weight: bold;">TỔNG CỘNG TOÀN BỘ VẬT DỤNG:</td>
-            <td style="text-align: right; color: #b91c1c; font-weight: bold;">${grandTotal.toLocaleString('vi-VN')} VNĐ</td>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- Two-Column Side-by-Side Checklist (Matching Excel Layout) -->
+      <div class="two-cols-wrapper">
+        ${roomsBlocksHtml}
+      </div>
 
-      <div class="sig-block">
+      <!-- Signature Section -->
+      <div class="sig-row">
         <div class="sig-col">
           <strong>NGƯỜI LẬP BẢNG</strong><br>
-          <span style="font-style: italic; font-size: 8.5pt; color: #64748b;">(Ký và ghi rõ họ tên)</span>
+          <span style="font-style: italic; color: #64748b;">(Ký và ghi rõ họ tên)</span>
           <div class="sig-space"></div>
         </div>
         <div class="sig-col">
           <strong>CHỦ ĐẦU TƯ / DUYỆT BẢNG</strong><br>
-          <span style="font-style: italic; font-size: 8.5pt; color: #64748b;">(Ký và ghi rõ họ tên)</span>
+          <span style="font-style: italic; color: #64748b;">(Ký và ghi rõ họ tên)</span>
           <div class="sig-space"></div>
         </div>
       </div>

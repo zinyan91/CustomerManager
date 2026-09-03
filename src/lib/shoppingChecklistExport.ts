@@ -1,5 +1,6 @@
 import { buildMultiSheetXlsx, type XlsxCell, type XlsxSheet } from './xlsxWriter';
 import { downloadBytes } from './xlsExport';
+import { printHtmlDoc } from './printHtmlDoc';
 
 const MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 import {
@@ -429,14 +430,5 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
     </html>
   `;
 
-  const printWin = window.open('', '_blank', 'width=950,height=800');
-  if (!printWin) return false;
-  printWin.document.open();
-  printWin.document.write(html);
-  printWin.document.close();
-  printWin.focus();
-  setTimeout(() => {
-    printWin.print();
-  }, 350);
-  return true;
+  return printHtmlDoc(html, `Du_Toan_Vat_Dung_${preset.name.replace(/\s+/g, '_')}`);
 }

@@ -200,8 +200,6 @@ export function exportShoppingChecklistToExcel(preset: ShoppingPreset, filename?
 
 export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
   const grandTotal = computePresetTotal(preset);
-  const totalItems = countPresetItems(preset);
-  const totalRooms = preset.floors.reduce((s, f) => s + f.rooms.length, 0);
 
   // Flatten all items with floor and room metadata
   const allEntries: Array<{
@@ -315,7 +313,7 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
       .join('');
   };
 
-  // Divide into balanced pages and balanced columns
+  // Divide into strictly balanced pages and balanced columns
   const total = allEntries.length;
   interface PagePartition {
     leftEntries: typeof allEntries;
@@ -326,7 +324,7 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
 
   const pagesData: PagePartition[] = [];
 
-  if (total <= 64) {
+  if (total <= 56) {
     const half = Math.ceil(total / 2);
     pagesData.push({
       leftEntries: allEntries.slice(0, half),
@@ -335,8 +333,8 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
       startIdxRight: half + 1,
     });
   } else {
-    // 2 Pages: Page 1 gets ~72 items (36 left, 36 right), Page 2 gets remaining balanced
-    const p1Total = Math.min(72, Math.ceil((total * 0.65) / 2) * 2);
+    // 2 Pages: Page 1 gets up to 60 items (30 left, 30 right) to guarantee zero overflow
+    const p1Total = Math.min(60, Math.ceil((total * 0.55) / 2) * 2);
     const p1Half = p1Total / 2;
 
     pagesData.push({
@@ -357,24 +355,6 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
     });
   }
 
-  // 2-row horizontal summary table
-  const summaryColsHeader = preset.floors
-    .map(f => `<th style="border: 1px solid #cbd5e1; padding: 1.5px 3px;">${f.name}</th>`)
-    .join('');
-
-  const summaryColsData = preset.floors
-    .map(f => {
-      const fTot = computeFloorTotal(f);
-      const pct = grandTotal > 0 ? ((fTot / grandTotal) * 100).toFixed(1) : '0';
-      return `
-        <td style="border: 1px solid #cbd5e1; padding: 1.5px 3px; text-align: right;">
-          <strong>${fTot.toLocaleString('vi-VN')} đ</strong>
-          <span style="color: #64748b; font-size: 7pt;">(${pct}%)</span>
-        </td>
-      `;
-    })
-    .join('');
-
   // Build HTML for each page
   const pagesHtml = pagesData
     .map((p, pIdx) => {
@@ -386,63 +366,30 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
 
       const topSectionHtml = isFirst
         ? `
-          <!-- Top Title Banner -->
-          <div class="top-banner">
-            <div>
-              <h1 class="doc-title">DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA</h1>
-              <div class="doc-sub">
-                Công trình / Bản dựng: <strong>${preset.name}</strong> • Quy mô: <strong>${preset.floors.length} tầng</strong>, <strong>${totalRooms} phòng</strong>, <strong>${totalItems} hạng mục</strong>
-              </div>
+          <!-- Minimalist Title Header (No colors, no date) -->
+          <div class="doc-header-simple">
+            <h1 class="doc-title">DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA</h1>
+            <div class="doc-sub">
+              Công trình: <strong>${preset.name}</strong> &nbsp;—&nbsp; Tổng dự toán: <strong>${grandTotal.toLocaleString('vi-VN')} VNĐ</strong> (Bằng chữ: <em>${moneyToVietnameseWords(grandTotal)}</em>)
             </div>
-            <div style="text-align: right; white-space: nowrap;">
-              <div style="font-size: 7pt; color: #64748b;">Ngày lập: ${fmtDate(todayIso())}</div>
-              <div class="doc-total-tag">TỔNG DỰ TOÁN: ${grandTotal.toLocaleString('vi-VN')} VNĐ</div>
-            </div>
-          </div>
-
-          <!-- Compact 2-Row Summary Table -->
-          <table class="summary-grid">
-            <thead>
-              <tr>
-                <th style="border: 1px solid #cbd5e1; padding: 1.5px 4px; text-align: left; width: 105px;">TỔNG HỢP THEO TẦNG</th>
-                ${summaryColsHeader}
-                <th style="border: 1px solid #cbd5e1; padding: 1.5px 4px; background: #fef3c7; color: #b91c1c;">TỔNG CỘNG</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="border: 1px solid #cbd5e1; padding: 1.5px 4px; font-weight: bold;">Chi phí & Tỷ trọng:</td>
-                ${summaryColsData}
-                <td style="border: 1px solid #cbd5e1; padding: 1.5px 4px; text-align: right; font-weight: 800; background: #fef3c7; color: #b91c1c;">
-                  ${grandTotal.toLocaleString('vi-VN')} VNĐ
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="summary-words">
-            (Bằng chữ: <strong>${moneyToVietnameseWords(grandTotal)}</strong>)
           </div>
         `
         : `
-          <!-- Secondary Page Header -->
-          <div class="top-banner" style="margin-bottom: 5px;">
-            <div class="doc-title" style="font-size: 10pt;">
-              DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA (TIẾP THEO) - ${preset.name.toUpperCase()}
-            </div>
-            <div style="font-size: 8pt; font-weight: bold; color: #b91c1c;">
-              TỔNG DỰ TOÁN: ${grandTotal.toLocaleString('vi-VN')} VNĐ
+          <!-- Secondary Page Header (Clean, minimalist) -->
+          <div class="doc-header-simple" style="margin-bottom: 5px; padding-bottom: 3px;">
+            <div class="doc-title" style="font-size: 10.5pt;">
+              DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA (TIẾP THEO) — ${preset.name.toUpperCase()}
             </div>
           </div>
         `;
 
       const sigHtml = isLast
         ? `
-          <!-- Signature Section (Only Nguoi Lap Bang, removed Chu Dau Tu) -->
+          <!-- Minimalist Signature (Only Nguoi Lap Bang, no date) -->
           <div class="sig-container">
             <div class="sig-box">
-              <div style="font-size: 7.5pt; color: #64748b; margin-bottom: 2px;">Ngày lập: ${fmtDate(todayIso())}</div>
               <strong>NGƯỜI LẬP BẢNG</strong><br>
-              <span style="font-style: italic; color: #64748b; font-size: 7pt;">(Ký và ghi rõ họ tên)</span>
+              <span style="font-style: italic; font-size: 7.5pt; color: #333;">(Ký, ghi rõ họ tên)</span>
               <div class="sig-space"></div>
             </div>
           </div>
@@ -494,57 +441,32 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           }
         }
         body {
-          font-family: Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+          font-family: Arial, Helvetica, sans-serif;
           font-size: 7.5pt;
-          color: #0f172a;
+          color: #000;
           margin: 0;
           padding: 4mm 6mm;
           line-height: 1.15;
           background: #fff;
         }
-        .top-banner {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          border-bottom: 2px solid #1e3a8a;
-          padding-bottom: 2px;
-          margin-bottom: 3px;
+        .doc-header-simple {
+          text-align: center;
+          margin-bottom: 5px;
+          border-bottom: 1px solid #000;
+          padding-bottom: 3px;
         }
         .doc-title {
           font-size: 13pt;
-          font-weight: 800;
+          font-weight: bold;
           text-transform: uppercase;
-          color: #1e3a8a;
-          letter-spacing: 0.3px;
+          color: #000;
           margin: 0;
+          letter-spacing: 0.2px;
         }
         .doc-sub {
           font-size: 8pt;
-          color: #475569;
-          margin-top: 1px;
-        }
-        .doc-total-tag {
-          font-size: 11pt;
-          font-weight: 800;
-          color: #b91c1c;
-        }
-        .summary-grid {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 7.2pt;
-          margin-bottom: 2px;
-        }
-        .summary-grid th {
-          background: #f1f5f9;
-          color: #334155;
-          font-weight: 700;
-          text-align: center;
-        }
-        .summary-words {
-          font-size: 7.2pt;
-          font-style: italic;
-          color: #475569;
-          margin-bottom: 4px;
+          color: #000;
+          margin-top: 2px;
         }
         .page-cols {
           display: flex;
@@ -567,17 +489,18 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           margin-bottom: 2px;
         }
         .item-table th, .item-table td {
-          border: 1px solid #cbd5e1;
+          border: 1px solid #000;
           padding: 1.5px 3px;
           vertical-align: middle;
           line-height: 1.15;
         }
         .room-title-row th {
-          background: #1e3a8a !important;
-          color: #ffffff !important;
+          background: #e5e7eb !important;
+          color: #000 !important;
           font-size: 7.5pt;
-          font-weight: 700;
+          font-weight: bold;
           padding: 2px 4px;
+          border: 1px solid #000;
         }
         .room-title-flex {
           display: flex;
@@ -585,16 +508,17 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           align-items: center;
         }
         .room-sum {
-          color: #fef08a !important;
-          font-weight: 700;
+          color: #000 !important;
+          font-weight: bold;
         }
         .col-head-row th {
-          background: #f1f5f9 !important;
-          color: #334155 !important;
+          background: #f3f4f6 !important;
+          color: #000 !important;
           font-size: 6.8pt;
-          font-weight: 700;
+          font-weight: bold;
           padding: 1.5px 2px;
           white-space: nowrap;
+          border: 1px solid #000;
         }
         .th-stt { text-align: center; }
         .th-name { text-align: left; padding-left: 4px; }
@@ -605,41 +529,41 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
 
         .td-stt {
           text-align: center;
-          color: #64748b;
+          color: #000;
           font-size: 7pt;
           white-space: nowrap;
         }
         .td-name {
           text-align: left;
           font-weight: 500;
-          color: #0f172a;
+          color: #000;
           white-space: normal;
           word-break: break-word;
           padding-left: 4px;
         }
         .td-unit {
           text-align: center;
-          color: #64748b;
+          color: #000;
           font-size: 7pt;
           white-space: nowrap;
         }
         .td-qty {
           text-align: right;
-          font-weight: 600;
-          color: #0f172a;
+          font-weight: bold;
+          color: #000;
           padding-right: 3px;
           white-space: nowrap;
         }
         .td-price {
           text-align: right;
-          color: #334155;
+          color: #000;
           padding-right: 4px;
           white-space: nowrap;
         }
         .td-amt {
           text-align: right;
-          font-weight: 700;
-          color: #0f172a;
+          font-weight: bold;
+          color: #000;
           padding-right: 4px;
           white-space: nowrap;
         }
@@ -650,9 +574,10 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           page-break-inside: avoid;
         }
         .sig-box {
-          width: 240px;
+          width: 200px;
           text-align: center;
-          font-size: 7.5pt;
+          font-size: 8pt;
+          color: #000;
         }
         .sig-space {
           height: 38px;

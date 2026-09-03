@@ -68,6 +68,7 @@ export function AppLayout() {
       </div>
 
       <Header
+        isMobileMenuOpen={isMobileMenuOpen}
         onToggleMobileMenu={handleToggleMobileMenu}
         onOpenCommandPalette={handleOpenCommandPalette}
       />

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, memo } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Sun, Moon, Menu, LogOut, ShieldCheck, User, Search, Sparkles } from 'lucide-react';
+import { Sun, Moon, Menu, X, LogOut, ShieldCheck, User, Search, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import { LANGS, LANG_SWITCH_ENABLED } from '../lib/i18n';
@@ -10,9 +10,10 @@ import { useConfirm } from '../context/ConfirmContext';
 interface HeaderProps {
   onToggleMobileMenu?: () => void;
   onOpenCommandPalette?: () => void;
+  isMobileMenuOpen?: boolean;
 }
 
-export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPalette }) => {
+export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPalette, isMobileMenuOpen = false }) => {
   const { theme, toggleTheme } = useTheme();
   const { user, role, fullName, isAdmin, signOut } = useAuth();
   const { lang, setLang, t } = useLang();
@@ -57,9 +58,9 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
           type="button"
           onClick={onToggleMobileMenu}
           className={`md:hidden ${ghostButton}`}
-          aria-label={t('header.openMenu')}
+          aria-label={isMobileMenuOpen ? t('header.closeMenu') : t('header.openMenu')}
         >
-          <Menu className="w-4 h-4" />
+          {isMobileMenuOpen ? <X className="w-4 h-4 text-accent" /> : <Menu className="w-4 h-4" />}
         </button>
 
         <div className="flex items-center gap-2.5">

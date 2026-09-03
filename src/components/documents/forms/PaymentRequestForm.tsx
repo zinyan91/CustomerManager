@@ -1,6 +1,5 @@
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { DateInput } from '../../DateInput';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../../lib/documentOptions';
 import { fmtDate } from '../../../lib/utils';
 import type { UiClasses } from '../../../lib/uiClasses';
@@ -11,11 +10,11 @@ export interface PaymentRequestFormProps {
   styles: UiClasses;
   selectedTemplate: TemplateType;
   constContractDate: string;
-  setConstContractDate: (v: string) => void;
+  setConstContractDate?: (v: string) => void;
   constPartyAName: string;
   setConstPartyAName: (v: string) => void;
   saleContractDate: string;
-  setSaleContractDate: (v: string) => void;
+  setSaleContractDate?: (v: string) => void;
   saleBuyerName: string;
   setSaleBuyerName: (v: string) => void;
   recipientTitle?: 'Ông' | 'Bà';
@@ -47,11 +46,9 @@ export const PaymentRequestForm: React.FC<PaymentRequestFormProps> = ({
   styles,
   selectedTemplate,
   constContractDate,
-  setConstContractDate,
   constPartyAName,
   setConstPartyAName,
   saleContractDate,
-  setSaleContractDate,
   saleBuyerName,
   setSaleBuyerName,
   recipientTitle = 'Ông',

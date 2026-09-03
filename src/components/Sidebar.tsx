@@ -45,19 +45,19 @@ export const Sidebar = memo<SidebarProps>(({
     <>
       {isOpenMobile && (
         <div
-          className="fixed inset-0 bg-surface/80 backdrop-blur-sm z-50 md:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/50 backdrop-blur-xs z-40 md:hidden animate-in fade-in duration-200"
           onClick={onCloseMobile}
           aria-hidden="true"
         />
       )}
 
       <aside
-        className={`fixed top-0 md:top-[56px] bottom-0 left-0 z-50 md:z-30 w-72 max-w-[85vw] md:w-64 bg-panel/95 md:bg-panel/85 backdrop-blur-2xl border-r border-line/70 flex flex-col shrink-0 transition-transform duration-200 ease-in-out ${
-          isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
+        className={`fixed top-0 md:top-[56px] bottom-0 left-0 z-50 md:z-30 w-72 max-w-[85vw] md:w-64 bg-panel border-r border-line/70 flex flex-col shrink-0 transition-transform duration-200 ease-in-out shadow-2xl md:shadow-none ${
+          isOpenMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
         aria-label="Sidebar Navigation"
       >
-        <div className="flex items-center justify-between p-3.5 md:hidden border-b border-line/60 bg-panel/50">
+        <div className="flex items-center justify-between p-3.5 md:hidden border-b border-line/60 bg-panel">
           <span className="text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" />
             Menu Hệ Thống

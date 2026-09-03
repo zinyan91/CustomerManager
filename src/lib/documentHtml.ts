@@ -205,7 +205,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
           <h1>HỢP ĐỒNG THUÊ MẶT BẰNG KINH DOANH</h1>
           <p class="text-center font-italic text-[11pt] no-indent">Số: ${mbContractNo}</p>
         </div>
-        <p class="clause-p">Hôm nay, ngày ${fmtDate(mbContractDate)}, tại địa chỉ ${nfc(mbLocation)}, chúng tôi gồm có:</p>
+        <p class="clause-p no-indent">Hôm nay, ngày ${fmtDate(mbContractDate)}, tại địa chỉ ${nfc(mbLocation)}, chúng tôi gồm có:</p>
         <p class="clause-p font-bold uppercase no-indent">BÊN CHO THUÊ (BÊN A):</p>
         <p class="clause-p no-indent">- Họ và tên: <strong>${nfc(mbPartyAName)}</strong> &nbsp;|&nbsp; CCCD số: <strong>${mbPartyACccd}</strong> do Cục Cảnh sát QLHC về TTXH cấp ngày ${mbPartyACccdDate}.</p>
         <p class="clause-p no-indent">- Địa chỉ thường trú: ${nfc(mbPartyAAddress)}.</p>
@@ -213,11 +213,11 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- Họ và tên: <strong>${nfc(mbPartyBName)}</strong> &nbsp;|&nbsp; CCCD số: <strong>${mbPartyBCccd}</strong> do Cục Cảnh sát QLHC về TTXH cấp ngày ${mbPartyBCccdDate}.</p>
         <p class="clause-p no-indent">- Địa chỉ thường trú: ${nfc(mbPartyBAddress)}.</p>
         <h2>ĐIỀU 1: NỘI DUNG HỢP ĐỒNG</h2>
-        <p class="clause-p">Bên A đồng ý cho Bên B thuê mặt bằng kinh doanh tại địa chỉ: <strong>${nfc(mbLocation)}</strong>.</p>
-        <p class="clause-p">Thời hạn thuê là 12 tháng kể từ ngày <strong>${fmtDate(mbStartDate)}</strong> đến hết ngày <strong>${fmtDate(mbEndDate)}</strong>.</p>
+        <p class="clause-p no-indent">Bên A đồng ý cho Bên B thuê mặt bằng kinh doanh tại địa chỉ: <strong>${nfc(mbLocation)}</strong>.</p>
+        <p class="clause-p no-indent">Thời hạn thuê là 12 tháng kể từ ngày <strong>${fmtDate(mbStartDate)}</strong> đến hết ngày <strong>${fmtDate(mbEndDate)}</strong>.</p>
         <h2>ĐIỀU 2: GIÁ THUÊ VÀ ĐẶT CỌC</h2>
-        <p class="clause-p">1. Giá thuê mặt bằng là: <strong>${mbMonthlyPrice} VNĐ/tháng</strong> (Bằng chữ: ${moneyTextToWords(mbMonthlyPrice)} mỗi tháng).</p>
-        <p class="clause-p">2. Tiền đặt cọc bảo đảm thực hiện hợp đồng là: <strong>${mbDepositAmount} VNĐ</strong>.</p>
+        <p class="clause-p no-indent">1. Giá thuê mặt bằng là: <strong>${mbMonthlyPrice} VNĐ/tháng</strong> (Bằng chữ: ${moneyTextToWords(mbMonthlyPrice)} mỗi tháng).</p>
+        <p class="clause-p no-indent">2. Tiền đặt cọc bảo đảm thực hiện hợp đồng là: <strong>${mbDepositAmount} VNĐ</strong>.</p>
         <table class="sig-table font-serif" style="width: 100%; margin-top: 20pt;">
           <tbody>
             <tr>
@@ -448,7 +448,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <div class="text-center pt-3 pb-1 no-indent">
           <h1>HỢP ĐỒNG THI CÔNG NHÀ Ở DÂN DỤNG</h1>
         </div>
-        <p class="clause-p">Căn cứ vào nhu cầu và khả năng hợp tác của hai bên. Hôm nay, ngày ${fmtDate(constContractDate)}, chúng tôi gồm có:</p>
+        <p class="clause-p no-indent">Căn cứ vào nhu cầu và khả năng hợp tác của hai bên. Hôm nay, ngày ${fmtDate(constContractDate)}, chúng tôi gồm có:</p>
 
         <p class="clause-p font-bold uppercase no-indent">BÊN THUÊ THI CÔNG XÂY DỰNG (BÊN A):</p>
         <p class="clause-p no-indent">- Họ và tên: <strong>${nfc(constPartyAName)}</strong></p>
@@ -458,18 +458,18 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- Họ và tên: <strong>${nfc(constPartyBName)}</strong></p>
         <p class="clause-p no-indent">- CCCD số: <strong>${nfc(constPartyBCccd)}</strong></p>
 
-        <p class="clause-p pt-2">Hai bên thỏa thuận ký hợp đồng với các điều khoản như sau:</p>
+        <p class="clause-p no-indent pt-2">Hai bên thỏa thuận ký hợp đồng với các điều khoản như sau:</p>
         <h2>Điều 1: Nội dung và phạm vi công việc</h2>
-        <p class="clause-p"><strong>1. Địa điểm thi công:</strong></p>
-        <p class="clause-p">Bên B nhận thi công/sửa chữa nhà ở dân dụng tại địa chỉ: <strong>${nfc(constSiteAddress)}</strong>.</p>
-        <p class="clause-p"><strong>2. Phạm vi công việc mà Bên B đảm nhận:</strong></p>
-        <p class="clause-p">Bên B nhận thực hiện toàn bộ phần nhân công (hoặc cả nhân công + vật liệu, tùy thỏa thuận) cho các hạng mục sau:</p>
+        <p class="clause-p no-indent"><strong>1. Địa điểm thi công:</strong></p>
+        <p class="clause-p no-indent">Bên B nhận thi công/sửa chữa nhà ở dân dụng tại địa chỉ: <strong>${nfc(constSiteAddress)}</strong>.</p>
+        <p class="clause-p no-indent"><strong>2. Phạm vi công việc mà Bên B đảm nhận:</strong></p>
+        <p class="clause-p no-indent">Bên B nhận thực hiện toàn bộ phần nhân công (hoặc cả nhân công + vật liệu, tùy thỏa thuận) cho các hạng mục sau:</p>
         <p class="clause-p no-indent">- Sửa chữa/tân trang phần tường: trát, bả, sơn lại toàn bộ các mảng tường bị hư hỏng.</p>
         <p class="clause-p no-indent">- Thay thế hoặc lát lại gạch nền, sàn theo mẫu Bên A đã lựa chọn.</p>
         <p class="clause-p no-indent">- Thi công hệ thống điện nước: đi lại đường dây điện, thay ổ cắm, công tắc, thay đường ống cấp – thoát nước hỏng.</p>
         <p class="clause-p no-indent">- Sửa chữa, thay mới cửa, mái tôn, lan can, cầu thang (nếu có).</p>
         <p class="clause-p no-indent">- Các hạng mục khác theo phụ lục kèm theo hợp đồng (nếu có).</p>
-        <p class="clause-p"><strong>3. Chất lượng &amp; tiêu chuẩn kỹ thuật:</strong></p>
+        <p class="clause-p no-indent"><strong>3. Chất lượng &amp; tiêu chuẩn kỹ thuật:</strong></p>
         <p class="clause-p no-indent">- Công việc thi công/sửa chữa phải đảm bảo đúng quy trình xây dựng dân dụng, an toàn lao động và tiêu chuẩn chất lượng theo thỏa thuận.</p>
         <p class="clause-p no-indent">- Vật liệu (nếu Bên B cung cấp) phải đúng chủng loại, nhãn hiệu và chất lượng theo cam kết với Bên A.</p>
 
@@ -477,7 +477,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- Ngày khởi công: <strong>${fmtDate(constStartDate)}</strong>.</p>
         <p class="clause-p no-indent">- Ngày hoàn thành dự kiến: <strong>${fmtDate(constEndDate)}</strong>.</p>
         <p class="clause-p no-indent">- Tổng thời gian thực hiện dự kiến: <strong>${constDurationMonths}</strong> (không tính Thứ 7, Chủ nhật).</p>
-        <p class="clause-p">Trường hợp bất khả kháng (thiên tai, dịch bệnh, thay đổi thiết kế theo yêu cầu Bên A), hai bên sẽ điều chỉnh tiến độ bằng văn bản.</p>
+        <p class="clause-p no-indent">Trường hợp bất khả kháng (thiên tai, dịch bệnh, thay đổi thiết kế theo yêu cầu Bên A), hai bên sẽ điều chỉnh tiến độ bằng văn bản.</p>
 
         <h2>Điều 3: Giá trị hợp đồng và phương thức thanh toán</h2>
         <p class="clause-p no-indent">- Tổng giá trị hợp đồng: <strong>${constTotalPrice} VNĐ</strong>.</p>
@@ -486,21 +486,21 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- Đợt 2: Số tiền còn lại là <strong>${constStage2Amount} VNĐ</strong> sẽ được Bên A thanh toán toàn bộ trước khi bàn giao hoàn thiện công trình.</p>
 
         <h2>Điều 4: Quyền và nghĩa vụ của các bên</h2>
-        <p class="clause-p"><strong>1. Quyền và nghĩa vụ của Bên A:</strong></p>
-        <p class="clause-p"><em>a. Quyền lợi:</em></p>
+        <p class="clause-p no-indent"><strong>1. Quyền và nghĩa vụ của Bên A:</strong></p>
+        <p class="clause-p no-indent"><em>a. Quyền lợi:</em></p>
         <p class="clause-p no-indent">- Yêu cầu Bên B thi công đúng tiến độ, đúng chất lượng, đúng thiết kế/hạng mục đã thỏa thuận.</p>
         <p class="clause-p no-indent">- Giám sát, kiểm tra quá trình thi công; có quyền tạm ngừng hoặc từ chối nghiệm thu nếu công trình không đạt yêu cầu.</p>
         <p class="clause-p no-indent">- Yêu cầu thay đổi vật liệu, biện pháp thi công nếu phát hiện không phù hợp (khi đó hai bên phải lập biên bản điều chỉnh).</p>
-        <p class="clause-p"><em>b. Nghĩa vụ:</em></p>
+        <p class="clause-p no-indent"><em>b. Nghĩa vụ:</em></p>
         <p class="clause-p no-indent">- Bàn giao mặt bằng thi công sạch sẽ, an toàn, đúng thời gian.</p>
         <p class="clause-p no-indent">- Thanh toán đúng hạn, đủ số tiền theo tiến độ hợp đồng.</p>
         <p class="clause-p no-indent">- Cung cấp điện, nước sinh hoạt/tạm thời phục vụ thi công (nếu có thỏa thuận).</p>
         <p class="clause-p no-indent">- Phối hợp giải quyết các vấn đề phát sinh liên quan đến hàng xóm, chính quyền địa phương trong quá trình thi công.</p>
-        <p class="clause-p"><strong>2. Quyền và nghĩa vụ của Bên B:</strong></p>
-        <p class="clause-p"><em>a. Quyền lợi:</em></p>
+        <p class="clause-p no-indent"><strong>2. Quyền và nghĩa vụ của Bên B:</strong></p>
+        <p class="clause-p no-indent"><em>a. Quyền lợi:</em></p>
         <p class="clause-p no-indent">- Nhận đủ và đúng hạn số tiền theo hợp đồng.</p>
         <p class="clause-p no-indent">- Được quyền tạm ngừng thi công nếu Bên A không thực hiện nghĩa vụ thanh toán theo thỏa thuận (sau khi đã có văn bản thông báo).</p>
-        <p class="clause-p"><em>b. Nghĩa vụ:</em></p>
+        <p class="clause-p no-indent"><em>b. Nghĩa vụ:</em></p>
         <p class="clause-p no-indent">- Thi công đúng thiết kế, đúng quy chuẩn xây dựng, đảm bảo chất lượng và an toàn lao động.</p>
         <p class="clause-p no-indent">- Chịu trách nhiệm về nhân công, phương tiện, máy móc, thiết bị phục vụ thi công.</p>
         <p class="clause-p no-indent">- Không tự ý thay đổi vật liệu, chủng loại, thiết kế nếu chưa có sự đồng ý bằng văn bản của Bên A.</p>
@@ -807,29 +807,29 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <h1>GIẤY ĐỀ NGHỊ THANH TOÁN</h1>
       </div>
 
-      <p class="clause-p">Kính gửi: <strong>${rTitle} ${nfc(buyerName)}</strong></p>
+      <p class="clause-p no-indent">Kính gửi: <strong>${rTitle} ${nfc(buyerName)}</strong></p>
 
-      <p class="clause-p">Căn cứ ${docTypeTitle} ký ngày <strong>${fmtDate(contractDateStr)}</strong> giữa ${rTitle} ${nfc(buyerName)} và ${nfc(sellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
+      <p class="clause-p no-indent">Căn cứ ${docTypeTitle} ký ngày <strong>${fmtDate(contractDateStr)}</strong> giữa ${rTitle} ${nfc(buyerName)} và ${nfc(sellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
 
-      <p class="clause-p"><strong>1. Giá trị hợp đồng:</strong> <strong>${totalAmountStr} đồng</strong></p>
-      <p class="clause-p no-indent">(Bằng chữ: ${moneyTextToWords(totalAmountStr)})</p>
+      <p class="clause-p no-indent font-bold">1. Giá trị hợp đồng: <strong>${totalAmountStr} đồng</strong></p>
+      <p class="clause-p no-indent font-italic pl-4">(Bằng chữ: ${moneyTextToWords(totalAmountStr)})</p>
 
-      <p class="clause-p"><strong>2. Thời hạn thanh toán:</strong></p>
+      <p class="clause-p no-indent font-bold pt-1">2. Thời hạn thanh toán:</p>
       ${stagesHtml}
 
-      <p class="clause-p"><strong>3. Thông tin thanh toán (${payMethodType === 'cash' ? 'Thanh toán tiền mặt' : 'Thanh toán chuyển khoản'}):</strong></p>
+      <p class="clause-p no-indent font-bold pt-1">3. Thông tin thanh toán (${payMethodType === 'cash' ? 'Thanh toán tiền mặt' : 'Thanh toán chuyển khoản'}):</p>
       ${infoHtml}
 
-      <p class="clause-p pt-2">Kính mong ${rTitle} ${nfc(buyerName)} sắp xếp thanh toán số tiền nêu trên theo đúng tiến độ đã thỏa thuận trong hợp đồng.</p>
+      <p class="clause-p no-indent pt-3">Kính mong ${rTitle} ${nfc(buyerName)} sắp xếp thanh toán số tiền nêu trên theo đúng tiến độ đã thỏa thuận trong hợp đồng.</p>
 
-      <p class="clause-p">Trân trọng!</p>
+      <p class="clause-p no-indent pt-1">Trân trọng!</p>
 
-      <table class="sig-table font-serif" style="width: 100%; margin-top: 20pt;">
+      <table class="sig-table font-serif" style="width: 100%; table-layout: fixed; margin-top: 20pt;">
         <tbody>
           <tr>
             <td style="width: 50%;"></td>
             <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
-              <p class="text-center font-bold uppercase no-indent">Người đề nghị thanh toán</p>
+              <p class="text-center font-bold uppercase no-indent">NGƯỜI ĐỀ NGHỊ THANH TOÁN</p>
               <p class="text-center font-italic text-[11pt] no-indent">(Ký và ghi rõ họ tên)</p>
               <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
             </td>

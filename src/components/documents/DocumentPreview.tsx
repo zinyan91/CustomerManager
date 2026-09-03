@@ -70,7 +70,7 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           margin-top: 2pt; 
           margin-bottom: 3.5pt; 
           text-align: justify; 
-          text-indent: 1cm; 
+          text-indent: 0; 
           line-height: 1.3; 
         }
         .no-indent,
@@ -309,7 +309,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
             margin-top: 2pt !important;
             margin-bottom: 3.5pt !important;
             text-align: justify !important;
-            text-indent: 1cm !important;
+            text-indent: 0 !important;
             line-height: 1.3 !important;
           }
           .a4-sheet-container .bm04-sheet {

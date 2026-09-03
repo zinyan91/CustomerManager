@@ -80,7 +80,7 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           text-align: justify; 
           line-height: 1.3; 
         }
-        .text-center { text-align: center; }
+        .text-center, .text-center p, .text-center div { text-align: center !important; }
         .text-right { text-align: right; }
         .text-left { text-align: left; }
         .font-bold { font-weight: bold; }
@@ -325,7 +325,9 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           .a4-sheet-container .no-indent {
             text-indent: 0 !important;
           }
-          .a4-sheet-container .text-center {
+          .a4-sheet-container .text-center,
+          .a4-sheet-container .text-center p,
+          .a4-sheet-container .text-center div {
             text-align: center !important;
           }
           .a4-sheet-container .text-right {

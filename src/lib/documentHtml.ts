@@ -191,6 +191,10 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
   const totalSaleAmount = saleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
     if (selectedTemplate === 'lease_mb') {
+      const mbContractNo = mbContractDate
+        ? `${fmtDate(mbContractDate).replace(/\//g, '')}/HĐMB`
+        : '23042026/HĐMB';
+
       return `
         <div class="text-center no-indent">
           <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
@@ -199,7 +203,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         </div>
         <div class="text-center pt-2 pb-2 no-indent">
           <h1>HỢP ĐỒNG THUÊ MẶT BẰNG KINH DOANH</h1>
-          <p class="font-italic text-[11pt] no-indent">(Số: 23042026/HĐMB)</p>
+          <p class="text-center font-italic text-[11pt] no-indent">Số: ${mbContractNo}</p>
         </div>
         <p class="clause-p">Hôm nay, ngày ${fmtDate(mbContractDate)}, tại địa chỉ ${nfc(mbLocation)}, chúng tôi gồm có:</p>
         <p class="clause-p font-bold uppercase no-indent">BÊN CHO THUÊ (BÊN A):</p>
@@ -246,7 +250,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         </div>
         <div class="text-center pt-2 pb-2 no-indent">
           <h1>HỢP ĐỒNG ĐẶT CỌC</h1>
-          <p class="font-italic text-[11pt] no-indent">(V/v chuyển nhượng QSDĐ và tài sản gắn liền với đất)</p>
+          <p class="text-center font-italic text-[11pt] no-indent">(V/v chuyển nhượng QSDĐ và tài sản gắn liền với đất)</p>
         </div>
         <p class="clause-p">Chúng tôi gồm có:</p>
 
@@ -559,7 +563,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
 
         <div class="text-center pt-3 pb-2 no-indent">
           <h1>BẢNG DỰ TOÁN HẠNG MỤC CÔNG VIỆC THI CÔNG</h1>
-          <p class="font-italic text-[11pt] no-indent">(Đính kèm Hợp đồng thi công nhà ở ngày ${fmtDate(constContractDate)})</p>
+          <p class="text-center font-italic text-[11pt] no-indent">(Đính kèm Hợp đồng thi công nhà ở ngày ${fmtDate(constContractDate)})</p>
         </div>
 
         <p class="clause-p font-bold uppercase no-indent">Chủ Đầu Tư (Bên A): <strong>${nfc(constPartyAName)}</strong></p>

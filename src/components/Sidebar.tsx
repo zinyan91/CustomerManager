@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { NavLink } from 'react-router';
 import { X, Sparkles } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
@@ -19,21 +19,45 @@ export const Sidebar = memo<SidebarProps>(({
   const { t } = useLang();
   const customerId = useSelectedCustomerId();
 
+  useEffect(() => {
+    if (!isOpenMobile) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCloseMobile?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpenMobile, onCloseMobile]);
+
+  useEffect(() => {
+    if (isOpenMobile) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpenMobile]);
+
   return (
     <>
       {isOpenMobile && (
         <div
-          className="fixed inset-0 bg-surface/80 backdrop-blur-sm z-40 md:hidden"
+          className="fixed inset-0 bg-surface/80 backdrop-blur-sm z-50 md:hidden animate-in fade-in duration-200"
           onClick={onCloseMobile}
+          aria-hidden="true"
         />
       )}
 
       <aside
-        className={`fixed top-0 md:top-[56px] bottom-0 left-0 z-30 w-68 md:w-64 bg-panel/85 backdrop-blur-2xl border-r border-line/70 flex flex-col shrink-0 transition-transform duration-200 ease-in-out ${
+        className={`fixed top-0 md:top-[56px] bottom-0 left-0 z-50 md:z-30 w-72 max-w-[85vw] md:w-64 bg-panel/95 md:bg-panel/85 backdrop-blur-2xl border-r border-line/70 flex flex-col shrink-0 transition-transform duration-200 ease-in-out ${
           isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
         }`}
+        aria-label="Sidebar Navigation"
       >
-        <div className="flex items-center justify-between p-3.5 md:hidden border-b border-line/60">
+        <div className="flex items-center justify-between p-3.5 md:hidden border-b border-line/60 bg-panel/50">
           <span className="text-xs font-bold uppercase tracking-wider text-accent flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" />
             Menu Hệ Thống
@@ -48,7 +72,7 @@ export const Sidebar = memo<SidebarProps>(({
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-2.5 py-3.5 space-y-4">
+        <nav className="flex-1 overflow-y-auto px-2.5 py-3.5 space-y-4 overscroll-contain">
           {NAV_GROUPS.map((group, gi) => (
             <div key={group.groupKey} className={gi === 0 ? '' : 'pt-2 border-t border-line/40'}>
               <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint flex items-center gap-1.5">

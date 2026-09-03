@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Outlet } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { LoginView } from './LoginView';
@@ -13,6 +13,21 @@ export function AppLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const { session, loading } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -56,11 +71,13 @@ export function AppLayout() {
         onToggleMobileMenu={handleToggleMobileMenu}
         onOpenCommandPalette={handleOpenCommandPalette}
       />
-      <div className="flex flex-1 pt-[56px] relative z-10 w-full">
-        <Sidebar
-          isOpenMobile={isMobileMenuOpen}
-          onCloseMobile={handleCloseMobileMenu}
-        />
+
+      <Sidebar
+        isOpenMobile={isMobileMenuOpen}
+        onCloseMobile={handleCloseMobileMenu}
+      />
+
+      <div className="flex flex-1 pt-[56px] relative w-full">
         <main className="flex-1 md:ml-64 min-w-0 px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4 overflow-y-auto relative z-10 w-full">
           <ErrorBoundary title="Lỗi khi tải giao diện màn hình">
             <CustomerContextBar />

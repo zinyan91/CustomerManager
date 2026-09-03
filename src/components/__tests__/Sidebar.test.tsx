@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import { describe, it, expect, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { Sidebar } from '../Sidebar';
 import { LanguageProvider } from '../../context/LanguageContext';
@@ -158,5 +158,71 @@ describe('Sidebar giữ ngữ cảnh khách hàng', () => {
     const dangMo = container.querySelectorAll('[aria-current="page"]');
     expect(dangMo.length).toBe(1);
     expect(dangMo[0].getAttribute('href')).toBe('/customers');
+  });
+});
+
+describe('Sidebar mobile drawer behavior', () => {
+  it('renders mobile header, close button and backdrop when isOpenMobile=true', () => {
+    const onClose = vi.fn();
+    render(
+      <MemoryRouter>
+        <LanguageProvider>
+          <Sidebar isOpenMobile={true} onCloseMobile={onClose} />
+        </LanguageProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Menu Hệ Thống')).toBeTruthy();
+    const closeBtn = screen.getByLabelText(translate('vi', 'header.closeMenu'));
+    expect(closeBtn).toBeTruthy();
+
+    fireEvent.click(closeBtn);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('clicking backdrop calls onCloseMobile', () => {
+    const onClose = vi.fn();
+    const { container } = render(
+      <MemoryRouter>
+        <LanguageProvider>
+          <Sidebar isOpenMobile={true} onCloseMobile={onClose} />
+        </LanguageProvider>
+      </MemoryRouter>
+    );
+
+    const backdrop = container.querySelector('[aria-hidden="true"]');
+    expect(backdrop).toBeTruthy();
+    fireEvent.click(backdrop!);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('pressing Escape calls onCloseMobile', () => {
+    const onClose = vi.fn();
+    render(
+      <MemoryRouter>
+        <LanguageProvider>
+          <Sidebar isOpenMobile={true} onCloseMobile={onClose} />
+        </LanguageProvider>
+      </MemoryRouter>
+    );
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('clicking a NavLink calls onCloseMobile', () => {
+    const onClose = vi.fn();
+    const { container } = render(
+      <MemoryRouter>
+        <LanguageProvider>
+          <Sidebar isOpenMobile={true} onCloseMobile={onClose} />
+        </LanguageProvider>
+      </MemoryRouter>
+    );
+
+    const firstLink = container.querySelector('nav a');
+    expect(firstLink).toBeTruthy();
+    fireEvent.click(firstLink!);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

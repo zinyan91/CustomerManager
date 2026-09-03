@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { DateInput } from '../../DateInput';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../../lib/documentOptions';
+import { fmtDate } from '../../../lib/utils';
 import type { UiClasses } from '../../../lib/uiClasses';
 import type { TemplateType } from '../TemplateSelector';
 import type { PaymentStageItem } from '../DocumentForm';
@@ -90,29 +91,24 @@ export const PaymentRequestForm: React.FC<PaymentRequestFormProps> = ({
       </div>
 
       <div className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
-        <div className="font-bold text-accent text-xs uppercase border-b pb-1.5 border-line/60">NGƯỜI NHẬN ĐỀ NGHỊ & HỢP ĐỒNG CĂN CỨ</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <div>
-            <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Kính gửi (Người nhận thanh toán)</label>
-            <div className="flex gap-1.5">
-              <select
-                value={recipientTitle}
-                onChange={e => setRecipientTitle && setRecipientTitle(e.target.value as 'Ông' | 'Bà')}
-                className={`w-20 shrink-0 rounded-xl p-2.5 font-bold ${styles.inputStyle}`}
-              >
-                <option value="Ông">Ông</option>
-                <option value="Bà">Bà</option>
-              </select>
-              <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} className={`w-full rounded-xl p-2.5 font-bold ${styles.inputStyle}`} />
-            </div>
-          </div>
-          <div>
-            <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Ngày ký Hợp Đồng căn cứ</label>
-            <DateInput
-              value={isSale ? saleContractDate : constContractDate}
-              onChange={isSale ? setSaleContractDate : setConstContractDate}
-              className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`}
-            />
+        <div className="font-bold text-accent text-xs uppercase border-b pb-1.5 border-line/60 flex items-center justify-between">
+          <span>NGƯỜI NHẬN ĐỀ NGHỊ THANH TOÁN</span>
+          <span className="text-[11px] text-muted-foreground font-normal normal-case">
+            Căn cứ HĐ ký ngày: <strong className="text-foreground">{fmtDate(isSale ? saleContractDate : constContractDate)}</strong>
+          </span>
+        </div>
+        <div>
+          <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Kính gửi</label>
+          <div className="flex gap-1.5">
+            <select
+              value={recipientTitle}
+              onChange={e => setRecipientTitle && setRecipientTitle(e.target.value as 'Ông' | 'Bà')}
+              className={`w-20 shrink-0 rounded-xl p-2.5 font-bold ${styles.inputStyle}`}
+            >
+              <option value="Ông">Ông</option>
+              <option value="Bà">Bà</option>
+            </select>
+            <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} className={`w-full rounded-xl p-2.5 font-bold ${styles.inputStyle}`} />
           </div>
         </div>
       </div>

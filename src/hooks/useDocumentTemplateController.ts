@@ -194,7 +194,7 @@ export function useDocumentTemplateController() {
   const [payCashCccdPlace, setPayCashCccdPlace] = useState('Cục Cảnh sát QLHC về TTXH');
   const [payBankOwner, setPayBankOwner] = useState('ĐỖ THỊ LAN ANH');
   const [payBankAccNo, setPayBankAccNo] = useState('0123456789');
-  const [payBankName, setPayBankName] = useState('Ngân hàng TMCP Ngoại thương Việt Nam (Vietcombank)');
+  const [payBankName, setPayBankName] = useState('Vietcombank');
   const [payBankBranch, setPayBankBranch] = useState('Chi nhánh TP.HCM');
 
   const [payStages, setPayStages] = useState<PaymentStageItem[]>([

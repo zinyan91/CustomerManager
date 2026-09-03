@@ -275,104 +275,129 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
       <meta charset="utf-8">
       <title>DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA</title>
       <style>
-        @page { size: A4; margin: 15mm 15mm 15mm 15mm; }
+        @page {
+          size: A4 landscape;
+          margin: 8mm 10mm;
+        }
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          thead { display: table-header-group; }
+          tr { page-break-inside: avoid; }
+        }
         body {
           font-family: 'Times New Roman', Times, serif;
-          font-size: 11pt;
-          color: #111;
+          font-size: 9.5pt;
+          color: #0f172a;
           margin: 0;
-          padding: 10px;
+          padding: 0;
+          line-height: 1.25;
         }
-        .header-top {
+        .doc-header {
           display: flex;
           justify-content: space-between;
-          margin-bottom: 15px;
+          align-items: flex-end;
+          border-bottom: 2px solid #1e3a8a;
+          padding-bottom: 5px;
+          margin-bottom: 8px;
         }
-        .national-motto {
-          text-align: center;
-          font-size: 11.5pt;
-        }
-        .national-motto strong { text-transform: uppercase; }
         .doc-title {
-          text-align: center;
-          margin: 15px 0 6px 0;
-          font-size: 16pt;
+          font-size: 14pt;
           font-weight: bold;
           text-transform: uppercase;
+          color: #1e3a8a;
+          letter-spacing: 0.5px;
+          margin: 0 0 2px 0;
+        }
+        .doc-meta {
+          font-size: 9pt;
+          color: #475569;
+        }
+        .doc-meta strong {
           color: #0f172a;
         }
-        .doc-subtitle {
-          text-align: center;
-          font-style: italic;
-          font-size: 10.5pt;
-          margin-bottom: 18px;
-          color: #475569;
+        .doc-kpi {
+          text-align: right;
+        }
+        .doc-kpi-date {
+          font-size: 8.5pt;
+          color: #64748b;
+        }
+        .doc-kpi-total {
+          font-size: 11pt;
+          font-weight: bold;
+          color: #b91c1c;
+          margin-top: 2px;
+        }
+        .section-heading {
+          font-weight: bold;
+          font-size: 9.5pt;
+          text-transform: uppercase;
+          color: #1e3a8a;
+          margin: 6px 0 3px 0;
         }
         table {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 18px;
-          font-size: 10.5pt;
+          margin-bottom: 6px;
+          font-size: 9pt;
         }
         th, td {
-          border: 1px solid #94a3b8;
-          padding: 5px 7px;
+          border: 1px solid #cbd5e1;
+          padding: 3px 5px;
           vertical-align: middle;
         }
         th {
           background-color: #f1f5f9;
           font-weight: bold;
           text-align: center;
+          color: #1e293b;
+          font-size: 8.5pt;
+          text-transform: uppercase;
         }
         .total-row {
           background-color: #fef3c7;
           font-weight: bold;
-          font-size: 11pt;
-        }
-        .section-heading {
-          font-weight: bold;
-          font-size: 12pt;
-          text-transform: uppercase;
-          margin: 18px 0 8px 0;
-          color: #1e3a8a;
-          border-bottom: 2px solid #1e3a8a;
-          padding-bottom: 3px;
+          font-size: 9pt;
         }
         .sig-block {
           display: flex;
           justify-content: space-between;
-          margin-top: 35px;
+          margin-top: 15px;
           page-break-inside: avoid;
         }
         .sig-col {
-          width: 45%;
+          width: 40%;
           text-align: center;
         }
         .sig-space {
-          height: 65px;
+          height: 45px;
         }
       </style>
     </head>
     <body>
-      <div class="national-motto">
-        <strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br>
-        <strong>Độc lập - Tự do - Hạnh phúc</strong><br>
-        <span>----------o0o----------</span>
+      <div class="doc-header">
+        <div>
+          <h1 class="doc-title">DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA</h1>
+          <div class="doc-meta">
+            Công trình / Bản dựng: <strong>${preset.name}</strong> &nbsp;•&nbsp; Quy mô: <strong>${preset.floors.length} tầng</strong>, <strong>${preset.floors.reduce((s, f) => s + f.rooms.length, 0)} phòng</strong>, <strong>${totalItems} hạng mục</strong>
+          </div>
+        </div>
+        <div class="doc-kpi">
+          <div class="doc-kpi-date">Ngày lập: ${fmtDate(todayIso())}</div>
+          <div class="doc-kpi-total">Tổng dự toán: ${grandTotal.toLocaleString('vi-VN')} VNĐ</div>
+        </div>
       </div>
-
-      <div class="doc-title">DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA</div>
-      <div class="doc-subtitle">Dự án / Bản dựng: <strong>${preset.name}</strong> &nbsp;|&nbsp; Ngày lập: ${fmtDate(todayIso())}</div>
 
       <div class="section-heading">I. BẢNG TỔNG HỢP CHI PHÍ THEO TẦNG</div>
       <table>
         <thead>
           <tr>
-            <th style="width: 6%;">STT</th>
-            <th style="width: 40%;">Tầng / Khu vực</th>
-            <th style="width: 14%;">Số phòng</th>
-            <th style="width: 14%;">Số hạng mục</th>
-            <th style="width: 16%;">Tổng chi phí</th>
-            <th style="width: 10%;">Tỷ trọng</th>
+            <th style="width: 4%;">STT</th>
+            <th style="width: 36%;">Tầng / Khu vực</th>
+            <th style="width: 12%; text-align: center;">Số phòng</th>
+            <th style="width: 12%; text-align: center;">Số hạng mục</th>
+            <th style="width: 20%; text-align: right;">Tổng chi phí (VNĐ)</th>
+            <th style="width: 16%; text-align: right;">Tỷ trọng (%)</th>
           </tr>
         </thead>
         <tbody>
@@ -380,35 +405,35 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           <tr class="total-row">
             <td style="text-align: center;">Σ</td>
             <td style="font-weight: bold;">TỔNG CỘNG TOÀN BỘ CÔNG TRÌNH</td>
-            <td style="text-align: center;">${preset.floors.reduce((s, f) => s + f.rooms.length, 0)}</td>
-            <td style="text-align: center;">${totalItems}</td>
-            <td style="text-align: right; color: #b91c1c;">${grandTotal.toLocaleString('vi-VN')} đ</td>
+            <td style="text-align: center;">${preset.floors.reduce((s, f) => s + f.rooms.length, 0)} phòng</td>
+            <td style="text-align: center;">${totalItems} món</td>
+            <td style="text-align: right; color: #b91c1c; font-weight: bold;">${grandTotal.toLocaleString('vi-VN')} VNĐ</td>
             <td style="text-align: right;">100.00%</td>
           </tr>
         </tbody>
       </table>
-      <div style="font-style: italic; margin-bottom: 20px;">
+      <div style="font-style: italic; font-size: 8.5pt; color: #475569; margin-bottom: 8px;">
         (Bằng chữ: <strong>${moneyToVietnameseWords(grandTotal)}</strong>)
       </div>
 
-      <div class="section-heading" style="page-break-before: auto;">II. BẢNG CHI TIẾT VẬT DỤNG THEO TỪNG TẦNG & PHÒNG</div>
+      <div class="section-heading">II. BẢNG CHI TIẾT VẬT DỤNG THEO TỪNG TẦNG & PHÒNG</div>
       <table>
         <thead>
           <tr>
-            <th style="width: 5%;">STT</th>
-            <th style="width: 38%;">Hạng mục / Tên vật dụng</th>
-            <th style="width: 8%;">ĐVT</th>
-            <th style="width: 8%;">SL</th>
-            <th style="width: 17%;">Đơn giá (VNĐ)</th>
-            <th style="width: 18%;">Thành tiền (VNĐ)</th>
-            <th style="width: 6%;">Ghi chú</th>
+            <th style="width: 4%;">STT</th>
+            <th style="width: 36%;">Hạng mục / Tên vật dụng</th>
+            <th style="width: 7%; text-align: center;">ĐVT</th>
+            <th style="width: 6%; text-align: right;">SL</th>
+            <th style="width: 15%; text-align: right;">Đơn giá (VNĐ)</th>
+            <th style="width: 16%; text-align: right;">Thành tiền (VNĐ)</th>
+            <th style="width: 16%;">Ghi chú</th>
           </tr>
         </thead>
         <tbody>
           ${floorsDetailHtml}
           <tr class="total-row">
             <td colspan="5" style="text-align: right; font-weight: bold;">TỔNG CỘNG TOÀN BỘ VẬT DỤNG:</td>
-            <td style="text-align: right; color: #b91c1c; font-weight: bold;">${grandTotal.toLocaleString('vi-VN')} đ</td>
+            <td style="text-align: right; color: #b91c1c; font-weight: bold;">${grandTotal.toLocaleString('vi-VN')} VNĐ</td>
             <td></td>
           </tr>
         </tbody>
@@ -417,12 +442,12 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
       <div class="sig-block">
         <div class="sig-col">
           <strong>NGƯỜI LẬP BẢNG</strong><br>
-          <span style="font-style: italic; font-size: 10pt;">(Ký và ghi rõ họ tên)</span>
+          <span style="font-style: italic; font-size: 8.5pt; color: #64748b;">(Ký và ghi rõ họ tên)</span>
           <div class="sig-space"></div>
         </div>
         <div class="sig-col">
           <strong>CHỦ ĐẦU TƯ / DUYỆT BẢNG</strong><br>
-          <span style="font-style: italic; font-size: 10pt;">(Ký và ghi rõ họ tên)</span>
+          <span style="font-style: italic; font-size: 8.5pt; color: #64748b;">(Ký và ghi rõ họ tên)</span>
           <div class="sig-space"></div>
         </div>
       </div>

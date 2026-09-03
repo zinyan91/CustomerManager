@@ -252,7 +252,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
           <h1>HỢP ĐỒNG ĐẶT CỌC</h1>
           <p class="text-center font-italic text-[11pt] no-indent">(V/v chuyển nhượng QSDĐ và tài sản gắn liền với đất)</p>
         </div>
-        <p class="clause-p">Chúng tôi gồm có:</p>
+        <p class="clause-p no-indent">Chúng tôi gồm có:</p>
 
         <p class="clause-p font-bold uppercase no-indent">I. BÊN MUA: (Gọi tắt là bên A)</p>
         <p class="clause-p no-indent">- ${nfc(d.buyerTitle)}: <strong>${nfc(d.buyerName)}</strong> &nbsp;|&nbsp; Sinh năm: ${nfc(d.buyerBirthYear)}</p>
@@ -264,10 +264,10 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- CCCD số: <strong>${nfc(d.sellerCccd)}</strong> &nbsp;|&nbsp; Cấp ngày: ${nfc(d.sellerCccdDate)} &nbsp;|&nbsp; Cấp tại: ${nfc(d.sellerCccdPlace)}</p>
         <p class="clause-p no-indent">- HKTT: ${nfc(d.sellerAddress)}</p>
 
-        <p class="clause-p pt-2">Hai bên đồng ý và thống nhất thỏa thuận như sau:</p>
+        <p class="clause-p no-indent pt-2">Hai bên đồng ý và thống nhất thỏa thuận như sau:</p>
 
         <h2>III. ĐỐI TƯỢNG CỦA HỢP ĐỒNG</h2>
-        <p class="clause-p">Bên B đồng ý bán cho bên A phần đất và tài sản trên đất:</p>
+        <p class="clause-p no-indent">Bên B đồng ý bán cho bên A phần đất và tài sản trên đất:</p>
         <p class="clause-p no-indent">- Thửa đất số: <strong>${nfc(d.parcelNo)}</strong> &nbsp;|&nbsp; Tờ bản đồ số: <strong>${nfc(d.mapSheetNo)}</strong></p>
         <p class="clause-p no-indent">- Diện tích: <strong>${nfc(d.area)} m²</strong> (Bằng chữ: ${nfc(d.areaInWords)}).</p>
         <p class="clause-p no-indent">- Địa chỉ thửa đất: ${nfc(d.parcelAddress)}</p>
@@ -282,8 +282,8 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- Các khoản phí, lệ phí: thuế thu nhập cá nhân ${taxLabel(d.incomeTaxBy)} chịu, ${taxLabel(d.registrationTaxBy)} chịu thuế trước bạ sang tên.</p>
 
         <h2>V. THỎA THUẬN CHUNG</h2>
-        <p class="clause-p">Bên B cam kết phần đất chuyển nhượng có nguồn gốc hợp pháp, hiện tại không tranh chấp, không thế chấp, không cho tặng, không góp vốn, không có đồng sở hữu nào khác, chưa sang nhượng cho bất kỳ ai và không bị kê biên để thi hành án.</p>
-        <p class="clause-p">Nếu xảy ra sai phạm các vấn đề trên làm ảnh hưởng tới việc chuyển nhượng QSDĐ thì bên B chịu hoàn toàn trách nhiệm trước pháp luật.</p>
+        <p class="clause-p no-indent">Bên B cam kết phần đất chuyển nhượng có nguồn gốc hợp pháp, hiện tại không tranh chấp, không thế chấp, không cho tặng, không góp vốn, không có đồng sở hữu nào khác, chưa sang nhượng cho bất kỳ ai và không bị kê biên để thi hành án.</p>
+        <p class="clause-p no-indent">Nếu xảy ra sai phạm các vấn đề trên làm ảnh hưởng tới việc chuyển nhượng QSDĐ thì bên B chịu hoàn toàn trách nhiệm trước pháp luật.</p>
         <p class="clause-p no-indent">- Nếu bên B đổi ý không bán đất cho bên A nữa với bất kỳ lý do gì, hoặc thực hiện sai hẹn theo thời gian thỏa thuận thì bên B phải trả lại tiền cọc cho bên A và bồi thường cho bên A số tiền gấp 2 lần số tiền mà bên B đã nhận cọc.</p>
         <p class="clause-p no-indent">- Nếu bên A đổi ý không mua đất của bên B nữa với bất kỳ lý do gì, hoặc thực hiện sai hẹn theo thời gian thỏa thuận thì bên A sẽ mất toàn bộ số tiền đã đặt cọc cho bên B.</p>
         <p class="clause-p no-indent">- Trong thời gian thực hiện hợp đồng mà có những tranh chấp về ranh đất, diện tích đất không đúng theo sổ đất, dính quy hoạch thì bên B phải trả lại cho bên A số tiền đã nhận cọc.</p>
@@ -296,7 +296,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- Hai bên công nhận đã hiểu rõ quyền, nghĩa vụ và lợi ích hợp pháp của mình, ý nghĩa và hậu quả pháp lý của việc giao kết Hợp đồng này.</p>
         <p class="clause-p no-indent">- Hai bên cam kết thực hiện đúng các điều khoản trong hợp đồng.</p>
         <p class="clause-p no-indent">- Hai bên đã tự đọc hợp đồng, đã hiểu và đồng ý tất cả các điều khoản ghi trong hợp đồng và ký vào hợp đồng này trước sự có mặt của người làm chứng.</p>
-        <p class="clause-p">Hợp đồng đặt cọc này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi bên giữ 01 (một) bản.</p>
+        <p class="clause-p no-indent">Hợp đồng đặt cọc này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi bên giữ 01 (một) bản.</p>
 
         <p class="clause-p text-right font-italic pt-3">${nfc(d.signPlace)}, ngày ${fmtDate(d.signDate)}</p>
 
@@ -340,7 +340,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- Căn cứ Bộ luật Dân sự số 91/2015/QH13 ngày 24/11/2015;</p>
         <p class="clause-p no-indent">- Căn cứ Luật Thương mại số 36/2005/QH11 ngày 14 tháng 06 năm 2005;</p>
         <p class="clause-p no-indent">- Căn cứ vào nhu cầu và sự thỏa thuận của các bên tham gia Hợp đồng;</p>
-        <p class="clause-p">Hôm nay, ngày ${fmtDate(mbContractDate)}, các Bên gồm:</p>
+        <p class="clause-p no-indent">Hôm nay, ngày ${fmtDate(mbContractDate)}, các Bên gồm:</p>
 
         <p class="clause-p font-bold uppercase no-indent">BÊN CHO THUÊ (BÊN A):</p>
         <p class="clause-p no-indent">- Ông/bà: <strong>${nfc(mbPartyAName)}</strong></p>
@@ -350,44 +350,44 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- Ông/bà: <strong>${nfc(mbPartyBName)}</strong></p>
         <p class="clause-p no-indent">- CCCD số: <strong>${mbPartyBCccd}</strong> &nbsp;|&nbsp; Ngày cấp: ${mbPartyBCccdDate} &nbsp;|&nbsp; Nơi cấp: Cục Cảnh sát QLHC về TTXH.</p>
         <p class="clause-p no-indent">- Nơi ĐKTT: ${nfc(mbPartyBAddress)}.</p>
-        <p class="clause-p">Bên A và Bên B sau đây gọi chung là “Hai Bên” hoặc “Các Bên”.</p>
-        <p class="clause-p">Sau khi thảo luận, Hai Bên thống nhất đi đến ký kết Hợp đồng thuê nhà (“Hợp Đồng”) với các điều khoản và điều kiện dưới đây:</p>
+        <p class="clause-p no-indent">Bên A và Bên B sau đây gọi chung là “Hai Bên” hoặc “Các Bên”.</p>
+        <p class="clause-p no-indent">Sau khi thảo luận, Hai Bên thống nhất đi đến ký kết Hợp đồng thuê nhà (“Hợp Đồng”) với các điều khoản và điều kiện dưới đây:</p>
 
         <h2>Điều 1: Nhà ở và các tài sản cho thuê kèm theo nhà ở</h2>
-        <p class="clause-p">1.1. Bên A đồng ý cho Bên B thuê và Bên B cũng đồng ý thuê quyền sử dụng đất và một căn nhà <strong>${nfc(lhFloors)}</strong> tầng gắn liền với quyền sử dụng đất tại địa chỉ: <strong>${nfc(mbLocation)}</strong> để sử dụng làm nơi để ở.</p>
-        <p class="item-p">- Diện tích quyền sử dụng đất: <strong>${nfc(lhLandArea)} m²</strong>;</p>
-        <p class="item-p">- Diện tích căn nhà: <strong>${nfc(lhHouseArea)} m²</strong>;</p>
-        <p class="clause-p">1.2. Bên A cam kết quyền sử dụng đất và căn nhà gắn liền trên đất trên là tài sản sở hữu hợp pháp của Bên A. Mọi tranh chấp phát sinh từ tài sản cho thuê trên Bên A hoàn toàn chịu trách nhiệm trước pháp luật.</p>
+        <p class="clause-p no-indent">1.1. Bên A đồng ý cho Bên B thuê và Bên B cũng đồng ý thuê quyền sử dụng đất và một căn nhà <strong>${nfc(lhFloors)}</strong> tầng gắn liền với quyền sử dụng đất tại địa chỉ: <strong>${nfc(mbLocation)}</strong> để sử dụng làm nơi để ở.</p>
+        <p class="clause-p no-indent">- Diện tích quyền sử dụng đất: <strong>${nfc(lhLandArea)} m²</strong>;</p>
+        <p class="clause-p no-indent">- Diện tích căn nhà: <strong>${nfc(lhHouseArea)} m²</strong>;</p>
+        <p class="clause-p no-indent">1.2. Bên A cam kết quyền sử dụng đất và căn nhà gắn liền trên đất trên là tài sản sở hữu hợp pháp của Bên A. Mọi tranh chấp phát sinh từ tài sản cho thuê trên Bên A hoàn toàn chịu trách nhiệm trước pháp luật.</p>
 
         <h2>Điều 2: Bàn giao và sử dụng diện tích thuê</h2>
-        <p class="clause-p">2.1. Thời điểm Bên A bàn giao tài sản thuê vào ngày <strong>${fmtDate(lhHandoverDate)}</strong>;</p>
-        <p class="clause-p">2.2. Bên B được toàn quyền sử dụng tài sản thuê kể từ thời điểm được Bên A bàn giao từ thời điểm quy định tại Mục 2.1 trên đây.</p>
+        <p class="clause-p no-indent">2.1. Thời điểm Bên A bàn giao tài sản thuê vào ngày <strong>${fmtDate(lhHandoverDate)}</strong>;</p>
+        <p class="clause-p no-indent">2.2. Bên B được toàn quyền sử dụng tài sản thuê kể từ thời điểm được Bên A bàn giao từ thời điểm quy định tại Mục 2.1 trên đây.</p>
 
         <h2>Điều 3: Thời hạn thuê</h2>
-        <p class="clause-p">3.1. Bên A cam kết cho Bên B thuê tài sản thuê với thời hạn là <strong>${lhTermLabel}</strong> kể từ ngày bàn giao Tài sản thuê;</p>
-        <p class="clause-p">3.2. Hết thời hạn thuê nêu trên nếu Bên B có nhu cầu tiếp tục sử dụng thì Bên A phải ưu tiên cho Bên B tiếp tục thuê.</p>
+        <p class="clause-p no-indent">3.1. Bên A cam kết cho Bên B thuê tài sản thuê với thời hạn là <strong>${lhTermLabel}</strong> kể từ ngày bàn giao Tài sản thuê;</p>
+        <p class="clause-p no-indent">3.2. Hết thời hạn thuê nêu trên nếu Bên B có nhu cầu tiếp tục sử dụng thì Bên A phải ưu tiên cho Bên B tiếp tục thuê.</p>
 
         <h2>Điều 4: Đặt cọc tiền thuê nhà</h2>
-        <p class="clause-p">4.1. Bên B sẽ giao cho Bên A một khoản tiền là <strong>${mbDepositAmount} VNĐ</strong> ngay sau khi ký hợp đồng này. Số tiền này là tiền đặt cọc để đảm bảo thực hiện Hợp đồng cho thuê nhà.</p>
-        <p class="clause-p">4.2. Nếu Bên B đơn phương chấm dứt hợp đồng mà không thực hiện nghĩa vụ báo trước tới Bên A thì Bên A sẽ không phải hoàn trả lại Bên B số tiền đặt cọc này.</p>
-        <p class="clause-p">Nếu Bên A đơn phương chấm dứt hợp đồng mà không thực hiện nghĩa vụ báo trước tới Bên B thì Bên A sẽ phải hoàn trả lại Bên B số tiền đặt cọc và phải bồi thường thêm một khoản bằng chính tiền đặt cọc.</p>
-        <p class="clause-p">4.3. Tiền đặt cọc của Bên B sẽ không được dùng để thanh toán tiền thuê. Nếu Bên B vi phạm Hợp Đồng làm phát sinh thiệt hại cho Bên A thì Bên A có quyền khấu trừ tiền đặt cọc để bù đắp các chi phí khắc phục thiệt hại phát sinh. Mức chi phí bù đắp thiệt hại sẽ được Các Bên thống nhất bằng văn bản.</p>
-        <p class="clause-p">4.4. Vào thời điểm kết thúc thời hạn thuê hoặc kể từ ngày chấm dứt Hợp đồng, Bên A sẽ hoàn lại cho Bên B số tiền đặt cọc sau khi đã khấu trừ khoản tiền chi phí để khắc phục thiệt hại (nếu có).</p>
+        <p class="clause-p no-indent">4.1. Bên B sẽ giao cho Bên A một khoản tiền là <strong>${mbDepositAmount} VNĐ</strong> ngay sau khi ký hợp đồng này. Số tiền này là tiền đặt cọc để đảm bảo thực hiện Hợp đồng cho thuê nhà.</p>
+        <p class="clause-p no-indent">4.2. Nếu Bên B đơn phương chấm dứt hợp đồng mà không thực hiện nghĩa vụ báo trước tới Bên A thì Bên A sẽ không phải hoàn trả lại Bên B số tiền đặt cọc này.</p>
+        <p class="clause-p no-indent">Nếu Bên A đơn phương chấm dứt hợp đồng mà không thực hiện nghĩa vụ báo trước tới Bên B thì Bên A sẽ phải hoàn trả lại Bên B số tiền đặt cọc và phải bồi thường thêm một khoản bằng chính tiền đặt cọc.</p>
+        <p class="clause-p no-indent">4.3. Tiền đặt cọc của Bên B sẽ không được dùng để thanh toán tiền thuê. Nếu Bên B vi phạm Hợp Đồng làm phát sinh thiệt hại cho Bên A thì Bên A có quyền khấu trừ tiền đặt cọc để bù đắp các chi phí khắc phục thiệt hại phát sinh. Mức chi phí bù đắp thiệt hại sẽ được Các Bên thống nhất bằng văn bản.</p>
+        <p class="clause-p no-indent">4.4. Vào thời điểm kết thúc thời hạn thuê hoặc kể từ ngày chấm dứt Hợp đồng, Bên A sẽ hoàn lại cho Bên B số tiền đặt cọc sau khi đã khấu trừ khoản tiền chi phí để khắc phục thiệt hại (nếu có).</p>
 
         <h2>Điều 5: Tiền thuê nhà</h2>
-        <p class="clause-p">5.1. Tiền thuê nhà đối với diện tích thuê nêu tại Mục 1.1 Điều 1 là: <strong>${mbMonthlyPrice} VNĐ/tháng</strong>.</p>
-        <p class="clause-p">5.2. Tiền thuê nhà không bao gồm chi phí khác như tiền điện, nước, vệ sinh... Khoản tiền này sẽ do Bên B trả theo khối lượng, công suất sử dụng thực tế của Bên B hàng tháng, được tính theo đơn giá của nhà nước.</p>
+        <p class="clause-p no-indent">5.1. Tiền thuê nhà đối với diện tích thuê nêu tại Mục 1.1 Điều 1 là: <strong>${mbMonthlyPrice} VNĐ/tháng</strong>.</p>
+        <p class="clause-p no-indent">5.2. Tiền thuê nhà không bao gồm chi phí khác như tiền điện, nước, vệ sinh... Khoản tiền này sẽ do Bên B trả theo khối lượng, công suất sử dụng thực tế của Bên B hàng tháng, được tính theo đơn giá của nhà nước.</p>
 
         <h2>Điều 6: Phương thức thanh toán tiền thuê nhà</h2>
-        <p class="clause-p">Tiền thuê nhà được thanh toán theo 01 (một) tháng/lần vào ngày <strong>${nfc(lhPaymentDay)}</strong> hàng tháng.</p>
-        <p class="clause-p">Các chi phí khác được Bên B tự thanh toán với các cơ quan, đơn vị có liên quan khi được yêu cầu.</p>
-        <p class="clause-p">Việc thanh toán tiền thuê nhà được thực hiện bằng đồng tiền Việt Nam theo hình thức trả trực tiếp bằng tiền mặt.</p>
+        <p class="clause-p no-indent">Tiền thuê nhà được thanh toán theo 01 (một) tháng/lần vào ngày <strong>${nfc(lhPaymentDay)}</strong> hàng tháng.</p>
+        <p class="clause-p no-indent">Các chi phí khác được Bên B tự thanh toán với các cơ quan, đơn vị có liên quan khi được yêu cầu.</p>
+        <p class="clause-p no-indent">Việc thanh toán tiền thuê nhà được thực hiện bằng đồng tiền Việt Nam theo hình thức trả trực tiếp bằng tiền mặt.</p>
 
         <h2>Điều 7: Quyền và nghĩa vụ của bên cho thuê nhà</h2>
-        <p class="clause-p"><strong>7.1. Quyền lợi</strong></p>
+        <p class="clause-p no-indent"><strong>7.1. Quyền lợi</strong></p>
         <p class="clause-p no-indent">- Yêu cầu Bên B thanh toán tiền thuê và chi phí khác đầy đủ, đúng hạn theo thoả thuận trong Hợp Đồng;</p>
         <p class="clause-p no-indent">- Yêu cầu Bên B phải sửa chữa phần hư hỏng, thiệt hại do lỗi của Bên B gây ra.</p>
-        <p class="clause-p"><strong>7.2. Nghĩa vụ</strong></p>
+        <p class="clause-p no-indent"><strong>7.2. Nghĩa vụ</strong></p>
         <p class="clause-p no-indent">- Bàn giao diện tích thuê cho Bên B theo đúng thời gian quy định trong Hợp đồng;</p>
         <p class="clause-p no-indent">- Đảm bảo việc cho thuê theo Hợp đồng này là đúng quy định của pháp luật;</p>
         <p class="clause-p no-indent">- Đảm bảo cho Bên B thực hiện quyền sử dụng diện tích thuê một cách độc lập và liên tục trong suốt thời hạn thuê, trừ trường hợp vi phạm pháp luật và/hoặc các quy định của Hợp đồng này;</p>
@@ -395,12 +395,12 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- Tuân thủ các nghĩa vụ khác theo thoả thuận tại Hợp đồng này hoặc/và các văn bản kèm theo Hợp đồng này; hoặc/và theo quy định của pháp luật Việt Nam.</p>
 
         <h2>Điều 8: Quyền và nghĩa vụ của bên thuê nhà</h2>
-        <p class="clause-p"><strong>8.1. Quyền lợi</strong></p>
+        <p class="clause-p no-indent"><strong>8.1. Quyền lợi</strong></p>
         <p class="clause-p no-indent">- Nhận bàn giao diện tích thuê theo đúng thoả thuận trong Hợp đồng;</p>
         <p class="clause-p no-indent">- Được sử dụng phần diện tích thuê làm nơi ở và các hoạt động hợp pháp khác;</p>
         <p class="clause-p no-indent">- Yêu cầu Bên A sửa chữa kịp thời những hư hỏng không phải do lỗi của Bên B trong phần diện tích thuê để bảo đảm an toàn;</p>
         <p class="clause-p no-indent">- Được tháo dỡ và đem ra khỏi phần diện tích thuê các tài sản, trang thiết bị của Bên B đã lắp đặt trong phần diện tích thuê khi hết thời hạn thuê hoặc đơn phương chấm dứt hợp đồng.</p>
-        <p class="clause-p"><strong>8.2. Nghĩa vụ</strong></p>
+        <p class="clause-p no-indent"><strong>8.2. Nghĩa vụ</strong></p>
         <p class="clause-p no-indent">- Sử dụng diện tích thuê đúng mục đích đã thỏa thuận, giữ gìn nhà ở và có trách nhiệm trong việc sửa chữa những hư hỏng do mình gây ra;</p>
         <p class="clause-p no-indent">- Thanh toán tiền đặt cọc, tiền thuê đầy đủ, đúng thời hạn đã thỏa thuận;</p>
         <p class="clause-p no-indent">- Trả lại diện tích thuê cho Bên A khi hết thời hạn thuê hoặc chấm dứt Hợp đồng thuê;</p>
@@ -408,8 +408,8 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- Tuân thủ một cách chặt chẽ quy định tại Hợp đồng này và các quy định của pháp luật Việt Nam.</p>
 
         <h2>Điều 9: Đơn phương chấm dứt hợp đồng thuê nhà</h2>
-        <p class="clause-p">Trong trường hợp một trong Hai Bên muốn đơn phương chấm dứt Hợp đồng trước hạn thì phải thông báo bằng văn bản cho bên kia trước 30 (ba mươi) ngày so với ngày mong muốn chấm dứt.</p>
-        <p class="clause-p">Nếu một trong Hai Bên không thực hiện nghĩa vụ thông báo cho Bên kia thì sẽ phải bồi thường cho bên đó một khoản tiền thuê tương đương với thời gian không thông báo và các thiệt hại khác phát sinh do việc chấm dứt Hợp đồng trái quy định.</p>
+        <p class="clause-p no-indent">Trong trường hợp một trong Hai Bên muốn đơn phương chấm dứt Hợp đồng trước hạn thì phải thông báo bằng văn bản cho bên kia trước 30 (ba mươi) ngày so với ngày mong muốn chấm dứt.</p>
+        <p class="clause-p no-indent">Nếu một trong Hai Bên không thực hiện nghĩa vụ thông báo cho Bên kia thì sẽ phải bồi thường cho bên đó một khoản tiền thuê tương đương với thời gian không thông báo và các thiệt hại khác phát sinh do việc chấm dứt Hợp đồng trái quy định.</p>
 
         <h2>Điều 10: Điều khoản thi hành</h2>
         <p class="clause-p no-indent">- Hợp đồng này có hiệu lực kể từ ngày hai bên cùng ký kết;</p>

@@ -73,10 +73,15 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           text-indent: 1cm; 
           line-height: 1.3; 
         }
-        .no-indent { text-indent: 0 !important; }
+        .no-indent,
+        p.no-indent,
+        p.clause-p.no-indent,
+        div.no-indent {
+          text-indent: 0 !important;
+        }
         p.item-p { 
           text-indent: 0; 
-          margin: 2pt 0 2pt 1.27cm; 
+          margin: 2pt 0; 
           text-align: justify; 
           line-height: 1.3; 
         }
@@ -249,7 +254,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
         </div>
       </div>
 
-      <div className="p-4 sm:p-6 overflow-x-auto bg-surface-elevated/40 flex justify-center">
+      <div className="overflow-x-auto bg-surface/30 p-0 sm:p-2.5 flex justify-center">
 
         <style>{`
           .a4-sheet-container {
@@ -258,12 +263,17 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
             line-height: 1.3 !important;
             color: #000000 !important;
             background-color: #ffffff !important;
-            width: 100%;
-            max-width: 210mm;
+            width: 100% !important;
+            max-width: 100% !important;
             min-height: 297mm;
-            padding: 16mm 14mm;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+            padding: 20px 16px !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1) !important;
             box-sizing: border-box;
+          }
+          @media (min-width: 640px) {
+            .a4-sheet-container {
+              padding: 20mm 15mm 20mm 25mm !important;
+            }
           }
           .a4-sheet-container h1 {
             text-align: center !important;
@@ -291,7 +301,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           }
           .a4-sheet-container p.item-p {
             text-indent: 0 !important;
-            margin: 2pt 0 2pt 1.27cm !important;
+            margin: 2pt 0 !important;
             text-align: justify !important;
             line-height: 1.3 !important;
           }
@@ -322,7 +332,10 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
             font-size: 9.5pt;
             font-style: italic;
           }
-          .a4-sheet-container .no-indent {
+          .a4-sheet-container .no-indent,
+          .a4-sheet-container p.no-indent,
+          .a4-sheet-container p.clause-p.no-indent,
+          .a4-sheet-container div.no-indent {
             text-indent: 0 !important;
           }
           .a4-sheet-container .text-center,

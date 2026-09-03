@@ -90,16 +90,19 @@ export const SaleForm: React.FC<SaleFormProps> = ({
   const totalAmount = saleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
   return (
-    <div className={`${styles.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 text-xs font-app animate-in fade-in duration-150`}>
-      <div className="flex items-center justify-between border-b pb-2.5 border-line/60">
+    <div className="space-y-4 text-xs font-app animate-in fade-in duration-150">
+      <div className="flex items-center justify-between border-b pb-2 border-line/60">
         <div className="font-bold text-accent uppercase tracking-wider text-xs">
           THÔNG TIN HỢP ĐỒNG MUA BÁN HÀNG HÓA & DANH MỤC SẢN PHẨM
         </div>
       </div>
 
       {/* Thông tin Bên Mua (Bên A) */}
-      <div className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
-        <div className="font-bold text-accent text-xs uppercase border-b pb-1.5 border-line/60">BÊN MUA (BÊN A)</div>
+      <div className="space-y-2.5 pb-4 border-b border-line/40">
+        <div className="font-bold text-accent text-xs uppercase tracking-wider flex items-center gap-1.5 pb-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
+          <span>BÊN MUA (BÊN A)</span>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Họ tên Bên Mua</label>
@@ -123,8 +126,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({
       </div>
 
       {/* Thông tin Bên Bán (Bên B) */}
-      <div className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
-        <div className="font-bold text-accent text-xs uppercase border-b pb-1.5 border-line/60">BÊN BÁN (BÊN B)</div>
+      <div className="space-y-2.5 pb-4 border-b border-line/40">
+        <div className="font-bold text-pos text-xs uppercase tracking-wider flex items-center gap-1.5 pb-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-pos"></span>
+          <span>BÊN BÁN (BÊN B)</span>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Họ tên Bên Bán</label>
@@ -227,8 +233,11 @@ export const SaleForm: React.FC<SaleFormProps> = ({
       </div>
 
       {/* Điều khoản hợp đồng */}
-      <div className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
-        <div className="font-bold text-warn text-xs uppercase border-b pb-1.5 border-line/60">ĐIỀU KHOẢN & TIẾN ĐỘ</div>
+      <div className="space-y-2.5 pb-4 border-b border-line/40">
+        <div className="font-bold text-warn text-xs uppercase tracking-wider flex items-center gap-1.5 pb-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-warn"></span>
+          <span>ĐIỀU KHOẢN & TIẾN ĐỘ</span>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Ngày ký hợp đồng</label>

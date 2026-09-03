@@ -62,15 +62,18 @@ export const ConstructionForm: React.FC<ConstructionFormProps> = ({
   setConstWarrantyMonths,
 }) => {
   return (
-    <div className={`${styles.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 text-xs font-app animate-in fade-in duration-150`}>
-      <div className="flex items-center justify-between border-b pb-2.5 border-line/60">
+    <div className="space-y-4 text-xs font-app animate-in fade-in duration-150">
+      <div className="flex items-center justify-between border-b pb-2 border-line/60">
         <div className="font-bold text-accent uppercase tracking-wider text-xs">
           THÔNG TIN HỢP ĐỒNG THI CÔNG NHÀ Ở DÂN DỤNG
         </div>
       </div>
 
-      <div className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
-        <div className="font-bold text-accent text-xs uppercase border-b pb-1.5 border-line/60">BÊN A (CHỦ ĐẦU TƯ)</div>
+      <div className="space-y-2.5 pb-4 border-b border-line/40">
+        <div className="font-bold text-accent text-xs uppercase tracking-wider flex items-center gap-1.5 pb-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
+          <span>BÊN A (CHỦ ĐẦU TƯ)</span>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Họ tên Chủ Đầu Tư</label>
@@ -87,8 +90,11 @@ export const ConstructionForm: React.FC<ConstructionFormProps> = ({
         </div>
       </div>
 
-      <div className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
-        <div className="font-bold text-pos text-xs uppercase border-b pb-1.5 border-line/60">BÊN B (NHÀ THẦU THI CÔNG)</div>
+      <div className="space-y-2.5 pb-4 border-b border-line/40">
+        <div className="font-bold text-pos text-xs uppercase tracking-wider flex items-center gap-1.5 pb-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-pos"></span>
+          <span>BÊN B (NHÀ THẦU THI CÔNG)</span>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Họ tên Đại Diện Bên B</label>
@@ -105,8 +111,11 @@ export const ConstructionForm: React.FC<ConstructionFormProps> = ({
         </div>
       </div>
 
-      <div className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
-        <div className="font-bold text-warn text-xs uppercase border-b pb-1.5 border-line/60">THỜI GIAN THI CÔNG & TIẾN ĐỘ THANH TOÁN</div>
+      <div className="space-y-2.5 pb-2">
+        <div className="font-bold text-warn text-xs uppercase tracking-wider flex items-center gap-1.5 pb-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-warn"></span>
+          <span>THỜI GIAN THI CÔNG & TIẾN ĐỘ THANH TOÁN</span>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Ngày ký HĐ</label>

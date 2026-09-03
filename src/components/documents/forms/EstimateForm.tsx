@@ -29,15 +29,18 @@ export const EstimateForm: React.FC<EstimateFormProps> = ({
   handleAddConstItem,
 }) => {
   return (
-    <div className={`${styles.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 text-xs font-app animate-in fade-in duration-150`}>
-      <div className="flex items-center justify-between border-b pb-2.5 border-line/60">
+    <div className="space-y-4 text-xs font-app animate-in fade-in duration-150">
+      <div className="flex items-center justify-between border-b pb-2 border-line/60">
         <div className="font-bold text-accent uppercase tracking-wider text-xs">
           BẢNG DỰ TOÁN HẠNG MỤC CÔNG VIỆC THI CÔNG
         </div>
       </div>
 
-      <div className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
-        <div className="font-bold text-accent text-xs uppercase border-b pb-1.5 border-line/60">THÔNG TIN CÔNG TRÌNH</div>
+      <div className="space-y-2.5 pb-4 border-b border-line/40">
+        <div className="font-bold text-accent text-xs uppercase tracking-wider flex items-center gap-1.5 pb-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
+          <span>THÔNG TIN CÔNG TRÌNH</span>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Chủ Đầu Tư (Bên A)</label>

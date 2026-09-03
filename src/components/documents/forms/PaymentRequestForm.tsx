@@ -80,16 +80,19 @@ export const PaymentRequestForm: React.FC<PaymentRequestFormProps> = ({
   const setRecipientName = isSale ? setSaleBuyerName : setConstPartyAName;
 
   return (
-    <div className={`${styles.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 text-xs font-app animate-in fade-in duration-150`}>
-      <div className="flex items-center justify-between border-b pb-2.5 border-line/60">
+    <div className="space-y-4 text-xs font-app animate-in fade-in duration-150">
+      <div className="flex items-center justify-between border-b pb-2 border-line/60">
         <div className="font-bold text-accent uppercase tracking-wider text-xs">
           THÔNG TIN GIẤY ĐỀ NGHỊ THANH TOÁN ({isSale ? 'HĐ MUA BÁN HÀNG HÓA' : 'HĐ THI CÔNG NHÀ Ở'})
         </div>
       </div>
 
-      <div className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
-        <div className="font-bold text-accent text-xs uppercase border-b pb-1.5 border-line/60 flex items-center justify-between">
-          <span>NGƯỜI NHẬN ĐỀ NGHỊ THANH TOÁN</span>
+      <div className="space-y-2.5 pb-4 border-b border-line/40">
+        <div className="font-bold text-accent text-xs uppercase tracking-wider flex items-center justify-between pb-0.5">
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent"></span>
+            <span>NGƯỜI NHẬN ĐỀ NGHỊ THANH TOÁN</span>
+          </span>
           <span className="text-[11px] text-muted-foreground font-normal normal-case">
             Căn cứ HĐ ký ngày: <strong className="text-foreground">{fmtDate(isSale ? saleContractDate : constContractDate)}</strong>
           </span>
@@ -110,8 +113,9 @@ export const PaymentRequestForm: React.FC<PaymentRequestFormProps> = ({
         </div>
       </div>
 
-      <div className="p-3.5 sm:p-4 rounded-xl border border-warn/30 bg-warn-soft/40 space-y-3 shadow-2xs">
-        <div className="font-bold text-warn text-xs uppercase border-b pb-1.5 border-warn/30 flex items-center justify-between">
+      <div className="space-y-3 pb-4 border-b border-line/40">
+        <div className="font-bold text-warn text-xs uppercase tracking-wider flex items-center gap-1.5 pb-0.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-warn"></span>
           <span>THÔNG TIN BÊN ĐỀ NGHỊ THANH TOÁN</span>
         </div>
 

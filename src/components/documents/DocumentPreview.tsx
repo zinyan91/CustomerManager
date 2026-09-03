@@ -188,7 +188,7 @@ interface DocumentPreviewProps {
 }
 
 export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
-  styles,
+  styles: _styles,
   docTitle,
   docFilename,
   docHtml,
@@ -197,10 +197,10 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   const { toast, show, dismiss } = useToast();
 
   return (
-    <div className={`${styles.containerCardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150 font-app`}>
+    <div className="flex flex-col h-full overflow-hidden font-app">
       <Toast toast={toast} onDismiss={dismiss} />
 
-      <div className="p-4 sm:p-5 border-b border-line/60 bg-surface/75 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+      <div className="p-3.5 sm:p-4 border-b border-line/60 bg-surface/50 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
         <div>
           <span className="text-[10px] uppercase font-bold text-ink-faint tracking-wider block mb-0.5">XEM TRƯỚC VĂN BẢN</span>
           <h2 className="font-bold text-sm sm:text-base text-accent tracking-tight">{docTitle}</h2>

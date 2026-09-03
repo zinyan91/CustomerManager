@@ -36,8 +36,8 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   setSelectedTemplate,
 }) => {
   return (
-    <div className="rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3 font-app animate-in fade-in duration-150">
-      <div className="flex items-center justify-between gap-3 border-b border-line/60 pb-2.5">
+    <div className="p-3.5 sm:p-4 border-b border-line/60 bg-surface/50 backdrop-blur-md space-y-2.5 font-app">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex items-center space-x-2 text-accent font-bold text-xs">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent">
             <FileSignature size={15} />

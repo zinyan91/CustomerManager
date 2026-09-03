@@ -12,16 +12,18 @@ export const DocumentTemplateView: React.FC = () => {
   const ctrl = useDocumentTemplateController();
 
   return (
-    <div className="space-y-4 text-xs font-app transition-colors duration-200">
+    <div className="rounded-2xl border border-line/70 bg-panel/90 shadow-sm overflow-hidden text-xs font-app animate-in fade-in duration-150">
+      {/* 1. Header chọn biểu mẫu liền mạch */}
       <TemplateSelector
         styles={styles}
         selectedTemplate={ctrl.selectedTemplate}
         setSelectedTemplate={ctrl.setSelectedTemplate}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Cột trái: Khung soạn thảo / Form nhập thông tin */}
-        <div className="lg:col-span-6 space-y-4">
+      {/* 2. Không gian làm việc 2 cột liền mạch - KHÔNG CÓ KHOẢNG HỞ Ở GIỮA */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-line/60">
+        {/* Cột trái: Form nhập liệu liền mạch */}
+        <div className="lg:col-span-6 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-140px)] bg-panel/30">
           <DocumentForm
             styles={styles}
             selectedTemplate={ctrl.selectedTemplate}
@@ -96,8 +98,8 @@ export const DocumentTemplateView: React.FC = () => {
           />
         </div>
 
-        {/* Cột phải: Xem trước tài liệu A4 / Kết xuất Word & PDF */}
-        <div className="lg:col-span-6">
+        {/* Cột phải: Xem trước tài liệu A4 liền mạch */}
+        <div className="lg:col-span-6 flex flex-col bg-surface/20 min-h-[700px]">
           <DocumentPreview
             styles={styles}
             docTitle={ctrl.currentTplInfo.label}

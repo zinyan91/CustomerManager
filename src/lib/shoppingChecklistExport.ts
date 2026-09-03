@@ -381,11 +381,22 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
 
       const sigHtml = isLast
         ? `
-          <!-- Total and Signature (No annotations, no date) -->
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 8px;">
-            <div style="font-size: 8.5pt; font-weight: bold; padding: 3px 6px; border: 1px solid #000; background: #f3f4f6;">
-              TỔNG CỘNG: ${grandTotal.toLocaleString('vi-VN')} VNĐ
-            </div>
+          <!-- Standard full-width Total table row -->
+          <table class="item-table" style="margin-top: 4px; width: 100%;">
+            <colgroup>
+              <col style="width: 82%;" />
+              <col style="width: 18%;" />
+            </colgroup>
+            <tbody>
+              <tr style="background: #e5e7eb; font-weight: bold;">
+                <td style="text-align: right; font-weight: bold; padding: 3px 6px; text-transform: uppercase;">TỔNG CỘNG:</td>
+                <td style="text-align: right; font-weight: bold; padding: 3px 6px;">${grandTotal.toLocaleString('vi-VN')} VNĐ</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Signature Section -->
+          <div class="sig-container">
             <div class="sig-box">
               <strong>NGƯỜI LẬP BẢNG</strong><br>
               <span style="font-style: italic; font-size: 7.5pt; color: #333;">(Ký, ghi rõ họ tên)</span>

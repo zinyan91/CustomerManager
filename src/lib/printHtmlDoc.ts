@@ -31,6 +31,10 @@ export function printHtmlDoc(html: string, title?: string): boolean {
   doc.write(html);
   doc.close();
 
+  // Clear both document.title and doc.title so Chrome/Edge will not print page title in header
+  document.title = '';
+  if (doc) doc.title = '';
+
   win.addEventListener('afterprint', cleanup);
   win.focus();
   win.print();

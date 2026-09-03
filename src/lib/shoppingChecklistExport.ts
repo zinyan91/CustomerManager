@@ -216,12 +216,12 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
               const amt = computeItemAmount(it);
               return `
                 <tr>
-                  <td style="text-align: center; color: #64748b;">${globalIdx++}</td>
-                  <td style="font-weight: 500; text-align: left;">${it.name}</td>
-                  <td style="text-align: center; color: #64748b;">${it.unit || 'Bộ/Cái'}</td>
-                  <td style="text-align: right; font-weight: 600;">${it.quantity.toLocaleString('vi-VN')}</td>
-                  <td style="text-align: right;">${it.unitPrice.toLocaleString('vi-VN')}</td>
-                  <td style="text-align: right; font-weight: bold; color: #0f172a;">${amt.toLocaleString('vi-VN')}</td>
+                  <td class="td-stt">${globalIdx++}</td>
+                  <td class="td-name">${it.name}</td>
+                  <td class="td-unit">${it.unit || 'Bộ/Cái'}</td>
+                  <td class="td-qty">${it.quantity.toLocaleString('vi-VN')}</td>
+                  <td class="td-price">${it.unitPrice.toLocaleString('vi-VN')}</td>
+                  <td class="td-amt">${amt.toLocaleString('vi-VN')}</td>
                 </tr>
               `;
             })
@@ -230,22 +230,30 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           return `
             <div class="room-box">
               <table class="item-table">
+                <colgroup>
+                  <col style="width: 5.5%;" />
+                  <col style="width: 47.5%;" />
+                  <col style="width: 7%;" />
+                  <col style="width: 5%;" />
+                  <col style="width: 17%;" />
+                  <col style="width: 18%;" />
+                </colgroup>
                 <thead>
                   <tr class="room-title-row">
                     <th colspan="6">
-                      <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <div class="room-title-flex">
                         <span>${floor.name.toUpperCase()} – ${room.name.toUpperCase()}</span>
-                        <span style="color: #fef08a;">Cộng: ${rTot.toLocaleString('vi-VN')} đ</span>
+                        <span class="room-sum">Cộng: ${rTot.toLocaleString('vi-VN')} đ</span>
                       </div>
                     </th>
                   </tr>
                   <tr class="col-head-row">
-                    <th style="width: 20px; text-align: center;">STT</th>
-                    <th style="text-align: left;">HẠNG MỤC / VẬT DỤNG</th>
-                    <th style="width: 32px; text-align: center;">ĐVT</th>
-                    <th style="width: 22px; text-align: right;">SL</th>
-                    <th style="width: 66px; text-align: right;">ĐƠN GIÁ</th>
-                    <th style="width: 74px; text-align: right;">THÀNH TIỀN</th>
+                    <th class="th-stt">STT</th>
+                    <th class="th-name">HẠNG MỤC / VẬT DỤNG</th>
+                    <th class="th-unit">ĐVT</th>
+                    <th class="th-qty">SL</th>
+                    <th class="th-price">ĐƠN GIÁ</th>
+                    <th class="th-amt">THÀNH TIỀN</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -286,12 +294,16 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
       <style>
         @page {
           size: A4 landscape;
-          margin: 0 !important;
+          margin: 0;
         }
         @media print {
+          @page {
+            size: A4 landscape;
+            margin: 0;
+          }
           html, body {
             margin: 0 !important;
-            padding: 5mm 6mm !important;
+            padding: 4mm 6mm !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -300,10 +312,10 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
         }
         body {
           font-family: Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
-          font-size: 7.8pt;
+          font-size: 7.5pt;
           color: #0f172a;
           margin: 0;
-          padding: 5mm 6mm;
+          padding: 4mm 6mm;
           line-height: 1.15;
           background: #fff;
         }
@@ -349,7 +361,7 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           font-size: 7.2pt;
           font-style: italic;
           color: #475569;
-          margin-bottom: 5px;
+          margin-bottom: 4px;
         }
         .two-cols-wrapper {
           column-count: 2;
@@ -364,38 +376,90 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           width: 100%;
           border-collapse: collapse;
           table-layout: fixed;
-          font-size: 7.5pt;
+          font-size: 7.2pt;
+          margin-bottom: 2px;
         }
         .item-table th, .item-table td {
           border: 1px solid #cbd5e1;
-          padding: 1px 3px;
+          padding: 1.5px 3px;
           vertical-align: middle;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .item-table td:nth-child(2) {
-          white-space: normal;
-          word-break: break-word;
+          line-height: 1.15;
         }
         .room-title-row th {
-          background: #1e3a8a;
-          color: #ffffff;
+          background: #1e3a8a !important;
+          color: #ffffff !important;
           font-size: 7.5pt;
           font-weight: 700;
           padding: 2px 4px;
         }
+        .room-title-flex {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .room-sum {
+          color: #fef08a !important;
+          font-weight: 700;
+        }
         .col-head-row th {
-          background: #f8fafc;
-          color: #475569;
+          background: #f1f5f9 !important;
+          color: #334155 !important;
           font-size: 6.8pt;
           font-weight: 700;
-          padding: 1px 2px;
+          padding: 1.5px 2px;
+          white-space: nowrap;
+        }
+        .th-stt { text-align: center; }
+        .th-name { text-align: left; padding-left: 4px; }
+        .th-unit { text-align: center; }
+        .th-qty { text-align: right; padding-right: 3px; }
+        .th-price { text-align: right; padding-right: 4px; }
+        .th-amt { text-align: right; padding-right: 4px; }
+
+        .td-stt {
+          text-align: center;
+          color: #64748b;
+          font-size: 7pt;
+          white-space: nowrap;
+        }
+        .td-name {
+          text-align: left;
+          font-weight: 500;
+          color: #0f172a;
+          white-space: normal;
+          word-break: break-word;
+          padding-left: 4px;
+        }
+        .td-unit {
+          text-align: center;
+          color: #64748b;
+          font-size: 7pt;
+          white-space: nowrap;
+        }
+        .td-qty {
+          text-align: right;
+          font-weight: 600;
+          color: #0f172a;
+          padding-right: 3px;
+          white-space: nowrap;
+        }
+        .td-price {
+          text-align: right;
+          color: #334155;
+          padding-right: 4px;
+          white-space: nowrap;
+        }
+        .td-amt {
+          text-align: right;
+          font-weight: 700;
+          color: #0f172a;
+          padding-right: 4px;
+          white-space: nowrap;
         }
         .sig-row {
           display: flex;
           justify-content: space-between;
-          margin-top: 10px;
+          margin-top: 8px;
           break-inside: avoid;
           page-break-inside: avoid;
         }

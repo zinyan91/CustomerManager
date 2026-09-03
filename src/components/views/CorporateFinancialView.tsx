@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Building2,
   FileSpreadsheet,
   RotateCcw,
   Save,
   Sparkles,
+  Upload,
 } from 'lucide-react';
 import type {
   CorporateFinancialProfile,
@@ -25,6 +26,7 @@ import {
   computeFinancialRatios,
 } from '../../lib/corporateFinancialFormulas';
 import { exportCorporateFinancialToExcel } from '../../lib/corporateFinancialExport';
+import { parseCorporateFinancialExcel } from '../../lib/corporateFinancialImport';
 import { B01aFinancialPositionTab } from '../corporateFinancial/B01aFinancialPositionTab';
 import { B02IncomeStatementTab } from '../corporateFinancial/B02IncomeStatementTab';
 import { B01bBalanceSheetTab } from '../corporateFinancial/B01bBalanceSheetTab';
@@ -49,6 +51,7 @@ export const CorporateFinancialView: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'b01a' | 'b02' | 'b01b' | 'ratios'>('b01a');
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Compute live statements
   const computedB01a = useMemo(() => computeB01a(profile.b01a), [profile.b01a]);
@@ -62,6 +65,33 @@ export const CorporateFinancialView: React.FC = () => {
   const showToast = (type: 'success' | 'error', message: string) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const res = parseCorporateFinancialExcel(buffer);
+      setProfile(res.profile);
+
+      const summary = [];
+      if (res.matchedItemsCount.b01a > 0) summary.push(`B01a: ${res.matchedItemsCount.b01a} chỉ tiêu`);
+      if (res.matchedItemsCount.b02 > 0) summary.push(`B02: ${res.matchedItemsCount.b02} chỉ tiêu`);
+      if (res.matchedItemsCount.b01b > 0) summary.push(`B01b: ${res.matchedItemsCount.b01b} chỉ tiêu`);
+
+      showToast(
+        'success',
+        `Tải lên thành công "${file.name}"! (${summary.join(', ') || 'Đã nạp số liệu'})`
+      );
+    } catch (err: any) {
+      showToast('error', `Lỗi đọc file Excel: ${err?.message || 'Không thể xử lý định dạng file này'}`);
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleUpdateB01a = (updated: B01aStatement) => {
@@ -210,6 +240,21 @@ export const CorporateFinancialView: React.FC = () => {
             >
               <Save className="w-3.5 h-3.5 text-emerald-600" />
               <span>Lưu nháp</span>
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border border-accent/40 bg-accent/15 text-accent hover:bg-accent/25 cursor-pointer transition-all shadow-2xs"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Tải lên Excel</span>
             </button>
             <button
               type="button"

@@ -12,7 +12,6 @@ import {
   countPresetItems,
 } from './shoppingChecklist';
 import { fmtDate, todayIso } from './utils';
-import { moneyToVietnameseWords } from './numberToWords';
 
 const BRAND_FILL = '1E3A8A'; // Dark navy
 const FLOOR_FILL = 'E2E8F0'; // Slate 200
@@ -366,27 +365,27 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
 
       const topSectionHtml = isFirst
         ? `
-          <!-- Minimalist Title Header (No colors, no date) -->
+          <!-- Minimalist Title Header (No subtitle, no date) -->
           <div class="doc-header-simple">
             <h1 class="doc-title">DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA</h1>
-            <div class="doc-sub">
-              Công trình: <strong>${preset.name}</strong> &nbsp;—&nbsp; Tổng dự toán: <strong>${grandTotal.toLocaleString('vi-VN')} VNĐ</strong> (Bằng chữ: <em>${moneyToVietnameseWords(grandTotal)}</em>)
-            </div>
           </div>
         `
         : `
           <!-- Secondary Page Header (Clean, minimalist) -->
           <div class="doc-header-simple" style="margin-bottom: 5px; padding-bottom: 3px;">
             <div class="doc-title" style="font-size: 10.5pt;">
-              DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA (TIẾP THEO) — ${preset.name.toUpperCase()}
+              DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA (TIẾP THEO)
             </div>
           </div>
         `;
 
       const sigHtml = isLast
         ? `
-          <!-- Minimalist Signature (Only Nguoi Lap Bang, no date) -->
-          <div class="sig-container">
+          <!-- Total and Signature (No annotations, no date) -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 8px;">
+            <div style="font-size: 8.5pt; font-weight: bold; padding: 3px 6px; border: 1px solid #000; background: #f3f4f6;">
+              TỔNG CỘNG: ${grandTotal.toLocaleString('vi-VN')} VNĐ
+            </div>
             <div class="sig-box">
               <strong>NGƯỜI LẬP BẢNG</strong><br>
               <span style="font-style: italic; font-size: 7.5pt; color: #333;">(Ký, ghi rõ họ tên)</span>

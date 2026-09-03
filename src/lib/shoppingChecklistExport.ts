@@ -222,7 +222,8 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
   // Render a list of items for one column, grouping by floor/room
   const renderColHtml = (
     entries: typeof allEntries,
-    startGlobalIdx: number
+    startGlobalIdx: number,
+    isFinalCol?: boolean
   ) => {
     if (entries.length === 0) return '';
 
@@ -252,7 +253,8 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
 
     let runningIdx = startGlobalIdx;
     return groups
-      .map(g => {
+      .map((g, gIdx) => {
+        const isVeryLastGroup = isFinalCol && gIdx === groups.length - 1;
         const groupSubtotal = g.items.reduce(
           (sum, it) => sum + computeItemAmount(it),
           0
@@ -273,6 +275,22 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           })
           .join('');
 
+        const totalRowHtml = isVeryLastGroup
+          ? `
+            <tr style="background: #e5e7eb; font-weight: bold;">
+              <td colspan="5" style="text-align: right; font-weight: bold; padding: 2.5px 4px; border: 1px solid #000; text-transform: uppercase;">
+                TỔNG CỘNG:
+              </td>
+              <td class="td-amt" style="font-weight: bold; border: 1px solid #000;">
+                ${grandTotal.toLocaleString('vi-VN')} VNĐ
+              </td>
+            </tr>
+          `
+          : '';
+
+        // Extract clean short floor name (e.g. "TẦNG 4" instead of "IV. TẦNG 4 – PHÒNG THỜ + SÂN THƯỢNG")
+        const shortFloor = g.floorName.split('–')[0].split('-')[0].trim().toUpperCase();
+
         return `
           <div class="room-box">
             <table class="item-table">
@@ -288,7 +306,7 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
                 <tr class="room-title-row">
                   <th colspan="6">
                     <div class="room-title-flex">
-                      <span>${g.floorName.toUpperCase()} – ${g.roomName.toUpperCase()}</span>
+                      <span>${shortFloor} – ${g.roomName.toUpperCase()}</span>
                       <span class="room-sum">Cộng: ${groupSubtotal.toLocaleString('vi-VN')} đ</span>
                     </div>
                   </th>
@@ -304,6 +322,7 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
               </thead>
               <tbody>
                 ${rowsHtml}
+                ${totalRowHtml}
               </tbody>
             </table>
           </div>
@@ -361,7 +380,7 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
       const isLast = pIdx === pagesData.length - 1;
 
       const colLeftHtml = renderColHtml(p.leftEntries, p.startIdxLeft);
-      const colRightHtml = renderColHtml(p.rightEntries, p.startIdxRight);
+      const colRightHtml = renderColHtml(p.rightEntries, p.startIdxRight, isLast);
 
       const topSectionHtml = isFirst
         ? `
@@ -381,21 +400,7 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
 
       const sigHtml = isLast
         ? `
-          <!-- Standard full-width Total table row -->
-          <table class="item-table" style="margin-top: 4px; width: 100%;">
-            <colgroup>
-              <col style="width: 82%;" />
-              <col style="width: 18%;" />
-            </colgroup>
-            <tbody>
-              <tr style="background: #e5e7eb; font-weight: bold;">
-                <td style="text-align: right; font-weight: bold; padding: 3px 6px; text-transform: uppercase;">TỔNG CỘNG:</td>
-                <td style="text-align: right; font-weight: bold; padding: 3px 6px;">${grandTotal.toLocaleString('vi-VN')} VNĐ</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <!-- Signature Section -->
+          <!-- Signature Section (Aligned right at the end of the document) -->
           <div class="sig-container">
             <div class="sig-box">
               <strong>NGƯỜI LẬP BẢNG</strong><br>

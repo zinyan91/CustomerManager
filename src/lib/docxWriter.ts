@@ -312,7 +312,9 @@ function paragraphFrom(el: Element, ctx: BlockCtx): DocxParagraph {
 
 function tableFrom(el: Element, ctx: BlockCtx): DocxTable {
   const bordered = el.classList.contains('table-doc');
+  const isSig = el.classList.contains('sig-table');
   const tableCtx = blockCtxOf(el, ctx);
+  if (isSig) tableCtx.align = 'center';
   const rows: DocxCell[][] = [];
 
   for (const tr of Array.from(el.querySelectorAll('tr'))) {
@@ -322,9 +324,9 @@ function tableFrom(el: Element, ctx: BlockCtx): DocxTable {
       if (tag !== 'td' && tag !== 'th') continue;
 
       const cellCtx = blockCtxOf(cellEl, { ...tableCtx, size: DOCX_TABLE_SIZE, firstLine: 0 });
-      if (tag === 'th') {
-        cellCtx.bold = true;
-        if (!cellCtx.align) cellCtx.align = 'center';
+      if (tag === 'th' || isSig || cellEl.classList.contains('text-center')) {
+        if (tag === 'th') cellCtx.bold = true;
+        if (!cellCtx.align || isSig) cellCtx.align = 'center';
       }
 
       const paragraphs = cellParagraphs(cellEl, cellCtx);
@@ -563,7 +565,7 @@ export function tableXml(table: DocxTable): string {
 
       return `<w:tc>${tcPr}${cell.paragraphs.map(paragraphXml).join('')}</w:tc>`;
     }).join('');
-    return `<w:tr>${cells}</w:tr>`;
+    return `<w:tr><w:trPr><w:cantSplit/></w:trPr>${cells}</w:tr>`;
   }).join('');
 
   return `<w:tbl>${props}${gridXml}${rowsXml}</w:tbl>`;

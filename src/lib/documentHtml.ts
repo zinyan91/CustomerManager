@@ -628,7 +628,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
       const itemsRowsHtml = saleItems.map((item, idx) => `
         <tr>
           <td class="text-center font-bold">${idx + 1}</td>
-          <td>${nfc(item.name)}</td>
+          <td class="text-left">${nfc(item.name)}</td>
           <td class="text-center">${item.unit}</td>
           <td class="text-center">${item.quantity}</td>
           <td class="text-right">${item.price.toLocaleString('vi-VN')}</td>
@@ -648,28 +648,20 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
 
         <p class="clause-p">Hôm nay, ${ngayThangNam(saleContractDate)}, chúng tôi gồm có:</p>
 
-        <div class="space-y-1 no-indent">
-          <div class="font-bold uppercase text-[13pt] no-indent">BÊN MUA (BÊN A):</div>
-          <div class="pl-6 space-y-0.5 no-indent">
-            <div>- Họ tên: <strong>${nfc(saleBuyerName)}</strong></div>
-            <div>- Địa chỉ: <strong>${nfc(saleBuyerAddress)}</strong></div>
-          </div>
-        </div>
+        <p class="clause-p font-bold uppercase no-indent">BÊN MUA (BÊN A):</p>
+        <p class="item-p">- Họ và tên: <strong>${nfc(saleBuyerName)}</strong></p>
+        <p class="item-p">- Địa chỉ: ${nfc(saleBuyerAddress)}</p>
 
-        <div class="space-y-1 no-indent pt-2">
-          <div class="font-bold uppercase text-[13pt] no-indent">BÊN BÁN (BÊN B):</div>
-          <div class="pl-6 space-y-0.5 no-indent">
-            <div>- Họ tên: <strong>${nfc(saleSellerName)}</strong></div>
-            ${salePayMethod === 'cash' ? `
-            <div>- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: <strong>${nfc(saleSellerCccdDate)}</strong> &nbsp;|&nbsp; Nơi cấp: <strong>${nfc(saleSellerCccdPlace)}</strong></div>
-            ` : `
-            <div>- Chủ tài khoản: <strong>${nfc(saleBankOwner || saleSellerName)}</strong></div>
-            <div>- Số tài khoản: <strong>${nfc(saleBankAccNo)}</strong> &nbsp;|&nbsp; Ngân hàng: <strong>${nfc(saleBankName)}</strong>${saleBankBranch ? ` &nbsp;|&nbsp; Chi nhánh: <strong>${nfc(saleBankBranch)}</strong>` : ''}</div>
-            `}
-          </div>
-        </div>
+        <p class="clause-p font-bold uppercase no-indent pt-1">BÊN BÁN (BÊN B):</p>
+        <p class="item-p">- Họ và tên: <strong>${nfc(saleSellerName)}</strong></p>
+        ${salePayMethod === 'cash' ? `
+        <p class="item-p">- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: ${nfc(saleSellerCccdDate)} &nbsp;|&nbsp; Nơi cấp: ${nfc(saleSellerCccdPlace)}</p>
+        ` : `
+        <p class="item-p">- Số tài khoản: <strong>${nfc(saleBankAccNo)}</strong> &nbsp;|&nbsp; Chủ tài khoản: <strong>${nfc(saleBankOwner || saleSellerName)}</strong></p>
+        <p class="item-p">- Ngân hàng: <strong>${nfc(saleBankName)}</strong>${saleBankBranch ? ` &nbsp;|&nbsp; Chi nhánh: ${nfc(saleBankBranch)}` : ''}</p>
+        `}
 
-        <p class="clause-p pt-2">Hai bên A và B thống nhất thoả thuận nội dung Hợp đồng như sau:</p>
+        <p class="clause-p pt-1">Hai bên cùng thống nhất ký kết Hợp đồng mua bán hàng hóa với các điều khoản sau đây:</p>
 
         <h2>ĐIỀU 1: ĐỐI TƯỢNG VÀ GIÁ CẢ</h2>
         <table class="table-doc">
@@ -706,39 +698,39 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p">Bên Bán chuyển giao hàng hóa cho Bên Mua trong thời hạn 30 ngày kể từ ngày ký kết hợp đồng.</p>
 
         <h2>ĐIỀU 5: NGHĨA VỤ CỦA BÊN BÁN</h2>
-        <p class="item-p">1. Bên Bán chịu trách nhiệm về số lượng, chất lượng đối với toàn bộ các sản phẩm do Bên Bán cung cấp.</p>
-        <p class="item-p">2. Bên Bán có nghĩa vụ cung cấp mọi chỉ dẫn cần thiết đối với việc bảo quản, sử dụng hàng hoá theo quy định của Hợp đồng này cho Bên mua.</p>
+        <p class="clause-p"><strong>1.</strong> Bên Bán chịu trách nhiệm về số lượng, chất lượng đối với toàn bộ các sản phẩm do Bên Bán cung cấp.</p>
+        <p class="clause-p"><strong>2.</strong> Bên Bán có nghĩa vụ cung cấp mọi chỉ dẫn cần thiết đối với việc bảo quản, sử dụng hàng hoá theo quy định của Hợp đồng này cho Bên mua.</p>
 
         <h2>ĐIỀU 6: NGHĨA VỤ CỦA BÊN MUA</h2>
-        <p class="item-p">1. Bên mua có nghĩa vụ thanh toán toàn bộ chi phí vận chuyển.</p>
-        <p class="item-p">2. Tổ chức tiếp nhận nhanh, an toàn, dứt điểm cho từng lô hàng.</p>
-        <p class="item-p">3. Thanh toán đầy đủ theo quy định tại Điều 3 Hợp đồng này.</p>
+        <p class="clause-p"><strong>1.</strong> Bên mua có nghĩa vụ thanh toán toàn bộ chi phí vận chuyển.</p>
+        <p class="clause-p"><strong>2.</strong> Tổ chức tiếp nhận nhanh, an toàn, dứt điểm cho từng lô hàng.</p>
+        <p class="clause-p"><strong>3.</strong> Thanh toán đầy đủ theo quy định tại Điều 3 Hợp đồng này.</p>
 
         <h2>ĐIỀU 7: CÁC TRƯỜNG HỢP CHẤM DỨT HỢP ĐỒNG</h2>
         <p class="clause-p">Hợp đồng này sẽ được chấm dứt trong các trường hợp sau:</p>
-        <p class="item-p">1. Khi các Bên thực hiện xong các quyền và nghĩa vụ quy định trong Hợp đồng này.</p>
-        <p class="item-p">2. Khi một Bên vi phạm hợp đồng dẫn đến Hợp đồng không thể thực hiện được thì phía Bên kia có quyền đơn phương chấm dứt hợp đồng.</p>
-        <p class="item-p">3. Hợp đồng có thể được chấm dứt do sự thỏa thuận bằng văn bản của các Bên.</p>
+        <p class="item-p">– Khi các Bên thực hiện xong các quyền và nghĩa vụ quy định trong Hợp đồng này.</p>
+        <p class="item-p">– Khi một Bên vi phạm hợp đồng dẫn đến Hợp đồng không thể thực hiện được thì phía Bên kia có quyền đơn phương chấm dứt hợp đồng.</p>
+        <p class="item-p">– Hợp đồng có thể được chấm dứt do sự thỏa thuận bằng văn bản của các Bên.</p>
 
         <h2>ĐIỀU 8: HIỆU LỰC THI HÀNH</h2>
-        <p class="item-p">1. Hợp đồng này có hiệu lực kể từ ngày ký, và chỉ được coi là kết thúc khi các Bên đã hoàn thành các nghĩa vụ của mình trong Hợp đồng.</p>
-        <p class="item-p">2. Trong trường hợp một Bên muốn sửa đổi các điều khoản trong hợp đồng thì phải thông báo cho Bên kia biết trước ít nhất là 03 ngày và cùng nhau thoả thuận lại những điểm cần thay đổi với sự đồng ý của hai Bên.</p>
-        <p class="item-p">3. Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, các bản có giá trị pháp lý như nhau.</p>
+        <p class="clause-p"><strong>1.</strong> Hợp đồng này có hiệu lực kể từ ngày ký, và chỉ được coi là kết thúc khi các Bên đã hoàn thành các nghĩa vụ của mình trong Hợp đồng.</p>
+        <p class="clause-p"><strong>2.</strong> Trong trường hợp một Bên muốn sửa đổi các điều khoản trong hợp đồng thì phải thông báo cho Bên kia biết trước ít nhất là 03 ngày và cùng nhau thoả thuận lại những điểm cần thay đổi với sự đồng ý của hai Bên.</p>
+        <p class="clause-p"><strong>3.</strong> Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, các bản có giá trị pháp lý như nhau.</p>
 
-        <table class="sig-table font-serif">
+        <table class="sig-table font-serif" style="width: 100%; margin-top: 20pt;">
           <tbody>
             <tr>
-              <td>
-                <div class="font-bold uppercase">ĐẠI DIỆN BÊN BÁN</div>
-                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
+              <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
+                <p class="text-center font-bold uppercase no-indent">ĐẠI DIỆN BÊN BÁN</p>
+                <p class="text-center font-italic text-[11pt] no-indent">(Ký và ghi rõ họ tên)</p>
                 <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
-                <div class="font-bold uppercase">${nfc(saleSellerName)}</div>
+                <p class="text-center font-bold uppercase no-indent">${nfc(saleSellerName)}</p>
               </td>
-              <td>
-                <div class="font-bold uppercase">ĐẠI DIỆN BÊN MUA</div>
-                <div class="font-italic text-[11pt]">(Ký và ghi rõ họ tên)</div>
+              <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
+                <p class="text-center font-bold uppercase no-indent">ĐẠI DIỆN BÊN MUA</p>
+                <p class="text-center font-italic text-[11pt] no-indent">(Ký và ghi rõ họ tên)</p>
                 <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
-                <div class="font-bold uppercase">${nfc(saleBuyerName)}</div>
+                <p class="text-center font-bold uppercase no-indent">${nfc(saleBuyerName)}</p>
               </td>
             </tr>
           </tbody>

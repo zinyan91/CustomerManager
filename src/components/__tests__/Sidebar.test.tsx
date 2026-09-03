@@ -26,13 +26,13 @@ const NHAN_MUC = [
   'Quản lý khoản vay (KUNN)',
   'Định giá TSĐB',
   'Thẻ tín dụng',
-  'Công cụ tính toán',
   'Phương án kinh doanh',
   'BCTC Doanh nghiệp (TT 133)',
   'Hàng tồn kho',
   'Dự toán vật dụng',
   'Bảng kê mua bán',
   'Hóa đơn bán lẻ',
+  'Công cụ tính toán',
   'Chào lãi suất',
   'Mua bán vốn nội bộ',
   'Tra cứu mục đích SDV',
@@ -46,9 +46,10 @@ const NHAN_MUC = [
 const NHAN_NHOM = [
   'Tổng quan',
   'Hồ sơ tín dụng',
-  'Công cụ & Phương án',
-  'Tra cứu & Biểu mẫu',
-  'Kiểm soát',
+  'Phân tích & BCTC Doanh nghiệp',
+  'Chứng từ & Bán hàng',
+  'Công cụ tính & Lãi suất',
+  'Tra cứu & Kiểm soát',
 ];
 
 describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
@@ -65,11 +66,11 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
     expect(container.querySelectorAll('nav a').length).toBe(21);
   });
 
-  it('hiện đủ 5 tiêu đề nhóm', () => {
+  it('hiện đủ 6 tiêu đề nhóm', () => {
     dungLen();
-    expect(NHAN_NHOM).toHaveLength(5);
+    expect(NHAN_NHOM).toHaveLength(6);
     for (const nhan of NHAN_NHOM) {
-      expect(screen.getAllByText(nhan).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(nhan).length, `thiếu nhóm "${nhan}"`).toBeGreaterThan(0);
     }
   });
 

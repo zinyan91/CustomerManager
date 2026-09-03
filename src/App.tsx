@@ -19,6 +19,7 @@ const DocumentTemplateView = lazy(() => import('./components/views/DocumentTempl
 const SettingsView = lazy(() => import('./components/views/SettingsView').then(m => ({ default: m.SettingsView })));
 const PostLoanControlView = lazy(() => import('./components/views/PostLoanControlView').then(m => ({ default: m.PostLoanControlView })));
 const BusinessPlanView = lazy(() => import('./components/views/BusinessPlanView').then(m => ({ default: m.BusinessPlanView })));
+const CorporateFinancialView = lazy(() => import('./components/views/CorporateFinancialView').then(m => ({ default: m.CorporateFinancialView })));
 const InventoryView = lazy(() => import('./components/views/InventoryView').then(m => ({ default: m.InventoryView })));
 const ShoppingChecklistView = lazy(() => import('./components/views/ShoppingChecklistView').then(m => ({ default: m.ShoppingChecklistView })));
 const PurchaseStatementView = lazy(() => import('./components/views/PurchaseStatementView').then(m => ({ default: m.PurchaseStatementView })));
@@ -38,6 +39,7 @@ export function App() {
         <Route path={ROUTE_OF['credit-cards']} element={<Suspense fallback={<ViewSkeleton />}><CardContractView /></Suspense>} />
         <Route path={ROUTE_OF.calculators} element={<Suspense fallback={<ViewSkeleton />}><CalculatorView /></Suspense>} />
         <Route path={ROUTE_OF['business-plan']} element={<Suspense fallback={<ViewSkeleton />}><BusinessPlanView /></Suspense>} />
+        <Route path={ROUTE_OF['corporate-financial']} element={<Suspense fallback={<ViewSkeleton />}><CorporateFinancialView /></Suspense>} />
         <Route path={ROUTE_OF.inventory} element={<Suspense fallback={<ViewSkeleton />}><InventoryView /></Suspense>} />
         <Route path={ROUTE_OF['shopping-checklist']} element={<Suspense fallback={<ViewSkeleton />}><ShoppingChecklistView /></Suspense>} />
         <Route path={ROUTE_OF['purchase-statement']} element={<Suspense fallback={<ViewSkeleton />}><PurchaseStatementView /></Suspense>} />

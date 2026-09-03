@@ -38,6 +38,7 @@ vi.mock('../views/DocumentTemplateView', () => ({ DocumentTemplateView: () => <d
 vi.mock('../views/SettingsView', () => ({ SettingsView: () => <div>MAN:settings</div> }));
 vi.mock('../views/PostLoanControlView', () => ({ PostLoanControlView: () => <div>MAN:post-loan</div> }));
 vi.mock('../views/BusinessPlanView', () => ({ BusinessPlanView: () => <div>MAN:business-plan</div> }));
+vi.mock('../views/CorporateFinancialView', () => ({ CorporateFinancialView: () => <div>MAN:corporate-financial</div> }));
 vi.mock('../views/InventoryView', () => ({ InventoryView: () => <div>MAN:inventory</div> }));
 vi.mock('../views/ShoppingChecklistView', () => ({ ShoppingChecklistView: () => <div>MAN:shopping-checklist</div> }));
 vi.mock('../views/PurchaseStatementView', () => ({ PurchaseStatementView: () => <div>MAN:purchase-statement</div> }));

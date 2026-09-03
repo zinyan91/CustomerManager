@@ -11,7 +11,7 @@ import { ROUTE_OF } from './routes';
 export type ScreenId =
   | 'dashboard'
   | 'customers' | 'credit-contracts' | 'loans' | 'collaterals' | 'credit-cards'
-  | 'calculators' | 'business-plan' | 'inventory' | 'shopping-checklist' | 'purchase-statement'
+  | 'calculators' | 'business-plan' | 'corporate-financial' | 'inventory' | 'shopping-checklist' | 'purchase-statement'
   | 'retail-invoice' | 'rate-quote' | 'cof'
   | 'mdsdv' | 'card-policies' | 'templates' | 'quiz-bank'
   | 'post-loan' | 'settings';
@@ -52,6 +52,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'calculators', labelKey: 'nav.calculators', groupKey: 'nav.groupBusinessTools', icon: Calculator, path: ROUTE_OF.calculators, keywords: ['tinh toan', 'lai suat', 'calculator', 'tra no'] },
       { id: 'business-plan', labelKey: 'nav.businessPlan', groupKey: 'nav.groupBusinessTools', icon: ClipboardList, path: ROUTE_OF['business-plan'], keywords: ['phuong an kinh doanh', 'pakd', 'phuong an'] },
+      { id: 'corporate-financial', labelKey: 'nav.corporateFinancial', groupKey: 'nav.groupBusinessTools', icon: Building2, path: ROUTE_OF['corporate-financial'], keywords: ['doanh nghiep', 'bctc', 'bao cao tai chinh', 'tt133', 'can doi ke toan', 'ket qua kinh doanh', 'b01a', 'b02', 'b01b'] },
       { id: 'inventory', labelKey: 'nav.inventory', groupKey: 'nav.groupBusinessTools', icon: Boxes, path: ROUTE_OF.inventory, keywords: ['ton kho', 'hang hoa', 'inventory'] },
       { id: 'shopping-checklist', labelKey: 'nav.shoppingChecklist', groupKey: 'nav.groupBusinessTools', icon: PackageCheck, path: ROUTE_OF['shopping-checklist'], keywords: ['vat dung', 'mua sam', 'noi that', 'tang', 'phong', 'shopping', 'procurement', 'checklist'] },
       { id: 'purchase-statement', labelKey: 'nav.purchaseStatement', groupKey: 'nav.groupBusinessTools', icon: FileText, path: ROUTE_OF['purchase-statement'], keywords: ['bang ke mua hang', 'hoa don', 'purchase'] },

@@ -11,6 +11,7 @@ export const ROUTE_OF: Record<ScreenId, string> = {
 
   calculators: '/tools/calculators',
   'business-plan': '/tools/business-plan',
+  'corporate-financial': '/tools/corporate-financial',
   inventory: '/tools/inventory',
   'shopping-checklist': '/tools/shopping-checklist',
   'purchase-statement': '/tools/purchase-statement',

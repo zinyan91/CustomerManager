@@ -28,6 +28,7 @@ const NHAN_MUC = [
   'Thẻ tín dụng',
   'Công cụ tính toán',
   'Phương án kinh doanh',
+  'BCTC Doanh nghiệp (TT 133)',
   'Hàng tồn kho',
   'Dự toán vật dụng',
   'Bảng kê mua bán',
@@ -51,17 +52,17 @@ const NHAN_NHOM = [
 ];
 
 describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
-  it('hiện đủ 20 mục, mỗi mục một nút', () => {
+  it('hiện đủ 21 mục, mỗi mục một nút', () => {
     dungLen();
-    expect(NHAN_MUC).toHaveLength(20);
+    expect(NHAN_MUC).toHaveLength(21);
     for (const nhan of NHAN_MUC) {
       expect(screen.getAllByText(nhan).length, `thiếu mục "${nhan}"`).toBeGreaterThan(0);
     }
   });
 
-  it('dựng đúng 20 liên kết trong nav', () => {
+  it('dựng đúng 21 liên kết trong nav', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a').length).toBe(20);
+    expect(container.querySelectorAll('nav a').length).toBe(21);
   });
 
   it('hiện đủ 5 tiêu đề nhóm', () => {
@@ -91,7 +92,7 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
 describe('Sidebar dùng liên kết thật', () => {
   it('mỗi mục là một thẻ liên kết, không phải nút', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a')).toHaveLength(20);
+    expect(container.querySelectorAll('nav a')).toHaveLength(21);
     expect(container.querySelectorAll('nav button')).toHaveLength(0);
   });
 

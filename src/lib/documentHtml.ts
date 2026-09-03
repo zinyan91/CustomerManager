@@ -698,24 +698,23 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p">Bên Bán chuyển giao hàng hóa cho Bên Mua trong thời hạn 30 ngày kể từ ngày ký kết hợp đồng.</p>
 
         <h2>ĐIỀU 5: NGHĨA VỤ CỦA BÊN BÁN</h2>
-        <p class="clause-p"><strong>1.</strong> Bên Bán chịu trách nhiệm về số lượng, chất lượng đối với toàn bộ các sản phẩm do Bên Bán cung cấp.</p>
-        <p class="clause-p"><strong>2.</strong> Bên Bán có nghĩa vụ cung cấp mọi chỉ dẫn cần thiết đối với việc bảo quản, sử dụng hàng hoá theo quy định của Hợp đồng này cho Bên mua.</p>
+        <p class="clause-p no-indent">- Bên Bán chịu trách nhiệm về số lượng, chất lượng đối với toàn bộ các sản phẩm do Bên Bán cung cấp.</p>
+        <p class="clause-p no-indent">- Bên Bán có nghĩa vụ cung cấp mọi chỉ dẫn cần thiết đối với việc bảo quản, sử dụng hàng hoá theo quy định của Hợp đồng này cho Bên mua.</p>
 
         <h2>ĐIỀU 6: NGHĨA VỤ CỦA BÊN MUA</h2>
-        <p class="clause-p"><strong>1.</strong> Bên mua có nghĩa vụ thanh toán toàn bộ chi phí vận chuyển.</p>
-        <p class="clause-p"><strong>2.</strong> Tổ chức tiếp nhận nhanh, an toàn, dứt điểm cho từng lô hàng.</p>
-        <p class="clause-p"><strong>3.</strong> Thanh toán đầy đủ theo quy định tại Điều 3 Hợp đồng này.</p>
+        <p class="clause-p no-indent">- Bên mua có nghĩa vụ thanh toán toàn bộ chi phí vận chuyển.</p>
+        <p class="clause-p no-indent">- Tổ chức tiếp nhận nhanh, an toàn, dứt điểm cho từng lô hàng.</p>
+        <p class="clause-p no-indent">- Thanh toán đầy đủ theo quy định tại Điều 3 Hợp đồng này.</p>
 
         <h2>ĐIỀU 7: CÁC TRƯỜNG HỢP CHẤM DỨT HỢP ĐỒNG</h2>
-        <p class="clause-p">Hợp đồng này sẽ được chấm dứt trong các trường hợp sau:</p>
-        <p class="item-p">– Khi các Bên thực hiện xong các quyền và nghĩa vụ quy định trong Hợp đồng này.</p>
-        <p class="item-p">– Khi một Bên vi phạm hợp đồng dẫn đến Hợp đồng không thể thực hiện được thì phía Bên kia có quyền đơn phương chấm dứt hợp đồng.</p>
-        <p class="item-p">– Hợp đồng có thể được chấm dứt do sự thỏa thuận bằng văn bản của các Bên.</p>
+        <p class="clause-p no-indent">- Khi các Bên thực hiện xong các quyền và nghĩa vụ quy định trong Hợp đồng này.</p>
+        <p class="clause-p no-indent">- Khi một Bên vi phạm hợp đồng dẫn đến Hợp đồng không thể thực hiện được thì phía Bên kia có quyền đơn phương chấm dứt hợp đồng.</p>
+        <p class="clause-p no-indent">- Hợp đồng có thể được chấm dứt do sự thỏa thuận bằng văn bản của các Bên.</p>
 
         <h2>ĐIỀU 8: HIỆU LỰC THI HÀNH</h2>
-        <p class="clause-p"><strong>1.</strong> Hợp đồng này có hiệu lực kể từ ngày ký, và chỉ được coi là kết thúc khi các Bên đã hoàn thành các nghĩa vụ của mình trong Hợp đồng.</p>
-        <p class="clause-p"><strong>2.</strong> Trong trường hợp một Bên muốn sửa đổi các điều khoản trong hợp đồng thì phải thông báo cho Bên kia biết trước ít nhất là 03 ngày và cùng nhau thoả thuận lại những điểm cần thay đổi với sự đồng ý của hai Bên.</p>
-        <p class="clause-p"><strong>3.</strong> Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, các bản có giá trị pháp lý như nhau.</p>
+        <p class="clause-p no-indent">- Hợp đồng này có hiệu lực kể từ ngày ký, và chỉ được coi là kết thúc khi các Bên đã hoàn thành các nghĩa vụ của mình trong Hợp đồng.</p>
+        <p class="clause-p no-indent">- Trong trường hợp một Bên muốn sửa đổi các điều khoản trong hợp đồng thì phải thông báo cho Bên kia biết trước ít nhất là 03 ngày và cùng nhau thoả thuận lại những điểm cần thay đổi với sự đồng ý của hai Bên.</p>
+        <p class="clause-p no-indent">- Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, các bản có giá trị pháp lý như nhau.</p>
 
         <table class="sig-table font-serif" style="width: 100%; margin-top: 20pt;">
           <tbody>

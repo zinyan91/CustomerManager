@@ -43,20 +43,27 @@ describe('sale_contract format and docx output', () => {
       }
     }
 
-    // Check clauses in Dieu 5, 6, 8 have firstLine = 567 and left = undefined/0
+    // Check clauses in Dieu 5, 6, 7, 8 are bullet points flush with left margin (firstLine = 0)
     const textBlocks = blocks.filter(b => b.kind === 'p');
     const dieu5P = textBlocks.find(p => p.runs.some(r => r.text.includes('Bên Bán chịu trách nhiệm')));
     expect(dieu5P).toBeDefined();
-    expect(dieu5P?.firstLine).toBe(567);
-    expect(dieu5P?.left).toBeUndefined();
+    expect(dieu5P?.firstLine).toBe(0);
+    expect(dieu5P?.runs[0].text.startsWith('-')).toBe(true);
 
     const dieu6P = textBlocks.find(p => p.runs.some(r => r.text.includes('chi phí vận chuyển')));
     expect(dieu6P).toBeDefined();
-    expect(dieu6P?.firstLine).toBe(567);
+    expect(dieu6P?.firstLine).toBe(0);
+    expect(dieu6P?.runs[0].text.startsWith('-')).toBe(true);
+
+    const dieu7P = textBlocks.find(p => p.runs.some(r => r.text.includes('Khi các Bên thực hiện xong')));
+    expect(dieu7P).toBeDefined();
+    expect(dieu7P?.firstLine).toBe(0);
+    expect(dieu7P?.runs[0].text.startsWith('-')).toBe(true);
 
     const dieu8P = textBlocks.find(p => p.runs.some(r => r.text.includes('Hợp đồng này có hiệu lực')));
     expect(dieu8P).toBeDefined();
-    expect(dieu8P?.firstLine).toBe(567);
+    expect(dieu8P?.firstLine).toBe(0);
+    expect(dieu8P?.runs[0].text.startsWith('-')).toBe(true);
 
     // Verify XML output
     const xml = documentXml(blocks);

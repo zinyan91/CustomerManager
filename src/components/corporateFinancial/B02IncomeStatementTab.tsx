@@ -32,7 +32,10 @@ export const B02IncomeStatementTab: React.FC<B02IncomeStatementTabProps> = ({
   const handlePrint = () => {
     printStatementHtml(
       'BÁO CÁO KẾT QUẢ HOẠT ĐỘNG KINH DOANH',
-      'B02 - DNNVV',
+      'B 02 - DNNVV',
+      `Năm ${statement.periodYear}`,
+      'Năm nay',
+      'Năm trước',
       statement,
       statement.items
     );

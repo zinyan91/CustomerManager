@@ -35,7 +35,10 @@ export const B01aFinancialPositionTab: React.FC<B01aFinancialPositionTabProps> =
   const handlePrint = () => {
     printStatementHtml(
       'BÁO CÁO TÌNH HÌNH TÀI CHÍNH',
-      'B01a - DNNVV',
+      'B 01a - DNNVV',
+      `Tại ngày 31 tháng 12 năm ${statement.periodYear}`,
+      'Số cuối năm',
+      'Số đầu năm',
       statement,
       statement.items
     );

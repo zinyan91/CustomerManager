@@ -36,8 +36,11 @@ export const B01bBalanceSheetTab: React.FC<B01bBalanceSheetTabProps> = ({
 
   const handlePrint = () => {
     printStatementHtml(
-      'BÁO CÁO TÌNH HÌNH TÀI CHÍNH (THEO THANH KHOẢN)',
-      'B01b - DNNVV',
+      'BÁO CÁO TÌNH HÌNH TÀI CHÍNH',
+      'B 01b - DNNVV',
+      `Tại ngày 31 tháng 12 năm ${statement.periodYear}`,
+      'Số cuối năm',
+      'Số đầu năm',
       statement,
       statement.items
     );

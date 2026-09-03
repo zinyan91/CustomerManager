@@ -1,4 +1,4 @@
-import { fmtDate } from './utils';
+import { fmtDate, parseAnyDate } from './utils';
 import { moneyTextToWords, moneyToVietnameseWords } from './numberToWords';
 import type { TemplateType } from '../components/documents/TemplateSelector';
 import type { SaleItem, ConstItem, PaymentStageItem } from '../components/documents/DocumentForm';
@@ -7,6 +7,10 @@ import type { DepositContractData } from '../components/documents/depositContrac
 const nfc = (str: string) => (str ? str.normalize('NFC') : '');
 
 function ngayThangNam(iso: string): string {
+  const parsed = parseAnyDate(iso);
+  if (parsed) {
+    return `ngày ${String(parsed.day).padStart(2, '0')} tháng ${String(parsed.month).padStart(2, '0')} năm ${parsed.year}`;
+  }
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((iso || '').trim());
   if (!m) return iso || '';
   return `ngày ${m[3]} tháng ${m[2]} năm ${m[1]}`;
@@ -42,6 +46,10 @@ export function buildGiayCamKetHtml(input: {
           </tr>
         </tbody>
       </table>
+      <div class="bm04-footer">
+        <span class="font-italic">BM08_........./2026/QĐ-TGĐ_Giấy cam kết</span>
+        <span>Trang 1/1</span>
+      </div>
     </div>
   `;
 }
@@ -106,6 +114,9 @@ export interface DocumentDraft {
   payBankName: string;
   payBankBranch: string;
   payStages: PaymentStageItem[];
+  saleStartDate?: string;
+  saleEndDate?: string;
+  recipientTitle?: 'Ông' | 'Bà';
   constDurationMonths: string;
   lhTermLabel: string;
 }
@@ -160,6 +171,9 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
     saleBankBranch,
     salePaymentStage1,
     saleItems,
+    saleStartDate,
+    saleEndDate,
+    recipientTitle,
     payMethodType,
     payCashName,
     payCashCccd,
@@ -632,20 +646,28 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
           <h1>HỢP ĐỒNG MUA BÁN HÀNG HOÁ</h1>
         </div>
 
-        <p class="clause-p">Hôm nay, ngày 9 tháng 4 năm 2026, chúng tôi gồm có:</p>
+        <p class="clause-p">Hôm nay, ${ngayThangNam(saleContractDate)}, chúng tôi gồm có:</p>
 
-        <p class="font-bold no-indent">BÊN MUA: (Sau đây gọi tắt là Bên A)</p>
-        <p class="item-p">- Họ tên: <strong>${nfc(saleBuyerName)}</strong></p>
-        <p class="item-p">- Địa chỉ: <strong>${nfc(saleBuyerAddress)}</strong></p>
+        <div class="space-y-1 no-indent">
+          <div class="font-bold uppercase text-[13pt] no-indent">BÊN MUA (BÊN A):</div>
+          <div class="pl-6 space-y-0.5 no-indent">
+            <div>- Họ tên: <strong>${nfc(saleBuyerName)}</strong></div>
+            <div>- Địa chỉ: <strong>${nfc(saleBuyerAddress)}</strong></div>
+          </div>
+        </div>
 
-        <p class="font-bold no-indent pt-2">BÊN BÁN: (Sau đây gọi tắt là Bên B)</p>
-        <p class="item-p">- Họ tên: <strong>${nfc(saleSellerName)}</strong></p>
-        ${salePayMethod === 'cash' ? `
-        <p class="item-p">- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: <strong>${nfc(saleSellerCccdDate)}</strong> &nbsp;|&nbsp; Nơi cấp: <strong>${nfc(saleSellerCccdPlace)}</strong></p>
-        ` : `
-        <p class="item-p">- Chủ tài khoản: <strong>${nfc(saleBankOwner || saleSellerName)}</strong></p>
-        <p class="item-p">- Số tài khoản: <strong>${nfc(saleBankAccNo)}</strong> &nbsp;|&nbsp; Ngân hàng: <strong>${nfc(saleBankName)}</strong>${saleBankBranch ? ` &nbsp;|&nbsp; Chi nhánh: <strong>${nfc(saleBankBranch)}</strong>` : ''}</p>
-        `}
+        <div class="space-y-1 no-indent pt-2">
+          <div class="font-bold uppercase text-[13pt] no-indent">BÊN BÁN (BÊN B):</div>
+          <div class="pl-6 space-y-0.5 no-indent">
+            <div>- Họ tên: <strong>${nfc(saleSellerName)}</strong></div>
+            ${salePayMethod === 'cash' ? `
+            <div>- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: <strong>${nfc(saleSellerCccdDate)}</strong> &nbsp;|&nbsp; Nơi cấp: <strong>${nfc(saleSellerCccdPlace)}</strong></div>
+            ` : `
+            <div>- Chủ tài khoản: <strong>${nfc(saleBankOwner || saleSellerName)}</strong></div>
+            <div>- Số tài khoản: <strong>${nfc(saleBankAccNo)}</strong> &nbsp;|&nbsp; Ngân hàng: <strong>${nfc(saleBankName)}</strong>${saleBankBranch ? ` &nbsp;|&nbsp; Chi nhánh: <strong>${nfc(saleBankBranch)}</strong>` : ''}</div>
+            `}
+          </div>
+        </div>
 
         <p class="clause-p pt-2">Hai bên A và B thống nhất thoả thuận nội dung Hợp đồng như sau:</p>
 
@@ -671,39 +693,37 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         </table>
 
         <h2>ĐIỀU 2: THỜI HẠN HỢP ĐỒNG</h2>
-        <p class="item-p">– Thời hạn Hợp đồng là: 01 tháng kể từ ngày 09/04/2026 đến ngày 09/05/2026</p>
+        <p class="clause-p">Thời hạn thực hiện Hợp đồng kể từ ngày <strong>${fmtDate(saleStartDate || saleContractDate)}</strong> đến ngày <strong>${fmtDate(saleEndDate || saleContractDate)}</strong>.</p>
 
         <h2>ĐIỀU 3: THỜI HẠN VÀ PHƯƠNG THỨC THANH TOÁN</h2>
-        <p class="item-p">– Tổng số tiền Bên Mua phải thanh toán cho Bên Bán là: <strong>${totalSaleAmount.toLocaleString('vi-VN')} đồng</strong></p>
-        <p class="clause-p">(Bằng chữ: ${moneyToVietnameseWords(totalSaleAmount)})</p>
-        <p class="clause-p"><strong>1. Thời hạn thanh toán:</strong></p>
-        <p class="clause-p">Mỗi một lô hàng khi Bên B xuất ra cho Bên A thì Bên A sẽ thanh toán như sau:</p>
-        <p class="item-p">– Lần 1: Bên A thanh toán cho Bên B số tiền là: <strong>${salePaymentStage1} đồng</strong></p>
-        <p class="item-p">– Lần 2: Số tiền còn lại sẽ được Bên A thanh toán toàn bộ trước khi nhận hàng dựa trên phiếu đề nghị thanh toán</p>
-        <p class="clause-p"><strong>2. Phương thức thanh toán:</strong> Bên A thanh toán cho Bên B bằng hình thức <strong>${salePayMethod === 'cash' ? 'tiền mặt' : 'chuyển khoản'}</strong>, theo thông tin Bên B đã nêu tại phần đầu Hợp đồng này.</p>
+        <p class="clause-p"><strong>1. Tổng giá trị thanh toán:</strong> Bên Mua thanh toán cho Bên Bán tổng số tiền là: <strong>${totalSaleAmount.toLocaleString('vi-VN')} đồng</strong> (Bằng chữ: ${moneyToVietnameseWords(totalSaleAmount)}).</p>
+        <p class="clause-p"><strong>2. Tiến độ thanh toán:</strong> Mỗi một lô hàng khi Bên B xuất ra cho Bên A thì Bên A sẽ thanh toán như sau:</p>
+        <p class="item-p">– Lần 1: Bên A thanh toán cho Bên B số tiền là: <strong>${salePaymentStage1} đồng</strong>.</p>
+        <p class="item-p">– Lần 2: Số tiền còn lại sẽ được Bên A thanh toán toàn bộ trước khi nhận hàng dựa trên phiếu đề nghị thanh toán.</p>
+        <p class="clause-p"><strong>3. Phương thức thanh toán:</strong> Bên A thanh toán cho Bên B bằng hình thức <strong>${salePayMethod === 'cash' ? 'tiền mặt' : 'chuyển khoản'}</strong>, theo thông tin Bên B đã nêu tại phần đầu Hợp đồng này.</p>
 
-        <h2>ĐIỀU 4: THỜI ĐIỂM VÀ ĐỊA ĐIỂM CHUYỂN GIAO TÀI SẢN</h2>
-        <p class="clause-p">Bên bán chuyển giao tài sản cho Bên mua trong thời hạn 30 ngày kể từ ngày ký kết hợp đồng.</p>
+        <h2>ĐIỀU 4: THỜI ĐIỂM VÀ ĐỊA ĐIỂM CHUYỂN GIAO HÀNG HÓA</h2>
+        <p class="clause-p">Bên Bán chuyển giao hàng hóa cho Bên Mua trong thời hạn 30 ngày kể từ ngày ký kết hợp đồng.</p>
 
         <h2>ĐIỀU 5: NGHĨA VỤ CỦA BÊN BÁN</h2>
-        <p class="item-p">- Bên Bán chịu trách nhiệm về số lượng, chất lượng đối với toàn bộ các sản phẩm do Bên Bán cung cấp.</p>
-        <p class="item-p">- Bên Bán có nghĩa vụ cung cấp mọi chỉ dẫn cần thiết đối với việc bảo quản, sử dụng hàng hoá theo quy định của Hợp đồng này cho Bên mua.</p>
+        <p class="item-p">1. Bên Bán chịu trách nhiệm về số lượng, chất lượng đối với toàn bộ các sản phẩm do Bên Bán cung cấp.</p>
+        <p class="item-p">2. Bên Bán có nghĩa vụ cung cấp mọi chỉ dẫn cần thiết đối với việc bảo quản, sử dụng hàng hoá theo quy định của Hợp đồng này cho Bên mua.</p>
 
         <h2>ĐIỀU 6: NGHĨA VỤ CỦA BÊN MUA</h2>
-        <p class="item-p">- Bên mua có nghĩa vụ thanh toán toàn bộ chi phí vận chuyển</p>
-        <p class="item-p">- Tổ chức tiếp nhận nhanh, an toàn, dứt điểm cho từng lô hàng.</p>
-        <p class="item-p">- Thanh toán theo quy định tại Điều 7 Hợp đồng này.</p>
+        <p class="item-p">1. Bên mua có nghĩa vụ thanh toán toàn bộ chi phí vận chuyển.</p>
+        <p class="item-p">2. Tổ chức tiếp nhận nhanh, an toàn, dứt điểm cho từng lô hàng.</p>
+        <p class="item-p">3. Thanh toán đầy đủ theo quy định tại Điều 3 Hợp đồng này.</p>
 
         <h2>ĐIỀU 7: CÁC TRƯỜNG HỢP CHẤM DỨT HỢP ĐỒNG</h2>
         <p class="clause-p">Hợp đồng này sẽ được chấm dứt trong các trường hợp sau:</p>
-        <p class="item-p">- Khi các Bên thực hiện xong các quyền và nghĩa vụ quy định trong Hợp đồng này.</p>
-        <p class="item-p">- Khi một Bên vi phạm hợp đồng dẫn đến Hợp đồng không thể thực hiện được thì phía Bên kia có quyền đơn phương chấm dứt hợp đồng.</p>
-        <p class="item-p">- Hợp đồng có thể được chấm dứt do sự thỏa thuận của các Bên.</p>
+        <p class="item-p">1. Khi các Bên thực hiện xong các quyền và nghĩa vụ quy định trong Hợp đồng này.</p>
+        <p class="item-p">2. Khi một Bên vi phạm hợp đồng dẫn đến Hợp đồng không thể thực hiện được thì phía Bên kia có quyền đơn phương chấm dứt hợp đồng.</p>
+        <p class="item-p">3. Hợp đồng có thể được chấm dứt do sự thỏa thuận bằng văn bản của các Bên.</p>
 
         <h2>ĐIỀU 8: HIỆU LỰC THI HÀNH</h2>
-        <p class="item-p">- Hợp đồng này có hiệu lực kể từ ngày ký, và chỉ được coi là kết thúc khi các Bên đã hoàn thành các nghĩa vụ của mình trong Hợp đồng.</p>
-        <p class="item-p">- Trong trường hợp một Bên muốn sửa đổi các điều khoản trong hợp đồng thì phải thông báo cho Bên kia biết trước ít nhất là 03 ngày và cùng nhau thoả thuận lại những điểm cần thay đổi với sự đồng ý của hai Bên.</p>
-        <p class="item-p">- Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, các bản có giá trị pháp lý như nhau.</p>
+        <p class="item-p">1. Hợp đồng này có hiệu lực kể từ ngày ký, và chỉ được coi là kết thúc khi các Bên đã hoàn thành các nghĩa vụ của mình trong Hợp đồng.</p>
+        <p class="item-p">2. Trong trường hợp một Bên muốn sửa đổi các điều khoản trong hợp đồng thì phải thông báo cho Bên kia biết trước ít nhất là 03 ngày và cùng nhau thoả thuận lại những điểm cần thay đổi với sự đồng ý của hai Bên.</p>
+        <p class="item-p">3. Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản, các bản có giá trị pháp lý như nhau.</p>
 
         <table class="sig-table font-serif">
           <tbody>
@@ -733,18 +753,21 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
     const totalAmountStr = isSale ? totalSaleAmount.toLocaleString('vi-VN') : constTotalPrice;
     const docTypeTitle = isSale ? 'Hợp đồng mua bán hàng hóa' : 'Hợp đồng thi công nhà ở dân dụng';
 
+    const rTitle = recipientTitle || (buyerName.toLowerCase().includes('thị') ? 'Bà' : 'Ông');
+
     const stagesHtml = payStages.map((st) => {
       let actionText = '';
       if (st.status === 'paid') {
-        actionText = `Bà/Ông ${nfc(buyerName)} đã thanh toán số tiền là:`;
+        actionText = `${rTitle} ${nfc(buyerName)} đã thanh toán số tiền là:`;
       } else if (st.status === 'current') {
-        actionText = `Bà/Ông ${nfc(buyerName)} thanh toán số tiền đợt này là:`;
+        actionText = `${rTitle} ${nfc(buyerName)} thanh toán số tiền đợt này là:`;
       } else {
         actionText = `Số tiền các đợt thanh toán tiếp theo:`;
       }
+      const cleanName = nfc(st.stageName).replace(/\s*\([^)]*\)/g, '').trim() || nfc(st.stageName);
       return `
-        <p class="clause-p" style="margin-left: 24px; text-align: justify;">
-          + <strong>${nfc(st.stageName)}:</strong> ${actionText} <strong>${st.amount} đồng</strong> ${st.note ? `<span class="font-italic">(${nfc(st.note)})</span>` : ''}
+        <p class="item-p">
+          + <strong>${cleanName}:</strong> ${actionText} <strong>${st.amount} đồng</strong>
         </p>
       `;
     }).join('');
@@ -757,18 +780,18 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
       const cccdPlace = payCashCccdPlace || 'CCS QLHC về TTXH';
 
       infoHtml = `
-        <p class="item-p" style="margin-left: 38px;">– Họ & tên: <strong>${nfc(name)}</strong></p>
-        <p class="item-p" style="margin-left: 38px;">– CCCD số: <strong>${nfc(cccd)}</strong></p>
-        <p class="item-p" style="margin-left: 38px;">– Ngày cấp: <strong>${nfc(cccdDate)}</strong></p>
-        <p class="item-p" style="margin-left: 38px;">– Nơi cấp: <strong>${nfc(cccdPlace)}</strong></p>
+        <p class="item-p">– Họ & tên: <strong>${nfc(name)}</strong></p>
+        <p class="item-p">– CCCD số: <strong>${nfc(cccd)}</strong></p>
+        <p class="item-p">– Ngày cấp: <strong>${nfc(cccdDate)}</strong></p>
+        <p class="item-p">– Nơi cấp: <strong>${nfc(cccdPlace)}</strong></p>
       `;
     } else {
       const owner = payBankOwner || sellerName;
       infoHtml = `
-        <p class="item-p" style="margin-left: 38px;">– Họ tên chủ tài khoản: <strong>${nfc(owner)}</strong></p>
-        <p class="item-p" style="margin-left: 38px;">– Số tài khoản: <strong>${nfc(payBankAccNo)}</strong></p>
-        <p class="item-p" style="margin-left: 38px;">– Ngân hàng: <strong>${nfc(payBankName)}</strong></p>
-        <p class="item-p" style="margin-left: 38px;">– Chi nhánh: <strong>${nfc(payBankBranch)}</strong></p>
+        <p class="item-p">– Họ tên chủ tài khoản: <strong>${nfc(owner)}</strong></p>
+        <p class="item-p">– Số tài khoản: <strong>${nfc(payBankAccNo)}</strong></p>
+        <p class="item-p">– Ngân hàng: <strong>${nfc(payBankName)}</strong></p>
+        <p class="item-p">– Chi nhánh: <strong>${nfc(payBankBranch)}</strong></p>
       `;
     }
 
@@ -779,7 +802,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">----------o0o----------</div>
       </div>
 
-      <div class="text-right font-italic text-[12pt] pt-2 pb-2 no-indent">
+      <div class="text-right font-italic text-[12pt] pt-2 pb-1 no-indent">
         ........, Ngày .... Tháng .... Năm 2026
       </div>
 
@@ -787,12 +810,12 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <h1>GIẤY ĐỀ NGHỊ THANH TOÁN</h1>
       </div>
 
-      <p class="clause-p">Kính gửi: <strong>${nfc(buyerName)}</strong></p>
+      <p class="clause-p">Kính gửi: <strong>${rTitle} ${nfc(buyerName)}</strong></p>
 
-      <p class="clause-p">Căn cứ ${docTypeTitle} ký ngày: <strong>${fmtDate(contractDateStr)}</strong> giữa ${nfc(buyerName)} và ${nfc(sellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
+      <p class="clause-p">Căn cứ ${docTypeTitle} ký ngày <strong>${fmtDate(contractDateStr)}</strong> giữa ${rTitle} ${nfc(buyerName)} và ${nfc(sellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
 
       <p class="clause-p"><strong>1. Giá trị hợp đồng:</strong> <strong>${totalAmountStr} đồng</strong></p>
-      <p class="item-p" style="margin-left: 38px;">(Bằng chữ: ${moneyTextToWords(totalAmountStr)})</p>
+      <p class="item-p">(Bằng chữ: ${moneyTextToWords(totalAmountStr)})</p>
 
       <p class="clause-p"><strong>2. Thời hạn thanh toán:</strong></p>
       ${stagesHtml}
@@ -800,7 +823,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
       <p class="clause-p"><strong>3. Thông tin thanh toán (${payMethodType === 'cash' ? 'Thanh toán tiền mặt' : 'Thanh toán chuyển khoản'}):</strong></p>
       ${infoHtml}
 
-      <p class="clause-p pt-3">Kính mong Bà/Ông ${nfc(buyerName)} sắp xếp thanh toán số tiền nêu trên theo đúng tiến độ đã thỏa thuận trong hợp đồng.</p>
+      <p class="clause-p pt-2">Kính mong ${rTitle} ${nfc(buyerName)} sắp xếp thanh toán số tiền nêu trên theo đúng tiến độ đã thỏa thuận trong hợp đồng.</p>
 
       <p class="clause-p">Trân trọng!</p>
 

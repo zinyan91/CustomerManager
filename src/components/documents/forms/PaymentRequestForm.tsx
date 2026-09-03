@@ -17,6 +17,8 @@ export interface PaymentRequestFormProps {
   setSaleContractDate: (v: string) => void;
   saleBuyerName: string;
   setSaleBuyerName: (v: string) => void;
+  recipientTitle?: 'Ông' | 'Bà';
+  setRecipientTitle?: (v: 'Ông' | 'Bà') => void;
   payMethodType?: 'cash' | 'transfer';
   setPayMethodType?: (v: 'cash' | 'transfer') => void;
   payCashName?: string;
@@ -51,6 +53,8 @@ export const PaymentRequestForm: React.FC<PaymentRequestFormProps> = ({
   setSaleContractDate,
   saleBuyerName,
   setSaleBuyerName,
+  recipientTitle = 'Ông',
+  setRecipientTitle,
   payMethodType,
   setPayMethodType,
   payCashName,
@@ -90,7 +94,17 @@ export const PaymentRequestForm: React.FC<PaymentRequestFormProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Kính gửi (Người nhận thanh toán)</label>
-            <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} className={`w-full rounded-xl p-2.5 font-bold ${styles.inputStyle}`} />
+            <div className="flex gap-1.5">
+              <select
+                value={recipientTitle}
+                onChange={e => setRecipientTitle && setRecipientTitle(e.target.value as 'Ông' | 'Bà')}
+                className={`w-20 shrink-0 rounded-xl p-2.5 font-bold ${styles.inputStyle}`}
+              >
+                <option value="Ông">Ông</option>
+                <option value="Bà">Bà</option>
+              </select>
+              <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} className={`w-full rounded-xl p-2.5 font-bold ${styles.inputStyle}`} />
+            </div>
           </div>
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Ngày ký Hợp Đồng căn cứ</label>

@@ -11,7 +11,8 @@ const BM04_MARGIN = 1440;
 export const BM04_LOGO_CX = 1511935;
 export const BM04_LOGO_CY = 349885;
 
-export const BM04_FOOTER_TEXT = 'BM04_........./2026/QĐ-TGĐ_Giấy cam kết';
+export const BM04_FOOTER_TEXT = 'BM08_........./2026/QĐ-TGĐ_Giấy cam kết';
+export const BM08_FOOTER_TEXT = BM04_FOOTER_TEXT;
 
 const WML = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';

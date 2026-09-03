@@ -10,7 +10,7 @@ export const MIME_DOCX =
 export const DOCX_FONT = 'Times New Roman';
 export const DOCX_BASE_SIZE = 26;
 export const DOCX_TABLE_SIZE = 24;
-export const DOCX_LINE = 360;
+export const DOCX_LINE = 276;
 
 export const PAGE_WIDTH = 11906;
 export const PAGE_HEIGHT = 16838;
@@ -20,8 +20,8 @@ export const MARGIN_BOTTOM = 1134;
 export const MARGIN_LEFT = 1701;
 export const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT;
 
-export const CLAUSE_INDENT = 720;
-export const ITEM_INDENT = 280;
+export const CLAUSE_INDENT = 567;
+export const ITEM_INDENT = 720;
 export const SIG_SPACE_AFTER = 1500;
 
 export type DocxAlign = 'left' | 'center' | 'right' | 'justify';
@@ -237,10 +237,10 @@ const BLOCK_TAGS = new Set(['h1', 'h2', 'h3', 'p', 'div', 'table', 'ul', 'ol', '
 
 function baseParagraph(tag: string, el: Element): DocxParagraph {
   if (tag === 'h1') {
-    return { kind: 'p', runs: [], align: 'center', before: ptToTwips(14), after: ptToTwips(12), line: DOCX_LINE };
+    return { kind: 'p', runs: [], align: 'center', before: ptToTwips(10), after: ptToTwips(8), line: DOCX_LINE };
   }
   if (tag === 'h2' || tag === 'h3') {
-    return { kind: 'p', runs: [], align: 'left', before: ptToTwips(12), after: ptToTwips(6), line: DOCX_LINE };
+    return { kind: 'p', runs: [], align: 'left', before: ptToTwips(10), after: ptToTwips(4), line: DOCX_LINE };
   }
   const p: DocxParagraph = {
     kind: 'p',
@@ -252,7 +252,8 @@ function baseParagraph(tag: string, el: Element): DocxParagraph {
   if (el.classList.contains('clause-p')) {
     p.align = 'justify';
     p.firstLine = CLAUSE_INDENT;
-    p.before = ptToTwips(4);
+    p.before = ptToTwips(2);
+    p.after = ptToTwips(3.5);
   }
   if (el.classList.contains('bm04-name')) {
     p.align = 'justify';
@@ -368,8 +369,8 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
       align: ctx.align,
       firstLine: ctx.firstLine,
       left: ctx.left,
-      before: ptToTwips(3),
-      after: ptToTwips(6),
+      before: ptToTwips(2),
+      after: ptToTwips(3.5),
       line: DOCX_LINE,
     });
   };
@@ -386,6 +387,11 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
 
     const el = child as Element;
     const tag = el.tagName.toLowerCase();
+
+    if (el.classList && el.classList.contains('bm04-footer')) {
+      // Chân trang BM08 đã được xử lý qua word/footer1.xml, không xuất lại trong thân tài liệu
+      continue;
+    }
 
     if (el.getAttribute && el.getAttribute(BM04_SECTION_ATTR) === BM04_SECTION_VALUE) {
       flush();

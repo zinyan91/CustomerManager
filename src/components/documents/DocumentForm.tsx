@@ -98,6 +98,8 @@ export interface DocumentFormProps {
 
   payMethodType?: 'cash' | 'transfer';
   setPayMethodType?: (v: 'cash' | 'transfer') => void;
+  recipientTitle?: 'Ông' | 'Bà';
+  setRecipientTitle?: (v: 'Ông' | 'Bà') => void;
   payCashName?: string; setPayCashName?: (v: string) => void;
   payCashCccd?: string; setPayCashCccd?: (v: string) => void;
   payCashCccdDate?: string; setPayCashCccdDate?: (v: string) => void;

@@ -81,6 +81,7 @@ export const DocumentTemplateView: React.FC = () => {
             onSelectCatalogId={ctrl.handleSelectCatalogId}
             onOpenCatalogModal={() => ctrl.setCatalogModalOpen(true)}
             payMethodType={ctrl.payMethodType} setPayMethodType={ctrl.setPayMethodType}
+            recipientTitle={ctrl.recipientTitle} setRecipientTitle={ctrl.setRecipientTitle}
             payCashName={ctrl.payCashName} setPayCashName={ctrl.setPayCashName}
             payCashCccd={ctrl.payCashCccd} setPayCashCccd={ctrl.setPayCashCccd}
             payCashCccdDate={ctrl.payCashCccdDate} setPayCashCccdDate={ctrl.setPayCashCccdDate}

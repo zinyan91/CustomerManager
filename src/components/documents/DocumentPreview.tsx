@@ -28,7 +28,7 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
         body {
           font-family: 'Times New Roman', Times, serif;
           font-size: 13pt;
-          line-height: 1.45;
+          line-height: 1.3;
           color: #000000;
           margin: 0;
           padding: 0;
@@ -61,24 +61,24 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           page-break-after: avoid;
         }
         p {
-          margin-top: 3pt;
-          margin-bottom: 4pt;
+          margin-top: 2pt;
+          margin-bottom: 3.5pt;
           text-align: justify;
-          line-height: 1.45;
+          line-height: 1.3;
         }
         p.clause-p { 
-          margin-top: 4pt; 
-          margin-bottom: 5pt; 
+          margin-top: 2pt; 
+          margin-bottom: 3.5pt; 
           text-align: justify; 
-          text-indent: 1.27cm; 
-          line-height: 1.45; 
+          text-indent: 1cm; 
+          line-height: 1.3; 
         }
         .no-indent { text-indent: 0 !important; }
         p.item-p { 
           text-indent: 0; 
-          margin: 2pt 0 3pt 18pt; 
+          margin: 2pt 0 2pt 1.27cm; 
           text-align: justify; 
-          line-height: 1.45; 
+          line-height: 1.3; 
         }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
@@ -121,9 +121,9 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           page-break-before: always;
           font-family: 'Arial Unicode MS', 'Arial', sans-serif;
           font-size: 10pt;
-          line-height: 1.35;
+          line-height: 1.25;
         }
-        .bm04-sheet p { margin: 0 0 4pt 0; text-indent: 0; text-align: justify; }
+        .bm04-sheet p { margin: 0 0 3pt 0; text-indent: 0; text-align: justify; line-height: 1.25; }
         .bm04-name { }
         .bm04-fill { }
         .bm04-fill .doc-tab {
@@ -146,6 +146,16 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           vertical-align: top;
           border: none;
           padding: 0;
+        }
+        .bm04-footer {
+          border-top: 1px solid #000000;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 20pt;
+          padding-top: 4pt;
+          font-size: 9.5pt;
+          font-style: italic;
         }
       </style>
     </head>
@@ -245,7 +255,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           .a4-sheet-container {
             font-family: 'Times New Roman', Times, serif !important;
             font-size: 13pt !important;
-            line-height: 1.5 !important;
+            line-height: 1.3 !important;
             color: #000000 !important;
             background-color: #ffffff !important;
             width: 100%;
@@ -260,8 +270,8 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
             font-size: 15pt !important;
             font-weight: bold !important;
             text-transform: uppercase !important;
-            margin-top: 14pt !important;
-            margin-bottom: 12pt !important;
+            margin-top: 10pt !important;
+            margin-bottom: 8pt !important;
             line-height: 1.3 !important;
             letter-spacing: normal !important;
           }
@@ -269,27 +279,48 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
             font-size: 13pt !important;
             font-weight: bold !important;
             text-transform: uppercase !important;
-            margin-top: 12pt !important;
-            margin-bottom: 6pt !important;
+            margin-top: 10pt !important;
+            margin-bottom: 4pt !important;
             text-align: left !important;
           }
           .a4-sheet-container p {
-            margin-top: 3pt !important;
-            margin-bottom: 6pt !important;
-            line-height: 1.5 !important;
+            margin-top: 2pt !important;
+            margin-bottom: 3.5pt !important;
+            text-align: justify !important;
+            line-height: 1.3 !important;
           }
           .a4-sheet-container p.item-p {
             text-indent: 0 !important;
-            margin: 2pt 0 2pt 14pt !important;
+            margin: 2pt 0 2pt 1.27cm !important;
             text-align: justify !important;
-            line-height: 1.5 !important;
+            line-height: 1.3 !important;
           }
           .a4-sheet-container p.clause-p {
-            margin-top: 4pt !important;
-            margin-bottom: 6pt !important;
+            margin-top: 2pt !important;
+            margin-bottom: 3.5pt !important;
             text-align: justify !important;
-            text-indent: 1.27cm !important;
-            line-height: 1.5 !important;
+            text-indent: 1cm !important;
+            line-height: 1.3 !important;
+          }
+          .a4-sheet-container .bm04-sheet {
+            font-family: 'Arial Unicode MS', 'Arial', sans-serif !important;
+            font-size: 10pt !important;
+            line-height: 1.25 !important;
+          }
+          .a4-sheet-container .bm04-sheet p {
+            margin: 0 0 3pt 0 !important;
+            text-indent: 0 !important;
+            line-height: 1.25 !important;
+          }
+          .a4-sheet-container .bm04-footer {
+            border-top: 1px solid #000000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20pt;
+            padding-top: 4pt;
+            font-size: 9.5pt;
+            font-style: italic;
           }
           .a4-sheet-container .no-indent {
             text-indent: 0 !important;
@@ -309,23 +340,23 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           .a4-sheet-container .table-doc {
             border-collapse: collapse !important;
             width: 100% !important;
-            margin-top: 10pt !important;
-            margin-bottom: 10pt !important;
+            margin-top: 8pt !important;
+            margin-bottom: 8pt !important;
           }
           .a4-sheet-container .table-doc th,
           .a4-sheet-container .table-doc td {
             border: 1px solid #000000 !important;
-            padding: 6pt 8pt !important;
+            padding: 5pt 7pt !important;
             font-size: 12pt !important;
           }
           .a4-sheet-container .sig-table {
             width: 100% !important;
-            margin-top: 24pt !important;
+            margin-top: 20pt !important;
             border-collapse: collapse !important;
             border: none !important;
           }
           .a4-sheet-container .sig-space {
-            height: 100px !important;
+            height: 90px !important;
             line-height: 1.25 !important;
           }
           .a4-sheet-container .sig-table td {

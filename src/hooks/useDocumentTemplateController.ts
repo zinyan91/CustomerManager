@@ -187,6 +187,7 @@ export function useDocumentTemplateController() {
 
   // Mẫu 6 & 7: Đề nghị thanh toán
   const [payMethodType, setPayMethodType] = useState<'cash' | 'transfer'>('transfer');
+  const [recipientTitle, setRecipientTitle] = useState<'Ông' | 'Bà'>('Ông');
   const [payCashName, setPayCashName] = useState('ĐỖ THỊ LAN ANH');
   const [payCashCccd, setPayCashCccd] = useState('0343 0300 4676');
   const [payCashCccdDate, setPayCashCccdDate] = useState('03/03/2022');
@@ -197,8 +198,8 @@ export function useDocumentTemplateController() {
   const [payBankBranch, setPayBankBranch] = useState('Chi nhánh TP.HCM');
 
   const [payStages, setPayStages] = useState<PaymentStageItem[]>([
-    { id: '1', stageName: 'Đợt 1 (Đặt cọc khi ký hợp đồng)', amount: '53.700.000', status: 'paid', note: 'Đã hoàn thành thanh toán theo biên nhận' },
-    { id: '2', stageName: 'Đợt 2 (Nghiệm thu hoàn thành)', amount: '950.000.000', status: 'current', note: 'Theo biên bản nghiệm thu đính kèm' },
+    { id: '1', stageName: 'Đợt 1', amount: '53.700.000', status: 'paid', note: '' },
+    { id: '2', stageName: 'Đợt 2', amount: '950.000.000', status: 'current', note: '' },
   ]);
 
   const handleAddPayStage = () => {
@@ -262,6 +263,9 @@ export function useDocumentTemplateController() {
     saleBankAccNo,
     saleBankName,
     saleBankBranch,
+    saleStartDate,
+    saleEndDate,
+    recipientTitle,
     salePaymentStage1,
     saleItems,
     payMethodType,
@@ -343,6 +347,7 @@ export function useDocumentTemplateController() {
     handleDeleteCatalog,
     handleResetCatalogs,
     payMethodType, setPayMethodType,
+    recipientTitle, setRecipientTitle,
     payCashName, setPayCashName,
     payCashCccd, setPayCashCccd,
     payCashCccdDate, setPayCashCccdDate,

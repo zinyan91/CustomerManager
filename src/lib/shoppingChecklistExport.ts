@@ -203,69 +203,159 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
   const totalItems = countPresetItems(preset);
   const totalRooms = preset.floors.reduce((s, f) => s + f.rooms.length, 0);
 
-  let globalIdx = 1;
+  // Flatten all items with floor and room metadata
+  const allEntries: Array<{
+    floorName: string;
+    roomName: string;
+    item: ShoppingPreset['floors'][0]['rooms'][0]['items'][0];
+  }> = [];
 
-  // Build each room's compact table for the 2-column flow
-  const roomsBlocksHtml = preset.floors
-    .map(floor => {
-      return floor.rooms
-        .map(room => {
-          const rTot = computeRoomTotal(room);
-          const itemsRows = room.items
-            .map(it => {
-              const amt = computeItemAmount(it);
-              return `
-                <tr>
-                  <td class="td-stt">${globalIdx++}</td>
-                  <td class="td-name">${it.name}</td>
-                  <td class="td-unit">${it.unit || 'Bộ/Cái'}</td>
-                  <td class="td-qty">${it.quantity.toLocaleString('vi-VN')}</td>
-                  <td class="td-price">${it.unitPrice.toLocaleString('vi-VN')}</td>
-                  <td class="td-amt">${amt.toLocaleString('vi-VN')}</td>
+  preset.floors.forEach(f => {
+    f.rooms.forEach(r => {
+      r.items.forEach(it => {
+        allEntries.push({
+          floorName: f.name,
+          roomName: r.name,
+          item: it,
+        });
+      });
+    });
+  });
+
+  // Render a list of items for one column, grouping by floor/room
+  const renderColHtml = (
+    entries: typeof allEntries,
+    startGlobalIdx: number
+  ) => {
+    if (entries.length === 0) return '';
+
+    const groups: Array<{
+      floorName: string;
+      roomName: string;
+      items: typeof entries[0]['item'][];
+    }> = [];
+
+    let curGroup: typeof groups[0] | null = null;
+    entries.forEach(e => {
+      if (
+        !curGroup ||
+        curGroup.floorName !== e.floorName ||
+        curGroup.roomName !== e.roomName
+      ) {
+        curGroup = {
+          floorName: e.floorName,
+          roomName: e.roomName,
+          items: [e.item],
+        };
+        groups.push(curGroup);
+      } else {
+        curGroup.items.push(e.item);
+      }
+    });
+
+    let runningIdx = startGlobalIdx;
+    return groups
+      .map(g => {
+        const groupSubtotal = g.items.reduce(
+          (sum, it) => sum + computeItemAmount(it),
+          0
+        );
+        const rowsHtml = g.items
+          .map(it => {
+            const amt = computeItemAmount(it);
+            return `
+              <tr>
+                <td class="td-stt">${runningIdx++}</td>
+                <td class="td-name">${it.name}</td>
+                <td class="td-unit">${it.unit || 'Bộ/Cái'}</td>
+                <td class="td-qty">${it.quantity.toLocaleString('vi-VN')}</td>
+                <td class="td-price">${it.unitPrice.toLocaleString('vi-VN')}</td>
+                <td class="td-amt">${amt.toLocaleString('vi-VN')}</td>
+              </tr>
+            `;
+          })
+          .join('');
+
+        return `
+          <div class="room-box">
+            <table class="item-table">
+              <colgroup>
+                <col style="width: 5.5%;" />
+                <col style="width: 47.5%;" />
+                <col style="width: 7%;" />
+                <col style="width: 5%;" />
+                <col style="width: 17%;" />
+                <col style="width: 18%;" />
+              </colgroup>
+              <thead>
+                <tr class="room-title-row">
+                  <th colspan="6">
+                    <div class="room-title-flex">
+                      <span>${g.floorName.toUpperCase()} – ${g.roomName.toUpperCase()}</span>
+                      <span class="room-sum">Cộng: ${groupSubtotal.toLocaleString('vi-VN')} đ</span>
+                    </div>
+                  </th>
                 </tr>
-              `;
-            })
-            .join('');
+                <tr class="col-head-row">
+                  <th class="th-stt">STT</th>
+                  <th class="th-name">HẠNG MỤC / VẬT DỤNG</th>
+                  <th class="th-unit">ĐVT</th>
+                  <th class="th-qty">SL</th>
+                  <th class="th-price">ĐƠN GIÁ</th>
+                  <th class="th-amt">THÀNH TIỀN</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+      })
+      .join('');
+  };
 
-          return `
-            <div class="room-box">
-              <table class="item-table">
-                <colgroup>
-                  <col style="width: 5.5%;" />
-                  <col style="width: 47.5%;" />
-                  <col style="width: 7%;" />
-                  <col style="width: 5%;" />
-                  <col style="width: 17%;" />
-                  <col style="width: 18%;" />
-                </colgroup>
-                <thead>
-                  <tr class="room-title-row">
-                    <th colspan="6">
-                      <div class="room-title-flex">
-                        <span>${floor.name.toUpperCase()} – ${room.name.toUpperCase()}</span>
-                        <span class="room-sum">Cộng: ${rTot.toLocaleString('vi-VN')} đ</span>
-                      </div>
-                    </th>
-                  </tr>
-                  <tr class="col-head-row">
-                    <th class="th-stt">STT</th>
-                    <th class="th-name">HẠNG MỤC / VẬT DỤNG</th>
-                    <th class="th-unit">ĐVT</th>
-                    <th class="th-qty">SL</th>
-                    <th class="th-price">ĐƠN GIÁ</th>
-                    <th class="th-amt">THÀNH TIỀN</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${itemsRows}
-                </tbody>
-              </table>
-            </div>
-          `;
-        })
-        .join('');
-    })
-    .join('');
+  // Divide into balanced pages and balanced columns
+  const total = allEntries.length;
+  interface PagePartition {
+    leftEntries: typeof allEntries;
+    rightEntries: typeof allEntries;
+    startIdxLeft: number;
+    startIdxRight: number;
+  }
+
+  const pagesData: PagePartition[] = [];
+
+  if (total <= 64) {
+    const half = Math.ceil(total / 2);
+    pagesData.push({
+      leftEntries: allEntries.slice(0, half),
+      rightEntries: allEntries.slice(half),
+      startIdxLeft: 1,
+      startIdxRight: half + 1,
+    });
+  } else {
+    // 2 Pages: Page 1 gets ~72 items (36 left, 36 right), Page 2 gets remaining balanced
+    const p1Total = Math.min(72, Math.ceil((total * 0.65) / 2) * 2);
+    const p1Half = p1Total / 2;
+
+    pagesData.push({
+      leftEntries: allEntries.slice(0, p1Half),
+      rightEntries: allEntries.slice(p1Half, p1Total),
+      startIdxLeft: 1,
+      startIdxRight: p1Half + 1,
+    });
+
+    const p2Entries = allEntries.slice(p1Total);
+    const p2Half = Math.ceil(p2Entries.length / 2);
+
+    pagesData.push({
+      leftEntries: p2Entries.slice(0, p2Half),
+      rightEntries: p2Entries.slice(p2Half),
+      startIdxLeft: p1Total + 1,
+      startIdxRight: p1Total + p2Half + 1,
+    });
+  }
 
   // 2-row horizontal summary table
   const summaryColsHeader = preset.floors
@@ -281,6 +371,93 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           <strong>${fTot.toLocaleString('vi-VN')} đ</strong>
           <span style="color: #64748b; font-size: 7pt;">(${pct}%)</span>
         </td>
+      `;
+    })
+    .join('');
+
+  // Build HTML for each page
+  const pagesHtml = pagesData
+    .map((p, pIdx) => {
+      const isFirst = pIdx === 0;
+      const isLast = pIdx === pagesData.length - 1;
+
+      const colLeftHtml = renderColHtml(p.leftEntries, p.startIdxLeft);
+      const colRightHtml = renderColHtml(p.rightEntries, p.startIdxRight);
+
+      const topSectionHtml = isFirst
+        ? `
+          <!-- Top Title Banner -->
+          <div class="top-banner">
+            <div>
+              <h1 class="doc-title">DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA</h1>
+              <div class="doc-sub">
+                Công trình / Bản dựng: <strong>${preset.name}</strong> • Quy mô: <strong>${preset.floors.length} tầng</strong>, <strong>${totalRooms} phòng</strong>, <strong>${totalItems} hạng mục</strong>
+              </div>
+            </div>
+            <div style="text-align: right; white-space: nowrap;">
+              <div style="font-size: 7pt; color: #64748b;">Ngày lập: ${fmtDate(todayIso())}</div>
+              <div class="doc-total-tag">TỔNG DỰ TOÁN: ${grandTotal.toLocaleString('vi-VN')} VNĐ</div>
+            </div>
+          </div>
+
+          <!-- Compact 2-Row Summary Table -->
+          <table class="summary-grid">
+            <thead>
+              <tr>
+                <th style="border: 1px solid #cbd5e1; padding: 1.5px 4px; text-align: left; width: 105px;">TỔNG HỢP THEO TẦNG</th>
+                ${summaryColsHeader}
+                <th style="border: 1px solid #cbd5e1; padding: 1.5px 4px; background: #fef3c7; color: #b91c1c;">TỔNG CỘNG</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 1px solid #cbd5e1; padding: 1.5px 4px; font-weight: bold;">Chi phí & Tỷ trọng:</td>
+                ${summaryColsData}
+                <td style="border: 1px solid #cbd5e1; padding: 1.5px 4px; text-align: right; font-weight: 800; background: #fef3c7; color: #b91c1c;">
+                  ${grandTotal.toLocaleString('vi-VN')} VNĐ
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="summary-words">
+            (Bằng chữ: <strong>${moneyToVietnameseWords(grandTotal)}</strong>)
+          </div>
+        `
+        : `
+          <!-- Secondary Page Header -->
+          <div class="top-banner" style="margin-bottom: 5px;">
+            <div class="doc-title" style="font-size: 10pt;">
+              DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA (TIẾP THEO) - ${preset.name.toUpperCase()}
+            </div>
+            <div style="font-size: 8pt; font-weight: bold; color: #b91c1c;">
+              TỔNG DỰ TOÁN: ${grandTotal.toLocaleString('vi-VN')} VNĐ
+            </div>
+          </div>
+        `;
+
+      const sigHtml = isLast
+        ? `
+          <!-- Signature Section (Only Nguoi Lap Bang, removed Chu Dau Tu) -->
+          <div class="sig-container">
+            <div class="sig-box">
+              <div style="font-size: 7.5pt; color: #64748b; margin-bottom: 2px;">Ngày lập: ${fmtDate(todayIso())}</div>
+              <strong>NGƯỜI LẬP BẢNG</strong><br>
+              <span style="font-style: italic; color: #64748b; font-size: 7pt;">(Ký và ghi rõ họ tên)</span>
+              <div class="sig-space"></div>
+            </div>
+          </div>
+        `
+        : '';
+
+      return `
+        <div class="print-page ${isLast ? 'last-page' : ''}">
+          ${topSectionHtml}
+          <div class="page-cols">
+            <div class="col-half">${colLeftHtml}</div>
+            <div class="col-half">${colRightHtml}</div>
+          </div>
+          ${sigHtml}
+        </div>
       `;
     })
     .join('');
@@ -307,8 +484,14 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          thead { display: table-header-group; }
-          tr { page-break-inside: avoid; }
+          .print-page {
+            page-break-after: always;
+            break-after: page;
+          }
+          .print-page.last-page {
+            page-break-after: auto;
+            break-after: auto;
+          }
         }
         body {
           font-family: Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
@@ -363,13 +546,17 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           color: #475569;
           margin-bottom: 4px;
         }
-        .two-cols-wrapper {
-          column-count: 2;
-          column-gap: 5mm;
-          column-fill: auto;
+        .page-cols {
+          display: flex;
+          gap: 5mm;
+          align-items: flex-start;
+          width: 100%;
+        }
+        .col-half {
+          flex: 1;
+          min-width: 0;
         }
         .room-box {
-          break-inside: auto;
           margin-bottom: 3px;
         }
         .item-table {
@@ -456,79 +643,24 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           padding-right: 4px;
           white-space: nowrap;
         }
-        .sig-row {
+        .sig-container {
           display: flex;
-          justify-content: space-between;
-          margin-top: 8px;
-          break-inside: avoid;
+          justify-content: flex-end;
+          margin-top: 10px;
           page-break-inside: avoid;
         }
-        .sig-col {
-          width: 45%;
+        .sig-box {
+          width: 240px;
           text-align: center;
           font-size: 7.5pt;
         }
         .sig-space {
-          height: 35px;
+          height: 38px;
         }
       </style>
     </head>
     <body>
-      <!-- Top Title Banner -->
-      <div class="top-banner">
-        <div>
-          <h1 class="doc-title">DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA</h1>
-          <div class="doc-sub">
-            Công trình / Bản dựng: <strong>${preset.name}</strong> • Quy mô: <strong>${preset.floors.length} tầng</strong>, <strong>${totalRooms} phòng</strong>, <strong>${totalItems} hạng mục</strong>
-          </div>
-        </div>
-        <div style="text-align: right; white-space: nowrap;">
-          <div style="font-size: 7pt; color: #64748b;">Ngày lập: ${fmtDate(todayIso())}</div>
-          <div class="doc-total-tag">TỔNG DỰ TOÁN: ${grandTotal.toLocaleString('vi-VN')} VNĐ</div>
-        </div>
-      </div>
-
-      <!-- Compact 2-Row Summary Table -->
-      <table class="summary-grid">
-        <thead>
-          <tr>
-            <th style="border: 1px solid #cbd5e1; padding: 1.5px 4px; text-align: left; width: 105px;">TỔNG HỢP THEO TẦNG</th>
-            ${summaryColsHeader}
-            <th style="border: 1px solid #cbd5e1; padding: 1.5px 4px; background: #fef3c7; color: #b91c1c;">TỔNG CỘNG</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="border: 1px solid #cbd5e1; padding: 1.5px 4px; font-weight: bold;">Chi phí & Tỷ trọng:</td>
-            ${summaryColsData}
-            <td style="border: 1px solid #cbd5e1; padding: 1.5px 4px; text-align: right; font-weight: 800; background: #fef3c7; color: #b91c1c;">
-              ${grandTotal.toLocaleString('vi-VN')} VNĐ
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="summary-words">
-        (Bằng chữ: <strong>${moneyToVietnameseWords(grandTotal)}</strong>)
-      </div>
-
-      <!-- Two-Column Side-by-Side Checklist (Matching Excel Layout) -->
-      <div class="two-cols-wrapper">
-        ${roomsBlocksHtml}
-      </div>
-
-      <!-- Signature Section -->
-      <div class="sig-row">
-        <div class="sig-col">
-          <strong>NGƯỜI LẬP BẢNG</strong><br>
-          <span style="font-style: italic; color: #64748b;">(Ký và ghi rõ họ tên)</span>
-          <div class="sig-space"></div>
-        </div>
-        <div class="sig-col">
-          <strong>CHỦ ĐẦU TƯ / DUYỆT BẢNG</strong><br>
-          <span style="font-style: italic; color: #64748b;">(Ký và ghi rõ họ tên)</span>
-          <div class="sig-space"></div>
-        </div>
-      </div>
+      ${pagesHtml}
     </body>
     </html>
   `;

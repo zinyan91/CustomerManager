@@ -49,7 +49,7 @@ export const CorporateFinancialView: React.FC = () => {
     return createSampleCorporateProfile();
   });
 
-  const [activeTab, setActiveTab] = useState<'b01a' | 'b02' | 'b01b' | 'ratios'>('b01a');
+  const [activeTab, setActiveTab] = useState<'b01a' | 'b02' | 'b01b'>('b01a');
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -319,7 +319,10 @@ export const CorporateFinancialView: React.FC = () => {
         </div>
       </div>
 
-      {/* Tab Navigation Pills */}
+      {/* 3 KPI & Phân tích tài chính Cards hiển thị trực quan ngay trên đầu */}
+      <FinancialRatiosCard ratios={financialRatios} />
+
+      {/* Tab Navigation Pills cho 3 Biểu mẫu chuẩn TT 133 */}
       <div className="inline-flex p-1 rounded-2xl bg-panel/85 border border-line/65 backdrop-blur-xl shadow-xs gap-1.5 flex-wrap">
         <button
           type="button"
@@ -354,17 +357,6 @@ export const CorporateFinancialView: React.FC = () => {
         >
           3. Bảng cân đối kế toán (Mẫu B01b)
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('ratios')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-2xs ${
-            activeTab === 'ratios'
-              ? 'bg-accent text-accent-ink shadow-xs'
-              : 'text-ink-muted hover:text-ink hover:bg-surface'
-          }`}
-        >
-          4. Phân tích chỉ số tài chính
-        </button>
       </div>
 
       {/* Tab Contents */}
@@ -387,10 +379,6 @@ export const CorporateFinancialView: React.FC = () => {
           statement={computedB01b}
           onChange={handleUpdateB01b}
         />
-      )}
-
-      {activeTab === 'ratios' && (
-        <FinancialRatiosCard ratios={financialRatios} />
       )}
     </div>
   );

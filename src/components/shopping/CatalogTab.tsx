@@ -3,7 +3,7 @@ import {
   Plus, Search, Pencil, Trash2, Package, X,
 } from 'lucide-react';
 import type { CatalogItem } from '../../lib/shoppingChecklist';
-import { fmtMoney, parseMoneyDecimalInput, formatMoneyInput } from '../../lib/utils';
+import { fmtNumber, parseMoneyDecimalInput, formatMoneyInput } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 
 interface CatalogTabProps {
@@ -189,7 +189,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({
                       {item.unit}
                     </td>
                     <td className="py-2.5 px-4 text-right font-mono font-bold text-ink">
-                      {fmtMoney(item.defaultPrice)} đ
+                      {fmtNumber(item.defaultPrice)} VNĐ
                     </td>
                     <td className="py-2.5 px-4 text-ink-muted italic">
                       {item.note || '—'}

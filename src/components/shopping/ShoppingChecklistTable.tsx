@@ -2,7 +2,7 @@ import React from 'react';
 import { Plus, Trash2, Library } from 'lucide-react';
 import type { ShoppingItem, ShoppingRoom } from '../../lib/shoppingChecklist';
 import { computeItemAmount, computeRoomTotal } from '../../lib/shoppingChecklist';
-import { fmtMoney, parseMoneyDecimalInput, formatMoneyInput } from '../../lib/utils';
+import { fmtNumber, parseMoneyDecimalInput, formatMoneyInput } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 
 interface ShoppingChecklistTableProps {
@@ -152,7 +152,7 @@ export const ShoppingChecklistTable: React.FC<ShoppingChecklistTableProps> = ({
                       {/* Total Amount */}
                       <td className="py-1.5 px-3 text-right">
                         <span className="font-bold font-mono text-accent text-xs">
-                          {fmtMoney(itemAmount)}
+                          {fmtNumber(itemAmount)}
                         </span>
                       </td>
 
@@ -190,7 +190,7 @@ export const ShoppingChecklistTable: React.FC<ShoppingChecklistTableProps> = ({
                     CỘNG KHU VỰC ({room.name}):
                   </td>
                   <td className="py-2.5 px-3 text-right text-accent font-mono text-xs">
-                    {fmtMoney(roomTotal)} đ
+                    {fmtNumber(roomTotal)} VNĐ
                   </td>
                   <td colSpan={2}></td>
                 </tr>

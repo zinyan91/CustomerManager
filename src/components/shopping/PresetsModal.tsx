@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Bookmark, Save, Trash2, X, RotateCcw } from 'lucide-react';
 import type { ShoppingPreset } from '../../lib/shoppingChecklist';
 import { computePresetTotal, countPresetItems } from '../../lib/shoppingChecklist';
-import { fmtMoney, fmtDate } from '../../lib/utils';
+import { fmtNumber, fmtDate } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 
 interface PresetsModalProps {
@@ -151,7 +151,7 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                           </span>
                           <span>•</span>
                           <span className="font-mono font-bold text-accent">
-                            {fmtMoney(total)} đ
+                            {fmtNumber(total)} VNĐ
                           </span>
                           <span>•</span>
                           <span>{fmtDate(preset.updatedAt)}</span>
@@ -227,7 +227,7 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
                   • {countPresetItems(currentPreset)} vật dụng với đơn giá hiện tại
                 </div>
                 <div className="font-semibold text-accent font-mono">
-                  • Tổng giá trị: {fmtMoney(computePresetTotal(currentPreset))} đ
+                  • Tổng giá trị: {fmtNumber(computePresetTotal(currentPreset))} VNĐ
                 </div>
               </div>
 

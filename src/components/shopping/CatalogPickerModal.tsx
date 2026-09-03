@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, Search, Check, Plus, Package } from 'lucide-react';
 import type { CatalogItem } from '../../lib/shoppingChecklist';
-import { fmtMoney } from '../../lib/utils';
+import { fmtNumber } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 
 interface CatalogPickerModalProps {
@@ -207,7 +207,7 @@ export const CatalogPickerModal: React.FC<CatalogPickerModalProps> = ({
 
                   <div className="text-right shrink-0 pl-3">
                     <div className="font-bold font-mono text-accent text-xs">
-                      {fmtMoney(item.defaultPrice)} đ
+                      {fmtNumber(item.defaultPrice)} VNĐ
                     </div>
                   </div>
                 </div>

@@ -19,7 +19,7 @@ import { ShoppingChecklistTable } from '../shopping/ShoppingChecklistTable';
 import { CatalogPickerModal } from '../shopping/CatalogPickerModal';
 import { CatalogTab } from '../shopping/CatalogTab';
 import { PresetsModal } from '../shopping/PresetsModal';
-import { fmtMoney } from '../../lib/utils';
+import { fmtNumber } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 import { useToast } from '../Toast';
 import { Toast } from '../Toast';
@@ -93,7 +93,7 @@ export const ShoppingChecklistView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto text-xs font-app animate-in fade-in duration-200">
+    <div className="space-y-4 w-full text-xs font-app animate-in fade-in duration-200">
       <Toast toast={toast} onDismiss={dismiss} />
 
       {/* Top Header & KPIs */}
@@ -177,7 +177,7 @@ export const ShoppingChecklistView: React.FC = () => {
               TỔNG CHI PHÍ DỰ TOÁN
             </span>
             <div className="font-mono font-bold text-base sm:text-xl text-accent tracking-tight">
-              {fmtMoney(grandTotal)} <span className="text-xs font-normal">VNĐ</span>
+              {fmtNumber(grandTotal)} <span className="text-xs font-normal">VNĐ</span>
             </div>
           </div>
 
@@ -340,7 +340,7 @@ export const ShoppingChecklistView: React.FC = () => {
                       <div className="text-right">
                         <span className="text-[10px] text-ink-faint block">Tổng tầng:</span>
                         <span className="font-mono font-bold text-accent text-sm">
-                          {fmtMoney(floorTotal)} đ
+                          {fmtNumber(floorTotal)} VNĐ
                         </span>
                       </div>
 
@@ -416,7 +416,7 @@ export const ShoppingChecklistView: React.FC = () => {
 
                                 <div className="flex items-center space-x-2">
                                   <span className="text-xs font-mono font-bold text-ink">
-                                    Cộng phòng: <strong className="text-accent">{fmtMoney(roomTotal)} đ</strong>
+                                    Cộng phòng: <strong className="text-accent">{fmtNumber(roomTotal)} VNĐ</strong>
                                   </span>
 
                                   <button

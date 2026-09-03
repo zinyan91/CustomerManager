@@ -39,6 +39,7 @@ vi.mock('../views/SettingsView', () => ({ SettingsView: () => <div>MAN:settings<
 vi.mock('../views/PostLoanControlView', () => ({ PostLoanControlView: () => <div>MAN:post-loan</div> }));
 vi.mock('../views/BusinessPlanView', () => ({ BusinessPlanView: () => <div>MAN:business-plan</div> }));
 vi.mock('../views/InventoryView', () => ({ InventoryView: () => <div>MAN:inventory</div> }));
+vi.mock('../views/ShoppingChecklistView', () => ({ ShoppingChecklistView: () => <div>MAN:shopping-checklist</div> }));
 vi.mock('../views/PurchaseStatementView', () => ({ PurchaseStatementView: () => <div>MAN:purchase-statement</div> }));
 vi.mock('../views/RetailInvoiceView', () => ({ RetailInvoiceView: () => <div>MAN:retail-invoice</div> }));
 vi.mock('../views/QuizBankView', () => ({ QuizBankView: () => <div>MAN:quiz-bank</div> }));

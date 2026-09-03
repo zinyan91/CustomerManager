@@ -3,8 +3,8 @@ import { NAV_GROUPS, NAV_ITEMS } from '../navigation';
 import { ROUTE_OF } from '../routes';
 
 describe('navigation', () => {
-  it('có đúng 19 màn', () => {
-    expect(NAV_ITEMS).toHaveLength(19);
+  it('có đúng 20 màn', () => {
+    expect(NAV_ITEMS).toHaveLength(20);
   });
 
   it('không id nào trùng', () => {
@@ -47,7 +47,7 @@ describe('navigation', () => {
       'business-plan', 'calculators', 'card-policies', 'cof', 'collaterals',
       'credit-cards', 'credit-contracts', 'customers', 'dashboard', 'inventory',
       'loans', 'mdsdv', 'post-loan', 'purchase-statement', 'quiz-bank',
-      'rate-quote', 'retail-invoice', 'settings', 'templates',
+      'rate-quote', 'retail-invoice', 'settings', 'shopping-checklist', 'templates',
     ]);
   });
 });

@@ -3,6 +3,7 @@ import {
   BookOpen, LayoutDashboard, Users, FileText, Building2, CreditCard,
   ShieldAlert, Settings, Calculator, FileSignature, Target, Percent,
   Landmark, Handshake, ClipboardList, GraduationCap, Boxes, Receipt,
+  PackageCheck,
 } from 'lucide-react';
 import type { TranslationKey } from './i18n';
 import { ROUTE_OF } from './routes';
@@ -10,7 +11,7 @@ import { ROUTE_OF } from './routes';
 export type ScreenId =
   | 'dashboard'
   | 'customers' | 'credit-contracts' | 'loans' | 'collaterals' | 'credit-cards'
-  | 'calculators' | 'business-plan' | 'inventory' | 'purchase-statement'
+  | 'calculators' | 'business-plan' | 'inventory' | 'shopping-checklist' | 'purchase-statement'
   | 'retail-invoice' | 'rate-quote' | 'cof'
   | 'mdsdv' | 'card-policies' | 'templates' | 'quiz-bank'
   | 'post-loan' | 'settings';
@@ -52,6 +53,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'calculators', labelKey: 'nav.calculators', groupKey: 'nav.groupBusinessTools', icon: Calculator, path: ROUTE_OF.calculators, keywords: ['tinh toan', 'lai suat', 'calculator', 'tra no'] },
       { id: 'business-plan', labelKey: 'nav.businessPlan', groupKey: 'nav.groupBusinessTools', icon: ClipboardList, path: ROUTE_OF['business-plan'], keywords: ['phuong an kinh doanh', 'pakd', 'phuong an'] },
       { id: 'inventory', labelKey: 'nav.inventory', groupKey: 'nav.groupBusinessTools', icon: Boxes, path: ROUTE_OF.inventory, keywords: ['ton kho', 'hang hoa', 'inventory'] },
+      { id: 'shopping-checklist', labelKey: 'nav.shoppingChecklist', groupKey: 'nav.groupBusinessTools', icon: PackageCheck, path: ROUTE_OF['shopping-checklist'], keywords: ['vat dung', 'mua sam', 'noi that', 'tang', 'phong', 'shopping', 'procurement', 'checklist'] },
       { id: 'purchase-statement', labelKey: 'nav.purchaseStatement', groupKey: 'nav.groupBusinessTools', icon: FileText, path: ROUTE_OF['purchase-statement'], keywords: ['bang ke mua hang', 'hoa don', 'purchase'] },
       { id: 'retail-invoice', labelKey: 'nav.retailInvoice', groupKey: 'nav.groupBusinessTools', icon: Receipt, path: ROUTE_OF['retail-invoice'], keywords: ['hoa don ban le', 'ban le', 'invoice'] },
       { id: 'rate-quote', labelKey: 'nav.rateQuote', groupKey: 'nav.groupBusinessTools', icon: Percent, path: ROUTE_OF['rate-quote'], keywords: ['dinh gia lai suat', 'lai suat', 'quote'] },

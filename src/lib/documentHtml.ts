@@ -649,16 +649,16 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p">Hôm nay, ${ngayThangNam(saleContractDate)}, chúng tôi gồm có:</p>
 
         <p class="clause-p font-bold uppercase no-indent">BÊN MUA (BÊN A):</p>
-        <p class="item-p">- Họ và tên: <strong>${nfc(saleBuyerName)}</strong></p>
-        <p class="item-p">- Địa chỉ: ${nfc(saleBuyerAddress)}</p>
+        <p class="clause-p no-indent">- Họ và tên: <strong>${nfc(saleBuyerName)}</strong></p>
+        <p class="clause-p no-indent">- Địa chỉ: ${nfc(saleBuyerAddress)}</p>
 
         <p class="clause-p font-bold uppercase no-indent pt-1">BÊN BÁN (BÊN B):</p>
-        <p class="item-p">- Họ và tên: <strong>${nfc(saleSellerName)}</strong></p>
+        <p class="clause-p no-indent">- Họ và tên: <strong>${nfc(saleSellerName)}</strong></p>
         ${salePayMethod === 'cash' ? `
-        <p class="item-p">- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: ${nfc(saleSellerCccdDate)} &nbsp;|&nbsp; Nơi cấp: ${nfc(saleSellerCccdPlace)}</p>
+        <p class="clause-p no-indent">- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: ${nfc(saleSellerCccdDate)} &nbsp;|&nbsp; Nơi cấp: ${nfc(saleSellerCccdPlace)}</p>
         ` : `
-        <p class="item-p">- Số tài khoản: <strong>${nfc(saleBankAccNo)}</strong> &nbsp;|&nbsp; Chủ tài khoản: <strong>${nfc(saleBankOwner || saleSellerName)}</strong></p>
-        <p class="item-p">- Ngân hàng: <strong>${nfc(saleBankName)}</strong>${saleBankBranch ? ` &nbsp;|&nbsp; Chi nhánh: ${nfc(saleBankBranch)}` : ''}</p>
+        <p class="clause-p no-indent">- Số tài khoản: <strong>${nfc(saleBankAccNo)}</strong> &nbsp;|&nbsp; Chủ tài khoản: <strong>${nfc(saleBankOwner || saleSellerName)}</strong></p>
+        <p class="clause-p no-indent">- Ngân hàng: <strong>${nfc(saleBankName)}</strong>${saleBankBranch ? ` &nbsp;|&nbsp; Chi nhánh: ${nfc(saleBankBranch)}` : ''}</p>
         `}
 
         <p class="clause-p pt-1">Hai bên cùng thống nhất ký kết Hợp đồng mua bán hàng hóa với các điều khoản sau đây:</p>

@@ -43,8 +43,20 @@ describe('sale_contract format and docx output', () => {
       }
     }
 
-    // Check clauses in Dieu 5, 6, 7, 8 are bullet points flush with left margin (firstLine = 0)
     const textBlocks = blocks.filter(b => b.kind === 'p');
+
+    // Check Bên Mua & Bên Bán details are flush with left margin
+    const buyerNameP = textBlocks.find(p => p.runs.map(r => r.text).join('').includes('NGÔ NHỊ ĐẠT'));
+    expect(buyerNameP).toBeDefined();
+    expect(buyerNameP?.firstLine).toBe(0);
+    expect(buyerNameP?.left).toBeUndefined();
+
+    const sellerNameP = textBlocks.find(p => p.runs.map(r => r.text).join('').includes('TRẦN THỊ PHƯƠNG'));
+    expect(sellerNameP).toBeDefined();
+    expect(sellerNameP?.firstLine).toBe(0);
+    expect(sellerNameP?.left).toBeUndefined();
+
+    // Check clauses in Dieu 5, 6, 7, 8 are bullet points flush with left margin (firstLine = 0)
     const dieu5P = textBlocks.find(p => p.runs.some(r => r.text.includes('Bên Bán chịu trách nhiệm')));
     expect(dieu5P).toBeDefined();
     expect(dieu5P?.firstLine).toBe(0);

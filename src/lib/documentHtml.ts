@@ -298,16 +298,16 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">- Hai bên đã tự đọc hợp đồng, đã hiểu và đồng ý tất cả các điều khoản ghi trong hợp đồng và ký vào hợp đồng này trước sự có mặt của người làm chứng.</p>
         <p class="clause-p no-indent">Hợp đồng đặt cọc này được lập thành 02 (hai) bản có giá trị pháp lý như nhau, mỗi bên giữ 01 (một) bản.</p>
 
-        <p class="clause-p text-right font-italic pt-3">${nfc(d.signPlace)}, ngày ${fmtDate(d.signDate)}</p>
+        <p class="text-right font-italic pt-3 no-indent">${nfc(d.signPlace)}, ngày ${fmtDate(d.signDate)}</p>
 
-        <table class="sig-table font-serif" style="width: 100%; margin-top: 20pt;">
+        <table class="sig-table font-serif" style="width: 100%; table-layout: fixed; margin-top: 20pt;">
           <tbody>
             <tr>
               <td class="text-center" style="width: 33%; text-align: center; vertical-align: top;">
                 <p class="text-center font-bold uppercase no-indent">BÊN A</p>
                 <p class="text-center font-italic text-[11pt] no-indent">(Ký, ghi rõ họ tên)</p>
                 <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
-                <p class="text-center font-bold uppercase no-indent">${nfc(d.buyerName)}</p>
+                <p class="text-center font-bold uppercase no-indent" style="white-space: nowrap;">${nfc(d.buyerName)}</p>
               </td>
               <td class="text-center" style="width: 34%; text-align: center; vertical-align: top;">
                 <p class="text-center font-bold uppercase no-indent">NGƯỜI LÀM CHỨNG</p>
@@ -319,7 +319,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
                 <p class="text-center font-bold uppercase no-indent">BÊN B</p>
                 <p class="text-center font-italic text-[11pt] no-indent">(Ký, ghi rõ họ tên)</p>
                 <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
-                <p class="text-center font-bold uppercase no-indent">${nfc(d.sellerName)}</p>
+                <p class="text-center font-bold uppercase no-indent" style="white-space: nowrap;">${nfc(d.sellerName)}</p>
               </td>
             </tr>
           </tbody>

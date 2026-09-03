@@ -21,7 +21,7 @@ export const DocumentTemplateView: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Cột trái: Khung soạn thảo / Form nhập thông tin */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="lg:col-span-6 space-y-4">
           <DocumentForm
             styles={styles}
             selectedTemplate={ctrl.selectedTemplate}
@@ -97,7 +97,7 @@ export const DocumentTemplateView: React.FC = () => {
         </div>
 
         {/* Cột phải: Xem trước tài liệu A4 / Kết xuất Word & PDF */}
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-6">
           <DocumentPreview
             styles={styles}
             docTitle={ctrl.currentTplInfo.label}

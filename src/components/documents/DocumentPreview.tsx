@@ -86,7 +86,7 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           line-height: 1.3; 
         }
         .text-center, .text-center p, .text-center div { text-align: center !important; }
-        .text-right { text-align: right; }
+        .text-right, p.text-right, p.clause-p.text-right, div.text-right { text-align: right !important; text-indent: 0 !important; }
         .text-left { text-align: left; }
         .font-bold { font-weight: bold; }
         .italic { font-style: italic; }
@@ -106,14 +106,14 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           page-break-inside: avoid;
         }
         .sig-table { 
-          width: 100%; 
+          width: 100% !important; 
+          table-layout: fixed !important;
           margin-top: 20pt; 
           border-collapse: collapse; 
           border: none; 
           page-break-inside: avoid;
         }
         .sig-table td { 
-          width: 50%; 
           text-align: center; 
           vertical-align: top; 
           border: none; 
@@ -343,8 +343,12 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           .a4-sheet-container .text-center div {
             text-align: center !important;
           }
-          .a4-sheet-container .text-right {
+          .a4-sheet-container .text-right,
+          .a4-sheet-container p.text-right,
+          .a4-sheet-container p.clause-p.text-right,
+          .a4-sheet-container div.text-right {
             text-align: right !important;
+            text-indent: 0 !important;
           }
           .a4-sheet-container .font-bold {
             font-weight: bold !important;
@@ -366,6 +370,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           }
           .a4-sheet-container .sig-table {
             width: 100% !important;
+            table-layout: fixed !important;
             margin-top: 20pt !important;
             border-collapse: collapse !important;
             border: none !important;
@@ -376,11 +381,10 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           }
           .a4-sheet-container .sig-table td {
             line-height: 1.25 !important;
-            width: 50% !important;
             text-align: center !important;
             vertical-align: top !important;
             border: none !important;
-            padding: 4px !important;
+            padding: 4px 6px !important;
           }
         `}</style>
         <div

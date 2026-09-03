@@ -121,10 +121,14 @@ export const ConstructionForm: React.FC<ConstructionFormProps> = ({
             <DateInput value={constEndDate} onChange={setConstEndDate} className={`w-full rounded-xl p-2.5 ${styles.inputStyle}`} />
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Tổng giá trị (VNĐ)</label>
             <input type="text" value={constTotalPrice} onChange={e => setConstTotalPrice(e.target.value)} className={`w-full rounded-xl p-2.5 font-mono font-bold text-accent ${styles.inputStyle}`} />
+          </div>
+          <div>
+            <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Thời gian bảo hành</label>
+            <input type="text" value={constWarrantyMonths} onChange={e => setConstWarrantyMonths(e.target.value)} placeholder="06 tháng" className={`w-full rounded-xl p-2.5 font-mono ${styles.inputStyle}`} />
           </div>
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Đặt cọc Đợt 1 (VNĐ)</label>
@@ -133,10 +137,6 @@ export const ConstructionForm: React.FC<ConstructionFormProps> = ({
           <div>
             <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Thanh toán Đợt 2 (VNĐ)</label>
             <input type="text" value={constStage2Amount} onChange={e => setConstStage2Amount(e.target.value)} className={`w-full rounded-xl p-2.5 font-mono font-bold text-accent ${styles.inputStyle}`} />
-          </div>
-          <div>
-            <label className={`block mb-1 text-[11px] ${styles.labelStyle}`}>Thời gian bảo hành</label>
-            <input type="text" value={constWarrantyMonths} onChange={e => setConstWarrantyMonths(e.target.value)} placeholder="06 tháng" className={`w-full rounded-xl p-2.5 font-mono ${styles.inputStyle}`} />
           </div>
         </div>
       </div>

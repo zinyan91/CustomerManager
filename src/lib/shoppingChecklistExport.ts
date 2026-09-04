@@ -97,9 +97,9 @@ export function exportShoppingChecklistToExcel(preset: ShoppingPreset, filename?
           { value: globalItemIndex++, style: { align: 'center' } },
           { value: it.name, style: { align: 'left' } },
           { value: it.unit || 'Bộ/Cái', style: { align: 'center' } },
-          { value: it.quantity, numeric: true, style: { align: 'right', numFmt: '#,##0.##' } },
-          { value: it.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0' } },
-          { value: amt, numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
+          { value: Number(it.quantity || 0), numeric: true, style: { align: 'right', numFmt: '#,##0.##' } },
+          { value: Number(it.unitPrice || 0), numeric: true, style: { align: 'right', numFmt: '#,##0' } },
+          { value: Number(amt || 0), numeric: true, style: { bold: true, align: 'right', numFmt: '#,##0' } },
           { value: it.note || '', style: { italic: true, align: 'left' } },
         ]);
       });
@@ -267,9 +267,9 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
                 <td class="td-stt">${runningIdx++}</td>
                 <td class="td-name">${it.name}</td>
                 <td class="td-unit">${it.unit || 'Bộ/Cái'}</td>
-                <td class="td-qty">${it.quantity.toLocaleString('vi-VN')}</td>
-                <td class="td-price">${it.unitPrice.toLocaleString('vi-VN')}</td>
-                <td class="td-amt">${amt.toLocaleString('vi-VN')}</td>
+                <td class="td-qty">${Number(it.quantity || 0).toLocaleString('vi-VN')}</td>
+                <td class="td-price">${Number(it.unitPrice || 0).toLocaleString('vi-VN')}</td>
+                <td class="td-amt">${Number(amt || 0).toLocaleString('vi-VN')}</td>
               </tr>
             `;
           })

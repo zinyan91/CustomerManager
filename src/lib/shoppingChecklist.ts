@@ -62,6 +62,45 @@ export function countPresetItems(preset: ShoppingPreset): number {
   );
 }
 
+export function sanitizePreset(raw: unknown): ShoppingPreset {
+  if (!raw || typeof raw !== 'object') return DEFAULT_PRESET;
+  const p = raw as Partial<ShoppingPreset>;
+  const rawFloors = Array.isArray(p.floors) ? p.floors : [];
+  return {
+    id: p.id || `preset_${Date.now()}`,
+    name: p.name || 'Mẫu Nhà Phố 4 Tầng (Gốc từ Excel)',
+    description: p.description || '',
+    createdAt: p.createdAt || new Date().toISOString(),
+    updatedAt: p.updatedAt || new Date().toISOString(),
+    floors: rawFloors.map((f, fIdx) => ({
+      id: f.id || `floor_${fIdx + 1}`,
+      name: f.name || `Tầng ${fIdx + 1}`,
+      rooms: (Array.isArray(f.rooms) ? f.rooms : []).map((r, rIdx) => ({
+        id: r.id || `room_${f.id || fIdx + 1}_${rIdx + 1}`,
+        name: r.name || `Phòng ${rIdx + 1}`,
+        items: (Array.isArray(r.items) ? r.items : []).map((it, itIdx) => {
+          const qty =
+            typeof it.quantity === 'number'
+              ? isNaN(it.quantity) ? 0 : it.quantity
+              : parseFloat(String(it.quantity || 0)) || 0;
+          const price =
+            typeof it.unitPrice === 'number'
+              ? isNaN(it.unitPrice) ? 0 : it.unitPrice
+              : parseFloat(String(it.unitPrice || 0)) || 0;
+          return {
+            id: it.id || `item_${fIdx + 1}_${rIdx + 1}_${itIdx + 1}`,
+            name: it.name || '',
+            unit: it.unit || 'Bộ/Cái',
+            quantity: qty,
+            unitPrice: price,
+            note: it.note || '',
+          };
+        }),
+      })),
+    })),
+  };
+}
+
 export const DEFAULT_CATALOG_ITEMS: CatalogItem[] = [
   {
     "id": "cat_1",

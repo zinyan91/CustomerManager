@@ -7,6 +7,7 @@ import {
   type CatalogItem,
   DEFAULT_PRESET,
   DEFAULT_CATALOG_ITEMS,
+  sanitizePreset,
 } from '../lib/shoppingChecklist';
 
 const STORAGE_ACTIVE_PRESET = 'cm_shopping_active_preset_v1';
@@ -17,21 +18,24 @@ export function useShoppingChecklist() {
   const [preset, setPreset] = useState<ShoppingPreset>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_ACTIVE_PRESET);
-      if (saved) return JSON.parse(saved);
+      if (saved) return sanitizePreset(JSON.parse(saved));
     } catch {
       // fallback
     }
-    return DEFAULT_PRESET;
+    return sanitizePreset(DEFAULT_PRESET);
   });
 
   const [savedPresets, setSavedPresets] = useState<ShoppingPreset[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_PRESETS_LIST);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed.map(sanitizePreset);
+      }
     } catch {
       // fallback
     }
-    return [DEFAULT_PRESET];
+    return [sanitizePreset(DEFAULT_PRESET)];
   });
 
   const [catalog, setCatalog] = useState<CatalogItem[]>(() => {
@@ -44,22 +48,28 @@ export function useShoppingChecklist() {
     return DEFAULT_CATALOG_ITEMS;
   });
 
-  // Auto-save active preset
+  // Debounced auto-save active preset to prevent main thread blocking during fast typing
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_ACTIVE_PRESET, JSON.stringify(preset));
-    } catch {
-      // ignore
-    }
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_ACTIVE_PRESET, JSON.stringify(preset));
+      } catch {
+        // ignore
+      }
+    }, 250);
+    return () => clearTimeout(timer);
   }, [preset]);
 
-  // Auto-save presets list
+  // Debounced auto-save presets list
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_PRESETS_LIST, JSON.stringify(savedPresets));
-    } catch {
-      // ignore
-    }
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_PRESETS_LIST, JSON.stringify(savedPresets));
+      } catch {
+        // ignore
+      }
+    }, 250);
+    return () => clearTimeout(timer);
   }, [savedPresets]);
 
   // Auto-save catalog
@@ -93,7 +103,7 @@ export function useShoppingChecklist() {
   const loadPreset = useCallback((presetId: string) => {
     const found = savedPresets.find(p => p.id === presetId);
     if (found) {
-      setPreset(JSON.parse(JSON.stringify(found)));
+      setPreset(sanitizePreset(JSON.parse(JSON.stringify(found))));
     }
   }, [savedPresets]);
 
@@ -102,7 +112,7 @@ export function useShoppingChecklist() {
   }, []);
 
   const resetToDefault = useCallback(() => {
-    setPreset(JSON.parse(JSON.stringify(DEFAULT_PRESET)));
+    setPreset(sanitizePreset(JSON.parse(JSON.stringify(DEFAULT_PRESET))));
   }, []);
 
   // --- FLOOR ACTIONS ---

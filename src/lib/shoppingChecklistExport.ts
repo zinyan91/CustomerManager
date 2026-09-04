@@ -340,9 +340,12 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
     startIdxRight: number;
   }
 
+  const MAX_PER_COL = 29;
+  const MAX_PER_PAGE = MAX_PER_COL * 2; // 58 items max per page
+
   const pagesData: PagePartition[] = [];
 
-  if (total <= 56) {
+  if (total <= 52) {
     const half = Math.ceil(total / 2);
     pagesData.push({
       leftEntries: allEntries.slice(0, half),
@@ -350,16 +353,16 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
       startIdxLeft: 1,
       startIdxRight: half + 1,
     });
-  } else {
-    // 2 Pages: Page 1 gets up to 60 items (30 left, 30 right) to guarantee zero overflow
-    const p1Total = Math.min(60, Math.ceil((total * 0.55) / 2) * 2);
-    const p1Half = p1Total / 2;
+  } else if (total <= 116) {
+    // 2 balanced pages: Page 1 and Page 2 fill the paper proportionately
+    const p1PerCol = Math.min(MAX_PER_COL, Math.ceil((total + 6) / 4));
+    const p1Total = p1PerCol * 2;
 
     pagesData.push({
-      leftEntries: allEntries.slice(0, p1Half),
-      rightEntries: allEntries.slice(p1Half, p1Total),
+      leftEntries: allEntries.slice(0, p1PerCol),
+      rightEntries: allEntries.slice(p1PerCol, p1Total),
       startIdxLeft: 1,
-      startIdxRight: p1Half + 1,
+      startIdxRight: p1PerCol + 1,
     });
 
     const p2Entries = allEntries.slice(p1Total);
@@ -371,6 +374,46 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
       startIdxLeft: p1Total + 1,
       startIdxRight: p1Total + p2Half + 1,
     });
+  } else {
+    // Generic partition for 3+ pages
+    let currentIdx = 0;
+    while (currentIdx < total) {
+      const remaining = total - currentIdx;
+      const isLastPage = remaining <= MAX_PER_PAGE;
+      const pageSize = isLastPage ? remaining : Math.min(MAX_PER_PAGE, Math.ceil(remaining / 2) * 2);
+      const half = Math.ceil(pageSize / 2);
+
+      pagesData.push({
+        leftEntries: allEntries.slice(currentIdx, currentIdx + half),
+        rightEntries: allEntries.slice(currentIdx + half, currentIdx + pageSize),
+        startIdxLeft: currentIdx + 1,
+        startIdxRight: currentIdx + half + 1,
+      });
+
+      currentIdx += pageSize;
+    }
+  }
+
+  // Determine dynamic row density so small & medium documents fill the page vertically
+  const maxItemsPerCol = pagesData.reduce((max, p) => {
+    return Math.max(max, p.leftEntries.length, p.rightEntries.length);
+  }, 0);
+
+  let cellPadding = '2.5px 3.5px';
+  let tableFontSize = '8pt';
+  let roomHeaderPadding = '3px 5px';
+  let lineSpacing = '1.25';
+
+  if (maxItemsPerCol <= 16) {
+    cellPadding = '4.5px 5px';
+    tableFontSize = '8.5pt';
+    roomHeaderPadding = '4.5px 6px';
+    lineSpacing = '1.35';
+  } else if (maxItemsPerCol <= 22) {
+    cellPadding = '3.5px 4.5px';
+    tableFontSize = '8.5pt';
+    roomHeaderPadding = '3.5px 5px';
+    lineSpacing = '1.3';
   }
 
   // Build HTML for each page
@@ -392,7 +435,7 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
         : `
           <!-- Secondary Page Header (Clean, minimalist) -->
           <div class="doc-header-simple" style="margin-bottom: 5px; padding-bottom: 3px;">
-            <div class="doc-title" style="font-size: 10.5pt;">
+            <div class="doc-title" style="font-size: 11pt;">
               DANH SÁCH CHI TIẾT CÁC VẬT DỤNG CẦN MUA (TIẾP THEO)
             </div>
           </div>
@@ -404,7 +447,7 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           <div class="sig-container">
             <div class="sig-box">
               <strong>NGƯỜI LẬP BẢNG</strong><br>
-              <span style="font-style: italic; font-size: 7.5pt; color: #333;">(Ký, ghi rõ họ tên)</span>
+              <span style="font-style: italic; font-size: 8pt; color: #333;">(Ký, ghi rõ họ tên)</span>
               <div class="sig-space"></div>
             </div>
           </div>
@@ -433,16 +476,16 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
       <style>
         @page {
           size: A4 landscape;
-          margin: 0;
+          margin: 8mm 10mm;
         }
         @media print {
           @page {
             size: A4 landscape;
-            margin: 0;
+            margin: 8mm 10mm;
           }
           html, body {
             margin: 0 !important;
-            padding: 4mm 6mm !important;
+            padding: 0 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -457,18 +500,18 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
         }
         body {
           font-family: Arial, Helvetica, sans-serif;
-          font-size: 7.5pt;
+          font-size: ${tableFontSize};
           color: #000;
           margin: 0;
-          padding: 4mm 6mm;
-          line-height: 1.15;
+          padding: 8mm 10mm;
+          line-height: ${lineSpacing};
           background: #fff;
         }
         .doc-header-simple {
           text-align: center;
-          margin-bottom: 5px;
-          border-bottom: 1px solid #000;
-          padding-bottom: 3px;
+          margin-bottom: 6px;
+          border-bottom: 1.5px solid #000;
+          padding-bottom: 4px;
         }
         .doc-title {
           font-size: 13pt;
@@ -476,16 +519,16 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           text-transform: uppercase;
           color: #000;
           margin: 0;
-          letter-spacing: 0.2px;
+          letter-spacing: 0.3px;
         }
         .doc-sub {
-          font-size: 8pt;
+          font-size: 8.5pt;
           color: #000;
           margin-top: 2px;
         }
         .page-cols {
           display: flex;
-          gap: 5mm;
+          gap: 6mm;
           align-items: flex-start;
           width: 100%;
         }
@@ -494,27 +537,27 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           min-width: 0;
         }
         .room-box {
-          margin-bottom: 3px;
+          margin-bottom: 4px;
         }
         .item-table {
           width: 100%;
           border-collapse: collapse;
           table-layout: fixed;
-          font-size: 7.2pt;
-          margin-bottom: 2px;
+          font-size: ${tableFontSize};
+          margin-bottom: 3px;
         }
         .item-table th, .item-table td {
           border: 1px solid #000;
-          padding: 1.5px 3px;
+          padding: ${cellPadding};
           vertical-align: middle;
-          line-height: 1.15;
+          line-height: ${lineSpacing};
         }
         .room-title-row th {
           background: #e5e7eb !important;
           color: #000 !important;
-          font-size: 7.5pt;
+          font-size: 8.5pt;
           font-weight: bold;
-          padding: 2px 4px;
+          padding: ${roomHeaderPadding};
           border: 1px solid #000;
         }
         .room-title-flex {
@@ -529,23 +572,23 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
         .col-head-row th {
           background: #f3f4f6 !important;
           color: #000 !important;
-          font-size: 6.8pt;
+          font-size: 7.5pt;
           font-weight: bold;
-          padding: 1.5px 2px;
+          padding: 2.5px 3px;
           white-space: nowrap;
           border: 1px solid #000;
         }
         .th-stt { text-align: center; }
-        .th-name { text-align: left; padding-left: 4px; }
+        .th-name { text-align: left; padding-left: 5px; }
         .th-unit { text-align: center; }
-        .th-qty { text-align: right; padding-right: 3px; }
+        .th-qty { text-align: right; padding-right: 4px; }
         .th-price { text-align: right; padding-right: 4px; }
         .th-amt { text-align: right; padding-right: 4px; }
 
         .td-stt {
           text-align: center;
           color: #000;
-          font-size: 7pt;
+          font-size: 7.5pt;
           white-space: nowrap;
         }
         .td-name {
@@ -554,19 +597,19 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           color: #000;
           white-space: normal;
           word-break: break-word;
-          padding-left: 4px;
+          padding-left: 5px;
         }
         .td-unit {
           text-align: center;
           color: #000;
-          font-size: 7pt;
+          font-size: 7.5pt;
           white-space: nowrap;
         }
         .td-qty {
           text-align: right;
           font-weight: bold;
           color: #000;
-          padding-right: 3px;
+          padding-right: 4px;
           white-space: nowrap;
         }
         .td-price {
@@ -589,13 +632,13 @@ export function exportShoppingChecklistToPdf(preset: ShoppingPreset): boolean {
           page-break-inside: avoid;
         }
         .sig-box {
-          width: 200px;
+          width: 220px;
           text-align: center;
-          font-size: 8pt;
+          font-size: 8.5pt;
           color: #000;
         }
         .sig-space {
-          height: 38px;
+          height: 44px;
         }
       </style>
     </head>

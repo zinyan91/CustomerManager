@@ -3,7 +3,7 @@ import {
   Plus, Search, Pencil, Trash2, Package, X,
 } from 'lucide-react';
 import type { CatalogItem } from '../../lib/shoppingChecklist';
-import { fmtNumber, parseMoneyDecimalInput, formatMoneyInput } from '../../lib/utils';
+import { fmtNumber, formatMoneyInput } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 
 interface CatalogTabProps {
@@ -76,7 +76,8 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({
     e.preventDefault();
     if (!formName.trim()) return;
 
-    const price = parseMoneyDecimalInput(formPriceStr);
+    const digits = formPriceStr.replace(/\D/g, '');
+    const price = digits ? parseInt(digits, 10) : 0;
 
     if (editingItem) {
       onUpdateItem(editingItem.id, {
@@ -325,7 +326,8 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({
                   <input
                     type="text"
                     value={formPriceStr}
-                    onChange={e => setFormPriceStr(e.target.value)}
+                    onFocus={e => e.target.select()}
+                    onChange={e => setFormPriceStr(formatMoneyInput(e.target.value))}
                     className={`w-full p-2.5 rounded-xl font-mono text-accent font-bold ${UI.inputStyle}`}
                     placeholder="0"
                   />

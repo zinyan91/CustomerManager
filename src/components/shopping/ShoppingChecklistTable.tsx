@@ -2,9 +2,10 @@ import React from 'react';
 import { Plus, Trash2, Library } from 'lucide-react';
 import type { ShoppingItem, ShoppingRoom } from '../../lib/shoppingChecklist';
 import { computeItemAmount, computeRoomTotal } from '../../lib/shoppingChecklist';
-import { fmtNumber, parseMoneyDecimalInput, formatMoneyInput } from '../../lib/utils';
+import { fmtNumber } from '../../lib/utils';
 import { UI } from '../../lib/uiClasses';
 import { QuantityInput } from './QuantityInput';
+import { PriceInput } from './PriceInput';
 
 interface ShoppingChecklistTableProps {
   floorId: string;
@@ -131,15 +132,9 @@ export const ShoppingChecklistTable: React.FC<ShoppingChecklistTableProps> = ({
 
                       {/* Unit Price */}
                       <td className="py-1.5 px-1.5">
-                        <input
-                          type="text"
-                          value={item.unitPrice ? formatMoneyInput(String(item.unitPrice)) : ''}
-                          placeholder="0"
-                          onFocus={e => e.target.select()}
-                          onChange={e => {
-                            const val = parseMoneyDecimalInput(e.target.value);
-                            onUpdateItem(item.id, { unitPrice: val });
-                          }}
+                        <PriceInput
+                          value={item.unitPrice}
+                          onChange={val => onUpdateItem(item.id, { unitPrice: val })}
                           className={`w-full px-2 py-1.5 rounded-md text-right font-mono text-xs ${UI.inputStyle}`}
                         />
                       </td>

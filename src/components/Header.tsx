@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, memo } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Sun, Moon, Menu, X, LogOut, ShieldCheck, User, Search, Sparkles } from 'lucide-react';
+import { Logo } from './Logo';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
 import { LANGS, LANG_SWITCH_ENABLED } from '../lib/i18n';
@@ -64,8 +65,8 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
         </button>
 
         <div className="flex items-center gap-2.5">
-          <div className="relative flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-accent to-accent-soft text-accent-ink font-mono text-xs font-black shadow-xs tracking-tighter">
-            CM
+          <div className="relative inline-flex shrink-0">
+            <Logo className="w-8 h-8" />
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-pos ring-2 ring-panel" />
           </div>
           <h1 className="text-xs sm:text-sm font-bold uppercase tracking-[0.14em] text-ink truncate flex items-center gap-1.5">

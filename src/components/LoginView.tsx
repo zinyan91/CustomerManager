@@ -3,24 +3,7 @@ import { Lock, User, LogIn, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-rea
 import { useAuth } from '../context/AuthContext';
 import { UI, PANEL, BTN_PRIMARY, RADIUS_CONTROL } from '../lib/uiClasses';
 import { APP_VERSION } from '../lib/appVersion';
-
-const BankEmblemLogo: React.FC<{ className?: string }> = ({ className = 'w-12 h-12' }) => (
-  <svg className={className} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path
-      d="M32 4L8 14V30C8 45.2 18.2 58.4 32 62C45.8 58.4 56 45.2 56 30V14L32 4Z"
-      className="fill-accent"
-    />
-    <path
-      d="M32 8L12 16.3V30C12 42.8 20.5 53.7 32 56.8C43.5 53.7 52 42.8 52 30V16.3L32 8Z"
-      className="fill-panel"
-    />
-    <path d="M20 22H44V25H20V22Z" className="fill-accent" />
-    <path d="M22 27H26V43H22V27Z" className="fill-accent" />
-    <path d="M30 27H34V43H30V27Z" className="fill-accent" />
-    <path d="M38 27H42V43H38V27Z" className="fill-accent" />
-    <path d="M18 45H46V49H18V45Z" className="fill-accent" />
-  </svg>
-);
+import { Logo } from './Logo';
 
 export const LoginView: React.FC = () => {
   const { signIn } = useAuth();
@@ -55,7 +38,7 @@ export const LoginView: React.FC = () => {
       <div className={`w-full max-w-sm ${PANEL} p-6 sm:p-8 space-y-6`}>
 
         <div className="flex items-center gap-3 border-b border-line pb-4">
-          <BankEmblemLogo className="w-9 h-9 shrink-0" />
+          <Logo className="w-9 h-9 shrink-0" />
           <div className="min-w-0">
             <h1 className="text-sm font-semibold tracking-tight text-ink uppercase">
               Quản lý khách hàng

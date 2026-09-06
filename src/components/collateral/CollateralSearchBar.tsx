@@ -3,71 +3,35 @@ import { Search, Plus, X } from 'lucide-react';
 import { UI } from '../../lib/uiClasses';
 
 interface CollateralSearchBarProps {
-  searchCif: string;
-  setSearchCif: (val: string) => void;
-  searchOwnerName: string;
-  setSearchOwnerName: (val: string) => void;
-  searchAssetCode: string;
-  setSearchAssetCode: (val: string) => void;
+  searchText: string;
+  setSearchText: (val: string) => void;
   setColPage: (page: number) => void;
   onNewCollateral?: () => void;
 }
 
 export const CollateralSearchBar: React.FC<CollateralSearchBarProps> = ({
-  searchCif,
-  setSearchCif,
-  searchOwnerName,
-  setSearchOwnerName,
-  searchAssetCode,
-  setSearchAssetCode,
+  searchText,
+  setSearchText,
   setColPage,
   onNewCollateral,
 }) => {
-  const hasFilter = Boolean(searchCif || searchOwnerName || searchAssetCode);
+  const hasFilter = Boolean(searchText);
 
   const handleClear = () => {
-    setSearchCif('');
-    setSearchOwnerName('');
-    setSearchAssetCode('');
+    setSearchText('');
     setColPage(1);
   };
 
   return (
     <div className={`${UI.containerCardBg} rounded-2xl p-3.5 sm:p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex flex-wrap items-center gap-3 animate-in fade-in duration-150`}>
-      <div className="flex items-center space-x-2 text-accent font-bold uppercase tracking-wider text-xs pr-2 border-r border-line/60">
-        <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
-          <Search className="w-4 h-4" />
-        </div>
-        <span className="text-[11px] tracking-wider hidden sm:inline">LỌC TSBĐ</span>
-      </div>
-
-      <div className="flex-1 min-w-[130px]">
+      <div className="relative flex-1 min-w-[220px]">
+        <Search className="w-4 h-4 text-ink-faint absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           type="text"
-          placeholder="Mã CIF..."
-          value={searchCif}
-          onChange={e => { setSearchCif(e.target.value); setColPage(1); }}
-          className={`w-full rounded-xl px-3 py-2 text-xs border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
-        />
-      </div>
-
-      <div className="flex-1 min-w-[140px]">
-        <input
-          type="text"
-          placeholder="Tên chủ tài sản..."
-          value={searchOwnerName}
-          onChange={e => { setSearchOwnerName(e.target.value); setColPage(1); }}
-          className={`w-full rounded-xl px-3 py-2 text-xs border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
-        />
-      </div>
-
-      <div className="flex-1 min-w-[150px]">
-        <input
-          type="text"
-          placeholder="Số GCN / Địa chỉ / Mã TSBĐ..."
-          value={searchAssetCode}
-          onChange={e => { setSearchAssetCode(e.target.value); setColPage(1); }}
-          className={`w-full rounded-xl px-3 py-2 text-xs border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
+          placeholder="Tìm theo Mã CIF, Tên chủ tài sản, Số GCN, Địa chỉ hoặc Mã TSBĐ..."
+          value={searchText}
+          onChange={e => { setSearchText(e.target.value); setColPage(1); }}
+          className={`w-full rounded-xl pl-9 pr-3 py-2 text-xs border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
         />
       </div>
 

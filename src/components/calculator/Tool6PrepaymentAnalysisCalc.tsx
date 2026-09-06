@@ -77,7 +77,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
   return (
     <div className="space-y-4 font-app">
       {/* Title Header Card */}
-      <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-150`}>
+      <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 shadow-xs specular-card flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-150`}>
         <div className="text-xs font-bold tracking-tight text-accent flex items-center space-x-2">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
             <Award className="w-4 h-4" />
@@ -164,7 +164,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Cột 1: Thông tin Khoản vay & Số tiền trả trước */}
-        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
+        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4`}>
           <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-2 border-b border-line/60 pb-3">
             <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
               <DollarSign className="w-3.5 h-3.5" />
@@ -254,7 +254,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
         </div>
 
         {/* Cột 2: Khung phí phạt trả trước hạn */}
-        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
+        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4`}>
           <div className="font-bold text-xs text-neg tracking-tight flex items-center justify-between border-b border-line/60 pb-3">
             <div className="flex items-center space-x-2">
               <div className="p-1.5 rounded-lg bg-neg-soft text-neg shrink-0 shadow-2xs">
@@ -390,7 +390,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
             />
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-surface border border-line/70 space-y-1.5 text-xs">
+          <div className="pl-4 border-l-2 border-line/40 space-y-1.5 text-xs">
             <div className="flex justify-between items-center text-ink-muted text-[11px]">
               <span>Dư nợ còn lại sau trả trước:</span>
               <strong className="font-mono text-accent font-bold">{fmtMoney(result.remainingBalanceAfterPrepay)}</strong>

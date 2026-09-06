@@ -1,9 +1,10 @@
 import React from 'react';
-import { CalendarClock, Copy, Loader2, Save } from 'lucide-react';
+import { CalendarClock, Copy, Loader2, Save, Trash2 } from 'lucide-react';
 import { DateInput } from '../DateInput';
 import { fmtDate } from '../../lib/utils';
 import type { RateProgram, RateProgramKind } from '../../lib/rateQuote';
 import { useRateProgramAdmin } from '../../hooks/useRateProgramAdmin';
+import { useConfirm } from '../../context/ConfirmContext';
 
 interface RateProgramAdminPanelProps {
   cardBg: string;
@@ -19,6 +20,21 @@ export const RateProgramAdminPanel: React.FC<RateProgramAdminPanelProps> = ({
   cardBg, labelCls, inputCls, programs, kind, activeProgram, reload,
 }) => {
   const a = useRateProgramAdmin({ programs, kind, activeProgram, reload });
+  const confirm = useConfirm();
+
+  const handleDelete = async () => {
+    if (!a.source || a.source.SourceVerified) return;
+    const ok = await confirm({
+      title: 'Xóa chương trình lãi suất',
+      message: `Xóa chương trình "${a.source.DocumentNumber}" (${a.source.Name})? `
+        + 'Toàn bộ bảng lãi suất, phí, điều kiện và thẩm quyền của kỳ này sẽ bị xóa theo. '
+        + 'Không hoàn tác được.',
+      confirmText: 'Xóa chương trình',
+      cancelText: 'Huỷ',
+      tone: 'danger',
+    });
+    if (ok) a.deleteProgram();
+  };
 
   return (
     <div className={`${cardBg} rounded-lg p-4 border space-y-4`}>
@@ -34,18 +50,35 @@ export const RateProgramAdminPanel: React.FC<RateProgramAdminPanelProps> = ({
         <>
           <div>
             <label className={labelCls}>Chương trình</label>
-            <select
-              value={a.sourceId ?? ''}
-              onChange={e => a.setSourceId(parseInt(e.target.value, 10))}
-              className={`${inputCls} font-bold`}
-            >
-              {a.kindPrograms.map(p => (
-                <option key={p.Id} value={p.Id}>
-                  {p.DocumentNumber} — {fmtDate(p.EffectiveFrom)} → {p.EffectiveTo ? fmtDate(p.EffectiveTo) : 'không giới hạn'}
-                  {p.SourceVerified ? '' : ' (chưa đối chiếu)'}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                value={a.sourceId ?? ''}
+                onChange={e => a.setSourceId(parseInt(e.target.value, 10))}
+                className={`${inputCls} font-bold flex-1`}
+              >
+                {a.kindPrograms.map(p => (
+                  <option key={p.Id} value={p.Id}>
+                    {p.DocumentNumber} — {fmtDate(p.EffectiveFrom)} → {p.EffectiveTo ? fmtDate(p.EffectiveTo) : 'không giới hạn'}
+                    {p.SourceVerified ? '' : ' (chưa đối chiếu)'}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={a.busy || !a.source || a.source.SourceVerified}
+                title={a.source && a.source.SourceVerified
+                  ? 'Bản đã đối chiếu văn bản gốc — không xóa được'
+                  : 'Xóa chương trình chưa đối chiếu này'}
+                className="shrink-0 border border-neg/40 text-neg hover:bg-neg hover:text-surface disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-neg text-xs px-3 py-2 rounded-md font-bold flex items-center gap-1.5 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Xóa</span>
+              </button>
+            </div>
+            <div className="text-[11px] text-ink-faint mt-1">
+              Chỉ xóa được chương trình <strong>chưa đối chiếu văn bản gốc</strong> (do nhân bản tạo ra). Bản gốc đã đối chiếu được bảo vệ.
+            </div>
           </div>
 
           <div className="rounded-md border border-line p-3 space-y-2">

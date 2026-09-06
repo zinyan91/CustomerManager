@@ -97,7 +97,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-pos-soft/25 border border-pos/30 space-y-2 shadow-2xs">
+          <div className="pl-4 border-l-2 border-pos/40 space-y-2">
             <div className="flex justify-between items-center text-xs">
               <span className="text-ink-muted text-[11px]">Lãi phẳng {flatRateMonthlyStr}%/tháng tương đương:</span>
               <strong className="font-mono text-xl font-extrabold text-pos">
@@ -151,7 +151,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-accent-soft/25 border border-accent/30 space-y-2 shadow-2xs">
+          <div className="pl-4 border-l-2 border-accent/40 space-y-2">
             <div className="flex justify-between items-center text-xs">
               <span className="text-ink-muted text-[11px]">Lãi suất hiệu lực thực tế (EAR):</span>
               <strong className="font-mono text-xl font-extrabold text-accent">

@@ -19,9 +19,7 @@ export function useCollateralController() {
   const [selectedCollateral, setSelectedCollateral] = useState<Collateral | null>(null);
   const [formCollapsed, setFormCollapsed] = useState(false);
 
-  const [searchCif, setSearchCif] = useState('');
-  const [searchOwnerName, setSearchOwnerName] = useState('');
-  const [searchAssetCode, setSearchAssetCode] = useState('');
+  const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'expired' | 'expiring_soon' | 'valid' | 'missing'>('all');
 
   const [inputCustomerId, setInputCustomerId] = useState<number | ''>('');
@@ -219,13 +217,13 @@ export function useCollateralController() {
 
   const filteredCollaterals = useMemo(() => customerScopedCollaterals.filter(col => {
     const cust = customers.find(c => c.Id === col.CustomerId);
-    if (searchCif.trim() && !cust?.CifKh.toLowerCase().includes(searchCif.trim().toLowerCase())) return false;
-    if (searchOwnerName.trim() && !cust?.FullName.toLowerCase().includes(searchOwnerName.trim().toLowerCase())) return false;
-    if (searchAssetCode.trim()) {
-      const q = searchAssetCode.trim().toLowerCase();
+    const q = searchText.trim().toLowerCase();
+    if (q) {
+      const cif = (cust?.CifKh || '').toLowerCase();
+      const name = (cust?.FullName || '').toLowerCase();
       const code = (col.AssetCode || '').toLowerCase();
       const addr = (col.Address || '').toLowerCase();
-      if (!code.includes(q) && !addr.includes(q)) return false;
+      if (!cif.includes(q) && !name.includes(q) && !code.includes(q) && !addr.includes(q)) return false;
     }
     if (statusFilter !== 'all') {
       const st = appraisalStatus(col);
@@ -235,7 +233,7 @@ export function useCollateralController() {
       if (statusFilter === 'valid' && st !== 'valid') return false;
     }
     return true;
-  }), [customerScopedCollaterals, customers, searchCif, searchOwnerName, searchAssetCode, statusFilter]);
+  }), [customerScopedCollaterals, customers, searchText, statusFilter]);
 
   const totalPages = Math.ceil(filteredCollaterals.length / COL_PAGE_SIZE) || 1;
   const paginatedCollaterals = useMemo(() =>
@@ -271,12 +269,8 @@ export function useCollateralController() {
     selectedCollateral,
     formCollapsed,
     setFormCollapsed,
-    searchCif,
-    setSearchCif,
-    searchOwnerName,
-    setSearchOwnerName,
-    searchAssetCode,
-    setSearchAssetCode,
+    searchText,
+    setSearchText,
     statusFilter,
     setStatusFilter,
     inputCustomerId,

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { cloneRateProgramAPI, updateRateProgramAPI } from '../lib/api';
+import { cloneRateProgramAPI, updateRateProgramAPI, deleteRateProgramAPI } from '../lib/api';
 import { checkProgramPeriod, type RateProgram, type RateProgramKind } from '../lib/rateQuote';
 
 interface UseRateProgramAdminArgs {
@@ -108,6 +108,25 @@ export function useRateProgramAdmin({
     }
   }, [source, programs, cloneDocNumber, cloneName, cloneDocDate, cloneFrom, cloneTo, reload]);
 
+  const deleteProgram = useCallback(async () => {
+    if (!source) return;
+    if (source.SourceVerified) {
+      setMessage('Chương trình đã đối chiếu văn bản gốc, không xóa được. Chỉ xóa được bản chưa đối chiếu (do nhân bản tạo ra).');
+      return;
+    }
+    setBusy(true);
+    setMessage('');
+    try {
+      await deleteRateProgramAPI(source.Id);
+      await reload();
+      setMessage('Đã xóa chương trình.');
+    } catch (err: unknown) {
+      setMessage(err instanceof Error ? err.message : 'Xóa thất bại.');
+    } finally {
+      setBusy(false);
+    }
+  }, [source, reload]);
+
   return {
     kindPrograms,
     source,
@@ -131,5 +150,6 @@ export function useRateProgramAdmin({
     message,
     savePeriod,
     cloneProgram,
+    deleteProgram,
   };
 }

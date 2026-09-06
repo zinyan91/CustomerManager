@@ -51,3 +51,22 @@ Tài liệu này tổng hợp toàn bộ các quy chuẩn làm việc, phong cá
 - Kỹ năng định dạng văn bản: [SKILL.md](file:///d:/CustomerManager/.agents/skills/document-formatting/SKILL.md)
 - Quy chuẩn lưu trữ Supabase + Cloudflare R2: [dual-storage-supabase-r2.md](file:///d:/CustomerManager/.agents/rules/dual-storage-supabase-r2.md)
 - Quy chuẩn nghiệp vụ tín dụng & ngân hàng: [tin-dung SKILL.md](file:///d:/CustomerManager/.agents/skills/tin-dung/SKILL.md)
+
+---
+
+## 5. Quy Chuẩn Đối Chiếu & Chuẩn Hóa Danh Mục ISO (Windows / Windows Server)
+
+- **Ngôn ngữ:** Chỉ lấy bản tiếng Anh (`en-us` / English).
+- **Phạm vi loại trừ (Bỏ qua 100%):**
+  - Không phải bản cài đặt (Language Pack, SDK, Tools, Symbols, Patches, Checked Builds).
+  - Driver Kits (DDK, WDK).
+  - Kiến trúc ARM (ARM64, ARM32).
+  - Ảnh đĩa ảo dựng sẵn (VHD, VHDX).
+  - Bản thử nghiệm / Xem trước (**Preview**, Insider Preview).
+  - Bản đánh giá dùng thử trùng lặp (EVAL) khi đã có bản Retail/VLSC chính thức.
+  - Các bản đám mây riêng của Azure (**Azure Stack HCI** / `SERVERAZURESTACKHCICOR`, **Azure Edition** / `SERVERDCAZURE`).
+- **Chuẩn hóa & Khớp nối dữ liệu:**
+  - Tên file có thể sai/nhầm: Bắt buộc đối chiếu mã băm SHA-1 từ tệp NFO và RG-Adguard để lấy tên gốc chuẩn.
+  - Kiến trúc ghi rõ ràng (`x64`, `x86`).
+  - Đường dẫn Google Drive chuẩn hóa định dạng tải trực tiếp: `https://docs.google.com/uc?export=download&id=...`.
+

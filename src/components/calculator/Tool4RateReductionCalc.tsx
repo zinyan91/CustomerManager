@@ -317,7 +317,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
   return (
     <div className="space-y-4 font-app">
       {/* Title & Mode Switcher Header Card */}
-      <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex flex-col md:flex-row items-start md:items-center justify-between gap-3 animate-in fade-in duration-150`}>
+      <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 shadow-xs specular-card flex flex-col md:flex-row items-start md:items-center justify-between gap-3 animate-in fade-in duration-150`}>
         <div>
           <h2 className="text-xs font-bold tracking-tight text-accent flex items-center space-x-2">
             <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
@@ -353,7 +353,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
 
       {calcMode === 'tdh' && (
         <div className="space-y-4">
-          <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
+          <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4`}>
             <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-2 border-b border-line/60 pb-3">
               <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
                 <Calculator className="w-3.5 h-3.5" />
@@ -500,7 +500,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-            <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex items-center justify-between`}>
+            <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 shadow-xs specular-card flex items-center justify-between`}>
               <div>
                 <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">TỔNG TIỀN GIẢM LÃI DỰ KIẾN</div>
                 <div className="text-xl font-extrabold text-pos mt-1 font-mono">
@@ -517,7 +517,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
               </div>
             </div>
 
-            <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex items-center justify-between`}>
+            <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 shadow-xs specular-card flex items-center justify-between`}>
               <div>
                 <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">LÃI BAN ĐẦU vs SAU GIẢM</div>
                 <div className="text-xs sm:text-sm font-extrabold text-accent mt-1 font-mono">
@@ -536,7 +536,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
               </div>
             </div>
 
-            <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex items-center justify-between`}>
+            <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 shadow-xs specular-card flex items-center justify-between`}>
               <div>
                 <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">MARGIN SAU GIẢM vs COF</div>
                 <div className="text-xl font-extrabold text-warn mt-1 font-mono">
@@ -562,7 +562,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
             </div>
           )}
 
-          <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5`}>
+          <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-3.5`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-line/60 pb-3">
               <div className="flex items-center space-x-2">
                 <Calendar className="w-4 h-4 text-accent" />
@@ -649,7 +649,7 @@ export const Tool4RateReductionCalc: React.FC<Tool4Props> = () => {
 
       {calcMode === 'quick' && (
         <div className="space-y-4">
-          <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5`}>
+          <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-3.5`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-line/60 pb-3">
               <div className="flex items-center space-x-2">
                 <Percent className="w-4 h-4 text-accent" />

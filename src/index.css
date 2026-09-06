@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 @import "tailwindcss";
 @source not "../docs";
 
@@ -305,17 +304,15 @@ h3, h4, h5, h6 {
 }
 
 .glass-floating-panel {
-  background: rgba(15, 23, 42, 0.82);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(51, 65, 85, 0.65);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  background: var(--t-panel);
+  border: 1px solid var(--t-line);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.25);
 }
 
 :root.light .glass-floating-panel {
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(203, 213, 225, 0.7);
-  box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  background: var(--t-panel);
+  border: 1px solid var(--t-line);
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.06);
 }
 
 /* FinTech Next-Gen Table System */
@@ -326,9 +323,7 @@ h3, h4, h5, h6 {
 }
 
 .table-fintech thead th {
-  background: rgba(var(--color-surface), 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--t-surface);
   color: var(--color-ink-faint);
   font-size: 10px;
   font-weight: 700;
@@ -383,6 +378,31 @@ h3, h4, h5, h6 {
 .font-mono.text-3xl,
 .text-3xl.font-mono {
   font-size: calc(var(--fs-mono) * 1.65);
+}
+
+/* ============================================================
+   HIỆU NĂNG: gỡ backdrop-blur nặng khỏi panel / thẻ / bảng / header.
+
+   Vì sao: toàn app dùng ~196 chỗ backdrop-blur, đa số backdrop-blur-xl
+   (bán kính 24px), áp lên các panel nằm trong vùng cuộn. Mỗi khung hình
+   khi cuộn, trình duyệt phải lấy mẫu và làm mờ lại toàn bộ nền phía sau
+   từng panel — đây là nguồn giật chính. Các panel này vốn đã đục 85-95%
+   (bg-panel/85, bg-panel/95...) nên blur gần như không nhìn thấy mà lại
+   rất tốn GPU.
+
+   Chỉ vô hiệu các tầng nặng (md trở lên). Giữ backdrop-blur-xs và
+   backdrop-blur-sm cho lớp nền mờ của modal — chúng nhẹ và chỉ hiện khi
+   modal mở (không cuộn), không gây giật.
+
+   Khai không nằm trong @layer nên thắng utility của Tailwind theo tầng
+   cascade — cùng cơ chế với phần ghi đè cỡ chữ ở trên. */
+.backdrop-blur-md,
+.backdrop-blur-lg,
+.backdrop-blur-xl,
+.backdrop-blur-2xl,
+.backdrop-blur-3xl {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* Bản in tự dựng HTML riêng, không ăn theo thiết lập màn hình. */

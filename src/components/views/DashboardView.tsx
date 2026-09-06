@@ -14,7 +14,7 @@ import {
 } from '../../lib/dueList';
 import { parseCollateralIds } from '../../lib/creditLimit';
 import { kunnPrincipal } from '../../lib/loanMath';
-import { outstandingOf, canQuickSettle } from '../../lib/loanMath';
+import { outstandingOf, canQuickSettle, debtGroupFromOverdueDays } from '../../lib/loanMath';
 import { useQuickSettle } from '../../hooks/useQuickSettle';
 import { useNavigate } from 'react-router';
 import { customerPath } from '../../lib/customerRoutes';
@@ -108,6 +108,29 @@ export const DashboardView: React.FC = () => {
     return map;
   }, [duePeriods]);
 
+  // Nhóm nợ HIỆU LỰC: lấy CAO HƠN giữa nhóm lưu trong CSDL và nhóm tự tính từ số
+  // ngày quá hạn thực tế của các kỳ chưa trả. Field DebtGroup lưu hay bị cũ (không
+  // cập nhật khi kỳ due trôi qua hạn), nên nếu chỉ đọc field lưu thì KH trễ 22 ngày
+  // vẫn hiện Nhóm 1. Lấy max để không bỏ sót quá hạn mà vẫn giữ nhóm banker hạ tay
+  // xuống thấp hơn (vì lý do định tính / chéo nhóm).
+  const debtGroupByContract = useMemo(() => {
+    const today = todayIso();
+    const map = new Map<number, number>();
+    for (const c of contracts) {
+      if (c.IsSettled) continue;
+      let maxOverdue = 0;
+      for (const p of periodsByContract.get(c.Id) || []) {
+        if (p.IsPaid) continue;
+        const iso = toIsoDate(p.DueDate);
+        if (!iso) continue;
+        const dl = daysUntil(iso, today);
+        if (dl !== null && dl < 0 && -dl > maxOverdue) maxOverdue = -dl;
+      }
+      map.set(c.Id, Math.max(c.DebtGroup ?? 1, debtGroupFromOverdueDays(maxOverdue)));
+    }
+    return map;
+  }, [contracts, periodsByContract]);
+
   const {
     chuaTatToan,
     totalCustomersCount,
@@ -157,7 +180,7 @@ export const DashboardView: React.FC = () => {
     });
 
     const groupStats = [1, 2, 3, 4, 5].map(group => {
-      const matched = unSettled.filter(c => (c.DebtGroup ?? 1) === group);
+      const matched = unSettled.filter(c => (debtGroupByContract.get(c.Id) ?? (c.DebtGroup ?? 1)) === group);
       const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
       return { group, count: matched.length, amount };
     });
@@ -177,7 +200,7 @@ export const DashboardView: React.FC = () => {
       loanMethodStats: methodStats,
       debtGroupStats: groupStats,
     };
-  }, [customers, contracts, collaterals, cardContracts, creditContracts, paidPrincipalMap]);
+  }, [customers, contracts, collaterals, cardContracts, creditContracts, paidPrincipalMap, debtGroupByContract]);
 
   const [onlyGroup1, setOnlyGroup1] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -193,7 +216,7 @@ export const DashboardView: React.FC = () => {
     dueHmtdList,
     dueCollateralList,
   } = useMemo(() => {
-    const activeContracts = chuaTatToan.filter(c => !onlyGroup1 || (c.DebtGroup ?? 1) === 1);
+    const activeContracts = chuaTatToan.filter(c => !onlyGroup1 || (debtGroupByContract.get(c.Id) ?? (c.DebtGroup ?? 1)) === 1);
 
     const monthList = activeContracts.map(c => {
       const cus = customerMap.get(c.CustomerId);
@@ -259,7 +282,7 @@ export const DashboardView: React.FC = () => {
       dueHmtdList: hmtdList,
       dueCollateralList: colList,
     };
-  }, [chuaTatToan, onlyGroup1, customerMap, collaterals, periodsByContract, hdtdById, hdtdByNumber]);
+  }, [chuaTatToan, onlyGroup1, customerMap, collaterals, periodsByContract, hdtdById, hdtdByNumber, debtGroupByContract]);
 
   const soNgay = <T extends { daysLeft?: number | null }>(x: T) => x.daysLeft;
 

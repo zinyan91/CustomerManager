@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
 
 export type DateFormat = 'dd/mm/yyyy' | 'mm/dd/yyyy' | 'yyyy-mm-dd';
 
@@ -18,15 +18,20 @@ export const DateFormatProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return 'dd/mm/yyyy';
   });
 
-  const setDateFormat = (format: DateFormat) => {
+  const setDateFormat = useCallback((format: DateFormat) => {
     setDateFormatState(format);
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('app_date_format', format);
     }
-  };
+  }, []);
+
+  const value = useMemo<DateFormatContextType>(() => ({
+    dateFormat,
+    setDateFormat,
+  }), [dateFormat, setDateFormat]);
 
   return (
-    <DateFormatContext.Provider value={{ dateFormat, setDateFormat }}>
+    <DateFormatContext.Provider value={value}>
       {children}
     </DateFormatContext.Provider>
   );

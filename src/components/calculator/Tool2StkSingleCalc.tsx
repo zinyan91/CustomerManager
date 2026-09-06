@@ -214,7 +214,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
         {/* Segmented Selectors: Collateral Type & Payment Method */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
           {/* Collateral Type */}
-          <div className="p-3 rounded-2xl border border-line/60 bg-surface/50 space-y-2">
+          <div className="pl-4 border-l-2 border-accent/40 space-y-2">
             <div className="text-[11px] font-bold uppercase tracking-wider text-ink-muted flex items-center gap-1.5">
               <Coins className="w-3.5 h-3.5 text-accent" />
               <span>LOẠI TÀI SẢN BẢO ĐẢM</span>
@@ -241,7 +241,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
           </div>
 
           {/* Interest Payment Method */}
-          <div className="p-3 rounded-2xl border border-line/60 bg-surface/50 space-y-2">
+          <div className="pl-4 border-l-2 border-warn/40 space-y-2">
             <div className="text-[11px] font-bold uppercase tracking-wider text-ink-muted flex items-center gap-1.5">
               <FileSpreadsheet className="w-3.5 h-3.5 text-warn" />
               <span>PHƯƠNG THỨC LÃNH LÃI TIỀN GỬI / CCTG</span>
@@ -307,7 +307,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           
           {/* Box 1: Thông tin Tiền gửi / CCTG */}
-          <div className="p-4 sm:p-5 rounded-2xl border border-line/60 bg-surface/60 backdrop-blur-md space-y-3.5 shadow-2xs">
+          <div className="pl-4 border-l-2 border-warn/40 space-y-3.5">
             <div className="font-bold text-warn text-xs uppercase tracking-wider flex items-center justify-between border-b border-line/50 pb-2.5">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-warn" />
@@ -483,7 +483,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
           </div>
 
           {/* Box 2: Danh sách các Khoản Vay Cầm Cố */}
-          <div className="p-4 sm:p-5 rounded-2xl border border-line/60 bg-surface/60 backdrop-blur-md space-y-3.5 shadow-2xs">
+          <div className="pl-4 border-l-2 border-accent/40 space-y-3.5">
             <div className="font-bold text-accent text-xs uppercase tracking-wider flex items-center justify-between border-b border-line/50 pb-2.5">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-accent" />
@@ -509,7 +509,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
               {loans.map((loan, idx) => {
                 const itemResult = result.loanItems[idx];
                 return (
-                  <div key={loan.id} className="p-3.5 rounded-xl border border-line/60 bg-panel/60 space-y-2.5 relative">
+                  <div key={loan.id} className="pb-3 border-b border-accent/15 last:border-b-0 last:pb-0 space-y-2.5 relative">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 rounded-md bg-accent-soft text-accent font-bold font-mono text-[10px]">

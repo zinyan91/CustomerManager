@@ -84,10 +84,10 @@ function DataTableImpl<T>({
           return (
             <li
               key={k}
-              className={`rounded-[var(--r-panel)] border transition-all p-4 space-y-3 shadow-xs specular-card backdrop-blur-xl ${
+              className={`rounded-[var(--r-panel)] border transition-all p-4 space-y-3 shadow-xs ${
                 isSelected?.(row)
                   ? 'border-accent/50 bg-accent-soft/70 shadow-sm ring-1 ring-accent/30'
-                  : 'border-line/70 bg-panel/85 hover:bg-panel'
+                  : 'border-line/70 bg-panel hover:bg-surface/70'
               }`}
             >
               <div
@@ -161,11 +161,11 @@ function DataTableImpl<T>({
 
       {/* Desktop Table (hidden md:block) */}
       <div
-        className={`hidden md:block overflow-x-auto rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card ${maxHeight ? 'overflow-y-auto' : ''}`}
+        className={`hidden md:block overflow-x-auto rounded-2xl border border-line/65 bg-panel shadow-xs ${maxHeight ? 'overflow-y-auto' : ''}`}
         style={maxHeight ? { maxHeight } : undefined}
       >
         <table className="w-full text-left text-xs border-collapse font-app">
-          <thead className={`${stickyHeader ? 'sticky top-0 z-20 bg-surface/95 backdrop-blur-md' : 'bg-surface/95'} border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint ${maxHeight ? 'shadow-2xs' : ''}`}>
+          <thead className={`${stickyHeader ? 'sticky top-0 z-20 bg-surface' : 'bg-surface'} border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint ${maxHeight ? 'shadow-2xs' : ''}`}>
             <tr>
               {columns.map((c) => (
                 <th
@@ -178,7 +178,7 @@ function DataTableImpl<T>({
               ))}
               {actions && (
                 <th
-                  className="px-4 py-3 whitespace-nowrap text-center sticky right-0 z-20 bg-surface/95 backdrop-blur-md border-l border-line/70 text-ink-faint"
+                  className="px-4 py-3 whitespace-nowrap text-center sticky right-0 z-20 bg-surface border-l border-line/70 text-ink-faint"
                 >
                   {actionsLabel}
                 </th>

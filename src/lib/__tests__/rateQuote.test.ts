@@ -361,10 +361,10 @@ describe('buildDepositRateRows — gộp bảng huy động theo cột kênh', (
   });
 });
 
-describe('checkProgramPeriod — chặn hai chương trình cùng loại chồng lấn ngày', () => {
+describe('checkProgramPeriod — cho phép chồng lấn (bản mới nhất thắng), chỉ chặn khi trùng đúng ngày bắt đầu', () => {
   const pool = [shortTerm, previous, unverifiedTdh];
 
-  it('khoảng ngày hợp lệ, không chồng lấn thì cho qua', () => {
+  it('khoảng ngày hợp lệ, không trùng ngày bắt đầu thì cho qua', () => {
     const r = checkProgramPeriod(pool, {
       kind: 'cho_vay_ngan_han', effectiveFrom: '2026-10-01', effectiveTo: '2026-12-31',
     });
@@ -386,15 +386,34 @@ describe('checkProgramPeriod — chặn hai chương trình cùng loại chồng
     expect(r.message).toContain('trước ngày bắt đầu');
   });
 
-  it('chồng lấn với chương trình cùng loại thì chặn và nêu số văn bản', () => {
+  it('CHỒNG LẤN ngày nhưng khác ngày bắt đầu thì CHO QUA — công văn mới đè kỳ cũ', () => {
+    // 2026-09-15 nằm trong kỳ shortTerm (2026-07-22 → 2026-09-30), khác ngày bắt đầu.
+    // Đây chính là ca người dùng gặp: ra kỳ mới trước khi kỳ cũ hết.
     const r = checkProgramPeriod(pool, {
       kind: 'cho_vay_ngan_han', effectiveFrom: '2026-09-15', effectiveTo: '2026-12-31',
     });
-    expect(r.ok).toBe(false);
-    expect(r.message).toContain('2274/2026/TB-BĐH');
+    expect(r.ok).toBe(true);
   });
 
-  it('chồng lấn với chương trình KHÁC loại thì không sao', () => {
+  it('mở kỳ mới đè lên kỳ đang để ngỏ ngày kết thúc vẫn cho qua', () => {
+    // unverifiedTdh (trung dài hạn) mở từ 2026-07-22, EffectiveTo null.
+    const r = checkProgramPeriod(pool, {
+      kind: 'cho_vay_trung_dai_han', effectiveFrom: '2026-12-01', effectiveTo: null,
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it('TRÙNG ĐÚNG ngày bắt đầu với chương trình cùng loại thì chặn và nêu số văn bản', () => {
+    const r = checkProgramPeriod(pool, {
+      kind: 'cho_vay_ngan_han', effectiveFrom: '2026-07-22', effectiveTo: '2026-12-31',
+    });
+    expect(r.ok).toBe(false);
+    expect(r.message).toContain('2274/2026/TB-BĐH');
+    expect(r.message).toContain('cùng ngày bắt đầu');
+  });
+
+  it('trùng ngày bắt đầu nhưng KHÁC loại thì không sao', () => {
+    // unverifiedTdh cũng bắt đầu 2026-07-22 nhưng là trung dài hạn, không xung đột với huy động.
     const r = checkProgramPeriod(pool, {
       kind: 'huy_dong', effectiveFrom: '2026-07-22', effectiveTo: '2026-12-31',
     });
@@ -404,28 +423,11 @@ describe('checkProgramPeriod — chặn hai chương trình cùng loại chồng
   it('bỏ qua chính nó khi đang sửa ngày của chương trình đang có', () => {
     const period = {
       kind: 'cho_vay_ngan_han' as const,
-      effectiveFrom: '2026-07-28',
+      effectiveFrom: '2026-07-22',
       effectiveTo: '2026-12-31',
     };
     expect(checkProgramPeriod(pool, period).ok).toBe(false);
     expect(checkProgramPeriod(pool, { ...period, id: 1 }).ok).toBe(true);
-  });
-
-  it('kề nhau không tính là chồng lấn', () => {
-    expect(checkProgramPeriod(pool, {
-      kind: 'cho_vay_ngan_han', effectiveFrom: '2026-10-01', effectiveTo: null,
-    }).ok).toBe(true);
-    expect(checkProgramPeriod(pool, {
-      kind: 'cho_vay_ngan_han', effectiveFrom: '2026-09-30', effectiveTo: null,
-    }).ok).toBe(false);
-  });
-
-  it('chương trình để ngỏ ngày kết thúc thì chặn mọi thứ sau nó', () => {
-    const r = checkProgramPeriod(pool, {
-      kind: 'cho_vay_trung_dai_han', effectiveFrom: '2030-01-01', effectiveTo: null,
-    });
-    expect(r.ok).toBe(false);
-    expect(r.message).toContain('TAM-TDH-2026');
   });
 
   it('findOverlappingPrograms trả về đúng danh sách chương trình vướng', () => {

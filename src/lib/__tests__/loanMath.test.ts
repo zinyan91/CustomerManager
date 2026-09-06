@@ -9,6 +9,7 @@ import {
   generateSchedule,
   calculateOverdueDaysFromDates,
   getAutoDebtGroupInfo,
+  debtGroupFromOverdueDays,
   recalculateSchedules,
   kunnPrincipal,
   computeOutstandingBalance,
@@ -351,6 +352,30 @@ describe('calculateOverdueDaysFromDates', () => {
   it('thiếu ngày thì trả 0', () => {
     expect(calculateOverdueDaysFromDates(null, '2026-03-15')).toBe(0);
     expect(calculateOverdueDaysFromDates('2026-03-20', null)).toBe(0);
+  });
+});
+
+describe('debtGroupFromOverdueDays — ngưỡng nhóm nợ dùng chung', () => {
+  it('dưới 10 ngày là Nhóm 1', () => {
+    expect(debtGroupFromOverdueDays(0)).toBe(1);
+    expect(debtGroupFromOverdueDays(9)).toBe(1);
+  });
+  it('10–90 ngày là Nhóm 2 (ca người dùng: trễ 22 ngày)', () => {
+    expect(debtGroupFromOverdueDays(10)).toBe(2);
+    expect(debtGroupFromOverdueDays(22)).toBe(2);
+    expect(debtGroupFromOverdueDays(90)).toBe(2);
+  });
+  it('91–180 ngày là Nhóm 3', () => {
+    expect(debtGroupFromOverdueDays(91)).toBe(3);
+    expect(debtGroupFromOverdueDays(180)).toBe(3);
+  });
+  it('181–360 ngày là Nhóm 4', () => {
+    expect(debtGroupFromOverdueDays(181)).toBe(4);
+    expect(debtGroupFromOverdueDays(360)).toBe(4);
+  });
+  it('trên 360 ngày là Nhóm 5', () => {
+    expect(debtGroupFromOverdueDays(361)).toBe(5);
+    expect(debtGroupFromOverdueDays(813)).toBe(5);
   });
 });
 

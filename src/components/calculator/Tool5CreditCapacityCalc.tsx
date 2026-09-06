@@ -158,7 +158,7 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-accent-soft/25 border border-accent/30 space-y-2 shadow-2xs">
+          <div className="pl-4 border-l-2 border-accent/40 space-y-2">
             <div className="flex justify-between items-center text-xs">
               <span className="text-ink-muted text-[11px]">Khả năng trả nợ gốc+lãi hàng tháng:</span>
               <strong className="font-mono text-accent font-bold">{fmtMoney(dtiMaxMonthlyPayment)} / tháng</strong>
@@ -227,7 +227,7 @@ export const Tool5CreditCapacityCalc: React.FC<Tool5Props> = () => {
             )}
           </div>
 
-          <div className="p-4 rounded-2xl bg-warn-soft/25 border border-warn/30 space-y-2 shadow-2xs">
+          <div className="pl-4 border-l-2 border-warn/40 space-y-2">
             <div className="flex justify-between items-center text-xs">
               <span className="text-ink-muted text-[11px]">Tỷ lệ LTV áp dụng:</span>
               <strong className="font-mono text-warn font-bold">{(activeLtv * 100).toFixed(0)}% Giá trị TS</strong>

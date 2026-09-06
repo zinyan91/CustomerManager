@@ -26,7 +26,6 @@ import {
   computeFinancialRatios,
 } from '../../lib/corporateFinancialFormulas';
 import { exportCorporateFinancialToExcel } from '../../lib/corporateFinancialExport';
-import { parseCorporateFinancialExcel } from '../../lib/corporateFinancialImport';
 import { B01aFinancialPositionTab } from '../corporateFinancial/B01aFinancialPositionTab';
 import { B02IncomeStatementTab } from '../corporateFinancial/B02IncomeStatementTab';
 import { B01bBalanceSheetTab } from '../corporateFinancial/B01bBalanceSheetTab';
@@ -73,6 +72,7 @@ export const CorporateFinancialView: React.FC = () => {
 
     try {
       const buffer = await file.arrayBuffer();
+      const { parseCorporateFinancialExcel } = await import('../../lib/corporateFinancialImport');
       const res = parseCorporateFinancialExcel(buffer);
       setProfile(res.profile);
 

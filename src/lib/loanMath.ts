@@ -342,6 +342,17 @@ export function computeSchedulePenalty(
   };
 }
 
+// Ngưỡng phân nhóm nợ theo số ngày quá hạn lớn nhất (chuẩn Thông tư 11/2021):
+// Nhóm 1 < 10 ngày, Nhóm 2: 10–90, Nhóm 3: 91–180, Nhóm 4: 181–360, Nhóm 5: > 360.
+// Tách riêng để dashboard và portfolio dùng CHUNG một nguồn ngưỡng, không lệch nhau.
+export function debtGroupFromOverdueDays(maxOverdueDays: number): number {
+  if (maxOverdueDays >= 10 && maxOverdueDays <= 90) return 2;
+  if (maxOverdueDays >= 91 && maxOverdueDays <= 180) return 3;
+  if (maxOverdueDays >= 181 && maxOverdueDays <= 360) return 4;
+  if (maxOverdueDays > 360) return 5;
+  return 1;
+}
+
 export interface AutoDebtGroupInfo {
   debtGroup: number;
   maxOverdueDays: number;
@@ -378,13 +389,7 @@ export function getAutoDebtGroupInfo(
     }
   }
 
-  let debtGroup = 1;
-  if (maxOverdueDays >= 10 && maxOverdueDays <= 90) debtGroup = 2;
-  else if (maxOverdueDays >= 91 && maxOverdueDays <= 180) debtGroup = 3;
-  else if (maxOverdueDays >= 181 && maxOverdueDays <= 360) debtGroup = 4;
-  else if (maxOverdueDays > 360) debtGroup = 5;
-
-  return { debtGroup, maxOverdueDays, worstDueDate };
+  return { debtGroup: debtGroupFromOverdueDays(maxOverdueDays), maxOverdueDays, worstDueDate };
 }
 
 export function isBulletPrincipal(

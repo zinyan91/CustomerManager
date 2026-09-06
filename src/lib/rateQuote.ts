@@ -155,6 +155,23 @@ export function findOverlappingPrograms(
   });
 }
 
+// Chương trình cùng loại bắt đầu ĐÚNG cùng một ngày là trường hợp resolver
+// (findActiveProgram) không phân định được bản nào áp dụng — vì nó chọn bản có
+// EffectiveFrom mới nhất, hai bản cùng ngày bắt đầu sẽ hoà. Đây là ràng buộc
+// duy nhất còn giữ; mọi chồng lấn khác đều hợp lệ (bản mới nhất đè bản cũ).
+export function findSameStartProgram(
+  programs: RateProgram[],
+  period: ProgramPeriod
+): RateProgram | null {
+  const from = (period.effectiveFrom || '').trim();
+  if (!from) return null;
+  return (programs || []).find(p => {
+    if (p.Kind !== period.kind) return false;
+    if (period.id !== null && period.id !== undefined && p.Id === period.id) return false;
+    return (p.EffectiveFrom || '').trim() === from;
+  }) ?? null;
+}
+
 export function checkProgramPeriod(
   programs: RateProgram[],
   period: ProgramPeriod
@@ -169,14 +186,17 @@ export function checkProgramPeriod(
     return { ok: false, message: 'Ngày hết hiệu lực không được trước ngày bắt đầu.' };
   }
 
-  const clash = findOverlappingPrograms(programs, period);
-  if (clash.length > 0) {
-    const names = clash
-      .map(p => `${p.DocumentNumber} (${fmtVn(p.EffectiveFrom)} → ${fmtVn(p.EffectiveTo)})`)
-      .join('; ');
+  // Cho phép chồng lấn: nghiệp vụ thường ra công văn mới trước khi kỳ cũ hết để
+  // áp liền sau đó, và resolver đã chọn bản EffectiveFrom mới nhất. Chỉ chặn khi
+  // trùng ĐÚNG ngày bắt đầu với một chương trình cùng loại (không xác định được).
+  const twin = findSameStartProgram(programs, period);
+  if (twin) {
     return {
       ok: false,
-      message: `Chồng lấn với chương trình cùng loại: ${names}. Đóng chương trình đó lại trước khi mở kỳ mới.`,
+      message: `Đã có chương trình cùng loại bắt đầu đúng ngày ${fmtVn(from)}: `
+        + `${twin.DocumentNumber} (${fmtVn(twin.EffectiveFrom)} → ${fmtVn(twin.EffectiveTo)}). `
+        + 'Hai chương trình cùng ngày bắt đầu sẽ không xác định được bản nào áp dụng — '
+        + 'đổi ngày hiệu lực từ, hoặc sửa/đóng chương trình đó.',
     };
   }
 

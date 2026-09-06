@@ -113,6 +113,25 @@ export async function cloneRateProgramAPI(params: {
   return data;
 }
 
+// Xóa một chương trình lãi suất. CHỈ xóa được bản chưa đối chiếu văn bản gốc
+// (SourceVerified = false) — bản gốc nạp bằng migration được bảo vệ. RLS chỉ cho
+// admin xóa; 6 bảng con đều ON DELETE CASCADE nên tự dọn theo. Dùng .select() để
+// biết có thật sự xóa được dòng nào không (RLS/điều kiện lọc mất thì trả rỗng).
+export async function deleteRateProgramAPI(id: number): Promise<void> {
+  const { data, error } = await supabase
+    .from('RatePrograms')
+    .delete()
+    .eq('Id', id)
+    .eq('SourceVerified', false)
+    .select('Id');
+  if (error) throw new Error(error.message || 'Không xóa được chương trình.');
+  if (!data || data.length === 0) {
+    throw new Error(
+      'Không xóa được. Chỉ admin xóa được, và chỉ với chương trình CHƯA đối chiếu văn bản gốc.'
+    );
+  }
+}
+
 export async function fetchRateProgramFeeOptionsAPI(programIds: number[]): Promise<RateProgramFeeOption[]> {
   if (!programIds || programIds.length === 0) return [];
   const { data, error } = await supabase

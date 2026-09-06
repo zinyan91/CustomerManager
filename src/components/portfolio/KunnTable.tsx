@@ -112,7 +112,9 @@ export const KunnTable: React.FC<KunnTableProps> = ({
               const isSelected = selectedContract?.Id === c.Id;
               const cSchedules = allSchedulesMap[c.Id] || [];
               const autoDebt = getAutoDebtGroupInfo(cSchedules);
-              const effectiveDg = autoDebt.maxOverdueDays > 0 ? autoDebt.debtGroup : (c.DebtGroup || 1);
+              // Nhóm hiệu lực = cao hơn giữa nhóm lưu và nhóm tự tính từ ngày quá hạn.
+              // Không hạ tụt nhóm banker chủ động nâng khi chỉ quá hạn nhẹ.
+              const effectiveDg = Math.max(c.DebtGroup ?? 1, autoDebt.debtGroup);
               const masterNo = getMasterHdtdNumber(c);
               return (
                 <tr key={c.Id}

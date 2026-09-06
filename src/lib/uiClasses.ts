@@ -9,11 +9,11 @@ export interface UiClasses {
 }
 
 export const UI: UiClasses = {
-  containerCardBg: 'bg-panel/85 backdrop-blur-xl border border-line/65 text-ink specular-card',
-  sectionBoxBg: 'bg-surface/75 backdrop-blur-md border border-line/50 text-ink',
+  containerCardBg: 'bg-panel border border-line/65 text-ink shadow-xs',
+  sectionBoxBg: 'bg-surface/90 border border-line/50 text-ink',
   inputStyle: 'bg-surface/80 border-line/70 text-ink placeholder-ink-faint focus:border-accent',
   readonlyInputStyle: 'bg-panel-muted/80 border-line/70 text-ink font-semibold cursor-default',
-  tableHeaderStyle: 'bg-surface/90 backdrop-blur-md text-ink-faint text-[10px] uppercase font-bold tracking-[0.11em] border-b border-line/80',
+  tableHeaderStyle: 'bg-surface text-ink-faint text-[10px] uppercase font-bold tracking-[0.11em] border-b border-line/80',
   tableRowHover: 'hover:bg-accent/[0.04] transition-colors duration-150',
   labelStyle: 'text-ink-muted font-medium',
 };
@@ -33,7 +33,7 @@ export const BTN_DANGER = `${BTN_BASE} border border-neg/30 text-neg hover:bg-ne
 
 export const BTN_GHOST = BTN_SECONDARY;
 
-export const PANEL = `bg-panel/85 backdrop-blur-xl border border-line/70 shadow-xs ${RADIUS_PANEL}`;
+export const PANEL = `bg-panel border border-line/70 shadow-xs ${RADIUS_PANEL}`;
 
 export const HEADING_SCREEN = 'text-sm font-semibold tracking-tight text-ink';
 
@@ -43,7 +43,7 @@ export const SECTION_LABEL =
   'text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint';
 
 export const TABLE_HEAD =
-  'bg-surface/90 backdrop-blur-md text-ink-faint text-[10px] uppercase font-bold tracking-[0.11em] border-b border-line/80';
+  'bg-surface text-ink-faint text-[10px] uppercase font-bold tracking-[0.11em] border-b border-line/80';
 
 export const TABLE_CELL = 'px-[var(--row-px)] py-[var(--row-py)]';
 

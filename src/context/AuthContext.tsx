@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [userId]);
 
-  const signIn = async (usernameOrEmail: string, password: string) => {
+  const signIn = useCallback(async (usernameOrEmail: string, password: string) => {
     const cleanInput = usernameOrEmail.trim();
     let emailToUse = cleanInput;
     if (!cleanInput.includes('@')) {
@@ -90,27 +90,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       throw new Error(error.message);
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setRole(null);
     setFullName(null);
-  };
+  }, []);
+
+  const value = useMemo<AuthContextType>(() => ({
+    session,
+    user: session?.user ?? null,
+    role,
+    fullName,
+    isAdmin: role === 'admin',
+    loading,
+    signIn,
+    signOut,
+  }), [session, role, fullName, loading, signIn, signOut]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        session,
-        user: session?.user ?? null,
-        role,
-        fullName,
-        isAdmin: role === 'admin',
-        loading,
-        signIn,
-        signOut,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

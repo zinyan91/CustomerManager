@@ -409,7 +409,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
         </div>
 
         {/* Lãi suất ưu đãi & sau ưu đãi */}
-        <div className="p-4 rounded-2xl border border-accent/30 bg-accent-soft/25 backdrop-blur-md space-y-3 shadow-2xs">
+        <div className="pl-4 border-l-2 border-accent/40 space-y-3">
           <div className="text-xs font-bold text-accent tracking-tight flex flex-wrap items-center justify-between gap-2 border-b pb-2 border-accent/25">
             <span className="uppercase tracking-wider text-[11px]">🎁 LÃI SUẤT ƯU ĐÃI VÀ LÃI SUẤT SAU ƯU ĐÃI</span>
             {isAnnuity && (
@@ -483,7 +483,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
         </div>
 
         {/* Kế hoạch trả nợ trước hạn */}
-        <div className="p-4 rounded-2xl border border-warn/30 bg-warn-soft/25 backdrop-blur-md space-y-3 shadow-2xs">
+        <div className="pl-4 border-l-2 border-warn/40 space-y-3">
           <div className="text-xs font-bold text-warn tracking-tight flex items-center justify-between gap-2 border-b pb-2 border-warn/25">
             <div className="flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-warn animate-pulse"></span>
@@ -506,7 +506,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           ) : (
             <div className="space-y-2.5">
               {prepayments.map(p => (
-                <div key={p.id} className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end p-3 rounded-xl bg-panel/90 border border-warn/30 shadow-2xs">
+                <div key={p.id} className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end pb-3 border-b border-warn/15 last:border-b-0 last:pb-0">
                   <div className="md:col-span-2">
                     <label className="block mb-1 font-bold text-warn text-[11px]">Kỳ trả nợ</label>
                     <input

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import {
   loadFormatSettings, saveFormatSettings, DEFAULT_FORMAT_SETTINGS,
 } from '../lib/formatSettings';
@@ -18,8 +18,13 @@ export const FormatSettingsProvider: React.FC<{ children: React.ReactNode }> = (
     setFormatSettings(saveFormatSettings(patch));
   }, []);
 
+  const value = useMemo<FormatSettingsContextType>(() => ({
+    formatSettings,
+    updateFormatSettings,
+  }), [formatSettings, updateFormatSettings]);
+
   return (
-    <FormatSettingsContext.Provider value={{ formatSettings, updateFormatSettings }}>
+    <FormatSettingsContext.Provider value={value}>
       {children}
     </FormatSettingsContext.Provider>
   );

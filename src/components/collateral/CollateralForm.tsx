@@ -163,12 +163,12 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                   }}
                   className={`w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
                 >
-                  <option value="Bất động sản đất ở">Bất động sản đất ở (LTV chuẩn 75%)</option>
-                  <option value="Bất động sản khác">Bất động sản khác (LTV chuẩn 70%)</option>
-                  <option value="Phương tiện vận tải">Phương tiện vận tải (LTV chuẩn 60%)</option>
-                  <option value="Tiền gửi / STK">Tiền gửi / Sổ tiết kiệm (LTV chuẩn 95%)</option>
-                  <option value="Máy móc thiết bị">Máy móc thiết bị (LTV chuẩn 50%)</option>
-                  <option value="Khác">Tài sản khác (LTV chuẩn 40%)</option>
+                  <option value="Bất động sản đất ở">Bất động sản đất ở</option>
+                  <option value="Bất động sản khác">Bất động sản khác</option>
+                  <option value="Phương tiện vận tải">Phương tiện vận tải</option>
+                  <option value="Tiền gửi / STK">Tiền gửi / Sổ tiết kiệm</option>
+                  <option value="Máy móc thiết bị">Máy móc thiết bị</option>
+                  <option value="Khác">Tài sản khác</option>
                 </select>
               </div>
             </div>

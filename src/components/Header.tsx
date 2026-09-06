@@ -51,7 +51,7 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
   const ghostButton = 'p-1.5 rounded-xl text-ink-faint hover:text-ink hover:bg-panel-muted/80 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer';
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 h-[56px] px-4 md:px-6 flex items-center justify-between bg-panel/85 backdrop-blur-2xl border-b border-line/70 shadow-xs transition-all">
+    <header className="fixed top-0 left-0 right-0 z-40 h-[56px] px-4 md:px-6 flex items-center justify-between bg-panel border-b border-line/70 shadow-xs">
       {/* Trái: Menu Nút + Brand Logo Capsule */}
       <div className="flex items-center gap-3 min-w-0">
         <button

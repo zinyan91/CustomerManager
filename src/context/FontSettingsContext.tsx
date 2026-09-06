@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import {
   type FontSettings, loadFontSettings, saveFontSettings,
   applyFontSettings, DEFAULT_FONT_SETTINGS, normalizeFontSettings,
@@ -20,12 +20,22 @@ export const FontSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     saveFontSettings(fontSettings);
   }, [fontSettings]);
 
+  const updateFontSettings = useCallback((patch: Partial<FontSettings>) => {
+    setFontSettings(prev => normalizeFontSettings({ ...prev, ...patch }));
+  }, []);
+
+  const resetFontSettings = useCallback(() => {
+    setFontSettings(DEFAULT_FONT_SETTINGS);
+  }, []);
+
+  const value = useMemo<Value>(() => ({
+    fontSettings,
+    updateFontSettings,
+    resetFontSettings,
+  }), [fontSettings, updateFontSettings, resetFontSettings]);
+
   return (
-    <Ctx.Provider value={{
-      fontSettings,
-      updateFontSettings: patch => setFontSettings(prev => normalizeFontSettings({ ...prev, ...patch })),
-      resetFontSettings: () => setFontSettings(DEFAULT_FONT_SETTINGS),
-    }}>
+    <Ctx.Provider value={value}>
       {children}
     </Ctx.Provider>
   );

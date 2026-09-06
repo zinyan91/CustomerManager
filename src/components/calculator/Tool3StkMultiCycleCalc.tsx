@@ -60,7 +60,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
 
   return (
     <div className="space-y-4">
-      <div className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 text-xs animate-in fade-in duration-150`}>
+      <div className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4 text-xs animate-in fade-in duration-150`}>
         <div className="font-bold text-accent uppercase tracking-wider text-xs flex items-center space-x-2 border-b border-line/60 pb-3">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
             <TrendingUp className="w-4 h-4" />
@@ -69,7 +69,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
         </div>
 
         {/* Thông tin Khoản Vay */}
-        <div className="p-4 rounded-2xl border border-line/60 bg-surface/60 backdrop-blur-md space-y-3 shadow-2xs">
+        <div className="pl-4 border-l-2 border-accent/40 space-y-3">
           <div className="font-bold text-accent text-[11px] uppercase tracking-wider flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-accent" />
             <span>THÔNG TIN KHOẢN VAY</span>
@@ -119,7 +119,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
         </div>
 
         {/* Sổ Tiết Kiệm Kỳ Đầu */}
-        <div className="p-4 rounded-2xl border border-line/60 bg-surface/60 backdrop-blur-md space-y-3 shadow-2xs">
+        <div className="pl-4 border-l-2 border-warn/40 space-y-3">
           <div className="font-bold text-warn text-[11px] uppercase tracking-wider flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-warn" />
             <span>SỔ TIẾT KIỆM KỲ ĐẦU</span>

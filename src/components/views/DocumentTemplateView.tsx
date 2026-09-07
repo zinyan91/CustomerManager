@@ -26,17 +26,21 @@ export const DocumentTemplateView: React.FC = () => {
 
       {/* 1b. Chuyển chế độ: mẫu lẻ (cũ) ↔ bộ hồ sơ (mới, song song) */}
       <div className="px-3.5 sm:px-4 py-2.5 border-b border-line/60 bg-surface/30 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setMode('dossier')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-            mode === 'dossier'
-              ? 'bg-accent text-accent-ink border-accent'
-              : 'bg-surface text-ink-muted border-line/70 hover:border-accent'
-          }`}
-        >
-          📁 Hồ sơ giải ngân
-        </button>
+        {dossierCtrl.dossiers.map(d => {
+          const active = mode === 'dossier' && dossierCtrl.activeDossier.id === d.id;
+          const Icon = d.icon;
+          return (
+            <button key={d.id} type="button"
+              onClick={() => { setMode('dossier'); dossierCtrl.selectDossier(d.id); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                active ? 'bg-accent text-accent-ink border-accent'
+                  : 'bg-surface text-ink-muted border-line/70 hover:border-accent'
+              }`}>
+              <Icon className="w-3.5 h-3.5" />
+              <span>{d.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {mode === 'dossier' ? (

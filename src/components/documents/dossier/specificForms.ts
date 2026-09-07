@@ -2,6 +2,9 @@ import type { FC } from 'react';
 import { SaleSpecificForm } from './SaleSpecificForm';
 import { PaymentSpecificForm } from './PaymentSpecificForm';
 import { ConstructionSpecificForm } from './ConstructionSpecificForm';
+import { LeaseMbSpecificForm } from './LeaseMbSpecificForm';
+import { LeaseHouseSpecificForm } from './LeaseHouseSpecificForm';
+import { EstimateSpecificForm } from './EstimateSpecificForm';
 
 export const SPECIFIC_FORM_BY_ID: Record<string, FC<any> | null> = {
   sale_contract: SaleSpecificForm,
@@ -10,4 +13,7 @@ export const SPECIFIC_FORM_BY_ID: Record<string, FC<any> | null> = {
   payment_request_const: PaymentSpecificForm,
   cam_ket: null,
   bang_ke: null,
+  lease_mb: LeaseMbSpecificForm,
+  lease_house: LeaseHouseSpecificForm,
+  const_estimate: EstimateSpecificForm,
 };

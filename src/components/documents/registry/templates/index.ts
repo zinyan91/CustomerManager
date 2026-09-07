@@ -4,6 +4,7 @@ import { paymentRequestSaleTemplate } from './paymentRequestSale';
 import { camKetTemplate } from './camKet';
 import { constructionTemplate } from './construction';
 import { paymentRequestConstTemplate } from './paymentRequestConst';
+import { bangKeTemplate } from './bangKe';
 
 export const TEMPLATE_BY_ID: Record<string, DocTemplate<any>> = {
   [saleContractTemplate.id]: saleContractTemplate,
@@ -11,4 +12,5 @@ export const TEMPLATE_BY_ID: Record<string, DocTemplate<any>> = {
   [camKetTemplate.id]: camKetTemplate,
   [constructionTemplate.id]: constructionTemplate,
   [paymentRequestConstTemplate.id]: paymentRequestConstTemplate,
+  [bangKeTemplate.id]: bangKeTemplate,
 };

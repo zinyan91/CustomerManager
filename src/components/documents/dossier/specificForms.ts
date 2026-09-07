@@ -9,4 +9,5 @@ export const SPECIFIC_FORM_BY_ID: Record<string, FC<any> | null> = {
   construction: ConstructionSpecificForm,
   payment_request_const: PaymentSpecificForm,
   cam_ket: null,
+  bang_ke: null,
 };

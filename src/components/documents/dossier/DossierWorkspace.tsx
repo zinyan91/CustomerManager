@@ -5,6 +5,7 @@ import { TEMPLATE_BY_ID } from '../registry/templates';
 import { CommonInfoForm } from './CommonInfoForm';
 import { SPECIFIC_FORM_BY_ID } from './specificForms';
 import { DocumentPreview } from '../DocumentPreview';
+import { StandaloneDocPreview } from './StandaloneDocPreview';
 
 export const DossierWorkspace: React.FC<{
   styles: UiClasses;
@@ -56,12 +57,20 @@ export const DossierWorkspace: React.FC<{
           )}
         </div>
         <div className="lg:col-span-6 flex flex-col bg-surface/20 min-h-[700px]">
-          <DocumentPreview
-            styles={styles}
-            docTitle={ctrl.activeTemplate.label}
-            docFilename={ctrl.activeTemplate.id}
-            docHtml={ctrl.activeHtml}
-          />
+          {ctrl.activeTemplate.standalone ? (
+            <StandaloneDocPreview
+              docTitle={ctrl.activeTemplate.label}
+              docFilename={ctrl.activeTemplate.id}
+              docHtml={ctrl.activeHtml}
+            />
+          ) : (
+            <DocumentPreview
+              styles={styles}
+              docTitle={ctrl.activeTemplate.label}
+              docFilename={ctrl.activeTemplate.id}
+              docHtml={ctrl.activeHtml}
+            />
+          )}
         </div>
       </div>
     </div>

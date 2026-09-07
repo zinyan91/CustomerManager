@@ -21,10 +21,10 @@ it('dossier ids are unique', () => {
   expect(new Set(ids).size).toBe(ids.length);
 });
 
-it('Giải ngân dossier lists the three pilot documents in order', () => {
+it('Giải ngân dossier lists its documents in order', () => {
   const giaiNgan = DOSSIERS.find(d => d.id === 'giai_ngan');
   expect(giaiNgan?.documents.map(d => d.templateId)).toEqual([
-    'sale_contract', 'payment_request_sale', 'cam_ket',
+    'sale_contract', 'bang_ke', 'payment_request_sale', 'cam_ket',
   ]);
   expect(giaiNgan?.documents.find(d => d.templateId === 'cam_ket')?.optional).toBe(true);
 });

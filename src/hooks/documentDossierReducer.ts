@@ -59,12 +59,19 @@ export function dossierReducer(state: DossierState, action: DossierAction): Doss
       };
     case 'toggleOptional': {
       const has = state.excludedDocIds.includes(action.docId);
-      return {
-        ...state,
-        excludedDocIds: has
-          ? state.excludedDocIds.filter(id => id !== action.docId)
-          : [...state.excludedDocIds, action.docId],
-      };
+      const excludedDocIds = has
+        ? state.excludedDocIds.filter(id => id !== action.docId)
+        : [...state.excludedDocIds, action.docId];
+      let activeDocId = state.activeDocId;
+      const nowExcluded = !has;
+      if (nowExcluded && action.docId === state.activeDocId) {
+        const dossier = dossierById(state.activeDossierId);
+        const firstIncluded = dossier.documents.find(
+          doc => !excludedDocIds.includes(doc.templateId),
+        );
+        if (firstIncluded) activeDocId = firstIncluded.templateId;
+      }
+      return { ...state, excludedDocIds, activeDocId };
     }
     default:
       return state;

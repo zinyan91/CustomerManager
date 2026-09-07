@@ -41,4 +41,21 @@ describe('dossierReducer', () => {
     s = dossierReducer(s, { type: 'toggleOptional', docId: 'cam_ket' });
     expect(s.excludedDocIds).toEqual([]);
   });
+
+  it('excluding the active optional doc moves active to first non-excluded doc', () => {
+    let s = initDossierState('giai_ngan');
+    s = dossierReducer(s, { type: 'selectDoc', docId: 'cam_ket' });
+    expect(s.activeDocId).toBe('cam_ket');
+    s = dossierReducer(s, { type: 'toggleOptional', docId: 'cam_ket' });
+    expect(s.excludedDocIds).toContain('cam_ket');
+    expect(s.activeDocId).not.toBe('cam_ket');
+    expect(s.activeDocId).toBe('sale_contract');
+  });
+
+  it('toggling an optional doc that is not active does not move active', () => {
+    let s = initDossierState('giai_ngan');
+    expect(s.activeDocId).toBe('sale_contract');
+    s = dossierReducer(s, { type: 'toggleOptional', docId: 'cam_ket' });
+    expect(s.activeDocId).toBe('sale_contract');
+  });
 });

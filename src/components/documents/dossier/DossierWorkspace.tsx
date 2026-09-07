@@ -23,6 +23,7 @@ export const DossierWorkspace: React.FC<{
               {doc.optional && (
                 <input type="checkbox" checked={!excluded}
                   onChange={() => ctrl.toggleOptional(doc.templateId)}
+                  aria-label={`Bật/tắt ${tpl.label}`}
                   title="Bật/tắt giấy tờ tùy chọn" />
               )}
               <button type="button" disabled={excluded}

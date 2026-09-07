@@ -29,9 +29,14 @@ it('Giải ngân dossier lists its documents in order', () => {
   expect(giaiNgan?.documents.find(d => d.templateId === 'cam_ket')?.optional).toBe(true);
 });
 
-it('Sửa chữa nhà dossier lists its documents in order', () => {
+it('Sửa chữa nhà dossier includes dự toán after construction', () => {
   const d = DOSSIERS.find(x => x.id === 'sua_chua_nha');
   expect(d?.documents.map(x => x.templateId)).toEqual([
-    'construction', 'payment_request_const', 'cam_ket',
+    'construction', 'const_estimate', 'payment_request_const', 'cam_ket',
   ]);
+});
+
+it('Cho thuê dossier lists its documents', () => {
+  const d = DOSSIERS.find(x => x.id === 'cho_thue');
+  expect(d?.documents.map(x => x.templateId)).toEqual(['lease_mb', 'lease_house']);
 });

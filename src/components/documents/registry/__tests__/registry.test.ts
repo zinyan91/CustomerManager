@@ -1,0 +1,30 @@
+import { describe, it, expect } from 'vitest';
+import { TEMPLATE_BY_ID } from '../templates';
+import { DOSSIERS } from '../dossiers';
+
+it('every dossier document references an existing template', () => {
+  for (const dossier of DOSSIERS) {
+    for (const doc of dossier.documents) {
+      expect(TEMPLATE_BY_ID[doc.templateId], `missing template ${doc.templateId}`).toBeDefined();
+    }
+  }
+});
+
+it('template ids are unique and match their map key', () => {
+  for (const [key, tpl] of Object.entries(TEMPLATE_BY_ID)) {
+    expect(tpl.id).toBe(key);
+  }
+});
+
+it('dossier ids are unique', () => {
+  const ids = DOSSIERS.map(d => d.id);
+  expect(new Set(ids).size).toBe(ids.length);
+});
+
+it('Giải ngân dossier lists the three pilot documents in order', () => {
+  const giaiNgan = DOSSIERS.find(d => d.id === 'giai_ngan');
+  expect(giaiNgan?.documents.map(d => d.templateId)).toEqual([
+    'sale_contract', 'payment_request_sale', 'cam_ket',
+  ]);
+  expect(giaiNgan?.documents.find(d => d.templateId === 'cam_ket')?.optional).toBe(true);
+});

@@ -23,7 +23,7 @@ export const DocumentTemplateView: React.FC = () => {
       {/* 2. Không gian làm việc 2 cột liền mạch - KHÔNG CÓ KHOẢNG HỞ Ở GIỮA */}
       <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-line/60">
         {/* Cột trái: Form nhập liệu liền mạch */}
-        <div className="lg:col-span-6 p-4 sm:p-6 overflow-y-auto max-h-[calc(100vh-140px)] bg-panel/30">
+        <div className="lg:col-span-6 lg:self-start p-4 sm:p-6 bg-panel/30">
           <DocumentForm
             styles={styles}
             selectedTemplate={ctrl.selectedTemplate}

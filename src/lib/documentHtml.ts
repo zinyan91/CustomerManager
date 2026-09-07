@@ -6,6 +6,14 @@ import type { DepositContractData } from '../components/documents/depositContrac
 
 const nfc = (str: string) => (str ? str.normalize('NFC') : '');
 
+const titleCaseName = (str: string) =>
+  nfc(str).trim().toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, sp, ch) => sp + ch.toUpperCase());
+
+const givenName = (str: string) => {
+  const parts = nfc(str).trim().split(/\s+/).filter(Boolean);
+  return parts.length ? titleCaseName(parts[parts.length - 1]) : '';
+};
+
 function ngayThangNam(iso: string): string {
   const parsed = parseAnyDate(iso);
   if (parsed) {
@@ -755,9 +763,9 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
     const stagesHtml = payStages.map((st) => {
       let actionText = '';
       if (st.status === 'paid') {
-        actionText = `${rTitle} ${nfc(buyerName)} đã thanh toán số tiền là:`;
+        actionText = `${rTitle} ${givenName(buyerName)} đã thanh toán số tiền là:`;
       } else if (st.status === 'current') {
-        actionText = `${rTitle} ${nfc(buyerName)} thanh toán số tiền đợt này là:`;
+        actionText = `${rTitle} ${givenName(buyerName)} thanh toán số tiền đợt này là:`;
       } else {
         actionText = `Số tiền các đợt thanh toán tiếp theo:`;
       }
@@ -809,7 +817,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
 
       <p class="clause-p no-indent">Kính gửi: <strong>${rTitle} ${nfc(buyerName)}</strong></p>
 
-      <p class="clause-p no-indent">Căn cứ ${docTypeTitle} ký ngày <strong>${fmtDate(contractDateStr)}</strong> giữa ${rTitle} ${nfc(buyerName)} và ${nfc(sellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
+      <p class="clause-p no-indent">Căn cứ ${docTypeTitle} ký ngày <strong>${fmtDate(contractDateStr)}</strong> giữa ${rTitle} ${titleCaseName(buyerName)} và ${titleCaseName(sellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
 
       <p class="clause-p no-indent font-bold">1. Giá trị hợp đồng: <strong>${totalAmountStr} đồng</strong></p>
       <p class="clause-p no-indent font-italic pl-4">(Bằng chữ: ${moneyTextToWords(totalAmountStr)})</p>

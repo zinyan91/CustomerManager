@@ -34,6 +34,7 @@ export interface DocTemplate<S> {
   label: string;
   icon: ComponentType<{ className?: string; size?: number }>;
   specificDefaults: S;
+  standalone?: boolean;   // true = buildHtml trả tài liệu HTML hoàn chỉnh (tự style/khổ), preview & in riêng
   buildHtml: (common: DossierCommon, specific: S) => string;
   attachments?: (common: DossierCommon, specific: S) => Attachment[];
 }

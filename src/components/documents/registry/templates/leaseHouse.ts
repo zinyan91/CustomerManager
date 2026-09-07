@@ -7,6 +7,7 @@ import { baseDraft } from '../legacyDraft';
 
 export interface LeaseHouseSpecific {
   location: string; floors: string; landArea: string; houseArea: string; handoverDate: string; paymentDay: string;
+  monthlyPrice: string; depositAmount: string;
 }
 
 export function leaseHouseToLegacyParams(common: DossierCommon, s: LeaseHouseSpecific): DocumentDraft {
@@ -20,6 +21,7 @@ export function leaseHouseToLegacyParams(common: DossierCommon, s: LeaseHouseSpe
     mbPartyBCccdDate: common.partyB.cccdDate, mbPartyBAddress: common.partyB.address,
     lhFloors: s.floors, lhLandArea: s.landArea, lhHouseArea: s.houseArea,
     lhHandoverDate: s.handoverDate, lhPaymentDay: s.paymentDay,
+    mbMonthlyPrice: s.monthlyPrice, mbDepositAmount: s.depositAmount,
     lhTermLabel: monthsBetweenLabel(common.startDate, common.endDate),
   };
 }
@@ -28,6 +30,6 @@ export const leaseHouseTemplate: DocTemplate<LeaseHouseSpecific> = {
   id: 'lease_house',
   label: 'HĐ Thuê Nhà Ở',
   icon: Home,
-  specificDefaults: { location: '', floors: '', landArea: '', houseArea: '', handoverDate: '', paymentDay: '' },
+  specificDefaults: { location: '', floors: '', landArea: '', houseArea: '', handoverDate: '', paymentDay: '', monthlyPrice: '', depositAmount: '' },
   buildHtml: (common, s) => buildDocumentHtml('lease_house', leaseHouseToLegacyParams(common, s)),
 };

@@ -2,6 +2,7 @@ import React from 'react';
 import type { DossierCommon } from '../registry/types';
 import type { LeaseHouseSpecific } from '../registry/templates/leaseHouse';
 import { DateInput } from '../../DateInput';
+import { formatMoneyInput } from '../../../lib/utils';
 
 const INPUT = 'w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent text-xs';
 const LABEL = 'block mb-1 text-[11px] font-semibold text-ink-muted';
@@ -38,6 +39,16 @@ export const LeaseHouseSpecificForm: React.FC<{
       <label className={LABEL}>Ngày thanh toán hàng tháng</label>
       <input className={INPUT} value={specific.paymentDay}
         onChange={e => patch({ paymentDay: e.target.value })} />
+    </div>
+    <div>
+      <label className={LABEL}>Giá thuê / tháng (VNĐ)</label>
+      <input className={INPUT} value={specific.monthlyPrice}
+        onChange={e => patch({ monthlyPrice: formatMoneyInput(e.target.value) })} />
+    </div>
+    <div>
+      <label className={LABEL}>Tiền đặt cọc (VNĐ)</label>
+      <input className={INPUT} value={specific.depositAmount}
+        onChange={e => patch({ depositAmount: formatMoneyInput(e.target.value) })} />
     </div>
   </div>
 );

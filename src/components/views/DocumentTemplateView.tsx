@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { UI } from '../../lib/uiClasses';
 import { TemplateSelector } from '../documents/TemplateSelector';
 import { DocumentForm } from '../documents/DocumentForm';
@@ -6,10 +6,14 @@ import { DocumentPreview } from '../documents/DocumentPreview';
 import { buildGiayCamKetHtml } from '../../lib/documentHtml';
 import { SaleCatalogModal } from '../documents/SaleCatalogModal';
 import { useDocumentTemplateController } from '../../hooks/useDocumentTemplateController';
+import { useDocumentDossierController } from '../../hooks/useDocumentDossierController';
+import { DossierWorkspace } from '../documents/dossier/DossierWorkspace';
 
 export const DocumentTemplateView: React.FC = () => {
   const styles = UI;
   const ctrl = useDocumentTemplateController();
+  const [mode, setMode] = useState<'legacy' | 'dossier'>('legacy');
+  const dossierCtrl = useDocumentDossierController();
 
   return (
     <div className="rounded-2xl border border-line/70 bg-panel/90 shadow-sm overflow-hidden text-xs font-app animate-in fade-in duration-150">
@@ -17,10 +21,28 @@ export const DocumentTemplateView: React.FC = () => {
       <TemplateSelector
         styles={styles}
         selectedTemplate={ctrl.selectedTemplate}
-        setSelectedTemplate={ctrl.setSelectedTemplate}
+        setSelectedTemplate={(t) => { ctrl.setSelectedTemplate(t); setMode('legacy'); }}
       />
 
-      {/* 2. Không gian làm việc 2 cột liền mạch - KHÔNG CÓ KHOẢNG HỞ Ở GIỮA */}
+      {/* 1b. Chuyển chế độ: mẫu lẻ (cũ) ↔ bộ hồ sơ (mới, song song) */}
+      <div className="px-3.5 sm:px-4 py-2.5 border-b border-line/60 bg-surface/30 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setMode('dossier')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+            mode === 'dossier'
+              ? 'bg-accent text-accent-ink border-accent'
+              : 'bg-surface text-ink-muted border-line/70 hover:border-accent'
+          }`}
+        >
+          📁 Hồ sơ giải ngân
+        </button>
+      </div>
+
+      {mode === 'dossier' ? (
+        <DossierWorkspace styles={styles} ctrl={dossierCtrl} />
+      ) : (
+      /* 2. Không gian làm việc 2 cột liền mạch - KHÔNG CÓ KHOẢNG HỞ Ở GIỮA */
       <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-line/60">
         {/* Cột trái: Form nhập liệu liền mạch */}
         <div className="lg:col-span-6 lg:self-start p-4 sm:p-6 bg-panel/30">
@@ -123,6 +145,7 @@ export const DocumentTemplateView: React.FC = () => {
           />
         </div>
       </div>
+      )}
 
       {/* Modal Quản lý / Thêm mới bộ mẫu danh mục hàng hóa */}
       <SaleCatalogModal

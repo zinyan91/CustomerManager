@@ -148,11 +148,11 @@ interface Tool1LoanScheduleCalcProps {
 export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ styles }) => {
   const [loanAmountStr, setLoanAmountStr] = useState('500.000.000');
   const [interestRateStr, setInterestRateStr] = useState('9.5');
-  const [tenorMonths, setTenorMonths] = useState<number>(120);
+  const [tenorMonthsStr, setTenorMonthsStr] = useState('120');
   const [disbursementDate, setDisbursementDate] = useState(() => todayIso());
   const [firstPaymentDate, setFirstPaymentDate] = useState('');
   const [repayMethod, setRepayMethod] = useState<PrincipalRepayMethod>('equal_principal');
-  const [principalGraceMonths, setPrincipalGraceMonths] = useState<number>(0);
+  const [principalGraceMonthsStr, setPrincipalGraceMonthsStr] = useState('0');
 
   const [promoMonthsStr, setPromoMonthsStr] = useState('12');
   const [baseRateStr, setBaseRateStr] = useState('9.7');
@@ -163,6 +163,8 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
 
   const loanAmt = parseMoneyInput(loanAmountStr);
   const rateAnnual = parseFloat(interestRateStr) || 0;
+  const tenorMonths = Math.max(1, parseInt(tenorMonthsStr, 10) || 1);
+  const principalGraceMonths = Math.max(0, parseInt(principalGraceMonthsStr, 10) || 0);
 
   const promoMonths = parseNumOrNull(promoMonthsStr);
   const baseRateAnnual = parseNumOrNull(baseRateStr);
@@ -350,8 +352,8 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               type="number"
               min={1}
               max={360}
-              value={tenorMonths}
-              onChange={e => setTenorMonths(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              value={tenorMonthsStr}
+              onChange={e => setTenorMonthsStr(e.target.value)}
               className={`w-full rounded-xl p-2.5 font-mono font-bold text-ink border border-line/70 bg-surface/80 focus:border-accent ${styles.inputStyle}`}
             />
           </div>
@@ -400,9 +402,9 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
               type="number"
               min={0}
               max={tenorMonths - 1}
-              value={effectiveGraceMonths}
+              value={isAnnuity ? '' : principalGraceMonthsStr}
               disabled={isAnnuity}
-              onChange={e => setPrincipalGraceMonths(Math.max(0, parseInt(e.target.value, 10) || 0))}
+              onChange={e => setPrincipalGraceMonthsStr(e.target.value)}
               className={`w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent font-mono font-bold ${styles.inputStyle} disabled:opacity-50 disabled:cursor-not-allowed`}
             />
           </div>

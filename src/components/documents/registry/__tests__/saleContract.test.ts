@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { it, expect } from 'vitest';
 import { buildDocumentHtml } from '../../../../lib/documentHtml';
 import { baseDraft } from '../legacyDraft';
 import { emptyCommon } from '../types';

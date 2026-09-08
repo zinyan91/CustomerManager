@@ -2,6 +2,8 @@ import React from 'react';
 import { FileText, Save, History, Download, Printer, Package, Trash2 } from 'lucide-react';
 import { getComputedBankAccText, type StatementSellerInfo } from '../../lib/statement';
 import { BANK_LIST } from '../../lib/documentOptions';
+import { CustomerPicker } from '../ui/CustomerPicker';
+import type { Customer } from '../../types';
 import { UI } from '../../lib/uiClasses';
 
 interface PurchaseStatementSellerCardProps {
@@ -14,6 +16,7 @@ interface PurchaseStatementSellerCardProps {
   onPrint: () => void;
   onOpenInventoryPicker: () => void;
   onClearAllItems: () => void;
+  customers?: Customer[];
 }
 
 export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardProps> = ({
@@ -26,6 +29,7 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
   onPrint,
   onOpenInventoryPicker,
   onClearAllItems,
+  customers = [],
 }) => {
   return (
     <div className={`${UI.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 font-app animate-in fade-in duration-150`}>
@@ -112,7 +116,7 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div>
             <label className="block text-[10px] text-ink-faint uppercase font-bold tracking-wider mb-1">
               Số CMND / CCCD Bên bán
@@ -126,16 +130,45 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
             />
           </div>
 
-          <div>
-            <label className="block text-[10px] text-ink-faint uppercase font-bold tracking-wider mb-1">
-              Bên mua hàng (Họ tên)
-            </label>
-            <input
-              type="text"
-              value={sellerInfo.buyerName}
-              onChange={e => onChangeSellerInfo({ ...sellerInfo, buyerName: e.target.value })}
-              className={`w-full rounded-xl p-2 font-bold ${UI.inputStyle}`}
-            />
+          <div className="sm:col-span-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-[10px] text-ink-faint uppercase font-bold tracking-wider">
+                Bên mua hàng (Họ tên & CCCD)
+              </label>
+            </div>
+            {customers.length > 0 && (
+              <CustomerPicker
+                customers={customers}
+                selectedCustomerId={null}
+                onSelectCustomer={(id) => {
+                  const c = customers.find(item => item.Id === id);
+                  if (c) {
+                    onChangeSellerInfo({
+                      ...sellerInfo,
+                      buyerName: c.FullName,
+                      buyerIdCard: c.NationalId || sellerInfo.buyerIdCard,
+                    });
+                  }
+                }}
+                placeholder="— Chọn Bên mua từ danh sách khách hàng —"
+              />
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <input
+                type="text"
+                placeholder="Họ tên Bên mua"
+                value={sellerInfo.buyerName}
+                onChange={e => onChangeSellerInfo({ ...sellerInfo, buyerName: e.target.value })}
+                className={`w-full rounded-xl p-2 font-bold ${UI.inputStyle}`}
+              />
+              <input
+                type="text"
+                placeholder="Số CMND/CCCD Bên mua"
+                value={sellerInfo.buyerIdCard}
+                onChange={e => onChangeSellerInfo({ ...sellerInfo, buyerIdCard: e.target.value })}
+                className={`w-full rounded-xl p-2 font-mono ${UI.inputStyle}`}
+              />
+            </div>
           </div>
 
           <div>

@@ -29,6 +29,11 @@ it('bangKeToStatement maps common → statement items + seller info', () => {
   expect(info.paymentMethod).toBe('transfer');
 });
 
+it('bangKeToStatement supports cash payment method', () => {
+  const { info } = bangKeToStatement(sampleCommon(), { paymentMethod: 'cash' });
+  expect(info.paymentMethod).toBe('cash');
+});
+
 it('is marked standalone and buildHtml equals the reused statement builder (golden)', () => {
   expect(bangKeTemplate.standalone).toBe(true);
   const common = sampleCommon();
@@ -36,12 +41,19 @@ it('is marked standalone and buildHtml equals the reused statement builder (gold
     { id: '1', dateStr: '2026-04-09', itemName: 'Lúa Jasmine', unit: 'Tấn', qty: 25, unitPrice: 8500000, note: 'vụ ĐX' },
     { id: '2', dateStr: '2026-04-09', itemName: 'Gạo ST25', unit: 'Tấn', qty: 15, unitPrice: 22000000, note: '' },
   ];
-  const expectedInfo: StatementSellerInfo = {
+  const expectedInfoTransfer: StatementSellerInfo = {
     sellerName: 'TRẦN THỊ PHƯƠNG', sellerAddress: 'Q10, TP.HCM', sellerBankAcc: '',
     sellerIdCard: '0791 7802 5859', buyerName: 'NGÔ NHỊ ĐẠT', buyerIdCard: '0343 0300 4676',
     statementDateStr: '2026-04-09', paymentMethod: 'transfer',
     bankAccNo: '0123456789', bankName: 'Vietcombank', bankOwner: 'TRẦN THỊ PHƯƠNG', bankBranch: 'TP.HCM',
   };
-  const expected = buildPurchaseStatementDocHtml(expectedItems, expectedInfo);
-  expect(bangKeTemplate.buildHtml(common, {})).toBe(expected);
+  const expectedTransfer = buildPurchaseStatementDocHtml(expectedItems, expectedInfoTransfer);
+  expect(bangKeTemplate.buildHtml(common, { paymentMethod: 'transfer' })).toBe(expectedTransfer);
+
+  const expectedInfoCash: StatementSellerInfo = {
+    ...expectedInfoTransfer,
+    paymentMethod: 'cash',
+  };
+  const expectedCash = buildPurchaseStatementDocHtml(expectedItems, expectedInfoCash);
+  expect(bangKeTemplate.buildHtml(common, { paymentMethod: 'cash' })).toBe(expectedCash);
 });

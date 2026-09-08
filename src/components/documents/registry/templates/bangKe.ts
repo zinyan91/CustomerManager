@@ -3,9 +3,11 @@ import { buildPurchaseStatementDocHtml } from '../../../../lib/inventoryExport';
 import type { StatementItem, StatementSellerInfo } from '../../../../lib/statement';
 import type { DocTemplate, DossierCommon } from '../types';
 
-export type BangKeSpecific = Record<string, never>;
+export interface BangKeSpecific {
+  paymentMethod: 'cash' | 'transfer';
+}
 
-export function bangKeToStatement(common: DossierCommon): { items: StatementItem[]; info: StatementSellerInfo } {
+export function bangKeToStatement(common: DossierCommon, specific?: BangKeSpecific): { items: StatementItem[]; info: StatementSellerInfo } {
   const items: StatementItem[] = common.items.map(it => ({
     id: it.id,
     dateStr: common.contractDate,
@@ -23,7 +25,7 @@ export function bangKeToStatement(common: DossierCommon): { items: StatementItem
     buyerName: common.partyA.name,
     buyerIdCard: common.partyA.cccd,
     statementDateStr: common.contractDate,
-    paymentMethod: 'transfer',
+    paymentMethod: specific?.paymentMethod ?? 'transfer',
     bankAccNo: common.bank.accNo,
     bankName: common.bank.name,
     bankOwner: common.bank.owner,
@@ -34,12 +36,12 @@ export function bangKeToStatement(common: DossierCommon): { items: StatementItem
 
 export const bangKeTemplate: DocTemplate<BangKeSpecific> = {
   id: 'bang_ke',
-  label: 'Bảng Kê Mua Hàng',
+  label: 'Bảng Kê Bán Hàng',
   icon: ClipboardList,
-  specificDefaults: {},
+  specificDefaults: { paymentMethod: 'transfer' },
   standalone: true,
-  buildHtml: (common) => {
-    const { items, info } = bangKeToStatement(common);
+  buildHtml: (common, specific) => {
+    const { items, info } = bangKeToStatement(common, specific);
     return buildPurchaseStatementDocHtml(items, info);
   },
 };

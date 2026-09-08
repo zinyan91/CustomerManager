@@ -22,6 +22,8 @@ import { PurchaseStatementKpiCards } from './PurchaseStatementKpiCards';
 import { PurchaseStatementAddItemForm } from './PurchaseStatementAddItemForm';
 import { PurchaseStatementTable } from './PurchaseStatementTable';
 import { useConfirm } from '../../context/ConfirmContext';
+import { fetchCustomersAPI } from '../../lib/api';
+import type { Customer } from '../../types';
 
 interface PurchaseStatementTabProps {
   showNotify: (type: 'success' | 'error', message: string) => void;
@@ -48,6 +50,12 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<StatementItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [customers, setCustomers] = useState<Customer[]>([]);
+
+  // Fetch Customers on mount
+  useEffect(() => {
+    fetchCustomersAPI().then(setCustomers);
+  }, []);
 
   // Fetch Inventory items on mount
   useEffect(() => {
@@ -179,6 +187,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
         sellerInfo={sellerInfo}
         onChangeSellerInfo={setSellerInfo}
         itemsCount={items.length}
+        customers={customers}
         onSaveToDb={handleSaveToDb}
         onOpenHistory={() => setShowHistoryModal(true)}
         onExportExcel={handleExportExcel}

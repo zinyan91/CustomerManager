@@ -3,8 +3,11 @@ import { Plus, Trash2 } from 'lucide-react';
 import type { DossierCommon, LineItem, Party } from '../registry/types';
 import type { PaymentStageItem } from '../DocumentForm';
 import { DateInput } from '../../DateInput';
+import { CustomerPicker } from '../../ui/CustomerPicker';
 import { formatMoneyInput } from '../../../lib/utils';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../../lib/documentOptions';
+import { fetchCustomersAPI } from '../../../lib/api';
+import type { Customer } from '../../../types';
 
 const INPUT = 'w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent text-xs';
 const LABEL = 'block mb-1 text-[11px] font-semibold text-ink-muted';
@@ -60,6 +63,27 @@ export const CommonInfoForm: React.FC<{
   common: DossierCommon;
   patch: (p: Partial<DossierCommon>) => void;
 }> = ({ common, patch }) => {
+  const [customers, setCustomers] = React.useState<Customer[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    fetchCustomersAPI().then(setCustomers).catch(() => {});
+  }, []);
+
+  const handleSelectCustomer = (id: number | null) => {
+    setSelectedCustomerId(id);
+    if (id !== null) {
+      const c = customers.find(item => item.Id === id);
+      if (c) {
+        setPartyA({
+          name: c.FullName,
+          cccd: c.NationalId || '',
+          address: c.Address || '',
+        });
+      }
+    }
+  };
+
   const setPartyA = (p: Partial<Party>) => patch({ partyA: { ...common.partyA, ...p } });
   const setPartyB = (p: Partial<Party>) => patch({ partyB: { ...common.partyB, ...p } });
   const setBank = (p: Partial<DossierCommon['bank']>) => patch({ bank: { ...common.bank, ...p } });
@@ -90,7 +114,16 @@ export const CommonInfoForm: React.FC<{
       </summary>
 
       <div className="p-4 space-y-5 border-t border-line/50">
-        <Group title="Bên A" accent="border-accent/50 text-accent">
+        <Group title="Bên A (Bên mua / Người vay)" accent="border-accent/50 text-accent">
+          <div className="mb-3">
+            <label className={LABEL}>Chọn nhanh từ Danh sách Khách hàng</label>
+            <CustomerPicker
+              customers={customers}
+              selectedCustomerId={selectedCustomerId}
+              onSelectCustomer={handleSelectCustomer}
+              placeholder="— Tìm theo tên, CIF, SĐT để điền Bên A —"
+            />
+          </div>
           <PartyFields party={common.partyA} set={setPartyA} />
         </Group>
 

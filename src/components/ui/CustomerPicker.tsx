@@ -6,7 +6,7 @@ export interface CustomerSummaryItem {
   Id: number;
   FullName: string;
   CifKh: string;
-  Phone?: string;
+  Phone?: string | null;
 }
 
 export interface CustomerPickerProps {

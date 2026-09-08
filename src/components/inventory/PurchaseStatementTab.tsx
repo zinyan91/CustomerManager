@@ -41,6 +41,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
     sellerIdCard: '080166012861',
     buyerName: 'NGUYỄN THÙY DUNG',
     buyerIdCard: '051188004003',
+    buyerAddress: 'TP.HCM',
     statementDateStr: todayIso(),
   });
 

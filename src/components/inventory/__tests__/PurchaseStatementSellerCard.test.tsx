@@ -15,6 +15,7 @@ describe('PurchaseStatementSellerCard', () => {
     sellerIdCard: '080166012861',
     buyerName: 'NGUYỄN THÙY DUNG',
     buyerIdCard: '051188004003',
+    buyerAddress: 'TP.HCM',
     statementDateStr: '2026-09-08',
     paymentMethod: 'transfer',
   };
@@ -56,8 +57,9 @@ describe('PurchaseStatementSellerCard', () => {
 
     const buyerNameInput = screen.getByDisplayValue('NGUYỄN THÙY DUNG');
     expect(buyerNameInput).toBeTruthy();
-    const buyerCccdInput = screen.getByDisplayValue('051188004003');
-    expect(buyerCccdInput).toBeTruthy();
+    const buyerAddressInput = screen.getByPlaceholderText('Địa chỉ Bên mua') as HTMLInputElement;
+    expect(buyerAddressInput).toBeTruthy();
+    expect(buyerAddressInput.value).toBe('TP.HCM');
 
     const cashRadio = screen.getByLabelText(/Tiền mặt/i);
     fireEvent.click(cashRadio);
@@ -92,7 +94,7 @@ describe('PurchaseStatementSellerCard', () => {
     expect(onChangeSellerInfo).toHaveBeenCalledWith(
       expect.objectContaining({
         buyerName: 'NGUYỄN VĂN A',
-        buyerIdCard: '012345678901',
+        buyerAddress: 'Hà Nội',
       })
     );
   });

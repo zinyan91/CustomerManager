@@ -133,7 +133,7 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
           <div className="sm:col-span-2 space-y-2">
             <div className="flex items-center justify-between">
               <label className="block text-[10px] text-ink-faint uppercase font-bold tracking-wider">
-                Bên mua hàng (Họ tên & CCCD)
+                Bên mua hàng (Họ tên & Địa chỉ)
               </label>
             </div>
             {customers.length > 0 && (
@@ -147,6 +147,7 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
                       ...sellerInfo,
                       buyerName: c.FullName,
                       buyerIdCard: c.NationalId || sellerInfo.buyerIdCard,
+                      buyerAddress: c.Address || sellerInfo.buyerAddress || '',
                     });
                   }
                 }}
@@ -163,10 +164,10 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
               />
               <input
                 type="text"
-                placeholder="Số CMND/CCCD Bên mua"
-                value={sellerInfo.buyerIdCard}
-                onChange={e => onChangeSellerInfo({ ...sellerInfo, buyerIdCard: e.target.value })}
-                className={`w-full rounded-xl p-2 font-mono ${UI.inputStyle}`}
+                placeholder="Địa chỉ Bên mua"
+                value={sellerInfo.buyerAddress || ''}
+                onChange={e => onChangeSellerInfo({ ...sellerInfo, buyerAddress: e.target.value })}
+                className={`w-full rounded-xl p-2 ${UI.inputStyle}`}
               />
             </div>
           </div>

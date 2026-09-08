@@ -411,32 +411,24 @@ export function buildPurchaseStatementXlsx(
   rows.push([{ value: 'BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ', style: { bold: true, align: 'center' } }]);
   merges.push('A5:I5');
 
-  // Row 6: Trống
   rows.push([]);
 
-  // Row 7: Bên bán hàng
   rows.push([{ value: `Bên bán hàng: ${info.sellerName || ''}`, style: { bold: true } }]);
   merges.push('A7:I7');
 
-  // Row 8: CMND/CCCD Bên bán (chỉ CMND/CCCD số)
   rows.push([{ value: `CMND/CCCD số: ${info.sellerIdCard || ''}` }]);
   merges.push('A8:I8');
 
-  // Row 9: Trống
   rows.push([]);
 
-  // Row 10: Bên mua hàng
   rows.push([{ value: `Bên mua hàng: ${info.buyerName || ''}`, style: { bold: true } }]);
   merges.push('A10:I10');
 
-  // Row 11: CMND/CCCD Bên mua
-  rows.push([{ value: `CMND/CCCD số: ${info.buyerIdCard || ''}` }]);
+  rows.push([{ value: `Địa chỉ: ${info.buyerAddress || ''}` }]);
   merges.push('A11:I11');
 
-  // Row 12: Trống
   rows.push([]);
 
-  // Table Header Row 1 (Row 13 in Excel)
   const bHeaderStyle: XlsxStyle = { bold: true, align: 'center', vAlign: 'center', border: true };
   rows.push([
     { value: 'Ngày, tháng,\nnăm', style: bHeaderStyle },
@@ -454,7 +446,6 @@ export function buildPurchaseStatementXlsx(
   merges.push('E13:H13');
   merges.push('I13:I14');
 
-  // Table Header Row 2 (Row 14 in Excel)
   rows.push([
     { value: '', style: bHeaderStyle },
     { value: 'Tên người bán', style: bHeaderStyle },
@@ -499,7 +490,6 @@ export function buildPurchaseStatementXlsx(
     ]);
   });
 
-  // Total Summary Row IMMEDIATELY after endRow (NO empty row before Total)
   const totalRowIndex = endRow + 1;
   const bTotalStyle: XlsxStyle = { bold: true, border: true };
 
@@ -516,10 +506,8 @@ export function buildPurchaseStatementXlsx(
   ]);
   merges.push(`A${totalRowIndex}:G${totalRowIndex}`);
 
-  // Empty row (Row totalRowIndex + 1)
   rows.push([]);
 
-  // Date Footer Row (Row totalRowIndex + 2)
   const dateRowIndex = totalRowIndex + 2;
   rows.push([
     { value: '' }, { value: '' }, { value: '' }, { value: '' }, { value: '' },
@@ -528,10 +516,8 @@ export function buildPurchaseStatementXlsx(
   ]);
   merges.push(`F${dateRowIndex}:H${dateRowIndex}`);
 
-  // Empty row (Row dateRowIndex + 1)
   rows.push([]);
 
-  // Signature titles Row (Row dateRowIndex + 2)
   const sigTitleRowIndex = dateRowIndex + 2;
   rows.push([
     { value: 'Bên bán hàng', style: { bold: true, align: 'center' } },
@@ -542,19 +528,7 @@ export function buildPurchaseStatementXlsx(
   merges.push(`A${sigTitleRowIndex}:C${sigTitleRowIndex}`);
   merges.push(`F${sigTitleRowIndex}:H${sigTitleRowIndex}`);
 
-  // 5 empty rows for signature space
   rows.push([]); rows.push([]); rows.push([]); rows.push([]); rows.push([]);
-
-  // Signature names Row
-  const sigNameRowIndex = sigTitleRowIndex + 6;
-  rows.push([
-    { value: (info.sellerName || '').toUpperCase(), style: { bold: true, align: 'center' } },
-    { value: '' }, { value: '' }, { value: '' }, { value: '' },
-    { value: (info.buyerName || '').toUpperCase(), style: { bold: true, align: 'center' } },
-    { value: '' }, { value: '' }, { value: '' },
-  ]);
-  merges.push(`A${sigNameRowIndex}:C${sigNameRowIndex}`);
-  merges.push(`F${sigNameRowIndex}:H${sigNameRowIndex}`);
 
   const sheet: XlsxSheet = {
     name: 'Bảng 1',
@@ -571,21 +545,17 @@ export function buildPurchaseStatementDocHtml(
   info: StatementSellerInfo
 ): string {
   const summary = computeStatementSummary(items);
-  const n = items.length;
-  const sellerIdText = getComputedBankAccText(info);
 
   const itemRows = items.map((it, idx) => {
     const c = computeStatementItem(it);
     return `
       <tr>
-        ${idx === 0 ? `
-          <td rowspan="${n}" class="text-center">${c.dateStr || '…../…../2024'}</td>
-          <td rowspan="${n}">${info.sellerName || ''}</td>
-          <td rowspan="${n}">${info.sellerAddress || ''}</td>
-          <td rowspan="${n}">${sellerIdText}</td>
-        ` : ''}
+        <td class="text-center font-mono">${idx === 0 ? (c.dateStr || '&hellip;') : ''}</td>
+        <td>${idx === 0 ? (info.sellerName || '') : ''}</td>
+        <td>${idx === 0 ? (info.sellerAddress || '') : ''}</td>
+        <td>${idx === 0 ? getComputedBankAccText(info) : ''}</td>
         <td class="font-bold">${c.itemName}</td>
-        <td class="text-center">${c.unit || 'Cái'}</td>
+        <td class="text-center font-mono">${c.unit || 'Cái'}</td>
         <td class="text-right font-mono">${c.qty.toLocaleString('vi-VN')}</td>
         <td class="text-right font-mono">${c.unitPrice.toLocaleString('vi-VN')}</td>
         <td class="text-right font-mono font-bold">${c.amount.toLocaleString('vi-VN')}</td>
@@ -602,13 +572,13 @@ export function buildPurchaseStatementDocHtml(
       <title>Bảng kê mua bán hàng hóa dịch vụ</title>
       <style>
         @page { size: A4 landscape; margin: 12mm 10mm 12mm 15mm; }
-        body { font-family: 'Times New Roman', Times, serif, sans-serif; font-size: 13px; color: #000000; margin: 0; padding: 0; }
-        .nation-header { text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 14px; }
-        .doc-title { text-align: center; font-size: 18px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; }
-        .party-box { margin-bottom: 15px; font-size: 13px; line-height: 1.6; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-        th { background-color: #ffffff; color: #000000; font-weight: bold; border: 1px solid #000000; padding: 6px 4px; text-align: center; }
-        td { border: 1px solid #000000; padding: 6px 4px; }
+        body { font-family: 'Times New Roman', Times, serif, sans-serif; font-size: 14px; color: #000000; margin: 0; padding: 0; }
+        .nation-header { text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 15px; }
+        .doc-title { text-align: center; font-size: 19px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; }
+        .party-box { margin-bottom: 15px; font-size: 14px; line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; line-height: 1.45; }
+        th { background-color: #ffffff; color: #000000; font-weight: bold; border: 1px solid #000000; padding: 8px 6px; text-align: center; }
+        td { border: 1px solid #000000; padding: 8px 6px; }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
@@ -621,7 +591,7 @@ export function buildPurchaseStatementDocHtml(
       <div class="nation-header">
         CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br/>
         <small style="font-weight: normal; font-style: italic;">Độc lập - Tự do - Hạnh phúc</small><br/>
-        <span style="font-size:11px;">*************</span>
+        <span style="font-size:12px;">*************</span>
       </div>
 
       <div class="doc-title">BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ</div>
@@ -633,7 +603,7 @@ export function buildPurchaseStatementDocHtml(
           : `<strong>CMND/CCCD số:</strong> ${info.sellerIdCard || '....................................'}<br/>`}
         <br/>
         <strong>Bên mua hàng:</strong> ${info.buyerName || '....................................'}<br/>
-        <strong>CMND/CCCD số:</strong> ${info.buyerIdCard || '....................................'}
+        <strong>Địa chỉ:</strong> ${info.buyerAddress || '....................................'}
       </div>
 
       <table>
@@ -669,14 +639,12 @@ export function buildPurchaseStatementDocHtml(
         <div class="sig-box">
           <strong>BÊN BÁN HÀNG</strong><br/>
           <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
-          <div style="height: 65px;"></div>
-          <strong>${(info.sellerName || '').toUpperCase()}</strong>
+          <div style="height: 75px;"></div>
         </div>
         <div class="sig-box">
           <strong>BÊN MUA HÀNG</strong><br/>
           <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
-          <div style="height: 65px;"></div>
-          <strong>${(info.buyerName || '').toUpperCase()}</strong>
+          <div style="height: 75px;"></div>
         </div>
       </div>
     </body>

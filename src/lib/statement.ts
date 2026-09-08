@@ -6,6 +6,7 @@ export interface StatementSellerInfo {
   sellerIdCard: string;
   buyerName: string;
   buyerIdCard: string;
+  buyerAddress?: string;
   statementDateStr: string;
   paymentMethod?: 'transfer' | 'cash';
   bankAccNo?: string;
@@ -23,13 +24,11 @@ export function getComputedBankAccText(info: StatementSellerInfo): string {
   const acc = info.bankAccNo || '';
   const bank = info.bankName || '';
   const branch = info.bankBranch || '';
-  const owner = info.bankOwner !== undefined ? info.bankOwner : info.sellerName;
 
-  if (acc || bank || owner) {
+  if (acc || bank) {
     const parts = [];
     if (acc) parts.push(`STK: ${acc}`);
     if (bank) parts.push(`Ngân hàng ${bank}${branch ? ` CN ${branch}` : ''}`);
-    if (owner) parts.push(`(Chủ TK: ${owner})`);
     return parts.join(' - ');
   }
 

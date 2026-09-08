@@ -7,7 +7,7 @@ import { bangKeTemplate, bangKeToStatement } from '../templates/bangKe';
 function sampleCommon() {
   const c = emptyCommon();
   c.contractDate = '2026-04-09';
-  c.partyA = { name: 'NGÔ NHỊ ĐẠT', cccd: '0343 0300 4676', cccdDate: '', cccdPlace: '', address: '', birthYear: '' };
+  c.partyA = { name: 'NGÔ NHỊ ĐẠT', cccd: '0343 0300 4676', cccdDate: '', cccdPlace: '', address: 'Hà Nội', birthYear: '' };
   c.partyB = { name: 'TRẦN THỊ PHƯƠNG', cccd: '0791 7802 5859', cccdDate: '', cccdPlace: '',
     address: 'Q10, TP.HCM', birthYear: '' };
   c.bank = { owner: 'TRẦN THỊ PHƯƠNG', accNo: '0123456789', name: 'Vietcombank', branch: 'TP.HCM' };
@@ -25,6 +25,7 @@ it('bangKeToStatement maps common → statement items + seller info', () => {
   expect(info.sellerName).toBe('TRẦN THỊ PHƯƠNG');
   expect(info.buyerName).toBe('NGÔ NHỊ ĐẠT');
   expect(info.buyerIdCard).toBe('0343 0300 4676');
+  expect(info.buyerAddress).toBe('Hà Nội');
   expect(info.bankAccNo).toBe('0123456789');
   expect(info.paymentMethod).toBe('transfer');
 });
@@ -44,6 +45,7 @@ it('is marked standalone and buildHtml equals the reused statement builder (gold
   const expectedInfoTransfer: StatementSellerInfo = {
     sellerName: 'TRẦN THỊ PHƯƠNG', sellerAddress: 'Q10, TP.HCM', sellerBankAcc: '',
     sellerIdCard: '0791 7802 5859', buyerName: 'NGÔ NHỊ ĐẠT', buyerIdCard: '0343 0300 4676',
+    buyerAddress: 'Hà Nội',
     statementDateStr: '2026-04-09', paymentMethod: 'transfer',
     bankAccNo: '0123456789', bankName: 'Vietcombank', bankOwner: 'TRẦN THỊ PHƯƠNG', bankBranch: 'TP.HCM',
   };

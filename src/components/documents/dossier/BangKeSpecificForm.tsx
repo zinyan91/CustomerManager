@@ -51,7 +51,7 @@ export const BangKeSpecificForm: React.FC<{
           <span className="font-bold uppercase text-[10px] block text-accent mb-0.5">
             Thông tin chuyển khoản hiển thị trên chứng từ:
           </span>
-          Tự động lấy theo mục <strong>Tài khoản ngân hàng</strong> ở Thông tin chung (STK, Ngân hàng, Chủ tài khoản, Chi nhánh).
+          Tự động lấy theo mục <strong>Tài khoản ngân hàng</strong> ở Thông tin chung (STK, Ngân hàng, Chi nhánh).
         </div>
       )}
     </div>

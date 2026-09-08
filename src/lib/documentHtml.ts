@@ -173,7 +173,6 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
     deposit,
     saleSellerCccdPlace,
     salePayMethod,
-    saleBankOwner,
     saleBankAccNo,
     saleBankName,
     saleBankBranch,
@@ -664,7 +663,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         ${salePayMethod === 'cash' ? `
         <p class="clause-p no-indent">- CCCD số: <strong>${nfc(saleSellerCccd)}</strong> &nbsp;|&nbsp; Ngày cấp: ${nfc(saleSellerCccdDate)} &nbsp;|&nbsp; Nơi cấp: ${nfc(saleSellerCccdPlace)}</p>
         ` : `
-        <p class="clause-p no-indent">- Số tài khoản: <strong>${nfc(saleBankAccNo)}</strong> &nbsp;|&nbsp; Chủ tài khoản: <strong>${nfc(saleBankOwner || saleSellerName)}</strong></p>
+        <p class="clause-p no-indent">- Số tài khoản: <strong>${nfc(saleBankAccNo)}</strong></p>
         <p class="clause-p no-indent">- Ngân hàng: <strong>${nfc(saleBankName)}</strong>${saleBankBranch ? ` &nbsp;|&nbsp; Chi nhánh: ${nfc(saleBankBranch)}` : ''}</p>
         `}
 

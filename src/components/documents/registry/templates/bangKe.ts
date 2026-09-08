@@ -24,6 +24,7 @@ export function bangKeToStatement(common: DossierCommon, specific?: BangKeSpecif
     sellerIdCard: common.partyB.cccd,
     buyerName: common.partyA.name,
     buyerIdCard: common.partyA.cccd,
+    buyerAddress: common.partyA.address,
     statementDateStr: common.contractDate,
     paymentMethod: specific?.paymentMethod ?? 'transfer',
     bankAccNo: common.bank.accNo,

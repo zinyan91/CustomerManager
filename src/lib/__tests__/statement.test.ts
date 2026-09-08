@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   computeStatementItem, computeStatementSummary,
   computeRetailInvoiceItem, computeRetailInvoiceSummary,
+  getComputedBankAccText,
   type StatementItem, type RetailInvoiceItem,
 } from '../statement';
 
@@ -37,5 +38,25 @@ describe('Purchase Statement & Retail Invoice Tests', () => {
     expect(summary.totalItems).toBe(2);
     expect(summary.totalQty).toBe(20);
     expect(summary.totalAmount).toBe(2350000);
+  });
+
+  it('getComputedBankAccText định dạng STK gọn gàng, không hiển thị Chủ TK', () => {
+    const text = getComputedBankAccText({
+      sellerName: 'LÊ THỊ HOÀNG ÂN',
+      sellerAddress: 'TP.HCM',
+      sellerBankAcc: '',
+      sellerIdCard: '080166012861',
+      buyerName: 'NGUYỄN THÙY DUNG',
+      buyerIdCard: '051188004003',
+      statementDateStr: '2026-09-08',
+      bankAccNo: '9975639612',
+      bankName: 'Techcombank',
+      bankBranch: 'HCM',
+      bankOwner: 'LÊ THỊ HOÀNG ÂN',
+      paymentMethod: 'transfer',
+    });
+
+    expect(text).toBe('STK: 9975639612 - Ngân hàng Techcombank CN HCM');
+    expect(text).not.toContain('Chủ TK');
   });
 });

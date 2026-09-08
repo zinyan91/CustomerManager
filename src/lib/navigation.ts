@@ -60,7 +60,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'templates', labelKey: 'nav.templates', groupKey: 'nav.groupProcurement', icon: FileSignature, path: ROUTE_OF.templates, keywords: ['bieu mau', 'chung tu', 'template', 'soan hop dong'] },
       { id: 'shopping-checklist', labelKey: 'nav.shoppingChecklist', groupKey: 'nav.groupProcurement', icon: PackageCheck, path: ROUTE_OF['shopping-checklist'], keywords: ['vat dung', 'mua sam', 'noi that', 'tang', 'phong', 'shopping', 'procurement', 'checklist'] },
-      { id: 'purchase-statement', labelKey: 'nav.purchaseStatement', groupKey: 'nav.groupProcurement', icon: FileText, path: ROUTE_OF['purchase-statement'], keywords: ['bang ke mua hang', 'hoa don', 'purchase'] },
       { id: 'retail-invoice', labelKey: 'nav.retailInvoice', groupKey: 'nav.groupProcurement', icon: Receipt, path: ROUTE_OF['retail-invoice'], keywords: ['hoa don ban le', 'ban le', 'invoice'] },
     ],
   },

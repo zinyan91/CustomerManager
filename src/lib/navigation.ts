@@ -58,6 +58,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     groupKey: 'nav.groupProcurement',
     items: [
+      { id: 'templates', labelKey: 'nav.templates', groupKey: 'nav.groupProcurement', icon: FileSignature, path: ROUTE_OF.templates, keywords: ['bieu mau', 'chung tu', 'template', 'soan hop dong'] },
       { id: 'shopping-checklist', labelKey: 'nav.shoppingChecklist', groupKey: 'nav.groupProcurement', icon: PackageCheck, path: ROUTE_OF['shopping-checklist'], keywords: ['vat dung', 'mua sam', 'noi that', 'tang', 'phong', 'shopping', 'procurement', 'checklist'] },
       { id: 'purchase-statement', labelKey: 'nav.purchaseStatement', groupKey: 'nav.groupProcurement', icon: FileText, path: ROUTE_OF['purchase-statement'], keywords: ['bang ke mua hang', 'hoa don', 'purchase'] },
       { id: 'retail-invoice', labelKey: 'nav.retailInvoice', groupKey: 'nav.groupProcurement', icon: Receipt, path: ROUTE_OF['retail-invoice'], keywords: ['hoa don ban le', 'ban le', 'invoice'] },
@@ -76,7 +77,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'mdsdv', labelKey: 'nav.mdsdv', groupKey: 'nav.groupLookupControl', icon: Target, path: ROUTE_OF.mdsdv, keywords: ['muc dich su dung von', 'mdsdv'] },
       { id: 'card-policies', labelKey: 'nav.cardPolicies', groupKey: 'nav.groupLookupControl', icon: BookOpen, path: ROUTE_OF['card-policies'], keywords: ['chinh sach the', 'quy dinh', 'policy'] },
-      { id: 'templates', labelKey: 'nav.templates', groupKey: 'nav.groupLookupControl', icon: FileSignature, path: ROUTE_OF.templates, keywords: ['bieu mau', 'chung tu', 'template'] },
       { id: 'quiz-bank', labelKey: 'nav.quizBank', groupKey: 'nav.groupLookupControl', icon: GraduationCap, path: ROUTE_OF['quiz-bank'], keywords: ['ngan hang cau hoi', 'quiz', 'on tap'] },
       { id: 'post-loan', labelKey: 'nav.postLoan', groupKey: 'nav.groupLookupControl', icon: ShieldAlert, path: ROUTE_OF['post-loan'], keywords: ['kiem soat sau vay', 'kssv', 'post loan', 'kiem tra'] },
       { id: 'settings', labelKey: 'nav.settings', groupKey: 'nav.groupLookupControl', icon: Settings, path: ROUTE_OF.settings, keywords: ['cai dat', 'he thong', 'settings', 'config'] },

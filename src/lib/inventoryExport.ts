@@ -416,7 +416,7 @@ export function buildPurchaseStatementXlsx(
   rows.push([{ value: `Bên bán hàng: ${info.sellerName || ''}`, style: { bold: true } }]);
   merges.push('A7:I7');
 
-  rows.push([{ value: `CMND/CCCD số: ${info.sellerIdCard || ''}` }]);
+  rows.push([{ value: `Địa chỉ: ${info.sellerAddress || ''}` }]);
   merges.push('A8:I8');
 
   rows.push([]);
@@ -450,7 +450,7 @@ export function buildPurchaseStatementXlsx(
     { value: '', style: bHeaderStyle },
     { value: 'Tên người bán', style: bHeaderStyle },
     { value: 'Địa chỉ', style: bHeaderStyle },
-    { value: 'Số CMND/CCCD/\nSTK', style: bHeaderStyle },
+    { value: info.paymentMethod === 'cash' ? 'Hình thức\nthanh toán' : 'Thông tin STK /\nNgân hàng', style: bHeaderStyle },
     { value: 'Tên hàng hóa, dịch vụ', style: bHeaderStyle },
     { value: 'Số lượng\n(kg)', style: bHeaderStyle },
     { value: 'Đơn giá\n(kg)', style: bHeaderStyle },
@@ -571,20 +571,75 @@ export function buildPurchaseStatementDocHtml(
       <meta charset="utf-8"/>
       <title>Bảng kê mua bán hàng hóa dịch vụ</title>
       <style>
-        @page { size: A4 landscape; margin: 12mm 10mm 12mm 15mm; }
-        body { font-family: 'Times New Roman', Times, serif, sans-serif; font-size: 14px; color: #000000; margin: 0; padding: 0; }
-        .nation-header { text-align: center; font-weight: bold; margin-bottom: 10px; font-size: 15px; }
-        .doc-title { text-align: center; font-size: 19px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; }
-        .party-box { margin-bottom: 15px; font-size: 14px; line-height: 1.6; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; line-height: 1.45; }
-        th { background-color: #ffffff; color: #000000; font-weight: bold; border: 1px solid #000000; padding: 8px 6px; text-align: center; }
-        td { border: 1px solid #000000; padding: 8px 6px; }
+        * { box-sizing: border-box; }
+        @page { size: A4 landscape; margin: 10mm 12mm; }
+        @media print {
+          html, body {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          table { page-break-inside: auto; }
+          tr { page-break-inside: avoid; page-break-after: auto; }
+          thead { display: table-header-group; }
+          tfoot { display: table-footer-group; }
+          .sig-table { page-break-inside: avoid; }
+        }
+        body {
+          font-family: 'Times New Roman', Times, serif, sans-serif;
+          font-size: 13px;
+          color: #000000;
+          margin: 0;
+          padding: 0;
+          line-height: 1.35;
+        }
+        .nation-header { text-align: center; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
+        .doc-title { text-align: center; font-size: 18px; font-weight: bold; text-transform: uppercase; margin-bottom: 12px; }
+        .party-box { margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
+        table.doc-table {
+          width: 100%;
+          table-layout: fixed;
+          border-collapse: collapse;
+          margin-top: 10px;
+          font-size: 12px;
+          line-height: 1.35;
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
+        th {
+          background-color: #ffffff;
+          color: #000000;
+          font-weight: bold;
+          border: 1px solid #000000;
+          padding: 6px 4px;
+          text-align: center;
+          vertical-align: middle;
+        }
+        td {
+          border: 1px solid #000000;
+          padding: 5px 4px;
+          vertical-align: middle;
+        }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .font-bold { font-weight: bold; }
-        .font-mono { font-family: 'Courier New', monospace; }
-        .sig-grid { display: flex; justify-content: space-between; margin-top: 30px; page-break-inside: avoid; }
-        .sig-box { width: 40%; text-align: center; }
+        .font-mono { font-family: 'Courier New', Courier, monospace; }
+        .sig-table {
+          width: 100%;
+          border-collapse: collapse;
+          border: none;
+          margin-top: 24px;
+          page-break-inside: avoid;
+        }
+        .sig-table td {
+          width: 50%;
+          border: none;
+          text-align: center;
+          vertical-align: top;
+          padding: 0;
+        }
       </style>
     </head>
     <body>
@@ -598,15 +653,28 @@ export function buildPurchaseStatementDocHtml(
 
       <div class="party-box">
         <strong>Bên bán hàng:</strong> ${info.sellerName || '....................................'}<br/>
+        <strong>Địa chỉ:</strong> ${info.sellerAddress || '....................................'}<br/>
         ${info.paymentMethod === 'transfer' 
           ? `<strong>Thông tin chuyển khoản:</strong> ${getComputedBankAccText(info)}<br/>` 
-          : `<strong>CMND/CCCD số:</strong> ${info.sellerIdCard || '....................................'}<br/>`}
+          : ''}
         <br/>
         <strong>Bên mua hàng:</strong> ${info.buyerName || '....................................'}<br/>
         <strong>Địa chỉ:</strong> ${info.buyerAddress || '....................................'}
       </div>
 
-      <table>
+      <table class="doc-table">
+        <colgroup>
+          <col style="width: 8%;"/>
+          <col style="width: 11%;"/>
+          <col style="width: 15%;"/>
+          <col style="width: 14%;"/>
+          <col style="width: 16%;"/>
+          <col style="width: 4.5%;"/>
+          <col style="width: 6.5%;"/>
+          <col style="width: 8.5%;"/>
+          <col style="width: 10.5%;"/>
+          <col style="width: 6%;"/>
+        </colgroup>
         <thead>
           <tr>
             <th rowspan="2">Ngày, tháng, năm</th>
@@ -617,7 +685,7 @@ export function buildPurchaseStatementDocHtml(
           <tr>
             <th>Tên người bán</th>
             <th>Địa chỉ</th>
-            <th>${info.paymentMethod === 'cash' ? 'Số CMND/CCCD' : 'Thông tin STK / Ngân hàng'}</th>
+            <th>${info.paymentMethod === 'cash' ? 'Hình thức thanh toán' : 'Thông tin STK / Ngân hàng'}</th>
             <th>Tên hàng hóa, dịch vụ</th>
             <th>ĐVT</th>
             <th>Số lượng (kg)</th>
@@ -635,18 +703,20 @@ export function buildPurchaseStatementDocHtml(
         </tbody>
       </table>
 
-      <div class="sig-grid">
-        <div class="sig-box">
-          <strong>BÊN BÁN HÀNG</strong><br/>
-          <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
-          <div style="height: 75px;"></div>
-        </div>
-        <div class="sig-box">
-          <strong>BÊN MUA HÀNG</strong><br/>
-          <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
-          <div style="height: 75px;"></div>
-        </div>
-      </div>
+      <table class="sig-table">
+        <tr>
+          <td>
+            <strong>BÊN BÁN HÀNG</strong><br/>
+            <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
+            <div style="height: 70px;"></div>
+          </td>
+          <td>
+            <strong>BÊN MUA HÀNG</strong><br/>
+            <small style="font-style: italic;">(Ký và ghi rõ họ tên)</small>
+            <div style="height: 70px;"></div>
+          </td>
+        </tr>
+      </table>
     </body>
     </html>
   `;

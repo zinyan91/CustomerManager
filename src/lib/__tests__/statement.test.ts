@@ -59,4 +59,19 @@ describe('Purchase Statement & Retail Invoice Tests', () => {
     expect(text).toBe('STK: 9975639612 - Ngân hàng Techcombank CN HCM');
     expect(text).not.toContain('Chủ TK');
   });
+
+  it('getComputedBankAccText cho tiền mặt trả về Tiền mặt, không hiển thị CCCD', () => {
+    const text = getComputedBankAccText({
+      sellerName: 'LÊ THỊ HOÀNG ÂN',
+      sellerAddress: 'TP.HCM',
+      sellerBankAcc: '',
+      sellerIdCard: '080166012861',
+      buyerName: 'NGUYỄN THÙY DUNG',
+      buyerIdCard: '051188004003',
+      statementDateStr: '2026-09-08',
+      paymentMethod: 'cash',
+    });
+    expect(text).toBe('Tiền mặt');
+    expect(text).not.toContain('080166012861');
+  });
 });

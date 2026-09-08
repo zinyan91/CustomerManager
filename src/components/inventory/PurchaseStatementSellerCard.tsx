@@ -116,20 +116,7 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-[10px] text-ink-faint uppercase font-bold tracking-wider mb-1">
-              Số CMND / CCCD Bên bán
-            </label>
-            <input
-              type="text"
-              placeholder="Nhập số CMND/CCCD"
-              value={sellerInfo.sellerIdCard}
-              onChange={e => onChangeSellerInfo({ ...sellerInfo, sellerIdCard: e.target.value })}
-              className={`w-full rounded-xl p-2 font-mono font-bold text-accent ${UI.inputStyle}`}
-            />
-          </div>
-
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="sm:col-span-2 space-y-2">
             <div className="flex items-center justify-between">
               <label className="block text-[10px] text-ink-faint uppercase font-bold tracking-wider">
@@ -247,7 +234,7 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
               <span className="font-bold text-[10px] uppercase text-amber-600 dark:text-amber-400">
                 Thông tin thanh toán hiển thị trên chứng từ:
               </span>{' '}
-              <span className="font-bold">{sellerInfo.sellerIdCard ? `CCCD: ${sellerInfo.sellerIdCard}` : 'Tiền mặt'}</span>
+              <span className="font-bold">Tiền mặt</span>
             </div>
           ) : (
             /* Bank Transfer Fields */

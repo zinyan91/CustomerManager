@@ -59,3 +59,22 @@ it('is marked standalone and buildHtml equals the reused statement builder (gold
   const expectedCash = buildPurchaseStatementDocHtml(expectedItems, expectedInfoCash);
   expect(bangKeTemplate.buildHtml(common, { paymentMethod: 'cash' })).toBe(expectedCash);
 });
+
+it('supports buildXlsx to export valid Excel file for purchase statement', () => {
+  expect(bangKeTemplate.buildXlsx).toBeDefined();
+  const common = sampleCommon();
+  const xlsx = bangKeTemplate.buildXlsx!(common, { paymentMethod: 'transfer' });
+  expect(xlsx).toBeInstanceOf(Uint8Array);
+  expect(xlsx.length).toBeGreaterThan(0);
+});
+
+it('buildPurchaseStatementDocHtml contains robust print setup preventing table clipping', () => {
+  const common = sampleCommon();
+  const html = bangKeTemplate.buildHtml(common, { paymentMethod: 'transfer' });
+  expect(html).toContain('size: A4 landscape');
+  expect(html).toContain('table.doc-table');
+  expect(html).toContain('table-layout: fixed');
+  expect(html).toContain('<colgroup>');
+  expect(html).toContain('class="sig-table"');
+  expect(html).toContain('page-break-inside: avoid');
+});

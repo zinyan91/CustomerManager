@@ -36,6 +36,7 @@ export interface DocTemplate<S> {
   specificDefaults: S;
   standalone?: boolean;   // true = buildHtml trả tài liệu HTML hoàn chỉnh (tự style/khổ), preview & in riêng
   buildHtml: (common: DossierCommon, specific: S) => string;
+  buildXlsx?: (common: DossierCommon, specific: S) => Uint8Array;
   attachments?: (common: DossierCommon, specific: S) => Attachment[];
 }
 

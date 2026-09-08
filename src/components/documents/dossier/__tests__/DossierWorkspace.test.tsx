@@ -27,4 +27,11 @@ describe('DossierWorkspace', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Đề Nghị TT (Mua Bán)' }));
     expect(screen.getByRole('heading', { name: 'Đề Nghị TT (Mua Bán)' })).toBeTruthy();
   });
+
+  it('switching to Bảng Kê Bán Hàng renders Excel export button in StandaloneDocPreview', () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole('button', { name: 'Bảng Kê Bán Hàng' }));
+    expect(screen.getByRole('heading', { name: 'Bảng Kê Bán Hàng' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Lưu dạng Excel (.xlsx)' })).toBeTruthy();
+  });
 });

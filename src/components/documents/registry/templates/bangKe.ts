@@ -1,5 +1,5 @@
 import { ClipboardList } from 'lucide-react';
-import { buildPurchaseStatementDocHtml } from '../../../../lib/inventoryExport';
+import { buildPurchaseStatementDocHtml, buildPurchaseStatementXlsx } from '../../../../lib/inventoryExport';
 import type { StatementItem, StatementSellerInfo } from '../../../../lib/statement';
 import type { DocTemplate, DossierCommon } from '../types';
 
@@ -44,5 +44,9 @@ export const bangKeTemplate: DocTemplate<BangKeSpecific> = {
   buildHtml: (common, specific) => {
     const { items, info } = bangKeToStatement(common, specific);
     return buildPurchaseStatementDocHtml(items, info);
+  },
+  buildXlsx: (common, specific) => {
+    const { items, info } = bangKeToStatement(common, specific);
+    return buildPurchaseStatementXlsx(items, info);
   },
 };

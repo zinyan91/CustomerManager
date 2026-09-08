@@ -19,7 +19,7 @@ export interface StatementSellerInfo {
 export function getComputedBankAccText(info: StatementSellerInfo): string {
   if (info.customStkText) return info.customStkText;
   if (info.paymentMethod === 'cash') {
-    return info.sellerIdCard || 'Tiền mặt';
+    return 'Tiền mặt';
   }
   const acc = info.bankAccNo || '';
   const bank = info.bankName || '';
@@ -32,7 +32,7 @@ export function getComputedBankAccText(info: StatementSellerInfo): string {
     return parts.join(' - ');
   }
 
-  return info.sellerBankAcc || info.sellerIdCard || 'STK: .....';
+  return info.sellerBankAcc || 'STK: .....';
 }
 
 export interface StatementItem {

@@ -6,12 +6,24 @@ import { CommonInfoForm } from './CommonInfoForm';
 import { SPECIFIC_FORM_BY_ID } from './specificForms';
 import { DocumentPreview } from '../DocumentPreview';
 import { StandaloneDocPreview } from './StandaloneDocPreview';
+import { downloadBytes } from '../../../lib/xlsExport';
+import { MIME_XLSX } from '../../../lib/xlsxWriter';
+import { todayIso } from '../../../lib/utils';
 
 export const DossierWorkspace: React.FC<{
   styles: UiClasses;
   ctrl: ReturnType<typeof useDocumentDossierController>;
 }> = ({ styles, ctrl }) => {
   const SpecificForm = SPECIFIC_FORM_BY_ID[ctrl.state.activeDocId];
+
+  const handleExportExcel = () => {
+    if (!ctrl.activeTemplate.buildXlsx) return;
+    const bytes = ctrl.activeTemplate.buildXlsx(ctrl.state.common, ctrl.activeSpecific);
+    const partyBName = ctrl.state.common.partyB.name.trim();
+    const safeName = partyBName ? partyBName.replace(/\s+/g, '_') : 'Bang_Ke';
+    const dateStr = ctrl.state.common.contractDate || todayIso();
+    downloadBytes(bytes, `Bang_Ke_Thu_Mua_${safeName}_${dateStr}.xlsx`, MIME_XLSX);
+  };
   return (
     <div className="space-y-0">
       <div className="p-3.5 sm:p-4 border-b border-line/60 bg-surface/40 flex flex-wrap gap-2">
@@ -62,6 +74,7 @@ export const DossierWorkspace: React.FC<{
               docTitle={ctrl.activeTemplate.label}
               docFilename={ctrl.activeTemplate.id}
               docHtml={ctrl.activeHtml}
+              onExportExcel={ctrl.activeTemplate.buildXlsx ? handleExportExcel : undefined}
             />
           ) : (
             <DocumentPreview

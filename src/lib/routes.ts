@@ -4,6 +4,7 @@ export const ROUTE_OF: Record<ScreenId, string> = {
   dashboard: '/dashboard',
 
   customers: '/customers',
+  disbursement: '/disbursement',
   'credit-contracts': '/credit-contracts',
   loans: '/loans',
   collaterals: '/collaterals',

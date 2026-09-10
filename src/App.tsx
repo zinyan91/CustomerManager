@@ -6,6 +6,7 @@ import { ROUTE_OF, DEFAULT_ROUTE } from './lib/routes';
 
 const DashboardView = lazy(() => import('./components/views/DashboardView').then(m => ({ default: m.DashboardView })));
 const CustomerListView = lazy(() => import('./components/views/CustomerListView').then(m => ({ default: m.CustomerListView })));
+const DisbursementPayeeListView = lazy(() => import('./components/views/DisbursementPayeeListView').then(m => ({ default: m.DisbursementPayeeListView })));
 const LoanPortfolioView = lazy(() => import('./components/views/LoanPortfolioView').then(m => ({ default: m.LoanPortfolioView })));
 const CreditContractView = lazy(() => import('./components/views/CreditContractView').then(m => ({ default: m.CreditContractView })));
 const CollateralView = lazy(() => import('./components/views/CollateralView').then(m => ({ default: m.CollateralView })));
@@ -33,6 +34,7 @@ export function App() {
         <Route index element={<Navigate to={DEFAULT_ROUTE} replace />} />
         <Route path={ROUTE_OF.dashboard} element={<Suspense fallback={<ViewSkeleton />}><DashboardView /></Suspense>} />
         <Route path={ROUTE_OF.customers} element={<Suspense fallback={<ViewSkeleton />}><CustomerListView /></Suspense>} />
+        <Route path={ROUTE_OF.disbursement} element={<Suspense fallback={<ViewSkeleton />}><DisbursementPayeeListView /></Suspense>} />
         <Route path={ROUTE_OF['credit-contracts']} element={<Suspense fallback={<ViewSkeleton />}><CreditContractView /></Suspense>} />
         <Route path={ROUTE_OF.loans} element={<Suspense fallback={<ViewSkeleton />}><LoanPortfolioView /></Suspense>} />
         <Route path={ROUTE_OF.collaterals} element={<Suspense fallback={<ViewSkeleton />}><CollateralView /></Suspense>} />

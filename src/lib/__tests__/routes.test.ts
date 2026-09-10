@@ -4,7 +4,7 @@ import { NAV_ITEMS } from '../navigation';
 
 describe('bảng đường dẫn', () => {
   it('mỗi màn có đúng một đường dẫn', () => {
-    expect(Object.keys(ROUTE_OF)).toHaveLength(21);
+    expect(Object.keys(ROUTE_OF)).toHaveLength(22);
     for (const item of NAV_ITEMS) {
       expect(ROUTE_OF[item.id], `thiếu đường dẫn cho ${item.id}`).toBeTruthy();
     }

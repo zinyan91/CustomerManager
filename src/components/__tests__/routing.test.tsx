@@ -25,6 +25,7 @@ import { AppLayout as AppLayoutDuoiTest } from '../AppLayout';
 
 vi.mock('../views/DashboardView', () => ({ DashboardView: () => <div>MAN:dashboard</div> }));
 vi.mock('../views/CustomerListView', () => ({ CustomerListView: () => <div>MAN:customers</div> }));
+vi.mock('../views/DisbursementPayeeListView', () => ({ DisbursementPayeeListView: () => <div>MAN:disbursement</div> }));
 vi.mock('../views/LoanPortfolioView', () => ({ LoanPortfolioView: () => <div>MAN:loans</div> }));
 vi.mock('../views/CreditContractView', () => ({ CreditContractView: () => <div>MAN:credit-contracts</div> }));
 vi.mock('../views/CollateralView', () => ({ CollateralView: () => <div>MAN:collaterals</div> }));

@@ -10,7 +10,7 @@ import { ROUTE_OF } from './routes';
 
 export type ScreenId =
   | 'dashboard'
-  | 'customers' | 'credit-contracts' | 'loans' | 'collaterals' | 'credit-cards'
+  | 'customers' | 'disbursement' | 'credit-contracts' | 'loans' | 'collaterals' | 'credit-cards'
   | 'calculators' | 'business-plan' | 'corporate-financial' | 'inventory' | 'shopping-checklist' | 'purchase-statement'
   | 'retail-invoice' | 'rate-quote' | 'cof'
   | 'mdsdv' | 'card-policies' | 'templates' | 'quiz-bank'
@@ -41,6 +41,7 @@ export const NAV_GROUPS: NavGroup[] = [
     groupKey: 'nav.groupRecords',
     items: [
       { id: 'customers', labelKey: 'nav.customers', groupKey: 'nav.groupRecords', icon: Users, path: ROUTE_OF.customers, keywords: ['khach hang', 'danh sach', 'customer', 'cif'] },
+      { id: 'disbursement', labelKey: 'nav.disbursement', groupKey: 'nav.groupRecords', icon: Landmark, path: ROUTE_OF.disbursement, keywords: ['thong tin giai ngan', 'giai ngan', 'thu huong', 'stk', 'ngan hang', 'disbursement', 'payee'] },
       { id: 'credit-contracts', labelKey: 'nav.creditContracts', groupKey: 'nav.groupRecords', icon: Handshake, path: ROUTE_OF['credit-contracts'], keywords: ['hop dong tin dung', 'hdtd', 'tin dung', 'contract'] },
       { id: 'loans', labelKey: 'nav.loans', groupKey: 'nav.groupRecords', icon: FileText, path: ROUTE_OF.loans, keywords: ['khoan vay', 'du no', 'loan', 'portfolio'] },
       { id: 'collaterals', labelKey: 'nav.collaterals', groupKey: 'nav.groupRecords', icon: Building2, path: ROUTE_OF.collaterals, keywords: ['tai san bao dam', 'tsbd', 'collateral', 'bat dong san'] },

@@ -52,7 +52,7 @@ export const Bm07SpecificForm: React.FC<{
         patch({
           repName: c.FullName,
           repCccd: c.NationalId || '',
-          companyName: c.IsBusiness ? c.FullName : (specific?.companyName || ''),
+          companyName: specific?.companyName || c.FullName || '',
         });
       }
     }

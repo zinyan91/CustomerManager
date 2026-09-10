@@ -1,46 +1,58 @@
 import React from 'react';
 import type { UiClasses } from '../../../lib/uiClasses';
-import { DOSSIERS } from '../registry/dossiers';
+import type { useDocumentDossierController } from '../../../hooks/useDocumentDossierController';
 import { TEMPLATE_BY_ID } from '../registry/templates';
-import { SPECIFIC_FORM_BY_ID } from './specificForms';
 import { CommonInfoForm } from './CommonInfoForm';
+import { SPECIFIC_FORM_BY_ID } from './specificForms';
 import { DocumentPreview } from '../DocumentPreview';
 import { StandaloneDocPreview } from './StandaloneDocPreview';
-import { useDossierWorkspace } from '../../../hooks/useDossierWorkspace';
 import { downloadBytes } from '../../../lib/xlsExport';
 import { MIME_XLSX } from '../../../lib/xlsxWriter';
+import { todayIso } from '../../../lib/utils';
 
-interface DossierWorkspaceProps {
+export const DossierWorkspace: React.FC<{
   styles: UiClasses;
-}
-
-export const DossierWorkspace: React.FC<DossierWorkspaceProps> = ({ styles }) => {
-  const ctrl = useDossierWorkspace();
+  ctrl: ReturnType<typeof useDocumentDossierController>;
+}> = ({ styles, ctrl }) => {
   const SpecificForm = SPECIFIC_FORM_BY_ID[ctrl.state.activeDocId];
 
   const handleExportExcel = () => {
     if (!ctrl.activeTemplate.buildXlsx) return;
     const bytes = ctrl.activeTemplate.buildXlsx(ctrl.state.common, ctrl.activeSpecific);
-    downloadBytes(bytes, `${ctrl.activeTemplate.id}.xlsx`, MIME_XLSX);
+    const partyBName = ctrl.state.common.partyB.name.trim();
+    const safeName = partyBName ? partyBName.replace(/\s+/g, '_') : 'Bang_Ke';
+    const dateStr = ctrl.state.common.contractDate || todayIso();
+    downloadBytes(bytes, `Bang_Ke_Thu_Mua_${safeName}_${dateStr}.xlsx`, MIME_XLSX);
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 border-b border-line/60 pb-3">
-        {ctrl.activeDossier.documents.map(d => {
-          const tpl = TEMPLATE_BY_ID[d.templateId];
-          if (!tpl) return null;
-          const active = d.templateId === ctrl.state.activeDocId;
-          const excluded = ctrl.state.excludedDocIds.includes(d.templateId);
+    <div className="space-y-0">
+      <div className="p-3.5 sm:p-4 border-b border-line/60 bg-surface/40 flex flex-wrap gap-2">
+        {ctrl.visibleDocs.map(doc => {
+          const tpl = TEMPLATE_BY_ID[doc.templateId];
+          const active = ctrl.state.activeDocId === doc.templateId;
+          const excluded = ctrl.isExcluded(doc.templateId);
           return (
-            <div key={d.templateId} className="flex items-center space-x-1">
+            <div key={doc.templateId} className="flex items-center gap-1">
+              {doc.optional && (
+                <input
+                  type="checkbox"
+                  checked={!excluded}
+                  onChange={() => ctrl.toggleOptional(doc.templateId)}
+                  aria-label={`Bật/tắt ${tpl.label}`}
+                  title="Bật/tắt giấy tờ tùy chọn"
+                />
+              )}
               <button
                 type="button"
-                onClick={() => ctrl.selectDoc(d.templateId)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                  active ? 'bg-accent text-accent-ink border-accent'
+                disabled={excluded}
+                onClick={() => ctrl.selectDoc(doc.templateId)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
+                  active
+                    ? 'bg-accent text-accent-ink border-accent'
                     : 'bg-surface text-ink-muted border-line/70 hover:border-accent'
-                } ${excluded ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}>
+                } ${excluded ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
                 {tpl.label}
               </button>
             </div>

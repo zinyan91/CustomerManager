@@ -777,15 +777,15 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
                 </div>
                 <div className="flex justify-between text-ink-muted">
                   <span>Tổng dư nợ:</span>
-                  <span className="font-bold text-accent">{fmtMoney(result.totalLoansPrincipal)}</span>
+                  <span className="font-bold text-accent">{fmtMoney(result.loanAmount)}</span>
                 </div>
                 <div className="flex justify-between text-ink-muted">
                   <span>Tổng tiền lãi dự thu:</span>
-                  <span className="font-bold text-accent">{fmtMoney(result.totalLoansInterest)}</span>
+                  <span className="font-bold text-accent">{fmtMoney(result.loanInterest)}</span>
                 </div>
                 <div className="flex justify-between text-ink-muted border-t border-line/40 pt-1">
                   <span>Tổng gốc + lãi:</span>
-                  <span className="font-bold text-pos">{fmtMoney(result.totalLoansObligation)}</span>
+                  <span className="font-bold text-pos">{fmtMoney(result.totalObligation)}</span>
                 </div>
               </div>
             </div>

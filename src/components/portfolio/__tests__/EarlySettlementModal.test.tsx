@@ -13,6 +13,7 @@ const mockContract: LoanContract = {
   Id: 10,
   CustomerId: 1,
   ContractNumber: 'KUNN-TEST-99',
+  ContractType: 1,
   LoanAmount: 100_000_000,
   CurrentBalance: 100_000_000,
   IsSettled: false,

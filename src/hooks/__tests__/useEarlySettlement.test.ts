@@ -22,6 +22,7 @@ const HOP_DONG: LoanContract = {
   Id: 99,
   CustomerId: 1,
   ContractNumber: 'KUNN-TT-01',
+  ContractType: 1,
   LoanAmount: 60_000_000,
   CurrentBalance: 60_000_000,
   InterestRate: 0.12,

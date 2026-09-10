@@ -6,6 +6,7 @@ const makeContract = (over: Partial<LoanContract> = {}): LoanContract => ({
   Id: 101,
   CustomerId: 1,
   ContractNumber: 'KUNN-2026-001',
+  ContractType: 1,
   LoanAmount: 120_000_000,
   CurrentBalance: 120_000_000,
   DisbursementDate: '2026-01-01',

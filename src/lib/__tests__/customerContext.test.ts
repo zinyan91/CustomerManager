@@ -109,4 +109,49 @@ describe('buildCustomerContext', () => {
     expect(r.debtGroup).toBe(1);
     expect(r.maxOverdueDays).toBe(0);
   });
+
+  it('KUNN đã tất toán dù sót lịch cũ quá hạn 787 ngày thì vẫn nhóm 1 và 0 ngày quá hạn', () => {
+    const qua = (dueDate: string): RepaymentSchedule => ({
+      Id: 8703, ContractId: 100, PeriodNumber: 1, DueDate: dueDate,
+      IsPaid: false, PrincipalAmount: 18_340_000, InterestAmount: 8_504_658,
+    } as RepaymentSchedule);
+
+    const r = buildCustomerContext({
+      creditContracts: [hdtd({ IsClosed: true })],
+      kunns: [kunn({ IsSettled: true })],
+      paidPrincipal: {},
+      overdueSchedules: [qua('2024-07-15')],
+      today: '2026-09-10',
+    });
+    expect(r.outstanding).toBe(0);
+    expect(r.activeKunnCount).toBe(0);
+    expect(r.debtGroup).toBe(1);
+    expect(r.maxOverdueDays).toBe(0);
+  });
+
+  it('chỉ tính quá hạn cho KUNN đang lưu nợ, bỏ qua kỳ cũ của KUNN đã tất toán', () => {
+    const qua = (contractId: number, dueDate: string): RepaymentSchedule => ({
+      Id: contractId === 100 ? 8703 : 8800, ContractId: contractId, PeriodNumber: 1, DueDate: dueDate,
+      IsPaid: false, PrincipalAmount: 10_000_000, InterestAmount: 1_000_000,
+    } as RepaymentSchedule);
+
+    const r = buildCustomerContext({
+      creditContracts: [hdtd()],
+      kunns: [
+        kunn({ Id: 100, IsSettled: true }), // Đã tất toán
+        kunn({ Id: 200, IsSettled: false, LoanAmount: 100_000_000 }), // Đang vay, trễ 15 ngày (Nhóm 2)
+      ],
+      paidPrincipal: {},
+      overdueSchedules: [
+        qua(100, '2024-07-15'), // Lịch cũ 787 ngày của KUNN đã tất toán -> BỎ QUA
+        qua(200, '2026-08-26'), // Lịch 15 ngày của KUNN đang vay -> TÍNH
+      ],
+      today: '2026-09-10',
+    });
+    expect(r.outstanding).toBe(100_000_000);
+    expect(r.activeKunnCount).toBe(1);
+    expect(r.maxOverdueDays).toBe(15);
+    expect(r.debtGroup).toBe(2); // 15 ngày quá hạn thuộc nhóm 2, không bị phóng đại lên nhóm 5
+  });
 });
+

@@ -56,11 +56,17 @@ export function useCustomerContext(customerId: number | null): CustomerContextSt
         }
 
         const kunnIds = kunns.map(k => k.Id);
+        const activeKunnIds = kunns
+          .filter(k => !k.IsSettled && !(k.CreditContractId != null && hdtds.some(cc => cc.Id === k.CreditContractId && cc.IsClosed)))
+          .map(k => k.Id);
+
         const [paidPrincipal, overdueSchedules] = kunnIds.length === 0
           ? [{}, []]
           : await Promise.all([
               fetchPaidPrincipalForContractsAPI(kunnIds),
-              fetchOverdueSchedulesAPI(kunnIds, today),
+              activeKunnIds.length === 0
+                ? Promise.resolve([])
+                : fetchOverdueSchedulesAPI(activeKunnIds, today),
             ]);
         if (huy) return;
 

@@ -1,5 +1,5 @@
 import type { CreditContract, LoanContract, RepaymentSchedule } from '../types';
-import { summarizeCreditContracts, totalsOfCreditContracts } from './creditContract';
+import { isKunnOfClosedHdtd, summarizeCreditContracts, totalsOfCreditContracts } from './creditContract';
 import { getAutoDebtGroupInfo, outstandingOf } from './loanMath';
 
 export interface CustomerContextSummary {
@@ -28,7 +28,22 @@ export function buildCustomerContext(
   });
 
   const { granted, outstanding, available } = totalsOfCreditContracts(summaries);
-  const { debtGroup, maxOverdueDays } = getAutoDebtGroupInfo(overdueSchedules, today);
+  const activeKunnCount = summaries.reduce((s, x) => s + x.activeKunnCount, 0);
+
+  // Chỉ xét các kỳ quá hạn của KUNN còn đang hoạt động (chưa tất toán và thuộc HĐTD còn hiệu lực)
+  const activeKunnIds = new Set(
+    kunns
+      .filter(k => !k.IsSettled && !isKunnOfClosedHdtd(k, creditContracts))
+      .map(k => k.Id)
+  );
+  const activeOverdueSchedules = overdueSchedules.filter(s =>
+    activeKunnIds.has(s.ContractId)
+  );
+
+  // Nếu khách hàng không còn dư nợ hoặc không có KUNN nào đang lưu nợ, khách hàng chuẩn nhóm 1 và không có nợ quá hạn
+  const { debtGroup, maxOverdueDays } = (outstanding <= 0 || activeKunnCount === 0)
+    ? { debtGroup: 1, maxOverdueDays: 0 }
+    : getAutoDebtGroupInfo(activeOverdueSchedules, today);
 
   return {
     granted,
@@ -36,6 +51,6 @@ export function buildCustomerContext(
     available,
     debtGroup,
     maxOverdueDays,
-    activeKunnCount: summaries.reduce((s, x) => s + x.activeKunnCount, 0),
+    activeKunnCount,
   };
 }

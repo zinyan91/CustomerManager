@@ -38,7 +38,7 @@ export function resolvePenaltyDue(
   if (s.OverdueInterestAmount !== undefined && s.OverdueInterestAmount !== null) {
     return s.OverdueInterestAmount;
   }
-  if (isScheduleFullySettled(s)) return 0;
+  if (contract?.IsSettled === true || isScheduleFullySettled(s)) return 0;
   return computeSchedulePenalty(
     s,
     getEffectiveActiveRate(contract, s.DueDate),
@@ -51,7 +51,7 @@ export function periodObligation(
   contract: LoanContract | null,
   asOfDateStr?: string
 ): PeriodObligation {
-  const isSettled = isScheduleFullySettled(s);
+  const isSettled = (contract?.IsSettled === true) || isScheduleFullySettled(s);
   const status = schedulePaymentStatus(s);
 
   const principalDue = s.PrincipalAmount || 0;

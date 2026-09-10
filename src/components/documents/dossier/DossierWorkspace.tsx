@@ -54,7 +54,12 @@ export const DossierWorkspace: React.FC<{
 
       <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-line/60">
         <div className="lg:col-span-6 lg:self-start p-4 sm:p-6 bg-panel/30 space-y-4">
-          <CommonInfoForm common={ctrl.state.common} patch={ctrl.patchCommon} />
+          <CommonInfoForm
+            common={ctrl.state.common}
+            patch={ctrl.patchCommon}
+            activeDocId={ctrl.state.activeDocId}
+            activeSpecific={ctrl.activeSpecific}
+          />
           {SpecificForm && (
             <div className="pl-4 border-l-2 border-accent/40">
               <div className="text-[11px] font-bold text-accent uppercase tracking-wider mb-2">

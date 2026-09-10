@@ -30,7 +30,19 @@ const Group: React.FC<{ title: string; accent?: string; children: React.ReactNod
   </div>
 );
 
-const PartyFields: React.FC<{ party: Party; set: (p: Partial<Party>) => void }> = ({ party, set }) => (
+interface PartyFieldsProps {
+  party: Party;
+  set: (p: Partial<Party>) => void;
+  hideIdCard?: boolean;
+  hideIssueDetails?: boolean;
+}
+
+const PartyFields: React.FC<PartyFieldsProps> = ({
+  party,
+  set,
+  hideIdCard = false,
+  hideIssueDetails = false,
+}) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
     <div>
       <label className={LABEL}>Họ tên</label>
@@ -40,34 +52,48 @@ const PartyFields: React.FC<{ party: Party; set: (p: Partial<Party>) => void }> 
       <label className={LABEL}>Địa chỉ</label>
       <input className={INPUT} value={party.address} onChange={e => set({ address: e.target.value })} />
     </div>
-    <div>
-      <label className={LABEL}>CCCD số</label>
-      <input className={INPUT} value={party.cccd} onChange={e => set({ cccd: e.target.value })} />
-    </div>
-    <div>
-      <label className={LABEL}>Ngày cấp CCCD</label>
-      <input className={INPUT} placeholder="VD: 25/05/2023" value={party.cccdDate}
-        onChange={e => set({ cccdDate: e.target.value })} />
-    </div>
-    <div>
-      <label className={LABEL}>Nơi cấp CCCD</label>
-      <select className={INPUT} value={party.cccdPlace} onChange={e => set({ cccdPlace: e.target.value })}>
-        <option value="">-- Chọn nơi cấp --</option>
-        {CCCD_ISSUE_PLACES.map(p => <option key={p} value={p}>{p}</option>)}
-      </select>
-    </div>
-    <div>
-      <label className={LABEL}>Năm sinh</label>
-      <input className={`${INPUT} font-mono`} placeholder="VD: 1985" value={party.birthYear || ''}
-        onChange={e => set({ birthYear: e.target.value })} />
-    </div>
+    {!hideIdCard && (
+      <div>
+        <label className={LABEL}>CCCD số</label>
+        <input className={INPUT} value={party.cccd} onChange={e => set({ cccd: e.target.value })} />
+      </div>
+    )}
+    {!hideIdCard && !hideIssueDetails && (
+      <>
+        <div>
+          <label className={LABEL}>Ngày cấp CCCD</label>
+          <input
+            className={INPUT}
+            placeholder="VD: 25/05/2023"
+            value={party.cccdDate}
+            onChange={e => set({ cccdDate: e.target.value })}
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className={LABEL}>Nơi cấp CCCD</label>
+          <select className={INPUT} value={party.cccdPlace} onChange={e => set({ cccdPlace: e.target.value })}>
+            <option value="">-- Chọn nơi cấp --</option>
+            {CCCD_ISSUE_PLACES.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+      </>
+    )}
   </div>
 );
 
-export const CommonInfoForm: React.FC<{
+export interface CommonInfoFormProps {
   common: DossierCommon;
   patch: (p: Partial<DossierCommon>) => void;
-}> = ({ common, patch }) => {
+  activeDocId?: string;
+  activeSpecific?: unknown;
+}
+
+export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
+  common,
+  patch,
+  activeDocId,
+  activeSpecific,
+}) => {
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = React.useState<number | null>(null);
   const [selectedCustomerBId, setSelectedCustomerBId] = React.useState<number | null>(null);
@@ -108,7 +134,11 @@ export const CommonInfoForm: React.FC<{
     }
   };
 
-  const selectedCustomerA = customers.find(item => item.Id === selectedCustomerId);
+  const isBangKe = activeDocId === 'bang_ke';
+  const payMethod = (activeSpecific as any)?.paymentMethod || (activeSpecific as any)?.payMethod;
+  const isCash = payMethod === 'cash';
+  const docsWithBank = ['bang_ke', 'sale_contract', 'payment_request_sale', 'payment_request_const'];
+  const showBankSection = !isCash && (!activeDocId || docsWithBank.includes(activeDocId));
 
   const setPartyA = (p: Partial<Party>) => patch({ partyA: { ...common.partyA, ...p } });
   const setPartyB = (p: Partial<Party>) => patch({ partyB: { ...common.partyB, ...p } });
@@ -133,6 +163,20 @@ export const CommonInfoForm: React.FC<{
   const removeItem = (id: string) =>
     patch({ items: common.items.filter(it => it.id !== id) });
 
+  // Đối với bảng kê, tự động đồng bộ tổng tiền từ danh mục hàng hóa nếu có
+  const computedItemsTotal = React.useMemo(() => {
+    return common.items.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.price) || 0)), 0);
+  }, [common.items]);
+
+  React.useEffect(() => {
+    if (isBangKe && common.items.length > 0) {
+      const formatted = computedItemsTotal.toLocaleString('vi-VN');
+      if (common.totalAmount !== formatted) {
+        patch({ totalAmount: formatted });
+      }
+    }
+  }, [isBangKe, computedItemsTotal, common.items.length, common.totalAmount, patch]);
+
   return (
     <details open className="rounded-xl border border-line/70 bg-surface/40 overflow-hidden">
       <summary className="px-4 py-3 cursor-pointer select-none font-bold text-accent uppercase tracking-wider text-xs">
@@ -140,7 +184,10 @@ export const CommonInfoForm: React.FC<{
       </summary>
 
       <div className="p-4 space-y-5 border-t border-line/50">
-        <Group title="Bên A (Bên mua / Người vay)" accent="border-accent/50 text-accent">
+        <Group
+          title={isBangKe ? "Bên A (Bên mua hàng / Khách hàng)" : "Bên A (Bên mua / Người vay)"}
+          accent="border-accent/50 text-accent"
+        >
           <div className="mb-3">
             <label className={LABEL}>Chọn nhanh từ Danh sách Khách hàng</label>
             <CustomerPicker
@@ -150,125 +197,135 @@ export const CommonInfoForm: React.FC<{
               placeholder="— Tìm theo tên, CIF, SĐT để điền Bên A —"
             />
           </div>
-          <PartyFields party={common.partyA} set={setPartyA} />
+          <PartyFields
+            party={common.partyA}
+            set={setPartyA}
+            hideIdCard={isBangKe}
+          />
         </Group>
 
-        <Group title="Bên B" accent="border-pos/50 text-pos">
-          <div className="mb-3 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+        <Group
+          title={isBangKe ? "Bên B (Bên bán hàng - Người dân / Hộ kinh doanh)" : "Bên B"}
+          accent="border-pos/50 text-pos"
+        >
+          {!isBangKe && (
+            <div className="mb-3">
               <label className={LABEL}>Chọn nhanh từ Danh sách Khách hàng</label>
-              {selectedCustomerA?.SpouseName && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPartyB({
-                      name: selectedCustomerA.SpouseName || '',
-                      cccd: selectedCustomerA.SpouseNationalId || '',
-                      address: selectedCustomerA.KhlqAddress || selectedCustomerA.Address || '',
-                    });
-                  }}
-                  className="text-[10px] font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  ⚡ Điền nhanh KHLQ: {selectedCustomerA.SpouseName}
-                </button>
-              )}
+              <CustomerPicker
+                customers={customers}
+                selectedCustomerId={selectedCustomerBId}
+                onSelectCustomer={handleSelectCustomerB}
+                placeholder="— Tìm theo tên, CIF, SĐT để điền Bên B —"
+              />
             </div>
-            <CustomerPicker
-              customers={customers}
-              selectedCustomerId={selectedCustomerBId}
-              onSelectCustomer={handleSelectCustomerB}
-              placeholder="— Tìm theo tên, CIF, SĐT để điền Bên B —"
-            />
-          </div>
-          <PartyFields party={common.partyB} set={setPartyB} />
+          )}
+          <PartyFields
+            party={common.partyB}
+            set={setPartyB}
+            hideIssueDetails={isBangKe}
+          />
         </Group>
 
         <Group title="Mốc thời gian" accent="border-warn/50 text-warn">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className={`grid grid-cols-1 ${isBangKe ? 'sm:grid-cols-1' : 'sm:grid-cols-3'} gap-2.5`}>
             <div>
-              <label className={LABEL}>Ngày ký hợp đồng</label>
+              <label className={LABEL}>{isBangKe ? 'Ngày lập bảng kê' : 'Ngày ký hợp đồng'}</label>
               <DateInput value={common.contractDate} onChange={v => patch({ contractDate: v })} className={INPUT} />
             </div>
-            <div>
-              <label className={LABEL}>Ngày bắt đầu / giao hàng</label>
-              <DateInput value={common.startDate} onChange={v => patch({ startDate: v })} className={INPUT} />
-            </div>
-            <div>
-              <label className={LABEL}>Ngày kết thúc / thanh toán hết</label>
-              <DateInput value={common.endDate} onChange={v => patch({ endDate: v })} className={INPUT} />
-            </div>
+            {!isBangKe && (
+              <>
+                <div>
+                  <label className={LABEL}>Ngày bắt đầu / giao hàng</label>
+                  <DateInput value={common.startDate} onChange={v => patch({ startDate: v })} className={INPUT} />
+                </div>
+                <div>
+                  <label className={LABEL}>Ngày kết thúc / thanh toán hết</label>
+                  <DateInput value={common.endDate} onChange={v => patch({ endDate: v })} className={INPUT} />
+                </div>
+              </>
+            )}
           </div>
         </Group>
 
-        <Group title="Tài khoản ngân hàng" accent="border-accent/50 text-accent">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            <div>
-              <label className={LABEL}>Chủ tài khoản</label>
-              <input className={INPUT} value={common.bank.owner} onChange={e => setBank({ owner: e.target.value })} />
+        {showBankSection && (
+          <Group title="Tài khoản ngân hàng thụ hưởng (Bên bán)" accent="border-accent/50 text-accent">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className={LABEL}>Chủ tài khoản</label>
+                <input className={INPUT} value={common.bank.owner} onChange={e => setBank({ owner: e.target.value })} />
+              </div>
+              <div>
+                <label className={LABEL}>Số tài khoản</label>
+                <input className={INPUT} value={common.bank.accNo} onChange={e => setBank({ accNo: e.target.value })} />
+              </div>
+              <div>
+                <label className={LABEL}>Ngân hàng</label>
+                <select className={INPUT} value={common.bank.name} onChange={e => setBank({ name: e.target.value })}>
+                  <option value="">-- Chọn ngân hàng --</option>
+                  {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={LABEL}>Chi nhánh</label>
+                <input className={INPUT} value={common.bank.branch} onChange={e => setBank({ branch: e.target.value })} />
+              </div>
             </div>
-            <div>
-              <label className={LABEL}>Số tài khoản</label>
-              <input className={INPUT} value={common.bank.accNo} onChange={e => setBank({ accNo: e.target.value })} />
-            </div>
-            <div>
-              <label className={LABEL}>Ngân hàng</label>
-              <select className={INPUT} value={common.bank.name} onChange={e => setBank({ name: e.target.value })}>
-                <option value="">-- Chọn ngân hàng --</option>
-                {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={LABEL}>Chi nhánh</label>
-              <input className={INPUT} value={common.bank.branch} onChange={e => setBank({ branch: e.target.value })} />
-            </div>
-          </div>
-        </Group>
+          </Group>
+        )}
 
         <Group title="Tổng tiền" accent="border-accent/50 text-accent">
           <div className="sm:w-1/2">
-            <label className={LABEL}>Tổng giá trị (VNĐ)</label>
-            <input className={`${INPUT} font-mono font-bold text-accent`} value={common.totalAmount}
-              onChange={e => patch({ totalAmount: formatMoneyInput(e.target.value) })} />
+            <label className={LABEL}>
+              {isBangKe ? 'Tổng giá trị bảng kê (VNĐ - tự động tính theo hàng hóa)' : 'Tổng giá trị (VNĐ)'}
+            </label>
+            <input
+              className={`${INPUT} font-mono font-bold text-accent`}
+              value={common.totalAmount}
+              readOnly={isBangKe && common.items.length > 0}
+              onChange={e => patch({ totalAmount: formatMoneyInput(e.target.value) })}
+            />
           </div>
         </Group>
 
-        <Group title="Các đợt thanh toán" accent="border-warn/50 text-warn">
-          <div className="space-y-2">
-            {common.stages.map(stage => (
-              <div key={stage.id} className="grid grid-cols-12 gap-2 items-end">
-                <div className="col-span-12 sm:col-span-4">
-                  <label className={LABEL}>Tên đợt</label>
-                  <input className={INPUT} value={stage.stageName}
-                    onChange={e => setStage(stage.id, { stageName: e.target.value })} />
+        {!isBangKe && (
+          <Group title="Các đợt thanh toán" accent="border-warn/50 text-warn">
+            <div className="space-y-2">
+              {common.stages.map(stage => (
+                <div key={stage.id} className="grid grid-cols-12 gap-2 items-end">
+                  <div className="col-span-12 sm:col-span-4">
+                    <label className={LABEL}>Tên đợt</label>
+                    <input className={INPUT} value={stage.stageName}
+                      onChange={e => setStage(stage.id, { stageName: e.target.value })} />
+                  </div>
+                  <div className="col-span-6 sm:col-span-3">
+                    <label className={LABEL}>Số tiền (VNĐ)</label>
+                    <input className={`${INPUT} font-mono text-right`} value={stage.amount}
+                      onChange={e => setStage(stage.id, { amount: formatMoneyInput(e.target.value) })} />
+                  </div>
+                  <div className="col-span-6 sm:col-span-4">
+                    <label className={LABEL}>Trạng thái</label>
+                    <select className={INPUT} value={stage.status}
+                      onChange={e => setStage(stage.id, { status: e.target.value as PaymentStageItem['status'] })}>
+                      {(Object.keys(STATUS_LABELS) as PaymentStageItem['status'][]).map(s => (
+                        <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-12 sm:col-span-1 flex justify-end">
+                    <button type="button" onClick={() => removeStage(stage.id)}
+                      className="p-2 rounded-lg text-neg hover:bg-neg-soft transition-colors" title="Xóa đợt">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="col-span-6 sm:col-span-3">
-                  <label className={LABEL}>Số tiền (VNĐ)</label>
-                  <input className={`${INPUT} font-mono text-right`} value={stage.amount}
-                    onChange={e => setStage(stage.id, { amount: formatMoneyInput(e.target.value) })} />
-                </div>
-                <div className="col-span-6 sm:col-span-4">
-                  <label className={LABEL}>Trạng thái</label>
-                  <select className={INPUT} value={stage.status}
-                    onChange={e => setStage(stage.id, { status: e.target.value as PaymentStageItem['status'] })}>
-                    {(Object.keys(STATUS_LABELS) as PaymentStageItem['status'][]).map(s => (
-                      <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-span-12 sm:col-span-1 flex justify-end">
-                  <button type="button" onClick={() => removeStage(stage.id)}
-                    className="p-2 rounded-lg text-neg hover:bg-neg-soft transition-colors" title="Xóa đợt">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-            <button type="button" onClick={addStage}
-              className="flex items-center gap-1.5 bg-accent hover:opacity-90 text-accent-ink px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
-              <Plus className="w-3.5 h-3.5" /><span>Thêm đợt thanh toán</span>
-            </button>
-          </div>
-        </Group>
+              ))}
+              <button type="button" onClick={addStage}
+                className="flex items-center gap-1.5 bg-accent hover:opacity-90 text-accent-ink px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
+                <Plus className="w-3.5 h-3.5" /><span>Thêm đợt thanh toán</span>
+              </button>
+            </div>
+          </Group>
+        )}
 
         <Group title="Danh mục hàng hóa / hạng mục" accent="border-pos/50 text-pos">
           <div className="space-y-2">

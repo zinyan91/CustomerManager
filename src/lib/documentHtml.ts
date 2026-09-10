@@ -249,6 +249,22 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
     if (selectedTemplate === 'deposit') {
       const d = deposit;
       const taxLabel = (side: string) => (side === 'A' ? 'bên A' : 'bên B');
+      const getBirthYearDisplay = (year?: string, cccd?: string) => {
+        if (year && year.trim()) return ` &nbsp;|&nbsp; Sinh năm: ${nfc(year.trim())}`;
+        if (!cccd) return '';
+        const digits = cccd.replace(/\D/g, '');
+        if (digits.length === 12) {
+          const centuryCode = parseInt(digits[3], 10);
+          const yr = parseInt(digits.substring(4, 6), 10);
+          if (!isNaN(centuryCode) && !isNaN(yr)) {
+            let century = 1900;
+            if (centuryCode === 2 || centuryCode === 3) century = 2000;
+            else if (centuryCode === 4 || centuryCode === 5) century = 2100;
+            return ` &nbsp;|&nbsp; Sinh năm: ${century + yr}`;
+          }
+        }
+        return '';
+      };
       return `
         <div class="text-center no-indent">
           <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
@@ -262,12 +278,12 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p no-indent">Chúng tôi gồm có:</p>
 
         <p class="clause-p font-bold uppercase no-indent">I. BÊN MUA: (Gọi tắt là bên A)</p>
-        <p class="clause-p no-indent">- ${nfc(d.buyerTitle)}: <strong>${nfc(d.buyerName)}</strong> &nbsp;|&nbsp; Sinh năm: ${nfc(d.buyerBirthYear)}</p>
+        <p class="clause-p no-indent">- ${nfc(d.buyerTitle)}: <strong>${nfc(d.buyerName)}</strong>${getBirthYearDisplay(d.buyerBirthYear, d.buyerCccd)}</p>
         <p class="clause-p no-indent">- CCCD số: <strong>${nfc(d.buyerCccd)}</strong> &nbsp;|&nbsp; Cấp ngày: ${nfc(d.buyerCccdDate)} &nbsp;|&nbsp; Cấp tại: ${nfc(d.buyerCccdPlace)}</p>
         <p class="clause-p no-indent">- HKTT: ${nfc(d.buyerAddress)}</p>
 
         <p class="clause-p font-bold uppercase no-indent pt-2">II. BÊN BÁN: (Gọi tắt là bên B)</p>
-        <p class="clause-p no-indent">- ${nfc(d.sellerTitle)}: <strong>${nfc(d.sellerName)}</strong> &nbsp;|&nbsp; Sinh năm: ${nfc(d.sellerBirthYear)}</p>
+        <p class="clause-p no-indent">- ${nfc(d.sellerTitle)}: <strong>${nfc(d.sellerName)}</strong>${getBirthYearDisplay(d.sellerBirthYear, d.sellerCccd)}</p>
         <p class="clause-p no-indent">- CCCD số: <strong>${nfc(d.sellerCccd)}</strong> &nbsp;|&nbsp; Cấp ngày: ${nfc(d.sellerCccdDate)} &nbsp;|&nbsp; Cấp tại: ${nfc(d.sellerCccdPlace)}</p>
         <p class="clause-p no-indent">- HKTT: ${nfc(d.sellerAddress)}</p>
 

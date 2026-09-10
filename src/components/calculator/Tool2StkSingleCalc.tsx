@@ -8,9 +8,15 @@ import {
   FileSpreadsheet,
   Plus,
   Trash2,
+  X,
+  Download,
 } from 'lucide-react';
 import { fmtMoney, fmtDate, formatMoneyInput, parseMoneyInput } from '../../lib/utils';
 import { DateInput } from '../DateInput';
+import { CustomerPicker } from '../ui/CustomerPicker';
+import { fetchCustomersAPI } from '../../lib/api';
+import type { Customer } from '../../types';
+import { exportBm12ToExcel } from '../../lib/bm12Export';
 import {
   calcStkPledge,
   TENOR_UNIT_LABELS,
@@ -70,6 +76,55 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
       useOwnDue: false,
     },
   ]);
+
+  // BM12 Excel Export State
+  const [showBm12Modal, setShowBm12Modal] = useState(false);
+  const [bm12CustomerName, setBm12CustomerName] = useState('');
+  const [bm12Cif, setBm12Cif] = useState('');
+  const [bm12Tkv, setBm12Tkv] = useState('');
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchCustomersAPI().then(setCustomers).catch(() => {});
+  }, []);
+
+  const handleSelectCustomer = (id: number | null) => {
+    setSelectedCustomerId(id);
+    if (id !== null) {
+      const c = customers.find(item => item.Id === id);
+      if (c) {
+        setBm12CustomerName(c.FullName);
+        setBm12Cif(c.CifKh || '');
+        setBm12Tkv(c.AccountNumber || '');
+      }
+    }
+  };
+
+  const handleExportBm12 = () => {
+    exportBm12ToExcel({
+      customerName: bm12CustomerName,
+      cif: bm12Cif,
+      tkv: bm12Tkv,
+      loans: loans.map((l, idx) => {
+        const itemRes = result.loanItems[idx];
+        return {
+          stt: idx + 1,
+          customerName: bm12CustomerName,
+          cif: bm12Cif,
+          tkv: bm12Tkv,
+          fromDate: l.disbursementDate,
+          toDate: l.useOwnDue ? l.loanDueDate : (result.savingsDueDate || l.disbursementDate),
+          days: itemRes?.loanDays,
+          balance: parseMoneyInput(l.loanAmountStr),
+          interestRateAnnual: (parseFloat(l.loanRateStr) || 0) / 100,
+          interest: itemRes?.loanInterest,
+          penalty: 0,
+        };
+      }),
+    });
+    setShowBm12Modal(false);
+  };
 
   // Update default LTV and amounts when deposit type changes
   useEffect(() => {
@@ -207,6 +262,15 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Vay tối đa theo quy định</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowBm12Modal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pos text-pos-ink hover:opacity-90 font-bold shadow-xs text-xs transition-all cursor-pointer"
+              title="Xuất Bảng tính thu nợ khoản vay CCSTK (.xlsx) chuẩn BM12"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Xuất Excel BM12</span>
             </button>
           </div>
         </div>
@@ -637,6 +701,115 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
         </div>
 
       </div>
+
+      {/* Modal Xuất Excel BM12 */}
+      {showBm12Modal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-panel border border-line rounded-2xl p-5 sm:p-6 w-full max-w-lg shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-line/60 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-pos-soft text-pos">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-ink">Xuất Excel BM12 (Bảng tính thu nợ CCSTK)</h3>
+                  <p className="text-[11px] text-ink-muted">Chuẩn hóa theo Thông báo số 2097/2026/TB-TGĐ</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBm12Modal(false)}
+                className="text-ink-faint hover:text-ink p-1 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className={labelCls}>Chọn nhanh từ Danh sách Khách hàng (Tùy chọn)</label>
+                <CustomerPicker
+                  customers={customers}
+                  selectedCustomerId={selectedCustomerId}
+                  onSelectCustomer={handleSelectCustomer}
+                  placeholder="— Tìm theo tên, CIF để tự động điền —"
+                />
+              </div>
+
+              <div>
+                <label className={labelCls}>Tên khách hàng</label>
+                <input
+                  type="text"
+                  placeholder="VD: NGUYỄN VĂN ANH"
+                  value={bm12CustomerName}
+                  onChange={e => setBm12CustomerName(e.target.value)}
+                  className={`${inputCls} uppercase`}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Mã khách hàng (CIF)</label>
+                  <input
+                    type="text"
+                    placeholder="VD: 005123456"
+                    value={bm12Cif}
+                    onChange={e => setBm12Cif(e.target.value)}
+                    className={`${inputCls} font-mono`}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Số tài khoản vay (TKV)</label>
+                  <input
+                    type="text"
+                    placeholder="VD: 000000345678"
+                    value={bm12Tkv}
+                    onChange={e => setBm12Tkv(e.target.value)}
+                    className={`${inputCls} font-mono`}
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-surface/80 border border-line/70 text-[11px] space-y-1">
+                <div className="flex justify-between text-ink-muted">
+                  <span>Số khoản vay / kỳ thu nợ:</span>
+                  <span className="font-bold text-ink">{loans.length} khoản</span>
+                </div>
+                <div className="flex justify-between text-ink-muted">
+                  <span>Tổng dư nợ:</span>
+                  <span className="font-bold text-accent">{fmtMoney(result.totalLoansPrincipal)}</span>
+                </div>
+                <div className="flex justify-between text-ink-muted">
+                  <span>Tổng tiền lãi dự thu:</span>
+                  <span className="font-bold text-accent">{fmtMoney(result.totalLoansInterest)}</span>
+                </div>
+                <div className="flex justify-between text-ink-muted border-t border-line/40 pt-1">
+                  <span>Tổng gốc + lãi:</span>
+                  <span className="font-bold text-pos">{fmtMoney(result.totalLoansObligation)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-line/60">
+              <button
+                type="button"
+                onClick={() => setShowBm12Modal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleExportBm12}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-pos text-pos-ink hover:opacity-90 font-bold text-xs transition-all shadow-xs cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Tải tệp Excel (.xlsx)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

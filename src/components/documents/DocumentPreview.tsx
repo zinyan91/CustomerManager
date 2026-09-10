@@ -11,6 +11,7 @@ function exportToWordDocx(filename: string, docHtml: string) {
 }
 
 function exportToPDFOnly(filename: string, docHtml: string): boolean {
+  const isVhtt = docHtml.includes('vhtt-doc');
   const pdfHtml = `
     <!DOCTYPE html>
     <html lang="vi">
@@ -20,15 +21,15 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
       <style>
         @page {
           size: A4 portrait;
-          margin: 20mm 15mm 20mm 25mm; /* Chuẩn văn bản: Trên 20mm, Dưới 20mm, Phải 15mm, Trái 25mm */
+          margin: ${isVhtt ? '15mm 15mm 18mm 20mm' : '20mm 15mm 20mm 25mm'};
         }
         * {
           box-sizing: border-box;
         }
         body {
           font-family: 'Times New Roman', Times, serif;
-          font-size: 13pt;
-          line-height: 1.3;
+          font-size: ${isVhtt ? '11pt' : '13pt'};
+          line-height: ${isVhtt ? '1.25' : '1.3'};
           color: #000000;
           margin: 0;
           padding: 0;
@@ -97,40 +98,87 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           margin-bottom: 8pt; 
           page-break-inside: auto;
         }
-        .table-doc th, .table-doc td { 
-          border: 1px solid #000; 
-          padding: 5pt 7pt; 
-          font-size: 12pt; 
+        .table-doc th, .table-doc td,
+        .table-bordered th, .table-bordered td {
+          border: 1px solid #000000;
+          padding: 4pt 6pt;
+          font-size: 11pt;
+          vertical-align: top;
         }
-        .table-doc tr {
+        .table-borderless {
+          border-collapse: collapse;
+          width: 100%;
+          border: none;
+          margin-top: 4pt;
+          margin-bottom: 4pt;
+        }
+        .table-borderless th, .table-borderless td {
+          border: none;
+          padding: 2.5pt 4pt;
+          vertical-align: top;
+        }
+        .sig-table {
+          width: 100%;
+          table-layout: fixed;
+          margin-top: 20pt;
+          border-collapse: collapse;
+          border: none;
           page-break-inside: avoid;
         }
-        .sig-table { 
-          width: 100% !important; 
-          table-layout: fixed !important;
-          margin-top: 20pt; 
-          border-collapse: collapse; 
-          border: none; 
-          page-break-inside: avoid;
+        .sig-table td {
+          line-height: 1.25;
+          text-align: center;
+          vertical-align: top;
+          border: none;
+          padding: 4px 6px;
         }
-        .sig-table td { 
-          text-align: center; 
-          vertical-align: top; 
-          border: none; 
-          padding: 0; 
-          line-height: 1.25; 
+        .sig-space {
+          height: 90px;
+          line-height: 1.25;
         }
-        .sig-space { height: 90px; line-height: 1.25; }
-
+        .contract-meta-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 6pt;
+          margin-bottom: 8pt;
+        }
+        .contract-meta-table td {
+          padding: 2pt 4pt;
+          font-size: 12pt;
+          vertical-align: top;
+          border: none;
+        }
         .bm04-sheet {
-          page-break-before: always;
           font-family: 'Arial Unicode MS', 'Arial', sans-serif;
           font-size: 10pt;
           line-height: 1.25;
+          color: #000000;
         }
-        .bm04-sheet p { margin: 0 0 3pt 0; text-indent: 0; text-align: justify; line-height: 1.25; }
-        .bm04-name { }
-        .bm04-fill { }
+        .bm04-header {
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+          margin-bottom: 8pt;
+        }
+        .bm04-header img {
+          max-height: 38pt;
+          width: auto;
+          object-fit: contain;
+        }
+        .bm04-title {
+          text-align: center;
+          font-size: 14pt;
+          font-weight: bold;
+          margin: 6pt 0 10pt 0;
+          letter-spacing: 0.5pt;
+        }
+        .bm04-sheet p {
+          margin: 0 0 3pt 0;
+          text-indent: 0;
+          line-height: 1.25;
+        }
+        .bm04-sheet .bm04-name { margin-bottom: 3pt; }
+        .bm04-fill { margin-bottom: 4pt; }
         .bm04-fill .doc-tab {
           display: inline-block;
           min-width: 40pt;
@@ -161,6 +209,20 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           padding-top: 4pt;
           font-size: 9.5pt;
           font-style: italic;
+        }
+        .vhtt-footer {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          border-top: 0.5pt solid #000000;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 8.5pt;
+          font-style: italic;
+          padding-top: 2.5pt;
+          background: #ffffff;
         }
       </style>
     </head>
@@ -332,6 +394,51 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
             font-size: 9.5pt;
             font-style: italic;
           }
+          .a4-sheet-container:has(.vhtt-doc) {
+            padding: 15mm 15mm 15mm 20mm !important;
+          }
+          .a4-sheet-container .vhtt-doc {
+            font-family: 'Times New Roman', Times, serif !important;
+            font-size: 11pt !important;
+            line-height: 1.25 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            min-height: calc(297mm - 30mm) !important;
+            box-sizing: border-box !important;
+          }
+          .a4-sheet-container .vhtt-doc p {
+            margin: 1.5pt 0 !important;
+            line-height: 1.25 !important;
+            text-align: justify !important;
+          }
+          .a4-sheet-container .vhtt-doc p.empty-p {
+            min-height: 0.4em !important;
+            margin: 0.5pt 0 !important;
+          }
+          .a4-sheet-container .vhtt-doc h1 {
+            font-size: 13pt !important;
+            margin-top: 4pt !important;
+            margin-bottom: 4pt !important;
+            line-height: 1.25 !important;
+          }
+          .a4-sheet-container .vhtt-doc table {
+            margin: 3pt 0 !important;
+          }
+          .a4-sheet-container .vhtt-doc .sig-table {
+            margin-top: 8pt !important;
+          }
+          .a4-sheet-container .vhtt-doc .vhtt-footer {
+            border-top: 0.5pt solid #000000 !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-top: auto !important;
+            padding-top: 2.5pt !important;
+            font-size: 8.5pt !important;
+            font-style: italic !important;
+            line-height: 1.2 !important;
+            width: 100% !important;
+          }
           .a4-sheet-container .no-indent,
           .a4-sheet-container p.no-indent,
           .a4-sheet-container p.clause-p.no-indent,
@@ -356,17 +463,32 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           .a4-sheet-container .font-italic {
             font-style: italic !important;
           }
-          .a4-sheet-container .table-doc {
+          .a4-sheet-container .table-doc,
+          .a4-sheet-container .table-bordered {
             border-collapse: collapse !important;
             width: 100% !important;
             margin-top: 8pt !important;
             margin-bottom: 8pt !important;
           }
           .a4-sheet-container .table-doc th,
-          .a4-sheet-container .table-doc td {
+          .a4-sheet-container .table-doc td,
+          .a4-sheet-container .table-bordered th,
+          .a4-sheet-container .table-bordered td {
             border: 1px solid #000000 !important;
-            padding: 5pt 7pt !important;
-            font-size: 12pt !important;
+            padding: 4pt 6pt !important;
+            font-size: 11pt !important;
+          }
+          .a4-sheet-container .table-borderless {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            border: none !important;
+            margin-top: 4pt !important;
+            margin-bottom: 4pt !important;
+          }
+          .a4-sheet-container .table-borderless th,
+          .a4-sheet-container .table-borderless td {
+            border: none !important;
+            padding: 2.5pt 4pt !important;
           }
           .a4-sheet-container .sig-table {
             width: 100% !important;

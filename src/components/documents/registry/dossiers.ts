@@ -1,4 +1,4 @@
-import { FolderOpen, Hammer, Home, Folder } from 'lucide-react';
+import { FolderOpen, Hammer, Home, Landmark, Folder } from 'lucide-react';
 import type { Dossier } from './types';
 
 export const DOSSIERS: Dossier[] = [
@@ -35,6 +35,18 @@ export const DOSSIERS: Dossier[] = [
     ],
   },
   {
+    id: 'van_hanh_tap_trung',
+    label: 'Vận hành tập trung',
+    icon: Landmark,
+    documents: [
+      { templateId: 'bm01_de_nghi_giai_ngan' },
+      { templateId: 'bm02_to_trinh_giai_ngan' },
+      { templateId: 'bm07_bien_ban_ban_giao' },
+      { templateId: 'bm09_danh_muc_ho_so' },
+      { templateId: 'bm11_tra_no_truoc_han' },
+    ],
+  },
+  {
     id: 'khac',
     label: 'Khác',
     icon: Folder,
@@ -43,4 +55,3 @@ export const DOSSIERS: Dossier[] = [
     ],
   },
 ];
-

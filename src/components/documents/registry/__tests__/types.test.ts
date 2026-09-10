@@ -4,7 +4,7 @@ import { emptyParty, emptyCommon } from '../types';
 describe('registry factories', () => {
   it('emptyParty has all string fields blank', () => {
     expect(emptyParty()).toEqual({
-      name: '', cccd: '', cccdDate: '', cccdPlace: '', address: '', birthYear: '',
+      name: '', cccd: '', cccdDate: '', cccdPlace: '', address: '', birthYear: '', cif: '',
     });
   });
 

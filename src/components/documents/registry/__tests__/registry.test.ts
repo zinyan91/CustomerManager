@@ -40,3 +40,16 @@ it('Cho thuê dossier lists its documents', () => {
   const d = DOSSIERS.find(x => x.id === 'cho_thue');
   expect(d?.documents.map(x => x.templateId)).toEqual(['lease_mb', 'lease_house']);
 });
+
+it('Vận hành tập trung dossier lists BM01, BM02, BM07, BM09, and BM11', () => {
+  const d = DOSSIERS.find(x => x.id === 'van_hanh_tap_trung');
+  expect(d).toBeDefined();
+  expect(d?.label).toBe('Vận hành tập trung');
+  expect(d?.documents.map(x => x.templateId)).toEqual([
+    'bm01_de_nghi_giai_ngan',
+    'bm02_to_trinh_giai_ngan',
+    'bm07_bien_ban_ban_giao',
+    'bm09_danh_muc_ho_so',
+    'bm11_tra_no_truoc_han',
+  ]);
+});

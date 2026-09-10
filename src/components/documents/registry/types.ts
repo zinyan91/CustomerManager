@@ -4,6 +4,7 @@ import type { PaymentStageItem } from '../DocumentForm';
 export interface Party {
   name: string; cccd: string; cccdDate: string;
   cccdPlace: string; address: string; birthYear: string;
+  cif?: string;
 }
 
 export interface LineItem {
@@ -49,7 +50,7 @@ export interface Dossier {
 }
 
 export function emptyParty(): Party {
-  return { name: '', cccd: '', cccdDate: '', cccdPlace: '', address: '', birthYear: '' };
+  return { name: '', cccd: '', cccdDate: '', cccdPlace: '', address: '', birthYear: '', cif: '' };
 }
 
 export function emptyCommon(): DossierCommon {

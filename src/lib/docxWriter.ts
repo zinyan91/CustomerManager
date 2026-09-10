@@ -193,10 +193,10 @@ function trimRuns(runs: DocxRun[]): DocxRun[] {
 function blockCtxOf(el: Element, ctx: BlockCtx): BlockCtx {
   const next: BlockCtx = { ...ctx, ...inlineCtxOf(el, ctx) };
   for (const cls of Array.from(el.classList)) {
-    if (cls === 'text-center') next.align = 'center';
-    if (cls === 'text-right') next.align = 'right';
-    if (cls === 'text-left') next.align = 'left';
-    if (cls === 'text-justify') next.align = 'justify';
+    if (cls === 'text-center' || cls === 'p-center') next.align = 'center';
+    if (cls === 'text-right' || cls === 'p-right') next.align = 'right';
+    if (cls === 'text-left' || cls === 'p-left') next.align = 'left';
+    if (cls === 'text-justify' || cls === 'p-justify') next.align = 'justify';
     if (cls === 'no-indent') next.firstLine = 0;
     const pl = /^pl-(\d+(?:\.\d+)?)$/.exec(cls);
     if (pl) next.left = (next.left || 0) + tailwindSpacing(parseFloat(pl[1]));
@@ -311,7 +311,7 @@ function paragraphFrom(el: Element, ctx: BlockCtx): DocxParagraph {
 }
 
 function tableFrom(el: Element, ctx: BlockCtx): DocxTable {
-  const bordered = el.classList.contains('table-doc');
+  const bordered = el.classList.contains('table-doc') || el.classList.contains('table-bordered');
   const isSig = el.classList.contains('sig-table');
   const tableCtx = blockCtxOf(el, ctx);
   if (isSig) tableCtx.align = 'center';
@@ -390,8 +390,8 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
     const el = child as Element;
     const tag = el.tagName.toLowerCase();
 
-    if (el.classList && el.classList.contains('bm04-footer')) {
-      // Chân trang BM08 đã được xử lý qua word/footer1.xml, không xuất lại trong thân tài liệu
+    if (el.classList && (el.classList.contains('bm04-footer') || el.classList.contains('vhtt-footer') || el.classList.contains('vhtt-footer-table'))) {
+      // Chân trang BM08 / VHTT đã được xử lý qua word/footer1.xml, không xuất lại trong thân tài liệu
       continue;
     }
 
@@ -722,17 +722,69 @@ export function buildDocx(blocks: DocxBlock[], extra: DocxPackageExtras = {}): U
 export const BM04_SECTION_ATTR = 'data-doc-section';
 export const BM04_SECTION_VALUE = 'bm04';
 
+const WML = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+
+export function vhttSectPr(footerRelId: string): string {
+  return '<w:sectPr>'
+    + `<w:footerReference w:type="default" r:id="${footerRelId}"/>`
+    + '<w:pgSz w:w="11906" w:h="16838"/>'
+    + '<w:pgMar w:top="850" w:right="850" w:bottom="1020" w:left="1134" w:header="720" w:footer="720" w:gutter="0"/>'
+    + '</w:sectPr>';
+}
+
+export function vhttFooterXml(footerText: string): string {
+  const pPr = '<w:pPr>'
+    + '<w:pBdr><w:top w:val="single" w:sz="4" w:space="1" w:color="auto"/></w:pBdr>'
+    + '<w:tabs><w:tab w:val="right" w:pos="9922"/></w:tabs>'
+    + '<w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>'
+    + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr>'
+    + '</w:pPr>';
+
+  return XML_DECL
+    + `<w:ftr xmlns:w="${WML}" xmlns:r="${REL_NS}">`
+    + '<w:p>' + pPr
+    + `<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t xml:space="preserve">${escapeXml(footerText)}</w:t></w:r>`
+    + '<w:r><w:tab/></w:r>'
+    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t xml:space="preserve">Trang </w:t></w:r>'
+    + '<w:r><w:fldChar w:fldCharType="begin"/></w:r>'
+    + '<w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>'
+    + '<w:r><w:fldChar w:fldCharType="separate"/></w:r>'
+    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>1</w:t></w:r>'
+    + '<w:r><w:fldChar w:fldCharType="end"/></w:r>'
+    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>/</w:t></w:r>'
+    + '<w:r><w:fldChar w:fldCharType="begin"/></w:r>'
+    + '<w:r><w:instrText xml:space="preserve"> NUMPAGES </w:instrText></w:r>'
+    + '<w:r><w:fldChar w:fldCharType="separate"/></w:r>'
+    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>1</w:t></w:r>'
+    + '<w:r><w:fldChar w:fldCharType="end"/></w:r>'
+    + '</w:p>'
+    + '</w:ftr>';
+}
+
 export function htmlToDocx(html: string): Uint8Array {
   const blocks = parseDocumentHtml(html);
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
   const coBm04 = !!doc.querySelector(`[${BM04_SECTION_ATTR}="${BM04_SECTION_VALUE}"]`);
-  if (!coBm04) return buildDocx(blocks);
+  if (coBm04) {
+    return buildDocx(blocks, {
+      finalSectPr: bm04SectPr(HEADER_REL_ID, FOOTER_REL_ID),
+      numbering: true,
+      headerXml: bm04HeaderXml(IMAGE_REL_ID),
+      footerXml: bm04FooterXml(),
+      image: { name: 'image1.png', bytes: bm04LogoBytes() },
+    });
+  }
 
-  return buildDocx(blocks, {
-    finalSectPr: bm04SectPr(HEADER_REL_ID, FOOTER_REL_ID),
-    numbering: true,
-    headerXml: bm04HeaderXml(IMAGE_REL_ID),
-    footerXml: bm04FooterXml(),
-    image: { name: 'image1.png', bytes: bm04LogoBytes() },
-  });
+  const vhttFooterEl = doc.querySelector('.vhtt-footer') || doc.querySelector('.vhtt-footer-table');
+  if (vhttFooterEl) {
+    const leftEl = vhttFooterEl.querySelector('.vhtt-footer-left') || vhttFooterEl.firstElementChild;
+    const leftText = leftEl?.textContent?.trim() || '';
+    return buildDocx(blocks, {
+      finalSectPr: vhttSectPr(FOOTER_REL_ID),
+      footerXml: vhttFooterXml(leftText),
+    });
+  }
+
+  return buildDocx(blocks);
 }

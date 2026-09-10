@@ -53,22 +53,25 @@ export const DisbursementPayeeListView: React.FC = () => {
   }, []);
 
   const filteredPayees = useMemo(() => {
-    if (!searchTerm.trim()) return payees;
-    const q = searchTerm.trim().toLowerCase();
-    return payees.filter((p) => {
-      const name = (p.FullName || '').toLowerCase();
-      const cccd = (p.NationalId || '').toLowerCase();
-      const stk = (p.AccountNumber || '').toLowerCase();
-      const bank = (p.BankName || '').toLowerCase();
-      const branch = (p.BankBranch || '').toLowerCase();
-      return (
-        name.includes(q) ||
-        cccd.includes(q) ||
-        stk.includes(q) ||
-        bank.includes(q) ||
-        branch.includes(q)
-      );
-    });
+    let list = payees;
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      list = payees.filter((p) => {
+        const name = (p.FullName || '').toLowerCase();
+        const cccd = (p.NationalId || '').toLowerCase();
+        const stk = (p.AccountNumber || '').toLowerCase();
+        const bank = (p.BankName || '').toLowerCase();
+        const branch = (p.BankBranch || '').toLowerCase();
+        return (
+          name.includes(q) ||
+          cccd.includes(q) ||
+          stk.includes(q) ||
+          bank.includes(q) ||
+          branch.includes(q)
+        );
+      });
+    }
+    return [...list].sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
   }, [payees, searchTerm]);
 
   const handleOpenCreate = () => {

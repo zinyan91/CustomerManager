@@ -103,4 +103,13 @@ describe('disbursementDb store and offline fallback', () => {
     list = await fetchDisbursementPayeesDb();
     expect(list.length).toBe(0);
   });
+
+  it('returns payees sorted alphabetically A-Z by FullName in Vietnamese', async () => {
+    await upsertDisbursementPayeeDb({ Id: '1', FullName: 'VŨ THỊ YẾN', NationalId: '1', AccountNumber: '1', BankName: 'A' });
+    await upsertDisbursementPayeeDb({ Id: '2', FullName: 'AN VĂN HÙNG', NationalId: '2', AccountNumber: '2', BankName: 'B' });
+    await upsertDisbursementPayeeDb({ Id: '3', FullName: 'ĐẶNG VĂN LÂM', NationalId: '3', AccountNumber: '3', BankName: 'C' });
+
+    const list = await fetchDisbursementPayeesDb();
+    expect(list.map(p => p.FullName)).toEqual(['AN VĂN HÙNG', 'ĐẶNG VĂN LÂM', 'VŨ THỊ YẾN']);
+  });
 });

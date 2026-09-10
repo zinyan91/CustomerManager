@@ -30,15 +30,18 @@ export const DisbursementPayeePicker: React.FC<DisbursementPayeePickerProps> = (
   );
 
   const filteredPayees = useMemo(() => {
-    if (!search.trim()) return payees;
-    const q = search.toLowerCase().trim();
-    return payees.filter(
-      (p) =>
-        (p.FullName || '').toLowerCase().includes(q) ||
-        (p.NationalId || '').toLowerCase().includes(q) ||
-        (p.AccountNumber || '').toLowerCase().includes(q) ||
-        (p.BankName || '').toLowerCase().includes(q)
-    );
+    let list = payees;
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      list = payees.filter(
+        (p) =>
+          (p.FullName || '').toLowerCase().includes(q) ||
+          (p.NationalId || '').toLowerCase().includes(q) ||
+          (p.AccountNumber || '').toLowerCase().includes(q) ||
+          (p.BankName || '').toLowerCase().includes(q)
+      );
+    }
+    return [...list].sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
   }, [payees, search]);
 
   const handleSelect = (id: string | null) => {

@@ -45,7 +45,7 @@ export async function fetchDisbursementPayeesDb(): Promise<DisbursementPayee[]> 
     const { data, error } = await supabase
       .from('DisbursementPayees')
       .select('*')
-      .order('CreatedAt', { ascending: false });
+      .order('FullName', { ascending: true });
 
     if (error) throw error;
     if (data && data.length > 0) {
@@ -61,6 +61,7 @@ export async function fetchDisbursementPayeesDb(): Promise<DisbursementPayee[]> 
         CreatedAt: d.CreatedAt,
         UpdatedAt: d.UpdatedAt,
       }));
+      payees.sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
       saveLocalPayees(payees);
       return payees;
     }
@@ -68,7 +69,9 @@ export async function fetchDisbursementPayeesDb(): Promise<DisbursementPayee[]> 
     // Supabase fallback sang local storage
   }
 
-  return getLocalPayees();
+  const locals = getLocalPayees();
+  locals.sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
+  return locals;
 }
 
 export async function upsertDisbursementPayeeDb(payee: DisbursementPayee): Promise<DisbursementPayee> {

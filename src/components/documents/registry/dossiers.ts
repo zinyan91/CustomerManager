@@ -1,4 +1,4 @@
-import { FolderOpen, Hammer, Home } from 'lucide-react';
+import { FolderOpen, Hammer, Home, Folder } from 'lucide-react';
 import type { Dossier } from './types';
 
 export const DOSSIERS: Dossier[] = [
@@ -33,4 +33,13 @@ export const DOSSIERS: Dossier[] = [
       { templateId: 'lease_house' },
     ],
   },
+  {
+    id: 'khac',
+    label: 'Khác',
+    icon: Folder,
+    documents: [
+      { templateId: 'deposit' },
+    ],
+  },
 ];
+

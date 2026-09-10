@@ -56,6 +56,11 @@ const PartyFields: React.FC<{ party: Party; set: (p: Partial<Party>) => void }> 
         {CCCD_ISSUE_PLACES.map(p => <option key={p} value={p}>{p}</option>)}
       </select>
     </div>
+    <div>
+      <label className={LABEL}>Năm sinh</label>
+      <input className={`${INPUT} font-mono`} placeholder="VD: 1985" value={party.birthYear || ''}
+        onChange={e => set({ birthYear: e.target.value })} />
+    </div>
   </div>
 );
 

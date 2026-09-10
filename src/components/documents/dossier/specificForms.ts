@@ -6,6 +6,7 @@ import { LeaseMbSpecificForm } from './LeaseMbSpecificForm';
 import { LeaseHouseSpecificForm } from './LeaseHouseSpecificForm';
 import { EstimateSpecificForm } from './EstimateSpecificForm';
 import { BangKeSpecificForm } from './BangKeSpecificForm';
+import { DepositSpecificForm } from './DepositSpecificForm';
 
 export const SPECIFIC_FORM_BY_ID: Record<string, FC<any> | null> = {
   sale_contract: SaleSpecificForm,
@@ -17,4 +18,6 @@ export const SPECIFIC_FORM_BY_ID: Record<string, FC<any> | null> = {
   lease_mb: LeaseMbSpecificForm,
   lease_house: LeaseHouseSpecificForm,
   const_estimate: EstimateSpecificForm,
+  deposit: DepositSpecificForm,
 };
+

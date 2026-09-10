@@ -57,6 +57,17 @@ function docxText(zip: Uint8Array): string {
 
 afterEach(cleanup);
 
+const TEMPLATE_DOSSIER_MAP: Record<string, string> = {
+  sale_contract: 'Hồ sơ giải ngân',
+  payment_request_sale: 'Hồ sơ giải ngân',
+  construction: 'Hồ sơ sửa chữa nhà',
+  const_estimate: 'Hồ sơ sửa chữa nhà',
+  payment_request_const: 'Hồ sơ sửa chữa nhà',
+  lease_mb: 'Hồ sơ cho thuê',
+  lease_house: 'Hồ sơ cho thuê',
+  deposit: 'Khác',
+};
+
 describe('Soạn biểu mẫu — tải Word', () => {
   for (const tpl of TEMPLATE_LIST) {
     it(`${tpl.label} xuất ra .docx đọc được, không mất chữ nào`, async () => {
@@ -64,7 +75,14 @@ describe('Soạn biểu mẫu — tải Word', () => {
       render(<DocumentTemplateView />);
       const user = userEvent.setup();
 
-      await user.click(screen.getByRole('button', { name: tpl.label }));
+      const dossierName = TEMPLATE_DOSSIER_MAP[tpl.id];
+      if (dossierName) {
+        const dossierBtn = screen.getByRole('button', { name: dossierName });
+        await user.click(dossierBtn);
+      }
+
+      const cleanLabel = tpl.label.replace(/^\d+\.\s*/, '');
+      await user.click(screen.getByRole('button', { name: cleanLabel }));
 
       const preview = document.querySelector('.a4-sheet-container') as HTMLElement;
       const onScreen = flat(preview.textContent || '');
@@ -82,3 +100,4 @@ describe('Soạn biểu mẫu — tải Word', () => {
     });
   }
 });
+

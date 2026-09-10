@@ -3,6 +3,8 @@ import { UserCheck, User, Users, Trash2, Sparkles, Plus, Check, Phone, ChevronDo
 import type { Customer } from '../../types';
 import { UI, BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '../../lib/uiClasses';
 import { formatNationalId } from '../../lib/utils';
+import { DateInput } from '../DateInput';
+import { CCCD_ISSUE_PLACES } from '../../lib/documentOptions';
 
 interface CustomerDrawerFormProps {
   isOpen: boolean;
@@ -14,6 +16,8 @@ interface CustomerDrawerFormProps {
     inputCif: string; setInputCif: (v: string) => void;
     inputFullName: string; setInputFullName: (v: string) => void;
     inputNationalId: string; setInputNationalId: (v: string) => void;
+    inputIdCardIssueDate: string; setInputIdCardIssueDate: (v: string) => void;
+    inputIdCardIssuePlace: string; setInputIdCardIssuePlace: (v: string) => void;
     inputPhone: string; setInputPhone: (v: string) => void;
     inputEmail: string; setInputEmail: (v: string) => void;
     inputAddress: string; setInputAddress: (v: string) => void;
@@ -184,7 +188,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block font-semibold mb-1 text-ink">Số CCCD / CMND (12 số / 9 số)</label>
                 <input
@@ -198,18 +202,45 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
               </div>
 
               <div>
-                <label className="block font-semibold mb-1 text-ink">Tình trạng hôn nhân</label>
-                <select
-                  value={formState.inputMaritalStatus}
-                  onChange={(e) => formState.setInputMaritalStatus(e.target.value)}
+                <label className="block font-semibold mb-1 text-ink">Ngày cấp CCCD</label>
+                <DateInput
+                  value={formState.inputIdCardIssueDate}
+                  onChange={formState.setInputIdCardIssueDate}
+                  placeholder="DD/MM/YYYY"
                   className={`w-full rounded-lg p-2.5 font-semibold ${UI.inputStyle}`}
-                >
-                  <option value="Độc thân">Độc thân</option>
-                  <option value="Đã kết hôn">Đã kết hôn (Kèm thông tin Vợ/Chồng)</option>
-                  <option value="Ly hôn">Ly hôn</option>
-                  <option value="Góa">Góa</option>
-                </select>
+                />
               </div>
+
+              <div>
+                <label className="block font-semibold mb-1 text-ink">Nơi cấp CCCD</label>
+                <input
+                  type="text"
+                  list="cccd-places-list"
+                  placeholder="Chọn hoặc nhập nơi cấp..."
+                  value={formState.inputIdCardIssuePlace}
+                  onChange={(e) => formState.setInputIdCardIssuePlace(e.target.value)}
+                  className={`w-full rounded-lg p-2.5 font-semibold ${UI.inputStyle}`}
+                />
+                <datalist id="cccd-places-list">
+                  {CCCD_ISSUE_PLACES.map((p) => (
+                    <option key={p} value={p} />
+                  ))}
+                </datalist>
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-semibold mb-1 text-ink">Tình trạng hôn nhân</label>
+              <select
+                value={formState.inputMaritalStatus}
+                onChange={(e) => formState.setInputMaritalStatus(e.target.value)}
+                className={`w-full rounded-lg p-2.5 font-semibold ${UI.inputStyle}`}
+              >
+                <option value="Độc thân">Độc thân</option>
+                <option value="Đã kết hôn">Đã kết hôn (Kèm thông tin Vợ/Chồng)</option>
+                <option value="Ly hôn">Ly hôn</option>
+                <option value="Góa">Góa</option>
+              </select>
             </div>
           </div>
 

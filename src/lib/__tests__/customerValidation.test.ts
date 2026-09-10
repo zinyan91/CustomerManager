@@ -149,11 +149,13 @@ describe('validateCustomerForm', () => {
 
 describe('parseRawCustomerText (Smart Paste)', () => {
   it('nhận diện đầy đủ các trường từ văn bản có nhãn', () => {
-    const raw = 'CIF: 005299617 - KH: NGUYEN VAN AN - CCCD: 079090001234 - SDT: 0909123456 - STK: 190333444555 - ĐC: 123 Lê Lợi, Q1, TPHCM';
+    const raw = 'CIF: 005299617 - KH: NGUYEN VAN AN - CCCD: 079090001234 - Cấp ngày: 25/05/2023 - Nơi cấp: Cục Cảnh sát QLHC về TTXH - SDT: 0909123456 - STK: 190333444555 - ĐC: 123 Lê Lợi, Q1, TPHCM';
     const parsed = parseRawCustomerText(raw);
     expect(parsed.cif).toBe('005299617');
     expect(parsed.fullName).toBe('NGUYEN VAN AN');
     expect(parsed.nationalId).toBe('079090001234');
+    expect(parsed.idCardIssueDate).toBe('2023-05-25');
+    expect(parsed.idCardIssuePlace).toBe('Cục Cảnh sát QLHC về TTXH');
     expect(parsed.phone).toBe('0909123456');
     expect(parsed.accountNumber).toBe('190333444555');
     expect(parsed.address).toBe('123 Lê Lợi, Q1, TPHCM');

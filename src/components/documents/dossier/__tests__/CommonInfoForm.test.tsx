@@ -15,6 +15,8 @@ describe('CommonInfoForm', () => {
         FullName: 'HOÀNG VĂN THÁI',
         CifKh: 'CIF123',
         NationalId: '079090123456',
+        IdCardIssueDate: '2023-05-25',
+        IdCardIssuePlace: 'Cục Cảnh sát QLHC về TTXH',
         Address: '123 Nguyễn Huệ, Q1, TP.HCM',
         MaritalStatus: 'Single',
       },
@@ -27,10 +29,10 @@ describe('CommonInfoForm', () => {
 
     // Wait for customer picker trigger to show
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Chọn Khách hàng/i })).toBeTruthy();
+      expect(screen.getAllByRole('button', { name: /Chọn Khách hàng/i })[0]).toBeTruthy();
     });
 
-    const trigger = screen.getByRole('button', { name: /Chọn Khách hàng/i });
+    const trigger = screen.getAllByRole('button', { name: /Chọn Khách hàng/i })[0];
     fireEvent.click(trigger);
 
     await waitFor(() => {
@@ -44,6 +46,8 @@ describe('CommonInfoForm', () => {
         name: 'HOÀNG VĂN THÁI',
         cccd: '079090123456',
         address: '123 Nguyễn Huệ, Q1, TP.HCM',
+        cccdDate: '25/05/2023',
+        cccdPlace: 'Cục Cảnh sát QLHC về TTXH',
       }),
     });
   });

@@ -422,9 +422,18 @@ export const CustomerListView: React.FC = () => {
                   label: 'Số CCCD / Định danh',
                   priority: 2,
                   render: c => (
-                    <span className="font-mono text-ink-muted text-xs">
-                      {formatNationalId(c.NationalId) || '—'}
-                    </span>
+                    <div>
+                      <div className="font-mono text-ink-muted text-xs font-semibold">
+                        {formatNationalId(c.NationalId) || '—'}
+                      </div>
+                      {(c.IdCardIssueDate || c.IdCardIssuePlace) && (
+                        <div className="text-[10px] text-ink-faint flex flex-wrap items-center gap-1 mt-0.5" title={`Cấp ngày: ${c.IdCardIssueDate ? fmtDate(c.IdCardIssueDate) : '—'} | Nơi cấp: ${c.IdCardIssuePlace || '—'}`}>
+                          {c.IdCardIssueDate && <span>Cấp: {fmtDate(c.IdCardIssueDate)}</span>}
+                          {c.IdCardIssueDate && c.IdCardIssuePlace && <span>•</span>}
+                          {c.IdCardIssuePlace && <span className="truncate max-w-[140px]">{c.IdCardIssuePlace}</span>}
+                        </div>
+                      )}
+                    </div>
                   )
                 },
                 {

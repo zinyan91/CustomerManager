@@ -4,7 +4,7 @@ import type { DossierCommon, LineItem, Party } from '../registry/types';
 import type { PaymentStageItem } from '../DocumentForm';
 import { DateInput } from '../../DateInput';
 import { CustomerPicker } from '../../ui/CustomerPicker';
-import { formatMoneyInput } from '../../../lib/utils';
+import { formatMoneyInput, fmtDate } from '../../../lib/utils';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../../lib/documentOptions';
 import { fetchCustomersAPI } from '../../../lib/api';
 import type { Customer } from '../../../types';
@@ -70,6 +70,7 @@ export const CommonInfoForm: React.FC<{
 }> = ({ common, patch }) => {
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = React.useState<number | null>(null);
+  const [selectedCustomerBId, setSelectedCustomerBId] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     fetchCustomersAPI().then(setCustomers).catch(() => {});
@@ -84,10 +85,30 @@ export const CommonInfoForm: React.FC<{
           name: c.FullName,
           cccd: c.NationalId || '',
           address: c.Address || '',
+          cccdDate: c.IdCardIssueDate ? fmtDate(c.IdCardIssueDate) : '',
+          cccdPlace: c.IdCardIssuePlace || '',
         });
       }
     }
   };
+
+  const handleSelectCustomerB = (id: number | null) => {
+    setSelectedCustomerBId(id);
+    if (id !== null) {
+      const c = customers.find(item => item.Id === id);
+      if (c) {
+        setPartyB({
+          name: c.FullName,
+          cccd: c.NationalId || '',
+          address: c.Address || '',
+          cccdDate: c.IdCardIssueDate ? fmtDate(c.IdCardIssueDate) : '',
+          cccdPlace: c.IdCardIssuePlace || '',
+        });
+      }
+    }
+  };
+
+  const selectedCustomerA = customers.find(item => item.Id === selectedCustomerId);
 
   const setPartyA = (p: Partial<Party>) => patch({ partyA: { ...common.partyA, ...p } });
   const setPartyB = (p: Partial<Party>) => patch({ partyB: { ...common.partyB, ...p } });
@@ -133,6 +154,32 @@ export const CommonInfoForm: React.FC<{
         </Group>
 
         <Group title="Bên B" accent="border-pos/50 text-pos">
+          <div className="mb-3 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className={LABEL}>Chọn nhanh từ Danh sách Khách hàng</label>
+              {selectedCustomerA?.SpouseName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPartyB({
+                      name: selectedCustomerA.SpouseName || '',
+                      cccd: selectedCustomerA.SpouseNationalId || '',
+                      address: selectedCustomerA.KhlqAddress || selectedCustomerA.Address || '',
+                    });
+                  }}
+                  className="text-[10px] font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  ⚡ Điền nhanh KHLQ: {selectedCustomerA.SpouseName}
+                </button>
+              )}
+            </div>
+            <CustomerPicker
+              customers={customers}
+              selectedCustomerId={selectedCustomerBId}
+              onSelectCustomer={handleSelectCustomerB}
+              placeholder="— Tìm theo tên, CIF, SĐT để điền Bên B —"
+            />
+          </div>
           <PartyFields party={common.partyB} set={setPartyB} />
         </Group>
 

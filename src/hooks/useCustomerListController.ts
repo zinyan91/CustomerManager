@@ -25,6 +25,8 @@ export function useCustomerListController() {
   const [inputCif, setInputCif] = useState('');
   const [inputFullName, setInputFullName] = useState('');
   const [inputNationalId, setInputNationalId] = useState('');
+  const [inputIdCardIssueDate, setInputIdCardIssueDate] = useState('');
+  const [inputIdCardIssuePlace, setInputIdCardIssuePlace] = useState('');
   const [inputPhone, setInputPhone] = useState('');
   const [inputEmail, setInputEmail] = useState('');
   const [inputAddress, setInputAddress] = useState('');
@@ -97,6 +99,8 @@ export function useCustomerListController() {
     setInputCif('');
     setInputFullName('');
     setInputNationalId('');
+    setInputIdCardIssueDate('');
+    setInputIdCardIssuePlace('');
     setInputPhone('');
     setInputEmail('');
     setInputAddress('');
@@ -122,6 +126,9 @@ export function useCustomerListController() {
     setInputCif(cus.CifKh || '');
     setInputFullName(cus.FullName || '');
     setInputNationalId(cus.NationalId || '');
+    const rawIssueDate = cus.IdCardIssueDate || '';
+    setInputIdCardIssueDate(rawIssueDate.includes('T') ? rawIssueDate.split('T')[0] : rawIssueDate);
+    setInputIdCardIssuePlace(cus.IdCardIssuePlace || '');
     setInputPhone(cus.Phone || '');
     setInputEmail(cus.Email || '');
     setInputAddress(cus.Address || '');
@@ -144,6 +151,8 @@ export function useCustomerListController() {
     if (parsed.cif) { setInputCif(parsed.cif); appliedCount++; }
     if (parsed.fullName) { setInputFullName(parsed.fullName.toUpperCase()); appliedCount++; }
     if (parsed.nationalId) { setInputNationalId(capDigits(parsed.nationalId, NATIONAL_ID_CCCD_LENGTH)); appliedCount++; }
+    if (parsed.idCardIssueDate) { setInputIdCardIssueDate(parsed.idCardIssueDate); appliedCount++; }
+    if (parsed.idCardIssuePlace) { setInputIdCardIssuePlace(parsed.idCardIssuePlace); appliedCount++; }
     if (parsed.phone) { setInputPhone(capNumberList(parsed.phone, PHONE_LENGTH)); appliedCount++; }
     if (parsed.email) { setInputEmail(parsed.email); appliedCount++; }
     if (parsed.accountNumber) { setInputAccountNumber(normalizeNumberList(parsed.accountNumber)); appliedCount++; }
@@ -184,6 +193,8 @@ export function useCustomerListController() {
       CifKh: inputCif.trim(),
       FullName: inputFullName.trim().toUpperCase(),
       NationalId: inputNationalId.trim() || null,
+      IdCardIssueDate: inputIdCardIssueDate.trim() || null,
+      IdCardIssuePlace: inputIdCardIssuePlace.trim() || null,
       Phone: inputPhone.trim() || null,
       Email: inputEmail.trim() || null,
       Address: inputAddress.trim() || null,
@@ -213,7 +224,7 @@ export function useCustomerListController() {
     }
   }, [
     inputCif, inputFullName, inputMaritalStatus, inputKhlqRelationship, inputSpouseName,
-    inputNationalId, inputPhone, inputSpouseNationalId, inputSpousePhone, selectedCustomer,
+    inputNationalId, inputIdCardIssueDate, inputIdCardIssuePlace, inputPhone, inputSpouseNationalId, inputSpousePhone, selectedCustomer,
     inputEmail, inputAddress, inputAccountNumber, inputCifKhlq, inputSpouseAccountNumber, inputKhlqAddress,
     showNotify, clearForm, fetchCustomers,
   ]);
@@ -258,6 +269,8 @@ export function useCustomerListController() {
       inputCif, setInputCif: (v: string) => setInputCif(v.replace(/\s+/g, '')),
       inputFullName, setInputFullName: (v: string) => setInputFullName(v.toUpperCase()),
       inputNationalId, setInputNationalId: (v: string) => setInputNationalId(capDigits(v, NATIONAL_ID_CCCD_LENGTH)),
+      inputIdCardIssueDate, setInputIdCardIssueDate,
+      inputIdCardIssuePlace, setInputIdCardIssuePlace,
       inputPhone, setInputPhone: (v: string) => setInputPhone(capNumberList(v, PHONE_LENGTH)),
       inputEmail, setInputEmail,
       inputAddress, setInputAddress,

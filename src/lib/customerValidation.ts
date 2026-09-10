@@ -86,6 +86,8 @@ export interface ParsedCustomerSnippet {
   cif?: string;
   fullName?: string;
   nationalId?: string;
+  idCardIssueDate?: string;
+  idCardIssuePlace?: string;
   phone?: string;
   email?: string;
   accountNumber?: string;
@@ -105,6 +107,22 @@ export function parseRawCustomerText(raw: string): ParsedCustomerSnippet {
   const cccdMatch = text.match(/(?:cccd|cmnd|số cccd|so cccd|số cmnd|so cmnd|căn cước)[\s:=-]+([0-9\s]{9,16})/i);
   if (cccdMatch) {
     res.nationalId = digitsOnly(cccdMatch[1]);
+  }
+
+  const issueDateMatch = text.match(/(?:ngày cấp|ngay cap|cấp ngày|cap ngay)[\s:=-]+([0-9]{1,2}[/-][0-9]{1,2}[/-][0-9]{4}|[0-9]{4}-[0-9]{2}-[0-9]{2})/i);
+  if (issueDateMatch) {
+    const rawDate = issueDateMatch[1].trim();
+    if (rawDate.includes('/')) {
+      const [d, m, y] = rawDate.split('/');
+      res.idCardIssueDate = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    } else {
+      res.idCardIssueDate = rawDate;
+    }
+  }
+
+  const issuePlaceMatch = text.match(/(?:nơi cấp|noi cap|cấp tại|cap tai)[\s:=-]+([^\n,;|–-]+)/i);
+  if (issuePlaceMatch) {
+    res.idCardIssuePlace = issuePlaceMatch[1].trim();
   }
 
   const phoneMatch = text.match(/(?:sđt|sdt|đt|dt|phone|tel|di động|di dong)[\s:=-]+([0-9\s/;,.-]{10,30})/i);

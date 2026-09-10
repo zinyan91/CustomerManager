@@ -6,6 +6,8 @@ export interface Customer {
   CifKhlq?: string | null;
   FullName: string;
   NationalId?: string | null;
+  IdCardIssueDate?: string | null;
+  IdCardIssuePlace?: string | null;
   Phone?: string | null;
   Email?: string | null;
   Address?: string | null;

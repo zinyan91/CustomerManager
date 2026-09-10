@@ -1,6 +1,14 @@
 export const CCCD_ISSUE_PLACES = [
+  'Cục Cảnh sát QLHC về TTXH',
   'CCS QLHC về TTXH',
   'Bộ Công An',
+  'Cục CSQLHC về TTXH',
+  'Cục Cảnh sát ĐKQL cư trú và DLQG về dân cư',
+  'Công an TP. Hà Nội',
+  'Công an TP. Hồ Chí Minh',
+  'Công an TP. Đà Nẵng',
+  'Công an TP. Hải Phòng',
+  'Công an TP. Cần Thơ',
 ] as const;
 
 export const BANK_LIST = [

@@ -247,6 +247,47 @@ export function useCreditContractController() {
     }
   }, [showNotify, customer, loadCustomer]);
 
+  const handleToggleCloseContract = useCallback(async (cc: CreditContract) => {
+    if (!customer) return;
+    const isClosing = !cc.IsClosed;
+    if (isClosing) {
+      const check = canCloseCreditContract(cc, kunns);
+      if (!check.allowed) {
+        showNotify('error', `Chưa thể tất toán: Còn KUNN chưa tất toán: ${check.unsettledKunnNumbers.join(', ')}.`);
+        return;
+      }
+      const ok = await confirm({
+        title: 'Tất toán Hợp đồng tín dụng',
+        message: `Xác nhận tất toán và đóng HĐTD "${cc.HdtdNumber}"?\nHĐTD sau khi đóng sẽ không thể giải ngân thêm KUNN mới.`,
+        confirmText: 'Tất toán HĐTD',
+        tone: 'primary',
+      });
+      if (!ok) return;
+    } else {
+      const ok = await confirm({
+        title: 'Mở lại Hợp đồng tín dụng',
+        message: `Mở lại hiệu lực cho HĐTD "${cc.HdtdNumber}"?`,
+        confirmText: 'Mở lại HĐTD',
+        tone: 'primary',
+      });
+      if (!ok) return;
+    }
+
+    setLoading(true);
+    try {
+      await saveCreditContractAPI({
+        ...cc,
+        IsClosed: isClosing,
+      });
+      showNotify('success', isClosing ? `Đã tất toán HĐTD ${cc.HdtdNumber}` : `Đã mở lại HĐTD ${cc.HdtdNumber}`);
+      await loadCustomer(customer);
+    } catch (err: any) {
+      showNotify('error', err.message || 'Không thể cập nhật trạng thái HĐTD.');
+    } finally {
+      setLoading(false);
+    }
+  }, [customer, kunns, confirm, showNotify, loadCustomer]);
+
   const purposeOptions = useMemo(() => allowedPurposes(form.LoanMethod), [form.LoanMethod]);
 
   const tongKhaNangBaoDam = useMemo(
@@ -307,6 +348,7 @@ export function useCreditContractController() {
     openEdit,
     handleSave,
     handleDelete,
+    handleToggleCloseContract,
     getKunnsForContract,
     outstandingOf,
   };

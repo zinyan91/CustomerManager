@@ -120,3 +120,59 @@ describe('Nút giải ngân đọc quyết định từ summarizeCreditContracts
     expect(nut).toHaveProperty('disabled', false);
   });
 });
+
+describe('Nút Tất toán / Mở lại HĐTD', () => {
+  it('hiển thị nút Tất toán khi HĐTD đang mở và gọi callback khi bấm', () => {
+    const cc = hdtd({ IsClosed: false });
+    const onToggleClose = vi.fn();
+    const summary = summarizeCreditContracts([cc], [], { today: HOM_NAY })[0];
+
+    render(
+      <KunnAccordionItem
+        contractSummary={summary}
+        collaterals={[]}
+        isExpanded={false}
+        onToggleExpand={() => {}}
+        getKunnsForContract={() => []}
+        outstandingOf={() => 0}
+        onDisburse={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+        onToggleClose={onToggleClose}
+        today={HOM_NAY}
+      />
+    );
+
+    const btn = screen.getByRole('button', { name: /tất toán hđtd/i });
+    expect(btn).toBeTruthy();
+    fireEvent.click(btn);
+    expect(onToggleClose).toHaveBeenCalledWith(cc);
+  });
+
+  it('hiển thị nút Mở lại khi HĐTD đã đóng', () => {
+    const cc = hdtd({ IsClosed: true });
+    const onToggleClose = vi.fn();
+    const summary = summarizeCreditContracts([cc], [], { today: HOM_NAY })[0];
+
+    render(
+      <KunnAccordionItem
+        contractSummary={summary}
+        collaterals={[]}
+        isExpanded={false}
+        onToggleExpand={() => {}}
+        getKunnsForContract={() => []}
+        outstandingOf={() => 0}
+        onDisburse={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+        onToggleClose={onToggleClose}
+        today={HOM_NAY}
+      />
+    );
+
+    const btn = screen.getByRole('button', { name: /mở lại hđtd/i });
+    expect(btn).toBeTruthy();
+    fireEvent.click(btn);
+    expect(onToggleClose).toHaveBeenCalledWith(cc);
+  });
+});

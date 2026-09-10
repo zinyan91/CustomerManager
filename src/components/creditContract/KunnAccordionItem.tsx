@@ -1,13 +1,13 @@
 import React, { type ElementType } from 'react';
 import {
-  Banknote, AlertTriangle, Building2, Calendar, ChevronDown, ChevronUp, Trash2, Clock
+  Banknote, AlertTriangle, Building2, Calendar, ChevronDown, ChevronUp, Trash2, Clock, CheckCircle2, RotateCcw
 } from 'lucide-react';
 import { fmtDate, fmtMoney, fmtRate, todayIso } from '../../lib/utils';
 import { collateralValue } from '../../lib/collateralMath';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { kunnPrincipal } from '../../lib/loanMath';
 import {
-  hdtdLifecycle, HDTD_LIFECYCLE_LABEL,
+  hdtdLifecycle, HDTD_LIFECYCLE_LABEL, canCloseCreditContract,
   type HdtdLifecycle, type CreditContractSummary,
 } from '../../lib/creditContract';
 import type { Collateral, CreditContract, LoanContract } from '../../types';
@@ -38,6 +38,7 @@ interface KunnAccordionItemProps {
   onDisburse: (cc: CreditContract) => void;
   onEdit: (cc: CreditContract) => void;
   onDelete: (cc: CreditContract) => void;
+  onToggleClose?: (cc: CreditContract) => void;
   today?: string;
 }
 
@@ -51,6 +52,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
   onDisburse,
   onEdit,
   onDelete,
+  onToggleClose,
   today,
 }) => {
   const {
@@ -69,6 +71,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
   const LifecycleIcon = LIFECYCLE_ICON[lifecycle];
 
   const canDelete = kunnCount === 0;
+  const canCloseCheck = canCloseCreditContract(cc, contractKunns);
 
   const utilPercent = granted > 0
     ? isRevolving
@@ -152,6 +155,39 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
                   : 'Giải ngân từ HĐTD'}
               </span>
             </button>
+
+            {onToggleClose && (
+              <button
+                type="button"
+                onClick={() => onToggleClose(cc)}
+                className={`font-semibold text-xs py-1.5 px-3 rounded-xl border transition-colors flex items-center space-x-1.5 shadow-2xs ${
+                  cc.IsClosed
+                    ? 'border-line/70 bg-surface/80 hover:bg-surface text-ink hover:border-accent cursor-pointer'
+                    : canCloseCheck.allowed
+                    ? 'border-line/70 bg-surface/80 hover:bg-surface text-ink hover:border-accent cursor-pointer'
+                    : 'border-line bg-panel-muted/50 text-ink-faint cursor-not-allowed opacity-70'
+                }`}
+                title={
+                  cc.IsClosed
+                    ? 'Mở lại hiệu lực Hợp đồng tín dụng'
+                    : canCloseCheck.allowed
+                    ? 'Tất toán và đóng Hợp đồng tín dụng'
+                    : `Không thể tất toán: Còn ${canCloseCheck.unsettledKunnNumbers.length} KUNN chưa tất toán (${canCloseCheck.unsettledKunnNumbers.join(', ')})`
+                }
+              >
+                {cc.IsClosed ? (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5 text-accent" />
+                    <span>Mở lại HĐTD</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className={`w-3.5 h-3.5 ${canCloseCheck.allowed ? 'text-accent' : 'text-ink-faint'}`} />
+                    <span>Tất toán HĐTD</span>
+                  </>
+                )}
+              </button>
+            )}
 
             <button
               type="button"

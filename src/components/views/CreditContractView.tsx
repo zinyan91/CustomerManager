@@ -43,8 +43,10 @@ export const CreditContractView: React.FC = () => {
     openEdit,
     handleSave,
     handleDelete,
+    handleToggleCloseContract,
     getKunnsForContract,
     outstandingOf,
+    closeCheck,
   } = useCreditContractController();
 
   const [expandedKunnContractIds, setExpandedKunnContractIds] = useState<number[]>([]);
@@ -211,6 +213,7 @@ export const CreditContractView: React.FC = () => {
                     onDisburse={handleDisburseRequest}
                     onEdit={openEdit}
                     onDelete={handleDelete}
+                    onToggleClose={handleToggleCloseContract}
                     today={today}
                   />
                 ))}
@@ -238,6 +241,7 @@ export const CreditContractView: React.FC = () => {
         purposeOptions={purposeOptions}
         tongKhaNangBaoDam={tongKhaNangBaoDam}
         vuotKhaNangBaoDam={vuotKhaNangBaoDam}
+        closeCheck={closeCheck}
         onSave={handleSave}
         onClose={() => setShowForm(false)}
       />

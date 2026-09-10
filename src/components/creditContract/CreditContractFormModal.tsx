@@ -5,6 +5,7 @@ import { fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib
 import { usableCapacity, collateralValue } from '../../lib/collateralMath';
 import { DateInput } from '../DateInput';
 import { LOAN_METHODS } from '../../hooks/useCreditContractController';
+import type { CloseCreditContractCheck } from '../../lib/creditContract';
 import type { Collateral, CreditContract } from '../../types';
 
 interface CreditContractFormModalProps {
@@ -24,6 +25,7 @@ interface CreditContractFormModalProps {
   purposeOptions: readonly { value: string; label: string }[] | Array<{ value: string; label: string }>;
   tongKhaNangBaoDam: number;
   vuotKhaNangBaoDam: boolean;
+  closeCheck?: CloseCreditContractCheck;
   onSave: (e: React.FormEvent) => void;
   onClose: () => void;
 }
@@ -48,6 +50,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
   purposeOptions,
   tongKhaNangBaoDam,
   vuotKhaNangBaoDam,
+  closeCheck,
   onSave,
   onClose,
 }) => {
@@ -279,6 +282,42 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
               )}
             </div>
           </div>
+
+          {/* Trạng thái Tất toán / Đóng HĐTD */}
+          {editing && (
+            <div className="pt-2 border-t border-line/60 space-y-2">
+              <label className="flex items-center space-x-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.IsClosed ?? false}
+                  disabled={!form.IsClosed && closeCheck ? !closeCheck.allowed : false}
+                  onChange={e => setForm({ ...form, IsClosed: e.target.checked })}
+                  className="rounded border-line text-accent focus:ring-accent w-4 h-4 disabled:opacity-40 disabled:cursor-not-allowed"
+                />
+                <span className="font-bold text-xs text-ink">
+                  Đánh dấu Hợp đồng tín dụng ĐÃ TẤT TOÁN / ĐÃ ĐÓNG
+                </span>
+              </label>
+
+              {!form.IsClosed && closeCheck && !closeCheck.allowed && (
+                <div className="p-3 rounded-xl bg-warn-soft border border-warn/30 text-warn text-xs flex items-start space-x-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Không thể tất toán HĐTD</p>
+                    <p className="text-[11px] mt-0.5 text-warn/90">
+                      Còn {closeCheck.unsettledKunnNumbers.length} KUNN chưa tất toán: <strong>{closeCheck.unsettledKunnNumbers.join(', ')}</strong>. Vui lòng tất toán các KUNN này trước khi đóng HĐTD.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {form.IsClosed && (
+                <p className="text-[11px] text-ink-faint italic pl-6.5">
+                  HĐTD đang ở trạng thái đã đóng. Không thể phát sinh giải ngân KUNN mới từ HĐTD này.
+                </p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className={`block mb-1 font-semibold ${UI.labelStyle}`}>Ghi chú bổ sung</label>

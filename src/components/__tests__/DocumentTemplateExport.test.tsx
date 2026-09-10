@@ -82,7 +82,11 @@ describe('Soạn biểu mẫu — tải Word', () => {
       }
 
       const cleanLabel = tpl.label.replace(/^\d+\.\s*/, '');
-      await user.click(screen.getByRole('button', { name: cleanLabel }));
+      const currentActive = screen.queryByRole('heading', { name: cleanLabel });
+      if (!currentActive) {
+        await user.click(screen.getByRole('button', { name: 'Chọn biểu mẫu' }));
+        await user.click(screen.getByRole('button', { name: cleanLabel }));
+      }
 
       const preview = document.querySelector('.a4-sheet-container') as HTMLElement;
       const onScreen = flat(preview.textContent || '');

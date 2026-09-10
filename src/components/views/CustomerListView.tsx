@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import type { Customer } from '../../types';
 import { isCustomerArchived, CUSTOMER_STATUS_LABEL, type CustomerStatusFilter } from '../../lib/customerStatus';
-import { fmtDate, formatNationalId, parseNationalIdInput } from '../../lib/utils';
+import { fmtDate, formatNationalId, parseNationalIdInput, formatPhoneNumber } from '../../lib/utils';
 import {
   Search, Plus, UserCheck, Users, Archive, ArchiveRestore,
   Edit3, Phone, ShieldCheck, HeartHandshake, X, FileSpreadsheet, RefreshCw
@@ -381,22 +381,27 @@ export const CustomerListView: React.FC = () => {
               )}
               columns={([
                 {
-                  key: 'kh',
-                  label: 'Khách hàng & Mã CIF',
+                  key: 'cif',
+                  label: 'Mã CIF',
                   priority: 1,
                   render: c => (
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-accent-soft text-accent font-bold flex items-center justify-center text-xs shadow-2xs shrink-0 border border-accent/20">
+                    <span className="font-mono text-xs text-accent font-bold tracking-tight">
+                      {c.CifKh}
+                    </span>
+                  )
+                },
+                {
+                  key: 'kh',
+                  label: 'Họ và Tên Khách hàng',
+                  priority: 1,
+                  render: c => (
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-accent-soft text-accent font-bold flex items-center justify-center text-[11px] shadow-2xs shrink-0 border border-accent/20">
                         {getInitials(c.FullName)}
                       </div>
-                      <div>
-                        <div className="font-bold text-ink text-xs group-hover:text-accent transition-colors">
-                          {c.FullName}
-                        </div>
-                        <div className="font-mono text-[11px] text-accent font-semibold tracking-tight">
-                          {c.CifKh}
-                        </div>
-                      </div>
+                      <span className="font-bold text-ink text-xs group-hover:text-accent transition-colors">
+                        {c.FullName}
+                      </span>
                     </div>
                   )
                 },
@@ -406,12 +411,12 @@ export const CustomerListView: React.FC = () => {
                   priority: 2,
                   render: c => c.Phone ? (
                     <a
-                      href={`tel:${c.Phone}`}
+                      href={`tel:${c.Phone.replace(/\s+/g, '')}`}
                       onClick={(e) => e.stopPropagation()}
                       className="font-mono text-ink-muted hover:text-accent flex items-center gap-1 text-xs"
                     >
                       <Phone className="w-3 h-3 text-ink-faint" />
-                      <span>{c.Phone}</span>
+                      <span>{formatPhoneNumber(c.Phone)}</span>
                     </a>
                   ) : (
                     <span className="text-ink-faint font-mono">—</span>
@@ -419,7 +424,7 @@ export const CustomerListView: React.FC = () => {
                 },
                 {
                   key: 'cccd',
-                  label: 'Số CCCD / Định danh',
+                  label: 'Số CCCD',
                   priority: 2,
                   render: c => (
                     <div>

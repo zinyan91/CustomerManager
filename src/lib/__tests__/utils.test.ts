@@ -15,6 +15,7 @@ import {
   getMasterHdtdNumber,
   formatNationalId,
   parseNationalIdInput,
+  formatPhoneNumber,
   parseDecimalNumber,
   parseMoneyDecimalInput,
 } from '../utils';
@@ -378,5 +379,23 @@ describe('parseDecimalNumber / parseMoneyDecimalInput', () => {
     expect(parseDecimalNumber('1,000,000')).toBe(1000000);
     expect(parseDecimalNumber('1.234,56')).toBe(1234.56);
     expect(parseDecimalNumber('1,234.56')).toBe(1234.56);
+  });
+});
+
+describe('formatPhoneNumber', () => {
+  it('định dạng số điện thoại 10 số thành dạng 4.3.3', () => {
+    expect(formatPhoneNumber('0909123456')).toBe('0909.123.456');
+    expect(formatPhoneNumber('0912345678')).toBe('0912.345.678');
+  });
+
+  it('định dạng nhiều số điện thoại ngăn cách bằng dấu phẩy hoặc gạch chéo', () => {
+    expect(formatPhoneNumber('0909123456, 0987654321')).toBe('0909.123.456, 0987.654.321');
+    expect(formatPhoneNumber('0909123456 / 0987654321')).toBe('0909.123.456 / 0987.654.321');
+  });
+
+  it('xử lý chuỗi rỗng hoặc null an toàn', () => {
+    expect(formatPhoneNumber('')).toBe('');
+    expect(formatPhoneNumber(null)).toBe('');
+    expect(formatPhoneNumber(undefined)).toBe('');
   });
 });

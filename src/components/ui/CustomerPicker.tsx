@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { Search, ChevronDown, Check, User, X } from 'lucide-react';
 
+import { formatPhoneNumber } from '../../lib/utils';
+
 export interface CustomerSummaryItem {
   Id: number;
   FullName: string;
@@ -133,7 +135,7 @@ export const CustomerPicker: React.FC<CustomerPickerProps> = ({
                     <div className="min-w-0">
                       <div className="truncate font-bold">{c.FullName}</div>
                       <div className="text-[10px] text-ink-faint font-mono">
-                        CIF: {c.CifKh} {c.Phone ? `· ${c.Phone}` : ''}
+                        CIF: {c.CifKh} {c.Phone ? `· ${formatPhoneNumber(c.Phone)}` : ''}
                       </div>
                     </div>
                     {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}

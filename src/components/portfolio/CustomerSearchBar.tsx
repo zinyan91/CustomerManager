@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, ChevronDown, X } from 'lucide-react';
 import type { Customer } from '../../types';
 import { UI } from '../../lib/uiClasses';
+import { formatPhoneNumber } from '../../lib/utils';
 
 interface CustomerSearchBarProps {
   allCustomers: Customer[];
@@ -83,7 +84,7 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
                   </div>
                   <div className="min-w-0">
                     <span className="font-semibold text-ink group-hover:text-accent transition-colors block truncate text-xs">{c.FullName}</span>
-                    {c.Phone && <span className="text-[10px] text-ink-muted block">{c.Phone}</span>}
+                    {c.Phone && <span className="text-[10px] text-ink-muted block">{formatPhoneNumber(c.Phone)}</span>}
                   </div>
                 </div>
                 <span className="font-mono text-accent font-bold text-[11px] shrink-0 ml-3 bg-accent-soft px-2.5 py-0.5 rounded-full border border-accent/20">

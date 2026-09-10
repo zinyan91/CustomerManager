@@ -20,6 +20,17 @@ export function parseNationalIdInput(v?: string | null): string {
   return String(v).replace(/\s+/g, '');
 }
 
+/**
+ * Định dạng số điện thoại hiển thị theo chuẩn 4 số đầu . 3 số giữa . 3 số cuối (VD: 0909.123.456)
+ */
+export function formatPhoneNumber(v?: string | null): string {
+  if (!v) return '';
+  const raw = String(v).trim();
+  if (!raw) return '';
+
+  return raw.replace(/\b(\d{4})(\d{3})(\d{3})\b/g, '$1.$2.$3');
+}
+
 export function fmtDecimals(v?: number | null, digits: number = 1, fallback: string = '—'): string {
   if (v === undefined || v === null || isNaN(v)) return fallback;
   return formatNumberWith(v, digits, loadFormatSettings().numberStyle);

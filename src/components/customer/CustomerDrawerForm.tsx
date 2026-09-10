@@ -175,7 +175,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
 
               <div className="sm:col-span-2">
                 <label className="block font-semibold mb-1 text-ink">
-                  Họ và Tên Khách hàng (Tự động viết HOA) <span className="text-neg">*</span>
+                  Họ và Tên Khách hàng <span className="text-neg">*</span>
                 </label>
                 <input
                   type="text"
@@ -190,7 +190,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block font-semibold mb-1 text-ink">Số CCCD / CMND (12 số / 9 số)</label>
+                <label className="block font-semibold mb-1 text-ink">Số CCCD</label>
                 <input
                   type="text"
                   placeholder="0790 9200 1234..."
@@ -213,19 +213,18 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
 
               <div>
                 <label className="block font-semibold mb-1 text-ink">Nơi cấp CCCD</label>
-                <input
-                  type="text"
-                  list="cccd-places-list"
-                  placeholder="Chọn hoặc nhập nơi cấp..."
+                <select
                   value={formState.inputIdCardIssuePlace}
                   onChange={(e) => formState.setInputIdCardIssuePlace(e.target.value)}
                   className={`w-full rounded-lg p-2.5 font-semibold ${UI.inputStyle}`}
-                />
-                <datalist id="cccd-places-list">
+                >
+                  <option value="">-- Chọn nơi cấp --</option>
                   {CCCD_ISSUE_PLACES.map((p) => (
-                    <option key={p} value={p} />
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
                   ))}
-                </datalist>
+                </select>
               </div>
             </div>
 
@@ -288,8 +287,8 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
 
             <div>
               <label className="block font-semibold mb-1 text-ink">Địa chỉ liên lạc thường trú</label>
-              <textarea
-                rows={2}
+              <input
+                type="text"
                 placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
                 value={formState.inputAddress}
                 onChange={(e) => formState.setInputAddress(e.target.value)}

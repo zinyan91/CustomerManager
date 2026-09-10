@@ -81,4 +81,36 @@ describe('DisbursementPayeeListView', () => {
       );
     });
   });
+
+  it('allows creating a payee without STK (AccountNumber optional)', async () => {
+    vi.spyOn(db, 'fetchDisbursementPayeesDb').mockResolvedValue([]);
+    const upsertSpy = vi.spyOn(db, 'upsertDisbursementPayeeDb').mockImplementation(async (payee) => ({
+      ...payee,
+      Id: 'new_id_456',
+    }));
+
+    render(<DisbursementPayeeListView />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/THÊM THÔNG TIN MỚI/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText(/THÊM THÔNG TIN MỚI/i));
+
+    fireEvent.change(screen.getByPlaceholderText(/VD: NGUYỄN VĂN A/i), {
+      target: { value: 'TRẦN VĂN BÌNH' },
+    });
+
+    // Leave STK blank and click save
+    fireEvent.click(screen.getByRole('button', { name: /LƯU THÔNG TIN/i }));
+
+    await waitFor(() => {
+      expect(upsertSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          FullName: 'TRẦN VĂN BÌNH',
+          AccountNumber: '',
+        })
+      );
+    });
+  });
 });

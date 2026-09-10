@@ -60,7 +60,7 @@ export const DisbursementPayeePicker: React.FC<DisbursementPayeePickerProps> = (
             <Landmark className="w-3.5 h-3.5 text-accent shrink-0" />
             <span className="truncate">
               {selectedPayee
-                ? `${selectedPayee.FullName} — STK: ${selectedPayee.AccountNumber} (${selectedPayee.BankName || ''})`
+                ? `${selectedPayee.FullName}${selectedPayee.AccountNumber ? ` — STK: ${selectedPayee.AccountNumber}` : ''}${selectedPayee.BankName ? ` (${selectedPayee.BankName})` : ''}`
                 : placeholder}
             </span>
           </div>
@@ -136,9 +136,13 @@ export const DisbursementPayeePicker: React.FC<DisbursementPayeePickerProps> = (
                         )}
                       </div>
                       <div className="text-[11px] text-ink-faint truncate mt-0.5">
-                        <span className="font-mono text-accent font-semibold">{p.AccountNumber}</span>
-                        {p.BankName && <span> • {p.BankName}</span>}
+                        {p.AccountNumber ? (
+                          <span className="font-mono text-accent font-semibold">{p.AccountNumber}</span>
+                        ) : null}
+                        {p.AccountNumber && p.BankName && <span> • </span>}
+                        {p.BankName && <span>{p.BankName}</span>}
                         {p.BankBranch && <span> ({p.BankBranch})</span>}
+                        {!p.AccountNumber && !p.BankName && <span>—</span>}
                       </div>
                     </div>
                     {isSelected && (

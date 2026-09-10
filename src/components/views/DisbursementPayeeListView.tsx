@@ -87,10 +87,6 @@ export const DisbursementPayeeListView: React.FC = () => {
       setNotification({ type: 'error', message: 'Vui lòng nhập Họ và tên người thụ hưởng.' });
       return;
     }
-    if (!editingPayee.AccountNumber.trim()) {
-      setNotification({ type: 'error', message: 'Vui lòng nhập Số tài khoản (STK).' });
-      return;
-    }
 
     setSaving(true);
     try {
@@ -98,7 +94,7 @@ export const DisbursementPayeeListView: React.FC = () => {
         ...editingPayee,
         FullName: editingPayee.FullName.trim().toUpperCase(),
         NationalId: parseNationalIdInput(editingPayee.NationalId),
-        AccountNumber: editingPayee.AccountNumber.trim(),
+        AccountNumber: editingPayee.AccountNumber?.trim() || '',
         BankBranch: editingPayee.BankBranch?.trim() || '',
       });
 
@@ -396,11 +392,8 @@ export const DisbursementPayeeListView: React.FC = () => {
               {/* STK, Ngân hàng, Chi nhánh */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-line/50">
                 <div>
-                  <label className={LABEL}>
-                    Số tài khoản (STK) <span className="text-neg">*</span>
-                  </label>
+                  <label className={LABEL}>Số tài khoản (STK)</label>
                   <input
-                    required
                     type="text"
                     placeholder="VD: 19033481284"
                     value={editingPayee.AccountNumber}

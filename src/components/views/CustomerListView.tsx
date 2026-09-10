@@ -83,12 +83,6 @@ export const CustomerListView: React.FC = () => {
     );
   };
 
-  const getInitials = (name: string) => {
-    if (!name) return 'KH';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
 
   return (
     <div className="space-y-4 md:space-y-4.5 w-full pb-8">
@@ -395,14 +389,9 @@ export const CustomerListView: React.FC = () => {
                   label: 'Họ và Tên Khách hàng',
                   priority: 1,
                   render: c => (
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-accent-soft text-accent font-bold flex items-center justify-center text-[11px] shadow-2xs shrink-0 border border-accent/20">
-                        {getInitials(c.FullName)}
-                      </div>
-                      <span className="font-bold text-ink text-xs group-hover:text-accent transition-colors">
-                        {c.FullName}
-                      </span>
-                    </div>
+                    <span className="font-bold text-ink text-xs group-hover:text-accent transition-colors">
+                      {c.FullName}
+                    </span>
                   )
                 },
                 {

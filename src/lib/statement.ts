@@ -19,7 +19,9 @@ export interface StatementSellerInfo {
 export function getComputedBankAccText(info: StatementSellerInfo): string {
   if (info.customStkText) return info.customStkText;
   if (info.paymentMethod === 'cash') {
-    return 'Tiền mặt';
+    return info.sellerIdCard && info.sellerIdCard.trim()
+      ? `CCCD: ${info.sellerIdCard.trim()}`
+      : 'Tiền mặt';
   }
   const acc = info.bankAccNo || '';
   const bank = info.bankName || '';

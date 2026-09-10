@@ -77,8 +77,11 @@ describe('CommonInfoForm', () => {
     );
 
     // Bên A: có Họ tên, Địa chỉ nhưng KHÔNG có CCCD số hay Ngày cấp
-    expect(screen.getByText('Bên A (Bên mua hàng / Khách hàng)')).toBeTruthy();
-    expect(screen.getByText('Bên B (Bên bán hàng - Người dân / Hộ kinh doanh)')).toBeTruthy();
+    expect(screen.getByText('Bên A (Bên mua)')).toBeTruthy();
+    expect(screen.getByText('Bên B (Bên bán)')).toBeTruthy();
+
+    // Có nút Chọn từ Hàng tồn kho
+    expect(screen.getByRole('button', { name: /Chọn từ Hàng tồn kho/i })).toBeTruthy();
 
     // Trong Bên A, không có CCCD
     // Chỉ có 1 nhãn 'CCCD số' (của Bên B), thay vì 2 nhãn

@@ -60,7 +60,7 @@ describe('Purchase Statement & Retail Invoice Tests', () => {
     expect(text).not.toContain('Chủ TK');
   });
 
-  it('getComputedBankAccText cho tiền mặt trả về Tiền mặt, không hiển thị CCCD', () => {
+  it('getComputedBankAccText cho tiền mặt thể hiện số CCCD người bán tại cột thanh toán', () => {
     const text = getComputedBankAccText({
       sellerName: 'LÊ THỊ HOÀNG ÂN',
       sellerAddress: 'TP.HCM',
@@ -71,7 +71,20 @@ describe('Purchase Statement & Retail Invoice Tests', () => {
       statementDateStr: '2026-09-08',
       paymentMethod: 'cash',
     });
+    expect(text).toBe('CCCD: 080166012861');
+  });
+
+  it('getComputedBankAccText cho tiền mặt nếu không có số CCCD thì hiển thị Tiền mặt', () => {
+    const text = getComputedBankAccText({
+      sellerName: 'LÊ THỊ HOÀNG ÂN',
+      sellerAddress: 'TP.HCM',
+      sellerBankAcc: '',
+      sellerIdCard: '',
+      buyerName: 'NGUYỄN THÙY DUNG',
+      buyerIdCard: '051188004003',
+      statementDateStr: '2026-09-08',
+      paymentMethod: 'cash',
+    });
     expect(text).toBe('Tiền mặt');
-    expect(text).not.toContain('080166012861');
   });
 });

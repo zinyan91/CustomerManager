@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Package } from 'lucide-react';
 import type { DossierCommon, LineItem, Party } from '../registry/types';
 import type { PaymentStageItem } from '../DocumentForm';
 import { DateInput } from '../../DateInput';
@@ -8,6 +8,7 @@ import { formatMoneyInput, fmtDate } from '../../../lib/utils';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../../lib/documentOptions';
 import { fetchCustomersAPI } from '../../../lib/api';
 import type { Customer } from '../../../types';
+import { InventoryItemPickerModal, type SelectedInventoryItemPayload } from '../../inventory/InventoryItemPickerModal';
 
 const INPUT = 'w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent text-xs';
 const LABEL = 'block mb-1 text-[11px] font-semibold text-ink-muted';
@@ -97,6 +98,7 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = React.useState<number | null>(null);
   const [selectedCustomerBId, setSelectedCustomerBId] = React.useState<number | null>(null);
+  const [isInventoryPickerOpen, setIsInventoryPickerOpen] = React.useState(false);
 
   React.useEffect(() => {
     fetchCustomersAPI().then(setCustomers).catch(() => {});
@@ -163,6 +165,20 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
   const removeItem = (id: string) =>
     patch({ items: common.items.filter(it => it.id !== id) });
 
+  const handleSelectInventoryItems = (selected: SelectedInventoryItemPayload[]) => {
+    const newItems: LineItem[] = selected.map(it => ({
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      name: it.name,
+      unit: it.unit || 'Kg',
+      quantity: it.qty || 1,
+      price: it.unitPrice || 0,
+    }));
+    // Bỏ qua các dòng trống chưa có dữ liệu
+    const validExisting = common.items.filter(it => it.name.trim() !== '' || it.price > 0);
+    patch({ items: [...validExisting, ...newItems] });
+    setIsInventoryPickerOpen(false);
+  };
+
   // Đối với bảng kê, tự động đồng bộ tổng tiền từ danh mục hàng hóa nếu có
   const computedItemsTotal = React.useMemo(() => {
     return common.items.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.price) || 0)), 0);
@@ -178,194 +194,211 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
   }, [isBangKe, computedItemsTotal, common.items.length, common.totalAmount, patch]);
 
   return (
-    <details open className="rounded-xl border border-line/70 bg-surface/40 overflow-hidden">
-      <summary className="px-4 py-3 cursor-pointer select-none font-bold text-accent uppercase tracking-wider text-xs">
-        Thông tin chung (cả hồ sơ)
-      </summary>
+    <>
+      <details open className="rounded-xl border border-line/70 bg-surface/40 overflow-hidden">
+        <summary className="px-4 py-3 cursor-pointer select-none font-bold text-accent uppercase tracking-wider text-xs">
+          Thông tin chung (cả hồ sơ)
+        </summary>
 
-      <div className="p-4 space-y-5 border-t border-line/50">
-        <Group
-          title={isBangKe ? "Bên A (Bên mua hàng / Khách hàng)" : "Bên A (Bên mua / Người vay)"}
-          accent="border-accent/50 text-accent"
-        >
-          <div className="mb-3">
-            <label className={LABEL}>Chọn nhanh từ Danh sách Khách hàng</label>
-            <CustomerPicker
-              customers={customers}
-              selectedCustomerId={selectedCustomerId}
-              onSelectCustomer={handleSelectCustomer}
-              placeholder="— Tìm theo tên, CIF, SĐT để điền Bên A —"
-            />
-          </div>
-          <PartyFields
-            party={common.partyA}
-            set={setPartyA}
-            hideIdCard={isBangKe}
-          />
-        </Group>
-
-        <Group
-          title={isBangKe ? "Bên B (Bên bán hàng - Người dân / Hộ kinh doanh)" : "Bên B"}
-          accent="border-pos/50 text-pos"
-        >
-          {!isBangKe && (
+        <div className="p-4 space-y-5 border-t border-line/50">
+          <Group title="Bên A (Bên mua)" accent="border-accent/50 text-accent">
             <div className="mb-3">
               <label className={LABEL}>Chọn nhanh từ Danh sách Khách hàng</label>
               <CustomerPicker
                 customers={customers}
-                selectedCustomerId={selectedCustomerBId}
-                onSelectCustomer={handleSelectCustomerB}
-                placeholder="— Tìm theo tên, CIF, SĐT để điền Bên B —"
+                selectedCustomerId={selectedCustomerId}
+                onSelectCustomer={handleSelectCustomer}
+                placeholder="— Tìm theo tên, CIF, SĐT để điền Bên A —"
               />
             </div>
-          )}
-          <PartyFields
-            party={common.partyB}
-            set={setPartyB}
-            hideIssueDetails={isBangKe}
-          />
-        </Group>
+            <PartyFields
+              party={common.partyA}
+              set={setPartyA}
+              hideIdCard={isBangKe}
+            />
+          </Group>
 
-        <Group title="Mốc thời gian" accent="border-warn/50 text-warn">
-          <div className={`grid grid-cols-1 ${isBangKe ? 'sm:grid-cols-1' : 'sm:grid-cols-3'} gap-2.5`}>
-            <div>
-              <label className={LABEL}>{isBangKe ? 'Ngày lập bảng kê' : 'Ngày ký hợp đồng'}</label>
-              <DateInput value={common.contractDate} onChange={v => patch({ contractDate: v })} className={INPUT} />
-            </div>
+          <Group title="Bên B (Bên bán)" accent="border-pos/50 text-pos">
             {!isBangKe && (
-              <>
-                <div>
-                  <label className={LABEL}>Ngày bắt đầu / giao hàng</label>
-                  <DateInput value={common.startDate} onChange={v => patch({ startDate: v })} className={INPUT} />
-                </div>
-                <div>
-                  <label className={LABEL}>Ngày kết thúc / thanh toán hết</label>
-                  <DateInput value={common.endDate} onChange={v => patch({ endDate: v })} className={INPUT} />
-                </div>
-              </>
+              <div className="mb-3">
+                <label className={LABEL}>Chọn nhanh từ Danh sách Khách hàng</label>
+                <CustomerPicker
+                  customers={customers}
+                  selectedCustomerId={selectedCustomerBId}
+                  onSelectCustomer={handleSelectCustomerB}
+                  placeholder="— Tìm theo tên, CIF, SĐT để điền Bên B —"
+                />
+              </div>
             )}
-          </div>
-        </Group>
+            <PartyFields
+              party={common.partyB}
+              set={setPartyB}
+              hideIssueDetails={isBangKe}
+            />
+          </Group>
 
-        {showBankSection && (
-          <Group title="Tài khoản ngân hàng thụ hưởng (Bên bán)" accent="border-accent/50 text-accent">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <Group title="Mốc thời gian" accent="border-warn/50 text-warn">
+            <div className={`grid grid-cols-1 ${isBangKe ? 'sm:grid-cols-1' : 'sm:grid-cols-3'} gap-2.5`}>
               <div>
-                <label className={LABEL}>Chủ tài khoản</label>
-                <input className={INPUT} value={common.bank.owner} onChange={e => setBank({ owner: e.target.value })} />
+                <label className={LABEL}>{isBangKe ? 'Ngày lập bảng kê' : 'Ngày ký hợp đồng'}</label>
+                <DateInput value={common.contractDate} onChange={v => patch({ contractDate: v })} className={INPUT} />
               </div>
-              <div>
-                <label className={LABEL}>Số tài khoản</label>
-                <input className={INPUT} value={common.bank.accNo} onChange={e => setBank({ accNo: e.target.value })} />
-              </div>
-              <div>
-                <label className={LABEL}>Ngân hàng</label>
-                <select className={INPUT} value={common.bank.name} onChange={e => setBank({ name: e.target.value })}>
-                  <option value="">-- Chọn ngân hàng --</option>
-                  {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className={LABEL}>Chi nhánh</label>
-                <input className={INPUT} value={common.bank.branch} onChange={e => setBank({ branch: e.target.value })} />
-              </div>
+              {!isBangKe && (
+                <>
+                  <div>
+                    <label className={LABEL}>Ngày bắt đầu / giao hàng</label>
+                    <DateInput value={common.startDate} onChange={v => patch({ startDate: v })} className={INPUT} />
+                  </div>
+                  <div>
+                    <label className={LABEL}>Ngày kết thúc / thanh toán hết</label>
+                    <DateInput value={common.endDate} onChange={v => patch({ endDate: v })} className={INPUT} />
+                  </div>
+                </>
+              )}
             </div>
           </Group>
-        )}
 
-        <Group title="Tổng tiền" accent="border-accent/50 text-accent">
-          <div className="sm:w-1/2">
-            <label className={LABEL}>
-              {isBangKe ? 'Tổng giá trị bảng kê (VNĐ - tự động tính theo hàng hóa)' : 'Tổng giá trị (VNĐ)'}
-            </label>
-            <input
-              className={`${INPUT} font-mono font-bold text-accent`}
-              value={common.totalAmount}
-              readOnly={isBangKe && common.items.length > 0}
-              onChange={e => patch({ totalAmount: formatMoneyInput(e.target.value) })}
-            />
-          </div>
-        </Group>
+          {showBankSection && (
+            <Group title="Tài khoản ngân hàng thụ hưởng (Bên bán)" accent="border-accent/50 text-accent">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label className={LABEL}>Chủ tài khoản</label>
+                  <input className={INPUT} value={common.bank.owner} onChange={e => setBank({ owner: e.target.value })} />
+                </div>
+                <div>
+                  <label className={LABEL}>Số tài khoản</label>
+                  <input className={INPUT} value={common.bank.accNo} onChange={e => setBank({ accNo: e.target.value })} />
+                </div>
+                <div>
+                  <label className={LABEL}>Ngân hàng</label>
+                  <select className={INPUT} value={common.bank.name} onChange={e => setBank({ name: e.target.value })}>
+                    <option value="">-- Chọn ngân hàng --</option>
+                    {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={LABEL}>Chi nhánh</label>
+                  <input className={INPUT} value={common.bank.branch} onChange={e => setBank({ branch: e.target.value })} />
+                </div>
+              </div>
+            </Group>
+          )}
 
-        {!isBangKe && (
-          <Group title="Các đợt thanh toán" accent="border-warn/50 text-warn">
+          <Group title="Tổng tiền" accent="border-accent/50 text-accent">
+            <div className="sm:w-1/2">
+              <label className={LABEL}>
+                {isBangKe ? 'Tổng giá trị bảng kê (VNĐ - tự động tính theo hàng hóa)' : 'Tổng giá trị (VNĐ)'}
+              </label>
+              <input
+                className={`${INPUT} font-mono font-bold text-accent`}
+                value={common.totalAmount}
+                readOnly={isBangKe && common.items.length > 0}
+                onChange={e => patch({ totalAmount: formatMoneyInput(e.target.value) })}
+              />
+            </div>
+          </Group>
+
+          {!isBangKe && (
+            <Group title="Các đợt thanh toán" accent="border-warn/50 text-warn">
+              <div className="space-y-2">
+                {common.stages.map(stage => (
+                  <div key={stage.id} className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-12 sm:col-span-4">
+                      <label className={LABEL}>Tên đợt</label>
+                      <input className={INPUT} value={stage.stageName}
+                        onChange={e => setStage(stage.id, { stageName: e.target.value })} />
+                    </div>
+                    <div className="col-span-6 sm:col-span-3">
+                      <label className={LABEL}>Số tiền (VNĐ)</label>
+                      <input className={`${INPUT} font-mono text-right`} value={stage.amount}
+                        onChange={e => setStage(stage.id, { amount: formatMoneyInput(e.target.value) })} />
+                    </div>
+                    <div className="col-span-6 sm:col-span-4">
+                      <label className={LABEL}>Trạng thái</label>
+                      <select className={INPUT} value={stage.status}
+                        onChange={e => setStage(stage.id, { status: e.target.value as PaymentStageItem['status'] })}>
+                        {(Object.keys(STATUS_LABELS) as PaymentStageItem['status'][]).map(s => (
+                          <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-12 sm:col-span-1 flex justify-end">
+                      <button type="button" onClick={() => removeStage(stage.id)}
+                        className="p-2 rounded-lg text-neg hover:bg-neg-soft transition-colors" title="Xóa đợt">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <button type="button" onClick={addStage}
+                  className="flex items-center gap-1.5 bg-accent hover:opacity-90 text-accent-ink px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
+                  <Plus className="w-3.5 h-3.5" /><span>Thêm đợt thanh toán</span>
+                </button>
+              </div>
+            </Group>
+          )}
+
+          <Group title="Danh mục hàng hóa / hạng mục" accent="border-pos/50 text-pos">
             <div className="space-y-2">
-              {common.stages.map(stage => (
-                <div key={stage.id} className="grid grid-cols-12 gap-2 items-end">
+              {common.items.map(item => (
+                <div key={item.id} className="grid grid-cols-12 gap-2 items-end">
                   <div className="col-span-12 sm:col-span-4">
-                    <label className={LABEL}>Tên đợt</label>
-                    <input className={INPUT} value={stage.stageName}
-                      onChange={e => setStage(stage.id, { stageName: e.target.value })} />
+                    <label className={LABEL}>Tên mặt hàng</label>
+                    <input className={INPUT} value={item.name}
+                      onChange={e => setItem(item.id, { name: e.target.value })} />
                   </div>
-                  <div className="col-span-6 sm:col-span-3">
-                    <label className={LABEL}>Số tiền (VNĐ)</label>
-                    <input className={`${INPUT} font-mono text-right`} value={stage.amount}
-                      onChange={e => setStage(stage.id, { amount: formatMoneyInput(e.target.value) })} />
+                  <div className="col-span-4 sm:col-span-2">
+                    <label className={LABEL}>ĐVT</label>
+                    <input className={INPUT} value={item.unit}
+                      onChange={e => setItem(item.id, { unit: e.target.value })} />
                   </div>
-                  <div className="col-span-6 sm:col-span-4">
-                    <label className={LABEL}>Trạng thái</label>
-                    <select className={INPUT} value={stage.status}
-                      onChange={e => setStage(stage.id, { status: e.target.value as PaymentStageItem['status'] })}>
-                      {(Object.keys(STATUS_LABELS) as PaymentStageItem['status'][]).map(s => (
-                        <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                      ))}
-                    </select>
+                  <div className="col-span-4 sm:col-span-2">
+                    <label className={LABEL}>Số lượng</label>
+                    <input type="number" min={0} className={`${INPUT} font-mono text-center`} value={item.quantity}
+                      onChange={e => setItem(item.id, { quantity: Number(e.target.value) || 0 })} />
+                  </div>
+                  <div className="col-span-4 sm:col-span-3">
+                    <label className={LABEL}>Đơn giá (VNĐ)</label>
+                    <input type="number" min={0} className={`${INPUT} font-mono text-right`} value={item.price}
+                      onChange={e => setItem(item.id, { price: Number(e.target.value) || 0 })} />
                   </div>
                   <div className="col-span-12 sm:col-span-1 flex justify-end">
-                    <button type="button" onClick={() => removeStage(stage.id)}
-                      className="p-2 rounded-lg text-neg hover:bg-neg-soft transition-colors" title="Xóa đợt">
+                    <button type="button" onClick={() => removeItem(item.id)}
+                      className="p-2 rounded-lg text-neg hover:bg-neg-soft transition-colors" title="Xóa dòng">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               ))}
-              <button type="button" onClick={addStage}
-                className="flex items-center gap-1.5 bg-accent hover:opacity-90 text-accent-ink px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
-                <Plus className="w-3.5 h-3.5" /><span>Thêm đợt thanh toán</span>
-              </button>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="flex items-center gap-1.5 bg-accent hover:opacity-90 text-accent-ink px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /><span>Thêm mặt hàng</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsInventoryPickerOpen(true)}
+                  className="flex items-center gap-1.5 bg-pos/15 hover:bg-pos/25 text-pos border border-pos/30 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  <Package className="w-3.5 h-3.5" /><span>Chọn từ Hàng tồn kho</span>
+                </button>
+              </div>
             </div>
           </Group>
-        )}
+        </div>
+      </details>
 
-        <Group title="Danh mục hàng hóa / hạng mục" accent="border-pos/50 text-pos">
-          <div className="space-y-2">
-            {common.items.map(item => (
-              <div key={item.id} className="grid grid-cols-12 gap-2 items-end">
-                <div className="col-span-12 sm:col-span-4">
-                  <label className={LABEL}>Tên mặt hàng</label>
-                  <input className={INPUT} value={item.name}
-                    onChange={e => setItem(item.id, { name: e.target.value })} />
-                </div>
-                <div className="col-span-4 sm:col-span-2">
-                  <label className={LABEL}>ĐVT</label>
-                  <input className={INPUT} value={item.unit}
-                    onChange={e => setItem(item.id, { unit: e.target.value })} />
-                </div>
-                <div className="col-span-4 sm:col-span-2">
-                  <label className={LABEL}>Số lượng</label>
-                  <input type="number" min={0} className={`${INPUT} font-mono text-center`} value={item.quantity}
-                    onChange={e => setItem(item.id, { quantity: Number(e.target.value) || 0 })} />
-                </div>
-                <div className="col-span-4 sm:col-span-3">
-                  <label className={LABEL}>Đơn giá (VNĐ)</label>
-                  <input type="number" min={0} className={`${INPUT} font-mono text-right`} value={item.price}
-                    onChange={e => setItem(item.id, { price: Number(e.target.value) || 0 })} />
-                </div>
-                <div className="col-span-12 sm:col-span-1 flex justify-end">
-                  <button type="button" onClick={() => removeItem(item.id)}
-                    className="p-2 rounded-lg text-neg hover:bg-neg-soft transition-colors" title="Xóa dòng">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-            <button type="button" onClick={addItem}
-              className="flex items-center gap-1.5 bg-accent hover:opacity-90 text-accent-ink px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
-              <Plus className="w-3.5 h-3.5" /><span>Thêm mặt hàng</span>
-            </button>
-          </div>
-        </Group>
-      </div>
-    </details>
+      <InventoryItemPickerModal
+        isOpen={isInventoryPickerOpen}
+        onClose={() => setIsInventoryPickerOpen(false)}
+        onSelectItems={handleSelectInventoryItems}
+        title="CHỌN MẶT HÀNG TỪ KHO VÀO HỒ SƠ"
+        defaultQtyType="import"
+      />
+    </>
   );
 };

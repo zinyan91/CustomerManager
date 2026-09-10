@@ -31,6 +31,7 @@ import { DueSectionPanel, dueBadgeClass, dueBadgeText } from '../dashboard/DueSe
 import { DashboardSummaryKpis } from '../dashboard/DashboardSummaryKpis';
 import { DashboardPortfolioStructure } from '../dashboard/DashboardPortfolioStructure';
 import type { ColumnDef } from '../ui/DataTable';
+import { exportActiveCustomerPortfolioExcel } from '../../lib/customerPortfolioExport';
 
 export const DashboardView: React.FC = () => {
   const { toast, show, dismiss } = useToast();
@@ -636,6 +637,22 @@ export const DashboardView: React.FC = () => {
     }
   };
 
+  const handleExportActivePortfolio = () => {
+    try {
+      exportActiveCustomerPortfolioExcel({
+        customers,
+        contracts,
+        creditContracts,
+        collaterals,
+        paidPrincipalMap,
+      });
+      show('success', '✓ Đã xuất danh mục khách hàng đang vay ra file Excel!');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      show('error', `Không thể xuất báo cáo: ${msg}`);
+    }
+  };
+
   const formatMoney = (val: number) => {
     if (val >= 1e9) return (val / 1e9).toFixed(2) + ' Tỷ';
     if (val >= 1e6) return (val / 1e6).toFixed(0) + ' Trđ';
@@ -710,6 +727,16 @@ export const DashboardView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleExportActivePortfolio}
+            className="bg-panel hover:bg-surface border border-line hover:border-accent text-ink text-xs px-3.5 py-2 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
+            title="Xuất toàn bộ danh sách khách hàng đang vay kèm KUNN và TSBĐ ra file Excel"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-pos" />
+            <span>Xuất danh mục đang vay</span>
+          </button>
+
           <button
             onClick={fetchDashboardData}
             className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-2 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"

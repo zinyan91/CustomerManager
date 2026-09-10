@@ -5,7 +5,7 @@ import { isCustomerArchived, CUSTOMER_STATUS_LABEL, type CustomerStatusFilter } 
 import { fmtDate, formatNationalId, parseNationalIdInput } from '../../lib/utils';
 import {
   Search, Plus, UserCheck, Users, Archive, ArchiveRestore,
-  Edit3, Phone, ShieldCheck, HeartHandshake, X
+  Edit3, Phone, ShieldCheck, HeartHandshake, X, FileSpreadsheet, RefreshCw
 } from 'lucide-react';
 import { Toast } from '../Toast';
 import { DataTable, type ColumnDef } from '../ui/DataTable';
@@ -14,6 +14,7 @@ import { CustomerDrawerForm } from '../customer/CustomerDrawerForm';
 import { customerProfilePath } from '../../lib/customerRoutes';
 import { useSelectedCustomerId } from '../../hooks/useSelectedCustomerId';
 import { ROUTE_OF } from '../../lib/routes';
+import { downloadActiveCustomerPortfolioReport } from '../../lib/customerPortfolioExport';
 
 export const CustomerListView: React.FC = () => {
   const {
@@ -73,6 +74,15 @@ export const CustomerListView: React.FC = () => {
     return visibleCustomers.filter(c => !!c.SpouseName || !!c.CifKhlq).length;
   }, [visibleCustomers]);
 
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportActivePortfolio = async () => {
+    await downloadActiveCustomerPortfolioReport(
+      setExporting,
+      (type, msg) => setNotification({ type, message: msg })
+    );
+  };
+
   const getInitials = (name: string) => {
     if (!name) return 'KH';
     const parts = name.trim().split(/\s+/);
@@ -96,6 +106,21 @@ export const CustomerListView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleExportActivePortfolio}
+            disabled={exporting}
+            className="bg-panel hover:bg-surface border border-line hover:border-accent text-ink text-xs px-3.5 py-2 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
+            title="Xuất toàn bộ danh sách khách hàng đang vay kèm KUNN và TSBĐ ra file Excel"
+          >
+            {exporting ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-accent" />
+            ) : (
+              <FileSpreadsheet className="w-3.5 h-3.5 text-pos" />
+            )}
+            <span>{exporting ? 'Đang xuất Excel...' : 'XUẤT DANH MỤC ĐANG VAY'}</span>
+          </button>
+
           <button
             type="button"
             onClick={openDrawerForCreate}

@@ -6,6 +6,7 @@ describe('specificForms', () => {
     expect(SPECIFIC_FORM_BY_ID.sale_contract).toBeTypeOf('function');
     expect(SPECIFIC_FORM_BY_ID.bang_ke).toBeTypeOf('function');
     expect(SPECIFIC_FORM_BY_ID.payment_request_sale).toBeTypeOf('function');
+    expect(SPECIFIC_FORM_BY_ID.payment_request_bang_ke).toBeTypeOf('function');
     expect(SPECIFIC_FORM_BY_ID.cam_ket).toBeNull();
   });
 });

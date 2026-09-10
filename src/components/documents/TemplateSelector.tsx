@@ -11,6 +11,7 @@ export type TemplateType =
   | 'sale_contract'
   | 'lease_house'
   | 'payment_request_sale'
+  | 'payment_request_bang_ke'
   | 'payment_request_const'
   | 'deposit';
 

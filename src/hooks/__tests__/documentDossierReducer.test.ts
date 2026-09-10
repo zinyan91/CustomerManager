@@ -7,7 +7,7 @@ describe('dossierReducer', () => {
     expect(s.activeDossierId).toBe('giai_ngan');
     expect(s.activeDocId).toBe('sale_contract');
     expect(Object.keys(s.specificByDocId).sort()).toEqual(
-      ['bang_ke', 'cam_ket', 'payment_request_sale', 'sale_contract'],
+      ['bang_ke', 'cam_ket', 'payment_request_bang_ke', 'payment_request_sale', 'sale_contract'],
     );
     expect(s.excludedDocIds).toEqual([]);
   });

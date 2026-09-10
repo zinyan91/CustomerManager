@@ -4,9 +4,11 @@ import type { DossierCommon, LineItem, Party } from '../registry/types';
 import type { PaymentStageItem } from '../DocumentForm';
 import { DateInput } from '../../DateInput';
 import { CustomerPicker } from '../../ui/CustomerPicker';
+import { DisbursementPayeePicker } from '../../ui/DisbursementPayeePicker';
 import { formatMoneyInput, fmtDate } from '../../../lib/utils';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../../lib/documentOptions';
 import { fetchCustomersAPI } from '../../../lib/api';
+import { fetchDisbursementPayeesDb, type DisbursementPayee } from '../../../lib/disbursementDb';
 import type { Customer } from '../../../types';
 import { InventoryItemPickerModal, type SelectedInventoryItemPayload } from '../../inventory/InventoryItemPickerModal';
 
@@ -96,12 +98,14 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
   activeSpecific,
 }) => {
   const [customers, setCustomers] = React.useState<Customer[]>([]);
+  const [payees, setPayees] = React.useState<DisbursementPayee[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = React.useState<number | null>(null);
-  const [selectedCustomerBId, setSelectedCustomerBId] = React.useState<number | null>(null);
+  const [selectedPayeeId, setSelectedPayeeId] = React.useState<string | null>(null);
   const [isInventoryPickerOpen, setIsInventoryPickerOpen] = React.useState(false);
 
   React.useEffect(() => {
     fetchCustomersAPI().then(setCustomers).catch(() => {});
+    fetchDisbursementPayeesDb().then(setPayees).catch(() => {});
   }, []);
 
   const handleSelectCustomer = (id: number | null) => {
@@ -120,26 +124,32 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
     }
   };
 
-  const handleSelectCustomerB = (id: number | null) => {
-    setSelectedCustomerBId(id);
-    if (id !== null) {
-      const c = customers.find(item => item.Id === id);
-      if (c) {
+  const handleSelectPayeeB = (id: string | null) => {
+    setSelectedPayeeId(id);
+    if (id) {
+      const p = payees.find(item => item.Id === id);
+      if (p) {
         setPartyB({
-          name: c.FullName,
-          cccd: c.NationalId || '',
-          address: c.Address || '',
-          cccdDate: c.IdCardIssueDate ? fmtDate(c.IdCardIssueDate) : '',
-          cccdPlace: c.IdCardIssuePlace || '',
+          name: p.FullName,
+          cccd: p.NationalId || '',
+          address: common.partyB.address || '',
+          cccdDate: p.IdCardIssueDate ? fmtDate(p.IdCardIssueDate) : '',
+          cccdPlace: p.IdCardIssuePlace || '',
+        });
+        setBank({
+          owner: p.FullName,
+          accNo: p.AccountNumber || '',
+          name: p.BankName || '',
+          branch: p.BankBranch || '',
         });
       }
     }
   };
 
-  const isBangKe = activeDocId === 'bang_ke';
-  const payMethod = (activeSpecific as any)?.paymentMethod || (activeSpecific as any)?.payMethod;
+  const isBangKe = activeDocId === 'bang_ke' || activeDocId === 'payment_request_bang_ke';
+  const payMethod = (activeSpecific as any)?.paymentMethod || (activeSpecific as any)?.payMethod || (activeSpecific as any)?.payMethodType;
   const isCash = payMethod === 'cash';
-  const docsWithBank = ['bang_ke', 'sale_contract', 'payment_request_sale', 'payment_request_const'];
+  const docsWithBank = ['bang_ke', 'sale_contract', 'payment_request_sale', 'payment_request_bang_ke', 'payment_request_const'];
   const showBankSection = !isCash && (!activeDocId || docsWithBank.includes(activeDocId));
 
   const setPartyA = (p: Partial<Party>) => patch({ partyA: { ...common.partyA, ...p } });
@@ -218,18 +228,16 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
             />
           </Group>
 
-          <Group title="Bên B (Bên bán)" accent="border-pos/50 text-pos">
-            {!isBangKe && (
-              <div className="mb-3">
-                <label className={LABEL}>Chọn nhanh từ Danh sách Khách hàng</label>
-                <CustomerPicker
-                  customers={customers}
-                  selectedCustomerId={selectedCustomerBId}
-                  onSelectCustomer={handleSelectCustomerB}
-                  placeholder="— Tìm theo tên, CIF, SĐT để điền Bên B —"
-                />
-              </div>
-            )}
+          <Group title="Bên B (Bên bán / Thụ hưởng)" accent="border-pos/50 text-pos">
+            <div className="mb-3">
+              <label className={LABEL}>Chọn nhanh từ Thông tin giải ngân</label>
+              <DisbursementPayeePicker
+                payees={payees}
+                selectedPayeeId={selectedPayeeId}
+                onSelectPayee={handleSelectPayeeB}
+                placeholder="— Tìm theo tên, CCCD, STK để điền Bên B —"
+              />
+            </div>
             <PartyFields
               party={common.partyB}
               set={setPartyB}

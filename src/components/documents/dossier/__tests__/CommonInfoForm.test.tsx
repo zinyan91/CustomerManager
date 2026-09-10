@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/re
 import { CommonInfoForm } from '../CommonInfoForm';
 import { emptyCommon } from '../../registry/types';
 import * as api from '../../../../lib/api';
+import * as disbursementDb from '../../../../lib/disbursementDb';
 
 afterEach(cleanup);
 
@@ -20,6 +21,19 @@ describe('CommonInfoForm', () => {
       MaritalStatus: 'Married',
       SpouseName: 'TRẦN THỊ HƯƠNG',
       SpouseNationalId: '079190654321',
+    },
+  ];
+
+  const mockPayees: disbursementDb.DisbursementPayee[] = [
+    {
+      Id: 'payee-99',
+      FullName: 'LÊ VĂN TÁM',
+      NationalId: '079099887766',
+      IdCardIssueDate: '2022-08-15',
+      IdCardIssuePlace: 'Bộ Công An',
+      AccountNumber: '1903456789',
+      BankName: 'Techcombank',
+      BankBranch: 'CN Tân Bình',
     },
   ];
 
@@ -78,7 +92,7 @@ describe('CommonInfoForm', () => {
 
     // Bên A: có Họ tên, Địa chỉ nhưng KHÔNG có CCCD số hay Ngày cấp
     expect(screen.getByText('Bên A (Bên mua)')).toBeTruthy();
-    expect(screen.getByText('Bên B (Bên bán)')).toBeTruthy();
+    expect(screen.getByText('Bên B (Bên bán / Thụ hưởng)')).toBeTruthy();
 
     // Có nút Chọn từ Hàng tồn kho
     expect(screen.getByRole('button', { name: /Chọn từ Hàng tồn kho/i })).toBeTruthy();
@@ -131,5 +145,44 @@ describe('CommonInfoForm', () => {
     );
 
     expect(screen.getByText(/Tài khoản ngân hàng thụ hưởng/i)).toBeTruthy();
+  });
+
+  it('allows selecting payee for Bên B from Thông tin giải ngân and auto-fills partyB and bank', async () => {
+    vi.spyOn(api, 'fetchCustomersAPI').mockResolvedValue([] as any);
+    vi.spyOn(disbursementDb, 'fetchDisbursementPayeesDb').mockResolvedValue(mockPayees);
+
+    const patch = vi.fn();
+    render(<CommonInfoForm common={emptyCommon()} patch={patch} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Chọn Thông tin giải ngân/i })).toBeTruthy();
+    });
+
+    const payeeTrigger = screen.getByRole('button', { name: /Chọn Thông tin giải ngân/i });
+    fireEvent.click(payeeTrigger);
+
+    await waitFor(() => {
+      expect(screen.getByText('LÊ VĂN TÁM')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('LÊ VĂN TÁM'));
+
+    expect(patch).toHaveBeenCalledWith({
+      partyB: expect.objectContaining({
+        name: 'LÊ VĂN TÁM',
+        cccd: '079099887766',
+        cccdDate: '15/08/2022',
+        cccdPlace: 'Bộ Công An',
+      }),
+    });
+
+    expect(patch).toHaveBeenCalledWith({
+      bank: expect.objectContaining({
+        owner: 'LÊ VĂN TÁM',
+        accNo: '1903456789',
+        name: 'Techcombank',
+        branch: 'CN Tân Bình',
+      }),
+    });
   });
 });

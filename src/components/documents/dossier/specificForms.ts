@@ -15,6 +15,7 @@ export const SPECIFIC_FORM_BY_ID: Record<string, FC<any> | null> = {
   payment_request_const: PaymentSpecificForm,
   cam_ket: null,
   bang_ke: BangKeSpecificForm,
+  payment_request_bang_ke: PaymentSpecificForm,
   lease_mb: LeaseMbSpecificForm,
   lease_house: LeaseHouseSpecificForm,
   const_estimate: EstimateSpecificForm,

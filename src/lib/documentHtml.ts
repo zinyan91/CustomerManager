@@ -760,11 +760,22 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
     }
 
     const isSale = selectedTemplate === 'payment_request_sale';
-    const buyerName = isSale ? saleBuyerName : constPartyAName;
-    const sellerName = isSale ? saleSellerName : constPartyBName;
-    const contractDateStr = isSale ? saleContractDate : constContractDate;
-    const totalAmountStr = isSale ? totalSaleAmount.toLocaleString('vi-VN') : constTotalPrice;
-    const docTypeTitle = isSale ? 'Hợp đồng mua bán hàng hóa' : 'Hợp đồng thi công nhà ở dân dụng';
+    const isBangKe = selectedTemplate === 'payment_request_bang_ke';
+    const buyerName = isSale || isBangKe ? saleBuyerName : constPartyAName;
+    const sellerName = isSale || isBangKe ? saleSellerName : constPartyBName;
+    const contractDateStr = isSale || isBangKe ? saleContractDate : constContractDate;
+    const totalAmountStr = isSale
+      ? totalSaleAmount.toLocaleString('vi-VN')
+      : isBangKe
+      ? (totalSaleAmount > 0 ? totalSaleAmount.toLocaleString('vi-VN') : (constTotalPrice || '0'))
+      : constTotalPrice;
+    const docTypeTitle = isBangKe
+      ? 'Bảng kê mua bán hàng hóa'
+      : isSale
+      ? 'Hợp đồng mua bán hàng hóa'
+      : 'Hợp đồng thi công nhà ở dân dụng';
+    const docDateAction = isBangKe ? 'lập ngày' : 'ký ngày';
+    const docValueLabel = isBangKe ? '1. Giá trị bảng kê' : '1. Giá trị hợp đồng';
 
     const rTitle = recipientTitle || (buyerName.toLowerCase().includes('thị') ? 'Bà' : 'Ông');
 
@@ -775,7 +786,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
       return raw.replace(/^(Ngân hàng\s*(TMCP|CP|TNHH)?\s*)/i, '').trim() || raw;
     })();
 
-    const stagesHtml = payStages.map((st) => {
+    const stagesHtml = payStages.length > 0 ? payStages.map((st) => {
       let actionText = '';
       if (st.status === 'paid') {
         actionText = `${rTitle} ${givenName(buyerName)} đã thanh toán số tiền là:`;
@@ -790,13 +801,17 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
           + <strong>${cleanName}:</strong> ${actionText} <strong>${st.amount} đồng</strong>
         </p>
       `;
-    }).join('');
+    }).join('') : `
+      <p class="clause-p no-indent">
+        + <strong>Thanh toán một lần:</strong> ${rTitle} ${givenName(buyerName)} thanh toán số tiền là: <strong>${totalAmountStr} đồng</strong>
+      </p>
+    `;
 
     let infoHtml = '';
     if (payMethodType === 'cash') {
       const name = payCashName || sellerName;
-      const cccd = payCashCccd || (isSale ? saleSellerCccd : constPartyBCccd);
-      const cccdDate = payCashCccdDate || (isSale ? saleSellerCccdDate : '03/03/2022');
+      const cccd = payCashCccd || (isSale || isBangKe ? saleSellerCccd : constPartyBCccd);
+      const cccdDate = payCashCccdDate || (isSale || isBangKe ? saleSellerCccdDate : '03/03/2022');
       const cccdPlace = payCashCccdPlace || 'CCS QLHC về TTXH';
 
       infoHtml = `
@@ -832,9 +847,9 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
 
       <p class="clause-p no-indent">Kính gửi: <strong>${rTitle} ${nfc(buyerName)}</strong></p>
 
-      <p class="clause-p no-indent">Căn cứ ${docTypeTitle} ký ngày <strong>${fmtDate(contractDateStr)}</strong> giữa ${rTitle} ${titleCaseName(buyerName)} và ${titleCaseName(sellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
+      <p class="clause-p no-indent">Căn cứ ${docTypeTitle} ${docDateAction} <strong>${fmtDate(contractDateStr)}</strong> giữa ${rTitle} ${titleCaseName(buyerName)} và ${titleCaseName(sellerName)}, tôi xin đề nghị thanh toán theo các nội dung sau:</p>
 
-      <p class="clause-p no-indent font-bold">1. Giá trị hợp đồng: <strong>${totalAmountStr} đồng</strong></p>
+      <p class="clause-p no-indent font-bold">${docValueLabel}: <strong>${totalAmountStr} đồng</strong></p>
       <p class="clause-p no-indent font-italic pl-4">(Bằng chữ: ${moneyTextToWords(totalAmountStr)})</p>
 
       <p class="clause-p no-indent font-bold pt-1">2. Thời hạn thanh toán:</p>
@@ -843,7 +858,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
       <p class="clause-p no-indent font-bold pt-1">3. Thông tin thanh toán (${payMethodType === 'cash' ? 'Thanh toán tiền mặt' : 'Thanh toán chuyển khoản'}):</p>
       ${infoHtml}
 
-      <p class="clause-p no-indent pt-3">Kính mong ${rTitle} ${nfc(buyerName)} sắp xếp thanh toán số tiền nêu trên theo đúng tiến độ đã thỏa thuận trong hợp đồng.</p>
+      <p class="clause-p no-indent pt-3">Kính mong ${rTitle} ${nfc(buyerName)} sắp xếp thanh toán số tiền nêu trên theo đúng tiến độ đã thỏa thuận${isBangKe ? '' : ' trong hợp đồng'}.</p>
 
       <p class="clause-p no-indent pt-1">Trân trọng!</p>
 
@@ -855,6 +870,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
               <p class="text-center font-bold uppercase no-indent">NGƯỜI ĐỀ NGHỊ THANH TOÁN</p>
               <p class="text-center font-italic text-[11pt] no-indent">(Ký và ghi rõ họ tên)</p>
               <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
+              <p class="text-center font-bold uppercase no-indent">${nfc(sellerName)}</p>
             </td>
           </tr>
         </tbody>

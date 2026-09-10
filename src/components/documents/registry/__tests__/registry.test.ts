@@ -24,7 +24,7 @@ it('dossier ids are unique', () => {
 it('Giải ngân dossier lists its documents in order', () => {
   const giaiNgan = DOSSIERS.find(d => d.id === 'giai_ngan');
   expect(giaiNgan?.documents.map(d => d.templateId)).toEqual([
-    'sale_contract', 'bang_ke', 'payment_request_sale', 'cam_ket',
+    'sale_contract', 'bang_ke', 'payment_request_sale', 'payment_request_bang_ke', 'cam_ket',
   ]);
   expect(giaiNgan?.documents.find(d => d.templateId === 'cam_ket')?.optional).toBe(true);
 });

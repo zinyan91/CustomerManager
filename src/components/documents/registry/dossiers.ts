@@ -10,6 +10,7 @@ export const DOSSIERS: Dossier[] = [
       { templateId: 'sale_contract' },
       { templateId: 'bang_ke' },
       { templateId: 'payment_request_sale' },
+      { templateId: 'payment_request_bang_ke' },
       { templateId: 'cam_ket', optional: true },
     ],
   },

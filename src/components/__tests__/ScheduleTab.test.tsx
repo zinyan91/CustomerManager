@@ -206,4 +206,53 @@ describe('cột Ghi nhận và thao tác', () => {
     const nutThuNhanh = screen.getByRole('button', { name: /Thu nhanh/ });
     expect((nutThuNhanh as HTMLButtonElement).disabled).toBe(true);
   });
+
+  it('nút Tất toán trước hạn hiển thị và gọi onOpenEarlySettlement khi khoản vay còn nợ', async () => {
+    const user = userEvent.setup();
+    const onOpenEarlySettlement = vi.fn();
+
+    render(
+      <ThemeProvider>
+        <LanguageProvider>
+          <ScheduleTab
+            contracts={[kunn]}
+            selectedContract={kunn}
+            handleSelectContract={() => {}}
+            schedules={lich}
+            openPaymentModal={() => {}}
+            onOpenEarlySettlement={onOpenEarlySettlement}
+          />
+        </LanguageProvider>
+      </ThemeProvider>
+    );
+
+    const nutTatToan = screen.getByRole('button', { name: /Tất toán trước hạn/ });
+    expect(nutTatToan).toBeTruthy();
+    expect((nutTatToan as HTMLButtonElement).disabled).toBe(false);
+
+    await user.click(nutTatToan);
+    expect(onOpenEarlySettlement).toHaveBeenCalledTimes(1);
+  });
+
+  it('nút Tất toán trước hạn bị disable khi hợp đồng đã tất toán', () => {
+    const settledKunn = { ...kunn, IsSettled: true, CurrentBalance: 0 };
+
+    render(
+      <ThemeProvider>
+        <LanguageProvider>
+          <ScheduleTab
+            contracts={[settledKunn]}
+            selectedContract={settledKunn}
+            handleSelectContract={() => {}}
+            schedules={lich}
+            openPaymentModal={() => {}}
+            onOpenEarlySettlement={vi.fn()}
+          />
+        </LanguageProvider>
+      </ThemeProvider>
+    );
+
+    const nutTatToan = screen.getByRole('button', { name: /Tất toán trước hạn/ });
+    expect((nutTatToan as HTMLButtonElement).disabled).toBe(true);
+  });
 });

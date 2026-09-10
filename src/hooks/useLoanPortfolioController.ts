@@ -26,6 +26,7 @@ import { parseNumericId } from '../lib/customerRoutes';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../lib/creditLimit';
 import type { LoanContract, CreditContract, RateAdjustmentHistoryItem } from '../types';
 import { usePaymentModal } from './usePaymentModal';
+import { useEarlySettlement } from './useEarlySettlement';
 import { useCustomerPortfolio } from './useCustomerPortfolio';
 import {
   blankFormFields, buildKunnPayload, checkLoanAmount, checkMonthlyPrincipal, contractToFormFields,
@@ -156,6 +157,21 @@ export function useLoanPortfolioController() {
         const updated = { ...selectedContract, CurrentBalance: balance, DebtGroup: debtGroup };
         setSelectedContract(updated);
         setContracts(prev => prev.map(c => c.Id === updated.Id ? updated : c));
+      }
+    },
+    onNotify: showNotify,
+    onLoadingChange: setLoading,
+  });
+
+  const earlySettlementProps = useEarlySettlement({
+    selectedContract,
+    schedules,
+    onSettled: ({ contract: updatedContract, schedules: newSchedules }) => {
+      setSchedules(newSchedules);
+      if (selectedContract) {
+        setAllSchedulesMap(prev => ({ ...prev, [updatedContract.Id]: newSchedules }));
+        setSelectedContract(updatedContract);
+        setContracts(prev => prev.map(c => c.Id === updatedContract.Id ? updatedContract : c));
       }
     },
     onNotify: showNotify,
@@ -911,6 +927,7 @@ export function useLoanPortfolioController() {
     handleSearch,
     handleSelectContract,
     paymentModalProps,
+    earlySettlementProps,
     prefVal,
     baseVal,
     marginVal,

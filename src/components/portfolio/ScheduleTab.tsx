@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { CheckCircle2 } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
 import { fmtDate, fmtMoney, fmtNumber, fmtRate, todayIso } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
@@ -17,6 +18,7 @@ interface ScheduleTabProps {
   schedules: RepaymentSchedule[];
   openPaymentModal: (s: RepaymentSchedule) => void;
   onQuickSettleAll?: () => void;
+  onOpenEarlySettlement?: () => void;
 }
 
 const DENSITY_KEY = 'schedule_density';
@@ -24,7 +26,7 @@ const DENSITY_KEY = 'schedule_density';
 const num = (v: number) => (v > 0 ? fmtNumber(v) : '–');
 
 export const ScheduleTab: React.FC<ScheduleTabProps> = ({
-  contracts, selectedContract, handleSelectContract, schedules, openPaymentModal, onQuickSettleAll,
+  contracts, selectedContract, handleSelectContract, schedules, openPaymentModal, onQuickSettleAll, onOpenEarlySettlement,
 }) => {
   const { t } = useLang();
   const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null);
@@ -49,6 +51,10 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
   const grandTotal = sumObligations(rows.map(r => r.o));
   const selectedScheduleObj = schedules.find(s => s.Id === selectedScheduleId) || null;
   const settledCount = rows.filter(r => r.o.isSettled).length;
+
+  const isContractSettled = selectedContract ? Boolean(selectedContract.IsSettled) : false;
+  const outstandingBal = selectedContract ? computeOutstandingBalance(schedules, selectedContract) : 0;
+  const canEarlySettle = Boolean(selectedContract && !isContractSettled && outstandingBal > 0);
 
   const cell = `${TABLE_CELL} whitespace-nowrap`;
   const headCell = `px-[var(--row-px)] py-2.5 bg-surface/90 backdrop-blur-md text-ink-faint text-[10px] uppercase font-bold tracking-[0.11em] whitespace-nowrap`;
@@ -119,6 +125,23 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenEarlySettlement && (
+              <button
+                type="button"
+                onClick={onOpenEarlySettlement}
+                disabled={!canEarlySettle}
+                className={`px-3 py-1.5 text-[11px] font-bold rounded-xl border transition-all duration-150 flex items-center gap-1.5 shadow-xs cursor-pointer ${
+                  canEarlySettle
+                    ? 'bg-panel text-ink border-line hover:border-accent hover:text-accent shadow-2xs'
+                    : 'bg-surface text-ink-faint border-line/60 opacity-60 cursor-not-allowed'
+                }`}
+                title={canEarlySettle ? 'Tất toán toàn bộ khoản vay trước hạn, chốt lãi thực tế và cắt bỏ các kỳ tương lai' : 'Khoản vay đã tất toán hoặc không còn dư nợ'}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-accent" />
+                <span>Tất toán trước hạn</span>
+              </button>
+            )}
+
             {onQuickSettleAll && (
               <button
                 type="button"

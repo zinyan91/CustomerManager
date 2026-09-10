@@ -15,6 +15,7 @@ import type { LoanContract } from '../../types';
 const PaymentModal = lazy(() => import('../portfolio/PaymentModal').then(m => ({ default: m.PaymentModal })));
 const KunnForm = lazy(() => import('../portfolio/KunnForm').then(m => ({ default: m.KunnForm })));
 const ScheduleTab = lazy(() => import('../portfolio/ScheduleTab').then(m => ({ default: m.ScheduleTab })));
+const EarlySettlementModal = lazy(() => import('../portfolio/EarlySettlementModal').then(m => ({ default: m.EarlySettlementModal })));
 
 const ComponentFallback = () => (
   <div className="flex items-center justify-center p-8 text-ink-muted">
@@ -92,6 +93,7 @@ export const LoanPortfolioView: React.FC = () => {
     handleSearch,
     handleSelectContract,
     paymentModalProps,
+    earlySettlementProps,
     postPrefRate,
     normalRate,
     surchargeVal,
@@ -225,6 +227,7 @@ export const LoanPortfolioView: React.FC = () => {
             schedules={schedules}
             openPaymentModal={paymentModalProps.open}
             onQuickSettleAll={paymentModalProps.quickSettleAllDue}
+            onOpenEarlySettlement={earlySettlementProps.open}
           />
         </Suspense>
       )}
@@ -330,6 +333,24 @@ export const LoanPortfolioView: React.FC = () => {
             setModalIsPaid={paymentModalProps.setIsPaid}
             onClose={paymentModalProps.close}
             onSave={paymentModalProps.save}
+          />
+        </Suspense>
+      )}
+
+      {/* Early Settlement Modal */}
+      {earlySettlementProps.isOpen && selectedContract && (
+        <Suspense fallback={<ComponentFallback />}>
+          <EarlySettlementModal
+            isOpen={earlySettlementProps.isOpen}
+            selectedContract={selectedContract}
+            settlementDate={earlySettlementProps.settlementDate}
+            setSettlementDate={earlySettlementProps.setSettlementDate}
+            penaltyRateStr={earlySettlementProps.penaltyRateStr}
+            setPenaltyRateStr={earlySettlementProps.setPenaltyRateStr}
+            quote={earlySettlementProps.quote}
+            isSubmitting={earlySettlementProps.isSubmitting}
+            onClose={earlySettlementProps.close}
+            onConfirm={earlySettlementProps.executeSettlement}
           />
         </Suspense>
       )}

@@ -112,4 +112,27 @@ describe('disbursementDb store and offline fallback', () => {
     const list = await fetchDisbursementPayeesDb();
     expect(list.map(p => p.FullName)).toEqual(['AN VĂN HÙNG', 'ĐẶNG VĂN LÂM', 'VŨ THỊ YẾN']);
   });
+
+  it('handles multiple bank accounts and backward compatibility with single AccountNumber', async () => {
+    const multiAccountPayee: DisbursementPayee = {
+      Id: 'payee_multi',
+      FullName: 'LÊ VĂN LONG',
+      NationalId: '079999888777',
+      BankAccounts: [
+        { accountNumber: '111111', bankName: 'Vietcombank', bankBranch: 'CN 1' },
+        { accountNumber: '222222', bankName: 'BIDV', bankBranch: 'CN 2' },
+      ],
+    };
+
+    const saved = await upsertDisbursementPayeeDb(multiAccountPayee);
+    expect(saved.AccountNumber).toBe('111111');
+    expect(saved.BankName).toBe('Vietcombank');
+    expect(saved.BankAccounts?.length).toBe(2);
+
+    const list = await fetchDisbursementPayeesDb();
+    const found = list.find((p) => p.Id === 'payee_multi');
+    expect(found).toBeDefined();
+    expect(found?.BankAccounts?.length).toBe(2);
+    expect(found?.BankAccounts?.[1].accountNumber).toBe('222222');
+  });
 });

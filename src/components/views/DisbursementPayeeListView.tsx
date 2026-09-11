@@ -8,6 +8,7 @@ import {
   upsertDisbursementPayeeDb,
   deleteDisbursementPayeeDb,
   type DisbursementPayee,
+  type PayeeBankAccount,
 } from '../../lib/disbursementDb';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../lib/documentOptions';
 import { fmtDate, formatNationalId, parseNationalIdInput } from '../../lib/utils';
@@ -32,6 +33,7 @@ export const DisbursementPayeeListView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPayee, setEditingPayee] = useState<DisbursementPayee>(EMPTY_PAYEE);
+  const [editingAccounts, setEditingAccounts] = useState<PayeeBankAccount[]>([]);
   const [notification, setNotification] = useState<ToastMessage | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -59,15 +61,20 @@ export const DisbursementPayeeListView: React.FC = () => {
       list = payees.filter((p) => {
         const name = (p.FullName || '').toLowerCase();
         const cccd = (p.NationalId || '').toLowerCase();
-        const stk = (p.AccountNumber || '').toLowerCase();
-        const bank = (p.BankName || '').toLowerCase();
-        const branch = (p.BankBranch || '').toLowerCase();
+        const accounts = p.BankAccounts && p.BankAccounts.length > 0
+          ? p.BankAccounts
+          : p.AccountNumber
+          ? [{ accountNumber: p.AccountNumber, bankName: p.BankName || '', bankBranch: p.BankBranch || '' }]
+          : [];
+        const stkStr = accounts.map(a => (a.accountNumber || '').toLowerCase()).join(' ');
+        const bankStr = accounts.map(a => (a.bankName || '').toLowerCase()).join(' ');
+        const branchStr = accounts.map(a => (a.bankBranch || '').toLowerCase()).join(' ');
         return (
           name.includes(q) ||
           cccd.includes(q) ||
-          stk.includes(q) ||
-          bank.includes(q) ||
-          branch.includes(q)
+          stkStr.includes(q) ||
+          bankStr.includes(q) ||
+          branchStr.includes(q)
         );
       });
     }
@@ -76,12 +83,35 @@ export const DisbursementPayeeListView: React.FC = () => {
 
   const handleOpenCreate = () => {
     setEditingPayee({ ...EMPTY_PAYEE });
+    setEditingAccounts([{ accountNumber: '', bankName: '', bankBranch: '' }]);
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (payee: DisbursementPayee) => {
     setEditingPayee({ ...payee });
+    const accs = payee.BankAccounts && payee.BankAccounts.length > 0
+      ? payee.BankAccounts.map(a => ({ ...a }))
+      : payee.AccountNumber
+      ? [{ accountNumber: payee.AccountNumber, bankName: payee.BankName || '', bankBranch: payee.BankBranch || '' }]
+      : [{ accountNumber: '', bankName: '', bankBranch: '' }];
+    setEditingAccounts(accs);
     setIsModalOpen(true);
+  };
+
+  const handleAddAccount = () => {
+    setEditingAccounts(prev => [...prev, { accountNumber: '', bankName: '', bankBranch: '' }]);
+  };
+
+  const handleRemoveAccount = (index: number) => {
+    setEditingAccounts(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleAccountChange = (index: number, field: keyof PayeeBankAccount, value: string) => {
+    setEditingAccounts(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -91,14 +121,26 @@ export const DisbursementPayeeListView: React.FC = () => {
       return;
     }
 
+    const validAccounts = editingAccounts
+      .map(a => ({
+        accountNumber: a.accountNumber?.trim() || '',
+        bankName: a.bankName?.trim() || '',
+        bankBranch: a.bankBranch?.trim() || '',
+      }))
+      .filter(a => a.accountNumber || a.bankName || a.bankBranch);
+
+    const primaryAccount = validAccounts[0];
+
     setSaving(true);
     try {
       const saved = await upsertDisbursementPayeeDb({
         ...editingPayee,
         FullName: editingPayee.FullName.trim().toUpperCase(),
         NationalId: parseNationalIdInput(editingPayee.NationalId),
-        AccountNumber: editingPayee.AccountNumber?.trim() || '',
-        BankBranch: editingPayee.BankBranch?.trim() || '',
+        AccountNumber: primaryAccount?.accountNumber || '',
+        BankName: primaryAccount?.bankName || '',
+        BankBranch: primaryAccount?.bankBranch || '',
+        BankAccounts: validAccounts,
       });
 
       setPayees((prev) => {
@@ -174,31 +216,80 @@ export const DisbursementPayeeListView: React.FC = () => {
       key: 'stk',
       label: 'Số tài khoản (STK)',
       priority: 1,
-      render: (p) => (
-        <span className="font-mono text-accent text-xs font-bold tracking-tight">
-          {p.AccountNumber || '—'}
-        </span>
-      ),
+      render: (p) => {
+        const accounts = p.BankAccounts && p.BankAccounts.length > 0
+          ? p.BankAccounts
+          : p.AccountNumber
+          ? [{ accountNumber: p.AccountNumber, bankName: p.BankName || '', bankBranch: p.BankBranch || '' }]
+          : [];
+
+        if (accounts.length === 0) return <span className="text-ink-faint">—</span>;
+
+        return (
+          <div className="space-y-1 py-0.5">
+            {accounts.map((acc, idx) => (
+              <div key={idx} className="flex items-center gap-1.5">
+                <span className="font-mono text-accent text-xs font-bold tracking-tight">
+                  {acc.accountNumber || '—'}
+                </span>
+                {accounts.length > 1 && acc.bankName && (
+                  <span className="text-[10px] text-ink-faint px-1 py-0.2 rounded bg-surface border border-line/60">
+                    {acc.bankName}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      },
     },
     {
       key: 'bank',
       label: 'Ngân hàng',
       priority: 2,
-      render: (p) => (
-        <span className="text-xs font-semibold text-ink-muted">
-          {p.BankName || '—'}
-        </span>
-      ),
+      render: (p) => {
+        const accounts = p.BankAccounts && p.BankAccounts.length > 0
+          ? p.BankAccounts
+          : p.AccountNumber
+          ? [{ accountNumber: p.AccountNumber, bankName: p.BankName || '', bankBranch: p.BankBranch || '' }]
+          : [];
+
+        if (accounts.length === 0) return <span className="text-ink-faint">—</span>;
+
+        return (
+          <div className="space-y-1 py-0.5">
+            {accounts.map((acc, idx) => (
+              <div key={idx} className="text-xs font-semibold text-ink-muted truncate max-w-[150px]">
+                {acc.bankName || '—'}
+              </div>
+            ))}
+          </div>
+        );
+      },
     },
     {
       key: 'branch',
       label: 'Chi nhánh',
       priority: 2,
-      render: (p) => (
-        <span className="text-xs text-ink-muted">
-          {p.BankBranch || '—'}
-        </span>
-      ),
+      render: (p) => {
+        const accounts = p.BankAccounts && p.BankAccounts.length > 0
+          ? p.BankAccounts
+          : p.AccountNumber
+          ? [{ accountNumber: p.AccountNumber, bankName: p.BankName || '', bankBranch: p.BankBranch || '' }]
+          : [];
+
+        if (accounts.length === 0) return <span className="text-ink-faint">—</span>;
+
+        return (
+          <div className="space-y-1 py-0.5">
+            {accounts.map((acc, idx) => (
+              <div key={idx} className="text-xs text-ink-muted truncate max-w-[150px]">
+                {acc.bankBranch || '—'}
+              </div>
+            ))}
+          </div>
+        );
+      },
     },
   ];
 
@@ -392,51 +483,86 @@ export const DisbursementPayeeListView: React.FC = () => {
                 </div>
               </div>
 
-              {/* STK, Ngân hàng, Chi nhánh */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-line/50">
-                <div>
-                  <label className={LABEL}>Số tài khoản (STK)</label>
-                  <input
-                    type="text"
-                    placeholder="VD: 19033481284"
-                    value={editingPayee.AccountNumber}
-                    onChange={(e) =>
-                      setEditingPayee({ ...editingPayee, AccountNumber: e.target.value })
-                    }
-                    className={`${INPUT} font-mono font-bold text-accent`}
-                  />
-                </div>
-
-                <div>
-                  <label className={LABEL}>Ngân hàng</label>
-                  <select
-                    value={editingPayee.BankName}
-                    onChange={(e) =>
-                      setEditingPayee({ ...editingPayee, BankName: e.target.value })
-                    }
-                    className={INPUT}
+              {/* Danh sách tài khoản ngân hàng */}
+              <div className="pt-3 border-t border-line/50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-ink uppercase tracking-wider">
+                    Tài khoản ngân hàng ({editingAccounts.length})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddAccount}
+                    className="text-accent hover:underline text-xs font-bold flex items-center gap-1 cursor-pointer"
                   >
-                    <option value="">-- Chọn ngân hàng --</option>
-                    {BANK_LIST.map((b) => (
-                      <option key={b} value={b}>
-                        {b}
-                      </option>
-                    ))}
-                  </select>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Thêm tài khoản</span>
+                  </button>
                 </div>
 
-                <div className="sm:col-span-2">
-                  <label className={LABEL}>Chi nhánh</label>
-                  <input
-                    type="text"
-                    placeholder="VD: Chi nhánh TP.HCM"
-                    value={editingPayee.BankBranch || ''}
-                    onChange={(e) =>
-                      setEditingPayee({ ...editingPayee, BankBranch: e.target.value })
-                    }
-                    className={INPUT}
-                  />
-                </div>
+                {editingAccounts.length === 0 ? (
+                  <div className="text-center py-4 bg-surface/40 rounded-xl border border-dashed border-line text-xs text-ink-faint">
+                    Chưa có tài khoản ngân hàng nào. Bấm "+ Thêm tài khoản" nếu có STK.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {editingAccounts.map((acc, index) => (
+                      <div key={index} className="p-3 bg-surface/50 rounded-xl border border-line/70 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-accent uppercase">
+                            Tài khoản #{index + 1}
+                          </span>
+                          {editingAccounts.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAccount(index)}
+                              className="text-neg hover:bg-neg-soft/60 p-1 rounded-lg transition-colors cursor-pointer"
+                              title="Xóa tài khoản này"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div>
+                            <label className={LABEL}>Số tài khoản (STK)</label>
+                            <input
+                              type="text"
+                              placeholder="VD: 19033481284"
+                              value={acc.accountNumber}
+                              onChange={(e) => handleAccountChange(index, 'accountNumber', e.target.value)}
+                              className={`${INPUT} font-mono font-bold text-accent`}
+                            />
+                          </div>
+                          <div>
+                            <label className={LABEL}>Ngân hàng</label>
+                            <select
+                              value={acc.bankName}
+                              onChange={(e) => handleAccountChange(index, 'bankName', e.target.value)}
+                              className={INPUT}
+                            >
+                              <option value="">-- Chọn ngân hàng --</option>
+                              {BANK_LIST.map((b) => (
+                                <option key={b} value={b}>
+                                  {b}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className={LABEL}>Chi nhánh</label>
+                            <input
+                              type="text"
+                              placeholder="VD: Chi nhánh TP.HCM"
+                              value={acc.bankBranch || ''}
+                              onChange={(e) => handleAccountChange(index, 'bankBranch', e.target.value)}
+                              className={INPUT}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Form Actions */}

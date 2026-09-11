@@ -156,6 +156,15 @@ body {
   background: var(--t-ink-faint);
 }
 
+/* Hide scrollbars on horizontal scrollable tab strips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Cỡ chữ và font theo thiết lập người dùng.
    Ứng dụng dùng lớp tiện dụng của Tailwind ở khắp nơi, nên cách duy nhất để một
    thiết lập ăn vào mọi màn hình mà không phải sửa từng component là ghi đè chính

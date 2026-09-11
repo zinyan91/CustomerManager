@@ -245,7 +245,7 @@ export function useCreditContractController() {
     } finally {
       setLoading(false);
     }
-  }, [showNotify, customer, loadCustomer]);
+  }, [confirm, showNotify, customer, loadCustomer]);
 
   const handleToggleCloseContract = useCallback(async (cc: CreditContract) => {
     if (!customer) return;

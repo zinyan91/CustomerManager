@@ -682,7 +682,7 @@ export function useLoanPortfolioController() {
     } finally {
       setLoading(false);
     }
-  }, [selectedContract, setSelectedContract, setSchedules, setContracts, showNotify]);
+  }, [confirm, selectedContract, setSelectedContract, setSchedules, setContracts, showNotify]);
 
   const handleAutoGenerateSchedule = useCallback(async () => {
     if (!selectedContract) return;

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { StatementSellerInfo, StatementItem, RetailInvoiceHeader, RetailInvoiceItem } from './statement';
+import { todayIso } from './utils';
 
 const STATEMENT_STORAGE_KEY = 'customer_manager_statements_db';
 const RETAIL_INVOICE_STORAGE_KEY = 'customer_manager_retail_invoices_db';
@@ -51,10 +52,10 @@ export async function fetchPurchaseStatementsDb(): Promise<SavedPurchaseStatemen
           paymentMethod: (d.PaymentMethod as any) || 'transfer',
           buyerName: d.BuyerName || '',
           buyerIdCard: d.BuyerIdCard || '',
-          statementDateStr: d.StatementDate || new Date().toISOString().split('T')[0],
+          statementDateStr: d.StatementDate || todayIso(),
         },
         items: Array.isArray(d.Items) ? d.Items : [],
-        statementDate: d.StatementDate || new Date().toISOString().split('T')[0],
+        statementDate: d.StatementDate || todayIso(),
         createdAt: d.CreatedAt,
       }));
 
@@ -99,7 +100,7 @@ export async function savePurchaseStatementDb(stmt: SavedPurchaseStatement): Pro
       PaymentMethod: stmt.sellerInfo.paymentMethod || 'transfer',
       BuyerName: stmt.sellerInfo.buyerName || '',
       BuyerIdCard: stmt.sellerInfo.buyerIdCard || '',
-      StatementDate: stmt.statementDate || stmt.sellerInfo.statementDateStr || new Date().toISOString().split('T')[0],
+      StatementDate: stmt.statementDate || stmt.sellerInfo.statementDateStr || todayIso(),
       Items: stmt.items,
       UpdatedAt: new Date().toISOString(),
     };
@@ -139,12 +140,12 @@ export async function fetchRetailInvoicesDb(): Promise<SavedRetailInvoice[]> {
       const invoices: SavedRetailInvoice[] = data.map((d: any) => ({
         id: d.Id,
         invoiceNo: d.InvoiceNo || d.Id,
-        invoiceDate: d.InvoiceDate || new Date().toISOString().split('T')[0],
+        invoiceDate: d.InvoiceDate || todayIso(),
         headerInfo: {
           buyerName: d.CustomerName || '',
           buyerAddress: d.CustomerAddress || '',
           shopName: 'SALON & SPA MINH THƯ',
-          invoiceDateStr: d.InvoiceDate || new Date().toISOString().split('T')[0],
+          invoiceDateStr: d.InvoiceDate || todayIso(),
         },
         items: Array.isArray(d.Items) ? d.Items : [],
         discount: Number(d.Discount || 0),
@@ -188,7 +189,7 @@ export async function saveRetailInvoiceDb(inv: SavedRetailInvoice): Promise<void
     const payload = {
       Id: inv.id,
       InvoiceNo: inv.invoiceNo,
-      InvoiceDate: inv.invoiceDate || new Date().toISOString().split('T')[0],
+      InvoiceDate: inv.invoiceDate || todayIso(),
       CustomerName: inv.headerInfo.buyerName || '',
       CustomerAddress: inv.headerInfo.buyerAddress || '',
       PaymentMethod: inv.paymentMethod || 'cash',

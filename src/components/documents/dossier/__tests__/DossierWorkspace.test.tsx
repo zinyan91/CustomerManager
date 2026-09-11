@@ -51,4 +51,14 @@ describe('DossierWorkspace', () => {
     expect(screen.getByRole('heading', { name: 'Bảng Kê Bán Hàng' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Lưu dạng Excel (.xlsx)' })).toBeTruthy();
   });
+
+  it('allows selecting documents directly via horizontal tab strip', () => {
+    render(<Harness />);
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.length).toBeGreaterThanOrEqual(4);
+
+    // Click tab 2 (Bảng Kê Bán Hàng) directly
+    fireEvent.click(tabs[1]);
+    expect(screen.getByRole('heading', { name: 'Bảng Kê Bán Hàng' })).toBeTruthy();
+  });
 });

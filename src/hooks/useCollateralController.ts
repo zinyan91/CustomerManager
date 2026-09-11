@@ -205,7 +205,7 @@ export function useCollateralController() {
   }, [
     inputCustomerId, inputAppraisedValue, inputLtvPercent, inputAssetType,
     inputAppraisalDate, inputAppraisalTenorMonths, selectedCollateral,
-    inputAssetCode, inputAddress, showNotify, handleResetForm, fetchData,
+    inputAssetCode, inputAddress, showNotify, handleResetForm, fetchData, confirm,
   ]);
 
   const customerScopedCollaterals = useMemo(

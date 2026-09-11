@@ -80,12 +80,11 @@ export const DossierWorkspace: React.FC<{
           aria-label="Danh sách biểu mẫu trong hồ sơ"
           className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto no-scrollbar scroll-smooth py-0.5"
         >
-          {ctrl.visibleDocs.map((doc, idx) => {
+          {ctrl.visibleDocs.map(doc => {
             const tpl = TEMPLATE_BY_ID[doc.templateId];
             if (!tpl) return null;
             const active = ctrl.state.activeDocId === doc.templateId;
             const excluded = ctrl.isExcluded(doc.templateId);
-            const Icon = tpl.icon;
 
             return (
               <button
@@ -94,10 +93,10 @@ export const DossierWorkspace: React.FC<{
                 type="button"
                 ref={active ? activeTabRef : undefined}
                 aria-selected={active}
-                aria-label={`Biểu mẫu #${idx + 1}: ${tpl.label}`}
+                aria-label={tpl.label}
                 disabled={excluded}
                 onClick={() => ctrl.selectDoc(doc.templateId)}
-                className={`group px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer flex items-center gap-2 shrink-0 whitespace-nowrap ${
+                className={`group px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
                   active
                     ? 'bg-panel text-ink border-line/90 shadow-2xs font-bold'
                     : excluded
@@ -105,21 +104,6 @@ export const DossierWorkspace: React.FC<{
                     : 'bg-surface/50 hover:bg-surface-elevated text-ink-muted hover:text-ink border-transparent hover:border-line/60'
                 }`}
               >
-                <span
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold shrink-0 ${
-                    active
-                      ? 'bg-surface border border-line/80 text-ink'
-                      : 'bg-surface/80 text-ink-muted group-hover:text-ink'
-                  }`}
-                >
-                  #{idx + 1}
-                </span>
-                {Icon && (
-                  <Icon
-                    size={14}
-                    className={active ? 'text-ink' : 'text-ink-muted group-hover:text-ink'}
-                  />
-                )}
                 <span>{tpl.label}</span>
                 {doc.optional && (
                   <span className="text-[9px] px-1 py-0.5 rounded bg-surface/80 border border-line/60 text-ink-faint font-normal">
@@ -199,12 +183,11 @@ export const DossierWorkspace: React.FC<{
               </div>
 
               <div className="space-y-1 max-h-80 overflow-y-auto pr-1">
-                {ctrl.visibleDocs.map((doc, idx) => {
+                {ctrl.visibleDocs.map(doc => {
                   const tpl = TEMPLATE_BY_ID[doc.templateId];
                   if (!tpl) return null;
                   const active = ctrl.state.activeDocId === doc.templateId;
                   const excluded = ctrl.isExcluded(doc.templateId);
-                  const Icon = tpl.icon;
 
                   return (
                     <div
@@ -225,23 +208,8 @@ export const DossierWorkspace: React.FC<{
                           ctrl.selectDoc(doc.templateId);
                           setOpenDropdown(false);
                         }}
-                        className="flex items-center gap-2.5 truncate flex-1 text-left cursor-pointer disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 truncate flex-1 text-left cursor-pointer disabled:cursor-not-allowed py-0.5"
                       >
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold shrink-0 ${
-                            active
-                              ? 'bg-panel border border-line text-ink'
-                              : 'bg-surface border border-line/80 text-ink-muted'
-                          }`}
-                        >
-                          #{idx + 1}
-                        </span>
-                        {Icon && (
-                          <Icon
-                            size={14}
-                            className={active ? 'text-ink' : 'text-ink-muted shrink-0'}
-                          />
-                        )}
                         <span className="truncate">{tpl.label}</span>
                       </button>
 

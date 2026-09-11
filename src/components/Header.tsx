@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, memo } from 'react';
 import { useTheme } from '../context/ThemeContext';
-import { Sun, Moon, Menu, X, LogOut, ShieldCheck, User, Search, Sparkles } from 'lucide-react';
+import { Sun, Moon, Menu, X, LogOut, ShieldCheck, User, Search } from 'lucide-react';
 import { Logo } from './Logo';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
@@ -67,11 +67,9 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
         <div className="flex items-center gap-2.5">
           <div className="relative inline-flex shrink-0">
             <Logo className="w-8 h-8" />
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-pos ring-2 ring-panel" />
           </div>
-          <h1 className="text-xs sm:text-sm font-bold uppercase tracking-[0.14em] text-ink truncate flex items-center gap-1.5">
-            <span>{t('header.title')}</span>
-            <Sparkles className="w-3 h-3 text-accent hidden sm:inline-block opacity-70" />
+          <h1 className="text-xs sm:text-sm font-bold uppercase tracking-[0.14em] text-ink truncate">
+            {t('header.title')}
           </h1>
         </div>
       </div>

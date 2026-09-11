@@ -100,3 +100,7 @@ export function bm04LogoBytes(): Uint8Array {
   for (let i = 0; i < bin.length; i += 1) out[i] = bin.charCodeAt(i);
   return out;
 }
+
+export function bm04LogoDataUri(): string {
+  return `data:image/png;base64,${LOGO_BASE64}`;
+}

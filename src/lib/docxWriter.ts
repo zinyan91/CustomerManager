@@ -390,8 +390,8 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
     const el = child as Element;
     const tag = el.tagName.toLowerCase();
 
-    if (el.classList && (el.classList.contains('bm04-footer') || el.classList.contains('vhtt-footer') || el.classList.contains('vhtt-footer-table'))) {
-      // Chân trang BM08 / VHTT đã được xử lý qua word/footer1.xml, không xuất lại trong thân tài liệu
+    if (el.classList && (el.classList.contains('bm04-footer') || el.classList.contains('bm04-header') || el.classList.contains('vhtt-footer') || el.classList.contains('vhtt-footer-table'))) {
+      // Đầu trang/Chân trang BM08 / VHTT đã được xử lý qua word/header1.xml và footer1.xml, không xuất lại trong thân tài liệu
       continue;
     }
 

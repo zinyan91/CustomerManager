@@ -79,6 +79,10 @@ describe('htmlToDocx — gói tài liệu có giấy cam kết', () => {
     expect(goi.co(`cx="${BM04_LOGO_CX}" cy="${BM04_LOGO_CY}"`)).toBe(true);
   });
 
+  it('logo được căn lề trái trong header Word', () => {
+    expect(goi.co('<w:pPr><w:jc w:val="left"/></w:pPr>')).toBe(true);
+  });
+
   it('nhúng đúng bytes ảnh gốc, không nén lại', () => {
     const logo = bm04LogoBytes();
     expect(logo.length).toBe(6977);

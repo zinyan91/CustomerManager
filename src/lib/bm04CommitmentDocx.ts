@@ -46,7 +46,7 @@ export function bm04HeaderXml(imageRelId: string): string {
 
   return XML_DECL
     + `<w:hdr xmlns:w="${WML}" xmlns:r="${REL_NS}">`
-    + '<w:p><w:pPr><w:jc w:val="right"/></w:pPr>'
+    + '<w:p><w:pPr><w:jc w:val="left"/></w:pPr>'
     + `<w:r>${drawing}</w:r>`
     + '</w:p>'
     + '</w:hdr>';

@@ -12,6 +12,7 @@ function exportToWordDocx(filename: string, docHtml: string) {
 
 function exportToPDFOnly(filename: string, docHtml: string): boolean {
   const isVhtt = docHtml.includes('vhtt-doc');
+  const isBm04 = docHtml.includes('bm04');
   const pdfHtml = `
     <!DOCTYPE html>
     <html lang="vi">
@@ -21,7 +22,7 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
       <style>
         @page {
           size: A4 portrait;
-          margin: ${isVhtt ? '15mm 15mm 18mm 20mm' : '20mm 15mm 20mm 25mm'};
+          margin: ${isBm04 ? '20mm 20mm 20mm 25mm' : isVhtt ? '15mm 15mm 18mm 20mm' : '20mm 15mm 20mm 25mm'};
         }
         * {
           box-sizing: border-box;
@@ -54,18 +55,18 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           margin-bottom: 4pt; 
           page-break-after: avoid;
         }
-        h3 {
-          font-size: 13pt;
-          font-weight: bold;
-          margin-top: 8pt;
-          margin-bottom: 4pt;
+        h3 { 
+          font-size: 13pt; 
+          font-weight: bold; 
+          margin-top: 8pt; 
+          margin-bottom: 4pt; 
           page-break-after: avoid;
         }
-        p {
-          margin-top: 2pt;
-          margin-bottom: 3.5pt;
-          text-align: justify;
-          line-height: 1.3;
+        p { 
+          margin-top: 2pt; 
+          margin-bottom: 3.5pt; 
+          text-align: justify; 
+          line-height: 1.3; 
         }
         p.clause-p { 
           margin-top: 2pt; 
@@ -150,46 +151,68 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
         }
         .bm04-sheet {
           font-family: 'Arial Unicode MS', 'Arial', sans-serif;
-          font-size: 10pt;
-          line-height: 1.25;
+          font-size: 11pt;
+          line-height: 1.45;
           color: #000000;
+          display: flex;
+          flex-direction: column;
+          min-height: calc(297mm - 45mm);
+          box-sizing: border-box;
         }
         .bm04-header {
           display: flex;
-          justify-content: flex-end;
+          justify-content: flex-start;
           align-items: center;
           margin-bottom: 8pt;
         }
-        .bm04-header img {
-          max-height: 38pt;
+        .bm04-header img,
+        .bm04-logo {
+          max-height: 40pt;
           width: auto;
           object-fit: contain;
+        }
+        .bm04-date {
+          font-style: italic;
+          font-size: 11pt;
+          margin-bottom: 10pt;
         }
         .bm04-title {
           text-align: center;
           font-size: 14pt;
           font-weight: bold;
-          margin: 6pt 0 10pt 0;
+          margin: 8pt 0 12pt 0;
           letter-spacing: 0.5pt;
         }
-        .bm04-sheet p {
-          margin: 0 0 3pt 0;
-          text-indent: 0;
-          line-height: 1.25;
+        .bm04-section-title {
+          font-size: 11pt;
+          font-weight: bold;
+          margin-bottom: 6pt;
         }
-        .bm04-sheet .bm04-name { margin-bottom: 3pt; }
-        .bm04-fill { margin-bottom: 4pt; }
+        .bm04-sheet p {
+          margin: 0 0 5pt 0;
+          text-indent: 0;
+          line-height: 1.4;
+        }
+        .bm04-sheet .bm04-name { margin-bottom: 6pt; }
+        .bm04-fill { margin-bottom: 6pt; }
         .bm04-fill .doc-tab {
           display: inline-block;
-          min-width: 40pt;
-          border-bottom: 1px dotted #000;
+          min-width: 30pt;
           margin: 0 4pt;
         }
-        .bm04-bullet { padding-left: 36pt; text-indent: -18pt; }
-        .bm04-bullet::before { content: '-'; padding-right: 9pt; }
+        .bm04-bullet {
+          padding-left: 24pt;
+          text-indent: -14pt;
+          margin-bottom: 5pt;
+        }
+        .bm04-bullet::before {
+          content: '- ';
+          padding-right: 4pt;
+          font-weight: bold;
+        }
         .bm04-sig {
           width: 100%;
-          margin-top: 12pt;
+          margin-top: 16pt;
           border-collapse: collapse;
           border: none;
           page-break-inside: avoid;
@@ -201,14 +224,18 @@ function exportToPDFOnly(filename: string, docHtml: string): boolean {
           padding: 0;
         }
         .bm04-footer {
-          border-top: 1px solid #000000;
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          border-top: 0.5pt solid #000000;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-top: 20pt;
-          padding-top: 4pt;
-          font-size: 9.5pt;
+          padding-top: 3pt;
+          font-size: 9pt;
           font-style: italic;
+          background: #ffffff;
         }
         .vhtt-footer {
           position: fixed;
@@ -376,23 +403,70 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
           }
           .a4-sheet-container .bm04-sheet {
             font-family: 'Arial Unicode MS', 'Arial', sans-serif !important;
-            font-size: 10pt !important;
-            line-height: 1.25 !important;
+            font-size: 11pt !important;
+            line-height: 1.45 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            min-height: calc(297mm - 45mm) !important;
+            box-sizing: border-box !important;
+          }
+          .a4-sheet-container .bm04-header {
+            display: flex !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
+            margin-bottom: 8pt !important;
+          }
+          .a4-sheet-container .bm04-header img,
+          .a4-sheet-container .bm04-logo {
+            max-height: 40pt !important;
+            width: auto !important;
+            object-fit: contain !important;
+          }
+          .a4-sheet-container .bm04-date {
+            font-style: italic !important;
+            font-size: 11pt !important;
+            margin-bottom: 10pt !important;
+          }
+          .a4-sheet-container .bm04-title {
+            text-align: center !important;
+            font-size: 14pt !important;
+            font-weight: bold !important;
+            margin: 8pt 0 12pt 0 !important;
+            letter-spacing: 0.5pt !important;
+          }
+          .a4-sheet-container .bm04-section-title {
+            font-size: 11pt !important;
+            font-weight: bold !important;
+            margin-bottom: 6pt !important;
           }
           .a4-sheet-container .bm04-sheet p {
-            margin: 0 0 3pt 0 !important;
+            margin: 0 0 5pt 0 !important;
             text-indent: 0 !important;
-            line-height: 1.25 !important;
+            line-height: 1.4 !important;
+          }
+          .a4-sheet-container .bm04-bullet {
+            padding-left: 24pt !important;
+            text-indent: -14pt !important;
+            margin-bottom: 5pt !important;
+          }
+          .a4-sheet-container .bm04-bullet::before {
+            content: '- ' !important;
+            padding-right: 4pt !important;
+            font-weight: bold !important;
           }
           .a4-sheet-container .bm04-footer {
-            border-top: 1px solid #000000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 20pt;
-            padding-top: 4pt;
-            font-size: 9.5pt;
-            font-style: italic;
+            border-top: 0.5pt solid #000000 !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-top: auto !important;
+            padding-top: 3pt !important;
+            font-size: 9pt !important;
+            font-style: italic !important;
+            width: 100% !important;
+          }
+          .a4-sheet-container:has(.bm04-sheet) {
+            padding: 20mm 20mm 20mm 25mm !important;
           }
           .a4-sheet-container:has(.vhtt-doc) {
             padding: 15mm 15mm 15mm 20mm !important;

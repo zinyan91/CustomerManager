@@ -3,6 +3,7 @@ import { moneyTextToWords, moneyToVietnameseWords } from './numberToWords';
 import type { TemplateType } from '../components/documents/TemplateSelector';
 import type { SaleItem, ConstItem, PaymentStageItem } from '../components/documents/DocumentForm';
 import type { DepositContractData } from '../components/documents/depositContract';
+import { bm04LogoDataUri } from './bm04Logo';
 
 const nfc = (str: string) => (str ? str.normalize('NFC') : '');
 
@@ -31,14 +32,20 @@ export function buildGiayCamKetHtml(input: {
   noiCap: string;
   ngayLap: string;
 }): string {
+  const dateFormatted = input.ngayLap ? ngayThangNam(input.ngayLap) : 'ngày ..... tháng ..... năm 20...';
+
   return `
     <div data-doc-section="bm04" class="bm04-sheet">
-      <p class="text-right no-indent">TP.HCM, ${ngayThangNam(input.ngayLap)}</p>
+      <div class="bm04-header">
+        <img src="${bm04LogoDataUri()}" alt="Vietbank" class="bm04-logo" />
+      </div>
+      <p class="text-right no-indent bm04-date">TP.HCM, ${dateFormatted}</p>
       <p class="no-indent">&nbsp;</p>
-      <p class="text-center no-indent font-bold text-[14pt]">GIẤY CAM KẾT</p>
-      <p class="no-indent font-bold">BÊN CAM KẾT</p>
-      <p class="bm04-name">Tôi tên là: ${nfc(input.hoTen)}</p>
-      <p class="bm04-fill">Số CCCD/CC: ${nfc(input.cccd)}<span class="doc-tab"></span>cấp ngày: ${nfc(input.ngayCap)}<span class="doc-tab"></span>Nơi cấp: ${nfc(input.noiCap)}</p>
+      <p class="text-center no-indent font-bold text-[14pt] bm04-title">GIẤY CAM KẾT</p>
+      <p class="no-indent">&nbsp;</p>
+      <p class="no-indent font-bold bm04-section-title">BÊN CAM KẾT</p>
+      <p class="bm04-name no-indent">Tôi tên là: <strong>${nfc(input.hoTen)}</strong></p>
+      <p class="bm04-fill no-indent">Số CCCD/CC: <span>${nfc(input.cccd)}</span><span class="doc-tab"></span>cấp ngày: <span>${nfc(input.ngayCap)}</span><span class="doc-tab"></span>Nơi cấp: <span>${nfc(input.noiCap)}</span></p>
       <p class="no-indent">Nay, Tôi cam kết các nội dung sau:</p>
       <p class="bm04-bullet">Tôi không có tài khoản thanh toán tại bất kỳ tổ chức cung ứng dịch vụ thanh toán nào.</p>
       <p class="bm04-bullet">Tôi cam kết chịu trách nhiệm trước pháp luật về tính chính xác, trung thực của các thông tin, hồ sơ và chứng từ đã cung cấp cho Vietbank.</p>
@@ -49,7 +56,9 @@ export function buildGiayCamKetHtml(input: {
             <td>&nbsp;</td>
             <td class="text-center">
               <div class="font-bold">BÊN CAM KẾT</div>
-              <div>(Ký, ghi rõ họ tên)</div>
+              <div class="font-italic">(Ký, ghi rõ họ tên)</div>
+              <div class="sig-space" style="height: 80px;">&nbsp;</div>
+              <div class="font-bold">${nfc(input.hoTen) || '&nbsp;'}</div>
             </td>
           </tr>
         </tbody>

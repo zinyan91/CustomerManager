@@ -65,6 +65,10 @@ const TEMPLATE_DOSSIER_MAP: Record<string, string> = {
   payment_request_const: 'Hồ sơ sửa chữa nhà',
   lease_mb: 'Hồ sơ cho thuê',
   lease_house: 'Hồ sơ cho thuê',
+  lease_room: 'Hồ sơ cho thuê',
+  lease_warehouse: 'Hồ sơ cho thuê',
+  loan_contract: 'Khác',
+  lease_land: 'Hồ sơ cho thuê',
   deposit: 'Khác',
 };
 

@@ -32,6 +32,9 @@ export const DOSSIERS: Dossier[] = [
     documents: [
       { templateId: 'lease_mb' },
       { templateId: 'lease_house' },
+      { templateId: 'lease_room' },
+      { templateId: 'lease_warehouse' },
+      { templateId: 'lease_land' },
     ],
   },
   {
@@ -52,6 +55,7 @@ export const DOSSIERS: Dossier[] = [
     icon: Folder,
     documents: [
       { templateId: 'deposit' },
+      { templateId: 'loan_contract' },
     ],
   },
 ];

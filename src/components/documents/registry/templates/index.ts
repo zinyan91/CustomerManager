@@ -8,6 +8,7 @@ import { paymentRequestConstTemplate } from './paymentRequestConst';
 import { bangKeTemplate } from './bangKe';
 import { leaseMbTemplate } from './leaseMb';
 import { leaseHouseTemplate } from './leaseHouse';
+import { leaseRoomTemplate } from './leaseRoom';
 import { constEstimateTemplate } from './constEstimate';
 import { depositTemplate } from './deposit';
 import { bm01DeNghiGiaiNganTemplate } from './bm01DeNghiGiaiNgan';
@@ -15,6 +16,10 @@ import { bm02ToTrinhGiaiNganTemplate } from './bm02ToTrinhGiaiNgan';
 import { bm07BienBanBanGiaoTemplate } from './bm07BienBanBanGiao';
 import { bm09DanhMucHoSoTemplate } from './bm09DanhMucHoSo';
 import { bm11TraNoTruocHanTemplate } from './bm11TraNoTruocHan';
+
+import { leaseWarehouseTemplate } from './leaseWarehouse';
+import { loanContractTemplate } from './loanContract';
+import { leaseLandTemplate } from './leaseLand';
 
 export const TEMPLATE_BY_ID: Record<string, DocTemplate<any>> = {
   [saleContractTemplate.id]: saleContractTemplate,
@@ -26,6 +31,10 @@ export const TEMPLATE_BY_ID: Record<string, DocTemplate<any>> = {
   [bangKeTemplate.id]: bangKeTemplate,
   [leaseMbTemplate.id]: leaseMbTemplate,
   [leaseHouseTemplate.id]: leaseHouseTemplate,
+  [leaseRoomTemplate.id]: leaseRoomTemplate,
+  [leaseWarehouseTemplate.id]: leaseWarehouseTemplate,
+  [loanContractTemplate.id]: loanContractTemplate,
+  [leaseLandTemplate.id]: leaseLandTemplate,
   [constEstimateTemplate.id]: constEstimateTemplate,
   [depositTemplate.id]: depositTemplate,
   [bm01DeNghiGiaiNganTemplate.id]: bm01DeNghiGiaiNganTemplate,

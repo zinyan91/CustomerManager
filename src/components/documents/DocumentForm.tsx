@@ -122,6 +122,9 @@ export const DocumentForm: React.FC<DocumentFormProps> = (props) => {
       return <DepositForm {...props} />;
     case 'lease_mb':
     case 'lease_house':
+    case 'lease_room':
+    case 'lease_warehouse':
+    case 'lease_land':
       return <LeaseForm {...props} />;
     case 'construction':
       return <ConstructionForm {...props} />;

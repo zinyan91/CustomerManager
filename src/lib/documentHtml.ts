@@ -5,7 +5,7 @@ import type { SaleItem, ConstItem, PaymentStageItem } from '../components/docume
 import type { DepositContractData } from '../components/documents/depositContract';
 import { bm04LogoDataUri } from './bm04Logo';
 
-const nfc = (str: string) => (str ? str.normalize('NFC') : '');
+const nfc = (str?: string) => (str ? str.normalize('NFC') : '');
 
 const titleCaseName = (str: string) =>
   nfc(str).trim().toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, sp, ch) => sp + ch.toUpperCase());
@@ -71,6 +71,462 @@ export function buildGiayCamKetHtml(input: {
   `;
 }
 
+export interface BuildLeaseRoomParams {
+  partyA: {
+    name: string;
+    birthYear?: string;
+    cccd?: string;
+    cccdDate?: string;
+    cccdPlace?: string;
+    address?: string;
+  };
+  partyB: {
+    name: string;
+    birthYear?: string;
+    cccd?: string;
+    cccdDate?: string;
+    cccdPlace?: string;
+    address?: string;
+  };
+  contractDate?: string;
+  partyAPhone?: string;
+  partyBPhone?: string;
+  roomNo?: string;
+  houseNo?: string;
+  location?: string;
+  coTenants?: string;
+  monthlyPrice?: string;
+  purpose?: string;
+  termMonths?: string;
+}
+
+export function buildLeaseRoomHtml(input: BuildLeaseRoomParams): string {
+  const dateFormatted = input.contractDate ? ngayThangNam(input.contractDate) : 'ngày ..... tháng ..... năm 20...';
+  const locationText = input.location
+    ? `Tại địa chỉ: ${nfc(input.location)}`
+    : (input.houseNo ? `Tại địa chỉ: ${nfc(input.houseNo)}` : 'Tại địa chỉ: ................................................................................');
+
+  const formatCoTenants = (raw?: string) => {
+    if (!raw || !raw.trim()) {
+      return `
+        <p class="clause-p no-indent">- ....................................................................................................................................................</p>
+        <p class="clause-p no-indent">- ....................................................................................................................................................</p>
+        <p class="clause-p no-indent">- ....................................................................................................................................................</p>
+      `;
+    }
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) {
+      return `
+        <p class="clause-p no-indent">- ....................................................................................................................................................</p>
+        <p class="clause-p no-indent">- ....................................................................................................................................................</p>
+      `;
+    }
+    return lines.map(line => `<p class="clause-p no-indent">- ${nfc(line)}</p>`).join('');
+  };
+
+  return `
+    <div class="text-center no-indent">
+      <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+      <div class="font-bold text-[13pt] no-indent">Độc lập – Tự do – Hạnh phúc</div>
+      <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">-----o0o-----</div>
+    </div>
+    <div class="text-center pt-2 pb-2 no-indent">
+      <h1 style="font-size: 16pt; font-weight: bold; text-transform: uppercase;">HỢP ĐỒNG THUÊ PHÒNG TRỌ</h1>
+    </div>
+
+    <p class="clause-p no-indent">Hôm nay, ${dateFormatted} ${locationText}</p>
+    <p class="clause-p no-indent">Đại diện các bên gồm có:</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-1">CHỦ NHÀ (BÊN A)</p>
+    <p class="clause-p no-indent">- Ông (Bà): <strong>${nfc(input.partyA.name) || '................................................'}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Sinh năm: <strong>${input.partyA.birthYear || '.........'}</strong></p>
+    <p class="clause-p no-indent">- CCCD số: <strong>${input.partyA.cccd || '........................'}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Cấp ngày: <strong>${input.partyA.cccdDate || '.../.../20...'}</strong></p>
+    <p class="clause-p no-indent">- Tại: <strong>${nfc(input.partyA.cccdPlace) || '................................................'}</strong></p>
+    <p class="clause-p no-indent">- Địa chỉ thường trú: <strong>${nfc(input.partyA.address) || '................................................'}</strong></p>
+    <p class="clause-p no-indent">- Điện thoại: <strong>${nfc(input.partyAPhone) || '........................'}</strong></p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">NGƯỜI THUÊ (BÊN B)</p>
+    <p class="clause-p no-indent">- Ông (Bà): <strong>${nfc(input.partyB.name) || '................................................'}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Sinh năm: <strong>${input.partyB.birthYear || '.........'}</strong></p>
+    <p class="clause-p no-indent">- CCCD số: <strong>${input.partyB.cccd || '........................'}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Cấp ngày: <strong>${input.partyB.cccdDate || '.../.../20...'}</strong></p>
+    <p class="clause-p no-indent">- Tại: <strong>${nfc(input.partyB.cccdPlace) || '................................................'}</strong></p>
+    <p class="clause-p no-indent">- Địa chỉ thường trú: <strong>${nfc(input.partyB.address) || '................................................'}</strong></p>
+    <p class="clause-p no-indent">- Điện thoại: <strong>${nfc(input.partyBPhone) || '........................'}</strong></p>
+
+    <p class="clause-p font-bold no-indent pt-1">Những người cùng thuê phòng:</p>
+    ${formatCoTenants(input.coTenants)}
+
+    <p class="clause-p font-italic no-indent pt-2">Sau khi bàn bạc, hai bên đã đi đến thống nhất ký hợp đồng này với những điều khoản như sau:</p>
+
+    <p class="clause-p no-indent"><strong>ĐIỀU I:</strong> Bên A đồng ý cho bên B thuê: <strong>${input.roomNo ? `phòng số ${nfc(input.roomNo)}` : '................................................'}</strong></p>
+    <p class="clause-p no-indent">Căn nhà số: <strong>${nfc(input.houseNo || input.location) || '................................................'}</strong> (do bên A làm chủ sở hữu).</p>
+    <p class="clause-p no-indent">✓ Giá cho thuê là: <strong>${input.monthlyPrice ? `${input.monthlyPrice} đồng/tháng` : '........................ đồng/tháng'}</strong> (Tiền điện, nước, điện thoại và các nhu cầu khác các bên tự thanh toán nếu có).</p>
+    <p class="clause-p no-indent">✓ Mục đích cho thuê: <strong>${nfc(input.purpose) || 'Ở'}</strong></p>
+    <p class="clause-p no-indent">✓ Thời hạn hợp đồng cho thuê là: <strong>${input.termMonths ? `${input.termMonths} tháng` : '........................ tháng'}</strong></p>
+
+    <p class="clause-p no-indent pt-2"><strong>ĐIỀU II:</strong> Bên B đồng ý thuê phòng của bên A với những nội dung nêu tại điều I của hợp đồng này.</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU III: TRÁCH NHIỆM CỦA BÊN A</p>
+    <p class="clause-p no-indent">- Tạo điều kiện thuận lợi cho bên B được sử dụng diện tích phòng thuê mà không bị gây khó khăn bởi bất cứ ai.</p>
+    <p class="clause-p no-indent">- Hỗ trợ bên B lập hồ sơ kê khai đăng ký tạm trú.</p>
+    <p class="clause-p no-indent">- Không chịu trách nhiệm về các hành vi dân sự hoặc vi phạm pháp luật của bên B khi sử dụng phòng đã thuê.</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU IV: TRÁCH NHIỆM CỦA BÊN B</p>
+    <p class="clause-p no-indent">- Sử dụng diện tích phòng thuê đúng mục đích.</p>
+    <p class="clause-p no-indent">- Thanh toán đủ tiền thuê phòng hàng tháng cho bên A vào đúng chu kỳ mỗi tháng.</p>
+    <p class="clause-p no-indent">- Không tự ý cho người khác thuê lại hoặc sửa chữa thay đổi kết cấu xây dựng phòng đã thuê.</p>
+    <p class="clause-p no-indent">- Bồi thường, sửa chữa hư hao nhà nếu có.</p>
+    <p class="clause-p no-indent">- Không dùng phòng thuê để làm việc phạm pháp như tàng trữ vũ khí, chất dễ cháy nổ, hóa chất độc hại, văn hóa phẩm đồi trụy,...</p>
+    <p class="clause-p no-indent">- Giữ gìn vệ sinh chung và thực hiện nếp sống văn hóa, văn minh đô thị mà khu phố và chính quyền địa phương vận động.</p>
+    <p class="clause-p no-indent">- Thực hiện đăng ký tạm trú, tạm vắng theo quy định của pháp luật.</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU KHOẢN KHÁC</p>
+    <p class="clause-p no-indent">- Khi bên A muốn chấm dứt hợp đồng trước thời hạn thì phải báo cho bên B trước ít nhất là 30 ngày và hoàn lại tiền thế chân (Điều kiện hợp đồng đã duy trì từ 6 tháng).</p>
+    <p class="clause-p no-indent">- Khi bên B muốn chấm dứt hợp đồng trước thời hạn thì phải báo cho bên A trước ít nhất là 30 ngày và hoàn lại tiền thế chân (Điều kiện hợp đồng đã duy trì từ 6 tháng). Nếu bên B đơn phương hủy hợp đồng hoặc hợp đồng chưa đủ 6 tháng, bên A có quyền từ chối hoàn trả bên B tiền thế chân.</p>
+    <p class="clause-p no-indent">- Khi chấm dứt hợp đồng, bên B giao lại phòng cho bên A đúng hiện trạng ban đầu. Trừ những hao mòn theo thời gian hoặc do sử dụng điều kiện bình thường.</p>
+    <p class="clause-p no-indent">- Trong quá trình sử dụng phòng thuê, hệ thống điện nước, các thiết bị khác trong phòng nếu có hư hỏng thì bên B có trách nhiệm tự sửa chữa.</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU KHOẢN CHUNG</p>
+    <p class="clause-p no-indent">- Hai bên cam kết thực hiện đúng những điều đã ký kết trong hợp đồng này. Nếu bên nào sai phạm gây thiệt hại cho đối tác thì phải chịu trách nhiệm bồi thường kể cả chi phí liên quan đến tòa án nếu có.</p>
+    <p class="clause-p no-indent">- Trong quá trình thực hiện hợp đồng, nếu có phát sinh hai bên sẽ cùng bàn bạc lại để đảm bảo công bằng quyền lợi của đôi bên.</p>
+    <p class="clause-p no-indent">- Hợp đồng này được lập thành 02 bản, mỗi bên lưu 01 bản để làm cơ sở thực hiện.</p>
+    <p class="clause-p no-indent">- Hai bên đã đọc kỹ và hiểu rõ những điều khoản nêu trong hợp đồng và thống nhất ký kết.</p>
+
+    <table class="sig-table font-serif" style="width: 100%; margin-top: 20pt; page-break-inside: avoid;">
+      <tbody>
+        <tr>
+          <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
+            <p class="text-center font-bold uppercase no-indent">ĐẠI DIỆN BÊN B</p>
+            <p class="text-center font-italic text-[11pt] no-indent">(Ký và ghi rõ họ tên)</p>
+            <div class="sig-space" style="height: 80px;">&nbsp;</div>
+            <p class="text-center font-bold uppercase no-indent">${nfc(input.partyB.name) || '&nbsp;'}</p>
+          </td>
+          <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
+            <p class="text-center font-bold uppercase no-indent">ĐẠI DIỆN BÊN A</p>
+            <p class="text-center font-italic text-[11pt] no-indent">(Ký và ghi rõ họ tên)</p>
+            <div class="sig-space" style="height: 80px;">&nbsp;</div>
+            <p class="text-center font-bold uppercase no-indent">${nfc(input.partyA.name) || '&nbsp;'}</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+}
+
+export interface BuildLeaseWarehouseParams {
+  partyA: {
+    name: string;
+    birthYear?: string;
+    cccd?: string;
+    cccdDate?: string;
+    cccdPlace?: string;
+    address?: string;
+  };
+  partyB: {
+    name: string;
+    birthYear?: string;
+    cccd?: string;
+    cccdDate?: string;
+    cccdPlace?: string;
+    address?: string;
+  };
+  area?: string;
+  warehouseAddress?: string;
+  startDate?: string;
+  endDate?: string;
+  monthlyPrice?: string;
+  paymentDay?: string;
+  signPlace?: string;
+  signDate?: string;
+}
+
+export function buildLeaseWarehouseHtml(input: BuildLeaseWarehouseParams): string {
+  const signDateFormatted = input.signDate ? ngayThangNam(input.signDate) : 'ngày ..... tháng ..... năm 20...';
+  const placeFormatted = input.signPlace ? `${nfc(input.signPlace)} ` : '';
+
+  return `
+    <div class="text-center no-indent">
+      <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+      <div class="font-bold text-[13pt] no-indent">Độc lập – Tự do – Hạnh phúc</div>
+      <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">-----o0o-----</div>
+    </div>
+    <div class="text-center pt-2 pb-2 no-indent">
+      <h1 style="font-size: 16pt; font-weight: bold; text-transform: uppercase;">HỢP ĐỒNG THUÊ NHÀ KHO</h1>
+    </div>
+
+    <p class="clause-p font-bold uppercase no-indent pt-1">(BÊN A) BÊN CHO THUÊ NHÀ KHO</p>
+    <p class="clause-p no-indent">- Họ và tên: <strong>${nfc(input.partyA.name) || '................................................'}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Sinh năm: <strong>${input.partyA.birthYear || '.........'}</strong></p>
+    <p class="clause-p no-indent">- CMND/CCCD số: <strong>${input.partyA.cccd || '........................'}</strong> &nbsp;&nbsp; cấp ngày: ${input.partyA.cccdDate || '.../.../20...'} &nbsp;&nbsp; Tại: ${nfc(input.partyA.cccdPlace) || '........................'}</p>
+    <p class="clause-p no-indent">- Hộ khẩu thường trú: ${nfc(input.partyA.address) || '................................................'}</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">(BÊN B) BÊN THUÊ NHÀ</p>
+    <p class="clause-p no-indent">- Họ và tên: <strong>${nfc(input.partyB.name) || '................................................'}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Sinh năm: <strong>${input.partyB.birthYear || '.........'}</strong></p>
+    <p class="clause-p no-indent">- CMND/CCCD số: <strong>${input.partyB.cccd || '........................'}</strong> &nbsp;&nbsp; cấp ngày: ${input.partyB.cccdDate || '.../.../20...'} &nbsp;&nbsp; Tại: ${nfc(input.partyB.cccdPlace) || '........................'}</p>
+    <p class="clause-p no-indent">- Hộ khẩu thường trú: ${nfc(input.partyB.address) || '................................................'}</p>
+
+    <p class="clause-p no-indent pt-2">Hai bên thỏa thuận và đồng ý với những nội dung sau:</p>
+
+    <p class="clause-p font-bold no-indent pt-1">ĐIỀU 1:</p>
+    <p class="clause-p no-indent">- Bên A đồng ý cho bên B thuê kho với diện tích là: <strong>${input.area ? `${input.area} m²` : '................ m²'}</strong></p>
+    <p class="clause-p no-indent">- Địa chỉ: <strong>${nfc(input.warehouseAddress) || '................................................'}</strong></p>
+    <p class="clause-p no-indent">- Thời hạn thuê kho kể từ <strong>${fmtDate(input.startDate) || 'ngày ... tháng ... năm ...'}</strong> đến <strong>${fmtDate(input.endDate) || 'ngày ... tháng ... năm ...'}</strong></p>
+
+    <p class="clause-p font-bold no-indent pt-2">ĐIỀU 2:</p>
+    <p class="clause-p no-indent">- Tiền thuê kho là: <strong>${input.monthlyPrice ? `${input.monthlyPrice} đ/tháng` : '................ đ/tháng'}</strong> ${input.monthlyPrice ? `(Bằng chữ: ${moneyTextToWords(input.monthlyPrice)})` : ''}</p>
+    <p class="clause-p no-indent">- Tiền thuê kho bên B thanh toán cho bên A vào <strong>${input.paymentDay ? `ngày ${input.paymentDay} hàng tháng` : 'ngày ..... hàng tháng'}</strong></p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU 3: TRÁCH NHIỆM BÊN A</p>
+    <p class="clause-p no-indent">- Giao nhà kho cho bên B đúng ngày hợp đồng.</p>
+    <p class="clause-p no-indent">- Hướng dẫn bên B chấp hành đúng các quy định của địa phương và hoàn tất mọi thủ tục giấy tờ đăng ký cho bên B.</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU 4: TRÁCH NHIỆM BÊN B</p>
+    <p class="clause-p no-indent">- Trả tiền thuê kho hàng tháng theo hợp đồng.</p>
+    <p class="clause-p no-indent">- Sử dụng đúng theo hợp đồng thuê kho và có trách nhiệm bảo quản cẩn thận, giữ gìn sạch sẽ nơi nhà kho.</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU 5: ĐIỀU KHOẢN CHUNG</p>
+    <p class="clause-p no-indent">- Bên A và bên B thực hiện đúng các điều khoản ghi trong hợp đồng.</p>
+    <p class="clause-p no-indent">- Hợp đồng được thành lập 02 bản có giá trị ngang nhau, mỗi bên giữ 01 bản.</p>
+
+    <p class="text-right font-italic pt-3 no-indent">${placeFormatted}${signDateFormatted}</p>
+
+    <table class="sig-table font-serif" style="width: 100%; margin-top: 15pt; page-break-inside: avoid;">
+      <tbody>
+        <tr>
+          <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
+            <p class="text-center font-bold uppercase no-indent">ĐẠI DIỆN BÊN A</p>
+            <p class="text-center font-italic text-[11pt] no-indent">(Ký và ghi rõ họ tên)</p>
+            <div class="sig-space" style="height: 80px;">&nbsp;</div>
+            <p class="text-center font-bold uppercase no-indent">${nfc(input.partyA.name) || '&nbsp;'}</p>
+          </td>
+          <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
+            <p class="text-center font-bold uppercase no-indent">ĐẠI DIỆN BÊN B</p>
+            <p class="text-center font-italic text-[11pt] no-indent">(Ký và ghi rõ họ tên)</p>
+            <div class="sig-space" style="height: 80px;">&nbsp;</div>
+            <p class="text-center font-bold uppercase no-indent">${nfc(input.partyB.name) || '&nbsp;'}</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+}
+
+export interface BuildLoanContractParams {
+  partyA: {
+    name: string;
+    birthYear?: string;
+    cccd?: string;
+    cccdDate?: string;
+    cccdPlace?: string;
+    address?: string;
+  };
+  partyB: {
+    name: string;
+    birthYear?: string;
+    cccd?: string;
+    cccdDate?: string;
+    cccdPlace?: string;
+    address?: string;
+  };
+  contractDate?: string;
+  location?: string;
+  loanAmount?: string;
+  loanPurpose?: string;
+  startDate?: string;
+  endDate?: string;
+  paymentMethod?: string;
+}
+
+export function buildLoanContractHtml(input: BuildLoanContractParams): string {
+  const dateFormatted = input.contractDate ? ngayThangNam(input.contractDate) : 'ngày … tháng … năm …';
+  const locationFormatted = input.location ? nfc(input.location) : '……………………';
+
+  return `
+    <div class="text-center no-indent">
+      <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+      <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
+      <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">-----o0o-----</div>
+    </div>
+    <div class="text-center pt-2 pb-2 no-indent">
+      <h1 style="font-size: 16pt; font-weight: bold; text-transform: uppercase;">GIẤY VAY TIỀN</h1>
+    </div>
+
+    <p class="clause-p no-indent">Hôm nay, ${dateFormatted}, tại ${locationFormatted}, chúng tôi gồm:</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-1">BÊN CHO VAY (BÊN A):</p>
+    <p class="clause-p no-indent">- Ông/bà: <strong>${nfc(input.partyA.name) || '................................................'}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Sinh năm: <strong>${input.partyA.birthYear || '.........'}</strong></p>
+    <p class="clause-p no-indent">- CCCD số: <strong>${input.partyA.cccd || '........................'}</strong> &nbsp;&nbsp; Cấp ngày: ${input.partyA.cccdDate || '.../.../20...'} &nbsp;&nbsp; Nơi cấp: ${nfc(input.partyA.cccdPlace) || '........................'}</p>
+    <p class="clause-p no-indent">- Hộ khẩu thường trú: ${nfc(input.partyA.address) || '................................................'}</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">BÊN VAY (BÊN B):</p>
+    <p class="clause-p no-indent">- Ông/bà: <strong>${nfc(input.partyB.name) || '................................................'}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Sinh năm: <strong>${input.partyB.birthYear || '.........'}</strong></p>
+    <p class="clause-p no-indent">- CCCD số: <strong>${input.partyB.cccd || '........................'}</strong> &nbsp;&nbsp; Cấp ngày: ${input.partyB.cccdDate || '.../.../20...'} &nbsp;&nbsp; Nơi cấp: ${nfc(input.partyB.cccdPlace) || '........................'}</p>
+    <p class="clause-p no-indent">- Hộ khẩu thường trú: ${nfc(input.partyB.address) || '................................................'}</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU 1: SỐ TIỀN VAY VÀ MỤC ĐÍCH</p>
+    <p class="clause-p no-indent">- Bên A đồng ý cho bên B vay và bên B đồng ý vay số tiền là: <strong>${input.loanAmount ? `${input.loanAmount} VNĐ` : '................................ VNĐ'}</strong></p>
+    <p class="clause-p no-indent">(Bằng chữ: <em>${input.loanAmount ? moneyTextToWords(input.loanAmount) : '................................................................'}</em>)</p>
+    <p class="clause-p no-indent">- Mục đích vay: <strong>${nfc(input.loanPurpose) || 'Tiêu dùng / Phục vụ sản xuất kinh doanh'}</strong></p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU 2: THỜI HẠN VAY</p>
+    <p class="clause-p no-indent">Từ ngày: <strong>${fmtDate(input.startDate) || '……………………..'}</strong> đến ngày: <strong>${fmtDate(input.endDate) || '………………………'}</strong></p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU 3: PHƯƠNG THỨC TRẢ NỢ</p>
+    <p class="clause-p no-indent">Hình thức thanh toán: <strong>${input.paymentMethod || 'tiền mặt / chuyển khoản'}</strong></p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU 4: CAM KẾT</p>
+    <p class="clause-p no-indent">- Bên B cam kết sử dụng tiền đúng mục đích và thanh toán đầy đủ, đúng hạn.</p>
+    <p class="clause-p no-indent">- Hai bên tự chịu trách nhiệm trước pháp luật về nội dung hợp đồng.</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">ĐIỀU 5: HIỆU LỰC</p>
+    <p class="clause-p no-indent">- Hợp đồng có hiệu lực từ ngày ký.</p>
+    <p class="clause-p no-indent">- Lập thành 02 bản, mỗi bên giữ 01 bản.</p>
+
+    <table class="sig-table font-serif" style="width: 100%; margin-top: 20pt; page-break-inside: avoid;">
+      <tbody>
+        <tr>
+          <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
+            <p class="text-center font-bold uppercase no-indent">ĐẠI DIỆN BÊN A</p>
+            <p class="text-center font-italic text-[11pt] no-indent">(Ký, ghi rõ họ tên)</p>
+            <div class="sig-space" style="height: 80px;">&nbsp;</div>
+            <p class="text-center font-bold uppercase no-indent">${nfc(input.partyA.name) || '&nbsp;'}</p>
+          </td>
+          <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
+            <p class="text-center font-bold uppercase no-indent">ĐẠI DIỆN BÊN B</p>
+            <p class="text-center font-italic text-[11pt] no-indent">(Ký, ghi rõ họ tên)</p>
+            <div class="sig-space" style="height: 80px;">&nbsp;</div>
+            <p class="text-center font-bold uppercase no-indent">${nfc(input.partyB.name) || '&nbsp;'}</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+}
+
+export interface BuildLeaseLandParams {
+  partyA: {
+    name: string;
+    birthYear?: string;
+    cccd?: string;
+    cccdDate?: string;
+    cccdPlace?: string;
+    address?: string;
+  };
+  partyB: {
+    name: string;
+    birthYear?: string;
+    cccd?: string;
+    cccdDate?: string;
+    cccdPlace?: string;
+    address?: string;
+  };
+  contractNo?: string;
+  contractDate?: string;
+  location?: string;
+  landArea?: string;
+  landAddress?: string;
+  termYears?: string;
+  startDate?: string;
+  endDate?: string;
+  purpose?: string;
+  rentPricePerYear?: string;
+  paymentMethod?: string;
+}
+
+export function buildLeaseLandHtml(input: BuildLeaseLandParams): string {
+  const dateFormatted = input.contractDate ? ngayThangNam(input.contractDate) : 'ngày … tháng … năm ……';
+  const contractNoFormatted = input.contractNo ? input.contractNo : '....………';
+  const locationFormatted = input.location ? nfc(input.location) : '................................';
+
+  return `
+    <table class="w-full no-border mb-2 font-serif" style="width: 100%; border: none; border-collapse: collapse;">
+      <tbody>
+        <tr>
+          <td style="width: 45%; vertical-align: top; text-align: center; border: none;">
+            <div class="font-bold text-[12pt] uppercase no-indent">HỢP ĐỒNG THUÊ ĐẤT</div>
+            <div class="text-[11pt] no-indent">Số: ${contractNoFormatted}</div>
+          </td>
+          <td style="width: 55%; vertical-align: top; text-align: center; border: none;">
+            <div class="font-bold text-[12pt] uppercase no-indent">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+            <div class="font-bold text-[12pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
+            <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 4px;">----------o0o----------</div>
+            <div class="font-italic text-[11pt] no-indent">${dateFormatted}</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="text-center pt-2 pb-2 no-indent">
+      <h1 style="font-size: 16pt; font-weight: bold; text-transform: uppercase;">HỢP ĐỒNG THUÊ ĐẤT</h1>
+    </div>
+
+    <p class="clause-p no-indent">- Căn cứ Luật Đất đai ngày 29 tháng 11 năm 2013;</p>
+    <p class="clause-p no-indent">- Căn cứ Nghị định số 43/2014/NĐ-CP ngày 15 tháng 5 năm 2014 của Chính phủ quy định chi tiết thi hành một số điều của Luật Đất đai;</p>
+    <p class="clause-p no-indent">- Căn cứ Thông tư số 30/2014/TT-BTNMT ngày 02 tháng 6 năm 2014 của Bộ trưởng Bộ Tài nguyên và Môi trường quy định về hồ sơ giao đất, cho thuê đất, chuyển mục đích sử dụng đất, thu hồi đất;</p>
+
+    <p class="clause-p no-indent pt-1">Hôm nay, ${dateFormatted}, tại ${locationFormatted}, chúng tôi gồm:</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-1">BÊN CHO THUÊ ĐẤT (BÊN A):</p>
+    <p class="clause-p no-indent">- Ông/bà: <strong>${nfc(input.partyA.name) || '................................................'}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Năm sinh: <strong>${input.partyA.birthYear || '.........'}</strong></p>
+    <p class="clause-p no-indent">- CCCD số: <strong>${input.partyA.cccd || '........................'}</strong> &nbsp;&nbsp; Ngày cấp: ${input.partyA.cccdDate || '.../.../20...'} &nbsp;&nbsp; Nơi cấp: ${nfc(input.partyA.cccdPlace) || '........................'}</p>
+    <p class="clause-p no-indent">- Nơi ĐKTT: ${nfc(input.partyA.address) || '................................................'}</p>
+
+    <p class="clause-p font-bold uppercase no-indent pt-2">BÊN THUÊ ĐẤT (BÊN B):</p>
+    <p class="clause-p no-indent">- Ông/bà: <strong>${nfc(input.partyB.name) || '................................................'}</strong> &nbsp;&nbsp;&nbsp;&nbsp; Năm sinh: <strong>${input.partyB.birthYear || '.........'}</strong></p>
+    <p class="clause-p no-indent">- CCCD số: <strong>${input.partyB.cccd || '........................'}</strong> &nbsp;&nbsp; Ngày cấp: ${input.partyB.cccdDate || '.../.../20...'} &nbsp;&nbsp; Nơi cấp: ${nfc(input.partyB.cccdPlace) || '........................'}</p>
+    <p class="clause-p no-indent">- Nơi ĐKTT: ${nfc(input.partyB.address) || '................................................'}</p>
+
+    <p class="clause-p no-indent pt-2">Hai Bên thỏa thuận ký hợp đồng thuê đất với các điều, khoản sau đây:</p>
+
+    <p class="clause-p font-bold no-indent pt-1">Điều 1. Bên cho thuê đất cho Bên thuê đất thuê khu đất như sau:</p>
+    <p class="clause-p no-indent">- Diện tích đất: <strong>${input.landArea ? `${input.landArea} m²` : '.............. m²'}</strong>, tại: <strong>${nfc(input.landAddress || input.location) || '................................................'}</strong></p>
+    <p class="clause-p no-indent">- Thời hạn thuê đất: <strong>${input.termYears ? `${input.termYears} năm` : '...... năm'}</strong>, kể từ <strong>${fmtDate(input.startDate) || 'ngày ... tháng ... năm ...'}</strong> đến <strong>${fmtDate(input.endDate) || 'ngày ... tháng ... năm ...'}</strong></p>
+    <p class="clause-p no-indent">- Mục đích sử dụng đất thuê: <strong>${nfc(input.purpose) || '................................................'}</strong></p>
+
+    <p class="clause-p font-bold no-indent pt-2">Điều 2. Bên thuê đất có trách nhiệm trả tiền thuê đất theo quy định sau:</p>
+    <p class="clause-p no-indent">- Giá đất tính tiền thuê đất là: <strong>${input.rentPricePerYear ? `${input.rentPricePerYear} đồng/năm` : '................ đồng/năm'}</strong>${input.rentPricePerYear ? ` (Bằng chữ: ${moneyTextToWords(input.rentPricePerYear)})` : ''}</p>
+    <p class="clause-p no-indent">- Tiền thuê đất được tính từ: <strong>${fmtDate(input.startDate) || 'ngày ... tháng ... năm ...'}</strong></p>
+    <p class="clause-p no-indent">- Phương thức nộp tiền thuê đất: <strong>${nfc(input.paymentMethod) || '................................................'}</strong></p>
+    <p class="clause-p no-indent">- Việc cho thuê đất không làm mất quyền của Nhà nước là đại diện chủ sở hữu đất đai và mọi tài nguyên nằm trong lòng đất.</p>
+
+    <p class="clause-p font-bold no-indent pt-2">Điều 3. Việc sử dụng đất trên khu đất thuê phải phù hợp với mục đích sử dụng đất đã ghi tại Điều 1 của Hợp đồng này.</p>
+
+    <p class="clause-p font-bold no-indent pt-2">Điều 4. Quyền và nghĩa vụ của các bên</p>
+    <p class="clause-p no-indent">- Bên cho thuê đất bảo đảm việc sử dụng đất của Bên thuê đất trong thời gian thực hiện hợp đồng, không được chuyển giao quyền sử dụng khu đất trên cho bên thứ ba, chấp hành quyết định thu hồi đất theo quy định của pháp luật về đất đai;</p>
+    <p class="clause-p no-indent">- Trong thời gian thực hiện hợp đồng, Bên thuê đất có các quyền và nghĩa vụ theo quy định của pháp luật về đất đai;</p>
+    <p class="clause-p no-indent">- Trường hợp Bên thuê đất bị thay đổi do chia tách, sáp nhập, chuyển đổi doanh nghiệp, bán tài sản gắn liền với đất thuê thì tổ chức, cá nhân được hình thành hợp pháp sau khi Bên thuê đất bị thay đổi sẽ thực hiện tiếp quyền và nghĩa vụ của Bên thuê đất trong thời gian còn lại của Hợp đồng này;</p>
+    <p class="clause-p no-indent">- Trong thời hạn hợp đồng còn hiệu lực thi hành, nếu Bên thuê đất trả lại toàn bộ hoặc một phần khu đất thuê trước thời hạn thì phải thông báo cho Bên cho thuê đất biết trước ít nhất là 6 tháng. Bên cho thuê đất trả lời cho Bên thuê đất trong thời gian 03 tháng, kể từ ngày nhận được đề nghị của Bên thuê đất. Thời điểm kết thúc hợp đồng tính đến ngày bàn giao mặt bằng.</p>
+
+    <p class="clause-p font-bold no-indent pt-2">Điều 5. Hợp đồng thuê đất chấm dứt trong các trường hợp sau:</p>
+    <p class="clause-p no-indent">- Hết thời hạn thuê đất mà không được gia hạn thuê tiếp;</p>
+    <p class="clause-p no-indent">- Do đề nghị của một bên hoặc các bên tham gia hợp đồng và được cơ quan nhà nước có thẩm quyền cho thuê đất chấp thuận;</p>
+    <p class="clause-p no-indent">- Bên thuê đất bị phá sản hoặc bị phát mại tài sản hoặc giải thể;</p>
+    <p class="clause-p no-indent">- Bên thuê đất bị cơ quan nhà nước có thẩm quyền thu hồi đất theo quy định của pháp luật về đất đai.</p>
+
+    <p class="clause-p font-bold no-indent pt-2">Điều 6. Việc giải quyết tài sản gắn liền với đất sau khi kết thúc Hợp đồng này được thực hiện theo quy định của pháp luật.</p>
+
+    <p class="clause-p font-bold no-indent pt-2">Điều 7. Hai Bên cam kết thực hiện đúng quy định của hợp đồng này, nếu Bên nào không thực hiện thì phải bồi thường cho việc vi phạm hợp đồng gây ra theo quy định của pháp luật.</p>
+
+    <p class="clause-p font-bold no-indent pt-2">Điều 8. Hợp đồng này được lập thành 04 bản có giá trị pháp lý như nhau, mỗi Bên giữ 01 bản và gửi đến cơ quan thuế, kho bạc nhà nước nơi thu tiền thuê đất.</p>
+    <p class="clause-p no-indent">Hợp đồng này có hiệu lực kể từ ngày ký.</p>
+
+    <table class="sig-table font-serif" style="width: 100%; margin-top: 20pt; page-break-inside: avoid;">
+      <tbody>
+        <tr>
+          <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
+            <p class="text-center font-bold uppercase no-indent">BÊN CHO THUÊ ĐẤT</p>
+            <p class="text-center font-italic text-[11pt] no-indent">(Ký, ghi rõ họ tên)</p>
+            <div class="sig-space" style="height: 80px;">&nbsp;</div>
+            <p class="text-center font-bold uppercase no-indent">${nfc(input.partyA.name) || '&nbsp;'}</p>
+          </td>
+          <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
+            <p class="text-center font-bold uppercase no-indent">BÊN THUÊ ĐẤT</p>
+            <p class="text-center font-italic text-[11pt] no-indent">(Ký, ghi rõ họ tên)</p>
+            <div class="sig-space" style="height: 80px;">&nbsp;</div>
+            <p class="text-center font-bold uppercase no-indent">${nfc(input.partyB.name) || '&nbsp;'}</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  `;
+}
 
 export interface DocumentDraft {
   mbContractDate: string;
@@ -136,6 +592,32 @@ export interface DocumentDraft {
   recipientTitle?: 'Ông' | 'Bà';
   constDurationMonths: string;
   lhTermLabel: string;
+  lrPartyAPhone?: string;
+  lrPartyBPhone?: string;
+  lrPartyABirthYear?: string;
+  lrPartyBBirthYear?: string;
+  lrPartyACccdPlace?: string;
+  lrPartyBCccdPlace?: string;
+  lrRoomNo?: string;
+  lrHouseNo?: string;
+  lrLocation?: string;
+  lrCoTenants?: string;
+  lrMonthlyPrice?: string;
+  lrPurpose?: string;
+  lrTermMonths?: string;
+  lwArea?: string;
+  lwWarehouseAddress?: string;
+  lwPaymentDay?: string;
+  lwSignPlace?: string;
+  loanAmount?: string;
+  loanPurpose?: string;
+  loanPaymentMethod?: string;
+  landContractNo?: string;
+  landArea?: string;
+  landAddress?: string;
+  landTermYears?: string;
+  landRentPricePerYear?: string;
+  landPaymentMethod?: string;
 }
 
 export function buildDocumentHtml(selectedTemplate: TemplateType, draft: DocumentDraft): string {
@@ -202,6 +684,19 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
     payStages,
     constDurationMonths,
     lhTermLabel,
+    lrPartyAPhone,
+    lrPartyBPhone,
+    lrPartyABirthYear,
+    lrPartyBBirthYear,
+    lrPartyACccdPlace,
+    lrPartyBCccdPlace,
+    lrRoomNo,
+    lrHouseNo,
+    lrLocation,
+    lrCoTenants,
+    lrMonthlyPrice,
+    lrPurpose,
+    lrTermMonths,
   } = draft;
 
   const totalSaleAmount = saleItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
@@ -468,6 +963,126 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
           </tbody>
         </table>
       `;
+    }
+
+    if (selectedTemplate === 'lease_room') {
+      return buildLeaseRoomHtml({
+        partyA: {
+          name: mbPartyAName,
+          birthYear: lrPartyABirthYear,
+          cccd: mbPartyACccd,
+          cccdDate: mbPartyACccdDate,
+          cccdPlace: lrPartyACccdPlace,
+          address: mbPartyAAddress,
+        },
+        partyB: {
+          name: mbPartyBName,
+          birthYear: lrPartyBBirthYear,
+          cccd: mbPartyBCccd,
+          cccdDate: mbPartyBCccdDate,
+          cccdPlace: lrPartyBCccdPlace,
+          address: mbPartyBAddress,
+        },
+        contractDate: mbContractDate,
+        partyAPhone: lrPartyAPhone,
+        partyBPhone: lrPartyBPhone,
+        roomNo: lrRoomNo,
+        houseNo: lrHouseNo || mbLocation,
+        location: lrLocation || mbLocation,
+        coTenants: lrCoTenants,
+        monthlyPrice: lrMonthlyPrice || mbMonthlyPrice,
+        purpose: lrPurpose || 'Ở',
+        termMonths: lrTermMonths,
+      });
+    }
+
+    if (selectedTemplate === 'lease_warehouse') {
+      return buildLeaseWarehouseHtml({
+        partyA: {
+          name: mbPartyAName,
+          birthYear: lrPartyABirthYear,
+          cccd: mbPartyACccd,
+          cccdDate: mbPartyACccdDate,
+          cccdPlace: lrPartyACccdPlace,
+          address: mbPartyAAddress,
+        },
+        partyB: {
+          name: mbPartyBName,
+          birthYear: lrPartyBBirthYear,
+          cccd: mbPartyBCccd,
+          cccdDate: mbPartyBCccdDate,
+          cccdPlace: lrPartyBCccdPlace,
+          address: mbPartyBAddress,
+        },
+        area: draft.lwArea,
+        warehouseAddress: draft.lwWarehouseAddress || mbLocation,
+        startDate: mbStartDate,
+        endDate: mbEndDate,
+        monthlyPrice: mbMonthlyPrice,
+        paymentDay: draft.lwPaymentDay,
+        signPlace: draft.lwSignPlace,
+        signDate: mbContractDate,
+      });
+    }
+
+    if (selectedTemplate === 'loan_contract') {
+      return buildLoanContractHtml({
+        partyA: {
+          name: mbPartyAName,
+          birthYear: lrPartyABirthYear,
+          cccd: mbPartyACccd,
+          cccdDate: mbPartyACccdDate,
+          cccdPlace: lrPartyACccdPlace,
+          address: mbPartyAAddress,
+        },
+        partyB: {
+          name: mbPartyBName,
+          birthYear: lrPartyBBirthYear,
+          cccd: mbPartyBCccd,
+          cccdDate: mbPartyBCccdDate,
+          cccdPlace: lrPartyBCccdPlace,
+          address: mbPartyBAddress,
+        },
+        contractDate: mbContractDate,
+        location: mbLocation,
+        loanAmount: draft.loanAmount || draft.constTotalPrice,
+        loanPurpose: draft.loanPurpose,
+        startDate: mbStartDate,
+        endDate: mbEndDate,
+        paymentMethod: draft.loanPaymentMethod,
+      });
+    }
+
+    if (selectedTemplate === 'lease_land') {
+      return buildLeaseLandHtml({
+        partyA: {
+          name: mbPartyAName,
+          birthYear: lrPartyABirthYear,
+          cccd: mbPartyACccd,
+          cccdDate: mbPartyACccdDate,
+          cccdPlace: lrPartyACccdPlace,
+          address: mbPartyAAddress,
+        },
+        partyB: {
+          name: mbPartyBName,
+          birthYear: lrPartyBBirthYear,
+          cccd: mbPartyBCccd,
+          cccdDate: mbPartyBCccdDate,
+          cccdPlace: lrPartyBCccdPlace,
+          address: mbPartyBAddress,
+        },
+        contractNo: draft.landContractNo,
+        contractDate: mbContractDate,
+        location: mbLocation,
+        landArea: draft.landArea,
+        landAddress: draft.landAddress || mbLocation,
+        termYears: draft.landTermYears,
+        startDate: mbStartDate,
+        endDate: mbEndDate,
+        purpose: draft.lrPurpose,
+        rentPricePerYear: draft.landRentPricePerYear || mbMonthlyPrice,
+        paymentMethod: draft.landPaymentMethod,
+      });
     }
 
     if (selectedTemplate === 'construction') {

@@ -75,6 +75,9 @@ export const TemplateManagerModal: React.FC<TemplateManagerModalProps> = ({
     if (!templateName.trim()) return;
     onSaveTemplate(templateName, items, editingId || undefined);
     setEditingId(null);
+    setTemplateName('');
+    setItems([]);
+    onClose();
   };
 
   return (
@@ -204,11 +207,22 @@ export const TemplateManagerModal: React.FC<TemplateManagerModalProps> = ({
               <div className="flex justify-end space-x-2 pt-2">
                 <button
                   type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setTemplateName('');
+                    setItems([]);
+                  }}
+                  className="px-3.5 py-1.5 rounded border border-line text-ink-muted hover:bg-panel-muted text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
                   onClick={handleSave}
-                  className="bg-pos hover:opacity-90 text-white font-bold px-4 py-1.5 rounded flex items-center space-x-1.5"
+                  className="bg-pos hover:opacity-90 text-white font-bold px-4 py-1.5 rounded flex items-center space-x-1.5 cursor-pointer shadow-xs transition-opacity"
                 >
                   <Check className="w-4 h-4" />
-                  <span>Lưu Ngành hàng chuẩn</span>
+                  <span>{editingId ? 'Cập nhật Ngành hàng' : 'Cập nhật'}</span>
                 </button>
               </div>
             </div>
@@ -278,6 +292,17 @@ export const TemplateManagerModal: React.FC<TemplateManagerModalProps> = ({
               </div>
             </div>
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-3 border-t border-line flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-1.5 rounded-lg border border-line text-ink-muted hover:bg-panel-muted text-xs font-semibold cursor-pointer transition-colors"
+          >
+            Đóng
+          </button>
         </div>
       </div>
     </div>

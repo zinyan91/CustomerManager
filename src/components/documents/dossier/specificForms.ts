@@ -4,6 +4,10 @@ import { PaymentSpecificForm } from './PaymentSpecificForm';
 import { ConstructionSpecificForm } from './ConstructionSpecificForm';
 import { LeaseMbSpecificForm } from './LeaseMbSpecificForm';
 import { LeaseHouseSpecificForm } from './LeaseHouseSpecificForm';
+import { LeaseRoomSpecificForm } from './LeaseRoomSpecificForm';
+import { LeaseWarehouseSpecificForm } from './LeaseWarehouseSpecificForm';
+import { LoanContractSpecificForm } from './LoanContractSpecificForm';
+import { LeaseLandSpecificForm } from './LeaseLandSpecificForm';
 import { EstimateSpecificForm } from './EstimateSpecificForm';
 import { BangKeSpecificForm } from './BangKeSpecificForm';
 import { DepositSpecificForm } from './DepositSpecificForm';
@@ -23,6 +27,10 @@ export const SPECIFIC_FORM_BY_ID: Record<string, FC<any> | null> = {
   payment_request_bang_ke: PaymentSpecificForm,
   lease_mb: LeaseMbSpecificForm,
   lease_house: LeaseHouseSpecificForm,
+  lease_room: LeaseRoomSpecificForm,
+  lease_warehouse: LeaseWarehouseSpecificForm,
+  loan_contract: LoanContractSpecificForm,
+  lease_land: LeaseLandSpecificForm,
   const_estimate: EstimateSpecificForm,
   deposit: DepositSpecificForm,
   bm01_de_nghi_giai_ngan: Bm01SpecificForm,

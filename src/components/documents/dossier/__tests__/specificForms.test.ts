@@ -13,6 +13,10 @@ describe('specificForms', () => {
     expect(SPECIFIC_FORM_BY_ID.bm07_bien_ban_ban_giao).toBeTypeOf('function');
     expect(SPECIFIC_FORM_BY_ID.bm09_danh_muc_ho_so).toBeTypeOf('function');
     expect(SPECIFIC_FORM_BY_ID.bm11_tra_no_truoc_han).toBeTypeOf('function');
+    expect(SPECIFIC_FORM_BY_ID.lease_room).toBeTypeOf('function');
+    expect(SPECIFIC_FORM_BY_ID.lease_warehouse).toBeTypeOf('function');
+    expect(SPECIFIC_FORM_BY_ID.loan_contract).toBeTypeOf('function');
+    expect(SPECIFIC_FORM_BY_ID.lease_land).toBeTypeOf('function');
     expect(SPECIFIC_FORM_BY_ID.cam_ket).toBeNull();
   });
 });

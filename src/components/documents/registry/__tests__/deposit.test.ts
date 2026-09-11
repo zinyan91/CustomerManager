@@ -15,7 +15,7 @@ it('folder Khác tồn tại và chứa mẫu HĐ Đặt Cọc (QSDĐ)', () => {
   const khac = DOSSIERS.find(d => d.id === 'khac');
   expect(khac).toBeDefined();
   expect(khac?.label).toBe('Khác');
-  expect(khac?.documents.map(x => x.templateId)).toEqual(['deposit']);
+  expect(khac?.documents.map(x => x.templateId)).toContain('deposit');
 });
 
 it('depositToLegacyParams maps partyA to buyer and partyB to seller', () => {

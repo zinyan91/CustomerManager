@@ -38,7 +38,18 @@ it('Sửa chữa nhà dossier includes dự toán after construction', () => {
 
 it('Cho thuê dossier lists its documents', () => {
   const d = DOSSIERS.find(x => x.id === 'cho_thue');
-  expect(d?.documents.map(x => x.templateId)).toEqual(['lease_mb', 'lease_house']);
+  expect(d?.documents.map(x => x.templateId)).toEqual([
+    'lease_mb',
+    'lease_house',
+    'lease_room',
+    'lease_warehouse',
+    'lease_land',
+  ]);
+});
+
+it('Khác dossier lists deposit and loan_contract', () => {
+  const d = DOSSIERS.find(x => x.id === 'khac');
+  expect(d?.documents.map(x => x.templateId)).toEqual(['deposit', 'loan_contract']);
 });
 
 it('Vận hành tập trung dossier lists BM01, BM02, BM07, BM09, and BM11', () => {

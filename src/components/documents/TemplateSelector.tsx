@@ -1,7 +1,8 @@
 import React from 'react';
 import type { UiClasses } from '../../lib/uiClasses';
 import {
-  Building2, Home, Hammer, Calculator, ShoppingCart, CreditCard, Handshake, FileSignature
+  Building2, Home, Hammer, Calculator, ShoppingCart, CreditCard, Handshake, FileSignature, DoorOpen,
+  Warehouse, Coins, LandPlot,
 } from 'lucide-react';
 
 export type TemplateType =
@@ -10,6 +11,10 @@ export type TemplateType =
   | 'const_estimate'
   | 'sale_contract'
   | 'lease_house'
+  | 'lease_room'
+  | 'lease_warehouse'
+  | 'loan_contract'
+  | 'lease_land'
   | 'payment_request_sale'
   | 'payment_request_bang_ke'
   | 'payment_request_const'
@@ -30,6 +35,10 @@ export const TEMPLATE_LIST: { id: TemplateType; label: string; icon: React.Compo
   { id: 'payment_request_sale', label: '6. Đề Nghị TT (Mua Bán)', icon: CreditCard },
   { id: 'payment_request_const', label: '7. Đề Nghị TT (Thi Công)', icon: CreditCard },
   { id: 'deposit', label: '8. HĐ Đặt Cọc (QSDĐ)', icon: Handshake },
+  { id: 'lease_room', label: '9. HĐ Thuê Phòng Trọ', icon: DoorOpen },
+  { id: 'lease_warehouse', label: '10. HĐ Thuê Nhà Kho', icon: Warehouse },
+  { id: 'loan_contract', label: '11. Giấy Vay Tiền', icon: Coins },
+  { id: 'lease_land', label: '12. HĐ Thuê Đất', icon: LandPlot },
 ];
 
 export const TemplateSelector: React.FC<TemplateSelectorProps> = ({

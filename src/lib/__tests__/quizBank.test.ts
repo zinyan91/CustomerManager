@@ -4,6 +4,7 @@ import {
   quizNormalizeText, quizDuplicateKey, optionLetter, emptyDraft, relabelOptions,
   findDuplicateQuestion, duplicateClusters, validateQuizDraft, draftToPayload, hasSettledAnswer,
   isAnswerCorrect, isMultiAnswer, searchQuestions, quizStats, parseQuizImportFile, questionToDraft,
+  quizQuestionsToExportRows, quizExportJson, quizExportFileName,
   MIN_DRAFT_OPTIONS, type QuizQuestion, type QuizDraft,
 } from '../quizBank';
 
@@ -550,5 +551,116 @@ describe('parseQuizImportFile', () => {
 
   it('tệp rỗng ra không câu nào, không nổ', () => {
     expect(parseQuizImportFile('[]')).toEqual({ rows: [], skipped: [] });
+  });
+});
+
+describe('quizQuestionsToExportRows', () => {
+  it('sắp theo Id tăng dần và đổi sang khoá của tệp nhập', () => {
+    const rows = quizQuestionsToExportRows([
+      q({ Id: 7, QuestionText: 'Câu bảy' }),
+      q({ Id: 2, QuestionText: 'Câu hai' }),
+    ]);
+
+    expect(rows.map(r => r.id)).toEqual([2, 7]);
+    expect(rows[0]).toEqual({
+      id: 2,
+      question: 'Câu hai',
+      options: [
+        { id: 'A', text: 'Tối đa 70%' },
+        { id: 'B', text: 'Tối đa 100%' },
+      ],
+      correct_answers: ['B'],
+      sources: ['PDF1 (Câu 6)'],
+    });
+  });
+
+  it('chỉ ghi chủ đề khi có, không ghi khoá rỗng', () => {
+    expect(quizQuestionsToExportRows([q({ Topic: '  Tuân thủ ' })])[0].topic).toBe('Tuân thủ');
+    expect(quizQuestionsToExportRows([q({ Topic: '   ' })])[0]).not.toHaveProperty('topic');
+    expect(quizQuestionsToExportRows([q({ Topic: null })])[0]).not.toHaveProperty('topic');
+  });
+
+  it('không dùng chung tham chiếu mảng với câu gốc', () => {
+    const source = q();
+    const row = quizQuestionsToExportRows([source])[0];
+    row.options.push({ id: 'C', text: 'Thêm sau khi xuất' });
+    row.correct_answers.push('C');
+    row.sources.push('Nguồn lạ');
+
+    expect(source.Options).toHaveLength(2);
+    expect(source.CorrectAnswers).toEqual(['B']);
+    expect(source.Sources).toEqual(['PDF1 (Câu 6)']);
+  });
+
+  it('ngân hàng rỗng ra mảng rỗng', () => {
+    expect(quizQuestionsToExportRows([])).toEqual([]);
+  });
+});
+
+describe('quizExportJson', () => {
+  it('nạp lại được chính tệp vừa xuất, không câu nào bị bỏ', () => {
+    const bank = [
+      q({ Id: 1, Topic: 'Tuân thủ' }),
+      q({
+        Id: 4,
+        QuestionText: 'Tiêu chí nhận diện rủi ro gồm những gì?',
+        Options: [
+          { id: 'A', text: 'Thái độ' },
+          { id: 'B', text: 'Hành vi' },
+        ],
+        CorrectAnswers: ['A', 'B'],
+        Sources: [],
+      }),
+    ];
+
+    const { rows, skipped } = parseQuizImportFile(quizExportJson(bank));
+
+    expect(skipped).toEqual([]);
+    expect(rows).toEqual([
+      {
+        question: bank[0].QuestionText,
+        options: bank[0].Options,
+        correct_answers: ['B'],
+        sources: ['PDF1 (Câu 6)'],
+        topic: 'Tuân thủ',
+      },
+      {
+        question: bank[1].QuestionText,
+        options: bank[1].Options,
+        correct_answers: ['A', 'B'],
+        sources: [],
+        topic: null,
+      },
+    ]);
+  });
+
+  it('câu chưa chốt đáp án vẫn xuất được và nạp lại được', () => {
+    const { rows, skipped } = parseQuizImportFile(
+      quizExportJson([q({ CorrectAnswers: [] })])
+    );
+
+    expect(skipped).toEqual([]);
+    expect(rows[0].correct_answers).toEqual([]);
+  });
+
+  it('xuất được cả bộ câu hỏi gốc trong repo', () => {
+    const bank = (quizSeed as any[]).map<QuizQuestion>(raw => ({
+      Id: raw.id,
+      QuestionText: raw.question,
+      Options: raw.options,
+      CorrectAnswers: raw.correct_answers,
+      Sources: raw.sources ?? [],
+    }));
+
+    const { rows, skipped } = parseQuizImportFile(quizExportJson(bank));
+
+    expect(skipped).toEqual([]);
+    expect(rows).toHaveLength(bank.length);
+  });
+});
+
+describe('quizExportFileName', () => {
+  it('gắn ngày vào tên tệp', () => {
+    expect(quizExportFileName('2026-09-18')).toBe('ngan-hang-cau-hoi-2026-09-18.json');
   });
 });

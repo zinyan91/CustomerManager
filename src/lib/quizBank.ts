@@ -250,6 +250,42 @@ export function quizStats(questions: QuizQuestion[]): {
   };
 }
 
+export const QUIZ_EXPORT_MIME = 'application/json;charset=utf-8';
+
+export interface QuizExportRow {
+  id: number;
+  question: string;
+  options: QuizOption[];
+  correct_answers: string[];
+  sources: string[];
+  topic?: string;
+}
+
+export function quizQuestionsToExportRows(questions: readonly QuizQuestion[]): QuizExportRow[] {
+  return [...questions]
+    .sort((a, b) => a.Id - b.Id)
+    .map(q => {
+      const topic = (q.Topic || '').trim();
+      const row: QuizExportRow = {
+        id: q.Id,
+        question: q.QuestionText,
+        options: q.Options.map(o => ({ id: o.id, text: o.text })),
+        correct_answers: [...q.CorrectAnswers],
+        sources: [...q.Sources],
+      };
+      if (topic) row.topic = topic;
+      return row;
+    });
+}
+
+export function quizExportJson(questions: readonly QuizQuestion[]): string {
+  return JSON.stringify(quizQuestionsToExportRows(questions), null, 2);
+}
+
+export function quizExportFileName(isoDate: string): string {
+  return `ngan-hang-cau-hoi-${isoDate}.json`;
+}
+
 export interface QuizImportRow {
   question: string;
   options: QuizOption[];

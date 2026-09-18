@@ -1,12 +1,40 @@
 # Tiến độ công việc
 
-Cập nhật: 27/08/2026 — nạp chương trình ưu đãi lãi suất huy động Tuần lễ vàng theo Thông báo 2605/2026/TB-BĐH
+Cập nhật: 18/09/2026 — xuất ngân hàng câu hỏi ra tệp JSON nạp lại được
 
 Trạng thái: ✅ xong · 🔄 đang làm · ⬜ chưa làm · 🕐 hoãn có chủ đích · ⚠️ chờ quyết định nghiệp vụ
 
 **Cách đọc tài liệu này.** Bảng chỉ ghi **một dòng** mỗi việc. Việc nào cần kể dài
 thì có mục riêng ở phần [Ghi chú chi tiết](#ghi-chú-chi-tiết), đánh số §1, §2…
 và dòng bảng trỏ tới. Phần **còn mở** đặt lên đầu vì đó là thứ cần biết trước.
+
+---
+
+# 0. Xuất ngân hàng câu hỏi ra tệp JSON — 18/09/2026
+
+Màn Ngân hàng câu hỏi trước nay chỉ có đường **vào** (panel Nạp thêm) mà không có
+đường **ra**: bộ câu hỏi nằm trên Supabase, muốn sao lưu hay chuyển sang môi trường
+khác phải truy vấn tay. Nay bổ sung nút **Xuất JSON** ngay hàng thao tác.
+
+1. **Hàm thuần trong `src/lib/quizBank.ts`** (không nhúng phép biến đổi vào `.tsx`):
+   - `quizQuestionsToExportRows` — đổi khoá PascalCase của CSDL sang khoá snake_case
+     của tệp nhập, sắp theo `Id` tăng dần, sao chép mảng nên không dùng chung tham
+     chiếu với câu gốc, chỉ ghi khoá `topic` khi thực sự có giá trị.
+   - `quizExportJson`, `quizExportFileName` (`ngan-hang-cau-hoi-YYYY-MM-DD.json`).
+2. **Round-trip Xuất ⇄ Nhập là ràng buộc bắt buộc.** Tệp vừa xuất nạp lại qua
+   `parseQuizImportFile` phải không bỏ sót câu nào — khoá bằng test, chạy thử trên
+   cả bộ câu hỏi gốc 662 câu trong `src/data/quiz_bank.json`. Câu chưa chốt đáp án
+   (`correct_answers` rỗng) vẫn xuất và nạp lại được.
+3. **Khoá `id` ghi ra để tra chứng từ**, nhưng trình nạp bỏ qua nó — nạp sang môi
+   trường khác không có nguy cơ ghi đè nhầm ID.
+4. Ngày đặt tên tệp lấy bằng `todayIso()`, không dùng `toISOString()` (quy tắc múi giờ).
+
+| | Việc | Ghi chú |
+| :--- | :--- | :--- |
+| ✅ | Hàm xuất thuần `quizBank.ts` | `quizQuestionsToExportRows` / `quizExportJson` / `quizExportFileName` |
+| ✅ | Nút `QuizExportButton.tsx` | Nhãn đếm số câu, khoá nút khi ngân hàng rỗng, dùng lại `downloadTextFile` |
+| ✅ | Gắn vào `QuizBankView` | Hàng thao tác: ô tìm kiếm · Xuất JSON · Thêm câu hỏi |
+| ✅ | Bộ kiểm thử | 150 tệp, **2.095 test pass**, build & lint sạch |
 
 ---
 

@@ -1,3 +1,12 @@
+> **⛔ TỆP ĐÃ ĐÓNG BĂNG — KHÔNG GHI THÊM VÀO ĐÂY.**
+>
+> Đây là bản lưu trữ của `PROGRESS.md` cũ (tới 28/08/2026), giữ lại để **tra cứu lịch sử**.
+> Tệp dùng hai cơ chế ghi chồng nhau và lối đánh số `§`/`0.x` trùng lặp — đó là lý do nó bị đóng băng.
+>
+> **Nhật ký từ 09/2026 trở đi ghi tại [`docs/progress/`](./README.md)**, mỗi tháng một tệp.
+
+---
+
 # Tiến độ công việc
 
 Cập nhật: 27/08/2026 — nạp chương trình ưu đãi lãi suất huy động Tuần lễ vàng theo Thông báo 2605/2026/TB-BĐH

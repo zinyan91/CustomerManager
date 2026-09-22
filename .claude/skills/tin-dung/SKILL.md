@@ -186,4 +186,4 @@ Phê duyệt HMTD  →  Hợp đồng tín dụng (HĐTD)  →  Giấy nhận n�
 4. `npm test && npm run build`.
 5. Nếu đổi CSDL: tạo migration trong `supabase/migrations/`, **áp migration trên Supabase TRƯỚC khi deploy code**.
 6. Kiểm chứng thực tế: file xuất, giao diện, phản hồi CSDL.
-7. Cập nhật `PROGRESS.md`; nếu quy tắc nghiệp vụ thay đổi, **cập nhật lại file `references/` tương ứng** để tài liệu không trôi khỏi code.
+7. Ghi một mục vào `docs/progress/YYYY-MM.md` theo khuôn tại `docs/progress/README.md` (`PROGRESS.md` cũ đã đóng băng, chỉ tra cứu); nếu quy tắc nghiệp vụ thay đổi, **cập nhật lại file `references/` tương ứng ở CẢ HAI cây** `.agents/` và `.claude/` để tài liệu không trôi khỏi code.

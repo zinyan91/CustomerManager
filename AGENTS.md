@@ -4,6 +4,15 @@ Tài liệu này tổng hợp toàn bộ các quy chuẩn làm việc, phong cá
 
 ---
 
+## 0. Bắt Buộc Trước Khi Code (đọc đầu tiên)
+
+- **Trước khi gõ dòng code đầu tiên:** làm đủ checklist và điền mẫu brief trong [truoc-khi-code.md](file:///d:/CustomerManager/.agents/rules/truoc-khi-code.md). Không bỏ qua vì "việc nhỏ".
+- **Tài liệu có thể đã trôi khỏi mã nguồn.** Skill và `references/` cập nhật chậm hơn `src/`. Luôn đối chiếu mã nguồn trước khi kết luận về phạm vi hay kiến trúc; mâu thuẫn thì **tin code và sửa tài liệu**.
+- **Sau khi xong và đã kiểm chứng:** ghi một mục vào `docs/progress/YYYY-MM.md` theo khuôn tại [docs/progress/README.md](file:///d:/CustomerManager/docs/progress/README.md). Ghi trước khi commit, không để dồn.
+- `PROGRESS.md` ở thư mục gốc **đã đóng băng**, nay là `docs/progress/archive-truoc-2026-09.md` — chỉ tra cứu, tuyệt đối không ghi thêm.
+
+---
+
 ## 1. Phong Cách Thiết Kế & Trình Bày (Aesthetics & Presentation)
 
 - **Đơn giản, thực dụng, chuẩn mực:**
@@ -47,6 +56,9 @@ Tài liệu này tổng hợp toàn bộ các quy chuẩn làm việc, phong cá
 
 ## 4. Hệ Thống Rules & Skills Liên Quan
 
+- **Bắt buộc trước khi code (checklist + mẫu brief):** [truoc-khi-code.md](file:///d:/CustomerManager/.agents/rules/truoc-khi-code.md)
+- Quy chuẩn kiến trúc SRP/SoC: [architecture-principles.md](file:///d:/CustomerManager/.agents/rules/architecture-principles.md)
+- Nhật ký tiến độ theo tháng: [docs/progress/README.md](file:///d:/CustomerManager/docs/progress/README.md)
 - Quy chuẩn chi tiết in ấn & bảng biểu: [document-formatting-and-printing.md](file:///d:/CustomerManager/.agents/rules/document-formatting-and-printing.md)
 - Kỹ năng định dạng văn bản: [SKILL.md](file:///d:/CustomerManager/.agents/skills/document-formatting/SKILL.md)
 - Quy chuẩn lưu trữ Supabase + Cloudflare R2: [dual-storage-supabase-r2.md](file:///d:/CustomerManager/.agents/rules/dual-storage-supabase-r2.md)

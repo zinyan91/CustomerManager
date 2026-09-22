@@ -5,6 +5,7 @@ import type { UiClasses } from '../../../lib/uiClasses';
 import type { useDocumentDossierController } from '../../../hooks/useDocumentDossierController';
 import { TEMPLATE_BY_ID } from '../registry/templates';
 import { CommonInfoForm } from './CommonInfoForm';
+import { CreditCardCommonForm } from './CreditCardCommonForm';
 import { SPECIFIC_FORM_BY_ID } from './specificForms';
 import { DocumentPreview } from '../DocumentPreview';
 import { StandaloneDocPreview } from './StandaloneDocPreview';
@@ -40,9 +41,12 @@ export const DossierWorkspace: React.FC<{
     if (!ctrl.activeTemplate.buildXlsx) return;
     const bytes = ctrl.activeTemplate.buildXlsx(ctrl.state.common, ctrl.activeSpecific);
     const partyBName = ctrl.state.common.partyB.name.trim();
-    const safeName = partyBName ? partyBName.replace(/\s+/g, '_') : 'Bang_Ke';
+    const safeName = partyBName ? partyBName.replace(/\s+/g, '_') : (ctrl.state.activeDocId === 'const_estimate' ? 'Du_Toan' : 'Bang_Ke');
     const dateStr = ctrl.state.common.contractDate || todayIso();
-    downloadBytes(bytes, `Bang_Ke_Thu_Mua_${safeName}_${dateStr}.xlsx`, MIME_XLSX);
+    const fileName = ctrl.state.activeDocId === 'const_estimate'
+      ? `BANG_DU_TOAN_CHI_TIET_${safeName}_${dateStr}.xlsx`
+      : `Bang_Ke_Thu_Mua_${safeName}_${dateStr}.xlsx`;
+    downloadBytes(bytes, fileName, MIME_XLSX);
   };
 
   const handlePrevDoc = () => {
@@ -253,6 +257,23 @@ export const DossierWorkspace: React.FC<{
                 patch={(p: Record<string, unknown>) => ctrl.patchSpecific(ctrl.state.activeDocId, p)}
               />
             ) : null
+          ) : ctrl.state.activeDossierId === 'the_tin_dung' ? (
+            <CreditCardCommonForm
+              common={ctrl.state.common}
+              patch={ctrl.patchCommon}
+              activeDocId={ctrl.state.activeDocId}
+              activeSpecific={ctrl.activeSpecific}
+              patchSpecific={(p: Record<string, unknown>) => ctrl.patchSpecific(ctrl.state.activeDocId, p)}
+            />
+          ) : ctrl.state.activeDocId === 'const_estimate' ? (
+            SpecificForm ? (
+              <SpecificForm
+                common={ctrl.state.common}
+                specific={ctrl.activeSpecific}
+                patch={(p: Record<string, unknown>) => ctrl.patchSpecific(ctrl.state.activeDocId, p)}
+                patchCommon={ctrl.patchCommon}
+              />
+            ) : null
           ) : (
             <>
               <CommonInfoForm
@@ -260,6 +281,7 @@ export const DossierWorkspace: React.FC<{
                 patch={ctrl.patchCommon}
                 activeDocId={ctrl.state.activeDocId}
                 activeSpecific={ctrl.activeSpecific}
+                dossierId={ctrl.state.activeDossierId}
               />
               {SpecificForm && (
                 <div className="pl-4 border-l-2 border-accent/40">
@@ -270,6 +292,7 @@ export const DossierWorkspace: React.FC<{
                     common={ctrl.state.common}
                     specific={ctrl.activeSpecific}
                     patch={(p: Record<string, unknown>) => ctrl.patchSpecific(ctrl.state.activeDocId, p)}
+                    patchCommon={ctrl.patchCommon}
                   />
                 </div>
               )}

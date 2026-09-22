@@ -1,4 +1,4 @@
-import { FolderOpen, Hammer, Home, Landmark, Folder } from 'lucide-react';
+import { FolderOpen, Hammer, Home, Landmark, Folder, CreditCard } from 'lucide-react';
 import type { Dossier } from './types';
 
 export const DOSSIERS: Dossier[] = [
@@ -12,6 +12,17 @@ export const DOSSIERS: Dossier[] = [
       { templateId: 'payment_request_sale' },
       { templateId: 'payment_request_bang_ke' },
       { templateId: 'cam_ket', optional: true },
+    ],
+  },
+  {
+    id: 'the_tin_dung',
+    label: 'Thẻ tín dụng',
+    icon: CreditCard,
+    documents: [
+      { templateId: 'cc_danh_muc' },
+      { templateId: 'cc_to_trinh' },
+      { templateId: 'cc_phieu_yeu_cau' },
+      { templateId: 'cc_huong_dan' },
     ],
   },
   {

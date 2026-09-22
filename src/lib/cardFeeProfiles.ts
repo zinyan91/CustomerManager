@@ -154,3 +154,27 @@ export function searchCardFeeProfiles(
     );
   });
 }
+
+export type CardNetwork = 'Visa' | 'Napas' | 'Mastercard';
+
+export function detectCardNetwork(text: string): CardNetwork {
+  const upper = (text || '').toUpperCase();
+  if (upper.includes('NAPAS') || upper.includes('NPC')) return 'Napas';
+  if (upper.includes('MASTER') || upper.includes('MCCR') || upper.includes('MC_')) return 'Mastercard';
+  return 'Visa';
+}
+
+export const DEFAULT_NETWORK_CARDS: Record<CardNetwork, { productPlan: string; feeIntProfile: string }> = {
+  Visa: {
+    productPlan: 'MS - VISA_TIN DUNG MYSTYLE',
+    feeIntProfile: 'MS_PREL2_VISA_MS 33% MIEN PHI TN 1 NAM',
+  },
+  Napas: {
+    productPlan: 'NPC_STAND - NP TIN DUNG NOI DIA CHUAN',
+    feeIntProfile: 'NPC_PRFL1_NAPAS TIN DUNG 18% THU PHI TN',
+  },
+  Mastercard: {
+    productPlan: 'MCCR_PL - MASTERCARD CREDIT PLATINUM',
+    feeIntProfile: 'MCCP_PRF05_MCCR_PL 33% MIEN PHI PH, TN 1 NAM',
+  },
+};

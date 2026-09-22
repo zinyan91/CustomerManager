@@ -10,7 +10,6 @@ import { importQuizQuestionsAPI } from '../../lib/api';
 import { Toast } from '../Toast';
 import { QuizQuestionForm } from '../quiz/QuizQuestionForm';
 import { QuizImportPanel } from '../quiz/QuizImportPanel';
-import { QuizExportButton } from '../quiz/QuizExportButton';
 import { QuizTelemetryStrip } from '../quiz/QuizTelemetryStrip';
 import { QuizPracticeCard } from '../quiz/QuizPracticeCard';
 import { QuizQuestionItem } from '../quiz/QuizQuestionItem';
@@ -173,7 +172,6 @@ export const QuizBankView: React.FC = () => {
                   className={`w-full rounded-xl pl-9 pr-3.5 py-2.5 border ${UI.inputStyle}`}
                 />
               </div>
-              {stats.total > 0 && <QuizExportButton questions={questions} />}
               <button
                 type="button"
                 onClick={() => {

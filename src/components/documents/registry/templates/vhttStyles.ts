@@ -53,6 +53,20 @@ export const VHTT_STYLES = `
     vertical-align: top !important;
   }
   
+  .vhtt-doc table.table-approval {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: 1.5pt solid #000000 !important;
+    margin: 6pt 0 8pt 0 !important;
+    page-break-inside: avoid !important;
+  }
+  .vhtt-doc table.table-approval th,
+  .vhtt-doc table.table-approval td {
+    font-size: 10pt !important;
+    vertical-align: top !important;
+    padding: 3pt 4pt !important;
+  }
+  
   .vhtt-doc .sig-table {
     margin-top: 8pt !important;
     page-break-inside: avoid !important;

@@ -71,7 +71,6 @@ describe('QuizBankView — tra cứu', () => {
     expect(screen.getByText('nhiều đáp án')).toBeTruthy();
     expect(screen.getByText('Tổng ngân hàng câu hỏi').parentElement!.textContent)
       .toContain('2 Câu hỏi');
-    expect(screen.getByRole('button', { name: 'Xuất JSON (2 câu)' })).toBeTruthy();
   });
 
   it('đáp án đúng tô sẵn, không phải bấm hiện', async () => {
@@ -113,7 +112,6 @@ describe('QuizBankView — tra cứu', () => {
     const user = userEvent.setup();
 
     const seedButton = await screen.findByRole('button', { name: /Nạp bộ câu hỏi gốc/i });
-    expect(screen.queryByRole('button', { name: /Xuất JSON/i })).toBeNull();
     await user.click(seedButton);
 
     expect(await screen.findByText(/Đã nạp 662 câu hỏi/)).toBeTruthy();

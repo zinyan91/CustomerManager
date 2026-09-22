@@ -37,3 +37,64 @@ it('buildHtml equals legacy builder (golden)', () => {
   });
   expect(constEstimateTemplate.buildHtml(common, sampleSpecific)).toBe(expected);
 });
+
+it('buildHtml renders 7-column layout and summary rows matching BẢNG DỰ TOÁN CHI TIẾT', () => {
+  const common = sampleCommon();
+  const html = constEstimateTemplate.buildHtml(common, {
+    sheetTitle: 'BẢNG DỰ TOÁN CÔNG TRÌNH SỬA CHỮA CHI TIẾT',
+    loanAmount: 150000000,
+    unitPrice: 6000000,
+    creatorTitle: 'Người lập',
+    creatorName: 'LÝ THỊ THÙY DUNG',
+  });
+
+  // Check 7 columns in table header
+  expect(html).toContain('STT');
+  expect(html).toContain('Tên Hạng Mục');
+  expect(html).toContain('Đơn Vị Tính');
+  expect(html).toContain('Số Lượng');
+  expect(html).toContain('Đơn Giá');
+  expect(html).toContain('Thành Tiền');
+  expect(html).toContain('Ghi Chú');
+
+  // Check summary rows
+  expect(html).toContain('Tổng cộng');
+  expect(html).toContain('Vốn vay');
+  expect(html).toContain('Vốn tự có');
+  expect(html).toContain('Đơn giá');
+
+  // Check title and creator
+  expect(html).toContain('BẢNG DỰ TOÁN CÔNG TRÌNH SỬA CHỮA CHI TIẾT');
+  expect(html).toContain('LÝ THỊ THÙY DUNG');
+});
+
+it('buildXlsx produces a valid Excel (.xlsx) file buffer with PK zip magic header', () => {
+  const common = sampleCommon();
+  const xlsxBytes = constEstimateTemplate.buildXlsx!(common, {
+    sheetTitle: 'BẢNG DỰ TOÁN CÔNG TRÌNH SỬA CHỮA CHI TIẾT',
+    loanAmount: 150000000,
+    unitPrice: 6000000,
+  });
+
+  expect(xlsxBytes).toBeInstanceOf(Uint8Array);
+  expect(xlsxBytes.length).toBeGreaterThan(500);
+  // Zip/XLSX magic bytes: PK\x03\x04
+  expect(xlsxBytes[0]).toBe(0x50);
+  expect(xlsxBytes[1]).toBe(0x4b);
+  expect(xlsxBytes[2]).toBe(0x03);
+  expect(xlsxBytes[3]).toBe(0x04);
+});
+
+it('has standalone flag set to true for independent preview and no common fields', () => {
+  expect(constEstimateTemplate.standalone).toBe(true);
+});
+
+it('supports switching between landscape (default) and portrait orientation', () => {
+  const common = sampleCommon();
+  const htmlLandscape = constEstimateTemplate.buildHtml(common, { orientation: 'landscape' });
+  expect(htmlLandscape).toContain('size: A4 landscape');
+
+  const htmlPortrait = constEstimateTemplate.buildHtml(common, { orientation: 'portrait' });
+  expect(htmlPortrait).toContain('size: A4 portrait');
+});
+

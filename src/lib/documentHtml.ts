@@ -4,6 +4,7 @@ import type { TemplateType } from '../components/documents/TemplateSelector';
 import type { SaleItem, ConstItem, PaymentStageItem } from '../components/documents/DocumentForm';
 import type { DepositContractData } from '../components/documents/depositContract';
 import { bm04LogoDataUri } from './bm04Logo';
+import { buildEstimateDocHtml } from './estimateExport';
 
 const nfc = (str?: string) => (str ? str.normalize('NFC') : '');
 
@@ -1187,87 +1188,30 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
     }
 
     if (selectedTemplate === 'const_estimate') {
-      const constRowsHtml = constItems.map((item, idx) => `
-        <tr>
-          <td class="text-center font-bold">${idx + 1}</td>
-          <td>${nfc(item.name)}</td>
-          <td class="text-center">${item.unit}</td>
-          <td class="text-center">${item.quantity}</td>
-          <td class="text-right">${item.price.toLocaleString('vi-VN')}</td>
-          <td class="text-right font-bold">${(item.quantity * item.price).toLocaleString('vi-VN')}</td>
-          <td>${nfc(item.note)}</td>
-        </tr>
-      `).join('');
+      const items = constItems.map((item, idx) => ({
+        id: String(item.id || idx + 1),
+        name: item.name || '',
+        unit: item.unit || 'm²',
+        quantity: Number(item.quantity) || 0,
+        price: Number(item.price) || 0,
+        note: item.note || '',
+      }));
+      const total = items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+      const loanAmount = constStage2Amount
+        ? Number(String(constStage2Amount).replace(/[^\d.-]/g, '')) || Math.round(total * 0.8)
+        : Math.round(total * 0.8);
 
-      const totalConstCalculated = constItems.reduce((sum, i) => sum + (i.quantity * i.price), 0);
-
-      return `
-        <div class="text-center no-indent">
-          <div class="font-bold text-[13pt] uppercase no-indent">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-          <div class="font-bold text-[13pt] no-indent">Độc lập - Tự do - Hạnh phúc</div>
-          <div class="text-center no-indent font-bold" style="letter-spacing: 1px; margin: 2px 0 6px;">----------o0o----------</div>
-        </div>
-
-        <div class="text-center pt-3 pb-2 no-indent">
-          <h1>BẢNG DỰ TOÁN HẠNG MỤC CÔNG VIỆC THI CÔNG</h1>
-          <p class="text-center font-italic text-[11pt] no-indent">(Đính kèm Hợp đồng thi công nhà ở ngày ${fmtDate(constContractDate)})</p>
-        </div>
-
-        <p class="clause-p font-bold uppercase no-indent">Chủ Đầu Tư (Bên A): <strong>${nfc(constPartyAName)}</strong></p>
-        <p class="clause-p font-bold uppercase no-indent">Nhà Thầu Thi Công (Bên B): <strong>${nfc(constPartyBName)}</strong></p>
-        <p class="clause-p no-indent">Công trình / Địa điểm: ${nfc(constSiteAddress)}</p>
-
-        <table class="table-doc">
-          <thead>
-            <tr>
-              <th style="width: 5%;">STT</th>
-              <th style="width: 30%;">Hạng mục công việc</th>
-              <th style="width: 8%;">Đơn vị</th>
-              <th style="width: 10%;">Khối lượng</th>
-              <th style="width: 15%;">Đơn giá (VNĐ)</th>
-              <th style="width: 16%;">Thành tiền (VNĐ)</th>
-              <th style="width: 16%;">Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${constRowsHtml}
-            <tr>
-              <td colSpan="5" class="text-right font-bold">Tổng cộng (tạm tính):</td>
-              <td class="text-right font-bold text-[12pt]">${totalConstCalculated.toLocaleString('vi-VN')}</td>
-              <td></td>
-            </tr>
-            <tr>
-              <td colSpan="5" class="text-right font-bold">Số tiền vay:</td>
-              <td class="text-right font-bold">800.000.000</td>
-              <td class="text-right font-bold">96,74%</td>
-            </tr>
-            <tr>
-              <td colSpan="5" class="text-right font-bold">Còn lại:</td>
-              <td class="text-right font-bold">203.700.000</td>
-              <td class="text-right font-bold">3,26%</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <table class="sig-table font-serif" style="width: 100%; margin-top: 20pt;">
-          <tbody>
-            <tr>
-              <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
-                <p class="text-center font-bold uppercase no-indent">ĐẠI DIỆN BÊN A</p>
-                <p class="text-center font-italic text-[11pt] no-indent">(Ký và ghi rõ họ tên)</p>
-                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
-                <p class="text-center font-bold uppercase no-indent">${nfc(constPartyAName)}</p>
-              </td>
-              <td class="text-center" style="width: 50%; text-align: center; vertical-align: top;">
-                <p class="text-center font-bold uppercase no-indent">ĐẠI DIỆN BÊN B</p>
-                <p class="text-center font-italic text-[11pt] no-indent">(Ký và ghi rõ họ tên)</p>
-                <div class="sig-space">&nbsp;<br />&nbsp;<br />&nbsp;<br />&nbsp;</div>
-                <p class="text-center font-bold uppercase no-indent">${nfc(constPartyBName)}</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      `;
+      return buildEstimateDocHtml({
+        sheetTitle: 'BẢNG DỰ TOÁN CÔNG TRÌNH SỬA CHỮA CHI TIẾT',
+        items,
+        loanAmount,
+        creatorTitle: 'Người lập',
+        creatorName: nfc(constPartyAName),
+        siteAddress: constSiteAddress,
+        contractDate: constContractDate,
+        partyAName: constPartyAName,
+        partyBName: constPartyBName,
+      });
     }
 
     if (selectedTemplate === 'sale_contract') {

@@ -21,6 +21,11 @@ import { leaseWarehouseTemplate } from './leaseWarehouse';
 import { loanContractTemplate } from './loanContract';
 import { leaseLandTemplate } from './leaseLand';
 
+import { ccDanhMucTemplate } from './ccDanhMuc';
+import { ccToTrinhTemplate } from './ccToTrinh';
+import { ccPhieuYeuCauTemplate } from './ccPhieuYeuCau';
+import { ccHuongDanTemplate } from './ccHuongDan';
+
 export const TEMPLATE_BY_ID: Record<string, DocTemplate<any>> = {
   [saleContractTemplate.id]: saleContractTemplate,
   [paymentRequestSaleTemplate.id]: paymentRequestSaleTemplate,
@@ -42,4 +47,8 @@ export const TEMPLATE_BY_ID: Record<string, DocTemplate<any>> = {
   [bm07BienBanBanGiaoTemplate.id]: bm07BienBanBanGiaoTemplate,
   [bm09DanhMucHoSoTemplate.id]: bm09DanhMucHoSoTemplate,
   [bm11TraNoTruocHanTemplate.id]: bm11TraNoTruocHanTemplate,
+  [ccDanhMucTemplate.id]: ccDanhMucTemplate,
+  [ccToTrinhTemplate.id]: ccToTrinhTemplate,
+  [ccPhieuYeuCauTemplate.id]: ccPhieuYeuCauTemplate,
+  [ccHuongDanTemplate.id]: ccHuongDanTemplate,
 };

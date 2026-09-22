@@ -4,6 +4,7 @@ import { TEMPLATE_LIST } from '../components/documents/TemplateSelector';
 import type { SaleItem, ConstItem, PaymentStageItem } from '../components/documents/DocumentForm';
 import { DEFAULT_DEPOSIT_CONTRACT, type DepositContractData } from '../components/documents/depositContract';
 import { buildDocumentHtml } from '../lib/documentHtml';
+import { ESTIMATE_PRESETS } from '../lib/estimateExport';
 import {
   loadSaleCatalogs,
   saveSaleCatalog,
@@ -61,33 +62,14 @@ export function useDocumentTemplateController() {
   const [constSiteAddress, setConstSiteAddress] = useState('1 phần thửa đất số 45 Tờ bản đồ số 9 (BĐĐC) Địa chỉ 478/34 Hòa Hảo, Phường 5, Quận 10, Tp.HCM');
   const [constStartDate, setConstStartDate] = useState('2026-03-20');
   const [constEndDate, setConstEndDate] = useState('2026-05-20');
-  const [constTotalPrice, setConstTotalPrice] = useState('1.003.700.000');
-  const [constDepositStage1, setConstDepositStage1] = useState('53.700.000');
-  const [constStage2Amount, setConstStage2Amount] = useState('950.000.000');
+  const [constTotalPrice, setConstTotalPrice] = useState('1.078.500.000');
+  const [constDepositStage1, setConstDepositStage1] = useState('118.500.000');
+  const [constStage2Amount, setConstStage2Amount] = useState('960.000.000');
   const [constWarrantyMonths, setConstWarrantyMonths] = useState('06');
 
-  const [constItems, setConstItems] = useState<ConstItem[]>([
-    { id: '1', name: 'Sửa chữa tường (vữa, sơn)', unit: 'm²', quantity: 36.5, price: 6000000, note: 'Vẽ lại tường, bả vữa, sơn lại' },
-    { id: '2', name: 'Thay thế gạch lát nền', unit: 'm²', quantity: 36.5, price: 6000000, note: 'Thay gạch lát sàn mới' },
-    { id: '3', name: 'Lắp đặt hệ thống điện (đi dây, ổ cắm)', unit: 'm', quantity: 18, price: 2600000, note: 'Đi lại hệ thống điện' },
-    { id: '4', name: 'Sửa chữa cửa (sơn lại, thay bản lề)', unit: 'Cái', quantity: 2, price: 5000000, note: 'Sơn cửa, thay bản lề' },
-    { id: '5', name: 'Sửa chữa mái tôn (vệ sinh, sơn lại)', unit: 'm²', quantity: 45, price: 2200000, note: 'Sơn lại mái tôn' },
-    { id: '6', name: 'Sơn tường ngoài', unit: 'm²', quantity: 68, price: 1000000, note: 'Sơn lại tường ngoài nhà' },
-    { id: '7', name: 'Vệ sinh tổng thể', unit: 'Mỗi', quantity: 1, price: 5000000, note: 'Dọn dẹp vệ sinh toàn bộ nhà' },
-    { id: '8', name: 'Lắp đặt trần thạch cao', unit: 'm²', quantity: 45, price: 280000, note: 'Lắp trần thạch cao cho các phòng' },
-    { id: '9', name: 'Lắp đặt hệ thống chiếu sáng hiện đại', unit: 'Cái', quantity: 15, price: 1000000, note: 'Lắp đèn chiếu sáng LED hiện đại' },
-    { id: '10', name: 'Thay thế cửa cuốn, cửa nhựa', unit: 'Cái', quantity: 1, price: 1500000, note: 'Thay mới cửa cuốn, cửa nhựa' },
-    { id: '11', name: 'Thay thế cửa nhôm, cửa kính hư hỏng tại ban công', unit: 'Cái', quantity: 10, price: 2200000, note: 'Thay cửa hư hỏng' },
-    { id: '12', name: 'Chống thấm, sửa chữa sân thượng và mái che', unit: 'm²', quantity: 40, price: 700000, note: 'Chống thấm, sửa mái, không đục phá kết cấu' },
-    { id: '13', name: 'Cải tạo, ốp lát lại nhà vệ sinh tầng trệt', unit: 'm²', quantity: 36.5, price: 1600000, note: 'Ốp lát, thay thiết bị, không thay đổi tường chịu lực' },
-    { id: '14', name: 'Cải tạo, ốp lát lại nhà vệ sinh các tầng 1', unit: 'm²', quantity: 36.5, price: 1600000, note: 'Cải tạo hoàn thiện, giữ nguyên kết cấu' },
-    { id: '15', name: 'Cải tạo, ốp lát lại nhà vệ sinh các tầng 2', unit: 'm²', quantity: 36.5, price: 1600000, note: 'Cải tạo hoàn thiện, giữ nguyên kết cấu' },
-    { id: '16', name: 'Sơn bả lại trần nhà phòng khách và các tầng', unit: 'm²', quantity: 36, price: 450000, note: 'Hoàn thiện sơn bả trần' },
-    { id: '17', name: 'Lắp đặt bổ sung đèn LED chiếu sáng trong nhà', unit: 'Cái', quantity: 4, price: 850000, note: 'Bổ sung đèn LED tiết kiệm điện' },
-    { id: '18', name: 'Lát gạch hoàn thiện ban công, lô gia', unit: 'm²', quantity: 50, price: 500000, note: 'Lát gạch hoàn thiện khu vực ban công' },
-    { id: '19', name: 'Sửa chữa, thay mới tủ bếp, mặt bàn bếp', unit: 'Bộ', quantity: 5, price: 4600000, note: 'Thay tủ bếp, mặt bàn, không can thiệp kết cấu' },
-    { id: '20', name: 'Sửa chữa, sơn mới lan can và tay vịn cầu thang', unit: 'm', quantity: 30, price: 500000, note: 'Sơn sửa lan can, tay vịn, đảm bảo an toàn' },
-  ]);
+  const [constItems, setConstItems] = useState<ConstItem[]>(
+    ESTIMATE_PRESETS.sua_chua_nha.items as ConstItem[]
+  );
 
   const handleAddConstItem = () => {
     setConstItems([

@@ -89,6 +89,7 @@ export interface CommonInfoFormProps {
   patch: (p: Partial<DossierCommon>) => void;
   activeDocId?: string;
   activeSpecific?: unknown;
+  dossierId?: string;
 }
 
 export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
@@ -96,6 +97,7 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
   patch,
   activeDocId,
   activeSpecific,
+  dossierId,
 }) => {
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [payees, setPayees] = React.useState<DisbursementPayee[]>([]);
@@ -203,6 +205,27 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
     }
   }, [isBangKe, computedItemsTotal, common.items.length, common.totalAmount, patch]);
 
+  let partyATitle = 'Bên A (Bên mua)';
+  let partyBTitle = 'Bên B (Bên bán / Thụ hưởng)';
+  let showItems = true;
+  let showStages = true;
+
+  if (dossierId === 'sua_chua_nha') {
+    partyATitle = 'Bên A (Chủ nhà / Bên giao khoán)';
+    partyBTitle = 'Bên B (Bên nhận khoán thi công)';
+    showItems = false;
+  } else if (dossierId === 'cho_thue') {
+    partyATitle = 'Bên A (Bên cho thuê)';
+    partyBTitle = 'Bên B (Bên thuê)';
+    showItems = false;
+    showStages = false;
+  } else if (dossierId === 'khac') {
+    partyATitle = 'Bên A (Bên giao / Bên cho vay)';
+    partyBTitle = 'Bên B (Bên nhận / Bên vay)';
+    showItems = false;
+    showStages = false;
+  }
+
   return (
     <>
       <details open className="rounded-xl border border-line/70 bg-surface/40 overflow-hidden">
@@ -211,7 +234,7 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
         </summary>
 
         <div className="p-4 space-y-5 border-t border-line/50">
-          <Group title="Bên A (Bên mua)" accent="border-accent/50 text-accent">
+          <Group title={partyATitle} accent="border-accent/50 text-accent">
             <div className="mb-3">
               <label className={LABEL}>Chọn nhanh từ Danh sách Khách hàng</label>
               <CustomerPicker
@@ -228,7 +251,7 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
             />
           </Group>
 
-          <Group title="Bên B (Bên bán / Thụ hưởng)" accent="border-pos/50 text-pos">
+          <Group title={partyBTitle} accent="border-pos/50 text-pos">
             <div className="mb-3">
               <label className={LABEL}>Chọn nhanh từ Thông tin giải ngân</label>
               <DisbursementPayeePicker
@@ -306,7 +329,7 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
             </div>
           </Group>
 
-          {!isBangKe && (
+          {showStages && !isBangKe && (
             <Group title="Các đợt thanh toán" accent="border-warn/50 text-warn">
               <div className="space-y-2">
                 {common.stages.map(stage => (
@@ -346,57 +369,59 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
             </Group>
           )}
 
-          <Group title="Danh mục hàng hóa / hạng mục" accent="border-pos/50 text-pos">
-            <div className="space-y-2">
-              {common.items.map(item => (
-                <div key={item.id} className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-12 sm:col-span-4">
-                    <label className={LABEL}>Tên mặt hàng</label>
-                    <input className={INPUT} value={item.name}
-                      onChange={e => setItem(item.id, { name: e.target.value })} />
+          {showItems && (
+            <Group title="Danh mục hàng hóa / hạng mục" accent="border-pos/50 text-pos">
+              <div className="space-y-2">
+                {common.items.map(item => (
+                  <div key={item.id} className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-12 sm:col-span-4">
+                      <label className={LABEL}>Tên mặt hàng</label>
+                      <input className={INPUT} value={item.name}
+                        onChange={e => setItem(item.id, { name: e.target.value })} />
+                    </div>
+                    <div className="col-span-4 sm:col-span-2">
+                      <label className={LABEL}>ĐVT</label>
+                      <input className={INPUT} value={item.unit}
+                        onChange={e => setItem(item.id, { unit: e.target.value })} />
+                    </div>
+                    <div className="col-span-4 sm:col-span-2">
+                      <label className={LABEL}>Số lượng</label>
+                      <input type="number" min={0} className={`${INPUT} font-mono text-center`} value={item.quantity}
+                        onChange={e => setItem(item.id, { quantity: Number(e.target.value) || 0 })} />
+                    </div>
+                    <div className="col-span-4 sm:col-span-3">
+                      <label className={LABEL}>Đơn giá (VNĐ)</label>
+                      <input type="number" min={0} className={`${INPUT} font-mono text-right`} value={item.price}
+                        onChange={e => setItem(item.id, { price: Number(e.target.value) || 0 })} />
+                    </div>
+                    <div className="col-span-12 sm:col-span-1 flex justify-end">
+                      <button type="button" onClick={() => removeItem(item.id)}
+                        className="p-2 rounded-lg text-neg hover:bg-neg-soft transition-colors" title="Xóa dòng">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="col-span-4 sm:col-span-2">
-                    <label className={LABEL}>ĐVT</label>
-                    <input className={INPUT} value={item.unit}
-                      onChange={e => setItem(item.id, { unit: e.target.value })} />
-                  </div>
-                  <div className="col-span-4 sm:col-span-2">
-                    <label className={LABEL}>Số lượng</label>
-                    <input type="number" min={0} className={`${INPUT} font-mono text-center`} value={item.quantity}
-                      onChange={e => setItem(item.id, { quantity: Number(e.target.value) || 0 })} />
-                  </div>
-                  <div className="col-span-4 sm:col-span-3">
-                    <label className={LABEL}>Đơn giá (VNĐ)</label>
-                    <input type="number" min={0} className={`${INPUT} font-mono text-right`} value={item.price}
-                      onChange={e => setItem(item.id, { price: Number(e.target.value) || 0 })} />
-                  </div>
-                  <div className="col-span-12 sm:col-span-1 flex justify-end">
-                    <button type="button" onClick={() => removeItem(item.id)}
-                      className="p-2 rounded-lg text-neg hover:bg-neg-soft transition-colors" title="Xóa dòng">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
 
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={addItem}
-                  className="flex items-center gap-1.5 bg-accent hover:opacity-90 text-accent-ink px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" /><span>Thêm mặt hàng</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsInventoryPickerOpen(true)}
-                  className="flex items-center gap-1.5 bg-pos/15 hover:bg-pos/25 text-pos border border-pos/30 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                >
-                  <Package className="w-3.5 h-3.5" /><span>Chọn từ Hàng tồn kho</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={addItem}
+                    className="flex items-center gap-1.5 bg-accent hover:opacity-90 text-accent-ink px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /><span>Thêm mặt hàng</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsInventoryPickerOpen(true)}
+                    className="flex items-center gap-1.5 bg-pos/15 hover:bg-pos/25 text-pos border border-pos/30 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <Package className="w-3.5 h-3.5" /><span>Chọn từ Hàng tồn kho</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          </Group>
+            </Group>
+          )}
         </div>
       </details>
 

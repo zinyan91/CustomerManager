@@ -2,7 +2,7 @@ import { Hammer } from 'lucide-react';
 import type { DocumentDraft } from '../../../../lib/documentHtml';
 import { buildDocumentHtml } from '../../../../lib/documentHtml';
 import { monthsBetweenLabel } from '../../../../hooks/useDocumentTemplateController';
-import type { ConstItem } from '../../DocumentForm';
+import type { ConstItem } from '../../../../types/documents';
 import type { DocTemplate, DossierCommon } from '../types';
 import { baseDraft } from '../legacyDraft';
 

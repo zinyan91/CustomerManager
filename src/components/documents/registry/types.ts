@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { PaymentStageItem } from '../DocumentForm';
+import type { PaymentStageItem } from '../../../types/documents';
 
 export interface Party {
   name: string; cccd: string; cccdDate: string;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Trash2, Package } from 'lucide-react';
 import type { DossierCommon, LineItem, Party } from '../registry/types';
-import type { PaymentStageItem } from '../DocumentForm';
+import type { PaymentStageItem } from '../../../types/documents';
 import { DateInput } from '../../DateInput';
 import { CustomerPicker } from '../../ui/CustomerPicker';
 import { DisbursementPayeePicker } from '../../ui/DisbursementPayeePicker';

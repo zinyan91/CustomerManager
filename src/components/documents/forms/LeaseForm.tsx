@@ -1,7 +1,7 @@
 import React from 'react';
 import { DateInput } from '../../DateInput';
 import type { UiClasses } from '../../../lib/uiClasses';
-import type { TemplateType } from '../TemplateSelector';
+import type { TemplateType } from '../../../types/documents';
 
 export interface LeaseFormProps {
   styles: UiClasses;

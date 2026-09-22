@@ -1,8 +1,8 @@
 import { fmtDate, parseAnyDate } from './utils';
 import { moneyTextToWords, moneyToVietnameseWords } from './numberToWords';
-import type { TemplateType } from '../components/documents/TemplateSelector';
-import type { SaleItem, ConstItem, PaymentStageItem } from '../components/documents/DocumentForm';
-import type { DepositContractData } from '../components/documents/depositContract';
+import type { TemplateType } from '../types/documents';
+import type { SaleItem, ConstItem, PaymentStageItem } from '../types/documents';
+import type { DepositContractData } from '../types/documents';
 import { bm04LogoDataUri } from './bm04Logo';
 import { buildEstimateDocHtml } from './estimateExport';
 

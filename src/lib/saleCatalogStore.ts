@@ -1,4 +1,4 @@
-import type { SaleItem } from '../components/documents/DocumentForm';
+import type { SaleItem } from '../types/documents';
 import { supabase } from './supabase';
 
 export interface SaleCatalogProfile {

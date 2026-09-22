@@ -1,7 +1,7 @@
 import React from 'react';
-import type { DepositContractData } from './depositContract';
+import type { DepositContractData } from '../../types/documents';
 import type { UiClasses } from '../../lib/uiClasses';
-import type { TemplateType } from './TemplateSelector';
+import type { TemplateType } from '../../types/documents';
 import { DepositForm } from './forms/DepositForm';
 import { LeaseForm } from './forms/LeaseForm';
 import { ConstructionForm } from './forms/ConstructionForm';
@@ -9,30 +9,7 @@ import { EstimateForm } from './forms/EstimateForm';
 import { SaleForm } from './forms/SaleForm';
 import { PaymentRequestForm } from './forms/PaymentRequestForm';
 
-export interface SaleItem {
-  id: string;
-  name: string;
-  unit: string;
-  quantity: number;
-  price: number;
-}
-
-export interface ConstItem {
-  id: string;
-  name: string;
-  unit: string;
-  quantity: number;
-  price: number;
-  note: string;
-}
-
-export interface PaymentStageItem {
-  id: string;
-  stageName: string;
-  amount: string;
-  status: 'paid' | 'current' | 'future';
-  note?: string;
-}
+import type { SaleItem, ConstItem, PaymentStageItem } from '../../types/documents';
 
 export interface DocumentFormProps {
   styles: UiClasses;

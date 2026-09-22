@@ -1,41 +1,4 @@
-export interface DepositContractData {
-  buyerTitle: string;
-  buyerName: string;
-  buyerBirthYear: string;
-  buyerCccd: string;
-  buyerCccdDate: string;
-  buyerCccdPlace: string;
-  buyerAddress: string;
-
-  sellerTitle: string;
-  sellerName: string;
-  sellerBirthYear: string;
-  sellerCccd: string;
-  sellerCccdDate: string;
-  sellerCccdPlace: string;
-  sellerAddress: string;
-
-  parcelNo: string;
-  mapSheetNo: string;
-  area: string;
-  areaInWords: string;
-  parcelAddress: string;
-  urbanResidentialArea: string;
-  perennialCropArea: string;
-  certificateNo: string;
-  certificateBookNo: string;
-  certificateIssuer: string;
-  certificateDate: string;
-
-  transferPrice: string;
-  deposit1: string;
-  payment2: string;
-  incomeTaxBy: string;
-  registrationTaxBy: string;
-
-  signPlace: string;
-  signDate: string;
-}
+import type { DepositContractData } from '../../types/documents';
 
 export const DEFAULT_DEPOSIT_CONTRACT: DepositContractData = {
   buyerTitle: 'Ông',

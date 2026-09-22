@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BTN_PRIMARY, BTN_SECONDARY, UI } from '../../lib/uiClasses';
 import { Plus, Trash2, FolderPlus, RefreshCw, Check, Sparkles } from 'lucide-react';
 import type { SaleCatalogProfile } from '../../lib/saleCatalogStore';
-import type { SaleItem } from './DocumentForm';
+import type { SaleItem } from '../../types/documents';
 
 interface SaleCatalogModalProps {
   isOpen: boolean;

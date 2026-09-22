@@ -1,6 +1,6 @@
 import React from 'react';
 import { DateInput } from '../../DateInput';
-import type { DepositContractData } from '../depositContract';
+import type { DepositContractData } from '../../../types/documents';
 import type { UiClasses } from '../../../lib/uiClasses';
 
 export interface DepositFormProps {

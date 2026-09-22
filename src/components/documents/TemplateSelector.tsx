@@ -5,20 +5,7 @@ import {
   Warehouse, Coins, LandPlot,
 } from 'lucide-react';
 
-export type TemplateType =
-  | 'lease_mb'
-  | 'construction'
-  | 'const_estimate'
-  | 'sale_contract'
-  | 'lease_house'
-  | 'lease_room'
-  | 'lease_warehouse'
-  | 'loan_contract'
-  | 'lease_land'
-  | 'payment_request_sale'
-  | 'payment_request_bang_ke'
-  | 'payment_request_const'
-  | 'deposit';
+import type { TemplateType } from '../../types/documents';
 
 interface TemplateSelectorProps {
   styles?: UiClasses;

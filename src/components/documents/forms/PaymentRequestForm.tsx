@@ -3,8 +3,8 @@ import { Plus, Trash2 } from 'lucide-react';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../../lib/documentOptions';
 import { fmtDate } from '../../../lib/utils';
 import type { UiClasses } from '../../../lib/uiClasses';
-import type { TemplateType } from '../TemplateSelector';
-import type { PaymentStageItem } from '../DocumentForm';
+import type { TemplateType } from '../../../types/documents';
+import type { PaymentStageItem } from '../../../types/documents';
 
 export interface PaymentRequestFormProps {
   styles: UiClasses;

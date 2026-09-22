@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import type { TemplateType } from '../components/documents/TemplateSelector';
+import type { TemplateType } from '../types/documents';
 import { TEMPLATE_LIST } from '../components/documents/TemplateSelector';
-import type { SaleItem, ConstItem, PaymentStageItem } from '../components/documents/DocumentForm';
-import { DEFAULT_DEPOSIT_CONTRACT, type DepositContractData } from '../components/documents/depositContract';
+import type { SaleItem, ConstItem, PaymentStageItem } from '../types/documents';
+import { DEFAULT_DEPOSIT_CONTRACT } from '../components/documents/depositContract';
+import type { DepositContractData } from '../types/documents';
 import { buildDocumentHtml } from '../lib/documentHtml';
 import { ESTIMATE_PRESETS } from '../lib/estimateExport';
 import {

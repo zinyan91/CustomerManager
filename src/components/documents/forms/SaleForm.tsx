@@ -3,7 +3,7 @@ import { Plus, Trash2, FolderPlus } from 'lucide-react';
 import { DateInput } from '../../DateInput';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../../lib/documentOptions';
 import type { UiClasses } from '../../../lib/uiClasses';
-import type { SaleItem } from '../DocumentForm';
+import type { SaleItem } from '../../../types/documents';
 import type { SaleCatalogProfile } from '../../../lib/saleCatalogStore';
 
 export interface SaleFormProps {

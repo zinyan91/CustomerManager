@@ -7,7 +7,7 @@ import {
   type EstimateItem,
 } from '../../../../lib/estimateExport';
 import type { DocumentDraft } from '../../../../lib/documentHtml';
-import type { ConstItem } from '../../DocumentForm';
+import type { ConstItem } from '../../../../types/documents';
 import { baseDraft } from '../legacyDraft';
 
 export interface EstimateSpecific {

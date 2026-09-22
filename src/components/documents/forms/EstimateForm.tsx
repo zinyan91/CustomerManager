@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { UiClasses } from '../../../lib/uiClasses';
-import type { ConstItem } from '../DocumentForm';
+import type { ConstItem } from '../../../types/documents';
 
 export interface EstimateFormProps {
   styles: UiClasses;

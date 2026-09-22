@@ -133,7 +133,7 @@ export const DisbursementPayeeListView: React.FC = () => {
 
     setSaving(true);
     try {
-      const saved = await upsertDisbursementPayeeDb({
+      const { payee: saved, syncedToServer } = await upsertDisbursementPayeeDb({
         ...editingPayee,
         FullName: editingPayee.FullName.trim().toUpperCase(),
         NationalId: parseNationalIdInput(editingPayee.NationalId),
@@ -154,10 +154,15 @@ export const DisbursementPayeeListView: React.FC = () => {
       });
 
       setIsModalOpen(false);
-      setNotification({
-        type: 'success',
-        message: editingPayee.Id ? 'Đã cập nhật thông tin giải ngân thành công.' : 'Đã thêm thông tin giải ngân mới thành công.',
-      });
+      setNotification(syncedToServer
+        ? {
+            type: 'success',
+            message: editingPayee.Id ? 'Đã cập nhật thông tin giải ngân thành công.' : 'Đã thêm thông tin giải ngân mới thành công.',
+          }
+        : {
+            type: 'error',
+            message: 'Đã lưu tạm trên máy này nhưng chưa đồng bộ được lên máy chủ. Vui lòng kiểm tra kết nối và lưu lại.',
+          });
     } catch {
       setNotification({ type: 'error', message: 'Không thể lưu thông tin. Vui lòng thử lại.' });
     } finally {
@@ -171,9 +176,11 @@ export const DisbursementPayeeListView: React.FC = () => {
     }
     setDeletingId(id);
     try {
-      await deleteDisbursementPayeeDb(id);
+      const { syncedToServer } = await deleteDisbursementPayeeDb(id);
       setPayees((prev) => prev.filter((p) => p.Id !== id));
-      setNotification({ type: 'success', message: `Đã xóa thông tin của "${name}".` });
+      setNotification(syncedToServer
+        ? { type: 'success', message: `Đã xóa thông tin của "${name}".` }
+        : { type: 'error', message: `Đã xóa "${name}" trên máy này nhưng chưa xóa được trên máy chủ. Vui lòng kiểm tra kết nối và thử lại.` });
     } catch {
       setNotification({ type: 'error', message: 'Không thể xóa thông tin giải ngân.' });
     } finally {

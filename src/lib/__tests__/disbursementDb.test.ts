@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   fetchDisbursementPayeesDb,
   upsertDisbursementPayeeDb,
@@ -6,17 +6,21 @@ import {
   type DisbursementPayee,
 } from '../disbursementDb';
 
+const dbState = vi.hoisted(() => ({ shouldFail: true }));
+
 vi.mock('../supabase', () => {
   const dbError = { message: 'CSDL khong kha dung trong moi truong test' };
-  const failResult = { data: null, error: dbError };
+  const result = () => (dbState.shouldFail
+    ? { data: null, error: dbError }
+    : { data: null, error: null });
   const chain: any = {
     select: () => chain,
-    order: () => Promise.resolve(failResult),
+    order: () => Promise.resolve(result()),
     delete: () => chain,
-    eq: () => Promise.resolve(failResult),
-    upsert: () => Promise.resolve(failResult),
+    eq: () => Promise.resolve(result()),
+    upsert: () => Promise.resolve(result()),
     then: (onFulfilled: any, onRejected?: any) =>
-      Promise.resolve(failResult).then(onFulfilled, onRejected),
+      Promise.resolve(result()).then(onFulfilled, onRejected),
   };
   return {
     supabase: {
@@ -52,7 +56,7 @@ describe('disbursementDb store and offline fallback', () => {
       BankBranch: 'Chi nhánh Sài Gòn',
     };
 
-    const saved = await upsertDisbursementPayeeDb(newPayee);
+    const { payee: saved } = await upsertDisbursementPayeeDb(newPayee);
     expect(saved.Id).toBeTruthy();
     expect(saved.FullName).toBe('NGUYỄN VĂN AN');
 
@@ -74,7 +78,7 @@ describe('disbursementDb store and offline fallback', () => {
 
     await upsertDisbursementPayeeDb(initial);
 
-    const updated = await upsertDisbursementPayeeDb({
+    const { payee: updated } = await upsertDisbursementPayeeDb({
       ...initial,
       BankBranch: 'Chi nhánh Bến Thành',
     });
@@ -124,7 +128,7 @@ describe('disbursementDb store and offline fallback', () => {
       ],
     };
 
-    const saved = await upsertDisbursementPayeeDb(multiAccountPayee);
+    const { payee: saved } = await upsertDisbursementPayeeDb(multiAccountPayee);
     expect(saved.AccountNumber).toBe('111111');
     expect(saved.BankName).toBe('Vietcombank');
     expect(saved.BankAccounts?.length).toBe(2);
@@ -134,5 +138,87 @@ describe('disbursementDb store and offline fallback', () => {
     expect(found).toBeDefined();
     expect(found?.BankAccounts?.length).toBe(2);
     expect(found?.BankAccounts?.[1].accountNumber).toBe('222222');
+  });
+});
+
+describe('disbursementDb bao loi thay vi nuot loi', () => {
+  const store: Record<string, string> = {};
+
+  beforeEach(() => {
+    for (const k in store) delete store[k];
+    globalThis.localStorage = {
+      getItem: (k: string) => store[k] ?? null,
+      setItem: (k: string, v: string) => { store[k] = String(v); },
+      removeItem: (k: string) => { delete store[k]; },
+      clear: () => { for (const k in store) delete store[k]; },
+      length: 0,
+      key: () => null,
+    };
+    dbState.shouldFail = true;
+  });
+
+  afterEach(() => {
+    dbState.shouldFail = true;
+    vi.restoreAllMocks();
+  });
+
+  const mau: DisbursementPayee = {
+    Id: 'payee_sync',
+    FullName: 'PHẠM VĂN SƠN',
+    NationalId: '079555444333',
+    AccountNumber: '55554444',
+    BankName: 'MB Bank',
+  };
+
+  it('luu: bao syncedToServer=false va ghi console.error khi CSDL loi, nhung van giu duoc du lieu local', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await upsertDisbursementPayeeDb(mau);
+
+    expect(res.syncedToServer).toBe(false);
+    expect(spy).toHaveBeenCalled();
+
+    const list = await fetchDisbursementPayeesDb();
+    expect(list.length).toBe(1);
+    expect(list[0].FullName).toBe('PHẠM VĂN SƠN');
+  });
+
+  it('luu: bao syncedToServer=true khi CSDL ghi thanh cong', async () => {
+    dbState.shouldFail = false;
+
+    const res = await upsertDisbursementPayeeDb(mau);
+
+    expect(res.syncedToServer).toBe(true);
+    expect(res.payee.FullName).toBe('PHẠM VĂN SƠN');
+  });
+
+  it('xoa: bao syncedToServer=false va ghi console.error khi CSDL loi, nhung van xoa khoi local', async () => {
+    await upsertDisbursementPayeeDb(mau);
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await deleteDisbursementPayeeDb('payee_sync');
+
+    expect(res.syncedToServer).toBe(false);
+    expect(spy).toHaveBeenCalled();
+
+    const list = await fetchDisbursementPayeesDb();
+    expect(list.length).toBe(0);
+  });
+
+  it('xoa: bao syncedToServer=true khi CSDL xoa thanh cong', async () => {
+    await upsertDisbursementPayeeDb(mau);
+    dbState.shouldFail = false;
+
+    const res = await deleteDisbursementPayeeDb('payee_sync');
+
+    expect(res.syncedToServer).toBe(true);
+  });
+
+  it('doc: ghi console.error khi CSDL loi thay vi im lang', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await fetchDisbursementPayeesDb();
+
+    expect(spy).toHaveBeenCalled();
   });
 });

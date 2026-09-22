@@ -106,7 +106,7 @@ export async function fetchDisbursementPayeesDb(): Promise<DisbursementPayee[]> 
       return payees;
     }
   } catch (err) {
-    // Supabase fallback sang local storage
+    console.error('fetchDisbursementPayeesDb error:', err);
   }
 
   const locals = getLocalPayees();
@@ -114,7 +114,8 @@ export async function fetchDisbursementPayeesDb(): Promise<DisbursementPayee[]> 
   return locals;
 }
 
-export async function upsertDisbursementPayeeDb(payee: DisbursementPayee): Promise<DisbursementPayee> {
+export async function upsertDisbursementPayeeDb(payee: DisbursementPayee): Promise<{ payee: DisbursementPayee; syncedToServer: boolean }> {
+  let syncedToServer = true;
   const accounts: PayeeBankAccount[] = Array.isArray(payee.BankAccounts)
     ? payee.BankAccounts
     : payee.AccountNumber
@@ -156,7 +157,8 @@ export async function upsertDisbursementPayeeDb(payee: DisbursementPayee): Promi
 
     if (error) throw error;
   } catch (err) {
-    // Supabase fallback
+    syncedToServer = false;
+    console.error('upsertDisbursementPayeeDb error:', err);
   }
 
   // Luôn lưu local
@@ -171,10 +173,11 @@ export async function upsertDisbursementPayeeDb(payee: DisbursementPayee): Promi
   }
   saveLocalPayees(updatedList);
 
-  return itemToSave;
+  return { payee: itemToSave, syncedToServer };
 }
 
-export async function deleteDisbursementPayeeDb(id: string): Promise<void> {
+export async function deleteDisbursementPayeeDb(id: string): Promise<{ syncedToServer: boolean }> {
+  let syncedToServer = true;
   try {
     const { error } = await supabase
       .from('DisbursementPayees')
@@ -183,10 +186,12 @@ export async function deleteDisbursementPayeeDb(id: string): Promise<void> {
 
     if (error) throw error;
   } catch (err) {
-    // Supabase fallback
+    syncedToServer = false;
+    console.error('deleteDisbursementPayeeDb error:', err);
   }
 
   const current = getLocalPayees();
   const updatedList = current.filter(p => p.Id !== id);
   saveLocalPayees(updatedList);
+  return { syncedToServer };
 }

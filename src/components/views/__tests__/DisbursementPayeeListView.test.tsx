@@ -48,10 +48,10 @@ describe('DisbursementPayeeListView', () => {
 
   it('opens create modal and saves new payee', async () => {
     vi.spyOn(db, 'fetchDisbursementPayeesDb').mockResolvedValue([]);
-    const upsertSpy = vi.spyOn(db, 'upsertDisbursementPayeeDb').mockImplementation(async (payee) => ({
+    const upsertSpy = vi.spyOn(db, 'upsertDisbursementPayeeDb').mockImplementation(async (payee) => ({ syncedToServer: true, payee: {
       ...payee,
       Id: 'new_id_123',
-    }));
+    } }));
 
     render(<DisbursementPayeeListView />);
 
@@ -84,10 +84,10 @@ describe('DisbursementPayeeListView', () => {
 
   it('allows creating a payee without STK (AccountNumber optional)', async () => {
     vi.spyOn(db, 'fetchDisbursementPayeesDb').mockResolvedValue([]);
-    const upsertSpy = vi.spyOn(db, 'upsertDisbursementPayeeDb').mockImplementation(async (payee) => ({
+    const upsertSpy = vi.spyOn(db, 'upsertDisbursementPayeeDb').mockImplementation(async (payee) => ({ syncedToServer: true, payee: {
       ...payee,
       Id: 'new_id_456',
-    }));
+    } }));
 
     render(<DisbursementPayeeListView />);
 

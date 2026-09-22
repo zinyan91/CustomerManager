@@ -21,7 +21,7 @@ function dungLen() {
 
 const NHAN_MUC = [
   'Tổng quan',
-  'Danh mục nghiệp vụ & Tra cứu',
+  'Danh mục',
   'Danh sách khách hàng',
   'Hợp đồng tín dụng',
   'Quản lý khoản vay (KUNN)',
@@ -31,8 +31,6 @@ const NHAN_MUC = [
   'Hàng tồn kho',
   'Công cụ tính toán',
   'Chào lãi suất',
-  'Mua bán vốn nội bộ',
-  'Ôn tập nghiệp vụ',
   'Kiểm soát sau vay',
   'Cấu hình & cài đặt',
 ];
@@ -40,23 +38,23 @@ const NHAN_MUC = [
 const NHAN_NHOM = [
   'Tổng quan',
   'Hồ sơ tín dụng',
-  'Phân tích & BCTC Doanh nghiệp',
+  'Phân tích kinh doanh',
   'Công cụ tính & Lãi suất',
   'Tra cứu & Kiểm soát',
 ];
 
 describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
-  it('hiện đủ 15 mục, mỗi mục một nút', () => {
+  it('hiện đủ 13 mục, mỗi mục một nút', () => {
     dungLen();
-    expect(NHAN_MUC).toHaveLength(15);
+    expect(NHAN_MUC).toHaveLength(13);
     for (const nhan of NHAN_MUC) {
       expect(screen.getAllByText(nhan).length, `thiếu mục "${nhan}"`).toBeGreaterThan(0);
     }
   });
 
-  it('dựng đúng 15 liên kết trong nav', () => {
+  it('dựng đúng 13 liên kết trong nav', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a').length).toBe(15);
+    expect(container.querySelectorAll('nav a').length).toBe(13);
   });
 
   it('hiện đủ 5 tiêu đề nhóm', () => {
@@ -69,14 +67,14 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
 
   it('mục đang mở được đánh dấu aria-current', () => {
     render(
-      <MemoryRouter initialEntries={['/dashboard']}>
+      <MemoryRouter initialEntries={['/customers']}>
         <LanguageProvider>
           <Sidebar />
         </LanguageProvider>
       </MemoryRouter>
     );
     const lienKet = screen
-      .getAllByText(translate('vi', 'nav.dashboard'))
+      .getAllByText(translate('vi', 'nav.customers'))
       .map(el => el.closest('a'))
       .find(Boolean);
     expect(lienKet?.getAttribute('aria-current')).toBe('page');
@@ -86,14 +84,13 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
 describe('Sidebar dùng liên kết thật', () => {
   it('mỗi mục là một thẻ liên kết, không phải nút', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a')).toHaveLength(15);
+    expect(container.querySelectorAll('nav a')).toHaveLength(13);
     expect(container.querySelectorAll('nav button')).toHaveLength(0);
   });
 
   it('liên kết trỏ đúng đường dẫn của màn', () => {
     const { container } = dungLen();
     const href = [...container.querySelectorAll('nav a')].map(a => a.getAttribute('href'));
-    expect(href).toContain('/dashboard');
     expect(href).toContain('/customers');
     expect(href).toContain('/settings');
   });
@@ -132,7 +129,7 @@ describe('Sidebar giữ ngữ cảnh khách hàng', () => {
 
   it('đang có khách thì mục ngoài phạm vi khách vẫn trỏ đường phẳng', () => {
     const { container } = dungLenO('/customers/55/loans');
-    expect(container.querySelector('a[href="/dashboard"]')).toBeTruthy();
+    expect(container.querySelector('a[href="/tools/calculators"]')).toBeTruthy();
     expect(container.querySelector('a[href="/settings"]')).toBeTruthy();
   });
 

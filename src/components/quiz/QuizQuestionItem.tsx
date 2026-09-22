@@ -52,7 +52,7 @@ export const QuizQuestionItem: React.FC<QuizQuestionItemProps> = ({
               </span>
             )}
           </div>
-          <div className="text-ink leading-relaxed font-semibold text-xs sm:text-sm pt-0.5">
+          <div className="text-ink leading-relaxed font-semibold text-sm sm:text-base pt-0.5">
             {question.QuestionText}
           </div>
         </div>
@@ -83,13 +83,13 @@ export const QuizQuestionItem: React.FC<QuizQuestionItemProps> = ({
           return (
             <div
               key={option.id}
-              className={`flex items-start gap-2.5 leading-relaxed rounded-lg p-2 text-xs transition-colors ${
+              className={`flex items-start gap-2.5 leading-relaxed rounded-lg p-2 sm:p-2.5 text-xs sm:text-sm transition-colors ${
                 isRight
                   ? 'text-pos font-bold bg-pos-soft border border-pos/30 shadow-2xs'
                   : 'text-ink-muted bg-surface/40 hover:bg-surface/70'
               }`}
             >
-              <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-surface/80 border border-line/60 text-[10px] shrink-0">
+              <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-surface/80 border border-line/60 text-[11px] sm:text-xs shrink-0">
                 {option.id}
               </span>
               <span className="pt-0.5">{option.text}</span>

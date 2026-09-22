@@ -34,6 +34,7 @@ export const DEFAULT_ROUTE = ROUTE_OF.dashboard;
 
 export const HUB_SUBROUTES: Record<string, ScreenId> = {
   '/hub/documents': 'templates',
+  '/hub/estimate': 'calculators',
   '/hub/disbursement': 'disbursement',
   '/hub/mdsdv': 'mdsdv',
   '/hub/card-fees': 'card-policies',
@@ -41,6 +42,7 @@ export const HUB_SUBROUTES: Record<string, ScreenId> = {
   '/hub/shopping': 'shopping-checklist',
   '/hub/invoice': 'retail-invoice',
   '/hub/statement': 'purchase-statement',
+  '/hub/quiz': 'quiz-bank',
 };
 
 export const SCREEN_OF_PATH: Record<string, ScreenId> = Object.fromEntries(

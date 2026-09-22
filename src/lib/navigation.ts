@@ -1,8 +1,9 @@
 import type { ElementType } from 'react';
 import {
-  LayoutDashboard, Users, FileText, Building2, CreditCard,
+  LayoutDashboard, Landmark,
+  Users, FileText, Building2, CreditCard,
   ShieldAlert, Settings, Calculator, Percent,
-  Landmark, Handshake, ClipboardList, GraduationCap, Boxes,
+  Handshake, ClipboardList, Boxes,
 } from 'lucide-react';
 import type { TranslationKey } from './i18n';
 import { ROUTE_OF } from './routes';
@@ -33,8 +34,8 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     groupKey: 'nav.groupOverview',
     items: [
-      { id: 'dashboard', labelKey: 'nav.dashboard', groupKey: 'nav.groupOverview', icon: LayoutDashboard, path: ROUTE_OF.dashboard, keywords: ['overview', 'tong quan', 'dashboard'] },
-      { id: 'hub', labelKey: 'nav.hub', groupKey: 'nav.groupOverview', icon: Boxes, path: ROUTE_OF.hub, keywords: ['danh muc', 'hub', 'nghiep vu', 'tra cuu', 'khong gian doc lap', 'chung tu', 'hop dong', 'bieu mau', 'soan thao', 'mdsdv', 'the tin dung', 'chinh sach the', 'vat dung', 'mua sam', 'hoa don', 'ban le', 'bang ke'] },
+      { id: 'dashboard', labelKey: 'nav.dashboard', groupKey: 'nav.groupOverview', icon: LayoutDashboard, path: ROUTE_OF.dashboard, keywords: ['tong quan', 'dashboard', 'thong ke'] },
+      { id: 'hub', labelKey: 'nav.hub', groupKey: 'nav.groupOverview', icon: Landmark, path: ROUTE_OF.hub, keywords: ['danh muc', 'hub', 'nghiep vu', 'tra cuu', 'bieu mau'] },
     ],
   },
   {
@@ -59,13 +60,11 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'calculators', labelKey: 'nav.calculators', groupKey: 'nav.groupFinancialTools', icon: Calculator, path: ROUTE_OF.calculators, keywords: ['tinh toan', 'lai suat', 'calculator', 'tra no'] },
       { id: 'rate-quote', labelKey: 'nav.rateQuote', groupKey: 'nav.groupFinancialTools', icon: Percent, path: ROUTE_OF['rate-quote'], keywords: ['dinh gia lai suat', 'lai suat', 'quote'] },
-      { id: 'cof', labelKey: 'nav.cof', groupKey: 'nav.groupFinancialTools', icon: Landmark, path: ROUTE_OF.cof, keywords: ['gia von', 'cof', 'cost of funds'] },
     ],
   },
   {
     groupKey: 'nav.groupLookupControl',
     items: [
-      { id: 'quiz-bank', labelKey: 'nav.quizBank', groupKey: 'nav.groupLookupControl', icon: GraduationCap, path: ROUTE_OF['quiz-bank'], keywords: ['ngan hang cau hoi', 'quiz', 'on tap'] },
       { id: 'post-loan', labelKey: 'nav.postLoan', groupKey: 'nav.groupLookupControl', icon: ShieldAlert, path: ROUTE_OF['post-loan'], keywords: ['kiem soat sau vay', 'kssv', 'post loan', 'kiem tra'] },
       { id: 'settings', labelKey: 'nav.settings', groupKey: 'nav.groupLookupControl', icon: Settings, path: ROUTE_OF.settings, keywords: ['cai dat', 'he thong', 'settings', 'config'] },
     ],

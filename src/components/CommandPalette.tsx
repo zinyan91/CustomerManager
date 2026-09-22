@@ -17,6 +17,8 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) =>
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const allItems = useMemo(() => NAV_ITEMS, []);
+
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -26,14 +28,14 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) =>
   }, [isOpen]);
 
   const filteredItems = useMemo(() => {
-    if (!query.trim()) return NAV_ITEMS;
+    if (!query.trim()) return allItems;
     const q = query.toLowerCase().trim();
-    return NAV_ITEMS.filter((item) => {
+    return allItems.filter((item) => {
       const label = t(item.labelKey).toLowerCase();
       const group = t(item.groupKey).toLowerCase();
       return label.includes(q) || group.includes(q) || item.keywords.some((kw) => kw.includes(q));
     });
-  }, [query, t]);
+  }, [query, allItems, t]);
 
   useEffect(() => {
     setSelectedIndex(0);

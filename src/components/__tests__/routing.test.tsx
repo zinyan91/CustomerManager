@@ -45,6 +45,8 @@ vi.mock('../views/ShoppingChecklistView', () => ({ ShoppingChecklistView: () => 
 vi.mock('../views/PurchaseStatementView', () => ({ PurchaseStatementView: () => <div>MAN:purchase-statement</div> }));
 vi.mock('../views/RetailInvoiceView', () => ({ RetailInvoiceView: () => <div>MAN:retail-invoice</div> }));
 vi.mock('../views/QuizBankView', () => ({ QuizBankView: () => <div>MAN:quiz-bank</div> }));
+vi.mock('../views/WorkspaceHubView', () => ({ WorkspaceHubView: () => <div>MAN:hub</div> }));
+vi.mock('../views/ConstructionEstimateView', () => ({ ConstructionEstimateView: () => <div>MAN:estimate</div> }));
 
 import { App as AppThatDuoiTest } from '../../App';
 
@@ -82,7 +84,7 @@ describe('AppLayout dựng được trong bộ định tuyến', () => {
 
   it('render khung và nội dung màn con, không ném lỗi', () => {
     dungLen(ROUTE_OF.dashboard);
-    expect(screen.getByRole('navigation')).toBeTruthy();
+    expect(screen.getAllByRole('navigation').length).toBeGreaterThan(0);
     expect(screen.getByText('NOI DUNG MAN')).toBeTruthy();
   });
 

@@ -61,7 +61,7 @@ export const QuizBankView: React.FC = () => {
   } = useQuizBankController();
 
   return (
-    <div className="space-y-4 text-xs font-app transition-colors duration-200">
+    <div className="space-y-4 text-sm font-app transition-colors duration-200">
       <Toast toast={toast} onDismiss={dismiss} />
 
       {/* Main Control Panel */}
@@ -77,7 +77,7 @@ export const QuizBankView: React.FC = () => {
             <button
               type="button"
               onClick={() => setMode('browse')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border cursor-pointer ${
                 mode === 'browse'
                   ? 'bg-accent text-accent-ink border-accent shadow-md shadow-accent/20 ring-2 ring-accent/20'
                   : 'bg-surface hover:bg-surface-elevated text-ink-muted border-line/70'
@@ -88,7 +88,7 @@ export const QuizBankView: React.FC = () => {
             <button
               type="button"
               onClick={() => setMode('practice')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border cursor-pointer ${
                 mode === 'practice'
                   ? 'bg-accent text-accent-ink border-accent shadow-md shadow-accent/20 ring-2 ring-accent/20'
                   : 'bg-surface hover:bg-surface-elevated text-ink-muted border-line/70'

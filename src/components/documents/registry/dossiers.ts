@@ -31,7 +31,6 @@ export const DOSSIERS: Dossier[] = [
     icon: Hammer,
     documents: [
       { templateId: 'construction' },
-      { templateId: 'const_estimate' },
       { templateId: 'payment_request_const' },
       { templateId: 'cam_ket', optional: true },
     ],

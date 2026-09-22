@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback, memo } from 'react';
+import { useNavigate } from 'react-router';
 import { useTheme } from '../context/ThemeContext';
-import { Sun, Moon, Menu, X, LogOut, ShieldCheck, User, Search } from 'lucide-react';
+import {
+  Sun, Moon, Menu, X, LogOut, ShieldCheck, User, Search,
+} from 'lucide-react';
 import { Logo } from './Logo';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LanguageContext';
@@ -21,6 +24,14 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { reachable } = useApiHealth();
   const confirm = useConfirm();
+
+  let navigate: (path: string) => void = () => {};
+  try {
+    const nav = useNavigate();
+    navigate = nav;
+  } catch {
+    // fallback if rendered outside Router in tests
+  }
 
   useEffect(() => {
     const len = () => setIsOnline(true);
@@ -64,29 +75,34 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
           {isMobileMenuOpen ? <X className="w-4 h-4 text-accent" /> : <Menu className="w-4 h-4" />}
         </button>
 
-        <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard')}
+          className="flex items-center gap-2.5 cursor-pointer text-left focus-visible:outline-none"
+          title="Trang chủ / Tổng quan CRM"
+        >
           <div className="relative inline-flex shrink-0">
             <Logo className="w-8 h-8" />
           </div>
-          <h1 className="text-xs sm:text-sm font-bold uppercase tracking-[0.14em] text-ink truncate">
+          <h1 className="text-xs sm:text-sm font-bold uppercase tracking-[0.14em] text-ink truncate hover:text-accent transition-colors">
             {t('header.title')}
           </h1>
-        </div>
+        </button>
       </div>
 
-      {/* Giữa: Thanh Lệnh Tìm Kiếm Trọng Tâm Raycast / Linear Style */}
+      {/* Giữa: Ô tìm kiếm nhanh dạng thanh nổi gọn gàng */}
       {onOpenCommandPalette && (
         <button
           type="button"
           onClick={onOpenCommandPalette}
-          className="hidden sm:flex items-center justify-between gap-2 px-3.5 py-1.5 rounded-xl border border-line/60 bg-surface/60 hover:bg-surface text-xs text-ink-muted hover:text-ink hover:border-accent/50 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-accent cursor-pointer shadow-2xs group w-48 sm:w-64 md:w-80 lg:w-96 mx-2"
-          title="Tìm kiếm nhanh (Ctrl + K)"
+          className="hidden sm:flex items-center gap-2.5 w-full max-w-sm lg:max-w-md px-3.5 py-1.5 rounded-xl border border-line/70 bg-surface/70 hover:bg-surface text-ink-muted hover:text-ink hover:border-accent/50 text-xs transition-all cursor-pointer shadow-2xs group"
+          title="Mở tìm kiếm nhanh (Ctrl + K)"
         >
-          <div className="flex items-center gap-2">
-            <Search className="w-3.5 h-3.5 text-accent group-hover:scale-110 transition-transform" />
-            <span className="text-[11px] font-medium">Tìm kiếm nhanh tính năng, khách hàng...</span>
-          </div>
-          <kbd className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border border-line/70 bg-panel-muted/60 text-[10px] font-mono text-ink-faint shadow-2xs">
+          <Search className="w-3.5 h-3.5 text-ink-faint group-hover:text-accent transition-colors" />
+          <span className="flex-1 text-left truncate text-ink-faint group-hover:text-ink-muted">
+            Tìm kiếm nhanh tính năng, khách hàng...
+          </span>
+          <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono rounded-md bg-panel border border-line text-ink-faint shadow-2xs">
             Ctrl K
           </kbd>
         </button>
@@ -98,10 +114,11 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
           <button
             type="button"
             onClick={onOpenCommandPalette}
-            className="sm:hidden p-1.5 rounded-xl text-ink-faint hover:text-ink hover:bg-panel-muted/80 transition-all"
-            title="Tìm kiếm (Ctrl + K)"
+            className={`sm:hidden ${ghostButton}`}
+            title="Mở tìm kiếm nhanh (Ctrl + K)"
+            aria-label="Tìm kiếm nhanh"
           >
-            <Search className="w-4 h-4 text-accent" />
+            <Search className="w-4 h-4" />
           </button>
         )}
 

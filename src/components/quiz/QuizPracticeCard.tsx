@@ -29,7 +29,7 @@ export const QuizPracticeCard: React.FC<QuizPracticeCardProps> = ({
 }) => {
   return (
     <div className="rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 font-app animate-in fade-in duration-150">
-      <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs border-b border-line/60 pb-2.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs sm:text-sm border-b border-line/60 pb-2.5">
         <span>
           Câu {practiceList.length === 0 ? 0 : practiceAt + 1} / {practiceList.length}
           {skippedInPractice > 0 && (
@@ -46,19 +46,19 @@ export const QuizPracticeCard: React.FC<QuizPracticeCardProps> = ({
       </div>
 
       {!current ? (
-        <div className="text-ink-muted text-xs p-4 text-center">Không có câu nào khớp bộ lọc.</div>
+        <div className="text-ink-muted text-sm p-4 text-center">Không có câu nào khớp bộ lọc.</div>
       ) : (
         <>
-          <div className="space-y-1.5 p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 shadow-2xs">
-            <div className="text-ink leading-relaxed font-semibold text-xs sm:text-sm">{current.QuestionText}</div>
+          <div className="space-y-2 p-4 sm:p-5 rounded-xl border border-line/70 bg-surface/60 shadow-2xs">
+            <div className="text-ink leading-relaxed font-semibold text-base sm:text-lg">{current.QuestionText}</div>
             {isMultiAnswer(current) && (
-              <div className="text-[10px] uppercase font-bold tracking-[0.1em] text-accent">
+              <div className="text-xs uppercase font-bold tracking-wider text-accent">
                 ★ Câu nhiều đáp án — chọn tất cả đáp án đúng
               </div>
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {current.Options.map(option => {
               const isPicked = picked.includes(option.id);
               const isRight = current.CorrectAnswers.includes(option.id);
@@ -75,34 +75,34 @@ export const QuizPracticeCard: React.FC<QuizPracticeCardProps> = ({
                   onClick={() => togglePick(option.id)}
                   disabled={checked}
                   aria-pressed={isPicked}
-                  className={`w-full text-left rounded-xl border p-3 flex items-start gap-2.5 transition-all cursor-pointer shadow-2xs ${tone}`}
+                  className={`w-full text-left rounded-xl border p-3 sm:p-3.5 flex items-start gap-3 transition-all cursor-pointer shadow-2xs ${tone}`}
                 >
-                  <span className="font-mono font-bold shrink-0">{option.id}</span>
-                  <span className="leading-relaxed text-xs">{option.text}</span>
+                  <span className="font-mono font-bold text-sm sm:text-base shrink-0">{option.id}</span>
+                  <span className="leading-relaxed text-sm sm:text-base">{option.text}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="flex items-center gap-2 pt-2 border-t border-line/60">
+          <div className="flex items-center gap-3 pt-2.5 border-t border-line/60">
             {!checked ? (
               <button
                 type="button"
                 onClick={submitAnswer}
                 disabled={picked.length === 0}
-                className={`${BTN_PRIMARY} px-4 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-accent/20 cursor-pointer disabled:opacity-50`}
+                className={`${BTN_PRIMARY} px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-md shadow-accent/20 cursor-pointer disabled:opacity-50`}
               >
                 Kiểm tra
               </button>
             ) : (
               <>
-                <span className={`font-semibold ${isAnswerCorrect(current, picked) ? 'text-pos' : 'text-neg'}`}>
+                <span className={`font-semibold text-sm sm:text-base ${isAnswerCorrect(current, picked) ? 'text-pos' : 'text-neg'}`}>
                   {isAnswerCorrect(current, picked) ? 'Đúng' : `Sai — đáp án ${current.CorrectAnswers.join(', ')}`}
                 </span>
                 <button
                   type="button"
                   onClick={nextQuestion}
-                  className={`${BTN_SECONDARY} px-4 py-2.5 rounded-xl font-bold text-xs shadow-2xs cursor-pointer`}
+                  className={`${BTN_SECONDARY} px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-2xs cursor-pointer`}
                 >
                   Câu tiếp
                 </button>

@@ -8,6 +8,28 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    port: 5173,
+    watch: {
+      ignored: ['**/mobile/**', '**/dist/**', '**/.git/**', '**/docs/**', '**/.agents/**'],
+    },
+  },
+  optimizeDeps: {
+    entries: ['index.html', 'src/**/*.{ts,tsx}'],
+    include: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react-router',
+      'lucide-react',
+      '@supabase/supabase-js',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-tabs',
+      'recharts',
+      'xlsx',
+    ],
+  },
   build: {
     rollupOptions: {
       output: {

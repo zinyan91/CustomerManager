@@ -2,6 +2,7 @@ import type { ScreenId } from './navigation';
 
 export const ROUTE_OF: Record<ScreenId, string> = {
   dashboard: '/dashboard',
+  hub: '/hub',
 
   customers: '/customers',
   disbursement: '/disbursement',
@@ -31,6 +32,17 @@ export const ROUTE_OF: Record<ScreenId, string> = {
 
 export const DEFAULT_ROUTE = ROUTE_OF.dashboard;
 
+export const HUB_SUBROUTES: Record<string, ScreenId> = {
+  '/hub/documents': 'templates',
+  '/hub/disbursement': 'disbursement',
+  '/hub/mdsdv': 'mdsdv',
+  '/hub/card-fees': 'card-policies',
+  '/hub/corporate-financial': 'corporate-financial',
+  '/hub/shopping': 'shopping-checklist',
+  '/hub/invoice': 'retail-invoice',
+  '/hub/statement': 'purchase-statement',
+};
+
 export const SCREEN_OF_PATH: Record<string, ScreenId> = Object.fromEntries(
   Object.entries(ROUTE_OF).map(([id, path]) => [path, id as ScreenId])
 );
@@ -38,5 +50,5 @@ export const SCREEN_OF_PATH: Record<string, ScreenId> = Object.fromEntries(
 export function screenIdOfPath(pathname: string): ScreenId | null {
   if (!pathname) return null;
   const clean = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
-  return SCREEN_OF_PATH[clean] ?? null;
+  return SCREEN_OF_PATH[clean] ?? HUB_SUBROUTES[clean] ?? null;
 }

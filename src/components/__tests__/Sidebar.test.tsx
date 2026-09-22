@@ -21,23 +21,17 @@ function dungLen() {
 
 const NHAN_MUC = [
   'Tổng quan',
+  'Danh mục nghiệp vụ & Tra cứu',
   'Danh sách khách hàng',
-  'Thông tin giải ngân',
   'Hợp đồng tín dụng',
   'Quản lý khoản vay (KUNN)',
   'Định giá TSĐB',
   'Thẻ tín dụng',
   'Phương án kinh doanh',
-  'BCTC Doanh nghiệp (TT 133)',
   'Hàng tồn kho',
-  'Soạn biểu mẫu HĐ',
-  'Dự toán vật dụng',
-  'Hóa đơn bán lẻ',
   'Công cụ tính toán',
   'Chào lãi suất',
   'Mua bán vốn nội bộ',
-  'Tra cứu mục đích SDV',
-  'Tra cứu chính sách thẻ',
   'Ôn tập nghiệp vụ',
   'Kiểm soát sau vay',
   'Cấu hình & cài đặt',
@@ -47,28 +41,27 @@ const NHAN_NHOM = [
   'Tổng quan',
   'Hồ sơ tín dụng',
   'Phân tích & BCTC Doanh nghiệp',
-  'Chứng từ & Bán hàng',
   'Công cụ tính & Lãi suất',
   'Tra cứu & Kiểm soát',
 ];
 
 describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
-  it('hiện đủ 21 mục, mỗi mục một nút', () => {
+  it('hiện đủ 15 mục, mỗi mục một nút', () => {
     dungLen();
-    expect(NHAN_MUC).toHaveLength(21);
+    expect(NHAN_MUC).toHaveLength(15);
     for (const nhan of NHAN_MUC) {
       expect(screen.getAllByText(nhan).length, `thiếu mục "${nhan}"`).toBeGreaterThan(0);
     }
   });
 
-  it('dựng đúng 21 liên kết trong nav', () => {
+  it('dựng đúng 15 liên kết trong nav', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a').length).toBe(21);
+    expect(container.querySelectorAll('nav a').length).toBe(15);
   });
 
-  it('hiện đủ 6 tiêu đề nhóm', () => {
+  it('hiện đủ 5 tiêu đề nhóm', () => {
     dungLen();
-    expect(NHAN_NHOM).toHaveLength(6);
+    expect(NHAN_NHOM).toHaveLength(5);
     for (const nhan of NHAN_NHOM) {
       expect(screen.getAllByText(nhan).length, `thiếu nhóm "${nhan}"`).toBeGreaterThan(0);
     }
@@ -93,7 +86,7 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
 describe('Sidebar dùng liên kết thật', () => {
   it('mỗi mục là một thẻ liên kết, không phải nút', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a')).toHaveLength(21);
+    expect(container.querySelectorAll('nav a')).toHaveLength(15);
     expect(container.querySelectorAll('nav button')).toHaveLength(0);
   });
 

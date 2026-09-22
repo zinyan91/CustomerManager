@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { SidebarCollapseProvider, useSidebarCollapse } from '../context/SidebarCollapseContext';
 import { LoginView } from './LoginView';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
@@ -9,11 +10,12 @@ import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
 import { CustomerContextBar } from './CustomerContextBar';
 
-export function AppLayout() {
+function AppLayoutContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const { session, loading } = useAuth();
   const location = useLocation();
+  const { isSidebarCollapsed } = useSidebarCollapse();
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -76,7 +78,7 @@ export function AppLayout() {
       />
 
       <div className="flex flex-1 pt-[56px] relative w-full">
-        <main className="flex-1 md:ml-64 min-w-0 px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4 overflow-y-auto relative z-10 w-full">
+        <main className={`flex-1 ${isSidebarCollapsed ? 'md:ml-0' : 'md:ml-64'} transition-[margin] duration-200 min-w-0 px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4 overflow-y-auto relative z-10 w-full`}>
           <ErrorBoundary title="Lỗi khi tải giao diện màn hình">
             <CustomerContextBar />
             <Outlet />
@@ -89,5 +91,13 @@ export function AppLayout() {
         onClose={handleCloseCommandPalette}
       />
     </div>
+  );
+}
+
+export function AppLayout() {
+  return (
+    <SidebarCollapseProvider>
+      <AppLayoutContent />
+    </SidebarCollapseProvider>
   );
 }

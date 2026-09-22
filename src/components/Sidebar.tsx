@@ -6,6 +6,7 @@ import { NAV_GROUPS } from '../lib/navigation';
 import { APP_VERSION } from '../lib/appVersion';
 import { useSelectedCustomerId } from '../hooks/useSelectedCustomerId';
 import { screenPathFor } from '../lib/customerRoutes';
+import { useSidebarCollapse } from '../context/SidebarCollapseContext';
 
 interface SidebarProps {
   isOpenMobile?: boolean;
@@ -18,6 +19,7 @@ export const Sidebar = memo<SidebarProps>(({
 }) => {
   const { t } = useLang();
   const customerId = useSelectedCustomerId();
+  const { isSidebarCollapsed } = useSidebarCollapse();
 
   useEffect(() => {
     if (!isOpenMobile) return;
@@ -53,7 +55,11 @@ export const Sidebar = memo<SidebarProps>(({
 
       <aside
         className={`fixed top-0 md:top-[56px] bottom-0 left-0 z-50 md:z-30 w-72 max-w-[85vw] md:w-64 bg-panel border-r border-line/70 flex flex-col shrink-0 transition-transform duration-200 ease-in-out shadow-2xl md:shadow-none ${
-          isOpenMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          isOpenMobile
+            ? 'translate-x-0'
+            : isSidebarCollapsed
+            ? '-translate-x-full md:-translate-x-full'
+            : '-translate-x-full md:translate-x-0'
         }`}
         aria-label="Sidebar Navigation"
       >

@@ -3,8 +3,8 @@ import { NAV_GROUPS, NAV_ITEMS } from '../navigation';
 import { ROUTE_OF } from '../routes';
 
 describe('navigation', () => {
-  it('có đúng 21 màn', () => {
-    expect(NAV_ITEMS).toHaveLength(21);
+  it('có đúng 15 màn', () => {
+    expect(NAV_ITEMS).toHaveLength(15);
   });
 
   it('không id nào trùng', () => {
@@ -44,10 +44,10 @@ describe('navigation', () => {
 
   it('giữ đúng bộ id mà App.tsx đang xử lý', () => {
     expect(NAV_ITEMS.map(i => i.id).sort()).toEqual([
-      'business-plan', 'calculators', 'card-policies', 'cof', 'collaterals',
-      'corporate-financial', 'credit-cards', 'credit-contracts', 'customers', 'dashboard', 'disbursement', 'inventory',
-      'loans', 'mdsdv', 'post-loan', 'quiz-bank',
-      'rate-quote', 'retail-invoice', 'settings', 'shopping-checklist', 'templates',
+      'business-plan', 'calculators', 'cof', 'collaterals',
+      'credit-cards', 'credit-contracts', 'customers', 'dashboard', 'hub', 'inventory',
+      'loans', 'post-loan', 'quiz-bank',
+      'rate-quote', 'settings',
     ]);
   });
 });

@@ -1,5 +1,5 @@
-import React, { lazy, Suspense } from 'react';
-import { ClipboardList, FileDown, RotateCcw, Loader2 } from 'lucide-react';
+import React from 'react';
+import { ClipboardList, FileDown, RotateCcw } from 'lucide-react';
 import { type BusinessPlanInput } from '../../lib/businessPlan';
 import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
@@ -12,22 +12,11 @@ import {
   BASIS_FIELDS,
 } from '../../hooks/useBusinessPlanController';
 
-const ToiLoanCalcSection = lazy(() => import('../businessPlan/ToiLoanCalcSection').then(m => ({ default: m.ToiLoanCalcSection })));
-
-const TabFallback = () => (
-  <div className="flex items-center justify-center p-8 text-ink-muted">
-    <Loader2 className="w-5 h-5 animate-spin text-accent mr-2" />
-    <span className="text-xs">Đang tải phân hệ TOI...</span>
-  </div>
-);
-
 export const BusinessPlanView: React.FC = () => {
   const {
     input,
     unit,
     setUnit,
-    activeSubTab,
-    setActiveSubTab,
     notification,
     setNotification,
     growthFactorStr,
@@ -46,37 +35,7 @@ export const BusinessPlanView: React.FC = () => {
     <div className="space-y-4 text-xs pb-4 font-app">
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
-      {/* Sub-tab navigation pill capsule */}
-      <div className="inline-flex p-1 rounded-2xl bg-panel/85 border border-line/65 backdrop-blur-xl shadow-xs gap-1.5">
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('sheet')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-2xs ${activeSubTab === 'sheet'
-            ? 'bg-accent text-accent-ink shadow-xs'
-            : 'text-ink-muted hover:text-ink hover:bg-surface'
-            }`}
-        >
-          Bảng Phương án & Hạn mức
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSubTab('toi')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-2xs ${activeSubTab === 'toi'
-            ? 'bg-accent text-accent-ink shadow-xs'
-            : 'text-ink-muted hover:text-ink hover:bg-surface'
-            }`}
-        >
-          Dự phóng Thu nhập TOI
-        </button>
-      </div>
-
-      {activeSubTab === 'toi' ? (
-        <Suspense fallback={<TabFallback />}>
-          <ToiLoanCalcSection />
-        </Suspense>
-      ) : (
-        <>
-          <div className={`${UI.containerCardBg} rounded-2xl p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 animate-in fade-in duration-150`}>
+      <div className={`${UI.containerCardBg} rounded-2xl p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 animate-in fade-in duration-150`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line/60 pb-3">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0">
@@ -210,8 +169,6 @@ export const BusinessPlanView: React.FC = () => {
               ))}
             </div>
           </div>
-        </>
-      )}
     </div>
   );
 };

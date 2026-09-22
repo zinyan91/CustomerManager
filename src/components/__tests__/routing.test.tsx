@@ -47,6 +47,7 @@ vi.mock('../views/RetailInvoiceView', () => ({ RetailInvoiceView: () => <div>MAN
 vi.mock('../views/QuizBankView', () => ({ QuizBankView: () => <div>MAN:quiz-bank</div> }));
 vi.mock('../views/WorkspaceHubView', () => ({ WorkspaceHubView: () => <div>MAN:hub</div> }));
 vi.mock('../views/ConstructionEstimateView', () => ({ ConstructionEstimateView: () => <div>MAN:estimate</div> }));
+vi.mock('../views/ToiProjectionView', () => ({ ToiProjectionView: () => <div>MAN:toi</div> }));
 
 import { App as AppThatDuoiTest } from '../../App';
 

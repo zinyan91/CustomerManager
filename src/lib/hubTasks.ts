@@ -11,6 +11,7 @@ import {
   Hammer,
   GraduationCap,
   Coins,
+  Calculator,
 } from 'lucide-react';
 
 export type HubTaskGroupId = 'credit' | 'estimate' | 'lookup';
@@ -37,7 +38,7 @@ export const HUB_TASK_GROUPS = [
   {
     id: 'credit' as HubTaskGroupId,
     title: 'Hồ Sơ Tín Dụng & Kế Toán',
-    badge: '4 tác vụ',
+    badge: '5 tác vụ',
     dotColor: 'bg-blue-500',
     gridCols: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
   },
@@ -125,6 +126,23 @@ export const HUB_TASKS: HubTaskItem[] = [
       hoverBorder: 'hover:border-cyan-500/60',
       hoverText: 'group-hover:text-cyan-600 dark:group-hover:text-cyan-400',
       activeTab: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/40',
+    },
+  },
+  {
+    id: 'toi',
+    groupId: 'credit',
+    name: 'Dự Phóng Thu Nhập TOI Cho Vay',
+    shortName: 'Dự phóng TOI',
+    path: '/hub/toi',
+    icon: Calculator,
+    keywords: ['toi', 'thu nhap', 'du phong', 'ftp', 'lai vay', 'bien lai', 'cho vay', 'tin dung', 'bien lai suat'],
+    color: {
+      borderLeft: 'border-l-indigo-500',
+      iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/15',
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      hoverBorder: 'hover:border-indigo-500/60',
+      hoverText: 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400',
+      activeTab: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/40',
     },
   },
 

@@ -27,7 +27,6 @@ export const BASIS_FIELDS: { key: BasisKey; label: string }[] = [
 export function useBusinessPlanController() {
   const [input, setInput] = useState<BusinessPlanInput>(() => emptyBusinessPlanInput(todayIso()));
   const [unit, setUnit] = useState<MoneyUnit>('million');
-  const [activeSubTab, setActiveSubTab] = useState<'sheet' | 'toi'>('sheet');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [growthFactorStr, setGrowthFactorStr] = useState<string | null>(null);
 
@@ -79,8 +78,6 @@ export function useBusinessPlanController() {
     setInput,
     unit,
     setUnit,
-    activeSubTab,
-    setActiveSubTab,
     notification,
     setNotification,
     growthFactorStr,

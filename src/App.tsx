@@ -28,6 +28,7 @@ const RetailInvoiceView = lazy(() => import('./components/views/RetailInvoiceVie
 const QuizBankView = lazy(() => import('./components/views/QuizBankView').then(m => ({ default: m.QuizBankView })));
 const WorkspaceHubView = lazy(() => import('./components/views/WorkspaceHubView').then(m => ({ default: m.WorkspaceHubView })));
 const ConstructionEstimateView = lazy(() => import('./components/views/ConstructionEstimateView').then(m => ({ default: m.ConstructionEstimateView })));
+const ToiProjectionView = lazy(() => import('./components/views/ToiProjectionView').then(m => ({ default: m.ToiProjectionView })));
 const DedicatedWorkspaceLayout = lazy(() => import('./components/hub/DedicatedWorkspaceLayout').then(m => ({ default: m.DedicatedWorkspaceLayout })));
 
 export function App() {
@@ -38,6 +39,7 @@ export function App() {
         <Route path={ROUTE_OF.hub} element={<Suspense fallback={<ViewSkeleton />}><WorkspaceHubView /></Suspense>} />
         <Route path="/hub/documents" element={<Suspense fallback={<ViewSkeleton />}><DocumentTemplateView /></Suspense>} />
         <Route path="/hub/estimate" element={<Suspense fallback={<ViewSkeleton />}><ConstructionEstimateView /></Suspense>} />
+        <Route path="/hub/toi" element={<Suspense fallback={<ViewSkeleton />}><ToiProjectionView /></Suspense>} />
         <Route path="/hub/disbursement" element={<Suspense fallback={<ViewSkeleton />}><DisbursementPayeeListView /></Suspense>} />
         <Route path="/hub/mdsdv" element={<Suspense fallback={<ViewSkeleton />}><MdsdvLookupView /></Suspense>} />
         <Route path="/hub/card-fees" element={<Suspense fallback={<ViewSkeleton />}><CardPolicyLookupView /></Suspense>} />

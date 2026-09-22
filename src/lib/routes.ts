@@ -43,6 +43,8 @@ export const HUB_SUBROUTES: Record<string, ScreenId> = {
   '/hub/invoice': 'retail-invoice',
   '/hub/statement': 'purchase-statement',
   '/hub/quiz': 'quiz-bank',
+  '/hub/cof': 'cof',
+  '/hub/toi': 'business-plan',
 };
 
 export const SCREEN_OF_PATH: Record<string, ScreenId> = Object.fromEntries(

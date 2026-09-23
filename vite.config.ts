@@ -34,6 +34,15 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          const path = id.replace(/\\/g, '/');
+          if (path.includes('/src/data/')) {
+            if (path.includes('mdsdv')) {
+              return 'data-mdsdv';
+            }
+            if (path.includes('inventoryTemplates')) {
+              return 'data-inventory-templates';
+            }
+          }
           if (id.includes('node_modules')) {
             if (id.includes('xlsx')) {
               return 'vendor-xlsx';

@@ -196,13 +196,13 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
     <td><p class="p-left empty-p">&nbsp;</p></td>
   </tr>
   <tr>
-    <td><p class="p-left">Ông/Bà</p></td>
+    <td><p class="p-left" style="margin-left:12pt; text-indent:-12pt;"><span class="li-num" style="width:12pt">-</span>Ông/Bà</p></td>
     <td colspan="2"><p class="p-center">:</p></td>
     <td><p class="p-left">${name2 ? `<strong>${name2}</strong>` : '________'}</p></td>
     <td><p class="p-left">CIF: ${cif2 ? `<strong>${cif2}</strong>` : '________'}</p></td>
   </tr>
   <tr>
-    <td><p class="p-left">CCCD/CC/Hộ chiếu số</p></td>
+    <td><p class="p-left" style="margin-left:12pt; text-indent:-12pt;"><span class="li-num" style="width:12pt">-</span>CCCD/CC/Hộ chiếu số</p></td>
     <td colspan="2"><p class="p-center">:</p></td>
     <td><p class="p-left">${cccd2 || '________'}</p></td>
     <td><p class="p-left empty-p">&nbsp;</p></td>

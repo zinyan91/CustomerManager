@@ -120,6 +120,14 @@ describe('Đánh số mục như bản gốc TB 2097/2026 (I. / 1. / a. / - / +)
     expect(soCua('bm01_de_nghi_giai_ngan').filter(x => x === '-').length).toBeGreaterThanOrEqual(4);
   });
 
+  it.each(['single', 'married'])('BM01 KH %s: mọi dòng "Ông/Bà" và "CCCD" đều có gạch đầu dòng', customerType => {
+    const t = TEMPLATE_BY_ID.bm01_de_nghi_giai_ngan;
+    const html = t.buildHtml(emptyCommon(), { ...t.specificDefaults, customerType });
+    const nhan = [...html.matchAll(/<p[^>]*>(.*?)(Ông\/Bà|CCCD\/CC\/Hộ chiếu số)<\/p>/g)];
+    expect(nhan).toHaveLength(customerType === 'married' ? 4 : 2);
+    for (const m of nhan) expect(m[1]).toContain('<span class="li-num" style="width:12pt">-</span>');
+  });
+
   it('trong Word, số thứ tự đứng trước một tab rồi mới tới nội dung', () => {
     const t = TEMPLATE_BY_ID.bm02_to_trinh_giai_ngan;
     const xml = zipPart(htmlToDocx(t.buildHtml(emptyCommon(), t.specificDefaults)), 'word/document.xml');

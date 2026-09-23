@@ -4,15 +4,19 @@ import {
   customerDeleteBlockers, customerDeleteBlockedMessage, type CustomerLinkCounts,
 } from '../customerStatus';
 
+export async function fetchCustomersStrictAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
+  let query = supabase.from('Customers').select('*').limit(1000);
+  if (filters?.cif) query = query.ilike('CifKh', `%${filters.cif}%`);
+  if (filters?.name) query = query.ilike('FullName', `%${filters.name}%`);
+  if (filters?.nationalId) query = query.ilike('NationalId', `%${filters.nationalId}%`);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []).sort((a: any, b: any) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
+}
+
 export async function fetchCustomersAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
   try {
-    let query = supabase.from('Customers').select('*').limit(1000);
-    if (filters?.cif) query = query.ilike('CifKh', `%${filters.cif}%`);
-    if (filters?.name) query = query.ilike('FullName', `%${filters.name}%`);
-    if (filters?.nationalId) query = query.ilike('NationalId', `%${filters.nationalId}%`);
-    const { data, error } = await query;
-    if (error) throw error;
-    return (data || []).sort((a: any, b: any) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
+    return await fetchCustomersStrictAPI(filters);
   } catch (err: any) {
     console.error("fetchCustomersAPI error:", err);
     return [];

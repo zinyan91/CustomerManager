@@ -2,14 +2,18 @@ import { supabase } from '../supabase';
 import type { Collateral, LoanContract, CollateralAppraisal } from '../../types';
 import { defaultLtvForAssetType } from '../collateralMath';
 
+export async function fetchCollateralsStrictAPI(): Promise<Collateral[]> {
+  const { data, error } = await supabase
+    .from('Collaterals')
+    .select('*')
+    .order('Id', { ascending: false });
+  if (error) throw error;
+  return (data || []) as Collateral[];
+}
+
 export async function fetchCollateralsAPI(): Promise<Collateral[]> {
   try {
-    const { data, error } = await supabase
-      .from('Collaterals')
-      .select('*')
-      .order('Id', { ascending: false });
-    if (error) throw error;
-    return (data || []) as Collateral[];
+    return await fetchCollateralsStrictAPI();
   } catch (err) {
     console.error("fetchCollateralsAPI error:", err);
     return [];

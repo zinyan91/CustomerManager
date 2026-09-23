@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Coins,
   Calculator,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export type HubTaskGroupId = 'credit' | 'estimate' | 'lookup';
@@ -38,7 +39,7 @@ export const HUB_TASK_GROUPS = [
   {
     id: 'credit' as HubTaskGroupId,
     title: 'Hồ Sơ Tín Dụng & Kế Toán',
-    badge: '5 tác vụ',
+    badge: '6 tác vụ',
     dotColor: 'bg-blue-500',
     gridCols: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
   },
@@ -143,6 +144,23 @@ export const HUB_TASKS: HubTaskItem[] = [
       hoverBorder: 'hover:border-indigo-500/60',
       hoverText: 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400',
       activeTab: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/40',
+    },
+  },
+  {
+    id: 'reports',
+    groupId: 'credit',
+    name: 'Trung Tâm Báo Cáo Excel',
+    shortName: 'Báo cáo Excel',
+    path: '/hub/reports',
+    icon: FileSpreadsheet,
+    keywords: ['bao cao', 'excel', 'xuat', 'kunn', 'hdtd', 'tai san', 'no due', 'qua han', 'toi han', 'danh muc'],
+    color: {
+      borderLeft: 'border-l-slate-500',
+      iconBg: 'bg-slate-500/10 dark:bg-slate-500/15',
+      iconColor: 'text-slate-600 dark:text-slate-400',
+      hoverBorder: 'hover:border-slate-500/60',
+      hoverText: 'group-hover:text-slate-600 dark:group-hover:text-slate-400',
+      activeTab: 'bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/40',
     },
   },
 

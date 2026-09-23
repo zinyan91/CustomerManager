@@ -12,7 +12,7 @@ export type ScreenId =
   | 'dashboard' | 'hub'
   | 'customers' | 'disbursement' | 'credit-contracts' | 'loans' | 'collaterals' | 'credit-cards'
   | 'calculators' | 'business-plan' | 'corporate-financial' | 'inventory' | 'shopping-checklist' | 'purchase-statement'
-  | 'retail-invoice' | 'rate-quote' | 'cof'
+  | 'retail-invoice' | 'rate-quote' | 'cof' | 'reports'
   | 'mdsdv' | 'card-policies' | 'templates' | 'quiz-bank'
   | 'post-loan' | 'settings';
 

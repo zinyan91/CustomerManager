@@ -113,7 +113,7 @@ export function buildBm07Html(common: DossierCommon, s: Bm07Specific = defaultBm
 
   return `
 ${VHTT_STYLES}
-<div class="vhtt-doc">
+<div class="vhtt-doc" data-vhtt-form="BM07">
 <p class="p-center" style="font-size: 13pt; margin-bottom: 2pt;"><strong>BIÊN BẢN BÀN GIAO HỒ SƠ, CHỨNG TỪ</strong></p>
 <p class="p-center" style="font-style: italic; margin-top: 0; margin-bottom: 8pt;">(áp dụng khi giao nhận hồ sơ cấp tín dụng với khách hàng)</p>
 

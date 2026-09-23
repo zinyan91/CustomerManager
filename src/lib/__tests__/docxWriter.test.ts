@@ -414,3 +414,32 @@ describe('tblGrid tôn trọng độ rộng đã khai khi hàng đầu có ô g�
     expect(new Set(g).size).toBe(1);
   });
 });
+
+describe('parseDocumentHtml nhận bối cảnh gốc về phông và cỡ chữ', () => {
+  const GOC = { font: 'Arial', size: 20, tableSize: 18, titleSize: 24 };
+  const runDau = (blocks: ReturnType<typeof parseDocumentHtml>) => {
+    const b = blocks[0];
+    return b.kind === 'p' ? b.runs[0] : (b as DocxTable).rows[0][0].paragraphs[0].runs[0];
+  };
+
+  it('đoạn thân bài dùng phông và cỡ gốc', () => {
+    const r = runDau(parseDocumentHtml('<p>Chữ thân bài</p>', GOC));
+    expect(r.font).toBe('Arial');
+    expect(r.size).toBe(20);
+  });
+
+  it('ô bảng dùng cỡ chữ bảng của bối cảnh, vẫn giữ phông gốc', () => {
+    const r = runDau(parseDocumentHtml('<table><tr><td>Ô</td></tr></table>', GOC));
+    expect(r.font).toBe('Arial');
+    expect(r.size).toBe(18);
+  });
+
+  it('tiêu đề h1 dùng cỡ tiêu đề của bối cảnh', () => {
+    expect(runDau(parseDocumentHtml('<h1>Tiêu đề</h1>', GOC)).size).toBe(24);
+  });
+
+  it('không truyền bối cảnh thì giữ nguyên như cũ', () => {
+    expect(runDau(parseDocumentHtml('<table><tr><td>Ô</td></tr></table>')).size).toBe(24);
+    expect(runDau(parseDocumentHtml('<h1>Tiêu đề</h1>')).size).toBe(32);
+  });
+});

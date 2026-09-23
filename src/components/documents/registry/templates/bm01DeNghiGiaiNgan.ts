@@ -355,7 +355,7 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
 
   return `
 ${VHTT_STYLES}
-<div class="vhtt-doc">
+<div class="vhtt-doc" data-vhtt-form="BM01">
 <p class="p-center"><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>
 <p class="p-center"><strong>Độc</strong><strong> </strong><strong>lập</strong><strong> – </strong><strong>Tự</strong><strong> do – </strong><strong>Hạnh</strong><strong> </strong><strong>phúc</strong></p>
 <p class="p-right">${dateLine}</p>

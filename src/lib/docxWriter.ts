@@ -3,6 +3,9 @@ import {
   BM04_FONT, BM04_SIZE, bm04SectPr, bm04HeaderXml, bm04FooterXml,
 } from './bm04CommitmentDocx';
 import { bm04LogoBytes } from './bm04Logo';
+import {
+  VHTT_DOCX_FONT, VHTT_DOCX_PROFILES, VHTT_FORM_ATTR, type VhttDocxMargins, type VhttDocxProfile,
+} from './vhttDocxProfiles';
 
 export const MIME_DOCX =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -84,7 +87,11 @@ interface BlockCtx extends InlineCtx {
   align?: DocxAlign;
   firstLine?: number;
   left?: number;
+  tableSize?: number;
+  titleSize?: number;
 }
+
+export type DocxBaseCtx = Pick<BlockCtx, 'font' | 'size' | 'tableSize' | 'titleSize'>;
 
 function pxToTwips(px: number): number {
   return Math.round(px * 15);
@@ -294,7 +301,7 @@ function baseParagraph(tag: string, el: Element): DocxParagraph {
 }
 
 function headingCtx(tag: string, ctx: BlockCtx): BlockCtx {
-  if (tag === 'h1') return { ...ctx, bold: true, upper: true, size: 32 };
+  if (tag === 'h1') return { ...ctx, bold: true, upper: true, size: ctx.titleSize ?? 32 };
   if (tag === 'h2' || tag === 'h3') return { ...ctx, bold: true, upper: true, size: DOCX_BASE_SIZE };
   return ctx;
 }
@@ -330,7 +337,7 @@ function tableFrom(el: Element, ctx: BlockCtx): DocxTable {
       const tag = cellEl.tagName.toLowerCase();
       if (tag !== 'td' && tag !== 'th') continue;
 
-      const cellCtx = blockCtxOf(cellEl, { ...tableCtx, size: DOCX_TABLE_SIZE, firstLine: 0 });
+      const cellCtx = blockCtxOf(cellEl, { ...tableCtx, size: tableCtx.tableSize ?? DOCX_TABLE_SIZE, firstLine: 0 });
       if (tag === 'th' || isSig || cellEl.classList.contains('text-center')) {
         if (tag === 'th') cellCtx.bold = true;
         if (!cellCtx.align || isSig) cellCtx.align = 'center';
@@ -452,9 +459,9 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
   return out;
 }
 
-export function parseDocumentHtml(html: string): DocxBlock[] {
+export function parseDocumentHtml(html: string, base: DocxBaseCtx = {}): DocxBlock[] {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
-  const blocks = walkBlocks(doc.body, {});
+  const blocks = walkBlocks(doc.body, { ...base });
   return blocks[0] && blocks[0].kind === 'sect' ? blocks.slice(1) : blocks;
 }
 
@@ -604,19 +611,21 @@ export function documentXml(blocks: DocxBlock[], finalSectPr: string = SECT_PR):
     + '</w:document>';
 }
 
-const STYLES_XML = XML_DECL
-  + '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-  + '<w:docDefaults><w:rPrDefault><w:rPr>'
-  + `<w:rFonts w:ascii="${DOCX_FONT}" w:hAnsi="${DOCX_FONT}" w:cs="${DOCX_FONT}"/>`
-  + `<w:sz w:val="${DOCX_BASE_SIZE}"/><w:szCs w:val="${DOCX_BASE_SIZE}"/>`
-  + '<w:color w:val="000000"/>'
-  + '</w:rPr></w:rPrDefault>'
-  + '<w:pPrDefault><w:pPr>'
-  + `<w:spacing w:before="60" w:after="120" w:line="${DOCX_LINE}" w:lineRule="auto"/>`
-  + '</w:pPr></w:pPrDefault></w:docDefaults>'
-  + '<w:style w:type="paragraph" w:default="1" w:styleId="Normal">'
-  + '<w:name w:val="Normal"/><w:qFormat/></w:style>'
-  + '</w:styles>';
+function stylesXml(font = DOCX_FONT, size = DOCX_BASE_SIZE): string {
+  return XML_DECL
+    + '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+    + '<w:docDefaults><w:rPrDefault><w:rPr>'
+    + `<w:rFonts w:ascii="${font}" w:hAnsi="${font}" w:cs="${font}"/>`
+    + `<w:sz w:val="${size}"/><w:szCs w:val="${size}"/>`
+    + '<w:color w:val="000000"/>'
+    + '</w:rPr></w:rPrDefault>'
+    + '<w:pPrDefault><w:pPr>'
+    + `<w:spacing w:before="60" w:after="120" w:line="${DOCX_LINE}" w:lineRule="auto"/>`
+    + '</w:pPr></w:pPrDefault></w:docDefaults>'
+    + '<w:style w:type="paragraph" w:default="1" w:styleId="Normal">'
+    + '<w:name w:val="Normal"/><w:qFormat/></w:style>'
+    + '</w:styles>';
+}
 
 function contentTypesXml(extra: DocxPackageExtras): string {
   const hasHeader = !!extra.headerXml;
@@ -698,6 +707,8 @@ const NUMBERING_XML = XML_DECL
   + '</w:numbering>';
 
 export interface DocxPackageExtras {
+  defaultFont?: string;
+  defaultSize?: number;
   finalSectPr?: string;
   numbering?: boolean;
   headerXml?: string;
@@ -711,7 +722,7 @@ export function buildDocx(blocks: DocxBlock[], extra: DocxPackageExtras = {}): U
     { name: '_rels/.rels', data: utf8(ROOT_RELS) },
     { name: 'word/document.xml', data: utf8(documentXml(blocks, extra.finalSectPr)) },
     { name: 'word/_rels/document.xml.rels', data: utf8(documentRelsXml(extra)) },
-    { name: 'word/styles.xml', data: utf8(STYLES_XML) },
+    { name: 'word/styles.xml', data: utf8(stylesXml(extra.defaultFont, extra.defaultSize)) },
   ];
 
   if (extra.headerXml) {
@@ -737,46 +748,57 @@ export const BM04_SECTION_VALUE = 'bm04';
 const WML = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 
-export function vhttSectPr(footerRelId: string): string {
+const VHTT_DEFAULT_MARGINS: VhttDocxMargins = { top: 850, right: 850, bottom: 1020, left: 1134, header: 720, footer: 720 };
+
+export function vhttSectPr(footerRelId: string, m: VhttDocxMargins = VHTT_DEFAULT_MARGINS): string {
   return '<w:sectPr>'
     + `<w:footerReference w:type="default" r:id="${footerRelId}"/>`
-    + '<w:pgSz w:w="11906" w:h="16838"/>'
-    + '<w:pgMar w:top="850" w:right="850" w:bottom="1020" w:left="1134" w:header="720" w:footer="720" w:gutter="0"/>'
+    + `<w:pgSz w:w="${PAGE_WIDTH}" w:h="${PAGE_HEIGHT}"/>`
+    + `<w:pgMar w:top="${m.top}" w:right="${m.right}" w:bottom="${m.bottom}" w:left="${m.left}" w:header="${m.header}" w:footer="${m.footer}" w:gutter="0"/>`
     + '</w:sectPr>';
 }
 
-export function vhttFooterXml(footerText: string): string {
+export function vhttFooterXml(footerText: string, font = DOCX_FONT, tabPos = 9922): string {
+  const rFonts = `<w:rFonts w:ascii="${font}" w:eastAsia="${font}" w:hAnsi="${font}" w:cs="${font}"/>`;
   const pPr = '<w:pPr>'
     + '<w:pBdr><w:top w:val="single" w:sz="4" w:space="1" w:color="auto"/></w:pBdr>'
-    + '<w:tabs><w:tab w:val="right" w:pos="9922"/></w:tabs>'
-    + '<w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>'
+    + '<w:tabs><w:tab w:val="right" w:pos="' + tabPos + '"/></w:tabs>'
+    + '<w:rPr>' + rFonts
     + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr>'
     + '</w:pPr>';
 
   return XML_DECL
     + `<w:ftr xmlns:w="${WML}" xmlns:r="${REL_NS}">`
     + '<w:p>' + pPr
-    + `<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t xml:space="preserve">${escapeXml(footerText)}</w:t></w:r>`
+    + `<w:r><w:rPr>' + rFonts + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t xml:space="preserve">${escapeXml(footerText)}</w:t></w:r>`
     + '<w:r><w:tab/></w:r>'
-    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t xml:space="preserve">Trang </w:t></w:r>'
+    + '<w:r><w:rPr>' + rFonts + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t xml:space="preserve">Trang </w:t></w:r>'
     + '<w:r><w:fldChar w:fldCharType="begin"/></w:r>'
     + '<w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>'
     + '<w:r><w:fldChar w:fldCharType="separate"/></w:r>'
-    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>1</w:t></w:r>'
+    + '<w:r><w:rPr>' + rFonts + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>1</w:t></w:r>'
     + '<w:r><w:fldChar w:fldCharType="end"/></w:r>'
-    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>/</w:t></w:r>'
+    + '<w:r><w:rPr>' + rFonts + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>/</w:t></w:r>'
     + '<w:r><w:fldChar w:fldCharType="begin"/></w:r>'
     + '<w:r><w:instrText xml:space="preserve"> NUMPAGES </w:instrText></w:r>'
     + '<w:r><w:fldChar w:fldCharType="separate"/></w:r>'
-    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>1</w:t></w:r>'
+    + '<w:r><w:rPr>' + rFonts + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>1</w:t></w:r>'
     + '<w:r><w:fldChar w:fldCharType="end"/></w:r>'
     + '</w:p>'
     + '</w:ftr>';
 }
 
+function vhttProfileOf(doc: Document): VhttDocxProfile | undefined {
+  const form = doc.querySelector(`.vhtt-doc[${VHTT_FORM_ATTR}]`)?.getAttribute(VHTT_FORM_ATTR);
+  return form ? VHTT_DOCX_PROFILES[form] : undefined;
+}
+
 export function htmlToDocx(html: string): Uint8Array {
-  const blocks = parseDocumentHtml(html);
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+  const profile = vhttProfileOf(doc);
+  const blocks = parseDocumentHtml(html, profile
+    ? { font: VHTT_DOCX_FONT, size: profile.bodySize, tableSize: profile.tableSize, titleSize: profile.titleSize }
+    : {});
   const coBm04 = !!doc.querySelector(`[${BM04_SECTION_ATTR}="${BM04_SECTION_VALUE}"]`);
   if (coBm04) {
     return buildDocx(blocks, {
@@ -792,6 +814,15 @@ export function htmlToDocx(html: string): Uint8Array {
   if (vhttFooterEl) {
     const leftEl = vhttFooterEl.querySelector('.vhtt-footer-left') || vhttFooterEl.firstElementChild;
     const leftText = leftEl?.textContent?.trim() || '';
+    if (profile) {
+      const m = profile.margins;
+      return buildDocx(blocks, {
+        finalSectPr: vhttSectPr(FOOTER_REL_ID, m),
+        footerXml: vhttFooterXml(leftText, VHTT_DOCX_FONT, PAGE_WIDTH - m.left - m.right),
+        defaultFont: VHTT_DOCX_FONT,
+        defaultSize: profile.bodySize,
+      });
+    }
     return buildDocx(blocks, {
       finalSectPr: vhttSectPr(FOOTER_REL_ID),
       footerXml: vhttFooterXml(leftText),

@@ -83,7 +83,7 @@ export function buildBm02Html(common?: DossierCommon, specific?: Bm02Specific): 
 
   return `
 ${VHTT_STYLES}
-<div class="vhtt-doc">
+<div class="vhtt-doc" data-vhtt-form="BM02">
 <table class="table-borderless">
 <tbody>
   <tr>

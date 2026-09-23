@@ -98,7 +98,7 @@ export function buildBm11Html(common?: DossierCommon, specific?: Bm11Specific): 
 
   return `
 ${VHTT_STYLES}
-<div class="vhtt-doc">
+<div class="vhtt-doc" data-vhtt-form="BM11">
 <p class="p-center"><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>
 <p class="p-center"><strong>Độc</strong><strong> </strong><strong>lập</strong><strong> – </strong><strong>Tự</strong><strong> do – </strong><strong>Hạnh</strong><strong> </strong><strong>phúc</strong></p>
 <p class="p-right empty-p">&nbsp;</p>

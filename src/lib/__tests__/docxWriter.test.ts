@@ -390,3 +390,27 @@ describe('thẻ không phải nội dung không được lọt vào Word', () =>
     expect(chuCua('<script>var a = 1;</script><p>Chữ</p>')).not.toContain('var a');
   });
 });
+
+describe('tblGrid tôn trọng độ rộng đã khai khi hàng đầu có ô gộp cột', () => {
+  function gridOf(html: string): number[] {
+    const t = parseDocumentHtml(html).find(b => b.kind === 'table') as DocxTable;
+    return [...tableXml(t).matchAll(/<w:gridCol w:w="(\d+)"\/>/g)].map(m => Number(m[1]));
+  }
+
+  it('ô gộp 2 cột chia đều độ rộng của nó cho 2 cột lưới', () => {
+    const g = gridOf(`<table><tr>
+      <td style="width: 26%">Nhãn</td><td colspan="2" style="width: 4%">:</td>
+      <td style="width: 44%">Giá trị</td><td style="width: 26%">CIF</td>
+    </tr></table>`);
+    expect(g).toHaveLength(5);
+    expect(g[0]).toBe(Math.round(CONTENT_WIDTH * 0.26));
+    expect(g[1]).toBe(Math.round(CONTENT_WIDTH * 0.02));
+    expect(g[2]).toBe(Math.round(CONTENT_WIDTH * 0.02));
+    expect(g[3]).toBe(Math.round(CONTENT_WIDTH * 0.44));
+  });
+
+  it('hàng đầu thiếu độ rộng ở một ô thì vẫn chia đều như trước', () => {
+    const g = gridOf('<table><tr><td style="width: 30%">A</td><td colspan="2">B</td></tr></table>');
+    expect(new Set(g).size).toBe(1);
+  });
+});

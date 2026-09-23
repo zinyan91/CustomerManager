@@ -165,10 +165,10 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
 <table class="table-borderless">
 <tbody>
   <tr>
-    <td><p class="p-left">Ông/Bà</p></td>
-    <td colspan="2"><p class="p-center">:</p></td>
-    <td><p class="p-left">${name1 ? `<strong>${name1}</strong>` : '________'}</p></td>
-    <td><p class="p-left">CIF: ${cif1 ? `<strong>${cif1}</strong>` : '________'}</p></td>
+    <td style="width: 26%;"><p class="p-left">Ông/Bà</p></td>
+    <td colspan="2" style="width: 4%;"><p class="p-center">:</p></td>
+    <td style="width: 44%;"><p class="p-left">${name1 ? `<strong>${name1}</strong>` : '________'}</p></td>
+    <td style="width: 26%;"><p class="p-left">CIF: ${cif1 ? `<strong>${cif1}</strong>` : '________'}</p></td>
   </tr>
   <tr>
     <td><p class="p-left">CCCD/CC/Hộ chiếu số</p></td>
@@ -184,10 +184,10 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
 <table class="table-borderless">
 <tbody>
   <tr>
-    <td><p class="p-left">Ông/Bà</p></td>
-    <td colspan="2"><p class="p-center">:</p></td>
-    <td><p class="p-left">${name1 ? `<strong>${name1}</strong>` : '________'}</p></td>
-    <td><p class="p-left">CIF: ${cif1 ? `<strong>${cif1}</strong>` : '________'}</p></td>
+    <td style="width: 26%;"><p class="p-left">Ông/Bà</p></td>
+    <td colspan="2" style="width: 4%;"><p class="p-center">:</p></td>
+    <td style="width: 44%;"><p class="p-left">${name1 ? `<strong>${name1}</strong>` : '________'}</p></td>
+    <td style="width: 26%;"><p class="p-left">CIF: ${cif1 ? `<strong>${cif1}</strong>` : '________'}</p></td>
   </tr>
   <tr>
     <td><p class="p-left">CCCD/CC/Hộ chiếu số</p></td>
@@ -216,9 +216,9 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
 <table class="table-borderless">
 <tbody>
   <tr>
-    <td><p class="p-left">Tên tổ chức</p></td>
-    <td><p class="p-center">:</p></td>
-    <td colspan="4"><p class="p-left">${orgName ? `<strong>${orgName}</strong>` : '________'}</p></td>
+    <td style="width: 30%;"><p class="p-left">Tên tổ chức</p></td>
+    <td style="width: 3%;"><p class="p-center">:</p></td>
+    <td colspan="4" style="width: 67%;"><p class="p-left">${orgName ? `<strong>${orgName}</strong>` : '________'}</p></td>
   </tr>
   <tr>
     <td><p class="p-left">MSDN/số ĐKKD/GPHĐ số</p></td>

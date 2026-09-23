@@ -522,9 +522,12 @@ function gridColumns(table: DocxTable): number[] {
   const total = spans.reduce((s, n) => s + n, 0) || 1;
 
   const known = first.every(c => c.widthPct !== undefined);
-  if (known && spans.every(n => n === 1)) {
+  if (known) {
     const sum = first.reduce((s, c) => s + (c.widthPct as number), 0) || 100;
-    return first.map(c => Math.round((CONTENT_WIDTH * (c.widthPct as number)) / sum));
+    return first.flatMap((c, i) => {
+      const col = Math.round((CONTENT_WIDTH * (c.widthPct as number)) / sum / spans[i]);
+      return Array.from({ length: spans[i] }, () => col);
+    });
   }
 
   const each = Math.round(CONTENT_WIDTH / total);

@@ -414,3 +414,126 @@ describe('tblGrid tôn trọng độ rộng đã khai khi hàng đầu có ô g�
     expect(new Set(g).size).toBe(1);
   });
 });
+
+describe('parseDocumentHtml nhận bối cảnh gốc về phông và cỡ chữ', () => {
+  const GOC = { font: 'Arial', size: 20, tableSize: 18, titleSize: 24 };
+  const runDau = (blocks: ReturnType<typeof parseDocumentHtml>) => {
+    const b = blocks[0];
+    return b.kind === 'p' ? b.runs[0] : (b as DocxTable).rows[0][0].paragraphs[0].runs[0];
+  };
+
+  it('đoạn thân bài dùng phông và cỡ gốc', () => {
+    const r = runDau(parseDocumentHtml('<p>Chữ thân bài</p>', GOC));
+    expect(r.font).toBe('Arial');
+    expect(r.size).toBe(20);
+  });
+
+  it('ô bảng dùng cỡ chữ bảng của bối cảnh, vẫn giữ phông gốc', () => {
+    const r = runDau(parseDocumentHtml('<table><tr><td>Ô</td></tr></table>', GOC));
+    expect(r.font).toBe('Arial');
+    expect(r.size).toBe(18);
+  });
+
+  it('tiêu đề h1 dùng cỡ tiêu đề của bối cảnh', () => {
+    expect(runDau(parseDocumentHtml('<h1>Tiêu đề</h1>', GOC)).size).toBe(24);
+  });
+
+  it('không truyền bối cảnh thì giữ nguyên như cũ', () => {
+    expect(runDau(parseDocumentHtml('<table><tr><td>Ô</td></tr></table>')).size).toBe(24);
+    expect(runDau(parseDocumentHtml('<h1>Tiêu đề</h1>')).size).toBe(32);
+  });
+});
+
+describe('gạch chân <u> được giữ khi xuất Word', () => {
+  it('chữ trong <u> mang cờ gạch chân', () => {
+    const b = parseDocumentHtml('<p><u><strong>THÔNG TIN KHÁCH HÀNG</strong></u>:</p>')[0] as DocxParagraph;
+    expect(b.runs[0].underline).toBe(true);
+    expect(b.runs[0].bold).toBe(true);
+    expect(b.runs[1].underline).toBeFalsy();
+  });
+
+  it('XML có <w:u w:val="single"/> đặt sau cỡ chữ theo đúng thứ tự lược đồ', () => {
+    const xml = paragraphXml({ kind: 'p', runs: [{ text: 'A', bold: true, size: 20, underline: true }] });
+    expect(xml).toContain('<w:sz w:val="20"/><w:szCs w:val="20"/><w:u w:val="single"/>');
+  });
+
+  it('style="text-decoration: underline" cũng được nhận', () => {
+    const b = parseDocumentHtml('<p><span style="text-decoration: underline">Gạch</span></p>')[0] as DocxParagraph;
+    expect(b.runs[0].underline).toBe(true);
+  });
+});
+
+describe('đoạn đánh số kiểu Word: span.li-num + thụt treo theo pt', () => {
+  const HTML = '<p style="margin-left:14.2pt; text-indent:-7.1pt"><span class="li-num" style="width:7.1pt">I.</span><u>THÔNG TIN</u>:</p>';
+
+  it('thụt lề đọc theo đơn vị pt (1pt = 20 twip)', () => {
+    const p = parseDocumentHtml(HTML)[0] as DocxParagraph;
+    expect(p.left).toBe(284);
+    expect(p.firstLine).toBe(-142);
+  });
+
+  it('số thứ tự thành một run, theo sau là tab, rồi mới tới nội dung', () => {
+    const p = parseDocumentHtml(HTML)[0] as DocxParagraph;
+    expect(p.runs[0].text).toBe('I.');
+    expect(p.runs[1].tab).toBe(true);
+    expect(p.runs[2].text).toBe('THÔNG TIN');
+    expect(p.runs[2].underline).toBe(true);
+  });
+
+  it('số thứ tự không mang gạch chân hay đậm của nội dung phía sau', () => {
+    const p = parseDocumentHtml(HTML)[0] as DocxParagraph;
+    expect(p.runs[0].underline).toBeFalsy();
+  });
+
+  it('thụt lề đơn vị px vẫn đọc như cũ', () => {
+    const p = parseDocumentHtml('<p style="margin-left:20px">A</p>')[0] as DocxParagraph;
+    expect(p.left).toBe(300);
+  });
+
+  it('XML đoạn có thụt treo ghi w:hanging thay cho w:firstLine âm', () => {
+    const xml = paragraphXml(parseDocumentHtml(HTML)[0] as DocxParagraph);
+    expect(xml).toMatch(/<w:ind w:left="284" w:hanging="142"\/>/);
+  });
+});
+
+describe('nền ô bảng từ CSS background', () => {
+  const t = () => parseDocumentHtml('<table class="table-bordered"><tr><td style="width:10%; background: #DEEAF6">STT</td><td style="width:90%">Nội dung</td></tr></table>')[0] as DocxTable;
+
+  it('ô có background mang mã màu hex, ô không có thì không', () => {
+    expect(t().rows[0][0].fill).toBe('DEEAF6');
+    expect(t().rows[0][1].fill).toBeUndefined();
+  });
+
+  it('XML ghi <w:shd> đúng thứ tự lược đồ: sau gridSpan, trước vAlign', () => {
+    expect(tableXml(t())).toMatch(/<w:tcW [^>]*\/><w:shd w:val="clear" w:color="auto" w:fill="DEEAF6"\/><w:vAlign/);
+  });
+
+  it('nhận cả background-color và mã màu 3 ký tự', () => {
+    const c = (parseDocumentHtml('<table><tr><td style="background-color:#abc">A</td></tr></table>')[0] as DocxTable).rows[0][0];
+    expect(c.fill).toBe('AABBCC');
+  });
+});
+
+describe('ảnh logo trong thân tài liệu', () => {
+  const HTML = '<p><img data-docx-image="vietbank-logo" style="width:122pt; height:31.5pt" alt="Vietbank"></p><p>Tên TTKD</p>';
+
+  it('img có dấu data-docx-image thành một run ảnh, kích thước đổi pt sang EMU', () => {
+    const p = parseDocumentHtml(HTML)[0] as DocxParagraph;
+    expect(p.runs[0].image).toEqual({ cx: 122 * 12700, cy: 31.5 * 12700 });
+  });
+
+  it('img không có dấu thì bỏ qua như trước', () => {
+    const blocks = parseDocumentHtml('<p><img src="x.png">Chữ</p>');
+    expect((blocks[0] as DocxParagraph).runs.every(r => !r.image)).toBe(true);
+  });
+
+  it('tệp Word có ảnh trong media, quan hệ ảnh của document và thẻ w:drawing tham chiếu đúng', () => {
+    const bytes = htmlToDocx(HTML);
+    expect(zipNames(bytes).some(n => /^word\/media\/.+\.png$/.test(n))).toBe(true);
+    const rels = zipPart(bytes, 'word/_rels/document.xml.rels');
+    const relId = /Id="(rId\d+)" Type="[^"]*\/image"/.exec(rels)?.[1];
+    expect(relId).toBeTruthy();
+    expect(zipPart(bytes, 'word/document.xml')).toContain(`r:embed="${relId}"`);
+    expect(zipPart(bytes, '[Content_Types].xml')).toContain('Extension="png"');
+  });
+});

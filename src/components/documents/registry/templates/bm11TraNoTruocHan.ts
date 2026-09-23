@@ -98,7 +98,7 @@ export function buildBm11Html(common?: DossierCommon, specific?: Bm11Specific): 
 
   return `
 ${VHTT_STYLES}
-<div class="vhtt-doc">
+<div class="vhtt-doc" data-vhtt-form="BM11">
 <p class="p-center"><strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong></p>
 <p class="p-center"><strong>Độc</strong><strong> </strong><strong>lập</strong><strong> – </strong><strong>Tự</strong><strong> do – </strong><strong>Hạnh</strong><strong> </strong><strong>phúc</strong></p>
 <p class="p-right empty-p">&nbsp;</p>
@@ -106,12 +106,12 @@ ${VHTT_STYLES}
 <p class="p-center"><strong>GIẤY ĐỀ NGHỊ TRẢ NỢ TRƯỚC HẠN</strong></p>
 <p class="p-center"><u><em>Kính</em></u><u><em> </em></u><u><em>gửi</em></u><em>:</em> ${branchText}</p>
 <p class="p-center empty-p">&nbsp;</p>
-<p class="p-left"><u><strong>THÔNG TIN </strong></u><u><strong>KHÁCH HÀNG</strong></u>:</p>
-<p class="p-left">Tên Khách hàng: ${customerName}</p>
-<p class="p-left">CCCD/CMND/CNĐKKD/CNĐKDN: ${cccd} Ngày cấp: ${cccdDate} Nơi cấp: ${cccdPlace}</p>
-<p class="p-left">Địa chỉ: ${address} Số điện thoại: ${phone}</p>
-<p class="p-left"><u><strong>NHU CẦU </strong></u><u><strong>KHÁCH HÀNG</strong></u><u><strong>:</strong></u></p>
-<p class="p-left">Đề nghị Vietbank trích từ Tài khoản thanh toán (TKTT) và/hoặc tất toán Sổ tiết kiệm/Tài khoản tiền gửi như sau:</p>
+<p class="p-left" style="margin-left:22.5pt; text-indent:-15.2pt;"><span class="li-num" style="width:15.2pt">I.</span><u><strong>THÔNG TIN </strong></u><u><strong>KHÁCH HÀNG</strong></u>:</p>
+<p class="p-left" style="margin-left:21.3pt; text-indent:-15.2pt;"><span class="li-num" style="width:15.2pt">1.</span>Tên Khách hàng: ${customerName}</p>
+<p class="p-left" style="margin-left:21.3pt; text-indent:-15.2pt;"><span class="li-num" style="width:15.2pt">2.</span>CCCD/CMND/CNĐKKD/CNĐKDN: ${cccd} Ngày cấp: ${cccdDate} Nơi cấp: ${cccdPlace}</p>
+<p class="p-left" style="margin-left:21.3pt; text-indent:-15.2pt;"><span class="li-num" style="width:15.2pt">3.</span>Địa chỉ: ${address} Số điện thoại: ${phone}</p>
+<p class="p-left" style="margin-left:22.5pt; text-indent:-20.8pt;"><span class="li-num" style="width:20.8pt">II.</span><u><strong>NHU CẦU </strong></u><u><strong>KHÁCH HÀNG</strong></u><u><strong>:</strong></u></p>
+<p class="p-left" style="margin-left:22.5pt; text-indent:-15.2pt;"><span class="li-num" style="width:15.2pt">1.</span>Đề nghị Vietbank trích từ Tài khoản thanh toán (TKTT) và/hoặc tất toán Sổ tiết kiệm/Tài khoản tiền gửi như sau:</p>
 <table class="table-bordered">
 <tbody>
   <tr>
@@ -181,7 +181,7 @@ ${VHTT_STYLES}
 </tbody>
 </table>
 
-<p class="p-left">Nội dung khác:</p>
+<p class="p-left" style="margin-left:22.5pt; text-indent:-15.2pt;"><span class="li-num" style="width:15.2pt">2.</span>Nội dung khác:</p>
 <p class="p-left">⃞ Tôi/Chúng tôi đề nghị trả nợ gốc trước hạn các kỳ của lịch trả nợ tương ứng:</p>
 <p class="p-left">Giấy nhận nợ Số ……….... ngày …../….../……: Từ kỳ ….(…./…./20….)  đến kỳ ….(…./…./20….)</p>
 <p class="p-left">Giấy nhận nợ Số ……….... ngày …../….../……: Từ kỳ ….(…./…./20….)  đến kỳ ….(…./…./20….)</p>
@@ -205,10 +205,10 @@ ${VHTT_STYLES}
 </table>
 
 <p class="p-left">(*) Người đề nghị ghi rõ các nội dung khác liên quan đến việc thu nợ (nếu có)</p>
-<p class="p-left"><u><strong>PHẦN XÁC NHẬN CỦA NGÂN HÀNG</strong></u></p>
-<p class="p-left">Mã CIF: ${cif}</p>
-<p class="p-left">Xác nhận thu nợ theo đề nghị của khách hàng</p>
-<p class="p-left">Mức phí /phạt liên quan (**):....................................</p>
+<p class="p-left" style="margin-left:36pt; text-indent:-26.4pt;"><span class="li-num" style="width:26.4pt">III.</span><u><strong>PHẦN XÁC NHẬN CỦA NGÂN HÀNG</strong></u></p>
+<p class="p-left" style="margin-left:36pt; text-indent:-18pt;"><span class="li-num" style="width:18pt">-</span>Mã CIF: ${cif}</p>
+<p class="p-left" style="margin-left:36pt; text-indent:-18pt;"><span class="li-num" style="width:18pt">-</span>Xác nhận thu nợ theo đề nghị của khách hàng</p>
+<p class="p-left" style="margin-left:36pt; text-indent:-18pt;"><span class="li-num" style="width:18pt">-</span>Mức phí /phạt liên quan (**):....................................</p>
 <p class="p-left">+ Phí phạt trả nợ trước hạn: </p>
 <p class="p-left">+ Phí ……………………….</p>
 <p class="p-left empty-p">&nbsp;</p>

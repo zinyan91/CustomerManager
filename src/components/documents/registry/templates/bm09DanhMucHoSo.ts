@@ -140,7 +140,7 @@ export function buildBm09Html(common: DossierCommon, s: Bm09Specific = defaultBm
 
   return `
 ${VHTT_STYLES}
-<div class="vhtt-doc">
+<div class="vhtt-doc" data-vhtt-form="BM09">
 <p class="p-center" style="font-size: 13pt; margin-bottom: 10pt;">
   <strong>DANH MỤC HỒ SƠ TÍN DỤNG KH: ${custName}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MÃ CIF: ${cif}</strong>
 </p>

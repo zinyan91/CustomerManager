@@ -3,6 +3,9 @@ import {
   BM04_FONT, BM04_SIZE, bm04SectPr, bm04HeaderXml, bm04FooterXml,
 } from './bm04CommitmentDocx';
 import { bm04LogoBytes } from './bm04Logo';
+import {
+  VHTT_DOCX_FONT, VHTT_DOCX_PROFILES, VHTT_FORM_ATTR, type VhttDocxMargins, type VhttDocxProfile,
+} from './vhttDocxProfiles';
 
 export const MIME_DOCX =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -32,9 +35,11 @@ export interface DocxRun {
   font?: string;
   bold?: boolean;
   italic?: boolean;
+  underline?: boolean;
   size?: number;
   letterSpacing?: number;
   lineBreak?: boolean;
+  image?: { cx: number; cy: number };
 }
 
 export interface DocxParagraph {
@@ -56,6 +61,7 @@ export interface DocxCell {
   paragraphs: DocxParagraph[];
   span?: number;
   widthPct?: number;
+  fill?: string;
 }
 
 export interface DocxTable {
@@ -75,6 +81,7 @@ interface InlineCtx {
   font?: string;
   bold?: boolean;
   italic?: boolean;
+  underline?: boolean;
   size?: number;
   upper?: boolean;
   letterSpacing?: number;
@@ -84,7 +91,11 @@ interface BlockCtx extends InlineCtx {
   align?: DocxAlign;
   firstLine?: number;
   left?: number;
+  tableSize?: number;
+  titleSize?: number;
 }
+
+export type DocxBaseCtx = Pick<BlockCtx, 'font' | 'size' | 'tableSize' | 'titleSize'>;
 
 function pxToTwips(px: number): number {
   return Math.round(px * 15);
@@ -92,6 +103,12 @@ function pxToTwips(px: number): number {
 
 function ptToTwips(pt: number): number {
   return Math.round(pt * 20);
+}
+
+function lengthToTwips(value: string): number | null {
+  const n = parseFloat(value);
+  if (!isFinite(n)) return null;
+  return value.trim().endsWith('pt') ? ptToTwips(n) : pxToTwips(n);
 }
 
 function tailwindSpacing(step: number): number {
@@ -120,6 +137,7 @@ function inlineCtxOf(el: Element, ctx: InlineCtx): InlineCtx {
   const tag = el.tagName.toLowerCase();
   if (tag === 'strong' || tag === 'b' || tag === 'th') next.bold = true;
   if (tag === 'em' || tag === 'i') next.italic = true;
+  if (tag === 'u') next.underline = true;
 
   for (const cls of Array.from(el.classList)) {
     if (cls === 'font-bold' || cls === 'text-bold') next.bold = true;
@@ -136,6 +154,7 @@ function inlineCtxOf(el: Element, ctx: InlineCtx): InlineCtx {
   }
   if (css['font-weight'] === 'bold') next.bold = true;
   if (css['font-style'] === 'italic') next.italic = true;
+  if ((css['text-decoration'] || '').includes('underline')) next.underline = true;
   return next;
 }
 
@@ -150,6 +169,18 @@ function isNonContent(el: Element): boolean {
   return NON_CONTENT_TAGS.has(el.tagName.toLowerCase());
 }
 
+export const BODY_IMAGE_ATTR = 'data-docx-image';
+const EMU_PER_PT = 12700;
+
+function bodyImageOf(el: Element): { cx: number; cy: number } | null {
+  if (!el.getAttribute(BODY_IMAGE_ATTR)) return null;
+  const css = styleOf(el);
+  const w = parseFloat(css['width'] || '');
+  const h = parseFloat(css['height'] || '');
+  if (!isFinite(w) || !isFinite(h)) return null;
+  return { cx: Math.round(w * EMU_PER_PT), cy: Math.round(h * EMU_PER_PT) };
+}
+
 function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
   for (const child of Array.from(node.childNodes)) {
     if (child.nodeType === 3) {
@@ -160,6 +191,7 @@ function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
           font: ctx.font,
           bold: ctx.bold,
           italic: ctx.italic,
+          underline: ctx.underline,
           size: ctx.size,
           letterSpacing: ctx.letterSpacing,
         });
@@ -177,16 +209,27 @@ function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
       runs.push({ text: '', tab: true });
       continue;
     }
+    if (el.tagName.toLowerCase() === 'img') {
+      const image = bodyImageOf(el);
+      if (image) runs.push({ text: '', image });
+      continue;
+    }
+    if (el.classList && el.classList.contains('li-num')) {
+      const numCtx = { ...inlineCtxOf(el, ctx), underline: false };
+      runs.push({ text: (el.textContent || '').trim(), font: numCtx.font, bold: numCtx.bold, italic: numCtx.italic, size: numCtx.size });
+      runs.push({ text: '', tab: true });
+      continue;
+    }
     collectRuns(el, inlineCtxOf(el, ctx), runs);
   }
 }
 
 function trimRuns(runs: DocxRun[]): DocxRun[] {
   const out = runs.slice();
-  while (out.length > 0 && !out[0].lineBreak && out[0].text.trim() === '') out.shift();
+  while (out.length > 0 && !out[0].lineBreak && !out[0].image && out[0].text.trim() === '') out.shift();
   while (out.length > 0) {
     const last = out[out.length - 1];
-    if (last.lineBreak || last.text.trim() === '') out.pop();
+    if (!last.image && (last.lineBreak || last.text.trim() === '')) out.pop();
     else break;
   }
   if (out.length > 0) {
@@ -211,12 +254,12 @@ function blockCtxOf(el: Element, ctx: BlockCtx): BlockCtx {
   const css = styleOf(el);
   if (css['text-align']) next.align = alignFromValue(css['text-align']) || next.align;
   if (css['margin-left']) {
-    const px = parseFloat(css['margin-left']);
-    if (isFinite(px)) next.left = pxToTwips(px);
+    const tw = lengthToTwips(css['margin-left']);
+    if (tw !== null) next.left = tw;
   }
   if (css['text-indent']) {
-    const px = parseFloat(css['text-indent']);
-    if (isFinite(px)) next.firstLine = pxToTwips(px);
+    const tw = lengthToTwips(css['text-indent']);
+    if (tw !== null) next.firstLine = tw;
   }
   return next;
 }
@@ -294,7 +337,7 @@ function baseParagraph(tag: string, el: Element): DocxParagraph {
 }
 
 function headingCtx(tag: string, ctx: BlockCtx): BlockCtx {
-  if (tag === 'h1') return { ...ctx, bold: true, upper: true, size: 32 };
+  if (tag === 'h1') return { ...ctx, bold: true, upper: true, size: ctx.titleSize ?? 32 };
   if (tag === 'h2' || tag === 'h3') return { ...ctx, bold: true, upper: true, size: DOCX_BASE_SIZE };
   return ctx;
 }
@@ -317,6 +360,13 @@ function paragraphFrom(el: Element, ctx: BlockCtx): DocxParagraph {
   return p;
 }
 
+function fillOf(value?: string): string | undefined {
+  const m = /#([0-9a-f]{6}|[0-9a-f]{3})(?![0-9a-f])/i.exec(value || '');
+  if (!m) return undefined;
+  const hex = m[1].length === 3 ? m[1].split('').map(c => c + c).join('') : m[1];
+  return hex.toUpperCase();
+}
+
 function tableFrom(el: Element, ctx: BlockCtx): DocxTable {
   const bordered = el.classList.contains('table-doc') || el.classList.contains('table-bordered');
   const isSig = el.classList.contains('sig-table');
@@ -330,7 +380,7 @@ function tableFrom(el: Element, ctx: BlockCtx): DocxTable {
       const tag = cellEl.tagName.toLowerCase();
       if (tag !== 'td' && tag !== 'th') continue;
 
-      const cellCtx = blockCtxOf(cellEl, { ...tableCtx, size: DOCX_TABLE_SIZE, firstLine: 0 });
+      const cellCtx = blockCtxOf(cellEl, { ...tableCtx, size: tableCtx.tableSize ?? DOCX_TABLE_SIZE, firstLine: 0 });
       if (tag === 'th' || isSig || cellEl.classList.contains('text-center')) {
         if (tag === 'th') cellCtx.bold = true;
         if (!cellCtx.align || isSig) cellCtx.align = 'center';
@@ -345,6 +395,7 @@ function tableFrom(el: Element, ctx: BlockCtx): DocxTable {
         paragraphs,
         span: span > 1 ? span : undefined,
         widthPct: width ? parseFloat(width[1]) : undefined,
+        fill: fillOf(css['background-color'] || css['background']),
       });
     }
     if (cells.length > 0) rows.push(cells);
@@ -388,7 +439,7 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
     if (child.nodeType === 3) {
       const text = normalizeText(child.nodeValue || '', ctx.upper);
       if (text.trim() !== '') {
-        pending.push({ text, font: ctx.font, bold: ctx.bold, italic: ctx.italic, size: ctx.size });
+        pending.push({ text, font: ctx.font, bold: ctx.bold, italic: ctx.italic, underline: ctx.underline, size: ctx.size });
       }
       continue;
     }
@@ -452,15 +503,31 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
   return out;
 }
 
-export function parseDocumentHtml(html: string): DocxBlock[] {
+export function parseDocumentHtml(html: string, base: DocxBaseCtx = {}): DocxBlock[] {
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
-  const blocks = walkBlocks(doc.body, {});
+  const blocks = walkBlocks(doc.body, { ...base });
   return blocks[0] && blocks[0].kind === 'sect' ? blocks.slice(1) : blocks;
+}
+
+function imageRunXml(image: { cx: number; cy: number }): string {
+  return '<w:r><w:drawing>'
+    + '<wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">'
+    + `<wp:extent cx="${image.cx}" cy="${image.cy}"/>`
+    + '<wp:docPr id="101" name="Logo"/>'
+    + '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+    + '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+    + '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+    + '<pic:nvPicPr><pic:cNvPr id="0" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr>'
+    + `<pic:blipFill><a:blip r:embed="${BODY_IMAGE_REL_ID}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>`
+    + `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${image.cx}" cy="${image.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>`
+    + '</pic:pic></a:graphicData></a:graphic></wp:inline>'
+    + '</w:drawing></w:r>';
 }
 
 function runXml(run: DocxRun): string {
   if (run.lineBreak) return '<w:r><w:br/></w:r>';
   if (run.tab) return '<w:r><w:tab/></w:r>';
+  if (run.image) return imageRunXml(run.image);
 
   const props: string[] = [];
   if (run.font) {
@@ -472,6 +539,7 @@ function runXml(run: DocxRun): string {
   if (run.italic) props.push('<w:i/><w:iCs/>');
   if (run.letterSpacing) props.push(`<w:spacing w:val="${run.letterSpacing}"/>`);
   if (run.size) props.push(`<w:sz w:val="${run.size}"/><w:szCs w:val="${run.size}"/>`);
+  if (run.underline) props.push('<w:u w:val="single"/>');
   const rPr = props.length > 0 ? `<w:rPr>${props.join('')}</w:rPr>` : '';
 
   return `<w:r>${rPr}<w:t xml:space="preserve">${escapeXml(run.text)}</w:t></w:r>`;
@@ -506,8 +574,9 @@ export function paragraphXml(p: DocxParagraph): string {
 
   const indParts: string[] = [];
   if (p.left) indParts.push(`w:left="${p.left}"`);
-  if (p.hanging) indParts.push(`w:hanging="${p.hanging}"`);
-  if (p.firstLine) indParts.push(`w:firstLine="${p.firstLine}"`);
+  const hanging = p.hanging || (p.firstLine && p.firstLine < 0 ? -p.firstLine : 0);
+  if (hanging) indParts.push(`w:hanging="${hanging}"`);
+  else if (p.firstLine) indParts.push(`w:firstLine="${p.firstLine}"`);
   if (indParts.length > 0) props.push(`<w:ind ${indParts.join(' ')}/>`);
 
   if (p.align) props.push(`<w:jc w:val="${JC[p.align]}"/>`);
@@ -572,6 +641,7 @@ export function tableXml(table: DocxTable): string {
       const tcPr = '<w:tcPr>'
         + `<w:tcW w:w="${width}" w:type="pct"/>`
         + (span > 1 ? `<w:gridSpan w:val="${span}"/>` : '')
+        + (cell.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${cell.fill}"/>` : '')
         + `<w:vAlign w:val="${vAlign}"/>`
         + '</w:tcPr>';
 
@@ -604,19 +674,21 @@ export function documentXml(blocks: DocxBlock[], finalSectPr: string = SECT_PR):
     + '</w:document>';
 }
 
-const STYLES_XML = XML_DECL
-  + '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-  + '<w:docDefaults><w:rPrDefault><w:rPr>'
-  + `<w:rFonts w:ascii="${DOCX_FONT}" w:hAnsi="${DOCX_FONT}" w:cs="${DOCX_FONT}"/>`
-  + `<w:sz w:val="${DOCX_BASE_SIZE}"/><w:szCs w:val="${DOCX_BASE_SIZE}"/>`
-  + '<w:color w:val="000000"/>'
-  + '</w:rPr></w:rPrDefault>'
-  + '<w:pPrDefault><w:pPr>'
-  + `<w:spacing w:before="60" w:after="120" w:line="${DOCX_LINE}" w:lineRule="auto"/>`
-  + '</w:pPr></w:pPrDefault></w:docDefaults>'
-  + '<w:style w:type="paragraph" w:default="1" w:styleId="Normal">'
-  + '<w:name w:val="Normal"/><w:qFormat/></w:style>'
-  + '</w:styles>';
+function stylesXml(font = DOCX_FONT, size = DOCX_BASE_SIZE): string {
+  return XML_DECL
+    + '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+    + '<w:docDefaults><w:rPrDefault><w:rPr>'
+    + `<w:rFonts w:ascii="${font}" w:hAnsi="${font}" w:cs="${font}"/>`
+    + `<w:sz w:val="${size}"/><w:szCs w:val="${size}"/>`
+    + '<w:color w:val="000000"/>'
+    + '</w:rPr></w:rPrDefault>'
+    + '<w:pPrDefault><w:pPr>'
+    + `<w:spacing w:before="60" w:after="120" w:line="${DOCX_LINE}" w:lineRule="auto"/>`
+    + '</w:pPr></w:pPrDefault></w:docDefaults>'
+    + '<w:style w:type="paragraph" w:default="1" w:styleId="Normal">'
+    + '<w:name w:val="Normal"/><w:qFormat/></w:style>'
+    + '</w:styles>';
+}
 
 function contentTypesXml(extra: DocxPackageExtras): string {
   const hasHeader = !!extra.headerXml;
@@ -625,7 +697,7 @@ function contentTypesXml(extra: DocxPackageExtras): string {
     + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
     + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
     + '<Default Extension="xml" ContentType="application/xml"/>'
-    + (extra.image ? '<Default Extension="png" ContentType="image/png"/>' : '')
+    + (extra.image || extra.bodyImage ? '<Default Extension="png" ContentType="image/png"/>' : '')
     + '<Override PartName="/word/document.xml"'
     + ' ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
     + '<Override PartName="/word/styles.xml"'
@@ -658,6 +730,7 @@ export const HEADER_REL_ID = 'rId2';
 export const FOOTER_REL_ID = 'rId3';
 export const IMAGE_REL_ID = 'rId4';
 export const NUMBERING_REL_ID = 'rId5';
+export const BODY_IMAGE_REL_ID = 'rId6';
 
 function documentRelsXml(extra: DocxPackageExtras): string {
   return XML_DECL
@@ -669,6 +742,8 @@ function documentRelsXml(extra: DocxPackageExtras): string {
       ? `<Relationship Id="${FOOTER_REL_ID}" Type="${REL_BASE}/footer" Target="footer1.xml"/>` : '')
     + (extra.numbering
       ? `<Relationship Id="${NUMBERING_REL_ID}" Type="${REL_BASE}/numbering" Target="numbering.xml"/>` : '')
+    + (extra.bodyImage
+      ? `<Relationship Id="${BODY_IMAGE_REL_ID}" Type="${REL_BASE}/image" Target="media/${extra.bodyImage.name}"/>` : '')
     + '</Relationships>';
 }
 
@@ -698,11 +773,14 @@ const NUMBERING_XML = XML_DECL
   + '</w:numbering>';
 
 export interface DocxPackageExtras {
+  defaultFont?: string;
+  defaultSize?: number;
   finalSectPr?: string;
   numbering?: boolean;
   headerXml?: string;
   footerXml?: string;
   image?: { name: string; bytes: Uint8Array };
+  bodyImage?: { name: string; bytes: Uint8Array };
 }
 
 export function buildDocx(blocks: DocxBlock[], extra: DocxPackageExtras = {}): Uint8Array {
@@ -711,7 +789,7 @@ export function buildDocx(blocks: DocxBlock[], extra: DocxPackageExtras = {}): U
     { name: '_rels/.rels', data: utf8(ROOT_RELS) },
     { name: 'word/document.xml', data: utf8(documentXml(blocks, extra.finalSectPr)) },
     { name: 'word/_rels/document.xml.rels', data: utf8(documentRelsXml(extra)) },
-    { name: 'word/styles.xml', data: utf8(STYLES_XML) },
+    { name: 'word/styles.xml', data: utf8(stylesXml(extra.defaultFont, extra.defaultSize)) },
   ];
 
   if (extra.headerXml) {
@@ -723,6 +801,9 @@ export function buildDocx(blocks: DocxBlock[], extra: DocxPackageExtras = {}): U
   }
   if (extra.image) {
     parts.push({ name: `word/media/${extra.image.name}`, data: extra.image.bytes });
+  }
+  if (extra.bodyImage) {
+    parts.push({ name: `word/media/${extra.bodyImage.name}`, data: extra.bodyImage.bytes });
   }
   if (extra.numbering) {
     parts.push({ name: 'word/numbering.xml', data: utf8(NUMBERING_XML) });
@@ -737,46 +818,60 @@ export const BM04_SECTION_VALUE = 'bm04';
 const WML = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 
-export function vhttSectPr(footerRelId: string): string {
+const VHTT_DEFAULT_MARGINS: VhttDocxMargins = { top: 850, right: 850, bottom: 1020, left: 1134, header: 720, footer: 720 };
+
+export function vhttSectPr(footerRelId: string, m: VhttDocxMargins = VHTT_DEFAULT_MARGINS): string {
   return '<w:sectPr>'
     + `<w:footerReference w:type="default" r:id="${footerRelId}"/>`
-    + '<w:pgSz w:w="11906" w:h="16838"/>'
-    + '<w:pgMar w:top="850" w:right="850" w:bottom="1020" w:left="1134" w:header="720" w:footer="720" w:gutter="0"/>'
+    + `<w:pgSz w:w="${PAGE_WIDTH}" w:h="${PAGE_HEIGHT}"/>`
+    + `<w:pgMar w:top="${m.top}" w:right="${m.right}" w:bottom="${m.bottom}" w:left="${m.left}" w:header="${m.header}" w:footer="${m.footer}" w:gutter="0"/>`
     + '</w:sectPr>';
 }
 
-export function vhttFooterXml(footerText: string): string {
+export function vhttFooterXml(footerText: string, font = DOCX_FONT, tabPos = 9922): string {
+  const rFonts = `<w:rFonts w:ascii="${font}" w:eastAsia="${font}" w:hAnsi="${font}" w:cs="${font}"/>`;
   const pPr = '<w:pPr>'
     + '<w:pBdr><w:top w:val="single" w:sz="4" w:space="1" w:color="auto"/></w:pBdr>'
-    + '<w:tabs><w:tab w:val="right" w:pos="9922"/></w:tabs>'
-    + '<w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/>'
+    + '<w:tabs><w:tab w:val="right" w:pos="' + tabPos + '"/></w:tabs>'
+    + '<w:rPr>' + rFonts
     + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr>'
     + '</w:pPr>';
 
   return XML_DECL
     + `<w:ftr xmlns:w="${WML}" xmlns:r="${REL_NS}">`
     + '<w:p>' + pPr
-    + `<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t xml:space="preserve">${escapeXml(footerText)}</w:t></w:r>`
+    + `<w:r><w:rPr>' + rFonts + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t xml:space="preserve">${escapeXml(footerText)}</w:t></w:r>`
     + '<w:r><w:tab/></w:r>'
-    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t xml:space="preserve">Trang </w:t></w:r>'
+    + '<w:r><w:rPr>' + rFonts + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t xml:space="preserve">Trang </w:t></w:r>'
     + '<w:r><w:fldChar w:fldCharType="begin"/></w:r>'
     + '<w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>'
     + '<w:r><w:fldChar w:fldCharType="separate"/></w:r>'
-    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>1</w:t></w:r>'
+    + '<w:r><w:rPr>' + rFonts + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>1</w:t></w:r>'
     + '<w:r><w:fldChar w:fldCharType="end"/></w:r>'
-    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>/</w:t></w:r>'
+    + '<w:r><w:rPr>' + rFonts + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>/</w:t></w:r>'
     + '<w:r><w:fldChar w:fldCharType="begin"/></w:r>'
     + '<w:r><w:instrText xml:space="preserve"> NUMPAGES </w:instrText></w:r>'
     + '<w:r><w:fldChar w:fldCharType="separate"/></w:r>'
-    + '<w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:eastAsia="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>1</w:t></w:r>'
+    + '<w:r><w:rPr>' + rFonts + '<w:sz w:val="17"/><w:szCs w:val="17"/><w:i/><w:iCs/></w:rPr><w:t>1</w:t></w:r>'
     + '<w:r><w:fldChar w:fldCharType="end"/></w:r>'
     + '</w:p>'
     + '</w:ftr>';
 }
 
+function vhttProfileOf(doc: Document): VhttDocxProfile | undefined {
+  const form = doc.querySelector(`.vhtt-doc[${VHTT_FORM_ATTR}]`)?.getAttribute(VHTT_FORM_ATTR);
+  return form ? VHTT_DOCX_PROFILES[form] : undefined;
+}
+
 export function htmlToDocx(html: string): Uint8Array {
-  const blocks = parseDocumentHtml(html);
   const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+  const profile = vhttProfileOf(doc);
+  const blocks = parseDocumentHtml(html, profile
+    ? { font: VHTT_DOCX_FONT, size: profile.bodySize, tableSize: profile.tableSize, titleSize: profile.titleSize }
+    : {});
+  const bodyImage = doc.querySelector(`img[${BODY_IMAGE_ATTR}]`)
+    ? { name: 'logo.png', bytes: bm04LogoBytes() }
+    : undefined;
   const coBm04 = !!doc.querySelector(`[${BM04_SECTION_ATTR}="${BM04_SECTION_VALUE}"]`);
   if (coBm04) {
     return buildDocx(blocks, {
@@ -785,6 +880,7 @@ export function htmlToDocx(html: string): Uint8Array {
       headerXml: bm04HeaderXml(IMAGE_REL_ID),
       footerXml: bm04FooterXml(),
       image: { name: 'image1.png', bytes: bm04LogoBytes() },
+      bodyImage,
     });
   }
 
@@ -792,11 +888,22 @@ export function htmlToDocx(html: string): Uint8Array {
   if (vhttFooterEl) {
     const leftEl = vhttFooterEl.querySelector('.vhtt-footer-left') || vhttFooterEl.firstElementChild;
     const leftText = leftEl?.textContent?.trim() || '';
+    if (profile) {
+      const m = profile.margins;
+      return buildDocx(blocks, {
+        finalSectPr: vhttSectPr(FOOTER_REL_ID, m),
+        footerXml: vhttFooterXml(leftText, VHTT_DOCX_FONT, PAGE_WIDTH - m.left - m.right),
+        defaultFont: VHTT_DOCX_FONT,
+        defaultSize: profile.bodySize,
+        bodyImage,
+      });
+    }
     return buildDocx(blocks, {
       finalSectPr: vhttSectPr(FOOTER_REL_ID),
       footerXml: vhttFooterXml(leftText),
+      bodyImage,
     });
   }
 
-  return buildDocx(blocks);
+  return buildDocx(blocks, { bodyImage });
 }

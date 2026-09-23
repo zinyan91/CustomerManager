@@ -29,8 +29,8 @@ describe('BM01 — cột nhãn đủ rộng trong Word, không ngắt "CCCD/CC/H
     return [...xml.matchAll(/<w:gridCol w:w="(\d+)"\/>/g)].map(m => Number(m[1]));
   };
 
-  it.each(['single', 'married'])('KH %s: cột nhãn chiếm 26%% khổ', type => {
-    expect(luoi(type)[0]).toBe(Math.round(CONTENT_WIDTH * 0.26));
+  it.each(['single', 'married'])('KH %s: cột nhãn chiếm 30%% khổ', type => {
+    expect(luoi(type)[0]).toBe(Math.round(CONTENT_WIDTH * 0.3));
   });
 
   it('KH tổ chức: cột nhãn chiếm 30% khổ', () => {
@@ -78,5 +78,33 @@ describe('Phông và cỡ mặc định của tài liệu theo hồ sơ in, đ�
   it('tài liệu không có hồ sơ in vẫn giữ mặc định Times New Roman như cũ', () => {
     const t = TEMPLATE_BY_ID.cc_to_trinh;
     expect(zipPart(htmlToDocx(t.buildHtml(emptyCommon(), t.specificDefaults)), 'word/styles.xml')).toContain('Times New Roman');
+  });
+});
+
+describe('Đánh số mục như bản gốc TB 2097/2026 (I. / 1. / a. / - / +)', () => {
+  const soCua = (id: string, s: object = {}) => {
+    const t = TEMPLATE_BY_ID[id];
+    const html = t.buildHtml(emptyCommon(), { ...t.specificDefaults, ...s });
+    return [...html.matchAll(/<span class="li-num"[^>]*>([^<]*)<\/span>/g)].map(m => m[1]);
+  };
+
+  it('BM02 có đủ đề mục La Mã, số và chữ theo thứ tự', () => {
+    const so = soCua('bm02_to_trinh_giai_ngan');
+    expect(so.filter(x => /^[IVX]+\.$/.test(x))).toEqual(['I.', 'II.']);
+    expect(so.filter(x => /^[a-e]\.$/.test(x))).toEqual(['a.', 'b.', 'c.', 'd.', 'e.', 'a.', 'b.']);
+  });
+
+  it('BM11 có ba đề mục I, II, III', () => {
+    expect(soCua('bm11_tra_no_truoc_han').filter(x => /^[IVX]+\.$/.test(x))).toEqual(['I.', 'II.', 'III.']);
+  });
+
+  it('BM01 các dòng cam kết có gạch đầu dòng', () => {
+    expect(soCua('bm01_de_nghi_giai_ngan').filter(x => x === '-').length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('trong Word, số thứ tự đứng trước một tab rồi mới tới nội dung', () => {
+    const t = TEMPLATE_BY_ID.bm02_to_trinh_giai_ngan;
+    const xml = zipPart(htmlToDocx(t.buildHtml(emptyCommon(), t.specificDefaults)), 'word/document.xml');
+    expect(xml).toMatch(/<w:t xml:space="preserve">I\.<\/w:t><\/w:r><w:r><w:tab\/><\/w:r>/);
   });
 });

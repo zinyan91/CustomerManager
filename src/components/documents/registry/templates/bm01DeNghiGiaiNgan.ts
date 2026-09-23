@@ -165,13 +165,13 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
 <table class="table-borderless">
 <tbody>
   <tr>
-    <td style="width: 26%;"><p class="p-left">Ông/Bà</p></td>
+    <td style="width: 30%;"><p class="p-left" style="margin-left:12pt; text-indent:-12pt;"><span class="li-num" style="width:12pt">-</span>Ông/Bà</p></td>
     <td colspan="2" style="width: 4%;"><p class="p-center">:</p></td>
-    <td style="width: 44%;"><p class="p-left">${name1 ? `<strong>${name1}</strong>` : '________'}</p></td>
+    <td style="width: 40%;"><p class="p-left">${name1 ? `<strong>${name1}</strong>` : '________'}</p></td>
     <td style="width: 26%;"><p class="p-left">CIF: ${cif1 ? `<strong>${cif1}</strong>` : '________'}</p></td>
   </tr>
   <tr>
-    <td><p class="p-left">CCCD/CC/Hộ chiếu số</p></td>
+    <td><p class="p-left" style="margin-left:12pt; text-indent:-12pt;"><span class="li-num" style="width:12pt">-</span>CCCD/CC/Hộ chiếu số</p></td>
     <td colspan="2"><p class="p-center">:</p></td>
     <td><p class="p-left">${cccd1 || '________'}</p></td>
     <td><p class="p-left empty-p">&nbsp;</p></td>
@@ -184,13 +184,13 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
 <table class="table-borderless">
 <tbody>
   <tr>
-    <td style="width: 26%;"><p class="p-left">Ông/Bà</p></td>
+    <td style="width: 30%;"><p class="p-left" style="margin-left:12pt; text-indent:-12pt;"><span class="li-num" style="width:12pt">-</span>Ông/Bà</p></td>
     <td colspan="2" style="width: 4%;"><p class="p-center">:</p></td>
-    <td style="width: 44%;"><p class="p-left">${name1 ? `<strong>${name1}</strong>` : '________'}</p></td>
+    <td style="width: 40%;"><p class="p-left">${name1 ? `<strong>${name1}</strong>` : '________'}</p></td>
     <td style="width: 26%;"><p class="p-left">CIF: ${cif1 ? `<strong>${cif1}</strong>` : '________'}</p></td>
   </tr>
   <tr>
-    <td><p class="p-left">CCCD/CC/Hộ chiếu số</p></td>
+    <td><p class="p-left" style="margin-left:12pt; text-indent:-12pt;"><span class="li-num" style="width:12pt">-</span>CCCD/CC/Hộ chiếu số</p></td>
     <td colspan="2"><p class="p-center">:</p></td>
     <td><p class="p-left">${cccd1 || '________'}</p></td>
     <td><p class="p-left empty-p">&nbsp;</p></td>
@@ -216,27 +216,27 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
 <table class="table-borderless">
 <tbody>
   <tr>
-    <td style="width: 30%;"><p class="p-left">Tên tổ chức</p></td>
+    <td style="width: 30%;"><p class="p-left" style="margin-left:12pt; text-indent:-12pt;"><span class="li-num" style="width:12pt">-</span>Tên tổ chức</p></td>
     <td style="width: 3%;"><p class="p-center">:</p></td>
     <td colspan="4" style="width: 67%;"><p class="p-left">${orgName ? `<strong>${orgName}</strong>` : '________'}</p></td>
   </tr>
   <tr>
-    <td><p class="p-left">MSDN/số ĐKKD/GPHĐ số</p></td>
+    <td><p class="p-left" style="margin-left:12pt; text-indent:-12pt;"><span class="li-num" style="width:12pt">-</span>MSDN/số ĐKKD/GPHĐ số</p></td>
     <td><p class="p-center">:</p></td>
     <td colspan="4"><p class="p-left">${orgRegNo || '________'}</p></td>
   </tr>
   <tr>
-    <td><p class="p-left">Người đại diện</p></td>
+    <td><p class="p-left" style="margin-left:12pt; text-indent:-12pt;"><span class="li-num" style="width:12pt">-</span>Người đại diện</p></td>
     <td><p class="p-center">:</p></td>
     <td colspan="4"><p class="p-left">${repName || '________'}</p></td>
   </tr>
   <tr>
-    <td><p class="p-left">Chức vụ</p></td>
+    <td><p class="p-left" style="margin-left:12pt; text-indent:-12pt;"><span class="li-num" style="width:12pt">-</span>Chức vụ</p></td>
     <td><p class="p-center">:</p></td>
     <td colspan="4"><p class="p-left">${repPosition || '________'}</p></td>
   </tr>
   <tr>
-    <td><p class="p-left">Theo Văn bản uỷ quyền số (nếu có)</p></td>
+    <td><p class="p-left" style="margin-left:12pt; text-indent:-12pt;"><span class="li-num" style="width:12pt">-</span>Theo Văn bản uỷ quyền số (nếu có)</p></td>
     <td><p class="p-center">:</p></td>
     <td colspan="4"><p class="p-left">${authText}</p></td>
   </tr>
@@ -369,10 +369,10 @@ ${disbursementTableHtml}
 
 <p class="p-left">Tôi/chúng tôi đề nghị Vietbank trích tiền từ tài khoản thanh toán số ${feeAcc} của tôi/chúng tôi để thu các khoản phí phát sinh liên quan đến việc giải ngân tiền cho bên thụ hưởng nêu trên.</p>
 <p class="p-left">Tôi/Chúng tôi cam kết:</p>
-<p class="p-left">Tôi/Chúng tôi bảo đảm rằng các hồ sơ, chứng từ giải ngân cung cấp cho Vietbank theo phương án vay vốn/giải ngân lần này là xác thực, đầy đủ, hợp pháp, chưa từng được sử dụng để phục vụ việc vay vốn/giải ngân tại bất cứ Tổ chức tín dụng, Chi nhánh Ngân hàng nước ngoài nào và hoàn toàn chịu trách nhiệm về các hồ sơ, chứng từ đã cung cấp cho Vietbank.</p>
-<p class="p-left">Tôi/Chúng tôi bảo đảm chỉ sử dụng các hồ sơ, chứng từ giải ngân cung cấp cho lần này để chứng minh duy nhất cho phương án vay vốn/giải ngân tại Vietbank, đồng thời tôi/chúng tôi cam kết không sử dụng các hồ sơ, chứng từ này để phục vụ việc vay vốn/giải ngân tại bất cứ Tổ chức tín dụng, Chi nhánh Ngân hàng nước ngoài nào khác.</p>
-<p class="p-left">Phương thức giải ngân bằng tiền mặt/chuyển khoản theo đề nghị trên là phù hợp quy định của pháp luật.</p>
-<p class="p-left">Khi Ngân hàng đã chuyển khoản tiền vay vào tài khoản người thụ hưởng (bao gồm tài khoản của bên vay và/hoặc bên thứ ba), hoặc chi trả bằng tiền mặt theo đề nghị này, thì được xem là Ngân hàng đã hoàn tất việc giải ngân; tôi/chúng tôi được xem là đã nhận đủ số tiền giải ngân.</p>
+<p class="p-left" style="margin-left:36pt; text-indent:-18pt;"><span class="li-num" style="width:18pt">-</span>Tôi/Chúng tôi bảo đảm rằng các hồ sơ, chứng từ giải ngân cung cấp cho Vietbank theo phương án vay vốn/giải ngân lần này là xác thực, đầy đủ, hợp pháp, chưa từng được sử dụng để phục vụ việc vay vốn/giải ngân tại bất cứ Tổ chức tín dụng, Chi nhánh Ngân hàng nước ngoài nào và hoàn toàn chịu trách nhiệm về các hồ sơ, chứng từ đã cung cấp cho Vietbank.</p>
+<p class="p-left" style="margin-left:36pt; text-indent:-18pt;"><span class="li-num" style="width:18pt">-</span>Tôi/Chúng tôi bảo đảm chỉ sử dụng các hồ sơ, chứng từ giải ngân cung cấp cho lần này để chứng minh duy nhất cho phương án vay vốn/giải ngân tại Vietbank, đồng thời tôi/chúng tôi cam kết không sử dụng các hồ sơ, chứng từ này để phục vụ việc vay vốn/giải ngân tại bất cứ Tổ chức tín dụng, Chi nhánh Ngân hàng nước ngoài nào khác.</p>
+<p class="p-left" style="margin-left:36pt; text-indent:-18pt;"><span class="li-num" style="width:18pt">-</span>Phương thức giải ngân bằng tiền mặt/chuyển khoản theo đề nghị trên là phù hợp quy định của pháp luật.</p>
+<p class="p-left" style="margin-left:36pt; text-indent:-18pt;"><span class="li-num" style="width:18pt">-</span>Khi Ngân hàng đã chuyển khoản tiền vay vào tài khoản người thụ hưởng (bao gồm tài khoản của bên vay và/hoặc bên thứ ba), hoặc chi trả bằng tiền mặt theo đề nghị này, thì được xem là Ngân hàng đã hoàn tất việc giải ngân; tôi/chúng tôi được xem là đã nhận đủ số tiền giải ngân.</p>
 <p class="p-left">Trân trọng,</p>
 <table class="table-borderless sig-table" style="page-break-inside: avoid; margin-top: 8pt;">
 <tbody>

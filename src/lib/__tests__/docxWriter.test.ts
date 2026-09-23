@@ -462,3 +462,36 @@ describe('gạch chân <u> được giữ khi xuất Word', () => {
     expect(b.runs[0].underline).toBe(true);
   });
 });
+
+describe('đoạn đánh số kiểu Word: span.li-num + thụt treo theo pt', () => {
+  const HTML = '<p style="margin-left:14.2pt; text-indent:-7.1pt"><span class="li-num" style="width:7.1pt">I.</span><u>THÔNG TIN</u>:</p>';
+
+  it('thụt lề đọc theo đơn vị pt (1pt = 20 twip)', () => {
+    const p = parseDocumentHtml(HTML)[0] as DocxParagraph;
+    expect(p.left).toBe(284);
+    expect(p.firstLine).toBe(-142);
+  });
+
+  it('số thứ tự thành một run, theo sau là tab, rồi mới tới nội dung', () => {
+    const p = parseDocumentHtml(HTML)[0] as DocxParagraph;
+    expect(p.runs[0].text).toBe('I.');
+    expect(p.runs[1].tab).toBe(true);
+    expect(p.runs[2].text).toBe('THÔNG TIN');
+    expect(p.runs[2].underline).toBe(true);
+  });
+
+  it('số thứ tự không mang gạch chân hay đậm của nội dung phía sau', () => {
+    const p = parseDocumentHtml(HTML)[0] as DocxParagraph;
+    expect(p.runs[0].underline).toBeFalsy();
+  });
+
+  it('thụt lề đơn vị px vẫn đọc như cũ', () => {
+    const p = parseDocumentHtml('<p style="margin-left:20px">A</p>')[0] as DocxParagraph;
+    expect(p.left).toBe(300);
+  });
+
+  it('XML đoạn có thụt treo ghi w:hanging thay cho w:firstLine âm', () => {
+    const xml = paragraphXml(parseDocumentHtml(HTML)[0] as DocxParagraph);
+    expect(xml).toMatch(/<w:ind w:left="284" w:hanging="142"\/>/);
+  });
+});

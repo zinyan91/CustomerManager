@@ -118,14 +118,14 @@ ${VHTT_STYLES}
 <p class="p-center" style="font-style: italic; margin-top: 0; margin-bottom: 8pt;">(áp dụng khi giao nhận hồ sơ cấp tín dụng với khách hàng)</p>
 
 <p class="p-justify" style="margin-top: 6pt;"><strong>1. BÊN GIAO: ĐẠI DIỆN KHÁCH HÀNG</strong></p>
-<p class="p-justify">Ông/Bà: <strong>${repName}</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Chức vụ: <strong>${repPos}</strong></p>
-<p class="p-justify">CCCD/CC/Hộ Chiếu số: <strong>${repCccd}</strong>&nbsp;&nbsp;&nbsp;&nbsp;Ngày cấp: <strong>${repCccdDate}</strong>&nbsp;&nbsp;&nbsp;&nbsp;Nơi cấp: <strong>${repCccdPlace}</strong></p>
+<p class="p-justify" style="margin-left:22.5pt; text-indent:-18pt;"><span class="li-num" style="width:18pt">-</span>Ông/Bà: <strong>${repName}</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Chức vụ: <strong>${repPos}</strong></p>
+<p class="p-justify" style="margin-left:22.5pt; text-indent:-18pt;"><span class="li-num" style="width:18pt">-</span>CCCD/CC/Hộ Chiếu số: <strong>${repCccd}</strong>&nbsp;&nbsp;&nbsp;&nbsp;Ngày cấp: <strong>${repCccdDate}</strong>&nbsp;&nbsp;&nbsp;&nbsp;Nơi cấp: <strong>${repCccdPlace}</strong></p>
 <p class="p-justify">Là đại diện công ty: <strong>${company}</strong></p>
 <p class="p-justify">Theo Giấy đề nghị v/v Đăng ký Nhân viên thực hiện giao nhận hồ sơ, chứng từ ngày <strong>${regDocDate}</strong> đã được Vietbank xác nhận.</p>
 
 <p class="p-justify" style="margin-top: 6pt;"><strong>2. BÊN NHẬN: NGÂN HÀNG TMCP VIỆT NAM THƯƠNG TÍN – CN ${branch}${pgd} (Vietbank)</strong></p>
-<p class="p-justify">Ông/Bà: <strong>${bankStaff}</strong></p>
-<p class="p-justify">Chức vụ: <strong>${bankPos}</strong>&nbsp;&nbsp;&nbsp;&nbsp;TTKD/Phòng: <strong>${bankDept}</strong>&nbsp;&nbsp;&nbsp;&nbsp;Bộ phận: <strong>${bankTeam}</strong></p>
+<p class="p-justify" style="margin-left:22.5pt; text-indent:-18pt;"><span class="li-num" style="width:18pt">-</span>Ông/Bà: <strong>${bankStaff}</strong></p>
+<p class="p-justify" style="margin-left:22.5pt; text-indent:-18pt;"><span class="li-num" style="width:18pt">-</span>Chức vụ: <strong>${bankPos}</strong>&nbsp;&nbsp;&nbsp;&nbsp;TTKD/Phòng: <strong>${bankDept}</strong>&nbsp;&nbsp;&nbsp;&nbsp;Bộ phận: <strong>${bankTeam}</strong></p>
 
 <p class="p-justify" style="margin-top: 6pt;"><strong>3. NỘI DUNG THỰC HIỆN: BÀN GIAO HỒ SƠ KHÁCH HÀNG ĐÃ KÝ, ĐÓNG DẤU</strong></p>
 

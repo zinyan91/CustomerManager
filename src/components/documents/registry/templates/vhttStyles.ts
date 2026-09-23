@@ -11,9 +11,14 @@ export const VHTT_STYLES = `
     box-sizing: border-box !important;
   }
   .vhtt-doc p {
-    margin: 1.5pt 0 !important;
+    margin-top: 1.5pt !important;
+    margin-bottom: 1.5pt !important;
     text-align: justify !important;
     line-height: 1.25 !important;
+  }
+  .vhtt-doc .li-num {
+    display: inline-block;
+    text-indent: 0;
   }
   .vhtt-doc p.empty-p {
     min-height: 0.4em !important;

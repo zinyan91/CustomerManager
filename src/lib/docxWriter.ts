@@ -103,6 +103,12 @@ function ptToTwips(pt: number): number {
   return Math.round(pt * 20);
 }
 
+function lengthToTwips(value: string): number | null {
+  const n = parseFloat(value);
+  if (!isFinite(n)) return null;
+  return value.trim().endsWith('pt') ? ptToTwips(n) : pxToTwips(n);
+}
+
 function tailwindSpacing(step: number): number {
   return pxToTwips(step * 4);
 }
@@ -189,6 +195,12 @@ function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
       runs.push({ text: '', tab: true });
       continue;
     }
+    if (el.classList && el.classList.contains('li-num')) {
+      const numCtx = { ...inlineCtxOf(el, ctx), underline: false };
+      runs.push({ text: (el.textContent || '').trim(), font: numCtx.font, bold: numCtx.bold, italic: numCtx.italic, size: numCtx.size });
+      runs.push({ text: '', tab: true });
+      continue;
+    }
     collectRuns(el, inlineCtxOf(el, ctx), runs);
   }
 }
@@ -223,12 +235,12 @@ function blockCtxOf(el: Element, ctx: BlockCtx): BlockCtx {
   const css = styleOf(el);
   if (css['text-align']) next.align = alignFromValue(css['text-align']) || next.align;
   if (css['margin-left']) {
-    const px = parseFloat(css['margin-left']);
-    if (isFinite(px)) next.left = pxToTwips(px);
+    const tw = lengthToTwips(css['margin-left']);
+    if (tw !== null) next.left = tw;
   }
   if (css['text-indent']) {
-    const px = parseFloat(css['text-indent']);
-    if (isFinite(px)) next.firstLine = pxToTwips(px);
+    const tw = lengthToTwips(css['text-indent']);
+    if (tw !== null) next.firstLine = tw;
   }
   return next;
 }
@@ -519,8 +531,9 @@ export function paragraphXml(p: DocxParagraph): string {
 
   const indParts: string[] = [];
   if (p.left) indParts.push(`w:left="${p.left}"`);
-  if (p.hanging) indParts.push(`w:hanging="${p.hanging}"`);
-  if (p.firstLine) indParts.push(`w:firstLine="${p.firstLine}"`);
+  const hanging = p.hanging || (p.firstLine && p.firstLine < 0 ? -p.firstLine : 0);
+  if (hanging) indParts.push(`w:hanging="${hanging}"`);
+  else if (p.firstLine) indParts.push(`w:firstLine="${p.firstLine}"`);
   if (indParts.length > 0) props.push(`<w:ind ${indParts.join(' ')}/>`);
 
   if (p.align) props.push(`<w:jc w:val="${JC[p.align]}"/>`);

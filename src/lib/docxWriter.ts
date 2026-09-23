@@ -35,6 +35,7 @@ export interface DocxRun {
   font?: string;
   bold?: boolean;
   italic?: boolean;
+  underline?: boolean;
   size?: number;
   letterSpacing?: number;
   lineBreak?: boolean;
@@ -78,6 +79,7 @@ interface InlineCtx {
   font?: string;
   bold?: boolean;
   italic?: boolean;
+  underline?: boolean;
   size?: number;
   upper?: boolean;
   letterSpacing?: number;
@@ -127,6 +129,7 @@ function inlineCtxOf(el: Element, ctx: InlineCtx): InlineCtx {
   const tag = el.tagName.toLowerCase();
   if (tag === 'strong' || tag === 'b' || tag === 'th') next.bold = true;
   if (tag === 'em' || tag === 'i') next.italic = true;
+  if (tag === 'u') next.underline = true;
 
   for (const cls of Array.from(el.classList)) {
     if (cls === 'font-bold' || cls === 'text-bold') next.bold = true;
@@ -143,6 +146,7 @@ function inlineCtxOf(el: Element, ctx: InlineCtx): InlineCtx {
   }
   if (css['font-weight'] === 'bold') next.bold = true;
   if (css['font-style'] === 'italic') next.italic = true;
+  if ((css['text-decoration'] || '').includes('underline')) next.underline = true;
   return next;
 }
 
@@ -167,6 +171,7 @@ function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
           font: ctx.font,
           bold: ctx.bold,
           italic: ctx.italic,
+          underline: ctx.underline,
           size: ctx.size,
           letterSpacing: ctx.letterSpacing,
         });
@@ -395,7 +400,7 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
     if (child.nodeType === 3) {
       const text = normalizeText(child.nodeValue || '', ctx.upper);
       if (text.trim() !== '') {
-        pending.push({ text, font: ctx.font, bold: ctx.bold, italic: ctx.italic, size: ctx.size });
+        pending.push({ text, font: ctx.font, bold: ctx.bold, italic: ctx.italic, underline: ctx.underline, size: ctx.size });
       }
       continue;
     }
@@ -479,6 +484,7 @@ function runXml(run: DocxRun): string {
   if (run.italic) props.push('<w:i/><w:iCs/>');
   if (run.letterSpacing) props.push(`<w:spacing w:val="${run.letterSpacing}"/>`);
   if (run.size) props.push(`<w:sz w:val="${run.size}"/><w:szCs w:val="${run.size}"/>`);
+  if (run.underline) props.push('<w:u w:val="single"/>');
   const rPr = props.length > 0 ? `<w:rPr>${props.join('')}</w:rPr>` : '';
 
   return `<w:r>${rPr}<w:t xml:space="preserve">${escapeXml(run.text)}</w:t></w:r>`;

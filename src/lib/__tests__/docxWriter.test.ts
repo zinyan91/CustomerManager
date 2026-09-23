@@ -443,3 +443,22 @@ describe('parseDocumentHtml nhận bối cảnh gốc về phông và cỡ chữ
     expect(runDau(parseDocumentHtml('<h1>Tiêu đề</h1>')).size).toBe(32);
   });
 });
+
+describe('gạch chân <u> được giữ khi xuất Word', () => {
+  it('chữ trong <u> mang cờ gạch chân', () => {
+    const b = parseDocumentHtml('<p><u><strong>THÔNG TIN KHÁCH HÀNG</strong></u>:</p>')[0] as DocxParagraph;
+    expect(b.runs[0].underline).toBe(true);
+    expect(b.runs[0].bold).toBe(true);
+    expect(b.runs[1].underline).toBeFalsy();
+  });
+
+  it('XML có <w:u w:val="single"/> đặt sau cỡ chữ theo đúng thứ tự lược đồ', () => {
+    const xml = paragraphXml({ kind: 'p', runs: [{ text: 'A', bold: true, size: 20, underline: true }] });
+    expect(xml).toContain('<w:sz w:val="20"/><w:szCs w:val="20"/><w:u w:val="single"/>');
+  });
+
+  it('style="text-decoration: underline" cũng được nhận', () => {
+    const b = parseDocumentHtml('<p><span style="text-decoration: underline">Gạch</span></p>')[0] as DocxParagraph;
+    expect(b.runs[0].underline).toBe(true);
+  });
+});

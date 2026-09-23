@@ -135,5 +135,11 @@ export const VHTT_STYLES = `
       background: #ffffff !important;
     }
   }
+  .vhtt-doc[data-vhtt-form],
+  .vhtt-doc[data-vhtt-form] table.table-bordered th,
+  .vhtt-doc[data-vhtt-form] table.table-bordered td {
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 10pt !important;
+  }
 </style>
 `;

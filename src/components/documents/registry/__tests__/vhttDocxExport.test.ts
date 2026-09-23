@@ -5,6 +5,7 @@ import { DOSSIERS } from '../dossiers';
 import { emptyCommon } from '../types';
 import { htmlToDocx, parseDocumentHtml, CONTENT_WIDTH, PAGE_WIDTH, type DocxTable } from '../../../../lib/docxWriter';
 import { VHTT_DOCX_PROFILES } from '../../../../lib/vhttDocxProfiles';
+import { VHTT_STYLES } from '../templates/vhttStyles';
 import { zipPart, zipNames } from '../../../../lib/__tests__/zipRead';
 
 const VHTT = DOSSIERS.find(d => d.id === 'van_hanh_tap_trung')!;
@@ -146,5 +147,12 @@ describe('BM02 có logo Vietbank như bản gốc', () => {
     const bytes = htmlToDocx(html);
     expect(zipPart(bytes, 'word/document.xml')).toContain('<w:drawing>');
     expect(zipNames(bytes)).toContain('word/media/logo.png');
+  });
+});
+
+describe('Bản xem trước và in PDF của 5 mẫu dùng Arial 10pt như bản gốc', () => {
+  it('CSS có quy tắc riêng cho mẫu mang data-vhtt-form, mẫu thẻ tín dụng không bị đổi', () => {
+    expect(VHTT_STYLES).toMatch(/\.vhtt-doc\[data-vhtt-form\][^{]*\{[^}]*font-family:\s*Arial[^}]*font-size:\s*10pt/);
+    expect(VHTT_STYLES).toMatch(/\.vhtt-doc \{[^}]*font-family: 'Times New Roman'/);
   });
 });

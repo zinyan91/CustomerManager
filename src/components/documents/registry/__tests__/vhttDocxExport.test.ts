@@ -5,7 +5,7 @@ import { DOSSIERS } from '../dossiers';
 import { emptyCommon } from '../types';
 import { htmlToDocx, parseDocumentHtml, CONTENT_WIDTH, PAGE_WIDTH, type DocxTable } from '../../../../lib/docxWriter';
 import { VHTT_DOCX_PROFILES } from '../../../../lib/vhttDocxProfiles';
-import { zipPart } from '../../../../lib/__tests__/zipRead';
+import { zipPart, zipNames } from '../../../../lib/__tests__/zipRead';
 
 const VHTT = DOSSIERS.find(d => d.id === 'van_hanh_tap_trung')!;
 
@@ -133,5 +133,18 @@ describe('BM02: bảng có độ rộng cột và nền tiêu đề như bản g
       expect(b.rows[0].every(c => c.fill === 'DEEAF6')).toBe(true);
       expect(b.rows[1].every(c => c.fill === undefined)).toBe(true);
     }
+  });
+});
+
+describe('BM02 có logo Vietbank như bản gốc', () => {
+  it('logo nằm ở ô trên cùng bên trái, trước dòng Tên TTKD, và có trong tệp Word', () => {
+    const t = TEMPLATE_BY_ID.bm02_to_trinh_giai_ngan;
+    const html = t.buildHtml(emptyCommon(), t.specificDefaults);
+    const iLogo = html.indexOf('data-docx-image="vietbank-logo"');
+    expect(iLogo).toBeGreaterThan(-1);
+    expect(iLogo).toBeLessThan(html.indexOf('Tên TTKD'));
+    const bytes = htmlToDocx(html);
+    expect(zipPart(bytes, 'word/document.xml')).toContain('<w:drawing>');
+    expect(zipNames(bytes)).toContain('word/media/logo.png');
   });
 });

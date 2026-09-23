@@ -1,6 +1,7 @@
 import { FileText } from 'lucide-react';
 import type { DocTemplate, DossierCommon } from '../types';
 import { VHTT_STYLES } from './vhttStyles';
+import { bm04LogoDataUri } from '../../../../lib/bm04Logo';
 
 export interface Bm02Specific {
   centerName?: string;
@@ -87,7 +88,7 @@ ${VHTT_STYLES}
 <table class="table-borderless">
 <tbody>
   <tr>
-    <td><p class="p-left empty-p">&nbsp;</p><p class="p-left empty-p">&nbsp;</p><p class="p-left">Tên TTKD: ${centerName}</p><p class="p-left">Mã TTKD: ${centerCode}</p></td>
+    <td><p class="p-left"><img src="${bm04LogoDataUri()}" data-docx-image="vietbank-logo" alt="Vietbank" style="width:122pt; height:31.5pt"></p><p class="p-left">Tên TTKD: ${centerName}</p><p class="p-left">Mã TTKD: ${centerCode}</p></td>
     <td><p class="p-left">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p><p class="p-center">Độc lập – Tự do – Hạnh phúc</p><p class="p-center">--------</p><p class="p-right"><em>${dateLine}</em></p></td>
   </tr>
 </tbody>

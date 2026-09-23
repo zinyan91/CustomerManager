@@ -513,3 +513,27 @@ describe('nền ô bảng từ CSS background', () => {
     expect(c.fill).toBe('AABBCC');
   });
 });
+
+describe('ảnh logo trong thân tài liệu', () => {
+  const HTML = '<p><img data-docx-image="vietbank-logo" style="width:122pt; height:31.5pt" alt="Vietbank"></p><p>Tên TTKD</p>';
+
+  it('img có dấu data-docx-image thành một run ảnh, kích thước đổi pt sang EMU', () => {
+    const p = parseDocumentHtml(HTML)[0] as DocxParagraph;
+    expect(p.runs[0].image).toEqual({ cx: 122 * 12700, cy: 31.5 * 12700 });
+  });
+
+  it('img không có dấu thì bỏ qua như trước', () => {
+    const blocks = parseDocumentHtml('<p><img src="x.png">Chữ</p>');
+    expect((blocks[0] as DocxParagraph).runs.every(r => !r.image)).toBe(true);
+  });
+
+  it('tệp Word có ảnh trong media, quan hệ ảnh của document và thẻ w:drawing tham chiếu đúng', () => {
+    const bytes = htmlToDocx(HTML);
+    expect(zipNames(bytes).some(n => /^word\/media\/.+\.png$/.test(n))).toBe(true);
+    const rels = zipPart(bytes, 'word/_rels/document.xml.rels');
+    const relId = /Id="(rId\d+)" Type="[^"]*\/image"/.exec(rels)?.[1];
+    expect(relId).toBeTruthy();
+    expect(zipPart(bytes, 'word/document.xml')).toContain(`r:embed="${relId}"`);
+    expect(zipPart(bytes, '[Content_Types].xml')).toContain('Extension="png"');
+  });
+});

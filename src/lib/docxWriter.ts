@@ -39,6 +39,7 @@ export interface DocxRun {
   size?: number;
   letterSpacing?: number;
   lineBreak?: boolean;
+  image?: { cx: number; cy: number };
 }
 
 export interface DocxParagraph {
@@ -168,6 +169,18 @@ function isNonContent(el: Element): boolean {
   return NON_CONTENT_TAGS.has(el.tagName.toLowerCase());
 }
 
+export const BODY_IMAGE_ATTR = 'data-docx-image';
+const EMU_PER_PT = 12700;
+
+function bodyImageOf(el: Element): { cx: number; cy: number } | null {
+  if (!el.getAttribute(BODY_IMAGE_ATTR)) return null;
+  const css = styleOf(el);
+  const w = parseFloat(css['width'] || '');
+  const h = parseFloat(css['height'] || '');
+  if (!isFinite(w) || !isFinite(h)) return null;
+  return { cx: Math.round(w * EMU_PER_PT), cy: Math.round(h * EMU_PER_PT) };
+}
+
 function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
   for (const child of Array.from(node.childNodes)) {
     if (child.nodeType === 3) {
@@ -196,6 +209,11 @@ function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
       runs.push({ text: '', tab: true });
       continue;
     }
+    if (el.tagName.toLowerCase() === 'img') {
+      const image = bodyImageOf(el);
+      if (image) runs.push({ text: '', image });
+      continue;
+    }
     if (el.classList && el.classList.contains('li-num')) {
       const numCtx = { ...inlineCtxOf(el, ctx), underline: false };
       runs.push({ text: (el.textContent || '').trim(), font: numCtx.font, bold: numCtx.bold, italic: numCtx.italic, size: numCtx.size });
@@ -208,10 +226,10 @@ function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
 
 function trimRuns(runs: DocxRun[]): DocxRun[] {
   const out = runs.slice();
-  while (out.length > 0 && !out[0].lineBreak && out[0].text.trim() === '') out.shift();
+  while (out.length > 0 && !out[0].lineBreak && !out[0].image && out[0].text.trim() === '') out.shift();
   while (out.length > 0) {
     const last = out[out.length - 1];
-    if (last.lineBreak || last.text.trim() === '') out.pop();
+    if (!last.image && (last.lineBreak || last.text.trim() === '')) out.pop();
     else break;
   }
   if (out.length > 0) {
@@ -491,9 +509,25 @@ export function parseDocumentHtml(html: string, base: DocxBaseCtx = {}): DocxBlo
   return blocks[0] && blocks[0].kind === 'sect' ? blocks.slice(1) : blocks;
 }
 
+function imageRunXml(image: { cx: number; cy: number }): string {
+  return '<w:r><w:drawing>'
+    + '<wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">'
+    + `<wp:extent cx="${image.cx}" cy="${image.cy}"/>`
+    + '<wp:docPr id="101" name="Logo"/>'
+    + '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+    + '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+    + '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'
+    + '<pic:nvPicPr><pic:cNvPr id="0" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr>'
+    + `<pic:blipFill><a:blip r:embed="${BODY_IMAGE_REL_ID}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>`
+    + `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${image.cx}" cy="${image.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>`
+    + '</pic:pic></a:graphicData></a:graphic></wp:inline>'
+    + '</w:drawing></w:r>';
+}
+
 function runXml(run: DocxRun): string {
   if (run.lineBreak) return '<w:r><w:br/></w:r>';
   if (run.tab) return '<w:r><w:tab/></w:r>';
+  if (run.image) return imageRunXml(run.image);
 
   const props: string[] = [];
   if (run.font) {
@@ -663,7 +697,7 @@ function contentTypesXml(extra: DocxPackageExtras): string {
     + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
     + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
     + '<Default Extension="xml" ContentType="application/xml"/>'
-    + (extra.image ? '<Default Extension="png" ContentType="image/png"/>' : '')
+    + (extra.image || extra.bodyImage ? '<Default Extension="png" ContentType="image/png"/>' : '')
     + '<Override PartName="/word/document.xml"'
     + ' ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
     + '<Override PartName="/word/styles.xml"'
@@ -696,6 +730,7 @@ export const HEADER_REL_ID = 'rId2';
 export const FOOTER_REL_ID = 'rId3';
 export const IMAGE_REL_ID = 'rId4';
 export const NUMBERING_REL_ID = 'rId5';
+export const BODY_IMAGE_REL_ID = 'rId6';
 
 function documentRelsXml(extra: DocxPackageExtras): string {
   return XML_DECL
@@ -707,6 +742,8 @@ function documentRelsXml(extra: DocxPackageExtras): string {
       ? `<Relationship Id="${FOOTER_REL_ID}" Type="${REL_BASE}/footer" Target="footer1.xml"/>` : '')
     + (extra.numbering
       ? `<Relationship Id="${NUMBERING_REL_ID}" Type="${REL_BASE}/numbering" Target="numbering.xml"/>` : '')
+    + (extra.bodyImage
+      ? `<Relationship Id="${BODY_IMAGE_REL_ID}" Type="${REL_BASE}/image" Target="media/${extra.bodyImage.name}"/>` : '')
     + '</Relationships>';
 }
 
@@ -743,6 +780,7 @@ export interface DocxPackageExtras {
   headerXml?: string;
   footerXml?: string;
   image?: { name: string; bytes: Uint8Array };
+  bodyImage?: { name: string; bytes: Uint8Array };
 }
 
 export function buildDocx(blocks: DocxBlock[], extra: DocxPackageExtras = {}): Uint8Array {
@@ -763,6 +801,9 @@ export function buildDocx(blocks: DocxBlock[], extra: DocxPackageExtras = {}): U
   }
   if (extra.image) {
     parts.push({ name: `word/media/${extra.image.name}`, data: extra.image.bytes });
+  }
+  if (extra.bodyImage) {
+    parts.push({ name: `word/media/${extra.bodyImage.name}`, data: extra.bodyImage.bytes });
   }
   if (extra.numbering) {
     parts.push({ name: 'word/numbering.xml', data: utf8(NUMBERING_XML) });
@@ -828,6 +869,9 @@ export function htmlToDocx(html: string): Uint8Array {
   const blocks = parseDocumentHtml(html, profile
     ? { font: VHTT_DOCX_FONT, size: profile.bodySize, tableSize: profile.tableSize, titleSize: profile.titleSize }
     : {});
+  const bodyImage = doc.querySelector(`img[${BODY_IMAGE_ATTR}]`)
+    ? { name: 'logo.png', bytes: bm04LogoBytes() }
+    : undefined;
   const coBm04 = !!doc.querySelector(`[${BM04_SECTION_ATTR}="${BM04_SECTION_VALUE}"]`);
   if (coBm04) {
     return buildDocx(blocks, {
@@ -836,6 +880,7 @@ export function htmlToDocx(html: string): Uint8Array {
       headerXml: bm04HeaderXml(IMAGE_REL_ID),
       footerXml: bm04FooterXml(),
       image: { name: 'image1.png', bytes: bm04LogoBytes() },
+      bodyImage,
     });
   }
 
@@ -850,13 +895,15 @@ export function htmlToDocx(html: string): Uint8Array {
         footerXml: vhttFooterXml(leftText, VHTT_DOCX_FONT, PAGE_WIDTH - m.left - m.right),
         defaultFont: VHTT_DOCX_FONT,
         defaultSize: profile.bodySize,
+        bodyImage,
       });
     }
     return buildDocx(blocks, {
       finalSectPr: vhttSectPr(FOOTER_REL_ID),
       footerXml: vhttFooterXml(leftText),
+      bodyImage,
     });
   }
 
-  return buildDocx(blocks);
+  return buildDocx(blocks, { bodyImage });
 }

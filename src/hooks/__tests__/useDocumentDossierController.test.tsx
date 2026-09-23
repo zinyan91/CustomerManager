@@ -25,4 +25,14 @@ describe('useDocumentDossierController', () => {
     act(() => result.current.toggleOptional('cam_ket'));
     expect(result.current.isExcluded('cam_ket')).toBe(true);
   });
+
+  it('đổi bộ qua selectDocIn rồi quay lại vẫn giữ dữ liệu', () => {
+    const { result } = renderHook(() => useDocumentDossierController());
+    act(() => result.current.patchCommon({ totalAmount: '5.000' }));
+    act(() => result.current.selectDocIn('van_hanh_tap_trung', 'bm01_de_nghi_giai_ngan'));
+    expect(result.current.activeDossier.id).toBe('van_hanh_tap_trung');
+    act(() => result.current.selectDossier('giai_ngan'));
+    expect(result.current.state.common.totalAmount).toBe('5.000');
+    expect(result.current.isExcludedIn('sua_chua_nha', 'cam_ket')).toBe(false);
+  });
 });

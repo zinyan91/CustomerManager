@@ -39,6 +39,23 @@ describe('BM01 — cột nhãn đủ rộng trong Word, không ngắt "CCCD/CC/H
   });
 });
 
+describe('BM01 — bảng chuyển khoản / tiền mặt chia cột 32/3/65 như bản gốc, "Bằng chữ" không bị đẩy xuống', () => {
+  const bm01 = TEMPLATE_BY_ID.bm01_de_nghi_giai_ngan;
+  const luoiBangSoTien = (disbursementMethod: string) => {
+    const xml = zipPart(htmlToDocx(bm01.buildHtml(emptyCommon(), { ...bm01.specificDefaults, disbursementMethod })), 'word/document.xml') ?? '';
+    const bang = xml.split('<w:tbl>').find(t => t.includes('Bằng chữ')) ?? '';
+    return [...bang.matchAll(/<w:gridCol w:w="(\d+)"\/>/g)].map(m => Number(m[1]));
+  };
+
+  it.each(['transfer', 'cash'])('%s', method => {
+    expect(luoiBangSoTien(method)).toEqual([
+      Math.round(CONTENT_WIDTH * 0.32),
+      Math.round(CONTENT_WIDTH * 0.03),
+      Math.round(CONTENT_WIDTH * 0.65),
+    ]);
+  });
+});
+
 describe('Word Vận hành tập trung khớp bản gốc TB 2097/2026: Arial, cỡ chữ và lề theo từng mẫu', () => {
   const MAU: Record<string, string> = {
     bm01_de_nghi_giai_ngan: 'BM01', bm02_to_trinh_giai_ngan: 'BM02', bm07_bien_ban_ban_giao: 'BM07',

@@ -285,9 +285,9 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
     <td colspan="3"><p class="p-left">${headerTitle}</p></td>
   </tr>
   <tr>
-    <td><p class="p-left">Số tiền</p></td>
-    <td><p class="p-center">:</p></td>
-    <td><p class="p-left">${transferAmountDisplay} Bằng chữ: ${transferWordsDisplay}</p></td>
+    <td style="width: 32%;"><p class="p-left">Số tiền</p></td>
+    <td style="width: 3%;"><p class="p-center">:</p></td>
+    <td style="width: 65%;"><p class="p-left">${transferAmountDisplay} Bằng chữ: ${transferWordsDisplay}</p></td>
   </tr>
   <tr>
     <td><p class="p-left">Số tài khoản</p></td>
@@ -327,9 +327,9 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
     <td colspan="3"><p class="p-left"><strong>Nhận tiền mặt:</strong></p></td>
   </tr>
   <tr>
-    <td><p class="p-left">Số tiền</p></td>
-    <td><p class="p-center">:</p></td>
-    <td><p class="p-left">${cashAmountDisplay} Bằng chữ: ${cashWordsDisplay}</p></td>
+    <td style="width: 32%;"><p class="p-left">Số tiền</p></td>
+    <td style="width: 3%;"><p class="p-center">:</p></td>
+    <td style="width: 65%;"><p class="p-left">${cashAmountDisplay} Bằng chữ: ${cashWordsDisplay}</p></td>
   </tr>
   <tr>
     <td><p class="p-left">Họ tên người nhận tiền</p></td>

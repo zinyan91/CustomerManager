@@ -413,6 +413,18 @@ describe('tblGrid tôn trọng độ rộng đã khai khi hàng đầu có ô g�
     const g = gridOf('<table><tr><td style="width: 30%">A</td><td colspan="2">B</td></tr></table>');
     expect(new Set(g).size).toBe(1);
   });
+
+  it('hàng đầu là tiêu đề gộp hết cột thì lấy độ rộng từ hàng kế tiếp có đủ độ rộng', () => {
+    const g = gridOf(`<table>
+      <tr><td colspan="3">Chuyển khoản</td></tr>
+      <tr><td style="width: 32%">Số tiền</td><td style="width: 3%">:</td><td style="width: 65%">1.000</td></tr>
+    </table>`);
+    expect(g).toEqual([
+      Math.round(CONTENT_WIDTH * 0.32),
+      Math.round(CONTENT_WIDTH * 0.03),
+      Math.round(CONTENT_WIDTH * 0.65),
+    ]);
+  });
 });
 
 describe('parseDocumentHtml nhận bối cảnh gốc về phông và cỡ chữ', () => {

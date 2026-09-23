@@ -585,17 +585,21 @@ export function paragraphXml(p: DocxParagraph): string {
   return `<w:p>${pPr}${p.runs.map(runXml).join('')}</w:p>`;
 }
 
-function gridColumns(table: DocxTable): number[] {
-  const first = table.rows[0] || [];
-  const spans = first.map(c => c.span || 1);
-  const total = spans.reduce((s, n) => s + n, 0) || 1;
+function spanTotal(row: DocxCell[]): number {
+  return row.reduce((s, c) => s + (c.span || 1), 0);
+}
 
-  const known = first.every(c => c.widthPct !== undefined);
-  if (known) {
-    const sum = first.reduce((s, c) => s + (c.widthPct as number), 0) || 100;
-    return first.flatMap((c, i) => {
-      const col = Math.round((CONTENT_WIDTH * (c.widthPct as number)) / sum / spans[i]);
-      return Array.from({ length: spans[i] }, () => col);
+function gridColumns(table: DocxTable): number[] {
+  const total = spanTotal(table.rows[0] || []) || 1;
+  const sized = table.rows.find(row =>
+    row.length > 0 && spanTotal(row) === total && row.every(c => c.widthPct !== undefined));
+
+  if (sized) {
+    const sum = sized.reduce((s, c) => s + (c.widthPct as number), 0) || 100;
+    return sized.flatMap(c => {
+      const span = c.span || 1;
+      const col = Math.round((CONTENT_WIDTH * (c.widthPct as number)) / sum / span);
+      return Array.from({ length: span }, () => col);
     });
   }
 

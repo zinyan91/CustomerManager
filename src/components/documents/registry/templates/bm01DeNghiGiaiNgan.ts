@@ -6,6 +6,7 @@ import { moneyTextToWords } from '../../../../lib/numberToWords';
 export type Bm01CustomerType = 'single' | 'married' | 'org';
 export type Bm01DisbursementMethod = 'transfer' | 'cash';
 export type Bm01TransferType = 'transfer' | 'freeze' | 'saving_freeze' | 'all';
+export type Bm01BranchType = 'CN' | 'PGD';
 
 export interface Bm01Specific {
   customerType?: Bm01CustomerType; // 'single' | 'married' | 'org'
@@ -29,6 +30,7 @@ export interface Bm01Specific {
   authDocDate?: string;
 
   // Kính gửi & Ngày tháng
+  branchType?: Bm01BranchType; // 'CN' = Chi nhánh, 'PGD' = Phòng giao dịch; bỏ trống = bản nháp cũ, ghi 'CN/PGD'
   branchName?: string;
   docPlace?: string;
   docDate?: string;
@@ -137,7 +139,8 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
   const authDocDate = s.authDocDate || '';
 
   // Kính gửi & Ngày tháng
-  const branchText = s.branchName ? `VIETBANK – CN/PGD ${s.branchName}` : 'VIETBANK – CN/PGD ………………';
+  const donVi = s.branchType ?? 'CN/PGD';
+  const branchText = s.branchName ? `VIETBANK – ${donVi} ${s.branchName}` : `VIETBANK – ${donVi} ………………`;
   const docDateVal = s.docDate || common?.contractDate || '';
   const placeVal = s.docPlace || '……………..';
   let dateLine = '<em>……………..,</em><em> </em><em>ngày</em><em>……</em><em>tháng</em><em> ……..</em><em>năm</em><em>…….</em>';

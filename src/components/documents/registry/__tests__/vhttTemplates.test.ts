@@ -175,3 +175,32 @@ describe('Vận hành tập trung templates', () => {
     });
   });
 });
+
+describe('BM01 — chọn Chi nhánh hoặc Phòng giao dịch thay cho "CN/PGD" ghi cứng', () => {
+  const common = emptyCommon();
+  const kinhGui = (s: object) => textContentOf(
+    bm01DeNghiGiaiNganTemplate.buildHtml(common, { ...bm01DeNghiGiaiNganTemplate.specificDefaults, ...s })
+  );
+
+  it('chọn PGD thì chỉ ghi PGD', () => {
+    const t = kinhGui({ branchType: 'PGD', branchName: 'An Phú' });
+    expect(t).toContain('VIETBANK – PGD An Phú');
+    expect(t).not.toContain('CN/PGD');
+  });
+
+  it('chọn CN thì chỉ ghi CN', () => {
+    const t = kinhGui({ branchType: 'CN', branchName: 'Sài Gòn' });
+    expect(t).toContain('VIETBANK – CN Sài Gòn');
+    expect(t).not.toContain('CN/PGD');
+  });
+
+  it('đã chọn loại nhưng chưa nhập tên thì vẫn giữ đúng loại, chừa chỗ điền tay', () => {
+    const t = kinhGui({ branchType: 'PGD', branchName: '' });
+    expect(t).toContain('VIETBANK – PGD ……');
+    expect(t).not.toContain('CN/PGD');
+  });
+
+  it('bản nháp cũ chưa có loại đơn vị thì giữ nguyên "CN/PGD" như trước', () => {
+    expect(kinhGui({ branchType: undefined, branchName: 'Sài Gòn' })).toContain('VIETBANK – CN/PGD Sài Gòn');
+  });
+});

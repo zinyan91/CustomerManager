@@ -32,7 +32,7 @@ describe('buildPortfolioSheet — anh xa dung truong du lieu that', () => {
 
     const sheet = buildPortfolioSheet(params, CTX);
 
-    expect(sheet.rows).toHaveLength(2);
+    expect(sheet.rows).toHaveLength(3);
     const dong = sheet.rows[1].map(c => c.value);
     expect(dong[1]).toBe('CIF001');
     expect(dong[2]).toBe('TRAN THI B');
@@ -49,6 +49,6 @@ describe('buildPortfolioSheet — anh xa dung truong du lieu that', () => {
       collaterals: [],
     } as any;
 
-    expect(buildPortfolioSheet(params, CTX).rows).toHaveLength(1);
+    expect(buildPortfolioSheet(params, CTX).rows).toHaveLength(2);
   });
 });

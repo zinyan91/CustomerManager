@@ -1,11 +1,11 @@
-import { fetchCustomersAPI } from '../api/customerApi';
+import { fetchCustomersStrictAPI } from '../api/customerApi';
 import {
-  fetchContractsAPI,
+  fetchContractsStrictAPI,
   fetchOutstandingScheduleDetailsAPI,
   fetchPaidPrincipalMapAPI,
 } from '../api/loanContractApi';
 import { fetchAllCreditContractsAPI } from '../api/creditContractApi';
-import { fetchCollateralsAPI } from '../api/collateralApi';
+import { fetchCollateralsStrictAPI } from '../api/collateralApi';
 import { addDaysToDate } from '../loanMath';
 import { REPORT_UPCOMING_DAYS } from './dueBucket';
 import { mapCollateralRows, mapCreditRows, mapDueRows, mapKunnRows } from './mappers';
@@ -17,8 +17,8 @@ function reportCutoffIso(todayIso: string): string {
 
 async function loadLoanBasics() {
   const [customers, contracts, paid] = await Promise.all([
-    fetchCustomersAPI(),
-    fetchContractsAPI(),
+    fetchCustomersStrictAPI(),
+    fetchContractsStrictAPI(),
     fetchPaidPrincipalMapAPI(),
   ]);
   return { customers, contracts, paid };
@@ -28,7 +28,7 @@ export async function loadPortfolioParams(): Promise<ReportRowSet> {
   const [basics, creditContracts, collaterals] = await Promise.all([
     loadLoanBasics(),
     fetchAllCreditContractsAPI(),
-    fetchCollateralsAPI(),
+    fetchCollateralsStrictAPI(),
   ]);
   return {
     rows: [{
@@ -61,7 +61,7 @@ export async function loadKunnRows(ctx: ReportLoadContext): Promise<ReportRowSet
     dangVay.map(k => k.Id),
     ctx.todayIso
   );
-  return { rows: mapKunnRows(customers, dangVay, schedules, paid, creditContracts) };
+  return { rows: mapKunnRows(customers, dangVay, schedules, paid, creditContracts, ctx.todayIso) };
 }
 
 export async function loadCreditRows(ctx: ReportLoadContext): Promise<ReportRowSet> {
@@ -74,8 +74,8 @@ export async function loadCreditRows(ctx: ReportLoadContext): Promise<ReportRowS
 
 export async function loadCollateralRows(): Promise<ReportRowSet> {
   const [customers, collaterals] = await Promise.all([
-    fetchCustomersAPI(),
-    fetchCollateralsAPI(),
+    fetchCustomersStrictAPI(),
+    fetchCollateralsStrictAPI(),
   ]);
   return { rows: mapCollateralRows(customers, collaterals) };
 }

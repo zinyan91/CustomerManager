@@ -1,7 +1,7 @@
 import type { XlsxSheet } from '../../xlsxWriter';
 import { fmtDate } from '../../utils';
-import { dueBucketOf, daysLeftOf, matchesBucket, DUE_BUCKET_LABELS, type DueBucketFilter } from '../dueBucket';
-import { ST, headerRow, textCell, moneyCell, numCell } from '../sheetStyles';
+import { dueBucketOf, daysLeftOf, matchesBucket, dueStatusLabel, type DueBucketFilter } from '../dueBucket';
+import { ST, headerRow, textCell, moneyCell, numCell, totalRow, sumOf } from '../sheetStyles';
 import type { ReportLoadContext } from '../types';
 
 export interface CreditSheetRow {
@@ -31,7 +31,6 @@ export function buildCreditSheet(
   const loc = rows.filter(r => matchesBucket(dueBucketOf(r.endDate, ctx.todayIso), filter));
 
   const body = loc.map((r, i) => {
-    const bucket = dueBucketOf(r.endDate, ctx.todayIso);
     return [
       numCell(i + 1),
       textCell(r.cif, ST.center),
@@ -42,7 +41,7 @@ export function buildCreditSheet(
       textCell(r.startDate ? fmtDate(r.startDate) : '', ST.center),
       textCell(r.endDate ? fmtDate(r.endDate) : '', ST.center),
       numCell(daysLeftOf(r.endDate, ctx.todayIso)),
-      textCell(DUE_BUCKET_LABELS[bucket], ST.center),
+      textCell(dueStatusLabel(r.endDate, ctx.todayIso), ST.center),
       moneyCell(r.granted),
       moneyCell(r.used),
       moneyCell(r.available),
@@ -51,7 +50,15 @@ export function buildCreditSheet(
 
   return {
     name: 'HDTD',
-    rows: [headerRow(COT), ...body],
+    rows: [
+      headerRow(COT),
+      ...body,
+      totalRow(COT.length, {
+        10: sumOf(loc.map(r => r.granted)),
+        11: sumOf(loc.map(r => r.used)),
+        12: sumOf(loc.map(r => r.available)),
+      }),
+    ],
     colWidths: [5, 10, 26, 16, 14, 14, 13, 15, 9, 13, 16, 16, 16],
   };
 }

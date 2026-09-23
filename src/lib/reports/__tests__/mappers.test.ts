@@ -120,3 +120,26 @@ describe('mapCollateralRows', () => {
     expect(rows[0].expiryDate).toBeNull();
   });
 });
+
+describe('Final review — sua loi', () => {
+  it('I1: lai suat KUNN doi tu dang thap phan luu trong CSDL sang %/nam', () => {
+    const rows = mapKunnRows([KH], [kunn({ InterestRate: 0.095 })], [], {}, [], HOM_NAY);
+    expect(rows[0].interestRate).toBe(9.5);
+  });
+
+  it('I2: tai san chua dinh gia thi gia tri va han muc de trong, khong hien 0', () => {
+    const rows = mapCollateralRows([KH], [{
+      Id: 8, CustomerId: 1, AssetCode: 'TS-CHUA', AssetType: 'BĐS Loại 1', LtvPercent: 80,
+    }]);
+    expect(rows[0].appraisedValue).toBeNull();
+    expect(rows[0].maxLoan).toBeNull();
+  });
+
+  it('F7: uu tien ngay het hieu luc da luu, khop voi man Tai san', () => {
+    const rows = mapCollateralRows([KH], [{
+      Id: 9, CustomerId: 1, AssetCode: 'TS-NHAP', AppraisedValue: 100, LtvPercent: 80,
+      AppraisalDate: null, AppraisalExpiryDate: '2026-12-31',
+    }]);
+    expect(rows[0].expiryDate).toBe('2026-12-31');
+  });
+});

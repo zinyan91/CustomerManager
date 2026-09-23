@@ -36,6 +36,9 @@ export function useReportCenterController() {
       }
 
       downloadBytes(buildReportWorkbook(sheets), `BaoCao_${ctx.todayIso}.xlsx`, MIME_XLSX);
+    } catch (err) {
+      console.error('exportSelected error:', err);
+      setError('Không tạo được tệp Excel. Vui lòng thử lại.');
     } finally {
       setExporting(false);
     }

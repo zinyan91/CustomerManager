@@ -1,7 +1,7 @@
 import type { XlsxSheet } from '../../xlsxWriter';
 import { fmtDate } from '../../utils';
-import { dueBucketOf, daysLeftOf, matchesBucket, DUE_BUCKET_LABELS, type DueBucketFilter } from '../dueBucket';
-import { ST, headerRow, textCell, moneyCell, numCell } from '../sheetStyles';
+import { dueBucketOf, daysLeftOf, matchesBucket, dueStatusLabel, type DueBucketFilter } from '../dueBucket';
+import { ST, headerRow, textCell, moneyCell, numCell, totalRow, sumOf } from '../sheetStyles';
 import type { ReportLoadContext } from '../types';
 
 export interface CollateralSheetRow {
@@ -32,7 +32,6 @@ export function buildCollateralSheet(
   const loc = rows.filter(r => matchesBucket(dueBucketOf(r.expiryDate, ctx.todayIso), filter));
 
   const body = loc.map((r, i) => {
-    const bucket = dueBucketOf(r.expiryDate, ctx.todayIso);
     return [
       numCell(i + 1),
       textCell(r.cif, ST.center),
@@ -44,7 +43,7 @@ export function buildCollateralSheet(
       numCell(r.tenorMonths),
       textCell(r.expiryDate ? fmtDate(r.expiryDate) : '', ST.center),
       numCell(daysLeftOf(r.expiryDate, ctx.todayIso)),
-      textCell(DUE_BUCKET_LABELS[bucket], ST.center),
+      textCell(dueStatusLabel(r.expiryDate, ctx.todayIso), ST.center),
       moneyCell(r.appraisedValue),
       numCell(r.ltvPercent),
       moneyCell(r.maxLoan),
@@ -53,7 +52,14 @@ export function buildCollateralSheet(
 
   return {
     name: 'Tai san bao dam',
-    rows: [headerRow(COT), ...body],
+    rows: [
+      headerRow(COT),
+      ...body,
+      totalRow(COT.length, {
+        11: sumOf(loc.map(r => r.appraisedValue)),
+        13: sumOf(loc.map(r => r.maxLoan)),
+      }),
+    ],
     colWidths: [5, 10, 26, 14, 18, 30, 13, 13, 15, 9, 13, 18, 9, 18],
   };
 }

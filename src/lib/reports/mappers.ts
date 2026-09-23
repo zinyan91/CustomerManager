@@ -1,7 +1,8 @@
 import type { Collateral, CreditContract, Customer, LoanContract, RepaymentSchedule } from '../../types';
 import { isScheduleFullySettled, outstandingOf } from '../loanMath';
 import { summarizeCreditContracts, resolveMasterHdtdNumber } from '../creditContract';
-import { appraisalExpiryDate, assetClassLabel, collateralValue, getEffectiveLtv, maxLoanFromCollateral } from '../collateralMath';
+import { appraisalExpiryDate, assetClassLabel, getEffectiveLtv, maxLoanFromCollateral } from '../collateralMath';
+import { getEffectiveActiveRate } from '../rateResolution';
 import type { KunnSheetRow } from './builders/kunnSheet';
 import type { DueSheetRow } from './builders/dueSheet';
 import type { CreditSheetRow } from './builders/creditSheet';
@@ -33,7 +34,8 @@ export function mapKunnRows(
   contracts: LoanContract[],
   outstandingSchedules: RepaymentSchedule[],
   paid: PaidPrincipalMap,
-  creditContracts: CreditContract[] = []
+  creditContracts: CreditContract[] = [],
+  todayIso?: string
 ): KunnSheetRow[] {
   const khOf = customerLookup(customers);
   const lichOf = schedulesByContract(outstandingSchedules);
@@ -52,7 +54,7 @@ export function mapKunnRows(
         kunnDueDate: k.KunnDueDate ?? null,
         loanAmount: k.LoanAmount ?? null,
         outstanding: outstandingFor(k, paid),
-        interestRate: k.InterestRate ?? null,
+        interestRate: Number((getEffectiveActiveRate(k, todayIso) * 100).toFixed(2)),
         storedDebtGroup: k.DebtGroup,
         overdueSchedules: lichOf.get(k.Id) ?? [],
       };
@@ -128,6 +130,7 @@ export function mapCollateralRows(customers: Customer[], collaterals: Collateral
   const khOf = customerLookup(customers);
 
   return collaterals.map(c => {
+    const giaTri = c.AppraisedValue ?? c.Value ?? null;
     const kh = khOf(c.CustomerId);
     return {
       cif: kh?.CifKh ?? '',
@@ -137,10 +140,10 @@ export function mapCollateralRows(customers: Customer[], collaterals: Collateral
       address: c.Address ?? null,
       appraisalDate: c.AppraisalDate ?? null,
       tenorMonths: c.AppraisalTenorMonths ?? null,
-      expiryDate: appraisalExpiryDate(c),
-      appraisedValue: collateralValue(c),
+      expiryDate: c.AppraisalExpiryDate || appraisalExpiryDate(c),
+      appraisedValue: giaTri,
       ltvPercent: getEffectiveLtv(c),
-      maxLoan: maxLoanFromCollateral(c),
+      maxLoan: giaTri === null ? null : maxLoanFromCollateral(c),
     };
   });
 }

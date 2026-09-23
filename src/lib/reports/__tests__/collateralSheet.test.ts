@@ -29,7 +29,7 @@ describe('buildCollateralSheet', () => {
       row({ assetCode: 'CON', expiryDate: '2027-05-01' }),
     ];
     const sheet = buildCollateralSheet(data, 'overdue', CTX);
-    expect(sheet.rows).toHaveLength(2);
+    expect(sheet.rows).toHaveLength(3);
     expect(sheet.rows[1][3].value).toBe('HET');
   });
 
@@ -41,11 +41,11 @@ describe('buildCollateralSheet', () => {
 
   it('chung thu chua khai ngay het hieu luc van ra dong', () => {
     const sheet = buildCollateralSheet([row({ expiryDate: null })], 'all', CTX);
-    expect(sheet.rows).toHaveLength(2);
+    expect(sheet.rows).toHaveLength(3);
     expect(sheet.rows[1][8].value).toBe('');
   });
 
   it('danh sach rong van ra sheet co hang tieu de', () => {
-    expect(buildCollateralSheet([], 'all', CTX).rows).toHaveLength(1);
+    expect(buildCollateralSheet([], 'all', CTX).rows).toHaveLength(2);
   });
 });

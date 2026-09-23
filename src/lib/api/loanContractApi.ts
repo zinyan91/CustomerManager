@@ -5,11 +5,15 @@ import type { DuePeriodRow } from '../duePeriod';
 import { findKunnNumberClash } from '../creditContract';
 import { unarchiveCustomer } from './customerApi';
 
+export async function fetchContractsStrictAPI(): Promise<LoanContract[]> {
+  const { data, error } = await supabase.from('LoanContracts').select('*, customer:Customers(*)');
+  if (error) throw error;
+  return (data || []).sort((a: any, b: any) => (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
+}
+
 export async function fetchContractsAPI(): Promise<LoanContract[]> {
   try {
-    const { data, error } = await supabase.from('LoanContracts').select('*, customer:Customers(*)');
-    if (error) throw error;
-    return (data || []).sort((a: any, b: any) => (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
+    return await fetchContractsStrictAPI();
   } catch (err) {
     console.error("fetchContractsAPI error:", err);
     return [];

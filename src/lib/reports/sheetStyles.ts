@@ -33,3 +33,27 @@ export function numCell(value: number | null | undefined, style: XlsxStyle = ST.
   }
   return { value, numeric: true, style };
 }
+
+const TOTAL_FILL = 'FFD9D9D9';
+
+export const ST_TOTAL = {
+  label: { bold: true, align: 'center', vAlign: 'center', fill: TOTAL_FILL, border: true } as XlsxStyle,
+  blank: { fill: TOTAL_FILL, border: true } as XlsxStyle,
+  money: { bold: true, align: 'right', vAlign: 'center', numFmt: NUM_FMT_ACCOUNTING, fill: TOTAL_FILL, border: true } as XlsxStyle,
+};
+
+export function sumOf(values: (number | null | undefined)[]): number {
+  let tong = 0;
+  for (const v of values) {
+    if (v !== null && v !== undefined && !Number.isNaN(v)) tong += v;
+  }
+  return tong;
+}
+
+export function totalRow(width: number, sums: Record<number, number>): XlsxCell[] {
+  return Array.from({ length: width }, (_, i) => {
+    if (i === 0) return { value: 'TỔNG CỘNG', style: ST_TOTAL.label };
+    if (i in sums) return { value: sums[i], numeric: true, style: ST_TOTAL.money };
+    return { value: '', style: ST_TOTAL.blank };
+  });
+}

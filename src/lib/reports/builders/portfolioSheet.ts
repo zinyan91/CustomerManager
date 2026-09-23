@@ -3,7 +3,7 @@ import {
   buildActivePortfolioData,
   type CustomerPortfolioExportParams,
 } from '../../customerPortfolioExport';
-import { ST, headerRow, textCell, moneyCell, numCell } from '../sheetStyles';
+import { ST, headerRow, textCell, moneyCell, numCell, totalRow, sumOf } from '../sheetStyles';
 import type { ReportLoadContext } from '../types';
 
 const COT = [
@@ -33,7 +33,14 @@ export function buildPortfolioSheet(
 
   return {
     name: 'Danh muc dang vay',
-    rows: [headerRow(COT), ...body],
+    rows: [
+      headerRow(COT),
+      ...body,
+      totalRow(COT.length, {
+        7: sumOf(data.map(r => r.principalAmount)),
+        8: sumOf(data.map(r => r.currentBalance)),
+      }),
+    ],
     colWidths: [5, 12, 26, 14, 16, 16, 18, 18, 18, 11],
   };
 }

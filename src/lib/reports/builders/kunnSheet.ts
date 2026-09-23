@@ -1,8 +1,8 @@
 import type { XlsxSheet } from '../../xlsxWriter';
 import type { RepaymentSchedule } from '../../../types';
 import { fmtDate } from '../../utils';
-import { dueBucketOf, daysLeftOf, matchesBucket, DUE_BUCKET_LABELS, type DueBucketFilter } from '../dueBucket';
-import { ST, headerRow, textCell, moneyCell, numCell } from '../sheetStyles';
+import { dueBucketOf, daysLeftOf, matchesBucket, dueStatusLabel, type DueBucketFilter } from '../dueBucket';
+import { ST, headerRow, textCell, moneyCell, numCell, totalRow, sumOf } from '../sheetStyles';
 import { liveDebtGroup } from './dueSheet';
 import type { ReportLoadContext } from '../types';
 
@@ -35,7 +35,6 @@ export function buildKunnSheet(
   const loc = rows.filter(r => matchesBucket(dueBucketOf(r.kunnDueDate, ctx.todayIso), filter));
 
   const body = loc.map((r, i) => {
-    const bucket = dueBucketOf(r.kunnDueDate, ctx.todayIso);
     return [
       numCell(i + 1),
       textCell(r.cif, ST.center),
@@ -46,7 +45,7 @@ export function buildKunnSheet(
       textCell(r.disbursementDate ? fmtDate(r.disbursementDate) : '', ST.center),
       textCell(r.kunnDueDate ? fmtDate(r.kunnDueDate) : '', ST.center),
       numCell(daysLeftOf(r.kunnDueDate, ctx.todayIso)),
-      textCell(DUE_BUCKET_LABELS[bucket], ST.center),
+      textCell(dueStatusLabel(r.kunnDueDate, ctx.todayIso), ST.center),
       moneyCell(r.loanAmount),
       moneyCell(r.outstanding),
       numCell(r.interestRate),
@@ -56,7 +55,14 @@ export function buildKunnSheet(
 
   return {
     name: 'KUNN',
-    rows: [headerRow(COT), ...body],
+    rows: [
+      headerRow(COT),
+      ...body,
+      totalRow(COT.length, {
+        10: sumOf(loc.map(r => r.loanAmount)),
+        11: sumOf(loc.map(r => r.outstanding)),
+      }),
+    ],
     colWidths: [5, 10, 26, 16, 16, 14, 13, 15, 9, 13, 16, 16, 9, 9],
   };
 }

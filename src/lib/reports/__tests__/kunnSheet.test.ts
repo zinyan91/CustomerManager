@@ -31,7 +31,7 @@ describe('buildKunnSheet', () => {
       row({ kunnNumber: 'B', kunnDueDate: '2026-12-31', disbursementDate: '2026-09-20' }),
     ];
     const sheet = buildKunnSheet(data, 'overdue', CTX);
-    expect(sheet.rows).toHaveLength(2);
+    expect(sheet.rows).toHaveLength(3);
     expect(sheet.rows[1][3].value).toBe('A');
   });
 
@@ -47,11 +47,11 @@ describe('buildKunnSheet', () => {
 
   it('ngay dao han chua khai van ra dong', () => {
     const sheet = buildKunnSheet([row({ kunnDueDate: null })], 'all', CTX);
-    expect(sheet.rows).toHaveLength(2);
+    expect(sheet.rows).toHaveLength(3);
     expect(sheet.rows[1][7].value).toBe('');
   });
 
   it('danh sach rong van ra sheet co hang tieu de', () => {
-    expect(buildKunnSheet([], 'all', CTX).rows).toHaveLength(1);
+    expect(buildKunnSheet([], 'all', CTX).rows).toHaveLength(2);
   });
 });

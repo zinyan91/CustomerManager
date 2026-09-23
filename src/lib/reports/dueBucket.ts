@@ -29,3 +29,8 @@ export function dueBucketOf(dateIso: string | null | undefined, todayIso?: strin
 export function matchesBucket(bucket: DueBucket, filter: DueBucketFilter): boolean {
   return filter === 'all' || bucket === filter;
 }
+
+export function dueStatusLabel(dateIso: string | null | undefined, todayIso?: string): string {
+  if (daysUntil(dateIso, todayIso) === null) return '';
+  return DUE_BUCKET_LABELS[dueBucketOf(dateIso, todayIso)];
+}

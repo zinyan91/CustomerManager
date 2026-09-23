@@ -29,7 +29,7 @@ describe('buildCreditSheet', () => {
       row({ hdtdNumber: 'XA', endDate: '2027-01-01' }),
     ];
     const sheet = buildCreditSheet(data, 'upcoming', CTX);
-    expect(sheet.rows).toHaveLength(2);
+    expect(sheet.rows).toHaveLength(3);
     expect(sheet.rows[1][3].value).toBe('SAP');
   });
 
@@ -40,11 +40,11 @@ describe('buildCreditSheet', () => {
 
   it('ngay het hieu luc chua khai van ra dong', () => {
     const sheet = buildCreditSheet([row({ endDate: null })], 'all', CTX);
-    expect(sheet.rows).toHaveLength(2);
+    expect(sheet.rows).toHaveLength(3);
     expect(sheet.rows[1][7].value).toBe('');
   });
 
   it('danh sach rong van ra sheet co hang tieu de', () => {
-    expect(buildCreditSheet([], 'all', CTX).rows).toHaveLength(1);
+    expect(buildCreditSheet([], 'all', CTX).rows).toHaveLength(2);
   });
 });

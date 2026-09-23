@@ -2,8 +2,8 @@ import type { XlsxSheet } from '../../xlsxWriter';
 import type { RepaymentSchedule } from '../../../types';
 import { getAutoDebtGroupInfo } from '../../loanMath';
 import { fmtDate } from '../../utils';
-import { dueBucketOf, daysLeftOf, matchesBucket, DUE_BUCKET_LABELS, type DueBucketFilter } from '../dueBucket';
-import { ST, headerRow, textCell, moneyCell, numCell } from '../sheetStyles';
+import { dueBucketOf, daysLeftOf, matchesBucket, dueStatusLabel, type DueBucketFilter } from '../dueBucket';
+import { ST, headerRow, textCell, moneyCell, numCell, totalRow, sumOf } from '../sheetStyles';
 import type { ReportLoadContext } from '../types';
 
 export interface DueSheetRow {
@@ -43,7 +43,6 @@ export function buildDueSheet(
   const loc = rows.filter(r => matchesBucket(dueBucketOf(r.dueDate, ctx.todayIso), filter));
 
   const body = loc.map((r, i) => {
-    const bucket = dueBucketOf(r.dueDate, ctx.todayIso);
     return [
       numCell(i + 1),
       textCell(r.cif, ST.center),
@@ -52,7 +51,7 @@ export function buildDueSheet(
       numCell(r.periodNumber),
       textCell(r.dueDate ? fmtDate(r.dueDate) : '', ST.center),
       numCell(daysLeftOf(r.dueDate, ctx.todayIso)),
-      textCell(DUE_BUCKET_LABELS[bucket], ST.center),
+      textCell(dueStatusLabel(r.dueDate, ctx.todayIso), ST.center),
       moneyCell(r.principal),
       moneyCell(r.interest),
       moneyCell(r.total),
@@ -63,7 +62,15 @@ export function buildDueSheet(
 
   return {
     name: 'No due',
-    rows: [headerRow(COT), ...body],
+    rows: [
+      headerRow(COT),
+      ...body,
+      totalRow(COT.length, {
+        8: sumOf(loc.map(r => r.principal)),
+        9: sumOf(loc.map(r => r.interest)),
+        10: sumOf(loc.map(r => r.total)),
+      }),
+    ],
     colWidths: [5, 10, 26, 16, 7, 13, 9, 13, 15, 13, 15, 16, 9],
   };
 }

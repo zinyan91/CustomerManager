@@ -30,7 +30,7 @@ describe('buildDueSheet', () => {
       row({ kunnNumber: 'SAP', dueDate: '2026-10-10' }),
     ];
     const chiQuaHan = buildDueSheet(data, 'overdue', CTX);
-    expect(chiQuaHan.rows).toHaveLength(2);
+    expect(chiQuaHan.rows).toHaveLength(3);
     expect(chiQuaHan.rows[1][3].value).toBe('QH');
   });
 
@@ -41,14 +41,14 @@ describe('buildDueSheet', () => {
 
   it('ngay den han chua khai van ra dong, o ngay de trong', () => {
     const sheet = buildDueSheet([row({ dueDate: null })], 'all', CTX);
-    expect(sheet.rows).toHaveLength(2);
+    expect(sheet.rows).toHaveLength(3);
     expect(sheet.rows[1][5].value).toBe('');
-    expect(sheet.rows[1][7].value).toBe('Chưa tới hạn');
+    expect(sheet.rows[1][7].value).toBe('');
   });
 
   it('danh sach rong van ra sheet co hang tieu de', () => {
     const sheet = buildDueSheet([], 'all', CTX);
-    expect(sheet.rows).toHaveLength(1);
+    expect(sheet.rows).toHaveLength(2);
     expect(sheet.name).toBeTruthy();
   });
 });
@@ -67,5 +67,22 @@ describe('liveDebtGroup — nhom no tinh song', () => {
 
   it('khong co lich qua han va khong co nhom luu thi la nhom 1', () => {
     expect(liveDebtGroup(undefined, [], '2026-09-23')).toBe(1);
+  });
+});
+
+describe('Final review — dong TONG CONG va nhan trang thai', () => {
+  it('I3: dong cuoi la TONG CONG, chi cong Goc/Lai/Tong ky, khong cong du no lap lai', () => {
+    const sheet = buildDueSheet([row(), row({ principal: 2_000_000, interest: 100_000, total: 2_100_000 })], 'all', CTX);
+    const cuoi = sheet.rows[sheet.rows.length - 1];
+    expect(cuoi[0].value).toBe('TỔNG CỘNG');
+    expect(cuoi[8].value).toBe(3_000_000);
+    expect(cuoi[9].value).toBe(150_000);
+    expect(cuoi[10].value).toBe(3_150_000);
+    expect(cuoi[11].value).toBe('');
+  });
+
+  it('F6: ngay den han khong xac dinh thi o trang thai de trong, khong khang dinh "Chua toi han"', () => {
+    const sheet = buildDueSheet([row({ dueDate: null })], 'all', CTX);
+    expect(sheet.rows[1][7].value).toBe('');
   });
 });

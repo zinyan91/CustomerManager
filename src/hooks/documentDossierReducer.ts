@@ -12,7 +12,6 @@ export interface DossierState {
 }
 
 export type DossierAction =
-  | { type: 'selectDossier'; dossierId: string }
   | { type: 'selectDoc'; docId: string }
   | { type: 'patchCommon'; patch: Partial<DossierCommon> }
   | { type: 'patchSpecific'; docId: string; patch: Record<string, unknown> }
@@ -43,8 +42,6 @@ export function initDossierState(dossierId: string): DossierState {
 
 export function dossierReducer(state: DossierState, action: DossierAction): DossierState {
   switch (action.type) {
-    case 'selectDossier':
-      return initDossierState(action.dossierId);
     case 'selectDoc':
       return { ...state, activeDocId: action.docId };
     case 'patchCommon':
@@ -75,5 +72,42 @@ export function dossierReducer(state: DossierState, action: DossierAction): Doss
     }
     default:
       return state;
+  }
+}
+
+export interface DossierWorkspaceState {
+  activeDossierId: string;
+  byDossier: Record<string, DossierState>;
+}
+
+export type WorkspaceAction =
+  | DossierAction
+  | { type: 'selectDossier'; dossierId: string }
+  | { type: 'selectDocIn'; dossierId: string; docId: string }
+  | { type: 'toggleOptionalIn'; dossierId: string; docId: string };
+
+export function initWorkspaceState(dossierId: string): DossierWorkspaceState {
+  return { activeDossierId: dossierId, byDossier: { [dossierId]: initDossierState(dossierId) } };
+}
+
+function withDossier(state: DossierWorkspaceState, dossierId: string, action?: DossierAction): DossierWorkspaceState {
+  const current = state.byDossier[dossierId] ?? initDossierState(dossierId);
+  const next = action ? dossierReducer(current, action) : current;
+  return { ...state, byDossier: { ...state.byDossier, [dossierId]: next } };
+}
+
+export function workspaceReducer(state: DossierWorkspaceState, action: WorkspaceAction): DossierWorkspaceState {
+  switch (action.type) {
+    case 'selectDossier':
+      return { ...withDossier(state, action.dossierId), activeDossierId: action.dossierId };
+    case 'selectDocIn':
+      return {
+        ...withDossier(state, action.dossierId, { type: 'selectDoc', docId: action.docId }),
+        activeDossierId: action.dossierId,
+      };
+    case 'toggleOptionalIn':
+      return withDossier(state, action.dossierId, { type: 'toggleOptional', docId: action.docId });
+    default:
+      return withDossier(state, state.activeDossierId, action);
   }
 }

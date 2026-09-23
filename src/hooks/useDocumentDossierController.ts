@@ -2,10 +2,11 @@ import { useReducer, useMemo, useCallback } from 'react';
 import type { DossierCommon, DocTemplate, Dossier } from '../components/documents/registry/types';
 import { TEMPLATE_BY_ID } from '../components/documents/registry/templates';
 import { DOSSIERS } from '../components/documents/registry/dossiers';
-import { dossierReducer, initDossierState } from './documentDossierReducer';
+import { workspaceReducer, initWorkspaceState } from './documentDossierReducer';
 
 export function useDocumentDossierController() {
-  const [state, dispatch] = useReducer(dossierReducer, DOSSIERS[0].id, initDossierState);
+  const [ws, dispatch] = useReducer(workspaceReducer, DOSSIERS[0].id, initWorkspaceState);
+  const state = ws.byDossier[ws.activeDossierId];
 
   const activeDossier = useMemo<Dossier>(
     () => DOSSIERS.find(d => d.id === state.activeDossierId) ?? DOSSIERS[0],
@@ -23,6 +24,11 @@ export function useDocumentDossierController() {
     [state.excludedDocIds],
   );
 
+  const isExcludedIn = useCallback(
+    (dossierId: string, docId: string) => ws.byDossier[dossierId]?.excludedDocIds.includes(docId) ?? false,
+    [ws.byDossier],
+  );
+
   return {
     state,
     dossiers: DOSSIERS,
@@ -32,11 +38,14 @@ export function useDocumentDossierController() {
     activeSpecific,
     activeHtml,
     isExcluded,
+    isExcludedIn,
     selectDossier: (dossierId: string) => dispatch({ type: 'selectDossier', dossierId }),
     selectDoc: (docId: string) => dispatch({ type: 'selectDoc', docId }),
+    selectDocIn: (dossierId: string, docId: string) => dispatch({ type: 'selectDocIn', dossierId, docId }),
     patchCommon: (patch: Partial<DossierCommon>) => dispatch({ type: 'patchCommon', patch }),
     patchSpecific: (docId: string, patch: Record<string, unknown>) =>
       dispatch({ type: 'patchSpecific', docId, patch }),
     toggleOptional: (docId: string) => dispatch({ type: 'toggleOptional', docId }),
+    toggleOptionalIn: (dossierId: string, docId: string) => dispatch({ type: 'toggleOptionalIn', dossierId, docId }),
   };
 }

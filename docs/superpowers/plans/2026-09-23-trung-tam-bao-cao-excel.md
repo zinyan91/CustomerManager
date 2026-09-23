@@ -335,7 +335,6 @@ export interface ReportDef {
 > ```
 >
 > Đừng đổi chữ ký builder cho khớp `ReportRowSet` — builder giữ kiểu cụ thể thì test của nó mới bắt được sai cột.
-```
 
 - [ ] **Step 4: Chạy test để xác nhận đạt**
 

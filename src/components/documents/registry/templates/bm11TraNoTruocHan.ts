@@ -1,9 +1,11 @@
 import { Clock } from 'lucide-react';
 import type { DocTemplate, DossierCommon } from '../types';
 import { VHTT_STYLES } from './vhttStyles';
+import { vhttBranchUnit, type VhttBranchType } from './vhttBranch';
 
 export interface Bm11Specific {
   // Cơ quan & Ngày tháng
+  branchType?: VhttBranchType; // 'CN' = Chi nhánh, 'PGD' = Phòng giao dịch; bỏ trống = bản nháp cũ, ghi 'CN/PGD'
   branchName?: string;
   docPlace?: string;
   docDate?: string;
@@ -69,7 +71,8 @@ function formatBm11Date(place?: string, dateStr?: string): string {
 export function buildBm11Html(common?: DossierCommon, specific?: Bm11Specific): string {
   const s = specific || defaultBm11Specific;
   const dateLine = formatBm11Date(s.docPlace, s.docDate || common?.contractDate);
-  const branchText = s.branchName ? `Ngân hàng TMCP Việt Nam Thương Tín (Vietbank) <strong>– </strong>CN/PGD ${s.branchName}` : 'Ngân hàng TMCP Việt Nam Thương Tín (Vietbank) <strong>– </strong>CN/PGD ……';
+  const donVi = vhttBranchUnit(s.branchType);
+  const branchText = `Ngân hàng TMCP Việt Nam Thương Tín (Vietbank) <strong>– </strong>${donVi} ${s.branchName || '……'}`;
 
   const customerName = s.customerName || common?.partyA?.name || '……………………………………………………………………………………………….…..';
   const cccd = s.cccd || common?.partyA?.cccd || '…………………….';

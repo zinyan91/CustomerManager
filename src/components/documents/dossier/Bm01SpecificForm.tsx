@@ -5,9 +5,9 @@ import type {
   Bm01CustomerType,
   Bm01DisbursementMethod,
   Bm01TransferType,
-  Bm01BranchType,
 } from '../registry/templates/bm01DeNghiGiaiNgan';
 import { CustomerPicker } from '../../ui/CustomerPicker';
+import { VhttBranchInput } from './VhttBranchInput';
 import { DateInput } from '../../DateInput';
 import { fetchCustomersAPI } from '../../../lib/api';
 import { formatMoneyInput } from '../../../lib/utils';
@@ -382,28 +382,14 @@ export const Bm01SpecificForm: React.FC<{
       {/* 2. Kính gửi & Hợp đồng tín dụng */}
       <Group title="2. Cơ quan tiếp nhận & Hợp đồng tín dụng" accent="border-pos/50 text-pos">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <div>
-            <label className={LABEL}>Vietbank tiếp nhận</label>
-            <div className="flex gap-2">
-              <select
-                className={`${INPUT} w-auto shrink-0`}
-                aria-label="Loại đơn vị tiếp nhận"
-                value={specific?.branchType ?? ''}
-                onChange={e => patch({ branchType: (e.target.value || undefined) as Bm01BranchType | undefined })}
-              >
-                <option value="">CN/PGD</option>
-                <option value="CN">CN</option>
-                <option value="PGD">PGD</option>
-              </select>
-              <input
-                className={INPUT}
-                aria-label="Tên đơn vị tiếp nhận"
-                placeholder={specific?.branchType === 'PGD' ? 'VD: An Phú' : 'VD: Sài Gòn'}
-                value={specific?.branchName ?? ''}
-                onChange={e => patch({ branchName: e.target.value })}
-              />
-            </div>
-          </div>
+          <VhttBranchInput
+            label="Vietbank tiếp nhận"
+            inputClassName={INPUT}
+            labelClassName={LABEL}
+            branchType={specific?.branchType}
+            branchName={specific?.branchName}
+            onChange={patch}
+          />
           <div>
             <label className={LABEL}>Địa danh lập văn bản</label>
             <input

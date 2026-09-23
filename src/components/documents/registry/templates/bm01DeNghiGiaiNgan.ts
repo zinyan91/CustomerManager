@@ -1,12 +1,13 @@
 import { Banknote } from 'lucide-react';
 import type { DocTemplate, DossierCommon } from '../types';
 import { VHTT_STYLES } from './vhttStyles';
+import { vhttBranchUnit, type VhttBranchType } from './vhttBranch';
 import { moneyTextToWords } from '../../../../lib/numberToWords';
 
 export type Bm01CustomerType = 'single' | 'married' | 'org';
 export type Bm01DisbursementMethod = 'transfer' | 'cash';
 export type Bm01TransferType = 'transfer' | 'freeze' | 'saving_freeze' | 'all';
-export type Bm01BranchType = 'CN' | 'PGD';
+export type Bm01BranchType = VhttBranchType;
 
 export interface Bm01Specific {
   customerType?: Bm01CustomerType; // 'single' | 'married' | 'org'
@@ -139,7 +140,7 @@ export function buildBm01Html(common?: DossierCommon, specific?: Bm01Specific): 
   const authDocDate = s.authDocDate || '';
 
   // Kính gửi & Ngày tháng
-  const donVi = s.branchType ?? 'CN/PGD';
+  const donVi = vhttBranchUnit(s.branchType);
   const branchText = s.branchName ? `VIETBANK – ${donVi} ${s.branchName}` : `VIETBANK – ${donVi} ………………`;
   const docDateVal = s.docDate || common?.contractDate || '';
   const placeVal = s.docPlace || '……………..';

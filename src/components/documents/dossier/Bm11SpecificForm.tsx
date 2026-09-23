@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { DossierCommon } from '../registry/types';
 import type { Bm11Specific } from '../registry/templates/bm11TraNoTruocHan';
+import { VhttBranchInput } from './VhttBranchInput';
 import { CustomerPicker } from '../../ui/CustomerPicker';
 import { DateInput } from '../../DateInput';
 import { fetchCustomersAPI } from '../../../lib/api';
@@ -153,15 +154,14 @@ export const Bm11SpecificForm: React.FC<{
       {/* 2. Đơn vị tiếp nhận & Ngày lập */}
       <Group title="2. Cơ quan tiếp nhận & Ngày đề nghị" accent="border-pos/50 text-pos">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          <div>
-            <label className={LABEL}>CN/PGD Vietbank tiếp nhận</label>
-            <input
-              className={INPUT}
-              placeholder="VD: Sài Gòn / An Phú"
-              value={specific?.branchName || ''}
-              onChange={e => patch({ branchName: e.target.value })}
-            />
-          </div>
+          <VhttBranchInput
+            label="Vietbank tiếp nhận"
+            inputClassName={INPUT}
+            labelClassName={LABEL}
+            branchType={specific?.branchType}
+            branchName={specific?.branchName}
+            onChange={patch}
+          />
           <div>
             <label className={LABEL}>Địa danh lập</label>
             <input

@@ -62,3 +62,15 @@ describe('TreeRail', () => {
     expect(screen.getByText('gồm-b/1')).toBeTruthy();
   });
 });
+
+describe('TreeRail — thư mục đang dùng vẫn đóng được', () => {
+  it('bấm thư mục chứa nút đang chọn thì đóng lại thật, bấm lần nữa thì mở', () => {
+    render(<TreeRail title="Bộ hồ sơ" nodes={NODES} selectedId="a/1" onSelect={vi.fn()} onCollapse={vi.fn()} />);
+    const a = () => screen.getByRole('button', { name: 'Thư mục A' });
+    fireEvent.click(a());
+    expect(a().getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('button', { name: 'Lá A1' })).toBeNull();
+    fireEvent.click(a());
+    expect(a().getAttribute('aria-expanded')).toBe('true');
+  });
+});

@@ -47,6 +47,9 @@ describe('Soạn hồ sơ — cây bộ hồ sơ', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Gồm Giấy Cam Kết (Hồ sơ sửa chữa nhà)' }));
     expect((screen.getByRole('checkbox', { name: 'Gồm Giấy Cam Kết (Hồ sơ sửa chữa nhà)' }) as HTMLInputElement).checked).toBe(false);
     expect((screen.getByRole('checkbox', { name: 'Gồm Giấy Cam Kết (Hồ sơ giải ngân)' }) as HTMLInputElement).checked).toBe(true);
+    const [laGiaiNgan, laSuaNha] = within(cay()!).getAllByRole('button', { name: 'Giấy Cam Kết' }) as HTMLButtonElement[];
+    expect(laGiaiNgan.disabled).toBe(false);
+    expect(laSuaNha.disabled).toBe(true);
   });
 
   it('ẩn cây, mở lại, và nhớ trạng thái ẩn khi mở lại màn', () => {
@@ -76,6 +79,43 @@ describe('Soạn hồ sơ — cây bộ hồ sơ', () => {
       expect(cay()).toBeNull();
     } finally {
       window.matchMedia = cu;
+    }
+  });
+});
+
+describe('Soạn hồ sơ — ngăn kéo màn hẹp', () => {
+  const hep = () => {
+    const cu = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
+    return () => { window.matchMedia = cu; };
+  };
+
+  it('ngăn kéo gắn thẳng vào body để không bị thanh đầu trang của khung hub đè lên', () => {
+    const tra = hep();
+    try {
+      const { container } = render(<DocumentTemplateView />);
+      fireEvent.click(screen.getByRole('button', { name: 'Ẩn Bộ hồ sơ' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Hiện cây hồ sơ' }));
+      expect(cay()).toBeTruthy();
+      expect(container.contains(cay())).toBe(false);
+      expect(cay()!.parentElement).toBe(document.body);
+    } finally {
+      tra();
+    }
+  });
+
+  it('bấm « trong ngăn kéo chỉ đóng ngăn kéo, không lưu trạng thái ẩn cho màn rộng', () => {
+    const tra = hep();
+    try {
+      localStorage.setItem('cm_doc_tree_collapsed', '0');
+      render(<DocumentTemplateView />);
+      fireEvent.click(screen.getByRole('button', { name: 'Hiện cây hồ sơ' }));
+      const ngan = screen.getAllByRole('navigation', { name: 'Bộ hồ sơ' }).find(n => n.parentElement === document.body)!;
+      fireEvent.click(within(ngan).getByRole('button', { name: 'Ẩn Bộ hồ sơ' }));
+      expect(screen.getAllByRole('navigation', { name: 'Bộ hồ sơ' }).some(n => n.parentElement === document.body)).toBe(false);
+      expect(localStorage.getItem('cm_doc_tree_collapsed')).toBe('0');
+    } finally {
+      tra();
     }
   });
 });

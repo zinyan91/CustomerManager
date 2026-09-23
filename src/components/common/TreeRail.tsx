@@ -15,14 +15,13 @@ interface TreeRailProps {
 export const TreeRail: React.FC<TreeRailProps> = ({
   title, nodes, selectedId, onSelect, onCollapse, renderTrailing, className = '',
 }) => {
-  const [open, setOpen] = useState<Set<string>>(() => new Set());
+  const [open, setOpen] = useState<Set<string>>(() => new Set(pathTo(nodes, selectedId)));
   const [lastSelected, setLastSelected] = useState(selectedId);
   if (lastSelected !== selectedId) {
     setLastSelected(selectedId);
-    setOpen(prev => new Set([...prev, ...pathTo(nodes, lastSelected)]));
+    setOpen(prev => new Set([...prev, ...pathTo(nodes, selectedId)]));
   }
-  const forced = new Set(pathTo(nodes, selectedId));
-  const isOpen = (id: string) => forced.has(id) || open.has(id);
+  const isOpen = (id: string) => open.has(id);
   const toggle = (id: string) => setOpen(prev => {
     const next = new Set(prev);
     if (next.has(id)) next.delete(id);

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { UI } from '../../lib/uiClasses';
 import { FolderArchive, PanelLeftOpen } from 'lucide-react';
 import { useDocumentDossierController } from '../../hooks/useDocumentDossierController';
@@ -28,8 +29,6 @@ export const DocumentTemplateView: React.FC = () => {
     else setDrawerOpen(true);
   };
 
-  const showTree = !collapsed || drawerOpen;
-
   return (
     <div className="rounded-2xl border border-line/70 bg-panel/90 shadow-sm overflow-hidden text-xs font-app animate-in fade-in duration-150">
       <div className="p-3 sm:p-3.5 border-b border-line/60 bg-surface/50 flex items-center gap-2.5">
@@ -40,20 +39,23 @@ export const DocumentTemplateView: React.FC = () => {
       </div>
 
       <div className="flex">
-        {drawerOpen && (
-          <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setDrawerOpen(false)} aria-hidden />
+        {drawerOpen && createPortal(
+          <>
+            <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => setDrawerOpen(false)} aria-hidden />
+            <DossierTreeRail
+              ctrl={dossierCtrl}
+              onCollapse={() => setDrawerOpen(false)}
+              onPicked={() => setDrawerOpen(false)}
+              className="fixed inset-y-0 left-0 z-[61] w-72 max-w-[85vw] shadow-xl font-app"
+            />
+          </>,
+          document.body,
         )}
-        {showTree && (
+        {!collapsed && !drawerOpen && (
           <DossierTreeRail
             ctrl={dossierCtrl}
-            onCollapse={() => {
-              setDrawerOpen(false);
-              setCollapsed(true);
-            }}
-            onPicked={() => setDrawerOpen(false)}
-            className={drawerOpen
-              ? 'fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] shadow-xl'
-              : 'hidden lg:flex w-60 shrink-0 border-r border-line/60'}
+            onCollapse={() => setCollapsed(true)}
+            className="hidden lg:flex w-60 shrink-0 border-r border-line/60"
           />
         )}
         <div className="flex-1 min-w-0">

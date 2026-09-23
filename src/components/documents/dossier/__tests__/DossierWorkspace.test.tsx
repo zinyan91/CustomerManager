@@ -43,3 +43,27 @@ describe('DossierWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Mở cây' })).toBeTruthy();
   });
 });
+
+describe('DossierWorkspace — ‹ › bỏ qua giấy tờ đã loại', () => {
+  function Loai() {
+    const ctrl = useDocumentDossierController();
+    return (
+      <>
+        <button type="button" onClick={() => ctrl.toggleOptional('cam_ket')}>loại cam kết</button>
+        <DossierWorkspace styles={UI} ctrl={ctrl} />
+      </>
+    );
+  }
+
+  it('bỏ tick Cam kết thì › từ Đề nghị TT (Bảng Kê) không sang Cam kết, và đếm chỉ tính giấy còn gồm', () => {
+    render(<Loai />);
+    fireEvent.click(screen.getByRole('button', { name: 'loại cam kết' }));
+    const next = screen.getByRole('button', { name: 'Biểu mẫu tiếp theo' });
+    fireEvent.click(next);
+    fireEvent.click(next);
+    fireEvent.click(next);
+    expect(screen.getByRole('heading', { name: 'Đề Nghị TT (Bảng Kê)' })).toBeTruthy();
+    expect(screen.getByText('· 4/4')).toBeTruthy();
+    expect((next as HTMLButtonElement).disabled).toBe(true);
+  });
+});

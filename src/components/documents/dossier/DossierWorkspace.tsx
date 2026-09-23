@@ -17,9 +17,9 @@ export const DossierWorkspace: React.FC<{
   ctrl: ReturnType<typeof useDocumentDossierController>;
   leading?: React.ReactNode;
 }> = ({ styles, ctrl, leading }) => {
-  const activeIndex = Math.max(0, ctrl.visibleDocs.findIndex(d => d.templateId === ctrl.state.activeDocId));
-  const currentDoc = ctrl.visibleDocs[activeIndex] || ctrl.visibleDocs[0];
-  const currentTpl = currentDoc ? TEMPLATE_BY_ID[currentDoc.templateId] : null;
+  const navDocs = ctrl.visibleDocs.filter(d => !ctrl.isExcluded(d.templateId));
+  const activeIndex = Math.max(0, navDocs.findIndex(d => d.templateId === ctrl.state.activeDocId));
+  const currentTpl = TEMPLATE_BY_ID[ctrl.state.activeDocId];
 
   const SpecificForm = SPECIFIC_FORM_BY_ID[ctrl.state.activeDocId];
 
@@ -37,13 +37,13 @@ export const DossierWorkspace: React.FC<{
 
   const handlePrevDoc = () => {
     if (activeIndex > 0) {
-      ctrl.selectDoc(ctrl.visibleDocs[activeIndex - 1].templateId);
+      ctrl.selectDoc(navDocs[activeIndex - 1].templateId);
     }
   };
 
   const handleNextDoc = () => {
-    if (activeIndex < ctrl.visibleDocs.length - 1) {
-      ctrl.selectDoc(ctrl.visibleDocs[activeIndex + 1].templateId);
+    if (activeIndex < navDocs.length - 1) {
+      ctrl.selectDoc(navDocs[activeIndex + 1].templateId);
     }
   };
 
@@ -63,11 +63,11 @@ export const DossierWorkspace: React.FC<{
         </button>
         <span className="flex-1 min-w-0 truncate text-xs font-semibold text-ink" title={currentTpl?.label}>
           {currentTpl?.label}
-          <span className="ml-1.5 font-normal text-ink-faint">· {activeIndex + 1}/{ctrl.visibleDocs.length}</span>
+          <span className="ml-1.5 font-normal text-ink-faint">· {activeIndex + 1}/{navDocs.length}</span>
         </span>
         <button
           type="button"
-          disabled={activeIndex >= ctrl.visibleDocs.length - 1}
+          disabled={activeIndex >= navDocs.length - 1}
           onClick={handleNextDoc}
           className="p-1.5 sm:p-2 rounded-lg border border-line/70 bg-surface hover:bg-surface-elevated disabled:opacity-25 disabled:cursor-not-allowed transition-all text-ink-muted hover:text-ink shrink-0 cursor-pointer"
           title="Biểu mẫu tiếp theo (>)"

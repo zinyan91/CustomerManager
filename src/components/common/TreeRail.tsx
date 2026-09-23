@@ -41,8 +41,8 @@ export const TreeRail: React.FC<TreeRailProps> = ({
                 type="button"
                 aria-expanded={expanded}
                 onClick={() => toggle(node.id)}
-                style={{ paddingLeft: `${8 + depth * 12}px` }}
-                className="w-full flex items-center gap-1.5 pr-2 py-1.5 text-xs font-semibold text-ink hover:bg-panel-muted/60 transition-colors text-left cursor-pointer"
+                style={{ paddingLeft: `${6 + depth * 10}px` }}
+                className="w-full flex items-center gap-1.5 pr-2 py-1 text-xs font-semibold text-ink hover:bg-panel-muted/60 transition-colors text-left cursor-pointer"
               >
                 {expanded
                   ? <ChevronDown size={13} className="text-ink-faint shrink-0" aria-hidden />
@@ -63,8 +63,8 @@ export const TreeRail: React.FC<TreeRailProps> = ({
               aria-current={selected ? 'true' : undefined}
               onClick={() => onSelect(node.id)}
               title={node.label}
-              style={{ paddingLeft: `${8 + depth * 12}px` }}
-              className={`flex-1 min-w-0 text-left pr-2 py-1.5 text-xs border-l-2 transition-colors truncate ${
+              style={{ paddingLeft: `${6 + depth * 10}px` }}
+              className={`flex-1 min-w-0 text-left pr-2 py-1 text-xs border-l-2 transition-colors truncate ${
                 selected
                   ? 'border-accent bg-panel-muted font-bold text-ink'
                   : node.disabled
@@ -83,7 +83,7 @@ export const TreeRail: React.FC<TreeRailProps> = ({
 
   return (
     <nav aria-label={title} className={`flex flex-col bg-panel text-ink ${className}`}>
-      <div className="flex items-center justify-between px-3 py-2 border-b border-line/60">
+      <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-line/60">
         <span className="text-[11px] font-bold uppercase tracking-wide text-ink-faint">{title}</span>
         <button
           type="button"
@@ -95,7 +95,7 @@ export const TreeRail: React.FC<TreeRailProps> = ({
           <PanelLeftClose size={15} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto py-1.5">{renderNodes(nodes, 0)}</div>
+      <div className="flex-1 overflow-y-auto py-1">{renderNodes(nodes, 0)}</div>
     </nav>
   );
 };

@@ -105,13 +105,13 @@ ${VHTT_STYLES}
 <table class="table-bordered">
 <tbody>
   <tr>
-    <td><p class="p-center"><strong>STT</strong></p></td>
-    <td><p class="p-center"><strong>Khoản mục thanh toán</strong></p></td>
-    <td><p class="p-center"><strong>Số - ngày Hóa đơn/Hợp đồng</strong></p></td>
-    <td><p class="p-center"><strong>Trị giá Hóa đơn/Hợp đồng</strong></p></td>
-    <td><p class="p-center"><strong>Số tiền </strong><strong>đã </strong><strong>tài trợ </strong></p></td>
-    <td><p class="p-center"><strong>Số tiền tài trợ lần này</strong></p></td>
-    <td><p class="p-center"><strong>Bên thụ hưởng</strong></p></td>
+    <td style="width: 6%; background: #DEEAF6;"><p class="p-center"><strong>STT</strong></p></td>
+    <td style="width: 20%; background: #DEEAF6;"><p class="p-center"><strong>Khoản mục thanh toán</strong></p></td>
+    <td style="width: 14%; background: #DEEAF6;"><p class="p-center"><strong>Số - ngày Hóa đơn/Hợp đồng</strong></p></td>
+    <td style="width: 14%; background: #DEEAF6;"><p class="p-center"><strong>Trị giá Hóa đơn/Hợp đồng</strong></p></td>
+    <td style="width: 13%; background: #DEEAF6;"><p class="p-center"><strong>Số tiền </strong><strong>đã </strong><strong>tài trợ </strong></p></td>
+    <td style="width: 13%; background: #DEEAF6;"><p class="p-center"><strong>Số tiền tài trợ lần này</strong></p></td>
+    <td style="width: 20%; background: #DEEAF6;"><p class="p-center"><strong>Bên thụ hưởng</strong></p></td>
   </tr>
   <tr>
     <td><p class="p-center">1</p></td>
@@ -169,12 +169,12 @@ ${VHTT_STYLES}
 <table class="table-bordered">
 <tbody>
   <tr>
-    <td><p class="p-center"><strong>STT</strong></p></td>
-    <td><p class="p-center"><strong>Số </strong><strong>Commitment </strong></p></td>
-    <td><p class="p-center"><strong>Hạn mức tín dụng</strong></p><p class="p-center"><strong>được cấp</strong></p></td>
-    <td><p class="p-center"><strong>Hạn mức tín dụng</strong></p><p class="p-center"><strong>đã sử dụng/Dư nợ</strong></p></td>
-    <td><p class="p-center"><strong>Hạn mức tín dụng</strong></p><p class="p-center"><strong>khả dụ</strong><strong>ng </strong></p></td>
-    <td><p class="p-center"><strong>Ngày hết hạn</strong><strong> CMT</strong></p></td>
+    <td style="width: 5%; background: #DEEAF6;"><p class="p-center"><strong>STT</strong></p></td>
+    <td style="width: 18%; background: #DEEAF6;"><p class="p-center"><strong>Số </strong><strong>Commitment </strong></p></td>
+    <td style="width: 18%; background: #DEEAF6;"><p class="p-center"><strong>Hạn mức tín dụng</strong></p><p class="p-center"><strong>được cấp</strong></p></td>
+    <td style="width: 20%; background: #DEEAF6;"><p class="p-center"><strong>Hạn mức tín dụng</strong></p><p class="p-center"><strong>đã sử dụng/Dư nợ</strong></p></td>
+    <td style="width: 20%; background: #DEEAF6;"><p class="p-center"><strong>Hạn mức tín dụng</strong></p><p class="p-center"><strong>khả dụ</strong><strong>ng </strong></p></td>
+    <td style="width: 18%; background: #DEEAF6;"><p class="p-center"><strong>Ngày hết hạn</strong><strong> CMT</strong></p></td>
   </tr>
   <tr>
     <td><p class="p-center"><strong>1</strong></p></td>
@@ -231,16 +231,16 @@ ${VHTT_STYLES}
 <table class="table-bordered">
 <tbody>
   <tr>
-    <td><p class="p-center"><strong>STT</strong></p></td>
-    <td><p class="p-center"><strong>Mã TSBĐ </strong><strong>(</strong><strong>FBE</strong><strong>)</strong></p></td>
-    <td><p class="p-center"><strong>Tên </strong><strong>TSBĐ</strong></p></td>
-    <td><p class="p-center"><strong>Giá trị (FBE)</strong></p></td>
-    <td><p class="p-center"><strong>Giá trị (AVM)</strong></p></td>
-    <td><p class="p-center"><strong>Tỷ lệ LTV </strong></p></td>
-    <td><p class="p-center"><strong>Giá trị</strong><strong> TS khả dụng</strong></p></td>
-    <td><p class="p-center"><strong>Tình trạ</strong><strong>ng</strong></p></td>
-    <td><p class="p-center"><strong>Ngày hết hạn </strong><strong>ĐGTS</strong></p></td>
-    <td><p class="p-center"><strong>Ngày hết hạn </strong><strong>BH</strong><strong>TS</strong></p></td>
+    <td style="width: 5%; background: #DEEAF6;"><p class="p-center"><strong>STT</strong></p></td>
+    <td style="width: 12%; background: #DEEAF6;"><p class="p-center"><strong>Mã TSBĐ </strong><strong>(</strong><strong>FBE</strong><strong>)</strong></p></td>
+    <td style="width: 14%; background: #DEEAF6;"><p class="p-center"><strong>Tên </strong><strong>TSBĐ</strong></p></td>
+    <td style="width: 11%; background: #DEEAF6;"><p class="p-center"><strong>Giá trị (FBE)</strong></p></td>
+    <td style="width: 10%; background: #DEEAF6;"><p class="p-center"><strong>Giá trị (AVM)</strong></p></td>
+    <td style="width: 8%; background: #DEEAF6;"><p class="p-center"><strong>Tỷ lệ LTV </strong></p></td>
+    <td style="width: 12%; background: #DEEAF6;"><p class="p-center"><strong>Giá trị</strong><strong> TS khả dụng</strong></p></td>
+    <td style="width: 7%; background: #DEEAF6;"><p class="p-center"><strong>Tình trạ</strong><strong>ng</strong></p></td>
+    <td style="width: 10%; background: #DEEAF6;"><p class="p-center"><strong>Ngày hết hạn </strong><strong>ĐGTS</strong></p></td>
+    <td style="width: 11%; background: #DEEAF6;"><p class="p-center"><strong>Ngày hết hạn </strong><strong>BH</strong><strong>TS</strong></p></td>
   </tr>
   <tr>
     <td><p class="p-center"><strong>1</strong></p></td>
@@ -286,13 +286,13 @@ ${VHTT_STYLES}
 <table class="table-bordered">
 <tbody>
   <tr>
-    <td><p class="p-center"><strong>STT</strong></p></td>
-    <td><p class="p-center"><strong>Nội dung phê duyệt</strong></p></td>
-    <td><p class="p-center"><strong>H</strong><strong>oàn thành</strong></p></td>
-    <td><p class="p-center"><strong>Ch</strong><strong>ưa </strong><strong>hoàn thành</strong></p></td>
-    <td><p class="p-center"><strong>Ch</strong><strong>ưa đến hạn thực hiện</strong></p></td>
-    <td><p class="p-center"><strong>Ngày phải hoàn thành</strong></p></td>
-    <td><p class="p-left"><strong>Lý do không/</strong><strong> </strong><strong>chưa thực hiện </strong><strong>v</strong><strong>à</strong><strong> Hướng khắc phục</strong></p></td>
+    <td style="width: 5%; background: #DEEAF6;"><p class="p-center"><strong>STT</strong></p></td>
+    <td style="width: 43%; background: #DEEAF6;"><p class="p-center"><strong>Nội dung phê duyệt</strong></p></td>
+    <td style="width: 7%; background: #DEEAF6;"><p class="p-center"><strong>H</strong><strong>oàn thành</strong></p></td>
+    <td style="width: 7%; background: #DEEAF6;"><p class="p-center"><strong>Ch</strong><strong>ưa </strong><strong>hoàn thành</strong></p></td>
+    <td style="width: 9%; background: #DEEAF6;"><p class="p-center"><strong>Ch</strong><strong>ưa đến hạn thực hiện</strong></p></td>
+    <td style="width: 12%; background: #DEEAF6;"><p class="p-center"><strong>Ngày phải hoàn thành</strong></p></td>
+    <td style="width: 17%; background: #DEEAF6;"><p class="p-left"><strong>Lý do không/</strong><strong> </strong><strong>chưa thực hiện </strong><strong>v</strong><strong>à</strong><strong> Hướng khắc phục</strong></p></td>
   </tr>
   <tr>
     <td colspan="7"><p class="p-left"><strong>Văn bản/Biên bản họp/Thông báo kết quả phê duyệt cấp tín dụng số</strong><strong>… ngày .../.../……</strong></p></td>
@@ -385,10 +385,10 @@ ${VHTT_STYLES}
 <table class="table-bordered">
 <tbody>
   <tr>
-    <td><p class="p-center"><strong>HSRR tại thời điểm phê duyệt</strong></p></td>
-    <td><p class="p-center"><strong>HSRR tại thời điểm giải ngân</strong></p></td>
-    <td><p class="p-center"><strong>Biên độ vay theo phê duyệt</strong></p></td>
-    <td><p class="p-center"><strong>Biên độ vay tại thời điểm giải ngân</strong></p></td>
+    <td style="width: 26%; background: #DEEAF6;"><p class="p-center"><strong>HSRR tại thời điểm phê duyệt</strong></p></td>
+    <td style="width: 24%; background: #DEEAF6;"><p class="p-center"><strong>HSRR tại thời điểm giải ngân</strong></p></td>
+    <td style="width: 24%; background: #DEEAF6;"><p class="p-center"><strong>Biên độ vay theo phê duyệt</strong></p></td>
+    <td style="width: 26%; background: #DEEAF6;"><p class="p-center"><strong>Biên độ vay tại thời điểm giải ngân</strong></p></td>
   </tr>
   <tr>
     <td><p class="p-center">…….%</p></td>
@@ -403,10 +403,10 @@ ${VHTT_STYLES}
 <table class="table-bordered">
 <tbody>
   <tr>
-    <td><p class="p-center"><strong>STT</strong></p></td>
-    <td><p class="p-center"><strong>Tiêu chí</strong></p></td>
-    <td><p class="p-center"><strong>LSCV ưu đãi (%/năm)</strong></p></td>
-    <td><p class="p-center"><strong>LSCV sau ưu đãi</strong><strong> </strong><strong>(%/năm)</strong></p></td>
+    <td style="width: 8%; background: #DEEAF6;"><p class="p-center"><strong>STT</strong></p></td>
+    <td style="width: 51%; background: #DEEAF6;"><p class="p-center"><strong>Tiêu chí</strong></p></td>
+    <td style="width: 20%; background: #DEEAF6;"><p class="p-center"><strong>LSCV ưu đãi (%/năm)</strong></p></td>
+    <td style="width: 20%; background: #DEEAF6;"><p class="p-center"><strong>LSCV sau ưu đãi</strong><strong> </strong><strong>(%/năm)</strong></p></td>
   </tr>
   <tr>
     <td><p class="p-center"><strong>1</strong></p></td>
@@ -488,9 +488,9 @@ ${VHTT_STYLES}
 <table class="table-bordered" style="page-break-inside: avoid; margin-top: 10pt;">
 <tbody>
   <tr>
-    <td style="width: 33%;"><p class="p-center"><strong>CBBH</strong></p></td>
-    <td style="width: 33%;"><p class="p-center"><strong>CKS.CBBH</strong></p></td>
-    <td style="width: 34%;"><p class="p-center"><u><strong>PHÊ DUYỆT CỦA TĐV/CẤP CÓ THẨM QUYỀN</strong></u></p></td>
+    <td style="width: 33%; background: #DEEAF6;"><p class="p-center"><strong>CBBH</strong></p></td>
+    <td style="width: 31%; background: #DEEAF6;"><p class="p-center"><strong>CKS.CBBH</strong></p></td>
+    <td style="width: 36%; background: #DEEAF6;"><p class="p-center"><u><strong>PHÊ DUYỆT CỦA TĐV/CẤP CÓ THẨM QUYỀN</strong></u></p></td>
   </tr>
   <tr>
     <td><p class="p-left">☐  Đồng ý: ……………………</p><p class="p-left">☐  Không đồng ý: ……………</p><p class="p-right"><em> (Ký, ghi rõ họ tên)</em></p><p class="p-right empty-p">&nbsp;</p><p class="p-right empty-p">&nbsp;</p><p class="p-right empty-p">&nbsp;</p><p class="p-right empty-p">&nbsp;</p><p class="p-right empty-p">&nbsp;</p><p class="p-left"><em>Mã CIF quản lý TKV:${tkvCif}</em></p></td>

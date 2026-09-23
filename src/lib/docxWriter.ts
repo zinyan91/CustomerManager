@@ -60,6 +60,7 @@ export interface DocxCell {
   paragraphs: DocxParagraph[];
   span?: number;
   widthPct?: number;
+  fill?: string;
 }
 
 export interface DocxTable {
@@ -341,6 +342,13 @@ function paragraphFrom(el: Element, ctx: BlockCtx): DocxParagraph {
   return p;
 }
 
+function fillOf(value?: string): string | undefined {
+  const m = /#([0-9a-f]{6}|[0-9a-f]{3})(?![0-9a-f])/i.exec(value || '');
+  if (!m) return undefined;
+  const hex = m[1].length === 3 ? m[1].split('').map(c => c + c).join('') : m[1];
+  return hex.toUpperCase();
+}
+
 function tableFrom(el: Element, ctx: BlockCtx): DocxTable {
   const bordered = el.classList.contains('table-doc') || el.classList.contains('table-bordered');
   const isSig = el.classList.contains('sig-table');
@@ -369,6 +377,7 @@ function tableFrom(el: Element, ctx: BlockCtx): DocxTable {
         paragraphs,
         span: span > 1 ? span : undefined,
         widthPct: width ? parseFloat(width[1]) : undefined,
+        fill: fillOf(css['background-color'] || css['background']),
       });
     }
     if (cells.length > 0) rows.push(cells);
@@ -598,6 +607,7 @@ export function tableXml(table: DocxTable): string {
       const tcPr = '<w:tcPr>'
         + `<w:tcW w:w="${width}" w:type="pct"/>`
         + (span > 1 ? `<w:gridSpan w:val="${span}"/>` : '')
+        + (cell.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${cell.fill}"/>` : '')
         + `<w:vAlign w:val="${vAlign}"/>`
         + '</w:tcPr>';
 

@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { TEMPLATE_BY_ID } from '../templates';
 import { DOSSIERS } from '../dossiers';
 import { emptyCommon } from '../types';
-import { htmlToDocx, CONTENT_WIDTH, PAGE_WIDTH } from '../../../../lib/docxWriter';
+import { htmlToDocx, parseDocumentHtml, CONTENT_WIDTH, PAGE_WIDTH, type DocxTable } from '../../../../lib/docxWriter';
 import { VHTT_DOCX_PROFILES } from '../../../../lib/vhttDocxProfiles';
 import { zipPart } from '../../../../lib/__tests__/zipRead';
 
@@ -106,5 +106,32 @@ describe('Đánh số mục như bản gốc TB 2097/2026 (I. / 1. / a. / - / +)
     const t = TEMPLATE_BY_ID.bm02_to_trinh_giai_ngan;
     const xml = zipPart(htmlToDocx(t.buildHtml(emptyCommon(), t.specificDefaults)), 'word/document.xml');
     expect(xml).toMatch(/<w:t xml:space="preserve">I\.<\/w:t><\/w:r><w:r><w:tab\/><\/w:r>/);
+  });
+});
+
+describe('BM02: bảng có độ rộng cột và nền tiêu đề như bản gốc', () => {
+  const GOC: number[][] = [
+    [6, 20, 14, 14, 13, 13, 20],
+    [5, 18, 18, 20, 20, 18],
+    [5, 12, 14, 11, 10, 8, 12, 7, 10, 11],
+    [5, 43, 7, 7, 9, 12, 17],
+    [26, 24, 24, 26],
+    [8, 51, 20, 20],
+    [33, 31, 36],
+  ];
+  const bangs = () => {
+    const t = TEMPLATE_BY_ID.bm02_to_trinh_giai_ngan;
+    return parseDocumentHtml(t.buildHtml(emptyCommon(), t.specificDefaults)).filter(b => b.kind === 'table').slice(1) as DocxTable[];
+  };
+
+  it('7 bảng kẻ khung có độ rộng cột hàng đầu đúng bản gốc', () => {
+    expect(bangs().map(b => b.rows[0].map(c => c.widthPct))).toEqual(GOC);
+  });
+
+  it('hàng tiêu đề mọi bảng kẻ khung tô nền xanh nhạt DEEAF6, hàng dữ liệu không tô', () => {
+    for (const b of bangs()) {
+      expect(b.rows[0].every(c => c.fill === 'DEEAF6')).toBe(true);
+      expect(b.rows[1].every(c => c.fill === undefined)).toBe(true);
+    }
   });
 });

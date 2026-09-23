@@ -495,3 +495,21 @@ describe('đoạn đánh số kiểu Word: span.li-num + thụt treo theo pt', (
     expect(xml).toMatch(/<w:ind w:left="284" w:hanging="142"\/>/);
   });
 });
+
+describe('nền ô bảng từ CSS background', () => {
+  const t = () => parseDocumentHtml('<table class="table-bordered"><tr><td style="width:10%; background: #DEEAF6">STT</td><td style="width:90%">Nội dung</td></tr></table>')[0] as DocxTable;
+
+  it('ô có background mang mã màu hex, ô không có thì không', () => {
+    expect(t().rows[0][0].fill).toBe('DEEAF6');
+    expect(t().rows[0][1].fill).toBeUndefined();
+  });
+
+  it('XML ghi <w:shd> đúng thứ tự lược đồ: sau gridSpan, trước vAlign', () => {
+    expect(tableXml(t())).toMatch(/<w:tcW [^>]*\/><w:shd w:val="clear" w:color="auto" w:fill="DEEAF6"\/><w:vAlign/);
+  });
+
+  it('nhận cả background-color và mã màu 3 ký tự', () => {
+    const c = (parseDocumentHtml('<table><tr><td style="background-color:#abc">A</td></tr></table>')[0] as DocxTable).rows[0][0];
+    expect(c.fill).toBe('AABBCC');
+  });
+});

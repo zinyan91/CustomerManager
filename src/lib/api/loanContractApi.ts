@@ -187,6 +187,46 @@ export async function fetchOutstandingSchedulesAPI(
   return theoLo.flat();
 }
 
+async function fetchOutstandingDetailLot(lot: number[], cutoffIso: string): Promise<RepaymentSchedule[]> {
+  const all: RepaymentSchedule[] = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('RepaymentSchedules')
+      .select('*')
+      .in('ContractId', lot)
+      .or('IsPaid.is.null,IsPaid.eq.false')
+      .lte('DueDate', cutoffIso)
+      .order('Id', { ascending: true })
+      .range(from, from + SCHEDULE_PAGE - 1);
+
+    if (error) {
+      throw new Error(`Không nạp được lịch trả nợ: ${error.message}`);
+    }
+    if (!data || data.length === 0) break;
+
+    all.push(...(data as RepaymentSchedule[]));
+    if (data.length < SCHEDULE_PAGE) break;
+    from += SCHEDULE_PAGE;
+  }
+
+  return all;
+}
+
+export async function fetchOutstandingScheduleDetailsAPI(
+  contractIds: number[],
+  cutoffIso: string
+): Promise<RepaymentSchedule[]> {
+  if (contractIds.length === 0) return [];
+
+  const theoLo = await Promise.all(
+    chunk(contractIds, CONTRACT_LOT).map(lot => fetchOutstandingDetailLot(lot, cutoffIso))
+  );
+
+  return theoLo.flat();
+}
+
 export async function fetchPaidPrincipalMapAPI(): Promise<Record<number, number>> {
   const { data, error } = await supabase
     .from('ContractPaidPrincipal')

@@ -5,9 +5,8 @@ import { buildDueSheet, type DueSheetRow } from './builders/dueSheet';
 import { buildKunnSheet, type KunnSheetRow } from './builders/kunnSheet';
 import { buildCreditSheet, type CreditSheetRow } from './builders/creditSheet';
 import { buildCollateralSheet, type CollateralSheetRow } from './builders/collateralSheet';
-import type { ReportDef, ReportId, ReportRowSet } from './types';
-
-const CHUA_NAP = async (): Promise<ReportRowSet> => ({ rows: [] });
+import { loadCollateralRows, loadCreditRows, loadDueRows, loadKunnRows, loadPortfolioParams } from './loaders';
+import type { ReportDef, ReportId } from './types';
 
 const DANH_MUC_RONG: CustomerPortfolioExportParams = {
   customers: [],
@@ -24,7 +23,7 @@ export const REPORTS: ReportDef[] = [
     sheetName: 'Danh muc dang vay',
     supportsDueFilter: false,
     dueFieldLabel: '—',
-    load: CHUA_NAP,
+    load: loadPortfolioParams,
     buildSheet: (data, _filter, ctx) =>
       buildPortfolioSheet((data.rows[0] as CustomerPortfolioExportParams | undefined) ?? DANH_MUC_RONG, ctx),
   },
@@ -35,7 +34,7 @@ export const REPORTS: ReportDef[] = [
     sheetName: 'No due',
     supportsDueFilter: true,
     dueFieldLabel: 'Ngày đến hạn kỳ trả',
-    load: CHUA_NAP,
+    load: loadDueRows,
     buildSheet: (data, filter, ctx) => buildDueSheet(data.rows as DueSheetRow[], filter, ctx),
   },
   {
@@ -45,7 +44,7 @@ export const REPORTS: ReportDef[] = [
     sheetName: 'KUNN',
     supportsDueFilter: true,
     dueFieldLabel: 'Ngày đáo hạn KUNN',
-    load: CHUA_NAP,
+    load: loadKunnRows,
     buildSheet: (data, filter, ctx) => buildKunnSheet(data.rows as KunnSheetRow[], filter, ctx),
   },
   {
@@ -55,7 +54,7 @@ export const REPORTS: ReportDef[] = [
     sheetName: 'HDTD',
     supportsDueFilter: true,
     dueFieldLabel: 'Ngày hết hiệu lực HĐ',
-    load: CHUA_NAP,
+    load: loadCreditRows,
     buildSheet: (data, filter, ctx) => buildCreditSheet(data.rows as CreditSheetRow[], filter, ctx),
   },
   {
@@ -65,7 +64,7 @@ export const REPORTS: ReportDef[] = [
     sheetName: 'Tai san bao dam',
     supportsDueFilter: true,
     dueFieldLabel: 'Ngày hết hiệu lực chứng thư',
-    load: CHUA_NAP,
+    load: loadCollateralRows,
     buildSheet: (data, filter, ctx) => buildCollateralSheet(data.rows as CollateralSheetRow[], filter, ctx),
   },
 ];

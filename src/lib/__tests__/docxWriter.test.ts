@@ -365,3 +365,28 @@ describe('htmlToDocx', () => {
     expect(readUint32(zip, 0)).toBe(0x04034b50);
   });
 });
+
+describe('thẻ không phải nội dung không được lọt vào Word', () => {
+  function chuCua(html: string): string {
+    return parseDocumentHtml(html)
+      .flatMap(b => (b.kind === 'p' ? b.runs.map(r => r.text) : []))
+      .join('');
+  }
+
+  it('nội dung thẻ <style> không thành chữ trong tài liệu', () => {
+    const chu = chuCua('<style>.vhtt-doc { font-family: Times; }</style><p>Nội dung thật</p>');
+    expect(chu).toContain('Nội dung thật');
+    expect(chu).not.toContain('font-family');
+  });
+
+  it('<style> lồng trong thẻ inline cũng bị bỏ qua', () => {
+    const chu = chuCua('<p><span>Trước <style>.x { color: red; }</style>sau</span></p>');
+    expect(chu).not.toContain('color');
+    expect(chu).toContain('Trước');
+    expect(chu).toContain('sau');
+  });
+
+  it('nội dung thẻ <script> cũng không thành chữ', () => {
+    expect(chuCua('<script>var a = 1;</script><p>Chữ</p>')).not.toContain('var a');
+  });
+});

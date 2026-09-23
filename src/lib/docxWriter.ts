@@ -144,6 +144,12 @@ function normalizeText(text: string, upper?: boolean): string {
   return upper ? collapsed.toLocaleUpperCase('vi-VN') : collapsed;
 }
 
+const NON_CONTENT_TAGS = new Set(['style', 'script', 'template', 'noscript', 'head', 'title', 'meta', 'link']);
+
+function isNonContent(el: Element): boolean {
+  return NON_CONTENT_TAGS.has(el.tagName.toLowerCase());
+}
+
 function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
   for (const child of Array.from(node.childNodes)) {
     if (child.nodeType === 3) {
@@ -162,6 +168,7 @@ function collectRuns(node: Node, ctx: InlineCtx, runs: DocxRun[]): void {
     }
     if (child.nodeType !== 1) continue;
     const el = child as Element;
+    if (isNonContent(el)) continue;
     if (el.tagName.toLowerCase() === 'br') {
       runs.push({ text: '', lineBreak: true });
       continue;
@@ -389,6 +396,8 @@ function walkBlocks(node: Element, ctx: BlockCtx): DocxBlock[] {
 
     const el = child as Element;
     const tag = el.tagName.toLowerCase();
+
+    if (isNonContent(el)) continue;
 
     if (el.classList && (el.classList.contains('bm04-footer') || el.classList.contains('bm04-header') || el.classList.contains('vhtt-footer') || el.classList.contains('vhtt-footer-table'))) {
       // Đầu trang/Chân trang BM08 / VHTT đã được xử lý qua word/header1.xml và footer1.xml, không xuất lại trong thân tài liệu

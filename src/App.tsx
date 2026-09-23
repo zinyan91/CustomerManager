@@ -28,6 +28,7 @@ const RetailInvoiceView = lazy(() => import('./components/views/RetailInvoiceVie
 const QuizBankView = lazy(() => import('./components/views/QuizBankView').then(m => ({ default: m.QuizBankView })));
 const WorkspaceHubView = lazy(() => import('./components/views/WorkspaceHubView').then(m => ({ default: m.WorkspaceHubView })));
 const ConstructionEstimateView = lazy(() => import('./components/views/ConstructionEstimateView').then(m => ({ default: m.ConstructionEstimateView })));
+const ReportCenterView = lazy(() => import('./components/views/ReportCenterView').then(m => ({ default: m.ReportCenterView })));
 const ToiProjectionView = lazy(() => import('./components/views/ToiProjectionView').then(m => ({ default: m.ToiProjectionView })));
 const DedicatedWorkspaceLayout = lazy(() => import('./components/hub/DedicatedWorkspaceLayout').then(m => ({ default: m.DedicatedWorkspaceLayout })));
 
@@ -49,6 +50,7 @@ export function App() {
         <Route path="/hub/statement" element={<Suspense fallback={<ViewSkeleton />}><PurchaseStatementView /></Suspense>} />
         <Route path="/hub/quiz" element={<Suspense fallback={<ViewSkeleton />}><QuizBankView /></Suspense>} />
         <Route path="/hub/cof" element={<Suspense fallback={<ViewSkeleton />}><CofView /></Suspense>} />
+        <Route path="/hub/reports" element={<Suspense fallback={<ViewSkeleton />}><ReportCenterView /></Suspense>} />
       </Route>
 
       {/* Giao diện CRM chính có Sidebar hệ thống */}
@@ -67,6 +69,7 @@ export function App() {
         <Route path={ROUTE_OF.inventory} element={<Suspense fallback={<ViewSkeleton />}><InventoryView /></Suspense>} />
         <Route path={ROUTE_OF['rate-quote']} element={<Suspense fallback={<ViewSkeleton />}><RateQuoteView /></Suspense>} />
         <Route path={ROUTE_OF.cof} element={<Navigate to="/hub/cof" replace />} />
+        <Route path={ROUTE_OF.reports} element={<Navigate to="/hub/reports" replace />} />
         <Route path={ROUTE_OF['quiz-bank']} element={<Navigate to="/hub/quiz" replace />} />
         <Route path={ROUTE_OF['post-loan']} element={<Suspense fallback={<ViewSkeleton />}><PostLoanControlView /></Suspense>} />
         <Route path={ROUTE_OF.settings} element={<Suspense fallback={<ViewSkeleton />}><SettingsView /></Suspense>} />

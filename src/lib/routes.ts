@@ -20,6 +20,7 @@ export const ROUTE_OF: Record<ScreenId, string> = {
   'retail-invoice': '/tools/retail-invoice',
   'rate-quote': '/tools/rate-quote',
   cof: '/tools/cost-of-funds',
+  reports: '/tools/reports',
 
   mdsdv: '/reference/loan-purpose',
   'card-policies': '/reference/card-policies',
@@ -45,6 +46,7 @@ export const HUB_SUBROUTES: Record<string, ScreenId> = {
   '/hub/quiz': 'quiz-bank',
   '/hub/cof': 'cof',
   '/hub/toi': 'business-plan',
+  '/hub/reports': 'reports',
 };
 
 export const SCREEN_OF_PATH: Record<string, ScreenId> = Object.fromEntries(

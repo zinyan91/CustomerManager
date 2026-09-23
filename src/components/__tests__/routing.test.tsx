@@ -35,6 +35,7 @@ vi.mock('../views/CalculatorView', () => ({ CalculatorView: () => <div>MAN:calcu
 vi.mock('../views/MdsdvLookupView', () => ({ MdsdvLookupView: () => <div>MAN:mdsdv</div> }));
 vi.mock('../views/RateQuoteView', () => ({ RateQuoteView: () => <div>MAN:rate-quote</div> }));
 vi.mock('../views/CofView', () => ({ CofView: () => <div>MAN:cof</div> }));
+vi.mock('../views/ReportCenterView', () => ({ ReportCenterView: () => <div>MAN:reports</div> }));
 vi.mock('../views/DocumentTemplateView', () => ({ DocumentTemplateView: () => <div>MAN:templates</div> }));
 vi.mock('../views/SettingsView', () => ({ SettingsView: () => <div>MAN:settings</div> }));
 vi.mock('../views/PostLoanControlView', () => ({ PostLoanControlView: () => <div>MAN:post-loan</div> }));

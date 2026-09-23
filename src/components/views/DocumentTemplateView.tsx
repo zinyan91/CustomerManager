@@ -55,7 +55,7 @@ export const DocumentTemplateView: React.FC = () => {
           <DossierTreeRail
             ctrl={dossierCtrl}
             onCollapse={() => setCollapsed(true)}
-            className="hidden lg:flex w-60 shrink-0 border-r border-line/60"
+            className="hidden lg:flex w-52 shrink-0 border-r border-line/60"
           />
         )}
         <div className="flex-1 min-w-0">

@@ -16,6 +16,11 @@ export const TreeRail: React.FC<TreeRailProps> = ({
   title, nodes, selectedId, onSelect, onCollapse, renderTrailing, className = '',
 }) => {
   const [open, setOpen] = useState<Set<string>>(() => new Set());
+  const [lastSelected, setLastSelected] = useState(selectedId);
+  if (lastSelected !== selectedId) {
+    setLastSelected(selectedId);
+    setOpen(prev => new Set([...prev, ...pathTo(nodes, lastSelected)]));
+  }
   const forced = new Set(pathTo(nodes, selectedId));
   const isOpen = (id: string) => forced.has(id) || open.has(id);
   const toggle = (id: string) => setOpen(prev => {

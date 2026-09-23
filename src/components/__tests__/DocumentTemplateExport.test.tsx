@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DocumentTemplateView } from '../views/DocumentTemplateView';
 import { TEMPLATE_LIST } from '../documents/TemplateSelector';
@@ -79,17 +79,17 @@ describe('Soạn biểu mẫu — tải Word', () => {
       render(<DocumentTemplateView />);
       const user = userEvent.setup();
 
+      const cay = within(screen.getByRole('navigation', { name: 'Bộ hồ sơ' }));
       const dossierName = TEMPLATE_DOSSIER_MAP[tpl.id];
       if (dossierName) {
-        const dossierBtn = screen.getByRole('button', { name: dossierName });
-        await user.click(dossierBtn);
+        const folder = cay.getByRole('button', { name: dossierName });
+        if (folder.getAttribute('aria-expanded') !== 'true') await user.click(folder);
       }
 
       const cleanLabel = tpl.label.replace(/^\d+\.\s*/, '');
       const currentActive = screen.queryByRole('heading', { name: cleanLabel });
       if (!currentActive) {
-        await user.click(screen.getByRole('button', { name: 'Chọn biểu mẫu' }));
-        await user.click(screen.getByRole('button', { name: cleanLabel }));
+        await user.click(cay.getByRole('button', { name: cleanLabel }));
       }
 
       const preview = document.querySelector('.a4-sheet-container') as HTMLElement;

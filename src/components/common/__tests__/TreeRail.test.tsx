@@ -27,6 +27,14 @@ describe('TreeRail', () => {
     expect(screen.getByRole('button', { name: 'Lá A1' }).getAttribute('aria-current')).toBe('true');
   });
 
+  it('chọn sang thư mục khác thì thư mục cũ vẫn mở như Drive', () => {
+    const props = { title: 'Bộ hồ sơ', nodes: NODES, onSelect: vi.fn(), onCollapse: vi.fn() };
+    const { rerender } = render(<TreeRail {...props} selectedId="a/1" />);
+    rerender(<TreeRail {...props} selectedId="b/1" />);
+    expect(screen.getByRole('button', { name: 'Thư mục A' }).getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Thư mục B' }).getAttribute('aria-expanded')).toBe('true');
+  });
+
   it('bấm thư mục để mở/đóng', () => {
     ve();
     fireEvent.click(screen.getByRole('button', { name: 'Thư mục B' }));

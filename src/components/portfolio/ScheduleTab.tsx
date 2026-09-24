@@ -12,9 +12,7 @@ import { PANEL, SECTION_LABEL, TABLE_CELL } from '../../lib/uiClasses';
 type Density = 'cozy' | 'compact';
 
 interface ScheduleTabProps {
-  contracts: LoanContract[];
   selectedContract: LoanContract | null;
-  handleSelectContract: (c: LoanContract) => void;
   schedules: RepaymentSchedule[];
   openPaymentModal: (s: RepaymentSchedule) => void;
   onQuickSettleAll?: () => void;
@@ -26,7 +24,7 @@ const DENSITY_KEY = 'schedule_density';
 const num = (v: number) => (v > 0 ? fmtNumber(v) : '–');
 
 export const ScheduleTab: React.FC<ScheduleTabProps> = ({
-  contracts, selectedContract, handleSelectContract, schedules, openPaymentModal, onQuickSettleAll, onOpenEarlySettlement,
+  selectedContract, schedules, openPaymentModal, onQuickSettleAll, onOpenEarlySettlement,
 }) => {
   const { t } = useLang();
   const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null);
@@ -62,29 +60,19 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
   return (
     <div className="space-y-3" data-density={density}>
       <div className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card`}>
-        <div className={`${SECTION_LABEL} mb-2.5`}>
-          {t('schedule.contracts')}
+        <div className={`${SECTION_LABEL} mb-1.5`}>
+          {t('schedule.kunn')}
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {contracts.map(c => {
-            const isCurrent = selectedContract?.Id === c.Id;
-            return (
-              <button
-                key={c.Id}
-                onClick={() => handleSelectContract(c)}
-                aria-pressed={isCurrent}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-medium border transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                  isCurrent
-                    ? 'bg-accent text-accent-ink border-accent'
-                    : 'bg-panel text-ink-muted border-line hover:border-line-strong hover:text-ink'
-                }`}
-              >
-                <span className="font-mono">{c.ContractNumber}</span>
-                <span className="opacity-70"> · {fmtMoney(kunnPrincipal(c))}</span>
-              </button>
-            );
-          })}
-        </div>
+        {selectedContract && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-sm font-bold text-ink">{selectedContract.ContractNumber}</span>
+            {isContractSettled && (
+              <span className="px-1.5 py-0.5 rounded-md border border-line text-[10px] font-semibold text-ink-muted">
+                {t('schedule.settledBadge')}
+              </span>
+            )}
+          </div>
+        )}
 
         {selectedContract && (
           <dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3 mt-4 pt-4 border-t border-line">
@@ -112,9 +100,6 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
             <span className={`${SECTION_LABEL} uppercase tracking-wider text-[11px]`}>
               {t('schedule.title')}
             </span>
-            {selectedContract && (
-              <span className="font-mono text-accent font-bold text-xs">{selectedContract.ContractNumber}</span>
-            )}
             {schedules.length > 0 && (
               <span className="text-xs text-ink-muted">
                 <span className="font-mono text-pos font-bold">{settledCount}</span>

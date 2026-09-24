@@ -48,6 +48,7 @@ Ngày: 2026-09-24 · Trạng thái: chờ duyệt spec
 - HĐTC chưa giải chấp thì không xóa được.
 - Tài sản hay HĐTD đang nằm trong một HĐTC thì không xóa được. Muốn xóa phải gỡ khỏi HĐTC trước.
 - Chỉ nối tài sản và HĐTD **của cùng khách hàng** với HĐTC.
+- Xóa khách hàng bị chặn khi khách còn HĐTC, cùng cơ chế đang chặn khi còn KUNN, HĐTD, tài sản hay thẻ (`customerDeleteBlockers`). Người dùng phải giải chấp và xóa HĐTC trước.
 - Tái cấp: HĐTD mới được tick thêm vào HĐTC đang có. HĐTD cũ đã đóng vẫn chọn được, có nhãn "Đã đóng".
 
 ## Dữ liệu

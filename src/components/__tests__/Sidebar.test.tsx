@@ -52,9 +52,9 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
     }
   });
 
-  it('dựng đúng 13 liên kết trong nav', () => {
+  it('dựng đúng 14 liên kết trong nav', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a').length).toBe(13);
+    expect(container.querySelectorAll('nav a').length).toBe(14);
   });
 
   it('hiện đủ 5 tiêu đề nhóm', () => {
@@ -84,7 +84,7 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
 describe('Sidebar dùng liên kết thật', () => {
   it('mỗi mục là một thẻ liên kết, không phải nút', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a')).toHaveLength(13);
+    expect(container.querySelectorAll('nav a')).toHaveLength(14);
     expect(container.querySelectorAll('nav button')).toHaveLength(0);
   });
 

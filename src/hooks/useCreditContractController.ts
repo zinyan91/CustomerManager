@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import type { Customer, CreditContract, LoanContract, Collateral, RepaymentSchedule } from '../types';
+import type { Customer, CreditContract, LoanContract, Collateral, RepaymentSchedule, MortgageContract } from '../types';
 import {
   fetchCustomersAPI, fetchContractsByCustomerAPI,
   fetchCreditContractsByCustomerAPI, saveCreditContractAPI,
   deleteCreditContractAPI, countKunnOfCreditContractAPI,
-  fetchCollateralsByCustomerAPI, fetchRepaymentSchedulesAPI,
+  fetchCollateralsByCustomerAPI, fetchRepaymentSchedulesAPI, fetchMortgageContractsAPI,
 } from '../lib/api';
 import { customerPath } from '../lib/customerRoutes';
 import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
@@ -34,6 +34,7 @@ export function useCreditContractController() {
   const [contracts, setContracts] = useState<CreditContract[]>([]);
   const [kunns, setKunns] = useState<LoanContract[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
+  const [mortgages, setMortgages] = useState<MortgageContract[]>([]);
   const [schedulesMap, setSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
   const [loading, setLoading] = useState(false);
   const [notify, setNotify] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -67,20 +68,26 @@ export function useCreditContractController() {
     setShowForm(false);
     setEditing(null);
     if (!c) {
-      setContracts([]); setKunns([]); setCollaterals([]); setSchedulesMap({});
+      setContracts([]); setKunns([]); setCollaterals([]); setMortgages([]); setSchedulesMap({});
       return;
     }
     setLoading(true);
     try {
-      const [ccs, ks, cols] = await Promise.all([
+      const [ccs, ks, cols, mcs] = await Promise.all([
         fetchCreditContractsByCustomerAPI(c.Id),
         fetchContractsByCustomerAPI(c.Id),
         fetchCollateralsByCustomerAPI(c.Id),
+        // Dòng HĐTC chỉ để tham khảo: nạp lỗi thì màn HĐTD vẫn chạy, kèm thông báo dòng này có thể thiếu.
+        fetchMortgageContractsAPI(c.Id).catch(() => {
+          showNotify('error', 'Không nạp được danh sách HĐTC; dòng HĐTC có thể thiếu.');
+          return [] as MortgageContract[];
+        }),
       ]);
       if (loadTokenRef.current !== token) return;
       setContracts(ccs);
       setKunns(ks);
       setCollaterals(cols);
+      setMortgages(mcs);
 
       const map: Record<number, RepaymentSchedule[]> = {};
       await Promise.all(ks.map(async k => {
@@ -91,7 +98,7 @@ export function useCreditContractController() {
     } finally {
       if (loadTokenRef.current === token) setLoading(false);
     }
-  }, []);
+  }, [showNotify]);
 
   useEffect(() => {
     if (allCustomers.length === 0) return;
@@ -314,6 +321,7 @@ export function useCreditContractController() {
     contracts,
     kunns,
     collaterals,
+    mortgages,
     schedulesMap,
     loading,
     notify,

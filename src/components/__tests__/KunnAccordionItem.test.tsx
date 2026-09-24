@@ -176,3 +176,25 @@ describe('Nút Tất toán / Mở lại HĐTD', () => {
     expect(onToggleClose).toHaveBeenCalledWith(cc);
   });
 });
+
+describe('dòng hợp đồng thế chấp', () => {
+  it('HĐTD có HĐTC thì hiện "HĐTC:" kèm số', () => {
+    const cc = hdtd({});
+    const summary = summarizeCreditContracts([cc], [], { today: HOM_NAY })[0];
+    render(
+      <KunnAccordionItem
+        contractSummary={summary} collaterals={[]} isExpanded={false} onToggleExpand={() => {}}
+        getKunnsForContract={() => []} outstandingOf={() => 0}
+        onDisburse={() => {}} onEdit={() => {}} onDelete={() => {}} today={HOM_NAY}
+        mortgageNumbers={['HĐTC-01', 'HĐTC-02']}
+      />
+    );
+    expect(screen.getByText('HĐTC:')).toBeTruthy();
+    expect(screen.getByText('HĐTC-01, HĐTC-02')).toBeTruthy();
+  });
+
+  it('không có HĐTC thì không hiện dòng này', () => {
+    dungThe(hdtd({}), []);
+    expect(screen.queryByText('HĐTC:')).toBeNull();
+  });
+});

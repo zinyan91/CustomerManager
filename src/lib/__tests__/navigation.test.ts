@@ -3,8 +3,8 @@ import { NAV_GROUPS, NAV_ITEMS } from '../navigation';
 import { ROUTE_OF } from '../routes';
 
 describe('navigation', () => {
-  it('có đúng 13 màn', () => {
-    expect(NAV_ITEMS).toHaveLength(13);
+  it('có đúng 14 màn', () => {
+    expect(NAV_ITEMS).toHaveLength(14);
   });
 
   it('không id nào trùng', () => {
@@ -46,7 +46,7 @@ describe('navigation', () => {
     expect(NAV_ITEMS.map(i => i.id).sort()).toEqual([
       'business-plan', 'calculators', 'collaterals',
       'credit-cards', 'credit-contracts', 'customers', 'dashboard', 'hub', 'inventory',
-      'loans', 'post-loan',
+      'loans', 'mortgage-contracts', 'post-loan',
       'rate-quote', 'settings',
     ]);
   });

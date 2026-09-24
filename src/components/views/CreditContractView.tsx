@@ -4,6 +4,7 @@ import { FileText, Plus } from 'lucide-react';
 import { Toast } from '../Toast';
 import { useCreditContractController } from '../../hooks/useCreditContractController';
 import { totalsOfCreditContracts } from '../../lib/creditContract';
+import { mortgagesOfCreditContract } from '../../lib/mortgageContract';
 import { CreditContractFormModal } from '../creditContract/CreditContractFormModal';
 import { KunnAccordionItem } from '../creditContract/KunnAccordionItem';
 import { CreditContractKpiStrip } from '../creditContract/CreditContractKpiStrip';
@@ -13,6 +14,7 @@ export const CreditContractView: React.FC = () => {
     allCustomers,
     customer,
     collaterals,
+    mortgages,
     notify,
     setNotify,
     showForm,
@@ -214,6 +216,7 @@ export const CreditContractView: React.FC = () => {
                     onEdit={openEdit}
                     onDelete={handleDelete}
                     onToggleClose={handleToggleCloseContract}
+                    mortgageNumbers={mortgagesOfCreditContract(contractSummary.contract.Id, mortgages).map(m => m.MortgageNumber)}
                     today={today}
                   />
                 ))}

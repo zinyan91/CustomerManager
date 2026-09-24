@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI } from '../lib/api';
+import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI, fetchMortgageContractsAPI } from '../lib/api';
 import { parseAnyDate, fmtDate, parseMoneyInput, formatMoneyInput } from '../lib/utils';
 import { useSelectedCustomerId } from './useSelectedCustomerId';
 import {
   defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue,
   maxLoanFromCollateral, totalUsableCapacity, appraisalStatus,
 } from '../lib/collateralMath';
-import type { Collateral, Customer } from '../types';
+import type { Collateral, Customer, MortgageContract } from '../types';
+import { mortgagesOfCollateral } from '../lib/mortgageContract';
 import { useConfirm } from '../context/ConfirmContext';
 
 export const COL_PAGE_SIZE = 10;
@@ -14,6 +15,7 @@ export const COL_PAGE_SIZE = 10;
 export function useCollateralController() {
   const scopedCustomerId = useSelectedCustomerId();
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
+  const [mortgages, setMortgages] = useState<MortgageContract[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCollateral, setSelectedCollateral] = useState<Collateral | null>(null);
@@ -44,12 +46,18 @@ export function useCollateralController() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [colList, custList] = await Promise.all([
+      const [colList, custList, mcs] = await Promise.all([
         fetchCollateralsAPI(),
         fetchCustomersAPI(),
+        // Cột HĐTC chỉ để tham khảo: nạp lỗi thì bảng TSBĐ vẫn hiện, kèm thông báo cột có thể thiếu.
+        fetchMortgageContractsAPI().catch(() => {
+          showNotify('error', 'Không nạp được danh sách HĐTC; cột HĐTC có thể thiếu.');
+          return [] as MortgageContract[];
+        }),
       ]);
       setCollaterals(colList);
       setCustomers(custList);
+      setMortgages(mcs);
     } catch (err: any) {
       showNotify('error', `Lỗi tải dữ liệu TSBĐ: ${err.message}`);
     } finally {
@@ -254,6 +262,11 @@ export function useCollateralController() {
     [customerScopedCollaterals]
   );
   const weightedLtvVal = totalCollateralVal > 0 ? (totalMaxLoanVal / totalCollateralVal) * 100 : 0;
+  const mortgageNumbersOf = useCallback(
+    (collateralId: number) => mortgagesOfCollateral(collateralId, mortgages).map(m => m.MortgageNumber),
+    [mortgages]
+  );
+
   const appraisalStatusCounts = useMemo(() => {
     const counts = { expired: 0, expiring_soon: 0, missing: 0 };
     for (const c of customerScopedCollaterals) {
@@ -303,6 +316,7 @@ export function useCollateralController() {
     handleSave,
     filteredCollaterals,
     paginatedCollaterals,
+    mortgageNumbersOf,
     totalPages,
     customerScopedCollateralCount: customerScopedCollaterals.length,
     totalCollateralVal,

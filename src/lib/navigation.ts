@@ -3,14 +3,14 @@ import {
   LayoutDashboard, Landmark,
   Users, FileText, Building2, CreditCard,
   ShieldAlert, Settings, Calculator, Percent,
-  Handshake, ClipboardList, Boxes,
+  Handshake, ClipboardList, Boxes, FileSignature,
 } from 'lucide-react';
 import type { TranslationKey } from './i18n';
 import { ROUTE_OF } from './routes';
 
 export type ScreenId =
   | 'dashboard' | 'hub'
-  | 'customers' | 'disbursement' | 'credit-contracts' | 'loans' | 'collaterals' | 'credit-cards'
+  | 'customers' | 'disbursement' | 'credit-contracts' | 'loans' | 'collaterals' | 'mortgage-contracts' | 'credit-cards'
   | 'calculators' | 'business-plan' | 'corporate-financial' | 'inventory' | 'shopping-checklist' | 'purchase-statement'
   | 'retail-invoice' | 'rate-quote' | 'cof' | 'reports'
   | 'mdsdv' | 'card-policies' | 'templates' | 'quiz-bank'
@@ -45,6 +45,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'credit-contracts', labelKey: 'nav.creditContracts', groupKey: 'nav.groupRecords', icon: Handshake, path: ROUTE_OF['credit-contracts'], keywords: ['hop dong tin dung', 'hdtd', 'tin dung', 'contract'] },
       { id: 'loans', labelKey: 'nav.loans', groupKey: 'nav.groupRecords', icon: FileText, path: ROUTE_OF.loans, keywords: ['khoan vay', 'du no', 'loan', 'portfolio'] },
       { id: 'collaterals', labelKey: 'nav.collaterals', groupKey: 'nav.groupRecords', icon: Building2, path: ROUTE_OF.collaterals, keywords: ['tai san bao dam', 'tsbd', 'collateral', 'bat dong san'] },
+      { id: 'mortgage-contracts', labelKey: 'nav.mortgageContracts', groupKey: 'nav.groupRecords', icon: FileSignature, path: ROUTE_OF['mortgage-contracts'], keywords: ['hop dong the chap', 'hdtc', 'the chap', 'mortgage'] },
       { id: 'credit-cards', labelKey: 'nav.creditCards', groupKey: 'nav.groupRecords', icon: CreditCard, path: ROUTE_OF['credit-cards'], keywords: ['the tin dung', 'card', 'han muc'] },
     ],
   },

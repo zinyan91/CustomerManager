@@ -45,6 +45,7 @@ export const CollateralView: React.FC = () => {
     handleSave,
     filteredCollaterals,
     paginatedCollaterals,
+    mortgageNumbersOf,
     totalPages,
     customerScopedCollateralCount,
     totalCollateralVal,
@@ -164,6 +165,7 @@ export const CollateralView: React.FC = () => {
         totalPages={totalPages}
         onDelete={handleDelete}
         deletingId={deletingId}
+        mortgageNumbersOf={mortgageNumbersOf}
       />
 
       <CollateralForm

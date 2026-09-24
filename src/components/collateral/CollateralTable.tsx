@@ -21,6 +21,7 @@ interface CollateralTableProps {
   totalPages: number;
   onDelete: (c: Collateral) => void;
   deletingId: number | null;
+  mortgageNumbersOf?: (collateralId: number) => string[];
 }
 
 function getAssetIcon(type: string) {
@@ -44,6 +45,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
   totalPages,
   onDelete,
   deletingId,
+  mortgageNumbersOf,
 }) => {
   const pageTotalValue = paginatedCollaterals.reduce((sum, c) => sum + collateralValue(c), 0);
   const pageTotalMaxLoan = paginatedCollaterals.reduce((sum, c) => sum + maxLoanFromCollateral(c), 0);
@@ -78,6 +80,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
               <th className="px-4 py-3 whitespace-nowrap text-right">SỨC CẤP TỐI ĐA</th>
               <th className="px-4 py-3 whitespace-nowrap text-center">NGÀY ĐỊNH GIÁ</th>
               <th className="px-4 py-3 whitespace-nowrap text-center">HẠN ĐỊNH GIÁ</th>
+              <th className="px-4 py-3 whitespace-nowrap">HĐTC</th>
               <th className="px-4 py-3 whitespace-nowrap text-center">TRẠNG THÁI</th>
               <th className="px-4 py-3 whitespace-nowrap text-center">THAO TÁC</th>
             </tr>
@@ -85,7 +88,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
           <tbody className="divide-y divide-line/40">
             {paginatedCollaterals.length === 0 ? (
               <tr>
-                <td colSpan={10} className="text-center py-12 px-4 text-ink-faint">
+                <td colSpan={11} className="text-center py-12 px-4 text-ink-faint">
                   <div className="flex flex-col items-center justify-center space-y-2">
                     <Building2 className="w-8 h-8 text-ink-faint opacity-50" />
                     <span className="text-xs font-semibold">Không tìm thấy tài sản bảo đảm nào phù hợp bộ lọc.</span>
@@ -206,6 +209,11 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                       {fmtDate(expDate) || '—'}
                     </td>
 
+                    {/* Hợp đồng thế chấp đang chứa tài sản */}
+                    <td className="px-4 py-3.5 font-mono text-[11px] text-ink">
+                      {(mortgageNumbersOf?.(c.Id) ?? []).join(', ') || <span className="text-ink-faint">—</span>}
+                    </td>
+
                     {/* Trạng thái hiệu lực (Tách riêng 1 cột độc lập) */}
                     <td className="px-4 py-3.5 text-center whitespace-nowrap">
                       {st === 'expired' && (
@@ -285,7 +293,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                 <td className="px-4 py-3 text-right font-mono font-bold text-accent text-xs">
                   {fmtMoney(pageTotalMaxLoan)}
                 </td>
-                <td colSpan={4} className="px-4 py-3 text-center text-ink-faint text-[10px]">
+                <td colSpan={5} className="px-4 py-3 text-center text-ink-faint text-[10px]">
                   Hiển thị {paginatedCollaterals.length} / {filteredCollaterals.length} TSBĐ
                 </td>
               </tr>

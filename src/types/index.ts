@@ -52,6 +52,26 @@ export interface ContractCollateral {
   collateral?: Collateral;
 }
 
+export interface MortgageContract {
+  Id: number;
+  CustomerId: number;
+  MortgageNumber: string;
+  SignedDate?: string | null;
+  Pledgor?: string | null;
+  MaxSecuredAmount?: number | null;
+  NotaryNumber?: string | null;
+  NotaryDate?: string | null;
+  NotaryOffice?: string | null;
+  RegistrationDate?: string | null;
+  RegistrationOffice?: string | null;
+  IsReleased: boolean;
+  ReleasedDate?: string | null;
+  Note?: string | null;
+  CreatedAt?: string;
+  CollateralIds: number[];
+  CreditContractIds: number[];
+}
+
 export interface CreditContract {
   Id: number;
   CustomerId: number;

@@ -76,6 +76,15 @@ describe('customerDeleteBlockers', () => {
       .toEqual(['1 khoản vay (KUNN)', '1 hợp đồng tín dụng', '1 tài sản bảo đảm', '1 thẻ tín dụng']);
   });
 
+  it('khách còn hợp đồng thế chấp cũng bị chặn xoá', () => {
+    expect(customerDeleteBlockers({ mortgages: 2 })).toEqual(['2 hợp đồng thế chấp']);
+  });
+
+  it('HĐTC đứng trước HĐTD và tài sản vì phải gỡ HĐTC rồi mới xoá được hai loại đó', () => {
+    expect(customerDeleteBlockers({ kunn: 1, hdtd: 1, collaterals: 1, cards: 1, mortgages: 1 }))
+      .toEqual(['1 khoản vay (KUNN)', '1 hợp đồng thế chấp', '1 hợp đồng tín dụng', '1 tài sản bảo đảm', '1 thẻ tín dụng']);
+  });
+
   it('thiếu số đếm nào thì coi như 0, không chặn nhầm', () => {
     expect(customerDeleteBlockers({ kunn: 1 })).toEqual(['1 khoản vay (KUNN)']);
     expect(customerDeleteBlockers({})).toEqual([]);

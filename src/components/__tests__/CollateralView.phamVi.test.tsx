@@ -5,6 +5,7 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 
 vi.mock('../../lib/api', () => ({
+  fetchMortgageContractsAPI: async () => [],
   fetchCollateralsAPI: async () => ([
     { Id: 1, CustomerId: 55, AssetCode: 'TS-55', AssetType: 'BĐS - Loại 1', AppraisedValue: 1_000_000_000, LtvPercent: 80 },
     { Id: 2, CustomerId: 77, AssetCode: 'TS-77', AssetType: 'BĐS - Loại 1', AppraisedValue: 2_000_000_000, LtvPercent: 80 },

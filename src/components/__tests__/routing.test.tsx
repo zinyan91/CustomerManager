@@ -29,6 +29,7 @@ vi.mock('../views/DisbursementPayeeListView', () => ({ DisbursementPayeeListView
 vi.mock('../views/LoanPortfolioView', () => ({ LoanPortfolioView: () => <div>MAN:loans</div> }));
 vi.mock('../views/CreditContractView', () => ({ CreditContractView: () => <div>MAN:credit-contracts</div> }));
 vi.mock('../views/CollateralView', () => ({ CollateralView: () => <div>MAN:collaterals</div> }));
+vi.mock('../views/MortgageContractView', () => ({ MortgageContractView: () => <div>MAN:mortgage-contracts</div> }));
 vi.mock('../views/CardContractView', () => ({ CardContractView: () => <div>MAN:credit-cards</div> }));
 vi.mock('../views/CardPolicyLookupView', () => ({ CardPolicyLookupView: () => <div>MAN:card-policies</div> }));
 vi.mock('../views/CalculatorView', () => ({ CalculatorView: () => <div>MAN:calculators</div> }));
@@ -133,6 +134,7 @@ describe('tuyến lồng theo khách hàng', () => {
     ['/customers/55/credit-contracts', 'credit-contracts'],
     ['/customers/55/loans', 'loans'],
     ['/customers/55/collaterals', 'collaterals'],
+    ['/customers/55/mortgage-contracts', 'mortgage-contracts'],
     ['/customers/55/credit-cards', 'credit-cards'],
     ['/customers/55/post-loan-control', 'post-loan'],
   ] as const;

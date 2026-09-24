@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 import type { Collateral, LoanContract, CollateralAppraisal } from '../../types';
 import { defaultLtvForAssetType } from '../collateralMath';
+import { mortgageLinkErrorMessage } from '../mortgageContract';
 
 export async function fetchCollateralsStrictAPI(): Promise<Collateral[]> {
   const { data, error } = await supabase
@@ -104,7 +105,7 @@ export async function deleteCollateralAPI(id: number): Promise<void> {
   }
 
   const { data, error } = await supabase.from('Collaterals').delete().eq('Id', id).select();
-  if (error) throw error;
+  if (error) throw new Error(mortgageLinkErrorMessage(error, 'collateral') ?? error.message);
   if (!data || data.length === 0) {
     throw new Error('Xoá thất bại: bạn không có quyền xoá TSĐB này, hoặc bản ghi đã bị xoá trước đó.');
   }

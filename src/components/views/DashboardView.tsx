@@ -6,7 +6,8 @@ import {
 } from '../../lib/api';
 import { contractDueState, dueCutoffIso, type DuePeriodRow } from '../../lib/duePeriod';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
-import { fmtDate, fmtMoney, getMasterHdtdNumber, toIsoDate, daysUntil, todayIso } from '../../lib/utils';
+import { fmtDate, fmtMoney, toIsoDate, daysUntil, todayIso } from '../../lib/utils';
+import { buildHdtdExpiryList } from '../../lib/hdtdExpiryAlerts';
 import { assetClassLabel, collateralValue, appraisalExpiryDate } from '../../lib/collateralMath';
 import {
   filterByDue, countByDue, buildDueListHtml, openPrintWindow,
@@ -87,16 +88,6 @@ export const DashboardView: React.FC = () => {
   const customerMap = useMemo(
     () => new Map(customers.map(c => [c.Id, c])),
     [customers]
-  );
-
-  const hdtdById = useMemo(
-    () => new Map(creditContracts.map(cc => [cc.Id, cc])),
-    [creditContracts]
-  );
-
-  const hdtdByNumber = useMemo(
-    () => new Map(creditContracts.map(cc => [cc.HdtdNumber, cc])),
-    [creditContracts]
   );
 
   const periodsByContract = useMemo(() => {
@@ -233,34 +224,8 @@ export const DashboardView: React.FC = () => {
     }).filter(item => item.daysLeft !== null && item.daysLeft <= 10)
       .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
 
-    const hmtdMap: Record<string, { masterNo: string; contract: LoanContract; customer?: Customer; endDateStr: string; daysLeft: number | null }> = {};
-
-    activeContracts.forEach(c => {
-      const isHmtd = c.LoanMethod === 'Hạn mức tín dụng' || c.LoanMethod?.includes('Hạn mức');
-      if (!isHmtd) return;
-
-      const masterNo = getMasterHdtdNumber(c);
-      const cus = customerMap.get(c.CustomerId);
-      const hdtdCha = (c.CreditContractId ? hdtdById.get(c.CreditContractId) : undefined)
-        || hdtdByNumber.get(masterNo);
-      const endDateStr = (hdtdCha && toIsoDate(hdtdCha.ContractEndDate))
-        || toIsoDate(c.ContractEndDate) || '';
-      const daysLeft = daysUntil(endDateStr);
-
-      if (!hmtdMap[masterNo] || (c.ContractAmount && c.ContractAmount > (hmtdMap[masterNo].contract.ContractAmount || 0))) {
-        hmtdMap[masterNo] = {
-          masterNo,
-          contract: c,
-          customer: cus,
-          endDateStr,
-          daysLeft
-        };
-      }
-    });
-
-    const hmtdList = Object.values(hmtdMap)
-      .filter(item => item.daysLeft !== null && item.daysLeft <= 45)
-      .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
+    const hmtdList = buildHdtdExpiryList(activeContracts, creditContracts, todayIso())
+      .map(item => ({ ...item, customer: customerMap.get(item.contract.CustomerId) }));
 
     const collateralIdsDangTheChap = new Set<number>();
     chuaTatToan.forEach(c => parseCollateralIds(c).forEach(id => collateralIdsDangTheChap.add(id)));
@@ -283,7 +248,7 @@ export const DashboardView: React.FC = () => {
       dueHmtdList: hmtdList,
       dueCollateralList: colList,
     };
-  }, [chuaTatToan, onlyGroup1, customerMap, collaterals, periodsByContract, hdtdById, hdtdByNumber, debtGroupByContract]);
+  }, [chuaTatToan, onlyGroup1, customerMap, collaterals, periodsByContract, creditContracts, debtGroupByContract]);
 
   const soNgay = <T extends { daysLeft?: number | null }>(x: T) => x.daysLeft;
 
@@ -680,10 +645,10 @@ export const DashboardView: React.FC = () => {
     : alertConsoleTab === 'tsbd' ? inTsbd
     : undefined;
 
+  // HĐTD hết hạn chỉ là hết hạn giải ngân, không phải nợ quá hạn nên không cộng vào đây.
   const urgentOverdueCount =
     dueInMonthList.filter(item => (item.state.daysLeft ?? 0) < 0).length +
-    dueKunnList.filter(item => (item.daysLeft ?? 0) < 0).length +
-    dueHmtdList.filter(item => (item.daysLeft ?? 0) < 0).length;
+    dueKunnList.filter(item => (item.daysLeft ?? 0) < 0).length;
 
   const urgentOverdueAmount =
     dueInMonthList.filter(item => (item.state.daysLeft ?? 0) < 0).reduce((s, i) => s + (i.state.period?.TotalAmount ?? 0), 0) +
@@ -1091,7 +1056,7 @@ export const DashboardView: React.FC = () => {
               title="Hạn mức tín dụng (HMTD) sắp tới hạn kết thúc"
               counts={hmtdCount}
               rows={filteredHmtdRows}
-              rowKey={r => r.masterNo}
+              rowKey={r => r.key}
               cardTitle={r => r.customer?.FullName || 'N/A'}
               cardSubtitle={r => r.customer?.CifKh || ''}
               emptyText="Không có Hợp đồng HMTD nào sắp tới hạn hoặc đã quá hạn."

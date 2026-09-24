@@ -300,6 +300,29 @@ tháng còn lại (sàn 1 tháng), có +1 tháng nếu ngày đáo hạn vượt
 (`hdtdEffectiveDatesOf` đọc `ContractStart/EndDate` của HĐTD qua `CreditContractId`) ghi
 đè ngày trên form — để KUNN luôn kế thừa đúng hiệu lực HĐTD.
 
+### HĐTD hết hạn khi KUNN còn trong hạn — tái cấp
+
+HĐTD hết hạn chỉ có nghĩa **không giải ngân thêm được**; nó **không** phải nợ quá hạn.
+KUNN ngắn hạn giải ngân trước ngày hết hạn vẫn chạy tới `KunnDueDate` của nó, và quá
+hạn của KUNN chỉ tính theo lịch trả nợ và ngày đến hạn KUNN. Thường ngân hàng ký một
+HĐTD mới (**tái cấp**) để giải ngân các khoản tiếp theo, trong khi KUNN cũ vẫn nối vào
+HĐTD cũ.
+
+CSDL **không có cột liên kết tái cấp**. `findRenewingHdtd` (`hdtdExpiryAlerts.ts`) nhận
+diện ngầm: HĐTD khác của **cùng khách**, chưa đóng, đã hiệu lực và còn hạn tính tới
+hôm nay (`hdtdLifecycle` là `active` hoặc `expiring_soon`), bắt đầu sau HĐTD cũ (thiếu
+ngày bắt đầu thì so ngày hết hạn).
+
+Danh sách cảnh báo "HĐTD sắp hết hạn" của Dashboard (`buildHdtdExpiryList`):
+
+- Tra HĐTD cha qua `CreditContractId`, không có mới tra theo số HĐTD **trong cùng
+  khách** (số HĐTD chỉ duy nhất theo khách). Ngày hết hạn lấy từ bản ghi HĐTD; bản sao
+  `ContractEndDate` trên KUNN chỉ dùng khi không tìm được HĐTD — bản sao này ghi lúc lưu
+  KUNN và **không** cập nhật khi sửa HĐTD.
+- HĐTD đã được tái cấp thì bỏ khỏi danh sách; hết hạn mà chưa tái cấp thì vẫn hiện để
+  nhắc tái cấp.
+- Các dòng này **không** được cộng vào ô "Quá hạn thu nợ".
+
 ---
 
 ## 11. Sản phẩm vay & ràng buộc
@@ -399,3 +422,5 @@ khai** → khả năng trả nợ trả về 0, không suy đoán.
 | `isRevolvingCredit` (`kunnFormRules.ts`) | `=== 'Hạn mức tín dụng'`; thẻ ≠ revolving. **Chỉ cho UI form.** |
 | `buildKunnPayload` (`kunnForm.ts`) | Ghi đè ngày KUNN bằng hiệu lực HĐTD cha; xử lý lãi suất/gốc/TSĐB. |
 | `checkMonthlyPrincipal` (`kunnForm.ts`) | Ba số (vay/kỳ/gốc mỗi kỳ) nhất quán trong dung sai 100k. |
+| `findRenewingHdtd` (`hdtdExpiryAlerts.ts`) | HĐTD tái cấp của cùng khách: chưa đóng, đang hiệu lực, bắt đầu sau HĐTD cũ. |
+| `buildHdtdExpiryList` (`hdtdExpiryAlerts.ts`) | Cảnh báo HĐTD sắp/đã hết hạn trên Dashboard; bỏ HĐTD đã tái cấp. |

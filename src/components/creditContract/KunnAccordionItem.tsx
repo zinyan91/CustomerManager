@@ -39,6 +39,7 @@ interface KunnAccordionItemProps {
   onEdit: (cc: CreditContract) => void;
   onDelete: (cc: CreditContract) => void;
   onToggleClose?: (cc: CreditContract) => void;
+  mortgageNumbers?: string[];
   today?: string;
 }
 
@@ -53,6 +54,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
   onEdit,
   onDelete,
   onToggleClose,
+  mortgageNumbers = [],
   today,
 }) => {
   const {
@@ -282,6 +284,13 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
                 <span className="text-ink-faint">({fmtMoney(collateralValue(c))})</span>
               </span>
             ))}
+          </div>
+        )}
+
+        {mortgageNumbers.length > 0 && (
+          <div className="pt-2 flex flex-wrap items-center gap-2 text-[11px] text-ink-muted">
+            <span className="font-bold text-ink-faint text-xs">HĐTC:</span>
+            <span className="font-mono text-ink">{mortgageNumbers.join(', ')}</span>
           </div>
         )}
       </div>

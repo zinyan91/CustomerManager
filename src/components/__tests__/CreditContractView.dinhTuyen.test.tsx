@@ -5,6 +5,7 @@ import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/re
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 
 vi.mock('../../lib/api', () => ({
+  fetchMortgageContractsAPI: async () => [],
   fetchCustomersAPI: async () => ([
     { Id: 55, FullName: 'Trần Thị B', CifKh: '900055' },
     { Id: 77, FullName: 'Lê Văn C', CifKh: '900077' },

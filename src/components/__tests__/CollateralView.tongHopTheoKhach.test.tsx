@@ -6,6 +6,7 @@ import { MemoryRouter, Routes, Route } from 'react-router';
 import { CollateralView } from '../views/CollateralView';
 
 vi.mock('../../lib/api', () => ({
+  fetchMortgageContractsAPI: async () => [],
   fetchCollateralsAPI: async () => ([
     {
       Id: 1, CustomerId: 55, AssetCode: 'TS-55', AssetType: 'BĐS - Loại 1',

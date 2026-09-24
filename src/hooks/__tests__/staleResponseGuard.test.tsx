@@ -22,6 +22,7 @@ vi.mock('../../lib/api', () => ({
   fetchCreditContractsByCustomerAPI: (...a: unknown[]) => fetchCreditContracts(...a),
   fetchContractsByCustomerAPI: (...a: unknown[]) => fetchContracts(...a),
   fetchCollateralsByCustomerAPI: (...a: unknown[]) => fetchCollaterals(...a),
+  fetchMortgageContractsAPI: async () => [],
   fetchCardContractsByCustomerAPI: (...a: unknown[]) => fetchCards(...a),
   fetchRepaymentSchedulesAPI: (...a: unknown[]) => fetchSchedules(...a),
   saveCreditContractAPI: async () => ({}),

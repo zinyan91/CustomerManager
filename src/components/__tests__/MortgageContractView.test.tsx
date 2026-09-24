@@ -173,3 +173,17 @@ describe('MortgageContractView — form', () => {
     expect(before2).toMatchObject({ Id: 11 });
   });
 });
+
+describe('MortgageContractView — nhãn nhiều tài sản / HĐTD', () => {
+  it('ngăn cách bằng dấu phẩy như spec ("TS-01, TS-03")', async () => {
+    api.fetchCollateralsByCustomerAPI.mockResolvedValue([
+      { Id: 3, CustomerId: 7, AssetCode: 'TS-03' }, { Id: 4, CustomerId: 7, AssetCode: 'TS-04' }]);
+    api.fetchCreditContractsByCustomerAPI.mockResolvedValue([
+      { Id: 9, CustomerId: 7, HdtdNumber: 'HDTD-A' }, { Id: 10, CustomerId: 7, HdtdNumber: 'HDTD-B' }]);
+    api.fetchMortgageContractsAPI.mockResolvedValue([
+      hdtc({ Id: 1, MortgageNumber: 'HĐTC-01', CollateralIds: [3, 4], CreditContractIds: [9, 10] })]);
+    dung();
+    expect(await screen.findByText('TS-03, TS-04')).toBeTruthy();
+    expect(screen.getByText('HDTD-A, HDTD-B')).toBeTruthy();
+  });
+});

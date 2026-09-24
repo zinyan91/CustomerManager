@@ -41,16 +41,8 @@ export const MortgageContractTable: React.FC<{
               <td className={`${CELL} text-right font-mono`}>
                 {m.MaxSecuredAmount === null || m.MaxSecuredAmount === undefined ? '—' : fmtMoney(m.MaxSecuredAmount)}
               </td>
-              <td className={CELL}>
-                <div className="flex flex-wrap gap-1">
-                  {collateralLabels(m.CollateralIds, collaterals).map(l => <span key={l} className="font-mono">{l}</span>)}
-                </div>
-              </td>
-              <td className={CELL}>
-                <div className="flex flex-wrap gap-1">
-                  {creditContractLabels(m.CreditContractIds, creditContracts).map(l => <span key={l} className="font-mono">{l}</span>)}
-                </div>
-              </td>
+              <td className={`${CELL} font-mono`}>{collateralLabels(m.CollateralIds, collaterals).join(', ')}</td>
+              <td className={`${CELL} font-mono`}>{creditContractLabels(m.CreditContractIds, creditContracts).join(', ')}</td>
               <td className={CELL}>
                 {m.IsReleased
                   ? <span className="text-ink-muted">Đã giải chấp{m.ReleasedDate ? ` · ${fmtDate(m.ReleasedDate)}` : ''}</span>

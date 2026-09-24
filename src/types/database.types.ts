@@ -161,6 +161,43 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['Collaterals']['Insert']>;
       };
 
+      MortgageContracts: {
+        Row: {
+          Id: number;
+          CustomerId: number;
+          MortgageNumber: string;
+          SignedDate: string | null;
+          Pledgor: string | null;
+          MaxSecuredAmount: number | null;
+          NotaryNumber: string | null;
+          NotaryDate: string | null;
+          NotaryOffice: string | null;
+          RegistrationDate: string | null;
+          RegistrationOffice: string | null;
+          IsReleased: boolean;
+          ReleasedDate: string | null;
+          Note: string | null;
+          CreatedAt: string;
+        };
+        Insert: Omit<Database['public']['Tables']['MortgageContracts']['Row'], 'Id' | 'CreatedAt'> & {
+          Id?: number;
+          CreatedAt?: string;
+        };
+        Update: Partial<Database['public']['Tables']['MortgageContracts']['Insert']>;
+      };
+
+      MortgageContractCollaterals: {
+        Row: { MortgageContractId: number; CollateralId: number };
+        Insert: { MortgageContractId: number; CollateralId: number };
+        Update: Partial<{ MortgageContractId: number; CollateralId: number }>;
+      };
+
+      MortgageContractCreditContracts: {
+        Row: { MortgageContractId: number; CreditContractId: number };
+        Insert: { MortgageContractId: number; CreditContractId: number };
+        Update: Partial<{ MortgageContractId: number; CreditContractId: number }>;
+      };
+
       InventoryItems: {
         Row: {
           Id: string;

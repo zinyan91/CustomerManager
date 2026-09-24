@@ -11,7 +11,8 @@
 5. [Khả năng bảo đảm dùng được (usableCapacity)](#5-khả-năng-bảo-đảm-dùng-được-usablecapacity)
 6. [So khớp CollateralIds — tách theo dấu phẩy](#6-so-khớp-collateralids--tách-theo-dấu-phẩy)
 7. [Quy tắc `||` khi 0 là giá trị hợp lệ](#7-quy-tắc--khi-0-là-giá-trị-hợp-lệ)
-8. [Sổ tra hàm nhanh](#8-sổ-tra-hàm-nhanh)
+8. [Hợp đồng thế chấp (HĐTC)](#8-hợp-đồng-thế-chấp-hđtc)
+9. [Sổ tra hàm nhanh](#9-sổ-tra-hàm-nhanh)
 
 ---
 
@@ -154,7 +155,25 @@ Nguyên tắc chung áp cho **mọi trường số mà 0 là giá trị hợp l�
 
 ---
 
-## 8. Sổ tra hàm nhanh
+## 8. Hợp đồng thế chấp (HĐTC)
+
+HĐTC lưu ở `MortgageContracts` (migration 58), màn `/customers/:id/mortgage-contracts`. Một HĐTC gồm **nhiều tài sản** (`MortgageContractCollaterals`) và bảo đảm cho **nhiều HĐTD** (`MortgageContractCreditContracts`). Khi HĐTD được tái cấp, HĐTD mới được gắn thêm vào HĐTC cũ, không phải nhập lại. `Pledgor` để trống nghĩa là bên thế chấp chính là khách hàng; có giá trị khi tài sản của bên thứ ba.
+
+Quy tắc toàn vẹn nằm ở CSDL, không trông vào giao diện:
+
+- Chỉ nối tài sản / HĐTD **cùng khách hàng** với HĐTC (trigger `mortgage_link_same_customer`).
+- **Không xoá HĐTC chưa giải chấp** (trigger `mortgage_block_delete_unreleased`), trừ khi bị xoá theo dây chuyền từ `Customers`.
+- **Không xoá tài sản / HĐTD đang nằm trong HĐTC**, kể cả HĐTC đã giải chấp — phải gỡ khỏi HĐTC trước (khoá ngoại NO ACTION `fk_mortgage_link_collateral`, `fk_mortgage_link_credit_contract`). `mortgageLinkErrorMessage` (`mortgageContract.ts`) đổi lỗi khoá ngoại này sang tiếng Việt cho `deleteCollateralAPI` và `deleteCreditContractAPI`.
+- Giải chấp phải có ngày giải chấp (CHECK `mortgage_released_has_date`).
+- Xoá khách hàng bị chặn khi còn HĐTC (`customerDeleteBlockers`), như với KUNN / HĐTD / TSBĐ / thẻ. HĐTC đứng ngay sau KUNN trong danh sách vì phải gỡ HĐTC rồi mới xoá được HĐTD và tài sản.
+
+Lưu HĐTC chạy hai bước: ghi dòng HĐTC rồi ghi bảng nối theo chênh lệch (`linkDiff`). Bước sau lỗi thì API ném `MortgageLinkSaveError` mang `mortgageId`, và controller chuyển form sang chế độ sửa HĐTC vừa tạo — lần Lưu kế tiếp là cập nhật, không chèn trùng.
+
+**Hai nguồn độc lập:** `CreditContracts.CollateralIds` (chuỗi CSV, §6) vẫn là nguồn cho hạn mức và LTV. Bảng nối HĐTC ↔ tài sản là nguồn pháp lý riêng. Hai nguồn **có thể lệch nhau** và hiện chưa có gì đối chiếu tự động — đừng đọc bảng nối để tính hạn mức.
+
+---
+
+## 9. Sổ tra hàm nhanh
 
 Tất cả ở `src/lib/collateralMath.ts` trừ khi ghi khác.
 

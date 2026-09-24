@@ -30,10 +30,12 @@ export interface CustomerLinkCounts {
   hdtd: number;
   collaterals: number;
   cards: number;
+  mortgages: number;
 }
 
 const BLOCKER_LABEL: { key: keyof CustomerLinkCounts; noun: string }[] = [
   { key: 'kunn', noun: 'khoản vay (KUNN)' },
+  { key: 'mortgages', noun: 'hợp đồng thế chấp' },
   { key: 'hdtd', noun: 'hợp đồng tín dụng' },
   { key: 'collaterals', noun: 'tài sản bảo đảm' },
   { key: 'cards', noun: 'thẻ tín dụng' },

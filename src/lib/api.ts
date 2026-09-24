@@ -1,6 +1,7 @@
 export * from './api/customerApi';
 export * from './api/collateralApi';
 export * from './api/creditContractApi';
+export * from './api/mortgageContractApi';
 export * from './api/loanContractApi';
 export * from './api/cardContractApi';
 export * from './api/postLoanApi';

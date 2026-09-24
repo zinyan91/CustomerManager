@@ -100,13 +100,14 @@ async function countRowsFor(table: string, customerId: number): Promise<number> 
 }
 
 export async function fetchCustomerLinkCountsAPI(customerId: number): Promise<CustomerLinkCounts> {
-  const [kunn, hdtd, collaterals, cards] = await Promise.all([
+  const [kunn, hdtd, collaterals, cards, mortgages] = await Promise.all([
     countRowsFor('LoanContracts', customerId),
     countRowsFor('CreditContracts', customerId),
     countRowsFor('Collaterals', customerId),
     countRowsFor('CardContracts', customerId),
+    countRowsFor('MortgageContracts', customerId),
   ]);
-  return { kunn, hdtd, collaterals, cards };
+  return { kunn, hdtd, collaterals, cards, mortgages };
 }
 
 export async function deleteCustomerAPI(id: number): Promise<void> {

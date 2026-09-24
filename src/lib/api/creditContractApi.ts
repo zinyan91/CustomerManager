@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 import type { CreditContract } from '../../types';
 import { unarchiveCustomer } from './customerApi';
+import { mortgageLinkErrorMessage } from '../mortgageContract';
 
 export async function fetchCreditContractsByCustomerAPI(customerId: number): Promise<CreditContract[]> {
   try {
@@ -61,6 +62,8 @@ export async function deleteCreditContractAPI(id: number): Promise<void> {
     .eq('Id', id)
     .select('Id');
   if (error) {
+    const mortgageMessage = mortgageLinkErrorMessage(error, 'credit_contract');
+    if (mortgageMessage) throw new Error(mortgageMessage);
     if (error.code === '23503') {
       const n = await countKunnOfCreditContractAPI(id);
       throw new Error(`Không xoá được HĐTD: còn ${n} KUNN đang gắn với hợp đồng này. Xoá KUNN trước.`);

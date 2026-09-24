@@ -221,9 +221,7 @@ export const LoanPortfolioView: React.FC = () => {
       {foundCustomer && mainTab === 'schedule' && selectedContract && (
         <Suspense fallback={<ComponentFallback />}>
           <ScheduleTab
-            contracts={contracts}
             selectedContract={selectedContract}
-            handleSelectContract={handleSelectContract}
             schedules={schedules}
             openPaymentModal={paymentModalProps.open}
             onQuickSettleAll={paymentModalProps.quickSettleAllDue}

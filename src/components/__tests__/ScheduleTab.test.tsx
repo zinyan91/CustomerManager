@@ -40,9 +40,7 @@ function dungLen(schedules: RepaymentSchedule[] = lich, contract: LoanContract |
     <ThemeProvider>
       <LanguageProvider>
         <ScheduleTab
-          contracts={[kunn]}
           selectedContract={contract}
-          handleSelectContract={() => {}}
           schedules={schedules}
           openPaymentModal={() => {}}
         />
@@ -141,9 +139,7 @@ describe('cột Ghi nhận và thao tác', () => {
       <ThemeProvider>
         <LanguageProvider>
           <ScheduleTab
-            contracts={[kunn]}
             selectedContract={kunn}
-            handleSelectContract={() => {}}
             schedules={lich}
             openPaymentModal={(s: RepaymentSchedule) => goi.push(s.PeriodNumber)}
           />
@@ -163,9 +159,7 @@ describe('cột Ghi nhận và thao tác', () => {
       <ThemeProvider>
         <LanguageProvider>
           <ScheduleTab
-            contracts={[kunn]}
             selectedContract={kunn}
-            handleSelectContract={() => {}}
             schedules={lich}
             openPaymentModal={() => {}}
             onQuickSettleAll={onQuickSettleAll}
@@ -192,9 +186,7 @@ describe('cột Ghi nhận và thao tác', () => {
       <ThemeProvider>
         <LanguageProvider>
           <ScheduleTab
-            contracts={[kunn]}
             selectedContract={kunn}
-            handleSelectContract={() => {}}
             schedules={allPaid}
             openPaymentModal={() => {}}
             onQuickSettleAll={vi.fn()}
@@ -215,9 +207,7 @@ describe('cột Ghi nhận và thao tác', () => {
       <ThemeProvider>
         <LanguageProvider>
           <ScheduleTab
-            contracts={[kunn]}
             selectedContract={kunn}
-            handleSelectContract={() => {}}
             schedules={lich}
             openPaymentModal={() => {}}
             onOpenEarlySettlement={onOpenEarlySettlement}
@@ -241,9 +231,7 @@ describe('cột Ghi nhận và thao tác', () => {
       <ThemeProvider>
         <LanguageProvider>
           <ScheduleTab
-            contracts={[settledKunn]}
             selectedContract={settledKunn}
-            handleSelectContract={() => {}}
             schedules={lich}
             openPaymentModal={() => {}}
             onOpenEarlySettlement={vi.fn()}
@@ -254,5 +242,20 @@ describe('cột Ghi nhận và thao tác', () => {
 
     const nutTatToan = screen.getByRole('button', { name: /Tất toán trước hạn/ });
     expect((nutTatToan as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+describe('đầu tab chỉ hiện KUNN đang chọn', () => {
+  it('ghi số KUNN đang chọn, không còn hàng nút chọn KUNN khác', () => {
+    dungLen();
+    expect(screen.getByText('Khế ước nhận nợ')).toBeTruthy();
+    expect(screen.getByText(kunn.ContractNumber)).toBeTruthy();
+    expect(screen.queryByText('Hợp đồng tín dụng')).toBeNull();
+    expect(screen.queryAllByRole('button').some(b => b.textContent?.includes(kunn.ContractNumber))).toBe(false);
+  });
+
+  it('KUNN đã tất toán có nhãn Đã tất toán', () => {
+    dungLen(lich, { ...kunn, IsSettled: true, CurrentBalance: 0 });
+    expect(screen.getByText('Đã tất toán')).toBeTruthy();
   });
 });

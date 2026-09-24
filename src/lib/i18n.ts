@@ -62,7 +62,8 @@ const dictionary = {
     'header.closeMenu': 'Đóng menu',
     'header.version': 'Phiên bản',
 
-    'schedule.contracts': 'Hợp đồng tín dụng',
+    'schedule.kunn': 'Khế ước nhận nợ',
+    'schedule.settledBadge': 'Đã tất toán',
     'schedule.loanAmount': 'Số tiền KUNN',
     'schedule.currentBalance': 'Dư nợ hiện hữu',
     'schedule.activeRate': 'Lãi suất hiện hành',
@@ -158,7 +159,8 @@ const dictionary = {
     'header.closeMenu': 'Close menu',
     'header.version': 'Version',
 
-    'schedule.contracts': 'Credit contracts',
+    'schedule.kunn': 'Loan note',
+    'schedule.settledBadge': 'Settled',
     'schedule.loanAmount': 'Loan amount',
     'schedule.currentBalance': 'Current balance',
     'schedule.activeRate': 'Active rate',

@@ -99,3 +99,77 @@ describe('MortgageContractView — danh sách', () => {
     expect(api.fetchMortgageContractsAPI).toHaveBeenNthCalledWith(2, 8);
   });
 });
+
+describe('MortgageContractView — form', () => {
+  it('thêm mới: chỉ liệt kê tài sản/HĐTD của khách, tick rồi lưu gọi API với id đã chọn', async () => {
+    api.fetchMortgageContractsAPI.mockResolvedValue([]);
+    api.saveMortgageContractAPI.mockResolvedValue(11);
+    dung();
+    fireEvent.click(await screen.findByRole('button', { name: /Thêm HĐTC/ }));
+
+    fireEvent.change(screen.getByLabelText('Số HĐTC'), { target: { value: 'HĐTC-05' } });
+    fireEvent.click(screen.getByLabelText('TS-03'));
+    fireEvent.click(screen.getByLabelText('2002/HDTD/9653222'));
+    fireEvent.change(screen.getByLabelText('Giá trị bảo đảm tối đa (VNĐ)'), { target: { value: '2500000000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu HĐTC' }));
+
+    await waitFor(() => expect(api.saveMortgageContractAPI).toHaveBeenCalled());
+    const [draft, before] = api.saveMortgageContractAPI.mock.calls[0];
+    expect(draft).toMatchObject({
+      CustomerId: 7, MortgageNumber: 'HĐTC-05', CollateralIds: [3], CreditContractIds: [9], MaxSecuredAmount: 2500000000,
+    });
+    expect(before).toBeNull();
+  });
+
+  it('thiếu số HĐTC thì hiện lỗi, không gọi API', async () => {
+    api.fetchMortgageContractsAPI.mockResolvedValue([]);
+    dung();
+    fireEvent.click(await screen.findByRole('button', { name: /Thêm HĐTC/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu HĐTC' }));
+    expect(await screen.findByText('Số HĐTC là bắt buộc.')).toBeTruthy();
+    expect(api.saveMortgageContractAPI).not.toHaveBeenCalled();
+  });
+
+  it('HĐTC chưa giải chấp: nút Xoá bị khoá kèm giải thích', async () => {
+    api.fetchMortgageContractsAPI.mockResolvedValue([hdtc({ Id: 1, MortgageNumber: 'HĐTC-01' })]);
+    dung();
+    fireEvent.click(await screen.findByText('HĐTC-01'));
+    const nutXoa = screen.getByRole('button', { name: 'Xoá HĐTC' }) as HTMLButtonElement;
+    expect(nutXoa.disabled).toBe(true);
+    expect(screen.getByText(/Chưa giải chấp nên chưa xoá được/)).toBeTruthy();
+  });
+
+  it('HĐTC đã giải chấp: xác nhận rồi xoá', async () => {
+    api.fetchMortgageContractsAPI.mockResolvedValue([
+      hdtc({ Id: 2, MortgageNumber: 'HĐTC-02', IsReleased: true, ReleasedDate: '2026-01-01' })]);
+    api.deleteMortgageContractAPI.mockResolvedValue(undefined);
+    confirmMock.mockResolvedValue(true);
+    dung();
+    fireEvent.change(await screen.findByLabelText('Lọc trạng thái'), { target: { value: 'all' } });
+    fireEvent.click(await screen.findByText('HĐTC-02'));
+    fireEvent.click(screen.getByRole('button', { name: 'Xoá HĐTC' }));
+    await waitFor(() => expect(api.deleteMortgageContractAPI).toHaveBeenCalledWith(2));
+  });
+
+  it('lưu HĐTC mới lỗi ở bước liên kết: lần lưu sau là cập nhật HĐTC vừa tạo', async () => {
+    const { MortgageLinkSaveError } = api;
+    api.fetchMortgageContractsAPI
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([hdtc({ Id: 11, MortgageNumber: 'HĐTC-05' })]);
+    api.saveMortgageContractAPI
+      .mockRejectedValueOnce(new MortgageLinkSaveError('Đã lưu HĐTC "HĐTC-05" nhưng chưa lưu được danh sách tài sản/HĐTD: lỗi', 11))
+      .mockResolvedValueOnce(11);
+    dung();
+    fireEvent.click(await screen.findByRole('button', { name: /Thêm HĐTC/ }));
+    fireEvent.change(screen.getByLabelText('Số HĐTC'), { target: { value: 'HĐTC-05' } });
+    fireEvent.click(screen.getByLabelText('TS-03'));
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu HĐTC' }));
+    expect(await screen.findByText(/chưa lưu được danh sách tài sản/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu HĐTC' }));
+    await waitFor(() => expect(api.saveMortgageContractAPI).toHaveBeenCalledTimes(2));
+    const [draft2, before2] = api.saveMortgageContractAPI.mock.calls[1];
+    expect(draft2.Id).toBe(11);
+    expect(before2).toMatchObject({ Id: 11 });
+  });
+});

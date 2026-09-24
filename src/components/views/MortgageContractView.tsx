@@ -4,6 +4,7 @@ import { Toast } from '../Toast';
 import { EmptyState } from '../ui/FeedbackStates';
 import { MortgageContractToolbar } from '../mortgage/MortgageContractToolbar';
 import { MortgageContractTable } from '../mortgage/MortgageContractTable';
+import { MortgageContractForm } from '../mortgage/MortgageContractForm';
 import { useMortgageContractController } from '../../hooks/useMortgageContractController';
 
 export const MortgageContractView: React.FC = () => {
@@ -32,6 +33,20 @@ export const MortgageContractView: React.FC = () => {
         collaterals={c.collaterals} creditContracts={c.creditContracts}
         onOpen={c.openEdit} onPage={c.setPage}
       />
+      {c.draft && (
+        <MortgageContractForm
+          draft={c.draft}
+          original={c.mortgages.find(m => m.Id === c.draft?.Id) ?? null}
+          errors={c.formErrors}
+          saving={c.saving}
+          collaterals={c.collaterals}
+          creditContracts={c.creditContracts}
+          onChange={c.setDraft}
+          onSave={c.save}
+          onDelete={c.remove}
+          onClose={c.closeForm}
+        />
+      )}
     </div>
   );
 };

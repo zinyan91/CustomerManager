@@ -58,7 +58,7 @@ CREATE INDEX IF NOT EXISTS idx_mortgage_contracts_customer
 CREATE TABLE IF NOT EXISTS public."MortgageContractCollaterals" (
   "MortgageContractId" integer NOT NULL
     REFERENCES public."MortgageContracts"("Id") ON DELETE CASCADE,
-  "CollateralId"       bigint  NOT NULL,
+  "CollateralId"       integer NOT NULL,
   PRIMARY KEY ("MortgageContractId", "CollateralId"),
   CONSTRAINT fk_mortgage_link_collateral FOREIGN KEY ("CollateralId")
     REFERENCES public."Collaterals"("Id") ON DELETE NO ACTION
@@ -69,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_mortgage_collaterals_collateral
 CREATE TABLE IF NOT EXISTS public."MortgageContractCreditContracts" (
   "MortgageContractId" integer NOT NULL
     REFERENCES public."MortgageContracts"("Id") ON DELETE CASCADE,
-  "CreditContractId"   bigint  NOT NULL,
+  "CreditContractId"   integer NOT NULL,
   PRIMARY KEY ("MortgageContractId", "CreditContractId"),
   CONSTRAINT fk_mortgage_link_credit_contract FOREIGN KEY ("CreditContractId")
     REFERENCES public."CreditContracts"("Id") ON DELETE NO ACTION

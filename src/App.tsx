@@ -10,6 +10,7 @@ const DisbursementPayeeListView = lazy(() => import('./components/views/Disburse
 const LoanPortfolioView = lazy(() => import('./components/views/LoanPortfolioView').then(m => ({ default: m.LoanPortfolioView })));
 const CreditContractView = lazy(() => import('./components/views/CreditContractView').then(m => ({ default: m.CreditContractView })));
 const CollateralView = lazy(() => import('./components/views/CollateralView').then(m => ({ default: m.CollateralView })));
+const MortgageContractView = lazy(() => import('./components/views/MortgageContractView').then(m => ({ default: m.MortgageContractView })));
 const CardContractView = lazy(() => import('./components/views/CardContractView').then(m => ({ default: m.CardContractView })));
 const CardPolicyLookupView = lazy(() => import('./components/views/CardPolicyLookupView').then(m => ({ default: m.CardPolicyLookupView })));
 const CalculatorView = lazy(() => import('./components/views/CalculatorView').then(m => ({ default: m.CalculatorView })));
@@ -62,6 +63,7 @@ export function App() {
         <Route path={ROUTE_OF['credit-contracts']} element={<Suspense fallback={<ViewSkeleton />}><CreditContractView /></Suspense>} />
         <Route path={ROUTE_OF.loans} element={<Suspense fallback={<ViewSkeleton />}><LoanPortfolioView /></Suspense>} />
         <Route path={ROUTE_OF.collaterals} element={<Suspense fallback={<ViewSkeleton />}><CollateralView /></Suspense>} />
+        <Route path={ROUTE_OF['mortgage-contracts']} element={<Suspense fallback={<ViewSkeleton />}><MortgageContractView /></Suspense>} />
         <Route path={ROUTE_OF['credit-cards']} element={<Suspense fallback={<ViewSkeleton />}><CardContractView /></Suspense>} />
         <Route path={ROUTE_OF.calculators} element={<Suspense fallback={<ViewSkeleton />}><CalculatorView /></Suspense>} />
         <Route path={ROUTE_OF['business-plan']} element={<Suspense fallback={<ViewSkeleton />}><BusinessPlanView /></Suspense>} />
@@ -85,6 +87,7 @@ export function App() {
         <Route path={`/customers/:customerId${ROUTE_OF.loans}`} element={<Suspense fallback={<ViewSkeleton />}><LoanPortfolioView /></Suspense>} />
         <Route path={`/customers/:customerId${ROUTE_OF.loans}/:kunnId/schedule`} element={<Suspense fallback={<ViewSkeleton />}><LoanPortfolioView /></Suspense>} />
         <Route path={`/customers/:customerId${ROUTE_OF.collaterals}`} element={<Suspense fallback={<ViewSkeleton />}><CollateralView /></Suspense>} />
+        <Route path={`/customers/:customerId${ROUTE_OF['mortgage-contracts']}`} element={<Suspense fallback={<ViewSkeleton />}><MortgageContractView /></Suspense>} />
         <Route path={`/customers/:customerId${ROUTE_OF['credit-cards']}`} element={<Suspense fallback={<ViewSkeleton />}><CardContractView /></Suspense>} />
         <Route path={`/customers/:customerId${ROUTE_OF['post-loan']}`} element={<Suspense fallback={<ViewSkeleton />}><PostLoanControlView /></Suspense>} />
         <Route path="/customers/:customerId/profile" element={<Suspense fallback={<ViewSkeleton />}><CustomerListView /></Suspense>} />

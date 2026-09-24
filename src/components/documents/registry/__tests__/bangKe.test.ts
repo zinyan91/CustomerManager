@@ -30,8 +30,10 @@ it('bangKeToStatement maps common → statement items + seller info', () => {
   expect(info.paymentMethod).toBe('transfer');
 });
 
-it('bangKeToStatement supports cash payment method', () => {
-  const { info } = bangKeToStatement(sampleCommon(), { paymentMethod: 'cash' });
+it('bangKeToStatement follows the dossier cash payment method', () => {
+  const common = sampleCommon();
+  common.payMethod = 'cash';
+  const { info } = bangKeToStatement(common);
   expect(info.paymentMethod).toBe('cash');
 });
 
@@ -50,27 +52,28 @@ it('is marked standalone and buildHtml equals the reused statement builder (gold
     bankAccNo: '0123456789', bankName: 'Vietcombank', bankOwner: 'TRẦN THỊ PHƯƠNG', bankBranch: 'TP.HCM',
   };
   const expectedTransfer = buildPurchaseStatementDocHtml(expectedItems, expectedInfoTransfer);
-  expect(bangKeTemplate.buildHtml(common, { paymentMethod: 'transfer' })).toBe(expectedTransfer);
+  expect(bangKeTemplate.buildHtml(common, {})).toBe(expectedTransfer);
 
   const expectedInfoCash: StatementSellerInfo = {
     ...expectedInfoTransfer,
     paymentMethod: 'cash',
   };
   const expectedCash = buildPurchaseStatementDocHtml(expectedItems, expectedInfoCash);
-  expect(bangKeTemplate.buildHtml(common, { paymentMethod: 'cash' })).toBe(expectedCash);
+  common.payMethod = 'cash';
+  expect(bangKeTemplate.buildHtml(common, {})).toBe(expectedCash);
 });
 
 it('supports buildXlsx to export valid Excel file for purchase statement', () => {
   expect(bangKeTemplate.buildXlsx).toBeDefined();
   const common = sampleCommon();
-  const xlsx = bangKeTemplate.buildXlsx!(common, { paymentMethod: 'transfer' });
+  const xlsx = bangKeTemplate.buildXlsx!(common, {});
   expect(xlsx).toBeInstanceOf(Uint8Array);
   expect(xlsx.length).toBeGreaterThan(0);
 });
 
 it('buildPurchaseStatementDocHtml contains robust print setup preventing table clipping', () => {
   const common = sampleCommon();
-  const html = bangKeTemplate.buildHtml(common, { paymentMethod: 'transfer' });
+  const html = bangKeTemplate.buildHtml(common, {});
   expect(html).toContain('size: A4 landscape');
   expect(html).toContain('table.doc-table');
   expect(html).toContain('table-layout: fixed');

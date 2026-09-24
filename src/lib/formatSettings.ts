@@ -127,6 +127,31 @@ export function formatMoneyWith(
   return formatNumberWith(value, 0, settings.numberStyle);
 }
 
+/**
+ * Nhóm lại chuỗi tiền (VNĐ, số nguyên) đã nhập/lưu theo kiểu số đang cài.
+ * Chỉ đọc chữ số nên chuỗi lưu bằng dấu cũ (100.000 hay 100,000) đều ra cùng kết quả.
+ */
+export function formatMoneyTextWith(
+  text: string | null | undefined,
+  settings: FormatSettings = loadFormatSettings()
+): string {
+  const raw = text ?? '';
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return raw;
+  return groupInteger(digits.replace(/^0+(?=\d)/, ''), NUMBER_SEPARATORS[settings.numberStyle].group);
+}
+
+/** Số lượng: tối đa 3 chữ số thập phân, không in số 0 thừa. */
+export function formatQuantityWith(
+  value: number | null | undefined,
+  settings: FormatSettings = loadFormatSettings()
+): string {
+  if (value === null || value === undefined || isNaN(value)) return '';
+  const rounded = Math.round(value * 1000) / 1000;
+  const fraction = String(rounded).split('.')[1] ?? '';
+  return formatNumberWith(rounded, fraction.length, settings.numberStyle);
+}
+
 export function formatDecimalWith(
   value: number | null | undefined,
   settings: FormatSettings = loadFormatSettings()

@@ -86,7 +86,6 @@ describe('CommonInfoForm', () => {
         common={emptyCommon()}
         patch={patch}
         activeDocId="bang_ke"
-        activeSpecific={{ paymentMethod: 'cash' }}
       />
     );
 
@@ -118,33 +117,52 @@ describe('CommonInfoForm', () => {
     expect(screen.queryByText('Các đợt thanh toán')).toBeNull();
   });
 
-  it('hides Bank section when paymentMethod is cash, shows it when transfer', async () => {
+  it('hides bank fields when the dossier pays in cash, shows them when transfer', async () => {
     vi.spyOn(api, 'fetchCustomersAPI').mockResolvedValue([] as any);
     const patch = vi.fn();
+    const cash = { ...emptyCommon(), payMethod: 'cash' as const };
 
     const { rerender } = render(
-      <CommonInfoForm
-        common={emptyCommon()}
-        patch={patch}
-        activeDocId="bang_ke"
-        activeSpecific={{ paymentMethod: 'cash' }}
-      />
+      <CommonInfoForm common={cash} patch={patch} activeDocId="bang_ke" />
     );
 
-    // Khi chọn Tiền mặt: Khối Tài khoản ngân hàng phải biến mất
-    expect(screen.queryByText(/Tài khoản ngân hàng thụ hưởng/i)).toBeNull();
+    expect(screen.getByText('Hình thức thanh toán cho Bên bán')).toBeTruthy();
+    expect(screen.queryByText('Chủ tài khoản')).toBeNull();
 
-    // Khi chọn Chuyển khoản: Khối Tài khoản ngân hàng hiển thị
     rerender(
-      <CommonInfoForm
-        common={emptyCommon()}
-        patch={patch}
-        activeDocId="bang_ke"
-        activeSpecific={{ paymentMethod: 'transfer' }}
-      />
+      <CommonInfoForm common={emptyCommon()} patch={patch} activeDocId="bang_ke" />
+    );
+    expect(screen.getByText('Chủ tài khoản')).toBeTruthy();
+
+    fireEvent.click(screen.getByLabelText('Tiền mặt'));
+    expect(patch).toHaveBeenCalledWith({ payMethod: 'cash' });
+  });
+
+  it('payment request: shows salutation under Bên A and hides the goods list', async () => {
+    vi.spyOn(api, 'fetchCustomersAPI').mockResolvedValue([] as any);
+    const patch = vi.fn();
+    const common = emptyCommon();
+    common.partyA = { ...common.partyA, name: 'TRẦN THỊ PHƯƠNG' };
+
+    render(
+      <CommonInfoForm common={common} patch={patch} activeDocId="payment_request_sale" dossierId="giai_ngan" />
     );
 
-    expect(screen.getByText(/Tài khoản ngân hàng thụ hưởng/i)).toBeTruthy();
+    const salutation = screen.getByLabelText(/Xưng hô/i) as HTMLSelectElement;
+    expect(salutation.value).toBe('Bà');
+    fireEvent.change(salutation, { target: { value: 'Ông' } });
+    expect(patch).toHaveBeenCalledWith({ partyA: expect.objectContaining({ gender: 'male' }) });
+
+    expect(screen.queryByText('Danh mục hàng hóa / hạng mục')).toBeNull();
+    expect(screen.getByText('Các đợt thanh toán')).toBeTruthy();
+  });
+
+  it('sale contract still shows the goods list', async () => {
+    vi.spyOn(api, 'fetchCustomersAPI').mockResolvedValue([] as any);
+    render(
+      <CommonInfoForm common={emptyCommon()} patch={vi.fn()} activeDocId="sale_contract" dossierId="giai_ngan" />
+    );
+    expect(screen.getByText('Danh mục hàng hóa / hạng mục')).toBeTruthy();
   });
 
   it('allows selecting payee for Bên B from Thông tin giải ngân and auto-fills partyB and bank', async () => {

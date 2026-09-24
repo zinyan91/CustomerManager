@@ -2,31 +2,25 @@ import { CreditCard } from 'lucide-react';
 import type { DocumentDraft } from '../../../../lib/documentHtml';
 import { buildDocumentHtml } from '../../../../lib/documentHtml';
 import type { DocTemplate, DossierCommon } from '../types';
+import { partyTitle } from '../types';
 import { baseDraft } from '../legacyDraft';
 
-export interface PaymentSpecific {
-  payMethodType: 'cash' | 'transfer';
-  recipientTitle: 'Ông' | 'Bà';
-  cashName: string;
-  cashCccd: string;
-  cashCccdDate: string;
-  cashCccdPlace: string;
-}
+/**
+ * Đề nghị thanh toán không còn phần riêng: hình thức, xưng hô, các đợt và người nhận tiền
+ * đều lấy từ thông tin chung, nên luôn khớp với HĐ / bảng kê cùng hồ sơ.
+ */
+export type PaymentSpecific = Record<string, never>;
 
-export function paymentToLegacyParams(common: DossierCommon, specific: PaymentSpecific): DocumentDraft {
+/** Phần thông tin thanh toán dùng chung cho mọi mẫu đề nghị thanh toán. */
+export function paymentInfoFromCommon(common: DossierCommon): Partial<DocumentDraft> {
   return {
-    ...baseDraft(),
-    saleContractDate: common.contractDate,
-    saleBuyerName: common.partyA.name,
-    saleSellerName: common.partyB.name,
-    saleItems: common.items,
     payStages: common.stages,
-    payMethodType: specific.payMethodType,
-    recipientTitle: specific.recipientTitle,
-    payCashName: specific.cashName,
-    payCashCccd: specific.cashCccd,
-    payCashCccdDate: specific.cashCccdDate,
-    payCashCccdPlace: specific.cashCccdPlace,
+    payMethodType: common.payMethod,
+    recipientTitle: partyTitle(common.partyA),
+    payCashName: common.partyB.name,
+    payCashCccd: common.partyB.cccd,
+    payCashCccdDate: common.partyB.cccdDate,
+    payCashCccdPlace: common.partyB.cccdPlace,
     payBankOwner: common.bank.owner,
     payBankAccNo: common.bank.accNo,
     payBankName: common.bank.name,
@@ -34,14 +28,21 @@ export function paymentToLegacyParams(common: DossierCommon, specific: PaymentSp
   };
 }
 
+export function paymentToLegacyParams(common: DossierCommon): DocumentDraft {
+  return {
+    ...baseDraft(),
+    saleContractDate: common.contractDate,
+    saleBuyerName: common.partyA.name,
+    saleSellerName: common.partyB.name,
+    saleItems: common.items,
+    ...paymentInfoFromCommon(common),
+  };
+}
+
 export const paymentRequestSaleTemplate: DocTemplate<PaymentSpecific> = {
   id: 'payment_request_sale',
   label: 'Đề Nghị TT (Mua Bán)',
   icon: CreditCard,
-  specificDefaults: {
-    payMethodType: 'transfer', recipientTitle: 'Ông',
-    cashName: '', cashCccd: '', cashCccdDate: '', cashCccdPlace: '',
-  },
-  buildHtml: (common, specific) =>
-    buildDocumentHtml('payment_request_sale', paymentToLegacyParams(common, specific)),
+  specificDefaults: {},
+  buildHtml: common => buildDocumentHtml('payment_request_sale', paymentToLegacyParams(common)),
 };

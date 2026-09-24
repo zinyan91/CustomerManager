@@ -6,12 +6,16 @@
 --
 -- Toàn vẹn đặt ở CSDL, không trông vào giao diện:
 --   · chỉ nối tài sản / HĐTD cùng khách hàng với HĐTC        (trigger)
+--   · không đổi khách sở hữu của tài sản / HĐTD / HĐTC        (trigger)
+--     khi bản ghi đang nằm trong một HĐTC
 --   · không xoá HĐTC chưa giải chấp                           (trigger)
---   · không xoá tài sản / HĐTD đang nằm trong một HĐTC        (khoá ngoại NO ACTION)
+--   · không xoá tài sản / HĐTD đang nằm trong một HĐTC        (khoá ngoại)
 --   · đã giải chấp thì phải có ngày giải chấp                 (CHECK)
 --
--- Khoá ngoại phía tài sản / HĐTD là NO ACTION (kiểm cuối câu lệnh) để chuỗi
--- xoá theo khách hàng (khách → HĐTC → bảng nối, khách → tài sản) không vướng.
+-- Xoá khách hàng: phải giải chấp và xoá HĐTC trước, đúng như app đã chặn
+-- (customerDeleteBlockers). Không có đường tắt xoá dây chuyền: thứ tự chạy các
+-- trigger RI khi cascade từ Customers không bảo đảm bảng nối biến mất trước khi
+-- khoá ngoại phía tài sản / HĐTD được kiểm.
 --
 -- CreditContracts.CollateralIds (chuỗi CSV) vẫn là nguồn cho hạn mức / LTV.
 -- Bảng nối ở đây là nguồn pháp lý riêng; hai nguồn có thể lệch nhau.
@@ -117,10 +121,59 @@ CREATE TRIGGER trg_mortgage_credit_contracts_same_customer
 
 
 -- ---------------------------------------------------------------------
--- 3. TRIGGER: không xoá HĐTC chưa giải chấp
+-- 3. TRIGGER: không đổi khách sở hữu khi bản ghi đang nằm trong HĐTC
 -- ---------------------------------------------------------------------
--- pg_trigger_depth() > 1 nghĩa là đang bị xoá theo dây chuyền từ Customers
--- (chỉ admin xoá được khách, và việc đó là cố ý) — cho qua.
+-- Trigger 2 chỉ canh lúc nối. Nếu sau đó đổi CustomerId của tài sản / HĐTD /
+-- HĐTC thì liên kết thành nối chéo khách: HĐTC không còn thấy tài sản để gỡ,
+-- còn khách mới thì bị chặn xoá tài sản vì một HĐTC họ không có.
+CREATE OR REPLACE FUNCTION public.mortgage_block_owner_change()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+DECLARE
+  linked boolean;
+BEGIN
+  IF TG_TABLE_NAME = 'Collaterals' THEN
+    SELECT EXISTS (SELECT 1 FROM public."MortgageContractCollaterals" WHERE "CollateralId" = OLD."Id") INTO linked;
+  ELSIF TG_TABLE_NAME = 'CreditContracts' THEN
+    SELECT EXISTS (SELECT 1 FROM public."MortgageContractCreditContracts" WHERE "CreditContractId" = OLD."Id") INTO linked;
+  ELSE
+    SELECT EXISTS (SELECT 1 FROM public."MortgageContractCollaterals" WHERE "MortgageContractId" = OLD."Id")
+        OR EXISTS (SELECT 1 FROM public."MortgageContractCreditContracts" WHERE "MortgageContractId" = OLD."Id")
+      INTO linked;
+  END IF;
+
+  IF linked THEN
+    RAISE EXCEPTION 'Không đổi được khách hàng sở hữu: bản ghi đang nằm trong hợp đồng thế chấp. Gỡ khỏi HĐTC trước.';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_collaterals_block_owner_change ON public."Collaterals";
+CREATE TRIGGER trg_collaterals_block_owner_change
+  BEFORE UPDATE OF "CustomerId" ON public."Collaterals"
+  FOR EACH ROW WHEN (OLD."CustomerId" IS DISTINCT FROM NEW."CustomerId")
+  EXECUTE FUNCTION public.mortgage_block_owner_change();
+
+DROP TRIGGER IF EXISTS trg_credit_contracts_block_owner_change ON public."CreditContracts";
+CREATE TRIGGER trg_credit_contracts_block_owner_change
+  BEFORE UPDATE OF "CustomerId" ON public."CreditContracts"
+  FOR EACH ROW WHEN (OLD."CustomerId" IS DISTINCT FROM NEW."CustomerId")
+  EXECUTE FUNCTION public.mortgage_block_owner_change();
+
+DROP TRIGGER IF EXISTS trg_mortgage_contracts_block_owner_change ON public."MortgageContracts";
+CREATE TRIGGER trg_mortgage_contracts_block_owner_change
+  BEFORE UPDATE OF "CustomerId" ON public."MortgageContracts"
+  FOR EACH ROW WHEN (OLD."CustomerId" IS DISTINCT FROM NEW."CustomerId")
+  EXECUTE FUNCTION public.mortgage_block_owner_change();
+
+
+-- ---------------------------------------------------------------------
+-- 4. TRIGGER: không xoá HĐTC chưa giải chấp
+-- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.mortgage_block_delete_unreleased()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -128,7 +181,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT OLD."IsReleased" AND pg_trigger_depth() <= 1 THEN
+  IF NOT OLD."IsReleased" THEN
     RAISE EXCEPTION 'Không xoá được HĐTC "%": hợp đồng chưa giải chấp. Ghi nhận giải chấp trước.', OLD."MortgageNumber";
   END IF;
   RETURN OLD;
@@ -142,7 +195,7 @@ CREATE TRIGGER trg_mortgage_block_delete_unreleased
 
 
 -- ---------------------------------------------------------------------
--- 4. ROW LEVEL SECURITY — suy quyền theo khách hàng, giống Collaterals
+-- 5. ROW LEVEL SECURITY — suy quyền theo khách hàng, giống Collaterals
 -- ---------------------------------------------------------------------
 ALTER TABLE public."MortgageContracts"               ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."MortgageContractCollaterals"     ENABLE ROW LEVEL SECURITY;
@@ -182,14 +235,15 @@ GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
 
 -- ---------------------------------------------------------------------
--- 5. TỰ KIỂM: đủ 3 bảng, 3 trigger, 3 policy, RLS bật
+-- 6. TỰ KIỂM: đủ 3 bảng, 6 trigger, 3 policy, RLS bật
 -- ---------------------------------------------------------------------
 SELECT
   (SELECT count(*) FROM pg_tables WHERE schemaname = 'public'
      AND tablename IN ('MortgageContracts','MortgageContractCollaterals','MortgageContractCreditContracts')) AS so_bang_3,
   (SELECT count(*) FROM pg_trigger WHERE tgname IN (
      'trg_mortgage_collaterals_same_customer','trg_mortgage_credit_contracts_same_customer',
-     'trg_mortgage_block_delete_unreleased')) AS so_trigger_3,
+     'trg_mortgage_block_delete_unreleased','trg_collaterals_block_owner_change',
+     'trg_credit_contracts_block_owner_change','trg_mortgage_contracts_block_owner_change')) AS so_trigger_6,
   (SELECT count(*) FROM pg_policies WHERE schemaname = 'public' AND policyname IN (
      'mortgage_contracts_all','mortgage_collaterals_all','mortgage_credit_contracts_all')) AS so_policy_3,
   (SELECT bool_and(relrowsecurity) FROM pg_class WHERE relname IN

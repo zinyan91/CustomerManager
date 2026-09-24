@@ -162,7 +162,8 @@ HĐTC lưu ở `MortgageContracts` (migration 58), màn `/customers/:id/mortgage
 Quy tắc toàn vẹn nằm ở CSDL, không trông vào giao diện:
 
 - Chỉ nối tài sản / HĐTD **cùng khách hàng** với HĐTC (trigger `mortgage_link_same_customer`).
-- **Không xoá HĐTC chưa giải chấp** (trigger `mortgage_block_delete_unreleased`), trừ khi bị xoá theo dây chuyền từ `Customers`.
+- **Không xoá HĐTC chưa giải chấp** (trigger `mortgage_block_delete_unreleased`). Không có ngoại lệ xoá dây chuyền: xoá khách phải giải chấp và xoá HĐTC trước.
+- **Không đổi khách sở hữu** (`CustomerId`) của tài sản / HĐTD / HĐTC khi bản ghi đang nằm trong một HĐTC (trigger `mortgage_block_owner_change`), để liên kết không thành nối chéo khách.
 - **Không xoá tài sản / HĐTD đang nằm trong HĐTC**, kể cả HĐTC đã giải chấp — phải gỡ khỏi HĐTC trước (khoá ngoại NO ACTION `fk_mortgage_link_collateral`, `fk_mortgage_link_credit_contract`). `mortgageLinkErrorMessage` (`mortgageContract.ts`) đổi lỗi khoá ngoại này sang tiếng Việt cho `deleteCollateralAPI` và `deleteCreditContractAPI`.
 - Giải chấp phải có ngày giải chấp (CHECK `mortgage_released_has_date`).
 - Xoá khách hàng bị chặn khi còn HĐTC (`customerDeleteBlockers`), như với KUNN / HĐTD / TSBĐ / thẻ. HĐTC đứng ngay sau KUNN trong danh sách vì phải gỡ HĐTC rồi mới xoá được HĐTD và tài sản.

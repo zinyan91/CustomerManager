@@ -77,8 +77,11 @@ export function useCreditContractController() {
         fetchCreditContractsByCustomerAPI(c.Id),
         fetchContractsByCustomerAPI(c.Id),
         fetchCollateralsByCustomerAPI(c.Id),
-        // Dòng HĐTC chỉ để tham khảo: nạp lỗi thì màn HĐTD vẫn chạy, không có dòng này.
-        fetchMortgageContractsAPI(c.Id).catch(() => [] as MortgageContract[]),
+        // Dòng HĐTC chỉ để tham khảo: nạp lỗi thì màn HĐTD vẫn chạy, kèm thông báo dòng này có thể thiếu.
+        fetchMortgageContractsAPI(c.Id).catch(() => {
+          showNotify('error', 'Không nạp được danh sách HĐTC; dòng HĐTC có thể thiếu.');
+          return [] as MortgageContract[];
+        }),
       ]);
       if (loadTokenRef.current !== token) return;
       setContracts(ccs);
@@ -95,7 +98,7 @@ export function useCreditContractController() {
     } finally {
       if (loadTokenRef.current === token) setLoading(false);
     }
-  }, []);
+  }, [showNotify]);
 
   useEffect(() => {
     if (allCustomers.length === 0) return;

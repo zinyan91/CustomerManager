@@ -49,8 +49,11 @@ export function useCollateralController() {
       const [colList, custList, mcs] = await Promise.all([
         fetchCollateralsAPI(),
         fetchCustomersAPI(),
-        // Cột HĐTC chỉ để tham khảo: nạp lỗi thì bảng TSBĐ vẫn hiện, cột để trống.
-        fetchMortgageContractsAPI().catch(() => [] as MortgageContract[]),
+        // Cột HĐTC chỉ để tham khảo: nạp lỗi thì bảng TSBĐ vẫn hiện, kèm thông báo cột có thể thiếu.
+        fetchMortgageContractsAPI().catch(() => {
+          showNotify('error', 'Không nạp được danh sách HĐTC; cột HĐTC có thể thiếu.');
+          return [] as MortgageContract[];
+        }),
       ]);
       setCollaterals(colList);
       setCustomers(custList);

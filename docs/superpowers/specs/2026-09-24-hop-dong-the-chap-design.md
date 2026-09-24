@@ -84,12 +84,13 @@ Chỉ mục trên `CustomerId`.
 
 Khóa chính kép (`MortgageContractId`, `…Id`). Chỉ mục trên cột phía tài sản/HĐTD để tra ngược.
 
-Khóa ngoại phía tài sản/HĐTD dùng **NO ACTION** chứ không phải RESTRICT. NO ACTION kiểm ở cuối câu lệnh, nên khi xóa cả khách hàng thì chuỗi xóa theo (khách → HĐTC → bảng nối, khách → tài sản) chạy xong mà không vướng. Xóa riêng lẻ một tài sản đang được thế chấp vẫn bị chặn.
+Khóa ngoại phía tài sản/HĐTD chặn xóa riêng lẻ một tài sản hay HĐTD đang được thế chấp. Xóa khách hàng không có đường tắt xóa dây chuyền: thứ tự chạy các trigger RI khi cascade từ `Customers` không bảo đảm bảng nối biến mất trước, nên phải giải chấp và xóa HĐTC trước (app đã chặn xóa khách còn HĐTC).
 
 ### Trigger
 
 1. **Cùng khách hàng** (BEFORE INSERT OR UPDATE trên hai bảng nối): `CustomerId` của tài sản/HĐTD phải bằng `CustomerId` của HĐTC. Sai thì báo lỗi tiếng Việt.
-2. **Chặn xóa HĐTC chưa giải chấp** (BEFORE DELETE trên `MortgageContracts`): báo lỗi tiếng Việt nếu `IsReleased = false`. Riêng trường hợp xóa theo khách hàng (cascade từ `Customers`) thì cho qua, vì chỉ admin xóa được khách và việc xóa khách là cố ý. Phân biệt bằng `pg_trigger_depth() > 1`.
+2. **Chặn xóa HĐTC chưa giải chấp** (BEFORE DELETE trên `MortgageContracts`): báo lỗi tiếng Việt nếu `IsReleased = false`. Không có ngoại lệ.
+3. **Chặn đổi khách sở hữu** (BEFORE UPDATE OF `CustomerId` trên `Collaterals`, `CreditContracts`, `MortgageContracts`): báo lỗi tiếng Việt nếu bản ghi đang nằm trong một HĐTC, để liên kết không thành nối chéo khách.
 
 ### RLS
 

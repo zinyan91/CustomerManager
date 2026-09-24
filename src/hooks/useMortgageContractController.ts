@@ -32,6 +32,7 @@ export function useMortgageContractController() {
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState<Notice | null>(null);
   const tokenRef = useRef(0);
+  const customerIdRef = useRef(customerId);
 
   const load = useCallback(async (id: number | null): Promise<MortgageContract[]> => {
     const token = ++tokenRef.current;
@@ -58,9 +59,13 @@ export function useMortgageContractController() {
   }, []);
 
   useEffect(() => {
+    customerIdRef.current = customerId;
     setDraft(null); setEditing(null); setFormErrors([]); setPage(1);
     load(customerId);
   }, [customerId, load]);
+
+  // Lưu/xoá xong mà người dùng đã chuyển sang khách khác thì không nạp lại khách cũ đè lên.
+  const stillOn = useCallback((id: number) => customerIdRef.current === id, []);
 
   const setStatus = useCallback((s: MortgageStatusFilter) => { setStatusState(s); setPage(1); }, []);
   const setQuery = useCallback((q: string) => { setQueryState(q); setPage(1); }, []);
@@ -87,16 +92,18 @@ export function useMortgageContractController() {
     setFormErrors(errors);
     if (errors.length > 0) return;
 
+    const owner = draft.CustomerId;
     setSaving(true);
     try {
       await saveMortgageContractAPI(draft, editing);
       setNotification({ type: 'success', message: `Đã lưu HĐTC "${draft.MortgageNumber.trim()}".` });
+      if (!stillOn(owner)) return;
       closeForm();
-      await load(customerId);
+      await load(owner);
     } catch (err) {
       setNotification({ type: 'error', message: (err as Error).message });
-      if (err instanceof MortgageLinkSaveError) {
-        const list = await load(customerId);
+      if (err instanceof MortgageLinkSaveError && stillOn(owner)) {
+        const list = await load(owner);
         const saved = list.find(m => m.Id === err.mortgageId) ?? null;
         setEditing(saved);
         setDraft(d => (d ? { ...d, Id: err.mortgageId } : d));
@@ -104,7 +111,7 @@ export function useMortgageContractController() {
     } finally {
       setSaving(false);
     }
-  }, [draft, editing, mortgages, closeForm, load, customerId]);
+  }, [draft, editing, mortgages, closeForm, load, stillOn]);
 
   const remove = useCallback(async (m: MortgageContract) => {
     if (!m.IsReleased) {
@@ -121,12 +128,13 @@ export function useMortgageContractController() {
     try {
       await deleteMortgageContractAPI(m.Id);
       setNotification({ type: 'success', message: `Đã xoá HĐTC "${m.MortgageNumber}".` });
+      if (!stillOn(m.CustomerId)) return;
       if (draft?.Id === m.Id) closeForm();
-      await load(customerId);
+      await load(m.CustomerId);
     } catch (err) {
       setNotification({ type: 'error', message: (err as Error).message });
     }
-  }, [confirm, draft, closeForm, load, customerId]);
+  }, [confirm, draft, closeForm, load, stillOn]);
 
   return {
     customerId, loading, mortgages, collaterals, creditContracts,

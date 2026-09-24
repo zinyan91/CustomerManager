@@ -187,3 +187,25 @@ describe('MortgageContractView — nhãn nhiều tài sản / HĐTD', () => {
     expect(screen.getByText('HDTD-A, HDTD-B')).toBeTruthy();
   });
 });
+
+describe('MortgageContractView — đổi khách khi đang lưu', () => {
+  it('lưu xong sau khi đã chuyển sang khách khác thì không nạp đè dữ liệu khách cũ', async () => {
+    api.fetchMortgageContractsAPI.mockImplementation(async (id: number) =>
+      id === 7 ? [hdtc({ Id: 1, MortgageNumber: 'HĐTC-KHACH-CU' })] : [hdtc({ Id: 9, CustomerId: 8, MortgageNumber: 'HĐTC-KHACH-MOI' })]);
+    let xongLuu: (v: number) => void = () => {};
+    api.saveMortgageContractAPI.mockImplementation(() => new Promise<number>(r => { xongLuu = r; }));
+    dung();
+    fireEvent.click(await screen.findByRole('button', { name: /Thêm HĐTC/ }));
+    fireEvent.change(screen.getByLabelText('Số HĐTC'), { target: { value: 'HĐTC-05' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu HĐTC' }));
+    await waitFor(() => expect(api.saveMortgageContractAPI).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole('button', { name: 'đổi khách', hidden: true }));
+    expect(await screen.findByText('HĐTC-KHACH-MOI')).toBeTruthy();
+
+    xongLuu(11);
+    await new Promise(r => setTimeout(r, 20));
+    expect(screen.getByText('HĐTC-KHACH-MOI')).toBeTruthy();
+    expect(screen.queryByText('HĐTC-KHACH-CU')).toBeNull();
+  });
+});

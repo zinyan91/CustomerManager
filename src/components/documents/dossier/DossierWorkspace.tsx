@@ -110,7 +110,6 @@ export const DossierWorkspace: React.FC<{
                 common={ctrl.state.common}
                 patch={ctrl.patchCommon}
                 activeDocId={ctrl.state.activeDocId}
-                activeSpecific={ctrl.activeSpecific}
                 dossierId={ctrl.state.activeDossierId}
               />
               {SpecificForm && (

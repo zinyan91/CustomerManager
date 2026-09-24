@@ -52,6 +52,8 @@ export interface DossierCommon {
   contractDate: string;
   startDate: string;
   endDate: string;
+  /** Hình thức Bên A trả cho Bên B — dùng chung cho HĐ, bảng kê và đề nghị thanh toán. */
+  payMethod: 'cash' | 'transfer';
   bank: { owner: string; accNo: string; name: string; branch: string };
   totalAmount: string;
   stages: PaymentStageItem[];
@@ -141,10 +143,18 @@ export function emptyCommon(): DossierCommon {
     contractDate: '',
     startDate: '',
     endDate: '',
+    payMethod: 'transfer',
     bank: { owner: '', accNo: '', name: '', branch: '' },
     totalAmount: '',
     stages: [],
     items: [],
     creditCard: defaultCreditCardCommon(),
   };
+}
+
+/** Xưng hô theo giới tính đã chọn; chưa chọn thì đoán theo tên (có chữ "thị" là Bà). */
+export function partyTitle(party: Party): 'Ông' | 'Bà' {
+  if (party.gender === 'male') return 'Ông';
+  if (party.gender === 'female') return 'Bà';
+  return /(^|\s)thị(\s|$)/iu.test(party.name.normalize('NFC')) ? 'Bà' : 'Ông';
 }

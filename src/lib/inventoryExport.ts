@@ -6,6 +6,7 @@ import {
   type StatementItem, type StatementSellerInfo, type RetailInvoiceItem, type RetailInvoiceHeader,
 } from './statement';
 import { fmtDate, todayIso } from './utils';
+import { formatMoneyWith, formatQuantityWith } from './formatSettings';
 
 export interface InventoryExportContext {
   customerName?: string;
@@ -556,9 +557,9 @@ export function buildPurchaseStatementDocHtml(
         <td>${idx === 0 ? getComputedBankAccText(info) : ''}</td>
         <td class="font-bold">${c.itemName}</td>
         <td class="text-center font-mono">${c.unit || 'Cái'}</td>
-        <td class="text-right font-mono">${c.qty.toLocaleString('vi-VN')}</td>
-        <td class="text-right font-mono">${c.unitPrice.toLocaleString('vi-VN')}</td>
-        <td class="text-right font-mono font-bold">${c.amount.toLocaleString('vi-VN')}</td>
+        <td class="text-right font-mono">${formatQuantityWith(c.qty)}</td>
+        <td class="text-right font-mono">${formatMoneyWith(c.unitPrice)}</td>
+        <td class="text-right font-mono font-bold">${formatMoneyWith(c.amount)}</td>
         <td>${c.note || ''}</td>
       </tr>
     `;
@@ -697,7 +698,7 @@ export function buildPurchaseStatementDocHtml(
           ${itemRows}
           <tr style="font-weight: bold;">
             <td colspan="8" class="text-center">Tổng cộng</td>
-            <td class="text-right font-mono font-bold">${summary.totalAmount.toLocaleString('vi-VN')}</td>
+            <td class="text-right font-mono font-bold">${formatMoneyWith(summary.totalAmount)}</td>
             <td></td>
           </tr>
         </tbody>

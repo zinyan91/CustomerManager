@@ -4,6 +4,7 @@ import {
   loadFormatSettings, saveFormatSettings, resetFormatSettingsCache,
   groupInteger, formatNumberWith, formatMoneyWith, formatDecimalWith,
   formatPercentWith, formatTimeWith, parseNumberWith, parseMoneyWith,
+  formatMoneyTextWith, formatQuantityWith,
 } from '../formatSettings';
 import type { FormatSettings } from '../formatSettings';
 
@@ -83,6 +84,34 @@ describe('formatMoneyWith', () => {
 
   it('ignores the decimal setting for money', () => {
     expect(formatMoneyWith(1234.99, { ...vi, decimalDigits: 4 })).toBe('1.235');
+  });
+});
+
+describe('formatMoneyTextWith', () => {
+  it('nhóm lại chuỗi tiền đã lưu theo kiểu đang cài, bất kể dấu cũ', () => {
+    expect(formatMoneyTextWith('100.000.000', en)).toBe('100,000,000');
+    expect(formatMoneyTextWith('100,000,000', vi)).toBe('100.000.000');
+    expect(formatMoneyTextWith('53700000', space)).toBe('53 700 000');
+  });
+
+  it('giữ nguyên chuỗi rỗng hoặc không có chữ số', () => {
+    expect(formatMoneyTextWith('', vi)).toBe('');
+    expect(formatMoneyTextWith(undefined, vi)).toBe('');
+    expect(formatMoneyTextWith('.........', vi)).toBe('.........');
+  });
+});
+
+describe('formatQuantityWith', () => {
+  it('số nguyên không có phần thập phân', () => {
+    expect(formatQuantityWith(1500, vi)).toBe('1.500');
+    expect(formatQuantityWith(1500, en)).toBe('1,500');
+  });
+
+  it('giữ tối đa 3 chữ số thập phân, bỏ số 0 thừa', () => {
+    expect(formatQuantityWith(12.5, vi)).toBe('12,5');
+    expect(formatQuantityWith(12.5, en)).toBe('12.5');
+    expect(formatQuantityWith(0.12345, vi)).toBe('0,123');
+    expect(formatQuantityWith(2.1, vi)).toBe('2,1');
   });
 });
 

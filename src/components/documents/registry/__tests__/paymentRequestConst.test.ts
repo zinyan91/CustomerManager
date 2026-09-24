@@ -14,11 +14,9 @@ function sampleCommon() {
   c.stages = [{ id: '1', stageName: 'Đợt 1', amount: '53.700.000', status: 'paid', note: '' }];
   return c;
 }
-const sampleSpecific = { payMethodType: 'transfer' as const, recipientTitle: 'Bà' as const,
-  cashName: '', cashCccd: '', cashCccdDate: '', cashCccdPlace: '' };
 
 it('maps to const_* buyer/seller, shared stages, bank', () => {
-  const d = paymentConstToLegacyParams(sampleCommon(), sampleSpecific);
+  const d = paymentConstToLegacyParams(sampleCommon());
   expect(d.constPartyAName).toBe('LÝ THỊ THÙY DUNG');
   expect(d.constPartyBName).toBe('ĐỖ THỊ LAN ANH');
   expect(d.constTotalPrice).toBe('1.003.700.000');
@@ -44,5 +42,5 @@ it('buildHtml equals legacy builder (golden)', () => {
     payBankName: 'Vietcombank',
     payBankBranch: 'CN TP.HCM',
   });
-  expect(paymentRequestConstTemplate.buildHtml(common, sampleSpecific)).toBe(expected);
+  expect(paymentRequestConstTemplate.buildHtml(common, {})).toBe(expected);
 });

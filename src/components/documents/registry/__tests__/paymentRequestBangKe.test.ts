@@ -14,17 +14,9 @@ function sampleCommon() {
   return c;
 }
 
-const sampleSpecific = {
-  payMethodType: 'transfer' as const,
-  recipientTitle: 'Ông' as const,
-  cashName: '',
-  cashCccd: '',
-  cashCccdDate: '',
-  cashCccdPlace: '',
-};
 
 it('paymentBangKeToLegacyParams maps shared items, parties and bank info', () => {
-  const d = paymentBangKeToLegacyParams(sampleCommon(), sampleSpecific);
+  const d = paymentBangKeToLegacyParams(sampleCommon());
   expect(d.saleBuyerName).toBe('NGÔ NHỊ ĐẠT');
   expect(d.saleSellerName).toBe('TRẦN THỊ PHƯƠNG');
   expect(d.saleItems).toHaveLength(1);
@@ -35,7 +27,7 @@ it('paymentBangKeToLegacyParams maps shared items, parties and bank info', () =>
 
 it('buildHtml creates document referencing Bảng kê and single payment when stages is empty', () => {
   const common = sampleCommon();
-  const html = paymentRequestBangKeTemplate.buildHtml(common, sampleSpecific);
+  const html = paymentRequestBangKeTemplate.buildHtml(common, {});
   expect(html).toContain('Bảng kê mua bán hàng hóa');
   expect(html).toContain('lập ngày <strong>09/04/2026</strong>');
   expect(html).toContain('1. Giá trị bảng kê: <strong>212.500.000 đồng</strong>');
@@ -45,17 +37,10 @@ it('buildHtml creates document referencing Bảng kê and single payment when st
   expect(html).toContain('Vietcombank');
 });
 
-it('buildHtml outputs cash info when payMethodType is cash', () => {
+it('buildHtml outputs cash info when the dossier pays in cash', () => {
   const common = sampleCommon();
-  const cashSpecific = {
-    ...sampleSpecific,
-    payMethodType: 'cash' as const,
-    cashName: 'TRẦN THỊ PHƯƠNG',
-    cashCccd: '079178025859',
-    cashCccdDate: '29/11/2021',
-    cashCccdPlace: 'Bộ Công An',
-  };
-  const html = paymentRequestBangKeTemplate.buildHtml(common, cashSpecific);
+  common.payMethod = 'cash';
+  const html = paymentRequestBangKeTemplate.buildHtml(common, {});
   expect(html).toContain('Thanh toán tiền mặt');
   expect(html).toContain('079178025859');
   expect(html).toContain('Bộ Công An');

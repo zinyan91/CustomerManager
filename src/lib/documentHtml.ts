@@ -1,4 +1,5 @@
 import { fmtDate, parseAnyDate } from './utils';
+import { formatMoneyWith, formatMoneyTextWith, formatQuantityWith } from './formatSettings';
 import { moneyTextToWords, moneyToVietnameseWords } from './numberToWords';
 import type { TemplateType } from '../types/documents';
 import type { SaleItem, ConstItem, PaymentStageItem } from '../types/documents';
@@ -1220,9 +1221,9 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
           <td class="text-center font-bold">${idx + 1}</td>
           <td class="text-left">${nfc(item.name)}</td>
           <td class="text-center">${item.unit}</td>
-          <td class="text-center">${item.quantity}</td>
-          <td class="text-right">${item.price.toLocaleString('vi-VN')}</td>
-          <td class="text-right font-bold">${(item.quantity * item.price).toLocaleString('vi-VN')}</td>
+          <td class="text-center">${formatQuantityWith(item.quantity)}</td>
+          <td class="text-right">${formatMoneyWith(item.price)}</td>
+          <td class="text-right font-bold">${formatMoneyWith(item.quantity * item.price)}</td>
         </tr>
       `).join('');
 
@@ -1269,7 +1270,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
             ${itemsRowsHtml}
             <tr>
               <td colSpan="5" class="text-bold text-center font-bold">Tổng cộng</td>
-              <td class="text-right font-bold text-[13pt]">${totalSaleAmount.toLocaleString('vi-VN')}</td>
+              <td class="text-right font-bold text-[13pt]">${formatMoneyWith(totalSaleAmount)}</td>
             </tr>
           </tbody>
         </table>
@@ -1278,9 +1279,9 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p">Thời hạn thực hiện Hợp đồng kể từ ngày <strong>${fmtDate(saleStartDate || saleContractDate)}</strong> đến ngày <strong>${fmtDate(saleEndDate || saleContractDate)}</strong>.</p>
 
         <h2>ĐIỀU 3: THỜI HẠN VÀ PHƯƠNG THỨC THANH TOÁN</h2>
-        <p class="clause-p"><strong>1. Tổng giá trị thanh toán:</strong> Bên Mua thanh toán cho Bên Bán tổng số tiền là: <strong>${totalSaleAmount.toLocaleString('vi-VN')} đồng</strong> (Bằng chữ: ${moneyToVietnameseWords(totalSaleAmount)}).</p>
+        <p class="clause-p"><strong>1. Tổng giá trị thanh toán:</strong> Bên Mua thanh toán cho Bên Bán tổng số tiền là: <strong>${formatMoneyWith(totalSaleAmount)} đồng</strong> (Bằng chữ: ${moneyToVietnameseWords(totalSaleAmount)}).</p>
         <p class="clause-p"><strong>2. Tiến độ thanh toán:</strong> Mỗi một lô hàng khi Bên B xuất ra cho Bên A thì Bên A sẽ thanh toán như sau:</p>
-        <p class="item-p">– Lần 1: Bên A thanh toán cho Bên B số tiền là: <strong>${salePaymentStage1} đồng</strong>.</p>
+        <p class="item-p">– Lần 1: Bên A thanh toán cho Bên B số tiền là: <strong>${formatMoneyTextWith(salePaymentStage1)} đồng</strong>.</p>
         <p class="item-p">– Lần 2: Số tiền còn lại sẽ được Bên A thanh toán toàn bộ trước khi nhận hàng dựa trên phiếu đề nghị thanh toán.</p>
         <p class="clause-p"><strong>3. Phương thức thanh toán:</strong> Bên A thanh toán cho Bên B bằng hình thức <strong>${salePayMethod === 'cash' ? 'tiền mặt' : 'chuyển khoản'}</strong>, theo thông tin Bên B đã nêu tại phần đầu Hợp đồng này.</p>
 
@@ -1333,10 +1334,10 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
     const sellerName = isSale || isBangKe ? saleSellerName : constPartyBName;
     const contractDateStr = isSale || isBangKe ? saleContractDate : constContractDate;
     const totalAmountStr = isSale
-      ? totalSaleAmount.toLocaleString('vi-VN')
+      ? formatMoneyWith(totalSaleAmount)
       : isBangKe
-      ? (totalSaleAmount > 0 ? totalSaleAmount.toLocaleString('vi-VN') : (constTotalPrice || '0'))
-      : constTotalPrice;
+      ? (totalSaleAmount > 0 ? formatMoneyWith(totalSaleAmount) : (formatMoneyTextWith(constTotalPrice) || '0'))
+      : formatMoneyTextWith(constTotalPrice);
     const docTypeTitle = isBangKe
       ? 'Bảng kê mua bán hàng hóa'
       : isSale
@@ -1366,7 +1367,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
       const cleanName = nfc(st.stageName).replace(/\s*\([^)]*\)/g, '').trim() || nfc(st.stageName);
       return `
         <p class="clause-p no-indent">
-          + <strong>${cleanName}:</strong> ${actionText} <strong>${st.amount} đồng</strong>
+          + <strong>${cleanName}:</strong> ${actionText} <strong>${formatMoneyTextWith(st.amount)} đồng</strong>
         </p>
       `;
     }).join('') : `

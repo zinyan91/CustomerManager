@@ -6,6 +6,7 @@ import type { MortgageContract } from '../../types';
 
 const api = vi.hoisted(() => ({
   fetchMortgageContractsAPI: vi.fn(),
+  fetchCustomersAPI: vi.fn(),
   fetchCollateralsByCustomerAPI: vi.fn(),
   fetchCreditContractsByCustomerAPI: vi.fn(),
   saveMortgageContractAPI: vi.fn(),
@@ -44,6 +45,7 @@ const trang = (n: string) => (_: string, el: Element | null) =>
   el?.tagName === 'SPAN' && new RegExp(`Trang ${n}`).test(el.textContent ?? '');
 
 beforeEach(() => {
+  api.fetchCustomersAPI.mockResolvedValue([{ Id: 7, FullName: 'NGÔ NHỊ ĐẠT', CifKh: '900007' }]);
   api.fetchCollateralsByCustomerAPI.mockResolvedValue([{ Id: 3, CustomerId: 7, AssetCode: 'TS-03' }]);
   api.fetchCreditContractsByCustomerAPI.mockResolvedValue([{ Id: 9, CustomerId: 7, HdtdNumber: '2002/HDTD/9653222' }]);
 });
@@ -207,5 +209,16 @@ describe('MortgageContractView — đổi khách khi đang lưu', () => {
     await new Promise(r => setTimeout(r, 20));
     expect(screen.getByText('HĐTC-KHACH-MOI')).toBeTruthy();
     expect(screen.queryByText('HĐTC-KHACH-CU')).toBeNull();
+  });
+});
+
+describe('MortgageContractView — chọn khách ngay tại màn', () => {
+  it('chưa chọn khách thì có ô chọn khách; chọn xong nạp HĐTC của khách đó', async () => {
+    api.fetchMortgageContractsAPI.mockResolvedValue([hdtc({ Id: 1, MortgageNumber: 'HĐTC-01' })]);
+    dung('/mortgage-contracts');
+    fireEvent.click(await screen.findByRole('button', { name: /Chọn Khách hàng/i }));
+    fireEvent.click(await screen.findByText('NGÔ NHỊ ĐẠT'));
+    expect(await screen.findByText('HĐTC-01')).toBeTruthy();
+    expect(api.fetchMortgageContractsAPI).toHaveBeenCalledWith(7);
   });
 });

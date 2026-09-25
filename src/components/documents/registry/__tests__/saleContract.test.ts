@@ -82,3 +82,9 @@ it('buildHtml output equals the legacy builder for the same data (golden)', () =
   const actual = saleContractTemplate.buildHtml(common, {});
   expect(actual).toBe(expected);
 });
+
+it('HĐ mua bán: thời hạn tính từ ngày ký, bỏ qua ngày bắt đầu cũ còn sót trong bản nháp', () => {
+  const c = sampleCommon();
+  c.startDate = '2026-05-01';
+  expect(saleToLegacyParams(c).saleStartDate).toBe('2026-04-09');
+});

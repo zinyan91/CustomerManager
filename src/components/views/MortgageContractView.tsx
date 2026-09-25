@@ -2,6 +2,7 @@ import React from 'react';
 import { FileSignature } from 'lucide-react';
 import { Toast } from '../Toast';
 import { EmptyState } from '../ui/FeedbackStates';
+import { CustomerPicker } from '../ui/CustomerPicker';
 import { MortgageContractToolbar } from '../mortgage/MortgageContractToolbar';
 import { MortgageContractTable } from '../mortgage/MortgageContractTable';
 import { MortgageContractForm } from '../mortgage/MortgageContractForm';
@@ -12,11 +13,22 @@ export const MortgageContractView: React.FC = () => {
 
   if (c.customerId === null) {
     return (
-      <EmptyState
-        icon={FileSignature}
-        title="Chọn khách hàng"
-        description="Chọn khách hàng ở thanh khách hàng phía trên để xem hợp đồng thế chấp."
-      />
+      <>
+        <Toast toast={c.notification} onDismiss={() => c.setNotification(null)} />
+        <EmptyState
+          icon={FileSignature}
+          title="Chọn khách hàng"
+          description="Chọn khách hàng để xem và nhập hợp đồng thế chấp."
+          action={
+            <CustomerPicker
+              customers={c.allCustomers}
+              selectedCustomerId={null}
+              onSelectCustomer={c.selectCustomer}
+              placeholder="— Tìm theo tên, CIF, SĐT —"
+            />
+          }
+        />
+      </>
     );
   }
 

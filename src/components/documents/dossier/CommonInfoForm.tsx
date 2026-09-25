@@ -35,22 +35,34 @@ const Group: React.FC<{ title: string; accent?: string; children: React.ReactNod
 );
 
 interface PartyFieldsProps {
+  idPrefix: string;
   party: Party;
   set: (p: Partial<Party>) => void;
   hideIdCard?: boolean;
   hideIssueDetails?: boolean;
+  titleSelect?: React.ReactNode;
 }
 
 const PartyFields: React.FC<PartyFieldsProps> = ({
+  idPrefix,
   party,
   set,
   hideIdCard = false,
   hideIssueDetails = false,
+  titleSelect,
 }) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
     <div>
-      <label className={LABEL}>Họ tên</label>
-      <input className={INPUT} value={party.name} onChange={e => set({ name: e.target.value })} />
+      <label htmlFor={`${idPrefix}-name`} className={LABEL}>Họ tên</label>
+      <div className="flex gap-1.5">
+        {titleSelect}
+        <input
+          id={`${idPrefix}-name`}
+          className={INPUT.replace('w-full', 'min-w-0 flex-1')}
+          value={party.name}
+          onChange={e => set({ name: e.target.value })}
+        />
+      </div>
     </div>
     <div>
       <label className={LABEL}>Địa chỉ</label>
@@ -163,6 +175,11 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
       id: Date.now().toString(),
       stageName: `Đợt ${common.stages.length + 1}`, amount: '0', status: 'future', note: '',
     }] });
+  // "Lần 1" của HĐ mua bán chính là Đợt 1 của Đề nghị thanh toán; chưa có đợt nào thì tạo Đợt 1.
+  const setFirstStageAmount = (amount: string) =>
+    patch({ stages: common.stages.length > 0
+      ? [{ ...common.stages[0], amount }, ...common.stages.slice(1)]
+      : [{ id: Date.now().toString(), stageName: 'Đợt 1', amount, status: 'current', note: '' }] });
   const removeStage = (id: string) =>
     patch({ stages: common.stages.filter(s => s.id !== id) });
 
@@ -189,20 +206,6 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
     setIsInventoryPickerOpen(false);
   };
 
-  // Đối với bảng kê, tự động đồng bộ tổng tiền từ danh mục hàng hóa nếu có
-  const computedItemsTotal = React.useMemo(() => {
-    return common.items.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.price) || 0)), 0);
-  }, [common.items]);
-
-  React.useEffect(() => {
-    if (isBangKe && common.items.length > 0) {
-      const formatted = formatMoneyWith(computedItemsTotal);
-      if (common.totalAmount !== formatted) {
-        patch({ totalAmount: formatted });
-      }
-    }
-  }, [isBangKe, computedItemsTotal, common.items.length, common.totalAmount, patch]);
-
   let partyATitle = 'Bên A (Bên mua)';
   let partyBTitle = 'Bên B (Bên bán / Thụ hưởng)';
   let showItems = true;
@@ -224,6 +227,20 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
     showStages = false;
   }
 
+  // Hồ sơ có danh mục hàng hóa: tổng giá trị là tổng bảng hàng, như văn bản đang tính — không hiện ô nhập tay.
+  const computedItemsTotal = React.useMemo(() => {
+    return common.items.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.price) || 0)), 0);
+  }, [common.items]);
+
+  React.useEffect(() => {
+    if (showItems) {
+      const formatted = formatMoneyWith(computedItemsTotal);
+      if (common.totalAmount !== formatted) {
+        patch({ totalAmount: formatted });
+      }
+    }
+  }, [showItems, computedItemsTotal, common.totalAmount, patch]);
+
   return (
     <>
       <details open className="rounded-xl border border-line/70 bg-surface/40 overflow-hidden">
@@ -234,7 +251,6 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
         <div className="p-4 space-y-5 border-t border-line/50">
           <Group title={partyATitle} accent="border-accent/50 text-accent">
             <div className="mb-3">
-              <label className={LABEL}>Chọn nhanh từ Danh sách Khách hàng</label>
               <CustomerPicker
                 customers={customers}
                 selectedCustomerId={selectedCustomerId}
@@ -242,30 +258,28 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
                 placeholder="— Tìm theo tên, CIF, SĐT để điền Bên A —"
               />
             </div>
-            {showStages && (
-              <div className="mb-2.5 sm:w-1/2">
-                <label htmlFor="partyA-title" className={LABEL}>Xưng hô (Kính gửi trong Đề nghị thanh toán)</label>
+            <PartyFields
+              idPrefix="partyA"
+              party={common.partyA}
+              set={setPartyA}
+              hideIdCard={isBangKe}
+              titleSelect={showStages ? (
                 <select
-                  id="partyA-title"
-                  className={INPUT}
+                  aria-label="Xưng hô (Kính gửi trong Đề nghị thanh toán)"
+                  title="Xưng hô trong Đề nghị thanh toán"
+                  className={INPUT.replace('w-full', 'w-20 shrink-0')}
                   value={partyTitle(common.partyA)}
                   onChange={e => setPartyA({ gender: e.target.value === 'Bà' ? 'female' : 'male' })}
                 >
                   <option value="Ông">Ông</option>
                   <option value="Bà">Bà</option>
                 </select>
-              </div>
-            )}
-            <PartyFields
-              party={common.partyA}
-              set={setPartyA}
-              hideIdCard={isBangKe}
+              ) : undefined}
             />
           </Group>
 
           <Group title={partyBTitle} accent="border-pos/50 text-pos">
             <div className="mb-3">
-              <label className={LABEL}>Chọn nhanh từ Thông tin giải ngân</label>
               <DisbursementPayeePicker
                 payees={payees}
                 selectedPayeeId={selectedPayeeId}
@@ -274,6 +288,7 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
               />
             </div>
             <PartyFields
+              idPrefix="partyB"
               party={common.partyB}
               set={setPartyB}
               hideIssueDetails={isBangKe}
@@ -281,17 +296,20 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
           </Group>
 
           <Group title="Mốc thời gian" accent="border-warn/50 text-warn">
-            <div className={`grid grid-cols-1 ${isBangKe ? 'sm:grid-cols-1' : 'sm:grid-cols-3'} gap-2.5`}>
+            <div className={`grid grid-cols-1 ${isBangKe ? 'sm:grid-cols-1' : showItems ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} gap-2.5`}>
               <div>
                 <label className={LABEL}>{isBangKe ? 'Ngày lập bảng kê' : 'Ngày ký hợp đồng'}</label>
                 <DateInput value={common.contractDate} onChange={v => patch({ contractDate: v })} className={INPUT} />
               </div>
               {!isBangKe && (
                 <>
-                  <div>
-                    <label className={LABEL}>Ngày bắt đầu / giao hàng</label>
-                    <DateInput value={common.startDate} onChange={v => patch({ startDate: v })} className={INPUT} />
-                  </div>
+                  {/* Hồ sơ mua bán giao hàng ngay ngày ký nên chỉ cần Ngày ký hợp đồng. */}
+                  {!showItems && (
+                    <div>
+                      <label className={LABEL}>Ngày bắt đầu / giao hàng</label>
+                      <DateInput value={common.startDate} onChange={v => patch({ startDate: v })} className={INPUT} />
+                    </div>
+                  )}
                   <div>
                     <label className={LABEL}>Ngày kết thúc / thanh toán hết</label>
                     <DateInput value={common.endDate} onChange={v => patch({ endDate: v })} className={INPUT} />
@@ -347,28 +365,37 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
             </Group>
           )}
 
-          <Group title="Tổng tiền" accent="border-accent/50 text-accent">
-            <div className="sm:w-1/2">
-              <label className={LABEL}>
-                {isBangKe ? 'Tổng giá trị bảng kê (VNĐ - tự động tính theo hàng hóa)' : 'Tổng giá trị (VNĐ)'}
-              </label>
-              <input
-                className={`${INPUT} font-mono font-bold text-accent`}
-                value={common.totalAmount}
-                readOnly={isBangKe && common.items.length > 0}
-                onChange={e => patch({ totalAmount: formatMoneyInput(e.target.value) })}
-              />
-            </div>
-          </Group>
+          {!showItems && (
+            <Group title="Tổng tiền" accent="border-accent/50 text-accent">
+              <div className="sm:w-1/2">
+                <label htmlFor="dossier-total" className={LABEL}>Tổng giá trị (VNĐ)</label>
+                <input
+                  id="dossier-total"
+                  className={`${INPUT} font-mono font-bold text-accent`}
+                  value={common.totalAmount}
+                  onChange={e => patch({ totalAmount: formatMoneyInput(e.target.value) })}
+                />
+              </div>
+            </Group>
+          )}
 
-          {showStages && !isBangKe && (
+          {activeDocId === 'sale_contract' && (
+            <Group title="Thanh toán" accent="border-warn/50 text-warn">
+              <div className="sm:w-1/2">
+                <label htmlFor="sale-stage1" className={LABEL}>Thanh toán Lần 1 (VNĐ)</label>
+                <input
+                  id="sale-stage1"
+                  className={`${INPUT} font-mono text-right`}
+                  value={common.stages[0]?.amount ?? ''}
+                  onChange={e => setFirstStageAmount(formatMoneyInput(e.target.value))}
+                />
+              </div>
+            </Group>
+          )}
+
+          {showStages && isPaymentRequest && !isBangKe && (
             <Group title="Các đợt thanh toán" accent="border-warn/50 text-warn">
               <div className="space-y-2">
-                {activeDocId === 'sale_contract' && (
-                  <p className="text-[11px] text-ink-muted">
-                    Số tiền Đợt 1 là số tiền &quot;Lần 1&quot; trong HĐ mua bán và dùng chung cho Đề nghị thanh toán.
-                  </p>
-                )}
                 {common.stages.map(stage => (
                   <div key={stage.id} className="grid grid-cols-12 gap-2 items-end">
                     <div className="col-span-12 sm:col-span-4">

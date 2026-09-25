@@ -22,7 +22,8 @@ export function saleToLegacyParams(common: DossierCommon): DocumentDraft {
     saleBankAccNo: common.bank.accNo,
     saleBankName: common.bank.name,
     saleBankBranch: common.bank.branch,
-    saleStartDate: common.startDate,
+    // Hàng giao ngay khi ký: thời hạn tính từ ngày ký, ô ngày bắt đầu không còn trên form.
+    saleStartDate: common.contractDate,
     saleEndDate: common.endDate,
     salePaymentStage1: common.stages[0]?.amount ?? '',
     saleItems: common.items,

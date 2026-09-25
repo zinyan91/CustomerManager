@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   fetchMortgageContractsAPI, fetchCollateralsByCustomerAPI, fetchCreditContractsByCustomerAPI,
-  saveMortgageContractAPI, deleteMortgageContractAPI, MortgageLinkSaveError,
+  saveMortgageContractAPI, deleteMortgageContractAPI, MortgageLinkSaveError, fetchCustomersAPI,
 } from '../lib/api';
 import {
   emptyMortgageDraft, filterMortgageContracts, paginate, validateMortgageContract,
   type MortgageContractDraft, type MortgageStatusFilter,
 } from '../lib/mortgageContract';
-import { useSelectedCustomerId } from './useSelectedCustomerId';
+import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
 import { useConfirm } from '../context/ConfirmContext';
-import type { Collateral, CreditContract, MortgageContract } from '../types';
+import type { Collateral, CreditContract, Customer, MortgageContract } from '../types';
 
 export const MORTGAGE_PAGE_SIZE = 10;
 
@@ -17,7 +17,9 @@ type Notice = { type: 'success' | 'error'; message: string };
 
 export function useMortgageContractController() {
   const customerId = useSelectedCustomerId();
+  const selectCustomer = useCustomerNavigate();
   const confirm = useConfirm();
+  const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
 
   const [mortgages, setMortgages] = useState<MortgageContract[]>([]);
   const [collaterals, setCollaterals] = useState<Collateral[]>([]);
@@ -33,6 +35,12 @@ export function useMortgageContractController() {
   const [notification, setNotification] = useState<Notice | null>(null);
   const tokenRef = useRef(0);
   const customerIdRef = useRef(customerId);
+
+  // Thanh khách hàng đầu trang chỉ hiện khi đã có khách, nên màn này phải tự có ô chọn khách.
+  useEffect(() => {
+    fetchCustomersAPI().then(setAllCustomers).catch((err: Error) =>
+      setNotification({ type: 'error', message: `Không nạp được danh sách khách hàng: ${err.message}` }));
+  }, []);
 
   const load = useCallback(async (id: number | null): Promise<MortgageContract[]> => {
     const token = ++tokenRef.current;
@@ -137,7 +145,7 @@ export function useMortgageContractController() {
   }, [confirm, draft, closeForm, load, stillOn]);
 
   return {
-    customerId, loading, mortgages, collaterals, creditContracts,
+    customerId, allCustomers, selectCustomer, loading, mortgages, collaterals, creditContracts,
     status, setStatus, query, setQuery, filtered, paged, setPage,
     draft, setDraft, formErrors, saving,
     openNew, openEdit, closeForm, save, remove,

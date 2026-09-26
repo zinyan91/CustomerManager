@@ -100,7 +100,7 @@ export const Bm01SpecificForm: React.FC<{
     return list;
   }, [activeCustomer, specific?.name2, common?.bank?.accNo, common?.bank?.owner]);
 
-  const customerType: Bm01CustomerType = specific?.customerType || 'single';
+  const customerType: Bm01CustomerType = specific?.customerType === 'married' ? 'married' : 'single';
   const method: Bm01DisbursementMethod = specific?.disbursementMethod || 'transfer';
   const transferSubType: Bm01TransferType = specific?.transferSubType || 'transfer';
 
@@ -132,6 +132,8 @@ export const Bm01SpecificForm: React.FC<{
 
   useEffect(() => {
     const updates: Partial<Bm01Specific> = {};
+    // Chỉ còn khách cá nhân: bản nháp cũ chọn "tổ chức" chuyển về cá nhân độc thân.
+    if (specific?.customerType === 'org') updates.customerType = 'single';
     if (!specific?.name1 && common?.partyA?.name) updates.name1 = common.partyA.name;
     if (!specific?.cif1 && common?.partyA?.cif) updates.cif1 = common.partyA.cif;
     if (!specific?.cccd1 && common?.partyA?.cccd) updates.cccd1 = common.partyA.cccd;
@@ -166,8 +168,39 @@ export const Bm01SpecificForm: React.FC<{
 
   return (
     <div className="space-y-4">
-      {/* 1. Phân loại Khách hàng & Chọn nhanh */}
-      <Group title="1. Thông tin Khách hàng" accent="border-accent/50 text-accent">
+      {/* 1. Ngày lập & Kính gửi — theo thứ tự trên văn bản: dòng ngày tháng rồi "Kính gửi" */}
+      <Group title="1. Ngày lập & Kính gửi" accent="border-pos/50 text-pos">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label className={LABEL}>Địa danh lập văn bản</label>
+            <input
+              className={INPUT}
+              placeholder="VD: TP. Hồ Chí Minh"
+              value={specific?.docPlace ?? ''}
+              onChange={e => patch({ docPlace: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className={LABEL}>Ngày lập đề nghị</label>
+            <DateInput
+              className={INPUT}
+              value={specific?.docDate ?? common?.contractDate ?? ''}
+              onChange={v => patch({ docDate: v })}
+            />
+          </div>
+        </div>
+        <VhttBranchInput
+          label="Vietbank tiếp nhận"
+          inputClassName={INPUT}
+          labelClassName={LABEL}
+          branchType={specific?.branchType}
+          branchName={specific?.branchName}
+          onChange={patch}
+        />
+      </Group>
+
+      {/* 2. Khách hàng cá nhân (tự suy ra độc thân hoặc vợ chồng) */}
+      <Group title="2. Thông tin Khách hàng" accent="border-accent/50 text-accent">
         <div className="space-y-3">
           <div>
             <label className={LABEL}>Chọn nhanh từ Danh sách Khách hàng</label>
@@ -179,43 +212,6 @@ export const Bm01SpecificForm: React.FC<{
             />
           </div>
 
-          <div>
-            <label className={LABEL}>Loại khách hàng</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const hasSpouse = Boolean(
-                    (activeCustomer?.SpouseName && activeCustomer.SpouseName.trim()) ||
-                    (activeCustomer?.MaritalStatus && activeCustomer.MaritalStatus.toLowerCase().includes('kết hôn')) ||
-                    (specific?.name2 && specific.name2.trim())
-                  );
-                  patch({ customerType: hasSpouse ? 'married' : 'single' });
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
-                  customerType !== 'org'
-                    ? 'bg-accent text-accent-ink border-accent shadow-sm'
-                    : 'bg-surface/70 text-ink-muted border-line/70 hover:border-accent'
-                }`}
-              >
-                👤 Khách hàng Cá nhân
-              </button>
-              <button
-                type="button"
-                onClick={() => patch({ customerType: 'org' })}
-                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
-                  customerType === 'org'
-                    ? 'bg-accent text-accent-ink border-accent shadow-sm'
-                    : 'bg-surface/70 text-ink-muted border-line/70 hover:border-accent'
-                }`}
-              >
-                🏢 Doanh nghiệp / Tổ chức
-              </button>
-            </div>
-          </div>
-
-          {/* Form thông tin Khách hàng Cá nhân (Tự động suy ra Độc thân hoặc Vợ chồng) */}
-          {customerType !== 'org' && (
             <div className="space-y-3 pt-1">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
@@ -310,105 +306,11 @@ export const Bm01SpecificForm: React.FC<{
                 </div>
               )}
             </div>
-          )}
-
-          {/* Trường nhập thông tin cho Doanh nghiệp / Tổ chức */}
-          {customerType === 'org' && (
-            <div className="space-y-2.5 pt-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className={LABEL}>Tên tổ chức</label>
-                  <input
-                    className={INPUT}
-                    placeholder="VD: Công ty TNHH Thương Mại ABC"
-                    value={specific?.orgName ?? ''}
-                    onChange={e => patch({ orgName: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className={LABEL}>MSDN / Số ĐKKD / GPHĐ</label>
-                  <input
-                    className={`${INPUT} font-mono`}
-                    placeholder="VD: 0312345678"
-                    value={specific?.orgRegNo ?? ''}
-                    onChange={e => patch({ orgRegNo: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className={LABEL}>Người đại diện</label>
-                  <input
-                    className={INPUT}
-                    placeholder="VD: Nguyễn Văn C"
-                    value={specific?.repName ?? ''}
-                    onChange={e => patch({ repName: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className={LABEL}>Chức vụ</label>
-                  <input
-                    className={INPUT}
-                    placeholder="VD: Giám đốc / Tổng giám đốc"
-                    value={specific?.repPosition ?? ''}
-                    onChange={e => patch({ repPosition: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label className={LABEL}>Văn bản uỷ quyền số (nếu có)</label>
-                  <input
-                    className={INPUT}
-                    placeholder="VD: 01/UQ-ABC"
-                    value={specific?.authDocNo ?? ''}
-                    onChange={e => patch({ authDocNo: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className={LABEL}>Ngày ký ủy quyền</label>
-                  <DateInput
-                    className={INPUT}
-                    value={specific?.authDocDate ?? ''}
-                    onChange={v => patch({ authDocDate: v })}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </Group>
-
-      {/* 2. Kính gửi & Hợp đồng tín dụng */}
-      <Group title="2. Cơ quan tiếp nhận & Hợp đồng tín dụng" accent="border-pos/50 text-pos">
+      {/* 3. Hợp đồng tín dụng & phương thức giải ngân: chỉ hiển thị 1 trong 2 phương thức */}
+      <Group title="3. Hợp đồng tín dụng & Phương thức giải ngân" accent="border-warn/50 text-warn">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <VhttBranchInput
-            label="Vietbank tiếp nhận"
-            inputClassName={INPUT}
-            labelClassName={LABEL}
-            branchType={specific?.branchType}
-            branchName={specific?.branchName}
-            onChange={patch}
-          />
-          <div>
-            <label className={LABEL}>Địa danh lập văn bản</label>
-            <input
-              className={INPUT}
-              placeholder="VD: TP. Hồ Chí Minh"
-              value={specific?.docPlace ?? ''}
-              onChange={e => patch({ docPlace: e.target.value })}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          <div>
-            <label className={LABEL}>Ngày lập đề nghị</label>
-            <DateInput
-              className={INPUT}
-              value={specific?.docDate ?? common?.contractDate ?? ''}
-              onChange={v => patch({ docDate: v })}
-            />
-          </div>
           <div>
             <label className={LABEL}>Hợp đồng tín dụng số</label>
             <input
@@ -427,10 +329,6 @@ export const Bm01SpecificForm: React.FC<{
             />
           </div>
         </div>
-      </Group>
-
-      {/* 3. Phương thức giải ngân: Chỉ hiển thị 1 trong 2 */}
-      <Group title="3. Phương thức giải ngân (Bên thụ hưởng nhận tiền)" accent="border-warn/50 text-warn">
         <div>
           <label className={LABEL}>Chọn phương thức giải ngân</label>
           <div className="grid grid-cols-2 gap-2">

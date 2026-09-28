@@ -16,13 +16,13 @@ Làm tuần tự. Chưa xong bước trên thì chưa được sang bước dư�
 
 ### 1. Nắm nghiệp vụ
 
-- [ ] Đọc [`SKILL.md`](../skills/tin-dung/SKILL.md) phần cốt lõi.
-- [ ] Mở đúng tệp trong [`.agents/skills/tin-dung/references/`](../skills/tin-dung/references/) cho mảng đang làm (bảng điều hướng ở mục 1 của `SKILL.md`).
+- [ ] Gọi skill `/tin-dung` (nguồn: `D:/agent-kit/skills/tin-dung/SKILL.md`) và đọc phần cốt lõi.
+- [ ] Mở đúng tệp trong `D:/agent-kit/skills/tin-dung/references/` cho mảng đang làm (bảng điều hướng ở mục 1 của `SKILL.md`).
 - [ ] **Đối chiếu `src/` để xác nhận.** Tài liệu cập nhật chậm hơn mã nguồn và **thường xuyên trôi** — `SKILL.md` tự quy định: *mâu thuẫn thì tin code, rồi sửa tài liệu*. Đừng kết luận về phạm vi hay kiến trúc chỉ dựa trên tài liệu.
 
 ### 2. Xác định tầng đặt code
 
-Theo [`architecture-principles.md`](./architecture-principles.md) — trả lời dứt khoát **trước** khi mở trình soạn thảo:
+Theo luật chung SRP/SoC (`D:/agent-kit/rules/20-kien-truc-va-ma.md`) — trả lời dứt khoát **trước** khi mở trình soạn thảo:
 
 | Thứ đang viết | Đặt ở |
 | :--- | :--- |
@@ -44,7 +44,7 @@ Theo [`architecture-principles.md`](./architecture-principles.md) — trả lờ
 - [ ] `npm test && npm run build` — **cả hai phải xanh**.
 - [ ] Kiểm chứng thực tế thứ vừa sửa: tệp xuất mở được, giao diện đúng, CSDL phản hồi đúng.
 - [ ] Ghi mục mới vào [`docs/progress/YYYY-MM.md`](../../docs/progress/README.md).
-- [ ] Nếu quy tắc nghiệp vụ thay đổi: cập nhật `references/` tương ứng ở **cả hai cây** `.agents/` và `.claude/` (cây `.claude/` bị `.gitignore`, phải `git add -f`).
+- [ ] Nếu quy tắc nghiệp vụ thay đổi: cập nhật `D:/agent-kit/skills/tin-dung/references/` rồi commit ở repo `agent-kit` — skill `tin-dung` chỉ còn **một** bản, ở đó.
 
 ---
 
@@ -72,7 +72,7 @@ Theo [`architecture-principles.md`](./architecture-principles.md) — trả lờ
 
 ## Quy tắc vàng dễ vi phạm nhất
 
-Chi tiết đầy đủ ở mục 4 của [`SKILL.md`](../skills/tin-dung/SKILL.md). Bốn điều hay bị quên nhất:
+Chi tiết đầy đủ ở mục 4 của skill `/tin-dung` (`D:/agent-kit/skills/tin-dung/SKILL.md`). Bốn điều hay bị quên nhất:
 
 1. **Không dùng `||` khi `0` là giá trị hợp lệ.** `parseFloat('0') || 80` cho ra `80` — biến tài sản LTV 0% thành 80%.
 2. **Cấm `toISOString().split('T')[0]`** để lấy hôm nay — trước 07:00 giờ VN trả về ngày hôm qua. Dùng `todayIso()`.

@@ -39,4 +39,4 @@ Việc **không** cần ghi: sửa lỗi chính tả, đổi khoảng cách giao
 ## Liên quan
 
 - Việc phải làm **trước** khi gõ dòng code đầu tiên: [`.agents/rules/truoc-khi-code.md`](../../.agents/rules/truoc-khi-code.md)
-- Quy chuẩn kiến trúc SRP/SoC: [`.agents/rules/architecture-principles.md`](../../.agents/rules/architecture-principles.md)
+- Quy chuẩn kiến trúc SRP/SoC: luật chung `D:/agent-kit/rules/20-kien-truc-va-ma.md`

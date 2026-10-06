@@ -1,10 +1,16 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+vi.mock('../../../context/AuthContext', () => ({ useAuth: () => ({ user: { id: 'user-test' }, can: () => false }) }));
+
 import { FelixAiAvatar } from '../FelixAiAvatar';
 import { AiMarkdownMessage } from '../AiMarkdownMessage';
 import { AiComposer } from '../AiComposer';
 import { AiChatDialog } from '../AiChatDialog';
+
+afterEach(() => {
+  cleanup();
+});
 
 describe('FelixAiAvatar', () => {
   it('dựng hình ảnh avatar robot ở trạng thái idle', () => {
@@ -54,7 +60,7 @@ describe('AiComposer', () => {
       />
     );
 
-    const textarea = screen.getByPlaceholderText(/Nhập câu hỏi nghiệp vụ/);
+    const textarea = screen.getByPlaceholderText(/Nhập câu hỏi hoặc kéo thả tệp/);
     fireEvent.change(textarea, { target: { value: 'Hỏi về điều kiện cấp tín dụng' } });
     fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: false });
 
@@ -81,10 +87,26 @@ describe('AiComposer', () => {
     fireEvent.click(stopButton);
     expect(onStop).toHaveBeenCalled();
   });
+
+  it('hiển thị nút đính kèm tệp hình ảnh/PDF cho AI đọc', () => {
+    const onSend = vi.fn();
+    const { container } = render(
+      <AiComposer
+        onSend={onSend}
+        onStop={vi.fn()}
+        isStreaming={false}
+        attachedDoc={null}
+        onRemoveAttachedDoc={vi.fn()}
+      />
+    );
+
+    const attachButton = container.querySelector('button[title*="Đính kèm hình ảnh"]');
+    expect(attachButton).toBeTruthy();
+  });
 });
 
-describe('AiChatDialog - Right Drawer Panel', () => {
-  it('dựng tab chat cạnh phải màn hình khi isOpen=true', () => {
+describe('AiChatDialog - Sidebar & Drawer Modes', () => {
+  it('dựng sidebar cạnh phải màn hình khi mode="sidebar" (mặc định)', () => {
     const onClose = vi.fn();
     const { container } = render(
       <AiChatDialog
@@ -93,12 +115,26 @@ describe('AiChatDialog - Right Drawer Panel', () => {
       />
     );
 
-    const drawerWrapper = container.querySelector('.fixed.inset-y-0.right-0');
-    expect(drawerWrapper).toBeTruthy();
+    const sidebar = container.querySelector('aside');
+    expect(sidebar).toBeTruthy();
     expect(screen.getByText('Trợ Lý AI Tín Dụng & Văn Thư')).toBeTruthy();
 
     const closeButton = screen.getByTitle('Đóng cửa sổ');
     fireEvent.click(closeButton);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('dựng drawer dưới header (top-56px) khi mode="drawer"', () => {
+    const onClose = vi.fn();
+    const { container } = render(
+      <AiChatDialog
+        isOpen={true}
+        onClose={onClose}
+        mode="drawer"
+      />
+    );
+
+    const drawer = container.querySelector('.fixed.top-\\[56px\\].right-0');
+    expect(drawer).toBeTruthy();
   });
 });

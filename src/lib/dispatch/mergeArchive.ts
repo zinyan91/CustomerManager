@@ -4,10 +4,6 @@ import type { DispatchDocument } from '../../types/dispatch';
 /** Id tạm cho tệp có trên Hugging Face nhưng chưa có dòng metadata trong DB. */
 export const HF_ONLY_ID_PREFIX = 'hf_';
 
-export function isPersistedDispatch(doc: Pick<DispatchDocument, 'id'>): boolean {
-  return !doc.id.startsWith(HF_ONLY_ID_PREFIX);
-}
-
 function folderOf(path: string): string {
   const parts = path.split('/');
   return parts.length > 1 ? parts.slice(0, -1).join('/') : '';

@@ -6,7 +6,7 @@ import {
 import type { DispatchDocument } from '../../types/dispatch';
 import { DISPATCH_TYPE_LABELS } from '../../types/dispatch';
 import type { HfConfig } from '../../types/huggingface';
-import { resolveFileDownloadUrl, saveDispatchRecord } from '../../lib/dispatch/dispatchStorage';
+import { resolveFileDownloadUrl } from '../../lib/dispatch/dispatchStorage';
 import { summarizeDocumentWithAi } from '../../lib/ai/geminiClient';
 
 interface DispatchPreviewModalProps {
@@ -96,16 +96,13 @@ export function DispatchPreviewModal({
         currentDoc.note
       );
 
-      const updated = await saveDispatchRecord({
-        ...currentDoc,
-        aiSummary: res.summary,
-        aiKeywords: res.keywords,
-      });
+      // Bản tóm tắt chỉ hiện trong phiên xem này, không ghi vào CSDL
+      const updated: DispatchDocument = { ...currentDoc, aiSummary: res.summary, aiKeywords: res.keywords };
 
       setCurrentDoc(updated);
       onUpdated?.(updated);
     } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : 'Không lưu được bản tóm tắt.');
+      setErrorMsg(e instanceof Error ? e.message : 'Không tạo được bản tóm tắt.');
     } finally {
       setIsSummarizing(false);
     }

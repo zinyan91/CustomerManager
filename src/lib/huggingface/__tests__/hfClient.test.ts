@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildFolderTree, normalizeHfRepoAndFolder } from '../hfClient';
 import { formatBytes } from '../../../types/huggingface';
-import { filterDispatches } from '../../dispatch/dispatchStorage';
-import type { DispatchDocument } from '../../../types/dispatch';
 
 describe('Hugging Face Client & Folder Tree', () => {
   const store: Record<string, string> = {};
@@ -59,70 +57,5 @@ describe('Hugging Face Client & Folder Tree', () => {
     });
     expect(normalizeHfRepoAndFolder('datasets/own/repo', '/ho-so/')).toEqual({ repoId: 'own/repo', folder: 'ho-so' });
     expect(normalizeHfRepoAndFolder('own/repo/a/b', '')).toEqual({ repoId: 'own/repo', folder: 'a/b' });
-  });
-
-  it('filterDispatches lọc chính xác theo folderPath', () => {
-    const docs: DispatchDocument[] = [
-      {
-        id: '1',
-        documentNumber: '112/QD',
-        title: 'Quyết định 112',
-        documentType: 'quyet_dinh',
-        issuer: 'NHNN',
-        documentDate: '2026-01-01',
-        receivedDate: '2026-01-02',
-        customerId: null,
-        fileName: '112.pdf',
-        fileSize: 100,
-        fileType: 'application/pdf',
-        fileUrl: '',
-        filePath: '2026/phap-quy/112.pdf',
-        folderPath: '2026/phap-quy',
-        storageProvider: 'huggingface',
-        createdAt: '',
-        updatedAt: '',
-      },
-      {
-        id: '2',
-        documentNumber: 'HD-01',
-        title: 'Hợp đồng tín dụng 01',
-        documentType: 'hop_dong',
-        issuer: 'CN',
-        documentDate: '2026-01-01',
-        receivedDate: '2026-01-02',
-        customerId: 1,
-        fileName: 'hd01.pdf',
-        fileSize: 200,
-        fileType: 'application/pdf',
-        fileUrl: '',
-        filePath: '2026/hop-dong/hd01.pdf',
-        folderPath: '2026/hop-dong',
-        storageProvider: 'huggingface',
-        createdAt: '',
-        updatedAt: '',
-      },
-    ];
-
-    const resultPhapQuy = filterDispatches(docs, {
-      search: '',
-      documentType: 'all',
-      customerId: 'all',
-      folderPath: '2026/phap-quy',
-      dateFrom: '',
-      dateTo: '',
-    });
-    expect(resultPhapQuy.length).toBe(1);
-    expect(resultPhapQuy[0].id).toBe('1');
-
-    const resultHopDong = filterDispatches(docs, {
-      search: '',
-      documentType: 'all',
-      customerId: 'all',
-      folderPath: '2026/hop-dong',
-      dateFrom: '',
-      dateTo: '',
-    });
-    expect(resultHopDong.length).toBe(1);
-    expect(resultHopDong[0].id).toBe('2');
   });
 });

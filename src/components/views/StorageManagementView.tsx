@@ -45,7 +45,7 @@ export function StorageManagementView() {
   const userId = user?.id ?? null;
   const { managedUsers } = useUserScope();
   const { auth, allRepos, repos, selectedRepo, selectRepo, config, documents, folders, status, reload, reloadRepos } =
-    useArchive('storage');
+    useArchive();
   const upload = useArchiveUpload(config, reload);
   const zipDl = useFolderZipDownload();
 
@@ -209,10 +209,15 @@ export function StorageManagementView() {
           <button
             type="button"
             onClick={() => {
-              setAiAttachedDoc(null);
-              setIsAiChatOpen(true);
+              setIsAiChatOpen((prev) => !prev);
+              if (isAiChatOpen) setAiAttachedDoc(null);
             }}
-            className="px-3.5 py-2 rounded-lg border border-teal-600/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-800 dark:text-teal-300 text-sm font-semibold flex items-center gap-2 cursor-pointer"
+            aria-pressed={isAiChatOpen}
+            className={`px-3.5 py-2 rounded-lg border text-sm font-semibold flex items-center gap-2 cursor-pointer transition-colors ${
+              isAiChatOpen
+                ? 'border-teal-600 bg-teal-600 text-white dark:bg-teal-500 dark:border-teal-500 dark:text-slate-900 shadow-2xs'
+                : 'border-teal-600/30 bg-teal-500/10 hover:bg-teal-500/20 text-teal-800 dark:text-teal-300'
+            }`}
           >
             <Sparkles className="w-4 h-4" />
             <span>Trợ lý AI</span>
@@ -591,6 +596,18 @@ export function StorageManagementView() {
             )}
           </UploadDropZone>
         </div>
+
+        {/* Cột phải: Sidebar Chat AI */}
+        <AiChatDialog
+          isOpen={isAiChatOpen}
+          onClose={() => {
+            setIsAiChatOpen(false);
+            setAiAttachedDoc(null);
+          }}
+          availableDispatches={documents}
+          initialAttachedDoc={aiAttachedDoc}
+          mode="sidebar"
+        />
       </div>
 
       {canConfigure && (
@@ -612,16 +629,6 @@ export function StorageManagementView() {
           setAiAttachedDoc(d);
           setIsAiChatOpen(true);
         }}
-      />
-
-      <AiChatDialog
-        isOpen={isAiChatOpen}
-        onClose={() => {
-          setIsAiChatOpen(false);
-          setAiAttachedDoc(null);
-        }}
-        availableDispatches={documents}
-        initialAttachedDoc={aiAttachedDoc}
       />
     </div>
   );

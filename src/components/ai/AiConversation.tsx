@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
-import { Copy, Check, FileText, Sparkles, Loader2 } from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Copy, Check, FileText, Sparkles, Loader2, Image as ImageIcon } from 'lucide-react';
 import type { AiChatMessage, StarterPrompt } from '../../types/ai';
 import { BANKING_STARTER_PROMPTS } from '../../types/ai';
 import { FelixAiAvatar } from './FelixAiAvatar';
 import { AiMarkdownMessage } from './AiMarkdownMessage';
+import { formatFileSize } from '../../lib/ai/fileToAttachment';
 
 interface AiConversationProps {
   messages: AiChatMessage[];
@@ -11,6 +12,14 @@ interface AiConversationProps {
   streamingText: string;
   onSelectPrompt: (prompt: string) => void;
   onClearHistory?: () => void;
+  /** Tiến trình trước khi có chữ đầu tiên (đang tra cứu / đọc văn bản). */
+  statusText?: string;
+  /** Đổi giá trị này thì cuộn xuống cuối (vd: thẻ đề xuất mới xuất hiện bên dưới). */
+  scrollKey?: string;
+  /** Hỏi lại AI một câu trả lời lấy từ bộ nhớ dùng chung. */
+  onRefreshAnswer?: (messageId: string) => void;
+  /** Nội dung chèn sau tin nhắn cuối (vd: thẻ đề xuất ghi nhận văn bản). */
+  footer?: ReactNode;
 }
 
 export function AiConversation({
@@ -18,6 +27,10 @@ export function AiConversation({
   isStreaming,
   streamingText,
   onSelectPrompt,
+  statusText,
+  scrollKey,
+  onRefreshAnswer,
+  footer,
 }: AiConversationProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -25,7 +38,7 @@ export function AiConversation({
   // Cuộn xuống cuối khi có tin nhắn mới hoặc đang stream
   useEffect(() => {
     bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
-  }, [messages, streamingText, isStreaming]);
+  }, [messages, streamingText, isStreaming, scrollKey]);
 
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -74,11 +87,47 @@ export function AiConversation({
                   </span>
                 </div>
 
-                {/* Văn bản đính kèm nếu có */}
+                {/* Văn bản đính kèm từ kho nếu có */}
                 {msg.attachedDocumentTitle && (
                   <div className="mb-2 p-1.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-[11px] text-teal-700 dark:text-teal-300 flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">Văn bản: {msg.attachedDocumentTitle}</span>
+                    <span className="truncate">Hồ sơ kho: {msg.attachedDocumentTitle}</span>
+                  </div>
+                )}
+
+                {/* Tệp đính kèm hình ảnh hoặc PDF tải lên */}
+                {msg.attachments && msg.attachments.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {msg.attachments.map((att) => (
+                      <div
+                        key={att.id}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[11px] ${
+                          msg.role === 'user'
+                            ? 'bg-slate-800/80 border-slate-700 text-slate-200'
+                            : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {att.mimeType.startsWith('image/') ? (
+                          att.previewUrl ? (
+                            <img
+                              src={att.previewUrl}
+                              alt={att.name}
+                              className="w-6 h-6 object-cover rounded border border-slate-600/30 shrink-0"
+                            />
+                          ) : (
+                            <ImageIcon className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          )
+                        ) : (
+                          <FileText className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                        )}
+                        <span className="truncate max-w-[150px]" title={att.name}>
+                          {att.name}
+                        </span>
+                        <span className="text-[10px] opacity-60 font-mono">
+                          ({formatFileSize(att.size)})
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -92,6 +141,20 @@ export function AiConversation({
                 {/* Actions chân tin nhắn AI */}
                 {msg.role === 'assistant' && (
                   <div className="mt-2.5 pt-1.5 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-end gap-2 text-[10px] text-slate-400">
+                    {msg.fromCache && (
+                      <>
+                        <span className="mr-auto">Câu trả lời đã có từ trước (dùng chung)</span>
+                        {onRefreshAnswer && (
+                          <button
+                            type="button"
+                            onClick={() => onRefreshAnswer(msg.id)}
+                            className="hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                          >
+                            Hỏi lại AI
+                          </button>
+                        )}
+                      </>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleCopy(msg.id, msg.content)}
@@ -133,7 +196,7 @@ export function AiConversation({
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-slate-400 py-1">
-                    <span>Đang kết nối mô hình xử lý văn bản...</span>
+                    <span>{statusText || 'Đang kết nối mô hình xử lý văn bản...'}</span>
                   </div>
                 )}
               </div>
@@ -141,6 +204,8 @@ export function AiConversation({
           )}
         </>
       )}
+
+      {footer}
 
       <div ref={bottomRef} />
     </div>

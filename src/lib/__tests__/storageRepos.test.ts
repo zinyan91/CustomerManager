@@ -6,7 +6,6 @@ import {
   suggestPersonalRepoSlug,
   mapRepoRow,
   reposForStorage,
-  dispatchRepoOf,
   repoLabel,
   canUploadToRepo,
   canDeleteInRepo,
@@ -76,18 +75,13 @@ describe('reposForStorage', () => {
     expect(reposForStorage(all, 'user', 'u-a').map((r) => r.id)).toEqual([1, 2]);
   });
 
-  it('admin: thấy mọi kho (trừ Văn thư), kho của mình đứng trước kho người khác', () => {
-    expect(reposForStorage(all, 'user_admin', 'u-a').map((r) => r.id)).toEqual([1, 2, 3]);
-    expect(reposForStorage(all, 'master_admin', 'u-b').map((r) => r.id)).toEqual([1, 3, 2]);
+  it('admin: thấy mọi kho kể cả Văn thư (để tải tệp lên cho văn bản), Văn thư sau Kho chung, kho của mình trước kho người khác', () => {
+    expect(reposForStorage(all, 'user_admin', 'u-a').map((r) => r.id)).toEqual([1, 4, 2, 3]);
+    expect(reposForStorage(all, 'master_admin', 'u-b').map((r) => r.id)).toEqual([1, 4, 3, 2]);
   });
 
   it('user chưa được gán kho cá nhân chỉ thấy Kho chung', () => {
     expect(reposForStorage(all, 'user', 'u-moi').map((r) => r.id)).toEqual([1]);
-  });
-
-  it('dispatchRepoOf lấy repo văn thư hoặc null', () => {
-    expect(dispatchRepoOf(all)?.id).toBe(4);
-    expect(dispatchRepoOf([SHARED])).toBeNull();
   });
 });
 

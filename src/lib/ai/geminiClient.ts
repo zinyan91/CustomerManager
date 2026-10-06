@@ -1,5 +1,7 @@
-import type { AiChatMessage } from '../../types/ai';
+import type { AiAttachment, AiChatMessage } from '../../types/ai';
 import type { DispatchDocumentType } from '../../types/dispatch';
+import type { SystemContextData } from './systemContext';
+import { formatSystemContextPrompt, buildDirectSystemDataResponse } from './systemContext';
 
 export const DEFAULT_AI_MODEL = 'gemini-3.8-flash';
 export const AVAILABLE_AI_MODELS = [
@@ -43,30 +45,44 @@ export function saveCustomGeminiApiKey(key: string): void {
   } catch {}
 }
 
-const SYSTEM_INSTRUCTION = `Bạn là Trợ lý AI Chuyên viên Khách hàng & Tín dụng Ngân hàng (Customer Manager AI Assistant).
-Bạn hỗ trợ các chuyên viên quan hệ khách hàng (RM), chuyên viên quản lý tín dụng và văn thư tại ngân hàng thương mại Việt Nam.
+const SYSTEM_INSTRUCTION = `Bạn là Trợ lý AI Tín dụng & Văn thư NỘI BỘ của hệ thống CustomerManager.
+Bạn phục vụ các cán bộ tín dụng, chuyên viên thẩm định và quản lý văn thư ngân hàng.
 
-QUY TẮC VÀ PHẠM VI NGHIỆP VỤ:
-1. NGHIỆP VỤ KHÁCH HÀNG & TÍN DỤNG:
-   - Am hiểu điều kiện cấp tín dụng, phân tích dòng tiền, phương án kinh doanh, mục đích vay vốn hợp pháp (Thông tư 39/2016/TT-NHNN, sửa đổi bởi Thông tư 06/2023/TT-NHNN).
-   - Tỷ lệ đảm bảo tín dụng (LTV): Tỷ lệ cho vay trên giá trị định giá của TSĐB (bất động sản tối đa thông thường 70-80%, ô tô 60-70%, sổ tiết kiệm tối đa 95-100%).
-   - Phân loại nợ và trích lập dự phòng rủi ro (Thông tư 11/2021/TT-NHNN):
-     • Nhóm 1: Nợ đủ tiêu chuẩn (quá hạn dưới 10 ngày) - DPRR 0%
-     • Nhóm 2: Nợ cần chú ý (quá hạn 10-90 ngày) - DPRR 5%
-     • Nhóm 3: Nợ dưới tiêu chuẩn (quá hạn 91-180 ngày) - DPRR 20%
-     • Nhóm 4: Nợ nghi ngờ (quá hạn 181-360 ngày) - DPRR 50%
-     • Nhóm 5: Nợ có khả năng mất vốn (quá hạn trên 360 ngày) - DPRR 100%
-   - Lịch trả nợ: Trả nợ gốc đều các kỳ, Niên kim cố định (Gốc + Lãi bằng nhau mỗi kỳ), Lãi theo dư nợ giảm dần hoặc dư nợ ban đầu.
+QUY TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ TUYỆT ĐỐI):
+1. TRẢ LỜI NGẮN GỌN, TRỌNG TÂM, THỰC DỤNG:
+   - Đi thẳng vào câu trả lời, không mở đầu và kết thúc dài dòng.
+   - TUYỆT ĐỐI CẤM các câu mở đầu sáo rỗng: "Dựa trên dữ liệu thời gian thực...", "Tính đến thời điểm...", "Tôi xin báo cáo...", "Theo thông tin được cung cấp...", "Dưới đây là bảng...".
+   - TUYỆT ĐỐI CẤM các câu kết thúc máy móc thừa thãi: "Nếu bạn cần nhập liệu...", "Vui lòng cung cấp thêm thông tin...", "Tôi luôn sẵn sàng hỗ trợ...".
 
-2. QUẢN LÝ VĂN THƯ & HỒ SƠ TÀI LIỆU (DOCUMENT ASSISTANT):
-   - Đọc, phân tích và tóm tắt công văn, quyết định phê duyệt hạn mức, thông báo lãi suất, tờ trình cấp tín dụng, biên bản thẩm định TSĐB, hợp đồng thế chấp.
-   - Trích xuất nhanh: Số hiệu văn bản, Cơ quan/Người ký, Trích yếu nội dung, Ngày ban hành, Khách hàng liên quan, Các điều kiện tiên quyết cần đáp ứng trước khi giải ngân.
-   - Soát xét danh mục hồ sơ pháp lý, hồ sơ tài chính và hồ sơ bảo đảm.
+2. PHÂN TÁCH RÀNH MẠCH CÁC PHÂN HỆ (TUYỆT ĐỐI KHÔNG TRỘN LẪN):
+   - Phân hệ Văn thư (Công văn, quyết định, tờ trình, văn bản pháp quy) và Phân hệ Kho lưu trữ cá nhân (Hugging Face dataset) là HAI MẢNG ĐỘC LẬP HOÀN TOÀN.
+   - Khi người dùng hỏi về Văn thư / Công văn / Văn bản: CHỈ TRẢ LỜI VỀ VĂN THƯ. TUYỆT ĐỐI KHÔNG nhắc đến "Kho lưu trữ", "Hugging Face", "Token", "Dataset" trong câu trả lời.
+   - Khi người dùng hỏi về Kho lưu trữ / File cá nhân: CHỈ trả lời về kho lưu trữ Hugging Face.
+   - Khi người dùng hỏi về Khách hàng: CHỈ trả lời về danh sách / số lượng khách hàng.
 
-3. PHONG CÁCH PHẢN HỒI:
-   - Trả lời bằng tiếng Việt chuyên nghiệp, gãy gọn, chuẩn mực theo phong cách văn bản ngân hàng.
-   - Định dạng Markdown rõ ràng: bảng số liệu, danh mục gạch đầu dòng, bôi đậm các điểm quan trọng.
-   - Tuyệt đối không màu mè, không trả lời lan man.`;
+3. KHI HỆ THỐNG CHƯA CÓ DỮ LIỆU:
+   - Nếu chưa có văn thư: Trả lời đúng một câu: "Hiện tại trong hệ thống chưa có văn bản nào."
+   - Nếu chưa có khách hàng: Trả lời đúng một câu: "Hiện tại trong hệ thống chưa có khách hàng nào."
+   - TUYỆT ĐỐI KHÔNG vẽ bảng rỗng hoặc bảng xác nhận trạng thái kho khi hệ thống chưa có dữ liệu.
+
+4. KHI CÓ DỮ LIỆU VÀ CẦN THỐNG KÊ:
+   - Nêu ngay số lượng cụ thể và trình bày bảng Markdown tối giản chuẩn Excel.
+   - Không tự ý thêm các cột hay dòng không liên quan đến câu hỏi.
+
+5. NGHIỆP VỤ TÍN DỤNG:
+   - Nắm vững Thông tư 39/2016/TT-NHNN, Thông tư 11/2021/TT-NHNN (phân loại nợ Nhóm 1 - 5, trích lập DPRR).
+   - Phong cách giao tiếp chuẩn mực, gãy gọn, chuyên nghiệp.
+
+6. ĐỌC VÀ PHÂN TÍCH HÌNH ẢNH / TÀI LIỆU PDF (MULTIMODAL ANALYSIS):
+   - Khi người dùng gửi tệp hình ảnh (ảnh scan, chụp tài liệu, CCCD, sổ đỏ, biên bản, hóa đơn) hoặc tệp PDF:
+     • Đọc kỹ lưỡng từng trang và mọi chi tiết trong tệp/hình ảnh được đính kèm.
+     • Trích xuất chính xác các thông tin trọng tâm: Tiêu đề, số hiệu, ngày ban hành, các bên tham gia, giá trị số tiền, lãi suất, tài sản bảo đảm, con dấu, chữ ký.
+     • Phân tích tính pháp lý, cảnh báo điều khoản rủi ro tín dụng và tóm tắt nội dung súc tích theo chuẩn mực ngân hàng.
+
+7. VĂN BẢN VĂN THƯ ĐƯỢC ĐÍNH KÈM TỰ ĐỘNG:
+   - Khi ngữ cảnh có mục "NỘI DUNG VĂN BẢN VĂN THƯ ĐÃ ĐƯỢC ĐÍNH KÈM", các tệp kèm theo chính là nội dung văn bản trong sổ Văn thư mà người dùng đang hỏi tới. ĐỌC NỘI DUNG THẬT trong tệp, trả lời dựa trên đó, trích đúng số liệu (lãi suất, kỳ hạn, điều kiện, ngày hiệu lực), nêu rõ trả lời theo văn bản số nào.
+   - Không dùng danh mục tóm tắt để suy đoán nội dung; không có trong tệp thì nói "văn bản không nêu".
+   - Nếu có mục "KHÔNG ĐỌC ĐƯỢC", nói rõ với người dùng tệp nào chưa đọc được và vì sao, không bịa nội dung.`;
 
 /**
  * Xây dựng câu trả lời giả lập dự phòng khi offline hoặc không có API key
@@ -148,27 +164,98 @@ Tôi có thể hỗ trợ bạn các công việc chuyên môn:
 Bạn có thể đặt câu hỏi hoặc chọn một trong các gợi ý bên dưới để bắt đầu.`;
 }
 
+export interface StreamExtras {
+  /** Tệp văn bản (PDF/ảnh) gắn vào câu hỏi cuối của người dùng; không lưu vào lịch sử chat. */
+  attachments?: AiAttachment[];
+  /** Gọi khi không gọi được Gemini và phải dùng câu trả lời dự phòng có sẵn (không nên lưu làm bộ nhớ). */
+  onFallback?: () => void;
+}
+
+/** Nội dung gửi Gemini: chữ và tệp của từng tin, cộng tệp bổ sung vào tin người dùng cuối. */
+export function buildContents(messages: AiChatMessage[], extraAttachments: AiAttachment[] = []) {
+  const lastUser = messages.map((m) => m.role).lastIndexOf('user');
+  return messages.map((m, idx) => {
+    const parts: any[] = [];
+    if (m.content && m.content.trim()) parts.push({ text: m.content });
+    const atts = [...(m.attachments ?? []), ...(idx === lastUser ? extraAttachments : [])];
+    for (const att of atts) {
+      if (att.base64Data && att.mimeType) parts.push({ inline_data: { mime_type: att.mimeType, data: att.base64Data } });
+    }
+    if (parts.length === 0) parts.push({ text: ' ' });
+    return { role: m.role === 'assistant' ? 'model' : 'user', parts };
+  });
+}
+
+/** Trả lời hội thoại không cần suy luận dài: giảm "thinking" để phản hồi đầu tiên đến nhanh. */
+export function thinkingConfigFor(model: string): Record<string, unknown> | undefined {
+  if (/^gemini-2\.5/.test(model)) return { thinkingBudget: 0 };
+  if (/^gemini-3/.test(model)) return { thinkingLevel: 'low' };
+  return undefined;
+}
+
+// Model đã trả 404 trong phiên này thì không thử lại ở mỗi câu hỏi (mỗi lần thử là một vòng mạng)
+const unavailableModels = new Set<string>();
+
+export function resetModelMemory(): void {
+  unavailableModels.clear();
+}
+
+const HEADER_TIMEOUT_MS = 15_000;
+const HEADER_TIMEOUT_WITH_FILES_MS = 45_000;
+
+/**
+ * Mở luồng SSE. Hạn chờ chỉ áp cho tới khi có phản hồi đầu: dùng AbortSignal.timeout sẽ cắt ngang
+ * cả luồng trả lời dài. Trả null nếu model không dùng được (đã ghi nhớ nếu là 404).
+ */
+async function openStream(model: string, apiKey: string, payload: any, timeoutMs: number): Promise<Response | null> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
+  const post = async (body: any) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  const thinking = thinkingConfigFor(model);
+  let res = await post(thinking ? { ...payload, generationConfig: { ...payload.generationConfig, thinkingConfig: thinking } } : payload);
+  // Cấu hình thinking bị từ chối thì thử lại đúng model đó không kèm thinking
+  if (res.status === 400 && thinking) res = await post(payload);
+  if (res.status === 404) unavailableModels.add(model);
+  return res.ok && res.body ? res : null;
+}
+
 /**
  * Stream phản hồi từ Gemini API với cơ chế tự động chuyển model fallback
  */
 export async function* streamGeminiContent(
   messages: AiChatMessage[],
   docContext?: string,
-  model = DEFAULT_AI_MODEL
+  model = DEFAULT_AI_MODEL,
+  systemContext?: SystemContextData,
+  extras: StreamExtras = {}
 ): AsyncGenerator<string, void, unknown> {
   const apiKey = getGeminiApiKey();
 
-  // Chuẩn bị nội dung gửi cho Gemini
-  const candidateModels = Array.from(new Set([model, ...FALLBACK_AI_MODELS]));
-
-  const contents = messages.map((m) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
-  }));
+  const candidateModels = Array.from(new Set([model, ...FALLBACK_AI_MODELS])).filter((m) => !unavailableModels.has(m));
+  const contents = buildContents(messages, extras.attachments);
 
   let systemPrompt = SYSTEM_INSTRUCTION;
+
+  // Bơm dữ liệu thời gian thực của hệ thống vào System Prompt
+  if (systemContext) {
+    systemPrompt += `
+
+${formatSystemContextPrompt(systemContext)}`;
+  }
+
   if (docContext) {
-    systemPrompt += `\n\nNGỮ CẢNH VĂN BẢN ĐANG XEM XÉT:\n${docContext}`;
+    systemPrompt += `
+
+NGỮ CẢNH VĂN BẢN ĐANG XEM XÉT:
+${docContext}`;
   }
 
   const payload = {
@@ -177,7 +264,7 @@ export async function* streamGeminiContent(
     },
     contents,
     generationConfig: {
-      temperature: 0.6,
+      temperature: 0.4,
       maxOutputTokens: 4096,
     },
   };
@@ -185,30 +272,24 @@ export async function* streamGeminiContent(
   let response: Response | null = null;
 
   if (apiKey) {
+    const timeoutMs = extras.attachments?.length ? HEADER_TIMEOUT_WITH_FILES_MS : HEADER_TIMEOUT_MS;
     for (const cand of candidateModels) {
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cand)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(12000),
-        });
-
-        if (res.ok && res.body) {
-          response = res;
-          break;
-        }
+        response = await openStream(cand, apiKey, payload, timeoutMs);
+        if (response) break;
       } catch {
         // Thử model tiếp theo
       }
     }
   }
 
-  // Nếu không gọi được Gemini (offline / rate limit / chưa cấu hình key), dùng fallback thông minh
+  // Nếu không gọi được Gemini (offline / rate limit / chưa cấu hình key / API overloaded), dùng fallback thông minh
   if (!response || !response.body) {
+    extras.onFallback?.();
     const lastUserMessage = messages[messages.length - 1]?.content || '';
-    const fallbackText = buildFallbackResponse(lastUserMessage, docContext);
+    // Thử trả lời trực tiếp từ dữ liệu hệ thống trước
+    const directAns = systemContext ? buildDirectSystemDataResponse(lastUserMessage, systemContext) : null;
+    const fallbackText = directAns || buildFallbackResponse(lastUserMessage, docContext);
 
     // Stream từng từ một tạo hiệu ứng typing mượt mà
     const words = fallbackText.split(' ');

@@ -83,7 +83,7 @@ function AppLayoutContent() {
       />
 
       <div className="flex flex-1 pt-[56px] relative w-full">
-        <main className={`flex-1 ${isSidebarCollapsed ? 'md:ml-0' : 'md:ml-64'} transition-[margin] duration-200 min-w-0 px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4 overflow-y-auto relative z-10 w-full`}>
+        <main className={`flex-1 ${isSidebarCollapsed ? 'md:ml-0' : 'md:ml-64'} transition-[margin] duration-200 min-w-0 px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4 overflow-y-auto relative w-full`}>
           <ErrorBoundary title="Lỗi khi tải giao diện màn hình">
             {ready ? (
               // key = phạm vi tài khoản: đổi tài khoản thì remount để mọi màn nạp lại đúng dữ liệu
@@ -112,6 +112,7 @@ function AppLayoutContent() {
       <AiChatDialog
         isOpen={isAiDialogOpen}
         onClose={() => setIsAiDialogOpen(false)}
+        mode="drawer"
       />
     </div>
   );

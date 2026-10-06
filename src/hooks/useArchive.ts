@@ -6,20 +6,15 @@ import { useAuth } from '../context/AuthContext';
 import { fetchHfAuth } from '../lib/huggingface/hfConfigApi';
 import { listHfTree } from '../lib/huggingface/hfClient';
 import { listStorageRepos } from '../lib/api/storageReposApi';
-import { listDispatches } from '../lib/dispatch/dispatchStorage';
 import { mergeHfTreeWithDispatches, collectFolders } from '../lib/dispatch/mergeArchive';
 import { classifyArchiveError, type ArchiveStatus } from '../lib/huggingface/hfStatus';
-import { dispatchRepoOf, reposForStorage, toHfConfig } from '../lib/storageRepos';
-
-export type ArchiveMode = 'storage' | 'dispatch';
+import { reposForStorage, toHfConfig } from '../lib/storageRepos';
 
 /**
- * Nạp kho lưu trữ dùng chung cho hai màn:
- * - 'storage': các repo user được thấy (Kho chung, kho cá nhân), chọn được repo;
- * - 'dispatch': repo Văn thư duy nhất, kèm metadata từ bảng Dispatches.
- * Mọi lỗi được phân loại thành `status`, không để danh sách rỗng im lặng.
+ * Nạp Kho lưu trữ: các repo tài khoản được thấy (Kho chung, Văn thư cho admin, kho cá nhân),
+ * chọn được repo, kèm cây tệp. Mọi lỗi được phân loại thành `status`, không để danh sách rỗng im lặng.
  */
-export function useArchive(mode: ArchiveMode) {
+export function useArchive() {
   const { role, user } = useAuth();
   const userId = user?.id ?? null;
 
@@ -48,13 +43,7 @@ export function useArchive(mode: ArchiveMode) {
     void reloadRepos();
   }, [reloadRepos]);
 
-  const candidates = useMemo(() => {
-    if (mode === 'dispatch') {
-      const r = dispatchRepoOf(allRepos);
-      return r ? [r] : [];
-    }
-    return reposForStorage(allRepos, role, userId);
-  }, [mode, allRepos, role, userId]);
+  const candidates = useMemo(() => reposForStorage(allRepos, role, userId), [allRepos, role, userId]);
 
   const selectedRepo = useMemo(
     () => candidates.find((r) => r.id === selectedRepoId) ?? candidates[0] ?? null,
@@ -78,11 +67,8 @@ export function useArchive(mode: ArchiveMode) {
     }
     setFileStatus({ kind: 'loading' });
     try {
-      const [tree, dispatches] = await Promise.all([
-        listHfTree(repoId, folder ?? '', token, true),
-        mode === 'dispatch' ? listDispatches(repoId) : Promise.resolve([] as DispatchDocument[]),
-      ]);
-      setDocuments(mergeHfTreeWithDispatches(tree, dispatches, new Date().toISOString(), repoId));
+      const tree = await listHfTree(repoId, folder ?? '', token, true);
+      setDocuments(mergeHfTreeWithDispatches(tree, [], new Date().toISOString(), repoId));
       setFolders(collectFolders(tree));
       setFileStatus({ kind: 'ready' });
     } catch (err) {
@@ -90,7 +76,7 @@ export function useArchive(mode: ArchiveMode) {
       setFolders([]);
       setFileStatus(classifyArchiveError(err));
     }
-  }, [mode, repoId, folder, token]);
+  }, [repoId, folder, token]);
 
   useEffect(() => {
     if (metaStatus.kind === 'ready') void reload();

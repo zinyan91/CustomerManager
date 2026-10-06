@@ -1,3 +1,12 @@
+export interface AiAttachment {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  base64Data: string;
+  previewUrl?: string;
+}
+
 export interface AiChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -5,6 +14,9 @@ export interface AiChatMessage {
   createdAt: string;
   attachedDocumentId?: string;
   attachedDocumentTitle?: string;
+  /** Trả lời lấy từ bộ nhớ dùng chung (người khác đã hỏi), không đọc lại văn bản. */
+  fromCache?: boolean;
+  attachments?: AiAttachment[];
 }
 
 export interface AiThreadSummary {
@@ -30,6 +42,16 @@ export interface StarterPrompt {
 }
 
 export const BANKING_STARTER_PROMPTS: StarterPrompt[] = [
+  {
+    title: 'Thống kê toàn bộ văn thư hệ thống',
+    badge: 'Kho văn thư',
+    prompt: 'Hiện tại trong hệ thống có bao nhiêu văn thư? Hãy thống kê chi tiết số lượng theo loại hình và lập danh mục cụ thể.',
+  },
+  {
+    title: 'Tổng quan danh sách khách hàng',
+    badge: 'Khách hàng',
+    prompt: 'Thống kê tổng số khách hàng hiện có trong hệ thống và danh sách thông tin cơ bản.',
+  },
   {
     title: 'Quy định phân loại nợ & trích lập dự phòng',
     badge: 'TT 11/2021',

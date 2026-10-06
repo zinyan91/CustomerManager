@@ -43,25 +43,3 @@ export interface DispatchDocument {
   createdAt: string;
   updatedAt: string;
 }
-
-export interface DispatchFilter {
-  search: string;
-  documentType: string;
-  customerId: number | 'all';
-  folderPath?: string;
-  dateFrom: string;
-  dateTo: string;
-}
-
-export interface DispatchUploadPayload {
-  file: File;
-  documentNumber: string;
-  title: string;
-  documentType: DispatchDocumentType;
-  issuer: string;
-  documentDate: string;
-  receivedDate: string;
-  customerId: number | null;
-  folderPath?: string;
-  note?: string;
-}

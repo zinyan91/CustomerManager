@@ -1,10 +1,16 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
-import type { DispatchDocument } from '../../types/dispatch';
+import { render, screen, cleanup, fireEvent, within, waitFor } from '@testing-library/react';
+import type { OfficialDoc } from '../../types/officialDoc';
 
-const state = vi.hoisted(() => ({ role: 'user', archive: null as unknown }));
+const state = vi.hoisted(() => ({
+  role: 'user',
+  hook: null as unknown,
+  deleteDoc: vi.fn(),
+  saveDoc: vi.fn(),
+  fetchBlob: vi.fn(),
+}));
 
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({
@@ -12,7 +18,6 @@ vi.mock('../../context/AuthContext', () => ({
     user: { id: 'u' },
     can: (cap: string) => {
       const granted: Record<string, string[]> = {
-        'storage.configure': ['master_admin'],
         'storage.delete': ['master_admin', 'user_admin'],
         'dispatch.upload': ['master_admin', 'user_admin'],
       };
@@ -20,135 +25,321 @@ vi.mock('../../context/AuthContext', () => ({
     },
   }),
 }));
-vi.mock('../../hooks/useArchive', () => ({ useArchive: () => state.archive }));
-vi.mock('../ai/AiChatDialog', () => ({ AiChatDialog: () => null }));
-vi.mock('../dispatch/DispatchPreviewModal', () => ({ DispatchPreviewModal: () => null }));
-vi.mock('../dispatch/DispatchUploadModal', () => ({
-  DispatchUploadModal: (p: { isOpen: boolean; defaultCategory: string; rootFolder: string }) =>
-    p.isOpen ? <div>UPLOAD {p.defaultCategory} @{p.rootFolder}</div> : null,
+vi.mock('../../hooks/useOfficialDocs', () => ({ useOfficialDocs: () => state.hook }));
+vi.mock('../../hooks/useHfToken', () => ({ useHfToken: () => ({ token: 'hf_t', error: null }) }));
+vi.mock('../ai/AiChatDialog', () => ({ AiChatDialog: ({ isOpen }: { isOpen: boolean }) => (isOpen ? <div>AI CHAT</div> : null) }));
+vi.mock('../dispatch/HfFilePickerModal', () => ({
+  HfFilePickerModal: () => <div>PICKER</div>,
+  pickedKey: (r: string, p: string) => `${r}/${p}`,
 }));
-vi.mock('../storage/StorageSettingsModal', () => ({
-  StorageSettingsModal: ({ isOpen }: { isOpen: boolean }) => (isOpen ? <div>MODAL CẤU HÌNH</div> : null),
+vi.mock('../../lib/api/officialDocApi', () => ({
+  deleteOfficialDoc: state.deleteDoc,
+  saveOfficialDoc: state.saveDoc,
 }));
-vi.mock('../../lib/supabase', () => ({
-  supabase: {
-    from: () => ({
-      select: () => ({ order: () => Promise.resolve({ data: [], error: null }) }),
-    }),
-  },
+vi.mock('../../lib/officialDoc/docFiles', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../lib/officialDoc/docFiles')>()),
+  fetchDocFileBlob: state.fetchBlob,
 }));
 
 import { DispatchManagementView } from '../views/DispatchManagementView';
 
-const doc = (id: string, title: string, folderPath: string, documentType: DispatchDocument['documentType']): DispatchDocument => ({
-  id,
-  documentNumber: `S${id}`,
-  title,
-  documentType,
-  issuer: 'NH',
-  documentDate: '2026-01-01',
-  receivedDate: '2026-01-02',
-  customerId: null,
-  fileName: `${title}.pdf`,
-  fileSize: 1024,
-  fileType: 'application/pdf',
-  fileUrl: 'u',
-  filePath: `${folderPath}/${title}.pdf`,
-  folderPath,
-  repoId: 'own/van-thu-tin-dung',
-  storageProvider: 'huggingface',
+const doc = (over: Partial<OfficialDoc> = {}): OfficialDoc => ({
+  id: '1',
+  category: 'van-ban',
+  docNumber: '2753/2026/TB-BĐH',
+  title: 'Chương trình lãi suất cho vay trung dài hạn KHCN',
+  issuedDate: '2026-09-18',
+  effectiveFrom: '2026-09-21',
+  effectiveTo: '2026-10-31',
+  files: [
+    { kind: 'goc', repoId: 'o/kho', path: 'vb/2753.pdf', name: '2753.pdf' },
+    { kind: 'bieu-mau', repoId: 'o/kho', path: 'vb/BM01.docx', name: 'BM01.docx' },
+  ],
   createdAt: '',
   updatedAt: '',
+  ...over,
 });
 
-const DOCS = [
-  doc('1', 'Quyết định 112', 'van-thu/van-ban/2026', 'quyet_dinh'),
-  doc('2', 'Hợp đồng Alpha', 'van-thu/hop-dong/2026', 'hop_dong'),
-  doc('3', 'Hợp đồng Beta', 'van-thu/hop-dong/2025', 'hop_dong'),
-  doc('4', 'Công văn 9', 'van-thu/cong-van/2026', 'cong_van'),
-];
+const makeHook = (over: Record<string, unknown> = {}) => ({
+  filter: { search: '', category: 'all', status: 'all', issuedFrom: '', issuedTo: '' },
+  updateFilter: vi.fn(),
+  resetFilters: vi.fn(),
+  page: 1,
+  setPage: vi.fn(),
+  pageCount: 1,
+  docs: [doc(), doc({ id: '2', docNumber: 'HD-01', title: 'Hợp đồng mẫu', category: 'hop-dong', files: [] })],
+  total: 2,
+  counts: { all: 6, 'van-ban': 3, 'hop-dong': 2, 'cong-van': 1, khac: 0 },
+  loading: false,
+  error: null,
+  reload: vi.fn(),
+  ...over,
+});
 
 beforeEach(() => {
   state.role = 'user';
-  state.archive = {
-    auth: { token: 't' },
-    allRepos: [],
-    config: { token: 't', repoId: 'own/van-thu-tin-dung', folder: 'van-thu' },
-    documents: DOCS,
-    setDocuments: vi.fn(),
-    status: { kind: 'ready' },
-    reload: vi.fn().mockResolvedValue(undefined),
-    reloadRepos: vi.fn(),
-  };
+  state.hook = makeHook();
+  state.deleteDoc.mockReset();
+  state.saveDoc.mockReset();
+  state.fetchBlob.mockReset();
 });
 afterEach(cleanup);
 
 const nav = () => screen.getByRole('navigation', { name: 'Mục văn thư' });
 
-describe('Văn thư - sidebar riêng', () => {
-  it('có đủ Tất cả, Văn bản, Hợp đồng, Công văn, Khác kèm số lượng', () => {
+describe('Văn thư - sidebar và danh sách', () => {
+  it('sidebar có Tất cả và bốn mục kèm số lượng từ máy chủ', () => {
     render(<DispatchManagementView />);
     const items = within(nav()).getAllByRole('button').map((b) => b.textContent);
-    expect(items).toEqual(['Tất cả4', 'Văn bản1', 'Hợp đồng2', 'Công văn1', 'Khác0']);
+    expect(items).toEqual(['Tất cả6', 'Văn bản3', 'Hợp đồng2', 'Công văn1', 'Khác0']);
   });
 
-  it('chọn một mục thì chỉ còn văn bản của mục đó', () => {
+  it('chọn mục thì đổi bộ lọc mục', () => {
+    const hook = makeHook();
+    state.hook = hook;
     render(<DispatchManagementView />);
     fireEvent.click(within(nav()).getByRole('button', { name: /Hợp đồng/ }));
-
-    expect(screen.getByText('Hợp đồng Alpha')).toBeTruthy();
-    expect(screen.getByText('Hợp đồng Beta')).toBeTruthy();
-    expect(screen.queryByText('Quyết định 112')).toBeNull();
-    expect(screen.queryByText('Công văn 9')).toBeNull();
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Hợp đồng');
+    expect(hook.updateFilter).toHaveBeenCalledWith({ category: 'hop-dong' });
   });
 
-  it('mục đang chọn được đánh dấu aria-current', () => {
+  it('mục đang chọn được đánh dấu và đặt làm tiêu đề trang', () => {
+    state.hook = makeHook({ filter: { ...makeHook().filter, category: 'cong-van' } });
     render(<DispatchManagementView />);
-    fireEvent.click(within(nav()).getByRole('button', { name: /Công văn/ }));
     expect(within(nav()).getByRole('button', { name: /Công văn/ }).getAttribute('aria-current')).toBe('page');
-    expect(within(nav()).getByRole('button', { name: /Tất cả/ }).getAttribute('aria-current')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Công văn');
+  });
+
+  it('hiện số hiệu, loại, ba ngày và tình trạng của từng văn bản', () => {
+    render(<DispatchManagementView />);
+    const row = screen.getByText('2753/2026/TB-BĐH').closest('tr') as HTMLElement;
+    expect(screen.queryByText('Loại văn bản')).toBeNull();
+    expect(within(row).getByText('18/09/2026')).toBeTruthy();
+    expect(within(row).getByText('21/09/2026')).toBeTruthy();
+    expect(within(row).getByText('31/10/2026')).toBeTruthy();
+  });
+
+  it('gõ vào ô tìm kiếm và đổi bộ lọc loại, tình trạng gọi updateFilter', () => {
+    const hook = makeHook();
+    state.hook = hook;
+    render(<DispatchManagementView />);
+    fireEvent.change(screen.getByLabelText('Tìm văn bản'), { target: { value: 'lai suat' } });
+    fireEvent.change(screen.getByLabelText('Lọc tình trạng'), { target: { value: 'expired' } });
+    expect(hook.updateFilter).toHaveBeenCalledWith({ search: 'lai suat' });
+    expect(screen.queryByLabelText('Lọc loại văn bản')).toBeNull();
+    expect(hook.updateFilter).toHaveBeenCalledWith({ status: 'expired' });
+  });
+
+  it('phân trang gọi setPage và khóa nút ở trang đầu/cuối', () => {
+    const hook = makeHook({ page: 2, pageCount: 3, total: 40 });
+    state.hook = hook;
+    render(<DispatchManagementView />);
+    fireEvent.click(screen.getByRole('button', { name: 'Trang sau' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Trang trước' }));
+    expect(hook.setPage).toHaveBeenNthCalledWith(1, 3);
+    expect(hook.setPage).toHaveBeenNthCalledWith(2, 1);
+    expect(screen.getByText('Trang 2/3')).toBeTruthy();
+  });
+
+  it('danh sách rỗng và đang tải hiện thông báo tương ứng', () => {
+    state.hook = makeHook({ docs: [], total: 0, loading: true });
+    const { unmount } = render(<DispatchManagementView />);
+    expect(screen.getByText(/Đang tải văn bản/)).toBeTruthy();
+    unmount();
+    state.hook = makeHook({ docs: [], total: 0 });
+    render(<DispatchManagementView />);
+    expect(screen.getByText(/Không có văn bản nào phù hợp/)).toBeTruthy();
+  });
+
+  it('lỗi từ máy chủ được hiện rõ, không để danh sách rỗng im lặng', () => {
+    state.hook = makeHook({ docs: [], total: 0, error: 'Không tìm được văn bản: boom' });
+    render(<DispatchManagementView />);
+    expect(screen.getByRole('alert').textContent).toMatch(/boom/);
   });
 });
 
 describe('Văn thư - phân quyền', () => {
-  it('user chỉ xem và tải: không có nút tải lên, không có nút xóa, không có cấu hình', () => {
+  it('user chỉ xem: không có Thêm, Sửa, Xóa', () => {
     render(<DispatchManagementView />);
-    expect(screen.queryByRole('button', { name: /Tải văn thư mới/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Thêm văn bản/ })).toBeNull();
+    expect(screen.queryByTitle('Sửa văn bản')).toBeNull();
     expect(screen.queryByTitle('Xóa văn bản này')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Cấu hình kho lưu trữ' })).toBeNull();
   });
 
-  it('User Admin upload được và nơi bỏ vào mặc định theo mục đang chọn; không có cấu hình', () => {
+  it('User Admin thêm, sửa, xóa được', () => {
     state.role = 'user_admin';
     render(<DispatchManagementView />);
-    fireEvent.click(within(nav()).getByRole('button', { name: /Hợp đồng/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Tải văn thư mới/ }));
-
-    expect(screen.getByText('UPLOAD hop-dong @van-thu')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Cấu hình kho lưu trữ' })).toBeNull();
-    expect(screen.getAllByTitle('Xóa văn bản này').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Thêm văn bản/ })).toBeTruthy();
+    expect(screen.getAllByTitle('Sửa văn bản')).toHaveLength(2);
+    expect(screen.getAllByTitle('Xóa văn bản này')).toHaveLength(2);
   });
 
-  it('mục Tất cả thì mặc định bỏ vào Văn bản', () => {
+  it('thêm văn bản mở form với mục mặc định theo mục đang xem', () => {
     state.role = 'master_admin';
+    state.hook = makeHook({ filter: { ...makeHook().filter, category: 'hop-dong' } });
     render(<DispatchManagementView />);
-    fireEvent.click(screen.getByRole('button', { name: /Tải văn thư mới/ }));
-    expect(screen.getByText('UPLOAD van-ban @van-thu')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Thêm văn bản/ }));
+    expect((screen.getByLabelText('Mục') as HTMLSelectElement).value).toBe('hop-dong');
   });
 
-  it('chỉ Master Admin thấy nút cấu hình', () => {
+  it('lưu form gọi API rồi tải lại danh sách', async () => {
     state.role = 'master_admin';
+    const hook = makeHook();
+    state.hook = hook;
+    state.saveDoc.mockResolvedValue(doc());
     render(<DispatchManagementView />);
-    fireEvent.click(screen.getByRole('button', { name: 'Cấu hình kho lưu trữ' }));
-    expect(screen.getByText('MODAL CẤU HÌNH')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Thêm văn bản/ }));
+    fireEvent.change(screen.getByLabelText('Số hiệu'), { target: { value: 'S1' } });
+    fireEvent.change(screen.getByLabelText('Tiêu đề'), { target: { value: 'Tiêu đề 1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu văn bản' }));
+
+    await waitFor(() => expect(hook.reload).toHaveBeenCalled());
+    expect(state.saveDoc).toHaveBeenCalledWith(null, expect.objectContaining({ docNumber: 'S1', title: 'Tiêu đề 1' }));
+    expect(screen.queryByRole('dialog', { name: 'Thêm văn bản' })).toBeNull();
   });
 
-  it('chưa cấu hình repo: admin không có nút tải lên và thấy hướng dẫn tạo repo', () => {
-    state.role = 'master_admin';
-    state.archive = { ...(state.archive as object), config: null, status: { kind: 'no_repo' }, documents: [] };
+  it('xóa: xác nhận rồi gọi API và tải lại; không xác nhận thì không xóa', async () => {
+    state.role = 'user_admin';
+    const hook = makeHook();
+    state.hook = hook;
+    state.deleteDoc.mockResolvedValue(undefined);
+    const confirm = vi.spyOn(window, 'confirm');
+
+    confirm.mockReturnValueOnce(false);
     render(<DispatchManagementView />);
-    expect(screen.queryByRole('button', { name: /Tải văn thư mới/ })).toBeNull();
-    expect(screen.getByRole('alert').textContent).toMatch(/tạo repo/);
+    fireEvent.click(screen.getAllByTitle('Xóa văn bản này')[0]);
+    expect(state.deleteDoc).not.toHaveBeenCalled();
+
+    confirm.mockReturnValueOnce(true);
+    fireEvent.click(screen.getAllByTitle('Xóa văn bản này')[0]);
+    await waitFor(() => expect(hook.reload).toHaveBeenCalled());
+    expect(state.deleteDoc).toHaveBeenCalledWith('1');
+    confirm.mockRestore();
+  });
+
+  it('xóa bị từ chối (RLS) thì hiện lỗi và không tải lại', async () => {
+    state.role = 'user_admin';
+    const hook = makeHook();
+    state.hook = hook;
+    state.deleteDoc.mockRejectedValue(new Error('Không xóa được văn bản: không đủ quyền'));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<DispatchManagementView />);
+    fireEvent.click(screen.getAllByTitle('Xóa văn bản này')[0]);
+    expect((await screen.findByRole('alert')).textContent).toMatch(/không đủ quyền/);
+    expect(hook.reload).not.toHaveBeenCalled();
+  });
+});
+
+describe('Văn thư - xem chi tiết và mở tệp', () => {
+  const openDetail = () => {
+    render(<DispatchManagementView />);
+    fireEvent.click(screen.getByRole('button', { name: 'Xem văn bản 2753/2026/TB-BĐH' }));
+    return screen.getByRole('dialog', { name: 'Xem văn bản' });
+  };
+
+  it('hiện đủ các trường và hai nhóm tệp', () => {
+    const dlg = openDetail();
+    expect(within(dlg).getByText('2753/2026/TB-BĐH')).toBeTruthy();
+    expect(within(dlg).queryByText('Loại văn bản')).toBeNull();
+    expect(within(dlg).getByText('File văn bản gốc')).toBeTruthy();
+    expect(within(dlg).getByText('File biểu mẫu')).toBeTruthy();
+    expect(within(dlg).getByText('31/10/2026')).toBeTruthy();
+  });
+
+  it('PDF có Xem và Tải về, tệp Word chỉ có Tải về', () => {
+    const dlg = openDetail();
+    const pdf = within(dlg).getByText('2753.pdf').closest('li') as HTMLElement;
+    const word = within(dlg).getByText('BM01.docx').closest('li') as HTMLElement;
+    expect(within(pdf).getByRole('button', { name: 'Xem' })).toBeTruthy();
+    expect(within(pdf).getByRole('button', { name: 'Tải về' })).toBeTruthy();
+    expect(within(word).queryByRole('button', { name: 'Xem' })).toBeNull();
+    expect(within(word).getByRole('button', { name: 'Tải về' })).toBeTruthy();
+  });
+
+  it('Xem tải tệp từ Kho bằng token rồi mở trong tab mới', async () => {
+    const tab = { location: { href: '' }, close: vi.fn() };
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    const original = URL.createObjectURL;
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:pdf');
+    state.fetchBlob.mockResolvedValue(new Blob(['x']));
+    try {
+      const dlg = openDetail();
+      fireEvent.click(within(within(dlg).getByText('2753.pdf').closest('li') as HTMLElement).getByRole('button', { name: 'Xem' }));
+      await waitFor(() => expect(tab.location.href).toBe('blob:pdf'));
+      expect(state.fetchBlob).toHaveBeenCalledWith(expect.objectContaining({ path: 'vb/2753.pdf', repoId: 'o/kho' }), 'hf_t');
+    } finally {
+      URL.createObjectURL = original;
+    }
+  });
+
+  it('tệp đã bị xóa khỏi Kho: đóng tab trống và báo lỗi', async () => {
+    const tab = { location: { href: '' }, close: vi.fn() };
+    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    state.fetchBlob.mockRejectedValue(new Error('Tệp "2753.pdf" không còn trong Kho lưu trữ.'));
+    const dlg = openDetail();
+    fireEvent.click(within(within(dlg).getByText('2753.pdf').closest('li') as HTMLElement).getByRole('button', { name: 'Xem' }));
+    expect((await within(dlg).findByRole('alert')).textContent).toMatch(/không còn trong Kho lưu trữ/);
+    expect(tab.close).toHaveBeenCalled();
+  });
+
+  it('trình duyệt chặn tab mới thì báo, không gọi mạng', async () => {
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    const dlg = openDetail();
+    fireEvent.click(within(within(dlg).getByText('2753.pdf').closest('li') as HTMLElement).getByRole('button', { name: 'Xem' }));
+    expect((await within(dlg).findByRole('alert')).textContent).toMatch(/chặn tab mới/);
+    expect(state.fetchBlob).not.toHaveBeenCalled();
+  });
+
+  it('đóng chi tiết', () => {
+    const dlg = openDetail();
+    fireEvent.click(within(dlg).getByRole('button', { name: 'Đóng' }));
+    expect(screen.queryByRole('dialog', { name: 'Xem văn bản' })).toBeNull();
+  });
+});
+
+describe('Văn thư - nút Tải về ở cột Thao tác', () => {
+  const stubUrl = () => {
+    const original = URL.createObjectURL;
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:dl');
+    return () => {
+      URL.createObjectURL = original;
+    };
+  };
+
+  it('tiêu đề là chữ thường, không còn là liên kết; Xem và Tải về là nút ở cột Thao tác', () => {
+    render(<DispatchManagementView />);
+    const row = screen.getByText('2753/2026/TB-BĐH').closest('tr') as HTMLElement;
+    expect(within(row).getByText('Chương trình lãi suất cho vay trung dài hạn KHCN').closest('button')).toBeNull();
+    expect(within(row).getByRole('button', { name: 'Xem văn bản 2753/2026/TB-BĐH' })).toBeTruthy();
+    expect(within(row).getByRole('button', { name: 'Tải về văn bản 2753/2026/TB-BĐH' })).toBeTruthy();
+  });
+
+  it('bấm Tải về lấy tệp gốc từ Kho bằng token chung rồi tải xuống', async () => {
+    const restore = stubUrl();
+    state.fetchBlob.mockResolvedValue(new Blob(['x']));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    try {
+      render(<DispatchManagementView />);
+      fireEvent.click(screen.getByRole('button', { name: 'Tải về văn bản 2753/2026/TB-BĐH' }));
+      await waitFor(() => expect(click).toHaveBeenCalled());
+      expect(state.fetchBlob).toHaveBeenCalledWith(expect.objectContaining({ kind: 'goc', path: 'vb/2753.pdf' }), 'hf_t');
+    } finally {
+      click.mockRestore();
+      restore();
+    }
+  });
+
+  it('văn bản chưa có tệp thì nút Tải về bị khóa', () => {
+    render(<DispatchManagementView />);
+    const btn = screen.getByRole('button', { name: 'Tải về văn bản HD-01' }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    fireEvent.click(btn);
+    expect(state.fetchBlob).not.toHaveBeenCalled();
+  });
+
+  it('tệp đã bị xóa khỏi Kho: hiện lỗi rõ ràng ở đầu trang', async () => {
+    state.fetchBlob.mockRejectedValue(new Error('Tệp "2753.pdf" không còn trong Kho lưu trữ.'));
+    render(<DispatchManagementView />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tải về văn bản 2753/2026/TB-BĐH' }));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/không còn trong Kho lưu trữ/);
   });
 });

@@ -52,21 +52,18 @@ export function mapRepoRow(row: {
 }
 
 /**
- * Repo hiện trong màn Kho lưu trữ (không gồm Văn thư).
- * Admin thấy mọi repo; user thấy Kho chung và repo gán cho mình.
+ * Repo hiện trong màn Kho lưu trữ.
+ * Admin thấy mọi repo, kể cả kho Văn thư (nơi để tệp cho các văn bản); user thấy Kho chung
+ * và repo gán cho mình.
  */
 export function reposForStorage(repos: StorageRepo[], role: string | null | undefined, userId: string | null): StorageRepo[] {
-  const list = repos.filter((r) => r.kind !== 'dispatch').filter((r) => {
+  const list = repos.filter((r) => {
     if (isAdminRole(role)) return true;
     return r.kind === 'shared' || (r.kind === 'personal' && r.assignedUserId !== null && r.assignedUserId === userId);
   });
-  // Kho chung đứng đầu, rồi kho của chính mình, rồi các kho cá nhân khác
-  const rank = (r: StorageRepo) => (r.kind === 'shared' ? 0 : r.assignedUserId === userId ? 1 : 2);
+  // Kho chung đứng đầu, rồi Văn thư, rồi kho của chính mình, rồi các kho cá nhân khác
+  const rank = (r: StorageRepo) => (r.kind === 'shared' ? 0 : r.kind === 'dispatch' ? 1 : r.assignedUserId === userId ? 2 : 3);
   return [...list].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'vi'));
-}
-
-export function dispatchRepoOf(repos: StorageRepo[]): StorageRepo | null {
-  return repos.find((r) => r.kind === 'dispatch') ?? null;
 }
 
 /** Nhãn hiển thị; ownerName là tên người được gán (dùng cho admin xem kho của người khác). */

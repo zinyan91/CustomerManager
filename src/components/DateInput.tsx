@@ -14,6 +14,7 @@ export interface DateInputProps {
   id?: string;
   name?: string;
   format?: DateFormat;
+  ariaLabel?: string;
 }
 
 const REGEX_YYYY_MM_DD = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/;
@@ -136,6 +137,7 @@ export const DateInput = memo<DateInputProps>(({
   id,
   name,
   format: propFormat,
+  ariaLabel,
 }) => {
   const { dateFormat: globalFormat } = useDateFormat();
   const activeFormat = propFormat || globalFormat || 'dd/mm/yyyy';
@@ -217,6 +219,7 @@ export const DateInput = memo<DateInputProps>(({
         type="text"
         id={id}
         name={name}
+        aria-label={ariaLabel}
         value={displayText}
         onChange={handleTextChange}
         onBlur={handleBlur}

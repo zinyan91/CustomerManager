@@ -28,7 +28,7 @@ export function AiMarkdownMessage({ content }: { content: string }) {
             <tr className="bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 font-semibold text-slate-800 dark:text-slate-200">
               {headerRow.map((h, i) => (
                 <th key={i} className="px-3 py-2 border-r last:border-r-0 border-slate-300 dark:border-slate-700 font-medium">
-                  {h}
+                  {renderFormattedInline(h)}
                 </th>
               ))}
             </tr>
@@ -38,7 +38,7 @@ export function AiMarkdownMessage({ content }: { content: string }) {
               <tr key={ri} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                 {r.map((c, ci) => (
                   <td key={ci} className="px-3 py-1.5 border-r last:border-r-0 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
-                    {c}
+                    {renderFormattedInline(c)}
                   </td>
                 ))}
               </tr>

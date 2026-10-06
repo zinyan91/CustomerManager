@@ -5,7 +5,6 @@ import {
   mergeHfTreeWithDispatches,
   collectFolders,
   guessMime,
-  isPersistedDispatch,
 } from '../mergeArchive';
 
 const NOW = '2026-10-06T00:00:00.000Z';
@@ -60,7 +59,6 @@ describe('mergeHfTreeWithDispatches', () => {
   it('tệp chưa có metadata được dựng bản ghi tạm với id hf_', () => {
     const out = mergeHfTreeWithDispatches([file('van-thu/a b.pdf')], [], NOW);
     expect(out[0].id.startsWith('hf_')).toBe(true);
-    expect(isPersistedDispatch(out[0])).toBe(false);
     expect(out[0].folderPath).toBe('van-thu');
     expect(out[0].fileType).toBe('application/pdf');
     expect(out[0].createdAt).toBe(NOW);
@@ -70,10 +68,6 @@ describe('mergeHfTreeWithDispatches', () => {
   it('bỏ metadata mà tệp đã biến mất khỏi HF, và bỏ qua thư mục', () => {
     const out = mergeHfTreeWithDispatches([dir('van-thu'), file('van-thu/khac.pdf')], [meta({ filePath: 'da-xoa.pdf' })], NOW);
     expect(out.map((d) => d.filePath)).toEqual(['van-thu/khac.pdf']);
-  });
-
-  it('id số của DB là bản ghi đã lưu', () => {
-    expect(isPersistedDispatch({ id: '12' })).toBe(true);
   });
 });
 

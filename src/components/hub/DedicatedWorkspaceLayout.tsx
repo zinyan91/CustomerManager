@@ -1,5 +1,6 @@
 import React from 'react';
-import { Outlet } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
+import { ROUTE_OF } from '../../lib/routes';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { LoginView } from '../LoginView';
@@ -9,6 +10,9 @@ import { CustomerContextBar } from '../CustomerContextBar';
 
 export const DedicatedWorkspaceLayout: React.FC = () => {
   const { session, loading } = useAuth();
+  const { pathname } = useLocation();
+  // Văn thư và Kho lưu trữ tự quản bố cục toàn màn hình: không chừa lề ngoài
+  const fullBleed = pathname === ROUTE_OF.dispatches || pathname === ROUTE_OF.storage;
 
   if (loading) {
     return (
@@ -33,7 +37,7 @@ export const DedicatedWorkspaceLayout: React.FC = () => {
       <DedicatedWorkspaceHeader />
 
       {/* Standalone Workspace Content (100% Full Width, No Left Sidebar) */}
-      <main className="flex-1 w-full min-w-0 px-3 sm:px-6 2xl:px-8 py-3.5 sm:py-5 overflow-y-auto relative z-10">
+      <main className={`flex-1 w-full min-w-0 overflow-y-auto relative ${fullBleed ? '' : 'px-3 sm:px-6 2xl:px-8 py-3.5 sm:py-5'}`}>
         <ErrorBoundary title="Lỗi khi tải giao diện tác vụ">
           <CustomerContextBar />
           <Outlet />

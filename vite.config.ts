@@ -8,6 +8,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  envPrefix: ['VITE_', 'GEMINI_', 'HF_'],
+  define: {
+    'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY || ''),
+    'process.env.HF_TOKEN': JSON.stringify(process.env.HF_TOKEN || ''),
+  },
   server: {
     port: 5173,
     watch: {

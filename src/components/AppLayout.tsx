@@ -9,10 +9,12 @@ import { Sidebar } from './Sidebar';
 import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
 import { CustomerContextBar } from './CustomerContextBar';
+import { AiChatDialog, FloatingAiAssistantButton } from './ai/AiChatDialog';
 
 function AppLayoutContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   const { session, loading } = useAuth();
   const location = useLocation();
   const { isSidebarCollapsed } = useSidebarCollapse();
@@ -70,6 +72,7 @@ function AppLayoutContent() {
         isMobileMenuOpen={isMobileMenuOpen}
         onToggleMobileMenu={handleToggleMobileMenu}
         onOpenCommandPalette={handleOpenCommandPalette}
+        onOpenAiChat={() => setIsAiDialogOpen(true)}
       />
 
       <Sidebar
@@ -89,6 +92,15 @@ function AppLayoutContent() {
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={handleCloseCommandPalette}
+      />
+
+      {/* Nút tròn nổi mở Trợ lý AI ở góc màn hình */}
+      <FloatingAiAssistantButton onClick={() => setIsAiDialogOpen(true)} />
+
+      {/* Cửa sổ Trợ lý AI */}
+      <AiChatDialog
+        isOpen={isAiDialogOpen}
+        onClose={() => setIsAiDialogOpen(false)}
       />
     </div>
   );

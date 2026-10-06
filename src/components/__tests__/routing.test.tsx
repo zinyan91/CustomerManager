@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { LanguageProvider } from '../../context/LanguageContext';
@@ -31,6 +31,8 @@ vi.mock('../views/CreditContractView', () => ({ CreditContractView: () => <div>M
 vi.mock('../views/CollateralView', () => ({ CollateralView: () => <div>MAN:collaterals</div> }));
 vi.mock('../views/MortgageContractView', () => ({ MortgageContractView: () => <div>MAN:mortgage-contracts</div> }));
 vi.mock('../views/CardContractView', () => ({ CardContractView: () => <div>MAN:credit-cards</div> }));
+vi.mock('../views/DispatchManagementView', () => ({ DispatchManagementView: () => <div>MAN:dispatches</div> }));
+vi.mock('../views/StorageManagementView', () => ({ StorageManagementView: () => <div>MAN:storage</div> }));
 vi.mock('../views/CardPolicyLookupView', () => ({ CardPolicyLookupView: () => <div>MAN:card-policies</div> }));
 vi.mock('../views/CalculatorView', () => ({ CalculatorView: () => <div>MAN:calculators</div> }));
 vi.mock('../views/MdsdvLookupView', () => ({ MdsdvLookupView: () => <div>MAN:mdsdv</div> }));
@@ -53,7 +55,16 @@ vi.mock('../views/ToiProjectionView', () => ({ ToiProjectionView: () => <div>MAN
 
 import { App as AppThatDuoiTest } from '../../App';
 
-afterEach(cleanup);
+let errorSpy: ReturnType<typeof vi.spyOn>;
+
+beforeEach(() => {
+  errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  errorSpy?.mockRestore();
+  cleanup();
+});
 
 describe('bảng đường dẫn', () => {
   it('mọi đường dẫn tra ngược được ra màn', () => {

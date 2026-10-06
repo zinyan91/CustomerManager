@@ -12,6 +12,7 @@ const CreditContractView = lazy(() => import('./components/views/CreditContractV
 const CollateralView = lazy(() => import('./components/views/CollateralView').then(m => ({ default: m.CollateralView })));
 const MortgageContractView = lazy(() => import('./components/views/MortgageContractView').then(m => ({ default: m.MortgageContractView })));
 const CardContractView = lazy(() => import('./components/views/CardContractView').then(m => ({ default: m.CardContractView })));
+const DispatchManagementView = lazy(() => import('./components/views/DispatchManagementView').then(m => ({ default: m.DispatchManagementView })));
 const CardPolicyLookupView = lazy(() => import('./components/views/CardPolicyLookupView').then(m => ({ default: m.CardPolicyLookupView })));
 const CalculatorView = lazy(() => import('./components/views/CalculatorView').then(m => ({ default: m.CalculatorView })));
 const MdsdvLookupView = lazy(() => import('./components/views/MdsdvLookupView').then(m => ({ default: m.MdsdvLookupView })));
@@ -32,6 +33,7 @@ const ConstructionEstimateView = lazy(() => import('./components/views/Construct
 const ReportCenterView = lazy(() => import('./components/views/ReportCenterView').then(m => ({ default: m.ReportCenterView })));
 const ToiProjectionView = lazy(() => import('./components/views/ToiProjectionView').then(m => ({ default: m.ToiProjectionView })));
 const DedicatedWorkspaceLayout = lazy(() => import('./components/hub/DedicatedWorkspaceLayout').then(m => ({ default: m.DedicatedWorkspaceLayout })));
+const StorageManagementView = lazy(() => import('./components/views/StorageManagementView').then(m => ({ default: m.StorageManagementView })));
 
 export function App() {
   return (
@@ -52,6 +54,10 @@ export function App() {
         <Route path="/hub/quiz" element={<Suspense fallback={<ViewSkeleton />}><QuizBankView /></Suspense>} />
         <Route path="/hub/cof" element={<Suspense fallback={<ViewSkeleton />}><CofView /></Suspense>} />
         <Route path="/hub/reports" element={<Suspense fallback={<ViewSkeleton />}><ReportCenterView /></Suspense>} />
+        <Route path={ROUTE_OF.dispatches} element={<Suspense fallback={<ViewSkeleton />}><DispatchManagementView /></Suspense>} />
+        <Route path={ROUTE_OF.storage} element={<Suspense fallback={<ViewSkeleton />}><StorageManagementView /></Suspense>} />
+        <Route path="/hub/dispatches" element={<Navigate to={ROUTE_OF.dispatches} replace />} />
+        <Route path="/hub/storage" element={<Navigate to={ROUTE_OF.storage} replace />} />
       </Route>
 
       {/* Giao diện CRM chính có Sidebar hệ thống */}

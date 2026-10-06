@@ -61,6 +61,18 @@ export const DedicatedWorkspaceHeader: React.FC = () => {
                 Danh Mục Tác Vụ Độc Lập
               </h1>
             </div>
+          ) : location.pathname === '/dispatches' || location.pathname === '/hub/dispatches' ? (
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-xs sm:text-sm font-bold text-ink truncate">
+                Sổ Quản Lý Văn Thư & Công Văn
+              </h1>
+            </div>
+          ) : location.pathname === '/storage' || location.pathname === '/hub/storage' ? (
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-xs sm:text-sm font-bold text-ink truncate">
+                Kho Lưu Trữ Cá Nhân & Hugging Face
+              </h1>
+            </div>
           ) : currentTask ? (
             <div className="flex items-center gap-2 min-w-0">
               <div className={`p-1.5 rounded-md shrink-0 ${currentTask.color.iconBg} ${currentTask.color.iconColor}`}>

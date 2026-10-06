@@ -48,6 +48,14 @@ describe('uploadItemsToHf', () => {
     ]);
   });
 
+  it('ghi thẳng lên Hugging Face: không cấu hình hubUrl/fetch trung gian (không qua máy chủ của ứng dụng)', async () => {
+    hub.commit.mockResolvedValue({});
+    await uploadItemsToHf(T, '', [item('a.pdf')]);
+    const arg = hub.commit.mock.calls[0][0];
+    expect(arg.hubUrl).toBeUndefined();
+    expect(arg.fetch).toBeUndefined();
+  });
+
   it('thư mục đích rỗng thì tệp nằm ở gốc repo', async () => {
     hub.commit.mockResolvedValue({});
     const res = await uploadItemsToHf(T, '', [item('x.pdf')]);

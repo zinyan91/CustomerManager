@@ -1,19 +1,22 @@
 import { useMemo, useRef, useState } from 'react';
 import {
   Upload, FolderUp, Search, RotateCcw, Database, ChevronRight, Settings,
-  File as FileIcon, FileText, FileArchive, Grid2X2, List, Download, Eye, Trash2,
+  File as FileIcon, FileText, FileArchive, Folder, Grid2X2, List, Download, Eye, Trash2,
   Sparkles, AlertCircle, Loader2, X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useUserScope } from '../../context/UserScopeContext';
 import { useArchive } from '../../hooks/useArchive';
 import { useArchiveUpload } from '../../hooks/useArchiveUpload';
+import { useFolderZipDownload } from '../../hooks/useFolderZipDownload';
 import { buildFolderTree } from '../../lib/huggingface/hfClient';
 import { deleteFileFromHf } from '../../lib/huggingface/hfWrite';
 import { isHfConfigComplete } from '../../lib/huggingface/hfConfigApi';
 import { archiveStatusMessage } from '../../lib/huggingface/hfStatus';
 import { resolveFileDownloadUrl, joinArchivePath } from '../../lib/dispatch/dispatchStorage';
 import { canDeleteInRepo, canUploadToRepo, repoLabel } from '../../lib/storageRepos';
+import { browseFolder, stripBase } from '../../lib/dispatch/folderBrowse';
+import { planFolderZip } from '../../lib/dispatch/folderZipPlan';
 import { itemsFromFileList, type UploadItem } from '../../lib/uploadItems';
 import { fmtDate } from '../../lib/utils';
 import type { DispatchDocument } from '../../types/dispatch';
@@ -24,6 +27,7 @@ import { AiChatDialog } from '../ai/AiChatDialog';
 import { StorageSettingsModal } from '../storage/StorageSettingsModal';
 import { UploadDropZone } from '../storage/UploadDropZone';
 import { UploadStatusPanel } from '../storage/UploadStatusPanel';
+import { DownloadStatusPanel } from '../storage/DownloadStatusPanel';
 
 const ARCHIVE_EXT = /\.(zip|rar|7z|tar|gz|tgz)$/i;
 
@@ -43,6 +47,7 @@ export function StorageManagementView() {
   const { auth, allRepos, repos, selectedRepo, selectRepo, config, documents, folders, status, reload, reloadRepos } =
     useArchive('storage');
   const upload = useArchiveUpload(config, reload);
+  const zipDl = useFolderZipDownload();
 
   const [selectedFolder, setSelectedFolder] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,33 +68,43 @@ export function StorageManagementView() {
   const statusMessage = archiveStatusMessage(status, canConfigure);
   const ownerNames = useMemo(() => new Map(managedUsers.map((u) => [u.userId, u.fullName])), [managedUsers]);
 
+  // Thư mục gốc cấu hình của repo là "Gốc"; selectedFolder luôn là đường dẫn TƯƠNG ĐỐI so với gốc này
+  const baseFolder = joinArchivePath(config?.folder);
+  const currentFolder = joinArchivePath(baseFolder, selectedFolder);
+
   const folderTreeRoot = useMemo<FolderTreeNode>(() => {
     const fileItems = documents.map((d) => ({
-      path: d.filePath || joinArchivePath(d.folderPath || 'ca-nhan', d.fileName),
+      path: stripBase(d.filePath || joinArchivePath(d.folderPath, d.fileName), baseFolder) ?? '',
       size: d.fileSize || 0,
     }));
-    for (const folder of new Set([...folders, ...virtualFolders])) {
-      fileItems.push({ path: `${folder}/.keep`, size: 0 });
+    const relFolders = [...folders.map((f) => stripBase(f, baseFolder)), ...virtualFolders];
+    for (const folder of new Set(relFolders)) {
+      if (folder) fileItems.push({ path: `${folder}/.keep`, size: 0 });
     }
-    return buildFolderTree(fileItems);
-  }, [documents, folders, virtualFolders]);
+    return buildFolderTree(fileItems.filter((i) => i.path));
+  }, [documents, folders, virtualFolders, baseFolder]);
 
-  const filteredFiles = useMemo(() => {
-    let result = documents;
-    if (selectedFolder) {
-      const target = selectedFolder.replace(/^\/+|\/+$/g, '');
-      result = result.filter((d) => {
-        const fPath = (d.folderPath || '').replace(/^\/+|\/+$/g, '');
-        const fullPath = (d.filePath || '').replace(/^\/+|\/+$/g, '');
-        return fPath === target || fullPath.startsWith(target + '/');
-      });
-    }
-    if (searchQuery.trim()) {
+  const isSearching = searchQuery.trim() !== '';
+
+  // Kiểu trình quản lý tệp: thư mục hiện thành thư mục, tệp chỉ là tệp nằm trực tiếp ở đây.
+  // Đang tìm kiếm thì quét toàn kho và trả danh sách phẳng.
+  const browse = useMemo(() => {
+    if (isSearching) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter((d) => d.fileName.toLowerCase().includes(q) || d.title.toLowerCase().includes(q));
+      return {
+        folders: [],
+        files: documents.filter((d) => d.fileName.toLowerCase().includes(q) || d.title.toLowerCase().includes(q)),
+      };
     }
-    return result;
-  }, [documents, selectedFolder, searchQuery]);
+    const emptyFolders = [...folders, ...virtualFolders.map((v) => joinArchivePath(baseFolder, v))];
+    return browseFolder(documents, emptyFolders, currentFolder);
+  }, [documents, folders, virtualFolders, baseFolder, currentFolder, isSearching, searchQuery]);
+
+  const filteredFiles = browse.files;
+  const listedFileCount = filteredFiles.length + browse.folders.reduce((n, f) => n + f.fileCount, 0);
+  const listedBytes =
+    filteredFiles.reduce((sum, d) => sum + (d.fileSize || 0), 0) + browse.folders.reduce((sum, f) => sum + f.totalBytes, 0);
+  const openFolder = (entryPath: string) => setSelectedFolder(stripBase(entryPath, baseFolder) ?? '');
 
   const stats = useMemo(() => {
     const totalBytes = documents.reduce((sum, d) => sum + (d.fileSize || 0), 0);
@@ -115,7 +130,7 @@ export function StorageManagementView() {
     }
   };
 
-  const targetFolder = selectedFolder || joinArchivePath(config?.folder);
+  const targetFolder = currentFolder;
 
   const startUpload = (items: UploadItem[]) => {
     if (!canUpload) {
@@ -147,6 +162,18 @@ export function StorageManagementView() {
       return;
     }
     await reload();
+  };
+
+  // Phải chạy đồng bộ trong sự kiện click: hộp "Lưu thành" cần user activation
+  const handleDownloadFolder = (folderPath: string) => {
+    if (!config) return;
+    setActionError(null);
+    try {
+      const rootLabel = selectedRepo ? repoLabel(selectedRepo, userId) : 'Kho';
+      zipDl.start(planFolderZip(documents, folderPath, rootLabel), { repoId: config.repoId, token: config.token });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Không nén được thư mục.');
+    }
   };
 
   const handleDownload = async (doc: DispatchDocument) => {
@@ -219,6 +246,16 @@ export function StorageManagementView() {
       </div>
 
       <UploadStatusPanel running={upload.running} progress={upload.progress} summary={upload.summary} error={upload.error} onDismiss={upload.dismiss} />
+
+      <DownloadStatusPanel
+        phase={zipDl.phase}
+        fileName={zipDl.fileName}
+        progress={zipDl.progress}
+        error={zipDl.error}
+        message={zipDl.message}
+        onCancel={zipDl.cancel}
+        onDismiss={zipDl.dismiss}
+      />
 
       {(statusMessage || actionError || status.kind === 'loading') && (
         <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 space-y-1.5 text-sm">
@@ -338,6 +375,18 @@ export function StorageManagementView() {
                 />
               </div>
 
+              {!isSearching && (browse.folders.length > 0 || filteredFiles.length > 0) && (
+                <button
+                  type="button"
+                  disabled={zipDl.isBusy}
+                  onClick={() => handleDownloadFolder(currentFolder)}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm font-medium flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Tải thư mục này (ZIP)</span>
+                </button>
+              )}
+
               <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800">
                 <button
                   type="button"
@@ -375,16 +424,50 @@ export function StorageManagementView() {
           </div>
 
           <UploadDropZone disabled={!canUpload || upload.running} onItems={startUpload} className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-            {filteredFiles.length === 0 ? (
+            {filteredFiles.length === 0 && browse.folders.length === 0 ? (
               <div className="h-72 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
                 <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
-                <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">Thư mục này chưa có tệp tin nào</h3>
-                {canUpload && (
+                <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  {isSearching ? 'Không tìm thấy tệp nào khớp' : 'Thư mục này chưa có tệp tin nào'}
+                </h3>
+                {canUpload && !isSearching && (
                   <p className="text-sm text-slate-400 max-w-md">Kéo thả tệp, thư mục hoặc tệp nén vào đây, hoặc dùng nút Tải lên ở góc trên.</p>
                 )}
               </div>
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                {browse.folders.map((f) => (
+                  <div
+                    key={f.path}
+                    className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-slate-400 dark:hover:border-slate-600 transition-all shadow-2xs flex items-center"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => openFolder(f.path)}
+                      className="flex-1 min-w-0 p-4 flex items-center gap-3 text-left cursor-pointer"
+                    >
+                      <div className="p-2.5 rounded-lg bg-amber-500/10">
+                        <Folder className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{f.name}</div>
+                        <div className="text-xs text-slate-500">
+                          {f.fileCount} tệp · {(f.totalBytes / 1024 / 1024).toFixed(1)} MB
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={zipDl.isBusy || f.fileCount === 0}
+                      onClick={() => handleDownloadFolder(f.path)}
+                      aria-label={`Tải thư mục ${f.name} (ZIP)`}
+                      className={`${iconBtn} mr-3 disabled:opacity-40`}
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
                 {filteredFiles.map((doc) => (
                   <div
                     key={doc.id}
@@ -439,6 +522,35 @@ export function StorageManagementView() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {browse.folders.map((f) => (
+                      <tr key={f.path} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                        <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100">
+                          <button type="button" onClick={() => openFolder(f.path)} className="flex items-center gap-2 hover:underline text-left cursor-pointer">
+                            <Folder className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <span>{f.name}</span>
+                          </button>
+                        </td>
+                        <td className="py-3 px-4 text-xs text-slate-500">{f.fileCount} tệp</td>
+                        <td className="py-3 px-4 text-right font-mono text-slate-600 dark:text-slate-400">{(f.totalBytes / 1024).toFixed(0)} KB</td>
+                        <td className="py-3 px-4" />
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              disabled={zipDl.isBusy || f.fileCount === 0}
+                              onClick={() => handleDownloadFolder(f.path)}
+                              aria-label={`Tải thư mục ${f.name} (ZIP)`}
+                              className={`${iconBtn} disabled:opacity-40`}
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button type="button" onClick={() => openFolder(f.path)} aria-label={`Mở thư mục ${f.name}`} className={iconBtn}>
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                     {filteredFiles.map((doc) => (
                       <tr key={doc.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                         <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100">
@@ -469,10 +581,8 @@ export function StorageManagementView() {
                   </tbody>
                   <tfoot>
                     <tr className="bg-slate-50 dark:bg-slate-800 font-bold text-slate-900 dark:text-slate-100 border-t-2 border-slate-300 dark:border-slate-700">
-                      <td colSpan={2} className="py-2.5 px-4 text-left">TỔNG CỘNG ({filteredFiles.length} tệp)</td>
-                      <td className="py-2.5 px-4 text-right font-mono">
-                        {(filteredFiles.reduce((sum, d) => sum + (d.fileSize || 0), 0) / 1024 / 1024).toFixed(2)} MB
-                      </td>
+                      <td colSpan={2} className="py-2.5 px-4 text-left">TỔNG CỘNG ({listedFileCount} tệp)</td>
+                      <td className="py-2.5 px-4 text-right font-mono">{(listedBytes / 1024 / 1024).toFixed(2)} MB</td>
                       <td colSpan={2} />
                     </tr>
                   </tfoot>

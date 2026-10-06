@@ -9,7 +9,10 @@ const hfMock = vi.hoisted(() => ({
 }));
 
 vi.mock('../../supabase', () => ({ supabase: supabaseMock }));
-vi.mock('../../huggingface/hfClient', () => ({ fetchHfFileBlob: hfMock.fetchHfFileBlob }));
+vi.mock('../../huggingface/hfClient', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../huggingface/hfClient')>()),
+  fetchHfFileBlob: hfMock.fetchHfFileBlob,
+}));
 vi.mock('../../huggingface/hfWrite', () => ({
   uploadItemsToHf: hfMock.uploadItemsToHf,
   deleteFileFromHf: hfMock.deleteFileFromHf,

@@ -12,6 +12,12 @@ export class HfApiError extends Error {
   }
 }
 
+/** Đường dẫn tải trực tiếp của tệp trong dataset HF. */
+export function hfFileUrl(repoId: string, filePath: string): string {
+  const encoded = filePath.split('/').map(encodeURIComponent).join('/');
+  return `https://huggingface.co/datasets/${repoId}/resolve/main/${encoded}`;
+}
+
 /**
  * Chuẩn hóa Repo ID và Folder từ chuỗi nhập vào
  * Xử lý thông minh URL Hugging Face hoặc chuỗi có dạng 'owner/repo/folder'

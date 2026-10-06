@@ -1,7 +1,7 @@
 import type { DispatchDocument, DispatchFilter, DispatchUploadPayload } from '../../types/dispatch';
 import type { HfConfig } from '../../types/huggingface';
 import { supabase } from '../supabase';
-import { fetchHfFileBlob } from '../huggingface/hfClient';
+import { fetchHfFileBlob, hfFileUrl } from '../huggingface/hfClient';
 import { uploadItemsToHf, deleteFileFromHf } from '../huggingface/hfWrite';
 import { joinArchivePath } from '../archivePath';
 import { isHfConfigComplete } from '../huggingface/hfConfigApi';
@@ -10,13 +10,7 @@ import { isPersistedDispatch } from './mergeArchive';
 const MSG_NOT_CONFIGURED =
   'Chưa cấu hình kho lưu trữ Hugging Face. Liên hệ Master Admin để cấu hình token và repo.';
 
-export { joinArchivePath };
-
-/** Đường dẫn tải trực tiếp của tệp trong dataset HF. */
-export function hfFileUrl(repoId: string, filePath: string): string {
-  const encoded = filePath.split('/').map(encodeURIComponent).join('/');
-  return `https://huggingface.co/datasets/${repoId}/resolve/main/${encoded}`;
-}
+export { joinArchivePath, hfFileUrl };
 
 /** Dòng bảng Dispatches (PascalCase) sang DispatchDocument. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

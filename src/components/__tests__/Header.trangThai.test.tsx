@@ -8,8 +8,8 @@ import { recordApiFailure, recordApiSuccess, resetApiHealth } from '../../lib/ap
 
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({
-    user: { id: 'u', email: 'a@b.vn' }, role: 'banker', fullName: 'Thử',
-    isAdmin: false, signOut: async () => {},
+    user: { id: 'u', email: 'a@b.vn' }, role: 'user', fullName: 'Thử',
+    isAdmin: false, can: () => false, roleLoading: false, signOut: async () => {},
   }),
 }));
 

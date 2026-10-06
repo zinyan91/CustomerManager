@@ -1,8 +1,15 @@
 export interface HfConfig {
   token: string;
   repoId: string; // e.g. 'username/customer-dispatches'
+  folder?: string; // e.g. 'van-thu' hoặc 'ho-so' (tùy chọn)
   username?: string;
   isPrivate?: boolean;
+}
+
+/** Thông tin xác thực Hugging Face dùng chung cho mọi repo (lưu ở SystemConfig). */
+export interface HfAuth {
+  token: string;
+  username?: string;
 }
 
 export interface HfFileItem {

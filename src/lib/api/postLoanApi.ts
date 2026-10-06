@@ -1,14 +1,26 @@
 import { supabase } from '../supabase';
 import type { PostLoanControlRecord } from '../../types';
+import { fetchCustomerIdsInScopeAPI } from './customerApi';
+import { fetchByCustomerScope, type OwnerScope } from '../ownerScope';
+import { getActiveOwnerScope } from '../ownerScopeStore';
 
-export async function fetchPostLoanControlRecordsAPI(): Promise<PostLoanControlRecord[]> {
-  const { data, error } = await supabase
-    .from('PostLoanControlRecords')
-    .select('*')
-    .order('PerformedDate', { ascending: false })
-    .limit(5000);
-  if (error) throw error;
-  return data || [];
+export async function fetchPostLoanControlRecordsAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<PostLoanControlRecord[]> {
+  const ids = await fetchCustomerIdsInScopeAPI(scope);
+  return fetchByCustomerScope<PostLoanControlRecord>(
+    ids,
+    async (part) => {
+      let query = supabase
+        .from('PostLoanControlRecords')
+        .select('*')
+        .order('PerformedDate', { ascending: false })
+        .limit(5000);
+      if (part) query = query.in('CustomerId', part);
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    (a, b) => (b.PerformedDate || '').localeCompare(a.PerformedDate || '')
+  );
 }
 
 export async function savePostLoanControlRecordAPI(

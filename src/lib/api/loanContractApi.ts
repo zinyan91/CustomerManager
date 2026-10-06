@@ -4,16 +4,22 @@ import { chunk } from '../utils';
 import type { DuePeriodRow } from '../duePeriod';
 import { findKunnNumberClash } from '../creditContract';
 import { unarchiveCustomer } from './customerApi';
+import { applyOwnerScope, customerEmbed, type OwnerScope } from '../ownerScope';
+import { getActiveOwnerScope } from '../ownerScopeStore';
 
-export async function fetchContractsStrictAPI(): Promise<LoanContract[]> {
-  const { data, error } = await supabase.from('LoanContracts').select('*, customer:Customers(*)');
+export async function fetchContractsStrictAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<LoanContract[]> {
+  const { data, error } = await applyOwnerScope(
+    supabase.from('LoanContracts').select(`*, ${customerEmbed(scope)}` as '*'),
+    scope,
+    'customer.OwnerId'
+  );
   if (error) throw error;
   return (data || []).sort((a: any, b: any) => (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
 }
 
-export async function fetchContractsAPI(): Promise<LoanContract[]> {
+export async function fetchContractsAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<LoanContract[]> {
   try {
-    return await fetchContractsStrictAPI();
+    return await fetchContractsStrictAPI(scope);
   } catch (err) {
     console.error("fetchContractsAPI error:", err);
     return [];

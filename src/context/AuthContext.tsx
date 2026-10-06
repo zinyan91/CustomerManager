@@ -1,15 +1,22 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { can as canRole, isAppRole, type AppRole, type Capability } from '../lib/permissions';
 
-export type AppRole = 'admin' | 'banker';
+export type { AppRole };
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   role: AppRole | null;
   fullName: string | null;
+  isMasterAdmin: boolean;
+  isUserAdmin: boolean;
   isAdmin: boolean;
+  isUser: boolean;
+  can: (capability: Capability) => boolean;
+  /** Đã đăng nhập nhưng chưa tra xong vai trò; các màn dữ liệu chưa nên nạp. */
+  roleLoading: boolean;
 
   loading: boolean;
   signIn: (usernameOrEmail: string, password: string) => Promise<void>;
@@ -22,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [fullName, setFullName] = useState<string | null>(null);
+  const [roleResolvedFor, setRoleResolvedFor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!userId) {
       setRole(null);
       setFullName(null);
+      setRoleResolvedFor(null);
       return;
     }
 
@@ -59,10 +68,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Không tra được vai trò người dùng:', error);
           setRole(null);
           setFullName(null);
+          setRoleResolvedFor(userId);
           return;
         }
-        setRole((data?.Role as AppRole) ?? null);
+        if (data?.Role && !isAppRole(data.Role)) {
+          console.error(`Vai trò "${data.Role}" không hợp lệ. Cần áp migration 60 để chuyển sang vai trò mới.`);
+        }
+        setRole(isAppRole(data?.Role) ? data.Role : null);
         setFullName(data?.FullName ?? null);
+        setRoleResolvedFor(userId);
       });
 
     return () => {
@@ -96,18 +110,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setRole(null);
     setFullName(null);
+    setRoleResolvedFor(null);
   }, []);
 
-  const value = useMemo<AuthContextType>(() => ({
-    session,
-    user: session?.user ?? null,
-    role,
-    fullName,
-    isAdmin: role === 'admin',
-    loading,
-    signIn,
-    signOut,
-  }), [session, role, fullName, loading, signIn, signOut]);
+  const value = useMemo<AuthContextType>(() => {
+    const isMasterAdmin = role === 'master_admin';
+    const isUserAdmin = role === 'user_admin';
+    const isAdmin = isMasterAdmin || isUserAdmin;
+    const isUser = role === 'user';
+
+    return {
+      session,
+      user: session?.user ?? null,
+      role,
+      fullName,
+      isMasterAdmin,
+      isUserAdmin,
+      isAdmin,
+      isUser,
+      can: (capability: Capability) => canRole(role, capability),
+      roleLoading: userId !== null && roleResolvedFor !== userId,
+      loading,
+      signIn,
+      signOut,
+    };
+  }, [session, userId, role, fullName, roleResolvedFor, loading, signIn, signOut]);
 
   return (
     <AuthContext.Provider value={value}>

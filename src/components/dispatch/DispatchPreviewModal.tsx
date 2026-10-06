@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import type { DispatchDocument } from '../../types/dispatch';
 import { DISPATCH_TYPE_LABELS } from '../../types/dispatch';
-import { resolveFileDownloadUrl, updateDispatchDocument } from '../../lib/dispatch/dispatchStorage';
+import type { HfConfig } from '../../types/huggingface';
+import { resolveFileDownloadUrl, saveDispatchRecord } from '../../lib/dispatch/dispatchStorage';
 import { summarizeDocumentWithAi } from '../../lib/ai/geminiClient';
 
 interface DispatchPreviewModalProps {
@@ -14,6 +15,8 @@ interface DispatchPreviewModalProps {
   onClose: () => void;
   onOpenAiChat: (doc: DispatchDocument) => void;
   onUpdated?: (updated: DispatchDocument) => void;
+  /** Cấu hình HF dùng chung để tải tệp riêng tư; null khi chưa cấu hình. */
+  hfConfig: HfConfig | null;
 }
 
 export function DispatchPreviewModal({
@@ -22,14 +25,17 @@ export function DispatchPreviewModal({
   onClose,
   onOpenAiChat,
   onUpdated,
+  hfConfig,
 }: DispatchPreviewModalProps) {
   const [fileUrl, setFileUrl] = useState<string>('');
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentDoc, setCurrentDoc] = useState<DispatchDocument | null>(doc);
 
   useEffect(() => {
     setCurrentDoc(doc);
+    setErrorMsg(null);
   }, [doc]);
 
   useEffect(() => {
@@ -41,21 +47,25 @@ export function DispatchPreviewModal({
     let active = true;
     setIsLoadingUrl(true);
 
-    resolveFileDownloadUrl(doc)
+    resolveFileDownloadUrl(doc, hfConfig)
       .then((url) => {
         if (active) {
           setFileUrl(url);
           setIsLoadingUrl(false);
         }
       })
-      .catch(() => {
-        if (active) setIsLoadingUrl(false);
+      .catch((err) => {
+        if (active) {
+          setFileUrl('');
+          setErrorMsg(err instanceof Error ? err.message : 'Không mở được tệp.');
+          setIsLoadingUrl(false);
+        }
       });
 
     return () => {
       active = false;
     };
-  }, [doc]);
+  }, [doc, hfConfig]);
 
   if (!isOpen || !currentDoc) return null;
 
@@ -77,6 +87,7 @@ export function DispatchPreviewModal({
   const handleGenerateSummary = async () => {
     if (!currentDoc || isSummarizing) return;
     setIsSummarizing(true);
+    setErrorMsg(null);
     try {
       const res = await summarizeDocumentWithAi(
         currentDoc.title,
@@ -85,17 +96,16 @@ export function DispatchPreviewModal({
         currentDoc.note
       );
 
-      const updated = await updateDispatchDocument(currentDoc.id, {
+      const updated = await saveDispatchRecord({
+        ...currentDoc,
         aiSummary: res.summary,
         aiKeywords: res.keywords,
       });
 
-      if (updated) {
-        setCurrentDoc(updated);
-        onUpdated?.(updated);
-      }
+      setCurrentDoc(updated);
+      onUpdated?.(updated);
     } catch (e) {
-      console.error('Lỗi khi tóm tắt văn bản:', e);
+      setErrorMsg(e instanceof Error ? e.message : 'Không lưu được bản tóm tắt.');
     } finally {
       setIsSummarizing(false);
     }
@@ -150,6 +160,12 @@ export function DispatchPreviewModal({
             </button>
           </div>
         </div>
+
+        {errorMsg && (
+          <div className="px-5 py-2 text-xs bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-300 border-b border-rose-200 dark:border-rose-800">
+            {errorMsg}
+          </div>
+        )}
 
         {/* Khung nội dung Preview & Sidebar metadata */}
         <div className="flex-1 flex flex-col md:flex-row min-h-0">

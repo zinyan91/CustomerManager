@@ -2,19 +2,28 @@ import { supabase } from '../supabase';
 import type { Collateral, LoanContract, CollateralAppraisal } from '../../types';
 import { defaultLtvForAssetType } from '../collateralMath';
 import { mortgageLinkErrorMessage } from '../mortgageContract';
+import { fetchCustomerIdsInScopeAPI } from './customerApi';
+import { fetchByCustomerScope, type OwnerScope } from '../ownerScope';
+import { getActiveOwnerScope } from '../ownerScopeStore';
 
-export async function fetchCollateralsStrictAPI(): Promise<Collateral[]> {
-  const { data, error } = await supabase
-    .from('Collaterals')
-    .select('*')
-    .order('Id', { ascending: false });
-  if (error) throw error;
-  return (data || []) as Collateral[];
+export async function fetchCollateralsStrictAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<Collateral[]> {
+  const ids = await fetchCustomerIdsInScopeAPI(scope);
+  return fetchByCustomerScope<Collateral>(
+    ids,
+    async (part) => {
+      let query = supabase.from('Collaterals').select('*').order('Id', { ascending: false });
+      if (part) query = query.in('CustomerId', part);
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as Collateral[];
+    },
+    (a, b) => b.Id - a.Id
+  );
 }
 
-export async function fetchCollateralsAPI(): Promise<Collateral[]> {
+export async function fetchCollateralsAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<Collateral[]> {
   try {
-    return await fetchCollateralsStrictAPI();
+    return await fetchCollateralsStrictAPI(scope);
   } catch (err) {
     console.error("fetchCollateralsAPI error:", err);
     return [];

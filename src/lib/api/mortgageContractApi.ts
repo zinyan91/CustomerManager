@@ -1,6 +1,9 @@
 import { supabase } from '../supabase';
 import type { MortgageContract } from '../../types';
 import { linkDiff, type MortgageContractDraft } from '../mortgageContract';
+import { fetchCustomerIdsInScopeAPI } from './customerApi';
+import { fetchByCustomerScope, type OwnerScope } from '../ownerScope';
+import { getActiveOwnerScope } from '../ownerScopeStore';
 
 const SELECT = '*, MortgageContractCollaterals(CollateralId), MortgageContractCreditContracts(CreditContractId)';
 
@@ -29,12 +32,25 @@ function fromRow(row: MortgageRow): MortgageContract {
   };
 }
 
-export async function fetchMortgageContractsAPI(customerId?: number): Promise<MortgageContract[]> {
-  let query = supabase.from('MortgageContracts').select(SELECT).order('Id', { ascending: false });
-  if (customerId !== undefined) query = query.eq('CustomerId', customerId);
-  const { data, error } = await query;
-  if (error) throw new Error(`Không nạp được danh sách HĐTC: ${error.message}`);
-  return ((data ?? []) as MortgageRow[]).map(fromRow);
+export async function fetchMortgageContractsAPI(
+  customerId?: number,
+  scope: OwnerScope = getActiveOwnerScope()
+): Promise<MortgageContract[]> {
+  // Có chỉ định khách hàng thì không cần lọc theo phạm vi tài khoản
+  const ids = customerId !== undefined ? null : await fetchCustomerIdsInScopeAPI(scope);
+  const rows = await fetchByCustomerScope<MortgageRow>(
+    ids,
+    async (part) => {
+      let query = supabase.from('MortgageContracts').select(SELECT).order('Id', { ascending: false });
+      if (customerId !== undefined) query = query.eq('CustomerId', customerId);
+      if (part) query = query.in('CustomerId', part);
+      const { data, error } = await query;
+      if (error) throw new Error(`Không nạp được danh sách HĐTC: ${error.message}`);
+      return (data ?? []) as MortgageRow[];
+    },
+    (a, b) => Number(b.Id) - Number(a.Id)
+  );
+  return rows.map(fromRow);
 }
 
 async function syncLinks(

@@ -15,8 +15,14 @@ import { customerProfilePath } from '../../lib/customerRoutes';
 import { useSelectedCustomerId } from '../../hooks/useSelectedCustomerId';
 import { ROUTE_OF } from '../../lib/routes';
 import { downloadActiveCustomerPortfolioReport } from '../../lib/customerPortfolioExport';
+import { useUserScope } from '../../context/UserScopeContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const CustomerListView: React.FC = () => {
+  const { can, user } = useAuth();
+  const { selectedUserId, selectedUser, setSelectedUserId } = useUserScope();
+  const scopeBannerLabel =
+    selectedUserId === 'all' ? 'Tất cả tài khoản' : selectedUserId === 'unassigned' ? 'Chưa phân công' : selectedUser?.fullName || 'Tài khoản đã chọn';
   const {
     loading,
     selectedCustomer,
@@ -125,6 +131,33 @@ export const CustomerListView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Banner thông báo phạm vi tài khoản đang xem (dành cho Admin) */}
+      {can('scope.switch') && user && selectedUserId !== user.id && (
+        <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-accent-soft/40 border border-accent/30 text-xs shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <span className="p-1.5 rounded-lg bg-accent-soft text-accent">
+              <Users className="w-4 h-4" />
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-ink-muted">Đang xem dữ liệu của:</span>
+              <span className="font-bold text-ink">{scopeBannerLabel}</span>
+              <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent font-mono text-[10px] font-bold">
+                {visibleCustomers.length} khách hàng
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedUserId(user.id)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-line bg-panel hover:bg-surface text-ink text-xs font-semibold cursor-pointer shadow-2xs transition-all"
+            title="Quay lại xem dữ liệu của chính mình"
+          >
+            <X className="w-3.5 h-3.5 text-ink-muted" />
+            <span>Về tài khoản của tôi</span>
+          </button>
+        </div>
+      )}
 
       {/* 2. Top Bento KPI Cards Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -493,6 +526,7 @@ export const CustomerListView: React.FC = () => {
         onSave={handleSaveCustomer}
         onDelete={handleDeleteCustomer}
         onParseSnippet={parseAndApplySnippet}
+        canDelete={can('customer.deleteForever')}
       />
     </div>
   );

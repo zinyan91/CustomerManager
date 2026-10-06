@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useUserScope } from '../context/UserScopeContext';
 import { SidebarCollapseProvider, useSidebarCollapse } from '../context/SidebarCollapseContext';
 import { LoginView } from './LoginView';
 import { Header } from './Header';
@@ -16,6 +17,7 @@ function AppLayoutContent() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   const { session, loading } = useAuth();
+  const { ready, scopeKey } = useUserScope();
   const location = useLocation();
   const { isSidebarCollapsed } = useSidebarCollapse();
 
@@ -83,8 +85,17 @@ function AppLayoutContent() {
       <div className="flex flex-1 pt-[56px] relative w-full">
         <main className={`flex-1 ${isSidebarCollapsed ? 'md:ml-0' : 'md:ml-64'} transition-[margin] duration-200 min-w-0 px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4 overflow-y-auto relative z-10 w-full`}>
           <ErrorBoundary title="Lỗi khi tải giao diện màn hình">
-            <CustomerContextBar />
-            <Outlet />
+            {ready ? (
+              // key = phạm vi tài khoản: đổi tài khoản thì remount để mọi màn nạp lại đúng dữ liệu
+              <Fragment key={scopeKey}>
+                <CustomerContextBar />
+                <Outlet />
+              </Fragment>
+            ) : (
+              <div className="flex justify-center py-16" role="status" aria-label="Đang nạp phạm vi dữ liệu">
+                <Loader2 className="w-6 h-6 animate-spin text-accent" />
+              </div>
+            )}
           </ErrorBoundary>
         </main>
       </div>

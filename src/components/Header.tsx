@@ -10,6 +10,7 @@ import { useLang } from '../context/LanguageContext';
 import { LANGS, LANG_SWITCH_ENABLED } from '../lib/i18n';
 import { useApiHealth } from '../hooks/useApiHealth';
 import { useConfirm } from '../context/ConfirmContext';
+import { UserScopeSelector } from './common/UserScopeSelector';
 
 interface HeaderProps {
   onToggleMobileMenu?: () => void;
@@ -57,9 +58,13 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
     }
   }, [confirm, t, signOut]);
 
-  const roleLabel = role === 'admin'
-    ? t('header.roleAdmin')
-    : role === 'banker' ? t('header.roleBanker') : t('header.roleNone');
+  const roleLabel = role === 'master_admin'
+    ? 'Master Admin'
+    : role === 'user_admin'
+    ? 'User Admin'
+    : role === 'user'
+    ? t('header.roleBanker')
+    : t('header.roleNone');
 
   const ghostButton = 'p-1.5 rounded-xl text-ink-faint hover:text-ink hover:bg-panel-muted/80 transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer';
 
@@ -122,6 +127,9 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
             <Search className="w-4 h-4" />
           </button>
         )}
+
+        {/* Bộ chọn tài khoản quản trị dữ liệu theo User (chỉ hiển thị cho Admin) */}
+        <UserScopeSelector className="hidden sm:block" />
 
         {/* Nút Kích hoạt Trợ lý AI Tín dụng & Văn thư */}
         {onOpenAiChat && (

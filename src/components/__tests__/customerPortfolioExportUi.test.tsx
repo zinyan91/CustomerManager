@@ -7,6 +7,24 @@ import { MemoryRouter } from 'react-router';
 
 const mockDownload = vi.fn();
 
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({
+    session: { user: { id: 'test' } },
+    user: { id: 'test', email: 'test@nganhang.vn' },
+    role: 'master_admin',
+    fullName: 'Quản trị thử',
+    isMasterAdmin: true,
+    isUserAdmin: false,
+    isAdmin: true,
+    isUser: false,
+    can: () => true,
+    loading: false,
+    signIn: async () => {},
+    signOut: async () => {},
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 vi.mock('../../lib/customerPortfolioExport', () => ({
   downloadActiveCustomerPortfolioReport: (...args: unknown[]) => mockDownload(...args),
 }));

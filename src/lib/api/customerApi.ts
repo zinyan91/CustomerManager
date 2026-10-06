@@ -1,11 +1,24 @@
 import { supabase } from '../supabase';
+import { applyOwnerScope, type OwnerScope } from '../ownerScope';
+import { getActiveOwnerScope } from '../ownerScopeStore';
 import type { Customer } from '../../types';
 import {
   customerDeleteBlockers, customerDeleteBlockedMessage, type CustomerLinkCounts,
 } from '../customerStatus';
 
-export async function fetchCustomersStrictAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
-  let query = supabase.from('Customers').select('*').limit(1000);
+/** Mã KH thuộc phạm vi; null = không lọc. Dùng cho bảng con không có cột chủ sở hữu. */
+export async function fetchCustomerIdsInScopeAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<number[] | null> {
+  if (scope.kind === 'all') return null;
+  const { data, error } = await applyOwnerScope(supabase.from('Customers').select('Id'), scope).limit(5000);
+  if (error) throw error;
+  return (data ?? []).map((r: { Id: number }) => r.Id);
+}
+
+export async function fetchCustomersStrictAPI(
+  filters?: { cif?: string; name?: string; nationalId?: string },
+  scope: OwnerScope = getActiveOwnerScope()
+): Promise<Customer[]> {
+  let query = applyOwnerScope(supabase.from('Customers').select('*'), scope).limit(1000);
   if (filters?.cif) query = query.ilike('CifKh', `%${filters.cif}%`);
   if (filters?.name) query = query.ilike('FullName', `%${filters.name}%`);
   if (filters?.nationalId) query = query.ilike('NationalId', `%${filters.nationalId}%`);
@@ -14,9 +27,12 @@ export async function fetchCustomersStrictAPI(filters?: { cif?: string; name?: s
   return (data || []).sort((a: any, b: any) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
 }
 
-export async function fetchCustomersAPI(filters?: { cif?: string; name?: string; nationalId?: string }): Promise<Customer[]> {
+export async function fetchCustomersAPI(
+  filters?: { cif?: string; name?: string; nationalId?: string },
+  scope: OwnerScope = getActiveOwnerScope()
+): Promise<Customer[]> {
   try {
-    return await fetchCustomersStrictAPI(filters);
+    return await fetchCustomersStrictAPI(filters, scope);
   } catch (err: any) {
     console.error("fetchCustomersAPI error:", err);
     return [];

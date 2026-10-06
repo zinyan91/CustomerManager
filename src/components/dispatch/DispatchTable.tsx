@@ -7,7 +7,8 @@ interface DispatchTableProps {
   onPreview: (doc: DispatchDocument) => void;
   onDownload: (doc: DispatchDocument) => void;
   onAiSummary: (doc: DispatchDocument) => void;
-  onDelete: (id: string) => void;
+  onDelete: (doc: DispatchDocument) => void;
+  canDelete: boolean;
 }
 
 export function DispatchTable({
@@ -16,6 +17,7 @@ export function DispatchTable({
   onDownload,
   onAiSummary,
   onDelete,
+  canDelete,
 }: DispatchTableProps) {
   // Tính tổng dung lượng (MB)
   const totalSizeBytes = documents.reduce((acc, d) => acc + (d.fileSize || 0), 0);
@@ -140,14 +142,16 @@ export function DispatchTable({
                       <Sparkles className="w-3.5 h-3.5" />
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => onDelete(doc.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
-                      title="Xóa văn bản này"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={() => onDelete(doc)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+                        title="Xóa văn bản này"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

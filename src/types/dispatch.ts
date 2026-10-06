@@ -35,6 +35,7 @@ export interface DispatchDocument {
   fileUrl: string;
   filePath?: string; // Đường dẫn tương đối trong repo (vd: 2026/01/QD_112.pdf)
   folderPath?: string; // Thư mục cha (vd: 2026/01)
+  repoId?: string; // Repo HF chứa tệp (owner/repo)
   storageProvider: 'huggingface' | 'r2' | 'supabase' | 'local';
   aiSummary?: string;
   aiKeywords?: string[];

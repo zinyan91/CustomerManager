@@ -2,10 +2,16 @@ import { supabase } from '../supabase';
 import type { CardContract, CardSupplementaryHolder } from '../../types';
 import { CARD_TENOR_MONTHS } from '../cardContract';
 import { unarchiveCustomer } from './customerApi';
+import { applyOwnerScope, customerEmbed, type OwnerScope } from '../ownerScope';
+import { getActiveOwnerScope } from '../ownerScopeStore';
 
-export async function fetchCardContractsAPI(): Promise<CardContract[]> {
+export async function fetchCardContractsAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<CardContract[]> {
   try {
-    const { data, error } = await supabase.from('CardContracts').select('*, customer:Customers(*)');
+    const { data, error } = await applyOwnerScope(
+      supabase.from('CardContracts').select(`*, ${customerEmbed(scope)}` as '*'),
+      scope,
+      'customer.OwnerId'
+    );
     if (error) throw error;
     return (data || []).sort((a: any, b: any) =>
       (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));

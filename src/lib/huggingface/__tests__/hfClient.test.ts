@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { buildFolderTree, getHfConfig, saveHfConfig } from '../hfClient';
+import { buildFolderTree, normalizeHfRepoAndFolder } from '../hfClient';
 import { formatBytes } from '../../../types/huggingface';
 import { filterDispatches } from '../../dispatch/dispatchStorage';
 import type { DispatchDocument } from '../../../types/dispatch';
@@ -52,18 +52,13 @@ describe('Hugging Face Client & Folder Tree', () => {
     expect(nodePhapQuy?.totalBytes).toBe(3000);
   });
 
-  it('Lưu và đọc cấu hình Hugging Face từ LocalStorage', () => {
-    saveHfConfig({
-      token: 'hf_test_token_12345',
-      repoId: 'test-user/my-dispatches',
-      username: 'test-user',
-      isPrivate: true,
+  it('normalizeHfRepoAndFolder tách repo và thư mục từ URL hoặc chuỗi dài', () => {
+    expect(normalizeHfRepoAndFolder('https://huggingface.co/datasets/own/repo/tree/main/van-thu', '')).toEqual({
+      repoId: 'own/repo',
+      folder: 'van-thu',
     });
-
-    const loaded = getHfConfig();
-    expect(loaded.token).toBe('hf_test_token_12345');
-    expect(loaded.repoId).toBe('test-user/my-dispatches');
-    expect(loaded.username).toBe('test-user');
+    expect(normalizeHfRepoAndFolder('datasets/own/repo', '/ho-so/')).toEqual({ repoId: 'own/repo', folder: 'ho-so' });
+    expect(normalizeHfRepoAndFolder('own/repo/a/b', '')).toEqual({ repoId: 'own/repo', folder: 'a/b' });
   });
 
   it('filterDispatches lọc chính xác theo folderPath', () => {

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router';
 import { ArrowLeft, LayoutGrid, Search, X } from 'lucide-react';
 import { HUB_TASKS } from '../../lib/hubTasks';
+import { UserScopeSelector } from '../common/UserScopeSelector';
 
 export const DedicatedWorkspaceHeader: React.FC = () => {
   const navigate = useNavigate();
@@ -91,31 +92,35 @@ export const DedicatedWorkspaceHeader: React.FC = () => {
           )}
         </div>
 
-        {/* Nhánh phải: Ô tìm kiếm nhanh trên Header (đồng bộ URL search param ?q=) */}
-        {isCatalog && (
-          <div className="w-48 sm:w-64 shrink-0">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => handleSearchChange(e.target.value)}
-                placeholder="Tìm tác vụ..."
-                className="w-full rounded-lg pl-8 pr-7 py-1.5 bg-panel border border-line focus:border-ink-muted text-xs text-ink placeholder:text-ink-faint transition-all outline-hidden"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink cursor-pointer"
-                  title="Xóa tìm kiếm"
-                >
-                  <X size={13} />
-                </button>
-              )}
+        {/* Nhánh phải: Bộ chọn tài khoản cho Admin & Ô tìm kiếm nhanh */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <UserScopeSelector />
+
+          {isCatalog && (
+            <div className="w-48 sm:w-64 shrink-0">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => handleSearchChange(e.target.value)}
+                  placeholder="Tìm tác vụ..."
+                  className="w-full rounded-lg pl-8 pr-7 py-1.5 bg-panel border border-line focus:border-ink-muted text-xs text-ink placeholder:text-ink-faint transition-all outline-hidden"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink cursor-pointer"
+                    title="Xóa tìm kiếm"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </header>
   );

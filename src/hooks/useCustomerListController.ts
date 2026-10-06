@@ -5,13 +5,23 @@ import {
   filterCustomersByStatus, countCustomersByStatus, isCustomerArchived,
   type CustomerStatusFilter,
 } from '../lib/customerStatus';
-import {
-  validateCustomerForm, NATIONAL_ID_CCCD_LENGTH, PHONE_LENGTH,
+import { validateCustomerForm, NATIONAL_ID_CCCD_LENGTH, PHONE_LENGTH,
   capDigits, capNumberList, normalizeNumberList, parseRawCustomerText,
 } from '../lib/customerValidation';
 import { useConfirm } from '../context/ConfirmContext';
+import { useUserScope } from '../context/UserScopeContext';
+import { useAuth } from '../context/AuthContext';
 
 export function useCustomerListController() {
+  const { can } = useAuth();
+  const { ownerScope, managedUsers } = useUserScope();
+  const canAssignOwner = can('customer.assign');
+  // KH tạo mới mặc định thuộc tài khoản đang xem; để trống thì API gán cho chính người tạo
+  const defaultOwnerId = ownerScope.kind === 'user' ? ownerScope.userId : '';
+  const ownerOptions = useMemo(
+    () => managedUsers.filter((u) => u.role !== 'unassigned').map((u) => ({ userId: u.userId, fullName: u.fullName })),
+    [managedUsers]
+  );
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -40,6 +50,7 @@ export function useCustomerListController() {
   const [inputSpousePhone, setInputSpousePhone] = useState('');
   const [inputSpouseAccountNumber, setInputSpouseAccountNumber] = useState('');
   const [inputKhlqAddress, setInputKhlqAddress] = useState('');
+  const [inputOwnerId, setInputOwnerId] = useState('');
 
   const [statusFilter, setStatusFilter] = useState<CustomerStatusFilter>('active');
   const [archiving, setArchiving] = useState<number | null>(null);
@@ -72,6 +83,7 @@ export function useCustomerListController() {
     fetchCustomers();
   }, [fetchCustomers]);
 
+  // Phạm vi tài khoản đã được lọc ở server (lib/api đọc ownerScopeStore)
   const statusCounts = useMemo(() => countCustomersByStatus(customers), [customers]);
   const visibleCustomers = useMemo(
     () => filterCustomersByStatus(customers, statusFilter),
@@ -113,13 +125,15 @@ export function useCustomerListController() {
     setInputSpousePhone('');
     setInputSpouseAccountNumber('');
     setInputKhlqAddress('');
+    setInputOwnerId('');
   }, []);
 
   const openDrawerForCreate = useCallback(() => {
     clearForm();
+    setInputOwnerId(defaultOwnerId);
     setDrawerTab('basic');
     setIsDrawerOpen(true);
-  }, [clearForm]);
+  }, [clearForm, defaultOwnerId]);
 
   const openDrawerForEdit = useCallback((cus: Customer) => {
     setSelectedCustomer(cus);
@@ -141,6 +155,7 @@ export function useCustomerListController() {
     setInputSpousePhone(cus.SpousePhone || '');
     setInputSpouseAccountNumber(cus.SpouseAccountNumber || '');
     setInputKhlqAddress(cus.KhlqAddress || '');
+    setInputOwnerId(cus.OwnerId || '');
     setDrawerTab('basic');
     setIsDrawerOpen(true);
   }, []);
@@ -207,6 +222,8 @@ export function useCustomerListController() {
       SpousePhone: inputSpousePhone.trim() || null,
       SpouseAccountNumber: inputSpouseAccountNumber.trim() || null,
       KhlqAddress: inputKhlqAddress.trim() || null,
+      // Chỉ người có quyền gán mới đổi được người phụ trách; để trống thì giữ nguyên
+      ...(canAssignOwner && inputOwnerId ? { OwnerId: inputOwnerId } : {}),
     };
 
     try {
@@ -214,6 +231,7 @@ export function useCustomerListController() {
       showNotify('success', selectedCustomer ? 'Đã CẬP NHẬT thành công hồ sơ!' : 'Đã TẠO MỚI thành công hồ sơ KH!');
       if (options?.continueAdding) {
         clearForm();
+        setInputOwnerId(defaultOwnerId);
       } else {
         setIsDrawerOpen(false);
         clearForm();
@@ -226,6 +244,7 @@ export function useCustomerListController() {
     inputCif, inputFullName, inputMaritalStatus, inputKhlqRelationship, inputSpouseName,
     inputNationalId, inputIdCardIssueDate, inputIdCardIssuePlace, inputPhone, inputSpouseNationalId, inputSpousePhone, selectedCustomer,
     inputEmail, inputAddress, inputAccountNumber, inputCifKhlq, inputSpouseAccountNumber, inputKhlqAddress,
+    inputOwnerId, canAssignOwner, defaultOwnerId,
     showNotify, clearForm, fetchCustomers,
   ]);
 
@@ -233,6 +252,10 @@ export function useCustomerListController() {
 
   const handleDeleteCustomer = useCallback(async () => {
     if (!selectedCustomer) return;
+    if (!can('customer.deleteForever')) {
+      showNotify('error', 'Chỉ Master Admin mới có quyền xóa vĩnh viễn khách hàng.');
+      return;
+    }
     const ok = await confirm({
       title: 'Xoá Khách hàng',
       message: `Bạn có chắc chắn muốn xoá Khách hàng "${selectedCustomer.FullName}" (CIF: ${selectedCustomer.CifKh})?`,
@@ -249,7 +272,7 @@ export function useCustomerListController() {
     } catch (err: any) {
       showNotify('error', `Lỗi xoá khách hàng: ${err.message}`);
     }
-  }, [selectedCustomer, showNotify, clearForm, fetchCustomers]);
+  }, [selectedCustomer, can, showNotify, clearForm, fetchCustomers]);
 
   return {
     customers,
@@ -290,6 +313,9 @@ export function useCustomerListController() {
       inputSpousePhone, setInputSpousePhone: (v: string) => setInputSpousePhone(capNumberList(v, PHONE_LENGTH)),
       inputSpouseAccountNumber, setInputSpouseAccountNumber: (v: string) => setInputSpouseAccountNumber(normalizeNumberList(v)),
       inputKhlqAddress, setInputKhlqAddress,
+      inputOwnerId, setInputOwnerId,
+      canAssignOwner,
+      ownerOptions,
     },
     statusFilter,
     setStatusFilter,

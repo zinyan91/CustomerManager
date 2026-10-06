@@ -3,7 +3,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { useDateFormat, type DateFormat } from '../../context/DateFormatContext';
 import { useFormatSettings } from '../../context/FormatSettingsContext';
 import { useFontSettings } from '../../context/FontSettingsContext';
+import { useAuth } from '../../context/AuthContext';
 import { Panel } from '../ui/Panel';
+import { UserManagementSection } from '../settings/UserManagementSection';
 import {
   Settings,
   Sun,
@@ -38,6 +40,7 @@ export const SettingsView: React.FC = () => {
   const { dateFormat, setDateFormat } = useDateFormat();
   const { formatSettings, updateFormatSettings } = useFormatSettings();
   const { fontSettings, updateFontSettings, resetFontSettings } = useFontSettings();
+  const { isAdmin } = useAuth();
 
   const handleResetAll = () => {
     resetFontSettings();
@@ -78,6 +81,8 @@ export const SettingsView: React.FC = () => {
 
       {/* Main 2-Column Responsive Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Quản lý tài khoản & phân quyền (Chỉ Admin) */}
+        {isAdmin && <UserManagementSection />}
         {/* ========================================================================= */}
         {/* CỘT 1: GIAO DIỆN & HIỂN THỊ */}
         {/* ========================================================================= */}

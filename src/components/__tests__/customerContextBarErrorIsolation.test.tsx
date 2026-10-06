@@ -10,9 +10,11 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({
     session: { user: { id: 'test' } },
     user: { id: 'test', email: 'test@nganhang.vn' },
-    role: 'banker',
+    role: 'user',
     fullName: 'Nguyễn Văn Thử',
     isAdmin: false,
+    can: () => false,
+    roleLoading: false,
     loading: false,
     signIn: async () => {},
     signOut: async () => {},

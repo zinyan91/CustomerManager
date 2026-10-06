@@ -1,9 +1,16 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, X, FileText, Sparkles, AlertCircle } from 'lucide-react';
 import type { DispatchDocumentType, DispatchUploadPayload } from '../../types/dispatch';
 import { DISPATCH_TYPE_LABELS } from '../../types/dispatch';
 import { extractDocumentMetadataFromFileName } from '../../lib/ai/geminiClient';
 import type { Database } from '../../types/database.types';
+import { todayIso } from '../../lib/utils';
+import {
+  DISPATCH_CATEGORIES,
+  categoryOfType,
+  dispatchUploadFolder,
+  type DispatchCategoryId,
+} from '../../lib/dispatch/dispatchCategories';
 
 type CustomerRow = Database['public']['Tables']['Customers']['Row'];
 
@@ -12,7 +19,10 @@ interface DispatchUploadModalProps {
   onClose: () => void;
   onUpload: (payload: DispatchUploadPayload) => Promise<void>;
   customers: CustomerRow[];
-  initialFolderPath?: string;
+  /** Thư mục gốc cấu hình của repo Văn thư (có thể rỗng). */
+  rootFolder: string;
+  /** Mục đang chọn ở sidebar, dùng làm nơi bỏ vào mặc định. */
+  defaultCategory: DispatchCategoryId;
 }
 
 export function DispatchUploadModal({
@@ -20,16 +30,18 @@ export function DispatchUploadModal({
   onClose,
   onUpload,
   customers,
-  initialFolderPath = '',
+  rootFolder,
+  defaultCategory,
 }: DispatchUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [folderPath, setFolderPath] = useState(initialFolderPath);
+  const [category, setCategory] = useState<DispatchCategoryId>(defaultCategory);
+  const [categoryTouched, setCategoryTouched] = useState(false);
   const [documentNumber, setDocumentNumber] = useState('');
   const [title, setTitle] = useState('');
   const [documentType, setDocumentType] = useState<DispatchDocumentType>('khac');
   const [issuer, setIssuer] = useState('');
-  const [documentDate, setDocumentDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [documentDate, setDocumentDate] = useState(() => todayIso());
+  const [receivedDate, setReceivedDate] = useState(() => todayIso());
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,7 +49,21 @@ export function DispatchUploadModal({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Mỗi lần mở lại: nơi bỏ vào mặc định theo mục đang xem ở sidebar
+  useEffect(() => {
+    if (isOpen) {
+      setCategory(defaultCategory);
+      setCategoryTouched(false);
+    }
+  }, [isOpen, defaultCategory]);
+
   if (!isOpen) return null;
+
+  // Đổi loại văn bản thì gợi ý lại nơi bỏ vào, trừ khi admin đã tự chọn
+  const changeType = (type: DispatchDocumentType) => {
+    setDocumentType(type);
+    if (!categoryTouched) setCategory(categoryOfType(type));
+  };
 
   const handleFileChange = (file: File) => {
     setSelectedFile(file);
@@ -48,7 +74,7 @@ export function DispatchUploadModal({
     if (!title) setTitle(meta.title);
     if (meta.documentNumber && !documentNumber) setDocumentNumber(meta.documentNumber);
     if (meta.issuer && !issuer) setIssuer(meta.issuer);
-    if (meta.documentType !== 'khac') setDocumentType(meta.documentType);
+    if (meta.documentType !== 'khac') changeType(meta.documentType);
   };
 
   const handleAiAutoFill = () => {
@@ -57,7 +83,7 @@ export function DispatchUploadModal({
     setTitle(meta.title);
     if (meta.documentNumber) setDocumentNumber(meta.documentNumber);
     if (meta.issuer) setIssuer(meta.issuer);
-    setDocumentType(meta.documentType);
+    changeType(meta.documentType);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,7 +110,7 @@ export function DispatchUploadModal({
         documentDate,
         receivedDate,
         customerId,
-        folderPath: folderPath.trim() || undefined,
+        folderPath: dispatchUploadFolder(rootFolder, category, documentDate),
         note: note.trim(),
       });
       onClose();
@@ -142,7 +168,7 @@ export function DispatchUploadModal({
               ref={fileInputRef}
               type="file"
               className="hidden"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt,.zip,.rar,.7z"
               onChange={(e) => {
                 if (e.target.files?.[0]) {
                   handleFileChange(e.target.files[0]);
@@ -224,7 +250,7 @@ export function DispatchUploadModal({
               </label>
               <select
                 value={documentType}
-                onChange={(e) => setDocumentType(e.target.value as DispatchDocumentType)}
+                onChange={(e) => changeType(e.target.value as DispatchDocumentType)}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
               >
                 {Object.entries(DISPATCH_TYPE_LABELS).map(([key, label]) => (
@@ -297,18 +323,27 @@ export function DispatchUploadModal({
             </select>
           </div>
 
-          {/* Thư mục lưu trữ */}
+          {/* Nơi bỏ vào: mục trong sidebar Văn thư */}
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Thư mục lưu trữ (Hugging Face / Cây thư mục)
+            <label htmlFor="dispatch-category" className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Bỏ vào mục
             </label>
-            <input
-              type="text"
-              value={folderPath}
-              onChange={(e) => setFolderPath(e.target.value)}
-              placeholder="VD: 2026/hop-dong (để trống sẽ tự động phân loại)"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-teal-500"
-            />
+            <select
+              id="dispatch-category"
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value as DispatchCategoryId);
+                setCategoryTouched(true);
+              }}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            >
+              {DISPATCH_CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-slate-500 font-mono">{dispatchUploadFolder(rootFolder, category, documentDate)}</p>
           </div>
 
           {/* Ghi chú */}

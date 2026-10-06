@@ -30,10 +30,14 @@ interface CustomerDrawerFormProps {
     inputSpousePhone: string; setInputSpousePhone: (v: string) => void;
     inputSpouseAccountNumber: string; setInputSpouseAccountNumber: (v: string) => void;
     inputKhlqAddress: string; setInputKhlqAddress: (v: string) => void;
+    inputOwnerId: string; setInputOwnerId: (v: string) => void;
+    canAssignOwner: boolean;
+    ownerOptions: { userId: string; fullName: string }[];
   };
   onSave: (e?: React.FormEvent, options?: { continueAdding?: boolean }) => void;
   onDelete: () => void;
   onParseSnippet?: (raw: string) => void;
+  canDelete?: boolean;
 }
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/Dialog';
@@ -46,6 +50,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
   onSave,
   onDelete,
   onParseSnippet,
+  canDelete = true,
 }) => {
   const [smartPasteOpen, setSmartPasteOpen] = useState(false);
   const [smartPasteText, setSmartPasteText] = useState('');
@@ -295,6 +300,22 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
                 className={`w-full rounded-lg p-2.5 ${UI.inputStyle}`}
               />
             </div>
+
+            {formState.canAssignOwner && (
+              <div>
+                <label className="block font-semibold mb-1 text-ink">Người phụ trách (tài khoản)</label>
+                <select
+                  value={formState.inputOwnerId}
+                  onChange={(e) => formState.setInputOwnerId(e.target.value)}
+                  className={`w-full rounded-lg p-2.5 ${UI.inputStyle}`}
+                >
+                  <option value="">Mặc định (giữ nguyên hoặc tài khoản của tôi)</option>
+                  {formState.ownerOptions.map((o) => (
+                    <option key={o.userId} value={o.userId}>{o.fullName}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Section 3: Người liên quan & Vợ / Chồng */}
@@ -424,7 +445,7 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
 
           {/* Sticky Modal Footer Actions */}
           <div className="border-t border-line pt-4 flex flex-wrap items-center justify-between gap-3 sticky bottom-0 bg-panel -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 p-4 sm:px-6 z-10 shadow-lg">
-            {selectedCustomer ? (
+            {selectedCustomer && canDelete ? (
               <button
                 type="button"
                 onClick={onDelete}

@@ -1,6 +1,8 @@
 import { supabase } from '../supabase';
 import type { CreditContract } from '../../types';
-import { unarchiveCustomer } from './customerApi';
+import { unarchiveCustomer, fetchCustomerIdsInScopeAPI } from './customerApi';
+import { fetchByCustomerScope, type OwnerScope } from '../ownerScope';
+import { getActiveOwnerScope } from '../ownerScopeStore';
 import { mortgageLinkErrorMessage } from '../mortgageContract';
 
 export async function fetchCreditContractsByCustomerAPI(customerId: number): Promise<CreditContract[]> {
@@ -18,13 +20,19 @@ export async function fetchCreditContractsByCustomerAPI(customerId: number): Pro
   }
 }
 
-export async function fetchAllCreditContractsAPI(): Promise<CreditContract[]> {
-  const { data, error } = await supabase
-    .from('CreditContracts')
-    .select('*')
-    .order('HdtdNumber', { ascending: true });
-  if (error) throw new Error(`Không nạp được danh sách HĐTD: ${error.message}`);
-  return data || [];
+export async function fetchAllCreditContractsAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<CreditContract[]> {
+  const ids = await fetchCustomerIdsInScopeAPI(scope);
+  return fetchByCustomerScope<CreditContract>(
+    ids,
+    async (part) => {
+      let query = supabase.from('CreditContracts').select('*').order('HdtdNumber', { ascending: true });
+      if (part) query = query.in('CustomerId', part);
+      const { data, error } = await query;
+      if (error) throw new Error(`Không nạp được danh sách HĐTD: ${error.message}`);
+      return data || [];
+    },
+    (a, b) => (a.HdtdNumber || '').localeCompare(b.HdtdNumber || '')
+  );
 }
 
 export async function saveCreditContractAPI(cc: Partial<CreditContract>): Promise<CreditContract> {

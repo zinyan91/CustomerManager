@@ -1,49 +1,60 @@
-import type { HfConfig, HfFileItem, FolderTreeNode } from '../../types/huggingface';
+import type { HfFileItem, FolderTreeNode } from '../../types/huggingface';
 
 const HF_API_BASE = 'https://huggingface.co/api';
-const STORAGE_KEY_CONFIG = 'cm_hf_config_v1';
 
-/**
- * Lấy cấu hình Hugging Face từ LocalStorage hoặc Biến môi trường
- */
-export function getHfConfig(): HfConfig {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.token || parsed.repoId) {
-        return parsed;
-      }
-    }
-  } catch {}
-
-  const token = (
-    import.meta.env.VITE_HF_TOKEN ||
-    (import.meta.env as any).HF_TOKEN ||
-    (typeof process !== 'undefined' && process.env ? (process.env.HF_TOKEN as string) : '') ||
-    ''
-  ).trim();
-
-  const repoId = (
-    import.meta.env.VITE_HF_DATASET_REPO ||
-    (import.meta.env as any).HF_DATASET_REPO ||
-    ''
-  ).trim();
-
-  return {
-    token,
-    repoId,
-    isPrivate: true,
-  };
+/** Lỗi trả về từ API Hugging Face, mang theo mã HTTP để giao diện phân loại. */
+export class HfApiError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'HfApiError';
+    this.status = status;
+  }
 }
 
 /**
- * Lưu cấu hình Hugging Face vào LocalStorage
+ * Chuẩn hóa Repo ID và Folder từ chuỗi nhập vào
+ * Xử lý thông minh URL Hugging Face hoặc chuỗi có dạng 'owner/repo/folder'
  */
-export function saveHfConfig(config: HfConfig): void {
-  try {
-    localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
-  } catch {}
+export function normalizeHfRepoAndFolder(
+  repoInput: string = '',
+  folderInput: string = ''
+): { repoId: string; folder: string } {
+  let cleanRepo = repoInput.trim();
+  let cleanFolder = folderInput.trim().replace(/^\/+|\/+$/g, '');
+
+  // 1. Nếu dán URL Hugging Face (ví dụ: https://huggingface.co/datasets/owner/repo/tree/main/subfolder)
+  if (cleanRepo.includes('huggingface.co/datasets/')) {
+    const afterDatasets = cleanRepo.split('huggingface.co/datasets/')[1] || '';
+    const parts = afterDatasets.split('/tree/main/');
+    if (parts.length > 1) {
+      cleanRepo = parts[0];
+      if (!cleanFolder && parts[1]) {
+        cleanFolder = parts[1].replace(/^\/+|\/+$/g, '');
+      }
+    } else {
+      cleanRepo = parts[0];
+    }
+  }
+
+  // 2. Cắt bỏ tiền tố datasets/ nếu người dùng gõ
+  if (cleanRepo.startsWith('datasets/')) {
+    cleanRepo = cleanRepo.substring('datasets/'.length);
+  }
+
+  // 3. Nếu chuỗi có nhiều hơn 2 đoạn (ví dụ: 'owner/repo/my-folder/sub')
+  const segments = cleanRepo.split('/').filter(Boolean);
+  if (segments.length >= 2) {
+    cleanRepo = `${segments[0]}/${segments[1]}`;
+    if (segments.length > 2 && !cleanFolder) {
+      cleanFolder = segments.slice(2).join('/');
+    }
+  }
+
+  return {
+    repoId: cleanRepo,
+    folder: cleanFolder,
+  };
 }
 
 /**
@@ -94,14 +105,15 @@ export async function validateHfToken(token: string): Promise<{
  */
 export async function listHfTree(
   repoId: string,
-  folderPath: string = '',
-  token?: string,
+  folderPath: string,
+  token: string,
   recursive: boolean = true
 ): Promise<HfFileItem[]> {
-  const cleanRepo = repoId.trim();
+  const norm = normalizeHfRepoAndFolder(repoId, folderPath);
+  const cleanRepo = norm.repoId;
+  const cleanPath = norm.folder;
   if (!cleanRepo) return [];
 
-  const cleanPath = folderPath.replace(/^\/+|\/+$/g, '');
   const encodedPath = cleanPath ? cleanPath.split('/').map(encodeURIComponent).join('/') : '';
   const baseUrl = encodedPath
     ? `${HF_API_BASE}/datasets/${cleanRepo}/tree/main/${encodedPath}`
@@ -109,17 +121,13 @@ export async function listHfTree(
 
   const url = recursive ? `${baseUrl}?recursive=true` : baseUrl;
   const headers: Record<string, string> = {};
-  const activeToken = token || getHfConfig().token;
-  if (activeToken) {
-    headers.Authorization = `Bearer ${activeToken}`;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
   const res = await fetch(url, { headers, cache: 'no-store' });
   if (!res.ok) {
-    if (res.status === 404) {
-      return [];
-    }
-    throw new Error(`Lỗi tải danh sách tệp từ Hugging Face (${res.status})`);
+    throw new HfApiError(res.status, `Lỗi tải danh sách tệp từ Hugging Face (${res.status})`);
   }
 
   const raw = await res.json();
@@ -153,138 +161,17 @@ export async function listHfTree(
 }
 
 /**
- * Tải tệp lên Hugging Face Dataset qua REST upload
- */
-export async function uploadFileToHf(
-  repoId: string,
-  filePath: string,
-  file: File | Blob,
-  token?: string
-): Promise<{ success: boolean; url: string; error?: string }> {
-  const activeToken = token || getHfConfig().token;
-  if (!activeToken) {
-    return { success: false, url: '', error: 'Chưa cấu hình HF Token với quyền write.' };
-  }
-
-  const cleanRepo = repoId.trim();
-  const cleanPath = filePath.replace(/^\/+|\/+$/g, '');
-
-  try {
-    const uploadUrl = `${HF_API_BASE}/datasets/${cleanRepo}/upload/main/${encodeURIComponent(cleanPath)}`;
-    const res = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${activeToken}`,
-      },
-      body: file,
-    });
-
-    if (res.ok) {
-      const downloadUrl = `https://huggingface.co/datasets/${cleanRepo}/resolve/main/${cleanPath}`;
-      return { success: true, url: downloadUrl };
-    }
-
-    // Fallback qua Hub Commit API nếu upload trực tiếp báo lỗi
-    const arrayBuffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    const base64Content = btoa(binary);
-
-    const commitRes = await fetch(`${HF_API_BASE}/datasets/${cleanRepo}/commit/main`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${activeToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        summary: `Upload document: ${cleanPath}`,
-        operations: [
-          {
-            key: 'file',
-            value: {
-              content: base64Content,
-              encoding: 'base64',
-              path: cleanPath,
-            },
-            operation: 'addOrUpdate',
-          },
-        ],
-      }),
-    });
-
-    if (!commitRes.ok) {
-      const errText = await commitRes.text();
-      return { success: false, url: '', error: `Lỗi upload HF (${commitRes.status}): ${errText}` };
-    }
-
-    const downloadUrl = `https://huggingface.co/datasets/${cleanRepo}/resolve/main/${cleanPath}`;
-    return { success: true, url: downloadUrl };
-  } catch (err: any) {
-    return { success: false, url: '', error: err.message || 'Lỗi mạng khi tải lên Hugging Face' };
-  }
-}
-
-/**
- * Xóa tệp khỏi Hugging Face Dataset qua Commit API
- */
-export async function deleteFileFromHf(
-  repoId: string,
-  filePath: string,
-  token?: string
-): Promise<{ success: boolean; error?: string }> {
-  const activeToken = token || getHfConfig().token;
-  if (!activeToken) {
-    return { success: false, error: 'Chưa cấu hình HF Token.' };
-  }
-
-  const cleanRepo = repoId.trim();
-  const cleanPath = filePath.replace(/^\/+|\/+$/g, '');
-
-  try {
-    const res = await fetch(`${HF_API_BASE}/datasets/${cleanRepo}/commit/main`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${activeToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        summary: `Delete document: ${cleanPath}`,
-        operations: [
-          {
-            operation: 'delete',
-            path: cleanPath,
-          },
-        ],
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      return { success: false, error: `Lỗi xoá tệp (${res.status}): ${errText}` };
-    }
-
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message || 'Lỗi mạng khi xoá tệp trên Hugging Face' };
-  }
-}
-
-/**
  * Tải Blob từ Hugging Face (hỗ trợ cả Private Dataset với Authorization Bearer)
  */
-export async function fetchHfFileBlob(downloadUrl: string, token?: string): Promise<Blob> {
-  const activeToken = token || getHfConfig().token;
+export async function fetchHfFileBlob(downloadUrl: string, token: string): Promise<Blob> {
   const headers: Record<string, string> = {};
-  if (activeToken) {
-    headers.Authorization = `Bearer ${activeToken}`;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
   const res = await fetch(downloadUrl, { headers });
   if (!res.ok) {
-    throw new Error(`Không thể tải tệp từ Hugging Face (${res.status})`);
+    throw new HfApiError(res.status, `Không thể tải tệp từ Hugging Face (${res.status})`);
   }
   return await res.blob();
 }

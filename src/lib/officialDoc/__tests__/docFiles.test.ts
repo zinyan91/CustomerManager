@@ -13,6 +13,7 @@ import { HfApiError } from '../../huggingface/hfClient';
 import {
   addDocFile,
   canViewInBrowser,
+  docDownloadPlan,
   fetchDocFileBlob,
   groupFilesByKind,
   primaryFile,
@@ -42,6 +43,22 @@ describe('groupFilesByKind', () => {
     expect(groupFilesByKind(files)).toEqual({
       goc: [files[1], files[2]],
       'bieu-mau': [files[0]],
+    });
+  });
+});
+
+describe('docDownloadPlan', () => {
+  it('chưa có tệp thì không tải', () => {
+    expect(docDownloadPlan({ docNumber: '2097/2026/TB-TGĐ', files: [] })).toEqual({ kind: 'none' });
+  });
+  it('một tệp thì tải thẳng tệp đó', () => {
+    const file = f('goc', 'a/2097.pdf');
+    expect(docDownloadPlan({ docNumber: '2097/2026/TB-TGĐ', files: [file] })).toEqual({ kind: 'single', file });
+  });
+  it('nhiều tệp (gốc, phụ lục, biểu mẫu) thì nén ZIP mang tên số hiệu', () => {
+    const files = [f('goc', 'a/2097.pdf'), f('goc', 'a/PL1.pdf'), f('bieu-mau', 'b/mau.zip', 'o/mau')];
+    expect(docDownloadPlan({ docNumber: '2097/2026/TB-TGĐ', files })).toEqual({
+      kind: 'zip', files, zipName: '2097-2026-tb-tgd.zip',
     });
   });
 });

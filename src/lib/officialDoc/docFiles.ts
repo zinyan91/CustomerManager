@@ -1,7 +1,8 @@
-import type { OfficialDocFile, OfficialDocFileKind } from '../../types/officialDoc';
+import type { OfficialDoc, OfficialDocFile, OfficialDocFileKind } from '../../types/officialDoc';
 import type { StorageRepo, StorageRepoKind } from '../../types/storageRepo';
 import { HfApiError, fetchHfFileBlob, hfFileUrl } from '../huggingface/hfClient';
 import { guessMime } from '../dispatch/mergeArchive';
+import { docFolderSlug } from './docPaths';
 
 export const FILE_KIND_LABELS: Record<OfficialDocFileKind, string> = {
   goc: 'File văn bản gốc',
@@ -13,6 +14,18 @@ export const FILE_KINDS: readonly OfficialDocFileKind[] = ['goc', 'bieu-mau'];
 /** Tệp để tải nhanh ngoài danh sách: bản gốc đầu tiên, không có thì tệp đầu tiên; null nếu chưa có tệp. */
 export function primaryFile(files: OfficialDocFile[]): OfficialDocFile | null {
   return files.find((f) => f.kind === 'goc') ?? files[0] ?? null;
+}
+
+export type DocDownloadPlan =
+  | { kind: 'none' }
+  | { kind: 'single'; file: OfficialDocFile }
+  | { kind: 'zip'; files: OfficialDocFile[]; zipName: string };
+
+/** Nút tải ở danh sách: một tệp thì tải thẳng, nhiều tệp (gốc, phụ lục, biểu mẫu) thì nén thành một ZIP. */
+export function docDownloadPlan(doc: Pick<OfficialDoc, 'docNumber' | 'files'>): DocDownloadPlan {
+  if (doc.files.length === 0) return { kind: 'none' };
+  if (doc.files.length === 1) return { kind: 'single', file: doc.files[0] };
+  return { kind: 'zip', files: doc.files, zipName: `${docFolderSlug(doc.docNumber)}.zip` };
 }
 
 export function groupFilesByKind(files: OfficialDocFile[]): Record<OfficialDocFileKind, OfficialDocFile[]> {

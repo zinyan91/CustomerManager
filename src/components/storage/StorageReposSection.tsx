@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { useUserScope } from '../../context/UserScopeContext';
-import { createStorageRepo, removeStorageRepo } from '../../lib/api/storageReposApi';
+import { createStorageRepo, removeStorageRepo, updateStorageRepo } from '../../lib/api/storageReposApi';
 import { buildRepoId, suggestPersonalRepoSlug } from '../../lib/storageRepos';
 import { STORAGE_KIND_LABELS, type StorageRepo, type StorageRepoKind } from '../../types/storageRepo';
 import type { HfAuth } from '../../types/huggingface';
@@ -35,6 +35,12 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
+  const [editing, setEditing] = useState<StorageRepo | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editRepoId, setEditRepoId] = useState('');
+  const [editFolder, setEditFolder] = useState('');
+  const [editBusy, setEditBusy] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const picked = users.find((u) => u.userId === userId);
   const suggestion = useMemo(() => {
@@ -78,6 +84,34 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
       setError(err instanceof Error ? err.message : 'Không tạo được repo.');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const startEdit = (repo: StorageRepo) => {
+    setEditing(repo);
+    setEditName(repo.name);
+    setEditRepoId(repo.repoId);
+    setEditFolder(repo.folder);
+    setEditError(null);
+    setOkMsg(null);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auth || !editing) return;
+    const idChanged = editRepoId.trim() !== editing.repoId;
+    if (idChanged && !window.confirm(`Đổi Repository ID từ ${editing.repoId} sang ${editRepoId.trim()}? Các văn bản đang trỏ tới repo cũ sẽ được cập nhật theo. Dataset trên Hugging Face không bị đổi tên.`)) return;
+    setEditBusy(true);
+    setEditError(null);
+    try {
+      const result = await updateStorageRepo(editing, { name: editName, repoId: editRepoId.trim(), folder: editFolder }, auth.token);
+      setOkMsg(`Đã lưu "${editName.trim()}".${result.documents > 0 ? ` Đã cập nhật đường dẫn kho trong ${result.documents} văn bản.` : ''}`);
+      setEditing(null);
+      await onChanged();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Không sửa được repo.');
+    } finally {
+      setEditBusy(false);
     }
   };
 
@@ -127,7 +161,16 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
                 <td className="py-2 px-3 text-slate-600 dark:text-slate-400">{STORAGE_KIND_LABELS[r.kind]}</td>
                 <td className="py-2 px-3 font-mono text-xs text-slate-600 dark:text-slate-400">{r.repoId}</td>
                 <td className="py-2 px-3 text-slate-600 dark:text-slate-400">{userName(r.assignedUserId) || '—'}</td>
-                <td className="py-2 px-3">
+                <td className="py-2 px-3 whitespace-nowrap">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(r)}
+                    aria-label={`Sửa ${r.name}`}
+                    title="Sửa repo"
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleRemove(r)}
@@ -142,6 +185,50 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
           </tbody>
         </table>
       </div>
+
+      {editing && (
+        <form onSubmit={handleUpdate} aria-label="Sửa repo" className="space-y-3 p-4 rounded-xl border border-slate-300 dark:border-slate-700">
+          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Sửa repo: {STORAGE_KIND_LABELS[editing.kind]}</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="edit-repo-name" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tên hiển thị</label>
+              <input id="edit-repo-name" value={editName} onChange={(e) => setEditName(e.target.value)} className={FIELD} />
+            </div>
+            <div>
+              <label htmlFor="edit-repo-id" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Repository ID</label>
+              <input id="edit-repo-id" value={editRepoId} onChange={(e) => setEditRepoId(e.target.value)} className={`${FIELD} font-mono`} placeholder="tai-khoan/ten-repo" />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="edit-repo-folder" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Thư mục gốc</label>
+              <input id="edit-repo-folder" value={editFolder} onChange={(e) => setEditFolder(e.target.value)} className={`${FIELD} font-mono`} placeholder="Để trống = toàn repo" />
+            </div>
+          </div>
+          {editError && (
+            <div role="alert" className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{editError}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <button
+              type="submit"
+              disabled={editBusy || !auth || !editName.trim() || !editRepoId.trim()}
+              className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white disabled:opacity-50 flex items-center gap-2"
+            >
+              {editBusy && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span>Lưu thay đổi</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(null)}
+              disabled={editBusy}
+              className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+            >
+              Hủy
+            </button>
+          </div>
+        </form>
+      )}
 
       <form onSubmit={handleCreate} className="space-y-3 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
         <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Thêm repo</h4>

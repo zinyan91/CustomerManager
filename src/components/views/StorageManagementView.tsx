@@ -1,8 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Upload, FolderUp, Search, RotateCcw, Database, ChevronRight, Settings,
   File as FileIcon, FileText, FileArchive, Folder, Grid2X2, List, Download, Eye, Trash2,
-  Sparkles, AlertCircle, Loader2, X,
+  Sparkles, AlertCircle, Loader2, X, Copy, ClipboardPaste, MoreHorizontal,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useUserScope } from '../../context/UserScopeContext';
@@ -10,6 +10,7 @@ import { useArchive } from '../../hooks/useArchive';
 import { useArchiveUpload } from '../../hooks/useArchiveUpload';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { useFolderZipDownload } from '../../hooks/useFolderZipDownload';
+import { useStorageClipboard } from '../../hooks/useStorageClipboard';
 import { buildFolderTree } from '../../lib/huggingface/hfClient';
 import { deleteFileFromHf } from '../../lib/huggingface/hfWrite';
 import { isHfConfigComplete } from '../../lib/huggingface/hfConfigApi';
@@ -18,6 +19,7 @@ import { resolveFileDownloadUrl, joinArchivePath } from '../../lib/dispatch/disp
 import { canDeleteInRepo, canUploadToRepo, repoLabel, splitStorageRepos, type StorageScope } from '../../lib/storageRepos';
 import { browseFolder, stripBase } from '../../lib/dispatch/folderBrowse';
 import { planFolderZip } from '../../lib/dispatch/folderZipPlan';
+import { buildClip, describeClip, planClipZip, topKey, type ClipTop } from '../../lib/storageClipboard';
 import { itemsFromFileList, type UploadItem } from '../../lib/uploadItems';
 import { fmtDate } from '../../lib/utils';
 import type { DispatchDocument } from '../../types/dispatch';
@@ -26,11 +28,15 @@ import { FolderTreeView } from '../dispatch/FolderTreeView';
 import { DispatchPreviewModal } from '../dispatch/DispatchPreviewModal';
 import { AiChatDialog } from '../ai/AiChatDialog';
 import { StorageSettingsModal } from '../storage/StorageSettingsModal';
+import { ItemMenu, type MenuEntry } from '../storage/ItemMenu';
 import { UploadDropZone } from '../storage/UploadDropZone';
 import { UploadStatusPanel } from '../storage/UploadStatusPanel';
 import { DownloadStatusPanel } from '../storage/DownloadStatusPanel';
 
 const ARCHIVE_EXT = /\.(zip|rar|7z|tar|gz|tgz)$/i;
+
+const barBtn =
+  'px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-sm font-medium flex items-center gap-1.5 cursor-pointer';
 
 // webkitdirectory chưa có trong kiểu chuẩn của React nên khai báo qua object
 const FOLDER_INPUT_ATTRS = { webkitdirectory: '', directory: '' } as Record<string, string>;
@@ -56,6 +62,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
     useArchive(scope);
   const upload = useArchiveUpload(config, reload);
   const zipDl = useFolderZipDownload();
+  const clipboard = useStorageClipboard();
 
   const [selectedFolder, setSelectedFolder] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,6 +76,8 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const [aiAttachedDoc, setAiAttachedDoc] = useState<DispatchDocument | null>(null);
   const [virtualFolders, setVirtualFolders] = useState<string[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; tops: ClipTop[]; pasteInto?: string } | null>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -121,6 +130,24 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const listedBytes =
     filteredFiles.reduce((sum, d) => sum + (d.fileSize || 0), 0) + browse.folders.reduce((sum, f) => sum + f.totalBytes, 0);
   const openFolder = (entryPath: string) => setSelectedFolder(stripBase(entryPath, baseFolder) ?? '');
+
+  // Chọn tất cả: các mục đang hiện ở danh sách (thư mục và tệp)
+  const listedTops = useMemo<ClipTop[]>(
+    () => [
+      ...browse.folders.map((f) => ({ kind: 'folder' as const, path: f.path, name: f.name })),
+      ...filteredFiles.map((d) => ({ kind: 'file' as const, path: d.filePath || joinArchivePath(d.folderPath, d.fileName), name: d.fileName })),
+    ],
+    [browse.folders, filteredFiles]
+  );
+  const allListedSelected = listedTops.length > 0 && listedTops.every((t) => clipboard.selected.has(topKey(t)));
+  const toggleAllListed = () => {
+    if (allListedSelected) clipboard.clearSelection();
+    else for (const t of listedTops) if (!clipboard.selected.has(topKey(t))) clipboard.toggle(t);
+  };
+  const { clearSelection } = clipboard;
+  useEffect(() => {
+    clearSelection();
+  }, [selectedRepo?.id, selectedFolder, searchQuery, clearSelection]);
 
   const stats = useMemo(() => {
     const totalBytes = documents.reduce((sum, d) => sum + (d.fileSize || 0), 0);
@@ -210,6 +237,100 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const iconBtn =
     'p-1.5 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800';
 
+  const selectedTops = useMemo(() => [...clipboard.selected.values()], [clipboard.selected]);
+
+  const topOfDoc = (doc: DispatchDocument): ClipTop => ({ kind: 'file', path: doc.filePath || joinArchivePath(doc.folderPath, doc.fileName), name: doc.fileName });
+  const topOfFolder = (f: { path: string; name: string }): ClipTop => ({ kind: 'folder', path: f.path, name: f.name });
+  // Bấm vào mục đang được chọn thì thao tác áp cho cả nhóm đã chọn; mục khác thì chỉ cho riêng nó
+  const actionTops = (top: ClipTop): ClipTop[] => (clipboard.selected.has(topKey(top)) ? selectedTops : [top]);
+
+  const handleCopy = (tops: ClipTop[]) => {
+    if (!config) return;
+    if (clipboard.copy(config.repoId, documents, tops)) setActionError(null);
+  };
+
+  const handlePaste = async (destFolder: string) => {
+    if (!config || !clipboard.clip) return;
+    if (!canUpload) {
+      setActionError('Bạn không có quyền tải lên kho này.');
+      return;
+    }
+    setActionError(null);
+    await clipboard.paste({
+      destRepoId: config.repoId,
+      destFolder,
+      destDocs: documents,
+      token: config.token,
+      upload: (items, folder) => upload.upload(items, folder),
+    });
+  };
+
+  // Phải chạy đồng bộ trong sự kiện click: hộp "Lưu thành" cần user activation
+  const handleDownloadTops = (tops: ClipTop[]) => {
+    if (!config) return;
+    if (tops.length === 1 && tops[0].kind === 'folder') {
+      handleDownloadFolder(tops[0].path);
+      return;
+    }
+    if (tops.length === 1) {
+      const doc = documents.find((d) => (d.filePath || joinArchivePath(d.folderPath, d.fileName)) === tops[0].path);
+      if (doc) void handleDownload(doc);
+      return;
+    }
+    setActionError(null);
+    try {
+      const rootLabel = selectedFolder ? selectedFolder.split('/').pop()! : selectedRepo ? repoLabel(selectedRepo, userId) : 'Kho';
+      zipDl.start(planClipZip(buildClip(config.repoId, documents, tops), rootLabel), { repoId: config.repoId, token: config.token });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Không nén được các mục đã chọn.');
+    }
+  };
+
+  const openMenu = (e: React.MouseEvent, tops: ClipTop[], pasteInto?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenu({ x: e.clientX, y: e.clientY, tops, pasteInto });
+  };
+
+  const openMenuAtButton = (e: React.MouseEvent<HTMLButtonElement>, tops: ClipTop[], pasteInto?: string) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMenu({ x: rect.right - 192, y: rect.bottom + 4, tops, pasteInto });
+  };
+
+  const menuEntries = (m: NonNullable<typeof menu>): MenuEntry[] => {
+    const entries: MenuEntry[] = [];
+    if (m.tops.length > 0) {
+      entries.push(
+        { id: 'copy', label: m.tops.length > 1 ? `Sao chép ${m.tops.length} mục` : 'Sao chép', icon: Copy, onSelect: () => handleCopy(m.tops) },
+        {
+          id: 'download',
+          label: m.tops.length === 1 && m.tops[0].kind === 'file' ? 'Tải về' : 'Tải về (ZIP)',
+          icon: Download,
+          onSelect: () => handleDownloadTops(m.tops),
+          disabled: zipDl.isBusy,
+        },
+      );
+    }
+    if (clipboard.clip && canUpload) {
+      const where = m.pasteInto ?? currentFolder;
+      entries.push({
+        id: 'paste',
+        label: m.pasteInto !== undefined ? `Dán vào "${m.pasteInto.split('/').pop()}"` : 'Dán vào thư mục này',
+        icon: ClipboardPaste,
+        onSelect: () => void handlePaste(where),
+        disabled: upload.running || clipboard.fetching !== null,
+      });
+    }
+    return entries;
+  };
+
+  const shownError = actionError ?? clipboard.error;
+  const dismissShownError = () => {
+    setActionError(null);
+    clipboard.dismissError();
+  };
+
   return (
     <div className={`flex flex-col ${embedded ? 'h-full min-h-[28rem]' : 'h-[calc(100dvh-3.5rem)]'} overflow-hidden bg-slate-50 dark:bg-slate-950`}>
       {/* Tiêu đề và thao tác */}
@@ -280,7 +401,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
         onDismiss={zipDl.dismiss}
       />
 
-      {(statusMessage || actionError || status.kind === 'loading') && (
+      {(statusMessage || shownError || status.kind === 'loading') && (
         <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 space-y-1.5 text-sm">
           {status.kind === 'loading' && (
             <div className="flex items-center gap-2 text-slate-500">
@@ -294,14 +415,56 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
               <span>{statusMessage}</span>
             </div>
           )}
-          {actionError && (
+          {shownError && (
             <div role="alert" className="flex items-start gap-2 text-rose-700 dark:text-rose-300">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span className="flex-1">{actionError}</span>
-              <button type="button" onClick={() => setActionError(null)} aria-label="Đóng thông báo" className="p-0.5 text-slate-400 hover:text-slate-700">
+              <span className="flex-1">{shownError}</span>
+              <button type="button" onClick={dismissShownError} aria-label="Đóng thông báo" className="p-0.5 text-slate-400 hover:text-slate-700">
                 <X className="w-4 h-4" />
               </button>
             </div>
+          )}
+        </div>
+      )}
+
+      {(selectedTops.length > 0 || clipboard.clip || clipboard.fetching) && (
+        <div role="toolbar" aria-label="Thao tác với mục đã chọn" className="px-6 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 shrink-0 flex flex-wrap items-center gap-2 text-sm">
+          {selectedTops.length > 0 && (
+            <>
+              <span className="font-medium text-slate-800 dark:text-slate-100">Đã chọn {selectedTops.length} mục</span>
+              <button type="button" onClick={() => handleCopy(selectedTops)} className={barBtn}>
+                <Copy className="w-4 h-4" />
+                <span>Sao chép</span>
+              </button>
+              <button type="button" disabled={zipDl.isBusy} onClick={() => handleDownloadTops(selectedTops)} className={`${barBtn} disabled:opacity-50`}>
+                <Download className="w-4 h-4" />
+                <span>Tải về</span>
+              </button>
+              <button type="button" onClick={clipboard.clearSelection} className={barBtn}>
+                <X className="w-4 h-4" />
+                <span>Bỏ chọn</span>
+              </button>
+            </>
+          )}
+          {clipboard.fetching && (
+            <span role="status" className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Đang lấy tệp nguồn {clipboard.fetching.done}/{clipboard.fetching.total}
+            </span>
+          )}
+          {clipboard.clip && !clipboard.fetching && (
+            <span className="ml-auto flex items-center gap-2">
+              <span className="text-slate-600 dark:text-slate-300">Đã sao chép: {describeClip(clipboard.clip)}</span>
+              {canUpload && (
+                <button type="button" disabled={upload.running} onClick={() => void handlePaste(currentFolder)} className={`${barBtn} disabled:opacity-50`}>
+                  <ClipboardPaste className="w-4 h-4" />
+                  <span>Dán vào thư mục này</span>
+                </button>
+              )}
+              <button type="button" onClick={clipboard.clearClip} aria-label="Bỏ mục đã sao chép" className={iconBtn}>
+                <X className="w-4 h-4" />
+              </button>
+            </span>
           )}
         </div>
       )}
@@ -476,7 +639,14 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
             </div>
           </div>
 
-          <UploadDropZone disabled={!canUpload || upload.running} onItems={startUpload} className="flex-1 overflow-y-auto p-3 sm:p-5 custom-scrollbar">
+          <UploadDropZone
+            disabled={!canUpload || upload.running}
+            onItems={startUpload}
+            onContextMenu={(e) => {
+              if (clipboard.clip && canUpload) openMenu(e, []);
+            }}
+            className="flex-1 overflow-y-auto p-3 sm:p-5 custom-scrollbar"
+          >
             {filteredFiles.length === 0 && browse.folders.length === 0 ? (
               <div className="h-72 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
                 <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
@@ -492,8 +662,16 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                 {browse.folders.map((f) => (
                   <div
                     key={f.path}
+                    onContextMenu={(e) => openMenu(e, actionTops(topOfFolder(f)), f.path)}
                     className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-slate-400 dark:hover:border-slate-600 transition-all shadow-2xs flex items-center"
                   >
+                    <input
+                      type="checkbox"
+                      checked={clipboard.selected.has(topKey(topOfFolder(f)))}
+                      onChange={() => clipboard.toggle(topOfFolder(f))}
+                      aria-label={`Chọn thư mục ${f.name}`}
+                      className="w-4 h-4 ml-3 cursor-pointer"
+                    />
                     <button
                       type="button"
                       onClick={() => openFolder(f.path)}
@@ -515,19 +693,30 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                       disabled={zipDl.isBusy || f.fileCount === 0}
                       onClick={() => handleDownloadFolder(f.path)}
                       aria-label={`Tải thư mục ${f.name} (ZIP)`}
-                      className={`${iconBtn} mr-3 disabled:opacity-40`}
+                      className={`${iconBtn} disabled:opacity-40`}
                     >
                       <Download className="w-4 h-4" />
+                    </button>
+                    <button type="button" onClick={(e) => openMenuAtButton(e, actionTops(topOfFolder(f)), f.path)} aria-label={`Thao tác khác với thư mục ${f.name}`} aria-haspopup="menu" className={`${iconBtn} mr-3`}>
+                      <MoreHorizontal className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
                 {filteredFiles.map((doc) => (
                   <div
                     key={doc.id}
+                    onContextMenu={(e) => openMenu(e, actionTops(topOfDoc(doc)))}
                     className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-slate-400 dark:hover:border-slate-600 transition-all shadow-2xs flex flex-col justify-between"
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2 mb-3">
+                        <input
+                          type="checkbox"
+                          checked={clipboard.selected.has(topKey(topOfDoc(doc)))}
+                          onChange={() => clipboard.toggle(topOfDoc(doc))}
+                          aria-label={`Chọn ${doc.fileName}`}
+                          className="w-4 h-4 cursor-pointer"
+                        />
                         <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800">
                           <FileGlyph doc={doc} />
                         </div>
@@ -557,6 +746,9 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                             <Trash2 className="w-4 h-4" />
                           </button>
                         )}
+                        <button type="button" onClick={(e) => openMenuAtButton(e, actionTops(topOfDoc(doc)))} aria-label={`Thao tác khác với ${doc.fileName}`} aria-haspopup="menu" className={iconBtn}>
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -567,6 +759,15 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                 <table className="w-full min-w-[680px] text-left text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-semibold">
+                      <th className="py-3 pl-4 pr-1 w-px">
+                        <input
+                          type="checkbox"
+                          checked={allListedSelected}
+                          onChange={toggleAllListed}
+                          aria-label="Chọn tất cả mục đang hiện"
+                          className="w-4 h-4 cursor-pointer"
+                        />
+                      </th>
                       <th className="py-3 px-4 min-w-[14rem]">Tên tệp</th>
                       <th className="py-3 px-4 whitespace-nowrap">Thư mục</th>
                       <th className="py-3 px-4 text-right whitespace-nowrap">Dung lượng</th>
@@ -576,7 +777,16 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {browse.folders.map((f) => (
-                      <tr key={f.path} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                      <tr key={f.path} onContextMenu={(e) => openMenu(e, actionTops(topOfFolder(f)), f.path)} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                        <td className="py-3 pl-4 pr-1">
+                          <input
+                            type="checkbox"
+                            checked={clipboard.selected.has(topKey(topOfFolder(f)))}
+                            onChange={() => clipboard.toggle(topOfFolder(f))}
+                            aria-label={`Chọn thư mục ${f.name}`}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                        </td>
                         <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100">
                           <button type="button" onClick={() => openFolder(f.path)} className="flex items-center gap-2 hover:underline text-left cursor-pointer">
                             <Folder className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
@@ -597,6 +807,9 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                             >
                               <Download className="w-4 h-4" />
                             </button>
+                            <button type="button" onClick={(e) => openMenuAtButton(e, actionTops(topOfFolder(f)), f.path)} aria-label={`Thao tác khác với thư mục ${f.name}`} aria-haspopup="menu" className={iconBtn}>
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
                             <button type="button" onClick={() => openFolder(f.path)} aria-label={`Mở thư mục ${f.name}`} className={iconBtn}>
                               <ChevronRight className="w-4 h-4" />
                             </button>
@@ -605,7 +818,16 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                       </tr>
                     ))}
                     {filteredFiles.map((doc) => (
-                      <tr key={doc.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                      <tr key={doc.id} onContextMenu={(e) => openMenu(e, actionTops(topOfDoc(doc)))} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
+                        <td className="py-3 pl-4 pr-1">
+                          <input
+                            type="checkbox"
+                            checked={clipboard.selected.has(topKey(topOfDoc(doc)))}
+                            onChange={() => clipboard.toggle(topOfDoc(doc))}
+                            aria-label={`Chọn ${doc.fileName}`}
+                            className="w-4 h-4 cursor-pointer"
+                          />
+                        </td>
                         <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100">
                           <button type="button" onClick={() => setPreviewDoc(doc)} className="hover:underline text-left break-all">
                             {doc.fileName || doc.title}
@@ -627,6 +849,9 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             )}
+                            <button type="button" onClick={(e) => openMenuAtButton(e, actionTops(topOfDoc(doc)))} aria-label={`Thao tác khác với ${doc.fileName}`} aria-haspopup="menu" className={iconBtn}>
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -634,7 +859,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                   </tbody>
                   <tfoot>
                     <tr className="bg-slate-50 dark:bg-slate-800 font-bold text-slate-900 dark:text-slate-100 border-t-2 border-slate-300 dark:border-slate-700">
-                      <td colSpan={2} className="py-2.5 px-4 text-left">TỔNG CỘNG ({listedFileCount} tệp)</td>
+                      <td colSpan={3} className="py-2.5 px-4 text-left">TỔNG CỘNG ({listedFileCount} tệp)</td>
                       <td className="py-2.5 px-4 text-right font-mono">{(listedBytes / 1024 / 1024).toFixed(2)} MB</td>
                       <td colSpan={2} />
                     </tr>
@@ -659,6 +884,8 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
         />
         )}
       </div>
+
+      {menu && menuEntries(menu).length > 0 && <ItemMenu x={menu.x} y={menu.y} entries={menuEntries(menu)} onClose={closeMenu} />}
 
       {canConfigure && (
         <StorageSettingsModal

@@ -11,6 +11,8 @@ export interface DocProposal {
   attachment: AiAttachment;
   /** Bộ biểu mẫu người dùng gửi kèm (một hay nhiều tệp); có thì không tự tra kho Biểu mẫu. */
   formUploads: File[];
+  /** Phụ lục (PDF, ảnh) của thư mục văn thư: chỉ lưu cùng thư mục với tệp gốc, AI không đọc. */
+  appendices: File[];
   status: ProposalStatus;
   fields: ExtractedDoc | null;
   /** Biểu mẫu AI tự tìm thấy trong kho Biểu mẫu theo số hiệu; người dùng bỏ bớt được trước khi ghi. */
@@ -68,12 +70,13 @@ export function useAiDocProposals({ enabled, model, onRecorded }: Options) {
   );
 
   const propose = useCallback(
-    (attachments: AiAttachment[], formUploads: File[] = []) => {
+    (attachments: AiAttachment[], formUploads: File[] = [], appendices: File[] = []) => {
       if (!enabled || attachments.length === 0) return;
       const added: DocProposal[] = attachments.map((attachment) => ({
         id: `prop_${attachment.id}`,
         attachment,
         formUploads,
+        appendices,
         status: 'reading',
         fields: null,
         formFiles: [],
@@ -138,6 +141,7 @@ export function useAiDocProposals({ enabled, model, onRecorded }: Options) {
           target,
           formUploads: current.formUploads,
           formFiles: current.formFiles,
+          appendices: current.appendices,
         });
         patch(id, { status: 'saved' });
         onRecorded?.();

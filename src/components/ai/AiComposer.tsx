@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useState, useRef, useEffect } from 'react';
-import { Send, Square, Paperclip, X, FileText, ChevronDown, Image as ImageIcon, AlertCircle, Archive, FileSpreadsheet } from 'lucide-react';
+import { Send, Square, Paperclip, X, FileText, ChevronDown, Image as ImageIcon, AlertCircle, Archive, FileSpreadsheet, Folder, FolderUp } from 'lucide-react';
 import type { DispatchDocument } from '../../types/dispatch';
 import type { AiAttachment } from '../../types/ai';
 import { convertFilesToAiAttachments, formatFileSize } from '../../lib/ai/fileToAttachment';
@@ -7,13 +7,18 @@ import { ATTACHMENT_INTENTS, intentsFor, type AttachmentIntentId } from '../../l
 import { checkFormTotal, formPairingProblem, isFormAttachment } from '../../lib/ai/formFiles';
 import { fileToSpreadsheetAttachment, isSpreadsheetFile } from '../../lib/ai/spreadsheetText';
 import { fileToWordAttachment, isDocxFile, isLegacyDocFile, legacyDocMessage } from '../../lib/ai/wordText';
+import { planFolderBundle, readableFiles, splitDroppedItems, type DroppedFolder } from '../../lib/officialDoc/folderBundle';
+import { itemsFromFileList, type UploadItem } from '../../lib/uploadItems';
+
+const FOLDER_INPUT_ATTRS = { webkitdirectory: '', directory: '' } as Record<string, string>;
 
 interface AiComposerProps {
   /**
    * `intent` có khi người dùng chọn một việc với tệp (tóm tắt, đọc, thêm văn bản mới) thay vì tự gõ câu hỏi.
    * `formFiles` là bộ biểu mẫu (Word, Excel, ZIP...) đi kèm văn bản, chỉ dùng với việc thêm văn bản mới.
+   * `appendices` là phụ lục (PDF, ảnh) của thư mục văn thư đã thả vào; AI chỉ đọc tệp chính, phụ lục chỉ được lưu.
    */
-  onSend: (message: string, attachments?: AiAttachment[], intent?: AttachmentIntentId, formFiles?: File[]) => void;
+  onSend: (message: string, attachments?: AiAttachment[], intent?: AttachmentIntentId, formFiles?: File[], appendices?: File[]) => void;
   /** Hiện lựa chọn "Thêm văn bản mới" (tài khoản được thêm văn bản vào Văn thư). */
   canRecord?: boolean;
   onStop: () => void;
@@ -28,6 +33,8 @@ interface AiComposerProps {
 export interface AiComposerHandle {
   /** Thêm tệp (kéo thả từ ngoài vào) vào danh sách đính kèm; không gửi, chờ người dùng Enter. */
   addFiles: (files: File[]) => void;
+  /** Tệp kèm đường dẫn (thả cả thư mục). Một thư mục là một văn bản: một tệp chính cùng các phụ lục. */
+  addItems: (items: UploadItem[] | Promise<UploadItem[]>) => void;
 }
 
 export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function AiComposer({
@@ -49,11 +56,14 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
   const [sheets, setSheets] = useState<File[]>([]);
   // Tệp Word (.docx): AI đọc thành chữ như văn bản; khi thêm văn bản mới thì đi kèm làm biểu mẫu
   const [words, setWords] = useState<File[]>([]);
+  // Thư mục văn thư đang đính kèm: tệp chính nằm ở `attachments` cho AI đọc, phần còn lại của PDF/ảnh là phụ lục chỉ để lưu
+  const [folder, setFolder] = useState<{ name: string; readable: File[]; main: File } | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isReadingFiles, setIsReadingFiles] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   // Tự động chỉnh độ cao textarea
   useEffect(() => {
@@ -94,6 +104,7 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
     const atts = all.length > 0 ? all : undefined;
     setText('');
     setAttachments([]);
+    setFolder(null);
     setSheets([]);
     setWords([]);
     setUploadError(null);
@@ -154,7 +165,87 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
     }
   };
 
-  useImperativeHandle(ref, () => ({ addFiles: (files) => void processFileList(files) }));
+  const addFolder = async (dropped: DroppedFolder) => {
+    const plan = planFolderBundle(dropped.name, dropped.files);
+    if (!plan) {
+      setUploadError(`Thư mục "${dropped.name}" không có PDF hoặc ảnh để làm văn bản chính.`);
+      return;
+    }
+    if (folder || attachments.length > 0) {
+      setUploadError('Gỡ văn bản đang đính kèm trước khi thêm thư mục.');
+      return;
+    }
+    const sizeProblem = checkFormTotal([...forms, ...plan.appendices, ...plan.others]);
+    if (sizeProblem) {
+      setUploadError(sizeProblem);
+      return;
+    }
+    setIsReadingFiles(true);
+    setUploadError(null);
+    try {
+      const { attachments: read, errors } = await convertFilesToAiAttachments([plan.main]);
+      if (read.length === 0) {
+        setUploadError(errors.join('. '));
+        return;
+      }
+      setAttachments(read);
+      setFolder({ name: plan.name, readable: readableFiles(dropped.files), main: plan.main });
+      if (plan.others.length > 0) await processFileList(plan.others);
+    } finally {
+      setIsReadingFiles(false);
+    }
+  };
+
+  const processItems = async (source: UploadItem[] | Promise<UploadItem[]>) => {
+    try {
+      const items = await source;
+      if (items.length === 0) return;
+      const { folders, loose } = splitDroppedItems(items);
+      // Chỉ tài khoản được thêm văn bản mới có khái niệm thư mục văn thư; các tài khoản khác nhận từng tệp như trước
+      if (!canRecord || folders.length === 0) {
+        await processFileList(items.map((i) => i.file));
+        return;
+      }
+      if (folders.length > 1) {
+        setUploadError('Mỗi lần chỉ thêm một thư mục văn thư. Thả từng thư mục một.');
+        return;
+      }
+      await addFolder(folders[0]);
+      if (loose.length > 0) await processFileList(loose);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Không đọc được thư mục.');
+    }
+  };
+
+  const changeMain = async (index: number) => {
+    const next = folder?.readable[index];
+    if (!folder || !next || next === folder.main) return;
+    setIsReadingFiles(true);
+    try {
+      const { attachments: read, errors } = await convertFilesToAiAttachments([next]);
+      if (read.length === 0) {
+        setUploadError(errors.join('. '));
+        return;
+      }
+      setAttachments(read);
+      setFolder({ ...folder, main: next });
+      setUploadError(null);
+    } finally {
+      setIsReadingFiles(false);
+    }
+  };
+
+  const removeFolder = () => {
+    setFolder(null);
+    setAttachments([]);
+  };
+
+  useImperativeHandle(ref, () => ({ addFiles: (files) => void processFileList(files), addItems: (items) => void processItems(items) }));
+
+  const handleFolderInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) void processItems(itemsFromFileList(e.target.files));
+    e.target.value = '';
+  };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -184,9 +275,13 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
 
   const handleRemoveAttachment = (id: string) => {
     setAttachments((prev) => prev.filter((a) => a.id !== id));
+    // Bỏ tệp chính thì thư mục không còn ý nghĩa
+    setFolder(null);
   };
 
   const canSend = Boolean(text.trim()) && !isStreaming && !isReadingFiles;
+  // Phụ lục theo thứ tự tự nhiên của tên tệp
+  const appendices = folder ? (planFolderBundle(folder.name, folder.readable, folder.main)?.appendices ?? []) : [];
   const pairingProblem = formPairingProblem(forms.length, attachments.length);
 
   const sendWithIntent = async (id: AttachmentIntentId) => {
@@ -208,15 +303,16 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
     }
     setText('');
     setAttachments([]);
+    setFolder(null);
     setForms([]);
     setSheets([]);
     setWords([]);
     setUploadError(null);
-    onSend(prompt, [...atts, ...sheetAtts], id, formFiles);
+    onSend(prompt, [...atts, ...sheetAtts], id, formFiles, id === 'record' ? appendices : undefined);
   };
 
   // Có biểu mẫu thì chỉ còn việc thêm văn bản mới: tóm tắt hay đọc không dùng tới biểu mẫu
-  const intents = intentsFor(canRecord, Boolean(text.trim() || forms.length > 0), { documents: attachments.length, words: words.length, sheets: sheets.length, forms: forms.length });
+  const intents = intentsFor(canRecord, Boolean(text.trim() || forms.length > 0), { documents: attachments.length, words: words.length, sheets: sheets.length, forms: forms.length, appendices: appendices.length });
 
   return (
     <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
@@ -247,6 +343,36 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
       {/* Dải hiển thị tệp / hình ảnh đang đính kèm */}
       {(attachments.length > 0 || forms.length > 0 || sheets.length > 0 || words.length > 0) && (
         <div className="mb-2 max-w-3xl mx-auto flex flex-wrap gap-2">
+          {folder && (
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs text-xs text-slate-800 dark:text-slate-200 max-w-md">
+              <Folder className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium text-[11px]" title={folder.name}>{folder.name}</div>
+                <div className="text-[10px] text-slate-400">{appendices.length} phụ lục</div>
+              </div>
+              {folder.readable.length > 1 && (
+                <select
+                  aria-label="Tệp văn bản chính"
+                  value={folder.readable.indexOf(folder.main)}
+                  onChange={(e) => void changeMain(Number(e.target.value))}
+                  disabled={isReadingFiles}
+                  className="max-w-44 text-[11px] rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-1 py-0.5"
+                >
+                  {folder.readable.map((f, i) => (
+                    <option key={`${f.name}_${i}`} value={i}>{f.name}</option>
+                  ))}
+                </select>
+              )}
+              <button
+                type="button"
+                onClick={removeFolder}
+                className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-md transition-colors cursor-pointer shrink-0"
+                title="Gỡ thư mục"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
           {forms.map((form, i) => (
             <div
               key={`form_${form.name}_${i}`}
@@ -413,6 +539,29 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
         >
           <Paperclip className="w-4 h-4" />
         </button>
+
+        {canRecord && (
+          <>
+            <input
+              ref={folderInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleFolderInputChange}
+              aria-label="Chọn thư mục văn thư để thêm"
+              {...FOLDER_INPUT_ATTRS}
+            />
+            <button
+              type="button"
+              onClick={() => folderInputRef.current?.click()}
+              disabled={isReadingFiles}
+              className="p-2 text-slate-500 hover:text-teal-700 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50"
+              title="Đính kèm cả thư mục văn thư: một tệp chính cùng các phụ lục"
+            >
+              <FolderUp className="w-4 h-4" />
+            </button>
+          </>
+        )}
 
         {/* Nút đính kèm văn thư từ kho */}
         {availableDispatches.length > 0 && onSelectDispatch && (

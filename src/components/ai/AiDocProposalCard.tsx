@@ -22,7 +22,7 @@ const lbl = 'block text-[10px] font-semibold text-slate-500 dark:text-slate-400 
 
 /** Thẻ AI đề xuất ghi nhận một văn bản: sửa được các trường, bấm Ghi nhận mới lưu. */
 export function AiDocProposalCard({ proposal, onEdit, onRecord, onDismiss, onRemoveForm, onResearchForms }: AiDocProposalCardProps) {
-  const { id, attachment, status, fields, error, formUploads, formFiles, searchingForms, formNote } = proposal;
+  const { id, attachment, status, fields, error, formUploads, appendices, formFiles, searchingForms, formNote } = proposal;
   const invalid = fields ? validateOfficialDoc({ ...fields, files: [] }) : null;
   const locked = status === 'saving' || status === 'saved';
 
@@ -86,6 +86,21 @@ export function AiDocProposalCard({ proposal, onEdit, onRecord, onDismiss, onRem
               <DateInput id={`${id}-to`} disabled={locked} value={fields.effectiveTo ?? ''} onChange={(iso) => onEdit(id, { effectiveTo: iso || null })} className={input} />
             </div>
           </div>
+
+          {appendices.length > 0 && (
+            <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+              <span className={`${lbl.replace('mb-0.5', '')} block mb-1`}>Phụ lục ({appendices.length})</span>
+              <ul className="space-y-1">
+                {appendices.map((f, i) => (
+                  <li key={`${f.name}_${i}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                    <FileText className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                    <span className="flex-1 truncate" title={f.name}>{f.name}</span>
+                    <span className="font-mono text-[10px] text-slate-400">{formatFileSize(f.size)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between mb-1">

@@ -43,7 +43,7 @@ export function AiChatDialog({
   const recordAllowed = canRecordDocs ?? can('dispatch.upload');
   const docs = useAiDocProposals({ enabled: recordAllowed, model: assistant.model, onRecorded: onDocRecorded });
   const credit = useAiCreditProposals({ model: assistant.model });
-  const { isDragging, dropHandlers } = useFileDrop((files) => composerRef.current?.addFiles(files));
+  const { isDragging, dropHandlers } = useFileDrop((items) => composerRef.current?.addItems(items));
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const resize = useResizableWidth({ storageKey: 'cm_ai_chat_width', defaultWidth: 480, minWidth: 380, wideWidth: 800 });
   const isMaximized = resize.isWide;
@@ -222,10 +222,10 @@ export function AiChatDialog({
           <AiComposer
             ref={composerRef}
             canRecord={recordAllowed}
-            onSend={(msg, atts, intent, formFiles) => {
+            onSend={(msg, atts, intent, formFiles, appendices) => {
               // "Thêm văn bản mới": AI chỉ trích các trường để người dùng xem rồi xác nhận, không trả lời trong chat
               if (intent === 'record') {
-                if (atts) docs.propose(atts, formFiles ?? []);
+                if (atts) docs.propose(atts, formFiles ?? [], appendices ?? []);
                 return;
               }
               // "Nhập hồ sơ tín dụng": AI trích khách hàng và tài sản bảo đảm để người dùng xem rồi ghi, không trả lời trong chat

@@ -283,3 +283,63 @@ describe('recordDocFromFile với bộ biểu mẫu nhiều tệp (tờ trình, 
     expect(m.upload).not.toHaveBeenCalled();
   });
 });
+
+describe('recordDocFromFile kèm phụ lục của thư mục văn thư', () => {
+  const FOLDER = 'van-thu/van-ban/2026/2753-2026-tb-bdh';
+
+  it('tệp chính một commit, phụ lục một commit chung cùng thư mục; văn bản gắn tệp chính trước rồi phụ lục theo thứ tự', async () => {
+    await recordDocFromFile({ file: file('tb.pdf'), fields: FIELDS, target: TARGET, appendices: [file('PL1.pdf'), file('PL2.pdf')] });
+
+    expect(m.upload).toHaveBeenCalledTimes(2);
+    const [, mainFolder, mainItems] = m.upload.mock.calls[0];
+    expect(mainFolder).toBe(FOLDER);
+    expect(mainItems.map((i: { relativePath: string }) => i.relativePath)).toEqual(['tb.pdf']);
+    const [tgt, folder, items] = m.upload.mock.calls[1];
+    expect(tgt).toEqual({ repoId: 'o/van-thu', token: 'hf_t' });
+    expect(folder).toBe(FOLDER);
+    expect(items.map((i: { relativePath: string }) => i.relativePath)).toEqual(['PL1.pdf', 'PL2.pdf']);
+
+    expect(m.save).toHaveBeenCalledWith(null, {
+      ...FIELDS,
+      files: [
+        { kind: 'goc', repoId: 'o/van-thu', path: `${FOLDER}/tb.pdf`, name: 'tb.pdf' },
+        { kind: 'goc', repoId: 'o/van-thu', path: `${FOLDER}/PL1.pdf`, name: 'PL1.pdf' },
+        { kind: 'goc', repoId: 'o/van-thu', path: `${FOLDER}/PL2.pdf`, name: 'PL2.pdf' },
+      ],
+    });
+  });
+
+  it('phụ lục trùng tên với tệp đã có hoặc với nhau thì đổi tên, không ghi đè', async () => {
+    m.listTree.mockResolvedValue([{ type: 'file', name: 'PL1.pdf' }]);
+    await recordDocFromFile({ file: file('tb.pdf'), fields: FIELDS, target: TARGET, appendices: [file('PL1.pdf'), file('PL1.pdf')] });
+    const items = m.upload.mock.calls[1][2] as Array<{ relativePath: string }>;
+    expect(items.map((i) => i.relativePath)).toEqual(['PL1-2.pdf', 'PL1-3.pdf']);
+  });
+
+  it('không có phụ lục thì chỉ một lần tải như cũ', async () => {
+    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, appendices: [] });
+    expect(m.upload).toHaveBeenCalledTimes(1);
+  });
+
+  it('phụ lục tải hỏng sau khi tệp chính đã lên: nói rõ tệp đã ở Kho, tên phụ lục lỗi, và không ghi văn bản', async () => {
+    m.upload
+      .mockResolvedValueOnce({ uploaded: ['x'], failed: [] })
+      .mockResolvedValueOnce({ uploaded: [], failed: [{ path: `${FOLDER}/PL2.pdf`, error: 'Tệp quá lớn so với giới hạn của kho lưu trữ.' }] });
+    await expect(
+      recordDocFromFile({ file: file('tb.pdf'), fields: FIELDS, target: TARGET, appendices: [file('PL1.pdf'), file('PL2.pdf')] })
+    ).rejects.toThrow(/Tệp gốc đã lên Kho \(.*tb\.pdf\) nhưng chưa tải được phụ lục: PL2\.pdf: Tệp quá lớn.*Chưa ghi văn bản/);
+    expect(m.save).not.toHaveBeenCalled();
+  });
+
+  it('ghi văn bản hỏng thì liệt kê cả tệp chính lẫn phụ lục đã lên Kho', async () => {
+    m.save.mockRejectedValue(new Error('lỗi CSDL'));
+    await expect(
+      recordDocFromFile({ file: file('tb.pdf'), fields: FIELDS, target: TARGET, appendices: [file('PL1.pdf')] })
+    ).rejects.toThrow(/tb\.pdf, .*PL1\.pdf\) nhưng chưa ghi được văn bản: lỗi CSDL/);
+  });
+
+  it('thiếu trường bắt buộc thì không tải gì lên, kể cả phụ lục', async () => {
+    await expect(recordDocFromFile({ file: file(), fields: { ...FIELDS, docNumber: '' }, target: TARGET, appendices: [file('PL1.pdf')] })).rejects.toThrow();
+    expect(m.upload).not.toHaveBeenCalled();
+  });
+});

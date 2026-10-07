@@ -67,7 +67,7 @@ export function OfficialDocList({
                 type="button"
                 onClick={() => onDownload(doc)}
                 disabled={doc.files.length === 0 || downloadingId === doc.id}
-                title={doc.files.length === 0 ? 'Chưa có tệp để tải' : 'Tải về'}
+                title={doc.files.length === 0 ? 'Chưa có tệp để tải' : doc.files.length > 1 ? `Tải ${doc.files.length} tệp (ZIP)` : 'Tải về'}
                 aria-label={`Tải về văn bản ${doc.docNumber}`}
                 className={`${btn} disabled:opacity-40 disabled:cursor-not-allowed`}
               >

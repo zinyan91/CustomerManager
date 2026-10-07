@@ -44,6 +44,8 @@ export interface AttachmentMix {
   sheets: number;
   /** Biểu mẫu khác (Word, ZIP...). */
   forms: number;
+  /** Phụ lục của thư mục văn thư (PDF, ảnh chỉ để lưu, AI không đọc). Có phụ lục thì chỉ còn việc thêm văn bản mới. */
+  appendices?: number;
 }
 
 /**
@@ -60,6 +62,7 @@ export function intentsFor(
   const words = mix.words ?? 0;
   return ATTACHMENT_INTENTS.filter((i) => {
     if (i.needsRecordPermission && !canRecord) return false;
+    if ((mix.appendices ?? 0) > 0 && i.id !== 'record') return false;
     // Thêm vào Văn thư cần tệp gốc là PDF hoặc ảnh (Word chỉ đi kèm làm biểu mẫu)
     if (i.id === 'record') return mix.documents > 0 && !((mix.sheets > 0 || words > 0) && mix.forms === 0 && mix.documents > 1);
     if (hasTypedText) return false;

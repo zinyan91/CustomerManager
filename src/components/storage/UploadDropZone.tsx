@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent, type ReactNode } from 'react';
+import { useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from 'react';
 import { UploadCloud } from 'lucide-react';
 import { itemsFromDataTransfer, type UploadItem } from '../../lib/uploadItems';
 
@@ -6,6 +6,8 @@ interface UploadDropZoneProps {
   /** Tắt khi người dùng không có quyền tải lên vào repo đang chọn. */
   disabled?: boolean;
   onItems: (items: UploadItem[]) => void;
+  /** Chuột phải vào vùng nền (không phải một mục) để mở menu dán. */
+  onContextMenu?: (e: MouseEvent<HTMLDivElement>) => void;
   children: ReactNode;
   className?: string;
 }
@@ -13,7 +15,7 @@ interface UploadDropZoneProps {
 const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files');
 
 /** Bọc một vùng để nhận tệp/thư mục kéo thả từ máy vào. */
-export function UploadDropZone({ disabled = false, onItems, children, className = '' }: UploadDropZoneProps) {
+export function UploadDropZone({ disabled = false, onItems, onContextMenu, children, className = '' }: UploadDropZoneProps) {
   const [over, setOver] = useState(false);
   // dragenter/dragleave bắn lặp khi đi qua phần tử con nên đếm độ sâu để không nhấp nháy
   const depth = useRef(0);
@@ -56,6 +58,7 @@ export function UploadDropZone({ disabled = false, onItems, children, className 
       onDragLeave={handleLeave}
       onDragOver={handleOver}
       onDrop={handleDrop}
+      onContextMenu={onContextMenu}
     >
       {children}
       {over && (

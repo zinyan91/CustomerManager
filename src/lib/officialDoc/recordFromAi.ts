@@ -65,6 +65,30 @@ async function uploadIntoDocFolder(repo: StorageRepo, token: string, file: File,
   return { path: joinArchivePath(folder, name), name };
 }
 
+/**
+ * Tải các phụ lục (PDF, ảnh) vào cùng thư mục văn bản trong một lần commit. Tên trùng với tệp đã có hay giữa các
+ * phụ lục với nhau thì đổi tên. Trả vị trí từng tệp theo đúng thứ tự đầu vào.
+ */
+async function uploadAppendices(repo: StorageRepo, token: string, files: File[], fields: ExtractedDoc): Promise<Array<{ path: string; name: string }>> {
+  const folder = joinArchivePath(repo.folder, fields.category, fields.issuedDate.slice(0, 4), docFolderSlug(fields.docNumber));
+  const taken = await existingFileNames(repo, token, folder);
+  const items = files.map((file) => {
+    const name = uniqueFileName(file.name, taken);
+    taken.add(name);
+    return { name, file: name === file.name ? file : new File([file], name, { type: file.type }) };
+  });
+  const result = await uploadItemsToHf(
+    { repoId: repo.repoId, token },
+    folder,
+    items.map((i) => ({ file: i.file, relativePath: i.name }))
+  );
+  if (result.failed.length > 0) {
+    const first = result.failed[0];
+    throw new Error(`${first.path.split('/').pop()}: ${first.error}`);
+  }
+  return items.map((i) => ({ path: joinArchivePath(folder, i.name), name: i.name }));
+}
+
 export interface FormLookup {
   /** Biểu mẫu tìm thấy trong kho Biểu mẫu, đã ở dạng tệp của văn bản. */
   files: OfficialDocFile[];
@@ -98,8 +122,10 @@ export async function recordDocFromFile(args: {
   target: RecordTarget;
   formUploads?: File[];
   formFiles?: OfficialDocFile[];
+  /** Phụ lục (PDF, ảnh) của thư mục văn thư: lưu cùng thư mục với tệp gốc và gắn vào văn bản như tệp gốc. */
+  appendices?: File[];
 }) {
-  const { file, fields, target, formUploads = [], formFiles = [] } = args;
+  const { file, fields, target, formUploads = [], formFiles = [], appendices = [] } = args;
   const invalid = validateOfficialDoc({ ...fields, files: [] });
   if (invalid) throw new Error(invalid);
   if (formUploads.length > 0 && !target.formRepo) throw new Error(MSG_NO_FORM_REPO);
@@ -109,6 +135,18 @@ export async function recordDocFromFile(args: {
   const goc = await uploadIntoDocFolder(target.repo, target.token, file, fields);
   let files: OfficialDocFile[] = [{ kind: 'goc', repoId: target.repo.repoId, path: goc.path, name: goc.name }];
   const landed = [goc.path];
+
+  if (appendices.length > 0) {
+    try {
+      for (const a of await uploadAppendices(target.repo, target.token, appendices, fields)) {
+        files = addDocFile(files, { kind: 'goc', repoId: target.repo.repoId, path: a.path, name: a.name });
+        landed.push(a.path);
+      }
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      throw new Error(`Tệp gốc đã lên Kho (${goc.path}) nhưng chưa tải được phụ lục: ${reason}. Chưa ghi văn bản.`);
+    }
+  }
 
   if (formBundle && target.formRepo) {
     try {

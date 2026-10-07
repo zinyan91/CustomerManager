@@ -3,8 +3,8 @@ import { Plus, Sparkles, FolderArchive, FolderCog, AlertCircle, X } from 'lucide
 import type { OfficialDoc, OfficialDocCategory, OfficialDocInput } from '../../types/officialDoc';
 import { OFFICIAL_CATEGORIES, categoryLabel } from '../../lib/officialDoc/categories';
 import { deleteOfficialDoc, saveOfficialDoc } from '../../lib/api/officialDocApi';
-import { downloadDocFile } from '../../lib/officialDoc/docFileActions';
-import { primaryFile } from '../../lib/officialDoc/docFiles';
+import { downloadDocFile, downloadDocFilesZip } from '../../lib/officialDoc/docFileActions';
+import { docDownloadPlan } from '../../lib/officialDoc/docFiles';
 import { useOfficialDocs } from '../../hooks/useOfficialDocs';
 import { useHfToken } from '../../hooks/useHfToken';
 import { useAuth } from '../../context/AuthContext';
@@ -49,12 +49,13 @@ export function DispatchManagementView() {
   };
 
   const handleDownload = async (doc: OfficialDoc) => {
-    const file = primaryFile(doc.files);
-    if (!file) return;
+    const plan = docDownloadPlan(doc);
+    if (plan.kind === 'none') return;
     setActionError(null);
     setDownloadingId(doc.id);
     try {
-      await downloadDocFile(file, token);
+      if (plan.kind === 'zip') await downloadDocFilesZip(plan.files, plan.zipName, token);
+      else await downloadDocFile(plan.file, token);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Không tải được tệp.');
     } finally {

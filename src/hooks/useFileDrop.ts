@@ -1,9 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
+import { itemsFromDataTransfer, type UploadItem } from '../lib/uploadItems';
 
 const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files');
 
-/** Vùng nhận tệp kéo thả. `isDragging` bật khi đang kéo tệp qua vùng; thả thì gọi onFiles. */
-export function useFileDrop(onFiles: (files: File[]) => void) {
+/**
+ * Vùng nhận tệp kéo thả. `isDragging` bật khi đang kéo tệp qua vùng; thả thì gọi onItems với tệp kèm đường dẫn
+ * trong thư mục (đọc cả thư mục thả vào). Đọc thư mục là bất đồng bộ nên onItems nhận một Promise để nơi dùng báo lỗi.
+ */
+export function useFileDrop(onItems: (items: Promise<UploadItem[]>) => void) {
   const [isDragging, setIsDragging] = useState(false);
   // Con trong vùng bắn dragenter/dragleave liên tục nên phải đếm để không nhấp nháy
   const depth = useRef(0);
@@ -32,10 +36,10 @@ export function useFileDrop(onFiles: (files: File[]) => void) {
       e.preventDefault();
       depth.current = 0;
       setIsDragging(false);
-      const files = Array.from(e.dataTransfer.files);
-      if (files.length > 0) onFiles(files);
+      // Phải gọi ngay trong sự kiện: danh sách mục thả chỉ hợp lệ lúc này
+      onItems(itemsFromDataTransfer(e.dataTransfer));
     },
-    [onFiles]
+    [onItems]
   );
 
   return { isDragging, dropHandlers: { onDragEnter, onDragOver, onDragLeave, onDrop } };

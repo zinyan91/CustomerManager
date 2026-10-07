@@ -2,6 +2,7 @@ import { supabase } from '../supabase';
 import type { StorageRepo } from '../../types/storageRepo';
 import { mapRepoRow, validateRepoInput, type RepoInput } from '../storageRepos';
 import { createHfDataset } from '../huggingface/hfWrite';
+import { HfApiError, listHfTree } from '../huggingface/hfClient';
 
 /** Danh sách repo được phép thấy (RLS lọc theo vai trò). Ném lỗi khi DB báo lỗi. */
 export async function listStorageRepos(): Promise<StorageRepo[]> {
@@ -75,4 +76,61 @@ export async function assignStorageRepo(id: number, userId: string): Promise<voi
     .select('Id');
   if (error) throw new Error(describeInsertError(error));
   if (!data || data.length === 0) throw new Error('Không gán được repo: không đủ quyền hoặc không phải repo cá nhân.');
+}
+
+export interface RepoEdit {
+  name: string;
+  repoId: string;
+  folder: string;
+}
+
+export interface RepoEditResult {
+  /** Số văn bản đã cập nhật đường dẫn kho theo Repository ID mới. */
+  documents: number;
+  dispatches: number;
+}
+
+const MISSING_FUNCTION_CODES = ['PGRST202', '42883'];
+
+/** Dataset phải có thật trên Hugging Face trước khi trỏ repo tới nó, kẻo gõ nhầm tiếp. */
+async function assertDatasetExists(repoId: string, token: string): Promise<void> {
+  try {
+    await listHfTree(repoId, '', token, false);
+  } catch (err) {
+    if (err instanceof HfApiError && err.status === 404) {
+      throw new Error(`Không tìm thấy dataset ${repoId} trên Hugging Face (hoặc token không có quyền xem). Kiểm tra lại Repository ID.`);
+    }
+    if (err instanceof HfApiError && (err.status === 401 || err.status === 403)) {
+      throw new Error('Token kho lưu trữ không hợp lệ hoặc không đủ quyền xem dataset này.');
+    }
+    throw err;
+  }
+}
+
+/**
+ * Master Admin sửa tên hiển thị, Repository ID và thư mục gốc của repo. Đổi Repository ID thì đường dẫn kho
+ * trong các văn bản đang trỏ tới repo cũ được cập nhật cùng lúc (một giao dịch ở CSDL). Không đổi tên dataset trên Hugging Face.
+ */
+export async function updateStorageRepo(repo: StorageRepo, edit: RepoEdit, token: string): Promise<RepoEditResult> {
+  const invalid = validateRepoInput({ name: edit.name, repoId: edit.repoId, kind: repo.kind, assignedUserId: repo.assignedUserId });
+  if (invalid) throw new Error(invalid);
+  if (edit.repoId !== repo.repoId) await assertDatasetExists(edit.repoId, token);
+
+  const { data, error } = await supabase.rpc('update_storage_repo', {
+    p_id: repo.id,
+    p_name: edit.name,
+    p_repo_id: edit.repoId,
+    p_folder: edit.folder,
+  });
+  if (error) {
+    if (error.code && MISSING_FUNCTION_CODES.includes(error.code)) {
+      throw new Error('Chưa áp migration 67_sua_repo_kho_luu_tru.sql trên Supabase.');
+    }
+    throw new Error(`Không sửa được repo: ${error.message}`);
+  }
+  const result = data as Partial<RepoEditResult> | null;
+  if (typeof result?.documents !== 'number' || typeof result?.dispatches !== 'number') {
+    throw new Error('Máy chủ trả về kết quả sửa repo không hợp lệ.');
+  }
+  return { documents: result.documents, dispatches: result.dispatches };
 }

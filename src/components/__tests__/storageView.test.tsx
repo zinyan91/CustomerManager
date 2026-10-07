@@ -280,6 +280,99 @@ describe('Kho lưu trữ - duyệt thư mục kiểu trình quản lý tệp', (
   });
 });
 
+describe('Kho lưu trữ - chọn kho', () => {
+  const mine = repo({ id: 2, name: 'Kho của tôi', repoId: 'own/a', kind: 'personal', assignedUserId: 'u-a' });
+  const bang = repo({ id: 3, name: 'Kho B', repoId: 'own/b', kind: 'personal', assignedUserId: 'u-b' });
+  const hung = repo({ id: 4, name: 'Kho H', repoId: 'own/h', kind: 'personal', assignedUserId: 'u-h' });
+  const withRepos = (list: StorageRepo[], selected: StorageRepo) => {
+    state.archive = makeArchive({ allRepos: list, repos: list, selectedRepo: selected });
+  };
+
+  it('kho của người khác không liệt kê thành tab, chỉ có trong ô chọn', () => {
+    state.role = 'master_admin';
+    withRepos([repo({}), mine, bang, hung], repo({}));
+    render(<StorageManagementView />);
+    const tabs = screen.getAllByRole('tab').map((t) => t.textContent);
+    expect(tabs).toEqual(['Kho chung', 'Kho của tôi']);
+    const select = screen.getByLabelText('Kho của người dùng khác') as HTMLSelectElement;
+    expect([...select.options].map((o) => o.value)).toEqual(['', '3', '4']);
+  });
+
+  it('chọn một người trong ô chọn thì mở kho của người đó', () => {
+    state.role = 'master_admin';
+    const archive = makeArchive({ allRepos: [repo({}), mine, bang], repos: [repo({}), mine, bang] });
+    state.archive = archive;
+    render(<StorageManagementView />);
+    fireEvent.change(screen.getByLabelText('Kho của người dùng khác'), { target: { value: '3' } });
+    expect(archive.selectRepo).toHaveBeenCalledWith(3);
+  });
+
+  it('không có kho nào của người khác thì không hiện ô chọn (User Admin, user)', () => {
+    state.role = 'user_admin';
+    withRepos([repo({}), mine], repo({}));
+    render(<StorageManagementView />);
+    expect(screen.queryByLabelText('Kho của người dùng khác')).toBeNull();
+  });
+
+  it('nhúng trong tab Văn thư: có tiêu đề riêng và không có trợ lý AI', () => {
+    state.role = 'master_admin';
+    const vt = repo({ id: 5, name: 'Văn thư', kind: 'dispatch' });
+    const bm = repo({ id: 6, name: 'Biểu mẫu', kind: 'form' });
+    withRepos([vt, bm], vt);
+    render(<StorageManagementView scope="dispatch" embedded />);
+    expect(screen.getByRole('heading', { name: 'Kho Văn thư và Biểu mẫu' })).toBeTruthy();
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Văn thư', 'Biểu mẫu']);
+    expect(screen.queryByRole('button', { name: /Trợ lý AI/ })).toBeNull();
+  });
+
+  it('màn Kho lưu trữ bình thường vẫn có nút Trợ lý AI', () => {
+    render(<StorageManagementView />);
+    expect(screen.getByRole('heading', { name: 'Kho lưu trữ' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Trợ lý AI/ })).toBeTruthy();
+  });
+});
+
+describe('Kho lưu trữ - điện thoại', () => {
+  beforeEach(() => {
+    state.archive = makeArchive({
+      documents: [mk('goc.pdf'), mk('MY HUE/a.pdf', 2048), mk('MY HUE/b.pdf'), mk('MY HUE/2026/c.pdf')],
+    });
+    window.matchMedia = ((q: string) => ({
+      matches: q.includes('max-width: 767px'),
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    // @ts-expect-error: trả về môi trường không có matchMedia như các test khác
+    delete window.matchMedia;
+  });
+
+  it('luôn dùng thẻ, không dùng bảng nhiều cột dù mặc định là dạng bảng', () => {
+    render(<StorageManagementView />);
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.getByRole('button', { name: /MY HUE.*3 tệp/ })).toBeTruthy();
+  });
+
+  it('có nút mở ngăn Kho và thư mục, bật tắt được', () => {
+    render(<StorageManagementView />);
+    const toggle = screen.getAllByRole('button').find((b) => b.getAttribute('aria-expanded') !== null) as HTMLElement;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('chọn thư mục thì đóng ngăn để thấy ngay danh sách tệp', () => {
+    render(<StorageManagementView />);
+    const toggle = screen.getAllByRole('button').find((b) => b.getAttribute('aria-expanded') !== null) as HTMLElement;
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    // Mục trong cây thư mục (khác thẻ thư mục ở khung phải)
+    fireEvent.click(screen.getByText('MY HUE', { selector: 'span.truncate' }));
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  });
+});
+
 type PickerWindow = { showSaveFilePicker?: unknown };
 
 function fileSink() {

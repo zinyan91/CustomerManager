@@ -94,8 +94,16 @@ describe('useAiAssistant - đọc văn bản Văn thư', () => {
     const hook = setup();
     await ask(hook, '2848-8 nói về gì');
     await ask(hook, 'Danh sách khách hàng');
-    expect(m.system.mock.calls[0][0]).toEqual({ includeCustomers: false });
-    expect(m.system.mock.calls[1][0]).toEqual({ includeCustomers: true });
+    expect(m.system.mock.calls[0][0]).toEqual({ includeCustomers: false, includeFinancials: false });
+    expect(m.system.mock.calls[1][0]).toEqual({ includeCustomers: true, includeFinancials: false });
+  });
+
+  it('chỉ nạp báo cáo tài chính khi câu hỏi nhắc tới tài chính doanh nghiệp', async () => {
+    const hook = setup();
+    await ask(hook, '2848-8 nói về gì');
+    await ask(hook, 'Phân tích báo cáo tài chính và khả năng trả nợ');
+    expect(m.system.mock.calls[0][0]).toMatchObject({ includeFinancials: false });
+    expect(m.system.mock.calls[1][0]).toMatchObject({ includeFinancials: true });
   });
 
   it('không có văn bản liên quan thì không gửi tệp nào', async () => {

@@ -84,7 +84,7 @@ export function OfficialDocForm({ doc, defaultCategory, token, onSubmit, onClose
           </button>
         </div>
 
-        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
+        <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4">
           <div>
             <label htmlFor="od-number" className={label}>Số hiệu</label>
             <input id="od-number" value={input.docNumber} onChange={(e) => patch({ docNumber: e.target.value })} className={control} />

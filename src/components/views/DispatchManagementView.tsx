@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Sparkles, FolderArchive, AlertCircle, X } from 'lucide-react';
+import { Plus, Sparkles, FolderArchive, FolderCog, AlertCircle, X } from 'lucide-react';
 import type { OfficialDoc, OfficialDocCategory, OfficialDocInput } from '../../types/officialDoc';
 import { OFFICIAL_CATEGORIES, categoryLabel } from '../../lib/officialDoc/categories';
 import { deleteOfficialDoc, saveOfficialDoc } from '../../lib/api/officialDocApi';
@@ -8,16 +8,18 @@ import { primaryFile } from '../../lib/officialDoc/docFiles';
 import { useOfficialDocs } from '../../hooks/useOfficialDocs';
 import { useHfToken } from '../../hooks/useHfToken';
 import { useAuth } from '../../context/AuthContext';
+import { canManageRepos } from '../../lib/storageRepos';
 import { OfficialDocFilters } from '../dispatch/OfficialDocFilters';
 import { OfficialDocList } from '../dispatch/OfficialDocList';
 import { OfficialDocDetail } from '../dispatch/OfficialDocDetail';
 import { OfficialDocForm } from '../dispatch/OfficialDocForm';
 import { AiChatDialog } from '../ai/AiChatDialog';
+import { StorageManagementView } from './StorageManagementView';
 
 type FormState = { doc: OfficialDoc | null } | null;
 
 export function DispatchManagementView() {
-  const { can } = useAuth();
+  const { can, role } = useAuth();
   const docsState = useOfficialDocs();
   const { filter, updateFilter, resetFilters, counts } = docsState;
   const { token, error: tokenError } = useHfToken();
@@ -27,6 +29,9 @@ export function DispatchManagementView() {
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  // Kho Văn thư và Biểu mẫu chỉ Master Admin quản lý; các vai trò khác dùng chúng qua danh mục văn bản
+  const canManageFiles = canManageRepos(role);
+  const [panel, setPanel] = useState<'docs' | 'files'>('docs');
 
   const canEdit = can('dispatch.upload');
   const canDelete = can('storage.delete');
@@ -69,23 +74,26 @@ export function DispatchManagementView() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden font-app bg-slate-50 dark:bg-slate-950">
-      <aside className="w-48 xl:w-56 2xl:w-64 shrink-0 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <div className="px-4 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2.5">
+    <div className="flex flex-col md:flex-row h-[calc(100dvh-3.5rem)] overflow-hidden font-app bg-slate-50 dark:bg-slate-950">
+      <aside className="w-full md:w-48 xl:w-56 2xl:w-64 shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <div className="hidden md:flex px-4 py-4 border-b border-slate-200 dark:border-slate-800 items-center gap-2.5">
           <FolderArchive className="w-5 h-5 text-slate-700 dark:text-slate-300" />
           <span className="text-base font-bold text-slate-900 dark:text-slate-100">Văn thư</span>
         </div>
 
-        <nav className="p-3 space-y-1" aria-label="Mục văn thư">
+        <nav className="p-2 md:p-3 flex md:block gap-1.5 md:gap-0 md:space-y-1 overflow-x-auto" aria-label="Mục văn thư">
           {navItems.map((item) => {
-            const active = item.id === filter.category;
+            const active = panel === 'docs' && item.id === filter.category;
             return (
               <button
                 key={item.id}
                 type="button"
                 aria-current={active ? 'page' : undefined}
-                onClick={() => updateFilter({ category: item.id })}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm cursor-pointer ${
+                onClick={() => {
+                  setPanel('docs');
+                  updateFilter({ category: item.id });
+                }}
+                className={`shrink-0 md:w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm whitespace-nowrap cursor-pointer ${
                   active
                     ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -96,17 +104,36 @@ export function DispatchManagementView() {
               </button>
             );
           })}
+
+          {canManageFiles && (
+            <button
+              type="button"
+              aria-current={panel === 'files' ? 'page' : undefined}
+              onClick={() => setPanel('files')}
+              className={`shrink-0 md:w-full md:mt-3 md:border-t md:border-slate-200 md:dark:border-slate-800 md:pt-3 flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm whitespace-nowrap cursor-pointer ${
+                panel === 'files'
+                  ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <FolderCog className="w-4 h-4 shrink-0" />
+              <span>Kho tệp</span>
+            </button>
+          )}
         </nav>
       </aside>
 
-      <div className="flex-1 min-w-0 overflow-y-auto bg-white dark:bg-slate-900">
+      <div className="flex-1 min-h-0 md:min-w-0 overflow-y-auto bg-white dark:bg-slate-900">
+       {panel === 'files' && canManageFiles ? (
+        <StorageManagementView scope="dispatch" embedded />
+       ) : (
        <section className="divide-y divide-slate-200 dark:divide-slate-800">
-        <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+        <div className="px-3 sm:px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">
             {filter.category === 'all' ? 'Tất cả văn bản' : categoryLabel(filter.category)}
           </h1>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
               onClick={() => setIsAiChatOpen((prev) => !prev)}
@@ -164,6 +191,7 @@ export function DispatchManagementView() {
           onDelete={canDelete ? handleDelete : undefined}
         />
        </section>
+       )}
       </div>
 
       <OfficialDocDetail doc={detailDoc} token={token} onClose={() => setDetailDoc(null)} />

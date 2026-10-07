@@ -3,6 +3,7 @@ import type { AiChatMessage, AiThreadSummary, AiAttachment } from '../types/ai';
 import type { DispatchDocument } from '../types/dispatch';
 import { streamGeminiContent, DEFAULT_AI_MODEL } from '../lib/ai/geminiClient';
 import { fetchSystemContextData, mentionsCustomers, type SystemContextData } from '../lib/ai/systemContext';
+import { mentionsFinancials } from '../lib/ai/financialContext';
 import { prepareDocContext, lookupSharedAnswer, EMPTY_DOC_CONTEXT, type SharedLookup } from '../lib/ai/docContext';
 import { questionKey, saveCachedAnswer } from '../lib/ai/answerCache';
 import { loadMessages, loadThreads, removeThread, saveMessages, saveThreads } from '../lib/ai/chatStorage';
@@ -178,10 +179,10 @@ export function useAiAssistant(userId: string | null = null) {
         });
       };
 
-      // Chỉ câu hỏi mở đầu một cuộc chat, không kèm tệp riêng hay khách hàng, mới dùng chung được:
-      // câu nối tiếp phụ thuộc ngữ cảnh, còn dữ liệu khách hàng không được chia sẻ giữa các tài khoản.
+      // Chỉ câu hỏi mở đầu một cuộc chat, không kèm tệp riêng, khách hàng hay báo cáo tài chính, mới dùng chung được:
+      // câu nối tiếp phụ thuộc ngữ cảnh, còn dữ liệu khách hàng và báo cáo tài chính không được chia sẻ giữa các tài khoản.
       const key = questionKey(cleanText);
-      const shareable = history.length === 0 && !hasAttachments && !targetDoc && !mentionsCustomers(cleanText) && key !== '';
+      const shareable = history.length === 0 && !hasAttachments && !targetDoc && !mentionsCustomers(cleanText) && !mentionsFinancials(cleanText) && key !== '';
 
       setStatusText('Đang tra cứu văn bản...');
       let lookup: SharedLookup | null = null;
@@ -206,7 +207,7 @@ export function useAiAssistant(userId: string | null = null) {
       let docs = EMPTY_DOC_CONTEXT;
       try {
         const [sys, prepared] = await Promise.all([
-          fetchSystemContextData({ includeCustomers: mentionsCustomers(cleanText) }).catch((err) => {
+          fetchSystemContextData({ includeCustomers: mentionsCustomers(cleanText), includeFinancials: mentionsFinancials(cleanText) }).catch((err) => {
             console.warn('Lỗi thu thập dữ liệu hệ thống cho AI:', err);
             return undefined;
           }),

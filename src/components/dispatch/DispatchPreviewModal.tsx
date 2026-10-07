@@ -13,7 +13,8 @@ interface DispatchPreviewModalProps {
   document: DispatchDocument | null;
   isOpen: boolean;
   onClose: () => void;
-  onOpenAiChat: (doc: DispatchDocument) => void;
+  /** Không truyền thì ẩn nút Hỏi đáp AI (màn không có trợ lý AI). */
+  onOpenAiChat?: (doc: DispatchDocument) => void;
   onUpdated?: (updated: DispatchDocument) => void;
   /** Cấu hình HF dùng chung để tải tệp riêng tư; null khi chưa cấu hình. */
   hfConfig: HfConfig | null;
@@ -138,6 +139,7 @@ export function DispatchPreviewModal({
               <span className="hidden sm:inline">Tải về</span>
             </button>
 
+            {onOpenAiChat && (
             <button
               type="button"
               onClick={() => onOpenAiChat(currentDoc)}
@@ -147,6 +149,7 @@ export function DispatchPreviewModal({
               <MessageSquare className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Hỏi đáp AI</span>
             </button>
+            )}
 
             <button
               type="button"

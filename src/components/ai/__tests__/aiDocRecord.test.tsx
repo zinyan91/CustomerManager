@@ -9,6 +9,8 @@ const m = vi.hoisted(() => ({
   target: vi.fn(),
   record: vi.fn(),
   findForms: vi.fn(),
+  sheet: vi.fn(),
+  word: vi.fn(),
 }));
 
 vi.mock('../../../context/AuthContext', () => ({
@@ -31,6 +33,16 @@ vi.mock('../../../lib/officialDoc/recordFromAi', () => ({
   findFormFiles: m.findForms,
 }));
 
+vi.mock('../../../lib/ai/spreadsheetText', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../lib/ai/spreadsheetText')>()),
+  fileToSpreadsheetAttachment: m.sheet,
+}));
+
+vi.mock('../../../lib/ai/wordText', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../lib/ai/wordText')>()),
+  fileToWordAttachment: m.word,
+}));
+
 import { AiChatDialog } from '../AiChatDialog';
 
 const PLACEHOLDER = 'Nhập câu hỏi hoặc kéo thả tệp vào đây...';
@@ -46,6 +58,8 @@ beforeEach(() => {
   m.target.mockReset().mockResolvedValue({ repo: { id: 1 }, token: 't' });
   m.record.mockReset().mockResolvedValue({ id: '9' });
   m.findForms.mockReset().mockResolvedValue({ files: [], note: null });
+  m.word.mockReset().mockImplementation(async (f: File) => ({ id: `word_${f.name}`, name: f.name, mimeType: 'word', size: 1, base64Data: '', textData: 'TỜ TRÌNH TÍN DỤNG\nHọ tên | Nguyễn Văn An' }));
+  m.sheet.mockReset().mockImplementation(async (f: File) => ({ id: `sheet_${f.name}`, name: f.name, mimeType: 'sheet', size: 1, base64Data: '', textData: `### Sheet "B01a"\n100,Tài sản,1` }));
 });
 afterEach(cleanup);
 
@@ -90,7 +104,7 @@ describe('Chat AI - ô nhập và kéo thả', () => {
     expect(await screen.findByText('tb.pdf')).toBeTruthy();
     const group = screen.getByRole('group', { name: 'Chọn việc cần làm với tệp' });
     expect(group.textContent).toContain('Bạn muốn làm gì với tệp này?');
-    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['Tóm tắt văn bản', 'Đọc văn bản', 'Thêm văn bản mới']);
+    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['Tóm tắt văn bản', 'Đọc văn bản', 'Thêm văn bản mới', 'Nhập hồ sơ tín dụng']);
 
     fireEvent.keyDown(textarea(), { key: 'Enter' });
     expect(m.send).not.toHaveBeenCalled();
@@ -100,9 +114,9 @@ describe('Chat AI - ô nhập và kéo thả', () => {
 
   it('thả định dạng AI không đọc được thì báo lỗi, không đính kèm', async () => {
     render(<AiChatDialog isOpen onClose={() => {}} />);
-    drop(new File(['x'], 'a.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }));
+    drop(new File(['x'], 'a.pptx', { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }));
     expect(await screen.findByText(/không được hỗ trợ/)).toBeTruthy();
-    expect(screen.queryByText('a.docx')).toBeNull();
+    expect(screen.queryByText('a.pptx')).toBeNull();
   });
 });
 
@@ -387,7 +401,7 @@ describe('Chat AI - biểu mẫu của văn bản', () => {
     fireEvent.click(screen.getByTitle('Gỡ biểu mẫu'));
     expect(screen.queryByText('bieu-mau.zip')).toBeNull();
     const group = screen.getByRole('group', { name: 'Chọn việc cần làm với tệp' });
-    expect(within(group).getAllByRole('button')).toHaveLength(3);
+    expect(within(group).getAllByRole('button')).toHaveLength(4);
   });
 
   const docx = (name: string) => new File(['x'], name, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
@@ -416,5 +430,170 @@ describe('Chat AI - biểu mẫu của văn bản', () => {
     fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), docx('mau-01.docx')] } });
     await screen.findByText('mau-01.docx');
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('Chat AI - bảng tính (báo cáo tài chính Excel)', () => {
+  const xlsx = (name = 'bctc-2025.xlsx') => new File(['PK'], name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+  it('chỉ có bảng tính: không báo lỗi định dạng, chỉ hiện việc Phân tích báo cáo tài chính (cả tài khoản thường)', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs={false} />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [xlsx()] } });
+    await screen.findByText('bctc-2025.xlsx');
+    expect(screen.queryByRole('alert')).toBeNull();
+    const group = screen.getByRole('group', { name: 'Chọn việc cần làm với tệp' });
+    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['Phân tích báo cáo tài chính']);
+  });
+
+  it('Phân tích báo cáo tài chính: gửi câu hỏi phân tích kèm nội dung bảng tính dạng chữ, không đề xuất ghi nhận', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [xlsx()] } });
+    await screen.findByText('bctc-2025.xlsx');
+    fireEvent.click(screen.getByRole('button', { name: 'Phân tích báo cáo tài chính' }));
+    await waitFor(() => expect(m.send).toHaveBeenCalledTimes(1));
+    const [msg, , atts] = m.send.mock.calls[0];
+    expect(msg).toMatch(/^Phân tích báo cáo tài chính/);
+    expect(atts).toHaveLength(1);
+    expect(atts[0]).toMatchObject({ name: 'bctc-2025.xlsx', base64Data: '' });
+    expect(atts[0].textData).toContain('100,Tài sản,1');
+    expect(m.extract).not.toHaveBeenCalled();
+  });
+
+  it('tự gõ câu hỏi rồi Enter: bảng tính vẫn đi kèm câu hỏi đó', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs={false} />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [xlsx()] } });
+    await screen.findByText('bctc-2025.xlsx');
+    fireEvent.change(textarea(), { target: { value: 'Khả năng trả nợ ra sao?' } });
+    fireEvent.keyDown(textarea(), { key: 'Enter' });
+    await waitFor(() => expect(m.send).toHaveBeenCalledTimes(1));
+    expect(m.send.mock.calls[0][0]).toBe('Khả năng trả nợ ra sao?');
+    expect(m.send.mock.calls[0][2][0].textData).toContain('Sheet');
+  });
+
+  it('đọc bảng tính lỗi: báo lỗi nêu tên tệp, không gửi gì, giữ tệp để thử lại', async () => {
+    m.sheet.mockRejectedValue(new Error('Không đọc được bảng tính "bctc-2025.xlsx": hỏng'));
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [xlsx()] } });
+    await screen.findByText('bctc-2025.xlsx');
+    fireEvent.click(screen.getByRole('button', { name: 'Phân tích báo cáo tài chính' }));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Không đọc được bảng tính "bctc-2025.xlsx"/);
+    expect(m.send).not.toHaveBeenCalled();
+    expect(screen.getByText('bctc-2025.xlsx')).toBeTruthy();
+  });
+
+  it('gỡ bảng tính khỏi dải đính kèm', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [xlsx()] } });
+    await screen.findByText('bctc-2025.xlsx');
+    fireEvent.click(screen.getByTitle('Gỡ bảng tính'));
+    expect(screen.queryByText('bctc-2025.xlsx')).toBeNull();
+  });
+
+  it('một văn bản PDF kèm bảng tính: Thêm văn bản mới thì bảng tính thành biểu mẫu, không đọc thành chữ', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), xlsx('phu-luc.xlsx')] } });
+    await screen.findByText('phu-luc.xlsx');
+    const group = screen.getByRole('group', { name: 'Chọn việc cần làm với tệp' });
+    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'Tóm tắt văn bản', 'Đọc văn bản', 'Thêm văn bản mới', 'Phân tích báo cáo tài chính', 'Nhập hồ sơ tín dụng',
+    ]);
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm văn bản mới' }));
+    await screen.findByLabelText('Số hiệu');
+    expect(m.sheet).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận vào Văn thư' }));
+    await waitFor(() => expect(m.record).toHaveBeenCalledTimes(1));
+    expect(m.record.mock.calls[0][0].formUploads.map((f: File) => f.name)).toEqual(['phu-luc.xlsx']);
+  });
+
+  it('Tóm tắt văn bản kèm bảng tính: gửi cả PDF và nội dung bảng tính', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs={false} />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), xlsx()] } });
+    await screen.findByText('bctc-2025.xlsx');
+    fireEvent.click(screen.getByRole('button', { name: 'Tóm tắt văn bản' }));
+    await waitFor(() => expect(m.send).toHaveBeenCalledTimes(1));
+    expect(m.send.mock.calls[0][2].map((a: { name: string }) => a.name)).toEqual(['tb.pdf', 'bctc-2025.xlsx']);
+  });
+});
+
+describe('Chat AI - tệp Word', () => {
+  const docx = (name = 'to-trinh.docx') => new File(['PK'], name, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+
+  it('chỉ có tệp Word: không báo lỗi định dạng, hiện các việc đọc được (cả tài khoản thường)', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs={false} />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [docx()] } });
+    await screen.findByText('to-trinh.docx');
+    expect(screen.queryByRole('alert')).toBeNull();
+    const group = screen.getByRole('group', { name: 'Chọn việc cần làm với tệp' });
+    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'Tóm tắt văn bản', 'Đọc văn bản', 'Phân tích báo cáo tài chính', 'Nhập hồ sơ tín dụng',
+    ]);
+  });
+
+  it('Tóm tắt văn bản với tệp Word: gửi câu hỏi tóm tắt kèm nội dung Word dạng chữ', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs={false} />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [docx()] } });
+    await screen.findByText('to-trinh.docx');
+    fireEvent.click(screen.getByRole('button', { name: 'Tóm tắt văn bản' }));
+    await waitFor(() => expect(m.send).toHaveBeenCalledTimes(1));
+    const [msg, , atts] = m.send.mock.calls[0];
+    expect(msg).toMatch(/^Tóm tắt văn bản đính kèm/);
+    expect(atts).toHaveLength(1);
+    expect(atts[0]).toMatchObject({ name: 'to-trinh.docx', base64Data: '' });
+    expect(atts[0].textData).toContain('TỜ TRÌNH TÍN DỤNG');
+  });
+
+  it('tự gõ câu hỏi rồi Enter: nội dung Word đi kèm câu hỏi', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs={false} />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [docx()] } });
+    await screen.findByText('to-trinh.docx');
+    fireEvent.change(textarea(), { target: { value: 'Tờ trình này đề nghị cấp bao nhiêu?' } });
+    fireEvent.keyDown(textarea(), { key: 'Enter' });
+    await waitFor(() => expect(m.send).toHaveBeenCalledTimes(1));
+    expect(m.send.mock.calls[0][2][0].textData).toContain('Nguyễn Văn An');
+  });
+
+  it('Word .doc cũ: báo hướng dẫn lưu lại, không đính kèm thành tệp rỗng', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs={false} />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [new File(['x'], 'cu.doc', { type: 'application/msword' })] } });
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Word định dạng cũ \(\.doc\).*\.docx hoặc PDF/);
+    expect(screen.queryByText('cu.doc')).toBeNull();
+  });
+
+  it('đọc Word lỗi: báo lỗi nêu tên tệp, không gửi gì, giữ tệp để thử lại', async () => {
+    m.word.mockRejectedValue(new Error('Không đọc được tệp Word "to-trinh.docx": hỏng'));
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs={false} />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [docx()] } });
+    await screen.findByText('to-trinh.docx');
+    fireEvent.click(screen.getByRole('button', { name: 'Đọc văn bản' }));
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Không đọc được tệp Word "to-trinh.docx"/);
+    expect(m.send).not.toHaveBeenCalled();
+    expect(screen.getByText('to-trinh.docx')).toBeTruthy();
+  });
+
+  it('gỡ tệp Word khỏi dải đính kèm', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs={false} />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [docx()] } });
+    await screen.findByText('to-trinh.docx');
+    fireEvent.click(screen.getByTitle('Gỡ tệp Word'));
+    expect(screen.queryByText('to-trinh.docx')).toBeNull();
+  });
+
+  it('PDF kèm Word: Thêm văn bản mới thì Word thành biểu mẫu, không đọc thành chữ', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), docx('bieu-mau-01.docx')] } });
+    await screen.findByText('bieu-mau-01.docx');
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm văn bản mới' }));
+    await screen.findByLabelText('Số hiệu');
+    expect(m.word).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận vào Văn thư' }));
+    await waitFor(() => expect(m.record).toHaveBeenCalledTimes(1));
+    expect(m.record.mock.calls[0][0].formUploads.map((f: File) => f.name)).toEqual(['bieu-mau-01.docx']);
+  });
+
+  it('chỉ có Word thì không có việc Thêm văn bản mới (cần tệp gốc PDF hoặc ảnh)', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [docx()] } });
+    await screen.findByText('to-trinh.docx');
+    expect(screen.queryByRole('button', { name: 'Thêm văn bản mới' })).toBeNull();
   });
 });

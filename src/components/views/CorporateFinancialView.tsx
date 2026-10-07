@@ -14,6 +14,7 @@ import type {
   B01bStatement,
 } from '../../types/corporateFinancial';
 import {
+  CORPORATE_FINANCIAL_STORAGE_KEY as STORAGE_KEY,
   createSampleCorporateProfile,
   createEmptyB01a,
   createEmptyB02,
@@ -33,7 +34,6 @@ import { FinancialRatiosCard } from '../corporateFinancial/FinancialRatiosCard';
 import { Toast, type ToastMessage } from '../Toast';
 import { UI } from '../../lib/uiClasses';
 
-const STORAGE_KEY = 'customer_manager_corporate_financial_v1';
 
 export const CorporateFinancialView: React.FC = () => {
   const [profile, setProfile] = useState<CorporateFinancialProfile>(() => {

@@ -17,6 +17,31 @@ export const ASSET_TYPE_LTV: ReadonlyArray<readonly [string, number]> = [
   ['Quyền tài sản', 50],
 ];
 
+/** Các loại tài sản chọn được trên form TSĐB: giá trị lưu vào CSDL và nhãn hiển thị. */
+export const COLLATERAL_ASSET_TYPES: ReadonlyArray<{ value: string; label: string }> = [
+  { value: 'Bất động sản đất ở', label: 'Bất động sản đất ở' },
+  { value: 'Bất động sản khác', label: 'Bất động sản khác' },
+  { value: 'Phương tiện vận tải', label: 'Phương tiện vận tải' },
+  { value: 'Tiền gửi / STK', label: 'Tiền gửi / Sổ tiết kiệm' },
+  { value: 'Máy móc thiết bị', label: 'Máy móc thiết bị' },
+  { value: 'Khác', label: 'Tài sản khác' },
+];
+
+/** Chữ AI hay người dùng gõ thành một loại tài sản hợp lệ của form; không nhận ra thì "Khác". */
+export function normalizeAssetTypeInput(input?: string | null): string {
+  const text = (input ?? '').trim();
+  if (!text) return 'Khác';
+  const exact = COLLATERAL_ASSET_TYPES.find((t) => t.value.toLowerCase() === text.toLowerCase() || t.label.toLowerCase() === text.toLowerCase());
+  if (exact) return exact.value;
+  const lower = text.toLowerCase();
+  if (/tiết kiệm|tiet kiem|tiền gửi|tien gui|stk|giấy tờ có giá|giay to co gia|chứng chỉ tiền gửi/.test(lower)) return 'Tiền gửi / STK';
+  if (/xe |ô tô|o to|oto|phương tiện|phuong tien|tàu|tau |vận tải/.test(` ${lower} `)) return 'Phương tiện vận tải';
+  if (/máy|may moc|thiết bị|thiet bi/.test(lower)) return 'Máy móc thiết bị';
+  if (/đất ở|dat o|nhà ở|nha o|nhà|căn hộ|can ho|chung cư|chung cu|quyền sử dụng đất|quyen su dung dat/.test(lower)) return 'Bất động sản đất ở';
+  if (/bất động sản|bat dong san|bđs|bds|đất|dat |thửa/.test(lower)) return 'Bất động sản khác';
+  return 'Khác';
+}
+
 export function defaultLtvForAssetType(assetType?: string | null): number {
   if (!assetType) return 80;
 

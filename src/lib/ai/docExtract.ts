@@ -2,12 +2,10 @@ import type { AiAttachment } from '../../types/ai';
 import type { OfficialDocInput } from '../../types/officialDoc';
 import { isCategory, OFFICIAL_CATEGORIES } from '../officialDoc/categories';
 import { toIsoDate } from '../utils';
-import { FALLBACK_AI_MODELS, getGeminiApiKey } from './geminiClient';
+import { generateJsonFromAttachment } from './geminiJson';
 
 /** Các trường AI trích được; tệp được gắn sau khi tải lên Kho. */
 export type ExtractedDoc = Omit<OfficialDocInput, 'files'>;
-
-const EXTRACT_TIMEOUT_MS = 90_000;
 
 export function buildExtractionPrompt(): string {
   const categories = OFFICIAL_CATEGORIES.map((c) => `${c.id} (${c.label})`).join(', ');
@@ -63,45 +61,12 @@ export async function extractOfficialDocFields(
   model: string,
   fetchFn: typeof fetch = fetch
 ): Promise<ExtractedDoc> {
-  const apiKey = getGeminiApiKey();
-  if (!apiKey) {
-    throw new Error('Chưa cấu hình khóa Gemini nên AI không đọc được tệp. Liên hệ quản trị để cấu hình.');
-  }
-
-  const payload = {
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          { text: buildExtractionPrompt() },
-          { inline_data: { mime_type: attachment.mimeType, data: attachment.base64Data } },
-        ],
-      },
-    ],
-    generationConfig: { temperature: 0, responseMimeType: 'application/json' },
-  };
-
-  let lastError = 'AI không phản hồi.';
-  for (const candidate of Array.from(new Set([model, ...FALLBACK_AI_MODELS]))) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(candidate)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const res = await fetchFn(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(EXTRACT_TIMEOUT_MS),
-      });
-      if (!res.ok) {
-        lastError = `AI từ chối yêu cầu (${res.status}).`;
-        continue;
-      }
-      const json = await res.json();
-      const out = json?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join('') ?? '';
-      return parseExtractedFields(out);
-    } catch (err) {
-      lastError = err instanceof Error ? err.message : lastError;
-      // Thử model tiếp theo
-    }
-  }
-  throw new Error(`Không đọc được văn bản bằng AI: ${lastError}`);
+  const raw = await generateJsonFromAttachment({
+    attachment,
+    prompt: buildExtractionPrompt(),
+    model,
+    errorPrefix: 'Không đọc được văn bản bằng AI',
+    fetchFn,
+  });
+  return parseExtractedFields(raw);
 }

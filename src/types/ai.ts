@@ -4,6 +4,8 @@ export interface AiAttachment {
   mimeType: string;
   size: number;
   base64Data: string;
+  /** Bảng tính đã đổi thành chữ (CSV theo sheet) để AI đọc; khi có thì không dùng base64Data. */
+  textData?: string;
   previewUrl?: string;
 }
 

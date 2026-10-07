@@ -7,8 +7,10 @@ import { FelixAiAvatar } from './FelixAiAvatar';
 import { AiConversation } from './AiConversation';
 import { AiComposer, type AiComposerHandle } from './AiComposer';
 import { AiDocProposalCard } from './AiDocProposalCard';
+import { AiCreditProposalCard } from './AiCreditProposalCard';
 import { useAiAssistant } from '../../hooks/useAiAssistant';
 import { useAiDocProposals } from '../../hooks/useAiDocProposals';
+import { useAiCreditProposals } from '../../hooks/useAiCreditProposals';
 import { useFileDrop } from '../../hooks/useFileDrop';
 import { useResizableWidth } from '../../hooks/useResizableWidth';
 import { useAuth } from '../../context/AuthContext';
@@ -40,6 +42,7 @@ export function AiChatDialog({
   const composerRef = useRef<AiComposerHandle>(null);
   const recordAllowed = canRecordDocs ?? can('dispatch.upload');
   const docs = useAiDocProposals({ enabled: recordAllowed, model: assistant.model, onRecorded: onDocRecorded });
+  const credit = useAiCreditProposals({ model: assistant.model });
   const { isDragging, dropHandlers } = useFileDrop((files) => composerRef.current?.addFiles(files));
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const resize = useResizableWidth({ storageKey: 'cm_ai_chat_width', defaultWidth: 480, minWidth: 380, wideWidth: 800 });
@@ -185,11 +188,24 @@ export function AiChatDialog({
             isStreaming={assistant.isStreaming}
             streamingText={assistant.streamingText}
             statusText={assistant.statusText}
-            scrollKey={docs.proposals.map((p) => `${p.id}:${p.status}`).join('|')}
+            scrollKey={[...docs.proposals, ...credit.proposals].map((p) => `${p.id}:${p.status}`).join('|')}
             onRefreshAnswer={(id) => void assistant.refreshAnswer(id)}
             onSelectPrompt={(p) => assistant.sendMessage(p)}
             onClearHistory={assistant.clearMessages}
-            footer={docs.proposals.map((p) => (
+            footer={[
+              ...credit.proposals.map((p) => (
+                <AiCreditProposalCard
+                  key={p.id}
+                  proposal={p}
+                  onEditCustomer={credit.editCustomer}
+                  onEditCollateral={credit.editCollateral}
+                  onRemoveCollateral={credit.removeCollateral}
+                  onLookup={(id) => void credit.lookup(id)}
+                  onRecord={(id) => void credit.record(id)}
+                  onDismiss={credit.dismiss}
+                />
+              )),
+              ...docs.proposals.map((p) => (
               <AiDocProposalCard
                 key={p.id}
                 proposal={p}
@@ -199,7 +215,8 @@ export function AiChatDialog({
                 onRemoveForm={docs.removeForm}
                 onResearchForms={docs.researchForms}
               />
-            ))}
+              )),
+            ]}
           />
 
           <AiComposer
@@ -209,6 +226,11 @@ export function AiChatDialog({
               // "Thêm văn bản mới": AI chỉ trích các trường để người dùng xem rồi xác nhận, không trả lời trong chat
               if (intent === 'record') {
                 if (atts) docs.propose(atts, formFiles ?? []);
+                return;
+              }
+              // "Nhập hồ sơ tín dụng": AI trích khách hàng và tài sản bảo đảm để người dùng xem rồi ghi, không trả lời trong chat
+              if (intent === 'credit') {
+                if (atts) credit.propose(atts);
                 return;
               }
               void assistant.sendMessage(msg, undefined, atts);
@@ -240,7 +262,7 @@ export function AiChatDialog({
       <aside
         aria-label="Trợ lý AI Tín dụng & Văn thư"
         style={{ width: resize.width }}
-        className="relative h-full max-w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shrink-0 z-20"
+        className="relative h-full max-w-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shrink-0 z-20 max-md:fixed max-md:inset-0 max-md:z-50 max-md:w-full! max-md:border-l-0"
       >
         {resizeHandle}
         {chatContent}

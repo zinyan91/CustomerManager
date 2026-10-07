@@ -8,13 +8,14 @@ import { listHfTree } from '../lib/huggingface/hfClient';
 import { listStorageRepos } from '../lib/api/storageReposApi';
 import { mergeHfTreeWithDispatches, collectFolders } from '../lib/dispatch/mergeArchive';
 import { classifyArchiveError, type ArchiveStatus } from '../lib/huggingface/hfStatus';
-import { reposForStorage, toHfConfig } from '../lib/storageRepos';
+import { reposForScope, toHfConfig, type StorageScope } from '../lib/storageRepos';
 
 /**
  * Nạp Kho lưu trữ: các repo tài khoản được thấy (Kho chung, Văn thư cho admin, kho cá nhân),
  * chọn được repo, kèm cây tệp. Mọi lỗi được phân loại thành `status`, không để danh sách rỗng im lặng.
+ * `scope` chọn nhóm kho của màn (Kho lưu trữ hoặc kho Văn thư/Biểu mẫu trong tab Văn thư).
  */
-export function useArchive() {
+export function useArchive(scope: StorageScope = 'storage') {
   const { role, user } = useAuth();
   const userId = user?.id ?? null;
 
@@ -43,7 +44,7 @@ export function useArchive() {
     void reloadRepos();
   }, [reloadRepos]);
 
-  const candidates = useMemo(() => reposForStorage(allRepos, role, userId), [allRepos, role, userId]);
+  const candidates = useMemo(() => reposForScope(allRepos, role, userId, scope), [allRepos, role, userId, scope]);
 
   const selectedRepo = useMemo(
     () => candidates.find((r) => r.id === selectedRepoId) ?? candidates[0] ?? null,

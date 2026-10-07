@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { Toast } from '../Toast';
 import { DataTable, type ColumnDef } from '../ui/DataTable';
+import { CustomerProgressCell } from '../customers/CustomerProgressCell';
+import { useCustomerProgress } from '../../hooks/useCustomerProgress';
 import { useCustomerListController } from '../../hooks/useCustomerListController';
 import { CustomerDrawerForm } from '../customer/CustomerDrawerForm';
 import { customerProfilePath } from '../../lib/customerRoutes';
@@ -52,6 +54,9 @@ export const CustomerListView: React.FC = () => {
     handleDeleteCustomer,
     parseAndApplySnippet,
   } = useCustomerListController();
+
+  const customerIds = useMemo(() => visibleCustomers.map(c => c.Id), [visibleCustomers]);
+  const { progress: progressMap, error: progressError } = useCustomerProgress(customerIds);
 
   const navigate = useNavigate();
   const profileCustomerId = useSelectedCustomerId();
@@ -464,37 +469,10 @@ export const CustomerListView: React.FC = () => {
                   )
                 },
                 {
-                  key: 'khlq',
-                  label: 'KHLQ / Vợ chồng',
-                  priority: 2,
-                  render: c => c.SpouseName ? (
-                    <div>
-                      <div className="text-ink font-semibold text-xs">{c.SpouseName}</div>
-                      {c.CifKhlq && (
-                        <div className="font-mono text-[10px] text-ink-faint">CIF: {c.CifKhlq}</div>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-ink-faint">–</span>
-                  )
-                },
-                {
-                  key: 'quanHe',
-                  label: 'Phân loại KHLQ',
+                  key: 'tienDo',
+                  label: 'Tiến độ hồ sơ',
                   priority: 1,
-                  render: c => {
-                    const rel = c.KhlqRelationship || (c.MaritalStatus === 'Đã kết hôn' ? 'Vợ / Chồng' : 'Không có');
-                    return (
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                        rel === 'Vợ / Chồng' ? 'bg-accent-soft border-accent/30 text-accent'
-                        : rel === 'Người bảo lãnh' ? 'bg-pos-soft border-pos/30 text-pos'
-                        : rel === 'Bên bảo đảm (Chủ TSĐB)' ? 'bg-warn-soft border-warn/30 text-warn'
-                        : 'bg-panel-muted border-line text-ink-muted'
-                      }`}>
-                        {rel}
-                      </span>
-                    );
-                  }
+                  render: c => <CustomerProgressCell progress={progressMap?.get(c.Id) ?? null} error={progressError} />
                 },
                 {
                   key: 'luuTru',

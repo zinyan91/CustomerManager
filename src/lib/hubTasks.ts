@@ -15,7 +15,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 
-export type HubTaskGroupId = 'credit' | 'estimate' | 'lookup';
+export type HubTaskGroupId = 'dossier' | 'analysis' | 'estimate' | 'lookup';
 
 export interface HubTaskItem {
   id: string;
@@ -37,10 +37,17 @@ export interface HubTaskItem {
 
 export const HUB_TASK_GROUPS = [
   {
-    id: 'credit' as HubTaskGroupId,
-    title: 'Hồ Sơ Tín Dụng & Kế Toán',
-    badge: '6 tác vụ',
+    id: 'dossier' as HubTaskGroupId,
+    title: 'Hồ Sơ & Chứng Từ',
+    badge: '2 tác vụ',
     dotColor: 'bg-blue-500',
+    gridCols: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+  },
+  {
+    id: 'analysis' as HubTaskGroupId,
+    title: 'Phân Tích, Báo Cáo & Vốn',
+    badge: '4 tác vụ',
+    dotColor: 'bg-sky-500',
     gridCols: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
   },
   {
@@ -48,11 +55,11 @@ export const HUB_TASK_GROUPS = [
     title: 'Dự Toán Thi Công, Mua Sắm & Bán Lẻ',
     badge: '4 tác vụ',
     dotColor: 'bg-orange-500',
-    gridCols: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
+    gridCols: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
   },
   {
     id: 'lookup' as HubTaskGroupId,
-    title: 'Tra Cứu Quy Định, Mã Phí & Ôn Tập Nghiệp Vụ',
+    title: 'Tra Cứu Quy Định, Mã Phí & Ôn Tập',
     badge: '3 tác vụ',
     dotColor: 'bg-indigo-500',
     gridCols: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
@@ -63,7 +70,7 @@ export const HUB_TASKS: HubTaskItem[] = [
   // 1. Nhóm Hồ sơ tín dụng & Giải ngân
   {
     id: 'templates',
-    groupId: 'credit',
+    groupId: 'dossier',
     name: 'Hồ Sơ Chứng Từ & Soạn Hợp Đồng',
     shortName: 'Hồ sơ chứng từ',
     path: '/hub/documents',
@@ -80,7 +87,7 @@ export const HUB_TASKS: HubTaskItem[] = [
   },
   {
     id: 'disbursement',
-    groupId: 'credit',
+    groupId: 'dossier',
     name: 'Thông Tin Giải Ngân & Thụ Hưởng',
     shortName: 'Thông tin giải ngân',
     path: '/hub/disbursement',
@@ -97,7 +104,7 @@ export const HUB_TASKS: HubTaskItem[] = [
   },
   {
     id: 'corporate-financial',
-    groupId: 'credit',
+    groupId: 'analysis',
     name: 'Báo Cáo Tài Chính Doanh Nghiệp (TT 133)',
     shortName: 'BCTC Doanh nghiệp',
     path: '/hub/corporate-financial',
@@ -114,7 +121,7 @@ export const HUB_TASKS: HubTaskItem[] = [
   },
   {
     id: 'cof',
-    groupId: 'credit',
+    groupId: 'analysis',
     name: 'Mua Bán Vốn Nội Bộ (COF)',
     shortName: 'Mua bán vốn (COF)',
     path: '/hub/cof',
@@ -131,7 +138,7 @@ export const HUB_TASKS: HubTaskItem[] = [
   },
   {
     id: 'toi',
-    groupId: 'credit',
+    groupId: 'analysis',
     name: 'Dự Phóng Thu Nhập TOI Cho Vay',
     shortName: 'Dự phóng TOI',
     path: '/hub/toi',
@@ -148,7 +155,7 @@ export const HUB_TASKS: HubTaskItem[] = [
   },
   {
     id: 'reports',
-    groupId: 'credit',
+    groupId: 'analysis',
     name: 'Trung Tâm Báo Cáo Excel',
     shortName: 'Báo cáo Excel',
     path: '/hub/reports',

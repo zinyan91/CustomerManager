@@ -4,6 +4,7 @@ import { computeStatus } from '../../lib/officialDoc/status';
 import { PAGE_SIZE } from '../../lib/officialDoc/docQuery';
 import { ariaSort, type DocSort, type DocSortKey } from '../../lib/officialDoc/docSort';
 import { fmtDate, todayIso } from '../../lib/utils';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import { OfficialDocStatusBadge } from './OfficialDocStatusBadge';
 
 interface OfficialDocListProps {
@@ -22,6 +23,14 @@ interface OfficialDocListProps {
   onEdit?: (doc: OfficialDoc) => void;
   onDelete?: (doc: OfficialDoc) => void;
 }
+
+const SORT_OPTIONS: Array<{ key: DocSortKey; label: string }> = [
+  { key: 'issuedDate', label: 'Ngày ban hành' },
+  { key: 'effectiveFrom', label: 'Ngày hiệu lực' },
+  { key: 'effectiveTo', label: 'Ngày hết hiệu lực' },
+  { key: 'docNumber', label: 'Số hiệu' },
+  { key: 'title', label: 'Tiêu đề' },
+];
 
 const th = 'px-3 py-2.5 border-r border-slate-300 dark:border-slate-700 text-left';
 const td = 'px-3 py-2 border-r border-slate-200 dark:border-slate-800 align-top';
@@ -44,7 +53,115 @@ export function OfficialDocList({
   onDelete,
 }: OfficialDocListProps) {
   const today = todayIso();
+  const isMobile = useIsMobile();
   const firstRow = (page - 1) * PAGE_SIZE;
+
+  const rowActions = (doc: OfficialDoc, compact: boolean) => {
+    const btn = compact ? `${iconBtn} !p-2.5` : iconBtn;
+    return (
+            <div className={`flex items-center ${compact ? 'justify-end gap-1' : 'justify-center gap-0.5'}`}>
+              <button type="button" onClick={() => onOpen(doc)} title="Xem văn bản" aria-label={`Xem văn bản ${doc.docNumber}`} className={btn}>
+                <Eye className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onDownload(doc)}
+                disabled={doc.files.length === 0 || downloadingId === doc.id}
+                title={doc.files.length === 0 ? 'Chưa có tệp để tải' : 'Tải về'}
+                aria-label={`Tải về văn bản ${doc.docNumber}`}
+                className={`${btn} disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                <Download className="w-4 h-4" />
+              </button>
+              {onEdit && (
+                <button type="button" onClick={() => onEdit(doc)} title="Sửa văn bản" aria-label={`Sửa văn bản ${doc.docNumber}`} className={btn}>
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
+              {onDelete && (
+                <button type="button" onClick={() => onDelete(doc)} title="Xóa văn bản này" aria-label={`Xóa văn bản ${doc.docNumber}`} className={btn}>
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+    );
+  };
+
+  const statusOf = (doc: OfficialDoc) => computeStatus(doc.effectiveFrom, doc.effectiveTo, today);
+
+  const mobileCards = (
+    <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+      {docs.map((doc) => (
+        <li key={doc.id} className="px-3 py-3">
+          <div className="flex items-start justify-between gap-2">
+            <span className="font-mono font-semibold text-sm text-slate-900 dark:text-slate-100 break-all">{doc.docNumber}</span>
+            <span className="shrink-0">
+              <OfficialDocStatusBadge status={statusOf(doc)} />
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-slate-800 dark:text-slate-200">{doc.title}</p>
+          <dl className="mt-2 grid grid-cols-3 gap-2 text-xs">
+            <div>
+              <dt className="text-slate-500">Ban hành</dt>
+              <dd className="text-slate-900 dark:text-slate-100">{fmtDate(doc.issuedDate)}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Hiệu lực</dt>
+              <dd className="text-slate-900 dark:text-slate-100">{fmtDate(doc.effectiveFrom)}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Hết hiệu lực</dt>
+              <dd className="text-slate-900 dark:text-slate-100">{fmtDate(doc.effectiveTo) || '—'}</dd>
+            </div>
+          </dl>
+          <div className="mt-1.5">{rowActions(doc, true)}</div>
+        </li>
+      ))}
+    </ul>
+  );
+
+  const mobileSortBar = (
+    <div className="px-3 py-2 flex items-center gap-2 text-sm border-b border-slate-200 dark:border-slate-800">
+      <label htmlFor="doc-sort-key" className="text-slate-500 shrink-0">Sắp xếp</label>
+      <select
+        id="doc-sort-key"
+        value={sort.key}
+        onChange={(e) => {
+          const key = e.target.value as DocSortKey;
+          if (key !== sort.key) onSort(key);
+        }}
+        className="flex-1 min-w-0 px-2 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+      >
+        {SORT_OPTIONS.map((o) => (
+          <option key={o.key} value={o.key}>{o.label}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={() => onSort(sort.key)}
+        aria-label={sort.dir === 'asc' ? 'Đang tăng dần, bấm để giảm dần' : 'Đang giảm dần, bấm để tăng dần'}
+        className="p-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer"
+      >
+        {sort.dir === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+
+  const emptyState = (
+    <div className="py-10 text-center text-slate-500 dark:text-slate-400">
+      {loading ? (
+        <span className="inline-flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Đang tải văn bản...
+        </span>
+      ) : (
+        <>
+          <FileText className="w-6 h-6 mx-auto mb-1.5 opacity-40" />
+          <span>Không có văn bản nào phù hợp.</span>
+        </>
+      )}
+    </div>
+  );
 
   const sortHeader = (key: DocSortKey, label: string, className: string) => {
     const active = sort.key === key;
@@ -66,6 +183,12 @@ export function OfficialDocList({
 
   return (
     <div>
+      {isMobile ? (
+        <>
+          {mobileSortBar}
+          {docs.length === 0 ? emptyState : mobileCards}
+        </>
+      ) : (
       <div className="overflow-x-auto">
         <table className="w-full min-w-[880px] text-sm border-collapse">
           <thead>
@@ -112,31 +235,7 @@ export function OfficialDocList({
                     <OfficialDocStatusBadge status={computeStatus(doc.effectiveFrom, doc.effectiveTo, today)} />
                   </td>
                   <td className="w-px whitespace-nowrap px-3 py-2 align-top">
-                    <div className="flex items-center justify-center gap-0.5">
-                      <button type="button" onClick={() => onOpen(doc)} title="Xem văn bản" aria-label={`Xem văn bản ${doc.docNumber}`} className={iconBtn}>
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDownload(doc)}
-                        disabled={doc.files.length === 0 || downloadingId === doc.id}
-                        title={doc.files.length === 0 ? 'Chưa có tệp để tải' : 'Tải về'}
-                        aria-label={`Tải về văn bản ${doc.docNumber}`}
-                        className={`${iconBtn} disabled:opacity-40 disabled:cursor-not-allowed`}
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                      {onEdit && (
-                        <button type="button" onClick={() => onEdit(doc)} title="Sửa văn bản" aria-label={`Sửa văn bản ${doc.docNumber}`} className={iconBtn}>
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      )}
-                      {onDelete && (
-                        <button type="button" onClick={() => onDelete(doc)} title="Xóa văn bản này" aria-label={`Xóa văn bản ${doc.docNumber}`} className={iconBtn}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
+                    {rowActions(doc, false)}
                   </td>
                 </tr>
               ))
@@ -144,6 +243,7 @@ export function OfficialDocList({
           </tbody>
         </table>
       </div>
+      )}
 
       <div className="px-4 py-2.5 border-t border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
         <span>{total} văn bản</span>

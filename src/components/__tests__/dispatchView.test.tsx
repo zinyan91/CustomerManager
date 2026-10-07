@@ -47,6 +47,10 @@ vi.mock('../../lib/officialDoc/formBundle', async (importOriginal) => ({
   zipBlobs: state.zip,
 }));
 
+vi.mock('../views/StorageManagementView', () => ({
+  StorageManagementView: (p: { scope?: string; embedded?: boolean }) => <div>KHO TỆP {p.scope} {String(p.embedded)}</div>,
+}));
+
 import { DispatchManagementView } from '../views/DispatchManagementView';
 
 const doc = (over: Partial<OfficialDoc> = {}): OfficialDoc => ({
@@ -442,5 +446,82 @@ describe('Văn thư - tải cả bộ tệp dạng ZIP', () => {
     fireEvent.click(within(dlg).getByRole('button', { name: 'Tải tất cả (ZIP)' }));
     expect((await within(dlg).findByRole('alert')).textContent).toMatch(/"hop-dong.docx" không còn trong Kho/);
     expect(state.zip).not.toHaveBeenCalled();
+  });
+});
+
+describe('Văn thư - điện thoại', () => {
+  beforeEach(() => {
+    window.matchMedia = ((q: string) => ({
+      matches: q.includes('max-width: 767px'),
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    // @ts-expect-error: trả về môi trường không có matchMedia như các test khác
+    delete window.matchMedia;
+  });
+
+  it('hiện thẻ thay cho bảng, vẫn đủ số hiệu, tiêu đề, ngày, tình trạng', () => {
+    state.hook = makeHook();
+    render(<DispatchManagementView />);
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.getByText('2753/2026/TB-BĐH')).toBeTruthy();
+    expect(screen.getByText('Chương trình lãi suất cho vay trung dài hạn KHCN')).toBeTruthy();
+    expect(screen.getAllByText('Ban hành').length).toBeGreaterThan(0);
+  });
+
+  it('thẻ có đủ nút Xem, Tải về như bảng', () => {
+    state.hook = makeHook();
+    render(<DispatchManagementView />);
+    expect(screen.getByRole('button', { name: 'Xem văn bản 2753/2026/TB-BĐH' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Tải về văn bản 2753/2026/TB-BĐH' })).toBeTruthy();
+  });
+
+  it('thanh sắp xếp: đổi cột và đảo chiều', () => {
+    const hook = makeHook();
+    state.hook = hook;
+    render(<DispatchManagementView />);
+    fireEvent.change(screen.getByLabelText('Sắp xếp'), { target: { value: 'docNumber' } });
+    expect(hook.toggleSort).toHaveBeenLastCalledWith('docNumber');
+    fireEvent.click(screen.getByRole('button', { name: /Đang giảm dần/ }));
+    expect(hook.toggleSort).toHaveBeenLastCalledWith('issuedDate');
+  });
+
+  it('không có văn bản thì báo trống, không phải bảng rỗng', () => {
+    state.hook = makeHook({ docs: [], total: 0 });
+    render(<DispatchManagementView />);
+    expect(screen.getByText('Không có văn bản nào phù hợp.')).toBeTruthy();
+  });
+});
+
+describe('Văn thư - mục Kho tệp (kho Văn thư và Biểu mẫu)', () => {
+  it('Master Admin có mục Kho tệp, bấm vào thì mở kho Văn thư/Biểu mẫu nhúng trong tab', () => {
+    state.role = 'master_admin';
+    state.hook = makeHook();
+    render(<DispatchManagementView />);
+    fireEvent.click(screen.getByRole('button', { name: 'Kho tệp' }));
+    expect(screen.getByText('KHO TỆP dispatch true')).toBeTruthy();
+    expect(screen.queryByRole('table')).toBeNull();
+  });
+
+  it('bấm lại một mục văn bản thì về danh mục', () => {
+    state.role = 'master_admin';
+    state.hook = makeHook();
+    render(<DispatchManagementView />);
+    fireEvent.click(screen.getByRole('button', { name: 'Kho tệp' }));
+    fireEvent.click(screen.getByRole('button', { name: /Tất cả/ }));
+    expect(screen.queryByText(/KHO TỆP/)).toBeNull();
+    expect(screen.getByRole('table')).toBeTruthy();
+  });
+
+  it('User Admin và user không có mục Kho tệp', () => {
+    for (const role of ['user_admin', 'user']) {
+      state.role = role;
+      state.hook = makeHook();
+      const { unmount } = render(<DispatchManagementView />);
+      expect(screen.queryByRole('button', { name: 'Kho tệp' }), role).toBeNull();
+      unmount();
+    }
   });
 });

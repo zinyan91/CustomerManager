@@ -45,7 +45,7 @@ export function saveMessages(userId: string | null, threadId: string, messages: 
   write(
     messagesKey(userId, threadId),
     messages.map((m) =>
-      m.attachments ? { ...m, attachments: m.attachments.map((a) => ({ ...a, base64Data: '', previewUrl: undefined })) } : m
+      m.attachments ? { ...m, attachments: m.attachments.map((a) => ({ ...a, base64Data: '', textData: undefined, previewUrl: undefined })) } : m
     )
   );
 }

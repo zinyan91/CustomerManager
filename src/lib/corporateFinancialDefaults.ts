@@ -6,6 +6,9 @@ import type {
   FinancialLineItem,
 } from '../types/corporateFinancial';
 
+/** Khóa localStorage lưu bản nháp BCTC; dùng chung giữa màn BCTC và trợ lý AI. */
+export const CORPORATE_FINANCIAL_STORAGE_KEY = 'customer_manager_corporate_financial_v1';
+
 export const DEFAULT_B01A_TEMPLATE: Omit<FinancialLineItem, 'currentPeriod' | 'previousPeriod'>[] = [
   // PHẦN I - TÀI SẢN
   { id: 'b01a_100', code: '100', name: 'A. TÀI SẢN NGẮN HẠN', isHeader: true, isFormula: true, indent: 0 },

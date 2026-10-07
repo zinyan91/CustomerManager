@@ -5,7 +5,8 @@ import {
   buildRepoId,
   suggestPersonalRepoSlug,
   mapRepoRow,
-  reposForStorage,
+  reposForScope,
+  splitStorageRepos,
   repoLabel,
   canUploadToRepo,
   canDeleteInRepo,
@@ -69,26 +70,64 @@ describe('mapRepoRow', () => {
   });
 });
 
-describe('reposForStorage', () => {
-  const all = [OTHER, VT, MINE, SHARED];
+describe('reposForScope - Kho lưu trữ', () => {
+  const all = [OTHER, BM, VT, MINE, SHARED];
 
-  it('user: Kho chung rồi kho của mình, không thấy kho người khác và Văn thư', () => {
-    expect(reposForStorage(all, 'user', 'u-a').map((r) => r.id)).toEqual([1, 2]);
+  it('user: Kho chung rồi kho của mình, không thấy kho người khác, Văn thư, Biểu mẫu', () => {
+    expect(reposForScope(all, 'user', 'u-a', 'storage').map((r) => r.id)).toEqual([1, 2]);
   });
 
-  it('admin: thấy mọi kho kể cả Văn thư (để tải tệp lên cho văn bản), Văn thư sau Kho chung, kho của mình trước kho người khác', () => {
-    expect(reposForStorage(all, 'user_admin', 'u-a').map((r) => r.id)).toEqual([1, 4, 2, 3]);
-    expect(reposForStorage(all, 'master_admin', 'u-b').map((r) => r.id)).toEqual([1, 4, 3, 2]);
+  it('User Admin cũng chỉ có Kho chung và kho của mình: không quản lý Văn thư, Biểu mẫu, kho người khác', () => {
+    expect(reposForScope(all, 'user_admin', 'u-a', 'storage').map((r) => r.id)).toEqual([1, 2]);
+    expect(reposForScope(all, 'user_admin', 'u-x', 'storage').map((r) => r.id)).toEqual([1]);
+  });
+
+  it('Master Admin có thêm kho của người khác (để chọn), nhưng Văn thư và Biểu mẫu đã chuyển sang tab Văn thư', () => {
+    expect(reposForScope(all, 'master_admin', 'u-a', 'storage').map((r) => r.id)).toEqual([1, 2, 3]);
+    expect(reposForScope(all, 'master_admin', 'u-b', 'storage').map((r) => r.id)).toEqual([1, 3, 2]);
   });
 
   it('user chưa được gán kho cá nhân chỉ thấy Kho chung', () => {
-    expect(reposForStorage(all, 'user', 'u-moi').map((r) => r.id)).toEqual([1]);
+    expect(reposForScope(all, 'user', 'u-moi', 'storage').map((r) => r.id)).toEqual([1]);
   });
 
-  it('kho Biểu mẫu: admin thấy ngay sau Văn thư, user thường không thấy', () => {
-    const withForm = [OTHER, BM, VT, MINE, SHARED];
-    expect(reposForStorage(withForm, 'master_admin', 'u-a').map((r) => r.id)).toEqual([1, 4, 5, 2, 3]);
-    expect(reposForStorage(withForm, 'user', 'u-a').map((r) => r.id)).toEqual([1, 2]);
+  it('không có vai trò thì chỉ Kho chung theo luật chung, không lộ kho cá nhân', () => {
+    expect(reposForScope(all, null, null, 'storage').map((r) => r.id)).toEqual([1]);
+  });
+});
+
+describe('reposForScope - tab Văn thư', () => {
+  const all = [OTHER, BM, VT, MINE, SHARED];
+
+  it('chỉ Master Admin thấy kho Văn thư và Biểu mẫu, Văn thư đứng trước', () => {
+    expect(reposForScope(all, 'master_admin', 'u-a', 'dispatch').map((r) => r.id)).toEqual([4, 5]);
+  });
+
+  it('User Admin và user không có kho nào ở đây', () => {
+    expect(reposForScope(all, 'user_admin', 'u-a', 'dispatch')).toEqual([]);
+    expect(reposForScope(all, 'user', 'u-a', 'dispatch')).toEqual([]);
+  });
+});
+
+describe('splitStorageRepos', () => {
+  it('kho hiện sẵn: Kho chung và kho của mình; kho người khác tách riêng để chọn khi cần', () => {
+    const list = reposForScope([OTHER, MINE, SHARED], 'master_admin', 'u-a', 'storage');
+    const { primary, others } = splitStorageRepos(list, 'u-a');
+    expect(primary.map((r) => r.id)).toEqual([1, 2]);
+    expect(others.map((r) => r.id)).toEqual([3]);
+  });
+
+  it('nhiều người dùng không làm dài danh sách hiện sẵn', () => {
+    const many = Array.from({ length: 100 }, (_, i) => repo({ id: 100 + i, kind: 'personal', assignedUserId: `u-${i}`, name: `Kho ${i}` }));
+    const { primary, others } = splitStorageRepos(reposForScope([SHARED, ...many], 'master_admin', 'u-a', 'storage'), 'u-a');
+    expect(primary.map((r) => r.id)).toEqual([1]);
+    expect(others).toHaveLength(100);
+  });
+
+  it('kho Văn thư và Biểu mẫu đều là kho hiện sẵn', () => {
+    const { primary, others } = splitStorageRepos(reposForScope([VT, BM], 'master_admin', 'm', 'dispatch'), 'm');
+    expect(primary.map((r) => r.id)).toEqual([4, 5]);
+    expect(others).toEqual([]);
   });
 });
 
@@ -104,32 +143,43 @@ describe('repoLabel', () => {
 });
 
 describe('quyền theo repo', () => {
-  it('upload: user được ở Kho chung và kho của mình; không ở kho người khác hay Văn thư', () => {
+  it('upload: user được ở Kho chung và kho của mình; không ở kho người khác, Văn thư, Biểu mẫu', () => {
     expect(canUploadToRepo('user', 'u-a', SHARED)).toBe(true);
     expect(canUploadToRepo('user', 'u-a', MINE)).toBe(true);
     expect(canUploadToRepo('user', 'u-a', OTHER)).toBe(false);
     expect(canUploadToRepo('user', 'u-a', VT)).toBe(false);
     expect(canUploadToRepo('user', 'u-a', BM)).toBe(false);
-    expect(canUploadToRepo('user_admin', 'u-a', BM)).toBe(true);
   });
 
-  it('upload: admin được ở mọi repo; thiếu repo hoặc vai trò thì không', () => {
-    for (const r of [SHARED, MINE, OTHER, VT]) {
-      expect(canUploadToRepo('master_admin', 'x', r)).toBe(true);
-      expect(canUploadToRepo('user_admin', 'x', r)).toBe(true);
-    }
+  it('upload: User Admin giống user, không quản lý kho Văn thư, Biểu mẫu hay kho người khác', () => {
+    expect(canUploadToRepo('user_admin', 'u-a', SHARED)).toBe(true);
+    expect(canUploadToRepo('user_admin', 'u-a', MINE)).toBe(true);
+    expect(canUploadToRepo('user_admin', 'u-a', OTHER)).toBe(false);
+    expect(canUploadToRepo('user_admin', 'u-a', VT)).toBe(false);
+    expect(canUploadToRepo('user_admin', 'u-a', BM)).toBe(false);
+  });
+
+  it('upload: Master Admin ở mọi repo; thiếu repo hoặc vai trò thì không', () => {
+    for (const r of [SHARED, MINE, OTHER, VT, BM]) expect(canUploadToRepo('master_admin', 'x', r)).toBe(true);
     expect(canUploadToRepo('user', 'u-a', null)).toBe(false);
     expect(canUploadToRepo(null, 'u-a', SHARED)).toBe(false);
   });
 
-  it('xóa: user chỉ trong kho cá nhân của mình; admin mọi repo', () => {
+  it('xóa: user chỉ trong kho cá nhân của mình', () => {
     expect(canDeleteInRepo('user', 'u-a', MINE)).toBe(true);
     expect(canDeleteInRepo('user', 'u-a', SHARED)).toBe(false);
     expect(canDeleteInRepo('user', 'u-a', OTHER)).toBe(false);
     expect(canDeleteInRepo('user', 'u-a', VT)).toBe(false);
-    expect(canDeleteInRepo('user_admin', 'x', SHARED)).toBe(true);
-    expect(canDeleteInRepo('master_admin', 'x', VT)).toBe(true);
     expect(canDeleteInRepo('user', null, repo({ kind: 'personal', assignedUserId: null }))).toBe(false);
+  });
+
+  it('xóa: User Admin ở Kho chung và kho của mình, không ở Văn thư, Biểu mẫu, kho người khác; Master Admin mọi repo', () => {
+    expect(canDeleteInRepo('user_admin', 'u-a', SHARED)).toBe(true);
+    expect(canDeleteInRepo('user_admin', 'u-a', MINE)).toBe(true);
+    expect(canDeleteInRepo('user_admin', 'u-a', OTHER)).toBe(false);
+    expect(canDeleteInRepo('user_admin', 'u-a', VT)).toBe(false);
+    expect(canDeleteInRepo('user_admin', 'u-a', BM)).toBe(false);
+    for (const r of [SHARED, MINE, OTHER, VT, BM]) expect(canDeleteInRepo('master_admin', 'x', r)).toBe(true);
   });
 
   it('chỉ Master Admin quản lý repo', () => {

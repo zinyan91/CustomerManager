@@ -64,6 +64,14 @@ describe('chat theo từng tài khoản', () => {
     expect(loadMessages('u', 't')[0].attachments).toEqual([{ id: 'a', name: 'x.pdf', mimeType: 'application/pdf', size: 99, base64Data: '' }]);
   });
 
+  it('khi lưu bỏ cả nội dung chữ của bảng tính (có thể rất dài), giữ tên tệp', () => {
+    const sheet = { id: 's', name: 'bctc.xlsx', mimeType: 'sheet', size: 5, base64Data: '', textData: 'SO-LIEU-NHAY-CAM-100,200' };
+    saveMessages('u', 't', [msg('m1', { attachments: [sheet] })]);
+    const raw = store.get(messagesKey('u', 't')) as string;
+    expect(raw).not.toContain('SO-LIEU-NHAY-CAM');
+    expect(loadMessages('u', 't')[0].attachments?.[0]).toMatchObject({ name: 'bctc.xlsx' });
+  });
+
   it('xóa thread chỉ xóa tin nhắn của đúng tài khoản', () => {
     saveMessages('a', 't', [msg('1')]);
     saveMessages('b', 't', [msg('2')]);

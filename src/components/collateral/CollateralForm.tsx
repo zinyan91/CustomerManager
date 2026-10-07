@@ -7,7 +7,7 @@ import type { Collateral, Customer } from '../../types';
 import { UI } from '../../lib/uiClasses';
 import { DateInput } from '../DateInput';
 import { fmtMoney, parseMoneyInput } from '../../lib/utils';
-import { defaultLtvForAssetType, maxLoanFromCollateral } from '../../lib/collateralMath';
+import { defaultLtvForAssetType, maxLoanFromCollateral, COLLATERAL_ASSET_TYPES } from '../../lib/collateralMath';
 
 interface CollateralFormProps {
   selectedCollateral: Collateral | null;
@@ -163,12 +163,9 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                   }}
                   className={`w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
                 >
-                  <option value="Bất động sản đất ở">Bất động sản đất ở</option>
-                  <option value="Bất động sản khác">Bất động sản khác</option>
-                  <option value="Phương tiện vận tải">Phương tiện vận tải</option>
-                  <option value="Tiền gửi / STK">Tiền gửi / Sổ tiết kiệm</option>
-                  <option value="Máy móc thiết bị">Máy móc thiết bị</option>
-                  <option value="Khác">Tài sản khác</option>
+                  {COLLATERAL_ASSET_TYPES.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
                 </select>
               </div>
             </div>

@@ -8,13 +8,14 @@ import { useAuth } from '../../context/AuthContext';
 import { useUserScope } from '../../context/UserScopeContext';
 import { useArchive } from '../../hooks/useArchive';
 import { useArchiveUpload } from '../../hooks/useArchiveUpload';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import { useFolderZipDownload } from '../../hooks/useFolderZipDownload';
 import { buildFolderTree } from '../../lib/huggingface/hfClient';
 import { deleteFileFromHf } from '../../lib/huggingface/hfWrite';
 import { isHfConfigComplete } from '../../lib/huggingface/hfConfigApi';
 import { archiveStatusMessage } from '../../lib/huggingface/hfStatus';
 import { resolveFileDownloadUrl, joinArchivePath } from '../../lib/dispatch/dispatchStorage';
-import { canDeleteInRepo, canUploadToRepo, repoLabel } from '../../lib/storageRepos';
+import { canDeleteInRepo, canUploadToRepo, repoLabel, splitStorageRepos, type StorageScope } from '../../lib/storageRepos';
 import { browseFolder, stripBase } from '../../lib/dispatch/folderBrowse';
 import { planFolderZip } from '../../lib/dispatch/folderZipPlan';
 import { itemsFromFileList, type UploadItem } from '../../lib/uploadItems';
@@ -40,18 +41,28 @@ function FileGlyph({ doc }: { doc: DispatchDocument }) {
   return <FileIcon className="w-6 h-6 text-slate-600 dark:text-slate-400" />;
 }
 
-export function StorageManagementView() {
+interface StorageManagementViewProps {
+  /** Kho lưu trữ (mặc định) hoặc kho Văn thư và Biểu mẫu khi nhúng trong tab Văn thư. */
+  scope?: StorageScope;
+  /** Nhúng trong màn khác: lấp đầy khung chứa và không có trợ lý AI riêng. */
+  embedded?: boolean;
+}
+
+export function StorageManagementView({ scope = 'storage', embedded = false }: StorageManagementViewProps = {}) {
   const { role, user, can } = useAuth();
   const userId = user?.id ?? null;
   const { managedUsers } = useUserScope();
   const { auth, allRepos, repos, selectedRepo, selectRepo, config, documents, folders, status, reload, reloadRepos } =
-    useArchive();
+    useArchive(scope);
   const upload = useArchiveUpload(config, reload);
   const zipDl = useFolderZipDownload();
 
   const [selectedFolder, setSelectedFolder] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  // Điện thoại: bảng nhiều cột khó đọc nên luôn dùng thẻ; kho và cây thư mục nằm trong một ngăn bật tắt
+  const isMobile = useIsMobile();
+  const [isTreeOpen, setIsTreeOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<DispatchDocument | null>(null);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
@@ -67,6 +78,11 @@ export function StorageManagementView() {
   const canDelete = canDeleteInRepo(role, userId, selectedRepo);
   const statusMessage = archiveStatusMessage(status, canConfigure);
   const ownerNames = useMemo(() => new Map(managedUsers.map((u) => [u.userId, u.fullName])), [managedUsers]);
+  // Kho của người khác (chỉ Master Admin có) nằm trong ô chọn, không liệt kê hết thành tab
+  const { primary: primaryRepos, others: otherRepos } = useMemo(() => splitStorageRepos(repos, userId), [repos, userId]);
+  const nameOf = (r: (typeof repos)[number]) => repoLabel(r, userId, r.assignedUserId ? ownerNames.get(r.assignedUserId) : undefined);
+  const sortedOthers = useMemo(() => [...otherRepos].sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'vi')), [otherRepos, ownerNames]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pageTitle = scope === 'dispatch' ? 'Kho Văn thư và Biểu mẫu' : 'Kho lưu trữ';
 
   // Thư mục gốc cấu hình của repo là "Gốc"; selectedFolder luôn là đường dẫn TƯƠNG ĐỐI so với gốc này
   const baseFolder = joinArchivePath(config?.folder);
@@ -195,17 +211,18 @@ export function StorageManagementView() {
     'p-1.5 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800';
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className={`flex flex-col ${embedded ? 'h-full min-h-[28rem]' : 'h-[calc(100dvh-3.5rem)]'} overflow-hidden bg-slate-50 dark:bg-slate-950`}>
       {/* Tiêu đề và thao tác */}
-      <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
             <Database className="w-6 h-6" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Kho lưu trữ</h1>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{pageTitle}</h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {!embedded && (
           <button
             type="button"
             onClick={() => {
@@ -222,6 +239,7 @@ export function StorageManagementView() {
             <Sparkles className="w-4 h-4" />
             <span>Trợ lý AI</span>
           </button>
+          )}
 
           {canUpload && (
             <>
@@ -288,9 +306,9 @@ export function StorageManagementView() {
         </div>
       )}
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Cột trái: chọn kho và cây thư mục */}
-        <div className="w-60 xl:w-72 2xl:w-80 shrink-0 flex flex-col bg-slate-50 dark:bg-slate-900/60 border-r border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Cột trái: chọn kho và cây thư mục (điện thoại: ngăn bật tắt phía trên danh sách tệp) */}
+        <div className={`${isTreeOpen ? 'flex' : 'hidden'} md:flex w-full md:w-60 xl:w-72 2xl:w-80 shrink-0 max-md:max-h-[55%] flex-col bg-slate-50 dark:bg-slate-900/60 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 overflow-hidden`}>
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Kho</span>
@@ -303,7 +321,7 @@ export function StorageManagementView() {
 
             {repos.length > 0 ? (
               <div className="space-y-1" role="tablist" aria-label="Chọn kho">
-                {repos.map((r) => {
+                {primaryRepos.map((r) => {
                   const active = r.id === selectedRepo?.id;
                   return (
                     <button
@@ -311,14 +329,14 @@ export function StorageManagementView() {
                       type="button"
                       role="tab"
                       aria-selected={active}
-                      onClick={() => handleSelectRepo(r.id)}
+                      onClick={() => { handleSelectRepo(r.id); setIsTreeOpen(false); }}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate cursor-pointer ${
                         active
                           ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 font-semibold'
                           : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                       }`}
                     >
-                      {repoLabel(r, userId, r.assignedUserId ? ownerNames.get(r.assignedUserId) : undefined)}
+                      {nameOf(r)}
                     </button>
                   );
                 })}
@@ -327,6 +345,27 @@ export function StorageManagementView() {
               <p className="text-sm text-slate-500">Chưa có kho nào.</p>
             )}
 
+            {sortedOthers.length > 0 && (
+              <div className="mt-3">
+                <label htmlFor="other-repo" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Kho của người dùng khác</label>
+                <select
+                  id="other-repo"
+                  value={sortedOthers.some((r) => r.id === selectedRepo?.id) ? selectedRepo?.id : ''}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleSelectRepo(Number(e.target.value));
+                      setIsTreeOpen(false);
+                    }
+                  }}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-800 dark:text-slate-100"
+                >
+                  <option value="">Chọn người dùng...</option>
+                  {sortedOthers.map((r) => (
+                    <option key={r.id} value={r.id}>{nameOf(r)}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
               <span>{stats.totalFiles} tệp</span>
               <span>{stats.totalMb} MB</span>
@@ -334,14 +373,23 @@ export function StorageManagementView() {
           </div>
 
           <div className="flex-1 overflow-hidden">
-            <FolderTreeView rootNode={folderTreeRoot} selectedPath={selectedFolder} onSelectPath={setSelectedFolder} onCreateFolder={handleCreateFolder} />
+            <FolderTreeView rootNode={folderTreeRoot} selectedPath={selectedFolder} onSelectPath={(path) => { setSelectedFolder(path); setIsTreeOpen(false); }} onCreateFolder={handleCreateFolder} />
           </div>
         </div>
 
         {/* Cột phải: danh sách tệp, có kéo thả */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-900">
-          <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-900/50 text-sm">
-            <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 min-w-0">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-white dark:bg-slate-900">
+          <div className="px-3 sm:px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-900/50 text-sm">
+            <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400 min-w-0 max-md:w-full">
+              <button
+                type="button"
+                onClick={() => setIsTreeOpen((open) => !open)}
+                aria-expanded={isTreeOpen}
+                className="md:hidden shrink-0 inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm font-semibold cursor-pointer"
+              >
+                <Folder className="w-4 h-4" />
+                <span className="truncate max-w-[10rem]">{selectedRepo ? nameOf(selectedRepo) : 'Kho'}</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setSelectedFolder('')}
@@ -367,8 +415,8 @@ export function StorageManagementView() {
               })}
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <div className="relative">
+            <div className="flex flex-wrap items-center gap-2.5 max-md:w-full">
+              <div className="relative max-sm:w-full">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
@@ -376,7 +424,7 @@ export function StorageManagementView() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm tệp tin..."
                   aria-label="Tìm tệp tin"
-                  className="w-40 xl:w-56 pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-hidden"
+                  className="w-full sm:w-40 xl:w-56 pl-9 pr-3 py-2 sm:py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-hidden"
                 />
               </div>
 
@@ -392,7 +440,7 @@ export function StorageManagementView() {
                 </button>
               )}
 
-              <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800">
+              <div className="hidden md:flex items-center border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800">
                 <button
                   type="button"
                   onClick={() => setViewMode('list')}
@@ -428,7 +476,7 @@ export function StorageManagementView() {
             </div>
           </div>
 
-          <UploadDropZone disabled={!canUpload || upload.running} onItems={startUpload} className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+          <UploadDropZone disabled={!canUpload || upload.running} onItems={startUpload} className="flex-1 overflow-y-auto p-3 sm:p-5 custom-scrollbar">
             {filteredFiles.length === 0 && browse.folders.length === 0 ? (
               <div className="h-72 flex flex-col items-center justify-center text-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
                 <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
@@ -439,7 +487,7 @@ export function StorageManagementView() {
                   <p className="text-sm text-slate-400 max-w-md">Kéo thả tệp, thư mục hoặc tệp nén vào đây, hoặc dùng nút Tải lên ở góc trên.</p>
                 )}
               </div>
-            ) : viewMode === 'grid' ? (
+            ) : isMobile || viewMode === 'grid' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
                 {browse.folders.map((f) => (
                   <div
@@ -597,7 +645,8 @@ export function StorageManagementView() {
           </UploadDropZone>
         </div>
 
-        {/* Cột phải: Sidebar Chat AI */}
+        {/* Cột phải: Sidebar Chat AI (nhúng trong tab Văn thư thì dùng trợ lý của Văn thư) */}
+        {!embedded && (
         <AiChatDialog
           isOpen={isAiChatOpen}
           onClose={() => {
@@ -608,6 +657,7 @@ export function StorageManagementView() {
           initialAttachedDoc={aiAttachedDoc}
           mode="sidebar"
         />
+        )}
       </div>
 
       {canConfigure && (
@@ -625,7 +675,7 @@ export function StorageManagementView() {
         isOpen={Boolean(previewDoc)}
         onClose={() => setPreviewDoc(null)}
         hfConfig={config}
-        onOpenAiChat={(d) => {
+        onOpenAiChat={embedded ? undefined : (d) => {
           setAiAttachedDoc(d);
           setIsAiChatOpen(true);
         }}

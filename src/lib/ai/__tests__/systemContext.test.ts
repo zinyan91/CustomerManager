@@ -184,3 +184,41 @@ describe('describeDocFiles', () => {
     expect(describeDocFiles(forms)).toBe('8 biểu mẫu: "m1.docx", "m2.docx", "m3.docx", "m4.docx", "m5.docx" và 3 biểu mẫu khác');
   });
 });
+
+describe('Báo cáo tài chính trong ngữ cảnh AI', () => {
+  const base = {
+    officialDocs: [],
+    totalOfficialDocs: 0,
+    docsByCategory: { all: 0, 'van-ban': 0, 'hop-dong': 0, 'cong-van': 0, khac: 0 },
+    customers: [],
+    totalCustomers: 0,
+    hfConfig: { hasToken: false },
+  };
+
+  it('câu hỏi không liên quan tài chính: không có mục báo cáo tài chính', () => {
+    expect(formatSystemContextPrompt(base)).not.toContain('BÁO CÁO TÀI CHÍNH DOANH NGHIỆP');
+  });
+
+  it('có bản đã lưu: nạp đúng nội dung vào mục 4', () => {
+    const prompt = formatSystemContextPrompt({ ...base, financialProfile: ['Doanh nghiệp: Công ty A', '270 | TỔNG CỘNG TÀI SẢN | 100 | 90'].join(String.fromCharCode(10)) });
+    expect(prompt).toContain('## 4. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP');
+    expect(prompt).toContain('Doanh nghiệp: Công ty A');
+    expect(prompt.indexOf('## 4.')).toBeLessThan(prompt.indexOf('HẾT DỮ LIỆU HỆ THỐNG'));
+  });
+
+  it('hỏi tài chính nhưng chưa lưu bản nào: nói rõ chưa có, hướng dẫn gửi tệp, không bịa số', () => {
+    const prompt = formatSystemContextPrompt({ ...base, financialProfile: null });
+    expect(prompt).toContain('Chưa có bản báo cáo tài chính nào được lưu');
+    expect(prompt).toContain('PDF, ảnh hoặc Excel');
+  });
+});
+
+describe('Chỉ dẫn hệ thống cho AI', () => {
+  it('có phần phân tích báo cáo tài chính và vấn đề doanh nghiệp', async () => {
+    const { SYSTEM_INSTRUCTION } = await import('../geminiClient');
+    expect(SYSTEM_INSTRUCTION).toContain('BÁO CÁO TÀI CHÍNH & PHÂN TÍCH DOANH NGHIỆP');
+    expect(SYSTEM_INSTRUCTION).toContain('133/2016/TT-BTC');
+    expect(SYSTEM_INSTRUCTION).toContain('CÁC VẤN ĐỀ DOANH NGHIỆP KHÁC');
+    expect(SYSTEM_INSTRUCTION).toContain('không bịa số');
+  });
+});

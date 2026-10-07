@@ -1,6 +1,6 @@
 import type { HfConfig } from '../types/huggingface';
 import type { StorageRepo, StorageRepoKind } from '../types/storageRepo';
-import { isAdminRole, isMasterAdminRole } from './permissions';
+import { isMasterAdminRole } from './permissions';
 
 const VI_MAP: Record<string, string> = { đ: 'd', Đ: 'd' };
 
@@ -51,20 +51,34 @@ export function mapRepoRow(row: {
   };
 }
 
+/** Màn dùng kho: Kho lưu trữ (kho chung, kho cá nhân) hoặc Văn thư (kho Văn thư, kho Biểu mẫu). */
+export type StorageScope = 'storage' | 'dispatch';
+
+const isOwnPersonal = (r: StorageRepo, userId: string | null) => r.kind === 'personal' && r.assignedUserId !== null && r.assignedUserId === userId;
+
 /**
- * Repo hiện trong màn Kho lưu trữ.
- * Admin thấy mọi repo, kể cả kho Văn thư và Biểu mẫu (nơi để tệp cho các văn bản); user thấy Kho chung
- * và repo gán cho mình.
+ * Repo dùng được trong một màn.
+ * Kho lưu trữ: ai cũng có Kho chung và kho của mình; Master Admin có thêm kho của người khác (chỉ để chọn khi cần).
+ * Văn thư: kho Văn thư và kho Biểu mẫu, chỉ Master Admin; các vai trò khác dùng chúng qua danh mục văn bản.
  */
-export function reposForStorage(repos: StorageRepo[], role: string | null | undefined, userId: string | null): StorageRepo[] {
+export function reposForScope(repos: StorageRepo[], role: string | null | undefined, userId: string | null, scope: StorageScope): StorageRepo[] {
+  const master = isMasterAdminRole(role);
   const list = repos.filter((r) => {
-    if (isAdminRole(role)) return true;
-    return r.kind === 'shared' || (r.kind === 'personal' && r.assignedUserId !== null && r.assignedUserId === userId);
+    if (scope === 'dispatch') return master && (r.kind === 'dispatch' || r.kind === 'form');
+    if (r.kind === 'shared') return true;
+    if (r.kind === 'personal') return master || isOwnPersonal(r, userId);
+    return false;
   });
   // Kho chung đứng đầu, rồi Văn thư, Biểu mẫu, rồi kho của chính mình, rồi các kho cá nhân khác
   const rank = (r: StorageRepo) =>
     r.kind === 'shared' ? 0 : r.kind === 'dispatch' ? 1 : r.kind === 'form' ? 2 : r.assignedUserId === userId ? 3 : 4;
   return [...list].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'vi'));
+}
+
+/** Kho hiện sẵn thành tab, và kho của người khác (nhiều, chỉ hiện khi cần chọn). */
+export function splitStorageRepos(repos: StorageRepo[], userId: string | null): { primary: StorageRepo[]; others: StorageRepo[] } {
+  const primary = repos.filter((r) => r.kind !== 'personal' || isOwnPersonal(r, userId));
+  return { primary, others: repos.filter((r) => !primary.includes(r)) };
 }
 
 /** Nhãn hiển thị; ownerName là tên người được gán (dùng cho admin xem kho của người khác). */
@@ -79,20 +93,21 @@ export function repoLabel(repo: StorageRepo, userId: string | null, ownerName?: 
 /**
  * Quyền upload theo repo. Lưu ý: đây là quy tắc giao diện — mọi tài khoản đều đọc được token
  * chung nên không thể ép buộc ở tầng HF (xem spec mục Rủi ro).
+ * Master Admin ở mọi repo; các vai trò khác chỉ ở Kho chung và kho cá nhân của mình
+ * (User Admin không quản lý kho Văn thư, kho Biểu mẫu hay kho của người khác).
  */
 export function canUploadToRepo(role: string | null | undefined, userId: string | null, repo: StorageRepo | null): boolean {
   if (!repo || !role) return false;
-  if (isAdminRole(role)) return true;
-  if (repo.kind === 'shared') return true;
-  if (repo.kind === 'personal') return repo.assignedUserId !== null && repo.assignedUserId === userId;
-  return false;
+  if (isMasterAdminRole(role)) return true;
+  return repo.kind === 'shared' || isOwnPersonal(repo, userId);
 }
 
-/** Xóa: admin mọi repo; user chỉ xóa trong repo cá nhân của mình. */
+/** Xóa: Master Admin mọi repo; User Admin ở Kho chung và kho của mình; user chỉ trong kho cá nhân của mình. */
 export function canDeleteInRepo(role: string | null | undefined, userId: string | null, repo: StorageRepo | null): boolean {
   if (!repo || !role) return false;
-  if (isAdminRole(role)) return true;
-  return repo.kind === 'personal' && repo.assignedUserId !== null && repo.assignedUserId === userId;
+  if (isMasterAdminRole(role)) return true;
+  if (isOwnPersonal(repo, userId)) return true;
+  return role === 'user_admin' && repo.kind === 'shared';
 }
 
 /** Chỉ Master Admin tạo và gán repo. */

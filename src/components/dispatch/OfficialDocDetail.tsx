@@ -79,7 +79,7 @@ export function OfficialDocDetail({ doc, token, onClose }: OfficialDocDetailProp
           </div>
         )}
 
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           <div className="space-y-4">
             <Field label="Số hiệu">{doc.docNumber}</Field>
             <Field label="Tiêu đề">{doc.title}</Field>

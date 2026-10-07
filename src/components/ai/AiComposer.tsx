@@ -1,10 +1,12 @@
 import { forwardRef, useImperativeHandle, useState, useRef, useEffect } from 'react';
-import { Send, Square, Paperclip, X, FileText, ChevronDown, Image as ImageIcon, AlertCircle, Archive } from 'lucide-react';
+import { Send, Square, Paperclip, X, FileText, ChevronDown, Image as ImageIcon, AlertCircle, Archive, FileSpreadsheet } from 'lucide-react';
 import type { DispatchDocument } from '../../types/dispatch';
 import type { AiAttachment } from '../../types/ai';
 import { convertFilesToAiAttachments, formatFileSize } from '../../lib/ai/fileToAttachment';
 import { ATTACHMENT_INTENTS, intentsFor, type AttachmentIntentId } from '../../lib/ai/attachmentIntents';
 import { checkFormTotal, formPairingProblem, isFormAttachment } from '../../lib/ai/formFiles';
+import { fileToSpreadsheetAttachment, isSpreadsheetFile } from '../../lib/ai/spreadsheetText';
+import { fileToWordAttachment, isDocxFile, isLegacyDocFile, legacyDocMessage } from '../../lib/ai/wordText';
 
 interface AiComposerProps {
   /**
@@ -43,6 +45,10 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
   const [showDocPicker, setShowDocPicker] = useState(false);
   const [attachments, setAttachments] = useState<AiAttachment[]>([]);
   const [forms, setForms] = useState<File[]>([]);
+  // Bảng tính (Excel, CSV): AI đọc thành chữ để phân tích báo cáo tài chính; khi thêm văn bản mới thì thành biểu mẫu
+  const [sheets, setSheets] = useState<File[]>([]);
+  // Tệp Word (.docx): AI đọc thành chữ như văn bản; khi thêm văn bản mới thì đi kèm làm biểu mẫu
+  const [words, setWords] = useState<File[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isReadingFiles, setIsReadingFiles] = useState(false);
 
@@ -57,7 +63,18 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
     }
   }, [text]);
 
-  const handleSend = () => {
+  /** Bảng tính và tệp Word đang đính kèm thành tệp chữ cho AI. Lỗi đọc được báo và dừng gửi, không lẳng lặng bỏ tệp. */
+  const readTexts = async (which: { sheets: boolean; words: boolean }): Promise<AiAttachment[] | null> => {
+    try {
+      const reads = [...(which.sheets ? sheets.map((f) => fileToSpreadsheetAttachment(f)) : []), ...(which.words ? words.map((f) => fileToWordAttachment(f)) : [])];
+      return await Promise.all(reads);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Không đọc được tệp đính kèm.');
+      return null;
+    }
+  };
+
+  const handleSend = async () => {
     const hasText = Boolean(text.trim());
     // Có tệp mà chưa gõ gì: phải chọn một việc ở dải lựa chọn, không tự gửi câu hỏi mặc định
     if (!hasText || isStreaming) return;
@@ -67,10 +84,18 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
       return;
     }
 
+    setIsReadingFiles(true);
+    const sheetAtts = sheets.length + words.length > 0 ? await readTexts({ sheets: true, words: true }) : [];
+    setIsReadingFiles(false);
+    if (!sheetAtts) return;
+
     const msg = text;
-    const atts = attachments.length > 0 ? [...attachments] : undefined;
+    const all = [...attachments, ...sheetAtts];
+    const atts = all.length > 0 ? all : undefined;
     setText('');
     setAttachments([]);
+    setSheets([]);
+    setWords([]);
     setUploadError(null);
     if (atts) {
       onSend(msg, atts);
@@ -86,7 +111,7 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
 
@@ -98,9 +123,12 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
     setUploadError(null);
     try {
       // Chỉ tài khoản được thêm văn bản mới có biểu mẫu; tài khoản khác gặp lại báo lỗi định dạng như mọi tệp AI không đọc được
-      const formFiles = canRecord ? files.filter(isFormAttachment) : [];
-      const documentFiles = files.filter((f) => !formFiles.includes(f));
-      const problems: string[] = [];
+      const sheetFiles = files.filter(isSpreadsheetFile);
+      const wordFiles = files.filter(isDocxFile);
+      const formFiles = canRecord ? files.filter((f) => !isSpreadsheetFile(f) && !isDocxFile(f) && !isLegacyDocFile(f) && isFormAttachment(f)) : [];
+      const legacyFiles = files.filter(isLegacyDocFile);
+      const documentFiles = files.filter((f) => !formFiles.includes(f) && !sheetFiles.includes(f) && !wordFiles.includes(f) && !legacyFiles.includes(f));
+      const problems: string[] = legacyFiles.map((f) => legacyDocMessage(f.name));
 
       const sizeProblem = formFiles.length > 0 ? checkFormTotal([...forms, ...formFiles]) : null;
       const acceptedForms = sizeProblem ? [] : formFiles;
@@ -114,6 +142,8 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
         problems.push(...errors);
       }
       if (acceptedForms.length > 0) setForms((prev) => [...prev, ...acceptedForms]);
+      if (sheetFiles.length > 0) setSheets((prev) => [...prev, ...sheetFiles]);
+      if (wordFiles.length > 0) setWords((prev) => [...prev, ...wordFiles]);
       if (problems.length > 0) {
         setUploadError(problems.join('. '));
       }
@@ -159,20 +189,34 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
   const canSend = Boolean(text.trim()) && !isStreaming && !isReadingFiles;
   const pairingProblem = formPairingProblem(forms.length, attachments.length);
 
-  const sendWithIntent = (id: AttachmentIntentId) => {
-    if (isStreaming || isReadingFiles || attachments.length === 0 || pairingProblem) return;
+  const sendWithIntent = async (id: AttachmentIntentId) => {
+    if (isStreaming || isReadingFiles || (attachments.length === 0 && sheets.length === 0 && words.length === 0) || pairingProblem) return;
     const prompt = ATTACHMENT_INTENTS.find((i) => i.id === id)?.prompt ?? '';
     const atts = [...attachments];
-    const formFiles = [...forms];
+    // Thêm văn bản mới: bảng tính và Word là biểu mẫu của văn bản. Nhập hồ sơ tín dụng: chỉ Word là hồ sơ để đọc.
+    // Các việc còn lại: bảng tính và Word là nội dung cho AI đọc
+    const formFiles = id === 'record' ? [...forms, ...sheets, ...words] : [...forms];
+    const readSheetsToo = id !== 'record' && id !== 'credit';
+    const readWordsToo = id !== 'record';
+    let sheetAtts: AiAttachment[] = [];
+    if ((readSheetsToo && sheets.length > 0) || (readWordsToo && words.length > 0)) {
+      setIsReadingFiles(true);
+      const read = await readTexts({ sheets: readSheetsToo, words: readWordsToo });
+      setIsReadingFiles(false);
+      if (!read) return;
+      sheetAtts = read;
+    }
     setText('');
     setAttachments([]);
     setForms([]);
+    setSheets([]);
+    setWords([]);
     setUploadError(null);
-    onSend(prompt, atts, id, formFiles);
+    onSend(prompt, [...atts, ...sheetAtts], id, formFiles);
   };
 
   // Có biểu mẫu thì chỉ còn việc thêm văn bản mới: tóm tắt hay đọc không dùng tới biểu mẫu
-  const intents = intentsFor(canRecord, Boolean(text.trim() || forms.length > 0));
+  const intents = intentsFor(canRecord, Boolean(text.trim() || forms.length > 0), { documents: attachments.length, words: words.length, sheets: sheets.length, forms: forms.length });
 
   return (
     <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
@@ -201,7 +245,7 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
       )}
 
       {/* Dải hiển thị tệp / hình ảnh đang đính kèm */}
-      {(attachments.length > 0 || forms.length > 0) && (
+      {(attachments.length > 0 || forms.length > 0 || sheets.length > 0 || words.length > 0) && (
         <div className="mb-2 max-w-3xl mx-auto flex flex-wrap gap-2">
           {forms.map((form, i) => (
             <div
@@ -218,6 +262,46 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
                 onClick={() => setForms((prev) => prev.filter((_, idx) => idx !== i))}
                 className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-md transition-colors cursor-pointer shrink-0"
                 title="Gỡ biểu mẫu"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          {words.map((word, i) => (
+            <div
+              key={`word_${word.name}_${i}`}
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs text-xs text-slate-800 dark:text-slate-200 max-w-xs"
+            >
+              <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium text-[11px]" title={word.name}>{word.name}</div>
+                <div className="text-[10px] text-slate-400 font-mono">{formatFileSize(word.size)}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWords((prev) => prev.filter((_, idx) => idx !== i))}
+                className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-md transition-colors cursor-pointer shrink-0"
+                title="Gỡ tệp Word"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          {sheets.map((sheet, i) => (
+            <div
+              key={`sheet_${sheet.name}_${i}`}
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs text-xs text-slate-800 dark:text-slate-200 max-w-xs"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium text-[11px]" title={sheet.name}>{sheet.name}</div>
+                <div className="text-[10px] text-slate-400 font-mono">{formatFileSize(sheet.size)}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSheets((prev) => prev.filter((_, idx) => idx !== i))}
+                className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-md transition-colors cursor-pointer shrink-0"
+                title="Gỡ bảng tính"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -265,7 +349,7 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
       )}
 
       {/* Chọn việc cần làm với tệp vừa đính kèm */}
-      {attachments.length > 0 && !pairingProblem && intents.length > 0 && (
+      {(attachments.length > 0 || sheets.length > 0 || words.length > 0) && !pairingProblem && intents.length > 0 && (
         <div role="group" aria-label="Chọn việc cần làm với tệp" className="mb-2 max-w-3xl mx-auto flex flex-wrap items-center gap-2 text-xs">
           <span className="text-slate-500 dark:text-slate-400">Bạn muốn làm gì với tệp này?</span>
           {intents.map((i) => (
@@ -273,7 +357,7 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
               key={i.id}
               type="button"
               disabled={isStreaming || isReadingFiles}
-              onClick={() => sendWithIntent(i.id)}
+              onClick={() => void sendWithIntent(i.id)}
               className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-medium hover:border-teal-600 hover:text-teal-800 dark:hover:text-teal-300 disabled:opacity-50 cursor-pointer"
             >
               {i.label}
@@ -312,7 +396,7 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
         <input
           ref={fileInputRef}
           type="file"
-          accept={canRecord ? undefined : 'image/*,application/pdf'}
+          accept={canRecord ? undefined : 'image/*,application/pdf,.docx,.xlsx,.xls,.xlsm,.csv'}
           multiple
           className="hidden"
           onChange={handleFileInputChange}
@@ -396,7 +480,7 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
         ) : (
           <button
             type="button"
-            onClick={handleSend}
+            onClick={() => void handleSend()}
             disabled={!canSend}
             className="p-2 bg-teal-700 hover:bg-teal-600 disabled:opacity-40 text-white rounded-lg transition-colors flex items-center justify-center shrink-0 cursor-pointer"
             title="Gửi tin nhắn"

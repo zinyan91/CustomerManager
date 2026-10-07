@@ -27,6 +27,12 @@ describe('buildContents', () => {
   it('không có tệp bổ sung thì giữ nguyên như cũ; tin rỗng có chữ đệm', () => {
     expect(buildContents([msg('1', 'user', '  ')])[0].parts).toEqual([{ text: ' ' }]);
   });
+
+  it('bảng tính, Word đi kèm thành đoạn chữ có tên tệp, không thành tệp nhị phân', () => {
+    const sheet: AiAttachment = { id: 's', name: 'bctc.xlsx', mimeType: 'sheet', size: 1, base64Data: '', textData: '100,Tài sản,1' };
+    const out = buildContents([msg('1', 'user', 'phân tích', [sheet])]);
+    expect(out[0].parts).toEqual([{ text: 'phân tích' }, { text: 'Nội dung tệp đính kèm "bctc.xlsx":' + String.fromCharCode(10) + '100,Tài sản,1' }]);
+  });
 });
 
 describe('thinkingConfigFor', () => {

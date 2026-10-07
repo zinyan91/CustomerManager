@@ -4,6 +4,7 @@ import { searchOfficialDocs, countByCategory, type CategoryCounts } from '../api
 import { fetchCustomersAPI } from '../api/customerApi';
 import { fetchHfAuth } from '../huggingface/hfConfigApi';
 import type { Customer } from '../../types';
+import { formatFinancialProfile, loadSavedFinancialProfile } from './financialContext';
 
 export interface SystemContextData {
   officialDocs: OfficialDoc[];
@@ -15,6 +16,11 @@ export interface SystemContextData {
     hasToken: boolean;
     username?: string;
   };
+  /**
+   * Báo cáo tài chính doanh nghiệp đã lưu trên trình duyệt này: chuỗi dữ liệu; null = đã hỏi nhưng chưa lưu bản nào;
+   * undefined = câu hỏi không liên quan tài chính nên không nạp.
+   */
+  financialProfile?: string | null;
 }
 
 const DEFAULT_DOC_FILTER: OfficialDocFilter = {
@@ -28,6 +34,8 @@ const DEFAULT_DOC_FILTER: OfficialDocFilter = {
 export interface SystemContextOptions {
   /** Tải danh sách khách hàng (nặng nhất). Chỉ bật khi câu hỏi nhắc tới khách hàng. */
   includeCustomers?: boolean;
+  /** Nạp bản báo cáo tài chính doanh nghiệp đã lưu trên trình duyệt. Chỉ bật khi câu hỏi nhắc tới tài chính doanh nghiệp. */
+  includeFinancials?: boolean;
 }
 
 const MAX_FORM_NAMES = 5;
@@ -58,7 +66,7 @@ export function mentionsCustomers(question: string): boolean {
  * Ba nguồn tải song song; nguồn nào lỗi thì bỏ qua riêng nguồn đó.
  */
 export async function fetchSystemContextData(options: SystemContextOptions = {}): Promise<SystemContextData> {
-  const { includeCustomers = true } = options;
+  const { includeCustomers = true, includeFinancials = false } = options;
 
   const [docsRes, customers, hasToken] = await Promise.all([
     Promise.all([searchOfficialDocs(DEFAULT_DOC_FILTER, 1), countByCategory(DEFAULT_DOC_FILTER)]).catch((err) => {
@@ -79,7 +87,13 @@ export async function fetchSystemContextData(options: SystemContextOptions = {})
     customers,
     totalCustomers: customers.length,
     hfConfig: hasToken,
+    financialProfile: includeFinancials ? readFinancialProfile() : undefined,
   };
+}
+
+function readFinancialProfile(): string | null {
+  const profile = loadSavedFinancialProfile();
+  return profile ? formatFinancialProfile(profile) : null;
 }
 
 /**
@@ -137,6 +151,16 @@ export function formatSystemContextPrompt(data: SystemContextData): string {
     if (data.totalCustomers > 50) {
       lines.push(`... và ${data.totalCustomers - 50} khách hàng khác.`);
     }
+  }
+
+  // 4. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP
+  if (data.financialProfile !== undefined) {
+    lines.push('');
+    lines.push('## 4. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP (bản đã lưu trên trình duyệt của người đang hỏi):');
+    lines.push(
+      data.financialProfile ??
+        '- Chưa có bản báo cáo tài chính nào được lưu trên trình duyệt này. Nếu cần phân tích số liệu, nhờ người dùng gửi tệp PDF, ảnh hoặc Excel của báo cáo, hoặc nhập và lưu bản nháp ở màn Báo cáo tài chính doanh nghiệp.'
+    );
   }
   lines.push('=== [HẾT DỮ LIỆU HỆ THỐNG] ===');
 

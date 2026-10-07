@@ -8,6 +8,7 @@ import { DISPATCH_TYPE_LABELS } from '../../types/dispatch';
 import type { HfConfig } from '../../types/huggingface';
 import { resolveFileDownloadUrl } from '../../lib/dispatch/dispatchStorage';
 import { summarizeDocumentWithAi } from '../../lib/ai/geminiClient';
+import { fileKindOf, isReadableByAi } from '../../lib/fileKinds';
 
 interface DispatchPreviewModalProps {
   document: DispatchDocument | null;
@@ -70,10 +71,10 @@ export function DispatchPreviewModal({
 
   if (!isOpen || !currentDoc) return null;
 
-  const isPdf = currentDoc.fileName.toLowerCase().endsWith('.pdf') || currentDoc.fileType.includes('pdf');
-  const isImage =
-    currentDoc.fileName.toLowerCase().match(/\.(jpg|jpeg|png|webp)$/) ||
-    currentDoc.fileType.includes('image');
+  const kind = fileKindOf(currentDoc.fileName, currentDoc.fileType);
+  const isPdf = kind === 'pdf';
+  const isImage = kind === 'image';
+  const aiReadable = isReadableByAi(kind);
 
   const handleDownload = () => {
     if (!fileUrl) return;
@@ -139,7 +140,7 @@ export function DispatchPreviewModal({
               <span className="hidden sm:inline">Tải về</span>
             </button>
 
-            {onOpenAiChat && (
+            {onOpenAiChat && aiReadable && (
             <button
               type="button"
               onClick={() => onOpenAiChat(currentDoc)}
@@ -205,7 +206,9 @@ export function DispatchPreviewModal({
                   </p>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Trình duyệt không hỗ trợ xem trước trực tiếp định dạng văn bản này. Bạn có thể tải file về để mở trên máy tính hoặc sử dụng AI để tóm tắt các điểm chính.
+                  {aiReadable
+                    ? 'Trình duyệt không hỗ trợ xem trước trực tiếp định dạng văn bản này. Bạn có thể tải file về để mở trên máy tính hoặc sử dụng AI để tóm tắt các điểm chính.'
+                    : 'Định dạng này không xem trước được. Hãy tải tệp về để mở trên máy tính.'}
                 </p>
                 <div className="flex items-center justify-center gap-3">
                   <button
@@ -283,6 +286,7 @@ export function DispatchPreviewModal({
             </div>
 
             {/* Khối AI Tóm tắt nội dung */}
+            {aiReadable && (
             <div className="rounded-xl p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200 text-xs">
@@ -325,6 +329,7 @@ export function DispatchPreviewModal({
                 </p>
               )}
             </div>
+            )}
 
             {/* Ghi chú */}
             {currentDoc.note && (

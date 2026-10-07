@@ -30,6 +30,11 @@ describe('itemsFromFileList', () => {
     expect(items.map((i) => i.relativePath)).toEqual(['a.zip', 'HoSo/2026/b.pdf']);
   });
 
+  it('không loại tệp nào theo định dạng: ảnh, tệp nén, exe đều được tải lên', () => {
+    const names = ['a.png', 'b.gif', 'c.zip', 'd.rar', 'e.7z', 'f.exe', 'g.msi', 'h.iso', 'khong-duoi'];
+    expect(itemsFromFileList(names.map((n) => file(n))).map((i) => i.relativePath)).toEqual(names);
+  });
+
   it('bỏ tệp rác của hệ điều hành và thư mục .git', () => {
     const items = itemsFromFileList([
       file('.DS_Store'),

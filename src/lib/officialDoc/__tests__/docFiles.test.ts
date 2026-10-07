@@ -1,20 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { OfficialDocFile } from '../../../types/officialDoc';
 import type { StorageRepo } from '../../../types/storageRepo';
 
-const h = vi.hoisted(() => ({ fetchBlob: vi.fn() }));
-
-vi.mock('../../huggingface/hfClient', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../huggingface/hfClient')>();
-  return { ...actual, fetchHfFileBlob: h.fetchBlob };
-});
-
-import { HfApiError } from '../../huggingface/hfClient';
 import {
   addDocFile,
   canViewInBrowser,
   docDownloadPlan,
-  fetchDocFileBlob,
   groupFilesByKind,
   primaryFile,
   removeDocFile,
@@ -30,11 +21,7 @@ const f = (kind: OfficialDocFile['kind'], path: string, repoId = 'o/kho'): Offic
 });
 
 const repo = (id: number, kind: StorageRepo['kind'], assignedUserId: string | null = null): StorageRepo => ({
-  id, name: `r${id}`, repoId: `o/r${id}`, provider: 'huggingface', folder: '', kind, assignedUserId, createdAt: '',
-});
-
-beforeEach(() => {
-  h.fetchBlob.mockReset();
+  id, name: `r${id}`, repoId: `o/r${id}`, kind, assignedUserId, createdAt: '',
 });
 
 describe('groupFilesByKind', () => {
@@ -125,46 +112,5 @@ describe('repoKindOfFile', () => {
   it('mỗi loại tệp ứng với đúng một loại kho', () => {
     expect(repoKindOfFile('goc')).toBe('dispatch');
     expect(repoKindOfFile('bieu-mau')).toBe('form');
-  });
-});
-
-describe('fetchDocFileBlob', () => {
-  const file = f('goc', 'a b/ví dụ.pdf');
-
-  it('tải từ huggingface.co đúng đường dẫn và token', async () => {
-    h.fetchBlob.mockResolvedValue(new Blob(['xyz'], { type: 'application/octet-stream' }));
-    const out = await fetchDocFileBlob(file, 'tok');
-    expect(out.size).toBe(3);
-    expect(out.type).toBe('application/pdf');
-    expect(h.fetchBlob).toHaveBeenCalledWith(
-      'https://huggingface.co/datasets/o/kho/resolve/main/a%20b/v%C3%AD%20d%E1%BB%A5.pdf',
-      'tok'
-    );
-  });
-
-  it('tệp không còn trong Kho (404) báo rõ ràng', async () => {
-    h.fetchBlob.mockImplementation(async () => {
-      throw new HfApiError(404, 'x');
-    });
-    await expect(fetchDocFileBlob(file, 't')).rejects.toThrow(/không còn trong Kho lưu trữ/);
-  });
-
-  it('token bị từ chối thì nói về token', async () => {
-    h.fetchBlob.mockImplementation(async () => {
-      throw new HfApiError(403, 'x');
-    });
-    await expect(fetchDocFileBlob(file, 't')).rejects.toThrow(/Token kho lưu trữ bị từ chối/);
-  });
-
-  it('chưa có token thì báo chưa cấu hình, không gọi mạng', async () => {
-    await expect(fetchDocFileBlob(file, '')).rejects.toThrow(/Chưa cấu hình kho lưu trữ/);
-    expect(h.fetchBlob).not.toHaveBeenCalled();
-  });
-
-  it('lỗi khác giữ nguyên thông điệp', async () => {
-    h.fetchBlob.mockImplementation(async () => {
-      throw new HfApiError(500, 'Máy chủ lỗi');
-    });
-    await expect(fetchDocFileBlob(file, 't')).rejects.toThrow(/Máy chủ lỗi/);
   });
 });

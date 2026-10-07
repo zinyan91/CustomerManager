@@ -1,6 +1,6 @@
 import { joinArchivePath } from '../archivePath';
 import type { UploadItem } from '../uploadItems';
-import type { UploadFailure, UploadProgress, UploadResult } from '../huggingface/hfWrite';
+import type { UploadFailure, UploadProgress, UploadResult } from '../uploadItems';
 import { ensureDriveFolderPath, newFolderPathCache, uploadDriveFile } from './driveClient';
 import { describeDriveError } from './driveErrors';
 import { baseOf, dirOf } from './driveOps';

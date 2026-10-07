@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
-import type { FolderZipPlan } from '../../dispatch/folderZipPlan';
-import { downloadFolderZip, isAbortError, type ZipProgress } from '../hfFolderZip';
+import type { FolderZipPlan } from '../dispatch/folderZipPlan';
+import { downloadFolderZip, isAbortError, type OpenZipEntry, type ZipProgress } from '../folderZip';
 
 const enc = (s: string) => new TextEncoder().encode(s);
 
@@ -37,6 +37,10 @@ async function readZip(blob: Blob): Promise<Record<string, string>> {
   return out;
 }
 
+/** Mở tệp qua một hàm fetch giả: đường dẫn tệp nằm trong URL. */
+const via = (fetchFn: typeof fetch): OpenZipEntry => (entry, signal) =>
+  fetchFn(`https://kho.test/datasets/own/repo/resolve/main/${entry.filePath.split("/").map(encodeURIComponent).join("/")}`, { signal });
+
 const okFetch = (files: Record<string, string>) =>
   vi.fn(async (url: RequestInfo | URL) => {
     const path = decodeURIComponent(new URL(String(url)).pathname.replace('/datasets/own/repo/resolve/main/', ''));
@@ -47,7 +51,7 @@ describe('downloadFolderZip', () => {
   it('nén đủ tệp, giữ cấu trúc và nội dung (đọc lại bằng zip.js)', async () => {
     const files = { 'f/a.txt': 'xin chào', 'f/sub/b.txt': 'nội dung B', 'f/rong.txt': '' };
     const sink = collector();
-    await downloadFolderZip({ plan: plan(files), repoId: 'own/repo', token: 'hf_t', writable: sink.writable, fetchFn: okFetch(files) });
+    await downloadFolderZip({ plan: plan(files), writable: sink.writable, openEntry: via(okFetch(files)) });
 
     expect(sink.events).toEqual(['close']);
     expect(await readZip(sink.blob())).toEqual({
@@ -57,34 +61,13 @@ describe('downloadFolderZip', () => {
     });
   });
 
-  it('gửi token Bearer và tải đúng đường dẫn tệp (có mã hóa ký tự đặc biệt)', async () => {
-    const files = { 'f/tài liệu #1.txt': 'x' };
-    const fetchFn = okFetch(files);
-    const sink = collector();
-    await downloadFolderZip({ plan: plan(files), repoId: 'own/repo', token: 'hf_secret', writable: sink.writable, fetchFn });
-
-    const [url, init] = (fetchFn as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(String(url)).toBe('https://huggingface.co/datasets/own/repo/resolve/main/f/t%C3%A0i%20li%E1%BB%87u%20%231.txt');
-    expect((init as RequestInit).headers).toEqual({ Authorization: 'Bearer hf_secret' });
-  });
-
-  it('mọi yêu cầu tải chỉ đi tới huggingface.co, không qua máy chủ của ứng dụng (tránh tốn băng thông Vercel/Supabase)', async () => {
-    const files = { 'f/a.txt': 'a', 'f/b.txt': 'b', 'f/sub/c.txt': 'c' };
-    const fetchFn = okFetch(files);
-    await downloadFolderZip({ plan: plan(files), repoId: 'own/repo', token: 't', writable: collector().writable, fetchFn });
-
-    const hosts = (fetchFn as unknown as ReturnType<typeof vi.fn>).mock.calls.map(([u]) => new URL(String(u)).host);
-    expect(hosts).toHaveLength(3);
-    expect(new Set(hosts)).toEqual(new Set(['huggingface.co']));
-  });
-
   it('báo tiến độ từ 0 tới đủ và gọi onCommitting đúng một lần, trước khi đóng đích', async () => {
     const files = { 'f/a.txt': 'aaaa', 'f/b.txt': 'bb' };
     const sink = collector();
     const seen: ZipProgress[] = [];
     const order: string[] = [];
     await downloadFolderZip({
-      plan: plan(files), repoId: 'own/repo', token: 't', writable: sink.writable, fetchFn: okFetch(files),
+      plan: plan(files), writable: sink.writable, openEntry: via(okFetch(files)),
       onProgress: (p) => seen.push({ ...p }),
       onCommitting: () => order.push(`committing(events=${sink.events.join(',')})`),
     });
@@ -98,23 +81,23 @@ describe('downloadFolderZip', () => {
     const sink = collector();
     const fetchFn = vi.fn(async () => new Response('', { status: 404 })) as unknown as typeof fetch;
     await expect(
-      downloadFolderZip({ plan: plan({ 'f/a.txt': 'x' }), repoId: 'own/repo', token: 't', writable: sink.writable, fetchFn })
+      downloadFolderZip({ plan: plan({ 'f/a.txt': 'x' }), writable: sink.writable, openEntry: via(fetchFn) })
     ).rejects.toThrow(/Không tìm thấy tệp "Goc\/a.txt"/);
     expect(sink.events).toEqual(['abort']);
   });
 
-  it('token bị từ chối (403) thì nói rõ về token', async () => {
+  it('bị từ chối (403) thì nói rõ là kho từ chối', async () => {
     const fetchFn = vi.fn(async () => new Response('', { status: 403 })) as unknown as typeof fetch;
     await expect(
-      downloadFolderZip({ plan: plan({ 'f/a.txt': 'x' }), repoId: 'o/r', token: 't', writable: collector().writable, fetchFn })
-    ).rejects.toThrow(/Token kho lưu trữ bị từ chối/);
+      downloadFolderZip({ plan: plan({ 'f/a.txt': 'x' }), writable: collector().writable, openEntry: via(fetchFn) })
+    ).rejects.toThrow(/Kho lưu trữ từ chối khi tải/);
   });
 
   it('tải thiếu byte so với kích thước đã biết thì báo lỗi và hủy đích', async () => {
     const sink = collector();
     const p = plan({ 'f/a.txt': 'đủ mười byte...' });
     const fetchFn = vi.fn(async () => new Response(enc('ngắn'), { status: 200 })) as unknown as typeof fetch;
-    await expect(downloadFolderZip({ plan: p, repoId: 'o/r', token: 't', writable: sink.writable, fetchFn })).rejects.toThrow(/chưa đủ/);
+    await expect(downloadFolderZip({ plan: p, writable: sink.writable, openEntry: via(fetchFn) })).rejects.toThrow(/chưa đủ/);
     expect(sink.events).toEqual(['abort']);
   });
 
@@ -128,7 +111,7 @@ describe('downloadFolderZip', () => {
     }) as unknown as typeof fetch;
 
     const err = await downloadFolderZip({
-      plan: plan(files), repoId: 'o/r', token: 't', writable: sink.writable, signal: controller.signal, fetchFn,
+      plan: plan(files), writable: sink.writable, signal: controller.signal, openEntry: via(fetchFn),
     }).catch((e) => e);
 
     expect(isAbortError(err)).toBe(true);
@@ -140,7 +123,7 @@ describe('downloadFolderZip', () => {
     controller.abort();
     const fetchFn = vi.fn() as unknown as typeof fetch;
     const err = await downloadFolderZip({
-      plan: plan({ 'f/a.txt': 'x' }), repoId: 'o/r', token: 't', writable: collector().writable, signal: controller.signal, fetchFn,
+      plan: plan({ 'f/a.txt': 'x' }), writable: collector().writable, signal: controller.signal, openEntry: via(fetchFn),
     }).catch((e) => e);
     expect(isAbortError(err)).toBe(true);
     expect(fetchFn).not.toHaveBeenCalled();
@@ -151,23 +134,21 @@ describe('downloadFolderZip', () => {
       throw new TypeError('Failed to fetch');
     }) as unknown as typeof fetch;
     const err = await downloadFolderZip({
-      plan: plan({ 'f/a.txt': 'x' }), repoId: 'o/r', token: 't', writable: collector().writable, fetchFn,
+      plan: plan({ 'f/a.txt': 'x' }), writable: collector().writable, openEntry: via(fetchFn),
     }).catch((e) => e);
     expect(isAbortError(err)).toBe(false);
     expect((err as Error).message).toMatch(/Failed to fetch/);
   });
 });
 
-describe('downloadFolderZip với hàm mở tệp riêng (Google Drive)', () => {
-  it('đọc từng tệp bằng openEntry, không gọi Hugging Face, nội dung và cấu trúc đúng', async () => {
+describe('downloadFolderZip với hàm mở tệp theo mã tệp', () => {
+  it('đọc từng tệp bằng openEntry, nội dung và cấu trúc đúng', async () => {
     const files = { 'f/a.txt': 'xin chào', 'f/sub/b.txt': 'B' };
     const p = plan(files);
     const withIds: FolderZipPlan = { ...p, entries: p.entries.map((e, i) => ({ ...e, fileId: `ID${i}` })) };
-    const fetchFn = vi.fn() as unknown as typeof fetch;
     const openEntry = vi.fn(async (entry: FolderZipPlan['entries'][number]) => new Response(enc(files[entry.filePath as keyof typeof files])));
     const sink = collector();
-    await downloadFolderZip({ plan: withIds, openEntry, writable: sink.writable, fetchFn });
-    expect(fetchFn).not.toHaveBeenCalled();
+    await downloadFolderZip({ plan: withIds, openEntry, writable: sink.writable });
     expect(openEntry.mock.calls.map((c) => c[0].fileId)).toEqual(['ID0', 'ID1']);
     expect(await readZip(sink.blob())).toEqual({ 'Goc/a.txt': 'xin chào', 'Goc/sub/b.txt': 'B' });
   });

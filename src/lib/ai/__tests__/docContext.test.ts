@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { OfficialDoc } from '../../../types/officialDoc';
 
-const m = vi.hoisted(() => ({ index: vi.fn(), auth: vi.fn(), read: vi.fn(), find: vi.fn() }));
+const m = vi.hoisted(() => ({ index: vi.fn(), read: vi.fn(), find: vi.fn() }));
 vi.mock('../../api/officialDocApi', () => ({ listDocIndex: m.index }));
-vi.mock('../../huggingface/hfConfigApi', () => ({ fetchHfAuth: m.auth }));
 vi.mock('../docReader', () => ({ readDocsForAi: m.read }));
 vi.mock('../answerCache', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../answerCache')>()),
@@ -14,7 +13,7 @@ import { describeRead, lookupSharedAnswer, prepareDocContext } from '../docConte
 
 const doc = (id: string, docNumber: string, title: string): OfficialDoc => ({
   id, category: 'van-ban', docNumber, title, issuedDate: '2026-09-28', effectiveFrom: '2026-09-28', effectiveTo: null,
-  files: [{ kind: 'goc', repoId: 'o/k', path: `${id}.pdf`, name: `${id}.pdf` }], createdAt: '', updatedAt: `v-${id}`,
+  files: [{ kind: 'goc', repoId: 'o/k', path: `${id}.pdf`, name: `${id}.pdf`, fileId: `F${id}` }], createdAt: '', updatedAt: `v-${id}`,
 });
 const D8 = doc('8', '2848-8/2026/TB-BĐH', 'Gia hạn chương trình ưu đãi lãi suất huy động Tuần lễ vàng');
 const READ_OK = {
@@ -26,7 +25,6 @@ const READ_OK = {
 
 beforeEach(() => {
   m.index.mockReset().mockResolvedValue([D8, doc('4', '2848-4/2026/TB-BĐH', 'Triển khai chương trình lãi suất cho vay')]);
-  m.auth.mockReset().mockResolvedValue({ token: 'tk' });
   m.read.mockReset().mockResolvedValue(READ_OK);
   m.find.mockReset().mockResolvedValue(null);
 });
@@ -37,7 +35,7 @@ describe('prepareDocContext', () => {
     const out = await prepareDocContext('2848-8 nói về gì', [], { onStatus });
 
     expect(onStatus).toHaveBeenCalledWith('Đang đọc văn bản 2848-8/2026/TB-BĐH...');
-    expect(m.read).toHaveBeenCalledWith([D8], 'tk');
+    expect(m.read).toHaveBeenCalledWith([D8]);
     expect(out.attachments).toHaveLength(1);
     expect(out.contextText).toMatch(/Tệp "8\.pdf" \(File văn bản gốc\) thuộc văn bản số 2848-8\/2026\/TB-BĐH/);
     expect(out.focusIds).toEqual(['8']);
@@ -47,14 +45,13 @@ describe('prepareDocContext', () => {
 
   it('câu nối tiếp dùng văn bản đang bàn từ lượt trước', async () => {
     const out = await prepareDocContext('Bảng lãi suất chi tiết', ['8']);
-    expect(m.read).toHaveBeenCalledWith([D8], 'tk');
+    expect(m.read).toHaveBeenCalledWith([D8]);
     expect(out.focusIds).toEqual(['8']);
   });
 
   it('câu hỏi không liên quan văn bản nào: không tải gì, giữ nguyên văn bản đang bàn', async () => {
     const out = await prepareDocContext('xin chào', ['8']);
     expect(m.read).not.toHaveBeenCalled();
-    expect(m.auth).not.toHaveBeenCalled();
     expect(out).toEqual({ attachments: [], contextText: '', focusIds: ['8'], refs: [], complete: false });
   });
 
@@ -63,32 +60,6 @@ describe('prepareDocContext', () => {
     const out = await prepareDocContext('2848-8', []);
     expect(out.attachments).toEqual([]);
     expect(out.contextText).toMatch(/Không tra cứu được danh mục văn bản: .*boom/);
-  });
-
-  it('chưa có token HF: nói rõ chưa đọc được nội dung', async () => {
-    m.auth.mockResolvedValue(null);
-    const out = await prepareDocContext('2848-8', []);
-    expect(m.read).not.toHaveBeenCalled();
-    expect(out.contextText).toMatch(/Chưa cấu hình kho lưu trữ/);
-  });
-
-  it('văn bản có tệp trên Google Drive: không đòi token Hugging Face, không đọc cấu hình HF', async () => {
-    const onDrive = { ...D8, files: [{ kind: 'goc' as const, repoId: 'DRIVE-ROOT', path: '8.pdf', name: '8.pdf', fileId: 'F8' }] };
-    m.index.mockResolvedValue([onDrive]);
-    m.auth.mockResolvedValue(null);
-    const out = await prepareDocContext('2848-8', []);
-    expect(m.auth).not.toHaveBeenCalled();
-    expect(m.read).toHaveBeenCalledWith([onDrive], '');
-    expect(out.attachments).toHaveLength(1);
-  });
-
-  it('chỉ một tệp còn ở Hugging Face mà chưa có token thì vẫn báo chưa đọc được', async () => {
-    const mixed = { ...D8, files: [...D8.files, { kind: 'goc' as const, repoId: 'DRIVE-ROOT', path: 'p.pdf', name: 'p.pdf', fileId: 'F9' }] };
-    m.index.mockResolvedValue([mixed]);
-    m.auth.mockResolvedValue(null);
-    const out = await prepareDocContext('2848-8', []);
-    expect(m.read).not.toHaveBeenCalled();
-    expect(out.contextText).toMatch(/Chưa cấu hình kho lưu trữ/);
   });
 
   it('tệp không đọc được: ghi chú đi vào ngữ cảnh', async () => {
@@ -104,7 +75,7 @@ describe('prepareDocContext - dùng danh mục tải sẵn', () => {
     const preset = [D8];
     await prepareDocContext('2848-8', [], { index: preset });
     expect(m.index).not.toHaveBeenCalled();
-    expect(m.read).toHaveBeenCalledWith([D8], 'tk');
+    expect(m.read).toHaveBeenCalledWith([D8]);
   });
 });
 

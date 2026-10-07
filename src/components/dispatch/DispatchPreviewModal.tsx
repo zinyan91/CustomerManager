@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import type { DispatchDocument } from '../../types/dispatch';
 import { DISPATCH_TYPE_LABELS } from '../../types/dispatch';
-import type { HfConfig } from '../../types/huggingface';
 import { resolveFileDownloadUrl } from '../../lib/dispatch/dispatchStorage';
 import { summarizeDocumentWithAi } from '../../lib/ai/geminiClient';
 import { fileKindOf, isReadableByAi } from '../../lib/fileKinds';
@@ -18,7 +17,6 @@ interface DispatchPreviewModalProps {
   onOpenAiChat?: (doc: DispatchDocument) => void;
   onUpdated?: (updated: DispatchDocument) => void;
   /** Cấu hình HF dùng chung để tải tệp riêng tư; null khi chưa cấu hình. */
-  hfConfig: HfConfig | null;
 }
 
 export function DispatchPreviewModal({
@@ -27,7 +25,6 @@ export function DispatchPreviewModal({
   onClose,
   onOpenAiChat,
   onUpdated,
-  hfConfig,
 }: DispatchPreviewModalProps) {
   const [fileUrl, setFileUrl] = useState<string>('');
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
@@ -49,7 +46,7 @@ export function DispatchPreviewModal({
     let active = true;
     setIsLoadingUrl(true);
 
-    resolveFileDownloadUrl(doc, hfConfig)
+    resolveFileDownloadUrl(doc)
       .then((url) => {
         if (active) {
           setFileUrl(url);
@@ -67,7 +64,7 @@ export function DispatchPreviewModal({
     return () => {
       active = false;
     };
-  }, [doc, hfConfig]);
+  }, [doc]);
 
   if (!isOpen || !currentDoc) return null;
 

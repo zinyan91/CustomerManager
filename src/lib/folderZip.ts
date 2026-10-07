@@ -1,5 +1,4 @@
-import type { FolderZipPlan, ZipEntry } from '../dispatch/folderZipPlan';
-import { hfFileUrl } from './hfClient';
+import type { FolderZipPlan, ZipEntry } from './dispatch/folderZipPlan';
 
 export interface ZipProgress {
   completed: number;
@@ -9,22 +8,18 @@ export interface ZipProgress {
   currentName: string;
 }
 
-/** Mở một tệp để đọc theo luồng. Mặc định đọc từ Hugging Face; Google Drive truyền hàm riêng. */
+/** Mở một tệp để đọc theo luồng. */
 export type OpenZipEntry = (entry: ZipEntry, signal: AbortSignal) => Promise<Response>;
 
 export interface ZipDownloadOptions {
   plan: FolderZipPlan;
-  repoId?: string;
-  token?: string;
-  /** Có thì dùng thay cho đọc từ Hugging Face (repoId và token khi đó không cần). */
-  openEntry?: OpenZipEntry;
+  openEntry: OpenZipEntry;
   /** Nơi ghi tệp zip: hộp "Lưu thành" của trình duyệt hoặc bộ đệm bộ nhớ. */
   writable: WritableStream<Uint8Array>;
   signal?: AbortSignal;
   onProgress?: (progress: ZipProgress) => void;
   /** Zip đã đủ và hợp lệ; bước kế tiếp là chốt tệp. Sau điểm này không hủy được nữa. */
   onCommitting?: () => void;
-  fetchFn?: typeof fetch;
 }
 
 const STALL_MS = 90_000;
@@ -37,7 +32,7 @@ export function isAbortError(reason: unknown): boolean {
 }
 
 function describeStatus(status: number, name: string): string {
-  if (status === 401 || status === 403) return `Token kho lưu trữ bị từ chối khi tải "${name}" (${status}).`;
+  if (status === 401 || status === 403) return `Kho lưu trữ từ chối khi tải "${name}" (${status}).`;
   if (status === 404) return `Không tìm thấy tệp "${name}" trong kho lưu trữ (có thể đã bị xóa).`;
   return `Không tải được tệp "${name}" từ kho lưu trữ (${status}).`;
 }
@@ -48,8 +43,7 @@ function describeStatus(status: number, name: string): string {
  * vào RAM. Lỗi hoặc hủy thì hủy luôn đích ghi để không để lại tệp zip dở.
  */
 export async function downloadFolderZip(options: ZipDownloadOptions): Promise<void> {
-  const { plan, repoId = '', token = '', writable, signal: outer, onProgress, onCommitting } = options;
-  const doFetch = options.fetchFn ?? fetch;
+  const { plan, writable, signal: outer, onProgress, onCommitting } = options;
 
   const controller = new AbortController();
   const link = () => controller.abort(outer?.reason ?? abortError());
@@ -91,13 +85,7 @@ export async function downloadFolderZip(options: ZipDownloadOptions): Promise<vo
       armStall();
       let response: Response;
       try {
-        response = options.openEntry
-          ? await options.openEntry(entry, signal)
-          : await doFetch(hfFileUrl(repoId, entry.filePath), {
-              headers: { Authorization: `Bearer ${token}` },
-              cache: 'no-store',
-              signal,
-            });
+        response = await options.openEntry(entry, signal);
       } finally {
         disarmStall();
       }
@@ -127,7 +115,7 @@ export async function downloadFolderZip(options: ZipDownloadOptions): Promise<vo
           },
           flush() {
             disarmStall();
-            // Chỉ bắt tải thiếu: kích thước trong cây HF có thể lệch nhẹ nên không bắt tải dư.
+            // Chỉ bắt tải thiếu: kích thước trong cây kho có thể lệch nhẹ nên không bắt tải dư.
             if (received < entry.size) {
               throw new Error(`Tệp "${entry.zipPath}" tải về chưa đủ (${received}/${entry.size} byte). Hãy thử lại.`);
             }
@@ -155,7 +143,7 @@ export async function downloadFolderZip(options: ZipDownloadOptions): Promise<vo
     controller.abort(error);
     // Đã bắt đầu chốt tệp thì không thể hủy đáng tin cậy; để trình duyệt tự báo kết quả.
     if (!committing) await output.abort(error).catch(() => undefined);
-    // Người dùng hủy thì báo AbortError; còn lại giữ nguyên lỗi cụ thể (token, tệp đã xóa, mạng...)
+    // Người dùng hủy thì báo AbortError; còn lại giữ nguyên lỗi cụ thể (quyền, tệp đã xóa, mạng...)
     if (outer?.aborted) throw abortError();
     throw error instanceof Error ? error : new Error('Không thể hoàn tất tệp ZIP. Vui lòng thử lại.');
   } finally {

@@ -29,24 +29,29 @@ vi.mock('../../hooks/useArchive', () => ({ useArchive: () => state.archive }));
 vi.mock('../ai/AiChatDialog', () => ({ AiChatDialog: () => null }));
 vi.mock('../dispatch/DispatchPreviewModal', () => ({ DispatchPreviewModal: () => null }));
 
-const commit = vi.hoisted(() => vi.fn());
-vi.mock('@huggingface/hub', () => ({ commit, createRepo: vi.fn() }));
+const up = vi.hoisted(() => vi.fn());
+vi.mock('../../lib/drive/driveUpload', () => ({ uploadItemsToDrive: up }));
+
+type ZipEntryLike = { filePath: string };
+const zip = vi.hoisted(() => ({ impl: null as null | ((entry: { filePath: string }) => Promise<Response>) }));
+vi.mock('../../lib/drive/driveZip', () => ({ driveOpenEntry: () => (entry: { filePath: string }) => zip.impl!(entry) }));
 
 import { StorageManagementView } from '../views/StorageManagementView';
 
 const repo = (over: Partial<StorageRepo>): StorageRepo => ({
-  id: 1, name: 'Kho chung', repoId: 'own/chung', provider: 'huggingface', folder: '', kind: 'shared', assignedUserId: null, createdAt: '', ...over,
+  id: 1, name: 'Kho chung', repoId: 'ROOTchungAbCdEfGhIjKlMnOp', kind: 'shared', assignedUserId: null, createdAt: '', ...over,
 });
 
 const makeArchive = (over: Record<string, unknown> = {}) => {
   const shared = repo({});
   return {
-    auth: { token: 'hf_t', username: 'own' },
     allRepos: [shared],
     repos: [shared],
     selectedRepo: shared,
     selectRepo: vi.fn(),
-    config: { token: 'hf_t', repoId: 'own/chung', provider: 'huggingface', folder: '', isPrivate: true },
+    driveRoot: 'ROOT',
+    driveEntries: [],
+    driveWrite: true,
     documents: [],
     folders: [],
     status: { kind: 'ready' },
@@ -61,7 +66,13 @@ beforeEach(() => {
   state.role = 'user';
   state.userId = 'u-a';
   state.archive = makeArchive();
-  commit.mockReset();
+  up.mockReset();
+  up.mockImplementation(async (_ctx: unknown, _root: string, folder: string, items: Array<{ relativePath: string }>) => ({
+    uploaded: items.map((i) => (folder ? `${folder}/${i.relativePath}` : i.relativePath)),
+    failed: [],
+    files: [],
+  }));
+  zip.impl = null;
 });
 afterEach(cleanup);
 
@@ -104,7 +115,7 @@ describe('Kho lưu trữ - giao diện', () => {
   it('User Admin không thấy cấu hình nhưng được thấy nút xóa tệp', () => {
     state.role = 'user_admin';
     state.archive = makeArchive({
-      documents: [{ id: 'hf_1', title: 'a.pdf', fileName: 'a.pdf', fileType: 'application/pdf', fileSize: 10, filePath: 'a.pdf', folderPath: '', documentType: 'khac', updatedAt: '2026-10-01T00:00:00Z' }],
+      documents: [{ id: 'drive_1', title: 'a.pdf', fileName: 'a.pdf', fileType: 'application/pdf', fileSize: 10, filePath: 'a.pdf', folderPath: '', documentType: 'khac', updatedAt: '2026-10-01T00:00:00Z' }],
     });
     render(<StorageManagementView />);
     expect(screen.queryByRole('link', { name: 'Cấu hình kho lưu trữ' })).toBeNull();
@@ -112,14 +123,14 @@ describe('Kho lưu trữ - giao diện', () => {
   });
 
   it('user chỉ xóa được trong kho cá nhân của mình, không xóa ở Kho chung', () => {
-    const doc = { id: 'hf_1', title: 'a.pdf', fileName: 'a.pdf', fileType: 'application/pdf', fileSize: 10, filePath: 'a.pdf', folderPath: '', documentType: 'khac', updatedAt: '2026-10-01T00:00:00Z' };
+    const doc = { id: 'drive_1', title: 'a.pdf', fileName: 'a.pdf', fileType: 'application/pdf', fileSize: 10, filePath: 'a.pdf', folderPath: '', documentType: 'khac', updatedAt: '2026-10-01T00:00:00Z' };
     state.archive = makeArchive({ documents: [doc] });
     const { unmount } = render(<StorageManagementView />);
     expect(screen.queryByRole('button', { name: 'Xóa a.pdf' })).toBeNull();
     unmount();
 
     const mine = repo({ id: 2, name: 'Kho A', kind: 'personal', assignedUserId: 'u-a', repoId: 'own/a' });
-    state.archive = makeArchive({ documents: [doc], repos: [repo({}), mine], selectedRepo: mine, config: { token: 'hf_t', repoId: 'own/a', provider: 'huggingface', folder: '' } });
+    state.archive = makeArchive({ documents: [doc], repos: [repo({}), mine], selectedRepo: mine });
     render(<StorageManagementView />);
     expect(screen.getByRole('button', { name: 'Xóa a.pdf' })).toBeTruthy();
   });
@@ -133,8 +144,8 @@ describe('Kho lưu trữ - giao diện', () => {
     expect(screen.getByLabelText('Chọn tệp để tải lên').hasAttribute('webkitdirectory')).toBe(false);
   });
 
-  it('chưa cấu hình: user được bảo liên hệ Master Admin và không có nút tải lên', () => {
-    state.archive = makeArchive({ status: { kind: 'not_configured' }, config: null, selectedRepo: null, repos: [] });
+  it('chưa có kho: user được bảo liên hệ Master Admin và không có nút tải lên', () => {
+    state.archive = makeArchive({ status: { kind: 'no_repo' }, driveRoot: null, selectedRepo: null, repos: [] });
     render(<StorageManagementView />);
     expect(screen.getByRole('alert').textContent).toMatch(/Liên hệ Master Admin/);
     expect(screen.queryByRole('button', { name: /Tải lên tệp/ })).toBeNull();
@@ -149,8 +160,7 @@ describe('Kho lưu trữ - giao diện', () => {
     expect(tabs[1].getAttribute('aria-selected')).toBe('true');
   });
 
-  it('thả tệp vào vùng danh sách thì commit lên đúng dataset rồi nạp lại', async () => {
-    commit.mockResolvedValue({});
+  it('thả tệp vào vùng danh sách thì tải lên đúng kho rồi nạp lại', async () => {
     const archive = makeArchive();
     state.archive = archive;
     render(<StorageManagementView />);
@@ -166,16 +176,15 @@ describe('Kho lưu trữ - giao diện', () => {
       },
     });
 
-    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
-    const arg = commit.mock.calls[0][0];
-    expect(arg.repo).toEqual({ type: 'dataset', name: 'own/chung' });
-    expect(arg.operations[0].path).toBe('nen.zip');
+    await waitFor(() => expect(up).toHaveBeenCalledTimes(1));
+    expect(up.mock.calls[0][1]).toBe('ROOT');
+    expect(up.mock.calls[0][3].map((i: { relativePath: string }) => i.relativePath)).toEqual(['nen.zip']);
     await waitFor(() => expect((archive as { reload: ReturnType<typeof vi.fn> }).reload).toHaveBeenCalled());
   });
 
-  it('không có quyền tải lên (kho cá nhân của người khác) thì thả tệp không gọi HF', async () => {
+  it('không có quyền tải lên (kho cá nhân của người khác) thì thả tệp không tải lên', async () => {
     const other = repo({ id: 3, name: 'Kho B', kind: 'personal', assignedUserId: 'u-b', repoId: 'own/b' });
-    state.archive = makeArchive({ repos: [repo({}), other], selectedRepo: other, config: { token: 'hf_t', repoId: 'own/b', provider: 'huggingface', folder: '' } });
+    state.archive = makeArchive({ repos: [repo({}), other], selectedRepo: other });
     render(<StorageManagementView />);
     expect(screen.queryByRole('button', { name: /Tải lên tệp/ })).toBeNull();
 
@@ -183,7 +192,7 @@ describe('Kho lưu trữ - giao diện', () => {
     const f = new File(['x'], 'a.pdf');
     fireEvent.drop(zone, { dataTransfer: { types: ['Files'], items: [], files: [f] } });
     await new Promise((r) => setTimeout(r, 20));
-    expect(commit).not.toHaveBeenCalled();
+    expect(up).not.toHaveBeenCalled();
   });
 });
 
@@ -191,7 +200,7 @@ const mk = (filePath: string, fileSize = 1024) => {
   const i = filePath.lastIndexOf('/');
   const fileName = filePath.slice(i + 1);
   return {
-    id: `hf_${filePath}`, title: fileName, fileName, fileType: 'application/pdf', fileSize, filePath,
+    id: `drive_${filePath}`, title: fileName, fileName, fileType: 'application/pdf', fileSize, filePath,
     folderPath: i === -1 ? '' : filePath.slice(0, i), documentType: 'khac', updatedAt: '2026-10-01T00:00:00Z',
   };
 };
@@ -241,19 +250,7 @@ describe('Kho lưu trữ - duyệt thư mục kiểu trình quản lý tệp', (
     expect(screen.queryByRole('button', { name: /MY HUE.*tệp/ })).toBeNull();
   });
 
-  it('thư mục gốc cấu hình của repo là "Gốc": thấy ngay nội dung, không phải bấm vào thư mục gốc', () => {
-    state.archive = makeArchive({
-      config: { token: 'hf_t', repoId: 'own/chung', provider: 'huggingface', folder: 'van-thu' },
-      documents: [mk('van-thu/x.pdf'), mk('van-thu/Con/y.pdf')],
-      folders: ['van-thu', 'van-thu/Con'],
-    });
-    renderGrid();
-    expect(screen.getByRole('button', { name: 'x.pdf' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /Con.*1 tệp/ })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /van-thu/ })).toBeNull();
-  });
-
-  it('thư mục rỗng trên HF vẫn hiện thành thư mục 0 tệp', () => {
+  it('thư mục rỗng vẫn hiện thành thư mục 0 tệp', () => {
     state.archive = makeArchive({ documents: [mk('goc.pdf')], folders: ['Rong'] });
     renderGrid();
     expect(screen.getByRole('button', { name: /Rong.*0 tệp/ })).toBeTruthy();
@@ -403,9 +400,8 @@ async function zipNames(bytes: Uint8Array): Promise<Record<string, number>> {
 }
 
 const fetchBySize = (docs: Array<{ filePath: string; fileSize: number }>) =>
-  vi.fn(async (url: RequestInfo | URL) => {
-    const path = decodeURIComponent(new URL(String(url)).pathname.replace('/datasets/own/chung/resolve/main/', ''));
-    const doc = docs.find((d) => d.filePath === path);
+  vi.fn(async (entry: ZipEntryLike) => {
+    const doc = docs.find((d) => d.filePath === entry.filePath);
     return doc ? new Response(new Uint8Array(doc.fileSize), { status: 200 }) : new Response('', { status: 404 });
   });
 
@@ -424,7 +420,7 @@ describe('Kho lưu trữ - tải thư mục về dạng ZIP', () => {
     const sink = fileSink();
     const picker = vi.fn(async () => ({ createWritable: async () => sink.writable }));
     (window as unknown as PickerWindow).showSaveFilePicker = picker;
-    vi.stubGlobal('fetch', fetchBySize(DOCS));
+    zip.impl = fetchBySize(DOCS);
     render(<StorageManagementView />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Tải thư mục MY HUE (ZIP)' }));
@@ -444,7 +440,7 @@ describe('Kho lưu trữ - tải thư mục về dạng ZIP', () => {
   it('nút "Tải thư mục này" trên thanh công cụ nén đúng thư mục đang xem', async () => {
     const sink = fileSink();
     (window as unknown as PickerWindow).showSaveFilePicker = vi.fn(async () => ({ createWritable: async () => sink.writable }));
-    vi.stubGlobal('fetch', fetchBySize(DOCS));
+    zip.impl = fetchBySize(DOCS);
     renderGrid();
 
     fireEvent.click(screen.getByRole('button', { name: /MY HUE.*3 tệp/ }));
@@ -459,7 +455,7 @@ describe('Kho lưu trữ - tải thư mục về dạng ZIP', () => {
       throw new DOMException('The user aborted a request.', 'AbortError');
     });
     const fetchMock = fetchBySize(DOCS);
-    vi.stubGlobal('fetch', fetchMock);
+    zip.impl = fetchMock;
     render(<StorageManagementView />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Tải thư mục MY HUE (ZIP)' }));
@@ -470,10 +466,10 @@ describe('Kho lưu trữ - tải thư mục về dạng ZIP', () => {
     expect(screen.queryByText(/Đã hủy tải thư mục/)).toBeNull();
   });
 
-  it('tệp đã bị xóa trên HF: báo rõ tên tệp và hủy đích ghi, không chốt zip dở', async () => {
+  it('tệp đã bị xóa khỏi kho: báo rõ tên tệp và hủy đích ghi, không chốt zip dở', async () => {
     const sink = fileSink();
     (window as unknown as PickerWindow).showSaveFilePicker = vi.fn(async () => ({ createWritable: async () => sink.writable }));
-    vi.stubGlobal('fetch', fetchBySize(DOCS.filter((d) => d.filePath !== 'MY HUE/b.pdf')));
+    zip.impl = fetchBySize(DOCS.filter((d) => d.filePath !== 'MY HUE/b.pdf'));
     render(<StorageManagementView />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Tải thư mục MY HUE (ZIP)' }));
@@ -492,7 +488,7 @@ describe('Kho lưu trữ - tải thư mục về dạng ZIP', () => {
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
       clicked.push(this.download);
     });
-    vi.stubGlobal('fetch', fetchBySize(DOCS));
+    zip.impl = fetchBySize(DOCS);
     render(<StorageManagementView />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Tải thư mục MY HUE (ZIP)' }));
@@ -506,7 +502,7 @@ describe('Kho lưu trữ - tải thư mục về dạng ZIP', () => {
 
   it('không có hộp Lưu thành và thư mục quá lớn: từ chối, không tải gì', () => {
     const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
+    zip.impl = fetchMock;
     state.archive = makeArchive({ documents: [mk('Lon/x.bin', 600 * 1024 * 1024)] });
     render(<StorageManagementView />);
 
@@ -540,27 +536,25 @@ describe('Kho lưu trữ - tải lên liên tiếp', () => {
 
   it('tải xong một thư mục thì tải tiếp được một tệp, rồi một thư mục nữa', async () => {
     state.role = 'user';
-    commit.mockResolvedValue({});
     const reload = vi.fn().mockResolvedValue(undefined);
     state.archive = makeArchive({ reload });
     render(<StorageManagementView />);
 
     pick('Chọn thư mục để tải lên', folderFiles());
-    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(up).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
     await waitFor(() => expect((screen.getByRole('button', { name: /Tải lên tệp/ }) as HTMLButtonElement).disabled).toBe(false));
 
     pick('Chọn tệp để tải lên', [new File(['y'], 'c.pdf')]);
-    await waitFor(() => expect(commit).toHaveBeenCalledTimes(2));
-    expect(commit.mock.calls[1][0].operations.map((o: { path: string }) => o.path)).toEqual(['c.pdf']);
+    await waitFor(() => expect(up).toHaveBeenCalledTimes(2));
+    expect(up.mock.calls[1][3].map((i: { relativePath: string }) => i.relativePath)).toEqual(['c.pdf']);
     await waitFor(() => expect(reload).toHaveBeenCalledTimes(2));
 
     pick('Chọn thư mục để tải lên', folderFiles());
-    await waitFor(() => expect(commit).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(up).toHaveBeenCalledTimes(3));
   });
 
   it('nạp lại danh sách chậm sau khi tải lên không khóa nút tải lên', async () => {
-    commit.mockResolvedValue({});
     let release!: () => void;
     const reload = vi.fn().mockImplementation(() => new Promise<void>((r) => { release = r; }));
     state.archive = makeArchive({ reload });
@@ -574,20 +568,19 @@ describe('Kho lưu trữ - tải lên liên tiếp', () => {
   });
 
   it('tải lên hỏng giữa chừng thì lần sau vẫn tải được', async () => {
-    commit.mockRejectedValueOnce(Object.assign(new Error('x'), { statusCode: 500 })).mockResolvedValue({});
+    up.mockRejectedValueOnce(new Error('x'));
     render(<StorageManagementView />);
     pick('Chọn tệp để tải lên', [new File(['y'], 'hong.pdf')]);
-    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(up).toHaveBeenCalledTimes(1));
     await waitFor(() => expect((screen.getByRole('button', { name: /Tải lên tệp/ }) as HTMLButtonElement).disabled).toBe(false));
 
     pick('Chọn tệp để tải lên', [new File(['z'], 'tot.pdf')]);
-    await waitFor(() => expect(commit).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(up).toHaveBeenCalledTimes(2));
   });
 });
 
 describe('Kho lưu trữ - nạp lại danh sách sau khi tải lên', () => {
   it('nạp lại hỏng: báo rõ đã tải lên nhưng chưa nạp được danh sách, nút tải lên vẫn dùng được', async () => {
-    commit.mockResolvedValue({});
     state.archive = makeArchive({ reload: vi.fn().mockRejectedValue(new Error('mạng chập chờn')) });
     render(<StorageManagementView />);
     const input = screen.getByLabelText('Chọn tệp để tải lên') as HTMLInputElement;

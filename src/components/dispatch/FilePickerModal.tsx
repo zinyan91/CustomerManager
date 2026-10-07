@@ -3,32 +3,27 @@ import { X, Folder, FileText, ChevronRight, Check, Loader2, AlertCircle } from '
 import type { DispatchDocument } from '../../types/dispatch';
 import type { OfficialDocFileKind } from '../../types/officialDoc';
 import { STORAGE_KIND_LABELS, type StorageRepo } from '../../types/storageRepo';
-import type { ArchiveStatus } from '../../lib/huggingface/hfStatus';
-import { classifyArchiveError, archiveStatusMessage } from '../../lib/huggingface/hfStatus';
-import { listHfTree } from '../../lib/huggingface/hfClient';
+import { classifyArchiveError, archiveStatusMessage, type ArchiveStatus } from '../../lib/archiveStatus';
 import { describeDriveError } from '../../lib/drive/driveErrors';
 import { listStorageRepos } from '../../lib/api/storageReposApi';
 import { repoKindOfFile, selectableRepos } from '../../lib/officialDoc/docFiles';
-import { browseFolder, stripBase } from '../../lib/dispatch/folderBrowse';
-import { collectFolders, mergeHfTreeWithDispatches } from '../../lib/dispatch/mergeArchive';
+import { browseFolder } from '../../lib/dispatch/folderBrowse';
 import { joinArchivePath } from '../../lib/archivePath';
-import { formatBytes } from '../../types/huggingface';
+import { formatBytes } from '../../lib/formatBytes';
 
 export interface PickedFile {
   repoId: string;
   path: string;
   name: string;
-  /** Chỉ có với tệp Google Drive. */
   fileId?: string;
   nativeMimeType?: string;
 }
 
-interface HfFilePickerModalProps {
+interface FilePickerModalProps {
   /** Loại tệp đang chọn: quyết định kho nào được mở (gốc: kho Văn thư; biểu mẫu: kho Biểu mẫu). */
   fileKind: OfficialDocFileKind;
   /** Tiêu đề phụ, vd: "File văn bản gốc". */
   title: string;
-  token: string;
   /** Khóa `${repoId}/${path}` của các tệp đã chọn, để đánh dấu. */
   pickedKeys: Set<string>;
   onPick: (file: PickedFile) => void;
@@ -38,7 +33,7 @@ interface HfFilePickerModalProps {
 export const pickedKey = (repoId: string, path: string) => `${repoId}/${path}`;
 
 /** Chọn tệp có sẵn trong kho tương ứng với loại tệp để gắn vào văn bản. Không tải tệp lên. */
-export function HfFilePickerModal({ fileKind, title, token, pickedKeys, onPick, onClose }: HfFilePickerModalProps) {
+export function FilePickerModal({ fileKind, title, pickedKeys, onPick, onClose }: FilePickerModalProps) {
   const kindLabel = STORAGE_KIND_LABELS[repoKindOfFile(fileKind)];
   const [repos, setRepos] = useState<StorageRepo[]>([]);
   const [repoIndex, setRepoIndex] = useState(0);
@@ -64,37 +59,22 @@ export function HfFilePickerModal({ fileKind, title, token, pickedKeys, onPick, 
 
   const repo = repos[repoIndex] ?? null;
 
-  const isDrive = repo?.provider === 'drive';
-  // Kho Drive luôn tính từ thư mục gốc của kho
-  const base = repo && !isDrive ? repo.folder : '';
-
   useEffect(() => {
     if (!repo) return;
-    const isDriveRepo = repo.provider === 'drive';
-    // Token Hugging Face chỉ cần cho kho Hugging Face; kho Drive đi qua Edge Function drive-token
-    if (!isDriveRepo && !token) {
-      setStatus({ kind: 'not_configured' });
-      return;
-    }
     let active = true;
     setStatus({ kind: 'loading' });
-    setCurrent(isDriveRepo ? '' : repo.folder);
+    setCurrent('');
 
-    const load = isDriveRepo
-      ? Promise.all([import('../../lib/drive/driveToken'), import('../../lib/drive/driveClient'), import('../../lib/drive/driveTree'), import('../../lib/drive/driveDocuments')]).then(
-          async ([{ driveContext }, { listDriveFiles }, { buildRepoEntries, listingOf }, { entriesToDocuments }]) => {
-            const files = await listDriveFiles(driveContext);
-            if (!files.some((f) => f.id === repo.repoId)) {
-              throw new Error('Không tìm thấy thư mục gốc của kho trong Shared Drive. Kiểm tra lại ID thư mục và việc tài khoản dịch vụ là thành viên của Shared Drive.');
-            }
-            const entries = buildRepoEntries(files, repo.repoId);
-            return { docs: entriesToDocuments(entries, repo.repoId, new Date().toISOString()), folders: listingOf(entries).folders };
-          }
-        )
-      : listHfTree(repo.repoId, repo.folder, token, true).then((tree) => ({
-          docs: mergeHfTreeWithDispatches(tree, [], new Date().toISOString(), repo.repoId),
-          folders: collectFolders(tree),
-        }));
+    const load = Promise.all([import('../../lib/drive/driveToken'), import('../../lib/drive/driveClient'), import('../../lib/drive/driveTree'), import('../../lib/drive/driveDocuments')]).then(
+      async ([{ driveContext }, { listDriveFiles }, { buildRepoEntries, listingOf }, { entriesToDocuments }]) => {
+        const files = await listDriveFiles(driveContext);
+        if (!files.some((f) => f.id === repo.repoId)) {
+          throw new Error('Không tìm thấy thư mục gốc của kho trong Shared Drive. Kiểm tra lại ID thư mục và việc tài khoản dịch vụ là thành viên của Shared Drive.');
+        }
+        const entries = buildRepoEntries(files, repo.repoId);
+        return { docs: entriesToDocuments(entries, repo.repoId, new Date().toISOString()), folders: listingOf(entries).folders };
+      }
+    );
 
     load
       .then((loaded) => {
@@ -107,15 +87,15 @@ export function HfFilePickerModal({ fileKind, title, token, pickedKeys, onPick, 
         if (!active) return;
         setDocs([]);
         setEmptyFolders([]);
-        setStatus(isDriveRepo ? { kind: 'error', message: describeDriveError(err, 'Nạp kho lưu trữ') } : classifyArchiveError(err));
+        setStatus({ kind: 'error', message: describeDriveError(err, 'Nạp kho lưu trữ') });
       });
     return () => {
       active = false;
     };
-  }, [repo, token]);
+  }, [repo]);
 
   const listing = useMemo(() => browseFolder(docs, emptyFolders, current), [docs, emptyFolders, current]);
-  const crumbs = (stripBase(current, base) ?? '').split('/').filter(Boolean);
+  const crumbs = current.split('/').filter(Boolean);
   const message =
     status.kind === 'no_repo'
       ? `Chưa có kho ${kindLabel}. Liên hệ Master Admin để tạo kho ${kindLabel}.`
@@ -156,13 +136,13 @@ export function HfFilePickerModal({ fileKind, title, token, pickedKeys, onPick, 
         )}
 
         <div className="px-5 py-2.5 flex items-center flex-wrap gap-1 text-sm text-slate-600 dark:text-slate-300">
-          <button type="button" onClick={() => setCurrent(base)} className="hover:underline cursor-pointer">
+          <button type="button" onClick={() => setCurrent('')} className="hover:underline cursor-pointer">
             Gốc
           </button>
           {crumbs.map((name, i) => (
             <span key={`${name}-${i}`} className="flex items-center gap-1">
               <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-              <button type="button" onClick={() => setCurrent(joinArchivePath(base, ...crumbs.slice(0, i + 1)))} className="hover:underline cursor-pointer">
+              <button type="button" onClick={() => setCurrent(joinArchivePath(...crumbs.slice(0, i + 1)))} className="hover:underline cursor-pointer">
                 {name}
               </button>
             </span>

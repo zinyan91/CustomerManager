@@ -1,9 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { HfConfig } from '../types/huggingface';
-import type { UploadItem } from '../lib/uploadItems';
-import { topLevelNames } from '../lib/uploadItems';
-import { isHfConfigComplete } from '../lib/huggingface/hfConfigApi';
-import { uploadItemsToHf, type UploadFailure, type UploadProgress, type UploadResult } from '../lib/huggingface/hfWrite';
+import { topLevelNames, type UploadFailure, type UploadItem, type UploadProgress } from '../lib/uploadItems';
 import { uploadItemsToDrive } from '../lib/drive/driveUpload';
 import type { DriveContext } from '../lib/drive/driveTypes';
 
@@ -23,7 +19,7 @@ export interface DriveUploadTarget {
 }
 
 /** Trạng thái một lần upload nhiều tệp/folder: tiến độ, kết quả, lỗi từng tệp. */
-export function useArchiveUpload(config: HfConfig | null, onDone: () => void | Promise<void>, drive: DriveUploadTarget | null = null) {
+export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => void | Promise<void>) {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [summary, setSummary] = useState<UploadSummary | null>(null);
@@ -32,7 +28,7 @@ export function useArchiveUpload(config: HfConfig | null, onDone: () => void | P
   const upload = useCallback(
     async (items: UploadItem[], targetFolder: string) => {
       if (items.length === 0) return;
-      if (!drive && !isHfConfigComplete(config)) {
+      if (!drive) {
         setError('Chưa có kho lưu trữ để tải lên.');
         return;
       }
@@ -41,9 +37,7 @@ export function useArchiveUpload(config: HfConfig | null, onDone: () => void | P
       setSummary(null);
       let uploadedCount = 0;
       try {
-        const res: UploadResult = drive
-          ? await uploadItemsToDrive(drive.ctx, drive.rootId, targetFolder, items, drive.existingPaths, setProgress, drive.folderIds)
-          : await uploadItemsToHf({ repoId: config!.repoId, token: config!.token }, targetFolder, items, setProgress);
+        const res = await uploadItemsToDrive(drive.ctx, drive.rootId, targetFolder, items, drive.existingPaths, setProgress, drive.folderIds);
         uploadedCount = res.uploaded.length;
         setSummary({ uploaded: uploadedCount, failed: res.failed, names: topLevelNames(items) });
       } catch (err) {
@@ -61,7 +55,7 @@ export function useArchiveUpload(config: HfConfig | null, onDone: () => void | P
         }
       }
     },
-    [config, drive, onDone]
+    [drive, onDone]
   );
 
   const dismiss = useCallback(() => {

@@ -13,13 +13,11 @@ import { useDriveOps, type DriveOpsTarget } from '../../hooks/useDriveOps';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { useFolderZipDownload, type ZipTarget } from '../../hooks/useFolderZipDownload';
 import { useStorageClipboard } from '../../hooks/useStorageClipboard';
-import { buildFolderTree } from '../../lib/huggingface/hfClient';
-import { deleteFileFromHf } from '../../lib/huggingface/hfWrite';
-import { isHfConfigComplete } from '../../lib/huggingface/hfConfigApi';
-import { archiveStatusMessage } from '../../lib/huggingface/hfStatus';
+import { buildFolderTree, type FolderTreeNode } from '../../lib/folderTree';
+import { archiveStatusMessage } from '../../lib/archiveStatus';
 import { resolveFileDownloadUrl, joinArchivePath } from '../../lib/dispatch/dispatchStorage';
 import { canDeleteInRepo, canUploadToRepo, repoLabel, splitStorageRepos, type StorageScope } from '../../lib/storageRepos';
-import { browseFolder, stripBase } from '../../lib/dispatch/folderBrowse';
+import { browseFolder } from '../../lib/dispatch/folderBrowse';
 import { planFolderZip } from '../../lib/dispatch/folderZipPlan';
 import { buildClip, describeClip, planClipZip, topKey, type ClipTop } from '../../lib/storageClipboard';
 import { driveContext } from '../../lib/drive/driveToken';
@@ -29,7 +27,6 @@ import { ROUTE_OF } from '../../lib/routes';
 import { itemsFromFileList, type UploadItem } from '../../lib/uploadItems';
 import { fmtDate } from '../../lib/utils';
 import type { DispatchDocument } from '../../types/dispatch';
-import type { FolderTreeNode } from '../../types/huggingface';
 import { FolderTreeView } from '../dispatch/FolderTreeView';
 import { DispatchPreviewModal } from '../dispatch/DispatchPreviewModal';
 import { AiChatDialog } from '../ai/AiChatDialog';
@@ -66,21 +63,21 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const userId = user?.id ?? null;
   const { managedUsers } = useUserScope();
   const {
-    auth, repos, selectedRepo, isDrive, driveRoot, driveEntries, driveWrite, selectRepo, config, documents, folders, status, reload,
+    repos, selectedRepo, driveRoot, driveEntries, driveWrite, selectRepo, documents, folders, status, reload,
   } = useArchive(scope);
   const confirm = useConfirm();
   const driveUploadTarget = useMemo<DriveUploadTarget | null>(
     () =>
-      isDrive && driveRoot
+      driveRoot
         ? { ctx: driveContext, rootId: driveRoot, existingPaths: (driveEntries ?? []).map((e) => e.path), folderIds: folderIdMap(driveEntries ?? []) }
         : null,
-    [isDrive, driveRoot, driveEntries]
+    [driveRoot, driveEntries]
   );
   const driveOpsTarget = useMemo<DriveOpsTarget | null>(
-    () => (isDrive && driveRoot ? { ctx: driveContext, rootId: driveRoot, entries: driveEntries ?? [] } : null),
-    [isDrive, driveRoot, driveEntries]
+    () => (driveRoot ? { ctx: driveContext, rootId: driveRoot, entries: driveEntries ?? [] } : null),
+    [driveRoot, driveEntries]
   );
-  const upload = useArchiveUpload(config, reload, driveUploadTarget);
+  const upload = useArchiveUpload(driveUploadTarget, reload);
   const driveOps = useDriveOps(driveOpsTarget, reload);
   const zipDl = useFolderZipDownload();
   const clipboard = useStorageClipboard();
@@ -94,7 +91,6 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const [previewDoc, setPreviewDoc] = useState<DispatchDocument | null>(null);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [aiAttachedDoc, setAiAttachedDoc] = useState<DispatchDocument | null>(null);
-  const [virtualFolders, setVirtualFolders] = useState<string[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ x: number; y: number; tops: ClipTop[]; pasteInto?: string } | null>(null);
   const [driveDialog, setDriveDialog] = useState<
@@ -106,14 +102,11 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const folderInputRef = useRef<HTMLInputElement>(null);
 
   const canConfigure = can('storage.configure');
-  // Kho Google Drive: ngoài quyền theo vai trò còn cần token có quyền ghi vào Shared Drive
-  const canUpload = canUploadToRepo(role, userId, selectedRepo) && (isDrive ? Boolean(driveWrite) : isHfConfigComplete(config));
-  const canDelete = canDeleteInRepo(role, userId, selectedRepo) && (isDrive ? Boolean(driveWrite) : true);
-  const canEditDrive = isDrive && canUpload;
-  const zipTarget = useMemo<ZipTarget | null>(
-    () => (isDrive ? { openEntry: driveOpenEntry(driveContext) } : config ? { repoId: config.repoId, token: config.token } : null),
-    [isDrive, config]
-  );
+  // Ngoài quyền theo vai trò còn cần token có quyền ghi vào Shared Drive
+  const canUpload = canUploadToRepo(role, userId, selectedRepo) && Boolean(driveWrite);
+  const canDelete = canDeleteInRepo(role, userId, selectedRepo) && Boolean(driveWrite);
+  const canEditDrive = canUpload;
+  const zipTarget = useMemo<ZipTarget>(() => ({ openEntry: driveOpenEntry(driveContext) }), []);
   const statusMessage = archiveStatusMessage(status, canConfigure);
   const ownerNames = useMemo(() => new Map(managedUsers.map((u) => [u.userId, u.fullName])), [managedUsers]);
   // Kho của người khác (chỉ Master Admin có) nằm trong ô chọn, không liệt kê hết thành tab
@@ -122,21 +115,18 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const sortedOthers = useMemo(() => [...otherRepos].sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'vi')), [otherRepos, ownerNames]); // eslint-disable-line react-hooks/exhaustive-deps
   const pageTitle = scope === 'dispatch' ? 'Kho Văn thư và Biểu mẫu' : 'Kho lưu trữ';
 
-  // Thư mục gốc cấu hình của repo là "Gốc"; selectedFolder luôn là đường dẫn TƯƠNG ĐỐI so với gốc này
-  const baseFolder = joinArchivePath(config?.folder);
-  const currentFolder = joinArchivePath(baseFolder, selectedFolder);
+  const currentFolder = joinArchivePath(selectedFolder);
 
   const folderTreeRoot = useMemo<FolderTreeNode>(() => {
     const fileItems = documents.map((d) => ({
-      path: stripBase(d.filePath || joinArchivePath(d.folderPath, d.fileName), baseFolder) ?? '',
+      path: d.filePath || joinArchivePath(d.folderPath, d.fileName),
       size: d.fileSize || 0,
     }));
-    const relFolders = [...folders.map((f) => stripBase(f, baseFolder)), ...virtualFolders];
-    for (const folder of new Set(relFolders)) {
+    for (const folder of new Set(folders)) {
       if (folder) fileItems.push({ path: `${folder}/.keep`, size: 0 });
     }
     return buildFolderTree(fileItems.filter((i) => i.path));
-  }, [documents, folders, virtualFolders, baseFolder]);
+  }, [documents, folders]);
 
   const isSearching = searchQuery.trim() !== '';
 
@@ -150,15 +140,14 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
         files: documents.filter((d) => d.fileName.toLowerCase().includes(q) || d.title.toLowerCase().includes(q)),
       };
     }
-    const emptyFolders = [...folders, ...virtualFolders.map((v) => joinArchivePath(baseFolder, v))];
-    return browseFolder(documents, emptyFolders, currentFolder);
-  }, [documents, folders, virtualFolders, baseFolder, currentFolder, isSearching, searchQuery]);
+    return browseFolder(documents, folders, currentFolder);
+  }, [documents, folders, currentFolder, isSearching, searchQuery]);
 
   const filteredFiles = browse.files;
   const listedFileCount = filteredFiles.length + browse.folders.reduce((n, f) => n + f.fileCount, 0);
   const listedBytes =
     filteredFiles.reduce((sum, d) => sum + (d.fileSize || 0), 0) + browse.folders.reduce((sum, f) => sum + f.totalBytes, 0);
-  const openFolder = (entryPath: string) => setSelectedFolder(stripBase(entryPath, baseFolder) ?? '');
+  const openFolder = (entryPath: string) => setSelectedFolder(entryPath);
 
   // Chọn tất cả: các mục đang hiện ở danh sách (thư mục và tệp)
   const listedTops = useMemo<ClipTop[]>(
@@ -189,17 +178,8 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
     selectRepo(id);
     setSelectedFolder('');
     setSearchQuery('');
-    setVirtualFolders([]);
     upload.dismiss();
     setActionError(null);
-  };
-
-  const handleCreateFolder = (parentPath: string, folderName: string) => {
-    const newPath = joinArchivePath(parentPath, folderName.trim().replace(/\s+/g, '-'));
-    if (!virtualFolders.includes(newPath)) {
-      setVirtualFolders((prev) => [...prev, newPath]);
-      setSelectedFolder(newPath);
-    }
   };
 
   const targetFolder = currentFolder;
@@ -220,29 +200,10 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
     if (items.length > 0) startUpload(items);
   };
 
-  const handleDeleteFile = async (doc: DispatchDocument) => {
-    if (isDrive) {
-      await handleTrash([topOfDoc(doc)]);
-      return;
-    }
-    if (!canDelete || !config || !doc.filePath) {
-      setActionError('Bạn không có quyền xóa tệp trong kho này.');
-      return;
-    }
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa tệp "${doc.fileName}"?`)) return;
-
-    setActionError(null);
-    const res = await deleteFileFromHf(config.repoId, doc.filePath, config.token);
-    if (!res.success) {
-      setActionError(res.error || 'Không xóa được tệp.');
-      return;
-    }
-    await reload();
-  };
+  const handleDeleteFile = (doc: DispatchDocument) => handleTrash([topOfDoc(doc)]);
 
   // Phải chạy đồng bộ trong sự kiện click: hộp "Lưu thành" cần user activation
   const handleDownloadFolder = (folderPath: string) => {
-    if (!zipTarget) return;
     setActionError(null);
     try {
       const rootLabel = selectedRepo ? repoLabel(selectedRepo, userId) : 'Kho';
@@ -255,7 +216,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const handleDownload = async (doc: DispatchDocument) => {
     setActionError(null);
     try {
-      const url = await resolveFileDownloadUrl(doc, config);
+      const url = await resolveFileDownloadUrl(doc);
       const a = document.createElement('a');
       a.href = url;
       a.download = doc.fileName;
@@ -279,7 +240,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
 
   const handleCopy = (tops: ClipTop[]) => {
     if (!selectedRepo) return;
-    if (clipboard.copy(selectedRepo.repoId, documents, tops, selectedRepo.provider)) setActionError(null);
+    if (clipboard.copy(selectedRepo.repoId, documents, tops)) setActionError(null);
   };
 
   const handlePaste = async (destFolder: string) => {
@@ -290,13 +251,10 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
     }
     setActionError(null);
     await clipboard.paste({
-      destRepoId: config?.repoId ?? selectedRepo.repoId,
+      destRepoId: selectedRepo.repoId,
       destFolder,
       destDocs: documents,
-      // Dán từ kho Hugging Face sang kho Drive vẫn cần token Hugging Face để đọc tệp nguồn
-      token: config?.token ?? auth?.token ?? '',
-      upload: (items, folder) => upload.upload(items, folder),
-      serverCopy: isDrive ? (plan, folder) => driveOps.copyPlan(plan, folder) : undefined,
+      serverCopy: (plan, folder) => driveOps.copyPlan(plan, folder),
     });
   };
 
@@ -360,7 +318,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
 
   // Phải chạy đồng bộ trong sự kiện click: hộp "Lưu thành" cần user activation
   const handleDownloadTops = (tops: ClipTop[]) => {
-    if (!zipTarget || !selectedRepo) return;
+    if (!selectedRepo) return;
     if (tops.length === 1 && tops[0].kind === 'folder') {
       handleDownloadFolder(tops[0].path);
       return;
@@ -373,7 +331,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
     setActionError(null);
     try {
       const rootLabel = selectedFolder ? selectedFolder.split('/').pop()! : selectedRepo ? repoLabel(selectedRepo, userId) : 'Kho';
-      zipDl.start(planClipZip(buildClip(selectedRepo.repoId, documents, tops, selectedRepo.provider), rootLabel), zipTarget);
+      zipDl.start(planClipZip(buildClip(selectedRepo.repoId, documents, tops), rootLabel), zipTarget);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Không nén được các mục đã chọn.');
     }
@@ -412,7 +370,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
         label: m.pasteInto !== undefined ? `Dán vào "${m.pasteInto.split('/').pop()}"` : 'Dán vào thư mục này',
         icon: ClipboardPaste,
         onSelect: () => void handlePaste(where),
-        disabled: upload.running || clipboard.fetching !== null || driveOps.busy,
+        disabled: upload.running || driveOps.busy,
       });
     }
     if (canEditDrive) {
@@ -438,7 +396,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
         });
       }
     }
-    if (isDrive && canDelete && m.tops.length > 0) {
+    if (canDelete && m.tops.length > 0) {
       entries.push({ id: 'trash', label: 'Xóa', icon: Trash2, onSelect: () => void handleTrash(m.tops), disabled: driveOps.busy });
     }
     return entries;
@@ -546,7 +504,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
         </div>
       )}
 
-      {(selectedTops.length > 0 || clipboard.clip || clipboard.fetching) && (
+      {(selectedTops.length > 0 || clipboard.clip) && (
         <div role="toolbar" aria-label="Thao tác với mục đã chọn" className="px-6 py-2 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 shrink-0 flex flex-wrap items-center gap-2 text-sm">
           {selectedTops.length > 0 && (
             <>
@@ -565,7 +523,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                   <span>Di chuyển</span>
                 </button>
               )}
-              {isDrive && canDelete && (
+              {canDelete && (
                 <button type="button" disabled={driveOps.busy} onClick={() => void handleTrash(selectedTops)} className={`${barBtn} disabled:opacity-50 hover:text-rose-700`}>
                   <Trash2 className="w-4 h-4" />
                   <span>Xóa</span>
@@ -577,19 +535,13 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
               </button>
             </>
           )}
-          {clipboard.fetching && (
-            <span role="status" className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Đang lấy tệp nguồn {clipboard.fetching.done}/{clipboard.fetching.total}
-            </span>
-          )}
           {driveOps.copyProgress && (
             <span role="status" className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
               <Loader2 className="w-4 h-4 animate-spin" />
               Đang sao chép {driveOps.copyProgress.done}/{driveOps.copyProgress.total}
             </span>
           )}
-          {clipboard.clip && !clipboard.fetching && (
+          {clipboard.clip && (
             <span className="ml-auto flex items-center gap-2">
               <span className="text-slate-600 dark:text-slate-300">Đã sao chép: {describeClip(clipboard.clip)}</span>
               {canUpload && (
@@ -673,7 +625,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
           </div>
 
           <div className="flex-1 overflow-hidden">
-            <FolderTreeView rootNode={folderTreeRoot} selectedPath={selectedFolder} onSelectPath={(path) => { setSelectedFolder(path); setIsTreeOpen(false); }} onCreateFolder={isDrive ? (canEditDrive ? handleTreeCreateDriveFolder : undefined) : handleCreateFolder} />
+            <FolderTreeView rootNode={folderTreeRoot} selectedPath={selectedFolder} onSelectPath={(path) => { setSelectedFolder(path); setIsTreeOpen(false); }} onCreateFolder={canEditDrive ? handleTreeCreateDriveFolder : undefined} />
           </div>
         </div>
 
@@ -1052,7 +1004,6 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
         document={previewDoc}
         isOpen={Boolean(previewDoc)}
         onClose={() => setPreviewDoc(null)}
-        hfConfig={config}
         onOpenAiChat={embedded ? undefined : (d) => {
           setAiAttachedDoc(d);
           setIsAiChatOpen(true);

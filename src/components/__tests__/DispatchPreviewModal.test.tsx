@@ -14,11 +14,11 @@ afterEach(cleanup);
 
 const doc = (fileName: string, fileType: string): DispatchDocument => ({
   id: 'd1', documentNumber: 'X', title: fileName, documentType: 'khac', issuer: 'Kho lưu trữ', documentDate: '', receivedDate: '',
-  customerId: null, fileName, fileSize: 2048, fileType, fileUrl: '', storageProvider: 'huggingface', createdAt: '', updatedAt: '',
+  customerId: null, fileName, fileSize: 2048, fileType, fileUrl: '', storageProvider: 'drive', createdAt: '', updatedAt: '',
 });
 
 function mo(d: DispatchDocument) {
-  return render(<DispatchPreviewModal document={d} isOpen onClose={() => {}} onOpenAiChat={() => {}} hfConfig={null} />);
+  return render(<DispatchPreviewModal document={d} isOpen onClose={() => {}} onOpenAiChat={() => {}} />);
 }
 
 describe('DispatchPreviewModal theo loại tệp', () => {

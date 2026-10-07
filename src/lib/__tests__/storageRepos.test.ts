@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { StorageRepo } from '../../types/storageRepo';
 import {
-  slugifyRepoName,
-  buildRepoId,
-  suggestPersonalRepoSlug,
   mapRepoRow,
   reposForScope,
   splitStorageRepos,
@@ -11,7 +8,6 @@ import {
   canUploadToRepo,
   canDeleteInRepo,
   canManageRepos,
-  toHfConfig,
   validateRepoInput,
 } from '../storageRepos';
 
@@ -19,8 +15,6 @@ const repo = (over: Partial<StorageRepo>): StorageRepo => ({
   id: 1,
   name: 'R',
   repoId: 'own/r',
-  provider: 'huggingface',
-  folder: '',
   kind: 'shared',
   assignedUserId: null,
   createdAt: '',
@@ -33,41 +27,11 @@ const OTHER = repo({ id: 3, name: 'Kho B', kind: 'personal', assignedUserId: 'u-
 const VT = repo({ id: 4, name: 'Văn thư', kind: 'dispatch', repoId: 'own/van-thu-tin-dung' });
 const BM = repo({ id: 5, name: 'Biểu mẫu', kind: 'form', repoId: 'own/cm-bieu-mau' });
 
-describe('slugifyRepoName / buildRepoId', () => {
-  it('bỏ dấu tiếng Việt, đ thành d, ký tự lạ thành gạch ngang', () => {
-    expect(slugifyRepoName('Văn thư Tín dụng')).toBe('van-thu-tin-dung');
-    expect(slugifyRepoName('Đặng Thị Ánh!!')).toBe('dang-thi-anh');
-    expect(slugifyRepoName('  --a__b--  ')).toBe('a-b');
-  });
-
-  it('cắt độ dài 60 và không để gạch ngang ở cuối', () => {
-    const s = slugifyRepoName('a'.repeat(59) + ' bbb');
-    expect(s.length).toBeLessThanOrEqual(60);
-    expect(s.endsWith('-')).toBe(false);
-  });
-
-  it('chuỗi chỉ có ký tự lạ cho slug rỗng', () => {
-    expect(slugifyRepoName('!!!')).toBe('');
-  });
-
-  it('buildRepoId cần cả owner và slug', () => {
-    expect(buildRepoId('zinya', 'Văn thư Tín dụng')).toBe('zinya/van-thu-tin-dung');
-    expect(buildRepoId('', 'abc')).toBe('');
-    expect(buildRepoId('zinya', '!!!')).toBe('');
-  });
-
-  it('tên gợi ý cho repo cá nhân, có mặc định khi tên rỗng', () => {
-    expect(suggestPersonalRepoSlug('Nguyễn Văn A')).toBe('cm-kho-nguyen-van-a');
-    expect(suggestPersonalRepoSlug('')).toBe('cm-kho-user');
-  });
-});
-
 describe('mapRepoRow', () => {
-  it('ép kiểu và bỏ gạch chéo thừa ở thư mục', () => {
-    const r = mapRepoRow({ Id: '7', Name: 'N', RepoId: 'a/b', Folder: '/van-thu/', Kind: 'personal', AssignedUserId: 'u', CreatedAt: 't' });
-    expect(r).toMatchObject({ id: 7, provider: 'huggingface', folder: 'van-thu', kind: 'personal', assignedUserId: 'u' });
-    expect(mapRepoRow({ Id: 1, Name: 'N', RepoId: 'a/b', Kind: 'shared' }).folder).toBe('');
-    expect(mapRepoRow({ Id: 1, Name: 'N', RepoId: 'a/b', Kind: 'shared' }).assignedUserId).toBeNull();
+  it('ép kiểu các trường của dòng CSDL', () => {
+    const r = mapRepoRow({ Id: '7', Name: 'N', RepoId: 'a', Kind: 'personal', AssignedUserId: 'u', CreatedAt: 't' });
+    expect(r).toEqual({ id: 7, name: 'N', repoId: 'a', kind: 'personal', assignedUserId: 'u', createdAt: 't' });
+    expect(mapRepoRow({ Id: 1, Name: 'N', RepoId: 'a', Kind: 'shared' }).assignedUserId).toBeNull();
   });
 });
 
@@ -191,59 +155,25 @@ describe('quyền theo repo', () => {
   });
 });
 
-describe('toHfConfig', () => {
-  it('ghép token với repo, null khi thiếu một trong hai', () => {
-    expect(toHfConfig('hf_t', repo({ repoId: 'o/r', folder: 'f' }))).toEqual({ token: 'hf_t', repoId: 'o/r', folder: 'f', isPrivate: true });
-    // Repo Google Drive không dùng token Hugging Face
-    expect(toHfConfig('hf_t', repo({ repoId: '1AbCdEfGhIjKlMnOp', provider: 'drive' }))).toBeNull();
-    expect(toHfConfig('', SHARED)).toBeNull();
-    expect(toHfConfig('hf_t', null)).toBeNull();
-  });
-});
-
 describe('validateRepoInput', () => {
-  const ok = { name: 'Kho A', repoId: 'own/cm-kho-a', kind: 'personal' as const, assignedUserId: 'u-a' };
+  const FOLDER_ID = '1AbCdEfGhIjKlMnOpQrStUvWxYz012345';
+  const ok = { name: 'Kho A', repoId: FOLDER_ID, kind: 'personal' as const, assignedUserId: 'u-a' };
 
   it('đầu vào đúng thì hợp lệ', () => {
     expect(validateRepoInput(ok)).toBeNull();
-    expect(validateRepoInput({ name: 'Chung', repoId: 'own/Chung_1.v2', kind: 'shared' })).toBeNull();
+    expect(validateRepoInput({ name: 'Chung', repoId: FOLDER_ID, kind: 'shared' })).toBeNull();
   });
 
-  it('thiếu tên hoặc repoId sai dạng', () => {
+  it('thiếu tên thì báo; ID thư mục sai dạng thì báo, kể cả dạng owner/ten-repo cũ', () => {
     expect(validateRepoInput({ ...ok, name: '  ' })).toMatch(/tên/);
-    for (const bad of ['', 'own', 'own/', '/r', 'own/r/x', 'own/có dấu', 'own /r', '-own/r']) {
-      expect(validateRepoInput({ ...ok, repoId: bad }), bad).toMatch(/owner/);
+    for (const bad of ['', 'ngan', 'own/cm-kho', 'co dau cach 12345', 'có-dấu-12345678']) {
+      expect(validateRepoInput({ ...ok, repoId: bad }), bad).toMatch(/ID thư mục Google Drive/);
     }
   });
 
   it('repo cá nhân bắt buộc có người được gán; loại khác thì không được gán', () => {
     expect(validateRepoInput({ ...ok, assignedUserId: null })).toMatch(/tài khoản/);
-    expect(validateRepoInput({ name: 'C', repoId: 'o/c', kind: 'shared', assignedUserId: 'u' })).toMatch(/Chỉ repo cá nhân/);
-    expect(validateRepoInput({ name: 'V', repoId: 'o/v', kind: 'dispatch', assignedUserId: 'u' })).toMatch(/Chỉ repo cá nhân/);
-  });
-});
-
-describe('repo Google Drive', () => {
-  const FOLDER_ID = '1AbCdEfGhIjKlMnOpQrStUvWxYz012345';
-
-  it('mapRepoRow đọc Provider; thiếu hoặc lạ thì coi là Hugging Face', () => {
-    const row = { Id: 1, Name: 'K', RepoId: 'x', Kind: 'shared' };
-    expect(mapRepoRow({ ...row, Provider: 'drive' }).provider).toBe('drive');
-    expect(mapRepoRow({ ...row, Provider: 'huggingface' }).provider).toBe('huggingface');
-    expect(mapRepoRow(row).provider).toBe('huggingface');
-    expect(mapRepoRow({ ...row, Provider: 'dropbox' }).provider).toBe('huggingface');
-  });
-
-  it('validateRepoInput: repo Drive nhận ID thư mục, từ chối dạng owner/ten-repo', () => {
-    const base = { name: 'Kho chung', kind: 'shared' as const, provider: 'drive' as const };
-    expect(validateRepoInput({ ...base, repoId: FOLDER_ID })).toBeNull();
-    expect(validateRepoInput({ ...base, repoId: 'own/cm-kho' })).toMatch(/ID thư mục Google Drive/);
-    expect(validateRepoInput({ ...base, repoId: 'ngan' })).toMatch(/ID thư mục Google Drive/);
-    expect(validateRepoInput({ ...base, repoId: 'co dau cach 12345' })).toMatch(/ID thư mục Google Drive/);
-  });
-
-  it('validateRepoInput: repo Hugging Face vẫn cần dạng owner/ten-repo, không nhận ID Drive', () => {
-    expect(validateRepoInput({ name: 'K', kind: 'shared', repoId: FOLDER_ID })).toMatch(/owner\/ten-repo/);
-    expect(validateRepoInput({ name: 'K', kind: 'shared', repoId: 'own/cm-kho', provider: 'huggingface' })).toBeNull();
+    expect(validateRepoInput({ name: 'C', repoId: FOLDER_ID, kind: 'shared', assignedUserId: 'u' })).toMatch(/Chỉ repo cá nhân/);
+    expect(validateRepoInput({ name: 'V', repoId: FOLDER_ID, kind: 'dispatch', assignedUserId: 'u' })).toMatch(/Chỉ repo cá nhân/);
   });
 });

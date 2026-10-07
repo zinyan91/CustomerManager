@@ -2,7 +2,6 @@ import type { AiAttachment } from '../../types/ai';
 import type { OfficialDoc } from '../../types/officialDoc';
 import { listDocIndex } from '../api/officialDocApi';
 import { findCachedAnswer, isCacheValid, questionKey, type CachedAnswer, type DocRef } from './answerCache';
-import { fetchHfAuth } from '../huggingface/hfConfigApi';
 import { FILE_KIND_LABELS } from '../officialDoc/docFiles';
 import { pickRelevantDocs } from './docRetrieval';
 import { readDocsForAi, type ReadDocsResult } from './docReader';
@@ -95,20 +94,7 @@ export async function prepareDocContext(question: string, focusIds: string[], de
   if (picked.docs.length === 0) return { ...EMPTY_DOC_CONTEXT, focusIds };
 
   deps.onStatus?.(`Đang đọc văn bản ${picked.docs.map((d) => d.docNumber).join(', ')}...`);
-  // Tệp trên Google Drive không cần token Hugging Face; chỉ đòi token khi văn bản có tệp còn ở Hugging Face
-  let token = '';
-  if (picked.docs.some((d) => d.files.some((f) => !f.fileId))) {
-    try {
-      token = (await fetchHfAuth())?.token ?? '';
-    } catch (err) {
-      return { ...EMPTY_DOC_CONTEXT, focusIds, contextText: `Không đọc được cấu hình kho lưu trữ: ${err instanceof Error ? err.message : String(err)}` };
-    }
-    if (!token) {
-      return { ...EMPTY_DOC_CONTEXT, focusIds, contextText: 'Chưa cấu hình kho lưu trữ nên chưa đọc được nội dung tệp văn bản.' };
-    }
-  }
-
-  const read = await readDocsForAi(picked.docs, token);
+  const read = await readDocsForAi(picked.docs);
   return {
     attachments: read.attachments,
     contextText: describeRead(read),

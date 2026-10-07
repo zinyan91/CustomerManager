@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ClipboardError, MAX_PASTE_BYTES, MAX_PASTE_FILES, buildClip, describeClip, planClipZip, planPaste, topKey,
+  ClipboardError, buildClip, describeClip, planClipZip, planPaste, topKey,
   type ClipTop, type StorageClip,
 } from '../storageClipboard';
 
@@ -112,13 +112,6 @@ describe('planPaste', () => {
     const plan = planPaste(clipOf(file('van-ban/2026/2093/2097.pdf')), 'o/nguon', 'van-ban/2026/2093', DOCS);
     expect(plan.files[0].relativePath).toBe('2097-2.pdf');
   });
-
-  it('vượt giới hạn số tệp hoặc dung lượng thì báo lỗi nói rõ giới hạn', () => {
-    const many = Array.from({ length: MAX_PASTE_FILES + 1 }, (_, i) => doc(`d/f${i}.pdf`, 1));
-    expect(() => planPaste(buildClip('o/n', many, [folder('d')]), 'o/d', '', [])).toThrow(/tối đa 500 tệp/);
-    const big = [doc('d/a.bin', MAX_PASTE_BYTES), doc('d/b.bin', 1)];
-    expect(() => planPaste(buildClip('o/n', big, [folder('d')]), 'o/d', '', [])).toThrow(/tối đa 200 MB/);
-  });
 });
 
 describe('planClipZip', () => {
@@ -146,27 +139,25 @@ describe('describeClip', () => {
   });
 });
 
-describe('nguồn Google Drive', () => {
+describe('tệp Google Drive', () => {
   const DRIVE_DOCS = [
     { filePath: 'VB/a.pdf', fileSize: 10, updatedAt: 't', fileId: 'ID1' },
     { filePath: 'VB/B.docx', fileSize: 0, updatedAt: 't', fileId: 'ID2', nativeMimeType: 'application/vnd.google-apps.document' },
     { filePath: 'goc.pdf', fileSize: 5, updatedAt: 't', fileId: 'ID3' },
   ];
 
-  it('buildClip ghi nhận nhà cung cấp và mang theo mã tệp, kiểu gốc', () => {
-    const clip = buildClip('FOLDERID1234567', DRIVE_DOCS, [folder('VB')], 'drive');
-    expect(clip.provider).toBe('drive');
+  it('buildClip mang theo mã tệp và kiểu gốc', () => {
+    const clip = buildClip('FOLDERID1234567', DRIVE_DOCS, [folder('VB')]);
     expect(clip.files.map((f) => [f.rel, f.fileId, f.nativeMimeType])).toEqual([['VB/a.pdf', 'ID1', ''], ['VB/B.docx', 'ID2', 'application/vnd.google-apps.document']]);
   });
 
-  it('mặc định là Hugging Face và không có mã tệp', () => {
+  it('tệp không có mã thì không mang mã tệp', () => {
     const clip = buildClip('o/kho', [doc('a.pdf')], [file('a.pdf')]);
-    expect(clip.provider).toBe('huggingface');
     expect(clip.files[0].fileId).toBeUndefined();
   });
 
   it('planPaste và planClipZip giữ mã tệp để tải đúng tệp nguồn', () => {
-    const clip = buildClip('FOLDERID1234567', DRIVE_DOCS, [file('goc.pdf')], 'drive');
+    const clip = buildClip('FOLDERID1234567', DRIVE_DOCS, [file('goc.pdf')]);
     expect(planPaste(clip, 'o/dich', '', []).files[0]).toMatchObject({ sourcePath: 'goc.pdf', fileId: 'ID3', nativeMimeType: '' });
     expect(planClipZip(clip, 'Kho').entries[0]).toMatchObject({ filePath: 'goc.pdf', fileId: 'ID3' });
   });

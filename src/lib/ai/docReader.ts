@@ -34,9 +34,9 @@ const orderFiles = (files: OfficialDocFile[]) => [...files].sort((a, b) => Numbe
 
 /**
  * Tải nội dung các văn bản (PDF, ảnh) từ Kho để AI đọc. Tải song song, thẳng từ trình duyệt tới
- * Hugging Face. Tệp không đọc được ghi vào `notes`, không ném lỗi làm hỏng cả câu trả lời.
+ * Google Drive. Tệp không đọc được ghi vào `notes`, không ném lỗi làm hỏng cả câu trả lời.
  */
-export async function readDocsForAi(docs: OfficialDoc[], token: string): Promise<ReadDocsResult> {
+export async function readDocsForAi(docs: OfficialDoc[]): Promise<ReadDocsResult> {
   const result: ReadDocsResult = { attachments: [], readFiles: [], notes: [], forms: [] };
   const wanted: Array<{ doc: OfficialDoc; file: OfficialDocFile }> = [];
 
@@ -67,7 +67,7 @@ export async function readDocsForAi(docs: OfficialDoc[], token: string): Promise
       try {
         let att = cache.get(key);
         if (!att) {
-          const blob = await fetchDocFileBlob(file, token);
+          const blob = await fetchDocFileBlob(file);
           att = {
             id: `docread_${key}`,
             name: file.name,

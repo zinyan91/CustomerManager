@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, Loader2, X } from 'lucide-react';
-import type { UploadProgress } from '../../lib/huggingface/hfWrite';
+import type { UploadProgress } from '../../lib/uploadItems';
 import type { UploadSummary } from '../../hooks/useArchiveUpload';
 
 interface UploadStatusPanelProps {

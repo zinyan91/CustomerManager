@@ -1,45 +1,50 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StorageRepo } from '../../../types/storageRepo';
 import type { ExtractedDoc } from '../../ai/docExtract';
+import { createFakeDrive } from '../../drive/__tests__/fakeDrive';
 
-const m = vi.hoisted(() => ({
-  save: vi.fn(),
-  listRepos: vi.fn(),
-  listTree: vi.fn(),
-  auth: vi.fn(),
-  upload: vi.fn(),
+const h = vi.hoisted(() => ({ ctx: null as unknown, save: vi.fn(), listRepos: vi.fn() }));
+vi.mock('../../drive/driveToken', () => ({
+  get driveContext() {
+    return h.ctx;
+  },
 }));
+vi.mock('../../api/officialDocApi', () => ({ saveOfficialDoc: h.save }));
+vi.mock('../../api/storageReposApi', () => ({ listStorageRepos: h.listRepos }));
 
-vi.mock('../../api/officialDocApi', () => ({ saveOfficialDoc: m.save }));
-vi.mock('../../api/storageReposApi', () => ({ listStorageRepos: m.listRepos }));
-vi.mock('../../huggingface/hfConfigApi', () => ({ fetchHfAuth: m.auth }));
-vi.mock('../../huggingface/hfWrite', () => ({ uploadItemsToHf: m.upload }));
-vi.mock('../../huggingface/hfClient', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../huggingface/hfClient')>()),
-  listHfTree: m.listTree,
-}));
+import { attachmentToFile, docFolderSlug, findFormFiles, recordDocFromFile, resolveRecordTarget, uniqueFileName, type RecordTarget } from '../recordFromAi';
 
-import { HfApiError } from '../../huggingface/hfClient';
-import { attachmentToFile, docFolderSlug, findFormFiles, recordDocFromFile, resolveRecordTarget, uniqueFileName } from '../recordFromAi';
-
-const repo = (over: Partial<StorageRepo>): StorageRepo => ({
-  id: 1, name: 'r', repoId: 'o/van-thu', provider: 'huggingface', folder: 'van-thu', kind: 'dispatch', assignedUserId: null, createdAt: '', ...over,
-});
-const FORM_REPO = repo({ id: 2, repoId: 'o/bieu-mau', provider: 'huggingface', folder: 'bm', kind: 'form' });
-const TARGET = { repo: repo({}), formRepo: FORM_REPO, token: 'hf_t' };
-const NO_FORM_TARGET = { repo: repo({}), formRepo: null, token: 'hf_t' };
 const FIELDS: ExtractedDoc = {
   category: 'van-ban', docNumber: '2753/2026/TB-BĐH', title: 'Chương trình lãi suất',
   issuedDate: '2026-09-18', effectiveFrom: '2026-09-21', effectiveTo: null,
 };
-const file = (name = 'tb.pdf') => new File(['abc'], name, { type: 'application/pdf' });
+const FOLDER = 'van-ban/2026/2753-2026-tb-bdh';
+const pdf = (name: string, text = 'abc') => new File([text], name, { type: 'application/pdf' });
+const repo = (over: Partial<StorageRepo>): StorageRepo => ({
+  id: 1, name: 'r', repoId: 'X', kind: 'dispatch', assignedUserId: null, createdAt: '', ...over,
+});
+
+let drive: ReturnType<typeof createFakeDrive>;
+let vt: ReturnType<typeof drive.seedFolder>;
+let bm: ReturnType<typeof drive.seedFolder>;
+let target: RecordTarget;
 
 beforeEach(() => {
-  Object.values(m).forEach((f) => f.mockReset());
-  m.listTree.mockResolvedValue([]);
-  m.upload.mockResolvedValue({ uploaded: ['x'], failed: [] });
-  m.save.mockResolvedValue({ id: '1' });
+  Object.values(h).forEach((f) => typeof f === 'function' && 'mockReset' in f && (f as ReturnType<typeof vi.fn>).mockReset());
+  drive = createFakeDrive();
+  h.ctx = drive.ctx;
+  vt = drive.seedFolder('Văn thư');
+  bm = drive.seedFolder('Biểu mẫu');
+  target = { repo: repo({ id: 1, repoId: vt.id }), formRepo: repo({ id: 2, repoId: bm.id, kind: 'form' }) };
+  h.save.mockResolvedValue({ id: '1' });
 });
+
+/** Đường dẫn đầy đủ của một mục Drive theo chuỗi cha, tính từ thư mục gốc kho. */
+function pathOf(id: string, rootId: string): string {
+  const names: string[] = [];
+  for (let cur = drive.files.get(id); cur && cur.id !== rootId; cur = drive.files.get(cur.parents[0])) names.unshift(cur.name);
+  return names.join('/');
+}
 
 describe('docFolderSlug / uniqueFileName', () => {
   it('slug không dấu, không gạch chéo', () => {
@@ -64,282 +69,191 @@ describe('attachmentToFile', () => {
 });
 
 describe('resolveRecordTarget', () => {
-  it('lấy kho Văn thư và token', async () => {
-    m.listRepos.mockResolvedValue([repo({ id: 5, kind: 'shared' }), repo({ id: 6 })]);
-    m.auth.mockResolvedValue({ token: 'tk' });
+  it('lấy kho Văn thư; Kho chung không bị nhầm là kho Văn thư', async () => {
+    h.listRepos.mockResolvedValue([repo({ id: 5, kind: 'shared' }), repo({ id: 6 })]);
     const t = await resolveRecordTarget();
     expect(t.repo.id).toBe(6);
     expect(t.formRepo).toBeNull();
-    expect(t.token).toBe('tk');
   });
-  it('có kho Biểu mẫu thì lấy kèm; Kho chung không bị nhầm là kho Biểu mẫu', async () => {
-    m.listRepos.mockResolvedValue([repo({ id: 5, kind: 'shared' }), repo({ id: 6 }), repo({ id: 7, kind: 'form', repoId: 'o/bm' })]);
-    m.auth.mockResolvedValue({ token: 'tk' });
+  it('có kho Biểu mẫu thì lấy kèm', async () => {
+    h.listRepos.mockResolvedValue([repo({ id: 5, kind: 'shared' }), repo({ id: 6 }), repo({ id: 7, kind: 'form' })]);
     const t = await resolveRecordTarget();
     expect(t.repo.id).toBe(6);
     expect(t.formRepo?.id).toBe(7);
   });
-  it('thiếu kho Văn thư hoặc token thì báo rõ', async () => {
-    m.listRepos.mockResolvedValue([repo({ kind: 'shared' })]);
-    m.auth.mockResolvedValue({ token: 'tk' });
+  it('thiếu kho Văn thư thì báo rõ', async () => {
+    h.listRepos.mockResolvedValue([repo({ kind: 'shared' })]);
     await expect(resolveRecordTarget()).rejects.toThrow(/Chưa có kho Văn thư/);
-    m.listRepos.mockResolvedValue([repo({})]);
-    m.auth.mockResolvedValue(null);
-    await expect(resolveRecordTarget()).rejects.toThrow(/Chưa cấu hình token/);
   });
 });
 
-describe('recordDocFromFile', () => {
-  it('tải lên <gốc>/<mục>/<năm>/<số hiệu>/ rồi ghi văn bản với tệp gốc', async () => {
-    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET });
+describe('recordDocFromFile lên kho Drive', () => {
+  it('tải tệp gốc vào <mục>/<năm>/<số hiệu>/ và ghi văn bản tham chiếu bằng mã tệp', async () => {
+    await recordDocFromFile({ file: pdf('tb.pdf', 'NOI DUNG'), fields: FIELDS, target });
 
-    expect(m.upload).toHaveBeenCalledTimes(1);
-    const [tgt, folder, items] = m.upload.mock.calls[0];
-    expect(tgt).toEqual({ repoId: 'o/van-thu', token: 'hf_t' });
-    expect(folder).toBe('van-thu/van-ban/2026/2753-2026-tb-bdh');
-    expect(items).toHaveLength(1);
-    expect(items[0].relativePath).toBe('tb.pdf');
-
-    expect(m.save).toHaveBeenCalledWith(null, {
+    const made = drive.byName('tb.pdf');
+    expect(made).toHaveLength(1);
+    expect(pathOf(made[0].id, vt.id)).toBe(`${FOLDER}/tb.pdf`);
+    expect(new TextDecoder().decode(made[0].bytes)).toBe('NOI DUNG');
+    expect(h.save).toHaveBeenCalledWith(null, {
       ...FIELDS,
-      files: [{ kind: 'goc', repoId: 'o/van-thu', path: 'van-thu/van-ban/2026/2753-2026-tb-bdh/tb.pdf', name: 'tb.pdf' }],
+      files: [{ kind: 'goc', repoId: vt.id, path: `${FOLDER}/tb.pdf`, name: 'tb.pdf', fileId: made[0].id }],
     });
   });
 
-  it('thiếu trường bắt buộc thì không tải gì lên', async () => {
-    await expect(recordDocFromFile({ file: file(), fields: { ...FIELDS, docNumber: '' }, target: TARGET })).rejects.toThrow(/số hiệu/i);
-    expect(m.upload).not.toHaveBeenCalled();
-    expect(m.save).not.toHaveBeenCalled();
+  it('thư mục văn bản đã có thì dùng lại, không tạo trùng', async () => {
+    await recordDocFromFile({ file: pdf('a.pdf'), fields: FIELDS, target });
+    await recordDocFromFile({ file: pdf('b.pdf'), fields: FIELDS, target });
+    expect(drive.byName('2753-2026-tb-bdh')).toHaveLength(1);
+    expect(drive.byName('2026')).toHaveLength(1);
+    expect(drive.byName('van-ban')).toHaveLength(1);
   });
 
-  it('trùng tên tệp trong thư mục đích thì đổi tên, không ghi đè', async () => {
-    m.listTree.mockResolvedValue([{ type: 'file', name: 'tb.pdf', path: 'p', size: 1, downloadUrl: '' }]);
-    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET });
-    expect(m.upload.mock.calls[0][2][0].relativePath).toBe('tb-2.pdf');
-    expect(m.save.mock.calls[0][1].files[0].name).toBe('tb-2.pdf');
+  it('trùng tên tệp đã có trong thư mục thì đổi thành -2, tệp cũ không bị đè', async () => {
+    const vb = drive.seedFolder('van-ban', vt.id);
+    const y = drive.seedFolder('2026', vb.id);
+    const d = drive.seedFolder('2753-2026-tb-bdh', y.id);
+    const old = drive.seedFile('tb.pdf', d.id, 'CU');
+
+    await recordDocFromFile({ file: pdf('tb.pdf', 'MOI'), fields: FIELDS, target });
+
+    expect(new TextDecoder().decode(old.bytes)).toBe('CU');
+    const saved = h.save.mock.calls[0][1].files[0];
+    expect(saved.name).toBe('tb-2.pdf');
+    expect(saved.path).toBe(`${FOLDER}/tb-2.pdf`);
+    expect(new TextDecoder().decode(drive.files.get(saved.fileId)!.bytes)).toBe('MOI');
   });
 
-  it('thư mục chưa có (404) coi như trống; lỗi khác thì dừng', async () => {
-    m.listTree.mockRejectedValueOnce(new HfApiError(404, 'x'));
-    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET });
-    expect(m.upload).toHaveBeenCalled();
+  it('phụ lục cùng thư mục với tệp gốc, mỗi tệp có mã Drive riêng, tên trùng nhau thì đổi tên', async () => {
+    await recordDocFromFile({ file: pdf('goc.pdf'), fields: FIELDS, target, appendices: [pdf('pl1.pdf', 'P1'), pdf('pl1.pdf', 'P1b'), pdf('goc.pdf', 'trung-goc')] });
 
-    m.upload.mockClear();
-    m.listTree.mockRejectedValueOnce(new HfApiError(403, 'token'));
-    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET })).rejects.toThrow();
-    expect(m.upload).not.toHaveBeenCalled();
+    const files = h.save.mock.calls[0][1].files as Array<{ name: string; path: string; fileId: string; kind: string }>;
+    expect(files.map((f) => f.name)).toEqual(['goc.pdf', 'pl1.pdf', 'pl1-2.pdf', 'goc-2.pdf']);
+    expect(new Set(files.map((f) => f.fileId)).size).toBe(4);
+    for (const f of files) {
+      expect(f.kind).toBe('goc');
+      expect(pathOf(f.fileId, vt.id)).toBe(f.path);
+    }
   });
 
-  it('upload hỏng thì báo lỗi và không ghi văn bản', async () => {
-    m.upload.mockResolvedValue({ uploaded: [], failed: [{ path: 'p', error: 'Token không đủ quyền ghi' }] });
-    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET })).rejects.toThrow(/Token không đủ quyền ghi/);
-    expect(m.save).not.toHaveBeenCalled();
+  it('bộ biểu mẫu lên kho Biểu mẫu cùng cấu trúc thư mục, ghi là biểu mẫu với mã Drive', async () => {
+    const form = new File(['xlsx'], 'mau-01.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    await recordDocFromFile({ file: pdf('goc.pdf'), fields: FIELDS, target, formUploads: [form] });
+
+    const files = h.save.mock.calls[0][1].files as Array<{ kind: string; repoId: string; path: string; fileId: string }>;
+    const bieuMau = files.find((f) => f.kind === 'bieu-mau')!;
+    expect(bieuMau.repoId).toBe(bm.id);
+    expect(pathOf(bieuMau.fileId, bm.id)).toBe(`${FOLDER}/mau-01.xlsx`);
+    expect(files.find((f) => f.kind === 'goc')!.repoId).toBe(vt.id);
   });
 
-  it('tệp đã lên nhưng ghi văn bản hỏng: nói rõ đường dẫn tệp đã ở trong Kho', async () => {
-    m.save.mockRejectedValue(new Error('Không lưu được văn bản: row-level security'));
-    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET })).rejects.toThrow(
-      /Tệp đã lên Kho \(van-thu\/van-ban\/2026\/2753-2026-tb-bdh\/tb\.pdf\) nhưng chưa ghi được văn bản: .*row-level security/
+  it('thiếu kho Biểu mẫu mà có biểu mẫu tải lên thì báo trước khi tải gì lên', async () => {
+    await expect(
+      recordDocFromFile({ file: pdf('goc.pdf'), fields: FIELDS, target: { ...target, formRepo: null }, formUploads: [pdf('bm.pdf')] }),
+    ).rejects.toThrow(/Chưa có kho Biểu mẫu/);
+    expect(drive.requests).toHaveLength(0);
+  });
+
+  it('Drive từ chối tải lên: ném lỗi tiếng Việt, chưa ghi văn bản', async () => {
+    drive.failNext(/^POST \/upload\/drive\/v3\/files$/, new Response(JSON.stringify({ error: { code: 403, message: 'x', errors: [{ reason: 'storageQuotaExceeded' }] } }), { status: 403 }));
+    await expect(recordDocFromFile({ file: pdf('tb.pdf'), fields: FIELDS, target })).rejects.toThrow(/Shared Drive đã hết dung lượng/);
+    expect(h.save).not.toHaveBeenCalled();
+  });
+
+  it('phụ lục lỗi thì nói tệp gốc đã lên và chưa ghi văn bản', async () => {
+    let posts = 0;
+    const original = drive.ctx.fetchFn!;
+    drive.ctx.fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      if ((init?.method ?? 'GET') === 'POST' && new URL(String(input)).pathname === '/upload/drive/v3/files' && ++posts === 2) {
+        return new Response(JSON.stringify({ error: { code: 403, message: 'x', errors: [{ reason: 'storageQuotaExceeded' }] } }), { status: 403 });
+      }
+      return original(input, init);
+    }) as typeof fetch;
+
+    await expect(recordDocFromFile({ file: pdf('goc.pdf'), fields: FIELDS, target, appendices: [pdf('pl.pdf')] })).rejects.toThrow(
+      new RegExp(`Tệp gốc đã lên Kho \\(${FOLDER}/goc\\.pdf\\) nhưng chưa tải được phụ lục`),
+    );
+    expect(h.save).not.toHaveBeenCalled();
+  });
+
+  it('ghi văn bản thất bại thì báo các tệp đã lên Kho để người dùng xử lý', async () => {
+    h.save.mockRejectedValue(new Error('RLS từ chối'));
+    await expect(recordDocFromFile({ file: pdf('tb.pdf'), fields: FIELDS, target })).rejects.toThrow(
+      new RegExp(`Tệp đã lên Kho \\(${FOLDER}/tb\\.pdf\\) nhưng chưa ghi được văn bản: RLS từ chối`),
     );
   });
 });
 
-const zipFile = (name = 'bieu-mau.zip') => new File(['zipdata'], name, { type: 'application/zip' });
-
-describe('recordDocFromFile kèm bộ biểu mẫu', () => {
-  it('một tệp biểu mẫu (vd zip) giữ nguyên: PDF vào kho Văn thư, biểu mẫu vào kho Biểu mẫu cùng cấu trúc thư mục', async () => {
-    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formUploads: [zipFile()] });
-
-    expect(m.upload).toHaveBeenCalledTimes(2);
-    const [gocTarget, gocFolder] = m.upload.mock.calls[0];
-    const [formTarget, formFolder, formItems] = m.upload.mock.calls[1];
-    expect(gocTarget.repoId).toBe('o/van-thu');
-    expect(gocFolder).toBe('van-thu/van-ban/2026/2753-2026-tb-bdh');
-    expect(formTarget.repoId).toBe('o/bieu-mau');
-    expect(formFolder).toBe('bm/van-ban/2026/2753-2026-tb-bdh');
-    expect(formItems[0].relativePath).toBe('bieu-mau.zip');
-
-    expect(m.save).toHaveBeenCalledWith(null, {
-      ...FIELDS,
-      files: [
-        { kind: 'goc', repoId: 'o/van-thu', path: 'van-thu/van-ban/2026/2753-2026-tb-bdh/tb.pdf', name: 'tb.pdf' },
-        { kind: 'bieu-mau', repoId: 'o/bieu-mau', path: 'bm/van-ban/2026/2753-2026-tb-bdh/bieu-mau.zip', name: 'bieu-mau.zip' },
-      ],
-    });
-  });
-
-  it('chưa có kho Biểu mẫu mà có zip thì báo rõ và không tải gì lên', async () => {
-    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: NO_FORM_TARGET, formUploads: [zipFile()] })).rejects.toThrow(/Chưa có kho Biểu mẫu/);
-    expect(m.upload).not.toHaveBeenCalled();
-    expect(m.save).not.toHaveBeenCalled();
-  });
-
-  it('zip tải hỏng sau khi tệp gốc đã lên: nói rõ tệp gốc đã ở Kho và chưa ghi văn bản', async () => {
-    m.upload
-      .mockResolvedValueOnce({ uploaded: ['x'], failed: [] })
-      .mockResolvedValueOnce({ uploaded: [], failed: [{ path: 'p', error: 'Tệp quá lớn so với giới hạn của kho lưu trữ.' }] });
-    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formUploads: [zipFile()] })).rejects.toThrow(
-      /Tệp gốc đã lên Kho \(van-thu\/van-ban\/2026\/2753-2026-tb-bdh\/tb\.pdf\) nhưng chưa tải được bộ biểu mẫu: Tệp quá lớn.*Chưa ghi văn bản/
-    );
-    expect(m.save).not.toHaveBeenCalled();
-  });
-
-  it('ghi văn bản hỏng thì liệt kê mọi tệp đã lên Kho', async () => {
-    m.save.mockRejectedValue(new Error('row-level security'));
-    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formUploads: [zipFile()] })).rejects.toThrow(
-      /Tệp đã lên Kho \(.*tb\.pdf, bm\/van-ban\/2026\/2753-2026-tb-bdh\/bieu-mau\.zip\)/
-    );
-  });
-
-  it('trùng tên zip trong kho Biểu mẫu thì đổi tên, không ghi đè', async () => {
-    m.listTree.mockResolvedValueOnce([]).mockResolvedValueOnce([{ type: 'file', name: 'bieu-mau.zip', path: 'p', size: 1, downloadUrl: '' }]);
-    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formUploads: [zipFile()] });
-    expect(m.upload.mock.calls[1][2][0].relativePath).toBe('bieu-mau-2.zip');
-  });
-});
-
-describe('recordDocFromFile gắn biểu mẫu có sẵn trong kho', () => {
+describe('recordDocFromFile: kiểm tra đầu vào và gắn biểu mẫu có sẵn', () => {
   const found = [
-    { kind: 'bieu-mau' as const, repoId: 'o/bieu-mau', path: 'bm/2753-2026-tb-bdh/mau-01.docx', name: 'mau-01.docx' },
-    { kind: 'bieu-mau' as const, repoId: 'o/bieu-mau', path: 'bm/2753-2026-tb-bdh/mau-02.xlsx', name: 'mau-02.xlsx' },
+    { kind: 'bieu-mau' as const, repoId: 'BM', path: 'bm/2753-2026-tb-bdh/mau-01.docx', name: 'mau-01.docx', fileId: 'F1' },
+    { kind: 'bieu-mau' as const, repoId: 'BM', path: 'bm/2753-2026-tb-bdh/mau-02.xlsx', name: 'mau-02.xlsx', fileId: 'F2' },
   ];
 
+  it('thiếu trường bắt buộc thì không tải gì lên', async () => {
+    await expect(recordDocFromFile({ file: pdf('tb.pdf'), fields: { ...FIELDS, docNumber: '' }, target })).rejects.toThrow(/số hiệu/i);
+    expect(drive.requests).toHaveLength(0);
+    expect(h.save).not.toHaveBeenCalled();
+  });
+
   it('chỉ gắn, không tải lại biểu mẫu đã có', async () => {
-    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formFiles: found });
-    expect(m.upload).toHaveBeenCalledTimes(1);
-    const files = m.save.mock.calls[0][1].files;
+    await recordDocFromFile({ file: pdf('tb.pdf'), fields: FIELDS, target, formFiles: found });
+    const files = h.save.mock.calls[0][1].files;
     expect(files.map((f: { kind: string; name: string }) => `${f.kind}:${f.name}`)).toEqual(['goc:tb.pdf', 'bieu-mau:mau-01.docx', 'bieu-mau:mau-02.xlsx']);
+    expect(drive.byName('mau-01.docx')).toHaveLength(0);
   });
 
   it('không gắn trùng một biểu mẫu hai lần', async () => {
-    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formFiles: [...found, found[0]] });
-    expect(m.save.mock.calls[0][1].files).toHaveLength(3);
+    await recordDocFromFile({ file: pdf('tb.pdf'), fields: FIELDS, target, formFiles: [...found, found[0]] });
+    expect(h.save.mock.calls[0][1].files).toHaveLength(3);
   });
 });
 
-describe('findFormFiles', () => {
-  const entry = (path: string) => ({ type: 'file', name: path.split('/').pop(), path, size: 1, downloadUrl: '' });
-
-  it('tìm theo số hiệu trong kho Biểu mẫu và trả dạng tệp của văn bản', async () => {
-    m.listTree.mockResolvedValue([entry('bm/van-ban/2026/2753-2026-tb-bdh/mau-01.docx'), entry('bm/van-ban/2026/9999-2026-tb-x/mau.docx')]);
-    const out = await findFormFiles(TARGET, '2753/2026/TB-BĐH');
-    expect(m.listTree).toHaveBeenCalledWith('o/bieu-mau', 'bm', 'hf_t', true);
-    expect(out.note).toBeNull();
-    expect(out.files).toEqual([{ kind: 'bieu-mau', repoId: 'o/bieu-mau', path: 'bm/van-ban/2026/2753-2026-tb-bdh/mau-01.docx', name: 'mau-01.docx' }]);
-  });
-
-  it('không thấy biểu mẫu thì trả rỗng và không có ghi chú lỗi', async () => {
-    m.listTree.mockResolvedValue([entry('bm/khac/a.docx')]);
-    expect(await findFormFiles(TARGET, '2753/2026/TB-BĐH')).toEqual({ files: [], note: null });
-  });
-
-  it('chưa có kho Biểu mẫu thì nói rõ, không gọi kho', async () => {
-    const out = await findFormFiles(NO_FORM_TARGET, '2753/2026/TB-BĐH');
-    expect(out.files).toEqual([]);
-    expect(out.note).toMatch(/Chưa có kho Biểu mẫu/);
-    expect(m.listTree).not.toHaveBeenCalled();
-  });
-
-  it('lỗi từ kho được ném ra, không nuốt thành rỗng', async () => {
-    m.listTree.mockRejectedValue(new HfApiError(403, 'token'));
-    await expect(findFormFiles(TARGET, '2753/2026/TB-BĐH')).rejects.toThrow();
-  });
-});
-
-describe('recordDocFromFile với bộ biểu mẫu nhiều tệp (tờ trình, hợp đồng đính kèm...)', () => {
+describe('recordDocFromFile với bộ biểu mẫu nhiều tệp', () => {
   const docx = (name: string, text: string) => new File([text], name, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
 
   it('nhiều tệp được nén thành đúng một ZIP đặt theo số hiệu rồi tải lên kho Biểu mẫu', async () => {
     await recordDocFromFile({
-      file: file(),
+      file: pdf('tb.pdf'),
       fields: FIELDS,
-      target: TARGET,
+      target,
       formUploads: [docx('to-trinh.docx', 'A'), docx('hop-dong.docx', 'B'), docx('phu-luc.docx', 'C')],
     });
 
-    expect(m.upload).toHaveBeenCalledTimes(2);
-    const [formTarget, formFolder, formItems] = m.upload.mock.calls[1];
-    expect(formTarget.repoId).toBe('o/bieu-mau');
-    expect(formFolder).toBe('bm/van-ban/2026/2753-2026-tb-bdh');
-    expect(formItems).toHaveLength(1);
-    expect(formItems[0].relativePath).toBe('2753-2026-tb-bdh-bieu-mau.zip');
-    expect(formItems[0].file.type).toBe('application/zip');
-
-    const files = m.save.mock.calls[0][1].files;
-    expect(files.filter((f: { kind: string }) => f.kind === 'bieu-mau')).toEqual([
-      { kind: 'bieu-mau', repoId: 'o/bieu-mau', path: 'bm/van-ban/2026/2753-2026-tb-bdh/2753-2026-tb-bdh-bieu-mau.zip', name: '2753-2026-tb-bdh-bieu-mau.zip' },
-    ]);
+    const zips = drive.byName('2753-2026-tb-bdh-bieu-mau.zip');
+    expect(zips).toHaveLength(1);
+    expect(pathOf(zips[0].id, bm.id)).toBe(`${FOLDER}/2753-2026-tb-bdh-bieu-mau.zip`);
+    const files = h.save.mock.calls[0][1].files as Array<{ kind: string; name: string }>;
+    expect(files.filter((f) => f.kind === 'bieu-mau').map((f) => f.name)).toEqual(['2753-2026-tb-bdh-bieu-mau.zip']);
   });
 
   it('một tệp Word thì giữ nguyên, không nén', async () => {
-    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formUploads: [docx('mau-01.docx', 'A')] });
-    expect(m.upload.mock.calls[1][2][0].relativePath).toBe('mau-01.docx');
-  });
-
-  it('chưa có kho Biểu mẫu mà có biểu mẫu thì báo rõ và không tải gì lên', async () => {
-    await expect(
-      recordDocFromFile({ file: file(), fields: FIELDS, target: NO_FORM_TARGET, formUploads: [docx('a.docx', 'A'), docx('b.docx', 'B')] })
-    ).rejects.toThrow(/Chưa có kho Biểu mẫu/);
-    expect(m.upload).not.toHaveBeenCalled();
+    await recordDocFromFile({ file: pdf('tb.pdf'), fields: FIELDS, target, formUploads: [docx('mau-01.docx', 'A')] });
+    expect(drive.byName('mau-01.docx')).toHaveLength(1);
+    expect(drive.byName('2753-2026-tb-bdh-bieu-mau.zip')).toHaveLength(0);
   });
 });
 
-describe('recordDocFromFile kèm phụ lục của thư mục văn thư', () => {
-  const FOLDER = 'van-thu/van-ban/2026/2753-2026-tb-bdh';
+describe('findFormFiles trên kho Biểu mẫu ở Drive', () => {
+  it('tìm theo số hiệu, trả tệp kèm mã Drive; không lấy tệp của văn bản khác', async () => {
+    const d = drive.seedFolder('2753-2026-tb-bdh', bm.id);
+    const mau = drive.seedFile('mau-01.docx', d.id, 'x', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    const other = drive.seedFolder('9999-2026-tb', bm.id);
+    drive.seedFile('mau-khac.docx', other.id);
 
-  it('tệp chính một commit, phụ lục một commit chung cùng thư mục; văn bản gắn tệp chính trước rồi phụ lục theo thứ tự', async () => {
-    await recordDocFromFile({ file: file('tb.pdf'), fields: FIELDS, target: TARGET, appendices: [file('PL1.pdf'), file('PL2.pdf')] });
-
-    expect(m.upload).toHaveBeenCalledTimes(2);
-    const [, mainFolder, mainItems] = m.upload.mock.calls[0];
-    expect(mainFolder).toBe(FOLDER);
-    expect(mainItems.map((i: { relativePath: string }) => i.relativePath)).toEqual(['tb.pdf']);
-    const [tgt, folder, items] = m.upload.mock.calls[1];
-    expect(tgt).toEqual({ repoId: 'o/van-thu', token: 'hf_t' });
-    expect(folder).toBe(FOLDER);
-    expect(items.map((i: { relativePath: string }) => i.relativePath)).toEqual(['PL1.pdf', 'PL2.pdf']);
-
-    expect(m.save).toHaveBeenCalledWith(null, {
-      ...FIELDS,
-      files: [
-        { kind: 'goc', repoId: 'o/van-thu', path: `${FOLDER}/tb.pdf`, name: 'tb.pdf' },
-        { kind: 'goc', repoId: 'o/van-thu', path: `${FOLDER}/PL1.pdf`, name: 'PL1.pdf' },
-        { kind: 'goc', repoId: 'o/van-thu', path: `${FOLDER}/PL2.pdf`, name: 'PL2.pdf' },
-      ],
-    });
+    const found = await findFormFiles(target, FIELDS.docNumber);
+    expect(found.note).toBeNull();
+    expect(found.files).toEqual([{ kind: 'bieu-mau', repoId: bm.id, path: '2753-2026-tb-bdh/mau-01.docx', name: 'mau-01.docx', fileId: mau.id }]);
   });
 
-  it('phụ lục trùng tên với tệp đã có hoặc với nhau thì đổi tên, không ghi đè', async () => {
-    m.listTree.mockResolvedValue([{ type: 'file', name: 'PL1.pdf' }]);
-    await recordDocFromFile({ file: file('tb.pdf'), fields: FIELDS, target: TARGET, appendices: [file('PL1.pdf'), file('PL1.pdf')] });
-    const items = m.upload.mock.calls[1][2] as Array<{ relativePath: string }>;
-    expect(items.map((i) => i.relativePath)).toEqual(['PL1-2.pdf', 'PL1-3.pdf']);
+  it('không có biểu mẫu nào khớp thì trả rỗng, không phải lỗi', async () => {
+    drive.seedFile('khong-lien-quan.docx', bm.id);
+    expect(await findFormFiles(target, FIELDS.docNumber)).toEqual({ files: [], note: null });
   });
 
-  it('không có phụ lục thì chỉ một lần tải như cũ', async () => {
-    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, appendices: [] });
-    expect(m.upload).toHaveBeenCalledTimes(1);
-  });
-
-  it('phụ lục tải hỏng sau khi tệp chính đã lên: nói rõ tệp đã ở Kho, tên phụ lục lỗi, và không ghi văn bản', async () => {
-    m.upload
-      .mockResolvedValueOnce({ uploaded: ['x'], failed: [] })
-      .mockResolvedValueOnce({ uploaded: [], failed: [{ path: `${FOLDER}/PL2.pdf`, error: 'Tệp quá lớn so với giới hạn của kho lưu trữ.' }] });
-    await expect(
-      recordDocFromFile({ file: file('tb.pdf'), fields: FIELDS, target: TARGET, appendices: [file('PL1.pdf'), file('PL2.pdf')] })
-    ).rejects.toThrow(/Tệp gốc đã lên Kho \(.*tb\.pdf\) nhưng chưa tải được phụ lục: PL2\.pdf: Tệp quá lớn.*Chưa ghi văn bản/);
-    expect(m.save).not.toHaveBeenCalled();
-  });
-
-  it('ghi văn bản hỏng thì liệt kê cả tệp chính lẫn phụ lục đã lên Kho', async () => {
-    m.save.mockRejectedValue(new Error('lỗi CSDL'));
-    await expect(
-      recordDocFromFile({ file: file('tb.pdf'), fields: FIELDS, target: TARGET, appendices: [file('PL1.pdf')] })
-    ).rejects.toThrow(/tb\.pdf, .*PL1\.pdf\) nhưng chưa ghi được văn bản: lỗi CSDL/);
-  });
-
-  it('thiếu trường bắt buộc thì không tải gì lên, kể cả phụ lục', async () => {
-    await expect(recordDocFromFile({ file: file(), fields: { ...FIELDS, docNumber: '' }, target: TARGET, appendices: [file('PL1.pdf')] })).rejects.toThrow();
-    expect(m.upload).not.toHaveBeenCalled();
+  it('chưa có kho Biểu mẫu thì nói rõ', async () => {
+    const found = await findFormFiles({ ...target, formRepo: null }, FIELDS.docNumber);
+    expect(found.files).toEqual([]);
+    expect(found.note).toMatch(/Chưa có kho Biểu mẫu/);
   });
 });

@@ -6,7 +6,6 @@ import { deleteOfficialDoc, saveOfficialDoc } from '../../lib/api/officialDocApi
 import { downloadDocFile, downloadDocFilesZip } from '../../lib/officialDoc/docFileActions';
 import { docDownloadPlan } from '../../lib/officialDoc/docFiles';
 import { useOfficialDocs } from '../../hooks/useOfficialDocs';
-import { useHfToken } from '../../hooks/useHfToken';
 import { useAuth } from '../../context/AuthContext';
 import { canManageRepos } from '../../lib/storageRepos';
 import { OfficialDocFilters } from '../dispatch/OfficialDocFilters';
@@ -22,7 +21,6 @@ export function DispatchManagementView() {
   const { can, role } = useAuth();
   const docsState = useOfficialDocs();
   const { filter, updateFilter, resetFilters, counts } = docsState;
-  const { token, error: tokenError } = useHfToken();
 
   const [detailDoc, setDetailDoc] = useState<OfficialDoc | null>(null);
   const [form, setForm] = useState<FormState>(null);
@@ -35,7 +33,7 @@ export function DispatchManagementView() {
 
   const canEdit = can('dispatch.upload');
   const canDelete = can('storage.delete');
-  const error = actionError ?? docsState.error ?? tokenError;
+  const error = actionError ?? docsState.error;
 
   const navItems: Array<{ id: OfficialDocCategory | 'all'; label: string }> = [
     { id: 'all', label: 'Tất cả' },
@@ -54,8 +52,8 @@ export function DispatchManagementView() {
     setActionError(null);
     setDownloadingId(doc.id);
     try {
-      if (plan.kind === 'zip') await downloadDocFilesZip(plan.files, plan.zipName, token);
-      else await downloadDocFile(plan.file, token);
+      if (plan.kind === 'zip') await downloadDocFilesZip(plan.files, plan.zipName);
+      else await downloadDocFile(plan.file);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Không tải được tệp.');
     } finally {
@@ -195,13 +193,12 @@ export function DispatchManagementView() {
        )}
       </div>
 
-      <OfficialDocDetail doc={detailDoc} token={token} onClose={() => setDetailDoc(null)} />
+      <OfficialDocDetail doc={detailDoc} onClose={() => setDetailDoc(null)} />
 
       {form && (
         <OfficialDocForm
           doc={form.doc}
           defaultCategory={filter.category === 'all' ? 'van-ban' : filter.category}
-          token={token}
           onSubmit={handleSubmit}
           onClose={() => setForm(null)}
         />

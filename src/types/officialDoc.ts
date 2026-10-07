@@ -3,9 +3,8 @@ export type OfficialDocCategory = 'van-ban' | 'hop-dong' | 'cong-van' | 'khac';
 export type OfficialDocFileKind = 'goc' | 'bieu-mau';
 
 /**
- * Tệp của văn bản: tham chiếu tới tệp nằm trong Kho lưu trữ. Tệp Hugging Face tham chiếu theo đường dẫn;
- * tệp Google Drive có `fileId` và tham chiếu theo mã đó, nên đổi tên hay di chuyển tệp trong Kho không làm mất liên kết
- * (`path` chỉ để hiển thị).
+ * Tệp của văn bản: tham chiếu tới tệp trong Kho lưu trữ theo `fileId` (mã tệp Google Drive), nên đổi tên hay
+ * di chuyển tệp trong Kho không làm mất liên kết (`path` chỉ để hiển thị).
  */
 export interface OfficialDocFile {
   kind: OfficialDocFileKind;

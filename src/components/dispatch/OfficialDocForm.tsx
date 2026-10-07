@@ -7,13 +7,12 @@ import { STORAGE_KIND_LABELS } from '../../types/storageRepo';
 import { validateOfficialDoc } from '../../lib/officialDoc/validate';
 import { todayIso } from '../../lib/utils';
 import { DateInput } from '../DateInput';
-import { HfFilePickerModal, pickedKey } from './HfFilePickerModal';
+import { FilePickerModal, pickedKey } from './FilePickerModal';
 
 interface OfficialDocFormProps {
   /** Văn bản đang sửa; null khi tạo mới. */
   doc: OfficialDoc | null;
   defaultCategory: OfficialDocCategory;
-  token: string;
   /** Ném lỗi để form hiển thị; trả về bình thường thì form đóng. */
   onSubmit: (input: OfficialDocInput) => Promise<void>;
   onClose: () => void;
@@ -24,7 +23,7 @@ const control =
 const label = 'block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1';
 
 /** Form tạo/sửa văn bản. Mount mới mỗi lần mở để state luôn khởi tạo từ `doc`. */
-export function OfficialDocForm({ doc, defaultCategory, token, onSubmit, onClose }: OfficialDocFormProps) {
+export function OfficialDocForm({ doc, defaultCategory, onSubmit, onClose }: OfficialDocFormProps) {
   const [input, setInput] = useState<OfficialDocInput>(() => {
     if (doc) {
       const { id: _id, createdAt: _c, updatedAt: _u, ...rest } = doc;
@@ -173,10 +172,9 @@ export function OfficialDocForm({ doc, defaultCategory, token, onSubmit, onClose
       </form>
 
       {pickerKind && (
-        <HfFilePickerModal
+        <FilePickerModal
           fileKind={pickerKind}
           title={FILE_KIND_LABELS[pickerKind]}
-          token={token}
           pickedKeys={pickedKeys}
           onPick={(file) => patch({ files: addDocFile(input.files, { kind: pickerKind, ...file }) })}
           onClose={() => setPickerKind(null)}

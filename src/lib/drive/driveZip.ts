@@ -1,5 +1,5 @@
 import type { ZipEntry } from '../dispatch/folderZipPlan';
-import type { OpenZipEntry } from '../huggingface/hfFolderZip';
+import type { OpenZipEntry } from '../folderZip';
 import { openDriveDownload } from './driveClient';
 import { describeDriveError } from './driveErrors';
 import type { DriveContext } from './driveTypes';

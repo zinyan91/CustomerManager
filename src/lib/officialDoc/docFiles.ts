@@ -1,7 +1,6 @@
 import type { OfficialDoc, OfficialDocFile, OfficialDocFileKind } from '../../types/officialDoc';
 import type { StorageRepo, StorageRepoKind } from '../../types/storageRepo';
-import { HfApiError, fetchHfFileBlob, hfFileUrl } from '../huggingface/hfClient';
-import { guessMime } from '../dispatch/mergeArchive';
+import { guessMime } from '../mimeTypes';
 import { docFolderSlug } from './docPaths';
 
 export const FILE_KIND_LABELS: Record<OfficialDocFileKind, string> = {
@@ -64,33 +63,13 @@ export function selectableRepos(repos: StorageRepo[], kind: OfficialDocFileKind)
 }
 
 /**
- * Tải tệp thẳng từ Kho (không qua máy chủ ứng dụng). Tệp có `fileId` lấy từ Google Drive và không cần token Hugging Face;
- * tệp còn lại lấy từ Hugging Face. Ném lỗi tiếng Việt khi hỏng.
- * Blob được gắn kiểu theo đuôi tệp vì kho thường trả application/octet-stream, khiến PDF
+ * Tải tệp thẳng từ Kho Google Drive (không qua máy chủ ứng dụng). Ném lỗi tiếng Việt khi hỏng.
+ * Blob được gắn kiểu theo đuôi tệp vì Drive có thể trả application/octet-stream, khiến PDF
  * bị tải xuống thay vì hiện trong tab.
  */
-export async function fetchDocFileBlob(file: OfficialDocFile, token: string): Promise<Blob> {
-  if (file.fileId) {
-    // Nạp trễ: lớp Drive kéo theo máy khách Supabase
-    const [{ driveContext }, { fetchDriveDocBlob }] = await Promise.all([import('../drive/driveToken'), import('../drive/driveDocuments')]);
-    const blob = await fetchDriveDocBlob(driveContext, { fileId: file.fileId, fileName: file.name, nativeMimeType: file.nativeMimeType });
-    return new Blob([blob], { type: guessMime(file.name) });
-  }
-  if (!token) {
-    throw new Error('Chưa cấu hình kho lưu trữ. Liên hệ Master Admin để cấu hình token.');
-  }
-  try {
-    const blob = await fetchHfFileBlob(hfFileUrl(file.repoId, file.path), token);
-    return new Blob([blob], { type: guessMime(file.name) });
-  } catch (err) {
-    if (err instanceof HfApiError) {
-      if (err.status === 404) {
-        throw new Error(`Tệp "${file.name}" không còn trong Kho lưu trữ. Liên hệ admin để gắn lại tệp.`);
-      }
-      if (err.status === 401 || err.status === 403) {
-        throw new Error(`Token kho lưu trữ bị từ chối (${err.status}). Liên hệ Master Admin để cập nhật token.`);
-      }
-    }
-    throw err;
-  }
+export async function fetchDocFileBlob(file: OfficialDocFile): Promise<Blob> {
+  // Nạp trễ: lớp Drive kéo theo máy khách Supabase
+  const [{ driveContext }, { fetchDriveDocBlob }] = await Promise.all([import('../drive/driveToken'), import('../drive/driveDocuments')]);
+  const blob = await fetchDriveDocBlob(driveContext, { fileId: file.fileId, fileName: file.name, nativeMimeType: file.nativeMimeType });
+  return new Blob([blob], { type: guessMime(file.name) });
 }

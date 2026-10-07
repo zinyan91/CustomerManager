@@ -2,7 +2,6 @@ import type { OfficialDoc, OfficialDocFilter } from '../../types/officialDoc';
 import { OFFICIAL_CATEGORIES, categoryLabel } from '../officialDoc/categories';
 import { searchOfficialDocs, countByCategory, type CategoryCounts } from '../api/officialDocApi';
 import { fetchCustomersAPI } from '../api/customerApi';
-import { fetchHfAuth } from '../huggingface/hfConfigApi';
 import type { Customer } from '../../types';
 import { formatFinancialProfile, loadSavedFinancialProfile } from './financialContext';
 
@@ -12,10 +11,6 @@ export interface SystemContextData {
   docsByCategory: CategoryCounts;
   customers: Customer[];
   totalCustomers: number;
-  hfConfig: {
-    hasToken: boolean;
-    username?: string;
-  };
   /**
    * Báo cáo tài chính doanh nghiệp đã lưu trên trình duyệt này: chuỗi dữ liệu; null = đã hỏi nhưng chưa lưu bản nào;
    * undefined = câu hỏi không liên quan tài chính nên không nạp.
@@ -63,18 +58,17 @@ export function mentionsCustomers(question: string): boolean {
 
 /**
  * Thu thập dữ liệu nghiệp vụ thời gian thực của hệ thống CustomerManager cho AI.
- * Ba nguồn tải song song; nguồn nào lỗi thì bỏ qua riêng nguồn đó.
+ * Các nguồn tải song song; nguồn nào lỗi thì bỏ qua riêng nguồn đó.
  */
 export async function fetchSystemContextData(options: SystemContextOptions = {}): Promise<SystemContextData> {
   const { includeCustomers = true, includeFinancials = false } = options;
 
-  const [docsRes, customers, hasToken] = await Promise.all([
+  const [docsRes, customers] = await Promise.all([
     Promise.all([searchOfficialDocs(DEFAULT_DOC_FILTER, 1), countByCategory(DEFAULT_DOC_FILTER)]).catch((err) => {
       console.warn('Không thể nạp danh sách văn thư cho AI context:', err);
       return null;
     }),
     includeCustomers ? fetchCustomersAPI().catch(() => [] as Customer[]) : Promise.resolve([] as Customer[]),
-    fetchHfAuth().then((auth) => ({ hasToken: Boolean(auth?.token), username: auth?.username })).catch(() => ({ hasToken: false, username: undefined })),
   ]);
 
   const officialDocs: OfficialDoc[] = docsRes?.[0].docs ?? [];
@@ -86,7 +80,6 @@ export async function fetchSystemContextData(options: SystemContextOptions = {})
     docsByCategory,
     customers,
     totalCustomers: customers.length,
-    hfConfig: hasToken,
     financialProfile: includeFinancials ? readFinancialProfile() : undefined,
   };
 }
@@ -103,7 +96,7 @@ export function formatSystemContextPrompt(data: SystemContextData): string {
   const lines: string[] = [];
 
   lines.push('=== [DỮ LIỆU NỘI BỘ HỆ THỐNG CUSTOMERMANAGER] ===');
-  lines.push('(Lưu ý: Chỉ sử dụng dữ liệu của đúng phân hệ người dùng đang hỏi. Tuyệt đối không nhắc đến kho lưu trữ hoặc token nếu người dùng hỏi về văn thư).');
+  lines.push('(Lưu ý: Chỉ sử dụng dữ liệu của đúng phân hệ người dùng đang hỏi. Tuyệt đối không nhắc đến kho lưu trữ nếu người dùng hỏi về văn thư).');
   lines.push('');
 
   // 1. VĂN THƯ
@@ -130,13 +123,8 @@ export function formatSystemContextPrompt(data: SystemContextData): string {
   }
   lines.push('');
 
-  // 2. KHO LƯU TRỮ CÁ NHÂN
-  lines.push('## 2. PHÂN HỆ KHO LƯU TRỮ CÁ NHÂN:');
-  lines.push(`- Trạng thái kết nối Access Token: ${data.hfConfig.hasToken ? `Đã kết nối (User: ${data.hfConfig.username || 'System'})` : 'Chưa cấu hình Token'}`);
-  lines.push('');
-
-  // 3. KHÁCH HÀNG
-  lines.push(`## 3. PHÂN HỆ KHÁCH HÀNG (Tổng cộng: ${data.totalCustomers} khách hàng):`);
+  // 2. KHÁCH HÀNG
+  lines.push(`## 2. PHÂN HỆ KHÁCH HÀNG (Tổng cộng: ${data.totalCustomers} khách hàng):`);
   if (data.totalCustomers === 0) {
     lines.push('- Danh sách khách hàng hiện đang trống.');
   } else {
@@ -153,10 +141,10 @@ export function formatSystemContextPrompt(data: SystemContextData): string {
     }
   }
 
-  // 4. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP
+  // 3. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP
   if (data.financialProfile !== undefined) {
     lines.push('');
-    lines.push('## 4. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP (bản đã lưu trên trình duyệt của người đang hỏi):');
+    lines.push('## 3. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP (bản đã lưu trên trình duyệt của người đang hỏi):');
     lines.push(
       data.financialProfile ??
         '- Chưa có bản báo cáo tài chính nào được lưu trên trình duyệt này. Nếu cần phân tích số liệu, nhờ người dùng gửi tệp PDF, ảnh hoặc Excel của báo cáo, hoặc nhập và lưu bản nháp ở màn Báo cáo tài chính doanh nghiệp.'

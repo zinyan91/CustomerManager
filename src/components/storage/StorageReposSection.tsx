@@ -1,23 +1,18 @@
 import { useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, CloudUpload, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { useUserScope } from '../../context/UserScopeContext';
 import { createStorageRepo, removeStorageRepo, updateStorageRepo } from '../../lib/api/storageReposApi';
-import { buildRepoId, suggestPersonalRepoSlug } from '../../lib/storageRepos';
-import { STORAGE_KIND_LABELS, STORAGE_PROVIDER_LABELS, type StorageProviderId, type StorageRepo, type StorageRepoKind } from '../../types/storageRepo';
-import type { HfAuth } from '../../types/huggingface';
+import { STORAGE_KIND_LABELS, type StorageRepo, type StorageRepoKind } from '../../types/storageRepo';
 
 interface StorageReposSectionProps {
-  auth: HfAuth | null;
   repos: StorageRepo[];
   onChanged: () => void | Promise<void>;
-  /** Mở việc chuyển repo Hugging Face sang Drive; nơi gọi quyết định hiện tiến độ ở đâu. Không truyền thì không có nút chuyển. */
-  onMigrate?: (repo: StorageRepo) => void;
 }
 
 const FIELD =
   'w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-slate-500';
 
-export function StorageReposSection({ auth, repos, onChanged, onMigrate }: StorageReposSectionProps) {
+export function StorageReposSection({ repos, onChanged }: StorageReposSectionProps) {
   const { managedUsers } = useUserScope();
   const users = useMemo(() => managedUsers.filter((u) => u.role !== 'unassigned'), [managedUsers]);
   const userName = (id: string | null) => users.find((u) => u.userId === id)?.fullName ?? '';
@@ -34,33 +29,26 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
   const [nameInput, setNameInput] = useState<string | null>(null);
   const [repoInput, setRepoInput] = useState<string | null>(null);
   const [existing, setExisting] = useState(false);
-  // Kho mới mặc định nằm trên Google Drive; Hugging Face còn để đăng ký repo cũ
-  const [provider, setProvider] = useState<StorageProviderId>('drive');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
   const [editing, setEditing] = useState<StorageRepo | null>(null);
   const [editName, setEditName] = useState('');
   const [editRepoId, setEditRepoId] = useState('');
-  const [editFolder, setEditFolder] = useState('');
   const [editBusy, setEditBusy] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
   const picked = users.find((u) => u.userId === userId);
-  const isDriveForm = provider === 'drive';
-  // Drive tạo thư mục mới thì chưa có ID để nhập; chỉ đăng ký thư mục có sẵn mới cần ID
-  const needsRepoId = !isDriveForm || existing;
+  // Tạo thư mục mới thì chưa có ID để nhập; chỉ đăng ký thư mục có sẵn mới cần ID
   const suggestion = useMemo(() => {
-    const ns = auth?.username ?? '';
-    if (kind === 'shared') return { name: 'Kho chung', repoId: buildRepoId(ns, 'cm-kho-chung') };
-    if (kind === 'dispatch') return { name: 'Văn thư', repoId: buildRepoId(ns, 'van-thu-tin-dung') };
-    if (kind === 'form') return { name: 'Biểu mẫu', repoId: buildRepoId(ns, 'cm-bieu-mau') };
-    const full = picked?.fullName ?? '';
-    return { name: full ? `Kho của ${full}` : '', repoId: full ? buildRepoId(ns, suggestPersonalRepoSlug(full)) : '' };
-  }, [kind, picked, auth?.username]);
+    if (kind === 'shared') return 'Kho chung';
+    if (kind === 'dispatch') return 'Văn thư';
+    if (kind === 'form') return 'Biểu mẫu';
+    return picked?.fullName ? `Kho của ${picked.fullName}` : '';
+  }, [kind, picked]);
 
-  const name = nameInput ?? suggestion.name;
-  const repoId = repoInput ?? (isDriveForm ? '' : suggestion.repoId);
+  const name = nameInput ?? suggestion;
+  const repoId = repoInput ?? '';
 
   const resetForm = () => {
     setNameInput(null);
@@ -71,21 +59,18 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isDriveForm && !auth) return;
     setBusy(true);
     setError(null);
     setOkMsg(null);
     try {
       const created = await createStorageRepo({
         name,
-        repoId: needsRepoId ? repoId.trim() : '',
+        repoId: existing ? repoId.trim() : '',
         kind,
-        provider,
         assignedUserId: kind === 'personal' ? userId : null,
-        token: auth?.token ?? '',
         createRemote: !existing,
       });
-      setOkMsg(`Đã ${existing ? 'đăng ký' : 'tạo'} ${isDriveForm ? 'kho' : 'repo'} ${created.repoId}.`);
+      setOkMsg(`Đã ${existing ? 'đăng ký' : 'tạo'} kho ${created.repoId}.`);
       resetForm();
       await onChanged();
     } catch (err) {
@@ -99,20 +84,19 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
     setEditing(repo);
     setEditName(repo.name);
     setEditRepoId(repo.repoId);
-    setEditFolder(repo.folder);
     setEditError(null);
     setOkMsg(null);
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editing || (editing.provider === 'huggingface' && !auth)) return;
+    if (!editing) return;
     const idChanged = editRepoId.trim() !== editing.repoId;
-    if (idChanged && !window.confirm(`Đổi Repository ID từ ${editing.repoId} sang ${editRepoId.trim()}? Các văn bản đang trỏ tới repo cũ sẽ được cập nhật theo. ${editing.provider === 'drive' ? 'Thư mục trên Google Drive không bị đổi tên.' : 'Dataset trên Hugging Face không bị đổi tên.'}`)) return;
+    if (idChanged && !window.confirm(`Đổi Repository ID từ ${editing.repoId} sang ${editRepoId.trim()}? Các văn bản đang trỏ tới repo cũ sẽ được cập nhật theo. Thư mục trên Google Drive không bị đổi tên.`)) return;
     setEditBusy(true);
     setEditError(null);
     try {
-      const result = await updateStorageRepo(editing, { name: editName, repoId: editRepoId.trim(), folder: editFolder }, auth?.token ?? '');
+      const result = await updateStorageRepo(editing, { name: editName, repoId: editRepoId.trim() });
       setOkMsg(`Đã lưu "${editName.trim()}".${result.documents > 0 ? ` Đã cập nhật đường dẫn kho trong ${result.documents} văn bản.` : ''}`);
       setEditing(null);
       await onChanged();
@@ -124,7 +108,7 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
   };
 
   const handleRemove = async (repo: StorageRepo) => {
-    if (!window.confirm(`Gỡ "${repo.name}" khỏi danh sách? ${repo.provider === 'drive' ? 'Thư mục trên Google Drive' : 'Dataset trên Hugging Face'} vẫn được giữ nguyên.`)) return;
+    if (!window.confirm(`Gỡ "${repo.name}" khỏi danh sách? Thư mục trên Google Drive vẫn được giữ nguyên.`)) return;
     setError(null);
     setOkMsg(null);
     try {
@@ -150,7 +134,6 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
             <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
               <th className="py-2 px-3">Tên</th>
               <th className="py-2 px-3">Loại</th>
-              <th className="py-2 px-3">Nơi lưu</th>
               <th className="py-2 px-3">Repository ID</th>
               <th className="py-2 px-3">Gán cho</th>
               <th className="py-2 px-3 w-10" />
@@ -159,7 +142,7 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {repos.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-4 px-3 text-center text-slate-500">
+                <td colSpan={5} className="py-4 px-3 text-center text-slate-500">
                   Chưa có repo nào.
                 </td>
               </tr>
@@ -168,20 +151,9 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
               <tr key={r.id}>
                 <td className="py-2 px-3 font-medium text-slate-900 dark:text-slate-100">{r.name}</td>
                 <td className="py-2 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{STORAGE_KIND_LABELS[r.kind]}</td>
-                <td className="py-2 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{STORAGE_PROVIDER_LABELS[r.provider]}</td>
                 <td className="py-2 px-3 font-mono text-xs text-slate-600 dark:text-slate-400">{r.repoId}</td>
                 <td className="py-2 px-3 text-slate-600 dark:text-slate-400">{userName(r.assignedUserId) || '—'}</td>
                 <td className="py-2 px-3 whitespace-nowrap">
-                  {r.provider === 'huggingface' && onMigrate && (
-                    <button
-                      type="button"
-                      onClick={() => onMigrate(r)}
-                      aria-label={`Chuyển ${r.name} sang Google Drive`}
-                      className="p-1 rounded-md text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    >
-                      <CloudUpload className="w-4 h-4" />
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={() => startEdit(r)}
@@ -215,12 +187,8 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
               <input id="edit-repo-name" value={editName} onChange={(e) => setEditName(e.target.value)} className={FIELD} />
             </div>
             <div>
-              <label htmlFor="edit-repo-id" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">{editing.provider === 'drive' ? 'ID thư mục Google Drive' : 'Repository ID'}</label>
-              <input id="edit-repo-id" value={editRepoId} onChange={(e) => setEditRepoId(e.target.value)} className={`${FIELD} font-mono`} placeholder={editing.provider === 'drive' ? '1AbC...' : 'tai-khoan/ten-repo'} />
-            </div>
-            <div className="sm:col-span-2">
-              <label htmlFor="edit-repo-folder" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Thư mục gốc</label>
-              <input id="edit-repo-folder" value={editFolder} onChange={(e) => setEditFolder(e.target.value)} className={`${FIELD} font-mono`} placeholder="Để trống = toàn repo" />
+              <label htmlFor="edit-repo-id" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">ID thư mục Google Drive</label>
+              <input id="edit-repo-id" value={editRepoId} onChange={(e) => setEditRepoId(e.target.value)} className={`${FIELD} font-mono`} placeholder="1AbC..." />
             </div>
           </div>
           {editError && (
@@ -232,7 +200,7 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
           <div className="flex items-center gap-2">
             <button
               type="submit"
-              disabled={editBusy || (editing.provider === 'huggingface' && !auth) || !editName.trim() || !editRepoId.trim()}
+              disabled={editBusy || !editName.trim() || !editRepoId.trim()}
               className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white disabled:opacity-50 flex items-center gap-2"
             >
               {editBusy && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -252,26 +220,8 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
 
       <form onSubmit={handleCreate} className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
         <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Thêm repo</h4>
-        {!auth && !isDriveForm && <p className="text-xs text-amber-700 dark:text-amber-400">Lưu token ở phần trên trước khi tạo repo.</p>}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="repo-provider" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nơi lưu</label>
-            <select
-              id="repo-provider"
-              value={provider}
-              onChange={(e) => {
-                setProvider(e.target.value as StorageProviderId);
-                setRepoInput(null);
-              }}
-              className={FIELD}
-            >
-              {(['drive', 'huggingface'] as const).map((p) => (
-                <option key={p} value={p}>{STORAGE_PROVIDER_LABELS[p]}</option>
-              ))}
-            </select>
-          </div>
-
           <div>
             <label htmlFor="repo-kind" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Loại</label>
             <select
@@ -319,17 +269,17 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
             <input id="repo-name" value={name} onChange={(e) => setNameInput(e.target.value)} className={FIELD} />
           </div>
 
-          {needsRepoId && (
+          {existing && (
             <div>
-              <label htmlFor="repo-id" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">{isDriveForm ? 'ID thư mục Google Drive' : 'Repository ID'}</label>
-              <input id="repo-id" value={repoId} onChange={(e) => setRepoInput(e.target.value)} className={`${FIELD} font-mono`} placeholder={isDriveForm ? '1AbC...' : 'tai-khoan/ten-repo'} />
+              <label htmlFor="repo-id" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">ID thư mục Google Drive</label>
+              <input id="repo-id" value={repoId} onChange={(e) => setRepoInput(e.target.value)} className={`${FIELD} font-mono`} placeholder="1AbC..." />
             </div>
           )}
         </div>
 
         <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
           <input type="checkbox" checked={existing} onChange={(e) => setExisting(e.target.checked)} />
-          <span>{isDriveForm ? 'Thư mục đã có sẵn trong Shared Drive (chỉ đăng ký, không tạo mới)' : 'Repo đã có sẵn trên Hugging Face (chỉ đăng ký, không tạo mới)'}</span>
+          <span>Thư mục đã có sẵn trong Shared Drive (chỉ đăng ký, không tạo mới)</span>
         </label>
 
         {error && (
@@ -347,17 +297,11 @@ export function StorageReposSection({ auth, repos, onChanged, onMigrate }: Stora
 
         <button
           type="submit"
-          disabled={busy || (!isDriveForm && !auth) || !name.trim() || (needsRepoId && !repoId.trim()) || (kind === 'personal' && !userId)}
+          disabled={busy || !name.trim() || (existing && !repoId.trim()) || (kind === 'personal' && !userId)}
           className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white disabled:opacity-50 flex items-center gap-2"
         >
           {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-          <span>
-            {busy
-              ? 'Đang xử lý...'
-              : isDriveForm
-                ? existing ? 'Đăng ký thư mục' : 'Tạo thư mục trong Shared Drive'
-                : existing ? 'Đăng ký repo' : 'Tạo repo trên Hugging Face'}
-          </span>
+          <span>{busy ? 'Đang xử lý...' : existing ? 'Đăng ký thư mục' : 'Tạo thư mục trong Shared Drive'}</span>
         </button>
       </form>
     </div>

@@ -3,9 +3,7 @@ import {
   normalizeRelativePath,
   itemsFromFileList,
   itemsFromDataTransfer,
-  batchUploadItems,
   topLevelNames,
-  type UploadItem,
 } from '../uploadItems';
 
 const file = (name: string, size = 1, rel?: string): File => {
@@ -118,31 +116,6 @@ describe('itemsFromDataTransfer', () => {
   });
 });
 
-describe('batchUploadItems', () => {
-  const items = (sizes: number[]): UploadItem[] =>
-    sizes.map((s, i) => ({ file: file(`f${i}`, s), relativePath: `f${i}` }));
-
-  it('chia theo số tệp tối đa mỗi lô', () => {
-    const batches = batchUploadItems(items([1, 1, 1, 1, 1]), 2, 1000);
-    expect(batches.map((b) => b.length)).toEqual([2, 2, 1]);
-  });
-
-  it('chia theo tổng dung lượng', () => {
-    const batches = batchUploadItems(items([60, 60, 60]), 50, 100);
-    expect(batches.map((b) => b.length)).toEqual([1, 1, 1]);
-    expect(batchUploadItems(items([40, 40, 40]), 50, 100).map((b) => b.length)).toEqual([2, 1]);
-  });
-
-  it('tệp lớn hơn giới hạn vẫn nằm riêng một lô, không mất tệp nào', () => {
-    const batches = batchUploadItems(items([10, 500, 10]), 50, 100);
-    expect(batches.flat()).toHaveLength(3);
-    expect(batches.some((b) => b.length === 1 && b[0].file.size === 500)).toBe(true);
-  });
-
-  it('danh sách rỗng cho không lô nào', () => {
-    expect(batchUploadItems([])).toEqual([]);
-  });
-});
 
 describe('topLevelNames', () => {
   it('lấy đoạn đầu không trùng', () => {

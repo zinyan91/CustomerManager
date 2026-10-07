@@ -4,8 +4,24 @@ export interface UploadItem {
   relativePath: string;
 }
 
-export const MAX_FILES_PER_COMMIT = 50;
-export const MAX_BYTES_PER_COMMIT = 300 * 1024 * 1024;
+export interface UploadFailure {
+  path: string;
+  error: string;
+}
+
+export interface UploadProgress {
+  totalFiles: number;
+  uploadedFiles: number;
+  failedFiles: number;
+  batchIndex: number;
+  batchCount: number;
+}
+
+export interface UploadResult {
+  /** Đường dẫn đầy đủ trong kho của các tệp đã lên. */
+  uploaded: string[];
+  failed: UploadFailure[];
+}
 
 const IGNORED_NAMES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini']);
 
@@ -109,31 +125,6 @@ export async function itemsFromDataTransfer(dt: DataTransfer): Promise<UploadIte
     return itemsFromFileList(dt.files ?? []);
   }
   return out;
-}
-
-/** Chia thành từng commit theo số tệp và tổng dung lượng; một tệp lớn hơn giới hạn vẫn đứng riêng một lô. */
-export function batchUploadItems(
-  items: UploadItem[],
-  maxFiles: number = MAX_FILES_PER_COMMIT,
-  maxBytes: number = MAX_BYTES_PER_COMMIT
-): UploadItem[][] {
-  const batches: UploadItem[][] = [];
-  let current: UploadItem[] = [];
-  let bytes = 0;
-
-  for (const item of items) {
-    const size = item.file.size;
-    const full = current.length >= maxFiles || (current.length > 0 && bytes + size > maxBytes);
-    if (full) {
-      batches.push(current);
-      current = [];
-      bytes = 0;
-    }
-    current.push(item);
-    bytes += size;
-  }
-  if (current.length > 0) batches.push(current);
-  return batches;
 }
 
 /** Tên thư mục gốc (đoạn đầu) của các tệp, để báo "đã tải folder X". */

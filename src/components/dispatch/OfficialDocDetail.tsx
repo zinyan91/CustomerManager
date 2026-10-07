@@ -12,8 +12,6 @@ import { OfficialDocStatusBadge } from './OfficialDocStatusBadge';
 
 interface OfficialDocDetailProps {
   doc: OfficialDoc | null;
-  /** Token Hugging Face dùng chung; rỗng khi chưa cấu hình. */
-  token: string;
   onClose: () => void;
 }
 
@@ -30,7 +28,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function OfficialDocDetail({ doc, token, onClose }: OfficialDocDetailProps) {
+export function OfficialDocDetail({ doc, onClose }: OfficialDocDetailProps) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +40,7 @@ export function OfficialDocDetail({ doc, token, onClose }: OfficialDocDetailProp
     setBusyKey(`all/${kind}`);
     try {
       const name = kind === 'bieu-mau' ? bundleFileName(doc.docNumber) : `${docFolderSlug(doc.docNumber)}-van-ban-goc.zip`;
-      await downloadDocFilesZip(files, name, token);
+      await downloadDocFilesZip(files, name);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không tải được tệp.');
     } finally {
@@ -54,7 +52,7 @@ export function OfficialDocDetail({ doc, token, onClose }: OfficialDocDetailProp
     setError(null);
     setBusyKey(`${file.repoId}/${file.path}/${mode}`);
     try {
-      await (mode === 'view' ? viewDocFile(file, token) : downloadDocFile(file, token));
+      await (mode === 'view' ? viewDocFile(file) : downloadDocFile(file));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không mở được tệp.');
     } finally {

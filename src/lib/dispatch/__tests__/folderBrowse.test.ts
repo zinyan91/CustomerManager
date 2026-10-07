@@ -19,7 +19,7 @@ const doc = (filePath: string, size = 100): DispatchDocument => {
     fileUrl: '',
     filePath,
     folderPath: i === -1 ? '' : filePath.slice(0, i),
-    storageProvider: 'huggingface',
+    storageProvider: 'drive',
     createdAt: '',
     updatedAt: '',
   };

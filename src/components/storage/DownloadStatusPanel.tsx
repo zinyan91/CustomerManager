@@ -1,6 +1,6 @@
 import { AlertCircle, CheckCircle2, Loader2, X } from 'lucide-react';
 import type { ZipPhase } from '../../hooks/useFolderZipDownload';
-import type { ZipProgress } from '../../lib/huggingface/hfFolderZip';
+import type { ZipProgress } from '../../lib/folderZip';
 
 interface DownloadStatusPanelProps {
   phase: ZipPhase;

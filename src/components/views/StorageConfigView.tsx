@@ -1,12 +1,8 @@
-import { useState } from 'react';
 import { AlertCircle, Loader2, ShieldAlert } from 'lucide-react';
-import type { StorageRepo } from '../../types/storageRepo';
 import { useAuth } from '../../context/AuthContext';
 import { useStorageConfig } from '../../hooks/useStorageConfig';
 import { ConfigCard } from '../storage/ConfigCard';
 import { DriveConnectionSection } from '../storage/DriveConnectionSection';
-import { HfTokenSection } from '../storage/HfTokenSection';
-import { RepoMigrationPanel } from '../storage/RepoMigrationPanel';
 import { StorageReposSection } from '../storage/StorageReposSection';
 
 function Loading() {
@@ -19,8 +15,7 @@ function Loading() {
 }
 
 function StorageConfigBody() {
-  const { auth, repos, loading, error, reload } = useStorageConfig();
-  const [migrating, setMigrating] = useState<StorageRepo | null>(null);
+  const { repos, loading, error, reload } = useStorageConfig();
   const ready = !loading && !error;
 
   return (
@@ -38,20 +33,13 @@ function StorageConfigBody() {
         <div className="space-y-5 min-w-0">
           <ConfigCard title="Danh sách repo">
             {loading && <Loading />}
-            {ready && <StorageReposSection auth={auth} repos={repos} onChanged={reload} onMigrate={setMigrating} />}
+            {ready && <StorageReposSection repos={repos} onChanged={reload} />}
           </ConfigCard>
         </div>
 
         <div className="space-y-5 min-w-0">
-          {migrating && (
-            <RepoMigrationPanel key={migrating.id} repo={migrating} hfToken={auth?.token ?? ''} onDone={reload} onClose={() => setMigrating(null)} />
-          )}
           <ConfigCard title="Google Drive">
             <DriveConnectionSection />
-          </ConfigCard>
-          <ConfigCard title="Tài khoản Hugging Face">
-            {loading && <Loading />}
-            {ready && <HfTokenSection auth={auth} onSaved={reload} />}
           </ConfigCard>
         </div>
       </div>
@@ -59,7 +47,7 @@ function StorageConfigBody() {
   );
 }
 
-/** Cấu hình kho lưu trữ trong khu quản trị: danh sách repo và việc chuyển sang Drive, kết nối Google Drive, token Hugging Face. Chỉ Master Admin. */
+/** Cấu hình kho lưu trữ trong khu quản trị: danh sách repo và kết nối Google Drive. Chỉ Master Admin. */
 export function StorageConfigView() {
   const { can } = useAuth();
 

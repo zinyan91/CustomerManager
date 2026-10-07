@@ -7,7 +7,6 @@ import {
 } from '../systemContext';
 import { searchOfficialDocs, countByCategory } from '../../api/officialDocApi';
 import { fetchCustomersAPI } from '../../api/customerApi';
-import { fetchHfAuth } from '../../huggingface/hfConfigApi';
 
 vi.mock('../../api/officialDocApi', () => ({
   searchOfficialDocs: vi.fn(),
@@ -16,10 +15,6 @@ vi.mock('../../api/officialDocApi', () => ({
 
 vi.mock('../../api/customerApi', () => ({
   fetchCustomersAPI: vi.fn(),
-}));
-
-vi.mock('../../huggingface/hfConfigApi', () => ({
-  fetchHfAuth: vi.fn(),
 }));
 
 describe('AI System Context Grounding', () => {
@@ -66,17 +61,10 @@ describe('AI System Context Grounding', () => {
       },
     ]);
 
-    vi.mocked(fetchHfAuth).mockResolvedValue({
-      token: 'hf_test_token',
-      username: 'bank-admin',
-    });
-
     const data = await fetchSystemContextData();
     expect(data.totalOfficialDocs).toBe(2);
     expect(data.docsByCategory['van-ban']).toBe(1);
     expect(data.totalCustomers).toBe(1);
-    expect(data.hfConfig.hasToken).toBe(true);
-    expect(data.hfConfig.username).toBe('bank-admin');
   });
 
   it('định dạng prompt System Context đầy đủ thông tin cho Gemini AI', () => {
@@ -199,11 +187,11 @@ describe('Báo cáo tài chính trong ngữ cảnh AI', () => {
     expect(formatSystemContextPrompt(base)).not.toContain('BÁO CÁO TÀI CHÍNH DOANH NGHIỆP');
   });
 
-  it('có bản đã lưu: nạp đúng nội dung vào mục 4', () => {
+  it('có bản đã lưu: nạp đúng nội dung vào mục 3', () => {
     const prompt = formatSystemContextPrompt({ ...base, financialProfile: ['Doanh nghiệp: Công ty A', '270 | TỔNG CỘNG TÀI SẢN | 100 | 90'].join(String.fromCharCode(10)) });
-    expect(prompt).toContain('## 4. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP');
+    expect(prompt).toContain('## 3. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP');
     expect(prompt).toContain('Doanh nghiệp: Công ty A');
-    expect(prompt.indexOf('## 4.')).toBeLessThan(prompt.indexOf('HẾT DỮ LIỆU HỆ THỐNG'));
+    expect(prompt.indexOf('## 3.')).toBeLessThan(prompt.indexOf('HẾT DỮ LIỆU HỆ THỐNG'));
   });
 
   it('hỏi tài chính nhưng chưa lưu bản nào: nói rõ chưa có, hướng dẫn gửi tệp, không bịa số', () => {

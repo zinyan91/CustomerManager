@@ -4,9 +4,9 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import type { OfficialDoc } from '../../types/officialDoc';
 
-vi.mock('../dispatch/HfFilePickerModal', () => ({
+vi.mock('../dispatch/FilePickerModal', () => ({
   pickedKey: (r: string, p: string) => `${r}/${p}`,
-  HfFilePickerModal: (p: {
+  FilePickerModal: (p: {
     fileKind: string;
     title: string;
     pickedKeys: Set<string>;
@@ -43,7 +43,7 @@ const existing: OfficialDoc = {
 
 const setup = (doc: OfficialDoc | null = null, onSubmit = vi.fn().mockResolvedValue(undefined)) => {
   const onClose = vi.fn();
-  render(<OfficialDocForm doc={doc} defaultCategory="hop-dong" token="t" onSubmit={onSubmit} onClose={onClose} />);
+  render(<OfficialDocForm doc={doc} defaultCategory="hop-dong" onSubmit={onSubmit} onClose={onClose} />);
   return { onSubmit, onClose };
 };
 
@@ -163,7 +163,7 @@ describe('OfficialDocForm - định dạng ngày theo cài đặt của web', ()
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(
       <DateFormatProvider>
-        <OfficialDocForm doc={{ ...existing, issuedDate: '2026-09-28', effectiveFrom: '2026-09-28', effectiveTo: null }} defaultCategory="van-ban" token="t" onSubmit={onSubmit} onClose={vi.fn()} />
+        <OfficialDocForm doc={{ ...existing, issuedDate: '2026-09-28', effectiveFrom: '2026-09-28', effectiveTo: null }} defaultCategory="van-ban" onSubmit={onSubmit} onClose={vi.fn()} />
       </DateFormatProvider>
     );
     expect(value('Ngày ban hành')).toBe(shown);

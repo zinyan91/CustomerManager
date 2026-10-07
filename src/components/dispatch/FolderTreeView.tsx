@@ -8,7 +8,7 @@ import {
   FolderPlus,
   Files,
 } from 'lucide-react';
-import type { FolderTreeNode } from '../../types/huggingface';
+import type { FolderTreeNode } from '../../lib/folderTree';
 
 interface FolderTreeViewProps {
   rootNode: FolderTreeNode;

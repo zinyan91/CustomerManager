@@ -22,7 +22,6 @@ vi.mock('../../context/UserScopeContext', () => ({ useUserScope: () => ({ manage
 vi.mock('../../hooks/useArchive', () => ({ useArchive: () => h.archive }));
 vi.mock('../ai/AiChatDialog', () => ({ AiChatDialog: () => null }));
 vi.mock('../dispatch/DispatchPreviewModal', () => ({ DispatchPreviewModal: () => null }));
-vi.mock('@huggingface/hub', () => ({ commit: vi.fn(), createRepo: vi.fn() }));
 
 import { StorageManagementView } from '../views/StorageManagementView';
 
@@ -45,7 +44,7 @@ async function mount(write = true, seed?: (d: Fake, rootId: string) => void) {
   seed?.(drive, root.id);
 
   const entries = buildRepoEntries(await listDriveFiles(drive.ctx), root.id);
-  const repo: StorageRepo = { id: 7, name: 'Kho chung', repoId: root.id, provider: 'drive', folder: '', kind: 'shared', assignedUserId: null, createdAt: '' };
+  const repo: StorageRepo = { id: 7, name: 'Kho chung', repoId: root.id, kind: 'shared', assignedUserId: null, createdAt: '' };
   reload = vi.fn().mockResolvedValue(undefined);
   h.archive = {
     auth: null, allRepos: [repo], repos: [repo], selectedRepo: repo, isDrive: true, driveRoot: root.id, driveEntries: entries, driveWrite: write,

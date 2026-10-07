@@ -1,19 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { DispatchDocument } from '../../../types/dispatch';
 
-const hfMock = vi.hoisted(() => ({ fetchHfFileBlob: vi.fn() }));
 const driveMock = vi.hoisted(() => ({ fetchDriveDocBlob: vi.fn() }));
 vi.mock('../../drive/driveToken', () => ({ driveContext: { marker: 'ctx' } }));
 vi.mock('../../drive/driveDocuments', () => ({ fetchDriveDocBlob: driveMock.fetchDriveDocBlob }));
 
-vi.mock('../../huggingface/hfClient', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../huggingface/hfClient')>()),
-  fetchHfFileBlob: hfMock.fetchHfFileBlob,
-}));
 
 import { joinArchivePath, resolveFileDownloadUrl } from '../dispatchStorage';
-
-const CFG = { token: 'hf_t', repoId: 'own/repo', folder: 'van-thu' };
 
 const doc = (over: Partial<DispatchDocument> = {}): DispatchDocument => ({
   id: '5',
@@ -27,18 +20,18 @@ const doc = (over: Partial<DispatchDocument> = {}): DispatchDocument => ({
   fileName: 'f.pdf',
   fileSize: 10,
   fileType: 'application/pdf',
-  fileUrl: 'https://huggingface.co/datasets/own/repo/resolve/main/van-thu/f.pdf',
+  fileUrl: '',
   filePath: 'van-thu/f.pdf',
   folderPath: 'van-thu',
   repoId: 'own/repo',
-  storageProvider: 'huggingface',
+  storageProvider: 'drive',
+  fileId: 'ID1',
   createdAt: '',
   updatedAt: '',
   ...over,
 });
 
 beforeEach(() => {
-  hfMock.fetchHfFileBlob.mockReset();
   driveMock.fetchDriveDocBlob.mockReset();
 });
 
@@ -50,35 +43,18 @@ describe('joinArchivePath', () => {
 });
 
 describe('resolveFileDownloadUrl', () => {
-  it('tệp HF tải bằng token rồi tạo object URL', async () => {
-    hfMock.fetchHfFileBlob.mockResolvedValue(new Blob(['x']));
-    const original = URL.createObjectURL;
-    URL.createObjectURL = vi.fn().mockReturnValue('blob:abc');
-    try {
-      expect(await resolveFileDownloadUrl(doc(), CFG)).toBe('blob:abc');
-      expect(hfMock.fetchHfFileBlob).toHaveBeenCalledWith(expect.stringContaining('resolve/main'), 'hf_t');
-    } finally {
-      URL.createObjectURL = original;
-    }
-  });
-
-  it('thiếu cấu hình HF thì báo lỗi thay vì trả URL không dùng được', async () => {
-    await expect(resolveFileDownloadUrl(doc(), null)).rejects.toThrow(/Chưa cấu hình/);
-  });
-
   it('nguồn khác trả thẳng fileUrl', async () => {
-    expect(await resolveFileDownloadUrl(doc({ storageProvider: 'r2', fileUrl: 'https://r2/x' }), null)).toBe('https://r2/x');
+    expect(await resolveFileDownloadUrl(doc({ storageProvider: 'r2', fileUrl: 'https://r2/x' }))).toBe('https://r2/x');
   });
 
-  it('tệp Google Drive tải bằng mã tệp, không cần cấu hình Hugging Face', async () => {
+  it('tệp Google Drive tải bằng mã tệp rồi tạo object URL', async () => {
     driveMock.fetchDriveDocBlob.mockResolvedValue(new Blob(['x']));
     const original = URL.createObjectURL;
     URL.createObjectURL = vi.fn().mockReturnValue('blob:drive');
     try {
-      const d = doc({ storageProvider: 'drive', fileId: 'ID1', fileUrl: '' });
-      expect(await resolveFileDownloadUrl(d, null)).toBe('blob:drive');
+      const d = doc();
+      expect(await resolveFileDownloadUrl(d)).toBe('blob:drive');
       expect(driveMock.fetchDriveDocBlob).toHaveBeenCalledWith({ marker: 'ctx' }, d);
-      expect(hfMock.fetchHfFileBlob).not.toHaveBeenCalled();
     } finally {
       URL.createObjectURL = original;
     }
@@ -86,6 +62,6 @@ describe('resolveFileDownloadUrl', () => {
 
   it('lỗi tải từ Drive được ném nguyên thông điệp tiếng Việt', async () => {
     driveMock.fetchDriveDocBlob.mockRejectedValue(new Error('Tải "f.pdf" không được: không tìm thấy tệp'));
-    await expect(resolveFileDownloadUrl(doc({ storageProvider: 'drive', fileId: 'ID1' }), null)).rejects.toThrow(/không tìm thấy tệp/);
+    await expect(resolveFileDownloadUrl(doc())).rejects.toThrow(/không tìm thấy tệp/);
   });
 });

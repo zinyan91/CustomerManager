@@ -27,10 +27,9 @@ vi.mock('../../context/AuthContext', () => ({
   }),
 }));
 vi.mock('../../hooks/useOfficialDocs', () => ({ useOfficialDocs: () => state.hook }));
-vi.mock('../../hooks/useHfToken', () => ({ useHfToken: () => ({ token: 'hf_t', error: null }) }));
 vi.mock('../ai/AiChatDialog', () => ({ AiChatDialog: ({ isOpen }: { isOpen: boolean }) => (isOpen ? <div>AI CHAT</div> : null) }));
-vi.mock('../dispatch/HfFilePickerModal', () => ({
-  HfFilePickerModal: () => <div>PICKER</div>,
+vi.mock('../dispatch/FilePickerModal', () => ({
+  FilePickerModal: () => <div>PICKER</div>,
   pickedKey: (r: string, p: string) => `${r}/${p}`,
 }));
 vi.mock('../../lib/api/officialDocApi', () => ({
@@ -267,7 +266,7 @@ describe('Văn thư - xem chi tiết và mở tệp', () => {
     expect(within(word).getByRole('button', { name: 'Tải về' })).toBeTruthy();
   });
 
-  it('Xem tải tệp từ Kho bằng token rồi mở trong tab mới', async () => {
+  it('Xem tải tệp từ Kho rồi mở trong tab mới', async () => {
     const tab = { location: { href: '' }, close: vi.fn() };
     vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
     const original = URL.createObjectURL;
@@ -277,7 +276,7 @@ describe('Văn thư - xem chi tiết và mở tệp', () => {
       const dlg = openDetail();
       fireEvent.click(within(within(dlg).getByText('2753.pdf').closest('li') as HTMLElement).getByRole('button', { name: 'Xem' }));
       await waitFor(() => expect(tab.location.href).toBe('blob:pdf'));
-      expect(state.fetchBlob).toHaveBeenCalledWith(expect.objectContaining({ path: 'vb/2753.pdf', repoId: 'o/kho' }), 'hf_t');
+      expect(state.fetchBlob).toHaveBeenCalledWith(expect.objectContaining({ path: 'vb/2753.pdf', repoId: 'o/kho' }));
     } finally {
       URL.createObjectURL = original;
     }
@@ -325,7 +324,7 @@ describe('Văn thư - nút Tải về ở cột Thao tác', () => {
     expect(within(row).getByRole('button', { name: 'Tải về văn bản 2753/2026/TB-BĐH' })).toBeTruthy();
   });
 
-  it('bấm Tải về lấy tệp gốc từ Kho bằng token chung rồi tải xuống', async () => {
+  it('bấm Tải về lấy tệp gốc từ Kho rồi tải xuống', async () => {
     const restore = stubUrl();
     state.fetchBlob.mockResolvedValue(new Blob(['x']));
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
@@ -333,7 +332,7 @@ describe('Văn thư - nút Tải về ở cột Thao tác', () => {
       render(<DispatchManagementView />);
       fireEvent.click(screen.getByRole('button', { name: 'Tải về văn bản 2753/2026/TB-BĐH' }));
       await waitFor(() => expect(click).toHaveBeenCalled());
-      expect(state.fetchBlob).toHaveBeenCalledWith(expect.objectContaining({ kind: 'goc', path: 'vb/2753.pdf' }), 'hf_t');
+      expect(state.fetchBlob).toHaveBeenCalledWith(expect.objectContaining({ kind: 'goc', path: 'vb/2753.pdf' }));
     } finally {
       click.mockRestore();
       restore();

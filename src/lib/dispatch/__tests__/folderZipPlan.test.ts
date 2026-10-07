@@ -25,7 +25,7 @@ const doc = (filePath: string, fileSize = 100, updatedAt = '2026-10-01T00:00:00Z
   fileUrl: '',
   filePath,
   folderPath: filePath.split('/').slice(0, -1).join('/'),
-  storageProvider: 'huggingface',
+  storageProvider: 'drive',
   createdAt: '',
   updatedAt,
 });

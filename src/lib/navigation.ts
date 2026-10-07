@@ -52,7 +52,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'mortgage-contracts', labelKey: 'nav.mortgageContracts', groupKey: 'nav.groupRecords', icon: FileSignature, path: ROUTE_OF['mortgage-contracts'], keywords: ['hop dong the chap', 'hdtc', 'the chap', 'mortgage'] },
       { id: 'credit-cards', labelKey: 'nav.creditCards', groupKey: 'nav.groupRecords', icon: CreditCard, path: ROUTE_OF['credit-cards'], keywords: ['the tin dung', 'card', 'han muc'] },
       { id: 'dispatches', labelKey: 'nav.dispatches', groupKey: 'nav.groupRecords', icon: FolderArchive, path: ROUTE_OF.dispatches, keywords: ['van thu', 'tai lieu', 'ho so', 'dispatch', 'cong van'] },
-      { id: 'storage', labelKey: 'nav.storage', groupKey: 'nav.groupRecords', icon: Database, path: ROUTE_OF.storage, keywords: ['kho luu tru', 'file ca nhan', 'huggingface', 'dataset', 'drive'] },
+      { id: 'storage', labelKey: 'nav.storage', groupKey: 'nav.groupRecords', icon: Database, path: ROUTE_OF.storage, keywords: ['kho luu tru', 'file ca nhan', 'drive'] },
     ],
   },
   {

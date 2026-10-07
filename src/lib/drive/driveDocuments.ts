@@ -1,12 +1,12 @@
 import type { DispatchDocument } from '../../types/dispatch';
-import { guessMime } from '../dispatch/mergeArchive';
+import { guessMime } from '../mimeTypes';
 import { downloadDriveBlob } from './driveClient';
 import { describeDriveError } from './driveErrors';
 import type { DriveContext, DriveEntry } from './driveTypes';
 
 const folderOf = (path: string) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
 
-/** Tên tệp bỏ đuôi, dùng làm "số hiệu" tạm của tệp trong Kho (cùng cách với tệp Hugging Face chưa có metadata). */
+/** Tên tệp bỏ đuôi, dùng làm "số hiệu" tạm của tệp trong Kho . */
 const stem = (name: string) => name.replace(/\.[^/.]+$/, '');
 
 /** Tệp (không phải thư mục) của một kho Drive thành tài liệu hiển thị trong Kho lưu trữ. */
@@ -55,10 +55,4 @@ export async function fetchDriveDocBlob(ctx: DriveContext, doc: Pick<DispatchDoc
   } catch (err) {
     throw new Error(describeDriveError(err, `Tải "${doc.fileName}"`));
   }
-}
-
-/** Hàm lấy tệp nguồn Drive cho kế hoạch dán (sao chép sang kho Hugging Face). */
-export function driveBlobFetcher(ctx: DriveContext): (file: { sourcePath: string; fileId?: string; nativeMimeType?: string }) => Promise<Blob> {
-  return (file) =>
-    fetchDriveDocBlob(ctx, { fileId: file.fileId, fileName: file.sourcePath.split('/').pop() ?? file.sourcePath, nativeMimeType: file.nativeMimeType });
 }

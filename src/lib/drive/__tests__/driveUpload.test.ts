@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { listDriveFiles } from '../driveClient';
 import { planDriveUploads, uploadItemsToDrive } from '../driveUpload';
 import { buildRepoEntries } from '../driveTree';
-import type { UploadItem } from '../../uploadItems';
-import type { UploadProgress } from '../../huggingface/hfWrite';
+import type { UploadItem, UploadProgress } from '../../uploadItems';
 import { createFakeDrive } from './fakeDrive';
 
 const item = (relativePath: string, text = 'noi dung'): UploadItem => ({ file: new File([text], relativePath.split('/').pop()!, { type: 'application/pdf' }), relativePath });

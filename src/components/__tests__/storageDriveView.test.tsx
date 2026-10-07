@@ -29,14 +29,12 @@ vi.mock('../../hooks/useArchive', () => ({ useArchive: () => state.archive }));
 vi.mock('../ai/AiChatDialog', () => ({ AiChatDialog: () => null }));
 vi.mock('../dispatch/DispatchPreviewModal', () => ({ DispatchPreviewModal: () => null }));
 
-const commit = vi.hoisted(() => vi.fn());
-vi.mock('@huggingface/hub', () => ({ commit, createRepo: vi.fn() }));
 
 import { StorageManagementView } from '../views/StorageManagementView';
 
 const ROOT = '1AbCdEfGhIjKlMnOpQrStUvWxYz012345';
 const repo = (over: Partial<StorageRepo>): StorageRepo => ({
-  id: 1, name: 'Kho chung', repoId: 'own/chung', provider: 'huggingface', folder: '', kind: 'shared', assignedUserId: null, createdAt: '', ...over,
+  id: 1, name: 'Kho chung', repoId: 'own/chung', kind: 'shared', assignedUserId: null, createdAt: '', ...over,
 });
 const mk = (filePath: string, fileSize: number, extra: { fileId?: string; storageProvider?: string; repoId?: string } = {}) => {
   const i = filePath.lastIndexOf('/');
@@ -49,14 +47,14 @@ const mk = (filePath: string, fileSize: number, extra: { fileId?: string; storag
 const makeArchive = (over: Record<string, unknown> = {}) => {
   const shared = repo({});
   return {
-    auth: { token: 'hf_t', username: 'own' }, allRepos: [shared], repos: [shared], selectedRepo: shared, isDrive: false, selectRepo: vi.fn(),
-    config: { token: 'hf_t', repoId: 'own/chung', folder: '', isPrivate: true },
+    allRepos: [shared], repos: [shared], selectedRepo: shared, selectRepo: vi.fn(),
+    driveRoot: null, driveEntries: [], driveWrite: false,
     documents: [], folders: [], status: { kind: 'ready' }, reload: vi.fn().mockResolvedValue(undefined), reloadRepos: vi.fn(), setDocuments: vi.fn(),
     ...over,
   };
 };
 
-const driveRepo = repo({ id: 7, repoId: ROOT, provider: 'drive' });
+const driveRepo = repo({ id: 7, repoId: ROOT });
 const DOCS = [
   mk('goc.pdf', 5, { storageProvider: 'drive', fileId: 'ID-GOC', repoId: ROOT }),
   mk('VB/a.pdf', 30, { storageProvider: 'drive', fileId: 'ID-A', repoId: ROOT }),
@@ -64,12 +62,11 @@ const DOCS = [
 ];
 
 const fetchMock = vi.fn();
-const hang = (ten: string) => within(screen.getByRole('table')).getByText(ten).closest('tr') as HTMLElement;
 const toolbar = () => screen.getByRole('toolbar', { name: 'Thao tác với mục đã chọn' });
 const idOf = (call: unknown[]) => decodeURIComponent(new URL(String(call[0])).pathname.split('/files/')[1]);
 
 function useDrive() {
-  state.archive = makeArchive({ repos: [driveRepo], allRepos: [driveRepo], selectedRepo: driveRepo, isDrive: true, driveRoot: ROOT, driveEntries: [], driveWrite: false, config: null, documents: DOCS, folders: ['VB'] });
+  state.archive = makeArchive({ repos: [driveRepo], allRepos: [driveRepo], selectedRepo: driveRepo, driveRoot: ROOT, driveEntries: [], driveWrite: false, documents: DOCS, folders: ['VB'] });
 }
 function driveBytes() {
   driveFetch.mockImplementation(async (url: RequestInfo | URL) => {
@@ -99,8 +96,6 @@ function sink() {
 
 beforeEach(() => {
   state.role = 'master_admin';
-  commit.mockReset();
-  commit.mockResolvedValue({});
   driveFetch.mockReset();
   fetchMock.mockReset();
   vi.stubGlobal('fetch', fetchMock);
@@ -143,23 +138,6 @@ describe('Kho lưu trữ - kho Google Drive', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tải thư mục VB (ZIP)' }));
     expect((await screen.findByRole('alert')).textContent).toMatch(/Tải "VB\/a\.pdf" không được: không tìm thấy/);
     expect(out.events).toEqual(['abort']);
-  });
-
-  it('sao chép từ kho Drive rồi dán sang kho Hugging Face: tải bằng mã tệp Drive, tải lên đúng đường dẫn', async () => {
-    driveBytes();
-    const view = render(<StorageManagementView />);
-    fireEvent.contextMenu(hang('goc.pdf'));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Sao chép' }));
-
-    const hf = repo({ id: 1 });
-    state.archive = makeArchive({ repos: [hf], allRepos: [hf], selectedRepo: hf, documents: [] });
-    view.rerender(<StorageManagementView />);
-    fireEvent.click(within(toolbar()).getByRole('button', { name: 'Dán vào thư mục này' }));
-
-    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
-    expect(commit.mock.calls[0][0].operations.map((o: { path: string }) => o.path)).toEqual(['goc.pdf']);
-    expect(driveFetch.mock.calls.map(idOf)).toEqual(['ID-GOC']);
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('chọn nhiều mục rồi Tải về: nén một ZIP, mọi tệp lấy bằng mã tệp Drive', async () => {

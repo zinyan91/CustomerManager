@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { listDriveFiles } from '../driveClient';
 import {
   MAX_MIGRATE_FILE_BYTES, MigrationError, copyToDrive, inspectDestination, migrateRepoFilesToDrive, planMigration, verifyCopy,
-  type MigrationFile, type SourceItem,
+  type FileEvent, type MigrationFile, type SourceControl, type SourceItem,
 } from '../driveMigration';
 import { buildRepoEntries } from '../driveTree';
 import { createFakeDrive } from './fakeDrive';
@@ -13,7 +13,7 @@ const text = (s: string) => new Blob([s]);
 
 /** Nguồn Hugging Face giả: đường dẫn → nội dung. */
 function source(contents: Record<string, string>) {
-  const fetchSource = vi.fn(async (f: MigrationFile) => {
+  const fetchSource = vi.fn(async (f: MigrationFile, _control?: SourceControl) => {
     if (!(f.from in contents)) throw new Error(`Không có ${f.from}`);
     return text(contents[f.from]);
   });
@@ -182,6 +182,84 @@ describe('migrateRepoFilesToDrive', () => {
     const { fetchSource, tree } = source({ 'a.pdf': 'A' });
     const err = (await migrateRepoFilesToDrive({ ctx: drive.ctx, repoName: 'K', plan: planMigration(tree, ''), fetchSource }).catch((e) => e)) as MigrationError;
     expect(err.details[0]).toMatch(/Shared Drive đã hết dung lượng/);
+  });
+});
+
+describe('migrateRepoFilesToDrive: sự kiện theo từng tệp và loại lỗi', () => {
+  const events = (list: FileEvent[], rel: string) => list.filter((e) => e.rel === rel);
+
+  it('mỗi tệp đi qua đang tải xuống, đang tải lên rồi xong, kèm số byte đã nhận ở từng bước', async () => {
+    const drive = createFakeDrive();
+    const { tree } = source({ 'a.pdf': 'ABCDEFGH' });
+    const seen: FileEvent[] = [];
+    const fetchSource = vi.fn(async (_f: MigrationFile, c: SourceControl) => {
+      c.onBytes(3);
+      c.onBytes(8);
+      return text('ABCDEFGH');
+    });
+    await migrateRepoFilesToDrive({ ctx: drive.ctx, repoName: 'K', plan: planMigration(tree, ''), fetchSource, onFile: (e) => seen.push({ ...e }) });
+
+    const mine = events(seen, 'a.pdf');
+    expect(mine.map((e) => e.state).filter(Boolean)).toEqual(['downloading', 'uploading', 'done']);
+    expect(mine.filter((e) => e.state === undefined).map((e) => e.downloaded)).toContain(3);
+    expect(mine[mine.length - 1]).toMatchObject({ state: 'done', downloaded: 8, uploaded: 8 });
+    expect(mine.find((e) => e.state === 'uploading')).toMatchObject({ downloaded: 8, uploaded: 0 });
+  });
+
+  it('tệp đã có sẵn đủ dung lượng báo là bỏ qua và không tải gì', async () => {
+    const drive = createFakeDrive();
+    const dest = drive.seedFolder('K');
+    drive.seedFile('a.pdf', dest.id, 'ABC');
+    const { fetchSource, tree } = source({ 'a.pdf': 'ABC' });
+    const seen: FileEvent[] = [];
+    await migrateRepoFilesToDrive({ ctx: drive.ctx, repoName: 'K', plan: planMigration(tree, ''), fetchSource, onFile: (e) => seen.push(e) });
+    expect(events(seen, 'a.pdf')).toEqual([{ rel: 'a.pdf', state: 'skipped', downloaded: 3, uploaded: 3 }]);
+    expect(fetchSource).not.toHaveBeenCalled();
+  });
+
+  it('tệp lỗi báo trạng thái lỗi kèm lý do; các tệp khác vẫn xong', async () => {
+    const drive = createFakeDrive();
+    const { fetchSource, tree } = source({ 'a.pdf': 'A', 'b.pdf': 'B' });
+    const seen: FileEvent[] = [];
+    const flaky = vi.fn(async (f: MigrationFile, c: SourceControl) => {
+      if (f.rel === 'b.pdf') throw new Error('Không thể tải tệp từ kho lưu trữ (500)');
+      return fetchSource(f, c);
+    });
+    await migrateRepoFilesToDrive({ ctx: drive.ctx, repoName: 'K', plan: planMigration(tree, ''), fetchSource: flaky, onFile: (e) => seen.push(e) }).catch(() => {});
+    expect(events(seen, 'b.pdf').at(-1)).toEqual({ rel: 'b.pdf', state: 'failed', error: expect.stringContaining('Không thể tải tệp từ kho lưu trữ (500)') });
+    expect(events(seen, 'a.pdf').at(-1)).toMatchObject({ state: 'done' });
+  });
+
+  it('dừng giữa lúc đang tải: tệp đó trở về chờ (không phải lỗi) và lỗi mang loại cancelled', async () => {
+    const drive = createFakeDrive();
+    const controller = new AbortController();
+    const seen: FileEvent[] = [];
+    const hanging = vi.fn(async (_f: MigrationFile, c: SourceControl) => {
+      c.onBytes(1);
+      controller.abort();
+      throw new DOMException('Đã hủy', 'AbortError');
+    });
+    const err = (await migrateRepoFilesToDrive({
+      ctx: drive.ctx, repoName: 'K', plan: planMigration([file('a.pdf', 4)], ''), fetchSource: hanging, signal: controller.signal, onFile: (e) => seen.push(e),
+    }).catch((e) => e)) as MigrationError;
+    expect(err).toBeInstanceOf(MigrationError);
+    expect(err.kind).toBe('cancelled');
+    expect(events(seen, 'a.pdf').at(-1)).toEqual({ rel: 'a.pdf', state: 'pending', downloaded: 0, uploaded: 0 });
+    expect(events(seen, 'a.pdf').some((e) => e.state === 'failed')).toBe(false);
+  });
+
+  it('phân loại lỗi: quá lớn, có tệp lỗi, đối chiếu lệch', async () => {
+    const big = await migrateRepoFilesToDrive({
+      ctx: createFakeDrive().ctx, repoName: 'K', plan: planMigration([file('to.bin', MAX_MIGRATE_FILE_BYTES + 1)], ''), fetchSource: async () => text(''),
+    }).catch((e) => e);
+    expect((big as MigrationError).kind).toBe('oversize');
+
+    const bad = await migrateRepoFilesToDrive({
+      ctx: createFakeDrive().ctx, repoName: 'K', plan: planMigration([file('a.pdf', 1)], ''), fetchSource: async () => {
+        throw new Error('hong');
+      },
+    }).catch((e) => e);
+    expect((bad as MigrationError).kind).toBe('files');
   });
 });
 

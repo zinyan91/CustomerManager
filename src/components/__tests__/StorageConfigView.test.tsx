@@ -6,6 +6,7 @@ import type { StorageRepo } from '../../types/storageRepo';
 import { createFakeDrive } from '../../lib/drive/__tests__/fakeDrive';
 
 const h = vi.hoisted(() => ({
+  listHf: vi.fn(),
   canConfigure: true,
   fetchHfAuth: vi.fn(),
   listStorageRepos: vi.fn(),
@@ -23,6 +24,11 @@ vi.mock('../../lib/api/storageReposApi', () => ({
   removeStorageRepo: vi.fn(),
   updateStorageRepo: vi.fn(),
 }));
+vi.mock('../../lib/huggingface/hfClient', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../lib/huggingface/hfClient')>()),
+  listHfTree: h.listHf,
+}));
+vi.mock('../../lib/api/storageMigrationApi', () => ({ switchRepoToDrive: vi.fn() }));
 vi.mock('../../lib/drive/driveToken', () => ({
   get driveContext() {
     return h.driveCtx;
@@ -30,6 +36,10 @@ vi.mock('../../lib/drive/driveToken', () => ({
 }));
 
 import { StorageConfigView } from '../views/StorageConfigView';
+
+const hfRepo = (over: Partial<StorageRepo> = {}): StorageRepo => ({
+  id: 9, name: 'Kho của Hồng Phúc', repoId: 'Ying91/cm-kho-hong-phuc', provider: 'huggingface', folder: '', kind: 'personal', assignedUserId: null, createdAt: '', ...over,
+});
 
 const repo = (over: Partial<StorageRepo> = {}): StorageRepo => ({
   id: 1, name: 'Kho chung', repoId: 'Ying91/cm-kho-chung', provider: 'huggingface', folder: '', kind: 'shared', assignedUserId: null, createdAt: '', ...over,
@@ -60,7 +70,7 @@ describe('StorageConfigView (khu quản trị)', () => {
     h.listStorageRepos.mockReturnValue(new Promise(() => {}));
     render(<StorageConfigView />);
     expect(screen.getByRole('button', { name: 'Kiểm tra kết nối Google Drive' })).toBeTruthy();
-    expect(screen.getByText('Đang nạp cấu hình...')).toBeTruthy();
+    expect(screen.getAllByText('Đang nạp cấu hình...').length).toBeGreaterThan(0);
     expect(screen.queryByRole('table')).toBeNull();
   });
 
@@ -78,7 +88,7 @@ describe('StorageConfigView (khu quản trị)', () => {
     render(<StorageConfigView />);
     expect((await screen.findByRole('alert')).textContent).toContain('permission denied');
     expect(screen.queryByRole('table')).toBeNull();
-    expect(screen.queryByText('Danh sách repo')).toBeNull();
+    expect(screen.queryByLabelText('Access Token Hugging Face')).toBeNull();
   });
 
   it('chưa có token Hugging Face vẫn hiện được danh sách repo để dùng Drive', async () => {
@@ -86,6 +96,34 @@ describe('StorageConfigView (khu quản trị)', () => {
     render(<StorageConfigView />);
     expect(await screen.findByRole('table')).toBeTruthy();
     expect((screen.getByLabelText('Nơi lưu') as HTMLSelectElement).value).toBe('drive');
+  });
+
+  it('bố cục hai cột dùng hết chiều rộng: không bó trong một cột hẹp', async () => {
+    const { container } = render(<StorageConfigView />);
+    await screen.findByRole('table');
+    expect(container.querySelector('.max-w-3xl')).toBeNull();
+    const grid = container.querySelector('.grid') as HTMLElement;
+    expect(grid.className).toMatch(/xl:grid-cols-\[minmax\(0,3fr\)_minmax\(0,2fr\)\]/);
+    // Danh sách repo ở cột trái; kết nối Drive và token ở cột phải
+    expect(grid.children[0].textContent).toContain('Danh sách repo');
+    expect(grid.children[1].textContent).toContain('Google Drive');
+    expect(grid.children[1].textContent).toContain('Tài khoản Hugging Face');
+  });
+
+  it('chuyển repo hiện ngay trên trang (cột phải), không mở hộp thoại; Đóng gỡ khung', async () => {
+    h.listStorageRepos.mockResolvedValue([hfRepo()]);
+    h.listHf.mockResolvedValue([]);
+    const { container } = render(<StorageConfigView />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Chuyển Kho của Hồng Phúc sang Google Drive' }));
+
+    expect(await screen.findByRole('heading', { name: 'Chuyển Kho của Hồng Phúc sang Google Drive' })).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const grid = container.querySelector('.grid') as HTMLElement;
+    expect(grid.children[1].textContent).toContain('Chuyển Kho của Hồng Phúc sang Google Drive');
+    await waitFor(() => expect(h.listHf).toHaveBeenCalledWith('Ying91/cm-kho-hong-phuc', '', 'hf_t', true));
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Đóng' }));
+    expect(screen.queryByRole('heading', { name: 'Chuyển Kho của Hồng Phúc sang Google Drive' })).toBeNull();
   });
 
   it('nút kiểm tra kết nối chạy được ngay trong trang cấu hình', async () => {

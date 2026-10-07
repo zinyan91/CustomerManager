@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, CloudUpload, Loader2, Pencil, Trash2 } from 'lucide-react';
-import { RepoMigrationDialog } from './RepoMigrationDialog';
 import { useUserScope } from '../../context/UserScopeContext';
 import { createStorageRepo, removeStorageRepo, updateStorageRepo } from '../../lib/api/storageReposApi';
 import { buildRepoId, suggestPersonalRepoSlug } from '../../lib/storageRepos';
@@ -11,12 +10,14 @@ interface StorageReposSectionProps {
   auth: HfAuth | null;
   repos: StorageRepo[];
   onChanged: () => void | Promise<void>;
+  /** Mở việc chuyển repo Hugging Face sang Drive; nơi gọi quyết định hiện tiến độ ở đâu. Không truyền thì không có nút chuyển. */
+  onMigrate?: (repo: StorageRepo) => void;
 }
 
 const FIELD =
   'w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-slate-500';
 
-export function StorageReposSection({ auth, repos, onChanged }: StorageReposSectionProps) {
+export function StorageReposSection({ auth, repos, onChanged, onMigrate }: StorageReposSectionProps) {
   const { managedUsers } = useUserScope();
   const users = useMemo(() => managedUsers.filter((u) => u.role !== 'unassigned'), [managedUsers]);
   const userName = (id: string | null) => users.find((u) => u.userId === id)?.fullName ?? '';
@@ -39,7 +40,6 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
   const [error, setError] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
   const [editing, setEditing] = useState<StorageRepo | null>(null);
-  const [migrating, setMigrating] = useState<StorageRepo | null>(null);
   const [editName, setEditName] = useState('');
   const [editRepoId, setEditRepoId] = useState('');
   const [editFolder, setEditFolder] = useState('');
@@ -144,7 +144,7 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
 
   return (
     <div className="space-y-4">
-      <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+      <div className="overflow-x-auto">
         <table className="w-full text-left text-sm border-collapse">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
@@ -167,15 +167,15 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
             {repos.map((r) => (
               <tr key={r.id}>
                 <td className="py-2 px-3 font-medium text-slate-900 dark:text-slate-100">{r.name}</td>
-                <td className="py-2 px-3 text-slate-600 dark:text-slate-400">{STORAGE_KIND_LABELS[r.kind]}</td>
-                <td className="py-2 px-3 text-slate-600 dark:text-slate-400">{STORAGE_PROVIDER_LABELS[r.provider]}</td>
+                <td className="py-2 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{STORAGE_KIND_LABELS[r.kind]}</td>
+                <td className="py-2 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{STORAGE_PROVIDER_LABELS[r.provider]}</td>
                 <td className="py-2 px-3 font-mono text-xs text-slate-600 dark:text-slate-400">{r.repoId}</td>
                 <td className="py-2 px-3 text-slate-600 dark:text-slate-400">{userName(r.assignedUserId) || '—'}</td>
                 <td className="py-2 px-3 whitespace-nowrap">
-                  {r.provider === 'huggingface' && (
+                  {r.provider === 'huggingface' && onMigrate && (
                     <button
                       type="button"
-                      onClick={() => setMigrating(r)}
+                      onClick={() => onMigrate(r)}
                       aria-label={`Chuyển ${r.name} sang Google Drive`}
                       className="p-1 rounded-md text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
                     >
@@ -206,18 +206,8 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
         </table>
       </div>
 
-      {migrating && (
-        <RepoMigrationDialog
-          key={migrating.id}
-          repo={migrating}
-          hfToken={auth?.token ?? ''}
-          onDone={onChanged}
-          onClose={() => setMigrating(null)}
-        />
-      )}
-
       {editing && (
-        <form onSubmit={handleUpdate} aria-label="Sửa repo" className="space-y-3 p-4 rounded-xl border border-slate-300 dark:border-slate-700">
+        <form onSubmit={handleUpdate} aria-label="Sửa repo" className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
           <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Sửa repo: {STORAGE_KIND_LABELS[editing.kind]}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -260,7 +250,7 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
         </form>
       )}
 
-      <form onSubmit={handleCreate} className="space-y-3 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+      <form onSubmit={handleCreate} className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
         <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Thêm repo</h4>
         {!auth && !isDriveForm && <p className="text-xs text-amber-700 dark:text-amber-400">Lưu token ở phần trên trước khi tạo repo.</p>}
 

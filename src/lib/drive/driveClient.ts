@@ -268,6 +268,8 @@ export async function uploadDriveFile(ctx: DriveContext, parentId: string, file:
   const doFetch = fetcher(ctx);
   const sleep = ctx.sleep ?? defaultSleep;
   const type = file.type || 'application/octet-stream';
+  // Chỉ khi cần tiến độ từng byte, chạy trong trình duyệt thật (có XHR) và không bị thay hàm gọi mạng (test)
+  const useXhr = Boolean(onProgress) && !ctx.fetchFn && typeof XMLHttpRequest !== 'undefined';
 
   if (total === 0) {
     const res = await driveRequest(ctx, `${API}/files?${writeParams()}`, {
@@ -296,14 +298,16 @@ export async function uploadDriveFile(ctx: DriveContext, parentId: string, file:
     const end = Math.min(offset + chunk, total) - 1;
     let res: Response;
     try {
-      // Không đặt redirect: 'manual': trình duyệt biến mọi 3xx thành phản hồi mờ (status 0, không đọc được tiêu đề), nên 308 hợp lệ
-      // của Google giữa các đoạn thành lỗi. Mặc định thì 308 không có Location trả về nguyên vẹn.
-      res = await doFetch(session, {
-        method: 'PUT',
-        headers: { 'Content-Range': `bytes ${offset}-${end}/${total}` },
-        body: file.slice(offset, end + 1),
-        signal,
-      });
+      const range = { 'Content-Range': `bytes ${offset}-${end}/${total}` };
+      const part = file.slice(offset, end + 1);
+      if (useXhr) {
+        // fetch không báo tiến độ gửi; XHR báo từng byte. Cũng đọc được 308 như fetch mặc định.
+        res = await putWithProgress(session, range, part, signal, (loaded) => onProgress?.(Math.min(offset + loaded, total), total));
+      } else {
+        // Không đặt redirect: 'manual': trình duyệt biến mọi 3xx thành phản hồi mờ (status 0, không đọc được tiêu đề), nên 308 hợp lệ
+        // của Google giữa các đoạn thành lỗi. Mặc định thì 308 không có Location trả về nguyên vẹn.
+        res = await doFetch(session, { method: 'PUT', headers: range, body: part, signal });
+      }
     } catch (err) {
       if (signal?.aborted || failures >= MAX_RETRIES) throw err;
       failures++;
@@ -332,6 +336,46 @@ export async function uploadDriveFile(ctx: DriveContext, parentId: string, file:
     throw await readDriveError(res);
   }
   throw new DriveApiError(500, '', 'Phiên tải lên kết thúc mà Google chưa xác nhận tệp. Hãy thử lại.');
+}
+
+/**
+ * Gửi một đoạn bằng XHR để biết số byte đã gửi. Trả Response như fetch: 308 đọc được status, tiêu đề lấy từ các tiêu đề
+ * trình duyệt cho đọc. Lỗi mạng thành TypeError (giống fetch) để đi chung đường thử lại; hủy thành AbortError.
+ */
+function putWithProgress(url: string, headers: Record<string, string>, body: Blob, signal: AbortSignal | undefined, onLoaded: (loaded: number) => void): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason ?? new DOMException('Đã hủy', 'AbortError'));
+      return;
+    }
+    const xhr = new XMLHttpRequest();
+    const onAbort = () => xhr.abort();
+    const done = () => signal?.removeEventListener('abort', onAbort);
+    signal?.addEventListener('abort', onAbort);
+
+    xhr.open('PUT', url);
+    for (const [name, value] of Object.entries(headers)) xhr.setRequestHeader(name, value);
+    xhr.upload.onprogress = (e) => onLoaded(e.loaded);
+    xhr.onload = () => {
+      done();
+      const resHeaders = new Headers();
+      for (const line of xhr.getAllResponseHeaders().trim().split(/[\r\n]+/)) {
+        const i = line.indexOf(':');
+        if (i > 0) resHeaders.append(line.slice(0, i).trim(), line.slice(i + 1).trim());
+      }
+      resolve(new Response(xhr.responseText || null, { status: xhr.status, headers: resHeaders }));
+    };
+    xhr.onerror = () => {
+      done();
+      reject(new TypeError('Failed to fetch'));
+    };
+    xhr.ontimeout = xhr.onerror;
+    xhr.onabort = () => {
+      done();
+      reject(signal?.reason ?? new DOMException('Đã hủy', 'AbortError'));
+    };
+    xhr.send(body);
+  });
 }
 
 /** Hỏi Google đã nhận tới byte nào của phiên tải lên; lỗi mạng thì giữ vị trí cũ. */

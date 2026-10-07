@@ -91,6 +91,24 @@ export interface MigrationProgress {
   bytesTotal: number;
 }
 
+export type FileState = 'pending' | 'downloading' | 'uploading' | 'done' | 'skipped' | 'failed';
+
+export interface FileEvent {
+  rel: string;
+  state?: FileState;
+  /** Byte đã tải xuống từ nguồn. */
+  downloaded?: number;
+  /** Byte đã tải lên Drive. */
+  uploaded?: number;
+  error?: string;
+}
+
+/** Hàm lấy tệp nguồn báo số byte đã nhận qua `onBytes` và dừng khi `signal` bị hủy. */
+export interface SourceControl {
+  onBytes: (loaded: number) => void;
+  signal?: AbortSignal;
+}
+
 export interface MappedFile {
   from: string;
   path: string;
@@ -117,11 +135,13 @@ export async function copyToDrive(args: {
   destRootId: string;
   plan: MigrationPlan;
   existing: ReadonlyMap<string, { id: string; size: number }>;
-  fetchSource: (file: MigrationFile) => Promise<Blob>;
+  fetchSource: (file: MigrationFile, control: SourceControl) => Promise<Blob>;
   onProgress?: (p: MigrationProgress) => void;
+  /** Báo trạng thái và số byte đã tải xuống/tải lên của từng tệp (gọi rất dày khi đang truyền). */
+  onFile?: (event: FileEvent) => void;
   signal?: AbortSignal;
 }): Promise<CopyOutcome> {
-  const { ctx, destRootId, plan, existing, fetchSource, onProgress, signal } = args;
+  const { ctx, destRootId, plan, existing, fetchSource, onProgress, onFile, signal } = args;
   const out: CopyOutcome = { mapped: [], copied: 0, reused: 0, failed: [], cancelled: false };
   const cache = newFolderPathCache();
   for (const folder of plan.folders) await ensureDriveFolderPath(ctx, destRootId, folder, cache);
@@ -139,25 +159,41 @@ export async function copyToDrive(args: {
         out.cancelled = true;
         return;
       }
+      const emit = (e: Omit<FileEvent, 'rel'>) => onFile?.({ rel: f.rel, ...e });
       try {
         const have = existing.get(f.rel);
         if (have && have.size === f.size) {
           out.mapped.push({ from: f.from, path: f.rel, fileId: have.id, size: f.size });
           out.reused++;
+          emit({ state: 'skipped', downloaded: f.size, uploaded: f.size });
         } else {
           if (f.size > MAX_MIGRATE_FILE_BYTES) throw new Error(`Tệp quá lớn để chuyển bằng công cụ này (${Math.round(f.size / 1024 / 1024)} MB).`);
-          const blob = await fetchSource(f);
+          emit({ state: 'downloading', downloaded: 0, uploaded: 0 });
+          const blob = await fetchSource(f, { onBytes: (downloaded) => emit({ downloaded }), signal });
           if (blob.size !== f.size) throw new Error(`Dung lượng tải về (${blob.size} byte) khác dung lượng nguồn (${f.size} byte).`);
           // Bản chép dở của lần trước (sai dung lượng) vào thùng rác, kẻo ở đích có hai tệp cùng tên
           if (have) await trashDriveFile(ctx, have.id);
           const parentId = await ensureDriveFolderPath(ctx, destRootId, dirOf(f.rel), cache);
-          const made = await uploadDriveFile(ctx, parentId, new File([blob], baseOf(f.rel), { type: blob.type }));
+          emit({ state: 'uploading', downloaded: f.size, uploaded: 0 });
+          const made = await uploadDriveFile(ctx, parentId, new File([blob], baseOf(f.rel), { type: blob.type }), {
+            onProgress: (uploaded) => emit({ uploaded }),
+            signal,
+          });
           if (made.size !== blob.size) throw new Error(`Drive ghi nhận ${made.size} byte, khác ${blob.size} byte đã gửi.`);
           out.mapped.push({ from: f.from, path: f.rel, fileId: made.id, size: f.size });
           out.copied++;
+          emit({ state: 'done', downloaded: f.size, uploaded: f.size });
         }
       } catch (err) {
-        out.failed.push({ from: f.from, error: describeDriveError(err, `Chép "${baseOf(f.rel)}"`) });
+        // Bị dừng giữa chừng: tệp này chưa xong, không phải lỗi
+        if (signal?.aborted) {
+          out.cancelled = true;
+          emit({ state: 'pending', downloaded: 0, uploaded: 0 });
+          return;
+        }
+        const error = describeDriveError(err, `Chép "${baseOf(f.rel)}"`);
+        out.failed.push({ from: f.from, error });
+        emit({ state: 'failed', error });
       }
       done++;
       bytesDone += f.size;
@@ -185,11 +221,16 @@ export async function verifyCopy(ctx: DriveContext, destRootId: string, expected
   return problems.length > 0 ? { ok: false, problems } : { ok: true, ids };
 }
 
+/** `cancelled`: người dùng dừng; `files`: có tệp chưa chép được; `verify`: đối chiếu sau khi chép lệch; `oversize`: có tệp quá lớn. */
+export type MigrationErrorKind = 'cancelled' | 'files' | 'verify' | 'oversize';
+
 export class MigrationError extends Error {
   readonly details: string[];
-  constructor(message: string, details: string[] = []) {
+  readonly kind: MigrationErrorKind;
+  constructor(message: string, kind: MigrationErrorKind, details: string[] = []) {
     super(message);
     this.name = 'MigrationError';
+    this.kind = kind;
     this.details = details;
   }
 }
@@ -210,28 +251,34 @@ export async function migrateRepoFilesToDrive(args: {
   ctx: DriveContext;
   repoName: string;
   plan: MigrationPlan;
-  fetchSource: (file: MigrationFile) => Promise<Blob>;
+  fetchSource: (file: MigrationFile, control: SourceControl) => Promise<Blob>;
   onProgress?: (p: MigrationProgress) => void;
+  onFile?: (event: FileEvent) => void;
   signal?: AbortSignal;
 }): Promise<MigrationRunResult> {
-  const { ctx, repoName, plan, fetchSource, onProgress, signal } = args;
+  const { ctx, repoName, plan, fetchSource, onProgress, onFile, signal } = args;
   if (plan.oversize.length > 0) {
-    throw new MigrationError(`Có ${plan.oversize.length} tệp lớn hơn ${MAX_MIGRATE_FILE_BYTES / 1024 / 1024} MB, công cụ không chuyển được.`, plan.oversize.map((f) => f.rel));
+    throw new MigrationError(
+      `Có ${plan.oversize.length} tệp lớn hơn ${MAX_MIGRATE_FILE_BYTES / 1024 / 1024} MB, công cụ không chuyển được.`,
+      'oversize',
+      plan.oversize.map((f) => f.rel),
+    );
   }
   const dest = await inspectDestination(ctx, repoName);
   const destRootId = dest.folderId ?? (await createDriveFolder(ctx, (await ctx.getAccess()).driveId, repoName)).id;
 
-  const outcome = await copyToDrive({ ctx, destRootId, plan, existing: dest.existing, fetchSource, onProgress, signal });
-  if (outcome.cancelled) throw new MigrationError('Đã dừng. Các tệp đã chép được giữ lại; chạy lại để chép tiếp.');
+  const outcome = await copyToDrive({ ctx, destRootId, plan, existing: dest.existing, fetchSource, onProgress, onFile, signal });
+  if (outcome.cancelled) throw new MigrationError('Đã dừng. Các tệp đã chép được giữ lại; bấm Chuyển ngay để chép tiếp.', 'cancelled');
   if (outcome.failed.length > 0) {
     throw new MigrationError(
-      `${outcome.failed.length} tệp chưa chép được. Chưa đổi gì trong hệ thống; chạy lại để chép tiếp các tệp còn thiếu.`,
+      `${outcome.failed.length} tệp chưa chép được. Chưa đổi gì trong hệ thống; bấm Thử lại tệp lỗi để chép tiếp các tệp còn thiếu.`,
+      'files',
       outcome.failed.map((f) => `${f.from}: ${f.error}`),
     );
   }
 
   const verified = await verifyCopy(ctx, destRootId, outcome.mapped.map((m) => ({ path: m.path, size: m.size })));
-  if (!verified.ok) throw new MigrationError('Đối chiếu sau khi chép phát hiện chênh lệch. Chưa đổi gì trong hệ thống.', verified.problems);
+  if (!verified.ok) throw new MigrationError('Đối chiếu sau khi chép phát hiện chênh lệch. Chưa đổi gì trong hệ thống.', 'verify', verified.problems);
 
   return {
     destRootId,

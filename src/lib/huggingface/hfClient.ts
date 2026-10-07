@@ -171,17 +171,34 @@ export async function listHfTree(
 /**
  * Tải Blob từ Hugging Face (hỗ trợ cả Private Dataset với Authorization Bearer)
  */
-export async function fetchHfFileBlob(downloadUrl: string, token: string): Promise<Blob> {
+export async function fetchHfFileBlob(
+  downloadUrl: string,
+  token: string,
+  options: { onBytes?: (loaded: number) => void; signal?: AbortSignal } = {}
+): Promise<Blob> {
   const headers: Record<string, string> = {};
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(downloadUrl, { headers });
+  const res = await fetch(downloadUrl, { headers, signal: options.signal });
   if (!res.ok) {
     throw new HfApiError(res.status, `Không thể tải tệp từ kho lưu trữ (${res.status})`);
   }
-  return await res.blob();
+  if (!options.onBytes || !res.body) return await res.blob();
+
+  // Đọc theo luồng để báo được số byte đã nhận
+  const reader = res.body.getReader();
+  const chunks: Uint8Array<ArrayBuffer>[] = [];
+  let loaded = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value as Uint8Array<ArrayBuffer>);
+    loaded += value.byteLength;
+    options.onBytes(loaded);
+  }
+  return new Blob(chunks, { type: res.headers.get('Content-Type') ?? '' });
 }
 
 /**

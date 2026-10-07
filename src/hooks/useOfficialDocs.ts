@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { OfficialDoc, OfficialDocFilter } from '../types/officialDoc';
 import { countByCategory, searchOfficialDocs, type CategoryCounts } from '../lib/api/officialDocApi';
 import { PAGE_SIZE } from '../lib/officialDoc/docQuery';
+import { DEFAULT_DOC_SORT, nextSort, type DocSort, type DocSortKey } from '../lib/officialDoc/docSort';
 
 export const INITIAL_DOC_FILTER: OfficialDocFilter = {
   search: '',
@@ -22,6 +23,7 @@ export function useOfficialDocs() {
   const [filter, setFilter] = useState<OfficialDocFilter>(INITIAL_DOC_FILTER);
   const [appliedSearch, setAppliedSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [sort, setSort] = useState<DocSort>(DEFAULT_DOC_SORT);
   const [version, setVersion] = useState(0);
 
   const [docs, setDocs] = useState<OfficialDoc[]>([]);
@@ -47,7 +49,7 @@ export function useOfficialDocs() {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    searchOfficialDocs(query, page)
+    searchOfficialDocs(query, page, sort)
       .then((res) => {
         if (!active) return;
         // Vừa xóa dòng cuối của trang cuối: quay về trang 1 thay vì hiện trang trống
@@ -70,7 +72,7 @@ export function useOfficialDocs() {
     return () => {
       active = false;
     };
-  }, [query, page, version]);
+  }, [query, page, sort, version]);
 
   useEffect(() => {
     let active = true;
@@ -98,12 +100,20 @@ export function useOfficialDocs() {
     setPage(1);
   }, []);
 
+  /** Bấm tiêu đề cột: đổi cột hoặc đảo chiều, luôn về trang 1. */
+  const toggleSort = useCallback((key: DocSortKey) => {
+    setSort((s) => nextSort(s, key));
+    setPage(1);
+  }, []);
+
   const reload = useCallback(() => setVersion((v) => v + 1), []);
 
   return {
     filter,
     updateFilter,
     resetFilters,
+    sort,
+    toggleSort,
     page,
     setPage,
     pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)),

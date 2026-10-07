@@ -1,20 +1,35 @@
 import type { OfficialDocFile } from '../../types/officialDoc';
 import { fetchDocFileBlob } from './docFiles';
+import { zipBlobs } from './formBundle';
 
 const REVOKE_AFTER_MS = 60_000;
 
 const keepUrlAlive = (url: string) => setTimeout(() => URL.revokeObjectURL(url), REVOKE_AFTER_MS);
 
-/** Tải tệp từ Kho về máy. Ném lỗi tiếng Việt khi hỏng. */
-export async function downloadDocFile(file: OfficialDocFile, token: string): Promise<void> {
-  const url = URL.createObjectURL(await fetchDocFileBlob(file, token));
+function saveBlob(blob: Blob, name: string): void {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = file.name;
+  a.download = name;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   keepUrlAlive(url);
+}
+
+/** Tải tệp từ Kho về máy. Ném lỗi tiếng Việt khi hỏng. */
+export async function downloadDocFile(file: OfficialDocFile, token: string): Promise<void> {
+  saveBlob(await fetchDocFileBlob(file, token), file.name);
+}
+
+/**
+ * Tải nhiều tệp của một văn bản về dạng một ZIP, để không phải bấm từng tệp. Tải từng tệp thẳng từ
+ * Kho rồi nén trên trình duyệt; một tệp lỗi thì dừng và nói rõ tệp nào, không đưa ZIP thiếu.
+ */
+export async function downloadDocFilesZip(files: OfficialDocFile[], zipName: string, token: string): Promise<void> {
+  const inputs = [];
+  for (const file of files) inputs.push({ name: file.name, blob: await fetchDocFileBlob(file, token) });
+  saveBlob(await zipBlobs(inputs), zipName);
 }
 
 /**

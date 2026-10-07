@@ -4,7 +4,9 @@ import type { OfficialDoc, OfficialDocFile } from '../../types/officialDoc';
 import { computeStatus } from '../../lib/officialDoc/status';
 import { categoryLabel } from '../../lib/officialDoc/categories';
 import { FILE_KINDS, FILE_KIND_LABELS, canViewInBrowser, groupFilesByKind } from '../../lib/officialDoc/docFiles';
-import { downloadDocFile, viewDocFile } from '../../lib/officialDoc/docFileActions';
+import { downloadDocFile, downloadDocFilesZip, viewDocFile } from '../../lib/officialDoc/docFileActions';
+import { docFolderSlug } from '../../lib/officialDoc/docPaths';
+import { bundleFileName } from '../../lib/officialDoc/formBundle';
 import { fmtDate, todayIso } from '../../lib/utils';
 import { OfficialDocStatusBadge } from './OfficialDocStatusBadge';
 
@@ -34,6 +36,19 @@ export function OfficialDocDetail({ doc, token, onClose }: OfficialDocDetailProp
 
   if (!doc) return null;
   const groups = groupFilesByKind(doc.files);
+
+  const downloadAll = async (files: OfficialDocFile[], kind: OfficialDocFile['kind']) => {
+    setError(null);
+    setBusyKey(`all/${kind}`);
+    try {
+      const name = kind === 'bieu-mau' ? bundleFileName(doc.docNumber) : `${docFolderSlug(doc.docNumber)}-van-ban-goc.zip`;
+      await downloadDocFilesZip(files, name, token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không tải được tệp.');
+    } finally {
+      setBusyKey(null);
+    }
+  };
 
   const openFile = async (file: OfficialDocFile, mode: 'view' | 'download') => {
     setError(null);
@@ -74,7 +89,14 @@ export function OfficialDocDetail({ doc, token, onClose }: OfficialDocDetailProp
 
             {FILE_KINDS.map((kind) => (
               <div key={kind}>
-                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">{FILE_KIND_LABELS[kind]}</div>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">{FILE_KIND_LABELS[kind]}</div>
+                  {groups[kind].length > 1 && (
+                    <button type="button" disabled={busyKey !== null} onClick={() => void downloadAll(groups[kind], kind)} className={`text-xs ${linkBtn}`}>
+                      Tải tất cả (ZIP)
+                    </button>
+                  )}
+                </div>
                 {groups[kind].length === 0 ? (
                   <div className="text-sm text-slate-400">Chưa có tệp</div>
                 ) : (

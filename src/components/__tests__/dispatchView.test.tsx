@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   deleteDoc: vi.fn(),
   saveDoc: vi.fn(),
   fetchBlob: vi.fn(),
+  zip: vi.fn(),
 }));
 
 vi.mock('../../context/AuthContext', () => ({
@@ -41,6 +42,11 @@ vi.mock('../../lib/officialDoc/docFiles', async (importOriginal) => ({
   fetchDocFileBlob: state.fetchBlob,
 }));
 
+vi.mock('../../lib/officialDoc/formBundle', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../lib/officialDoc/formBundle')>()),
+  zipBlobs: state.zip,
+}));
+
 import { DispatchManagementView } from '../views/DispatchManagementView';
 
 const doc = (over: Partial<OfficialDoc> = {}): OfficialDoc => ({
@@ -66,6 +72,8 @@ const makeHook = (over: Record<string, unknown> = {}) => ({
   resetFilters: vi.fn(),
   page: 1,
   setPage: vi.fn(),
+  sort: { key: 'issuedDate', dir: 'desc' },
+  toggleSort: vi.fn(),
   pageCount: 1,
   docs: [doc(), doc({ id: '2', docNumber: 'HD-01', title: 'Hợp đồng mẫu', category: 'hop-dong', files: [] })],
   total: 2,
@@ -341,5 +349,98 @@ describe('Văn thư - nút Tải về ở cột Thao tác', () => {
     render(<DispatchManagementView />);
     fireEvent.click(screen.getByRole('button', { name: 'Tải về văn bản 2753/2026/TB-BĐH' }));
     expect((await screen.findByRole('alert')).textContent).toMatch(/không còn trong Kho lưu trữ/);
+  });
+});
+
+describe('Văn thư - sắp xếp theo cột', () => {
+  it('mặc định đánh dấu cột Ban hành giảm dần, cột khác chưa sắp', () => {
+    state.hook = makeHook();
+    render(<DispatchManagementView />);
+    const col = (name: string) => screen.getByRole('columnheader', { name });
+    expect(col('Ban hành').getAttribute('aria-sort')).toBe('descending');
+    expect(col('Số hiệu').getAttribute('aria-sort')).toBe('none');
+  });
+
+  it('bấm tiêu đề cột gọi sắp xếp đúng khóa', () => {
+    const hook = makeHook();
+    state.hook = hook;
+    render(<DispatchManagementView />);
+    fireEvent.click(within(screen.getByRole('columnheader', { name: 'Số hiệu' })).getByRole('button'));
+    fireEvent.click(within(screen.getByRole('columnheader', { name: 'Hết hiệu lực' })).getByRole('button'));
+    expect(hook.toggleSort).toHaveBeenNthCalledWith(1, 'docNumber');
+    expect(hook.toggleSort).toHaveBeenNthCalledWith(2, 'effectiveTo');
+  });
+
+  it('cột Tình trạng và Thao tác không sắp xếp', () => {
+    state.hook = makeHook();
+    render(<DispatchManagementView />);
+    expect(within(screen.getByRole('columnheader', { name: 'Tình trạng' })).queryByRole('button')).toBeNull();
+  });
+});
+
+describe('Văn thư - tải cả bộ tệp dạng ZIP', () => {
+  const bundle = doc({
+    files: [
+      { kind: 'goc', repoId: 'o/vt', path: 'vb/2753.pdf', name: '2753.pdf' },
+      { kind: 'bieu-mau', repoId: 'o/bm', path: 'bm/to-trinh.docx', name: 'to-trinh.docx' },
+      { kind: 'bieu-mau', repoId: 'o/bm', path: 'bm/hop-dong.docx', name: 'hop-dong.docx' },
+      { kind: 'bieu-mau', repoId: 'o/bm', path: 'bm/phu-luc.xlsx', name: 'phu-luc.xlsx' },
+    ],
+  });
+
+  const openBundle = () => {
+    state.hook = makeHook({ docs: [bundle], total: 1 });
+    render(<DispatchManagementView />);
+    fireEvent.click(screen.getByRole('button', { name: 'Xem văn bản 2753/2026/TB-BĐH' }));
+    return screen.getByRole('dialog', { name: 'Xem văn bản' });
+  };
+
+  it('chỉ nhóm có nhiều tệp mới có nút Tải tất cả (ZIP)', () => {
+    const dlg = openBundle();
+    expect(within(dlg).getAllByRole('button', { name: 'Tải tất cả (ZIP)' })).toHaveLength(1);
+  });
+
+  it('một tệp mỗi nhóm thì không có nút Tải tất cả', () => {
+    state.hook = makeHook();
+    render(<DispatchManagementView />);
+    fireEvent.click(screen.getByRole('button', { name: 'Xem văn bản 2753/2026/TB-BĐH' }));
+    expect(screen.queryByRole('button', { name: 'Tải tất cả (ZIP)' })).toBeNull();
+  });
+
+  it('bấm Tải tất cả: tải từng biểu mẫu từ Kho, nén một ZIP đặt theo số hiệu và lưu về máy', async () => {
+    state.fetchBlob.mockImplementation(async (f: { name: string }) => new Blob([f.name]));
+    state.zip.mockResolvedValue(new Blob(['zip']));
+    const original = URL.createObjectURL;
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:zip');
+    const names: string[] = [];
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      names.push(this.download);
+    });
+    try {
+      const dlg = openBundle();
+      fireEvent.click(within(dlg).getByRole('button', { name: 'Tải tất cả (ZIP)' }));
+      await waitFor(() => expect(names).toEqual(['2753-2026-tb-bdh-bieu-mau.zip']));
+      expect(state.fetchBlob).toHaveBeenCalledTimes(3);
+      expect(state.zip).toHaveBeenCalledWith([
+        { name: 'to-trinh.docx', blob: expect.any(Blob) },
+        { name: 'hop-dong.docx', blob: expect.any(Blob) },
+        { name: 'phu-luc.xlsx', blob: expect.any(Blob) },
+      ]);
+    } finally {
+      URL.createObjectURL = original;
+      clickSpy.mockRestore();
+    }
+  });
+
+  it('một tệp tải lỗi thì báo rõ và không đưa ZIP thiếu', async () => {
+    state.zip.mockClear();
+    state.fetchBlob.mockImplementation(async (f: { name: string }) => {
+      if (f.name === 'hop-dong.docx') throw new Error('Tệp "hop-dong.docx" không còn trong Kho lưu trữ.');
+      return new Blob(['x']);
+    });
+    const dlg = openBundle();
+    fireEvent.click(within(dlg).getByRole('button', { name: 'Tải tất cả (ZIP)' }));
+    expect((await within(dlg).findByRole('alert')).textContent).toMatch(/"hop-dong.docx" không còn trong Kho/);
+    expect(state.zip).not.toHaveBeenCalled();
   });
 });

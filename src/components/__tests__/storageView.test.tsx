@@ -68,6 +68,13 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+/** Mặc định là dạng bảng; các ca kiểm thư mục dạng thẻ bấm sang dạng lưới trước. */
+function renderGrid() {
+  const view = render(<StorageManagementView />);
+  fireEvent.click(screen.getByRole('button', { name: 'Dạng lưới' }));
+  return view;
+}
+
 describe('Kho lưu trữ - giao diện', () => {
   it('tiêu đề chỉ là "Kho lưu trữ", không còn nhãn quyền hay chữ Hugging Face/Dataset Repo', () => {
     render(<StorageManagementView />);
@@ -197,7 +204,7 @@ describe('Kho lưu trữ - duyệt thư mục kiểu trình quản lý tệp', (
   });
 
   it('ở gốc: thư mục hiện thành thư mục kèm số tệp, tệp cấp sâu không lẫn ra ngoài', () => {
-    render(<StorageManagementView />);
+    renderGrid();
     expect(screen.getByRole('button', { name: /MY HUE.*3 tệp/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'goc.pdf' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'a.pdf' })).toBeNull();
@@ -205,7 +212,7 @@ describe('Kho lưu trữ - duyệt thư mục kiểu trình quản lý tệp', (
   });
 
   it('bấm vào thư mục thì đi vào: thấy tệp trực tiếp và thư mục con, hết thấy tệp ở gốc', () => {
-    render(<StorageManagementView />);
+    renderGrid();
     fireEvent.click(screen.getByRole('button', { name: /MY HUE.*3 tệp/ }));
 
     expect(screen.getByRole('button', { name: 'a.pdf' })).toBeTruthy();
@@ -216,7 +223,7 @@ describe('Kho lưu trữ - duyệt thư mục kiểu trình quản lý tệp', (
   });
 
   it('đi sâu rồi quay về gốc bằng breadcrumb', () => {
-    render(<StorageManagementView />);
+    renderGrid();
     fireEvent.click(screen.getByRole('button', { name: /MY HUE.*3 tệp/ }));
     fireEvent.click(screen.getByRole('button', { name: /2026.*1 tệp/ }));
     expect(screen.getByRole('button', { name: 'c.pdf' })).toBeTruthy();
@@ -227,7 +234,7 @@ describe('Kho lưu trữ - duyệt thư mục kiểu trình quản lý tệp', (
   });
 
   it('tìm kiếm quét toàn kho, trả danh sách phẳng không có thẻ thư mục', () => {
-    render(<StorageManagementView />);
+    renderGrid();
     fireEvent.change(screen.getByLabelText('Tìm tệp tin'), { target: { value: 'c.pdf' } });
 
     expect(screen.getByRole('button', { name: 'c.pdf' })).toBeTruthy();
@@ -240,7 +247,7 @@ describe('Kho lưu trữ - duyệt thư mục kiểu trình quản lý tệp', (
       documents: [mk('van-thu/x.pdf'), mk('van-thu/Con/y.pdf')],
       folders: ['van-thu', 'van-thu/Con'],
     });
-    render(<StorageManagementView />);
+    renderGrid();
     expect(screen.getByRole('button', { name: 'x.pdf' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Con.*1 tệp/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /van-thu/ })).toBeNull();
@@ -248,8 +255,15 @@ describe('Kho lưu trữ - duyệt thư mục kiểu trình quản lý tệp', (
 
   it('thư mục rỗng trên HF vẫn hiện thành thư mục 0 tệp', () => {
     state.archive = makeArchive({ documents: [mk('goc.pdf')], folders: ['Rong'] });
-    render(<StorageManagementView />);
+    renderGrid();
     expect(screen.getByRole('button', { name: /Rong.*0 tệp/ })).toBeTruthy();
+  });
+
+  it('mặc định hiện dạng bảng, không phải dạng lưới', () => {
+    render(<StorageManagementView />);
+    expect(screen.getByRole('button', { name: 'Dạng bảng' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Dạng lưới' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getAllByRole('row').length).toBeGreaterThan(1);
   });
 
   it('dạng bảng: dòng thư mục đứng trước các tệp và tổng cộng tính cả nội dung thư mục', () => {
@@ -338,7 +352,7 @@ describe('Kho lưu trữ - tải thư mục về dạng ZIP', () => {
     const sink = fileSink();
     (window as unknown as PickerWindow).showSaveFilePicker = vi.fn(async () => ({ createWritable: async () => sink.writable }));
     vi.stubGlobal('fetch', fetchBySize(DOCS));
-    render(<StorageManagementView />);
+    renderGrid();
 
     fireEvent.click(screen.getByRole('button', { name: /MY HUE.*3 tệp/ }));
     fireEvent.click(screen.getByRole('button', { name: /Tải thư mục này \(ZIP\)/ }));

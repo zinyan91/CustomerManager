@@ -52,8 +52,19 @@ describe('searchOfficialDocs', () => {
     expect(h.calls).toContainEqual(['select', '*', { count: 'exact' }]);
     expect(h.calls).toContainEqual(['ilike', 'SearchText', '%lai%']);
     expect(h.calls).toContainEqual(['eq', 'Category', 'hop-dong']);
-    expect(h.calls).toContainEqual(['order', 'IssuedDate', { ascending: false }]);
+    expect(h.calls).toContainEqual(['order', 'IssuedDate', { ascending: false, nullsFirst: false }]);
+    expect(h.calls).toContainEqual(['order', 'Id', { ascending: false, nullsFirst: false }]);
     expect(h.calls).toContainEqual(['range', 15, 29]);
+  });
+
+  it('sắp theo cột người dùng chọn, ngày ban hành mới nhất làm khóa phụ, ngày trống xuống cuối', async () => {
+    await searchOfficialDocs(EMPTY, 1, { key: 'docNumber', dir: 'asc' });
+    const orders = h.calls.filter((c) => c[0] === 'order');
+    expect(orders).toEqual([
+      ['order', 'DocNumber', { ascending: true, nullsFirst: false }],
+      ['order', 'IssuedDate', { ascending: false, nullsFirst: false }],
+      ['order', 'Id', { ascending: false, nullsFirst: false }],
+    ]);
   });
 
   it('DB báo lỗi thì ném lỗi tiếng Việt, không trả danh sách rỗng im lặng', async () => {

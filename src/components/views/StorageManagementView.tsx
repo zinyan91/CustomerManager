@@ -51,7 +51,7 @@ export function StorageManagementView() {
 
   const [selectedFolder, setSelectedFolder] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<DispatchDocument | null>(null);
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);

@@ -205,10 +205,10 @@ export function AiChatDialog({
           <AiComposer
             ref={composerRef}
             canRecord={recordAllowed}
-            onSend={(msg, atts, intent, formZip) => {
+            onSend={(msg, atts, intent, formFiles) => {
               // "Thêm văn bản mới": AI chỉ trích các trường để người dùng xem rồi xác nhận, không trả lời trong chat
               if (intent === 'record') {
-                if (atts) docs.propose(atts, formZip ?? null);
+                if (atts) docs.propose(atts, formFiles ?? []);
                 return;
               }
               void assistant.sendMessage(msg, undefined, atts);

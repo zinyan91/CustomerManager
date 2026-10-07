@@ -280,7 +280,7 @@ describe('Chat AI - biểu mẫu của văn bản', () => {
 
     await waitFor(() => expect(m.record).toHaveBeenCalledTimes(1));
     const arg = m.record.mock.calls[0][0];
-    expect(arg.formZip).toBeNull();
+    expect(arg.formUploads).toEqual([]);
     expect(arg.formFiles.map((f: { name: string }) => f.name)).toEqual(['mau-01.docx']);
   });
 
@@ -321,7 +321,7 @@ describe('Chat AI - biểu mẫu của văn bản', () => {
     render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
     fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), zip()] } });
     await screen.findByText('bieu-mau.zip');
-    expect(screen.getByTitle('Gỡ thư mục nén')).toBeTruthy();
+    expect(screen.getByTitle('Gỡ biểu mẫu')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Thêm văn bản mới' }));
     await screen.findByLabelText('Số hiệu');
@@ -332,7 +332,7 @@ describe('Chat AI - biểu mẫu của văn bản', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận vào Văn thư' }));
     await waitFor(() => expect(m.record).toHaveBeenCalledTimes(1));
     const arg = m.record.mock.calls[0][0];
-    expect(arg.formZip.name).toBe('bieu-mau.zip');
+    expect(arg.formUploads.map((f: File) => f.name)).toEqual(['bieu-mau.zip']);
     expect(arg.formFiles).toEqual([]);
   });
 
@@ -368,14 +368,14 @@ describe('Chat AI - biểu mẫu của văn bản', () => {
     await screen.findByText('bieu-mau.zip');
     fireEvent.change(textarea(), { target: { value: 'Văn bản này nói gì?' } });
     fireEvent.keyDown(textarea(), { key: 'Enter' });
-    expect((await screen.findAllByRole('alert')).map((a) => a.textContent).join(' ')).toMatch(/Thư mục nén chỉ dùng với/);
+    expect((await screen.findAllByRole('alert')).map((a) => a.textContent).join(' ')).toMatch(/Biểu mẫu chỉ dùng với/);
     expect(m.send).not.toHaveBeenCalled();
   });
 
-  it('tài khoản không được thêm văn bản thì không nhận thư mục nén', async () => {
+  it('tài khoản không được thêm văn bản thì không nhận biểu mẫu, gặp báo lỗi định dạng như mọi tệp AI không đọc được', async () => {
     render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs={false} />);
     fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), zip()] } });
-    expect((await screen.findByRole('alert')).textContent).toMatch(/không có quyền thêm văn bản/);
+    expect((await screen.findByRole('alert')).textContent).toMatch(/không được hỗ trợ/);
     expect(screen.queryByText('bieu-mau.zip')).toBeNull();
     expect(screen.getByText('tb.pdf')).toBeTruthy();
   });
@@ -384,9 +384,37 @@ describe('Chat AI - biểu mẫu của văn bản', () => {
     render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
     fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), zip()] } });
     await screen.findByText('bieu-mau.zip');
-    fireEvent.click(screen.getByTitle('Gỡ thư mục nén'));
+    fireEvent.click(screen.getByTitle('Gỡ biểu mẫu'));
     expect(screen.queryByText('bieu-mau.zip')).toBeNull();
     const group = screen.getByRole('group', { name: 'Chọn việc cần làm với tệp' });
     expect(within(group).getAllByRole('button')).toHaveLength(3);
+  });
+
+  const docx = (name: string) => new File(['x'], name, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+
+  it('bộ biểu mẫu nhiều tệp (tờ trình, hợp đồng...) đi kèm PDF: hiện từng tệp, báo sẽ nén thành một ZIP, ghi nhận gửi đủ các tệp', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), {
+      dataTransfer: { types: ['Files'], files: [pdf(), docx('to-trinh.docx'), docx('hop-dong.docx'), docx('phu-luc.docx')] },
+    });
+    await screen.findByText('to-trinh.docx');
+    expect(screen.getByText('hop-dong.docx')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm văn bản mới' }));
+    await screen.findByLabelText('Số hiệu');
+    expect(await screen.findByText('3 tệp sẽ được nén thành một tệp ZIP trong kho Biểu mẫu.')).toBeTruthy();
+    expect(m.findForms).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận vào Văn thư' }));
+    await waitFor(() => expect(m.record).toHaveBeenCalledTimes(1));
+    expect(m.record.mock.calls[0][0].formUploads.map((f: File) => f.name)).toEqual(['to-trinh.docx', 'hop-dong.docx', 'phu-luc.docx']);
+  });
+
+  it('chỉ có một tệp Word kèm PDF cũng là biểu mẫu, không báo lỗi định dạng', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), docx('mau-01.docx')] } });
+    await screen.findByText('mau-01.docx');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

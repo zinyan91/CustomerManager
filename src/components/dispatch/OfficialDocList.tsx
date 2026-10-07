@@ -1,7 +1,8 @@
-import { Eye, Download, Pencil, Trash2, FileText, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Eye, Download, Pencil, Trash2, FileText, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, ChevronsUpDown, Loader2 } from 'lucide-react';
 import type { OfficialDoc } from '../../types/officialDoc';
 import { computeStatus } from '../../lib/officialDoc/status';
 import { PAGE_SIZE } from '../../lib/officialDoc/docQuery';
+import { ariaSort, type DocSort, type DocSortKey } from '../../lib/officialDoc/docSort';
 import { fmtDate, todayIso } from '../../lib/utils';
 import { OfficialDocStatusBadge } from './OfficialDocStatusBadge';
 
@@ -11,6 +12,8 @@ interface OfficialDocListProps {
   total: number;
   page: number;
   pageCount: number;
+  sort: DocSort;
+  onSort: (key: DocSortKey) => void;
   onPageChange: (page: number) => void;
   onOpen: (doc: OfficialDoc) => void;
   onDownload: (doc: OfficialDoc) => void;
@@ -31,6 +34,8 @@ export function OfficialDocList({
   total,
   page,
   pageCount,
+  sort,
+  onSort,
   onPageChange,
   onOpen,
   onDownload,
@@ -41,6 +46,24 @@ export function OfficialDocList({
   const today = todayIso();
   const firstRow = (page - 1) * PAGE_SIZE;
 
+  const sortHeader = (key: DocSortKey, label: string, className: string) => {
+    const active = sort.key === key;
+    const Icon = !active ? ChevronsUpDown : sort.dir === 'asc' ? ChevronUp : ChevronDown;
+    const centered = className.includes('text-center');
+    return (
+      <th className={className} aria-sort={ariaSort(sort, key)}>
+        <button
+          type="button"
+          onClick={() => onSort(key)}
+          className={`inline-flex items-center gap-1 font-semibold cursor-pointer hover:text-slate-950 dark:hover:text-white ${centered ? 'justify-center w-full' : ''}`}
+        >
+          <span>{label}</span>
+          <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? '' : 'opacity-40'}`} />
+        </button>
+      </th>
+    );
+  };
+
   return (
     <div>
       <div className="overflow-x-auto">
@@ -48,11 +71,11 @@ export function OfficialDocList({
           <thead>
             <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-b border-slate-300 dark:border-slate-700 font-semibold">
               <th className={`${th} w-12 text-center`}>STT</th>
-              <th className={`${th} min-w-[11rem] whitespace-nowrap`}>Số hiệu</th>
-              <th className={`${th} min-w-[260px]`}>Tiêu đề</th>
-              <th className={`${th} w-28 whitespace-nowrap text-center`}>Ban hành</th>
-              <th className={`${th} w-28 whitespace-nowrap text-center`}>Hiệu lực</th>
-              <th className={`${th} w-28 whitespace-nowrap text-center`}>Hết hiệu lực</th>
+              {sortHeader('docNumber', 'Số hiệu', `${th} min-w-[11rem] whitespace-nowrap`)}
+              {sortHeader('title', 'Tiêu đề', `${th} min-w-[260px]`)}
+              {sortHeader('issuedDate', 'Ban hành', `${th} w-28 whitespace-nowrap text-center`)}
+              {sortHeader('effectiveFrom', 'Hiệu lực', `${th} w-28 whitespace-nowrap text-center`)}
+              {sortHeader('effectiveTo', 'Hết hiệu lực', `${th} w-28 whitespace-nowrap text-center`)}
               <th className={`${th} w-32 whitespace-nowrap text-center`}>Tình trạng</th>
               <th className="w-px whitespace-nowrap px-3 py-2.5 text-center">Thao tác</th>
             </tr>

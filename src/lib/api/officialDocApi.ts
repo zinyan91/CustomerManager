@@ -8,6 +8,7 @@ import type {
 } from '../../types/officialDoc';
 import { OFFICIAL_CATEGORIES } from '../officialDoc/categories';
 import { applyDocFilters, pageRange } from '../officialDoc/docQuery';
+import { DEFAULT_DOC_SORT, sortOrder, type DocSort } from '../officialDoc/docSort';
 import { mapOfficialDocRow, toOfficialDocRow } from '../officialDoc/mapRow';
 import { validateOfficialDoc } from '../officialDoc/validate';
 
@@ -21,13 +22,12 @@ export interface DocSearchResult {
 }
 
 /** Một trang văn bản theo bộ lọc. Chỉ metadata nhỏ đi qua Supabase. Ném lỗi khi DB báo lỗi. */
-export async function searchOfficialDocs(filter: OfficialDocFilter, page: number): Promise<DocSearchResult> {
+export async function searchOfficialDocs(filter: OfficialDocFilter, page: number, sort: DocSort = DEFAULT_DOC_SORT): Promise<DocSearchResult> {
   const [from, to] = pageRange(page);
-  const base = supabase.from(TABLE).select('*', { count: 'exact' });
-  const { data, count, error } = await applyDocFilters(base, filter, todayIso())
-    .order('IssuedDate', { ascending: false })
-    .order('Id', { ascending: false })
-    .range(from, to);
+  let query = applyDocFilters(supabase.from(TABLE).select('*', { count: 'exact' }), filter, todayIso());
+  // Ngày để trống (vd không hết hiệu lực) luôn xuống cuối, dù sắp tăng hay giảm
+  for (const o of sortOrder(sort)) query = query.order(o.column, { ascending: o.ascending, nullsFirst: false });
+  const { data, count, error } = await query.range(from, to);
 
   if (error) {
     if (error.code === 'PGRST103') return { docs: [], total: 0, outOfRange: true };

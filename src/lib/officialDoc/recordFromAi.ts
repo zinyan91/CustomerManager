@@ -10,6 +10,7 @@ import { fetchHfAuth } from '../huggingface/hfConfigApi';
 import { uploadItemsToHf } from '../huggingface/hfWrite';
 import { addDocFile } from './docFiles';
 import { docFolderSlug, uniqueFileName } from './docPaths';
+import { prepareFormUpload } from './formBundle';
 import { matchFormFiles } from './formMatch';
 import { validateOfficialDoc } from './validate';
 
@@ -87,34 +88,36 @@ export async function findFormFiles(target: RecordTarget, docNumber: string): Pr
 
 /**
  * Tải tệp lên kho Văn thư (<gốc>/<mục>/<năm>/<số hiệu>/) rồi ghi văn bản với tệp là bản gốc.
- * Có thể kèm thư mục nén biểu mẫu (tải lên kho Biểu mẫu, cùng cấu trúc thư mục) và các biểu mẫu
- * đã có sẵn trong kho Biểu mẫu (chỉ gắn, không tải lại). Kiểm tra dữ liệu và kho đích trước khi tải
+ * Có thể kèm bộ biểu mẫu (một tệp thì giữ nguyên, nhiều tệp thì nén thành một ZIP, rồi tải lên kho
+ * Biểu mẫu cùng cấu trúc thư mục) và các biểu mẫu đã có sẵn trong kho Biểu mẫu (chỉ gắn, không tải lại). Kiểm tra dữ liệu và kho đích trước khi tải
  * để không để lại tệp mồ côi vì thiếu trường hay thiếu kho.
  */
 export async function recordDocFromFile(args: {
   file: File;
   fields: ExtractedDoc;
   target: RecordTarget;
-  formZip?: File | null;
+  formUploads?: File[];
   formFiles?: OfficialDocFile[];
 }) {
-  const { file, fields, target, formZip = null, formFiles = [] } = args;
+  const { file, fields, target, formUploads = [], formFiles = [] } = args;
   const invalid = validateOfficialDoc({ ...fields, files: [] });
   if (invalid) throw new Error(invalid);
-  if (formZip && !target.formRepo) throw new Error(MSG_NO_FORM_REPO);
+  if (formUploads.length > 0 && !target.formRepo) throw new Error(MSG_NO_FORM_REPO);
+  // Nén bộ biểu mẫu trước khi tải bất cứ gì lên, để lỗi nén không để lại tệp gốc mồ côi
+  const formBundle = await prepareFormUpload(formUploads, fields.docNumber);
 
   const goc = await uploadIntoDocFolder(target.repo, target.token, file, fields);
   let files: OfficialDocFile[] = [{ kind: 'goc', repoId: target.repo.repoId, path: goc.path, name: goc.name }];
   const landed = [goc.path];
 
-  if (formZip && target.formRepo) {
+  if (formBundle && target.formRepo) {
     try {
-      const zip = await uploadIntoDocFolder(target.formRepo, target.token, formZip, fields);
-      files = addDocFile(files, { kind: 'bieu-mau', repoId: target.formRepo.repoId, path: zip.path, name: zip.name });
-      landed.push(zip.path);
+      const uploaded = await uploadIntoDocFolder(target.formRepo, target.token, formBundle, fields);
+      files = addDocFile(files, { kind: 'bieu-mau', repoId: target.formRepo.repoId, path: uploaded.path, name: uploaded.name });
+      landed.push(uploaded.path);
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      throw new Error(`Tệp gốc đã lên Kho (${goc.path}) nhưng chưa tải được thư mục nén biểu mẫu: ${reason}. Chưa ghi văn bản.`);
+      throw new Error(`Tệp gốc đã lên Kho (${goc.path}) nhưng chưa tải được bộ biểu mẫu: ${reason}. Chưa ghi văn bản.`);
     }
   }
   for (const f of formFiles) files = addDocFile(files, f);

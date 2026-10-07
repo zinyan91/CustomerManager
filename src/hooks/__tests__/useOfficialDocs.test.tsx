@@ -40,7 +40,7 @@ describe('useOfficialDocs', () => {
     expect(result.current.total).toBe(31);
     expect(result.current.pageCount).toBe(3);
     expect(result.current.counts).toEqual(COUNTS);
-    expect(api.search).toHaveBeenCalledWith(expect.objectContaining({ search: '', category: 'all' }), 1);
+    expect(api.search).toHaveBeenCalledWith(expect.objectContaining({ search: '', category: 'all' }), 1, { key: 'issuedDate', dir: 'desc' });
   });
 
   it('ô tìm kiếm chờ 300ms: gõ nhiều phím chỉ gọi DB một lần với từ khóa cuối', async () => {
@@ -59,7 +59,7 @@ describe('useOfficialDocs', () => {
       await vi.advanceTimersByTimeAsync(300);
     });
     expect(api.search).toHaveBeenCalledTimes(1);
-    expect(api.search).toHaveBeenCalledWith(expect.objectContaining({ search: 'lai' }), 1);
+    expect(api.search).toHaveBeenCalledWith(expect.objectContaining({ search: 'lai' }), 1, expect.anything());
     expect(api.count).toHaveBeenCalledTimes(1);
     expect(api.count).toHaveBeenCalledWith(expect.objectContaining({ search: 'lai', category: 'all' }));
   });
@@ -68,12 +68,12 @@ describe('useOfficialDocs', () => {
     const { result } = renderHook(() => useOfficialDocs());
     await waitFor(() => expect(result.current.loading).toBe(false));
     act(() => result.current.setPage(3));
-    await waitFor(() => expect(api.search).toHaveBeenLastCalledWith(expect.anything(), 3));
+    await waitFor(() => expect(api.search).toHaveBeenLastCalledWith(expect.anything(), 3, expect.anything()));
     api.search.mockClear();
     api.count.mockClear();
 
     act(() => result.current.updateFilter({ category: 'hop-dong' }));
-    await waitFor(() => expect(api.search).toHaveBeenCalledWith(expect.objectContaining({ category: 'hop-dong' }), 1));
+    await waitFor(() => expect(api.search).toHaveBeenCalledWith(expect.objectContaining({ category: 'hop-dong' }), 1, expect.anything()));
     expect(api.count).not.toHaveBeenCalled();
     expect(result.current.page).toBe(1);
   });
@@ -144,5 +144,19 @@ describe('useOfficialDocs', () => {
       releaseFirst({ docs: [d('1')], total: 31, outOfRange: false });
     });
     expect(result.current.docs.map((x) => x.id)).toEqual(['2']);
+  });
+
+  it('bấm tiêu đề cột: sắp theo cột đó, bấm lại thì đảo chiều, luôn về trang 1', async () => {
+    const { result } = renderHook(() => useOfficialDocs());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    act(() => result.current.setPage(3));
+    await waitFor(() => expect(api.search).toHaveBeenLastCalledWith(expect.anything(), 3, expect.anything()));
+
+    act(() => result.current.toggleSort('docNumber'));
+    await waitFor(() => expect(api.search).toHaveBeenLastCalledWith(expect.anything(), 1, { key: 'docNumber', dir: 'asc' }));
+    expect(result.current.sort).toEqual({ key: 'docNumber', dir: 'asc' });
+
+    act(() => result.current.toggleSort('docNumber'));
+    await waitFor(() => expect(api.search).toHaveBeenLastCalledWith(expect.anything(), 1, { key: 'docNumber', dir: 'desc' }));
   });
 });

@@ -154,6 +154,8 @@ export function DispatchManagementView() {
           total={docsState.total}
           page={docsState.page}
           pageCount={docsState.pageCount}
+          sort={docsState.sort}
+          onSort={docsState.toggleSort}
           onPageChange={docsState.setPage}
           onOpen={setDetailDoc}
           onDownload={handleDownload}

@@ -146,9 +146,9 @@ describe('recordDocFromFile', () => {
 
 const zipFile = (name = 'bieu-mau.zip') => new File(['zipdata'], name, { type: 'application/zip' });
 
-describe('recordDocFromFile kèm thư mục nén biểu mẫu', () => {
-  it('PDF vào kho Văn thư, zip vào kho Biểu mẫu cùng cấu trúc thư mục; văn bản có đủ hai loại tệp', async () => {
-    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formZip: zipFile() });
+describe('recordDocFromFile kèm bộ biểu mẫu', () => {
+  it('một tệp biểu mẫu (vd zip) giữ nguyên: PDF vào kho Văn thư, biểu mẫu vào kho Biểu mẫu cùng cấu trúc thư mục', async () => {
+    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formUploads: [zipFile()] });
 
     expect(m.upload).toHaveBeenCalledTimes(2);
     const [gocTarget, gocFolder] = m.upload.mock.calls[0];
@@ -169,7 +169,7 @@ describe('recordDocFromFile kèm thư mục nén biểu mẫu', () => {
   });
 
   it('chưa có kho Biểu mẫu mà có zip thì báo rõ và không tải gì lên', async () => {
-    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: NO_FORM_TARGET, formZip: zipFile() })).rejects.toThrow(/Chưa có kho Biểu mẫu/);
+    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: NO_FORM_TARGET, formUploads: [zipFile()] })).rejects.toThrow(/Chưa có kho Biểu mẫu/);
     expect(m.upload).not.toHaveBeenCalled();
     expect(m.save).not.toHaveBeenCalled();
   });
@@ -178,22 +178,22 @@ describe('recordDocFromFile kèm thư mục nén biểu mẫu', () => {
     m.upload
       .mockResolvedValueOnce({ uploaded: ['x'], failed: [] })
       .mockResolvedValueOnce({ uploaded: [], failed: [{ path: 'p', error: 'Tệp quá lớn so với giới hạn của kho lưu trữ.' }] });
-    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formZip: zipFile() })).rejects.toThrow(
-      /Tệp gốc đã lên Kho \(van-thu\/van-ban\/2026\/2753-2026-tb-bdh\/tb\.pdf\) nhưng chưa tải được thư mục nén biểu mẫu: Tệp quá lớn.*Chưa ghi văn bản/
+    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formUploads: [zipFile()] })).rejects.toThrow(
+      /Tệp gốc đã lên Kho \(van-thu\/van-ban\/2026\/2753-2026-tb-bdh\/tb\.pdf\) nhưng chưa tải được bộ biểu mẫu: Tệp quá lớn.*Chưa ghi văn bản/
     );
     expect(m.save).not.toHaveBeenCalled();
   });
 
   it('ghi văn bản hỏng thì liệt kê mọi tệp đã lên Kho', async () => {
     m.save.mockRejectedValue(new Error('row-level security'));
-    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formZip: zipFile() })).rejects.toThrow(
+    await expect(recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formUploads: [zipFile()] })).rejects.toThrow(
       /Tệp đã lên Kho \(.*tb\.pdf, bm\/van-ban\/2026\/2753-2026-tb-bdh\/bieu-mau\.zip\)/
     );
   });
 
   it('trùng tên zip trong kho Biểu mẫu thì đổi tên, không ghi đè', async () => {
     m.listTree.mockResolvedValueOnce([]).mockResolvedValueOnce([{ type: 'file', name: 'bieu-mau.zip', path: 'p', size: 1, downloadUrl: '' }]);
-    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formZip: zipFile() });
+    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formUploads: [zipFile()] });
     expect(m.upload.mock.calls[1][2][0].relativePath).toBe('bieu-mau-2.zip');
   });
 });
@@ -243,5 +243,43 @@ describe('findFormFiles', () => {
   it('lỗi từ kho được ném ra, không nuốt thành rỗng', async () => {
     m.listTree.mockRejectedValue(new HfApiError(403, 'token'));
     await expect(findFormFiles(TARGET, '2753/2026/TB-BĐH')).rejects.toThrow();
+  });
+});
+
+describe('recordDocFromFile với bộ biểu mẫu nhiều tệp (tờ trình, hợp đồng đính kèm...)', () => {
+  const docx = (name: string, text: string) => new File([text], name, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+
+  it('nhiều tệp được nén thành đúng một ZIP đặt theo số hiệu rồi tải lên kho Biểu mẫu', async () => {
+    await recordDocFromFile({
+      file: file(),
+      fields: FIELDS,
+      target: TARGET,
+      formUploads: [docx('to-trinh.docx', 'A'), docx('hop-dong.docx', 'B'), docx('phu-luc.docx', 'C')],
+    });
+
+    expect(m.upload).toHaveBeenCalledTimes(2);
+    const [formTarget, formFolder, formItems] = m.upload.mock.calls[1];
+    expect(formTarget.repoId).toBe('o/bieu-mau');
+    expect(formFolder).toBe('bm/van-ban/2026/2753-2026-tb-bdh');
+    expect(formItems).toHaveLength(1);
+    expect(formItems[0].relativePath).toBe('2753-2026-tb-bdh-bieu-mau.zip');
+    expect(formItems[0].file.type).toBe('application/zip');
+
+    const files = m.save.mock.calls[0][1].files;
+    expect(files.filter((f: { kind: string }) => f.kind === 'bieu-mau')).toEqual([
+      { kind: 'bieu-mau', repoId: 'o/bieu-mau', path: 'bm/van-ban/2026/2753-2026-tb-bdh/2753-2026-tb-bdh-bieu-mau.zip', name: '2753-2026-tb-bdh-bieu-mau.zip' },
+    ]);
+  });
+
+  it('một tệp Word thì giữ nguyên, không nén', async () => {
+    await recordDocFromFile({ file: file(), fields: FIELDS, target: TARGET, formUploads: [docx('mau-01.docx', 'A')] });
+    expect(m.upload.mock.calls[1][2][0].relativePath).toBe('mau-01.docx');
+  });
+
+  it('chưa có kho Biểu mẫu mà có biểu mẫu thì báo rõ và không tải gì lên', async () => {
+    await expect(
+      recordDocFromFile({ file: file(), fields: FIELDS, target: NO_FORM_TARGET, formUploads: [docx('a.docx', 'A'), docx('b.docx', 'B')] })
+    ).rejects.toThrow(/Chưa có kho Biểu mẫu/);
+    expect(m.upload).not.toHaveBeenCalled();
   });
 });

@@ -22,7 +22,7 @@ const lbl = 'block text-[10px] font-semibold text-slate-500 dark:text-slate-400 
 
 /** Thẻ AI đề xuất ghi nhận một văn bản: sửa được các trường, bấm Ghi nhận mới lưu. */
 export function AiDocProposalCard({ proposal, onEdit, onRecord, onDismiss, onRemoveForm, onResearchForms }: AiDocProposalCardProps) {
-  const { id, attachment, status, fields, error, formZip, formFiles, searchingForms, formNote } = proposal;
+  const { id, attachment, status, fields, error, formUploads, formFiles, searchingForms, formNote } = proposal;
   const invalid = fields ? validateOfficialDoc({ ...fields, files: [] }) : null;
   const locked = status === 'saving' || status === 'saved';
 
@@ -90,7 +90,7 @@ export function AiDocProposalCard({ proposal, onEdit, onRecord, onDismiss, onRem
           <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700">
             <div className="flex items-center justify-between mb-1">
               <span className={lbl.replace('mb-0.5', '')}>Biểu mẫu</span>
-              {!formZip && !locked && (
+              {formUploads.length === 0 && !locked && (
                 <button
                   type="button"
                   onClick={() => onResearchForms(id)}
@@ -103,12 +103,21 @@ export function AiDocProposalCard({ proposal, onEdit, onRecord, onDismiss, onRem
               )}
             </div>
 
-            {formZip ? (
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
-                <Archive className="w-3.5 h-3.5 shrink-0 text-slate-500" />
-                <span className="flex-1 truncate" title={formZip.name}>{formZip.name}</span>
-                <span className="font-mono text-[10px] text-slate-400">{formatFileSize(formZip.size)}</span>
-              </div>
+            {formUploads.length > 0 ? (
+              <>
+                <ul className="space-y-1">
+                  {formUploads.map((f, i) => (
+                    <li key={`${f.name}_${i}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                      <Archive className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                      <span className="flex-1 truncate" title={f.name}>{f.name}</span>
+                      <span className="font-mono text-[10px] text-slate-400">{formatFileSize(f.size)}</span>
+                    </li>
+                  ))}
+                </ul>
+                {formUploads.length > 1 && (
+                  <div className="mt-1 text-slate-500">{formUploads.length} tệp sẽ được nén thành một tệp ZIP trong kho Biểu mẫu.</div>
+                )}
+              </>
             ) : (
               <>
                 {searchingForms && (

@@ -9,8 +9,8 @@ export type ProposalStatus = 'reading' | 'ready' | 'saving' | 'saved' | 'error';
 export interface DocProposal {
   id: string;
   attachment: AiAttachment;
-  /** Thư mục nén biểu mẫu người dùng gửi kèm; có thì không tự tra kho Biểu mẫu. */
-  formZip: File | null;
+  /** Bộ biểu mẫu người dùng gửi kèm (một hay nhiều tệp); có thì không tự tra kho Biểu mẫu. */
+  formUploads: File[];
   status: ProposalStatus;
   fields: ExtractedDoc | null;
   /** Biểu mẫu AI tự tìm thấy trong kho Biểu mẫu theo số hiệu; người dùng bỏ bớt được trước khi ghi. */
@@ -32,7 +32,7 @@ interface Options {
 /**
  * Đề xuất ghi nhận văn bản từ tệp gửi cho AI: AI đọc tệp, trích các trường, người dùng xem/sửa
  * rồi bấm ghi. AI không tự ghi vào CSDL: một thao tác xác nhận của admin là điều kiện bắt buộc.
- * Gửi kèm thư mục nén thì nó thành biểu mẫu của văn bản; không kèm thì AI tự tra kho Biểu mẫu.
+ * Gửi kèm biểu mẫu (một hay nhiều tệp) thì chúng thành biểu mẫu của văn bản; không kèm thì AI tự tra kho Biểu mẫu.
  */
 export function useAiDocProposals({ enabled, model, onRecorded }: Options) {
   const [proposals, setProposals] = useState<DocProposal[]>([]);
@@ -68,12 +68,12 @@ export function useAiDocProposals({ enabled, model, onRecorded }: Options) {
   );
 
   const propose = useCallback(
-    (attachments: AiAttachment[], formZip: File | null = null) => {
+    (attachments: AiAttachment[], formUploads: File[] = []) => {
       if (!enabled || attachments.length === 0) return;
       const added: DocProposal[] = attachments.map((attachment) => ({
         id: `prop_${attachment.id}`,
         attachment,
-        formZip,
+        formUploads,
         status: 'reading',
         fields: null,
         formFiles: [],
@@ -87,7 +87,7 @@ export function useAiDocProposals({ enabled, model, onRecorded }: Options) {
         extractOfficialDocFields(p.attachment, model)
           .then((fields) => {
             patch(p.id, { status: 'ready', fields });
-            if (!p.formZip) void searchForms(p.id, fields.docNumber);
+            if (p.formUploads.length === 0) void searchForms(p.id, fields.docNumber);
           })
           .catch((err) =>
             patch(p.id, { status: 'error', error: err instanceof Error ? err.message : 'AI không đọc được tệp.' })
@@ -119,7 +119,7 @@ export function useAiDocProposals({ enabled, model, onRecorded }: Options) {
   const researchForms = useCallback(
     (id: string) => {
       const current = proposalsRef.current.find((p) => p.id === id);
-      if (!current?.fields || current.formZip || current.searchingForms) return;
+      if (!current?.fields || current.formUploads.length > 0 || current.searchingForms) return;
       void searchForms(id, current.fields.docNumber);
     },
     [searchForms]
@@ -136,7 +136,7 @@ export function useAiDocProposals({ enabled, model, onRecorded }: Options) {
           file: attachmentToFile(current.attachment),
           fields: current.fields,
           target,
-          formZip: current.formZip,
+          formUploads: current.formUploads,
           formFiles: current.formFiles,
         });
         patch(id, { status: 'saved' });

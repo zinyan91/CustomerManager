@@ -30,7 +30,7 @@ const f = (kind: OfficialDocFile['kind'], path: string, repoId = 'o/kho'): Offic
 });
 
 const repo = (id: number, kind: StorageRepo['kind'], assignedUserId: string | null = null): StorageRepo => ({
-  id, name: `r${id}`, repoId: `o/r${id}`, folder: '', kind, assignedUserId, createdAt: '',
+  id, name: `r${id}`, repoId: `o/r${id}`, provider: 'huggingface', folder: '', kind, assignedUserId, createdAt: '',
 });
 
 beforeEach(() => {

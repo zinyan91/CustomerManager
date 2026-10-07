@@ -72,6 +72,25 @@ describe('prepareDocContext', () => {
     expect(out.contextText).toMatch(/Chưa cấu hình kho lưu trữ/);
   });
 
+  it('văn bản có tệp trên Google Drive: không đòi token Hugging Face, không đọc cấu hình HF', async () => {
+    const onDrive = { ...D8, files: [{ kind: 'goc' as const, repoId: 'DRIVE-ROOT', path: '8.pdf', name: '8.pdf', fileId: 'F8' }] };
+    m.index.mockResolvedValue([onDrive]);
+    m.auth.mockResolvedValue(null);
+    const out = await prepareDocContext('2848-8', []);
+    expect(m.auth).not.toHaveBeenCalled();
+    expect(m.read).toHaveBeenCalledWith([onDrive], '');
+    expect(out.attachments).toHaveLength(1);
+  });
+
+  it('chỉ một tệp còn ở Hugging Face mà chưa có token thì vẫn báo chưa đọc được', async () => {
+    const mixed = { ...D8, files: [...D8.files, { kind: 'goc' as const, repoId: 'DRIVE-ROOT', path: 'p.pdf', name: 'p.pdf', fileId: 'F9' }] };
+    m.index.mockResolvedValue([mixed]);
+    m.auth.mockResolvedValue(null);
+    const out = await prepareDocContext('2848-8', []);
+    expect(m.read).not.toHaveBeenCalled();
+    expect(out.contextText).toMatch(/Chưa cấu hình kho lưu trữ/);
+  });
+
   it('tệp không đọc được: ghi chú đi vào ngữ cảnh', async () => {
     m.read.mockResolvedValue({ attachments: [], readFiles: [], notes: ['Tệp "8.pdf" của văn bản 2848-8 không còn trong Kho'], forms: [] });
     const out = await prepareDocContext('2848-8', []);

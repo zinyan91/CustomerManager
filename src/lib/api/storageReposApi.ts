@@ -23,26 +23,48 @@ function describeInsertError(error: { code?: string; message: string }): string 
 export interface CreateRepoArgs extends RepoInput {
   folder?: string;
   token: string;
-  /** true: tạo dataset private mới trên Hugging Face; false: chỉ đăng ký repo đã có. */
-  createOnHf: boolean;
+  /**
+   * true: tạo mới ở nơi lưu (dataset private trên Hugging Face, hoặc thư mục tên `name` ở gốc Shared Drive);
+   * false: chỉ đăng ký repo hay thư mục đã có (khi đó `repoId` là bắt buộc).
+   */
+  createRemote: boolean;
 }
+
+/** ID giả để kiểm tra các trường khác khi thư mục Drive chưa được tạo nên chưa có ID thật. */
+const PENDING_DRIVE_FOLDER_ID = 'ChuaTaoThuMuc';
 
 /** Tạo (hoặc đăng ký) repo rồi lưu vào danh sách. Ném lỗi tiếng Việt khi hỏng ở bước nào. */
 export async function createStorageRepo(args: CreateRepoArgs): Promise<StorageRepo> {
-  const invalid = validateRepoInput(args);
+  const newDriveFolder = args.provider === 'drive' && args.createRemote;
+  const invalid = validateRepoInput(newDriveFolder ? { ...args, repoId: PENDING_DRIVE_FOLDER_ID } : args);
   if (invalid) throw new Error(invalid);
 
-  if (args.createOnHf) {
-    await createHfDataset(args.token, args.repoId);
+  let repoId = args.repoId;
+  let createdWhere = '';
+  if (newDriveFolder) {
+    // Nạp trễ: lớp Drive kéo theo token và máy khách Supabase
+    const [{ driveContext }, { createDriveFolder }, { describeDriveError }] = await Promise.all([
+      import('../drive/driveToken'), import('../drive/driveClient'), import('../drive/driveErrors'),
+    ]);
+    try {
+      repoId = (await createDriveFolder(driveContext, (await driveContext.getAccess()).driveId, args.name.trim())).id;
+    } catch (err) {
+      throw new Error(describeDriveError(err, 'Tạo thư mục trong Shared Drive'));
+    }
+    createdWhere = `Đã tạo thư mục "${args.name.trim()}" (ID ${repoId}) trong Shared Drive`;
+  } else if (args.provider !== 'drive' && args.createRemote) {
+    await createHfDataset(args.token, repoId);
+    createdWhere = `Đã tạo repo ${repoId} trên Hugging Face`;
   }
 
   const { data, error } = await supabase
     .from('StorageRepos')
     .insert({
       Name: args.name.trim(),
-      RepoId: args.repoId,
+      RepoId: repoId,
       Folder: args.folder?.trim() || null,
       Kind: args.kind,
+      Provider: args.provider === 'drive' ? 'drive' : 'huggingface',
       AssignedUserId: args.kind === 'personal' ? args.assignedUserId : null,
     })
     .select()
@@ -50,11 +72,7 @@ export async function createStorageRepo(args: CreateRepoArgs): Promise<StorageRe
 
   if (error) {
     const reason = describeInsertError(error);
-    throw new Error(
-      args.createOnHf
-        ? `Đã tạo repo ${args.repoId} trên Hugging Face nhưng chưa đăng ký được vào hệ thống: ${reason}`
-        : reason
-    );
+    throw new Error(createdWhere ? `${createdWhere} nhưng chưa đăng ký được vào hệ thống: ${reason}` : reason);
   }
   return mapRepoRow(data);
 }
@@ -112,9 +130,10 @@ async function assertDatasetExists(repoId: string, token: string): Promise<void>
  * trong các văn bản đang trỏ tới repo cũ được cập nhật cùng lúc (một giao dịch ở CSDL). Không đổi tên dataset trên Hugging Face.
  */
 export async function updateStorageRepo(repo: StorageRepo, edit: RepoEdit, token: string): Promise<RepoEditResult> {
-  const invalid = validateRepoInput({ name: edit.name, repoId: edit.repoId, kind: repo.kind, assignedUserId: repo.assignedUserId });
+  const invalid = validateRepoInput({ name: edit.name, repoId: edit.repoId, kind: repo.kind, assignedUserId: repo.assignedUserId, provider: repo.provider });
   if (invalid) throw new Error(invalid);
-  if (edit.repoId !== repo.repoId) await assertDatasetExists(edit.repoId, token);
+  // Chỉ Hugging Face kiểm dataset mới có thật; thư mục Drive được kiểm khi mở kho
+  if (repo.provider === 'huggingface' && edit.repoId !== repo.repoId) await assertDatasetExists(edit.repoId, token);
 
   const { data, error } = await supabase.rpc('update_storage_repo', {
     p_id: repo.id,

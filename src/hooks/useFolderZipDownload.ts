@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { chooseSinkMode, type FolderZipPlan } from '../lib/dispatch/folderZipPlan';
-import { downloadFolderZip, isAbortError, type ZipProgress } from '../lib/huggingface/hfFolderZip';
+import { downloadFolderZip, isAbortError, type OpenZipEntry, type ZipProgress } from '../lib/huggingface/hfFolderZip';
 import { hasNativeSavePicker, openZipSink } from '../lib/zipSink';
+
+/** Nơi đọc tệp khi nén: repo Hugging Face (repoId, token) hoặc hàm mở tệp riêng (Google Drive). */
+export type ZipTarget = { repoId: string; token: string } | { openEntry: OpenZipEntry };
 
 export type ZipPhase = 'choosing' | 'downloading' | 'saving' | 'cancelling' | null;
 
@@ -34,7 +37,7 @@ export function useFolderZipDownload() {
   }, []);
 
   /** Gọi ĐỒNG BỘ trong sự kiện click: hộp "Lưu thành" cần user activation. */
-  const start = useCallback((plan: FolderZipPlan, target: { repoId: string; token: string }) => {
+  const start = useCallback((plan: FolderZipPlan, target: ZipTarget) => {
     if (activeRef.current) return;
 
     const mode = chooseSinkMode(hasNativeSavePicker(), plan.totalBytes);
@@ -66,8 +69,7 @@ export function useFolderZipDownload() {
         let lastAt = 0;
         await downloadFolderZip({
           plan,
-          repoId: target.repoId,
-          token: target.token,
+          ...('openEntry' in target ? { openEntry: target.openEntry } : { repoId: target.repoId, token: target.token }),
           writable: sink,
           signal: run.controller.signal,
           onCommitting: () => {

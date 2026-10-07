@@ -99,4 +99,20 @@ describe('readDocsForAi', () => {
     await readDocsForAi([d], 't');
     expect(m.fetchBlob).toHaveBeenCalledTimes(1);
   });
+
+  it('tệp Drive dùng chung bộ nhớ đệm theo mã tệp: đổi tên hay di chuyển tệp trong Kho vẫn không tải lại', async () => {
+    const before: OfficialDocFile = { kind: 'goc', repoId: 'ROOT', path: 'cu/a.pdf', name: 'a.pdf', fileId: 'F1' };
+    const after: OfficialDocFile = { ...before, path: 'moi/b.pdf', name: 'b.pdf' };
+    await readDocsForAi([doc('1', [before])], '');
+    await readDocsForAi([doc('1', [after])], '');
+    expect(m.fetchBlob).toHaveBeenCalledTimes(1);
+  });
+
+  it('hai tệp Drive khác mã nhưng cùng đường dẫn không bị lẫn bộ nhớ đệm', async () => {
+    const a: OfficialDocFile = { kind: 'goc', repoId: 'ROOT', path: 'a.pdf', name: 'a.pdf', fileId: 'F1' };
+    const b: OfficialDocFile = { ...a, fileId: 'F2' };
+    await readDocsForAi([doc('1', [a])], '');
+    await readDocsForAi([doc('2', [b])], '');
+    expect(m.fetchBlob).toHaveBeenCalledTimes(2);
+  });
 });

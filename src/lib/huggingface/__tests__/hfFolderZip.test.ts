@@ -157,3 +157,26 @@ describe('downloadFolderZip', () => {
     expect((err as Error).message).toMatch(/Failed to fetch/);
   });
 });
+
+describe('downloadFolderZip với hàm mở tệp riêng (Google Drive)', () => {
+  it('đọc từng tệp bằng openEntry, không gọi Hugging Face, nội dung và cấu trúc đúng', async () => {
+    const files = { 'f/a.txt': 'xin chào', 'f/sub/b.txt': 'B' };
+    const p = plan(files);
+    const withIds: FolderZipPlan = { ...p, entries: p.entries.map((e, i) => ({ ...e, fileId: `ID${i}` })) };
+    const fetchFn = vi.fn() as unknown as typeof fetch;
+    const openEntry = vi.fn(async (entry: FolderZipPlan['entries'][number]) => new Response(enc(files[entry.filePath as keyof typeof files])));
+    const sink = collector();
+    await downloadFolderZip({ plan: withIds, openEntry, writable: sink.writable, fetchFn });
+    expect(fetchFn).not.toHaveBeenCalled();
+    expect(openEntry.mock.calls.map((c) => c[0].fileId)).toEqual(['ID0', 'ID1']);
+    expect(await readZip(sink.blob())).toEqual({ 'Goc/a.txt': 'xin chào', 'Goc/sub/b.txt': 'B' });
+  });
+
+  it('openEntry ném lỗi thì dừng, hủy đích ghi và nêu lỗi gốc', async () => {
+    const sink = collector();
+    await expect(
+      downloadFolderZip({ plan: plan({ 'f/a.txt': 'x' }), openEntry: async () => { throw new Error('Tải "a.txt" không được: không tìm thấy tệp'); }, writable: sink.writable }),
+    ).rejects.toThrow(/không tìm thấy tệp/);
+    expect(sink.events).toContain('abort');
+  });
+});

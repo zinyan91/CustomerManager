@@ -28,9 +28,6 @@ vi.mock('../../context/UserScopeContext', () => ({ useUserScope: () => ({ manage
 vi.mock('../../hooks/useArchive', () => ({ useArchive: () => state.archive }));
 vi.mock('../ai/AiChatDialog', () => ({ AiChatDialog: () => null }));
 vi.mock('../dispatch/DispatchPreviewModal', () => ({ DispatchPreviewModal: () => null }));
-vi.mock('../storage/StorageSettingsModal', () => ({
-  StorageSettingsModal: ({ isOpen }: { isOpen: boolean }) => (isOpen ? <div>MODAL CẤU HÌNH</div> : null),
-}));
 
 const commit = vi.hoisted(() => vi.fn());
 vi.mock('@huggingface/hub', () => ({ commit, createRepo: vi.fn() }));
@@ -38,7 +35,7 @@ vi.mock('@huggingface/hub', () => ({ commit, createRepo: vi.fn() }));
 import { StorageManagementView } from '../views/StorageManagementView';
 
 const repo = (over: Partial<StorageRepo>): StorageRepo => ({
-  id: 1, name: 'Kho chung', repoId: 'own/chung', folder: '', kind: 'shared', assignedUserId: null, createdAt: '', ...over,
+  id: 1, name: 'Kho chung', repoId: 'own/chung', provider: 'huggingface', folder: '', kind: 'shared', assignedUserId: null, createdAt: '', ...over,
 });
 
 const makeArchive = (over: Record<string, unknown> = {}) => {
@@ -49,7 +46,7 @@ const makeArchive = (over: Record<string, unknown> = {}) => {
     repos: [shared],
     selectedRepo: shared,
     selectRepo: vi.fn(),
-    config: { token: 'hf_t', repoId: 'own/chung', folder: '', isPrivate: true },
+    config: { token: 'hf_t', repoId: 'own/chung', provider: 'huggingface', folder: '', isPrivate: true },
     documents: [],
     folders: [],
     status: { kind: 'ready' },
@@ -89,16 +86,19 @@ describe('Kho lưu trữ - giao diện', () => {
     expect(document.querySelectorAll('[title]')).toHaveLength(0);
   });
 
-  it('user thường không thấy nút cấu hình lẫn biểu tượng khóa', () => {
+  it('user thường không thấy liên kết cấu hình lẫn biểu tượng khóa', () => {
     render(<StorageManagementView />);
-    expect(screen.queryByRole('button', { name: 'Cấu hình kho lưu trữ' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Cấu hình kho lưu trữ' })).toBeNull();
   });
 
-  it('Master Admin thấy nút cấu hình và mở được modal', () => {
+  it('Master Admin thấy liên kết cấu hình mở trang cấu hình ở khu quản trị bằng tab mới', () => {
     state.role = 'master_admin';
     render(<StorageManagementView />);
-    fireEvent.click(screen.getByRole('button', { name: 'Cấu hình kho lưu trữ' }));
-    expect(screen.getByText('MODAL CẤU HÌNH')).toBeTruthy();
+    const link = screen.getByRole('link', { name: 'Cấu hình kho lưu trữ' });
+    expect(link.getAttribute('href')).toBe('/admin/storage');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toContain('noopener');
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('User Admin không thấy cấu hình nhưng được thấy nút xóa tệp', () => {
@@ -107,7 +107,7 @@ describe('Kho lưu trữ - giao diện', () => {
       documents: [{ id: 'hf_1', title: 'a.pdf', fileName: 'a.pdf', fileType: 'application/pdf', fileSize: 10, filePath: 'a.pdf', folderPath: '', documentType: 'khac', updatedAt: '2026-10-01T00:00:00Z' }],
     });
     render(<StorageManagementView />);
-    expect(screen.queryByRole('button', { name: 'Cấu hình kho lưu trữ' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Cấu hình kho lưu trữ' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Xóa a.pdf' })).toBeTruthy();
   });
 
@@ -119,7 +119,7 @@ describe('Kho lưu trữ - giao diện', () => {
     unmount();
 
     const mine = repo({ id: 2, name: 'Kho A', kind: 'personal', assignedUserId: 'u-a', repoId: 'own/a' });
-    state.archive = makeArchive({ documents: [doc], repos: [repo({}), mine], selectedRepo: mine, config: { token: 'hf_t', repoId: 'own/a', folder: '' } });
+    state.archive = makeArchive({ documents: [doc], repos: [repo({}), mine], selectedRepo: mine, config: { token: 'hf_t', repoId: 'own/a', provider: 'huggingface', folder: '' } });
     render(<StorageManagementView />);
     expect(screen.getByRole('button', { name: 'Xóa a.pdf' })).toBeTruthy();
   });
@@ -175,7 +175,7 @@ describe('Kho lưu trữ - giao diện', () => {
 
   it('không có quyền tải lên (kho cá nhân của người khác) thì thả tệp không gọi HF', async () => {
     const other = repo({ id: 3, name: 'Kho B', kind: 'personal', assignedUserId: 'u-b', repoId: 'own/b' });
-    state.archive = makeArchive({ repos: [repo({}), other], selectedRepo: other, config: { token: 'hf_t', repoId: 'own/b', folder: '' } });
+    state.archive = makeArchive({ repos: [repo({}), other], selectedRepo: other, config: { token: 'hf_t', repoId: 'own/b', provider: 'huggingface', folder: '' } });
     render(<StorageManagementView />);
     expect(screen.queryByRole('button', { name: /Tải lên tệp/ })).toBeNull();
 
@@ -243,7 +243,7 @@ describe('Kho lưu trữ - duyệt thư mục kiểu trình quản lý tệp', (
 
   it('thư mục gốc cấu hình của repo là "Gốc": thấy ngay nội dung, không phải bấm vào thư mục gốc', () => {
     state.archive = makeArchive({
-      config: { token: 'hf_t', repoId: 'own/chung', folder: 'van-thu' },
+      config: { token: 'hf_t', repoId: 'own/chung', provider: 'huggingface', folder: 'van-thu' },
       documents: [mk('van-thu/x.pdf'), mk('van-thu/Con/y.pdf')],
       folders: ['van-thu', 'van-thu/Con'],
     });

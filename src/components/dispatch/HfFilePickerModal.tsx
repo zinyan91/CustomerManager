@@ -6,6 +6,7 @@ import { STORAGE_KIND_LABELS, type StorageRepo } from '../../types/storageRepo';
 import type { ArchiveStatus } from '../../lib/huggingface/hfStatus';
 import { classifyArchiveError, archiveStatusMessage } from '../../lib/huggingface/hfStatus';
 import { listHfTree } from '../../lib/huggingface/hfClient';
+import { describeDriveError } from '../../lib/drive/driveErrors';
 import { listStorageRepos } from '../../lib/api/storageReposApi';
 import { repoKindOfFile, selectableRepos } from '../../lib/officialDoc/docFiles';
 import { browseFolder, stripBase } from '../../lib/dispatch/folderBrowse';
@@ -17,6 +18,9 @@ export interface PickedFile {
   repoId: string;
   path: string;
   name: string;
+  /** Chỉ có với tệp Google Drive. */
+  fileId?: string;
+  nativeMimeType?: string;
 }
 
 interface HfFilePickerModalProps {
@@ -60,27 +64,50 @@ export function HfFilePickerModal({ fileKind, title, token, pickedKeys, onPick, 
 
   const repo = repos[repoIndex] ?? null;
 
+  const isDrive = repo?.provider === 'drive';
+  // Kho Drive luôn tính từ thư mục gốc của kho
+  const base = repo && !isDrive ? repo.folder : '';
+
   useEffect(() => {
     if (!repo) return;
-    if (!token) {
+    const isDriveRepo = repo.provider === 'drive';
+    // Token Hugging Face chỉ cần cho kho Hugging Face; kho Drive đi qua Edge Function drive-token
+    if (!isDriveRepo && !token) {
       setStatus({ kind: 'not_configured' });
       return;
     }
     let active = true;
     setStatus({ kind: 'loading' });
-    setCurrent(repo.folder);
-    listHfTree(repo.repoId, repo.folder, token, true)
-      .then((tree) => {
+    setCurrent(isDriveRepo ? '' : repo.folder);
+
+    const load = isDriveRepo
+      ? Promise.all([import('../../lib/drive/driveToken'), import('../../lib/drive/driveClient'), import('../../lib/drive/driveTree'), import('../../lib/drive/driveDocuments')]).then(
+          async ([{ driveContext }, { listDriveFiles }, { buildRepoEntries, listingOf }, { entriesToDocuments }]) => {
+            const files = await listDriveFiles(driveContext);
+            if (!files.some((f) => f.id === repo.repoId)) {
+              throw new Error('Không tìm thấy thư mục gốc của kho trong Shared Drive. Kiểm tra lại ID thư mục và việc tài khoản dịch vụ là thành viên của Shared Drive.');
+            }
+            const entries = buildRepoEntries(files, repo.repoId);
+            return { docs: entriesToDocuments(entries, repo.repoId, new Date().toISOString()), folders: listingOf(entries).folders };
+          }
+        )
+      : listHfTree(repo.repoId, repo.folder, token, true).then((tree) => ({
+          docs: mergeHfTreeWithDispatches(tree, [], new Date().toISOString(), repo.repoId),
+          folders: collectFolders(tree),
+        }));
+
+    load
+      .then((loaded) => {
         if (!active) return;
-        setDocs(mergeHfTreeWithDispatches(tree, [], new Date().toISOString(), repo.repoId));
-        setEmptyFolders(collectFolders(tree));
+        setDocs(loaded.docs);
+        setEmptyFolders(loaded.folders);
         setStatus({ kind: 'ready' });
       })
       .catch((err) => {
         if (!active) return;
         setDocs([]);
         setEmptyFolders([]);
-        setStatus(classifyArchiveError(err));
+        setStatus(isDriveRepo ? { kind: 'error', message: describeDriveError(err, 'Nạp kho lưu trữ') } : classifyArchiveError(err));
       });
     return () => {
       active = false;
@@ -88,7 +115,6 @@ export function HfFilePickerModal({ fileKind, title, token, pickedKeys, onPick, 
   }, [repo, token]);
 
   const listing = useMemo(() => browseFolder(docs, emptyFolders, current), [docs, emptyFolders, current]);
-  const base = repo?.folder ?? '';
   const crumbs = (stripBase(current, base) ?? '').split('/').filter(Boolean);
   const message =
     status.kind === 'no_repo'
@@ -179,7 +205,15 @@ export function HfFilePickerModal({ fileKind, title, token, pickedKeys, onPick, 
                   <button
                     type="button"
                     disabled={picked || !repo}
-                    onClick={() => repo && onPick({ repoId: repo.repoId, path, name: file.fileName })}
+                    onClick={() =>
+                      repo &&
+                      onPick({
+                        repoId: repo.repoId,
+                        path,
+                        name: file.fileName,
+                        ...(file.fileId ? { fileId: file.fileId, ...(file.nativeMimeType ? { nativeMimeType: file.nativeMimeType } : {}) } : {}),
+                      })
+                    }
                     className="w-full flex items-center gap-2.5 px-2 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 cursor-pointer"
                   >
                     <FileText className="w-4 h-4 text-slate-500" />

@@ -2,8 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const sb = vi.hoisted(() => ({ from: vi.fn() }));
 const hf = vi.hoisted(() => ({ createHfDataset: vi.fn() }));
+const dr = vi.hoisted(() => ({ createDriveFolder: vi.fn(), getAccess: vi.fn() }));
 vi.mock('../../supabase', () => ({ supabase: sb }));
 vi.mock('../../huggingface/hfWrite', () => hf);
+vi.mock('../../drive/driveToken', () => ({ driveContext: { getAccess: dr.getAccess, invalidate: () => {} } }));
+vi.mock('../../drive/driveClient', () => ({ createDriveFolder: dr.createDriveFolder }));
 
 import { listStorageRepos, createStorageRepo, removeStorageRepo, assignStorageRepo } from '../storageReposApi';
 
@@ -16,6 +19,9 @@ const insertChain = (result: { data: unknown; error: unknown }) => ({
 beforeEach(() => {
   sb.from.mockReset();
   hf.createHfDataset.mockReset();
+  dr.createDriveFolder.mockReset();
+  dr.getAccess.mockReset();
+  dr.getAccess.mockResolvedValue({ accessToken: 't', expiresAt: 1, access: 'write', driveId: 'DRV' });
 });
 
 describe('listStorageRepos', () => {
@@ -32,7 +38,7 @@ describe('listStorageRepos', () => {
 });
 
 describe('createStorageRepo', () => {
-  const args = { name: 'Kho A', repoId: 'own/cm-kho-a', kind: 'personal' as const, assignedUserId: 'u-a', token: 'hf_t', createOnHf: true };
+  const args = { name: 'Kho A', repoId: 'own/cm-kho-a', kind: 'personal' as const, assignedUserId: 'u-a', token: 'hf_t', createRemote: true };
 
   it('tạo dataset trên HF trước rồi đăng ký vào DB', async () => {
     hf.createHfDataset.mockResolvedValue(undefined);
@@ -42,13 +48,13 @@ describe('createStorageRepo', () => {
     const out = await createStorageRepo(args);
 
     expect(hf.createHfDataset).toHaveBeenCalledWith('hf_t', 'own/cm-kho-a');
-    expect(chain.insert).toHaveBeenCalledWith({ Name: 'Kho A', RepoId: 'own/cm-kho-a', Folder: null, Kind: 'personal', AssignedUserId: 'u-a' });
+    expect(chain.insert).toHaveBeenCalledWith({ Name: 'Kho A', RepoId: 'own/cm-kho-a', Folder: null, Kind: 'personal', Provider: 'huggingface', AssignedUserId: 'u-a' });
     expect(out.id).toBe(5);
   });
 
-  it('createOnHf=false chỉ đăng ký, không gọi HF', async () => {
+  it('createRemote=false chỉ đăng ký, không gọi HF', async () => {
     sb.from.mockReturnValue(insertChain({ data: ROW, error: null }));
-    await createStorageRepo({ ...args, createOnHf: false });
+    await createStorageRepo({ ...args, createRemote: false });
     expect(hf.createHfDataset).not.toHaveBeenCalled();
   });
 
@@ -56,7 +62,7 @@ describe('createStorageRepo', () => {
     const chain = insertChain({ data: { ...ROW, Kind: 'shared', AssignedUserId: null }, error: null });
     sb.from.mockReturnValue(chain);
     hf.createHfDataset.mockResolvedValue(undefined);
-    await createStorageRepo({ name: 'Chung', repoId: 'own/chung', kind: 'shared', token: 't', createOnHf: true });
+    await createStorageRepo({ name: 'Chung', repoId: 'own/chung', kind: 'shared', token: 't', createRemote: true });
     expect(chain.insert.mock.calls[0][0].AssignedUserId).toBeNull();
   });
 
@@ -81,7 +87,7 @@ describe('createStorageRepo', () => {
 
   it('trùng khóa duy nhất cho thông điệp dễ hiểu', async () => {
     sb.from.mockReturnValue(insertChain({ data: null, error: { code: '23505', message: 'duplicate' } }));
-    await expect(createStorageRepo({ ...args, createOnHf: false })).rejects.toThrow(/chỉ có một repo cá nhân/);
+    await expect(createStorageRepo({ ...args, createRemote: false })).rejects.toThrow(/chỉ có một repo cá nhân/);
   });
 });
 
@@ -101,5 +107,53 @@ describe('removeStorageRepo / assignStorageRepo', () => {
     await expect(assignStorageRepo(5, 'u-b')).resolves.toBeUndefined();
     sb.from.mockReturnValue(chain([]));
     await expect(assignStorageRepo(5, 'u-b')).rejects.toThrow(/không phải repo cá nhân/);
+  });
+});
+
+describe('createStorageRepo với Google Drive', () => {
+  const FOLDER_ID = '1AbCdEfGhIjKlMnOpQrStUvWxYz012345';
+
+  it('đăng ký thư mục có sẵn (createRemote=false): không tạo gì, ghi Provider drive và ID thư mục', async () => {
+    const row = { ...ROW, RepoId: FOLDER_ID, Provider: 'drive', Kind: 'shared', AssignedUserId: null };
+    const chain = insertChain({ data: row, error: null });
+    sb.from.mockReturnValue(chain);
+    const out = await createStorageRepo({ name: 'Kho chung', repoId: FOLDER_ID, kind: 'shared', provider: 'drive', token: '', createRemote: false });
+    expect(hf.createHfDataset).not.toHaveBeenCalled();
+    expect(dr.createDriveFolder).not.toHaveBeenCalled();
+    expect(chain.insert).toHaveBeenCalledWith({ Name: 'Kho chung', RepoId: FOLDER_ID, Folder: null, Kind: 'shared', Provider: 'drive', AssignedUserId: null });
+    expect(out.provider).toBe('drive');
+  });
+
+  it('tạo thư mục mới (createRemote=true): tạo ở gốc Shared Drive theo tên rồi đăng ký ID vừa tạo, không tạo dataset Hugging Face', async () => {
+    dr.createDriveFolder.mockResolvedValue({ id: FOLDER_ID });
+    const chain = insertChain({ data: { ...ROW, RepoId: FOLDER_ID, Provider: 'drive', Kind: 'shared', AssignedUserId: null }, error: null });
+    sb.from.mockReturnValue(chain);
+    await createStorageRepo({ name: '  Kho chung  ', repoId: '', kind: 'shared', provider: 'drive', token: '', createRemote: true });
+    expect(dr.createDriveFolder).toHaveBeenCalledWith(expect.anything(), 'DRV', 'Kho chung');
+    expect(hf.createHfDataset).not.toHaveBeenCalled();
+    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ RepoId: FOLDER_ID, Provider: 'drive' }));
+  });
+
+  it('tạo thư mục Drive hỏng: báo thông điệp tiếng Việt và không ghi CSDL', async () => {
+    const { DriveApiError } = await import('../../drive/driveErrors');
+    dr.createDriveFolder.mockRejectedValue(new DriveApiError(403, 'insufficientFilePermissions', 'x'));
+    await expect(createStorageRepo({ name: 'Kho', repoId: '', kind: 'shared', provider: 'drive', token: '', createRemote: true })).rejects.toThrow(/Tạo thư mục trong Shared Drive không được: .*Quản lý nội dung/);
+    expect(sb.from).not.toHaveBeenCalled();
+  });
+
+  it('thư mục đã tạo mà đăng ký CSDL hỏng: nói rõ ID thư mục đã tạo để không mất dấu', async () => {
+    dr.createDriveFolder.mockResolvedValue({ id: FOLDER_ID });
+    sb.from.mockReturnValue(insertChain({ data: null, error: { code: '23505', message: 'dup' } }));
+    await expect(createStorageRepo({ name: 'Kho', repoId: '', kind: 'shared', provider: 'drive', token: '', createRemote: true })).rejects.toThrow(`Đã tạo thư mục "Kho" (ID ${FOLDER_ID}) trong Shared Drive nhưng chưa đăng ký được vào hệ thống`);
+  });
+
+  it('tạo thư mục mới mà thiếu tên thì chặn trước khi tạo gì', async () => {
+    await expect(createStorageRepo({ name: '  ', repoId: '', kind: 'shared', provider: 'drive', token: '', createRemote: true })).rejects.toThrow(/tên hiển thị/);
+    expect(dr.createDriveFolder).not.toHaveBeenCalled();
+  });
+
+  it('ID Drive sai dạng bị chặn trước khi gọi CSDL', async () => {
+    await expect(createStorageRepo({ name: 'K', repoId: 'own/kho', kind: 'shared', provider: 'drive', token: '', createRemote: false })).rejects.toThrow(/ID thư mục Google Drive/);
+    expect(sb.from).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,5 @@
 import type { HfConfig } from '../types/huggingface';
-import type { StorageRepo, StorageRepoKind } from '../types/storageRepo';
+import type { StorageProviderId, StorageRepo, StorageRepoKind } from '../types/storageRepo';
 import { isMasterAdminRole } from './permissions';
 
 const VI_MAP: Record<string, string> = { đ: 'd', Đ: 'd' };
@@ -37,6 +37,7 @@ export function mapRepoRow(row: {
   RepoId: string;
   Folder?: string | null;
   Kind: string;
+  Provider?: string | null;
   AssignedUserId?: string | null;
   CreatedAt?: string;
 }): StorageRepo {
@@ -44,6 +45,7 @@ export function mapRepoRow(row: {
     id: Number(row.Id),
     name: row.Name,
     repoId: row.RepoId,
+    provider: row.Provider === 'drive' ? 'drive' : 'huggingface',
     folder: (row.Folder ?? '').replace(/^\/+|\/+$/g, ''),
     kind: row.Kind as StorageRepoKind,
     assignedUserId: row.AssignedUserId ?? null,
@@ -120,12 +122,20 @@ export interface RepoInput {
   repoId: string;
   kind: StorageRepoKind;
   assignedUserId?: string | null;
+  /** Mặc định Hugging Face. */
+  provider?: StorageProviderId;
 }
+
+export const DRIVE_FOLDER_ID_PATTERN = /^[A-Za-z0-9_-]{10,}$/;
 
 /** Kiểm tra đầu vào tạo repo; trả thông điệp lỗi hoặc null nếu hợp lệ. */
 export function validateRepoInput(input: RepoInput): string | null {
   if (!input.name.trim()) return 'Nhập tên hiển thị của repo.';
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(input.repoId)) {
+  if (input.provider === 'drive') {
+    if (!DRIVE_FOLDER_ID_PATTERN.test(input.repoId)) {
+      return 'ID thư mục Google Drive chỉ gồm chữ không dấu, số, "-" hoặc "_" (từ 10 ký tự).';
+    }
+  } else if (!/^[A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._-]*$/.test(input.repoId)) {
     return 'Repository ID cần dạng owner/ten-repo, chỉ gồm chữ không dấu, số, "-", "_" hoặc ".".';
   }
   if (input.kind === 'personal' && !input.assignedUserId) return 'Chọn tài khoản được gán repo cá nhân.';
@@ -135,6 +145,7 @@ export function validateRepoInput(input: RepoInput): string | null {
 
 /** Ghép token chung với một repo thành cấu hình kết nối HF. */
 export function toHfConfig(token: string, repo: StorageRepo | null): HfConfig | null {
-  if (!repo || !token) return null;
+  // Repo Google Drive không dùng token Hugging Face
+  if (!repo || !token || repo.provider !== 'huggingface') return null;
   return { token, repoId: repo.repoId, folder: repo.folder, isPrivate: true };
 }

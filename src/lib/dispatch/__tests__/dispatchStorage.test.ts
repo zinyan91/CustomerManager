@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { DispatchDocument } from '../../../types/dispatch';
 
 const hfMock = vi.hoisted(() => ({ fetchHfFileBlob: vi.fn() }));
+const driveMock = vi.hoisted(() => ({ fetchDriveDocBlob: vi.fn() }));
+vi.mock('../../drive/driveToken', () => ({ driveContext: { marker: 'ctx' } }));
+vi.mock('../../drive/driveDocuments', () => ({ fetchDriveDocBlob: driveMock.fetchDriveDocBlob }));
 
 vi.mock('../../huggingface/hfClient', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../huggingface/hfClient')>()),
@@ -36,6 +39,7 @@ const doc = (over: Partial<DispatchDocument> = {}): DispatchDocument => ({
 
 beforeEach(() => {
   hfMock.fetchHfFileBlob.mockReset();
+  driveMock.fetchDriveDocBlob.mockReset();
 });
 
 describe('joinArchivePath', () => {
@@ -64,5 +68,24 @@ describe('resolveFileDownloadUrl', () => {
 
   it('nguồn khác trả thẳng fileUrl', async () => {
     expect(await resolveFileDownloadUrl(doc({ storageProvider: 'r2', fileUrl: 'https://r2/x' }), null)).toBe('https://r2/x');
+  });
+
+  it('tệp Google Drive tải bằng mã tệp, không cần cấu hình Hugging Face', async () => {
+    driveMock.fetchDriveDocBlob.mockResolvedValue(new Blob(['x']));
+    const original = URL.createObjectURL;
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:drive');
+    try {
+      const d = doc({ storageProvider: 'drive', fileId: 'ID1', fileUrl: '' });
+      expect(await resolveFileDownloadUrl(d, null)).toBe('blob:drive');
+      expect(driveMock.fetchDriveDocBlob).toHaveBeenCalledWith({ marker: 'ctx' }, d);
+      expect(hfMock.fetchHfFileBlob).not.toHaveBeenCalled();
+    } finally {
+      URL.createObjectURL = original;
+    }
+  });
+
+  it('lỗi tải từ Drive được ném nguyên thông điệp tiếng Việt', async () => {
+    driveMock.fetchDriveDocBlob.mockRejectedValue(new Error('Tải "f.pdf" không được: không tìm thấy tệp'));
+    await expect(resolveFileDownloadUrl(doc({ storageProvider: 'drive', fileId: 'ID1' }), null)).rejects.toThrow(/không tìm thấy tệp/);
   });
 });

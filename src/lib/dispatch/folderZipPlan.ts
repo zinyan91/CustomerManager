@@ -14,6 +14,9 @@ export interface ZipEntry {
   zipPath: string;
   size: number;
   modifiedAt: string;
+  /** Tệp Google Drive: mã tệp và kiểu gốc (tệp Google Docs/Sheets/Slides phải xuất). */
+  fileId?: string;
+  nativeMimeType?: string;
 }
 
 export interface FolderZipPlan {
@@ -67,7 +70,13 @@ export function planFolderZip(docs: DispatchDocument[], folderPath: string, root
     if (!Number.isSafeInteger(doc.fileSize) || doc.fileSize < 0) {
       throw new FolderZipError(`Không thể nén: kích thước tệp "${doc.fileName}" không hợp lệ.`);
     }
-    entries.push({ filePath, zipPath: `${rootName}/${rel}`, size: doc.fileSize, modifiedAt: doc.updatedAt || '' });
+    entries.push({
+      filePath,
+      zipPath: `${rootName}/${rel}`,
+      size: doc.fileSize,
+      modifiedAt: doc.updatedAt || '',
+      ...(doc.fileId ? { fileId: doc.fileId, nativeMimeType: doc.nativeMimeType ?? '' } : {}),
+    });
   }
 
   if (entries.length === 0) throw new FolderZipError('Thư mục này chưa có tệp nào để tải.');

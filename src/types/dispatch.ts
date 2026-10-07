@@ -36,7 +36,11 @@ export interface DispatchDocument {
   filePath?: string; // Đường dẫn tương đối trong repo (vd: 2026/01/QD_112.pdf)
   folderPath?: string; // Thư mục cha (vd: 2026/01)
   repoId?: string; // Repo HF chứa tệp (owner/repo)
-  storageProvider: 'huggingface' | 'r2' | 'supabase' | 'local';
+  storageProvider: 'huggingface' | 'drive' | 'r2' | 'supabase' | 'local';
+  /** ID tệp trên Google Drive (storageProvider = 'drive'). */
+  fileId?: string;
+  /** Kiểu gốc của tệp Google Docs/Sheets/Slides trên Drive; có thì tải về phải xuất sang Office. */
+  nativeMimeType?: string;
   aiSummary?: string;
   aiKeywords?: string[];
   note?: string;

@@ -18,7 +18,7 @@ export interface ReadDocsResult {
   forms: Array<{ docNumber: string; title: string; fileName: string }>;
 }
 
-// Đọc lại cùng văn bản ở câu hỏi nối tiếp thì không phải tải lại từ Hugging Face
+// Đọc lại cùng văn bản ở câu hỏi nối tiếp thì không phải tải lại từ Kho
 const cache = new Map<string, AiAttachment>();
 
 export function clearDocReaderCache(): void {
@@ -62,7 +62,8 @@ export async function readDocsForAi(docs: OfficialDoc[], token: string): Promise
 
   const loaded = await Promise.all(
     wanted.map(async ({ doc, file }) => {
-      const key = `${file.repoId}/${file.path}`;
+      // Tệp Drive có mã bất biến: đổi tên hay di chuyển tệp không làm đọc nhầm bản nhớ cũ
+      const key = file.fileId ? `drive/${file.fileId}` : `${file.repoId}/${file.path}`;
       try {
         let att = cache.get(key);
         if (!att) {

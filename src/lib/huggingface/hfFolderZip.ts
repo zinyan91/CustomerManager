@@ -9,10 +9,15 @@ export interface ZipProgress {
   currentName: string;
 }
 
+/** Mở một tệp để đọc theo luồng. Mặc định đọc từ Hugging Face; Google Drive truyền hàm riêng. */
+export type OpenZipEntry = (entry: ZipEntry, signal: AbortSignal) => Promise<Response>;
+
 export interface ZipDownloadOptions {
   plan: FolderZipPlan;
-  repoId: string;
-  token: string;
+  repoId?: string;
+  token?: string;
+  /** Có thì dùng thay cho đọc từ Hugging Face (repoId và token khi đó không cần). */
+  openEntry?: OpenZipEntry;
   /** Nơi ghi tệp zip: hộp "Lưu thành" của trình duyệt hoặc bộ đệm bộ nhớ. */
   writable: WritableStream<Uint8Array>;
   signal?: AbortSignal;
@@ -43,7 +48,7 @@ function describeStatus(status: number, name: string): string {
  * vào RAM. Lỗi hoặc hủy thì hủy luôn đích ghi để không để lại tệp zip dở.
  */
 export async function downloadFolderZip(options: ZipDownloadOptions): Promise<void> {
-  const { plan, repoId, token, writable, signal: outer, onProgress, onCommitting } = options;
+  const { plan, repoId = '', token = '', writable, signal: outer, onProgress, onCommitting } = options;
   const doFetch = options.fetchFn ?? fetch;
 
   const controller = new AbortController();
@@ -86,11 +91,13 @@ export async function downloadFolderZip(options: ZipDownloadOptions): Promise<vo
       armStall();
       let response: Response;
       try {
-        response = await doFetch(hfFileUrl(repoId, entry.filePath), {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: 'no-store',
-          signal,
-        });
+        response = options.openEntry
+          ? await options.openEntry(entry, signal)
+          : await doFetch(hfFileUrl(repoId, entry.filePath), {
+              headers: { Authorization: `Bearer ${token}` },
+              cache: 'no-store',
+              signal,
+            });
       } finally {
         disarmStall();
       }

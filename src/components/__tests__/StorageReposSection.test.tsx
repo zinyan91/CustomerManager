@@ -19,8 +19,8 @@ vi.mock('../../lib/api/storageReposApi', () => ({
 import { StorageReposSection } from '../storage/StorageReposSection';
 
 const REPOS: StorageRepo[] = [
-  { id: 1, name: 'Văn thư', repoId: 'Ying91/van-thu-tin-dung', folder: '', kind: 'dispatch', assignedUserId: null, createdAt: '' },
-  { id: 2, name: 'Kho chung', repoId: 'Ying91/cm-kho-chung', folder: 'chung', kind: 'shared', assignedUserId: null, createdAt: '' },
+  { id: 1, name: 'Văn thư', repoId: 'Ying91/van-thu-tin-dung', provider: 'huggingface', folder: '', kind: 'dispatch', assignedUserId: null, createdAt: '' },
+  { id: 2, name: 'Kho chung', repoId: 'Ying91/cm-kho-chung', provider: 'huggingface', folder: 'chung', kind: 'shared', assignedUserId: null, createdAt: '' },
 ];
 const AUTH = { token: 'tok', username: 'Ying91' };
 

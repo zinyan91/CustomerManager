@@ -10,8 +10,8 @@ vi.mock('../../huggingface/hfClient', async (importOriginal) => ({ ...(await imp
 import { HfApiError } from '../../huggingface/hfClient';
 import { updateStorageRepo } from '../storageReposApi';
 
-const REPO: StorageRepo = { id: 3, name: 'Kho chung', repoId: 'Ying91/cm-kho-chung', folder: '', kind: 'shared', assignedUserId: null, createdAt: '' };
-const EDIT = { name: 'Kho chung', repoId: 'Ying91/cm-kho-chung', folder: '' };
+const REPO: StorageRepo = { id: 3, name: 'Kho chung', repoId: 'Ying91/cm-kho-chung', provider: 'huggingface', folder: '', kind: 'shared', assignedUserId: null, createdAt: '' };
+const EDIT = { name: 'Kho chung', repoId: 'Ying91/cm-kho-chung', provider: 'huggingface', folder: '' };
 
 beforeEach(() => {
   sb.rpc.mockReset();
@@ -71,5 +71,21 @@ describe('updateStorageRepo', () => {
   it('kết quả sai dạng thì báo lỗi, không đoán', async () => {
     sb.rpc.mockResolvedValue({ data: { documents: 'x' }, error: null });
     await expect(updateStorageRepo(REPO, EDIT, 'tok')).rejects.toThrow(/không hợp lệ/);
+  });
+});
+
+describe('updateStorageRepo với repo Google Drive', () => {
+  const DRIVE_REPO: StorageRepo = { ...REPO, repoId: '1AbCdEfGhIjKlMnOpQrStUvWxYz012345', provider: 'drive' };
+
+  it('đổi ID thư mục: không hỏi Hugging Face, vẫn gọi hàm CSDL', async () => {
+    const out = await updateStorageRepo(DRIVE_REPO, { name: 'Kho chung', repoId: '1ZyXwVuTsRqPoNmLkJiHgFeDcBa98765', folder: '' }, 'tok');
+    expect(hf.listHfTree).not.toHaveBeenCalled();
+    expect(sb.rpc).toHaveBeenCalledWith('update_storage_repo', expect.objectContaining({ p_repo_id: '1ZyXwVuTsRqPoNmLkJiHgFeDcBa98765' }));
+    expect(out).toEqual({ documents: 0, dispatches: 0 });
+  });
+
+  it('ID dạng owner/ten-repo bị chặn vì không phải ID Drive', async () => {
+    await expect(updateStorageRepo(DRIVE_REPO, { name: 'K', repoId: 'Ying91/cm-kho', folder: '' }, 'tok')).rejects.toThrow(/ID thư mục Google Drive/);
+    expect(sb.rpc).not.toHaveBeenCalled();
   });
 });

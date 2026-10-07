@@ -23,9 +23,9 @@ import { HfApiError } from '../../huggingface/hfClient';
 import { attachmentToFile, docFolderSlug, findFormFiles, recordDocFromFile, resolveRecordTarget, uniqueFileName } from '../recordFromAi';
 
 const repo = (over: Partial<StorageRepo>): StorageRepo => ({
-  id: 1, name: 'r', repoId: 'o/van-thu', folder: 'van-thu', kind: 'dispatch', assignedUserId: null, createdAt: '', ...over,
+  id: 1, name: 'r', repoId: 'o/van-thu', provider: 'huggingface', folder: 'van-thu', kind: 'dispatch', assignedUserId: null, createdAt: '', ...over,
 });
-const FORM_REPO = repo({ id: 2, repoId: 'o/bieu-mau', folder: 'bm', kind: 'form' });
+const FORM_REPO = repo({ id: 2, repoId: 'o/bieu-mau', provider: 'huggingface', folder: 'bm', kind: 'form' });
 const TARGET = { repo: repo({}), formRepo: FORM_REPO, token: 'hf_t' };
 const NO_FORM_TARGET = { repo: repo({}), formRepo: null, token: 'hf_t' };
 const FIELDS: ExtractedDoc = {

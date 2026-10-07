@@ -6,6 +6,12 @@ import { useAuth } from '../context/AuthContext';
 import { fetchHfAuth } from '../lib/huggingface/hfConfigApi';
 import { listHfTree } from '../lib/huggingface/hfClient';
 import { listStorageRepos } from '../lib/api/storageReposApi';
+import { listDriveFiles } from '../lib/drive/driveClient';
+import { entriesToDocuments } from '../lib/drive/driveDocuments';
+import { describeDriveError } from '../lib/drive/driveErrors';
+import { driveContext } from '../lib/drive/driveToken';
+import { buildRepoEntries, listingOf } from '../lib/drive/driveTree';
+import type { DriveEntry } from '../lib/drive/driveTypes';
 import { mergeHfTreeWithDispatches, collectFolders } from '../lib/dispatch/mergeArchive';
 import { classifyArchiveError, type ArchiveStatus } from '../lib/huggingface/hfStatus';
 import { reposForScope, toHfConfig, type StorageScope } from '../lib/storageRepos';
@@ -26,6 +32,8 @@ export function useArchive(scope: StorageScope = 'storage') {
 
   const [documents, setDocuments] = useState<DispatchDocument[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
+  const [driveEntries, setDriveEntries] = useState<DriveEntry[]>([]);
+  const [driveWrite, setDriveWrite] = useState(false);
   const [fileStatus, setFileStatus] = useState<ArchiveStatus>({ kind: 'loading' });
 
   const reloadRepos = useCallback(async () => {
@@ -59,8 +67,35 @@ export function useArchive(scope: StorageScope = 'storage') {
   const repoId = config?.repoId;
   const folder = config?.folder;
   const token = config?.token;
+  // Repo Google Drive: RepoId là ID thư mục gốc của kho trong Shared Drive
+  const driveRoot = selectedRepo?.provider === 'drive' ? selectedRepo.repoId : null;
 
   const reload = useCallback(async () => {
+    if (driveRoot) {
+      setFileStatus({ kind: 'loading' });
+      try {
+        const files = await listDriveFiles(driveContext);
+        if (!files.some((f) => f.id === driveRoot)) {
+          throw new Error('Không tìm thấy thư mục gốc của kho trong Shared Drive. Kiểm tra lại ID thư mục và việc tài khoản dịch vụ là thành viên của Shared Drive.');
+        }
+        const entries = buildRepoEntries(files, driveRoot);
+        const access = await driveContext.getAccess();
+        setDriveEntries(entries);
+        setDriveWrite(access.access === 'write');
+        setDocuments(entriesToDocuments(entries, driveRoot, new Date().toISOString()));
+        setFolders(listingOf(entries).folders);
+        setFileStatus({ kind: 'ready' });
+      } catch (err) {
+        setDriveEntries([]);
+        setDriveWrite(false);
+        setDocuments([]);
+        setFolders([]);
+        setFileStatus({ kind: 'error', message: describeDriveError(err, 'Nạp kho lưu trữ') });
+      }
+      return;
+    }
+    setDriveEntries([]);
+    setDriveWrite(false);
     if (!repoId || !token) {
       setDocuments([]);
       setFolders([]);
@@ -77,7 +112,7 @@ export function useArchive(scope: StorageScope = 'storage') {
       setFolders([]);
       setFileStatus(classifyArchiveError(err));
     }
-  }, [repoId, folder, token]);
+  }, [driveRoot, repoId, folder, token]);
 
   useEffect(() => {
     if (metaStatus.kind === 'ready') void reload();
@@ -85,7 +120,8 @@ export function useArchive(scope: StorageScope = 'storage') {
 
   const status: ArchiveStatus = useMemo(() => {
     if (metaStatus.kind !== 'ready') return metaStatus;
-    if (!auth) return { kind: 'not_configured' };
+    // Token Hugging Face chỉ cần cho repo Hugging Face; repo Drive đi qua Edge Function drive-token
+    if (!auth && (!selectedRepo || selectedRepo.provider === 'huggingface')) return { kind: 'not_configured' };
     if (!selectedRepo) return { kind: 'no_repo' };
     return fileStatus;
   }, [metaStatus, auth, selectedRepo, fileStatus]);
@@ -97,6 +133,14 @@ export function useArchive(scope: StorageScope = 'storage') {
     /** Repo dùng được trong màn hiện tại. */
     repos: candidates,
     selectedRepo,
+    /** Kho đang chọn nằm trên Google Drive (không có `config` Hugging Face). */
+    isDrive: driveRoot !== null,
+    /** ID thư mục gốc của kho Drive đang chọn; null khi không phải kho Drive. */
+    driveRoot,
+    /** Mọi thư mục và tệp của kho Drive đang chọn, kèm mã Drive. */
+    driveEntries,
+    /** Token hiện có quyền ghi vào Shared Drive (người chỉ được đọc thì không). */
+    driveWrite,
     selectRepo: setSelectedRepoId,
     config,
     documents,

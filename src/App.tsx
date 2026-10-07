@@ -15,6 +15,7 @@ const CardContractView = lazy(() => import('./components/views/CardContractView'
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
 const AdminOverviewView = lazy(() => import('./components/views/AdminOverviewView').then(m => ({ default: m.AdminOverviewView })));
 const CustomerTransferView = lazy(() => import('./components/views/CustomerTransferView').then(m => ({ default: m.CustomerTransferView })));
+const StorageConfigView = lazy(() => import('./components/views/StorageConfigView').then(m => ({ default: m.StorageConfigView })));
 const UserModulesView = lazy(() => import('./components/views/UserModulesView').then(m => ({ default: m.UserModulesView })));
 const UserManagementView = lazy(() => import('./components/views/UserManagementView').then(m => ({ default: m.UserManagementView })));
 const DispatchManagementView = lazy(() => import('./components/views/DispatchManagementView').then(m => ({ default: m.DispatchManagementView })));
@@ -71,6 +72,7 @@ export function App() {
         <Route path="users" element={<Suspense fallback={<ViewSkeleton />}><UserManagementView /></Suspense>} />
         <Route path="users/:userId" element={<Suspense fallback={<ViewSkeleton />}><UserModulesView /></Suspense>} />
         <Route path="transfer" element={<Suspense fallback={<ViewSkeleton />}><CustomerTransferView /></Suspense>} />
+        <Route path="storage" element={<Suspense fallback={<ViewSkeleton />}><StorageConfigView /></Suspense>} />
       </Route>
 
       {/* Giao diện CRM chính có Sidebar hệ thống */}

@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react';
 import type { DispatchDocument } from '../types/dispatch';
-import { fetchPasteItems } from '../lib/huggingface/hfCopy';
+import { fetchPasteItems, hfBlobFetcher } from '../lib/huggingface/hfCopy';
 import {
-  buildClip, planPaste, topKey, type ClipTop, type StorageClip,
+  buildClip, planPaste, topKey, type ClipTop, type PastePlan, type StorageClip,
 } from '../lib/storageClipboard';
 import type { UploadItem } from '../lib/uploadItems';
+import type { StorageProviderId } from '../types/storageRepo';
 
 type DocLike = Pick<DispatchDocument, 'filePath' | 'fileSize' | 'updatedAt'>;
 
@@ -15,6 +16,8 @@ export interface PasteArgs {
   token: string;
   /** Tải các tệp đã lấy về lên repo đích; chính là hàm tải lên của màn Kho. */
   upload: (items: UploadItem[], targetFolder: string) => Promise<void>;
+  /** Kho đích là Google Drive: tệp nguồn Drive được Google sao chép tại chỗ, không tải về trình duyệt. Trả thông điệp lỗi hoặc null. */
+  serverCopy?: (plan: PastePlan, destFolder: string) => Promise<string | null>;
 }
 
 const message = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback);
@@ -41,10 +44,10 @@ export function useStorageClipboard() {
   const clearClip = useCallback(() => setClip(null), []);
 
   /** Sao chép các mục vào bộ nhớ tạm của Kho. Trả true khi thành công. */
-  const copy = useCallback((repoId: string, docs: readonly DocLike[], tops: readonly ClipTop[]): boolean => {
+  const copy = useCallback((repoId: string, docs: readonly DocLike[], tops: readonly ClipTop[], provider: StorageProviderId = 'huggingface'): boolean => {
     setError(null);
     try {
-      setClip(buildClip(repoId, docs, tops));
+      setClip(buildClip(repoId, docs, tops, provider));
       return true;
     } catch (err) {
       setError(message(err, 'Không sao chép được.'));
@@ -57,9 +60,23 @@ export function useStorageClipboard() {
     if (!clip) return 0;
     setError(null);
     try {
+      if (args.serverCopy && clip.provider === 'drive') {
+        const plan = planPaste(clip, args.destRepoId, args.destFolder, args.destDocs, { serverSide: true });
+        const failure = await args.serverCopy(plan, args.destFolder);
+        if (failure) {
+          setError(failure);
+          return 0;
+        }
+        return plan.files.length;
+      }
       const plan = planPaste(clip, args.destRepoId, args.destFolder, args.destDocs);
       setFetching({ done: 0, total: plan.files.length });
-      const items = await fetchPasteItems(plan, clip.repoId, args.token, (done, total) => setFetching({ done, total }));
+      // Nạp trễ: lớp Drive kéo theo máy khách Supabase
+      const fetchBlob =
+        clip.provider === 'drive'
+          ? await import('../lib/drive/driveToken').then(async ({ driveContext }) => (await import('../lib/drive/driveDocuments')).driveBlobFetcher(driveContext))
+          : hfBlobFetcher(clip.repoId, args.token);
+      const items = await fetchPasteItems(plan, fetchBlob, (done, total) => setFetching({ done, total }));
       setFetching(null);
       await args.upload(items, args.destFolder);
       return items.length;

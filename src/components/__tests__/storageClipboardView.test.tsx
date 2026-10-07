@@ -17,7 +17,6 @@ vi.mock('../../context/UserScopeContext', () => ({ useUserScope: () => ({ manage
 vi.mock('../../hooks/useArchive', () => ({ useArchive: () => state.archive }));
 vi.mock('../ai/AiChatDialog', () => ({ AiChatDialog: () => null }));
 vi.mock('../dispatch/DispatchPreviewModal', () => ({ DispatchPreviewModal: () => null }));
-vi.mock('../storage/StorageSettingsModal', () => ({ StorageSettingsModal: () => null }));
 
 const commit = vi.hoisted(() => vi.fn());
 vi.mock('@huggingface/hub', () => ({ commit, createRepo: vi.fn() }));
@@ -25,7 +24,7 @@ vi.mock('@huggingface/hub', () => ({ commit, createRepo: vi.fn() }));
 import { StorageManagementView } from '../views/StorageManagementView';
 
 const repo = (over: Partial<StorageRepo>): StorageRepo => ({
-  id: 1, name: 'Kho chung', repoId: 'own/chung', folder: '', kind: 'shared', assignedUserId: null, createdAt: '', ...over,
+  id: 1, name: 'Kho chung', repoId: 'own/chung', provider: 'huggingface', folder: '', kind: 'shared', assignedUserId: null, createdAt: '', ...over,
 });
 const mk = (filePath: string, fileSize = 1024) => {
   const i = filePath.lastIndexOf('/');
@@ -39,7 +38,7 @@ const makeArchive = (over: Record<string, unknown> = {}) => {
   const shared = repo({});
   return {
     auth: { token: 'hf_t', username: 'own' }, allRepos: [shared], repos: [shared], selectedRepo: shared, selectRepo: vi.fn(),
-    config: { token: 'hf_t', repoId: 'own/chung', folder: '', isPrivate: true },
+    config: { token: 'hf_t', repoId: 'own/chung', provider: 'huggingface', folder: '', isPrivate: true },
     documents: [], folders: [], status: { kind: 'ready' }, reload: vi.fn().mockResolvedValue(undefined), reloadRepos: vi.fn(), setDocuments: vi.fn(),
     ...over,
   };
@@ -190,7 +189,7 @@ describe('Kho lưu trữ - chọn, sao chép, dán, tải về', () => {
     const mine = repo({ id: 2, name: 'Kho A', kind: 'personal', assignedUserId: 'u-a', repoId: 'own/a' });
     state.archive = makeArchive({
       repos: [repo({}), mine], allRepos: [repo({}), mine], selectedRepo: mine,
-      config: { token: 'hf_t', repoId: 'own/a', folder: '', isPrivate: true }, documents: [mk('co-san.pdf')],
+      config: { token: 'hf_t', repoId: 'own/a', provider: 'huggingface', folder: '', isPrivate: true }, documents: [mk('co-san.pdf')],
     });
     view.rerender(<StorageManagementView />);
 
@@ -210,7 +209,7 @@ describe('Kho lưu trữ - chọn, sao chép, dán, tải về', () => {
     const other = repo({ id: 3, name: 'Kho B', kind: 'personal', assignedUserId: 'u-khac', repoId: 'own/b' });
     state.archive = makeArchive({
       repos: [repo({}), other], allRepos: [repo({}), other], selectedRepo: other,
-      config: { token: 'hf_t', repoId: 'own/b', folder: '', isPrivate: true }, documents: [mk('y.pdf')],
+      config: { token: 'hf_t', repoId: 'own/b', provider: 'huggingface', folder: '', isPrivate: true }, documents: [mk('y.pdf')],
     });
     view.rerender(<StorageManagementView />);
 

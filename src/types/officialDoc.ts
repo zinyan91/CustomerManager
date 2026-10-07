@@ -2,12 +2,19 @@ export type OfficialDocCategory = 'van-ban' | 'hop-dong' | 'cong-van' | 'khac';
 
 export type OfficialDocFileKind = 'goc' | 'bieu-mau';
 
-/** Tệp của văn bản: chỉ là đường dẫn tới tệp nằm trong Kho lưu trữ (Hugging Face). */
+/**
+ * Tệp của văn bản: tham chiếu tới tệp nằm trong Kho lưu trữ. Tệp Hugging Face tham chiếu theo đường dẫn;
+ * tệp Google Drive có `fileId` và tham chiếu theo mã đó, nên đổi tên hay di chuyển tệp trong Kho không làm mất liên kết
+ * (`path` chỉ để hiển thị).
+ */
 export interface OfficialDocFile {
   kind: OfficialDocFileKind;
   repoId: string;
   path: string;
   name: string;
+  fileId?: string;
+  /** Kiểu gốc trên Drive khi là tệp Google Docs/Sheets/Slides (phải xuất ra Office thay vì tải thẳng). */
+  nativeMimeType?: string;
 }
 
 export type OfficialDocStatus = 'upcoming' | 'active' | 'expired';

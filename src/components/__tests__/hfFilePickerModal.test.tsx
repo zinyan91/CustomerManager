@@ -15,7 +15,7 @@ vi.mock('../../lib/huggingface/hfClient', async (importOriginal) => ({
 import { HfFilePickerModal } from '../dispatch/HfFilePickerModal';
 
 const repo = (id: number, kind: StorageRepo['kind'], name: string): StorageRepo => ({
-  id, name, repoId: `o/r${id}`, folder: '', kind, assignedUserId: null, createdAt: '',
+  id, name, repoId: `o/r${id}`, provider: 'huggingface', folder: '', kind, assignedUserId: null, createdAt: '',
 });
 const entry = (path: string) => ({ type: 'file', name: path.split('/').pop(), path, size: 10, downloadUrl: '' });
 

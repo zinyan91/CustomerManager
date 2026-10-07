@@ -23,7 +23,8 @@ vi.mock('../../context/AuthContext', () => ({
     loading: false,
     signIn: async () => {},
     role: h.role,
-    can: (c: string) => c === 'user.manage' && (h.role === 'master_admin' || h.role === 'user_admin'),
+    can: (c: string) =>
+      (c === 'user.manage' && (h.role === 'master_admin' || h.role === 'user_admin')) || (c === 'storage.configure' && h.role === 'master_admin'),
   }),
 }));
 vi.mock('../../hooks/useAdminUsers', () => ({
@@ -186,6 +187,19 @@ describe('AdminLayout', () => {
     expect(within(nav).getByRole('link', { name: 'Tổng quan' }).getAttribute('href')).toBe('/admin');
     expect(within(nav).getByRole('link', { name: 'Người dùng' }).getAttribute('href')).toBe('/admin/users');
     expect(screen.getByText('NOI-DUNG-TONG-QUAN')).toBeTruthy();
+  });
+
+  it('mục Cấu hình kho lưu trữ chỉ hiện với Master Admin', () => {
+    h.role = 'master_admin';
+    const { unmount } = dungLayout();
+    expect(within(screen.getByRole('navigation', { name: 'Khu quản trị' })).getByRole('link', { name: 'Cấu hình kho lưu trữ' }).getAttribute('href')).toBe('/admin/storage');
+    unmount();
+
+    h.role = 'user_admin';
+    dungLayout();
+    const nav = screen.getByRole('navigation', { name: 'Khu quản trị' });
+    expect(within(nav).queryByRole('link', { name: 'Cấu hình kho lưu trữ' })).toBeNull();
+    expect(within(nav).getByRole('link', { name: 'Người dùng' })).toBeTruthy();
   });
 
   it('có đường về ứng dụng, và không dựng sidebar của ứng dụng', () => {

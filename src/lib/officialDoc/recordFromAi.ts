@@ -29,21 +29,52 @@ export interface RecordTarget {
   repo: StorageRepo;
   /** Kho Biểu mẫu: nơi để biểu mẫu; null khi chưa tạo. */
   formRepo: StorageRepo | null;
+  /** Token Hugging Face; rỗng khi các kho cần dùng đều ở Google Drive. */
   token: string;
 }
 
 const MSG_NO_FORM_REPO = 'Chưa có kho Biểu mẫu. Liên hệ Master Admin để tạo kho Biểu mẫu.';
 
-/** Kho Văn thư, kho Biểu mẫu (nếu có) và token dùng chung. Ném lỗi tiếng Việt khi thiếu kho Văn thư hoặc token. */
+/** Kho Văn thư, kho Biểu mẫu (nếu có) và token dùng chung. Ném lỗi tiếng Việt khi thiếu kho Văn thư, hoặc thiếu token mà có kho Hugging Face. */
 export async function resolveRecordTarget(): Promise<RecordTarget> {
   const [repos, auth] = await Promise.all([listStorageRepos(), fetchHfAuth()]);
   const repo = repos.find((r) => r.kind === 'dispatch');
   if (!repo) throw new Error('Chưa có kho Văn thư. Liên hệ Master Admin để tạo kho Văn thư.');
-  if (!auth) throw new Error('Chưa cấu hình token kho lưu trữ. Liên hệ Master Admin để cấu hình.');
-  return { repo, formRepo: repos.find((r) => r.kind === 'form') ?? null, token: auth.token };
+  const formRepo = repos.find((r) => r.kind === 'form') ?? null;
+  const needsHfToken = [repo, formRepo].some((r) => r?.provider === 'huggingface');
+  if (needsHfToken && !auth) throw new Error('Chưa cấu hình token kho lưu trữ. Liên hệ Master Admin để cấu hình.');
+  return { repo, formRepo, token: auth?.token ?? '' };
+}
+
+/** Vị trí một tệp đã lên Kho. `fileId` chỉ có với tệp Google Drive. */
+interface Landed {
+  path: string;
+  name: string;
+  fileId?: string;
+}
+
+const asDocFile = (kind: OfficialDocFile['kind'], repo: StorageRepo, f: Landed): OfficialDocFile => ({
+  kind,
+  repoId: repo.repoId,
+  path: f.path,
+  name: f.name,
+  ...(f.fileId ? { fileId: f.fileId } : {}),
+});
+
+/** Thư mục văn bản trong kho: <gốc kho>/<mục>/<năm>/<số hiệu>. Kho Drive luôn tính từ thư mục gốc của kho. */
+function docFolderOf(repo: StorageRepo, fields: ExtractedDoc): string {
+  const base = repo.provider === 'drive' ? '' : repo.folder;
+  return joinArchivePath(base, fields.category, fields.issuedDate.slice(0, 4), docFolderSlug(fields.docNumber));
 }
 
 async function existingFileNames(repo: StorageRepo, token: string, folder: string): Promise<Set<string>> {
+  if (repo.provider === 'drive') {
+    const [{ driveContext }, { findDriveFolderPath, listDriveChildren }] = await Promise.all([import('../drive/driveToken'), import('../drive/driveClient')]);
+    const folderId = await findDriveFolderPath(driveContext, repo.repoId, folder);
+    // Thư mục chưa có thì chưa có tệp nào để trùng
+    if (!folderId) return new Set();
+    return new Set((await listDriveChildren(driveContext, folderId)).map((f) => f.name));
+  }
   try {
     const tree = await listHfTree(repo.repoId, folder, token, false);
     return new Set(tree.filter((i) => i.type === 'file').map((i) => i.name));
@@ -54,39 +85,51 @@ async function existingFileNames(repo: StorageRepo, token: string, folder: strin
   }
 }
 
+/**
+ * Tải các tệp vào một thư mục của kho (một lần), trả vị trí từng tệp theo đúng thứ tự đầu vào. Tệp lỗi thì ném lỗi tiếng Việt;
+ * `nameFailures` thêm tên tệp lỗi vào đầu thông điệp (dùng khi tải nhiều tệp để biết tệp nào).
+ */
+async function uploadFiles(repo: StorageRepo, token: string, folder: string, items: Array<{ name: string; file: File }>, nameFailures: boolean): Promise<Landed[]> {
+  const fail = (path: string, error: string) => new Error(nameFailures ? `${path.split('/').pop()}: ${error}` : error);
+  if (repo.provider === 'drive') {
+    const [{ driveContext }, { uploadItemsToDrive }] = await Promise.all([import('../drive/driveToken'), import('../drive/driveUpload')]);
+    // Tên đã được đổi tránh trùng ở nơi gọi nên không cần Drive đổi thêm lần nữa
+    const result = await uploadItemsToDrive(driveContext, repo.repoId, folder, items.map((i) => ({ file: i.file, relativePath: i.name })), []);
+    if (result.failed.length > 0) throw fail(result.failed[0].path, result.failed[0].error);
+    return items.map((i) => {
+      const path = joinArchivePath(folder, i.name);
+      const made = result.files.find((f) => f.path === path);
+      if (!made) throw new Error(`Không nhận được mã tệp Google Drive của "${i.name}".`);
+      return { path, name: i.name, fileId: made.fileId };
+    });
+  }
+  const result = await uploadItemsToHf({ repoId: repo.repoId, token }, folder, items.map((i) => ({ file: i.file, relativePath: i.name })));
+  if (result.failed.length > 0) throw fail(result.failed[0].path, result.failed[0].error);
+  return items.map((i) => ({ path: joinArchivePath(folder, i.name), name: i.name }));
+}
+
 /** Tải một tệp vào <gốc kho>/<mục>/<năm>/<số hiệu>/, đổi tên nếu trùng. Trả vị trí tệp trong kho. */
-async function uploadIntoDocFolder(repo: StorageRepo, token: string, file: File, fields: ExtractedDoc): Promise<{ path: string; name: string }> {
-  const folder = joinArchivePath(repo.folder, fields.category, fields.issuedDate.slice(0, 4), docFolderSlug(fields.docNumber));
+async function uploadIntoDocFolder(repo: StorageRepo, token: string, file: File, fields: ExtractedDoc): Promise<Landed> {
+  const folder = docFolderOf(repo, fields);
   const name = uniqueFileName(file.name, await existingFileNames(repo, token, folder));
   const upload = name === file.name ? file : new File([file], name, { type: file.type });
-
-  const result = await uploadItemsToHf({ repoId: repo.repoId, token }, folder, [{ file: upload, relativePath: name }]);
-  if (result.failed.length > 0) throw new Error(result.failed[0].error);
-  return { path: joinArchivePath(folder, name), name };
+  const [landed] = await uploadFiles(repo, token, folder, [{ name, file: upload }], false);
+  return landed;
 }
 
 /**
- * Tải các phụ lục (PDF, ảnh) vào cùng thư mục văn bản trong một lần commit. Tên trùng với tệp đã có hay giữa các
+ * Tải các phụ lục (PDF, ảnh) vào cùng thư mục văn bản trong một lần. Tên trùng với tệp đã có hay giữa các
  * phụ lục với nhau thì đổi tên. Trả vị trí từng tệp theo đúng thứ tự đầu vào.
  */
-async function uploadAppendices(repo: StorageRepo, token: string, files: File[], fields: ExtractedDoc): Promise<Array<{ path: string; name: string }>> {
-  const folder = joinArchivePath(repo.folder, fields.category, fields.issuedDate.slice(0, 4), docFolderSlug(fields.docNumber));
+async function uploadAppendices(repo: StorageRepo, token: string, files: File[], fields: ExtractedDoc): Promise<Landed[]> {
+  const folder = docFolderOf(repo, fields);
   const taken = await existingFileNames(repo, token, folder);
   const items = files.map((file) => {
     const name = uniqueFileName(file.name, taken);
     taken.add(name);
     return { name, file: name === file.name ? file : new File([file], name, { type: file.type }) };
   });
-  const result = await uploadItemsToHf(
-    { repoId: repo.repoId, token },
-    folder,
-    items.map((i) => ({ file: i.file, relativePath: i.name }))
-  );
-  if (result.failed.length > 0) {
-    const first = result.failed[0];
-    throw new Error(`${first.path.split('/').pop()}: ${first.error}`);
-  }
-  return items.map((i) => ({ path: joinArchivePath(folder, i.name), name: i.name }));
+  return uploadFiles(repo, token, folder, items, true);
 }
 
 export interface FormLookup {
@@ -96,16 +139,29 @@ export interface FormLookup {
   note: string | null;
 }
 
+/** Các tệp của kho Biểu mẫu dưới dạng cây phẳng, kèm mã Drive khi kho ở Google Drive. */
+async function listFormRepoFiles(repo: StorageRepo, token: string): Promise<Array<{ type: string; path: string; name: string; fileId?: string; nativeMimeType?: string }>> {
+  if (repo.provider === 'drive') {
+    const [{ driveContext }, { listDriveFiles }, { buildRepoEntries }] = await Promise.all([
+      import('../drive/driveToken'), import('../drive/driveClient'), import('../drive/driveTree'),
+    ]);
+    const entries = buildRepoEntries(await listDriveFiles(driveContext), repo.repoId);
+    return entries.map((e) => ({ type: e.isFolder ? 'directory' : 'file', path: e.path, name: e.name, fileId: e.id, nativeMimeType: e.nativeMimeType }));
+  }
+  return listHfTree(repo.repoId, repo.folder, token, true);
+}
+
 /** Tự tra kho Biểu mẫu tìm biểu mẫu của văn bản theo số hiệu. Lỗi mạng hay token được ném ra cho nơi gọi báo. */
 export async function findFormFiles(target: RecordTarget, docNumber: string): Promise<FormLookup> {
   if (!target.formRepo) return { files: [], note: 'Chưa có kho Biểu mẫu nên chưa tự tra được biểu mẫu.' };
   const { formRepo, token } = target;
-  const tree = await listHfTree(formRepo.repoId, formRepo.folder, token, true);
+  const tree = await listFormRepoFiles(formRepo, token);
   const files = matchFormFiles(tree, docNumber).map((i) => ({
     kind: 'bieu-mau' as const,
     repoId: formRepo.repoId,
     path: i.path,
     name: i.name,
+    ...(i.fileId ? { fileId: i.fileId, ...(i.nativeMimeType ? { nativeMimeType: i.nativeMimeType } : {}) } : {}),
   }));
   return { files, note: null };
 }
@@ -133,13 +189,13 @@ export async function recordDocFromFile(args: {
   const formBundle = await prepareFormUpload(formUploads, fields.docNumber);
 
   const goc = await uploadIntoDocFolder(target.repo, target.token, file, fields);
-  let files: OfficialDocFile[] = [{ kind: 'goc', repoId: target.repo.repoId, path: goc.path, name: goc.name }];
+  let files: OfficialDocFile[] = [asDocFile('goc', target.repo, goc)];
   const landed = [goc.path];
 
   if (appendices.length > 0) {
     try {
       for (const a of await uploadAppendices(target.repo, target.token, appendices, fields)) {
-        files = addDocFile(files, { kind: 'goc', repoId: target.repo.repoId, path: a.path, name: a.name });
+        files = addDocFile(files, asDocFile('goc', target.repo, a));
         landed.push(a.path);
       }
     } catch (err) {
@@ -151,7 +207,7 @@ export async function recordDocFromFile(args: {
   if (formBundle && target.formRepo) {
     try {
       const uploaded = await uploadIntoDocFolder(target.formRepo, target.token, formBundle, fields);
-      files = addDocFile(files, { kind: 'bieu-mau', repoId: target.formRepo.repoId, path: uploaded.path, name: uploaded.name });
+      files = addDocFile(files, asDocFile('bieu-mau', target.formRepo, uploaded));
       landed.push(uploaded.path);
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);

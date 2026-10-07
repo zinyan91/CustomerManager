@@ -64,11 +64,18 @@ export function selectableRepos(repos: StorageRepo[], kind: OfficialDocFileKind)
 }
 
 /**
- * Tải tệp thẳng từ Hugging Face (không qua máy chủ ứng dụng). Ném lỗi tiếng Việt khi hỏng.
- * Blob được gắn kiểu theo đuôi tệp vì HF thường trả application/octet-stream, khiến PDF
+ * Tải tệp thẳng từ Kho (không qua máy chủ ứng dụng). Tệp có `fileId` lấy từ Google Drive và không cần token Hugging Face;
+ * tệp còn lại lấy từ Hugging Face. Ném lỗi tiếng Việt khi hỏng.
+ * Blob được gắn kiểu theo đuôi tệp vì kho thường trả application/octet-stream, khiến PDF
  * bị tải xuống thay vì hiện trong tab.
  */
 export async function fetchDocFileBlob(file: OfficialDocFile, token: string): Promise<Blob> {
+  if (file.fileId) {
+    // Nạp trễ: lớp Drive kéo theo máy khách Supabase
+    const [{ driveContext }, { fetchDriveDocBlob }] = await Promise.all([import('../drive/driveToken'), import('../drive/driveDocuments')]);
+    const blob = await fetchDriveDocBlob(driveContext, { fileId: file.fileId, fileName: file.name, nativeMimeType: file.nativeMimeType });
+    return new Blob([blob], { type: guessMime(file.name) });
+  }
   if (!token) {
     throw new Error('Chưa cấu hình kho lưu trữ. Liên hệ Master Admin để cấu hình token.');
   }

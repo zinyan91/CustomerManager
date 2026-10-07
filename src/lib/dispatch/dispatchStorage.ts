@@ -14,6 +14,11 @@ export { joinArchivePath, hfFileUrl };
  * tải thành Blob rồi tạo object URL.
  */
 export async function resolveFileDownloadUrl(doc: DispatchDocument, hfConfig: HfConfig | null): Promise<string> {
+  if (doc.storageProvider === 'drive') {
+    // Nạp trễ: token Drive kéo theo máy khách Supabase, không cần cho đường Hugging Face
+    const [{ driveContext }, { fetchDriveDocBlob }] = await Promise.all([import('../drive/driveToken'), import('../drive/driveDocuments')]);
+    return URL.createObjectURL(await fetchDriveDocBlob(driveContext, doc));
+  }
   if (doc.storageProvider === 'huggingface') {
     if (!isHfConfigComplete(hfConfig)) {
       throw new Error(MSG_NOT_CONFIGURED);

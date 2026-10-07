@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, CloudUpload, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { RepoMigrationDialog } from './RepoMigrationDialog';
 import { useUserScope } from '../../context/UserScopeContext';
 import { createStorageRepo, removeStorageRepo, updateStorageRepo } from '../../lib/api/storageReposApi';
 import { buildRepoId, suggestPersonalRepoSlug } from '../../lib/storageRepos';
-import { STORAGE_KIND_LABELS, type StorageRepo, type StorageRepoKind } from '../../types/storageRepo';
+import { STORAGE_KIND_LABELS, STORAGE_PROVIDER_LABELS, type StorageProviderId, type StorageRepo, type StorageRepoKind } from '../../types/storageRepo';
 import type { HfAuth } from '../../types/huggingface';
 
 interface StorageReposSectionProps {
@@ -32,10 +33,13 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
   const [nameInput, setNameInput] = useState<string | null>(null);
   const [repoInput, setRepoInput] = useState<string | null>(null);
   const [existing, setExisting] = useState(false);
+  // Kho mới mặc định nằm trên Google Drive; Hugging Face còn để đăng ký repo cũ
+  const [provider, setProvider] = useState<StorageProviderId>('drive');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
   const [editing, setEditing] = useState<StorageRepo | null>(null);
+  const [migrating, setMigrating] = useState<StorageRepo | null>(null);
   const [editName, setEditName] = useState('');
   const [editRepoId, setEditRepoId] = useState('');
   const [editFolder, setEditFolder] = useState('');
@@ -43,6 +47,9 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
   const [editError, setEditError] = useState<string | null>(null);
 
   const picked = users.find((u) => u.userId === userId);
+  const isDriveForm = provider === 'drive';
+  // Drive tạo thư mục mới thì chưa có ID để nhập; chỉ đăng ký thư mục có sẵn mới cần ID
+  const needsRepoId = !isDriveForm || existing;
   const suggestion = useMemo(() => {
     const ns = auth?.username ?? '';
     if (kind === 'shared') return { name: 'Kho chung', repoId: buildRepoId(ns, 'cm-kho-chung') };
@@ -53,7 +60,7 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
   }, [kind, picked, auth?.username]);
 
   const name = nameInput ?? suggestion.name;
-  const repoId = repoInput ?? suggestion.repoId;
+  const repoId = repoInput ?? (isDriveForm ? '' : suggestion.repoId);
 
   const resetForm = () => {
     setNameInput(null);
@@ -64,20 +71,21 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth) return;
+    if (!isDriveForm && !auth) return;
     setBusy(true);
     setError(null);
     setOkMsg(null);
     try {
       const created = await createStorageRepo({
         name,
-        repoId: repoId.trim(),
+        repoId: needsRepoId ? repoId.trim() : '',
         kind,
+        provider,
         assignedUserId: kind === 'personal' ? userId : null,
-        token: auth.token,
-        createOnHf: !existing,
+        token: auth?.token ?? '',
+        createRemote: !existing,
       });
-      setOkMsg(`Đã ${existing ? 'đăng ký' : 'tạo'} repo ${created.repoId}.`);
+      setOkMsg(`Đã ${existing ? 'đăng ký' : 'tạo'} ${isDriveForm ? 'kho' : 'repo'} ${created.repoId}.`);
       resetForm();
       await onChanged();
     } catch (err) {
@@ -98,13 +106,13 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !editing) return;
+    if (!editing || (editing.provider === 'huggingface' && !auth)) return;
     const idChanged = editRepoId.trim() !== editing.repoId;
-    if (idChanged && !window.confirm(`Đổi Repository ID từ ${editing.repoId} sang ${editRepoId.trim()}? Các văn bản đang trỏ tới repo cũ sẽ được cập nhật theo. Dataset trên Hugging Face không bị đổi tên.`)) return;
+    if (idChanged && !window.confirm(`Đổi Repository ID từ ${editing.repoId} sang ${editRepoId.trim()}? Các văn bản đang trỏ tới repo cũ sẽ được cập nhật theo. ${editing.provider === 'drive' ? 'Thư mục trên Google Drive không bị đổi tên.' : 'Dataset trên Hugging Face không bị đổi tên.'}`)) return;
     setEditBusy(true);
     setEditError(null);
     try {
-      const result = await updateStorageRepo(editing, { name: editName, repoId: editRepoId.trim(), folder: editFolder }, auth.token);
+      const result = await updateStorageRepo(editing, { name: editName, repoId: editRepoId.trim(), folder: editFolder }, auth?.token ?? '');
       setOkMsg(`Đã lưu "${editName.trim()}".${result.documents > 0 ? ` Đã cập nhật đường dẫn kho trong ${result.documents} văn bản.` : ''}`);
       setEditing(null);
       await onChanged();
@@ -116,7 +124,7 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
   };
 
   const handleRemove = async (repo: StorageRepo) => {
-    if (!window.confirm(`Gỡ "${repo.name}" khỏi danh sách? Dataset trên Hugging Face vẫn được giữ nguyên.`)) return;
+    if (!window.confirm(`Gỡ "${repo.name}" khỏi danh sách? ${repo.provider === 'drive' ? 'Thư mục trên Google Drive' : 'Dataset trên Hugging Face'} vẫn được giữ nguyên.`)) return;
     setError(null);
     setOkMsg(null);
     try {
@@ -142,6 +150,7 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
             <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
               <th className="py-2 px-3">Tên</th>
               <th className="py-2 px-3">Loại</th>
+              <th className="py-2 px-3">Nơi lưu</th>
               <th className="py-2 px-3">Repository ID</th>
               <th className="py-2 px-3">Gán cho</th>
               <th className="py-2 px-3 w-10" />
@@ -150,7 +159,7 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {repos.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 px-3 text-center text-slate-500">
+                <td colSpan={6} className="py-4 px-3 text-center text-slate-500">
                   Chưa có repo nào.
                 </td>
               </tr>
@@ -159,9 +168,20 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
               <tr key={r.id}>
                 <td className="py-2 px-3 font-medium text-slate-900 dark:text-slate-100">{r.name}</td>
                 <td className="py-2 px-3 text-slate-600 dark:text-slate-400">{STORAGE_KIND_LABELS[r.kind]}</td>
+                <td className="py-2 px-3 text-slate-600 dark:text-slate-400">{STORAGE_PROVIDER_LABELS[r.provider]}</td>
                 <td className="py-2 px-3 font-mono text-xs text-slate-600 dark:text-slate-400">{r.repoId}</td>
                 <td className="py-2 px-3 text-slate-600 dark:text-slate-400">{userName(r.assignedUserId) || '—'}</td>
                 <td className="py-2 px-3 whitespace-nowrap">
+                  {r.provider === 'huggingface' && (
+                    <button
+                      type="button"
+                      onClick={() => setMigrating(r)}
+                      aria-label={`Chuyển ${r.name} sang Google Drive`}
+                      className="p-1 rounded-md text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <CloudUpload className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => startEdit(r)}
@@ -186,6 +206,16 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
         </table>
       </div>
 
+      {migrating && (
+        <RepoMigrationDialog
+          key={migrating.id}
+          repo={migrating}
+          hfToken={auth?.token ?? ''}
+          onDone={onChanged}
+          onClose={() => setMigrating(null)}
+        />
+      )}
+
       {editing && (
         <form onSubmit={handleUpdate} aria-label="Sửa repo" className="space-y-3 p-4 rounded-xl border border-slate-300 dark:border-slate-700">
           <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Sửa repo: {STORAGE_KIND_LABELS[editing.kind]}</h4>
@@ -195,8 +225,8 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
               <input id="edit-repo-name" value={editName} onChange={(e) => setEditName(e.target.value)} className={FIELD} />
             </div>
             <div>
-              <label htmlFor="edit-repo-id" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Repository ID</label>
-              <input id="edit-repo-id" value={editRepoId} onChange={(e) => setEditRepoId(e.target.value)} className={`${FIELD} font-mono`} placeholder="tai-khoan/ten-repo" />
+              <label htmlFor="edit-repo-id" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">{editing.provider === 'drive' ? 'ID thư mục Google Drive' : 'Repository ID'}</label>
+              <input id="edit-repo-id" value={editRepoId} onChange={(e) => setEditRepoId(e.target.value)} className={`${FIELD} font-mono`} placeholder={editing.provider === 'drive' ? '1AbC...' : 'tai-khoan/ten-repo'} />
             </div>
             <div className="sm:col-span-2">
               <label htmlFor="edit-repo-folder" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Thư mục gốc</label>
@@ -212,7 +242,7 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
           <div className="flex items-center gap-2">
             <button
               type="submit"
-              disabled={editBusy || !auth || !editName.trim() || !editRepoId.trim()}
+              disabled={editBusy || (editing.provider === 'huggingface' && !auth) || !editName.trim() || !editRepoId.trim()}
               className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white disabled:opacity-50 flex items-center gap-2"
             >
               {editBusy && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -232,9 +262,26 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
 
       <form onSubmit={handleCreate} className="space-y-3 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
         <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Thêm repo</h4>
-        {!auth && <p className="text-xs text-amber-700 dark:text-amber-400">Lưu token ở phần trên trước khi tạo repo.</p>}
+        {!auth && !isDriveForm && <p className="text-xs text-amber-700 dark:text-amber-400">Lưu token ở phần trên trước khi tạo repo.</p>}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="repo-provider" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nơi lưu</label>
+            <select
+              id="repo-provider"
+              value={provider}
+              onChange={(e) => {
+                setProvider(e.target.value as StorageProviderId);
+                setRepoInput(null);
+              }}
+              className={FIELD}
+            >
+              {(['drive', 'huggingface'] as const).map((p) => (
+                <option key={p} value={p}>{STORAGE_PROVIDER_LABELS[p]}</option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label htmlFor="repo-kind" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Loại</label>
             <select
@@ -282,15 +329,17 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
             <input id="repo-name" value={name} onChange={(e) => setNameInput(e.target.value)} className={FIELD} />
           </div>
 
-          <div>
-            <label htmlFor="repo-id" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Repository ID</label>
-            <input id="repo-id" value={repoId} onChange={(e) => setRepoInput(e.target.value)} className={`${FIELD} font-mono`} placeholder="tai-khoan/ten-repo" />
-          </div>
+          {needsRepoId && (
+            <div>
+              <label htmlFor="repo-id" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">{isDriveForm ? 'ID thư mục Google Drive' : 'Repository ID'}</label>
+              <input id="repo-id" value={repoId} onChange={(e) => setRepoInput(e.target.value)} className={`${FIELD} font-mono`} placeholder={isDriveForm ? '1AbC...' : 'tai-khoan/ten-repo'} />
+            </div>
+          )}
         </div>
 
         <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
           <input type="checkbox" checked={existing} onChange={(e) => setExisting(e.target.checked)} />
-          <span>Repo đã có sẵn trên Hugging Face (chỉ đăng ký, không tạo mới)</span>
+          <span>{isDriveForm ? 'Thư mục đã có sẵn trong Shared Drive (chỉ đăng ký, không tạo mới)' : 'Repo đã có sẵn trên Hugging Face (chỉ đăng ký, không tạo mới)'}</span>
         </label>
 
         {error && (
@@ -308,11 +357,17 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
 
         <button
           type="submit"
-          disabled={busy || !auth || !name.trim() || !repoId.trim() || (kind === 'personal' && !userId)}
+          disabled={busy || (!isDriveForm && !auth) || !name.trim() || (needsRepoId && !repoId.trim()) || (kind === 'personal' && !userId)}
           className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white disabled:opacity-50 flex items-center gap-2"
         >
           {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-          <span>{busy ? 'Đang xử lý...' : existing ? 'Đăng ký repo' : 'Tạo repo trên Hugging Face'}</span>
+          <span>
+            {busy
+              ? 'Đang xử lý...'
+              : isDriveForm
+                ? existing ? 'Đăng ký thư mục' : 'Tạo thư mục trong Shared Drive'
+                : existing ? 'Đăng ký repo' : 'Tạo repo trên Hugging Face'}
+          </span>
         </button>
       </form>
     </div>

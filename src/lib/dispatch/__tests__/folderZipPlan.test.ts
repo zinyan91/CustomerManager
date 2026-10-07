@@ -133,3 +133,13 @@ describe('chooseSinkMode', () => {
     expect(chooseSinkMode(false, MAX_BUFFERED_ZIP_BYTES + 1)).toBe('too_large');
   });
 });
+
+describe('planFolderZip với tệp Google Drive', () => {
+  it('mang theo mã tệp và kiểu gốc để tải đúng tệp', () => {
+    const doc = (filePath: string, extra: Record<string, unknown>) => ({ filePath, fileSize: 10, updatedAt: 't', fileName: filePath.split('/').pop(), ...extra }) as never;
+    const plan = planFolderZip([doc('VB/a.pdf', { fileId: 'ID1' }), doc('VB/B.docx', { fileId: 'ID2', nativeMimeType: 'application/vnd.google-apps.document' }), doc('VB/c.txt', {})], 'VB', 'Kho');
+    expect(plan.entries.map((e) => [e.zipPath, e.fileId, e.nativeMimeType])).toEqual([
+      ['VB/a.pdf', 'ID1', ''], ['VB/B.docx', 'ID2', 'application/vnd.google-apps.document'], ['VB/c.txt', undefined, undefined],
+    ]);
+  });
+});

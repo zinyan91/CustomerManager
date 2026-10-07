@@ -44,7 +44,7 @@ export function AdminLayout() {
       <aside className="md:w-56 shrink-0 md:min-h-screen bg-panel border-b md:border-b-0 md:border-r border-line flex flex-col">
         <div className="px-4 py-3 text-base font-bold text-slate-900 dark:text-slate-100">Quản trị</div>
         <nav aria-label="Khu quản trị" className="flex md:flex-col gap-1 px-2 pb-2 overflow-x-auto md:flex-1">
-          {ADMIN_NAV.map(({ id, label, path, icon: Icon, exact }) => (
+          {ADMIN_NAV.filter((n) => !n.capability || can(n.capability)).map(({ id, label, path, icon: Icon, exact }) => (
             <NavLink key={id} to={path} end={exact} className={item}>
               <Icon className="w-4 h-4 shrink-0" />
               <span>{label}</span>

@@ -109,11 +109,10 @@ export async function updateStorageRepo(repo: StorageRepo, edit: RepoEdit): Prom
     p_id: repo.id,
     p_name: edit.name,
     p_repo_id: edit.repoId,
-    p_folder: '',
   });
   if (error) {
     if (error.code && MISSING_FUNCTION_CODES.includes(error.code)) {
-      throw new Error('Chưa áp migration 67_sua_repo_kho_luu_tru.sql trên Supabase.');
+      throw new Error('Chưa áp migration 70_don_huggingface.sql trên Supabase.');
     }
     throw new Error(`Không sửa được repo: ${error.message}`);
   }

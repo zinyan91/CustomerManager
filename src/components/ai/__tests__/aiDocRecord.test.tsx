@@ -350,12 +350,24 @@ describe('Chat AI - biểu mẫu của văn bản', () => {
     expect(arg.formFiles).toEqual([]);
   });
 
-  it('chỉ có thư mục nén, chưa có văn bản: báo cần thêm văn bản và không có nút chọn việc', async () => {
+  it('tệp AI không đọc được đứng một mình (chưa có văn bản): không ép thêm PDF, chỉ báo AI không đọc được định dạng này', async () => {
     render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
     fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [zip()] } });
-    await screen.findByText('bieu-mau.zip');
-    expect((await screen.findByRole('alert')).textContent).toMatch(/Thêm văn bản PDF hoặc ảnh/);
+    expect((await screen.findByRole('alert')).textContent).toMatch(/bieu-mau.zip.*không được hỗ trợ/);
+    expect(screen.queryByText(/Thêm văn bản PDF hoặc ảnh/)).toBeNull();
+    expect(screen.queryByTitle('Gỡ biểu mẫu')).toBeNull();
     expect(screen.queryByRole('group', { name: 'Chọn việc cần làm với tệp' })).toBeNull();
+  });
+
+  it('tệp XML (kê khai thuế) là chữ thuần: AI đọc được, không cần PDF đi kèm và không bị coi là biểu mẫu', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    const xml = new File(['<HSoKhaiThue><ten>Cty A</ten></HSoKhaiThue>'], 'ETAX11320240234717015.xml', { type: 'text/xml' });
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [xml] } });
+    await screen.findByText('ETAX11320240234717015.xml');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByTitle('Gỡ biểu mẫu')).toBeNull();
+    expect(screen.getByTitle('Gỡ tệp Word')).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Chọn việc cần làm với tệp' })).toBeTruthy();
   });
 
   it('hai văn bản cùng một thư mục nén: báo, không cho thêm', async () => {

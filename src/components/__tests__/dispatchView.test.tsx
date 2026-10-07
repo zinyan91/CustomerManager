@@ -28,6 +28,10 @@ vi.mock('../../context/AuthContext', () => ({
 }));
 vi.mock('../../hooks/useOfficialDocs', () => ({ useOfficialDocs: () => state.hook }));
 vi.mock('../ai/AiChatDialog', () => ({ AiChatDialog: ({ isOpen }: { isOpen: boolean }) => (isOpen ? <div>AI CHAT</div> : null) }));
+vi.mock('../dispatch/DispatchPreviewModal', () => ({
+  DispatchPreviewModal: ({ document: d, isOpen }: { document: { fileName: string; fileId?: string; fileType: string } | null; isOpen: boolean }) =>
+    isOpen && d ? <div role="dialog" aria-label="Xem trước tệp">{d.fileName}|{d.fileId}|{d.fileType}</div> : null,
+}));
 vi.mock('../dispatch/FilePickerModal', () => ({
   FilePickerModal: () => <div>PICKER</div>,
   pickedKey: (r: string, p: string) => `${r}/${p}`,
@@ -266,38 +270,14 @@ describe('Văn thư - xem chi tiết và mở tệp', () => {
     expect(within(word).getByRole('button', { name: 'Tải về' })).toBeTruthy();
   });
 
-  it('Xem tải tệp từ Kho rồi mở trong tab mới', async () => {
-    const tab = { location: { href: '' }, close: vi.fn() };
-    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
-    const original = URL.createObjectURL;
-    URL.createObjectURL = vi.fn().mockReturnValue('blob:pdf');
-    state.fetchBlob.mockResolvedValue(new Blob(['x']));
-    try {
-      const dlg = openDetail();
-      fireEvent.click(within(within(dlg).getByText('2753.pdf').closest('li') as HTMLElement).getByRole('button', { name: 'Xem' }));
-      await waitFor(() => expect(tab.location.href).toBe('blob:pdf'));
-      expect(state.fetchBlob).toHaveBeenCalledWith(expect.objectContaining({ path: 'vb/2753.pdf', repoId: 'o/kho' }));
-    } finally {
-      URL.createObjectURL = original;
-    }
-  });
-
-  it('tệp đã bị xóa khỏi Kho: đóng tab trống và báo lỗi', async () => {
-    const tab = { location: { href: '' }, close: vi.fn() };
-    vi.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
-    state.fetchBlob.mockRejectedValue(new Error('Tệp "2753.pdf" không còn trong Kho lưu trữ.'));
+  it('Xem mở khung xem trước ngay trong ứng dụng, không mở tab mới (trình duyệt hay chặn)', () => {
+    const open = vi.spyOn(window, 'open');
     const dlg = openDetail();
     fireEvent.click(within(within(dlg).getByText('2753.pdf').closest('li') as HTMLElement).getByRole('button', { name: 'Xem' }));
-    expect((await within(dlg).findByRole('alert')).textContent).toMatch(/không còn trong Kho lưu trữ/);
-    expect(tab.close).toHaveBeenCalled();
-  });
-
-  it('trình duyệt chặn tab mới thì báo, không gọi mạng', async () => {
-    vi.spyOn(window, 'open').mockReturnValue(null);
-    const dlg = openDetail();
-    fireEvent.click(within(within(dlg).getByText('2753.pdf').closest('li') as HTMLElement).getByRole('button', { name: 'Xem' }));
-    expect((await within(dlg).findByRole('alert')).textContent).toMatch(/chặn tab mới/);
-    expect(state.fetchBlob).not.toHaveBeenCalled();
+    const preview = screen.getByRole('dialog', { name: 'Xem trước tệp' });
+    expect(preview.textContent).toContain('2753.pdf');
+    expect(preview.textContent).toContain('application/pdf');
+    expect(open).not.toHaveBeenCalled();
   });
 
   it('đóng chi tiết', () => {

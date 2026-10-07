@@ -19,7 +19,7 @@ beforeEach(() => {
 describe('updateStorageRepo', () => {
   it('chỉ đổi tên: gọi hàm CSDL đúng tham số', async () => {
     const out = await updateStorageRepo(REPO, { ...EDIT, name: 'Kho dùng chung' });
-    expect(sb.rpc).toHaveBeenCalledWith('update_storage_repo', { p_id: 3, p_name: 'Kho dùng chung', p_repo_id: ID_A, p_folder: '' });
+    expect(sb.rpc).toHaveBeenCalledWith('update_storage_repo', { p_id: 3, p_name: 'Kho dùng chung', p_repo_id: ID_A });
     expect(out).toEqual({ documents: 0, dispatches: 0 });
   });
 
@@ -43,7 +43,7 @@ describe('updateStorageRepo', () => {
 
   it('chưa áp migration thì báo đích danh', async () => {
     sb.rpc.mockResolvedValue({ data: null, error: { message: 'function not found', code: 'PGRST202' } });
-    await expect(updateStorageRepo(REPO, EDIT)).rejects.toThrow(/Chưa áp migration 67/);
+    await expect(updateStorageRepo(REPO, EDIT)).rejects.toThrow(/Chưa áp migration 70/);
   });
 
   it('kết quả sai dạng thì báo lỗi, không đoán', async () => {

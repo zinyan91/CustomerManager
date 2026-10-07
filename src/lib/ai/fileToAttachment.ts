@@ -98,7 +98,7 @@ export async function fileToAiAttachment(file: File): Promise<AiAttachment> {
   const mimeType = resolveMimeType(file);
   if (!isSupportedAiAttachmentFile(file)) {
     throw new Error(
-      `Định dạng của tệp "${file.name}" không được hỗ trợ. AI chỉ đọc được tệp hình ảnh (PNG, JPG, WebP) và tài liệu PDF.`
+      `Định dạng của tệp "${file.name}" không được hỗ trợ. AI đọc được hình ảnh (PNG, JPG, WebP), PDF, Word (.docx), Excel/CSV và tệp chữ (XML, TXT, JSON).`
     );
   }
 

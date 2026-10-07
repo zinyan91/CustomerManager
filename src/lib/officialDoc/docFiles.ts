@@ -1,3 +1,4 @@
+import type { DispatchDocument } from '../../types/dispatch';
 import type { OfficialDoc, OfficialDocFile, OfficialDocFileKind } from '../../types/officialDoc';
 import type { StorageRepo, StorageRepoKind } from '../../types/storageRepo';
 import { guessMime } from '../mimeTypes';
@@ -49,6 +50,31 @@ export function removeDocFile(files: OfficialDocFile[], file: OfficialDocFile): 
 /** PDF và ảnh mở được ngay trong tab trình duyệt; định dạng khác chỉ tải về. */
 export function canViewInBrowser(fileName: string): boolean {
   return /\.(pdf|png|jpe?g|webp|gif)$/i.test(fileName);
+}
+
+/** Tệp của văn bản dưới dạng tài liệu để mở trong khung xem trước của ứng dụng (không mở tab mới, trình duyệt hay chặn). */
+export function docFileToPreviewDocument(doc: Pick<OfficialDoc, 'id' | 'docNumber' | 'title'>, file: OfficialDocFile): DispatchDocument {
+  return {
+    id: `${doc.id}/${file.fileId ?? file.path}`,
+    documentNumber: doc.docNumber,
+    title: file.name,
+    documentType: 'khac',
+    issuer: doc.title,
+    documentDate: '',
+    receivedDate: '',
+    customerId: null,
+    fileName: file.name,
+    fileSize: 0,
+    fileType: guessMime(file.name),
+    fileUrl: '',
+    filePath: file.path,
+    repoId: file.repoId,
+    storageProvider: 'drive',
+    fileId: file.fileId,
+    nativeMimeType: file.nativeMimeType,
+    createdAt: '',
+    updatedAt: '',
+  };
 }
 
 /** Mỗi loại tệp của văn bản có kho riêng: bản gốc ở kho Văn thư, biểu mẫu ở kho Biểu mẫu. */

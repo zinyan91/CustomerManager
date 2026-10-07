@@ -3,12 +3,14 @@ import { X, AlertCircle } from 'lucide-react';
 import type { OfficialDoc, OfficialDocFile } from '../../types/officialDoc';
 import { computeStatus } from '../../lib/officialDoc/status';
 import { categoryLabel } from '../../lib/officialDoc/categories';
-import { FILE_KINDS, FILE_KIND_LABELS, canViewInBrowser, groupFilesByKind } from '../../lib/officialDoc/docFiles';
-import { downloadDocFile, downloadDocFilesZip, viewDocFile } from '../../lib/officialDoc/docFileActions';
+import type { DispatchDocument } from '../../types/dispatch';
+import { FILE_KINDS, FILE_KIND_LABELS, canViewInBrowser, docFileToPreviewDocument, groupFilesByKind } from '../../lib/officialDoc/docFiles';
+import { downloadDocFile, downloadDocFilesZip } from '../../lib/officialDoc/docFileActions';
 import { docFolderSlug } from '../../lib/officialDoc/docPaths';
 import { bundleFileName } from '../../lib/officialDoc/formBundle';
 import { fmtDate, todayIso } from '../../lib/utils';
 import { OfficialDocStatusBadge } from './OfficialDocStatusBadge';
+import { DispatchPreviewModal } from './DispatchPreviewModal';
 
 interface OfficialDocDetailProps {
   doc: OfficialDoc | null;
@@ -31,6 +33,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export function OfficialDocDetail({ doc, onClose }: OfficialDocDetailProps) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<DispatchDocument | null>(null);
 
   if (!doc) return null;
   const groups = groupFilesByKind(doc.files);
@@ -48,19 +51,20 @@ export function OfficialDocDetail({ doc, onClose }: OfficialDocDetailProps) {
     }
   };
 
-  const openFile = async (file: OfficialDocFile, mode: 'view' | 'download') => {
+  const downloadFile = async (file: OfficialDocFile) => {
     setError(null);
-    setBusyKey(`${file.repoId}/${file.path}/${mode}`);
+    setBusyKey(`${file.repoId}/${file.path}`);
     try {
-      await (mode === 'view' ? viewDocFile(file) : downloadDocFile(file));
+      await downloadDocFile(file);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không mở được tệp.');
+      setError(err instanceof Error ? err.message : 'Không tải được tệp.');
     } finally {
       setBusyKey(null);
     }
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto bg-slate-900/60">
       <div role="dialog" aria-label="Xem văn bản" className="w-full max-w-4xl my-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl">
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
@@ -105,13 +109,13 @@ export function OfficialDocDetail({ doc, onClose }: OfficialDocDetailProps) {
                         {' | '}
                         {canViewInBrowser(file.name) && (
                           <>
-                            <button type="button" disabled={busyKey !== null} onClick={() => void openFile(file, 'view')} className={linkBtn}>
+                            <button type="button" disabled={busyKey !== null} onClick={() => setPreview(docFileToPreviewDocument(doc, file))} className={linkBtn}>
                               Xem
                             </button>
                             {' | '}
                           </>
                         )}
-                        <button type="button" disabled={busyKey !== null} onClick={() => void openFile(file, 'download')} className={linkBtn}>
+                        <button type="button" disabled={busyKey !== null} onClick={() => void downloadFile(file)} className={linkBtn}>
                           Tải về
                         </button>
                       </li>
@@ -133,5 +137,7 @@ export function OfficialDocDetail({ doc, onClose }: OfficialDocDetailProps) {
         </div>
       </div>
     </div>
+    <DispatchPreviewModal document={preview} isOpen={preview !== null} onClose={() => setPreview(null)} />
+    </>
   );
 }

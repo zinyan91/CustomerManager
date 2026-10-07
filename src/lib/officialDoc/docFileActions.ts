@@ -32,19 +32,3 @@ export async function downloadDocFilesZip(files: OfficialDocFile[], zipName: str
   saveBlob(await zipBlobs(inputs), zipName);
 }
 
-/**
- * Mở tệp (PDF, ảnh) trong tab mới. Tab phải mở ngay trong sự kiện click, trước mọi await,
- * kẻo trình duyệt chặn cửa sổ bật lên; tải hỏng thì đóng tab trống đó.
- */
-export async function viewDocFile(file: OfficialDocFile): Promise<void> {
-  const tab = window.open('', '_blank');
-  if (!tab) throw new Error('Trình duyệt đã chặn tab mới. Cho phép cửa sổ bật lên hoặc bấm "Tải về".');
-  try {
-    const url = URL.createObjectURL(await fetchDocFileBlob(file));
-    tab.location.href = url;
-    keepUrlAlive(url);
-  } catch (err) {
-    tab.close();
-    throw err;
-  }
-}

@@ -7,6 +7,7 @@ import { ATTACHMENT_INTENTS, intentsFor, type AttachmentIntentId } from '../../l
 import { checkFormTotal, formPairingProblem, isFormAttachment } from '../../lib/ai/formFiles';
 import { fileToSpreadsheetAttachment, isSpreadsheetFile } from '../../lib/ai/spreadsheetText';
 import { fileToWordAttachment, isDocxFile, isLegacyDocFile, legacyDocMessage } from '../../lib/ai/wordText';
+import { fileToPlainTextAttachment, isPlainTextFile } from '../../lib/ai/plainText';
 import { planFolderBundle, readableFiles, splitDroppedItems, type DroppedFolder } from '../../lib/officialDoc/folderBundle';
 import { itemsFromFileList, type UploadItem } from '../../lib/uploadItems';
 
@@ -54,7 +55,7 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
   const [forms, setForms] = useState<File[]>([]);
   // Bảng tính (Excel, CSV): AI đọc thành chữ để phân tích báo cáo tài chính; khi thêm văn bản mới thì thành biểu mẫu
   const [sheets, setSheets] = useState<File[]>([]);
-  // Tệp Word (.docx): AI đọc thành chữ như văn bản; khi thêm văn bản mới thì đi kèm làm biểu mẫu
+  // Tệp Word (.docx) và tệp chữ thuần (XML, TXT, JSON...): AI đọc thành chữ như văn bản; khi thêm văn bản mới thì đi kèm làm biểu mẫu
   const [words, setWords] = useState<File[]>([]);
   // Thư mục văn thư đang đính kèm: tệp chính nằm ở `attachments` cho AI đọc, phần còn lại của PDF/ảnh là phụ lục chỉ để lưu
   const [folder, setFolder] = useState<{ name: string; readable: File[]; main: File } | null>(null);
@@ -76,7 +77,7 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
   /** Bảng tính và tệp Word đang đính kèm thành tệp chữ cho AI. Lỗi đọc được báo và dừng gửi, không lẳng lặng bỏ tệp. */
   const readTexts = async (which: { sheets: boolean; words: boolean }): Promise<AiAttachment[] | null> => {
     try {
-      const reads = [...(which.sheets ? sheets.map((f) => fileToSpreadsheetAttachment(f)) : []), ...(which.words ? words.map((f) => fileToWordAttachment(f)) : [])];
+      const reads = [...(which.sheets ? sheets.map((f) => fileToSpreadsheetAttachment(f)) : []), ...(which.words ? words.map((f) => (isDocxFile(f) ? fileToWordAttachment(f) : fileToPlainTextAttachment(f))) : [])];
       return await Promise.all(reads);
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Không đọc được tệp đính kèm.');
@@ -133,12 +134,14 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
     setIsReadingFiles(true);
     setUploadError(null);
     try {
-      // Chỉ tài khoản được thêm văn bản mới có biểu mẫu; tài khoản khác gặp lại báo lỗi định dạng như mọi tệp AI không đọc được
       const sheetFiles = files.filter(isSpreadsheetFile);
-      const wordFiles = files.filter(isDocxFile);
-      const formFiles = canRecord ? files.filter((f) => !isSpreadsheetFile(f) && !isDocxFile(f) && !isLegacyDocFile(f) && isFormAttachment(f)) : [];
+      const wordFiles = files.filter((f) => isDocxFile(f) || isPlainTextFile(f));
       const legacyFiles = files.filter(isLegacyDocFile);
-      const documentFiles = files.filter((f) => !formFiles.includes(f) && !sheetFiles.includes(f) && !wordFiles.includes(f) && !legacyFiles.includes(f));
+      const others = files.filter((f) => !sheetFiles.includes(f) && !wordFiles.includes(f) && !legacyFiles.includes(f));
+      // Tệp AI không đọc được (ZIP...) chỉ thành biểu mẫu khi đang có văn bản PDF/ảnh để đi cùng; đứng một mình thì báo định dạng không hỗ trợ
+      const hasDocument = attachments.length > 0 || others.some((f) => !isFormAttachment(f));
+      const formFiles = canRecord && hasDocument ? others.filter(isFormAttachment) : [];
+      const documentFiles = others.filter((f) => !formFiles.includes(f));
       const problems: string[] = legacyFiles.map((f) => legacyDocMessage(f.name));
 
       const sizeProblem = formFiles.length > 0 ? checkFormTotal([...forms, ...formFiles]) : null;

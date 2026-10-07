@@ -30,6 +30,10 @@ export function describeRead(read: ReadDocsResult): string {
       lines.push(`- Tệp "${f.fileName}" (${FILE_KIND_LABELS[f.kind]}) thuộc văn bản số ${f.docNumber}: ${f.title}`)
     );
   }
+  if (read.forms.length > 0) {
+    lines.push('BIỂU MẪU KÈM THEO (lấy ở kho Biểu mẫu qua nút tải của văn bản; AI không đọc nội dung các tệp này, chỉ cho biết tên):');
+    read.forms.forEach((f) => lines.push(`- Biểu mẫu "${f.fileName}" của văn bản số ${f.docNumber}: ${f.title}`));
+  }
   if (read.notes.length > 0) {
     lines.push('KHÔNG ĐỌC ĐƯỢC (nói rõ điều này với người dùng, tuyệt đối không bịa nội dung):');
     read.notes.forEach((n) => lines.push(`- ${n}`));
@@ -98,7 +102,7 @@ export async function prepareDocContext(question: string, focusIds: string[], de
     return { ...EMPTY_DOC_CONTEXT, focusIds, contextText: `Không đọc được cấu hình kho lưu trữ: ${err instanceof Error ? err.message : String(err)}` };
   }
   if (!token) {
-    return { ...EMPTY_DOC_CONTEXT, focusIds, contextText: 'Chưa cấu hình token Hugging Face nên chưa đọc được nội dung tệp văn bản.' };
+    return { ...EMPTY_DOC_CONTEXT, focusIds, contextText: 'Chưa cấu hình kho lưu trữ nên chưa đọc được nội dung tệp văn bản.' };
   }
 
   const read = await readDocsForAi(picked.docs, token);

@@ -3,6 +3,7 @@ import {
   fetchSystemContextData,
   formatSystemContextPrompt,
   buildDirectSystemDataResponse,
+  describeDocFiles,
 } from '../systemContext';
 import { searchOfficialDocs, countByCategory } from '../../api/officialDocApi';
 import { fetchCustomersAPI } from '../../api/customerApi';
@@ -157,5 +158,29 @@ describe('AI System Context Grounding', () => {
 
     const response = buildDirectSystemDataResponse('có bao nhiêu văn thư hiện có', emptyData);
     expect(response).toBe('Hiện tại trong hệ thống chưa có văn bản nào.');
+  });
+});
+
+describe('describeDocFiles', () => {
+  const f = (kind: 'goc' | 'bieu-mau', name: string) => ({ kind, repoId: 'o/k', path: `d/${name}`, name });
+
+  it('văn bản chưa có tệp', () => {
+    expect(describeDocFiles([])).toBe('Chưa có tệp');
+    expect(describeDocFiles(undefined)).toBe('Chưa có tệp');
+  });
+
+  it('chỉ có tệp gốc', () => {
+    expect(describeDocFiles([f('goc', 'a.pdf')])).toBe('1 tệp gốc');
+  });
+
+  it('nêu tên biểu mẫu để AI trả lời được "văn bản này có biểu mẫu nào"', () => {
+    expect(describeDocFiles([f('goc', 'a.pdf'), f('bieu-mau', 'mau-01.docx'), f('bieu-mau', 'bieu-mau.zip')])).toBe(
+      '1 tệp gốc, 2 biểu mẫu: "mau-01.docx", "bieu-mau.zip"'
+    );
+  });
+
+  it('nhiều biểu mẫu thì chỉ nêu vài tên đầu và đếm phần còn lại', () => {
+    const forms = Array.from({ length: 8 }, (_, i) => f('bieu-mau', `m${i + 1}.docx`));
+    expect(describeDocFiles(forms)).toBe('8 biểu mẫu: "m1.docx", "m2.docx", "m3.docx", "m4.docx", "m5.docx" và 3 biểu mẫu khác');
   });
 });

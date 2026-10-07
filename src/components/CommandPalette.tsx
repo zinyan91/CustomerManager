@@ -2,14 +2,15 @@ import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from '
 import { Search, X, ChevronRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import { useLang } from '../context/LanguageContext';
-import { NAV_ITEMS } from '../lib/navigation';
+import { visibleNavItems } from '../lib/navigation';
 
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
+  canManageUsers?: boolean;
 }
 
-export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) => {
+export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, canManageUsers = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLang();
@@ -17,7 +18,7 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose }) =>
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const allItems = useMemo(() => NAV_ITEMS, []);
+  const allItems = useMemo(() => visibleNavItems(canManageUsers), [canManageUsers]);
 
   useEffect(() => {
     if (isOpen) {

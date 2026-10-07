@@ -107,7 +107,7 @@ describe('downloadFolderZip', () => {
     const fetchFn = vi.fn(async () => new Response('', { status: 403 })) as unknown as typeof fetch;
     await expect(
       downloadFolderZip({ plan: plan({ 'f/a.txt': 'x' }), repoId: 'o/r', token: 't', writable: collector().writable, fetchFn })
-    ).rejects.toThrow(/Token Hugging Face bị từ chối/);
+    ).rejects.toThrow(/Token kho lưu trữ bị từ chối/);
   });
 
   it('tải thiếu byte so với kích thước đã biết thì báo lỗi và hủy đích', async () => {

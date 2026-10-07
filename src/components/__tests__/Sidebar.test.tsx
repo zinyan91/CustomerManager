@@ -9,11 +9,11 @@ import { translate } from '../../lib/i18n';
 
 afterEach(cleanup);
 
-function dungLen() {
+function dungLen(canManageUsers = false) {
   return render(
     <MemoryRouter>
       <LanguageProvider>
-        <Sidebar />
+        <Sidebar canManageUsers={canManageUsers} />
       </LanguageProvider>
     </MemoryRouter>
   );
@@ -57,6 +57,15 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
   it('dựng đúng 16 liên kết trong nav', () => {
     const { container } = dungLen();
     expect(container.querySelectorAll('nav a').length).toBe(16);
+  });
+
+  it('chỉ hiện mục Người dùng khi có quyền quản lý người dùng', () => {
+    const { container, unmount } = dungLen(false);
+    expect(container.querySelector('nav a[href="/users"]')).toBeNull();
+    unmount();
+    const co = dungLen(true);
+    expect(co.container.querySelectorAll('nav a').length).toBe(17);
+    expect(co.container.querySelector('nav a[href="/users"]')).toBeTruthy();
   });
 
   it('hiện đủ 5 tiêu đề nhóm', () => {

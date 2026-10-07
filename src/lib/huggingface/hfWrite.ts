@@ -33,18 +33,18 @@ export function describeHfWriteError(err: unknown): string {
   const status = (err as { statusCode?: number } | null)?.statusCode;
   switch (status) {
     case 401:
-      return 'Token Hugging Face không hợp lệ hoặc đã hết hạn.';
+      return 'Token kho lưu trữ không hợp lệ hoặc đã hết hạn.';
     case 403:
       return 'Token không đủ quyền ghi vào repo này. Dùng token có quyền Write cho đúng dataset.';
     case 404:
-      return 'Không tìm thấy repo trên Hugging Face. Kiểm tra lại Repository ID.';
+      return 'Không tìm thấy repo trong kho lưu trữ. Kiểm tra lại Repository ID.';
     case 409:
-      return 'Repo này đã tồn tại trên Hugging Face.';
+      return 'Repo này đã tồn tại.';
     case 413:
-      return 'Tệp quá lớn so với giới hạn của Hugging Face.';
+      return 'Tệp quá lớn so với giới hạn của kho lưu trữ.';
   }
-  if (err instanceof TypeError) return 'Không kết nối được tới Hugging Face. Kiểm tra mạng rồi thử lại.';
-  return err instanceof Error && err.message ? err.message : 'Lỗi không xác định khi ghi lên Hugging Face.';
+  if (err instanceof TypeError) return 'Không kết nối được tới kho lưu trữ. Kiểm tra mạng rồi thử lại.';
+  return err instanceof Error && err.message ? err.message : 'Lỗi không xác định khi ghi lên kho lưu trữ.';
 }
 
 async function commitBatch(target: HfTarget, files: Array<{ path: string; content: Blob }>, title: string): Promise<void> {
@@ -116,7 +116,7 @@ export async function deleteFileFromHf(
   filePath: string,
   token: string
 ): Promise<{ success: boolean; error?: string }> {
-  if (!token) return { success: false, error: 'Chưa cấu hình token Hugging Face.' };
+  if (!token) return { success: false, error: 'Chưa cấu hình token kho lưu trữ.' };
   try {
     const { commit } = await loadHub();
     await commit({
@@ -133,7 +133,7 @@ export async function deleteFileFromHf(
 
 /** Tạo dataset private mới trên Hugging Face. Ném Error với thông điệp tiếng Việt khi lỗi. */
 export async function createHfDataset(token: string, repoId: string): Promise<void> {
-  if (!token) throw new Error('Chưa cấu hình token Hugging Face.');
+  if (!token) throw new Error('Chưa cấu hình token kho lưu trữ.');
   if (!repoId.includes('/')) throw new Error('Tên repo cần dạng owner/tên.');
   try {
     const { createRepo } = await loadHub();

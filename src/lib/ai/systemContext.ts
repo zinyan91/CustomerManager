@@ -30,6 +30,23 @@ export interface SystemContextOptions {
   includeCustomers?: boolean;
 }
 
+const MAX_FORM_NAMES = 5;
+
+/** Tệp của văn bản cho AI: số tệp gốc và tên các biểu mẫu (tối đa vài tên), để trả lời được "văn bản này có biểu mẫu nào". */
+export function describeDocFiles(files: OfficialDoc['files'] | undefined): string {
+  if (!files?.length) return 'Chưa có tệp';
+  const originals = files.filter((f) => f.kind === 'goc').length;
+  const forms = files.filter((f) => f.kind === 'bieu-mau');
+  const parts: string[] = [];
+  if (originals > 0) parts.push(`${originals} tệp gốc`);
+  if (forms.length > 0) {
+    const names = forms.slice(0, MAX_FORM_NAMES).map((f) => `"${f.name}"`).join(', ');
+    const more = forms.length > MAX_FORM_NAMES ? ` và ${forms.length - MAX_FORM_NAMES} biểu mẫu khác` : '';
+    parts.push(`${forms.length} biểu mẫu: ${names}${more}`);
+  }
+  return parts.join(', ');
+}
+
 /** Câu hỏi có nhắc tới khách hàng, để quyết định có tải danh sách khách hàng cho AI hay không. */
 export function mentionsCustomers(question: string): boolean {
   // \b của JS không coi chữ có dấu là chữ: "không" sẽ khớp nhầm "kh"; dùng ranh giới theo chữ cái Unicode
@@ -91,7 +108,7 @@ export function formatSystemContextPrompt(data: SystemContextData): string {
       const catText = categoryLabel(doc.category);
       const docNum = doc.docNumber ? `Số hiệu: "${doc.docNumber}"` : 'Chưa có số hiệu';
       const issued = doc.issuedDate ? `Ngày ban hành: ${doc.issuedDate}` : '';
-      const filesCount = doc.files?.length ? `${doc.files.length} tệp đính kèm` : 'Chưa có tệp';
+      const filesCount = describeDocFiles(doc.files);
 
       const meta = [docNum, `Mục: ${catText}`, issued, filesCount].filter(Boolean).join(' | ');
       lines.push(`${idx + 1}. "${doc.title}" [${meta}]`);
@@ -99,8 +116,8 @@ export function formatSystemContextPrompt(data: SystemContextData): string {
   }
   lines.push('');
 
-  // 2. KHO LƯU TRỮ CÁ NHÂN (HUGGING FACE)
-  lines.push('## 2. PHÂN HỆ KHO LƯU TRỮ CÁ NHÂN (HUGGING FACE):');
+  // 2. KHO LƯU TRỮ CÁ NHÂN
+  lines.push('## 2. PHÂN HỆ KHO LƯU TRỮ CÁ NHÂN:');
   lines.push(`- Trạng thái kết nối Access Token: ${data.hfConfig.hasToken ? `Đã kết nối (User: ${data.hfConfig.username || 'System'})` : 'Chưa cấu hình Token'}`);
   lines.push('');
 

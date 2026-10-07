@@ -21,6 +21,7 @@ const READ_OK = {
   attachments: [{ id: 'a', name: '8.pdf', mimeType: 'application/pdf', size: 1, base64Data: 'QQ==' }],
   readFiles: [{ docId: '8', docNumber: D8.docNumber, title: D8.title, fileName: '8.pdf', kind: 'goc' }],
   notes: [],
+  forms: [],
 };
 
 beforeEach(() => {
@@ -68,11 +69,11 @@ describe('prepareDocContext', () => {
     m.auth.mockResolvedValue(null);
     const out = await prepareDocContext('2848-8', []);
     expect(m.read).not.toHaveBeenCalled();
-    expect(out.contextText).toMatch(/Chưa cấu hình token Hugging Face/);
+    expect(out.contextText).toMatch(/Chưa cấu hình kho lưu trữ/);
   });
 
   it('tệp không đọc được: ghi chú đi vào ngữ cảnh', async () => {
-    m.read.mockResolvedValue({ attachments: [], readFiles: [], notes: ['Tệp "8.pdf" của văn bản 2848-8 không còn trong Kho'] });
+    m.read.mockResolvedValue({ attachments: [], readFiles: [], notes: ['Tệp "8.pdf" của văn bản 2848-8 không còn trong Kho'], forms: [] });
     const out = await prepareDocContext('2848-8', []);
     expect(out.attachments).toEqual([]);
     expect(out.contextText).toMatch(/KHÔNG ĐỌC ĐƯỢC.*\n- Tệp "8\.pdf"/);
@@ -133,6 +134,16 @@ describe('lookupSharedAnswer', () => {
 
 describe('describeRead', () => {
   it('rỗng khi không có gì', () => {
-    expect(describeRead({ attachments: [], readFiles: [], notes: [] })).toBe('');
+    expect(describeRead({ attachments: [], readFiles: [], notes: [], forms: [] })).toBe('');
+  });
+
+  it('biểu mẫu AI không đọc được chỉ được nêu tên, không bị tính là lỗi đọc', () => {
+    const text = describeRead({
+      attachments: [], readFiles: [], notes: [],
+      forms: [{ docNumber: '2903/2026/TB-TGĐ', title: 'Triển khai SMS 2way', fileName: 'mau-01.docx' }],
+    });
+    expect(text).toContain('BIỂU MẪU KÈM THEO');
+    expect(text).toContain('Biểu mẫu "mau-01.docx" của văn bản số 2903/2026/TB-TGĐ');
+    expect(text).not.toContain('KHÔNG ĐỌC ĐƯỢC');
   });
 });

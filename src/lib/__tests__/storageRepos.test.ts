@@ -29,6 +29,7 @@ const SHARED = repo({ id: 1, name: 'Kho chung', kind: 'shared' });
 const MINE = repo({ id: 2, name: 'Kho A', kind: 'personal', assignedUserId: 'u-a' });
 const OTHER = repo({ id: 3, name: 'Kho B', kind: 'personal', assignedUserId: 'u-b' });
 const VT = repo({ id: 4, name: 'Văn thư', kind: 'dispatch', repoId: 'own/van-thu-tin-dung' });
+const BM = repo({ id: 5, name: 'Biểu mẫu', kind: 'form', repoId: 'own/cm-bieu-mau' });
 
 describe('slugifyRepoName / buildRepoId', () => {
   it('bỏ dấu tiếng Việt, đ thành d, ký tự lạ thành gạch ngang', () => {
@@ -83,12 +84,19 @@ describe('reposForStorage', () => {
   it('user chưa được gán kho cá nhân chỉ thấy Kho chung', () => {
     expect(reposForStorage(all, 'user', 'u-moi').map((r) => r.id)).toEqual([1]);
   });
+
+  it('kho Biểu mẫu: admin thấy ngay sau Văn thư, user thường không thấy', () => {
+    const withForm = [OTHER, BM, VT, MINE, SHARED];
+    expect(reposForStorage(withForm, 'master_admin', 'u-a').map((r) => r.id)).toEqual([1, 4, 5, 2, 3]);
+    expect(reposForStorage(withForm, 'user', 'u-a').map((r) => r.id)).toEqual([1, 2]);
+  });
 });
 
 describe('repoLabel', () => {
   it('nhãn theo loại và chủ sở hữu', () => {
     expect(repoLabel(SHARED, 'u-a')).toBe('Kho chung');
     expect(repoLabel(VT, 'u-a')).toBe('Văn thư');
+    expect(repoLabel(BM, 'u-a')).toBe('Biểu mẫu');
     expect(repoLabel(MINE, 'u-a')).toBe('Kho của tôi');
     expect(repoLabel(OTHER, 'u-a', 'Trần B')).toBe('Kho của Trần B');
     expect(repoLabel(OTHER, 'u-a')).toBe('Kho B');
@@ -101,6 +109,8 @@ describe('quyền theo repo', () => {
     expect(canUploadToRepo('user', 'u-a', MINE)).toBe(true);
     expect(canUploadToRepo('user', 'u-a', OTHER)).toBe(false);
     expect(canUploadToRepo('user', 'u-a', VT)).toBe(false);
+    expect(canUploadToRepo('user', 'u-a', BM)).toBe(false);
+    expect(canUploadToRepo('user_admin', 'u-a', BM)).toBe(true);
   });
 
   it('upload: admin được ở mọi repo; thiếu repo hoặc vai trò thì không', () => {

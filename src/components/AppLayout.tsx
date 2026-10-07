@@ -16,7 +16,8 @@ function AppLayoutContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
-  const { session, loading } = useAuth();
+  const { session, loading, can } = useAuth();
+  const canManageUsers = can('user.manage');
   const { ready, scopeKey } = useUserScope();
   const location = useLocation();
   const { isSidebarCollapsed } = useSidebarCollapse();
@@ -80,6 +81,7 @@ function AppLayoutContent() {
       <Sidebar
         isOpenMobile={isMobileMenuOpen}
         onCloseMobile={handleCloseMobileMenu}
+        canManageUsers={canManageUsers}
       />
 
       <div className="flex flex-1 pt-[56px] relative w-full">
@@ -103,6 +105,7 @@ function AppLayoutContent() {
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={handleCloseCommandPalette}
+        canManageUsers={canManageUsers}
       />
 
       {/* Nút tròn nổi mở Trợ lý AI ở góc màn hình */}

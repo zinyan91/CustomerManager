@@ -415,3 +415,79 @@ describe('Kho lưu trữ - tải thư mục về dạng ZIP', () => {
     expect((screen.getByRole('button', { name: 'Tải thư mục Rong (ZIP)' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+describe('Kho lưu trữ - tải lên liên tiếp', () => {
+  const folderFiles = () => {
+    const mk = (name: string, rel: string) => {
+      const f = new File(['x'], name);
+      Object.defineProperty(f, 'webkitRelativePath', { value: rel });
+      return f;
+    };
+    return [mk('a.txt', 'Tai-lieu/a.txt'), mk('b.txt', 'Tai-lieu/sub/b.txt')];
+  };
+  const pick = (label: string, files: File[]) => {
+    const input = screen.getByLabelText(label) as HTMLInputElement;
+    Object.defineProperty(input, 'files', { value: files, configurable: true });
+    fireEvent.change(input);
+  };
+
+  it('tải xong một thư mục thì tải tiếp được một tệp, rồi một thư mục nữa', async () => {
+    state.role = 'user';
+    commit.mockResolvedValue({});
+    const reload = vi.fn().mockResolvedValue(undefined);
+    state.archive = makeArchive({ reload });
+    render(<StorageManagementView />);
+
+    pick('Chọn thư mục để tải lên', folderFiles());
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect((screen.getByRole('button', { name: /Tải lên tệp/ }) as HTMLButtonElement).disabled).toBe(false));
+
+    pick('Chọn tệp để tải lên', [new File(['y'], 'c.pdf')]);
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(2));
+    expect(commit.mock.calls[1][0].operations.map((o: { path: string }) => o.path)).toEqual(['c.pdf']);
+    await waitFor(() => expect(reload).toHaveBeenCalledTimes(2));
+
+    pick('Chọn thư mục để tải lên', folderFiles());
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(3));
+  });
+
+  it('nạp lại danh sách chậm sau khi tải lên không khóa nút tải lên', async () => {
+    commit.mockResolvedValue({});
+    let release!: () => void;
+    const reload = vi.fn().mockImplementation(() => new Promise<void>((r) => { release = r; }));
+    state.archive = makeArchive({ reload });
+    render(<StorageManagementView />);
+
+    pick('Chọn thư mục để tải lên', folderFiles());
+    await waitFor(() => expect(reload).toHaveBeenCalled());
+    // danh sách vẫn đang nạp lại nhưng tệp đã lên xong: nút tải lên phải dùng được
+    expect((screen.getByRole('button', { name: /Tải lên tệp/ }) as HTMLButtonElement).disabled).toBe(false);
+    release();
+  });
+
+  it('tải lên hỏng giữa chừng thì lần sau vẫn tải được', async () => {
+    commit.mockRejectedValueOnce(Object.assign(new Error('x'), { statusCode: 500 })).mockResolvedValue({});
+    render(<StorageManagementView />);
+    pick('Chọn tệp để tải lên', [new File(['y'], 'hong.pdf')]);
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect((screen.getByRole('button', { name: /Tải lên tệp/ }) as HTMLButtonElement).disabled).toBe(false));
+
+    pick('Chọn tệp để tải lên', [new File(['z'], 'tot.pdf')]);
+    await waitFor(() => expect(commit).toHaveBeenCalledTimes(2));
+  });
+});
+
+describe('Kho lưu trữ - nạp lại danh sách sau khi tải lên', () => {
+  it('nạp lại hỏng: báo rõ đã tải lên nhưng chưa nạp được danh sách, nút tải lên vẫn dùng được', async () => {
+    commit.mockResolvedValue({});
+    state.archive = makeArchive({ reload: vi.fn().mockRejectedValue(new Error('mạng chập chờn')) });
+    render(<StorageManagementView />);
+    const input = screen.getByLabelText('Chọn tệp để tải lên') as HTMLInputElement;
+    Object.defineProperty(input, 'files', { value: [new File(['y'], 'a.pdf')], configurable: true });
+    fireEvent.change(input);
+
+    expect((await screen.findByText(/Đã tải lên nhưng chưa nạp lại được danh sách: mạng chập chờn/)).textContent).toBeTruthy();
+    expect((screen.getByRole('button', { name: /Tải lên tệp/ }) as HTMLButtonElement).disabled).toBe(false);
+  });
+});

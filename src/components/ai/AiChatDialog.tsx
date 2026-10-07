@@ -190,17 +190,25 @@ export function AiChatDialog({
             onSelectPrompt={(p) => assistant.sendMessage(p)}
             onClearHistory={assistant.clearMessages}
             footer={docs.proposals.map((p) => (
-              <AiDocProposalCard key={p.id} proposal={p} onEdit={docs.edit} onRecord={docs.record} onDismiss={docs.dismiss} />
+              <AiDocProposalCard
+                key={p.id}
+                proposal={p}
+                onEdit={docs.edit}
+                onRecord={docs.record}
+                onDismiss={docs.dismiss}
+                onRemoveForm={docs.removeForm}
+                onResearchForms={docs.researchForms}
+              />
             ))}
           />
 
           <AiComposer
             ref={composerRef}
             canRecord={recordAllowed}
-            onSend={(msg, atts, intent) => {
+            onSend={(msg, atts, intent, formZip) => {
               // "Thêm văn bản mới": AI chỉ trích các trường để người dùng xem rồi xác nhận, không trả lời trong chat
               if (intent === 'record') {
-                if (atts) docs.propose(atts);
+                if (atts) docs.propose(atts, formZip ?? null);
                 return;
               }
               void assistant.sendMessage(msg, undefined, atts);

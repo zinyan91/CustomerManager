@@ -22,10 +22,11 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
 
   const hasShared = repos.some((r) => r.kind === 'shared');
   const hasDispatch = repos.some((r) => r.kind === 'dispatch');
+  const hasForm = repos.some((r) => r.kind === 'form');
   const assignedIds = new Set(repos.filter((r) => r.kind === 'personal').map((r) => r.assignedUserId));
   const freeUsers = users.filter((u) => !assignedIds.has(u.userId));
 
-  const firstKind: StorageRepoKind = !hasShared ? 'shared' : !hasDispatch ? 'dispatch' : 'personal';
+  const firstKind: StorageRepoKind = !hasShared ? 'shared' : !hasDispatch ? 'dispatch' : !hasForm ? 'form' : 'personal';
   const [kind, setKind] = useState<StorageRepoKind>(firstKind);
   const [userId, setUserId] = useState('');
   const [nameInput, setNameInput] = useState<string | null>(null);
@@ -40,6 +41,7 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
     const ns = auth?.username ?? '';
     if (kind === 'shared') return { name: 'Kho chung', repoId: buildRepoId(ns, 'cm-kho-chung') };
     if (kind === 'dispatch') return { name: 'Văn thư', repoId: buildRepoId(ns, 'van-thu-tin-dung') };
+    if (kind === 'form') return { name: 'Biểu mẫu', repoId: buildRepoId(ns, 'cm-bieu-mau') };
     const full = picked?.fullName ?? '';
     return { name: full ? `Kho của ${full}` : '', repoId: full ? buildRepoId(ns, suggestPersonalRepoSlug(full)) : '' };
   }, [kind, picked, auth?.username]);
@@ -94,6 +96,7 @@ export function StorageReposSection({ auth, repos, onChanged }: StorageReposSect
   const kindOptions: Array<{ value: StorageRepoKind; disabled: boolean }> = [
     { value: 'shared', disabled: hasShared },
     { value: 'dispatch', disabled: hasDispatch },
+    { value: 'form', disabled: hasForm },
     { value: 'personal', disabled: freeUsers.length === 0 },
   ];
 

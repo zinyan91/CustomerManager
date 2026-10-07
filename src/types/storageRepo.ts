@@ -1,9 +1,10 @@
-export type StorageRepoKind = 'shared' | 'personal' | 'dispatch';
+export type StorageRepoKind = 'shared' | 'personal' | 'dispatch' | 'form';
 
 export const STORAGE_KIND_LABELS: Record<StorageRepoKind, string> = {
   shared: 'Kho chung',
   personal: 'Kho cá nhân',
   dispatch: 'Văn thư',
+  form: 'Biểu mẫu',
 };
 
 /** Một dataset Hugging Face được đăng ký trong hệ thống. */

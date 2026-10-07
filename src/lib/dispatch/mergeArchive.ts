@@ -39,7 +39,7 @@ export function mergeHfTreeWithDispatches(
         documentNumber: item.name.replace(/\.[^/.]+$/, ''),
         title: item.name,
         documentType: 'khac',
-        issuer: 'Kho lưu trữ Hugging Face',
+        issuer: 'Kho lưu trữ',
         documentDate: '',
         receivedDate: '',
         customerId: null,

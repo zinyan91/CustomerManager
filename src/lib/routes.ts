@@ -31,6 +31,7 @@ export const ROUTE_OF: Record<ScreenId, string> = {
   'quiz-bank': '/reference/quiz',
 
   'post-loan': '/post-loan-control',
+  users: '/users',
   settings: '/settings',
 };
 

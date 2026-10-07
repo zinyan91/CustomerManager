@@ -25,16 +25,16 @@ export interface ZipDownloadOptions {
 const STALL_MS = 90_000;
 
 const abortError = () => new DOMException('Đã hủy tải thư mục.', 'AbortError');
-const stallError = () => new Error('Hugging Face không phản hồi. Kiểm tra mạng rồi thử lại.');
+const stallError = () => new Error('Kho lưu trữ không phản hồi. Kiểm tra mạng rồi thử lại.');
 
 export function isAbortError(reason: unknown): boolean {
   return typeof reason === 'object' && reason !== null && 'name' in reason && (reason as { name: string }).name === 'AbortError';
 }
 
 function describeStatus(status: number, name: string): string {
-  if (status === 401 || status === 403) return `Token Hugging Face bị từ chối khi tải "${name}" (${status}).`;
-  if (status === 404) return `Không tìm thấy tệp "${name}" trên Hugging Face (có thể đã bị xóa).`;
-  return `Không tải được tệp "${name}" từ Hugging Face (${status}).`;
+  if (status === 401 || status === 403) return `Token kho lưu trữ bị từ chối khi tải "${name}" (${status}).`;
+  if (status === 404) return `Không tìm thấy tệp "${name}" trong kho lưu trữ (có thể đã bị xóa).`;
+  return `Không tải được tệp "${name}" từ kho lưu trữ (${status}).`;
 }
 
 /**

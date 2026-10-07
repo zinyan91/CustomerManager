@@ -44,16 +44,16 @@ export function OfficialDocList({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
+        <table className="w-full min-w-[880px] text-sm border-collapse">
           <thead>
             <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-b border-slate-300 dark:border-slate-700 font-semibold">
               <th className={`${th} w-12 text-center`}>STT</th>
-              <th className={`${th} w-48`}>Số hiệu</th>
+              <th className={`${th} min-w-[11rem] whitespace-nowrap`}>Số hiệu</th>
               <th className={`${th} min-w-[260px]`}>Tiêu đề</th>
-              <th className={`${th} w-28 text-center`}>Ban hành</th>
-              <th className={`${th} w-28 text-center`}>Hiệu lực</th>
-              <th className={`${th} w-28 text-center`}>Hết hiệu lực</th>
-              <th className={`${th} w-32 text-center`}>Tình trạng</th>
+              <th className={`${th} w-28 whitespace-nowrap text-center`}>Ban hành</th>
+              <th className={`${th} w-28 whitespace-nowrap text-center`}>Hiệu lực</th>
+              <th className={`${th} w-28 whitespace-nowrap text-center`}>Hết hiệu lực</th>
+              <th className={`${th} w-32 whitespace-nowrap text-center`}>Tình trạng</th>
               <th className="w-px whitespace-nowrap px-3 py-2.5 text-center">Thao tác</th>
             </tr>
           </thead>
@@ -78,14 +78,14 @@ export function OfficialDocList({
               docs.map((doc, i) => (
                 <tr key={doc.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60">
                   <td className={`${td} text-center text-slate-500 font-mono`}>{firstRow + i + 1}</td>
-                  <td className={`${td} font-mono font-medium text-slate-900 dark:text-slate-100 break-all`}>{doc.docNumber}</td>
+                  <td className={`${td} font-mono font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap`}>{doc.docNumber}</td>
                   <td className={`${td} text-slate-900 dark:text-slate-100`}>
                     {doc.title}
                   </td>
-                  <td className={`${td} text-center`}>{fmtDate(doc.issuedDate)}</td>
-                  <td className={`${td} text-center`}>{fmtDate(doc.effectiveFrom)}</td>
-                  <td className={`${td} text-center`}>{fmtDate(doc.effectiveTo)}</td>
-                  <td className={`${td} text-center`}>
+                  <td className={`${td} text-center whitespace-nowrap`}>{fmtDate(doc.issuedDate)}</td>
+                  <td className={`${td} text-center whitespace-nowrap`}>{fmtDate(doc.effectiveFrom)}</td>
+                  <td className={`${td} text-center whitespace-nowrap`}>{fmtDate(doc.effectiveTo)}</td>
+                  <td className={`${td} text-center whitespace-nowrap`}>
                     <OfficialDocStatusBadge status={computeStatus(doc.effectiveFrom, doc.effectiveTo, today)} />
                   </td>
                   <td className="w-px whitespace-nowrap px-3 py-2 align-top">

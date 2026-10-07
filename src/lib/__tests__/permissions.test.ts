@@ -16,6 +16,7 @@ const MATRIX: Record<Capability, Record<AppRole, boolean>> = {
   'customer.assign': { master_admin: true, user_admin: true, user: false },
   'customer.deleteForever': { master_admin: true, user_admin: false, user: false },
   'role.manage': { master_admin: true, user_admin: false, user: false },
+  'user.manage': { master_admin: true, user_admin: true, user: false },
   'storage.configure': { master_admin: true, user_admin: false, user: false },
   'storage.upload': { master_admin: true, user_admin: true, user: true },
   'storage.delete': { master_admin: true, user_admin: true, user: false },

@@ -28,15 +28,24 @@ export function useArchiveUpload(config: HfConfig | null, onDone: () => void | P
       setRunning(true);
       setError(null);
       setSummary(null);
+      let uploadedCount = 0;
       try {
         const res = await uploadItemsToHf({ repoId: config.repoId, token: config.token }, targetFolder, items, setProgress);
-        setSummary({ uploaded: res.uploaded.length, failed: res.failed, names: topLevelNames(items) });
-        if (res.uploaded.length > 0) await onDone();
+        uploadedCount = res.uploaded.length;
+        setSummary({ uploaded: uploadedCount, failed: res.failed, names: topLevelNames(items) });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Không tải được lên.');
       } finally {
         setRunning(false);
         setProgress(null);
+      }
+      // Nạp lại danh sách chạy sau khi đã mở khóa: liệt kê cả kho có thể chậm, không được giữ nút tải lên chờ nó
+      if (uploadedCount > 0) {
+        try {
+          await onDone();
+        } catch (err) {
+          setError(`Đã tải lên nhưng chưa nạp lại được danh sách: ${err instanceof Error ? err.message : String(err)}`);
+        }
       }
     },
     [config, onDone]

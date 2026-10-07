@@ -53,7 +53,7 @@ export function mapRepoRow(row: {
 
 /**
  * Repo hiện trong màn Kho lưu trữ.
- * Admin thấy mọi repo, kể cả kho Văn thư (nơi để tệp cho các văn bản); user thấy Kho chung
+ * Admin thấy mọi repo, kể cả kho Văn thư và Biểu mẫu (nơi để tệp cho các văn bản); user thấy Kho chung
  * và repo gán cho mình.
  */
 export function reposForStorage(repos: StorageRepo[], role: string | null | undefined, userId: string | null): StorageRepo[] {
@@ -61,8 +61,9 @@ export function reposForStorage(repos: StorageRepo[], role: string | null | unde
     if (isAdminRole(role)) return true;
     return r.kind === 'shared' || (r.kind === 'personal' && r.assignedUserId !== null && r.assignedUserId === userId);
   });
-  // Kho chung đứng đầu, rồi Văn thư, rồi kho của chính mình, rồi các kho cá nhân khác
-  const rank = (r: StorageRepo) => (r.kind === 'shared' ? 0 : r.kind === 'dispatch' ? 1 : r.assignedUserId === userId ? 2 : 3);
+  // Kho chung đứng đầu, rồi Văn thư, Biểu mẫu, rồi kho của chính mình, rồi các kho cá nhân khác
+  const rank = (r: StorageRepo) =>
+    r.kind === 'shared' ? 0 : r.kind === 'dispatch' ? 1 : r.kind === 'form' ? 2 : r.assignedUserId === userId ? 3 : 4;
   return [...list].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'vi'));
 }
 
@@ -70,6 +71,7 @@ export function reposForStorage(repos: StorageRepo[], role: string | null | unde
 export function repoLabel(repo: StorageRepo, userId: string | null, ownerName?: string): string {
   if (repo.kind === 'shared') return 'Kho chung';
   if (repo.kind === 'dispatch') return 'Văn thư';
+  if (repo.kind === 'form') return 'Biểu mẫu';
   if (repo.assignedUserId && repo.assignedUserId === userId) return 'Kho của tôi';
   return ownerName ? `Kho của ${ownerName}` : repo.name;
 }

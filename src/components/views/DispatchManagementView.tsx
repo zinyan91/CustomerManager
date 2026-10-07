@@ -70,7 +70,7 @@ export function DispatchManagementView() {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden font-app bg-slate-50 dark:bg-slate-950">
-      <aside className="w-56 lg:w-64 shrink-0 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <aside className="w-48 xl:w-56 2xl:w-64 shrink-0 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="px-4 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2.5">
           <FolderArchive className="w-5 h-5 text-slate-700 dark:text-slate-300" />
           <span className="text-base font-bold text-slate-900 dark:text-slate-100">Văn thư</span>

@@ -8,6 +8,7 @@ const m = vi.hoisted(() => ({
   extract: vi.fn(),
   target: vi.fn(),
   record: vi.fn(),
+  findForms: vi.fn(),
 }));
 
 vi.mock('../../../context/AuthContext', () => ({
@@ -27,6 +28,7 @@ vi.mock('../../../lib/officialDoc/recordFromAi', () => ({
   attachmentToFile: () => new File(['x'], 'tb.pdf', { type: 'application/pdf' }),
   resolveRecordTarget: m.target,
   recordDocFromFile: m.record,
+  findFormFiles: m.findForms,
 }));
 
 import { AiChatDialog } from '../AiChatDialog';
@@ -43,6 +45,7 @@ beforeEach(() => {
   m.extract.mockReset().mockResolvedValue(FIELDS);
   m.target.mockReset().mockResolvedValue({ repo: { id: 1 }, token: 't' });
   m.record.mockReset().mockResolvedValue({ id: '9' });
+  m.findForms.mockReset().mockResolvedValue({ files: [], note: null });
 });
 afterEach(cleanup);
 
@@ -250,5 +253,140 @@ describe('Chat AI - ghi nhận mặc định theo quyền tài khoản', () => {
     drop(pdf());
     await screen.findByText('tb.pdf');
     expect(screen.queryByRole('button', { name: 'Thêm văn bản mới' })).toBeNull();
+  });
+});
+
+const zip = (name = 'bieu-mau.zip') => new File(['PK'], name, { type: 'application/zip' });
+const FORM = (name: string) => ({ kind: 'bieu-mau', repoId: 'o/bieu-mau', path: `bm/2753-2026-tb-bdh/${name}`, name });
+
+describe('Chat AI - biểu mẫu của văn bản', () => {
+  it('chỉ gửi PDF: AI tự tra kho Biểu mẫu theo số hiệu và hiện biểu mẫu tìm thấy', async () => {
+    m.findForms.mockResolvedValue({ files: [FORM('mau-01.docx'), FORM('mau-02.xlsx')], note: null });
+    await dropAndAdd({ canRecordDocs: true });
+
+    expect(await screen.findByText('mau-01.docx')).toBeTruthy();
+    expect(screen.getByText('mau-02.xlsx')).toBeTruthy();
+    expect(m.findForms).toHaveBeenCalledWith({ repo: { id: 1 }, token: 't' }, '2753/2026/TB-BĐH');
+  });
+
+  it('bỏ bớt một biểu mẫu rồi ghi: chỉ gắn những biểu mẫu còn lại, không có thư mục nén', async () => {
+    m.findForms.mockResolvedValue({ files: [FORM('mau-01.docx'), FORM('mau-02.xlsx')], note: null });
+    await dropAndAdd({ canRecordDocs: true });
+    await screen.findByText('mau-01.docx');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bỏ biểu mẫu mau-02.xlsx' }));
+    expect(screen.queryByText('mau-02.xlsx')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận vào Văn thư' }));
+
+    await waitFor(() => expect(m.record).toHaveBeenCalledTimes(1));
+    const arg = m.record.mock.calls[0][0];
+    expect(arg.formZip).toBeNull();
+    expect(arg.formFiles.map((f: { name: string }) => f.name)).toEqual(['mau-01.docx']);
+  });
+
+  it('không có biểu mẫu khớp thì nói rõ, vẫn ghi được văn bản', async () => {
+    await dropAndAdd({ canRecordDocs: true });
+    expect(await screen.findByText(/Không có biểu mẫu khớp số hiệu/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận vào Văn thư' }));
+    await waitFor(() => expect(m.record).toHaveBeenCalledTimes(1));
+    expect(m.record.mock.calls[0][0].formFiles).toEqual([]);
+  });
+
+  it('tra kho Biểu mẫu hỏng thì hiện lý do, không giả làm "không có biểu mẫu"', async () => {
+    m.findForms.mockRejectedValue(new Error('Token kho lưu trữ bị từ chối (403).'));
+    await dropAndAdd({ canRecordDocs: true });
+    expect(await screen.findByText(/Chưa tra được kho Biểu mẫu: Token kho lưu trữ bị từ chối/)).toBeTruthy();
+    expect(screen.queryByText(/Không có biểu mẫu khớp số hiệu/)).toBeNull();
+  });
+
+  it('chưa có kho Biểu mẫu thì hiện ghi chú của lần tra', async () => {
+    m.findForms.mockResolvedValue({ files: [], note: 'Chưa có kho Biểu mẫu nên chưa tự tra được biểu mẫu.' });
+    await dropAndAdd({ canRecordDocs: true });
+    expect(await screen.findByText(/Chưa có kho Biểu mẫu nên chưa tự tra/)).toBeTruthy();
+  });
+
+  it('sửa số hiệu rồi "Tra lại theo số hiệu" thì tra lại với số hiệu mới', async () => {
+    await dropAndAdd({ canRecordDocs: true });
+    await screen.findByText(/Không có biểu mẫu khớp số hiệu/);
+    m.findForms.mockResolvedValue({ files: [FORM('moi.docx')], note: null });
+
+    fireEvent.change(screen.getByLabelText('Số hiệu'), { target: { value: '9999/2026/TB-X' } });
+    fireEvent.click(screen.getByRole('button', { name: /Tra lại theo số hiệu/ }));
+
+    expect(await screen.findByText('moi.docx')).toBeTruthy();
+    expect(m.findForms).toHaveBeenLastCalledWith(expect.anything(), '9999/2026/TB-X');
+  });
+
+  it('gửi PDF kèm thư mục nén: không tự tra kho, zip được ghi làm biểu mẫu', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), zip()] } });
+    await screen.findByText('bieu-mau.zip');
+    expect(screen.getByTitle('Gỡ thư mục nén')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm văn bản mới' }));
+    await screen.findByLabelText('Số hiệu');
+    expect(await screen.findAllByText('bieu-mau.zip')).toHaveLength(1);
+    expect(m.findForms).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /Tra lại theo số hiệu/ })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi nhận vào Văn thư' }));
+    await waitFor(() => expect(m.record).toHaveBeenCalledTimes(1));
+    const arg = m.record.mock.calls[0][0];
+    expect(arg.formZip.name).toBe('bieu-mau.zip');
+    expect(arg.formFiles).toEqual([]);
+  });
+
+  it('chỉ có thư mục nén, chưa có văn bản: báo cần thêm văn bản và không có nút chọn việc', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [zip()] } });
+    await screen.findByText('bieu-mau.zip');
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Thêm văn bản PDF hoặc ảnh/);
+    expect(screen.queryByRole('group', { name: 'Chọn việc cần làm với tệp' })).toBeNull();
+  });
+
+  it('hai văn bản cùng một thư mục nén: báo, không cho thêm', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), {
+      dataTransfer: { types: ['Files'], files: [pdf(), new File(['%PDF'], 'b.pdf', { type: 'application/pdf' }), zip()] },
+    });
+    await screen.findByText('bieu-mau.zip');
+    expect((await screen.findByRole('alert')).textContent).toMatch(/chỉ đi kèm một văn bản/);
+    expect(screen.queryByRole('button', { name: 'Thêm văn bản mới' })).toBeNull();
+  });
+
+  it('có thư mục nén thì chỉ còn việc Thêm văn bản mới', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), zip()] } });
+    await screen.findByText('bieu-mau.zip');
+    const group = screen.getByRole('group', { name: 'Chọn việc cần làm với tệp' });
+    expect(within(group).getAllByRole('button').map((b) => b.textContent)).toEqual(['Thêm văn bản mới']);
+  });
+
+  it('gõ câu hỏi rồi Enter khi còn thư mục nén: báo lỗi, không lẳng lặng bỏ thư mục nén', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), zip()] } });
+    await screen.findByText('bieu-mau.zip');
+    fireEvent.change(textarea(), { target: { value: 'Văn bản này nói gì?' } });
+    fireEvent.keyDown(textarea(), { key: 'Enter' });
+    expect((await screen.findAllByRole('alert')).map((a) => a.textContent).join(' ')).toMatch(/Thư mục nén chỉ dùng với/);
+    expect(m.send).not.toHaveBeenCalled();
+  });
+
+  it('tài khoản không được thêm văn bản thì không nhận thư mục nén', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs={false} />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), zip()] } });
+    expect((await screen.findByRole('alert')).textContent).toMatch(/không có quyền thêm văn bản/);
+    expect(screen.queryByText('bieu-mau.zip')).toBeNull();
+    expect(screen.getByText('tb.pdf')).toBeTruthy();
+  });
+
+  it('gỡ thư mục nén khỏi dải đính kèm', async () => {
+    render(<AiChatDialog isOpen onClose={() => {}} canRecordDocs />);
+    fireEvent.drop(textarea(), { dataTransfer: { types: ['Files'], files: [pdf(), zip()] } });
+    await screen.findByText('bieu-mau.zip');
+    fireEvent.click(screen.getByTitle('Gỡ thư mục nén'));
+    expect(screen.queryByText('bieu-mau.zip')).toBeNull();
+    const group = screen.getByRole('group', { name: 'Chọn việc cần làm với tệp' });
+    expect(within(group).getAllByRole('button')).toHaveLength(3);
   });
 });

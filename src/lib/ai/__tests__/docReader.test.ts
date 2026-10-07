@@ -45,6 +45,22 @@ describe('readDocsForAi', () => {
     expect(r.attachments.map((a) => a.name)).toEqual(['b.pdf']);
   });
 
+  it('biểu mẫu Word/Excel/zip không đọc được thì chỉ nêu tên, không ghi chú lỗi, không tải', async () => {
+    const r = await readDocsForAi([doc('1', [file('goc.pdf'), file('mau-01.docx', 'bieu-mau'), file('bieu-mau.zip', 'bieu-mau')])], 't');
+    expect(m.fetchBlob).toHaveBeenCalledTimes(1);
+    expect(r.notes).toEqual([]);
+    expect(r.forms).toEqual([
+      { docNumber: 'S1', title: 'T1', fileName: 'mau-01.docx' },
+      { docNumber: 'S1', title: 'T1', fileName: 'bieu-mau.zip' },
+    ]);
+  });
+
+  it('biểu mẫu là PDF vẫn được đọc như trước', async () => {
+    const r = await readDocsForAi([doc('1', [file('goc.pdf'), file('mau.pdf', 'bieu-mau')])], 't');
+    expect(r.readFiles.map((f) => f.fileName)).toEqual(['goc.pdf', 'mau.pdf']);
+    expect(r.forms).toEqual([]);
+  });
+
   it('văn bản chưa có tệp thì ghi chú', async () => {
     const r = await readDocsForAi([doc('1', [])], 't');
     expect(r.attachments).toEqual([]);

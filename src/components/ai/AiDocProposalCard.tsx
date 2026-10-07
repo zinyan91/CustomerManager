@@ -1,7 +1,8 @@
-import { FileText, Loader2, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { FileText, Loader2, CheckCircle2, AlertCircle, X, Archive, RefreshCw } from 'lucide-react';
 import type { DocProposal } from '../../hooks/useAiDocProposals';
 import type { ExtractedDoc } from '../../lib/ai/docExtract';
-import type { OfficialDocCategory } from '../../types/officialDoc';
+import { formatFileSize } from '../../lib/ai/fileToAttachment';
+import type { OfficialDocCategory, OfficialDocFile } from '../../types/officialDoc';
 import { OFFICIAL_CATEGORIES } from '../../lib/officialDoc/categories';
 import { validateOfficialDoc } from '../../lib/officialDoc/validate';
 import { DateInput } from '../DateInput';
@@ -11,6 +12,8 @@ interface AiDocProposalCardProps {
   onEdit: (id: string, change: Partial<ExtractedDoc>) => void;
   onRecord: (id: string) => void;
   onDismiss: (id: string) => void;
+  onRemoveForm: (id: string, file: OfficialDocFile) => void;
+  onResearchForms: (id: string) => void;
 }
 
 const input =
@@ -18,8 +21,8 @@ const input =
 const lbl = 'block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5';
 
 /** Thẻ AI đề xuất ghi nhận một văn bản: sửa được các trường, bấm Ghi nhận mới lưu. */
-export function AiDocProposalCard({ proposal, onEdit, onRecord, onDismiss }: AiDocProposalCardProps) {
-  const { id, attachment, status, fields, error } = proposal;
+export function AiDocProposalCard({ proposal, onEdit, onRecord, onDismiss, onRemoveForm, onResearchForms }: AiDocProposalCardProps) {
+  const { id, attachment, status, fields, error, formZip, formFiles, searchingForms, formNote } = proposal;
   const invalid = fields ? validateOfficialDoc({ ...fields, files: [] }) : null;
   const locked = status === 'saving' || status === 'saved';
 
@@ -82,6 +85,62 @@ export function AiDocProposalCard({ proposal, onEdit, onRecord, onDismiss }: AiD
               <label className={lbl} htmlFor={`${id}-to`}>Ngày hết hiệu lực</label>
               <DateInput id={`${id}-to`} disabled={locked} value={fields.effectiveTo ?? ''} onChange={(iso) => onEdit(id, { effectiveTo: iso || null })} className={input} />
             </div>
+          </div>
+
+          <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-1">
+              <span className={lbl.replace('mb-0.5', '')}>Biểu mẫu</span>
+              {!formZip && !locked && (
+                <button
+                  type="button"
+                  onClick={() => onResearchForms(id)}
+                  disabled={searchingForms}
+                  className="inline-flex items-center gap-1 text-[11px] text-blue-700 dark:text-blue-400 hover:underline disabled:opacity-50 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3 h-3 ${searchingForms ? 'animate-spin' : ''}`} />
+                  Tra lại theo số hiệu
+                </button>
+              )}
+            </div>
+
+            {formZip ? (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                <Archive className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                <span className="flex-1 truncate" title={formZip.name}>{formZip.name}</span>
+                <span className="font-mono text-[10px] text-slate-400">{formatFileSize(formZip.size)}</span>
+              </div>
+            ) : (
+              <>
+                {searchingForms && (
+                  <div role="status" className="flex items-center gap-1.5 text-slate-500">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Đang tra kho Biểu mẫu...
+                  </div>
+                )}
+                {!searchingForms && formFiles.length === 0 && !formNote && (
+                  <div className="text-slate-500">Không có biểu mẫu khớp số hiệu trong kho Biểu mẫu.</div>
+                )}
+                {formNote && (
+                  <div role="status" className="flex items-start gap-1.5 text-amber-800 dark:text-amber-300">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <span>{formNote}</span>
+                  </div>
+                )}
+                <ul className="space-y-1">
+                  {formFiles.map((f) => (
+                    <li key={`${f.repoId}/${f.path}`} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+                      <FileText className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                      <span className="flex-1 truncate" title={f.path}>{f.name}</span>
+                      {!locked && (
+                        <button type="button" onClick={() => onRemoveForm(id, f)} aria-label={`Bỏ biểu mẫu ${f.name}`} className="p-0.5 text-slate-400 hover:text-rose-600 cursor-pointer">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
 
           {error && status !== 'error' && (

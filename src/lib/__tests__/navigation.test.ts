@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { NAV_GROUPS, NAV_ITEMS } from '../navigation';
+import { NAV_GROUPS, NAV_ITEMS, visibleNavGroups, visibleNavItems } from '../navigation';
 import { ROUTE_OF } from '../routes';
 
 describe('navigation', () => {
-  it('có đúng 16 màn', () => {
-    expect(NAV_ITEMS).toHaveLength(16);
+  it('có đúng 17 màn', () => {
+    expect(NAV_ITEMS).toHaveLength(17);
   });
 
   it('không id nào trùng', () => {
@@ -47,8 +47,29 @@ describe('navigation', () => {
       'business-plan', 'calculators', 'collaterals',
       'credit-cards', 'credit-contracts', 'customers', 'dashboard', 'dispatches', 'hub', 'inventory',
       'loans', 'mortgage-contracts', 'post-loan',
-      'rate-quote', 'settings', 'storage',
+      'rate-quote', 'settings', 'storage', 'users',
     ]);
+  });
+});
+
+describe('navigation — mục chỉ dành cho quản trị', () => {
+  it('chỉ mục Người dùng đánh dấu adminOnly', () => {
+    expect(NAV_ITEMS.filter(i => i.adminOnly).map(i => i.id)).toEqual(['users']);
+  });
+
+  it('không có quyền quản lý người dùng thì ẩn mục Người dùng', () => {
+    expect(visibleNavItems(false)).toHaveLength(16);
+    expect(visibleNavItems(false).some(i => i.id === 'users')).toBe(false);
+    expect(visibleNavGroups(false).flatMap(g => g.items).some(i => i.id === 'users')).toBe(false);
+  });
+
+  it('có quyền thì hiện đủ 17 mục', () => {
+    expect(visibleNavItems(true)).toHaveLength(17);
+    expect(visibleNavGroups(true).flatMap(g => g.items).some(i => i.id === 'users')).toBe(true);
+  });
+
+  it('không để lại nhóm rỗng', () => {
+    for (const g of visibleNavGroups(false)) expect(g.items.length).toBeGreaterThan(0);
   });
 });
 

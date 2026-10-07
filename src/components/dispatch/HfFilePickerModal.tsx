@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { X, Folder, FileText, ChevronRight, Check, Loader2, AlertCircle } from 'lucide-react';
 import type { DispatchDocument } from '../../types/dispatch';
-import type { StorageRepo } from '../../types/storageRepo';
+import type { OfficialDocFileKind } from '../../types/officialDoc';
+import { STORAGE_KIND_LABELS, type StorageRepo } from '../../types/storageRepo';
 import type { ArchiveStatus } from '../../lib/huggingface/hfStatus';
 import { classifyArchiveError, archiveStatusMessage } from '../../lib/huggingface/hfStatus';
 import { listHfTree } from '../../lib/huggingface/hfClient';
 import { listStorageRepos } from '../../lib/api/storageReposApi';
-import { selectableRepos } from '../../lib/officialDoc/docFiles';
+import { repoKindOfFile, selectableRepos } from '../../lib/officialDoc/docFiles';
 import { browseFolder, stripBase } from '../../lib/dispatch/folderBrowse';
 import { collectFolders, mergeHfTreeWithDispatches } from '../../lib/dispatch/mergeArchive';
 import { joinArchivePath } from '../../lib/archivePath';
@@ -19,6 +20,8 @@ export interface PickedFile {
 }
 
 interface HfFilePickerModalProps {
+  /** Loại tệp đang chọn: quyết định kho nào được mở (gốc: kho Văn thư; biểu mẫu: kho Biểu mẫu). */
+  fileKind: OfficialDocFileKind;
   /** Tiêu đề phụ, vd: "File văn bản gốc". */
   title: string;
   token: string;
@@ -30,8 +33,9 @@ interface HfFilePickerModalProps {
 
 export const pickedKey = (repoId: string, path: string) => `${repoId}/${path}`;
 
-/** Chọn tệp có sẵn trong Kho chung và kho Văn thư để gắn vào văn bản. Không tải tệp lên. */
-export function HfFilePickerModal({ title, token, pickedKeys, onPick, onClose }: HfFilePickerModalProps) {
+/** Chọn tệp có sẵn trong kho tương ứng với loại tệp để gắn vào văn bản. Không tải tệp lên. */
+export function HfFilePickerModal({ fileKind, title, token, pickedKeys, onPick, onClose }: HfFilePickerModalProps) {
+  const kindLabel = STORAGE_KIND_LABELS[repoKindOfFile(fileKind)];
   const [repos, setRepos] = useState<StorageRepo[]>([]);
   const [repoIndex, setRepoIndex] = useState(0);
   const [docs, setDocs] = useState<DispatchDocument[]>([]);
@@ -44,7 +48,7 @@ export function HfFilePickerModal({ title, token, pickedKeys, onPick, onClose }:
     listStorageRepos()
       .then((all) => {
         if (!active) return;
-        const list = selectableRepos(all);
+        const list = selectableRepos(all, fileKind);
         setRepos(list);
         setStatus(list.length === 0 ? { kind: 'no_repo' } : { kind: 'loading' });
       })
@@ -52,7 +56,7 @@ export function HfFilePickerModal({ title, token, pickedKeys, onPick, onClose }:
     return () => {
       active = false;
     };
-  }, []);
+  }, [fileKind]);
 
   const repo = repos[repoIndex] ?? null;
 
@@ -86,14 +90,17 @@ export function HfFilePickerModal({ title, token, pickedKeys, onPick, onClose }:
   const listing = useMemo(() => browseFolder(docs, emptyFolders, current), [docs, emptyFolders, current]);
   const base = repo?.folder ?? '';
   const crumbs = (stripBase(current, base) ?? '').split('/').filter(Boolean);
-  const message = archiveStatusMessage(status, false);
+  const message =
+    status.kind === 'no_repo'
+      ? `Chưa có kho ${kindLabel}. Liên hệ Master Admin để tạo kho ${kindLabel}.`
+      : archiveStatusMessage(status, false);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60">
-      <div role="dialog" aria-label="Chọn tệp từ Kho lưu trữ" className="w-full max-w-3xl h-[80vh] bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col">
+      <div role="dialog" aria-label={`Chọn tệp từ kho ${kindLabel}`} className="w-full max-w-3xl h-[80vh] bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col">
         <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Chọn từ Kho lưu trữ</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Chọn từ kho {kindLabel}</h3>
             <p className="text-xs text-slate-500">{title}</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
@@ -116,7 +123,7 @@ export function HfFilePickerModal({ title, token, pickedKeys, onPick, onClose }:
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
-                {r.kind === 'shared' ? 'Kho chung' : 'Văn thư'}
+                {r.name}
               </button>
             ))}
           </div>

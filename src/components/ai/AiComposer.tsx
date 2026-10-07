@@ -1,13 +1,17 @@
 import { forwardRef, useImperativeHandle, useState, useRef, useEffect } from 'react';
-import { Send, Square, Paperclip, X, FileText, ChevronDown, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Send, Square, Paperclip, X, FileText, ChevronDown, Image as ImageIcon, AlertCircle, Archive } from 'lucide-react';
 import type { DispatchDocument } from '../../types/dispatch';
 import type { AiAttachment } from '../../types/ai';
 import { convertFilesToAiAttachments, formatFileSize } from '../../lib/ai/fileToAttachment';
 import { ATTACHMENT_INTENTS, intentsFor, type AttachmentIntentId } from '../../lib/ai/attachmentIntents';
+import { checkFormZip, isZipFile, zipPairingProblem } from '../../lib/ai/formZip';
 
 interface AiComposerProps {
-  /** `intent` có khi người dùng chọn một việc với tệp (tóm tắt, đọc, thêm văn bản mới) thay vì tự gõ câu hỏi. */
-  onSend: (message: string, attachments?: AiAttachment[], intent?: AttachmentIntentId) => void;
+  /**
+   * `intent` có khi người dùng chọn một việc với tệp (tóm tắt, đọc, thêm văn bản mới) thay vì tự gõ câu hỏi.
+   * `formZip` là thư mục nén biểu mẫu, chỉ đi với việc thêm văn bản mới.
+   */
+  onSend: (message: string, attachments?: AiAttachment[], intent?: AttachmentIntentId, formZip?: File | null) => void;
   /** Hiện lựa chọn "Thêm văn bản mới" (tài khoản được thêm văn bản vào Văn thư). */
   canRecord?: boolean;
   onStop: () => void;
@@ -38,6 +42,7 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
   const [text, setText] = useState('');
   const [showDocPicker, setShowDocPicker] = useState(false);
   const [attachments, setAttachments] = useState<AiAttachment[]>([]);
+  const [zips, setZips] = useState<File[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isReadingFiles, setIsReadingFiles] = useState(false);
 
@@ -56,6 +61,11 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
     const hasText = Boolean(text.trim());
     // Có tệp mà chưa gõ gì: phải chọn một việc ở dải lựa chọn, không tự gửi câu hỏi mặc định
     if (!hasText || isStreaming) return;
+    // Thư mục nén chỉ dùng được khi thêm văn bản mới; không lẳng lặng bỏ nó khỏi câu hỏi
+    if (zips.length > 0) {
+      setUploadError('Thư mục nén chỉ dùng với "Thêm văn bản mới". Gỡ thư mục nén nếu muốn gửi câu hỏi.');
+      return;
+    }
 
     const msg = text;
     const atts = attachments.length > 0 ? [...attachments] : undefined;
@@ -87,12 +97,26 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
     setIsReadingFiles(true);
     setUploadError(null);
     try {
-      const { attachments: newAtts, errors } = await convertFilesToAiAttachments(files);
-      if (newAtts.length > 0) {
-        setAttachments((prev) => [...prev, ...newAtts]);
+      const zipFiles = files.filter(isZipFile);
+      const documentFiles = files.filter((f) => !isZipFile(f));
+      const problems: string[] = [];
+
+      const acceptedZips = zipFiles.filter((z) => {
+        const problem = checkFormZip(z, canRecord);
+        if (problem) problems.push(problem);
+        return !problem;
+      });
+      // Đọc xong tệp văn bản rồi mới cập nhật cùng lúc với thư mục nén, để không nháy cảnh báo "thiếu văn bản"
+      if (documentFiles.length > 0) {
+        const { attachments: newAtts, errors } = await convertFilesToAiAttachments(documentFiles);
+        if (newAtts.length > 0) {
+          setAttachments((prev) => [...prev, ...newAtts]);
+        }
+        problems.push(...errors);
       }
-      if (errors.length > 0) {
-        setUploadError(errors.join('. '));
+      if (acceptedZips.length > 0) setZips((prev) => [...prev, ...acceptedZips]);
+      if (problems.length > 0) {
+        setUploadError(problems.join('. '));
       }
     } catch (err: any) {
       setUploadError(err.message || 'Không thể đọc tệp tin.');
@@ -134,24 +158,28 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
   };
 
   const canSend = Boolean(text.trim()) && !isStreaming && !isReadingFiles;
+  const pairingProblem = zipPairingProblem(zips.length, attachments.length);
 
   const sendWithIntent = (id: AttachmentIntentId) => {
-    if (isStreaming || isReadingFiles || attachments.length === 0) return;
+    if (isStreaming || isReadingFiles || attachments.length === 0 || pairingProblem) return;
     const prompt = ATTACHMENT_INTENTS.find((i) => i.id === id)?.prompt ?? '';
     const atts = [...attachments];
+    const zip = zips[0] ?? null;
     setText('');
     setAttachments([]);
+    setZips([]);
     setUploadError(null);
-    onSend(prompt, atts, id);
+    onSend(prompt, atts, id, zip);
   };
 
-  const intents = intentsFor(canRecord, Boolean(text.trim()));
+  // Có thư mục nén thì chỉ còn việc thêm văn bản mới: tóm tắt hay đọc không dùng tới thư mục nén
+  const intents = intentsFor(canRecord, Boolean(text.trim() || zips.length > 0));
 
   return (
     <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60">
       {/* Thông báo lỗi khi upload */}
       {uploadError && (
-        <div className="mb-2 max-w-3xl mx-auto flex items-center justify-between p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300">
+        <div role="alert" className="mb-2 max-w-3xl mx-auto flex items-center justify-between p-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300">
           <div className="flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             <span>{uploadError}</span>
@@ -166,9 +194,36 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
         </div>
       )}
 
+      {pairingProblem && (
+        <div role="alert" className="mb-2 max-w-3xl mx-auto flex items-center gap-1.5 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-xs text-amber-800 dark:text-amber-300">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <span>{pairingProblem}</span>
+        </div>
+      )}
+
       {/* Dải hiển thị tệp / hình ảnh đang đính kèm */}
-      {attachments.length > 0 && (
+      {(attachments.length > 0 || zips.length > 0) && (
         <div className="mb-2 max-w-3xl mx-auto flex flex-wrap gap-2">
+          {zips.map((zip, i) => (
+            <div
+              key={`zip_${zip.name}_${i}`}
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs text-xs text-slate-800 dark:text-slate-200 max-w-xs"
+            >
+              <Archive className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-medium text-[11px]" title={zip.name}>{zip.name}</div>
+                <div className="text-[10px] text-slate-400 font-mono">{formatFileSize(zip.size)}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setZips((prev) => prev.filter((_, idx) => idx !== i))}
+                className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-md transition-colors cursor-pointer shrink-0"
+                title="Gỡ thư mục nén"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
           {attachments.map((att) => (
             <div
               key={att.id}
@@ -211,7 +266,7 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
       )}
 
       {/* Chọn việc cần làm với tệp vừa đính kèm */}
-      {attachments.length > 0 && intents.length > 0 && (
+      {attachments.length > 0 && !pairingProblem && intents.length > 0 && (
         <div role="group" aria-label="Chọn việc cần làm với tệp" className="mb-2 max-w-3xl mx-auto flex flex-wrap items-center gap-2 text-xs">
           <span className="text-slate-500 dark:text-slate-400">Bạn muốn làm gì với tệp này?</span>
           {intents.map((i) => (
@@ -258,11 +313,11 @@ export const AiComposer = forwardRef<AiComposerHandle, AiComposerProps>(function
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*,application/pdf"
+          accept="image/*,application/pdf,.zip,application/zip"
           multiple
           className="hidden"
           onChange={handleFileInputChange}
-          aria-label="Tải ảnh hoặc file PDF lên"
+          aria-label="Tải ảnh, file PDF hoặc thư mục nén lên"
         />
 
         {/* Nút đính kèm hình ảnh / PDF từ máy tính */}

@@ -5,7 +5,7 @@ import { joinArchivePath } from '../archivePath';
 import { isHfConfigComplete } from '../huggingface/hfConfigApi';
 
 const MSG_NOT_CONFIGURED =
-  'Chưa cấu hình kho lưu trữ Hugging Face. Liên hệ Master Admin để cấu hình token và repo.';
+  'Chưa cấu hình kho lưu trữ. Liên hệ Master Admin để cấu hình token và repo.';
 
 export { joinArchivePath, hfFileUrl };
 

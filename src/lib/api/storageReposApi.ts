@@ -14,7 +14,7 @@ export async function listStorageRepos(): Promise<StorageRepo[]> {
 
 function describeInsertError(error: { code?: string; message: string }): string {
   if (error.code === '23505') {
-    return 'Đã có repo cùng loại hoặc tài khoản này đã được gán repo cá nhân. Mỗi tài khoản chỉ có một repo cá nhân, hệ thống chỉ có một Kho chung và một repo Văn thư.';
+    return 'Đã có repo cùng loại hoặc tài khoản này đã được gán repo cá nhân. Mỗi tài khoản chỉ có một repo cá nhân, hệ thống chỉ có một Kho chung, một repo Văn thư và một repo Biểu mẫu.';
   }
   return error.message;
 }

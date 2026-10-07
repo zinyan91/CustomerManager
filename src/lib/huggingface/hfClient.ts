@@ -1,6 +1,7 @@
 import type { HfFileItem, FolderTreeNode } from '../../types/huggingface';
 
 const HF_API_BASE = 'https://huggingface.co/api';
+const LIST_TIMEOUT_MS = 60_000;
 
 /** Lỗi trả về từ API Hugging Face, mang theo mã HTTP để giao diện phân loại. */
 export class HfApiError extends Error {
@@ -131,9 +132,10 @@ export async function listHfTree(
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(url, { headers, cache: 'no-store' });
+  // Có hạn chờ: liệt kê đệ quy cả kho có thể rất chậm, không để giao diện chờ vô hạn
+  const res = await fetch(url, { headers, cache: 'no-store', signal: AbortSignal.timeout(LIST_TIMEOUT_MS) });
   if (!res.ok) {
-    throw new HfApiError(res.status, `Lỗi tải danh sách tệp từ Hugging Face (${res.status})`);
+    throw new HfApiError(res.status, `Lỗi tải danh sách tệp từ kho lưu trữ (${res.status})`);
   }
 
   const raw = await res.json();
@@ -177,7 +179,7 @@ export async function fetchHfFileBlob(downloadUrl: string, token: string): Promi
 
   const res = await fetch(downloadUrl, { headers });
   if (!res.ok) {
-    throw new HfApiError(res.status, `Không thể tải tệp từ Hugging Face (${res.status})`);
+    throw new HfApiError(res.status, `Không thể tải tệp từ kho lưu trữ (${res.status})`);
   }
   return await res.blob();
 }

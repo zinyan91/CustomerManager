@@ -71,7 +71,7 @@ export const DedicatedWorkspaceHeader: React.FC = () => {
           ) : location.pathname === '/storage' || location.pathname === '/hub/storage' ? (
             <div className="flex items-center gap-2 min-w-0">
               <h1 className="text-xs sm:text-sm font-bold text-ink truncate">
-                Kho Lưu Trữ Cá Nhân & Hugging Face
+                Kho Lưu Trữ Cá Nhân
               </h1>
             </div>
           ) : currentTask ? (

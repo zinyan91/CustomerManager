@@ -14,6 +14,8 @@ export interface ReadDocsResult {
   readFiles: Array<{ docId: string; docNumber: string; title: string; fileName: string; kind: OfficialDocFile['kind'] }>;
   /** Tệp không đọc được (định dạng, quá lớn, lỗi tải) để AI nói rõ thay vì đoán. */
   notes: string[];
+  /** Biểu mẫu AI không đọc nội dung (Word, Excel, zip...): chỉ nêu tên cho người dùng biết văn bản có biểu mẫu nào. */
+  forms: Array<{ docNumber: string; title: string; fileName: string }>;
 }
 
 // Đọc lại cùng văn bản ở câu hỏi nối tiếp thì không phải tải lại từ Hugging Face
@@ -35,7 +37,7 @@ const orderFiles = (files: OfficialDocFile[]) => [...files].sort((a, b) => Numbe
  * Hugging Face. Tệp không đọc được ghi vào `notes`, không ném lỗi làm hỏng cả câu trả lời.
  */
 export async function readDocsForAi(docs: OfficialDoc[], token: string): Promise<ReadDocsResult> {
-  const result: ReadDocsResult = { attachments: [], readFiles: [], notes: [] };
+  const result: ReadDocsResult = { attachments: [], readFiles: [], notes: [], forms: [] };
   const wanted: Array<{ doc: OfficialDoc; file: OfficialDocFile }> = [];
 
   for (const doc of docs) {
@@ -45,6 +47,10 @@ export async function readDocsForAi(docs: OfficialDoc[], token: string): Promise
     }
     for (const file of orderFiles(doc.files)) {
       if (!isSupportedAiAttachmentFile({ name: file.name })) {
+        if (file.kind === 'bieu-mau') {
+          result.forms.push({ docNumber: doc.docNumber, title: doc.title, fileName: file.name });
+          continue;
+        }
         result.notes.push(`Tệp "${file.name}" của văn bản ${doc.docNumber} không phải PDF hoặc ảnh nên AI chưa đọc được.`);
       } else if (wanted.length < MAX_READ_FILES) {
         wanted.push({ doc, file });

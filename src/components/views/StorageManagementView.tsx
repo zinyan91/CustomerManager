@@ -290,7 +290,7 @@ export function StorageManagementView() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Cột trái: chọn kho và cây thư mục */}
-        <div className="w-72 lg:w-80 shrink-0 flex flex-col bg-slate-50 dark:bg-slate-900/60 border-r border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="w-60 xl:w-72 2xl:w-80 shrink-0 flex flex-col bg-slate-50 dark:bg-slate-900/60 border-r border-slate-200 dark:border-slate-800 overflow-hidden">
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Kho</span>
@@ -376,7 +376,7 @@ export function StorageManagementView() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Tìm tệp tin..."
                   aria-label="Tìm tệp tin"
-                  className="w-56 pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-hidden"
+                  className="w-40 xl:w-56 pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-hidden"
                 />
               </div>
 
@@ -515,15 +515,15 @@ export function StorageManagementView() {
                 ))}
               </div>
             ) : (
-              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
-                <table className="w-full text-left text-sm border-collapse">
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-x-auto bg-white dark:bg-slate-900">
+                <table className="w-full min-w-[680px] text-left text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-semibold">
-                      <th className="py-3 px-4">Tên tệp</th>
-                      <th className="py-3 px-4">Thư mục</th>
-                      <th className="py-3 px-4 text-right">Dung lượng</th>
-                      <th className="py-3 px-4">Ngày cập nhật</th>
-                      <th className="py-3 px-4 text-center">Thao tác</th>
+                      <th className="py-3 px-4 min-w-[14rem]">Tên tệp</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Thư mục</th>
+                      <th className="py-3 px-4 text-right whitespace-nowrap">Dung lượng</th>
+                      <th className="py-3 px-4 whitespace-nowrap">Ngày cập nhật</th>
+                      <th className="py-3 px-4 text-center whitespace-nowrap">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -535,8 +535,8 @@ export function StorageManagementView() {
                             <span>{f.name}</span>
                           </button>
                         </td>
-                        <td className="py-3 px-4 text-xs text-slate-500">{f.fileCount} tệp</td>
-                        <td className="py-3 px-4 text-right font-mono text-slate-600 dark:text-slate-400">{(f.totalBytes / 1024).toFixed(0)} KB</td>
+                        <td className="py-3 px-4 text-xs text-slate-500 whitespace-nowrap">{f.fileCount} tệp</td>
+                        <td className="py-3 px-4 text-right font-mono whitespace-nowrap text-slate-600 dark:text-slate-400">{(f.totalBytes / 1024).toFixed(0)} KB</td>
                         <td className="py-3 px-4" />
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
@@ -563,9 +563,9 @@ export function StorageManagementView() {
                             {doc.fileName || doc.title}
                           </button>
                         </td>
-                        <td className="py-3 px-4 font-mono text-xs text-slate-500">{doc.folderPath || 'Gốc'}</td>
-                        <td className="py-3 px-4 text-right font-mono text-slate-600 dark:text-slate-400">{(doc.fileSize / 1024).toFixed(0)} KB</td>
-                        <td className="py-3 px-4 text-slate-500">{fmtDate(doc.updatedAt?.slice(0, 10))}</td>
+                        <td className="py-3 px-4 font-mono text-xs text-slate-500 break-all min-w-[8rem]">{doc.folderPath || 'Gốc'}</td>
+                        <td className="py-3 px-4 text-right font-mono whitespace-nowrap text-slate-600 dark:text-slate-400">{(doc.fileSize / 1024).toFixed(0)} KB</td>
+                        <td className="py-3 px-4 text-slate-500 whitespace-nowrap">{fmtDate(doc.updatedAt?.slice(0, 10))}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center justify-center gap-1.5">
                             <button type="button" onClick={() => setPreviewDoc(doc)} aria-label={`Xem ${doc.fileName}`} className={iconBtn}>

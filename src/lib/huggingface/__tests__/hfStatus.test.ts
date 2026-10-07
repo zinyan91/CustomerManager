@@ -60,3 +60,12 @@ describe('archiveStatusMessage', () => {
     expect(archiveStatusMessage({ kind: 'error', message: 'Hỏng' }, false)).toBe('Hỏng');
   });
 });
+
+describe('classifyArchiveError - hết hạn chờ', () => {
+  it('liệt kê quá lâu (TimeoutError) thì báo kho phản hồi chậm, không báo lỗi mạng', () => {
+    expect(classifyArchiveError(new DOMException('signal timed out', 'TimeoutError'))).toEqual({
+      kind: 'error',
+      message: 'Kho lưu trữ phản hồi quá chậm. Thử tải lại sau ít phút.',
+    });
+  });
+});

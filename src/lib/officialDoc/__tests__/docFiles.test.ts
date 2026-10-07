@@ -17,6 +17,7 @@ import {
   groupFilesByKind,
   primaryFile,
   removeDocFile,
+  repoKindOfFile,
   selectableRepos,
 } from '../docFiles';
 
@@ -83,9 +84,30 @@ describe('canViewInBrowser', () => {
 });
 
 describe('selectableRepos', () => {
-  it('chỉ Kho chung và kho Văn thư, Kho chung đứng đầu; bỏ kho cá nhân', () => {
-    const list = selectableRepos([repo(1, 'personal', 'u1'), repo(2, 'dispatch'), repo(3, 'shared')]);
-    expect(list.map((r) => r.id)).toEqual([3, 2]);
+  const all = [repo(1, 'personal', 'u1'), repo(2, 'dispatch'), repo(3, 'shared'), repo(4, 'form')];
+
+  it('tệp gốc chỉ lấy từ kho Văn thư', () => {
+    expect(selectableRepos(all, 'goc').map((r) => r.id)).toEqual([2]);
+  });
+
+  it('tệp biểu mẫu chỉ lấy từ kho Biểu mẫu', () => {
+    expect(selectableRepos(all, 'bieu-mau').map((r) => r.id)).toEqual([4]);
+  });
+
+  it('Kho chung và kho cá nhân không bao giờ được chọn', () => {
+    expect(selectableRepos([repo(1, 'shared'), repo(2, 'personal', 'u')], 'goc')).toEqual([]);
+    expect(selectableRepos([repo(1, 'shared'), repo(2, 'personal', 'u')], 'bieu-mau')).toEqual([]);
+  });
+
+  it('chưa có kho tương ứng thì danh sách rỗng', () => {
+    expect(selectableRepos([repo(2, 'dispatch')], 'bieu-mau')).toEqual([]);
+  });
+});
+
+describe('repoKindOfFile', () => {
+  it('mỗi loại tệp ứng với đúng một loại kho', () => {
+    expect(repoKindOfFile('goc')).toBe('dispatch');
+    expect(repoKindOfFile('bieu-mau')).toBe('form');
   });
 });
 
@@ -114,7 +136,7 @@ describe('fetchDocFileBlob', () => {
     h.fetchBlob.mockImplementation(async () => {
       throw new HfApiError(403, 'x');
     });
-    await expect(fetchDocFileBlob(file, 't')).rejects.toThrow(/Token Hugging Face bị từ chối/);
+    await expect(fetchDocFileBlob(file, 't')).rejects.toThrow(/Token kho lưu trữ bị từ chối/);
   });
 
   it('chưa có token thì báo chưa cấu hình, không gọi mạng', async () => {

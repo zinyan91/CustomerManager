@@ -1,5 +1,5 @@
 import type { OfficialDocFile, OfficialDocFileKind } from '../../types/officialDoc';
-import type { StorageRepo } from '../../types/storageRepo';
+import type { StorageRepo, StorageRepoKind } from '../../types/storageRepo';
 import { HfApiError, fetchHfFileBlob, hfFileUrl } from '../huggingface/hfClient';
 import { guessMime } from '../dispatch/mergeArchive';
 
@@ -39,13 +39,15 @@ export function canViewInBrowser(fileName: string): boolean {
   return /\.(pdf|png|jpe?g|webp|gif)$/i.test(fileName);
 }
 
-/**
- * Kho cho phép gắn tệp vào văn bản: Kho chung và kho Văn thư, nơi mọi tài khoản đều mở được.
- * Kho cá nhân bị loại vì người khác không thấy kho đó.
- */
-export function selectableRepos(repos: StorageRepo[]): StorageRepo[] {
-  const rank = (r: StorageRepo) => (r.kind === 'shared' ? 0 : 1);
-  return repos.filter((r) => r.kind === 'shared' || r.kind === 'dispatch').sort((a, b) => rank(a) - rank(b));
+/** Mỗi loại tệp của văn bản có kho riêng: bản gốc ở kho Văn thư, biểu mẫu ở kho Biểu mẫu. */
+export function repoKindOfFile(kind: OfficialDocFileKind): StorageRepoKind {
+  return kind === 'goc' ? 'dispatch' : 'form';
+}
+
+/** Kho cho phép gắn tệp loại `kind` vào văn bản. Kho chung và kho cá nhân không dùng cho văn bản. */
+export function selectableRepos(repos: StorageRepo[], kind: OfficialDocFileKind): StorageRepo[] {
+  const wanted = repoKindOfFile(kind);
+  return repos.filter((r) => r.kind === wanted);
 }
 
 /**
@@ -55,7 +57,7 @@ export function selectableRepos(repos: StorageRepo[]): StorageRepo[] {
  */
 export async function fetchDocFileBlob(file: OfficialDocFile, token: string): Promise<Blob> {
   if (!token) {
-    throw new Error('Chưa cấu hình kho lưu trữ. Liên hệ Master Admin để cấu hình token Hugging Face.');
+    throw new Error('Chưa cấu hình kho lưu trữ. Liên hệ Master Admin để cấu hình token.');
   }
   try {
     const blob = await fetchHfFileBlob(hfFileUrl(file.repoId, file.path), token);
@@ -66,7 +68,7 @@ export async function fetchDocFileBlob(file: OfficialDocFile, token: string): Pr
         throw new Error(`Tệp "${file.name}" không còn trong Kho lưu trữ. Liên hệ admin để gắn lại tệp.`);
       }
       if (err.status === 401 || err.status === 403) {
-        throw new Error(`Token Hugging Face bị từ chối (${err.status}). Liên hệ Master Admin để cập nhật token.`);
+        throw new Error(`Token kho lưu trữ bị từ chối (${err.status}). Liên hệ Master Admin để cập nhật token.`);
       }
     }
     throw err;

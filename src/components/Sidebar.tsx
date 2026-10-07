@@ -2,7 +2,7 @@ import { memo, useEffect } from 'react';
 import { NavLink } from 'react-router';
 import { X, Sparkles } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
-import { NAV_GROUPS } from '../lib/navigation';
+import { visibleNavGroups } from '../lib/navigation';
 import { APP_VERSION } from '../lib/appVersion';
 import { useSelectedCustomerId } from '../hooks/useSelectedCustomerId';
 import { screenPathFor } from '../lib/customerRoutes';
@@ -11,11 +11,14 @@ import { useSidebarCollapse } from '../context/SidebarCollapseContext';
 interface SidebarProps {
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
+  /** Hiện mục Người dùng (chỉ hai role admin). */
+  canManageUsers?: boolean;
 }
 
 export const Sidebar = memo<SidebarProps>(({
   isOpenMobile = false,
   onCloseMobile,
+  canManageUsers = false,
 }) => {
   const { t } = useLang();
   const customerId = useSelectedCustomerId();
@@ -79,7 +82,7 @@ export const Sidebar = memo<SidebarProps>(({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2.5 py-3.5 space-y-4 overscroll-contain">
-          {NAV_GROUPS.map((group, gi) => (
+          {visibleNavGroups(canManageUsers).map((group, gi) => (
             <div key={group.groupKey} className={gi === 0 ? '' : 'pt-2 border-t border-line/40'}>
               <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint flex items-center gap-1.5">
                 <span className="w-1 h-1 rounded-full bg-accent/60" />

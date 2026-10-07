@@ -7,6 +7,7 @@ import type { OfficialDoc } from '../../types/officialDoc';
 vi.mock('../dispatch/HfFilePickerModal', () => ({
   pickedKey: (r: string, p: string) => `${r}/${p}`,
   HfFilePickerModal: (p: {
+    fileKind: string;
     title: string;
     pickedKeys: Set<string>;
     onPick: (f: { repoId: string; path: string; name: string }) => void;
@@ -14,6 +15,7 @@ vi.mock('../dispatch/HfFilePickerModal', () => ({
   }) => (
     <div role="dialog" aria-label="Bộ chọn tệp">
       <span>{p.title}</span>
+      <span data-testid="file-kind">{p.fileKind}</span>
       <span data-testid="picked">{[...p.pickedKeys].join(',')}</span>
       <button type="button" onClick={() => p.onPick({ repoId: 'o/kho', path: 'a/qd.pdf', name: 'qd.pdf' })}>Chọn qd.pdf</button>
       <button type="button" onClick={p.onClose}>Xong chọn</button>
@@ -89,9 +91,10 @@ describe('OfficialDocForm - thêm mới', () => {
 
   it('chọn tệp từ Kho theo từng nhóm, đánh dấu đã chọn, gỡ được', () => {
     setup();
-    fireEvent.click(screen.getAllByRole('button', { name: /Chọn từ Kho/ })[1]); // File biểu mẫu
+    fireEvent.click(screen.getByRole('button', { name: 'Chọn từ kho Biểu mẫu' }));
     const picker = screen.getByRole('dialog', { name: 'Bộ chọn tệp' });
     expect(within(picker).getByText('File biểu mẫu')).toBeTruthy();
+    expect(within(picker).getByTestId('file-kind').textContent).toBe('bieu-mau');
 
     fireEvent.click(within(picker).getByRole('button', { name: 'Chọn qd.pdf' }));
     expect(within(picker).getByTestId('picked').textContent).toBe('o/kho/a/qd.pdf');
@@ -111,7 +114,8 @@ describe('OfficialDocForm - thêm mới', () => {
     expect(screen.queryByLabelText('Loại văn bản')).toBeNull();
     fireEvent.change(screen.getByLabelText('Ngày ban hành'), { target: { value: '18/09/2026' } });
     fireEvent.change(screen.getByLabelText('Ngày hết hiệu lực'), { target: { value: '31/10/2026' } });
-    fireEvent.click(screen.getAllByRole('button', { name: /Chọn từ Kho/ })[0]); // File văn bản gốc
+    fireEvent.click(screen.getByRole('button', { name: 'Chọn từ kho Văn thư' }));
+    expect(screen.getByTestId('file-kind').textContent).toBe('goc');
     fireEvent.click(screen.getByRole('button', { name: 'Chọn qd.pdf' }));
     fireEvent.click(screen.getByRole('button', { name: 'Xong chọn' }));
     fireEvent.click(screen.getByRole('button', { name: 'Lưu văn bản' }));

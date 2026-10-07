@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { X, Plus, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import type { OfficialDoc, OfficialDocCategory, OfficialDocFileKind, OfficialDocInput } from '../../types/officialDoc';
 import { OFFICIAL_CATEGORIES } from '../../lib/officialDoc/categories';
-import { FILE_KINDS, FILE_KIND_LABELS, addDocFile, removeDocFile } from '../../lib/officialDoc/docFiles';
+import { FILE_KINDS, FILE_KIND_LABELS, addDocFile, removeDocFile, repoKindOfFile } from '../../lib/officialDoc/docFiles';
+import { STORAGE_KIND_LABELS } from '../../types/storageRepo';
 import { validateOfficialDoc } from '../../lib/officialDoc/validate';
 import { todayIso } from '../../lib/utils';
 import { DateInput } from '../DateInput';
@@ -136,7 +137,7 @@ export function OfficialDocForm({ doc, defaultCategory, token, onSubmit, onClose
                 <span className={label.replace('mb-1', '')}>{FILE_KIND_LABELS[kind]}</span>
                 <button type="button" onClick={() => setPickerKind(kind)} className="inline-flex items-center gap-1 text-sm text-blue-700 dark:text-blue-400 hover:underline cursor-pointer">
                   <Plus className="w-4 h-4" />
-                  Chọn từ Kho
+                  Chọn từ kho {STORAGE_KIND_LABELS[repoKindOfFile(kind)]}
                 </button>
               </div>
               <ul className="space-y-1">
@@ -173,6 +174,7 @@ export function OfficialDocForm({ doc, defaultCategory, token, onSubmit, onClose
 
       {pickerKind && (
         <HfFilePickerModal
+          fileKind={pickerKind}
           title={FILE_KIND_LABELS[pickerKind]}
           token={token}
           pickedKeys={pickedKeys}

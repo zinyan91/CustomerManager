@@ -32,6 +32,8 @@ export async function readDriveError(res: Response): Promise<DriveApiError> {
 export function describeDriveError(err: unknown, what = 'Thao tác với Google Drive'): string {
   if (err instanceof DriveApiError) {
     const { status, reason } = err;
+    // Status 0 là phản hồi mà trình duyệt không cho đọc (bị chặn CORS hay chuyển hướng mờ), không phải lỗi từ Google
+    if (status === 0) return `${what} không được: trình duyệt không đọc được phản hồi của Google Drive. Thử lại; nếu vẫn lỗi hãy báo người phụ trách kỹ thuật.`;
     if (reason === 'storageQuotaExceeded' || reason === 'teamDriveFileLimitExceeded' || reason === 'driveFileLimitExceeded') {
       return `${what} không được: Shared Drive đã hết dung lượng hoặc đạt giới hạn số tệp.`;
     }

@@ -85,6 +85,7 @@ describe('describeDriveError', () => {
     [e(404), /không tìm thấy/],
     [e(503), /đang lỗi \(503\)/],
     [e(400), /goc/],
+    [e(0), /trình duyệt không đọc được phản hồi/],
   ])('%#', (err, pattern) => expect(describeDriveError(err, 'Tải tệp lên')).toMatch(pattern));
 
   it('nêu việc đang làm', () => {

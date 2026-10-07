@@ -302,6 +302,30 @@ describe('uploadDriveFile', () => {
     expect(progress).toEqual([CH, CH * 2, total]);
   });
 
+  it('chạy được trên trình duyệt: gặp redirect "manual" thì trình duyệt trả phản hồi mờ status 0, nên mã không được dùng nó', async () => {
+    const CH = 256 * 1024;
+    const opaque = { ok: false, status: 0, statusText: '', type: 'opaqueredirect', headers: new Headers() } as unknown as Response;
+    const browserLike = (_url: string, init: RequestInit) =>
+      init.redirect === 'manual' ? opaque : new Response(null, { status: 308, headers: { Range: `bytes=0-${CH - 1}` } });
+    const s = setup([initReply(), browserLike, browserLike, json({ ...RAW, id: 'BIG' })]);
+    const f = await uploadDriveFile(s.ctx, 'P', bytes(CH * 2 + 1000), { chunkBytes: CH });
+    expect(f.id).toBe('BIG');
+    expect(s.calls.slice(1).every((c) => c.init.redirect !== 'manual')).toBe(true);
+  });
+
+  it('hỏi vị trí sau khi mất mạng cũng không dùng redirect "manual"', async () => {
+    const CH = 256 * 1024;
+    const opaque = { ok: false, status: 0, statusText: '', type: 'opaqueredirect', headers: new Headers() } as unknown as Response;
+    const s = setup([
+      initReply(),
+      new TypeError('Failed to fetch'),
+      (_url, init) => (init.redirect === 'manual' ? opaque : new Response(null, { status: 308, headers: { Range: `bytes=0-${CH - 1}` } })),
+      json(RAW),
+    ]);
+    await uploadDriveFile(s.ctx, 'P', bytes(CH + 500), { chunkBytes: CH });
+    expect(s.calls[3].headers.get('Content-Range')).toBe(`bytes ${CH}-${CH + 499}/${CH + 500}`);
+  });
+
   it('không đọc được Range thì coi như đoạn đã được nhận đủ', async () => {
     const CH = 256 * 1024;
     const s = setup([initReply(), new Response(null, { status: 308 }), json(RAW)]);

@@ -296,11 +296,12 @@ export async function uploadDriveFile(ctx: DriveContext, parentId: string, file:
     const end = Math.min(offset + chunk, total) - 1;
     let res: Response;
     try {
+      // Không đặt redirect: 'manual': trình duyệt biến mọi 3xx thành phản hồi mờ (status 0, không đọc được tiêu đề), nên 308 hợp lệ
+      // của Google giữa các đoạn thành lỗi. Mặc định thì 308 không có Location trả về nguyên vẹn.
       res = await doFetch(session, {
         method: 'PUT',
         headers: { 'Content-Range': `bytes ${offset}-${end}/${total}` },
         body: file.slice(offset, end + 1),
-        redirect: 'manual',
         signal,
       });
     } catch (err) {
@@ -336,7 +337,7 @@ export async function uploadDriveFile(ctx: DriveContext, parentId: string, file:
 /** Hỏi Google đã nhận tới byte nào của phiên tải lên; lỗi mạng thì giữ vị trí cũ. */
 async function queryUploadOffset(doFetch: typeof fetch, session: string, total: number, fallback: number): Promise<number> {
   try {
-    const res = await doFetch(session, { method: 'PUT', headers: { 'Content-Range': `bytes */${total}` }, redirect: 'manual' });
+    const res = await doFetch(session, { method: 'PUT', headers: { 'Content-Range': `bytes */${total}` } });
     if (res.status === 308) return receivedBytes(res.headers.get('Range')) ?? 0;
   } catch {
     // Chưa hỏi được: gửi lại đoạn cũ

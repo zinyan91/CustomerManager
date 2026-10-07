@@ -3,6 +3,8 @@ import { Search, X, ChevronRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import { useLang } from '../context/LanguageContext';
 import { visibleNavItems } from '../lib/navigation';
+import { filterNavItems } from '../lib/modules';
+import { useModules } from '../context/ModulesContext';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -18,7 +20,9 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, canM
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const allItems = useMemo(() => visibleNavItems(canManageUsers), [canManageUsers]);
+  const { allowed } = useModules();
+
+  const allItems = useMemo(() => filterNavItems(visibleNavItems(canManageUsers), allowed), [canManageUsers, allowed]);
 
   useEffect(() => {
     if (isOpen) {

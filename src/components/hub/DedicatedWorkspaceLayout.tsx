@@ -7,6 +7,7 @@ import { LoginView } from '../LoginView';
 import { DedicatedWorkspaceHeader } from './DedicatedWorkspaceHeader';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { CustomerContextBar } from '../CustomerContextBar';
+import { ModuleGate } from '../ModuleGate';
 
 export const DedicatedWorkspaceLayout: React.FC = () => {
   const { session, loading } = useAuth();
@@ -39,8 +40,10 @@ export const DedicatedWorkspaceLayout: React.FC = () => {
       {/* Standalone Workspace Content (100% Full Width, No Left Sidebar) */}
       <main className={`flex-1 w-full min-w-0 overflow-y-auto relative ${fullBleed ? '' : 'px-3 sm:px-6 2xl:px-8 py-3.5 sm:py-5'}`}>
         <ErrorBoundary title="Lỗi khi tải giao diện tác vụ">
-          <CustomerContextBar />
-          <Outlet />
+          <ModuleGate>
+            <CustomerContextBar />
+            <Outlet />
+          </ModuleGate>
         </ErrorBoundary>
       </main>
     </div>

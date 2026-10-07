@@ -12,6 +12,9 @@ const CreditContractView = lazy(() => import('./components/views/CreditContractV
 const CollateralView = lazy(() => import('./components/views/CollateralView').then(m => ({ default: m.CollateralView })));
 const MortgageContractView = lazy(() => import('./components/views/MortgageContractView').then(m => ({ default: m.MortgageContractView })));
 const CardContractView = lazy(() => import('./components/views/CardContractView').then(m => ({ default: m.CardContractView })));
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
+const AdminOverviewView = lazy(() => import('./components/views/AdminOverviewView').then(m => ({ default: m.AdminOverviewView })));
+const UserModulesView = lazy(() => import('./components/views/UserModulesView').then(m => ({ default: m.UserModulesView })));
 const UserManagementView = lazy(() => import('./components/views/UserManagementView').then(m => ({ default: m.UserManagementView })));
 const DispatchManagementView = lazy(() => import('./components/views/DispatchManagementView').then(m => ({ default: m.DispatchManagementView })));
 const CardPolicyLookupView = lazy(() => import('./components/views/CardPolicyLookupView').then(m => ({ default: m.CardPolicyLookupView })));
@@ -81,7 +84,12 @@ export function App() {
         <Route path={ROUTE_OF.reports} element={<Navigate to="/hub/reports" replace />} />
         <Route path={ROUTE_OF['quiz-bank']} element={<Navigate to="/hub/quiz" replace />} />
         <Route path={ROUTE_OF['post-loan']} element={<Suspense fallback={<ViewSkeleton />}><PostLoanControlView /></Suspense>} />
-        <Route path={ROUTE_OF.users} element={<Suspense fallback={<ViewSkeleton />}><UserManagementView /></Suspense>} />
+        <Route path={ROUTE_OF.admin} element={<Suspense fallback={<ViewSkeleton />}><AdminLayout /></Suspense>}>
+          <Route index element={<Suspense fallback={<ViewSkeleton />}><AdminOverviewView /></Suspense>} />
+          <Route path="users" element={<Suspense fallback={<ViewSkeleton />}><UserManagementView /></Suspense>} />
+          <Route path="users/:userId" element={<Suspense fallback={<ViewSkeleton />}><UserModulesView /></Suspense>} />
+        </Route>
+        <Route path="/users" element={<Navigate to="/admin/users" replace />} />
         <Route path={ROUTE_OF.settings} element={<Suspense fallback={<ViewSkeleton />}><SettingsView /></Suspense>} />
 
         {/* Chuyển thẳng các đường dẫn cũ sang không gian làm việc độc lập */}

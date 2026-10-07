@@ -2,12 +2,15 @@ import React from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router';
 import { ArrowLeft, LayoutGrid, Search, X } from 'lucide-react';
 import { HUB_TASKS } from '../../lib/hubTasks';
+import { landingPath } from '../../lib/modules';
+import { useModules } from '../../context/ModulesContext';
 import { UserScopeSelector } from '../common/UserScopeSelector';
 
 export const DedicatedWorkspaceHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { allowed } = useModules();
 
   const isCatalog = location.pathname === '/hub';
   const searchQuery = searchParams.get('q') || '';
@@ -33,7 +36,7 @@ export const DedicatedWorkspaceHeader: React.FC = () => {
         <div className="flex items-center gap-2.5 min-w-0">
           <button
             type="button"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(landingPath(allowed))}
             className="flex items-center gap-1 px-2 py-1 rounded-lg border border-line/70 bg-panel hover:bg-surface text-ink text-xs font-medium transition-all cursor-pointer shadow-2xs shrink-0"
             title="Quay lại giao diện CRM chính"
           >

@@ -2,13 +2,17 @@ import React, { useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { ArrowRight } from 'lucide-react';
 import { buildHubSections } from '../../lib/hubSections';
+import { visibleHubTasks } from '../../lib/modules';
+import { useModules } from '../../context/ModulesContext';
 
 export const WorkspaceHubView: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
 
-  const sections = useMemo(() => buildHubSections(searchQuery), [searchQuery]);
+  const { allowed } = useModules();
+
+  const sections = useMemo(() => buildHubSections(searchQuery, visibleHubTasks(allowed)), [searchQuery, allowed]);
 
   return (
     <div className="w-full space-y-6 font-app animate-in fade-in duration-150 py-1 sm:py-2">

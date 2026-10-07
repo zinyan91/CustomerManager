@@ -46,7 +46,7 @@ const dictionary = {
     'nav.templates': 'Soạn biểu mẫu HĐ',
     'nav.quizBank': 'Ôn tập nghiệp vụ',
     'nav.postLoan': 'Kiểm soát sau vay',
-    'nav.users': 'Người dùng',
+    'nav.admin': 'Quản trị',
     'nav.settings': 'Cấu hình & cài đặt',
 
     'header.title': 'Quản lý khách hàng',
@@ -147,7 +147,7 @@ const dictionary = {
     'nav.templates': 'Contract templates',
     'nav.quizBank': 'Knowledge quiz',
     'nav.postLoan': 'Post-loan monitoring',
-    'nav.users': 'Users',
+    'nav.admin': 'Administration',
     'nav.settings': 'Settings',
 
     'header.title': 'Customer manager',

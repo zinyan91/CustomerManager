@@ -7,7 +7,16 @@ import { Sidebar } from '../Sidebar';
 import { LanguageProvider } from '../../context/LanguageContext';
 import { translate } from '../../lib/i18n';
 
-afterEach(cleanup);
+const modulesState = vi.hoisted(() => ({ allowed: null as string[] | null }));
+vi.mock('../../context/ModulesContext', async () => {
+  const { MODULE_IDS } = await import('../../lib/modules');
+  return { useModules: () => ({ allowed: modulesState.allowed ?? [...MODULE_IDS], ready: true, error: null, reload: () => {} }) };
+});
+
+afterEach(() => {
+  modulesState.allowed = null;
+  cleanup();
+});
 
 function dungLen(canManageUsers = false) {
   return render(
@@ -59,13 +68,13 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
     expect(container.querySelectorAll('nav a').length).toBe(16);
   });
 
-  it('chỉ hiện mục Người dùng khi có quyền quản lý người dùng', () => {
+  it('chỉ hiện mục Quản trị khi có quyền quản lý người dùng', () => {
     const { container, unmount } = dungLen(false);
-    expect(container.querySelector('nav a[href="/users"]')).toBeNull();
+    expect(container.querySelector('nav a[href="/admin"]')).toBeNull();
     unmount();
     const co = dungLen(true);
     expect(co.container.querySelectorAll('nav a').length).toBe(17);
-    expect(co.container.querySelector('nav a[href="/users"]')).toBeTruthy();
+    expect(co.container.querySelector('nav a[href="/admin"]')).toBeTruthy();
   });
 
   it('hiện đủ 5 tiêu đề nhóm', () => {
@@ -228,5 +237,28 @@ describe('Sidebar mobile drawer behavior', () => {
     expect(firstLink).toBeTruthy();
     fireEvent.click(firstLink!);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Sidebar lọc theo module của tài khoản', () => {
+  const hrefs = (container: HTMLElement) => [...container.querySelectorAll('nav a')].map(a => a.getAttribute('href'));
+
+  it('tài khoản chỉ có Văn thư chỉ thấy Danh mục, Văn thư và Cài đặt', () => {
+    modulesState.allowed = ['dispatch'];
+    const { container } = dungLen();
+    expect(hrefs(container)).toEqual(['/hub', '/dispatches', '/settings']);
+  });
+
+  it('nhóm không còn mục nào thì bỏ cả tiêu đề nhóm', () => {
+    modulesState.allowed = ['dispatch'];
+    dungLen();
+    expect(screen.queryByText('Công cụ tính & Lãi suất')).toBeNull();
+    expect(screen.queryByText('Phân tích kinh doanh')).toBeNull();
+  });
+
+  it('tài khoản không có module nào chỉ còn Danh mục và Cài đặt', () => {
+    modulesState.allowed = [];
+    const { container } = dungLen();
+    expect(hrefs(container)).toEqual(['/hub', '/settings']);
   });
 });

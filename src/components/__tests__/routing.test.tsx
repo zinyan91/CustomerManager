@@ -23,6 +23,12 @@ vi.mock('../../context/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+vi.mock('../../context/ModulesContext', async () => {
+  const { MODULE_IDS } = await import('../../lib/modules');
+  const value = { allowed: [...MODULE_IDS], ready: true, error: null, reload: () => {} };
+  return { useModules: () => value, ModulesProvider: ({ children }: { children: React.ReactNode }) => children };
+});
+
 import { AppLayout as AppLayoutDuoiTest } from '../AppLayout';
 
 vi.mock('../views/DashboardView', () => ({ DashboardView: () => <div>MAN:dashboard</div> }));
@@ -53,7 +59,7 @@ vi.mock('../views/RetailInvoiceView', () => ({ RetailInvoiceView: () => <div>MAN
 vi.mock('../views/QuizBankView', () => ({ QuizBankView: () => <div>MAN:quiz-bank</div> }));
 vi.mock('../views/WorkspaceHubView', () => ({ WorkspaceHubView: () => <div>MAN:hub</div> }));
 vi.mock('../views/ConstructionEstimateView', () => ({ ConstructionEstimateView: () => <div>MAN:estimate</div> }));
-vi.mock('../views/UserManagementView', () => ({ UserManagementView: () => <div>MAN:users</div> }));
+vi.mock('../admin/AdminLayout', () => ({ AdminLayout: () => <div>MAN:admin</div> }));
 vi.mock('../views/ToiProjectionView', () => ({ ToiProjectionView: () => <div>MAN:toi</div> }));
 
 import { App as AppThatDuoiTest } from '../../App';

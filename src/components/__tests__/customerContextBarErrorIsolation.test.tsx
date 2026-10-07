@@ -22,6 +22,12 @@ vi.mock('../../context/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
+vi.mock('../../context/ModulesContext', async () => {
+  const { MODULE_IDS } = await import('../../lib/modules');
+  const value = { allowed: [...MODULE_IDS], ready: true, error: null, reload: () => {} };
+  return { useModules: () => value, ModulesProvider: ({ children }: { children: React.ReactNode }) => children };
+});
+
 vi.mock('../../hooks/useCustomerContext', () => ({
   useCustomerContext: () => { throw new Error('lỗi giả lập trong thanh ngữ cảnh'); },
 }));

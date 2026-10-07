@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
+import { render as renderRaw, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
+import type { ReactElement } from 'react';
 
 const h = vi.hoisted(() => ({
   auth: { role: 'master_admin' as string | null, id: 'me' },
@@ -10,6 +12,7 @@ const h = vi.hoisted(() => ({
     create: vi.fn(),
     update: vi.fn(),
     remove: vi.fn(),
+    modules: vi.fn(),
   },
 }));
 
@@ -23,6 +26,11 @@ vi.mock('../../context/AuthContext', () => ({
 vi.mock('../../context/UserScopeContext', () => ({
   useUserScope: () => ({ managedUsers: [{ userId: 'u1', customerCount: 7 }] }),
 }));
+vi.mock('../../lib/api/userModulesApi', () => ({
+  fetchAllUserModules: h.api.modules,
+  saveUserModules: vi.fn(),
+  fetchOwnModules: vi.fn(),
+}));
 vi.mock('../../lib/api/userAdminApi', () => ({
   listAdminUsers: h.api.list,
   createAdminUser: h.api.create,
@@ -31,6 +39,8 @@ vi.mock('../../lib/api/userAdminApi', () => ({
 }));
 
 import { UserManagementView } from '../views/UserManagementView';
+
+const render = (ui: ReactElement) => renderRaw(<MemoryRouter>{ui}</MemoryRouter>);
 
 const U = (p: Record<string, unknown>) => ({
   id: 'x', email: 'x@app.local', fullName: 'X', role: 'user', disabled: false, lastSignInAt: null, createdAt: '2026-01-01T00:00:00Z', ...p,
@@ -52,6 +62,7 @@ beforeEach(() => {
   h.api.create.mockResolvedValue({ id: 'new' });
   h.api.update.mockResolvedValue({ id: 'u1' });
   h.api.remove.mockResolvedValue({ id: 'u1' });
+  h.api.modules.mockResolvedValue({});
 });
 afterEach(() => {
   cleanup();
@@ -188,5 +199,43 @@ describe('UserManagementView', () => {
     fireEvent.click(screen.getByRole('button', { name: /Thêm người dùng/ }));
     const select = (await screen.findByLabelText('Vai trò')) as HTMLSelectElement;
     expect([...select.options].map(o => o.value)).toEqual(['user_admin', 'user']);
+  });
+});
+
+describe('UserManagementView: module của từng tài khoản', () => {
+  it('cột Module: chưa có dòng cờ và quản trị ghi Đầy đủ, có dòng cờ thì gọi tên module', async () => {
+    h.api.modules.mockResolvedValue({ u1: ['dispatch'], u2: ['credit', 'dispatch', 'quiz'], u3: [] });
+    render(<UserManagementView />);
+    await screen.findByText('Nhân viên Một');
+    await waitFor(() => expect(within(screen.getByText('Nhân viên Một').closest('tr')!).getByText('Văn thư')).toBeTruthy());
+    expect(within(screen.getByText('Nhân viên Hai').closest('tr')!).getByText('3/7 module')).toBeTruthy();
+    expect(within(screen.getByText('Chưa gán').closest('tr')!).getByText('Không có')).toBeTruthy();
+    expect(within(screen.getByText('Quản trị viên').closest('tr')!).getByText('Đầy đủ')).toBeTruthy();
+  });
+
+  it('quản trị có dòng cờ rỗng vẫn ghi Đầy đủ vì luôn đủ module', async () => {
+    h.api.modules.mockResolvedValue({ ua: [] });
+    render(<UserManagementView />);
+    await screen.findByText('Quản trị viên');
+    await waitFor(() => expect(h.api.modules).toHaveBeenCalled());
+    expect(within(screen.getByText('Quản trị viên').closest('tr')!).getByText('Đầy đủ')).toBeTruthy();
+  });
+
+  it('nút chọn module chỉ có ở tài khoản cấp User và chưa phân quyền, trỏ đúng đường dẫn', async () => {
+    render(<UserManagementView />);
+    await screen.findByText('Nhân viên Một');
+    const link = within(screen.getByText('Nhân viên Một').closest('tr')!).getByRole('link', { name: /Chọn module/ });
+    expect(link.getAttribute('href')).toBe('/admin/users/u1');
+    expect(within(screen.getByText('Chưa gán').closest('tr')!).getByRole('link', { name: /Chọn module/ })).toBeTruthy();
+    expect(within(screen.getByText('Quản trị viên').closest('tr')!).queryByRole('link', { name: /Chọn module/ })).toBeNull();
+    expect(within(screen.getByText(/Tôi/).closest('tr')!).queryByRole('link', { name: /Chọn module/ })).toBeNull();
+  });
+
+  it('lỗi nạp cờ module hiện nguyên thông điệp và cột Module không giả vờ là Đầy đủ', async () => {
+    h.api.modules.mockRejectedValue(new Error('Chưa áp migration 65_user_modules.sql trên Supabase.'));
+    render(<UserManagementView />);
+    expect((await screen.findByText(/Chưa áp migration 65_user_modules\.sql/)).textContent).toContain('migration 65');
+    const row = (await screen.findByText('Nhân viên Một')).closest('tr')!;
+    expect(within(row).queryByText('Đầy đủ')).toBeNull();
   });
 });

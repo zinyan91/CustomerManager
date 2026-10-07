@@ -9,6 +9,7 @@ import { ThemeProvider } from './context/ThemeContext.tsx';
 import { LanguageProvider } from './context/LanguageContext.tsx';
 import { AuthProvider } from './context/AuthContext.tsx';
 import { UserScopeProvider } from './context/UserScopeContext.tsx';
+import { ModulesProvider } from './context/ModulesContext.tsx';
 import { DateFormatProvider } from './context/DateFormatContext.tsx';
 import { FormatSettingsProvider } from './context/FormatSettingsContext.tsx';
 import { FontSettingsProvider } from './context/FontSettingsContext.tsx';
@@ -18,6 +19,7 @@ const providers = [
   ThemeProvider,
   LanguageProvider,
   AuthProvider,
+  ModulesProvider,
   UserScopeProvider,
   DateFormatProvider,
   FormatSettingsProvider,

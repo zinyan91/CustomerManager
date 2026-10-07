@@ -44,28 +44,28 @@ describe('navigation', () => {
 
   it('giữ đúng bộ id mà App.tsx đang xử lý', () => {
     expect(NAV_ITEMS.map(i => i.id).sort()).toEqual([
-      'business-plan', 'calculators', 'collaterals',
+      'admin', 'business-plan', 'calculators', 'collaterals',
       'credit-cards', 'credit-contracts', 'customers', 'dashboard', 'dispatches', 'hub', 'inventory',
       'loans', 'mortgage-contracts', 'post-loan',
-      'rate-quote', 'settings', 'storage', 'users',
+      'rate-quote', 'settings', 'storage',
     ]);
   });
 });
 
 describe('navigation — mục chỉ dành cho quản trị', () => {
-  it('chỉ mục Người dùng đánh dấu adminOnly', () => {
-    expect(NAV_ITEMS.filter(i => i.adminOnly).map(i => i.id)).toEqual(['users']);
+  it('chỉ mục Quản trị đánh dấu adminOnly', () => {
+    expect(NAV_ITEMS.filter(i => i.adminOnly).map(i => i.id)).toEqual(['admin']);
   });
 
   it('không có quyền quản lý người dùng thì ẩn mục Người dùng', () => {
     expect(visibleNavItems(false)).toHaveLength(16);
-    expect(visibleNavItems(false).some(i => i.id === 'users')).toBe(false);
-    expect(visibleNavGroups(false).flatMap(g => g.items).some(i => i.id === 'users')).toBe(false);
+    expect(visibleNavItems(false).some(i => i.id === 'admin')).toBe(false);
+    expect(visibleNavGroups(false).flatMap(g => g.items).some(i => i.id === 'admin')).toBe(false);
   });
 
   it('có quyền thì hiện đủ 17 mục', () => {
     expect(visibleNavItems(true)).toHaveLength(17);
-    expect(visibleNavGroups(true).flatMap(g => g.items).some(i => i.id === 'users')).toBe(true);
+    expect(visibleNavGroups(true).flatMap(g => g.items).some(i => i.id === 'admin')).toBe(true);
   });
 
   it('không để lại nhóm rỗng', () => {

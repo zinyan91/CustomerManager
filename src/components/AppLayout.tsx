@@ -10,6 +10,7 @@ import { Sidebar } from './Sidebar';
 import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
 import { CustomerContextBar } from './CustomerContextBar';
+import { ModuleGate } from './ModuleGate';
 import { AiChatDialog, FloatingAiAssistantButton } from './ai/AiChatDialog';
 
 function AppLayoutContent() {
@@ -90,8 +91,10 @@ function AppLayoutContent() {
             {ready ? (
               // key = phạm vi tài khoản: đổi tài khoản thì remount để mọi màn nạp lại đúng dữ liệu
               <Fragment key={scopeKey}>
-                <CustomerContextBar />
-                <Outlet />
+                <ModuleGate>
+                  <CustomerContextBar />
+                  <Outlet />
+                </ModuleGate>
               </Fragment>
             ) : (
               <div className="flex justify-center py-16" role="status" aria-label="Đang nạp phạm vi dữ liệu">

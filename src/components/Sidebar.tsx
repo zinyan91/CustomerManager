@@ -3,6 +3,8 @@ import { NavLink } from 'react-router';
 import { X, Sparkles } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
 import { visibleNavGroups } from '../lib/navigation';
+import { filterNavGroups } from '../lib/modules';
+import { useModules } from '../context/ModulesContext';
 import { APP_VERSION } from '../lib/appVersion';
 import { useSelectedCustomerId } from '../hooks/useSelectedCustomerId';
 import { screenPathFor } from '../lib/customerRoutes';
@@ -23,6 +25,7 @@ export const Sidebar = memo<SidebarProps>(({
   const { t } = useLang();
   const customerId = useSelectedCustomerId();
   const { isSidebarCollapsed } = useSidebarCollapse();
+  const { allowed } = useModules();
 
   useEffect(() => {
     if (!isOpenMobile) return;
@@ -82,7 +85,7 @@ export const Sidebar = memo<SidebarProps>(({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2.5 py-3.5 space-y-4 overscroll-contain">
-          {visibleNavGroups(canManageUsers).map((group, gi) => (
+          {filterNavGroups(visibleNavGroups(canManageUsers), allowed).map((group, gi) => (
             <div key={group.groupKey} className={gi === 0 ? '' : 'pt-2 border-t border-line/40'}>
               <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink-faint flex items-center gap-1.5">
                 <span className="w-1 h-1 rounded-full bg-accent/60" />

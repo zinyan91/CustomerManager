@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Plus, Pencil, Lock, Unlock, Trash2, RefreshCw, AlertCircle, Check, X, Loader2, ShieldAlert } from 'lucide-react';
+import { Link } from 'react-router';
+import { Plus, Pencil, Lock, Unlock, Trash2, RefreshCw, AlertCircle, Check, X, Loader2, ShieldAlert, SlidersHorizontal } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useUserScope } from '../../context/UserScopeContext';
 import { useAdminUsers } from '../../hooks/useAdminUsers';
+import { useUserModules } from '../../hooks/useUserModules';
+import { canEditModules, effectiveModules, modulesSummary } from '../../lib/adminOverview';
 import { roleLabel } from '../../lib/permissions';
 import {
   canEditUser,
@@ -35,6 +38,7 @@ export function UserManagementView() {
   const { can, role, user: me } = useAuth();
   const allowed = can('user.manage');
   const { users, loading, error, reload, create, update, remove } = useAdminUsers(allowed);
+  const { byUser: modulesByUser, error: modulesError } = useUserModules(allowed, me?.id ?? null);
   const { managedUsers } = useUserScope();
 
   const [form, setForm] = useState<FormState>(null);
@@ -105,7 +109,7 @@ export function UserManagementView() {
     void run(u, () => remove(u.id), `Đã xóa ${displayName(u)}.`);
   };
 
-  const shownError = actionError ?? error;
+  const shownError = actionError ?? error ?? modulesError;
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden divide-y divide-slate-200 dark:divide-slate-800">
@@ -157,6 +161,7 @@ export function UserManagementView() {
               <th className={th}>Họ tên</th>
               <th className={th}>Email</th>
               <th className={th}>Vai trò</th>
+              <th className={th}>Module</th>
               <th className={`${th} text-right`}>KH phụ trách</th>
               <th className={`${th} text-center`}>Trạng thái</th>
               <th className={`${th} text-center`}>Đăng nhập cuối</th>
@@ -166,7 +171,7 @@ export function UserManagementView() {
           <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
             {users.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-10 text-center text-slate-500 dark:text-slate-400">
+                <td colSpan={8} className="py-10 text-center text-slate-500 dark:text-slate-400">
                   {loading ? (
                     <span className="inline-flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -190,6 +195,7 @@ export function UserManagementView() {
                     </td>
                     <td className={`${td} text-slate-700 dark:text-slate-300 break-all`}>{u.email ?? '—'}</td>
                     <td className={`${td} text-slate-700 dark:text-slate-300`}>{u.role ? roleLabel(u.role) : '—'}</td>
+                    <td className={`${td} text-slate-700 dark:text-slate-300`}>{modulesError ? '—' : modulesSummary(effectiveModules(u, modulesByUser[u.id]))}</td>
                     <td className={`${td} text-right font-mono`}>{counts.get(u.id) ?? 0}</td>
                     <td className={`${td} text-center`}>
                       <span className={`inline-block px-2 py-0.5 rounded border text-xs font-medium whitespace-nowrap ${STATUS_STYLES[status]}`}>{STATUS_LABELS[status]}</span>
@@ -201,6 +207,11 @@ export function UserManagementView() {
                           <Loader2 className="w-4 h-4 animate-spin text-slate-500" aria-label="Đang xử lý" />
                         ) : (
                           <>
+                            {canEditModules(actor.role, u.role) && (
+                              <Link to={`/admin/users/${u.id}`} title="Chọn module" aria-label={`Chọn module của ${displayName(u)}`} className={iconBtn}>
+                                <SlidersHorizontal className="w-4 h-4" />
+                              </Link>
+                            )}
                             {canEditUser(actor.role, u) && (
                               <button type="button" onClick={() => setForm({ user: u })} title="Sửa" aria-label={`Sửa ${displayName(u)}`} className={iconBtn}>
                                 <Pencil className="w-4 h-4" />

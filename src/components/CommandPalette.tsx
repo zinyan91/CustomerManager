@@ -46,8 +46,9 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, canM
     setSelectedIndex(0);
   }, [query]);
 
-  const handleSelect = useCallback((path: string) => {
-    navigate(path, { replace: path === location.pathname });
+  const handleSelect = useCallback((item: { path: string; newTab?: boolean }) => {
+    if (item.newTab) window.open(item.path, '_blank', 'noopener,noreferrer');
+    else navigate(item.path, { replace: item.path === location.pathname });
     onClose();
   }, [navigate, location.pathname, onClose]);
 
@@ -61,7 +62,7 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, canM
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (filteredItems[selectedIndex]) {
-        handleSelect(filteredItems[selectedIndex].path);
+        handleSelect(filteredItems[selectedIndex]);
       }
     } else if (e.key === 'Escape') {
       e.preventDefault();
@@ -113,7 +114,7 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, canM
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => handleSelect(item.path)}
+                  onClick={() => handleSelect(item)}
                   onMouseEnter={() => setSelectedIndex(idx)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs transition-colors duration-150 text-left ${
                     isSelected

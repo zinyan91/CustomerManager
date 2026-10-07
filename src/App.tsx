@@ -14,6 +14,7 @@ const MortgageContractView = lazy(() => import('./components/views/MortgageContr
 const CardContractView = lazy(() => import('./components/views/CardContractView').then(m => ({ default: m.CardContractView })));
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout').then(m => ({ default: m.AdminLayout })));
 const AdminOverviewView = lazy(() => import('./components/views/AdminOverviewView').then(m => ({ default: m.AdminOverviewView })));
+const CustomerTransferView = lazy(() => import('./components/views/CustomerTransferView').then(m => ({ default: m.CustomerTransferView })));
 const UserModulesView = lazy(() => import('./components/views/UserModulesView').then(m => ({ default: m.UserModulesView })));
 const UserManagementView = lazy(() => import('./components/views/UserManagementView').then(m => ({ default: m.UserManagementView })));
 const DispatchManagementView = lazy(() => import('./components/views/DispatchManagementView').then(m => ({ default: m.DispatchManagementView })));
@@ -64,6 +65,14 @@ export function App() {
         <Route path="/hub/storage" element={<Navigate to={ROUTE_OF.storage} replace />} />
       </Route>
 
+      {/* Khu quản trị: khung và sidebar riêng, mở ở tab mới */}
+      <Route path={ROUTE_OF.admin} element={<Suspense fallback={<ViewSkeleton />}><AdminLayout /></Suspense>}>
+        <Route index element={<Suspense fallback={<ViewSkeleton />}><AdminOverviewView /></Suspense>} />
+        <Route path="users" element={<Suspense fallback={<ViewSkeleton />}><UserManagementView /></Suspense>} />
+        <Route path="users/:userId" element={<Suspense fallback={<ViewSkeleton />}><UserModulesView /></Suspense>} />
+        <Route path="transfer" element={<Suspense fallback={<ViewSkeleton />}><CustomerTransferView /></Suspense>} />
+      </Route>
+
       {/* Giao diện CRM chính có Sidebar hệ thống */}
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to={DEFAULT_ROUTE} replace />} />
@@ -84,11 +93,6 @@ export function App() {
         <Route path={ROUTE_OF.reports} element={<Navigate to="/hub/reports" replace />} />
         <Route path={ROUTE_OF['quiz-bank']} element={<Navigate to="/hub/quiz" replace />} />
         <Route path={ROUTE_OF['post-loan']} element={<Suspense fallback={<ViewSkeleton />}><PostLoanControlView /></Suspense>} />
-        <Route path={ROUTE_OF.admin} element={<Suspense fallback={<ViewSkeleton />}><AdminLayout /></Suspense>}>
-          <Route index element={<Suspense fallback={<ViewSkeleton />}><AdminOverviewView /></Suspense>} />
-          <Route path="users" element={<Suspense fallback={<ViewSkeleton />}><UserManagementView /></Suspense>} />
-          <Route path="users/:userId" element={<Suspense fallback={<ViewSkeleton />}><UserModulesView /></Suspense>} />
-        </Route>
         <Route path="/users" element={<Navigate to="/admin/users" replace />} />
         <Route path={ROUTE_OF.settings} element={<Suspense fallback={<ViewSkeleton />}><SettingsView /></Suspense>} />
 

@@ -25,6 +25,8 @@ export interface NavItem {
   keywords: string[];
   /** Chỉ tài khoản có quyền user.manage (hai role admin) thấy mục này. */
   adminOnly?: boolean;
+  /** Mở ở tab trình duyệt mới thay vì chuyển trang trong tab hiện tại. */
+  newTab?: boolean;
 }
 
 export interface NavGroup {
@@ -71,7 +73,7 @@ export const NAV_GROUPS: NavGroup[] = [
     groupKey: 'nav.groupLookupControl',
     items: [
       { id: 'post-loan', labelKey: 'nav.postLoan', groupKey: 'nav.groupLookupControl', icon: ShieldAlert, path: ROUTE_OF['post-loan'], keywords: ['kiem soat sau vay', 'kssv', 'post loan', 'kiem tra'] },
-      { id: 'admin', labelKey: 'nav.admin', groupKey: 'nav.groupLookupControl', icon: UserCog, path: ROUTE_OF.admin, keywords: ['nguoi dung', 'tai khoan', 'phan quyen', 'vai tro', 'user', 'role'], adminOnly: true },
+      { id: 'admin', labelKey: 'nav.admin', groupKey: 'nav.groupLookupControl', icon: UserCog, path: ROUTE_OF.admin, newTab: true, keywords: ['nguoi dung', 'tai khoan', 'phan quyen', 'vai tro', 'user', 'role'], adminOnly: true },
       { id: 'settings', labelKey: 'nav.settings', groupKey: 'nav.groupLookupControl', icon: Settings, path: ROUTE_OF.settings, keywords: ['cai dat', 'he thong', 'settings', 'config'] },
     ],
   },

@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { LanguageProvider } from '../../context/LanguageContext';
 import type { AdminUser } from '../../lib/userAdmin';
 
 const h = vi.hoisted(() => ({
   role: 'user_admin' as string,
+  session: true,
   users: [] as unknown[],
   usersError: null as string | null,
   byUser: {} as Record<string, string[]>,
@@ -18,6 +19,9 @@ const h = vi.hoisted(() => ({
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({
     user: { id: 'me' },
+    session: h.session ? { user: { id: 'me' } } : null,
+    loading: false,
+    signIn: async () => {},
     role: h.role,
     can: (c: string) => c === 'user.manage' && (h.role === 'master_admin' || h.role === 'user_admin'),
   }),
@@ -38,6 +42,7 @@ const user = (id: string, role: AdminUser['role'], name = id): AdminUser => ({
 
 beforeEach(() => {
   h.role = 'user_admin';
+  h.session = true;
   h.users = [user('u1', 'user', 'Nguyễn Văn An'), user('m1', 'master_admin', 'Chủ hệ thống'), user('a1', 'user_admin', 'Quản lý')];
   h.usersError = null;
   h.byUser = {};
@@ -175,11 +180,25 @@ describe('AdminLayout', () => {
     );
   }
 
-  it('hai vai trò quản trị thấy hai tab và nội dung', () => {
+  it('hai vai trò quản trị thấy sidebar quản trị và nội dung', () => {
     dungLayout();
-    expect(screen.getByRole('link', { name: 'Tổng quan' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Người dùng' })).toBeTruthy();
+    const nav = screen.getByRole('navigation', { name: 'Khu quản trị' });
+    expect(within(nav).getByRole('link', { name: 'Tổng quan' }).getAttribute('href')).toBe('/admin');
+    expect(within(nav).getByRole('link', { name: 'Người dùng' }).getAttribute('href')).toBe('/admin/users');
     expect(screen.getByText('NOI-DUNG-TONG-QUAN')).toBeTruthy();
+  });
+
+  it('có đường về ứng dụng, và không dựng sidebar của ứng dụng', () => {
+    const { container } = dungLayout();
+    expect(screen.getByRole('link', { name: 'Về ứng dụng' }).getAttribute('href')).toBe('/dashboard');
+    expect(container.querySelector('[aria-label="Sidebar Navigation"]')).toBeNull();
+  });
+
+  it('chưa đăng nhập thì hiện màn đăng nhập, không lộ nội dung quản trị', () => {
+    h.session = false;
+    dungLayout();
+    expect(screen.queryByText('NOI-DUNG-TONG-QUAN')).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Khu quản trị' })).toBeNull();
   });
 
   it('tài khoản cấp User không thấy nội dung quản trị', () => {

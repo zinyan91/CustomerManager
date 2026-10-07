@@ -52,6 +52,12 @@ describe('navigation', () => {
   });
 });
 
+describe('navigation — mục mở ở tab mới', () => {
+  it('chỉ mục Quản trị mở ở tab mới', () => {
+    expect(NAV_ITEMS.filter(i => i.newTab).map(i => i.id)).toEqual(['admin']);
+  });
+});
+
 describe('navigation — mục chỉ dành cho quản trị', () => {
   it('chỉ mục Quản trị đánh dấu adminOnly', () => {
     expect(NAV_ITEMS.filter(i => i.adminOnly).map(i => i.id)).toEqual(['admin']);

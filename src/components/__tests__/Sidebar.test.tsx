@@ -240,6 +240,16 @@ describe('Sidebar mobile drawer behavior', () => {
   });
 });
 
+describe('Sidebar mở Quản trị ở tab mới', () => {
+  it('mục Quản trị là liên kết target _blank có rel an toàn; các mục khác mở trong tab hiện tại', () => {
+    const { container } = dungLen(true);
+    const admin = container.querySelector('nav a[href="/admin"]')!;
+    expect(admin.getAttribute('target')).toBe('_blank');
+    expect(admin.getAttribute('rel')).toContain('noopener');
+    expect(container.querySelector('nav a[href="/customers"]')!.getAttribute('target')).toBeNull();
+  });
+});
+
 describe('Sidebar lọc theo module của tài khoản', () => {
   const hrefs = (container: HTMLElement) => [...container.querySelectorAll('nav a')].map(a => a.getAttribute('href'));
 

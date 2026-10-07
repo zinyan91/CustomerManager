@@ -1,6 +1,6 @@
 import { memo, useEffect } from 'react';
 import { NavLink } from 'react-router';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, ExternalLink } from 'lucide-react';
 import { useLang } from '../context/LanguageContext';
 import { visibleNavGroups } from '../lib/navigation';
 import { filterNavGroups } from '../lib/modules';
@@ -96,6 +96,22 @@ export const Sidebar = memo<SidebarProps>(({
                   const Icon = item.icon;
                   const to = screenPathFor(item.id, customerId);
                   const ketThuc = item.id === 'customers';
+                  if (item.newTab) {
+                    return (
+                      <a
+                        key={item.id}
+                        href={to}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={onCloseMobile}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-left transition-all duration-150 focus-visible:outline-2 focus-visible:outline-accent group text-ink-muted hover:text-ink hover:bg-surface/70 font-medium"
+                      >
+                        <Icon className="w-4 h-4 shrink-0 text-ink-faint group-hover:text-accent" />
+                        <span className="truncate">{t(item.labelKey)}</span>
+                        <ExternalLink className="w-3 h-3 shrink-0 ml-auto text-ink-faint" aria-hidden="true" />
+                      </a>
+                    );
+                  }
                   return (
                     <NavLink
                       key={item.id}

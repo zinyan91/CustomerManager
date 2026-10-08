@@ -911,61 +911,6 @@
   opacity: 0.88;
 }
 
-.wr-file-root {
-  position: relative;
-}
-
-.wr-file-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 60;
-  min-width: 260px;
-  padding: 0.35rem;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-}
-
-.wr-file-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  width: 100%;
-  padding: 0.5rem 0.65rem;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  text-align: left;
-  cursor: pointer;
-}
-
-.wr-file-item:hover {
-  background: var(--bg-surface-hover);
-}
-
-.wr-file-item small {
-  display: block;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  margin-top: 0.1rem;
-  max-width: 28ch;
-}
-
-.wr-file-item svg {
-  margin-top: 0.1rem;
-  color: var(--text-secondary);
-}
-
-.wr-file-sep {
-  height: 1px;
-  margin: 0.3rem 0;
-  background: var(--border-subtle);
-}
-
 .wr-tab-panel {
   background: var(--bg-app);
   border-top: 1px solid var(--border-subtle);

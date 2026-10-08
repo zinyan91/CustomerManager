@@ -18,6 +18,7 @@ import { DEFAULT_PAGE_SETUP, pageGeometryPx, parsePageSetup, type PageSetup } fr
 import { pageAt, type PaginationResult } from '../utils/pagination';
 import { FindReplacePanel } from './FindReplacePanel';
 import { StatsDialog } from './StatsDialog';
+import { WriterBackstage, type WriterBackstageSection } from './WriterBackstage';
 import { WriterRibbon } from './WriterRibbon';
 import { ZOOM_MAX, ZOOM_MIN } from './ribbon/LayoutAndViewTabs';
 
@@ -43,6 +44,7 @@ export interface WriterScreenProps {
   onHome: () => void;
   onOpenFile: (file: File, link?: DriveLink) => void;
   onNew: () => void;
+  onOpenDraft: (id: string) => void;
   /** The draft now has this id; `isNew` when it was just created (the address should show it). */
   onDraftId: (id: string, isNew: boolean) => void;
 }
@@ -110,7 +112,7 @@ export const WriterScreen: React.FC<WriterScreenProps> = (props) => {
   return <WriterBody {...props} loaded={loaded} />;
 };
 
-const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, onHome, onOpenFile, onNew, onDraftId }) => {
+const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, onHome, onOpenFile, onNew, onOpenDraft, onDraftId }) => {
   const { m } = useOfficeI18n();
   const t = m.writer;
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -126,6 +128,8 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [backstage, setBackstage] = useState<WriterBackstageSection | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   const openInput = useRef<HTMLInputElement>(null);
 
   const idRef = useRef<string | null>(loaded.id);
@@ -153,15 +157,17 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
     idRef.current = id;
     setSaveState('saving');
     try {
+      const updatedAt = Date.now();
       await saveDraft({
         id,
         title: latest.current.title.trim() || firstLine(doc),
         doc,
         pageSetup: latest.current.pageSetup,
-        updatedAt: Date.now(),
+        updatedAt,
         ...(linkRef.current ? { driveLink: linkRef.current } : {}),
       });
       if (isNew) onDraftId(id, true);
+      setSavedAt(updatedAt);
       setSaveState('saved');
     } catch {
       dirty.current = true;
@@ -295,6 +301,10 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
     printDocument(editor.getHTML(), editor.getJSON() as DocNode, exportOptions());
   };
 
+  // Ctrl+S: tài liệu đã gắn tệp trong Kho lưu trữ thì ghi đè tệp đó, chưa gắn thì mở mục Lưu của màn Tệp.
+  const saveShortcut = useRef<() => void>(() => {});
+  saveShortcut.current = () => (archive.link ? void archive.saveToArchive() : setBackstage('save'));
+
   // Word's shortcuts that the editor does not bind itself.
   useEffect(() => {
     if (!editor) return;
@@ -310,7 +320,7 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
       } else if (key === 's') {
         event.preventDefault();
         void flush();
-        void downloadDocx();
+        saveShortcut.current();
       } else if (key === 'p') {
         event.preventDefault();
         print();
@@ -378,21 +388,7 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
           onFind={() => setFindOpen(true)}
           onStats={() => setStatsOpen(true)}
           onError={setError}
-          file={{
-            onNew,
-            onOpen: () => openInput.current?.click(),
-            onDownloadDocx: () => void downloadDocx(),
-            onDownloadHtml: () => void downloadHtml(),
-            onDownloadTxt: () => void downloadTxt(),
-            onPrint: print,
-            onOpenArchive: archive.openFromArchive,
-            onSaveArchive: () => void archive.saveToArchive(),
-            onSaveArchiveAs: archive.saveToArchiveAs,
-            archiveLinked: archive.link !== null,
-            onHome: () => {
-              void flush().then(onHome);
-            },
-          }}
+          onFile={() => setBackstage('home')}
         />
       )}
       <input
@@ -422,6 +418,43 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
             ×
           </button>
         </div>
+      )}
+      {backstage && (
+        <WriterBackstage
+          title={title}
+          savedAt={savedAt}
+          initial={backstage}
+          archiveLink={archive.link}
+          notice={notice}
+          problem={error}
+          stats={{ words: stats.words, chars: stats.chars, pages: pagination.pageCount }}
+          onClose={() => {
+            setBackstage(null);
+            setNotice(null);
+          }}
+          onHome={() => {
+            void flush().then(onHome);
+          }}
+          onNew={() => {
+            void flush().then(onNew);
+          }}
+          onOpenDevice={() => openInput.current?.click()}
+          onOpenDraft={(id) => {
+            void flush().then(() => onOpenDraft(id));
+          }}
+          onOpenFromArchive={archive.openFromArchive}
+          onSaveNow={async () => {
+            dirty.current = true;
+            await flush();
+          }}
+          onSaveToArchive={archive.saveToArchive}
+          onSaveToArchiveAs={archive.saveToArchiveAs}
+          onDownloadDocx={() => void downloadDocx()}
+          onDownloadHtml={() => void downloadHtml()}
+          onDownloadTxt={() => void downloadTxt()}
+          onPrint={print}
+          onError={setError}
+        />
       )}
       {archive.dialog}
       {editor && findOpen && <FindReplacePanel editor={editor} state={state} onClose={() => setFindOpen(false)} />}

@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { Archive, ChevronDown, FileDown, FilePlus, FileText, FolderOpen, Home, Printer } from 'lucide-react';
 import { useOfficeI18n } from '../../i18n';
 import type { WriterFormatState } from '../editor/useWriterState';
 import type { PageSetup } from '../utils/pageSetup';
@@ -10,21 +9,6 @@ import { LayoutTab, ViewTab } from './ribbon/LayoutAndViewTabs';
 
 export type RibbonTab = 'home' | 'insert' | 'layout' | 'view';
 
-export interface FileActions {
-  onNew: () => void;
-  onOpen: () => void;
-  onDownloadDocx: () => void;
-  onDownloadHtml: () => void;
-  onDownloadTxt: () => void;
-  onPrint: () => void;
-  onOpenArchive: () => void;
-  onSaveArchive: () => void;
-  onSaveArchiveAs: () => void;
-  /** Văn bản đã gắn với một tệp trong Kho lưu trữ. */
-  archiveLinked: boolean;
-  onHome: () => void;
-}
-
 export interface WriterRibbonProps {
   editor: Editor;
   state: WriterFormatState;
@@ -33,13 +17,13 @@ export interface WriterRibbonProps {
   zoom: number;
   onZoom: (zoom: number) => void;
   contentWidthPx: number;
-  file: FileActions;
+  onFile: () => void;
   onFind: () => void;
   onStats: () => void;
   onError: (message: string) => void;
 }
 
-/** The "Tệp" menu, then one tab at a time like Word's ribbon. */
+/** Nút "Tệp" mở màn Tệp toàn khung, rồi từng tab một như ribbon của Word. */
 export const WriterRibbon: React.FC<WriterRibbonProps> = ({
   editor,
   state,
@@ -48,7 +32,7 @@ export const WriterRibbon: React.FC<WriterRibbonProps> = ({
   zoom,
   onZoom,
   contentWidthPx,
-  file,
+  onFile,
   onFind,
   onStats,
   onError,
@@ -56,40 +40,6 @@ export const WriterRibbon: React.FC<WriterRibbonProps> = ({
   const { m } = useOfficeI18n();
   const t = m.writer;
   const [tab, setTab] = useState<RibbonTab>('home');
-  const [fileOpen, setFileOpen] = useState(false);
-  const fileRoot = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!fileOpen) return;
-    const onPointer = (event: PointerEvent) => {
-      if (fileRoot.current && !fileRoot.current.contains(event.target as Node)) setFileOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setFileOpen(false);
-    document.addEventListener('pointerdown', onPointer);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onPointer);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [fileOpen]);
-
-  const fileItem = (icon: React.ReactNode, label: string, action: () => void, hint?: string) => (
-    <button
-      type="button"
-      className="wr-file-item"
-      onClick={() => {
-        setFileOpen(false);
-        action();
-      }}
-    >
-      {icon}
-      <span>
-        {label}
-        {hint && <small>{hint}</small>}
-      </span>
-    </button>
-  );
-
   const tabs: Array<{ id: RibbonTab; label: string }> = [
     { id: 'home', label: t.tabs.home },
     { id: 'insert', label: t.tabs.insert },
@@ -100,35 +50,9 @@ export const WriterRibbon: React.FC<WriterRibbonProps> = ({
   return (
     <div className="wr-ribbon">
       <div className="wr-tabs" role="tablist">
-        <div className="wr-file-root" ref={fileRoot}>
-          <button
-            type="button"
-            className="wr-tab wr-tab-file"
-            aria-haspopup="menu"
-            aria-expanded={fileOpen}
-            onClick={() => setFileOpen((v) => !v)}
-          >
-            {t.tabs.file}
-            <ChevronDown size={13} />
-          </button>
-          {fileOpen && (
-            <div className="wr-file-menu" role="menu">
-              {fileItem(<FilePlus size={16} />, t.file.new, file.onNew)}
-              {fileItem(<FolderOpen size={16} />, t.file.open, file.onOpen)}
-              {fileItem(<Archive size={16} />, m.ribbon.backstage.openFromArchive, file.onOpenArchive)}
-              <div className="wr-file-sep" />
-              {fileItem(<Archive size={16} />, m.ribbon.backstage.saveToArchive, file.onSaveArchive)}
-              {file.archiveLinked && fileItem(<Archive size={16} />, m.ribbon.backstage.saveToArchiveAs, file.onSaveArchiveAs)}
-              {fileItem(<FileDown size={16} />, t.file.downloadDocx, file.onDownloadDocx)}
-              {fileItem(<FileText size={16} />, t.file.downloadHtml, file.onDownloadHtml)}
-              {fileItem(<FileText size={16} />, t.file.downloadTxt, file.onDownloadTxt)}
-              <div className="wr-file-sep" />
-              {fileItem(<Printer size={16} />, t.file.print, file.onPrint, t.file.printHint)}
-              <div className="wr-file-sep" />
-              {fileItem(<Home size={16} />, t.file.close, file.onHome)}
-            </div>
-          )}
-        </div>
+        <button type="button" className="wr-tab wr-tab-file" onClick={onFile}>
+          {t.tabs.file}
+        </button>
         {tabs.map(({ id, label }) => (
           <button
             key={id}

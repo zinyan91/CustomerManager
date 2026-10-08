@@ -232,6 +232,10 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
     onProblem: setMessage,
   });
 
+  // Ctrl+S: bảng tính đã gắn tệp trong Kho lưu trữ thì ghi đè tệp đó, chưa gắn thì mở mục Lưu của màn Tệp.
+  const saveShortcut = useRef<() => void>(() => {});
+  saveShortcut.current = () => (archive.link ? void archive.saveToArchive() : setBackstage('save'));
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
@@ -244,7 +248,7 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
         setBackstage('print');
       } else if (key === 's') {
         event.preventDefault();
-        void downloadXlsx();
+        saveShortcut.current();
       } else if (key === '=' || key === '+') {
         event.preventDefault();
         setZoom((z) => clampZoom(z + 10));

@@ -4,8 +4,9 @@ import type { CfRule, CfStyle } from '../engine/conditional';
 import { isError, type Scalar } from '../engine/values';
 import { mergeValidations, parseListItems, type NumberOp, type Validation, type ValidationRule } from '../engine/validation';
 import { addChartsToXlsx, readChartsFromXlsx } from './xlsxCharts';
-import { DEFAULT_COL_WIDTH, Workbook, constantValue, newSheet, type Cell, type CellStyle, type Sheet, type WorkbookData } from '../model/workbook';
+import { DEFAULT_COL_WIDTH, pageSetupOf, Workbook, constantValue, newSheet, type Cell, type CellStyle, type Sheet, type WorkbookData } from '../model/workbook';
 import { parseCsv, toCsv } from '../utils/csv';
+import { fromExcelPageSetup, toExcelPageSetup, type ExcelPageSetup } from './pageSetupXlsx';
 import { fromFileFormula, toFileFormula } from './xlfn';
 
 /** Excel's column width unit (characters of the default font) and pixels. */
@@ -383,6 +384,8 @@ export async function importXlsx(data: ArrayBuffer): Promise<WorkbookData> {
     const validations = readValidations(ws);
     if (validations.length > 0) sheet.validations = validations;
     if (view && ((view.xSplit ?? 0) > 0 || (view.ySplit ?? 0) > 0)) sheet.freeze = { rows: Math.max(0, view.ySplit ?? 0), cols: Math.max(0, view.xSplit ?? 0) };
+    const pageSetup = fromExcelPageSetup(ws.pageSetup as ExcelPageSetup | undefined);
+    if (pageSetup) sheet.pageSetup = pageSetup;
     const merges = (ws.model as { merges?: string[] }).merges ?? [];
     for (const m of merges) {
       const range = parseRange(m);
@@ -480,6 +483,7 @@ export async function exportXlsx(wb: Workbook): Promise<Blob> {
     if (sheet.freeze && (sheet.freeze.rows > 0 || sheet.freeze.cols > 0)) {
       ws.views = [{ state: 'frozen', xSplit: sheet.freeze.cols, ySplit: sheet.freeze.rows, topLeftCell: `${columnName(sheet.freeze.cols)}${sheet.freeze.rows + 1}` }];
     }
+    if (sheet.pageSetup) ws.pageSetup = { ...ws.pageSetup, ...toExcelPageSetup(pageSetupOf(sheet)) } as Worksheet['pageSetup'];
     sheet.cf.forEach((rule, index) => {
       const converted = ruleOut(rule, index + 1);
       if (converted) ws.addConditionalFormatting({ ref: rangeName(rule.range), rules: [converted] } as unknown as Parameters<Worksheet['addConditionalFormatting']>[0]);

@@ -27,3 +27,34 @@ function saveWithAnchor(blob: Blob, filename: string): void {
 export function saveDocument(blob: Blob, filename: string): void {
   saveWithAnchor(blob, safeName(filename));
 }
+
+const PRINT_CLEANUP_FALLBACK_MS = 60_000;
+
+/** Tải tệp xuống máy; trùng với saveDocument, giữ riêng cho chỗ chỉ "tải xuống" chứ không "lưu tài liệu". */
+export function downloadBlob(blob: Blob, filename: string): void {
+  saveWithAnchor(blob, safeName(filename));
+}
+
+/**
+ * Mở hộp thoại in của trình duyệt cho một trang HTML nằm trong blob. Khung ẩn đặt ngoài màn hình
+ * thay vì `display: none` vì Chrome không in từ khung chưa từng được dàn trang.
+ */
+export function printBlob(blob: Blob): void {
+  const printUrl = URL.createObjectURL(blob);
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;left:-9999px;top:-9999px';
+  let cleanedUp = false;
+  const cleanup = () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    URL.revokeObjectURL(printUrl);
+    iframe.remove();
+  };
+  iframe.onload = () => {
+    iframe.contentWindow?.addEventListener('afterprint', cleanup, { once: true });
+    iframe.contentWindow?.print();
+    setTimeout(cleanup, PRINT_CLEANUP_FALLBACK_MS);
+  };
+  iframe.src = printUrl;
+  document.body.appendChild(iframe);
+}

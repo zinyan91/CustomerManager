@@ -1,5 +1,6 @@
 import { calcVi } from './calcVi';
 import { ribbonVi } from './ribbonVi';
+import { writerVi } from './writerVi';
 
 export const vi = {
   calc: calcVi,
@@ -16,6 +17,10 @@ export const vi = {
     spreadsheetNew: 'Bảng tính trống',
     spreadsheetOpen: 'Mở bảng tính',
     spreadsheetOpenHint: 'XLSX hoặc CSV từ máy',
+    document: 'Văn bản',
+    documentNew: 'Văn bản trống',
+    documentOpen: 'Mở văn bản',
+    documentOpenHint: 'DOCX, TXT hoặc HTML từ máy',
     recent: 'Gần đây',
     noRecent: 'Chưa có tài liệu nào.',
     open: 'Mở',
@@ -24,15 +29,7 @@ export const vi = {
     updated: (when: string) => `Sửa lúc ${when}`,
     draftsNote: 'Bản nháp nằm trong trình duyệt này, không gắn với tài khoản. Cần chia sẻ thì tải về.',
   },
-  writer: {
-    saving: 'Đang lưu…',
-    saved: 'Đã lưu bản nháp',
-    saveFailed: 'Không lưu được bản nháp trong trình duyệt',
-    errors: {
-      imageFailed: 'Không đọc được ảnh này.',
-      draftMissing: 'Không tìm thấy bản nháp này; có thể nó đã bị xóa.',
-    },
-  },
+  writer: writerVi,
 };
 
 export type OfficeMessages = typeof vi;

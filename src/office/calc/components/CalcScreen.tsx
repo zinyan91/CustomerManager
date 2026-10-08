@@ -177,6 +177,12 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
     };
   }, [controller, t.validation.rejected, m.ribbon.review.protectedNotice]);
 
+  const protectedNotice = m.ribbon.review.protectedNotice;
+  const sheetProtected = controller.sheetProtected;
+  useEffect(() => {
+    if (!sheetProtected) setMessage((current) => (current === protectedNotice ? null : current));
+  }, [sheetProtected, protectedNotice]);
+
   const fail = (caught: unknown) => setMessage(t.errors.exportFailed(caught instanceof Error ? caught.message : String(caught)));
 
   const downloadXlsx = async () => {

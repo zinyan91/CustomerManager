@@ -42,6 +42,7 @@ const DedicatedWorkspaceLayout = lazy(() => import('./components/hub/DedicatedWo
 const OfficeLayout = lazy(() => import('./office/OfficeLayout').then(m => ({ default: m.OfficeLayout })));
 const OfficeIndex = lazy(() => import('./office/OfficeLayout').then(m => ({ default: m.OfficeIndex })));
 const OfficeCalcRoute = lazy(() => import('./office/OfficeCalcRoute').then(m => ({ default: m.OfficeCalcRoute })));
+const OfficeWriterRoute = lazy(() => import('./office/OfficeWriterRoute').then(m => ({ default: m.OfficeWriterRoute })));
 const StorageManagementView = lazy(() => import('./components/views/StorageManagementView').then(m => ({ default: m.StorageManagementView })));
 
 export function App() {
@@ -74,6 +75,8 @@ export function App() {
         <Route index element={<Suspense fallback={<ViewSkeleton />}><OfficeIndex /></Suspense>} />
         <Route path="calc" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
         <Route path="calc/:draftId" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
+        <Route path="writer" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
+        <Route path="writer/:draftId" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
       </Route>
 
       {/* Khu quản trị: khung và sidebar riêng, mở ở tab mới */}

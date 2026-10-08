@@ -300,3 +300,24 @@ describe('xlsx future functions', () => {
     expect(back.sheets[0].cells.get(2)?.raw).toBe('=MAXIFS(A1:A1,A1:A1,">0")&"IFS(x)"');
   });
 });
+
+describe('xlsx page setup', () => {
+  it('hướng giấy, khổ, lề, tỉ lệ, vùng in, đường lưới và tiêu đề đi qua tệp và quay về', async () => {
+    const wb = new Workbook();
+    wb.putCell(0, 0, 0, { raw: 'x', style: 0 });
+    wb.sheets[0].pageSetup = { orientation: 'landscape', paper: 'Legal', margins: { top: 25.4, right: 12.7, bottom: 25.4, left: 12.7 }, scale: 80, printArea: { r1: 0, c1: 0, r2: 4, c2: 2 }, gridlines: true, headings: true };
+    wb.sheets.push(newSheet('Hai'));
+    const back = new Workbook();
+    back.loadData(await importXlsx(await (await exportXlsx(wb)).arrayBuffer()));
+    expect(back.sheets[0].pageSetup).toEqual(wb.sheets[0].pageSetup);
+    expect(back.sheets[1].pageSetup).toBeUndefined();
+  });
+
+  it('trang tính không đặt gì thì tệp không mang thiết lập trang khác mặc định', async () => {
+    const wb = new Workbook();
+    wb.putCell(0, 0, 0, { raw: 'x', style: 0 });
+    const back = new Workbook();
+    back.loadData(await importXlsx(await (await exportXlsx(wb)).arrayBuffer()));
+    expect(back.sheets[0].pageSetup).toBeUndefined();
+  });
+});

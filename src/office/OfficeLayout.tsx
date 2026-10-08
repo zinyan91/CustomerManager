@@ -6,17 +6,19 @@ import { LoginView } from '../components/LoginView';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ModuleGate } from '../components/ModuleGate';
 import { OfficeHome } from './OfficeHome';
-import { calcPath } from './paths';
+import { calcPath, writerPath } from './paths';
 import './styles/office.css';
 
-/** Cổng vào /office: tạo bảng tính trống, mở tệp từ máy (chuyển sang màn Bảng tính qua trạng thái địa chỉ) hoặc mở bản nháp. */
+const PATH_OF = { calc: calcPath, writer: writerPath };
+
+/** Cổng vào /office: tạo bảng tính hay văn bản trống, mở tệp từ máy (chuyển sang màn Bảng tính qua trạng thái địa chỉ) hoặc mở bản nháp. */
 export const OfficeIndex: React.FC = () => {
   const navigate = useNavigate();
   return (
     <OfficeHome
-      onNewSpreadsheet={() => navigate(calcPath())}
-      onOpenFile={(file) => navigate(calcPath(), { state: { file } })}
-      onOpenDraft={(id) => navigate(calcPath(id))}
+      onNewDocument={(kind) => navigate(PATH_OF[kind]())}
+      onOpenFile={(kind, file) => navigate(PATH_OF[kind](), { state: { file } })}
+      onOpenDraft={(kind, id) => navigate(PATH_OF[kind](id))}
     />
   );
 };

@@ -1,6 +1,6 @@
 # Tab Báo cáo: bảng tính và soạn văn bản như Excel/Word, mở toàn màn hình
 
-Ngày: 07/10/2026. Trạng thái: đã duyệt ("làm đi" 08/10/2026); giai đoạn 1 (khung và Bảng tính) đã làm, giai đoạn 2 và 3 chưa. Giai đoạn 3 viết lại theo Google Drive vì kho lưu trữ không còn Hugging Face.
+Ngày: 07/10/2026. Trạng thái: đã duyệt ("làm đi" 08/10/2026); giai đoạn 1 (khung và Bảng tính) và giai đoạn 2 (Văn bản) đã làm, giai đoạn 3 chưa. Giai đoạn 3 viết lại theo Google Drive vì kho lưu trữ không còn Hugging Face.
 
 ## Mục tiêu
 

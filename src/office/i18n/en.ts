@@ -1,5 +1,6 @@
 import { calcEn } from './calcEn';
 import { ribbonEn } from './ribbonEn';
+import { writerEn } from './writerEn';
 import type { OfficeMessages } from './vi';
 
 export const en: OfficeMessages = {
@@ -16,6 +17,10 @@ export const en: OfficeMessages = {
     spreadsheet: 'Spreadsheet',
     spreadsheetNew: 'Blank spreadsheet',
     spreadsheetOpen: 'Open a spreadsheet',
+    document: 'Documents',
+    documentNew: 'Blank document',
+    documentOpen: 'Open a document',
+    documentOpenHint: 'DOCX, TXT or HTML from this device',
     spreadsheetOpenHint: 'XLSX or CSV from this computer',
     recent: 'Recent',
     noRecent: 'No documents yet.',
@@ -25,13 +30,5 @@ export const en: OfficeMessages = {
     updated: (when: string) => `Edited ${when}`,
     draftsNote: 'Drafts live in this browser and are not tied to your account. Download a file to share it.',
   },
-  writer: {
-    saving: 'Saving…',
-    saved: 'Draft saved',
-    saveFailed: 'Could not save the draft in this browser',
-    errors: {
-      imageFailed: 'Could not read this image.',
-      draftMissing: 'This draft was not found; it may have been deleted.',
-    },
-  },
+  writer: writerEn,
 };

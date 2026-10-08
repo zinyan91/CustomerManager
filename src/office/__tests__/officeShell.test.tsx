@@ -10,6 +10,7 @@ const h = vi.hoisted(() => ({
   loading: false,
   allowed: [] as string[],
   drafts: [] as Array<{ id: string; title: string; updatedAt: number }>,
+  writerDrafts: [] as Array<{ id: string; title: string; updatedAt: number }>,
   deleted: [] as string[],
 }));
 
@@ -23,6 +24,14 @@ vi.mock('../calc/services/calcDraftStore', () => ({
   deleteCalcDraft: async (id: string) => {
     h.deleted.push(id);
     h.drafts = h.drafts.filter((d) => d.id !== id);
+  },
+}));
+
+vi.mock('../writer/services/draftStore', () => ({
+  listDrafts: async () => h.writerDrafts,
+  deleteDraft: async (id: string) => {
+    h.deleted.push(id);
+    h.writerDrafts = h.writerDrafts.filter((d) => d.id !== id);
   },
 }));
 
@@ -43,6 +52,8 @@ function dung(path = '/office') {
             <Route index element={<OfficeIndex />} />
             <Route path="calc" element={<div>MAN BANG TINH MOI</div>} />
             <Route path="calc/:draftId" element={<div>MAN BANG TINH NHAP</div>} />
+            <Route path="writer" element={<div>MAN VAN BAN MOI</div>} />
+            <Route path="writer/:draftId" element={<div>MAN VAN BAN NHAP</div>} />
           </Route>
           <Route path="*" element={<Where />} />
         </Routes>
@@ -57,6 +68,7 @@ beforeEach(() => {
   h.loading = false;
   h.allowed = [...MODULE_IDS];
   h.drafts = [];
+  h.writerDrafts = [];
   h.deleted = [];
   vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
@@ -114,6 +126,36 @@ describe('OfficeIndex: cổng vào', () => {
     fireEvent.click(within(items[0]).getByRole('button', { name: /Mở Báo cáo quý 3/ }));
     expect(await screen.findByText('MAN BANG TINH NHAP')).toBeTruthy();
     expect(screen.getByTestId('where').textContent).toBe('/office/calc/b2');
+  });
+
+  it('gộp nháp bảng tính và văn bản theo giờ sửa; bấm nháp văn bản mở màn Văn bản', async () => {
+    h.drafts = [{ id: 'c1', title: 'Sổ cái', updatedAt: 1 }];
+    h.writerDrafts = [
+      { id: 'w1', title: 'Tờ trình', updatedAt: 5 },
+      { id: 'w2', title: '', updatedAt: 3 },
+    ];
+    dung();
+    const items = within(await screen.findByRole('list')).getAllByRole('listitem');
+    expect(items.map((i) => i.textContent)).toEqual([
+      expect.stringContaining('Tờ trình'),
+      expect.stringContaining('Tài liệu không tên'),
+      expect.stringContaining('Sổ cái'),
+    ]);
+    fireEvent.click(within(items[0]).getByRole('button', { name: /Mở Tờ trình/ }));
+    expect(await screen.findByText('MAN VAN BAN NHAP')).toBeTruthy();
+    expect(screen.getByTestId('where').textContent).toBe('/office/writer/w1');
+  });
+
+  it('Văn bản trống mở màn văn bản mới, và mở tệp .docx kèm tệp đó', async () => {
+    dung();
+    fireEvent.click(await screen.findByRole('button', { name: /Văn bản trống/ }));
+    expect(await screen.findByText('MAN VAN BAN MOI')).toBeTruthy();
+    cleanup();
+    dung();
+    const input = (await screen.findByLabelText('Mở văn bản', { selector: 'input' })) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(['x'], 'thu.docx')] } });
+    expect(await screen.findByText('MAN VAN BAN MOI')).toBeTruthy();
+    expect(screen.getByTestId('where').textContent).toBe('/office/writer+file');
   });
 
   it('Bảng tính trống mở màn bảng tính mới', async () => {

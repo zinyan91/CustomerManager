@@ -17,12 +17,19 @@ const FILES = sources(ROOT).map((path) => ({ path: relative(process.cwd(), path)
 
 describe('ranh giới của khối Office (src/office)', () => {
   it('có mã để kiểm tra', () => {
-    expect(FILES.length).toBeGreaterThan(30);
+    expect(FILES.length).toBeGreaterThan(60);
   });
 
-  it('thư viện tệp (exceljs, jszip) chỉ được nạp lười, không nhập tĩnh vào gói chính', () => {
+  it('thư viện tệp (exceljs, jszip, docx, mammoth) chỉ được nạp lười, không nhập tĩnh vào gói chính', () => {
     for (const { path, text } of FILES) {
-      expect(/^\s*import(?!\s+type)[^'"\n]*from\s+['"](exceljs|jszip)['"]/m.test(text), `${path} nhập tĩnh exceljs/jszip`).toBe(false);
+      expect(/^\s*import(?!\s+type)[^'"\n]*from\s+['"](exceljs|jszip|docx|mammoth)['"]/m.test(text), `${path} nhập tĩnh thư viện tệp`).toBe(false);
+    }
+  });
+
+  it('trình soạn Tiptap chỉ nằm trong writer/, không lan sang Bảng tính hay khung', () => {
+    for (const { path, text } of FILES) {
+      if (path.includes('src/office/writer/')) continue;
+      expect(text.includes('@tiptap/'), `${path} dùng Tiptap ngoài writer/`).toBe(false);
     }
   });
 

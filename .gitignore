@@ -42,3 +42,6 @@ docs/superpowers/anh-moc/
 # File catalog ISO (dự án khác, lạc vào thư mục — không thuộc CustomerManager)
 *_Catalog_Preview.json
 docs/quy-trinh-cao-va-dong-bo-catalog-iso.md
+
+# Đồ tạm của agent (kiểm tra giao diện, ảnh chụp)
+.tmp/

@@ -24,6 +24,7 @@ export const ROUTE_OF: Record<ScreenId, string> = {
   'rate-quote': '/tools/rate-quote',
   cof: '/tools/cost-of-funds',
   reports: '/tools/reports',
+  office: '/office',
 
   mdsdv: '/reference/loan-purpose',
   'card-policies': '/reference/card-policies',
@@ -60,5 +61,6 @@ export const SCREEN_OF_PATH: Record<string, ScreenId> = Object.fromEntries(
 export function screenIdOfPath(pathname: string): ScreenId | null {
   if (!pathname) return null;
   const clean = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  if (clean.startsWith(`${ROUTE_OF.office}/`)) return 'office';
   return SCREEN_OF_PATH[clean] ?? HUB_SUBROUTES[clean] ?? null;
 }

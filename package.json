@@ -24,6 +24,8 @@
     "@radix-ui/react-tabs": "^1.1.21",
     "@supabase/supabase-js": "^2.111.0",
     "@zip.js/zip.js": "^2.15.0",
+    "exceljs": "^4.4.0",
+    "jszip": "^3.10.2",
     "lucide-react": "^1.27.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.7",

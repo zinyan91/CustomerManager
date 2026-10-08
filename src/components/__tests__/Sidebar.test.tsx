@@ -42,6 +42,7 @@ const NHAN_MUC = [
   'Hàng tồn kho',
   'Công cụ tính toán',
   'Chào lãi suất',
+  'Báo cáo',
   'Kiểm soát sau vay',
   'Cấu hình & cài đặt',
 ];
@@ -57,15 +58,15 @@ const NHAN_NHOM = [
 describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
   it('hiện đủ các mục, mỗi mục một nút', () => {
     dungLen();
-    expect(NHAN_MUC).toHaveLength(15);
+    expect(NHAN_MUC).toHaveLength(16);
     for (const nhan of NHAN_MUC) {
       expect(screen.getAllByText(nhan).length, `thiếu mục "${nhan}"`).toBeGreaterThan(0);
     }
   });
 
-  it('dựng đúng 16 liên kết trong nav', () => {
+  it('dựng đúng 17 liên kết trong nav', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a').length).toBe(16);
+    expect(container.querySelectorAll('nav a').length).toBe(17);
   });
 
   it('chỉ hiện mục Quản trị khi có quyền quản lý người dùng', () => {
@@ -73,7 +74,7 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
     expect(container.querySelector('nav a[href="/admin"]')).toBeNull();
     unmount();
     const co = dungLen(true);
-    expect(co.container.querySelectorAll('nav a').length).toBe(17);
+    expect(co.container.querySelectorAll('nav a').length).toBe(18);
     expect(co.container.querySelector('nav a[href="/admin"]')).toBeTruthy();
   });
 
@@ -104,7 +105,7 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
 describe('Sidebar dùng liên kết thật', () => {
   it('mỗi mục là một thẻ liên kết, không phải nút', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a')).toHaveLength(16);
+    expect(container.querySelectorAll('nav a')).toHaveLength(17);
     expect(container.querySelectorAll('nav button')).toHaveLength(0);
   });
 

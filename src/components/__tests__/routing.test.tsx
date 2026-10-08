@@ -61,6 +61,7 @@ vi.mock('../views/WorkspaceHubView', () => ({ WorkspaceHubView: () => <div>MAN:h
 vi.mock('../views/ConstructionEstimateView', () => ({ ConstructionEstimateView: () => <div>MAN:estimate</div> }));
 vi.mock('../admin/AdminLayout', () => ({ AdminLayout: () => <div>MAN:admin</div> }));
 vi.mock('../views/ToiProjectionView', () => ({ ToiProjectionView: () => <div>MAN:toi</div> }));
+vi.mock('../../office/OfficeLayout', () => ({ OfficeLayout: () => <div>MAN:office</div>, OfficeIndex: () => <div>MAN:office</div> }));
 
 import { App as AppThatDuoiTest } from '../../App';
 

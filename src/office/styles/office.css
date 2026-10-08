@@ -1,0 +1,2784 @@
+/* Bộ Office (Bảng tính, Văn bản): mọi quy tắc nằm dưới .felix-office để không đè lên giao diện còn lại. */
+/* ===== palette.css ===== */
+/* ==========================================================================
+   Palette tokens, light and dark
+   --n-0 … --n-900 is the neutral (slate) scale; each hue has 50 … 900.
+   Light values are the Tailwind hexes the stylesheets used before tokens,
+   so light mode looks exactly as it did. Dark mode inverts the neutral
+   scale; pale hue shades (50–300) become the hue mixed over the dark
+   surface, and text shades (400–900) lighten so they stay readable.
+   Saturated fills (buttons, progress bars) are not tokens: white text on
+   them works in both themes.
+   ========================================================================== */
+.felix-office {
+  --n-0: #ffffff;
+  --n-50: #f8fafc;
+  --n-100: #f1f5f9;
+  --n-200: #e2e8f0;
+  --n-300: #cbd5e1;
+  --n-400: #94a3b8;
+  --n-500: #64748b;
+  --n-600: #475569;
+  --n-700: #334155;
+  --n-800: #1e293b;
+  --n-900: #0f172a;
+  --red-50: #fef2f2;
+  --red-100: #fee2e2;
+  --red-200: #fecaca;
+  --red-300: #fca5a5;
+  --red-400: #f87171;
+  --red-500: #ef4444;
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+  --red-800: #991b1b;
+  --red-900: #7f1d1d;
+
+  --orange-50: #fff7ed;
+  --orange-100: #ffedd5;
+  --orange-200: #fed7aa;
+  --orange-300: #fdba74;
+  --orange-400: #fb923c;
+  --orange-500: #f97316;
+  --orange-600: #ea580c;
+  --orange-700: #c2410c;
+  --orange-800: #9a3412;
+  --orange-900: #7c2d12;
+
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-200: #fde68a;
+  --amber-300: #fcd34d;
+  --amber-400: #fbbf24;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+  --amber-800: #92400e;
+  --amber-900: #78350f;
+
+  --yellow-50: #fefce8;
+  --yellow-100: #fef9c3;
+  --yellow-200: #fef08a;
+  --yellow-300: #fde047;
+  --yellow-400: #facc15;
+  --yellow-500: #eab308;
+  --yellow-600: #ca8a04;
+  --yellow-700: #a16207;
+  --yellow-800: #854d0e;
+  --yellow-900: #713f12;
+
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-200: #bbf7d0;
+  --green-300: #86efac;
+  --green-400: #4ade80;
+  --green-500: #22c55e;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --green-800: #166534;
+  --green-900: #14532d;
+
+  --emerald-50: #ecfdf5;
+  --emerald-100: #d1fae5;
+  --emerald-200: #a7f3d0;
+  --emerald-300: #6ee7b7;
+  --emerald-400: #34d399;
+  --emerald-500: #10b981;
+  --emerald-600: #059669;
+  --emerald-700: #047857;
+  --emerald-800: #065f46;
+  --emerald-900: #064e3b;
+
+  --sky-50: #f0f9ff;
+  --sky-100: #e0f2fe;
+  --sky-200: #bae6fd;
+  --sky-300: #7dd3fc;
+  --sky-400: #38bdf8;
+  --sky-500: #0ea5e9;
+  --sky-600: #0284c7;
+  --sky-700: #0369a1;
+  --sky-800: #075985;
+  --sky-900: #0c4a6e;
+
+  --blue-50: #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+  --blue-900: #1e3a8a;
+
+  --indigo-50: #eef2ff;
+  --indigo-100: #e0e7ff;
+  --indigo-200: #c7d2fe;
+  --indigo-300: #a5b4fc;
+  --indigo-400: #818cf8;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+  --indigo-700: #4338ca;
+  --indigo-800: #3730a3;
+  --indigo-900: #312e81;
+
+  --violet-50: #f5f3ff;
+  --violet-100: #ede9fe;
+  --violet-200: #ddd6fe;
+  --violet-300: #c4b5fd;
+  --violet-400: #a78bfa;
+  --violet-500: #8b5cf6;
+  --violet-600: #7c3aed;
+  --violet-700: #6d28d9;
+  --violet-800: #5b21b6;
+  --violet-900: #4c1d95;
+
+  --purple-50: #faf5ff;
+  --purple-100: #f3e8ff;
+  --purple-200: #e9d5ff;
+  --purple-300: #d8b4fe;
+  --purple-400: #c084fc;
+  --purple-500: #a855f7;
+  --purple-600: #9333ea;
+  --purple-700: #7e22ce;
+  --purple-800: #6b21a8;
+  --purple-900: #581c87;
+
+  --fuchsia-50: #fdf4ff;
+  --fuchsia-100: #fae8ff;
+  --fuchsia-200: #f5d0fe;
+  --fuchsia-300: #f0abfc;
+  --fuchsia-400: #e879f9;
+  --fuchsia-500: #d946ef;
+  --fuchsia-600: #c026d3;
+  --fuchsia-700: #a21caf;
+  --fuchsia-800: #86198f;
+  --fuchsia-900: #701a75;
+}
+
+.dark .felix-office {
+  --n-0: #162033;
+  --n-50: #0f172a;
+  --n-100: #1f2a3e;
+  --n-200: #2a374d;
+  --n-300: #3b4a63;
+  --n-400: #64748b;
+  --n-500: #94a3b8;
+  --n-600: #b4c0d0;
+  --n-700: #cbd5e1;
+  --n-800: #e2e8f0;
+  --n-900: #f1f5f9;
+  --red-50: color-mix(in srgb, #ef4444 12%, var(--n-0));
+  --red-100: color-mix(in srgb, #ef4444 18%, var(--n-0));
+  --red-200: color-mix(in srgb, #ef4444 28%, var(--n-0));
+  --red-300: color-mix(in srgb, #ef4444 40%, var(--n-0));
+  --red-400: #fca5a5;
+  --red-500: #f87171;
+  --red-600: #f87171;
+  --red-700: #fca5a5;
+  --red-800: #fecaca;
+  --red-900: #fee2e2;
+
+  --orange-50: color-mix(in srgb, #f97316 12%, var(--n-0));
+  --orange-100: color-mix(in srgb, #f97316 18%, var(--n-0));
+  --orange-200: color-mix(in srgb, #f97316 28%, var(--n-0));
+  --orange-300: color-mix(in srgb, #f97316 40%, var(--n-0));
+  --orange-400: #fdba74;
+  --orange-500: #fb923c;
+  --orange-600: #fb923c;
+  --orange-700: #fdba74;
+  --orange-800: #fed7aa;
+  --orange-900: #ffedd5;
+
+  --amber-50: color-mix(in srgb, #f59e0b 12%, var(--n-0));
+  --amber-100: color-mix(in srgb, #f59e0b 18%, var(--n-0));
+  --amber-200: color-mix(in srgb, #f59e0b 28%, var(--n-0));
+  --amber-300: color-mix(in srgb, #f59e0b 40%, var(--n-0));
+  --amber-400: #fcd34d;
+  --amber-500: #fbbf24;
+  --amber-600: #fbbf24;
+  --amber-700: #fcd34d;
+  --amber-800: #fde68a;
+  --amber-900: #fef3c7;
+
+  --yellow-50: color-mix(in srgb, #eab308 12%, var(--n-0));
+  --yellow-100: color-mix(in srgb, #eab308 18%, var(--n-0));
+  --yellow-200: color-mix(in srgb, #eab308 28%, var(--n-0));
+  --yellow-300: color-mix(in srgb, #eab308 40%, var(--n-0));
+  --yellow-400: #fde047;
+  --yellow-500: #facc15;
+  --yellow-600: #facc15;
+  --yellow-700: #fde047;
+  --yellow-800: #fef08a;
+  --yellow-900: #fef9c3;
+
+  --green-50: color-mix(in srgb, #22c55e 12%, var(--n-0));
+  --green-100: color-mix(in srgb, #22c55e 18%, var(--n-0));
+  --green-200: color-mix(in srgb, #22c55e 28%, var(--n-0));
+  --green-300: color-mix(in srgb, #22c55e 40%, var(--n-0));
+  --green-400: #86efac;
+  --green-500: #4ade80;
+  --green-600: #4ade80;
+  --green-700: #86efac;
+  --green-800: #bbf7d0;
+  --green-900: #dcfce7;
+
+  --emerald-50: color-mix(in srgb, #10b981 12%, var(--n-0));
+  --emerald-100: color-mix(in srgb, #10b981 18%, var(--n-0));
+  --emerald-200: color-mix(in srgb, #10b981 28%, var(--n-0));
+  --emerald-300: color-mix(in srgb, #10b981 40%, var(--n-0));
+  --emerald-400: #6ee7b7;
+  --emerald-500: #34d399;
+  --emerald-600: #34d399;
+  --emerald-700: #6ee7b7;
+  --emerald-800: #a7f3d0;
+  --emerald-900: #d1fae5;
+
+  --sky-50: color-mix(in srgb, #0ea5e9 12%, var(--n-0));
+  --sky-100: color-mix(in srgb, #0ea5e9 18%, var(--n-0));
+  --sky-200: color-mix(in srgb, #0ea5e9 28%, var(--n-0));
+  --sky-300: color-mix(in srgb, #0ea5e9 40%, var(--n-0));
+  --sky-400: #7dd3fc;
+  --sky-500: #38bdf8;
+  --sky-600: #38bdf8;
+  --sky-700: #7dd3fc;
+  --sky-800: #bae6fd;
+  --sky-900: #e0f2fe;
+
+  --blue-50: color-mix(in srgb, #3b82f6 12%, var(--n-0));
+  --blue-100: color-mix(in srgb, #3b82f6 18%, var(--n-0));
+  --blue-200: color-mix(in srgb, #3b82f6 28%, var(--n-0));
+  --blue-300: color-mix(in srgb, #3b82f6 40%, var(--n-0));
+  --blue-400: #93c5fd;
+  --blue-500: #60a5fa;
+  --blue-600: #60a5fa;
+  --blue-700: #93c5fd;
+  --blue-800: #bfdbfe;
+  --blue-900: #dbeafe;
+
+  --indigo-50: color-mix(in srgb, #6366f1 12%, var(--n-0));
+  --indigo-100: color-mix(in srgb, #6366f1 18%, var(--n-0));
+  --indigo-200: color-mix(in srgb, #6366f1 28%, var(--n-0));
+  --indigo-300: color-mix(in srgb, #6366f1 40%, var(--n-0));
+  --indigo-400: #a5b4fc;
+  --indigo-500: #818cf8;
+  --indigo-600: #818cf8;
+  --indigo-700: #a5b4fc;
+  --indigo-800: #c7d2fe;
+  --indigo-900: #e0e7ff;
+
+  --violet-50: color-mix(in srgb, #8b5cf6 12%, var(--n-0));
+  --violet-100: color-mix(in srgb, #8b5cf6 18%, var(--n-0));
+  --violet-200: color-mix(in srgb, #8b5cf6 28%, var(--n-0));
+  --violet-300: color-mix(in srgb, #8b5cf6 40%, var(--n-0));
+  --violet-400: #c4b5fd;
+  --violet-500: #a78bfa;
+  --violet-600: #a78bfa;
+  --violet-700: #c4b5fd;
+  --violet-800: #ddd6fe;
+  --violet-900: #ede9fe;
+
+  --purple-50: color-mix(in srgb, #a855f7 12%, var(--n-0));
+  --purple-100: color-mix(in srgb, #a855f7 18%, var(--n-0));
+  --purple-200: color-mix(in srgb, #a855f7 28%, var(--n-0));
+  --purple-300: color-mix(in srgb, #a855f7 40%, var(--n-0));
+  --purple-400: #d8b4fe;
+  --purple-500: #c084fc;
+  --purple-600: #c084fc;
+  --purple-700: #d8b4fe;
+  --purple-800: #e9d5ff;
+  --purple-900: #f3e8ff;
+
+  --fuchsia-50: color-mix(in srgb, #d946ef 12%, var(--n-0));
+  --fuchsia-100: color-mix(in srgb, #d946ef 18%, var(--n-0));
+  --fuchsia-200: color-mix(in srgb, #d946ef 28%, var(--n-0));
+  --fuchsia-300: color-mix(in srgb, #d946ef 40%, var(--n-0));
+  --fuchsia-400: #f0abfc;
+  --fuchsia-500: #e879f9;
+  --fuchsia-600: #e879f9;
+  --fuchsia-700: #f0abfc;
+  --fuchsia-800: #f5d0fe;
+  --fuchsia-900: #fae8ff;
+}
+
+/* ===== felix-tokens.css ===== */
+/* GENERATED by scripts/sync-felix-tokens.mjs from felix-web src/app/globals.css.
+   Do not edit by hand: change the hub, then run `npm run sync:tokens`. */
+.felix-office {
+  --fl-bg-page: #ffffff;
+  --fl-bg-1: #ffffff;
+  --fl-bg-2: #f8fafc;
+  --fl-bg-3: #f1f5f9;
+  --fl-fg-1: #0f172a;
+  --fl-fg-2: #334155;
+  --fl-fg-3: #64748b;
+  --fl-stroke-1: #e2e8f0;
+  --fl-stroke-2: #f1f5f9;
+  --fl-accent: #0f766e;
+  --fl-accent-hover: #115e59;
+  --fl-verified: #059669;
+  --fl-attention: #d97706;
+  --fl-error: #dc2626;
+  --fl-fg-on-accent: #ffffff;
+  --fl-prod-windows: #0284c7;
+  --fl-prod-server: #6366f1;
+  --fl-prod-office: #e11d48;
+  --fl-prod-sql: #d97706;
+  --fl-prod-tools: #059669;
+  --fl-prod-software: #7c3aed;
+  --fl-accent-tint: rgba(15, 118, 110, 0.08);
+  --fl-prod-windows-tint: rgba(2, 132, 199, 0.08);
+  --fl-prod-server-tint: rgba(99, 102, 241, 0.08);
+  --fl-prod-office-tint: rgba(225, 29, 72, 0.08);
+  --fl-prod-sql-tint: rgba(217, 119, 6, 0.08);
+  --fl-prod-tools-tint: rgba(5, 150, 105, 0.08);
+  --fl-prod-software-tint: rgba(124, 58, 237, 0.08);
+  --fl-verified-40: rgba(5, 150, 105, 0.3);
+  --fl-attention-40: rgba(217, 119, 6, 0.3);
+  --fl-error-40: rgba(220, 38, 38, 0.3);
+  --fl-error-10: rgba(220, 38, 38, 0.08);
+  --fl-mirror-drive: #059669;
+  --fl-mirror-onedrive: #0284c7;
+  --fl-mirror-direct: #0067b8;
+  --fl-mirror-drive-40: rgba(5, 150, 105, 0.3);
+  --fl-mirror-onedrive-40: rgba(2, 132, 199, 0.3);
+  --fl-mirror-direct-40: rgba(0, 103, 184, 0.3);
+  --fl-mirror-drive-tint: rgba(5, 150, 105, 0.08);
+  --fl-mirror-onedrive-tint: rgba(2, 132, 199, 0.08);
+  --fl-mirror-direct-tint: rgba(0, 103, 184, 0.08);
+}
+
+.dark .felix-office {
+  --fl-bg-page: #0b0d14;
+  --fl-bg-1: #11141d;
+  --fl-bg-2: #171b26;
+  --fl-bg-3: #1e2433;
+  --fl-fg-1: #f8fafc;
+  --fl-fg-2: #cbd5e1;
+  --fl-fg-3: #94a3b8;
+  --fl-stroke-1: #1e2433;
+  --fl-stroke-2: #171b26;
+  --fl-accent: #2dd4bf;
+  --fl-accent-hover: #5eead4;
+  --fl-verified: #34d399;
+  --fl-attention: #fbbf24;
+  --fl-error: #f87171;
+  --fl-fg-on-accent: #042f2e;
+  --fl-prod-windows: #38bdf8;
+  --fl-prod-server: #a5b4fc;
+  --fl-prod-office: #fb7185;
+  --fl-prod-sql: #fbbf24;
+  --fl-prod-tools: #34d399;
+  --fl-prod-software: #a78bfa;
+  --fl-accent-tint: rgba(45, 212, 191, 0.1);
+  --fl-prod-windows-tint: rgba(56, 189, 248, 0.1);
+  --fl-prod-server-tint: rgba(165, 180, 252, 0.1);
+  --fl-prod-office-tint: rgba(251, 113, 133, 0.1);
+  --fl-prod-sql-tint: rgba(251, 191, 36, 0.1);
+  --fl-prod-tools-tint: rgba(52, 211, 153, 0.1);
+  --fl-prod-software-tint: rgba(167, 139, 250, 0.1);
+  --fl-verified-40: rgba(52, 211, 153, 0.3);
+  --fl-attention-40: rgba(251, 191, 36, 0.3);
+  --fl-error-40: rgba(248, 113, 113, 0.3);
+  --fl-error-10: rgba(248, 113, 113, 0.08);
+  --fl-mirror-drive: #34d399;
+  --fl-mirror-onedrive: #38bdf8;
+  --fl-mirror-direct: #60a5fa;
+  --fl-mirror-drive-40: rgba(52, 211, 153, 0.3);
+  --fl-mirror-onedrive-40: rgba(56, 189, 248, 0.3);
+  --fl-mirror-direct-40: rgba(96, 165, 250, 0.3);
+  --fl-mirror-drive-tint: rgba(52, 211, 153, 0.1);
+  --fl-mirror-onedrive-tint: rgba(56, 189, 248, 0.1);
+  --fl-mirror-direct-tint: rgba(96, 165, 250, 0.1);
+}
+
+/* ===== variables.css ===== */
+/* ==========================================================================
+   Felix PDF - Clean SaaS Utility Design
+   Surfaces, text and the brand accent follow the Felix tokens (--fl-*,
+   felix-tokens.css, copied from the hub) so this app and its tab on the hub
+   look like one product. `--accent-red` keeps its old name because ~30 rules
+   use it, but it is the Felix teal now; real danger states use --red-*.
+   ========================================================================== */
+.felix-office {
+  --bg-app: var(--fl-bg-2);
+  --bg-surface: var(--fl-bg-1);
+  --bg-surface-hover: var(--fl-bg-3);
+  --bg-sidebar: var(--fl-bg-1);
+
+  --border-subtle: var(--fl-stroke-1);
+  --border-strong: var(--n-300);
+  --border-focus: var(--fl-accent);
+
+  --text-primary: var(--fl-fg-1);
+  --text-secondary: var(--fl-fg-2);
+  --text-muted: var(--fl-fg-3);
+  --text-light: var(--n-400);
+
+  --accent-red: var(--fl-accent);
+  --accent-red-hover: var(--fl-accent-hover);
+  --accent-tint: var(--fl-accent-tint);
+  /* Text on an accent fill: white on teal, near-black on the bright dark-mode teal. */
+  --accent-on: var(--fl-fg-on-accent);
+  --accent-blue: #2563eb;
+  --accent-green: #16a34a;
+
+  --font-sans: inherit;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  /* The desktop title bar (DesktopTitleBar): the cream and deep green of the
+     Felix cat logo. Its height is 0 until the bar mounts and sets
+     .has-titlebar, so the web layout is untouched. */
+  --titlebar-height: 0px;
+  --titlebar-bg: #f7f1e1;
+  --titlebar-fg: #244a39;
+  --titlebar-border: #e8dcbc;
+  --titlebar-hover: rgba(36, 74, 57, 0.08);
+
+  /* The Felix cat logo's colours, for brand surfaces (the /download page). */
+  --brand-green: #244a39;
+  --brand-on-green: #f7f1e1;
+  --brand-cream: #fbf7ec;
+  --brand-cream-strong: #f3e8c9;
+  --brand-cream-border: #e8dcbc;
+
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-sm: 0 2px 5px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 8px 20px rgba(15, 23, 42, 0.14);
+  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+  --shadow-card-hover: 0 8px 20px rgba(0, 0, 0, 0.07), 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+
+.dark .felix-office {
+  --titlebar-bg: #1c1a14;
+  --titlebar-fg: #e9d9a8;
+  --titlebar-border: #2e2a1e;
+  --titlebar-hover: rgba(233, 217, 168, 0.1);
+  --brand-green: #3f7a5c;
+  --brand-on-green: #fbf7ec;
+  --brand-cream: #1c1a14;
+  --brand-cream-strong: #2a261b;
+  --brand-cream-border: #3a3426;
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-card-hover: 0 8px 20px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== office.css ===== */
+/* ==========================================================================
+   Felix Office: tokens shared with Felix PDF, then this app's own styles.
+   ========================================================================== */
+
+.felix-office {
+  font-family: var(--font-sans);
+  background: var(--bg-app);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* The paper stays white in dark mode, as in Word and Google Docs. */
+  --office-paper: #ffffff;
+  --office-paper-ink: #1f2328;
+  --office-desk: var(--n-100);
+}
+
+.dark .felix-office {
+  --office-desk: #0f1115;
+}
+
+
+.office-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ---------- Header ---------- */
+.office-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.45rem 1rem;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.office-header-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.office-header-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.office-header-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.office-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.office-header-link,
+.office-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.office-header-btn {
+  background: var(--accent-red);
+  border-color: var(--accent-red);
+  color: var(--accent-on);
+}
+
+.office-header-link:hover {
+  background: var(--bg-surface-hover);
+}
+
+.office-header-btn:hover:not(:disabled) {
+  background: var(--accent-red-hover);
+}
+
+.office-header-btn:disabled,
+.office-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.office-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.office-icon-btn:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.office-lang-switch {
+  display: inline-flex;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.office-lang-switch button {
+  padding: 0.3rem 0.55rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.office-lang-switch button.is-active {
+  background: var(--accent-tint);
+  color: var(--text-primary);
+}
+
+.felix-office :where(button, a, input, select):focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+/* ---------- Notices ---------- */
+.office-notice {
+  margin: 4rem auto;
+  max-width: 480px;
+  padding: 0 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+}
+
+.office-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--red-50);
+  color: var(--red-700);
+  border-bottom: 1px solid var(--red-200);
+  font-size: 0.85rem;
+}
+
+.dark .felix-office .office-banner {
+  background: color-mix(in srgb, var(--red-500) 18%, var(--bg-surface));
+  color: var(--red-100);
+  border-color: color-mix(in srgb, var(--red-500) 40%, transparent);
+}
+
+/* ---------- Home ---------- */
+.office-home.is-dragging {
+  outline: 3px dashed var(--accent-red);
+  outline-offset: -12px;
+}
+
+.office-home-main {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+  display: grid;
+  gap: 2.25rem;
+}
+
+.office-hero h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0 0 0.5rem;
+}
+
+.office-hero p {
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 60ch;
+}
+
+.office-section-title {
+  font-size: 1.05rem;
+  margin: 0 0 0.35rem;
+}
+
+.office-section-note {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  margin: 0 0 0.9rem;
+}
+
+.office-import-note {
+  margin-top: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.office-start-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.office-start-card {
+  display: grid;
+  gap: 0.3rem;
+  justify-items: start;
+  text-align: left;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.office-start-card:hover {
+  border-color: var(--accent-red);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.office-start-card small {
+  color: var(--text-secondary);
+}
+
+.office-start-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--accent-tint);
+  color: var(--accent-red);
+  margin-bottom: 0.35rem;
+}
+
+.office-recent-list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.office-recent-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-right: 0.5rem;
+}
+
+.office-recent-list li + li {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.office-recent-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.office-recent-open:hover {
+  background: var(--bg-surface-hover);
+}
+
+.office-recent-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.office-recent-when {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .office-header-link span,
+  .office-header-btn span {
+    display: none;
+  }
+  .office-recent-when {
+    display: none;
+  }
+}
+
+/* Why a file was not opened here: it belongs to another of the apps. Over whatever page is on show. */
+.office-toast {
+  position: fixed;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: min(36rem, calc(100vw - 2rem));
+  padding: 0.6rem 0.8rem 0.6rem 1rem;
+  border: 1px solid var(--border-strong);
+  border-left: 4px solid var(--accent-red);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+}
+
+/* ===== writer.css ===== */
+/* ==========================================================================
+   Felix Writer: ribbon, page view, panels.
+   ========================================================================== */
+
+.writer-page {
+  position: relative;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.writer-title-input {
+  flex: 0 1 360px;
+  min-width: 120px;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.writer-title-input:hover {
+  border-color: var(--border-subtle);
+}
+
+.writer-title-input:focus {
+  border-color: var(--border-focus);
+  background: var(--bg-surface);
+}
+
+.writer-save-state {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.writer-save-state.is-error {
+  color: var(--red-600);
+}
+
+/* ---------- Ribbon ---------- */
+.wr-ribbon {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.wr-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0 0.75rem;
+}
+
+.wr-tab {
+  padding: 0.5rem 0.85rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wr-tab:hover {
+  color: var(--text-primary);
+}
+
+.wr-tab.is-active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent-red);
+}
+
+.wr-tab-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.25rem 0.35rem 0.25rem 0;
+  padding: 0.25rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border-bottom: 0;
+  background: var(--text-primary);
+  color: var(--bg-surface);
+}
+
+.wr-tab-file:hover {
+  color: var(--bg-surface);
+  opacity: 0.88;
+}
+
+.wr-file-root {
+  position: relative;
+}
+
+.wr-file-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 60;
+  min-width: 260px;
+  padding: 0.35rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.wr-file-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wr-file-item:hover {
+  background: var(--bg-surface-hover);
+}
+
+.wr-file-item small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  margin-top: 0.1rem;
+  max-width: 28ch;
+}
+
+.wr-file-item svg {
+  margin-top: 0.1rem;
+  color: var(--text-secondary);
+}
+
+.wr-file-sep {
+  height: 1px;
+  margin: 0.3rem 0;
+  background: var(--border-subtle);
+}
+
+.wr-tab-panel {
+  background: var(--bg-app);
+  border-top: 1px solid var(--border-subtle);
+  padding: 0.4rem 0.75rem;
+  overflow-x: auto;
+}
+
+.wr-tab-body {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-height: 62px;
+}
+
+.wr-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 0.65rem;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.wr-group:first-child {
+  padding-left: 0;
+}
+
+.wr-group:last-child {
+  border-right: 0;
+}
+
+.wr-group-body {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.1rem;
+  flex: 1;
+}
+
+.wr-group-label {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  padding-top: 0.1rem;
+}
+
+.wr-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 0.3rem;
+  background: var(--border-subtle);
+}
+
+.wr-btn {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 0.3rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.wr-btn:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.wr-btn.is-active {
+  background: var(--accent-tint);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+}
+
+.wr-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.wr-color-btn {
+  display: inline-flex;
+  border-bottom: 3px solid currentColor;
+  line-height: 1;
+}
+
+.wr-flip-v {
+  transform: scaleY(-1);
+}
+
+.wr-flip-h {
+  transform: scaleX(-1);
+}
+
+.wr-rot {
+  transform: rotate(90deg);
+}
+
+.wr-select,
+.wr-field input[type='number'],
+.wr-field input[type='text'] {
+  height: 30px;
+  padding: 0 0.4rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.wr-field {
+  display: grid;
+  gap: 0.1rem;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-right: 0.35rem;
+}
+
+.wr-field input[type='number'] {
+  width: 68px;
+}
+
+.wr-field-wide input {
+  width: 190px;
+}
+
+.wr-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.wr-zoom-value {
+  min-width: 52px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wr-zoom-value:hover {
+  background: var(--bg-surface-hover);
+}
+
+.wr-text-btn {
+  height: 30px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wr-text-btn:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+}
+
+.wr-text-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.wr-text-btn.is-primary {
+  background: var(--accent-red);
+  border-color: var(--accent-red);
+  color: var(--accent-on);
+}
+
+/* ---------- Popovers ---------- */
+.wr-popover {
+  position: relative;
+  display: inline-flex;
+}
+
+.wr-popover-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 70;
+  padding: 0.5rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.wr-popover-panel.align-start {
+  left: 0;
+}
+
+.wr-popover-panel.align-end {
+  right: 0;
+}
+
+.wr-swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 22px);
+  gap: 4px;
+}
+
+.wr-swatch {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.wr-swatch.is-active {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+.wr-swatch-none {
+  grid-column: 1 / -1;
+  margin-top: 0.25rem;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.wr-menu {
+  display: grid;
+  min-width: 90px;
+}
+
+.wr-menu-item {
+  padding: 0.35rem 0.75rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.wr-menu-item:hover {
+  background: var(--bg-surface-hover);
+}
+
+.wr-menu-item.is-active {
+  background: var(--accent-tint);
+  font-weight: 700;
+}
+
+.wr-table-grid-cells {
+  display: grid;
+  grid-template-columns: repeat(8, 20px);
+  gap: 3px;
+}
+
+.wr-table-grid-cells button {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+
+.wr-table-grid-cells button.is-on {
+  background: var(--accent-tint);
+  border-color: var(--accent-red);
+}
+
+.wr-table-grid-label {
+  margin-top: 0.4rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.wr-chars {
+  display: grid;
+  grid-template-columns: repeat(10, 30px);
+  gap: 2px;
+}
+
+.wr-chars button {
+  height: 30px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.wr-chars button:hover {
+  background: var(--bg-surface-hover);
+}
+
+/* ---------- Find & replace, statistics ---------- */
+.wr-find {
+  position: absolute;
+  top: 7.5rem;
+  right: 1.5rem;
+  z-index: 55;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.wr-find-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.wr-find-input {
+  width: 200px;
+  height: 30px;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.wr-find-count {
+  min-width: 3.5em;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.wr-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.wr-modal {
+  min-width: 280px;
+  padding: 1.25rem 1.5rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  display: grid;
+  gap: 0.9rem;
+}
+
+.wr-modal h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.wr-modal dl {
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.wr-modal dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  font-size: 0.88rem;
+}
+
+.wr-modal dt {
+  color: var(--text-secondary);
+}
+
+.wr-modal dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+/* ---------- The page view ---------- */
+.writer-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--office-desk);
+  padding: 1.5rem 1rem 3rem;
+}
+
+.writer-canvas {
+  display: flex;
+  justify-content: center;
+  min-width: min-content;
+}
+
+.writer-zoom-frame {
+  flex-shrink: 0;
+}
+
+.writer-sheet {
+  position: relative;
+  box-sizing: border-box;
+  background: var(--office-paper);
+  color: var(--office-paper-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform-origin: top left;
+}
+
+.writer-sheet .ProseMirror {
+  outline: none;
+  min-height: 1em;
+}
+
+.writer-sheet .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: #9aa0a6;
+}
+
+.writer-page-header,
+.writer-page-footer {
+  color: #5f6368;
+  font-family: Arial, 'Noto Sans', sans-serif;
+  font-size: 9pt;
+  text-align: center;
+  white-space: pre-wrap;
+  overflow: hidden;
+  user-select: none;
+}
+
+.writer-first-header {
+  position: absolute;
+  top: calc(var(--page-margin-top) / 2 - 0.6em);
+  left: 0;
+  right: 0;
+}
+
+.writer-last-footer {
+  position: absolute;
+  bottom: calc(var(--page-margin-bottom) / 2 - 0.6em);
+  left: 0;
+  right: 0;
+}
+
+/* The space the Pagination extension draws between two sheets. */
+.writer-page-gap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  pointer-events: none;
+  user-select: none;
+}
+
+.writer-page-gap .writer-page-footer {
+  margin-top: var(--page-filler);
+  height: var(--page-margin-bottom);
+  background: var(--office-paper);
+  display: grid;
+  place-items: center;
+}
+
+.writer-page-gap .writer-page-header {
+  height: var(--page-margin-top);
+  background: var(--office-paper);
+  display: grid;
+  place-items: center;
+}
+
+.writer-page-gap-band {
+  height: var(--page-gap);
+  background: var(--office-desk);
+  box-shadow: inset 0 4px 6px -4px rgba(0, 0, 0, 0.3), inset 0 -4px 6px -4px rgba(0, 0, 0, 0.3);
+}
+
+.writer-page-break {
+  position: relative;
+  height: 0;
+  border-top: 1px dashed #b0b4ba;
+  margin: 4pt 0;
+}
+
+.writer-page-break::after {
+  content: '';
+}
+
+.writer-sheet .writer-toc {
+  user-select: none;
+  padding: 0.4em 0.6em;
+  border-radius: 4px;
+  background: #f6f8fa;
+}
+
+.writer-sheet .writer-toc button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #1155cc;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.writer-sheet .writer-toc .toc-empty {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.writer-find-match {
+  background: #fff59d;
+  border-radius: 2px;
+}
+
+.writer-find-current {
+  background: #ffb74d;
+  border-radius: 2px;
+}
+
+.writer-sheet .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(37, 99, 235, 0.18);
+  pointer-events: none;
+}
+
+.writer-sheet td,
+.writer-sheet th {
+  position: relative;
+}
+
+.writer-sheet .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #2563eb;
+  pointer-events: none;
+}
+
+.writer-sheet .tableWrapper {
+  /* Visible, not auto: a page gap drawn between two rows reaches past the table to the sheet's edges. */
+  overflow: visible;
+}
+
+.writer-sheet .writer-content .writer-page-gap-row,
+.writer-sheet .writer-content .writer-page-gap-row > td {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.writer-sheet.resize-cursor {
+  cursor: col-resize;
+}
+
+.writer-sheet img.ProseMirror-selectednode {
+  outline: 2px solid #2563eb;
+}
+
+.writer-status {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.3rem 1rem;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+@media print {
+  .office-header,
+  .wr-ribbon,
+  .writer-status,
+  .wr-find {
+    display: none !important;
+  }
+}
+
+/* While Pagination measures, the gaps it drew last time are out of the layout. */
+.writer-sheet .writer-measuring .writer-page-gap,
+.writer-sheet .ProseMirror.writer-measuring .writer-page-gap-row,
+.writer-sheet .ProseMirror.writer-measuring .writer-repeat-header,
+.writer-sheet .ProseMirror.writer-measuring .writer-page-gap {
+  display: none;
+}
+
+.wr-rot-quarter {
+  transform: rotate(90deg) scaleX(-1);
+}
+
+/* ===== calc.css ===== */
+/* ==========================================================================
+   Felix Calc: formula bar, grid, sheet tabs. The ribbon reuses writer.css.
+   ========================================================================== */
+
+.calc-page {
+  --calc-grid: var(--border-subtle);
+  --calc-ink: var(--text-primary);
+  --calc-head: var(--bg-surface-hover);
+}
+
+.calc-formula-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.calc-name-box,
+.calc-formula-input {
+  height: 28px;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.calc-name-box {
+  width: 120px;
+  text-align: center;
+}
+
+.calc-formula-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-sans);
+}
+
+.calc-fx {
+  color: var(--text-muted);
+  font-style: italic;
+  font-weight: 700;
+  padding: 0 0.2rem;
+}
+
+/* ---------- Grid ---------- */
+.calc-grid {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+  background: var(--bg-surface);
+  outline: none;
+  user-select: none;
+}
+
+.calc-grid.is-painting {
+  cursor: copy;
+}
+
+.calc-canvas {
+  position: relative;
+}
+
+.calc-head-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--calc-head);
+  border-bottom: 1px solid var(--border-strong);
+  box-sizing: border-box;
+}
+
+.calc-corner {
+  position: sticky;
+  left: 0;
+  z-index: 6;
+  background: var(--calc-head);
+  border-right: 1px solid var(--border-strong);
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.calc-col-head,
+.calc-row-head {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: var(--calc-head);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.calc-col-head {
+  top: 0;
+  border-right: 1px solid var(--border-strong);
+}
+
+.calc-row-head {
+  left: 0;
+  right: 0;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.calc-col-head.is-selected,
+.calc-row-head.is-selected {
+  background: var(--accent-tint);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.calc-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 7px;
+  height: 100%;
+  z-index: 2;
+  cursor: col-resize;
+}
+
+.calc-resize-handle.is-row {
+  top: auto;
+  right: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 7px;
+  cursor: row-resize;
+}
+
+.calc-body {
+  position: relative;
+}
+
+.calc-row-heads {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  background: var(--calc-head);
+  border-right: 1px solid var(--border-strong);
+  box-sizing: border-box;
+}
+
+.calc-layer {
+  position: absolute;
+  left: 0;
+  width: 100%;
+}
+
+.calc-gridline-v,
+.calc-gridline-h {
+  position: absolute;
+  background: var(--calc-grid);
+  pointer-events: none;
+}
+
+.calc-gridline-v {
+  width: 1px;
+}
+
+.calc-gridline-h {
+  height: 1px;
+}
+
+.calc-cell-box {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.calc-cell-text {
+  position: absolute;
+  display: flex;
+  box-sizing: border-box;
+  padding: 0 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  /* Taller than the font's own height, or a descender is clipped by the cell. */
+  line-height: 1.4;
+  color: var(--text-primary);
+  pointer-events: none;
+}
+
+.calc-cell-text > span {
+  min-width: 0;
+}
+
+.calc-cell-text.is-wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.calc-cell-text.is-error {
+  color: var(--red-600);
+}
+
+.calc-selection {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  border: 2px solid var(--accent-red);
+  background: color-mix(in srgb, var(--accent-red) 10%, transparent);
+  pointer-events: none;
+}
+
+.calc-fill-handle {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 8px;
+  height: 8px;
+  background: var(--accent-red);
+  border: 1px solid var(--bg-surface);
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.calc-copied {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  border: 2px dashed var(--accent-red);
+  pointer-events: none;
+}
+
+.calc-fill-preview {
+  position: absolute;
+  z-index: 2;
+  box-sizing: border-box;
+  border: 1px dashed var(--text-secondary);
+  background: color-mix(in srgb, var(--accent-red) 6%, transparent);
+  pointer-events: none;
+}
+
+.calc-edit-input {
+  position: absolute;
+  z-index: 6;
+  box-sizing: border-box;
+  padding: 0 4px;
+  border: 2px solid var(--accent-red);
+  color: var(--text-primary);
+  outline: none;
+  user-select: text;
+}
+
+/* ---------- Sheet tabs, status, ribbon bits ---------- */
+.calc-sheet-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem 0;
+  background: var(--bg-app);
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.calc-sheet-tab-list {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.calc-sheet-tab {
+  display: flex;
+  align-items: center;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.calc-sheet-tab > button[role='tab'] {
+  padding: 0.4rem 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.calc-sheet-tab.is-active {
+  background: var(--bg-surface);
+  border-bottom-color: var(--accent-red);
+}
+
+.calc-sheet-tab.is-active > button[role='tab'] {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.calc-tab-menu {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 0 0.35rem;
+  cursor: pointer;
+}
+
+.calc-sheet-tabs .wr-popover-panel {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.calc-status-zoom {
+  margin-left: auto;
+}
+
+.calc-btn-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.calc-style-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 110px);
+  gap: 4px;
+}
+
+.calc-style-chip {
+  padding: 0.35rem 0.4rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.calc-style-chip:hover {
+  border-color: var(--accent-red);
+}
+
+.office-start-icon.is-calc {
+  background: color-mix(in srgb, var(--green-500, #16a34a) 14%, transparent);
+  color: var(--green-600, #16a34a);
+}
+
+.calc-ribbon .wr-tab-panel {
+  box-sizing: border-box;
+  height: 108px;
+  scrollbar-width: thin;
+}
+
+.calc-ribbon .wr-tab-body {
+  flex-wrap: nowrap;
+  min-height: 84px;
+}
+
+.calc-ribbon .wr-group {
+  flex-shrink: 0;
+  padding: 0 0.5rem;
+}
+
+.calc-ribbon .wr-group:first-child {
+  padding-left: 0;
+}
+
+.calc-ribbon .wr-group-body:has(.wr-btn.has-text),
+.calc-ribbon .wr-group-body:has(.wr-option-grid) {
+  align-items: flex-start;
+}
+
+.calc-ribbon .wr-group-body {
+  flex-wrap: nowrap;
+}
+
+.calc-ribbon .wr-text-btn {
+  white-space: nowrap;
+}
+
+.calc-data-bar {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 2px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.calc-cf-menu {
+  min-width: 250px;
+}
+
+.calc-menu-heading {
+  padding: 0.35rem 0.5rem 0.15rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.calc-cf-looks {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  padding: 0.15rem 0.35rem 0.35rem;
+}
+
+.calc-style-chip.is-active {
+  outline: 2px solid var(--accent-red);
+}
+
+.calc-swatch-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.calc-menu-sep {
+  height: 1px;
+  margin: 0.3rem 0;
+  background: var(--border-subtle);
+}
+
+.calc-chart {
+  position: absolute;
+  z-index: 4;
+  box-sizing: border-box;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
+  cursor: move;
+}
+
+.calc-chart.is-selected {
+  border-color: var(--accent-red);
+  outline: 2px solid var(--accent-red);
+}
+
+.calc-chart-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.calc-chart-resize {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: var(--accent-red);
+  border: 2px solid var(--bg-surface);
+  border-radius: 2px;
+  cursor: nwse-resize;
+}
+
+/* ----- Frozen panes: zero-size sticky boxes whose clipped bands the scroll cannot move. */
+
+.calc-frozen {
+  position: sticky;
+  width: 0;
+  height: 0;
+  z-index: 2;
+}
+
+.calc-frozen.is-corner,
+.calc-frozen.is-heads {
+  z-index: 3;
+}
+
+.calc-frozen.is-rowheads {
+  z-index: 5;
+}
+
+.calc-frozen-band {
+  position: absolute;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--bg-surface);
+}
+
+.calc-frozen-band.is-heads,
+.calc-frozen-band.is-rowheads {
+  background: var(--calc-head);
+}
+
+.calc-frozen-band.is-rowheads {
+  border-right: 1px solid var(--border-strong);
+}
+
+.calc-frozen-band.is-top {
+  border-bottom: 2px solid var(--border-strong);
+}
+
+.calc-frozen-band.is-left {
+  border-right: 2px solid var(--border-strong);
+}
+
+.calc-frozen-band.is-corner {
+  border-right: 2px solid var(--border-strong);
+  border-bottom: 2px solid var(--border-strong);
+}
+
+.calc-frozen-content {
+  position: absolute;
+}
+
+.calc-image {
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.calc-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.calc-image.is-selected {
+  outline: 2px solid var(--accent-blue);
+}
+
+/* ----- Filter */
+
+.calc-filter-btn {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.calc-filter-btn:hover {
+  background: var(--bg-surface-hover);
+}
+
+.calc-filter-btn.is-active {
+  /* Opaque, so it also shows on a header cell filled with the accent colour. */
+  background: var(--bg-surface);
+  border-color: var(--accent-red);
+  box-shadow: 0 0 0 1px var(--accent-red);
+  color: var(--accent-red);
+  font-weight: 700;
+}
+
+.calc-filter-menu {
+  position: fixed;
+  z-index: 60;
+  width: 248px;
+  max-height: min(70vh, 460px);
+  display: flex;
+  flex-direction: column;
+  padding: 0.35rem;
+  gap: 0.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+  font-size: 0.85rem;
+}
+
+.calc-filter-item {
+  text-align: left;
+  padding: 0.3rem 0.5rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.calc-filter-item:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+}
+
+.calc-filter-item:disabled {
+  color: var(--text-secondary);
+  opacity: 0.55;
+  cursor: default;
+}
+
+.calc-filter-search {
+  height: 28px;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.calc-filter-list {
+  flex: 1;
+  min-height: 80px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem;
+}
+
+.calc-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.calc-filter-row:hover {
+  background: var(--bg-surface-hover);
+}
+
+.calc-filter-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calc-filter-count {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.calc-filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.calc-filter-condition {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* ----- Dialogs (summary) */
+
+.calc-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.4);
+}
+
+.calc-dialog {
+  width: min(440px, calc(100vw - 2rem));
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.35);
+}
+
+.calc-dialog-title {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.calc-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem 1rem;
+}
+
+.calc-dialog-field {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+}
+
+.calc-dialog-field select {
+  height: 30px;
+  padding: 0 0.4rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.calc-dialog-text,
+.calc-dialog-hint {
+  margin: 0;
+  padding: 0.9rem 1rem 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.calc-dialog-body .calc-dialog-hint {
+  padding: 0;
+}
+
+.calc-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.calc-dialog-field input {
+  height: 30px;
+  min-width: 0;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.calc-dialog-problem {
+  margin: 0;
+  color: var(--accent-red);
+  font-size: 0.85rem;
+}
+
+/* The list under the arrow of a cell with a list rule. */
+.calc-list-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 160px;
+  max-width: 320px;
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+}
+
+.calc-list-item {
+  padding: 0.35rem 0.6rem;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calc-list-item:hover {
+  background: var(--bg-surface-hover);
+}
+
+.calc-list-item.is-current {
+  font-weight: 700;
+}
+
+/* The formula behind a cell a block spills over, shown greyed in the formula bar. */
+.calc-formula-input::placeholder {
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+
+
+/* ---------- Ribbon tabs with text under the icon ---------- */
+.wr-btn.has-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 56px;
+  height: 56px;
+  padding: 0.2rem 0.35rem;
+}
+
+.wr-btn-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  max-width: 84px;
+  font-size: 0.7rem;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.wr-option-grid {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  gap: 0.2rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.wr-option-head {
+  font-size: 0.7rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.wr-option-grid .wr-check {
+  justify-content: center;
+}
+
+.wr-option-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* ---------- Insert-function dialog, statistics, comments ---------- */
+.calc-fn-dialog {
+  width: min(520px, calc(100vw - 2rem));
+}
+
+.calc-fn-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.2rem;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.calc-fn-list button {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  width: 100%;
+  padding: 0.3rem 0.55rem;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calc-fn-list button:hover {
+  background: var(--bg-surface-hover);
+}
+
+.calc-fn-list button.is-picked {
+  background: var(--accent-tint);
+  font-weight: 700;
+}
+
+.calc-fn-list small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.calc-fn-empty {
+  padding: 0.6rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.calc-stats {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.45rem 1.5rem;
+  margin: 0;
+  padding: 0.9rem 1rem;
+  font-size: 0.88rem;
+}
+
+.calc-stats dt {
+  color: var(--text-secondary);
+}
+
+.calc-stats dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.calc-comments-dialog {
+  width: min(520px, calc(100vw - 2rem));
+}
+
+.calc-comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.calc-comment-list button {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr;
+  gap: 0.1rem 0.6rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calc-comment-list button:hover {
+  background: var(--bg-surface-hover);
+}
+
+.calc-comment-list small {
+  grid-column: 2;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.calc-comment-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.calc-comment-mark {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 7px 7px 0;
+  border-color: transparent var(--accent-red) transparent transparent;
+  pointer-events: auto;
+}
+
+.calc-canvas.no-headings .calc-head-bar,
+.calc-canvas.no-headings .calc-row-heads,
+.calc-canvas.no-headings .calc-frozen.is-rowheads {
+  display: none;
+}
+
+/* ---------- Backstage (File) ---------- */
+.calc-backstage {
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  display: flex;
+  background: var(--bg-app);
+  color: var(--text-primary);
+}
+
+.calc-backstage-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  width: 220px;
+  flex-shrink: 0;
+  padding: 0.6rem 0.5rem;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.calc-backstage-back {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 0.4rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.calc-backstage-back:hover {
+  background: var(--bg-surface-hover);
+}
+
+.calc-backstage-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calc-backstage-item:hover {
+  background: var(--bg-surface-hover);
+}
+
+.calc-backstage-item.is-active {
+  border-left-color: var(--text-primary);
+  background: var(--bg-surface-hover);
+  font-weight: 700;
+}
+
+.calc-backstage-item.is-close {
+  margin-top: auto;
+}
+
+.calc-backstage-panel {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 1.6rem 2.4rem;
+}
+
+.calc-backstage-panel h2 {
+  margin: 0 0 1.2rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.calc-templates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.6rem;
+}
+
+.calc-template {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 150px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.calc-template-thumb {
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 110px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+}
+
+.calc-template:hover .calc-template-thumb {
+  border-color: var(--text-primary);
+}
+
+.calc-recent h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.calc-recent ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.calc-recent li button {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.4rem;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calc-recent li button:hover {
+  background: var(--bg-surface-hover);
+}
+
+.calc-recent-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calc-recent small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.calc-info {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 0.7rem 1rem;
+  max-width: 560px;
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.calc-info dt {
+  color: var(--text-secondary);
+}
+
+.calc-info dd {
+  margin: 0;
+}
+
+.calc-save {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.calc-save .calc-dialog-text {
+  padding: 0;
+}
+
+.calc-save-option {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: min(420px, 100%);
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calc-save-option:hover {
+  border-color: var(--text-primary);
+}
+
+.calc-print {
+  display: flex;
+  gap: 1.6rem;
+  align-items: flex-start;
+}
+
+.calc-print-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.calc-print-settings .calc-dialog-field {
+  grid-template-columns: 7rem 1fr;
+}
+
+.calc-print-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 44px;
+}
+
+.calc-print-sheet {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.calc-print-preview {
+  flex: 1;
+  min-width: 0;
+  max-height: calc(100vh - 7rem);
+  overflow: auto;
+  padding: 1rem;
+  background: var(--office-desk);
+}
+
+.calc-print-preview iframe {
+  display: block;
+  border: 0;
+  background: #fff;
+  box-shadow: var(--shadow-md);
+}

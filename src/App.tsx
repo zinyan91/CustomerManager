@@ -39,6 +39,9 @@ const ConstructionEstimateView = lazy(() => import('./components/views/Construct
 const ReportCenterView = lazy(() => import('./components/views/ReportCenterView').then(m => ({ default: m.ReportCenterView })));
 const ToiProjectionView = lazy(() => import('./components/views/ToiProjectionView').then(m => ({ default: m.ToiProjectionView })));
 const DedicatedWorkspaceLayout = lazy(() => import('./components/hub/DedicatedWorkspaceLayout').then(m => ({ default: m.DedicatedWorkspaceLayout })));
+const OfficeLayout = lazy(() => import('./office/OfficeLayout').then(m => ({ default: m.OfficeLayout })));
+const OfficeIndex = lazy(() => import('./office/OfficeLayout').then(m => ({ default: m.OfficeIndex })));
+const OfficeCalcRoute = lazy(() => import('./office/OfficeCalcRoute').then(m => ({ default: m.OfficeCalcRoute })));
 const StorageManagementView = lazy(() => import('./components/views/StorageManagementView').then(m => ({ default: m.StorageManagementView })));
 
 export function App() {
@@ -64,6 +67,13 @@ export function App() {
         <Route path={ROUTE_OF.storage} element={<Suspense fallback={<ViewSkeleton />}><StorageManagementView /></Suspense>} />
         <Route path="/hub/dispatches" element={<Navigate to={ROUTE_OF.dispatches} replace />} />
         <Route path="/hub/storage" element={<Navigate to={ROUTE_OF.storage} replace />} />
+      </Route>
+
+      {/* Báo cáo (bảng tính kiểu Excel): trang trống toàn màn hình, không sidebar */}
+      <Route path={ROUTE_OF.office} element={<Suspense fallback={<ViewSkeleton />}><OfficeLayout /></Suspense>}>
+        <Route index element={<Suspense fallback={<ViewSkeleton />}><OfficeIndex /></Suspense>} />
+        <Route path="calc" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
+        <Route path="calc/:draftId" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
       </Route>
 
       {/* Khu quản trị: khung và sidebar riêng, mở ở tab mới */}

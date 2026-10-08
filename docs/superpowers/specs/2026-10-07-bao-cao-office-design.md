@@ -1,6 +1,6 @@
 # Tab Báo cáo: bảng tính và soạn văn bản như Excel/Word, mở toàn màn hình
 
-Ngày: 07/10/2026. Trạng thái: chờ duyệt.
+Ngày: 07/10/2026. Trạng thái: đã duyệt ("làm đi" 08/10/2026); giai đoạn 1 (khung và Bảng tính) đã làm, giai đoạn 2 và 3 chưa. Giai đoạn 3 viết lại theo Google Drive vì kho lưu trữ không còn Hugging Face.
 
 ## Mục tiêu
 
@@ -13,7 +13,7 @@ Nguồn tham khảo là `D:\Felix Platform\felix-office` (Felix Calc và Felix W
 ## Đã chốt với người dùng
 
 - Sao chép mã Calc và Writer vào CustomerManager (không nhúng iframe, không viết bản gọn mới).
-- Tài liệu: bản nháp tự lưu trên máy (IndexedDB) và tải về .xlsx/.docx; **lưu lên Kho lưu trữ** khi cần chia sẻ. Tệp đi thẳng từ trình duyệt tới Hugging Face, không qua Vercel hay Supabase.
+- Tài liệu: bản nháp tự lưu trên máy (IndexedDB) và tải về .xlsx/.docx; **lưu lên Kho lưu trữ** khi cần chia sẻ. Tệp đi thẳng từ trình duyệt tới Google Drive, không qua Vercel hay Supabase.
 
 ## Quy mô của bản gốc (đo trong `felix-office`)
 
@@ -50,7 +50,7 @@ KHÔNG LÀM:
 
 **Khung toàn màn hình.** `OfficeLayout` đặt ngoài `AppLayout` (như `AdminLayout`): chờ đăng nhập, không sidebar, không Header của ứng dụng; mỗi màn Calc/Writer tự có thanh tiêu đề của nó với nút "Về ứng dụng".
 
-**Module.** Tab Báo cáo thuộc module `tools` hiện có (chỉ ẩn ở giao diện, vì tệp nháp nằm trên máy, không có bảng dữ liệu để chặn). Không cần migration. Muốn tắt riêng tab này cho từng tài khoản thì thêm module `office` bằng migration 67 (đổi CHECK của `UserModules`); chỉ làm khi bạn yêu cầu. Việc lưu lên Kho vẫn đi theo quyền Kho lưu trữ hiện có (`storage.upload`, token Hugging Face).
+**Module.** Tab Báo cáo thuộc module `tools` hiện có (chỉ ẩn ở giao diện, vì tệp nháp nằm trên máy, không có bảng dữ liệu để chặn). Không cần migration. Muốn tắt riêng tab này cho từng tài khoản thì thêm module `office` bằng migration 67 (đổi CHECK của `UserModules`); chỉ làm khi bạn yêu cầu. Việc lưu lên Kho vẫn đi theo quyền Kho lưu trữ hiện có (`storage.upload`, token Drive do Edge Function `drive-token` cấp).
 
 **CSS.** Bản gốc dùng CSS toàn cục (`:root` định nghĩa `--n-*`, `--font-sans`, `base.css` đặt lại kiểu) và sẽ đè lên Tailwind của CustomerManager. Cách xử lý: bọc mọi thứ trong một lớp gốc `.felix-office`, chuyển các khai báo `:root` thành `.felix-office`, bỏ `base.css` toàn cục, và chỉ nạp CSS khi tải khối Office (nhập CSS trong chính tệp màn hình tải lười). Chế độ tối dùng `:root[data-theme='dark']` của CustomerManager nên cần nối với cơ chế giao diện sáng/tối đang có, không giữ bộ chuyển riêng của bản gốc.
 
@@ -60,7 +60,7 @@ KHÔNG LÀM:
 
 **Nháp.** Giữ nguyên `idbStore` và kho nháp (`felix-office-calc`, `felix-office-writer`): nháp ở trong trình duyệt của từng người, không rời máy trừ khi bấm lưu lên Kho. Nháp gắn với trình duyệt chứ không gắn với tài khoản; đổi tài khoản trên cùng trình duyệt sẽ thấy cùng danh sách nháp. Cần nói rõ điều này khi bàn giao.
 
-**Lưu lên Kho lưu trữ (giai đoạn 3).** Nút "Lưu vào Kho" mở hộp chọn kho và thư mục (kho chung, kho cá nhân theo quyền hiện có), xuất tệp .xlsx/.docx rồi gửi bằng `uploadItemsToHf` đã có. "Mở từ Kho" chọn tệp .xlsx/.docx trong kho, tải bằng `fetchHfFileBlob` rồi mở trong trình soạn. Dùng lại `useArchive` và danh sách kho hiện có, không thêm bảng dữ liệu.
+**Lưu lên Kho lưu trữ (giai đoạn 3).** Nút "Lưu vào Kho" mở hộp chọn kho và thư mục (kho chung, kho cá nhân theo quyền hiện có), xuất tệp .xlsx/.docx rồi gửi bằng `uploadItemsToDrive` đã có. "Mở từ Kho" chọn tệp .xlsx/.docx trong kho, tải bằng mã tệp qua `fetchDriveDocBlob` rồi mở trong trình soạn. Dùng lại `useArchive` và danh sách kho hiện có, không thêm bảng dữ liệu.
 
 ## Các giai đoạn (mỗi giai đoạn dùng được và kiểm chứng riêng)
 

@@ -60,6 +60,7 @@ export const SCREEN_MODULE: Record<ScreenId, ModuleId | null> = {
   'business-plan': 'tools',
   'corporate-financial': 'tools',
   reports: 'tools',
+  office: 'tools',
   mdsdv: 'tools',
   'card-policies': 'tools',
   admin: null,

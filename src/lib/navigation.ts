@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Landmark,
   Users, FileText, Building2, CreditCard,
   ShieldAlert, Settings, Calculator, Percent,
-  Handshake, ClipboardList, Boxes, FileSignature, FolderArchive, Database, UserCog,
+  Handshake, ClipboardList, Boxes, FileSignature, FolderArchive, Database, UserCog, FileSpreadsheet,
 } from 'lucide-react';
 import type { TranslationKey } from './i18n';
 import { ROUTE_OF } from './routes';
@@ -12,7 +12,7 @@ export type ScreenId =
   | 'dashboard' | 'hub'
   | 'customers' | 'disbursement' | 'credit-contracts' | 'loans' | 'collaterals' | 'mortgage-contracts' | 'credit-cards' | 'dispatches' | 'storage'
   | 'calculators' | 'business-plan' | 'corporate-financial' | 'inventory' | 'shopping-checklist' | 'purchase-statement'
-  | 'retail-invoice' | 'rate-quote' | 'cof' | 'reports'
+  | 'retail-invoice' | 'rate-quote' | 'cof' | 'reports' | 'office'
   | 'mdsdv' | 'card-policies' | 'templates' | 'quiz-bank'
   | 'post-loan' | 'admin' | 'settings';
 
@@ -67,6 +67,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: 'calculators', labelKey: 'nav.calculators', groupKey: 'nav.groupFinancialTools', icon: Calculator, path: ROUTE_OF.calculators, keywords: ['tinh toan', 'lai suat', 'calculator', 'tra no'] },
       { id: 'rate-quote', labelKey: 'nav.rateQuote', groupKey: 'nav.groupFinancialTools', icon: Percent, path: ROUTE_OF['rate-quote'], keywords: ['dinh gia lai suat', 'lai suat', 'quote'] },
+      { id: 'office', labelKey: 'nav.office', groupKey: 'nav.groupFinancialTools', icon: FileSpreadsheet, path: ROUTE_OF.office, keywords: ['bao cao', 'bang tinh', 'excel', 'xlsx', 'office', 'spreadsheet'] },
     ],
   },
   {

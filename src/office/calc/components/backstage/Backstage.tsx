@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
-import { ArrowLeft, FilePlus2, FileSpreadsheet, FolderOpen, Home, Info, Printer, Save, SaveAll, X } from 'lucide-react';
+import { Archive, ArrowLeft, FilePlus2, FileSpreadsheet, FolderOpen, Home, Info, Printer, Save, SaveAll, X } from 'lucide-react';
 import { useOfficeI18n } from '../../../i18n';
+import type { DriveLink } from '../../../shared/archive/officeArchive';
 import type { DraftSummary } from '../../../shared/idbStore';
 import type { CalcController } from '../../controller';
 import { listCalcDrafts } from '../../services/calcDraftStore';
@@ -15,6 +16,14 @@ export interface BackstageProps {
   /** Có bản nháp đã lưu chưa, và lúc lưu gần nhất. */
   savedAt: number | null;
   initial: BackstageSection;
+  /** Tệp trong Kho lưu trữ mà bảng tính đang gắn với. */
+  archiveLink: DriveLink | null;
+  /** Kết quả của lần lưu/mở Kho gần nhất: thành công hoặc lỗi. */
+  notice: string | null;
+  problem: string | null;
+  onSaveToArchive: () => Promise<void>;
+  onSaveToArchiveAs: () => void;
+  onOpenFromArchive: () => void;
   onClose: () => void;
   onNew: () => void;
   onOpenDevice: () => void;
@@ -69,6 +78,16 @@ export const Backstage: React.FC<BackstageProps> = (props) => {
       </nav>
       <div className="calc-backstage-panel">
         <h2>{t.nav[section]}</h2>
+        {props.problem && (
+          <p role="alert" className="calc-backstage-note is-problem">
+            {props.problem}
+          </p>
+        )}
+        {props.notice && (
+          <p role="status" className="calc-backstage-note">
+            {props.notice}
+          </p>
+        )}
         <BackstageContent section={section} {...props} />
       </div>
     </div>
@@ -140,6 +159,10 @@ const BackstageContent: React.FC<BackstageProps & { section: BackstageSection }>
           <FolderOpen size={16} />
           {t.openFromDevice}
         </button>
+        <button type="button" className="wr-text-btn calc-open-archive" onClick={props.onOpenFromArchive}>
+          <Archive size={16} />
+          {t.openFromArchive}
+        </button>
         {recent}
       </>
     );
@@ -149,6 +172,7 @@ const BackstageContent: React.FC<BackstageProps & { section: BackstageSection }>
       [t.info.name, props.title.trim() || m.calc.untitled],
       [t.info.location, t.info.locationValue],
       [t.info.modified, props.savedAt ? when(props.savedAt) : t.info.notSaved],
+      ...(props.archiveLink ? ([[t.archivePath, props.archiveLink.path]] as Array<[string, string]>) : []),
       [t.info.sheets, String(stats.sheets)],
       [t.info.cells, stats.cells.toLocaleString()],
     ];
@@ -176,6 +200,16 @@ const BackstageContent: React.FC<BackstageProps & { section: BackstageSection }>
           <Save size={16} />
           {t.saveNow}
         </button>
+        <button type="button" className="wr-text-btn is-primary" onClick={() => void props.onSaveToArchive()}>
+          <Archive size={16} />
+          {t.saveToArchive}
+          {props.archiveLink ? ` (${props.archiveLink.path})` : ''}
+        </button>
+        {props.archiveLink && (
+          <button type="button" className="wr-text-btn" onClick={props.onSaveToArchiveAs}>
+            {t.saveToArchiveAs}
+          </button>
+        )}
         {savedNotice && (
           <p role="status" className="calc-dialog-text">
             {t.saved}

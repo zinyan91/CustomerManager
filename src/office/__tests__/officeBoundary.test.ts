@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(process.cwd(), 'src/office');
@@ -46,17 +46,23 @@ describe('ranh giới của khối Office (src/office)', () => {
     }
   });
 
-  it('chỉ chạm vào ứng dụng ở vài điểm: ngữ cảnh đăng nhập, ngôn ngữ, tuyến, module và vài thành phần khung', () => {
+  it('chỉ chạm vào ứng dụng ở vài điểm: đăng nhập, ngôn ngữ, tuyến, module, khung và Kho lưu trữ', () => {
+    // Đường dẫn tính từ src/. Mã Office nhập gì ngoài src/office thì phải nằm trong danh sách này.
     const allowed = [
-      '../../context/AuthContext', '../context/AuthContext', '../../context/LanguageContext', '../../lib/i18n',
-      '../../lib/routes', '../lib/routes', '../components/LoginView', '../components/ErrorBoundary', '../components/ModuleGate',
+      'context/AuthContext', 'context/LanguageContext', 'lib/i18n', 'lib/routes',
+      'components/LoginView', 'components/ErrorBoundary', 'components/ModuleGate',
+      // Lưu vào và mở từ Kho lưu trữ (Google Drive)
+      'hooks/useArchive', 'lib/archivePath', 'lib/archiveStatus', 'lib/dispatch/folderBrowse', 'lib/formatBytes', 'lib/storageRepos',
+      'lib/drive/driveClient', 'lib/drive/driveDocuments', 'lib/drive/driveOps', 'lib/drive/driveToken', 'lib/drive/driveTypes', 'lib/drive/driveUpload',
+      'types/dispatch',
     ];
+    const SRC = resolve(process.cwd(), 'src');
     for (const { path, text } of FILES) {
-      for (const m of text.matchAll(/from\s+['"](\.\.\/[^'"]*(?:context|lib|components)\/[^'"]*)['"]/g)) {
-        const target = m[1];
-        // Đường dẫn trong nội bộ src/office (calc/, shared/, i18n/) luôn hợp lệ
-        if (/^\.\.\/(\.\.\/)?(calc|shared|i18n|model|engine|services|utils|components|styles)\b/.test(target) && !target.includes('context/') && !target.includes('lib/')) continue;
-        expect(allowed.some((a) => target.startsWith(a)), `${path} nhập ${target}`).toBe(true);
+      for (const m of text.matchAll(/from\s+['"](\.{1,2}\/[^'"]*)['"]/g)) {
+        const target = resolve(dirname(resolve(process.cwd(), path)), m[1]);
+        if (target.startsWith(ROOT)) continue;
+        const fromSrc = relative(SRC, target).split('\\').join('/');
+        expect(allowed.includes(fromSrc), `${path} nhập ${m[1]} (src/${fromSrc})`).toBe(true);
       }
     }
   });

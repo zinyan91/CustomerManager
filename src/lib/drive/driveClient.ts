@@ -263,13 +263,8 @@ export function receivedBytes(range: string | null): number | null {
  */
 export async function uploadDriveFile(ctx: DriveContext, parentId: string, file: File, options: UploadOptions = {}): Promise<DriveFile> {
   const { onProgress, signal } = options;
-  const chunk = Math.max(256 * 1024, Math.floor((options.chunkBytes ?? UPLOAD_CHUNK_BYTES) / (256 * 1024)) * 256 * 1024);
   const total = file.size;
-  const doFetch = fetcher(ctx);
-  const sleep = ctx.sleep ?? defaultSleep;
   const type = file.type || 'application/octet-stream';
-  // Chỉ khi cần tiến độ từng byte, chạy trong trình duyệt thật (có XHR) và không bị thay hàm gọi mạng (test)
-  const useXhr = Boolean(onProgress) && !ctx.fetchFn && typeof XMLHttpRequest !== 'undefined';
 
   if (total === 0) {
     const res = await driveRequest(ctx, `${API}/files?${writeParams()}`, {
@@ -290,6 +285,36 @@ export async function uploadDriveFile(ctx: DriveContext, parentId: string, file:
   });
   const session = init.headers.get('Location');
   if (!session) throw new Error('Google Drive không trả về địa chỉ phiên tải lên.');
+  return sendResumable(ctx, session, file, options);
+}
+
+/**
+ * Ghi đè nội dung một tệp đã có (giữ nguyên mã, tên và thư mục), cùng kiểu resumable với uploadDriveFile.
+ * Tệp rỗng không hỗ trợ vì Drive không mở được phiên tải lên cho 0 byte.
+ */
+export async function updateDriveFile(ctx: DriveContext, fileId: string, file: Blob, options: UploadOptions = {}): Promise<DriveFile> {
+  if (file.size === 0) throw new Error('Không ghi được tệp rỗng lên Google Drive.');
+  const type = file.type || 'application/octet-stream';
+  const init = await driveRequest(ctx, `${UPLOAD_API}/files/${encodeURIComponent(fileId)}?${new URLSearchParams({ uploadType: 'resumable', supportsAllDrives: 'true', fields: FILE_FIELDS })}`, {
+    method: 'PATCH',
+    headers: { ...JSON_HEADERS, 'X-Upload-Content-Type': type, 'X-Upload-Content-Length': String(file.size) },
+    body: '{}',
+    signal: options.signal,
+  });
+  const session = init.headers.get('Location');
+  if (!session) throw new Error('Google Drive không trả về địa chỉ phiên tải lên.');
+  return sendResumable(ctx, session, file, options);
+}
+
+/** Gửi nội dung vào một phiên tải lên đã mở: từng đoạn, mất mạng thì hỏi Google đã nhận tới đâu và gửi tiếp. */
+async function sendResumable(ctx: DriveContext, session: string, file: Blob, options: UploadOptions): Promise<DriveFile> {
+  const { onProgress, signal } = options;
+  const chunk = Math.max(256 * 1024, Math.floor((options.chunkBytes ?? UPLOAD_CHUNK_BYTES) / (256 * 1024)) * 256 * 1024);
+  const total = file.size;
+  const doFetch = fetcher(ctx);
+  const sleep = ctx.sleep ?? defaultSleep;
+  // Chỉ khi cần tiến độ từng byte, chạy trong trình duyệt thật (có XHR) và không bị thay hàm gọi mạng (test)
+  const useXhr = Boolean(onProgress) && !ctx.fetchFn && typeof XMLHttpRequest !== 'undefined';
 
   let offset = 0;
   let failures = 0;

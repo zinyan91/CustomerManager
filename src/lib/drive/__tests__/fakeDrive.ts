@@ -15,7 +15,7 @@ const FOLDER = 'application/vnd.google-apps.folder';
 /** Google Drive giả trong bộ nhớ, đủ các lệnh ứng dụng dùng: liệt kê, tìm thư mục con, tạo, tải lên resumable, tải về, đổi tên, di chuyển, sao chép, thùng rác. */
 export function createFakeDrive(driveId = 'DRV') {
   const files = new Map<string, FakeFile>();
-  const sessions = new Map<string, { name: string; parents: string[]; type: string; total: number; received: Uint8Array[] }>();
+  const sessions = new Map<string, { name: string; parents: string[]; type: string; total: number; received: Uint8Array[]; updateId?: string }>();
   let seq = 0;
   /** Các Shared Drive mà tài khoản dịch vụ giả là thành viên (mặc định chỉ ổ đang dùng). */
   const accessibleDrives: Array<{ id: string; name: string }> = [{ id: driveId, name: 'Shared Drive thử' }];
@@ -60,6 +60,13 @@ export function createFakeDrive(driveId = 'DRV') {
       const all = new Uint8Array(sent);
       let o = 0;
       for (const c of session.received) { all.set(c, o); o += c.length; }
+      if (session.updateId) {
+        const target = files.get(session.updateId);
+        if (!target) return notFound();
+        target.bytes = all;
+        target.mimeType = session.type;
+        return json(view(target));
+      }
       return json(view(add(session.name, session.parents, session.type, all)));
     }
 
@@ -70,6 +77,19 @@ export function createFakeDrive(driveId = 'DRV') {
       const id = `s${++seq}`;
       sessions.set(id, {
         name: meta.name, parents: meta.parents,
+        type: new Headers(init.headers).get('X-Upload-Content-Type') ?? 'application/octet-stream',
+        total: Number(new Headers(init.headers).get('X-Upload-Content-Length') ?? 0), received: [],
+      });
+      return new Response('{}', { status: 200, headers: { Location: `https://upload.test/upload/session?id=${id}` } });
+    }
+
+    const updateMatch = path.startsWith('/upload/drive/v3/files/') ? [path, path.slice('/upload/drive/v3/files/'.length)] : null;
+    if (method === 'PATCH' && updateMatch) {
+      const target = files.get(decodeURIComponent(updateMatch[1]));
+      if (!target || !live(target)) return notFound();
+      const id = `s${++seq}`;
+      sessions.set(id, {
+        name: target.name, parents: target.parents, updateId: target.id,
         type: new Headers(init.headers).get('X-Upload-Content-Type') ?? 'application/octet-stream',
         total: Number(new Headers(init.headers).get('X-Upload-Content-Length') ?? 0), received: [],
       });

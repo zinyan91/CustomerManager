@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { Download, Printer } from 'lucide-react';
+import { useArchiveDocument } from '../../shared/archive/useArchiveDocument';
+import type { DriveLink } from '../../shared/archive/officeArchive';
 import { downloadBlob, saveDocument } from '../../shared/files';
 import { OfficeHeader } from '../../shared/OfficeHeader';
 import { useOfficeI18n } from '../../i18n';
@@ -28,6 +30,7 @@ interface Loaded {
   pageSetup: PageSetup;
   /** True when the content did not come from a saved draft: save it as soon as it is open. */
   needsSave: boolean;
+  link: DriveLink | null;
 }
 
 export interface WriterScreenProps {
@@ -35,8 +38,10 @@ export interface WriterScreenProps {
   docId: string | null;
   /** A file to open into a new draft (from the home screen or File ▸ Open). */
   file: File | null;
+  /** Tệp trong Kho lưu trữ mà `file` được mở ra từ đó. */
+  link?: DriveLink | null;
   onHome: () => void;
-  onOpenFile: (file: File) => void;
+  onOpenFile: (file: File, link?: DriveLink) => void;
   onNew: () => void;
   /** The draft now has this id; `isNew` when it was just created (the address should show it). */
   onDraftId: (id: string, isNew: boolean) => void;
@@ -57,15 +62,15 @@ export const WriterScreen: React.FC<WriterScreenProps> = (props) => {
           if (!draft) throw new Error(m.writer.errors.draftMissing);
           props.onDraftId(draft.id, false);
           if (!cancelled) {
-            setLoaded({ id: draft.id, title: draft.title, content: draft.doc, pageSetup: draft.pageSetup, needsSave: false });
+            setLoaded({ id: draft.id, title: draft.title, content: draft.doc, pageSetup: draft.pageSetup, needsSave: false, link: draft.driveLink ?? null });
           }
         } else if (props.file) {
           const imported = await importDocument(props.file);
           if (!cancelled) {
-            setLoaded({ id: null, title: imported.title, content: imported.html, pageSetup: parsePageSetup({ ...DEFAULT_PAGE_SETUP, ...imported.pageDefaults }), needsSave: true });
+            setLoaded({ id: null, title: imported.title, content: imported.html, pageSetup: parsePageSetup({ ...DEFAULT_PAGE_SETUP, ...imported.pageDefaults }), needsSave: true, link: props.link ?? null });
           }
         } else if (!cancelled) {
-          setLoaded({ id: null, title: '', content: '', pageSetup: DEFAULT_PAGE_SETUP, needsSave: false });
+          setLoaded({ id: null, title: '', content: '', pageSetup: DEFAULT_PAGE_SETUP, needsSave: false, link: null });
         }
       } catch (caught) {
         const detail = caught instanceof Error ? caught.message : String(caught);
@@ -120,9 +125,11 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
   const [currentPage, setCurrentPage] = useState(1);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const openInput = useRef<HTMLInputElement>(null);
 
   const idRef = useRef<string | null>(loaded.id);
+  const linkRef = useRef<DriveLink | null>(loaded.link);
   const latest = useRef({ title, pageSetup, doc: null as DocNode | null });
   latest.current.title = title;
   latest.current.pageSetup = pageSetup;
@@ -152,6 +159,7 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
         doc,
         pageSetup: latest.current.pageSetup,
         updatedAt: Date.now(),
+        ...(linkRef.current ? { driveLink: linkRef.current } : {}),
       });
       if (isNew) onDraftId(id, true);
       setSaveState('saved');
@@ -246,6 +254,30 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
       fail(caught);
     }
   };
+
+  const buildDocx = async (): Promise<Blob> => {
+    if (!editor) throw new Error(t.errors.unsupported);
+    return exportDocx(editor.getJSON() as DocNode, exportOptions());
+  };
+
+  const archive = useArchiveDocument({
+    initialLink: loaded.link,
+    extension: '.docx',
+    openExtensions: ['.docx', '.txt', '.md', '.html', '.htm'],
+    fallbackName: t.untitled,
+    title: documentName,
+    buildBlob: buildDocx,
+    onLinkChange: (next) => {
+      linkRef.current = next;
+      dirty.current = true;
+      void flush();
+    },
+    onOpened: (file, link) => {
+      void flush().then(() => onOpenFile(file, link));
+    },
+    onNotice: setNotice,
+    onProblem: setError,
+  });
 
   const downloadHtml = async () => {
     if (!editor) return;
@@ -353,6 +385,10 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
             onDownloadHtml: () => void downloadHtml(),
             onDownloadTxt: () => void downloadTxt(),
             onPrint: print,
+            onOpenArchive: archive.openFromArchive,
+            onSaveArchive: () => void archive.saveToArchive(),
+            onSaveArchiveAs: archive.saveToArchiveAs,
+            archiveLinked: archive.link !== null,
             onHome: () => {
               void flush().then(onHome);
             },
@@ -379,6 +415,15 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
           </button>
         </div>
       )}
+      {notice && (
+        <div className="office-banner is-ok" role="status">
+          <span>{notice}</span>
+          <button type="button" className="wr-text-btn" onClick={() => setNotice(null)}>
+            ×
+          </button>
+        </div>
+      )}
+      {archive.dialog}
       {editor && findOpen && <FindReplacePanel editor={editor} state={state} onClose={() => setFindOpen(false)} />}
 
       <div className="writer-scroll">

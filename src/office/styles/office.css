@@ -2782,3 +2782,179 @@
   background: #fff;
   box-shadow: var(--shadow-md);
 }
+
+
+/* ---------- Archive picker (open / save in Kho lưu trữ) ---------- */
+.archive-dialog {
+  width: min(640px, calc(100vw - 2rem));
+  max-height: min(78vh, 640px);
+}
+
+.archive-repos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.6rem 1rem 0;
+}
+
+.archive-repos button {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.archive-repos button.is-active {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  color: var(--bg-surface);
+  font-weight: 700;
+}
+
+.archive-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.6rem 1rem 0.3rem;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+.archive-crumbs span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.archive-crumbs button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.archive-crumbs button:hover {
+  text-decoration: underline;
+}
+
+.archive-list {
+  flex: 1;
+  min-height: 160px;
+  overflow-y: auto;
+  padding: 0 1rem;
+}
+
+.archive-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.archive-list li button {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.45rem 0.4rem;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.archive-list li button:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+}
+
+.archive-list li button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.archive-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archive-list small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.archive-note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.7rem 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.archive-note.is-problem,
+.archive-problem {
+  color: var(--accent-red);
+}
+
+.archive-name-field {
+  margin: 0.4rem 1rem 0;
+}
+
+.archive-problem {
+  margin: 0.4rem 1rem 0;
+}
+
+.calc-backstage-note {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.calc-backstage-note.is-problem {
+  color: var(--accent-red);
+}
+
+.calc-open-archive {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0 0.6rem;
+}
+
+.office-banner.is-ok {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.dark .felix-office .office-banner.is-ok {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.calc-backstage-panel .wr-text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: auto;
+  padding: 0.55rem 1rem;
+  white-space: nowrap;
+}
+
+.calc-backstage-panel > .wr-text-btn,
+.calc-backstage-panel > .calc-open-archive {
+  margin: 0 0.6rem 1.4rem 0;
+}

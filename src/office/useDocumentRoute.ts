@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { ROUTE_OF } from '../lib/routes';
+import type { DriveLink } from './shared/archive/officeArchive';
 
 /**
  * Logic chung của màn tài liệu (Bảng tính, Văn bản): mỗi tài liệu mở ra là một màn mới (đổi key). Lưu nháp lần đầu
@@ -10,7 +11,9 @@ export function useDocumentRoute(pathOf: (draftId?: string) => string) {
   const { draftId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const file = (location.state as { file?: File } | null)?.file ?? null;
+  const state = location.state as { file?: File; link?: DriveLink } | null;
+  const file = state?.file ?? null;
+  const link = state?.link ?? null;
 
   const [screenKey, setScreenKey] = useState(0);
   const held = useRef<string | null>(draftId ?? null);
@@ -23,7 +26,7 @@ export function useDocumentRoute(pathOf: (draftId?: string) => string) {
   }
 
   const start = useCallback(
-    (to: string, state?: { file: File }) => {
+    (to: string, state?: { file: File; link?: DriveLink }) => {
       held.current = null;
       setScreenKey((key) => key + 1);
       navigate(to, { state });
@@ -35,10 +38,11 @@ export function useDocumentRoute(pathOf: (draftId?: string) => string) {
   return {
     docId: draftId ?? null,
     file,
+    link,
     screenKey,
     onHome: () => navigate(ROUTE_OF.office),
     onNew: () => start(pathOf()),
-    onOpenFile: (opened: File) => start(pathOf(), { file: opened }),
+    onOpenFile: (opened: File, opening?: DriveLink) => start(pathOf(), { file: opened, link: opening }),
     onOpenDraft: (id: string) => navigate(pathOf(id)),
     onDraftId: (id: string, isNew: boolean) => {
       if (currentKey.current !== mountedKey) return;

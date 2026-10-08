@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { ChevronDown, FileDown, FilePlus, FileText, FolderOpen, Home, Printer } from 'lucide-react';
+import { Archive, ChevronDown, FileDown, FilePlus, FileText, FolderOpen, Home, Printer } from 'lucide-react';
 import { useOfficeI18n } from '../../i18n';
 import type { WriterFormatState } from '../editor/useWriterState';
 import type { PageSetup } from '../utils/pageSetup';
@@ -17,6 +17,11 @@ export interface FileActions {
   onDownloadHtml: () => void;
   onDownloadTxt: () => void;
   onPrint: () => void;
+  onOpenArchive: () => void;
+  onSaveArchive: () => void;
+  onSaveArchiveAs: () => void;
+  /** Văn bản đã gắn với một tệp trong Kho lưu trữ. */
+  archiveLinked: boolean;
   onHome: () => void;
 }
 
@@ -110,7 +115,10 @@ export const WriterRibbon: React.FC<WriterRibbonProps> = ({
             <div className="wr-file-menu" role="menu">
               {fileItem(<FilePlus size={16} />, t.file.new, file.onNew)}
               {fileItem(<FolderOpen size={16} />, t.file.open, file.onOpen)}
+              {fileItem(<Archive size={16} />, m.ribbon.backstage.openFromArchive, file.onOpenArchive)}
               <div className="wr-file-sep" />
+              {fileItem(<Archive size={16} />, m.ribbon.backstage.saveToArchive, file.onSaveArchive)}
+              {file.archiveLinked && fileItem(<Archive size={16} />, m.ribbon.backstage.saveToArchiveAs, file.onSaveArchiveAs)}
               {fileItem(<FileDown size={16} />, t.file.downloadDocx, file.onDownloadDocx)}
               {fileItem(<FileText size={16} />, t.file.downloadHtml, file.onDownloadHtml)}
               {fileItem(<FileText size={16} />, t.file.downloadTxt, file.onDownloadTxt)}

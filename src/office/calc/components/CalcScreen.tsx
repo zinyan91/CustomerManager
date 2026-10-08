@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Download } from 'lucide-react';
+import { useArchiveDocument } from '../../shared/archive/useArchiveDocument';
+import type { DriveLink } from '../../shared/archive/officeArchive';
 import { saveDocument } from '../../shared/files';
 import { OfficeHeader } from '../../shared/OfficeHeader';
 import { useOfficeI18n } from '../../i18n';
@@ -24,13 +26,16 @@ interface Loaded {
   data: WorkbookData | null;
   needsSave: boolean;
   savedAt: number | null;
+  link: DriveLink | null;
 }
 
 export interface CalcScreenProps {
   docId: string | null;
   file: File | null;
+  /** Tệp trong Kho lưu trữ mà `file` được mở ra từ đó. */
+  link?: DriveLink | null;
   onHome: () => void;
-  onOpenFile: (file: File) => void;
+  onOpenFile: (file: File, link?: DriveLink) => void;
   onNew: () => void;
   onOpenDraft: (id: string) => void;
   /** Tên người sửa, ghi vào ghi chú. */
@@ -51,12 +56,12 @@ export const CalcScreen: React.FC<CalcScreenProps> = (props) => {
           const draft = await getCalcDraft(props.docId);
           if (!draft) throw new Error(m.writer.errors.draftMissing);
           props.onDraftId(draft.id, false);
-          if (!cancelled) setLoaded({ id: draft.id, title: draft.title, data: draft.data, needsSave: false, savedAt: draft.updatedAt });
+          if (!cancelled) setLoaded({ id: draft.id, title: draft.title, data: draft.data, needsSave: false, savedAt: draft.updatedAt, link: draft.driveLink ?? null });
         } else if (props.file) {
           const imported = await importSpreadsheet(props.file, m.calc.errors.unsupported);
-          if (!cancelled) setLoaded({ id: null, title: imported.title, data: imported.data, needsSave: true, savedAt: null });
+          if (!cancelled) setLoaded({ id: null, title: imported.title, data: imported.data, needsSave: true, savedAt: null, link: props.link ?? null });
         } else if (!cancelled) {
-          setLoaded({ id: null, title: '', data: null, needsSave: false, savedAt: null });
+          setLoaded({ id: null, title: '', data: null, needsSave: false, savedAt: null, link: null });
         }
       } catch (caught) {
         const detail = caught instanceof Error ? caught.message : String(caught);
@@ -103,12 +108,14 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
   const [view, setView] = useState<ViewOptions>(DEFAULT_VIEW);
   const [backstage, setBackstage] = useState<BackstageSection | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(loaded.savedAt);
+  const [notice, setNotice] = useState<string | null>(null);
   const [findOpen, setFindOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const openInput = useRef<HTMLInputElement>(null);
 
   const idRef = useRef<string | null>(loaded.id);
+  const linkRef = useRef<DriveLink | null>(loaded.link);
   const titleRef = useRef(title);
   titleRef.current = title;
   const timer = useRef<number | undefined>(undefined);
@@ -127,7 +134,7 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
     setSaveState('saving');
     try {
       const updatedAt = Date.now();
-      await saveCalcDraft({ id, title: titleRef.current.trim(), data: controller.wb.toData(), updatedAt });
+      await saveCalcDraft({ id, title: titleRef.current.trim(), data: controller.wb.toData(), updatedAt, ...(linkRef.current ? { driveLink: linkRef.current } : {}) });
       if (isNew) onDraftId(id, true);
       setSavedAt(updatedAt);
       setSaveState('saved');
@@ -202,6 +209,28 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
       fail(caught);
     }
   };
+
+  const archive = useArchiveDocument({
+    initialLink: loaded.link,
+    extension: '.xlsx',
+    openExtensions: ['.xlsx', '.xlsm', '.csv', '.tsv'],
+    fallbackName: t.untitled,
+    title: () => titleRef.current,
+    buildBlob: async () => {
+      controller.commitEdit(null);
+      return exportXlsx(controller.wb);
+    },
+    onLinkChange: (next) => {
+      linkRef.current = next;
+      dirty.current = true;
+      void flush();
+    },
+    onOpened: (file, link) => {
+      void flush().then(() => onOpenFile(file, link));
+    },
+    onNotice: setNotice,
+    onProblem: setMessage,
+  });
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -328,7 +357,16 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
           title={title}
           savedAt={savedAt}
           initial={backstage}
-          onClose={() => setBackstage(null)}
+          archiveLink={archive.link}
+          notice={notice}
+          problem={message}
+          onSaveToArchive={archive.saveToArchive}
+          onSaveToArchiveAs={archive.saveToArchiveAs}
+          onOpenFromArchive={archive.openFromArchive}
+          onClose={() => {
+            setBackstage(null);
+            setNotice(null);
+          }}
           onNew={() => {
             void flush().then(onNew);
           }}
@@ -348,6 +386,7 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
           onMessage={setMessage}
         />
       )}
+      {archive.dialog}
 
       <footer className="writer-status" aria-label="status">
         <span>

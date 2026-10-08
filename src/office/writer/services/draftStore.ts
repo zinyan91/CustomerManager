@@ -1,3 +1,4 @@
+import { parseDriveLink, type DriveLink } from '../../shared/archive/officeArchive';
 import { newDraftId, openIdbStore, type DraftSummary } from '../../shared/idbStore';
 import { parseDocJson, type DocNode } from '../utils/docJson';
 import { parsePageSetup, type PageSetup } from '../utils/pageSetup';
@@ -14,6 +15,8 @@ export interface Draft {
   pageSetup: PageSetup;
   /** Milliseconds since the epoch. */
   updatedAt: number;
+  /** Tệp trong Kho lưu trữ mà văn bản này đã được lưu vào hoặc mở ra từ đó. */
+  driveLink?: DriveLink;
 }
 
 export type { DraftSummary };
@@ -25,12 +28,14 @@ function toDraft(value: unknown): Draft | null {
   if (!value || typeof value !== 'object') return null;
   const raw = value as Partial<Draft>;
   if (typeof raw.id !== 'string') return null;
+  const driveLink = parseDriveLink(raw.driveLink);
   return {
     id: raw.id,
     title: typeof raw.title === 'string' ? raw.title : '',
     doc: parseDocJson(raw.doc),
     pageSetup: parsePageSetup(raw.pageSetup),
     updatedAt: Number(raw.updatedAt) || 0,
+    ...(driveLink ? { driveLink } : {}),
   };
 }
 

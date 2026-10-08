@@ -1,6 +1,6 @@
 # Báo cáo: bảng tính dùng chung, cùng sửa nhiều người, nhật ký và lùi lịch sử
 
-Ngày: 08/10/2026. Trạng thái: chờ duyệt. Làm cho Bảng tính; Văn bản (Writer) làm sau giai đoạn 2 của tab Báo cáo.
+Ngày: 08/10/2026. Trạng thái: đã duyệt (08/10/2026); giai đoạn 1 đã làm (migration 71 chưa áp), giai đoạn 2 đến 4 chưa. Làm cho Bảng tính; Văn bản (Writer) làm sau giai đoạn 2 của tab Báo cáo.
 
 ## Mục tiêu
 

@@ -242,6 +242,8 @@ export class CalcController {
   onReject: ((message: string | undefined) => void) | null = null;
   /** Gọi khi một thay đổi bị chặn vì trang tính đang được bảo vệ. */
   onProtected: (() => void) | null = null;
+  /** Mở chỉ để xem (bảng tính chung bằng quyền xem): mọi thay đổi bị chặn, kể cả đổi tên trang và cố định ô. */
+  readOnly = false;
 
   // ----- Data validation
 
@@ -325,7 +327,7 @@ export class CalcController {
 
   /** Sets cells (undefined clears one) as one undoable step. */
   apply(edits: Array<{ row: number; col: number; after: Cell | undefined }>, sheet = this.active): void {
-    if (this.wb.sheets[sheet]?.protected) {
+    if (this.readOnly || this.wb.sheets[sheet]?.protected) {
       this.onProtected?.();
       return;
     }
@@ -392,7 +394,9 @@ export class CalcController {
 
   /** Runs a structural change, remembering the whole workbook either side of it. */
   private structural(change: () => void, allowProtected = false): void {
-    if (!allowProtected && this.protectedBlocks()) return;
+    if (this.readOnly || !allowProtected) {
+      if (this.protectedBlocks()) return;
+    }
     const before = this.wb.toData();
     const beforeActive = this.active;
     change();
@@ -413,7 +417,7 @@ export class CalcController {
 
   /** Báo và trả true khi trang tính đang được bảo vệ, để nơi gọi dừng lại. */
   private protectedBlocks(): boolean {
-    if (!this.sheetProtected) return false;
+    if (!this.readOnly && !this.sheetProtected) return false;
     this.onProtected?.();
     return true;
   }

@@ -2903,3 +2903,78 @@
 .calc-backstage-panel > .calc-open-archive {
   margin: 0 0.6rem 1.4rem 0;
 }
+
+/* ---------- Share dialog and shared-document banner ---------- */
+.share-dialog {
+  width: min(520px, calc(100vw - 2rem));
+}
+
+.share-heading {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.share-note {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.share-members {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.share-members li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.share-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.88rem;
+}
+
+.share-dialog select {
+  height: 30px;
+  padding: 0 0.4rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.share-invite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.4rem;
+}
+
+.share-invite select:first-child {
+  flex: 1;
+  min-width: 160px;
+}
+
+.office-banner-actions {
+  display: inline-flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.office-header-link:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

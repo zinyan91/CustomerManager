@@ -21,6 +21,8 @@ export interface BackstageProps {
   initial: BackstageSection;
   /** Tệp trong Kho lưu trữ mà bảng tính đang gắn với. */
   archiveLink: DriveLink | null;
+  /** Nơi lưu hiện ở mục Thông tin khi không phải nháp trong trình duyệt. */
+  locationLabel?: string;
   /** Kết quả của lần lưu/mở Kho gần nhất: thành công hoặc lỗi. */
   notice: string | null;
   problem: string | null;
@@ -87,7 +89,7 @@ export const Backstage: React.FC<BackstageProps> = (props) => {
           <InfoList
             rows={[
               [t.info.name, props.title.trim() || m.calc.untitled],
-              [t.info.location, t.info.locationValue],
+              [t.info.location, props.locationLabel ?? t.info.locationValue],
               [t.info.modified, props.savedAt ? when(props.savedAt) : t.info.notSaved],
               ...(props.archiveLink ? ([[t.archivePath, props.archiveLink.path]] as Array<[string, string]>) : []),
               [t.info.sheets, String(stats.sheets)],

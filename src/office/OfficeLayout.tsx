@@ -6,7 +6,7 @@ import { LoginView } from '../components/LoginView';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ModuleGate } from '../components/ModuleGate';
 import { OfficeHome } from './OfficeHome';
-import { calcPath, writerPath } from './paths';
+import { calcPath, calcSharedPath, writerPath } from './paths';
 import './styles/office.css';
 
 const PATH_OF = { calc: calcPath, writer: writerPath };
@@ -19,6 +19,7 @@ export const OfficeIndex: React.FC = () => {
       onNewDocument={(kind) => navigate(PATH_OF[kind]())}
       onOpenFile={(kind, file) => navigate(PATH_OF[kind](), { state: { file } })}
       onOpenDraft={(kind, id) => navigate(PATH_OF[kind](id))}
+      onOpenShared={(id) => navigate(calcSharedPath(id))}
     />
   );
 };

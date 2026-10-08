@@ -12,6 +12,8 @@ const h = vi.hoisted(() => ({
   drafts: [] as Array<{ id: string; title: string; updatedAt: number }>,
   writerDrafts: [] as Array<{ id: string; title: string; updatedAt: number }>,
   deleted: [] as string[],
+  shared: [] as Array<{ id: string; title: string; ownerId: string; ownerName: string; role: string; updatedAt: string; lastSeq: number }>,
+  sharedError: null as null | string,
 }));
 
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ session: h.session, loading: h.loading }) }));
@@ -35,6 +37,18 @@ vi.mock('../writer/services/draftStore', () => ({
   },
 }));
 
+vi.mock('../collab/collabApi', () => ({
+  listSharedDocuments: async () => {
+    if (h.sharedError) throw new Error(h.sharedError);
+    return h.shared;
+  },
+  deleteSharedDocument: async (id: string) => {
+    h.deleted.push(id);
+    h.shared = h.shared.filter((d) => d.id !== id);
+  },
+  canManageSharing: (role: string) => role === 'owner' || role === 'admin',
+}));
+
 import { LanguageProvider } from '../../context/LanguageContext';
 import { OfficeIndex, OfficeLayout } from '../OfficeLayout';
 
@@ -51,6 +65,7 @@ function dung(path = '/office') {
           <Route path="/office" element={<OfficeLayout />}>
             <Route index element={<OfficeIndex />} />
             <Route path="calc" element={<div>MAN BANG TINH MOI</div>} />
+            <Route path="calc/shared/:sharedId" element={<div>MAN BANG TINH CHUNG</div>} />
             <Route path="calc/:draftId" element={<div>MAN BANG TINH NHAP</div>} />
             <Route path="writer" element={<div>MAN VAN BAN MOI</div>} />
             <Route path="writer/:draftId" element={<div>MAN VAN BAN NHAP</div>} />
@@ -70,6 +85,8 @@ beforeEach(() => {
   h.drafts = [];
   h.writerDrafts = [];
   h.deleted = [];
+  h.shared = [];
+  h.sharedError = null;
   vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
 afterEach(() => {
@@ -119,7 +136,7 @@ describe('OfficeIndex: cổng vào', () => {
       { id: 'a1', title: '', updatedAt: 1 },
     ];
     dung();
-    const list = await screen.findByRole('list');
+    const list = await screen.findByRole('list', { name: 'Gần đây' });
     const items = within(list).getAllByRole('listitem');
     expect(items[0].textContent).toContain('Báo cáo quý 3');
     expect(items[1].textContent).toContain('Bảng tính không tên');
@@ -135,7 +152,7 @@ describe('OfficeIndex: cổng vào', () => {
       { id: 'w2', title: '', updatedAt: 3 },
     ];
     dung();
-    const items = within(await screen.findByRole('list')).getAllByRole('listitem');
+    const items = within(await screen.findByRole('list', { name: 'Gần đây' })).getAllByRole('listitem');
     expect(items.map((i) => i.textContent)).toEqual([
       expect.stringContaining('Tờ trình'),
       expect.stringContaining('Tài liệu không tên'),
@@ -183,5 +200,48 @@ describe('OfficeIndex: cổng vào', () => {
     fireEvent.click(screen.getByRole('button', { name: /Xóa bản nháp: Cần xóa/ }));
     await waitFor(() => expect(h.deleted).toEqual(['a1']));
     await waitFor(() => expect(screen.queryByText('Cần xóa')).toBeNull());
+  });
+});
+
+describe('bảng tính chung trên cổng Báo cáo', () => {
+  const doc = (over: Record<string, unknown> = {}) => ({ id: 's1', title: 'Quỹ lương', ownerId: 'o', ownerName: 'Lan', role: 'editor', updatedAt: '2026-10-08T01:00:00Z', lastSeq: 3, ...over });
+
+  it('liệt kê bảng tính chung kèm quyền và chủ; bấm vào thì mở đúng bảng tính chung', async () => {
+    h.shared = [doc(), doc({ id: 's2', title: '', role: 'viewer', ownerName: '' })];
+    dung();
+    const items = within(await screen.findByRole('list', { name: 'Bảng tính chung' })).getAllByRole('listitem');
+    expect(items[0].textContent).toContain('Quỹ lương');
+    expect(items[0].textContent).toContain('của Lan');
+    expect(items[0].textContent).toContain('Được sửa');
+    expect(items[1].textContent).toContain('Chỉ xem');
+    fireEvent.click(within(items[0]).getByRole('button', { name: /Mở Quỹ lương/ }));
+    expect(await screen.findByText('MAN BANG TINH CHUNG')).toBeTruthy();
+    expect(screen.getByTestId('where').textContent).toBe('/office/calc/shared/s1');
+  });
+
+  it('chỉ chủ hoặc Master Admin thấy nút xóa; xóa phải xác nhận', async () => {
+    h.shared = [doc({ role: 'owner' }), doc({ id: 's2', title: 'Của người khác', role: 'editor' })];
+    dung();
+    await screen.findByText('Quỹ lương');
+    expect(screen.queryByRole('button', { name: /Xóa bản nháp: Của người khác/ })).toBeNull();
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+    fireEvent.click(screen.getByRole('button', { name: /Xóa bản nháp: Quỹ lương/ }));
+    expect(h.deleted).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: /Xóa bản nháp: Quỹ lương/ }));
+    await waitFor(() => expect(h.deleted).toEqual(['s1']));
+  });
+
+  it('lỗi khi nạp bảng tính chung hiện nguyên trong mục của nó, không che danh sách nháp trong trình duyệt', async () => {
+    h.drafts = [{ id: 'a1', title: 'Nháp của tôi', updatedAt: 1 }];
+    h.sharedError = 'Không đọc được danh sách bảng tính chung: máy chủ chưa có tính năng chia sẻ (cần áp migration 71 trên Supabase).';
+    dung();
+    expect((await screen.findAllByRole('alert')).map((a) => a.textContent).join(' ')).toContain('cần áp migration 71');
+    expect(await screen.findByText('Nháp của tôi')).toBeTruthy();
+  });
+
+  it('chưa có bảng tính chung thì nói rõ, không nhầm với lỗi', async () => {
+    dung();
+    expect(await screen.findByText('Chưa có bảng tính chung nào.')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

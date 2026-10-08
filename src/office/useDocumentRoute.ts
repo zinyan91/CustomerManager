@@ -8,7 +8,7 @@ import type { DriveLink } from './shared/archive/officeArchive';
  * chỉ thay địa chỉ sang .../<id> mà không dựng lại màn, nên cần nhớ id đang giữ; Back/Forward sang nháp khác thì dựng lại.
  */
 export function useDocumentRoute(pathOf: (draftId?: string) => string) {
-  const { draftId } = useParams();
+  const { draftId, sharedId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as { file?: File; link?: DriveLink } | null;
@@ -16,12 +16,13 @@ export function useDocumentRoute(pathOf: (draftId?: string) => string) {
   const link = state?.link ?? null;
 
   const [screenKey, setScreenKey] = useState(0);
-  const held = useRef<string | null>(draftId ?? null);
+  const held = useRef<string | null>(draftId ?? sharedId ?? null);
   const currentKey = useRef(0);
   currentKey.current = screenKey;
 
-  if (draftId && draftId !== held.current) {
-    held.current = draftId;
+  const opened = draftId ?? sharedId ?? null;
+  if (opened && opened !== held.current) {
+    held.current = opened;
     setScreenKey((key) => key + 1);
   }
 
@@ -37,6 +38,7 @@ export function useDocumentRoute(pathOf: (draftId?: string) => string) {
   const mountedKey = screenKey;
   return {
     docId: draftId ?? null,
+    sharedId: sharedId ?? null,
     file,
     link,
     screenKey,
@@ -44,6 +46,8 @@ export function useDocumentRoute(pathOf: (draftId?: string) => string) {
     onNew: () => start(pathOf()),
     onOpenFile: (opened: File, opening?: DriveLink) => start(pathOf(), { file: opened, link: opening }),
     onOpenDraft: (id: string) => navigate(pathOf(id)),
+    /** Dựng lại màn đang mở (tải bản mới nhất của bảng tính chung). */
+    onReload: () => setScreenKey((key) => key + 1),
     onDraftId: (id: string, isNew: boolean) => {
       if (currentKey.current !== mountedKey) return;
       held.current = id;

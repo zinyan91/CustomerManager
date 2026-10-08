@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Share2 } from 'lucide-react';
+import { canEdit, canManageSharing, createSharedDocument, getSharedDocument, type SharedRole } from '../../collab/collabApi';
+import { ShareDialog } from '../../collab/ShareDialog';
+import { useSharedPersistence } from '../../collab/useSharedPersistence';
 import { useArchiveDocument } from '../../shared/archive/useArchiveDocument';
 import type { DriveLink } from '../../shared/archive/officeArchive';
 import { saveDocument } from '../../shared/files';
@@ -27,10 +30,14 @@ interface Loaded {
   needsSave: boolean;
   savedAt: number | null;
   link: DriveLink | null;
+  /** Mở từ bảng tính chung trên hệ thống: mã, quyền của người mở và số thứ tự đã tải. */
+  shared: { id: string; role: SharedRole; seq: number } | null;
 }
 
 export interface CalcScreenProps {
   docId: string | null;
+  /** Mã bảng tính chung cần mở (thay cho nháp). */
+  sharedId?: string | null;
   file: File | null;
   /** Tệp trong Kho lưu trữ mà `file` được mở ra từ đó. */
   link?: DriveLink | null;
@@ -38,6 +45,10 @@ export interface CalcScreenProps {
   onOpenFile: (file: File, link?: DriveLink) => void;
   onNew: () => void;
   onOpenDraft: (id: string) => void;
+  /** Mở bảng tính chung vừa đưa lên hệ thống. */
+  onOpenShared?: (id: string) => void;
+  /** Dựng lại màn để tải bản mới nhất của bảng tính chung. */
+  onReloadShared?: () => void;
   /** Tên người sửa, ghi vào ghi chú. */
   author: string;
   onDraftId: (id: string, isNew: boolean) => void;
@@ -52,16 +63,19 @@ export const CalcScreen: React.FC<CalcScreenProps> = (props) => {
     let cancelled = false;
     (async () => {
       try {
-        if (props.docId) {
+        if (props.sharedId) {
+          const doc = await getSharedDocument(props.sharedId);
+          if (!cancelled) setLoaded({ id: null, title: doc.title, data: doc.data, needsSave: false, savedAt: null, link: null, shared: { id: doc.id, role: doc.role, seq: doc.lastSeq } });
+        } else if (props.docId) {
           const draft = await getCalcDraft(props.docId);
           if (!draft) throw new Error(m.writer.errors.draftMissing);
           props.onDraftId(draft.id, false);
-          if (!cancelled) setLoaded({ id: draft.id, title: draft.title, data: draft.data, needsSave: false, savedAt: draft.updatedAt, link: draft.driveLink ?? null });
+          if (!cancelled) setLoaded({ id: draft.id, title: draft.title, data: draft.data, needsSave: false, savedAt: draft.updatedAt, link: draft.driveLink ?? null, shared: null });
         } else if (props.file) {
           const imported = await importSpreadsheet(props.file, m.calc.errors.unsupported);
-          if (!cancelled) setLoaded({ id: null, title: imported.title, data: imported.data, needsSave: true, savedAt: null, link: props.link ?? null });
+          if (!cancelled) setLoaded({ id: null, title: imported.title, data: imported.data, needsSave: true, savedAt: null, link: props.link ?? null, shared: null });
         } else if (!cancelled) {
-          setLoaded({ id: null, title: '', data: null, needsSave: false, savedAt: null, link: null });
+          setLoaded({ id: null, title: '', data: null, needsSave: false, savedAt: null, link: null, shared: null });
         }
       } catch (caught) {
         const detail = caught instanceof Error ? caught.message : String(caught);
@@ -93,12 +107,13 @@ export const CalcScreen: React.FC<CalcScreenProps> = (props) => {
   return <CalcBody {...props} loaded={loaded} />;
 };
 
-const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHome, onOpenFile, onNew, onOpenDraft, author, onDraftId }) => {
+const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHome, onOpenFile, onNew, onOpenDraft, onOpenShared, onReloadShared, author, onDraftId }) => {
   const { m } = useOfficeI18n();
   const t = m.calc;
   const controller = useMemo(() => {
     const c = new CalcController();
     if (loaded.data) c.load(loaded.data);
+    c.readOnly = loaded.shared !== null && !canEdit(loaded.shared.role);
     return c;
   }, [loaded]);
   useSyncExternalStore(controller.subscribe, controller.getVersion);
@@ -112,6 +127,8 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
   const [findOpen, setFindOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+  const [shareOpen, setShareOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const openInput = useRef<HTMLInputElement>(null);
 
   const idRef = useRef<string | null>(loaded.id);
@@ -124,10 +141,22 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
 
   const documentName = () => titleRef.current.trim() || t.untitled;
 
+  const shared = loaded.shared;
+  const { save: saveShared, state: sharedState } = useSharedPersistence({
+    id: shared && canEdit(shared.role) ? shared.id : null,
+    initialSeq: shared?.seq ?? 0,
+    getTitle: () => titleRef.current.trim(),
+    getData: () => controller.wb.toData(),
+  });
+
   const flush = useCallback(async () => {
     window.clearTimeout(timer.current);
     if (!dirty.current) return;
     dirty.current = false;
+    if (shared) {
+      if (canEdit(shared.role) && (await saveShared()) === 'failed') dirty.current = true;
+      return;
+    }
     const isNew = idRef.current === null;
     const id = idRef.current ?? newDraftId();
     idRef.current = id;
@@ -142,7 +171,7 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
       dirty.current = true;
       setSaveState('failed');
     }
-  }, [controller, onDraftId]);
+  }, [controller, onDraftId, shared, saveShared]);
 
   const scheduleSave = useCallback(() => {
     dirty.current = true;
@@ -177,12 +206,12 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
 
   useEffect(() => {
     controller.onReject = (custom) => setMessage(custom ?? t.validation.rejected);
-    controller.onProtected = () => setMessage(m.ribbon.review.protectedNotice);
+    controller.onProtected = () => setMessage(controller.readOnly ? m.ribbon.share.readOnly : m.ribbon.review.protectedNotice);
     return () => {
       controller.onReject = null;
       controller.onProtected = null;
     };
-  }, [controller, t.validation.rejected, m.ribbon.review.protectedNotice]);
+  }, [controller, t.validation.rejected, m.ribbon.review.protectedNotice, m.ribbon.share.readOnly]);
 
   const protectedNotice = m.ribbon.review.protectedNotice;
   const sheetProtected = controller.sheetProtected;
@@ -279,8 +308,48 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
     return count > 0 ? { sum, count, average: sum / count } : null;
   })();
 
+  const share = async () => {
+    if (shared) {
+      if (canManageSharing(shared.role)) setShareOpen(true);
+      return;
+    }
+    if (!window.confirm(m.ribbon.share.uploadConfirm)) return;
+    setSharing(true);
+    try {
+      controller.commitEdit(null);
+      onOpenShared?.(await createSharedDocument(titleRef.current.trim(), controller.wb.toData()));
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const keepMineAsDraft = async () => {
+    try {
+      const id = newDraftId();
+      await saveCalcDraft({ id, title: titleRef.current.trim(), data: controller.wb.toData(), updatedAt: Date.now() });
+      onOpenDraft(id);
+    } catch (caught) {
+      setMessage(caught instanceof Error ? caught.message : String(caught));
+    }
+  };
+
+  const conflict = sharedState === 'conflict';
+  const shareText = m.ribbon.share;
+  const sharedSaveLabel = shared
+    ? sharedState === 'saving'
+      ? shareText.saving
+      : sharedState === 'saved'
+        ? shareText.saved
+        : sharedState === 'failed'
+          ? shareText.saveFailed
+          : controller.readOnly
+            ? shareText.roleLabel[shared.role]
+            : ''
+    : null;
   const saveLabel =
-    saveState === 'saving' ? m.writer.saving : saveState === 'saved' ? m.writer.saved : saveState === 'failed' ? m.writer.saveFailed : '';
+    sharedSaveLabel ?? (saveState === 'saving' ? m.writer.saving : saveState === 'saved' ? m.writer.saved : saveState === 'failed' ? m.writer.saveFailed : '');
 
   return (
     <div className="office-page writer-page calc-page">
@@ -289,10 +358,18 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
           void flush().then(onHome);
         }}
         actions={
-          <button type="button" className="office-header-btn" onClick={() => void downloadXlsx()} title={t.file.downloadXlsx}>
-            <Download size={15} />
-            <span>XLSX</span>
-          </button>
+          <>
+            {(!shared || canManageSharing(shared.role)) && (
+              <button type="button" className="office-header-link" onClick={() => void share()} disabled={sharing}>
+                <Share2 size={14} />
+                <span>{shareText.button}</span>
+              </button>
+            )}
+            <button type="button" className="office-header-btn" onClick={() => void downloadXlsx()} title={t.file.downloadXlsx}>
+              <Download size={15} />
+              <span>XLSX</span>
+            </button>
+          </>
         }
       >
         <input
@@ -301,13 +378,14 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
           value={title}
           placeholder={t.untitled}
           aria-label={t.titleLabel}
+          readOnly={controller.readOnly}
           onChange={(event) => {
             setTitle(event.target.value);
             titleRef.current = event.target.value;
             scheduleSave();
           }}
         />
-        <span className={`writer-save-state${saveState === 'failed' ? ' is-error' : ''}`} role="status" aria-live="polite">
+        <span className={`writer-save-state${saveState === 'failed' || sharedState === 'failed' || conflict ? ' is-error' : ''}`} role="status" aria-live="polite">
           {saveLabel}
         </span>
       </OfficeHeader>
@@ -350,6 +428,20 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
           </button>
         </div>
       )}
+      {conflict && (
+        <div className="office-banner" role="alert">
+          <span>{shareText.conflict}</span>
+          <span className="office-banner-actions">
+            <button type="button" className="wr-text-btn is-primary" onClick={() => onReloadShared?.()}>
+              {shareText.reload}
+            </button>
+            <button type="button" className="wr-text-btn" onClick={() => void keepMineAsDraft()}>
+              {shareText.keepMine}
+            </button>
+          </span>
+        </div>
+      )}
+      {shareOpen && shared && <ShareDialog docId={shared.id} onClose={() => setShareOpen(false)} />}
       {findOpen && <CalcFindPanel controller={controller} onClose={() => setFindOpen(false)} />}
 
       {view.formulaBar && <FormulaBar controller={controller} />}
@@ -362,6 +454,7 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
           savedAt={savedAt}
           initial={backstage}
           archiveLink={archive.link}
+          locationLabel={shared ? shareText.sharedLocation : undefined}
           notice={notice}
           problem={message}
           onSaveToArchive={archive.saveToArchive}

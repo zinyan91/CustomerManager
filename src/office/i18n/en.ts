@@ -17,6 +17,9 @@ export const en: OfficeMessages = {
     spreadsheet: 'Spreadsheet',
     spreadsheetNew: 'Blank spreadsheet',
     spreadsheetOpen: 'Open a spreadsheet',
+    sharedTitle: 'Shared spreadsheets',
+    sharedEmpty: 'No shared spreadsheets yet.',
+    sharedBy: (name: string) => (name ? `by ${name}` : ''),
     document: 'Documents',
     documentNew: 'Blank document',
     documentOpen: 'Open a document',
@@ -28,7 +31,7 @@ export const en: OfficeMessages = {
     delete: 'Delete draft',
     confirmDelete: (name: string) => `Delete the draft "${name}"? This cannot be undone.`,
     updated: (when: string) => `Edited ${when}`,
-    draftsNote: 'Drafts live in this browser and are not tied to your account. Download a file to share it.',
+    draftsNote: 'Drafts live in this browser and are not tied to your account.',
   },
   writer: writerEn,
 };

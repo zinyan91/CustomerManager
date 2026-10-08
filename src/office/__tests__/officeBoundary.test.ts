@@ -55,6 +55,8 @@ describe('ranh giới của khối Office (src/office)', () => {
       'hooks/useArchive', 'lib/archivePath', 'lib/archiveStatus', 'lib/dispatch/folderBrowse', 'lib/formatBytes', 'lib/storageRepos',
       'lib/drive/driveClient', 'lib/drive/driveDocuments', 'lib/drive/driveOps', 'lib/drive/driveToken', 'lib/drive/driveTypes', 'lib/drive/driveUpload',
       'types/dispatch',
+      // Bảng tính chung (cùng sửa): gọi Supabase
+      'lib/supabase',
     ];
     const SRC = resolve(process.cwd(), 'src');
     for (const { path, text } of FILES) {

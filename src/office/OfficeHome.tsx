@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FilePlus2, FileText, FolderOpen, Table2, Trash2 } from 'lucide-react';
 import { deleteCalcDraft, listCalcDrafts } from './calc/services/calcDraftStore';
+import { canManageSharing, deleteSharedDocument, listSharedDocuments, type SharedDocSummary } from './collab/collabApi';
 import { useOfficeI18n } from './i18n';
 import type { DraftSummary } from './shared/idbStore';
 import { deleteDraft as deleteWriterDraft, listDrafts as listWriterDrafts } from './writer/services/draftStore';
@@ -11,6 +12,7 @@ interface OfficeHomeProps {
   onNewDocument: (kind: OfficeKind) => void;
   onOpenFile: (kind: OfficeKind, file: File) => void;
   onOpenDraft: (kind: OfficeKind, id: string) => void;
+  onOpenShared: (id: string) => void;
 }
 
 type Recent = DraftSummary & { kind: OfficeKind };
@@ -26,11 +28,13 @@ const ACCEPT: Record<OfficeKind, string> = {
 const DELETE: Record<OfficeKind, (id: string) => Promise<void>> = { calc: deleteCalcDraft, writer: deleteWriterDraft };
 
 /** Cổng vào tab Báo cáo: tạo hoặc mở bảng tính và văn bản, và danh sách bản nháp gần đây trong trình duyệt này. */
-export const OfficeHome: React.FC<OfficeHomeProps> = ({ onNewDocument, onOpenFile, onOpenDraft }) => {
+export const OfficeHome: React.FC<OfficeHomeProps> = ({ onNewDocument, onOpenFile, onOpenDraft, onOpenShared }) => {
   const { m, lang } = useOfficeI18n();
   const t = m.home;
   const [recent, setRecent] = useState<Recent[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [shared, setShared] = useState<SharedDocSummary[] | null>(null);
+  const [sharedError, setSharedError] = useState<string | null>(null);
   const inputs = { calc: useRef<HTMLInputElement>(null), writer: useRef<HTMLInputElement>(null) };
 
   const reload = useCallback(async () => {
@@ -45,9 +49,31 @@ export const OfficeHome: React.FC<OfficeHomeProps> = ({ onNewDocument, onOpenFil
     }
   }, []);
 
+  // Bảng tính chung nạp riêng: lỗi ở đây (mất mạng, chưa áp migration) không được che danh sách nháp trong trình duyệt.
+  const reloadShared = useCallback(async () => {
+    try {
+      setShared(await listSharedDocuments());
+      setSharedError(null);
+    } catch (caught) {
+      setShared([]);
+      setSharedError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }, []);
+
   useEffect(() => {
     void reload();
-  }, [reload]);
+    void reloadShared();
+  }, [reload, reloadShared]);
+
+  const removeShared = async (doc: SharedDocSummary) => {
+    if (!window.confirm(t.confirmDelete(doc.title || m.calc.untitled))) return;
+    try {
+      await deleteSharedDocument(doc.id);
+      await reloadShared();
+    } catch (caught) {
+      setSharedError(caught instanceof Error ? caught.message : String(caught));
+    }
+  };
 
   const nameOf = (draft: Recent) => draft.title || (draft.kind === 'calc' ? m.calc.untitled : m.writer.untitled);
 
@@ -98,6 +124,45 @@ export const OfficeHome: React.FC<OfficeHomeProps> = ({ onNewDocument, onOpenFil
       {section('calc', t.spreadsheet, t.spreadsheetNew, t.spreadsheetOpen, t.spreadsheetOpenHint)}
       {section('writer', t.document, t.documentNew, t.documentOpen, t.documentOpenHint)}
 
+      <section aria-label={t.sharedTitle} className="space-y-2">
+        <h2 className="text-sm font-bold text-ink">{t.sharedTitle}</h2>
+        {sharedError && (
+          <div role="alert" className="text-sm text-rose-700 dark:text-rose-300">
+            {sharedError}
+          </div>
+        )}
+        {shared && shared.length === 0 && !sharedError && <p className="text-sm text-slate-500">{t.sharedEmpty}</p>}
+        <ul className="divide-y divide-line border-y border-line" aria-label={t.sharedTitle}>
+          {(shared ?? []).map((doc) => (
+            <li key={doc.id} className="flex items-center gap-3 py-2">
+              <Table2 className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />
+              <button
+                type="button"
+                className="flex-1 min-w-0 text-left cursor-pointer hover:underline"
+                onClick={() => onOpenShared(doc.id)}
+                aria-label={`${t.open} ${doc.title || m.calc.untitled}`}
+              >
+                <span className="block truncate text-sm font-medium text-ink">{doc.title || m.calc.untitled}</span>
+                <span className="block text-xs text-slate-500">
+                  {[t.sharedBy(doc.ownerName), t.updated(when(Date.parse(doc.updatedAt) || 0))].filter(Boolean).join(' · ')}
+                </span>
+              </button>
+              <span className="text-xs text-slate-500 shrink-0">{m.ribbon.share.roleLabel[doc.role]}</span>
+              {canManageSharing(doc.role) && (
+                <button
+                  type="button"
+                  onClick={() => void removeShared(doc)}
+                  aria-label={`${t.delete}: ${doc.title || m.calc.untitled}`}
+                  className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-surface cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <section aria-label={t.recent} className="space-y-2">
         <h2 className="text-sm font-bold text-ink">{t.recent}</h2>
         {error && (
@@ -106,7 +171,7 @@ export const OfficeHome: React.FC<OfficeHomeProps> = ({ onNewDocument, onOpenFil
           </div>
         )}
         {recent && recent.length === 0 && !error && <p className="text-sm text-slate-500">{t.noRecent}</p>}
-        <ul className="divide-y divide-line border-y border-line">
+        <ul className="divide-y divide-line border-y border-line" aria-label={t.recent}>
           {(recent ?? []).map((draft) => (
             <li key={`${draft.kind}:${draft.id}`} className="flex items-center gap-3 py-2">
               {draft.kind === 'calc' ? <Table2 className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" /> : <FileText className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />}

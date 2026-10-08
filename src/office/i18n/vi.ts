@@ -17,6 +17,9 @@ export const vi = {
     spreadsheetNew: 'Bảng tính trống',
     spreadsheetOpen: 'Mở bảng tính',
     spreadsheetOpenHint: 'XLSX hoặc CSV từ máy',
+    sharedTitle: 'Bảng tính chung',
+    sharedEmpty: 'Chưa có bảng tính chung nào.',
+    sharedBy: (name: string) => (name ? `của ${name}` : ''),
     document: 'Văn bản',
     documentNew: 'Văn bản trống',
     documentOpen: 'Mở văn bản',
@@ -27,7 +30,7 @@ export const vi = {
     delete: 'Xóa bản nháp',
     confirmDelete: (name: string) => `Xóa bản nháp "${name}"? Thao tác này không hoàn tác được.`,
     updated: (when: string) => `Sửa lúc ${when}`,
-    draftsNote: 'Bản nháp nằm trong trình duyệt này, không gắn với tài khoản. Cần chia sẻ thì tải về.',
+    draftsNote: 'Bản nháp nằm trong trình duyệt này, không gắn với tài khoản.',
   },
   writer: writerVi,
 };

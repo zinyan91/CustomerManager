@@ -826,3 +826,44 @@ describe('insert function and workbook statistics', () => {
     expect(workbookStats(s.c.wb)).toEqual({ sheets: 2, cells: 3, formulas: 1, charts: 0, pictures: 1, comments: 1 });
   });
 });
+
+describe('chỉ xem', () => {
+  it('chặn mọi thay đổi, kể cả những việc trang tính được bảo vệ vẫn cho làm', () => {
+    const s = sheet();
+    s.type('A1', '5');
+    let warned = 0;
+    s.c.onProtected = () => { warned++; };
+    s.c.readOnly = true;
+
+    s.type('A1', '9');
+    s.c.addSheet();
+    s.c.setFreeze(1, 1);
+    s.c.setPageSetup({ orientation: 'landscape' });
+    s.c.toggleProtection();
+    s.c.setComment(0, 0, 'x', 'An');
+    s.c.insertRows();
+    expect(s.raw('A1')).toBe('5');
+    expect(s.c.wb.sheets).toHaveLength(1);
+    expect(s.c.frozen).toEqual({ rows: 0, cols: 0 });
+    expect(s.c.pageSetup.orientation).toBe('portrait');
+    expect(s.c.sheetProtected).toBe(false);
+    expect(s.c.commentAt(0, 0)).toBeUndefined();
+    expect(warned).toBeGreaterThan(4);
+  });
+
+  it('vẫn chọn ô, cuộn, sao chép và đổi trang tính để xem; bỏ chỉ xem thì sửa lại được', () => {
+    const s = sheet();
+    s.type('A1', '5');
+    s.c.addSheet();
+    s.c.switchSheet(0);
+    s.c.readOnly = true;
+    s.c.select(0, 0);
+    expect(s.c.copy(false)).toBe('5');
+    s.c.switchSheet(1);
+    expect(s.c.active).toBe(1);
+    s.c.readOnly = false;
+    s.c.switchSheet(0);
+    s.type('A1', '7');
+    expect(s.raw('A1')).toBe('7');
+  });
+});

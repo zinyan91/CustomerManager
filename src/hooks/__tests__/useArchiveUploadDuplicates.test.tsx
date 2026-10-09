@@ -77,3 +77,34 @@ describe('useArchiveUpload - tệp trùng tên', () => {
     expect(m.upload).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('useArchiveUpload - danh sách từng tệp', () => {
+  it('gom sự kiện từng tệp thành các dòng (một dòng mỗi đường dẫn, cập nhật tại chỗ), giữ sau khi xong, xóa khi đóng', async () => {
+    m.upload.mockImplementation(async (_c, _r, _t, items: UploadItem[], _e, _p, _f, onFile: (e: unknown) => void) => {
+      for (const i of items) onFile({ path: i.relativePath, size: i.file.size, state: 'wait' });
+      for (const i of items) onFile({ path: i.relativePath, size: i.file.size, state: 'run' });
+      onFile({ path: items[0].relativePath, size: items[0].file.size, state: 'done' });
+      onFile({ path: items[1].relativePath, size: items[1].file.size, state: 'failed', error: 'Hết dung lượng' });
+      return { uploaded: [items[0].relativePath], failed: [{ path: items[1].relativePath, error: 'Hết dung lượng' }], files: [] };
+    });
+    const { result } = setup([]);
+    await act(() => result.current.upload([item('a.pdf', 1), item('b.pdf', 2)], ''));
+    expect(result.current.files).toEqual([
+      { path: 'a.pdf', size: 1, state: 'done' },
+      { path: 'b.pdf', size: 2, state: 'failed', error: 'Hết dung lượng' },
+    ]);
+    act(() => result.current.dismiss());
+    expect(result.current.files).toEqual([]);
+  });
+
+  it('đợt mới xóa danh sách của đợt trước', async () => {
+    m.upload.mockImplementation(async (_c, _r, _t, items: UploadItem[], _e, _p, _f, onFile: (e: unknown) => void) => {
+      for (const i of items) onFile({ path: i.relativePath, size: i.file.size, state: 'done' });
+      return { uploaded: items.map((i) => i.relativePath), failed: [], files: [] };
+    });
+    const { result } = setup([]);
+    await act(() => result.current.upload([item('a.pdf', 1)], ''));
+    await act(() => result.current.upload([item('b.pdf', 1)], ''));
+    expect(result.current.files.map((f) => f.path)).toEqual(['b.pdf']);
+  });
+});

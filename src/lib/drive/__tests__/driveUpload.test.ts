@@ -90,6 +90,26 @@ describe('uploadItemsToDrive', () => {
     expect(drive.byName('a-2.pdf')).toHaveLength(1);
   });
 
+  it('báo trạng thái từng tệp: tất cả chờ trước, rồi đang tải, rồi xong; tệp lỗi mang thông điệp', async () => {
+    const { drive, root } = await setup();
+    drive.failNext(/^POST \/upload\/drive\/v3\/files$/, new Response(JSON.stringify({ error: { code: 403, message: 'x', errors: [{ reason: 'storageQuotaExceeded' }] } }), { status: 403 }));
+    const events: Array<{ path: string; state: string; error?: string }> = [];
+    await uploadItemsToDrive(drive.ctx, root.id, '', [item('a.pdf'), item('b.pdf')], [], undefined, undefined, (e) => events.push({ path: e.path, state: e.state, error: e.error }));
+
+    expect(events.slice(0, 2)).toEqual([{ path: 'a.pdf', state: 'wait', error: undefined }, { path: 'b.pdf', state: 'wait', error: undefined }]);
+    for (const path of ['a.pdf', 'b.pdf']) {
+      const states = events.filter((e) => e.path === path).map((e) => e.state);
+      expect(states[0]).toBe('wait');
+      expect(states[1]).toBe('run');
+      expect(['done', 'failed']).toContain(states[2]);
+      expect(states).toHaveLength(3);
+    }
+    const failed = events.filter((e) => e.state === 'failed');
+    expect(failed).toHaveLength(1);
+    expect(failed[0].error).toMatch(/Shared Drive đã hết dung lượng/);
+    expect(events.filter((e) => e.state === 'done')).toHaveLength(1);
+  });
+
   it('một tệp lỗi thì ghi lại thông điệp tiếng Việt kèm đường dẫn, các tệp khác vẫn lên', async () => {
     const { drive, root } = await setup();
     drive.failNext(/^POST \/upload\/drive\/v3\/files$/, new Response(JSON.stringify({ error: { code: 403, message: 'x', errors: [{ reason: 'storageQuotaExceeded' }] } }), { status: 403 }));

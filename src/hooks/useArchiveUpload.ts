@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { topLevelNames, type UploadFailure, type UploadItem, type UploadProgress } from '../lib/uploadItems';
-import { uploadItemsToDrive } from '../lib/drive/driveUpload';
+import { uploadItemsToDrive, type UploadFileEvent } from '../lib/drive/driveUpload';
 import { applyDuplicateChoices, findDuplicates, type DuplicateChoice, type DuplicateMatch } from '../lib/drive/driveDuplicates';
 import type { DriveContext, DriveEntry } from '../lib/drive/driveTypes';
 
@@ -11,6 +11,9 @@ export interface UploadSummary {
   /** Đường dẫn các tệp bỏ qua vì trùng tên với tệp đã có (do người dùng chọn). */
   skipped?: string[];
 }
+
+/** Một dòng trong danh sách từng tệp của đợt tải lên. */
+export type UploadFileRow = UploadFileEvent;
 
 /** Đợt tải lên đang chờ người dùng quyết định cho các tệp trùng tên. */
 export interface PendingDuplicates {
@@ -35,6 +38,7 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [summary, setSummary] = useState<UploadSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [files, setFiles] = useState<UploadFileRow[]>([]);
   const [waiting, setWaiting] = useState<{ items: UploadItem[]; targetFolder: string; matches: DuplicateMatch[] } | null>(null);
 
   const run = useCallback(
@@ -50,9 +54,12 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
       setRunning(true);
       setError(null);
       setSummary(null);
+      setFiles([]);
       let uploadedCount = 0;
       try {
-        const res = await uploadItemsToDrive(drive.ctx, drive.rootId, targetFolder, items, drive.existingPaths, setProgress, drive.folderIds);
+        const onFile = (event: UploadFileEvent) =>
+          setFiles((rows) => (rows.some((r) => r.path === event.path) ? rows.map((r) => (r.path === event.path ? event : r)) : [...rows, event]));
+        const res = await uploadItemsToDrive(drive.ctx, drive.rootId, targetFolder, items, drive.existingPaths, setProgress, drive.folderIds, onFile);
         uploadedCount = res.uploaded.length;
         setSummary({ uploaded: uploadedCount, failed: res.failed, names: topLevelNames(items), skipped });
       } catch (err) {
@@ -104,9 +111,10 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
   const dismiss = useCallback(() => {
     setSummary(null);
     setError(null);
+    setFiles([]);
   }, []);
 
   const pending: PendingDuplicates | null = waiting ? { matches: waiting.matches, total: waiting.items.length } : null;
 
-  return { running, progress, summary, error, upload, dismiss, pending, resolveDuplicates, cancelDuplicates };
+  return { running, progress, summary, error, files, upload, dismiss, pending, resolveDuplicates, cancelDuplicates };
 }

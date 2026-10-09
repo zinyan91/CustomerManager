@@ -8,6 +8,16 @@ import type { DriveContext } from './driveTypes';
 
 const UPLOAD_CONCURRENCY = 3;
 
+/** Trạng thái của từng tệp trong một đợt tải lên. */
+export type UploadFileState = 'wait' | 'run' | 'done' | 'failed';
+
+export interface UploadFileEvent {
+  path: string;
+  size: number;
+  state: UploadFileState;
+  error?: string;
+}
+
 export interface PlannedUpload {
   item: UploadItem;
   /** Đường dẫn đầy đủ trong kho sau khi đã đổi tên tránh trùng. */
@@ -70,6 +80,7 @@ export async function uploadItemsToDrive(
   existingPaths: readonly string[],
   onProgress?: (p: UploadProgress) => void,
   knownFolders?: ReadonlyMap<string, string>,
+  onFile?: (event: UploadFileEvent) => void,
 ): Promise<DriveUploadResult> {
   const planned = planDriveUploads(items, targetFolder, existingPaths);
   const uploaded: string[] = [];
@@ -81,17 +92,23 @@ export async function uploadItemsToDrive(
   const report = () =>
     onProgress?.({ totalFiles: planned.length, uploadedFiles: uploaded.length, failedFiles: failed.length, batchIndex: 0, batchCount: 1 });
   report();
+  for (const job of planned) onFile?.({ path: job.path, size: job.item.file.size, state: 'wait' });
 
   const worker = async () => {
     for (let job = queue.shift(); job; job = queue.shift()) {
+      const size = job.item.file.size;
+      onFile?.({ path: job.path, size, state: 'run' });
       try {
         const parentId = await ensureDriveFolderPath(ctx, rootId, dirOf(job.path), folderCache);
         const file = baseOf(job.path) === job.item.file.name ? job.item.file : new File([job.item.file], baseOf(job.path), { type: job.item.file.type });
         const made = await uploadDriveFile(ctx, parentId, file);
         uploaded.push(job.path);
         created.push({ path: job.path, fileId: made.id });
+        onFile?.({ path: job.path, size, state: 'done' });
       } catch (err) {
-        failed.push({ path: job.path, error: describeDriveError(err, 'Tải lên') });
+        const error = describeDriveError(err, 'Tải lên');
+        failed.push({ path: job.path, error });
+        onFile?.({ path: job.path, size, state: 'failed', error });
       }
       report();
     }

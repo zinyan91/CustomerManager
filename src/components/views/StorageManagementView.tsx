@@ -470,7 +470,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
       {upload.pending && (
         <UploadDuplicateDialog matches={upload.pending.matches} total={upload.pending.total} onConfirm={(choices) => void upload.resolveDuplicates(choices)} onCancel={upload.cancelDuplicates} />
       )}
-      <UploadStatusPanel running={upload.running} progress={upload.progress} summary={upload.summary} error={upload.error} onDismiss={upload.dismiss} />
+      <UploadStatusPanel running={upload.running} progress={upload.progress} summary={upload.summary} error={upload.error} files={upload.files} onDismiss={upload.dismiss} />
 
       <DownloadStatusPanel
         phase={zipDl.phase}

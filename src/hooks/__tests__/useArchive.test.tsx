@@ -108,6 +108,7 @@ describe('useArchive: không có kho', () => {
 
   it('mở lần sau: hiện ngay bản đã lưu trong máy khi Drive còn chưa trả lời, rồi thay bằng bản mới', async () => {
     const first = renderHook(() => useArchive('storage'));
+    await waitFor(() => expect(first.result.current.status.kind).toBe('ready'));
     await waitFor(() => expect(first.result.current.refreshing).toBe(false));
     first.unmount();
 
@@ -137,6 +138,7 @@ describe('useArchive: không có kho', () => {
 
   it('làm mới khi đang hiện danh sách: không chuyển lại sang "đang tải", số tệp cập nhật', async () => {
     const { result } = renderHook(() => useArchive('storage'));
+    await waitFor(() => expect(result.current.status.kind).toBe('ready'));
     await waitFor(() => expect(result.current.refreshing).toBe(false));
     m.listDrive.mockResolvedValue([dfile(ROOT, 'Gốc', ['DRV'], FOLDER), dfile('A', 'a.pdf', [ROOT]), dfile('B', 'b.pdf', [ROOT])]);
     let pending: Promise<void> = Promise.resolve();

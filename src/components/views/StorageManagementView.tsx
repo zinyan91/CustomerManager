@@ -32,9 +32,8 @@ import { DispatchPreviewModal } from '../dispatch/DispatchPreviewModal';
 import { AiChatDialog } from '../ai/AiChatDialog';
 import { ItemMenu, type MenuEntry } from '../storage/ItemMenu';
 import { UploadDropZone } from '../storage/UploadDropZone';
-import { UploadStatusPanel } from '../storage/UploadStatusPanel';
+import { TransferPanel } from '../storage/TransferPanel';
 import { UploadDuplicateDialog } from '../storage/UploadDuplicateDialog';
-import { DownloadStatusPanel } from '../storage/DownloadStatusPanel';
 import { DriveNameDialog } from '../storage/DriveNameDialog';
 import { DriveMoveDialog } from '../storage/DriveMoveDialog';
 
@@ -470,17 +469,6 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
       {upload.pending && (
         <UploadDuplicateDialog matches={upload.pending.matches} total={upload.pending.total} onConfirm={(choices) => void upload.resolveDuplicates(choices)} onCancel={upload.cancelDuplicates} />
       )}
-      <UploadStatusPanel running={upload.running} progress={upload.progress} summary={upload.summary} error={upload.error} files={upload.files} onDismiss={upload.dismiss} />
-
-      <DownloadStatusPanel
-        phase={zipDl.phase}
-        fileName={zipDl.fileName}
-        progress={zipDl.progress}
-        error={zipDl.error}
-        message={zipDl.message}
-        onCancel={zipDl.cancel}
-        onDismiss={zipDl.dismiss}
-      />
 
       {(statusMessage || shownError || refreshError || status.kind === 'loading' || (refreshing && status.kind === 'ready')) && (
         <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 space-y-1.5 text-sm">
@@ -989,6 +977,11 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
         />
         )}
       </div>
+
+      <TransferPanel
+        upload={{ running: upload.running, progress: upload.progress, summary: upload.summary, error: upload.error, files: upload.files, onDismiss: upload.dismiss }}
+        zip={{ phase: zipDl.phase, fileName: zipDl.fileName, progress: zipDl.progress, error: zipDl.error, message: zipDl.message, onCancel: zipDl.cancel, onDismiss: zipDl.dismiss }}
+      />
 
       {menu && menuEntries(menu).length > 0 && <ItemMenu x={menu.x} y={menu.y} entries={menuEntries(menu)} onClose={closeMenu} />}
 

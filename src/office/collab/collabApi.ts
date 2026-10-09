@@ -155,8 +155,25 @@ export async function deleteSharedDocument(id: string): Promise<void> {
   await call<void>('office_delete_document', { p_doc: id }, 'Không xóa được bảng tính chung');
 }
 
+/** Một mốc phiên bản (không kèm nội dung). */
+export interface SharedVersion {
+  id: number;
+  seq: number;
+  label: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export const mapVersion = (row: Row): SharedVersion => ({
+  id: num(row.id),
+  seq: num(row.seq),
+  label: text(row.label),
+  createdBy: text(row.created_by),
+  createdAt: text(row.created_at),
+});
+
 /** Ghi một thao tác vào nhật ký, trả số thứ tự máy chủ gán. `clientId` là mã của máy này để nhận ra thao tác của chính mình. */
-export async function appendOp(id: string, clientId: string, patch: Patch, summary: Record<string, unknown> = {}): Promise<number> {
+export async function appendOp(id: string, clientId: string, patch: Patch, summary: object = {}): Promise<number> {
   return num(await call<number | string>('office_append_op', { p_doc: id, p_client: clientId, p_patch: patch, p_summary: summary }, 'Không gửi được thay đổi lên hệ thống'));
 }
 
@@ -182,5 +199,75 @@ export function subscribeOps(id: string, onOp: (op: SharedOp) => void, onStatus?
     .subscribe((status) => onStatus?.(status));
   return () => {
     void supabase.removeChannel(channel);
+  };
+}
+
+/** Lưu một mốc: nội dung đầy đủ ở số thứ tự `seq`. Trả mã mốc. */
+export async function saveVersion(id: string, seq: number, label: string, data: WorkbookData): Promise<number> {
+  return num(await call<number | string>('office_save_version', { p_doc: id, p_seq: seq, p_label: label, p_data: data }, 'Không lưu được mốc'));
+}
+
+/** Danh sách mốc, mới nhất trước, không kèm nội dung. */
+export async function listVersions(id: string): Promise<SharedVersion[]> {
+  const rows = await call<Row[] | null>('office_list_versions', { p_doc: id }, 'Không đọc được danh sách mốc');
+  return (rows ?? []).map(mapVersion);
+}
+
+/** Khôi phục một mốc thành bản hiện hành mới (không xóa gì). Trả số thứ tự mới. */
+export async function restoreVersion(id: string, versionId: number): Promise<number> {
+  return num(await call<number | string>('office_restore_version', { p_doc: id, p_version: versionId }, 'Không khôi phục được mốc'));
+}
+
+/** Đổi tên bảng tính chung; các máy khác nhận tên mới qua nhật ký. Trả số thứ tự mới. */
+export async function renameDocument(id: string, title: string): Promise<number> {
+  return num(await call<number | string>('office_rename_document', { p_doc: id, p_title: title }, 'Không đổi được tên bảng tính chung'));
+}
+
+/** Một người đang mở bảng tính chung và ô họ đang chọn. */
+export interface PresencePerson {
+  userId: string;
+  name: string;
+  sheet: string;
+  cell: string;
+}
+
+export interface PresenceHandle {
+  /** Báo ô mình đang chọn. */
+  update: (sheet: string, cell: string) => void;
+  leave: () => void;
+}
+
+/** Đọc danh sách người đang mở từ trạng thái presence của kênh (mỗi mã người dùng một mục, lấy bản mới nhất). */
+export function peopleFromPresence(state: Record<string, unknown[]>, selfId: string): PresencePerson[] {
+  const people: PresencePerson[] = [];
+  for (const [key, entries] of Object.entries(state)) {
+    if (key === selfId) continue;
+    const last = entries[entries.length - 1] as Partial<PresencePerson> | undefined;
+    if (!last) continue;
+    people.push({ userId: key, name: text(last.name), sheet: text(last.sheet), cell: text(last.cell) });
+  }
+  return people.sort((a, b) => a.name.localeCompare(b.name) || a.userId.localeCompare(b.userId));
+}
+
+/** Vào kênh presence của tài liệu: ai đang mở và đang chọn ô nào. Không lưu gì xuống CSDL. */
+export function joinPresence(id: string, me: { id: string; name: string }, onPeople: (people: PresencePerson[]) => void): PresenceHandle {
+  const channel = supabase.channel(`office-presence-${id}`, { config: { presence: { key: me.id } } });
+  let current = { name: me.name, sheet: '', cell: '' };
+  let ready = false;
+  channel
+    .on('presence', { event: 'sync' }, () => onPeople(peopleFromPresence(channel.presenceState() as Record<string, unknown[]>, me.id)))
+    .subscribe(async (status) => {
+      if (status !== 'SUBSCRIBED') return;
+      ready = true;
+      await channel.track(current);
+    });
+  return {
+    update: (sheet, cell) => {
+      current = { name: me.name, sheet, cell };
+      if (ready) void channel.track(current);
+    },
+    leave: () => {
+      void supabase.removeChannel(channel);
+    },
   };
 }

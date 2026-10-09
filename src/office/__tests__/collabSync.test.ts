@@ -257,6 +257,13 @@ describe('SyncEngine', () => {
     expect([1, 2, 5].map((k) => valueAt(e.local, k))).toEqual(['mình', 'người 2', 'mình 5']);
   });
 
+  it('thao tác không đổi nội dung (đổi tên tài liệu) chỉ tăng số thứ tự, không buộc dựng lại', () => {
+    const e = new SyncEngine(blank(), 1, 'A');
+    expect(e.receive({ seq: 2, clientId: '', patch: [] })).toBe(false);
+    expect(e.seq).toBe(2);
+    expect(e.receive(op(3, 'B', [[1, 'x']]))).toBe(true);
+  });
+
   it('gửi thất bại thì gửi lại đúng thay đổi đó', () => {
     const e = new SyncEngine(blank(), 0, 'A');
     e.edited(withCell(e.local, 1, 'a'));

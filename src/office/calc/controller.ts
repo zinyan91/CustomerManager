@@ -1388,6 +1388,22 @@ export class CalcController {
     this.emit();
   }
 
+  /**
+   * Thay nội dung bằng bản đã hợp nhất thay đổi của người khác, giữ nguyên trang tính đang xem (theo tên), vùng chọn và ô đang gõ.
+   * Hoàn tác bị xóa: các mục hoàn tác ghi chỉ số định dạng của bảng cũ, áp lại lên bảng mới có thể ra sai định dạng.
+   */
+  applyRemote(data: WorkbookData): void {
+    const name = this.wb.sheets[this.active]?.name;
+    this.wb.loadData(data);
+    const same = this.wb.sheets.findIndex((sheet) => sheet.name === name);
+    this.active = same >= 0 ? same : Math.min(this.active, this.wb.sheets.length - 1);
+    const sheet = this.wb.sheets[this.active];
+    if (this.selectedChart && !sheet.charts.some((c) => c.id === this.selectedChart) && !sheet.images?.some((i) => i.id === this.selectedChart)) this.selectedChart = null;
+    this.undoStack = [];
+    this.redoStack = [];
+    this.emit();
+  }
+
   /** True if text typed now would be a formula that parses. */
   static isValidFormula(text: string): boolean {
     try {

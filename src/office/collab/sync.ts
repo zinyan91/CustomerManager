@@ -48,6 +48,11 @@ export class SyncEngine {
     return this.cached;
   }
 
+  /** Bản máy chủ ở số thứ tự `seq`, không kể thay đổi chưa xác nhận của mình: dùng để ghi bản chụp. */
+  get serverData(): WorkbookData {
+    return this.server;
+  }
+
   /** Số thứ tự của bản máy chủ đã áp. */
   get seq(): number {
     return this.seqNo;
@@ -118,7 +123,8 @@ export class SyncEngine {
       if (next.own) {
         const at = this.pending.findIndex((p) => p.state !== 'queued');
         if (at >= 0) this.pending.splice(at, 1);
-      } else {
+      } else if (next.patch.length > 0) {
+        // Thao tác không đổi nội dung (đổi tên tài liệu) chỉ làm tiến số thứ tự, không buộc dựng lại bản đang thấy.
         changedByOthers = true;
       }
     }

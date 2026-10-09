@@ -4,28 +4,28 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 
 const h = vi.hoisted(() => ({
   role: 'editor' as string,
-  saves: [] as Array<{ id: string; seq: number; title: string }>,
-  saveReply: [] as Array<'ok' | 'conflict' | 'fail'>,
+  appended: [] as Array<{ id: string; clientId: string; patch: unknown[] }>,
+  ops: [] as Array<{ seq: number; userId: string; clientId: string; patch: unknown[]; summary: object; createdAt: string }>,
+  snapSeq: 7,
+  lastSeq: 7,
   created: [] as Array<{ title: string }>,
   drafts: [] as Array<{ id: string; title: string }>,
-  FakeConflict: class FakeConflict extends Error {},
 }));
 
 vi.mock('../collab/collabApi', async () => {
   const { Workbook } = await import('../calc/model/workbook');
   const blank = new Workbook().toData();
   return {
-  ConflictError: h.FakeConflict,
   canEdit: (role: string) => role === 'owner' || role === 'editor',
   canManageSharing: (role: string) => role === 'owner' || role === 'admin',
-  getSharedDocument: async (id: string) => ({ id, title: 'Quỹ lương', data: blank, role: h.role, lastSeq: 7 }),
-  saveSharedDocument: async (id: string, seq: number, title: string) => {
-    h.saves.push({ id, seq, title });
-    const reply = h.saveReply.shift() ?? 'ok';
-    if (reply === 'conflict') throw new h.FakeConflict('Người khác đã lưu');
-    if (reply === 'fail') throw new Error('mất mạng');
-    return seq + 1;
+  getSharedDocument: async (id: string) => ({ id, title: 'Quỹ lương', data: blank, role: h.role, lastSeq: h.lastSeq, snapSeq: h.snapSeq }),
+  listOps: async (_id: string, after: number) => h.ops.filter((op) => op.seq > after),
+  appendOp: async (id: string, clientId: string, patch: unknown[]) => {
+    h.appended.push({ id, clientId, patch });
+    return h.lastSeq + h.appended.length;
   },
+  saveSnapshot: async () => {},
+  subscribeOps: () => () => {},
   createSharedDocument: async (title: string) => {
     h.created.push({ title });
     return 'new-shared-id';
@@ -33,6 +33,7 @@ vi.mock('../collab/collabApi', async () => {
   listMembers: async () => [],
   listInvitableUsers: async () => [],
   setMember: async () => {},
+  joinPresence: () => ({ update: () => {}, leave: () => {} }),
   };
 });
 vi.mock('../calc/services/calcDraftStore', () => ({
@@ -76,8 +77,10 @@ const dung = (p: ReturnType<typeof props>) =>
 beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   h.role = 'editor';
-  h.saves = [];
-  h.saveReply = [];
+  h.appended = [];
+  h.ops = [];
+  h.snapSeq = 7;
+  h.lastSeq = 7;
   h.created = [];
   h.drafts = [];
 });
@@ -88,14 +91,30 @@ afterEach(() => {
 });
 
 describe('Bảng tính chung trong màn Bảng tính', () => {
-  it('người được sửa: đổi tên rồi tự lưu với số thứ tự đã tải, hiện "Đã lưu lên hệ thống"', async () => {
+  it('người được sửa: gõ vào ô thì sau 300 ms gửi một thao tác kèm mã máy, tên bị khóa, hiện "Đã lưu lên hệ thống"', async () => {
     dung(props({ sharedId: 's1' }));
     const title = (await screen.findByLabelText('Tên bảng tính')) as HTMLInputElement;
     expect(title.value).toBe('Quỹ lương');
     expect(title.readOnly).toBe(false);
-    fireEvent.change(title, { target: { value: 'Quỹ lương T10' } });
-    await waitFor(() => expect(h.saves).toEqual([{ id: 's1', seq: 7, title: 'Quỹ lương T10' }]), { timeout: 3000 });
+    const grid = document.querySelector('.calc-grid') as HTMLElement;
+    fireEvent.keyDown(grid, { key: '5' });
+    fireEvent.keyDown(document.querySelector('.calc-edit-input') as HTMLElement, { key: 'Enter' });
+    await waitFor(() => expect(h.appended).toHaveLength(1), { timeout: 3000 });
+    expect(h.appended[0].id).toBe('s1');
+    expect(h.appended[0].clientId).not.toBe('');
+    expect(h.appended[0].patch).toMatchObject([{ t: 'cells', sheet: 'Sheet1' }]);
     expect(await screen.findByText('Đã lưu lên hệ thống')).toBeTruthy();
+  });
+
+  it('mở: bản hiện hành là bản chụp cộng các thao tác sau nó trong nhật ký', async () => {
+    h.snapSeq = 7;
+    h.lastSeq = 9;
+    const op = (seq: number, row: number, text: string) => ({ seq, userId: 'u', clientId: 'khác', summary: {}, createdAt: '', patch: [{ t: 'cells', sheet: 'Sheet1', set: [[row * 16384, text, null]], del: [] }] });
+    h.ops = [op(6, 0, 'cũ hơn bản chụp'), op(8, 0, 'từ nhật ký 8'), op(9, 1, 'từ nhật ký 9')];
+    dung(props({ sharedId: 's1' }));
+    expect(await screen.findByText('từ nhật ký 8')).toBeTruthy();
+    expect(await screen.findByText('từ nhật ký 9')).toBeTruthy();
+    expect(screen.queryByText('cũ hơn bản chụp')).toBeNull();
   });
 
   it('người chỉ xem: khóa tên, hiện quyền, sửa ô bị chặn kèm lý do, không bao giờ gọi lưu; không có nút Chia sẻ', async () => {
@@ -112,26 +131,7 @@ describe('Bảng tính chung trong màn Bảng tính', () => {
     await act(async () => {
       await new Promise((r) => setTimeout(r, 1000));
     });
-    expect(h.saves).toHaveLength(0);
-  });
-
-  it('xung đột: hiện cảnh báo với hai lối ra; "Tải lại" dựng lại màn, "Giữ bản của tôi" lưu nháp riêng rồi mở nó', async () => {
-    h.saveReply = ['conflict'];
-    const p = props({ sharedId: 's1' });
-    dung(p);
-    fireEvent.change(await screen.findByLabelText('Tên bảng tính'), { target: { value: 'Bản của tôi' } });
-    expect((await screen.findByText(/Người khác đã lưu bảng tính này trước bạn/, undefined, { timeout: 3000 })).textContent).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Tải lại bản mới nhất' }));
-    expect(p.onReloadShared).toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Giữ bản của tôi thành nháp riêng' }));
-    await waitFor(() => expect(p.onOpenDraft).toHaveBeenCalledWith('draft-xyz'));
-    expect(h.drafts).toEqual([{ id: 'draft-xyz', title: 'Bản của tôi' }]);
-    // Sau xung đột không lưu lên hệ thống nữa
-    fireEvent.change(screen.getByLabelText('Tên bảng tính'), { target: { value: 'Sửa tiếp' } });
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 1200));
-    });
-    expect(h.saves).toHaveLength(1);
+    expect(h.appended).toHaveLength(0);
   });
 
   it('nháp riêng bấm Chia sẻ: hỏi xác nhận, không đồng ý thì không tải lên; đồng ý thì tạo và mở bảng tính chung', async () => {

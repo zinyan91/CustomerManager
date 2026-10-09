@@ -19,6 +19,7 @@ export const OfficeCalcRoute: React.FC = () => {
         key={`calc-${route.screenKey}`}
         {...route}
         author={fullName ?? user?.email ?? ''}
+        userId={user?.id ?? ''}
         onOpenShared={(id) => navigate(calcSharedPath(id), { replace: true })}
         onReloadShared={onReload}
       />

@@ -867,3 +867,36 @@ describe('chỉ xem', () => {
     expect(s.raw('A1')).toBe('7');
   });
 });
+
+describe('áp thay đổi từ xa (applyRemote)', () => {
+  it('giữ trang tính đang xem theo tên, vùng chọn và ô đang gõ; xóa hoàn tác; thay nội dung', () => {
+    const s = sheet();
+    s.type('A1', '1');
+    s.c.addSheet();
+    s.c.addSheet();
+    s.c.switchSheet(1);
+    s.c.select(4, 2);
+    s.c.startEdit('đang gõ');
+    const data = s.c.wb.toData();
+    // Người khác chèn một trang tính lên đầu: trang đang xem đổi chỉ số nhưng vẫn là Sheet2
+    data.sheets.unshift({ ...data.sheets[0], name: 'Mới', cells: [] });
+    data.sheets[2].cells = [[0, 'từ xa', 0]];
+    s.c.applyRemote(data);
+    expect(s.c.wb.sheets[s.c.active].name).toBe('Sheet2');
+    expect(s.c.selection).toMatchObject({ r1: 4, c1: 2 });
+    expect(s.c.editing?.text).toBe('đang gõ');
+    expect(s.c.canUndo).toBe(false);
+    expect(s.c.wb.getCell(s.c.active, 0, 0)?.raw).toBe('từ xa');
+  });
+
+  it('trang đang xem bị người khác xóa thì chuyển sang trang còn lại gần nhất, không lỗi', () => {
+    const s = sheet();
+    s.c.addSheet();
+    s.c.switchSheet(1);
+    const data = s.c.wb.toData();
+    data.sheets.splice(1, 1);
+    s.c.applyRemote(data);
+    expect(s.c.active).toBe(0);
+    expect(s.c.wb.sheets).toHaveLength(1);
+  });
+});

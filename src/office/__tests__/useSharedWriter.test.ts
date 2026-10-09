@@ -220,6 +220,18 @@ describe('useSharedWriter', () => {
     expect(hook.result.current.error).toBeNull();
   });
 
+  it('nội dung vượt 5 MB: báo ngay lý do, không gửi lên máy chủ; bớt xuống thì lưu lại được', async () => {
+    const { hook, type } = open();
+    type({ doc: 'x'.repeat(5 * 1024 * 1024 + 100) });
+    await waitFor(() => expect(hook.result.current.status).toBe('failed'));
+    expect(hook.result.current.error).toContain('vượt giới hạn 5 MB');
+    expect(h.saves).toHaveLength(0);
+    type({ doc: 'đã bỏ bớt ảnh' });
+    await waitFor(() => expect(hook.result.current.status).toBe('saved'));
+    expect(h.saves).toEqual([{ base: 1, title: 'Công văn', content: { doc: 'đã bỏ bớt ảnh' } }]);
+    expect(hook.result.current.error).toBeNull();
+  });
+
   it('mở kênh xong mà đã có thao tác bị lỡ: xử lý như thao tác của người khác', async () => {
     const { hook, loaded } = open();
     h.serverSeq = 3;

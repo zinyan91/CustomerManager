@@ -4,6 +4,7 @@ import { Download, Printer } from 'lucide-react';
 import { canEdit, canManageSharing, createSharedWriter, getSharedWriter, type SharedRole } from '../../collab/collabApi';
 import { PresenceBar } from '../../collab/PresenceBar';
 import { SharedDocActions, SharedDocPanels, type SharedPanel } from '../../collab/SharedDocChrome';
+import { contentSizeProblem } from '../../collab/contentSize';
 import { useSharedWriter } from '../../collab/useSharedWriter';
 import { WriterVersionPreview } from './WriterVersionPreview';
 import { usePresence } from '../../collab/usePresence';
@@ -254,10 +255,16 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
     if (!window.confirm(t.shared.uploadConfirm)) return;
     const doc = latest.current.doc;
     if (!doc) return;
+    const content = toSharedContent(doc, latest.current.pageSetup);
+    const tooBig = contentSizeProblem(content);
+    if (tooBig) {
+      setError(tooBig);
+      return;
+    }
     setSharing(true);
     try {
       await flush();
-      onOpenShared?.(await createSharedWriter(savedTitle(), toSharedContent(doc, latest.current.pageSetup)));
+      onOpenShared?.(await createSharedWriter(savedTitle(), content));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {

@@ -8,6 +8,7 @@
 --   office_create_document        thêm tham số p_kind (mặc định 'calc', nên lời gọi cũ vẫn chạy)
 --   office_list_documents         trả thêm kind
 --   office_get_document           trả thêm kind
+--   office_check_size             thông điệp quá 5 MB nói chung cho bảng tính và văn bản
 --   office_save_document          văn bản ghi tóm tắt {"kind":"save"} để nhật ký ghi "Lưu văn bản" (bảng tính giữ {"kind":"reset"})
 -- Không xóa dữ liệu. Gỡ lại: supabase/rollbacks/74_van_ban_chia_se_rollback.sql
 -- ÁP DỤNG: sau migration 73, TRƯỚC khi deploy mã Văn bản chung.
@@ -15,6 +16,21 @@
 
 ALTER TABLE public."OfficeDocuments" DROP CONSTRAINT IF EXISTS "OfficeDocuments_Kind_check";
 ALTER TABLE public."OfficeDocuments" ADD CONSTRAINT "OfficeDocuments_Kind_check" CHECK ("Kind" IN ('calc', 'writer'));
+
+CREATE OR REPLACE FUNCTION public.office_check_size(p_data jsonb)
+RETURNS void
+LANGUAGE plpgsql IMMUTABLE
+SET search_path = public
+AS $$
+BEGIN
+  IF p_data IS NULL OR jsonb_typeof(p_data) <> 'object' THEN
+    RAISE EXCEPTION 'Nội dung tài liệu không hợp lệ.' USING ERRCODE = '22023';
+  END IF;
+  IF octet_length(p_data::text) > 5 * 1024 * 1024 THEN
+    RAISE EXCEPTION 'Tài liệu lớn hơn 5 MB, không đưa lên hệ thống được. Hãy chia nhỏ hoặc bỏ bớt ảnh.' USING ERRCODE = '54000';
+  END IF;
+END;
+$$;
 
 DROP FUNCTION IF EXISTS public.office_create_document(text, jsonb);
 CREATE OR REPLACE FUNCTION public.office_create_document(p_title text, p_data jsonb, p_kind text DEFAULT 'calc')

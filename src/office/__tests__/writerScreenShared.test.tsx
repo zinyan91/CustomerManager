@@ -290,6 +290,20 @@ describe('Nháp văn bản đưa lên hệ thống', () => {
   });
 });
 
+describe('Nháp văn bản quá lớn', () => {
+  it('Chia sẻ nháp quá 5 MB: báo lý do ngay, không gọi máy chủ và không chuyển sang bản chung', async () => {
+    const p = props({ sharedId: null });
+    dung(p);
+    const share = await screen.findByRole('button', { name: /Chia sẻ/ });
+    typeText('x'.repeat(5 * 1024 * 1024 + 100));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fireEvent.click(share);
+    expect((await screen.findByRole('alert')).textContent).toContain('vượt giới hạn 5 MB');
+    expect(h.created).toHaveLength(0);
+    expect(p.onOpenShared).not.toHaveBeenCalled();
+  });
+});
+
 describe('Văn bản chung: bản mới của người khác', () => {
   it('người khác lưu khi mình chưa sửa gì: nội dung được thay bằng bản mới, không báo xung đột', async () => {
     dung(props());

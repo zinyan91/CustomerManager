@@ -3,6 +3,21 @@
 ALTER TABLE public."OfficeDocuments" DROP CONSTRAINT IF EXISTS "OfficeDocuments_Kind_check";
 ALTER TABLE public."OfficeDocuments" ADD CONSTRAINT "OfficeDocuments_Kind_check" CHECK ("Kind" IN ('calc'));
 
+CREATE OR REPLACE FUNCTION public.office_check_size(p_data jsonb)
+RETURNS void
+LANGUAGE plpgsql IMMUTABLE
+SET search_path = public
+AS $$
+BEGIN
+  IF p_data IS NULL OR jsonb_typeof(p_data) <> 'object' THEN
+    RAISE EXCEPTION 'Nội dung bảng tính không hợp lệ.' USING ERRCODE = '22023';
+  END IF;
+  IF octet_length(p_data::text) > 5 * 1024 * 1024 THEN
+    RAISE EXCEPTION 'Bảng tính lớn hơn 5 MB, không đưa lên hệ thống được. Hãy chia nhỏ hoặc bỏ bớt ảnh.' USING ERRCODE = '54000';
+  END IF;
+END;
+$$;
+
 DROP FUNCTION IF EXISTS public.office_create_document(text, jsonb, text);
 CREATE FUNCTION public.office_create_document(p_title text, p_data jsonb)
 RETURNS uuid

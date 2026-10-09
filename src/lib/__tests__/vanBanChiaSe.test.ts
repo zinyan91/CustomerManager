@@ -133,6 +133,15 @@ describe('migration 74: chia sẻ Văn bản', () => {
     expect([doc.data.note, doc.title, doc.kind]).toEqual(['một', 'Tên khác', 'writer']);
   });
 
+  it('quá 5 MB: thông điệp nói chung cho tài liệu (không nhắc riêng bảng tính), tạo và lưu đều bị từ chối', async () => {
+    await as(db, 'owner');
+    await expect(db.query(`SELECT public.office_create_document('Lớn', jsonb_build_object('doc', repeat('x', 5300000)), 'writer')`)).rejects.toThrow(/Tài liệu lớn hơn 5 MB/);
+    const id = await create(db, 'writer');
+    await as(db, 'owner');
+    await expect(db.query(`SELECT public.office_save_document($1, 1::bigint, 'Lớn', jsonb_build_object('doc', repeat('x', 5300000)))`, [id])).rejects.toThrow(/Tài liệu lớn hơn 5 MB/);
+    await expect(db.query(`SELECT public.office_create_document('Hỏng', '[]'::jsonb, 'writer')`)).rejects.toThrow(/Nội dung tài liệu không hợp lệ/);
+  });
+
   it('chạy lại migration không làm mất văn bản hay đổi loại', async () => {
     const id = await create(db, 'writer');
     await as(db, 'owner');
@@ -157,6 +166,7 @@ describe('migration 74: chia sẻ Văn bản', () => {
       const calc = (await own.query<{ id: string }>(`SELECT public.office_create_document('Cũ', '{}'::jsonb) AS id`)).rows[0].id;
       const columns = Object.keys((await own.query(`SELECT * FROM public.office_get_document($1)`, [calc])).rows[0] as object);
       expect(columns).not.toContain('kind');
+      await expect(own.query(`SELECT public.office_create_document('Hỏng', '[]'::jsonb)`)).rejects.toThrow(/Nội dung bảng tính không hợp lệ/);
       await expect(own.query(`SELECT public.office_create_document('x', '{}'::jsonb, 'writer')`)).rejects.toThrow();
     } finally {
       await own.close();

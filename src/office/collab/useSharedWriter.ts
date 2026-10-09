@@ -10,6 +10,7 @@ import {
   type SharedOp,
   type SharedWriter,
 } from './collabApi';
+import { contentSizeProblem } from './contentSize';
 
 export type WriterSyncStatus = 'idle' | 'saved' | 'saving' | 'conflict' | 'failed';
 
@@ -88,10 +89,16 @@ export function useSharedWriter(options: UseSharedWriterOptions) {
     if (!id || !latest.current.canWrite || conflict.current) return;
     if (inflight.current) return inflight.current;
     if (!dirty.current) return;
+    const { title, content } = latest.current.snapshot();
+    const tooBig = contentSizeProblem(content);
+    if (tooBig) {
+      setError(tooBig);
+      setStatus('failed');
+      return;
+    }
     const run = (async () => {
       dirty.current = false;
       setStatus('saving');
-      const { title, content } = latest.current.snapshot();
       let again = false;
       try {
         adopt(await saveSharedWriter(id, baseSeq.current, title, content));

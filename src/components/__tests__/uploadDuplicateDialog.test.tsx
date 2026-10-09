@@ -8,7 +8,8 @@ afterEach(cleanup);
 
 const match = (index: number, path: string, sameSize: boolean): DuplicateMatch => ({
   index, path, name: path, newSize: 2048, newModified: Date.UTC(2026, 9, 9), sameSize,
-  existing: { name: path, path, size: sameSize ? 2048 : 1024, modifiedTime: '2026-10-08T01:00:00Z' },
+  existing: { id: `id-${path}`, name: path, path, size: sameSize ? 2048 : 1024, modifiedTime: '2026-10-08T01:00:00Z' },
+  canOverwrite: true,
 });
 
 const open = (over: Partial<React.ComponentProps<typeof UploadDuplicateDialog>> = {}) => {
@@ -43,6 +44,15 @@ describe('UploadDuplicateDialog', () => {
     fireEvent.click(screen.getByLabelText('Áp dụng lựa chọn của tệp đầu tiên cho tất cả'));
     fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục' }));
     expect([...(props.onConfirm.mock.calls[0][0] as Map<number, string>)]).toEqual([[0, 'skip'], [2, 'skip']]);
+  });
+
+  it('có lựa chọn Ghi đè (không chọn sẵn) và gửi đúng khi chọn; tệp Google Docs không có lựa chọn này', () => {
+    const props = open({ matches: [match(0, 'a.pdf', true), { ...match(2, 'Bao-cao', false), canOverwrite: false }] });
+    expect((within(group('a.pdf')).getByLabelText('Ghi đè') as HTMLInputElement).checked).toBe(false);
+    expect(within(group('Bao-cao')).queryByLabelText('Ghi đè')).toBeNull();
+    fireEvent.click(within(group('a.pdf')).getByLabelText('Ghi đè'));
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục' }));
+    expect([...(props.onConfirm.mock.calls[0][0] as Map<number, string>)]).toEqual([[0, 'over'], [2, 'keep']]);
   });
 
   it('Hủy tải lên gọi onCancel và không tải gì', () => {

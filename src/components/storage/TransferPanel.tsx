@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ArrowDown, ArrowUp, CheckCircle2, Loader2, X } from 'lucide-react';
 import type { UploadFileRow, UploadSummary } from '../../hooks/useArchiveUpload';
 import type { ZipProgress } from '../../lib/folderZip';
 import { formatBytes } from '../../lib/formatBytes';
 import type { UploadProgress } from '../../lib/uploadItems';
+import { createSpeedMeter, type SpeedMeter } from '../../lib/speedMeter';
 import { buildTransferRows, countByTab, filterRows, totalsOf, type TransferRow, type TransferStatus, type TransferTab } from '../../lib/transferRows';
 
 interface TransferPanelProps {
@@ -14,6 +15,12 @@ interface TransferPanelProps {
     error: string | null;
     files: UploadFileRow[];
     onDismiss: () => void;
+    /** Hủy một tệp đang chờ hoặc đang tải. */
+    onCancelFile?: (path: string) => void;
+    /** Tải lại một tệp lỗi hoặc đã hủy. */
+    onRetryFile?: (path: string) => void;
+    /** Các đường dẫn còn tải lại được (còn giữ tệp gốc). */
+    retryable?: ReadonlySet<string>;
   };
   zip: {
     phase: 'choosing' | 'downloading' | 'saving' | 'cancelling' | null;
@@ -33,14 +40,17 @@ const TABS: Array<{ id: TransferTab; label: string }> = [
   { id: 'bad', label: 'Bỏ qua / Lỗi' },
 ];
 
-const STATUS_LABEL: Record<TransferStatus, string> = { wait: 'Đang chờ', run: 'Đang chạy', done: 'Hoàn tất', skipped: 'Đã bỏ qua', failed: 'Lỗi' };
+const STATUS_LABEL: Record<TransferStatus, string> = { wait: 'Đang chờ', run: 'Đang chạy', done: 'Hoàn tất', skipped: 'Đã bỏ qua', failed: 'Lỗi', cancelled: 'Đã hủy' };
 const STATUS_STYLE: Record<TransferStatus, string> = {
   wait: 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300',
   run: 'border-slate-500 text-slate-800 dark:text-slate-100',
   done: 'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
   skipped: 'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
   failed: 'border-transparent bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
+  cancelled: 'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
 };
+
+const actionBtn = 'px-2 py-0.5 rounded-md border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer';
 
 function Bar({ row }: { row: TransferRow }) {
   const colour = row.status === 'done' ? 'bg-emerald-600' : row.status === 'run' || row.status === 'wait' ? 'bg-slate-700 dark:bg-slate-300' : 'bg-slate-300 dark:bg-slate-600';
@@ -49,7 +59,7 @@ function Bar({ row }: { row: TransferRow }) {
       {row.status === 'run' && !row.known ? (
         <div className={`h-full w-1/3 ${colour} animate-pulse`} />
       ) : (
-        <div className={`h-full ${colour} transition-[width]`} style={{ width: `${row.status === 'skipped' || row.status === 'failed' ? 100 : row.pct}%` }} />
+        <div className={`h-full ${colour} transition-[width]`} style={{ width: `${row.status === 'skipped' || row.status === 'failed' || row.status === 'cancelled' ? 100 : row.pct}%` }} />
       )}
     </div>
   );
@@ -61,9 +71,22 @@ function Bar({ row }: { row: TransferRow }) {
  */
 export function TransferPanel({ upload, zip }: TransferPanelProps) {
   const [tab, setTab] = useState<TransferTab>('all');
+  // Tốc độ tải ZIP đo từ số byte đã nén; tệp tải lên đã có tốc độ từ hook
+  const [zipSpeed, setZipSpeed] = useState(0);
+  const zipMeter = useRef<SpeedMeter>(createSpeedMeter());
+  const zipLoaded = zip.progress?.loadedBytes;
+  useEffect(() => {
+    if (zip.phase !== 'downloading' || zipLoaded === undefined) {
+      zipMeter.current = createSpeedMeter();
+      setZipSpeed(0);
+      return;
+    }
+    setZipSpeed(zipMeter.current.sample(zipLoaded, Date.now()));
+  }, [zip.phase, zipLoaded]);
+
   const rows = useMemo(
-    () => buildTransferRows({ uploads: upload.files, skipped: upload.summary?.skipped, zip }),
-    [upload.files, upload.summary?.skipped, zip]
+    () => buildTransferRows({ uploads: upload.files, skipped: upload.summary?.skipped, zip, zipSpeed }),
+    [upload.files, upload.summary?.skipped, zip, zipSpeed]
   );
 
   const busy = upload.running || zip.phase !== null;
@@ -117,7 +140,7 @@ export function TransferPanel({ upload, zip }: TransferPanelProps) {
         <ul aria-label="Danh sách truyền tệp" className="max-h-60 overflow-auto divide-y divide-slate-100 dark:divide-slate-800">
           {shown.length === 0 && <li className="px-4 py-3 text-slate-500 dark:text-slate-400">Chưa có tệp nào trong mục này.</li>}
           {shown.map((r) => (
-            <li key={r.id} className="grid grid-cols-[1.25rem_minmax(0,2.2fr)_minmax(0,1.4fr)_5rem_minmax(5rem,1.2fr)_5.5rem_auto] items-center gap-3 px-4 py-2 min-w-[40rem]">
+            <li key={r.id} className="grid grid-cols-[1.25rem_minmax(0,2.2fr)_minmax(0,1.3fr)_4.5rem_minmax(5rem,1.2fr)_5rem_5.5rem_7rem] items-center gap-3 px-4 py-2 min-w-[48rem]">
               <span title={r.dir === 'up' ? 'Tải lên' : 'Tải xuống'} className="text-slate-500">
                 {r.dir === 'up' ? <ArrowUp className="w-4 h-4" aria-label="Tải lên" /> : <ArrowDown className="w-4 h-4" aria-label="Tải xuống" />}
               </span>
@@ -128,11 +151,22 @@ export function TransferPanel({ upload, zip }: TransferPanelProps) {
               <span className="truncate text-xs text-slate-500 dark:text-slate-400" title={r.dest}>{r.dest}</span>
               <span className="text-xs tabular-nums text-slate-600 dark:text-slate-300">{r.size > 0 ? formatBytes(r.size) : ''}</span>
               <Bar row={r} />
+              <span className="text-xs tabular-nums text-slate-600 dark:text-slate-300">{r.speed > 0 ? `${formatBytes(r.speed)}/s` : ''}</span>
               <span className={`text-xs text-center px-2 py-0.5 rounded-full border ${STATUS_STYLE[r.status]}`}>{STATUS_LABEL[r.status]}</span>
-              <span className="w-10">
+              <span className="flex justify-end gap-1">
                 {r.id === 'down:zip' && zip.phase === 'downloading' && (
-                  <button type="button" onClick={zip.onCancel} className="px-2 py-0.5 rounded-md border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+                  <button type="button" onClick={zip.onCancel} className={actionBtn}>
                     Hủy
+                  </button>
+                )}
+                {r.dir === 'up' && (r.status === 'wait' || r.status === 'run') && upload.onCancelFile && (
+                  <button type="button" onClick={() => upload.onCancelFile!(r.name)} aria-label={`Hủy ${r.name}`} className={actionBtn}>
+                    Hủy
+                  </button>
+                )}
+                {r.dir === 'up' && (r.status === 'failed' || r.status === 'cancelled') && upload.onRetryFile && upload.retryable?.has(r.name) && (
+                  <button type="button" disabled={upload.running} onClick={() => upload.onRetryFile!(r.name)} aria-label={`Thử lại ${r.name}`} className={`${actionBtn} disabled:opacity-50`}>
+                    Thử lại
                   </button>
                 )}
               </span>
@@ -173,7 +207,8 @@ export function TransferPanel({ upload, zip }: TransferPanelProps) {
                 <>
                   Đã tải lên {upload.summary.uploaded} tệp
                   {upload.summary.names.length > 0 && upload.summary.names.length <= 3 ? `: ${upload.summary.names.join(', ')}` : ''}
-                  {upload.summary.failed.length > 0 ? `, ${upload.summary.failed.length} tệp lỗi.` : '.'}
+                  {upload.summary.failed.length > 0 ? `, ${upload.summary.failed.length} tệp lỗi` : ''}
+                  {(upload.summary.cancelled ?? 0) > 0 ? `, ${upload.summary.cancelled} tệp đã hủy` : ''}.
                 </>
               )}
               {(upload.summary.skipped?.length ?? 0) > 0 ? ` Đã bỏ qua ${upload.summary.skipped!.length} tệp trùng tên.` : ''}

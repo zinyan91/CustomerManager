@@ -98,9 +98,9 @@ describe('uploadItemsToDrive', () => {
 
     expect(events.slice(0, 2)).toEqual([{ path: 'a.pdf', state: 'wait', error: undefined }, { path: 'b.pdf', state: 'wait', error: undefined }]);
     for (const path of ['a.pdf', 'b.pdf']) {
-      const states = events.filter((e) => e.path === path).map((e) => e.state);
-      expect(states[0]).toBe('wait');
-      expect(states[1]).toBe('run');
+      // Tiến độ theo byte có thể báo thêm nhiều lần 'run': gộp các lần liên tiếp cùng trạng thái
+      const states = events.filter((e) => e.path === path).map((e) => e.state).filter((state, i, all) => state !== all[i - 1]);
+      expect(states.slice(0, 2)).toEqual(['wait', 'run']);
       expect(['done', 'failed']).toContain(states[2]);
       expect(states).toHaveLength(3);
     }
@@ -108,6 +108,61 @@ describe('uploadItemsToDrive', () => {
     expect(failed).toHaveLength(1);
     expect(failed[0].error).toMatch(/Shared Drive đã hết dung lượng/);
     expect(events.filter((e) => e.state === 'done')).toHaveLength(1);
+  });
+
+  it('tiến độ theo byte: đang tải có số byte đã gửi, xong thì bằng dung lượng; sự kiện đầu của tệp mang tệp gốc để thử lại', async () => {
+    const { drive, root } = await setup();
+    const a = item('a.pdf', 'NOI-DUNG-DAI');
+    const events: Array<{ state: string; loaded?: number; item?: unknown }> = [];
+    await uploadItemsToDrive(drive.ctx, root.id, '', [a], [], undefined, undefined, (e) => events.push({ state: e.state, loaded: e.loaded, item: e.item }));
+    expect(events[0]).toMatchObject({ state: 'wait', item: a });
+    const size = a.file.size;
+    expect(events.some((e) => e.state === 'run' && e.loaded === size)).toBe(true);
+    expect(events.at(-1)).toMatchObject({ state: 'done', loaded: size });
+  });
+
+  it('ghi đè: nội dung tệp cũ được thay, giữ nguyên mã và tên, không tạo thêm tệp', async () => {
+    const { drive, root, entries } = await setup();
+    const old = drive.seedFile('a.pdf', root.id, 'CU');
+    const res = await uploadItemsToDrive(drive.ctx, root.id, '', [item('a.pdf', 'NOI-DUNG-MOI')], [], undefined, undefined, undefined, { overwrite: new Map([['a.pdf', old.id]]) });
+    expect(res.failed).toEqual([]);
+    expect(res.uploaded).toEqual(['a.pdf']);
+    expect(res.files).toEqual([{ path: 'a.pdf', fileId: old.id }]);
+    expect((await entries()).map((e) => e.path)).toEqual(['a.pdf']);
+    expect(new TextDecoder().decode(drive.byName('a.pdf')[0].bytes)).toBe('NOI-DUNG-MOI');
+  });
+
+  it('hủy trước khi bắt đầu: tệp không được tải, không tính lỗi, báo trạng thái đã hủy; tệp khác vẫn lên', async () => {
+    const { drive, root } = await setup();
+    const stop = new AbortController();
+    stop.abort();
+    const events: Array<{ path: string; state: string }> = [];
+    const progress: UploadProgress[] = [];
+    const res = await uploadItemsToDrive(drive.ctx, root.id, '', [item('a.pdf'), item('b.pdf')], [], (p) => progress.push(p), undefined, (e) => events.push({ path: e.path, state: e.state }), {
+      signalFor: (path) => (path === 'b.pdf' ? stop.signal : undefined),
+    });
+    expect(res.uploaded).toEqual(['a.pdf']);
+    expect(res.cancelled).toEqual(['b.pdf']);
+    expect(res.failed).toEqual([]);
+    expect(events.filter((e) => e.path === 'b.pdf').map((e) => e.state)).toEqual(['wait', 'cancelled']);
+    expect(drive.byName('b.pdf')).toHaveLength(0);
+    const last = progress.at(-1)!;
+    expect(last.uploadedFiles + last.failedFiles).toBe(last.totalFiles);
+  });
+
+  it('hủy giữa chừng khi đang tải: tệp không được tạo, trạng thái đã hủy chứ không phải lỗi', async () => {
+    const { drive, root } = await setup();
+    const stop = new AbortController();
+    const events: string[] = [];
+    const res = await uploadItemsToDrive(drive.ctx, root.id, '', [item('a.pdf', 'NOI-DUNG')], [], undefined, undefined, (e) => {
+      events.push(e.state);
+      if (e.state === 'run') stop.abort();
+    }, { signalFor: () => stop.signal });
+    expect(res.cancelled).toEqual(['a.pdf']);
+    expect(res.uploaded).toEqual([]);
+    expect(res.failed).toEqual([]);
+    expect(events.at(-1)).toBe('cancelled');
+    expect(drive.byName('a.pdf')).toHaveLength(0);
   });
 
   it('một tệp lỗi thì ghi lại thông điệp tiếng Việt kèm đường dẫn, các tệp khác vẫn lên', async () => {
@@ -131,7 +186,7 @@ describe('uploadItemsToDrive', () => {
 
   it('danh sách rỗng thì không làm gì', async () => {
     const { drive, root } = await setup();
-    expect(await uploadItemsToDrive(drive.ctx, root.id, '', [], [])).toEqual({ uploaded: [], failed: [], files: [] });
+    expect(await uploadItemsToDrive(drive.ctx, root.id, '', [], [])).toEqual({ uploaded: [], failed: [], files: [], cancelled: [] });
     expect(drive.requests).toHaveLength(0);
   });
 

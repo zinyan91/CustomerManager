@@ -1,7 +1,7 @@
 import type { UploadFileEvent } from './drive/driveUpload';
 import type { ZipProgress } from './folderZip';
 
-export type TransferStatus = 'wait' | 'run' | 'done' | 'skipped' | 'failed';
+export type TransferStatus = 'wait' | 'run' | 'done' | 'skipped' | 'failed' | 'cancelled';
 export type TransferTab = 'all' | 'run' | 'done' | 'bad';
 
 export interface TransferRow {
@@ -17,7 +17,12 @@ export interface TransferRow {
   status: TransferStatus;
   /** Ghi chú một dòng: lỗi, lý do bỏ qua, tiến độ tệp. */
   note: string;
+  /** Tốc độ hiện tại (byte/giây); 0 khi chưa biết hoặc không đang chạy. */
+  speed: number;
 }
+
+/** Một tệp của đợt tải lên kèm tốc độ đo được. */
+export type UploadRowInput = UploadFileEvent & { speed?: number };
 
 export interface ZipState {
   phase: 'choosing' | 'downloading' | 'saving' | 'cancelling' | null;
@@ -30,7 +35,7 @@ export interface ZipState {
 const dirOf = (path: string) => path.split('/').slice(0, -1).join('/');
 
 /** Các dòng của bảng truyền tệp: từng tệp của đợt tải lên, tệp bỏ qua vì trùng, và lần tải thư mục về (ZIP) nếu có. */
-export function buildTransferRows(args: { uploads: readonly UploadFileEvent[]; skipped?: readonly string[]; zip?: ZipState | null }): TransferRow[] {
+export function buildTransferRows(args: { uploads: readonly UploadRowInput[]; skipped?: readonly string[]; zip?: ZipState | null; zipSpeed?: number }): TransferRow[] {
   const rows: TransferRow[] = [];
 
   for (const f of args.uploads) {
@@ -40,14 +45,15 @@ export function buildTransferRows(args: { uploads: readonly UploadFileEvent[]; s
       name: f.path,
       dest: dirOf(f.path) || 'Gốc kho',
       size: f.size,
-      pct: f.state === 'done' ? 100 : 0,
-      known: f.state === 'done' || f.state === 'wait',
-      status: f.state === 'failed' ? 'failed' : f.state,
-      note: f.error ?? '',
+      pct: f.state === 'done' ? 100 : f.state === 'run' && f.loaded !== undefined && f.size > 0 ? Math.min(100, Math.round((f.loaded / f.size) * 100)) : 0,
+      known: f.state === 'done' || f.state === 'wait' || (f.state === 'run' && f.loaded !== undefined),
+      status: f.state,
+      note: f.state === 'cancelled' ? 'Đã hủy' : (f.error ?? ''),
+      speed: f.state === 'run' ? (f.speed ?? 0) : 0,
     });
   }
   for (const path of args.skipped ?? []) {
-    rows.push({ id: `skip:${path}`, dir: 'up', name: path, dest: dirOf(path) || 'Gốc kho', size: 0, pct: 100, known: true, status: 'skipped', note: 'Trùng với tệp đã có trong kho' });
+    rows.push({ id: `skip:${path}`, dir: 'up', name: path, dest: dirOf(path) || 'Gốc kho', size: 0, pct: 100, known: true, status: 'skipped', note: 'Trùng với tệp đã có trong kho', speed: 0 });
   }
 
   const zip = args.zip;
@@ -74,6 +80,7 @@ export function buildTransferRows(args: { uploads: readonly UploadFileEvent[]; s
               : zip.phase && p
                 ? `${p.completed}/${p.total} tệp${p.currentName ? ` · ${p.currentName}` : ''}`
                 : zip.error ?? '',
+      speed: status === 'run' ? (args.zipSpeed ?? 0) : 0,
     });
   }
   return rows;

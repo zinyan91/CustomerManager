@@ -979,7 +979,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
       </div>
 
       <TransferPanel
-        upload={{ running: upload.running, progress: upload.progress, summary: upload.summary, error: upload.error, files: upload.files, onDismiss: upload.dismiss }}
+        upload={{ running: upload.running, progress: upload.progress, summary: upload.summary, error: upload.error, files: upload.files, onDismiss: upload.dismiss, onCancelFile: upload.cancelFile, onRetryFile: (path) => void upload.retryFile(path), retryable: upload.retryable }}
         zip={{ phase: zipDl.phase, fileName: zipDl.fileName, progress: zipDl.progress, error: zipDl.error, message: zipDl.message, onCancel: zipDl.cancel, onDismiss: zipDl.dismiss }}
       />
 

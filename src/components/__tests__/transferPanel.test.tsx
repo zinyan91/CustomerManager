@@ -46,6 +46,43 @@ describe('TransferPanel', () => {
     expect(screen.getByText('Đang truyền 1 tệp')).toBeTruthy();
   });
 
+  it('cột tốc độ chỉ hiện ở tệp đang chạy; tệp đang chạy có nút Hủy đúng đường dẫn', () => {
+    const cancel = vi.fn();
+    show({ upload: { running: true, progress, files: [{ path: 'VB/b.pdf', size: 4 * 1024 * 1024, state: 'run', loaded: 1024 * 1024, speed: 1536 * 1024 }, files[0]], onCancelFile: cancel } });
+    const [run, done] = rowsOf();
+    expect(run.textContent).toContain('1.50 MB/s');
+    expect(run.textContent).toContain('Đang chạy');
+    expect(within(run).getByRole('progressbar').getAttribute('aria-valuenow')).toBe('25');
+    expect(within(done).queryByRole('button', { name: /Hủy/ })).toBeNull();
+    fireEvent.click(within(run).getByRole('button', { name: 'Hủy VB/b.pdf' }));
+    expect(cancel).toHaveBeenCalledWith('VB/b.pdf');
+  });
+
+  it('tệp lỗi và đã hủy có nút Thử lại khi còn tệp gốc; khóa khi đang chạy; không có khi mất tệp gốc', () => {
+    const retry = vi.fn();
+    const rowsMix: UploadFileRow[] = [
+      { path: 'a.pdf', size: 1, state: 'failed', error: 'Mất mạng' },
+      { path: 'b.pdf', size: 1, state: 'cancelled' },
+      { path: 'c.pdf', size: 1, state: 'failed', error: 'x' },
+    ];
+    show({ upload: { files: rowsMix, onRetryFile: retry, retryable: new Set(['a.pdf', 'b.pdf']) } });
+    const [a, b, c] = rowsOf();
+    expect(b.textContent).toContain('Đã hủy');
+    fireEvent.click(within(a).getByRole('button', { name: 'Thử lại a.pdf' }));
+    expect(retry).toHaveBeenCalledWith('a.pdf');
+    expect(within(b).getByRole('button', { name: 'Thử lại b.pdf' })).toBeTruthy();
+    expect(within(c).queryByRole('button', { name: /Thử lại/ })).toBeNull();
+    cleanup();
+
+    show({ upload: { running: true, progress, files: rowsMix, onRetryFile: retry, retryable: new Set(['a.pdf']) } });
+    expect((screen.getByRole('button', { name: 'Thử lại a.pdf' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('tóm tắt nêu số tệp đã hủy', () => {
+    show({ upload: { summary: { uploaded: 2, failed: [], names: [], cancelled: 1 } } });
+    expect(screen.getByRole('status').textContent).toContain('Đã tải lên 2 tệp, 1 tệp đã hủy.');
+  });
+
   it('chuyển tab lọc đúng các dòng; tab rỗng nói rõ', () => {
     show({ upload: { files } });
     fireEvent.click(screen.getByRole('tab', { name: 'Hoàn tất (1)' }));

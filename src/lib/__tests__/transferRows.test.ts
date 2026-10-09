@@ -18,6 +18,24 @@ describe('buildTransferRows', () => {
     expect(rows.every((r) => r.dir === 'up')).toBe(true);
   });
 
+  it('đang tải có số byte: phần trăm và tốc độ; đã hủy có ghi chú và nằm tab Bỏ qua/Lỗi; tốc độ chỉ hiện khi đang chạy', () => {
+    const rows = buildTransferRows({
+      uploads: [{ ...up('a.pdf', 'run', 200), loaded: 50, speed: 1024 }, { ...up('b.pdf', 'cancelled', 5) }, { ...up('c.pdf', 'done', 5), speed: 999 }],
+    });
+    expect(rows.map((r) => [r.status, r.pct, r.known, r.speed, r.note])).toEqual([
+      ['run', 25, true, 1024, ''],
+      ['cancelled', 0, false, 0, 'Đã hủy'],
+      ['done', 100, true, 0, ''],
+    ]);
+    expect(rows.map(tabOf)).toEqual(['run', 'bad', 'done']);
+  });
+
+  it('tốc độ của dòng ZIP lấy từ tham số khi đang tải', () => {
+    const progress = { completed: 1, total: 2, loadedBytes: 10, totalBytes: 100, currentName: '' };
+    expect(buildTransferRows({ uploads: [], zip: zip({ phase: 'downloading', progress }), zipSpeed: 2048 })[0].speed).toBe(2048);
+    expect(buildTransferRows({ uploads: [], zip: zip({ message: 'xong' }), zipSpeed: 2048 })[0].speed).toBe(0);
+  });
+
   it('tệp bỏ qua vì trùng thành dòng "đã bỏ qua" kèm lý do', () => {
     const rows = buildTransferRows({ uploads: [], skipped: ['VB/a.pdf'] });
     expect(rows).toEqual([expect.objectContaining({ name: 'VB/a.pdf', dest: 'VB', status: 'skipped', pct: 100, note: 'Trùng với tệp đã có trong kho' })]);

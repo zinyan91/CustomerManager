@@ -4,8 +4,8 @@ import { applyDuplicateChoices, defaultChoice, findDuplicates } from '../driveDu
 import type { DriveEntry } from '../driveTypes';
 import type { UploadItem } from '../../uploadItems';
 
-const entry = (path: string, size: number, isFolder = false): DriveEntry => ({
-  id: `id-${path}`, name: path.split('/').pop()!, path, isFolder, size, modifiedTime: '2026-10-08T01:00:00Z', mimeType: 'application/pdf', nativeMimeType: '',
+const entry = (path: string, size: number, isFolder = false, nativeMimeType = ''): DriveEntry => ({
+  id: `id-${path}`, name: path.split('/').pop()!, path, isFolder, size, modifiedTime: '2026-10-08T01:00:00Z', mimeType: 'application/pdf', nativeMimeType,
 });
 const item = (relativePath: string, size: number): UploadItem => ({ file: new File(['x'.repeat(size)], relativePath.split('/').pop()!, { lastModified: 1_000 }), relativePath });
 
@@ -38,6 +38,17 @@ describe('applyDuplicateChoices', () => {
     const { items: left, skipped } = applyDuplicateChoices(items, matches, new Map());
     expect(left.map((i) => i.relativePath)).toEqual(['b.pdf', 'moi.pdf']);
     expect(skipped).toEqual(['a.pdf']);
+  });
+
+  it('ghi đè: tệp vẫn được tải, kèm mã tệp cũ theo đường dẫn viết thường; tệp Google Docs không ghi đè được nên coi như giữ cả hai', () => {
+    const docs = [entry('a.pdf', 10), entry('Bao-cao.gdoc', 5, false, 'application/vnd.google-apps.document')];
+    const its = [item('A.PDF', 99), item('Bao-cao.gdoc', 7)];
+    const found = findDuplicates(its, '', docs);
+    expect(found.map((m) => [m.existing.id, m.canOverwrite])).toEqual([['id-a.pdf', true], ['id-Bao-cao.gdoc', false]]);
+    const result = applyDuplicateChoices(its, found, new Map([[0, 'over'], [1, 'over']]));
+    expect(result.items).toHaveLength(2);
+    expect(result.skipped).toEqual([]);
+    expect([...result.overwrites]).toEqual([['a.pdf', 'id-a.pdf']]);
   });
 
   it('theo lựa chọn của người dùng; tệp không trùng luôn được tải', () => {

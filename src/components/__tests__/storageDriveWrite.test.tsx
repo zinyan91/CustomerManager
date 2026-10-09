@@ -134,6 +134,22 @@ describe('Kho Google Drive: tải lên', () => {
     expect(live('goc.pdf')).toHaveLength(1);
   });
 
+  it('chọn Ghi đè: nội dung tệp cũ được thay, vẫn một tệp cùng mã, không tạo goc-2.pdf', async () => {
+    await mount();
+    const before = live('goc.pdf')[0].id;
+    const input = screen.getByLabelText('Chọn tệp để tải lên') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(['NOI-DUNG-MOI-DAI'], 'goc.pdf', { type: 'application/pdf' })] } });
+
+    await screen.findByText('1 tệp trùng tên trong thư mục này');
+    fireEvent.click(screen.getByLabelText('Ghi đè'));
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục' }));
+
+    await waitFor(() => expect(new TextDecoder().decode(live('goc.pdf')[0].bytes)).toBe('NOI-DUNG-MOI-DAI'));
+    expect(live('goc.pdf')).toHaveLength(1);
+    expect(live('goc.pdf')[0].id).toBe(before);
+    expect(live('goc-2.pdf')).toHaveLength(0);
+  });
+
   it('hủy ở hộp tệp trùng: không tải gì', async () => {
     await mount();
     const input = screen.getByLabelText('Chọn tệp để tải lên') as HTMLInputElement;

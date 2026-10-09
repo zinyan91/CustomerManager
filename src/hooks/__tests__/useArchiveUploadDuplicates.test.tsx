@@ -17,7 +17,7 @@ const item = (relativePath: string, size: number): UploadItem => ({ file: new Fi
 const target = (entries?: DriveEntry[]): DriveUploadTarget => ({ ctx: {} as never, rootId: 'ROOT', existingPaths: (entries ?? []).map((e) => e.path), entries });
 
 beforeEach(() => {
-  m.upload.mockReset().mockImplementation(async (_c, _r, _t, items: UploadItem[]) => ({ uploaded: items.map((i) => i.relativePath), failed: [], files: [] }));
+  m.upload.mockReset().mockImplementation(async (_c, _r, _t, items: UploadItem[]) => ({ uploaded: items.map((i) => i.relativePath), failed: [], files: [], cancelled: [] }));
 });
 
 const setup = (entries?: DriveEntry[], onDone = vi.fn()) => ({ onDone, ...renderHook(() => useArchiveUpload(target(entries), onDone)) });
@@ -85,13 +85,13 @@ describe('useArchiveUpload - danh sách từng tệp', () => {
       for (const i of items) onFile({ path: i.relativePath, size: i.file.size, state: 'run' });
       onFile({ path: items[0].relativePath, size: items[0].file.size, state: 'done' });
       onFile({ path: items[1].relativePath, size: items[1].file.size, state: 'failed', error: 'Hết dung lượng' });
-      return { uploaded: [items[0].relativePath], failed: [{ path: items[1].relativePath, error: 'Hết dung lượng' }], files: [] };
+      return { uploaded: [items[0].relativePath], failed: [{ path: items[1].relativePath, error: 'Hết dung lượng' }], files: [], cancelled: [] };
     });
     const { result } = setup([]);
     await act(() => result.current.upload([item('a.pdf', 1), item('b.pdf', 2)], ''));
     expect(result.current.files).toEqual([
-      { path: 'a.pdf', size: 1, state: 'done' },
-      { path: 'b.pdf', size: 2, state: 'failed', error: 'Hết dung lượng' },
+      { path: 'a.pdf', size: 1, state: 'done', speed: 0 },
+      { path: 'b.pdf', size: 2, state: 'failed', error: 'Hết dung lượng', speed: 0 },
     ]);
     act(() => result.current.dismiss());
     expect(result.current.files).toEqual([]);
@@ -100,7 +100,7 @@ describe('useArchiveUpload - danh sách từng tệp', () => {
   it('đợt mới xóa danh sách của đợt trước', async () => {
     m.upload.mockImplementation(async (_c, _r, _t, items: UploadItem[], _e, _p, _f, onFile: (e: unknown) => void) => {
       for (const i of items) onFile({ path: i.relativePath, size: i.file.size, state: 'done' });
-      return { uploaded: items.map((i) => i.relativePath), failed: [], files: [] };
+      return { uploaded: items.map((i) => i.relativePath), failed: [], files: [], cancelled: [] };
     });
     const { result } = setup([]);
     await act(() => result.current.upload([item('a.pdf', 1)], ''));

@@ -19,7 +19,8 @@ const when = (value: number | string) => {
 const btn = 'px-4 py-2 text-sm font-semibold rounded-lg border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer';
 
 /**
- * Hỏi cách xử lý các tệp trùng tên với tệp đã có trong thư mục đích: bỏ qua, hoặc giữ cả hai (tệp mới tự đổi tên thêm hậu tố).
+ * Hỏi cách xử lý các tệp trùng tên với tệp đã có trong thư mục đích: bỏ qua, giữ cả hai (tệp mới tự đổi tên thêm hậu tố), hoặc
+ * ghi đè nội dung tệp cũ (Drive giữ bản cũ trong lịch sử phiên bản; không có với tệp Google Docs, Sheets, Slides).
  * Chỉ so tên và dung lượng, chưa so nội dung, nên "cùng dung lượng" chỉ là gợi ý.
  */
 export function UploadDuplicateDialog({ matches, total, onConfirm, onCancel }: UploadDuplicateDialogProps) {
@@ -55,7 +56,7 @@ export function UploadDuplicateDialog({ matches, total, onConfirm, onCancel }: U
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-800 dark:text-slate-100">
-                  {(['skip', 'keep'] as const).map((value) => (
+                  {(['skip', 'keep', 'over'] as const).filter((value) => value !== 'over' || m.canOverwrite).map((value) => (
                     <label key={value} className="inline-flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="radio"
@@ -63,7 +64,7 @@ export function UploadDuplicateDialog({ matches, total, onConfirm, onCancel }: U
                         checked={choiceOf(m) === value}
                         onChange={() => setChoices((prev) => new Map(prev).set(m.index, value))}
                       />
-                      {value === 'skip' ? 'Bỏ qua' : 'Giữ cả hai (tệp mới đổi tên)'}
+                      {value === 'skip' ? 'Bỏ qua' : value === 'keep' ? 'Giữ cả hai (tệp mới đổi tên)' : 'Ghi đè'}
                     </label>
                   ))}
                 </div>

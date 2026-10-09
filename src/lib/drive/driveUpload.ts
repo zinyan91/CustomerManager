@@ -1,7 +1,7 @@
 import { joinArchivePath } from '../archivePath';
 import type { UploadItem } from '../uploadItems';
 import type { UploadFailure, UploadProgress, UploadResult } from '../uploadItems';
-import { ensureDriveFolderPath, newFolderPathCache, uploadDriveFile } from './driveClient';
+import { ensureDriveFolderPath, newFolderPathCache, updateDriveFile, uploadDriveFile } from './driveClient';
 import { describeDriveError } from './driveErrors';
 import { baseOf, dirOf } from './driveOps';
 import type { DriveContext } from './driveTypes';
@@ -9,14 +9,27 @@ import type { DriveContext } from './driveTypes';
 const UPLOAD_CONCURRENCY = 3;
 
 /** Trạng thái của từng tệp trong một đợt tải lên. */
-export type UploadFileState = 'wait' | 'run' | 'done' | 'failed';
+export type UploadFileState = 'wait' | 'run' | 'done' | 'failed' | 'cancelled';
 
 export interface UploadFileEvent {
   path: string;
   size: number;
   state: UploadFileState;
   error?: string;
+  /** Số byte đã gửi (khi đang tải). */
+  loaded?: number;
+  /** Tệp gốc, để thử lại khi lỗi hoặc đã hủy (có ở sự kiện đầu tiên của tệp). */
+  item?: UploadItem;
 }
+
+export interface DriveUploadOptions {
+  /** Đường dẫn đích viết thường mà tệp mới ghi đè lên tệp cũ, kèm mã tệp cũ. */
+  overwrite?: ReadonlyMap<string, string>;
+  /** Tín hiệu hủy riêng của từng tệp; tệp đã hủy trước khi bắt đầu thì không tải. */
+  signalFor?: (path: string) => AbortSignal | undefined;
+}
+
+const isAbort = (err: unknown) => err instanceof Error && err.name === 'AbortError';
 
 export interface PlannedUpload {
   item: UploadItem;
@@ -66,6 +79,8 @@ function freeName(name: string, takenLower: ReadonlySet<string>): string {
 /** Kết quả tải lên kèm mã Drive của từng tệp đã lên, để văn bản tham chiếu theo mã. */
 export interface DriveUploadResult extends UploadResult {
   files: Array<{ path: string; fileId: string }>;
+  /** Tệp người dùng hủy (không tính là lỗi). */
+  cancelled: string[];
 }
 
 /**
@@ -81,38 +96,59 @@ export async function uploadItemsToDrive(
   onProgress?: (p: UploadProgress) => void,
   knownFolders?: ReadonlyMap<string, string>,
   onFile?: (event: UploadFileEvent) => void,
+  options: DriveUploadOptions = {},
 ): Promise<DriveUploadResult> {
   const planned = planDriveUploads(items, targetFolder, existingPaths);
   const uploaded: string[] = [];
   const created: Array<{ path: string; fileId: string }> = [];
   const failed: UploadFailure[] = [];
+  const cancelled: string[] = [];
   const folderCache = newFolderPathCache(knownFolders);
   const queue = [...planned];
 
   const report = () =>
-    onProgress?.({ totalFiles: planned.length, uploadedFiles: uploaded.length, failedFiles: failed.length, batchIndex: 0, batchCount: 1 });
+    onProgress?.({ totalFiles: planned.length, uploadedFiles: uploaded.length, failedFiles: failed.length + cancelled.length, batchIndex: 0, batchCount: 1 });
   report();
-  for (const job of planned) onFile?.({ path: job.path, size: job.item.file.size, state: 'wait' });
+  for (const job of planned) onFile?.({ path: job.path, size: job.item.file.size, state: 'wait', item: job.item });
 
   const worker = async () => {
     for (let job = queue.shift(); job; job = queue.shift()) {
       const size = job.item.file.size;
-      onFile?.({ path: job.path, size, state: 'run' });
+      const signal = options.signalFor?.(job.path);
+      if (signal?.aborted) {
+        cancelled.push(job.path);
+        onFile?.({ path: job.path, size, state: 'cancelled' });
+        report();
+        continue;
+      }
+      onFile?.({ path: job.path, size, state: 'run', loaded: 0 });
       try {
-        const parentId = await ensureDriveFolderPath(ctx, rootId, dirOf(job.path), folderCache);
         const file = baseOf(job.path) === job.item.file.name ? job.item.file : new File([job.item.file], baseOf(job.path), { type: job.item.file.type });
-        const made = await uploadDriveFile(ctx, parentId, file);
+        const progress = (sent: number) => onFile?.({ path: job.path, size, state: 'run', loaded: sent });
+        const overwriteId = options.overwrite?.get(lower(job.path));
+        let fileId: string;
+        if (overwriteId) {
+          fileId = (await updateDriveFile(ctx, overwriteId, file, { onProgress: progress, signal })).id;
+        } else {
+          const parentId = await ensureDriveFolderPath(ctx, rootId, dirOf(job.path), folderCache);
+          fileId = (await uploadDriveFile(ctx, parentId, file, { onProgress: progress, signal })).id;
+        }
         uploaded.push(job.path);
-        created.push({ path: job.path, fileId: made.id });
-        onFile?.({ path: job.path, size, state: 'done' });
+        created.push({ path: job.path, fileId });
+        onFile?.({ path: job.path, size, state: 'done', loaded: size });
       } catch (err) {
-        const error = describeDriveError(err, 'Tải lên');
-        failed.push({ path: job.path, error });
-        onFile?.({ path: job.path, size, state: 'failed', error });
+        if (isAbort(err) || signal?.aborted) {
+          cancelled.push(job.path);
+          onFile?.({ path: job.path, size, state: 'cancelled' });
+        } else {
+          const error = describeDriveError(err, 'Tải lên');
+          failed.push({ path: job.path, error });
+          onFile?.({ path: job.path, size, state: 'failed', error });
+        }
       }
       report();
     }
   };
   await Promise.all(Array.from({ length: Math.min(UPLOAD_CONCURRENCY, planned.length) }, worker));
-  return { uploaded, failed, files: created };
+  return { uploaded, failed, files: created, cancelled };
 }

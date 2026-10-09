@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { StorageRepo } from '../../types/storageRepo';
 import type { DriveFile } from '../../lib/drive/driveTypes';
 
@@ -12,6 +12,7 @@ vi.mock('../../lib/drive/driveToken', () => ({ driveContext: { marker: 'ctx', ge
 vi.mock('../../lib/drive/driveClient', () => ({ listDriveFiles: m.listDrive }));
 
 import { DriveApiError } from '../../lib/drive/driveErrors';
+import { readCachedEntries, writeCachedEntries } from '../../lib/drive/driveEntriesCache';
 import { useArchive } from '../useArchive';
 
 const ROOT = '1AbCdEfGhIjKlMnOpQrStUvWxYz012345';
@@ -24,6 +25,7 @@ const dfile = (id: string, name: string, parents: string[], mimeType = 'applicat
 const FOLDER = 'application/vnd.google-apps.folder';
 
 beforeEach(() => {
+  localStorage.clear();
   Object.values(m).forEach((f) => f.mockReset());
   m.access.mockResolvedValue({ accessToken: 't', expiresAt: Date.now() + 3_600_000, access: 'write', driveId: 'DRV' });
   m.listRepos.mockResolvedValue([repo({})]);
@@ -94,6 +96,58 @@ describe('useArchive', () => {
 });
 
 describe('useArchive: không có kho', () => {
+  it('nạp xong thì lưu danh sách vào máy theo tài khoản và kho, kèm quyền ghi', async () => {
+    const { result } = renderHook(() => useArchive('storage'));
+    await waitFor(() => expect(result.current.status.kind).toBe('ready'));
+    await waitFor(() => expect(result.current.refreshing).toBe(false));
+    const cached = readCachedEntries('u1', ROOT);
+    expect(cached?.write).toBe(true);
+    expect(cached?.entries.map((e) => e.path).sort()).toEqual(['VB', 'VB/a.pdf', 'goc.pdf']);
+    expect(result.current.loadedAt).toBe(cached?.savedAt);
+  });
+
+  it('mở lần sau: hiện ngay bản đã lưu trong máy khi Drive còn chưa trả lời, rồi thay bằng bản mới', async () => {
+    const first = renderHook(() => useArchive('storage'));
+    await waitFor(() => expect(first.result.current.refreshing).toBe(false));
+    first.unmount();
+
+    let release: (files: DriveFile[]) => void = () => {};
+    m.listDrive.mockReturnValue(new Promise<DriveFile[]>((resolve) => (release = resolve)));
+    const { result } = renderHook(() => useArchive('storage'));
+    await waitFor(() => expect(result.current.status.kind).toBe('ready'));
+    expect(result.current.documents.map((d) => d.filePath).sort()).toEqual(['VB/a.pdf', 'goc.pdf']);
+    expect(result.current.driveWrite).toBe(true);
+    expect(result.current.refreshing).toBe(true);
+
+    release([dfile(ROOT, 'Gốc', ['DRV'], FOLDER), dfile('M', 'moi.pdf', [ROOT])]);
+    await waitFor(() => expect(result.current.refreshing).toBe(false));
+    expect(result.current.documents.map((d) => d.filePath)).toEqual(['moi.pdf']);
+    expect(result.current.refreshError).toBeNull();
+  });
+
+  it('có bản đã lưu mà lấy bản mới lỗi: giữ danh sách cũ, báo lỗi riêng, không xóa trắng', async () => {
+    writeCachedEntries('u1', ROOT, { entries: [{ id: 'X', name: 'cu.pdf', path: 'cu.pdf', isFolder: false, size: 5, modifiedTime: '', mimeType: 'application/pdf', nativeMimeType: '' }], write: false });
+    m.listDrive.mockRejectedValue(new DriveApiError(403, 'forbidden', 'x'));
+    const { result } = renderHook(() => useArchive('storage'));
+    await waitFor(() => expect(result.current.refreshError).toMatch(/Quản lý nội dung/));
+    expect(result.current.status.kind).toBe('ready');
+    expect(result.current.documents.map((d) => d.filePath)).toEqual(['cu.pdf']);
+    expect(result.current.refreshing).toBe(false);
+  });
+
+  it('làm mới khi đang hiện danh sách: không chuyển lại sang "đang tải", số tệp cập nhật', async () => {
+    const { result } = renderHook(() => useArchive('storage'));
+    await waitFor(() => expect(result.current.refreshing).toBe(false));
+    m.listDrive.mockResolvedValue([dfile(ROOT, 'Gốc', ['DRV'], FOLDER), dfile('A', 'a.pdf', [ROOT]), dfile('B', 'b.pdf', [ROOT])]);
+    let pending: Promise<void> = Promise.resolve();
+    act(() => {
+      pending = result.current.reload();
+    });
+    expect(result.current.status.kind).toBe('ready');
+    await act(() => pending);
+    expect(result.current.documents).toHaveLength(2);
+  });
+
   it('không có repo nào thì báo chưa có repo, không gọi Drive', async () => {
     m.listRepos.mockResolvedValue([]);
     const { result } = renderHook(() => useArchive('storage'));

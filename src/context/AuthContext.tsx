@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useMemo, useCall
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { can as canRole, isAppRole, type AppRole, type Capability } from '../lib/permissions';
+import { clearCachedEntries } from '../lib/drive/driveEntriesCache';
 
 export type { AppRole };
 
@@ -107,6 +108,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = useCallback(async () => {
+    // Máy dùng chung không giữ lại danh sách tệp của người vừa đăng xuất
+    clearCachedEntries();
     await supabase.auth.signOut();
     setRole(null);
     setFullName(null);

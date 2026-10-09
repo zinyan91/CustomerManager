@@ -1,0 +1,318 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup Kho lưu trữ</title>
+<style>
+  /* Bố cục: một cột làm việc gồm thanh đường dẫn, vùng thả cố định, bảng tệp cuộn riêng, bảng truyền tệp ở đáy. */
+  :root {
+    --bg: #f8fafc; --surface: #ffffff; --line: #cbd5e1; --line-soft: #e2e8f0;
+    --fg: #0f172a; --muted: #64748b; --head: #f1f5f9; --accent: #1e293b; --accent-fg: #ffffff;
+    --ok: #166534; --ok-bg: #dcfce7; --warn: #92400e; --warn-bg: #fef3c7; --bad: #991b1b; --bad-bg: #fee2e2;
+    --bar: #475569; --bar-bg: #e2e8f0; --veil: rgb(15 23 42 / 0.45);
+    --font: system-ui, "Segoe UI", Arial, sans-serif; --mono: ui-monospace, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1220; --surface: #111a2c; --line: #334155; --line-soft: #1e293b; --fg: #e2e8f0; --muted: #94a3b8;
+      --head: #172236; --accent: #e2e8f0; --accent-fg: #0f172a; --ok: #86efac; --ok-bg: #14532d; --warn: #fcd34d;
+      --warn-bg: #422006; --bad: #fca5a5; --bad-bg: #450a0a; --bar: #94a3b8; --bar-bg: #1e293b; --veil: rgb(0 0 0 / 0.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1220; --surface: #111a2c; --line: #334155; --line-soft: #1e293b; --fg: #e2e8f0; --muted: #94a3b8;
+    --head: #172236; --accent: #e2e8f0; --accent-fg: #0f172a; --ok: #86efac; --ok-bg: #14532d; --warn: #fcd34d;
+    --warn-bg: #422006; --bad: #fca5a5; --bad-bg: #450a0a; --bar: #94a3b8; --bar-bg: #1e293b; --veil: rgb(0 0 0 / 0.6);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--fg); font-family: var(--font); padding-inline: 1rem; padding-block: 1rem; }
+  .app { max-width: 1180px; margin-inline: auto; display: flex; flex-direction: column; gap: 0.75rem; }
+  h1 { font-size: 1.05rem; margin: 0; }
+  .note { font-size: 0.8rem; color: var(--muted); margin: 0; }
+  .sim { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  button { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 0.35rem 0.75rem; cursor: pointer; }
+  button:hover { background: var(--head); }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  button.primary:hover { opacity: 0.9; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[disabled] { opacity: 0.45; cursor: default; }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--line); }
+  .crumbs { flex: 1 1 14rem; min-width: 0; font-size: 0.9rem; display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  .crumbs b { font-weight: 600; }
+  .crumbs span { color: var(--muted); }
+  .cache { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 0.4rem; }
+  .spin { width: 11px; height: 11px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+
+  /* Vùng thả cố định: không nằm trong phần cuộn nên luôn thấy, ở bất kỳ vị trí cuộn nào. */
+  .dropbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding: 0.6rem 0.8rem; margin: 0.6rem 0.8rem 0; border: 1.5px dashed var(--line); border-radius: 8px; background: var(--head); font-size: 0.88rem; }
+  .dropbar .grow { flex: 1 1 12rem; min-width: 0; }
+  .dropbar.over { border-color: var(--accent); background: var(--surface); }
+
+  .scroll { max-height: 19rem; overflow: auto; margin-top: 0.6rem; border-top: 1px solid var(--line-soft); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.86rem; min-width: 40rem; }
+  th, td { text-align: left; padding: 0.45rem 0.8rem; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
+  th { position: sticky; top: 0; background: var(--head); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.name { white-space: normal; word-break: break-all; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tfoot td { font-weight: 700; background: var(--head); border-top: 2px solid var(--line); border-bottom: 0; }
+  tr.sel td { background: var(--head); }
+  .tag { display: inline-block; font-size: 0.72rem; padding: 0.05rem 0.45rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .tag.new { color: var(--ok); background: var(--ok-bg); border-color: transparent; }
+
+  /* Bảng truyền tệp kiểu AirExplorer */
+  .tabs { display: flex; flex-wrap: wrap; gap: 0.25rem; padding: 0.4rem 0.6rem 0; border-bottom: 1px solid var(--line); background: var(--head); }
+  .tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 0.4rem 0.7rem; }
+  .tabs button[aria-selected="true"] { border-bottom-color: var(--accent); font-weight: 600; }
+  .tabs .spacer { flex: 1; }
+  .queue { max-height: 15rem; overflow: auto; }
+  .xfer { display: grid; grid-template-columns: 1.6rem minmax(0, 2.2fr) minmax(0, 1.6fr) 5rem minmax(7rem, 1.4fr) 5.2rem 4.6rem; gap: 0.6rem; align-items: center; padding: 0.45rem 0.8rem; border-bottom: 1px solid var(--line-soft); font-size: 0.84rem; min-width: 44rem; }
+  .xfer.head { position: sticky; top: 0; background: var(--head); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; z-index: 1; }
+  .xfer .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .xfer .sub { color: var(--muted); font-size: 0.75rem; }
+  .bar { height: 7px; background: var(--bar-bg); border-radius: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--bar); }
+  .xfer.done .bar i { background: var(--ok); }
+  .xfer.skipped .bar i, .xfer.failed .bar i { width: 100%; background: var(--line); }
+  .st { font-size: 0.76rem; padding: 0.1rem 0.5rem; border-radius: 999px; text-align: center; border: 1px solid var(--line); }
+  .st.ok { color: var(--ok); background: var(--ok-bg); border-color: transparent; }
+  .st.warn { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
+  .st.bad { color: var(--bad); background: var(--bad-bg); border-color: transparent; }
+  .empty { padding: 1rem 0.8rem; color: var(--muted); font-size: 0.86rem; }
+  .qfoot { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; padding: 0.45rem 0.8rem; font-size: 0.8rem; background: var(--head); border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+
+  /* Lớp phủ thả tệp phủ toàn khung nhìn (position: fixed), không phụ thuộc vị trí cuộn. */
+  .veil { position: fixed; inset: 0; z-index: 50; background: var(--veil); display: grid; place-items: center; padding: 1rem; }
+  .veil .box { background: var(--surface); border: 2px dashed var(--accent); border-radius: 12px; padding: 2.2rem 2.6rem; text-align: center; max-width: 28rem; }
+  .veil .box b { display: block; font-size: 1.1rem; margin-bottom: 0.3rem; }
+
+  .dlg { position: fixed; inset: 0; z-index: 60; background: var(--veil); display: grid; place-items: center; padding: 1rem; }
+  .dlg .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; width: min(46rem, 100%); max-height: 90%; display: flex; flex-direction: column; }
+  .dlg header { padding: 0.8rem 1rem; border-bottom: 1px solid var(--line); font-weight: 600; }
+  .dlg .body { padding: 0.8rem 1rem; overflow: auto; display: flex; flex-direction: column; gap: 0.6rem; }
+  .dlg footer { padding: 0.7rem 1rem; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: space-between; align-items: center; }
+  .dlg footer .btns { display: flex; gap: 0.5rem; }
+  .dup { border: 1px solid var(--line-soft); border-radius: 6px; padding: 0.55rem 0.7rem; display: grid; gap: 0.35rem; }
+  .dup .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.4rem 1rem; font-size: 0.8rem; color: var(--muted); }
+  .dup .opts { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; font-size: 0.86rem; }
+  .dup .opts label { display: inline-flex; gap: 0.3rem; align-items: center; cursor: pointer; }
+  .news { font-size: 0.84rem; color: var(--muted); }
+  @media (max-width: 640px) { .dropbar { margin-inline: 0.5rem; } }
+</style>
+
+<div class="app">
+  <div>
+    <h1>Mockup Kho lưu trữ: tải lên và tải xuống</h1>
+    <p class="note">Bản mẫu để duyệt bố cục, dữ liệu minh họa, chưa nối với Drive. Bấm các nút dưới đây để xem từng tình huống.</p>
+  </div>
+  <div class="sim" role="group" aria-label="Mô phỏng">
+    <button id="sim-drag" type="button">1. Giữ tệp kéo qua trang</button>
+    <button id="sim-drop" type="button" class="primary">2. Thả 4 tệp (2 tệp trùng)</button>
+    <button id="sim-down" type="button">3. Tải xuống các tệp đang chọn</button>
+    <button id="sim-reset" type="button">Đặt lại</button>
+  </div>
+
+  <section class="panel" aria-label="Kho lưu trữ">
+    <div class="toolbar">
+      <div class="crumbs"><b>Kho chung</b><span>/</span><span>Văn thư</span><span>/</span><b>2026</b></div>
+      <div class="cache"><span class="spin" id="spin"></span><span id="cache-text">Đang kiểm tra thay đổi…</span></div>
+      <button type="button" id="refresh">Làm mới</button>
+    </div>
+
+    <div class="dropbar" id="dropbar">
+      <div class="grow"><b>Thả tệp hoặc thư mục vào bất kỳ đâu trên trang</b> để tải lên thư mục 2026</div>
+      <button type="button">Chọn tệp</button>
+      <button type="button">Chọn thư mục</button>
+    </div>
+
+    <div class="scroll" id="scroll">
+      <table>
+        <thead><tr><th style="width:2rem"><input type="checkbox" id="all" aria-label="Chọn tất cả"></th><th>Tên</th><th>Ngày sửa</th><th class="num">Dung lượng</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+        <tfoot><tr><td colspan="3">TỔNG CỘNG (<span id="count">0</span> tệp)</td><td class="num" id="size">0 MB</td><td></td></tr></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Truyền tệp">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="all" aria-selected="true">Tất cả (<span id="n-all">0</span>)</button>
+      <button type="button" role="tab" data-tab="run" aria-selected="false">Đang chạy (<span id="n-run">0</span>)</button>
+      <button type="button" role="tab" data-tab="done" aria-selected="false">Hoàn tất (<span id="n-done">0</span>)</button>
+      <button type="button" role="tab" data-tab="bad" aria-selected="false">Bỏ qua / Lỗi (<span id="n-bad">0</span>)</button>
+      <span class="spacer"></span>
+      <button type="button" id="clear" style="margin-bottom:0.3rem">Xóa danh sách đã xong</button>
+    </div>
+    <div class="queue" id="queue"></div>
+    <div class="qfoot"><span id="q-total">Chưa có tệp nào</span><span id="q-speed"></span></div>
+  </section>
+</div>
+
+<div class="veil" id="veil" hidden>
+  <div class="box"><b>Thả để tải lên thư mục 2026</b><span class="note">Thả ở đâu trên trang cũng được, kể cả khi bảng đang cuộn.</span></div>
+</div>
+
+<div class="dlg" id="dlg" hidden role="dialog" aria-modal="true" aria-label="Tệp trùng">
+  <div class="card">
+    <header>Phát hiện <span id="dup-n">2</span> tệp trùng tên trong thư mục này</header>
+    <div class="body" id="dup-list"></div>
+    <footer>
+      <label><input type="checkbox" id="apply-all"> Áp dụng lựa chọn đầu tiên cho tất cả</label>
+      <div class="btns"><button type="button" id="dup-cancel">Hủy tải lên</button><button type="button" class="primary" id="dup-go">Tiếp tục</button></div>
+    </footer>
+  </div>
+</div>
+
+<script>
+  const MB = 1024 * 1024;
+  const files = [
+    { name: '2903-2026-TB-TGD.pdf', mod: '08/10/2026', size: 1.4 * MB, hash: 'a1' },
+    { name: '2848-4-2026-TB-BDH.pdf', mod: '07/10/2026', size: 2.1 * MB, hash: 'b2' },
+    { name: '2753-2026-TB-BDH.pdf', mod: '05/10/2026', size: 3.6 * MB, hash: 'c3' },
+    { name: 'Bieu-mau-de-nghi-vay.docx', mod: '30/09/2026', size: 0.4 * MB, hash: 'd4' },
+    { name: 'Bang-lai-suat-thang-10.xlsx', mod: '01/10/2026', size: 0.9 * MB, hash: 'e5' },
+  ];
+  const incomingSeed = [
+    { name: '2903-2026-TB-TGD.pdf', mod: '08/10/2026', size: 1.4 * MB, hash: 'a1' },
+    { name: '2848-4-2026-TB-BDH.pdf', mod: '09/10/2026', size: 2.3 * MB, hash: 'zz' },
+    { name: 'ETAX11320240234717015.xml', mod: '09/10/2026', size: 0.04 * MB, hash: 'n1' },
+    { name: 'Bao-cao-tai-chinh-2025.pdf', mod: '09/10/2026', size: 4.2 * MB, hash: 'n2' },
+  ];
+  let repo = [], queue = [], tab = 'all', timer = null, selected = new Set(), uid = 0, pending = [];
+
+  const $ = (id) => document.getElementById(id);
+  const fmt = (b) => b >= MB ? (b / MB).toFixed(b >= 10 * MB ? 0 : 1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function renderRows() {
+    $('rows').innerHTML = repo.map((f) => `<tr class="${selected.has(f.name) ? 'sel' : ''}">
+      <td><input type="checkbox" data-sel="${esc(f.name)}" ${selected.has(f.name) ? 'checked' : ''} aria-label="Chọn ${esc(f.name)}"></td>
+      <td class="name">${esc(f.name)} ${f.fresh ? '<span class="tag new">Mới</span>' : ''}</td>
+      <td>${f.mod}</td><td class="num">${fmt(f.size)}</td>
+      <td><button type="button" data-down="${esc(f.name)}">Tải xuống</button></td></tr>`).join('');
+    $('count').textContent = repo.length;
+    $('size').textContent = (repo.reduce((s, f) => s + f.size, 0) / MB).toFixed(2) + ' MB';
+    $('all').checked = repo.length > 0 && selected.size === repo.length;
+    $('sim-down').disabled = selected.size === 0;
+  }
+
+  const stateOf = (x) => x.status === 'run' || x.status === 'wait' ? 'run' : x.status === 'done' ? 'done' : 'bad';
+  function renderQueue() {
+    const shown = queue.filter((x) => tab === 'all' || stateOf(x) === tab);
+    const label = { wait: ['Đang chờ', ''], run: ['Đang chạy', ''], done: ['Hoàn tất', 'ok'], skipped: ['Đã bỏ qua', 'warn'], failed: ['Lỗi', 'bad'] };
+    $('queue').innerHTML = shown.length === 0 ? '<div class="empty">Chưa có tệp nào trong mục này.</div>' :
+      `<div class="xfer head"><span></span><span>Tên</span><span>Đích</span><span>Dung lượng</span><span>Tiến độ</span><span>Tốc độ</span><span>Trạng thái</span></div>` +
+      shown.map((x) => `<div class="xfer ${x.status}">
+        <span title="${x.dir === 'up' ? 'Tải lên' : 'Tải xuống'}">${x.dir === 'up' ? '↑' : '↓'}</span>
+        <span class="t" title="${esc(x.name)}">${esc(x.name)}<br><span class="sub">${esc(x.note || '')}</span></span>
+        <span class="t sub">${x.dir === 'up' ? 'Kho chung / Văn thư / 2026' : 'Máy của tôi / Tải xuống'}</span>
+        <span>${fmt(x.size)}</span>
+        <span class="bar"><i style="width:${Math.round(x.pct)}%"></i></span>
+        <span class="sub">${x.status === 'run' ? (x.speed / MB).toFixed(1) + ' MB/s' : ''}</span>
+        <span class="st ${label[x.status][1]}">${label[x.status][0]}</span></div>`).join('');
+    const c = (k) => queue.filter((x) => k === 'all' || stateOf(x) === k).length;
+    ['all', 'run', 'done', 'bad'].forEach((k) => ($('n-' + k).textContent = c(k)));
+    const active = queue.filter((x) => x.status === 'run');
+    $('q-total').textContent = queue.length === 0 ? 'Chưa có tệp nào' : `Tổng ${queue.length} tệp, ${fmt(queue.reduce((s, x) => s + x.size, 0))}`;
+    $('q-speed').textContent = active.length ? `Đang truyền ${active.length} tệp · ${(active.reduce((s, x) => s + x.speed, 0) / MB).toFixed(1)} MB/s` : '';
+  }
+
+  function add(items, dir, note) {
+    items.forEach((f) => queue.push({ id: ++uid, dir, name: f.name, size: f.size, pct: 0, speed: 0, status: 'wait', note: note || '', src: f }));
+    pump(); renderQueue();
+  }
+  function pump() {
+    if (timer) return;
+    timer = setInterval(() => {
+      const running = queue.filter((x) => x.status === 'run');
+      const next = queue.filter((x) => x.status === 'wait').slice(0, Math.max(0, 2 - running.length));
+      next.forEach((x) => { x.status = 'run'; });
+      queue.filter((x) => x.status === 'run').forEach((x) => {
+        x.speed = (1.6 + (x.id % 3) * 0.7) * MB;
+        x.pct = Math.min(100, x.pct + Math.max(4, (x.speed / x.size) * 100 * 0.35));
+        if (x.pct >= 100) {
+          x.status = 'done'; x.speed = 0;
+          if (x.dir === 'up' && !repo.some((f) => f.name === x.name && x.note.indexOf('Ghi đè') < 0)) repo.unshift({ ...x.src, name: x.name, fresh: true });
+          else if (x.dir === 'up') { const i = repo.findIndex((f) => f.name === x.name); if (i >= 0) repo[i] = { ...x.src, fresh: true }; }
+          renderRows();
+        }
+      });
+      renderQueue();
+      if (!queue.some((x) => x.status === 'run' || x.status === 'wait')) { clearInterval(timer); timer = null; }
+    }, 450);
+  }
+
+  function startUpload(incoming) {
+    const dups = incoming.filter((f) => repo.some((r) => r.name === f.name));
+    const fresh = incoming.filter((f) => !dups.includes(f));
+    pending = { fresh, dups };
+    if (dups.length === 0) { add(fresh, 'up'); return; }
+    $('dup-n').textContent = dups.length;
+    $('dup-list').innerHTML = dups.map((f, i) => {
+      const old = repo.find((r) => r.name === f.name);
+      const same = old.hash === f.hash && old.size === f.size;
+      return `<div class="dup"><div><b>${esc(f.name)}</b> ${same ? '<span class="tag">Giống hệt (cùng mã băm)</span>' : '<span class="tag" style="color:var(--warn)">Nội dung khác</span>'}</div>
+        <div class="cmp"><span>Trên kho: ${fmt(old.size)} · sửa ${old.mod}</span><span>Tệp mới: ${fmt(f.size)} · sửa ${f.mod}</span></div>
+        <div class="opts" data-dup="${i}">
+          <label><input type="radio" name="d${i}" value="skip" ${same ? 'checked' : ''}> Bỏ qua</label>
+          <label><input type="radio" name="d${i}" value="over" ${same ? '' : 'checked'}> Ghi đè</label>
+          <label><input type="radio" name="d${i}" value="both"> Giữ cả hai (đổi tên)</label></div></div>`;
+    }).join('') + (fresh.length ? `<div class="news">${fresh.length} tệp còn lại không trùng sẽ được tải lên bình thường.</div>` : '');
+    $('apply-all').checked = false;
+    $('dlg').hidden = false;
+  }
+
+  $('dup-go').onclick = () => {
+    const { fresh, dups } = pending;
+    const first = document.querySelector('#dup-list input[type=radio]:checked')?.value || 'skip';
+    const all = $('apply-all').checked;
+    const out = [...fresh];
+    dups.forEach((f, i) => {
+      const pick = all ? first : (document.querySelector(`input[name=d${i}]:checked`)?.value || 'skip');
+      if (pick === 'skip') {
+        queue.push({ id: ++uid, dir: 'up', name: f.name, size: f.size, pct: 100, speed: 0, status: 'skipped', note: 'Trùng với tệp trên kho', src: f });
+      } else if (pick === 'both') {
+        const dot = f.name.lastIndexOf('.');
+        out.push({ ...f, name: f.name.slice(0, dot) + ' (2)' + f.name.slice(dot) });
+      } else {
+        const x = { ...f }; out.push(x); x.over = true;
+      }
+    });
+    $('dlg').hidden = true;
+    out.forEach((f) => queue.push({ id: ++uid, dir: 'up', name: f.name, size: f.size, pct: 0, speed: 0, status: 'wait', note: f.over ? 'Ghi đè bản trên kho' : '', src: f }));
+    pump(); renderQueue();
+  };
+  $('dup-cancel').onclick = () => { $('dlg').hidden = true; };
+
+  const dragOn = (on) => { $('veil').hidden = !on; $('dropbar').classList.toggle('over', on); };
+  $('sim-drag').onclick = () => { $('scroll').scrollTop = 120; dragOn(true); setTimeout(() => dragOn(false), 2600); };
+  $('veil').onclick = () => dragOn(false);
+  $('sim-drop').onclick = () => { dragOn(false); startUpload(incomingSeed.map((f) => ({ ...f }))); };
+  $('sim-down').onclick = () => add([...selected].map((n) => repo.find((f) => f.name === n)).filter(Boolean), 'down');
+  $('rows').onclick = (e) => {
+    const d = e.target.dataset;
+    if (d.down) add([repo.find((f) => f.name === d.down)], 'down');
+  };
+  $('rows').onchange = (e) => { const n = e.target.dataset.sel; if (n) { e.target.checked ? selected.add(n) : selected.delete(n); renderRows(); } };
+  $('all').onchange = (e) => { selected = e.target.checked ? new Set(repo.map((f) => f.name)) : new Set(); renderRows(); };
+  document.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => {
+    tab = b.dataset.tab;
+    document.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+    renderQueue();
+  }));
+  $('clear').onclick = () => { queue = queue.filter((x) => x.status === 'run' || x.status === 'wait'); renderQueue(); };
+
+  function loadList() {
+    $('spin').hidden = false;
+    $('cache-text').textContent = 'Danh sách lưu lúc 09:41 · đang kiểm tra thay đổi…';
+    setTimeout(() => { $('spin').hidden = true; $('cache-text').textContent = 'Đã cập nhật lúc ' + new Date().toTimeString().slice(0, 5); }, 1600);
+  }
+  $('refresh').onclick = loadList;
+  $('sim-reset').onclick = () => { clearInterval(timer); timer = null; repo = files.map((f) => ({ ...f })); queue = []; selected = new Set(); tab = 'all'; renderRows(); renderQueue(); loadList(); };
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { $('dlg').hidden = true; dragOn(false); } });
+  $('sim-reset').click();
+</script>

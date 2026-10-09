@@ -116,6 +116,24 @@ describe('Kho lưu trữ - kho Google Drive', () => {
     expect(screen.queryByRole('button', { name: 'Xóa goc.pdf' })).toBeNull();
   });
 
+  it('đang cập nhật từ bản đã lưu: vẫn hiện danh sách và nói rõ đang cập nhật kèm giờ của bản lưu', () => {
+    useDrive();
+    (state.archive as Record<string, unknown>).refreshing = true;
+    (state.archive as Record<string, unknown>).loadedAt = new Date(2026, 9, 9, 8, 5).getTime();
+    render(<StorageManagementView />);
+    expect(within(screen.getByRole('table')).getByText('goc.pdf')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain('Đang cập nhật danh sách (bản lưu lúc 08:05)');
+  });
+
+  it('cập nhật lỗi: giữ danh sách và báo lỗi kèm giờ của bản đang hiện, không xóa trắng', () => {
+    useDrive();
+    (state.archive as Record<string, unknown>).refreshError = 'Drive từ chối (403).';
+    (state.archive as Record<string, unknown>).loadedAt = new Date(2026, 9, 9, 8, 5).getTime();
+    render(<StorageManagementView />);
+    expect(within(screen.getByRole('table')).getByText('goc.pdf')).toBeTruthy();
+    expect(screen.getByRole('alert').textContent).toContain('đang hiện bản lưu lúc 08:05. Drive từ chối (403).');
+  });
+
   it('tải thư mục ZIP đọc từng tệp bằng mã tệp Drive kèm token, giữ cấu trúc', async () => {
     const out = sink();
     driveBytes();

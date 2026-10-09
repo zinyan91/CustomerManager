@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DispatchDocument } from '../types/dispatch';
 import type { StorageRepo } from '../types/storageRepo';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +6,7 @@ import { listStorageRepos } from '../lib/api/storageReposApi';
 import { listDriveFiles } from '../lib/drive/driveClient';
 import { entriesToDocuments } from '../lib/drive/driveDocuments';
 import { describeDriveError } from '../lib/drive/driveErrors';
+import { readCachedEntries, writeCachedEntries } from '../lib/drive/driveEntriesCache';
 import { driveContext } from '../lib/drive/driveToken';
 import { buildRepoEntries, listingOf } from '../lib/drive/driveTree';
 import type { DriveEntry } from '../lib/drive/driveTypes';
@@ -30,6 +31,13 @@ export function useArchive(scope: StorageScope = 'storage') {
   const [driveEntries, setDriveEntries] = useState<DriveEntry[]>([]);
   const [driveWrite, setDriveWrite] = useState(false);
   const [fileStatus, setFileStatus] = useState<ArchiveStatus>({ kind: 'loading' });
+  // Danh sách đang hiện có thể là bản đã lưu trong máy; `refreshing` bật trong lúc lấy bản mới từ Drive
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [loadedAt, setLoadedAt] = useState<number | null>(null);
+  // Kho đang hiện danh sách (từ bản đã lưu hoặc từ Drive) và số thứ tự lần nạp mới nhất, để bỏ kết quả của lần nạp đã bị thay thế
+  const shownRoot = useRef<string | null>(null);
+  const loadSeq = useRef(0);
 
   const reloadRepos = useCallback(async () => {
     setMetaStatus({ kind: 'loading' });
@@ -45,6 +53,13 @@ export function useArchive(scope: StorageScope = 'storage') {
     void reloadRepos();
   }, [reloadRepos]);
 
+  // Xin quyền Drive (Edge Function) song song với việc nạp danh sách kho, thay vì đợi xong mới xin
+  useEffect(() => {
+    Promise.resolve(driveContext.getAccess()).catch(() => {
+      // Lỗi sẽ được báo khi nạp danh sách tệp ở bước sau
+    });
+  }, []);
+
   const candidates = useMemo(() => reposForScope(allRepos, role, userId, scope), [allRepos, role, userId, scope]);
 
   const selectedRepo = useMemo(
@@ -55,35 +70,71 @@ export function useArchive(scope: StorageScope = 'storage') {
   // RepoId là ID thư mục gốc của kho trong Shared Drive
   const driveRoot = selectedRepo?.repoId ?? null;
 
+  const show = useCallback((root: string, entries: DriveEntry[], write: boolean) => {
+    setDriveEntries(entries);
+    setDriveWrite(write);
+    setDocuments(entriesToDocuments(entries, root, new Date().toISOString()));
+    setFolders(listingOf(entries).folders);
+  }, []);
+
+  /**
+   * Nạp kho. Lần đầu mở một kho mà trong máy có bản đã lưu thì hiện ngay bản đó rồi lấy bản mới từ Drive ở phía sau
+   * (không chờ liệt kê cả Shared Drive). Lấy bản mới lỗi thì giữ danh sách đang hiện và báo lỗi riêng, không xóa trắng.
+   */
   const reload = useCallback(async () => {
+    const seq = ++loadSeq.current;
     if (!driveRoot) {
+      shownRoot.current = null;
       setDriveEntries([]);
       setDriveWrite(false);
       setDocuments([]);
       setFolders([]);
+      setRefreshing(false);
       return;
     }
-    setFileStatus({ kind: 'loading' });
+    if (shownRoot.current !== driveRoot) {
+      const cached = userId ? readCachedEntries(userId, driveRoot) : null;
+      if (cached) {
+        show(driveRoot, cached.entries, cached.write);
+        setLoadedAt(cached.savedAt);
+        shownRoot.current = driveRoot;
+        setFileStatus({ kind: 'ready' });
+      } else {
+        setFileStatus({ kind: 'loading' });
+      }
+    }
+    setRefreshing(true);
+    setRefreshError(null);
     try {
-      const files = await listDriveFiles(driveContext);
+      const [files, access] = await Promise.all([listDriveFiles(driveContext), driveContext.getAccess()]);
+      if (seq !== loadSeq.current) return;
       if (!files.some((f) => f.id === driveRoot)) {
         throw new Error('Không tìm thấy thư mục gốc của kho trong Shared Drive. Kiểm tra lại ID thư mục và việc tài khoản dịch vụ là thành viên của Shared Drive.');
       }
       const entries = buildRepoEntries(files, driveRoot);
-      const access = await driveContext.getAccess();
-      setDriveEntries(entries);
-      setDriveWrite(access.access === 'write');
-      setDocuments(entriesToDocuments(entries, driveRoot, new Date().toISOString()));
-      setFolders(listingOf(entries).folders);
+      const write = access.access === 'write';
+      const now = Date.now();
+      show(driveRoot, entries, write);
+      if (userId) writeCachedEntries(userId, driveRoot, { entries, write }, now);
+      shownRoot.current = driveRoot;
+      setLoadedAt(now);
       setFileStatus({ kind: 'ready' });
     } catch (err) {
-      setDriveEntries([]);
-      setDriveWrite(false);
-      setDocuments([]);
-      setFolders([]);
-      setFileStatus({ kind: 'error', message: describeDriveError(err, 'Nạp kho lưu trữ') });
+      if (seq !== loadSeq.current) return;
+      const message = describeDriveError(err, 'Nạp kho lưu trữ');
+      if (shownRoot.current === driveRoot) {
+        setRefreshError(message);
+      } else {
+        setDriveEntries([]);
+        setDriveWrite(false);
+        setDocuments([]);
+        setFolders([]);
+        setFileStatus({ kind: 'error', message });
+      }
+    } finally {
+      if (seq === loadSeq.current) setRefreshing(false);
     }
-  }, [driveRoot]);
+  }, [driveRoot, userId, show]);
 
   useEffect(() => {
     if (metaStatus.kind === 'ready') void reload();
@@ -114,5 +165,11 @@ export function useArchive(scope: StorageScope = 'storage') {
     status,
     reload,
     reloadRepos,
+    /** Đang lấy bản mới từ Drive (danh sách đang hiện có thể là bản đã lưu trong máy). */
+    refreshing,
+    /** Lấy bản mới không được; danh sách đang hiện vẫn là bản cũ. */
+    refreshError,
+    /** Lúc lấy được danh sách đang hiện (mili giây). */
+    loadedAt,
   };
 }

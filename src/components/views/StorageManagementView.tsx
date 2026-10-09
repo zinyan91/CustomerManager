@@ -63,7 +63,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const userId = user?.id ?? null;
   const { managedUsers } = useUserScope();
   const {
-    repos, selectedRepo, driveRoot, driveEntries, driveWrite, selectRepo, documents, folders, status, reload,
+    repos, selectedRepo, driveRoot, driveEntries, driveWrite, selectRepo, documents, folders, status, reload, refreshing, refreshError, loadedAt,
   } = useArchive(scope);
   const confirm = useConfirm();
   const driveUploadTarget = useMemo<DriveUploadTarget | null>(
@@ -478,12 +478,24 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
         onDismiss={zipDl.dismiss}
       />
 
-      {(statusMessage || shownError || status.kind === 'loading') && (
+      {(statusMessage || shownError || refreshError || status.kind === 'loading' || (refreshing && status.kind === 'ready')) && (
         <div className="px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 space-y-1.5 text-sm">
           {status.kind === 'loading' && (
             <div className="flex items-center gap-2 text-slate-500">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Đang nạp kho lưu trữ...</span>
+            </div>
+          )}
+          {refreshing && status.kind === 'ready' && (
+            <div role="status" className="flex items-center gap-2 text-slate-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>{loadedAt ? `Đang cập nhật danh sách (bản lưu lúc ${new Date(loadedAt).toTimeString().slice(0, 5)})...` : 'Đang cập nhật danh sách...'}</span>
+            </div>
+          )}
+          {refreshError && (
+            <div role="alert" className="flex items-start gap-2 text-amber-800 dark:text-amber-300">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{`Chưa cập nhật được danh sách, đang hiện bản lưu${loadedAt ? ` lúc ${new Date(loadedAt).toTimeString().slice(0, 5)}` : ''}. ${refreshError}`}</span>
             </div>
           )}
           {statusMessage && (

@@ -47,6 +47,50 @@ describe('UploadDropZone', () => {
     expect(queryByRole('status')).toBeNull();
   });
 
+  it('thả ở bất kỳ đâu trên trang (ngoài vùng danh sách) vẫn tải lên; lớp phủ cố định theo khung nhìn, không nằm trong phần cuộn', async () => {
+    const onItems = vi.fn();
+    const { container, queryByRole } = render(<UploadDropZone className="overflow-y-auto" onItems={onItems}>nội dung</UploadDropZone>);
+    const outside = document.createElement('div');
+    document.body.appendChild(outside);
+    const dt = dtWith(new File(['x'], 'ngoai.pdf'));
+
+    fireEvent.dragEnter(outside, { dataTransfer: dt });
+    const veil = queryByRole('status')!;
+    expect(veil.className).toContain('fixed');
+    expect(container.firstElementChild!.contains(veil)).toBe(false);
+
+    fireEvent.drop(outside, { dataTransfer: dt });
+    await waitFor(() => expect(onItems).toHaveBeenCalledTimes(1));
+    expect(queryByRole('status')).toBeNull();
+    outside.remove();
+  });
+
+  it('chỗ đã tự nhận tệp (preventDefault trước) thì không tải lên và không hiện lớp phủ', async () => {
+    const onItems = vi.fn();
+    const { queryByRole } = render(<UploadDropZone onItems={onItems}>x</UploadDropZone>);
+    const chat = document.createElement('div');
+    chat.addEventListener('dragenter', (e) => e.preventDefault());
+    chat.addEventListener('drop', (e) => e.preventDefault());
+    document.body.appendChild(chat);
+    const dt = dtWith(new File(['x'], 'cho-chat.pdf'));
+
+    fireEvent.dragEnter(chat, { dataTransfer: dt });
+    expect(queryByRole('status')).toBeNull();
+    fireEvent.drop(chat, { dataTransfer: dt });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onItems).not.toHaveBeenCalled();
+    chat.remove();
+  });
+
+  it('gỡ khỏi trang thì không còn nhận tệp', async () => {
+    const onItems = vi.fn();
+    const { unmount } = render(<UploadDropZone onItems={onItems}>x</UploadDropZone>);
+    unmount();
+    fireEvent.drop(document.body, { dataTransfer: dtWith(new File(['x'], 'sau.pdf')) });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onItems).not.toHaveBeenCalled();
+  });
+
   it('đi qua phần tử con không làm lớp phủ nhấp nháy', () => {
     const { container, queryByRole } = render(<UploadDropZone onItems={vi.fn()}><span>con</span></UploadDropZone>);
     const zone = container.firstElementChild!;

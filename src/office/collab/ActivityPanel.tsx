@@ -63,7 +63,10 @@ export const ActivityPanel: React.FC<ActivityPanelProps> = ({ docId, seq, me, on
   const describe = (op: SharedOp, summary: PatchSummary | null): string[] => {
     if (isReset(op)) return [t.reset];
     if (!summary) return [t.unknown];
-    const lines = summary.cells.map((cell) => `${cell.sheet}!${cell.ref}: ${cell.value === '' ? t.cleared : cell.value}`);
+    const lines = summary.cells.map((cell) => {
+      const now = cell.value === '' ? t.cleared : cell.value;
+      return cell.old ? `${cell.sheet}!${cell.ref}: ${cell.old} → ${now}` : `${cell.sheet}!${cell.ref}: ${now}`;
+    });
     if (summary.cellCount > summary.cells.length) lines.push(t.moreCells(summary.cellCount - summary.cells.length));
     return [...lines, ...summary.changes.map(change)];
   };

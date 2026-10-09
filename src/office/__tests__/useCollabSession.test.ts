@@ -131,6 +131,17 @@ describe('useCollabSession', () => {
     await waitFor(() => expect(a.hook.result.current.seq).toBe(2));
   });
 
+  it('sửa lại một ô đã có giá trị: tóm tắt ghi cả giá trị cũ', async () => {
+    const a = join(blank(), 1);
+    act(() => edit(a.ctrl, 0, 0, 'lần một'));
+    await waitFor(() => expect(h.log).toHaveLength(1));
+    await waitFor(() => expect(a.hook.result.current.status).toBe('saved'));
+    act(() => edit(a.ctrl, 0, 0, 'lần hai'));
+    await waitFor(() => expect(h.log).toHaveLength(2));
+    expect(h.summaries[0]).toMatchObject({ cells: [{ ref: 'A1', value: 'lần một', old: '' }] });
+    expect(h.summaries[1]).toMatchObject({ cells: [{ ref: 'A1', value: 'lần hai', old: 'lần một' }] });
+  });
+
   it('hai máy sửa hai ô khác nhau cùng lúc: cả hai ô có ở cả hai máy, hai máy giống nhau', async () => {
     const base = blank();
     const a = join(base, 1);

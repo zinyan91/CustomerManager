@@ -118,10 +118,11 @@ export function useCollabSession({ id, controller, initialData, initialSeq, canW
       if (pumping) return pumping;
       pumping = (async () => {
         try {
-          for (let patch = engine.takeOutgoing(); patch && !disposed; patch = engine.takeOutgoing()) {
+          for (let next = engine.takeOutgoingWithBase(); next && !disposed; next = engine.takeOutgoingWithBase()) {
+            const { patch, before } = next;
             setStatus('saving');
             try {
-              const assigned = await appendOp(id, engine.clientId, patch, summarizePatch(patch));
+              const assigned = await appendOp(id, engine.clientId, patch, summarizePatch(patch, before));
               failures = 0;
               if (engine.acknowledged(assigned)) refresh();
               noteSeq();

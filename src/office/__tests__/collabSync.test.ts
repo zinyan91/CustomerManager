@@ -235,6 +235,19 @@ describe('SyncEngine', () => {
     expect(valueAt(e.local, 1)).toBe('a');
   });
 
+  it('takeOutgoingWithBase: bản trước thay đổi đó, không gồm chính nó và gồm thay đổi gửi trước chưa dồn vào máy chủ', () => {
+    const e = new SyncEngine(blank(), 0, 'A');
+    e.edited(withCell(e.local, 1, 'một'));
+    const first = e.takeOutgoingWithBase()!;
+    expect(valueAt(first.before, 1)).toBeUndefined();
+    e.edited(withCell(e.local, 1, 'hai'));
+    expect(e.takeOutgoingWithBase()).toBeNull();
+    e.acknowledged(2); // máy chủ chờ thao tác số 1 của người khác nên chưa dồn thao tác của mình
+    const second = e.takeOutgoingWithBase()!;
+    expect(valueAt(second.before, 1)).toBe('một');
+    expect(valueAt(e.local, 1)).toBe('hai');
+  });
+
   it('thao tác của mình chờ sau một thao tác của người khác đến muộn: vẫn đúng thứ tự', () => {
     const e = new SyncEngine(blank(), 0, 'A');
     e.edited(withCell(e.local, 1, 'của mình'));

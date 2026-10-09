@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { cellKey } from '../calc/engine/cellRef';
 import type { Patch } from '../collab/patch';
+import { Workbook } from '../calc/model/workbook';
 import { parseSummary, summarizePatch } from '../collab/summary';
 
 const h = vi.hoisted(() => ({
@@ -34,6 +35,25 @@ describe('summarizePatch', () => {
     expect(summary.cells).toHaveLength(5);
     expect(summary.cells[0]).toEqual({ sheet: 'Sheet1', ref: 'B2', value: 'x'.repeat(60) });
     expect(summary.cells[1]).toEqual({ sheet: 'Sheet1', ref: 'A1', value: '=A2+1' });
+  });
+
+  it('có bản trước thay đổi thì mỗi ô kèm giá trị cũ (rỗng nếu ô trống hoặc trang tính chưa có)', () => {
+    const before = { ...new Workbook().toData(), sheets: [{ ...new Workbook().toData().sheets[0], name: 'S', cells: [[cellKey(0, 0), 'cũ', 0]] as Array<[number, string, number]> }] };
+    const summary = summarizePatch(
+      [
+        { t: 'cells', sheet: 'S', set: [[cellKey(0, 0), 'mới', null], [cellKey(1, 0), 'x', null]], del: [] },
+        { t: 'cells', sheet: 'S', set: [], del: [cellKey(0, 0)] },
+        { t: 'cells', sheet: 'Mới', set: [[cellKey(0, 0), 'y', null]], del: [] },
+      ],
+      before,
+    );
+    expect(summary.cells).toEqual([
+      { sheet: 'S', ref: 'A1', value: 'mới', old: 'cũ' },
+      { sheet: 'S', ref: 'A2', value: 'x', old: '' },
+      { sheet: 'S', ref: 'A1', value: '', old: 'cũ' },
+      { sheet: 'Mới', ref: 'A1', value: 'y', old: '' },
+    ]);
+    expect(summarizePatch([{ t: 'cells', sheet: 'S', set: [[cellKey(0, 0), 'a', null]], del: [] }]).cells[0]).not.toHaveProperty('old');
   });
 
   it('xóa ô ghi giá trị rỗng; các thay đổi khác ghi theo loại và tên', () => {
@@ -94,6 +114,17 @@ describe('ngăn Nhật ký', () => {
     expect(items[0].textContent).toContain('Đổi tên trang tính: A → B');
     expect(items[1].textContent).toContain('Sheet1!A1: =SUM(B1:B3)');
     expect(items[2].textContent).toContain('Sheet1!B2: xin chào');
+  });
+
+  it('ô đã có giá trị thì ghi "cũ → mới", ô đã xóa ghi "cũ → (đã xóa)", ô trước đó trống chỉ ghi giá trị mới', async () => {
+    const cells = [{ sheet: 'S', ref: 'A1', value: '20', old: '10' }, { sheet: 'S', ref: 'A2', value: '', old: 'x' }, { sheet: 'S', ref: 'A3', value: 'y', old: '' }];
+    h.ops = [op(8, 'u2', { cellCount: 3, cells, changes: [] })];
+    dung();
+    const text = (await screen.findByRole('list')).textContent!;
+    expect(text).toContain('S!A1: 10 → 20');
+    expect(text).toContain('S!A2: x → (đã xóa)');
+    expect(text).toContain('S!A3: y');
+    expect(text).not.toContain('→ y');
   });
 
   it('chỉ nạp phần đuôi: gọi từ số thứ tự (hiện hành − 200), không âm; nạp lại khi số thứ tự đổi', async () => {

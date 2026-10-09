@@ -1,4 +1,5 @@
 import { cellName, keyCol, keyRow } from '../calc/engine/cellRef';
+import type { WorkbookData } from '../calc/model/workbook';
 import type { Patch } from './patch';
 
 export interface SummaryCell {
@@ -6,6 +7,8 @@ export interface SummaryCell {
   ref: string;
   /** Giá trị mới (công thức giữ nguyên dạng gõ); rỗng khi ô bị xóa. */
   value: string;
+  /** Giá trị trước đó; rỗng nếu ô trống. Thiếu ở thao tác ghi bởi bản cũ. */
+  old?: string;
 }
 
 export interface SummaryChange {
@@ -26,17 +29,23 @@ export interface PatchSummary {
 const MAX_CELLS = 5;
 const MAX_VALUE = 60;
 
-export function summarizePatch(patch: Patch): PatchSummary {
+/** `before` là bảng tính trước thay đổi; có thì mỗi ô kèm giá trị cũ. */
+export function summarizePatch(patch: Patch, before?: WorkbookData): PatchSummary {
   const summary: PatchSummary = { cellCount: 0, cells: [], changes: [] };
+  const oldValue = (sheet: string, key: number): Pick<SummaryCell, 'old'> => {
+    if (!before) return {};
+    const found = before.sheets.find((candidate) => candidate.name === sheet)?.cells.find(([cellKey]) => cellKey === key);
+    return { old: (found?.[1] ?? '').slice(0, MAX_VALUE) };
+  };
   for (const op of patch) {
     switch (op.t) {
       case 'cells':
         summary.cellCount += op.set.length + op.del.length;
         for (const [key, raw] of op.set) {
-          if (summary.cells.length < MAX_CELLS) summary.cells.push({ sheet: op.sheet, ref: cellName(keyRow(key), keyCol(key)), value: raw.slice(0, MAX_VALUE) });
+          if (summary.cells.length < MAX_CELLS) summary.cells.push({ sheet: op.sheet, ref: cellName(keyRow(key), keyCol(key)), value: raw.slice(0, MAX_VALUE), ...oldValue(op.sheet, key) });
         }
         for (const key of op.del) {
-          if (summary.cells.length < MAX_CELLS) summary.cells.push({ sheet: op.sheet, ref: cellName(keyRow(key), keyCol(key)), value: '' });
+          if (summary.cells.length < MAX_CELLS) summary.cells.push({ sheet: op.sheet, ref: cellName(keyRow(key), keyCol(key)), value: '', ...oldValue(op.sheet, key) });
         }
         break;
       case 'keyed':

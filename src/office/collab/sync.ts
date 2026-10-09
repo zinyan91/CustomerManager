@@ -84,11 +84,18 @@ export class SyncEngine {
 
   /** Thay đổi kế tiếp cần gửi, hoặc null khi đang có thay đổi bay hay không có gì. Gọi xong coi như đã bắt đầu gửi. */
   takeOutgoing(): Patch | null {
+    return this.takeOutgoingWithBase()?.patch ?? null;
+  }
+
+  /** Như `takeOutgoing`, kèm bản bảng tính ngay trước thay đổi đó (để nhật ký ghi được giá trị cũ). */
+  takeOutgoingWithBase(): { patch: Patch; before: WorkbookData } | null {
     if (this.pending.some((p) => p.state === 'inflight')) return null;
-    const next = this.pending.find((p) => p.state === 'queued');
-    if (!next) return null;
+    const index = this.pending.findIndex((p) => p.state === 'queued');
+    if (index < 0) return null;
+    const next = this.pending[index];
     next.state = 'inflight';
-    return next.patch;
+    const before = this.pending.slice(0, index).reduce((data, earlier) => applyPatch(data, earlier.patch), this.server);
+    return { patch: next.patch, before };
   }
 
   /** Gửi thất bại (mất mạng): cho phép gửi lại thay đổi đang bay. */

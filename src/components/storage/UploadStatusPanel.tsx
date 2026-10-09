@@ -50,9 +50,16 @@ export function UploadStatusPanel({ running, progress, summary, error, onDismiss
           <div className="flex items-start gap-2 text-slate-800 dark:text-slate-100">
             <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${summary.failed.length === 0 ? 'text-emerald-600' : 'text-amber-600'}`} />
             <span className="flex-1">
-              Đã tải lên {summary.uploaded} tệp
-              {summary.names.length > 0 && summary.names.length <= 3 ? `: ${summary.names.join(', ')}` : ''}
-              {summary.failed.length > 0 ? `, ${summary.failed.length} tệp lỗi.` : '.'}
+              {summary.uploaded === 0 && (summary.skipped?.length ?? 0) > 0 && summary.failed.length === 0 ? (
+                'Không có tệp nào được tải lên.'
+              ) : (
+                <>
+                  Đã tải lên {summary.uploaded} tệp
+                  {summary.names.length > 0 && summary.names.length <= 3 ? `: ${summary.names.join(', ')}` : ''}
+                  {summary.failed.length > 0 ? `, ${summary.failed.length} tệp lỗi.` : '.'}
+                </>
+              )}
+              {(summary.skipped?.length ?? 0) > 0 ? ` Đã bỏ qua ${summary.skipped!.length} tệp trùng tên.` : ''}
             </span>
             <button type="button" onClick={onDismiss} aria-label="Đóng thông báo" className="p-0.5 text-slate-400 hover:text-slate-700">
               <X className="w-4 h-4" />

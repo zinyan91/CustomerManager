@@ -107,13 +107,42 @@ describe('Kho Google Drive: tải lên', () => {
     expect(new TextDecoder().decode(created[0].bytes)).toBe('Xin chào');
   });
 
-  it('tệp trùng tên tệp đã có thì lên với tên mới, tệp cũ còn nguyên', async () => {
+  it('tệp trùng tên tệp đã có: hỏi trước; chọn giữ cả hai thì lên với tên mới, tệp cũ còn nguyên', async () => {
+    await mount();
+    const input = screen.getByLabelText('Chọn tệp để tải lên') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(['MOI-DAI-HON'], 'goc.pdf', { type: 'application/pdf' })] } });
+
+    expect(await screen.findByText('1 tệp trùng tên trong thư mục này')).toBeTruthy();
+    expect(live('goc-2.pdf')).toHaveLength(0);
+    fireEvent.click(screen.getByLabelText(/Giữ cả hai/));
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục' }));
+
+    await waitFor(() => expect(live('goc-2.pdf')).toHaveLength(1));
+    expect(new TextDecoder().decode(live('goc.pdf')[0].bytes)).toBe('GOC');
+  });
+
+  it('tệp trùng tên và cùng dung lượng: mặc định bỏ qua, không tạo thêm tệp nào, báo đã bỏ qua', async () => {
     await mount();
     const input = screen.getByLabelText('Chọn tệp để tải lên') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [new File(['MOI'], 'goc.pdf', { type: 'application/pdf' })] } });
 
-    await waitFor(() => expect(live('goc-2.pdf')).toHaveLength(1));
-    expect(new TextDecoder().decode(live('goc.pdf')[0].bytes)).toBe('GOC');
+    await screen.findByText('1 tệp trùng tên trong thư mục này');
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục' }));
+
+    expect(await screen.findByText(/Đã bỏ qua 1 tệp trùng tên/)).toBeTruthy();
+    expect(live('goc-2.pdf')).toHaveLength(0);
+    expect(live('goc.pdf')).toHaveLength(1);
+  });
+
+  it('hủy ở hộp tệp trùng: không tải gì', async () => {
+    await mount();
+    const input = screen.getByLabelText('Chọn tệp để tải lên') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(['MOI'], 'goc.pdf', { type: 'application/pdf' })] } });
+
+    await screen.findByText('1 tệp trùng tên trong thư mục này');
+    fireEvent.click(screen.getByRole('button', { name: 'Hủy tải lên' }));
+    await waitFor(() => expect(screen.queryByText('1 tệp trùng tên trong thư mục này')).toBeNull());
+    expect(live('goc-2.pdf')).toHaveLength(0);
   });
 
   it('tải vào thư mục đang mở', async () => {

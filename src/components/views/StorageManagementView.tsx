@@ -33,6 +33,7 @@ import { AiChatDialog } from '../ai/AiChatDialog';
 import { ItemMenu, type MenuEntry } from '../storage/ItemMenu';
 import { UploadDropZone } from '../storage/UploadDropZone';
 import { UploadStatusPanel } from '../storage/UploadStatusPanel';
+import { UploadDuplicateDialog } from '../storage/UploadDuplicateDialog';
 import { DownloadStatusPanel } from '../storage/DownloadStatusPanel';
 import { DriveNameDialog } from '../storage/DriveNameDialog';
 import { DriveMoveDialog } from '../storage/DriveMoveDialog';
@@ -69,7 +70,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const driveUploadTarget = useMemo<DriveUploadTarget | null>(
     () =>
       driveRoot
-        ? { ctx: driveContext, rootId: driveRoot, existingPaths: (driveEntries ?? []).map((e) => e.path), folderIds: folderIdMap(driveEntries ?? []) }
+        ? { ctx: driveContext, rootId: driveRoot, existingPaths: (driveEntries ?? []).map((e) => e.path), folderIds: folderIdMap(driveEntries ?? []), entries: driveEntries ?? [] }
         : null,
     [driveRoot, driveEntries]
   );
@@ -466,6 +467,9 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
         </div>
       </div>
 
+      {upload.pending && (
+        <UploadDuplicateDialog matches={upload.pending.matches} total={upload.pending.total} onConfirm={(choices) => void upload.resolveDuplicates(choices)} onCancel={upload.cancelDuplicates} />
+      )}
       <UploadStatusPanel running={upload.running} progress={upload.progress} summary={upload.summary} error={upload.error} onDismiss={upload.dismiss} />
 
       <DownloadStatusPanel

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { useOfficeI18n } from '../i18n';
-import { listInvitableUsers, listOps, type SharedOp } from './collabApi';
+import { listInvitableUsers, listOps, type SharedKind, type SharedOp } from './collabApi';
 import { parseSummary, type PatchSummary, type SummaryChange } from './summary';
 
 export interface ActivityPanelProps {
@@ -10,6 +10,8 @@ export interface ActivityPanelProps {
   seq: number;
   /** Mã và tên của chính người đang mở (danh sách tài khoản có thể mời không gồm họ). */
   me: { id: string; name: string };
+  /** Loại tài liệu, để ghi đúng chữ cho thao tác khôi phục; mặc định bảng tính. */
+  kind?: SharedKind;
   onClose: () => void;
 }
 
@@ -19,7 +21,7 @@ const TAIL = 200;
 const isReset = (op: SharedOp): boolean => (op.summary as { kind?: unknown }).kind === 'reset' || op.patch.some((p) => (p as { t: string }).t === 'reset');
 
 /** Ngăn Nhật ký: các thay đổi gần nhất của bảng tính chung, mới nhất trước, lọc theo người. */
-export const ActivityPanel: React.FC<ActivityPanelProps> = ({ docId, seq, me, onClose }) => {
+export const ActivityPanel: React.FC<ActivityPanelProps> = ({ docId, seq, me, kind = 'calc', onClose }) => {
   const { m, lang } = useOfficeI18n();
   const t = m.ribbon.activity;
   const [ops, setOps] = useState<SharedOp[] | null>(null);
@@ -61,7 +63,8 @@ export const ActivityPanel: React.FC<ActivityPanelProps> = ({ docId, seq, me, on
     return item.kind === 'renameSheet' ? `${label}: ${item.name} → ${item.to ?? ''}` : item.name ? `${label}: ${item.name}` : label;
   };
   const describe = (op: SharedOp, summary: PatchSummary | null): string[] => {
-    if (isReset(op)) return [t.reset];
+    if ((op.summary as { kind?: unknown }).kind === 'save') return [t.save];
+    if (isReset(op)) return [kind === 'writer' ? t.resetWriter : t.reset];
     if (!summary) return [t.unknown];
     const lines = summary.cells.map((cell) => {
       const now = cell.value === '' ? t.cleared : cell.value;

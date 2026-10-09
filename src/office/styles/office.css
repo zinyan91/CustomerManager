@@ -3114,3 +3114,7 @@
   justify-content: flex-end;
   padding: 0.6rem 1rem 0.8rem;
 }
+
+.writer-ribbon-locked {
+  opacity: 0.55;
+}

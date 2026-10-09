@@ -4,11 +4,13 @@ import { listInvitableUsers, listMembers, setMember, type InvitableUser, type Me
 
 export interface ShareDialogProps {
   docId: string;
+  /** Tiêu đề hộp thoại; mặc định là của bảng tính. */
+  title?: string;
   onClose: () => void;
 }
 
 /** Mời từng tài khoản vào bảng tính chung, đổi quyền sửa/xem, gỡ. Chỉ chủ và Master Admin mở được (máy chủ cũng kiểm lại). */
-export const ShareDialog: React.FC<ShareDialogProps> = ({ docId, onClose }) => {
+export const ShareDialog: React.FC<ShareDialogProps> = ({ docId, title, onClose }) => {
   const { m } = useOfficeI18n();
   const t = m.ribbon.share;
   const [members, setMembers] = useState<SharedMember[] | null>(null);
@@ -53,8 +55,8 @@ export const ShareDialog: React.FC<ShareDialogProps> = ({ docId, onClose }) => {
 
   return (
     <div className="calc-dialog-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div className="calc-dialog share-dialog" role="dialog" aria-label={t.title}>
-        <div className="calc-dialog-title">{t.title}</div>
+      <div className="calc-dialog share-dialog" role="dialog" aria-label={title ?? t.title}>
+        <div className="calc-dialog-title">{title ?? t.title}</div>
         <div className="calc-dialog-body">
           <h3 className="share-heading">{t.members}</h3>
           {members !== null && members.length === 0 && <p className="share-note">{t.none}</p>}

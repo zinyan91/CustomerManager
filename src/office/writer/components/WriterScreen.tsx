@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { Download, Printer } from 'lucide-react';
+import { canEdit, canManageSharing, createSharedWriter, getSharedWriter, type SharedRole } from '../../collab/collabApi';
+import { PresenceBar } from '../../collab/PresenceBar';
+import { SharedDocActions, SharedDocPanels, type SharedPanel } from '../../collab/SharedDocChrome';
+import { useSharedWriter } from '../../collab/useSharedWriter';
+import { usePresence } from '../../collab/usePresence';
 import { useArchiveDocument } from '../../shared/archive/useArchiveDocument';
 import type { DriveLink } from '../../shared/archive/officeArchive';
 import { downloadBlob, saveDocument } from '../../shared/files';
@@ -13,9 +18,10 @@ import { exportDocx } from '../services/docxExportService';
 import { importDocument } from '../services/docxImportService';
 import { getDraft, newDraftId, saveDraft } from '../services/draftStore';
 import { buildPrintHtml, printDocument } from '../services/printService';
-import { docStats, docToPlainText, firstLine, type DocNode, type DocStats } from '../utils/docJson';
+import { docStats, docToPlainText, EMPTY_DOC, firstLine, type DocNode, type DocStats } from '../utils/docJson';
 import { DEFAULT_PAGE_SETUP, pageGeometryPx, parsePageSetup, type PageSetup } from '../utils/pageSetup';
 import { pageAt, type PaginationResult } from '../utils/pagination';
+import { parseSharedContent, toSharedContent } from '../utils/sharedContent';
 import { FindReplacePanel } from './FindReplacePanel';
 import { StatsDialog } from './StatsDialog';
 import { WriterBackstage, type WriterBackstageSection } from './WriterBackstage';
@@ -32,6 +38,8 @@ interface Loaded {
   /** True when the content did not come from a saved draft: save it as soon as it is open. */
   needsSave: boolean;
   link: DriveLink | null;
+  /** Văn bản chung trên hệ thống; null là nháp trong trình duyệt. */
+  shared: { id: string; role: SharedRole; seq: number } | null;
 }
 
 export interface WriterScreenProps {
@@ -47,6 +55,15 @@ export interface WriterScreenProps {
   onOpenDraft: (id: string) => void;
   /** The draft now has this id; `isNew` when it was just created (the address should show it). */
   onDraftId: (id: string, isNew: boolean) => void;
+  /** Văn bản chung cần mở (địa chỉ .../shared/:id). */
+  sharedId?: string | null;
+  /** Mã và tên người đang mở, để Nhật ký và danh sách người đang mở. */
+  userId?: string;
+  author?: string;
+  /** Nháp vừa được đưa lên hệ thống: mở bản chung. */
+  onOpenShared?: (id: string) => void;
+  /** Dựng lại màn đang mở (tải bản mới nhất của văn bản chung). */
+  onReloadShared?: () => void;
 }
 
 /** Opens what the route asks for, then hands it to the editor. */
@@ -59,20 +76,26 @@ export const WriterScreen: React.FC<WriterScreenProps> = (props) => {
     let cancelled = false;
     (async () => {
       try {
-        if (props.docId) {
+        if (props.sharedId) {
+          const doc = await getSharedWriter(props.sharedId);
+          const content = parseSharedContent(doc.content);
+          if (!cancelled) {
+            setLoaded({ id: null, title: doc.title, content: content.doc, pageSetup: content.pageSetup, needsSave: false, link: null, shared: { id: doc.id, role: doc.role, seq: doc.lastSeq } });
+          }
+        } else if (props.docId) {
           const draft = await getDraft(props.docId);
           if (!draft) throw new Error(m.writer.errors.draftMissing);
           props.onDraftId(draft.id, false);
           if (!cancelled) {
-            setLoaded({ id: draft.id, title: draft.title, content: draft.doc, pageSetup: draft.pageSetup, needsSave: false, link: draft.driveLink ?? null });
+            setLoaded({ id: draft.id, title: draft.title, content: draft.doc, pageSetup: draft.pageSetup, needsSave: false, link: draft.driveLink ?? null, shared: null });
           }
         } else if (props.file) {
           const imported = await importDocument(props.file);
           if (!cancelled) {
-            setLoaded({ id: null, title: imported.title, content: imported.html, pageSetup: parsePageSetup({ ...DEFAULT_PAGE_SETUP, ...imported.pageDefaults }), needsSave: true, link: props.link ?? null });
+            setLoaded({ id: null, title: imported.title, content: imported.html, pageSetup: parsePageSetup({ ...DEFAULT_PAGE_SETUP, ...imported.pageDefaults }), needsSave: true, link: props.link ?? null, shared: null });
           }
         } else if (!cancelled) {
-          setLoaded({ id: null, title: '', content: '', pageSetup: DEFAULT_PAGE_SETUP, needsSave: false, link: null });
+          setLoaded({ id: null, title: '', content: '', pageSetup: DEFAULT_PAGE_SETUP, needsSave: false, link: null, shared: null });
         }
       } catch (caught) {
         const detail = caught instanceof Error ? caught.message : String(caught);
@@ -112,7 +135,7 @@ export const WriterScreen: React.FC<WriterScreenProps> = (props) => {
   return <WriterBody {...props} loaded={loaded} />;
 };
 
-const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, onHome, onOpenFile, onNew, onOpenDraft, onDraftId }) => {
+const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, onHome, onOpenFile, onNew, onOpenDraft, onDraftId, onOpenShared, userId = '', author = '' }) => {
   const { m } = useOfficeI18n();
   const t = m.writer;
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -131,6 +154,13 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
   const [backstage, setBackstage] = useState<WriterBackstageSection | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const openInput = useRef<HTMLInputElement>(null);
+  const shared = loaded.shared;
+  const canWrite = shared ? canEdit(shared.role) : true;
+  const me = useMemo(() => ({ id: userId, name: author }), [userId, author]);
+  const [panel, setPanel] = useState<SharedPanel>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const sharedRef = useRef<{ edited: () => void; flush: () => Promise<void> } | null>(null);
 
   const idRef = useRef<string | null>(loaded.id);
   const linkRef = useRef<DriveLink | null>(loaded.link);
@@ -148,6 +178,7 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
   }, [t.untitled]);
 
   const flush = useCallback(async () => {
+    if (sharedRef.current) return sharedRef.current.flush();
     window.clearTimeout(timer.current);
     const doc = latest.current.doc;
     if (!dirty.current || !doc) return;
@@ -176,10 +207,80 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
   }, [onDraftId]);
 
   const scheduleSave = useCallback(() => {
+    if (sharedRef.current) {
+      sharedRef.current.edited();
+      return;
+    }
     dirty.current = true;
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => void flush(), SAVE_DELAY_MS);
   }, [flush]);
+
+  const savedTitle = () => latest.current.title.trim() || firstLine(latest.current.doc ?? EMPTY_DOC);
+  const collab = useSharedWriter({
+    id: shared?.id ?? null,
+    initialSeq: shared?.seq ?? 0,
+    userId,
+    canWrite,
+    snapshot: () => ({ title: savedTitle(), content: toSharedContent(latest.current.doc ?? EMPTY_DOC, latest.current.pageSetup) }),
+    onLoaded: (doc) => {
+      const content = parseSharedContent(doc.content);
+      editor?.commands.setContent(content.doc, { emitUpdate: false });
+      latest.current.doc = editor ? (editor.getJSON() as DocNode) : content.doc;
+      setStats(docStats(latest.current.doc));
+      latest.current.title = doc.title;
+      setTitle(doc.title);
+      latest.current.pageSetup = content.pageSetup;
+      setPageSetup(content.pageSetup);
+    },
+    onTitle: (next) => {
+      latest.current.title = next;
+      setTitle(next);
+    },
+  });
+  sharedRef.current = shared ? collab : null;
+  const people = usePresence(shared?.id ?? null, me, null);
+
+  useEffect(() => {
+    if (editor && !editor.isDestroyed) editor.setEditable(canWrite, false);
+  }, [editor, canWrite]);
+
+  const share = async () => {
+    if (shared) {
+      if (canManageSharing(shared.role)) setShareOpen(true);
+      return;
+    }
+    if (!window.confirm(t.shared.uploadConfirm)) return;
+    const doc = latest.current.doc;
+    if (!doc) return;
+    setSharing(true);
+    try {
+      await flush();
+      onOpenShared?.(await createSharedWriter(savedTitle(), toSharedContent(doc, latest.current.pageSetup)));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const reloadShared = () => void collab.reload();
+  const keepMine = async () => {
+    const doc = latest.current.doc;
+    try {
+      if (doc) {
+        await saveDraft({ id: newDraftId(), title: savedTitle(), doc, pageSetup: latest.current.pageSetup, updatedAt: Date.now() });
+        setNotice(t.shared.keptNotice);
+      }
+      await collab.reload();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  };
+  const leave = (action: () => void) => {
+    if (collab.status === 'conflict' && !window.confirm(t.shared.leaveConfirm)) return;
+    void flush().then(action);
+  };
 
   // Save what is pending when the tab is hidden or closed, and when leaving this screen.
   useEffect(() => {
@@ -338,17 +439,40 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, t]);
 
-  const saveLabel =
-    saveState === 'saving' ? t.saving : saveState === 'saved' ? t.saved : saveState === 'failed' ? t.saveFailed : '';
+  const sharedText = m.ribbon.share;
+  const saveLabel = shared
+    ? !canWrite
+      ? sharedText.roleLabel[shared.role]
+      : collab.status === 'saving'
+        ? sharedText.saving
+        : collab.status === 'saved'
+          ? sharedText.saved
+          : collab.status === 'idle'
+            ? ''
+            : sharedText.saveFailed
+    : saveState === 'saving'
+      ? t.saving
+      : saveState === 'saved'
+        ? t.saved
+        : saveState === 'failed'
+          ? t.saveFailed
+          : '';
+  const failed = shared ? collab.status === 'failed' || collab.status === 'conflict' : saveState === 'failed';
 
   return (
     <div className="office-page writer-page">
       <OfficeHeader
-        onHome={() => {
-          void flush().then(onHome);
-        }}
+        onHome={() => leave(onHome)}
         actions={
           <>
+            <SharedDocActions
+              shared={shared !== null}
+              showShare={!shared || canManageSharing(shared.role)}
+              sharing={sharing}
+              panel={panel}
+              onPanel={setPanel}
+              onShare={() => void share()}
+            />
             <button type="button" className="office-header-btn" onClick={() => void downloadDocx()} title={t.file.downloadDocx} disabled={!editor}>
               <Download size={15} />
               <span>DOCX</span>
@@ -365,18 +489,21 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
           value={title}
           placeholder={t.untitled}
           aria-label={t.titleLabel}
+          readOnly={!canWrite}
           onChange={(event) => {
             setTitle(event.target.value);
             latest.current.title = event.target.value;
             scheduleSave();
           }}
         />
-        <span className={`writer-save-state${saveState === 'failed' ? ' is-error' : ''}`} role="status" aria-live="polite">
+        <span className={`writer-save-state${failed ? ' is-error' : ''}`} role="status" aria-live="polite">
           {saveLabel}
         </span>
+        <PresenceBar people={people} unnamed={m.ribbon.presence.unnamed} label={m.ribbon.presence.label} />
       </OfficeHeader>
 
       {editor && (
+        <div inert={!canWrite} className={canWrite ? undefined : 'writer-ribbon-locked'}>
         <WriterRibbon
           editor={editor}
           state={state}
@@ -390,6 +517,7 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
           onError={setError}
           onFile={() => setBackstage('home')}
         />
+        </div>
       )}
       <input
         ref={openInput}
@@ -419,6 +547,38 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
           </button>
         </div>
       )}
+      {shared && collab.status === 'conflict' && (
+        <div className="office-banner" role="alert">
+          <span>{t.shared.conflict}</span>
+          <button type="button" className="wr-text-btn is-primary" onClick={reloadShared}>
+            {t.shared.reload}
+          </button>
+          <button type="button" className="wr-text-btn" onClick={() => void keepMine()}>
+            {t.shared.keepMine}
+          </button>
+        </div>
+      )}
+      {shared && collab.status === 'failed' && collab.error && (
+        <div className="office-banner" role="alert">
+          <span>{collab.error}</span>
+        </div>
+      )}
+      {shared && (
+        <SharedDocPanels
+          docId={shared.id}
+          kind="writer"
+          role={shared.role}
+          me={me}
+          seq={collab.seq}
+          panel={panel}
+          onClosePanel={() => setPanel(null)}
+          shareOpen={shareOpen}
+          shareTitle={t.shared.shareTitle}
+          onCloseShare={() => setShareOpen(false)}
+          onSaveMilestone={collab.saveMilestone}
+          onRestore={(versionId) => collab.restore(versionId, m.ribbon.history.safetyLabel)}
+        />
+      )}
       {backstage && (
         <WriterBackstage
           title={title}
@@ -432,16 +592,10 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
             setBackstage(null);
             setNotice(null);
           }}
-          onHome={() => {
-            void flush().then(onHome);
-          }}
-          onNew={() => {
-            void flush().then(onNew);
-          }}
+          onHome={() => leave(onHome)}
+          onNew={() => leave(onNew)}
           onOpenDevice={() => openInput.current?.click()}
-          onOpenDraft={(id) => {
-            void flush().then(() => onOpenDraft(id));
-          }}
+          onOpenDraft={(id) => leave(() => onOpenDraft(id))}
           onOpenFromArchive={archive.openFromArchive}
           onSaveNow={async () => {
             dirty.current = true;

@@ -77,6 +77,7 @@ export function App() {
         <Route path="calc/shared/:sharedId" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
         <Route path="calc/:draftId" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
         <Route path="writer" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
+        <Route path="writer/shared/:sharedId" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
         <Route path="writer/:draftId" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
       </Route>
 

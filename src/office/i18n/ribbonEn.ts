@@ -121,6 +121,8 @@ export const ribbonEn: RibbonMessages = {
     someone: 'A user',
     cleared: '(cleared)',
     reset: 'Restored the whole spreadsheet',
+    resetWriter: 'Restored the whole document',
+    save: 'Saved the document',
     unknown: 'Change',
     moreCells: (n: number) => `and ${n} more cells`,
     changes: {

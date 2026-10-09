@@ -40,6 +40,7 @@ import {
   appendOp, listOps, saveSnapshot, subscribeOps, mapOpRecord,
   ConflictError, canEdit, canManageSharing, createSharedDocument, deleteSharedDocument, getSharedDocument, listInvitableUsers, listMembers,
   listSharedDocuments, saveSharedDocument, setMember, toCollabError,
+  createSharedWriter, getSharedWriter, saveSharedWriter,
 } from '../collab/collabApi';
 import type { WorkbookData } from '../calc/model/workbook';
 
@@ -60,7 +61,7 @@ describe('collabApi', () => {
 
   it('danh sách: đổi tên cột về dạng của mã, rỗng khi không có', async () => {
     h.reply.data = [{ id: 'a', title: 'T', owner_id: 'o', owner_name: 'Chủ', role: 'editor', updated_at: '2026-10-08', last_seq: '4' }];
-    expect(await listSharedDocuments()).toEqual([{ id: 'a', title: 'T', ownerId: 'o', ownerName: 'Chủ', role: 'editor', updatedAt: '2026-10-08', lastSeq: 4 }]);
+    expect(await listSharedDocuments()).toEqual([{ id: 'a', title: 'T', ownerId: 'o', ownerName: 'Chủ', role: 'editor', updatedAt: '2026-10-08', lastSeq: 4, kind: 'calc' }]);
     h.reply.data = null;
     expect(await listSharedDocuments()).toEqual([]);
   });
@@ -89,6 +90,37 @@ describe('collabApi', () => {
     h.reply = { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.office_list_documents' } };
     await expect(listSharedDocuments()).rejects.toThrow(/cần áp migration 71/);
     expect(toCollabError({ message: 'Could not find the function x in the schema cache' }, 'Làm gì').message).toContain('migration 71');
+  });
+
+  it('hàm thiếu: nêu đúng migration theo tên hàm (72, 73) hoặc tham số p_kind (74)', () => {
+    const migration = (message: string) => toCollabError({ code: 'PGRST202', message }, 'Việc').message;
+    expect(migration('Could not find the function public.office_append_op(p_client) in the schema cache')).toContain('migration 72');
+    expect(migration('Could not find the function public.office_list_versions(p_doc)')).toContain('migration 73');
+    expect(migration('Could not find the function public.office_create_document(p_data, p_kind, p_title) in the schema cache')).toContain('migration 74');
+    expect(migration('Could not find the function public.office_get_document(p_doc)')).toContain('migration 71');
+  });
+
+  it('văn bản chung: tạo kèm loại, danh sách có kind, mở trả nội dung nguyên khối, lưu đúng số thứ tự', async () => {
+    const content = { doc: { type: 'doc' }, pageSetup: {} };
+    h.reply.data = 'w-1';
+    expect(await createSharedWriter('Công văn', content)).toBe('w-1');
+    expect(h.calls[0]).toEqual({ fn: 'office_create_document', args: { p_title: 'Công văn', p_data: content, p_kind: 'writer' } });
+    h.reply.data = [{ id: 'a', title: 'T', owner_id: 'o', owner_name: '', role: 'owner', updated_at: '', last_seq: 1, kind: 'writer' }];
+    expect((await listSharedDocuments())[0].kind).toBe('writer');
+    h.reply.data = [{ id: 'a', title: 'T', data: content, role: 'editor', last_seq: 3, kind: 'writer' }];
+    expect(await getSharedWriter('a')).toEqual({ id: 'a', title: 'T', content, role: 'editor', lastSeq: 3 });
+    h.reply.data = 4;
+    expect(await saveSharedWriter('a', 3, 'T', content)).toBe(4);
+    expect(h.calls.at(-1)?.args).toEqual({ p_doc: 'a', p_base_seq: 3, p_title: 'T', p_data: content });
+    h.reply = { data: null, error: { code: '40001', message: 'Người khác đã lưu' } };
+    await expect(saveSharedWriter('a', 3, 'T', content)).rejects.toBeInstanceOf(ConflictError);
+  });
+
+  it('mở nhầm loại bị từ chối ở cả hai phía', async () => {
+    h.reply.data = [{ id: 'a', title: 'T', data: DATA, role: 'editor', last_seq: 3, kind: 'calc' }];
+    await expect(getSharedWriter('a')).rejects.toThrow(/đây là bảng tính/);
+    h.reply.data = [{ id: 'a', title: 'T', data: { doc: {} }, role: 'editor', last_seq: 3, kind: 'writer' }];
+    await expect(getSharedDocument('a')).rejects.toThrow(/đây là văn bản/);
   });
 
   it('lỗi khác giữ nguyên thông điệp của máy chủ kèm việc đang làm', async () => {

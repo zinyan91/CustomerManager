@@ -163,6 +163,17 @@ export const writerVi = {
     imageFailed: 'Không đọc được ảnh này.',
     draftMissing: 'Không tìm thấy bản nháp này; có thể nó đã bị xoá.',
   },
+  shared: {
+    shareTitle: 'Chia sẻ văn bản',
+    uploadConfirm: 'Đưa văn bản này lên hệ thống để chia sẻ? Bản trong trình duyệt vẫn giữ nguyên.',
+    readOnly: 'Bạn chỉ có quyền xem văn bản này.',
+    location: 'Văn bản chung trên hệ thống',
+    conflict: 'Người khác đã lưu bản mới hơn của văn bản này. Phần bạn đang sửa chưa được lưu.',
+    reload: 'Tải bản mới',
+    keepMine: 'Giữ bản của tôi thành nháp',
+    keptNotice: 'Đã giữ bản của bạn thành nháp trong trình duyệt.',
+    leaveConfirm: 'Còn phần chưa lưu do xung đột. Rời đi sẽ mất phần này. Vẫn rời đi?',
+  },
 };
 
 export type WriterMessages = typeof writerVi;

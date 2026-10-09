@@ -120,6 +120,8 @@ export const ribbonVi = {
     someone: 'Một người dùng',
     cleared: '(đã xóa)',
     reset: 'Khôi phục cả bảng tính',
+    resetWriter: 'Khôi phục cả văn bản',
+    save: 'Lưu văn bản',
     unknown: 'Thay đổi',
     moreCells: (n: number) => `và ${n} ô khác`,
     changes: {

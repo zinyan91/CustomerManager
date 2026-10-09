@@ -5,6 +5,8 @@ import type { Patch } from './patch';
 /** Quyền của người đang mở trên một bảng tính chung (admin: Master Admin xem, quản lý chia sẻ, không sửa). */
 export type SharedRole = 'owner' | 'editor' | 'viewer' | 'admin';
 export type MemberRole = 'editor' | 'viewer';
+/** Loại tài liệu chung: bảng tính hoặc văn bản. */
+export type SharedKind = 'calc' | 'writer';
 
 export interface SharedDocSummary {
   id: string;
@@ -13,6 +15,17 @@ export interface SharedDocSummary {
   ownerName: string;
   role: SharedRole;
   updatedAt: string;
+  lastSeq: number;
+  /** Máy chủ chưa áp migration 74 thì không trả loại: coi là bảng tính. */
+  kind: SharedKind;
+}
+
+/** Văn bản chung: nội dung là cả khối (cây tài liệu và thiết lập trang), do màn Văn bản đọc ra. */
+export interface SharedWriter {
+  id: string;
+  title: string;
+  content: unknown;
+  role: SharedRole;
   lastSeq: number;
 }
 
@@ -78,7 +91,13 @@ export const mapSummary = (row: Row): SharedDocSummary => ({
   role: toRole(row.role),
   updatedAt: text(row.updated_at),
   lastSeq: num(row.last_seq),
+  kind: row.kind === 'writer' ? 'writer' : 'calc',
 });
+
+export const mapWriter = (row: Row): SharedWriter => {
+  if (row.data === null || row.data === undefined || typeof row.data !== 'object') throw new Error('Nội dung văn bản chung bị hỏng, không mở được.');
+  return { id: text(row.id), title: text(row.title), content: row.data, role: toRole(row.role), lastSeq: num(row.last_seq) };
+};
 
 export const mapDocument = (row: Row): SharedDocument => {
   const data = row.data as WorkbookData | null;
@@ -100,11 +119,19 @@ export const mapOp = (row: Row): SharedOp => ({
 export const mapOpRecord = (record: Row): SharedOp =>
   mapOp({ seq: record.Seq, user_id: record.UserId, client_id: record.ClientId, patch: record.Patch, summary: record.Summary, created_at: record.CreatedAt });
 
+/** Hàm thiếu thuộc migration nào, suy từ tên hàm (hoặc tham số p_kind của migration 74) trong thông báo lỗi. */
+function missingMigration(message: string): number {
+  if (/p_kind/.test(message)) return 74;
+  if (/office_(append_op|list_ops|save_snapshot)/.test(message)) return 72;
+  if (/office_(save_version|list_versions|restore_version|rename_document)/.test(message)) return 73;
+  return 71;
+}
+
 /** Lỗi từ Supabase thành lỗi tiếng Việt: xung đột có kiểu riêng, hàm chưa có (chưa áp migration) được nói rõ. */
 export function toCollabError(error: { code?: string; message: string }, doing: string): Error {
   if (error.code === '40001') return new ConflictError(error.message);
   if (error.code === 'PGRST202' || /Could not find the function/i.test(error.message)) {
-    return new Error(`${doing}: máy chủ chưa có tính năng chia sẻ (cần áp migration 71 trên Supabase).`);
+    return new Error(`${doing}: máy chủ chưa có tính năng chia sẻ (cần áp migration ${missingMigration(error.message)} trên Supabase).`);
   }
   return new Error(`${doing}: ${error.message}`);
 }
@@ -120,6 +147,11 @@ export async function createSharedDocument(title: string, data: WorkbookData): P
   return call<string>('office_create_document', { p_title: title, p_data: data }, 'Không đưa được bảng tính lên hệ thống');
 }
 
+/** Đưa văn bản lên hệ thống (cần migration 74). Nội dung là cả khối do màn Văn bản dựng. */
+export async function createSharedWriter(title: string, content: object): Promise<string> {
+  return call<string>('office_create_document', { p_title: title, p_data: content, p_kind: 'writer' }, 'Không đưa được văn bản lên hệ thống');
+}
+
 export async function listSharedDocuments(): Promise<SharedDocSummary[]> {
   const rows = await call<Row[] | null>('office_list_documents', {}, 'Không đọc được danh sách bảng tính chung');
   return (rows ?? []).map(mapSummary);
@@ -128,7 +160,20 @@ export async function listSharedDocuments(): Promise<SharedDocSummary[]> {
 export async function getSharedDocument(id: string): Promise<SharedDocument> {
   const rows = await call<Row[] | null>('office_get_document', { p_doc: id }, 'Không mở được bảng tính chung');
   if (!rows || rows.length === 0) throw new Error('Không mở được bảng tính chung: không tìm thấy tài liệu.');
+  if (rows[0].kind === 'writer') throw new Error('Không mở được bảng tính chung: đây là văn bản, hãy mở ở màn Văn bản.');
   return mapDocument(rows[0]);
+}
+
+export async function getSharedWriter(id: string): Promise<SharedWriter> {
+  const rows = await call<Row[] | null>('office_get_document', { p_doc: id }, 'Không mở được văn bản chung');
+  if (!rows || rows.length === 0) throw new Error('Không mở được văn bản chung: không tìm thấy tài liệu.');
+  if (rows[0].kind !== 'writer') throw new Error('Không mở được văn bản chung: đây là bảng tính, hãy mở ở màn Bảng tính.');
+  return mapWriter(rows[0]);
+}
+
+/** Lưu cả khối văn bản; trả số thứ tự mới. Ném ConflictError khi người khác đã lưu trước. */
+export async function saveSharedWriter(id: string, baseSeq: number, title: string, content: object): Promise<number> {
+  return num(await call<number | string>('office_save_document', { p_doc: id, p_base_seq: baseSeq, p_title: title, p_data: content }, 'Không lưu được văn bản chung'));
 }
 
 /** Lưu nội dung; trả số thứ tự mới. Ném ConflictError khi người khác đã lưu trước. */
@@ -203,7 +248,7 @@ export function subscribeOps(id: string, onOp: (op: SharedOp) => void, onStatus?
 }
 
 /** Lưu một mốc: nội dung đầy đủ ở số thứ tự `seq`. Trả mã mốc. */
-export async function saveVersion(id: string, seq: number, label: string, data: WorkbookData): Promise<number> {
+export async function saveVersion(id: string, seq: number, label: string, data: object): Promise<number> {
   return num(await call<number | string>('office_save_version', { p_doc: id, p_seq: seq, p_label: label, p_data: data }, 'Không lưu được mốc'));
 }
 

@@ -9,13 +9,15 @@ export interface HistoryPanelProps {
   /** Có quyền lưu mốc và khôi phục (chủ và người được sửa). */
   canWrite: boolean;
   me: { id: string; name: string };
+  /** Hiện nút Xem (xem trước chỉ-đọc). Mặc định có; văn bản chưa có xem trước nên tắt. */
+  preview?: boolean;
   onSave: (label: string) => Promise<void>;
   onRestore: (versionId: number) => Promise<void>;
   onClose: () => void;
 }
 
 /** Ngăn Lịch sử: các mốc đã lưu của bảng tính chung, lưu mốc mới, khôi phục một mốc (có xác nhận, không xóa gì). */
-export const HistoryPanel: React.FC<HistoryPanelProps> = ({ docId, canWrite, me, onSave, onRestore, onClose }) => {
+export const HistoryPanel: React.FC<HistoryPanelProps> = ({ docId, canWrite, me, preview = true, onSave, onRestore, onClose }) => {
   const { m, lang } = useOfficeI18n();
   const t = m.ribbon.history;
   const [versions, setVersions] = useState<SharedVersion[] | null>(null);
@@ -95,9 +97,11 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ docId, canWrite, me,
               <small>{when(version.createdAt)}</small>
             </div>
             <div className="activity-line">{nameOf(version.createdBy)}</div>
-            <button type="button" className="wr-text-btn history-restore" aria-label={`${t.view}: ${version.label || t.unnamed}`} onClick={() => setViewing(version)}>
-              {t.view}
-            </button>
+            {preview && (
+              <button type="button" className="wr-text-btn history-restore" aria-label={`${t.view}: ${version.label || t.unnamed}`} onClick={() => setViewing(version)}>
+                {t.view}
+              </button>
+            )}
             {canWrite && (
               <button
                 type="button"

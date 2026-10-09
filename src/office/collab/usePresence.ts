@@ -5,13 +5,19 @@ import { joinPresence, type PresencePerson } from './collabApi';
 
 const THROTTLE_MS = 300;
 
-/** Những người khác đang mở bảng tính chung và ô họ chọn; báo ô mình chọn (gộp trong 300 ms). null thì không làm gì. */
-export function usePresence(id: string | null, me: { id: string; name: string }, controller: CalcController): PresencePerson[] {
+/** Những người khác đang mở tài liệu chung; có bộ điều khiển bảng tính thì báo cả ô mình chọn (gộp trong 300 ms). id null thì không làm gì. */
+export function usePresence(id: string | null, me: { id: string; name: string }, controller: CalcController | null): PresencePerson[] {
   const [people, setPeople] = useState<PresencePerson[]>([]);
 
   useEffect(() => {
     if (!id || !me.id) return;
     const handle = joinPresence(id, me, setPeople);
+    if (!controller) {
+      return () => {
+        handle.leave();
+        setPeople([]);
+      };
+    }
     let timer: number | undefined;
     let last = '';
     const report = () => {

@@ -12,7 +12,7 @@ interface OfficeHomeProps {
   onNewDocument: (kind: OfficeKind) => void;
   onOpenFile: (kind: OfficeKind, file: File) => void;
   onOpenDraft: (kind: OfficeKind, id: string) => void;
-  onOpenShared: (id: string) => void;
+  onOpenShared: (id: string, kind: OfficeKind) => void;
 }
 
 type Recent = DraftSummary & { kind: OfficeKind };
@@ -135,14 +135,14 @@ export const OfficeHome: React.FC<OfficeHomeProps> = ({ onNewDocument, onOpenFil
         <ul className="divide-y divide-line border-y border-line" aria-label={t.sharedTitle}>
           {(shared ?? []).map((doc) => (
             <li key={doc.id} className="flex items-center gap-3 py-2">
-              <Table2 className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />
+              {doc.kind === 'writer' ? <FileText className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" /> : <Table2 className="w-4 h-4 shrink-0 text-slate-500" aria-hidden="true" />}
               <button
                 type="button"
                 className="flex-1 min-w-0 text-left cursor-pointer hover:underline"
-                onClick={() => onOpenShared(doc.id)}
-                aria-label={`${t.open} ${doc.title || m.calc.untitled}`}
+                onClick={() => onOpenShared(doc.id, doc.kind)}
+                aria-label={`${t.open} ${doc.title || (doc.kind === 'writer' ? m.writer.untitled : m.calc.untitled)}`}
               >
-                <span className="block truncate text-sm font-medium text-ink">{doc.title || m.calc.untitled}</span>
+                <span className="block truncate text-sm font-medium text-ink">{doc.title || (doc.kind === 'writer' ? m.writer.untitled : m.calc.untitled)}</span>
                 <span className="block text-xs text-slate-500">
                   {[t.sharedBy(doc.ownerName), t.updated(when(Date.parse(doc.updatedAt) || 0))].filter(Boolean).join(' · ')}
                 </span>
@@ -152,7 +152,7 @@ export const OfficeHome: React.FC<OfficeHomeProps> = ({ onNewDocument, onOpenFil
                 <button
                   type="button"
                   onClick={() => void removeShared(doc)}
-                  aria-label={`${t.delete}: ${doc.title || m.calc.untitled}`}
+                  aria-label={`${t.delete}: ${doc.title || (doc.kind === 'writer' ? m.writer.untitled : m.calc.untitled)}`}
                   className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-surface cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />

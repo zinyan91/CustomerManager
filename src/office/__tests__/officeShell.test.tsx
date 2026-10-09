@@ -12,7 +12,7 @@ const h = vi.hoisted(() => ({
   drafts: [] as Array<{ id: string; title: string; updatedAt: number }>,
   writerDrafts: [] as Array<{ id: string; title: string; updatedAt: number }>,
   deleted: [] as string[],
-  shared: [] as Array<{ id: string; title: string; ownerId: string; ownerName: string; role: string; updatedAt: string; lastSeq: number }>,
+  shared: [] as Array<{ id: string; title: string; ownerId: string; ownerName: string; role: string; updatedAt: string; lastSeq: number; kind?: string }>,
   sharedError: null as null | string,
 }));
 
@@ -68,6 +68,7 @@ function dung(path = '/office') {
             <Route path="calc/shared/:sharedId" element={<div>MAN BANG TINH CHUNG</div>} />
             <Route path="calc/:draftId" element={<div>MAN BANG TINH NHAP</div>} />
             <Route path="writer" element={<div>MAN VAN BAN MOI</div>} />
+            <Route path="writer/shared/:sharedId" element={<div>MAN VAN BAN CHUNG</div>} />
             <Route path="writer/:draftId" element={<div>MAN VAN BAN NHAP</div>} />
           </Route>
           <Route path="*" element={<Where />} />
@@ -203,13 +204,13 @@ describe('OfficeIndex: cổng vào', () => {
   });
 });
 
-describe('bảng tính chung trên cổng Báo cáo', () => {
+describe('tài liệu chung trên cổng Báo cáo', () => {
   const doc = (over: Record<string, unknown> = {}) => ({ id: 's1', title: 'Quỹ lương', ownerId: 'o', ownerName: 'Lan', role: 'editor', updatedAt: '2026-10-08T01:00:00Z', lastSeq: 3, ...over });
 
   it('liệt kê bảng tính chung kèm quyền và chủ; bấm vào thì mở đúng bảng tính chung', async () => {
     h.shared = [doc(), doc({ id: 's2', title: '', role: 'viewer', ownerName: '' })];
     dung();
-    const items = within(await screen.findByRole('list', { name: 'Bảng tính chung' })).getAllByRole('listitem');
+    const items = within(await screen.findByRole('list', { name: 'Tài liệu chung' })).getAllByRole('listitem');
     expect(items[0].textContent).toContain('Quỹ lương');
     expect(items[0].textContent).toContain('của Lan');
     expect(items[0].textContent).toContain('Được sửa');
@@ -217,6 +218,22 @@ describe('bảng tính chung trên cổng Báo cáo', () => {
     fireEvent.click(within(items[0]).getByRole('button', { name: /Mở Quỹ lương/ }));
     expect(await screen.findByText('MAN BANG TINH CHUNG')).toBeTruthy();
     expect(screen.getByTestId('where').textContent).toBe('/office/calc/shared/s1');
+  });
+
+  it('văn bản chung mở ở màn Văn bản, bảng tính chung mở ở màn Bảng tính, theo loại', async () => {
+    h.shared = [doc({ id: 'w1', title: 'Công văn', kind: 'writer' }), doc({ id: 's1', title: 'Quỹ lương', kind: 'calc' }), doc({ id: 'w2', title: '', kind: 'writer' })];
+    dung();
+    const list = await screen.findByRole('list', { name: 'Tài liệu chung' });
+    fireEvent.click(within(list).getByRole('button', { name: /Mở Công văn/ }));
+    expect(await screen.findByText('MAN VAN BAN CHUNG')).toBeTruthy();
+    expect(screen.getByTestId('where').textContent).toBe('/office/writer/shared/w1');
+  });
+
+  it('văn bản chung không có tên hiện tên mặc định của Văn bản, không phải của Bảng tính', async () => {
+    h.shared = [doc({ id: 'w2', title: '', kind: 'writer' })];
+    dung();
+    const item = within(await screen.findByRole('list', { name: 'Tài liệu chung' })).getAllByRole('listitem')[0];
+    expect(item.textContent).toContain('Tài liệu không tên');
   });
 
   it('chỉ chủ hoặc Master Admin thấy nút xóa; xóa phải xác nhận', async () => {
@@ -239,9 +256,9 @@ describe('bảng tính chung trên cổng Báo cáo', () => {
     expect(await screen.findByText('Nháp của tôi')).toBeTruthy();
   });
 
-  it('chưa có bảng tính chung thì nói rõ, không nhầm với lỗi', async () => {
+  it('chưa có tài liệu chung thì nói rõ, không nhầm với lỗi', async () => {
     dung();
-    expect(await screen.findByText('Chưa có bảng tính chung nào.')).toBeTruthy();
+    expect(await screen.findByText('Chưa có tài liệu chung nào.')).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });

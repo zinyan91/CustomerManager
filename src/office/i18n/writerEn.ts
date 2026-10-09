@@ -162,4 +162,15 @@ export const writerEn: WriterMessages = {
     imageFailed: 'Could not read this image.',
     draftMissing: 'This draft was not found; it may have been deleted.',
   },
+  shared: {
+    shareTitle: 'Share document',
+    uploadConfirm: 'Upload this document to the system to share it? The copy in this browser stays as it is.',
+    readOnly: 'You can only view this document.',
+    location: 'Shared document on the system',
+    conflict: 'Someone else saved a newer version of this document. What you are editing is not saved.',
+    reload: 'Load latest',
+    keepMine: 'Keep mine as a draft',
+    keptNotice: 'Your version was kept as a draft in this browser.',
+    leaveConfirm: 'Some changes are unsaved because of a conflict. Leaving discards them. Leave anyway?',
+  },
 };

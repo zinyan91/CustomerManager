@@ -259,11 +259,15 @@ export async function listVersions(id: string): Promise<SharedVersion[]> {
 }
 
 /** Nội dung đầy đủ của một mốc, để xem trước. Đọc thẳng bảng (RLS cho phép người có quyền trên tài liệu). */
-export async function getVersionData(id: string, versionId: number): Promise<WorkbookData> {
+export async function getVersionContent(id: string, versionId: number): Promise<unknown> {
   const { data, error } = await supabase.from('OfficeDocumentVersions').select('Data').eq('DocId', id).eq('Id', versionId).maybeSingle();
   if (error) throw toCollabError(error, 'Không đọc được nội dung mốc');
   if (!data) throw new Error('Không đọc được nội dung mốc: mốc không còn tồn tại hoặc bạn không có quyền xem.');
-  return (data as { Data: WorkbookData }).Data;
+  return (data as { Data: unknown }).Data;
+}
+
+export async function getVersionData(id: string, versionId: number): Promise<WorkbookData> {
+  return (await getVersionContent(id, versionId)) as WorkbookData;
 }
 
 /** Khôi phục một mốc thành bản hiện hành mới (không xóa gì). Trả số thứ tự mới. */

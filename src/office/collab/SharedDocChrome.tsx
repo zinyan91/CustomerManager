@@ -60,14 +60,16 @@ export interface SharedDocPanelsProps {
   onCloseShare: () => void;
   onSaveMilestone: (label: string) => Promise<void>;
   onRestore: (versionId: number) => Promise<void>;
+  /** Hộp xem trước mốc của loại tài liệu này; không truyền thì Lịch sử không có nút Xem. */
+  renderPreview?: (preview: { versionId: number; name: string; onClose: () => void }) => React.ReactNode;
 }
 
-/** Ngăn Nhật ký, ngăn Lịch sử và hộp Chia sẻ của một tài liệu chung. Xem trước mốc chỉ có ở bảng tính. */
-export const SharedDocPanels: React.FC<SharedDocPanelsProps> = ({ docId, kind, role, me, seq, panel, onClosePanel, shareOpen, shareTitle, onCloseShare, onSaveMilestone, onRestore }) => (
+/** Ngăn Nhật ký, ngăn Lịch sử và hộp Chia sẻ của một tài liệu chung. */
+export const SharedDocPanels: React.FC<SharedDocPanelsProps> = ({ docId, kind, role, me, seq, panel, onClosePanel, shareOpen, shareTitle, onCloseShare, onSaveMilestone, onRestore, renderPreview }) => (
   <>
     {panel === 'activity' && <ActivityPanel docId={docId} seq={seq} me={me} kind={kind} onClose={onClosePanel} />}
     {panel === 'history' && (
-      <HistoryPanel docId={docId} canWrite={canEdit(role)} me={me} preview={kind === 'calc'} onSave={onSaveMilestone} onRestore={onRestore} onClose={onClosePanel} />
+      <HistoryPanel docId={docId} canWrite={canEdit(role)} me={me} renderPreview={renderPreview} onSave={onSaveMilestone} onRestore={onRestore} onClose={onClosePanel} />
     )}
     {shareOpen && <ShareDialog docId={docId} title={shareTitle} onClose={onCloseShare} />}
   </>

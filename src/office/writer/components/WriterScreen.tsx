@@ -5,6 +5,7 @@ import { canEdit, canManageSharing, createSharedWriter, getSharedWriter, type Sh
 import { PresenceBar } from '../../collab/PresenceBar';
 import { SharedDocActions, SharedDocPanels, type SharedPanel } from '../../collab/SharedDocChrome';
 import { useSharedWriter } from '../../collab/useSharedWriter';
+import { WriterVersionPreview } from './WriterVersionPreview';
 import { usePresence } from '../../collab/usePresence';
 import { useArchiveDocument } from '../../shared/archive/useArchiveDocument';
 import type { DriveLink } from '../../shared/archive/officeArchive';
@@ -577,6 +578,7 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
           onCloseShare={() => setShareOpen(false)}
           onSaveMilestone={collab.saveMilestone}
           onRestore={(versionId) => collab.restore(versionId, m.ribbon.history.safetyLabel)}
+          renderPreview={({ versionId, name, onClose }) => <WriterVersionPreview docId={shared.id} versionId={versionId} name={name} onClose={onClose} />}
         />
       )}
       {backstage && (

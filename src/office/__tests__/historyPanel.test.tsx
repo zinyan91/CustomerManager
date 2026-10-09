@@ -28,11 +28,12 @@ vi.mock('../collab/collabApi', () => ({
 import { Workbook } from '../calc/model/workbook';
 import { LanguageProvider } from '../../context/LanguageContext';
 import { HistoryPanel } from '../collab/HistoryPanel';
+import { VersionPreview } from '../collab/VersionPreview';
 
 const v = (id: number, label: string, by: string) => ({ id, seq: id, label, createdBy: by, createdAt: '2026-10-09T01:00:00Z' });
 
 function dung(over: Partial<React.ComponentProps<typeof HistoryPanel>> = {}) {
-  const props = { docId: 'd1', canWrite: true, me: { id: 'u1', name: 'Lan' }, onSave: vi.fn(async () => {}), onRestore: vi.fn(async () => {}), onClose: vi.fn(), ...over };
+  const props = { docId: 'd1', canWrite: true, me: { id: 'u1', name: 'Lan' }, renderPreview: (p: { versionId: number; name: string; onClose: () => void }) => <VersionPreview docId="d1" versionId={p.versionId} name={p.name} onClose={p.onClose} />, onSave: vi.fn(async () => {}), onRestore: vi.fn(async () => {}), onClose: vi.fn(), ...over };
   render(
     <LanguageProvider>
       <HistoryPanel {...props} />
@@ -116,6 +117,13 @@ describe('ngăn Lịch sử', () => {
 });
 
 describe('xem trước một mốc', () => {
+  it('không truyền cách dựng xem trước thì không có nút Xem', async () => {
+    h.versions = [v(5, 'Mốc 5', 'u1')];
+    dung({ renderPreview: undefined });
+    await screen.findByText('Mốc 5');
+    expect(screen.queryByRole('button', { name: /^Xem:/ })).toBeNull();
+  });
+
   const blank = () => new Workbook().toData();
 
   it('Xem mở hộp chỉ đọc đúng mốc, người chỉ xem cũng xem được, Escape đóng', async () => {

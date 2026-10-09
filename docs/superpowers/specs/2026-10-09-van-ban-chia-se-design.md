@@ -9,7 +9,7 @@ Một văn bản trong tab Báo cáo có thể được **chia sẻ** như bản
 ## Không làm
 
 - Sửa cùng lúc theo từng ký tự (Yjs / hợp nhất văn bản). Người dùng đã chọn không làm đợt này.
-- Xem trước chỉ-đọc của mốc trong Writer (Bảng tính đã có; Writer cần dựng trình soạn chỉ-đọc riêng, để đợt sau). Khôi phục vẫn có hộp xác nhận và tự lưu mốc an toàn.
+- (Đã làm sau đó) Xem trước chỉ-đọc của mốc trong Writer dùng lại trình soạn ở chế độ khóa.
 - Hợp nhất tự động hai bản sửa. Xung đột thì người dùng chọn: tải bản mới (bỏ phần mình sửa chưa lưu) hoặc giữ bản của mình thành nháp riêng.
 - Đổi cách nháp cá nhân: văn bản chưa chia sẻ vẫn là nháp trong trình duyệt (IndexedDB).
 

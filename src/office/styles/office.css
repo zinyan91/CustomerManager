@@ -3118,3 +3118,8 @@
 .writer-ribbon-locked {
   opacity: 0.55;
 }
+
+.version-preview-doc {
+  height: min(60vh, 520px);
+  overflow: auto;
+}

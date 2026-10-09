@@ -25,6 +25,9 @@ const h = vi.hoisted(() => {
     onChange: null as null | ((editor: unknown) => void),
     json: { type: 'doc', content: [] } as unknown,
     joins: 0,
+    versions: [] as Array<{ id: number; seq: number; label: string; createdBy: string; createdAt: string }>,
+    versionContent: null as unknown,
+    viewed: [] as number[],
   };
 });
 
@@ -53,7 +56,11 @@ vi.mock('../collab/collabApi', () => ({
   },
   saveVersion: async () => 1,
   restoreVersion: async () => 9,
-  listVersions: async () => [],
+  listVersions: async () => h.versions,
+  getVersionContent: async (_id: string, versionId: number) => {
+    h.viewed.push(versionId);
+    return h.versionContent;
+  },
   listInvitableUsers: async () => [],
   listMembers: async () => [],
   setMember: async () => {},
@@ -134,6 +141,9 @@ beforeEach(() => {
   h.editable = [];
   h.setContents = [];
   h.joins = 0;
+  h.versions = [];
+  h.versionContent = null;
+  h.viewed = [];
   h.json = text('Bản trên máy chủ');
   h.editor = {
     isDestroyed: false,
@@ -232,7 +242,22 @@ describe('Văn bản chung trong màn Văn bản', () => {
     expect(confirm).toHaveBeenCalledTimes(2);
   });
 
-  it('có thanh Nhật ký, Lịch sử và (cho chủ) Chia sẻ; Lịch sử của văn bản không có nút Xem trước', async () => {
+  it('Lịch sử của văn bản có nút Xem: mở bản chụp ở trình soạn chỉ đọc đúng mốc, không đụng nội dung đang soạn', async () => {
+    h.versions = [{ id: 4, seq: 2, label: 'Chốt tháng 9', createdBy: 'u1', createdAt: '2026-10-09T01:00:00Z' }];
+    h.versionContent = { doc: text('Bản của mốc'), pageSetup: {} };
+    dung(props());
+    await screen.findByLabelText('Tên tài liệu');
+    fireEvent.click(screen.getByRole('button', { name: /Lịch sử/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Xem: Chốt tháng 9' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Xem mốc: Chốt tháng 9' });
+    expect(h.viewed).toEqual([4]);
+    await waitFor(() => expect(within(dialog).getByTestId('editor').textContent).toContain('Bản của mốc'));
+    expect(h.setContents).toEqual([]);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('có thanh Nhật ký, Lịch sử và (cho chủ) Chia sẻ', async () => {
     h.role = 'owner';
     dung(props());
     await screen.findByLabelText('Tên tài liệu');

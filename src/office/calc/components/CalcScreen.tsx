@@ -4,6 +4,7 @@ import { canEdit, canManageSharing, createSharedDocument, type SharedRole } from
 import { loadSharedWorkbook } from '../../collab/loadShared';
 import { ActivityPanel } from '../../collab/ActivityPanel';
 import { HistoryPanel } from '../../collab/HistoryPanel';
+import { VersionPreview } from '../../collab/VersionPreview';
 import { PresenceBar } from '../../collab/PresenceBar';
 import { usePresence } from '../../collab/usePresence';
 import { ShareDialog } from '../../collab/ShareDialog';
@@ -462,6 +463,7 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
           docId={shared.id}
           canWrite={canEdit(shared.role)}
           me={me}
+          renderPreview={({ versionId, name, onClose }) => <VersionPreview docId={shared.id} versionId={versionId} name={name} onClose={onClose} />}
           onSave={saveMilestone}
           onRestore={(versionId) => restore(versionId, m.ribbon.history.safetyLabel)}
           onClose={() => setPanel(null)}

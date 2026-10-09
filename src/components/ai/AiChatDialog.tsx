@@ -86,7 +86,6 @@ export function AiChatDialog({
                   <option value="gemini-3.8-flash">Gemini 3.8 Flash</option>
                   <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
                   <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
                 </select>
               </div>
               <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[200px] sm:max-w-xs">
@@ -218,6 +217,20 @@ export function AiChatDialog({
               )),
             ]}
           />
+
+          {assistant.error && (
+            <div role="alert" className="shrink-0 flex flex-wrap items-center gap-2 px-3 py-2 text-xs border-t border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200">
+              <span className="flex-1 min-w-0">{assistant.error}</span>
+              {assistant.messages[assistant.messages.length - 1]?.role === 'user' && (
+                <button type="button" onClick={() => void assistant.retryLast()} className="px-2 py-1 rounded-md border border-rose-300 dark:border-rose-800 font-medium hover:bg-rose-100 dark:hover:bg-rose-900/40 cursor-pointer">
+                  Thử lại
+                </button>
+              )}
+              <button type="button" onClick={assistant.dismissError} aria-label="Đóng thông báo lỗi" className="px-2 py-1 rounded-md hover:bg-rose-100 dark:hover:bg-rose-900/40 cursor-pointer">
+                ×
+              </button>
+            </div>
+          )}
 
           <AiComposer
             ref={composerRef}

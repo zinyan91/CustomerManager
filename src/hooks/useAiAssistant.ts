@@ -243,7 +243,8 @@ export function useAiAssistant(userId: string | null = null) {
         failed = true;
         console.error('Lỗi khi trò chuyện với AI:', err);
         setError(err.message || 'Lỗi kết nối AI');
-        accumulated += '\n\n*(Đã xảy ra gián đoạn trong quá trình xử lý phản hồi)*';
+        // Chưa có chữ nào thì không tạo tin của AI: chỉ báo lỗi và cho thử lại, không để một tin rỗng nghĩa trông như câu trả lời
+        if (accumulated.trim()) accumulated += '\n\n*(Đã xảy ra gián đoạn trong quá trình xử lý phản hồi)*';
       } finally {
         setIsStreaming(false);
         setStreamingText('');
@@ -276,6 +277,18 @@ export function useAiAssistant(userId: string | null = null) {
     [messages, activeThreadId, userId, sendMessage]
   );
 
+  /** Gửi lại câu hỏi vừa bị lỗi (tin cuối cùng là của người dùng, AI chưa trả lời). */
+  const retryLast = useCallback(async () => {
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== 'user') return;
+    const base = messages.slice(0, -1);
+    setMessages(base);
+    if (activeThreadId) saveMessages(userId, activeThreadId, base);
+    await sendMessage(last.content, undefined, last.attachments, { skipCache: true, baseHistory: base });
+  }, [messages, activeThreadId, userId, sendMessage]);
+
+  const dismissError = useCallback(() => setError(null), []);
+
   const askAboutDocument = useCallback(
     (doc: DispatchDocument) => {
       setAttachedDoc(doc);
@@ -299,6 +312,8 @@ export function useAiAssistant(userId: string | null = null) {
     setAttachedDoc,
     sendMessage,
     refreshAnswer,
+    retryLast,
+    dismissError,
     stopStreaming,
     clearMessages,
     createNewThread,

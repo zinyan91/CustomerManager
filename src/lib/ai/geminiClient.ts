@@ -4,13 +4,29 @@ import type { SystemContextData } from './systemContext';
 import { formatSystemContextPrompt, buildDirectSystemDataResponse } from './systemContext';
 
 export const DEFAULT_AI_MODEL = 'gemini-3.8-flash';
-export const AVAILABLE_AI_MODELS = [
-  'gemini-3.8-flash',
-  'gemini-3.6-flash',
-  'gemini-3.1-flash-lite',
-  'gemini-2.5-flash',
-];
-export const FALLBACK_AI_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
+export const AVAILABLE_AI_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
+export const FALLBACK_AI_MODELS = AVAILABLE_AI_MODELS;
+
+/** Gemini không dùng được: thông điệp tiếng Việt nêu đúng lý do để người dùng biết cần làm gì. */
+export class AiUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AiUnavailableError';
+  }
+}
+
+export const MSG_GEMINI_NOT_CONFIGURED = 'Chưa cấu hình khóa Gemini nên AI chưa trả lời được. Liên hệ quản trị để cấu hình VITE_GEMINI_API_KEY rồi triển khai lại.';
+
+/** Lý do một lần gọi Gemini bị từ chối, từ mã HTTP và nội dung lỗi (nếu có). */
+export function describeGeminiFailure(status: number, detail = ''): string {
+  const extra = detail.trim() ? ` Chi tiết: ${detail.trim().slice(0, 160)}` : '';
+  if (status === 401 || status === 403) return `Khóa Gemini bị từ chối (HTTP ${status}). Kiểm tra khóa còn hiệu lực và được phép dùng Gemini API.${extra}`;
+  if (status === 404) return `Mô hình AI không còn dùng được (HTTP 404).${extra}`;
+  if (status === 429) return 'Đã hết hạn mức gọi Gemini (HTTP 429). Thử lại sau ít phút.';
+  if (status === 400) return `Gemini từ chối yêu cầu (HTTP 400), có thể do tệp đính kèm quá lớn hoặc không hợp lệ.${extra}`;
+  if (status >= 500) return `Máy chủ Gemini đang quá tải hoặc gặp sự cố (HTTP ${status}). Thử lại sau ít phút.`;
+  return `Gemini trả về lỗi HTTP ${status}.${extra}`;
+}
 
 export function getGeminiApiKey(): string {
   // 1. Kiểm tra cấu hình do người dùng lưu trong localStorage (nếu có)
@@ -97,86 +113,6 @@ QUY TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ TUYỆT ĐỐI):
    - Hỗ trợ các câu hỏi về khách hàng doanh nghiệp: pháp lý doanh nghiệp (giấy chứng nhận đăng ký doanh nghiệp, điều lệ, người đại diện theo pháp luật, thẩm quyền ký và nghị quyết của hội đồng), thẩm định phương án kinh doanh và dòng tiền, tài sản bảo đảm của doanh nghiệp, nghĩa vụ thuế, hợp đồng thương mại với đối tác đầu vào và đầu ra.
    - Trả lời theo quy định hiện hành; khi cần đối chiếu văn bản pháp luật mới nhất hoặc quy định nội bộ của ngân hàng thì nói rõ để cán bộ kiểm tra lại, không khẳng định chắc chắn điều mình không chắc.`;
 
-/**
- * Xây dựng câu trả lời giả lập dự phòng khi offline hoặc không có API key
- */
-function buildFallbackResponse(messageText: string, docContext?: string): string {
-  const lower = messageText.toLowerCase();
-
-  if (docContext || lower.includes('văn thư') || lower.includes('tóm tắt') || lower.includes('văn bản')) {
-    return `### Phân tích & Tóm tắt Văn bản / Hồ sơ
-
-${docContext ? `**Văn bản đang tham chiếu:** ${docContext}\n\n` : ''}
-Dựa trên thông tin hồ sơ văn thư, các điểm cốt lõi cần lưu ý bao gồm:
-
-1. **Tính hợp lệ hành chính:**
-   - Số hiệu, ngày ban hành và thẩm quyền ký duyệt cần được đối chiếu chính xác với văn bản gốc hoặc nghị quyết phê duyệt của cấp có thẩm quyền.
-2. **Nội dung điều khoản trọng tâm:**
-   - Mục đích cấp tín dụng / sử dụng vốn phải phù hợp với quy định của NHNN và giấy phép đăng ký kinh doanh.
-   - Biện pháp bảo đảm: Đảm bảo hoàn tất đăng ký giao dịch bảo đảm trước khi thực hiện giải ngân đợt đầu.
-3. **Nghĩa vụ của khách hàng:**
-   - Cung cấp hóa đơn, chứng từ chứng minh mục đích sử dụng vốn trong vòng 30 ngày kể từ ngày nhận nợ.
-   - Mua và duy trì bảo hiểm cháy nổ/vật chất đối với tài sản bảo đảm trong suốt thời gian vay.
-
-*Gợi ý:* Bạn có thể đặt thêm câu hỏi cụ thể về nghĩa vụ pháp lý hoặc tiến độ giải ngân của văn bản này.`;
-  }
-
-  if (lower.includes('nhóm nợ') || lower.includes('thông tư 11') || lower.includes('dự phòng')) {
-    return `### Quy định Phân loại Nợ & Tỷ lệ Trích lập Dự phòng Cụ thể (TT 11/2021/TT-NHNN)
-
-| Nhóm nợ | Tên nhóm | Số ngày quá hạn | Tỷ lệ DPRR cụ thể |
-| :--- | :--- | :--- | :---: |
-| **Nhóm 1** | Nợ đủ tiêu chuẩn | Quá hạn < 10 ngày | **0%** |
-| **Nhóm 2** | Nợ cần chú ý | Quá hạn 10 – 90 ngày | **5%** |
-| **Nhóm 3** | Nợ dưới tiêu chuẩn | Quá hạn 91 – 180 ngày | **20%** |
-| **Nhóm 4** | Nợ nghi ngờ | Quá hạn 181 – 360 ngày | **50%** |
-| **Nhóm 5** | Nợ có khả năng mất vốn | Quá hạn > 360 ngày | **100%** |
-
-**Lưu ý quan trọng:**
-- Nợ được cơ cấu lại thời hạn trả nợ nhưng không trả được đúng hạn cơ cấu sẽ bị chuyển sang nhóm nợ cao hơn.
-- Khi khách hàng có nhiều khoản vay, toàn bộ các khoản nợ của khách hàng tại TCTD sẽ bị chuyển sang nhóm có mức độ rủi ro cao nhất (nguyên tắc gộp nhóm nợ).`;
-  }
-
-  if (lower.includes('ltv') || lower.includes('định giá') || lower.includes('tài sản')) {
-    return `### Tỷ lệ Cấp tín dụng trên Giá trị Tài sản Bảo đảm (LTV)
-
-Tỷ lệ LTV (*Loan-To-Value*) được tính theo công thức:
-$$\\text{LTV} = \\frac{\\text{Số tiền vay / Hạn mức}}{\\text{Giá trị định giá của TSĐB}} \\times 100\\%$$
-
-**Khung tỷ lệ an toàn thường áp dụng:**
-- **Bất động sản (Đất ở, nhà ở có GCN):** Tối đa **70% - 80%**.
-- **Đất nông nghiệp, đất thương mại dịch vụ:** Tối đa **50% - 60%**.
-- **Phương tiện vận tải (Ô tô dưới 9 chỗ):** Tối đa **60% - 70%** (thời gian vay không vượt quá thời gian khấu hao còn lại).
-- **Số dư Tiền gửi, Sổ tiết kiệm, Kỳ phiếu:** Tối đa **95% - 100%**.
-
-*Lưu ý:* Giá trị định giá TSĐB được xác định theo Biên bản định giá của Hội đồng định giá ngân hàng hoặc kết quả của Công ty định giá độc lập có thẩm quyền.`;
-  }
-
-  if (lower.includes('lịch trả nợ') || lower.includes('niên kim') || lower.includes('gốc đều')) {
-    return `### So sánh Phương thức Trả nợ Gốc đều vs Niên kim
-
-1. **Phương thức Gốc đều (Gốc chia đều các kỳ):**
-   - **Gốc mỗi kỳ:** Bằng Số tiền vay chia cho Tổng số kỳ.
-   - **Tiền lãi:** Tính theo dư nợ giảm dần thực tế $\\Rightarrow$ Số tiền trả (Gốc + Lãi) giảm dần theo thời gian.
-   - **Ưu điểm:** Tổng tiền lãi cả vòng đời khoản vay thấp hơn; người vay giảm áp lực nợ nhanh.
-
-2. **Phương thức Niên kim cố định (Gốc + Lãi bằng nhau mỗi kỳ):**
-   - **Số tiền trả hàng kỳ:** Không đổi trong suốt thời gian vay (công thức niên kim tài chính PMT).
-   - **Cơ cấu trong kỳ:** Những kỳ đầu tiền lãi chiếm tỷ trọng lớn, tiền gốc chiếm tỷ trọng nhỏ; về cuối kỳ trả nợ thì tiền gốc tăng lên.
-   - **Ưu điểm:** Khách hàng dễ chủ động cân đối ngân sách và dòng tiền sinh hoạt cố định hàng tháng.`;
-  }
-
-  return `Chào bạn, tôi là Trợ lý AI Khách hàng & Tín dụng Ngân hàng.
-
-Tôi có thể hỗ trợ bạn các công việc chuyên môn:
-- **Quản lý & Tóm tắt Văn thư:** Phân tích công văn, quyết định tín dụng, tờ trình, hợp đồng thế chấp.
-- **Tư vấn Tín dụng & Khách hàng:** Tính toán hạn mức, tỷ lệ LTV, phân loại nhóm nợ theo Thông tư 11/2021/TT-NHNN.
-- **Lập kế hoạch trả nợ:** Tư vấn phương thức trả nợ gốc đều, niên kim, lịch thu nợ.
-- **Rà soát Pháp lý:** Kiểm tra điều kiện phê duyệt, nghĩa vụ chứng minh mục đích sử dụng vốn sau giải ngân.
-
-Bạn có thể đặt câu hỏi hoặc chọn một trong các gợi ý bên dưới để bắt đầu.`;
-}
-
 export interface StreamExtras {
   /** Tệp văn bản (PDF/ảnh) gắn vào câu hỏi cuối của người dùng; không lưu vào lịch sử chat. */
   attachments?: AiAttachment[];
@@ -222,7 +158,9 @@ const HEADER_TIMEOUT_WITH_FILES_MS = 45_000;
  * Mở luồng SSE. Hạn chờ chỉ áp cho tới khi có phản hồi đầu: dùng AbortSignal.timeout sẽ cắt ngang
  * cả luồng trả lời dài. Trả null nếu model không dùng được (đã ghi nhớ nếu là 404).
  */
-async function openStream(model: string, apiKey: string, payload: any, timeoutMs: number): Promise<Response | null> {
+type OpenResult = { response: Response } | { failure: string; modelGone: boolean };
+
+async function openStream(model: string, apiKey: string, payload: any, timeoutMs: number): Promise<OpenResult> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
   const post = async (body: any) => {
     const controller = new AbortController();
@@ -239,7 +177,15 @@ async function openStream(model: string, apiKey: string, payload: any, timeoutMs
   // Cấu hình thinking bị từ chối thì thử lại đúng model đó không kèm thinking
   if (res.status === 400 && thinking) res = await post(payload);
   if (res.status === 404) unavailableModels.add(model);
-  return res.ok && res.body ? res : null;
+  if (res.ok && res.body) return { response: res };
+  const detail = await res.text().then((text) => {
+    try {
+      return String((JSON.parse(text) as { error?: { message?: string } }).error?.message ?? '');
+    } catch {
+      return '';
+    }
+  }, () => '');
+  return { failure: describeGeminiFailure(res.status, detail), modelGone: res.status === 404 };
 }
 
 /**
@@ -285,30 +231,38 @@ ${docContext}`;
   };
 
   let response: Response | null = null;
+  // Lý do đáng báo nhất: lỗi không phải "model không còn", vì lỗi đó chỉ nói model này hỏng chứ không nói vì sao cả chuỗi hỏng
+  let failure = apiKey ? '' : MSG_GEMINI_NOT_CONFIGURED;
 
   if (apiKey) {
     const timeoutMs = extras.attachments?.length ? HEADER_TIMEOUT_WITH_FILES_MS : HEADER_TIMEOUT_MS;
+    let modelGone = '';
     for (const cand of candidateModels) {
       try {
-        response = await openStream(cand, apiKey, payload, timeoutMs);
-        if (response) break;
-      } catch {
-        // Thử model tiếp theo
+        const opened = await openStream(cand, apiKey, payload, timeoutMs);
+        if ('response' in opened) {
+          response = opened.response;
+          break;
+        }
+        if (opened.modelGone) modelGone ||= opened.failure;
+        else failure ||= opened.failure;
+      } catch (err) {
+        const timedOut = err instanceof Error && err.name === 'AbortError';
+        failure ||= timedOut
+          ? `Gemini không phản hồi sau ${Math.round(timeoutMs / 1000)} giây. Thử lại, hoặc gửi ít tệp hơn.`
+          : 'Không kết nối được tới Gemini. Kiểm tra mạng rồi thử lại.';
       }
     }
+    failure ||= modelGone || 'Không có mô hình AI nào dùng được.';
   }
 
-  // Nếu không gọi được Gemini (offline / rate limit / chưa cấu hình key / API overloaded), dùng fallback thông minh
+  // Không gọi được Gemini: chỉ còn câu trả lời lấy trực tiếp từ dữ liệu hệ thống thật (số lượng, danh sách...); không có thì báo lý do.
   if (!response || !response.body) {
-    extras.onFallback?.();
     const lastUserMessage = messages[messages.length - 1]?.content || '';
-    // Thử trả lời trực tiếp từ dữ liệu hệ thống trước
     const directAns = systemContext ? buildDirectSystemDataResponse(lastUserMessage, systemContext) : null;
-    const fallbackText = directAns || buildFallbackResponse(lastUserMessage, docContext);
-
-    // Stream từng từ một tạo hiệu ứng typing mượt mà
-    const words = fallbackText.split(' ');
-    for (const word of words) {
+    if (!directAns) throw new AiUnavailableError(failure);
+    extras.onFallback?.();
+    for (const word of directAns.split(' ')) {
       yield word + ' ';
       await new Promise((r) => setTimeout(r, 20));
     }
@@ -400,11 +354,7 @@ export async function summarizeDocumentWithAi(
     }
   } catch {}
 
-  // Fallback tóm tắt mặc định
-  return {
-    summary: `Văn bản "${title}" do ${issuer || 'đơn vị có thẩm quyền'} ban hành${docNumber ? ` theo số hiệu ${docNumber}` : ''}, quy định các điều khoản và hồ sơ nghiệp vụ liên quan đến cấp tín dụng và quản lý tài sản bảo đảm.`,
-    keywords: ['Hồ sơ tín dụng', 'Văn bản điều hành', 'Quản lý rủi ro'],
-  };
+  throw new Error('AI trả về nội dung không đọc được. Hãy thử lại.');
 }
 
 /**

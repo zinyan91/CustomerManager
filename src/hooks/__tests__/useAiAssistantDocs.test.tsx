@@ -230,6 +230,33 @@ describe('useAiAssistant - bộ nhớ trả lời dùng chung', () => {
     expect(m.save).not.toHaveBeenCalled();
   });
 
+  it('AI không gọi được: báo lỗi thật, không tạo tin trả lời rỗng; Thử lại gửi lại đúng câu hỏi và có câu trả lời', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    // eslint-disable-next-line require-yield
+    m.stream.mockImplementationOnce(async function* () {
+      throw new Error('Đã hết hạn mức gọi Gemini (HTTP 429). Thử lại sau ít phút.');
+    });
+    const hook = setup();
+    await ask(hook, 'Phân tích báo cáo tài chính trong tệp đính kèm');
+    expect(hook.result.current.error).toContain('HTTP 429');
+    expect(hook.result.current.messages.map((x) => x.role)).toEqual(['user']);
+
+    await act(async () => {
+      await hook.result.current.retryLast();
+    });
+    expect(hook.result.current.error).toBeNull();
+    expect(hook.result.current.messages.map((x) => [x.role, x.content])).toEqual([
+      ['user', 'Phân tích báo cáo tài chính trong tệp đính kèm'],
+      ['assistant', 'Trả lời'],
+    ]);
+
+    act(() => hook.result.current.dismissError());
+    await act(async () => {
+      await hook.result.current.retryLast();
+    });
+    expect(hook.result.current.messages).toHaveLength(2);
+  });
+
   it('không lưu khi AI dùng câu trả lời dự phòng (không đọc được văn bản thật)', async () => {
     m.stream.mockImplementation(async function* (_h: unknown, _d: unknown, _m: unknown, _s: unknown, extras: { onFallback: () => void }) {
       extras.onFallback();

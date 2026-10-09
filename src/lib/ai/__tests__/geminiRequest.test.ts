@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import type { AiAttachment, AiChatMessage } from '../../../types/ai';
-import { buildContents, thinkingConfigFor } from '../geminiClient';
+import { AiUnavailableError, MSG_GEMINI_NOT_CONFIGURED, buildContents, describeGeminiFailure, resetModelMemory, streamGeminiContent, thinkingConfigFor } from '../geminiClient';
 import { mentionsCustomers } from '../systemContext';
 
 const msg = (id: string, role: AiChatMessage['role'], content: string, attachments?: AiAttachment[]): AiChatMessage => ({
@@ -32,6 +32,71 @@ describe('buildContents', () => {
     const sheet: AiAttachment = { id: 's', name: 'bctc.xlsx', mimeType: 'sheet', size: 1, base64Data: '', textData: '100,Tài sản,1' };
     const out = buildContents([msg('1', 'user', 'phân tích', [sheet])]);
     expect(out[0].parts).toEqual([{ text: 'phân tích' }, { text: 'Nội dung tệp đính kèm "bctc.xlsx":' + String.fromCharCode(10) + '100,Tài sản,1' }]);
+  });
+});
+
+describe('describeGeminiFailure', () => {
+  it('mỗi nhóm lỗi nêu đúng lý do và việc cần làm', () => {
+    expect(describeGeminiFailure(403)).toContain('Khóa Gemini bị từ chối (HTTP 403)');
+    expect(describeGeminiFailure(429)).toContain('hết hạn mức');
+    expect(describeGeminiFailure(503)).toContain('quá tải');
+    expect(describeGeminiFailure(404)).toContain('không còn dùng được');
+    expect(describeGeminiFailure(400, 'Request payload size exceeds the limit')).toContain('Request payload size exceeds the limit');
+  });
+});
+
+describe('streamGeminiContent khi Gemini không dùng được', () => {
+  const user: AiChatMessage[] = [msg('1', 'user', 'Phân tích báo cáo tài chính trong tệp đính kèm')];
+  const drain = async () => {
+    let out = '';
+    for await (const chunk of streamGeminiContent(user, 'ngữ cảnh văn thư', 'gemini-3.8-flash')) out += chunk;
+    return out;
+  };
+  const sse = (text: string) =>
+    new Response(new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('data: ' + JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }) + '\n\n')); c.close(); } }));
+
+  beforeEach(() => {
+    resetModelMemory();
+    vi.stubEnv('VITE_GEMINI_API_KEY', 'khoa-thu');
+    vi.stubEnv('GEMINI_API_KEY', '');
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('thiếu khóa: báo thiếu khóa, không trả câu soạn sẵn nào', async () => {
+    vi.stubEnv('VITE_GEMINI_API_KEY', '');
+    vi.stubGlobal('fetch', vi.fn());
+    await expect(drain()).rejects.toThrow(MSG_GEMINI_NOT_CONFIGURED);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('mọi model trả 429: ném lỗi nêu hạn mức, KHÔNG có câu "Tỷ lệ LTV" hay "Phân tích & Tóm tắt Văn bản"', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 429 })));
+    const error = await drain().catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(AiUnavailableError);
+    expect((error as Error).message).toContain('hết hạn mức');
+  });
+
+  it('một model báo 404 còn model sau chạy được: dùng model sau, không báo lỗi', async () => {
+    let call = 0;
+    vi.stubGlobal('fetch', vi.fn(async () => (call++ === 0 ? new Response('{"error":{"message":"no longer available"}}', { status: 404 }) : sse('Xin chào'))));
+    expect(await drain()).toBe('Xin chào');
+  });
+
+  it('chỉ có lỗi 404 ở mọi model thì báo model không còn dùng được; lỗi khác 404 được ưu tiên báo vì nói đúng nguyên nhân', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 404 })));
+    await expect(drain()).rejects.toThrow('Mô hình AI không còn dùng được');
+    resetModelMemory();
+    let call = 0;
+    vi.stubGlobal('fetch', vi.fn(async () => (call++ === 0 ? new Response('{}', { status: 404 }) : new Response('{}', { status: 403 }))));
+    await expect(drain()).rejects.toThrow('Khóa Gemini bị từ chối (HTTP 403)');
+  });
+
+  it('mất mạng: báo không kết nối được', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
+    await expect(drain()).rejects.toThrow('Không kết nối được tới Gemini');
   });
 });
 

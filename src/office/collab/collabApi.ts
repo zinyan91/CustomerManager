@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase';
 import type { WorkbookData } from '../calc/model/workbook';
+import type { Patch } from './patch';
 
 /** Quyền của người đang mở trên một bảng tính chung (admin: Master Admin xem, quản lý chia sẻ, không sửa). */
 export type SharedRole = 'owner' | 'editor' | 'viewer' | 'admin';
@@ -20,7 +21,20 @@ export interface SharedDocument {
   title: string;
   data: WorkbookData;
   role: SharedRole;
+  /** Số thứ tự hiện hành của tài liệu. */
   lastSeq: number;
+  /** Số thứ tự mà `data` đang ứng với; bản hiện hành = data + các thao tác sau số này. Thiếu (máy chủ chưa áp migration 72) thì bằng lastSeq. */
+  snapSeq: number;
+}
+
+/** Một thao tác trong nhật ký, đã được máy chủ xếp thứ tự. */
+export interface SharedOp {
+  seq: number;
+  userId: string;
+  clientId: string;
+  patch: Patch;
+  summary: Record<string, unknown>;
+  createdAt: string;
 }
 
 export interface InvitableUser {
@@ -69,8 +83,22 @@ export const mapSummary = (row: Row): SharedDocSummary => ({
 export const mapDocument = (row: Row): SharedDocument => {
   const data = row.data as WorkbookData | null;
   if (!data || !Array.isArray(data.sheets)) throw new Error('Nội dung bảng tính chung bị hỏng, không mở được.');
-  return { id: text(row.id), title: text(row.title), data, role: toRole(row.role), lastSeq: num(row.last_seq) };
+  const lastSeq = num(row.last_seq);
+  return { id: text(row.id), title: text(row.title), data, role: toRole(row.role), lastSeq, snapSeq: row.snap_seq === undefined ? lastSeq : num(row.snap_seq) };
 };
+
+export const mapOp = (row: Row): SharedOp => ({
+  seq: num(row.seq),
+  userId: text(row.user_id),
+  clientId: text(row.client_id),
+  patch: Array.isArray(row.patch) ? (row.patch as Patch) : [],
+  summary: row.summary && typeof row.summary === 'object' ? (row.summary as Record<string, unknown>) : {},
+  createdAt: text(row.created_at),
+});
+
+/** Dòng Realtime của bảng nhật ký dùng tên cột CamelCase của bảng. */
+export const mapOpRecord = (record: Row): SharedOp =>
+  mapOp({ seq: record.Seq, user_id: record.UserId, client_id: record.ClientId, patch: record.Patch, summary: record.Summary, created_at: record.CreatedAt });
 
 /** Lỗi từ Supabase thành lỗi tiếng Việt: xung đột có kiểu riêng, hàm chưa có (chưa áp migration) được nói rõ. */
 export function toCollabError(error: { code?: string; message: string }, doing: string): Error {
@@ -125,4 +153,34 @@ export async function setMember(id: string, userId: string, role: MemberRole | n
 
 export async function deleteSharedDocument(id: string): Promise<void> {
   await call<void>('office_delete_document', { p_doc: id }, 'Không xóa được bảng tính chung');
+}
+
+/** Ghi một thao tác vào nhật ký, trả số thứ tự máy chủ gán. `clientId` là mã của máy này để nhận ra thao tác của chính mình. */
+export async function appendOp(id: string, clientId: string, patch: Patch, summary: Record<string, unknown> = {}): Promise<number> {
+  return num(await call<number | string>('office_append_op', { p_doc: id, p_client: clientId, p_patch: patch, p_summary: summary }, 'Không gửi được thay đổi lên hệ thống'));
+}
+
+/** Các thao tác sau một số thứ tự (tối đa 1000 mỗi lần), để tải bù chỗ thiếu hoặc dựng bản hiện hành lúc mở. */
+export async function listOps(id: string, after: number): Promise<SharedOp[]> {
+  const rows = await call<Row[] | null>('office_list_ops', { p_doc: id, p_after: after }, 'Không đọc được nhật ký thay đổi');
+  return (rows ?? []).map(mapOp);
+}
+
+/** Ghi bản chụp ở một số thứ tự đã có; máy chủ bỏ qua lặng lẽ nếu đã có bản chụp mới hơn. */
+export async function saveSnapshot(id: string, seq: number, data: WorkbookData): Promise<void> {
+  await call<void>('office_save_snapshot', { p_doc: id, p_seq: seq, p_data: data }, 'Không ghi được bản chụp');
+}
+
+/**
+ * Nghe thao tác mới của một tài liệu qua Realtime. Trả hàm hủy đăng ký. `onStatus` báo trạng thái kênh để nơi gọi tải bù khi
+ * nối lại sau khi mất kết nối.
+ */
+export function subscribeOps(id: string, onOp: (op: SharedOp) => void, onStatus?: (status: string) => void): () => void {
+  const channel = supabase
+    .channel(`office-ops-${id}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'OfficeDocumentOps', filter: `DocId=eq.${id}` }, (payload) => onOp(mapOpRecord(payload.new as Row)))
+    .subscribe((status) => onStatus?.(status));
+  return () => {
+    void supabase.removeChannel(channel);
+  };
 }

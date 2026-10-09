@@ -213,6 +213,14 @@ export async function listVersions(id: string): Promise<SharedVersion[]> {
   return (rows ?? []).map(mapVersion);
 }
 
+/** Nội dung đầy đủ của một mốc, để xem trước. Đọc thẳng bảng (RLS cho phép người có quyền trên tài liệu). */
+export async function getVersionData(id: string, versionId: number): Promise<WorkbookData> {
+  const { data, error } = await supabase.from('OfficeDocumentVersions').select('Data').eq('DocId', id).eq('Id', versionId).maybeSingle();
+  if (error) throw toCollabError(error, 'Không đọc được nội dung mốc');
+  if (!data) throw new Error('Không đọc được nội dung mốc: mốc không còn tồn tại hoặc bạn không có quyền xem.');
+  return (data as { Data: WorkbookData }).Data;
+}
+
 /** Khôi phục một mốc thành bản hiện hành mới (không xóa gì). Trả số thứ tự mới. */
 export async function restoreVersion(id: string, versionId: number): Promise<number> {
   return num(await call<number | string>('office_restore_version', { p_doc: id, p_version: versionId }, 'Không khôi phục được mốc'));

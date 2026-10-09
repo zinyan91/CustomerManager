@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useOfficeI18n } from '../i18n';
+import { VersionPreview } from './VersionPreview';
 import { listInvitableUsers, listVersions, type SharedVersion } from './collabApi';
 
 export interface HistoryPanelProps {
@@ -22,6 +23,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ docId, canWrite, me,
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<SharedVersion | null>(null);
 
   const reload = useCallback(async () => {
     setVersions(await listVersions(docId));
@@ -93,6 +95,9 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ docId, canWrite, me,
               <small>{when(version.createdAt)}</small>
             </div>
             <div className="activity-line">{nameOf(version.createdBy)}</div>
+            <button type="button" className="wr-text-btn history-restore" aria-label={`${t.view}: ${version.label || t.unnamed}`} onClick={() => setViewing(version)}>
+              {t.view}
+            </button>
             {canWrite && (
               <button
                 type="button"
@@ -110,6 +115,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ docId, canWrite, me,
           </li>
         ))}
       </ul>
+      {viewing && <VersionPreview docId={docId} versionId={viewing.id} name={viewing.label || t.unnamed} onClose={() => setViewing(null)} />}
     </aside>
   );
 };

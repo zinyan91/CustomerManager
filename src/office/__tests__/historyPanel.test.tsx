@@ -6,10 +6,18 @@ const h = vi.hoisted(() => ({
   versions: [] as Array<{ id: number; seq: number; label: string; createdBy: string; createdAt: string }>,
   fail: null as null | Error,
   reads: 0,
+  data: null as unknown,
+  viewError: null as null | Error,
+  viewed: [] as number[],
 }));
 
 vi.mock('../collab/collabApi', () => ({
   listInvitableUsers: async () => [{ id: 'u2', fullName: 'Bình' }],
+  getVersionData: async (_doc: string, versionId: number) => {
+    h.viewed.push(versionId);
+    if (h.viewError) throw h.viewError;
+    return h.data;
+  },
   listVersions: async () => {
     h.reads += 1;
     if (h.fail) throw h.fail;
@@ -17,6 +25,7 @@ vi.mock('../collab/collabApi', () => ({
   },
 }));
 
+import { Workbook } from '../calc/model/workbook';
 import { LanguageProvider } from '../../context/LanguageContext';
 import { HistoryPanel } from '../collab/HistoryPanel';
 
@@ -36,9 +45,13 @@ beforeEach(() => {
   h.versions = [];
   h.fail = null;
   h.reads = 0;
+  h.viewed = [];
+  h.viewError = null;
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
 });
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -99,5 +112,31 @@ describe('ngăn Lịch sử', () => {
     dung();
     expect((await screen.findByRole('alert')).textContent).toContain('mất mạng');
     expect(screen.queryByText(/Chưa có mốc nào/)).toBeNull();
+  });
+});
+
+describe('xem trước một mốc', () => {
+  const blank = () => new Workbook().toData();
+
+  it('Xem mở hộp chỉ đọc đúng mốc, người chỉ xem cũng xem được, Escape đóng', async () => {
+    h.versions = [v(5, 'Mốc 5', 'u1')];
+    h.data = blank();
+    dung({ canWrite: false });
+    fireEvent.click(await screen.findByRole('button', { name: 'Xem: Mốc 5' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Xem mốc: Mốc 5' });
+    expect(h.viewed).toEqual([5]);
+    await within(dialog).findByRole('tab', { name: 'Sheet1' });
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('lỗi đọc mốc hiện nguyên trong hộp và không có lưới', async () => {
+    h.versions = [v(5, 'Mốc 5', 'u1')];
+    h.viewError = new Error('Không đọc được nội dung mốc: mất mạng');
+    dung();
+    fireEvent.click(await screen.findByRole('button', { name: 'Xem: Mốc 5' }));
+    const dialog = await screen.findByRole('dialog');
+    expect((await within(dialog).findByRole('alert')).textContent).toContain('mất mạng');
+    expect(within(dialog).queryByRole('tab')).toBeNull();
   });
 });

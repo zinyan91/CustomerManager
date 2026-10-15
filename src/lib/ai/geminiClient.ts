@@ -2,6 +2,10 @@ import type { AiAttachment, AiChatMessage } from '../../types/ai';
 import type { DispatchDocumentType } from '../../types/dispatch';
 import type { SystemContextData } from './systemContext';
 import { formatSystemContextPrompt, buildDirectSystemDataResponse } from './systemContext';
+import { runToolLoop, type Content, type ModelPart, type OpenTurn, type TurnChunk } from './toolLoop';
+import { KHAI_BAO_CONG_CU, dungChiDanTriThuc, taoCongCuTriThuc } from './tools/traCuuHeThong';
+import { taiKhoTriThuc } from './triThuc/khoTriThuc';
+import type { ChuDe } from './triThuc/phanTichTriThuc';
 
 export const DEFAULT_AI_MODEL = 'gemini-3.8-flash';
 export const AVAILABLE_AI_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
@@ -14,6 +18,8 @@ export class AiUnavailableError extends Error {
     this.name = 'AiUnavailableError';
   }
 }
+
+export const MSG_GEMINI_EMPTY = 'AI không đưa ra câu trả lời. Hãy thử hỏi lại.';
 
 export const MSG_GEMINI_NOT_CONFIGURED = 'Chưa cấu hình khóa Gemini nên AI chưa trả lời được. Liên hệ quản trị để cấu hình VITE_GEMINI_API_KEY rồi triển khai lại.';
 
@@ -118,6 +124,10 @@ export interface StreamExtras {
   attachments?: AiAttachment[];
   /** Gọi khi không gọi được Gemini và phải dùng câu trả lời dự phòng có sẵn (không nên lưu làm bộ nhớ). */
   onFallback?: () => void;
+  /** Gọi khi AI đã tra công cụ tri thức trong lượt này: câu trả lời không nên lưu dùng chung. */
+  onToolUse?: () => void;
+  /** Đặt false để tắt công cụ tri thức (lời gọi cần đầu ra thuần như tóm tắt, trích JSON). */
+  tools?: boolean;
 }
 
 /** Nội dung gửi Gemini: chữ và tệp của từng tin, cộng tệp bổ sung vào tin người dùng cuối. */
@@ -188,6 +198,46 @@ async function openStream(model: string, apiKey: string, payload: any, timeoutMs
   return { failure: describeGeminiFailure(res.status, detail), modelGone: res.status === 404 };
 }
 
+async function* readTurn(response: Response): AsyncGenerator<TurnChunk> {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  const parts: ModelPart[] = [];
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+
+        const dataStr = trimmed.slice(5).trim();
+        if (dataStr === '[DONE]') break;
+
+        try {
+          const chunkParts = JSON.parse(dataStr).candidates?.[0]?.content?.parts;
+          if (!Array.isArray(chunkParts)) continue;
+          for (const part of chunkParts as ModelPart[]) {
+            parts.push(part);
+            if (typeof part.text === 'string' && part.text && part.thought !== true) yield { text: part.text };
+          }
+        } catch {
+          // Bỏ qua dòng SSE không hợp lệ
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  yield { parts };
+}
+
 /**
  * Stream phản hồi từ Gemini API với cơ chế tự động chuyển model fallback
  */
@@ -203,7 +253,22 @@ export async function* streamGeminiContent(
   const candidateModels = Array.from(new Set([model, ...FALLBACK_AI_MODELS])).filter((m) => !unavailableModels.has(m));
   const contents = buildContents(messages, extras.attachments);
 
+  let kho: ChuDe[] = [];
+  if (extras.tools !== false) {
+    try {
+      kho = await taiKhoTriThuc();
+    } catch (err) {
+      console.warn('Không nạp được kho tri thức cho AI:', err);
+    }
+  }
+  const coTriThuc = kho.length > 0;
+
   let systemPrompt = SYSTEM_INSTRUCTION;
+  if (coTriThuc) {
+    systemPrompt += `
+
+${dungChiDanTriThuc(kho)}`;
+  }
 
   // Bơm dữ liệu thời gian thực của hệ thống vào System Prompt
   if (systemContext) {
@@ -219,29 +284,33 @@ NGỮ CẢNH VĂN BẢN ĐANG XEM XÉT:
 ${docContext}`;
   }
 
-  const payload = {
+  const payloadFor = (noiDung: unknown[], coCongCu: boolean) => ({
     system_instruction: {
       parts: [{ text: systemPrompt }],
     },
-    contents,
+    contents: noiDung,
+    ...(coTriThuc && coCongCu ? { tools: [KHAI_BAO_CONG_CU] } : {}),
     generationConfig: {
       temperature: 0.4,
       maxOutputTokens: 4096,
     },
-  };
+  });
+  const payload = payloadFor(contents, true);
 
+  const timeoutMs = extras.attachments?.length ? HEADER_TIMEOUT_WITH_FILES_MS : HEADER_TIMEOUT_MS;
   let response: Response | null = null;
+  let chosenModel = '';
   // Lý do đáng báo nhất: lỗi không phải "model không còn", vì lỗi đó chỉ nói model này hỏng chứ không nói vì sao cả chuỗi hỏng
   let failure = apiKey ? '' : MSG_GEMINI_NOT_CONFIGURED;
 
   if (apiKey) {
-    const timeoutMs = extras.attachments?.length ? HEADER_TIMEOUT_WITH_FILES_MS : HEADER_TIMEOUT_MS;
     let modelGone = '';
     for (const cand of candidateModels) {
       try {
         const opened = await openStream(cand, apiKey, payload, timeoutMs);
         if ('response' in opened) {
           response = opened.response;
+          chosenModel = cand;
           break;
         }
         if (opened.modelGone) modelGone ||= opened.failure;
@@ -269,41 +338,34 @@ ${docContext}`;
     return;
   }
 
-  // Đọc SSE Stream từ Google Gemini
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith('data:')) continue;
-
-        const dataStr = trimmed.slice(5).trim();
-        if (dataStr === '[DONE]') break;
-
-        try {
-          const parsed = JSON.parse(dataStr);
-          const chunkText = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (chunkText) {
-            yield chunkText;
-          }
-        } catch {
-          // Bỏ qua dòng SSE không hợp lệ
-        }
-      }
+  const lanDau: Response = response;
+  let soLuot = 0;
+  const openTurn: OpenTurn = async function* (noiDung, coCongCu) {
+    if (soLuot++ === 0) {
+      yield* readTurn(lanDau);
+      return;
     }
-  } finally {
-    reader.releaseLock();
+    let opened: OpenResult;
+    try {
+      opened = await openStream(chosenModel, apiKey, payloadFor(noiDung, coCongCu), timeoutMs);
+    } catch (err) {
+      const timedOut = err instanceof Error && err.name === 'AbortError';
+      throw new AiUnavailableError(
+        timedOut
+          ? `Gemini không phản hồi sau ${Math.round(timeoutMs / 1000)} giây. Thử lại.`
+          : 'Không kết nối được tới Gemini. Kiểm tra mạng rồi thử lại.'
+      );
+    }
+    if (!('response' in opened)) throw new AiUnavailableError(opened.failure);
+    yield* readTurn(opened.response);
+  };
+
+  let coChu = false;
+  for await (const chunk of runToolLoop(openTurn, contents as Content[], coTriThuc ? taoCongCuTriThuc(taiKhoTriThuc) : {}, extras.onToolUse)) {
+    if (chunk.trim()) coChu = true;
+    yield chunk;
   }
+  if (!coChu) throw new AiUnavailableError(MSG_GEMINI_EMPTY);
 }
 
 /**
@@ -337,7 +399,7 @@ export async function summarizeDocumentWithAi(
   ];
 
   let raw = '';
-  for await (const chunk of streamGeminiContent(messages)) {
+  for await (const chunk of streamGeminiContent(messages, undefined, undefined, undefined, { tools: false })) {
     raw += chunk;
   }
 

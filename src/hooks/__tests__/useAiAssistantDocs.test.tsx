@@ -266,6 +266,15 @@ describe('useAiAssistant - bộ nhớ trả lời dùng chung', () => {
     expect(m.save).not.toHaveBeenCalled();
   });
 
+  it('không lưu khi AI đã tra công cụ tri thức, dù câu hỏi khớp văn bản', async () => {
+    m.stream.mockImplementation(async function* (_h: unknown, _d: unknown, _m: unknown, _s: unknown, extras: { onToolUse?: () => void }) {
+      extras.onToolUse?.();
+      yield 'Trả lời theo tri thức';
+    });
+    await ask(setup(), Q);
+    expect(m.save).not.toHaveBeenCalled();
+  });
+
   it('không lưu khi chưa đọc đủ văn bản, khi AI lỗi giữa chừng, hoặc không có văn bản căn cứ', async () => {
     m.prepare.mockResolvedValue({ ...PREPARED, complete: false });
     await ask(setup(), Q);

@@ -227,11 +227,15 @@ export function useAiAssistant(userId: string | null = null) {
       let accumulated = '';
       let failed = false;
       let usedFallback = false;
+      let usedTools = false;
       try {
         const stream = streamGeminiContent(updatedHistory, docContext, model, systemData, {
           attachments: docs.attachments,
           onFallback: () => {
             usedFallback = true;
+          },
+          onToolUse: () => {
+            usedTools = true;
           },
         });
         for await (const chunk of stream) {
@@ -254,7 +258,7 @@ export function useAiAssistant(userId: string | null = null) {
       }
 
       // Lưu cho người sau chỉ khi câu trả lời thật sự dựa trên nội dung văn bản đã đọc đủ và trọn vẹn
-      if (shareable && !failed && !usedFallback && !abortControllerRef.current && docs.complete && accumulated.trim()) {
+      if (shareable && !failed && !usedFallback && !usedTools && !abortControllerRef.current && docs.complete && accumulated.trim()) {
         saveCachedAnswer({ key, question: cleanText, answer: accumulated, docRefs: docs.refs, model }).catch((err) =>
           console.warn('Không lưu được câu trả lời vào bộ nhớ dùng chung:', err)
         );

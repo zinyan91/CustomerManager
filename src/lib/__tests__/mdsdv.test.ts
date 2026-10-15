@@ -26,17 +26,17 @@ describe('normalizeVi', () => {
 
 describe('dataset shape', () => {
   it('carries the published FBE list version', () => {
-    expect(MDSDV_VERSION).toBe('19032025');
+    expect(MDSDV_VERSION).toBe('2026');
   });
 
-  it('expands to the full 9.133-row lookup table', () => {
-    expect(countMdsdvEntries()).toBe(9133);
+  it('expands to the full 9.313-row lookup table', () => {
+    expect(countMdsdvEntries()).toBe(9313);
   });
 
-  it('exposes all 21 level-1 industry codes', () => {
+  it('exposes all 22 level-1 industry codes', () => {
     const options = getLevel1Options();
-    expect(options).toHaveLength(21);
-    expect(options[0]).toEqual({ code: 'CEA', name: 'NÔNG NGHIỆP, LÂM NGHIỆP VÀ THUỶ SẢN' });
+    expect(options).toHaveLength(22);
+    expect(options[0]).toEqual({ code: 'CEA', name: 'NÔNG NGHIỆP, LÂM NGHIỆP VÀ THỦY SẢN' });
   });
 });
 
@@ -56,6 +56,15 @@ describe('findMdsdvByCode', () => {
   it('reads a code whose detail suffix is not in the common set', () => {
     const entry = findMdsdvByCode('CEA0111099');
     expect(entry!.fbeName).toBe('A0111099-Khac');
+  });
+
+  it('reads a consumer loan code correctly', () => {
+    const entry = findMdsdvByCode('CEU0000009');
+    expect(entry).not.toBeNull();
+    expect(entry!.fbeName).toBe('U0000009-Khac');
+    expect(entry!.level1Code).toBe('CEU');
+    expect(entry!.level5Code).toBe('CEU00000');
+    expect(entry!.allowsOverdraft).toBe(true);
   });
 
   it('accepts lowercase and surrounding whitespace', () => {
@@ -108,18 +117,18 @@ describe('searchMdsdv', () => {
 
   it('filters to codes available for overdraft accounts', () => {
     const res = searchMdsdv({ overdraftOnly: true, limit: 10_000 });
-    expect(res.total).toBe(760);
+    expect(res.total).toBe(772);
     expect(res.items.every(i => i.allowsOverdraft)).toBe(true);
   });
 
   it('returns the whole table when no filter is given', () => {
-    expect(searchMdsdv({ limit: 10_000 }).total).toBe(9133);
+    expect(searchMdsdv({ limit: 10_000 }).total).toBe(9313);
   });
 
   it('caps the returned rows but still reports the true total', () => {
     const res = searchMdsdv({ limit: 5 });
     expect(res.items).toHaveLength(5);
-    expect(res.total).toBe(9133);
+    expect(res.total).toBe(9313);
     expect(res.truncated).toBe(true);
   });
 

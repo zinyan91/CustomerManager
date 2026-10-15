@@ -79,7 +79,7 @@ export const MdsdvFilterHeader: React.FC<MdsdvFilterHeaderProps> = ({
             onChange={e => setLevel1Code(e.target.value)}
             className={`${inputCls} bg-panel h-10 w-full text-xs truncate`}
           >
-            <option value="">Tất cả ngành (21 ngành)</option>
+            <option value="">Tất cả ngành ({level1Options.length} ngành)</option>
             {level1Options.map(o => (
               <option key={o.code} value={o.code}>
                 {o.code} — {o.name}

@@ -199,6 +199,15 @@ describe('Báo cáo tài chính trong ngữ cảnh AI', () => {
     expect(prompt).toContain('Chưa có bản báo cáo tài chính nào được lưu');
     expect(prompt).toContain('PDF, ảnh hoặc Excel');
   });
+
+  it('nạp bản liveProfile trực tiếp vào system data ngay cả khi chưa lưu', async () => {
+    const { createSampleCorporateProfile } = await import('../../corporateFinancialDefaults');
+    const live = createSampleCorporateProfile();
+    live.name = 'DOANH NGHIỆP TRỰC TIẾP LIVE';
+
+    const data = await fetchSystemContextData({ includeCustomers: false, liveFinancialProfile: live });
+    expect(data.financialProfile).toContain('DOANH NGHIỆP TRỰC TIẾP LIVE');
+  });
 });
 
 describe('Chỉ dẫn hệ thống cho AI', () => {

@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { AiChatMessage, AiThreadSummary, AiAttachment } from '../types/ai';
 import type { DispatchDocument } from '../types/dispatch';
+import type { CorporateFinancialProfile } from '../types/corporateFinancial';
 import { streamGeminiContent, DEFAULT_AI_MODEL } from '../lib/ai/geminiClient';
 import { fetchSystemContextData, mentionsCustomers, type SystemContextData } from '../lib/ai/systemContext';
-import { mentionsFinancials } from '../lib/ai/financialContext';
+import { getActiveLiveFinancialProfile, mentionsFinancials } from '../lib/ai/financialContext';
 import { prepareDocContext, lookupSharedAnswer, EMPTY_DOC_CONTEXT, type SharedLookup } from '../lib/ai/docContext';
 import { questionKey, saveCachedAnswer } from '../lib/ai/answerCache';
 import { loadMessages, loadThreads, removeThread, saveMessages, saveThreads } from '../lib/ai/chatStorage';
@@ -17,11 +18,16 @@ export interface SendOptions {
   baseHistory?: AiChatMessage[];
 }
 
+export interface UseAiAssistantOptions {
+  /** Báo cáo tài chính doanh nghiệp đang nhập trực tiếp trên màn hình */
+  liveFinancialProfile?: CorporateFinancialProfile | null;
+}
+
 /**
  * Trợ lý AI: chat riêng theo tài khoản (userId) và bộ nhớ trả lời dùng chung cho các câu hỏi về văn bản Văn thư.
  * userId null (chưa đăng nhập) thì chat chỉ nằm trong bộ nhớ, không lưu.
  */
-export function useAiAssistant(userId: string | null = null) {
+export function useAiAssistant(userId: string | null = null, assistantOptions: UseAiAssistantOptions = {}) {
   const [threads, setThreads] = useState<AiThreadSummary[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
@@ -31,6 +37,11 @@ export function useAiAssistant(userId: string | null = null) {
   const [model, setModel] = useState<string>(DEFAULT_AI_MODEL);
   const [error, setError] = useState<string | null>(null);
   const [statusText, setStatusText] = useState('');
+
+  const liveProfileRef = useRef<CorporateFinancialProfile | null>(assistantOptions.liveFinancialProfile ?? null);
+  useEffect(() => {
+    liveProfileRef.current = assistantOptions.liveFinancialProfile ?? null;
+  }, [assistantOptions.liveFinancialProfile]);
 
   const abortControllerRef = useRef<boolean>(false);
   // Văn bản đang bàn ở lượt trước: câu hỏi nối tiếp ("bảng lãi suất chi tiết?") không phải nêu lại số hiệu
@@ -181,8 +192,18 @@ export function useAiAssistant(userId: string | null = null) {
 
       // Chỉ câu hỏi mở đầu một cuộc chat, không kèm tệp riêng, khách hàng hay báo cáo tài chính, mới dùng chung được:
       // câu nối tiếp phụ thuộc ngữ cảnh, còn dữ liệu khách hàng và báo cáo tài chính không được chia sẻ giữa các tài khoản.
+      const currentLiveProfile = liveProfileRef.current ?? getActiveLiveFinancialProfile();
+      const hasLiveFinancials = Boolean(currentLiveProfile);
+
       const key = questionKey(cleanText);
-      const shareable = history.length === 0 && !hasAttachments && !targetDoc && !mentionsCustomers(cleanText) && !mentionsFinancials(cleanText) && key !== '';
+      const shareable =
+        history.length === 0 &&
+        !hasAttachments &&
+        !targetDoc &&
+        !mentionsCustomers(cleanText) &&
+        !mentionsFinancials(cleanText) &&
+        !hasLiveFinancials &&
+        key !== '';
 
       setStatusText('Đang tra cứu văn bản...');
       let lookup: SharedLookup | null = null;
@@ -207,7 +228,11 @@ export function useAiAssistant(userId: string | null = null) {
       let docs = EMPTY_DOC_CONTEXT;
       try {
         const [sys, prepared] = await Promise.all([
-          fetchSystemContextData({ includeCustomers: mentionsCustomers(cleanText), includeFinancials: mentionsFinancials(cleanText) }).catch((err) => {
+          fetchSystemContextData({
+            includeCustomers: mentionsCustomers(cleanText),
+            includeFinancials: hasLiveFinancials || mentionsFinancials(cleanText),
+            ...(currentLiveProfile ? { liveFinancialProfile: currentLiveProfile } : {}),
+          }).catch((err) => {
             console.warn('Lỗi thu thập dữ liệu hệ thống cho AI:', err);
             return undefined;
           }),

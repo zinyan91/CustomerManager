@@ -16,7 +16,7 @@ const TAT_CA_TRANG = new Set([...Object.values(ROUTE_OF), ...ADMIN_NAV.map((i) =
 const CHUA_VIET: string[] = [
   '/dashboard', '/hub',
   '/dispatches',
-  '/tools/business-plan', '/tools/corporate-financial', '/tools/inventory', '/tools/shopping-checklist',
+  '/tools/business-plan', '/tools/inventory', '/tools/shopping-checklist',
   '/tools/purchase-statement', '/tools/retail-invoice', '/tools/rate-quote', '/tools/cost-of-funds',
   '/tools/reports', '/office', '/reference/loan-purpose', '/reference/card-policies',
   '/reference/templates', '/reference/quiz', '/admin', '/settings',

@@ -15,6 +15,8 @@ import { useFileDrop } from '../../hooks/useFileDrop';
 import { useResizableWidth } from '../../hooks/useResizableWidth';
 import { useAuth } from '../../context/AuthContext';
 import type { DispatchDocument } from '../../types/dispatch';
+import type { CorporateFinancialProfile } from '../../types/corporateFinancial';
+import { FINANCIAL_STARTER_PROMPTS } from '../../types/ai';
 
 interface AiChatDialogProps {
   isOpen: boolean;
@@ -25,6 +27,8 @@ interface AiChatDialogProps {
   /** AI đọc tệp gửi kèm và đề xuất ghi nhận vào Văn thư. Mặc định theo quyền dispatch.upload của tài khoản. */
   canRecordDocs?: boolean;
   onDocRecorded?: () => void;
+  /** Báo cáo tài chính doanh nghiệp đang nhập trực tiếp trên màn hình */
+  liveFinancialProfile?: CorporateFinancialProfile | null;
 }
 
 export function AiChatDialog({
@@ -35,10 +39,11 @@ export function AiChatDialog({
   mode = 'sidebar',
   canRecordDocs,
   onDocRecorded,
+  liveFinancialProfile,
 }: AiChatDialogProps) {
   const { user, can } = useAuth();
   // Chat riêng theo tài khoản: nhân viên khác đăng nhập trên cùng máy không thấy chat của nhau
-  const assistant = useAiAssistant(user?.id ?? null);
+  const assistant = useAiAssistant(user?.id ?? null, { liveFinancialProfile });
   const composerRef = useRef<AiComposerHandle>(null);
   const recordAllowed = canRecordDocs ?? can('dispatch.upload');
   const docs = useAiDocProposals({ enabled: recordAllowed, model: assistant.model, onRecorded: onDocRecorded });
@@ -76,7 +81,9 @@ export function AiChatDialog({
             />
             <div className="min-w-0">
               <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 flex-wrap">
-                <span className="truncate">Trợ Lý AI Tín Dụng & Văn Thư</span>
+                <span className="truncate">
+                  {liveFinancialProfile ? 'Trợ Lý AI Báo Cáo Tài Chính' : 'Trợ Lý AI Tín Dụng & Văn Thư'}
+                </span>
                 <select
                   value={assistant.model}
                   onChange={(e) => assistant.setModel(e.target.value)}
@@ -91,6 +98,8 @@ export function AiChatDialog({
               <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[200px] sm:max-w-xs">
                 {assistant.attachedDoc
                   ? `Đang xem: ${assistant.attachedDoc.title}`
+                  : liveFinancialProfile
+                  ? `Đang đọc BCTC: ${liveFinancialProfile.name || 'Doanh nghiệp'} (${liveFinancialProfile.year})`
                   : 'Sẵn sàng giải đáp & phân tích tài liệu'}
               </div>
             </div>
@@ -191,6 +200,8 @@ export function AiChatDialog({
             onRefreshAnswer={(id) => void assistant.refreshAnswer(id)}
             onSelectPrompt={(p) => assistant.sendMessage(p)}
             onClearHistory={assistant.clearMessages}
+            starterPrompts={liveFinancialProfile ? FINANCIAL_STARTER_PROMPTS : undefined}
+            isFinancialContext={Boolean(liveFinancialProfile)}
             footer={[
               ...credit.proposals.map((p) => (
                 <AiCreditProposalCard

@@ -85,3 +85,36 @@ export const BANKING_STARTER_PROMPTS: StarterPrompt[] = [
     prompt: 'Liệt kê danh mục hồ sơ pháp lý bắt buộc cần thu thập khi thẩm định khách hàng doanh nghiệp vay vốn ngắn hạn bổ sung vốn lưu động.',
   },
 ];
+
+export const FINANCIAL_STARTER_PROMPTS: StarterPrompt[] = [
+  {
+    title: 'Phân tích sức khỏe tài chính & khả năng trả nợ',
+    badge: 'Sức khỏe BCTC',
+    prompt: 'Phân tích tổng thể sức khỏe tài chính và khả năng trả nợ của doanh nghiệp dựa trên số liệu BCTC đang mở trên màn hình.',
+  },
+  {
+    title: 'Đọc sao kê tài khoản & Phân tích dòng tiền',
+    badge: 'Sao kê & Dòng tiền',
+    prompt: 'Hướng dẫn đọc và phân tích sao kê tài khoản ngân hàng của doanh nghiệp: bóc tách doanh số ghi có, ghi nợ, dòng tiền thuần, phát hiện dòng tiền đảo lòng vòng và rút tiền mặt bất thường.',
+  },
+  {
+    title: 'Tam giác đối soát BCTC - Sao kê - Thuế',
+    badge: 'Đối soát 3 bên',
+    prompt: 'Cách đối chiếu tam giác giữa Doanh thu BCTC (B02) với Doanh số ghi có trên sao kê ngân hàng và Tờ khai thuế GTGT để nhận diện doanh thu thực tế và cảnh báo doanh thu ảo.',
+  },
+  {
+    title: 'Thẩm định hạn mức vốn lưu động theo TT 39',
+    badge: 'Hạn mức TT 39',
+    prompt: 'Phương pháp xác định nhu cầu vốn lưu động ròng, chu kỳ ngân quỹ (CCC) và tính toán hạn mức tín dụng ngắn hạn tối đa cho doanh nghiệp theo Thông tư 39/2016/TT-NHNN.',
+  },
+  {
+    title: 'Đánh giá biên lợi nhuận & đặc thù ngành',
+    badge: 'Hiệu quả & Ngành',
+    prompt: 'Đánh giá biên lợi nhuận gộp, biên ròng, ROA, ROE và vòng quay vốn theo đặc thù ngành kinh doanh (sản xuất, thương mại, xây dựng, nông sản, xuất nhập khẩu).',
+  },
+  {
+    title: 'Stress-test kịch bản rủi ro & Cảnh báo sớm',
+    badge: 'Stress-test & Rủi ro',
+    prompt: 'Thực hiện stress-test khả năng trả nợ khi doanh thu giảm 20% hoặc lãi suất tăng 2%/năm; chỉ ra các dấu hiệu cảnh báo sớm rủi ro tín dụng của doanh nghiệp.',
+  },
+];

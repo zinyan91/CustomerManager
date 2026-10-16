@@ -3,7 +3,8 @@ import { OFFICIAL_CATEGORIES, categoryLabel } from '../officialDoc/categories';
 import { searchOfficialDocs, countByCategory, type CategoryCounts } from '../api/officialDocApi';
 import { fetchCustomersAPI } from '../api/customerApi';
 import type { Customer } from '../../types';
-import { formatFinancialProfile, loadSavedFinancialProfile } from './financialContext';
+import type { CorporateFinancialProfile } from '../../types/corporateFinancial';
+import { formatFinancialProfile, getActiveLiveFinancialProfile, loadSavedFinancialProfile } from './financialContext';
 
 export interface SystemContextData {
   officialDocs: OfficialDoc[];
@@ -29,8 +30,10 @@ const DEFAULT_DOC_FILTER: OfficialDocFilter = {
 export interface SystemContextOptions {
   /** Tải danh sách khách hàng (nặng nhất). Chỉ bật khi câu hỏi nhắc tới khách hàng. */
   includeCustomers?: boolean;
-  /** Nạp bản báo cáo tài chính doanh nghiệp đã lưu trên trình duyệt. Chỉ bật khi câu hỏi nhắc tới tài chính doanh nghiệp. */
+  /** Nạp bản báo cáo tài chính doanh nghiệp đã lưu trên trình duyệt hoặc đang nhập trực tiếp. */
   includeFinancials?: boolean;
+  /** Báo cáo tài chính doanh nghiệp đang mở/nhập trực tiếp trên màn hình. */
+  liveFinancialProfile?: CorporateFinancialProfile | null;
 }
 
 const MAX_FORM_NAMES = 5;
@@ -61,7 +64,7 @@ export function mentionsCustomers(question: string): boolean {
  * Các nguồn tải song song; nguồn nào lỗi thì bỏ qua riêng nguồn đó.
  */
 export async function fetchSystemContextData(options: SystemContextOptions = {}): Promise<SystemContextData> {
-  const { includeCustomers = true, includeFinancials = false } = options;
+  const { includeCustomers = true, includeFinancials = false, liveFinancialProfile } = options;
 
   const [docsRes, customers] = await Promise.all([
     Promise.all([searchOfficialDocs(DEFAULT_DOC_FILTER, 1), countByCategory(DEFAULT_DOC_FILTER)]).catch((err) => {
@@ -74,18 +77,21 @@ export async function fetchSystemContextData(options: SystemContextOptions = {})
   const officialDocs: OfficialDoc[] = docsRes?.[0].docs ?? [];
   const docsByCategory: CategoryCounts = docsRes?.[1] ?? { all: 0, 'van-ban': 0, 'hop-dong': 0, 'cong-van': 0, khac: 0 };
 
+  const effectiveLive = liveFinancialProfile ?? getActiveLiveFinancialProfile();
+  const shouldIncludeFinancials = includeFinancials || Boolean(effectiveLive);
+
   return {
     officialDocs,
     totalOfficialDocs: docsByCategory.all || officialDocs.length,
     docsByCategory,
     customers,
     totalCustomers: customers.length,
-    financialProfile: includeFinancials ? readFinancialProfile() : undefined,
+    financialProfile: shouldIncludeFinancials ? readFinancialProfile(effectiveLive) : undefined,
   };
 }
 
-function readFinancialProfile(): string | null {
-  const profile = loadSavedFinancialProfile();
+function readFinancialProfile(liveProfile?: CorporateFinancialProfile | null): string | null {
+  const profile = liveProfile ?? getActiveLiveFinancialProfile() ?? loadSavedFinancialProfile();
   return profile ? formatFinancialProfile(profile) : null;
 }
 
@@ -144,7 +150,7 @@ export function formatSystemContextPrompt(data: SystemContextData): string {
   // 3. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP
   if (data.financialProfile !== undefined) {
     lines.push('');
-    lines.push('## 3. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP (bản đã lưu trên trình duyệt của người đang hỏi):');
+    lines.push('## 3. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP (số liệu đang mở/nhập trực tiếp trên màn hình hoặc đã lưu):');
     lines.push(
       data.financialProfile ??
         '- Chưa có bản báo cáo tài chính nào được lưu trên trình duyệt này. Nếu cần phân tích số liệu, nhờ người dùng gửi tệp PDF, ảnh hoặc Excel của báo cáo, hoặc nhập và lưu bản nháp ở màn Báo cáo tài chính doanh nghiệp.'

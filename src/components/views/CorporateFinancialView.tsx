@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Building2,
   FileSpreadsheet,
@@ -27,10 +27,12 @@ import {
   computeFinancialRatios,
 } from '../../lib/corporateFinancialFormulas';
 import { exportCorporateFinancialToExcel } from '../../lib/corporateFinancialExport';
+import { setActiveLiveFinancialProfile } from '../../lib/ai/financialContext';
 import { B01aFinancialPositionTab } from '../corporateFinancial/B01aFinancialPositionTab';
 import { B02IncomeStatementTab } from '../corporateFinancial/B02IncomeStatementTab';
 import { B01bBalanceSheetTab } from '../corporateFinancial/B01bBalanceSheetTab';
 import { FinancialRatiosCard } from '../corporateFinancial/FinancialRatiosCard';
+import { AiChatDialog } from '../ai/AiChatDialog';
 import { Toast, type ToastMessage } from '../Toast';
 import { UI } from '../../lib/uiClasses';
 
@@ -49,8 +51,16 @@ export const CorporateFinancialView: React.FC = () => {
   });
 
   const [activeTab, setActiveTab] = useState<'b01a' | 'b02' | 'b01b'>('b01a');
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setActiveLiveFinancialProfile(profile);
+    return () => {
+      setActiveLiveFinancialProfile(null);
+    };
+  }, [profile]);
 
   // Compute live statements
   const computedB01a = useMemo(() => computeB01a(profile.b01a), [profile.b01a]);
@@ -219,6 +229,20 @@ export const CorporateFinancialView: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
+              onClick={() => setIsAiChatOpen((prev) => !prev)}
+              aria-pressed={isAiChatOpen}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                isAiChatOpen
+                  ? 'border-teal-600 bg-teal-600 text-white dark:bg-teal-500 dark:border-teal-500 dark:text-slate-900 shadow-2xs'
+                  : 'border-teal-600/40 bg-teal-500/10 hover:bg-teal-500/20 text-teal-800 dark:text-teal-300'
+              }`}
+              title="Mở Trợ lý AI phân tích Báo cáo tài chính"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Trợ lý AI</span>
+            </button>
+            <button
+              type="button"
               onClick={handleLoadSample}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-accent/40 bg-accent/10 text-accent hover:bg-accent/20 cursor-pointer transition-all"
             >
@@ -380,6 +404,13 @@ export const CorporateFinancialView: React.FC = () => {
           onChange={handleUpdateB01b}
         />
       )}
+
+      <AiChatDialog
+        isOpen={isAiChatOpen}
+        onClose={() => setIsAiChatOpen(false)}
+        mode="drawer"
+        liveFinancialProfile={profile}
+      />
     </div>
   );
 };

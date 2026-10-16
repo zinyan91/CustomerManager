@@ -3,11 +3,28 @@ import { CORPORATE_FINANCIAL_STORAGE_KEY } from '../corporateFinancialDefaults';
 import { checkB01aBalance, computeB01a, computeB01b, computeB02, computeFinancialRatios } from '../corporateFinancialFormulas';
 
 /**
- * Câu hỏi có nhắc tới báo cáo tài chính / phân tích doanh nghiệp, để quyết định có nạp bản BCTC đã lưu cho AI hay không.
+ * Câu hỏi có nhắc tới kinh tế, tài chính, sao kê, dòng tiền, phân tích hoặc thẩm định doanh nghiệp.
  * Dùng ranh giới theo chữ cái Unicode vì \b của JS không coi chữ có dấu là chữ.
  */
 export function mentionsFinancials(question: string): boolean {
-  return /(^|[^\p{L}\d])(bctc|b01a|b01b|b02|tt ?133|roe|roa|khdn)($|[^\p{L}\d])|báo cáo tài chính|bao cao tai chinh|tài chính doanh nghiệp|tai chinh doanh nghiep|cân đối kế toán|can doi ke toan|kết quả (hoạt động )?kinh doanh|ket qua (hoat dong )?kinh doanh|doanh thu|lợi nhuận|loi nhuan|thanh khoản|thanh khoan|đòn bẩy|don bay|(tỷ|chỉ|ty|chi) (số|so) tài chính|khả năng trả nợ|kha nang tra no|dòng tiền|dong tien|vốn chủ sở hữu|von chu so huu|hàng tồn kho|hang ton kho|doanh nghiệp|doanh nghiep/iu.test(question);
+  return (
+    /(^|[^\p{L}\d])(bctc|b01a|b01b|b02|b03|tt ?133|tt ?39|tt ?200|roe|roa|khdn|cfo|cfi|cff|fcff|fcfe|ebit|ebitda|dscr|icr|nwc|ccc)($|[^\p{L}\d])/iu.test(
+      question
+    ) ||
+    /sao kê|sao ke|báo cáo tài chính|bao cao tai chinh|tài chính doanh nghiệp|tai chinh doanh nghiep|dòng tiền|dong tien|lưu chuyển tiền tệ|luu chuyen tien te|ghi có|ghi co|ghi nợ|ghi no|doanh số|doanh so|số dư bình quân|so du binh quan|cân đối kế toán|can doi ke toan|kết quả (hoạt động )?kinh doanh|ket qua (hoat dong )?kinh doanh|doanh thu|lợi nhuận|loi nhuan|thanh khoản|thanh khoan|đòn bẩy|don bay|(tỷ|chỉ|ty|chi) (số|so) tài chính|khả năng trả nợ|kha nang tra no|vốn lưu động|von luu dong|chu kỳ ngân quỹ|chu ky ngan quy|chu kỳ kinh doanh|chu ky kinh doanh|phương án kinh doanh|phuong an kinh doanh|phương án vay|phuong an vay|nhu cầu vốn|nhu cau von|hạn mức tín dụng|han muc tin dung|thẩm định|tham dinh|đối chiếu thuế|doi chieu thue|tờ khai thuế|to khai thue|thuế gtgt|thue gtgt|hóa đơn điện tử|hoa don dien tu|vốn chủ sở hữu|von chu so huu|hàng tồn kho|hang ton kho|đặc thù ngành|dac thu nganh|ngành kinh tế|nganh kinh te|stress[- ]test|kịch bản rủi ro|kich ban rui ro|doanh nghiệp|doanh nghiep/iu.test(
+      question
+    )
+  );
+}
+
+let activeLiveProfile: CorporateFinancialProfile | null = null;
+
+export function setActiveLiveFinancialProfile(profile: CorporateFinancialProfile | null): void {
+  activeLiveProfile = profile;
+}
+
+export function getActiveLiveFinancialProfile(): CorporateFinancialProfile | null {
+  return activeLiveProfile;
 }
 
 /** Bản BCTC người dùng đã bấm "Lưu bản nháp" trên trình duyệt này; null khi chưa lưu hoặc dữ liệu hỏng. */
@@ -74,11 +91,16 @@ export function formatFinancialProfile(profile: CorporateFinancialProfile): stri
 }
 
 /**
- * Ngữ cảnh BCTC cho một câu hỏi: chỉ khi câu hỏi nhắc tới tài chính doanh nghiệp VÀ trình duyệt này có bản đã lưu.
+ * Ngữ cảnh BCTC cho một câu hỏi: ưu tiên bản đang mở trực tiếp trên màn hình, sau đó đến bản đã lưu trên trình duyệt.
  * Dữ liệu chỉ nằm trên trình duyệt (chưa lưu ở máy chủ), nên mỗi người chỉ thấy bản của mình.
  */
-export function buildFinancialContext(question: string, storage?: Pick<Storage, 'getItem'> | null): string | null {
-  if (!mentionsFinancials(question)) return null;
-  const profile = loadSavedFinancialProfile(storage);
-  return profile ? formatFinancialProfile(profile) : null;
+export function buildFinancialContext(
+  question: string,
+  storage?: Pick<Storage, 'getItem'> | null,
+  liveProfile?: CorporateFinancialProfile | null
+): string | null {
+  const profile = liveProfile ?? getActiveLiveFinancialProfile() ?? (mentionsFinancials(question) ? loadSavedFinancialProfile(storage) : null);
+  if (!profile) return null;
+  if (!liveProfile && !getActiveLiveFinancialProfile() && !mentionsFinancials(question)) return null;
+  return formatFinancialProfile(profile);
 }

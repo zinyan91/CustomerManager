@@ -20,6 +20,10 @@ interface AiConversationProps {
   onRefreshAnswer?: (messageId: string) => void;
   /** Nội dung chèn sau tin nhắn cuối (vd: thẻ đề xuất ghi nhận văn bản). */
   footer?: ReactNode;
+  /** Danh sách câu hỏi gợi ý ban đầu */
+  starterPrompts?: StarterPrompt[];
+  /** Đang trong ngữ cảnh phân tích báo cáo tài chính doanh nghiệp */
+  isFinancialContext?: boolean;
 }
 
 export function AiConversation({
@@ -31,6 +35,8 @@ export function AiConversation({
   scrollKey,
   onRefreshAnswer,
   footer,
+  starterPrompts,
+  isFinancialContext,
 }: AiConversationProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -49,7 +55,11 @@ export function AiConversation({
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.length === 0 ? (
-        <EmptyWelcomeState onSelectPrompt={onSelectPrompt} />
+        <EmptyWelcomeState
+          onSelectPrompt={onSelectPrompt}
+          starterPrompts={starterPrompts}
+          isFinancialContext={isFinancialContext}
+        />
       ) : (
         <>
           {messages.map((msg) => (
@@ -212,22 +222,33 @@ export function AiConversation({
   );
 }
 
-function EmptyWelcomeState({ onSelectPrompt }: { onSelectPrompt: (p: string) => void }) {
+function EmptyWelcomeState({
+  onSelectPrompt,
+  starterPrompts = BANKING_STARTER_PROMPTS,
+  isFinancialContext = false,
+}: {
+  onSelectPrompt: (p: string) => void;
+  starterPrompts?: StarterPrompt[];
+  isFinancialContext?: boolean;
+}) {
+  const prompts = starterPrompts && starterPrompts.length > 0 ? starterPrompts : BANKING_STARTER_PROMPTS;
   return (
     <div className="max-w-2xl mx-auto py-6 text-center space-y-6">
       <div className="space-y-2">
         <FelixAiAvatar size="xl" status="idle" className="mx-auto" />
         <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2">
-          <span>Trợ Lý AI Tín Dụng & Quản Lý Văn Thư</span>
+          <span>{isFinancialContext ? 'Trợ Lý AI Phân Tích Báo Cáo Tài Chính' : 'Trợ Lý AI Tín Dụng & Quản Lý Văn Thư'}</span>
           <Sparkles className="w-4 h-4 text-teal-600" />
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-          Hỗ trợ tra cứu quy chuẩn tín dụng, thẩm định hồ sơ, tính toán lịch trả nợ, tóm tắt và phân tích công văn, văn thư lưu trữ.
+          {isFinancialContext
+            ? 'Đọc và phân tích trực tiếp số liệu BCTC doanh nghiệp đang mở trên màn hình. Hỗ trợ đánh giá khả năng thanh toán, kiểm tra cân đối, biên lợi nhuận và thẩm định rủi ro tín dụng.'
+            : 'Hỗ trợ tra cứu quy chuẩn tín dụng, thẩm định hồ sơ, tính toán lịch trả nợ, tóm tắt và phân tích công văn, văn thư lưu trữ.'}
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-left pt-2">
-        {BANKING_STARTER_PROMPTS.map((starter: StarterPrompt, idx: number) => (
+        {prompts.map((starter: StarterPrompt, idx: number) => (
           <button
             key={idx}
             type="button"

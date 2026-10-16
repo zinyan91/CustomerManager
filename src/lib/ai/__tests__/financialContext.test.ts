@@ -1,5 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { buildFinancialContext, formatFinancialProfile, loadSavedFinancialProfile, mentionsFinancials } from '../financialContext';
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  buildFinancialContext,
+  formatFinancialProfile,
+  getActiveLiveFinancialProfile,
+  loadSavedFinancialProfile,
+  mentionsFinancials,
+  setActiveLiveFinancialProfile,
+} from '../financialContext';
 import { CORPORATE_FINANCIAL_STORAGE_KEY, createSampleCorporateProfile } from '../../corporateFinancialDefaults';
 
 const storageWith = (value: string | null) => ({ getItem: (k: string) => (k === CORPORATE_FINANCIAL_STORAGE_KEY ? value : null) });
@@ -91,6 +98,10 @@ describe('formatFinancialProfile', () => {
 describe('buildFinancialContext', () => {
   const saved = storageWith(JSON.stringify(createSampleCorporateProfile()));
 
+  beforeEach(() => {
+    setActiveLiveFinancialProfile(null);
+  });
+
   it('câu hỏi tài chính và có bản đã lưu thì trả ngữ cảnh', () => {
     expect(buildFinancialContext('phân tích báo cáo tài chính', saved)).toContain('### Mẫu B01a');
   });
@@ -101,5 +112,22 @@ describe('buildFinancialContext', () => {
 
   it('chưa lưu bản nào thì không bịa dữ liệu mẫu', () => {
     expect(buildFinancialContext('phân tích báo cáo tài chính', storageWith(null))).toBeNull();
+  });
+
+  it('ưu tiên bản liveProfile đang mở trực tiếp trên màn hình', () => {
+    const live = createSampleCorporateProfile();
+    live.name = 'CÔNG TY TRỰC TIẾP TRÊN MÀN HÌNH';
+    const ctx = buildFinancialContext('doanh nghiệp này thế nào?', null, live);
+    expect(ctx).toContain('CÔNG TY TRỰC TIẾP TRÊN MÀN HÌNH');
+  });
+
+  it('nhận diện activeLiveProfile qua setter toàn cục ngay cả khi câu hỏi chung', () => {
+    const live = createSampleCorporateProfile();
+    live.name = 'CÔNG TY TOÀN CỤC ACTIVE';
+    setActiveLiveFinancialProfile(live);
+    expect(getActiveLiveFinancialProfile()?.name).toBe('CÔNG TY TOÀN CỤC ACTIVE');
+
+    const ctx = buildFinancialContext('tình hình thế nào', null);
+    expect(ctx).toContain('CÔNG TY TOÀN CỤC ACTIVE');
   });
 });

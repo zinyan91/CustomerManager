@@ -69,9 +69,12 @@ describe('fileToSpreadsheetAttachment', () => {
     await expect(fileToSpreadsheetAttachment(new File([], 'hong.xlsx'))).rejects.toThrow(/Không đọc được bảng tính "hong.xlsx"/);
   });
 
-  it('quá cỡ thì báo giới hạn', async () => {
-    const big = { name: 'to.xlsx', size: 999 * 1024 * 1024, arrayBuffer: async () => new ArrayBuffer(0) } as unknown as File;
-    await expect(fileToSpreadsheetAttachment(big)).rejects.toThrow(/vượt quá dung lượng tối đa/);
+  it('tệp dung lượng lớn vẫn đọc nội dung bình thường không bị chặn', async () => {
+    const file = asFile(workbookBuffer({ S: [['A', 'B'], ['1', '2']] }), 'to.xlsx');
+    Object.defineProperty(file, 'size', { value: 50 * 1024 * 1024 });
+    const att = await fileToSpreadsheetAttachment(file);
+    expect(att.name).toBe('to.xlsx');
+    expect(att.textData).toContain('### Sheet "S"');
   });
 
   it('có ghi chú cho AI khi bị cắt', async () => {

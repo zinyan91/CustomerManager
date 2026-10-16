@@ -1,7 +1,5 @@
 import type { AiAttachment } from '../../types/ai';
 
-export const MAX_AI_ATTACHMENT_SIZE_BYTES = 15 * 1024 * 1024; // 15 MB
-
 export const SUPPORTED_AI_MIME_TYPES = [
   'application/pdf',
   'image/jpeg',
@@ -89,12 +87,6 @@ export async function blobToRawBase64(blob: Blob): Promise<string> {
  * Đọc file / blob thành đối tượng AiAttachment chứa Base64 dữ liệu
  */
 export async function fileToAiAttachment(file: File): Promise<AiAttachment> {
-  if (file.size > MAX_AI_ATTACHMENT_SIZE_BYTES) {
-    throw new Error(
-      `Tệp "${file.name}" vượt quá dung lượng tối đa cho phép (${formatFileSize(MAX_AI_ATTACHMENT_SIZE_BYTES)}). Vui lòng chọn tệp nhỏ hơn.`
-    );
-  }
-
   const mimeType = resolveMimeType(file);
   if (!isSupportedAiAttachmentFile(file)) {
     throw new Error(

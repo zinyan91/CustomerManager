@@ -5,7 +5,6 @@ import {
   isSupportedAiAttachmentFile,
   fileToAiAttachment,
   convertFilesToAiAttachments,
-  MAX_AI_ATTACHMENT_SIZE_BYTES,
 } from '../fileToAttachment';
 
 describe('fileToAttachment utils', () => {
@@ -43,16 +42,13 @@ describe('fileToAttachment utils', () => {
     expect(att.base64Data).not.toContain('data:application/pdf;base64,');
   });
 
-  it('từ chối tệp vượt quá dung lượng tối đa 15MB', async () => {
-    const oversizedFile = {
-      name: 'file_khung.pdf',
-      size: MAX_AI_ATTACHMENT_SIZE_BYTES + 1,
-      type: 'application/pdf',
-    } as unknown as File;
+  it('chấp nhận tệp có dung lượng lớn mà không bị chặn', async () => {
+    const largeFile = new File(['nội dung tệp pdf lớn'], 'sao_ke_day_du.pdf', { type: 'application/pdf' });
+    Object.defineProperty(largeFile, 'size', { value: 30 * 1024 * 1024 });
 
-    await expect(fileToAiAttachment(oversizedFile)).rejects.toThrow(
-      /vượt quá dung lượng tối đa/
-    );
+    const att = await fileToAiAttachment(largeFile);
+    expect(att.name).toBe('sao_ke_day_du.pdf');
+    expect(att.size).toBe(30 * 1024 * 1024);
   });
 
   it('từ chối tệp không thuộc định dạng PDF hoặc hình ảnh', async () => {

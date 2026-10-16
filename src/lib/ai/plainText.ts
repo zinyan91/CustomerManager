@@ -1,5 +1,4 @@
 import type { AiAttachment } from '../../types/ai';
-import { MAX_AI_ATTACHMENT_SIZE_BYTES, formatFileSize } from './fileToAttachment';
 
 /** Số ký tự tệp chữ thuần đưa cho AI mỗi tệp, bằng giới hạn của Word và bảng tính. */
 export const MAX_PLAIN_TEXT_CHARS = 60_000;
@@ -7,11 +6,8 @@ export const MAX_PLAIN_TEXT_CHARS = 60_000;
 /** Tệp chữ thuần AI đọc được nguyên văn (kê khai thuế XML, JSON, TXT...). */
 export const isPlainTextFile = (file: { name: string }): boolean => /\.(xml|txt|json|md|html?|log|tsv)$/i.test(file.name);
 
-/** Tệp chữ thuần thành tệp đính kèm dạng chữ cho AI. Ném lỗi tiếng Việt khi quá lớn hoặc không giải mã được. */
+/** Tệp chữ thuần thành tệp đính kèm dạng chữ cho AI. Ném lỗi tiếng Việt khi không giải mã được. */
 export async function fileToPlainTextAttachment(file: File): Promise<AiAttachment> {
-  if (file.size > MAX_AI_ATTACHMENT_SIZE_BYTES) {
-    throw new Error(`Tệp "${file.name}" vượt quá dung lượng tối đa cho phép (${formatFileSize(MAX_AI_ATTACHMENT_SIZE_BYTES)}).`);
-  }
   let text: string;
   try {
     text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());

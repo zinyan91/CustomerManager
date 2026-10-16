@@ -1,5 +1,4 @@
 import type { AiAttachment } from '../../types/ai';
-import { MAX_AI_ATTACHMENT_SIZE_BYTES, formatFileSize } from './fileToAttachment';
 
 /** Tổng số ký tự bảng tính đưa cho AI mỗi tệp: đủ cho một bộ báo cáo tài chính, không làm tràn giới hạn của mô hình. */
 export const MAX_SHEET_CHARS = 60_000;
@@ -44,9 +43,6 @@ export async function spreadsheetToText(buffer: ArrayBuffer, maxChars: number = 
 
 /** Bảng tính thành tệp đính kèm dạng chữ cho AI. Ném lỗi tiếng Việt khi tệp quá lớn hoặc không đọc được. */
 export async function fileToSpreadsheetAttachment(file: File): Promise<AiAttachment> {
-  if (file.size > MAX_AI_ATTACHMENT_SIZE_BYTES) {
-    throw new Error(`Tệp "${file.name}" vượt quá dung lượng tối đa cho phép (${formatFileSize(MAX_AI_ATTACHMENT_SIZE_BYTES)}).`);
-  }
   let sheet: SheetText;
   try {
     sheet = await spreadsheetToText(await file.arrayBuffer());

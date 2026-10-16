@@ -105,9 +105,10 @@ describe('fileToWordAttachment', () => {
     await expect(fileToWordAttachment(new File(['không phải zip'], 'hong.docx'))).rejects.toThrow(/Không đọc được tệp Word "hong\.docx"/);
   });
 
-  it('quá cỡ thì báo giới hạn', async () => {
+  it('tệp dung lượng lớn không bị chặn bởi lỗi dung lượng tối đa', async () => {
     const big = { name: 'to.docx', size: 999 * 1024 * 1024 } as unknown as File;
-    await expect(fileToWordAttachment(big)).rejects.toThrow(/vượt quá dung lượng tối đa/);
+    await expect(fileToWordAttachment(big)).rejects.toThrow(/Không đọc được tệp Word/);
+    await expect(fileToWordAttachment(big)).rejects.not.toThrow(/vượt quá dung lượng tối đa/);
   });
 
   it('có ghi chú cho AI khi bị cắt', async () => {

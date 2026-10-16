@@ -1,5 +1,4 @@
 import type { AiAttachment } from '../../types/ai';
-import { MAX_AI_ATTACHMENT_SIZE_BYTES, formatFileSize } from './fileToAttachment';
 
 /** Số ký tự văn bản Word đưa cho AI mỗi tệp, bằng giới hạn của bảng tính: đủ cho một tờ trình dài. */
 export const MAX_WORD_CHARS = 60_000;
@@ -94,9 +93,6 @@ export async function docxToText(blob: Blob, maxChars: number = MAX_WORD_CHARS):
 export async function fileToWordAttachment(file: File): Promise<AiAttachment> {
   if (isLegacyDocFile(file)) {
     throw new Error(legacyDocMessage(file.name));
-  }
-  if (file.size > MAX_AI_ATTACHMENT_SIZE_BYTES) {
-    throw new Error(`Tệp "${file.name}" vượt quá dung lượng tối đa cho phép (${formatFileSize(MAX_AI_ATTACHMENT_SIZE_BYTES)}).`);
   }
   let word: WordText;
   try {

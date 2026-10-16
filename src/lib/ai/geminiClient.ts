@@ -205,8 +205,8 @@ export function resetModelMemory(): void {
   unavailableModels.clear();
 }
 
-const HEADER_TIMEOUT_MS = 15_000;
-const HEADER_TIMEOUT_WITH_FILES_MS = 45_000;
+export const HEADER_TIMEOUT_MS = 30_000;
+export const HEADER_TIMEOUT_WITH_FILES_MS = 90_000;
 
 /**
  * Mở luồng SSE. Hạn chờ chỉ áp cho tới khi có phản hồi đầu: dùng AbortSignal.timeout sẽ cắt ngang
@@ -341,7 +341,12 @@ ${docContext}`;
   });
   const payload = payloadFor(contents, true);
 
-  const timeoutMs = extras.attachments?.length ? HEADER_TIMEOUT_WITH_FILES_MS : HEADER_TIMEOUT_MS;
+  const hasAttachmentsOrLongDoc = Boolean(
+    extras.attachments?.length ||
+    messages.some((m) => m.attachments && m.attachments.length > 0) ||
+    (docContext && docContext.length > 2000)
+  );
+  const timeoutMs = hasAttachmentsOrLongDoc ? HEADER_TIMEOUT_WITH_FILES_MS : HEADER_TIMEOUT_MS;
   let response: Response | null = null;
   let chosenModel = '';
   // Lý do đáng báo nhất: lỗi không phải "model không còn", vì lỗi đó chỉ nói model này hỏng chứ không nói vì sao cả chuỗi hỏng

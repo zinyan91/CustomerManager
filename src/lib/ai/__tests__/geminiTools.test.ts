@@ -5,7 +5,7 @@ import type { ChuDe } from '../triThuc/phanTichTriThuc';
 const m = vi.hoisted(() => ({ kho: vi.fn() }));
 vi.mock('../triThuc/khoTriThuc', () => ({ taiKhoTriThuc: m.kho }));
 
-import { AiUnavailableError, resetModelMemory, streamGeminiContent, type StreamExtras } from '../geminiClient';
+import { AiUnavailableError, resetModelMemory, streamGeminiContent, HEADER_TIMEOUT_MS, HEADER_TIMEOUT_WITH_FILES_MS, type StreamExtras } from '../geminiClient';
 
 const CHU_DE: ChuDe = {
   id: 'lai-lich-tra-no', tieuDe: 'Lãi và lịch trả nợ', moTa: 'm', nhom: 'Tính toán và lãi',
@@ -95,7 +95,7 @@ describe('streamGeminiContent với công cụ tri thức', () => {
     expect(bodyCuaLanGoi(f, 0).tools).toBeUndefined();
   });
 
-  it('lượt sau cũng chờ lâu như lượt đầu khi có tệp đính kèm (45 giây, không phải 15 giây)', async () => {
+  it('lượt sau cũng chờ lâu như lượt đầu khi có tệp đính kèm (90 giây, không phải 30 giây)', async () => {
     const f = vi.fn()
       .mockImplementationOnce(async () => khoiSse(parts([{ functionCall: { name: 'traCuuHeThong', args: {} } }])))
       .mockImplementationOnce(async () => khoiSse(parts([{ text: 'ok' }])));
@@ -105,8 +105,30 @@ describe('streamGeminiContent với công cụ tri thức', () => {
 
     expect(await gom({ attachments: tep })).toBe('ok');
 
-    const cho = doTre.mock.calls.map((c) => c[1]).filter((d) => d === 15_000 || d === 45_000);
-    expect(cho).toEqual([45_000, 45_000]);
+    const cho = doTre.mock.calls.map((c) => c[1]).filter((d) => d === HEADER_TIMEOUT_MS || d === HEADER_TIMEOUT_WITH_FILES_MS);
+    expect(cho).toEqual([HEADER_TIMEOUT_WITH_FILES_MS, HEADER_TIMEOUT_WITH_FILES_MS]);
+  });
+
+  it('tin nhắn có tệp đính kèm người dùng tự gửi (messages[].attachments) cũng được hưởng hạn chờ lâu', async () => {
+    const f = vi.fn().mockImplementationOnce(async () => khoiSse(parts([{ text: 'ok' }])));
+    vi.stubGlobal('fetch', f);
+    const doTre = vi.spyOn(globalThis, 'setTimeout');
+    const tinKemTep: AiChatMessage[] = [
+      {
+        id: '1',
+        role: 'user',
+        content: 'đọc báo cáo tài chính này',
+        createdAt: '',
+        attachments: [{ id: 'a', name: 'bctc.xlsx', mimeType: 'text/plain', size: 100, textData: 'du lieu', base64Data: '' }],
+      },
+    ];
+
+    let kq = '';
+    for await (const chunk of streamGeminiContent(tinKemTep)) kq += chunk;
+    expect(kq).toBe('ok');
+
+    const cho = doTre.mock.calls.map((c) => c[1]).filter((d) => d === HEADER_TIMEOUT_MS || d === HEADER_TIMEOUT_WITH_FILES_MS);
+    expect(cho).toEqual([HEADER_TIMEOUT_WITH_FILES_MS]);
   });
 
   it('AI không phát ra chữ nào: báo lỗi nêu rõ, không im lặng', async () => {

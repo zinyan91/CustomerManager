@@ -7,9 +7,11 @@ import { SidebarCollapseProvider, useSidebarCollapse } from '../context/SidebarC
 import { LoginView } from './LoginView';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
+import { PrimaryRail } from './PrimaryRail';
 import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
 import { CustomerContextBar } from './CustomerContextBar';
+import { LifecycleStepper } from './LifecycleStepper';
 import { ModuleGate } from './ModuleGate';
 import { AiChatDialog, FloatingAiAssistantButton } from './ai/AiChatDialog';
 
@@ -79,20 +81,26 @@ function AppLayoutContent() {
         onOpenAiChat={() => setIsAiDialogOpen(true)}
       />
 
+      {/* Thanh Điều Hướng Nghiệp Vụ Cấp 1 (Primary Command Rail 68px) */}
+      <PrimaryRail canManageUsers={canManageUsers} />
+
+      {/* Menu Phụ Theo Phân Hệ (Secondary Contextual Drawer) */}
       <Sidebar
         isOpenMobile={isMobileMenuOpen}
         onCloseMobile={handleCloseMobileMenu}
         canManageUsers={canManageUsers}
+        contextual={true}
       />
 
       <div className="flex flex-1 pt-[56px] relative w-full">
-        <main className={`flex-1 ${isSidebarCollapsed ? 'md:ml-0' : 'md:ml-64'} transition-[margin] duration-200 min-w-0 px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4 overflow-y-auto relative w-full`}>
+        <main className={`flex-1 ${isSidebarCollapsed ? 'md:ml-[68px]' : 'md:ml-[308px]'} transition-[margin] duration-200 min-w-0 px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4 overflow-y-auto relative w-full`}>
           <ErrorBoundary title="Lỗi khi tải giao diện màn hình">
             {ready ? (
               // key = phạm vi tài khoản: đổi tài khoản thì remount để mọi màn nạp lại đúng dữ liệu
               <Fragment key={scopeKey}>
                 <ModuleGate>
                   <CustomerContextBar />
+                  <LifecycleStepper />
                   <Outlet />
                 </ModuleGate>
               </Fragment>

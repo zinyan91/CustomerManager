@@ -32,6 +32,12 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
   dueAlertsTotal,
   formatMoney,
 }) => {
+  const custPercent = totalCustomersCount > 0 ? (customersWithDebtCount / totalCustomersCount) * 100 : 0;
+  const debtPercent = totalLimit > 0 ? (totalDebt / totalLimit) * 100 : 0;
+  const ltvPercent = weightedLtv > 1 ? weightedLtv : weightedLtv * 100;
+  const cardPercent = theConHieuLucCount > 0 ? 92 : 0;
+  const alertPercent = dueAlertsTotal > 0 ? 100 : 0;
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 2xl:gap-4">
       <KpiCard
@@ -41,7 +47,8 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
         label="Tổng số khách hàng"
         value={fmtNumber(totalCustomersCount)}
         unit="khách hàng"
-        note={`Trong đó ${fmtNumber(customersWithDebtCount)} khách hàng có dư nợ`}
+        progress={custPercent}
+        note={`Trong đó ${fmtNumber(customersWithDebtCount)} khách hàng có dư nợ (${custPercent.toFixed(1)}%)`}
       />
       <KpiCard
         cardBg={cardBg}
@@ -49,7 +56,8 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
         icon={DollarSign}
         label="Tổng quy mô dư nợ"
         value={formatMoney(totalDebt)}
-        note={`Tổng hạn mức cấp: ${formatMoney(totalLimit)}`}
+        progress={debtPercent}
+        note={`Tổng hạn mức cấp: ${formatMoney(totalLimit)} (${debtPercent.toFixed(1)}%)`}
       />
       <KpiCard
         cardBg={cardBg}
@@ -57,6 +65,7 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
         icon={Building2}
         label="Tổng giá trị TSĐB"
         value={formatMoney(totalCollateralVal)}
+        progress={ltvPercent}
         note={
           <>
             LTV bình quân: <strong className="text-[var(--kpi-hue)] font-bold">{fmtPercent(weightedLtv > 1 ? weightedLtv / 100 : weightedLtv)}</strong> ({fmtNumber(collateralsCount)} TS)
@@ -70,6 +79,7 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
         label="Thẻ tín dụng"
         value={fmtNumber(theConHieuLucCount)}
         unit="thẻ"
+        progress={cardPercent}
         note={`Hạn mức đã cấp: ${formatMoney(hanMucTheDaCap)}`}
       />
       <KpiCard
@@ -79,6 +89,7 @@ export const DashboardSummaryKpis: React.FC<DashboardSummaryKpisProps> = ({
         label="Cảnh báo tới hạn"
         value={fmtNumber(dueAlertsTotal)}
         unit="hạng mục"
+        progress={alertPercent}
         note="Cần theo dõi & xử lý ngay"
       />
     </div>

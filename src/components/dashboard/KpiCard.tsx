@@ -23,10 +23,12 @@ interface KpiCardProps {
   value: string;
   unit?: string;
   note?: ReactNode;
+  progress?: number;
+  meterColor?: string;
 }
 
 export const KpiCard = memo<KpiCardProps>(({
-  cardBg = 'bg-panel/85 backdrop-blur-xl border border-line/65 text-ink specular-card', hue, icon: Icon, label, value, unit, note,
+  cardBg = 'bg-panel/85 backdrop-blur-xl border border-line/65 text-ink specular-card', hue, icon: Icon, label, value, unit, note, progress, meterColor,
 }) => (
   <div
     data-kpi-hue={hue}
@@ -50,6 +52,17 @@ export const KpiCard = memo<KpiCardProps>(({
         </span>
         {unit && <span className="text-xs font-semibold text-ink-faint whitespace-nowrap">{unit}</span>}
       </div>
+      {typeof progress === 'number' && (
+        <div className="w-full h-1.5 bg-panel-muted/80 rounded-full overflow-hidden my-2">
+          <div
+            className="h-full rounded-full transition-all duration-500 shadow-xs"
+            style={{
+              width: `${Math.min(100, Math.max(0, progress))}%`,
+              backgroundColor: meterColor || 'var(--kpi-hue)',
+            }}
+          />
+        </div>
+      )}
       {note && <div className="text-[11px] text-ink-muted mt-1.5 text-balance leading-snug font-medium">{note}</div>}
     </div>
 

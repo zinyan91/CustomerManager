@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router';
 import { customerPath } from '../../lib/customerRoutes';
 import { summarizeCreditContracts, totalsOfCreditContracts } from '../../lib/creditContract';
 import { Toast, useToast } from '../Toast';
+import { ROUTE_OF } from '../../lib/routes';
 import type { Customer, Collateral, LoanContract, CardContract, CreditContract } from '../../types';
 import {
   Building2, RefreshCw, Calendar, Clock,
@@ -680,34 +681,60 @@ export const DashboardView: React.FC = () => {
     <div className="space-y-4 md:space-y-4.5 w-full pb-8">
       <Toast toast={toast} onDismiss={dismiss} />
 
-      {/* Sleek Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-line/60">
-        <div className="flex items-center gap-3">
-          <span className="p-2 rounded-xl bg-accent-soft text-accent shadow-xs">
-            <Building2 className="w-5 h-5" />
-          </span>
-          <h2 className="text-base sm:text-lg font-bold tracking-tight text-ink">
-            Báo Cáo Quản Trị Dư Nợ & Hạn Mức Tín Dụng
-          </h2>
+      {/* Executive Action Header theo phong cách Banking Heritage */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-line/60">
+        <div className="flex flex-col gap-1">
+          <div className="text-[11px] font-medium text-ink-faint flex items-center gap-1.5">
+            <span>Bàn làm việc Tổng quan</span>
+            <span className="text-ink-faint/60">/</span>
+            <span className="text-accent font-semibold">Bảng Tin KPIs & Lịch Thu Nợ</span>
+          </div>
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-ink flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-accent-soft text-accent">
+              <Building2 className="w-4 h-4" />
+            </span>
+            Bàn Làm Việc Cán Bộ Tín Dụng
+          </h1>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          <button
+            type="button"
+            onClick={() => navigate(ROUTE_OF.customers)}
+            className="bg-panel hover:bg-surface border border-line hover:border-accent text-ink text-xs px-3 py-1.5 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
+            title="Thêm khách hàng mới vào hệ thống"
+          >
+            <span className="text-accent font-bold">+</span>
+            <span>Thêm khách hàng</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate(ROUTE_OF.loans)}
+            className="bg-panel hover:bg-surface border border-line hover:border-accent text-ink text-xs px-3 py-1.5 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
+            title="Tạo khế ước nhận nợ (KUNN)"
+          >
+            <span className="text-accent font-bold">+</span>
+            <span>Lập khế ước</span>
+          </button>
+
           <button
             type="button"
             onClick={handleExportActivePortfolio}
-            className="bg-panel hover:bg-surface border border-line hover:border-accent text-ink text-xs px-3.5 py-2 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
+            className="bg-panel hover:bg-surface border border-line hover:border-accent text-ink text-xs px-3.5 py-1.5 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
             title="Xuất toàn bộ danh sách khách hàng đang vay kèm KUNN và TSBĐ ra file Excel"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-pos" />
-            <span>Xuất danh mục đang vay</span>
+            <span>Xuất Excel</span>
           </button>
 
           <button
             onClick={fetchDashboardData}
-            className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-2 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
+            className="bg-accent hover:opacity-90 text-accent-ink text-xs px-3.5 py-1.5 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
+            title="Cập nhật lại số liệu mới nhất"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Cập nhật số liệu</span>
+            <span>Làm mới</span>
           </button>
         </div>
       </div>
@@ -728,17 +755,11 @@ export const DashboardView: React.FC = () => {
         formatMoney={formatMoney}
       />
 
-      {/* 2. Tầng Cơ Cấu: Phân Bổ Phương Thức & Nhóm Nợ */}
-      <DashboardPortfolioStructure
-        cardBg={cardBg}
-        totalDebt={totalDebt}
-        loanMethodStats={loanMethodStats}
-        debtGroupStats={debtGroupStats}
-        formatMoney={formatMoney}
-      />
 
-      {/* 3. Tầng Tác Nghiệp: Khung Trung Tâm Cảnh Báo & Xử Lý Nợ Tập Trung */}
-      <div className="space-y-3.5">
+      {/* 2. Khung Tác Nghiệp 2 Cột (Executive Responsive 2-Column Grid theo Mockup) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* CỘT TRÁI (lg:col-span-7 xl:col-span-8): Trung Tâm Xử Lý Thu Nợ & Điểm Nóng Rủi Ro */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-4">
         {/* 3 Thẻ Điểm Nóng Rủi Ro Tương Tác (Quick-Action Filter Hotspots) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           {/* Hotspot 1: Quá hạn thu nợ */}
@@ -1079,9 +1100,156 @@ export const DashboardView: React.FC = () => {
               cardBg=""
               columns={tsbdColumns}
             />
-          )}
+          </div>
+        </div>
+
+        {/* CỘT PHẢI (lg:col-span-5 xl:col-span-4): Cảnh Báo HĐTD, Cơ Cấu Danh Mục & Lối Tắt */}
+        <div className="lg:col-span-5 xl:col-span-4 space-y-4">
+          {/* Card 1: Cảnh Báo Hết Hạn Hợp Đồng Tín Dụng */}
+          <div className={`${cardBg} rounded-2xl border border-line/70 bg-panel/80 backdrop-blur-md shadow-xs overflow-hidden`}>
+            <div className="p-3.5 px-4 border-b border-line/60 flex items-center justify-between bg-surface/40">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-warn" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-ink">
+                  Cảnh Báo Hết Hạn HĐTD
+                </h3>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-warn-soft text-warn border border-warn/30">
+                {dueHmtdList.length} HĐ cần xử lý
+              </span>
+            </div>
+            <div className="p-2.5 px-4 bg-surface/20 border-b border-line/40 text-[11px] text-ink-muted">
+              Cảnh báo trước 30 ngày để chủ động lập tờ trình tái cấp hoặc gia hạn.
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-line/60 bg-surface/50 text-[11px] text-ink-faint font-semibold">
+                    <th className="py-2 px-3">Khách Hàng / HĐTD</th>
+                    <th className="py-2 px-3 text-right">Hạn Mức</th>
+                    <th className="py-2 px-3 text-center">Hạn Còn</th>
+                    <th className="py-2 px-3 text-center">Xử Lý</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line/40">
+                  {dueHmtdList.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-6 text-center text-ink-faint text-xs">
+                        Không có HĐTD nào sắp hết hạn trong 30 ngày tới.
+                      </td>
+                    </tr>
+                  ) : (
+                    dueHmtdList.slice(0, 5).map((item) => {
+                      const dl = item.daysLeft ?? 0;
+                      return (
+                        <tr key={item.key} className="hover:bg-surface/50 transition-colors">
+                          <td className="py-2 px-3">
+                            <div className="font-bold text-ink truncate max-w-[130px]">
+                              {item.customer?.FullName || '—'}
+                            </div>
+                            <div className="font-mono text-[10px] text-ink-muted truncate max-w-[130px]">
+                              {item.masterNo || item.contract.ContractNumber}
+                            </div>
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono font-bold text-ink">
+                            {formatMoney(item.contract.ContractAmount || 0)}
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${dueBadgeClass(dl, 1)}`}>
+                              {dl < 0 ? `Trễ ${Math.abs(dl)}d` : `Còn ${dl}d`}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => navigate(customerPath('credit-contracts', item.contract.CustomerId))}
+                              className="px-2 py-0.5 rounded text-[10px] font-bold bg-panel hover:bg-surface border border-line text-accent cursor-pointer"
+                              title="Xem chi tiết HĐTD để tái cấp hoặc gia hạn"
+                            >
+                              Xử lý
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                  {/* DÒNG TỔNG CỘNG CHUẨN KẾ TOÁN (AGENTS.md) */}
+                  <tr className="bg-surface/60 font-bold border-t-2 border-line text-xs">
+                    <td className="py-2 px-3 uppercase tracking-wider text-[11px] text-ink">
+                      TỔNG HẠN MỨC
+                    </td>
+                    <td className="py-2 px-3 text-right font-mono text-accent">
+                      {formatMoney(
+                        dueHmtdList.reduce((s, i) => s + (i.contract.ContractAmount || 0), 0)
+                      )}
+                    </td>
+                    <td colSpan={2} className="py-2 px-3 text-[10px] text-ink-faint text-right">
+                      {dueHmtdList.length} HĐ
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Card 2: Phân Bổ Cơ Cấu Phương Thức & Nhóm Nợ */}
+          <DashboardPortfolioStructure
+            cardBg={cardBg}
+            totalDebt={totalDebt}
+            loanMethodStats={loanMethodStats}
+            debtGroupStats={debtGroupStats}
+            formatMoney={formatMoney}
+          />
+
+          {/* Card 3: Lối Tắt Tác Vụ Thường Dùng */}
+          <div className={`${cardBg} rounded-2xl border border-line/70 bg-panel/80 p-4 shadow-xs space-y-2.5`}>
+            <div className="flex items-center gap-2 pb-2 border-b border-line/60">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-ink">
+                Lối Tắt Tác Vụ Thường Dùng
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <button
+                type="button"
+                onClick={() => navigate(ROUTE_OF.customers)}
+                className="w-full flex items-center justify-between p-2.5 px-3 rounded-xl bg-surface/60 hover:bg-surface border border-line hover:border-accent text-xs font-semibold text-ink transition-all cursor-pointer group"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-accent font-bold">+</span>
+                  <span>Thêm khách hàng mới</span>
+                </span>
+                <span className="text-[10px] font-mono text-ink-faint group-hover:text-accent">CIF →</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate(ROUTE_OF.loans)}
+                className="w-full flex items-center justify-between p-2.5 px-3 rounded-xl bg-surface/60 hover:bg-surface border border-line hover:border-accent text-xs font-semibold text-ink transition-all cursor-pointer group"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-accent font-bold">+</span>
+                  <span>Lập khế ước giải ngân</span>
+                </span>
+                <span className="text-[10px] font-mono text-ink-faint group-hover:text-accent">KUNN →</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate(ROUTE_OF['business-plan'])}
+                className="w-full flex items-center justify-between p-2.5 px-3 rounded-xl bg-surface/60 hover:bg-surface border border-line hover:border-accent text-xs font-semibold text-ink transition-all cursor-pointer group"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="text-accent font-bold">+</span>
+                  <span>Thẩm định phương án kinh doanh</span>
+                </span>
+                <span className="text-[10px] font-mono text-ink-faint group-hover:text-accent">TT39 →</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

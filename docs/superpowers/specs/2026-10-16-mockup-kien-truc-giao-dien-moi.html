@@ -1,0 +1,2041 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mockup Kiến Trúc Giao Diện & Quy Hoạch Chức Năng Mới — CustomerManager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Elevation & Tone Palette (Fintech Executive Grayscale / Slate) */
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-subtle: #f1f5f9;
+      --surface-card: #ffffff;
+      --line: #cbd5e1;
+      --line-subtle: #e2e8f0;
+      --fg: #0f172a;
+      --fg-muted: #475569;
+      --fg-subtle: #94a3b8;
+      
+      /* Primary Command Rail (Deep Obsidian Navy for Elite Enterprise Contrast) */
+      --rail-bg: #0b1120;
+      --rail-border: #1e293b;
+      --rail-fg: #94a3b8;
+      --rail-hover: rgba(255, 255, 255, 0.08);
+      --rail-active-bg: rgba(2, 132, 199, 0.18);
+      --rail-active-fg: #38bdf8;
+      
+      /* Brand Accents */
+      --primary: #0284c7;
+      --primary-soft: #e0f2fe;
+      --primary-dark: #0369a1;
+      --accent: #0f172a;
+      --accent-fg: #ffffff;
+      
+      /* Status Semantics */
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --warning: #d97706;
+      --warning-bg: #fffbeb;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      
+      /* Typography & Shadows */
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+      --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+      
+      --rail-w: 68px;
+      --sidebar-w: 240px;
+      --header-h: 56px;
+    }
+
+    .tone-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    /* ========================================================================= */
+    /* TONE 1: MODERN SLATE (FINTECH EXECUTIVE — MẶC ĐỊNH) */
+    /* ========================================================================= */
+    [data-tone="slate"], :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-subtle: #f1f5f9;
+      --surface-card: #ffffff;
+      --line: #cbd5e1;
+      --line-subtle: #e2e8f0;
+      --fg: #0f172a;
+      --fg-muted: #475569;
+      --fg-subtle: #94a3b8;
+      --rail-bg: #0b1120;
+      --rail-border: #1e293b;
+      --rail-fg: #94a3b8;
+      --rail-hover: rgba(255, 255, 255, 0.08);
+      --rail-active-bg: rgba(2, 132, 199, 0.2);
+      --rail-active-fg: #38bdf8;
+      --primary: #0284c7;
+      --primary-soft: #e0f2fe;
+      --primary-dark: #0369a1;
+      --accent: #0f172a;
+      --accent-fg: #ffffff;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --warning: #d97706;
+      --warning-bg: #fffbeb;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      color-scheme: light;
+    }
+
+    /* ========================================================================= */
+    /* TONE 2: SWISS MINIMAL (PRIVATE WEALTH / MONOCHROME LUXURY) */
+    /* ========================================================================= */
+    [data-tone="swiss"] {
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --surface-subtle: #f4f4f5;
+      --surface-card: #ffffff;
+      --line: #d4d4d8;
+      --line-subtle: #e4e4e7;
+      --fg: #18181b;
+      --fg-muted: #52525b;
+      --fg-subtle: #a1a1aa;
+      --rail-bg: #18181b;
+      --rail-border: #27272a;
+      --rail-fg: #a1a1aa;
+      --rail-hover: rgba(255, 255, 255, 0.08);
+      --rail-active-bg: rgba(255, 255, 255, 0.14);
+      --rail-active-fg: #ffffff;
+      --primary: #18181b;
+      --primary-soft: #f4f4f5;
+      --primary-dark: #09090b;
+      --accent: #18181b;
+      --accent-fg: #ffffff;
+      --success: #15803d;
+      --success-bg: #f0fdf4;
+      --warning: #b45309;
+      --warning-bg: #fefce8;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      color-scheme: light;
+    }
+    [data-tone="swiss"] .rail-item.active::before {
+      background: #ffffff !important;
+      box-shadow: 0 0 8px #ffffff !important;
+    }
+    [data-tone="swiss"] .rail-item.active {
+      color: #ffffff !important;
+      border-color: rgba(255, 255, 255, 0.25) !important;
+    }
+    [data-tone="swiss"] .rail-item.special-home svg {
+      color: #ffffff !important;
+    }
+    [data-tone="swiss"] .brand-logo-pill {
+      background: #18181b !important;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+    }
+    [data-tone="swiss"] .customer-avatar {
+      background: #18181b !important;
+    }
+    [data-tone="swiss"] .drawer-link.active {
+      background: #f4f4f5 !important;
+      color: #18181b !important;
+      border-color: #d4d4d8 !important;
+    }
+    [data-tone="swiss"] .kpi-meter-fill {
+      background: #18181b !important;
+    }
+
+    /* ========================================================================= */
+    /* TONE 3: HERITAGE NAVY (BIG4 NGÂN HÀNG / STANDARD CHARTERED) */
+    /* ========================================================================= */
+    [data-tone="heritage"] {
+      --bg: #f3f5f8;
+      --surface: #ffffff;
+      --surface-subtle: #e9eff7;
+      --surface-card: #ffffff;
+      --line: #c4d1e3;
+      --line-subtle: #dbe4ef;
+      --fg: #0d1e36;
+      --fg-muted: #3a4d66;
+      --fg-subtle: #798da6;
+      --rail-bg: #091f38;
+      --rail-border: #133358;
+      --rail-fg: #8ea7c5;
+      --rail-hover: rgba(255, 255, 255, 0.1);
+      --rail-active-bg: rgba(14, 165, 233, 0.22);
+      --rail-active-fg: #38bdf8;
+      --primary: #0052cc;
+      --primary-soft: #e5edfa;
+      --primary-dark: #0747a6;
+      --accent: #091f38;
+      --accent-fg: #ffffff;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --warning: #d97706;
+      --warning-bg: #fffbeb;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      color-scheme: light;
+    }
+    [data-tone="heritage"] .brand-logo-pill {
+      background: linear-gradient(135deg, #0052cc 0%, #091f38 100%) !important;
+      box-shadow: 0 2px 5px rgba(0, 82, 204, 0.35) !important;
+    }
+    [data-tone="heritage"] .customer-avatar {
+      background: linear-gradient(135deg, #0052cc 0%, #0747a6 100%) !important;
+    }
+    [data-tone="heritage"] .rail-item.special-home svg {
+      color: #38bdf8 !important;
+    }
+
+    /* ========================================================================= */
+    /* TONE 4: OBSIDIAN TERMINAL (BLOOMBERG PRO / DARK MODE CHUYÊN SÂU) */
+    /* ========================================================================= */
+    [data-tone="terminal"] {
+      --bg: #030712;
+      --surface: #0b0f19;
+      --surface-subtle: #111827;
+      --surface-card: #0b0f19;
+      --line: #1f293d;
+      --line-subtle: #162032;
+      --fg: #f3f4f6;
+      --fg-muted: #9ca3af;
+      --fg-subtle: #6b7280;
+      --rail-bg: #02040a;
+      --rail-border: #111827;
+      --rail-fg: #6b7280;
+      --rail-hover: rgba(255, 255, 255, 0.08);
+      --rail-active-bg: rgba(56, 189, 248, 0.2);
+      --rail-active-fg: #38bdf8;
+      --primary: #38bdf8;
+      --primary-soft: #082f49;
+      --primary-dark: #0284c7;
+      --accent: #f3f4f6;
+      --accent-fg: #0b0f19;
+      --success: #34d399;
+      --success-bg: #064e3b;
+      --warning: #fbbf24;
+      --warning-bg: #78350f;
+      --danger: #f87171;
+      --danger-bg: #7f1d1d;
+      color-scheme: dark;
+    }
+    [data-tone="terminal"] .card {
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
+    }
+    [data-tone="terminal"] .brand-logo-pill {
+      background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%) !important;
+      color: #0b0f19 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.4) !important;
+    }
+    [data-tone="terminal"] .customer-avatar {
+      background: #38bdf8 !important;
+      color: #0b0f19 !important;
+    }
+    [data-tone="terminal"] .rail-item.special-home svg {
+      color: #38bdf8 !important;
+    }
+
+    /* ========================================================================= */
+    /* TONE 5: EMERALD WEALTH (PRIVATE BANKING / QUẢN LÝ GIA SẢN ĐẲNG CẤP) */
+    /* ========================================================================= */
+    [data-tone="emerald"] {
+      --bg: #f3f7f5;
+      --surface: #ffffff;
+      --surface-subtle: #e6f0eb;
+      --surface-card: #ffffff;
+      --line: #bfdacb;
+      --line-subtle: #daebe1;
+      --fg: #0d281e;
+      --fg-muted: #275240;
+      --fg-subtle: #5f8674;
+      --rail-bg: #062317;
+      --rail-border: #0f3827;
+      --rail-fg: #7ea894;
+      --rail-hover: rgba(255, 255, 255, 0.08);
+      --rail-active-bg: rgba(16, 185, 129, 0.22);
+      --rail-active-fg: #34d399;
+      --primary: #059669;
+      --primary-soft: #d1fae5;
+      --primary-dark: #047857;
+      --accent: #062317;
+      --accent-fg: #ffffff;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --warning: #d97706;
+      --warning-bg: #fffbeb;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      color-scheme: light;
+    }
+    [data-tone="emerald"] .brand-logo-pill {
+      background: linear-gradient(135deg, #059669 0%, #062317 100%) !important;
+      box-shadow: 0 2px 5px rgba(5, 150, 105, 0.35) !important;
+    }
+    [data-tone="emerald"] .customer-avatar {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    }
+    [data-tone="emerald"] .rail-item.special-home svg {
+      color: #34d399 !important;
+    }
+    [data-tone="emerald"] .kpi-meter-fill {
+      background: #059669 !important;
+    }
+
+    /* ========================================================================= */
+    /* TONE 6: WARM PAPER (NOTION CALM / VĂN BẢN KEM CHỐNG MỎI MẮT) */
+    /* ========================================================================= */
+    [data-tone="warm"] {
+      --bg: #f9f6f0;
+      --surface: #ffffff;
+      --surface-subtle: #f2eee5;
+      --surface-card: #ffffff;
+      --line: #ded7c8;
+      --line-subtle: #ece6da;
+      --fg: #2c2520;
+      --fg-muted: #5e5349;
+      --fg-subtle: #8e8073;
+      --rail-bg: #231f1c;
+      --rail-border: #38322e;
+      --rail-fg: #a19588;
+      --rail-hover: rgba(255, 255, 255, 0.08);
+      --rail-active-bg: rgba(180, 83, 9, 0.22);
+      --rail-active-fg: #f59e0b;
+      --primary: #b45309;
+      --primary-soft: #fef3c7;
+      --primary-dark: #92400e;
+      --accent: #231f1c;
+      --accent-fg: #ffffff;
+      --success: #15803d;
+      --success-bg: #f0fdf4;
+      --warning: #b45309;
+      --warning-bg: #fffbeb;
+      --danger: #b91c1c;
+      --danger-bg: #fef2f2;
+      color-scheme: light;
+    }
+    [data-tone="warm"] .brand-logo-pill {
+      background: linear-gradient(135deg, #b45309 0%, #231f1c 100%) !important;
+      box-shadow: 0 2px 5px rgba(180, 83, 9, 0.35) !important;
+    }
+    [data-tone="warm"] .customer-avatar {
+      background: linear-gradient(135deg, #b45309 0%, #78350f 100%) !important;
+    }
+    [data-tone="warm"] .rail-item.special-home svg {
+      color: #f59e0b !important;
+    }
+    [data-tone="warm"] .kpi-meter-fill {
+      background: #b45309 !important;
+    }
+
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.45;
+      font-size: 13.5px;
+      overflow-x: hidden;
+      letter-spacing: -0.01em;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Control Bar */
+    .top-control {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line-subtle);
+      padding: 8px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+    .top-control .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 13.5px;
+      letter-spacing: 0.04em;
+    }
+    .brand-logo-pill {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--surface-subtle);
+      border: 1px solid var(--line-subtle);
+      color: var(--fg-muted);
+      line-height: 1.2;
+    }
+    .badge.primary { background: var(--primary-soft); color: var(--primary); border-color: transparent; }
+    .badge.success { background: var(--success-bg); color: var(--success); border-color: transparent; }
+    .badge.warning { background: var(--warning-bg); color: var(--warning); border-color: transparent; }
+    .badge.danger { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+
+    /* Status Pill with Glow Dot */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .status-pill.warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .status-pill.warning .status-dot {
+      background: #d97706;
+      box-shadow: 0 0 5px rgba(217, 119, 6, 0.6);
+    }
+    .status-pill.danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .status-pill.danger .status-dot {
+      background: #dc2626;
+      box-shadow: 0 0 5px rgba(220, 38, 38, 0.6);
+    }
+    .status-pill.success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .status-pill.success .status-dot {
+      background: #10b981;
+      box-shadow: 0 0 5px rgba(16, 185, 129, 0.6);
+    }
+    .status-pill.neutral {
+      background: var(--surface-subtle);
+      color: var(--fg-muted);
+      border: 1px solid var(--line-subtle);
+    }
+    .status-pill.neutral .status-dot {
+      background: var(--fg-subtle);
+    }
+
+    .segmented {
+      display: inline-flex;
+      background: var(--surface-subtle);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--line-subtle);
+      gap: 3px;
+    }
+    .segmented button {
+      border: none;
+      background: transparent;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--fg-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .segmented button:hover {
+      color: var(--fg);
+    }
+    .segmented button.active {
+      background: var(--surface);
+      color: var(--fg);
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--fg);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      box-shadow: var(--shadow-xs);
+    }
+    .btn:hover {
+      background: var(--surface-subtle);
+      border-color: var(--fg-subtle);
+      transform: translateY(-1px);
+    }
+    .btn.primary {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #ffffff;
+      border-color: #0f172a;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+    .btn.primary:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.3);
+    }
+
+    /* App Shell Container */
+    .app-shell {
+      height: calc(100vh - 49px);
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Option 1: Rail + Contextual Drawer Layout */
+    .rail {
+      width: var(--rail-w);
+      background: var(--rail-bg);
+      border-right: 1px solid var(--rail-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 0 14px;
+      gap: 5px;
+      z-index: 30;
+      flex-shrink: 0;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+    }
+    .rail-item {
+      width: 54px;
+      height: 52px;
+      border-radius: 9px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      color: #94a3b8;
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .rail-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f1f5f9;
+      transform: translateY(-1px);
+    }
+    .rail-item.active {
+      background: rgba(2, 132, 199, 0.2);
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.35);
+      font-weight: 600;
+    }
+    .rail-item.active::before {
+      content: "";
+      position: absolute;
+      left: -7px;
+      top: 10px;
+      bottom: 10px;
+      width: 3.5px;
+      border-radius: 0 3px 3px 0;
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+    }
+    .rail-item.special-home {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 6px;
+      height: 54px;
+    }
+    .rail-item.special-home.active {
+      background: rgba(2, 132, 199, 0.25);
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+    .rail-item.special-home svg {
+      color: #38bdf8 !important;
+    }
+    .rail-label {
+      font-size: 10px;
+      line-height: 1;
+      text-align: center;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .rail-spacer { flex: 1; }
+
+    /* Sub-nav Drawer (Col 2) */
+    .drawer-nav {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--line-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+      transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .drawer-nav.collapsed {
+      width: 0;
+      border-right: none;
+      overflow: hidden;
+    }
+    .drawer-header {
+      padding: 15px 16px 11px;
+      border-bottom: 1px solid var(--line-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .drawer-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--fg-muted);
+    }
+    .drawer-group {
+      padding: 8px 10px;
+    }
+    .drawer-group-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--fg-subtle);
+      padding: 7px 8px 4px;
+    }
+    .drawer-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      color: var(--fg);
+      text-decoration: none;
+      cursor: pointer;
+      margin-bottom: 2px;
+      border: 1px solid transparent;
+      transition: all 0.12s;
+    }
+    .drawer-link:hover {
+      background: var(--surface-subtle);
+      color: var(--fg);
+      transform: translateX(1px);
+    }
+    .drawer-link.active {
+      background: var(--primary-soft);
+      font-weight: 600;
+      color: var(--primary-dark);
+      border-color: rgba(2, 132, 199, 0.2);
+    }
+    .drawer-link .lead {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .drawer-link .count {
+      font-size: 11px;
+      color: var(--fg-muted);
+      font-family: var(--mono);
+      background: var(--surface);
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--line-subtle);
+    }
+    .drawer-link.active .count {
+      background: #ffffff;
+      border-color: rgba(2, 132, 199, 0.3);
+      color: var(--primary);
+    }
+
+    /* Main Workspace */
+    .main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    /* Top App Header */
+    .app-header {
+      height: var(--header-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--line-subtle);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+    }
+    .breadcrumbs span.sep { color: var(--fg-subtle); font-size: 10px; }
+    .breadcrumbs span.current { font-weight: 600; color: var(--fg); }
+
+    /* Customer Context Capsule (Fintech Elevated) */
+    .customer-context-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--line-subtle);
+      border-radius: 28px;
+      padding: 4px 12px 4px 6px;
+      font-size: 12px;
+      transition: all 0.15s ease;
+    }
+    .customer-context-pill:hover {
+      border-color: var(--line);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .customer-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: -0.02em;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+    }
+    .customer-context-pill b { color: var(--fg); }
+    .customer-context-pill .cif { font-family: var(--mono); color: var(--fg-muted); font-size: 11px; }
+
+    /* Quick Search Bar */
+    .search-mock {
+      background: var(--surface-subtle);
+      border: 1px solid var(--line-subtle);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--fg-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 240px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .search-mock:hover {
+      background: var(--surface);
+      border-color: var(--line);
+      box-shadow: var(--shadow-xs);
+    }
+    .kbd {
+      font-family: var(--mono);
+      font-size: 10px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 1px 5px;
+      color: var(--fg-muted);
+      margin-left: auto;
+      font-weight: 600;
+    }
+
+    /* Content Pane */
+    .content-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Card Panels */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .card-head {
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--line-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+    }
+    .card-head h3 {
+      font-size: 13.5px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+    .card-body {
+      padding: 18px;
+    }
+
+    /* KPI Cards Row for Dashboard (Executive Polish) */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+      gap: 12px;
+    }
+    .kpi-box {
+      background: var(--surface);
+      border: 1px solid var(--line-subtle);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: var(--shadow-xs);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-box:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--line);
+    }
+    .kpi-box::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: transparent;
+    }
+    .kpi-box.accent-blue::before { background: var(--primary); }
+    .kpi-box.accent-green::before { background: #10b981; }
+    .kpi-box.accent-indigo::before { background: #6366f1; }
+    .kpi-box.accent-amber::before { background: #f59e0b; }
+    
+    .kpi-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .kpi-box .kpi-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .kpi-icon-pill {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .kpi-icon-pill.blue { background: rgba(2, 132, 199, 0.1); color: var(--primary); }
+    .kpi-icon-pill.green { background: rgba(16, 185, 129, 0.1); color: #059669; }
+    .kpi-icon-pill.indigo { background: rgba(99, 102, 241, 0.1); color: #4f46e5; }
+    .kpi-icon-pill.amber { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+    .kpi-icon-pill svg { width: 14px; height: 14px; }
+
+    .kpi-box .kpi-val {
+      font-size: 21px;
+      font-weight: 700;
+      font-family: var(--font);
+      letter-spacing: -0.02em;
+      color: var(--fg);
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+    .kpi-box .kpi-val .curr {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--fg-muted);
+    }
+    .kpi-box .kpi-sub {
+      font-size: 11.5px;
+      color: var(--fg-muted);
+      line-height: 1.35;
+    }
+    .kpi-meter {
+      width: 100%;
+      height: 3.5px;
+      border-radius: 2px;
+      background: var(--surface-subtle);
+      overflow: hidden;
+      margin: 2px 0;
+    }
+    .kpi-meter-fill {
+      height: 100%;
+      border-radius: 2px;
+    }
+
+    /* Grid of Features / Tasks */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--line-subtle);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.16s ease;
+      cursor: pointer;
+      box-shadow: var(--shadow-xs);
+    }
+    .feature-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .feature-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .feature-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
+      background: var(--surface-subtle);
+      border: 1px solid var(--line-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+    .feature-name {
+      font-weight: 600;
+      font-size: 12.5px;
+      color: var(--fg);
+    }
+    .feature-desc {
+      font-size: 11.5px;
+      color: var(--fg-muted);
+      line-height: 1.45;
+    }
+    .feature-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: auto;
+    }
+    .feature-tag {
+      font-size: 10.5px;
+      background: var(--surface-subtle);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--fg-muted);
+      border: 1px solid var(--line-subtle);
+    }
+
+    /* Comparison Table */
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    .matrix-table th, .matrix-table td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--line-subtle);
+      text-align: left;
+    }
+    .matrix-table th {
+      background: var(--surface-subtle);
+      font-weight: 600;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--fg-muted);
+    }
+    .matrix-table tr:hover td {
+      background: var(--surface-subtle);
+    }
+
+    /* Mode B: Top Workspace Nav */
+    .top-workspace-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line-subtle);
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      overflow-x: auto;
+    }
+    .workspace-tab {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 12px 6px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--fg-muted);
+      border-bottom: 2.5px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .workspace-tab:hover { color: var(--fg); }
+    .workspace-tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Lifecycle Stepper (Quy trình hồ sơ tín dụng) */
+    .stepper {
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--line-subtle);
+      border-radius: 8px;
+      overflow-x: auto;
+      padding: 6px 8px;
+      gap: 6px;
+      box-shadow: var(--shadow-xs);
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 11px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      color: var(--fg-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.12s;
+    }
+    .step-item:hover { background: var(--surface-subtle); color: var(--fg); }
+    .step-item.active {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-weight: 600;
+    }
+    .step-num {
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: var(--surface-subtle);
+      border: 1px solid var(--line-subtle);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .step-item.active .step-num {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .step-arrow { color: var(--fg-subtle); font-size: 10px; }
+
+    /* Due & Alert Rows on Dashboard */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      font-feature-settings: "tnum" 1, "cv02" 1;
+    }
+    .data-table th, .data-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line-subtle);
+      text-align: left;
+    }
+    .data-table th {
+      background: var(--surface-subtle);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--fg-muted);
+    }
+    .data-table tr:hover td {
+      background: var(--surface-subtle);
+    }
+    .data-table .num {
+      font-family: var(--font);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    /* Hide / Show Views */
+    .view-container { display: none; }
+    .view-container.active { display: flex; flex-direction: column; flex: 1; }
+
+    .info-callout {
+      background: var(--primary-soft);
+      border: 1px solid rgba(2, 132, 199, 0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--fg);
+    }
+    .info-callout b { color: var(--primary-dark); }
+
+    /* Icons SVG helpers */
+    svg.icon {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Control Bar (Xem trước & Chuyển đổi phương án) -->
+  <div class="top-control">
+    <div class="brand">
+      <div class="brand-logo-pill">
+        <svg class="icon" style="color: #fff; width: 15px; height: 15px;" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+      </div>
+      <span>CustomerManager</span>
+      <span class="badge primary">Quy Hoạch Giao Diện 2026</span>
+    </div>
+
+    <!-- Switcher giữa 3 phương án -->
+    <div class="segmented" id="layoutSwitcher">
+      <button type="button" class="active" onclick="switchLayout('option1')">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+        <span>Phương án 1: Primary Rail + Drawer (Khuyên Dùng)</span>
+      </button>
+      <button type="button" onclick="switchLayout('option2')">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
+        <span>Phương án 2: Top Workspace Tabs</span>
+      </button>
+      <button type="button" onclick="switchLayout('compare')">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+        <span>Bảng So Sánh Trước vs Sau</span>
+      </button>
+    </div>
+
+    <!-- Tone Selector (6 Phong Cách Thiết Kế Ngân Hàng & Tài Chính Cao Cấp) -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 11px; font-weight: 700; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.05em;">Tone:</span>
+      <div class="segmented" id="toneSwitcher">
+        <button type="button" class="active" onclick="switchTone('slate')" title="Tone 1: Modern Slate (Fintech Stripe / Linear)">
+          <span class="tone-dot" style="background: #0284c7;"></span>
+          <span>Slate</span>
+        </button>
+        <button type="button" onclick="switchTone('swiss')" title="Tone 2: Swiss Minimal (Tối Giản Đơn Sắc Thụy Sĩ)">
+          <span class="tone-dot" style="background: #18181b;"></span>
+          <span>Swiss</span>
+        </button>
+        <button type="button" onclick="switchTone('heritage')" title="Tone 3: Heritage Navy (Big4 Ngân Hàng VCB / BIDV)">
+          <span class="tone-dot" style="background: #0052cc;"></span>
+          <span>Navy</span>
+        </button>
+        <button type="button" onclick="switchTone('emerald')" title="Tone 4: Emerald Wealth (Ngọc Lục Bảo Private Banking)">
+          <span class="tone-dot" style="background: #059669;"></span>
+          <span>Emerald</span>
+        </button>
+        <button type="button" onclick="switchTone('warm')" title="Tone 5: Warm Paper (Giấy Kem Dịu Mắt Bàn Giấy)">
+          <span class="tone-dot" style="background: #b45309;"></span>
+          <span>Warm Paper</span>
+        </button>
+        <button type="button" onclick="switchTone('terminal')" title="Tone 6: Obsidian Terminal (Bloomberg Pro Đêm)">
+          <span class="tone-dot" style="background: #38bdf8;"></span>
+          <span>Terminal</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 1: PHƯƠNG ÁN 1 (PRIMARY RAIL + DRAWER) -->
+  <!-- ========================================================================= -->
+  <div id="viewOption1" class="view-container active">
+    <div class="app-shell">
+      <!-- 1. Primary Command Rail (68px) -->
+      <nav class="rail" aria-label="Main Navigation Rail">
+        
+        <!-- VỊ TRÍ SỐ 1: DASHBOARD / TỔNG QUAN HỆ THỐNG -->
+        <button class="rail-item special-home active" onclick="switchRail('overview', this)" title="0. Dashboard Tổng Quan & Bàn Làm Việc (Mặc Định)">
+          <svg class="icon" style="width: 20px; height: 20px; color: var(--primary);" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          <span class="rail-label" style="font-weight: 700; color: var(--primary);">Dashboard</span>
+        </button>
+
+        <!-- 5 TRỤ CỘT NGHIỆP VỤ -->
+        <button class="rail-item" onclick="switchRail('credit', this)" title="1. Quản lý Khách hàng & Hồ sơ tín dụng">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="rail-label">Tín dụng</span>
+        </button>
+
+        <button class="rail-item" onclick="switchRail('finance', this)" title="2. BCTC, Phân tích & Thẩm định tài chính">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span class="rail-label">Tài chính</span>
+        </button>
+
+        <button class="rail-item" onclick="switchRail('dossier', this)" title="3. Văn thư, Mẫu biểu & Kho lưu trữ">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span class="rail-label">Văn thư/Kho</span>
+        </button>
+
+        <button class="rail-item" onclick="switchRail('tools', this)" title="4. Dự toán, Bán lẻ & Công cụ phụ trợ">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span class="rail-label">Dự toán/Kho</span>
+        </button>
+
+        <button class="rail-item" onclick="switchRail('reference', this)" title="5. Tra cứu quy định, Lãi suất & Ôn tập">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span class="rail-label">Tra cứu</span>
+        </button>
+
+        <div class="rail-spacer"></div>
+
+        <button class="rail-item" onclick="switchRail('system', this)" title="Quản trị người dùng & Cài đặt hệ thống">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span class="rail-label">Cài đặt</span>
+        </button>
+      </nav>
+
+      <!-- 2. Sub-navigation Drawer (Theo ngữ cảnh nhóm đang chọn) -->
+      <aside class="drawer-nav" id="drawerNav" aria-label="Contextual Sub-Navigation">
+        <div class="drawer-header">
+          <span class="drawer-title" id="drawerTitle">DASHBOARD TỔNG QUAN</span>
+          <button type="button" class="btn" style="padding: 2px 6px; font-size: 11px;" onclick="toggleDrawer()" title="Ẩn/hiện thanh này">
+            <svg class="icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+        </div>
+
+        <div id="drawerContent">
+          <!-- Sẽ được nạp động theo rail được chọn -->
+        </div>
+      </aside>
+
+      <!-- 3. Workspace Body -->
+      <main class="main-area">
+        <!-- App Header -->
+        <div class="app-header">
+          <div class="breadcrumbs">
+            <button type="button" class="btn" style="padding: 4px 8px; margin-right: 4px;" onclick="toggleDrawer()">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <span id="breadcrumbSection">Tổng Quan & Bàn Làm Việc</span>
+            <span class="sep">/</span>
+            <span class="current" id="breadcrumbPage">Bảng Tin KPIs & Lịch Thu Nợ</span>
+          </div>
+
+          <!-- Customer Context Badge (Elevated Fintech Capsule) -->
+          <div class="customer-context-pill" id="customerPill">
+            <div class="customer-avatar">NH</div>
+            <div style="display: flex; flex-direction: column; line-height: 1.25;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: 700; color: var(--fg); font-size: 12.5px;">Công ty Cổ phần Thép Nam Hà</span>
+                <span class="badge" style="font-size: 9.5px; padding: 1px 5px; font-weight: 700; background: var(--primary-soft); color: var(--primary-dark); border: none;">VIP</span>
+              </div>
+              <span class="cif" style="font-size: 10.5px;">CIF: 28489102 • Nhóm 1 (Đủ tiêu chuẩn)</span>
+            </div>
+            <button type="button" class="btn" style="padding: 2px 8px; font-size: 11px; margin-left: 6px; border-radius: 12px;" onclick="alert('Đổi khách hàng đang tác nghiệp')">Đổi</button>
+          </div>
+
+          <!-- Quick Search & Actions -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="search-mock" onclick="alert('Mở hộp thoại Tìm kiếm nhanh toàn hệ thống (Ctrl + K)')">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span>Tìm khách hàng, số HĐ, công văn...</span>
+              <span class="kbd">⌘K</span>
+            </div>
+
+            <button type="button" class="btn primary" onclick="alert('Mở Trợ lý AI phân tích số liệu trực tiếp')">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              <span>Trợ lý AI</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="content-body" id="mainWorkspaceContent">
+          <!-- Lifecycle Stepper (chỉ hiện khi xem Tín dụng) -->
+          <div class="stepper" id="lifecycleStepper" style="display: none;">
+            <div class="step-item active">
+              <span class="step-num">1</span>
+              <span>Hồ Sơ CIF</span>
+            </div>
+            <span class="step-arrow">→</span>
+            <div class="step-item">
+              <span class="step-num">2</span>
+              <span>Hợp Đồng Tín Dụng</span>
+            </div>
+            <span class="step-arrow">→</span>
+            <div class="step-item">
+              <span class="step-num">3</span>
+              <span>Tài Sản & HĐTC</span>
+            </div>
+            <span class="step-arrow">→</span>
+            <div class="step-item">
+              <span class="step-num">4</span>
+              <span>Giải Ngân (KUNN)</span>
+            </div>
+            <span class="step-arrow">→</span>
+            <div class="step-item">
+              <span class="step-num">5</span>
+              <span>Thẻ Tín Dụng</span>
+            </div>
+            <span class="step-arrow">→</span>
+            <div class="step-item">
+              <span class="step-num">6</span>
+              <span>Kiểm Soát Sau Vay</span>
+            </div>
+          </div>
+
+          <!-- Dynamic Body Content -->
+          <div id="dynamicBody">
+            <!-- Nạp động: nếu là overview thì hiện Dashboard View, nếu là nhóm khác thì hiện Cards/List -->
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 2: PHƯƠNG ÁN 2 (TOP WORKSPACE TABS) -->
+  <!-- ========================================================================= -->
+  <div id="viewOption2" class="view-container">
+    <div style="background: var(--surface); border-bottom: 1px solid var(--line);">
+      <!-- Top Workspace Tabs Bar: Dashboard nằm vị trí đầu tiên -->
+      <div class="top-workspace-bar">
+        <div class="workspace-tab active" onclick="switchTopTab('dash-w', this)">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>📊 Dashboard Tổng Quan</span>
+        </div>
+        <div class="workspace-tab" onclick="switchTopTab('credit-w', this)">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <span>1. Tín Dụng & Khách Hàng</span>
+        </div>
+        <div class="workspace-tab" onclick="switchTopTab('finance-w', this)">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>2. Thẩm Định & Phân Tích BCTC</span>
+        </div>
+        <div class="workspace-tab" onclick="switchTopTab('dossier-w', this)">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span>3. Văn Thư & Kho Hồ Sơ</span>
+        </div>
+        <div class="workspace-tab" onclick="switchTopTab('retail-w', this)">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/></svg>
+          <span>4. Dự Toán & Thương Mại</span>
+        </div>
+        <div class="workspace-tab" onclick="switchTopTab('ref-w', this)">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span>5. Tra Cứu & Quản Trị</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inner Content with classic slim sidebar -->
+    <div class="app-shell" style="height: calc(100vh - 98px);">
+      <aside class="drawer-nav" style="width: 220px;">
+        <div class="drawer-header">
+          <span class="drawer-title">BÀN LÀM VIỆC TỔNG QUAN</span>
+        </div>
+        <div class="drawer-group">
+          <div class="drawer-group-title">Theo dõi & Thống kê</div>
+          <div class="drawer-link active"><div class="lead"><span>Bảng tin KPIs tổng hợp</span></div><span class="count">Live</span></div>
+          <div class="drawer-link"><div class="lead"><span>Lịch thu nợ kỳ này</span></div><span class="count">12</span></div>
+          <div class="drawer-link"><div class="lead"><span>Cảnh báo hết hạn HĐTD</span></div><span class="badge warning" style="font-size: 10px;">4 HĐ</span></div>
+          <div class="drawer-link"><div class="lead"><span>Danh mục nợ nhóm 2+</span></div><span class="badge danger" style="font-size: 10px;">1 KH</span></div>
+
+          <div class="drawer-group-title" style="margin-top: 10px;">Lối tắt tác vụ nhanh</div>
+          <div class="drawer-link"><div class="lead"><span>Thêm khách hàng mới</span></div></div>
+          <div class="drawer-link"><div class="lead"><span>Tạo khế ước giải ngân</span></div></div>
+          <div class="drawer-link"><div class="lead"><span>Soạn hợp đồng mẫu</span></div></div>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <div class="app-header">
+          <div class="breadcrumbs">
+            <span>Bàn làm việc Tổng quan</span>
+            <span class="sep">/</span>
+            <span class="current">Bảng Tin KPIs & Lịch Thu Nợ</span>
+          </div>
+          <button type="button" class="btn primary">Xuất Báo Cáo Excel</button>
+        </div>
+        <div class="content-body">
+          <div class="info-callout">
+            <b>💡 Đặc điểm Phương án 2 (Top Workspace):</b>
+            Tab Dashboard luôn nằm ở vị trí số 1 ngay trên đỉnh. Cán bộ vừa đăng nhập là thấy ngay toàn cảnh dư nợ và việc cần làm hôm nay, sau đó mới bấm chuyển sang các phân hệ chuyên môn (Tín dụng, BCTC, Văn thư...).
+          </div>
+          <div id="option2DynamicBody" style="margin-top: 14px;"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- VIEW 3: BẢNG SO SÁNH TRƯỚC VS SAU (BEFORE VS AFTER MATRIX) -->
+  <!-- ========================================================================= -->
+  <div id="viewCompare" class="view-container">
+    <div style="max-width: 1100px; margin: 20px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 20px;">
+      
+      <div>
+        <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">Bảng So Sánh Kiến Trúc Thông Tin & Quy Hoạch Chức Năng</h2>
+        <p style="color: var(--fg-muted); font-size: 13px;">Giải quyết triệt để tình trạng người dùng cảm thấy "khá là rối khi có quá nhiều chức năng", đồng thời bảo đảm <b>Dashboard luôn là Bàn Làm Việc Trung Tâm</b>.</p>
+      </div>
+
+      <div class="card">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th style="width: 22%;">Tiêu Chí Đánh Giá</th>
+              <th style="width: 39%; color: var(--danger);">Hiện Tại (Cũ — Gây Rối Rắm)</th>
+              <th style="width: 39%; color: var(--success);">Quy Hoạch Mới (Đề Xuất)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Vị trí Dashboard Tổng Quan</b></td>
+              <td>
+                Nằm chung danh sách 17 mục ở Sidebar, cạnh Hub và Khách hàng; dễ bị chìm và nhầm lẫn với Hub.
+              </td>
+              <td>
+                <span class="badge primary">Vị trí số 1 trang trọng nhất</span><br>
+                Được đặt riêng ở đỉnh Command Rail hoặc Tab số 1. Luôn mở đầu tiên khi vào ứng dụng.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Cách tiếp cận chức năng</b></td>
+              <td>
+                <span class="badge danger">Nghịch lý 2 cổng vào</span><br>
+                Người dùng vừa có Sidebar (17 mục), vừa có Hub (13 mục). Nhiều mục trùng lặp nhau gây bối rối (không biết nên bấm ở đâu).
+              </td>
+              <td>
+                <span class="badge success">Một nguồn chân lý duy nhất</span><br>
+                Dashboard là bàn làm việc chính; bên dưới là <b>5 Nhóm Nghiệp Vụ Cốt Lõi</b> rành mạch. Hub được tích hợp thành ô Tìm kiếm & Lối tắt nhanh (⌘K).
+              </td>
+            </tr>
+            <tr>
+              <td><b>Số lượng mục hiển thị cùng lúc</b></td>
+              <td>
+                <b>20–25 mục</b> trải dài kín màn hình, chia làm nhiều nhóm nhỏ (Tổng quan, Hồ sơ, Doanh nghiệp, Công cụ, Tra cứu).
+              </td>
+              <td>
+                <b>Chỉ Dashboard + 5 biểu tượng nhóm</b> trên thanh Rail gọn 68px. Menu con chỉ mở 4–6 mục của đúng nhóm đang làm việc. Giảm 75% tải nhận thức.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Luồng hồ sơ tín dụng</b></td>
+              <td>
+                Bị phân tán: Khách hàng ở một chỗ, Giải ngân ở Hub, Khoản vay ở mục khác, HĐTC ở mục khác, Báo cáo ở mục khác.
+              </td>
+              <td>
+                <b>Vòng đời tín dụng khép kín (Credit Stepper):</b><br>
+                CIF → HĐTD → TSBĐ & HĐTC → KUNN Giải Ngân → Thẻ → Kiểm Soát Sau Vay.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Các công cụ phân tích & Thẩm định</b></td>
+              <td>
+                Báo cáo tài chính doanh nghiệp nằm riêng; Dự phóng TOI nằm trong Business Plan; Bộ 9 công cụ tính toán nằm ở Calculator; Chào lãi suất COF nằm riêng.
+              </td>
+              <td>
+                Gom toàn bộ vào trụ cột <b>"Phân Tích & Thẩm Định"</b>: BCTC doanh nghiệp (có Trợ lý AI live), Thẩm định PAKD, Tam giác đối soát sao kê ngân hàng, và 9 Công cụ tính lãi/vốn.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Nhóm Mua sắm, Bán lẻ & Dự toán</b></td>
+              <td>
+                Bị xếp lộn xộn vào nhóm "Hồ sơ doanh nghiệp" hoặc "Công cụ tính", không đúng bản chất tác nghiệp.
+              </td>
+              <td>
+                Tách riêng vào phân hệ <b>"Dự Toán Thi Công & Bán Lẻ"</b>: Dự toán công trình, Danh mục mua sắm, Hóa đơn bán lẻ, Bảng kê thu mua, Quản lý kho hàng.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Ngữ cảnh khách hàng (Customer Context)</b></td>
+              <td>
+                Mỗi khi chuyển trang thì mất dấu khách hàng đang làm việc, phải quay lại màn Khách hàng hoặc tìm lại.
+              </td>
+              <td>
+                <b>Customer Context Capsule</b> luôn ghim trên thanh tiêu đề: hiển thị Tên DN, CIF, cho phép chuyển đổi nhanh dữ liệu xuyên suốt các màn.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Dữ liệu danh mục cấu trúc cho Phương án 1
+    const GROUPS_DATA = {
+      overview: {
+        title: "DASHBOARD TỔNG QUAN",
+        breadcrumb: "Tổng Quan & Bàn Làm Việc",
+        links: [
+          { group: "Theo Dõi & Thống Kê Dư Nợ", items: [
+            { id: "dash", label: "Bảng Tin KPIs & Chỉ Số Dư Nợ", count: "Live", active: true },
+            { id: "due", label: "Lịch Thu Nợ Gốc & Lãi Kỳ Này", count: "12 món" },
+            { id: "renewal", label: "Cảnh Báo Hết Hạn Hợp Đồng TD", count: "4 HĐ" },
+            { id: "portfolio", label: "Cơ Cấu Danh Mục Vay & TSBĐ", count: "Biểu đồ" }
+          ]},
+          { group: "Lối Tắt Tác Vụ Thường Dùng", items: [
+            { id: "newcus", label: "+ Thêm Khách Hàng Mới", count: "CIF" },
+            { id: "newkunn", label: "+ Lập Khế Ước Giải Ngân", count: "KUNN" },
+            { id: "openbctc", label: "+ Phân Tích BCTC Doanh Nghiệp", count: "AI" }
+          ]}
+        ],
+        isDashboard: true
+      },
+      credit: {
+        title: "HỒ SƠ TÍN DỤNG",
+        breadcrumb: "Hồ Sơ Tín Dụng",
+        links: [
+          { group: "Khách Hàng & Pháp Lý", items: [
+            { id: "cif", label: "Danh Sách Khách Hàng (CIF)", count: "48", active: true },
+            { id: "hdtd", label: "Hợp Đồng Tín Dụng (HĐTD)", count: "62" },
+            { id: "tsbd", label: "Tài Sản Bảo Đảm (TSBĐ)", count: "54" },
+            { id: "hdtc", label: "Hợp Đồng Thế Chấp (HĐTC)", count: "38" }
+          ]},
+          { group: "Giải Ngân & Quản Lý Vay", items: [
+            { id: "disbursement", label: "Thông Tin Giải Ngân & Thụ Hưởng", count: "12" },
+            { id: "kunn", label: "Khế Ước Nhận Nợ (KUNN / Lịch)", count: "115" },
+            { id: "cards", label: "Thẻ Tín Dụng & Hạn Mức", count: "24" },
+            { id: "postloan", label: "Kiểm Soát Sau Vay (KSSV)", count: "3 cảnh báo" }
+          ]}
+        ],
+        features: [
+          { name: "Khách Hàng (CIF)", desc: "Quản lý thông tin định danh, CCCD, doanh nghiệp, người liên quan và lịch sử quan hệ tín dụng.", tags: ["CCCD", "ĐKKD", "CIF"] },
+          { name: "Hợp Đồng Tín Dụng (HĐTD)", desc: "Quản lý hạn mức vay xoay vòng/từng lần, thời hạn cấp tín dụng và theo dõi khả dụng giải ngân.", tags: ["Hạn mức", "Khả dụng"] },
+          { name: "Tài Sản Bảo Đảm & HĐTC", desc: "Quản lý bất động sản, sổ tiết kiệm, phương tiện vận tải; tỷ lệ bảo đảm LTV và công chứng thế chấp.", tags: ["TSBĐ", "LTV", "Thế chấp"] },
+          { name: "Giải Ngân & KUNN", desc: "Lập khế ước nhận nợ, tạo lịch thu nợ tự động, kiểm soát mục đích sử dụng vốn và người thụ hưởng.", tags: ["Giải ngân", "KUNN", "Lịch nợ"] },
+          { name: "Thẻ Tín Dụng", desc: "Cấp phát thẻ tín dụng cá nhân và doanh nghiệp, liên kết tài sản bảo đảm, theo dõi biểu phí và hạn mức.", tags: ["Thẻ", "Hạn mức"] },
+          { name: "Kiểm Soát Sau Vay (KSSV)", desc: "Nhắc lịch kiểm tra định kỳ sau giải ngân 30-60 ngày, cảnh báo nợ quá hạn và giám sát nguồn thu trả nợ.", tags: ["KSSV", "Cảnh báo"] }
+        ]
+      },
+      finance: {
+        title: "TÀI CHÍNH & THẨM ĐỊNH",
+        breadcrumb: "Phân Tích & Thẩm Định",
+        links: [
+          { group: "Báo Cáo Tài Chính & Dòng Tiền", items: [
+            { id: "bctc", label: "Báo Cáo Tài Chính DN (Live AI)", count: "Mới", active: true },
+            { id: "saoke", label: "Đọc & Đối Soát Sao Kê Ngân Hàng", count: "Auto" },
+            { id: "pakd", label: "Thẩm Định Phương Án KD & Dự Án", count: "TT39" },
+            { id: "toi", label: "Dự Phóng Hiệu Quả TOI Khách Hàng", count: "TOI" }
+          ]},
+          { group: "Công Cụ Tính Toán Tín Dụng", items: [
+            { id: "calc", label: "Bộ 9 Công Cụ Tính Lãi & Vay", count: "9 tools" },
+            { id: "quote", label: "Định Giá & Chào Lãi Suất (COF)", count: "COF" }
+          ]}
+        ],
+        features: [
+          { name: "Báo Cáo Tài Chính DN & Trợ Lý AI", desc: "Nhập liệu B01a, B02, B03; AI đọc trực tiếp dữ liệu thời gian thực phân tích thanh khoản, DuPont, dòng tiền CFO.", tags: ["Live AI", "DuPont", "B01/B02"] },
+          { name: "Đọc Sao Kê & Tam Giác Đối Soát", desc: "Bóc tách doanh số Có/Nợ sao kê mọi ngân hàng TMCP, đối chiếu chéo BCTC vs Sao kê vs Tờ khai thuế GTGT.", tags: ["Sao kê", "Đối soát", "Thuế GTGT"] },
+          { name: "Thẩm Định Phương Án KD (TT 39)", desc: "Tính chu kỳ tiền mặt CCC, nhu cầu vốn lưu động, hạn mức cho vay tối đa và thẩm định dự án trung dài hạn DSCR.", tags: ["TT39", "Nhu cầu VLĐ", "DSCR"] },
+          { name: "Bộ 9 Công Cụ Tính Toán", desc: "Lịch trả nợ gốc lãi đều/giảm dần, tính lãi tiết kiệm, LTV tài sản, phí phạt trả nợ trước hạn, chuyển đổi lãi suất.", tags: ["Lãi suất", "Trả nợ", "LTV"] }
+        ]
+      },
+      dossier: {
+        title: "VĂN THƯ & KHO HỒ SƠ",
+        breadcrumb: "Văn Thư & Kho Hồ Sơ",
+        links: [
+          { group: "Hồ Sơ & Soạn Thảo", items: [
+            { id: "templates", label: "Thư Viện Biểu Mẫu & Hợp Đồng Mẫu", count: "18 mẫu", active: true },
+            { id: "dispatches", label: "Sổ Quản Lý Văn Thư (Đi/Đến)", count: "340" },
+            { id: "office", label: "Báo Cáo Office Cùng Sửa (Calc/Writer)", count: "Cloud" }
+          ]},
+          { group: "Lưu Trữ Điện Tử", items: [
+            { id: "storage", label: "Kho Lưu Trữ Đa Đám Mây (Drive/R2)", count: "Drive" },
+            { id: "reports", label: "Trung Tâm Báo Cáo Excel Tổng Hợp", count: "Reports" }
+          ]}
+        ],
+        features: [
+          { name: "Thư Viện Biểu Mẫu Tín Dụng", desc: "Soạn tự động HĐTD, HĐTC, Giấy vay tiền, Biên bản bàn giao, Cam kết tài sản, xuất file DOCX/PDF chuẩn.", tags: ["DOCX", "PDF", "Tự động điền"] },
+          { name: "Sổ Văn Thư Số Hóa", desc: "Quản lý công văn đến, công văn đi, tờ trình nội bộ; tra cứu nhanh số hiệu và liên kết tệp đính kèm.", tags: ["Công văn", "Tờ trình"] },
+          { name: "Báo Cáo Office Trực Tuyến", desc: "Bảng tính Excel Calc và soạn thảo Writer cùng sửa theo thời gian thực (Collaborative Office).", tags: ["Calc", "Writer", "Realtime"] },
+          { name: "Kho Lưu Trữ Tệp (Drive/R2)", desc: "Lưu trữ phân loại tệp tin theo hồ sơ khách hàng, tải lên dung lượng lớn không giới hạn, đồng bộ Google Drive.", tags: ["Cloudflare R2", "Google Drive"] }
+        ]
+      },
+      tools: {
+        title: "DỰ TOÁN & BÁN LẺ",
+        breadcrumb: "Dự Toán & Bán Lẻ",
+        links: [
+          { group: "Xây Lắp & Mua Sắm", items: [
+            { id: "estimate", label: "Dự Toán Thi Công Công Trình", count: "Xây lắp", active: true },
+            { id: "shopping", label: "Bảng Kê Mua Sắm Cá Nhân / Vật Tư", count: "Vật tư" }
+          ]},
+          { group: "Thương Mại & Kho Hàng", items: [
+            { id: "invoice", label: "Hóa Đơn Bán Lẻ Hàng Hóa", count: "Bán lẻ" },
+            { id: "statement", label: "Bảng Kê Thu Mua Hàng Hóa", count: "Thu mua" },
+            { id: "inventory", label: "Quản Lý Danh Mục Kho Hàng & Tồn", count: "Kho hàng" }
+          ]}
+        ],
+        features: [
+          { name: "Dự Toán Thi Công Công Trình", desc: "Lập bảng dự toán chi phí xây dựng, vật tư, nhân công phục vụ thẩm định phương án vay xây sửa nhà.", tags: ["Dự toán", "Xây dựng"] },
+          { name: "Bảng Kê Mua Sắm Vật Tư", desc: "Lập danh mục thiết bị, nội thất, vật tư sinh hoạt kèm đơn giá và nhà cung cấp để hoàn thiện hồ sơ giải ngân.", tags: ["Vật tư", "Mua sắm"] },
+          { name: "Hóa Đơn & Bảng Kê Bán Lẻ / Thu Mua", desc: "Bóc tách chứng từ bán lẻ và bảng kê thu mua nông sản/vật liệu không có hóa đơn GTGT theo đúng quy định.", tags: ["Bán lẻ", "Thu mua"] },
+          { name: "Quản Lý Kho Hàng & Tồn Kho", desc: "Theo dõi lượng hàng tồn, giá trị hàng luân chuyển làm căn cứ xác định mức tài trợ hạn mức vốn lưu động.", tags: ["Tồn kho", "Hàng hóa"] }
+        ]
+      },
+      reference: {
+        title: "TRA CỨU & ÔN TẬP",
+        breadcrumb: "Tra Cứu & Quy Định",
+        links: [
+          { group: "Danh Mục Tra Cứu Chuẩn", items: [
+            { id: "mdsdv", label: "Mục Đích Sử Dụng Vốn (MĐSDV 2026)", count: "9.313 mã", active: true },
+            { id: "cardpolicies", label: "Chính Sách & Biểu Phí Thẻ Tín Dụng", count: "Biểu phí" }
+          ]},
+          { group: "Nghiệp Vụ & Đào Tạo", items: [
+            { id: "quiz", label: "Ngân Hàng Câu Hỏi Trắc Nghiệm Tín Dụng", count: "400+ câu" }
+          ]}
+        ],
+        features: [
+          { name: "Tra Cứu MĐSDV Chuẩn 2026", desc: "Cơ sở dữ liệu 9.313 dòng chuẩn 22 ngành kinh tế cấp 1-5, tra mã thấu chi và mục đích tài trợ theo quy chuẩn NHNN.", tags: ["MĐSDV", "9.313 mã", "FBE"] },
+          { name: "Biểu Phí Thẻ & Lãi Suất Thẻ", desc: "Tra cứu phí thường niên, lãi suất rút tiền mặt, điều kiện miễn phí và chính sách tài sản bảo đảm cho thẻ.", tags: ["Biểu phí thẻ", "Chính sách"] },
+          { name: "Ngân Hàng Câu Hỏi Ôn Tập Nghiệp Vụ", desc: "Luyện thi trắc nghiệm quy trình tín dụng, thẩm định tài sản, văn bản pháp quy ngân hàng.", tags: ["Quiz", "Đào tạo"] }
+        ]
+      },
+      system: {
+        title: "CÀI ĐẶT & QUẢN TRỊ",
+        breadcrumb: "Quản Trị Hệ Thống",
+        links: [
+          { group: "Quản Trị Người Dùng & Quyền", items: [
+            { id: "users", label: "Quản Lý Tài Khoản & Phân Quyền", count: "Admin", active: true },
+            { id: "transfer", label: "Chuyển Giao Khách Hàng Giữa Cán Bộ", count: "Bàn giao" },
+            { id: "modules", label: "Bật/Tắt Phân Hệ Cho Từng User", count: "Module" }
+          ]},
+          { group: "Cấu Hình Ứng Dụng", items: [
+            { id: "settings", label: "Thiết Lập Chung & Lưu Trữ Đám Mây", count: "Config" }
+          ]}
+        ],
+        features: [
+          { name: "Quản Lý Người Dùng & Phân Quyền", desc: "Phân quyền 3 cấp (Master Admin, User Admin, Cán bộ tín dụng), quản lý trạng thái tài khoản.", tags: ["Users", "Roles"] },
+          { name: "Bật/Tắt Module Linh Hoạt", desc: "Cấp phát quyền sử dụng từng module chức năng cho từng cán bộ theo phòng ban (Chỉ văn thư, tín dụng, hoặc đầy đủ).", tags: ["Module Flags"] }
+        ]
+      }
+    };
+
+    function renderDashboardHTML() {
+      return `
+        <!-- 5 Ô KPIs Chuẩn Của CustomerManager (Fintech Elevated Tone) -->
+        <div class="kpi-row" style="margin-bottom: 16px;">
+          
+          <!-- KPI 1: Khách hàng -->
+          <div class="kpi-box accent-blue">
+            <div class="kpi-header">
+              <span class="kpi-label">Tổng Số Khách Hàng</span>
+              <div class="kpi-icon-pill blue">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+            </div>
+            <div class="kpi-val">48 <span class="curr">CIF</span></div>
+            <div class="kpi-meter"><div class="kpi-meter-fill" style="width: 66.7%; background: var(--primary);"></div></div>
+            <span class="kpi-sub">Trong đó <b>32</b> khách hàng có dư nợ (66.7%)</span>
+          </div>
+
+          <!-- KPI 2: Quy mô dư nợ -->
+          <div class="kpi-box accent-green">
+            <div class="kpi-header">
+              <span class="kpi-label">Tổng Quy Mô Dư Nợ</span>
+              <div class="kpi-icon-pill green">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+            </div>
+            <div class="kpi-val">128.540 <span class="curr">tỷ ₫</span></div>
+            <div class="kpi-meter"><div class="kpi-meter-fill" style="width: 80.3%; background: #10b981;"></div></div>
+            <span class="kpi-sub">Hạn mức đã cấp: <b>160.000 tỷ ₫</b> (80.3%)</span>
+          </div>
+
+          <!-- KPI 3: Giá trị TSBĐ -->
+          <div class="kpi-box accent-indigo">
+            <div class="kpi-header">
+              <span class="kpi-label">Tổng Giá Trị TSBĐ</span>
+              <div class="kpi-icon-pill indigo">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+            </div>
+            <div class="kpi-val">210.820 <span class="curr">tỷ ₫</span></div>
+            <div class="kpi-meter"><div class="kpi-meter-fill" style="width: 60.9%; background: #6366f1;"></div></div>
+            <span class="kpi-sub">Tỷ lệ bảo đảm bình quân LTV: <b>60.9%</b></span>
+          </div>
+
+          <!-- KPI 4: Thẻ tín dụng -->
+          <div class="kpi-box accent-blue">
+            <div class="kpi-header">
+              <span class="kpi-label">Hạn Mức Thẻ Cấp</span>
+              <div class="kpi-icon-pill blue">
+                <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              </div>
+            </div>
+            <div class="kpi-val">4.250 <span class="curr">tỷ ₫</span></div>
+            <div class="kpi-meter"><div class="kpi-meter-fill" style="width: 92%; background: #0284c7;"></div></div>
+            <span class="kpi-sub"><b>24 thẻ</b> lưu hành (kích hoạt 92%)</span>
+          </div>
+
+          <!-- KPI 5: Dự kiến thu nợ -->
+          <div class="kpi-box accent-amber" style="background: linear-gradient(180deg, var(--surface) 0%, rgba(254, 243, 199, 0.25) 100%); border-color: rgba(245, 158, 11, 0.4);">
+            <div class="kpi-header">
+              <span class="kpi-label" style="color: #b45309; font-weight: 700;">Thu Nợ Đến Hạn Kỳ Này</span>
+              <div class="kpi-icon-pill amber">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+            </div>
+            <div class="kpi-val" style="color: #b45309;">8.420 <span class="curr" style="color: #b45309;">tỷ ₫</span></div>
+            <div class="kpi-meter"><div class="kpi-meter-fill" style="width: 45%; background: #f59e0b;"></div></div>
+            <span class="kpi-sub">Gốc: <b>6.8 tỷ</b> • Lãi: <b>1.62 tỷ</b> (12 món)</span>
+          </div>
+
+        </div>
+
+        <!-- 2 Columns: Lịch thu nợ & Cảnh báo HĐTD -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px;">
+          
+          <!-- Bảng 1: Lịch thu nợ đến hạn (DueSectionPanel) -->
+          <div class="card">
+            <div class="card-head" style="flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <svg class="icon" style="color: var(--primary);" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <h3>Lịch Thu Nợ Đến Hạn (Kỳ Này)</h3>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <button type="button" class="btn" style="padding: 3px 9px; font-size: 11px;" onclick="alert('In danh sách thu nợ khổ A4 dọc chuẩn')">
+                  <svg class="icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                  <span>In bảng</span>
+                </button>
+                <button type="button" class="btn" style="padding: 3px 9px; font-size: 11px;" onclick="alert('Xuất Excel .xlsx chuẩn số kế toán')">
+                  <svg class="icon" style="width: 13px; height: 13px; color: var(--success);" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span>Excel</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Bộ lọc thời gian nhanh -->
+            <div style="padding: 8px 16px; background: var(--surface-subtle); border-bottom: 1px solid var(--line-subtle); display: flex; align-items: center; gap: 6px; font-size: 11.5px;">
+              <span style="color: var(--fg-muted); font-weight: 600;">Xem nhanh:</span>
+              <span class="badge primary" style="cursor: pointer;">Tất cả (12)</span>
+              <span class="badge" style="cursor: pointer;">Hôm nay (2)</span>
+              <span class="badge" style="cursor: pointer;">7 ngày tới (9)</span>
+              <span class="badge" style="cursor: pointer;">Tháng này (12)</span>
+              <span class="badge danger" style="cursor: pointer;">Quá hạn (1)</span>
+            </div>
+
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Khách Hàng / Khế Ước</th>
+                    <th>Ngày Đến Hạn</th>
+                    <th class="num">Gốc Cần Thu</th>
+                    <th class="num">Lãi Cần Thu</th>
+                    <th>Trạng Thái</th>
+                    <th style="text-align: center;">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><b>Cty CP Thép Nam Hà</b><div style="font-size: 11px; color: var(--fg-muted);">KUNN-2024-089 (Vay VLĐ)</div></td>
+                    <td>18/10/2026</td>
+                    <td class="num">500.000.000 ₫</td>
+                    <td class="num">38.450.000 ₫</td>
+                    <td><span class="status-pill warning"><span class="status-dot"></span>Còn 2 ngày</span></td>
+                    <td style="text-align: center;"><button type="button" class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="alert('Mở phiếu thu nhanh nợ gốc lãi')">Thu nhanh</button></td>
+                  </tr>
+                  <tr>
+                    <td><b>Nguyễn Văn An</b><div style="font-size: 11px; color: var(--fg-muted);">KUNN-2025-012 (Mua nhà)</div></td>
+                    <td>20/10/2026</td>
+                    <td class="num">15.000.000 ₫</td>
+                    <td class="num">4.200.000 ₫</td>
+                    <td><span class="status-pill warning"><span class="status-dot"></span>Còn 4 ngày</span></td>
+                    <td style="text-align: center;"><button type="button" class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="alert('Mở phiếu thu nhanh nợ gốc lãi')">Thu nhanh</button></td>
+                  </tr>
+                  <tr>
+                    <td><b>Cty TNHH May Xuất Khẩu Hòa Bình</b><div style="font-size: 11px; color: var(--fg-muted);">KUNN-2024-110 (Mở L/C)</div></td>
+                    <td>22/10/2026</td>
+                    <td class="num">250.000.000 ₫</td>
+                    <td class="num">19.250.000 ₫</td>
+                    <td><span class="status-pill success"><span class="status-dot"></span>Còn 6 ngày</span></td>
+                    <td style="text-align: center;"><button type="button" class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="alert('Mở phiếu thu nhanh nợ gốc lãi')">Thu nhanh</button></td>
+                  </tr>
+                  <tr>
+                    <td><b>Cty TNHH TM Tân Phát</b><div style="font-size: 11px; color: var(--fg-muted);">KUNN-2024-045 (Vay trung hạn)</div></td>
+                    <td>15/10/2026</td>
+                    <td class="num">120.000.000 ₫</td>
+                    <td class="num">18.900.000 ₫</td>
+                    <td><span class="status-pill danger"><span class="status-dot"></span>Quá hạn 1 ngày</span></td>
+                    <td style="text-align: center;"><button type="button" class="btn" style="padding: 3px 8px; font-size: 11px; color: var(--danger);" onclick="alert('Xem cảnh báo nợ quá hạn')">Đôn đốc</button></td>
+                  </tr>
+                  <!-- DÒNG TỔNG CỘNG CHUẨN KẾ TOÁN (AGENTS.md) -->
+                  <tr style="background: var(--surface-subtle); font-weight: 700; border-top: 2px solid var(--line);">
+                    <td colspan="2" style="text-transform: uppercase; letter-spacing: 0.04em;">TỔNG CỘNG (4 món hiển thị)</td>
+                    <td class="num" style="color: var(--fg);">885.000.000 ₫</td>
+                    <td class="num" style="color: var(--primary);">80.800.000 ₫</td>
+                    <td colspan="2" style="font-size: 11px; color: var(--fg-muted);">Tổng cộng: <b>965.800.000 ₫</b></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Bảng 2: Cảnh báo HĐTD sắp hết hạn -->
+          <div class="card">
+            <div class="card-head">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <svg class="icon" style="color: var(--warning);" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <h3>Cảnh Báo Hết Hạn Hợp Đồng Tín Dụng</h3>
+              </div>
+              <span class="badge warning">4 HĐ cần xử lý</span>
+            </div>
+            <div style="padding: 8px 16px; background: var(--surface-subtle); border-bottom: 1px solid var(--line-subtle); font-size: 11.5px; color: var(--fg-muted);">
+              Cảnh báo trước 30 ngày để cán bộ chủ động lập tờ trình tái cấp hoặc gia hạn hạn mức.
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Khách Hàng</th>
+                    <th>Số HĐTD</th>
+                    <th class="num">Hạn Mức Cấp</th>
+                    <th>Ngày Hết Hạn</th>
+                    <th>Xử Lý</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><b>Cty CP Cơ Khí Minh Đức</b></td>
+                    <td><code style="font-family: var(--mono); background: var(--surface-subtle); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line-subtle); font-size: 11.5px;">HDTD/2025/082</code></td>
+                    <td class="num">15.000.000.000 ₫</td>
+                    <td>28/10/2026 <span class="status-pill warning" style="font-size: 10px; padding: 2px 7px;"><span class="status-dot"></span>còn 12 ngày</span></td>
+                    <td><button type="button" class="btn" style="padding: 2px 7px; font-size: 11px;" onclick="alert('Lập hồ sơ tái cấp hạn mức tín dụng')">Tái Cấp</button></td>
+                  </tr>
+                  <tr>
+                    <td><b>Trần Thị Mai</b></td>
+                    <td><code style="font-family: var(--mono); background: var(--surface-subtle); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line-subtle); font-size: 11.5px;">HDTD/2025/119</code></td>
+                    <td class="num">2.000.000.000 ₫</td>
+                    <td>05/11/2026 <span class="status-pill warning" style="font-size: 10px; padding: 2px 7px;"><span class="status-dot"></span>còn 20 ngày</span></td>
+                    <td><button type="button" class="btn" style="padding: 2px 7px; font-size: 11px;" onclick="alert('Lập phụ lục gia hạn thời hạn hợp đồng')">Gia Hạn</button></td>
+                  </tr>
+                  <tr>
+                    <td><b>Công ty TNHH Nhựa Đại Phát</b></td>
+                    <td><code style="font-family: var(--mono); background: var(--surface-subtle); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line-subtle); font-size: 11.5px;">HDTD/2025/034</code></td>
+                    <td class="num">8.500.000.000 ₫</td>
+                    <td>12/11/2026 <span class="status-pill neutral" style="font-size: 10px; padding: 2px 7px;"><span class="status-dot"></span>còn 27 ngày</span></td>
+                    <td><button type="button" class="btn" style="padding: 2px 7px; font-size: 11px;" onclick="alert('Lập hồ sơ tái cấp')">Tái Cấp</button></td>
+                  </tr>
+                  <!-- DÒNG TỔNG CỘNG CHUẨN KẾ TOÁN (AGENTS.md) -->
+                  <tr style="background: var(--surface-subtle); font-weight: 700; border-top: 2px solid var(--line);">
+                    <td colspan="2" style="text-transform: uppercase; letter-spacing: 0.04em;">TỔNG HẠN MỨC CẦN GIA HẠN</td>
+                    <td class="num" style="color: var(--primary);">25.500.000.000 ₫</td>
+                    <td colspan="2" style="font-size: 11px; color: var(--fg-muted);">3 HĐ hiển thị / 4 HĐ toàn chi nhánh</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      `;
+    }
+
+    function renderDrawer(groupId) {
+      const group = GROUPS_DATA[groupId];
+      if (!group) return;
+
+      document.getElementById('drawerTitle').innerText = group.title;
+      document.getElementById('breadcrumbSection').innerText = group.breadcrumb;
+
+      let html = '';
+      group.links.forEach(sec => {
+        html += `<div class="drawer-group">`;
+        html += `<div class="drawer-group-title">${sec.group}</div>`;
+        sec.items.forEach(it => {
+          html += `
+            <div class="drawer-link ${it.active ? 'active' : ''}" onclick="selectDrawerLink('${it.label}', this)">
+              <div class="lead"><span>${it.label}</span></div>
+              <span class="count">${it.count}</span>
+            </div>
+          `;
+        });
+        html += `</div>`;
+      });
+      document.getElementById('drawerContent').innerHTML = html;
+
+      const dynamicBody = document.getElementById('dynamicBody');
+      const stepper = document.getElementById('lifecycleStepper');
+      const customerPill = document.getElementById('customerPill');
+
+      if (group.isDashboard) {
+        document.getElementById('breadcrumbPage').innerText = "Bảng Tin KPIs & Lịch Thu Nợ";
+        stepper.style.display = 'none';
+        customerPill.style.display = 'none'; // Dashboard là view toàn hệ thống
+        dynamicBody.innerHTML = renderDashboardHTML();
+      } else {
+        customerPill.style.display = 'flex';
+        stepper.style.display = (groupId === 'credit') ? 'flex' : 'none';
+        document.getElementById('breadcrumbPage').innerText = group.links[0]?.items[0]?.label || group.title;
+
+        // Render features grid
+        let featHtml = `
+          <div class="card">
+            <div class="card-head">
+              <h3>Các chức năng trong phân hệ ${group.title}</h3>
+              <span class="badge primary">Quy hoạch khép kín</span>
+            </div>
+            <div class="card-body">
+              <div class="feature-grid">
+        `;
+        group.features?.forEach(f => {
+          featHtml += `
+            <div class="feature-card" onclick="alert('Mở màn hình: ' + '${f.name}')">
+              <div class="feature-card-header">
+                <div class="feature-icon">
+                  <svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </div>
+                <div class="feature-name">${f.name}</div>
+              </div>
+              <div class="feature-desc">${f.desc}</div>
+              <div class="feature-tags">
+                ${f.tags.map(t => `<span class="feature-tag">${t}</span>`).join('')}
+              </div>
+            </div>
+          `;
+        });
+        featHtml += `
+              </div>
+            </div>
+          </div>
+        `;
+        dynamicBody.innerHTML = featHtml;
+      }
+    }
+
+    function selectDrawerLink(label, elem) {
+      document.querySelectorAll('#drawerContent .drawer-link').forEach(el => el.classList.remove('active'));
+      elem.classList.add('active');
+      document.getElementById('breadcrumbPage').innerText = label;
+    }
+
+    function switchRail(groupId, btn) {
+      document.querySelectorAll('.rail-item').forEach(el => el.classList.remove('active'));
+      btn.classList.add('active');
+      renderDrawer(groupId);
+
+      // Nếu drawer đang đóng thì mở ra
+      const drawer = document.getElementById('drawerNav');
+      drawer.classList.remove('collapsed');
+    }
+
+    function toggleDrawer() {
+      const drawer = document.getElementById('drawerNav');
+      drawer.classList.toggle('collapsed');
+    }
+
+    function switchLayout(layout) {
+      document.querySelectorAll('#layoutSwitcher button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+
+      if (layout === 'option1') {
+        document.querySelectorAll('#layoutSwitcher button')[0].classList.add('active');
+        document.getElementById('viewOption1').classList.add('active');
+      } else if (layout === 'option2') {
+        document.querySelectorAll('#layoutSwitcher button')[1].classList.add('active');
+        document.getElementById('viewOption2').classList.add('active');
+        const opt2Body = document.getElementById('option2DynamicBody');
+        if (opt2Body && !opt2Body.innerHTML) {
+          opt2Body.innerHTML = renderDashboardHTML();
+        }
+      } else {
+        document.querySelectorAll('#layoutSwitcher button')[2].classList.add('active');
+        document.getElementById('viewCompare').classList.add('active');
+      }
+    }
+
+    function switchTopTab(tabId, el) {
+      document.querySelectorAll('.workspace-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function switchTone(toneId) {
+      document.querySelectorAll('#toneSwitcher button').forEach(b => b.classList.remove('active'));
+      const buttons = document.querySelectorAll('#toneSwitcher button');
+      if (toneId === 'slate') buttons[0]?.classList.add('active');
+      else if (toneId === 'swiss') buttons[1]?.classList.add('active');
+      else if (toneId === 'heritage') buttons[2]?.classList.add('active');
+      else if (toneId === 'emerald') buttons[3]?.classList.add('active');
+      else if (toneId === 'warm') buttons[4]?.classList.add('active');
+      else if (toneId === 'terminal') buttons[5]?.classList.add('active');
+
+      document.documentElement.setAttribute('data-tone', toneId);
+      if (toneId === 'terminal') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    }
+
+    // Khởi tạo mặc định: MỞ NGAY DASHBOARD TỔNG QUAN
+    renderDrawer('overview');
+  </script>
+</body>
+</html>

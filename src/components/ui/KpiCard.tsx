@@ -38,12 +38,12 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     <div
       data-kpi-hue={hue}
       onClick={onClick}
-      className={`rounded-[var(--r-panel)] border border-line/70 bg-surface/80 hover:bg-surface p-3.5 sm:p-4 shadow-2xs transition-all ${
+      className={`rounded-[var(--r-panel)] border border-line/70 bg-panel/85 specular-card p-3.5 sm:p-4 shadow-xs transition-all ${
         onClick ? 'cursor-pointer active:scale-[0.99]' : ''
       } ${className}`}
     >
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-[var(--fs-label)] uppercase font-bold text-ink-faint tracking-wider truncate">
+      <div className="flex items-start justify-between gap-2 mb-2 min-h-10">
+        <span className="text-[length:var(--fs-label)] uppercase font-bold text-ink-faint tracking-wider text-balance min-w-0">
           {label}
         </span>
         {Icon && (
@@ -53,12 +53,12 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         )}
       </div>
 
-      <div className={`font-mono font-bold text-[var(--fs-num)] leading-tight tracking-tight truncate ${styles.valColor}`}>
+      <div className={`font-mono num-lead font-bold leading-tight tracking-tight truncate ${styles.valColor}`}>
         {value}
       </div>
 
       {subtext && (
-        <div className="mt-1 text-[var(--fs-label)] text-ink-faint font-medium truncate">
+        <div className="mt-1 text-[length:var(--fs-label)] text-ink-faint font-medium truncate">
           {subtext}
         </div>
       )}

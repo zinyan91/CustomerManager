@@ -21,7 +21,7 @@ export const MdsdvLookupView: React.FC = () => {
   const cardBg = UI.containerCardBg;
 
   return (
-    <div className="space-y-4">
+    <div data-workspace-page className="space-y-0">
       {/* Search & Filter Header Card */}
       <MdsdvFilterHeader
         query={query}
@@ -53,7 +53,7 @@ export const MdsdvLookupView: React.FC = () => {
 
       {/* Main Results Content */}
       {search.items.length === 0 ? (
-        <div className={`${cardBg} rounded-xl p-12 border border-line text-center space-y-3`}>
+        <div data-workspace-panel className={`${cardBg} rounded-xl p-12 border border-line text-center space-y-3`}>
           <div className="w-12 h-12 rounded-full bg-panel-muted text-ink-faint flex items-center justify-center mx-auto border border-line">
             <Search className="w-6 h-6" />
           </div>
@@ -76,7 +76,7 @@ export const MdsdvLookupView: React.FC = () => {
       )}
 
       {/* Footer Instructions & Rules Card */}
-      <div className={`${cardBg} rounded-xl p-3.5 border border-line text-xs text-ink-faint flex items-start space-x-2.5`}>
+      <div data-workspace-panel className={`${cardBg} rounded-xl p-3.5 border border-line text-xs text-ink-faint flex items-start space-x-2.5`}>
         <div className="p-1.5 rounded-md bg-accent-soft text-accent shrink-0 mt-0.5">
           <Info className="w-4 h-4" />
         </div>

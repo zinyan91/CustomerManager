@@ -23,6 +23,13 @@ beforeEach(() => {
 });
 
 describe('listStorageRepos', () => {
+  it('chuyển tín hiệu hủy tới truy vấn danh sách kho', async () => {
+    const controller=new AbortController();
+    const abortSignal=vi.fn(async () => ({data:[ROW],error:null}));
+    sb.from.mockReturnValue({select:()=>({order:()=>({abortSignal})})});
+    await listStorageRepos(controller.signal);
+    expect(abortSignal).toHaveBeenCalledWith(controller.signal);
+  });
   it('ánh xạ dòng DB sang StorageRepo', async () => {
     sb.from.mockReturnValue({ select: () => ({ order: async () => ({ data: [ROW], error: null }) }) });
     const out = await listStorageRepos();

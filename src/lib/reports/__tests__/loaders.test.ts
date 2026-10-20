@@ -21,6 +21,7 @@ vi.mock('../../api/collateralApi', () => ({
 }));
 
 import { loadCollateralRows, loadCreditRows, loadDueRows, loadKunnRows, loadPortfolioParams } from '../loaders';
+import { loadAlertSnapshot } from '../alertLoader';
 
 const CTX = { todayIso: '2026-09-23' };
 
@@ -33,5 +34,6 @@ describe('C1: tang nap khong duoc bien loi mang thanh bao cao rong', () => {
     await expect(loadKunnRows(CTX)).rejects.toThrow('mat ket noi');
     await expect(loadCreditRows(CTX)).rejects.toThrow('mat ket noi');
     await expect(loadCollateralRows()).rejects.toThrow('mat ket noi');
+    await expect(loadAlertSnapshot(CTX.todayIso)).rejects.toThrow('mat ket noi');
   });
 });

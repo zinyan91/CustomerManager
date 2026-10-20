@@ -48,7 +48,7 @@ export const CardFeeScheduleTab: React.FC<CardFeeScheduleTabProps> = ({
   return (
     <div className="space-y-4 font-app animate-in fade-in duration-150">
       {/* Top Filter Bar */}
-      <div className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5`}>
+      <div data-workspace-panel className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className={`${HEADING_SCREEN} flex items-center gap-2 text-accent`}>
             <Tag size={16} /> BẢNG TRA CỨU MÃ PHÍ THẺ TÍN DỤNG
@@ -99,18 +99,18 @@ export const CardFeeScheduleTab: React.FC<CardFeeScheduleTabProps> = ({
 
       {/* Grouped Fee Profile Tables */}
       {groupedProfiles.length === 0 ? (
-        <div className={`${PANEL} p-8 text-center text-ink-faint rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card`}>
+        <div data-workspace-panel className={`${PANEL} p-8 text-center text-ink-faint rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card`}>
           Không tìm thấy mã phí thẻ tương ứng với từ khóa "{feeQuery}"
         </div>
       ) : (
         groupedProfiles.map(group => (
-          <div key={group.name} className={`${PANEL} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden p-4 sm:p-5 space-y-3`}>
+          <div data-workspace-panel key={group.name} className={`${PANEL} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden p-4 sm:p-5 space-y-3`}>
             <div className="flex justify-between items-center border-b border-line/60 pb-2.5">
               <span className="text-xs font-bold text-accent uppercase tracking-wider">{group.name}</span>
               <span className="text-[11px] font-mono text-ink-faint">{group.items.length} cấu hình</span>
             </div>
 
-            <div className="overflow-x-auto max-h-[500px] overflow-y-auto border border-line/70 rounded-xl">
+            <div data-workspace-panel className="overflow-x-auto max-h-[500px] overflow-y-auto border border-line/70 rounded-xl">
               <table className="w-full text-left text-xs border-collapse min-w-[700px] font-app">
                 <thead className="sticky top-0 bg-surface/95 backdrop-blur-md text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint border-b border-line/80 z-10">
                   <tr>
@@ -185,7 +185,7 @@ export const CardFeeScheduleTab: React.FC<CardFeeScheduleTabProps> = ({
       )}
 
       {/* Common Notes Section */}
-      <div className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3`}>
+      <div data-workspace-panel className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3`}>
         <div className="flex items-center justify-between border-b border-line/60 pb-2.5">
           <div className={`${SECTION_LABEL} flex items-center gap-1.5 text-accent`}>
             <Info size={14} className="text-accent" /> Ghi chú chung & Lưu ý khai báo thông tin
@@ -227,7 +227,7 @@ export const CardFeeScheduleTab: React.FC<CardFeeScheduleTabProps> = ({
             </div>
           </div>
         ) : (
-          <div className="text-xs text-ink-muted leading-relaxed whitespace-pre-wrap font-app bg-surface/60 p-3.5 rounded-xl border border-line/70">
+          <div data-workspace-panel className="text-xs text-ink-muted leading-relaxed whitespace-pre-wrap font-app bg-surface/60 p-3.5 rounded-xl border border-line/70">
             {commonNote}
           </div>
         )}

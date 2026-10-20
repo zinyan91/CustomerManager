@@ -53,9 +53,9 @@ export const CofView: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 text-xs transition-colors duration-200">
+    <div data-workspace-page className="space-y-0 text-xs transition-colors duration-200">
       {/* Header Banner */}
-      <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm flex flex-wrap items-center justify-between gap-3`}>
+      <div data-workspace-panel className={`${cardBg} rounded-xl p-4 border border-line shadow-sm flex flex-wrap items-center justify-between gap-3`}>
         <div className="flex items-center space-x-2">
           <Landmark className="w-5 h-5 text-accent" />
           <span className="text-sm font-bold tracking-tight text-accent">
@@ -81,13 +81,13 @@ export const CofView: React.FC = () => {
       </div>
 
       {loadError && (
-        <div className="rounded-xl border border-neg/30 bg-neg-soft p-3 text-xs font-bold text-neg shadow-xs">
+        <div data-workspace-panel className="rounded-xl border border-neg/30 bg-neg-soft p-3 text-xs font-bold text-neg shadow-xs">
           {loadError}
         </div>
       )}
 
       {!program && !loadError && (
-        <div className="rounded-xl border border-warn/30 bg-warn-soft p-4 text-xs font-bold text-warn shadow-xs">
+        <div data-workspace-panel className="rounded-xl border border-warn/30 bg-warn-soft p-4 text-xs font-bold text-warn shadow-xs">
           Không có bảng giá mua bán vốn nội bộ nào hiệu lực tại ngày {fmtDate(onDate)}.
         </div>
       )}
@@ -95,7 +95,7 @@ export const CofView: React.FC = () => {
       {program && (
         <>
           {/* Program Header */}
-          <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-2`}>
+          <div data-workspace-panel className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-2`}>
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
               <div>
                 <div className="flex items-center space-x-2">
@@ -116,7 +116,7 @@ export const CofView: React.FC = () => {
           </div>
 
           {/* Quick COF & Margin Lookup */}
-          <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-3`}>
+          <div data-workspace-panel className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-3`}>
             <div className="font-bold text-xs tracking-tight text-accent border-b border-line pb-2 flex items-center space-x-2">
               <Info className="w-4 h-4 text-accent" />
               <span>TRA NHANH COF &amp; MARGIN</span>
@@ -156,7 +156,7 @@ export const CofView: React.FC = () => {
                   className={`${inputCls} font-bold`}
                 />
               </div>
-              <div className="p-3 rounded-md bg-accent-soft border border-accent/30">
+              <div data-workspace-panel className="p-3 rounded-md bg-accent-soft border border-accent/30">
                 <div className="text-[10px] font-bold text-ink-faint uppercase">COF → MARGIN</div>
                 <div className="font-mono font-extrabold text-accent mt-0.5">
                   {selectedCof === null ? 'Không có mức' : fmtPercentEmpty(selectedCof)}
@@ -173,7 +173,7 @@ export const CofView: React.FC = () => {
           </div>
 
           {/* Standard Rates Table */}
-          <div className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
+          <div data-workspace-panel className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
             <div className="p-3.5 sm:p-4 border-b border-line/60 flex flex-wrap items-center justify-between gap-2 bg-surface/75 backdrop-blur-md">
               <span className="font-bold text-xs tracking-tight text-accent uppercase tracking-wider">
                 {COF_SECTION_LABELS.vnd_thong_thuong}
@@ -253,7 +253,7 @@ export const CofView: React.FC = () => {
             if (sectionItems.length === 0) return null;
             const groups = groupRateItems(sectionItems);
             return (
-              <div key={section} className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
+              <div data-workspace-panel key={section} className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
                 <div className="p-3.5 sm:p-4 border-b border-line/60 font-bold text-xs tracking-tight text-accent uppercase tracking-wider bg-surface/75 backdrop-blur-md">
                   {COF_SECTION_LABELS[section]}
                 </div>
@@ -324,7 +324,7 @@ export const CofView: React.FC = () => {
           })}
 
           {saveMsg && (
-            <div className={`${cardBg} rounded-xl p-3.5 border text-xs font-bold ${
+            <div data-workspace-panel className={`${cardBg} rounded-xl p-3.5 border text-xs font-bold ${
               saveMsg === 'Đã lưu.' ? 'text-pos border-pos/40 bg-pos-soft/30' : 'text-neg border-neg/40 bg-neg-soft/30'
             }`}>
               {saveMsg}
@@ -332,7 +332,7 @@ export const CofView: React.FC = () => {
           )}
 
           {/* Scope Footer Info */}
-          <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card text-xs text-ink-muted space-y-1.5 animate-in fade-in duration-150`}>
+          <div data-workspace-panel className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card text-xs text-ink-muted space-y-1.5 animate-in fade-in duration-150`}>
             <div className="flex items-center space-x-2 font-bold text-ink uppercase tracking-wider text-[11px]">
               <Info className="w-4 h-4 text-accent" />
               <span>PHẠM VI ĐÃ NẠP</span>

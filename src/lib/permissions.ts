@@ -15,6 +15,7 @@ export const CAPABILITIES = [
   'storage.delete',
   'dispatch.upload',
   'scope.switch',
+  'team.manage',
 ] as const;
 export type Capability = (typeof CAPABILITIES)[number];
 
@@ -29,6 +30,7 @@ const GRANTS: Record<Capability, readonly AppRole[]> = {
   'storage.delete': ['master_admin', 'user_admin'],
   'dispatch.upload': ['master_admin', 'user_admin'],
   'scope.switch': ['master_admin', 'user_admin'],
+  'team.manage': ['master_admin'],
 };
 
 const ROLE_LABELS: Record<AppRole, string> = {

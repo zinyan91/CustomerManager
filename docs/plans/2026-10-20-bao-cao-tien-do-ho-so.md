@@ -1,0 +1,6 @@
+**Mục tiêu:** Nhân viên nhập báo cáo tiến độ ở menu phụ Tổng quan; Team & KPI đọc và tổng hợp cùng nguồn dữ liệu.
+**Phạm vi:** LÀM: loại KH, tên KH nhập/chọn, số tiền VND, số lượng thẻ, phí VND, bảo hiểm VND, loại hồ sơ, kỳ hạn và 11 tiến độ đã chốt; lọc tháng; sửa hồ sơ của mình; Leader chỉ đọc team. KHÔNG LÀM: tự tạo CIF, tự ghi khoản vay, cộng số tiền vào KPI tăng ròng, xoá hồ sơ.
+**Tệp dự kiến chạm:** types/loanProgress; lib/loanProgress; lib/api/loanProgressApi; hooks/useLoanProgress; components/loanProgress; views/LoanProgressView; điều hướng, TeamKpiDashboard, migration và test. Tách thành các tầng vì có nghiệp vụ, phân quyền và hai màn hình dùng chung.
+**Tầng:** types định nghĩa; lib validation/tổng hợp thuần; API Supabase; hooks điều phối; components hiển thị; migration bảo vệ dữ liệu.
+**Kiểm chứng bằng gì:** Vitest nghiệp vụ và RLS; TypeScript/build; DB rollback thử ghi/đọc với vai trò thật; đối soát bảng nghiệp vụ trước/sau; trình duyệt desktop/mobile.
+**Rủi ro đã biết:** Không nhầm số tiền với tăng ròng. Không coi trống là 0. Không cho Leader sửa dữ liệu thành viên hoặc đổi chủ sở hữu. Báo cáo vận hành theo membership hiện hành, không phải ảnh chụp lịch sử KPI. Khách hiện hữu phải thuộc chính người nhập. Dữ liệu tháng được nhập riêng; không tự sao chép tháng trước.

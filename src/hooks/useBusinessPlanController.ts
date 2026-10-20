@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import {
   computeBusinessPlan, emptyBusinessPlanInput,
-  type BusinessPlanInput, type BasisKey,
+  type BusinessPlanInput,
 } from '../lib/businessPlan';
 import {
   buildBusinessPlanSheets, sheetToXlsx, type ExportContext,
@@ -10,19 +10,6 @@ import { downloadBytes } from '../lib/xlsExport';
 import { MIME_XLSX } from '../lib/xlsxWriter';
 import { parseMoneyDecimalInput, todayIso } from '../lib/utils';
 import type { MoneyUnit } from '../components/businessPlan/units';
-
-export const BASIS_FIELDS: { key: BasisKey; label: string }[] = [
-  { key: 'revenue', label: 'Doanh thu' },
-  { key: 'cogs', label: 'Tổng chi phí' },
-  { key: 'staff', label: 'Chi phí nhân công' },
-  { key: 'premises', label: 'Chi phí thuê mặt bằng' },
-  { key: 'utilities', label: 'Chi phí điện nước' },
-  { key: 'interest', label: 'Chi phí lãi vay' },
-  { key: 'depreciation', label: 'Chi phí khấu hao' },
-  { key: 'other', label: 'Chi phí khác' },
-  { key: 'tax', label: 'Thuế' },
-  { key: 'profit', label: 'Lợi nhuận' },
-];
 
 export function useBusinessPlanController() {
   const [input, setInput] = useState<BusinessPlanInput>(() => emptyBusinessPlanInput(todayIso()));

@@ -1,8 +1,7 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { DossierNavigation } from './DossierNavigation';
 import type { UiClasses } from '../../../lib/uiClasses';
 import type { useDocumentDossierController } from '../../../hooks/useDocumentDossierController';
-import { TEMPLATE_BY_ID } from '../registry/templates';
 import { CommonInfoForm } from './CommonInfoForm';
 import { CreditCardCommonForm } from './CreditCardCommonForm';
 import { SPECIFIC_FORM_BY_ID } from './specificForms';
@@ -15,12 +14,9 @@ import { todayIso } from '../../../lib/utils';
 export const DossierWorkspace: React.FC<{
   styles: UiClasses;
   ctrl: ReturnType<typeof useDocumentDossierController>;
+  treeNavigation?: boolean;
   leading?: React.ReactNode;
-}> = ({ styles, ctrl, leading }) => {
-  const navDocs = ctrl.visibleDocs.filter(d => !ctrl.isExcluded(d.templateId));
-  const activeIndex = Math.max(0, navDocs.findIndex(d => d.templateId === ctrl.state.activeDocId));
-  const currentTpl = TEMPLATE_BY_ID[ctrl.state.activeDocId];
-
+}> = ({ styles, ctrl, treeNavigation, leading }) => {
   const SpecificForm = SPECIFIC_FORM_BY_ID[ctrl.state.activeDocId];
 
   const handleExportExcel = () => {
@@ -35,47 +31,9 @@ export const DossierWorkspace: React.FC<{
     downloadBytes(bytes, fileName, MIME_XLSX);
   };
 
-  const handlePrevDoc = () => {
-    if (activeIndex > 0) {
-      ctrl.selectDoc(navDocs[activeIndex - 1].templateId);
-    }
-  };
-
-  const handleNextDoc = () => {
-    if (activeIndex < navDocs.length - 1) {
-      ctrl.selectDoc(navDocs[activeIndex + 1].templateId);
-    }
-  };
-
   return (
     <div className="space-y-0">
-      <div className="p-2 sm:p-2.5 border-b border-line/60 bg-surface/40 flex items-center gap-2 overflow-hidden">
-        {leading}
-        <button
-          type="button"
-          disabled={activeIndex <= 0}
-          onClick={handlePrevDoc}
-          className="p-1.5 sm:p-2 rounded-lg border border-line/70 bg-surface hover:bg-surface-elevated disabled:opacity-25 disabled:cursor-not-allowed transition-all text-ink-muted hover:text-ink shrink-0 cursor-pointer"
-          title="Biểu mẫu trước (<)"
-          aria-label="Biểu mẫu trước"
-        >
-          <ChevronLeft size={15} />
-        </button>
-        <span className="flex-1 min-w-0 truncate text-xs font-semibold text-ink" title={currentTpl?.label}>
-          {currentTpl?.label}
-          <span className="ml-1.5 font-normal text-ink-faint">· {activeIndex + 1}/{navDocs.length}</span>
-        </span>
-        <button
-          type="button"
-          disabled={activeIndex >= navDocs.length - 1}
-          onClick={handleNextDoc}
-          className="p-1.5 sm:p-2 rounded-lg border border-line/70 bg-surface hover:bg-surface-elevated disabled:opacity-25 disabled:cursor-not-allowed transition-all text-ink-muted hover:text-ink shrink-0 cursor-pointer"
-          title="Biểu mẫu tiếp theo (>)"
-          aria-label="Biểu mẫu tiếp theo"
-        >
-          <ChevronRight size={15} />
-        </button>
-      </div>
+      <DossierNavigation ctrl={ctrl} treeNavigation={treeNavigation} leading={leading} />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-line/60">
         <div className="lg:col-span-6 lg:self-start p-4 sm:p-6 bg-panel/30 space-y-4">

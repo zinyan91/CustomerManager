@@ -11,11 +11,12 @@ describe('gatherSheets — mot bao cao loi khong lam hong ca tep', () => {
       { id: 'b', sheetName: 'B', load: async () => { throw new Error('mat ket noi'); }, buildSheet: () => ({ name: 'B', rows: [] }) },
     ] as any[];
 
-    const { sheets, failed } = await gatherSheets(defs, 'all', CTX);
+    const { sheets, failed, errors } = await gatherSheets(defs, 'all', CTX);
 
     expect(sheets).toHaveLength(1);
     expect(sheets[0].name).toBe('A');
     expect(failed).toEqual(['b']);
+    expect(errors).toEqual(['mat ket noi']);
     expect(spy).toHaveBeenCalled();
   });
 

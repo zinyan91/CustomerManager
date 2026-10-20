@@ -93,11 +93,11 @@ export const ShoppingChecklistView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 w-full text-xs font-app animate-in fade-in duration-200">
+    <div data-workspace-page className="space-y-0 w-full text-xs font-app animate-in fade-in duration-200">
       <Toast toast={toast} onDismiss={dismiss} />
 
       {/* Top Header & KPIs */}
-      <div className="rounded-2xl border border-line/70 bg-panel/90 shadow-sm overflow-hidden backdrop-blur-md">
+      <div data-workspace-panel className="rounded-2xl border border-line/70 bg-panel/90 shadow-sm overflow-hidden backdrop-blur-md">
         <div className="p-4 sm:p-5 border-b border-line/60 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
             <div className="p-2.5 rounded-2xl bg-accent text-accent-ink shadow-md shadow-accent/20">
@@ -241,7 +241,7 @@ export const ShoppingChecklistView: React.FC = () => {
 
       {/* Tab 1: Checklist (Tầng & Phòng) */}
       {activeTab === 'checklist' ? (
-        <div className="space-y-4">
+        <div className="space-y-0">
           {/* Quick Add Floor Button */}
           <div className="flex items-center justify-between px-1">
             <div className="text-ink-muted text-xs">
@@ -259,7 +259,7 @@ export const ShoppingChecklistView: React.FC = () => {
 
           {/* Floors List */}
           {preset.floors.length === 0 ? (
-            <div className="p-12 text-center bg-panel rounded-2xl border border-line">
+            <div data-workspace-panel className="p-12 text-center bg-panel rounded-2xl border border-line">
               <Building2 className="w-10 h-10 text-ink-faint mx-auto mb-2" />
               <p className="text-ink-muted font-bold text-sm">Chưa có tầng nào</p>
               <p className="text-ink-faint text-xs mt-1">Bấm "Thêm Tầng mới" để bắt đầu thiết lập bảng dự toán.</p>
@@ -279,6 +279,7 @@ export const ShoppingChecklistView: React.FC = () => {
 
               return (
                 <div
+                  data-workspace-panel
                   key={floor.id}
                   className="rounded-2xl border border-line/70 bg-panel/90 shadow-sm overflow-hidden"
                 >
@@ -373,7 +374,7 @@ export const ShoppingChecklistView: React.FC = () => {
                   {!isCollapsed && (
                     <div className="p-3 sm:p-4 space-y-4">
                       {floor.rooms.length === 0 ? (
-                        <div className="py-6 text-center text-ink-faint border border-dashed border-line rounded-xl">
+                        <div data-workspace-panel className="py-6 text-center text-ink-faint border border-dashed border-line rounded-xl">
                           Tầng này chưa có phòng nào. Bấm "+ Thêm phòng" để bổ sung.
                         </div>
                       ) : (
@@ -382,6 +383,7 @@ export const ShoppingChecklistView: React.FC = () => {
 
                           return (
                             <div
+                              data-workspace-panel
                               key={room.id}
                               className="rounded-xl border border-line/60 bg-surface/40 p-3 sm:p-4 space-y-3 shadow-2xs"
                             >

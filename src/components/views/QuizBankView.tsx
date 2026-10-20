@@ -61,11 +61,11 @@ export const QuizBankView: React.FC = () => {
   } = useQuizBankController();
 
   return (
-    <div className="space-y-4 text-sm font-app transition-colors duration-200">
+    <div data-workspace-page className="space-y-0 text-sm font-app transition-colors duration-200">
       <Toast toast={toast} onDismiss={dismiss} />
 
       {/* Main Control Panel */}
-      <div className="rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4">
+      <div data-workspace-panel className="rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line/60 pb-3">
           <div className={`${HEADING_SCREEN} flex items-center gap-2.5 text-accent`}>
             <div className="p-2 rounded-xl bg-accent-soft text-accent">
@@ -110,7 +110,7 @@ export const QuizBankView: React.FC = () => {
             <QuizTelemetryStrip stats={stats} />
 
             {clusters.length > 0 && (
-              <div className="text-xs leading-relaxed border border-line/70 rounded-xl p-3.5 bg-surface/60 space-y-1.5 shadow-2xs">
+              <div data-workspace-panel className="text-xs leading-relaxed border border-line/70 rounded-xl p-3.5 bg-surface/60 space-y-1.5 shadow-2xs">
                 <div className="flex items-center gap-1.5 font-bold text-ink">
                   <AlertTriangle className="w-4 h-4 text-neg" />
                   <span>{clusters.length} cụm câu hỏi trùng nội dung, gồm {clusters.reduce((s, c) => s + c.ids.length, 0)} câu</span>
@@ -144,7 +144,7 @@ export const QuizBankView: React.FC = () => {
             )}
 
             {stats.total === 0 && !loadError && (
-              <div className="space-y-2.5 border border-line/70 rounded-xl p-4 bg-surface/60 shadow-2xs">
+              <div data-workspace-panel className="space-y-2.5 border border-line/70 rounded-xl p-4 bg-surface/60 shadow-2xs">
                 <div className="text-xs text-ink-muted">
                   Ngân hàng chưa có câu nào. Nạp bộ câu hỏi gốc từ <code className="font-mono bg-surface px-1.5 py-0.5 rounded border border-line/60">src/data/quiz_bank.json</code> — chỉ chạy được một lần trên bảng rỗng.
                 </div>
@@ -198,7 +198,7 @@ export const QuizBankView: React.FC = () => {
 
       {/* Form Add / Edit Question Modal-like Box */}
       {formOpen && (
-        <div className="rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3 animate-in fade-in duration-150">
+        <div data-workspace-panel className="rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3 animate-in fade-in duration-150">
           <div className={`${SECTION_LABEL} mb-1 text-accent`}>
             {editingId === null ? 'Thêm câu hỏi mới' : `Sửa câu hỏi số ${editingId}`}
           </div>
@@ -249,7 +249,7 @@ export const QuizBankView: React.FC = () => {
           })}
 
           {pageRows.length === 0 && (
-            <div className="rounded-2xl p-8 text-center border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card text-ink-muted">
+            <div data-workspace-panel className="rounded-2xl p-8 text-center border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card text-ink-muted">
               Không có câu nào khớp từ khoá.
             </div>
           )}

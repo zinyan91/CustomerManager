@@ -66,8 +66,8 @@ async function jsonOf<T = Json>(res: Response): Promise<T> {
 }
 
 /** Mọi mục chưa vào thùng rác của cả Shared Drive, mỗi trang tối đa 1.000 mục. */
-export async function listDriveFiles(ctx: DriveContext): Promise<DriveFile[]> {
-  return listDriveQuery(ctx, 'trashed = false');
+export async function listDriveFiles(ctx: DriveContext, signal?: AbortSignal): Promise<DriveFile[]> {
+  return listDriveQuery(ctx, 'trashed = false', signal);
 }
 
 /** Các Shared Drive mà tài khoản đang dùng là thành viên (dùng để chẩn đoán khi ID Shared Drive đã đặt không tìm thấy). */
@@ -101,7 +101,7 @@ export async function findDriveFolderPath(ctx: DriveContext, rootId: string, pat
   return parentId;
 }
 
-async function listDriveQuery(ctx: DriveContext, q: string): Promise<DriveFile[]> {
+async function listDriveQuery(ctx: DriveContext, q: string, signal?: AbortSignal): Promise<DriveFile[]> {
   const { driveId } = await ctx.getAccess();
   const out: DriveFile[] = [];
   let pageToken = '';
@@ -116,7 +116,7 @@ async function listDriveQuery(ctx: DriveContext, q: string): Promise<DriveFile[]
       fields: `nextPageToken,files(${FILE_FIELDS})`,
     });
     if (pageToken) params.set('pageToken', pageToken);
-    const body = await jsonOf<{ files?: Json[]; nextPageToken?: string }>(await driveRequest(ctx, `${API}/files?${params}`));
+    const body = await jsonOf<{ files?: Json[]; nextPageToken?: string }>(await driveRequest(ctx, `${API}/files?${params}`, { signal }));
     out.push(...(body.files ?? []).map(toDriveFile));
     if (!body.nextPageToken) return out;
     pageToken = body.nextPageToken;

@@ -134,7 +134,16 @@ describe('App thật — mỗi đường dẫn trong ROUTE_OF dựng đúng màn
 
   it.each(Object.entries(ROUTE_OF))('đường dẫn %s dựng đúng màn', async (id, path) => {
     dungAppO(path);
-    expect(await screen.findByText(`MAN:${id}`)).toBeTruthy();
+    expect(await screen.findByText(`MAN:${id==='hub' ? 'mdsdv' : id}`)).toBeTruthy();
+  });
+  it.each(['/hub/mdsdv','/hub/card-fees','/hub/quiz','/hub/documents','/hub/cof','/hub/toi','/hub/estimate','/hub/reports','/dispatches','/storage'])('%s uses the shared navigation instead of the catalog shell',async path=>{
+    const {container}=dungAppO(path);
+    await screen.findByText(/^MAN:/);
+    expect(screen.getByRole('navigation',{name:'Phân hệ'})).toBeTruthy();
+    if (['/hub/documents','/dispatches','/storage'].includes(path)) expect(container.querySelector('#app-sidebar')).toBeNull();
+    else expect(container.querySelector('#app-sidebar')).toBeTruthy();
+    expect(screen.queryByText('Danh Mục Tác Vụ Độc Lập')).toBeNull();
+    expect(screen.queryByRole('button',{name:'Danh mục'})).toBeNull();
   });
 });
 

@@ -32,7 +32,7 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
   customers = [],
 }) => {
   return (
-    <div className={`${UI.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 font-app animate-in fade-in duration-150`}>
+    <div data-workspace-panel className={`${UI.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 font-app animate-in fade-in duration-150`}>
       {/* Title & Actions Bar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-line/60 pb-3">
         <div className="flex items-center space-x-3">
@@ -88,7 +88,7 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
       </div>
 
       {/* Information & Payment Method Controls */}
-      <div className="p-3.5 rounded-xl border border-line/70 bg-surface/60 backdrop-blur-md space-y-3">
+      <div data-workspace-panel className="p-3.5 rounded-xl border border-line/70 bg-surface/60 backdrop-blur-md space-y-3">
         {/* Seller Legal Identity Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -230,7 +230,7 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
 
           {/* Cash Mode Preview */}
           {sellerInfo.paymentMethod === 'cash' ? (
-            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-mono">
+            <div data-workspace-panel className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-mono">
               <span className="font-bold text-[10px] uppercase text-amber-600 dark:text-amber-400">
                 Thông tin thanh toán hiển thị trên chứng từ:
               </span>{' '}
@@ -284,7 +284,7 @@ export const PurchaseStatementSellerCard: React.FC<PurchaseStatementSellerCardPr
               </div>
 
               {/* Auto-assembled Preview Tag for Transfer Info */}
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-between">
+              <div data-workspace-panel className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-between">
                 <div className="flex items-center gap-1.5 font-mono">
                   <span className="font-bold text-[10px] uppercase text-emerald-600 dark:text-emerald-400">
                     Thông tin chuyển khoản hiển thị trên chứng từ:

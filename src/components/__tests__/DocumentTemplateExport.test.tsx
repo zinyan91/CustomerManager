@@ -79,18 +79,13 @@ describe('Soạn biểu mẫu — tải Word', () => {
       render(<DocumentTemplateView />);
       const user = userEvent.setup();
 
-      const cay = within(screen.getByRole('navigation', { name: 'Bộ hồ sơ' }));
       const dossierName = TEMPLATE_DOSSIER_MAP[tpl.id];
+      const tree = within(screen.getByRole('navigation', { name: 'Bộ hồ sơ' }));
       if (dossierName) {
-        const folder = cay.getByRole('button', { name: dossierName });
+        const folder = tree.getByRole('button', { name: dossierName });
         if (folder.getAttribute('aria-expanded') !== 'true') await user.click(folder);
       }
-
-      const cleanLabel = tpl.label.replace(/^\d+\.\s*/, '');
-      const currentActive = screen.queryByRole('heading', { name: cleanLabel });
-      if (!currentActive) {
-        await user.click(cay.getByRole('button', { name: cleanLabel }));
-      }
+      await user.click(tree.getByRole('button', { name: tpl.label.replace(/^\d+\.\s*/, '') }));
 
       const preview = document.querySelector('.a4-sheet-container') as HTMLElement;
       const onScreen = flat(preview.textContent || '');

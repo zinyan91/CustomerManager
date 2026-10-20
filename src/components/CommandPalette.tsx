@@ -2,9 +2,9 @@ import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from '
 import { Search, X, ChevronRight } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import { useLang } from '../context/LanguageContext';
-import { visibleNavItems } from '../lib/navigation';
-import { filterNavItems } from '../lib/modules';
+import { visibleWorkspaceSections, workspaceItemPath, type WorkspaceItem } from '../lib/workspaceNavigation';
 import { useModules } from '../context/ModulesContext';
+import { useSelectedCustomerId } from '../hooks/useSelectedCustomerId';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -21,8 +21,9 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, canM
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { allowed } = useModules();
+  const customerId = useSelectedCustomerId();
 
-  const allItems = useMemo(() => filterNavItems(visibleNavItems(canManageUsers), allowed), [canManageUsers, allowed]);
+  const allItems = useMemo(() => visibleWorkspaceSections(allowed, canManageUsers).flatMap(section => section.items.map(item => ({ ...item, groupLabel: section.label }))), [canManageUsers, allowed]);
 
   useEffect(() => {
     if (isOpen) {
@@ -36,8 +37,8 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, canM
     if (!query.trim()) return allItems;
     const q = query.toLowerCase().trim();
     return allItems.filter((item) => {
-      const label = t(item.labelKey).toLowerCase();
-      const group = t(item.groupKey).toLowerCase();
+      const label = (item.labelKey ? t(item.labelKey) : item.label ?? '').toLowerCase();
+      const group = item.groupLabel.toLowerCase();
       return label.includes(q) || group.includes(q) || item.keywords.some((kw) => kw.includes(q));
     });
   }, [query, allItems, t]);
@@ -46,11 +47,12 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, canM
     setSelectedIndex(0);
   }, [query]);
 
-  const handleSelect = useCallback((item: { path: string; newTab?: boolean }) => {
-    if (item.newTab) window.open(item.path, '_blank', 'noopener,noreferrer');
-    else navigate(item.path, { replace: item.path === location.pathname });
+  const handleSelect = useCallback((item: WorkspaceItem) => {
+    const path = workspaceItemPath(item, customerId);
+    if (item.newTab) window.open(path, '_blank', 'noopener,noreferrer');
+    else navigate(path, { replace: path === location.pathname });
     onClose();
-  }, [navigate, location.pathname, onClose]);
+  }, [navigate, location.pathname, onClose, customerId]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
@@ -133,8 +135,8 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, canM
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="truncate">
-                      <div className="font-semibold text-ink truncate">{t(item.labelKey)}</div>
-                      <div className="text-[10px] text-ink-faint">{t(item.groupKey)}</div>
+                      <div className="font-semibold text-ink truncate">{item.labelKey ? t(item.labelKey) : item.label}</div>
+                      <div className="text-[10px] text-ink-faint">{item.groupLabel}</div>
                     </div>
                   </div>
                   <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-accent' : 'text-ink-faint opacity-50'}`} />

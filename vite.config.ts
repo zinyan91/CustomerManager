@@ -16,7 +16,7 @@ export default defineConfig({
   server: {
     port: 5173,
     watch: {
-      ignored: ['**/mobile/**', '**/dist/**', '**/.git/**', '**/docs/**', '**/.agents/**'],
+      ignored: ['**/mobile/**', '**/dist/**', '**/.git/**', '**/docs/**', '**/.agents/**', '**/.tmp/**'],
     },
   },
   optimizeDeps: {

@@ -20,7 +20,7 @@ describe('useReportCenterController — F5: khong im lang khi xuat tep that bai'
       await result.current.exportSelected();
     });
 
-    expect(result.current.error).toMatch(/Không tạo được tệp Excel/);
+    expect(result.current.error).toBe('trinh duyet chan tai tep');
     expect(result.current.exporting).toBe(false);
     expect(spy).toHaveBeenCalled();
   });

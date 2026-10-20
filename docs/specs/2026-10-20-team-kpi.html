@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CustomerManager · Team & KPI</title>
+  <link rel="stylesheet" href="team-kpi.css">
+  <script defer src="team-kpi-model.js"></script>
+  <script defer src="team-kpi-views.js"></script>
+  <script defer src="team-kpi-controller.js"></script>
+</head>
+<body>
+  <div class="preview"><span>Mockup · Dữ liệu mô phỏng</span><label>Xem theo <select id="preview-role"><option value="leader">Leader · SRBO</option><option value="member">Thành viên · RBO</option><option value="admin">Admin</option></select></label></div>
+  <div class="shell">
+    <aside class="rail"><a class="brand" href="#" aria-label="CustomerManager">CM</a><span class="rail-active" aria-label="Tổng quan">▦</span><span aria-hidden="true">♧</span><span aria-hidden="true">▤</span></aside>
+    <div class="workspace"><header class="topbar"><strong>Tổng quan</strong><span>Nguyễn Minh Anh</span></header><main id="app"></main></div>
+  </div>
+  <dialog id="allocation-dialog"></dialog>
+  <dialog id="detail-dialog"></dialog>
+  <div id="notice" role="status" aria-live="polite"></div>
+</body>
+</html>

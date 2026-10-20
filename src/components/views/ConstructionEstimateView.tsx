@@ -147,11 +147,11 @@ export const ConstructionEstimateView: React.FC = () => {
   }, [estimateData]);
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-4 font-app animate-in fade-in duration-150 pb-8 text-ink">
+    <div data-workspace-page className="w-full space-y-0 font-app animate-in fade-in duration-150 pb-8 text-ink">
       <Toast toast={toast} onDismiss={dismiss} />
 
       {/* Thanh công cụ chính: Mẫu Preset & Các nút Thao tác */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-3.5 rounded-2xl border border-line bg-panel shadow-2xs">
+      <div data-workspace-panel className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-3.5 rounded-2xl border border-line bg-panel shadow-2xs">
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 shrink-0">
             <Hammer size={18} />
@@ -219,7 +219,7 @@ export const ConstructionEstimateView: React.FC = () => {
       </div>
 
       {/* Dải chọn mẫu Preset nhanh */}
-      <div className="flex items-center gap-2 p-2.5 rounded-xl border border-line bg-panel/70 overflow-x-auto no-scrollbar">
+      <div data-workspace-panel className="flex items-center gap-2 p-2.5 rounded-xl border border-line bg-panel/70 overflow-x-auto no-scrollbar">
         <span className="text-[11px] font-bold text-ink-muted shrink-0 px-1 flex items-center gap-1.5">
           <Layers size={13} />
           Mẫu sẵn:
@@ -245,9 +245,9 @@ export const ConstructionEstimateView: React.FC = () => {
       </div>
 
       {activeTab === 'editor' ? (
-        <div className="space-y-4">
+        <div className="space-y-0">
           {/* Khối Thông tin chung */}
-          <div className="p-4 rounded-2xl border border-line bg-panel space-y-3 shadow-2xs">
+          <div data-workspace-panel className="p-4 rounded-2xl border border-line bg-panel space-y-3 shadow-2xs">
             <h2 className="text-xs font-bold uppercase tracking-wider text-ink pb-2 border-b border-line/70">
               1. Thông Tin Công Trình & Các Bên Liên Quan
             </h2>
@@ -347,7 +347,7 @@ export const ConstructionEstimateView: React.FC = () => {
           </div>
 
           {/* Bảng Hạng Mục Thi Công Chi Tiết */}
-          <div className="p-4 rounded-2xl border border-line bg-panel space-y-3 shadow-2xs">
+          <div data-workspace-panel className="p-4 rounded-2xl border border-line bg-panel space-y-3 shadow-2xs">
             <div className="flex items-center justify-between gap-2 pb-2 border-b border-line/70">
               <h2 className="text-xs font-bold uppercase tracking-wider text-ink">
                 2. Bảng Kê Chi Tiết Khối Lượng Hạng Mục Công Việc ({items.length} hạng mục)
@@ -362,7 +362,7 @@ export const ConstructionEstimateView: React.FC = () => {
               </button>
             </div>
 
-            <div className="border border-line rounded-xl overflow-hidden shadow-2xs">
+            <div data-workspace-panel className="border border-line rounded-xl overflow-hidden shadow-2xs">
               <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
                 <table className="w-full border-collapse text-left text-xs font-app">
                   <thead className="bg-surface/80 border-b border-line sticky top-0 z-10">
@@ -473,13 +473,13 @@ export const ConstructionEstimateView: React.FC = () => {
           </div>
 
           {/* Cơ cấu nguồn vốn & Vốn vay ngân hàng */}
-          <div className="p-4 rounded-2xl border border-line bg-panel space-y-3 shadow-2xs">
+          <div data-workspace-panel className="p-4 rounded-2xl border border-line bg-panel space-y-3 shadow-2xs">
             <h2 className="text-xs font-bold uppercase tracking-wider text-ink pb-2 border-b border-line/70">
               3. Cơ Cấu Nguồn Vốn & Tài Trợ Tín Dụng
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3 rounded-xl border border-line bg-surface">
+              <div data-workspace-panel className="p-3 rounded-xl border border-line bg-surface">
                 <span className="text-[11px] font-semibold text-ink-muted block mb-1">
                   Tổng mức đầu tư công trình
                 </span>
@@ -489,7 +489,7 @@ export const ConstructionEstimateView: React.FC = () => {
                 <span className="text-[11px] text-ink-muted block mt-1">100% dự toán</span>
               </div>
 
-              <div className="p-3 rounded-xl border border-line bg-surface">
+              <div data-workspace-panel className="p-3 rounded-xl border border-line bg-surface">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[11px] font-semibold text-ink-muted">
                     Vốn ngân hàng cho vay ({loanPct}%)
@@ -517,7 +517,7 @@ export const ConstructionEstimateView: React.FC = () => {
                 </span>
               </div>
 
-              <div className="p-3 rounded-xl border border-line bg-surface">
+              <div data-workspace-panel className="p-3 rounded-xl border border-line bg-surface">
                 <span className="text-[11px] font-semibold text-ink-muted block mb-1">
                   Vốn tự có đối ứng ({ownPct}%)
                 </span>
@@ -533,7 +533,7 @@ export const ConstructionEstimateView: React.FC = () => {
         </div>
       ) : (
         /* Tab Xem trước văn bản in */
-        <div className="p-4 rounded-2xl border border-line bg-panel space-y-3 shadow-2xs">
+        <div data-workspace-panel className="p-4 rounded-2xl border border-line bg-panel space-y-3 shadow-2xs">
           <div className="flex items-center justify-between pb-2 border-b border-line/70">
             <span className="text-xs font-bold text-ink uppercase tracking-wider">
               Bản In Xem Trước Khổ A4 Ngang (Quy Chuẩn In Ấn & Báo Cáo)

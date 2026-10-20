@@ -95,7 +95,7 @@ export const RateQuoteView: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 text-xs transition-colors duration-200">
+    <div data-workspace-page className="space-y-0 text-xs transition-colors duration-200">
       {/* Program Selector Bar */}
       <div className={`${cardBg} rounded-xl p-2 border border-line shadow-sm flex flex-wrap items-center gap-2`}>
         {KIND_TABS.map(({ id, icon: Icon }) => (
@@ -132,13 +132,13 @@ export const RateQuoteView: React.FC = () => {
       </div>
 
       {loadError && (
-        <div className="rounded-lg border border-neg/30 bg-neg-soft p-3 text-xs font-bold text-neg">
+        <div data-workspace-panel className="rounded-lg border border-neg/30 bg-neg-soft p-3 text-xs font-bold text-neg">
           {loadError}
         </div>
       )}
 
       {!program && !loadError && (
-        <div className="rounded-lg border border-warn/30 bg-warn-soft p-4 text-xs font-bold text-warn">
+        <div data-workspace-panel className="rounded-lg border border-warn/30 bg-warn-soft p-4 text-xs font-bold text-warn">
           Không có chương trình {KIND_LABELS[kind].toLowerCase()} nào hiệu lực tại ngày {fmtDate(onDate)}.
           {isAdmin
             ? ' Gia hạn kỳ cũ hoặc nhân bản sang kỳ mới ở khối quản trị bên dưới.'
@@ -161,7 +161,7 @@ export const RateQuoteView: React.FC = () => {
       {program && (
         <>
           {/* Program Header */}
-          <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-2`}>
+          <div data-workspace-panel className={`${cardBg} rounded-xl p-4 border border-line shadow-sm space-y-2`}>
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
               <div>
                 <div className="flex items-center space-x-2">
@@ -196,7 +196,7 @@ export const RateQuoteView: React.FC = () => {
 
           {/* Scope and Target */}
           {(program.ScopeText || program.TargetText) && (
-            <div className={`${cardBg} rounded-xl p-4 border border-line shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]`}>
+            <div data-workspace-panel className={`${cardBg} rounded-xl p-4 border border-line shadow-sm grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px]`}>
               {program.TargetText && (
                 <div>
                   <div className="font-bold uppercase tracking-wider text-accent mb-1">
@@ -220,7 +220,7 @@ export const RateQuoteView: React.FC = () => {
           {warnings.length > 0 && (
             <div className="space-y-2">
               {warnings.map((w, i) => (
-                <div
+                <div data-workspace-panel
                   key={i}
                   className={`rounded-lg border p-3 text-xs font-bold flex items-start space-x-2 ${
                     w.level === 'block'
@@ -251,7 +251,7 @@ export const RateQuoteView: React.FC = () => {
 
           {/* Admin Rate Edit */}
           {isAdmin && selectedTier && (
-            <div className={`${cardBg} rounded-lg p-4 border space-y-2`}>
+            <div data-workspace-panel className={`${cardBg} rounded-lg p-4 border space-y-2`}>
               <div className="font-bold text-xs tracking-tight text-accent">
                 SỬA THÔNG SỐ (CHỈ ADMIN)
               </div>
@@ -285,7 +285,7 @@ export const RateQuoteView: React.FC = () => {
           )}
 
           {/* Quote & Calculator Panel */}
-          <div className={`${cardBg} rounded-lg p-4 border space-y-4`}>
+          <div data-workspace-panel className={`${cardBg} rounded-lg p-4 border space-y-4`}>
             <div className="font-bold text-xs tracking-tight text-accent border-b border-line pb-2">
               {kind === 'huy_dong' ? 'TÍNH LÃI TIỀN GỬI DỰ KIẾN' : 'CHÀO LÃI SUẤT & PHÍ DỊCH VỤ'}
             </div>
@@ -365,7 +365,7 @@ export const RateQuoteView: React.FC = () => {
 
             {kind === 'huy_dong' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-4 rounded-lg bg-accent-soft border border-accent/30">
+                <div data-workspace-panel className="p-4 rounded-lg bg-accent-soft border border-accent/30">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">LÃI SUẤT CHÀO</div>
                   <div className="text-2xl font-extrabold text-accent font-mono mt-1">
                     {selectedTier?.RateAnnual === null || selectedTier?.RateAnnual === undefined
@@ -374,7 +374,7 @@ export const RateQuoteView: React.FC = () => {
                   </div>
                   <div className="text-[11px] text-ink-faint mt-1">{selectedTier?.Label || '—'}</div>
                 </div>
-                <div className="p-4 rounded-lg bg-pos-soft border border-pos/30">
+                <div data-workspace-panel className="p-4 rounded-lg bg-pos-soft border border-pos/30">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">TIỀN LÃI DỰ KIẾN</div>
                   <div className="text-2xl font-extrabold text-pos font-mono mt-1">
                     {depositInterest === null ? '—' : fmtMoney(depositInterest)}
@@ -386,7 +386,7 @@ export const RateQuoteView: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="p-4 rounded-lg bg-accent-soft border border-accent/30">
+                <div data-workspace-panel className="p-4 rounded-lg bg-accent-soft border border-accent/30">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">LSCV TRONG THỜI GIAN CỐ ĐỊNH</div>
                   <div className="text-2xl font-extrabold text-accent font-mono mt-1">
                     {selectedTier?.RateAnnual === null || selectedTier?.RateAnnual === undefined
@@ -399,7 +399,7 @@ export const RateQuoteView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-lg bg-warn-soft border border-warn/30">
+                <div data-workspace-panel className="p-4 rounded-lg bg-warn-soft border border-warn/30">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">LSCV SAU THỜI GIAN CỐ ĐỊNH</div>
                   <div className="text-2xl font-extrabold text-warn font-mono mt-1">
                     {postFixedRate === null ? '—' : `${(postFixedRate * 100).toFixed(2)} %/năm`}
@@ -409,7 +409,7 @@ export const RateQuoteView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-4 rounded-lg bg-pos-soft border border-pos/30">
+                <div data-workspace-panel className="p-4 rounded-lg bg-pos-soft border border-pos/30">
                   <div className="text-[11px] font-bold text-ink-faint uppercase">PHÍ DỊCH VỤ TỐI THIỂU</div>
                   <div className="text-2xl font-extrabold text-pos font-mono mt-1">
                     {fee.feeAmount === null ? '—' : fmtMoney(fee.feeAmount)}
@@ -431,14 +431,14 @@ export const RateQuoteView: React.FC = () => {
             )}
 
             {blocked && (
-              <div className="rounded-lg border border-neg/30 bg-neg-soft p-3 text-xs font-bold text-neg">
+              <div data-workspace-panel className="rounded-lg border border-neg/30 bg-neg-soft p-3 text-xs font-bold text-neg">
                 Không được dùng kết quả trên để chào khách khi còn cảnh báo đỏ ở trên.
               </div>
             )}
           </div>
 
           {/* Export Panel */}
-          <div className={`${cardBg} rounded-lg p-4 border space-y-3`}>
+          <div data-workspace-panel className={`${cardBg} rounded-lg p-4 border space-y-3`}>
             <div className="font-bold text-xs tracking-tight text-accent border-b border-line pb-2 flex items-center space-x-1.5">
               <Printer className="w-4 h-4" />
               <span>XUẤT BẢNG LÃI SUẤT GỬI KHÁCH HÀNG</span>
@@ -502,7 +502,7 @@ export const RateQuoteView: React.FC = () => {
             )}
 
             {sheetBlockers.length > 0 ? (
-              <div className="rounded-md border border-neg/30 bg-neg-soft p-3 space-y-1">
+              <div data-workspace-panel className="rounded-md border border-neg/30 bg-neg-soft p-3 space-y-1">
                 <div className="text-xs font-bold text-neg">
                   Chưa xuất được file cho khách hàng:
                 </div>

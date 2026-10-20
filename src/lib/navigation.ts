@@ -1,6 +1,6 @@
 import type { ElementType } from 'react';
 import {
-  LayoutDashboard, Landmark,
+  LayoutDashboard,
   Users, FileText, Building2, CreditCard,
   ShieldAlert, Settings, Calculator, Percent,
   Handshake, ClipboardList, Boxes, FileSignature, FolderArchive, Database, UserCog, FileSpreadsheet,
@@ -39,7 +39,6 @@ export const NAV_GROUPS: NavGroup[] = [
     groupKey: 'nav.groupOverview',
     items: [
       { id: 'dashboard', labelKey: 'nav.dashboard', groupKey: 'nav.groupOverview', icon: LayoutDashboard, path: ROUTE_OF.dashboard, keywords: ['tong quan', 'dashboard', 'thong ke'] },
-      { id: 'hub', labelKey: 'nav.hub', groupKey: 'nav.groupOverview', icon: Landmark, path: ROUTE_OF.hub, keywords: ['danh muc', 'hub', 'nghiep vu', 'tra cuu', 'bieu mau'] },
     ],
   },
   {

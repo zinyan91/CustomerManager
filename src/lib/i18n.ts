@@ -26,7 +26,7 @@ const dictionary = {
     'nav.customers': 'Danh sách khách hàng',
     'nav.disbursement': 'Thông tin giải ngân',
     'nav.creditContracts': 'Hợp đồng tín dụng',
-    'nav.loans': 'Quản lý khoản vay (KUNN)',
+    'nav.loans': 'Quản lý khoản vay',
     'nav.collaterals': 'Định giá TSĐB',
     'nav.mortgageContracts': 'Hợp đồng thế chấp',
     'nav.creditCards': 'Thẻ tín dụng',

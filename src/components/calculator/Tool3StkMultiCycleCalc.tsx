@@ -60,7 +60,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
 
   return (
     <div className="space-y-4">
-      <div className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4 text-xs animate-in fade-in duration-150`}>
+      <div data-workspace-panel className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4 text-xs animate-in fade-in duration-150`}>
         <div className="font-bold text-accent uppercase tracking-wider text-xs flex items-center space-x-2 border-b border-line/60 pb-3">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
             <TrendingUp className="w-4 h-4" />
@@ -164,7 +164,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
         </div>
 
         {/* Bảng chi tiết các kỳ */}
-        <div className="overflow-x-auto border border-line/70 rounded-xl">
+        <div data-workspace-panel className="overflow-x-auto border border-line/70 rounded-xl">
           <table className="w-full text-left text-[11px] border-collapse min-w-[940px]">
             <thead className="sticky top-0 z-10 bg-surface/95 backdrop-blur-md text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint border-b border-line/80">
               <tr>
@@ -254,7 +254,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
 
         {/* Thẻ tổng kết Telemetry */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          <div className="p-4 rounded-2xl bg-warn-soft/25 border border-warn/30 specular-card shadow-xs flex flex-col justify-between">
+          <div data-workspace-panel className="p-4 rounded-2xl bg-warn-soft/25 border border-warn/30 specular-card shadow-xs flex flex-col justify-between">
             <span className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Tổng lãi STK các kỳ</span>
             <div className="text-base sm:text-lg font-bold text-warn font-mono mt-1">
               {fmtMoney(result.totalSavingsInterest)}
@@ -264,7 +264,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-accent-soft/25 border border-accent/30 specular-card shadow-xs flex flex-col justify-between">
+          <div data-workspace-panel className="p-4 rounded-2xl bg-accent-soft/25 border border-accent/30 specular-card shadow-xs flex flex-col justify-between">
             <span className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">Tiền lãi vay phải trả</span>
             <div className="text-base sm:text-lg font-bold text-accent font-mono mt-1">
               {fmtMoney(result.loanInterest)}
@@ -274,7 +274,7 @@ export const Tool3StkMultiCycleCalc: React.FC<Tool3StkMultiCycleCalcProps> = ({ 
             </div>
           </div>
 
-          <div className={`p-4 rounded-2xl border specular-card shadow-xs flex flex-col justify-between ${
+          <div data-workspace-panel className={`p-4 rounded-2xl border specular-card shadow-xs flex flex-col justify-between ${
             result.netGain >= 0
               ? 'bg-pos-soft/25 border-pos/30 text-pos'
               : 'bg-neg-soft/25 border-neg/30 text-neg'

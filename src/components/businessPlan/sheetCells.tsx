@@ -12,7 +12,7 @@ const INPUT = 'w-full bg-transparent text-right font-mono text-accent font-semib
 export const Panel: React.FC<{ title: string; children: React.ReactNode; aside?: React.ReactNode }> = ({
   title, children, aside,
 }) => (
-  <div className="bg-panel border border-line rounded-lg overflow-hidden">
+  <div data-workspace-panel className="bg-panel border border-line rounded-lg overflow-hidden">
     <div className="flex items-center justify-between px-3 py-2 border-b border-line bg-panel-muted">
       <h3 className="text-[11px] font-bold uppercase tracking-[0.09em] text-accent">{title}</h3>
       {aside}

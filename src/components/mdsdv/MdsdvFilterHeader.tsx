@@ -25,7 +25,7 @@ export const MdsdvFilterHeader: React.FC<MdsdvFilterHeaderProps> = ({
   const inputCls = UI.inputStyle;
 
   return (
-    <div className={`${cardBg} rounded-xl p-4 sm:p-5 border border-line-strong shadow-xs space-y-4`}>
+    <div data-workspace-panel className={`${cardBg} rounded-xl p-4 sm:p-5 border border-line-strong shadow-xs space-y-4`}>
       {/* Top Title Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-3">
         <div className="flex items-center space-x-2.5">

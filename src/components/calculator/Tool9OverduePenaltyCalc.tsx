@@ -65,7 +65,7 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
 
   return (
     <div className="space-y-4 font-app">
-      <div className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4 text-xs animate-in fade-in duration-150`}>
+      <div data-workspace-panel className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4 text-xs animate-in fade-in duration-150`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line/60 pb-3">
           <div className="font-bold text-accent uppercase tracking-wider text-xs flex items-center space-x-2">
             <div className="p-1.5 rounded-lg bg-neg-soft text-neg shrink-0 shadow-2xs">
@@ -87,7 +87,7 @@ export const Tool9OverduePenaltyCalc: React.FC<Props> = ({ styles }) => {
           Phạt <strong className="text-ink">{(DEFAULT_PRINCIPAL_PENALTY_MULTIPLIER * 100).toFixed(0)}%</strong> lãi suất trong hạn trên nợ gốc quá hạn, và <strong className="text-ink">{(DEFAULT_INTEREST_PENALTY_RATE * 100).toFixed(0)}%/năm</strong> trên số tiền lãi chậm trả. Tính theo số ngày thực tế chia 365.
         </div>
 
-        <div className="overflow-x-auto border border-line/70 rounded-xl">
+        <div data-workspace-panel className="overflow-x-auto border border-line/70 rounded-xl">
           <table className="w-full text-left text-[11px] border-collapse min-w-[1080px]">
             <thead className="sticky top-0 z-10 bg-surface/95 backdrop-blur-md text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint border-b border-line/80">
               <tr>

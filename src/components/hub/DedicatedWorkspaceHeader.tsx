@@ -1,16 +1,22 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router';
-import { ArrowLeft, LayoutGrid, Search, X } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Search, X, Menu } from 'lucide-react';
 import { HUB_TASKS } from '../../lib/hubTasks';
 import { landingPath } from '../../lib/modules';
 import { useModules } from '../../context/ModulesContext';
 import { UserScopeSelector } from '../common/UserScopeSelector';
+import { Sidebar } from '../Sidebar';
+import { useAuth } from '../../context/AuthContext';
 
 export const DedicatedWorkspaceHeader: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { allowed } = useModules();
+  const { can } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const closeMenu = useCallback(() => setIsMenuOpen(false), []);
+  useEffect(() => { setIsMenuOpen(false); }, [location.pathname]);
 
   const isCatalog = location.pathname === '/hub';
   const searchQuery = searchParams.get('q') || '';
@@ -30,10 +36,15 @@ export const DedicatedWorkspaceHeader: React.FC = () => {
   };
 
   return (
+    <>
+    <Sidebar overlay contextual isOpenMobile={isMenuOpen} onCloseMobile={closeMenu} canManageUsers={can('user.manage')} />
     <header className="w-full bg-panel/95 backdrop-blur-md border-b border-line/80 px-3 sm:px-6 2xl:px-8 py-2 shrink-0 z-30 sticky top-0">
       <div className="w-full flex items-center justify-between gap-3">
         {/* Nhánh trái: Nút điều hướng & Tiêu đề / Breadcrumb */}
         <div className="flex items-center gap-2.5 min-w-0">
+          <button type="button" onClick={() => setIsMenuOpen(true)} aria-label="Mở menu chức năng" aria-expanded={isMenuOpen} aria-controls="app-sidebar" className="p-2 rounded-lg border border-line bg-panel hover:bg-surface text-ink shrink-0">
+            <Menu size={15} />
+          </button>
           <button
             type="button"
             onClick={() => navigate(landingPath(allowed))}
@@ -126,5 +137,6 @@ export const DedicatedWorkspaceHeader: React.FC = () => {
         </div>
       </div>
     </header>
+    </>
   );
 };

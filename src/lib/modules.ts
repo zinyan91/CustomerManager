@@ -122,12 +122,14 @@ export function sameModules(a: readonly ModuleId[], b: readonly ModuleId[]): boo
 }
 
 export function canOpenScreen(allowed: readonly ModuleId[], id: ScreenId): boolean {
+  if (id === 'reports') return allowed.includes('credit') || allowed.includes('tools');
   const module = SCREEN_MODULE[id];
   return module === null || allowed.includes(module);
 }
 
 /** Tác vụ chưa khai báo module bị chặn (đóng khi thiếu), test buộc mọi tác vụ đều được khai báo. */
 export function canUseHubTask(allowed: readonly ModuleId[], task: Pick<HubTaskItem, 'id'>): boolean {
+  if (task.id === 'reports') return allowed.includes('credit') || allowed.includes('tools');
   const module = HUB_TASK_MODULE[task.id];
   return module !== undefined && allowed.includes(module);
 }
@@ -135,6 +137,7 @@ export function canUseHubTask(allowed: readonly ModuleId[], task: Pick<HubTaskIt
 /** Đường dẫn không thuộc màn hay tác vụ nào do bộ định tuyến xử lý (trang không tồn tại). */
 export function canOpenPath(allowed: readonly ModuleId[], pathname: string): boolean {
   const clean = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  if (clean === '/team-kpi' || clean === '/loan-progress') return allowed.includes('credit');
   const task = HUB_TASKS.find((t) => t.path === clean);
   if (task) return canUseHubTask(allowed, task);
   const customer = parseCustomerPath(clean);
@@ -157,10 +160,10 @@ export function filterNavGroups(groups: readonly NavGroup[], allowed: readonly M
     .filter((g) => g.items.length > 0);
 }
 
-/** Màn đầu tiên tài khoản được mở: Tổng quan nếu có, rồi màn đầu tiên thuộc module được cấp, rồi Hub, cuối cùng Cài đặt. */
+/** Giữ đích dự phòng theo quyền để không quay lại danh mục cũ. */
 export function landingPath(allowed: readonly ModuleId[]): string {
   if (canOpenScreen(allowed, 'dashboard')) return ROUTE_OF.dashboard;
   const first = NAV_ITEMS.find((i) => SCREEN_MODULE[i.id] !== null && canOpenScreen(allowed, i.id));
   if (first) return first.path;
-  return visibleHubTasks(allowed).length > 0 ? ROUTE_OF.hub : ROUTE_OF.settings;
+  return visibleHubTasks(allowed)[0]?.path ?? ROUTE_OF.settings;
 }

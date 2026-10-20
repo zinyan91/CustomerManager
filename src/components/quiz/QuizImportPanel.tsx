@@ -67,7 +67,7 @@ export const QuizImportPanel: React.FC<QuizImportPanelProps> = ({
       </div>
 
       {parseSkipped.length > 0 && (
-        <div className="text-xs border border-line/70 rounded-xl p-3.5 bg-surface/60 space-y-1 shadow-2xs">
+        <div data-workspace-panel className="text-xs border border-line/70 rounded-xl p-3.5 bg-surface/60 space-y-1 shadow-2xs">
           <div className="font-semibold text-ink">
             {parseSkipped.length} dòng trong tệp không đọc được
           </div>
@@ -83,7 +83,7 @@ export const QuizImportPanel: React.FC<QuizImportPanelProps> = ({
       )}
 
       {report && (
-        <div className="text-xs border border-line/70 rounded-xl p-3.5 bg-surface/60 space-y-2 shadow-2xs">
+        <div data-workspace-panel className="text-xs border border-line/70 rounded-xl p-3.5 bg-surface/60 space-y-2 shadow-2xs">
           <div className="font-bold text-ink">
             {fileName}: đã nạp <span className="text-pos font-mono">{report.da_nap}</span> câu
           </div>

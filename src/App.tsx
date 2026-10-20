@@ -1,10 +1,13 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router';
 import { AppLayout } from './components/AppLayout';
+import { LegacyHubRedirect } from './components/hub/LegacyHubRedirect';
 import { ViewSkeleton } from './components/SkeletonLoader';
 import { ROUTE_OF, DEFAULT_ROUTE } from './lib/routes';
 
 const DashboardView = lazy(() => import('./components/views/DashboardView').then(m => ({ default: m.DashboardView })));
+const TeamKpiView = lazy(() => import('./components/views/TeamKpiView').then(m => ({ default: m.TeamKpiView })));
+const LoanProgressView = lazy(() => import('./components/views/LoanProgressView').then(m => ({ default: m.LoanProgressView })));
 const CustomerListView = lazy(() => import('./components/views/CustomerListView').then(m => ({ default: m.CustomerListView })));
 const DisbursementPayeeListView = lazy(() => import('./components/views/DisbursementPayeeListView').then(m => ({ default: m.DisbursementPayeeListView })));
 const LoanPortfolioView = lazy(() => import('./components/views/LoanPortfolioView').then(m => ({ default: m.LoanPortfolioView })));
@@ -18,6 +21,8 @@ const CustomerTransferView = lazy(() => import('./components/views/CustomerTrans
 const StorageConfigView = lazy(() => import('./components/views/StorageConfigView').then(m => ({ default: m.StorageConfigView })));
 const UserModulesView = lazy(() => import('./components/views/UserModulesView').then(m => ({ default: m.UserModulesView })));
 const UserManagementView = lazy(() => import('./components/views/UserManagementView').then(m => ({ default: m.UserManagementView })));
+const AdminTeamsView = lazy(() => import('./components/views/AdminTeamsView').then(m => ({ default: m.AdminTeamsView })));
+const AdminKpiDataView = lazy(() => import('./components/views/AdminKpiDataView').then(m => ({ default: m.AdminKpiDataView })));
 const DispatchManagementView = lazy(() => import('./components/views/DispatchManagementView').then(m => ({ default: m.DispatchManagementView })));
 const CardPolicyLookupView = lazy(() => import('./components/views/CardPolicyLookupView').then(m => ({ default: m.CardPolicyLookupView })));
 const CalculatorView = lazy(() => import('./components/views/CalculatorView').then(m => ({ default: m.CalculatorView })));
@@ -34,11 +39,9 @@ const ShoppingChecklistView = lazy(() => import('./components/views/ShoppingChec
 const PurchaseStatementView = lazy(() => import('./components/views/PurchaseStatementView').then(m => ({ default: m.PurchaseStatementView })));
 const RetailInvoiceView = lazy(() => import('./components/views/RetailInvoiceView').then(m => ({ default: m.RetailInvoiceView })));
 const QuizBankView = lazy(() => import('./components/views/QuizBankView').then(m => ({ default: m.QuizBankView })));
-const WorkspaceHubView = lazy(() => import('./components/views/WorkspaceHubView').then(m => ({ default: m.WorkspaceHubView })));
 const ConstructionEstimateView = lazy(() => import('./components/views/ConstructionEstimateView').then(m => ({ default: m.ConstructionEstimateView })));
 const ReportCenterView = lazy(() => import('./components/views/ReportCenterView').then(m => ({ default: m.ReportCenterView })));
 const ToiProjectionView = lazy(() => import('./components/views/ToiProjectionView').then(m => ({ default: m.ToiProjectionView })));
-const DedicatedWorkspaceLayout = lazy(() => import('./components/hub/DedicatedWorkspaceLayout').then(m => ({ default: m.DedicatedWorkspaceLayout })));
 const OfficeLayout = lazy(() => import('./office/OfficeLayout').then(m => ({ default: m.OfficeLayout })));
 const OfficeIndex = lazy(() => import('./office/OfficeLayout').then(m => ({ default: m.OfficeIndex })));
 const OfficeCalcRoute = lazy(() => import('./office/OfficeCalcRoute').then(m => ({ default: m.OfficeCalcRoute })));
@@ -48,9 +51,31 @@ const StorageManagementView = lazy(() => import('./components/views/StorageManag
 export function App() {
   return (
     <Routes>
-      {/* Không Gian Nghiệp Vụ Độc Lập (Hoàn toàn tách biệt khỏi Sidebar tổng) */}
-      <Route element={<Suspense fallback={<ViewSkeleton />}><DedicatedWorkspaceLayout /></Suspense>}>
-        <Route path={ROUTE_OF.hub} element={<Suspense fallback={<ViewSkeleton />}><WorkspaceHubView /></Suspense>} />
+      {/* Báo cáo (bảng tính kiểu Excel): trang trống toàn màn hình, không sidebar */}
+      <Route path={ROUTE_OF.office} element={<Suspense fallback={<ViewSkeleton />}><OfficeLayout /></Suspense>}>
+        <Route index element={<Suspense fallback={<ViewSkeleton />}><OfficeIndex /></Suspense>} />
+        <Route path="calc" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
+        <Route path="calc/shared/:sharedId" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
+        <Route path="calc/:draftId" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
+        <Route path="writer" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
+        <Route path="writer/shared/:sharedId" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
+        <Route path="writer/:draftId" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
+      </Route>
+
+      {/* Khu quản trị: khung và sidebar riêng, mở ở tab mới */}
+      <Route path={ROUTE_OF.admin} element={<Suspense fallback={<ViewSkeleton />}><AdminLayout /></Suspense>}>
+        <Route index element={<Suspense fallback={<ViewSkeleton />}><AdminOverviewView /></Suspense>} />
+        <Route path="users" element={<Suspense fallback={<ViewSkeleton />}><UserManagementView /></Suspense>} />
+        <Route path="teams" element={<Suspense fallback={<ViewSkeleton />}><AdminTeamsView /></Suspense>} />
+        <Route path="kpi" element={<Suspense fallback={<ViewSkeleton />}><AdminKpiDataView /></Suspense>} />
+        <Route path="users/:userId" element={<Suspense fallback={<ViewSkeleton />}><UserModulesView /></Suspense>} />
+        <Route path="transfer" element={<Suspense fallback={<ViewSkeleton />}><CustomerTransferView /></Suspense>} />
+        <Route path="storage" element={<Suspense fallback={<ViewSkeleton />}><StorageConfigView /></Suspense>} />
+      </Route>
+
+      {/* Giao diện CRM chính có Sidebar hệ thống */}
+      <Route element={<AppLayout />}>
+        <Route path={ROUTE_OF.hub} element={<Suspense fallback={<ViewSkeleton />}><LegacyHubRedirect /></Suspense>} />
         <Route path="/hub/documents" element={<Suspense fallback={<ViewSkeleton />}><DocumentTemplateView /></Suspense>} />
         <Route path="/hub/estimate" element={<Suspense fallback={<ViewSkeleton />}><ConstructionEstimateView /></Suspense>} />
         <Route path="/hub/toi" element={<Suspense fallback={<ViewSkeleton />}><ToiProjectionView /></Suspense>} />
@@ -68,32 +93,10 @@ export function App() {
         <Route path={ROUTE_OF.storage} element={<Suspense fallback={<ViewSkeleton />}><StorageManagementView /></Suspense>} />
         <Route path="/hub/dispatches" element={<Navigate to={ROUTE_OF.dispatches} replace />} />
         <Route path="/hub/storage" element={<Navigate to={ROUTE_OF.storage} replace />} />
-      </Route>
-
-      {/* Báo cáo (bảng tính kiểu Excel): trang trống toàn màn hình, không sidebar */}
-      <Route path={ROUTE_OF.office} element={<Suspense fallback={<ViewSkeleton />}><OfficeLayout /></Suspense>}>
-        <Route index element={<Suspense fallback={<ViewSkeleton />}><OfficeIndex /></Suspense>} />
-        <Route path="calc" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
-        <Route path="calc/shared/:sharedId" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
-        <Route path="calc/:draftId" element={<Suspense fallback={<ViewSkeleton />}><OfficeCalcRoute /></Suspense>} />
-        <Route path="writer" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
-        <Route path="writer/shared/:sharedId" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
-        <Route path="writer/:draftId" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
-      </Route>
-
-      {/* Khu quản trị: khung và sidebar riêng, mở ở tab mới */}
-      <Route path={ROUTE_OF.admin} element={<Suspense fallback={<ViewSkeleton />}><AdminLayout /></Suspense>}>
-        <Route index element={<Suspense fallback={<ViewSkeleton />}><AdminOverviewView /></Suspense>} />
-        <Route path="users" element={<Suspense fallback={<ViewSkeleton />}><UserManagementView /></Suspense>} />
-        <Route path="users/:userId" element={<Suspense fallback={<ViewSkeleton />}><UserModulesView /></Suspense>} />
-        <Route path="transfer" element={<Suspense fallback={<ViewSkeleton />}><CustomerTransferView /></Suspense>} />
-        <Route path="storage" element={<Suspense fallback={<ViewSkeleton />}><StorageConfigView /></Suspense>} />
-      </Route>
-
-      {/* Giao diện CRM chính có Sidebar hệ thống */}
-      <Route element={<AppLayout />}>
         <Route index element={<Navigate to={DEFAULT_ROUTE} replace />} />
         <Route path={ROUTE_OF.dashboard} element={<Suspense fallback={<ViewSkeleton />}><DashboardView /></Suspense>} />
+        <Route path="/team-kpi" element={<Suspense fallback={<ViewSkeleton />}><TeamKpiView /></Suspense>} />
+        <Route path="/loan-progress" element={<Suspense fallback={<ViewSkeleton />}><LoanProgressView /></Suspense>} />
         <Route path={ROUTE_OF.customers} element={<Suspense fallback={<ViewSkeleton />}><CustomerListView /></Suspense>} />
         <Route path={ROUTE_OF.disbursement} element={<Navigate to="/hub/disbursement" replace />} />
         <Route path={ROUTE_OF['credit-contracts']} element={<Suspense fallback={<ViewSkeleton />}><CreditContractView /></Suspense>} />
@@ -113,7 +116,7 @@ export function App() {
         <Route path="/users" element={<Navigate to="/admin/users" replace />} />
         <Route path={ROUTE_OF.settings} element={<Suspense fallback={<ViewSkeleton />}><SettingsView /></Suspense>} />
 
-        {/* Chuyển thẳng các đường dẫn cũ sang không gian làm việc độc lập */}
+
         <Route path={ROUTE_OF.templates} element={<Navigate to="/hub/documents" replace />} />
         <Route path={ROUTE_OF.mdsdv} element={<Navigate to="/hub/mdsdv" replace />} />
         <Route path={ROUTE_OF['card-policies']} element={<Navigate to="/hub/card-fees" replace />} />

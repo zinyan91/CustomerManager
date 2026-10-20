@@ -24,7 +24,7 @@ export const Field: React.FC<FieldProps> = ({
       {label && (
         <label
           htmlFor={htmlFor}
-          className="block text-[var(--fs-label)] font-bold uppercase tracking-wider text-ink-muted select-none"
+          className="block text-[length:var(--fs-label)] font-bold uppercase tracking-wider text-ink-muted select-none"
         >
           {label}
           {required && <span className="text-neg ml-1">*</span>}

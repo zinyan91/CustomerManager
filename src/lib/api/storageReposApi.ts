@@ -3,8 +3,9 @@ import type { StorageRepo } from '../../types/storageRepo';
 import { mapRepoRow, validateRepoInput, type RepoInput } from '../storageRepos';
 
 /** Danh sách repo được phép thấy (RLS lọc theo vai trò). Ném lỗi khi DB báo lỗi. */
-export async function listStorageRepos(): Promise<StorageRepo[]> {
-  const { data, error } = await supabase.from('StorageRepos').select('*').order('Id', { ascending: true });
+export async function listStorageRepos(signal?: AbortSignal): Promise<StorageRepo[]> {
+  const query = supabase.from('StorageRepos').select('*').order('Id', { ascending: true });
+  const { data, error } = await (signal ? query.abortSignal(signal) : query);
   if (error) {
     throw new Error(`Không đọc được danh sách kho lưu trữ: ${error.message}`);
   }

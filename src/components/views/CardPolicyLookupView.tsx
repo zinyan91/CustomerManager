@@ -46,9 +46,9 @@ export const CardPolicyLookupView: React.FC = () => {
   } = useCardPolicyController();
 
   return (
-    <div className="space-y-4 w-full font-app animate-in fade-in duration-150">
+    <div data-workspace-page className="space-y-0 w-full font-app animate-in fade-in duration-150">
       {/* Top Header & Tab Switcher */}
-      <div className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3`}>
+      <div data-workspace-panel className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className={`${HEADING_SCREEN} flex items-center gap-2.5`}>
             <div className="p-2 bg-accent-soft rounded-xl text-accent">

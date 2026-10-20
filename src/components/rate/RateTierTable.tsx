@@ -20,7 +20,7 @@ export const RateTierTable: React.FC<RateTierTableProps> = ({
   cardBg, kind, program, lendingTiers, depositChannels, depositRows,
   selectedTierId, setSelectedTierId,
 }) => (
-  <div className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden font-app animate-in fade-in duration-150`}>
+  <div data-workspace-panel className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden font-app animate-in fade-in duration-150`}>
     <div className="p-3.5 sm:p-4 border-b border-line/60 font-bold text-xs tracking-tight text-accent flex items-center justify-between bg-surface/75 backdrop-blur-md">
       <span className="uppercase tracking-wider text-[11px]">
         {kind === 'huy_dong' ? 'BẢNG LÃI SUẤT TIỀN GỬI' : 'BẢNG LÃI SUẤT CHO VAY'}

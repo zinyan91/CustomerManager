@@ -82,7 +82,7 @@ export const QuizQuestionForm: React.FC<QuizQuestionFormProps> = ({
         )}
       </div>
 
-      <div className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
+      <div data-workspace-panel className="p-3.5 sm:p-4 rounded-xl border border-line/70 bg-surface/60 space-y-2.5 shadow-2xs">
         <div className="flex items-baseline justify-between gap-2 border-b border-line/60 pb-1.5">
           <span className={SECTION_LABEL}>
             Lựa chọn — tích vào ô vuông ở những đáp án đúng

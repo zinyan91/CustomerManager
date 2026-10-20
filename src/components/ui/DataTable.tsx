@@ -63,7 +63,7 @@ function DataTableImpl<T>({
 
   if (rows.length === 0) {
     return (
-      <div className="text-center py-12 text-ink-faint text-[var(--fs-body)]">
+      <div className="text-center py-12 text-ink-faint text-[length:var(--fs-body)]">
         {emptyText}
       </div>
     );
@@ -83,6 +83,7 @@ function DataTableImpl<T>({
 
           return (
             <li
+              data-workspace-panel
               key={k}
               className={`rounded-[var(--r-panel)] border transition-all p-4 space-y-3 shadow-xs ${
                 isSelected?.(row)
@@ -95,7 +96,7 @@ function DataTableImpl<T>({
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
                 <div className="flex items-baseline justify-between gap-2 pb-2 border-b border-line/50">
-                  <span className="font-bold text-ink text-[var(--fs-title)] tracking-tight">
+                  <span className="font-bold text-ink text-[length:var(--fs-title)] tracking-tight">
                     {title}
                   </span>
                   {cardSubtitle && (
@@ -108,7 +109,7 @@ function DataTableImpl<T>({
                 <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
                   {p1.map((c) => (
                     <div key={c.key} className="min-w-0">
-                      <dt className="text-[var(--fs-label)] font-bold uppercase tracking-wider text-ink-faint">
+                      <dt className="text-[length:var(--fs-label)] font-bold uppercase tracking-wider text-ink-faint">
                         {c.label}
                       </dt>
                       <dd className="text-xs text-ink font-medium truncate mt-0.5">
@@ -122,7 +123,7 @@ function DataTableImpl<T>({
                   <dl className="grid grid-cols-2 gap-x-3 gap-y-2 pt-2.5 border-t border-line/40 animate-in fade-in duration-150">
                     {[...p2, ...p3].map((c) => (
                       <div key={c.key} className="min-w-0">
-                        <dt className="text-[var(--fs-label)] font-bold uppercase tracking-wider text-ink-faint">
+                        <dt className="text-[length:var(--fs-label)] font-bold uppercase tracking-wider text-ink-faint">
                           {c.label}
                         </dt>
                         <dd className="text-xs text-ink font-medium truncate mt-0.5">
@@ -161,6 +162,7 @@ function DataTableImpl<T>({
 
       {/* Desktop Table (hidden md:block) */}
       <div
+        data-workspace-panel
         className={`hidden md:block overflow-x-auto rounded-2xl border border-line/65 bg-panel shadow-xs ${maxHeight ? 'overflow-y-auto' : ''}`}
         style={maxHeight ? { maxHeight } : undefined}
       >

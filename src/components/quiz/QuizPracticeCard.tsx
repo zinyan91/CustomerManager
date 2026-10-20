@@ -28,7 +28,7 @@ export const QuizPracticeCard: React.FC<QuizPracticeCardProps> = ({
   nextQuestion,
 }) => {
   return (
-    <div className="rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 font-app animate-in fade-in duration-150">
+    <div data-workspace-panel className="rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 font-app animate-in fade-in duration-150">
       <div className="flex flex-wrap items-baseline justify-between gap-2 text-xs sm:text-sm border-b border-line/60 pb-2.5">
         <span>
           Câu {practiceList.length === 0 ? 0 : practiceAt + 1} / {practiceList.length}
@@ -49,7 +49,7 @@ export const QuizPracticeCard: React.FC<QuizPracticeCardProps> = ({
         <div className="text-ink-muted text-sm p-4 text-center">Không có câu nào khớp bộ lọc.</div>
       ) : (
         <>
-          <div className="space-y-2 p-4 sm:p-5 rounded-xl border border-line/70 bg-surface/60 shadow-2xs">
+          <div data-workspace-panel className="space-y-2 p-4 sm:p-5 rounded-xl border border-line/70 bg-surface/60 shadow-2xs">
             <div className="text-ink leading-relaxed font-semibold text-base sm:text-lg">{current.QuestionText}</div>
             {isMultiAnswer(current) && (
               <div className="text-xs uppercase font-bold tracking-wider text-accent">

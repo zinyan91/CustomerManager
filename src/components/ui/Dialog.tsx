@@ -112,7 +112,7 @@ export const DialogTitle = React.forwardRef<
 >(({ className = '', ...props }, ref) => (
   <RadixDialog.Title
     ref={ref}
-    className={`text-[var(--fs-title)] font-bold text-ink tracking-tight ${className}`}
+    className={`text-[length:var(--fs-title)] font-bold text-ink tracking-tight ${className}`}
     {...props}
   />
 ));
@@ -124,7 +124,7 @@ export const DialogDescription = React.forwardRef<
 >(({ className = '', ...props }, ref) => (
   <RadixDialog.Description
     ref={ref}
-    className={`text-[var(--fs-label)] text-ink-faint font-normal ${className}`}
+    className={`text-[length:var(--fs-label)] text-ink-faint font-normal ${className}`}
     {...props}
   />
 ));

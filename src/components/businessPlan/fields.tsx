@@ -92,7 +92,7 @@ export const ReadOnlyRow: React.FC<{
 export const Block: React.FC<{ title: string; children: React.ReactNode; aside?: React.ReactNode }> = ({
   title, children, aside,
 }) => (
-  <div className={`${UI.containerCardBg} rounded-lg border p-3`}>
+  <div data-workspace-panel className={`${UI.containerCardBg} rounded-lg border p-3`}>
     <div className="flex items-center justify-between mb-2.5">
       <h3 className="text-[11px] font-bold uppercase tracking-[0.09em] text-accent">{title}</h3>
       {aside}

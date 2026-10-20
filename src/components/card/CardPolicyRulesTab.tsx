@@ -31,7 +31,7 @@ export const CardPolicyRulesTab: React.FC<CardPolicyRulesTabProps> = ({
   return (
     <div className="space-y-4 font-app animate-in fade-in duration-150">
       {/* Filter Controls Card */}
-      <div className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5`}>
+      <div data-workspace-panel className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5`}>
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
           <input
@@ -62,7 +62,7 @@ export const CardPolicyRulesTab: React.FC<CardPolicyRulesTabProps> = ({
       </div>
 
       {/* Main Rules Table Card */}
-      <div className={`${PANEL} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden p-4 sm:p-5 space-y-3`}>
+      <div data-workspace-panel className={`${PANEL} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden p-4 sm:p-5 space-y-3`}>
         <div className="flex items-center justify-between border-b border-line/60 pb-2.5">
           <span className="text-xs font-bold text-accent uppercase tracking-wider">
             DANH MỤC CHÍNH SÁCH PHÁT HÀNH THẺ
@@ -72,7 +72,7 @@ export const CardPolicyRulesTab: React.FC<CardPolicyRulesTabProps> = ({
           </span>
         </div>
 
-        <div className="overflow-x-auto max-h-[600px] overflow-y-auto border border-line/70 rounded-xl">
+        <div data-workspace-panel className="overflow-x-auto max-h-[600px] overflow-y-auto border border-line/70 rounded-xl">
           <table className="w-full text-left text-xs border-collapse min-w-[850px] font-app">
             <thead className="sticky top-0 bg-surface/95 backdrop-blur-md text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint border-b border-line/80 z-10">
               <tr>
@@ -126,7 +126,7 @@ export const CardPolicyRulesTab: React.FC<CardPolicyRulesTabProps> = ({
                       <tr className="bg-panel-muted/40 border-t border-b border-line/70">
                         <td colSpan={6} className="px-5 py-4 space-y-3">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1.5 p-3 rounded-xl bg-surface/70 border border-line/60">
+                            <div data-workspace-panel className="space-y-1.5 p-3 rounded-xl bg-surface/70 border border-line/60">
                               <div className={`${SECTION_LABEL} text-accent`}>Điều kiện & Tiêu chuẩn cấp thẻ</div>
                               {rule?.conditions && rule.conditions.length > 0 ? (
                                 <ul className="list-disc list-inside space-y-1 text-[11px] text-ink-muted pl-1">
@@ -139,7 +139,7 @@ export const CardPolicyRulesTab: React.FC<CardPolicyRulesTabProps> = ({
                               )}
                             </div>
 
-                            <div className="space-y-1.5 p-3 rounded-xl bg-surface/70 border border-line/60">
+                            <div data-workspace-panel className="space-y-1.5 p-3 rounded-xl bg-surface/70 border border-line/60">
                               <div className={`${SECTION_LABEL} text-accent`}>Hồ sơ & Đánh giá định kỳ</div>
                               {rule?.documents && rule.documents.length > 0 ? (
                                 <ul className="list-disc list-inside space-y-1 text-[11px] text-ink-muted pl-1">
@@ -182,13 +182,13 @@ export const CardPolicyRulesTab: React.FC<CardPolicyRulesTabProps> = ({
       </div>
 
       {/* General Notes Footer Section */}
-      <div className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3`}>
+      <div data-workspace-panel className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3`}>
         <div className={`${SECTION_LABEL} flex items-center gap-1.5 text-accent`}>
           <Info size={14} className="text-accent" /> Quy định chung về phát hành thẻ tín dụng
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-ink-muted">
           {CARD_POLICY_GENERAL_NOTES.map((note, idx) => (
-            <div key={idx} className="p-3.5 rounded-xl border border-line/70 bg-surface/60 space-y-1">
+            <div data-workspace-panel key={idx} className="p-3.5 rounded-xl border border-line/70 bg-surface/60 space-y-1">
               <div className="font-bold text-ink text-xs">Mục {idx + 1}</div>
               <div className="text-ink-muted leading-relaxed">{note}</div>
             </div>

@@ -15,7 +15,8 @@ const SidebarCollapseContext = createContext<SidebarCollapseContextType>({
 export const SidebarCollapseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('cm_sidebar_collapsed') === 'true';
+      const saved = localStorage.getItem('cm_sidebar_collapsed');
+      return saved === null ? window.innerWidth < 1200 : saved === 'true';
     } catch {
       return false;
     }

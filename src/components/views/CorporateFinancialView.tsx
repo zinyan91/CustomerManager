@@ -206,11 +206,11 @@ export const CorporateFinancialView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 text-xs pb-6 font-app">
+    <div data-workspace-page className="space-y-0 text-xs pb-6 font-app">
       <Toast toast={toast} onDismiss={() => setToast(null)} />
 
       {/* Header Info Card */}
-      <div className={`${UI.containerCardBg} rounded-2xl p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs space-y-4`}>
+      <div data-workspace-panel className={`${UI.containerCardBg} rounded-2xl p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs space-y-4`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-line/60 pb-3">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-accent-soft text-accent shrink-0">

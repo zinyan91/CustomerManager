@@ -56,7 +56,7 @@ export const ShoppingChecklistTable: React.FC<ShoppingChecklistTableProps> = ({
       </div>
 
       {/* Spreadsheet Grid */}
-      <div className="rounded-xl border border-line/70 overflow-hidden bg-panel shadow-2xs">
+      <div data-workspace-panel className="rounded-xl border border-line/70 overflow-hidden bg-panel shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>

@@ -49,7 +49,7 @@ export const B01bBalanceSheetTab: React.FC<B01bBalanceSheetTabProps> = ({
   return (
     <div className="space-y-4 animate-in fade-in duration-150">
       {/* Top action bar and Balance Status */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-line/65 bg-surface/80 backdrop-blur-md shadow-xs">
+      <div data-workspace-panel className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-line/65 bg-surface/80 backdrop-blur-md shadow-xs">
         <div className="flex items-center gap-2">
           {isBalanced ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
@@ -79,7 +79,7 @@ export const B01bBalanceSheetTab: React.FC<B01bBalanceSheetTabProps> = ({
       </div>
 
       {/* Main Table */}
-      <div className="overflow-x-auto rounded-xl border border-line/65 bg-surface/90 shadow-xs">
+      <div data-workspace-panel className="overflow-x-auto rounded-xl border border-line/65 bg-surface/90 shadow-xs">
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr className="bg-panel/90 border-b border-line text-ink font-bold">

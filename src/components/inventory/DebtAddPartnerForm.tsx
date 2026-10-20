@@ -55,6 +55,7 @@ export const DebtAddPartnerForm: React.FC<DebtAddPartnerFormProps> = ({
 
   return (
     <form
+      data-workspace-panel
       onSubmit={handleSubmit}
       className={`${UI.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3 font-app animate-in fade-in duration-150`}
     >

@@ -363,7 +363,7 @@ export const CreditCardCommonForm: React.FC<CreditCardCommonFormProps> = ({
             const planFeeProfiles = feeProfiles.filter(p => p.productMan === cItem.productPlan);
 
             return (
-              <div
+              <div data-workspace-panel
                 key={cItem.id}
                 className="p-3 rounded-xl border border-line/70 bg-surface/50 space-y-2.5 relative group"
               >

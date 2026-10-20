@@ -239,7 +239,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
 
   return (
     <div className="space-y-4">
-      <div className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-5 text-xs animate-in fade-in duration-150`}>
+      <div data-workspace-panel className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-5 text-xs animate-in fade-in duration-150`}>
         
         {/* Header Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line/60 pb-3.5">
@@ -335,7 +335,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
         {/* 2 Ô KPI Nổi bật: TỔNG GỐC LÃI SỔ NHẬN & TỔNG TRẢ NỢ */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Ô 1: Tổng gốc lãi sổ nhận */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-warn-soft/30 border border-warn/40 specular-card shadow-xs flex items-center justify-between">
+          <div data-workspace-panel className="p-4 sm:p-5 rounded-2xl bg-warn-soft/30 border border-warn/40 specular-card shadow-xs flex items-center justify-between">
             <div className="space-y-1">
               <span className="text-[11px] font-bold text-warn uppercase tracking-wider block">
                 TỔNG GỐC LÃI SỔ NHẬN
@@ -351,7 +351,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
           </div>
 
           {/* Ô 2: Tổng trả nợ */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-accent-soft/30 border border-accent/40 specular-card shadow-xs flex items-center justify-between">
+          <div data-workspace-panel className="p-4 sm:p-5 rounded-2xl bg-accent-soft/30 border border-accent/40 specular-card shadow-xs flex items-center justify-between">
             <div className="space-y-1">
               <span className="text-[11px] font-bold text-accent uppercase tracking-wider block">
                 TỔNG TRẢ NỢ (GỐC + LÃI VAY)
@@ -678,7 +678,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
         </div>
 
         {/* Chênh lệch Net Banner */}
-        <div className={`p-4 sm:p-5 rounded-2xl border specular-card shadow-xs ${
+        <div data-workspace-panel className={`p-4 sm:p-5 rounded-2xl border specular-card shadow-xs ${
           result.netGain >= 0
             ? 'bg-pos-soft/30 border-pos/30 text-pos'
             : 'bg-neg-soft/30 border-neg/30 text-neg'
@@ -770,7 +770,7 @@ export const Tool2StkSingleCalc: React.FC<Tool2StkSingleCalcProps> = ({ styles }
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-surface/80 border border-line/70 text-[11px] space-y-1">
+              <div data-workspace-panel className="p-3 rounded-xl bg-surface/80 border border-line/70 text-[11px] space-y-1">
                 <div className="flex justify-between text-ink-muted">
                   <span>Số khoản vay / kỳ thu nợ:</span>
                   <span className="font-bold text-ink">{loans.length} khoản</span>

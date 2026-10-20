@@ -25,6 +25,7 @@ export const Panel: React.FC<PanelProps> = ({
 
   return (
     <div
+      data-workspace-panel
       className={`rounded-[var(--r-panel)] border border-line/70 bg-panel/85 backdrop-blur-xl shadow-xs transition-all ${specularClass} ${paddingClass} ${className}`}
       {...rest}
     >
@@ -66,13 +67,13 @@ export const PanelHeader: React.FC<PanelHeaderProps> = ({
         )}
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-[var(--fs-title)] font-bold text-ink tracking-tight truncate">
+            <h2 className="text-[length:var(--fs-title)] font-bold text-ink tracking-tight truncate">
               {title}
             </h2>
             {badge && <span>{badge}</span>}
           </div>
           {subtitle && (
-            <p className="text-[var(--fs-label)] text-ink-faint font-normal mt-0.5">
+            <p className="text-[length:var(--fs-label)] text-ink-faint font-normal mt-0.5">
               {subtitle}
             </p>
           )}

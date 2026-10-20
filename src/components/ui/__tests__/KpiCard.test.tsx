@@ -21,7 +21,7 @@ describe('KpiCard Component', () => {
     expect(screen.getByText('Tổng hạn mức')).toBeTruthy();
     expect(screen.getByText('1.500.000.000 đ')).toBeTruthy();
     expect(screen.getByText('3 hợp đồng hiệu lực')).toBeTruthy();
-    expect(screen.getByText('1.500.000.000 đ').className).toContain('text-[var(--fs-num)]');
+    expect(screen.getByText('1.500.000.000 đ').className).toContain('num-lead');
   });
 
   it('applies semantic hue styles correctly', () => {

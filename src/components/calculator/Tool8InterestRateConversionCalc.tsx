@@ -36,7 +36,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
   return (
     <div className="space-y-4 font-app">
       {/* Title Header Card */}
-      <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150`}>
+      <div data-workspace-panel className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150`}>
         <div className="text-xs font-bold tracking-tight text-accent flex items-center space-x-2">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
             <RefreshCw className="w-4 h-4" />
@@ -49,7 +49,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Cột 1: Lãi phẳng sang giảm dần */}
-        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
+        <div data-workspace-panel className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
           <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-2 border-b border-line/60 pb-3">
             <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
               <Percent className="w-3.5 h-3.5" />
@@ -112,7 +112,7 @@ export const Tool8InterestRateConversionCalc: React.FC<Tool8Props> = () => {
         </div>
 
         {/* Cột 2: LS Danh nghĩa sang EAR */}
-        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
+        <div data-workspace-panel className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
           <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-2 border-b border-line/60 pb-3">
             <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
               <RefreshCw className="w-3.5 h-3.5" />

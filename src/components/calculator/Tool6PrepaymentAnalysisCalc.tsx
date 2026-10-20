@@ -77,7 +77,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
   return (
     <div className="space-y-4 font-app">
       {/* Title Header Card */}
-      <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 shadow-xs specular-card flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-150`}>
+      <div data-workspace-panel className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 shadow-xs specular-card flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-150`}>
         <div className="text-xs font-bold tracking-tight text-accent flex items-center space-x-2">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
             <Award className="w-4 h-4" />
@@ -100,7 +100,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
       {/* 4 KPI Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* KPI 1: Tổng tiền nộp đợt này */}
-        <div className="p-4 rounded-2xl border border-line/70 bg-surface/90 shadow-xs space-y-1">
+        <div data-workspace-panel className="p-4 rounded-2xl border border-line/70 bg-surface/90 shadow-xs space-y-1">
           <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint flex items-center justify-between">
             <span>TỔNG TIỀN NỘP ĐỢT NÀY</span>
             <DollarSign className="w-3.5 h-3.5 text-accent" />
@@ -114,7 +114,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
         </div>
 
         {/* KPI 2: Phí phạt trả trước */}
-        <div className="p-4 rounded-2xl border border-neg/30 bg-neg-soft/20 shadow-xs space-y-1">
+        <div data-workspace-panel className="p-4 rounded-2xl border border-neg/30 bg-neg-soft/20 shadow-xs space-y-1">
           <div className="text-[10px] font-bold uppercase tracking-wider text-neg flex items-center justify-between">
             <span>PHÍ PHẠT TRẢ TRƯỚC</span>
             <ShieldAlert className="w-3.5 h-3.5 text-neg" />
@@ -128,7 +128,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
         </div>
 
         {/* KPI 3: Tiền lãi tiết kiệm được */}
-        <div className="p-4 rounded-2xl border border-pos/30 bg-pos-soft/20 shadow-xs space-y-1">
+        <div data-workspace-panel className="p-4 rounded-2xl border border-pos/30 bg-pos-soft/20 shadow-xs space-y-1">
           <div className="text-[10px] font-bold uppercase tracking-wider text-pos flex items-center justify-between">
             <span>TỔNG LÃI TIẾT KIỆM</span>
             <TrendingUp className="w-3.5 h-3.5 text-pos" />
@@ -142,7 +142,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
         </div>
 
         {/* KPI 4: Lợi ích ròng */}
-        <div className={`p-4 rounded-2xl border shadow-xs space-y-1 ${
+        <div data-workspace-panel className={`p-4 rounded-2xl border shadow-xs space-y-1 ${
           result.netSavings >= 0 ? 'border-pos/40 bg-pos-soft/30' : 'border-neg/40 bg-neg-soft/30'
         }`}>
           <div className={`text-[10px] font-bold uppercase tracking-wider flex items-center justify-between ${
@@ -164,7 +164,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Cột 1: Thông tin Khoản vay & Số tiền trả trước */}
-        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4`}>
+        <div data-workspace-panel className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4`}>
           <div className="font-bold text-xs text-accent tracking-tight flex items-center space-x-2 border-b border-line/60 pb-3">
             <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
               <DollarSign className="w-3.5 h-3.5" />
@@ -254,7 +254,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
         </div>
 
         {/* Cột 2: Khung phí phạt trả trước hạn */}
-        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4`}>
+        <div data-workspace-panel className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 shadow-xs specular-card space-y-4`}>
           <div className="font-bold text-xs text-neg tracking-tight flex items-center justify-between border-b border-line/60 pb-3">
             <div className="flex items-center space-x-2">
               <div className="p-1.5 rounded-lg bg-neg-soft text-neg shrink-0 shadow-2xs">

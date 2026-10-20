@@ -27,6 +27,11 @@ const DELETE_BLOCKERS: Array<{ table: string; column: string; label: string }> =
   { table: 'CollateralAppraisals', column: 'PerformedBy', label: 'lần thẩm định tài sản' },
   { table: 'PostLoanControlRecords', column: 'PerformedBy', label: 'bản ghi kiểm soát sau vay' },
   { table: 'QuizQuestions', column: 'CreatedBy', label: 'câu hỏi trắc nghiệm' },
+  { table: 'TeamMemberships', column: 'UserId', label: 'lịch sử thành viên team' },
+  { table: 'MemberKpiTargets', column: 'UserId', label: 'chỉ tiêu KPI' },
+  { table: 'KpiObservations', column: 'UserId', label: 'số liệu KPI' },
+  { table: 'KpiInputBatches', column: 'PublishedBy', label: 'lần công bố KPI' },
+  { table: 'KpiAuditLog', column: 'ChangedBy', label: 'nhật ký KPI' },
 ];
 
 function describeAuthError(message: string): string {

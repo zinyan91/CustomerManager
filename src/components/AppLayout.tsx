@@ -11,9 +11,9 @@ import { PrimaryRail } from './PrimaryRail';
 import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
 import { CustomerContextBar } from './CustomerContextBar';
-import { LifecycleStepper } from './LifecycleStepper';
 import { ModuleGate } from './ModuleGate';
 import { AiChatDialog, FloatingAiAssistantButton } from './ai/AiChatDialog';
+import { workspaceSectionOfPath } from '../lib/workspaceNavigation';
 
 function AppLayoutContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -23,6 +23,12 @@ function AppLayoutContent() {
   const canManageUsers = can('user.manage');
   const { ready, scopeKey } = useUserScope();
   const location = useLocation();
+  const section = workspaceSectionOfPath(location.pathname);
+  const directWorkspace = section === 'dispatch' || section === 'storage';
+  const replacesSidebar = section === 'documents' || directWorkspace;
+  const continuousWorkspace = ['retail','dispatch','storage','documents','reference','finance'].includes(section ?? '')
+    || ['/hub/reports','/tools/reports'].includes(location.pathname.replace(/\/+$/,''));
+  const flushReport = ['/team-kpi','/loan-progress','/dispatches','/storage'].includes(location.pathname.replace(/\/+$/,''));
   const { isSidebarCollapsed } = useSidebarCollapse();
 
   useEffect(() => {
@@ -81,26 +87,24 @@ function AppLayoutContent() {
         onOpenAiChat={() => setIsAiDialogOpen(true)}
       />
 
-      {/* Thanh Điều Hướng Nghiệp Vụ Cấp 1 (Primary Command Rail 68px) */}
       <PrimaryRail canManageUsers={canManageUsers} />
 
-      {/* Menu Phụ Theo Phân Hệ (Secondary Contextual Drawer) */}
-      <Sidebar
+      {(!replacesSidebar || isMobileMenuOpen) && <Sidebar
         isOpenMobile={isMobileMenuOpen}
         onCloseMobile={handleCloseMobileMenu}
         canManageUsers={canManageUsers}
         contextual={true}
-      />
+        overlay={replacesSidebar}
+      />}
 
       <div className="flex flex-1 pt-[56px] relative w-full">
-        <main className={`flex-1 ${isSidebarCollapsed ? 'md:ml-[68px]' : 'md:ml-[308px]'} transition-[margin] duration-200 min-w-0 px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4 overflow-y-auto relative w-full`}>
+        <main className={`flex-1 ${isSidebarCollapsed || directWorkspace ? 'md:ml-[88px]' : 'md:ml-[308px]'} transition-[margin] duration-200 min-w-0 ${flushReport || continuousWorkspace ? 'p-0' : 'px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4'} ${continuousWorkspace ? 'workspace-continuous bg-panel' : ''} overflow-y-auto relative w-full`}>
           <ErrorBoundary title="Lỗi khi tải giao diện màn hình">
             {ready ? (
               // key = phạm vi tài khoản: đổi tài khoản thì remount để mọi màn nạp lại đúng dữ liệu
               <Fragment key={scopeKey}>
                 <ModuleGate>
                   <CustomerContextBar />
-                  <LifecycleStepper />
                   <Outlet />
                 </ModuleGate>
               </Fragment>

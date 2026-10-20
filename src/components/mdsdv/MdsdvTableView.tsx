@@ -10,7 +10,7 @@ export const MdsdvTableView: React.FC<MdsdvTableViewProps> = ({ items }) => {
   const cardBg = UI.containerCardBg;
 
   return (
-    <div className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden font-app animate-in fade-in duration-150`}>
+    <div data-workspace-panel className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden font-app animate-in fade-in duration-150`}>
       <div className="overflow-x-auto max-h-[640px] overflow-y-auto">
         <table className="w-full text-left text-xs border-collapse font-app">
           <thead className="bg-surface/95 backdrop-blur-md sticky top-0 z-10 border-b border-line/80 text-[10px] font-bold text-ink-faint uppercase tracking-[0.09em]">

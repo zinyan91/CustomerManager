@@ -7,16 +7,16 @@ import { DossierWorkspace } from '../DossierWorkspace';
 
 afterEach(cleanup);
 
-function Harness({ leading }: { leading?: React.ReactNode }) {
+function Harness() {
   const ctrl = useDocumentDossierController();
-  return <DossierWorkspace styles={UI} ctrl={ctrl} leading={leading} />;
+  return <DossierWorkspace styles={UI} ctrl={ctrl} />;
 }
 
 describe('DossierWorkspace', () => {
-  it('thanh tiêu đề hiện tên biểu mẫu đang mở và vị trí trong bộ', () => {
+  it('ô chọn và bản xem trước khớp biểu mẫu đang mở', () => {
     render(<Harness />);
     expect(screen.getByRole('heading', { name: 'HĐ Mua Bán Hàng Hóa' })).toBeTruthy();
-    expect(screen.getByText('· 1/5')).toBeTruthy();
+    expect((screen.getByLabelText('Biểu mẫu') as HTMLSelectElement).value).toBe('sale_contract');
   });
 
   it('navigates with next and prev buttons', () => {
@@ -24,7 +24,7 @@ describe('DossierWorkspace', () => {
     const nextBtn = screen.getByRole('button', { name: 'Biểu mẫu tiếp theo' });
     fireEvent.click(nextBtn);
     expect(screen.getByRole('heading', { name: 'Bảng Kê Bán Hàng' })).toBeTruthy();
-    expect(screen.getByText('· 2/5')).toBeTruthy();
+    expect((screen.getByLabelText('Biểu mẫu') as HTMLSelectElement).value).toBe('bang_ke');
 
     const prevBtn = screen.getByRole('button', { name: 'Biểu mẫu trước' });
     fireEvent.click(prevBtn);
@@ -38,9 +38,10 @@ describe('DossierWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Lưu dạng Excel (.xlsx)' })).toBeTruthy();
   });
 
-  it('hiện phần leading ở đầu thanh tiêu đề', () => {
-    render(<Harness leading={<button type="button">Mở cây</button>} />);
-    expect(screen.getByRole('button', { name: 'Mở cây' })).toBeTruthy();
+  it('chọn bộ hồ sơ ngay trên thanh ngang', () => {
+    render(<Harness />);
+    fireEvent.change(screen.getByLabelText('Bộ hồ sơ'),{target:{value:'cho_thue'}});
+    expect((screen.getByLabelText('Bộ hồ sơ') as HTMLSelectElement).value).toBe('cho_thue');
   });
 });
 
@@ -55,7 +56,7 @@ describe('DossierWorkspace — ‹ › bỏ qua giấy tờ đã loại', () => 
     );
   }
 
-  it('bỏ tick Cam kết thì › từ Đề nghị TT (Bảng Kê) không sang Cam kết, và đếm chỉ tính giấy còn gồm', () => {
+  it('bỏ tick Cam kết thì › dừng ở Đề nghị TT (Bảng Kê)', () => {
     render(<Loai />);
     fireEvent.click(screen.getByRole('button', { name: 'loại cam kết' }));
     const next = screen.getByRole('button', { name: 'Biểu mẫu tiếp theo' });
@@ -63,7 +64,7 @@ describe('DossierWorkspace — ‹ › bỏ qua giấy tờ đã loại', () => 
     fireEvent.click(next);
     fireEvent.click(next);
     expect(screen.getByRole('heading', { name: 'Đề Nghị TT (Bảng Kê)' })).toBeTruthy();
-    expect(screen.getByText('· 4/4')).toBeTruthy();
+    expect((screen.getByLabelText('Biểu mẫu') as HTMLSelectElement).value).toBe('payment_request_bang_ke');
     expect((next as HTMLButtonElement).disabled).toBe(true);
   });
 });

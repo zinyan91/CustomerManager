@@ -67,7 +67,7 @@ export const ToiLoanCalcSection: React.FC = () => {
     'w-full bg-transparent text-xs p-1 text-right rounded border border-transparent hover:border-line focus:border-accent focus:bg-panel outline-none transition-colors font-mono';
 
   return (
-    <div className={`${UI.containerCardBg} rounded-lg p-4 border space-y-4`}>
+    <div data-workspace-panel className={`${UI.containerCardBg} rounded-lg p-4 border space-y-4`}>
       {/* Header (No subtitle text) */}
       <div className="flex items-center space-x-2.5 border-b border-line pb-3">
         <div className="p-2 bg-accent-soft rounded-lg text-accent">
@@ -81,7 +81,7 @@ export const ToiLoanCalcSection: React.FC = () => {
       </div>
 
       {/* Master Input Control Box (Auto-syncs all 12 months) */}
-      <div className="bg-panel-muted/50 rounded-lg p-3.5 border border-line space-y-3">
+      <div data-workspace-panel className="bg-panel-muted/50 rounded-lg p-3.5 border border-line space-y-3">
         <div className="text-[11px] font-bold text-ink uppercase tracking-wide flex items-center justify-between border-b border-line pb-2">
           <span className="flex items-center space-x-1.5 text-accent">
             <ShieldCheck className="w-4 h-4" />
@@ -94,7 +94,7 @@ export const ToiLoanCalcSection: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Ngắn hạn */}
-          <div className="bg-panel rounded-md p-2.5 border border-line space-y-2">
+          <div data-workspace-panel className="bg-panel rounded-md p-2.5 border border-line space-y-2">
             <div className="text-xs font-bold text-accent uppercase">Cho vay Ngắn hạn (VND)</div>
             <div className="grid grid-cols-3 gap-2">
               <div>
@@ -131,7 +131,7 @@ export const ToiLoanCalcSection: React.FC = () => {
           </div>
 
           {/* Trung dài hạn */}
-          <div className="bg-panel rounded-md p-2.5 border border-line space-y-2">
+          <div data-workspace-panel className="bg-panel rounded-md p-2.5 border border-line space-y-2">
             <div className="text-xs font-bold text-accent uppercase">Cho vay Trung dài hạn (VND)</div>
             <div className="grid grid-cols-3 gap-2">
               <div>
@@ -171,7 +171,7 @@ export const ToiLoanCalcSection: React.FC = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-panel-muted/60 rounded-lg p-3 border border-line flex items-center justify-between">
+        <div data-workspace-panel className="bg-panel-muted/60 rounded-lg p-3 border border-line flex items-center justify-between">
           <div>
             <div className="text-[10px] font-bold text-ink-faint uppercase">DƯ NỢ BÌNH QUÂN CẢ NĂM</div>
             <div className="text-lg font-extrabold text-ink mt-0.5 font-mono">
@@ -186,7 +186,7 @@ export const ToiLoanCalcSection: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-pos-soft/40 rounded-lg p-3 border border-pos/30 flex items-center justify-between">
+        <div data-workspace-panel className="bg-pos-soft/40 rounded-lg p-3 border border-pos/30 flex items-center justify-between">
           <div>
             <div className="text-[10px] font-extrabold text-pos uppercase">TỔNG TOI CHO VAY (12 THÁNG)</div>
             <div className="text-lg font-black text-pos mt-0.5 font-mono">
@@ -201,7 +201,7 @@ export const ToiLoanCalcSection: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-accent-soft/40 rounded-lg p-3 border border-accent/30 flex items-center justify-between">
+        <div data-workspace-panel className="bg-accent-soft/40 rounded-lg p-3 border border-accent/30 flex items-center justify-between">
           <div>
             <div className="text-[10px] font-extrabold text-accent uppercase">HIỆU QUẢ TOI / DNBQ</div>
             <div className="text-xl font-black text-accent mt-0.5 font-mono">

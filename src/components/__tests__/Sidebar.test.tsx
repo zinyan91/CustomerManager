@@ -30,10 +30,9 @@ function dungLen(canManageUsers = false) {
 
 const NHAN_MUC = [
   'Tổng quan',
-  'Danh mục',
   'Danh sách khách hàng',
   'Hợp đồng tín dụng',
-  'Quản lý khoản vay (KUNN)',
+  'Quản lý khoản vay',
   'Định giá TSĐB',
   'Thẻ tín dụng',
   'Quản lý văn thư',
@@ -58,15 +57,15 @@ const NHAN_NHOM = [
 describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
   it('hiện đủ các mục, mỗi mục một nút', () => {
     dungLen();
-    expect(NHAN_MUC).toHaveLength(16);
+    expect(NHAN_MUC).toHaveLength(15);
     for (const nhan of NHAN_MUC) {
       expect(screen.getAllByText(nhan).length, `thiếu mục "${nhan}"`).toBeGreaterThan(0);
     }
   });
 
-  it('dựng đúng 17 liên kết trong nav', () => {
+  it('dựng đúng 16 liên kết trong nav', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a').length).toBe(17);
+    expect(container.querySelectorAll('nav a').length).toBe(16);
   });
 
   it('chỉ hiện mục Quản trị khi có quyền quản lý người dùng', () => {
@@ -74,7 +73,7 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
     expect(container.querySelector('nav a[href="/admin"]')).toBeNull();
     unmount();
     const co = dungLen(true);
-    expect(co.container.querySelectorAll('nav a').length).toBe(18);
+    expect(co.container.querySelectorAll('nav a').length).toBe(17);
     expect(co.container.querySelector('nav a[href="/admin"]')).toBeTruthy();
   });
 
@@ -105,7 +104,7 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
 describe('Sidebar dùng liên kết thật', () => {
   it('mỗi mục là một thẻ liên kết, không phải nút', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a')).toHaveLength(17);
+    expect(container.querySelectorAll('nav a')).toHaveLength(16);
     expect(container.querySelectorAll('nav button')).toHaveLength(0);
   });
 
@@ -254,10 +253,10 @@ describe('Sidebar mở Quản trị ở tab mới', () => {
 describe('Sidebar lọc theo module của tài khoản', () => {
   const hrefs = (container: HTMLElement) => [...container.querySelectorAll('nav a')].map(a => a.getAttribute('href'));
 
-  it('tài khoản chỉ có Văn thư chỉ thấy Danh mục, Văn thư và Cài đặt', () => {
+  it('tài khoản chỉ có Văn thư chỉ thấy Văn thư và Cài đặt', () => {
     modulesState.allowed = ['dispatch'];
     const { container } = dungLen();
-    expect(hrefs(container)).toEqual(['/hub', '/dispatches', '/settings']);
+    expect(hrefs(container)).toEqual(['/dispatches', '/settings']);
   });
 
   it('nhóm không còn mục nào thì bỏ cả tiêu đề nhóm', () => {
@@ -267,9 +266,9 @@ describe('Sidebar lọc theo module của tài khoản', () => {
     expect(screen.queryByText('Phân tích kinh doanh')).toBeNull();
   });
 
-  it('tài khoản không có module nào chỉ còn Danh mục và Cài đặt', () => {
+  it('tài khoản không có module nào chỉ còn Cài đặt', () => {
     modulesState.allowed = [];
     const { container } = dungLen();
-    expect(hrefs(container)).toEqual(['/hub', '/settings']);
+    expect(hrefs(container)).toEqual(['/settings']);
   });
 });

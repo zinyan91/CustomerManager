@@ -324,7 +324,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
   return (
     <div className="space-y-4">
       {/* Thông số khoản vay Container */}
-      <div className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 animate-in fade-in duration-150`}>
+      <div data-workspace-panel className={`${styles.containerCardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 animate-in fade-in duration-150`}>
         <div className="text-xs font-bold text-accent tracking-tight flex items-center space-x-2 border-b pb-3 border-line/60">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
             <RefreshCw className="w-4 h-4" />
@@ -560,19 +560,19 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
 
       {/* KPI Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex flex-col justify-between">
+        <div data-workspace-panel className="rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex flex-col justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng số tiền vay</span>
           <div className="font-mono font-bold text-base sm:text-lg text-accent tracking-tight mt-1">{fmtMoney(loanAmt)}</div>
         </div>
-        <div className="rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex flex-col justify-between">
+        <div data-workspace-panel className="rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex flex-col justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng tiền lãi phải trả</span>
           <div className="font-mono font-bold text-base sm:text-lg text-warn tracking-tight mt-1">{fmtMoney(totalInterestSum)}</div>
         </div>
-        <div className="rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex flex-col justify-between">
+        <div data-workspace-panel className="rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex flex-col justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Tổng nghĩa vụ (Gốc + Lãi)</span>
           <div className="font-mono font-bold text-base sm:text-lg text-pos tracking-tight mt-1">{fmtMoney(totalObligationSum)}</div>
         </div>
-        <div className="rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex flex-col justify-between">
+        <div data-workspace-panel className="rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex flex-col justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">
             {isAnnuity ? 'Tiền trả đều mỗi tháng' : 'Số tiền trả kỳ đầu tiên'}
           </span>
@@ -583,7 +583,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
       </div>
 
       {/* Schedule Table Preview */}
-      <div className={`${styles.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5`}>
+      <div data-workspace-panel className={`${styles.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-line/60">
           <div>
             <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
@@ -619,7 +619,7 @@ export const Tool1LoanScheduleCalc: React.FC<Tool1LoanScheduleCalcProps> = ({ st
           </div>
         </div>
 
-        <div className="overflow-x-auto max-h-[600px] border border-line/70 rounded-xl">
+        <div data-workspace-panel className="overflow-x-auto max-h-[600px] border border-line/70 rounded-xl">
           <table className="w-full text-xs text-left border-collapse">
             <thead className="sticky top-0 z-10 bg-surface/95 backdrop-blur-md border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.11em] text-ink-faint">
               <tr>

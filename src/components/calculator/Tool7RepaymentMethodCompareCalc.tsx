@@ -53,7 +53,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = () => {
   return (
     <div className="space-y-4 font-app">
       {/* Title Header Card */}
-      <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150`}>
+      <div data-workspace-panel className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150`}>
         <div className="text-xs font-bold tracking-tight text-accent flex items-center space-x-2">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
             <Layers className="w-4 h-4" />
@@ -65,7 +65,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = () => {
       </div>
 
       {/* Input Parameters */}
-      <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
+      <div data-workspace-panel className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-[11px] font-semibold text-ink-muted mb-1">
@@ -110,7 +110,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = () => {
       {/* 2 Options Comparison Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Phương án 1 */}
-        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-accent/30 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
+        <div data-workspace-panel className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-accent/30 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
           <div className="flex items-center justify-between border-b border-accent/25 pb-3">
             <span className="font-bold text-xs uppercase tracking-wider text-accent">
               PHƯƠNG ÁN 1: GỐC TRẢ ĐỀU (LÃI GIẢM DẦN)
@@ -137,7 +137,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = () => {
         </div>
 
         {/* Phương án 2 */}
-        <div className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
+        <div data-workspace-panel className={`${cardBg} rounded-2xl p-5 sm:p-6 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4`}>
           <div className="flex items-center justify-between border-b border-line/60 pb-3">
             <span className="font-bold text-xs uppercase tracking-wider text-ink">
               PHƯƠNG ÁN 2: NIÊN KIM EMI (CỐ ĐỊNH HÀNG THÁNG)
@@ -165,7 +165,7 @@ export const Tool7RepaymentMethodCompareCalc: React.FC<Tool7Props> = () => {
       </div>
 
       {/* Comparison summary banner */}
-      <div className="p-5 rounded-2xl bg-accent-soft/30 border border-accent/35 specular-card shadow-xs space-y-2 text-xs">
+      <div data-workspace-panel className="p-5 rounded-2xl bg-accent-soft/30 border border-accent/35 specular-card shadow-xs space-y-2 text-xs">
         <div className="flex items-center space-x-2 font-bold text-accent">
           <CheckCircle2 className="w-4 h-4 text-accent" />
           <span className="uppercase tracking-wider text-[11px]">SO SÁNH TỔNG QUAN DÀNH CHO TƯ VẤN:</span>

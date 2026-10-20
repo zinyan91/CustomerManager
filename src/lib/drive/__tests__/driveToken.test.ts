@@ -30,6 +30,24 @@ describe('isAccessFresh', () => {
 });
 
 describe('createAccessCache', () => {
+  it('xin token treo thì hết hạn chờ, lần sau xin lại được và bỏ kết quả trả muộn', async () => {
+    vi.useFakeTimers();
+    try {
+      let release!: (a: DriveAccess) => void;
+      const fetcher = vi.fn().mockImplementationOnce(() => new Promise<DriveAccess>(resolve => { release=resolve; }))
+        .mockResolvedValue(access(10_000_000, 'new'));
+      const cache = createAccessCache(fetcher, () => 0);
+      const failed = expect(cache.getAccess()).rejects.toThrow(/cấp quyền Google Drive/);
+      await vi.advanceTimersByTimeAsync(20_000);
+      await failed;
+      expect((await cache.getAccess()).accessToken).toBe('new');
+      release(access(10_000_000, 'old'));
+      await Promise.resolve();
+      expect((await cache.getAccess()).accessToken).toBe('new');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it('dùng lại token còn hạn, không hỏi lại', async () => {
     const fetcher = vi.fn(async () => access(10_000_000));
     const cache = createAccessCache(fetcher, () => 0);

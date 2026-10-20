@@ -34,12 +34,54 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('useArchive', () => {
+  it('danh sách kho treo thì báo lỗi và tải lại được metadata', async () => {
+    vi.useFakeTimers();
+    try {
+      m.listRepos.mockReturnValueOnce(new Promise(() => {}));
+      const { result } = renderHook(() => useArchive());
+      await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+      expect(result.current.status.kind).toBe('error');
+      expect((result.current.status as {message:string}).message).toMatch(/danh sách kho/);
+      await act(async () => { await result.current.reload(); });
+      expect(m.listRepos).toHaveBeenCalledTimes(2);
+      expect(result.current.status.kind).toBe('ready');
+    } finally { vi.useRealTimers(); }
+  });
+  it('liệt kê Drive treo thì dừng tải và cho thử lại', async () => {
+    vi.useFakeTimers();
+    try {
+      m.listDrive.mockReturnValueOnce(new Promise(() => {}));
+      const {result}=renderHook(() => useArchive());
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+      expect(result.current.status.kind).toBe('error');
+      expect(result.current.refreshing).toBe(false);
+      expect((result.current.status as {message:string}).message).toMatch(/danh sách tệp Google Drive/);
+      await act(async () => { await result.current.reload(); });
+      expect(result.current.status.kind).toBe('ready');
+    } finally { vi.useRealTimers(); }
+  });
+  it('Drive treo khi có cache thì giữ danh sách cũ và báo lỗi cập nhật', async () => {
+    vi.useFakeTimers();
+    try {
+      writeCachedEntries('u1', ROOT, { entries: [{ id: 'X', name: 'cu.pdf', path: 'cu.pdf', isFolder: false, size: 5, modifiedTime: '', mimeType: 'application/pdf', nativeMimeType: '' }], write: false });
+      m.listDrive.mockReturnValueOnce(new Promise(() => {}));
+      const {result}=renderHook(() => useArchive());
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(result.current.status.kind).toBe('ready');
+      await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+      expect(result.current.status.kind).toBe('ready');
+      expect(result.current.refreshError).toMatch(/danh sách tệp Google Drive/);
+      expect(result.current.refreshing).toBe(false);
+      expect(result.current.documents.map(doc=>doc.filePath)).toEqual(['cu.pdf']);
+    } finally { vi.useRealTimers(); }
+  });
   it('nạp cây từ Shared Drive: tài liệu có mã tệp, thư mục kể cả rỗng', async () => {
     const { result } = renderHook(() => useArchive('storage'));
     await waitFor(() => expect(result.current.status.kind).toBe('ready'));
     expect(result.current.documents.map((d) => [d.filePath, d.storageProvider, d.fileId])).toEqual([['goc.pdf', 'drive', 'G'], ['VB/a.pdf', 'drive', 'A']]);
     expect(result.current.folders).toEqual(['VB']);
-    expect(m.listDrive).toHaveBeenCalledWith(expect.objectContaining({ marker: 'ctx' }));
+    expect(m.listDrive).toHaveBeenCalledWith(expect.objectContaining({ marker: 'ctx' }), expect.any(AbortSignal));
   });
 
   it('đưa ra mã thư mục gốc, các mục kèm mã Drive và quyền ghi để màn Kho thao tác', async () => {

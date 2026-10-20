@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import type { DriveAccess, DriveContext } from './driveTypes';
+import { runWithTimeout } from '../asyncTimeout';
 
 const FUNCTION_NAME = 'drive-token';
 /** Xin token mới khi còn ít hơn ngần này mili giây. */
@@ -40,7 +41,7 @@ export function parseDriveAccess(raw: unknown): DriveAccess {
 
 export const isAccessFresh = (access: DriveAccess, now = Date.now()): boolean => access.expiresAt > now + REFRESH_MARGIN_MS;
 
-type Fetcher = () => Promise<DriveAccess>;
+type Fetcher = (signal: AbortSignal) => Promise<DriveAccess>;
 
 /** Giữ token trong bộ nhớ, dùng chung một lần xin cho nhiều lời gọi cùng lúc, xin lại khi gần hết hạn hoặc sau `invalidate`. */
 export function createAccessCache(fetcher: Fetcher, now: () => number = Date.now): Pick<DriveContext, 'getAccess' | 'invalidate'> {
@@ -49,7 +50,7 @@ export function createAccessCache(fetcher: Fetcher, now: () => number = Date.now
   return {
     getAccess: async () => {
       if (current && isAccessFresh(current, now())) return current;
-      inflight ??= fetcher()
+      inflight ??= runWithTimeout(fetcher, 20_000, 'Máy chủ cấp quyền Google Drive phản hồi quá chậm. Thử tải lại kho.')
         .then((a) => {
           current = a;
           return a;
@@ -65,8 +66,8 @@ export function createAccessCache(fetcher: Fetcher, now: () => number = Date.now
   };
 }
 
-async function fetchAccessFromFunction(): Promise<DriveAccess> {
-  const { data, error } = await supabase.functions.invoke(FUNCTION_NAME, { body: {} });
+async function fetchAccessFromFunction(signal: AbortSignal): Promise<DriveAccess> {
+  const { data, error } = await supabase.functions.invoke(FUNCTION_NAME, { body: {}, signal });
   if (error) throw new Error(await describeInvokeError(error as InvokeError));
   const res = data as { ok?: boolean; error?: string; data?: unknown } | null;
   if (!res?.ok) throw new Error(res?.error ?? 'Máy chủ trả về phản hồi không hợp lệ.');

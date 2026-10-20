@@ -27,7 +27,7 @@ export const RetailInvoiceHeaderCard: React.FC<RetailInvoiceHeaderCardProps> = (
   onClearAllItems,
 }) => {
   return (
-    <div className={`${UI.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 font-app animate-in fade-in duration-150`}>
+    <div data-workspace-panel className={`${UI.containerCardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 font-app animate-in fade-in duration-150`}>
       {/* Title + Action Toolbar */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-line/60 pb-3">
         <div className="flex items-center space-x-3">
@@ -83,7 +83,7 @@ export const RetailInvoiceHeaderCard: React.FC<RetailInvoiceHeaderCardProps> = (
       </div>
 
       {/* Invoice Parameters Form */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl border border-line/70 bg-surface/60 backdrop-blur-md">
+      <div data-workspace-panel className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl border border-line/70 bg-surface/60 backdrop-blur-md">
         <div>
           <label className="block text-[10px] text-ink-faint uppercase font-bold tracking-wider mb-1">Tên Cửa hàng / Tiệm</label>
           <input

@@ -6,6 +6,7 @@ import type { ReportId } from '../lib/reports/types';
 import { downloadBytes } from '../lib/xlsExport';
 import { MIME_XLSX } from '../lib/xlsxWriter';
 import { todayIso } from '../lib/utils';
+import { reportErrorMessage } from '../lib/reports/errorMessage';
 
 export function useReportCenterController() {
   const [selected, setSelected] = useState<ReportId[]>(['portfolio']);
@@ -24,21 +25,21 @@ export function useReportCenterController() {
     try {
       const ctx = { todayIso: todayIso() };
       const defs = REPORTS.filter(r => selected.includes(r.id));
-      const { sheets, failed } = await gatherSheets(defs, filter, ctx);
+      const { sheets, failed, errors } = await gatherSheets(defs, filter, ctx);
 
       if (sheets.length === 0) {
-        setError('Không xuất được báo cáo nào. Vui lòng kiểm tra kết nối và thử lại.');
+        setError(errors?.join('; ') || 'Không xuất được báo cáo nào. Vui lòng kiểm tra kết nối và thử lại.');
         return;
       }
       if (failed.length > 0) {
         const ten = REPORTS.filter(r => failed.includes(r.id)).map(r => r.name).join(', ');
-        setError(`Đã xuất ${sheets.length} báo cáo. Không nạp được: ${ten}.`);
+        setError(`Đã xuất ${sheets.length} báo cáo. Không nạp được: ${ten}. ${errors?.join('; ') ?? ''}`);
       }
 
       downloadBytes(buildReportWorkbook(sheets), `BaoCao_${ctx.todayIso}.xlsx`, MIME_XLSX);
     } catch (err) {
       console.error('exportSelected error:', err);
-      setError('Không tạo được tệp Excel. Vui lòng thử lại.');
+      setError(reportErrorMessage(err));
     } finally {
       setExporting(false);
     }

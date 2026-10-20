@@ -52,7 +52,8 @@ describe('M1: lỗi trong CustomerContextBar không làm trắng cả ứng dụ
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('navigation')).toBeTruthy();
+    expect(screen.getByRole('navigation', { name: 'Phân hệ' })).toBeTruthy();
+    expect(document.querySelector('#app-sidebar nav')).toBeTruthy();
     expect(screen.queryByText('NOI DUNG MAN')).toBeNull();
     expect(screen.getByText(/Lỗi khi tải giao diện màn hình/)).toBeTruthy();
   });

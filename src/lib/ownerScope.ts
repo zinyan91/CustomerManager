@@ -38,12 +38,9 @@ interface ResolveScopeInput {
   knownUserIds: readonly string[];
 }
 
-/**
- * Phạm vi hiệu lực của phiên. User thường: all (RLS đã khóa vào KH của mình).
- * Admin: mặc định là chính mình; chỉ nhận lựa chọn còn hợp lệ.
- */
+// Leader được RLS cho đọc team nên scope cá nhân phải lọc OwnerId độc lập.
 export function resolveScopeId({ canSwitch, ownUserId, requestedId, knownUserIds }: ResolveScopeInput): string {
-  if (!canSwitch) return SCOPE_ALL;
+  if (!canSwitch) return ownUserId ?? SCOPE_ALL;
   const own = ownUserId ?? SCOPE_ALL;
   if (!requestedId) return own;
   if (requestedId === SCOPE_ALL || requestedId === SCOPE_UNASSIGNED) return requestedId;

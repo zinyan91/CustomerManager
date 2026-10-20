@@ -12,6 +12,7 @@ import { buildRepoEntries, listingOf } from '../lib/drive/driveTree';
 import type { DriveEntry } from '../lib/drive/driveTypes';
 import { classifyArchiveError, type ArchiveStatus } from '../lib/archiveStatus';
 import { reposForScope, type StorageScope } from '../lib/storageRepos';
+import { runWithTimeout } from '../lib/asyncTimeout';
 
 /**
  * Nạp Kho lưu trữ: các repo tài khoản được thấy (Kho chung, Văn thư cho admin, kho cá nhân),
@@ -42,7 +43,7 @@ export function useArchive(scope: StorageScope = 'storage') {
   const reloadRepos = useCallback(async () => {
     setMetaStatus({ kind: 'loading' });
     try {
-      setAllRepos(await listStorageRepos());
+      setAllRepos(await runWithTimeout(signal => listStorageRepos(signal), 20_000, 'Kết nối danh sách kho lưu trữ phản hồi quá chậm. Thử tải lại kho.'));
       setMetaStatus({ kind: 'ready' });
     } catch (err) {
       setMetaStatus(classifyArchiveError(err));
@@ -106,7 +107,11 @@ export function useArchive(scope: StorageScope = 'storage') {
     setRefreshing(true);
     setRefreshError(null);
     try {
-      const [files, access] = await Promise.all([listDriveFiles(driveContext), driveContext.getAccess()]);
+      const [files, access] = await runWithTimeout(
+        signal => Promise.all([listDriveFiles(driveContext, signal), driveContext.getAccess()]),
+        60_000,
+        'Kết nối danh sách tệp Google Drive phản hồi quá chậm. Thử tải lại kho.',
+      );
       if (seq !== loadSeq.current) return;
       if (!files.some((f) => f.id === driveRoot)) {
         throw new Error('Không tìm thấy thư mục gốc của kho trong Shared Drive. Kiểm tra lại ID thư mục và việc tài khoản dịch vụ là thành viên của Shared Drive.');
@@ -146,6 +151,11 @@ export function useArchive(scope: StorageScope = 'storage') {
     return fileStatus;
   }, [metaStatus, selectedRepo, fileStatus]);
 
+  const refresh = useCallback(
+    () => metaStatus.kind === 'ready' ? reload() : reloadRepos(),
+    [metaStatus.kind, reload, reloadRepos],
+  );
+
   return {
     /** Mọi repo mà tài khoản được thấy (dùng cho màn quản lý repo). */
     allRepos,
@@ -163,7 +173,7 @@ export function useArchive(scope: StorageScope = 'storage') {
     setDocuments,
     folders,
     status,
-    reload,
+    reload: refresh,
     reloadRepos,
     /** Đang lấy bản mới từ Drive (danh sách đang hiện có thể là bản đã lưu trong máy). */
     refreshing,

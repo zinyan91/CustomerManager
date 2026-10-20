@@ -25,9 +25,13 @@ vi.mock('../../context/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-vi.mock('../../lib/customerPortfolioExport', () => ({
-  downloadActiveCustomerPortfolioReport: (...args: unknown[]) => mockDownload(...args),
+vi.mock('../../lib/customerPortfolioExport', async importOriginal => ({
+  ...await importOriginal<object>(),
+  exportActiveCustomerPortfolioExcel: (...args: unknown[]) => mockDownload(...args),
 }));
+vi.mock('../../lib/reports/alertLoader',()=>({loadAlertSnapshot:async()=>({
+  today:'2026-10-20',customers:[],contracts:[],collaterals:[],creditContracts:[],periods:[],paidPrincipalMap:{},
+})}));
 
 vi.mock('../../lib/api', () => ({
   fetchCustomersAPI: async () => [{ Id: 1, FullName: 'Nguyễn Văn A', CifKh: '123456' }],
@@ -37,26 +41,31 @@ vi.mock('../../lib/api', () => ({
 }));
 
 import { CustomerListView } from '../views/CustomerListView';
+import { ReportCenterView } from '../views/ReportCenterView';
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
 
-describe('CustomerListView - Nút xuất danh mục đang vay', () => {
-  it('hiển thị nút Xuất danh mục đang vay và kích hoạt download khi bấm', async () => {
-    const user = userEvent.setup();
-
+describe('Nút xuất danh mục đang vay chuyển về báo cáo', () => {
+  it('không còn nút xuất ở danh sách khách hàng', async () => {
     render(
       <MemoryRouter>
         <CustomerListView />
       </MemoryRouter>
     );
 
-    const btn = await screen.findByRole('button', { name: /XUẤT DANH MỤC ĐANG VAY/i });
-    expect(btn).toBeTruthy();
-
-    await user.click(btn);
+    expect((await screen.findAllByText('Nguyễn Văn A')).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /XUẤT DANH MỤC ĐANG VAY/i })).toBeNull();
+    expect(mockDownload).not.toHaveBeenCalled();
+  });
+  it('nút tại trung tâm báo cáo gọi đúng mẫu danh mục đầy đủ',async()=>{
+    const user=userEvent.setup();
+    render(<ReportCenterView />);
+    await user.click(screen.getByRole('tab',{name:'Danh mục & tổng hợp'}));
+    await user.click(screen.getByRole('button',{name:'Xuất danh mục đang vay'}));
     expect(mockDownload).toHaveBeenCalledTimes(1);
+    expect(mockDownload).toHaveBeenCalledWith(expect.objectContaining({todayStr:'2026-10-20',paidPrincipalMap:{}}));
   });
 });

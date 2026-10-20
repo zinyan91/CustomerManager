@@ -1,112 +1,95 @@
-# Kiến Trúc Giao Diện & Quy Hoạch Chức Năng CustomerManager — Thiết Kế
+# Kiến trúc điều hướng CustomerManager
 
-Ngày chốt: 16/10/2026  
-Mockup HTML tương tác đi kèm: [`2026-10-16-mockup-kien-truc-giao-dien-moi.html`](./2026-10-16-mockup-kien-truc-giao-dien-moi.html)
+Cập nhật: 20/10/2026. [Mockup điều hướng](./2026-10-16-mockup-kien-truc-giao-dien-moi.html).
 
----
+## 1. Phạm vi đã chốt
 
-## 1. Lý Do & Thực Trạng
+**Lần này chỉ thay đổi điều hướng. Giữ nguyên toàn bộ giao diện bên trong mọi chức năng, bao gồm Dashboard.**
 
-Chủ dự án phản ánh: **"hiện tại khá là rối khi có quá nhiều chức năng"**.
+Không thay KPI, biểu đồ, bảng dữ liệu, bộ lọc, biểu mẫu, nút nghiệp vụ, xuất Excel/PDF, luồng thu nợ hoặc bố cục của các màn hiện có. Không dựng lại hay rút gọn Dashboard. Không sửa dữ liệu, công thức tài chính, API hoặc quyền trên máy chủ.
 
-### Số liệu đo lường kiến trúc hiện tại (16/10/2026)
+Đã ghép lớp điều hướng trong `src/` để kiểm tra cục bộ; chưa deploy production. Trong mockup, mỗi điểm đến chỉ có liên kết mở màn hiện tại ở tab riêng. Không nhúng ứng dụng thật, không dựng UI chức năng thay thế, không thực hiện giao dịch mô phỏng. Ngữ cảnh khách hàng chỉ phục vụ thử điều hướng; ID mẫu không được đưa vào liên kết tới ứng dụng thật.
 
-| Chỉ số đo | Giá trị thực tế | Tác động UX |
-| :--- | :--- | :--- |
-| Tổng số route & màn hình | **28** màn hình chức năng | Quá tải nhận thức, khó tìm kiếm |
-| Số mục trên Sidebar chính | **17** mục xếp dọc liên tiếp | Cuộn mỏi mắt, danh sách phẳng thiếu phân cấp |
-| Số thẻ tác vụ trên Hub (`/hub`) | **13** thẻ chia 4 nhóm | Trùng lặp chéo với Sidebar |
-| Mục trùng lặp giữa Sidebar & Hub | **7** mục (Giải ngân, BCTC, Biểu mẫu, Báo cáo, Mua sắm, Bán lẻ, Thu mua) | Người dùng bối rối không biết nên bấm vào đâu |
-| Ngữ cảnh khách hàng khi chuyển trang | Bị ngắt quãng | Cán bộ phải chọn lại khách hàng khi đổi màn |
+### Điều chỉnh được yêu cầu sau khi ghép
 
-### 4 Điểm nghẽn cốt lõi gây rối
+Hai khung Phương thức vay và Nhóm nợ được trả về hàng rộng dưới KPI, theo vị trí trong Dashboard trước commit 77fff53. Khung cảnh báo HĐTD và bảng tác nghiệp dùng đủ chiều ngang, không bó trong cột phải. Bỏ khung Lối tắt tác vụ thường dùng. Menu phụ desktop chỉ hiện nhóm hiện hành; bỏ nút Tất cả chức năng và trạng thái chuyển sang danh sách phẳng. Điện thoại vẫn chọn nhóm bằng menu từ header. Các nội dung/số liệu/công thức khác giữ nguyên.
+## 2. Kết quả ghép vào mã hiện tại
 
-1. **Nghịch lý 2 cổng vào (Dual-entry Confusion):** 
-   - Vừa có Sidebar 17 mục, vừa có Hub 13 mục. Cùng một nghiệp vụ "Thông tin giải ngân", trên Hub có nút lớn, nhưng trên Sidebar thì nằm ở một vị trí khác hoặc không có biểu tượng tương đương. Người dùng không biết đâu là "menu chính" đâu là "menu phụ".
-2. **Liệt kê phẳng, thiếu phân cấp theo quy trình nghiệp vụ:**
-   - Nhóm "Hồ sơ" liệt kê phẳng: Khách hàng, HĐTD, Khoản vay, TSBĐ, HĐTC, Thẻ tín dụng, Văn thư, Kho lưu trữ. Thực tế tác nghiệp của cán bộ ngân hàng là một **vòng đời tín dụng khép kín theo trình tự**:
-     $$\text{CIF (Khách hàng)} \longrightarrow \text{HĐTD} \longrightarrow \text{TSBĐ \& HĐTC} \longrightarrow \text{KUNN / Giải ngân} \longrightarrow \text{Thẻ} \longrightarrow \text{KSSV}$$
-3. **Pha trộn giữa "Nghiệp vụ tín dụng lõi" và "Công cụ phụ trợ":**
-   - Các công cụ như Dự toán công trình xây dựng, Bảng kê mua sắm cá nhân, Hóa đơn bán lẻ, Thu mua nông sản... bị đặt xen lẫn vào nhóm Hồ sơ doanh nghiệp và Công cụ tính, làm loãng các màn hình nghiệp vụ ngân hàng cốt lõi.
-4. **Các công cụ phân tích tài chính bị phân tán:**
-   - Báo cáo tài chính doanh nghiệp nằm ở một nơi; Thẩm định phương án kinh doanh nằm trong Business Plan; Dự phóng TOI nằm ở Hub; Bộ 9 công cụ tính lãi vay nằm trong Calculator; Định giá lãi suất COF nằm riêng.
+- `src/lib/workspaceNavigation.ts` đọc danh mục từ `navigation.ts` và `hubTasks.ts`, lấy URL từ các nguồn hiện có, chỉ bổ sung cách phân nhóm. Không tạo route hoặc mô hình quyền mới.
+- PrimaryRail, Sidebar và CommandPalette cùng dùng danh mục này. Phân giải được URL `/tools/...`, URL theo khách hàng và alias Hub; không còn các bảng tiền tố rời nhau.
+- Menu phụ hiển thị phân hệ hiện hành trên desktop; menu điện thoại và lớp phủ ở màn chuyên dụng hiển thị tất cả chức năng được phép.
+- Bỏ LifecycleStepper khỏi vỏ trang để tránh ba tầng điều hướng lặp nhau. Liên kết menu phụ đã giữ ngữ cảnh khách hàng theo URL, không cần thêm một hàng tab hồ sơ.
+- Hub, Văn thư và Kho tệp giữ bố cục chuyên dụng; header có thêm nút mở cùng menu điều hướng. Office và Admin giữ không gian riêng như trước.
+- Mặc định menu phụ thu gọn khi lần đầu mở ở màn dưới 1200px; vẫn nhớ lựa chọn thu/mở của người dùng.
+- Dashboard chỉ sửa hai dấu đóng JSX sai để biên dịch được: thêm `)}` sau bảng TSBĐ và bỏ một `</div>` thừa. Không đổi nội dung, class, props hoặc tính toán nghiệp vụ của Dashboard.
 
----
+Không dùng số liệu chưa đo như “giảm 75% tải nhận thức”. Không giới hạn máy móc số mục trong mỗi nhóm.
 
-## 2. Giải Pháp: Quy Hoạch 5 Trụ Cột Nghiệp Vụ Cốt Lõi (5 Pillars)
+## 3. Bố cục điều hướng
 
-Toàn bộ 28 màn hình được tinh gọn và phân bổ lại một cách logic theo 5 không gian nghiệp vụ độc lập:
+Bản ghép chọn Rail + menu phụ. Phương án tab phân hệ chỉ còn trong mockup để tham khảo.
 
-```
-                            ┌──────────────────────────────────────────────┐
-                            │    DASHBOARD: BÀN LÀM VIỆC TỔNG QUAN (HOME)  │
-                            │ (Vị trí số 1 trên cùng — Mặc định mở đầu tiên)│
-                            │  • 5 Ô KPIs Dư nợ, TSBĐ, Khách hàng, Thẻ tín dụng │
-                            │  • Bảng Lịch thu nợ đến hạn (7 ngày / Hôm nay)│
-                            │  • Bảng Cảnh báo HĐTD hết hạn cần tái cấp/gia hạn │
-                            └──────────────────────┬───────────────────────┘
-                                                   │
-        ┌──────────────────┬───────────────────────┼───────────────────────┬──────────────────┐
-        ▼                  ▼                       ▼                       ▼                  ▼
-┌───────────────┐  ┌───────────────┐       ┌───────────────┐       ┌───────────────┐  ┌───────────────┐
-│ 1. TÍN DỤNG   │  │ 2. TÀI CHÍNH  │       │ 3. VĂN THƯ    │       │ 4. DỰ TOÁN    │  │ 5. TRA CỨU    │
-│ & KHÁCH HÀNG  │  │ & THẨM ĐỊNH   │       │ & KHO HỒ SƠ   │       │ & BÁN LẺ      │  │ & QUẢN TRỊ    │
-├───────────────┤  ├───────────────┤       ├───────────────┤       ├───────────────┤  ├───────────────┤
-│• Khách hàng   │  │• BCTC (Live AI│       │• Sổ văn thư   │       │• Dự toán thi  │  │• Tra cứu      │
-│  (CIF)        │  │• Sao kê ngân  │       │  (đi / đến)   │       │  công XD      │  │  MĐSDV 2026   │
-│• HĐTD hạn mức │  │  hàng (đối    │       │• Soạn thảo hợp│       │• Bảng kê mua  │• Biểu phí thẻ    │
-│• TSBĐ & HĐTC  │  │  soát chéo)   │       │  đồng & mẫu   │       │  sắm cá nhân  │• Ôn tập nghiệp   │
-│• Giải ngân &  │  │• Thẩm định    │       │• Kho lưu trữ  │       │• Hóa đơn bán  │  vụ (Quiz)       │
-│  thụ hưởng    │  │  PAKD (TT 39) │       │  Drive / R2   │       │  lẻ hàng hóa  │• Phân quyền      │
-│• KUNN & Lịch  │  │• Dự phóng TOI │       │• Báo cáo cùng │       │• Bảng kê thu  │  người dùng      │
-│• Thẻ tín dụng │  │• Bộ 9 công cụ │       │  sửa Office   │       │  mua hàng     │• Cài đặt hệ thống│
-│• Kiểm soát    │  │  tính lãi/vốn │       │• Báo cáo tổng │       │• Quản lý tồn  │                  │
-│  sau vay KSSV │  │• Chào lãi COF │       │  hợp trung tâm│       │  kho & VT     │                  │
-└───────────────┘  └───────────────┘       └───────────────┘       └───────────────┘  └───────────────┘
-```
+| Khu vực | Quy tắc |
+|---|---|
+| Rail | Rộng 88px để đọc nhãn đầy đủ; nhóm dài có thể xuống hai dòng, không cắt chữ |
+| Menu phụ | Rộng 220px trên desktop từ 768px, có nút thu gọn; nhãn khoản vay là “Quản lý khoản vay” |
+| Laptop 768–1199px | Lần đầu mặc định thu menu; dùng nút trên Rail để mở, vẫn nhớ lựa chọn |
+| Điện thoại dưới 768px | Giữ header hiện tại; nút menu mở toàn bộ chức năng theo nhóm trong lớp phủ |
+| Bàn phím | Focus rõ ràng, Escape đóng menu, giữ focus trong menu khi mở trên màn hẹp |
+| Tìm kiếm | Ctrl/Command K; tìm chức năng và tác vụ Hub theo quyền, giữ khách hàng khi chọn màn hồ sơ |
 
----
+Hình thức chỉ áp dụng cho vỏ điều hướng: rail xanh than, nền Slate phân lớp, viền và bóng nhẹ, icon SVG cùng hệ nét. Có Sáng/Tối, không phụ thuộc font/CDN, không ghi đè CSS của nội dung chức năng.
 
-## 3. Hai Phương Án Trình Bày Bố Cục (Layout Architecture)
+Điều chỉnh 20/10/2026: Dự toán, Tài liệu, Tra cứu, Phân tích và Báo cáo Excel dùng nền liền menu phụ, không padding ngoài hoặc chiều rộng tối đa căn giữa. Các vùng có `data-workspace-panel` bỏ góc tròn, bóng và viền bao, phân cách bằng đường kẻ dưới. CSS chỉ áp dụng trong `.workspace-continuous` ở màn hình; loại trừ cửa sổ fixed/dialog, không đổi ô nhập, nút hoặc HTML xuất/in. Office vẫn dùng editor riêng.
 
-File mockup HTML tương tác tại [`2026-10-16-mockup-kien-truc-giao-dien-moi.html`](./2026-10-16-mockup-kien-truc-giao-dien-moi.html) hiện thực hóa 2 phương án bố cục để xem xét trực tiếp:
+## 4. Danh mục chung
 
-### Phương án 1: Primary Rail + Contextual Drawer (Khuyên Dùng ⭐)
-- **Primary Rail (68px siêu tinh gọn bên trái):**
-  - **Vị trí số 1 trên cùng:** Nút **Dashboard** nổi bật với viền phân cách riêng. Đây là Bàn làm việc trung tâm mở mặc định mỗi khi cán bộ truy cập hệ thống.
-  - Tiếp theo là **5 biểu tượng trụ cột nghiệp vụ** (Tín dụng, Tài chính, Văn thư, Dự toán, Tra cứu).
-  - Đáy Rail là nút Cài đặt & Phân quyền hệ thống.
-  - Loại bỏ hoàn toàn cảm giác choáng ngợp khi mở ứng dụng.
-- **Contextual Drawer (Thanh phụ 240px có thể thu gọn):**
-  - Khi ở Dashboard: Drawer liệt kê ngay các chỉ số theo dõi (Bảng tin KPIs, Lịch thu nợ, Cảnh báo HĐTD, Cơ cấu danh mục) cùng lối tắt tạo mới nhanh (`+ Thêm KH mới`, `+ Lập khế ước`, `+ Phân tích BCTC`).
-  - Khi người dùng bấm vào 1 trong 5 trụ cột trên Rail: Drawer mở ra **4–6 chức năng con** thuộc đúng phân hệ đó.
-  - Có thể bấm nút ghim/thu gọn (`Collapse`) để mở rộng 100% diện tích màn hình cho bảng tính Excel hoặc báo cáo tài chính.
-- **Customer Context Capsule:**
-  - Viên nhãn định danh khách hàng (`CIF: 28489102 - Cty Thép Nam Hà`) luôn cố định trên header khi vào từng hồ sơ tín dụng, giúp cán bộ chuyển đổi giữa HĐTD, TSBĐ, KUNN hay BCTC của cùng một khách hàng mà không bị mất dấu.
+| Nhóm | Đích đến |
+|---|---|
+| Tổng quan | Dashboard hiện tại, Team & KPI, Báo cáo tiến độ, Báo cáo (/office), Báo cáo Excel |
+| Tín dụng | Khách hàng, HĐTD, TSBĐ, HĐTC, giải ngân, KUNN, thẻ, KSSV |
+| Phân tích | BCTC, PAKD, TOI, công cụ tính, chào lãi suất, COF |
+| Hồ sơ chứng từ | Cây bộ hồ sơ và biểu mẫu |
+| Quản lý văn thư | Trang Văn thư, mở trực tiếp từ rail |
+| Kho lưu trữ | Trang Kho lưu trữ, mở trực tiếp từ rail |
+| Dự toán & hàng hóa | Dự toán, mua sắm, bán lẻ, thu mua, kho hàng |
+| Tra cứu | MĐSDV, chính sách thẻ, ôn tập |
+| Cài đặt | Cài đặt cá nhân; quản trị người dùng khi có quyền |
 
-### Phương án 2: Top Workspace Tabs (Kiểu Core Banking Hiện Đại)
-- **Top Workspace Bar:**
-  - **Tab số 1 đầu tiên:** **📊 Dashboard Tổng Quan** luôn nằm ở vị trí trung tâm trên thanh điều hướng đỉnh.
-  - 5 phân hệ lớn được xếp thành các tab ngang tiếp theo.
-  - Sidebar bên trái đóng vai trò là cây danh mục con của phân hệ đang chọn.
-- **Ưu điểm:** Tương thích cao với cán bộ quen dùng các hệ thống ngân hàng truyền thống (T24, Flexcube, Core BPM).
+Bản mockup dùng `architecture-mockup-model.js`; bản React dùng `workspaceNavigation.ts` để ghép hai danh mục hiện có. Rail, menu và tìm kiếm đọc chung kết quả lọc quyền. Các URL và quyền vẫn được quyết định bởi `routes.ts`, `customerRoutes.ts`, `hubTasks.ts` và `modules.ts`.
 
----
+Nguồn điều hướng dùng `src/lib/navigation.ts`, `routes.ts`, `customerRoutes.ts` và mô hình module. Giữ URL cũ và alias Hub. Tác vụ Hub, Văn thư và Kho lưu trữ dùng AppLayout cùng rail/menu phụ; Office và Quản trị giữ bố cục chuyên dụng. Bỏ mục Danh mục; `/hub` chuyển tới chức năng tra cứu đầu tiên được cấp, hoặc chức năng được phép khác. Lọc từng chức năng theo quyền, bỏ nhóm rỗng; nút nhóm mở chức năng đầu tiên được phép. Dashboard thuộc module `credit`, không ép mọi tài khoản vào đó.
 
-## 4. Bảng So Sánh Chi Tiết Trước vs Sau
+Hồ sơ chứng từ là tab riêng trên rail, dùng cây bộ hồ sơ thay cho menu phụ thông thường. Cây nằm trong cột 220px ngay cạnh rail; vùng nhập/xem trước bắt đầu từ mép cây. Không thêm cột điều hướng hoặc ô chọn ngang. Thu/mở cây dùng chung trạng thái với rail; lựa chọn gồm giấy tờ tùy chọn nằm trên cây, giữ trước/sau và dữ liệu riêng từng bộ. Điện thoại mở cây bằng nút trong workspace, chọn biểu mẫu sẽ đóng cây; menu trên header vẫn chuyển được phân hệ.
 
-| Tiêu chí | Trước khi quy hoạch (Cũ) | Sau khi quy hoạch (Đề xuất) | Lợi ích mang lại |
-| :--- | :--- | :--- | :--- |
-| **Số lượng mục nhìn thấy cùng lúc** | 17 mục Sidebar + 13 thẻ Hub = **30 mục** | **5 biểu tượng nhóm lớn** trên Rail | Giảm **75%** tải nhận thức cho mắt |
-| **Quy trình cấp tín dụng** | Các màn hình nằm rải rác phẳng | **Credit Lifecycle Stepper** liên hoàn (CIF → HĐTD → TSBĐ → KUNN → KSSV) | Liền mạch theo đúng hồ sơ khoản vay |
-| **Báo cáo tài chính & Thẩm định** | Phân tán giữa Tools, Business Plan, Calculator và Hub | Tập trung thành trụ cột **Phân Tích & Thẩm Định** | Hỗ trợ phân tích chuyên sâu TT 39 & BCTC AI |
-| **Nhóm Mua sắm & Dự toán** | Nằm lẫn trong Tồn kho và Công cụ tính | Tách thành phân hệ **Dự Toán Thi Công & Bán Lẻ** | Phù hợp đúng đối tượng khách hàng cá nhân/XD |
-| **Trang Hub** | Menu song song gây tranh chấp với Sidebar | Biến thành **Trung Tâm Tìm Kiếm & Lối Tắt Nhanh (Quick Launch)** | Triệt tiêu xung đột 2 cổng vào |
+Văn thư và Kho lưu trữ tách thành hai tab chính, bỏ nhóm Tài liệu. Hai trang dùng điều hướng nội bộ sẵn có, main bắt đầu ngay cạnh rail (x88), không thêm menu phụ chỉ chứa một mục. Header điện thoại vẫn mở toàn bộ chức năng theo quyền. Báo cáo (/office) nằm trong nhóm Tổng quan nhưng giữ editor riêng khi mở.
 
----
+Báo cáo Excel (/hub/reports) gom thao tác xuất từ Dashboard và Danh sách khách hàng theo yêu cầu bổ sung. Hai nhóm ngang: Theo dõi đến hạn (kỳ due, KUNN, HĐTD, định giá TSBĐ; xem trước và xuất Excel/In-PDF chung bộ lọc) và Danh mục & tổng hợp (nút danh mục đang vay đầy đủ hai sheet, năm báo cáo tổng hợp xuất gộp). Bỏ ReportRail bên trong và nút xuất tại hai màn cũ. Bộ chọn cảnh báo được dùng chung với Dashboard; không đổi phạm vi cảnh báo cũ. Tài khoản có credit hoặc tools mở được trang; quyền dữ liệu vẫn theo RLS và phạm vi tài khoản hiện tại.
 
-## 5. Kế Hoạch Chuyển Đổi An Toàn (Zero Breaking Changes)
+## 5. Ngữ cảnh và tab hồ sơ
 
-1. **Bảo toàn URL 100%:** Toàn bộ các đường dẫn `/customers`, `/credit-contracts`, `/tools/corporate-financial`, `/office`... giữ nguyên vẹn; không làm hỏng bookmark hay liên kết chia sẻ.
-2. **Bảo toàn phân quyền Module (Migration 65):** Bảng `UserModules` và các cờ `credit, rates, dispatch, storage, inventory, quiz, tools` ánh xạ 1:1 sang 5 trụ cột mới một cách tự nhiên.
-3. **Thực thi giao diện:** Thay thế bố cục thanh bên `Sidebar.tsx` và thanh tiêu đề `Header.tsx` sang mô hình `PrimaryRail` + `ContextualDrawer`, giữ nguyên nội dung bên trong của từng màn hình con.
+Bản React dùng menu phụ để chuyển HĐTD, TSBĐ, HĐTC, KUNN, thẻ và KSSV; bỏ stepper trong AppLayout. Tab hồ sơ chỉ là phương án trong mockup, không ghép thêm vào React. Thẻ không phải bước bắt buộc sau giải ngân.
+
+- Đổi mục hồ sơ trong menu hoặc bảng lệnh giữ khách hàng theo URL. Bộ đổi khách hàng hiện tại không thay đổi.
+- Mở link trực tiếp hoặc Back/Forward khôi phục đúng màn và khách hàng.
+- Màn toàn danh mục và Cài đặt không hiện khách hàng cố định.
+- Không sửa nội dung, biểu mẫu hoặc cách xử lý nghiệp vụ của bất kỳ màn nào để phục vụ cơ chế điều hướng.
+- Tham số `?customerId=` cho phân tích trong mockup chỉ minh họa trạng thái; cần chốt với controller hiện tại trước khi triển khai thật.
+- Bảo vệ dữ liệu đang sửa phải tích hợp với cơ chế hiện tại của từng màn, không thay biểu mẫu hoặc luồng lưu trong đợt đổi điều hướng.
+
+## 6. Cấu trúc và kiểm chứng
+
+| Tệp | Vai trò |
+|---|---|
+| HTML | Khung điều hướng, bộ chọn bố cục/quyền/giao diện và hộp tìm kiếm |
+| `architecture-mockup.css` | Hình thức vỏ điều hướng và responsive |
+| `architecture-mockup-model.js` | Danh mục, dữ liệu ngữ cảnh mẫu, URL và quyền |
+| `architecture-mockup-views.js` | Dựng điều hướng, breadcrumb, tab và liên kết màn hiện tại |
+| `architecture-mockup-controller.js` | Điều phối chuyển trang, lịch sử, tìm kiếm và menu |
+| `architecture-mockup-check.mjs` | Kiểm tra URL, quyền, phạm vi khách hàng, bàn phím và việc không dựng lại UI chức năng |
+
+Mở trực tiếp HTML cùng các tệp đi kèm. Chạy kiểm tra từ gốc repo: `node docs/superpowers/specs/architecture-mockup-check.mjs`.
+
+Bản ghép kiểm tra bằng unit/integration test cho URL, tất cả tổ hợp module, menu, tìm kiếm và ngữ cảnh. Kiểm tra Edge headless dùng bản build React thật, session và API giả bị chặn ở lớp mạng; không đọc hoặc ghi production. Giữ năm KPI, toàn bộ bảng/bộ lọc/cơ cấu/lối tắt của Dashboard. Kiểm máy tính 1440px, laptop 1024px và điện thoại 390px, cả giao diện Sáng/Tối. Chưa đo thời gian tìm chức năng với người dùng và chưa deploy.
+
+Build được xuất vào `.tmp/build-last` để tránh ACL chặn việc dọn `dist/assets`; không thay cấu hình build của dự án. Trước deploy cần build lại và xác nhận deployment Ready theo quy tắc repo.

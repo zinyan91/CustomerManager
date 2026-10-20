@@ -35,9 +35,10 @@ describe('scopeFromId / scopeToId', () => {
 describe('resolveScopeId', () => {
   const base = { canSwitch: true, ownUserId: 'me', knownUserIds: ['me', 'a', 'b'] };
 
-  it('user không được chuyển: luôn all (RLS đã khóa vào chính mình)', () => {
-    expect(resolveScopeId({ ...base, canSwitch: false, requestedId: 'a' })).toBe(SCOPE_ALL);
-    expect(resolveScopeId({ ...base, canSwitch: false, requestedId: null })).toBe(SCOPE_ALL);
+  it('user và Leader không có quyền chuyển luôn bị lọc về chính mình', () => {
+    expect(resolveScopeId({ ...base, canSwitch: false, requestedId: 'a' })).toBe('me');
+    expect(resolveScopeId({ ...base, canSwitch: false, requestedId: null })).toBe('me');
+    expect(resolveScopeId({ ...base, canSwitch: false, requestedId: 'all' })).toBe('me');
   });
 
   it('admin chưa chọn gì: mặc định là tài khoản của chính mình', () => {

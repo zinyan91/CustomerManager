@@ -140,6 +140,20 @@ describe('phụ lục kết quả kinh doanh', () => {
     expect(cell(sheet, 6, 4).text).toBe(shareOfRevenueText(48 * M, 1200 * M));
     expect(cell(sheet, 6, 4).text).toBe('Chiếm 4% doanh thu');
   });
+  it('mọi dòng tự ghi tỷ trọng khi không có cơ sở nhập tay', () => {
+    for (const row of sheet.rows) {
+      expect(row[4].text).toBe(shareOfRevenueText(Number(row[3].text), result.actual.revenueAnnual));
+    }
+    expect(cell(sheet, 3, 4).text).toBe('Chiếm 5% doanh thu');
+    expect(cell(sheet, 4, 4).text).toBe('Chiếm 2% doanh thu');
+    expect(cell(sheet, 5, 4).text).toBe('Chiếm 1% doanh thu');
+    expect(cell(sheet, 10, 4).text).toBe('Chiếm 0% doanh thu');
+  });
+  it('doanh thu 0 không sinh tỷ trọng NaN hoặc Infinity', () => {
+    const empty=computeBusinessPlan(emptyBusinessPlanInput('2026-10-20'));
+    const exported=buildIncomeStatementSheet(empty,ctx);
+    expect(exported.rows.every(row=>row[4].text==='')).toBe(true);
+  });
 });
 
 describe('phụ lục cấp hạn mức', () => {

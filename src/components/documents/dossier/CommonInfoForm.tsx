@@ -243,7 +243,7 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
 
   return (
     <>
-      <details open className="rounded-xl border border-line/70 bg-surface/40 overflow-hidden">
+      <details data-workspace-panel open className="rounded-xl border border-line/70 bg-surface/40 overflow-hidden">
         <summary className="px-4 py-3 cursor-pointer select-none font-bold text-accent uppercase tracking-wider text-xs">
           Thông tin chung (cả hồ sơ)
         </summary>

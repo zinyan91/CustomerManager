@@ -28,7 +28,7 @@ export const DebtPayableTable: React.FC<DebtPayableTableProps> = ({
   onDelete,
 }) => {
   return (
-    <div className={`${UI.containerCardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden font-app space-y-3 p-4 sm:p-5 animate-in fade-in duration-150`}>
+    <div data-workspace-panel className={`${UI.containerCardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden font-app space-y-3 p-4 sm:p-5 animate-in fade-in duration-150`}>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-line/60 pb-3">
         <div className="relative w-full sm:w-72">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
@@ -45,7 +45,7 @@ export const DebtPayableTable: React.FC<DebtPayableTableProps> = ({
         </div>
       </div>
 
-      <div className="overflow-x-auto max-h-[500px] overflow-y-auto border border-line/70 rounded-xl">
+      <div data-workspace-panel className="overflow-x-auto max-h-[500px] overflow-y-auto border border-line/70 rounded-xl">
         <table className="w-full text-left text-xs border-collapse min-w-[900px] font-app">
           <thead className="sticky top-0 bg-surface/95 backdrop-blur-md text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint border-b border-line/80 z-10">
             <tr>

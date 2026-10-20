@@ -11,7 +11,7 @@ export const PurchaseStatementView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 text-xs pb-6">
+    <div data-workspace-page className="space-y-0 text-xs pb-6">
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
       <PurchaseStatementTab showNotify={showNotify} />
     </div>

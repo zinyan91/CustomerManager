@@ -156,11 +156,13 @@ describe('UserScopeContext - user thường', () => {
     state.role = 'user';
   });
 
-  it('không có quyền chuyển: phạm vi all (RLS khóa vào KH của mình), không gọi RPC', async () => {
+  it('phạm vi cá nhân luôn là chính mình kể cả khi RLS cho Leader đọc thêm hồ sơ team', async () => {
     const { result } = renderHook(() => useUserScope(), { wrapper });
     await waitFor(() => expect(result.current.ready).toBe(true));
 
-    expect(result.current.selectedUserId).toBe('all');
+    expect(result.current.selectedUserId).toBe('user-uuid-002');
+    expect(result.current.ownerScope).toEqual({ kind: 'user', userId: 'user-uuid-002' });
+    expect(getActiveOwnerScope()).toEqual({ kind: 'user', userId: 'user-uuid-002' });
     expect(state.rpc).not.toHaveBeenCalled();
     expect(result.current.managedUsers).toEqual([]);
   });
@@ -171,7 +173,7 @@ describe('UserScopeContext - user thường', () => {
 
     act(() => result.current.setSelectedUserId('admin-uuid-001'));
 
-    expect(result.current.selectedUserId).toBe('all');
+    expect(result.current.selectedUserId).toBe('user-uuid-002');
     expect(localStorage.getItem('cm_scope_v2:user-uuid-002')).toBeNull();
   });
 });

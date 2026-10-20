@@ -240,11 +240,11 @@ export const InventoryView: React.FC = () => {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
   return (
-    <div className="space-y-4 text-xs font-app">
+    <div data-workspace-page className="space-y-0 text-xs font-app">
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
       {/* Main Header Toolbar */}
-      <div className={`${UI.containerCardBg} rounded-xl border p-4 shadow-xs space-y-4`}>
+      <div data-workspace-panel className={`${UI.containerCardBg} rounded-xl border p-4 shadow-xs space-y-4`}>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
           <div className="flex items-center space-x-2">
             <Package className="w-5 h-5 text-accent" />
@@ -271,7 +271,7 @@ export const InventoryView: React.FC = () => {
         </div>
 
         {/* Sub-tab Navigation */}
-        <div className="flex space-x-2 border-b border-line pb-2">
+        <div className="flex flex-wrap gap-2 border-b border-line pb-2">
           <button
             onClick={() => setActiveSubTab('inventory')}
             className={`px-4 py-2 rounded-lg font-bold text-xs flex items-center space-x-2 transition-all ${activeSubTab === 'inventory'
@@ -310,7 +310,7 @@ export const InventoryView: React.FC = () => {
         {activeSubTab === 'inventory' && (
           <div className="space-y-4">
             {/* Header controls for Customer & Industry */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-panel-muted/40 p-3 rounded-lg border border-line">
+            <div data-workspace-panel className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-panel-muted/40 p-3 rounded-lg border border-line">
               <div>
                 <label className={`block mb-1 ${UI.labelStyle}`}>Tên Khách hàng / Hộ kinh doanh</label>
                 <input
@@ -367,7 +367,7 @@ export const InventoryView: React.FC = () => {
             </div>
 
             {/* Form Add New Item */}
-            <form onSubmit={handleAddItem} className="bg-panel border border-line p-3 rounded-lg space-y-2">
+            <form data-workspace-panel onSubmit={handleAddItem} className="bg-panel border border-line p-3 rounded-lg space-y-2">
               <div className="font-bold text-xs text-ink flex items-center space-x-1.5">
                 <Plus className="w-4 h-4 text-accent" />
                 <span>Thêm Sản phẩm / Hàng hóa mới vào danh mục</span>
@@ -462,7 +462,7 @@ export const InventoryView: React.FC = () => {
             </div>
 
             {/* Main Inventory Table */}
-            <div className="border border-line rounded-xl overflow-hidden bg-panel">
+            <div data-workspace-panel className="border border-line rounded-xl overflow-hidden bg-panel">
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className={UI.tableHeaderStyle}>

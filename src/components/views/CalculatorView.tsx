@@ -14,7 +14,7 @@ const Tool8InterestRateConversionCalc = lazy(() => import('../calculator/Tool8In
 const Tool9OverduePenaltyCalc = lazy(() => import('../calculator/Tool9OverduePenaltyCalc').then(m => ({ default: m.Tool9OverduePenaltyCalc })));
 
 const ToolFallback = () => (
-  <div className="flex items-center justify-center p-12 text-ink-muted bg-panel-muted/40 rounded-xl border border-line">
+  <div data-workspace-panel className="flex items-center justify-center p-12 text-ink-muted bg-panel-muted/40 rounded-xl border border-line">
     <Loader2 className="w-5 h-5 animate-spin text-accent mr-2" />
     <span className="text-xs">Đang tải công cụ tính toán...</span>
   </div>
@@ -32,9 +32,9 @@ export const CalculatorView: React.FC = () => {
   } = useCalculatorController();
 
   return (
-    <div className="space-y-4 text-xs transition-colors duration-200 font-app">
+    <div data-workspace-page className="space-y-0 text-xs transition-colors duration-200 font-app">
       {/* Unified Calculator Cockpit Navigation */}
-      <div className={`${styles.containerCardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
+      <div data-workspace-panel className={`${styles.containerCardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
         {/* Major Category Tabs (Tầng trên) */}
         <div className="p-3 sm:px-4 sm:py-3.5 bg-surface/75 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">

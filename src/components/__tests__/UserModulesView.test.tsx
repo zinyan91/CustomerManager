@@ -24,7 +24,8 @@ vi.mock('../../context/AuthContext', () => ({
     signIn: async () => {},
     role: h.role,
     can: (c: string) =>
-      (c === 'user.manage' && (h.role === 'master_admin' || h.role === 'user_admin')) || (c === 'storage.configure' && h.role === 'master_admin'),
+      (c === 'user.manage' && (h.role === 'master_admin' || h.role === 'user_admin'))
+      || ((c === 'storage.configure' || c === 'team.manage') && h.role === 'master_admin'),
   }),
 }));
 vi.mock('../../hooks/useAdminUsers', () => ({
@@ -193,12 +194,14 @@ describe('AdminLayout', () => {
     h.role = 'master_admin';
     const { unmount } = dungLayout();
     expect(within(screen.getByRole('navigation', { name: 'Khu quản trị' })).getByRole('link', { name: 'Cấu hình kho lưu trữ' }).getAttribute('href')).toBe('/admin/storage');
+    expect(within(screen.getByRole('navigation', { name: 'Khu quản trị' })).getByRole('link', { name: 'Team' }).getAttribute('href')).toBe('/admin/teams');
     unmount();
 
     h.role = 'user_admin';
     dungLayout();
     const nav = screen.getByRole('navigation', { name: 'Khu quản trị' });
     expect(within(nav).queryByRole('link', { name: 'Cấu hình kho lưu trữ' })).toBeNull();
+    expect(within(nav).queryByRole('link', { name: 'Team' })).toBeNull();
     expect(within(nav).getByRole('link', { name: 'Người dùng' })).toBeTruthy();
   });
 

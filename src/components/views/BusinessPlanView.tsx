@@ -7,10 +7,7 @@ import { Toast } from '../Toast';
 import { BusinessPlanSheet } from '../businessPlan/BusinessPlanSheet';
 import { UNIT_LABEL, type MoneyUnit } from '../businessPlan/units';
 import { fmtNumber } from '../../lib/utils';
-import {
-  useBusinessPlanController,
-  BASIS_FIELDS,
-} from '../../hooks/useBusinessPlanController';
+import { useBusinessPlanController } from '../../hooks/useBusinessPlanController';
 
 export const BusinessPlanView: React.FC = () => {
   const {
@@ -32,10 +29,10 @@ export const BusinessPlanView: React.FC = () => {
   const controlCls = `w-full rounded-md p-2 text-xs border ${UI.inputStyle}`;
 
   return (
-    <div className="space-y-4 text-xs pb-4 font-app">
+    <div data-workspace-page className="space-y-0 text-xs pb-4 font-app">
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
-      <div className={`${UI.containerCardBg} rounded-2xl p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 animate-in fade-in duration-150`}>
+      <div data-workspace-panel className={`${UI.containerCardBg} rounded-2xl p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-4 animate-in fade-in duration-150`}>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line/60 pb-3">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0">
@@ -60,17 +57,17 @@ export const BusinessPlanView: React.FC = () => {
 
             {/* Financial Health KPI Header */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-xl p-3.5 border border-line/60 bg-surface/75 backdrop-blur-md space-y-1 specular-card interactive-card">
+              <div data-workspace-panel className="rounded-xl p-3.5 border border-line/60 bg-surface/75 backdrop-blur-md space-y-1 specular-card interactive-card">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Doanh thu kế hoạch năm</div>
                 <div className="font-mono font-bold text-base text-accent">{fmtNumber(result.plan.revenueAnnual)} {UNIT_LABEL[unit]}</div>
               </div>
 
-              <div className="rounded-xl p-3.5 border border-line/60 bg-surface/75 backdrop-blur-md space-y-1 specular-card interactive-card">
+              <div data-workspace-panel className="rounded-xl p-3.5 border border-line/60 bg-surface/75 backdrop-blur-md space-y-1 specular-card interactive-card">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Lợi nhuận ròng kế hoạch</div>
                 <div className="font-mono font-bold text-base text-pos">{fmtNumber(result.plan.profitAfterTax)} {UNIT_LABEL[unit]}</div>
               </div>
 
-              <div className="rounded-xl p-3.5 border border-line/60 bg-surface/75 backdrop-blur-md space-y-1 specular-card interactive-card">
+              <div data-workspace-panel className="rounded-xl p-3.5 border border-line/60 bg-surface/75 backdrop-blur-md space-y-1 specular-card interactive-card">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-ink-faint">Hạn mức đề xuất cấp</div>
                 <div className="font-mono font-bold text-base text-warn">
                   {fmtNumber(result.limit ? result.limit.plan.avgWorkingCapitalNeed : result.eachTime ? result.eachTime.recommended : 0)} {UNIT_LABEL[unit]}
@@ -150,25 +147,6 @@ export const BusinessPlanView: React.FC = () => {
 
           <BusinessPlanSheet input={input} result={result} unit={unit} onChange={patch} />
 
-          <div className={`${UI.containerCardBg} rounded-2xl border border-line/65 p-4 sm:p-5 bg-panel/85 backdrop-blur-xl shadow-xs specular-card`}>
-            <h3 className="text-[11px] font-bold uppercase tracking-[0.09em] text-accent mb-2">
-              Cơ sở xác định — in ra phụ lục kết quả kinh doanh
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {BASIS_FIELDS.map(({ key, label }) => (
-                <label key={key} className="block">
-                  <span className={labelCls}>{label}</span>
-                  <textarea
-                    rows={2}
-                    value={input.basis[key] || ''}
-                    onChange={e => patch({ basis: { ...input.basis, [key]: e.target.value } })}
-                    placeholder="Bỏ trống thì phụ lục tự ghi tỷ trọng trên doanh thu"
-                    className={`${controlCls} rounded-xl`}
-                  />
-                </label>
-              ))}
-            </div>
-          </div>
     </div>
   );
 };

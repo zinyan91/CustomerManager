@@ -10,8 +10,8 @@ interface RetailInvoiceKpiCardsProps {
 
 export const RetailInvoiceKpiCards: React.FC<RetailInvoiceKpiCardsProps> = ({ summary }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-app animate-in fade-in duration-150">
-      <div className={`${UI.containerCardBg} rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex items-center justify-between`}>
+    <div data-workspace-metrics className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-app animate-in fade-in duration-150">
+      <div data-workspace-panel className={`${UI.containerCardBg} rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex items-center justify-between`}>
         <div>
           <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">MẶT HÀNG TRÊN HÓA ĐƠN</div>
           <div className="text-base font-bold text-accent mt-1 font-mono">
@@ -23,7 +23,7 @@ export const RetailInvoiceKpiCards: React.FC<RetailInvoiceKpiCardsProps> = ({ su
         </div>
       </div>
 
-      <div className={`${UI.containerCardBg} rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex items-center justify-between`}>
+      <div data-workspace-panel className={`${UI.containerCardBg} rounded-2xl p-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card flex items-center justify-between`}>
         <div>
           <div className="text-[10px] font-bold text-ink-faint uppercase tracking-wider">TỔNG SỐ LƯỢNG SẢN PHẨM</div>
           <div className="text-base font-bold text-ink mt-1 font-mono">
@@ -35,7 +35,7 @@ export const RetailInvoiceKpiCards: React.FC<RetailInvoiceKpiCardsProps> = ({ su
         </div>
       </div>
 
-      <div className={`${UI.containerCardBg} rounded-2xl p-4 border border-pos/40 bg-pos-soft/20 backdrop-blur-xl shadow-xs specular-card flex items-center justify-between`}>
+      <div data-workspace-panel className={`${UI.containerCardBg} rounded-2xl p-4 border border-pos/40 bg-pos-soft/20 backdrop-blur-xl shadow-xs specular-card flex items-center justify-between`}>
         <div>
           <div className="text-[10px] font-extrabold text-pos uppercase tracking-wider">TỔNG CỘNG HÓA ĐƠN</div>
           <div className="text-base font-extrabold text-pos mt-1 font-mono">

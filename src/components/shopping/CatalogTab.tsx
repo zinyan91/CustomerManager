@@ -103,9 +103,9 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({
   };
 
   return (
-    <div className="space-y-4 text-xs font-app animate-in fade-in duration-150">
+    <div className="space-y-0 text-xs font-app animate-in fade-in duration-150">
       {/* Search & Actions Bar */}
-      <div className="p-4 rounded-2xl border border-line/70 bg-panel/85 shadow-xs flex flex-wrap items-center justify-between gap-3">
+      <div data-workspace-panel className="p-4 rounded-2xl border border-line/70 bg-panel/85 shadow-xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
@@ -147,7 +147,7 @@ export const CatalogTab: React.FC<CatalogTabProps> = ({
       </div>
 
       {/* Catalog Table */}
-      <div className="rounded-2xl border border-line/70 overflow-hidden bg-panel shadow-sm">
+      <div data-workspace-panel className="rounded-2xl border border-line/70 overflow-hidden bg-panel shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>

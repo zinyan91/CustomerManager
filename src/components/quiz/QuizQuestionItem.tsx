@@ -19,7 +19,7 @@ export const QuizQuestionItem: React.FC<QuizQuestionItemProps> = ({
   onDelete,
 }) => {
   return (
-    <div
+    <div data-workspace-panel
       className={`rounded-xl p-3.5 sm:p-4 border border-line/70 bg-panel/85 backdrop-blur-xl shadow-xs space-y-3 font-app hover:border-accent/40 transition-all ${
         isConflicting ? ROW_RAIL_ALERT : ROW_RAIL_NEUTRAL
       }`}

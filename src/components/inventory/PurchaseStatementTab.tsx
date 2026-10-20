@@ -182,7 +182,7 @@ export const PurchaseStatementTab: React.FC<PurchaseStatementTabProps> = ({ show
   };
 
   return (
-    <div className="space-y-4 font-app animate-in fade-in duration-150 text-xs">
+    <div className="space-y-0 font-app animate-in fade-in duration-150 text-xs">
       {/* Seller & Buyer Information Card */}
       <PurchaseStatementSellerCard
         sellerInfo={sellerInfo}

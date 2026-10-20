@@ -51,6 +51,13 @@ describe('toDriveFile / driveQueryLiteral / receivedBytes', () => {
 });
 
 describe('driveRequest', () => {
+  it('chuyển tín hiệu hủy tới mọi trang liệt kê Drive', async () => {
+    const s = setup([json({files:[RAW],nextPageToken:'next'}),json({files:[]})]);
+    const controller = new AbortController();
+    await listDriveFiles(s.ctx, controller.signal);
+    expect(s.calls).toHaveLength(2);
+    expect(s.calls.every(call=>call.init.signal===controller.signal)).toBe(true);
+  });
   it('gắn Bearer token', async () => {
     const s = setup([json({})]);
     await driveRequest(s.ctx, 'https://x/y');

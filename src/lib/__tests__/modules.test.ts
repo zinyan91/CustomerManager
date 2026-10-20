@@ -73,6 +73,14 @@ describe('toggleModule / sameModules', () => {
 });
 
 describe('chặn màn hình, tác vụ Hub và đường dẫn', () => {
+  it('trung tâm báo cáo giữ quyền xuất của tài khoản tín dụng và công cụ', () => {
+    for(const allowed of [['credit'],['tools']] as ModuleId[][]) {
+      expect(canOpenPath(allowed,'/hub/reports')).toBe(true);
+      expect(canOpenPath(allowed,'/tools/reports')).toBe(true);
+      expect(canOpenScreen(allowed,'reports')).toBe(true);
+    }
+    expect(canOpenPath(['dispatch'],'/hub/reports')).toBe(false);
+  });
   const dispatchOnly: ModuleId[] = ['dispatch'];
   const all = [...MODULE_IDS];
 
@@ -114,7 +122,7 @@ describe('chặn màn hình, tác vụ Hub và đường dẫn', () => {
   it('mọi đường dẫn tác vụ Hub khớp module của tác vụ', () => {
     for (const task of HUB_TASKS) {
       expect(canOpenPath([HUB_TASK_MODULE[task.id]], task.path), task.id).toBe(true);
-      expect(canOpenPath(MODULE_IDS.filter((m) => m !== HUB_TASK_MODULE[task.id]), task.path), task.id).toBe(false);
+      expect(canOpenPath(MODULE_IDS.filter((m) => m !== HUB_TASK_MODULE[task.id] && (task.id !== 'reports' || m !== 'credit')), task.path), task.id).toBe(false);
     }
   });
 
@@ -136,9 +144,9 @@ describe('chặn màn hình, tác vụ Hub và đường dẫn', () => {
 });
 
 describe('lọc thanh bên', () => {
-  it('người chỉ có Văn thư thấy Tổng quan bị ẩn, Hub, Văn thư, Cài đặt còn lại', () => {
+  it('người chỉ có Văn thư thấy Tổng quan bị ẩn, Văn thư, Cài đặt còn lại', () => {
     const ids = filterNavGroups(NAV_GROUPS, ['dispatch']).flatMap((g) => g.items.map((i) => i.id));
-    expect(ids).toEqual(['hub', 'dispatches', 'admin', 'settings']);
+    expect(ids).toEqual(['dispatches', 'admin', 'settings']);
   });
 
   it('bỏ nhóm không còn mục nào', () => {
@@ -163,8 +171,8 @@ describe('landingPath', () => {
   it('chỉ có Kho lưu trữ thì mở Kho lưu trữ', () => {
     expect(landingPath(['storage'])).toBe(ROUTE_OF.storage);
   });
-  it('chỉ có Ôn tập (màn nằm trong Hub) thì vào Hub', () => {
-    expect(landingPath(['quiz'])).toBe(ROUTE_OF.hub);
+  it('chỉ có Ôn tập thì mở thẳng Ôn tập', () => {
+    expect(landingPath(['quiz'])).toBe('/hub/quiz');
   });
   it('không có module nào thì vào Cài đặt', () => {
     expect(landingPath([])).toBe(ROUTE_OF.settings);

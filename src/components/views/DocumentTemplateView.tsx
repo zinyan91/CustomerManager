@@ -1,81 +1,39 @@
-import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState } from 'react';
+import { PanelLeft } from 'lucide-react';
 import { UI } from '../../lib/uiClasses';
-import { FolderArchive, PanelLeftOpen } from 'lucide-react';
 import { useDocumentDossierController } from '../../hooks/useDocumentDossierController';
-import { usePersistedFlag } from '../../hooks/usePersistedFlag';
 import { DossierWorkspace } from '../documents/dossier/DossierWorkspace';
 import { DossierTreeRail } from '../documents/dossier/DossierTreeRail';
-
-const isWide = () => typeof window.matchMedia !== 'function' || window.matchMedia('(min-width: 1024px)').matches;
+import { useSidebarCollapse } from '../../context/SidebarCollapseContext';
+import { Button } from '../ui/Button';
+import { Dialog, DialogContent, DialogTitle } from '../ui/Dialog';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 
 export const DocumentTemplateView: React.FC = () => {
   const styles = UI;
   const dossierCtrl = useDocumentDossierController();
-  const [collapsed, setCollapsed] = usePersistedFlag('cm_doc_tree_collapsed', false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setDrawerOpen(false);
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [drawerOpen]);
-
-  const openTree = () => {
-    if (isWide()) setCollapsed(false);
-    else setDrawerOpen(true);
-  };
+  const { isSidebarCollapsed, setIsSidebarCollapsed } = useSidebarCollapse();
+  const [treeOpen, setTreeOpen] = useState(false);
+  const mobile = useIsMobile();
 
   return (
-    <div className="rounded-2xl border border-line/70 bg-panel/90 shadow-sm overflow-hidden text-xs font-app animate-in fade-in duration-150">
-      <div className="p-3 sm:p-3.5 border-b border-line/60 bg-surface/50 flex items-center gap-2.5">
-        <div className="p-1.5 rounded-lg bg-surface-elevated border border-line/70 text-ink">
-          <FolderArchive size={15} />
-        </div>
-        <span className="uppercase tracking-wider text-[11px] text-ink font-bold">BỘ HỒ SƠ & BIỂU MẪU CHỨNG TỪ PHÁP LÝ</span>
+    <>
+      {!mobile && !isSidebarCollapsed && <aside id="app-sidebar" className="hidden md:flex fixed top-[56px] bottom-0 left-[88px] w-[220px] z-30 border-r border-line/70 bg-panel">
+        <DossierTreeRail ctrl={dossierCtrl} onCollapse={() => setIsSidebarCollapsed(true)} className="w-full h-full" />
+      </aside>}
+      <Dialog open={treeOpen} onOpenChange={setTreeOpen}>
+        <DialogContent variant="drawer" hideCloseButton aria-describedby={undefined} style={{ left: 0, right: 'auto', width: 'min(288px,85vw)' }}>
+          <DialogTitle className="sr-only">Bộ hồ sơ</DialogTitle>
+          <DossierTreeRail ctrl={dossierCtrl} onCollapse={() => setTreeOpen(false)} onPicked={() => setTreeOpen(false)} className="h-full" />
+        </DialogContent>
+      </Dialog>
+      <div data-workspace-page data-workspace-panel className="bg-panel overflow-hidden text-xs font-app">
+        <DossierWorkspace styles={styles} ctrl={dossierCtrl} treeNavigation leading={
+          <Button variant="secondary" className="md:hidden" aria-label="Mở cây hồ sơ" onClick={() => setTreeOpen(true)}>
+            <PanelLeft className="w-4 h-4" />
+          </Button>
+        } />
       </div>
-
-      <div className="flex">
-        {drawerOpen && createPortal(
-          <>
-            <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => setDrawerOpen(false)} aria-hidden />
-            <DossierTreeRail
-              ctrl={dossierCtrl}
-              onCollapse={() => setDrawerOpen(false)}
-              onPicked={() => setDrawerOpen(false)}
-              className="fixed inset-y-0 left-0 z-[61] w-72 max-w-[85vw] shadow-xl font-app"
-            />
-          </>,
-          document.body,
-        )}
-        {!collapsed && !drawerOpen && (
-          <DossierTreeRail
-            ctrl={dossierCtrl}
-            onCollapse={() => setCollapsed(true)}
-            className="hidden lg:flex w-52 shrink-0 border-r border-line/60"
-          />
-        )}
-        <div className="flex-1 min-w-0">
-          <DossierWorkspace
-            styles={styles}
-            ctrl={dossierCtrl}
-            leading={(
-              <button
-                type="button"
-                onClick={openTree}
-                aria-label="Hiện cây hồ sơ"
-                title="Hiện cây hồ sơ"
-                className={`p-1.5 sm:p-2 rounded-lg border border-line/70 bg-surface hover:bg-surface-elevated text-ink-muted hover:text-ink shrink-0 cursor-pointer ${collapsed ? '' : 'lg:hidden'}`}
-              >
-                <PanelLeftOpen size={15} />
-              </button>
-            )}
-          />
-        </div>
-      </div>
-    </div>
+    </>
   );
 };

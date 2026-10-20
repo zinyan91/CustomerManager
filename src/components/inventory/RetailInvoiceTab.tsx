@@ -169,7 +169,7 @@ export const RetailInvoiceTab: React.FC<RetailInvoiceTabProps> = ({ showNotify }
   };
 
   return (
-    <div className="space-y-4 font-app animate-in fade-in duration-150 text-xs">
+    <div className="space-y-0 font-app animate-in fade-in duration-150 text-xs">
       {/* Header Info & Action Bar */}
       <RetailInvoiceHeaderCard
         headerInfo={headerInfo}

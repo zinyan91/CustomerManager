@@ -1,99 +1,31 @@
-import React from 'react';
-import { FileSpreadsheet, Loader2 } from 'lucide-react';
-import { ReportRail } from '../reports/ReportRail';
+import { useState } from 'react';
+import { FileSpreadsheet } from 'lucide-react';
+import { useAlertReports } from '../../hooks/useAlertReports';
 import { useReportCenterController } from '../../hooks/useReportCenterController';
-import { REPORTS } from '../../lib/reports/registry';
-import { DUE_BUCKET_LABELS, type DueBucketFilter } from '../../lib/reports/dueBucket';
-import { UI } from '../../lib/uiClasses';
+import { AlertReportWorkspace } from '../reports/AlertReportWorkspace';
+import { ReportSummaryWorkspace } from '../reports/ReportSummaryWorkspace';
 
-const BO_LOC: { value: DueBucketFilter; label: string }[] = [
-  { value: 'all', label: 'Tất cả' },
-  { value: 'overdue', label: DUE_BUCKET_LABELS.overdue },
-  { value: 'due', label: DUE_BUCKET_LABELS.due },
-  { value: 'upcoming', label: DUE_BUCKET_LABELS.upcoming },
-];
-
-export const ReportCenterView: React.FC = () => {
-  const { selected, toggle, filter, setFilter, exporting, error, exportSelected } =
-    useReportCenterController();
-
-  const daChon = REPORTS.filter(r => selected.includes(r.id));
-
-  return (
-    <div className="flex flex-col lg:flex-row gap-4 text-xs">
-      <ReportRail selected={selected} onToggle={toggle} />
-
-      <section className={`${UI.containerCardBg} rounded-xl p-4 flex-1 min-w-0 space-y-4`}>
-        <div className="flex items-center gap-2">
-          <FileSpreadsheet className="w-5 h-5 text-accent" />
-          <h1 className="text-sm font-bold tracking-tight text-ink">TRUNG TÂM BÁO CÁO EXCEL</h1>
-        </div>
-
-        <div>
-          <div className="mb-1.5 text-[11px] font-bold text-ink-faint">Kỳ hạn</div>
-          <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Lọc kỳ hạn">
-            {BO_LOC.map(o => (
-              <button
-                key={o.value}
-                type="button"
-                role="radio"
-                aria-checked={filter === o.value}
-                onClick={() => setFilter(o.value)}
-                className={`px-3 py-1.5 rounded-lg border text-xs transition-colors ${
-                  filter === o.value
-                    ? 'border-accent bg-panel-muted font-bold text-ink'
-                    : 'border-line text-ink-muted hover:text-ink'
-                }`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="text-left text-[11px] text-ink-faint border-b border-line">
-              <th className="py-1.5 pr-3 font-semibold">Báo cáo</th>
-              <th className="py-1.5 font-semibold">Căn cứ kỳ hạn</th>
-            </tr>
-          </thead>
-          <tbody>
-            {daChon.length === 0 ? (
-              <tr>
-                <td colSpan={2} className="py-3 text-ink-muted">Chưa chọn báo cáo nào.</td>
-              </tr>
-            ) : (
-              daChon.map(r => (
-                <tr key={r.id} className="border-b border-line/60">
-                  <td className="py-1.5 pr-3 text-ink">{r.name}</td>
-                  <td className="py-1.5 text-ink-muted">
-                    {r.supportsDueFilter ? r.dueFieldLabel : 'Không lọc — xuất toàn danh mục'}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-
-        {error && (
-          <div role="alert" className="rounded-lg border border-line px-3 py-2 text-ink">
-            {error}
-          </div>
-        )}
-
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={exportSelected}
-            disabled={selected.length === 0 || exporting}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {exporting && <Loader2 className="w-4 h-4 animate-spin" />}
-            Xuất Excel
-          </button>
-        </div>
-      </section>
+export function ReportCenterView() {
+  const [tab,setTab]=useState<'alerts'|'summary'>('alerts');
+  const alerts=useAlertReports();
+  const summary=useReportCenterController();
+  return <div data-workspace-page className="text-xs min-w-0 bg-panel">
+    <header className="px-4 py-4 border-b border-line flex items-center gap-2">
+      <FileSpreadsheet className="w-5 h-5 text-ink-muted" />
+      <h1 className="text-base font-semibold text-ink">Báo cáo Excel</h1>
+    </header>
+    <div role="tablist" aria-label="Nhóm báo cáo" className="flex border-b border-line">
+      {([{id:'alerts',label:'Theo dõi đến hạn'},{id:'summary',label:'Danh mục & tổng hợp'}] as const).map(item=>
+        <button key={item.id} type="button" role="tab" id={`report-tab-${item.id}`} aria-selected={tab===item.id}
+          aria-controls={`report-panel-${item.id}`} onClick={()=>setTab(item.id)}
+          onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();setTab(tab==='alerts'?'summary':'alerts');document.getElementById(`report-tab-${tab==='alerts'?'summary':'alerts'}`)?.focus();}}}
+          tabIndex={tab===item.id?0:-1}
+          className={`px-4 py-3 text-xs border-b-2 focus-visible:outline-2 focus-visible:outline-accent ${tab===item.id?'border-accent text-ink font-semibold':'border-transparent text-ink-muted hover:bg-surface'}`}>
+          {item.label}
+        </button>)}
     </div>
-  );
-};
+    <div role="tabpanel" id={`report-panel-${tab}`} aria-labelledby={`report-tab-${tab}`}>
+      {tab==='alerts'?<AlertReportWorkspace ctrl={alerts} />:<ReportSummaryWorkspace ctrl={summary} portfolio={alerts} />}
+    </div>
+  </div>;
+}

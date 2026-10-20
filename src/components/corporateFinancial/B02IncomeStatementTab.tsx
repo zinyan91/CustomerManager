@@ -47,7 +47,7 @@ export const B02IncomeStatementTab: React.FC<B02IncomeStatementTabProps> = ({
   return (
     <div className="space-y-4 animate-in fade-in duration-150">
       {/* Top summary cards */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-line/65 bg-surface/80 backdrop-blur-md shadow-xs">
+      <div data-workspace-panel className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-line/65 bg-surface/80 backdrop-blur-md shadow-xs">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-accent-soft text-accent">
@@ -84,7 +84,7 @@ export const B02IncomeStatementTab: React.FC<B02IncomeStatementTabProps> = ({
       </div>
 
       {/* Main Table */}
-      <div className="overflow-x-auto rounded-xl border border-line/65 bg-surface/90 shadow-xs">
+      <div data-workspace-panel className="overflow-x-auto rounded-xl border border-line/65 bg-surface/90 shadow-xs">
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr className="bg-panel/90 border-b border-line text-ink font-bold">

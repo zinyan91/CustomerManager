@@ -22,6 +22,7 @@ const MATRIX: Record<Capability, Record<AppRole, boolean>> = {
   'storage.delete': { master_admin: true, user_admin: true, user: false },
   'dispatch.upload': { master_admin: true, user_admin: true, user: false },
   'scope.switch': { master_admin: true, user_admin: true, user: false },
+  'team.manage': { master_admin: true, user_admin: false, user: false },
 };
 
 describe('permissions: ma trận quyền', () => {

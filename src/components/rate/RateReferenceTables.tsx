@@ -24,7 +24,7 @@ export const RateReferenceTables: React.FC<RateReferenceTablesProps> = ({
 }) => (
   <div className="space-y-4 font-app">
   {programFeeOptions.length > 0 && (
-    <div className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
+    <div data-workspace-panel className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
       <button
         type="button"
         onClick={() => setShowFeeTable(v => !v)}
@@ -67,7 +67,7 @@ export const RateReferenceTables: React.FC<RateReferenceTablesProps> = ({
   )}
 
   {programConditions.length > 0 && (
-    <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-2 animate-in fade-in duration-150`}>
+    <div data-workspace-panel className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-2 animate-in fade-in duration-150`}>
       <div className="font-bold text-xs tracking-tight text-accent border-b border-line/60 pb-2.5 uppercase tracking-wider">
         ĐIỀU KIỆN ÁP DỤNG
       </div>
@@ -82,7 +82,7 @@ export const RateReferenceTables: React.FC<RateReferenceTablesProps> = ({
   )}
 
   {programPrepayFees.length > 0 && (
-    <div className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
+    <div data-workspace-panel className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
       <div className="p-3.5 sm:p-4 border-b border-line/60 font-bold text-xs tracking-tight text-accent uppercase tracking-wider bg-surface/75 backdrop-blur-md">
         PHÍ TRẢ NỢ TRƯỚC HẠN
       </div>
@@ -119,7 +119,7 @@ export const RateReferenceTables: React.FC<RateReferenceTablesProps> = ({
   )}
 
   {programAuthorities.length > 0 && (
-    <div className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
+    <div data-workspace-panel className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
       <div className="p-3.5 sm:p-4 border-b border-line/60 font-bold text-xs tracking-tight text-accent flex items-center space-x-2 bg-surface/75 backdrop-blur-md">
         <div className="p-1 rounded-lg bg-accent-soft text-accent shrink-0">
           <Landmark className="w-4 h-4" />
@@ -165,7 +165,7 @@ export const RateReferenceTables: React.FC<RateReferenceTablesProps> = ({
   )}
 
   {programFbeCodes.length > 0 && (
-    <div className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
+    <div data-workspace-panel className={`${cardBg} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
       <div className="p-3.5 sm:p-4 border-b border-line/60 font-bold text-xs tracking-tight text-accent uppercase tracking-wider bg-surface/75 backdrop-blur-md">
         HƯỚNG DẪN NHẬP LIỆU TRÊN FBE
       </div>

@@ -1,19 +1,18 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { UI } from '../../lib/uiClasses';
+import { selectAlertRows } from '../../lib/reports/alertData';
 import {
   fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI,
   fetchOutstandingSchedulesAPI, fetchAllCreditContractsAPI, fetchPaidPrincipalMapAPI,
 } from '../../lib/api';
-import { contractDueState, dueCutoffIso, type DuePeriodRow } from '../../lib/duePeriod';
+import { dueCutoffIso, type DuePeriodRow } from '../../lib/duePeriod';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
 import { fmtDate, fmtMoney, toIsoDate, daysUntil, todayIso } from '../../lib/utils';
-import { buildHdtdExpiryList } from '../../lib/hdtdExpiryAlerts';
-import { assetClassLabel, collateralValue, appraisalExpiryDate } from '../../lib/collateralMath';
+import { assetClassLabel, collateralValue } from '../../lib/collateralMath';
 import {
-  filterByDue, countByDue, buildDueListHtml, openPrintWindow,
+  filterByDue, countByDue,
   DUE_FILTER_LABELS, type DueFilter,
 } from '../../lib/dueList';
-import { parseCollateralIds } from '../../lib/creditLimit';
 import { kunnPrincipal } from '../../lib/loanMath';
 import { outstandingOf, canQuickSettle, debtGroupFromOverdueDays } from '../../lib/loanMath';
 import { useQuickSettle } from '../../hooks/useQuickSettle';
@@ -25,15 +24,12 @@ import { ROUTE_OF } from '../../lib/routes';
 import type { Customer, Collateral, LoanContract, CardContract, CreditContract } from '../../types';
 import {
   Building2, RefreshCw, Calendar, Clock,
-  AlertTriangle, Printer, Search, FileSpreadsheet, X
+  AlertTriangle, Search, X
 } from 'lucide-react';
-import { buildXlsx, MIME_XLSX, type XlsxCell, type XlsxStyle } from '../../lib/xlsxWriter';
-import { downloadBytes } from '../../lib/xlsExport';
 import { DueSectionPanel, dueBadgeClass, dueBadgeText } from '../dashboard/DueSectionPanel';
 import { DashboardSummaryKpis } from '../dashboard/DashboardSummaryKpis';
 import { DashboardPortfolioStructure } from '../dashboard/DashboardPortfolioStructure';
 import type { ColumnDef } from '../ui/DataTable';
-import { exportActiveCustomerPortfolioExcel } from '../../lib/customerPortfolioExport';
 
 export const DashboardView: React.FC = () => {
   const { toast, show, dismiss } = useToast();
@@ -85,11 +81,6 @@ export const DashboardView: React.FC = () => {
       setLoading(false);
     }
   };
-
-  const customerMap = useMemo(
-    () => new Map(customers.map(c => [c.Id, c])),
-    [customers]
-  );
 
   const periodsByContract = useMemo(() => {
     const map = new Map<number, DuePeriodRow[]>();
@@ -204,52 +195,15 @@ export const DashboardView: React.FC = () => {
   const [alertConsoleTab, setAlertConsoleTab] = useState<'due_month' | 'kunn' | 'hmtd' | 'tsbd'>('due_month');
 
   const {
-    dueInMonthList,
-    dueKunnList,
-    dueHmtdList,
-    dueCollateralList,
-  } = useMemo(() => {
-    const activeContracts = chuaTatToan.filter(c => !onlyGroup1 || (debtGroupByContract.get(c.Id) ?? (c.DebtGroup ?? 1)) === 1);
-
-    const monthList = activeContracts.map(c => {
-      const cus = customerMap.get(c.CustomerId);
-      const state = contractDueState(periodsByContract.get(c.Id) || []);
-      return { contract: c, customer: cus, state };
-    }).filter(item => item.state.kind !== 'none')
-      .sort((a, b) => (a.state.daysLeft ?? 0) - (b.state.daysLeft ?? 0));
-
-    const kunnList = activeContracts.map(c => {
-      const cus = customerMap.get(c.CustomerId);
-      const daysLeft = daysUntil(c.KunnDueDate);
-      return { contract: c, customer: cus, daysLeft };
-    }).filter(item => item.daysLeft !== null && item.daysLeft <= 10)
-      .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
-
-    const hmtdList = buildHdtdExpiryList(activeContracts, creditContracts, todayIso())
-      .map(item => ({ ...item, customer: customerMap.get(item.contract.CustomerId) }));
-
-    const collateralIdsDangTheChap = new Set<number>();
-    chuaTatToan.forEach(c => parseCollateralIds(c).forEach(id => collateralIdsDangTheChap.add(id)));
-
-    const colList = collaterals
-      .filter(col => collateralIdsDangTheChap.has(col.Id))
-      .map(col => {
-        const cus = customerMap.get(col.CustomerId);
-        const expiryDateStr = appraisalExpiryDate(col);
-        if (!expiryDateStr) return null;
-        return { collateral: col, customer: cus, expiryDateStr, daysLeft: daysUntil(expiryDateStr) };
-      })
-      .filter((item): item is NonNullable<typeof item> =>
-        item !== null && item.daysLeft !== null && item.daysLeft <= 30)
-      .sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
-
-    return {
-      dueInMonthList: monthList,
-      dueKunnList: kunnList,
-      dueHmtdList: hmtdList,
-      dueCollateralList: colList,
-    };
-  }, [chuaTatToan, onlyGroup1, customerMap, collaterals, periodsByContract, creditContracts, debtGroupByContract]);
+    due: dueInMonthList,
+    kunn: dueKunnList,
+    credit: dueHmtdList,
+    collateral: dueCollateralList,
+  } = useMemo(() => selectAlertRows({
+    customers, contracts: chuaTatToan, creditContracts, collaterals,
+    periods: duePeriods, paidPrincipalMap, today: todayIso(),
+  }, { onlyGroup1, due: 'all', search: '' }),
+  [customers, chuaTatToan, creditContracts, collaterals, duePeriods, paidPrincipalMap, onlyGroup1]);
 
   const soNgay = <T extends { daysLeft?: number | null }>(x: T) => x.daysLeft;
 
@@ -435,190 +389,6 @@ export const DashboardView: React.FC = () => {
     } },
   ];
 
-  const inDanhSach = (
-    title: string,
-    columns: string[],
-    rows: string[][],
-    alignRight: number[]
-  ) => {
-    const html = buildDueListHtml({ title, columns, rows, alignRight });
-    if (!openPrintWindow(html)) {
-      show('error', 'Không mở được bản in. Tải lại trang rồi thử lại.');
-    }
-  };
-
-  const inKunn = () => inDanhSach(
-    'Danh sách Giấy nhận nợ (KUNN) sắp đến hạn kết thúc',
-    ['Khách hàng vay', 'Mã CIF', 'Số HĐTD / KUNN', 'Số tiền KUNN', 'Ngày kết thúc', 'Kỳ hạn', 'Hạn còn lại'],
-    kunnRows.map(({ contract, customer, daysLeft }) => [
-      customer?.FullName || '',
-      customer?.CifKh || '',
-      contract.ContractNumber || '',
-      fmtMoney(kunnPrincipal(contract)),
-      fmtDate(contract.KunnDueDate),
-      contract.KunnTenor || '',
-      daysLeft === null || daysLeft === undefined ? ''
-        : daysLeft < 0 ? `Quá hạn ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`,
-    ]),
-    [3]
-  );
-
-  const inHmtd = () => inDanhSach(
-    'Danh sách Hạn mức tín dụng (HMTD) sắp tới hạn kết thúc',
-    ['Khách hàng vay', 'Mã CIF', 'Số HĐTD hạn mức', 'Tổng mức cấp', 'Ngày hết hạn HĐ', 'Hạn còn lại'],
-    hmtdRows.map(({ masterNo, contract, customer, endDateStr, daysLeft }) => [
-      customer?.FullName || '',
-      customer?.CifKh || '',
-      masterNo || '',
-      fmtMoney(contract.ContractAmount || 0),
-      fmtDate(endDateStr),
-      daysLeft === null || daysLeft === undefined ? ''
-        : daysLeft < 0 ? `Đã hết hạn ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`,
-    ]),
-    [3]
-  );
-
-  const inTsbd = () => inDanhSach(
-    'Danh sách Định giá tài sản bảo đảm sắp tới hạn',
-    ['Chủ sở hữu TSBĐ', 'Mã CIF', 'Mã TS / Địa chỉ', 'Xếp loại TS', 'Giá trị định giá', 'Ngày hết hạn định giá', 'Trạng thái'],
-    tsbdRows.map(({ collateral, customer, expiryDateStr, daysLeft }) => [
-      customer?.FullName || '',
-      customer?.CifKh || '',
-      collateral.AssetCode || collateral.Address || '',
-      assetClassLabel(collateral.AssetType),
-      fmtMoney(collateralValue(collateral)),
-      fmtDate(expiryDateStr),
-      daysLeft === null || daysLeft === undefined ? ''
-        : daysLeft < 0 ? `Đã hết hạn định giá ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`,
-    ]),
-    [4]
-  );
-
-  const exportActiveTabExcel = () => {
-    const headerCenter: XlsxStyle = { bold: true, align: 'center' };
-    const headerLeft: XlsxStyle = { bold: true, align: 'left' };
-    const headerRight: XlsxStyle = { bold: true, align: 'right' };
-    const textCenter: XlsxStyle = { align: 'center' };
-    const textLeft: XlsxStyle = { align: 'left' };
-    const numRight: XlsxStyle = { align: 'right', numFmt: '#,##0' };
-
-    if (alertConsoleTab === 'due_month') {
-      const rows: XlsxCell[][] = [
-        [
-          { value: 'STT', style: headerCenter },
-          { value: 'Khách hàng vay', style: headerLeft },
-          { value: 'Mã CIF', style: headerCenter },
-          { value: 'Số HĐTD / KUNN', style: headerCenter },
-          { value: 'Kỳ số', style: headerCenter },
-          { value: 'Số tiền kỳ này', style: headerRight },
-          { value: 'Ngày đến hạn due', style: headerCenter },
-          { value: 'Hạn còn lại', style: headerCenter },
-        ],
-        ...filteredDueMonthRows.map((item, idx) => [
-          { value: idx + 1, style: textCenter },
-          { value: item.customer?.FullName || '—', style: textLeft },
-          { value: item.customer?.CifKh || '—', style: textCenter },
-          { value: item.contract.ContractNumber || '—', style: textCenter },
-          { value: item.state.period?.PeriodNumber ?? '', style: textCenter },
-          { value: item.state.period?.TotalAmount ?? 0, numeric: true, style: numRight },
-          { value: fmtDate(item.state.dueDateIso), style: textCenter },
-          { value: dueBadgeText(item.state.daysLeft ?? 0), style: textCenter },
-        ]),
-      ];
-      const bytes = buildXlsx({ name: 'Ky_Due_Thang', rows, colWidths: [8, 28, 14, 20, 10, 20, 16, 18] });
-      downloadBytes(bytes, `Bao_Cao_Ky_Due_${todayIso()}.xlsx`, MIME_XLSX);
-    } else if (alertConsoleTab === 'kunn') {
-      const rows: XlsxCell[][] = [
-        [
-          { value: 'STT', style: headerCenter },
-          { value: 'Khách hàng vay', style: headerLeft },
-          { value: 'Mã CIF', style: headerCenter },
-          { value: 'Số HĐTD / KUNN', style: headerCenter },
-          { value: 'Dư nợ KUNN', style: headerRight },
-          { value: 'Ngày kết thúc', style: headerCenter },
-          { value: 'Kỳ hạn', style: headerCenter },
-          { value: 'Hạn còn lại', style: headerCenter },
-        ],
-        ...filteredKunnRows.map(({ contract, customer, daysLeft }, idx) => [
-          { value: idx + 1, style: textCenter },
-          { value: customer?.FullName || '—', style: textLeft },
-          { value: customer?.CifKh || '—', style: textCenter },
-          { value: contract.ContractNumber || '—', style: textCenter },
-          { value: kunnPrincipal(contract), numeric: true, style: numRight },
-          { value: fmtDate(contract.KunnDueDate), style: textCenter },
-          { value: contract.KunnTenor || '—', style: textCenter },
-          { value: daysLeft === null || daysLeft === undefined ? '—' : daysLeft < 0 ? `Quá hạn ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`, style: textCenter },
-        ]),
-      ];
-      const bytes = buildXlsx({ name: 'KUNN_Den_Han', rows, colWidths: [8, 28, 14, 20, 20, 16, 14, 18] });
-      downloadBytes(bytes, `Bao_Cao_KUNN_Den_Han_${todayIso()}.xlsx`, MIME_XLSX);
-    } else if (alertConsoleTab === 'hmtd') {
-      const rows: XlsxCell[][] = [
-        [
-          { value: 'STT', style: headerCenter },
-          { value: 'Khách hàng vay', style: headerLeft },
-          { value: 'Mã CIF', style: headerCenter },
-          { value: 'Số HĐTD hạn mức', style: headerCenter },
-          { value: 'Tổng mức cấp', style: headerRight },
-          { value: 'Ngày hết hạn HĐ', style: headerCenter },
-          { value: 'Hạn còn lại', style: headerCenter },
-        ],
-        ...filteredHmtdRows.map(({ masterNo, contract, customer, endDateStr, daysLeft }, idx) => [
-          { value: idx + 1, style: textCenter },
-          { value: customer?.FullName || '—', style: textLeft },
-          { value: customer?.CifKh || '—', style: textCenter },
-          { value: masterNo || '—', style: textCenter },
-          { value: contract.ContractAmount || 0, numeric: true, style: numRight },
-          { value: fmtDate(endDateStr), style: textCenter },
-          { value: daysLeft === null || daysLeft === undefined ? '—' : daysLeft < 0 ? `Đã hết hạn ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`, style: textCenter },
-        ]),
-      ];
-      const bytes = buildXlsx({ name: 'HMTD_Het_Han', rows, colWidths: [8, 28, 14, 22, 20, 16, 18] });
-      downloadBytes(bytes, `Bao_Cao_HMTD_Het_Han_${todayIso()}.xlsx`, MIME_XLSX);
-    } else if (alertConsoleTab === 'tsbd') {
-      const rows: XlsxCell[][] = [
-        [
-          { value: 'STT', style: headerCenter },
-          { value: 'Chủ sở hữu TSBĐ', style: headerLeft },
-          { value: 'Mã CIF', style: headerCenter },
-          { value: 'Mã TS / Địa chỉ', style: headerLeft },
-          { value: 'Xếp loại TS', style: headerCenter },
-          { value: 'Giá trị định giá', style: headerRight },
-          { value: 'Ngày hết hạn ĐG', style: headerCenter },
-          { value: 'Trạng thái', style: headerCenter },
-        ],
-        ...filteredTsbdRows.map(({ collateral, customer, expiryDateStr, daysLeft }, idx) => [
-          { value: idx + 1, style: textCenter },
-          { value: customer?.FullName || '—', style: textLeft },
-          { value: customer?.CifKh || '—', style: textCenter },
-          { value: collateral.AssetCode || collateral.Address || '—', style: textLeft },
-          { value: assetClassLabel(collateral.AssetType), style: textCenter },
-          { value: collateralValue(collateral), numeric: true, style: numRight },
-          { value: fmtDate(expiryDateStr), style: textCenter },
-          { value: daysLeft === null || daysLeft === undefined ? '—' : daysLeft < 0 ? `Đã hết hạn ${Math.abs(daysLeft)} ngày` : `Còn ${daysLeft} ngày`, style: textCenter },
-        ]),
-      ];
-      const bytes = buildXlsx({ name: 'TSBD_Het_Han_DG', rows, colWidths: [8, 28, 14, 28, 18, 20, 16, 18] });
-      downloadBytes(bytes, `Bao_Cao_Dinh_Gia_TSBD_${todayIso()}.xlsx`, MIME_XLSX);
-    }
-  };
-
-  const handleExportActivePortfolio = () => {
-    try {
-      exportActiveCustomerPortfolioExcel({
-        customers,
-        contracts,
-        creditContracts,
-        collaterals,
-        paidPrincipalMap,
-      });
-      show('success', '✓ Đã xuất danh mục khách hàng đang vay ra file Excel!');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      show('error', `Không thể xuất báo cáo: ${msg}`);
-    }
-  };
-
   const formatMoney = (val: number) => {
     if (val >= 1e9) return (val / 1e9).toFixed(2) + ' Tỷ';
     if (val >= 1e6) return (val / 1e6).toFixed(0) + ' Trđ';
@@ -639,12 +409,6 @@ export const DashboardView: React.FC = () => {
     else if (alertConsoleTab === 'hmtd') setHmtdFilter(f);
     else setTsbdFilter(f);
   };
-
-  const currentPrintHandler =
-    alertConsoleTab === 'kunn' ? inKunn
-    : alertConsoleTab === 'hmtd' ? inHmtd
-    : alertConsoleTab === 'tsbd' ? inTsbd
-    : undefined;
 
   // HĐTD hết hạn chỉ là hết hạn giải ngân, không phải nợ quá hạn nên không cộng vào đây.
   const urgentOverdueCount =
@@ -718,15 +482,7 @@ export const DashboardView: React.FC = () => {
             <span>Lập khế ước</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleExportActivePortfolio}
-            className="bg-panel hover:bg-surface border border-line hover:border-accent text-ink text-xs px-3.5 py-1.5 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
-            title="Xuất toàn bộ danh sách khách hàng đang vay kèm KUNN và TSBĐ ra file Excel"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-pos" />
-            <span>Xuất Excel</span>
-          </button>
+
 
           <button
             onClick={fetchDashboardData}
@@ -755,11 +511,16 @@ export const DashboardView: React.FC = () => {
         formatMoney={formatMoney}
       />
 
+      <DashboardPortfolioStructure
+        cardBg={cardBg}
+        totalDebt={totalDebt}
+        loanMethodStats={loanMethodStats}
+        debtGroupStats={debtGroupStats}
+        formatMoney={formatMoney}
+      />
 
-      {/* 2. Khung Tác Nghiệp 2 Cột (Executive Responsive 2-Column Grid theo Mockup) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        {/* CỘT TRÁI (lg:col-span-7 xl:col-span-8): Trung Tâm Xử Lý Thu Nợ & Điểm Nóng Rủi Ro */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-4">
+      <div className="space-y-4">
+        <div className="space-y-4">
         {/* 3 Thẻ Điểm Nóng Rủi Ro Tương Tác (Quick-Action Filter Hotspots) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           {/* Hotspot 1: Quá hạn thu nợ */}
@@ -858,7 +619,6 @@ export const DashboardView: React.FC = () => {
 
         {/* Khung Bảng Chi Tiết Console */}
         <div className={`${cardBg} rounded-2xl p-4 sm:p-5 border border-line/70 bg-panel/80 backdrop-blur-md shadow-xs space-y-4`}>
-          {/* Unified Command Toolbar: Tab chuyển nghiệp vụ + Tìm kiếm nhanh + Bộ lọc Nhóm nợ + Bộ lọc Thời gian + Nút Xuất Excel/PDF */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 pb-3 border-b border-line/50">
             {/* Trái: 4 Tabs Danh Mục Cảnh Báo */}
             <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-surface/80 border border-line/50">
@@ -935,7 +695,6 @@ export const DashboardView: React.FC = () => {
               </button>
             </div>
 
-            {/* Phải: Ô Tìm Kiếm + Bộ Lọc Nhóm Nợ + Lọc Trạng Thái + In PDF & Xuất Excel */}
             <div className="flex flex-wrap items-center gap-2">
               {/* Ô Tìm Kiếm Nhanh */}
               <div className="relative flex-1 sm:max-w-xs min-w-[190px]">
@@ -1007,28 +766,7 @@ export const DashboardView: React.FC = () => {
                 })}
               </div>
 
-              {/* Nút Xuất Excel & In PDF */}
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={exportActiveTabExcel}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-panel border-line text-ink-muted hover:border-pos hover:text-pos transition-colors"
-                >
-                  <FileSpreadsheet className="w-3 h-3 text-pos" />
-                  <span>Excel</span>
-                </button>
 
-                {currentPrintHandler && (
-                  <button
-                    type="button"
-                    onClick={currentPrintHandler}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-panel border-line text-ink-muted hover:border-accent hover:text-accent transition-colors"
-                  >
-                    <Printer className="w-3 h-3" />
-                    <span>PDF</span>
-                  </button>
-                )}
-              </div>
             </div>
           </div>
 
@@ -1100,11 +838,11 @@ export const DashboardView: React.FC = () => {
               cardBg=""
               columns={tsbdColumns}
             />
+          )}
           </div>
         </div>
 
-        {/* CỘT PHẢI (lg:col-span-5 xl:col-span-4): Cảnh Báo HĐTD, Cơ Cấu Danh Mục & Lối Tắt */}
-        <div className="lg:col-span-5 xl:col-span-4 space-y-4">
+        <div className="space-y-4">
           {/* Card 1: Cảnh Báo Hết Hạn Hợp Đồng Tín Dụng */}
           <div className={`${cardBg} rounded-2xl border border-line/70 bg-panel/80 backdrop-blur-md shadow-xs overflow-hidden`}>
             <div className="p-3.5 px-4 border-b border-line/60 flex items-center justify-between bg-surface/40">
@@ -1192,64 +930,8 @@ export const DashboardView: React.FC = () => {
             </div>
           </div>
 
-          {/* Card 2: Phân Bổ Cơ Cấu Phương Thức & Nhóm Nợ */}
-          <DashboardPortfolioStructure
-            cardBg={cardBg}
-            totalDebt={totalDebt}
-            loanMethodStats={loanMethodStats}
-            debtGroupStats={debtGroupStats}
-            formatMoney={formatMoney}
-          />
-
-          {/* Card 3: Lối Tắt Tác Vụ Thường Dùng */}
-          <div className={`${cardBg} rounded-2xl border border-line/70 bg-panel/80 p-4 shadow-xs space-y-2.5`}>
-            <div className="flex items-center gap-2 pb-2 border-b border-line/60">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-ink">
-                Lối Tắt Tác Vụ Thường Dùng
-              </h3>
-            </div>
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                onClick={() => navigate(ROUTE_OF.customers)}
-                className="w-full flex items-center justify-between p-2.5 px-3 rounded-xl bg-surface/60 hover:bg-surface border border-line hover:border-accent text-xs font-semibold text-ink transition-all cursor-pointer group"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-accent font-bold">+</span>
-                  <span>Thêm khách hàng mới</span>
-                </span>
-                <span className="text-[10px] font-mono text-ink-faint group-hover:text-accent">CIF →</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigate(ROUTE_OF.loans)}
-                className="w-full flex items-center justify-between p-2.5 px-3 rounded-xl bg-surface/60 hover:bg-surface border border-line hover:border-accent text-xs font-semibold text-ink transition-all cursor-pointer group"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-accent font-bold">+</span>
-                  <span>Lập khế ước giải ngân</span>
-                </span>
-                <span className="text-[10px] font-mono text-ink-faint group-hover:text-accent">KUNN →</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigate(ROUTE_OF['business-plan'])}
-                className="w-full flex items-center justify-between p-2.5 px-3 rounded-xl bg-surface/60 hover:bg-surface border border-line hover:border-accent text-xs font-semibold text-ink transition-all cursor-pointer group"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-accent font-bold">+</span>
-                  <span>Thẩm định phương án kinh doanh</span>
-                </span>
-                <span className="text-[10px] font-mono text-ink-faint group-hover:text-accent">TT39 →</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };

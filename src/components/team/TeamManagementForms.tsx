@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import type { TeamAssignment, TeamRole } from '../../types/team';
 import type { AdminUser } from '../../lib/userAdmin';
+import { primaryBtn } from '../admin/tableStyles';
 import { displayName } from '../../lib/userAdmin';
 
 const field = 'w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink';
-const button = 'rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 cursor-pointer';
+const button = primaryBtn;
 
 export function TeamManagementForms({ teamId, users, onCreate, onAssign }: {
   teamId: string;
@@ -38,7 +39,7 @@ export function TeamManagementForms({ teamId, users, onCreate, onAssign }: {
     <div className="space-y-5">
       {error && <p role="alert" className="text-sm text-red-700 dark:text-red-300">{error}</p>}
       {notice && <p role="status" className="text-sm text-ink">{notice}</p>}
-      <form className="space-y-3 rounded-lg border border-line bg-panel p-5" onSubmit={event => void submit(event, async () => {
+      <form className="space-y-3 border-t border-line pt-4" onSubmit={event => void submit(event, async () => {
         await onCreate(name); setName('');
       }, 'Đã tạo team.')}>
         <h2 className="font-semibold text-ink">Tạo team</h2>
@@ -47,7 +48,7 @@ export function TeamManagementForms({ teamId, users, onCreate, onAssign }: {
         </label>
         <button className={button} disabled={busy || !name.trim()}>Tạo team</button>
       </form>
-      {teamId && <form className="space-y-3 rounded-lg border border-line bg-panel p-5" onSubmit={event => void submit(event, async () => {
+      {teamId && <form className="space-y-3 border-t border-line pt-4" onSubmit={event => void submit(event, async () => {
         await onAssign({ teamId, userId, teamRole, reason }); setReason('');
       }, 'Đã cập nhật vai trò trong team.')}>
         <h2 className="font-semibold text-ink">Gán thành viên</h2>

@@ -37,7 +37,7 @@ export const DedicatedWorkspaceHeader: React.FC = () => {
 
   return (
     <>
-    <Sidebar overlay contextual isOpenMobile={isMenuOpen} onCloseMobile={closeMenu} canManageUsers={can('user.manage')} />
+    <Sidebar overlay contextual isOpenMobile={isMenuOpen} onCloseMobile={closeMenu} isMasterAdmin={can('role.manage')} />
     <header className="w-full bg-panel/95 backdrop-blur-md border-b border-line/80 px-3 sm:px-6 2xl:px-8 py-2 shrink-0 z-30 sticky top-0">
       <div className="w-full flex items-center justify-between gap-3">
         {/* Nhánh trái: Nút điều hướng & Tiêu đề / Breadcrumb */}

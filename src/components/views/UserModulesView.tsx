@@ -13,6 +13,7 @@ import {
 import { roleLabel } from '../../lib/permissions';
 import { displayName } from '../../lib/userAdmin';
 import { headRow, panel, primaryBtn, secondaryBtn, td, th } from '../admin/tableStyles';
+import { AdminPageHeader } from '../admin/AdminPageHeader';
 
 /** Chọn module cho một tài khoản. Lưu xong có hiệu lực ngay ở CSDL (RLS), không cần người đó đăng nhập lại. */
 export function UserModulesView() {
@@ -57,7 +58,7 @@ export function UserModulesView() {
   };
 
   const back = (
-    <Link to="/admin/users" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:underline">
+    <Link to="/admin/users" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink hover:underline">
       <ArrowLeft className="w-4 h-4" />
       <span>Người dùng</span>
     </Link>
@@ -67,7 +68,7 @@ export function UserModulesView() {
     return (
       <div className="space-y-3">
         {back}
-        <div role="alert" className="flex items-start gap-2 text-sm text-rose-700 dark:text-rose-300">
+        <div role="alert" className="flex items-start gap-2 text-sm text-neg">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{loadError}</span>
         </div>
@@ -87,7 +88,7 @@ export function UserModulesView() {
     return (
       <div className="space-y-3">
         {back}
-        <p role="alert" className="text-sm text-slate-700 dark:text-slate-200">Không tìm thấy tài khoản này.</p>
+        <p role="alert" className="text-sm text-ink">Không tìm thấy tài khoản này.</p>
       </div>
     );
   }
@@ -95,14 +96,7 @@ export function UserModulesView() {
   return (
     <div className="space-y-3">
       {back}
-      <div className={panel}>
-        <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">{displayName(target)}</h1>
-            <div className="text-sm text-slate-600 dark:text-slate-300">
-              {target.email ?? 'Không có email'} · {roleLabel(target.role)}
-            </div>
-          </div>
+      <AdminPageHeader title={displayName(target)}>
           {editable && (
             <div className="flex flex-wrap items-center gap-2">
               {MODULE_PRESETS.map((p) => (
@@ -116,22 +110,26 @@ export function UserModulesView() {
               </button>
             </div>
           )}
-        </div>
+      </AdminPageHeader>
+      <div className="text-sm text-ink-muted">
+        {target.email ?? 'Không có email'} · {roleLabel(target.role)}
+      </div>
+      <div className={panel}>
 
         {notice && (
-          <div role="status" className="px-4 py-2.5 flex items-center gap-2 text-sm text-emerald-800 dark:text-emerald-300">
+          <div role="status" className="px-4 py-2.5 flex items-center gap-2 text-sm text-pos">
             <Check className="w-4 h-4 shrink-0" />
             <span>{notice}</span>
           </div>
         )}
         {saveError && (
-          <div role="alert" className="px-4 py-2.5 flex items-start gap-2 text-sm text-rose-700 dark:text-rose-300">
+          <div role="alert" className="px-4 py-2.5 flex items-start gap-2 text-sm text-neg">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{saveError}</span>
           </div>
         )}
         {!editable && (
-          <div className="px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200">{roleLabel(target.role)} luôn dùng được mọi module.</div>
+          <div className="px-4 py-2.5 text-sm text-ink">{roleLabel(target.role)} luôn dùng được mọi module.</div>
         )}
 
         <div className="overflow-x-auto">
@@ -144,9 +142,9 @@ export function UserModulesView() {
                 <th className={`${th} text-center border-r-0`}>Chặn ở CSDL</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+            <tbody className="divide-y divide-line">
               {MODULE_IDS.map((id) => (
-                <tr key={id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                <tr key={id} className="hover:bg-surface">
                   <td className={`${td} text-center`}>
                     <input
                       type="checkbox"
@@ -157,8 +155,8 @@ export function UserModulesView() {
                       className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                     />
                   </td>
-                  <td className={`${td} font-semibold text-slate-900 dark:text-slate-100`}>{MODULE_LABELS[id]}</td>
-                  <td className={`${td} text-slate-700 dark:text-slate-300`}>{features[id].join(', ')}</td>
+                  <td className={`${td} font-semibold text-ink`}>{MODULE_LABELS[id]}</td>
+                  <td className={`${td} text-ink-muted`}>{features[id].join(', ')}</td>
                   <td className={`${td} text-center border-r-0`}>{MODULE_DB_ENFORCED[id] ? 'Có' : 'Không'}</td>
                 </tr>
               ))}

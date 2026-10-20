@@ -19,19 +19,19 @@ import {
 } from '../../lib/userAdmin';
 import { fmtDate } from '../../lib/utils';
 import { UserFormModal, type UserFormValues } from '../users/UserFormModal';
+import { AdminPageHeader } from '../admin/AdminPageHeader';
+import { headRow, primaryBtn, secondaryBtn, td, th } from '../admin/tableStyles';
 
 type FormState = { user: AdminUser | null } | null;
 
 const STATUS_STYLES: Record<UserStatus, string> = {
-  active: 'border-emerald-600/40 text-emerald-800 dark:text-emerald-300',
+  active: 'border-emerald-600/40 text-pos',
   disabled: 'border-rose-600/40 text-rose-800 dark:text-rose-300',
-  unassigned: 'border-amber-600/40 text-amber-800 dark:text-amber-300',
+  unassigned: 'border-amber-600/40 text-warn',
 };
 
 const iconBtn =
-  'p-1.5 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer';
-const th = 'px-3 py-2.5 text-left border-r border-slate-300 dark:border-slate-700';
-const td = 'px-3 py-2 border-r border-slate-200 dark:border-slate-800 align-middle';
+  'p-1.5 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer';
 
 /** Thêm, sửa, khóa, xóa tài khoản và gán vai trò. Chỉ Master Admin và User Admin; luật thật nằm ở Edge Function. */
 export function UserManagementView() {
@@ -51,7 +51,7 @@ export function UserManagementView() {
 
   if (!allowed) {
     return (
-      <div role="alert" className="p-6 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+      <div role="alert" className="p-6 flex items-center gap-2 text-sm text-ink">
         <ShieldAlert className="w-4 h-4 shrink-0" />
         <span>Chỉ Master Admin và User Admin được quản lý người dùng.</span>
       </div>
@@ -112,15 +112,13 @@ export function UserManagementView() {
   const shownError = actionError ?? error ?? modulesError;
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs overflow-hidden divide-y divide-slate-200 dark:divide-slate-800">
-      <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">Người dùng</h1>
-        <div className="flex items-center gap-2.5">
+    <div className="space-y-4">
+      <AdminPageHeader title="Người dùng">
           <button
             type="button"
             onClick={() => void reload()}
             disabled={loading}
-            className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 disabled:opacity-60 cursor-pointer"
+            className={`${secondaryBtn} flex items-center gap-2`}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             <span>Làm mới</span>
@@ -128,22 +126,21 @@ export function UserManagementView() {
           <button
             type="button"
             onClick={() => setForm({ user: null })}
-            className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-sm font-semibold flex items-center gap-2 cursor-pointer"
+            className={`${primaryBtn} flex items-center gap-2`}
           >
             <Plus className="w-4 h-4" />
             <span>Thêm người dùng</span>
           </button>
-        </div>
-      </div>
+      </AdminPageHeader>
 
       {notice && (
-        <div role="status" className="px-4 py-2.5 flex items-center gap-2 text-sm text-emerald-800 dark:text-emerald-300">
+        <div role="status" className="px-4 py-2.5 flex items-center gap-2 text-sm text-pos">
           <Check className="w-4 h-4 shrink-0" />
           <span>{notice}</span>
         </div>
       )}
       {shownError && (
-        <div role="alert" className="px-4 py-2.5 flex items-start gap-2 text-sm text-rose-700 dark:text-rose-300">
+        <div role="alert" className="px-4 py-2.5 flex items-start gap-2 text-sm text-neg">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span className="flex-1">{shownError}</span>
           {actionError && (
@@ -154,10 +151,10 @@ export function UserManagementView() {
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      {(!error || loading || users.length > 0) && <div className="overflow-x-auto border border-line">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-b border-slate-300 dark:border-slate-700 font-semibold">
+            <tr className={headRow}>
               <th className={th}>Họ tên</th>
               <th className={th}>Email</th>
               <th className={th}>Vai trò</th>
@@ -168,10 +165,10 @@ export function UserManagementView() {
               <th className="w-px whitespace-nowrap px-3 py-2.5 text-center">Thao tác</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+          <tbody className="divide-y divide-line">
             {users.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-10 text-center text-slate-500 dark:text-slate-400">
+                <td colSpan={8} className="py-10 text-center text-ink-muted">
                   {loading ? (
                     <span className="inline-flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -188,15 +185,15 @@ export function UserManagementView() {
                 const busy = busyId === u.id;
                 const isSelf = u.id === actor.id;
                 return (
-                  <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60">
-                    <td className={`${td} font-semibold text-slate-900 dark:text-slate-100`}>
+                  <tr key={u.id} className="hover:bg-surface">
+                    <td className={`${td} font-semibold text-ink`}>
                       {displayName(u)}
                       {isSelf ? ' (bạn)' : ''}
                     </td>
-                    <td className={`${td} text-slate-700 dark:text-slate-300 break-all`}>{u.email ?? '—'}</td>
-                    <td className={`${td} text-slate-700 dark:text-slate-300`}>{u.role ? roleLabel(u.role) : '—'}</td>
-                    <td className={`${td} text-slate-700 dark:text-slate-300`}>{modulesError ? '—' : modulesSummary(effectiveModules(u, modulesByUser[u.id]))}</td>
-                    <td className={`${td} text-right font-mono`}>{counts.get(u.id) ?? 0}</td>
+                    <td className={`${td} text-ink-muted break-all`}>{u.email ?? '—'}</td>
+                    <td className={`${td} text-ink-muted`}>{u.role ? roleLabel(u.role) : '—'}</td>
+                    <td className={`${td} text-ink-muted`}>{modulesError ? '—' : modulesSummary(effectiveModules(u, modulesByUser[u.id]))}</td>
+                    <td className={`${td} text-right tabular-nums`}>{counts.get(u.id) ?? 0}</td>
                     <td className={`${td} text-center`}>
                       <span className={`inline-block px-2 py-0.5 rounded border text-xs font-medium whitespace-nowrap ${STATUS_STYLES[status]}`}>{STATUS_LABELS[status]}</span>
                     </td>
@@ -243,9 +240,9 @@ export function UserManagementView() {
             )}
           </tbody>
         </table>
-      </div>
+      </div>}
 
-      <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 text-sm text-slate-600 dark:text-slate-300">{users.length} tài khoản</div>
+      {!loading && !error && <div className="py-2 text-sm text-ink-muted">{users.length} tài khoản</div>}
 
       {form && <UserFormModal user={form.user} actor={actor} onSubmit={submitForm} onClose={() => setForm(null)} />}
     </div>

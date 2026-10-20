@@ -3,6 +3,7 @@ import { AlertCircle, CheckCircle2, Loader2, Pencil, Trash2 } from 'lucide-react
 import { useUserScope } from '../../context/UserScopeContext';
 import { createStorageRepo, removeStorageRepo, updateStorageRepo } from '../../lib/api/storageReposApi';
 import { STORAGE_KIND_LABELS, type StorageRepo, type StorageRepoKind } from '../../types/storageRepo';
+import { headRow, primaryBtn } from '../admin/tableStyles';
 
 interface StorageReposSectionProps {
   repos: StorageRepo[];
@@ -10,7 +11,7 @@ interface StorageReposSectionProps {
 }
 
 const FIELD =
-  'w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-hidden focus:border-slate-500';
+  'w-full px-3 py-2 text-sm rounded-lg border border-line bg-panel text-ink focus:outline-hidden focus:border-slate-500';
 
 export function StorageReposSection({ repos, onChanged }: StorageReposSectionProps) {
   const { managedUsers } = useUserScope();
@@ -131,7 +132,7 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm border-collapse">
           <thead>
-            <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
+            <tr className={headRow}>
               <th className="py-2 px-3">Tên</th>
               <th className="py-2 px-3">Loại</th>
               <th className="py-2 px-3">Repository ID</th>
@@ -139,7 +140,7 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
               <th className="py-2 px-3 w-10" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-line">
             {repos.length === 0 && (
               <tr>
                 <td colSpan={5} className="py-4 px-3 text-center text-slate-500">
@@ -149,9 +150,9 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
             )}
             {repos.map((r) => (
               <tr key={r.id}>
-                <td className="py-2 px-3 font-medium text-slate-900 dark:text-slate-100">{r.name}</td>
+                <td className="py-2 px-3 font-medium text-ink">{r.name}</td>
                 <td className="py-2 px-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{STORAGE_KIND_LABELS[r.kind]}</td>
-                <td className="py-2 px-3 font-mono text-xs text-slate-600 dark:text-slate-400">{r.repoId}</td>
+                <td className="py-2 px-3 tabular-nums text-xs text-slate-600 dark:text-slate-400">{r.repoId}</td>
                 <td className="py-2 px-3 text-slate-600 dark:text-slate-400">{userName(r.assignedUserId) || '—'}</td>
                 <td className="py-2 px-3 whitespace-nowrap">
                   <button
@@ -159,7 +160,7 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
                     onClick={() => startEdit(r)}
                     aria-label={`Sửa ${r.name}`}
                     title="Sửa repo"
-                    className="p-1 rounded-md text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className="p-1 rounded-md text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-surface"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
@@ -167,7 +168,7 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
                     type="button"
                     onClick={() => handleRemove(r)}
                     aria-label={`Gỡ ${r.name}`}
-                    className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-surface"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -179,8 +180,8 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
       </div>
 
       {editing && (
-        <form onSubmit={handleUpdate} aria-label="Sửa repo" className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-          <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Sửa repo: {STORAGE_KIND_LABELS[editing.kind]}</h4>
+        <form onSubmit={handleUpdate} aria-label="Sửa repo" className="space-y-3 pt-4 border-t border-line">
+          <h4 className="text-sm font-bold text-ink">Sửa repo: {STORAGE_KIND_LABELS[editing.kind]}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label htmlFor="edit-repo-name" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tên hiển thị</label>
@@ -188,7 +189,7 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
             </div>
             <div>
               <label htmlFor="edit-repo-id" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">ID thư mục Google Drive</label>
-              <input id="edit-repo-id" value={editRepoId} onChange={(e) => setEditRepoId(e.target.value)} className={`${FIELD} font-mono`} placeholder="1AbC..." />
+              <input id="edit-repo-id" value={editRepoId} onChange={(e) => setEditRepoId(e.target.value)} className={`${FIELD} tabular-nums`} placeholder="1AbC..." />
             </div>
           </div>
           {editError && (
@@ -201,7 +202,7 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
             <button
               type="submit"
               disabled={editBusy || !editName.trim() || !editRepoId.trim()}
-              className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white disabled:opacity-50 flex items-center gap-2"
+              className={`${primaryBtn} flex items-center gap-2`}
             >
               {editBusy && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>Lưu thay đổi</span>
@@ -210,7 +211,7 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
               type="button"
               onClick={() => setEditing(null)}
               disabled={editBusy}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium rounded-lg border border-line text-ink hover:bg-surface disabled:opacity-50"
             >
               Hủy
             </button>
@@ -218,8 +219,8 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
         </form>
       )}
 
-      <form onSubmit={handleCreate} className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-        <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">Thêm repo</h4>
+      <form onSubmit={handleCreate} className="space-y-3 pt-4 border-t border-line">
+        <h4 className="text-sm font-bold text-ink">Thêm repo</h4>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -272,12 +273,12 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
           {existing && (
             <div>
               <label htmlFor="repo-id" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">ID thư mục Google Drive</label>
-              <input id="repo-id" value={repoId} onChange={(e) => setRepoInput(e.target.value)} className={`${FIELD} font-mono`} placeholder="1AbC..." />
+              <input id="repo-id" value={repoId} onChange={(e) => setRepoInput(e.target.value)} className={`${FIELD} tabular-nums`} placeholder="1AbC..." />
             </div>
           )}
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+        <label className="flex items-center gap-2 text-sm text-ink-muted">
           <input type="checkbox" checked={existing} onChange={(e) => setExisting(e.target.checked)} />
           <span>Thư mục đã có sẵn trong Shared Drive (chỉ đăng ký, không tạo mới)</span>
         </label>
@@ -289,7 +290,7 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
           </div>
         )}
         {okMsg && (
-          <div role="status" className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
+          <div role="status" className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs text-pos flex items-start gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{okMsg}</span>
           </div>
@@ -298,7 +299,7 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
         <button
           type="submit"
           disabled={busy || !name.trim() || (existing && !repoId.trim()) || (kind === 'personal' && !userId)}
-          className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white disabled:opacity-50 flex items-center gap-2"
+          className={`${primaryBtn} flex items-center gap-2`}
         >
           {busy && <Loader2 className="w-4 h-4 animate-spin" />}
           <span>{busy ? 'Đang xử lý...' : existing ? 'Đăng ký thư mục' : 'Tạo thư mục trong Shared Drive'}</span>

@@ -4,6 +4,7 @@ import { canOpenPath, type ModuleId } from './modules';
 import { parseCustomerPath, screenPathFor } from './customerRoutes';
 import { screenIdOfPath } from './routes';
 import { ClipboardList, UsersRound } from 'lucide-react';
+import { ADMIN_NAV } from './adminNav';
 
 export const WORKSPACE_SECTIONS = [
   { id: 'overview', label: 'Tổng quan', items: ['dashboard', 'team-kpi', 'loan-progress', 'office', 'reports'] },
@@ -14,7 +15,8 @@ export const WORKSPACE_SECTIONS = [
   { id: 'storage', label: 'Kho lưu trữ', items: ['storage'] },
   { id: 'retail', label: 'Dự toán', items: ['inventory', 'estimate', 'shopping-checklist', 'retail-invoice', 'purchase-statement'] },
   { id: 'reference', label: 'Tra cứu', items: ['mdsdv', 'card-policies', 'quiz-bank'] },
-  { id: 'system', label: 'Cài đặt', items: ['settings', 'admin'] },
+  { id: 'admin', label: 'Quản trị', items: ['admin', ...ADMIN_NAV.filter(item => item.id !== 'overview').map(item => `admin-${item.id}`)] },
+  { id: 'system', label: 'Cài đặt', items: ['settings'] },
 ] as const;
 
 export type WorkspaceSectionId = typeof WORKSPACE_SECTIONS[number]['id'];
@@ -43,7 +45,14 @@ const WORKSPACE_ITEMS: WorkspaceItem[] = [
     icon: UsersRound, label: 'Team & KPI', keywords: ['team', 'kpi', 'leader', 'RBO', 'SRBO'],
     task: true,
   },
-  ...NAV_ITEMS.map(item => ({ ...item, screenId: item.id })),
+  ...NAV_ITEMS.map(item => ({
+    ...item, screenId: item.id,
+    ...(item.id === 'admin' ? { labelKey: undefined, label: 'Tổng quan' } : {}),
+  })),
+  ...ADMIN_NAV.filter(item => item.id !== 'overview').map(item => ({
+    id: `admin-${item.id}`, screenId: 'admin' as const, path: item.path,
+    icon: item.icon, label: item.label, keywords: [item.label], task: true, adminOnly: true,
+  })),
   ...HUB_TASKS
     .filter(task => !NAV_ITEMS.some(item => item.id === task.id))
     .map(task => ({
@@ -67,6 +76,10 @@ export function workspaceItemOfPath(pathname: string): WorkspaceItem | undefined
   const clean = pathname.split(/[?#]/)[0].replace(/\/+$/, '') || '/dashboard';
   const exact = WORKSPACE_ITEMS.find(item => item.path === clean);
   if (exact) return exact;
+  if (clean.startsWith('/admin/')) {
+    return WORKSPACE_ITEMS.find(item => item.id === 'admin-users' && clean.startsWith(`${item.path}/`))
+      ?? WORKSPACE_ITEMS.find(item => item.id === 'admin');
+  }
   const scoped = parseCustomerPath(clean);
   const screenId = scoped ? scoped.screen === 'profile' ? 'customers' : scoped.screen : screenIdOfPath(clean);
   return WORKSPACE_ITEMS.find(item => item.screenId === screenId && !item.task)
@@ -78,14 +91,14 @@ export function workspaceSectionOfPath(pathname: string): WorkspaceSectionId | u
   return item ? WORKSPACE_SECTIONS.find(section => (section.items as readonly string[]).includes(item.id))?.id : undefined;
 }
 
-export function visibleWorkspaceSections(allowed: readonly ModuleId[], canManageUsers: boolean): WorkspaceSection[] {
+export function visibleWorkspaceSections(allowed: readonly ModuleId[], isMasterAdmin: boolean): WorkspaceSection[] {
   return WORKSPACE_SECTIONS.map(section => ({
     id: section.id,
     label: section.label,
     items: section.items
       .map(id => WORKSPACE_ITEMS.find(item => item.id === id))
       .filter((item): item is WorkspaceItem => Boolean(item))
-      .filter(item => (!item.preview || import.meta.env.DEV && allowed.includes('credit')) && (!item.adminOnly || canManageUsers) && canOpenPath(allowed, item.path)),
+      .filter(item => (!item.preview || import.meta.env.DEV && allowed.includes('credit')) && (!item.adminOnly || isMasterAdmin) && canOpenPath(allowed, item.path)),
   })).filter(section => section.items.length > 0);
 }
 

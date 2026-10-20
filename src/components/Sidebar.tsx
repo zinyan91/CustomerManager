@@ -8,14 +8,14 @@ import { workspaceItemPath, type WorkspaceItem } from '../lib/workspaceNavigatio
 interface SidebarProps {
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
-  canManageUsers?: boolean;
+  isMasterAdmin?: boolean;
   contextual?: boolean;
   overlay?: boolean;
 }
 
-export const Sidebar = memo<SidebarProps>(({ isOpenMobile = false, onCloseMobile, canManageUsers = false, contextual = false, overlay = false }) => {
+export const Sidebar = memo<SidebarProps>(({ isOpenMobile = false, onCloseMobile, isMasterAdmin = false, contextual = false, overlay = false }) => {
   const { t, customerId, isSidebarCollapsed, asideRef, activeId, current, groups, drawerVisible } = useSidebarNavigation({
-    isOpenMobile, onCloseMobile, canManageUsers, contextual, overlay,
+    isOpenMobile, onCloseMobile, isMasterAdmin, contextual, overlay,
   });
 
   if (overlay && !isOpenMobile) return null;

@@ -4,6 +4,7 @@ import { useStorageConfig } from '../../hooks/useStorageConfig';
 import { ConfigCard } from '../storage/ConfigCard';
 import { DriveConnectionSection } from '../storage/DriveConnectionSection';
 import { StorageReposSection } from '../storage/StorageReposSection';
+import { AdminPageHeader } from '../admin/AdminPageHeader';
 
 function Loading() {
   return (
@@ -20,10 +21,10 @@ function StorageConfigBody() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Cấu hình kho lưu trữ</h1>
+      <AdminPageHeader title="Cấu hình kho lưu trữ" />
 
       {error && (
-        <div role="alert" className="flex items-start gap-2 text-sm text-rose-700 dark:text-rose-300">
+        <div role="alert" className="flex items-start gap-2 text-sm text-neg">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
@@ -53,7 +54,7 @@ export function StorageConfigView() {
 
   if (!can('storage.configure')) {
     return (
-      <div role="alert" className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+      <div role="alert" className="flex items-center gap-2 text-sm text-ink">
         <ShieldAlert className="w-4 h-4 shrink-0" />
         <span>Chỉ Master Admin cấu hình được kho lưu trữ.</span>
       </div>

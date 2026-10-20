@@ -11,10 +11,11 @@ import {
 } from '../../lib/customerTransfer';
 import { displayName } from '../../lib/userAdmin';
 import { fmtDate } from '../../lib/utils';
+import { AdminPageHeader } from '../admin/AdminPageHeader';
 import { headRow, panel, primaryBtn, td, th } from '../admin/tableStyles';
 
 const SELECT =
-  'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100';
+  'w-full px-3 py-2 rounded-lg border border-line bg-panel text-sm text-ink';
 
 const timeOf = (iso: string) => new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
 
@@ -68,10 +69,10 @@ export function CustomerTransferView() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100">Chuyển giao khách hàng</h1>
+      <AdminPageHeader title="Chuyển giao khách hàng" />
 
       <div className="grid gap-3 sm:grid-cols-2 max-w-3xl">
-        <label className="space-y-1 text-sm font-medium text-slate-700 dark:text-slate-200">
+        <label className="space-y-1 text-sm font-medium text-ink">
           <span>Chuyển từ</span>
           <select value={fromId} onChange={(e) => changeFrom(e.target.value)} className={SELECT} disabled={usersLoading}>
             <option value="">— Chọn người chuyển —</option>
@@ -80,7 +81,7 @@ export function CustomerTransferView() {
             ))}
           </select>
         </label>
-        <label className="space-y-1 text-sm font-medium text-slate-700 dark:text-slate-200">
+        <label className="space-y-1 text-sm font-medium text-ink">
           <span>Chuyển sang</span>
           <select value={toId} onChange={(e) => { setToId(e.target.value); setNotice(null); }} className={SELECT} disabled={usersLoading}>
             <option value="">— Chọn người nhận —</option>
@@ -92,19 +93,19 @@ export function CustomerTransferView() {
       </div>
 
       {notice && (
-        <div role="status" className="flex items-center gap-2 text-sm text-emerald-800 dark:text-emerald-300">
+        <div role="status" className="flex items-center gap-2 text-sm text-pos">
           <Check className="w-4 h-4 shrink-0" />
           <span>{notice}</span>
         </div>
       )}
       {shownError && (
-        <div role="alert" className="flex items-start gap-2 text-sm text-rose-700 dark:text-rose-300">
+        <div role="alert" className="flex items-start gap-2 text-sm text-neg">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{shownError}</span>
         </div>
       )}
       {warning && (
-        <div role="note" className="flex items-start gap-2 text-sm text-amber-800 dark:text-amber-300">
+        <div role="note" className="flex items-start gap-2 text-sm text-warn">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{warning}</span>
         </div>
@@ -130,10 +131,10 @@ export function CustomerTransferView() {
                   <th className={`${th} border-r-0`}>Họ tên</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-line">
                 {t.customers.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="py-10 text-center text-slate-500 dark:text-slate-400">
+                    <td colSpan={3} className="py-10 text-center text-ink-muted">
                       {t.loadingCustomers ? (
                         <span className="inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Đang tải...</span>
                       ) : fromId ? 'Tài khoản này không có khách hàng nào.' : 'Chọn người chuyển để xem khách hàng.'}
@@ -141,7 +142,7 @@ export function CustomerTransferView() {
                   </tr>
                 ) : (
                   t.customers.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                    <tr key={c.id} className="hover:bg-surface">
                       <td className={`${td} text-center`}>
                         <input
                           type="checkbox"
@@ -152,7 +153,7 @@ export function CustomerTransferView() {
                           className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                         />
                       </td>
-                      <td className={`${td} font-mono`}>{c.cif || '—'}</td>
+                      <td className={`${td} tabular-nums`}>{c.cif || '—'}</td>
                       <td className={`${td} border-r-0`}>{c.name || '—'}</td>
                     </tr>
                   ))
@@ -160,7 +161,7 @@ export function CustomerTransferView() {
               </tbody>
             </table>
           </div>
-          <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 text-sm text-slate-600 dark:text-slate-300">
+          <div className="px-4 py-2.5 bg-surface text-sm text-ink-muted">
             Đã chọn {t.selected.size} / {t.customers.length} khách
           </div>
         </div>
@@ -174,11 +175,11 @@ export function CustomerTransferView() {
                   <th className={`${th} text-right border-r-0`}>Số lượng</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+              <tbody className="divide-y divide-line">
                 {TRANSFER_COUNT_KEYS.map((key) => (
                   <tr key={key}>
                     <td className={td}>{TRANSFER_COUNT_LABELS[key]}</td>
-                    <td className={`${td} text-right font-mono border-r-0`}>{counts ? counts[key] : '—'}</td>
+                    <td className={`${td} text-right tabular-nums border-r-0`}>{counts ? counts[key] : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -198,7 +199,7 @@ export function CustomerTransferView() {
       </div>
 
       <div className={panel}>
-        <div className="px-4 py-3 text-sm font-bold text-slate-900 dark:text-slate-100">Nhật ký chuyển giao</div>
+        <div className="px-4 py-3 text-sm font-bold text-ink">Nhật ký chuyển giao</div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
@@ -211,10 +212,10 @@ export function CustomerTransferView() {
                 <th className={`${th} border-r-0`}>Người thực hiện</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+            <tbody className="divide-y divide-line">
               {t.history.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500 dark:text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-ink-muted">
                     {t.historyLoading ? 'Đang tải...' : 'Chưa có lần chuyển giao nào.'}
                   </td>
                 </tr>
@@ -224,8 +225,8 @@ export function CustomerTransferView() {
                     <td className={`${td} whitespace-nowrap`}>{fmtDate(h.transferredAt)} {timeOf(h.transferredAt)}</td>
                     <td className={td}>{name(h.fromUserId)}</td>
                     <td className={td}>{name(h.toUserId)}</td>
-                    <td className={`${td} text-right font-mono`}>{h.customerCount}</td>
-                    <td className={`${td} text-right font-mono`}>{h.counts.loans}</td>
+                    <td className={`${td} text-right tabular-nums`}>{h.customerCount}</td>
+                    <td className={`${td} text-right tabular-nums`}>{h.counts.loans}</td>
                     <td className={`${td} border-r-0`}>{name(h.transferredBy)}</td>
                   </tr>
                 ))

@@ -7,31 +7,42 @@ import { useIsMobile } from './useMediaQuery';
 import { useSelectedCustomerId } from './useSelectedCustomerId';
 import { visibleNavGroups } from '../lib/navigation';
 import { filterNavGroups } from '../lib/modules';
+import { useAuth } from '../context/AuthContext';
+import { ADMIN_NAV } from '../lib/adminNav';
 import { visibleWorkspaceSections, workspaceItemOfPath, workspaceSectionOfPath } from '../lib/workspaceNavigation';
 
 interface SidebarNavigationOptions {
   isOpenMobile: boolean;
   onCloseMobile?: () => void;
-  canManageUsers: boolean;
+  isMasterAdmin: boolean;
   contextual: boolean;
   overlay: boolean;
 }
 
-export function useSidebarNavigation({ isOpenMobile, onCloseMobile, canManageUsers, contextual, overlay }: SidebarNavigationOptions) {
+export function useSidebarNavigation({ isOpenMobile, onCloseMobile, isMasterAdmin, contextual, overlay }: SidebarNavigationOptions) {
   const { t } = useLang();
   const { pathname } = useLocation();
   const customerId = useSelectedCustomerId();
   const mobile = useIsMobile();
   const { isSidebarCollapsed } = useSidebarCollapse();
   const { allowed } = useModules();
+  const { can } = useAuth();
   const asideRef = useRef<HTMLElement>(null);
-  const sections = useMemo(() => visibleWorkspaceSections(allowed, canManageUsers), [allowed, canManageUsers]);
+  const sections = useMemo(() => visibleWorkspaceSections(allowed, isMasterAdmin), [allowed, isMasterAdmin]);
   const currentSection = workspaceSectionOfPath(pathname);
+  const adminSection = {
+    id: 'admin' as const, label: 'Quản trị',
+    items: ADMIN_NAV.filter(item => !item.capability || can(item.capability)).map(item => ({
+      id: item.id === 'overview' ? 'admin' : `admin-${item.id}`,
+      screenId: 'admin' as const, path: item.path, icon: item.icon,
+      label: item.label, keywords: [item.label], task: true,
+    })),
+  };
   const activeId = workspaceItemOfPath(pathname)?.id;
-  const current = sections.find(section => section.id === currentSection);
+  const current = currentSection === 'admin' && can('user.manage') ? adminSection : sections.find(section => section.id === currentSection);
   const groups = contextual
-    ? (isOpenMobile || overlay ? sections : sections.filter(section => section.id === currentSection))
-    : filterNavGroups(visibleNavGroups(canManageUsers), allowed).map(group => ({
+    ? (isOpenMobile || overlay ? sections : current ? [current] : [])
+    : filterNavGroups(visibleNavGroups(isMasterAdmin), allowed).map(group => ({
       id: group.groupKey,
       label: t(group.groupKey),
       items: group.items.map(item => ({ ...item, screenId: item.id })),

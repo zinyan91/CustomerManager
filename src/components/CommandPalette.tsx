@@ -9,10 +9,10 @@ import { useSelectedCustomerId } from '../hooks/useSelectedCustomerId';
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
-  canManageUsers?: boolean;
+  isMasterAdmin?: boolean;
 }
 
-export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, canManageUsers = false }) => {
+export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, isMasterAdmin = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLang();
@@ -23,7 +23,7 @@ export const CommandPalette = memo<CommandPaletteProps>(({ isOpen, onClose, canM
   const { allowed } = useModules();
   const customerId = useSelectedCustomerId();
 
-  const allItems = useMemo(() => visibleWorkspaceSections(allowed, canManageUsers).flatMap(section => section.items.map(item => ({ ...item, groupLabel: section.label }))), [canManageUsers, allowed]);
+  const allItems = useMemo(() => visibleWorkspaceSections(allowed, isMasterAdmin).flatMap(section => section.items.map(item => ({ ...item, groupLabel: section.label }))), [isMasterAdmin, allowed]);
 
   useEffect(() => {
     if (isOpen) {

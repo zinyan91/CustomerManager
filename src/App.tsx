@@ -62,19 +62,17 @@ export function App() {
         <Route path="writer/:draftId" element={<Suspense fallback={<ViewSkeleton />}><OfficeWriterRoute /></Suspense>} />
       </Route>
 
-      {/* Khu quản trị: khung và sidebar riêng, mở ở tab mới */}
-      <Route path={ROUTE_OF.admin} element={<Suspense fallback={<ViewSkeleton />}><AdminLayout /></Suspense>}>
-        <Route index element={<Suspense fallback={<ViewSkeleton />}><AdminOverviewView /></Suspense>} />
-        <Route path="users" element={<Suspense fallback={<ViewSkeleton />}><UserManagementView /></Suspense>} />
-        <Route path="teams" element={<Suspense fallback={<ViewSkeleton />}><AdminTeamsView /></Suspense>} />
-        <Route path="kpi" element={<Suspense fallback={<ViewSkeleton />}><AdminKpiDataView /></Suspense>} />
-        <Route path="users/:userId" element={<Suspense fallback={<ViewSkeleton />}><UserModulesView /></Suspense>} />
-        <Route path="transfer" element={<Suspense fallback={<ViewSkeleton />}><CustomerTransferView /></Suspense>} />
-        <Route path="storage" element={<Suspense fallback={<ViewSkeleton />}><StorageConfigView /></Suspense>} />
-      </Route>
-
       {/* Giao diện CRM chính có Sidebar hệ thống */}
       <Route element={<AppLayout />}>
+        <Route path={ROUTE_OF.admin} element={<Suspense fallback={<ViewSkeleton />}><AdminLayout /></Suspense>}>
+          <Route index element={<Suspense fallback={<ViewSkeleton />}><AdminOverviewView /></Suspense>} />
+          <Route path="users" element={<Suspense fallback={<ViewSkeleton />}><UserManagementView /></Suspense>} />
+          <Route path="teams" element={<Suspense fallback={<ViewSkeleton />}><AdminTeamsView /></Suspense>} />
+          <Route path="kpi" element={<Suspense fallback={<ViewSkeleton />}><AdminKpiDataView /></Suspense>} />
+          <Route path="users/:userId" element={<Suspense fallback={<ViewSkeleton />}><UserModulesView /></Suspense>} />
+          <Route path="transfer" element={<Suspense fallback={<ViewSkeleton />}><CustomerTransferView /></Suspense>} />
+          <Route path="storage" element={<Suspense fallback={<ViewSkeleton />}><StorageConfigView /></Suspense>} />
+        </Route>
         <Route path={ROUTE_OF.hub} element={<Suspense fallback={<ViewSkeleton />}><LegacyHubRedirect /></Suspense>} />
         <Route path="/hub/documents" element={<Suspense fallback={<ViewSkeleton />}><DocumentTemplateView /></Suspense>} />
         <Route path="/hub/estimate" element={<Suspense fallback={<ViewSkeleton />}><ConstructionEstimateView /></Suspense>} />

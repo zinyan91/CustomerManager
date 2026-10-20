@@ -1,20 +1,20 @@
 ﻿import { memo } from 'react';
 import { Link, useLocation } from 'react-router';
-import { LayoutDashboard, Users, TrendingUp, FolderArchive, Database, FileSignature, Boxes, Landmark, Settings, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, FolderArchive, Database, FileSignature, Boxes, Landmark, Settings, ShieldCheck, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { useSelectedCustomerId } from '../hooks/useSelectedCustomerId';
 import { useSidebarCollapse } from '../context/SidebarCollapseContext';
 import { useModules } from '../context/ModulesContext';
 import { visibleWorkspaceSections, workspaceItemPath, workspaceSectionOfPath } from '../lib/workspaceNavigation';
 
-const ICONS = { overview: LayoutDashboard, credit: Users, finance: TrendingUp, documents: FileSignature, dispatch: FolderArchive, storage: Database, retail: Boxes, reference: Landmark, system: Settings };
+const ICONS = { overview: LayoutDashboard, credit: Users, finance: TrendingUp, documents: FileSignature, dispatch: FolderArchive, storage: Database, retail: Boxes, reference: Landmark, admin: ShieldCheck, system: Settings };
 
-export const PrimaryRail = memo(({ canManageUsers = false }: { canManageUsers?: boolean }) => {
+export const PrimaryRail = memo(({ isMasterAdmin = false }: { isMasterAdmin?: boolean }) => {
   const { pathname } = useLocation();
   const customerId = useSelectedCustomerId();
   const { isSidebarCollapsed, toggleSidebar } = useSidebarCollapse();
   const { allowed } = useModules();
   const current = workspaceSectionOfPath(pathname);
-  const sections = visibleWorkspaceSections(allowed, canManageUsers);
+  const sections = visibleWorkspaceSections(allowed, isMasterAdmin);
   return (
     <nav className="fixed top-[56px] bottom-0 left-0 z-40 hidden md:flex flex-col items-center w-[88px] bg-[#13263e] border-r border-white/10 py-3 px-1.5 gap-1.5 overflow-y-auto" aria-label="Phân hệ">
       {sections.map(section => {

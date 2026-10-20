@@ -5,25 +5,29 @@ import { MemoryRouter, useLocation } from 'react-router';
 import { LanguageProvider } from '../../context/LanguageContext';
 import { SidebarCollapseProvider } from '../../context/SidebarCollapseContext';
 import type { ModuleId } from '../../lib/modules';
+import type { AppRole } from '../../lib/permissions';
 import { PrimaryRail } from '../PrimaryRail';
 import { Sidebar } from '../Sidebar';
 import { CommandPalette } from '../CommandPalette';
 import { DedicatedWorkspaceHeader } from '../hub/DedicatedWorkspaceHeader';
 
-const state = vi.hoisted(() => ({ allowed: null as ModuleId[] | null }));
+const state = vi.hoisted(() => ({ allowed: null as ModuleId[] | null, role: 'master_admin' as AppRole }));
 vi.mock('../../context/ModulesContext', async () => {
   const { MODULE_IDS } = await import('../../lib/modules');
   return { useModules: () => ({ allowed: state.allowed ?? MODULE_IDS, ready: true, error: null }) };
 });
-vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ can: () => true }) }));
+vi.mock('../../context/AuthContext', async () => {
+  const { can } = await import('../../lib/permissions');
+  return { useAuth: () => ({ can: (capability: Parameters<typeof can>[1]) => can(state.role, capability) }) };
+});
 vi.mock('../common/UserScopeSelector', () => ({ UserScopeSelector: () => null }));
 
 function NavigationFixture({ search = false }: { search?: boolean }) {
   const location = useLocation();
   return <>
-    <PrimaryRail canManageUsers />
-    <Sidebar contextual canManageUsers />
-    <CommandPalette isOpen={search} onClose={() => {}} canManageUsers />
+    <PrimaryRail isMasterAdmin={state.role === 'master_admin'} />
+    <Sidebar contextual isMasterAdmin={state.role === 'master_admin'} />
+    <CommandPalette isOpen={search} onClose={() => {}} isMasterAdmin={state.role === 'master_admin'} />
     <output data-testid="destination">{location.pathname}</output>
     <section data-testid="existing-content">Nội dung chức năng giữ nguyên</section>
   </>;
@@ -32,9 +36,47 @@ function mount(path: string, search = false) {
   return render(<MemoryRouter initialEntries={[path]}><LanguageProvider><SidebarCollapseProvider><NavigationFixture search={search} /></SidebarCollapseProvider></LanguageProvider></MemoryRouter>);
 }
 beforeEach(() => { localStorage.setItem('cm_sidebar_collapsed', 'false'); });
-afterEach(() => { state.allowed = null; localStorage.clear(); cleanup(); });
+afterEach(() => { state.allowed = null; state.role = 'master_admin'; localStorage.clear(); cleanup(); });
 
 describe('workspace shell navigation', () => {
+  it('opens administration in the current tab and keeps both menus active at user details', () => {
+    mount('/settings');
+    const rail = screen.getByRole('navigation', { name: 'Phân hệ' });
+    expect(document.querySelector('#app-sidebar a[href="/admin"]')).toBeNull();
+    const admin = within(rail).getByRole('link', { name: 'Quản trị' });
+    expect(admin.getAttribute('target')).toBeNull();
+    fireEvent.click(admin);
+    expect(screen.getByTestId('destination').textContent).toBe('/admin');
+    expect([...document.querySelectorAll('#app-sidebar a')].map(link => link.getAttribute('href')))
+      .toEqual(['/admin', '/admin/users', '/admin/teams', '/admin/kpi', '/admin/transfer', '/admin/storage']);
+    fireEvent.click(within(document.querySelector('#app-sidebar') as HTMLElement).getByRole('link', { name: 'Người dùng' }));
+    expect(screen.getByTestId('destination').textContent).toBe('/admin/users');
+    expect(admin.getAttribute('aria-current')).toBe('page');
+  });
+
+  it('keeps Người dùng selected when editing module access', () => {
+    mount('/admin/users/u1');
+    expect(document.querySelector('#app-sidebar [aria-current="page"]')?.getAttribute('href')).toBe('/admin/users');
+    expect(within(screen.getByRole('navigation', { name: 'Phân hệ' })).getByRole('link', { name: 'Quản trị' }).getAttribute('aria-current')).toBe('page');
+  });
+
+  it.each(['user_admin', 'user'] as AppRole[])('hides administrative navigation and search entries for %s', role => {
+    state.role = role;
+    mount('/settings', true);
+    expect(document.querySelector('nav[aria-label="Phân hệ"] a[href="/admin"]')).toBeNull();
+    expect(document.querySelector('#app-sidebar a[href^="/admin"]')).toBeNull();
+    fireEvent.change(screen.getByPlaceholderText('Tìm kiếm phân hệ, hợp đồng, khoản vay...'), { target: { value: 'Quản trị' } });
+    expect(screen.getByText(/Không tìm thấy phân hệ tương ứng/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Người dùng/ })).toBeNull();
+  });
+
+  it('preserves only existing permitted tools for User Admin opening a direct admin URL', () => {
+    state.role = 'user_admin';
+    mount('/admin/users/u1');
+    const links = [...document.querySelectorAll('#app-sidebar a')].map(link => link.getAttribute('href'));
+    expect(links).toEqual(['/admin', '/admin/users', '/admin/transfer']);
+    expect(document.querySelector('nav[aria-label="Phân hệ"] a[href="/admin"]')).toBeNull();
+  });
   it('opens Reference directly and exposes only its three lookup tools',()=>{
     mount('/dashboard');
     fireEvent.click(screen.getByRole('navigation',{name:'Phân hệ'}).querySelector('a[href="/hub/mdsdv"]')!);

@@ -20,13 +20,13 @@ function AppLayoutContent() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   const { session, loading, can } = useAuth();
-  const canManageUsers = can('user.manage');
+  const isMasterAdmin = can('role.manage');
   const { ready, scopeKey } = useUserScope();
   const location = useLocation();
   const section = workspaceSectionOfPath(location.pathname);
   const directWorkspace = section === 'dispatch' || section === 'storage';
   const replacesSidebar = section === 'documents' || directWorkspace;
-  const continuousWorkspace = ['retail','dispatch','storage','documents','reference','finance'].includes(section ?? '')
+  const continuousWorkspace = ['retail','dispatch','storage','documents','reference','finance','admin'].includes(section ?? '')
     || ['/hub/reports','/tools/reports'].includes(location.pathname.replace(/\/+$/,''));
   const flushReport = ['/team-kpi','/loan-progress','/dispatches','/storage'].includes(location.pathname.replace(/\/+$/,''));
   const { isSidebarCollapsed } = useSidebarCollapse();
@@ -81,18 +81,19 @@ function AppLayoutContent() {
       </div>
 
       <Header
+        showUserScope={section !== 'admin'}
         isMobileMenuOpen={isMobileMenuOpen}
         onToggleMobileMenu={handleToggleMobileMenu}
         onOpenCommandPalette={handleOpenCommandPalette}
         onOpenAiChat={() => setIsAiDialogOpen(true)}
       />
 
-      <PrimaryRail canManageUsers={canManageUsers} />
+      <PrimaryRail isMasterAdmin={isMasterAdmin} />
 
       {(!replacesSidebar || isMobileMenuOpen) && <Sidebar
         isOpenMobile={isMobileMenuOpen}
         onCloseMobile={handleCloseMobileMenu}
-        canManageUsers={canManageUsers}
+        isMasterAdmin={isMasterAdmin}
         contextual={true}
         overlay={replacesSidebar}
       />}
@@ -104,7 +105,7 @@ function AppLayoutContent() {
               // key = phạm vi tài khoản: đổi tài khoản thì remount để mọi màn nạp lại đúng dữ liệu
               <Fragment key={scopeKey}>
                 <ModuleGate>
-                  <CustomerContextBar />
+                  {section !== 'admin' && <CustomerContextBar />}
                   <Outlet />
                 </ModuleGate>
               </Fragment>
@@ -120,7 +121,7 @@ function AppLayoutContent() {
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={handleCloseCommandPalette}
-        canManageUsers={canManageUsers}
+        isMasterAdmin={isMasterAdmin}
       />
 
       {/* Nút tròn nổi mở Trợ lý AI ở góc màn hình */}

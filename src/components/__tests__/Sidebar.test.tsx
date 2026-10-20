@@ -8,6 +8,7 @@ import { LanguageProvider } from '../../context/LanguageContext';
 import { translate } from '../../lib/i18n';
 
 const modulesState = vi.hoisted(() => ({ allowed: null as string[] | null }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ can: () => false }) }));
 vi.mock('../../context/ModulesContext', async () => {
   const { MODULE_IDS } = await import('../../lib/modules');
   return { useModules: () => ({ allowed: modulesState.allowed ?? [...MODULE_IDS], ready: true, error: null, reload: () => {} }) };
@@ -18,11 +19,11 @@ afterEach(() => {
   cleanup();
 });
 
-function dungLen(canManageUsers = false) {
+function dungLen(isMasterAdmin = false) {
   return render(
     <MemoryRouter>
       <LanguageProvider>
-        <Sidebar canManageUsers={canManageUsers} />
+        <Sidebar isMasterAdmin={isMasterAdmin} />
       </LanguageProvider>
     </MemoryRouter>
   );
@@ -240,12 +241,11 @@ describe('Sidebar mobile drawer behavior', () => {
   });
 });
 
-describe('Sidebar mở Quản trị ở tab mới', () => {
-  it('mục Quản trị là liên kết target _blank có rel an toàn; các mục khác mở trong tab hiện tại', () => {
+describe('Sidebar mở Quản trị trong ứng dụng', () => {
+  it('Quản trị và các mục khác đều mở trong tab hiện tại', () => {
     const { container } = dungLen(true);
     const admin = container.querySelector('nav a[href="/admin"]')!;
-    expect(admin.getAttribute('target')).toBe('_blank');
-    expect(admin.getAttribute('rel')).toContain('noopener');
+    expect(admin.getAttribute('target')).toBeNull();
     expect(container.querySelector('nav a[href="/customers"]')!.getAttribute('target')).toBeNull();
   });
 });

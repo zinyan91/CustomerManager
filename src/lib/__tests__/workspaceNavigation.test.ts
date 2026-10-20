@@ -44,7 +44,9 @@ describe('workspace navigation', () => {
     ['/dispatches', 'dispatch'], ['/storage', 'storage'],
     ['/customers/55/loans/12/schedule', 'credit'], ['/customers/55/profile', 'credit'],
     ['/reference/quiz/', 'reference'], ['/tools/cost-of-funds', 'finance'],
-    ['/dashboard', 'overview'], ['/settings', 'system'], ['/admin/users', undefined],
+    ['/dashboard', 'overview'], ['/settings', 'system'], ['/admin/users', 'admin'],
+    ['/admin/users/u1', 'admin'], ['/admin/teams', 'admin'], ['/admin/kpi', 'admin'],
+    ['/admin/storage', 'admin'], ['/admin/transfer', 'admin'],
   ])('resolves %s to %s', (path, section) => {
     expect(workspaceSectionOfPath(path)).toBe(section);
   });
@@ -53,6 +55,16 @@ describe('workspace navigation', () => {
     expect(workspaceItemOfPath('/hub/estimate')?.id).toBe('estimate');
     expect(workspaceItemOfPath('/hub/toi')?.id).toBe('toi');
     expect(workspaceItemOfPath('/tools/business-plan')?.id).toBe('business-plan');
+  });
+
+  it('separates administration from settings and hides it without Master Admin visibility', () => {
+    const sections = visibleWorkspaceSections(MODULE_IDS, true);
+    expect(sections.find(section => section.id === 'system')?.items.map(item => item.id)).toEqual(['settings']);
+    expect(sections.find(section => section.id === 'admin')?.items.map(item => workspaceItemPath(item, 55)))
+      .toEqual(['/admin', '/admin/users', '/admin/teams', '/admin/kpi', '/admin/transfer', '/admin/storage']);
+    expect(visibleWorkspaceSections(MODULE_IDS, false).some(section => section.id === 'admin')).toBe(false);
+    expect(workspaceItemOfPath('/admin/users/u1')?.id).toBe('admin-users');
+    expect(workspaceItemOfPath('/administrator')).toBeUndefined();
   });
 
   it('uses the actual allowed task path, including special TOI and estimate permissions', () => {

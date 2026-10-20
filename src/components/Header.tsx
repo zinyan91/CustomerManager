@@ -17,9 +17,10 @@ interface HeaderProps {
   onOpenCommandPalette?: () => void;
   onOpenAiChat?: () => void;
   isMobileMenuOpen?: boolean;
+  showUserScope?: boolean;
 }
 
-export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPalette, onOpenAiChat, isMobileMenuOpen = false }) => {
+export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPalette, onOpenAiChat, isMobileMenuOpen = false, showUserScope = true }) => {
   const { theme, toggleTheme } = useTheme();
   const { user, role, fullName, isAdmin, signOut } = useAuth();
   const { lang, setLang, t } = useLang();
@@ -129,7 +130,7 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
         )}
 
         {/* Bộ chọn tài khoản quản trị dữ liệu theo User (chỉ hiển thị cho Admin) */}
-        <UserScopeSelector className="hidden sm:block" />
+        {showUserScope && <UserScopeSelector className="hidden sm:block" />}
 
         {/* Nút Kích hoạt Trợ lý AI Tín dụng & Văn thư */}
         {onOpenAiChat && (

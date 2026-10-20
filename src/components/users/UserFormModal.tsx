@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, AlertCircle, Loader2, Wand2, Copy, Check } from 'lucide-react';
 import { assignableRoles, checkAdminAction, displayName, generateTempPassword, type Actor, type AdminUser, type Role } from '../../lib/userAdmin';
 import { roleLabel } from '../../lib/permissions';
+import { primaryBtn, secondaryBtn } from '../admin/tableStyles';
 
 export interface UserFormValues {
   email: string;
@@ -20,8 +21,8 @@ interface UserFormModalProps {
 }
 
 const control =
-  'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm disabled:opacity-60';
-const label = 'block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1';
+  'w-full px-3 py-2 rounded-lg border border-line bg-panel text-ink text-sm disabled:opacity-60';
+const label = 'block text-xs font-semibold text-ink-muted mb-1';
 
 /** Form thêm hoặc sửa người dùng. Kiểm bằng đúng luật của máy chủ trước khi gửi. */
 export function UserFormModal({ user, actor, onSubmit, onClose }: UserFormModalProps) {
@@ -91,10 +92,10 @@ export function UserFormModal({ user, actor, onSubmit, onClose }: UserFormModalP
         onSubmit={submit}
         role="dialog"
         aria-label={editing ? 'Sửa người dùng' : 'Thêm người dùng'}
-        className="w-full max-w-lg my-8 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl"
+        className="w-full max-w-lg my-8 bg-panel rounded-xl border border-line shadow-xl"
       >
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{editing ? `Sửa ${displayName(user)}` : 'Thêm người dùng'}</h2>
+        <div className="px-6 py-4 border-b border-line flex items-center justify-between">
+          <h2 className="text-lg font-bold text-ink">{editing ? `Sửa ${displayName(user)}` : 'Thêm người dùng'}</h2>
           <button type="button" onClick={onClose} aria-label="Đóng" className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
@@ -122,19 +123,19 @@ export function UserFormModal({ user, actor, onSubmit, onClose }: UserFormModalP
           </div>
           <div>
             <label htmlFor="uf-password" className={label}>{editing ? 'Đặt lại mật khẩu (bỏ trống nếu không đổi)' : 'Mật khẩu tạm'}</label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <input
                 id="uf-password"
                 value={values.password}
                 onChange={(e) => patch({ password: e.target.value })}
-                className={`${control} font-mono`}
+                className={`${control} min-w-0 flex-1 basis-full sm:basis-0`}
                 autoComplete="new-password"
               />
-              <button type="button" onClick={() => patch({ password: generateTempPassword() })} className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
+              <button type="button" onClick={() => patch({ password: generateTempPassword() })} className="px-3 py-2 rounded-lg border border-line text-sm font-medium text-ink hover:bg-surface inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
                 <Wand2 className="w-4 h-4" />
                 Tạo mật khẩu
               </button>
-              <button type="button" onClick={copyPassword} disabled={!values.password} aria-label="Sao chép mật khẩu" className="p-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 cursor-pointer">
+              <button type="button" onClick={copyPassword} disabled={!values.password} aria-label="Sao chép mật khẩu" className="p-2 rounded-lg border border-line text-ink-muted hover:bg-surface disabled:opacity-40 cursor-pointer">
                 {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
@@ -142,17 +143,17 @@ export function UserFormModal({ user, actor, onSubmit, onClose }: UserFormModalP
         </div>
 
         {error && (
-          <div role="alert" className="mx-6 mb-4 flex items-start gap-2 text-sm text-rose-700 dark:text-rose-300">
+          <div role="alert" className="mx-6 mb-4 flex items-start gap-2 text-sm text-neg">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-2.5">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+        <div className="px-6 py-4 border-t border-line flex justify-end gap-2.5">
+          <button type="button" onClick={onClose} className={secondaryBtn}>
             Hủy
           </button>
-          <button type="submit" disabled={submitting} className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 text-sm font-semibold inline-flex items-center gap-2 disabled:opacity-60 cursor-pointer">
+          <button type="submit" disabled={submitting} className={`${primaryBtn} inline-flex items-center gap-2`}>
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
             {editing ? 'Lưu thay đổi' : 'Tạo tài khoản'}
           </button>

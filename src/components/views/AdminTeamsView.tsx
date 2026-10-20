@@ -2,17 +2,18 @@ import { useAuth } from '../../context/AuthContext';
 import { useTeamWorkspace } from '../../hooks/useTeamWorkspace';
 import { TeamManagementForms } from '../team/TeamManagementForms';
 import { TeamMembersTable } from '../team/TeamMembersTable';
+import { AdminPageHeader } from '../admin/AdminPageHeader';
+import { secondaryBtn } from '../admin/tableStyles';
 
 function AdminTeamsContent() {
   const workspace = useTeamWorkspace(true);
   return <div className="space-y-5 text-ink">
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <h1 className="text-xl font-semibold">Team</h1>
-      <button className="rounded-md border border-line bg-panel px-3 py-2 text-sm cursor-pointer" onClick={workspace.reload} disabled={workspace.loading}>Tải lại</button>
-    </div>
+    <AdminPageHeader title="Team">
+      <button className={secondaryBtn} onClick={workspace.reload} disabled={workspace.loading}>Làm mới</button>
+    </AdminPageHeader>
     {workspace.error ? <p role="alert" className="text-sm text-red-700 dark:text-red-300">{workspace.error}</p>
       : workspace.loading ? <p role="status" className="py-12 text-center text-sm text-ink-muted">Đang tải team…</p>
-        : <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        : <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]">
           <div className="space-y-5 min-w-0">
             {workspace.teams.length > 0 ? <>
               <label className="block text-sm">Team

@@ -53,8 +53,8 @@ describe('navigation', () => {
 });
 
 describe('navigation — mục mở ở tab mới', () => {
-  it('chỉ mục Quản trị mở ở tab mới', () => {
-    expect(NAV_ITEMS.filter(i => i.newTab).map(i => i.id)).toEqual(['admin']);
+  it('mọi mục chính đều mở trong tab hiện tại', () => {
+    expect(NAV_ITEMS.filter(i => i.newTab)).toEqual([]);
   });
 });
 

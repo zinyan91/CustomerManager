@@ -73,7 +73,7 @@ export const KunnForm: React.FC<KunnFormProps> = ({
   graceOptions, selectedCollaterals, maxAllowedLoanLtv,
 }) => {
   return (
-    <div className="rounded-2xl p-4 sm:p-5 space-y-4 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150 font-app">
+    <div data-workspace-panel className="p-4 sm:p-5 space-y-4 border-b border-line bg-panel font-app">
       <div className="flex items-center justify-between pb-3 border-b border-line/60">
         <h3 className="font-bold flex items-center space-x-2.5 text-sm text-accent">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent">

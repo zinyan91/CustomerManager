@@ -62,12 +62,12 @@ describe('periodObligation đọc hệ số từ hợp đồng', () => {
     const thuong = periodObligation(ky(), vay(), HOM_NAY);
 
     expect(thuong.penalty.due).toBeGreaterThan(0);
-    expect(mien.penalty.due).toBe(0);
+    expect(mien.penalty.due).toBe(computeSchedulePenalty(ky(), 0.12, { asOfDateStr: HOM_NAY, principalPenaltyMultiplier: 0 }).interestPenalty);
     expect(mien.total.due).toBeLessThan(thuong.total.due);
   });
 
   it('hệ số 0 không bị bẫy || đẩy về mặc định', () => {
     const o = periodObligation(ky(), vay({ PrincipalPenaltyMultiplier: 0 }), HOM_NAY);
-    expect(o.penalty.due).toBe(0);
+    expect(o.penalty.due).toBe(computeSchedulePenalty(ky(), 0.12, { asOfDateStr: HOM_NAY, principalPenaltyMultiplier: 0 }).interestPenalty);
   });
 });

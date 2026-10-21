@@ -33,6 +33,7 @@ import {
   nextKunnNumberFor, type KunnFormFields,
 } from '../lib/kunnForm';
 import type { MasterHdtdGroup } from '../components/portfolio/MasterHdtdFilterTabs';
+import { contractsForHdtd, masterHdtdFilterKey } from '../lib/portfolioFilters';
 
 export function useLoanPortfolioController() {
   const selectedCustomerId = useSelectedCustomerId();
@@ -332,7 +333,7 @@ export function useLoanPortfolioController() {
   const masterHdtdGroups = useMemo<MasterHdtdGroup[]>(() => {
     const map = new Map<string, LoanContract[]>();
     contracts.forEach(c => {
-      const masterNo = resolveMasterHdtdNumber(c, creditContracts) || 'KHÔNG_HĐTD';
+      const masterNo = masterHdtdFilterKey(c, creditContracts);
       const list = map.get(masterNo) || [];
       list.push(c);
       map.set(masterNo, list);
@@ -361,13 +362,7 @@ export function useLoanPortfolioController() {
   }, [contracts, creditContracts]);
 
   const contractsInHdtdScope = useMemo(() => {
-    if (selectedMasterFilter === 'ALL') return contracts;
-    if (selectedMasterFilter === 'KHONG_HDTD') {
-      return contracts.filter(k => !resolveMasterHdtdNumber(k, creditContracts));
-    }
-    return contracts.filter(
-      k => (resolveMasterHdtdNumber(k, creditContracts) || '').toLowerCase() === selectedMasterFilter.toLowerCase()
-    );
+    return contractsForHdtd(contracts, creditContracts, selectedMasterFilter);
   }, [contracts, selectedMasterFilter, creditContracts]);
 
   const settledInScopeCount = useMemo(
@@ -381,6 +376,22 @@ export function useLoanPortfolioController() {
   );
 
   const hiddenSettledCount = contractsInHdtdScope.length - visibleContracts.length;
+
+  const selectMasterFilter = (filter: string) => {
+    setSelectedMasterFilter(filter);
+    const candidates = contractsForHdtd(contracts, creditContracts, filter)
+      .filter(contract => showSettledKunn || !isKunnSettled(contract));
+    if (selectedContract && candidates.some(contract => contract.Id === selectedContract.Id)) return;
+    portfolio.cancelContractLoad();
+    setShowForm(false);
+    setSelectedContract(null);
+    setSchedules([]);
+    if (mainTab === 'schedule' && candidates.length) {
+      void portfolio.openContract(candidates[0]);
+    } else if (!candidates.length) {
+      setMainTab('kunn');
+    }
+  };
 
   const unsettledCount = useMemo(() => contracts.filter(k => !isKunnSettled(k)).length, [contracts]);
   const closedHdtdCount = useMemo(
@@ -851,7 +862,7 @@ export function useLoanPortfolioController() {
     showForm,
     setShowForm,
     selectedMasterFilter,
-    setSelectedMasterFilter,
+    setSelectedMasterFilter: selectMasterFilter,
     form,
     setForm,
     formHdtdNumber,

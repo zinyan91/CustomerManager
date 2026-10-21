@@ -3,7 +3,6 @@ import { Receipt, Save } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
 import { fmtDate, fmtMoney, formatMoneyInput } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
-import { calculateOverdueDaysFromDates, computeSchedulePenalty } from '../../lib/loanMath';
 import { DateInput } from '../DateInput';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
 import { Button } from '../ui/Button';
@@ -89,47 +88,37 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+              <label htmlFor="collection-payment-date" className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
                 Ngày thực trả
               </label>
               <DateInput
+                id="collection-payment-date"
                 value={modalPaymentDate}
-                onChange={v => {
-                  setModalPaymentDate(v);
-                  if (v && editingSchedule.DueDate) {
-                    const days = calculateOverdueDaysFromDates(v, editingSchedule.DueDate);
-                    setModalOverdueDaysStr(days.toString());
-                    const pen = computeSchedulePenalty(editingSchedule, annualRate, { overdueDays: days });
-                    setModalOverdueInterestStr(pen.total.toString());
-                  }
-                }}
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
-                Số ngày quá hạn
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={modalOverdueDaysStr}
-                onChange={e => {
-                  setModalOverdueDaysStr(e.target.value);
-                  const days = parseInt(e.target.value, 10) || 0;
-                  const pen = computeSchedulePenalty(editingSchedule, annualRate, { overdueDays: days });
-                  setModalOverdueInterestStr(pen.total.toString());
-                }}
+                onChange={setModalPaymentDate}
                 className="w-full p-2 rounded-[var(--r-control)] border border-line/70 bg-surface/80 text-xs font-mono font-bold"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+              <label htmlFor="collection-overdue-days" className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+                Số ngày quá hạn
+              </label>
+              <input
+                id="collection-overdue-days"
+                type="number"
+                min={0}
+                value={modalOverdueDaysStr}
+                onChange={e => setModalOverdueDaysStr(e.target.value)}
+                className="w-full p-2 rounded-[var(--r-control)] border border-line/70 bg-surface/80 text-xs font-mono font-bold"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="collection-principal" className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
                 Gốc thực thu (VNĐ)
               </label>
               <input
+                id="collection-principal"
                 type="text"
                 value={modalActualPaidPrincipalStr}
                 onChange={e => setModalActualPaidPrincipalStr(formatMoneyInput(e.target.value))}
@@ -138,10 +127,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
-                Lãi thường thực thu (VNĐ)
+              <label htmlFor="collection-interest" className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+                Lãi thực thu gồm lãi phạt (VNĐ)
               </label>
               <input
+                id="collection-interest"
                 type="text"
                 value={modalActualPaidInterestStr}
                 onChange={e => setModalActualPaidInterestStr(formatMoneyInput(e.target.value))}
@@ -150,10 +140,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+              <label htmlFor="collection-prepaid" className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
                 Gốc trả trước hạn (VNĐ)
               </label>
               <input
+                id="collection-prepaid"
                 type="text"
                 value={modalPrepaidPrincipalStr}
                 onChange={e => setModalPrepaidPrincipalStr(formatMoneyInput(e.target.value))}
@@ -162,10 +153,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
+              <label htmlFor="collection-penalty" className="block text-[11px] font-bold text-ink-muted uppercase mb-1">
                 Lãi phạt quá hạn (VNĐ)
               </label>
               <input
+                id="collection-penalty"
                 type="text"
                 value={modalOverdueInterestStr}
                 onChange={e => setModalOverdueInterestStr(formatMoneyInput(e.target.value))}
@@ -203,7 +195,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               onClick={onSave}
               leftIcon={<Save className="w-3.5 h-3.5" />}
             >
-              {loading ? 'Đang lưu...' : 'LƯU KỲ THU NỢ'}
+              {loading ? 'Đang lưu...' : 'Lưu kỳ thu nợ'}
             </Button>
           </div>
         </div>

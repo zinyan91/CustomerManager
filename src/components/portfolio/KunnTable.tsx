@@ -53,7 +53,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
   const rows = filteredContracts;
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150">
+    <div data-workspace-panel className="overflow-hidden border-b border-line bg-panel">
       <div className="p-3.5 sm:p-4 border-b border-line/60 flex flex-wrap items-center justify-between gap-3 bg-surface/75 backdrop-blur-md">
         <span className="font-bold flex items-center space-x-2 text-xs text-ink">
           <div className="p-1.5 rounded-lg bg-warn-soft text-warn shrink-0 shadow-2xs">

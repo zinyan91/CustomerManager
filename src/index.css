@@ -425,6 +425,10 @@ h3, h4, h5, h6 {
     margin-inline: 0;
   }
 
+  .workspace-continuous .workspace-customer-context {
+    margin-bottom: 0;
+  }
+
   :root .workspace-continuous [data-workspace-panel]:not(.fixed *):not([role="dialog"] *) {
     border-radius: 0;
     box-shadow: none;

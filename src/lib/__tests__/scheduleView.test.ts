@@ -21,12 +21,12 @@ const schedule = (over: Partial<RepaymentSchedule>): RepaymentSchedule => ({
 
 describe('resolvePenaltyDue', () => {
   it('tôn trọng lãi phạt khai tay bằng 0, không rơi về mức tính tự động', () => {
-    const s = schedule({ OverdueInterestAmount: 0, OverdueDays: 90 });
+    const s = schedule({ OverdueInterestAmount: 0, OverdueDays: 90, PaymentDate: '2026-08-06' });
     expect(resolvePenaltyDue(s, contract, '2026-08-06')).toBe(0);
   });
 
   it('dùng số khai tay khi có', () => {
-    const s = schedule({ OverdueInterestAmount: 55_000, OverdueDays: 90 });
+    const s = schedule({ OverdueInterestAmount: 55_000, OverdueDays: 90, PaymentDate: '2026-08-06' });
     expect(resolvePenaltyDue(s, contract, '2026-08-06')).toBe(55_000);
   });
 
@@ -38,6 +38,22 @@ describe('resolvePenaltyDue', () => {
   it('không tính phạt cho kỳ đã tất toán mà chưa khai', () => {
     const s = schedule({ OverdueInterestAmount: undefined, IsPaid: true, OverdueDays: 90 });
     expect(resolvePenaltyDue(s, contract, '2026-08-06')).toBe(0);
+  });
+
+  it('updates uncollected zero-default penalties with the calendar date and includes late interest', () => {
+    const s = schedule({ PrincipalAmount: 0, InterestAmount: 1_000_000, OverdueInterestAmount: 0, OverdueDays: 1 });
+    expect(resolvePenaltyDue(s, contract, '2026-02-09')).toBe(2466);
+    expect(resolvePenaltyDue(s, contract, '2026-02-10')).toBe(2740);
+    expect(periodObligation(s, contract, '2026-02-10').overdueDays).toBe(10);
+  });
+
+  it('splits collected interest and penalty without double counting on partial receipts', () => {
+    const s = schedule({ PrincipalAmount: 1_000_000, InterestAmount: 100_000, OverdueInterestAmount: 10_000, ActualPaidPrincipal: 0, ActualPaidInterest: 105_000 });
+    const o = periodObligation(s, contract, '2026-08-06');
+    expect(o.interest.paid).toBe(100_000);
+    expect(o.penalty.paid).toBe(5000);
+    expect(o.total.paid).toBe(105_000);
+    expect(o.total.unpaid).toBe(1_005_000);
   });
 });
 
@@ -88,7 +104,7 @@ describe('periodObligation', () => {
 
   it('tổng nghĩa vụ bằng gốc cộng lãi cộng phạt', () => {
     const o = periodObligation(
-      schedule({ OverdueInterestAmount: 30_000, DueDate: '2026-07-07' }),
+      schedule({ OverdueInterestAmount: 30_000, DueDate: '2026-07-07', PaymentDate: '2026-08-06' }),
       contract,
       '2026-08-06'
     );
@@ -100,7 +116,7 @@ describe('sumObligations', () => {
   it('tổng cột bằng tổng các dòng, kể cả khi có kỳ miễn phạt', () => {
     const rows = [
       schedule({ Id: 1, IsPaid: true }),
-      schedule({ Id: 2, DueDate: '2026-07-07', OverdueInterestAmount: 0 }),
+      schedule({ Id: 2, DueDate: '2026-07-07', OverdueInterestAmount: 0, PaymentDate: '2026-08-06' }),
       schedule({ Id: 3, DueDate: '2026-09-30' }),
     ].map(s => periodObligation(s, contract, '2026-08-06'));
 

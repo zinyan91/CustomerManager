@@ -29,7 +29,8 @@ export function CustomerContextBar() {
   return (
     <div
       data-testid="thanh-ngu-canh"
-      className="glass-floating-panel specular-card rounded-2xl p-3 sm:px-4 sm:py-2.5 mb-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2.5 shadow-lg shadow-black/10 animate-in fade-in duration-150"
+      data-workspace-panel
+      className="glass-floating-panel specular-card rounded-2xl p-3 sm:px-4 sm:py-2.5 mb-5 workspace-customer-context flex flex-wrap items-center justify-between gap-x-6 gap-y-2.5 shadow-lg shadow-black/10 animate-in fade-in duration-150"
     >
       {/* Khối danh tính khách hàng */}
       <div className="flex items-center gap-3 min-w-0">

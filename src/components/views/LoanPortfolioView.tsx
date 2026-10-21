@@ -27,6 +27,7 @@ const ComponentFallback = () => (
 export const LoanPortfolioView: React.FC = () => {
   const {
     notification,
+    portfolio,
     setNotification,
     loading,
     mainTab,
@@ -128,11 +129,12 @@ export const LoanPortfolioView: React.FC = () => {
   const remainingHmtd = Math.max(0, availBeforeThisKunn - kunnLoanAmountNum);
 
   return (
-    <div className="space-y-4 font-app">
+    <div data-workspace-page className="space-y-0 font-app">
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
       {/* Customer Search Section */}
       <CustomerSearchBar
+        compact={Boolean(foundCustomer)}
         allCustomers={allCustomers}
         dropdownQuery={dropdownQuery}
         setDropdownQuery={setDropdownQuery}
@@ -221,6 +223,8 @@ export const LoanPortfolioView: React.FC = () => {
       {foundCustomer && mainTab === 'schedule' && selectedContract && (
         <Suspense fallback={<ComponentFallback />}>
           <ScheduleTab
+            loading={portfolio.scheduleLoading}
+            error={portfolio.scheduleError}
             selectedContract={selectedContract}
             schedules={schedules}
             openPaymentModal={paymentModalProps.open}

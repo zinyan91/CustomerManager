@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Collateral, CardContract, CreditContract, Customer, LoanContract, RepaymentSchedule } from '../types';
 import {
   fetchCollateralsByCustomerAPI, fetchContractsByCustomerAPI, fetchCreditContractsByCustomerAPI,
@@ -36,7 +36,11 @@ export function useCustomerPortfolio({
   const [cards, setCards] = useState<CardContract[]>([]);
   const [selectedContract, setSelectedContract] = useState<LoanContract | null>(null);
   const [schedules, setSchedules] = useState<RepaymentSchedule[]>([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [allSchedulesMap, setAllSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
+  const contractTokenRef = useRef(0);
+  const cancelContractLoad = useCallback(() => { contractTokenRef.current++; }, []);
 
   useEffect(() => {
     fetchCustomersAPI().then(list => {
@@ -46,7 +50,12 @@ export function useCustomerPortfolio({
   }, []);
 
   useEffect(() => {
+    let canceled = false;
     setSchedules([]);
+    contractTokenRef.current++;
+    setScheduleError(null);
+    setScheduleLoading(false);
+    setCreditContracts([]);
     setAllSchedulesMap({});
     setSelectedContract(null);
     onCustomerChanged();
@@ -57,8 +66,16 @@ export function useCustomerPortfolio({
       return;
     }
     if (selectedCustomerId !== id) setSelectedCustomerId(id);
-    fetchCreditContractsByCustomerAPI(id).then(setCreditContracts);
-  }, [foundCustomer?.Id]);
+    fetchCreditContractsByCustomerAPI(id).then(rows => {
+      if (!canceled) setCreditContracts(rows);
+    }).catch(error => {
+      if (!canceled) onNotify('error', error instanceof Error ? error.message : String(error));
+    });
+    return () => {
+      canceled = true;
+      cancelContractLoad();
+    };
+  }, [foundCustomer?.Id, cancelContractLoad]);
 
   const pickTokenRef = useRef(0);
 
@@ -140,9 +157,13 @@ export function useCustomerPortfolio({
         const allCust = await fetchCustomersAPI({});
         for (const c of allCust) {
           if (pickTokenRef.current !== token) return;
-          const cons = await fetchContractsByCustomerAPI(c.Id);
+          const [cons, credits] = await Promise.all([
+            fetchContractsByCustomerAPI(c.Id), fetchCreditContractsByCustomerAPI(c.Id),
+          ]);
           if (pickTokenRef.current !== token) return;
-          const found = cons.find(con => con.ContractNumber?.toLowerCase().includes(searchContract.toLowerCase()));
+          const query = searchContract.trim().toLocaleLowerCase('vi-VN');
+          const found = cons.some(con => con.ContractNumber?.toLocaleLowerCase('vi-VN').includes(query))
+            || credits.some(con => con.HdtdNumber?.toLocaleLowerCase('vi-VN').includes(query));
           if (found) { matchedCustomer = c; setContracts(cons); break; }
         }
       }
@@ -189,17 +210,29 @@ export function useCustomerPortfolio({
   };
 
   const openContract = async (c: LoanContract) => {
+    const token = ++contractTokenRef.current;
     setSelectedContract(c);
+    setSchedules([]);
+    setScheduleLoading(true);
+    setScheduleError(null);
     onContractOpened(c);
 
-    const loaded = await fetchRepaymentSchedulesAPI(c.Id);
-    const next = loaded.length > 0 ? recalculateSchedules(loaded, c) : loaded;
-    setSchedules(next);
-    setAllSchedulesMap(prev => ({ ...prev, [c.Id]: next }));
+    try {
+      const loaded = await fetchRepaymentSchedulesAPI(c.Id);
+      if (token !== contractTokenRef.current) return;
+      const next = loaded.length > 0 ? recalculateSchedules(loaded, c) : loaded;
+      setSchedules(next);
+      setAllSchedulesMap(prev => ({ ...prev, [c.Id]: next }));
+    } catch (error) {
+      if (token === contractTokenRef.current) setScheduleError(error instanceof Error ? error.message : String(error));
+    } finally {
+      if (token === contractTokenRef.current) setScheduleLoading(false);
+    }
   };
 
   const selectContract = async (c: LoanContract) => {
     if (selectedContract?.Id === c.Id) {
+      contractTokenRef.current++;
       setSelectedContract(null);
       setSchedules([]);
       onContractClosed();
@@ -223,12 +256,14 @@ export function useCustomerPortfolio({
     cards,
     selectedContract, setSelectedContract,
     schedules, setSchedules,
+    scheduleLoading, scheduleError,
     allSchedulesMap, setAllSchedulesMap,
     loadAllSchedulesForContracts,
     pickCustomer,
     search,
     selectContract,
     openContract,
+    cancelContractLoad,
     clearSearch,
   };
 }

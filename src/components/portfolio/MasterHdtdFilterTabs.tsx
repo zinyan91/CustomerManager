@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText } from 'lucide-react';
 import type { LoanContract } from '../../types';
+import { NO_HDTD } from '../../lib/portfolioFilters';
 
 export interface MasterHdtdGroup {
   masterNo: string;
@@ -37,6 +38,7 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
           <button
             type="button"
             onClick={() => setSelectedMasterFilter('ALL')}
+            aria-pressed={selectedMasterFilter === 'ALL'}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs ${
               selectedMasterFilter === 'ALL'
                 ? 'bg-accent text-accent-ink shadow-xs'
@@ -50,13 +52,14 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
               key={g.masterNo}
               type="button"
               onClick={() => setSelectedMasterFilter(g.masterNo)}
+              aria-pressed={selectedMasterFilter === g.masterNo}
               className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs ${
                 selectedMasterFilter === g.masterNo
                   ? 'bg-accent text-accent-ink shadow-xs'
                   : 'bg-surface/80 text-accent hover:bg-surface border border-accent/30'
               }`}
             >
-              <span>{g.masterNo}</span>
+              <span>{g.masterNo === NO_HDTD ? 'Chưa gán HĐTD' : g.masterNo}</span>
               <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-app ${
                 selectedMasterFilter === g.masterNo ? 'bg-black/20 text-accent-ink' : 'bg-accent-soft text-accent'
               }`}>
@@ -67,12 +70,6 @@ export const MasterHdtdFilterTabs: React.FC<MasterHdtdFilterTabsProps> = ({
         </div>
       </div>
 
-      {selectedMasterFilter !== 'ALL' && (
-        <span className="text-[11px] text-accent font-medium flex items-center gap-1">
-          <span>Đang xem:</span>
-          <strong className="font-mono bg-accent-soft px-2 py-0.5 rounded-md border border-accent/20">{selectedMasterFilter}</strong>
-        </span>
-      )}
     </div>
   );
 };

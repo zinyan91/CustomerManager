@@ -5,6 +5,7 @@ import { UI } from '../../lib/uiClasses';
 import { formatPhoneNumber } from '../../lib/utils';
 
 interface CustomerSearchBarProps {
+  compact?: boolean;
   allCustomers: Customer[];
   dropdownQuery: string;
   setDropdownQuery: (q: string) => void;
@@ -25,6 +26,7 @@ interface CustomerSearchBarProps {
 }
 
 export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
+  compact = false,
   allCustomers,
   dropdownQuery,
   setDropdownQuery,
@@ -44,15 +46,11 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
   handleClearSearch,
 }) => {
   return (
-    <div className="relative z-30 rounded-2xl p-4 sm:p-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card space-y-3.5">
-      <div className="text-xs font-bold text-accent tracking-tight flex items-center space-x-2">
-        <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0">
-          <Search className="w-4 h-4" />
-        </div>
-        <span className="uppercase tracking-wider text-[11px]">TRA CỨU THÔNG TIN KHOẢN VAY KHÁCH HÀNG</span>
-      </div>
+    <details data-workspace-panel open={compact ? undefined : true} className="relative z-30 border-b border-line bg-panel">
+      <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-ink">Tìm kiếm khoản vay</summary>
+      <div className="space-y-3 px-4 pb-4">
 
-      <div className="relative">
+      {!compact && <div className="relative">
         <label className="block mb-1 text-[10px] uppercase tracking-wider text-ink-muted font-bold">
           CHỌN KHÁCH HÀNG TỪ DANH SÁCH
         </label>
@@ -94,37 +92,31 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
             ))}
           </div>
         )}
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <div className="flex-1 h-px bg-line/60"></div>
-        <span className="text-[10px] uppercase tracking-wider px-2 text-ink-faint font-semibold">hoặc tìm kiếm nâng cao</span>
-        <div className="flex-1 h-px bg-line/60"></div>
-      </div>
+      </div>}
 
       <form onSubmit={handleSearch} className="flex flex-wrap gap-3 items-end">
         <div className="flex-1 min-w-[140px]">
           <label className={`block mb-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider ${UI.labelStyle}`}>Mã CIF</label>
           <input type="text" value={searchCif} onChange={e => setSearchCif(e.target.value)}
-            placeholder="005236683..."
+            aria-label="Mã CIF"
             className={`w-full rounded-xl px-3 py-2 text-xs transition-colors border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`} />
         </div>
         <div className="flex-1 min-w-[140px]">
           <label className={`block mb-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider ${UI.labelStyle}`}>Họ tên Khách hàng</label>
           <input type="text" value={searchName} onChange={e => setSearchName(e.target.value)}
-            placeholder="Lê Ngọc Quế Hân..."
+            aria-label="Họ tên khách hàng"
             className={`w-full rounded-xl px-3 py-2 text-xs transition-colors border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`} />
         </div>
         <div className="flex-1 min-w-[140px]">
           <label className={`block mb-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider ${UI.labelStyle}`}>Số Hợp Đồng Tín Dụng</label>
           <input type="text" value={searchContract} onChange={e => setSearchContract(e.target.value)}
-            placeholder="HDTL-005236683..."
+            aria-label="Số hợp đồng tín dụng"
             className={`w-full rounded-xl px-3 py-2 text-xs transition-colors border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`} />
         </div>
         <button type="submit" disabled={isSearching}
           className="flex items-center space-x-2 bg-accent hover:opacity-90 disabled:opacity-60 text-accent-ink font-bold px-4.5 py-2 rounded-xl transition-all shrink-0 cursor-pointer shadow-xs">
           <Search className="w-3.5 h-3.5" />
-          <span>{isSearching ? 'Đang tìm...' : 'TÌM KIẾM'}</span>
+          <span>{isSearching ? 'Đang tìm...' : 'Tìm kiếm'}</span>
         </button>
         {foundCustomer && (
           <button type="button" onClick={handleClearSearch}
@@ -134,6 +126,7 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
           </button>
         )}
       </form>
-    </div>
+      </div>
+    </details>
   );
 };

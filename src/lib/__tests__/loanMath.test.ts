@@ -468,7 +468,8 @@ describe('recalculateSchedules', () => {
 
     expect(r[0].PrincipalAmount).toBe(10_910_000);
     expect(r[0].ActualPaidPrincipal).toBe(20_000_000);
-    expect(r[0].TotalAmount).toBe(10_910_000 + 999_000);
+    expect(r[0].ActualPaidInterest).toBe(999_000);
+    expect(r[0].TotalAmount).toBe(10_910_000 + r[0].InterestAmount);
   });
 
   it('khách trả vượt gốc của kỳ thì dư nợ giảm theo số thực thu', () => {

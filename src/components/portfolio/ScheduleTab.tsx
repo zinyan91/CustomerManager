@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import type { LoanContract, RepaymentSchedule } from '../../types';
-import { fmtDate, fmtMoney, fmtNumber, fmtRate, todayIso } from '../../lib/utils';
+import { fmtDate, fmtMoney, fmtNumber, fmtRate } from '../../lib/utils';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { isScheduleFullySettled, isBulletPrincipal, kunnPrincipal, computeOutstandingBalance } from '../../lib/loanMath';
 import { periodObligation, sumObligations } from '../../lib/scheduleView';
@@ -9,14 +9,19 @@ import { PeriodDetailCard } from './PeriodDetailCard';
 import { useLang } from '../../context/LanguageContext';
 import { PANEL, SECTION_LABEL, TABLE_CELL } from '../../lib/uiClasses';
 
+import { useCurrentDate } from '../../hooks/useCurrentDate';
+import { quickCollectionPlan } from '../../lib/paymentCollection';
+
 type Density = 'cozy' | 'compact';
 
 interface ScheduleTabProps {
   selectedContract: LoanContract | null;
   schedules: RepaymentSchedule[];
   openPaymentModal: (s: RepaymentSchedule) => void;
-  onQuickSettleAll?: () => void;
+  onQuickSettleAll?: (delayDays: number) => void;
   onOpenEarlySettlement?: () => void;
+  loading?: boolean;
+  error?: string | null;
 }
 
 const DENSITY_KEY = 'schedule_density';
@@ -24,9 +29,12 @@ const DENSITY_KEY = 'schedule_density';
 const num = (v: number) => (v > 0 ? fmtNumber(v) : '–');
 
 export const ScheduleTab: React.FC<ScheduleTabProps> = ({
-  selectedContract, schedules, openPaymentModal, onQuickSettleAll, onOpenEarlySettlement,
+  selectedContract, schedules, openPaymentModal, onQuickSettleAll, onOpenEarlySettlement, loading = false, error,
 }) => {
   const { t } = useLang();
+  const today = useCurrentDate();
+  const [quickDelay, setQuickDelay] = useState(0);
+  const canQuickCollect = Boolean(selectedContract && quickCollectionPlan(schedules, selectedContract, quickDelay, today).length);
   const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null);
   const [density, setDensity] = useState<Density>(
     () => (localStorage.getItem(DENSITY_KEY) === 'compact' ? 'compact' : 'cozy')
@@ -45,7 +53,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
     }
   }, [selectedContract?.Id, schedules]);
 
-  const rows = schedules.map(s => ({ s, o: periodObligation(s, selectedContract) }));
+  const rows = schedules.map(s => ({ s, o: periodObligation(s, selectedContract, today) }));
   const grandTotal = sumObligations(rows.map(r => r.o));
   const selectedScheduleObj = schedules.find(s => s.Id === selectedScheduleId) || null;
   const settledCount = rows.filter(r => r.o.isSettled).length;
@@ -59,7 +67,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
 
   return (
     <div className="space-y-3" data-density={density}>
-      <div className={`${PANEL} p-4 sm:p-5 rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card`}>
+      <div data-workspace-panel className={`${PANEL} p-4 sm:p-5`}>
         <div className={`${SECTION_LABEL} mb-1.5`}>
           {t('schedule.kunn')}
         </div>
@@ -93,8 +101,8 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(420px,30rem)] gap-3 items-start font-app">
-      <div className={`${PANEL} rounded-2xl border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card overflow-hidden animate-in fade-in duration-150`}>
+      <div className="space-y-4 font-app">
+      <div data-workspace-panel className={`${PANEL} overflow-hidden`}>
         <div className="px-4 py-3.5 border-b border-line/60 flex flex-wrap items-center justify-between gap-3 bg-surface/75 backdrop-blur-md">
           <div className="flex items-baseline gap-2.5">
             <span className={`${SECTION_LABEL} uppercase tracking-wider text-[11px]`}>
@@ -109,7 +117,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {onOpenEarlySettlement && (
               <button
                 type="button"
@@ -127,22 +135,27 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
               </button>
             )}
 
-            {onQuickSettleAll && (
+            {onQuickSettleAll && <>
+              <label className="sr-only" htmlFor="quick-collection-delay">Ngày thu nhanh</label>
+              <select id="quick-collection-delay" value={quickDelay} onChange={event => setQuickDelay(Number(event.target.value))}
+                className="rounded-md border border-line bg-panel px-2 py-1.5 text-xs text-ink">
+                <option value={0}>Đúng hạn</option>
+                {Array.from({ length: 9 }, (_, index) => index + 1).map(days => <option key={days} value={days}>Trễ {days} ngày</option>)}
+              </select>
               <button
                 type="button"
-                onClick={onQuickSettleAll}
-                disabled={!selectedContract || !schedules.some(s => !s.IsPaid && s.DueDate && s.DueDate <= todayIso())}
+                onClick={() => onQuickSettleAll(quickDelay)}
+                disabled={!canQuickCollect}
                 className={`px-3 py-1.5 text-[11px] font-bold rounded-xl border transition-all duration-150 flex items-center gap-1.5 shadow-md shadow-accent/20 cursor-pointer ${
-                  selectedContract && schedules.some(s => !s.IsPaid && s.DueDate && s.DueDate <= todayIso())
+                  canQuickCollect
                     ? 'bg-accent text-accent-ink border-accent hover:opacity-95'
                     : 'bg-surface text-ink-faint border-line/60 opacity-60 cursor-not-allowed'
                 }`}
-                title={selectedContract && schedules.some(s => !s.IsPaid && s.DueDate && s.DueDate <= todayIso()) ? 'Tự động ghi nhận tất cả các kỳ đến hạn theo đúng ngày đến hạn' : 'Không có kỳ nào đến hạn cần thu'}
               >
                 <span className="text-xs">⚡</span>
                 <span>Thu nhanh</span>
               </button>
-            )}
+            </>}
 
             <div className="inline-flex rounded-xl bg-surface p-0.5 border border-line/70 shadow-2xs" role="group" aria-label={t('schedule.density')}>
               {(['cozy', 'compact'] as Density[]).map(d => (
@@ -177,7 +190,11 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-line/40">
-              {!selectedContract ? (
+              {error ? (
+                <tr><td colSpan={8} className="py-8 px-4 text-neg"><span role="alert">{error}</span></td></tr>
+              ) : loading ? (
+                <tr><td colSpan={8} className="py-8 text-center text-ink-muted"><span role="status">Đang tải lịch trả nợ…</span></td></tr>
+              ) : !selectedContract ? (
                 <tr><td colSpan={8} className="text-center py-12 text-ink-faint">{t('schedule.emptyNoContract')}</td></tr>
               ) : schedules.length === 0 ? (
                 <tr><td colSpan={8} className="text-center py-12 text-ink-faint">
@@ -287,10 +304,11 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
       </div>
 
       {selectedContract && (
-        <div className="xl:sticky xl:top-[calc(var(--header-h)+0.75rem)]">
+        <div>
           <PeriodDetailCard
             selectedContract={selectedContract}
             selectedSchedule={selectedScheduleObj}
+            asOfDate={today}
           />
         </div>
       )}

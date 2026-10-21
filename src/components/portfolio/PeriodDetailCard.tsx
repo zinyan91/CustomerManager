@@ -9,6 +9,7 @@ import { PANEL, SECTION_LABEL, TABLE_CELL, TABLE_HEAD } from '../../lib/uiClasse
 interface PeriodDetailCardProps {
   selectedContract: LoanContract | null;
   selectedSchedule: RepaymentSchedule | null;
+  asOfDate?: string;
 }
 
 const money = (v: number) => (v > 0 ? fmtNumber(v) : '–');
@@ -16,6 +17,7 @@ const money = (v: number) => (v > 0 ? fmtNumber(v) : '–');
 export const PeriodDetailCard: React.FC<PeriodDetailCardProps> = ({
   selectedContract,
   selectedSchedule,
+  asOfDate,
 }) => {
   const { t } = useLang();
 
@@ -27,7 +29,7 @@ export const PeriodDetailCard: React.FC<PeriodDetailCardProps> = ({
     );
   }
 
-  const o = periodObligation(selectedSchedule, selectedContract);
+  const o = periodObligation(selectedSchedule, selectedContract, asOfDate);
 
   const rows = [
     { key: 'principal', label: t('period.rowPrincipal'), ...o.principal },
@@ -39,7 +41,7 @@ export const PeriodDetailCard: React.FC<PeriodDetailCardProps> = ({
   const headCell = `px-[var(--row-px)] py-2 ${TABLE_HEAD} font-semibold whitespace-nowrap`;
 
   return (
-    <div className={`${PANEL} overflow-hidden`}>
+    <div data-workspace-panel className={`${PANEL} overflow-hidden`}>
       <div className="px-4 py-3 border-b border-line flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
         <span className={`${SECTION_LABEL}`}>
           {t('schedule.period')}

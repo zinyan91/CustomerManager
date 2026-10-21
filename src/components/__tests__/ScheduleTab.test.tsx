@@ -107,7 +107,7 @@ describe('ScheduleTab dựng được lên', () => {
   it('tổng ở chân bảng bằng tổng phần còn nợ của các dòng, kể cả kỳ miễn phạt', () => {
     dungLen();
     const foot = document.querySelector('tfoot')!;
-    expect(within(foot).getByText('508.000.000')).toBeTruthy();
+    expect(within(foot).getByText('508.031.781')).toBeTruthy();
     expect(loiRender).toEqual([]);
   });
 });
@@ -197,6 +197,19 @@ describe('cột Ghi nhận và thao tác', () => {
 
     const nutThuNhanh = screen.getByRole('button', { name: /Thu nhanh/ });
     expect((nutThuNhanh as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('passes the selected 1–9 day delay to quick collection', async () => {
+    const user = userEvent.setup();
+    const collect = vi.fn();
+    render(<ThemeProvider><LanguageProvider>
+      <ScheduleTab selectedContract={kunn} schedules={lich} openPaymentModal={() => {}} onQuickSettleAll={collect} />
+    </LanguageProvider></ThemeProvider>);
+    const select = screen.getByRole('combobox', { name: 'Ngày thu nhanh' });
+    expect(within(select).getAllByRole('option')).toHaveLength(10);
+    await user.selectOptions(select, '9');
+    await user.click(screen.getByRole('button', { name: /Thu nhanh/ }));
+    expect(collect).toHaveBeenCalledWith(9);
   });
 
   it('nút Tất toán trước hạn hiển thị và gọi onOpenEarlySettlement khi khoản vay còn nợ', async () => {

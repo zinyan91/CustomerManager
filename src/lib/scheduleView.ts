@@ -1,12 +1,12 @@
 import type { LoanContract, RepaymentSchedule } from '../types';
 import {
-  computeSchedulePenalty,
   isScheduleFullySettled,
-  overdueDaysOfSchedule,
+  calculateOverdueDaysFromDates,
   paidPrincipalOf,
   schedulePaymentStatus,
 } from './loanMath';
-import { getEffectiveActiveRate } from './rateResolution';
+import { assessCollection, hasRecordedCollection } from './paymentCollection';
+import { todayIso } from './utils';
 
 export interface ObligationLine {
   due: number;
@@ -35,15 +35,11 @@ export function resolvePenaltyDue(
   contract: LoanContract | null,
   asOfDateStr?: string
 ): number {
-  if (s.OverdueInterestAmount !== undefined && s.OverdueInterestAmount !== null) {
+  if (hasRecordedCollection(s) && s.OverdueInterestAmount != null) {
     return s.OverdueInterestAmount;
   }
   if (contract?.IsSettled === true || isScheduleFullySettled(s)) return 0;
-  return computeSchedulePenalty(
-    s,
-    getEffectiveActiveRate(contract, s.DueDate),
-    { asOfDateStr, principalPenaltyMultiplier: contract?.PrincipalPenaltyMultiplier }
-  ).principalPenalty;
+  return assessCollection(s, contract, asOfDateStr ?? todayIso()).total;
 }
 
 export function periodObligation(
@@ -59,13 +55,13 @@ export function periodObligation(
   const penaltyDue = resolvePenaltyDue(s, contract, asOfDateStr);
 
   const principal = line(principalDue, paidPrincipalOf(s));
-  const interest = line(interestDue, isSettled ? interestDue : status.collectedInterest);
-  const penalty = line(penaltyDue, isSettled ? penaltyDue : 0);
+  const interest = line(interestDue, isSettled ? interestDue : Math.min(interestDue, status.collectedInterest));
+  const penalty = line(penaltyDue, isSettled ? penaltyDue : Math.min(penaltyDue, Math.max(0, status.collectedInterest - interestDue)));
 
   const totalDue = principalDue + interestDue + penaltyDue;
   const totalPaid = principal.paid + interest.paid + penalty.paid;
 
-  const overdueDays = isSettled ? (s.OverdueDays || 0) : overdueDaysOfSchedule(s, asOfDateStr);
+  const overdueDays = isSettled ? (s.OverdueDays || 0) : calculateOverdueDaysFromDates(asOfDateStr ?? todayIso(), s.DueDate);
 
   return {
     overdueDays,

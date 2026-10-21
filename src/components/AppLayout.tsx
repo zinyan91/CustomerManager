@@ -27,6 +27,7 @@ function AppLayoutContent() {
   const directWorkspace = section === 'dispatch' || section === 'storage';
   const replacesSidebar = section === 'documents' || directWorkspace;
   const continuousWorkspace = ['retail','dispatch','storage','documents','reference','finance','admin'].includes(section ?? '')
+    || /^(\/customers\/\d+)?\/loans(?:\/|$)/.test(location.pathname)
     || ['/hub/reports','/tools/reports'].includes(location.pathname.replace(/\/+$/,''));
   const flushReport = ['/team-kpi','/loan-progress','/dispatches','/storage'].includes(location.pathname.replace(/\/+$/,''));
   const { isSidebarCollapsed } = useSidebarCollapse();

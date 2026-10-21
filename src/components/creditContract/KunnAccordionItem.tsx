@@ -83,16 +83,16 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
 
   return (
     <div
-      className={`rounded-2xl border transition-all duration-150 overflow-hidden specular-card ${
+      data-workspace-panel
+      className={`border-b border-line overflow-hidden ${
         cc.IsClosed
-          ? 'bg-panel/50 border-line/60 opacity-75'
-          : 'bg-panel/85 backdrop-blur-xl border-line/70 hover:border-accent/40 shadow-xs'
+          ? 'bg-panel-muted/30'
+          : 'bg-panel'
       }`}
     >
-      {/* Top Row: Info & Action Buttons */}
-      <div className="p-4 sm:p-5 space-y-3">
+      <div className="p-4 space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1.5 min-w-[240px]">
+          <div className="space-y-1.5 min-w-0">
             <div className="flex items-center flex-wrap gap-2">
               <span className="font-mono font-bold text-sm sm:text-base text-accent tracking-tight">
                 {cc.HdtdNumber}
@@ -132,7 +132,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               disabled={!canDisburse}
@@ -154,7 +154,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
                   ? 'Chưa hiệu lực'
                   : available <= 0
                   ? 'Hết khả dụng'
-                  : 'Giải ngân từ HĐTD'}
+                  : 'Giải ngân'}
               </span>
             </button>
 
@@ -218,31 +218,30 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
           </div>
         </div>
 
-        {/* Financial Metrics & Visual Utilization Progress Bar */}
         <div className="space-y-2.5 pt-3 border-t border-line/60">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="p-2.5 rounded-xl bg-surface/60 border border-line/60">
+            <div className="min-w-0">
               <div className="text-[10px] text-ink-faint font-bold uppercase tracking-wider">Hạn mức cấp</div>
               <div className="font-mono font-bold text-accent text-sm">{fmtMoney(cc.ContractAmount || 0)}</div>
             </div>
-            <div className="p-2.5 rounded-xl bg-surface/60 border border-line/60">
+            <div className="min-w-0">
               <div className="text-[10px] text-ink-faint font-bold uppercase tracking-wider">Dư nợ hiện tại</div>
               <div className="font-mono font-bold text-warn text-sm">{fmtMoney(outstanding)}</div>
             </div>
-            <div className="p-2.5 rounded-xl bg-surface/60 border border-line/60">
+            <div className="min-w-0">
               <div className="text-[10px] text-ink-faint font-bold uppercase tracking-wider">Khả dụng giải ngân</div>
               <div className={`font-mono font-bold text-sm ${available > 0 ? 'text-pos' : 'text-ink-faint'}`}>
                 {fmtMoney(available)}
               </div>
             </div>
-            <div className="p-2.5 rounded-xl bg-surface/60 border border-line/60">
+            <div className="min-w-0">
               <div className="text-[10px] text-ink-faint font-bold uppercase tracking-wider">Quy mô KUNN</div>
               <div className="font-bold text-ink text-sm">{activeKunnCount} mở / {kunnCount} tổng</div>
             </div>
           </div>
 
           {/* Visual Headroom Progress Bar */}
-          <div className="space-y-1.5 p-2.5 rounded-xl bg-surface/40 border border-line/60">
+          <div className="space-y-1.5 pt-1">
             <div className="w-full bg-panel-muted rounded-full h-2 overflow-hidden flex border border-line/60">
               <div
                 className={`h-full transition-all duration-300 ${
@@ -255,7 +254,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
                 style={{ width: `${utilPercent}%` }}
               />
             </div>
-            <div className="flex items-center justify-between text-[10px] text-ink-faint font-medium">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] text-ink-faint font-medium">
               <span>
                 {isRevolving
                   ? `Hạn mức quay vòng: Đã sử dụng ${utilPercent.toFixed(1)}%`
@@ -268,7 +267,6 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
           </div>
         </div>
 
-        {/* Collateral Tag Badges */}
         {assignedCols.length > 0 && (
           <div className="pt-2.5 border-t border-line/60 flex flex-wrap items-center gap-2 text-[11px] text-ink-muted">
             <span className="flex items-center gap-1 font-bold text-ink-faint text-xs shrink-0">
@@ -295,8 +293,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
         )}
       </div>
 
-      {/* Accordion Toggle Footer */}
-      <div className="border-t border-line/60 bg-surface/50 px-4 sm:px-5 py-2.5 flex items-center justify-between">
+      <div className="border-t border-line bg-surface/50 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onClick={onToggleExpand}
@@ -314,15 +311,14 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
         </span>
       </div>
 
-      {/* Expanded KUNN Table */}
       {isExpanded && (
-        <div className="p-3 sm:p-4 bg-surface/30 border-t border-line/60 animate-in fade-in-50 duration-150">
+        <div className="bg-panel border-t border-line">
           {contractKunns.length === 0 ? (
             <div className="text-center py-6 text-ink-faint text-xs italic">
               Chưa có KUNN nào được giải ngân dưới HĐTD này.
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-line/70 bg-panel/60 backdrop-blur-md">
+            <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse min-w-[750px] font-app">
                 <thead className="sticky top-0 bg-surface/95 backdrop-blur-md border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint">
                   <tr>

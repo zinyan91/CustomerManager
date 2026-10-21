@@ -13,7 +13,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { CustomerContextBar } from './CustomerContextBar';
 import { ModuleGate } from './ModuleGate';
 import { AiChatDialog, FloatingAiAssistantButton } from './ai/AiChatDialog';
-import { workspaceSectionOfPath } from '../lib/workspaceNavigation';
+import { workspaceItemOfPath, workspaceSectionOfPath } from '../lib/workspaceNavigation';
 
 function AppLayoutContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -27,7 +27,7 @@ function AppLayoutContent() {
   const directWorkspace = section === 'dispatch' || section === 'storage';
   const replacesSidebar = section === 'documents' || directWorkspace;
   const continuousWorkspace = ['retail','dispatch','storage','documents','reference','finance','admin'].includes(section ?? '')
-    || /^(\/customers\/\d+)?\/loans(?:\/|$)/.test(location.pathname)
+    || ['customers', 'credit-contracts', 'disbursement', 'loans'].includes(workspaceItemOfPath(location.pathname)?.screenId ?? '')
     || ['/hub/reports','/tools/reports'].includes(location.pathname.replace(/\/+$/,''));
   const flushReport = ['/team-kpi','/loan-progress','/dispatches','/storage'].includes(location.pathname.replace(/\/+$/,''));
   const { isSidebarCollapsed } = useSidebarCollapse();

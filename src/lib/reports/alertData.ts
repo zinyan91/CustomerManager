@@ -4,7 +4,7 @@ import { filterByDue, type DueFilter } from '../dueList';
 import { buildHdtdExpiryList } from '../hdtdExpiryAlerts';
 import { appraisalExpiryDate } from '../collateralMath';
 import { parseCollateralIds } from '../creditLimit';
-import { debtGroupFromOverdueDays } from '../loanMath';
+import { debtGroupFromOverdueDays, outstandingOf } from '../loanMath';
 import { daysUntil } from '../utils';
 
 export const ALERT_REPORTS = [
@@ -56,14 +56,16 @@ export function selectAlertRows(data: AlertSnapshot, filters: AlertFilters) {
     state: contractDueState(periodsMap.get(contract.Id) ?? [], data.today),
   })).filter(item => item.state.kind !== 'none')
     .sort((a,b) => (a.state.daysLeft ?? 0) - (b.state.daysLeft ?? 0));
-  const kunn = eligible.map(contract => ({
+  const hasOutstanding = (contract: LoanContract) => outstandingOf(contract, data.paidPrincipalMap[contract.Id]) > 0;
+  const outstandingEligible = eligible.filter(hasOutstanding);
+  const kunn = outstandingEligible.map(contract => ({
     contract, customer: customerMap.get(contract.CustomerId),
     daysLeft: daysUntil(contract.KunnDueDate, data.today),
   })).filter(item => item.daysLeft !== null && item.daysLeft <= 10)
     .sort((a,b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
-  const credit = buildHdtdExpiryList(eligible, data.creditContracts, data.today)
+  const credit = buildHdtdExpiryList(outstandingEligible, data.creditContracts, data.today)
     .map(item => ({ ...item, customer: customerMap.get(item.contract.CustomerId) }));
-  const usedCollateralIds = new Set(active.flatMap(parseCollateralIds));
+  const usedCollateralIds = new Set(active.filter(hasOutstanding).flatMap(parseCollateralIds));
   const collateral = data.collaterals.filter(c => usedCollateralIds.has(c.Id)).map(collateral => {
     const expiryDateStr = appraisalExpiryDate(collateral);
     return { collateral, customer: customerMap.get(collateral.CustomerId), expiryDateStr,

@@ -1,6 +1,8 @@
 // Luật phân quyền quản lý người dùng. THUẦN (không dùng API của Deno hay trình duyệt) để hai nơi dùng chung:
 // Edge Function admin-users (kiểm lại ở máy chủ, đây mới là lớp bảo vệ thật) và giao diện (chỉ để ẩn nút).
 
+import { isValidUsername, USERNAME_ERROR } from '../_shared/username.ts';
+
 export const ROLES = ['master_admin', 'user_admin', 'user'] as const;
 export type Role = (typeof ROLES)[number];
 
@@ -33,8 +35,8 @@ export interface Actor {
 }
 
 export type AdminAction =
-  | { action: 'create'; email: string; fullName: string; role: Role; password: string }
-  | { action: 'update'; userId: string; fullName?: string; role?: Role; disabled?: boolean; newPassword?: string }
+  | { action: 'create'; username?: string; email?: string; fullName: string; role: Role; password: string }
+  | { action: 'update'; userId: string; username?: string; fullName?: string; role?: Role; disabled?: boolean; newPassword?: string }
   | { action: 'delete'; userId: string };
 
 const MSG_NOT_ADMIN = 'Chỉ Master Admin và User Admin được quản lý người dùng.';
@@ -49,7 +51,9 @@ export function checkAdminAction(actor: Actor, req: AdminAction, target: { role:
   if (!isAdminRole(actor.role)) return MSG_NOT_ADMIN;
 
   if (req.action === 'create') {
-    if (!isValidEmail(req.email)) return 'Email không hợp lệ.';
+    if (req.username !== undefined) {
+      if (!isValidUsername(req.username)) return USERNAME_ERROR;
+    } else if (typeof req.email !== 'string' || !isValidEmail(req.email)) return 'Email không hợp lệ.';
     if (!req.fullName.trim()) return 'Nhập họ tên.';
     const pw = passwordError(req.password);
     if (pw) return pw;
@@ -63,6 +67,7 @@ export function checkAdminAction(actor: Actor, req: AdminAction, target: { role:
 
   if (req.action === 'delete') return isSelf ? 'Không thể tự xóa tài khoản của mình.' : null;
 
+  if (req.username !== undefined && !isValidUsername(req.username)) return USERNAME_ERROR;
   if (req.fullName !== undefined && !req.fullName.trim()) return 'Nhập họ tên.';
   if (req.newPassword !== undefined) {
     const pw = passwordError(req.newPassword);

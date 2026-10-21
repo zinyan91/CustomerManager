@@ -147,12 +147,12 @@ describe('UserManagementView', () => {
     expect((await screen.findByRole('alert')).textContent).toMatch(/Chưa triển khai Edge Function/);
   });
 
-  it('thêm người dùng: kiểm mật khẩu, rồi gọi create với email chuẩn hóa', async () => {
+  it('thêm người dùng: kiểm mật khẩu, rồi gọi create với username chuẩn hóa', async () => {
     render(<UserManagementView />);
     await screen.findByText('Nhân viên Một');
     fireEvent.click(screen.getByRole('button', { name: /Thêm người dùng/ }));
     const dialog = await screen.findByRole('dialog', { name: 'Thêm người dùng' });
-    fireEvent.change(within(dialog).getByLabelText('Email đăng nhập'), { target: { value: 'Moi@App.local' } });
+    fireEvent.change(within(dialog).getByLabelText('Tên đăng nhập'), { target: { value: 'Moi' } });
     fireEvent.change(within(dialog).getByLabelText('Họ tên'), { target: { value: 'Người mới' } });
     fireEvent.change(within(dialog).getByLabelText('Mật khẩu tạm'), { target: { value: 'ngan' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Tạo tài khoản' }));
@@ -162,7 +162,7 @@ describe('UserManagementView', () => {
     fireEvent.change(within(dialog).getByLabelText('Mật khẩu tạm'), { target: { value: 'matkhau-dai-1' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Tạo tài khoản' }));
     await waitFor(() =>
-      expect(h.api.create).toHaveBeenCalledWith({ email: 'moi@app.local', fullName: 'Người mới', role: 'user', password: 'matkhau-dai-1' })
+      expect(h.api.create).toHaveBeenCalledWith({ username: 'moi', fullName: 'Người mới', role: 'user', password: 'matkhau-dai-1' })
     );
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
@@ -173,7 +173,7 @@ describe('UserManagementView', () => {
     await screen.findByText('Nhân viên Một');
     fireEvent.click(screen.getByRole('button', { name: /Thêm người dùng/ }));
     const dialog = await screen.findByRole('dialog');
-    fireEvent.change(within(dialog).getByLabelText('Email đăng nhập'), { target: { value: 'a@b.vn' } });
+    fireEvent.change(within(dialog).getByLabelText('Tên đăng nhập'), { target: { value: 'testuser' } });
     fireEvent.change(within(dialog).getByLabelText('Họ tên'), { target: { value: 'A' } });
     fireEvent.change(within(dialog).getByLabelText('Mật khẩu tạm'), { target: { value: 'matkhau-dai-1' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Tạo tài khoản' }));
@@ -188,7 +188,7 @@ describe('UserManagementView', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Sửa người dùng' });
     fireEvent.change(within(dialog).getByLabelText('Vai trò'), { target: { value: 'user_admin' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Lưu thay đổi' }));
-    await waitFor(() => expect(h.api.update).toHaveBeenCalledWith({ userId: 'u1', fullName: 'Nhân viên Một', role: 'user_admin' }));
+    await waitFor(() => expect(h.api.update).toHaveBeenCalledWith({ userId: 'u1', username: 'u1', fullName: 'Nhân viên Một', role: 'user_admin' }));
   });
 
   it('User Admin không có lựa chọn Master Admin khi gán vai trò', async () => {

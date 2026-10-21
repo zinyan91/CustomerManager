@@ -19,7 +19,7 @@ export const LoginView: React.FC = () => {
     setError(null);
 
     if (!usernameOrEmail.trim() || !password) {
-      setError('Vui lòng nhập đầy đủ tên đăng nhập / email và mật khẩu công vụ.');
+      setError('Vui lòng nhập tên đăng nhập và mật khẩu.');
       return;
     }
 
@@ -52,7 +52,7 @@ export const LoginView: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="dangnhap-tk" className={`block text-[11px] ${UI.labelStyle}`}>
-              Tên đăng nhập / Email công vụ
+              Tên đăng nhập
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint" />

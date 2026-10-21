@@ -22,6 +22,61 @@ const snapshot:AlertSnapshot={
 const filters={onlyGroup1:true,due:'all' as const,search:''};
 
 describe('cảnh báo báo cáo giữ cùng phạm vi Dashboard',()=>{
+  it('hết dư nợ theo gốc đã thu thì ngừng báo hết hạn dù cờ tất toán chưa cập nhật', () => {
+    const data = {
+      ...snapshot,
+      contracts: [contract(1, { CurrentBalance: 80_000_000 })],
+      paidPrincipalMap: { 1: 100_000_000 },
+      periods: [],
+    };
+    const rows = selectAlertRows(data, filters);
+    expect(rows.kunn).toEqual([]);
+    expect(rows.credit).toEqual([]);
+    expect(rows.collateral).toEqual([]);
+  });
+
+  it('dư nợ 0 trong hồ sơ không có bản đồ thu gốc cũng dừng cảnh báo hết hạn', () => {
+    const rows = selectAlertRows({
+      ...snapshot, contracts: [contract(1, { CurrentBalance: 0 })], paidPrincipalMap: {}, periods: [],
+    }, filters);
+    expect(rows.kunn).toEqual([]);
+    expect(rows.credit).toEqual([]);
+    expect(rows.collateral).toEqual([]);
+  });
+
+  it('khách tất toán một khoản vẫn cảnh báo tài sản của khoản còn nợ', () => {
+    const data = {
+      ...snapshot,
+      contracts: [
+        contract(1, { IsSettled: true, CollateralIds: '1' }),
+        contract(2, { CollateralIds: '2' }),
+      ],
+      collaterals: [
+        snapshot.collaterals[0],
+        { ...snapshot.collaterals[0], Id: 2 },
+      ],
+    };
+    expect(selectAlertRows(data, filters).collateral.map(r => r.collateral.Id)).toEqual([2]);
+  });
+
+  it('tài sản dùng chung vẫn cảnh báo nếu một khoản còn nợ', () => {
+    const data = { ...snapshot, paidPrincipalMap: { 1: 100_000_000, 2: 0 } };
+    expect(selectAlertRows(data, filters).collateral.map(r => r.collateral.Id)).toEqual([1]);
+  });
+
+  it('hết gốc vẫn giữ kỳ due còn lãi chưa thu; lưu trữ không che khoản còn nợ', () => {
+    const rows = selectAlertRows({
+      ...snapshot, contracts: [contract(1)], paidPrincipalMap: { 1: 100_000_000 },
+      periods: [{ ...snapshot.periods[0], TotalAmount: 2_000_000 }],
+    }, filters);
+    expect(rows.due).toHaveLength(1);
+    expect(rows.collateral).toHaveLength(0);
+    expect(selectAlertRows({
+      ...snapshot,
+      customers: snapshot.customers.map(c => ({ ...c, ArchivedAt: '2026-10-20T00:00:00Z' })),
+    }, filters).collateral).toHaveLength(1);
+  });
+
   it('khóa cửa sổ due 5/KUNN 10/HĐTD 45/định giá 30 ngày và loại tất toán',()=>{
     const rows=selectAlertRows(snapshot,filters);
     expect(rows.due.map(r=>r.contract.Id)).toEqual([1]);

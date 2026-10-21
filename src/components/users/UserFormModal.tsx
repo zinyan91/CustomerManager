@@ -5,7 +5,7 @@ import { roleLabel } from '../../lib/permissions';
 import { primaryBtn, secondaryBtn } from '../admin/tableStyles';
 
 export interface UserFormValues {
-  email: string;
+  username: string;
   fullName: string;
   role: Role | '';
   password: string;
@@ -31,7 +31,7 @@ export function UserFormModal({ user, actor, onSubmit, onClose }: UserFormModalP
   const isSelf = user?.id === actor.id;
 
   const [values, setValues] = useState<UserFormValues>({
-    email: user?.email ?? '',
+    username: user?.username ?? user?.email?.split('@')[0] ?? '',
     fullName: user?.fullName ?? '',
     role: user?.role ?? (roles.includes('user') ? 'user' : ''),
     password: '',
@@ -44,13 +44,14 @@ export function UserFormModal({ user, actor, onSubmit, onClose }: UserFormModalP
 
   const validate = (): string | null => {
     if (!editing) {
-      return checkAdminAction(actor, { action: 'create', email: values.email, fullName: values.fullName, role: values.role as Role, password: values.password }, null);
+      return checkAdminAction(actor, { action: 'create', username: values.username, fullName: values.fullName, role: values.role as Role, password: values.password }, null);
     }
     return checkAdminAction(
       actor,
       {
         action: 'update',
         userId: user.id,
+        username: values.username,
         fullName: values.fullName,
         ...(values.role ? { role: values.role } : {}),
         ...(values.password ? { newPassword: values.password } : {}),
@@ -103,8 +104,8 @@ export function UserFormModal({ user, actor, onSubmit, onClose }: UserFormModalP
 
         <div className="p-6 space-y-4">
           <div>
-            <label htmlFor="uf-email" className={label}>Email đăng nhập</label>
-            <input id="uf-email" type="email" value={values.email} disabled={editing} onChange={(e) => patch({ email: e.target.value.trim() })} className={control} autoComplete="off" />
+            <label htmlFor="uf-username" className={label}>Tên đăng nhập</label>
+            <input id="uf-username" type="text" value={values.username} onChange={(e) => patch({ username: e.target.value })} className={control} autoComplete="off" autoCapitalize="none" spellCheck={false} />
           </div>
           <div>
             <label htmlFor="uf-name" className={label}>Họ tên</label>

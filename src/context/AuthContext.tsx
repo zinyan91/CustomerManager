@@ -3,6 +3,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { can as canRole, isAppRole, type AppRole, type Capability } from '../lib/permissions';
 import { clearCachedEntries } from '../lib/drive/driveEntriesCache';
+import { signInWithUsername } from '../lib/api/usernameLogin';
 
 export type { AppRole };
 
@@ -87,13 +88,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = useCallback(async (usernameOrEmail: string, password: string) => {
     const cleanInput = usernameOrEmail.trim();
-    let emailToUse = cleanInput;
     if (!cleanInput.includes('@')) {
-      emailToUse = `${cleanInput.toLowerCase()}@app.local`;
+      await signInWithUsername(cleanInput, password);
+      return;
     }
 
     const { error } = await supabase.auth.signInWithPassword({
-      email: emailToUse,
+      email: cleanInput,
       password,
     });
     if (error) {

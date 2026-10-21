@@ -5,7 +5,7 @@ import { isCustomerArchived, CUSTOMER_STATUS_LABEL, type CustomerStatusFilter } 
 import { fmtDate, formatNationalId, parseNationalIdInput, formatPhoneNumber } from '../../lib/utils';
 import {
   Search, Plus, UserCheck, Users, Archive, ArchiveRestore,
-  Edit3, Phone, ShieldCheck, HeartHandshake, X
+  Edit3, Phone, X
 } from 'lucide-react';
 import { Toast } from '../Toast';
 import { DataTable, type ColumnDef } from '../ui/DataTable';
@@ -18,6 +18,9 @@ import { useSelectedCustomerId } from '../../hooks/useSelectedCustomerId';
 import { ROUTE_OF } from '../../lib/routes';
 import { useUserScope } from '../../context/UserScopeContext';
 import { useAuth } from '../../context/AuthContext';
+import { BTN_PRIMARY } from '../../lib/uiClasses';
+import { WorkspacePageHeader } from '../ui/WorkspacePageHeader';
+import { CustomerListSummaryStrip } from '../customers/CustomerListSummaryStrip';
 
 export const CustomerListView: React.FC = () => {
   const { can, user } = useAuth();
@@ -87,37 +90,23 @@ export const CustomerListView: React.FC = () => {
   }, [visibleCustomers]);
 
   return (
-    <div className="space-y-4 md:space-y-4.5 w-full pb-8">
+    <div data-workspace-page className="space-y-0 w-full font-app pb-8">
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
-      {/* 1. Sleek Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-line/60">
-        <div className="flex items-center gap-3">
-          <span className="p-2 rounded-xl bg-accent-soft text-accent shadow-xs">
-            <UserCheck className="w-5 h-5" />
-          </span>
-          <h2 className="text-base sm:text-lg font-bold tracking-tight text-ink">
-            Quản Lý & Tra Cứu Danh Sách Khách Hàng
-          </h2>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-
-
-          <button
-            type="button"
-            onClick={openDrawerForCreate}
-            className="bg-accent hover:opacity-90 text-accent-ink text-xs px-4 py-2 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer"
-          >
+      <WorkspacePageHeader
+        title="Danh sách khách hàng"
+        icon={UserCheck}
+        actions={
+          <button type="button" onClick={openDrawerForCreate} className={`${BTN_PRIMARY} text-xs px-4 py-2 inline-flex items-center gap-1.5 cursor-pointer`}>
             <Plus className="w-4 h-4" />
-            <span>THÊM KHÁCH HÀNG MỚI</span>
+            <span>Thêm khách hàng mới</span>
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Banner thông báo phạm vi tài khoản đang xem (dành cho Admin) */}
       {can('scope.switch') && user && selectedUserId !== user.id && (
-        <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-accent-soft/40 border border-accent/30 text-xs shadow-2xs">
+        <div data-workspace-panel className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 border-b border-line text-xs">
           <div className="flex items-center gap-2.5">
             <span className="p-1.5 rounded-lg bg-accent-soft text-accent">
               <Users className="w-4 h-4" />
@@ -142,110 +131,17 @@ export const CustomerListView: React.FC = () => {
         </div>
       )}
 
-      {/* 2. Top Bento KPI Cards Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {/* Card 1: Tổng khách hàng */}
-        <div
-          onClick={() => setStatusFilter('ALL')}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
-            statusFilter === 'ALL'
-              ? 'bg-accent-soft/40 border-accent/60 shadow-md'
-              : 'bg-panel/80 border-line/70 hover:border-accent/40'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-accent" />
-              Tổng hồ sơ
-            </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint group-hover:text-accent transition-colors">
-              Tất cả
-            </span>
-          </div>
-          <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-ink">
-              {statusCounts.ALL}
-            </span>
-            <span className="text-xs text-ink-muted font-medium">Khách hàng</span>
-          </div>
-        </div>
-
-        {/* Card 2: Đang hoạt động */}
-        <div
-          onClick={() => setStatusFilter('active')}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
-            statusFilter === 'active'
-              ? 'bg-pos-soft/40 border-pos/60 shadow-md'
-              : 'bg-panel/80 border-line/70 hover:border-pos/40'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-pos" />
-              Đang hoạt động
-            </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint group-hover:text-pos transition-colors">
-              Đang phục vụ
-            </span>
-          </div>
-          <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-pos">
-              {statusCounts.active}
-            </span>
-            <span className="text-xs text-ink-muted font-medium">Hồ sơ mở</span>
-          </div>
-        </div>
-
-        {/* Card 3: Đã lưu trữ */}
-        <div
-          onClick={() => setStatusFilter('archived')}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
-            statusFilter === 'archived'
-              ? 'bg-panel-muted border-ink/40 shadow-md'
-              : 'bg-panel/80 border-line/70 hover:border-ink/40'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
-              <Archive className="w-3.5 h-3.5 text-ink-muted" />
-              Hồ sơ lưu trữ
-            </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint group-hover:text-ink transition-colors">
-              Tất toán / Đóng
-            </span>
-          </div>
-          <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-ink-muted">
-              {statusCounts.archived}
-            </span>
-            <span className="text-xs text-ink-muted font-medium">Đã lưu kho</span>
-          </div>
-        </div>
-
-        {/* Card 4: KHLQ / Hôn phối */}
-        <div className="p-4 rounded-2xl border bg-panel/80 border-line/70 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
-              <HeartHandshake className="w-3.5 h-3.5 text-accent" />
-              Có KHLQ / Hôn phối
-            </span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint">
-              Gia đình
-            </span>
-          </div>
-          <div className="mt-2.5 flex items-baseline justify-between">
-            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-accent">
-              {khlqCount}
-            </span>
-            <span className="text-xs text-ink-muted font-medium">Hồ sơ liên quan</span>
-          </div>
-        </div>
-      </div>
+      <CustomerListSummaryStrip
+        counts={statusCounts}
+        status={statusFilter}
+        relatedCount={khlqCount}
+        onStatusChange={setStatusFilter}
+      />
 
       {/* 3. Khung Tìm Kiếm & Bảng Dữ Liệu Khách Hàng */}
-      <div className="rounded-2xl p-4 sm:p-5 border border-line/70 bg-panel/80 backdrop-blur-md shadow-xs space-y-4">
+      <div data-workspace-panel className="bg-panel">
         {/* Unified Command Toolbar: Tìm kiếm đa tiêu chí + Bộ lọc Trạng thái */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 pb-3 border-b border-line/50">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 px-4 py-3 border-b border-line">
           {/* Cụm Tìm Kiếm Tinh Gọn */}
           <form
             onSubmit={(e) => {
@@ -261,7 +157,7 @@ export const CustomerListView: React.FC = () => {
                 placeholder="Mã CIF..."
                 value={searchCif}
                 onChange={(e) => setSearchCif(e.target.value)}
-                className="w-full pl-8 pr-7 py-2 rounded-xl border border-line/60 bg-surface/70 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
+                className="w-full pl-8 pr-7 py-2 rounded-[var(--r-control)] border border-line bg-surface text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
               />
               {searchCif && (
                 <button
@@ -280,7 +176,7 @@ export const CustomerListView: React.FC = () => {
                 placeholder="Họ tên Khách hàng..."
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-line/60 bg-surface/70 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
+                className="w-full px-3 py-2 rounded-[var(--r-control)] border border-line bg-surface text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
               />
               {searchName && (
                 <button
@@ -300,7 +196,7 @@ export const CustomerListView: React.FC = () => {
                   placeholder="Số CCCD..."
                   value={formatNationalId(searchNationalId)}
                   onChange={(e) => setSearchNationalId(parseNationalIdInput(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-line/60 bg-surface/70 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
+                  className="w-full px-3 py-2 rounded-[var(--r-control)] border border-line bg-surface text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
                 />
                 {searchNationalId && (
                   <button
@@ -342,7 +238,7 @@ export const CustomerListView: React.FC = () => {
         </div>
 
         {/* Bảng Dữ Liệu Khách Hàng Adaptive Table */}
-        <div className="overflow-auto min-h-[420px]">
+        <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center p-16 text-ink-faint text-xs">
               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-accent mr-3"></div>

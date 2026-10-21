@@ -12,6 +12,8 @@ import {
 } from '../../lib/disbursementDb';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../lib/documentOptions';
 import { fmtDate, formatNationalId, parseNationalIdInput } from '../../lib/utils';
+import { BTN_PRIMARY } from '../../lib/uiClasses';
+import { WorkspacePageHeader } from '../ui/WorkspacePageHeader';
 
 const INPUT = 'w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent text-xs';
 const LABEL = 'block mb-1 text-[11px] font-semibold text-ink-muted';
@@ -301,51 +303,36 @@ export const DisbursementPayeeListView: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-4 md:space-y-4.5 w-full pb-8">
+    <div data-workspace-page className="space-y-0 w-full pb-8 font-app">
       <Toast toast={notification} onDismiss={() => setNotification(null)} />
 
-      {/* 1. Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-panel/70 p-4 sm:p-5 rounded-2xl border border-line/70 shadow-xs">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="p-2 rounded-xl bg-accent-soft text-accent">
-              <Landmark className="w-5 h-5" />
-            </span>
-            <h1 className="text-base sm:text-lg font-black tracking-tight text-ink uppercase">
-              THÔNG TIN GIẢI NGÂN
-            </h1>
-          </div>
-          <p className="text-xs text-ink-muted mt-1">
-            Quản lý thông tin tài khoản và đối tác thụ hưởng giải ngân
-          </p>
-        </div>
+      <WorkspacePageHeader
+        title="Thông tin giải ngân"
+        icon={Landmark}
+        actions={
+          <button type="button" onClick={handleOpenCreate} className={`${BTN_PRIMARY} text-xs px-4 py-2 inline-flex items-center gap-1.5 cursor-pointer`}>
+            <Plus className="w-4 h-4" />
+            <span>Thêm thông tin mới</span>
+          </button>
+        }
+      />
 
-        <button
-          type="button"
-          onClick={handleOpenCreate}
-          className="bg-accent hover:opacity-90 text-accent-ink text-xs px-4 py-2 rounded-xl flex items-center space-x-1.5 font-bold transition-all shadow-xs cursor-pointer shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>THÊM THÔNG TIN MỚI</span>
-        </button>
-      </div>
-
-      {/* 2. Main Content Card */}
-      <div className="bg-panel rounded-2xl border border-line/70 shadow-xs overflow-hidden">
-        {/* Search Toolbar */}
-        <div className="p-3 sm:p-4 border-b border-line/60 bg-surface/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div data-workspace-panel className="bg-panel">
+        <div className="px-4 py-3 border-b border-line flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:max-w-md">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
             <input
               type="text"
+              aria-label="Tìm thông tin giải ngân"
               placeholder="Tìm theo Họ tên, CCCD, STK, Ngân hàng..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-7 py-2 rounded-xl border border-line/60 bg-surface/70 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
+              className="w-full pl-8 pr-7 py-2 rounded-[var(--r-control)] border border-line bg-surface text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:border-accent transition-colors"
             />
             {searchTerm && (
               <button
                 type="button"
+                aria-label="Xóa tìm kiếm"
                 onClick={() => setSearchTerm('')}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink"
               >
@@ -360,7 +347,7 @@ export const DisbursementPayeeListView: React.FC = () => {
         </div>
 
         {/* Table View */}
-        <div className="overflow-auto min-h-[350px]">
+        <div className="overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center p-16 text-ink-faint text-xs">
               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-accent mr-3"></div>

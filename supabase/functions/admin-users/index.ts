@@ -7,6 +7,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { checkAdminAction, isAdminRole, isRole, type Actor, type AdminAction, type Role } from './rules.ts';
+import { normalizeUsername } from '../_shared/username.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -99,7 +100,7 @@ async function listUsers(admin: Admin) {
     users.push(...data.users);
     if (data.users.length < 1000) break;
   }
-  const { data: roles, error } = await admin.from('UserRoles').select('UserId, Role, FullName');
+  const { data: roles, error } = await admin.from('UserRoles').select('UserId, Role, FullName, Username');
   if (error) return fail(`Không đọc được vai trò: ${error.message}`, 500);
   const byId = new Map((roles ?? []).map((r) => [r.UserId as string, r]));
   const now = Date.now();
@@ -111,6 +112,7 @@ async function listUsers(admin: Admin) {
       return {
         id: u.id,
         email: u.email,
+        username: r?.Username ?? null,
         fullName: r?.FullName ?? null,
         role: isRole(r?.Role) ? r.Role : null,
         disabled: Boolean(u.banned_until && Date.parse(u.banned_until) > now),
@@ -122,8 +124,12 @@ async function listUsers(admin: Admin) {
 }
 
 async function createUser(admin: Admin, req: Extract<AdminAction, { action: 'create' }>) {
-  const email = req.email.trim().toLowerCase();
+  const username = normalizeUsername(req.username ?? req.email!.split('@')[0]);
+  const email = req.username !== undefined ? `${username}@app.local` : req.email!.trim().toLowerCase();
   const fullName = req.fullName.trim();
+  const { data: existing, error: usernameError } = await admin.from('UserRoles').select('UserId').eq('Username', username).maybeSingle();
+  if (usernameError) return fail(`Không kiểm tra được tên đăng nhập: ${usernameError.message}`);
+  if (existing) return fail('Tên đăng nhập đã được sử dụng.');
   const { data, error } = await admin.auth.admin.createUser({
     email,
     password: req.password,
@@ -132,7 +138,7 @@ async function createUser(admin: Admin, req: Extract<AdminAction, { action: 'cre
   });
   if (error || !data.user) return fail(describeAuthError(error?.message ?? 'Không tạo được tài khoản.'));
 
-  const { error: roleErr } = await admin.from('UserRoles').upsert({ UserId: data.user.id, Role: req.role, FullName: fullName }, { onConflict: 'UserId' });
+  const { error: roleErr } = await admin.from('UserRoles').upsert({ UserId: data.user.id, Role: req.role, FullName: fullName, Username: username }, { onConflict: 'UserId' });
   if (roleErr) {
     // Không để lại tài khoản đăng nhập được nhưng chưa có vai trò
     await admin.auth.admin.deleteUser(data.user.id);
@@ -142,6 +148,11 @@ async function createUser(admin: Admin, req: Extract<AdminAction, { action: 'cre
 }
 
 async function updateUser(admin: Admin, req: Extract<AdminAction, { action: 'update' }>, target: { role: Role | null; fullName: string | null }) {
+  if (req.username !== undefined) {
+    const { data: existing, error } = await admin.from('UserRoles').select('UserId').eq('Username', normalizeUsername(req.username)).neq('UserId', req.userId).maybeSingle();
+    if (error) return fail(`Không kiểm tra được tên đăng nhập: ${error.message}`);
+    if (existing) return fail('Tên đăng nhập đã được sử dụng.');
+  }
   const attrs: { password?: string; ban_duration?: string } = {};
   if (req.newPassword !== undefined) attrs.password = req.newPassword;
   if (req.disabled !== undefined) attrs.ban_duration = req.disabled ? BAN_FOREVER : 'none';
@@ -150,11 +161,14 @@ async function updateUser(admin: Admin, req: Extract<AdminAction, { action: 'upd
     if (error) return fail(describeAuthError(error.message));
   }
 
-  if (req.role !== undefined || req.fullName !== undefined) {
+  if (req.role !== undefined || req.fullName !== undefined || req.username !== undefined) {
     const role = req.role ?? target.role;
     const { error } = await admin
       .from('UserRoles')
-      .upsert({ UserId: req.userId, Role: role, FullName: req.fullName?.trim() ?? target.fullName }, { onConflict: 'UserId' });
+      .upsert({
+        UserId: req.userId, Role: role, FullName: req.fullName?.trim() ?? target.fullName,
+        ...(req.username !== undefined ? { Username: normalizeUsername(req.username) } : {}),
+      }, { onConflict: 'UserId' });
     if (error) return fail(`Không lưu được vai trò hoặc họ tên: ${error.message}`);
   }
   return json({ ok: true, data: { id: req.userId } });

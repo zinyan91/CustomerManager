@@ -68,6 +68,7 @@ export function UserManagementView() {
     if (editing) {
       await update({
         userId: editing.id,
+        username: values.username.trim().toLowerCase(),
         fullName: values.fullName.trim(),
         ...(values.role && values.role !== editing.role ? { role: values.role } : {}),
         ...(values.password ? { newPassword: values.password } : {}),
@@ -76,8 +77,8 @@ export function UserManagementView() {
       });
       say(`Đã cập nhật ${displayName(editing)}.`);
     } else {
-      await create({ email: values.email.trim().toLowerCase(), fullName: values.fullName.trim(), role: values.role as Role, password: values.password });
-      say(`Đã tạo tài khoản ${values.email.trim().toLowerCase()}. Hãy gửi mật khẩu tạm cho nhân viên.`);
+      await create({ username: values.username.trim().toLowerCase(), fullName: values.fullName.trim(), role: values.role as Role, password: values.password });
+      say(`Đã tạo tài khoản ${values.username.trim().toLowerCase()}. Hãy gửi mật khẩu tạm cho nhân viên.`);
     }
     setForm(null);
   };
@@ -156,7 +157,7 @@ export function UserManagementView() {
           <thead>
             <tr className={headRow}>
               <th className={th}>Họ tên</th>
-              <th className={th}>Email</th>
+              <th className={th}>Tên đăng nhập</th>
               <th className={th}>Vai trò</th>
               <th className={th}>Module</th>
               <th className={`${th} text-right`}>KH phụ trách</th>
@@ -190,7 +191,7 @@ export function UserManagementView() {
                       {displayName(u)}
                       {isSelf ? ' (bạn)' : ''}
                     </td>
-                    <td className={`${td} text-ink-muted break-all`}>{u.email ?? '—'}</td>
+                    <td className={`${td} text-ink-muted break-all`}>{u.username ?? u.email?.split('@')[0] ?? '—'}</td>
                     <td className={`${td} text-ink-muted`}>{u.role ? roleLabel(u.role) : '—'}</td>
                     <td className={`${td} text-ink-muted`}>{modulesError ? '—' : modulesSummary(effectiveModules(u, modulesByUser[u.id]))}</td>
                     <td className={`${td} text-right tabular-nums`}>{counts.get(u.id) ?? 0}</td>

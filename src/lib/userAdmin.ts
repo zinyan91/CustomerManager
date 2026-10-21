@@ -15,6 +15,7 @@ export {
 /** Một tài khoản đăng nhập kèm vai trò, do Edge Function admin-users trả về. */
 export interface AdminUser {
   id: string;
+  username?: string | null;
   email: string | null;
   fullName: string | null;
   role: Role | null;

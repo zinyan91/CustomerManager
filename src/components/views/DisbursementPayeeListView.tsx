@@ -318,7 +318,7 @@ export const DisbursementPayeeListView: React.FC = () => {
       />
 
       <div data-workspace-panel className="bg-panel">
-        <div className="px-4 py-3 border-b border-line flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="workspace-toolbar px-4 py-3 border-b border-line flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:max-w-md">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
             <input

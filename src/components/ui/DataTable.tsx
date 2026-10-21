@@ -1,5 +1,6 @@
 import React, { useState, memo } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { TABLE_HEAD } from '../../lib/uiClasses';
 
 export type FieldPriority = 1 | 2 | 3;
 
@@ -167,12 +168,12 @@ function DataTableImpl<T>({
         style={maxHeight ? { maxHeight } : undefined}
       >
         <table className="w-full text-left text-xs border-collapse font-app">
-          <thead className={`${stickyHeader ? 'sticky top-0 z-20 bg-surface' : 'bg-surface'} border-b border-line/80 text-[10px] uppercase font-bold tracking-[0.09em] text-ink-faint ${maxHeight ? 'shadow-2xs' : ''}`}>
+          <thead className={`${TABLE_HEAD} ${stickyHeader ? 'sticky top-0 z-20' : ''}`}>
             <tr>
               {columns.map((c) => (
                 <th
                   key={c.key}
-                  className={`px-4 py-3 whitespace-nowrap text-ink-faint ${alignClass(c.align)}`}
+                  className={`px-4 py-3 whitespace-nowrap ${alignClass(c.align)}`}
                   style={c.width ? { width: c.width } : undefined}
                 >
                   {c.label}
@@ -180,14 +181,14 @@ function DataTableImpl<T>({
               ))}
               {actions && (
                 <th
-                  className="px-4 py-3 whitespace-nowrap text-center sticky right-0 z-20 bg-surface border-l border-line/70 text-ink-faint"
+                  className="px-4 py-3 whitespace-nowrap text-center sticky right-0 z-20 bg-panel-muted border-l border-line"
                 >
                   {actionsLabel}
                 </th>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-line/40">
+          <tbody className="divide-y divide-line/65">
             {rows.map((row) => {
               const k = rowKey(row);
               const selected = isSelected?.(row);
@@ -197,7 +198,7 @@ function DataTableImpl<T>({
                   key={k}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   className={`group transition-colors duration-150 ${
-                    selected ? 'bg-accent-soft/70 border-l-2 border-l-accent font-medium' : 'hover:bg-accent/[0.04]'
+                    selected ? 'bg-accent-soft border-l-2 border-l-accent font-medium' : 'hover:bg-accent-soft'
                   } ${onRowClick ? 'cursor-pointer' : ''}`}
                 >
                   {columns.map((c) => (
@@ -211,7 +212,7 @@ function DataTableImpl<T>({
                   {actions && (
                     <td
                       className={`px-4 py-2.5 text-center whitespace-nowrap sticky right-0 z-10 border-l border-line/50 transition-colors ${
-                        selected ? 'bg-accent-soft/80' : 'bg-panel/95 group-hover:bg-surface/95'
+                        selected ? 'bg-accent-soft' : 'bg-panel group-hover:bg-accent-soft'
                       }`}
                       onClick={(e) => e.stopPropagation()}
                     >

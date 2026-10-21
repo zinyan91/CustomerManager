@@ -21,7 +21,7 @@ export const TabsTrigger = React.forwardRef<
 >(({ className = '', ...props }, ref) => (
   <RadixTabs.Trigger
     ref={ref}
-    className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-xs font-bold rounded-[calc(var(--r-control)-2px)] transition-all select-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50 text-ink-muted hover:text-ink data-[state=active]:bg-panel data-[state=active]:text-accent data-[state=active]:shadow-xs ${className}`}
+    className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-xs font-bold rounded-[calc(var(--r-control)-2px)] transition-all select-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50 text-ink-muted hover:text-ink data-[state=active]:bg-accent data-[state=active]:text-accent-ink ${className}`}
     {...props}
   />
 ));

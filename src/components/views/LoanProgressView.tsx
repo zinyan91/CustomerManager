@@ -33,7 +33,7 @@ export function LoanProgressView() {
       <div className="flex gap-2"><Button variant="secondary" disabled={report.loading} onClick={reload} leftIcon={<RefreshCw className="w-3.5 h-3.5" />}>Làm mới</Button>
         {canEnter && <Button onClick={()=>setEditor('new')} disabled={!user || !entryTeams.length} leftIcon={<Plus className="w-4 h-4" />}>Thêm hồ sơ</Button>}</div>
     </div>
-    <div className="grid sm:grid-cols-2 xl:grid-cols-[220px_160px_1fr_240px] gap-3 px-3">
+    <div className="workspace-toolbar grid sm:grid-cols-2 xl:grid-cols-[220px_160px_1fr_240px] gap-3 px-3 py-3 bg-surface border-y border-line">
       <Select aria-label="Team báo cáo" value={workspace.teamId} onChange={e=>workspace.selectTeam(e.target.value)} disabled={workspace.loading}>
         {!workspace.teams.length && <option value="">Chưa có team</option>}
         {workspace.teams.map(team=><option key={team.Id} value={team.Id}>{team.Name}</option>)}

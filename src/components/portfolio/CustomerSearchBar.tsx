@@ -46,7 +46,7 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
   handleClearSearch,
 }) => {
   return (
-    <details data-workspace-panel open={compact ? undefined : true} className="relative z-30 border-b border-line bg-panel">
+    <details data-workspace-panel open={compact ? undefined : true} className="workspace-toolbar relative z-30 border-b border-line bg-panel">
       <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-ink">Tìm kiếm khoản vay</summary>
       <div className="space-y-3 px-4 pb-4">
 

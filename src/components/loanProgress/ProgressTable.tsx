@@ -2,6 +2,7 @@ import type { LoanProgressEntry } from '../../types/loanProgress';
 import { progressNumber } from '../../lib/loanProgress';
 import { DataTable, type ColumnDef } from '../ui/DataTable';
 import { Button } from '../ui/Button';
+import { ProgressStageBadge } from './ProgressStageBadge';
 
 export function ProgressTable({rows,onEdit,showAssignee=false}:{rows:LoanProgressEntry[];onEdit?:(row:LoanProgressEntry)=>void;showAssignee?:boolean}) {
   const columns:ColumnDef<LoanProgressEntry>[] = [
@@ -13,7 +14,7 @@ export function ProgressTable({rows,onEdit,showAssignee=false}:{rows:LoanProgres
       .map(([key,label])=>({key,label,align:'right' as const,render:(row:LoanProgressEntry)=><span className="font-mono tabular-nums">{progressNumber(row[key])}</span>,priority:key==='Amount' ? 1 as const : 2 as const})),
     {key:'case',label:'Loại hồ sơ',render:row=>row.CaseType,priority:2},
     {key:'term',label:'Khoản vay',render:row=>row.LoanTerm,priority:2},
-    {key:'stage',label:'Tiến độ hồ sơ',render:row=>row.Stage},
+    {key:'stage',label:'Tiến độ hồ sơ',render:row=><ProgressStageBadge stage={row.Stage} />},
   ];
   return <DataTable columns={columns} rows={rows} rowKey={row=>row.Id}
     cardTitle={row=>row.CustomerName} cardSubtitle={row=>row.CustomerKind==='new' ? 'Mới' : 'Hiện hữu'}

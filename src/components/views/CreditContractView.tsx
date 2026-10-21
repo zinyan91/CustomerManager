@@ -79,7 +79,7 @@ export const CreditContractView: React.FC = () => {
       />
 
       {!customer ? (
-        <div data-workspace-panel className="px-4 py-3 border-b border-line">
+        <div data-workspace-panel className="workspace-toolbar px-4 py-3 border-b border-line">
           <div className="max-w-md space-y-2">
             <label htmlFor="customer-select-main" className="block text-[11px] font-bold uppercase tracking-wider text-ink-muted">
               Chọn Khách hàng tác nghiệp
@@ -134,7 +134,7 @@ export const CreditContractView: React.FC = () => {
           />
           <div data-workspace-panel className="bg-panel">
             {closedCount > 0 && (
-              <div className="flex items-center justify-end px-4 py-3 border-b border-line">
+              <div className="workspace-toolbar flex items-center justify-end px-4 py-3 border-b border-line">
                 <label className="text-[11px] font-semibold text-ink-muted flex items-center space-x-1.5 cursor-pointer select-none">
                   <input
                     type="checkbox"

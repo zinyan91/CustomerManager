@@ -10,9 +10,9 @@ interface CollateralSummaryStripProps {
 }
 
 const STATUS_METRICS = [
-  { status: 'expired', label: 'Hết hiệu lực', color: 'text-neg' },
-  { status: 'expiring_soon', label: 'Sắp hết hạn', color: 'text-warn' },
-  { status: 'missing', label: 'Chưa định giá', color: 'text-ink' },
+  { status: 'expired', label: 'Hết hiệu lực', color: 'text-neg', tone: 'neg' },
+  { status: 'expiring_soon', label: 'Sắp hết hạn', color: 'text-warn', tone: 'warn' },
+  { status: 'missing', label: 'Chưa định giá', color: 'text-ink', tone: 'neutral' },
 ] as const;
 
 export function CollateralSummaryStrip({ totalValue, count, counts, filter, onFilterChange }: CollateralSummaryStripProps) {
@@ -21,6 +21,7 @@ export function CollateralSummaryStrip({ totalValue, count, counts, filter, onFi
       <button
         type="button"
         data-workspace-panel
+        data-metric-tone="collateral"
         aria-pressed={filter === 'all'}
         onClick={() => onFilterChange('all')}
         className="px-4 py-3 text-left border-b border-line focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2 cursor-pointer"
@@ -34,6 +35,7 @@ export function CollateralSummaryStrip({ totalValue, count, counts, filter, onFi
           key={metric.status}
           type="button"
           data-workspace-panel
+          data-metric-tone={metric.tone}
           aria-pressed={filter === metric.status}
           onClick={() => onFilterChange(filter === metric.status ? 'all' : metric.status)}
           className="px-4 py-3 text-left border-b border-line focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2 cursor-pointer"

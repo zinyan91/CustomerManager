@@ -33,7 +33,7 @@ export const KpiCard = memo<KpiCardProps>(({
   <div
     data-kpi-hue={hue}
     style={{ '--kpi-hue': HUE_VAR[hue] } as CSSProperties}
-    className={`${cardBg} relative overflow-hidden p-4 sm:p-4.5 rounded-2xl border border-line/60 bg-gradient-to-b from-panel/95 via-panel/85 to-panel/65 backdrop-blur-xl flex items-start justify-between gap-3 shadow-sm hover:shadow-xl hover:border-[color-mix(in_srgb,var(--kpi-hue)_60%,transparent)] hover:-translate-y-1 transition-all duration-300 group`}
+    className={`${cardBg} dashboard-kpi-card relative overflow-hidden p-4 sm:p-4.5 rounded-2xl border border-line/60 bg-gradient-to-b from-panel/95 via-panel/85 to-panel/65 backdrop-blur-xl flex items-start justify-between gap-3 shadow-sm hover:shadow-xl hover:border-[color-mix(in_srgb,var(--kpi-hue)_60%,transparent)] hover:-translate-y-1 transition-all duration-300 group`}
   >
     {/* Top glowing accent bar */}
     <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[var(--kpi-hue)] via-[var(--kpi-hue)]/60 to-transparent opacity-90 group-hover:opacity-100" />

@@ -18,7 +18,7 @@ export const CreditContractKpiStrip: React.FC<CreditContractKpiStripProps> = ({
 }) => {
   return (
     <div data-workspace-metrics className="grid grid-cols-2 xl:grid-cols-4 font-app">
-      <div data-workspace-panel className="px-4 py-3 border-b border-line">
+      <div data-workspace-panel data-metric-tone="accent" className="px-4 py-3 border-b border-line">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold text-ink-muted">Hạn mức đã cấp</div>
           <div className="mt-1 font-mono font-bold text-sm sm:text-base text-accent whitespace-nowrap">
@@ -27,7 +27,7 @@ export const CreditContractKpiStrip: React.FC<CreditContractKpiStripProps> = ({
         </div>
       </div>
 
-      <div data-workspace-panel className="px-4 py-3 border-b border-line">
+      <div data-workspace-panel data-metric-tone="accent" className="px-4 py-3 border-b border-line">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold text-ink-muted">Quy mô HĐTD</div>
           <div className="mt-1 font-mono font-bold text-sm sm:text-base text-ink whitespace-nowrap">
@@ -36,7 +36,7 @@ export const CreditContractKpiStrip: React.FC<CreditContractKpiStripProps> = ({
         </div>
       </div>
 
-      <div data-workspace-panel className="px-4 py-3 border-b border-line">
+      <div data-workspace-panel data-metric-tone="collateral" className="px-4 py-3 border-b border-line">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold text-ink-muted">Khả năng bảo đảm</div>
           <div className="mt-1 font-mono font-bold text-sm sm:text-base text-ink whitespace-nowrap">
@@ -45,7 +45,7 @@ export const CreditContractKpiStrip: React.FC<CreditContractKpiStripProps> = ({
         </div>
       </div>
 
-      <div data-workspace-panel className="px-4 py-3 border-b border-line">
+      <div data-workspace-panel data-metric-tone={vuotKhaNangBaoDam ? 'neg' : 'pos'} className="px-4 py-3 border-b border-line">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold text-ink-muted">Tỷ lệ bảo đảm</div>
           <div className={`mt-1 font-mono font-bold text-sm sm:text-base ${vuotKhaNangBaoDam ? 'text-neg' : 'text-pos'}`}>

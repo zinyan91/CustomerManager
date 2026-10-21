@@ -13,8 +13,8 @@ export const UI: UiClasses = {
   sectionBoxBg: 'bg-surface/90 border border-line/50 text-ink',
   inputStyle: 'bg-surface/80 border-line/70 text-ink placeholder-ink-faint focus:border-accent',
   readonlyInputStyle: 'bg-panel-muted/80 border-line/70 text-ink font-semibold cursor-default',
-  tableHeaderStyle: 'bg-surface text-ink-faint text-[10px] uppercase font-bold tracking-[0.11em] border-b border-line/80',
-  tableRowHover: 'hover:bg-accent/[0.04] transition-colors duration-150',
+  tableHeaderStyle: 'bg-panel-muted/55 text-ink-muted text-[10px] font-semibold tracking-normal border-b border-line',
+  tableRowHover: 'hover:bg-accent-soft/60 transition-colors duration-150',
   labelStyle: 'text-ink-muted font-medium',
 };
 
@@ -43,7 +43,7 @@ export const SECTION_LABEL =
   'text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint';
 
 export const TABLE_HEAD =
-  'bg-surface text-ink-faint text-[10px] uppercase font-bold tracking-[0.11em] border-b border-line/80';
+  UI.tableHeaderStyle;
 
 export const TABLE_CELL = 'px-[var(--row-px)] py-[var(--row-py)]';
 

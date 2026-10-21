@@ -28,7 +28,7 @@ export function TeamKpiSummaryCards({ cards }: { cards:KpiDashboardCard[] }) {
               <span className="font-semibold text-ink">{formatKpiCompletion(card.completion)}</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-panel-muted" aria-hidden="true">
-              <div className="h-full rounded-full bg-accent" style={{ width:`${Math.max(0,Math.min(100,card.completion ?? 0))}%` }} />
+              <div className="h-full rounded-full" style={{ width:`${Math.max(0,Math.min(100,card.completion ?? 0))}%`, backgroundColor:'var(--metric-color, var(--color-accent))' }} />
             </div>
           </div>} />
       </div>;

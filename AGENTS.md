@@ -17,7 +17,8 @@ Tài liệu này tổng hợp toàn bộ các quy chuẩn làm việc, phong cá
 
 - **Đơn giản, thực dụng, chuẩn mực:**
   - Càng đơn giản, rõ ràng càng tốt. Tuyệt đối **không màu mè lòe loẹt**.
-  - Sử dụng bảng màu Grayscale / Slate tối giản chuẩn bảng tính Excel và văn bản nhà nước.
+  - Nền và bảng dùng màu trung tính; KPI, thao tác và trạng thái dùng màu có ý nghĩa, nhất quán ở Sáng/Tối. KPI và thẻ số liệu có viền màu, bóng cùng sắc rõ ở trạng thái thường; khung trang vẫn nối liền menu phụ.
+  - Quy ước có thể điều chỉnh theo nhu cầu và xác nhận của người dùng. Hướng hiện hành: [workspace-visual-conventions.md](docs/specs/workspace-visual-conventions.md).
 - **Không tự ý thêm chú thích thừa:**
   - Tuyệt đối không tự ý thêm các dòng như "Bằng chữ: ...", ngày lập bảng tùy tiện, các subtitle dài dòng không cần thiết, trừ khi có quy định pháp quy hoặc người dùng yêu cầu.
 - **Dòng TỔNG CỘNG:**

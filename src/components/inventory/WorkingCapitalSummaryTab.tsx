@@ -38,8 +38,8 @@ export const WorkingCapitalSummaryTab: React.FC<WorkingCapitalSummaryTabProps> =
       </div>
 
       {/* Main KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className={`${UI.containerCardBg} rounded-lg p-3.5 border flex items-center justify-between`}>
+      <div data-workspace-metrics className="workspace-metrics-wide grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div data-workspace-panel data-metric-tone="accent" className={`${UI.containerCardBg} rounded-lg p-3.5 border flex items-center justify-between`}>
           <div>
             <div className="text-[10px] font-bold text-ink-faint uppercase">1. HÀNG TỒN KHO CUỐI KỲ</div>
             <div className="text-lg font-black text-ink mt-1 font-mono">
@@ -54,7 +54,7 @@ export const WorkingCapitalSummaryTab: React.FC<WorkingCapitalSummaryTabProps> =
           </div>
         </div>
 
-        <div className={`${UI.containerCardBg} rounded-lg p-3.5 border flex items-center justify-between`}>
+        <div data-workspace-panel data-metric-tone="cust" className={`${UI.containerCardBg} rounded-lg p-3.5 border flex items-center justify-between`}>
           <div>
             <div className="text-[10px] font-bold text-ink-faint uppercase">2. CÔNG NỢ PHẢI THU</div>
             <div className="text-lg font-black text-ink mt-1 font-mono">
@@ -69,7 +69,7 @@ export const WorkingCapitalSummaryTab: React.FC<WorkingCapitalSummaryTabProps> =
           </div>
         </div>
 
-        <div className="rounded-lg p-3.5 border border-pos/40 bg-pos-soft flex items-center justify-between">
+        <div data-workspace-panel data-metric-tone="pos" className="rounded-lg p-3.5 border border-pos/40 bg-pos-soft flex items-center justify-between">
           <div>
             <div className="text-[10px] font-black text-pos uppercase tracking-wide">
               3. TỔNG TÀI SẢN KINH DOANH NGẮN HẠN (1 + 2)

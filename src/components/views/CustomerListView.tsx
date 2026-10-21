@@ -141,7 +141,7 @@ export const CustomerListView: React.FC = () => {
       {/* 3. Khung Tìm Kiếm & Bảng Dữ Liệu Khách Hàng */}
       <div data-workspace-panel className="bg-panel">
         {/* Unified Command Toolbar: Tìm kiếm đa tiêu chí + Bộ lọc Trạng thái */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 px-4 py-3 border-b border-line">
+        <div className="workspace-toolbar flex flex-col xl:flex-row xl:items-center justify-between gap-3 px-4 py-3 border-b border-line">
           {/* Cụm Tìm Kiếm Tinh Gọn */}
           <form
             onSubmit={(e) => {

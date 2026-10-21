@@ -21,7 +21,7 @@ export const CollateralSearchBar: React.FC<CollateralSearchBarProps> = ({
   };
 
   return (
-    <div data-workspace-panel className="px-4 py-3 border-b border-line flex flex-wrap items-center gap-3">
+    <div data-workspace-panel className="workspace-toolbar px-4 py-3 border-b border-line flex flex-wrap items-center gap-3">
       <div className="relative flex-1 min-w-[220px]">
         <Search className="w-4 h-4 text-ink-faint absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input

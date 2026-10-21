@@ -1,10 +1,11 @@
 import React, { memo, useState } from 'react';
-import { UserCheck, User, Users, Trash2, Sparkles, Plus, Check, Phone, ChevronDown, ChevronUp } from 'lucide-react';
+import { UserCheck, User, Users, Trash2, Archive, ArchiveRestore, Sparkles, Plus, Check, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Customer } from '../../types';
 import { UI, BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '../../lib/uiClasses';
 import { formatNationalId } from '../../lib/utils';
 import { DateInput } from '../DateInput';
 import { CCCD_ISSUE_PLACES } from '../../lib/documentOptions';
+import { isCustomerArchived } from '../../lib/customerStatus';
 
 interface CustomerDrawerFormProps {
   isOpen: boolean;
@@ -38,6 +39,8 @@ interface CustomerDrawerFormProps {
   onDelete: () => void;
   onParseSnippet?: (raw: string) => void;
   canDelete?: boolean;
+  onArchive?: () => void;
+  archiving?: boolean;
 }
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/Dialog';
@@ -51,6 +54,8 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
   onDelete,
   onParseSnippet,
   canDelete = true,
+  onArchive,
+  archiving = false,
 }) => {
   const [smartPasteOpen, setSmartPasteOpen] = useState(false);
   const [smartPasteText, setSmartPasteText] = useState('');
@@ -445,6 +450,19 @@ export const CustomerDrawerForm = memo<CustomerDrawerFormProps>(({
 
           {/* Sticky Modal Footer Actions */}
           <div className="border-t border-line pt-4 flex flex-wrap items-center justify-between gap-3 sticky bottom-0 bg-panel -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 p-4 sm:px-6 z-10 shadow-lg">
+            {selectedCustomer && onArchive && (
+              <button
+                type="button"
+                onClick={onArchive}
+                disabled={archiving}
+                className={`${BTN_SECONDARY} text-xs py-2 px-3.5 rounded-lg flex items-center gap-1.5 disabled:opacity-60`}
+              >
+                {isCustomerArchived(selectedCustomer)
+                  ? <ArchiveRestore className="w-3.5 h-3.5" />
+                  : <Archive className="w-3.5 h-3.5" />}
+                <span>{isCustomerArchived(selectedCustomer) ? 'Bỏ lưu trữ' : 'Lưu trữ hồ sơ'}</span>
+              </button>
+            )}
             {selectedCustomer && canDelete ? (
               <button
                 type="button"

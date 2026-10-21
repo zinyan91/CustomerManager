@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route, useNavigate, useLocation } from 'react-router';
 
@@ -24,7 +24,10 @@ vi.mock('../../context/AuthContext', () => ({
 }));
 
 vi.mock('../../lib/api', () => ({
-  fetchCustomersAPI: async () => ([{ Id: 55, FullName: 'Trần Thị B', CifKh: '900055' }]),
+  fetchCustomersAPI: async () => ([
+    { Id: 55, FullName: 'Trần Thị B', CifKh: '900055' },
+    { Id: 56, FullName: 'Khách đã lưu trữ', CifKh: '900056', ArchivedAt: '2026-10-20T08:00:00Z' },
+  ]),
   fetchCreditContractsByCustomerAPI: async () => [],
   fetchContractsByCustomerAPI: async () => ([
     {
@@ -48,11 +51,13 @@ vi.mock('../../lib/api', () => ({
   deleteRepaymentSchedulesByIdsAPI: async () => {},
   saveCustomerAPI: async (payload: unknown) => (payload as Record<string, unknown>),
   deleteCustomerAPI: async () => {},
-  setCustomerArchivedAPI: async (id: number) => ({ Id: id, ArchivedAt: null }),
+  setCustomerArchivedAPI: vi.fn(async (id: number, archived: boolean) =>
+    ({ Id: id, ArchivedAt: archived ? '2026-10-21T08:00:00Z' : null })),
 }));
 
 import { useLoanPortfolioController } from '../../hooks/useLoanPortfolioController';
 import { CustomerListView } from '../views/CustomerListView';
+import { setCustomerArchivedAPI } from '../../lib/api';
 
 function Probe() {
   const { mainTab, selectedContract } = useLoanPortfolioController();
@@ -97,7 +102,55 @@ function ProbeToggleThenReenter() {
   );
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
+describe('lưu trữ hồ sơ khách hàng', () => {
+  function openProfile(id: number) {
+    return render(
+      <MemoryRouter initialEntries={[`/customers/${id}/profile`]}>
+        <Routes>
+          <Route path="/customers" element={<CustomerListView />} />
+          <Route path="/customers/:customerId/profile" element={<CustomerListView />} />
+        </Routes>
+      </MemoryRouter>
+    );
+  }
+
+  it('URL khách đã lưu trữ mở được hồ sơ và bỏ lưu trữ ngay trong form', async () => {
+    openProfile(56);
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/HỒ SƠ KHÁCH HÀNG: Khách đã lưu trữ/)).toBeTruthy();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Bỏ lưu trữ' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(setCustomerArchivedAPI).toHaveBeenCalledWith(56, false);
+    await userEvent.click(screen.getByRole('button', { name: 'Đang làm việc (2)' }));
+    expect(screen.getAllByText('Khách đã lưu trữ').length).toBeGreaterThan(0);
+  });
+
+  it('lưu trữ từ form đóng form và chuyển khách sang danh sách đã lưu trữ', async () => {
+    openProfile(55);
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu trữ hồ sơ' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(setCustomerArchivedAPI).toHaveBeenCalledWith(55, true);
+    await userEvent.click(screen.getByRole('button', { name: 'Đã lưu trữ (2)' }));
+    expect(screen.getAllByText('Trần Thị B').length).toBeGreaterThan(0);
+  });
+
+  it('lỗi server giữ form mở và không đổi bộ đếm lưu trữ', async () => {
+    vi.mocked(setCustomerArchivedAPI).mockRejectedValueOnce(new Error('RLS: không có quyền sửa hồ sơ'));
+    openProfile(55);
+    const dialog = await screen.findByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Lưu trữ hồ sơ' }));
+    expect(await screen.findByText('RLS: không có quyền sửa hồ sơ')).toBeTruthy();
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    await userEvent.click(within(dialog).getByTitle('Đóng (Esc)'));
+    expect(screen.getByRole('button', { name: 'Đã lưu trữ (1)' })).toBeTruthy();
+  });
+});
 
 describe('tuyến sâu lịch trả nợ', () => {
   it('/customers/55/loans/912/schedule mở thẳng tab Lịch trả nợ của KUNN đó', async () => {

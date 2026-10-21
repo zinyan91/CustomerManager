@@ -164,6 +164,8 @@ export const LoanPortfolioView: React.FC = () => {
         <CustomerSummaryHeader
           selectedMasterFilter={selectedMasterFilter}
           totalCreditLimit={customerLimitTotals.granted}
+            outstanding={customerLimitTotals.outstanding}
+            available={customerLimitTotals.available}
           handleNewContract={handleNewContract}
         >
           <div className="flex flex-wrap items-center justify-between gap-3">

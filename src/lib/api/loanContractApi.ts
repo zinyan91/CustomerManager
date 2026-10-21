@@ -109,7 +109,6 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
       .select('*, customer:Customers(*)')
       .single();
     if (error) throw kunnNumberError(error, contractNumber);
-    await unarchiveCustomer(data?.CustomerId);
     return data;
   } else {
     const { data, error } = await supabase
@@ -118,7 +117,7 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
       .select('*, customer:Customers(*)')
       .single();
     if (error) throw kunnNumberError(error, contractNumber);
-    await unarchiveCustomer(data?.CustomerId);
+    if (!data.IsSettled) await unarchiveCustomer(data.CustomerId);
     return data;
   }
 }

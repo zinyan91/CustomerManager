@@ -59,7 +59,7 @@ export async function saveCreditContractAPI(cc: Partial<CreditContract>): Promis
     }
     throw error;
   }
-  await unarchiveCustomer(data?.CustomerId);
+  if (!isUpdate && !data.IsClosed) await unarchiveCustomer(data.CustomerId);
   return data;
 }
 

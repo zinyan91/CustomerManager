@@ -171,9 +171,10 @@ export async function setCustomerArchivedAPI(
 
 export async function unarchiveCustomer(customerId?: number | null): Promise<void> {
   if (!customerId) return;
-  await supabase
+  const { error } = await supabase
     .from('Customers')
     .update({ ArchivedAt: null })
     .eq('Id', customerId)
     .not('ArchivedAt', 'is', null);
+  if (error) throw error;
 }

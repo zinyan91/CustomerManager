@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -40,6 +40,7 @@ function dungLenO(duongDan: string) {
         <Route path="/loans" element={<><CustomerContextBar /><ViTri /></>} />
         <Route path="/customers" element={<><CustomerContextBar /><ViTri /></>} />
         <Route path="/customers/:customerId/loans" element={<><CustomerContextBar /><ViTri /></>} />
+        <Route path="/customers/:customerId/profile" element={<CustomerContextBar />} />
       </Routes>
     </MemoryRouter>
   );
@@ -58,20 +59,26 @@ describe('CustomerContextBar', () => {
     expect(dungHook).toHaveBeenCalledWith(null);
   });
 
-  it('có :customerId thì hiện đủ sáu thông tin của spec', () => {
+  it('trang khoản vay chỉ giữ tên, CIF và nhóm nợ trên thanh đầu', () => {
     dungLenO('/customers/55/loans');
     expect(screen.getByText('Trần Thị B')).toBeTruthy();
     expect(screen.getByText(/900055/)).toBeTruthy();
-    expect(screen.getByText(/0900000055/)).toBeTruthy();
-    expect(screen.getByText(/250\.000\.000/)).toBeTruthy();
-    expect(screen.getByText(/750\.000\.000/)).toBeTruthy();
+    expect(screen.queryByText(/0900000055/)).toBeNull();
+    expect(screen.queryByText(/250\.000\.000/)).toBeNull();
+    expect(screen.queryByText(/750\.000\.000/)).toBeNull();
     expect(screen.getByText(/Nhóm 1/)).toBeTruthy();
   });
 
-  it('nút đổi khách dẫn về danh sách khách hàng', () => {
+  it('bỏ cả hai điều khiển đổi khách bị trùng', () => {
     dungLenO('/customers/55/loans');
-    fireEvent.click(screen.getByRole('button', { name: /đổi khách/i }));
-    expect(screen.getByTestId('path').textContent).toBe('/customers');
+    expect(screen.queryByRole('button', { name: /đổi khách/i })).toBeNull();
+    expect(screen.queryByRole('combobox')).toBeNull();
+  });
+
+  it('các trang khác vẫn có số liệu ngữ cảnh', () => {
+    dungLenO('/customers/55/profile');
+    expect(screen.getByText(/250\.000\.000/)).toBeTruthy();
+    expect(screen.getByText(/750\.000\.000/)).toBeTruthy();
   });
 
   it('đang chuyển sang khách khác thì không hiện tên/số của khách cũ còn sót trong state', () => {

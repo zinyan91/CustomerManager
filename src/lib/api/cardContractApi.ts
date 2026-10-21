@@ -99,7 +99,7 @@ export async function saveCardContractAPI(
 
   const { data, error } = await q;
   if (error) throw cardContractDbError(error, contractNumber);
-  await unarchiveCustomer(data?.CustomerId);
+  if (!isUpdate && !data.IsClosed) await unarchiveCustomer(data.CustomerId);
   return data;
 }
 

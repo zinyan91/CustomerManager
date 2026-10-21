@@ -96,6 +96,8 @@ export function useCustomerListController() {
     try {
       const saved = await setCustomerArchivedAPI(cus.Id, !archived);
       setCustomers(prev => prev.map(c => (c.Id === cus.Id ? { ...c, ArchivedAt: saved.ArchivedAt } : c)));
+      setSelectedCustomer(prev => prev?.Id === cus.Id ? { ...prev, ArchivedAt: saved.ArchivedAt } : prev);
+      setIsDrawerOpen(false);
       showNotify('success', archived
         ? `Đã đưa hồ sơ ${cus.FullName} trở lại danh sách làm việc.`
         : `Đã lưu trữ hồ sơ ${cus.FullName}.`);

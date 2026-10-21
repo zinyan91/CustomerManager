@@ -42,6 +42,7 @@ export const CustomerListView: React.FC = () => {
     setStatusFilter,
     statusCounts,
     visibleCustomers,
+    customers,
     archiving,
     notification,
     setNotification,
@@ -67,11 +68,12 @@ export const CustomerListView: React.FC = () => {
       return;
     }
     if (profileAppliedFor === profileCustomerId) return;
-    const c = visibleCustomers.find(x => x.Id === profileCustomerId);
+    const c = customers.find(x => x.Id === profileCustomerId);
     if (!c) return;
+    setStatusFilter(isCustomerArchived(c) ? 'archived' : 'active');
     setProfileAppliedFor(profileCustomerId);
     openDrawerForEdit(c);
-  }, [profileCustomerId, profileAppliedFor, visibleCustomers, openDrawerForEdit]);
+  }, [profileCustomerId, profileAppliedFor, customers, openDrawerForEdit, setStatusFilter]);
 
   useEffect(() => {
     if (profileCustomerId === null) return;
@@ -378,12 +380,12 @@ export const CustomerListView: React.FC = () => {
                       toggleArchived(c);
                     }}
                     disabled={archiving === c.Id}
-                    title={isCustomerArchived(c) ? 'Bỏ lưu trữ' : 'Lưu trữ hồ sơ'}
-                    className="border border-line/80 bg-panel-muted/80 hover:border-ink/40 text-ink-muted hover:text-ink p-1.5 rounded-lg text-[11px] font-semibold inline-flex items-center transition-all disabled:opacity-60 cursor-pointer shadow-2xs"
+                    className="border border-line/80 bg-panel-muted/80 hover:border-ink/40 text-ink-muted hover:text-ink px-2.5 py-1 rounded-lg text-[11px] font-semibold inline-flex items-center gap-1.5 transition-all disabled:opacity-60 cursor-pointer shadow-2xs"
                   >
                     {isCustomerArchived(c)
                       ? <ArchiveRestore className="w-3 h-3 text-pos" />
                       : <Archive className="w-3 h-3" />}
+                    <span>{isCustomerArchived(c) ? 'Bỏ lưu trữ' : 'Lưu trữ hồ sơ'}</span>
                   </button>
                 </div>
               )}
@@ -481,6 +483,8 @@ export const CustomerListView: React.FC = () => {
         onDelete={handleDeleteCustomer}
         onParseSnippet={parseAndApplySnippet}
         canDelete={can('customer.deleteForever')}
+        onArchive={selectedCustomer ? () => toggleArchived(selectedCustomer) : undefined}
+        archiving={archiving === selectedCustomer?.Id}
       />
     </div>
   );

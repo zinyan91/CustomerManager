@@ -12,21 +12,25 @@ const dung = (props: Partial<Parameters<typeof CustomerSummaryHeader>[0]> = {}) 
     <CustomerSummaryHeader
       selectedMasterFilter="ALL"
       totalCreditLimit={1_460_000_000}
+      outstanding={460_000_000}
+      available={1_000_000_000}
       handleNewContract={vi.fn()}
       {...props}
     />
   );
 
-describe('CustomerSummaryHeader — bỏ phần trùng với thanh ngữ cảnh khách hàng', () => {
+describe('CustomerSummaryHeader — gom số liệu và giải ngân', () => {
   it('không còn hiện tên hay CIF khách hàng', () => {
     dung();
     expect(screen.queryByText(/CIF:/)).toBeNull();
   });
 
-  it('không còn hiện Tổng Dư Nợ KUNN hay HMTD Còn Lại', () => {
+  it('hiện dư nợ và khả dụng theo dữ liệu cùng phạm vi với tổng mức cấp', () => {
     dung();
-    expect(screen.queryByText(/Dư Nợ KUNN/)).toBeNull();
-    expect(screen.queryByText('HMTD Còn Lại')).toBeNull();
+    expect(screen.getByText('Dư nợ hiện hành')).toBeTruthy();
+    expect(screen.getByText('460.000.000 VNĐ')).toBeTruthy();
+    expect(screen.getByText('Hạn mức khả dụng')).toBeTruthy();
+    expect(screen.getByText('1.000.000.000 VNĐ')).toBeTruthy();
   });
 
   it('vẫn còn Tổng Mức Cấp — số duy nhất không có ở thanh ngữ cảnh', () => {

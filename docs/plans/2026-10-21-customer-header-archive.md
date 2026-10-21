@@ -1,0 +1,8 @@
+# Thu gọn tiêu đề và sửa luồng lưu trữ khách hàng
+
+**Mục tiêu:** Thanh đầu chỉ giữ tên/CIF trên trang khoản vay; số tiền và giải ngân chung một hàng. Có thể lưu trữ và mở lại hồ sơ mà vẫn giữ lịch sử.
+**Phạm vi:** LÀM: bỏ điện thoại và hai điều khiển đổi khách ở thanh ngữ cảnh; gom số liệu khoản vay; nút lưu trữ trong hồ sơ; mở hồ sơ đã lưu trữ qua URL; chỉ tự bỏ lưu trữ khi tạo hợp đồng còn hoạt động; commit/push main theo yêu cầu tiếp theo của người dùng. KHÔNG LÀM: thay công thức tiền, tự tất toán, xoá lịch sử, đổi RLS/schema.
+**Tệp dự kiến chạm:** CustomerContextBar, CustomerSummaryHeader, LoanPortfolioView; CustomerDrawerForm, CustomerListView, useCustomerListController; customerApi, loanContractApi, creditContractApi, cardContractApi; kiểm thử liên quan. Chia thành hai phần: bố cục và vòng đời lưu trữ.
+**Tầng:** components hiển thị và callback; hooks điều phối hồ sơ; lib/api quyết định thời điểm ghi trạng thái và báo lỗi. Dùng số tổng hợp sẵn của controller, không thêm công thức vào JSX.
+**Kiểm chứng bằng gì:** kiểm thử API tái hiện sửa hợp đồng tự bỏ lưu trữ trước khi sửa; kiểm thử mở URL hồ sơ lưu trữ và thao tác từ form; kiểm tra trình duyệt với Supabase bị chặn và dữ liệu giả; toàn bộ Vitest và build vào .tmp. Đã kiểm tra DB chỉ đọc: 53 khách, 3 lưu trữ, cột ArchivedAt tồn tại, không có trigger Customers; policy update cho admin/chủ hồ sơ.
+**Rủi ro đã biết:** không đánh đồng lưu trữ với tất toán; xoá vĩnh viễn vẫn bị chặn bởi lịch sử; không sửa quyền Leader chỉ đọc; số liệu tiêu đề phải theo bộ lọc HĐTD; không viết thử trên khách hàng thật. Chưa tái hiện được lỗi mà tài khoản người dùng gặp trên DB thật.

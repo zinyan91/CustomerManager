@@ -74,10 +74,11 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
   return (
     <div
       id="collateral-form-panel"
-      className="rounded-2xl p-5 sm:p-6 space-y-5 border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150"
+      data-workspace-panel
+      className="p-4 space-y-4 border-b border-line bg-panel"
     >
       {/* Header */}
-      <div className="flex items-center justify-between pb-3.5 border-b border-line/60">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-line">
         <h3 className="font-bold flex items-center space-x-2 text-xs tracking-tight text-ink">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
             <Building2 className="w-4 h-4" />
@@ -102,7 +103,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
           <button
             type="button"
             onClick={() => setFormCollapsed(f => !f)}
-            className="p-1.5 rounded-xl border border-line/60 bg-surface text-ink-faint hover:text-ink transition-colors cursor-pointer shadow-2xs"
+            className="p-1.5 rounded-[var(--r-control)] border border-line/60 bg-surface text-ink-faint hover:text-ink transition-colors cursor-pointer shadow-2xs"
             aria-label={formCollapsed ? 'Mở rộng form' : 'Thu gọn form'}
           >
             {formCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -127,7 +128,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                   required
                   value={inputCustomerId}
                   onChange={e => setInputCustomerId(e.target.value ? Number(e.target.value) : '')}
-                  className={`w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
+                  className={`w-full rounded-[var(--r-control)] p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
                 >
                   <option value="">-- Chọn Khách hàng --</option>
                   {customers.map(c => (
@@ -146,7 +147,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                   value={inputAssetCode}
                   onChange={e => setInputAssetCode(e.target.value)}
                   placeholder="GCN-2026-001..."
-                  className={`w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
+                  className={`w-full rounded-[var(--r-control)] p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
                 />
               </div>
               <div>
@@ -161,7 +162,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                     setInputAssetType(newType);
                     setInputLtvPercent(String(defaultLtvForAssetType(newType)));
                   }}
-                  className={`w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
+                  className={`w-full rounded-[var(--r-control)] p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
                 >
                   {COLLATERAL_ASSET_TYPES.map(t => (
                     <option key={t.value} value={t.value}>{t.label}</option>
@@ -187,7 +188,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                   value={inputAddress}
                   onChange={e => setInputAddress(e.target.value)}
                   placeholder="123 Nguyễn Huệ, Phường Bến Nghé, Quận 1, TP.HCM..."
-                  className={`w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
+                  className={`w-full rounded-[var(--r-control)] p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
                 />
               </div>
               <div>
@@ -200,7 +201,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                   value={inputAppraisedValue}
                   onChange={e => setInputAppraisedValue(e.target.value)}
                   placeholder="3.000.000.000..."
-                  className={`w-full rounded-xl p-2.5 font-mono font-bold text-pos border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
+                  className={`w-full rounded-[var(--r-control)] p-2.5 font-mono font-bold text-pos border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
                 />
               </div>
               <div>
@@ -215,7 +216,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                   required
                   value={inputLtvPercent}
                   onChange={e => setInputLtvPercent(e.target.value)}
-                  className={`w-full rounded-xl p-2.5 font-mono font-bold text-accent border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
+                  className={`w-full rounded-[var(--r-control)] p-2.5 font-mono font-bold text-accent border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
                 />
               </div>
             </div>
@@ -235,7 +236,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                 <DateInput
                   value={inputAppraisalDate}
                   onChange={val => setInputAppraisalDate(val)}
-                  className={`w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
+                  className={`w-full rounded-[var(--r-control)] p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
                 />
               </div>
               <div>
@@ -248,16 +249,15 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
                   max={120}
                   value={inputAppraisalTenorMonths}
                   onChange={e => setInputAppraisalTenorMonths(Number(e.target.value) || 12)}
-                  className={`w-full rounded-xl p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
+                  className={`w-full rounded-[var(--r-control)] p-2.5 border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
                 />
               </div>
             </div>
           </div>
 
-          {/* Live Simulator Card */}
-          <div className="p-4 rounded-2xl border border-accent/30 bg-accent-soft/20 backdrop-blur-md shadow-xs flex flex-wrap items-center justify-between gap-4">
+          <div className="py-3 border-y border-line flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-accent-soft text-accent shrink-0">
+              <div className="p-2 rounded-[var(--r-control)] bg-accent-soft text-accent shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
@@ -285,7 +285,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-accent hover:opacity-95 disabled:opacity-60 text-accent-ink font-bold py-2.5 px-4 rounded-xl transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-accent/25 active:scale-98"
+              className="flex-1 bg-accent hover:opacity-95 disabled:opacity-60 text-accent-ink font-bold py-2.5 px-4 rounded-[var(--r-control)] transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-accent/25 active:scale-98"
             >
               {selectedCollateral ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               <span>
@@ -300,7 +300,7 @@ export const CollateralForm: React.FC<CollateralFormProps> = ({
               <button
                 type="button"
                 onClick={handleReset}
-                className="bg-surface hover:bg-surface/80 border border-line/70 text-ink-muted hover:text-ink font-bold py-2.5 px-4 rounded-xl transition-colors cursor-pointer shadow-2xs"
+                className="bg-surface hover:bg-surface/80 border border-line/70 text-ink-muted hover:text-ink font-bold py-2.5 px-4 rounded-[var(--r-control)] transition-colors cursor-pointer shadow-2xs"
               >
                 Hủy
               </button>

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router';
 import { useTheme } from '../context/ThemeContext';
 import {
-  Sun, Moon, Menu, X, LogOut, ShieldCheck, User, Search, Sparkles,
+  Sun, Moon, Menu, X, LogOut, ShieldCheck, User, Search,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { useAuth } from '../context/AuthContext';
@@ -15,12 +15,11 @@ import { UserScopeSelector } from './common/UserScopeSelector';
 interface HeaderProps {
   onToggleMobileMenu?: () => void;
   onOpenCommandPalette?: () => void;
-  onOpenAiChat?: () => void;
   isMobileMenuOpen?: boolean;
   showUserScope?: boolean;
 }
 
-export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPalette, onOpenAiChat, isMobileMenuOpen = false, showUserScope = true }) => {
+export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPalette, isMobileMenuOpen = false, showUserScope = true }) => {
   const { theme, toggleTheme } = useTheme();
   const { user, role, fullName, isAdmin, signOut } = useAuth();
   const { lang, setLang, t } = useLang();
@@ -131,19 +130,6 @@ export const Header = memo<HeaderProps>(({ onToggleMobileMenu, onOpenCommandPale
 
         {/* Bộ chọn tài khoản quản trị dữ liệu theo User (chỉ hiển thị cho Admin) */}
         {showUserScope && <UserScopeSelector className="hidden sm:block" />}
-
-        {/* Nút Kích hoạt Trợ lý AI Tín dụng & Văn thư */}
-        {onOpenAiChat && (
-          <button
-            type="button"
-            onClick={onOpenAiChat}
-            className={`${ghostButton} text-teal-600 dark:text-teal-400 hover:text-teal-700 hover:bg-teal-500/10`}
-            title="Mở Trợ lý AI Tín dụng & Văn thư"
-            aria-label="Trợ lý AI Tín dụng & Văn thư"
-          >
-            <Sparkles className="w-4 h-4" />
-          </button>
-        )}
 
         {/* Chấm Trực Tuyến Live Pulse */}
         <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-xl bg-surface/50 border border-line/50 text-xs">

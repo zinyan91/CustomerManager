@@ -315,6 +315,7 @@ export function FloatingAiAssistantButton({ onClick }: { onClick: () => void }) 
     <button
       type="button"
       onClick={onClick}
+      aria-label="Trợ lý AI"
       className="fixed bottom-5 right-5 z-40 p-3 bg-slate-900 hover:bg-slate-800 text-white rounded-full shadow-lg border border-slate-700 transition-transform hover:scale-105 active:scale-95 flex items-center gap-2 group cursor-pointer"
       title="Mở Trợ lý AI Tín dụng & Quản lý văn thư"
     >

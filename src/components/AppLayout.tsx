@@ -24,16 +24,19 @@ function AppLayoutContent() {
   const { ready, scopeKey } = useUserScope();
   const location = useLocation();
   const section = workspaceSectionOfPath(location.pathname);
+  const screenId = workspaceItemOfPath(location.pathname)?.screenId;
+  const hasContextualAi = ['dispatches', 'storage', 'corporate-financial'].includes(screenId ?? '');
   const directWorkspace = section === 'dispatch' || section === 'storage';
   const replacesSidebar = section === 'documents' || directWorkspace;
   const continuousWorkspace = ['retail','dispatch','storage','documents','reference','finance','admin'].includes(section ?? '')
-    || ['customers', 'credit-contracts', 'disbursement', 'loans'].includes(workspaceItemOfPath(location.pathname)?.screenId ?? '')
+    || ['customers', 'credit-contracts', 'disbursement', 'loans', 'collaterals'].includes(screenId ?? '')
     || ['/hub/reports','/tools/reports'].includes(location.pathname.replace(/\/+$/,''));
   const flushReport = ['/team-kpi','/loan-progress','/dispatches','/storage'].includes(location.pathname.replace(/\/+$/,''));
   const { isSidebarCollapsed } = useSidebarCollapse();
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsAiDialogOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -86,7 +89,6 @@ function AppLayoutContent() {
         isMobileMenuOpen={isMobileMenuOpen}
         onToggleMobileMenu={handleToggleMobileMenu}
         onOpenCommandPalette={handleOpenCommandPalette}
-        onOpenAiChat={() => setIsAiDialogOpen(true)}
       />
 
       <PrimaryRail isMasterAdmin={isMasterAdmin} />
@@ -125,15 +127,16 @@ function AppLayoutContent() {
         isMasterAdmin={isMasterAdmin}
       />
 
-      {/* Nút tròn nổi mở Trợ lý AI ở góc màn hình */}
-      <FloatingAiAssistantButton onClick={() => setIsAiDialogOpen(true)} />
-
-      {/* Cửa sổ Trợ lý AI */}
-      <AiChatDialog
-        isOpen={isAiDialogOpen}
-        onClose={() => setIsAiDialogOpen(false)}
-        mode="drawer"
-      />
+      {!hasContextualAi && (
+        <>
+          {!isAiDialogOpen && <FloatingAiAssistantButton onClick={() => setIsAiDialogOpen(true)} />}
+          <AiChatDialog
+            isOpen={isAiDialogOpen}
+            onClose={() => setIsAiDialogOpen(false)}
+            mode="drawer"
+          />
+        </>
+      )}
     </div>
   );
 }

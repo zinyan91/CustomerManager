@@ -51,9 +51,9 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
   const pageTotalMaxLoan = paginatedCollaterals.reduce((sum, c) => sum + maxLoanFromCollateral(c), 0);
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-line/65 bg-panel/85 backdrop-blur-xl shadow-xs specular-card animate-in fade-in duration-150">
+    <div data-workspace-panel className="bg-panel border-b border-line">
       {/* Table Header Bar */}
-      <div className="p-3.5 sm:p-4 border-b border-line/60 bg-surface/75 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+      <div className="px-4 py-3 border-b border-line bg-surface/50 flex flex-wrap items-center justify-between gap-3">
         <span className="font-bold flex items-center space-x-2 text-xs text-ink">
           <div className="p-1.5 rounded-lg bg-accent-soft text-accent shrink-0 shadow-2xs">
             <Building2 className="w-4 h-4" />

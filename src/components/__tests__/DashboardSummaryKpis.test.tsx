@@ -42,11 +42,11 @@ describe('DashboardSummaryKpis — năm ô, mỗi ô một đại lượng', () 
     }
   });
 
-  it('thẻ tín dụng là ô riêng: số thẻ là con số lớn, hạn mức thẻ là dòng dưới', () => {
+  it('thẻ tín dụng giữ số thẻ và đơn vị, bỏ dòng hạn mức', () => {
     dung();
     expect(screen.getByText('7')).toBeTruthy();
     expect(screen.getByText('thẻ')).toBeTruthy();
-    expect(screen.getByText(/Hạn mức đã cấp: 250000000 VNĐ/)).toBeTruthy();
+    expect(screen.queryByText(/Hạn mức đã cấp:/)).toBeNull();
   });
 
   it('ô khách hàng KHÔNG còn mang số thẻ', () => {
@@ -54,9 +54,14 @@ describe('DashboardSummaryKpis — năm ô, mỗi ô một đại lượng', () 
     expect(screen.queryByText(/Thẻ tín dụng: 7/)).toBeNull();
   });
 
-  it('dòng dưới ô khách hàng dẫn xuất từ chính con số lớn', () => {
+  it('bỏ năm dòng phụ và giữ các số KPI chính', () => {
     dung();
-    expect(screen.getByText(/38 khách hàng có dư nợ/)).toBeTruthy();
+    for (const text of [/Trong đó/, /Tổng hạn mức cấp:/, /LTV bình quân:/, /Hạn mức đã cấp:/, /Cần theo dõi & xử lý ngay/]) {
+      expect(screen.queryByText(text)).toBeNull();
+    }
+    for (const text of ['50', '81000000000 VNĐ', '120000000000 VNĐ', '7', '72']) {
+      expect(screen.getByText(text)).toBeTruthy();
+    }
   });
 
   it('mỗi ô mang một sắc định danh riêng, không ô nào trùng ô nào', () => {

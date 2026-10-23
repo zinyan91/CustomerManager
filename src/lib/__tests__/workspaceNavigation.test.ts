@@ -37,13 +37,13 @@ describe('workspace navigation', () => {
 
   it.each([
     ['/tools/business-plan', 'finance'], ['/tools/calculators', 'finance'],
-    ['/tools/rate-quote', 'finance'], ['/tools/inventory', 'retail'],
+    ['/tools/rate-quote', 'reference'], ['/tools/inventory', 'retail'],
     ['/hub/estimate', 'retail'], ['/hub/toi', 'finance'],
     ['/hub/corporate-financial', 'finance'], ['/hub/documents', 'documents'],
     ['/office/calc/123', 'overview'], ['/office/writer/shared/abc', 'overview'],
     ['/dispatches', 'dispatch'], ['/storage', 'storage'],
     ['/customers/55/loans/12/schedule', 'credit'], ['/customers/55/profile', 'credit'],
-    ['/reference/quiz/', 'reference'], ['/tools/cost-of-funds', 'finance'],
+    ['/reference/quiz/', 'reference'], ['/tools/cost-of-funds', 'reference'],
     ['/dashboard', 'overview'], ['/settings', 'system'], ['/admin/users', 'admin'],
     ['/admin/users/u1', 'admin'], ['/admin/teams', 'admin'], ['/admin/kpi', 'admin'],
     ['/admin/storage', 'admin'], ['/admin/transfer', 'admin'],
@@ -68,14 +68,15 @@ describe('workspace navigation', () => {
   });
 
   it('uses the actual allowed task path, including special TOI and estimate permissions', () => {
-    const rates = visibleWorkspaceSections(['rates'], false).find(section => section.id === 'finance')!;
-    expect(rates.items.map(item => item.id)).toEqual(['toi', 'rate-quote', 'cof']);
+    const rates = visibleWorkspaceSections(['rates'], false);
+    expect(rates.find(section => section.id === 'finance')?.items.map(item => item.id)).toEqual(['toi']);
+    expect(rates.find(section => section.id === 'reference')?.items.map(item => item.id)).toEqual(['rate-quote', 'cof']);
     expect(visibleWorkspaceSections(['dispatch'], false).map(section => section.id)).toEqual(['dispatch', 'system']);
     expect(visibleWorkspaceSections(['dispatch'], false).find(section => section.id === 'dispatch')?.items.map(item => item.id)).toEqual(['dispatches']);
   });
   it('distributes catalog tools once and keeps Reference limited to lookups',()=>{
     const sections=visibleWorkspaceSections(MODULE_IDS,false);
-    expect(sections.find(section=>section.id==='reference')?.items.map(item=>item.id)).toEqual(['mdsdv','card-policies','quiz-bank']);
+    expect(sections.find(section=>section.id==='reference')?.items.map(item=>item.id)).toEqual(['mdsdv','card-policies','rate-quote','cof','quiz-bank']);
     expect(sections.find(section=>section.id==='overview')?.items.some(item=>item.id==='reports')).toBe(true);
     expect(sections.find(section=>section.id==='finance')?.items.some(item=>item.id==='reports')).toBe(false);
     expect(workspaceSectionOfPath('/hub/reports')).toBe('overview');

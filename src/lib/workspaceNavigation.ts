@@ -9,12 +9,12 @@ import { ADMIN_NAV } from './adminNav';
 export const WORKSPACE_SECTIONS = [
   { id: 'overview', label: 'Tổng quan', items: ['dashboard', 'team-kpi', 'loan-progress', 'office', 'reports'] },
   { id: 'credit', label: 'Tín dụng', items: ['customers', 'credit-contracts', 'collaterals', 'mortgage-contracts', 'disbursement', 'loans', 'credit-cards', 'post-loan'] },
-  { id: 'finance', label: 'Phân tích', items: ['business-plan', 'corporate-financial', 'toi', 'calculators', 'rate-quote', 'cof'] },
+  { id: 'finance', label: 'Phân tích', items: ['business-plan', 'corporate-financial', 'toi', 'calculators'] },
   { id: 'documents', label: 'Hồ sơ chứng từ', items: ['templates'] },
   { id: 'dispatch', label: 'Quản lý văn thư', items: ['dispatches'] },
   { id: 'storage', label: 'Kho lưu trữ', items: ['storage'] },
   { id: 'retail', label: 'Dự toán', items: ['inventory', 'estimate', 'shopping-checklist', 'retail-invoice', 'purchase-statement'] },
-  { id: 'reference', label: 'Tra cứu', items: ['mdsdv', 'card-policies', 'quiz-bank'] },
+  { id: 'reference', label: 'Tra cứu', items: ['mdsdv', 'card-policies', 'rate-quote', 'cof', 'quiz-bank'] },
   { id: 'admin', label: 'Quản trị', items: ['admin', ...ADMIN_NAV.filter(item => item.id !== 'overview').map(item => `admin-${item.id}`)] },
   { id: 'system', label: 'Cài đặt', items: ['settings'] },
 ] as const;

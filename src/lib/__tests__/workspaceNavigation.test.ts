@@ -12,12 +12,15 @@ describe('workspace navigation', () => {
     expect(workspaceSectionOfPath('/team-kpi')).toBe('overview');
     expect(workspaceSectionOfPath('/dashboard')).toBe('overview');
     const overview = visibleWorkspaceSections(['credit'], false).find(section => section.id === 'overview')!;
-    expect(overview.items.map(item => item.id)).toEqual(['dashboard', 'team-kpi', 'loan-progress', 'reports']);
+    expect(overview.items.map(item => item.id)).toEqual(['dashboard', 'team-kpi', 'kpi-forecast', 'loan-progress', 'reports']);
     expect(workspaceItemPath(overview.items[1], 55)).toBe('/team-kpi');
-    expect(workspaceItemPath(overview.items[2], 55)).toBe('/loan-progress');
+    expect(workspaceItemPath(overview.items[2], 55)).toBe('/kpi-forecast');
+    expect(workspaceItemPath(overview.items[3], 55)).toBe('/loan-progress');
     expect(workspaceSectionOfPath('/loan-progress')).toBe('overview');
+    expect(workspaceSectionOfPath('/kpi-forecast')).toBe('overview');
     expect(canOpenPath(['dispatch'], '/loan-progress')).toBe(false);
     expect(canOpenPath(['dispatch'], '/team-kpi')).toBe(false);
+    expect(canOpenPath(['dispatch'], '/kpi-forecast')).toBe(false);
     expect(visibleWorkspaceSections(['dispatch'], false).flatMap(section => section.items).some(item => item.id === 'team-kpi')).toBe(false);
     vi.stubEnv('DEV', false);
     try {

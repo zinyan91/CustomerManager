@@ -90,7 +90,7 @@ describe('workspace shell navigation', () => {
     const rail = screen.getByRole('navigation', { name: 'Phân hệ' });
     expect(within(rail).queryByRole('link', { name: 'Team & KPI' })).toBeNull();
     const sidebar = document.querySelector('#app-sidebar') as HTMLElement;
-    expect(within(sidebar).getAllByRole('link').map(link => link.textContent)).toEqual(['Tổng quan', 'Team & KPI', 'Báo cáo tiến độ', 'Báo cáo', 'Báo cáo Excel']);
+    expect(within(sidebar).getAllByRole('link').map(link => link.textContent)).toEqual(['Tổng quan', 'Team & KPI', 'Dự báo KPI', 'Báo cáo tiến độ', 'Báo cáo', 'Báo cáo Excel']);
     expect(within(sidebar).getByRole('link',{name:'Báo cáo'}).getAttribute('href')).toBe('/office');
     fireEvent.click(within(sidebar).getByRole('link',{name:'Báo cáo Excel'}));
     expect(screen.getByTestId('destination').textContent).toBe('/hub/reports');
@@ -102,6 +102,9 @@ describe('workspace shell navigation', () => {
     expect(screen.getByTestId('destination').textContent).toBe('/team-kpi');
     expect(within(rail).getByRole('link', { name: 'Tổng quan' }).getAttribute('aria-current')).toBe('page');
     expect(document.querySelector('#app-sidebar [aria-current="page"]')?.getAttribute('href')).toBe('/team-kpi');
+    fireEvent.click(within(sidebar).getByRole('link', { name: 'Dự báo KPI' }));
+    expect(screen.getByTestId('destination').textContent).toBe('/kpi-forecast');
+    expect(document.querySelector('#app-sidebar [aria-current="page"]')?.getAttribute('href')).toBe('/kpi-forecast');
     fireEvent.click(within(sidebar).getByRole('link', { name: 'Báo cáo tiến độ' }));
     expect(screen.getByTestId('destination').textContent).toBe('/loan-progress');
     expect(within(rail).queryByRole('link', { name: 'Báo cáo tiến độ' })).toBeNull();

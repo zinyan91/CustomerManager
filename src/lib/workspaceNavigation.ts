@@ -3,11 +3,11 @@ import { HUB_TASKS } from './hubTasks';
 import { canOpenPath, type ModuleId } from './modules';
 import { parseCustomerPath, screenPathFor } from './customerRoutes';
 import { screenIdOfPath } from './routes';
-import { ClipboardList, UsersRound } from 'lucide-react';
+import { Calculator, ClipboardList, UsersRound } from 'lucide-react';
 import { ADMIN_NAV } from './adminNav';
 
 export const WORKSPACE_SECTIONS = [
-  { id: 'overview', label: 'Tổng quan', items: ['dashboard', 'team-kpi', 'loan-progress', 'office', 'reports'] },
+  { id: 'overview', label: 'Tổng quan', items: ['dashboard', 'team-kpi', 'kpi-forecast', 'loan-progress', 'office', 'reports'] },
   { id: 'credit', label: 'Tín dụng', items: ['customers', 'credit-contracts', 'collaterals', 'mortgage-contracts', 'disbursement', 'loans', 'credit-cards', 'post-loan'] },
   { id: 'finance', label: 'Phân tích', items: ['business-plan', 'corporate-financial', 'toi', 'calculators'] },
   { id: 'documents', label: 'Hồ sơ chứng từ', items: ['templates'] },
@@ -43,6 +43,11 @@ const WORKSPACE_ITEMS: WorkspaceItem[] = [
   {
     id: 'team-kpi', screenId: 'dashboard' as const, path: '/team-kpi',
     icon: UsersRound, label: 'Team & KPI', keywords: ['team', 'kpi', 'leader', 'RBO', 'SRBO'],
+    task: true,
+  },
+  {
+    id: 'kpi-forecast', screenId: 'dashboard' as const, path: '/kpi-forecast',
+    icon: Calculator, label: 'Dự báo KPI', keywords: ['dự báo', 'kpi', 'RBO', 'CSO', 'thưởng'],
     task: true,
   },
   ...NAV_ITEMS.map(item => ({

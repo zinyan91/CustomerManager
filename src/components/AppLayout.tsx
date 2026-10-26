@@ -31,7 +31,7 @@ function AppLayoutContent() {
   const continuousWorkspace = ['retail','dispatch','storage','documents','reference','finance','admin'].includes(section ?? '')
     || ['customers', 'credit-contracts', 'disbursement', 'loans', 'collaterals'].includes(screenId ?? '')
     || ['/hub/reports','/tools/reports'].includes(location.pathname.replace(/\/+$/,''));
-  const flushReport = ['/team-kpi','/loan-progress','/dispatches','/storage'].includes(location.pathname.replace(/\/+$/,''));
+  const flushReport = ['/team-kpi','/kpi-forecast','/loan-progress','/dispatches','/storage'].includes(location.pathname.replace(/\/+$/,''));
   const { isSidebarCollapsed } = useSidebarCollapse();
 
   useEffect(() => {

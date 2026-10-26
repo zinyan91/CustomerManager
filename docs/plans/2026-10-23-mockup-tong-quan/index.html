@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tổng quan · Felix Quản lý khách hàng (mockup)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="ban-lam-viec">
+<div class="app">
+  <aside class="nav" aria-label="Điều hướng"></aside>
+
+  <div class="phonebar"></div>
+
+  <main class="canvas">
+    <div class="title-row">
+      <h1>Bàn làm việc</h1>
+      <div class="actions">
+        <span class="stamp" id="stamp"></span>
+        <button class="btn icon secondary" type="button" aria-label="Làm mới" data-icon="refresh"></button>
+        <button class="btn secondary" type="button" data-icon="plus">Thêm khách hàng</button>
+        <button class="btn primary" type="button" data-icon="plus">Lập khế ước</button>
+      </div>
+    </div>
+
+    <section class="kpis" id="kpis" aria-label="Chỉ số danh mục"></section>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="h-work">
+        <div class="card-head">
+          <h2 id="h-work">Việc cần xử lý</h2>
+          <span class="meta" id="window"></span>
+        </div>
+        <div class="tabs" role="tablist" id="tabs"></div>
+        <div id="panel"></div>
+      </section>
+
+      <div class="side">
+        <section class="card" aria-labelledby="h-group">
+          <div class="card-head"><h2 id="h-group">Dư nợ theo nhóm nợ</h2><span class="meta">Nhóm hiệu lực</span></div>
+          <div class="card-body" id="groups"></div>
+        </section>
+        <section class="card" aria-labelledby="h-method">
+          <div class="card-head"><h2 id="h-method">Dư nợ theo phương thức vay</h2></div>
+          <div class="card-body" id="methods"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="data.js"></script>
+<script src="common.js"></script>
+<script src="ban-lam-viec.js"></script>
+</body>
+</html>

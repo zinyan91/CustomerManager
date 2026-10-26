@@ -262,6 +262,28 @@ h3, h4, h5, h6 {
   font-family: var(--app-font);
 }
 
+.kpi-forecast-number-input,
+.kpi-forecast-value {
+  background: color-mix(in srgb, var(--color-accent-soft) 70%, var(--color-panel));
+  border-color: color-mix(in srgb, var(--color-accent) 35%, var(--color-line));
+}
+
+.kpi-forecast-number-input:hover {
+  background: color-mix(in srgb, var(--color-accent-soft) 90%, var(--color-panel));
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-line));
+}
+
+.kpi-forecast-number-input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.kpi-forecast-number-input[type='number']::-webkit-inner-spin-button,
+.kpi-forecast-number-input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
 /* Số cỡ lớn phải khai ở đây, sau .font-mono. Lớp tiện dụng cỡ chữ của
    Tailwind cùng độ đặc hiệu với .font-mono nên thua theo thứ tự nguồn —
    viết text-[calc(...)] thẳng trong component sẽ bị ép về --fs-mono. */

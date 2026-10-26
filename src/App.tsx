@@ -7,6 +7,7 @@ import { ROUTE_OF, DEFAULT_ROUTE } from './lib/routes';
 
 const DashboardView = lazy(() => import('./components/views/DashboardView').then(m => ({ default: m.DashboardView })));
 const TeamKpiView = lazy(() => import('./components/views/TeamKpiView').then(m => ({ default: m.TeamKpiView })));
+const KpiForecastView = lazy(() => import('./components/views/KpiForecastView').then(m => ({ default: m.KpiForecastView })));
 const LoanProgressView = lazy(() => import('./components/views/LoanProgressView').then(m => ({ default: m.LoanProgressView })));
 const CustomerListView = lazy(() => import('./components/views/CustomerListView').then(m => ({ default: m.CustomerListView })));
 const DisbursementPayeeListView = lazy(() => import('./components/views/DisbursementPayeeListView').then(m => ({ default: m.DisbursementPayeeListView })));
@@ -94,6 +95,7 @@ export function App() {
         <Route index element={<Navigate to={DEFAULT_ROUTE} replace />} />
         <Route path={ROUTE_OF.dashboard} element={<Suspense fallback={<ViewSkeleton />}><DashboardView /></Suspense>} />
         <Route path="/team-kpi" element={<Suspense fallback={<ViewSkeleton />}><TeamKpiView /></Suspense>} />
+        <Route path="/kpi-forecast" element={<Suspense fallback={<ViewSkeleton />}><KpiForecastView /></Suspense>} />
         <Route path="/loan-progress" element={<Suspense fallback={<ViewSkeleton />}><LoanProgressView /></Suspense>} />
         <Route path={ROUTE_OF.customers} element={<Suspense fallback={<ViewSkeleton />}><CustomerListView /></Suspense>} />
         <Route path={ROUTE_OF.disbursement} element={<Navigate to="/hub/disbursement" replace />} />

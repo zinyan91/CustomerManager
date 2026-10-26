@@ -137,7 +137,7 @@ export function canUseHubTask(allowed: readonly ModuleId[], task: Pick<HubTaskIt
 /** Đường dẫn không thuộc màn hay tác vụ nào do bộ định tuyến xử lý (trang không tồn tại). */
 export function canOpenPath(allowed: readonly ModuleId[], pathname: string): boolean {
   const clean = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
-  if (clean === '/team-kpi' || clean === '/loan-progress') return allowed.includes('credit');
+  if (clean === '/team-kpi' || clean === '/kpi-forecast' || clean === '/loan-progress') return allowed.includes('credit');
   const task = HUB_TASKS.find((t) => t.path === clean);
   if (task) return canUseHubTask(allowed, task);
   const customer = parseCustomerPath(clean);

@@ -40,6 +40,7 @@ export interface Collateral {
   AppraisalTenorMonths?: number | null;
   AppraisalExpiryDate?: string | null;
   Note?: string | null;
+  MovedToSavingsBookId?: number | null;
   customer?: Customer;
 }
 
@@ -105,6 +106,7 @@ export interface CreditContract {
   CreatedAt?: string;
 
   customer?: Customer;
+  MovedToPledgeLoanId?: number | null;
 }
 
 export interface LoanContract {
@@ -163,6 +165,7 @@ export interface LoanContract {
   PrincipalPenaltyMultiplier?: number | null;
   RateHistory?: RateAdjustmentHistoryItem[] | string | null;
   contractCollaterals?: ContractCollateral[];
+  MovedToPledgeLoanId?: number | null;
 }
 
 export interface RepaymentSchedule {
@@ -255,3 +258,5 @@ export interface CardSupplementaryHolder {
   RelationNote?: string | null;
   NationalId?: string | null;
 }
+
+export * from './savingsPledge';

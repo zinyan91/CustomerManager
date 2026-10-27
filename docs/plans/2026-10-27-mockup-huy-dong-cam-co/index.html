@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Huy động &amp; Cầm cố — mockup</title>
+<style>
+:root {
+  --surface: #F3F5F8; --panel: #FFFFFF; --panel-muted: #E6ECF5;
+  --line: #C4D1E3; --line-soft: #E1E8F1; --line-strong: #8EA7C5;
+  --ink: #0A192F; --ink-muted: #2A3F5A; --ink-faint: #4C6482;
+  --accent: #004CB8; --accent-ink: #FFFFFF; --accent-soft: #E5EEF9;
+  --pos: #047653; --pos-soft: #D1FAE5; --neg: #CA2121; --neg-soft: #FEE2E2;
+  --warn: #9D5604; --warn-soft: #FEF3C7;
+  --kpi-cust: #5B3BA2; --kpi-collateral: #0F6B76;
+  --r-panel: 12px; --r-control: 6px;
+  --font: "Segoe UI", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 var(--font); color: var(--ink); background: var(--surface); }
+.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.shell { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+.rail { border-right: 1px solid var(--line); background: var(--surface); padding: 16px 10px; }
+.brand { font-weight: 700; font-size: 15px; padding: 4px 10px 16px; }
+.rail-group { font-size: 12px; color: var(--ink-faint); padding: 14px 10px 4px; }
+.rail a { display: block; padding: 6px 10px; border-radius: 8px; color: var(--ink-muted); text-decoration: none; }
+.rail a:hover { background: var(--panel-muted); }
+.rail a[aria-current] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+main { background: var(--panel); padding: 20px 28px 40px; min-width: 0; }
+.ctx { display: flex; align-items: center; gap: 16px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); margin-bottom: 18px; }
+.ctx b { font-size: 15px; }
+.ctx span { color: var(--ink-muted); }
+.ctx button { margin-left: auto; }
+
+.titlebar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+h1 { font-size: 22px; margin: 0; font-weight: 700; }
+.titlebar .actions { margin-left: auto; display: flex; gap: 8px; }
+.btn { height: 34px; padding: 0 14px; border-radius: var(--r-control); border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+.btn:hover { border-color: var(--line-strong); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.primary:hover { background: #003E96; }
+.btn.danger { color: var(--neg); border-color: #E7A3A3; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+.tab { border: 0; background: none; padding: 8px 14px; border-radius: 8px 8px 0 0; color: var(--ink-muted); font-weight: 600; }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.tab .count { font-weight: 400; margin-left: 4px; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+.kpi { --hue: var(--accent); border-radius: var(--r-panel); padding: 12px 16px;
+  background: color-mix(in srgb, var(--hue) 3%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--hue) 55%, var(--line));
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--hue) 12%, transparent), 0 4px 12px color-mix(in srgb, var(--hue) 24%, transparent); }
+.kpi[data-metric-tone="collateral"] { --hue: var(--kpi-collateral); }
+.kpi[data-metric-tone="warn"] { --hue: var(--warn); }
+.kpi[data-metric-tone="pos"] { --hue: var(--pos); }
+.kpi .label { color: var(--ink-muted); font-weight: 500; font-size: 13px; }
+.kpi .value { font-size: 24px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.kpi .value small { font-size: 13px; color: var(--ink-faint); font-weight: 400; }
+.kpi .sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+
+.split { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
+table { width: 100%; border-collapse: collapse; }
+th { font-size: 12px; font-weight: 600; color: var(--ink-muted); text-align: left; padding: 8px 10px;
+  background: color-mix(in srgb, var(--panel-muted) 60%, var(--panel)); border-bottom: 1px solid var(--line); white-space: nowrap; }
+th.num { text-align: right; }
+td { padding: 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--accent-soft); }
+tbody tr[aria-selected="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+tbody tr.closed td { color: var(--ink-faint); }
+.id { font-weight: 600; white-space: nowrap; }
+.subline { font-size: 12px; color: var(--ink-faint); }
+.table-wrap { border: 1px solid var(--line); border-radius: 8px; overflow: auto; }
+
+.pill { display: inline-block; flex: none; white-space: nowrap; font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 999px; }
+.pill.pos { background: var(--pos-soft); color: #04402D; }
+.pill.warn { background: var(--warn-soft); color: #6B3A03; }
+.pill.neg { background: var(--neg-soft); color: #8A1616; }
+.pill.mute { background: var(--panel-muted); color: var(--ink-muted); }
+.pill.acc { background: var(--accent-soft); color: var(--accent); }
+
+.detail { border: 1px solid var(--line); border-radius: 8px; padding: 16px; position: sticky; top: 16px; }
+.detail h2 { font-size: 16px; margin: 0 0 2px; }
+.detail h3 { font-size: 13px; margin: 18px 0 6px; color: var(--ink-muted); font-weight: 600; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin-top: 12px; }
+.kv dt { color: var(--ink-muted); }
+.kv dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.kv .total { font-weight: 700; border-top: 1px solid var(--line); padding-top: 4px; }
+.bar { height: 8px; border-radius: 4px; background: var(--panel-muted); overflow: hidden; margin: 6px 0 2px; }
+.bar > i { display: block; height: 100%; background: var(--kpi-collateral); }
+.bar.over > i { background: var(--neg); }
+.bar-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-faint); }
+.links { margin: 0; padding: 0; list-style: none; }
+.links li { display: flex; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line-soft); }
+.links li:last-child { border-bottom: 0; }
+.links a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.detail .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.note-warn { margin-top: 10px; padding: 8px 10px; border-radius: 6px; background: var(--warn-soft); color: #6B3A03; font-size: 13px; }
+
+dialog { border: 1px solid var(--line); border-radius: 12px; padding: 0; width: min(640px, 94vw); color: var(--ink); box-shadow: 0 12px 40px rgba(10,25,47,.25); }
+dialog::backdrop { background: rgba(10,25,47,.35); }
+.dlg-head { display: flex; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.dlg-head h2 { font-size: 16px; margin: 0; }
+.dlg-head button { margin-left: auto; border: 0; background: none; font-size: 20px; color: var(--ink-muted); }
+.dlg-body { padding: 16px 18px; }
+.opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.opt { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.opt b { display: block; }
+.opt span { font-size: 12px; color: var(--ink-muted); }
+.fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+label.f { display: block; font-weight: 500; font-size: 13px; }
+label.f input, label.f select { display: block; width: 100%; margin-top: 6px; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-control); font: inherit; font-variant-numeric: tabular-nums; }
+label.f input:disabled { background: var(--surface); color: var(--ink-faint); }
+.calc { width: 100%; border: 1px solid var(--line); border-radius: 8px; }
+.calc td { border-bottom: 1px solid var(--line-soft); padding: 7px 10px; cursor: default; }
+.calc tr:hover { background: none; }
+.calc tr.sum td { font-weight: 700; border-bottom: 0; border-top: 1px solid var(--line); }
+.dlg-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--line); }
+
+@media (max-width: 1180px) { .split { grid-template-columns: 1fr; } .detail { position: static; } }
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; } .rail { display: none; }
+  .kpis { grid-template-columns: 1fr 1fr; }
+  main { padding: 16px; }
+  .fields, .opts { grid-template-columns: 1fr; }
+  .ctx { flex-wrap: wrap; }
+  .titlebar { flex-wrap: wrap; } .titlebar .actions { margin-left: 0; }
+  .hide-sm { display: none; }
+  .table-wrap table { min-width: 780px; }
+  .kpi .value { font-size: 20px; }
+}
+@media (prefers-reduced-motion: no-preference) { tbody tr { transition: background-color .12s; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="rail" aria-label="Phân hệ">
+    <div class="brand">CustomerManager</div>
+    <div class="rail-group">Khách hàng</div>
+    <a href="#">Danh sách khách hàng</a>
+    <div class="rail-group">Tín dụng</div>
+    <a href="#">Hợp đồng tín dụng</a>
+    <a href="#">Tài sản bảo đảm</a>
+    <a href="#">Hợp đồng thế chấp</a>
+    <a href="#" aria-current="page">Huy động &amp; Cầm cố</a>
+    <a href="#">Thẻ tín dụng</a>
+    <div class="rail-group">Tra cứu</div>
+    <a href="#">Chào lãi suất</a>
+    <a href="#">Mua bán vốn</a>
+  </nav>
+
+  <main>
+    <div class="ctx">
+      <b>Trần Thị Minh Hạnh</b>
+      <span>CIF 1002345678</span>
+      <span class="hide-sm">CCCD 079188004512</span>
+      <button class="btn">Đổi khách hàng</button>
+    </div>
+
+    <div class="titlebar">
+      <h1>Huy động &amp; Cầm cố</h1>
+      <div class="actions">
+        <button class="btn" id="btnNewSavings">Thêm sổ tiết kiệm</button>
+        <button class="btn primary" id="btnNewLoan">Tạo khoản vay cầm cố</button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="savings">Sổ tiết kiệm<span class="count" id="cntSavings"></span></button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="loans">Khoản vay cầm cố<span class="count" id="cntLoans"></span></button>
+    </div>
+
+    <section id="paneSavings">
+      <div class="kpis" id="kpiSavings"></div>
+      <div class="split">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Số sổ</th><th class="num">Số tiền gửi</th><th class="num">Lãi suất</th>
+              <th>Ngày gửi → đáo hạn</th><th class="num">Còn trống để cầm cố</th><th>Trạng thái</th>
+            </tr></thead>
+            <tbody id="tblSavings"></tbody>
+          </table>
+        </div>
+        <aside class="detail" id="detailSavings" aria-live="polite"></aside>
+      </div>
+    </section>
+
+    <section id="paneLoans" hidden>
+      <div class="kpis" id="kpiLoans"></div>
+      <div class="split">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Số HĐ cầm cố</th><th class="num">Dư nợ gốc</th><th class="num">Lãi suất</th>
+              <th>Giải ngân → đến hạn</th><th class="num">Lãi đến hôm nay</th><th>Trạng thái</th>
+            </tr></thead>
+            <tbody id="tblLoans"></tbody>
+          </table>
+        </div>
+        <aside class="detail" id="detailLoans" aria-live="polite"></aside>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="dlgRepay" aria-labelledby="dlgTitle">
+  <form method="dialog">
+    <div class="dlg-head"><h2 id="dlgTitle">Trả nợ</h2><button value="cancel" aria-label="Đóng">×</button></div>
+    <div class="dlg-body">
+      <div class="opts" id="repayOpts">
+        <label class="opt"><input type="radio" name="mode" value="partial" checked><div><b>Trả trước một phần</b><span>Trả bớt gốc, khoản vay tiếp tục</span></div></label>
+        <label class="opt"><input type="radio" name="mode" value="full"><div><b>Trả toàn bộ trước hạn</b><span>Lãi tính đến ngày trả, giải chấp sổ</span></div></label>
+        <label class="opt"><input type="radio" name="mode" value="due"><div><b>Trả khi đến hạn</b><span>Gốc và lãi vào ngày đến hạn</span></div></label>
+        <label class="opt"><input type="radio" name="mode" value="offset"><div><b>Tất toán sổ để cấn trừ</b><span>Dùng tiền sổ trả nợ, phần dư trả khách</span></div></label>
+      </div>
+      <div class="fields">
+        <label class="f">Ngày trả<input type="date" id="fDate"></label>
+        <label class="f">Gốc trả<input type="text" id="fPrincipal" inputmode="numeric"></label>
+        <label class="f" id="fSavingsWrap">Sổ tất toán<select id="fSavings"></select></label>
+      </div>
+      <table class="calc"><tbody id="calcBody"></tbody></table>
+      <div id="calcWarn"></div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn" value="cancel">Huỷ</button>
+      <button class="btn primary" value="ok" id="btnConfirm">Ghi nhận trả nợ</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const TODAY = '2026-10-27';
+const NON_TERM_RATE = 0.002;
+
+const savings = [
+  { id: 'STK-0123-001', amount: 500000000, rate: 0.052, open: '2026-04-15', months: 12, payout: 'Lãnh lãi cuối kỳ', closed: false },
+  { id: 'STK-0123-002', amount: 300000000, rate: 0.047, open: '2026-08-02', months: 6,  payout: 'Lãnh lãi cuối kỳ', closed: false },
+  { id: 'STK-0123-003', amount: 200000000, rate: 0.041, open: '2026-10-10', months: 3,  payout: 'Lãnh lãi cuối kỳ', closed: false },
+  { id: 'STK-0098-014', amount: 150000000, rate: 0.045, open: '2025-11-03', months: 6,  payout: 'Lãnh lãi cuối kỳ', closed: '2026-05-03' },
+];
+
+const loans = [
+  { id: 'CC-2026-0418', amount: 400000000, outstanding: 400000000, rate: 0.065, disb: '2026-06-20', due: '2027-02-15', lastInterest: '2026-06-20',
+    links: [{ sid: 'STK-0123-001', principal: 400000000 }], closed: false },
+  { id: 'CC-2026-0907', amount: 350000000, outstanding: 350000000, rate: 0.062, disb: '2026-09-07', due: '2027-02-02', lastInterest: '2026-09-07',
+    links: [{ sid: 'STK-0123-002', principal: 290000000 }, { sid: 'STK-0123-001', principal: 60000000 }], closed: false },
+  { id: 'CC-2026-0512', amount: 120000000, outstanding: 0, rate: 0.064, disb: '2026-01-12', due: '2026-05-03', lastInterest: '2026-04-20',
+    links: [{ sid: 'STK-0098-014', principal: 120000000 }], closed: '2026-04-20', closedHow: 'Trả toàn bộ trước hạn' },
+];
+
+const fmt = n => Math.round(n).toLocaleString('vi-VN');
+const pct = r => (r * 100).toFixed(2).replace('.', ',') + '%';
+const dmy = iso => iso ? iso.split('-').reverse().join('/') : '–';
+const toDate = iso => { const [y, m, d] = iso.split('-').map(Number); return Date.UTC(y, m - 1, d); };
+const days = (a, b) => Math.round((toDate(b) - toDate(a)) / 86400000);
+const addMonths = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); const t = new Date(Date.UTC(y, m - 1 + n, d)); return t.toISOString().slice(0, 10); };
+const interest = (p, r, d) => d > 0 ? Math.round(p * r * d / 365) : 0;
+const parseNum = s => Number(String(s).replace(/\D/g, '')) || 0;
+
+const savingsById = id => savings.find(s => s.id === id);
+const maturity = s => addMonths(s.open, s.months);
+const savingsValue = s => s.amount + interest(s.amount, s.rate, days(s.open, maturity(s)));
+const loanObligation = l => l.outstanding + interest(l.outstanding, l.rate, days(l.lastInterest, l.due));
+const activeLoans = () => loans.filter(l => !l.closed);
+
+function pledgedOn(s) {
+  return activeLoans().flatMap(l => l.links.filter(k => k.sid === s.id).map(k => ({
+    loan: l, principal: k.principal,
+    obligation: Math.round(loanObligation(l) * k.principal / l.links.reduce((a, x) => a + x.principal, 0)),
+  })));
+}
+function savingsStatus(s) {
+  if (s.closed) return ['mute', 'Đã tất toán'];
+  if (pledgedOn(s).length) return ['acc', 'Đang cầm cố'];
+  return ['pos', 'Chưa cầm cố'];
+}
+function loanStatus(l) {
+  if (l.closed) return ['mute', 'Đã tất toán'];
+  const left = days(TODAY, l.due);
+  if (left < 0) return ['neg', 'Quá hạn ' + (-left) + ' ngày'];
+  if (left <= 30) return ['warn', 'Đến hạn sau ' + left + ' ngày'];
+  return ['pos', 'Trong hạn'];
+}
+const pill = ([tone, text]) => `<span class="pill ${tone}">${text}</span>`;
+
+let selSavings = savings[0].id, selLoan = loans[0].id;
+
+function renderSavings() {
+  const open = savings.filter(s => !s.closed);
+  const total = open.reduce((a, s) => a + s.amount, 0);
+  const valueTotal = open.reduce((a, s) => a + savingsValue(s), 0);
+  const used = open.reduce((a, s) => a + pledgedOn(s).reduce((b, p) => b + p.obligation, 0), 0);
+  const next = open.map(maturity).sort()[0];
+  document.getElementById('cntSavings').textContent = `(${open.length})`;
+  document.getElementById('kpiSavings').innerHTML = `
+    <div class="kpi" data-metric-tone="collateral"><div class="label">Tiền gửi đang hiệu lực</div><div class="value">${fmt(total)} <small>đ</small></div><div class="sub">${open.length} sổ</div></div>
+    <div class="kpi" data-metric-tone="collateral"><div class="label">Đang dùng để cầm cố</div><div class="value">${fmt(used)} <small>đ</small></div><div class="sub">Gốc + lãi vay đến hạn</div></div>
+    <div class="kpi" data-metric-tone="pos"><div class="label">Còn trống để cầm cố</div><div class="value">${fmt(valueTotal - used)} <small>đ</small></div><div class="sub">Trên giá trị sổ đến đáo hạn</div></div>
+    <div class="kpi" data-metric-tone="warn"><div class="label">Đáo hạn gần nhất</div><div class="value">${dmy(next)}</div><div class="sub">còn ${days(TODAY, next)} ngày</div></div>`;
+  document.getElementById('tblSavings').innerHTML = savings.map(s => {
+    const free = s.closed ? null : savingsValue(s) - pledgedOn(s).reduce((a, p) => a + p.obligation, 0);
+    return `<tr tabindex="0" data-id="${s.id}" aria-selected="${s.id === selSavings}" class="${s.closed ? 'closed' : ''}">
+      <td><div class="id">${s.id}</div><div class="subline">${s.months} tháng · ${s.payout}</div></td>
+      <td class="num">${fmt(s.amount)}</td>
+      <td class="num">${pct(s.rate)}</td>
+      <td>${dmy(s.open)} → ${dmy(maturity(s))}</td>
+      <td class="num" style="${free < 0 ? 'color:var(--neg)' : ''}">${free === null ? '–' : fmt(free)}</td>
+      <td>${pill(savingsStatus(s))}</td></tr>`;
+  }).join('');
+  renderSavingsDetail();
+}
+
+function renderSavingsDetail() {
+  const s = savingsById(selSavings);
+  const mat = maturity(s);
+  const intToMat = interest(s.amount, s.rate, days(s.open, mat));
+  const pledges = pledgedOn(s);
+  const used = pledges.reduce((a, p) => a + p.obligation, 0);
+  const value = s.amount + intToMat;
+  const ratio = Math.min(100, used / value * 100);
+  document.getElementById('detailSavings').innerHTML = `
+    <h2>${s.id}</h2>${pill(savingsStatus(s))}
+    <dl class="kv">
+      <dt>Số tiền gửi</dt><dd>${fmt(s.amount)}</dd>
+      <dt>Lãi suất</dt><dd>${pct(s.rate)}/năm</dd>
+      <dt>Kỳ hạn</dt><dd>${s.months} tháng · ${s.payout}</dd>
+      <dt>Ngày gửi</dt><dd>${dmy(s.open)}</dd>
+      <dt>Ngày đáo hạn</dt><dd>${dmy(mat)}</dd>
+      <dt>Lãi đến đáo hạn</dt><dd>${fmt(intToMat)}</dd>
+      <dt class="total">Giá trị khi đáo hạn</dt><dd class="total">${fmt(value)}</dd>
+      ${s.closed ? `<dt>Ngày tất toán</dt><dd>${dmy(s.closed)}</dd>` : ''}
+    </dl>
+    ${s.closed ? '' : `
+    <h3>Mức dùng để cầm cố</h3>
+    <div class="bar"><i style="width:${ratio}%"></i></div>
+    <div class="bar-ends"><span class="num">Đã dùng ${fmt(used)}</span><span class="num">Còn trống ${fmt(value - used)}</span></div>`}
+    <h3>Đang bảo đảm cho</h3>
+    ${pledges.length ? `<ul class="links">${pledges.map(p => `<li><a href="#" data-goto-loan="${p.loan.id}">${p.loan.id}</a><span class="num">gốc ${fmt(p.principal)} · đến hạn ${dmy(p.loan.due)}</span></li>`).join('')}</ul>`
+      : '<p class="subline">Sổ chưa bảo đảm khoản vay nào.</p>'}
+    ${s.closed ? '' : `<div class="actions">
+      <button class="btn" ${pledges.length ? 'disabled' : ''}>Tất toán sổ</button>
+      <button class="btn">Sửa thông tin sổ</button>
+      ${value - used > 0 ? '<button class="btn primary">Vay cầm cố trên sổ này</button>' : ''}
+    </div>
+    ${pledges.length ? '<div class="note-warn">Sổ đang cầm cố: tất toán qua thao tác Trả nợ của khoản vay để cấn trừ.</div>' : ''}`}`;
+}
+
+function renderLoans() {
+  const act = activeLoans();
+  const out = act.reduce((a, l) => a + l.outstanding, 0);
+  const accr = act.reduce((a, l) => a + interest(l.outstanding, l.rate, days(l.lastInterest, TODAY)), 0);
+  const due = act.reduce((a, l) => a + loanObligation(l), 0);
+  const next = act.map(l => l.due).sort()[0];
+  document.getElementById('cntLoans').textContent = `(${act.length})`;
+  document.getElementById('kpiLoans').innerHTML = `
+    <div class="kpi"><div class="label">Dư nợ cầm cố</div><div class="value">${fmt(out)} <small>đ</small></div><div class="sub">${act.length} khoản đang vay</div></div>
+    <div class="kpi"><div class="label">Lãi dồn tích đến hôm nay</div><div class="value">${fmt(accr)} <small>đ</small></div><div class="sub">Tính đến ${dmy(TODAY)}</div></div>
+    <div class="kpi"><div class="label">Phải trả khi đến hạn</div><div class="value">${fmt(due)} <small>đ</small></div><div class="sub">Gốc + lãi cả kỳ</div></div>
+    <div class="kpi" data-metric-tone="warn"><div class="label">Đến hạn gần nhất</div><div class="value">${dmy(next)}</div><div class="sub">còn ${days(TODAY, next)} ngày</div></div>`;
+  document.getElementById('tblLoans').innerHTML = loans.map(l => {
+    const accrued = l.closed ? null : interest(l.outstanding, l.rate, days(l.lastInterest, TODAY));
+    return `<tr tabindex="0" data-id="${l.id}" aria-selected="${l.id === selLoan}" class="${l.closed ? 'closed' : ''}">
+      <td><div class="id">${l.id}</div><div class="subline">${days(l.disb, l.due)} ngày · ${l.links.map(k => k.sid).join(', ')}</div></td>
+      <td class="num">${fmt(l.outstanding)}</td>
+      <td class="num">${pct(l.rate)}</td>
+      <td>${dmy(l.disb)} → ${dmy(l.due)}</td>
+      <td class="num">${accrued === null ? '–' : fmt(accrued)}</td>
+      <td>${pill(loanStatus(l))}</td></tr>`;
+  }).join('');
+  renderLoanDetail();
+}
+
+function renderLoanDetail() {
+  const l = loans.find(x => x.id === selLoan);
+  const term = days(l.disb, l.due);
+  const intFull = interest(l.outstanding, l.rate, days(l.lastInterest, l.due));
+  const accrued = interest(l.outstanding, l.rate, days(l.lastInterest, TODAY));
+  const earliestMat = l.links.map(k => maturity(savingsById(k.sid))).sort()[0];
+  document.getElementById('detailLoans').innerHTML = `
+    <h2>${l.id}</h2>${pill(loanStatus(l))}
+    <dl class="kv">
+      <dt>Số tiền vay</dt><dd>${fmt(l.amount)}</dd>
+      <dt>Dư nợ gốc</dt><dd>${fmt(l.outstanding)}</dd>
+      <dt>Lãi suất</dt><dd>${pct(l.rate)}/năm</dd>
+      <dt>Thời hạn</dt><dd>${term} ngày</dd>
+      <dt>Ngày giải ngân</dt><dd>${dmy(l.disb)}</dd>
+      <dt>Ngày đến hạn</dt><dd>${dmy(l.due)}</dd>
+      <dt>Phương thức trả</dt><dd>Gốc và lãi trả cuối kỳ</dd>
+      ${l.closed ? `<dt>Tất toán</dt><dd>${dmy(l.closed)} · ${l.closedHow}</dd>` : `
+      <dt>Lãi đến hôm nay</dt><dd>${fmt(accrued)}</dd>
+      <dt>Lãi đến ngày đến hạn</dt><dd>${fmt(intFull)}</dd>
+      <dt class="total">Phải trả khi đến hạn</dt><dd class="total">${fmt(l.outstanding + intFull)}</dd>`}
+    </dl>
+    <h3>Sổ tiết kiệm bảo đảm</h3>
+    <ul class="links">${l.links.map(k => { const s = savingsById(k.sid); return `<li><a href="#" data-goto-savings="${s.id}">${s.id}</a><span class="num">gốc vay ${fmt(k.principal)} · đáo hạn ${dmy(maturity(s))}</span></li>`; }).join('')}</ul>
+    ${!l.closed && l.due > earliestMat ? '<div class="note-warn">Ngày đến hạn vượt ngày đáo hạn sớm nhất của sổ bảo đảm.</div>' : ''}
+    ${l.closed ? '' : `<div class="actions">
+      <button class="btn primary" id="btnRepay">Trả nợ</button>
+      <button class="btn">In HĐ cầm cố</button>
+      <button class="btn">Sửa</button>
+    </div>`}`;
+  const b = document.getElementById('btnRepay');
+  if (b) b.onclick = openRepay;
+}
+
+/* ---------- Trả nợ ---------- */
+const dlg = document.getElementById('dlgRepay');
+const fDate = document.getElementById('fDate'), fPrincipal = document.getElementById('fPrincipal'), fSavings = document.getElementById('fSavings');
+
+function openRepay() {
+  const l = loans.find(x => x.id === selLoan);
+  document.getElementById('dlgTitle').textContent = 'Trả nợ ' + l.id;
+  dlg.querySelector('input[value="partial"]').checked = true;
+  fDate.value = TODAY;
+  fPrincipal.value = fmt(100000000);
+  fSavings.innerHTML = l.links.map(k => `<option value="${k.sid}">${k.sid}</option>`).join('');
+  calcRepay();
+  dlg.showModal();
+}
+
+function calcRepay() {
+  const l = loans.find(x => x.id === selLoan);
+  const mode = dlg.querySelector('input[name="mode"]:checked').value;
+  document.getElementById('fSavingsWrap').style.visibility = mode === 'offset' ? 'visible' : 'hidden';
+  if (mode === 'due') fDate.value = l.due;
+  fDate.disabled = mode === 'due';
+  fPrincipal.disabled = mode !== 'partial';
+  if (mode !== 'partial') fPrincipal.value = fmt(l.outstanding);
+
+  const date = fDate.value || TODAY;
+  const d = days(l.lastInterest, date);
+  const principal = Math.min(parseNum(fPrincipal.value), l.outstanding);
+  const intDue = interest(l.outstanding, l.rate, d);
+  const rows = [];
+  let warn = '';
+
+  rows.push(['Lãi từ ' + dmy(l.lastInterest) + ' đến ' + dmy(date), d + ' ngày × ' + pct(l.rate) + ' trên ' + fmt(l.outstanding), intDue]);
+  rows.push(['Gốc trả', '', principal]);
+  const pay = principal + intDue;
+
+  if (mode === 'offset') {
+    const s = savingsById(fSavings.value);
+    const mat = maturity(s);
+    const early = date < mat;
+    const rateApplied = early ? NON_TERM_RATE : s.rate;
+    const sInt = interest(s.amount, rateApplied, days(s.open, early ? date : mat));
+    const sTotal = s.amount + sInt;
+    const others = pledgedOn(s).filter(p => p.loan.id !== l.id);
+    document.getElementById('calcBody').innerHTML = `
+      <tr><td>Tiền sổ ${s.id}</td><td class="subline">gốc ${fmt(s.amount)} + lãi ${early ? 'không kỳ hạn ' + pct(NON_TERM_RATE) : 'đúng kỳ hạn ' + pct(s.rate)}</td><td class="num">${fmt(sTotal)}</td></tr>
+      <tr><td>Trừ nợ phải trả</td><td class="subline">gốc ${fmt(principal)} + lãi ${fmt(intDue)}</td><td class="num">(${fmt(pay)})</td></tr>
+      <tr class="sum"><td colspan="2">${sTotal >= pay ? 'Còn lại trả khách' : 'Khách nộp thêm'}</td><td class="num">${fmt(Math.abs(sTotal - pay))}</td></tr>`;
+    if (others.length) warn = `Sổ ${s.id} còn bảo đảm cho ${others.map(o => o.loan.id).join(', ')}. Tất toán sổ phải xử lý cả khoản đó.`;
+    else if (early) warn = 'Tất toán trước ngày đáo hạn ' + dmy(mat) + ': lãi sổ tính theo lãi suất không kỳ hạn.';
+  } else {
+    const left = l.outstanding - principal;
+    document.getElementById('calcBody').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td class="subline">${r[1]}</td><td class="num">${fmt(r[2])}</td></tr>`).join('') +
+      `<tr class="sum"><td colspan="2">Tổng thu lần này</td><td class="num">${fmt(pay)}</td></tr>` +
+      (mode === 'partial' ? `<tr><td colspan="2">Dư nợ gốc còn lại · lãi kỳ tới tính từ ${dmy(date)}</td><td class="num">${fmt(left)}</td></tr>` : '');
+    if (mode !== 'partial') warn = 'Sau khi ghi nhận: khoản vay tất toán, giải chấp ' + l.links.map(k => k.sid).join(', ') + '.';
+  }
+  document.getElementById('calcWarn').innerHTML = warn ? `<div class="note-warn">${warn}</div>` : '';
+}
+
+dlg.addEventListener('input', calcRepay);
+dlg.addEventListener('change', calcRepay);
+fPrincipal.addEventListener('blur', () => { fPrincipal.value = fmt(parseNum(fPrincipal.value)); });
+
+/* ---------- Điều hướng ---------- */
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === name));
+  document.getElementById('paneSavings').hidden = name !== 'savings';
+  document.getElementById('paneLoans').hidden = name !== 'loans';
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
+function pickRow(tbodyId, cb) {
+  const tb = document.getElementById(tbodyId);
+  const go = e => { const tr = e.target.closest('tr'); if (tr) cb(tr.dataset.id); };
+  tb.addEventListener('click', go);
+  tb.addEventListener('keydown', e => { if (e.key === 'Enter') go(e); });
+}
+pickRow('tblSavings', id => { selSavings = id; renderSavings(); });
+pickRow('tblLoans', id => { selLoan = id; renderLoans(); });
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-goto-loan],[data-goto-savings]');
+  if (!a) return;
+  e.preventDefault();
+  if (a.dataset.gotoLoan) { selLoan = a.dataset.gotoLoan; renderLoans(); showTab('loans'); }
+  else { selSavings = a.dataset.gotoSavings; renderSavings(); showTab('savings'); }
+});
+
+renderSavings();
+renderLoans();
+</script>
+</body>
+</html>

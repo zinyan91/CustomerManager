@@ -12,8 +12,14 @@
 -- Gốc = kunnPrincipal: LoanAmount > 0, nếu không thì CurrentBalance > 0.
 --
 -- TSBĐ của khoản vay: lấy từ CollateralId/CollateralIds của KUNN; KUNN không khai thì lấy
--- CollateralIds của HĐTD. TSBĐ còn bảo đảm cho khoản vay KHÔNG phải cầm cố thì dừng, vì
--- đánh dấu đã chuyển sẽ làm nó biến khỏi khoản vay kia.
+-- CollateralIds của HĐTD. Dừng cả khối khi: TSBĐ không phải sổ tiết kiệm (cùng nhận diện với
+-- normalizeAssetTypeInput/isSavingsPassbook); TSBĐ còn bảo đảm cho khoản vay không phải cầm cố
+-- hoặc nằm trong HĐ thế chấp (đánh dấu đã chuyển sẽ làm nó biến khỏi chỗ kia); KUNN đang vay
+-- không còn sổ nào của chính khách hàng.
+--
+-- Gốc đã thu trước khi chuyển ghi thành dòng trả một phần ĐẶT TẠI NGÀY GIẢI NGÂN: cầm cố trả lãi
+-- cuối kỳ nên phần dư nợ còn lại vẫn chịu lãi từ ngày giải ngân; đặt ngày muộn hơn sẽ xoá mất
+-- phần lãi đó.
 --
 -- HĐTD cầm cố chưa có KUNN nào thì KHÔNG chuyển: chưa giải ngân nên không có dư nợ;
 -- tạo khoản vay từ HĐTD sẽ đẻ ra dư nợ không có thật.
@@ -101,6 +107,20 @@ BEGIN
   JOIN "Collaterals" col ON col."Id" = nullif(x, '')::bigint AND col."CustomerId" = s.customer_id
   WHERE NOT EXISTS (SELECT 1 FROM _col c WHERE c.kunn_id = s.kunn_id);
 
+  SELECT string_agg(DISTINCT col."Id"::text, ', ') INTO v_bad
+  FROM _col c JOIN "Collaterals" col ON col."Id" = c.collateral_id
+  WHERE lower(coalesce(col."AssetType", '')) !~ '(tiết kiệm|tiet kiem|tiền gửi|tien gui|stk|chứng chỉ tiền gửi)';
+  IF v_bad IS NOT NULL THEN
+    RAISE EXCEPTION 'Không chuyển được: TSBĐ Id % gắn với khoản cầm cố nhưng không phải sổ tiết kiệm. Gỡ TSBĐ đó khỏi KUNN rồi chạy lại.', v_bad;
+  END IF;
+
+  SELECT string_agg(s.contract_number, ', ' ORDER BY s.contract_number) INTO v_bad
+  FROM _src s
+  WHERE s.legacy_outstanding > 0 AND NOT EXISTS (SELECT 1 FROM _col c WHERE c.kunn_id = s.kunn_id);
+  IF v_bad IS NOT NULL THEN
+    RAISE EXCEPTION 'Không chuyển được: KUNN đang vay không có sổ tiết kiệm bảo đảm của chính khách hàng: %. Gắn sổ ở màn Khoản vay rồi chạy lại.', v_bad;
+  END IF;
+
   SELECT string_agg(DISTINCT c.collateral_id::text, ', ') INTO v_shared
   FROM _col c
   WHERE EXISTS (
@@ -115,9 +135,10 @@ BEGIN
       SELECT 1 FROM "CreditContracts" cc
       WHERE coalesce(cc."LoanMethod", '') <> c_cam_co
         AND c.collateral_id::text = ANY (regexp_split_to_array(coalesce(cc."CollateralIds", ''), '[^0-9]+'))
-    );
+    )
+    OR EXISTS (SELECT 1 FROM "MortgageContractCollaterals" m WHERE m."CollateralId" = c.collateral_id);
   IF v_shared IS NOT NULL THEN
-    RAISE EXCEPTION 'Không chuyển được: TSBĐ Id % còn bảo đảm cho khoản vay không phải cầm cố. Tách TSBĐ đó ra trước rồi chạy lại.', v_shared;
+    RAISE EXCEPTION 'Không chuyển được: TSBĐ Id % còn bảo đảm cho khoản vay không phải cầm cố hoặc nằm trong HĐ thế chấp. Tách TSBĐ đó ra trước rồi chạy lại.', v_shared;
   END IF;
 
   SELECT string_agg(DISTINCT col."Id"::text, ', ') INTO v_bad
@@ -181,8 +202,9 @@ BEGIN
     IF v_src.legacy_outstanding < v_src.principal THEN
       INSERT INTO "PledgeLoanRepayments" ("PledgeLoanId", "RepaymentDate", "Kind", "PrincipalPaid", "Note")
       VALUES (v_loan_id,
-              coalesce(CASE WHEN v_src.legacy_outstanding = 0 THEN v_src.settled_date END,
-                       greatest(v_src.disb, least(current_date, v_src.due))),
+              CASE WHEN v_src.legacy_outstanding = 0
+                   THEN coalesce(v_src.settled_date, greatest(v_src.disb, least(current_date, v_src.due)))
+                   ELSE v_src.disb END,
               CASE WHEN v_src.legacy_outstanding = 0 THEN 'full' ELSE 'partial' END,
               v_src.principal - v_src.legacy_outstanding,
               'Chuyển từ KUNN: gốc đã thu trước khi chuyển');

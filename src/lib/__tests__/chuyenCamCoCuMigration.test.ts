@@ -28,14 +28,16 @@ async function buildDb(extra = ''): Promise<PGlite> {
       "ContractNumber" text, "LoanMethod" text, "ContractAmount" numeric, "LoanAmount" numeric, "CurrentBalance" numeric,
       "DisbursementDate" text, "ContractStartDate" text, "ContractEndDate" text, "KunnDueDate" text,
       "InterestRate" numeric, "NormalRate" numeric, "IsSettled" boolean DEFAULT false, "SettledDate" date);
-    CREATE TABLE public."Collaterals" ("Id" serial PRIMARY KEY, "CustomerId" integer, "AssetCode" text, "Value" numeric, "AppraisedValue" numeric, "Note" text);
+    CREATE TABLE public."Collaterals" ("Id" serial PRIMARY KEY, "CustomerId" integer, "AssetCode" text, "AssetType" text, "Value" numeric, "AppraisedValue" numeric, "Note" text);
+    CREATE TABLE public."MortgageContractCollaterals" ("MortgageContractId" integer, "CollateralId" integer);
     CREATE TABLE public."RepaymentSchedules" ("Id" serial PRIMARY KEY, "ContractId" integer, "PrincipalAmount" numeric,
       "ActualPaidPrincipal" numeric, "PrepaidPrincipalAmount" numeric, "IsPaid" boolean);
 
     INSERT INTO public."Customers" VALUES (1, 'An'), (2, 'Bình');
-    INSERT INTO public."Collaterals" ("Id", "CustomerId", "AssetCode", "Value", "AppraisedValue") VALUES
-      (11, 1, 'STK-1', 500000000, NULL), (12, 1, 'STK-2', 300000000, NULL), (13, 1, NULL, NULL, 200000000),
-      (14, 2, 'SO-DO-1', 3000000000, NULL), (15, 1, 'STK-OLD', 150000000, NULL);
+    INSERT INTO public."Collaterals" ("Id", "CustomerId", "AssetCode", "AssetType", "Value", "AppraisedValue") VALUES
+      (11, 1, 'STK-1', 'Tiền gửi / STK', 500000000, NULL), (12, 1, 'STK-2', 'Sổ tiết kiệm', 300000000, NULL),
+      (13, 1, NULL, 'STK khác', NULL, 200000000), (14, 2, 'SO-DO-1', 'Bất động sản đất ở', 3000000000, NULL),
+      (15, 1, 'STK-OLD', 'Tiền gửi / STK', 150000000, NULL), (16, 1, 'SO-DO-AN', 'Bất động sản đất ở', 2000000000, NULL);
     INSERT INTO public."CreditContracts" ("Id", "CustomerId", "HdtdNumber", "LoanMethod", "ContractAmount", "ContractStartDate", "ContractEndDate", "InterestRate", "CollateralIds") VALUES
       (1, 1, 'HDTD-CC-1', '${CAM_CO}', 900000000, '2026-01-01', '2027-12-31', 6.5, '11'),
       (2, 2, 'HDTD-VAY-2', 'Cho vay từng lần', 2000000000, '2026-01-01', '2036-01-01', 9, '14');
@@ -66,8 +68,8 @@ async function snapshot(db: PGlite) {
       `SELECT l."ContractNumber" AS c, b."BookNumber" AS b, k."PrincipalCovered" AS p, k."ReleasedDate"::text AS released, k."Note" AS note
        FROM "PledgeLoanSavingsBooks" k JOIN "PledgeLoans" l ON l."Id" = k."PledgeLoanId" JOIN "SavingsBooks" b ON b."Id" = k."SavingsBookId"
        ORDER BY 1, 2`),
-    repayments: await rows<{ c: string; kind: string; p: string }>(db,
-      `SELECT l."ContractNumber" AS c, r."Kind" AS kind, r."PrincipalPaid" AS p FROM "PledgeLoanRepayments" r JOIN "PledgeLoans" l ON l."Id" = r."PledgeLoanId" ORDER BY 1`),
+    repayments: await rows<{ c: string; kind: string; p: string; d: string }>(db,
+      `SELECT l."ContractNumber" AS c, r."Kind" AS kind, r."PrincipalPaid" AS p, r."RepaymentDate"::text AS d FROM "PledgeLoanRepayments" r JOIN "PledgeLoans" l ON l."Id" = r."PledgeLoanId" ORDER BY 1`),
   };
 }
 
@@ -92,7 +94,10 @@ describe('migration 77: chuyển khoản cầm cố STK cũ sang tab mới', () 
       ['KUNN-4', 'STK-OLD', 120000000, '2026-04-20'],
     ]);
     expect(s.links.filter((l) => l.c === 'KUNN-2').every((l) => l.note === 'Chia tự động khi chuyển, cần kiểm lại')).toBe(true);
-    expect(s.repayments.map((r) => [r.c, r.kind, num(r.p)])).toEqual([['KUNN-2', 'partial', 50000000], ['KUNN-4', 'full', 120000000]]);
+    expect(s.repayments.map((r) => [r.c, r.kind, num(r.p), r.d])).toEqual([
+      ['KUNN-2', 'partial', 50000000, '2026-09-07'],
+      ['KUNN-4', 'full', 120000000, '2026-04-20'],
+    ]);
 
     const marks = await rows<{ t: string; id: number; moved: number | null }>(db, `
       SELECT 'cc' AS t, "Id" AS id, "MovedToPledgeLoanId" AS moved FROM "CreditContracts"
@@ -126,6 +131,34 @@ describe('migration 77: chuyển khoản cầm cố STK cũ sang tab mới', () 
     await expect(db.exec(M77)).rejects.toThrow(/KUNN-1/);
     const s = await snapshot(db);
     expect(s.loans).toHaveLength(0);
+  });
+
+  it('TSBD khong phai so tiet kiem thi bao loi va khong ghi gi', async () => {
+    const db = await buildDb(`UPDATE public."LoanContracts" SET "CollateralIds" = '16' WHERE "Id" = 101;`);
+    await expect(db.exec(M77)).rejects.toThrow(/Id 16 .*không phải sổ tiết kiệm/);
+    expect((await snapshot(db)).books).toHaveLength(0);
+  });
+
+  it('KUNN dang vay khong con so bao dam nao thi bao loi', async () => {
+    const db = await buildDb(`UPDATE public."LoanContracts" SET "CollateralId" = 99 WHERE "Id" = 101; UPDATE public."CreditContracts" SET "CollateralIds" = NULL WHERE "Id" = 1;`);
+    await expect(db.exec(M77)).rejects.toThrow(/không có sổ tiết kiệm bảo đảm.*KUNN-1/);
+    expect((await snapshot(db)).loans).toHaveLength(0);
+  });
+
+  it('so nam trong hop dong the chap thi bao loi', async () => {
+    const db = await buildDb(`INSERT INTO public."MortgageContractCollaterals" VALUES (7, 12);`);
+    await expect(db.exec(M77)).rejects.toThrow(/12/);
+    expect((await snapshot(db)).books).toHaveLength(0);
+  });
+
+  it('rollback tu choi khi da co tra no ghi sau khi chuyen', async () => {
+    const db = await buildDb();
+    await db.exec(M77);
+    await db.exec(`INSERT INTO "PledgeLoanRepayments" ("PledgeLoanId", "RepaymentDate", "Kind", "PrincipalPaid")
+      SELECT "Id", '2026-11-01', 'partial', 1000000 FROM "PledgeLoans" WHERE "ContractNumber" = 'KUNN-1'`);
+    await expect(db.exec(R77)).rejects.toThrow(/KUNN-1/);
+    await db.exec('ROLLBACK').catch(() => undefined);
+    expect((await snapshot(db)).loans).toHaveLength(3);
   });
 
   it('TSBD dung chung voi khoan vay thuong thi bao loi va khong ghi gi', async () => {

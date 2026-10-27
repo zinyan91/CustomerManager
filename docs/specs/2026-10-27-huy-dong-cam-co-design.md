@@ -84,13 +84,15 @@ Bảng mới. Đặt tên PascalCase và dùng `bigint` identity như các bản
 Migration **không phá huỷ**: không xoá HĐTD, KUNN hay TSBĐ cũ.
 
 1. Tạo nhánh backup trước khi làm.
-2. Đếm trước bằng truy vấn chỉ đọc: số HĐTD có `LoanMethod = 'Cầm cố sổ tiết kiệm'`, số KUNN dưới chúng, số TSBĐ loại sổ tiết kiệm (`isSavingsBookAsset` trong `collateralMath.ts`) đang gắn với chúng. **Báo số đếm cho người dùng và chờ duyệt trước khi ghi vào database thật.**
-3. Mỗi KUNN thành một `PledgeLoans`: số tiền = `ContractAmount`, lãi suất = `NormalInterestRate` (đổi đơn vị nếu cần), giải ngân = `DisbursementDate`, đến hạn = `ContractEndDate`. HĐTD không có KUNN thì lấy từ chính HĐTD. Phần gốc đã trả (`TotalPrincipalPaid`) thành một dòng `PledgeLoanRepayments` để dư nợ tính ra khớp `CurrentPrincipalBalance`.
-4. Mỗi TSBĐ loại sổ tiết kiệm đang gắn thành một `SavingsBooks`: số sổ lấy từ `AssetCode`, số tiền từ `Value` hoặc `AppraisedValue`. Những trường cũ không có thì để NULL.
-5. Liên kết lấy từ `LoanContracts.CollateralId` hoặc `CreditContracts.CollateralIds`. Một sổ cho nhiều khoản thì `PrincipalCovered` = số tiền vay; một khoản nhiều sổ thì chia theo giá trị sổ, và đánh dấu để banker kiểm lại.
-6. Đánh dấu bản ghi cũ đã chuyển bằng cột mới `MovedToPledgeLoanId` trên `CreditContracts` và `LoanContracts`. Mọi chỗ đọc HĐTD/KUNN bỏ qua bản ghi có cột này, để không đếm hai lần.
-7. Đối soát sau migration: số khoản vay, tổng số tiền vay, tổng dư nợ trước và sau phải khớp từng đồng.
-8. Bỏ "Cầm cố sổ tiết kiệm" khỏi danh sách phương thức vay khi tạo HĐTD mới (`useCreditContractController.ts`, `kunnForm.ts`). Giữ trong `loanProductRules.ts` để bản ghi cũ vẫn hiển thị đúng.
+2. Đếm trước bằng truy vấn chỉ đọc: số KUNN cầm cố, tổng dư nợ, các TSBĐ đang gắn. **Báo số đếm cho người dùng và chờ duyệt trước khi ghi vào database thật.**
+3. Mỗi KUNN cầm cố (KUNN hoặc HĐTD mang `LoanMethod = 'Cầm cố sổ tiết kiệm'`) thành một `PledgeLoans`. Cột thật của bảng cũ: số tiền theo `kunnPrincipal` (`LoanAmount`, rồi `CurrentBalance`); lãi suất `InterestRate`/`NormalRate` của KUNN rồi của HĐTD, giá trị ≤ 1 nhân 100; giải ngân `DisbursementDate`/`ContractStartDate`; đến hạn `KunnDueDate`/`ContractEndDate`.
+4. Dư nợ cũ tính đúng như `outstandingOf`: gốc đã thu lấy từ `RepaymentSchedules` bằng biểu thức của view `ContractPaidPrincipal` (không đọc view, vì view rỗng khi chạy trong SQL Editor). Phần gốc đã thu thành một dòng trả một phần **đặt tại ngày giải ngân**, để phần dư nợ còn lại vẫn chịu lãi từ ngày giải ngân. KUNN đã tất toán thành khoản đã tất toán, kèm dòng trả toàn bộ.
+5. HĐTD cầm cố chưa có KUNN **không** chuyển: chưa giải ngân nên không có dư nợ.
+6. TSBĐ của khoản vay lấy từ `CollateralId`/`CollateralIds` của KUNN, nếu KUNN không khai thì lấy của HĐTD. Mỗi TSBĐ thành một `SavingsBooks` (số sổ = `AssetCode`, hoặc `TSBD-<Id>`; số tiền = `Value`, hoặc `AppraisedValue`). Một khoản nhiều sổ thì chia phần gốc theo số tiền sổ, kèm ghi chú để banker kiểm lại.
+7. Dừng cả khối, không ghi dòng nào, khi: KUNN thiếu số tiền, lãi suất hoặc ngày; TSBĐ không phải sổ tiết kiệm; TSBĐ còn bảo đảm khoản vay không phải cầm cố hoặc nằm trong HĐ thế chấp; KUNN đang vay không còn sổ nào của chính khách hàng.
+8. Đánh dấu bản ghi cũ đã chuyển bằng `MovedToPledgeLoanId` (HĐTD, KUNN) và `MovedToSavingsBookId` (TSBĐ). Tầng API bỏ qua bản ghi có dấu này.
+9. Đối soát trong cùng khối: số khoản vay, tổng số tiền và tổng dư nợ phải khớp từng đồng, lệch thì huỷ cả khối. Chạy lại lần hai không tạo trùng. Rollback dừng nếu đã có trả nợ hoặc khoản vay mới ghi sau khi chuyển.
+10. Bỏ "Cầm cố sổ tiết kiệm" khỏi danh sách phương thức khi tạo HĐTD mới (`loanMethodOptions` trong `loanProductRules.ts`); bản ghi cũ vẫn hiển thị đúng.
 
 ## Tổng hợp ở các màn hình khác
 

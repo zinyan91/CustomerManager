@@ -14,7 +14,7 @@ const CAM_CO = 'Cầm cố sổ tiết kiệm';
 async function buildDb(extra = ''): Promise<PGlite> {
   const db = new PGlite();
   await db.exec(`
-    CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;
+    CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN;
     CREATE SCHEMA auth;
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT NULL::uuid $$;
     CREATE FUNCTION public.can_access_customer(cid bigint) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT true $$;

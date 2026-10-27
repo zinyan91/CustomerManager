@@ -23,8 +23,8 @@ async function buildDb(): Promise<PGlite> {
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE
       AS $$ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
     GRANT USAGE ON SCHEMA public, auth TO anon, authenticated;
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated;
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated;
+    -- Supabase từ 30/10/2026: bảng mới trong public KHÔNG tự được cấp quyền cho anon/authenticated.
+    CREATE ROLE service_role NOLOGIN;
 
     CREATE TABLE public."UserRoles" ("UserId" uuid PRIMARY KEY REFERENCES auth.users(id), "Role" text NOT NULL);
     CREATE FUNCTION public.is_admin() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
@@ -40,6 +40,8 @@ async function buildDb(): Promise<PGlite> {
     INSERT INTO auth.users (id) VALUES ${Object.values(ID).map((i) => `('${i}')`).join(', ')};
     INSERT INTO public."UserRoles" VALUES ('${ID.master}', 'master_admin'), ('${ID.alice}', 'user'), ('${ID.carol}', 'user');
     INSERT INTO public."Customers" VALUES (1, '${ID.alice}', 'An'), (2, '${ID.alice}', 'Bình'), (3, '${ID.carol}', 'Chi');
+    -- Bảng có sẵn giữ quyền cũ; chỉ bảng tạo mới mất quyền tự động.
+    GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
   `);
   await db.exec(MIGRATION);
   return db;
@@ -267,6 +269,11 @@ describe('migration 76: huy động và cầm cố sổ tiết kiệm', () => {
     const b = await addBook(db, 1, 'STK-A-851');
     await expect(saveLoan(db, { ...LOAN('CC-851'), DueDate: '2026-06-20' }, [{ SavingsBookId: b, PrincipalCovered: 400000000 }]))
       .rejects.toThrow();
+  });
+
+  it('ham ghi khong goi duoc bang anon', async () => {
+    await actAs(db, 'anon');
+    await expect(db.query(`SELECT public.save_pledge_loan('{}'::jsonb, '[]'::jsonb)`)).rejects.toThrow(/permission denied/);
   });
 
   it('anon khong doc duoc bang nao', async () => {

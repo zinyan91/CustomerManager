@@ -314,7 +314,16 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.save_pledge_loan(jsonb, jsonb) FROM anon;
-REVOKE ALL ON FUNCTION public.record_pledge_repayment(bigint, jsonb, numeric) FROM anon;
+-- Từ 30/10/2026 Supabase không còn tự cấp quyền cho bảng mới trong public (changelog 45329):
+-- phải GRANT rõ ràng, nếu không Data API trả 42501. Hàm mặc định cho PUBLIC EXECUTE nên thu hồi.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public."SavingsBooks", public."PledgeLoans",
+  public."PledgeLoanSavingsBooks", public."PledgeLoanRepayments" TO authenticated, service_role;
+
+REVOKE ALL ON FUNCTION public.save_pledge_loan(jsonb, jsonb) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.record_pledge_repayment(bigint, jsonb, numeric) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.can_access_pledge_loan(bigint) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.save_pledge_loan(jsonb, jsonb) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.record_pledge_repayment(bigint, jsonb, numeric) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.can_access_pledge_loan(bigint) TO authenticated, service_role;
 
 COMMIT;

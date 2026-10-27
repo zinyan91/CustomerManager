@@ -4,7 +4,7 @@ import { FileText, Save, AlertTriangle } from 'lucide-react';
 import { fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { usableCapacity, collateralValue } from '../../lib/collateralMath';
 import { DateInput } from '../DateInput';
-import { LOAN_METHODS } from '../../hooks/useCreditContractController';
+import { CREDIT_CONTRACT_LOAN_METHODS, loanMethodOptions } from '../../lib/loanProductRules';
 import type { CloseCreditContractCheck } from '../../lib/creditContract';
 import type { Collateral, CreditContract } from '../../types';
 
@@ -99,11 +99,11 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
                 Phương thức cho vay <span className="text-neg">*</span>
               </label>
               <select
-                value={form.LoanMethod || LOAN_METHODS[0]}
+                value={form.LoanMethod || CREDIT_CONTRACT_LOAN_METHODS[0]}
                 onChange={e => setForm({ ...form, LoanMethod: e.target.value })}
                 className={`w-full rounded-xl p-2.5 font-semibold ${UI.inputStyle}`}
               >
-                {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                {loanMethodOptions(form.LoanMethod).map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
           </div>

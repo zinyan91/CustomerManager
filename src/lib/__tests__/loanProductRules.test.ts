@@ -10,6 +10,7 @@ import {
   checkGrace,
   purposeLabel,
 } from '../loanProductRules';
+import { loanMethodOptions } from '../loanProductRules';
 
 describe('Hạn mức tín dụng — vay ngắn hạn sản xuất kinh doanh', () => {
   const M = 'Hạn mức tín dụng';
@@ -185,5 +186,16 @@ describe('kỳ hạn KUNN khi sản phẩm không tách hai cấp', () => {
 
   it('chưa khai kỳ hạn thì không cảnh báo', () => {
     expect(checkKunnTenor('Hạn mức tín dụng', 0).ok).toBe(true);
+  });
+});
+
+describe('loanMethodOptions', () => {
+  it('tao HDTD moi khong con phuong thuc cam co so tiet kiem', () => {
+    expect(loanMethodOptions()).not.toContain('Cầm cố sổ tiết kiệm');
+    expect(loanMethodOptions(null)).toEqual(['Hạn mức tín dụng', 'Hạn mức tín dụng từng lần', 'Cho vay từng lần', 'Hạn mức thẻ tín dụng']);
+  });
+
+  it('ban ghi cu dang mang gia tri do van hien de khong mat du lieu', () => {
+    expect(loanMethodOptions('Cầm cố sổ tiết kiệm')).toContain('Cầm cố sổ tiết kiệm');
   });
 });

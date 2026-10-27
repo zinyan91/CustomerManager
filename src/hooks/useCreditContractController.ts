@@ -13,16 +13,9 @@ import { todayIso, parseMoneyInput, formatMoneyInput } from '../lib/utils';
 import { summarizeCreditContracts, canCloseCreditContract } from '../lib/creditContract';
 import { addMonthsToDate, computeOutstandingBalance } from '../lib/loanMath';
 import { totalUsableCapacity } from '../lib/collateralMath';
-import { allowedPurposes } from '../lib/loanProductRules';
+import { allowedPurposes, CREDIT_CONTRACT_LOAN_METHODS } from '../lib/loanProductRules';
 import { useConfirm } from '../context/ConfirmContext';
 
-export const LOAN_METHODS = [
-  'Hạn mức tín dụng',
-  'Hạn mức tín dụng từng lần',
-  'Cho vay từng lần',
-  'Hạn mức thẻ tín dụng',
-  'Cầm cố sổ tiết kiệm',
-];
 
 export function useCreditContractController() {
   const navigate = useNavigate();
@@ -159,7 +152,7 @@ export function useCreditContractController() {
     setEditing(null);
     setForm({
       CustomerId: customer?.Id,
-      LoanMethod: LOAN_METHODS[0],
+      LoanMethod: CREDIT_CONTRACT_LOAN_METHODS[0],
       LoanTenorMonths: 12,
       IsClosed: false,
     });

@@ -185,3 +185,16 @@ export function checkGrace(loanMethod: string | null | undefined, graceMonths?: 
 export function isRevolvingCredit(loanMethod?: string | null): boolean {
   return getLoanProductRule(loanMethod).revolving;
 }
+
+export const CREDIT_CONTRACT_LOAN_METHODS = [
+  'Hạn mức tín dụng',
+  'Hạn mức tín dụng từng lần',
+  'Cho vay từng lần',
+  'Hạn mức thẻ tín dụng',
+];
+
+// Cầm cố sổ tiết kiệm đã có tab riêng; chỉ còn hiện để bản ghi HĐTD cũ không mất giá trị.
+export function loanMethodOptions(current?: string | null): string[] {
+  if (current && !CREDIT_CONTRACT_LOAN_METHODS.includes(current)) return [...CREDIT_CONTRACT_LOAN_METHODS, current];
+  return CREDIT_CONTRACT_LOAN_METHODS;
+}

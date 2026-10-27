@@ -11,6 +11,7 @@ vi.mock('../../lib/api', () => ({
     { Id: 77, FullName: 'Lê Văn C', CifKh: '900077' },
   ]),
   fetchCreditContractsByCustomerAPI: async () => [],
+  fetchPledgeLoanBundleByCustomerAPI: async () => ({ loans: [], links: [], repayments: [] }),
   fetchContractsByCustomerAPI: async () => [],
   fetchCollateralsByCustomerAPI: async () => [],
   fetchRepaymentSchedulesAPI: async () => [],

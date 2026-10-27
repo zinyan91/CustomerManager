@@ -9,6 +9,7 @@ vi.mock('../../lib/api', () => ({
   fetchCollateralsAPI: async () => ([{ Id: 1, CustomerId: 55, AssetCode: 'TS-55', AssetType: 'BĐS - Loại 1', AppraisedValue: 1_000_000_000 }]),
   fetchCustomersAPI: async () => ([{ Id: 55, FullName: 'Trần Thị B', CifKh: '900055' }]),
   fetchCreditContractsByCustomerAPI: async () => ([{ Id: 2, CustomerId: 55, HdtdNumber: 'HDTD-55', IsClosed: false }]),
+  fetchPledgeLoanBundleByCustomerAPI: async () => ({ loans: [], links: [], repayments: [] }),
   fetchContractsByCustomerAPI: async () => [],
   fetchCollateralsByCustomerAPI: async () => [],
   fetchRepaymentSchedulesAPI: async () => [],

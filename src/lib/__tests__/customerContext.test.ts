@@ -155,3 +155,28 @@ describe('buildCustomerContext', () => {
   });
 });
 
+
+describe('buildCustomerContext — khoản vay cầm cố', () => {
+  const pledge = {
+    loans: [{
+      Id: 1, CustomerId: 59, ContractNumber: 'GNN-01', Amount: 150_000_000, InterestRate: 8.2,
+      DisbursementDate: '2026-07-27', DueDate: '2026-11-20', LoanPurpose: null, IsClosed: false, ClosedDate: null,
+      ClosedHow: null, LegacyCreditContractId: null, LegacyLoanContractId: null, Note: null, CreatedAt: '',
+    }],
+    links: [], repayments: [], books: [],
+  };
+
+  it('cộng dư nợ và hạn mức của khoản cầm cố', () => {
+    const r = buildCustomerContext({
+      creditContracts: [], kunns: [], paidPrincipal: {}, overdueSchedules: [], today: '2026-10-27', pledge,
+    });
+    expect(r).toMatchObject({ granted: 150_000_000, outstanding: 150_000_000, available: 0, debtGroup: 1, activeKunnCount: 1 });
+  });
+
+  it('khoản cầm cố quá hạn kéo nhóm nợ của khách', () => {
+    const r = buildCustomerContext({
+      creditContracts: [], kunns: [], paidPrincipal: {}, overdueSchedules: [], today: '2026-11-30', pledge,
+    });
+    expect(r).toMatchObject({ debtGroup: 2, maxOverdueDays: 10 });
+  });
+});

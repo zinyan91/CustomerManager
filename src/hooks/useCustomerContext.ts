@@ -3,6 +3,7 @@ import type { Customer } from '../types';
 import {
   fetchContractsByCustomerAPI, fetchCreditContractsByCustomerAPI,
   fetchCustomerByIdAPI, fetchOverdueSchedulesAPI, fetchPaidPrincipalForContractsAPI,
+  fetchPledgeLoanBundleByCustomerAPI,
 } from '../lib/api';
 import { buildCustomerContext, type CustomerContextSummary } from '../lib/customerContext';
 import { todayIso } from '../lib/utils';
@@ -41,10 +42,11 @@ export function useCustomerContext(customerId: number | null): CustomerContextSt
 
     (async () => {
       try {
-        const [khach, hdtds, kunns] = await Promise.all([
+        const [khach, hdtds, kunns, camCo] = await Promise.all([
           fetchCustomerByIdAPI(customerId),
           fetchCreditContractsByCustomerAPI(customerId),
           fetchContractsByCustomerAPI(customerId),
+          fetchPledgeLoanBundleByCustomerAPI(customerId),
         ]);
         if (huy) return;
 
@@ -73,6 +75,7 @@ export function useCustomerContext(customerId: number | null): CustomerContextSt
         setCustomer(khach);
         setSummary(buildCustomerContext({
           creditContracts: hdtds, kunns, paidPrincipal, overdueSchedules, today,
+          pledge: { ...camCo, books: [] },
         }));
       } catch (err) {
         if (huy) return;

@@ -13,6 +13,7 @@ vi.mock('../../lib/api', () => ({
     LoanMethod: 'Hạn mức tín dụng', ContractAmount: 1_000_000_000,
     ContractStartDate: '2026-01-01', ContractEndDate: '2027-01-01', IsClosed: false,
   }]),
+  fetchPledgeLoanBundleByCustomerAPI: async () => ({ loans: [], links: [], repayments: [] }),
   fetchContractsByCustomerAPI: async () => [],
   fetchCollateralsByCustomerAPI: async () => [],
   fetchCardContractsByCustomerAPI: async () => [],

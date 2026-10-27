@@ -41,6 +41,7 @@ const danhSachKunn = [
 
 vi.mock('../../lib/api', () => ({
   fetchCustomersAPI: vi.fn(async () => [khach]),
+  fetchPledgeLoanBundleByCustomerAPI: async () => ({ loans: [], links: [], repayments: [] }),
   fetchContractsByCustomerAPI: vi.fn(async () => danhSachKunn),
   fetchCollateralsByCustomerAPI: vi.fn(async () => []),
   fetchCreditContractsByCustomerAPI: vi.fn(async () => [hdtd, { ...hdtd, Id: 11, HdtdNumber: 'HDTD-B' }, { ...hdtd, Id: 12, HdtdNumber: 'HDTD-EMPTY' }]),

@@ -34,9 +34,14 @@ describe('dong so tiet kiem', () => {
     expect(bookKpis(r, TODAY).freeCapacity).toBe(47395726 + 9817425);
   });
 
+  it('KPI con trong la null khi khong so nao tinh duoc', () => {
+    const r = buildBookRows({ ...SAMPLE, books: [{ ...STK_003, InterestRate: null }] }, TODAY);
+    expect(bookKpis(r, TODAY).freeCapacity).toBeNull();
+  });
+
   it('KPI khi chua co so nao', () => {
     expect(bookKpis([], TODAY)).toEqual({
-      activeTotal: 0, activeCount: 0, pledgedObligation: 0, freeCapacity: 0, nextMaturity: null, daysToNextMaturity: null,
+      activeTotal: 0, activeCount: 0, pledgedObligation: 0, freeCapacity: null, nextMaturity: null, daysToNextMaturity: null,
     });
   });
 });

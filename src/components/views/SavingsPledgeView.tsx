@@ -26,7 +26,7 @@ export function SavingsPledgeView() {
   const savingsKpis: KpiItem[] = [
     { label: 'Tiền gửi đang hiệu lực', value: money(bk.activeTotal), sub: `${bk.activeCount} sổ`, tone: 'collateral' },
     { label: 'Đang dùng để cầm cố', value: money(bk.pledgedObligation), sub: 'Gốc + lãi vay đến hạn', tone: 'collateral' },
-    { label: 'Còn trống để cầm cố', value: money(bk.freeCapacity), sub: 'Trên giá trị sổ đến đáo hạn', tone: 'pos' },
+    { label: 'Còn trống để cầm cố', value: bk.freeCapacity === null ? '—' : money(bk.freeCapacity), sub: 'Trên giá trị sổ đến đáo hạn', tone: 'pos' },
     { label: 'Đáo hạn gần nhất', value: bk.nextMaturity ? fmtDate(bk.nextMaturity) : '—', sub: daysLeft(bk.daysToNextMaturity), tone: 'warn' },
   ];
   const loanKpis: KpiItem[] = [

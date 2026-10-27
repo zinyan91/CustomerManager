@@ -12,6 +12,7 @@ const fetchOverdue = vi.fn();
 vi.mock('../../lib/api', () => ({
   fetchCustomerByIdAPI: (...a: unknown[]) => fetchCustomerById(...a),
   fetchCreditContractsByCustomerAPI: (...a: unknown[]) => fetchCreditContracts(...a),
+  fetchPledgeLoanBundleByCustomerAPI: async () => ({ loans: [], links: [], repayments: [] }),
   fetchContractsByCustomerAPI: (...a: unknown[]) => fetchContracts(...a),
   fetchPaidPrincipalForContractsAPI: (...a: unknown[]) => fetchPaid(...a),
   fetchOverdueSchedulesAPI: (...a: unknown[]) => fetchOverdue(...a),

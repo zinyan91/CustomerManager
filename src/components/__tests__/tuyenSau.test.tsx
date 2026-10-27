@@ -29,6 +29,7 @@ vi.mock('../../lib/api', () => ({
     { Id: 56, FullName: 'Khách đã lưu trữ', CifKh: '900056', ArchivedAt: '2026-10-20T08:00:00Z' },
   ]),
   fetchCreditContractsByCustomerAPI: async () => [],
+  fetchPledgeLoanBundleByCustomerAPI: async () => ({ loans: [], links: [], repayments: [] }),
   fetchContractsByCustomerAPI: async () => ([
     {
       Id: 912, CustomerId: 55, ContractNumber: 'KUNN-912',

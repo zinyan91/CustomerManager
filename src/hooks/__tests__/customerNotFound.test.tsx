@@ -20,6 +20,7 @@ const fetchSchedules = vi.fn();
 vi.mock('../../lib/api', () => ({
   fetchCustomersAPI: (...a: unknown[]) => fetchCustomers(...a),
   fetchCreditContractsByCustomerAPI: (...a: unknown[]) => fetchCreditContracts(...a),
+  fetchPledgeLoanBundleByCustomerAPI: async () => ({ loans: [], links: [], repayments: [] }),
   fetchContractsByCustomerAPI: (...a: unknown[]) => fetchContracts(...a),
   fetchCollateralsByCustomerAPI: (...a: unknown[]) => fetchCollaterals(...a),
   fetchMortgageContractsAPI: async () => [],

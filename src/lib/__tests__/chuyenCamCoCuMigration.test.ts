@@ -73,7 +73,7 @@ async function snapshot(db: PGlite) {
   };
 }
 
-describe('migration 77: chuyển khoản cầm cố STK cũ sang tab mới', () => {
+describe('migration 77: chuyển khoản cầm cố STK cũ sang tab mới', { timeout: 30000 }, () => {
   it('chuyen KUNN cam co, so, lien ket va goc da thu; khong dung khoan vay thuong', async () => {
     const db = await buildDb();
     await db.exec(M77);

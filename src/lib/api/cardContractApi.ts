@@ -5,16 +5,20 @@ import { unarchiveCustomer } from './customerApi';
 import { applyOwnerScope, customerEmbed, type OwnerScope } from '../ownerScope';
 import { getActiveOwnerScope } from '../ownerScopeStore';
 
+export async function fetchCardContractsStrictAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<CardContract[]> {
+  const { data, error } = await applyOwnerScope(
+    supabase.from('CardContracts').select(`*, ${customerEmbed(scope)}` as '*'),
+    scope,
+    'customer.OwnerId'
+  );
+  if (error) throw new Error(error.message);
+  return (data || []).sort((a: any, b: any) =>
+    (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
+}
+
 export async function fetchCardContractsAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<CardContract[]> {
   try {
-    const { data, error } = await applyOwnerScope(
-      supabase.from('CardContracts').select(`*, ${customerEmbed(scope)}` as '*'),
-      scope,
-      'customer.OwnerId'
-    );
-    if (error) throw error;
-    return (data || []).sort((a: any, b: any) =>
-      (a.customer?.FullName || '').localeCompare(b.customer?.FullName || '', 'vi'));
+    return await fetchCardContractsStrictAPI(scope);
   } catch (err) {
     console.error('fetchCardContractsAPI error:', err);
     return [];

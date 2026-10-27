@@ -5,10 +5,10 @@ import { MemoryRouter } from 'react-router';
 import type { CreditContract, LoanContract } from '../../types';
 
 const api = vi.hoisted(() => ({
-  fetchCustomersAPI: vi.fn(),
-  fetchCollateralsAPI: vi.fn(),
-  fetchContractsAPI: vi.fn(),
-  fetchCardContractsAPI: vi.fn(),
+  fetchCustomersStrictAPI: vi.fn(),
+  fetchCollateralsStrictAPI: vi.fn(),
+  fetchContractsStrictAPI: vi.fn(),
+  fetchCardContractsStrictAPI: vi.fn(),
   fetchOutstandingSchedulesAPI: vi.fn(),
   fetchAllCreditContractsAPI: vi.fn(),
   fetchPaidPrincipalMapAPI: vi.fn(),
@@ -36,10 +36,10 @@ const OLD_KUNN = {
 } as LoanContract;
 
 function setup(creditContracts: CreditContract[]) {
-  api.fetchCustomersAPI.mockResolvedValue([{ Id: 7, FullName: 'NGÔ NHỊ ĐẠT' }]);
-  api.fetchCollateralsAPI.mockResolvedValue([]);
-  api.fetchContractsAPI.mockResolvedValue([OLD_KUNN]);
-  api.fetchCardContractsAPI.mockResolvedValue([]);
+  api.fetchCustomersStrictAPI.mockResolvedValue([{ Id: 7, FullName: 'NGÔ NHỊ ĐẠT' }]);
+  api.fetchCollateralsStrictAPI.mockResolvedValue([]);
+  api.fetchContractsStrictAPI.mockResolvedValue([OLD_KUNN]);
+  api.fetchCardContractsStrictAPI.mockResolvedValue([]);
   api.fetchOutstandingSchedulesAPI.mockResolvedValue([]);
   api.fetchAllCreditContractsAPI.mockResolvedValue(creditContracts);
   api.fetchPaidPrincipalMapAPI.mockResolvedValue({});

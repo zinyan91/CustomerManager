@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { UI } from '../../lib/uiClasses';
 import { selectAlertRows } from '../../lib/reports/alertData';
 import {
-  fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI,
+  fetchCustomersStrictAPI, fetchCollateralsStrictAPI, fetchContractsStrictAPI, fetchCardContractsStrictAPI,
   fetchOutstandingSchedulesAPI, fetchAllCreditContractsAPI, fetchPaidPrincipalMapAPI,
   fetchAllPledgeLoanBundlesAPI,
 } from '../../lib/api';
@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { DueSectionPanel, dueBadgeClass, dueBadgeText } from '../dashboard/DueSectionPanel';
 import { DashboardSummaryKpis } from '../dashboard/DashboardSummaryKpis';
+import { ErrorState } from '../ui/FeedbackStates';
 import { DashboardPortfolioStructure } from '../dashboard/DashboardPortfolioStructure';
 import type { ColumnDef } from '../ui/DataTable';
 
@@ -45,6 +46,7 @@ export const DashboardView: React.FC = () => {
   const [paidPrincipalMap, setPaidPrincipalMap] = useState<Record<number, number>>({});
   const [pledge, setPledge] = useState<PledgeBundle>({ loans: [], links: [], repayments: [], books: [] });
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,10 +57,10 @@ export const DashboardView: React.FC = () => {
     setLoading(true);
     try {
       const [resCus, resCol, resCon, resCard, resCc, resPaid] = await Promise.all([
-        fetchCustomersAPI(),
-        fetchCollateralsAPI(),
-        fetchContractsAPI(),
-        fetchCardContractsAPI(),
+        fetchCustomersStrictAPI(),
+        fetchCollateralsStrictAPI(),
+        fetchContractsStrictAPI(),
+        fetchCardContractsStrictAPI(),
         fetchAllCreditContractsAPI(),
         fetchPaidPrincipalMapAPI().catch(() => ({} as Record<number, number>)),
       ]);
@@ -69,9 +71,11 @@ export const DashboardView: React.FC = () => {
       setCardContracts(resCard);
       setCreditContracts(resCc);
       setPaidPrincipalMap(resPaid);
+      setLoadError(null);
       try {
         setPledge(await fetchAllPledgeLoanBundlesAPI());
       } catch (err) {
+        setPledge({ loans: [], links: [], repayments: [], books: [] });
         show('error', `Không nạp được khoản vay cầm cố: ${err instanceof Error ? err.message : String(err)}. Tổng dư nợ chưa gồm phần cầm cố.`);
       }
 
@@ -84,7 +88,7 @@ export const DashboardView: React.FC = () => {
         setScheduleError(err instanceof Error ? err.message : 'Không nạp được lịch trả nợ.');
       }
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
+      setLoadError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -451,6 +455,18 @@ export const DashboardView: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent"></div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="w-full pb-8">
+        <ErrorState
+          title="Không nạp được dữ liệu Dashboard"
+          message={<span role="alert">{loadError}</span>}
+          onRetry={() => void fetchDashboardData()}
+        />
       </div>
     );
   }

@@ -3,11 +3,34 @@ import { calculateKpiForecast, createKpiForecastInputs, kpiTenureCoefficient } f
 
 describe('dự báo KPI RBO, CSO', () => {
   it('khớp bộ dữ liệu mẫu trong workbook', () => {
-    const result = calculateKpiForecast(createKpiForecastInputs());
+    const inputs = createKpiForecastInputs();
+    inputs.tenureMonths = 8;
+    inputs.actuals.netDeposit = 370;
+    inputs.actuals.managedLoan = 2627;
+    inputs.actuals.managedDeposit = 650000;
+    inputs.fees.beautifulNumber = 2;
+    inputs.fees.nonLifeInsurance = 15;
+    inputs.fees.creditActivity = 0.02;
+    const result = calculateKpiForecast(inputs);
     expect(result.planPoints).toBeCloseTo(285.2, 8);
     expect(result.actualPoints).toBeCloseTo(155.255, 8);
     expect(result.completion).toBeCloseTo(0.5443723702664797, 12);
     expect(result.bonus).toBe(0);
+  });
+
+  it('khởi tạo không có dữ liệu thực hiện mẫu', () => {
+    const inputs = createKpiForecastInputs();
+    expect(inputs.tenureMonths).toBe(0);
+    expect(Object.values(inputs.actuals).every(value => value === 0)).toBe(true);
+    expect(Object.values(inputs.fees).every(value => value === 0)).toBe(true);
+  });
+
+  it('giữ được kết quả thực hiện âm khi người dùng nhập số âm', () => {
+    const inputs = createKpiForecastInputs();
+    inputs.actuals.netLoan = -120;
+    const row = calculateKpiForecast(inputs).rows.find(item => item.id === 'netLoan');
+    expect(row?.actual).toBe(-120);
+    expect(row?.actualPoints).toBe(-4.08);
   });
 
   it.each([
@@ -37,6 +60,7 @@ describe('dự báo KPI RBO, CSO', () => {
   it('tính ba bậc thưởng và điều kiện tăng trưởng cho RBO', () => {
     const inputs = createKpiForecastInputs();
     inputs.actuals.netLoan = 1200;
+    inputs.tenureMonths = 24;
     inputs.actuals.netDeposit = 5000;
     inputs.actuals.netCasa = 1000;
     inputs.actuals.managedLoan = 100000;

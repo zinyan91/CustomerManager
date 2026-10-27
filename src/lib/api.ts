@@ -4,6 +4,8 @@ export * from './api/creditContractApi';
 export * from './api/mortgageContractApi';
 export * from './api/loanContractApi';
 export * from './api/cardContractApi';
+export * from './api/savingsBookApi';
+export * from './api/pledgeLoanApi';
 export * from './api/postLoanApi';
 export * from './api/rateQuoteApi';
 export * from './api/cofApi';

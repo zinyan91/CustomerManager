@@ -73,6 +73,24 @@ describe('saveSavingsBookAPI', () => {
     expect((insert?.args[0] as Record<string, unknown>).MaturityDate).toBe('2027-04-15');
   });
 
+  it('sua so chi gui cot duoc sua va chi sua so chua tat toan', async () => {
+    h.result = { data: { Id: 5 }, error: null };
+    await saveSavingsBookAPI({
+      Id: 5, CustomerId: 1, BookNumber: 'STK-1', Amount: 1, IsClosed: false, ClosedDate: null, ClosingInterest: null,
+      MovedFromCollateralId: 11, CreatedAt: 'x',
+    });
+    const update = h.calls.find((c) => c.op === 'update')?.args[0] as Record<string, unknown>;
+    for (const k of ['IsClosed', 'ClosedDate', 'ClosingInterest', 'MovedFromCollateralId', 'CreatedAt', 'CustomerId', 'Id']) {
+      expect(update, k).not.toHaveProperty(k);
+    }
+    expect(h.calls.some((c) => c.op === 'eq' && c.args[0] === 'IsClosed' && c.args[1] === false)).toBe(true);
+  });
+
+  it('sua so da tat toan bao loi ro rang', async () => {
+    h.result = { data: null, error: { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned' } };
+    await expect(saveSavingsBookAPI({ Id: 5, BookNumber: 'STK-1', Amount: 1 })).rejects.toThrow('Sổ STK-1 đã tất toán hoặc bạn không còn quyền sửa.');
+  });
+
   it('trung so so doi thanh cau tieng Viet', async () => {
     h.result = { data: null, error: { code: '23505', message: 'duplicate key' } };
     await expect(saveSavingsBookAPI({ CustomerId: 1, BookNumber: 'STK-1', Amount: 1 })).rejects.toThrow('Số sổ "STK-1" đã tồn tại trên hệ thống.');

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { formatNumberWith, parseNumberWith } from '../../lib/formatSettings';
 import { useFormatSettings } from '../../context/FormatSettingsContext';
 import { KPI_FORECAST_RANKS, KPI_FORECAST_REGIONS, type KpiForecastInputs, type KpiForecastRank, type KpiForecastRegion } from '../../types/kpiForecast';
@@ -15,6 +16,7 @@ export function KpiForecastControls({
   onTenureChange: (months: number) => void;
 }) {
   const { formatSettings } = useFormatSettings();
+  const [tenureDraft, setTenureDraft] = useState<string | null>(null);
 
   return (
     <div className="workspace-toolbar grid gap-2 border-y border-line bg-surface px-3 py-2 sm:grid-cols-3">
@@ -33,9 +35,13 @@ export function KpiForecastControls({
       <label className="space-y-1 text-[length:var(--fs-label)] font-medium text-ink-muted">
         <span className="block">Thâm niên chính thức (tháng)</span>
         <Input type="text" inputMode="numeric"
-          value={inputs.tenureMonths === 0 ? '' : formatNumberWith(inputs.tenureMonths, 0, formatSettings.numberStyle)}
+          value={tenureDraft ?? (inputs.tenureMonths === 0 ? '' : formatNumberWith(inputs.tenureMonths, 0, formatSettings.numberStyle))}
           className="kpi-forecast-number-input"
-          onChange={event => onTenureChange(Math.max(0, Math.trunc(parseNumberWith(event.target.value, formatSettings.numberStyle))))} />
+          onChange={event => {
+            setTenureDraft(event.target.value);
+            onTenureChange(Math.max(0, Math.trunc(parseNumberWith(event.target.value, formatSettings.numberStyle))));
+          }}
+          onBlur={() => setTenureDraft(null)} />
       </label>
     </div>
   );

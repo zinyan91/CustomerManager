@@ -57,4 +57,15 @@ describe('màn dự báo KPI RBO, CSO', () => {
     expect(within(row).getByText('18,02')).toBeTruthy();
     expect(within(row).getByText('144,20')).toBeTruthy();
   });
+
+  it('không định dạng lại giữa lúc đang gõ số', () => {
+    render(<KpiForecastView />);
+    const input = screen.getByLabelText('Thực hiện Tăng ròng dư nợ') as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: '59000' } });
+    expect(input.value).toBe('59000');
+
+    fireEvent.blur(input);
+    expect(input.value).toBe('59.000,00');
+  });
 });

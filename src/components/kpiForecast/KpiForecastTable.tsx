@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { formatNumberWith, parseNumberWith } from '../../lib/formatSettings';
 import { useFormatSettings } from '../../context/FormatSettingsContext';
 import { fmtPercent } from '../../lib/utils';
@@ -17,10 +17,28 @@ export function KpiForecastTable({
   onFeeChange: (id: KpiForecastFeeId, value: number) => void;
 }) {
   const { formatSettings } = useFormatSettings();
+  const [draftValues, setDraftValues] = useState<Record<string, string>>({});
   const amountDigits = Math.max(formatSettings.decimalDigits, 2);
   const formatInput = (value: number, digits: number) => value === 0
     ? ''
     : formatNumberWith(value, digits, formatSettings.numberStyle);
+  const inputValue = (key: string, value: number, digits: number) => (
+    Object.prototype.hasOwnProperty.call(draftValues, key)
+      ? draftValues[key]
+      : formatInput(value, digits)
+  );
+  const commitInput = (key: string, rawValue: string, commit: (value: number) => void) => {
+    setDraftValues(current => ({ ...current, [key]: rawValue }));
+    commit(parseNumberWith(rawValue, formatSettings.numberStyle));
+  };
+  const formatCommittedInput = (key: string) => {
+    setDraftValues(current => {
+      if (!Object.prototype.hasOwnProperty.call(current, key)) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
 
   return (
     <section aria-labelledby="kpi-forecast-table-title" className="border-y border-line bg-panel">
@@ -55,11 +73,13 @@ export function KpiForecastTable({
                       </div>
                     : <Input aria-label={`Thực hiện ${row.label}`} type="text"
                         inputMode={row.unit === 'Triệu đồng' ? 'decimal' : 'numeric'}
-                        value={formatInput(row.actual, row.unit === 'Triệu đồng' ? amountDigits : 0)}
-                        onChange={event => onActualChange(
-                          row.id as Exclude<KpiForecastMetricId, 'fees'>,
-                          parseNumberWith(event.target.value, formatSettings.numberStyle),
+                        value={inputValue(`actual:${row.id}`, row.actual, row.unit === 'Triệu đồng' ? amountDigits : 0)}
+                        onChange={event => commitInput(
+                          `actual:${row.id}`,
+                          event.target.value,
+                          value => onActualChange(row.id as Exclude<KpiForecastMetricId, 'fees'>, value),
                         )}
+                        onBlur={() => formatCommittedInput(`actual:${row.id}`)}
                         className="kpi-forecast-number-input text-right font-mono" />}
                 </div>
                 <div role="cell" className="text-right font-mono tabular-nums">
@@ -78,11 +98,13 @@ export function KpiForecastTable({
                   <div role="cell" className="text-right font-mono tabular-nums text-ink-faint">—</div>
                   <div role="cell">
                     <Input aria-label={`Thực hiện ${feeRow.label}`} type="text" inputMode="decimal"
-                      value={formatInput(feeRow.actual, amountDigits)}
-                      onChange={event => onFeeChange(
-                        feeRow.id,
-                        parseNumberWith(event.target.value, formatSettings.numberStyle),
+                      value={inputValue(`fee:${feeRow.id}`, feeRow.actual, amountDigits)}
+                      onChange={event => commitInput(
+                        `fee:${feeRow.id}`,
+                        event.target.value,
+                        value => onFeeChange(feeRow.id, value),
                       )}
+                      onBlur={() => formatCommittedInput(`fee:${feeRow.id}`)}
                       className="kpi-forecast-number-input text-right font-mono" />
                   </div>
                   <div role="cell" className="text-right font-mono tabular-nums text-ink-faint">—</div>

@@ -179,6 +179,7 @@ DECLARE
   v_link     jsonb;
   v_book     record;
   v_sum      numeric := 0;
+  v_old      record;
 BEGIN
   IF p_links IS NULL OR jsonb_typeof(p_links) <> 'array' OR jsonb_array_length(p_links) = 0 THEN
     RAISE EXCEPTION 'Khoản vay cầm cố phải gắn ít nhất một sổ tiết kiệm';
@@ -209,6 +210,11 @@ BEGIN
             (p_loan->>'DisbursementDate')::date, (p_loan->>'DueDate')::date, p_loan->>'LoanPurpose', p_loan->>'Note')
     RETURNING "Id" INTO v_id;
   ELSE
+    SELECT * INTO v_old FROM "PledgeLoans" WHERE "Id" = v_id FOR UPDATE;
+    IF FOUND AND EXISTS (SELECT 1 FROM "PledgeLoanRepayments" WHERE "PledgeLoanId" = v_id)
+       AND (v_old."Amount" <> v_amount OR v_old."DisbursementDate" <> (p_loan->>'DisbursementDate')::date) THEN
+      RAISE EXCEPTION 'Khoản vay % đã có lần trả nợ: không sửa được số tiền vay và ngày giải ngân', v_old."ContractNumber";
+    END IF;
     UPDATE "PledgeLoans" SET
       "ContractNumber"   = btrim(p_loan->>'ContractNumber'),
       "Amount"           = v_amount,
@@ -245,6 +251,7 @@ DECLARE
   v_principal   numeric := coalesce((p_repayment->>'PrincipalPaid')::numeric, 0);
   v_book_id     bigint  := nullif(p_repayment->>'OffsetSavingsBookId', '')::bigint;
   v_outstanding numeric;
+  v_last        date;
   v_id          bigint;
 BEGIN
   SELECT * INTO v_loan FROM "PledgeLoans" WHERE "Id" = p_loan_id FOR UPDATE;
@@ -255,8 +262,16 @@ BEGIN
     RAISE EXCEPTION 'Khoản vay đã tất toán';
   END IF;
 
-  SELECT v_loan."Amount" - coalesce(sum("PrincipalPaid"), 0) INTO v_outstanding
+  SELECT v_loan."Amount" - coalesce(sum("PrincipalPaid"), 0), greatest(v_loan."DisbursementDate", max("RepaymentDate"))
+    INTO v_outstanding, v_last
     FROM "PledgeLoanRepayments" WHERE "PledgeLoanId" = p_loan_id;
+
+  IF v_kind = 'due' THEN
+    v_date := v_loan."DueDate";
+  END IF;
+  IF v_date IS NULL OR v_date < v_last THEN
+    RAISE EXCEPTION 'Ngày trả phải từ ngày % trở đi', v_last;
+  END IF;
 
   IF v_kind = 'partial' THEN
     IF v_principal <= 0 OR v_principal >= v_outstanding THEN
@@ -272,6 +287,9 @@ BEGIN
       WHERE "PledgeLoanId" = p_loan_id AND "SavingsBookId" = v_book_id AND "ReleasedDate" IS NULL
     ) THEN
       RAISE EXCEPTION 'Sổ tất toán để cấn trừ phải là sổ đang bảo đảm cho khoản vay';
+    END IF;
+    IF EXISTS (SELECT 1 FROM "SavingsBooks" WHERE "Id" = v_book_id AND "IsClosed" FOR UPDATE) THEN
+      RAISE EXCEPTION 'Sổ đã tất toán, không cấn trừ lần nữa được';
     END IF;
   END IF;
 

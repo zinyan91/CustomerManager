@@ -213,6 +213,49 @@ describe('migration 76: huy động và cầm cố sổ tiết kiệm', () => {
     expect((await db.query(`SELECT * FROM public."PledgeLoanRepayments" WHERE "PledgeLoanId" = $1`, [loanId])).rows).toHaveLength(0);
   });
 
+  it('ngay tra truoc lan tra gan nhat bi tu choi', async () => {
+    await actAs(db, 'alice');
+    const b = await addBook(db, 1, 'STK-A-901');
+    const loanId = await saveLoan(db, LOAN('CC-901'), [{ SavingsBookId: b, PrincipalCovered: 400000000 }]);
+    await repay(db, loanId, { RepaymentDate: '2026-11-10', Kind: 'partial', PrincipalPaid: 100000000, InterestPaid: 0, PenaltyPaid: 0 });
+    await expect(repay(db, loanId, { RepaymentDate: '2026-11-05', Kind: 'partial', PrincipalPaid: 50000000, InterestPaid: 0, PenaltyPaid: 0 }))
+      .rejects.toThrow(/Ngày trả phải từ ngày 2026-11-10 trở đi/);
+    await expect(repay(db, loanId, { RepaymentDate: '2026-06-01', Kind: 'full', PrincipalPaid: 300000000, InterestPaid: 0, PenaltyPaid: 0 }))
+      .rejects.toThrow(/Ngày trả phải từ ngày/);
+  });
+
+  it('tra khi den han luon ghi ngay den han', async () => {
+    await actAs(db, 'alice');
+    const b = await addBook(db, 1, 'STK-A-911');
+    const loanId = await saveLoan(db, LOAN('CC-911'), [{ SavingsBookId: b, PrincipalCovered: 400000000 }]);
+    await repay(db, loanId, { RepaymentDate: '2026-10-27', Kind: 'due', PrincipalPaid: 400000000, InterestPaid: 0, PenaltyPaid: 0 });
+    const r = await one<{ d: string }>(db, `SELECT "RepaymentDate"::text AS d FROM public."PledgeLoanRepayments" WHERE "PledgeLoanId" = $1`, [loanId]);
+    expect(r.d).toBe('2027-02-15');
+  });
+
+  it('khong can tru hai lan tren cung mot so da tat toan', async () => {
+    await actAs(db, 'alice');
+    const b = await addBook(db, 1, 'STK-A-921');
+    const l1 = await saveLoan(db, LOAN('CC-921'), [{ SavingsBookId: b, PrincipalCovered: 400000000 }]);
+    const l2 = await saveLoan(db, { ...LOAN('CC-922'), Amount: 50000000 }, [{ SavingsBookId: b, PrincipalCovered: 50000000 }]);
+    await repay(db, l1, { RepaymentDate: '2026-10-27', Kind: 'offset', PrincipalPaid: 400000000, InterestPaid: 0, PenaltyPaid: 0, OffsetSavingsBookId: b }, 1);
+    await expect(repay(db, l2, { RepaymentDate: '2026-10-28', Kind: 'offset', PrincipalPaid: 50000000, InterestPaid: 0, PenaltyPaid: 0, OffsetSavingsBookId: b }, 2))
+      .rejects.toThrow(/đã tất toán/);
+  });
+
+  it('khong sua so tien hay ngay giai ngan sau khi da tra', async () => {
+    await actAs(db, 'alice');
+    const b = await addBook(db, 1, 'STK-A-931');
+    const loanId = await saveLoan(db, LOAN('CC-931'), [{ SavingsBookId: b, PrincipalCovered: 400000000 }]);
+    await repay(db, loanId, { RepaymentDate: '2026-10-27', Kind: 'partial', PrincipalPaid: 100000000, InterestPaid: 0, PenaltyPaid: 0 });
+    await expect(saveLoan(db, { ...LOAN('CC-931'), Id: loanId, Amount: 50000000 }, [{ SavingsBookId: b, PrincipalCovered: 50000000 }]))
+      .rejects.toThrow(/đã có lần trả nợ/);
+    await expect(saveLoan(db, { ...LOAN('CC-931'), Id: loanId, DisbursementDate: '2026-11-01' }, [{ SavingsBookId: b, PrincipalCovered: 400000000 }]))
+      .rejects.toThrow(/đã có lần trả nợ/);
+    const ok = await saveLoan(db, { ...LOAN('CC-931'), Id: loanId, DueDate: '2027-03-01' }, [{ SavingsBookId: b, PrincipalCovered: 400000000 }]);
+    expect(ok).toBe(loanId);
+  });
+
   it('BookNumber trung sau chuan hoa bi tu choi', async () => {
     await actAs(db, 'alice');
     await addBook(db, 1, 'STK-A-801');

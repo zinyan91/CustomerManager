@@ -1,4 +1,4 @@
-import type { Collateral, CreditContract, Customer, LoanContract } from '../../types';
+import type { Collateral, CreditContract, Customer, LoanContract, PledgeBundle } from '../../types';
 import { contractDueState, type DuePeriodRow } from '../duePeriod';
 import { filterByDue, type DueFilter } from '../dueList';
 import { buildHdtdExpiryList } from '../hdtdExpiryAlerts';
@@ -6,6 +6,9 @@ import { appraisalExpiryDate } from '../collateralMath';
 import { parseCollateralIds } from '../creditLimit';
 import { debtGroupFromOverdueDays, outstandingOf } from '../loanMath';
 import { daysUntil } from '../utils';
+import { openLoans, pledgeLoanAsKunn } from '../pledgePortfolio';
+import { outstandingPrincipal } from '../pledgeLoanMath';
+import { pledgeLoanDebtGroup } from '../pledgeLoan';
 
 export const ALERT_REPORTS = [
   { id: 'due', label: 'Kỳ due' },
@@ -23,6 +26,7 @@ export interface AlertSnapshot {
   periods: DuePeriodRow[];
   paidPrincipalMap: Record<number, number>;
   today: string;
+  pledge?: PledgeBundle;
 }
 
 export interface AlertFilters {
@@ -61,7 +65,18 @@ export function selectAlertRows(data: AlertSnapshot, filters: AlertFilters) {
   const kunn = outstandingEligible.map(contract => ({
     contract, customer: customerMap.get(contract.CustomerId),
     daysLeft: daysUntil(contract.KunnDueDate, data.today),
-  })).filter(item => item.daysLeft !== null && item.daysLeft <= 10)
+  }));
+  const pledge = data.pledge;
+  const pledgeKunn = pledge
+    ? openLoans(pledge)
+        .filter(l => !filters.onlyGroup1 || pledgeLoanDebtGroup(l, pledge.repayments, data.today) === 1)
+        .map(l => ({
+          contract: pledgeLoanAsKunn(l, outstandingPrincipal(l, pledge.repayments)),
+          customer: customerMap.get(l.CustomerId),
+          daysLeft: daysUntil(l.DueDate, data.today),
+        }))
+    : [];
+  const kunnDue = [...kunn, ...pledgeKunn].filter(item => item.daysLeft !== null && item.daysLeft <= 10)
     .sort((a,b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
   const credit = buildHdtdExpiryList(outstandingEligible, data.creditContracts, data.today)
     .map(item => ({ ...item, customer: customerMap.get(item.contract.CustomerId) }));
@@ -74,7 +89,7 @@ export function selectAlertRows(data: AlertSnapshot, filters: AlertFilters) {
     .sort((a,b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
   return {
     due: filterByDue(due, filters.due, r => r.state.daysLeft).filter(r => matches(r.customer,r.contract.ContractNumber)),
-    kunn: filterByDue(kunn, filters.due, r => r.daysLeft).filter(r => matches(r.customer,r.contract.ContractNumber)),
+    kunn: filterByDue(kunnDue, filters.due, r => r.daysLeft).filter(r => matches(r.customer,r.contract.ContractNumber)),
     credit: filterByDue(credit, filters.due, r => r.daysLeft).filter(r => matches(r.customer,r.masterNo)),
     collateral: filterByDue(collateral, filters.due, r => r.daysLeft)
       .filter(r => matches(r.customer,r.collateral.AssetCode,r.collateral.Address)),

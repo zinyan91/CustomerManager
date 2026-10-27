@@ -215,9 +215,9 @@ export const DashboardView: React.FC = () => {
     collateral: dueCollateralList,
   } = useMemo(() => selectAlertRows({
     customers, contracts: chuaTatToan, creditContracts, collaterals,
-    periods: duePeriods, paidPrincipalMap, today: todayIso(),
+    periods: duePeriods, paidPrincipalMap, today: todayIso(), pledge,
   }, { onlyGroup1, due: 'all', search: '' }),
-  [customers, chuaTatToan, creditContracts, collaterals, duePeriods, paidPrincipalMap, onlyGroup1]);
+  [customers, chuaTatToan, creditContracts, collaterals, duePeriods, paidPrincipalMap, onlyGroup1, pledge]);
 
   const soNgay = <T extends { daysLeft?: number | null }>(x: T) => x.daysLeft;
 

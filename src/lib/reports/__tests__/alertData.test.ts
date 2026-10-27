@@ -118,3 +118,30 @@ describe('cảnh báo báo cáo giữ cùng phạm vi Dashboard',()=>{
     }
   });
 });
+
+describe('cảnh báo KUNN đến hạn gồm khoản vay cầm cố', () => {
+  const pledgeLoan = {
+    Id: 7, CustomerId: 1, ContractNumber: 'CC-7', Amount: 150_000_000, InterestRate: 8.2,
+    DisbursementDate: '2026-07-27', DueDate: '2026-10-28', LoanPurpose: null, IsClosed: false, ClosedDate: null,
+    ClosedHow: null, LegacyCreditContractId: null, LegacyLoanContractId: null, Note: null, CreatedAt: '',
+  };
+  const pledge = { loans: [pledgeLoan], links: [], repayments: [], books: [] };
+  const base = { ...snapshot, contracts: [], periods: [], pledge };
+
+  it('khoản cầm cố còn ≤ 10 ngày đến hạn hiện như một dòng KUNN', () => {
+    const rows = selectAlertRows(base, filters);
+    expect(rows.kunn.map((r) => [r.contract.ContractNumber, r.daysLeft, r.contract.LoanAmount, r.contract.KunnDueDate, r.contract.KunnTenor, r.customer?.FullName]))
+      .toEqual([['CC-7', 8, 150_000_000, '2026-10-28', '93 ngày', 'Nguyễn An']]);
+  });
+
+  it('còn hơn 10 ngày, đã tất toán hoặc đã trả hết thì không báo', () => {
+    expect(selectAlertRows({ ...base, pledge: { ...pledge, loans: [{ ...pledgeLoan, DueDate: '2026-11-20' }] } }, filters).kunn).toEqual([]);
+    expect(selectAlertRows({ ...base, pledge: { ...pledge, loans: [{ ...pledgeLoan, IsClosed: true }] } }, filters).kunn).toEqual([]);
+  });
+
+  it('chế độ chỉ nhóm 1 bỏ khoản cầm cố quá hạn từ 10 ngày', () => {
+    const late = { ...base, today: '2026-11-07' };
+    expect(selectAlertRows(late, filters).kunn).toEqual([]);
+    expect(selectAlertRows(late, { ...filters, onlyGroup1: false }).kunn.map((r) => r.daysLeft)).toEqual([-10]);
+  });
+});

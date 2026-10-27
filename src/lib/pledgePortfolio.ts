@@ -19,7 +19,7 @@ export interface PledgePortfolioSummary {
   byDebtGroup: Record<DebtGroup, { count: number; amount: number }>;
 }
 
-function openLoans(bundle: Pick<PledgeBundle, 'loans' | 'repayments'>): PledgeLoan[] {
+export function openLoans(bundle: Pick<PledgeBundle, 'loans' | 'repayments'>): PledgeLoan[] {
   return bundle.loans.filter((l) => !l.IsClosed && outstandingPrincipal(l, bundle.repayments) > 0);
 }
 
@@ -98,7 +98,7 @@ function bookAsCollateral(b: SavingsBook): Collateral {
   };
 }
 
-function loanAsKunn(loan: PledgeLoan, outstanding: number): LoanContract {
+export function pledgeLoanAsKunn(loan: PledgeLoan, outstanding: number): LoanContract {
   return {
     Id: -loan.Id,
     CustomerId: loan.CustomerId,
@@ -106,6 +106,9 @@ function loanAsKunn(loan: PledgeLoan, outstanding: number): LoanContract {
     ContractType: 1,
     LoanMethod: PLEDGE_LOAN_METHOD,
     ContractAmount: loan.Amount,
+    LoanAmount: loan.Amount,
+    KunnDueDate: loan.DueDate,
+    KunnTenor: `${signedDays(loan.DisbursementDate, loan.DueDate)} ngày`,
     ContractStartDate: loan.DisbursementDate,
     ContractEndDate: loan.DueDate,
     DisbursementDate: loan.DisbursementDate,
@@ -123,7 +126,7 @@ export function pledgePortfolioRows(bundle: PledgeBundle, customers: Customer[])
     const term = `${signedDays(loan.DisbursementDate, loan.DueDate)} ngày`;
     rows.push({
       customer,
-      kunn: loanAsKunn(loan, outstanding),
+      kunn: pledgeLoanAsKunn(loan, outstanding),
       creditContract: null,
       matchedCollaterals: booksOfLoan(loan, bundle).map(bookAsCollateral),
       masterHdtdNumber: loan.ContractNumber,

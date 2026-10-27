@@ -64,9 +64,9 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
     }
   });
 
-  it('dựng đúng 16 liên kết trong nav', () => {
+  it('dựng đúng 17 liên kết trong nav', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a').length).toBe(16);
+    expect(container.querySelectorAll('nav a').length).toBe(17);
   });
 
   it('chỉ hiện mục Quản trị khi có quyền quản lý người dùng', () => {
@@ -74,7 +74,7 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
     expect(container.querySelector('nav a[href="/admin"]')).toBeNull();
     unmount();
     const co = dungLen(true);
-    expect(co.container.querySelectorAll('nav a').length).toBe(17);
+    expect(co.container.querySelectorAll('nav a').length).toBe(18);
     expect(co.container.querySelector('nav a[href="/admin"]')).toBeTruthy();
   });
 
@@ -105,7 +105,7 @@ describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
 describe('Sidebar dùng liên kết thật', () => {
   it('mỗi mục là một thẻ liên kết, không phải nút', () => {
     const { container } = dungLen();
-    expect(container.querySelectorAll('nav a')).toHaveLength(16);
+    expect(container.querySelectorAll('nav a')).toHaveLength(17);
     expect(container.querySelectorAll('nav button')).toHaveLength(0);
   });
 

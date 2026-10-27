@@ -2,7 +2,7 @@ import type { ScreenId } from './navigation';
 import { ROUTE_OF } from './routes';
 
 export const CUSTOMER_SCOPED_SCREENS = [
-  'credit-contracts', 'loans', 'collaterals', 'mortgage-contracts', 'credit-cards', 'post-loan',
+  'credit-contracts', 'loans', 'collaterals', 'mortgage-contracts', 'savings-pledge', 'credit-cards', 'post-loan',
 ] as const;
 
 export type CustomerScopedScreen = typeof CUSTOMER_SCOPED_SCREENS[number];

@@ -3,8 +3,8 @@ import { NAV_GROUPS, NAV_ITEMS, visibleNavGroups, visibleNavItems } from '../nav
 import { ROUTE_OF } from '../routes';
 
 describe('navigation', () => {
-  it('có đúng 17 màn', () => {
-    expect(NAV_ITEMS).toHaveLength(17);
+  it('có đúng 18 màn', () => {
+    expect(NAV_ITEMS).toHaveLength(18);
   });
 
   it('không id nào trùng', () => {
@@ -47,7 +47,7 @@ describe('navigation', () => {
       'admin', 'business-plan', 'calculators', 'collaterals',
       'credit-cards', 'credit-contracts', 'customers', 'dashboard', 'dispatches', 'inventory',
       'loans', 'mortgage-contracts', 'office', 'post-loan',
-      'rate-quote', 'settings', 'storage',
+      'rate-quote', 'savings-pledge', 'settings', 'storage',
     ]);
   });
 });
@@ -64,13 +64,13 @@ describe('navigation — mục chỉ dành cho quản trị', () => {
   });
 
   it('không có quyền quản lý người dùng thì ẩn mục Người dùng', () => {
-    expect(visibleNavItems(false)).toHaveLength(16);
+    expect(visibleNavItems(false)).toHaveLength(17);
     expect(visibleNavItems(false).some(i => i.id === 'admin')).toBe(false);
     expect(visibleNavGroups(false).flatMap(g => g.items).some(i => i.id === 'admin')).toBe(false);
   });
 
-  it('có quyền thì hiện đủ 17 mục', () => {
-    expect(visibleNavItems(true)).toHaveLength(17);
+  it('có quyền thì hiện đủ 18 mục', () => {
+    expect(visibleNavItems(true)).toHaveLength(18);
     expect(visibleNavGroups(true).flatMap(g => g.items).some(i => i.id === 'admin')).toBe(true);
   });
 

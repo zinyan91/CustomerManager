@@ -44,6 +44,7 @@ export const SCREEN_MODULE: Record<ScreenId, ModuleId | null> = {
   loans: 'credit',
   collaterals: 'credit',
   'mortgage-contracts': 'credit',
+  'savings-pledge': 'credit',
   'credit-cards': 'credit',
   templates: 'credit',
   'post-loan': 'credit',

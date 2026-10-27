@@ -24,6 +24,7 @@ export const LifecycleStepper: React.FC = memo(() => {
     '/loans',
     '/collaterals',
     '/mortgage-contracts',
+    '/savings-pledge',
     '/credit-cards',
     '/post-loan',
   ].some(p => pathname.startsWith(p));
@@ -36,7 +37,7 @@ export const LifecycleStepper: React.FC = memo(() => {
       num: 1,
       label: 'Hồ Sơ CIF',
       screenId: 'customers',
-      isActive: (p) => p.startsWith('/customers') && !p.includes('/credit-contracts') && !p.includes('/loans') && !p.includes('/collaterals') && !p.includes('/mortgage-contracts') && !p.includes('/credit-cards') && !p.includes('/post-loan'),
+      isActive: (p) => p.startsWith('/customers') && !p.includes('/credit-contracts') && !p.includes('/loans') && !p.includes('/collaterals') && !p.includes('/mortgage-contracts') && !p.includes('/savings-pledge') && !p.includes('/credit-cards') && !p.includes('/post-loan'),
     },
     {
       id: 'hdtd',

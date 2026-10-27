@@ -7,15 +7,15 @@ import {
 } from '../customerRoutes';
 
 describe('customerRoutes — dựng đường dẫn', () => {
-  it('sáu màn hồ sơ đều có đường lồng, ghép từ ROUTE_OF nên không lệch được', () => {
+  it('bảy màn hồ sơ đều có đường lồng, ghép từ ROUTE_OF nên không lệch được', () => {
     for (const s of CUSTOMER_SCOPED_SCREENS) {
       expect(customerPath(s, 55)).toBe(`/customers/55${ROUTE_OF[s]}`);
     }
   });
 
-  it('phạm vi khách gồm đúng sáu màn, không hơn không kém', () => {
+  it('phạm vi khách gồm đúng bảy màn, không hơn không kém', () => {
     expect([...CUSTOMER_SCOPED_SCREENS].sort()).toEqual(
-      ['collaterals', 'credit-cards', 'credit-contracts', 'loans', 'mortgage-contracts', 'post-loan']
+      ['collaterals', 'credit-cards', 'credit-contracts', 'loans', 'mortgage-contracts', 'post-loan', 'savings-pledge']
     );
   });
 

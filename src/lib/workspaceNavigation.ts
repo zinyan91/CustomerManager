@@ -8,7 +8,7 @@ import { ADMIN_NAV } from './adminNav';
 
 export const WORKSPACE_SECTIONS = [
   { id: 'overview', label: 'Tổng quan', items: ['dashboard', 'team-kpi', 'kpi-forecast', 'loan-progress', 'office', 'reports'] },
-  { id: 'credit', label: 'Tín dụng', items: ['customers', 'credit-contracts', 'collaterals', 'mortgage-contracts', 'disbursement', 'loans', 'credit-cards', 'post-loan'] },
+  { id: 'credit', label: 'Tín dụng', items: ['customers', 'credit-contracts', 'collaterals', 'mortgage-contracts', 'savings-pledge', 'disbursement', 'loans', 'credit-cards', 'post-loan'] },
   { id: 'finance', label: 'Phân tích', items: ['business-plan', 'corporate-financial', 'toi', 'calculators'] },
   { id: 'documents', label: 'Hồ sơ chứng từ', items: ['templates'] },
   { id: 'dispatch', label: 'Quản lý văn thư', items: ['dispatches'] },

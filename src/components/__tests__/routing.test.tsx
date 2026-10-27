@@ -39,6 +39,7 @@ vi.mock('../views/CreditContractView', () => ({ CreditContractView: () => <div>M
 vi.mock('../views/CollateralView', () => ({ CollateralView: () => <div>MAN:collaterals</div> }));
 vi.mock('../views/MortgageContractView', () => ({ MortgageContractView: () => <div>MAN:mortgage-contracts</div> }));
 vi.mock('../views/CardContractView', () => ({ CardContractView: () => <div>MAN:credit-cards</div> }));
+vi.mock('../views/SavingsPledgeView', () => ({ SavingsPledgeView: () => <div>MAN:savings-pledge</div> }));
 vi.mock('../views/DispatchManagementView', () => ({ DispatchManagementView: () => <div>MAN:dispatches</div> }));
 vi.mock('../views/StorageManagementView', () => ({ StorageManagementView: () => <div>MAN:storage</div> }));
 vi.mock('../views/CardPolicyLookupView', () => ({ CardPolicyLookupView: () => <div>MAN:card-policies</div> }));

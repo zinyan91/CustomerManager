@@ -10,6 +10,7 @@ export const ROUTE_OF: Record<ScreenId, string> = {
   loans: '/loans',
   collaterals: '/collaterals',
   'mortgage-contracts': '/mortgage-contracts',
+  'savings-pledge': '/savings-pledge',
   'credit-cards': '/credit-cards',
   dispatches: '/dispatches',
   storage: '/storage',

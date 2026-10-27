@@ -125,7 +125,7 @@ export function useSavingsPledgeController() {
       setLoanOpen(true);
     },
     close: () => setLoanOpen(false),
-    setField: <K extends keyof PledgeLoan>(key: K, value: PledgeLoan[K]) =>
+    setField: <K extends keyof PledgeLoan>(key: K, value: PledgeLoan[K] | undefined) =>
       setLoanValues((v) => ({ ...v, [key]: value })),
     setLinks: setLoanLinks,
     submit: async () => {

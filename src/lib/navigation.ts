@@ -3,14 +3,14 @@ import {
   LayoutDashboard,
   Users, FileText, Building2, CreditCard,
   ShieldAlert, Settings, Calculator, Percent,
-  Handshake, ClipboardList, Boxes, FileSignature, FolderArchive, Database, UserCog, FileSpreadsheet,
+  Handshake, ClipboardList, Boxes, FileSignature, FolderArchive, Database, UserCog, FileSpreadsheet, PiggyBank,
 } from 'lucide-react';
 import type { TranslationKey } from './i18n';
 import { ROUTE_OF } from './routes';
 
 export type ScreenId =
   | 'dashboard' | 'hub'
-  | 'customers' | 'disbursement' | 'credit-contracts' | 'loans' | 'collaterals' | 'mortgage-contracts' | 'credit-cards' | 'dispatches' | 'storage'
+  | 'customers' | 'disbursement' | 'credit-contracts' | 'loans' | 'collaterals' | 'mortgage-contracts' | 'savings-pledge' | 'credit-cards' | 'dispatches' | 'storage'
   | 'calculators' | 'business-plan' | 'corporate-financial' | 'inventory' | 'shopping-checklist' | 'purchase-statement'
   | 'retail-invoice' | 'rate-quote' | 'cof' | 'reports' | 'office'
   | 'mdsdv' | 'card-policies' | 'templates' | 'quiz-bank'
@@ -49,6 +49,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'loans', labelKey: 'nav.loans', groupKey: 'nav.groupRecords', icon: FileText, path: ROUTE_OF.loans, keywords: ['khoan vay', 'du no', 'loan', 'portfolio'] },
       { id: 'collaterals', labelKey: 'nav.collaterals', groupKey: 'nav.groupRecords', icon: Building2, path: ROUTE_OF.collaterals, keywords: ['tai san bao dam', 'tsbd', 'collateral', 'bat dong san'] },
       { id: 'mortgage-contracts', labelKey: 'nav.mortgageContracts', groupKey: 'nav.groupRecords', icon: FileSignature, path: ROUTE_OF['mortgage-contracts'], keywords: ['hop dong the chap', 'hdtc', 'the chap', 'mortgage'] },
+      { id: 'savings-pledge', labelKey: 'nav.savingsPledge', groupKey: 'nav.groupRecords', icon: PiggyBank, path: ROUTE_OF['savings-pledge'], keywords: ['huy dong', 'so tiet kiem', 'stk', 'cam co', 'tien gui'] },
       { id: 'credit-cards', labelKey: 'nav.creditCards', groupKey: 'nav.groupRecords', icon: CreditCard, path: ROUTE_OF['credit-cards'], keywords: ['the tin dung', 'card', 'han muc'] },
       { id: 'dispatches', labelKey: 'nav.dispatches', groupKey: 'nav.groupRecords', icon: FolderArchive, path: ROUTE_OF.dispatches, keywords: ['van thu', 'tai lieu', 'ho so', 'dispatch', 'cong van'] },
       { id: 'storage', labelKey: 'nav.storage', groupKey: 'nav.groupRecords', icon: Database, path: ROUTE_OF.storage, keywords: ['kho luu tru', 'file ca nhan', 'drive'] },

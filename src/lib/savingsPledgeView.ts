@@ -136,7 +136,7 @@ export function validateLoanForm(
 ): string | null {
   if (!(loan.ContractNumber || '').trim()) return 'Nhập số HĐ cầm cố.';
   if (!loan.Amount || loan.Amount <= 0) return 'Số tiền vay phải lớn hơn 0.';
-  if (loan.InterestRate === undefined || loan.InterestRate === null || loan.InterestRate < 0) return 'Nhập lãi suất.';
+  if (loan.InterestRate === undefined || loan.InterestRate === null || Number.isNaN(loan.InterestRate) || loan.InterestRate < 0) return 'Nhập lãi suất.';
   if (!loan.DisbursementDate || !loan.DueDate) return 'Nhập ngày giải ngân và ngày đến hạn.';
   if (loan.DueDate <= loan.DisbursementDate) return 'Ngày đến hạn phải sau ngày giải ngân.';
   if (links.length === 0) return 'Chọn ít nhất một sổ tiết kiệm bảo đảm.';

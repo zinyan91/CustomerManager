@@ -4,7 +4,9 @@ import { selectAlertRows } from '../../lib/reports/alertData';
 import {
   fetchCustomersAPI, fetchCollateralsAPI, fetchContractsAPI, fetchCardContractsAPI,
   fetchOutstandingSchedulesAPI, fetchAllCreditContractsAPI, fetchPaidPrincipalMapAPI,
+  fetchAllPledgeLoanBundlesAPI,
 } from '../../lib/api';
+import { PLEDGE_LOAN_METHOD, summarizePledgePortfolio } from '../../lib/pledgePortfolio';
 import { dueCutoffIso, type DuePeriodRow } from '../../lib/duePeriod';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
 import { fmtDate, fmtMoney, toIsoDate, daysUntil, todayIso } from '../../lib/utils';
@@ -21,7 +23,7 @@ import { customerPath } from '../../lib/customerRoutes';
 import { summarizeCreditContracts, totalsOfCreditContracts } from '../../lib/creditContract';
 import { Toast, useToast } from '../Toast';
 import { ROUTE_OF } from '../../lib/routes';
-import type { Customer, Collateral, LoanContract, CardContract, CreditContract } from '../../types';
+import type { Customer, Collateral, LoanContract, CardContract, CreditContract, PledgeBundle } from '../../types';
 import {
   Building2, RefreshCw, Calendar, Clock,
   AlertTriangle, Search, X
@@ -41,6 +43,7 @@ export const DashboardView: React.FC = () => {
   const [duePeriods, setDuePeriods] = useState<DuePeriodRow[]>([]);
   const [creditContracts, setCreditContracts] = useState<CreditContract[]>([]);
   const [paidPrincipalMap, setPaidPrincipalMap] = useState<Record<number, number>>({});
+  const [pledge, setPledge] = useState<PledgeBundle>({ loans: [], links: [], repayments: [], books: [] });
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -66,6 +69,11 @@ export const DashboardView: React.FC = () => {
       setCardContracts(resCard);
       setCreditContracts(resCc);
       setPaidPrincipalMap(resPaid);
+      try {
+        setPledge(await fetchAllPledgeLoanBundlesAPI());
+      } catch (err) {
+        show('error', `Không nạp được khoản vay cầm cố: ${err instanceof Error ? err.message : String(err)}. Tổng dư nợ chưa gồm phần cầm cố.`);
+      }
 
       const idsChuaTatToan = resCon.filter(c => !c.IsSettled).map(c => c.Id);
       try {
@@ -122,6 +130,7 @@ export const DashboardView: React.FC = () => {
     totalDebt,
     totalLimit,
     totalCollateralVal,
+    collateralsCount,
     weightedLtv,
     theConHieuLuc,
     hanMucTheDaCap,
@@ -137,9 +146,10 @@ export const DashboardView: React.FC = () => {
         today: todayIso(),
       })
     );
-    const debt = tongHopDong.outstanding;
-    const limit = tongHopDong.granted;
-    const colVal = collaterals.reduce((acc, c) => acc + collateralValue(c), 0);
+    const camCo = summarizePledgePortfolio(pledge, todayIso());
+    const debt = tongHopDong.outstanding + camCo.outstanding;
+    const limit = tongHopDong.granted + camCo.granted;
+    const colVal = collaterals.reduce((acc, c) => acc + collateralValue(c), 0) + camCo.collateralValue;
     const ltv = colVal > 0 ? (debt / colVal) * 100 : 0;
 
     const validCards = cardContracts.filter(c => !c.IsClosed);
@@ -153,7 +163,8 @@ export const DashboardView: React.FC = () => {
     ].map(method => {
       const matched = unSettled.filter(c => c.LoanMethod === method);
       const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
-      return { method, count: matched.length, amount, isGrantedLimit: false };
+      const pledgeExtra = method === PLEDGE_LOAN_METHOD ? camCo : { count: 0, outstanding: 0 };
+      return { method, count: matched.length + pledgeExtra.count, amount: amount + pledgeExtra.outstanding, isGrantedLimit: false };
     });
 
     methodStats.push({
@@ -166,25 +177,28 @@ export const DashboardView: React.FC = () => {
     const groupStats = [1, 2, 3, 4, 5].map(group => {
       const matched = unSettled.filter(c => (debtGroupByContract.get(c.Id) ?? (c.DebtGroup ?? 1)) === group);
       const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
-      return { group, count: matched.length, amount };
+      const pledgeGroup = camCo.byDebtGroup[group as 1 | 2 | 3 | 4 | 5];
+      return { group, count: matched.length + pledgeGroup.count, amount: amount + pledgeGroup.amount };
     });
 
     return {
       chuaTatToan: unSettled,
       totalCustomersCount: customers.length,
-      customersWithDebtCount: new Set(
-        unSettled.filter(c => duNoCua(c) > 0).map(c => c.CustomerId)
-      ).size,
+      customersWithDebtCount: new Set([
+        ...unSettled.filter(c => duNoCua(c) > 0).map(c => c.CustomerId),
+        ...camCo.customerIds,
+      ]).size,
       totalDebt: debt,
       totalLimit: limit,
       totalCollateralVal: colVal,
+      collateralsCount: collaterals.length + camCo.collateralCount,
       weightedLtv: ltv,
       theConHieuLuc: validCards,
       hanMucTheDaCap: cardLimit,
       loanMethodStats: methodStats,
       debtGroupStats: groupStats,
     };
-  }, [customers, contracts, collaterals, cardContracts, creditContracts, paidPrincipalMap, debtGroupByContract]);
+  }, [customers, contracts, collaterals, cardContracts, creditContracts, paidPrincipalMap, debtGroupByContract, pledge]);
 
   const [onlyGroup1, setOnlyGroup1] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -505,7 +519,7 @@ export const DashboardView: React.FC = () => {
         theConHieuLucCount={theConHieuLuc.length}
         hanMucTheDaCap={hanMucTheDaCap}
         totalCollateralVal={totalCollateralVal}
-        collateralsCount={collaterals.length}
+        collateralsCount={collateralsCount}
         weightedLtv={weightedLtv}
         dueAlertsTotal={dueInMonthList.length + dueKunnList.length + dueHmtdList.length + dueCollateralList.length}
         formatMoney={formatMoney}

@@ -11,7 +11,7 @@ export async function fetchCollateralsStrictAPI(scope: OwnerScope = getActiveOwn
   return fetchByCustomerScope<Collateral>(
     ids,
     async (part) => {
-      let query = supabase.from('Collaterals').select('*').order('Id', { ascending: false });
+      let query = supabase.from('Collaterals').select('*').is('MovedToSavingsBookId', null).order('Id', { ascending: false });
       if (part) query = query.in('CustomerId', part);
       const { data, error } = await query;
       if (error) throw error;
@@ -35,7 +35,8 @@ export async function fetchCollateralsByCustomerAPI(customerId: number): Promise
     const { data, error } = await supabase
       .from('Collaterals')
       .select('*')
-      .eq('CustomerId', customerId);
+      .eq('CustomerId', customerId)
+      .is('MovedToSavingsBookId', null);
     if (error) throw error;
     return data || [];
   } catch (err) {

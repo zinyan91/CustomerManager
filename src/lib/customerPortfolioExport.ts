@@ -1,4 +1,5 @@
-import type { Customer, LoanContract, CreditContract, Collateral } from '../types';
+import type { Customer, LoanContract, CreditContract, Collateral, PledgeBundle } from '../types';
+import { pledgePortfolioRows } from './pledgePortfolio';
 import { buildMultiSheetXlsx, type XlsxCell, type XlsxSheet, type XlsxStyle, MIME_XLSX } from './xlsxWriter';
 import { downloadBytes } from './xlsExport';
 import { fmtDate, todayIso } from './utils';
@@ -13,6 +14,7 @@ import {
   fetchContractsAPI,
   fetchAllCreditContractsAPI,
   fetchPaidPrincipalForContractsAPI,
+  fetchAllPledgeLoanBundlesAPI,
 } from './api';
 
 export interface CustomerPortfolioExportParams {
@@ -22,6 +24,7 @@ export interface CustomerPortfolioExportParams {
   collaterals: Collateral[];
   paidPrincipalMap?: Record<number, number>;
   todayStr?: string;
+  pledge?: PledgeBundle;
 }
 
 export interface PortfolioKunnRowData {
@@ -138,6 +141,7 @@ export function buildActivePortfolioData({
   creditContracts,
   collaterals,
   paidPrincipalMap,
+  pledge,
 }: CustomerPortfolioExportParams): PortfolioKunnRowData[] {
   const result: PortfolioKunnRowData[] = [];
   const customerMap = new Map<number, Customer>(customers.map(c => [c.Id, c]));
@@ -185,6 +189,8 @@ export function buildActivePortfolioData({
       hdtdEndDate,
     });
   }
+
+  if (pledge) result.push(...pledgePortfolioRows(pledge, customers));
 
   // Sắp xếp theo tên khách hàng rồi đến số KUNN
   result.sort((a, b) => {
@@ -522,11 +528,12 @@ export async function downloadActiveCustomerPortfolioReport(
 ): Promise<void> {
   try {
     onLoadingChange?.(true);
-    const [customers, collaterals, contracts, creditContracts] = await Promise.all([
+    const [customers, collaterals, contracts, creditContracts, pledge] = await Promise.all([
       fetchCustomersAPI(),
       fetchCollateralsAPI(),
       fetchContractsAPI(),
       fetchAllCreditContractsAPI(),
+      fetchAllPledgeLoanBundlesAPI(),
     ]);
 
     const activeContractIds = contracts.filter(c => !c.IsSettled).map(c => c.Id);
@@ -545,6 +552,7 @@ export async function downloadActiveCustomerPortfolioReport(
       creditContracts,
       collaterals,
       paidPrincipalMap,
+      pledge,
     });
 
     onNotify?.('success', '✓ Đã xuất thành công danh sách khách hàng đang vay ra file Excel!');

@@ -11,6 +11,7 @@ export async function fetchCreditContractsByCustomerAPI(customerId: number): Pro
       .from('CreditContracts')
       .select('*')
       .eq('CustomerId', customerId)
+      .is('MovedToPledgeLoanId', null)
       .order('HdtdNumber', { ascending: true });
     if (error) throw error;
     return data || [];
@@ -25,7 +26,7 @@ export async function fetchAllCreditContractsAPI(scope: OwnerScope = getActiveOw
   return fetchByCustomerScope<CreditContract>(
     ids,
     async (part) => {
-      let query = supabase.from('CreditContracts').select('*').order('HdtdNumber', { ascending: true });
+      let query = supabase.from('CreditContracts').select('*').is('MovedToPledgeLoanId', null).order('HdtdNumber', { ascending: true });
       if (part) query = query.in('CustomerId', part);
       const { data, error } = await query;
       if (error) throw new Error(`Không nạp được danh sách HĐTD: ${error.message}`);

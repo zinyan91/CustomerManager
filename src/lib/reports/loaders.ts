@@ -6,6 +6,8 @@ import {
 } from '../api/loanContractApi';
 import { fetchAllCreditContractsAPI } from '../api/creditContractApi';
 import { fetchCollateralsStrictAPI } from '../api/collateralApi';
+import { fetchAllPledgeLoanBundlesAPI } from '../api/pledgeLoanApi';
+import { pledgeLoanDueRows } from '../pledgePortfolio';
 import { addDaysToDate } from '../loanMath';
 import { REPORT_UPCOMING_DAYS } from './dueBucket';
 import { mapCollateralRows, mapCreditRows, mapDueRows, mapKunnRows } from './mappers';
@@ -25,10 +27,11 @@ async function loadLoanBasics() {
 }
 
 export async function loadPortfolioParams(): Promise<ReportRowSet> {
-  const [basics, creditContracts, collaterals] = await Promise.all([
+  const [basics, creditContracts, collaterals, pledge] = await Promise.all([
     loadLoanBasics(),
     fetchAllCreditContractsAPI(),
     fetchCollateralsStrictAPI(),
+    fetchAllPledgeLoanBundlesAPI(),
   ]);
   return {
     rows: [{
@@ -37,18 +40,24 @@ export async function loadPortfolioParams(): Promise<ReportRowSet> {
       creditContracts,
       collaterals,
       paidPrincipalMap: basics.paid,
+      pledge,
     }],
   };
 }
 
 export async function loadDueRows(ctx: ReportLoadContext): Promise<ReportRowSet> {
-  const { customers, contracts, paid } = await loadLoanBasics();
+  const [{ customers, contracts, paid }, pledge] = await Promise.all([loadLoanBasics(), fetchAllPledgeLoanBundlesAPI()]);
   const dangVay = contracts.filter(k => k.IsSettled !== true);
   const schedules = await fetchOutstandingScheduleDetailsAPI(
     dangVay.map(k => k.Id),
     reportCutoffIso(ctx.todayIso)
   );
-  return { rows: mapDueRows(customers, dangVay, schedules, paid) };
+  return {
+    rows: [
+      ...mapDueRows(customers, dangVay, schedules, paid),
+      ...pledgeLoanDueRows(pledge, customers, ctx.todayIso),
+    ],
+  };
 }
 
 export async function loadKunnRows(ctx: ReportLoadContext): Promise<ReportRowSet> {

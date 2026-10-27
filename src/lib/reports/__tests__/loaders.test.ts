@@ -15,6 +15,9 @@ vi.mock('../../api/loanContractApi', () => ({
 vi.mock('../../api/creditContractApi', () => ({
   fetchAllCreditContractsAPI: vi.fn(async () => []),
 }));
+vi.mock('../../api/pledgeLoanApi', () => ({
+  fetchAllPledgeLoanBundlesAPI: vi.fn(async () => ({ loans: [], links: [], repayments: [], books: [] })),
+}));
 vi.mock('../../api/collateralApi', () => ({
   fetchCollateralsAPI: vi.fn(async () => []),
   fetchCollateralsStrictAPI: vi.fn(async () => { throw loi; }),

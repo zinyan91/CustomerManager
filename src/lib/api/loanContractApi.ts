@@ -9,7 +9,7 @@ import { getActiveOwnerScope } from '../ownerScopeStore';
 
 export async function fetchContractsStrictAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<LoanContract[]> {
   const { data, error } = await applyOwnerScope(
-    supabase.from('LoanContracts').select(`*, ${customerEmbed(scope)}` as '*'),
+    supabase.from('LoanContracts').select(`*, ${customerEmbed(scope)}` as '*').is('MovedToPledgeLoanId', null),
     scope,
     'customer.OwnerId'
   );
@@ -32,6 +32,7 @@ export async function fetchContractsByCustomerAPI(customerId: number): Promise<L
       .from('LoanContracts')
       .select('*, customer:Customers(*)')
       .eq('CustomerId', customerId)
+      .is('MovedToPledgeLoanId', null)
       .order('Id', { ascending: false });
     if (error) throw error;
     return data || [];

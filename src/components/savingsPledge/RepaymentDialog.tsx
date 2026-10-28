@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/Dialog';
-import { Field, Select } from '../ui/Field';
+import { Field, Select, controlClass } from '../ui/Field';
 import { Button } from '../ui/Button';
 import { DateInput } from '../DateInput';
 import { fmtDate, fmtNumber, fmtRate } from '../../lib/utils';
@@ -73,7 +73,7 @@ function RepaymentDialogBody({ loan, bundle, today, onClose, onSubmit }: BodyPro
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Ngày trả" htmlFor="rp-date">
-              <DateInput id="rp-date" value={effectiveDate} disabled={kind === 'due'} onChange={(d) => form.setDate(d)} />
+              <DateInput id="rp-date" className={controlClass()} value={effectiveDate} disabled={kind === 'due'} onChange={(d) => form.setDate(d)} />
             </Field>
             <Field label="Gốc trả" htmlFor="rp-principal">
               <MoneyInput id="rp-principal" value={kind === 'partial' ? form.principal : quote.principal} disabled={kind !== 'partial'}

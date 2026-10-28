@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/Dialog';
-import { Field, Input, Select, Textarea } from '../ui/Field';
+import { Field, Input, Select, Textarea, controlClass } from '../ui/Field';
 import { Button } from '../ui/Button';
 import { DateInput } from '../DateInput';
 import { LOAN_PURPOSES } from '../../lib/loanProductRules';
@@ -53,10 +53,10 @@ export function PledgeLoanForm({ form, bookRows, bundle }: Props) {
               <DecimalInput id="pl-rate" value={v.InterestRate} onChange={(n) => state.setField('InterestRate', n ?? undefined)} />
             </Field>
             <Field label="Ngày giải ngân" htmlFor="pl-disb" required>
-              <DateInput id="pl-disb" value={v.DisbursementDate ?? ''} onChange={(d) => state.setField('DisbursementDate', d)} />
+              <DateInput id="pl-disb" className={controlClass()} value={v.DisbursementDate ?? ''} onChange={(d) => state.setField('DisbursementDate', d)} />
             </Field>
             <Field label="Ngày đến hạn" htmlFor="pl-due" required hint={days !== null ? `${days} ngày` : undefined}>
-              <DateInput id="pl-due" value={v.DueDate ?? ''} onChange={(d) => state.setField('DueDate', d)} />
+              <DateInput id="pl-due" className={controlClass()} value={v.DueDate ?? ''} onChange={(d) => state.setField('DueDate', d)} />
             </Field>
           </div>
 

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Input } from '../ui/Field';
 import { formatMoneyInput, parseDecimalNumber } from '../../lib/utils';
+import { loadFormatSettings, NUMBER_SEPARATORS } from '../../lib/formatSettings';
 
 interface MoneyProps {
   id: string;
@@ -30,7 +31,7 @@ export function MoneyInput({ id, value, onChange, disabled }: MoneyProps) {
       id={id}
       inputMode="numeric"
       disabled={disabled}
-      className="text-right font-mono tabular-nums"
+      className="text-right tabular-nums"
       value={shown}
       onChange={(e) => {
         const raw = e.target.value;
@@ -75,7 +76,7 @@ export function DecimalInput({ id, value, onChange }: DecimalProps) {
     <Input
       id={id}
       inputMode="decimal"
-      className="text-right font-mono tabular-nums"
+      className="text-right tabular-nums"
       value={shown}
       onChange={(e) => {
         setText(e.target.value);
@@ -92,5 +93,6 @@ function parseDecimal(text: string): number | null {
 }
 
 function displayDecimal(value: number | null | undefined): string {
-  return value === null || value === undefined ? '' : String(value).replace('.', ',');
+  if (value === null || value === undefined) return '';
+  return String(value).replace('.', NUMBER_SEPARATORS[loadFormatSettings().numberStyle].decimal);
 }

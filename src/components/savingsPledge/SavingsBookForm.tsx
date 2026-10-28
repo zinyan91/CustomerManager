@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/Dialog';
-import { Field, Input, Select, Textarea } from '../ui/Field';
+import { Field, Input, Select, Textarea, controlClass } from '../ui/Field';
 import { Button } from '../ui/Button';
 import { DateInput } from '../DateInput';
 import {
@@ -54,7 +54,7 @@ export function SavingsBookForm({ form }: { form: SavingsPledgeController['bookF
             <DecimalInput id="sb-rate" value={v.InterestRate} onChange={(n) => setField('InterestRate', n)} />
           </Field>
           <Field label="Ngày gửi" htmlFor="sb-open">
-            <DateInput id="sb-open" value={v.OpenDate ?? ''} onChange={(d) => setField('OpenDate', d || null)} />
+            <DateInput id="sb-open" className={controlClass()} value={v.OpenDate ?? ''} onChange={(d) => setField('OpenDate', d || null)} />
           </Field>
           <div className="grid grid-cols-2 gap-2">
             <Field label="Kỳ hạn" htmlFor="sb-tenor">

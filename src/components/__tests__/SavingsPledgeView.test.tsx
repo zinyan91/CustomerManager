@@ -92,6 +92,16 @@ describe('SavingsPledgeView', () => {
     expect(screen.queryByRole('columnheader', { name: 'Lãi hàng tháng' })).toBeNull();
   });
 
+  it('o ngay trong form so cung kieu dang voi cac o nhap khac', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa thông tin sổ' }));
+    const dialog = await screen.findByRole('dialog');
+    const date = within(dialog).getByLabelText('Ngày gửi', { selector: 'input' }) as HTMLInputElement;
+    const number = within(dialog).getByLabelText(/Số sổ/, { selector: 'input' }) as HTMLInputElement;
+    const base = (c: string) => c.split(/\s+/).filter((x) => x.startsWith('rounded-') || x.startsWith('border') || x === 'px-3' || x === 'py-2' || x === 'text-xs').sort();
+    expect(base(date.className)).toEqual(base(number.className));
+  });
+
   it('trang thai rong', async () => {
     m.books.mockResolvedValue([]);
     m.loans.mockResolvedValue({ loans: [], links: [], repayments: [] });

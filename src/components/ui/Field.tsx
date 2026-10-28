@@ -46,6 +46,14 @@ export const Field: React.FC<FieldProps> = ({
   );
 };
 
+// Một bộ kiểu dáng cho mọi ô nhập (Input, Select, Textarea, DateInput) để form không chỗ to chỗ nhỏ.
+// Select dùng py-[7px] vì trình duyệt tự cộng thêm 2px bên trong ô chọn.
+export function controlClass(hasError = false, padY = 'py-2'): string {
+  return `w-full rounded-[var(--r-control)] px-3 ${padY} text-xs font-semibold text-ink bg-surface/80 hover:bg-surface border transition-colors shadow-2xs placeholder:text-ink-faint focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-50 disabled:cursor-not-allowed ${
+    hasError ? 'border-neg focus:border-neg focus:ring-neg/30' : 'border-line/70'
+  }`;
+}
+
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   hasError?: boolean;
 }
@@ -55,9 +63,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         ref={ref}
-        className={`w-full rounded-[var(--r-control)] px-3 py-2 text-xs font-semibold text-ink bg-surface/80 hover:bg-surface border transition-colors shadow-2xs placeholder:text-ink-faint focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-50 disabled:cursor-not-allowed ${
-          hasError ? 'border-neg focus:border-neg focus:ring-neg/30' : 'border-line/70'
-        } ${className}`}
+        className={`${controlClass(hasError)} ${className}`}
         {...rest}
       />
     );
@@ -74,9 +80,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <select
         ref={ref}
-        className={`w-full rounded-[var(--r-control)] px-3 py-2 text-xs font-semibold text-ink bg-surface/80 hover:bg-surface border transition-colors shadow-2xs focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
-          hasError ? 'border-neg focus:border-neg focus:ring-neg/30' : 'border-line/70'
-        } ${className}`}
+        className={`${controlClass(hasError, 'py-[7px]')} cursor-pointer ${className}`}
         {...rest}
       >
         {children}
@@ -95,9 +99,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <textarea
         ref={ref}
-        className={`w-full rounded-[var(--r-control)] px-3 py-2 text-xs font-semibold text-ink bg-surface/80 hover:bg-surface border transition-colors shadow-2xs placeholder:text-ink-faint focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-50 disabled:cursor-not-allowed ${
-          hasError ? 'border-neg focus:border-neg focus:ring-neg/30' : 'border-line/70'
-        } ${className}`}
+        className={`${controlClass(hasError)} ${className}`}
         {...rest}
       />
     );

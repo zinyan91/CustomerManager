@@ -2,9 +2,10 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { useState } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { MoneyInput } from '../savingsPledge/inputs';
+import { DecimalInput, MoneyInput } from '../savingsPledge/inputs';
+import { resetFormatSettingsCache } from '../../lib/formatSettings';
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); localStorage.clear(); resetFormatSettingsCache(); });
 
 function Harness({ initial = 0 }: { initial?: number }) {
   const [value, setValue] = useState<number>(initial);
@@ -62,5 +63,24 @@ describe('MoneyInput', () => {
     fireEvent.change(input(), { target: { value: '' } });
     expect(value()).toBe('0');
     expect(input().value).toBe('');
+  });
+});
+
+describe('DecimalInput theo kiểu số trong Cài đặt', () => {
+  it('kiểu Việt Nam dùng dấu phẩy thập phân', () => {
+    render(<DecimalInput id="r" value={8.2} onChange={() => {}} />);
+    expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('8,2');
+  });
+
+  it('kiểu quốc tế dùng dấu chấm thập phân', () => {
+    localStorage.setItem('app_number_style', 'en');
+    resetFormatSettingsCache();
+    render(<DecimalInput id="r" value={8.2} onChange={() => {}} />);
+    expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('8.2');
+  });
+
+  it('ô số không dùng font mono, cùng font với các ô khác', () => {
+    render(<MoneyInput id="m" value={1000} onChange={() => {}} />);
+    expect(screen.getByRole('textbox').className).not.toContain('font-mono');
   });
 });

@@ -3,6 +3,7 @@ import type { SavingsBook } from '../../types';
 import { savingsMaturityDate } from '../savingsBook';
 import { applyOwnerScope, customerEmbed, type OwnerScope } from '../ownerScope';
 import { getActiveOwnerScope } from '../ownerScopeStore';
+import { allPages } from './paging';
 
 const EDITABLE_COLUMNS = [
   'BookNumber', 'DepositType', 'Currency', 'ExchangeRate', 'Amount', 'InterestRate', 'OpenDate',
@@ -26,13 +27,11 @@ export async function fetchSavingsBooksByCustomerAPI(customerId: number): Promis
 }
 
 export async function fetchAllSavingsBooksAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<SavingsBook[]> {
-  const { data, error } = await applyOwnerScope(
+  return allPages<SavingsBook>((from, to) => applyOwnerScope(
     supabase.from('SavingsBooks').select(`*, ${customerEmbed(scope)}` as '*'),
     scope,
     'customer.OwnerId'
-  );
-  if (error) throw new Error(error.message);
-  return (data || []) as SavingsBook[];
+  ).order('Id').range(from, to));
 }
 
 export async function saveSavingsBookAPI(book: Partial<SavingsBook>): Promise<SavingsBook> {

@@ -4,6 +4,7 @@ import { chunk } from '../utils';
 import { applyOwnerScope, customerEmbed, type OwnerScope } from '../ownerScope';
 import { getActiveOwnerScope } from '../ownerScopeStore';
 import { fetchAllSavingsBooksAPI } from './savingsBookApi';
+import { allPages } from './paging';
 
 export type PledgeLoanLinkInput = Pick<PledgeLoanLink, 'SavingsBookId' | 'PrincipalCovered'>;
 export type PledgeRepaymentInput = Omit<PledgeLoanRepayment, 'Id' | 'PledgeLoanId' | 'CreatedAt'>;
@@ -20,13 +21,13 @@ async function fetchChildren(loanIds: number[]): Promise<Pick<PledgeBundle, 'lin
   const repayments: PledgeLoanRepayment[] = [];
   for (const ids of chunk(loanIds, 200)) {
     const [l, r] = await Promise.all([
-      supabase.from('PledgeLoanSavingsBooks').select('*').in('PledgeLoanId', ids),
-      supabase.from('PledgeLoanRepayments').select('*').in('PledgeLoanId', ids).order('RepaymentDate', { ascending: true }),
+      allPages<PledgeLoanLink>((from, to) =>
+        supabase.from('PledgeLoanSavingsBooks').select('*').in('PledgeLoanId', ids).order('Id').range(from, to)),
+      allPages<PledgeLoanRepayment>((from, to) =>
+        supabase.from('PledgeLoanRepayments').select('*').in('PledgeLoanId', ids).order('Id').range(from, to)),
     ]);
-    if (l.error) throw new Error(l.error.message);
-    if (r.error) throw new Error(r.error.message);
-    links.push(...((l.data || []) as PledgeLoanLink[]));
-    repayments.push(...((r.data || []) as PledgeLoanRepayment[]));
+    links.push(...l);
+    repayments.push(...r);
   }
   return { links, repayments };
 }
@@ -45,16 +46,14 @@ export async function fetchPledgeLoanBundleByCustomerAPI(
 }
 
 export async function fetchAllPledgeLoanBundlesAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<PledgeBundle> {
-  const [loanRes, books] = await Promise.all([
-    applyOwnerScope(
+  const [loans, books] = await Promise.all([
+    allPages<PledgeLoan>((from, to) => applyOwnerScope(
       supabase.from('PledgeLoans').select(`*, ${customerEmbed(scope)}` as '*'),
       scope,
       'customer.OwnerId'
-    ),
+    ).order('Id').range(from, to)),
     fetchAllSavingsBooksAPI(scope),
   ]);
-  if (loanRes.error) throw new Error(loanRes.error.message);
-  const loans = (loanRes.data || []) as PledgeLoan[];
   return { loans, books, ...(await fetchChildren(loans.map((l) => l.Id))) };
 }
 

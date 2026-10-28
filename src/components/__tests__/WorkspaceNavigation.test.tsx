@@ -77,12 +77,12 @@ describe('workspace shell navigation', () => {
     expect(links).toEqual(['/admin', '/admin/users', '/admin/transfer']);
     expect(document.querySelector('nav[aria-label="Phân hệ"] a[href="/admin"]')).toBeNull();
   });
-  it('opens Reference directly and exposes only its three lookup tools',()=>{
+  it('opens Reference directly and exposes its lookup tools, including rate quote and cost of funds',()=>{
     mount('/dashboard');
     fireEvent.click(screen.getByRole('navigation',{name:'Phân hệ'}).querySelector('a[href="/hub/mdsdv"]')!);
     expect(screen.getByTestId('destination').textContent).toBe('/hub/mdsdv');
     const sidebar=document.querySelector('#app-sidebar')!;
-    expect([...sidebar.querySelectorAll('a')].map(link=>link.getAttribute('href'))).toEqual(['/hub/mdsdv','/hub/card-fees','/hub/quiz']);
+    expect([...sidebar.querySelectorAll('a')].map(link=>link.getAttribute('href'))).toEqual(['/hub/mdsdv','/hub/card-fees','/tools/rate-quote','/hub/cof','/hub/quiz']);
     expect(sidebar.querySelector('a[href="/hub"]')).toBeNull();
   });
   it('opens Team and KPI below Overview in the secondary menu without adding a rail entry', () => {
@@ -154,7 +154,9 @@ describe('workspace shell navigation', () => {
     expect(screen.getByTestId('destination').textContent).toBe('/hub/toi');
     const drawer = document.querySelector('#app-sidebar')!;
     expect(drawer.textContent).not.toContain('BCTC');
-    expect(drawer.querySelector('a[href="/hub/cof"]')).toBeTruthy();
+    expect(drawer.querySelector('a[href="/hub/cof"]')).toBeNull();
+    fireEvent.click(within(rail).getByRole('link', { name: 'Tra cứu' }));
+    expect(document.querySelector('#app-sidebar a[href="/hub/cof"]')).toBeTruthy();
   });
 
   it('finds Hub destinations through the same command menu', () => {

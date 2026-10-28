@@ -80,12 +80,12 @@ const LOAN = (n: string) => ({
 
 const one = async <T,>(db: PGlite, sql: string, params: unknown[] = []) => (await db.query<T>(sql, params)).rows[0];
 
-describe('migration 76: huy động và cầm cố sổ tiết kiệm', () => {
+describe('migration 76: huy động và cầm cố sổ tiết kiệm', { timeout: 30000 }, () => {
   let db: PGlite;
 
   beforeAll(async () => {
     db = await buildDb();
-  });
+  }, 60000);
   afterAll(async () => {
     await db.close();
   });

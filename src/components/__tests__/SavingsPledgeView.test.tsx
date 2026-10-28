@@ -139,6 +139,15 @@ describe('SavingsPledgeView', () => {
     expect(base(date.className)).toEqual(base(number.className));
   });
 
+  it('form khoan vay: mot so thi khong hoi phan goc bao dam, nhieu so moi hoi', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('button', { name: 'Vay cầm cố trên sổ này' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).queryAllByLabelText(/Phần gốc vay bảo đảm/)).toHaveLength(0);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Thêm sổ' }));
+    expect(within(dialog).getAllByLabelText(/Phần gốc vay bảo đảm/)).toHaveLength(2);
+  });
+
   it('trang thai rong', async () => {
     m.books.mockResolvedValue([]);
     m.loans.mockResolvedValue({ loans: [], links: [], repayments: [] });

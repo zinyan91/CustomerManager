@@ -22,7 +22,8 @@ export function PledgeLoanForm({ form, bookRows, bundle }: Props) {
   const state = useLoanFormState(form.initial, form.initialLinks, bundle);
   const v = state.values;
   const openBooks = bookRows.filter((r) => !r.book.IsClosed);
-  const covered = state.links.reduce((s, l) => s + l.PrincipalCovered, 0);
+  const multi = state.links.length > 1;
+  const covered = state.effectiveLinks.reduce((s, l) => s + l.PrincipalCovered, 0);
   const days = v.DisbursementDate && v.DueDate && v.DueDate > v.DisbursementDate ? signedDays(v.DisbursementDate, v.DueDate) : null;
   const unused = openBooks.filter((r) => !state.links.some((l) => l.SavingsBookId === r.book.Id));
 
@@ -63,15 +64,24 @@ export function PledgeLoanForm({ form, bookRows, bundle }: Props) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[length:var(--fs-label)] font-bold uppercase tracking-wider text-ink-muted">Sổ tiết kiệm bảo đảm</span>
-              <span className={`text-xs font-mono tabular-nums ${covered === (v.Amount ?? 0) ? 'text-ink-muted' : 'text-warn'}`}>
-                {fmtNumber(covered)} / {fmtNumber(v.Amount ?? 0)}
-              </span>
+              {multi && (
+                <span className={`text-xs tabular-nums ${covered === (v.Amount ?? 0) ? 'text-ink-muted' : 'text-warn'}`}>
+                  Đã chia {fmtNumber(covered)} / {fmtNumber(v.Amount ?? 0)}
+                </span>
+              )}
             </div>
             <div className="space-y-2">
+              {multi && (
+                <div className="grid grid-cols-[1fr_11rem_auto] gap-2 text-[11px] text-ink-muted">
+                  <span>Sổ</span>
+                  <span className="text-right">Phần gốc vay bảo đảm</span>
+                  <span className="w-10" />
+                </div>
+              )}
               {state.links.map((l, i) => {
                 const row = bookRows.find((r) => r.book.Id === l.SavingsBookId);
                 return (
-                  <div key={i} className="grid grid-cols-[1fr_11rem_auto] gap-2 items-center">
+                  <div key={i} className={`grid gap-2 items-center ${multi ? 'grid-cols-[1fr_11rem_auto]' : 'grid-cols-[1fr_auto]'}`}>
                     <Select aria-label="Sổ bảo đảm" value={l.SavingsBookId} onChange={(e) => setLink(i, { SavingsBookId: Number(e.target.value) })}>
                       {[...(row ? [row] : []), ...unused].map((r) => (
                         <option key={r.book.Id} value={r.book.Id}>
@@ -79,7 +89,10 @@ export function PledgeLoanForm({ form, bookRows, bundle }: Props) {
                         </option>
                       ))}
                     </Select>
-                    <MoneyInput id={`pl-cover-${i}`} value={l.PrincipalCovered} onChange={(n) => setLink(i, { PrincipalCovered: n })} />
+                    {multi && (
+                      <MoneyInput id={`pl-cover-${i}`} ariaLabel={`Phần gốc vay bảo đảm bởi sổ ${row?.book.BookNumber ?? ''}`}
+                        value={l.PrincipalCovered} onChange={(n) => setLink(i, { PrincipalCovered: n })} />
+                    )}
                     <Button variant="ghost" size="sm" onClick={() => state.setLinks(state.links.filter((_, j) => j !== i))}>Bỏ</Button>
                   </div>
                 );
@@ -87,7 +100,7 @@ export function PledgeLoanForm({ form, bookRows, bundle }: Props) {
             </div>
             {unused.length > 0 && (
               <Button variant="secondary" size="sm" className="mt-2"
-                onClick={() => state.setLinks([...state.links, { SavingsBookId: unused[0].book.Id, PrincipalCovered: Math.max(0, (v.Amount ?? 0) - covered) }])}>
+                onClick={() => state.setLinks([...state.effectiveLinks, { SavingsBookId: unused[0].book.Id, PrincipalCovered: Math.max(0, (v.Amount ?? 0) - covered) }])}>
                 Thêm sổ
               </Button>
             )}
@@ -103,7 +116,7 @@ export function PledgeLoanForm({ form, bookRows, bundle }: Props) {
         </div>
         <DialogFooter className="p-4 border-t border-line">
           <Button variant="secondary" onClick={form.close}>Huỷ</Button>
-          <Button loading={form.saving} onClick={() => void form.submit(v, state.links)}>Lưu khoản vay</Button>
+          <Button loading={form.saving} onClick={() => void form.submit(v, state.effectiveLinks)}>Lưu khoản vay</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

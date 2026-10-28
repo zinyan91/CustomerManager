@@ -54,3 +54,18 @@ describe('useLoanFormState', () => {
     expect(result.current.warnings).toContain('Ngày đến hạn vượt ngày đáo hạn sớm nhất của sổ bảo đảm.');
   });
 });
+
+describe('useLoanFormState — một sổ thì phần bảo đảm là toàn bộ số tiền vay', () => {
+  it('một sổ: phần gốc bảo đảm tự bằng số tiền vay, kể cả khi đổi số tiền', () => {
+    const { result } = renderHook(() => useLoanFormState({ ...CC_0418, Id: undefined, Amount: 200000000 }, [{ SavingsBookId: 1, PrincipalCovered: 0 }], SAMPLE));
+    expect(result.current.effectiveLinks).toEqual([{ SavingsBookId: 1, PrincipalCovered: 200000000 }]);
+    act(() => result.current.setField('Amount', 250000000));
+    expect(result.current.effectiveLinks).toEqual([{ SavingsBookId: 1, PrincipalCovered: 250000000 }]);
+  });
+
+  it('nhiều sổ: giữ phần gốc người dùng chia', () => {
+    const links = [{ SavingsBookId: 2, PrincipalCovered: 290000000 }, { SavingsBookId: 1, PrincipalCovered: 60000000 }];
+    const { result } = renderHook(() => useLoanFormState(CC_0907, links, SAMPLE));
+    expect(result.current.effectiveLinks).toEqual(links);
+  });
+});

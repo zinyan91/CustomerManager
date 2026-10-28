@@ -5,6 +5,7 @@ import { loadFormatSettings, NUMBER_SEPARATORS } from '../../lib/formatSettings'
 
 interface MoneyProps {
   id: string;
+  ariaLabel?: string;
   value: number | null | undefined;
   onChange: (v: number) => void;
   disabled?: boolean;
@@ -12,7 +13,7 @@ interface MoneyProps {
 
 // Số tiền VND là số nguyên: chỉ đọc chữ số. Bộ đọc số chung coi "4.5000" là 4,5 nên không dùng ở đây.
 // Định dạng lại sau mỗi phím rồi đặt con trỏ theo số chữ số đứng trước nó, để sửa giữa số không nhảy về cuối.
-export function MoneyInput({ id, value, onChange, disabled }: MoneyProps) {
+export function MoneyInput({ id, ariaLabel, value, onChange, disabled }: MoneyProps) {
   const ref = useRef<HTMLInputElement>(null);
   const caretDigits = useRef<number | null>(null);
   const shown = value ? formatMoneyInput(String(Math.round(value))) : '';
@@ -29,6 +30,7 @@ export function MoneyInput({ id, value, onChange, disabled }: MoneyProps) {
     <Input
       ref={ref}
       id={id}
+      aria-label={ariaLabel}
       inputMode="numeric"
       disabled={disabled}
       className="text-right tabular-nums"

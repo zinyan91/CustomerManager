@@ -9,15 +9,22 @@ interface MoneyProps {
   disabled?: boolean;
 }
 
+// Giữ nguyên chuỗi đang gõ, chỉ định dạng khi rời ô: định dạng theo từng phím làm con trỏ nhảy về cuối
+// và không xoá được dấu phân cách.
 export function MoneyInput({ id, value, onChange, disabled }: MoneyProps) {
+  const [draft, setDraft] = useState<string | null>(null);
   return (
     <Input
       id={id}
       inputMode="numeric"
       disabled={disabled}
       className="text-right font-mono tabular-nums"
-      value={value ? formatMoneyInput(String(Math.round(value))) : ''}
-      onChange={(e) => onChange(parseMoneyInput(e.target.value))}
+      value={draft ?? (value ? formatMoneyInput(String(Math.round(value))) : '')}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        onChange(parseMoneyInput(e.target.value));
+      }}
+      onBlur={() => setDraft(null)}
     />
   );
 }

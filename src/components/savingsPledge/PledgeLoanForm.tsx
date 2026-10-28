@@ -6,6 +6,8 @@ import { LOAN_PURPOSES } from '../../lib/loanProductRules';
 import { signedDays } from '../../lib/pledgeLoanMath';
 import { fmtNumber } from '../../lib/utils';
 import type { BookRow } from '../../lib/savingsPledgeView';
+import type { PledgeBundle } from '../../types';
+import { useLoanFormState } from '../../hooks/useLoanFormState';
 import type { SavingsPledgeController } from '../../hooks/useSavingsPledgeController';
 import { DecimalInput, MoneyInput } from './inputs';
 import { WarningNote } from './shared';
@@ -13,17 +15,19 @@ import { WarningNote } from './shared';
 interface Props {
   form: SavingsPledgeController['loanForm'];
   bookRows: BookRow[];
+  bundle: PledgeBundle;
 }
 
-export function PledgeLoanForm({ form, bookRows }: Props) {
-  const v = form.values;
+export function PledgeLoanForm({ form, bookRows, bundle }: Props) {
+  const state = useLoanFormState(form.initial, form.initialLinks, bundle);
+  const v = state.values;
   const openBooks = bookRows.filter((r) => !r.book.IsClosed);
-  const covered = form.links.reduce((s, l) => s + l.PrincipalCovered, 0);
+  const covered = state.links.reduce((s, l) => s + l.PrincipalCovered, 0);
   const days = v.DisbursementDate && v.DueDate && v.DueDate > v.DisbursementDate ? signedDays(v.DisbursementDate, v.DueDate) : null;
-  const unused = openBooks.filter((r) => !form.links.some((l) => l.SavingsBookId === r.book.Id));
+  const unused = openBooks.filter((r) => !state.links.some((l) => l.SavingsBookId === r.book.Id));
 
   const setLink = (index: number, patch: Partial<{ SavingsBookId: number; PrincipalCovered: number }>) =>
-    form.setLinks(form.links.map((l, i) => (i === index ? { ...l, ...patch } : l)));
+    state.setLinks(state.links.map((l, i) => (i === index ? { ...l, ...patch } : l)));
 
   return (
     <Dialog open={form.open} onOpenChange={(open) => !open && form.close()}>
@@ -34,25 +38,25 @@ export function PledgeLoanForm({ form, bookRows }: Props) {
         <div className="p-4 space-y-4 overflow-y-auto max-h-[65vh]">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Số HĐ cầm cố" htmlFor="pl-number" required>
-              <Input id="pl-number" value={v.ContractNumber ?? ''} onChange={(e) => form.setField('ContractNumber', e.target.value)} />
+              <Input id="pl-number" value={v.ContractNumber ?? ''} onChange={(e) => state.setField('ContractNumber', e.target.value)} />
             </Field>
             <Field label="Mục đích" htmlFor="pl-purpose">
-              <Select id="pl-purpose" value={v.LoanPurpose ?? ''} onChange={(e) => form.setField('LoanPurpose', e.target.value || null)}>
+              <Select id="pl-purpose" value={v.LoanPurpose ?? ''} onChange={(e) => state.setField('LoanPurpose', e.target.value || null)}>
                 <option value="">—</option>
                 {LOAN_PURPOSES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
               </Select>
             </Field>
             <Field label="Số tiền vay" htmlFor="pl-amount" required>
-              <MoneyInput id="pl-amount" value={v.Amount} onChange={(n) => form.setField('Amount', n)} />
+              <MoneyInput id="pl-amount" value={v.Amount} onChange={(n) => state.setField('Amount', n)} />
             </Field>
             <Field label="Lãi suất (%/năm)" htmlFor="pl-rate" required>
-              <DecimalInput id="pl-rate" value={v.InterestRate} onChange={(n) => form.setField('InterestRate', n ?? undefined)} />
+              <DecimalInput id="pl-rate" value={v.InterestRate} onChange={(n) => state.setField('InterestRate', n ?? undefined)} />
             </Field>
             <Field label="Ngày giải ngân" htmlFor="pl-disb" required>
-              <DateInput id="pl-disb" value={v.DisbursementDate ?? ''} onChange={(d) => form.setField('DisbursementDate', d)} />
+              <DateInput id="pl-disb" value={v.DisbursementDate ?? ''} onChange={(d) => state.setField('DisbursementDate', d)} />
             </Field>
             <Field label="Ngày đến hạn" htmlFor="pl-due" required hint={days !== null ? `${days} ngày` : undefined}>
-              <DateInput id="pl-due" value={v.DueDate ?? ''} onChange={(d) => form.setField('DueDate', d)} />
+              <DateInput id="pl-due" value={v.DueDate ?? ''} onChange={(d) => state.setField('DueDate', d)} />
             </Field>
           </div>
 
@@ -64,26 +68,26 @@ export function PledgeLoanForm({ form, bookRows }: Props) {
               </span>
             </div>
             <div className="space-y-2">
-              {form.links.map((l, i) => {
+              {state.links.map((l, i) => {
                 const row = bookRows.find((r) => r.book.Id === l.SavingsBookId);
                 return (
                   <div key={i} className="grid grid-cols-[1fr_11rem_auto] gap-2 items-center">
                     <Select aria-label="Sổ bảo đảm" value={l.SavingsBookId} onChange={(e) => setLink(i, { SavingsBookId: Number(e.target.value) })}>
                       {[...(row ? [row] : []), ...unused].map((r) => (
                         <option key={r.book.Id} value={r.book.Id}>
-                          {r.book.BookNumber} · còn trống {r.free === null ? '—' : fmtNumber(r.free)}
+                          {r.book.BookNumber} · {fmtNumber(r.book.Amount)}
                         </option>
                       ))}
                     </Select>
                     <MoneyInput id={`pl-cover-${i}`} value={l.PrincipalCovered} onChange={(n) => setLink(i, { PrincipalCovered: n })} />
-                    <Button variant="ghost" size="sm" onClick={() => form.setLinks(form.links.filter((_, j) => j !== i))}>Bỏ</Button>
+                    <Button variant="ghost" size="sm" onClick={() => state.setLinks(state.links.filter((_, j) => j !== i))}>Bỏ</Button>
                   </div>
                 );
               })}
             </div>
             {unused.length > 0 && (
               <Button variant="secondary" size="sm" className="mt-2"
-                onClick={() => form.setLinks([...form.links, { SavingsBookId: unused[0].book.Id, PrincipalCovered: Math.max(0, (v.Amount ?? 0) - covered) }])}>
+                onClick={() => state.setLinks([...state.links, { SavingsBookId: unused[0].book.Id, PrincipalCovered: Math.max(0, (v.Amount ?? 0) - covered) }])}>
                 Thêm sổ
               </Button>
             )}
@@ -91,15 +95,15 @@ export function PledgeLoanForm({ form, bookRows }: Props) {
           </div>
 
           <Field label="Ghi chú" htmlFor="pl-note">
-            <Textarea id="pl-note" rows={2} value={v.Note ?? ''} onChange={(e) => form.setField('Note', e.target.value || null)} />
+            <Textarea id="pl-note" rows={2} value={v.Note ?? ''} onChange={(e) => state.setField('Note', e.target.value || null)} />
           </Field>
 
-          {form.warnings.map((w) => <WarningNote key={w}>{w}</WarningNote>)}
+          {state.warnings.map((w) => <WarningNote key={w}>{w}</WarningNote>)}
           {form.error && <p role="alert" className="text-xs font-semibold text-neg">{form.error}</p>}
         </div>
         <DialogFooter className="p-4 border-t border-line">
           <Button variant="secondary" onClick={form.close}>Huỷ</Button>
-          <Button loading={form.saving} onClick={() => void form.submit()}>Lưu khoản vay</Button>
+          <Button loading={form.saving} onClick={() => void form.submit(v, state.links)}>Lưu khoản vay</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

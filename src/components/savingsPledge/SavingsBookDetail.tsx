@@ -15,8 +15,6 @@ interface Props {
 export function SavingsBookDetail({ row, onGoToLoan, onEdit, onNewLoan }: Props) {
   const b = row.book;
   const interest = savingsInterestToMaturity(b);
-  const used = row.allocations.reduce((s, a) => s + a.obligation, 0);
-  const ratio = row.capacity && row.capacity > 0 ? Math.min(100, Math.max(0, (used / row.capacity) * 100)) : 0;
   const pledged = row.allocations.length > 0;
 
   return (
@@ -42,19 +40,6 @@ export function SavingsBookDetail({ row, onGoToLoan, onEdit, onNewLoan }: Props)
 
       {row.incomplete && <WarningNote>Sổ thiếu lãi suất, ngày gửi hoặc kỳ hạn nên chưa tính được khả năng bảo đảm.</WarningNote>}
 
-      {!b.IsClosed && row.capacity !== null && (
-        <>
-          <SectionTitle>Mức dùng để cầm cố</SectionTitle>
-          <div className="h-2 rounded-full bg-panel-muted overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(ratio)} aria-label="Mức dùng để cầm cố">
-            <div className={`h-full ${row.free !== null && row.free < 0 ? 'bg-neg' : 'bg-kpi-collateral'}`} style={{ width: `${ratio}%` }} />
-          </div>
-          <div className="mt-1 flex justify-between text-[11px] text-ink-muted font-mono tabular-nums">
-            <span>Đã dùng {fmtNumber(used)}</span>
-            <span className={row.free !== null && row.free < 0 ? 'text-neg' : ''}>Còn trống {fmtNumber(row.free)}</span>
-          </div>
-        </>
-      )}
-
       <SectionTitle>Đang bảo đảm cho</SectionTitle>
       {pledged ? (
         <ul className="divide-y divide-line/60 text-xs">
@@ -74,7 +59,7 @@ export function SavingsBookDetail({ row, onGoToLoan, onEdit, onNewLoan }: Props)
       {!b.IsClosed && (
         <div className="mt-4 flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" onClick={onEdit}>Sửa thông tin sổ</Button>
-          {(row.free === null || row.free > 0) && <Button size="sm" onClick={onNewLoan}>Vay cầm cố trên sổ này</Button>}
+          <Button size="sm" onClick={onNewLoan}>Vay cầm cố trên sổ này</Button>
         </div>
       )}
       {pledged && !b.IsClosed && <WarningNote>Sổ đang cầm cố: tất toán qua thao tác Trả nợ của khoản vay để cấn trừ.</WarningNote>}

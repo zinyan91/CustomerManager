@@ -20,8 +20,9 @@ export function SavingsBookTable({ rows, selectedId, onSelect }: Props) {
             <th className={`${TABLE_CELL} text-left`}>Số sổ</th>
             <th className={`${TABLE_CELL} text-right`}>Số tiền gửi</th>
             <th className={`${TABLE_CELL} text-right`}>Lãi suất</th>
-            <th className={`${TABLE_CELL} text-left`}>Ngày gửi → đáo hạn</th>
-            <th className={`${TABLE_CELL} text-right`}>Còn trống để cầm cố</th>
+            <th className={`${TABLE_CELL} text-left`}>Kỳ hạn</th>
+            <th className={`${TABLE_CELL} text-left`}>Ngày gửi</th>
+            <th className={`${TABLE_CELL} text-left`}>Ngày đáo hạn</th>
             <th className={`${TABLE_CELL} text-left`}>Trạng thái</th>
           </tr>
         </thead>
@@ -40,17 +41,15 @@ export function SavingsBookTable({ rows, selectedId, onSelect }: Props) {
               >
                 <td className={TABLE_CELL}>
                   <div className="font-semibold whitespace-nowrap">{b.BookNumber}</div>
-                  <div className="text-[11px] text-ink-muted">
-                    {b.Tenor !== null && b.TenorUnit ? `${b.Tenor} ${TENOR_UNIT_LABELS[b.TenorUnit].toLowerCase()}` : '—'}
-                    {b.DepositType === 'tg_foreign' ? ` · ${b.Currency}` : ''}
-                  </div>
+                  {b.DepositType === 'tg_foreign' && <div className="text-[11px] text-ink-muted">{b.Currency}</div>}
                 </td>
                 <td className={`${TABLE_CELL} text-right font-mono tabular-nums whitespace-nowrap`}>{fmtNumber(b.Amount)}</td>
                 <td className={`${TABLE_CELL} text-right font-mono tabular-nums whitespace-nowrap`}>{b.InterestRate === null ? '—' : fmtRate(b.InterestRate)}</td>
-                <td className={`${TABLE_CELL} whitespace-nowrap`}>{fmtDate(b.OpenDate)} → {fmtDate(r.maturity)}</td>
-                <td className={`${TABLE_CELL} text-right font-mono tabular-nums whitespace-nowrap ${r.free !== null && r.free < 0 ? 'text-neg' : ''}`}>
-                  {r.free === null ? '—' : fmtNumber(r.free)}
+                <td className={`${TABLE_CELL} whitespace-nowrap`}>
+                  {b.Tenor !== null && b.TenorUnit ? `${b.Tenor} ${TENOR_UNIT_LABELS[b.TenorUnit].toLowerCase()}` : '—'}
                 </td>
+                <td className={`${TABLE_CELL} whitespace-nowrap`}>{fmtDate(b.OpenDate)}</td>
+                <td className={`${TABLE_CELL} whitespace-nowrap`}>{fmtDate(r.maturity)}</td>
                 <td className={TABLE_CELL}>
                   <div className="flex gap-1.5 flex-wrap">
                     <RowStatus {...r.status} />

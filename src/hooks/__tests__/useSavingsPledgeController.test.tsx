@@ -42,7 +42,7 @@ async function loaded() {
 describe('useSavingsPledgeController', () => {
   it('KPI tinh tu du lieu da nap', async () => {
     const { result } = await loaded();
-    expect(result.current.bookKpis.freeCapacity).toBe(259280000);
+    expect(result.current.bookKpis.pledgedObligation).toBe(775894794);
     expect(result.current.loanKpis.outstanding).toBe(750000000);
   });
 
@@ -52,46 +52,25 @@ describe('useSavingsPledgeController', () => {
     await waitFor(() => expect(result.current.error).toBe('relation "SavingsBooks" does not exist'));
   });
 
-  it('chon tra khi den han thi ngay tra la ngay den han', async () => {
+  it('ghi nhan tra no goi API, dong hop thoai va bao thanh cong', async () => {
     const { result } = await loaded();
     act(() => result.current.repayDialog.openFor(10));
-    act(() => result.current.repayDialog.setKind('due'));
-    expect(result.current.repayDialog.date).toBe('2027-02-15');
-    expect(result.current.repayDialog.quote?.total).toBe(417095890);
-  });
-
-  it('bao gia khong hop le thi khong goi API', async () => {
-    const { result } = await loaded();
-    act(() => result.current.repayDialog.openFor(10));
-    act(() => result.current.repayDialog.setPrincipal(0));
-    expect(result.current.repayDialog.quote?.ok).toBe(false);
-    await act(() => result.current.repayDialog.submit());
-    expect(m.record).not.toHaveBeenCalled();
-  });
-
-  it('tat toan so can tru gui dung du lieu', async () => {
-    const { result } = await loaded();
-    act(() => result.current.repayDialog.openFor(10));
-    act(() => result.current.repayDialog.setKind('offset'));
-    expect(result.current.repayDialog.quote?.warnings[0]).toContain('CC-2026-0907');
-    await act(() => result.current.repayDialog.submit());
-    expect(m.record).toHaveBeenCalledWith(10, {
-      RepaymentDate: '2026-10-27', Kind: 'offset', PrincipalPaid: 400000000, InterestPaid: 9189041,
-      PenaltyPaid: 0, OffsetSavingsBookId: 1, Note: null,
-    }, 534247);
-    expect(result.current.repayDialog.open).toBe(false);
+    expect(result.current.repayDialog.loan?.ContractNumber).toBe('CC-2026-0418');
+    const quote = { ok: true, interest: 9189041, principal: 400000000, principalPenalty: 0, interestPenalty: 0, total: 409189041, remainingPrincipal: 0, nextInterestFrom: null, warnings: [] };
+    await act(() => result.current.repayDialog.record({ loanId: 10, kind: 'full', date: '2026-10-27', quote, offsetBookId: null }));
+    expect(m.record).toHaveBeenCalledWith(10, expect.objectContaining({ Kind: 'full', PrincipalPaid: 400000000, InterestPaid: 9189041 }), null);
+    expect(result.current.repayDialog.loan).toBeNull();
+    expect(result.current.notification?.type).toBe('success');
   });
 
   it('form khoan vay chan tong goc bao dam lech', async () => {
     const { result } = await loaded();
     act(() => result.current.loanForm.openNew(3));
-    act(() => {
-      result.current.loanForm.setField('ContractNumber', 'CC-NEW');
-      result.current.loanForm.setField('Amount', 100000000);
-      result.current.loanForm.setField('InterestRate', 6);
-      result.current.loanForm.setField('DueDate', '2027-01-10');
-    });
-    await act(() => result.current.loanForm.submit());
+    expect(result.current.loanForm.initialLinks).toEqual([{ SavingsBookId: 3, PrincipalCovered: 0 }]);
+    await act(() => result.current.loanForm.submit(
+      { ContractNumber: 'CC-NEW', Amount: 100000000, InterestRate: 6, DisbursementDate: '2026-10-27', DueDate: '2027-01-10' },
+      result.current.loanForm.initialLinks,
+    ));
     expect(m.saveLoan).not.toHaveBeenCalled();
     expect(result.current.loanForm.error).toBe('Tổng phần gốc bảo đảm 0 phải bằng số tiền vay 100.000.000.');
   });

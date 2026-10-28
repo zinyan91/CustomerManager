@@ -34,7 +34,6 @@ export interface BookKpis {
   activeTotal: number;
   activeCount: number;
   pledgedObligation: number;
-  freeCapacity: number | null;
   nextMaturity: string | null;
   daysToNextMaturity: number | null;
 }
@@ -102,9 +101,6 @@ export function bookKpis(rows: BookRow[], asOf: string): BookKpis {
     activeTotal: open.reduce((s, r) => s + savingsPrincipalVnd(r.book), 0),
     activeCount: open.length,
     pledgedObligation: open.reduce((s, r) => s + r.allocations.reduce((a, x) => a + x.obligation, 0), 0),
-    freeCapacity: open.some((r) => r.free !== null)
-      ? open.reduce((s, r) => s + (r.free !== null && r.free > 0 ? r.free : 0), 0)
-      : null,
     nextMaturity,
     daysToNextMaturity: nextMaturity ? signedDays(asOf, nextMaturity) : null,
   };

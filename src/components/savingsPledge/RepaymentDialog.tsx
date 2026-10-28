@@ -3,7 +3,9 @@ import { Field, Select } from '../ui/Field';
 import { Button } from '../ui/Button';
 import { DateInput } from '../DateInput';
 import { fmtDate, fmtNumber, fmtRate } from '../../lib/utils';
-import type { PledgeRepaymentKind } from '../../types';
+import type { PledgeBundle, PledgeLoan, PledgeRepaymentKind } from '../../types';
+import { useRepaymentForm } from '../../hooks/useRepaymentForm';
+import type { RepaymentRequest } from '../../hooks/useSavingsPledgeData';
 import type { SavingsPledgeController } from '../../hooks/useSavingsPledgeController';
 import { MoneyInput } from './inputs';
 import { WarningNote } from './shared';
@@ -25,14 +27,33 @@ function Line({ label, sub, value, strong = false }: { label: string; sub?: stri
   );
 }
 
-export function RepaymentDialog({ dialog }: { dialog: SavingsPledgeController['repayDialog'] }) {
-  const { loan, quote, kind } = dialog;
-  if (!loan) return null;
-  const effectiveDate = kind === 'due' ? loan.DueDate : dialog.date;
-  const offsetBook = dialog.linkedBooks.find((b) => b.Id === dialog.offsetBookId);
+interface Props {
+  dialog: SavingsPledgeController['repayDialog'];
+  bundle: PledgeBundle;
+  today: string;
+}
+
+export function RepaymentDialog({ dialog, bundle, today }: Props) {
+  if (!dialog.loan) return null;
+  return <RepaymentDialogBody key={dialog.loan.Id} loan={dialog.loan} bundle={bundle} today={today} onClose={dialog.close} onSubmit={dialog.record} />;
+}
+
+interface BodyProps {
+  loan: PledgeLoan;
+  bundle: PledgeBundle;
+  today: string;
+  onClose: () => void;
+  onSubmit: (req: RepaymentRequest) => Promise<void>;
+}
+
+function RepaymentDialogBody({ loan, bundle, today, onClose, onSubmit }: BodyProps) {
+  const form = useRepaymentForm({ loan, bundle, today, onSubmit });
+  const { quote, kind } = form;
+  const effectiveDate = kind === 'due' ? loan.DueDate : form.date;
+  const offsetBook = form.linkedBooks.find((b) => b.Id === form.offsetBookId);
 
   return (
-    <Dialog open={dialog.open} onOpenChange={(open) => !open && dialog.close()}>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent size="xl" className="p-0 overflow-hidden max-h-[90vh]">
         <DialogHeader className="p-4 border-b border-line">
           <DialogTitle className="text-sm font-semibold text-ink">Trả nợ {loan.ContractNumber}</DialogTitle>
@@ -41,7 +62,7 @@ export function RepaymentDialog({ dialog }: { dialog: SavingsPledgeController['r
           <div role="radiogroup" aria-label="Cách trả nợ" className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {KINDS.map((k) => (
               <label key={k.kind} className={`flex gap-2 items-start rounded-[var(--r-control)] border px-3 py-2 cursor-pointer ${kind === k.kind ? 'border-accent bg-accent-soft' : 'border-line'}`}>
-                <input type="radio" name="repay-kind" className="mt-0.5" checked={kind === k.kind} onChange={() => dialog.setKind(k.kind)} />
+                <input type="radio" name="repay-kind" className="mt-0.5" checked={kind === k.kind} onChange={() => form.setKind(k.kind)} />
                 <span>
                   <span className="block text-xs font-semibold text-ink">{k.label}</span>
                   <span className="block text-[11px] text-ink-muted">{k.sub}</span>
@@ -52,24 +73,24 @@ export function RepaymentDialog({ dialog }: { dialog: SavingsPledgeController['r
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Field label="Ngày trả" htmlFor="rp-date">
-              <DateInput id="rp-date" value={effectiveDate} disabled={kind === 'due'} onChange={(d) => dialog.setDate(d)} />
+              <DateInput id="rp-date" value={effectiveDate} disabled={kind === 'due'} onChange={(d) => form.setDate(d)} />
             </Field>
             <Field label="Gốc trả" htmlFor="rp-principal">
-              <MoneyInput id="rp-principal" value={kind === 'partial' ? dialog.principal : quote?.principal} disabled={kind !== 'partial'}
-                onChange={(n) => dialog.setPrincipal(n)} />
+              <MoneyInput id="rp-principal" value={kind === 'partial' ? form.principal : quote.principal} disabled={kind !== 'partial'}
+                onChange={(n) => form.setPrincipal(n)} />
             </Field>
             {kind === 'offset' && (
               <Field label="Sổ tất toán" htmlFor="rp-book">
-                <Select id="rp-book" value={dialog.offsetBookId ?? ''} onChange={(e) => dialog.setOffsetBookId(Number(e.target.value))}>
-                  {dialog.linkedBooks.map((b) => <option key={b.Id} value={b.Id}>{b.BookNumber}</option>)}
+                <Select id="rp-book" value={form.offsetBookId ?? ''} onChange={(e) => form.setOffsetBookId(Number(e.target.value))}>
+                  {form.linkedBooks.map((b) => <option key={b.Id} value={b.Id}>{b.BookNumber}</option>)}
                 </Select>
               </Field>
             )}
           </div>
 
-          {quote && !quote.ok && <p role="alert" className="text-xs font-semibold text-neg">{quote.error}</p>}
+          {!quote.ok && <p role="alert" className="text-xs font-semibold text-neg">{quote.error}</p>}
 
-          {quote?.ok && (
+          {quote.ok && (
             <table className="w-full text-xs border border-line rounded-[var(--r-control)]">
               <tbody>
                 {kind === 'offset' && quote.offset && offsetBook ? (
@@ -97,15 +118,15 @@ export function RepaymentDialog({ dialog }: { dialog: SavingsPledgeController['r
             </table>
           )}
 
-          {quote?.ok && quote.warnings.map((w) => <WarningNote key={w}>{w}</WarningNote>)}
-          {quote?.ok && kind !== 'partial' && kind !== 'offset' && (
-            <WarningNote>Sau khi ghi nhận: khoản vay tất toán, giải chấp {dialog.linkedBooks.map((b) => b.BookNumber).join(', ')}.</WarningNote>
+          {quote.ok && quote.warnings.map((w) => <WarningNote key={w}>{w}</WarningNote>)}
+          {quote.ok && kind !== 'partial' && kind !== 'offset' && (
+            <WarningNote>Sau khi ghi nhận: khoản vay tất toán, giải chấp {form.linkedBooks.map((b) => b.BookNumber).join(', ')}.</WarningNote>
           )}
-          {dialog.error && <p role="alert" className="text-xs font-semibold text-neg">{dialog.error}</p>}
+          {form.error && <p role="alert" className="text-xs font-semibold text-neg">{form.error}</p>}
         </div>
         <DialogFooter className="p-4 border-t border-line">
-          <Button variant="secondary" onClick={dialog.close}>Huỷ</Button>
-          <Button loading={dialog.saving} disabled={!quote?.ok} onClick={() => void dialog.submit()}>Ghi nhận trả nợ</Button>
+          <Button variant="secondary" onClick={onClose}>Huỷ</Button>
+          <Button loading={form.saving} disabled={!quote.ok} onClick={() => void form.submit()}>Ghi nhận trả nợ</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

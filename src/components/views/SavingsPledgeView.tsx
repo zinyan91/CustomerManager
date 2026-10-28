@@ -26,7 +26,6 @@ export function SavingsPledgeView() {
   const savingsKpis: KpiItem[] = [
     { label: 'Tiền gửi đang hiệu lực', value: money(bk.activeTotal), sub: `${bk.activeCount} sổ`, tone: 'collateral' },
     { label: 'Đang dùng để cầm cố', value: money(bk.pledgedObligation), sub: 'Gốc + lãi vay đến hạn', tone: 'collateral' },
-    { label: 'Còn trống để cầm cố', value: bk.freeCapacity === null ? '—' : money(bk.freeCapacity), sub: 'Trên giá trị sổ đến đáo hạn', tone: 'pos' },
     { label: 'Đáo hạn gần nhất', value: bk.nextMaturity ? fmtDate(bk.nextMaturity) : '—', sub: daysLeft(bk.daysToNextMaturity), tone: 'warn' },
   ];
   const loanKpis: KpiItem[] = [
@@ -133,9 +132,9 @@ export function SavingsPledgeView() {
         </Tabs>
       )}
 
-      <SavingsBookForm form={c.bookForm} />
-      <PledgeLoanForm form={c.loanForm} bookRows={c.bookRows} />
-      <RepaymentDialog dialog={c.repayDialog} />
+      {c.bookForm.open && <SavingsBookForm key={c.bookForm.formKey} form={c.bookForm} />}
+      {c.loanForm.open && <PledgeLoanForm key={c.loanForm.formKey} form={c.loanForm} bookRows={c.bookRows} bundle={c.bundle} />}
+      <RepaymentDialog dialog={c.repayDialog} bundle={c.bundle} today={c.today} />
     </div>
   );
 }

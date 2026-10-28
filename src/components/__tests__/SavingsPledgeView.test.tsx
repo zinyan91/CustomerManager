@@ -75,6 +75,23 @@ describe('SavingsPledgeView', () => {
     expect(screen.queryByText('Khách hàng chưa có sổ tiết kiệm nào.')).toBeNull();
   });
 
+  it('the KPI tien gui va cot lai hang thang', async () => {
+    m.books.mockResolvedValue([{ ...SAMPLE.books[0], InterestPaymentMethod: 'periodic' }, SAMPLE.books[1], SAMPLE.books[2]]);
+    await renderLoaded();
+    const kpis = [...document.querySelectorAll('.workspace-kpi-card')].map((k) => k.textContent);
+    expect(kpis).toEqual([
+      expect.stringContaining('Tổng tiền gửi'), expect.stringContaining('Tổng lãi nhận'), expect.stringContaining('Tổng nhận cuối kỳ'),
+    ]);
+    expect(kpis[1]).toContain('35.174.794');
+    expect(screen.getByRole('columnheader', { name: 'Lãi hàng tháng' })).toBeTruthy();
+    expect(screen.getByRole('row', { name: /^STK-0123-001/ }).textContent).toContain('2.166.667');
+  });
+
+  it('khong co so lanh lai hang thang thi khong co cot lai hang thang', async () => {
+    await renderLoaded();
+    expect(screen.queryByRole('columnheader', { name: 'Lãi hàng tháng' })).toBeNull();
+  });
+
   it('trang thai rong', async () => {
     m.books.mockResolvedValue([]);
     m.loans.mockResolvedValue({ loans: [], links: [], repayments: [] });

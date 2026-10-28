@@ -12,6 +12,7 @@ interface Props {
 }
 
 export function SavingsBookTable({ rows, selectedId, onSelect }: Props) {
+  const showMonthly = rows.some((r) => r.book.InterestPaymentMethod === 'periodic');
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[720px] text-xs">
@@ -23,6 +24,7 @@ export function SavingsBookTable({ rows, selectedId, onSelect }: Props) {
             <th className={`${TABLE_CELL} text-left`}>Kỳ hạn</th>
             <th className={`${TABLE_CELL} text-left`}>Ngày gửi</th>
             <th className={`${TABLE_CELL} text-left`}>Ngày đáo hạn</th>
+            {showMonthly && <th className={`${TABLE_CELL} text-right`}>Lãi hàng tháng</th>}
             <th className={`${TABLE_CELL} text-left`}>Trạng thái</th>
           </tr>
         </thead>
@@ -50,6 +52,11 @@ export function SavingsBookTable({ rows, selectedId, onSelect }: Props) {
                 </td>
                 <td className={`${TABLE_CELL} whitespace-nowrap`}>{fmtDate(b.OpenDate)}</td>
                 <td className={`${TABLE_CELL} whitespace-nowrap`}>{fmtDate(r.maturity)}</td>
+                {showMonthly && (
+                  <td className={`${TABLE_CELL} text-right font-mono tabular-nums whitespace-nowrap`}>
+                    {r.monthlyInterest === null ? '—' : fmtNumber(r.monthlyInterest)}
+                  </td>
+                )}
                 <td className={TABLE_CELL}>
                   <div className="flex gap-1.5 flex-wrap">
                     <RowStatus {...r.status} />

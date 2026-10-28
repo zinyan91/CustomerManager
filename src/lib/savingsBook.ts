@@ -29,6 +29,19 @@ export function savingsInterestToMaturity(b: SavingsBook): number | null {
   return interestBetween(savingsPrincipalVnd(b), b.InterestRate, b.OpenDate, maturity);
 }
 
+export function savingsMonthlyInterest(b: SavingsBook): number | null {
+  if (b.InterestPaymentMethod !== 'periodic' || b.InterestRate === null) return null;
+  return Math.round(savingsPrincipalVnd(b) * b.InterestRate / 100 / 12);
+}
+
+// Lãnh lãi hàng tháng hoặc lãnh trước thì lãi đã nhận dần/nhận trước; ngày đáo hạn chỉ nhận gốc.
+export function savingsReceivedAtMaturity(b: SavingsBook): number | null {
+  const interest = savingsInterestToMaturity(b);
+  if (interest === null) return null;
+  const principal = savingsPrincipalVnd(b);
+  return b.InterestPaymentMethod === 'end_term' ? principal + interest : principal;
+}
+
 export function savingsPledgeCapacity(b: SavingsBook): number | null {
   const principal = savingsPrincipalVnd(b);
   if (b.DepositType === 'tg_foreign') return Math.round(principal * FOREIGN_DEPOSIT_LTV_PERCENT / 100);

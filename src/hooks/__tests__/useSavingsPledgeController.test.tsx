@@ -42,7 +42,7 @@ async function loaded() {
 describe('useSavingsPledgeController', () => {
   it('KPI tinh tu du lieu da nap', async () => {
     const { result } = await loaded();
-    expect(result.current.bookKpis.pledgedObligation).toBe(775894794);
+    expect(result.current.bookKpis.totalInterest).toBe(35174794);
     expect(result.current.loanKpis.outstanding).toBe(750000000);
   });
 

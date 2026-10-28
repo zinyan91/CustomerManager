@@ -34,6 +34,8 @@ export function SavingsBookDetail({ row, onGoToLoan, onEdit, onNewLoan }: Props)
         <DetailRow label="Ngày gửi" value={fmtDate(b.OpenDate)} />
         <DetailRow label="Ngày đáo hạn" value={fmtDate(row.maturity)} />
         <DetailRow label="Lãi đến đáo hạn" value={interest === null ? '—' : fmtNumber(interest)} />
+        {row.monthlyInterest !== null && <DetailRow label="Lãi hàng tháng" value={fmtNumber(row.monthlyInterest)} />}
+        <DetailRow label="Nhận khi đáo hạn" value={row.receivedAtMaturity === null ? '—' : fmtNumber(row.receivedAtMaturity)} />
         <DetailRow label="Khả năng bảo đảm" value={row.capacity === null ? '—' : fmtNumber(row.capacity)} strong />
         {b.IsClosed && <DetailRow label="Ngày tất toán" value={fmtDate(b.ClosedDate)} />}
       </DetailList>

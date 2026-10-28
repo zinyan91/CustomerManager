@@ -3,8 +3,8 @@ import { fmtNumber } from './utils';
 import { interestBetween, lastInterestDate, obligationAtDue, outstandingPrincipal, signedDays } from './pledgeLoanMath';
 import { pledgeLoanStatus, pledgeLoanWarnings, type StatusTone } from './pledgeLoan';
 import {
-  allocateObligations, isSavingsBookIncomplete, savingsFreeCapacity, savingsMaturityDate,
-  savingsPledgeCapacity, savingsPrincipalVnd, type BookAllocation,
+  allocateObligations, isSavingsBookIncomplete, savingsFreeCapacity, savingsInterestToMaturity, savingsMaturityDate,
+  savingsMonthlyInterest, savingsPledgeCapacity, savingsPrincipalVnd, savingsReceivedAtMaturity, type BookAllocation,
 } from './savingsBook';
 
 export type RowTone = StatusTone | 'accent';
@@ -15,6 +15,9 @@ export interface BookRow {
   capacity: number | null;
   free: number | null;
   allocations: BookAllocation[];
+  interestToMaturity: number | null;
+  monthlyInterest: number | null;
+  receivedAtMaturity: number | null;
   incomplete: boolean;
   status: { tone: RowTone; label: string };
 }
@@ -33,9 +36,9 @@ export interface LoanRow {
 export interface BookKpis {
   activeTotal: number;
   activeCount: number;
-  pledgedObligation: number;
-  nextMaturity: string | null;
-  daysToNextMaturity: number | null;
+  totalInterest: number | null;
+  totalAtMaturity: number | null;
+  missingCount: number;
 }
 
 export interface LoanKpis {
@@ -63,6 +66,9 @@ export function buildBookRows(bundle: PledgeBundle, _asOf: string): BookRow[] {
       capacity: book.IsClosed ? null : savingsPledgeCapacity(book),
       free: book.IsClosed ? null : savingsFreeCapacity(book, own),
       allocations: own,
+      interestToMaturity: savingsInterestToMaturity(book),
+      monthlyInterest: savingsMonthlyInterest(book),
+      receivedAtMaturity: savingsReceivedAtMaturity(book),
       incomplete: !book.IsClosed && isSavingsBookIncomplete(book),
       status: bookStatus(book, own),
     };
@@ -94,15 +100,15 @@ function earliest(dates: string[]): string | null {
   return dates.length > 0 ? [...dates].sort()[0] : null;
 }
 
-export function bookKpis(rows: BookRow[], asOf: string): BookKpis {
+export function bookKpis(rows: BookRow[], _asOf: string): BookKpis {
   const open = rows.filter((r) => !r.book.IsClosed);
-  const nextMaturity = earliest(open.map((r) => r.maturity).filter((d): d is string => d !== null && d >= asOf));
+  const known = open.filter((r) => r.interestToMaturity !== null && r.receivedAtMaturity !== null);
   return {
     activeTotal: open.reduce((s, r) => s + savingsPrincipalVnd(r.book), 0),
     activeCount: open.length,
-    pledgedObligation: open.reduce((s, r) => s + r.allocations.reduce((a, x) => a + x.obligation, 0), 0),
-    nextMaturity,
-    daysToNextMaturity: nextMaturity ? signedDays(asOf, nextMaturity) : null,
+    totalInterest: known.length ? known.reduce((s, r) => s + (r.interestToMaturity ?? 0), 0) : null,
+    totalAtMaturity: known.length ? known.reduce((s, r) => s + (r.receivedAtMaturity ?? 0), 0) : null,
+    missingCount: open.length - known.length,
   };
 }
 

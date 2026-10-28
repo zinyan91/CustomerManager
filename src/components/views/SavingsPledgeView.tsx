@@ -17,6 +17,7 @@ import { PledgeLoanForm } from '../savingsPledge/PledgeLoanForm';
 import { RepaymentDialog } from '../savingsPledge/RepaymentDialog';
 
 const money = (v: number) => <>{fmtNumber(v)} <span className="text-[11px] font-normal text-ink-muted">đ</span></>;
+const missingNote = (n: number) => (n > 0 ? `Chưa tính ${n} sổ thiếu thông tin` : undefined);
 const daysLeft = (d: number | null) => (d === null ? undefined : d < 0 ? `quá ${-d} ngày` : `còn ${d} ngày`);
 
 export function SavingsPledgeView() {
@@ -24,9 +25,9 @@ export function SavingsPledgeView() {
   const { bookKpis: bk, loanKpis: lk } = c;
 
   const savingsKpis: KpiItem[] = [
-    { label: 'Tiền gửi đang hiệu lực', value: money(bk.activeTotal), sub: `${bk.activeCount} sổ`, tone: 'collateral' },
-    { label: 'Đang dùng để cầm cố', value: money(bk.pledgedObligation), sub: 'Gốc + lãi vay đến hạn', tone: 'collateral' },
-    { label: 'Đáo hạn gần nhất', value: bk.nextMaturity ? fmtDate(bk.nextMaturity) : '—', sub: daysLeft(bk.daysToNextMaturity), tone: 'warn' },
+    { label: 'Tổng tiền gửi', value: money(bk.activeTotal), sub: `${bk.activeCount} sổ`, tone: 'collateral' },
+    { label: 'Tổng lãi nhận', value: bk.totalInterest === null ? '—' : money(bk.totalInterest), sub: missingNote(bk.missingCount), tone: 'pos' },
+    { label: 'Tổng nhận cuối kỳ', value: bk.totalAtMaturity === null ? '—' : money(bk.totalAtMaturity), sub: missingNote(bk.missingCount), tone: 'accent' },
   ];
   const loanKpis: KpiItem[] = [
     { label: 'Dư nợ cầm cố', value: money(lk.outstanding), sub: `${lk.activeCount} khoản đang vay`, tone: 'accent' },

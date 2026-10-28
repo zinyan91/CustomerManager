@@ -24,8 +24,21 @@ describe('dong so tiet kiem', () => {
 
   it('KPI so tiet kiem theo mockup', () => {
     expect(bookKpis(rows, TODAY)).toEqual({
-      activeTotal: 1000000000, activeCount: 3, pledgedObligation: 775894794,
-      nextMaturity: '2027-01-10', daysToNextMaturity: 75,
+      activeTotal: 1000000000, activeCount: 3, totalInterest: 35174794, totalAtMaturity: 1035174794, missingCount: 0,
+    });
+  });
+
+  it('lãi cộng theo từng sổ; sổ lãnh lãi hàng tháng nhận cuối kỳ chỉ có gốc', () => {
+    const r = buildBookRows({ ...SAMPLE, books: [{ ...SAMPLE.books[0], InterestPaymentMethod: 'periodic' }, SAMPLE.books[1]] }, TODAY);
+    expect(r[0]).toMatchObject({ interestToMaturity: 26000000, monthlyInterest: 2166667, receivedAtMaturity: 500000000 });
+    expect(r[1]).toMatchObject({ interestToMaturity: 7107945, monthlyInterest: null, receivedAtMaturity: 307107945 });
+    expect(bookKpis(r, TODAY)).toMatchObject({ totalInterest: 33107945, totalAtMaturity: 807107945 });
+  });
+
+  it('sổ thiếu thông tin không cộng vào lãi và được đếm riêng', () => {
+    const r = buildBookRows({ ...SAMPLE, books: [SAMPLE.books[0], { ...STK_003, InterestRate: null }] }, TODAY);
+    expect(bookKpis(r, TODAY)).toEqual({
+      activeTotal: 700000000, activeCount: 2, totalInterest: 26000000, totalAtMaturity: 526000000, missingCount: 1,
     });
   });
 
@@ -33,7 +46,7 @@ describe('dong so tiet kiem', () => {
 
   it('KPI khi chua co so nao', () => {
     expect(bookKpis([], TODAY)).toEqual({
-      activeTotal: 0, activeCount: 0, pledgedObligation: 0, nextMaturity: null, daysToNextMaturity: null,
+      activeTotal: 0, activeCount: 0, totalInterest: null, totalAtMaturity: null, missingCount: 0,
     });
   });
 });

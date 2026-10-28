@@ -56,7 +56,7 @@ function RepaymentDialogBody({ loan, bundle, today, onClose, onSubmit }: BodyPro
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent size="xl" className="p-0 overflow-hidden max-h-[90vh]">
         <DialogHeader className="p-4 border-b border-line">
-          <DialogTitle className="text-sm font-semibold text-ink">Trả nợ {loan.ContractNumber}</DialogTitle>
+          <DialogTitle>Trả nợ {loan.ContractNumber}</DialogTitle>
         </DialogHeader>
         <div className="p-4 space-y-4 overflow-y-auto max-h-[65vh]">
           <div role="radiogroup" aria-label="Cách trả nợ" className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -88,7 +88,7 @@ function RepaymentDialogBody({ loan, bundle, today, onClose, onSubmit }: BodyPro
             )}
           </div>
 
-          {!quote.ok && <p role="alert" className="text-xs font-semibold text-neg">{quote.error}</p>}
+          {!quote.ok && !(kind === 'partial' && form.principal === 0) && <p role="alert" className="text-xs font-semibold text-neg">{quote.error}</p>}
 
           {quote.ok && (
             <table className="w-full text-xs border border-line rounded-[var(--r-control)]">

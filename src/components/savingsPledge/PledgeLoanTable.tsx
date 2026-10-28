@@ -12,13 +12,15 @@ interface Props {
 export function PledgeLoanTable({ rows, selectedId, onSelect }: Props) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px] text-xs">
+      <table className="w-full min-w-[820px] text-xs">
         <thead>
           <tr className={TABLE_HEAD}>
             <th className={`${TABLE_CELL} text-left`}>Số HĐ cầm cố</th>
             <th className={`${TABLE_CELL} text-right`}>Dư nợ gốc</th>
             <th className={`${TABLE_CELL} text-right`}>Lãi suất</th>
-            <th className={`${TABLE_CELL} text-left`}>Giải ngân → đến hạn</th>
+            <th className={`${TABLE_CELL} text-left`}>Thời hạn</th>
+            <th className={`${TABLE_CELL} text-left`}>Ngày giải ngân</th>
+            <th className={`${TABLE_CELL} text-left`}>Ngày đến hạn</th>
             <th className={`${TABLE_CELL} text-right`}>Lãi đến hôm nay</th>
             <th className={`${TABLE_CELL} text-left`}>Trạng thái</th>
           </tr>
@@ -39,12 +41,14 @@ export function PledgeLoanTable({ rows, selectedId, onSelect }: Props) {
                 <td className={TABLE_CELL}>
                   <div className="font-semibold whitespace-nowrap">{l.ContractNumber}</div>
                   <div className="text-[11px] text-ink-muted">
-                    {r.termDays} ngày · {r.books.map((b) => b.book.BookNumber).join(', ') || '—'}
+                    {r.books.map((b) => b.book.BookNumber).join(', ') || '—'}
                   </div>
                 </td>
                 <td className={`${TABLE_CELL} text-right font-mono tabular-nums whitespace-nowrap`}>{fmtNumber(r.outstanding)}</td>
                 <td className={`${TABLE_CELL} text-right font-mono tabular-nums whitespace-nowrap`}>{fmtRate(l.InterestRate)}</td>
-                <td className={`${TABLE_CELL} whitespace-nowrap`}>{fmtDate(l.DisbursementDate)} → {fmtDate(l.DueDate)}</td>
+                <td className={`${TABLE_CELL} whitespace-nowrap`}>{r.termDays} ngày</td>
+                <td className={`${TABLE_CELL} whitespace-nowrap`}>{fmtDate(l.DisbursementDate)}</td>
+                <td className={`${TABLE_CELL} whitespace-nowrap`}>{fmtDate(l.DueDate)}</td>
                 <td className={`${TABLE_CELL} text-right font-mono tabular-nums whitespace-nowrap`}>{l.IsClosed ? '—' : fmtNumber(r.accruedToday)}</td>
                 <td className={TABLE_CELL}><RowStatus {...r.status} /></td>
               </tr>

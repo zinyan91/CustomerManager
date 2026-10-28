@@ -33,7 +33,7 @@ export function PledgeLoanForm({ form, bookRows, bundle }: Props) {
     <Dialog open={form.open} onOpenChange={(open) => !open && form.close()}>
       <DialogContent size="xl" className="p-0 overflow-hidden max-h-[90vh]">
         <DialogHeader className="p-4 border-b border-line">
-          <DialogTitle className="text-sm font-semibold text-ink">{v.Id ? `Sửa khoản vay ${v.ContractNumber}` : 'Tạo khoản vay cầm cố'}</DialogTitle>
+          <DialogTitle>{form.initial.Id ? `Sửa khoản vay ${form.initial.ContractNumber}` : 'Tạo khoản vay cầm cố'}</DialogTitle>
         </DialogHeader>
         <div className="p-4 space-y-4 overflow-y-auto max-h-[65vh]">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

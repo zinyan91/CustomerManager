@@ -21,7 +21,7 @@ export function SavingsBookForm({ form }: { form: SavingsPledgeController['bookF
     <Dialog open={form.open} onOpenChange={(open) => !open && form.close()}>
       <DialogContent size="xl" className="p-0 overflow-hidden max-h-[90vh]">
         <DialogHeader className="p-4 border-b border-line">
-          <DialogTitle className="text-sm font-semibold text-ink">{v.Id ? `Sửa sổ ${v.BookNumber}` : 'Thêm sổ tiết kiệm'}</DialogTitle>
+          <DialogTitle>{form.initial.Id ? `Sửa sổ ${form.initial.BookNumber}` : 'Thêm sổ tiết kiệm'}</DialogTitle>
         </DialogHeader>
         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-y-auto max-h-[65vh]">
           <Field label="Số sổ" htmlFor="sb-number" required>

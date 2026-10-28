@@ -16,14 +16,14 @@ const VALUE_COLOR: Record<KpiItem['tone'], string> = {
 };
 
 const GRID_COLS: Record<number, string> = {
-  2: 'xl:grid-cols-2',
-  3: 'xl:grid-cols-3',
-  4: 'xl:grid-cols-4',
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-3',
+  4: 'sm:grid-cols-2 xl:grid-cols-4',
 };
 
 export function SavingsPledgeKpis({ items }: { items: KpiItem[] }) {
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 ${GRID_COLS[items.length] ?? 'xl:grid-cols-4'} gap-3 p-4 font-app`}>
+    <div className={`grid grid-cols-1 ${GRID_COLS[items.length] ?? 'sm:grid-cols-2 xl:grid-cols-4'} gap-3 p-4 font-app`}>
       {items.map((k) => (
         <div key={k.label} data-metric-tone={k.tone} className="workspace-kpi-card px-4 py-3 min-w-0">
           <div className="text-[11px] font-semibold text-ink-muted">{k.label}</div>

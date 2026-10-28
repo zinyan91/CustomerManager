@@ -29,9 +29,9 @@ export function PledgeLoanDetail({ row, onGoToBook, onRepay, onEdit }: Props) {
       </div>
 
       <DetailList>
-        <DetailRow label="Số tiền vay" value={fmtNumber(l.Amount)} />
-        <DetailRow label="Dư nợ gốc" value={fmtNumber(row.outstanding)} />
-        <DetailRow label="Lãi suất" value={fmtRate(l.InterestRate)} />
+        <DetailRow mono label="Số tiền vay" value={fmtNumber(l.Amount)} />
+        <DetailRow mono label="Dư nợ gốc" value={fmtNumber(row.outstanding)} />
+        <DetailRow mono label="Lãi suất" value={fmtRate(l.InterestRate)} />
         <DetailRow label="Thời hạn" value={`${row.termDays} ngày`} />
         <DetailRow label="Ngày giải ngân" value={fmtDate(l.DisbursementDate)} />
         <DetailRow label="Ngày đến hạn" value={fmtDate(l.DueDate)} />
@@ -41,9 +41,9 @@ export function PledgeLoanDetail({ row, onGoToBook, onRepay, onEdit }: Props) {
           <DetailRow label="Tất toán" value={`${fmtDate(l.ClosedDate)} · ${CLOSED_HOW[l.ClosedHow ?? ''] ?? '—'}`} />
         ) : (
           <>
-            <DetailRow label="Lãi đến hôm nay" value={fmtNumber(row.accruedToday)} />
-            <DetailRow label="Lãi đến ngày đến hạn" value={fmtNumber(row.obligationAtDue - row.outstanding)} />
-            <DetailRow label="Phải trả khi đến hạn" value={fmtNumber(row.obligationAtDue)} strong />
+            <DetailRow mono label="Lãi đến hôm nay" value={fmtNumber(row.accruedToday)} />
+            <DetailRow mono label="Lãi đến ngày đến hạn" value={fmtNumber(row.obligationAtDue - row.outstanding)} />
+            <DetailRow mono label="Phải trả khi đến hạn" value={fmtNumber(row.obligationAtDue)} strong />
           </>
         )}
       </DetailList>

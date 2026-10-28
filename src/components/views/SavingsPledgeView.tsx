@@ -16,7 +16,7 @@ import { SavingsBookForm } from '../savingsPledge/SavingsBookForm';
 import { PledgeLoanForm } from '../savingsPledge/PledgeLoanForm';
 import { RepaymentDialog } from '../savingsPledge/RepaymentDialog';
 
-const money = (v: number) => <>{fmtNumber(v)} <span className="text-[11px] font-normal text-ink-muted">đ</span></>;
+const money = (v: number) => <>{fmtNumber(v)} <span className="text-[11px] font-normal text-ink-muted">VNĐ</span></>;
 const missingNote = (n: number) => (n > 0 ? `Chưa tính ${n} sổ thiếu thông tin` : undefined);
 const daysLeft = (d: number | null) => (d === null ? undefined : d < 0 ? `quá ${-d} ngày` : `còn ${d} ngày`);
 

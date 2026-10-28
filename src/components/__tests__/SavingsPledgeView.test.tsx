@@ -64,8 +64,45 @@ describe('SavingsPledgeView', () => {
     const detail = await screen.findByRole('complementary', { name: 'Chi tiết khoản vay CC-2026-0418' });
     fireEvent.click(within(detail).getByRole('button', { name: 'Trả nợ' }));
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('alert').textContent).toBe('Gốc trả trước một phần phải lớn hơn 0 và nhỏ hơn dư nợ 400.000.000.');
+    expect(within(dialog).queryByRole('alert')).toBeNull();
     expect((within(dialog).getByRole('button', { name: 'Ghi nhận trả nợ' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(within(dialog).getByLabelText('Gốc trả'), { target: { value: '500.000.000' } });
+    expect(within(dialog).getByRole('alert').textContent).toBe('Gốc trả trước một phần phải lớn hơn 0 và nhỏ hơn dư nợ 400.000.000.');
+    expect(within(dialog).getByRole('heading').className).not.toMatch(/text-sm|font-semibold/);
+  });
+
+  it('khung chi tiet: chu dung font app, chi so dung mono', async () => {
+    await renderLoaded();
+    const detail = screen.getByRole('complementary', { name: 'Chi tiết sổ STK-0123-001' });
+    const dd = (label: string) => within(detail).getByText(label).nextElementSibling as HTMLElement;
+    expect(dd('Loại tiền gửi').className).not.toContain('font-mono');
+    expect(dd('Lãnh lãi').className).not.toContain('font-mono');
+    expect(dd('Số tiền gửi').className).toContain('font-mono');
+  });
+
+  it('don vi tien la VNĐ va 3 the KPI xep 3 cot', async () => {
+    await renderLoaded();
+    const cards = [...document.querySelectorAll('.workspace-kpi-card')];
+    expect(cards[0].textContent).toContain('VNĐ');
+    expect(cards[0].parentElement!.className).toContain('sm:grid-cols-3');
+  });
+
+  it('bang khoan vay co cot thoi han, ngay giai ngan, ngay den han rieng', async () => {
+    await renderLoaded();
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /Khoản vay cầm cố/ }));
+    fireEvent.click(screen.getByRole('tab', { name: /Khoản vay cầm cố/ }));
+    await screen.findByRole('row', { name: /^CC-2026-0418/ });
+    expect(screen.getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
+      'Số HĐ cầm cố', 'Dư nợ gốc', 'Lãi suất', 'Thời hạn', 'Ngày giải ngân', 'Ngày đến hạn', 'Lãi đến hôm nay', 'Trạng thái',
+    ]);
+  });
+
+  it('tieu de form sua giu so goc khi dang go', async () => {
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa thông tin sổ' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.change(within(dialog).getByLabelText(/Số sổ/, { selector: 'input' }), { target: { value: 'STK-MOI' } });
+    expect(within(dialog).getByRole('heading').textContent).toBe('Sửa sổ STK-0123-001');
   });
 
   it('loi tai hien nguyen thong diep, khac trang thai rong', async () => {

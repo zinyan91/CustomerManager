@@ -14,12 +14,12 @@ export function DetailList({ children }: { children: React.ReactNode }) {
   return <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs mt-3">{children}</dl>;
 }
 
-export function DetailRow({ label, value, strong = false }: { label: string; value: React.ReactNode; strong?: boolean }) {
+export function DetailRow({ label, value, strong = false, mono = false }: { label: string; value: React.ReactNode; strong?: boolean; mono?: boolean }) {
   const line = strong ? 'border-t border-line pt-1.5 font-bold text-ink' : '';
   return (
     <>
       <dt className={`text-ink-muted ${line}`}>{label}</dt>
-      <dd className={`text-right font-mono tabular-nums text-ink ${line}`}>{value}</dd>
+      <dd className={`text-right tabular-nums text-ink ${mono ? 'font-mono' : ''} ${line}`}>{value}</dd>
     </>
   );
 }

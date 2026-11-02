@@ -12,14 +12,15 @@ import { useIsMobile } from '../../hooks/useMediaQuery';
 export const DocumentTemplateView: React.FC = () => {
   const styles = UI;
   const dossierCtrl = useDocumentDossierController();
-  const { isSidebarCollapsed, setIsSidebarCollapsed } = useSidebarCollapse();
+  const { isSecondaryCollapsed, setIsSecondaryCollapsed } = useSidebarCollapse();
   const [treeOpen, setTreeOpen] = useState(false);
   const mobile = useIsMobile();
+  const openTree = () => isSecondaryCollapsed && !mobile ? setIsSecondaryCollapsed(false) : setTreeOpen(true);
 
   return (
     <>
-      {!mobile && !isSidebarCollapsed && <aside id="app-sidebar" className="hidden md:flex fixed top-[56px] bottom-0 left-[88px] w-[220px] z-30 border-r border-line/70 bg-panel">
-        <DossierTreeRail ctrl={dossierCtrl} onCollapse={() => setIsSidebarCollapsed(true)} className="w-full h-full" />
+      {!mobile && !isSecondaryCollapsed && <aside id="dossier-tree" className="hidden md:flex fixed top-[56px] bottom-0 left-[var(--app-nav-w,88px)] w-[220px] z-30 border-r border-line/70 bg-panel">
+        <DossierTreeRail ctrl={dossierCtrl} onCollapse={() => setIsSecondaryCollapsed(true)} className="w-full h-full" />
       </aside>}
       <Dialog open={treeOpen} onOpenChange={setTreeOpen}>
         <DialogContent variant="drawer" hideCloseButton aria-describedby={undefined} style={{ left: 0, right: 'auto', width: 'min(288px,85vw)' }}>
@@ -29,7 +30,7 @@ export const DocumentTemplateView: React.FC = () => {
       </Dialog>
       <div data-workspace-page data-workspace-panel className="bg-panel overflow-hidden text-xs font-app">
         <DossierWorkspace styles={styles} ctrl={dossierCtrl} treeNavigation leading={
-          <Button variant="secondary" className="md:hidden" aria-label="Mở cây hồ sơ" onClick={() => setTreeOpen(true)}>
+          <Button variant="secondary" className={isSecondaryCollapsed ? '' : 'md:hidden'} aria-label="Mở cây hồ sơ" onClick={openTree}>
             <PanelLeft className="w-4 h-4" />
           </Button>
         } />

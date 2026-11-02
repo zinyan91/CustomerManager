@@ -13,15 +13,15 @@ const openFolder = (name:string) => {
 const pick = (name:string) => fireEvent.click(tree().getByRole('button',{name}));
 const included = (dossier:string) => tree().getByRole('checkbox',{name:`Gồm Giấy Cam Kết (${dossier})`}) as HTMLInputElement;
 
-function CollapseToggle() {
+function SidebarToggle() {
   const {toggleSidebar}=useSidebarCollapse();
-  return <button onClick={toggleSidebar}>Đổi trạng thái cây</button>;
+  return <button onClick={toggleSidebar}>Thu sidebar</button>;
 }
 
-describe('Hồ sơ chứng từ — cây thay menu phụ',()=>{
-  it('đặt một cây trong đúng cột sidebar, bỏ các ô chọn ngang',()=>{
+describe('Hồ sơ chứng từ — cây bộ hồ sơ làm menu phụ',()=>{
+  it('đặt một cây trong cột menu phụ, bỏ các ô chọn ngang',()=>{
     const {container}=render(<DocumentTemplateView />);
-    expect(container.querySelector('#app-sidebar nav')).toBe(screen.getByRole('navigation',{name:'Bộ hồ sơ'}));
+    expect(container.querySelector('#dossier-tree nav')).toBe(screen.getByRole('navigation',{name:'Bộ hồ sơ'}));
     expect(container.querySelectorAll('aside')).toHaveLength(1);
     expect(screen.queryByLabelText('Bộ hồ sơ',{selector:'select'})).toBeNull();
     expect(screen.queryByLabelText('Biểu mẫu')).toBeNull();
@@ -40,14 +40,18 @@ describe('Hồ sơ chứng từ — cây thay menu phụ',()=>{
     expect(included('Hồ sơ giải ngân').checked).toBe(true);
     expect(tree().getAllByRole('button',{name:'Giấy Cam Kết'}).filter(button=>button.hasAttribute('disabled'))).toHaveLength(1);
   });
-  it('thu cây và mở lại bằng cùng trạng thái của thanh điều hướng',()=>{
+  it('thu cây và mở lại bằng nút riêng, không phụ thuộc sidebar',()=>{
     localStorage.setItem('cm_sidebar_collapsed','false');
-    render(<SidebarCollapseProvider><CollapseToggle /><DocumentTemplateView /></SidebarCollapseProvider>);
+    render(<SidebarCollapseProvider><SidebarToggle /><DocumentTemplateView /></SidebarCollapseProvider>);
+    fireEvent.click(screen.getByRole('button',{name:'Thu sidebar'}));
+    expect(document.querySelector('#dossier-tree')).toBeTruthy();
     fireEvent.click(tree().getByRole('button',{name:'Ẩn Bộ hồ sơ'}));
-    expect(document.querySelector('#app-sidebar')).toBeNull();
+    expect(document.querySelector('#dossier-tree')).toBeNull();
+    expect(localStorage.getItem('cm_secondary_collapsed')).toBe('true');
     expect(localStorage.getItem('cm_sidebar_collapsed')).toBe('true');
-    fireEvent.click(screen.getByRole('button',{name:'Đổi trạng thái cây'}));
-    expect(document.querySelector('#app-sidebar')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button',{name:'Mở cây hồ sơ'}));
+    expect(document.querySelector('#dossier-tree')).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
   it('mở cây dạng drawer, chọn mẫu rồi đóng và trả về workspace',()=>{
     render(<DocumentTemplateView />);

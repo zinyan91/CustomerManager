@@ -26,7 +26,7 @@ function NavigationFixture({ search = false }: { search?: boolean }) {
   const location = useLocation();
   return <>
     <PrimaryRail isMasterAdmin={state.role === 'master_admin'} />
-    <Sidebar contextual isMasterAdmin={state.role === 'master_admin'} />
+    <Sidebar isMasterAdmin={state.role === 'master_admin'} />
     <CommandPalette isOpen={search} onClose={() => {}} isMasterAdmin={state.role === 'master_admin'} />
     <output data-testid="destination">{location.pathname}</output>
     <section data-testid="existing-content">Nội dung chức năng giữ nguyên</section>
@@ -47,7 +47,7 @@ describe('workspace shell navigation', () => {
     expect(admin.getAttribute('target')).toBeNull();
     fireEvent.click(admin);
     expect(screen.getByTestId('destination').textContent).toBe('/admin');
-    expect([...document.querySelectorAll('#app-sidebar a')].map(link => link.getAttribute('href')))
+    expect(within(screen.getByRole('group', { name: 'Quản trị' })).getAllByRole('link').map(link => link.getAttribute('href')))
       .toEqual(['/admin', '/admin/users', '/admin/teams', '/admin/kpi', '/admin/transfer', '/admin/storage']);
     fireEvent.click(within(document.querySelector('#app-sidebar') as HTMLElement).getByRole('link', { name: 'Người dùng' }));
     expect(screen.getByTestId('destination').textContent).toBe('/admin/users');
@@ -73,7 +73,7 @@ describe('workspace shell navigation', () => {
   it('preserves only existing permitted tools for User Admin opening a direct admin URL', () => {
     state.role = 'user_admin';
     mount('/admin/users/u1');
-    const links = [...document.querySelectorAll('#app-sidebar a')].map(link => link.getAttribute('href'));
+    const links = within(screen.getByRole('group', { name: 'Quản trị' })).getAllByRole('link').map(link => link.getAttribute('href'));
     expect(links).toEqual(['/admin', '/admin/users', '/admin/transfer']);
     expect(document.querySelector('nav[aria-label="Phân hệ"] a[href="/admin"]')).toBeNull();
   });
@@ -81,15 +81,15 @@ describe('workspace shell navigation', () => {
     mount('/dashboard');
     fireEvent.click(screen.getByRole('navigation',{name:'Phân hệ'}).querySelector('a[href="/hub/mdsdv"]')!);
     expect(screen.getByTestId('destination').textContent).toBe('/hub/mdsdv');
-    const sidebar=document.querySelector('#app-sidebar')!;
+    const sidebar=screen.getByRole('group',{name:'Tra cứu'});
     expect([...sidebar.querySelectorAll('a')].map(link=>link.getAttribute('href'))).toEqual(['/hub/mdsdv','/hub/card-fees','/tools/rate-quote','/hub/cof','/hub/quiz']);
     expect(sidebar.querySelector('a[href="/hub"]')).toBeNull();
   });
-  it('opens Team and KPI below Overview in the secondary menu without adding a rail entry', () => {
+  it('opens Team and KPI inside Overview in the sidebar without adding a rail entry', () => {
     mount('/dashboard');
     const rail = screen.getByRole('navigation', { name: 'Phân hệ' });
     expect(within(rail).queryByRole('link', { name: 'Team & KPI' })).toBeNull();
-    const sidebar = document.querySelector('#app-sidebar') as HTMLElement;
+    const sidebar = screen.getByRole('group', { name: 'Tổng quan' });
     expect(within(sidebar).getAllByRole('link').map(link => link.textContent)).toEqual(['Tổng quan', 'Team & KPI', 'Dự báo KPI', 'Báo cáo tiến độ', 'Báo cáo', 'Báo cáo Excel']);
     expect(within(sidebar).getByRole('link',{name:'Báo cáo'}).getAttribute('href')).toBe('/office');
     fireEvent.click(within(sidebar).getByRole('link',{name:'Báo cáo Excel'}));
@@ -178,6 +178,7 @@ describe('workspace shell navigation', () => {
   it('opens navigation over a dedicated workspace without replacing its content', () => {
     render(<MemoryRouter initialEntries={['/dispatches']}><LanguageProvider><DedicatedWorkspaceHeader /><section data-testid="dispatch-content">Văn thư hiện tại</section></LanguageProvider></MemoryRouter>);
     fireEvent.click(screen.getByRole('button', { name: 'Mở menu chức năng' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tín dụng' }));
     expect(screen.getByRole('link', { name: 'Danh sách khách hàng' })).toBeTruthy();
     expect(screen.getByTestId('dispatch-content').textContent).toBe('Văn thư hiện tại');
     fireEvent.keyDown(window, { key: 'Escape' });

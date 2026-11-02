@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Fragment } from 'react';
+import { useState, useEffect, useCallback, Fragment, type CSSProperties } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -26,13 +26,14 @@ function AppLayoutContent() {
   const section = workspaceSectionOfPath(location.pathname);
   const screenId = workspaceItemOfPath(location.pathname)?.screenId;
   const hasContextualAi = ['dispatches', 'storage', 'corporate-financial'].includes(screenId ?? '');
-  const directWorkspace = section === 'dispatch' || section === 'storage';
-  const replacesSidebar = section === 'documents' || directWorkspace;
   const continuousWorkspace = ['retail','dispatch','storage','documents','reference','finance','admin'].includes(section ?? '')
     || ['customers', 'credit-contracts', 'disbursement', 'loans', 'collaterals'].includes(screenId ?? '')
     || ['/hub/reports','/tools/reports'].includes(location.pathname.replace(/\/+$/,''));
   const flushReport = ['/team-kpi','/kpi-forecast','/loan-progress','/dispatches','/storage'].includes(location.pathname.replace(/\/+$/,''));
-  const { isSidebarCollapsed } = useSidebarCollapse();
+  const { isSidebarCollapsed, isSecondaryCollapsed } = useSidebarCollapse();
+  const navWidth = isSidebarCollapsed ? 88 : 240;
+  const secondaryWidth = section === 'documents' && !isSecondaryCollapsed ? 220 : 0;
+  const navVars = { '--app-nav-w': `${navWidth}px`, '--app-content-left': `${navWidth + secondaryWidth}px` } as CSSProperties;
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -78,7 +79,7 @@ function AppLayoutContent() {
   }
 
   return (
-    <div className="min-h-screen bg-surface text-ink flex flex-col antialiased relative overflow-x-hidden selection:bg-accent/20 selection:text-accent">
+    <div style={navVars} className="min-h-screen bg-surface text-ink flex flex-col antialiased relative overflow-x-hidden selection:bg-accent/20 selection:text-accent">
       {/* High-Performance Subtle Grid Background */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(var(--color-line-strong)_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.15] dark:opacity-[0.10] pointer-events-none" />
@@ -91,18 +92,16 @@ function AppLayoutContent() {
         onOpenCommandPalette={handleOpenCommandPalette}
       />
 
-      <PrimaryRail isMasterAdmin={isMasterAdmin} />
+      {isSidebarCollapsed && <PrimaryRail isMasterAdmin={isMasterAdmin} />}
 
-      {(!replacesSidebar || isMobileMenuOpen) && <Sidebar
+      <Sidebar
         isOpenMobile={isMobileMenuOpen}
         onCloseMobile={handleCloseMobileMenu}
         isMasterAdmin={isMasterAdmin}
-        contextual={true}
-        overlay={replacesSidebar}
-      />}
+      />
 
       <div className="flex flex-1 pt-[56px] relative w-full">
-        <main className={`flex-1 ${isSidebarCollapsed || directWorkspace ? 'md:ml-[88px]' : 'md:ml-[308px]'} transition-[margin] duration-200 min-w-0 ${flushReport || continuousWorkspace ? 'p-0' : 'px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4'} ${continuousWorkspace ? 'workspace-continuous bg-panel' : ''} overflow-y-auto relative w-full`}>
+        <main className={`flex-1 md:ml-[var(--app-content-left)] transition-[margin] duration-200 min-w-0 ${flushReport || continuousWorkspace ? 'p-0' : 'px-4 md:px-6 2xl:px-8 py-3.5 sm:py-4'} ${continuousWorkspace ? 'workspace-continuous bg-panel' : ''} overflow-y-auto relative w-full`}>
           <ErrorBoundary title="Lỗi khi tải giao diện màn hình">
             {ready ? (
               // key = phạm vi tài khoản: đổi tài khoản thì remount để mọi màn nạp lại đúng dữ liệu

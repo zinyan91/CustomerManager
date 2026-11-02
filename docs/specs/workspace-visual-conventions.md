@@ -4,11 +4,18 @@ Cập nhật ngày 21/10/2026 theo yêu cầu tăng phân cấp và màu sắc. 
 
 ## Bố cục và nền
 
-- Khung trang nối liền menu phụ, giữ chiều rộng làm việc. Không thêm lại nhiều lớp hộp lồng.
-- Khung trang giữ góc vuông và nối liền menu phụ. KPI và thẻ số liệu bo 12px theo `--r-panel`, có viền màu và bóng cùng sắc rõ ở trạng thái thường; nút, ô nhập, viên trạng thái và hộp thoại giữ bán kính theo token. Không áp quy tắc bỏ bo góc của khung trang lên mọi thẻ con.
+- Khung trang nối liền sidebar, giữ chiều rộng làm việc. Không thêm lại nhiều lớp hộp lồng.
+- Khung trang giữ góc vuông và nối liền sidebar. KPI và thẻ số liệu bo 12px theo `--r-panel`, có viền màu và bóng cùng sắc rõ ở trạng thái thường; nút, ô nhập, viên trạng thái và hộp thoại giữ bán kính theo token. Không áp quy tắc bỏ bo góc của khung trang lên mọi thẻ con.
 - Dùng `panel` cho dữ liệu, `surface` cho thanh lọc, `panel-muted` pha với `panel` cho tiêu đề bảng.
 - Không xoá nền trạng thái hoặc kết quả khi làm phẳng panel. Chỉ bỏ bo góc, bóng và viền ngoài ở khung trang; thẻ KPI là ngoại lệ có bề mặt riêng.
 - Giữ font, mật độ và định dạng số theo cấu hình người dùng.
+
+## Điều hướng
+
+- Một sidebar 240px nền `panel`. Mỗi phân hệ là một mục lớn; phân hệ nhiều màn bấm vào thì xổ các màn con thụt vào dưới nó, mở phân hệ khác thì phân hệ đang mở tự đóng. Phân hệ một màn là liên kết thẳng.
+- Thu gọn thì sidebar còn dải 88px gồm icon và tên phân hệ, bấm vào là mở màn đầu tiên của phân hệ đó.
+- Chỉ Soạn hợp đồng (Hồ sơ chứng từ) giữ menu phụ: cây bộ hồ sơ 220px nằm cạnh sidebar, có nút thu/mở riêng.
+- Điện thoại: cùng cây đó trong drawer mở từ nút menu trên header.
 
 ## Màu mang ý nghĩa
 

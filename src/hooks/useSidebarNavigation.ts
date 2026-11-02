@@ -1,52 +1,54 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 import { useLang } from '../context/LanguageContext';
 import { useModules } from '../context/ModulesContext';
 import { useSidebarCollapse } from '../context/SidebarCollapseContext';
 import { useIsMobile } from './useMediaQuery';
 import { useSelectedCustomerId } from './useSelectedCustomerId';
-import { visibleNavGroups } from '../lib/navigation';
-import { filterNavGroups } from '../lib/modules';
 import { useAuth } from '../context/AuthContext';
 import { ADMIN_NAV } from '../lib/adminNav';
-import { visibleWorkspaceSections, workspaceItemOfPath, workspaceSectionOfPath } from '../lib/workspaceNavigation';
+import {
+  visibleWorkspaceSections, withWorkspaceSection, workspaceItemOfPath, workspaceSectionOfPath,
+  type WorkspaceSection, type WorkspaceSectionId,
+} from '../lib/workspaceNavigation';
 
 interface SidebarNavigationOptions {
   isOpenMobile: boolean;
   onCloseMobile?: () => void;
   isMasterAdmin: boolean;
-  contextual: boolean;
   overlay: boolean;
 }
 
-export function useSidebarNavigation({ isOpenMobile, onCloseMobile, isMasterAdmin, contextual, overlay }: SidebarNavigationOptions) {
+export function useSidebarNavigation({ isOpenMobile, onCloseMobile, isMasterAdmin, overlay }: SidebarNavigationOptions) {
   const { t } = useLang();
   const { pathname } = useLocation();
   const customerId = useSelectedCustomerId();
   const mobile = useIsMobile();
-  const { isSidebarCollapsed } = useSidebarCollapse();
+  const { isSidebarCollapsed, toggleSidebar } = useSidebarCollapse();
   const { allowed } = useModules();
   const { can } = useAuth();
   const asideRef = useRef<HTMLElement>(null);
   const sections = useMemo(() => visibleWorkspaceSections(allowed, isMasterAdmin), [allowed, isMasterAdmin]);
   const currentSection = workspaceSectionOfPath(pathname);
-  const adminSection = {
-    id: 'admin' as const, label: 'Quản trị',
-    items: ADMIN_NAV.filter(item => !item.capability || can(item.capability)).map(item => ({
-      id: item.id === 'overview' ? 'admin' : `admin-${item.id}`,
-      screenId: 'admin' as const, path: item.path, icon: item.icon,
-      label: item.label, keywords: [item.label], task: true,
-    })),
-  };
   const activeId = workspaceItemOfPath(pathname)?.id;
-  const current = currentSection === 'admin' && can('user.manage') ? adminSection : sections.find(section => section.id === currentSection);
-  const groups = contextual
-    ? (isOpenMobile || overlay ? sections : current ? [current] : [])
-    : filterNavGroups(visibleNavGroups(isMasterAdmin), allowed).map(group => ({
-      id: group.groupKey,
-      label: t(group.groupKey),
-      items: group.items.map(item => ({ ...item, screenId: item.id })),
-    }));
+  const canManageUsers = can('user.manage');
+  const groups = useMemo(() => {
+    if (currentSection !== 'admin' || !canManageUsers) return sections;
+    const adminSection: WorkspaceSection = {
+      id: 'admin', label: 'Quản trị',
+      items: ADMIN_NAV.filter(item => !item.capability || can(item.capability)).map(item => ({
+        id: item.id === 'overview' ? 'admin' : `admin-${item.id}`,
+        screenId: 'admin' as const, path: item.path, icon: item.icon,
+        label: item.label, keywords: [item.label], task: true,
+      })),
+    };
+    return withWorkspaceSection(sections, adminSection);
+  }, [sections, currentSection, canManageUsers, can]);
+
+  // Chuyển sang phân hệ khác thì mở phân hệ đó, bỏ lựa chọn đóng/mở cũ
+  const [opened, setOpened] = useState<{ route?: WorkspaceSectionId; id?: WorkspaceSectionId }>({ route: currentSection, id: currentSection });
+  const openId = opened.route === currentSection ? opened.id : currentSection;
+  const toggleSection = (id: WorkspaceSectionId) => setOpened({ route: currentSection, id: openId === id ? undefined : id });
 
   useEffect(() => {
     if (!isOpenMobile) return;
@@ -73,7 +75,7 @@ export function useSidebarNavigation({ isOpenMobile, onCloseMobile, isMasterAdmi
   }, [isOpenMobile, onCloseMobile]);
 
   return {
-    t, customerId, isSidebarCollapsed, asideRef, activeId, current, groups,
+    t, customerId, isSidebarCollapsed, toggleSidebar, asideRef, activeId, currentSection, groups, openId, toggleSection,
     drawerVisible: overlay || mobile ? isOpenMobile : !isSidebarCollapsed,
   };
 }

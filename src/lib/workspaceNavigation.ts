@@ -3,7 +3,10 @@ import { HUB_TASKS } from './hubTasks';
 import { canOpenPath, type ModuleId } from './modules';
 import { parseCustomerPath, screenPathFor } from './customerRoutes';
 import { screenIdOfPath } from './routes';
-import { Calculator, ClipboardList, UsersRound } from 'lucide-react';
+import {
+  Boxes, Calculator, ClipboardList, Database, FileSignature, FolderArchive, Landmark, LayoutDashboard,
+  Settings, ShieldCheck, TrendingUp, Users, UsersRound,
+} from 'lucide-react';
 import { ADMIN_NAV } from './adminNav';
 
 export const WORKSPACE_SECTIONS = [
@@ -20,6 +23,11 @@ export const WORKSPACE_SECTIONS = [
 ] as const;
 
 export type WorkspaceSectionId = typeof WORKSPACE_SECTIONS[number]['id'];
+
+export const WORKSPACE_SECTION_ICONS: Record<WorkspaceSectionId, NavItem['icon']> = {
+  overview: LayoutDashboard, credit: Users, finance: TrendingUp, documents: FileSignature, dispatch: FolderArchive,
+  storage: Database, retail: Boxes, reference: Landmark, admin: ShieldCheck, system: Settings,
+};
 
 export interface WorkspaceItem {
   id: string;
@@ -105,6 +113,12 @@ export function visibleWorkspaceSections(allowed: readonly ModuleId[], isMasterA
       .filter((item): item is WorkspaceItem => Boolean(item))
       .filter(item => (!item.preview || import.meta.env.DEV && allowed.includes('credit')) && (!item.adminOnly || isMasterAdmin) && canOpenPath(allowed, item.path)),
   })).filter(section => section.items.length > 0);
+}
+
+export function withWorkspaceSection(sections: WorkspaceSection[], section: WorkspaceSection): WorkspaceSection[] {
+  const order: readonly string[] = WORKSPACE_SECTIONS.map(entry => entry.id);
+  return [...sections.filter(entry => entry.id !== section.id), section]
+    .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 }
 
 export function workspaceItemPath(item: WorkspaceItem, customerId: number | null): string {

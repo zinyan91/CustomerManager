@@ -4,36 +4,47 @@ interface SidebarCollapseContextType {
   isSidebarCollapsed: boolean;
   setIsSidebarCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
   toggleSidebar: () => void;
+  isSecondaryCollapsed: boolean;
+  setIsSecondaryCollapsed: (collapsed: boolean) => void;
 }
 
 const SidebarCollapseContext = createContext<SidebarCollapseContextType>({
   isSidebarCollapsed: false,
   setIsSidebarCollapsed: () => {},
   toggleSidebar: () => {},
+  isSecondaryCollapsed: false,
+  setIsSecondaryCollapsed: () => {},
 });
 
-export const SidebarCollapseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('cm_sidebar_collapsed');
-      return saved === null ? window.innerWidth < 1200 : saved === 'true';
-    } catch {
-      return false;
-    }
-  });
+function readFlag(key: string, fallback: () => boolean): boolean {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved === null ? fallback() : saved === 'true';
+  } catch {
+    return false;
+  }
+}
 
+function usePersistentFlag(key: string, fallback: () => boolean) {
+  const [value, setValue] = useState<boolean>(() => readFlag(key, fallback));
   useEffect(() => {
     try {
-      localStorage.setItem('cm_sidebar_collapsed', String(isSidebarCollapsed));
+      localStorage.setItem(key, String(value));
     } catch {
       // Ignore localStorage errors
     }
-  }, [isSidebarCollapsed]);
+  }, [key, value]);
+  return [value, setValue] as const;
+}
+
+export const SidebarCollapseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = usePersistentFlag('cm_sidebar_collapsed', () => window.innerWidth < 1200);
+  const [isSecondaryCollapsed, setIsSecondaryCollapsed] = usePersistentFlag('cm_secondary_collapsed', () => false);
 
   const toggleSidebar = () => setIsSidebarCollapsed(prev => !prev);
 
   return (
-    <SidebarCollapseContext.Provider value={{ isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar }}>
+    <SidebarCollapseContext.Provider value={{ isSidebarCollapsed, setIsSidebarCollapsed, toggleSidebar, isSecondaryCollapsed, setIsSecondaryCollapsed }}>
       {children}
     </SidebarCollapseContext.Provider>
   );

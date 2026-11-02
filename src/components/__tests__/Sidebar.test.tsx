@@ -1,7 +1,7 @@
 //@vitest-environment jsdom
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { Sidebar } from '../Sidebar';
 import { LanguageProvider } from '../../context/LanguageContext';
@@ -19,156 +19,106 @@ afterEach(() => {
   cleanup();
 });
 
-function dungLen(isMasterAdmin = false) {
+function dungLen(duongDan = '/dashboard', isMasterAdmin = false) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[duongDan]}>
       <LanguageProvider>
-        <Sidebar isMasterAdmin={isMasterAdmin} />
+        <Routes>
+          <Route path="*" element={<Sidebar isMasterAdmin={isMasterAdmin} />} />
+        </Routes>
       </LanguageProvider>
     </MemoryRouter>
   );
 }
 
-const NHAN_MUC = [
-  'Tổng quan',
-  'Danh sách khách hàng',
-  'Hợp đồng tín dụng',
-  'Quản lý khoản vay',
-  'Định giá TSĐB',
-  'Thẻ tín dụng',
-  'Quản lý văn thư',
-  'Kho lưu trữ',
-  'Phương án kinh doanh',
-  'Hàng tồn kho',
-  'Công cụ tính toán',
-  'Chào lãi suất',
-  'Báo cáo',
-  'Kiểm soát sau vay',
-  'Cấu hình & cài đặt',
-];
+const hrefs = (container: HTMLElement) => [...container.querySelectorAll('nav a')].map(a => a.getAttribute('href'));
+const phanHe = (nhan: string) => screen.getByRole('button', { name: nhan });
 
-const NHAN_NHOM = [
-  'Tổng quan',
-  'Hồ sơ tín dụng',
-  'Phân tích kinh doanh',
-  'Công cụ tính & Lãi suất',
-  'Tra cứu & Kiểm soát',
-];
-
-describe('Sidebar đọc danh sách màn từ navigation.ts', () => {
-  it('hiện đủ các mục, mỗi mục một nút', () => {
+describe('Sidebar gom phân hệ và màn con vào một cây', () => {
+  it('phân hệ nhiều màn là nút mở/đóng, phân hệ một màn là liên kết thẳng', () => {
     dungLen();
-    expect(NHAN_MUC).toHaveLength(15);
-    for (const nhan of NHAN_MUC) {
-      expect(screen.getAllByText(nhan).length, `thiếu mục "${nhan}"`).toBeGreaterThan(0);
+    for (const nhan of ['Tổng quan', 'Tín dụng', 'Phân tích', 'Dự toán', 'Tra cứu']) {
+      expect(phanHe(nhan).getAttribute('aria-expanded'), nhan).not.toBeNull();
+    }
+    for (const [nhan, href] of [['Hồ sơ chứng từ', '/hub/documents'], ['Quản lý văn thư', '/dispatches'], ['Kho lưu trữ', '/storage'], ['Cài đặt', '/settings']]) {
+      expect(screen.getByRole('link', { name: nhan }).getAttribute('href'), nhan).toBe(href);
     }
   });
 
-  it('dựng đúng 17 liên kết trong nav', () => {
-    const { container } = dungLen();
-    expect(container.querySelectorAll('nav a').length).toBe(17);
+  it('chỉ mở phân hệ chứa màn hiện tại', () => {
+    const { container } = dungLen('/customers');
+    expect(phanHe('Tín dụng').getAttribute('aria-expanded')).toBe('true');
+    expect(phanHe('Tổng quan').getAttribute('aria-expanded')).toBe('false');
+    expect(container.querySelectorAll('[role="group"]')).toHaveLength(1);
+    const tinDung = within(screen.getByRole('group', { name: 'Tín dụng' }));
+    expect(tinDung.getByRole('link', { name: translate('vi', 'nav.customers') }).getAttribute('aria-current')).toBe('page');
   });
 
-  it('chỉ hiện mục Quản trị khi có quyền quản lý người dùng', () => {
-    const { container, unmount } = dungLen(false);
-    expect(container.querySelector('nav a[href="/admin"]')).toBeNull();
-    unmount();
-    const co = dungLen(true);
-    expect(co.container.querySelectorAll('nav a').length).toBe(18);
-    expect(co.container.querySelector('nav a[href="/admin"]')).toBeTruthy();
+  it('mở phân hệ khác thì đóng phân hệ đang mở, bấm lại thì đóng', () => {
+    dungLen('/customers');
+    fireEvent.click(phanHe('Tra cứu'));
+    expect(screen.queryByRole('group', { name: 'Tín dụng' })).toBeNull();
+    expect(within(screen.getByRole('group', { name: 'Tra cứu' })).getAllByRole('link').map(a => a.getAttribute('href')))
+      .toEqual(['/hub/mdsdv', '/hub/card-fees', '/tools/rate-quote', '/hub/cof', '/hub/quiz']);
+    fireEvent.click(phanHe('Tra cứu'));
+    expect(screen.queryByRole('group')).toBeNull();
+    expect(phanHe('Tra cứu').getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('hiện đủ 5 tiêu đề nhóm', () => {
-    dungLen();
-    expect(NHAN_NHOM).toHaveLength(5);
-    for (const nhan of NHAN_NHOM) {
-      expect(screen.getAllByText(nhan).length, `thiếu nhóm "${nhan}"`).toBeGreaterThan(0);
-    }
+  it('phân hệ đang đóng vẫn đánh dấu là nơi chứa màn hiện tại', () => {
+    dungLen('/customers');
+    fireEvent.click(phanHe('Tín dụng'));
+    expect(phanHe('Tín dụng').className).toContain('font-semibold');
+    expect(phanHe('Tổng quan').className).not.toContain('font-semibold');
   });
 
-  it('mục đang mở được đánh dấu aria-current', () => {
-    render(
-      <MemoryRouter initialEntries={['/customers']}>
-        <LanguageProvider>
-          <Sidebar />
-        </LanguageProvider>
-      </MemoryRouter>
-    );
-    const lienKet = screen
-      .getAllByText(translate('vi', 'nav.customers'))
-      .map(el => el.closest('a'))
-      .find(Boolean);
-    expect(lienKet?.getAttribute('aria-current')).toBe('page');
-  });
-});
-
-describe('Sidebar dùng liên kết thật', () => {
-  it('mỗi mục là một thẻ liên kết, không phải nút', () => {
-    const { container } = dungLen();
-    expect(container.querySelectorAll('nav a')).toHaveLength(17);
-    expect(container.querySelectorAll('nav button')).toHaveLength(0);
-  });
-
-  it('liên kết trỏ đúng đường dẫn của màn', () => {
-    const { container } = dungLen();
-    const href = [...container.querySelectorAll('nav a')].map(a => a.getAttribute('href'));
-    expect(href).toContain('/customers');
-    expect(href).toContain('/settings');
+  it('chỉ hiện Quản trị cho quản trị viên', () => {
+    dungLen('/dashboard', false);
+    expect(screen.queryByRole('button', { name: 'Quản trị' })).toBeNull();
+    cleanup();
+    dungLen('/dashboard', true);
+    fireEvent.click(phanHe('Quản trị'));
+    const admin = within(screen.getByRole('group', { name: 'Quản trị' })).getByRole('link', { name: 'Tổng quan' });
+    expect(admin.getAttribute('href')).toBe('/admin');
+    expect(admin.getAttribute('target')).toBeNull();
   });
 
   it('mục ứng với đường dẫn hiện tại được đánh dấu aria-current', () => {
-    const { container } = render(
-      <MemoryRouter initialEntries={['/settings']}>
-        <LanguageProvider>
-          <Sidebar />
-        </LanguageProvider>
-      </MemoryRouter>
-    );
-    const dangMo = container.querySelector('[aria-current="page"]');
-    expect(dangMo?.getAttribute('href')).toBe('/settings');
+    const { container } = dungLen('/settings');
+    const dangMo = container.querySelectorAll('[aria-current="page"]');
+    expect(dangMo).toHaveLength(1);
+    expect(dangMo[0].getAttribute('href')).toBe('/settings');
   });
 });
 
 describe('Sidebar giữ ngữ cảnh khách hàng', () => {
-  function dungLenO(duongDan: string) {
-    return render(
-      <MemoryRouter initialEntries={[duongDan]}>
-        <LanguageProvider>
-          <Routes>
-            <Route path="*" element={<Sidebar />} />
-          </Routes>
-        </LanguageProvider>
-      </MemoryRouter>
-    );
-  }
-
   it('đang có khách thì mục màn hồ sơ trỏ tới đường lồng', () => {
-    const { container } = dungLenO('/customers/55/loans');
-    const link = container.querySelector('a[href="/customers/55/collaterals"]');
-    expect(link).toBeTruthy();
+    const { container } = dungLen('/customers/55/loans');
+    expect(container.querySelector('a[href="/customers/55/collaterals"]')).toBeTruthy();
   });
 
   it('đang có khách thì mục ngoài phạm vi khách vẫn trỏ đường phẳng', () => {
-    const { container } = dungLenO('/customers/55/loans');
+    const { container } = dungLen('/customers/55/loans');
+    fireEvent.click(phanHe('Phân tích'));
     expect(container.querySelector('a[href="/tools/calculators"]')).toBeTruthy();
     expect(container.querySelector('a[href="/settings"]')).toBeTruthy();
   });
 
   it('chưa có khách thì mọi mục trỏ đường phẳng', () => {
-    const { container } = dungLenO('/loans');
+    const { container } = dungLen('/loans');
     expect(container.querySelector('a[href="/collaterals"]')).toBeTruthy();
     expect(container.querySelector('a[href^="/customers/"]')).toBeNull();
   });
 
   it('ở đường lồng thì mục sáng là màn đó, không phải mục Khách hàng', () => {
-    const { container } = dungLenO('/customers/55/loans');
+    const { container } = dungLen('/customers/55/loans');
     const dangMo = container.querySelectorAll('[aria-current="page"]');
     expect(dangMo.length).toBe(1);
     expect(dangMo[0].getAttribute('href')).toBe('/customers/55/loans');
   });
 
   it('ở /customers thì mục Khách hàng sáng', () => {
-    const { container } = dungLenO('/customers');
+    const { container } = dungLen('/customers');
     const dangMo = container.querySelectorAll('[aria-current="page"]');
     expect(dangMo.length).toBe(1);
     expect(dangMo[0].getAttribute('href')).toBe('/customers');
@@ -176,99 +126,66 @@ describe('Sidebar giữ ngữ cảnh khách hàng', () => {
 });
 
 describe('Sidebar mobile drawer behavior', () => {
-  it('renders mobile header, close button and backdrop when isOpenMobile=true', () => {
-    const onClose = vi.fn();
-    render(
+  function drawer(onClose: () => void) {
+    return render(
       <MemoryRouter>
         <LanguageProvider>
           <Sidebar isOpenMobile={true} onCloseMobile={onClose} />
         </LanguageProvider>
       </MemoryRouter>
     );
+  }
 
+  it('renders mobile header, close button and backdrop when isOpenMobile=true', () => {
+    const onClose = vi.fn();
+    drawer(onClose);
     expect(screen.getByText('Menu Hệ Thống')).toBeTruthy();
-    const closeBtn = screen.getByLabelText(translate('vi', 'header.closeMenu'));
-    expect(closeBtn).toBeTruthy();
-
-    fireEvent.click(closeBtn);
+    fireEvent.click(screen.getByLabelText(translate('vi', 'header.closeMenu')));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('clicking backdrop calls onCloseMobile', () => {
     const onClose = vi.fn();
-    const { container } = render(
-      <MemoryRouter>
-        <LanguageProvider>
-          <Sidebar isOpenMobile={true} onCloseMobile={onClose} />
-        </LanguageProvider>
-      </MemoryRouter>
-    );
-
-    const backdrop = container.querySelector('[aria-hidden="true"]');
-    expect(backdrop).toBeTruthy();
-    fireEvent.click(backdrop!);
+    const { container } = drawer(onClose);
+    fireEvent.click(container.querySelector('div[aria-hidden="true"]')!);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('pressing Escape calls onCloseMobile', () => {
     const onClose = vi.fn();
-    render(
-      <MemoryRouter>
-        <LanguageProvider>
-          <Sidebar isOpenMobile={true} onCloseMobile={onClose} />
-        </LanguageProvider>
-      </MemoryRouter>
-    );
-
+    drawer(onClose);
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('clicking a NavLink calls onCloseMobile', () => {
+  it('clicking a link calls onCloseMobile, opening a section does not', () => {
     const onClose = vi.fn();
-    const { container } = render(
-      <MemoryRouter>
-        <LanguageProvider>
-          <Sidebar isOpenMobile={true} onCloseMobile={onClose} />
-        </LanguageProvider>
-      </MemoryRouter>
-    );
-
-    const firstLink = container.querySelector('nav a');
-    expect(firstLink).toBeTruthy();
-    fireEvent.click(firstLink!);
+    const { container } = drawer(onClose);
+    fireEvent.click(phanHe('Tín dụng'));
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(container.querySelector('nav a')!);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
 
-describe('Sidebar mở Quản trị trong ứng dụng', () => {
-  it('Quản trị và các mục khác đều mở trong tab hiện tại', () => {
-    const { container } = dungLen(true);
-    const admin = container.querySelector('nav a[href="/admin"]')!;
-    expect(admin.getAttribute('target')).toBeNull();
-    expect(container.querySelector('nav a[href="/customers"]')!.getAttribute('target')).toBeNull();
-  });
-});
-
 describe('Sidebar lọc theo module của tài khoản', () => {
-  const hrefs = (container: HTMLElement) => [...container.querySelectorAll('nav a')].map(a => a.getAttribute('href'));
-
   it('tài khoản chỉ có Văn thư chỉ thấy Văn thư và Cài đặt', () => {
     modulesState.allowed = ['dispatch'];
-    const { container } = dungLen();
+    const { container } = dungLen('/settings');
     expect(hrefs(container)).toEqual(['/dispatches', '/settings']);
+    expect(container.querySelectorAll('nav button')).toHaveLength(0);
   });
 
-  it('nhóm không còn mục nào thì bỏ cả tiêu đề nhóm', () => {
+  it('phân hệ không còn màn nào thì bỏ cả mục lớn', () => {
     modulesState.allowed = ['dispatch'];
-    dungLen();
-    expect(screen.queryByText('Công cụ tính & Lãi suất')).toBeNull();
-    expect(screen.queryByText('Phân tích kinh doanh')).toBeNull();
+    dungLen('/settings');
+    expect(screen.queryByRole('button', { name: 'Phân tích' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Tín dụng' })).toBeNull();
   });
 
   it('tài khoản không có module nào chỉ còn Cài đặt', () => {
     modulesState.allowed = [];
-    const { container } = dungLen();
+    const { container } = dungLen('/settings');
     expect(hrefs(container)).toEqual(['/settings']);
   });
 });

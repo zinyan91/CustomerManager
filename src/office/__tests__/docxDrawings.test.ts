@@ -22,6 +22,18 @@ describe('how a drawing in a .docx sits in the text', () => {
     expect(readDrawing('anchor', anchor(wrap, '<wp:posOffset>4000000</wp:posOffset>'))?.float).toBe('right');
   });
 
+  it('places a picture in front of the text, with no wrapping, by its offsets from the column and the paragraph', () => {
+    const front = (relH: string, relV: string, h = '<wp:posOffset>190500</wp:posOffset>', v = '<wp:posOffset>-95250</wp:posOffset>') =>
+      `<wp:anchor behindDoc="0"><wp:positionH relativeFrom="${relH}">${h}</wp:positionH><wp:positionV relativeFrom="${relV}">${v}</wp:positionV><wp:extent cx="1905000" cy="952500"/><wp:wrapNone/><wp:docPr id="1" name="P"/></wp:anchor>`;
+    expect(readDrawing('anchor', front('column', 'paragraph'))).toEqual({ width: 200, height: 100, float: 'front', x: 20, y: -10 });
+    // Placed from the page, which the paragraph says nothing about: it stays as it was.
+    expect(readDrawing('anchor', front('page', 'page'))?.float).toBeNull();
+    expect(readDrawing('anchor', front('column', 'paragraph', '<wp:align>left</wp:align>'))?.float).toBeNull();
+    const marked = markDrawings(`<w:p><w:r><w:drawing>${front('column', 'paragraph')}</w:drawing></w:r></w:p>`);
+    expect(marked).toContain('descr="felix-img:w=200,h=100,f=front,x=20,y=-10|"');
+    expect(applyDrawingMarkers('<img src="data:x" alt="felix-img:w=200,h=100,f=front,x=20,y=-10|"/>')).toBe('<img width="200" data-float="front" data-dx="20" data-dy="-10" data-h="100" src="data:x"/>');
+  });
+
   it('leaves a picture that does not wrap beside text as a block of its own', () => {
     const left = '<wp:align>left</wp:align>';
     expect(readDrawing('anchor', anchor('<wp:wrapTopAndBottom/>', left))?.float).toBeNull();

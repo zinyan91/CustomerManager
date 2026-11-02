@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { paginate, pageAt } from '../writer/utils/pagination';
+import { paginate, paginateColumns, pageAt, samePagination } from '../writer/utils/pagination';
 import {
   DEFAULT_PAGE_SETUP,
   clampMargins,
@@ -222,6 +222,28 @@ describe('docx defaults', () => {
     expect(defaults.baseSize).toBe(13);
   });
 
+  it("reads the file's own space after a paragraph and line spacing, and the format's 0 and single line where it names none", () => {
+    // Word's own template: 8 pt after, 1.08 lines, from the document defaults.
+    const word = '<w:styles><w:docDefaults><w:pPrDefault><w:pPr><w:spacing w:after="160" w:line="259" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1"><w:rPr/></w:style></w:styles>';
+    expect(readDocxDefaults(doc, word)).toMatchObject({ spaceAfter: 8, lineHeight: 1.08 });
+    // The default style wins over the document defaults.
+    const form = '<w:styles><w:docDefaults><w:pPrDefault><w:pPr><w:spacing w:after="160" w:line="259" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1"><w:pPr><w:spacing w:after="0" w:line="360" w:lineRule="auto"/></w:pPr></w:style></w:styles>';
+    expect(readDocxDefaults(doc, form)).toMatchObject({ spaceAfter: 0, lineHeight: 1.5 });
+    // Nothing named, an exact line height (not a multiple): 0 and a single line.
+    expect(readDocxDefaults(doc, styles)).toMatchObject({ spaceAfter: 0, lineHeight: 1 });
+    expect(readDocxDefaults(doc, '<w:styles><w:style w:type="paragraph" w:default="1"><w:pPr><w:spacing w:line="400" w:lineRule="exact"/></w:pPr></w:style></w:styles>').lineHeight).toBe(1);
+    // No styles part at all: the page setup keeps what a new document has.
+    expect(readDocxDefaults(doc, '').spaceAfter).toBeUndefined();
+  });
+
+  it('carries them into the stylesheet and the DOCX styles, and a draft without them gets the new-document values', async () => {
+    const { baseTextVars } = await import('../writer/utils/contentCss');
+    expect(baseTextVars({ baseFont: '', baseSize: 11, spaceAfter: 0, lineHeight: 1 })).toMatchObject({ '--writer-after': '0pt', '--writer-line': '1' });
+    const { parsePageSetup, DEFAULT_PAGE_SETUP } = await import('../writer/utils/pageSetup');
+    expect(parsePageSetup({ paper: 'a4' })).toMatchObject({ spaceAfter: 8, lineHeight: 1.15 });
+    expect(parsePageSetup({ spaceAfter: -3, lineHeight: 99 })).toMatchObject({ spaceAfter: DEFAULT_PAGE_SETUP.spaceAfter, lineHeight: DEFAULT_PAGE_SETUP.lineHeight });
+  });
+
   it('recognises landscape Letter and leaves an unknown paper unset', () => {
     expect(readDocxDefaults('<w:pgSz w:w="15840" w:h="12240" w:orient="landscape"/>', '').paper).toBe('letter');
     expect(readDocxDefaults('<w:pgSz w:w="5000" w:h="5000"/>', '').paper).toBeUndefined();
@@ -257,5 +279,82 @@ describe('print header rows', () => {
     );
     const plain = '<table><tbody><tr><th><p>A</p></th><td><p>x</p></td></tr></tbody></table>';
     expect(headerRowsToThead(plain)).toBe(plain);
+  });
+});
+
+describe('footnotes in print', () => {
+  it('lists the notes after the text in the order of their references', async () => {
+    const { appendFootnotes } = await import('../writer/services/printService');
+    const html = '<p>a<sup data-footnote="Một" title="Một"></sup> b<sup data-footnote="Hai &amp; ba"></sup></p>';
+    const out = appendFootnotes(html);
+    expect(out.startsWith(html)).toBe(true);
+    expect(out).toContain('<li>Một</li><li>Hai &amp; ba</li>');
+    expect(appendFootnotes('<p>none</p>')).toBe('<p>none</p>');
+  });
+});
+
+describe('pagination in columns', () => {
+  const block = (height: number, pos: number, extra: object = {}) => ({ height, pos, ...extra });
+
+  it('fills a column, then the next, then the next page', () => {
+    const blocks = [block(40, 0), block(40, 1), block(40, 2), block(40, 3), block(40, 4), block(40, 5), block(40, 6)];
+    const result = paginateColumns(blocks, 100, 2);
+    expect(result.columns).toEqual([
+      { index: 2, page: 0, column: 1, y: 0 },
+      { index: 3, page: 0, column: 1, y: 40 },
+      { index: 6, page: 1, column: 1, y: 0 },
+    ]);
+    expect(result.breaks).toEqual([{ beforeIndex: 4, filler: 20, pos: 4 }]);
+    expect(result.pageOfBlock).toEqual([0, 0, 0, 0, 1, 1, 1]);
+    expect(result.pageCount).toBe(2);
+  });
+
+  it('starts a new page at a manual break, wherever in the page it falls', () => {
+    const result = paginateColumns([block(10, 0, { breakAfter: true }), block(10, 1), block(10, 2)], 100, 3);
+    expect(result.pageOfBlock).toEqual([0, 1, 1]);
+    expect(result.breaks[0].filler).toBe(90);
+    expect(result.columns).toEqual([]);
+  });
+
+  it('is the one-column pagination when there is one column', () => {
+    const blocks = [block(60, 0), block(60, 1)];
+    expect(paginateColumns(blocks, 100, 1).breaks).toEqual(paginate(blocks, 100).breaks);
+  });
+});
+
+describe('pagination with footnotes', () => {
+  const note = (n: number) => ({ n, text: `note ${n}` });
+  const block = (height: number, pos: number, notes?: Array<{ n: number; text: string }>, reserve = 0) => ({ height, pos, ...(notes ? { notes, reserve } : {}) });
+
+  it('makes room at the foot of a page for the notes of the units on it', () => {
+    // 100 high pages: two 40 blocks fit, but with a note of 20 on the second they need 40 + 40 + 20 + the rule, which does not.
+    const result = paginate([block(40, 0), block(40, 1, [note(1)], 20), block(40, 2)], 100);
+    // The second block moves to the next page, and there it leaves no room for the third beside its note.
+    expect(result.breaks.map((b) => b.beforeIndex)).toEqual([1, 2]);
+    expect(result.breaks[1].notes).toEqual([note(1)]);
+    expect(result.lastNotes).toBeUndefined();
+  });
+
+  it('gives each page its own notes, and the last page its own', () => {
+    const result = paginate([block(30, 0, [note(1)], 10), block(60, 1), block(30, 2, [note(2)], 10), block(30, 3, [note(3)], 10)], 100);
+    expect(result.breaks[0].notes).toEqual([note(1)]);
+    expect(result.lastNotes).toEqual([note(2), note(3)]);
+  });
+
+  it('reserves the notes across a page of several columns', () => {
+    const note = (n: number) => ({ n, text: `note ${n}` });
+    // Column 1 is filled to 80; a 30 note in column 2 would need 38 at the foot, which column 1 has no room for: the page ends.
+    const result = paginateColumns([block(40, 0), block(40, 1), block(10, 2, [note(1)], 30), block(10, 3)], 100, 2);
+    expect(result.breaks.map((b) => b.beforeIndex)).toEqual([2]);
+    expect(result.lastNotes).toEqual([note(1)]);
+    const roomy = paginateColumns([block(40, 0), block(10, 1, [note(1)], 30)], 100, 2);
+    expect(roomy.breaks).toEqual([]);
+    expect(roomy.lastNotes).toEqual([note(1)]);
+  });
+
+  it('still counts two results with different notes as different', () => {
+    const a = paginate([block(10, 0, [note(1)], 5)], 100);
+    const b = paginate([block(10, 0)], 100);
+    expect(samePagination(a, b)).toBe(false);
   });
 });

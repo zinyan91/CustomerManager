@@ -16,6 +16,19 @@ export interface DocNode {
   marks?: DocMark[];
 }
 
+/** Blocks that took a picture as a block of its own, before pictures were allowed inside a paragraph. */
+const OLD_IMAGE_PARENTS = new Set(['doc', 'tableCell', 'tableHeader', 'listItem', 'taskItem', 'blockquote']);
+
+/** The document with every picture that stands alone among blocks wrapped in a paragraph (older drafts kept them as blocks). */
+export function wrapBlockImages(node: DocNode): DocNode {
+  if (!node.content) return node;
+  const content = node.content.map((child) => {
+    const inner = wrapBlockImages(child);
+    return OLD_IMAGE_PARENTS.has(node.type) && inner.type === 'image' ? { type: 'paragraph', content: [inner] } : inner;
+  });
+  return { ...node, content };
+}
+
 export const EMPTY_DOC: DocNode = { type: 'doc', content: [{ type: 'paragraph' }] };
 
 /** Blocks whose text ends a line in plain-text output and in statistics. */

@@ -6,7 +6,8 @@ import {
   fontSizeHalfPoints,
   toHex,
 } from '../writer/services/docxExportService';
-import { DEFAULT_PAGE_SETUP, type PageSetup } from '../writer/utils/pageSetup';
+import { DEFAULT_PAGE_SETUP, parsePageSetup, type PageSetup } from '../writer/utils/pageSetup';
+import { readDocxDefaults } from '../writer/utils/docxDefaults';
 import type { DocNode } from '../writer/utils/docJson';
 import { classesToInlineStyle, extractRunStyles, runCss } from '../writer/utils/docxRunStyles';
 import { docxToHtml, normaliseMammothHtml } from '../writer/services/docxImportService';
@@ -258,5 +259,186 @@ describe('exportDocx pictures that text wraps round', () => {
     const html = (await docxToHtml(await blob.arrayBuffer())).replace(/data:[^"]{40,}/g, 'data:...');
     expect(html).toContain('data-float="right"');
     expect(html).toContain('width="120"');
+  });
+});
+
+describe('a comment on a stretch of text', () => {
+  const doc: DocNode = {
+    type: 'doc',
+    content: [
+      paragraph(
+        text('đầu '),
+        text('đoạn ', [{ type: 'commentRange', attrs: { text: 'sửa chỗ này' } }]),
+        text('được ', [{ type: 'bold' }, { type: 'commentRange', attrs: { text: 'sửa chỗ này' } }]),
+        text('cuối'),
+      ),
+    ],
+  };
+
+  it('is written as one Word comment that starts and ends around the text', async () => {
+    const zip = await unzip(await exportDocx(doc, baseOptions));
+    const body = await zip.file('word/document.xml')!.async('string');
+    expect(body.match(/<w:commentRangeStart /g)).toHaveLength(1);
+    expect(body.match(/<w:commentRangeEnd /g)).toHaveLength(1);
+    expect(body.indexOf('commentRangeStart')).toBeLessThan(body.indexOf('đoạn'));
+    expect(body.indexOf('commentRangeEnd')).toBeGreaterThan(body.indexOf('được'));
+    expect(body.indexOf('commentRangeEnd')).toBeLessThan(body.indexOf('cuối'));
+    expect(await zip.file('word/comments.xml')!.async('string')).toContain('sửa chỗ này');
+  });
+
+  it('comes back from the file as a comment on the same text', async () => {
+    const blob = await exportDocx(doc, baseOptions);
+    const html = await docxToHtml(await blob.arrayBuffer());
+    expect(html).toMatch(/<span data-comment-range="sửa chỗ này"[^>]*>đoạn <strong>được <\/strong><\/span>|<span data-comment-range="sửa chỗ này"[^>]*>đoạn được/);
+  });
+});
+
+describe('the paragraph spacing a document sets', () => {
+  it('is what the DOCX styles say, so a form with no space after stays that tight in Word', async () => {
+    const setup = { ...DEFAULT_PAGE_SETUP, spaceAfter: 0, lineHeight: 1 };
+    const zip = await unzip(await exportDocx({ type: 'doc', content: [paragraph(text('a'))] }, { ...baseOptions, pageSetup: setup }));
+    const styles = await zip.file('word/styles.xml')!.async('string');
+    expect(styles).toMatch(/<w:docDefaults>[\s\S]*<w:spacing [^>]*w:after="0"[^>]*w:line="240"/);
+    const fallback = await unzip(await exportDocx({ type: 'doc', content: [paragraph(text('a'))] }, baseOptions));
+    expect(await fallback.file('word/styles.xml')!.async('string')).toMatch(/<w:spacing [^>]*w:after="160"[^>]*w:line="276"/);
+  });
+});
+
+describe('numbered lists set to a format and a first number', () => {
+  const list = (attrs: Record<string, unknown>, ...items: DocNode[]): DocNode => ({ type: 'orderedList', attrs, content: items.map((item) => ({ type: 'listItem', content: [item] })) });
+
+  it('writes each list with its own numbering, so two lists do not count on from each other', async () => {
+    const doc: DocNode = {
+      type: 'doc',
+      content: [list({ type: 'I', start: 1 }, paragraph(text('Phần'))), paragraph(text('giữa')), list({ type: 'a', start: 3 }, paragraph(text('chữ'))), list({ start: 1 }, paragraph(text('số')))],
+    };
+    const zip = await unzip(await exportDocx(doc, baseOptions));
+    const numbering = await zip.file('word/numbering.xml')!.async('string');
+    expect(numbering).toMatch(/<w:lvl w:ilvl="0"[^>]*>\s*<w:start w:val="1"\/>\s*<w:numFmt w:val="upperRoman"/);
+    expect(numbering).toMatch(/<w:lvl w:ilvl="0"[^>]*>\s*<w:start w:val="3"\/>\s*<w:numFmt w:val="lowerLetter"/);
+    const body = await zip.file('word/document.xml')!.async('string');
+    expect(new Set([...body.matchAll(/<w:numId w:val="(\d+)"/g)].map((m) => m[1])).size).toBe(3);
+  });
+
+  it('sets a nested list to its own format within its parent numbering', async () => {
+    const inner = list({ type: 'a' }, paragraph(text('con')));
+    const doc: DocNode = { type: 'doc', content: [{ type: 'orderedList', attrs: { type: 'I' }, content: [{ type: 'listItem', content: [paragraph(text('cha')), inner] }] }] };
+    const zip = await unzip(await exportDocx(doc, baseOptions));
+    const numbering = await zip.file('word/numbering.xml')!.async('string');
+    expect(numbering).toMatch(/<w:lvl w:ilvl="1"[^>]*>\s*<w:start w:val="1"\/>\s*<w:numFmt w:val="lowerLetter"/);
+  });
+
+  it('comes back from the file with the same formats and first numbers', async () => {
+    const doc: DocNode = { type: 'doc', content: [list({ type: 'I', start: 1 }, paragraph(text('Một'))), paragraph(text('giữa')), list({ type: 'a', start: 3 }, paragraph(text('ba')))] };
+    const html = await docxToHtml(await (await exportDocx(doc, baseOptions)).arrayBuffer());
+    expect(html).toContain('<ol type="I"');
+    expect(html).toContain('<ol type="a" start="3"');
+  });
+});
+
+describe('the borders of a table', () => {
+  const cell = (value: string): DocNode => ({ type: 'tableCell', attrs: { colspan: 1, rowspan: 1 }, content: [paragraph(text(value))] });
+  const table = (attrs: Record<string, unknown> | undefined): DocNode => ({ type: 'table', attrs, content: [{ type: 'tableRow', content: [cell('a')] }] });
+
+  it('writes none, a colour, or the editor grey, as the table says', async () => {
+    const body = async (doc: DocNode): Promise<string> => (await unzip(await exportDocx({ type: 'doc', content: [doc] }, baseOptions))).file('word/document.xml')!.async('string');
+    expect(await body(table({ borders: 'none' }))).toMatch(/<w:tblBorders><w:top w:val="none"/);
+    expect(await body(table({ borders: '#ff0000' }))).toMatch(/<w:top w:val="single" w:color="FF0000"/);
+    expect(await body(table(undefined))).toMatch(/<w:top w:val="single" w:color="999999"/);
+  });
+
+  it('comes back from the file with the same borders', async () => {
+    const html = await docxToHtml(await (await exportDocx({ type: 'doc', content: [table({ borders: 'none' }), table({ borders: '#00ff00' })] }, baseOptions)).arrayBuffer());
+    expect(html).toContain('<table data-borders="none"');
+    expect(html).toContain('<table data-borders="#00ff00"');
+  });
+});
+
+describe('a header and footer kept from the imported file', () => {
+  const HEADER = '<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:p><w:r><w:t>Logo ngân hàng</w:t></w:r><w:r><w:drawing><a:blip r:embed="rId1" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"/></w:drawing></w:r></w:p></w:hdr>';
+  const FOOTER = '<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>Mã biểu mẫu BM11</w:t></w:r><w:r><w:tab/></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>';
+  const RELS = '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/kept-header-image1.png"/></Relationships>';
+  const PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+  const kept = { header: { xml: HEADER, rels: RELS, media: { 'kept-header-image1.png': PIXEL } }, footer: { xml: FOOTER, rels: '', media: {} } };
+
+  it('writes the page columns into the section and reads them back', async () => {
+    const zip = await unzip(await exportDocx({ type: 'doc', content: [paragraph(text('a'))] }, { ...baseOptions, pageSetup: { ...DEFAULT_PAGE_SETUP, columns: 2, columnGap: 10 } }));
+    const documentXml = await zip.file('word/document.xml')!.async('string');
+    expect(documentXml).toMatch(/<w:cols[^>]*w:num="2"/);
+    expect(readDocxDefaults(documentXml, '')).toMatchObject({ columns: 2, columnGap: 10 });
+    const plain = await unzip(await exportDocx({ type: 'doc', content: [paragraph(text('a'))] }, { ...baseOptions, pageSetup: DEFAULT_PAGE_SETUP }));
+    expect(readDocxDefaults(await plain.file('word/document.xml')!.async('string'), '').columns).toBeUndefined();
+    expect(parsePageSetup({ columns: 9 }).columns).toBe(1);
+    expect(parsePageSetup({ columns: 3 }).columns).toBe(3);
+  });
+
+  it('is written into the package, with its picture, relationships and content types', async () => {
+    const setup = { ...DEFAULT_PAGE_SETUP, headerText: 'Logo ngân hàng', footerText: 'Mã biểu mẫu BM11', keptHeader: kept.header, keptFooter: kept.footer };
+    const zip = await unzip(await exportDocx({ type: 'doc', content: [paragraph(text('nội dung'))] }, { ...baseOptions, pageSetup: setup }));
+    expect(await zip.file('word/keptHeader.xml')!.async('string')).toBe(HEADER);
+    expect(await zip.file('word/keptFooter.xml')!.async('string')).toBe(FOOTER);
+    expect(await zip.file('word/_rels/keptHeader.xml.rels')!.async('string')).toContain('media/kept-header-image1.png');
+    expect(await zip.file('word/media/kept-header-image1.png')!.async('base64')).toBe(PIXEL);
+    const types = await zip.file('[Content_Types].xml')!.async('string');
+    expect(types).toContain('/word/keptHeader.xml');
+    expect(types).toContain('/word/keptFooter.xml');
+    expect(types).toMatch(/<Default[^>]*Extension="png"/);
+    const body = await zip.file('word/document.xml')!.async('string');
+    expect(body).toMatch(/<w:sectPr[^>]*><w:headerReference w:type="default" r:id="rIdKeptHeader"\/><w:footerReference w:type="default" r:id="rIdKeptFooter"\/>/);
+    expect(await zip.file('word/_rels/document.xml.rels')!.async('string')).toContain('Id="rIdKeptHeader"');
+    // The writer makes no header or footer of its own besides them.
+    expect(Object.keys(zip.files).filter((name) => /^word\/(header|footer)\d*\.xml$/.test(name))).toEqual([]);
+  });
+
+  it('is read back from the exported file as it was, and a file without any keeps none', async () => {
+    const { default: JSZip } = await import('jszip');
+    const { readKeptPart } = await import('../writer/utils/docxKeptParts');
+    const setup = { ...DEFAULT_PAGE_SETUP, keptHeader: kept.header, keptFooter: kept.footer };
+    const exported = await unzip(await exportDocx({ type: 'doc', content: [paragraph(text('a'))] }, { ...baseOptions, pageSetup: setup }));
+    const back = await readKeptPart(exported as unknown as InstanceType<typeof JSZip>, 'word/keptHeader.xml', 'header');
+    expect(back?.xml).toBe(HEADER);
+    expect(back?.media['kept-header-kept-header-image1.png']).toBe(PIXEL);
+    const plain = await unzip(await exportDocx({ type: 'doc', content: [paragraph(text('a'))] }, baseOptions));
+    expect(await readKeptPart(plain as unknown as InstanceType<typeof JSZip>, null, 'header')).toBeNull();
+  });
+
+  it('is dropped by a stored setup that holds something else, and the writer makes the header again from its text', async () => {
+    const { sanitiseKeptPart } = await import('../writer/utils/docxKeptParts');
+    const { parsePageSetup } = await import('../writer/utils/pageSetup');
+    expect(sanitiseKeptPart({ xml: '', rels: '', media: {} })).toBeNull();
+    expect(sanitiseKeptPart('x')).toBeNull();
+    expect(sanitiseKeptPart({ xml: '<w:hdr/>', rels: '', media: { '../evil.png': 'AAAA', 'ok.png': 'AAAA', 'bad.png': '<script>' } })?.media).toEqual({ 'ok.png': 'AAAA' });
+    expect(parsePageSetup({ keptHeader: kept.header }).keptHeader?.xml).toBe(HEADER);
+    const remade = await unzip(await exportDocx({ type: 'doc', content: [paragraph(text('a'))] }, { ...baseOptions, pageSetup: { ...DEFAULT_PAGE_SETUP, headerText: 'Chữ mới', keptHeader: null } }));
+    expect(await remade.file('word/header1.xml')!.async('string')).toContain('Chữ mới');
+    expect(remade.file('word/keptHeader.xml')).toBeNull();
+  });
+
+  it('keeps the distance of the header and footer from the paper edge', async () => {
+    const body = async (setup: typeof DEFAULT_PAGE_SETUP): Promise<string> => (await unzip(await exportDocx({ type: 'doc', content: [paragraph(text('a'))] }, { ...baseOptions, pageSetup: setup }))).file('word/document.xml')!.async('string');
+    expect(await body({ ...DEFAULT_PAGE_SETUP, headerDistance: 7.62, footerDistance: 12.7 })).toMatch(/w:header="432"[^>]*w:footer="720"/);
+    expect(await body(DEFAULT_PAGE_SETUP)).toMatch(/w:header="709"/);
+  });
+});
+
+describe('the column grid of a table with known widths', () => {
+  const cell = (value: string, colwidth: number[] | null, colspan = 1): DocNode => ({ type: 'tableCell', attrs: { colspan, rowspan: 1, colwidth }, content: [paragraph(text(value))] });
+  const body = async (doc: DocNode, pageSetup = DEFAULT_PAGE_SETUP): Promise<string> => (await unzip(await exportDocx({ type: 'doc', content: [doc] }, { ...baseOptions, pageSetup }))).file('word/document.xml')!.async('string');
+
+  it('writes the grid and a fixed layout, so that Word does not size the columns by their text', async () => {
+    const table: DocNode = { type: 'table', content: [{ type: 'tableRow', content: [cell('a', [60]), cell('b', [180])] }, { type: 'tableRow', content: [cell('c', [60, 180], 2)] }] };
+    const xml = await body(table);
+    expect(xml).toMatch(/<w:tblGrid><w:gridCol w:w="900"\/><w:gridCol w:w="2700"\/><\/w:tblGrid>/);
+    expect(xml).toContain('<w:tblLayout w:type="fixed"/>');
+    expect(xml).toMatch(/<w:tblW w:type="dxa" w:w="3600"\/>/);
+  });
+
+  it('shrinks a grid wider than the page to the page, and leaves a table without widths at the page width', async () => {
+    const wide: DocNode = { type: 'table', content: [{ type: 'tableRow', content: [cell('a', [600]), cell('b', [600])] }] };
+    const widths = [...(await body(wide)).matchAll(/<w:gridCol w:w="(\d+)"/g)].map((m) => Number(m[1]));
+    expect(widths[0]).toBe(widths[1]);
+    expect(widths[0] + widths[1]).toBeLessThanOrEqual(9100);
+    const plain: DocNode = { type: 'table', content: [{ type: 'tableRow', content: [cell('a', null), cell('b', null)] }] };
+    expect(await body(plain)).toMatch(/<w:tblW w:type="pct" w:w="5000"\/>/);
   });
 });

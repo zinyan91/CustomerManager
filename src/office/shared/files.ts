@@ -39,7 +39,7 @@ export function downloadBlob(blob: Blob, filename: string): void {
  * Mở hộp thoại in của trình duyệt cho một trang HTML nằm trong blob. Khung ẩn đặt ngoài màn hình
  * thay vì `display: none` vì Chrome không in từ khung chưa từng được dàn trang.
  */
-export function printBlob(blob: Blob): void {
+export function printBlob(blob: Blob, prepare?: (doc: Document) => void | Promise<void>): void {
   const printUrl = URL.createObjectURL(blob);
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;left:-9999px;top:-9999px';
@@ -50,7 +50,16 @@ export function printBlob(blob: Blob): void {
     URL.revokeObjectURL(printUrl);
     iframe.remove();
   };
-  iframe.onload = () => {
+  iframe.onload = async () => {
+    // Trang có thể tự sắp lại (chú thích về chân từng trang) sau khi phông đã nạp.
+    if (prepare && iframe.contentDocument) {
+      try {
+        await iframe.contentDocument.fonts?.ready;
+        await prepare(iframe.contentDocument);
+      } catch {
+        // Sắp lại không được thì vẫn in trang như đang có.
+      }
+    }
     iframe.contentWindow?.addEventListener('afterprint', cleanup, { once: true });
     iframe.contentWindow?.print();
     setTimeout(cleanup, PRINT_CLEANUP_FALLBACK_MS);

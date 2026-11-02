@@ -24,7 +24,10 @@ export type FloatSide = 'left' | 'right';
 export interface DrawingInfo {
   width: number;
   height: number;
-  float: FloatSide | null;
+  /** 'front': drawn over the text at an offset (`x`, `y` in pixels from the column's left edge and the anchor paragraph's top), taking no room. */
+  float: FloatSide | 'front' | null;
+  x?: number;
+  y?: number;
 }
 
 /** What one `wp:inline` or `wp:anchor` element says about size and wrapping. */
@@ -36,8 +39,16 @@ export function readDrawing(kind: 'inline' | 'anchor', xml: string): DrawingInfo
   if (!(width > 0) || !(height > 0)) return null;
   if (kind === 'inline') return { width, height, float: null };
 
-  const wraps = /<wp:wrap(Square|Tight|Through)\b/.test(xml);
   const behind = /\bbehindDoc="(?:1|true)"/.test(xml);
+  // In front of the text with no wrapping, placed by offsets from the column and the paragraph it is anchored in.
+  if (/<wp:wrapNone\b/.test(xml) && !behind) {
+    const h = /<wp:positionH\b[^>]*\brelativeFrom="(column|margin|character)"[^>]*>([\s\S]*?)<\/wp:positionH>/.exec(xml);
+    const v = /<wp:positionV\b[^>]*\brelativeFrom="(paragraph|line)"[^>]*>([\s\S]*?)<\/wp:positionV>/.exec(xml);
+    const hx = h && /<wp:posOffset>(-?\d+)<\/wp:posOffset>/.exec(h[2]);
+    const vy = v && /<wp:posOffset>(-?\d+)<\/wp:posOffset>/.exec(v[2]);
+    if (hx && vy) return { width, height, float: 'front', x: Math.round(Number(hx[1]) / EMU_PER_PX), y: Math.round(Number(vy[1]) / EMU_PER_PX) };
+  }
+  const wraps = /<wp:wrap(Square|Tight|Through)\b/.test(xml);
   if (!wraps || behind) return { width, height, float: null };
 
   const horizontal = /<wp:positionH\b[^>]*>([\s\S]*?)<\/wp:positionH>/.exec(xml);
@@ -59,7 +70,7 @@ export function markDrawings(documentXml: string): string {
   return documentXml.replace(/<wp:(inline|anchor)\b[\s\S]*?<\/wp:\1>/g, (drawing, kind: 'inline' | 'anchor') => {
     const info = readDrawing(kind, drawing);
     if (!info) return drawing;
-    const marker = `${MARKER}w=${info.width},h=${info.height}${info.float ? `,f=${info.float}` : ''}|`;
+    const marker = `${MARKER}w=${info.width},h=${info.height}${info.float ? `,f=${info.float}` : ''}${info.float === 'front' ? `,x=${info.x},y=${info.y}` : ''}|`;
     return drawing.replace(/<wp:docPr\b([^>]*?)(\/?)>/, (_tag, attributes: string, close: string) => {
       const existing = /\sdescr="([^"]*)"/.exec(attributes);
       const rest = existing ? attributes.replace(existing[0], '') : attributes;
@@ -74,7 +85,7 @@ export function applyDrawingMarkers(html: string): string {
     const alt = /\salt="felix-img:([^"|]*)\|([^"]*)"/.exec(tag);
     if (!alt) return tag;
     const parts = Object.fromEntries(alt[1].split(',').map((part) => part.split('=')));
-    const extra = [parts.w ? ` width="${parts.w}"` : '', parts.f ? ` data-float="${parts.f}"` : ''].join('');
+    const extra = [parts.w ? ` width="${parts.w}"` : '', parts.f ? ` data-float="${parts.f}"` : '', parts.f === 'front' ? ` data-dx="${parts.x}" data-dy="${parts.y}" data-h="${parts.h}"` : ''].join('');
     return tag.replace(alt[0], alt[2] ? ` alt="${alt[2]}"` : '').replace(/^<img\b/, `<img${extra}`);
   });
 }

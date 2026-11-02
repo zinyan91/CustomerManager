@@ -54,6 +54,16 @@ export const LayoutTab: React.FC<{ pageSetup: PageSetup; onChange: (next: PageSe
         />
       </Group>
 
+      <Group label={m.writer.groups.columns}>
+        <SelectBox
+          title={t.columns}
+          width={70}
+          value={String(pageSetup.columns)}
+          onChange={(value) => onChange({ ...pageSetup, columns: Number(value) })}
+          options={[1, 2, 3, 4].map((n) => ({ value: String(n), label: String(n) }))}
+        />
+      </Group>
+
       <Group label={m.writer.groups.margins}>
         <SelectBox
           title={t.margins}
@@ -115,7 +125,7 @@ export const LayoutTab: React.FC<{ pageSetup: PageSetup; onChange: (next: PageSe
             type="text"
             value={pageSetup.headerText}
             placeholder={t.headerPlaceholder}
-            onChange={(event) => onChange({ ...pageSetup, headerText: event.target.value })}
+            onChange={(event) => onChange({ ...pageSetup, headerText: event.target.value, keptHeader: null })}
           />
         </label>
         <label className="wr-field wr-field-wide">
@@ -124,14 +134,14 @@ export const LayoutTab: React.FC<{ pageSetup: PageSetup; onChange: (next: PageSe
             type="text"
             value={pageSetup.footerText}
             placeholder={t.footerPlaceholder}
-            onChange={(event) => onChange({ ...pageSetup, footerText: event.target.value })}
+            onChange={(event) => onChange({ ...pageSetup, footerText: event.target.value, keptFooter: null })}
           />
         </label>
         <label className="wr-check">
           <input
             type="checkbox"
             checked={pageSetup.pageNumbers}
-            onChange={(event) => onChange({ ...pageSetup, pageNumbers: event.target.checked })}
+            onChange={(event) => onChange({ ...pageSetup, pageNumbers: event.target.checked, keptFooter: null })}
           />
           <span>{t.pageNumbers}</span>
         </label>

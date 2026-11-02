@@ -11,6 +11,12 @@ import {
   SeparatorHorizontal,
   Table as TableIcon,
   Trash2,
+  CheckCheck,
+  GitCompare,
+  MessageSquarePlus,
+  XCircle,
+  PaintBucket,
+  StickyNote,
   TableCellsMerge,
   TableCellsSplit,
   Columns3,
@@ -18,10 +24,10 @@ import {
 } from 'lucide-react';
 import { useOfficeI18n } from '../../../i18n';
 import type { WriterFormatState } from '../../editor/useWriterState';
-import { SPECIAL_CHARACTERS } from '../../../shared/formatOptions';
+import { HIGHLIGHT_COLORS, SPECIAL_CHARACTERS } from '../../../shared/formatOptions';
 import { promptLink } from '../../editor/linkPrompt';
 import { prepareImage } from '../../../shared/imageImport';
-import { Btn, Group, Popover } from '../../../shared/ribbon/controls';
+import { Btn, Group, Popover, Swatches } from '../../../shared/ribbon/controls';
 
 const GRID_ROWS = 8;
 const GRID_COLS = 8;
@@ -121,6 +127,25 @@ export const InsertTab: React.FC<{
         <Btn title={t.cmd.splitCell} disabled={!state.canSplitCell} onClick={() => run().splitCell().run()}>
           <TableCellsSplit size={16} />
         </Btn>
+        <Popover
+          button={({ toggle }) => (
+            <Btn title={t.cmd.cellShading} disabled={!state.inTable} onClick={toggle}>
+              <PaintBucket size={16} />
+            </Btn>
+          )}
+        >
+          {(close) => (
+            <Swatches
+              colors={HIGHLIGHT_COLORS}
+              current={null}
+              noneLabel={t.cmd.noColor}
+              onPick={(color) => {
+                run().setCellAttribute('background', color ?? null).run();
+                close();
+              }}
+            />
+          )}
+        </Popover>
         <Btn title={t.cmd.headerRow} disabled={!state.inTable} onClick={() => run().toggleHeaderRow().run()}>
           <PanelTop size={16} />
         </Btn>
@@ -179,6 +204,33 @@ export const InsertTab: React.FC<{
       </Group>
 
       <Group label={t.groups.links}>
+        <Btn
+          title={t.cmd.footnote}
+          onClick={() => {
+            const text = window.prompt(t.cmd.footnotePrompt, '');
+            if (text) run().insertFootnote(text).run();
+          }}
+        >
+          <StickyNote size={16} />
+        </Btn>
+        <Btn
+          title={t.cmd.comment}
+          onClick={() => {
+            const text = window.prompt(t.cmd.commentPrompt, '');
+            if (text) run().insertComment(text).run();
+          }}
+        >
+          <MessageSquarePlus size={16} />
+        </Btn>
+        <Btn title={t.cmd.trackChanges} active={state.tracking} onClick={() => run().toggleTrackChanges().run()}>
+          <GitCompare size={16} />
+        </Btn>
+        <Btn title={t.cmd.acceptChanges} onClick={() => run().acceptChanges().run()}>
+          <CheckCheck size={16} />
+        </Btn>
+        <Btn title={t.cmd.rejectChanges} onClick={() => run().rejectChanges().run()}>
+          <XCircle size={16} />
+        </Btn>
         <Btn title={t.cmd.link} active={state.link} onClick={() => promptLink(editor, t.cmd.linkPrompt)}>
           <LinkIcon size={16} />
         </Btn>

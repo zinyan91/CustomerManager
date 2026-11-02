@@ -3296,3 +3296,73 @@
   color: var(--text-primary);
   cursor: pointer;
 }
+
+/* ===== writer.css: felix-office 5795c73 ===== */
+.writer-sheet.is-columns .ProseMirror {
+  width: var(--writer-col-width);
+}
+
+.writer-sheet.is-columns .ProseMirror > .writer-col-unit {
+  position: absolute;
+  left: var(--col-x);
+  top: var(--col-y);
+  width: var(--writer-col-width);
+  box-sizing: border-box;
+}
+
+.writer-sheet.is-columns .ProseMirror.writer-measuring > .writer-col-unit {
+  position: static;
+}
+
+.writer-notes {
+  font-size: 9pt;
+  line-height: 1.25;
+  color: var(--office-paper-ink);
+}
+
+.writer-notes-rule {
+  width: 30%;
+  border-top: 1px solid currentColor;
+  margin-bottom: 7px;
+}
+
+.writer-note {
+  margin: 0 0 2px;
+}
+
+.writer-notes-probe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  font-size: 9pt;
+  line-height: 1.25;
+}
+
+.writer-page-gap .writer-notes,
+.writer-notes.writer-notes-last {
+  position: absolute;
+  top: 0;
+  height: var(--page-filler);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  background: var(--office-paper);
+}
+
+.writer-notes.writer-notes-last {
+  left: 0;
+  height: auto;
+}
+
+.writer-sheet .ProseMirror.writer-measuring .writer-notes-last {
+  display: none;
+}
+
+.wr-menu-separator {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border-subtle, var(--border));
+}

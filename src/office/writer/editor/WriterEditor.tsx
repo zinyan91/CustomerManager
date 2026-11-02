@@ -4,7 +4,7 @@ import { writerExtensions } from './extensions';
 import type { PaginationResult } from '../utils/pagination';
 import { baseTextVars, contentCss } from '../utils/contentCss';
 import { footerText, type PageLayout } from './Pagination';
-import { pageGeometryPx, type PageSetup } from '../utils/pageSetup';
+import { mmToPx, pageGeometryPx, type PageSetup } from '../utils/pageSetup';
 import type { DocNode } from '../utils/docJson';
 import { useOfficeI18n } from '../../i18n';
 
@@ -46,6 +46,8 @@ export const WriterEditor: React.FC<WriterEditorProps> = ({
   textRef.current = m;
   const callbacks = useRef({ onChange, onPaginate });
   callbacks.current = { onChange, onPaginate };
+  const setupRef = useRef(pageSetup);
+  setupRef.current = pageSetup;
 
   const editor = useEditor({
     extensions: writerExtensions({
@@ -53,6 +55,10 @@ export const WriterEditor: React.FC<WriterEditorProps> = ({
       tocTitle: () => textRef.current.writer.toc.title,
       tocEmpty: () => textRef.current.writer.toc.empty,
       onPaginate: (result) => callbacks.current.onPaginate(result),
+      baseSize: () => setupRef.current.baseSize,
+      askFootnote: (current) => window.prompt(textRef.current.writer.cmd.footnotePrompt, current),
+      author: () => 'Felix Office',
+      askComment: (current) => window.prompt(textRef.current.writer.cmd.commentPrompt, current),
     }),
     content: initialContent,
     autofocus: 'start',
@@ -76,6 +82,8 @@ export const WriterEditor: React.FC<WriterEditorProps> = ({
   }, [editor]);
 
   const geometry = useMemo(() => pageGeometryPx(pageSetup), [pageSetup]);
+  const columnGapPx = mmToPx(pageSetup.columnGap);
+  const columnWidthPx = pageSetup.columns > 1 ? Math.max(40, (geometry.contentWidth - columnGapPx * (pageSetup.columns - 1)) / pageSetup.columns) : geometry.contentWidth;
   const layout: PageLayout = useMemo(
     () => ({
       contentHeight: geometry.contentHeight,
@@ -84,12 +92,15 @@ export const WriterEditor: React.FC<WriterEditorProps> = ({
       marginBottom: geometry.margins.bottom,
       marginLeft: geometry.margins.left,
       gap: PAGE_GAP_PX,
+      columns: pageSetup.columns,
+      columnWidth: columnWidthPx,
+      columnGap: columnGapPx,
       headerText: pageSetup.headerText,
       footerText: pageSetup.footerText,
       pageNumbers: pageSetup.pageNumbers,
       pageTemplate: m.writer.layout.pageTemplate,
     }),
-    [geometry, pageSetup, m],
+    [geometry, pageSetup, m, columnWidthPx, columnGapPx],
   );
 
   useEffect(() => {
@@ -113,7 +124,7 @@ export const WriterEditor: React.FC<WriterEditorProps> = ({
         style={{ width: geometry.width * scale, height: minHeight * scale }}
       >
         <div
-          className="writer-sheet"
+          className={`writer-sheet${pageSetup.columns > 1 ? ' is-columns' : ''}`}
           style={{
             width: geometry.width,
             minHeight,
@@ -122,6 +133,8 @@ export const WriterEditor: React.FC<WriterEditorProps> = ({
             ['--page-margin-top' as string]: `${geometry.margins.top}px`,
             ['--page-margin-bottom' as string]: `${geometry.margins.bottom}px`,
             ...baseTextVars(pageSetup),
+            ['--writer-columns' as string]: '1',
+            ['--writer-col-width' as string]: `${columnWidthPx}px`,
           }}
         >
           <div className="writer-page-header writer-first-header" aria-hidden="true">

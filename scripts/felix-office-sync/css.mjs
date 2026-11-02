@@ -1,9 +1,9 @@
-// Brings felix-office calc.css changes (BASE -> THEIRS) into CustomerManager's office.css.
+// Brings felix-office <sheet>.css changes (default calc) (BASE -> THEIRS) into CustomerManager's office.css.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const [felix, BASE, THEIRS, target] = process.argv.slice(2);
-const show = (rev) => execFileSync('git', ['-C', felix, 'show', `${rev}:src/styles/calc.css`], { encoding: 'utf8' }).replace(/\r\n/g, '\n');
+const [felix, BASE, THEIRS, target, sheet = 'calc'] = process.argv.slice(2);
+const show = (rev) => execFileSync('git', ['-C', felix, 'show', `${rev}:src/styles/${sheet}.css`], { encoding: 'utf8' }).replace(/\r\n/g, '\n');
 
 /** Top-level rule blocks: { head, text }. Comments between blocks are dropped. */
 function blocks(css) {
@@ -40,7 +40,7 @@ for (const { head, text } of after) {
     replaced.push(head);
   } else skipped.push(`${head} (changed by both)`);
 }
-if (added.length) css = `${css.trimEnd()}\n\n/* ===== calc.css: felix-office 11/10/2026 ===== */\n${added.join('\n\n')}\n`;
+if (added.length) css = `${css.trimEnd()}\n\n/* ===== ${sheet}.css: felix-office ${THEIRS} ===== */\n${added.join('\n\n')}\n`;
 writeFileSync(target, crlf ? css.replace(/\n/g, '\r\n') : css);
 console.log(`added ${added.length}, replaced ${replaced.length}: ${replaced.join(' | ')}`);
 if (skipped.length) console.log('skipped:\n  ' + skipped.join('\n  '));

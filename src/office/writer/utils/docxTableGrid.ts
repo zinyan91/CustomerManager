@@ -18,6 +18,25 @@ export function tableGridWidths(documentXml: string): number[][] {
   return tables;
 }
 
+/**
+ * The width of each grid column of a table, in pixels, from the cells' own widths (`colwidth`, one per column a
+ * cell covers); null when some column has none, or the table has no widths at all.
+ */
+export function columnWidthsOf(rows: Array<Array<{ colspan: number; rowspan: number; widths: number[] }>>): number[] | null {
+  const columns = cellColumns(rows.map((row) => row.map(({ colspan, rowspan }) => ({ colspan, rowspan }))));
+  const widths: number[] = [];
+  columns.forEach((rowCells, r) =>
+    rowCells.forEach((covered, c) =>
+      covered.forEach((column, i) => {
+        const width = rows[r][c].widths[i];
+        if (widths[column] === undefined && Number.isFinite(width) && width > 0) widths[column] = width;
+      }),
+    ),
+  );
+  const count = Math.max(0, ...columns.flat(2)) + 1;
+  return count > 0 && Array.from({ length: count }, (_x, i) => widths[i]).every((w) => w !== undefined) ? Array.from({ length: count }, (_x, i) => widths[i]) : null;
+}
+
 export interface CellSpan {
   colspan: number;
   rowspan: number;

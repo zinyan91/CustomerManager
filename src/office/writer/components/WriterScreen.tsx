@@ -20,7 +20,7 @@ import { exportDocx } from '../services/docxExportService';
 import { importDocument } from '../services/docxImportService';
 import { getDraft, newDraftId, saveDraft } from '../services/draftStore';
 import { buildPrintHtml, printDocument } from '../services/printService';
-import { docStats, docToPlainText, EMPTY_DOC, firstLine, type DocNode, type DocStats } from '../utils/docJson';
+import { docStats, docToPlainText, EMPTY_DOC, firstLine, wrapBlockImages, type DocNode, type DocStats } from '../utils/docJson';
 import { DEFAULT_PAGE_SETUP, pageGeometryPx, parsePageSetup, type PageSetup } from '../utils/pageSetup';
 import { pageAt, type PaginationResult } from '../utils/pagination';
 import { parseSharedContent, toSharedContent } from '../utils/sharedContent';
@@ -28,7 +28,6 @@ import { FindReplacePanel } from './FindReplacePanel';
 import { StatsDialog } from './StatsDialog';
 import { WriterBackstage, type WriterBackstageSection } from './WriterBackstage';
 import { WriterRibbon } from './WriterRibbon';
-import { ZOOM_MAX, ZOOM_MIN } from './ribbon/LayoutAndViewTabs';
 
 const SAVE_DELAY_MS = 800;
 
@@ -89,7 +88,7 @@ export const WriterScreen: React.FC<WriterScreenProps> = (props) => {
           if (!draft) throw new Error(m.writer.errors.draftMissing);
           props.onDraftId(draft.id, false);
           if (!cancelled) {
-            setLoaded({ id: draft.id, title: draft.title, content: draft.doc, pageSetup: draft.pageSetup, needsSave: false, link: draft.driveLink ?? null, shared: null });
+            setLoaded({ id: draft.id, title: draft.title, content: wrapBlockImages(draft.doc), pageSetup: draft.pageSetup, needsSave: false, link: draft.driveLink ?? null, shared: null });
           }
         } else if (props.file) {
           const imported = await importDocument(props.file);
@@ -433,12 +432,6 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
       } else if (key === 'p') {
         event.preventDefault();
         print();
-      } else if (key === '=' || key === '+') {
-        event.preventDefault();
-        setZoom((z) => Math.min(ZOOM_MAX, z + 10));
-      } else if (key === '-') {
-        event.preventDefault();
-        setZoom((z) => Math.max(ZOOM_MIN, z - 10));
       }
     };
     window.addEventListener('keydown', onKey);

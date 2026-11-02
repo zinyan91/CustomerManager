@@ -28,7 +28,7 @@ import {
 import { useOfficeI18n } from '../../../i18n';
 import type { WriterFormatState } from '../../editor/useWriterState';
 import { FONT_CHOICES, FONT_SIZES_PT, HIGHLIGHT_COLORS, TEXT_COLORS, fontLabelOf, fontSizePtOf } from '../../../shared/formatOptions';
-import { LINE_HEIGHTS } from '../../editor/ParagraphFormat';
+import { ADDED_SPACE_PT, FIRST_LINE_CM, LINE_HEIGHTS } from '../../editor/ParagraphFormat';
 import { Btn, Divider, Group, Popover, SelectBox, Swatches } from '../../../shared/ribbon/controls';
 
 export const HomeTab: React.FC<{ editor: Editor; state: WriterFormatState; baseFont: string; baseSize: number }> = ({
@@ -217,6 +217,37 @@ export const HomeTab: React.FC<{ editor: Editor; state: WriterFormatState; baseF
                   {value}
                 </button>
               ))}
+              <div className="wr-menu-separator" role="separator" />
+              <button
+                type="button"
+                className="wr-menu-item"
+                onClick={() => {
+                  run().setParagraphSpacing({ before: state.spaceBefore ? null : ADDED_SPACE_PT }).run();
+                  close();
+                }}
+              >
+                {state.spaceBefore ? t.cmd.removeSpaceBefore : t.cmd.addSpaceBefore}
+              </button>
+              <button
+                type="button"
+                className="wr-menu-item"
+                onClick={() => {
+                  run().setParagraphSpacing({ after: state.spaceAfter === 0 ? null : 0 }).run();
+                  close();
+                }}
+              >
+                {state.spaceAfter === 0 ? t.cmd.addSpaceAfter : t.cmd.removeSpaceAfter}
+              </button>
+              <button
+                type="button"
+                className="wr-menu-item"
+                onClick={() => {
+                  run().setFirstLineIndent(state.firstLine ? null : FIRST_LINE_CM).run();
+                  close();
+                }}
+              >
+                {state.firstLine ? t.cmd.removeFirstLine : t.cmd.addFirstLine}
+              </button>
             </div>
           )}
         </Popover>

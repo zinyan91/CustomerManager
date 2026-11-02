@@ -26,6 +26,11 @@ export interface WriterFormatState {
   orderedList: boolean;
   taskList: boolean;
   lineHeight: string | null;
+  /** Whether changes are being tracked. */
+  tracking: boolean;
+  spaceBefore: number | null;
+  spaceAfter: number | null;
+  firstLine: number | null;
   inTable: boolean;
   canMergeCells: boolean;
   canSplitCell: boolean;
@@ -59,6 +64,10 @@ const EMPTY: WriterFormatState = {
   orderedList: false,
   taskList: false,
   lineHeight: null,
+  tracking: false,
+  spaceBefore: null,
+  spaceAfter: null,
+  firstLine: null,
   inTable: false,
   canMergeCells: false,
   canSplitCell: false,
@@ -97,6 +106,10 @@ function read(editor: Editor): WriterFormatState {
     orderedList: editor.isActive('orderedList'),
     taskList: editor.isActive('taskList'),
     lineHeight: (block.lineHeight as string | null | undefined) ?? null,
+    tracking: !!(editor.storage as { trackChanges?: { enabled: boolean } }).trackChanges?.enabled,
+    spaceBefore: (block.spaceBefore as number | null | undefined) ?? null,
+    spaceAfter: (block.spaceAfter as number | null | undefined) ?? null,
+    firstLine: (block.firstLine as number | null | undefined) ?? null,
     inTable: editor.isActive('table'),
     canMergeCells: editor.can().mergeCells(),
     canSplitCell: editor.can().splitCell(),

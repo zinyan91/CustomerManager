@@ -4,6 +4,9 @@ import { Extension, type CommandProps } from '@tiptap/core';
 export const MAX_INDENT = 8;
 export const INDENT_STEP_CM = 1.27;
 export const LINE_HEIGHTS = ['1', '1.15', '1.5', '2', '2.5', '3'] as const;
+/** The gap Word's "Add space before paragraph" puts in, in points, and the first-line indent of a paragraph that has one, in centimetres. */
+export const ADDED_SPACE_PT = 12;
+export const FIRST_LINE_CM = 1.27;
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -12,11 +15,22 @@ declare module '@tiptap/core' {
       indent: () => ReturnType;
       outdent: () => ReturnType;
       setLineHeight: (lineHeight: string | null) => ReturnType;
+      /** Space above and below the paragraph in points; null leaves the page view's own. */
+      setParagraphSpacing: (spacing: { before?: number | null; after?: number | null }) => ReturnType;
+      /** The first line of the paragraph pushed in, in centimetres; null or 0 takes it back. */
+      setFirstLineIndent: (cm: number | null) => ReturnType;
     };
   }
 }
 
 const TYPES = ['paragraph', 'heading'];
+
+/** A length in points from a CSS value, or null: only points are the editor's own. */
+function points(value: string): number | null {
+  const match = /^(-?[\d.]+)pt$/.exec(value.trim());
+  const n = match ? Number(match[1]) : NaN;
+  return Number.isFinite(n) && n >= 0 && n <= 200 ? n : null;
+}
 
 /**
  * Paragraph-level formatting Word has and the starter kit does not: left
@@ -50,6 +64,35 @@ export const ParagraphFormat = Extension.create({
               return Number.isFinite(value) && value > 0 && value <= 5 ? String(value) : null;
             },
             renderHTML: (attributes) => (attributes.lineHeight ? { style: `line-height: ${attributes.lineHeight}` } : {}),
+          },
+          spaceBefore: {
+            default: null,
+            parseHTML: (element) => points(element.style.marginTop),
+            renderHTML: (attributes) => (attributes.spaceBefore !== null && attributes.spaceBefore !== undefined ? { style: `margin-top: ${attributes.spaceBefore}pt` } : {}),
+          },
+          spaceAfter: {
+            default: null,
+            parseHTML: (element) => points(element.style.marginBottom),
+            renderHTML: (attributes) => (attributes.spaceAfter !== null && attributes.spaceAfter !== undefined ? { style: `margin-bottom: ${attributes.spaceAfter}pt` } : {}),
+          },
+          markSize: {
+            default: null,
+            parseHTML: (element) => {
+              const value = Number(element.getAttribute('data-mark-size'));
+              return Number.isFinite(value) && value >= 1 && value <= 200 ? value : null;
+            },
+            renderHTML: (attributes) => (attributes.markSize ? { 'data-mark-size': String(attributes.markSize), style: `--mark-size: ${attributes.markSize}pt` } : {}),
+          },
+          firstLine: {
+            default: null,
+            parseHTML: (element) => {
+              const value = parseFloat(element.style.textIndent);
+              if (!Number.isFinite(value) || value <= 0) return null;
+              const unit = element.style.textIndent.replace(/[\d.\s-]/g, '');
+              const cm = unit === 'pt' ? value * 0.03528 : unit === 'px' ? value / 37.8 : unit === 'cm' ? value : null;
+              return cm === null ? null : Math.round(cm * 100) / 100;
+            },
+            renderHTML: (attributes) => (attributes.firstLine ? { style: `text-indent: ${attributes.firstLine}cm` } : {}),
           },
         },
       },
@@ -89,6 +132,18 @@ export const ParagraphFormat = Extension.create({
         (lineHeight) =>
         ({ commands }) =>
           TYPES.map((type) => commands.updateAttributes(type, { lineHeight })).some(Boolean),
+      setParagraphSpacing:
+        ({ before, after }) =>
+        ({ commands }) => {
+          const attrs: Record<string, number | null> = {};
+          if (before !== undefined) attrs.spaceBefore = before;
+          if (after !== undefined) attrs.spaceAfter = after;
+          return TYPES.map((type) => commands.updateAttributes(type, attrs)).some(Boolean);
+        },
+      setFirstLineIndent:
+        (cm) =>
+        ({ commands }) =>
+          TYPES.map((type) => commands.updateAttributes(type, { firstLine: cm ? cm : null })).some(Boolean),
     };
   },
 

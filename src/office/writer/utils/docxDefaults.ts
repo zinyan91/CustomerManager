@@ -1,3 +1,4 @@
+import type { HeaderFooterText } from './docxHeaderFooter';
 import { PAPER_SIZES_MM, clampMargins, type PageSetup, type PaperSize } from './pageSetup';
 
 /**
@@ -5,7 +6,7 @@ import { PAPER_SIZES_MM, clampMargins, type PageSetup, type PaperSize } from './
  * PageSetup it can set: paper, orientation, margins, and the font and size
  * that text without its own formatting uses.
  */
-export type DocxDefaults = Partial<Pick<PageSetup, 'paper' | 'orientation' | 'margins' | 'baseFont' | 'baseSize'>>;
+export type DocxDefaults = Partial<Pick<PageSetup, 'paper' | 'orientation' | 'margins' | 'baseFont' | 'baseSize' | 'spaceAfter' | 'lineHeight' | 'keptHeader' | 'keptFooter' | 'columns' | 'columnGap' | 'headerDistance' | 'footerDistance' | 'headerText' | 'footerText' | 'pageNumbers'>>;
 
 const TWIPS_PER_MM = 1440 / 25.4;
 
@@ -43,8 +44,11 @@ function sizeIn(rPr: string): number | null {
   return half ? Number(half) / 2 : null;
 }
 
-export function readDocxDefaults(documentXml: string, stylesXml: string, themeXml = ''): DocxDefaults {
+export function readDocxDefaults(documentXml: string, stylesXml: string, themeXml = '', header: HeaderFooterText | null = null, footer: HeaderFooterText | null = null): DocxDefaults {
   const defaults: DocxDefaults = {};
+  if (header?.text) defaults.headerText = header.text;
+  if (footer?.text) defaults.footerText = footer.text;
+  if (footer?.pageNumber || header?.pageNumber) defaults.pageNumbers = true;
 
   // The last section's page: the one a single-section document is all of.
   const pgSz = [...documentXml.matchAll(/<w:pgSz\b[^>]*>/g)].pop()?.[0];
@@ -59,12 +63,29 @@ export function readDocxDefaults(documentXml: string, stylesXml: string, themeXm
       defaults.orientation = landscape ? 'landscape' : 'portrait';
     }
   }
+  if (pgMar) {
+    const header = attribute(pgMar, 'header');
+    const footer = attribute(pgMar, 'footer');
+    if (header !== null && header >= 0) defaults.headerDistance = Math.round((header / TWIPS_PER_MM) * 10) / 10;
+    if (footer !== null && footer >= 0) defaults.footerDistance = Math.round((footer / TWIPS_PER_MM) * 10) / 10;
+  }
   if (pgMar && defaults.paper) {
     const side = (name: string) => (attribute(pgMar, name) ?? 1440) / TWIPS_PER_MM;
     defaults.margins = clampMargins(
       { top: side('top'), bottom: side('bottom'), left: side('left'), right: side('right') },
       { paper: defaults.paper, orientation: defaults.orientation ?? 'portrait' },
     );
+  }
+
+  // Columns of equal width in the last section (unequal ones, and different columns in earlier sections, are not kept).
+  const cols = [...documentXml.matchAll(/<w:cols\b[^>]*>/g)].pop()?.[0];
+  if (cols) {
+    const count = attribute(cols, 'num');
+    if (count !== null && count >= 2 && count <= 4 && !/\bw:equalWidth="(?:0|false)"/.test(cols)) {
+      defaults.columns = count;
+      const space = attribute(cols, 'space');
+      if (space !== null && space >= 0 && space <= 2835) defaults.columnGap = Math.round((space / TWIPS_PER_MM) * 10) / 10;
+    }
   }
 
   // Document defaults, then the default paragraph style on top of them.
@@ -77,5 +98,18 @@ export function readDocxDefaults(documentXml: string, stylesXml: string, themeXm
   const size = sizeIn(normal) ?? sizeIn(docDefaults);
   if (font) defaults.baseFont = font;
   if (size && size >= 6 && size <= 72) defaults.baseSize = size;
+
+  // Space after and line spacing a paragraph gets when it says nothing: the file's own, or, where it names none, the 0 and single line the format itself defaults to.
+  if (stylesXml) {
+    const paragraphDefaults = /<w:pPrDefault>([\s\S]*?)<\/w:pPrDefault>/.exec(docDefaults)?.[1] ?? '';
+    const spacing = (block: string): string => /<w:spacing\b[^>]*>/.exec(block)?.[0] ?? '';
+    const own = spacing(normal);
+    const inherited = spacing(paragraphDefaults);
+    const after = attribute(own, 'after') ?? attribute(inherited, 'after');
+    defaults.spaceAfter = after !== null && after >= 0 && after <= 1440 ? after / 20 : 0;
+    const line = attribute(own, 'line') ?? attribute(inherited, 'line');
+    const rule = /\bw:lineRule="(\w+)"/.exec(attribute(own, 'line') !== null ? own : inherited)?.[1] ?? 'auto';
+    defaults.lineHeight = line !== null && rule === 'auto' && line >= 120 && line <= 960 ? Math.round((line / 240) * 100) / 100 : 1;
+  }
   return defaults;
 }

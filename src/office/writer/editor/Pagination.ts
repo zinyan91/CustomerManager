@@ -2,8 +2,9 @@ import { Extension } from '@tiptap/core';
 import type { Node as PmNode } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view';
-import { paginate, samePagination, type MeasuredBlock, type PaginationResult } from '../utils/pagination';
+import { paginate, paginateColumns, samePagination, type MeasuredBlock, type PageNote, type PaginationResult } from '../utils/pagination';
 import { fillPageTemplate } from '../utils/pageSetup';
+import { renderNotes } from '../utils/footnotesDom';
 
 /** What the page view draws, in CSS pixels; set by WriterEditor from the page setup. */
 export interface PageLayout {
@@ -14,6 +15,10 @@ export interface PageLayout {
   marginLeft: number;
   /** Grey space between two sheets. */
   gap: number;
+  /** Text columns of the page: how many, how wide and how far apart, in CSS pixels. */
+  columns: number;
+  columnWidth: number;
+  columnGap: number;
   headerText: string;
   footerText: string;
   pageNumbers: boolean;
@@ -44,8 +49,13 @@ declare module '@tiptap/core' {
 
 const INITIAL: PaginationResult = { breaks: [], pageCount: 1, pageOfBlock: [], unitPositions: [] };
 
+/** The width of the text area of a page: all its columns and the gaps between them. */
+function fullWidth(layout: Pick<PageLayout, 'columns' | 'columnWidth' | 'columnGap'>): number {
+  return layout.columns * layout.columnWidth + (layout.columns - 1) * layout.columnGap;
+}
+
 /** The footer of the page that ends here, the grey gap, and the header of the next page. */
-function pageGap(layout: PageLayout, endingPage: number, pageCount: number, filler: number): HTMLElement {
+function pageGap(layout: PageLayout, endingPage: number, pageCount: number, filler: number, notes: readonly PageNote[] = []): HTMLElement {
   const gap = document.createElement('div');
   gap.className = 'writer-page-gap';
   gap.contentEditable = 'false';
@@ -58,6 +68,12 @@ function pageGap(layout: PageLayout, endingPage: number, pageCount: number, fill
   gap.style.setProperty('--page-gap', `${layout.gap}px`);
   gap.style.setProperty('--page-margin-top', `${layout.marginTop}px`);
 
+  if (notes.length > 0) {
+    const list = renderNotes(notes, true);
+    list.style.left = `${layout.marginLeft}px`;
+    list.style.width = `${fullWidth(layout)}px`;
+    gap.append(list);
+  }
   gap.append(pageBand('writer-page-footer', footerText(layout, endingPage + 1, pageCount)));
   const sheetGap = document.createElement('div');
   sheetGap.className = 'writer-page-gap-band';
@@ -104,8 +120,38 @@ export function footerText(layout: Pick<PageLayout, 'footerText' | 'pageNumbers'
 }
 
 function buildDecorations(doc: PmNode, result: PaginationResult, layout: PageLayout | null): DecorationSet {
-  if (!layout || result.breaks.length === 0) return DecorationSet.empty;
+  if (!layout || (result.breaks.length === 0 && !result.columns?.length && !result.lastNotes?.length)) return DecorationSet.empty;
   const decorations: Decoration[] = [];
+  const lastNotes = result.lastNotes;
+  if (lastNotes?.length) {
+    // The last page has no gap after it: its notes are drawn over the foot of its text area.
+    const top = (result.pageCount - 1) * (layout.contentHeight + layout.marginBottom + layout.gap + layout.marginTop);
+    decorations.push(
+      Decoration.widget(
+        doc.content.size,
+        () => {
+          const box = renderNotes(lastNotes, true);
+          box.classList.add('writer-notes-last');
+          box.contentEditable = 'false';
+          box.style.top = `${top}px`;
+          box.style.height = `${layout.contentHeight}px`;
+          box.style.width = `${fullWidth(layout)}px`;
+          return box;
+        },
+        { side: 10, ignoreSelection: true, key: `notes-last-${Math.round(top)}-${lastNotes.map((n) => `${n.n}${n.text}`).join('|')}` },
+      ),
+    );
+  }
+  // A unit in the second column or later is drawn over the page's text area at its place, out of the flow.
+  const period = layout.contentHeight + layout.marginBottom + layout.gap + layout.marginTop;
+  for (const placement of result.columns ?? []) {
+    const pos = result.unitPositions[placement.index];
+    const node = pos === undefined ? null : doc.nodeAt(pos);
+    if (!node || pos === undefined) continue;
+    const x = placement.column * (layout.columnWidth + layout.columnGap);
+    const y = placement.page * period + placement.y;
+    decorations.push(Decoration.node(pos, pos + node.nodeSize, { class: 'writer-col-unit', style: `--col-x: ${x}px; --col-y: ${y}px;` }, { key: `col-${placement.index}-${placement.column}-${Math.round(x)}-${Math.round(y)}` }));
+  }
   result.breaks.forEach((brk, i) => {
     if (brk.pos === undefined || brk.pos > doc.content.size) return;
     decorations.push(
@@ -114,12 +160,12 @@ function buildDecorations(doc: PmNode, result: PaginationResult, layout: PageLay
         () =>
           brk.row
             ? pageGapRow(layout, i, result.pageCount, brk.filler, brk.row.columns)
-            : pageGap(layout, i, result.pageCount, brk.filler),
+            : pageGap(layout, i, result.pageCount, brk.filler, brk.notes),
         {
           // Before the repeated header, which sits at side -1.
           side: -2,
           ignoreSelection: true,
-          key: `gap-${i}-${brk.row ? 'r' : 'b'}-${Math.round(brk.filler)}-${result.pageCount}-${layout.headerText}-${layout.footerText}-${layout.pageNumbers}`,
+          key: `gap-${i}-${brk.row ? 'r' : 'b'}-${Math.round(brk.filler)}-${result.pageCount}-${layout.headerText}-${layout.footerText}-${layout.pageNumbers}-${(brk.notes ?? []).map((n) => `${n.n}${n.text}`).join('|')}`,
         },
       ),
     );
@@ -169,13 +215,13 @@ function leadingHeaderRows(table: PmNode): number {
 }
 
 /** Top-level blocks, with each table cut into its rows. */
-function collectUnits(view: EditorView): Unit[] {
+function collectUnits(view: EditorView, splitTables = true): Unit[] {
   const units: Unit[] = [];
   view.state.doc.forEach((node, offset) => {
     const dom = view.nodeDOM(offset);
     if (!(dom instanceof HTMLElement)) return;
     const breakAfter = node.type.name === 'pageBreak';
-    if (node.type.name !== 'table') {
+    if (node.type.name !== 'table' || !splitTables) {
       units.push({ element: dom, end: dom, meta: { breakAfter, pos: offset } });
       return;
     }
@@ -215,10 +261,27 @@ function collectUnits(view: EditorView): Unit[] {
  * document, never on where the last run put its gaps, so a run cannot undo
  * what the previous one did and the view settles.
  */
-function measure(view: EditorView, contentHeight: number): MeasuredBlock[] {
+function measure(view: EditorView, contentHeight: number, splitTables = true, noteWidth = 0): MeasuredBlock[] {
   view.dom.classList.add('writer-measuring');
+  const probe = document.createElement('div');
   try {
-    const units = collectUnits(view);
+    const units = collectUnits(view, splitTables);
+    // Footnotes: each unit's notes, numbered as the counter in the text numbers them, and the height they take under a page's rule.
+    let counted = 0;
+    const noteHeights = new Map<number, { notes: PageNote[]; reserve: number }>();
+    if (noteWidth > 0) {
+      probe.className = 'writer-notes-probe';
+      probe.style.width = `${noteWidth}px`;
+      probe.style.fontFamily = getComputedStyle(view.dom).fontFamily;
+      (view.dom.closest('.writer-sheet') ?? view.dom).append(probe);
+      units.forEach((unit, i) => {
+        const sups = unit.element.querySelectorAll('sup[data-footnote]');
+        if (sups.length === 0) return;
+        const notes = Array.from(sups, (sup) => ({ n: (counted += 1), text: sup.getAttribute('data-footnote') ?? '' }));
+        probe.replaceChildren(renderNotes(notes, false));
+        noteHeights.set(i, { notes, reserve: probe.offsetHeight });
+      });
+    }
     const tops = units.map((unit) => layoutTop(unit.element));
     const heights = units.map((unit, i) => {
       const isLast = i === units.length - 1;
@@ -229,6 +292,8 @@ function measure(view: EditorView, contentHeight: number): MeasuredBlock[] {
     });
     return units.map((unit, i) => {
       const { row, ...rest } = unit.meta;
+      const withNotes = noteHeights.get(i);
+      if (withNotes) Object.assign(rest, withNotes);
       if (!row) return { ...rest, height: heights[i] };
       const { headerUnits, ...plain } = row;
       // Header rows that would take half a page or more are not repeated.
@@ -236,6 +301,7 @@ function measure(view: EditorView, contentHeight: number): MeasuredBlock[] {
       return { ...rest, height: heights[i], row: repeat > 0 && repeat < contentHeight / 2 ? { ...plain, repeat } : { columns: plain.columns } };
     });
   } finally {
+    probe.remove();
     view.dom.classList.remove('writer-measuring');
   }
 }
@@ -291,7 +357,9 @@ export const Pagination = Extension.create<PaginationOptions>({
             frame = requestAnimationFrame(() => {
               const state = paginationKey.getState(view.state);
               if (!state?.layout || view.isDestroyed) return;
-              const result = paginate(measure(view, state.layout.contentHeight), state.layout.contentHeight);
+              const { contentHeight, columns } = state.layout;
+              const noteWidth = fullWidth(state.layout);
+              const result = columns > 1 ? paginateColumns(measure(view, contentHeight, false, noteWidth), contentHeight, columns) : paginate(measure(view, contentHeight, true, noteWidth), contentHeight);
               if (!samePagination(result, state.result)) {
                 view.dispatch(view.state.tr.setMeta(paginationKey, { result } satisfies Meta).setMeta('addToHistory', false));
               }

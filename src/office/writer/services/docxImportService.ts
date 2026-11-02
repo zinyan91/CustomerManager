@@ -4,6 +4,20 @@ import { classesToInlineStyle, extractRunStyles } from '../utils/docxRunStyles';
 import { applyDrawingMarkers, markDrawings } from '../utils/docxDrawings';
 import { boxRules, boxTextBoxes, markTextBoxes } from '../utils/docxTextBoxes';
 import { cellColumns, tableGridWidths } from '../utils/docxTableGrid';
+import { applyCellShading } from '../utils/docxCellShading';
+import { applyTableProps } from '../utils/docxTableProps';
+import { markCommentRanges } from '../utils/docxCommentRanges';
+import { applyListMarkers, listMarkers, readNumbering } from '../utils/docxNumbering';
+import { applyTableBorders } from '../utils/docxTableBorders';
+import { readStyleSpacings } from '../utils/docxStyleSpacing';
+import { readKeptPart, type KeptPart } from '../utils/docxKeptParts';
+import { commentsToMarkers, footnotesToReferences } from '../utils/docxFootnotes';
+import { defaultPartPath, readHeaderFooter, type HeaderFooterText } from '../utils/docxHeaderFooter';
+import { applyParagraphMarkers, markParagraphFormat } from '../utils/docxParagraphs';
+import { convertSymbolFonts } from '../utils/docxSymbols';
+import { applyHorizontalLines, markHorizontalLines } from '../utils/docxLines';
+import { applyPageBreaks, markPageBreaks } from '../utils/docxPageBreaks';
+import { applyRevisionMarkers, markRevisions } from '../utils/docxRevisions';
 
 export interface ImportedDocument {
   /** HTML in the editor's vocabulary, ready for `setContent`. */
@@ -33,7 +47,7 @@ function alignmentOf(value: unknown): Alignment | null {
  * a catch-all rule here would win over them.
  */
 function styleMap(): string[] {
-  const rules: string[] = ['u => u', 's => s', 'strike => s'];
+  const rules: string[] = ['u => u', 's => s', 'strike => s', 'comment-reference => sup'];
   for (const align of ALIGNMENTS) {
     rules.push(`p[style-name^='align-${align}|Title'] => h1.align-${align}:fresh`);
     for (let level = 1; level <= 6; level += 1) {
@@ -97,12 +111,17 @@ export async function docxToHtml(data: ArrayBuffer): Promise<string> {
   return (await convertDocx(data)).html;
 }
 
+/** A tab character in the text (not inside a tag) as the node the editor keeps it in. */
+function tabsAsNodes(html: string): string {
+  return html.replace(/>([^<]*\t[^<]*)</g, (_all, text: string) => `>${text.replace(/\t/g, '<span data-tab></span>')}<`);
+}
+
 export async function convertDocx(data: ArrayBuffer): Promise<{ html: string; defaults: DocxDefaults }> {
   // mammoth's typings omit `transforms` and `transformDocument`, which its code has.
   const mammoth = (await import('mammoth')).default as unknown as MammothApi;
   const parts = await readParts(data);
   // Pictures carry their size and side in their description, which mammoth passes on as alt text.
-  const marked = markDrawings(parts.documentXml);
+  const marked = markDrawings(markCommentRanges(markRevisions(markParagraphFormat(markPageBreaks(markHorizontalLines(convertSymbolFonts(parts.documentXml))), listMarkers(parts.documentXml, readNumbering(parts.numberingXml)), parts.stylesXml ? readStyleSpacings(parts.stylesXml) : undefined))));
   // A text box with a frame keeps it, as a one-cell table (see docxTextBoxes.ts).
   const boxes = markTextBoxes(marked, parts.stylesXml);
   const runs = extractRunStyles(boxes.documentXml, boxes.stylesXml);
@@ -123,11 +142,11 @@ export async function convertDocx(data: ArrayBuffer): Promise<{ html: string; de
       }),
     },
   );
-  const html = classesToInlineStyle(applyDrawingMarkers(normaliseMammothHtml(result.value)), runs.css);
+  const html = classesToInlineStyle(applyDrawingMarkers(applyParagraphMarkers(applyPageBreaks(applyHorizontalLines(applyRevisionMarkers(commentsToMarkers(footnotesToReferences(applyListMarkers(normaliseMammothHtml(result.value))))))))), runs.css);
   return {
     // Widths first: the boxes add tables the file's table grids know nothing of.
-    html: boxTextBoxes(applyTableWidths(html, parts.documentXml)),
-    defaults: readDocxDefaults(parts.documentXml, parts.stylesXml, parts.themeXml),
+    html: tabsAsNodes(boxTextBoxes(applyTableBorders(applyTableProps(applyCellShading(applyTableWidths(html, parts.documentXml), parts.documentXml), parts.documentXml), parts.documentXml, parts.stylesXml))),
+    defaults: { ...readDocxDefaults(parts.documentXml, parts.stylesXml, parts.themeXml, parts.header, parts.footer), keptHeader: parts.keptHeader, keptFooter: parts.keptFooter },
   };
 }
 
@@ -159,18 +178,30 @@ export function bodyOf(html: string): string {
   return match ? match[1] : html;
 }
 
-async function readParts(data: ArrayBuffer): Promise<{ documentXml: string; stylesXml: string; themeXml: string }> {
+async function readParts(data: ArrayBuffer): Promise<{ keptHeader: KeptPart | null; keptFooter: KeptPart | null; documentXml: string; stylesXml: string; numberingXml: string; themeXml: string; header: HeaderFooterText | null; footer: HeaderFooterText | null }> {
   try {
     const { default: JSZip } = await import('jszip');
     const zip = await JSZip.loadAsync(data);
+    const documentXml = (await zip.file('word/document.xml')?.async('string')) ?? '';
+    const relsXml = (await zip.file('word/_rels/document.xml.rels')?.async('string')) ?? '';
+    const part = async (kind: 'header' | 'footer'): Promise<HeaderFooterText | null> => {
+      const path = defaultPartPath(documentXml, relsXml, kind);
+      const xml = path ? await zip.file(path)?.async('string') : undefined;
+      return xml ? readHeaderFooter(xml) : null;
+    };
     return {
-      documentXml: (await zip.file('word/document.xml')?.async('string')) ?? '',
+      keptHeader: await readKeptPart(zip, defaultPartPath(documentXml, relsXml, 'header'), 'header'),
+      keptFooter: await readKeptPart(zip, defaultPartPath(documentXml, relsXml, 'footer'), 'footer'),
+      documentXml,
       stylesXml: (await zip.file('word/styles.xml')?.async('string')) ?? '',
+      numberingXml: (await zip.file('word/numbering.xml')?.async('string')) ?? '',
       themeXml: (await zip.file('word/theme/theme1.xml')?.async('string')) ?? '',
+      header: await part('header'),
+      footer: await part('footer'),
     };
   } catch {
     // Not a readable package: mammoth reports it in its own words.
-    return { documentXml: '', stylesXml: '', themeXml: '' };
+    return { keptHeader: null, keptFooter: null, documentXml: '', stylesXml: '', numberingXml: '', themeXml: '', header: null, footer: null };
   }
 }
 
@@ -185,7 +216,7 @@ async function rewritePackage(data: ArrayBuffer, documentXml: string, stylesXml:
 
 /**
  * Gives each table cell the width of the grid columns it covers (as the
- * `data-colwidth` the editor's table cell reads), so a form keeps its
+ * `colwidth` the editor's table cell reads), so a form keeps its
  * proportions. Needs a DOM; without one, or without a grid, the HTML is
  * returned as it came.
  */
@@ -205,7 +236,7 @@ export function applyTableWidths(html: string, documentXml: string): string {
     cellColumns(spans).forEach((rowCells, r) => {
       rowCells.forEach((columns, c) => {
         const widths = columns.map((column) => grid[column]);
-        if (widths.every((w) => w > 0)) rows[r].cells[c].setAttribute('data-colwidth', widths.join(','));
+        if (widths.every((w) => w > 0)) rows[r].cells[c].setAttribute('colwidth', widths.join(','));
       });
     });
   });

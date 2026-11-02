@@ -2,7 +2,8 @@ import { printBlob } from '../../shared/files';
 import { baseTextVars, contentCss, cssString } from '../utils/contentCss';
 import { escapeHtml } from './docxImportService';
 import { docHeadings, type DocNode } from '../utils/docJson';
-import { pageDimensionsMm, splitPageTemplate, type PageSetup } from '../utils/pageSetup';
+import { mmToPx, pageDimensionsMm, splitPageTemplate, type PageSetup } from '../utils/pageSetup';
+import { FALLBACK_NOTES_CLASS, PRINT_NOTES_CSS, layoutPrintNotes } from './printNotes';
 
 export interface PrintOptions {
   title: string;
@@ -18,6 +19,13 @@ export interface PrintOptions {
  * come from @page; the header, footer and page numbers from @page margin
  * boxes, which Chromium draws (since 131). Pure: it only builds the string.
  */
+/** The notes of the document, numbered in the order of their references, as a list after the text. */
+export function appendFootnotes(html: string): string {
+  const notes = [...html.matchAll(/<sup\b[^>]*\bdata-footnote="([^"]*)"/g)].map((m) => m[1]);
+  if (notes.length === 0) return html;
+  return `${html}<div class="${FALLBACK_NOTES_CLASS}"><hr style="width: 30%; margin: 12pt 0 6pt 0"><ol style="font-size: 9pt; padding-left: 18pt">${notes.map((note) => `<li>${note}</li>`).join('')}</ol></div>`;
+}
+
 export function buildPrintHtml(bodyHtml: string, doc: DocNode, options: PrintOptions): string {
   const { pageSetup } = options;
   const { width, height } = pageDimensionsMm(pageSetup);
@@ -43,9 +51,10 @@ export function buildPrintHtml(bodyHtml: string, doc: DocNode, options: PrintOpt
 html, body { margin: 0; padding: 0; background: #ffffff; }
 * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 ${contentCss('.writer-content')}
+${PRINT_NOTES_CSS}
 .writer-content { ${Object.entries(baseTextVars(pageSetup)).map(([k, v]) => `${k}: ${v};`).join(' ')} }
 </style></head>
-<body><div class="writer-content">${headerRowsToThead(fillTableOfContents(bodyHtml, doc, options.tocTitle))}</div></body></html>`;
+<body><div class="writer-content">${appendFootnotes(headerRowsToThead(fillTableOfContents(bodyHtml, doc, options.tocTitle)))}</div></body></html>`;
 }
 
 const CELL_TEXT = String.raw`(?:(?!<\/?(?:tr|td|th)[\s>])[\s\S])*`;
@@ -71,5 +80,13 @@ export function fillTableOfContents(bodyHtml: string, doc: DocNode, tocTitle: st
 
 export function printDocument(bodyHtml: string, doc: DocNode, options: PrintOptions): void {
   const html = buildPrintHtml(bodyHtml, doc, options);
-  printBlob(new Blob([html], { type: 'text/html;charset=utf-8' }));
+  const { pageSetup } = options;
+  const { width, height } = pageDimensionsMm(pageSetup);
+  const geometry = {
+    contentWidth: mmToPx(width - pageSetup.margins.left - pageSetup.margins.right),
+    contentHeight: mmToPx(height - pageSetup.margins.top - pageSetup.margins.bottom),
+  };
+  // One column only: the notes go at the foot of each page. With several, they stay listed after the text.
+  const prepare = pageSetup.columns === 1 ? (page: Document) => void layoutPrintNotes(page, geometry) : undefined;
+  printBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), prepare);
 }

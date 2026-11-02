@@ -1,4 +1,4 @@
-import { parseDocJson, type DocNode } from './docJson';
+import { parseDocJson, wrapBlockImages, type DocNode } from './docJson';
 import { parsePageSetup, type PageSetup } from './pageSetup';
 
 /** Nội dung văn bản chung trên hệ thống: cả cây tài liệu và thiết lập trang, lưu thành một khối. */
@@ -12,5 +12,5 @@ export const toSharedContent = (doc: DocNode, pageSetup: PageSetup): SharedConte
 /** Đọc lại nội dung đã lưu; thiếu hay hỏng phần nào thì dùng văn bản trống hoặc thiết lập trang mặc định cho phần đó. */
 export function parseSharedContent(value: unknown): SharedContent {
   const raw = (value && typeof value === 'object' ? value : {}) as { doc?: unknown; pageSetup?: unknown };
-  return { doc: parseDocJson(raw.doc), pageSetup: parsePageSetup(raw.pageSetup) };
+  return { doc: wrapBlockImages(parseDocJson(raw.doc)), pageSetup: parsePageSetup(raw.pageSetup) };
 }

@@ -3,6 +3,8 @@
  * draft and written into the DOCX section properties, the print stylesheet and
  * the on-screen page view, so all three agree on where a page ends.
  */
+import { sanitiseKeptPart, type KeptPart } from './docxKeptParts';
+
 export type PaperSize = 'a4' | 'letter' | 'legal' | 'a5';
 export type Orientation = 'portrait' | 'landscape';
 export type MarginPreset = 'normal' | 'narrow' | 'wide' | 'custom';
@@ -26,6 +28,19 @@ export interface PageSetup {
   baseFont: string;
   /** Size of text with no size of its own, in points. */
   baseSize: number;
+  /** Space after a paragraph that sets none of its own, in points: 8 in a new document, what the file says in an imported one. */
+  spaceAfter: number;
+  /** Line spacing of a paragraph that sets none, as a multiple of the line: 1.15 in a new document. */
+  lineHeight: number;
+  /** The header and footer of an imported .docx as they were (logo, tabs, fields), written back as they are until the text above is edited. */
+  keptHeader: KeptPart | null;
+  keptFooter: KeptPart | null;
+  /** Text columns of the page (1 to 4, of equal width) and the gap between them in millimetres; Word's default gap is 12.7. */
+  columns: number;
+  columnGap: number;
+  /** Distance from the paper's edge to the header and the footer, in millimetres; null for the writer's own (half the margin, at most 12.5). */
+  headerDistance: number | null;
+  footerDistance: number | null;
 }
 
 /** Portrait width × height in millimetres. */
@@ -58,6 +73,14 @@ export const DEFAULT_PAGE_SETUP: PageSetup = {
   pageNumbers: false,
   baseFont: '',
   baseSize: 11,
+  spaceAfter: 8,
+  lineHeight: 1.15,
+  keptHeader: null,
+  keptFooter: null,
+  columns: 1,
+  columnGap: 12.7,
+  headerDistance: null,
+  footerDistance: null,
 };
 
 const MM_PER_INCH = 25.4;
@@ -152,6 +175,14 @@ export function parsePageSetup(value: unknown): PageSetup {
     pageNumbers: raw.pageNumbers === true,
     baseFont: typeof raw.baseFont === 'string' ? raw.baseFont.replace(/['"{};\\]/g, '').slice(0, 60) : '',
     baseSize: Number(raw.baseSize) >= 6 && Number(raw.baseSize) <= 72 ? Number(raw.baseSize) : 11,
+    spaceAfter: typeof raw.spaceAfter === 'number' && raw.spaceAfter >= 0 && raw.spaceAfter <= 72 ? raw.spaceAfter : DEFAULT_PAGE_SETUP.spaceAfter,
+    lineHeight: typeof raw.lineHeight === 'number' && raw.lineHeight >= 0.5 && raw.lineHeight <= 4 ? raw.lineHeight : DEFAULT_PAGE_SETUP.lineHeight,
+    keptHeader: sanitiseKeptPart(raw.keptHeader),
+    keptFooter: sanitiseKeptPart(raw.keptFooter),
+    columns: Number.isInteger(raw.columns) && Number(raw.columns) >= 1 && Number(raw.columns) <= 4 ? Number(raw.columns) : 1,
+    columnGap: typeof raw.columnGap === 'number' && raw.columnGap >= 0 && raw.columnGap <= 50 ? raw.columnGap : DEFAULT_PAGE_SETUP.columnGap,
+    headerDistance: typeof raw.headerDistance === 'number' && raw.headerDistance >= 0 && raw.headerDistance <= 100 ? raw.headerDistance : null,
+    footerDistance: typeof raw.footerDistance === 'number' && raw.footerDistance >= 0 && raw.footerDistance <= 100 ? raw.footerDistance : null,
   };
 }
 

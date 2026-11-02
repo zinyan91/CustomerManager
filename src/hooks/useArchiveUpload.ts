@@ -13,6 +13,8 @@ export interface UploadSummary {
   skipped?: string[];
   /** Số tệp người dùng đã hủy. */
   cancelled?: number;
+  /** Thời gian tải của cả đợt, từ lúc bắt đầu tới khi tệp cuối xong (chưa tính nạp lại danh sách). */
+  elapsedMs?: number;
 }
 
 /** Một dòng trong danh sách từng tệp của đợt tải lên, kèm tốc độ đo được (byte/giây). */
@@ -70,7 +72,8 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
   const controllers = useRef(new Map<string, AbortController>());
   const originals = useRef(new Map<string, Original>());
   const meters = useRef(new Map<string, SpeedMeter>());
-  const lastBatch = useRef<{ names: string[]; skipped: string[] | undefined }>({ names: [], skipped: undefined });
+  const lastBatch = useRef<{ names: string[]; skipped: string[] | undefined; elapsedMs?: number }>({ names: [], skipped: undefined });
+  const [startedAt, setStartedAt] = useState<number | null>(null);
   const latestProgress = useRef<UploadProgress | null>(null);
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -116,6 +119,8 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
         setSummary({ uploaded: 0, failed: [], names: [], skipped });
         return;
       }
+      const started = Date.now();
+      setStartedAt(started);
       setRunning(true);
       setError(null);
       if (!append) {
@@ -156,11 +161,14 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
         });
         uploadedCount = res.uploaded.length;
         flushNow();
-        setSummary(
-          append
+        // Thử lại một tệp không đổi thời gian của cả đợt
+        if (!append) lastBatch.current.elapsedMs = Date.now() - started;
+        setSummary({
+          ...(append
             ? summarize([...rowsRef.current.values()], lastBatch.current.names, lastBatch.current.skipped)
-            : { uploaded: uploadedCount, failed: res.failed, names: topLevelNames(items), skipped, cancelled: res.cancelled.length }
-        );
+            : { uploaded: uploadedCount, failed: res.failed, names: topLevelNames(items), skipped, cancelled: res.cancelled.length }),
+          elapsedMs: lastBatch.current.elapsedMs,
+        });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Không tải được lên.');
       } finally {
@@ -241,5 +249,5 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
   // Tệp lỗi hoặc đã hủy còn giữ tệp gốc để tải lại (mất khi tải lại trang)
   const retryable = new Set(files.filter((f) => (f.state === 'failed' || f.state === 'cancelled') && originals.current.has(f.path)).map((f) => f.path));
 
-  return { running, progress, summary, error, files, upload, dismiss, pending, resolveDuplicates, cancelDuplicates, cancelFile, retryFile, retryable };
+  return { running, startedAt, progress, summary, error, files, upload, dismiss, pending, resolveDuplicates, cancelDuplicates, cancelFile, retryFile, retryable };
 }

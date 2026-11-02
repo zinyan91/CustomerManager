@@ -3,6 +3,7 @@ import { AlertCircle, ArrowDown, ArrowUp, CheckCircle2, Loader2, X } from 'lucid
 import type { UploadFileRow, UploadSummary } from '../../hooks/useArchiveUpload';
 import type { ZipProgress } from '../../lib/folderZip';
 import { formatBytes } from '../../lib/formatBytes';
+import { formatDuration } from '../../lib/formatDuration';
 import type { UploadProgress } from '../../lib/uploadItems';
 import { createSpeedMeter, type SpeedMeter } from '../../lib/speedMeter';
 import { buildTransferRows, countByTab, filterRows, totalsOf, visibleRows, type TransferRow, type TransferStatus, type TransferTab } from '../../lib/transferRows';
@@ -12,6 +13,8 @@ const MAX_VISIBLE_ROWS = 200;
 interface TransferPanelProps {
   upload: {
     running: boolean;
+    /** Lúc bắt đầu đợt đang chạy (mili giây Unix), để hiện đồng hồ. */
+    startedAt?: number | null;
     progress: UploadProgress | null;
     summary: UploadSummary | null;
     error: string | null;
@@ -54,6 +57,18 @@ const STATUS_STYLE: Record<TransferStatus, string> = {
 
 const actionBtn = 'px-2 py-0.5 rounded-md border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer';
 
+/** Giờ hiện tại, cập nhật mỗi giây khi `active`. */
+function useClock(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  return now;
+}
+
 function Bar({ row }: { row: TransferRow }) {
   const colour = row.status === 'done' ? 'bg-emerald-600' : row.status === 'run' || row.status === 'wait' ? 'bg-slate-700 dark:bg-slate-300' : 'bg-slate-300 dark:bg-slate-600';
   return (
@@ -85,6 +100,8 @@ export function TransferPanel({ upload, zip }: TransferPanelProps) {
     }
     setZipSpeed(zipMeter.current.sample(zipLoaded, Date.now()));
   }, [zip.phase, zipLoaded]);
+
+  const now = useClock(upload.running);
 
   const rows = useMemo(
     () => buildTransferRows({ uploads: upload.files, skipped: upload.summary?.skipped, zip, zipSpeed }),
@@ -135,6 +152,7 @@ export function TransferPanel({ upload, zip }: TransferPanelProps) {
           <span>
             Đang tải lên {uploadDone}/{upload.progress?.totalFiles ?? '…'} tệp
           </span>
+          {upload.startedAt != null && <span className="tabular-nums text-slate-500 dark:text-slate-400">· {formatDuration(now - upload.startedAt)}</span>}
         </div>
       )}
 
@@ -215,6 +233,7 @@ export function TransferPanel({ upload, zip }: TransferPanelProps) {
                 </>
               )}
               {(upload.summary.skipped?.length ?? 0) > 0 ? ` Đã bỏ qua ${upload.summary.skipped!.length} tệp trùng tên.` : ''}
+              {upload.summary.elapsedMs !== undefined ? ` Thời gian: ${formatDuration(upload.summary.elapsedMs)}.` : ''}
             </span>
             <button type="button" onClick={upload.onDismiss} aria-label="Đóng thông báo" className="p-0.5 text-slate-400 hover:text-slate-700">
               <X className="w-4 h-4" />

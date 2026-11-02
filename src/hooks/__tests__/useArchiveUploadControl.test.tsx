@@ -25,6 +25,27 @@ beforeEach(() => {
 
 const setup = (entries: DriveEntry[] = [], onDone = vi.fn()) => ({ onDone, ...renderHook(() => useArchiveUpload(target(entries), onDone)) });
 
+describe('useArchiveUpload - đo thời gian của đợt', () => {
+  it('ghi lúc bắt đầu, xong thì tóm tắt có thời gian từ lúc bắt đầu tới tệp cuối', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(10_000);
+      m.upload.mockImplementation(async () => {
+        vi.setSystemTime(10_000 + 65_000);
+        return { uploaded: ['a.pdf'], failed: [], files: [], cancelled: [] };
+      });
+      const { result } = setup();
+      await act(async () => {
+        await result.current.upload([item('a.pdf', 3)], '');
+      });
+      expect(result.current.startedAt).toBe(10_000);
+      expect(result.current.summary).toMatchObject({ uploaded: 1, elapsedMs: 65_000 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('useArchiveUpload - tốc độ, hủy, thử lại, ghi đè', () => {
   it('đo tốc độ từ số byte đã gửi: dòng đang tải có speed, dòng xong thì không', async () => {
     vi.useFakeTimers();

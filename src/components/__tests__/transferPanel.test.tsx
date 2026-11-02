@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { TransferPanel } from '../storage/TransferPanel';
 import type { UploadFileRow } from '../../hooks/useArchiveUpload';
 
@@ -84,6 +84,25 @@ describe('TransferPanel', () => {
     expect(screen.getByRole('tab', { name: 'Tất cả (250)' })).toBeTruthy();
     expect(rowsOf()).toHaveLength(201);
     expect(rowsOf().at(-1)!.textContent).toBe('Và 50 tệp khác');
+  }, 15_000);
+
+  it('đang tải có đồng hồ chạy theo giây; xong thì tóm tắt ghi thời gian của đợt', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(100_000);
+      show({ upload: { running: true, startedAt: 100_000 - 64_000, progress, files } });
+      expect(screen.getByText('· 1 phút 04 giây')).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(2_000);
+      });
+      expect(screen.getByText('· 1 phút 06 giây')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+    cleanup();
+
+    show({ upload: { summary: { uploaded: 10, failed: [], names: [], elapsedMs: 3_725_000 } } });
+    expect(screen.getByRole('status').textContent).toContain('Đã tải lên 10 tệp. Thời gian: 1 giờ 02 phút 05 giây.');
   });
 
   it('tóm tắt nêu số tệp đã hủy', () => {

@@ -91,6 +91,13 @@ describe('driveRequest', () => {
     expect(s.calls).toHaveLength(4);
   });
 
+  it('403 vì vượt giới hạn tốc độ thì thử lại như 429', async () => {
+    const s = setup([apiError(403, 'userRateLimitExceeded'), apiError(403, 'rateLimitExceeded'), json({ ok: 1 })]);
+    await driveRequest(s.ctx, 'https://x/y');
+    expect(s.sleeps).toEqual([500, 1000]);
+    expect(s.calls).toHaveLength(3);
+  });
+
   it('403 và 404 không thử lại, đọc lý do của Google', async () => {
     const s = setup([apiError(403, 'insufficientFilePermissions', 'cấm')]);
     await expect(driveRequest(s.ctx, 'https://x/y')).rejects.toMatchObject({ status: 403, reason: 'insufficientFilePermissions', message: 'cấm' });

@@ -204,4 +204,16 @@ describe('uploadItemsToDrive', () => {
     await uploadItemsToDrive(drive.ctx, root.id, '', [item('Mới/a.pdf'), item('Mới/b.pdf'), item('Mới/c.pdf')], []);
     expect(drive.byName('Mới')).toHaveLength(1);
   });
+
+  it('sáu tệp chạy cùng lúc, tệp thứ bảy chờ tới khi có tệp xong', async () => {
+    const { drive, root } = await setup();
+    const started = new Set<string>();
+    let startedBeforeFirstDone = -1;
+    await uploadItemsToDrive(drive.ctx, root.id, '', Array.from({ length: 10 }, (_, i) => item(`f${i}.pdf`)), [], undefined, undefined, (e) => {
+      if (e.state === 'run') started.add(e.path);
+      if (e.state === 'done' && startedBeforeFirstDone < 0) startedBeforeFirstDone = started.size;
+    });
+    expect(startedBeforeFirstDone).toBe(6);
+    expect(started.size).toBe(10);
+  });
 });

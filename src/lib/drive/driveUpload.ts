@@ -6,7 +6,7 @@ import { describeDriveError } from './driveErrors';
 import { baseOf, dirOf } from './driveOps';
 import type { DriveContext } from './driveTypes';
 
-const UPLOAD_CONCURRENCY = 3;
+const UPLOAD_CONCURRENCY = 6;
 
 /** Trạng thái của từng tệp trong một đợt tải lên. */
 export type UploadFileState = 'wait' | 'run' | 'done' | 'failed' | 'cancelled';
@@ -85,7 +85,7 @@ export interface DriveUploadResult extends UploadResult {
 
 /**
  * Tải nhiều tệp lên Drive dưới `targetFolder` của kho có thư mục gốc `rootId`, giữ cấu trúc thư mục con (tạo thư mục còn thiếu,
- * dùng lại thư mục đã có). Ba tệp chạy song song. Tệp lỗi được ghi lại với thông điệp tiếng Việt, các tệp khác vẫn chạy tiếp.
+ * dùng lại thư mục đã có). Sáu tệp chạy song song. Tệp lỗi được ghi lại với thông điệp tiếng Việt, các tệp khác vẫn chạy tiếp.
  */
 export async function uploadItemsToDrive(
   ctx: DriveContext,

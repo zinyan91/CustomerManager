@@ -9,6 +9,13 @@ const FILE_FIELDS = 'id,name,mimeType,size,parents,modifiedTime,createdTime';
 export const UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
 const MAX_LIST_PAGES = 200;
 const RETRYABLE = new Set([429, 500, 502, 503, 504]);
+// Drive báo vượt giới hạn tốc độ bằng 403 kèm lý do này (không phải 429), nên thử lại như 429
+const RATE_LIMIT_REASONS = new Set(['userRateLimitExceeded', 'rateLimitExceeded']);
+
+async function isRateLimited(res: Response): Promise<boolean> {
+  if (res.status !== 403) return false;
+  return RATE_LIMIT_REASONS.has((await readDriveError(res.clone())).reason);
+}
 const MAX_RETRIES = 3;
 
 type Json = Record<string, unknown>;
@@ -53,7 +60,7 @@ export async function driveRequest(ctx: DriveContext, url: string, init: Request
       ctx.invalidate();
       continue;
     }
-    if (RETRYABLE.has(res.status) && attempt < MAX_RETRIES) {
+    if ((RETRYABLE.has(res.status) || await isRateLimited(res)) && attempt < MAX_RETRIES) {
       await sleep(500 * 2 ** attempt);
       continue;
     }

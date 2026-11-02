@@ -8,6 +8,7 @@ import { DISPATCH_TYPE_LABELS } from '../../types/dispatch';
 import { resolveFileDownloadUrl } from '../../lib/dispatch/dispatchStorage';
 import { summarizeDocumentWithAi } from '../../lib/ai/geminiClient';
 import { fileKindOf, isReadableByAi } from '../../lib/fileKinds';
+import { formatBytes } from '../../lib/formatBytes';
 
 interface DispatchPreviewModalProps {
   document: DispatchDocument | null;
@@ -199,7 +200,7 @@ export function DispatchPreviewModal({
                     {currentDoc.fileName}
                   </h4>
                   <p className="text-xs text-slate-500 mt-1">
-                    Định dạng {currentDoc.fileType || 'tài liệu'} • {(currentDoc.fileSize / 1024).toFixed(1)} KB
+                    Định dạng {currentDoc.fileType || 'tài liệu'} • {formatBytes(currentDoc.fileSize)}
                   </p>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">

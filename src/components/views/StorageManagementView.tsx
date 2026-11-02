@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useUserScope } from '../../context/UserScopeContext';
+import { formatBytes } from '../../lib/formatBytes';
 import { useArchive } from '../../hooks/useArchive';
 import { useArchiveUpload, type DriveUploadTarget } from '../../hooks/useArchiveUpload';
 import { useDriveOps, type DriveOpsTarget } from '../../hooks/useDriveOps';
@@ -169,7 +170,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
 
   const stats = useMemo(() => {
     const totalBytes = documents.reduce((sum, d) => sum + (d.fileSize || 0), 0);
-    return { totalFiles: documents.length, totalMb: (totalBytes / 1024 / 1024).toFixed(1) };
+    return { totalFiles: documents.length, totalBytes };
   }, [documents]);
 
   const breadcrumbSegments = useMemo(() => selectedFolder.split('/').filter(Boolean), [selectedFolder]);
@@ -624,7 +625,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
             )}
             <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
               <span>{stats.totalFiles} tệp</span>
-              <span>{stats.totalMb} MB</span>
+              <span>{formatBytes(stats.totalBytes)}</span>
             </div>
           </div>
 
@@ -776,7 +777,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{f.name}</div>
                         <div className="text-xs text-slate-500">
-                          {f.fileCount} tệp · {(f.totalBytes / 1024 / 1024).toFixed(1)} MB
+                          {f.fileCount} tệp · {formatBytes(f.totalBytes)}
                         </div>
                       </div>
                       <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
@@ -813,7 +814,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                         <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800">
                           <FileGlyph doc={doc} />
                         </div>
-                        <span className="text-xs font-mono text-slate-400">{(doc.fileSize / 1024).toFixed(0)} KB</span>
+                        <span className="text-xs font-mono text-slate-400">{formatBytes(doc.fileSize)}</span>
                       </div>
                       <button
                         type="button"
@@ -887,7 +888,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                           </button>
                         </td>
                         <td className="py-3 px-4 text-xs text-slate-500 whitespace-nowrap">{f.fileCount} tệp</td>
-                        <td className="py-3 px-4 text-right font-mono whitespace-nowrap text-slate-600 dark:text-slate-400">{(f.totalBytes / 1024).toFixed(0)} KB</td>
+                        <td className="py-3 px-4 text-right font-mono whitespace-nowrap text-slate-600 dark:text-slate-400">{formatBytes(f.totalBytes)}</td>
                         <td className="py-3 px-4" />
                         <td className="py-3 px-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
@@ -927,7 +928,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                           </button>
                         </td>
                         <td className="py-3 px-4 font-mono text-xs text-slate-500 break-all min-w-[8rem]">{doc.folderPath || 'Gốc'}</td>
-                        <td className="py-3 px-4 text-right font-mono whitespace-nowrap text-slate-600 dark:text-slate-400">{(doc.fileSize / 1024).toFixed(0)} KB</td>
+                        <td className="py-3 px-4 text-right font-mono whitespace-nowrap text-slate-600 dark:text-slate-400">{formatBytes(doc.fileSize)}</td>
                         <td className="py-3 px-4 text-slate-500 whitespace-nowrap">{fmtDate(doc.updatedAt?.slice(0, 10))}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center justify-center gap-1.5">
@@ -953,7 +954,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
                   <tfoot>
                     <tr className="bg-slate-50 dark:bg-slate-800 font-bold text-slate-900 dark:text-slate-100 border-t-2 border-slate-300 dark:border-slate-700">
                       <td colSpan={3} className="py-2.5 px-4 text-left">TỔNG CỘNG ({listedFileCount} tệp)</td>
-                      <td className="py-2.5 px-4 text-right font-mono">{(listedBytes / 1024 / 1024).toFixed(2)} MB</td>
+                      <td className="py-2.5 px-4 text-right font-mono">{formatBytes(listedBytes)}</td>
                       <td colSpan={2} />
                     </tr>
                   </tfoot>

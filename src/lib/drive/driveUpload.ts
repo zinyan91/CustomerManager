@@ -1,7 +1,7 @@
 import { joinArchivePath } from '../archivePath';
 import type { UploadItem } from '../uploadItems';
 import type { UploadFailure, UploadProgress, UploadResult } from '../uploadItems';
-import { ensureDriveFolderPath, newFolderPathCache, updateDriveFile, uploadDriveFile } from './driveClient';
+import { MULTIPART_MAX_BYTES, ensureDriveFolderPath, newFolderPathCache, updateDriveFile, uploadDriveFile, uploadSmallDriveFile } from './driveClient';
 import { describeDriveError } from './driveErrors';
 import { baseOf, dirOf } from './driveOps';
 import type { DriveContext } from './driveTypes';
@@ -104,7 +104,7 @@ export async function uploadItemsToDrive(
   const failed: UploadFailure[] = [];
   const cancelled: string[] = [];
   const folderCache = newFolderPathCache(knownFolders);
-  const queue = [...planned];
+  let next = 0;
 
   const report = () =>
     onProgress?.({ totalFiles: planned.length, uploadedFiles: uploaded.length, failedFiles: failed.length + cancelled.length, batchIndex: 0, batchCount: 1 });
@@ -112,7 +112,7 @@ export async function uploadItemsToDrive(
   for (const job of planned) onFile?.({ path: job.path, size: job.item.file.size, state: 'wait', item: job.item });
 
   const worker = async () => {
-    for (let job = queue.shift(); job; job = queue.shift()) {
+    for (let job = planned[next++]; job; job = planned[next++]) {
       const size = job.item.file.size;
       const signal = options.signalFor?.(job.path);
       if (signal?.aborted) {
@@ -131,7 +131,9 @@ export async function uploadItemsToDrive(
           fileId = (await updateDriveFile(ctx, overwriteId, file, { onProgress: progress, signal })).id;
         } else {
           const parentId = await ensureDriveFolderPath(ctx, rootId, dirOf(job.path), folderCache);
-          fileId = (await uploadDriveFile(ctx, parentId, file, { onProgress: progress, signal })).id;
+          fileId = size > 0 && size <= MULTIPART_MAX_BYTES
+            ? (await uploadSmallDriveFile(ctx, parentId, file, { signal })).id
+            : (await uploadDriveFile(ctx, parentId, file, { onProgress: progress, signal })).id;
         }
         uploaded.push(job.path);
         created.push({ path: job.path, fileId });

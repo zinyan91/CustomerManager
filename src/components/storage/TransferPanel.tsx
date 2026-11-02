@@ -5,7 +5,9 @@ import type { ZipProgress } from '../../lib/folderZip';
 import { formatBytes } from '../../lib/formatBytes';
 import type { UploadProgress } from '../../lib/uploadItems';
 import { createSpeedMeter, type SpeedMeter } from '../../lib/speedMeter';
-import { buildTransferRows, countByTab, filterRows, totalsOf, type TransferRow, type TransferStatus, type TransferTab } from '../../lib/transferRows';
+import { buildTransferRows, countByTab, filterRows, totalsOf, visibleRows, type TransferRow, type TransferStatus, type TransferTab } from '../../lib/transferRows';
+
+const MAX_VISIBLE_ROWS = 200;
 
 interface TransferPanelProps {
   upload: {
@@ -36,13 +38,15 @@ interface TransferPanelProps {
 const TABS: Array<{ id: TransferTab; label: string }> = [
   { id: 'all', label: 'Tất cả' },
   { id: 'run', label: 'Đang chạy' },
+  { id: 'done', label: 'Hoàn tất' },
   { id: 'bad', label: 'Bỏ qua / Lỗi' },
 ];
 
-const STATUS_LABEL: Record<TransferStatus, string> = { wait: 'Đang chờ', run: 'Đang chạy', skipped: 'Đã bỏ qua', failed: 'Lỗi', cancelled: 'Đã hủy' };
+const STATUS_LABEL: Record<TransferStatus, string> = { wait: 'Đang chờ', run: 'Đang chạy', done: 'Hoàn tất', skipped: 'Đã bỏ qua', failed: 'Lỗi', cancelled: 'Đã hủy' };
 const STATUS_STYLE: Record<TransferStatus, string> = {
   wait: 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300',
   run: 'border-slate-500 text-slate-800 dark:text-slate-100',
+  done: 'border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
   skipped: 'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
   failed: 'border-transparent bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
   cancelled: 'border-transparent bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
@@ -51,7 +55,7 @@ const STATUS_STYLE: Record<TransferStatus, string> = {
 const actionBtn = 'px-2 py-0.5 rounded-md border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer';
 
 function Bar({ row }: { row: TransferRow }) {
-  const colour = row.status === 'run' || row.status === 'wait' ? 'bg-slate-700 dark:bg-slate-300' : 'bg-slate-300 dark:bg-slate-600';
+  const colour = row.status === 'done' ? 'bg-emerald-600' : row.status === 'run' || row.status === 'wait' ? 'bg-slate-700 dark:bg-slate-300' : 'bg-slate-300 dark:bg-slate-600';
   return (
     <div className="h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden" role="progressbar" aria-label={`Tiến độ ${row.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={row.known ? row.pct : undefined}>
       {row.status === 'run' && !row.known ? (
@@ -64,8 +68,8 @@ function Bar({ row }: { row: TransferRow }) {
 }
 
 /**
- * Bảng truyền tệp của Kho lưu trữ: từng tệp đang tải lên (chờ, chạy, lỗi, bỏ qua vì trùng) và lần tải thư mục về dạng ZIP,
- * chia tab theo trạng thái; tệp xong thì rời bảng. Thông báo kết quả và lỗi chung của đợt nằm ngay dưới bảng.
+ * Bảng truyền tệp của Kho lưu trữ: từng tệp đang tải lên (chờ, chạy, xong, lỗi, bỏ qua vì trùng) và lần tải thư mục về dạng ZIP,
+ * chia tab theo trạng thái. Thông báo kết quả và lỗi chung của đợt nằm ngay dưới bảng. Không hiện gì khi chưa có việc nào.
  */
 export function TransferPanel({ upload, zip }: TransferPanelProps) {
   const [tab, setTab] = useState<TransferTab>('all');
@@ -92,40 +96,38 @@ export function TransferPanel({ upload, zip }: TransferPanelProps) {
   if (rows.length === 0 && !hasMessages && !upload.running) return null;
 
   const counts = countByTab(rows);
-  const shown = filterRows(rows, tab);
+  const { rows: shown, hidden } = visibleRows(filterRows(rows, tab), MAX_VISIBLE_ROWS);
   const totals = totalsOf(rows);
   const uploadDone = upload.progress ? upload.progress.uploadedFiles + upload.progress.failedFiles : 0;
 
   return (
     <section aria-label="Truyền tệp" className="shrink-0 border-t border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm">
-      {rows.length > 0 && (
-        <div role="tablist" aria-label="Lọc theo trạng thái" className="flex flex-wrap items-center gap-1 px-4 pt-1.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.id}
-              onClick={() => setTab(t.id)}
-              className={`px-3 py-1.5 -mb-px border-b-2 cursor-pointer ${tab === t.id ? 'border-slate-800 dark:border-slate-200 font-semibold text-slate-900 dark:text-slate-100' : 'border-transparent text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'}`}
-            >
-              {t.label} ({counts[t.id]})
-            </button>
-          ))}
-          <span className="flex-1" />
+      <div role="tablist" aria-label="Lọc theo trạng thái" className="flex flex-wrap items-center gap-1 px-4 pt-1.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60">
+        {TABS.map((t) => (
           <button
+            key={t.id}
             type="button"
-            disabled={busy || rows.length === 0}
-            onClick={() => {
-              upload.onDismiss();
-              zip.onDismiss();
-            }}
-            className="mb-1 px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-3 py-1.5 -mb-px border-b-2 cursor-pointer ${tab === t.id ? 'border-slate-800 dark:border-slate-200 font-semibold text-slate-900 dark:text-slate-100' : 'border-transparent text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'}`}
           >
-            Xóa danh sách đã xong
+            {t.label} ({counts[t.id]})
           </button>
-        </div>
-      )}
+        ))}
+        <span className="flex-1" />
+        <button
+          type="button"
+          disabled={busy || rows.length === 0}
+          onClick={() => {
+            upload.onDismiss();
+            zip.onDismiss();
+          }}
+          className="mb-1 px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
+        >
+          Xóa danh sách đã xong
+        </button>
+      </div>
 
       {upload.running && (
         <div role="status" className="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-200">
@@ -172,6 +174,7 @@ export function TransferPanel({ upload, zip }: TransferPanelProps) {
               </span>
             </li>
           ))}
+          {hidden > 0 && <li className="px-4 py-2 text-xs text-slate-500 dark:text-slate-400">Và {hidden} tệp khác</li>}
         </ul>
       )}
 
@@ -238,12 +241,10 @@ export function TransferPanel({ upload, zip }: TransferPanelProps) {
         )}
       </div>
 
-      {rows.length > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-x-6 px-4 py-1.5 text-xs tabular-nums bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">
-          <span>{`Tổng ${totals.count} tệp${totals.bytes > 0 ? `, ${formatBytes(totals.bytes)}` : ''}`}</span>
-          <span>{totals.active > 0 ? `Đang truyền ${totals.active} tệp` : ''}</span>
-        </div>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-x-6 px-4 py-1.5 text-xs tabular-nums bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300">
+        <span>{totals.count === 0 ? 'Chưa có tệp nào' : `Tổng ${totals.count} tệp${totals.bytes > 0 ? `, ${formatBytes(totals.bytes)}` : ''}`}</span>
+        <span>{totals.active > 0 ? `Đang truyền ${totals.active} tệp` : ''}</span>
+      </div>
     </section>
   );
 }

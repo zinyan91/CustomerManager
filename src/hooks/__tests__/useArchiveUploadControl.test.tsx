@@ -44,6 +44,11 @@ describe('useArchiveUpload - tốc độ, hủy, thử lại, ghi đè', () => {
       await act(async () => {
         await Promise.resolve();
       });
+      // Dòng được gom lại vẽ theo nhịp, chưa qua nhịp thì chưa thấy
+      expect(result.current.files).toHaveLength(0);
+      await act(async () => {
+        vi.advanceTimersByTime(200);
+      });
       const row = result.current.files[0];
       expect(row.state).toBe('run');
       expect(row.loaded).toBe(3_000_000);

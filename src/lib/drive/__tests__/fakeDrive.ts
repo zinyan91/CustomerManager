@@ -72,6 +72,17 @@ export function createFakeDrive(driveId = 'DRV') {
 
     const path = url.pathname;
     if (method === 'GET' && path === '/drive/v3/drives') return json({ drives: accessibleDrives });
+    if (method === 'POST' && path === '/upload/drive/v3/files' && url.searchParams.get('uploadType') === 'multipart') {
+      const boundary = (new Headers(init.headers).get('Content-Type') ?? '').match(/boundary=(.+)$/)?.[1] ?? '';
+      const raw = new Uint8Array(await (init.body as Blob).arrayBuffer());
+      const text = Array.from(raw, (b) => String.fromCharCode(b)).join('');
+      const metaStart = text.indexOf('\r\n\r\n') + 4;
+      const metaEnd = text.indexOf(`\r\n--${boundary}\r\n`, metaStart);
+      const meta = JSON.parse(new TextDecoder().decode(raw.slice(metaStart, metaEnd))) as { name: string; parents: string[]; mimeType: string };
+      const dataStart = text.indexOf('\r\n\r\n', metaEnd) + 4;
+      const dataEnd = text.lastIndexOf(`\r\n--${boundary}--`);
+      return json(view(add(meta.name, meta.parents, meta.mimeType, raw.slice(dataStart, dataEnd))));
+    }
     if (method === 'POST' && path === '/upload/drive/v3/files') {
       const meta = JSON.parse(body ?? '{}') as { name: string; parents: string[] };
       const id = `s${++seq}`;

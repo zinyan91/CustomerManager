@@ -27,34 +27,33 @@ describe('TransferPanel', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('đang tải lên: tệp xong rời bảng; tab kèm số lượng, từng tệp có trạng thái, dung lượng, lỗi; có dòng tiến độ chung và tổng', () => {
+  it('đang tải lên: tab kèm số lượng, từng tệp có trạng thái, dung lượng, lỗi; có dòng tiến độ chung và tổng', () => {
     show({ upload: { running: true, progress, files } });
-    expect(screen.getByRole('tab', { name: 'Tất cả (3)' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Tất cả (4)' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Đang chạy (2)' })).toBeTruthy();
-    expect(screen.queryByRole('tab', { name: /Hoàn tất/ })).toBeNull();
+    expect(screen.getByRole('tab', { name: 'Hoàn tất (1)' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Bỏ qua / Lỗi (1)' })).toBeTruthy();
     expect(screen.getByText('Đang tải lên 2/4 tệp')).toBeTruthy();
 
     const rows = rowsOf();
-    expect(rows).toHaveLength(3);
-    expect(rows.some((r) => r.textContent?.includes('VB/a.pdf'))).toBe(false);
-    expect(rows[0].textContent).toContain('Đang chạy');
-    expect(rows[0].textContent).toContain('1.00 MB');
-    expect(rows[1].textContent).toContain('Đang chờ');
-    expect(rows[2].textContent).toContain('Drive đã hết dung lượng.');
-    expect(screen.getByText(/Tổng 3 tệp/)).toBeTruthy();
+    expect(rows).toHaveLength(4);
+    expect(rows[0].textContent).toContain('Hoàn tất');
+    expect(rows[1].textContent).toContain('Đang chạy');
+    expect(rows[1].textContent).toContain('1.00 MB');
+    expect(rows[2].textContent).toContain('Đang chờ');
+    expect(rows[3].textContent).toContain('Drive đã hết dung lượng.');
+    expect(screen.getByText(/Tổng 4 tệp/)).toBeTruthy();
     expect(screen.getByText('Đang truyền 1 tệp')).toBeTruthy();
   });
 
   it('cột tốc độ chỉ hiện ở tệp đang chạy; tệp đang chạy có nút Hủy đúng đường dẫn', () => {
     const cancel = vi.fn();
-    show({ upload: { running: true, progress, files: [{ path: 'VB/b.pdf', size: 4 * 1024 * 1024, state: 'run', loaded: 1024 * 1024, speed: 1536 * 1024 }, files[3]], onCancelFile: cancel } });
-    const [run, failed] = rowsOf();
+    show({ upload: { running: true, progress, files: [{ path: 'VB/b.pdf', size: 4 * 1024 * 1024, state: 'run', loaded: 1024 * 1024, speed: 1536 * 1024 }, files[0]], onCancelFile: cancel } });
+    const [run, done] = rowsOf();
     expect(run.textContent).toContain('1.50 MB/s');
     expect(run.textContent).toContain('Đang chạy');
     expect(within(run).getByRole('progressbar').getAttribute('aria-valuenow')).toBe('25');
-    expect(failed.textContent).not.toContain('/s');
-    expect(within(failed).queryByRole('button', { name: /Hủy/ })).toBeNull();
+    expect(within(done).queryByRole('button', { name: /Hủy/ })).toBeNull();
     fireEvent.click(within(run).getByRole('button', { name: 'Hủy VB/b.pdf' }));
     expect(cancel).toHaveBeenCalledWith('VB/b.pdf');
   });
@@ -79,6 +78,14 @@ describe('TransferPanel', () => {
     expect((screen.getByRole('button', { name: 'Thử lại a.pdf' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('đợt rất lớn: chỉ vẽ 200 dòng, báo số tệp còn lại; số đếm trên tab vẫn đủ', () => {
+    const big: UploadFileRow[] = Array.from({ length: 250 }, (_, i) => ({ path: 'f' + i + '.pdf', size: 1, state: 'wait' }));
+    show({ upload: { running: true, progress, files: big } });
+    expect(screen.getByRole('tab', { name: 'Tất cả (250)' })).toBeTruthy();
+    expect(rowsOf()).toHaveLength(201);
+    expect(rowsOf().at(-1)!.textContent).toBe('Và 50 tệp khác');
+  });
+
   it('tóm tắt nêu số tệp đã hủy', () => {
     show({ upload: { summary: { uploaded: 2, failed: [], names: [], cancelled: 1 } } });
     expect(screen.getByRole('status').textContent).toContain('Đã tải lên 2 tệp, 1 tệp đã hủy.');
@@ -86,20 +93,20 @@ describe('TransferPanel', () => {
 
   it('chuyển tab lọc đúng các dòng; tab rỗng nói rõ', () => {
     show({ upload: { files } });
-    fireEvent.click(screen.getByRole('tab', { name: 'Đang chạy (2)' }));
-    expect(rowsOf().map((r) => r.textContent)).toEqual([expect.stringContaining('VB/b.pdf'), expect.stringContaining('VB/c.pdf')]);
+    fireEvent.click(screen.getByRole('tab', { name: 'Hoàn tất (1)' }));
+    expect(rowsOf().map((r) => r.textContent)).toEqual([expect.stringContaining('VB/a.pdf')]);
     fireEvent.click(screen.getByRole('tab', { name: 'Bỏ qua / Lỗi (1)' }));
     expect(rowsOf()[0].textContent).toContain('VB/d.pdf');
 
     cleanup();
-    show({ upload: { files: [files[1]] } });
+    show({ upload: { files: [files[0]] } });
     fireEvent.click(screen.getByRole('tab', { name: 'Bỏ qua / Lỗi (0)' }));
     expect(screen.getByText('Chưa có tệp nào trong mục này.')).toBeTruthy();
   });
 
   it('xong đợt: dòng tóm tắt giữ nguyên chữ cũ kèm số tệp bỏ qua; tệp bỏ qua hiện ở tab Bỏ qua / Lỗi', () => {
     const summary = { uploaded: 3, failed: [], names: ['VB'], skipped: ['VB/x.pdf'] };
-    show({ upload: { summary, files: [files[1]] } });
+    show({ upload: { summary, files: [files[0]] } });
     expect(screen.getByRole('status').textContent).toContain('Đã tải lên 3 tệp: VB. Đã bỏ qua 1 tệp trùng tên.');
     fireEvent.click(screen.getByRole('tab', { name: 'Bỏ qua / Lỗi (1)' }));
     expect(rowsOf()[0].textContent).toContain('Đã bỏ qua');
@@ -144,18 +151,10 @@ describe('TransferPanel', () => {
     expect(screen.getByRole('status').textContent).toContain('Đã tải K.zip');
   });
 
-  it('xong hết, không lỗi: không còn bảng, thanh tab hay dòng tổng, chỉ còn dòng tóm tắt', () => {
-    show({ upload: { files: [files[0]], summary: { uploaded: 1, failed: [], names: ['VB/a.pdf'] } } });
-    expect(screen.queryByRole('tablist')).toBeNull();
-    expect(screen.queryByRole('list', { name: 'Danh sách truyền tệp' })).toBeNull();
-    expect(screen.queryByText(/Tổng/)).toBeNull();
-    expect(screen.getByRole('status').textContent).toContain('Đã tải lên 1 tệp: VB/a.pdf.');
-  });
-
   it('"Xóa danh sách đã xong" xóa cả tải lên và tải xuống, và bị khóa khi còn đang chạy', () => {
     const up = vi.fn();
     const down = vi.fn();
-    show({ upload: { files, onDismiss: up }, zip: { fileName: 'K.zip', error: 'x', onDismiss: down } });
+    show({ upload: { files, onDismiss: up }, zip: { fileName: 'K.zip', message: 'xong', onDismiss: down } });
     fireEvent.click(screen.getByRole('button', { name: 'Xóa danh sách đã xong' }));
     expect(up).toHaveBeenCalled();
     expect(down).toHaveBeenCalled();

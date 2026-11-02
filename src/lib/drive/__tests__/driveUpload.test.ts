@@ -110,15 +110,30 @@ describe('uploadItemsToDrive', () => {
     expect(events.filter((e) => e.state === 'done')).toHaveLength(1);
   });
 
-  it('tiến độ theo byte: đang tải có số byte đã gửi, xong thì bằng dung lượng; sự kiện đầu của tệp mang tệp gốc để thử lại', async () => {
+  it('tệp nhỏ: một yêu cầu multipart, nội dung và tên đúng; sự kiện đầu của tệp mang tệp gốc để thử lại, xong thì bằng dung lượng', async () => {
     const { drive, root } = await setup();
-    const a = item('a.pdf', 'NOI-DUNG-DAI');
+    const a = item('Hồ sơ/á.pdf', 'NOI-DUNG-DAI');
     const events: Array<{ state: string; loaded?: number; item?: unknown }> = [];
+    const before = drive.requests.length;
     await uploadItemsToDrive(drive.ctx, root.id, '', [a], [], undefined, undefined, (e) => events.push({ state: e.state, loaded: e.loaded, item: e.item }));
     expect(events[0]).toMatchObject({ state: 'wait', item: a });
-    const size = a.file.size;
-    expect(events.some((e) => e.state === 'run' && e.loaded === size)).toBe(true);
-    expect(events.at(-1)).toMatchObject({ state: 'done', loaded: size });
+    expect(events.at(-1)).toMatchObject({ state: 'done', loaded: a.file.size });
+    const uploads = drive.requests.slice(before).filter((r) => r.url.includes('/upload/'));
+    expect(uploads).toHaveLength(1);
+    expect(new URL(uploads[0].url).searchParams.get('uploadType')).toBe('multipart');
+    const [saved] = drive.byName('á.pdf');
+    expect(new TextDecoder().decode(saved.bytes)).toBe('NOI-DUNG-DAI');
+    expect(saved.mimeType).toBe('application/pdf');
+  });
+
+  it('tệp trên 5 MB đi resumable, có tiến độ theo byte', async () => {
+    const { drive, root } = await setup();
+    const big = item('lon.pdf', 'x'.repeat(5 * 1024 * 1024 + 1));
+    const events: Array<{ state: string; loaded?: number }> = [];
+    await uploadItemsToDrive(drive.ctx, root.id, '', [big], [], undefined, undefined, (e) => events.push({ state: e.state, loaded: e.loaded }));
+    expect(drive.requests.some((r) => new URL(r.url).searchParams.get('uploadType') === 'resumable')).toBe(true);
+    expect(events.some((e) => e.state === 'run' && e.loaded === big.file.size)).toBe(true);
+    expect(drive.byName('lon.pdf')[0].bytes.length).toBe(big.file.size);
   });
 
   it('ghi đè: nội dung tệp cũ được thay, giữ nguyên mã và tên, không tạo thêm tệp', async () => {

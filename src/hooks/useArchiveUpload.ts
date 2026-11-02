@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { topLevelNames, type UploadFailure, type UploadItem, type UploadProgress } from '../lib/uploadItems';
 import { uploadItemsToDrive, type UploadFileEvent } from '../lib/drive/driveUpload';
 import { applyDuplicateChoices, findDuplicates, type DuplicateChoice, type DuplicateMatch } from '../lib/drive/driveDuplicates';
@@ -43,6 +43,7 @@ interface Original {
 }
 
 const lower = (s: string) => s.toLowerCase();
+const FLUSH_MS = 150;
 
 /** Tóm tắt của đợt từ các dòng hiện có (dùng sau khi thử lại, khi kết quả đổi). */
 function summarize(rows: readonly UploadFileRow[], names: string[], skipped: string[] | undefined): UploadSummary {
@@ -64,16 +65,35 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
   const [files, setFiles] = useState<UploadFileRow[]>([]);
   const [waiting, setWaiting] = useState<{ items: UploadItem[]; targetFolder: string; matches: DuplicateMatch[] } | null>(null);
 
-  const filesRef = useRef<UploadFileRow[]>([]);
+  // Dòng theo đường dẫn (giữ thứ tự thêm vào): đợt hàng nghìn tệp cập nhật một dòng không phải chép lại cả mảng
+  const rowsRef = useRef(new Map<string, UploadFileRow>());
   const controllers = useRef(new Map<string, AbortController>());
   const originals = useRef(new Map<string, Original>());
   const meters = useRef(new Map<string, SpeedMeter>());
   const lastBatch = useRef<{ names: string[]; skipped: string[] | undefined }>({ names: [], skipped: undefined });
+  const latestProgress = useRef<UploadProgress | null>(null);
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushNow = useCallback(() => {
+    if (flushTimer.current) clearTimeout(flushTimer.current);
+    flushTimer.current = null;
+    setFiles([...rowsRef.current.values()]);
+    setProgress(latestProgress.current);
+  }, []);
+
+  // Mỗi tệp phát vài sự kiện; vẽ lại theo từng sự kiện thì đợt 10.000 tệp khóa cả trang, nên gom lại vẽ theo nhịp
+  const scheduleFlush = useCallback(() => {
+    if (!flushTimer.current) flushTimer.current = setTimeout(flushNow, FLUSH_MS);
+  }, [flushNow]);
+
+  useEffect(() => () => {
+    if (flushTimer.current) clearTimeout(flushTimer.current);
+  }, []);
 
   const updateFiles = useCallback((next: (rows: UploadFileRow[]) => UploadFileRow[]) => {
-    filesRef.current = next(filesRef.current);
-    setFiles(filesRef.current);
-  }, []);
+    rowsRef.current = new Map(next([...rowsRef.current.values()]).map((r) => [r.path, r]));
+    flushNow();
+  }, [flushNow]);
 
   const resetBatch = useCallback(() => {
     controllers.current.clear();
@@ -123,26 +143,30 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
           } else {
             meters.current.delete(event.path);
           }
-          updateFiles((rows) => {
-            const row = { ...rest, speed };
-            return rows.some((r) => r.path === event.path) ? rows.map((r) => (r.path === event.path ? row : r)) : [...rows, row];
-          });
+          rowsRef.current.set(event.path, { ...rest, speed });
+          scheduleFlush();
         };
-        const res = await uploadItemsToDrive(drive.ctx, drive.rootId, targetFolder, items, existing, setProgress, drive.folderIds, onFile, {
+        const onProgress = (p: UploadProgress) => {
+          latestProgress.current = p;
+          scheduleFlush();
+        };
+        const res = await uploadItemsToDrive(drive.ctx, drive.rootId, targetFolder, items, existing, onProgress, drive.folderIds, onFile, {
           overwrite: overwrites,
           signalFor: (path) => controllers.current.get(path)?.signal,
         });
         uploadedCount = res.uploaded.length;
+        flushNow();
         setSummary(
           append
-            ? summarize(filesRef.current, lastBatch.current.names, lastBatch.current.skipped)
+            ? summarize([...rowsRef.current.values()], lastBatch.current.names, lastBatch.current.skipped)
             : { uploaded: uploadedCount, failed: res.failed, names: topLevelNames(items), skipped, cancelled: res.cancelled.length }
         );
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Không tải được lên.');
       } finally {
         setRunning(false);
-        setProgress(null);
+        latestProgress.current = null;
+        flushNow();
       }
       // Nạp lại danh sách chạy sau khi đã mở khóa: liệt kê cả kho có thể chậm, không được giữ nút tải lên chờ nó
       if (uploadedCount > 0) {
@@ -153,7 +177,7 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
         }
       }
     },
-    [drive, onDone, resetBatch, updateFiles]
+    [drive, onDone, resetBatch, flushNow, scheduleFlush]
   );
 
   /** Tải lên; có tệp trùng tên với tệp đã có thì dừng lại chờ `resolveDuplicates` hoặc `cancelDuplicates`. */
@@ -197,7 +221,7 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
   const retryFile = useCallback(
     async (path: string) => {
       const original = originals.current.get(path);
-      const row = filesRef.current.find((r) => r.path === path);
+      const row = rowsRef.current.get(path);
       if (running || !original || !row || (row.state !== 'failed' && row.state !== 'cancelled')) return;
       controllers.current.delete(path);
       updateFiles((rows) => rows.filter((r) => r.path !== path));

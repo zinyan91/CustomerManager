@@ -313,6 +313,33 @@ export async function uploadDriveFile(ctx: DriveContext, parentId: string, file:
   return sendResumable(ctx, session, file, options);
 }
 
+/** Tệp tới cỡ này tải bằng một yêu cầu multipart thay vì mở phiên resumable rồi gửi (hai yêu cầu); Google khuyên ngưỡng 5 MB. */
+export const MULTIPART_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Tải tệp nhỏ (tới MULTIPART_MAX_BYTES) lên thư mục `parentId` bằng một yêu cầu multipart: siêu dữ liệu và nội dung đi chung.
+ * Lỗi tạm thời thì gửi lại cả tệp (driveRequest tự thử lại). Không báo tiến độ từng byte.
+ */
+export async function uploadSmallDriveFile(ctx: DriveContext, parentId: string, file: File, options: Pick<UploadOptions, 'signal'> = {}): Promise<DriveFile> {
+  options.signal?.throwIfAborted();
+  const type = file.type || 'application/octet-stream';
+  const boundary = `cm-${crypto.randomUUID()}`;
+  const body = new Blob([
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n`,
+    JSON.stringify({ name: file.name, parents: [parentId], mimeType: type }),
+    `\r\n--${boundary}\r\nContent-Type: ${type}\r\n\r\n`,
+    file,
+    `\r\n--${boundary}--`,
+  ]);
+  const res = await driveRequest(ctx, `${UPLOAD_API}/files?${new URLSearchParams({ uploadType: 'multipart', supportsAllDrives: 'true', fields: FILE_FIELDS })}`, {
+    method: 'POST',
+    headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+    body,
+    signal: options.signal,
+  });
+  return toDriveFile(await jsonOf(res));
+}
+
 /**
  * Ghi đè nội dung một tệp đã có (giữ nguyên mã, tên và thư mục), cùng kiểu resumable với uploadDriveFile.
  * Tệp rỗng không hỗ trợ vì Drive không mở được phiên tải lên cho 0 byte.

@@ -26,6 +26,41 @@ function edit(c: CalcController, row: number, col: number, text: string) {
 }
 
 describe('diff và apply', () => {
+  it('mang đủ dữ liệu mới của trang tính và tên vùng, so trực tiếp từng trường', () => {
+    const c = new CalcController();
+    edit(c, 0, 0, '0');
+    const before = c.wb.toData();
+    c.addSheet();
+    c.switchSheet(0);
+    c.select(1, 1);
+    c.setLink('https://example.com/');
+    c.select(2, 0);
+    c.hideRows();
+    c.select(0, 3);
+    c.hideColumns();
+    c.select(4, 0);
+    c.extendTo(6, 0);
+    c.groupLines('row', 1);
+    c.setTabColor(0, '#1d6f42');
+    c.setSheetHidden(1, true);
+    c.setHideZeros(true);
+    c.select(0, 0);
+    c.extendTo(0, 2);
+    c.addSparklines('line');
+    c.select(0, 0);
+    expect(c.defineName('LaiSuat')).toBe(true);
+    const after = c.wb.toData();
+    const rebuilt = applyPatch(before, diffWorkbooks(before, after));
+    const fields = ['links', 'rowsHidden', 'colsHidden', 'rowLevels', 'tabColor', 'hideZeros', 'sparklines', 'hidden'] as const;
+    for (const [index, sheet] of after.sheets.entries()) {
+      for (const field of fields) expect(rebuilt.sheets[index]?.[field], `${sheet.name}.${field}`).toEqual(sheet[field]);
+    }
+    expect(after.sheets[0].links?.length).toBe(1);
+    expect(after.sheets[1].hidden).toBe(true);
+    expect(rebuilt.names).toEqual(after.names);
+    expect(after.names?.length).toBe(1);
+  });
+
   it('ô: đặt, sửa, xóa; định dạng đi theo giá trị chứ không theo chỉ số của máy', () => {
     const a = new CalcController();
     edit(a, 0, 0, 'x');
@@ -158,6 +193,33 @@ describe('thuộc tính: áp diff(trước, sau) lên trước luôn ra sau, qua
     },
     (c, r) => c.switchSheet(Math.floor(r() * c.wb.sheets.length)),
     (c) => c.toggleProtection(),
+    (c, r) => {
+      c.select(Math.floor(r() * 8), Math.floor(r() * 4));
+      c.setLink(r() > 0.3 ? 'https://example.com/' : null);
+    },
+    (c, r) => {
+      c.select(Math.floor(r() * 8), Math.floor(r() * 4));
+      c.extendTo(Math.floor(r() * 8) + 1, Math.floor(r() * 4) + 1);
+      [() => c.hideRows(), () => c.unhideRows(), () => c.hideColumns(), () => c.unhideColumns()][Math.floor(r() * 4)]();
+    },
+    (c, r) => {
+      c.select(Math.floor(r() * 6), 0);
+      c.extendTo(Math.floor(r() * 6) + 2, 0);
+      c.groupLines(r() > 0.5 ? 'row' : 'col', r() > 0.3 ? 1 : -1);
+    },
+    (c, r) => c.setTabColor(Math.floor(r() * c.wb.sheets.length), r() > 0.3 ? '#1d6f42' : null),
+    (c, r) => c.setSheetHidden(Math.floor(r() * c.wb.sheets.length), r() > 0.5),
+    (c, r) => c.setHideZeros(r() > 0.5),
+    (c, r) => {
+      c.select(Math.floor(r() * 6), 0);
+      c.extendTo(Math.floor(r() * 6), 3);
+      if (r() > 0.4) c.addSparklines(r() > 0.5 ? 'line' : 'column');
+      else c.clearSparklines();
+    },
+    (c, r) => {
+      c.select(Math.floor(r() * 6), Math.floor(r() * 3));
+      c.defineName(`Vùng_${Math.floor(r() * 4)}`);
+    },
     (c) => c.undo(),
     (c) => c.redo(),
   ];

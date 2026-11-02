@@ -1,5 +1,5 @@
 import type { CellStyle, WorkbookData } from '../calc/model/workbook';
-import { KEYED_PROPS, WHOLE_PROPS, styleToken, type KeyedProp, type Op, type Patch, type SheetData } from './patch';
+import { KEYED_PROPS, WHOLE_PROPS, definedNamesOf, styleToken, type KeyedProp, type Op, type Patch, type SheetData } from './patch';
 
 const json = (value: unknown): string => JSON.stringify(value ?? null);
 
@@ -118,5 +118,7 @@ export function diffWorkbooks(before: WorkbookData, after: WorkbookData): Patch 
   const predicted = before.sheets.filter((sheet) => !gone.has(sheet.name)).map((sheet) => renamedTo.get(sheet.name) ?? sheet.name);
   for (const sheet of stillAdded) predicted.splice(Math.min(after.sheets.indexOf(sheet), predicted.length), 0, sheet.name);
   if (json(order) !== json(predicted)) ops.push({ t: 'order', names: order });
+  const namesNow = definedNamesOf(after);
+  if (json(definedNamesOf(before)) !== json(namesNow)) ops.push({ t: 'definedNames', value: namesNow.length ? namesNow : null });
   return ops;
 }

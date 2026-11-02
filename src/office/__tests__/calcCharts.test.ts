@@ -129,4 +129,63 @@ describe('charts in the controller', () => {
     copy.loadData(old);
     expect(copy.sheets[0].charts).toEqual([]);
   });
+
+  it('an area chart is written as an areaChart and read back as one', async () => {
+    const c = sheet();
+    c.select(1, 1);
+    c.addChart('area');
+    const { exportXlsx, importXlsx } = await import('../calc/services/xlsxService');
+    const { default: JSZip } = await import('jszip');
+    const blob = await exportXlsx(c.wb);
+    const buffer = await blob.arrayBuffer();
+    const zip = await JSZip.loadAsync(buffer);
+    const chartPath = Object.keys(zip.files).find((name) => name.startsWith('xl/charts/chart') && name.endsWith('.xml'))!;
+    const chart = await zip.file(chartPath)!.async('string');
+    expect(chart).toContain('<c:areaChart>');
+    const back = new Workbook();
+    back.loadData(await importXlsx(buffer));
+    expect(back.sheets[0].charts[0].type).toBe('area');
+  });
+
+  it('a scatter chart takes x from the first numeric column and writes xVal and yVal', async () => {
+    const c = new CalcController();
+    [['x', 'y1', 'y2'], ['1', '2', '3'], ['2', '4', '1'], ['4', '5', '7']].forEach((row, r) => row.forEach((raw, col) => c.wb.putCell(0, r, col, { raw, style: 0 })));
+    c.selectRange({ r1: 0, c1: 0, r2: 3, c2: 2 });
+    c.addChart('scatter');
+    const range = c.wb.sheets[0].charts[0].range;
+    const data = readChartData(range, (r, col) => c.wb.valueAt(0, r, col), (r, col) => c.wb.displayAt(0, r, col), 'scatter');
+    expect(data.x).toEqual([1, 2, 4]);
+    expect(data.series.map((s) => s.name)).toEqual(['y1', 'y2']);
+    const { exportXlsx, importXlsx } = await import('../calc/services/xlsxService');
+    const { default: JSZip } = await import('jszip');
+    const buffer = await (await exportXlsx(c.wb)).arrayBuffer();
+    const zip = await JSZip.loadAsync(buffer);
+    const chart = await zip.file(Object.keys(zip.files).find((name) => name.startsWith('xl/charts/chart') && name.endsWith('.xml'))!)!.async('string');
+    expect(chart).toContain('<c:scatterChart>');
+    expect(chart.match(/<c:xVal>/g)).toHaveLength(2);
+    const back = new Workbook();
+    back.loadData(await importXlsx(buffer));
+    expect(back.sheets[0].charts[0].type).toBe('scatter');
+  });
+
+  it('a stacked column chart is written as grouping stacked and read back as stacked', async () => {
+    const c = sheet();
+    c.select(1, 1);
+    expect(c.addChart('column', true)).toBe(true);
+    expect(c.wb.sheets[0].charts[0].stacked).toBe(true);
+    c.select(1, 1);
+    c.addChart('line', true);
+    expect(c.wb.sheets[0].charts[1].stacked).toBeUndefined();
+    c.select(1, 1);
+    c.addChart('area', true);
+    const { exportXlsx, importXlsx } = await import('../calc/services/xlsxService');
+    const { default: JSZip } = await import('jszip');
+    const buffer = await (await exportXlsx(c.wb)).arrayBuffer();
+    const zip = await JSZip.loadAsync(buffer);
+    const parts = await Promise.all(Object.keys(zip.files).filter((name) => name.startsWith('xl/charts/chart') && name.endsWith('.xml')).map((name) => zip.file(name)!.async('string')));
+    expect(parts.some((xml) => xml.includes('<c:grouping val="stacked"/>') && xml.includes('<c:overlap val="100"/>'))).toBe(true);
+    const back = new Workbook();
+    back.loadData(await importXlsx(buffer));
+    expect(back.sheets[0].charts.map((chart) => [chart.type, chart.stacked ?? false])).toEqual([['column', true], ['line', false], ['area', true]]);
+  });
 });

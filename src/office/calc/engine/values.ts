@@ -4,7 +4,7 @@
  * 1, an empty cell is 0 or "" depending on who asks, and an error in any input
  * is the error out.
  */
-export type ErrorCode = '#DIV/0!' | '#REF!' | '#NAME?' | '#VALUE!' | '#N/A' | '#NUM!' | '#CIRC!' | '#SPILL!' | '#ERROR!';
+export type ErrorCode = '#DIV/0!' | '#REF!' | '#NAME?' | '#VALUE!' | '#N/A' | '#NUM!' | '#CIRC!' | '#SPILL!' | '#CALC!' | '#ERROR!';
 
 export class CellError {
   readonly code: ErrorCode;
@@ -25,6 +25,7 @@ export const ERRORS = {
   num: new CellError('#NUM!'),
   circular: new CellError('#CIRC!'),
   spill: new CellError('#SPILL!'),
+  calc: new CellError('#CALC!'),
   syntax: new CellError('#ERROR!'),
 } as const;
 
@@ -63,14 +64,15 @@ export function fail(error: CellError): never {
   throw new EvalAbort(error);
 }
 
-/** The number a text means, or null. Accepts thousands-free decimals, percent and exponent. */
+/** The number a text means, or null. Accepts decimals, thousands grouped by commas, percent and exponent. */
 export function parseNumber(text: string): number | null {
   const trimmed = text.trim();
   if (trimmed === '') return null;
   const percent = trimmed.endsWith('%');
   const body = percent ? trimmed.slice(0, -1).trim() : trimmed;
-  if (!/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(body)) return null;
-  const n = Number(body);
+  const grouped = /^[+-]?\d{1,3}(,\d{3})+(\.\d*)?$/.test(body);
+  if (!grouped && !/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(body)) return null;
+  const n = Number(grouped ? body.replace(/,/g, '') : body);
   if (!Number.isFinite(n)) return null;
   return percent ? n / 100 : n;
 }
@@ -90,7 +92,7 @@ export function toText(value: Scalar): string {
   if (isError(value)) fail(value);
   if (value === null) return '';
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
-  if (typeof value === 'number') return formatGeneral(value);
+  if (typeof value === 'number') return numberToText(value);
   return value;
 }
 
@@ -105,18 +107,71 @@ export function toBoolean(value: Scalar): boolean {
   fail(ERRORS.value);
 }
 
-/** Excel's "General": up to 11 significant digits, no trailing zeros. */
+export interface Digits {
+  /** Significant digits without trailing zeros. */
+  digits: string;
+  /** Power of ten of the first digit. */
+  exp: number;
+}
+
+export function digitsOf(abs: number): Digits {
+  const [mantissa, exponent] = abs.toExponential(14).split('e');
+  return { digits: mantissa.replace('.', '').replace(/0+$/, '') || '0', exp: Number(exponent) };
+}
+
+function fixedText({ digits, exp }: Digits): string {
+  if (exp >= 0) {
+    const whole = digits.slice(0, exp + 1).padEnd(exp + 1, '0');
+    const fraction = digits.slice(exp + 1);
+    return fraction ? `${whole}.${fraction}` : whole;
+  }
+  return `0.${'0'.repeat(-exp - 1)}${digits}`;
+}
+
+function scientificText(abs: number, significant: number): string {
+  const [mantissa, exponent] = abs.toExponential(significant - 1).split('e');
+  const trimmed = mantissa.includes('.') ? mantissa.replace(/0+$/, '').replace(/\.$/, '') : mantissa;
+  const power = Number(exponent);
+  return `${trimmed}E${power < 0 ? '-' : '+'}${String(Math.abs(power)).padStart(2, '0')}`;
+}
+
+/** A number as text in a formula (A1&""): 15 significant digits, in E notation only when the plain form runs past 20 characters. */
+export function numberToText(n: number): string {
+  if (!Number.isFinite(n)) return '#NUM!';
+  if (n === 0) return '0';
+  const abs = Math.abs(n);
+  const digits = digitsOf(abs);
+  const plain = fixedText(digits);
+  return (n < 0 ? '-' : '') + (plain.length <= 20 ? plain : scientificText(abs, 15));
+}
+
+/**
+ * Excel's "General" in a cell: what fits in 11 characters, in plain digits
+ * when that shows as many significant digits as E notation (6) would.
+ */
 export function formatGeneral(n: number): string {
   if (!Number.isFinite(n)) return '#NUM!';
-  if (Number.isInteger(n) && Math.abs(n) < 1e11) return String(n);
+  if (n === 0) return '0';
+  const sign = n < 0 ? '-' : '';
   const abs = Math.abs(n);
-  if (abs >= 1e11 || (abs < 1e-4 && n !== 0)) {
-    const [mantissa, exponent] = n.toExponential(5).split('e');
-    const trimmed = mantissa.includes('.') ? mantissa.replace(/0+$/, '').replace(/\.$/, '') : mantissa;
-    const power = Number(exponent);
-    return `${trimmed}E${power < 0 ? '-' : '+'}${String(Math.abs(power)).padStart(2, '0')}`;
+  const { digits, exp } = digitsOf(abs);
+  const scientific = scientificText(abs, 6);
+  const scientificDigits = Math.min(6, digits.length);
+
+  let plain: string | null = null;
+  let plainDigits = 0;
+  if (exp >= 0) {
+    const places = Math.max(0, 10 - (exp + 1));
+    const text = abs.toFixed(places);
+    if (text.split('.')[0].length <= 11) {
+      plain = text.includes('.') ? text.replace(/0+$/, '').replace(/\.$/, '') : text;
+      plainDigits = Math.min(digits.length, exp + 1 + places);
+    }
+  } else if (Number(abs.toFixed(9)) !== 0) {
+    plain = abs.toFixed(9).replace(/0+$/, '').replace(/\.$/, '');
+    plainDigits = Math.min(digits.length, 9 + exp + 1);
   }
-  return String(Number(n.toPrecision(11)));
+  return sign + (plain !== null && plainDigits >= scientificDigits ? plain : scientific);
 }
 
 /** Type order for comparing unlike values: numbers < text < booleans. */
@@ -143,7 +198,10 @@ export function compareValues(a: Scalar, b: Scalar): number {
   }
   const x = Number(a);
   const y = Number(b);
-  return x < y ? -1 : x > y ? 1 : 0;
+  if (x === y) return 0;
+  // 0.1 + 0.2 equals 0.3 in Excel: numbers that agree to 15 significant digits are equal.
+  if (Math.abs(x - y) <= 1e-14 * Math.max(Math.abs(x), Math.abs(y)) && Number(x.toPrecision(15)) === Number(y.toPrecision(15))) return 0;
+  return x < y ? -1 : 1;
 }
 
 /** Every scalar in the arguments, ranges flattened, in reading order. */

@@ -1,13 +1,19 @@
 import { CHART_MIN_HEIGHT, CHART_MIN_WIDTH, currentRegion, type ChartObject, type ChartType } from './engine/chartData';
 import type { CfRule } from './engine/conditional';
 import { functionOpening } from './engine/functionCatalog';
-import { cellKey, columnName, keyCol, keyRow, MAX_COLS, MAX_ROWS, parseRange, type CellPos, type RangePos } from './engine/cellRef';
+import { serialFromDate } from './engine/dates';
+import { absoluteAddress, isValidName } from './engine/definedNames';
+import { applyFlashFill, learnFlashFill } from './engine/flashFill';
+import { precedentsOf, rangeHolds } from './engine/dependencies';
+import { cellKey, columnName, keyCol, keyRow, MAX_COLS, MAX_ROWS, parseCell, parseRange, type CellPos, type RangePos } from './engine/cellRef';
 import { interpretEntry, parseTsv } from './engine/entry';
 import { parseFormula, shiftFormula } from './engine/parser';
-import { compareValues, isError, type Scalar } from './engine/values';
+import { compareValues, isError, parseNumber, type Scalar } from './engine/values';
 import type { FilterCondition } from './engine/filterCondition';
+import { goalSeek } from './engine/goalSeek';
 import { buildSummary, type SummaryConfig, type SummaryFn, type SummaryLabels } from './engine/summary';
 import { acceptsEntry, validationAt, type Validation, type ValidationRule } from './engine/validation';
+import { insertReference, pointSlot, referenceText, type Slot } from './engine/pointMode';
 import {
   DEFAULT_PAGE_SETUP,
   ROW_HEIGHT,
@@ -19,6 +25,7 @@ import {
   type CellComment,
   type CellStyle,
   type PageSetup,
+  type Sparkline,
   type FilterState,
   type ImageObject,
   type WorkbookData,
@@ -38,6 +45,10 @@ type HistoryEntry =
 
 interface Clipboard {
   range: RangePos;
+  /** Every block copied (several when the selection had aligned blocks); `range` is the first. */
+  ranges: RangePos[];
+  /** Where each copied cell came from, for moving its formula. */
+  origin: CellPos[][];
   cells: Array<Array<Cell | undefined>>;
   cut: boolean;
   text: string;
@@ -50,9 +61,16 @@ export interface Editing {
   text: string;
   /** True when typing replaced the cell: arrow keys then commit and move, as in Excel's Enter mode. */
   enterMode: boolean;
+  /** The span of the formula text a cell pointed at stands in, while the pointing goes on. */
+  pointing?: Slot;
+  /** The block pointed at, from where it started to where it ends, drawn over the grid. */
+  pointAnchor?: CellPos;
+  pointFocus?: CellPos;
+  /** Where the caret goes after the text changed by pointing. */
+  caret?: number;
 }
 
-export type BorderPreset = 'all' | 'outside' | 'none' | 'top' | 'bottom' | 'left' | 'right';
+export type BorderPreset = 'all' | 'outside' | 'none' | 'top' | 'bottom' | 'left' | 'right' | 'thickOutside' | 'thickBottom' | 'doubleBottom' | 'topBottom' | 'diagonalDown' | 'diagonalUp';
 
 const HISTORY_LIMIT = 200;
 
@@ -90,6 +108,10 @@ export class CalcController {
   selectedChart: string | null = null;
   /** Bumped on any change a view should repaint for. */
   version = 0;
+  /** Where typing goes inside a selection of several cells; null means the selection's first cell. */
+  cursor: CellPos | null = null;
+  /** The clock, so that a test can set the time Ctrl+; writes. */
+  now: () => Date = () => new Date();
   private listeners = new Set<() => void>();
   private undoStack: HistoryEntry[] = [];
   private redoStack: HistoryEntry[] = [];
@@ -115,6 +137,150 @@ export class CalcController {
 
   // ----- Selection
 
+  /** Blocks picked earlier with Ctrl+click; the selection proper is the one after them. */
+  private earlierBlocks: RangePos[] = [];
+
+  /** Every selected block, the last one being `selection`. */
+  get blocks(): RangePos[] {
+    return [...this.earlierBlocks, this.selection];
+  }
+
+  /** Ctrl+click: keeps what is selected and starts another block at the cell. */
+  addBlock(row: number, col: number): void {
+    this.commitEdit(null);
+    const kept = this.blocks;
+    this.select(row, col);
+    this.earlierBlocks = kept;
+    this.emit();
+  }
+
+  /**
+   * Ctrl+E: fills the active column from the examples already typed in it, by what the columns to its left
+   * (or its right, with none on the left) hold in those rows. Returns false when no recipe fits the examples.
+   */
+  flashFill(): boolean {
+    const { row, col } = this.activeCell;
+    const text = (r: number, c: number) => this.wb.displayAt(this.active, r, c);
+    const near = [col - 1, col - 2, col - 3].filter((c) => c >= 0);
+    const sources = near.some((c) => text(row, c) !== '') ? near : [col + 1, col + 2, col + 3];
+    const has = (r: number) => r >= 0 && sources.some((c) => text(r, c) !== '');
+    if (!has(row) && !has(row - 1) && !has(row + 1)) return false;
+    let top = row;
+    while (has(top - 1)) top -= 1;
+    let bottom = row;
+    while (has(bottom + 1)) bottom += 1;
+    const inputsOf = (r: number) => sources.map((c) => text(r, c));
+    const examples: Array<{ inputs: string[]; output: string }> = [];
+    for (let r = top; r <= bottom; r += 1) {
+      const output = text(r, col);
+      if (output !== '') examples.push({ inputs: inputsOf(r), output });
+    }
+    const program = learnFlashFill(examples);
+    if (!program) return false;
+    const edits: Array<{ row: number; col: number; after: Cell | undefined }> = [];
+    for (let r = top; r <= bottom; r += 1) {
+      if (text(r, col) !== '') continue;
+      const filled = applyFlashFill(program, inputsOf(r));
+      if (filled !== null && filled !== '') edits.push({ row: r, col, after: { raw: filled, style: this.wb.getCell(this.active, r, col)?.style ?? 0 } });
+    }
+    if (edits.length === 0) return false;
+    this.apply(edits);
+    return true;
+  }
+
+  /**
+   * Ctrl+ (rows) and Ctrl+Shift+| (columns): selects, inside the selection, the cells that differ from the comparison
+   * cell, which is the one in the active cell's column for each row (or in its row for each column). A formula
+   * counts as the same when it is the same once moved to the comparison cell, as in Excel. One cell selected means its region.
+   */
+  selectDifferences(by: 'row' | 'column'): void {
+    const { row: ar, col: ac } = this.activeCell;
+    let range = this.selection;
+    if (range.r1 === range.r2 && range.c1 === range.c2) {
+      this.selectRegion();
+      range = this.selection;
+      this.anchor = { row: ar, col: ac };
+    }
+    const raw = (r: number, c: number) => this.wb.getCell(this.active, r, c)?.raw ?? '';
+    const hits: RangePos[] = [];
+    for (let r = range.r1; r <= range.r2; r += 1)
+      for (let c = range.c1; c <= range.c2; c += 1) {
+        const [cr, cc] = by === 'row' ? [r, ac] : [ar, c];
+        if (r === cr && c === cc) continue;
+        const own = raw(r, c);
+        const moved = own.startsWith('=') ? shiftFormula(own, cr - r, cc - c) : own;
+        if (moved !== raw(cr, cc)) hits.push({ r1: r, c1: c, r2: r, c2: c });
+      }
+    if (hits.length > 0) this.selectBlocks(hits);
+  }
+
+  /** Ctrl+[: selects the cells the active cell's formula refers to; when they are on another sheet, goes there. */
+  selectPrecedents(): void {
+    const { row, col } = this.activeCell;
+    const found = precedentsOf(this.wb.getCell(this.active, row, col)?.raw ?? '');
+    const here = found.filter((p) => p.sheet === null || this.wb.sheetIndex(p.sheet) === this.active);
+    if (here.length > 0) {
+      this.selectBlocks(here.map((p) => p.range));
+      return;
+    }
+    const other = found.find((p) => p.sheet !== null && this.wb.sheetIndex(p.sheet) >= 0);
+    if (!other) return;
+    this.switchSheet(this.wb.sheetIndex(other.sheet!));
+    this.selectBlocks(found.filter((p) => p.sheet === other.sheet).map((p) => p.range));
+  }
+
+  /** Ctrl+]: selects the formulas of this sheet that refer directly to the selected cells. */
+  selectDependents(): void {
+    const targets = this.blocks;
+    const hits: RangePos[] = [];
+    const name = this.wb.sheets[this.active].name;
+    this.wb.sheets[this.active].cells.forEach((cell, key) => {
+      if (!cell.raw.startsWith('=')) return;
+      if (precedentsOf(cell.raw).some((p) => (p.sheet === null || p.sheet.toLowerCase() === name.toLowerCase()) && rangeHolds(p.range, targets))) hits.push({ r1: keyRow(key), c1: keyCol(key), r2: keyRow(key), c2: keyCol(key) });
+    });
+    if (hits.length > 0) this.selectBlocks(hits.sort((a, b) => a.r1 - b.r1 || a.c1 - b.c1));
+  }
+
+  /** Alt+;: narrows the selection to the cells that show, leaving out hidden and filtered rows and hidden columns. */
+  selectVisibleCells(): void {
+    const rows = this.wb.hiddenRows(this.active);
+    const cols = this.wb.hiddenCols(this.active);
+    const runs = (from: number, to: number, hidden: ReadonlySet<number>): Array<[number, number]> => {
+      const out: Array<[number, number]> = [];
+      let start = -1;
+      for (let i = from; i <= to + 1; i += 1) {
+        const shown = i <= to && !hidden.has(i);
+        if (shown && start < 0) start = i;
+        if (!shown && start >= 0) {
+          out.push([start, i - 1]);
+          start = -1;
+        }
+      }
+      return out;
+    };
+    const pieces = this.blocks.flatMap((b) => runs(b.r1, b.r2, rows).flatMap(([r1, r2]) => runs(b.c1, b.c2, cols).map(([c1, c2]) => ({ r1, c1, r2, c2 }))));
+    if (pieces.length > 0) this.selectBlocks(pieces);
+  }
+
+  /** Ctrl+Shift+O: the cells with a note, inside the selection (or the whole sheet when only one cell is selected). */
+  selectNotedCells(): void {
+    const notes = this.wb.sheets[this.active].comments;
+    if (!notes?.size) return;
+    const single = this.blocks.length === 1 && this.selection.r1 === this.selection.r2 && this.selection.c1 === this.selection.c2;
+    const within = (row: number, col: number) => single || this.blocks.some((b) => row >= b.r1 && row <= b.r2 && col >= b.c1 && col <= b.c2);
+    const hits = [...notes.keys()].map((key) => ({ row: keyRow(key), col: keyCol(key) })).filter(({ row, col }) => within(row, col));
+    if (hits.length > 0) this.selectBlocks(hits.map(({ row, col }) => ({ r1: row, c1: col, r2: row, c2: col })));
+  }
+
+  /** Selects several blocks at once (the last becomes the selection proper). */
+  selectBlocks(blocks: RangePos[]): void {
+    if (blocks.length === 0) return;
+    const last = blocks[blocks.length - 1];
+    this.selectRange(last);
+    this.earlierBlocks = blocks.slice(0, -1);
+    this.emit();
+  }
+
   /** The selection, widened so that it holds every merged cell it touches. */
   get selection(): RangePos {
     let range = rectOf(this.anchor, this.focus);
@@ -132,7 +298,7 @@ export class CalcController {
   }
 
   get activeCell(): CellPos {
-    return this.anchor;
+    return this.cursor ?? this.anchor;
   }
 
   /** The merged block a cell belongs to, if any. */
@@ -140,15 +306,46 @@ export class CalcController {
     return this.wb.sheets[this.active].merges.find((m) => within(m, row, col));
   }
 
+  /** F8: the arrow keys extend the selection until F8 or Esc. */
+  extendMode = false;
+  /** The column Tab began a run of entries in, which Enter goes back to, as in Excel. */
+  private tabReturn: number | null = null;
+  /** What F4 does again: the last formatting or row and column command. */
+  private lastRepeat: (() => void) | null = null;
+
+  toggleExtendMode(): void {
+    this.extendMode = !this.extendMode;
+    this.emit();
+  }
+
+  /** F4 and Ctrl+Y with nothing to redo: the last formatting or row and column command, on the selection now. */
+  repeatLast(): boolean {
+    if (!this.lastRepeat) return false;
+    this.lastRepeat();
+    return true;
+  }
+
+  /** F9: every formula is worked out again, which a random number or the time wants. */
+  recalculate(): void {
+    this.commitEdit(null);
+    this.wb.touch();
+    this.emit();
+  }
+
   select(row: number, col: number): void {
     this.commitEdit(null);
+    this.extendMode = false;
+    this.tabReturn = null;
     this.selectedChart = null;
     this.anchor = { row: clamp(row, 0, MAX_ROWS - 1), col: clamp(col, 0, MAX_COLS - 1) };
     this.focus = this.anchor;
+    this.cursor = null;
+    this.earlierBlocks = [];
     this.emit();
   }
 
   extendTo(row: number, col: number): void {
+    this.cursor = null;
     this.focus = { row: clamp(row, 0, MAX_ROWS - 1), col: clamp(col, 0, MAX_COLS - 1) };
     this.emit();
   }
@@ -157,12 +354,58 @@ export class CalcController {
     this.commitEdit(null);
     this.anchor = { row: range.r1, col: range.c1 };
     this.focus = { row: range.r2, col: range.c2 };
+    this.cursor = null;
+    this.earlierBlocks = [];
+    this.emit();
+  }
+
+  /** Whole columns of the selection, as far down as `rowLimit`. */
+  selectColumns(rowLimit: number): void {
+    const { c1, c2 } = this.selection;
+    this.selectRange({ r1: 0, c1, r2: rowLimit - 1, c2 });
+  }
+
+  /** Whole rows of the selection, as far right as `colLimit`. */
+  selectRows(colLimit: number): void {
+    const { r1, r2 } = this.selection;
+    this.selectRange({ r1, c1: 0, r2, c2: colLimit - 1 });
+  }
+
+  /** The block of data around the active cell (Ctrl+Shift+*). */
+  selectRegion(): void {
+    const { row, col } = this.activeCell;
+    this.selectRange(currentRegion(row, col, (r, c) => (this.wb.getCell(this.active, r, c)?.raw ?? '') !== ''));
+  }
+
+  /** Enter and Tab (with Shift, the other way) inside a selection of several cells walk through it and wrap; elsewhere they move. */
+  advance(dRow: number, dCol: number): void {
+    const sel = this.selection;
+    const { row, col } = this.activeCell;
+    if ((sel.r1 === sel.r2 && sel.c1 === sel.c2) || !within(sel, row, col)) {
+      this.move(dRow, dCol);
+      return;
+    }
+    let r = row + dRow;
+    let c = col + dCol;
+    if (dRow !== 0) {
+      if (r > sel.r2) [r, c] = [sel.r1, c + 1];
+      else if (r < sel.r1) [r, c] = [sel.r2, c - 1];
+      if (c > sel.c2) c = sel.c1;
+      else if (c < sel.c1) c = sel.c2;
+    } else {
+      if (c > sel.c2) [r, c] = [r + 1, sel.c1];
+      else if (c < sel.c1) [r, c] = [r - 1, sel.c2];
+      if (r > sel.r2) r = sel.r1;
+      else if (r < sel.r1) r = sel.r2;
+    }
+    this.cursor = { row: r, col: c };
     this.emit();
   }
 
   /** Arrow-key movement; from a merged cell it leaves the merge. */
   move(dRow: number, dCol: number, extend = false): void {
-    const from = extend ? this.focus : this.anchor;
+    extend = extend || this.extendMode;
+    const from = extend ? this.focus : this.activeCell;
     const m = this.mergeAt(from.row, from.col);
     let row = from.row;
     let col = from.col;
@@ -190,12 +433,16 @@ export class CalcController {
   // ----- Typing
 
   rawOfActive(): string {
-    return this.wb.getCell(this.active, this.anchor.row, this.anchor.col)?.raw ?? '';
+    const { row, col } = this.activeCell;
+    return this.wb.getCell(this.active, row, col)?.raw ?? '';
   }
 
   startEdit(initialText?: string): void {
-    if (this.protectedBlocks()) return;
-    const { row, col } = this.anchor;
+    const { row, col } = this.activeCell;
+    if (this.readOnly || this.isLocked(row, col)) {
+      this.onProtected?.();
+      return;
+    }
     this.editing = {
       row,
       col,
@@ -207,8 +454,47 @@ export class CalcController {
 
   setEditText(text: string): void {
     if (!this.editing) return;
-    this.editing = { ...this.editing, text };
+    this.editing = { ...this.editing, text, pointing: undefined, pointAnchor: undefined, pointFocus: undefined, caret: undefined };
     this.emit();
+  }
+
+  /** The text with the caret put at a place, which the editor then moves its caret to. */
+  setEditTextAt(text: string, caret: number): void {
+    if (!this.editing) return;
+    this.editing = { ...this.editing, text, pointing: undefined, pointAnchor: undefined, pointFocus: undefined, caret };
+    this.emit();
+  }
+
+  /** Whether a cell may be pointed at now, with the caret where it is; if so, the pointing starts. */
+  beginPoint(caret: number): boolean {
+    const editing = this.editing;
+    if (!editing) return false;
+    const slot = pointSlot(editing.text, caret, editing.pointing ?? null);
+    if (!slot) return false;
+    this.editing = { ...editing, pointing: slot };
+    return true;
+  }
+
+  /** The block pointed at goes into the formula in place of what was pointed at before. */
+  pointTo(anchor: CellPos, focus: CellPos): void {
+    const editing = this.editing;
+    if (!editing?.pointing) return;
+    const range: RangePos = { r1: Math.min(anchor.row, focus.row), c1: Math.min(anchor.col, focus.col), r2: Math.max(anchor.row, focus.row), c2: Math.max(anchor.col, focus.col) };
+    const next = insertReference(editing.text, editing.pointing, referenceText(range, null));
+    this.editing = { ...editing, text: next.text, pointing: next.slot, pointAnchor: anchor, pointFocus: focus, caret: next.slot.to };
+    this.emit();
+  }
+
+  /** An arrow key moves the cell pointed at, starting from the cell being edited; false when nothing may be pointed at. */
+  pointMove(direction: 'up' | 'down' | 'left' | 'right', extend: boolean, caret: number): boolean {
+    const editing = this.editing;
+    if (!editing || !editing.text.startsWith('=') || !(editing.enterMode || editing.pointing) || !this.beginPoint(caret)) return false;
+    const current = this.editing!;
+    const from = current.pointFocus ?? { row: editing.row, col: editing.col };
+    const step = { up: [-1, 0], down: [1, 0], left: [0, -1], right: [0, 1] }[direction];
+    const focus = { row: clamp(from.row + step[0], 0, MAX_ROWS - 1), col: clamp(from.col + step[1], 0, MAX_COLS - 1) };
+    this.pointTo(extend && current.pointAnchor ? current.pointAnchor : focus, focus);
+    return true;
   }
 
   /** Stores what is being typed and moves the cursor as Enter, Tab or an arrow would. */
@@ -227,15 +513,65 @@ export class CalcController {
         return;
       }
       const entry = interpretEntry(editing.text, style.numFmt);
-      const styleId = entry.numFmt ? this.wb.styleId({ ...style, numFmt: entry.numFmt }) : (existing?.style ?? 0);
+      // A new line in the text turns wrapping on, as in Excel.
+      const wrapped = editing.text.includes('\n') && !style.wrap;
+      const styleId = entry.numFmt || wrapped ? this.wb.styleId({ ...style, ...(entry.numFmt ? { numFmt: entry.numFmt } : {}), ...(wrapped ? { wrap: true } : {}) }) : (existing?.style ?? 0);
       this.apply([{ row: editing.row, col: editing.col, after: { raw: entry.raw, style: styleId } }]);
     }
     if (then) {
-      this.anchor = { row: editing.row, col: editing.col };
-      this.focus = this.anchor;
       const d = { down: [1, 0], up: [-1, 0], right: [0, 1], left: [0, -1] }[then];
-      this.move(d[0], d[1]);
+      const sel = this.selection;
+      const insideSelection = (sel.r1 !== sel.r2 || sel.c1 !== sel.c2) && within(sel, editing.row, editing.col);
+      if (insideSelection) {
+        this.cursor = { row: editing.row, col: editing.col };
+        this.advance(d[0], d[1]);
+      } else {
+        // A run of Tabs and then Enter comes back to the column the run began in.
+        const runStart = then === 'right' || then === 'left' ? (this.tabReturn ?? editing.col) : null;
+        const back = then === 'down' ? this.tabReturn : null;
+        this.anchor = { row: editing.row, col: back ?? editing.col };
+        this.focus = this.anchor;
+        this.cursor = null;
+        this.move(d[0], d[1]);
+        this.tabReturn = runStart;
+      }
     } else this.emit();
+  }
+
+  /** Ctrl+Enter: what is typed goes into every selected cell, a formula with its references moved as if filled. */
+  commitEditToSelection(): void {
+    const editing = this.editing;
+    if (!editing) return;
+    this.editing = null;
+    const edits: Array<{ row: number; col: number; after: Cell | undefined }> = [];
+    for (const { row, col } of this.selectedCells()) {
+      const existing = this.wb.getCell(this.active, row, col);
+      const style = this.wb.styleOf(existing?.style ?? 0);
+      const text = editing.text.startsWith('=') ? shiftFormula(editing.text, row - editing.row, col - editing.col) : editing.text;
+      const entry = interpretEntry(text, style.numFmt);
+      edits.push({ row, col, after: { raw: entry.raw, style: entry.numFmt ? this.wb.styleId({ ...style, numFmt: entry.numFmt }) : (existing?.style ?? 0) } });
+    }
+    this.apply(edits);
+  }
+
+  /** Ctrl+; writes today's date in the active cell, Ctrl+Shift+: the time. */
+  insertNow(kind: 'date' | 'time'): void {
+    const { row, col } = this.activeCell;
+    const serial = serialFromDate(this.now());
+    const value = kind === 'date' ? Math.floor(serial) : serial - Math.floor(serial);
+    const existing = this.wb.getCell(this.active, row, col);
+    const style = this.wb.styleOf(existing?.style ?? 0);
+    const styleId = this.wb.styleId({ ...style, numFmt: kind === 'date' ? 'dd/mm/yyyy' : 'hh:mm' });
+    this.apply([{ row, col, after: { raw: String(value), style: styleId } }]);
+  }
+
+  /** Ctrl+' opens the active cell for editing with the cell above's formula; Ctrl+Shift+" with what it shows. */
+  copyFromAbove(values: boolean): void {
+    const { row, col } = this.activeCell;
+    if (row === 0) return;
+    const above = values ? this.wb.displayAt(this.active, row - 1, col) : (this.wb.getCell(this.active, row - 1, col)?.raw ?? '');
+    this.editing = { row, col, text: above, enterMode: false };
+    this.emit();
   }
 
   /** Told when a typed entry is refused by data validation, with the rule's own message if it has one. */
@@ -325,22 +661,49 @@ export class CalcController {
 
   // ----- Changing cells and history
 
+  /** Whether a cell cannot be changed: the sheet is protected and the cell is locked. */
+  isLocked(row: number, col: number, sheet = this.active): boolean {
+    if (!this.wb.sheets[sheet]?.protected) return false;
+    return !this.wb.styleOf(this.wb.getCell(sheet, row, col)?.style ?? 0).unlocked;
+  }
+
+  get isProtected(): boolean {
+    return this.sheetProtected;
+  }
+
+  /** Protects the active sheet or takes the protection off. */
+  setProtected(on: boolean): void {
+    if (this.sheetProtected !== on) this.toggleProtection();
+  }
+
+  /** Locks or unlocks the selected cells; the lock only counts while the sheet is protected. */
+  setLocked(locked: boolean): void {
+    this.applyStyle({ unlocked: locked ? undefined : true });
+  }
+
   /** Sets cells (undefined clears one) as one undoable step. */
   apply(edits: Array<{ row: number; col: number; after: Cell | undefined }>, sheet = this.active): void {
-    if (this.readOnly || this.wb.sheets[sheet]?.protected) {
+    if (this.readOnly) {
       this.onProtected?.();
       return;
     }
     const changes: Change[] = [];
+    let refused = false;
     for (const { row, col, after } of edits) {
       if (row < 0 || col < 0 || row >= MAX_ROWS || col >= MAX_COLS) continue;
+      if (this.isLocked(row, col, sheet)) {
+        refused = true;
+        continue;
+      }
       const before = this.wb.getCell(sheet, row, col);
       const same = (before?.raw ?? '') === (after?.raw ?? '') && (before?.style ?? 0) === (after?.style ?? 0);
       if (!same) changes.push({ sheet, row, col, before, after });
     }
+    if (refused) this.onProtected?.();
     if (changes.length === 0) return;
     for (const c of changes) this.wb.putCell(c.sheet, c.row, c.col, c.after);
     this.pushHistory({ kind: 'cells', changes });
+    this.keepSummariesCurrent(changes);
     this.emit();
   }
 
@@ -363,6 +726,7 @@ export class CalcController {
     const entry = this.undoStack.pop();
     if (!entry) return;
     this.replay(entry, 'undo');
+    if (entry.kind === 'cells') this.keepSummariesCurrent(entry.changes);
     this.redoStack.push(entry);
     this.emit();
   }
@@ -372,6 +736,7 @@ export class CalcController {
     const entry = this.redoStack.pop();
     if (!entry) return;
     this.replay(entry, 'redo');
+    if (entry.kind === 'cells') this.keepSummariesCurrent(entry.changes);
     this.undoStack.push(entry);
     this.emit();
   }
@@ -526,9 +891,15 @@ export class CalcController {
 
   /** Cells of the selection, for walking it. */
   private selectedCells(): Array<{ row: number; col: number }> {
-    const { r1, c1, r2, c2 } = this.selection;
     const out: Array<{ row: number; col: number }> = [];
-    for (let r = r1; r <= r2; r += 1) for (let c = c1; c <= c2; c += 1) out.push({ row: r, col: c });
+    const seen = new Set<number>();
+    for (const { r1, c1, r2, c2 } of this.blocks)
+      for (let r = r1; r <= r2; r += 1)
+        for (let c = c1; c <= c2; c += 1) {
+          if (seen.has(r * MAX_COLS + c)) continue;
+          seen.add(r * MAX_COLS + c);
+          out.push({ row: r, col: c });
+        }
     return out;
   }
 
@@ -558,7 +929,8 @@ export class CalcController {
 
   /** The style of the active cell. */
   activeStyle(): CellStyle {
-    return this.wb.styleOf(this.wb.getCell(this.active, this.anchor.row, this.anchor.col)?.style ?? 0);
+    const { row, col } = this.activeCell;
+    return this.wb.styleOf(this.wb.getCell(this.active, row, col)?.style ?? 0);
   }
 
   /** Changes the style of every selected cell: `change` returns the new style from the old one. */
@@ -573,6 +945,7 @@ export class CalcController {
   }
 
   applyStyle(patch: Partial<CellStyle>): void {
+    this.lastRepeat = () => this.applyStyle(patch);
     this.restyle((style) => ({ ...style, ...patch }));
   }
 
@@ -582,20 +955,52 @@ export class CalcController {
     this.applyStyle({ [key]: turnOn });
   }
 
+  /** Increase or decrease Indent: one step of the aligned edge, left for text with no alignment of its own. */
+  changeIndent(delta: number): void {
+    const current = this.activeStyle().indent ?? 0;
+    const indent = Math.max(0, Math.min(15, current + delta));
+    this.applyStyle({ indent: indent || undefined, ...(indent > 0 && !this.activeStyle().hAlign ? { hAlign: 'left' as const } : {}) });
+  }
+
+  /** Orientation: the text turned this many degrees counter-clockwise (-90 to 90); 0 or undefined sets it straight. */
+  setRotation(degrees: number | undefined): void {
+    this.applyStyle({ rotation: degrees ? Math.max(-90, Math.min(90, Math.round(degrees))) : undefined });
+  }
+
   setNumFmt(code: string): void {
     this.applyStyle({ numFmt: code === 'General' ? undefined : code });
   }
 
   setBorders(preset: BorderPreset): void {
-    const { r1, c1, r2, c2 } = this.selection;
+    this.lastRepeat = () => this.setBorders(preset);
+    const blocks = this.blocks;
     this.restyle((style, row, col) => {
       const borders: Borders = { ...style.borders };
+      const { r1, c1, r2, c2 } = blocks.find((b) => row >= b.r1 && row <= b.r2 && col >= b.c1 && col <= b.c2) ?? this.selection;
       const edge = { top: row === r1, bottom: row === r2, left: col === c1, right: col === c2 };
       switch (preset) {
         case 'none':
           return { ...style, borders: undefined };
         case 'all':
           return { ...style, borders: { top: true, right: true, bottom: true, left: true } };
+        case 'thickOutside': {
+          const thick = { style: 'thick' as const };
+          return { ...style, borders: { ...borders, ...(edge.top ? { top: thick } : {}), ...(edge.bottom ? { bottom: thick } : {}), ...(edge.left ? { left: thick } : {}), ...(edge.right ? { right: thick } : {}) } };
+        }
+        case 'diagonalDown':
+        case 'diagonalUp': {
+          const key = preset;
+          const next: Borders = { ...borders };
+          if (next[key]) delete next[key];
+          else next[key] = true;
+          return { ...style, borders: Object.keys(next).length ? next : undefined };
+        }
+        case 'thickBottom':
+          return edge.bottom ? { ...style, borders: { ...borders, bottom: { style: 'thick' as const } } } : style;
+        case 'doubleBottom':
+          return edge.bottom ? { ...style, borders: { ...borders, bottom: { style: 'double' as const } } } : style;
+        case 'topBottom':
+          return { ...style, borders: { ...borders, ...(edge.top ? { top: true } : {}), ...(edge.bottom ? { bottom: true } : {}) } };
         case 'outside':
           return { ...style, borders: { ...borders, top: borders.top || edge.top, bottom: borders.bottom || edge.bottom, left: borders.left || edge.left, right: borders.right || edge.right } };
         default:
@@ -654,14 +1059,14 @@ export class CalcController {
   }
 
   /** Puts a chart of the selected data beside it and selects the chart. Returns false when there is no data. */
-  addChart(type: ChartType): boolean {
+  addChart(type: ChartType, stacked = false): boolean {
     this.commitEdit(null);
     const range = this.chartRange();
     if (!range) return false;
     const sheet = this.wb.sheets[this.active];
     const id = `ch${Date.now().toString(36)}${(cfCounter += 1).toString(36)}`;
     this.structural(() => {
-      sheet.charts.push({ id, type, range, title: '', row: range.r1, col: range.c2 + 2, dx: 0, dy: 0, width: 420, height: 270 });
+      sheet.charts.push({ id, type, ...(stacked && (type === 'column' || type === 'bar' || type === 'area') ? { stacked: true } : {}), range, title: '', row: range.r1, col: range.c2 + 2, dx: 0, dy: 0, width: 420, height: 270 });
       this.wb.touch();
     });
     this.selectedChart = id;
@@ -786,33 +1191,63 @@ export class CalcController {
 
   // ----- Clipboard
 
-  private rangeText(range: RangePos): string {
-    const lines: string[] = [];
-    for (let r = range.r1; r <= range.r2; r += 1) {
-      const cols: string[] = [];
-      for (let c = range.c1; c <= range.c2; c += 1) cols.push(this.wb.displayAt(this.active, r, c));
-      lines.push(cols.join('\t'));
-    }
-    return lines.join('\n');
-  }
-
   /** Remembers the selection for pasting inside the app and returns its text for the system clipboard. */
   copy(cut = false): string {
-    const range = this.selection;
+    const ranges = this.copyableBlocks();
+    const range = ranges[0];
     const cells: Clipboard['cells'] = [];
-    for (let r = range.r1; r <= range.r2; r += 1) {
-      const row: Array<Cell | undefined> = [];
-      for (let c = range.c1; c <= range.c2; c += 1) row.push(this.wb.getCell(this.active, r, c));
-      cells.push(row);
+    const origin: CellPos[][] = [];
+    const lines: string[] = [];
+    const sideBySide = ranges.length > 1 && ranges.every((b) => b.r1 === range.r1 && b.r2 === range.r2);
+    // Blocks side by side are joined along each row, blocks one above another are joined down the columns.
+    for (const block of ranges) {
+      for (let r = block.r1; r <= block.r2; r += 1) {
+        const row: Array<Cell | undefined> = [];
+        const from: CellPos[] = [];
+        const shown: string[] = [];
+        for (let c = block.c1; c <= block.c2; c += 1) {
+          row.push(this.wb.getCell(this.active, r, c));
+          from.push({ row: r, col: c });
+          shown.push(this.wb.displayAt(this.active, r, c));
+        }
+        if (sideBySide && block !== range) {
+          const at = r - block.r1;
+          cells[at].push(...row);
+          origin[at].push(...from);
+          lines[at] += `\t${shown.join('\t')}`;
+        } else {
+          cells.push(row);
+          origin.push(from);
+          lines.push(shown.join('	'));
+        }
+      }
     }
-    const text = this.rangeText(range);
-    this.clipboard = { range, cells, cut, text, sheet: this.active };
+    const text = lines.join('\n');
+    this.clipboard = { range, ranges, origin, cells, cut, text, sheet: this.active };
     this.emit();
     return text;
   }
 
+  /**
+   * The blocks a copy takes: all of them when they line up (the same rows, or the same columns, which Excel
+   * allows), in order, else only the last one.
+   */
+  private copyableBlocks(): RangePos[] {
+    const blocks = this.blocks;
+    if (blocks.length === 1) return blocks;
+    const sameRows = blocks.every((b) => b.r1 === blocks[0].r1 && b.r2 === blocks[0].r2);
+    const sameCols = blocks.every((b) => b.c1 === blocks[0].c1 && b.c2 === blocks[0].c2);
+    if (sameRows) return [...blocks].sort((a, b) => a.c1 - b.c1);
+    if (sameCols) return [...blocks].sort((a, b) => a.r1 - b.r1);
+    return [this.selection];
+  }
+
   get copiedRange(): RangePos | null {
     return this.clipboard && this.clipboard.sheet === this.active ? this.clipboard.range : null;
+  }
+
+  get copiedBlocks(): RangePos[] {
+    return this.clipboard && this.clipboard.sheet === this.active ? this.clipboard.ranges : [];
   }
 
   /**
@@ -829,25 +1264,31 @@ export class CalcController {
     if (clip && text.replace(/\r\n/g, '\n').replace(/\n$/, '') === clip.text) {
       const height = clip.cells.length;
       const width = clip.cells[0].length;
-      // A single cell fills a larger selection.
-      const rows = height === 1 && width === 1 ? target.r2 - target.r1 + 1 : height;
-      const cols = height === 1 && width === 1 ? target.c2 - target.c1 + 1 : width;
-      for (let r = 0; r < rows; r += 1)
-        for (let c = 0; c < cols; c += 1) {
-          const source = clip.cells[r % height][c % width];
-          const row = target.r1 + r;
-          const col = target.c1 + c;
-          if (!source) edits.push({ row, col, after: undefined });
-          else {
-            const dRow = row - (clip.range.r1 + (r % height));
-            const dCol = col - (clip.range.c1 + (c % width));
-            edits.push({ row, col, after: { raw: source.raw.startsWith('=') ? shiftFormula(source.raw, dRow, dCol) : source.raw, style: source.style } });
+      // Pasted into several blocks, each gets its own copy; with one block it is the selection, as before.
+      const targets = this.blocks.length > 1 && clip.ranges.length === 1 ? this.blocks : [target];
+      let rows = height;
+      let cols = width;
+      for (const block of targets) {
+        // A single cell fills a larger selection.
+        rows = height === 1 && width === 1 ? block.r2 - block.r1 + 1 : height;
+        cols = height === 1 && width === 1 ? block.c2 - block.c1 + 1 : width;
+        for (let r = 0; r < rows; r += 1)
+          for (let c = 0; c < cols; c += 1) {
+            const source = clip.cells[r % height][c % width];
+            const row = block.r1 + r;
+            const col = block.c1 + c;
+            if (!source) edits.push({ row, col, after: undefined });
+            else {
+              const from = clip.origin[r % height][c % width];
+              edits.push({ row, col, after: { raw: source.raw.startsWith('=') ? shiftFormula(source.raw, row - from.row, col - from.col) : source.raw, style: source.style } });
+            }
           }
-        }
+      }
       if (clip.cut) {
-        for (let r = clip.range.r1; r <= clip.range.r2; r += 1)
-          for (let c = clip.range.c1; c <= clip.range.c2; c += 1)
-            if (!edits.some((e) => e.row === r && e.col === c)) edits.push({ row: r, col: c, after: undefined });
+        for (const block of clip.ranges)
+          for (let r = block.r1; r <= block.r2; r += 1)
+            for (let c = block.c1; c <= block.c2; c += 1)
+              if (!edits.some((e) => e.row === r && e.col === c)) edits.push({ row: r, col: c, after: undefined });
         this.clipboard = null;
       }
       this.apply(edits, this.active);
@@ -869,6 +1310,51 @@ export class CalcController {
     );
     this.apply(edits);
     this.selectRange({ r1: target.r1, c1: target.c1, r2: target.r1 + grid.length - 1, c2: target.c1 + Math.max(...grid.map((l) => l.length)) - 1 });
+  }
+
+  /**
+   * Paste Special from what was last copied here: only the values (formats of
+   * the target stay), only the formulas, only the formats, or everything turned
+   * on its side. False when there is nothing to paste or it was cut.
+   */
+  pasteSpecial(kind: 'values' | 'formulas' | 'formats' | 'transpose'): boolean {
+    const clip = this.clipboard;
+    if (!clip || clip.cut) return false;
+    this.commitEdit(null);
+    const target = this.selection;
+    const height = clip.cells.length;
+    const width = clip.cells[0].length;
+    const edits: Array<{ row: number; col: number; after: Cell | undefined }> = [];
+    const place = (row: number, col: number, source: Cell | undefined, srcRow: number, srcCol: number) => {
+      const existing = this.wb.getCell(this.active, row, col);
+      const raw = source?.raw ?? '';
+      // Turned on its side, a formula keeps pointing at the cells it pointed at: moving its references along the other axis would send them off the sheet.
+      const moved = raw.startsWith('=') && kind !== 'transpose' ? shiftFormula(raw, row - srcRow, col - srcCol) : raw;
+      if (kind === 'formats') edits.push({ row, col, after: { raw: existing?.raw ?? '', style: source?.style ?? 0 } });
+      else if (kind === 'values') edits.push({ row, col, after: { raw: this.rawOfValue(clip.sheet, srcRow, srcCol), style: existing?.style ?? 0 } });
+      else if (kind === 'formulas') edits.push({ row, col, after: { raw: moved, style: existing?.style ?? 0 } });
+      else edits.push({ row, col, after: source ? { raw: moved, style: source.style } : undefined });
+    };
+    for (let r = 0; r < height; r += 1)
+      for (let c = 0; c < width; c += 1) {
+        const [row, col] = kind === 'transpose' ? [target.r1 + c, target.c1 + r] : [target.r1 + r, target.c1 + c];
+        place(row, col, clip.cells[r][c], clip.origin[r][c].row, clip.origin[r][c].col);
+      }
+    this.apply(edits, this.active);
+    const [rows, cols] = kind === 'transpose' ? [width, height] : [height, width];
+    this.selectRange({ r1: target.r1, c1: target.c1, r2: target.r1 + rows - 1, c2: target.c1 + cols - 1 });
+    return true;
+  }
+
+  /** What to store so that a cell holds exactly the value another cell shows now, without the formula behind it. */
+  private rawOfValue(sheet: number, row: number, col: number): string {
+    const value = this.wb.valueAt(sheet, row, col);
+    if (value === null) return '';
+    if (isError(value)) return value.code;
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
+    // Text that would be read as a number, a formula or a flag on its way back in keeps an apostrophe.
+    return /^[=+\-@'#]/.test(value) || parseNumber(value) !== null || /^(true|false)$/i.test(value) ? `'${value}` : value;
   }
 
   // ----- Fill
@@ -977,19 +1463,37 @@ export class CalcController {
     this.sortRows(this.selection, byColumn, ascending);
   }
 
-  private sortRows(range: RangePos, byColumn: number, ascending: boolean): void {
+  /**
+   * Data ▸ Sort with several levels: rows are ordered by the first key, ties by the next, and so on;
+   * blanks and errors go last whichever way a key runs. A selection of one cell stands for the data around it.
+   */
+  sortByKeys(keys: Array<{ column: number; ascending: boolean }>, hasHeader: boolean): void {
+    const sel = this.selection;
+    const single = sel.r1 === sel.r2 && sel.c1 === sel.c2;
+    const filled = (r: number, c: number) => (this.wb.getCell(this.active, r, c)?.raw ?? '') !== '';
+    const range = single ? currentRegion(sel.r1, sel.c1, filled) : sel;
+    this.sortRows({ ...range, r1: hasHeader ? range.r1 + 1 : range.r1 }, keys);
+  }
+
+  private sortRows(range: RangePos, byColumn: number | Array<{ column: number; ascending: boolean }>, ascending = true): void {
+    const keys = typeof byColumn === 'number' ? [{ column: byColumn, ascending }] : byColumn;
     const { r1, c1, r2, c2 } = range;
-    if (r1 === r2) return;
+    if (r1 >= r2 || keys.length === 0) return;
     const sheet = this.active;
     const rows = Array.from({ length: r2 - r1 + 1 }, (_, i) => r1 + i);
-    const keyOf = (r: number): Scalar => this.wb.valueAt(sheet, r, c1 + byColumn);
+    const missing = (v: Scalar) => v === null || isError(v);
     const sorted = [...rows].sort((a, b) => {
-      const ka = keyOf(a);
-      const kb = keyOf(b);
-      if (ka === null || isError(ka)) return kb === null || isError(kb) ? a - b : 1;
-      if (kb === null || isError(kb)) return -1;
-      const order = compareValues(ka, kb);
-      return (ascending ? order : -order) || a - b;
+      for (const key of keys) {
+        const ka = this.wb.valueAt(sheet, a, c1 + key.column);
+        const kb = this.wb.valueAt(sheet, b, c1 + key.column);
+        if (missing(ka) || missing(kb)) {
+          if (missing(ka) && missing(kb)) continue;
+          return missing(ka) ? 1 : -1;
+        }
+        const order = compareValues(ka, kb);
+        if (order !== 0) return key.ascending ? order : -order;
+      }
+      return a - b;
     });
     const edits: Array<{ row: number; col: number; after: Cell | undefined }> = [];
     sorted.forEach((from, i) => {
@@ -1000,6 +1504,64 @@ export class CalcController {
       }
     });
     this.apply(edits);
+  }
+
+  /**
+   * Data ▸ Remove Duplicates: of the rows that read the same (by what they show, without regard to case)
+   * only the first stays, the rest of the selection moving up. A single cell stands for the block of data
+   * around it. Returns how many rows went.
+   */
+  removeDuplicates(hasHeader: boolean): number {
+    const sel = this.selection;
+    const single = sel.r1 === sel.r2 && sel.c1 === sel.c2;
+    const filled = (r: number, c: number) => (this.wb.getCell(this.active, r, c)?.raw ?? '') !== '';
+    const { r1, c1, r2, c2 } = single ? currentRegion(sel.r1, sel.c1, filled) : sel;
+    const first = hasHeader ? r1 + 1 : r1;
+    const seen = new Set<string>();
+    const keep: number[] = [];
+    for (let r = first; r <= r2; r += 1) {
+      const key = Array.from({ length: c2 - c1 + 1 }, (_v, i) => this.wb.displayAt(this.active, r, c1 + i).toLocaleLowerCase()).join('');
+      if (seen.has(key)) continue;
+      seen.add(key);
+      keep.push(r);
+    }
+    const removed = r2 - first + 1 - keep.length;
+    if (removed <= 0) return 0;
+    const edits: Array<{ row: number; col: number; after: Cell | undefined }> = [];
+    keep.forEach((from, i) => {
+      const to = first + i;
+      if (to === from) return;
+      for (let c = c1; c <= c2; c += 1) {
+        const cell = this.wb.getCell(this.active, from, c);
+        edits.push({ row: to, col: c, after: cell ? { raw: cell.raw.startsWith('=') ? shiftFormula(cell.raw, to - from, 0) : cell.raw, style: cell.style } : undefined });
+      }
+    });
+    for (let r = first + keep.length; r <= r2; r += 1) for (let c = c1; c <= c2; c += 1) edits.push({ row: r, col: c, after: undefined });
+    this.apply(edits);
+    return removed;
+  }
+
+  /** Data ▸ Text to Columns: each selected cell is cut at the delimiter into the cells to its right. Returns how many cells were split. */
+  textToColumns(delimiter: string): number {
+    if (delimiter === '') return 0;
+    const { r1, c1, r2 } = this.selection;
+    const edits: Array<{ row: number; col: number; after: Cell | undefined }> = [];
+    let split = 0;
+    for (let r = r1; r <= r2; r += 1) {
+      const cell = this.wb.getCell(this.active, r, c1);
+      if (!cell || cell.raw === '' || cell.raw.startsWith('=')) continue;
+      const parts = (this.wb.valueAt(this.active, r, c1) === null ? cell.raw : this.wb.displayAt(this.active, r, c1)).split(delimiter);
+      if (parts.length < 2) continue;
+      split += 1;
+      parts.forEach((part, i) => {
+        const existing = this.wb.getCell(this.active, r, c1 + i);
+        const style = this.wb.styleOf(existing?.style ?? 0);
+        const entry = interpretEntry(part.trim(), style.numFmt);
+        edits.push({ row: r, col: c1 + i, after: { raw: entry.raw, style: entry.numFmt ? this.wb.styleId({ ...style, numFmt: entry.numFmt }) : (existing?.style ?? 0) } });
+      });
+    }
+    this.apply(edits);
+    return split;
   }
 
   // ----- Summary (PivotTable-style)
@@ -1053,6 +1615,7 @@ export class CalcController {
       this.active = this.wb.sheets.length - 1;
       this.selectedChart = null;
       this.anchor = this.focus = { row: 0, col: 0 };
+    this.cursor = null;
       this.wb.touch();
     });
   }
@@ -1070,11 +1633,22 @@ export class CalcController {
    */
   refreshSummary(): boolean {
     this.commitEdit(null);
-    const sheet = this.wb.sheets[this.active];
-    const config = sheet.summary;
-    if (!config) return false;
+    const plan = this.planSummary(this.active);
+    if (!plan) return false;
+    this.structural(() => {
+      this.writeSummary(plan);
+      this.selectedChart = null;
+    });
+    return true;
+  }
+
+  /** What a summary sheet would hold if made again now, or null when it is not a summary or its data is gone. */
+  private planSummary(index: number) {
+    const sheet = this.wb.sheets[index];
+    const config = sheet?.summary;
+    if (!config) return null;
     const sourceIndex = this.wb.sheetIndex(config.sheet);
-    if (sourceIndex < 0) return false;
+    if (sourceIndex < 0) return null;
     const { c1, c2 } = config.source;
     const filledRow = (r: number) => {
       for (let c = c1; c <= c2; c += 1) if ((this.wb.getCell(sourceIndex, r, c)?.raw ?? '') !== '') return true;
@@ -1091,20 +1665,45 @@ export class CalcController {
       (r, c) => this.wb.displayAt(sourceIndex, r, c),
       { sheetName: sheet.name, corner: config.corner, total: config.total },
     );
-    this.structural(() => {
-      const header = this.wb.styleId({ bold: true, fill: '#e2e8f0' });
-      const old = sheet.cells;
-      sheet.cells = new Map();
-      for (const cell of built.cells) {
-        const key = cellKey(cell.row, cell.col);
-        sheet.cells.set(key, { raw: cell.raw, style: old.get(key)?.style ?? (cell.header ? header : 0) });
-      }
-      sheet.summary = { ...config, source };
-      this.selectedChart = null;
-      this.wb.touch();
-    });
-    return true;
+    return { sheet, config, source, built };
   }
+
+  private writeSummary(plan: NonNullable<ReturnType<CalcController['planSummary']>>): void {
+    const { sheet, config, source, built } = plan;
+    const header = this.wb.styleId({ bold: true, fill: '#e2e8f0' });
+    const old = sheet.cells;
+    sheet.cells = new Map();
+    for (const cell of built.cells) {
+      const key = cellKey(cell.row, cell.col);
+      sheet.cells.set(key, { raw: cell.raw, style: old.get(key)?.style ?? (cell.header ? header : 0) });
+    }
+    sheet.summary = { ...config, source };
+    this.wb.touch();
+  }
+
+  /**
+   * Keeps every summary in step with its data: when a change to a source sheet brings or takes away a category
+   * (or a row under the source), the summary is made again. This is not an undo step of its own: undoing the
+   * change brings the summary back with it.
+   */
+  private keepSummariesCurrent(changed: Change[]): void {
+    if (this.refreshing || changed.length === 0) return;
+    const touched = new Set(changed.map((c) => this.wb.sheets[c.sheet]?.name));
+    this.refreshing = true;
+    try {
+      this.wb.sheets.forEach((sheet, index) => {
+        if (!sheet.summary || !touched.has(sheet.summary.sheet)) return;
+        const plan = this.planSummary(index);
+        if (!plan) return;
+        const same = plan.built.cells.length === sheet.cells.size && plan.built.cells.every((cell) => sheet.cells.get(cellKey(cell.row, cell.col))?.raw === cell.raw);
+        if (!same) this.writeSummary(plan);
+      });
+    } finally {
+      this.refreshing = false;
+    }
+  }
+
+  private refreshing = false;
 
   // ----- Filter
 
@@ -1165,7 +1764,7 @@ export class CalcController {
     if (excluded.length === 0) delete next[col];
     else next[col] = [...excluded];
     this.structural(() => {
-      sheet.filter = { ...filter, excluded: next };
+      sheet.filter = { range: filter.range, excluded: next, ...(filter.conditions ? { conditions: filter.conditions } : {}) };
       this.wb.touch();
     });
   }
@@ -1241,21 +1840,25 @@ export class CalcController {
   // ----- Rows, columns, sheets
 
   insertRows(): void {
+    this.lastRepeat = () => this.insertRows();
     const { r1, r2 } = this.selection;
     this.structural(() => this.wb.editStructure(this.active, { axis: 'row', at: r1, count: r2 - r1 + 1, mode: 'insert' }));
   }
 
   deleteRows(): void {
+    this.lastRepeat = () => this.deleteRows();
     const { r1, r2 } = this.selection;
     this.structural(() => this.wb.editStructure(this.active, { axis: 'row', at: r1, count: r2 - r1 + 1, mode: 'delete' }));
   }
 
   insertColumns(): void {
+    this.lastRepeat = () => this.insertColumns();
     const { c1, c2 } = this.selection;
     this.structural(() => this.wb.editStructure(this.active, { axis: 'col', at: c1, count: c2 - c1 + 1, mode: 'insert' }));
   }
 
   deleteColumns(): void {
+    this.lastRepeat = () => this.deleteColumns();
     const { c1, c2 } = this.selection;
     this.structural(() => this.wb.editStructure(this.active, { axis: 'col', at: c1, count: c2 - c1 + 1, mode: 'delete' }));
   }
@@ -1264,6 +1867,19 @@ export class CalcController {
   get frozen(): { rows: number; cols: number } {
     const freeze = this.wb.sheets[this.active].freeze;
     return { rows: freeze?.rows ?? 0, cols: freeze?.cols ?? 0 };
+  }
+
+  get hideZeros(): boolean {
+    return !!this.wb.sheets[this.active]?.hideZeros;
+  }
+
+  setHideZeros(hide: boolean): void {
+    const sheet = this.wb.sheets[this.active];
+    this.structural(() => {
+      if (hide) sheet.hideZeros = true;
+      else delete sheet.hideZeros;
+      this.wb.touch();
+    });
   }
 
   /** Freezes the first `rows` rows and `cols` columns of the active sheet (0, 0 unfreezes). */
@@ -1283,6 +1899,336 @@ export class CalcController {
     this.setFreeze(this.selection.r1, this.selection.c1);
   }
 
+  // ----- Links and notes
+
+  /** The address a cell links to. */
+  linkAt(row: number, col: number): string | undefined {
+    return this.wb.sheets[this.active].links?.get(cellKey(row, col));
+  }
+
+  noteAt(row: number, col: number): string | undefined {
+    return this.commentAt(row, col)?.text;
+  }
+
+  /** Links the selected cells to an address, or takes the link off with null. An empty cell shows the address. */
+  setLink(url: string | null): void {
+    const sheet = this.wb.sheets[this.active];
+    const address = url?.trim() ?? '';
+    this.structural(() => {
+      sheet.links ??= new Map();
+      for (const { row, col } of this.selectedCells()) {
+        const key = cellKey(row, col);
+        if (address === '') sheet.links.delete(key);
+        else {
+          sheet.links.set(key, address);
+          if (!(sheet.cells.get(key)?.raw ?? '')) sheet.cells.set(key, { raw: address, style: sheet.cells.get(key)?.style ?? 0 });
+        }
+      }
+      this.wb.touch();
+    });
+  }
+
+  /** Writes a note on the active cell, or takes it off with an empty text. */
+  setNote(text: string | null, author = ''): void {
+    const { row, col } = this.activeCell;
+    this.setComment(row, col, text ?? '', author);
+  }
+
+  // ----- Names
+
+  /** Names the selection (or whatever `refersTo` says); false when the name is not allowed. */
+  defineName(name: string, refersTo?: string): boolean {
+    const target = refersTo ?? absoluteAddress(this.wb.sheets[this.active].name, this.selection);
+    const before = this.wb.toData();
+    if (!isValidName(name) || !this.wb.setName(name, target)) return false;
+    // Taken back through the same snapshot the other structural changes use.
+    this.pushHistory({ kind: 'data', before, after: this.wb.toData(), beforeActive: this.active, afterActive: this.active });
+    this.emit();
+    return true;
+  }
+
+  /**
+   * Ctrl+Shift+F3: names the cells next to the labels in the selection's top row (when that row is all text),
+   * else in its left column, after the labels (spaces and other characters a name cannot hold become `_`).
+   * Returns how many names were made.
+   */
+  namesFromSelection(): number {
+    const { r1, c1, r2, c2 } = this.selection;
+    const sheet = this.wb.sheets[this.active].name;
+    const label = (r: number, c: number) => this.wb.displayAt(this.active, r, c);
+    const isText = (r: number, c: number) => label(r, c) !== '' && typeof this.wb.valueAt(this.active, r, c) === 'string';
+    const all = (cells: Array<[number, number]>) => cells.length > 0 && cells.every(([r, c]) => isText(r, c));
+    const row = (r: number) => Array.from({ length: c2 - c1 + 1 }, (_, i): [number, number] => [r, c1 + i]);
+    const column = (c: number) => Array.from({ length: r2 - r1 + 1 }, (_, i): [number, number] => [r1 + i, c]);
+    const made: Array<[string, string]> = [];
+    const nameOf = (text: string) => {
+      const clean = text.trim().replace(/[^\p{L}\p{N}_.]/gu, '_');
+      return /^[\p{L}_]/u.test(clean) ? clean : `_${clean}`;
+    };
+    if (r2 > r1 && all(row(r1))) {
+      for (let c = c1; c <= c2; c += 1) made.push([nameOf(label(r1, c)), absoluteAddress(sheet, { r1: r1 + 1, c1: c, r2, c2: c })]);
+    } else if (c2 > c1 && all(column(c1))) {
+      for (let r = r1; r <= r2; r += 1) made.push([nameOf(label(r, c1)), absoluteAddress(sheet, { r1: r, c1: c1 + 1, r2: r, c2 })]);
+    }
+    const before = this.wb.toData();
+    const count = made.filter(([name, target]) => isValidName(name) && this.wb.setName(name, target)).length;
+    if (count > 0) {
+      this.pushHistory({ kind: 'data', before, after: this.wb.toData(), beforeActive: this.active, afterActive: this.active });
+      this.emit();
+    }
+    return count;
+  }
+
+  deleteName(name: string): void {
+    const before = this.wb.toData();
+    this.wb.deleteName(name);
+    this.pushHistory({ kind: 'data', before, after: this.wb.toData(), beforeActive: this.active, afterActive: this.active });
+    this.emit();
+  }
+
+  /** Selects the cells a name refers to, on its own sheet; false when it is not a name of a block of cells. */
+  goToName(name: string): boolean {
+    const tree = this.wb.nameTree(name);
+    if (!tree || (tree.t !== 'ref' && tree.t !== 'range')) return false;
+    const from = tree.t === 'ref' ? tree : tree.from;
+    const to = tree.t === 'ref' ? tree : tree.to;
+    const sheet = tree.sheet === null ? this.active : this.wb.sheetIndex(tree.sheet);
+    if (sheet < 0) return false;
+    this.switchSheet(sheet);
+    this.selectRange({ r1: Math.min(from.row, to.row), c1: Math.min(from.col, to.col), r2: Math.max(from.row, to.row), c2: Math.max(from.col, to.col) });
+    return true;
+  }
+
+  /** Data > Group / Ungroup: one more (or one less) outline level on the selected rows, or columns when axis is col. */
+  groupLines(axis: 'row' | 'col', delta: 1 | -1): void {
+    const sheet = this.wb.sheets[this.active];
+    const [from, to] = axis === 'row' ? [this.selection.r1, this.selection.r2] : [this.selection.c1, this.selection.c2];
+    const key = axis === 'row' ? 'rowLevels' : 'colLevels';
+    this.structural(() => {
+      const levels = (sheet[key] ??= new Map());
+      for (let i = from; i <= to; i += 1) {
+        const next = Math.max(0, Math.min(7, (levels.get(i) ?? 0) + delta));
+        if (next > 0) levels.set(i, next);
+        else levels.delete(i);
+      }
+      if (levels.size === 0) delete sheet[key];
+      this.wb.touch();
+    });
+  }
+
+  /** The group of rows that ends just above `row` (its summary row): its first and last row and level, or null when `row` follows no group. */
+  groupAbove(row: number, axis: 'row' | 'col' = 'row'): { from: number; to: number; collapsed: boolean } | null {
+    const levels = axis === 'row' ? this.wb.sheets[this.active].rowLevels : this.wb.sheets[this.active].colLevels;
+    const level = levels?.get(row - 1) ?? 0;
+    if (!levels || level === 0 || (levels.get(row) ?? 0) >= level) return null;
+    let from = row - 1;
+    while (from > 0 && (levels.get(from - 1) ?? 0) >= level) from -= 1;
+    const hidden = axis === 'row' ? this.wb.sheets[this.active].rowsHidden : this.wb.sheets[this.active].colsHidden;
+    return { from, to: row - 1, collapsed: !!hidden?.has(row - 1) };
+  }
+
+  /** The + or - button of a group: hides its rows, or shows them again. */
+  toggleGroupAbove(row: number, axis: 'row' | 'col' = 'row'): void {
+    const group = this.groupAbove(row, axis);
+    if (!group) return;
+    const sheet = this.wb.sheets[this.active];
+    const key = axis === 'row' ? 'rowsHidden' : 'colsHidden';
+    this.structural(() => {
+      const hidden = (sheet[key] ??= new Set());
+      for (let r = group.from; r <= group.to; r += 1) {
+        if (group.collapsed) hidden.delete(r);
+        else hidden.add(r);
+      }
+      if (hidden.size === 0) delete sheet[key];
+      this.wb.touch();
+    });
+  }
+
+  /** Hides (or shows) the grouped rows or columns of the whole sheet from outline level `level` down: 1 hides all detail, 8 shows it all. */
+  showLevel(level: number): void {
+    const sheet = this.wb.sheets[this.active];
+    this.structural(() => {
+      for (const [levels, hiddenKey] of [[sheet.rowLevels, 'rowsHidden'], [sheet.colLevels, 'colsHidden']] as const) {
+        if (!levels) continue;
+        const hidden = (sheet[hiddenKey] ??= new Set());
+        for (const [index, own] of levels) {
+          if (own >= level) hidden.add(index);
+          else hidden.delete(index);
+        }
+        if (hidden.size === 0) delete sheet[hiddenKey];
+      }
+      this.wb.touch();
+    });
+  }
+
+  /** Insert > Sparklines: a line or column sparkline for each row of the selection, in the cell just right of it. */
+  addSparklines(type: 'line' | 'column'): boolean {
+    const { r1, c1, r2, c2 } = this.selection;
+    const sheet = this.wb.sheets[this.active];
+    const wide = c2 > c1;
+    const made: Sparkline[] = [];
+    for (let r = r1; r <= r2; r += 1) {
+      const source = wide ? { r1: r, c1, r2: r, c2 } : { r1, c1, r2, c2 };
+      if (!wide && r > r1) break;
+      made.push({ type, source, row: r, col: wide ? c2 + 1 : c2 + 1 });
+    }
+    if (made.length === 0) return false;
+    this.structural(() => {
+      const taken = new Set(made.map((s) => `${s.row},${s.col}`));
+      sheet.sparklines = [...(sheet.sparklines ?? []).filter((s) => !taken.has(`${s.row},${s.col}`)), ...made];
+      this.wb.touch();
+    });
+    return true;
+  }
+
+  /** Removes the sparklines in the selected cells. */
+  clearSparklines(): void {
+    const { r1, c1, r2, c2 } = this.selection;
+    const sheet = this.wb.sheets[this.active];
+    if (!sheet.sparklines?.some((s) => s.row >= r1 && s.row <= r2 && s.col >= c1 && s.col <= c2)) return;
+    this.structural(() => {
+      sheet.sparklines = sheet.sparklines!.filter((s) => !(s.row >= r1 && s.row <= r2 && s.col >= c1 && s.col <= c2));
+      if (sheet.sparklines.length === 0) delete sheet.sparklines;
+      this.wb.touch();
+    });
+  }
+
+  /**
+   * What-If Analysis > Goal Seek: sets the number in `changing` so that the formula in `target` gives `wanted`.
+   * Returns the number it wrote, or null when no input reaches it (nothing is changed then). One undo step.
+   */
+  goalSeek(targetAddress: string, wanted: number, changingAddress: string): number | null {
+    const target = parseCell(targetAddress);
+    const changing = parseCell(changingAddress);
+    if (!target || !changing) return null;
+    const sheet = this.active;
+    const was = this.wb.getCell(sheet, changing.row, changing.col);
+    const style = was?.style ?? 0;
+    const startValue = Number(this.wb.valueAt(sheet, changing.row, changing.col));
+    const found = goalSeek(
+      (input) => {
+        this.wb.putCell(sheet, changing.row, changing.col, { raw: String(input), style });
+        const value = this.wb.valueAt(sheet, target.row, target.col);
+        return typeof value === 'number' ? value : null;
+      },
+      wanted,
+      Number.isFinite(startValue) ? startValue : 0,
+    );
+    this.wb.putCell(sheet, changing.row, changing.col, was);
+    if (!found) return null;
+    const rounded = Number(found.input.toPrecision(12));
+    this.apply([{ row: changing.row, col: changing.col, after: { raw: String(rounded), style } }]);
+    return rounded;
+  }
+
+  /**
+   * Data > Subtotal: under each run of equal values in `groupColumn` of the selected table (its first row is the
+   * header) a row "<value> <total label>" holding a SUBTOTAL of `valueColumn`, and a grand total row at the end;
+   * the rows of each run become an outline group. Returns how many subtotal rows were added (0 when nothing to do).
+   */
+  addSubtotals(groupColumn: number, valueColumn: number, fn: 'sum' | 'count' | 'average' | 'max' | 'min', labels: { total: string; grand: string }): number {
+    if (this.selection.r1 === this.selection.r2 && this.selection.c1 === this.selection.c2) this.selectRegion();
+    const { r1, r2, c1, c2 } = this.selection;
+    if (r2 <= r1 || groupColumn < c1 || groupColumn > c2 || valueColumn < c1 || valueColumn > c2) return 0;
+    const sheet = this.active;
+    const number = { sum: 9, count: 3, average: 1, max: 4, min: 5 }[fn];
+    const keyAt = (r: number) => this.wb.displayAt(sheet, r, groupColumn);
+    const runs: Array<{ from: number; to: number; key: string }> = [];
+    for (let r = r1 + 1; r <= r2; r += 1) {
+      const last = runs[runs.length - 1];
+      if (last && last.key === keyAt(r)) last.to = r;
+      else runs.push({ from: r, to: r, key: keyAt(r) });
+    }
+    if (runs.length === 0) return 0;
+    const column = columnName(valueColumn);
+    this.structural(() => {
+      const subtotalRows = new Set<number>();
+      let shift = 0;
+      const place = (at: number, label: string, from: number, to: number) => {
+        this.wb.editStructure(sheet, { axis: 'row', at, count: 1, mode: 'insert' });
+        this.wb.putCell(sheet, at, groupColumn, { raw: label, style: this.wb.styleId({ bold: true }) });
+        this.wb.putCell(sheet, at, valueColumn, { raw: `=SUBTOTAL(${number},${column}${from + 1}:${column}${to + 1})`, style: this.wb.styleId({ bold: true }) });
+      };
+      // From the bottom up, so the rows above keep their numbers while the ones below move down.
+      place(r2 + 1, labels.grand, r1 + 1, r2);
+      for (let i = runs.length - 1; i >= 0; i -= 1) {
+        const run = runs[i];
+        place(run.to + 1, `${run.key} ${labels.total}`, run.from, run.to);
+      }
+      // Where the rows ended up: each run's subtotal comes right after it.
+      runs.forEach((run) => {
+        subtotalRows.add(run.to + 1 + shift);
+        shift += 1;
+      });
+      subtotalRows.add(r2 + 1 + shift);
+      const target = this.wb.sheets[sheet];
+      target.rowLevels ??= new Map();
+      for (let r = r1 + 1; r <= r2 + shift; r += 1) if (!subtotalRows.has(r)) target.rowLevels.set(r, 1);
+      this.wb.touch();
+    });
+    return runs.length + 1;
+  }
+
+  /** Hides the rows of the selection (Ctrl+9). */
+  hideRows(): void {
+    const { r1, r2 } = this.selection;
+    const sheet = this.wb.sheets[this.active];
+    this.structural(() => {
+      sheet.rowsHidden ??= new Set();
+      for (let r = r1; r <= r2; r += 1) sheet.rowsHidden.add(r);
+      this.wb.touch();
+    });
+    // The cursor moves off a row that is no longer there.
+    this.select(Math.min(r2 + 1, MAX_ROWS - 1), this.anchor.col);
+  }
+
+  /** Shows the hidden rows inside the selection (Ctrl+Shift+9). */
+  unhideRows(): void {
+    const { r1, r2 } = this.selection;
+    const sheet = this.wb.sheets[this.active];
+    if (![...(sheet.rowsHidden ?? [])].some((r) => r >= r1 && r <= r2)) return;
+    this.structural(() => {
+      for (let r = r1; r <= r2; r += 1) sheet.rowsHidden?.delete(r);
+      this.wb.touch();
+    });
+  }
+
+  hideColumns(): void {
+    const { c1, c2 } = this.selection;
+    const sheet = this.wb.sheets[this.active];
+    this.structural(() => {
+      sheet.colsHidden ??= new Set();
+      for (let c = c1; c <= c2; c += 1) sheet.colsHidden.add(c);
+      this.wb.touch();
+    });
+    this.select(this.anchor.row, Math.min(c2 + 1, MAX_COLS - 1));
+  }
+
+  unhideColumns(): void {
+    const { c1, c2 } = this.selection;
+    const sheet = this.wb.sheets[this.active];
+    if (![...(sheet.colsHidden ?? [])].some((c) => c >= c1 && c <= c2)) return;
+    this.structural(() => {
+      for (let c = c1; c <= c2; c += 1) sheet.colsHidden?.delete(c);
+      this.wb.touch();
+    });
+  }
+
+  /** Sets the height, in pixels, of the rows of the selection. */
+  setSelectedRowHeights(height: number): void {
+    const { r1, r2 } = this.selection;
+    const sheet = this.wb.sheets[this.active];
+    const next = clamp(Math.round(height), MIN_ROW_HEIGHT, MAX_ROW_HEIGHT);
+    this.structural(() => {
+      const heights = (sheet.rowHeights ??= new Map());
+      for (let r = r1; r <= r2; r += 1) {
+        if (next === ROW_HEIGHT) heights.delete(r);
+        else heights.set(r, next);
+      }
+      this.wb.touch();
+    });
+  }
+
   setColumnWidth(col: number, width: number): void {
     const sheet = this.wb.sheets[this.active];
     this.structural(() => {
@@ -1295,10 +2241,11 @@ export class CalcController {
   setRowHeight(row: number, height: number): void {
     const sheet = this.wb.sheets[this.active];
     const next = clamp(Math.round(height), MIN_ROW_HEIGHT, MAX_ROW_HEIGHT);
-    if ((sheet.rowHeights.get(row) ?? ROW_HEIGHT) === next) return;
+    if ((sheet.rowHeights?.get(row) ?? ROW_HEIGHT) === next) return;
     this.structural(() => {
-      if (next === ROW_HEIGHT) sheet.rowHeights.delete(row);
-      else sheet.rowHeights.set(row, next);
+      const heights = (sheet.rowHeights ??= new Map());
+      if (next === ROW_HEIGHT) heights.delete(row);
+      else heights.set(row, next);
       this.wb.touch();
     });
   }
@@ -1324,6 +2271,75 @@ export class CalcController {
       this.active = this.wb.sheets.length - 1;
       this.selectedChart = null;
     this.anchor = this.focus = { row: 0, col: 0 };
+    this.cursor = null;
+      this.wb.touch();
+    });
+  }
+
+  /** A copy of a sheet right after it, named "Name (2)" and so on. */
+  duplicateSheet(index: number): void {
+    if (index < 0 || index >= this.wb.sheets.length) return;
+    this.cancelEdit();
+    this.structural(() => {
+      const data = this.wb.toData();
+      const copy = structuredClone(data.sheets[index]);
+      const base = copy.name.replace(/ \(\d+\)$/, '');
+      let n = 2;
+      let name = `${base} (${n})`;
+      while (this.wb.sheetIndex(name) >= 0 || name.length > 31) {
+        n += 1;
+        name = `${base.slice(0, 31 - String(n).length - 3)} (${n})`;
+      }
+      copy.name = name;
+      data.sheets.splice(index + 1, 0, copy);
+      this.wb.loadData(data);
+      this.active = index + 1;
+      this.selectedChart = null;
+      this.anchor = this.focus = { row: 0, col: 0 };
+      this.cursor = null;
+    });
+  }
+
+  /** Moves a sheet one place left (-1) or right (1) among the tabs. */
+  moveSheet(index: number, delta: -1 | 1): void {
+    const to = index + delta;
+    if (index < 0 || to < 0 || to >= this.wb.sheets.length) return;
+    this.cancelEdit();
+    this.structural(() => {
+      const data = this.wb.toData();
+      const [moved] = data.sheets.splice(index, 1);
+      data.sheets.splice(to, 0, moved);
+      const wasActive = this.active === index;
+      this.wb.loadData(data);
+      if (wasActive) this.active = to;
+      else if (this.active === to) this.active = index;
+    });
+  }
+
+  /** Hide or show a sheet's tab. The last visible sheet cannot be hidden; hiding the active one moves to the next visible. */
+  setSheetHidden(index: number, hidden: boolean): boolean {
+    const sheets = this.wb.sheets;
+    const sheet = sheets[index];
+    if (!sheet) return false;
+    if (hidden && sheets.filter((s) => !s.hidden).length <= 1) return false;
+    this.structural(() => {
+      if (hidden) sheet.hidden = true;
+      else delete sheet.hidden;
+      this.wb.touch();
+    });
+    if (hidden && this.active === index) {
+      const next = sheets.findIndex((s, i) => i > index && !s.hidden);
+      this.switchSheet(next >= 0 ? next : sheets.findIndex((s) => !s.hidden));
+    }
+    return true;
+  }
+
+  setTabColor(index: number, color: string | null): void {
+    const sheet = this.wb.sheets[index];
+    if (!sheet) return;
+    this.structural(() => {
+      if (color) sheet.tabColor = color;
+      else delete sheet.tabColor;
       this.wb.touch();
     });
   }
@@ -1349,6 +2365,7 @@ export class CalcController {
       };
       for (const sheet of this.wb.sheets)
         for (const [key, cell] of sheet.cells) if (cell.raw.startsWith('=')) sheet.cells.set(key, { ...cell, raw: renamed(cell.raw) });
+      for (const [key, entry] of this.wb.names) this.wb.names.set(key, { ...entry, refersTo: renamed(entry.refersTo).replace(/^=/, '') });
       this.wb.touch();
     });
     return true;
@@ -1362,6 +2379,7 @@ export class CalcController {
       this.active = Math.min(this.active, this.wb.sheets.length - 1);
       this.selectedChart = null;
     this.anchor = this.focus = { row: 0, col: 0 };
+    this.cursor = null;
       this.wb.touch();
     });
   }
@@ -1372,15 +2390,18 @@ export class CalcController {
     this.active = index;
     this.selectedChart = null;
     this.anchor = this.focus = { row: 0, col: 0 };
+    this.cursor = null;
+    this.earlierBlocks = [];
     this.emit();
   }
 
   /** Replaces the whole workbook (opening a file) and forgets the history. */
   load(data: WorkbookData): void {
     this.wb.loadData(data);
-    this.active = 0;
+    this.active = Math.max(0, this.wb.sheets.findIndex((s) => !s.hidden));
     this.selectedChart = null;
     this.anchor = this.focus = { row: 0, col: 0 };
+    this.cursor = null;
     this.editing = null;
     this.undoStack = [];
     this.redoStack = [];

@@ -1,9 +1,10 @@
 import { columnName } from './cellRef';
-import { matchesCriteria } from './criteria';
-import { partsFromSerial, serialFromDate, serialFromParts } from './dates';
+import { hasWildcard, matchesCriteria, wildcard } from './criteria';
+import { parseDateText, partsFromSerial, serialFromDate, serialFromParts } from './dates';
 import { formatValue } from './numberFormat';
 import {
   ERRORS,
+  EvalAbort,
   compareValues,
   fail,
   flatten,
@@ -25,13 +26,13 @@ export interface FunctionContext {
   col: number;
 }
 
-type Fn = (args: Value[], ctx: FunctionContext) => Value;
+export type Fn = (args: Value[], ctx: FunctionContext) => Value;
 
-const table = (value: Value): RangeValue =>
+export const table = (value: Value): RangeValue =>
   isRange(value) ? value : { kind: 'range', rows: 1, cols: 1, values: [[value]] };
 
 /** Numbers in a SUM-like call: in ranges only real numbers count; typed-in arguments are coerced. */
-function numbersOf(args: Value[]): number[] {
+export function numbersOf(args: Value[]): number[] {
   const out: number[] = [];
   for (const arg of args) {
     if (isRange(arg)) {
@@ -45,27 +46,58 @@ function numbersOf(args: Value[]): number[] {
   return out;
 }
 
-const scalar = (value: Value): Scalar => {
+/** The values AND and OR look at: text that is not TRUE or FALSE, and blanks, are left out; none at all is #VALUE!. */
+function logicalValues(args: Value[]): Scalar[] {
+  const kept = flatten(args).filter((v) => v !== null && !(typeof v === 'string' && !/^\s*(true|false)\s*$/i.test(v)));
+  return kept.length ? kept : fail(ERRORS.value);
+}
+
+/** LEFT and RIGHT's count of characters: 1 when left out, never negative. */
+function characterCount(a: Value[]): number {
+  const n = a[1] === undefined ? 1 : num1(a, 1);
+  return n < 0 ? fail(ERRORS.value) : Math.trunc(n);
+}
+
+/** A function of k that, given a block of k, answers for each one. */
+function eachK(k: Value | undefined, one: (k: number) => Scalar): Value {
+  if (isRange(k) && k.rows * k.cols > 1) return { kind: 'range', rows: k.rows, cols: k.cols, values: k.values.map((row) => row.map((v) => { try { return one(toNumber(v)); } catch (error) { if (error instanceof EvalAbort) return error.error; throw error; } })) };
+  return one(toNumber(scalar(k ?? null)));
+}
+
+export const scalar = (value: Value): Scalar => {
   if (!isRange(value)) return value;
   if (value.rows === 1 && value.cols === 1) return value.values[0][0];
   return fail(ERRORS.value);
 };
 
-function round(n: number, digits: number, mode: 'half' | 'up' | 'down'): number {
+/** Excel's power: 0^0 is #NUM!, 0 to a negative power #DIV/0!, a root of a negative #NUM!. */
+export function power(base: number, exponent: number): number {
+  if (base === 0 && exponent === 0) return fail(ERRORS.num);
+  if (base === 0 && exponent < 0) return fail(ERRORS.div0);
+  // A negative base has a real root when the exponent is 1 over an odd whole number.
+  if (base < 0 && !Number.isInteger(exponent)) {
+    const root = 1 / exponent;
+    if (Number.isInteger(Math.round(root * 1e9) / 1e9) && Math.abs(root - Math.round(root)) < 1e-9 && Math.round(root) % 2 !== 0) return -((-base) ** exponent);
+  }
+  const r = base ** exponent;
+  return Number.isFinite(r) ? r : fail(ERRORS.num);
+}
+
+export function round(n: number, digits: number, mode: 'half' | 'up' | 'down'): number {
   const factor = 10 ** Math.trunc(digits);
   const scaled = n * factor;
   const done = mode === 'half' ? Math.sign(scaled) * Math.round(Math.abs(scaled) + 1e-12) : mode === 'up' ? Math.sign(scaled) * Math.ceil(Math.abs(scaled) - 1e-12) : Math.trunc(scaled + Math.sign(scaled) * 1e-12);
   return done / factor;
 }
 
-function median(values: number[]): number {
+export function median(values: number[]): number {
   if (values.length === 0) fail(ERRORS.num);
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-function stdev(values: number[], sample: boolean): number {
+export function stdev(values: number[], sample: boolean): number {
   const n = values.length;
   if (n < (sample ? 2 : 1)) fail(ERRORS.div0);
   const mean = values.reduce((a, b) => a + b, 0) / n;
@@ -95,7 +127,11 @@ function extremeIfs(args: Value[], pick: (...n: number[]) => number): number {
   return picked.length ? picked.reduce((x, y) => pick(x, y)) : 0;
 }
 
-function lookupIndex(needle: Scalar, haystack: Scalar[], exact: boolean): number {
+export function lookupIndex(needle: Scalar, haystack: Scalar[], exact: boolean): number {
+  if (exact && typeof needle === 'string' && hasWildcard(needle)) {
+    const pattern = wildcard(needle);
+    return haystack.findIndex((v) => typeof v === 'string' && pattern.test(v));
+  }
   if (exact) return haystack.findIndex((v) => v !== null && !isError(v) && typeof v === typeof needle && compareValues(v, needle) === 0);
   let found = -1;
   for (let i = 0; i < haystack.length; i += 1) {
@@ -107,11 +143,12 @@ function lookupIndex(needle: Scalar, haystack: Scalar[], exact: boolean): number
   return found;
 }
 
-const text1 = (args: Value[], i = 0) => toText(scalar(args[i] ?? null));
-const num1 = (args: Value[], i = 0) => toNumber(scalar(args[i] ?? null));
+export const text1 = (args: Value[], i = 0) => toText(scalar(args[i] ?? null));
+export const num1 = (args: Value[], i = 0) => toNumber(scalar(args[i] ?? null));
 
-function dateArg(value: Value): number {
-  const n = toNumber(scalar(value));
+export function dateArg(value: Value): number {
+  const given = scalar(value);
+  const n = typeof given === 'string' && parseNumber(given) === null ? (parseDateText(given) ?? toNumber(given)) : toNumber(given);
   if (n < 0) fail(ERRORS.num);
   return n;
 }
@@ -127,7 +164,10 @@ function mathFn(f: (n: number) => number): Fn {
 export const FUNCTIONS: Record<string, Fn> = {
   // ----- Math
   SUM: (a) => numbersOf(a).reduce((x, y) => x + y, 0),
-  PRODUCT: (a) => numbersOf(a).reduce((x, y) => x * y, 1),
+  PRODUCT: (a) => {
+    const n = numbersOf(a);
+    return n.length ? n.reduce((x, y) => x * y, 1) : 0;
+  },
   AVERAGE: (a) => {
     const n = numbersOf(a);
     return n.length ? n.reduce((x, y) => x + y, 0) / n.length : fail(ERRORS.div0);
@@ -143,7 +183,12 @@ export const FUNCTIONS: Record<string, Fn> = {
   MEDIAN: (a) => median(numbersOf(a)),
   STDEV: (a) => stdev(numbersOf(a), true),
   STDEVP: (a) => stdev(numbersOf(a), false),
-  COUNT: (a) => flatten(a).filter((v) => typeof v === 'number').length,
+  COUNT: (a) =>
+    a.reduce<number>((total, arg) => {
+      if (isRange(arg)) return total + arg.values.flat().filter((v) => typeof v === 'number').length;
+      if (typeof arg === 'number' || typeof arg === 'boolean') return total + 1;
+      return typeof arg === 'string' && (parseNumber(arg) !== null || parseDateText(arg) !== null) ? total + 1 : total;
+    }, 0),
   COUNTA: (a) => flatten(a).filter((v) => v !== null && v !== '').length,
   COUNTBLANK: (a) => flatten(a).filter((v) => v === null || v === '').length,
   ABS: mathFn(Math.abs),
@@ -159,12 +204,17 @@ export const FUNCTIONS: Record<string, Fn> = {
   ROUNDUP: (a) => round(num1(a), num1(a, 1), 'up'),
   ROUNDDOWN: (a) => round(num1(a), num1(a, 1), 'down'),
   CEILING: (a) => {
-    const sig = num1(a, 1);
-    return sig === 0 ? 0 : Math.ceil(num1(a) / sig) * sig;
+    const [n, sig] = [num1(a), num1(a, 1)];
+    if (sig === 0) return 0;
+    if (n > 0 && sig < 0) return fail(ERRORS.num);
+    // With both negative the value moves away from zero.
+    return n < 0 && sig < 0 ? -Math.ceil(-n / -sig) * -sig : Math.ceil(n / sig) * sig;
   },
   FLOOR: (a) => {
-    const sig = num1(a, 1);
-    return sig === 0 ? fail(ERRORS.div0) : Math.floor(num1(a) / sig) * sig;
+    const [n, sig] = [num1(a), num1(a, 1)];
+    if (sig === 0) return n === 0 ? 0 : fail(ERRORS.div0);
+    if (n > 0 && sig < 0) return fail(ERRORS.num);
+    return n < 0 && sig < 0 ? -Math.floor(-n / -sig) * -sig : Math.floor(n / sig) * sig;
   },
   MOD: (a) => {
     const d = num1(a, 1);
@@ -172,10 +222,7 @@ export const FUNCTIONS: Record<string, Fn> = {
     const n = num1(a);
     return n - d * Math.floor(n / d);
   },
-  POWER: (a) => {
-    const r = num1(a) ** num1(a, 1);
-    return Number.isFinite(r) ? r : fail(ERRORS.num);
-  },
+  POWER: (a) => power(num1(a), num1(a, 1)),
   PI: () => Math.PI,
   RAND: () => Math.random(),
   RANDBETWEEN: (a) => {
@@ -239,8 +286,8 @@ export const FUNCTIONS: Record<string, Fn> = {
   },
 
   // ----- Logic
-  AND: (a) => flatten(a).filter((v) => v !== null).every((v) => toBoolean(v)),
-  OR: (a) => flatten(a).filter((v) => v !== null).some((v) => toBoolean(v)),
+  AND: (a) => logicalValues(a).every((v) => toBoolean(v)),
+  OR: (a) => logicalValues(a).some((v) => toBoolean(v)),
   NOT: (a) => !toBoolean(scalar(a[0])),
   XOR: (a) => flatten(a).filter((v) => toBoolean(v)).length % 2 === 1,
   TRUE: () => true,
@@ -264,10 +311,10 @@ export const FUNCTIONS: Record<string, Fn> = {
       .join(text1(a));
   },
   LEN: (a) => text1(a).length,
-  LEFT: (a) => text1(a).slice(0, a[1] === undefined ? 1 : Math.max(0, num1(a, 1))),
+  LEFT: (a) => text1(a).slice(0, characterCount(a)),
   RIGHT: (a) => {
     const t = text1(a);
-    const n = a[1] === undefined ? 1 : Math.max(0, num1(a, 1));
+    const n = characterCount(a);
     return n === 0 ? '' : t.slice(-n);
   },
   MID: (a) => {
@@ -276,10 +323,10 @@ export const FUNCTIONS: Record<string, Fn> = {
     if (start < 1 || length < 0) fail(ERRORS.value);
     return text1(a).slice(start - 1, start - 1 + length);
   },
-  UPPER: (a) => text1(a).toLocaleUpperCase(),
+  UPPER: (a) => [...text1(a)].map((ch) => (ch.toUpperCase().length === ch.length ? ch.toUpperCase() : ch)).join(''),
   LOWER: (a) => text1(a).toLocaleLowerCase(),
-  PROPER: (a) => text1(a).toLocaleLowerCase().replace(/(^|[^\p{L}\p{N}])(\p{L})/gu, (_m, sep: string, ch: string) => sep + ch.toLocaleUpperCase()),
-  TRIM: (a) => text1(a).trim().replace(/\s+/g, ' '),
+  PROPER: (a) => text1(a).toLocaleLowerCase().replace(/(^|[^\p{L}])(\p{L})/gu, (_m, sep: string, ch: string) => sep + ch.toLocaleUpperCase()),
+  TRIM: (a) => text1(a).replace(/^ +| +$/g, '').replace(/ {2,}/g, ' '),
   REPT: (a) => text1(a).repeat(Math.max(0, num1(a, 1))),
   EXACT: (a) => text1(a) === text1(a, 1),
   SUBSTITUTE: (a) => {
@@ -312,8 +359,11 @@ export const FUNCTIONS: Record<string, Fn> = {
     return at < 0 ? fail(ERRORS.value) : at + 1;
   },
   SEARCH: (a) => {
-    const at = text1(a, 1).toLocaleLowerCase().indexOf(text1(a).toLocaleLowerCase(), a[2] === undefined ? 0 : num1(a, 2) - 1);
-    return at < 0 ? fail(ERRORS.value) : at + 1;
+    const from = a[2] === undefined ? 0 : num1(a, 2) - 1;
+    const within = text1(a, 1);
+    if (from < 0 || from > within.length) fail(ERRORS.value);
+    const at = within.slice(from).search(wildcard(text1(a), false));
+    return at < 0 ? fail(ERRORS.value) : at + from + 1;
   },
   VALUE: (a) => {
     const v = scalar(a[0]);
@@ -321,7 +371,17 @@ export const FUNCTIONS: Record<string, Fn> = {
     const n = parseNumber(toText(v));
     return n === null ? fail(ERRORS.value) : n;
   },
-  TEXT: (a) => formatValue(scalar(a[0]), text1(a, 1)),
+  TEXT: (a) => {
+    let value = scalar(a[0]);
+    // An empty cell is 0 to a format, as in Excel: a date format gives 00/01/1900.
+    if (value === null) value = 0;
+    // Text that reads as a number or a date is formatted as that, unless the format only asks for text.
+    if (typeof value === 'string' && text1(a, 1).trim() !== '@') {
+      const number = parseNumber(value);
+      value = number !== null ? number : (parseDateText(value) ?? value);
+    }
+    return formatValue(value, text1(a, 1));
+  },
   CHAR: (a) => String.fromCharCode(num1(a)),
   CODE: (a) => text1(a).charCodeAt(0) || fail(ERRORS.value),
 
@@ -362,10 +422,15 @@ export const FUNCTIONS: Record<string, Fn> = {
   },
   INDEX: (a) => {
     const data = table(a[0]);
-    let row = a[1] === undefined ? 1 : num1(a, 1);
-    let col = a[2] === undefined ? 1 : num1(a, 2);
-    if (data.rows === 1 && a[2] === undefined) [row, col] = [1, row];
-    if (row < 1 || col < 1 || row > data.rows || col > data.cols) fail(ERRORS.ref);
+    let row = a[1] === undefined ? 0 : num1(a, 1);
+    let col = a[2] === undefined ? 0 : num1(a, 2);
+    if (data.rows === 1 && a[2] === undefined) [row, col] = [0, row];
+    // One index into a table of several rows and columns means nothing.
+    if (data.rows > 1 && data.cols > 1 && a[2] === undefined && row > 0) fail(ERRORS.ref);
+    if (row < 0 || col < 0 || row > data.rows || col > data.cols) fail(ERRORS.ref);
+    if (row === 0 && col === 0) return data;
+    if (row === 0) return { kind: 'range', rows: data.rows, cols: 1, values: data.values.map((line) => [line[col - 1]]) };
+    if (col === 0) return { kind: 'range', rows: 1, cols: data.cols, values: [data.values[row - 1]] };
     return data.values[row - 1][col - 1];
   },
   ROW: (a, ctx) => (a[0] === undefined ? ctx.row + 1 : fail(ERRORS.value)),
@@ -384,10 +449,6 @@ export const FUNCTIONS: Record<string, Fn> = {
   YEAR: (a) => partsFromSerial(dateArg(a[0])).year,
   MONTH: (a) => partsFromSerial(dateArg(a[0])).month,
   DAY: (a) => partsFromSerial(dateArg(a[0])).day,
-  WEEKDAY: (a) => partsFromSerial(dateArg(a[0])).weekday + 1,
-  HOUR: (a) => partsFromSerial(dateArg(a[0])).hour,
-  MINUTE: (a) => partsFromSerial(dateArg(a[0])).minute,
-  SECOND: (a) => partsFromSerial(dateArg(a[0])).second,
   DAYS: (a) => Math.trunc(dateArg(a[0])) - Math.trunc(dateArg(a[1])),
 };
 
@@ -395,14 +456,14 @@ export const FUNCTIONS: Record<string, Fn> = {
 // ----- More: statistics, finance, dates, text and lookups
 
 /** The numbers of a range or list, in order; text and blanks are skipped. */
-const numberList = (value: Value): number[] => numbersOf([value]);
+export const numberList = (value: Value): number[] => numbersOf([value]);
 
-function sortedNumbers(value: Value): number[] {
+export function sortedNumbers(value: Value): number[] {
   return numberList(value).sort((x, y) => x - y);
 }
 
 /** Excel's PERCENTILE.INC: linear between the closest ranks. */
-function percentile(sorted: number[], k: number): number {
+export function percentile(sorted: number[], k: number): number {
   if (sorted.length === 0 || k < 0 || k > 1) fail(ERRORS.num);
   const position = k * (sorted.length - 1);
   const low = Math.floor(position);
@@ -411,7 +472,7 @@ function percentile(sorted: number[], k: number): number {
 }
 
 /** Pairs of numbers from two ranges of the same size; a pair with a non-number in it is dropped. */
-function pairsOf(ys: Value, xs: Value): Array<[number, number]> {
+export function pairsOf(ys: Value, xs: Value): Array<[number, number]> {
   const a = flatten([ys]);
   const b = flatten([xs]);
   if (a.length !== b.length) fail(ERRORS.na);
@@ -423,7 +484,7 @@ function pairsOf(ys: Value, xs: Value): Array<[number, number]> {
   return out;
 }
 
-function regression(ys: Value, xs: Value): { slope: number; intercept: number; r: number } {
+export function regression(ys: Value, xs: Value): { slope: number; intercept: number; r: number } {
   const pairs = pairsOf(ys, xs);
   const n = pairs.length;
   const meanY = pairs.reduce((t, [y]) => t + y, 0) / n;
@@ -451,7 +512,7 @@ function payment(rate: number, nper: number, pv: number, fv: number, type: numbe
 }
 
 /** The serial of a date `months` later, the day clamped to the end of a shorter month. */
-function addMonths(serial: number, months: number): number {
+export function addMonths(serial: number, months: number): number {
   const { year, month, day } = partsFromSerial(Math.trunc(serial));
   const total = year * 12 + (month - 1) + Math.trunc(months);
   const y = Math.floor(total / 12);
@@ -488,7 +549,7 @@ function datedif(start: number, end: number, unit: string): number {
   }
 }
 
-const isWorkday = (serial: number) => {
+export const isWorkday = (serial: number) => {
   const day = partsFromSerial(serial).weekday;
   return day >= 1 && day <= 5;
 };
@@ -515,16 +576,14 @@ function findPosition(needle: Scalar, haystack: Scalar[], mode: number, fromEnd:
 
 const MORE: Record<string, Fn> = {
   // Statistics
-  LARGE: (a) => {
+  LARGE: (a) => eachK(a[1], (k) => {
     const sorted = sortedNumbers(a[0]).reverse();
-    const k = num1(a, 1);
     return k >= 1 && k <= sorted.length ? sorted[Math.trunc(k) - 1] : fail(ERRORS.num);
-  },
-  SMALL: (a) => {
+  }),
+  SMALL: (a) => eachK(a[1], (k) => {
     const sorted = sortedNumbers(a[0]);
-    const k = num1(a, 1);
     return k >= 1 && k <= sorted.length ? sorted[Math.trunc(k) - 1] : fail(ERRORS.num);
-  },
+  }),
   RANK: (a) => {
     const x = num1(a);
     const values = numberList(a[1]);
@@ -546,11 +605,11 @@ const MORE: Record<string, Fn> = {
   },
   VAR: (a) => stdev(numbersOf(a), true) ** 2,
   VARP: (a) => stdev(numbersOf(a), false) ** 2,
-  PERCENTILE: (a) => percentile(sortedNumbers(a[0]), num1(a, 1)),
-  QUARTILE: (a) => {
-    const q = Math.trunc(num1(a, 1));
+  PERCENTILE: (a) => eachK(a[1], (k) => percentile(sortedNumbers(a[0]), k)),
+  QUARTILE: (a) => eachK(a[1], (k) => {
+    const q = Math.trunc(k);
     return q >= 0 && q <= 4 ? percentile(sortedNumbers(a[0]), q / 4) : fail(ERRORS.num);
-  },
+  }),
   SUMSQ: (a) => numbersOf(a).reduce((t, v) => t + v * v, 0),
   CORREL: (a) => regression(a[0], a[1]).r,
   SLOPE: (a) => regression(a[0], a[1]).slope,
@@ -627,25 +686,6 @@ const MORE: Record<string, Fn> = {
     return serialFromParts(moved.year, moved.month, new Date(Date.UTC(moved.year, moved.month, 0)).getUTCDate());
   },
   DATEDIF: (a) => datedif(Math.trunc(dateArg(a[0])), Math.trunc(dateArg(a[1])), text1(a, 2)),
-  NETWORKDAYS: (a) => {
-    const start = Math.trunc(dateArg(a[0]));
-    const end = Math.trunc(dateArg(a[1]));
-    const [from, to, sign] = start <= end ? [start, end, 1] : [end, start, -1];
-    let count = 0;
-    for (let d = from; d <= to; d += 1) if (isWorkday(d)) count += 1;
-    return count * sign;
-  },
-  WORKDAY: (a) => {
-    let date = Math.trunc(dateArg(a[0]));
-    let left = Math.trunc(num1(a, 1));
-    const step = left < 0 ? -1 : 1;
-    left = Math.abs(left);
-    while (left > 0) {
-      date += step;
-      if (isWorkday(date)) left -= 1;
-    }
-    return date;
-  },
 
   // Text
   REPLACE: (a) => {
@@ -676,7 +716,10 @@ const MORE: Record<string, Fn> = {
     const [row, col] = [Math.trunc(num1(a)), Math.trunc(num1(a, 1))];
     if (row < 1 || col < 1) fail(ERRORS.value);
     const mode = a[2] === undefined ? 1 : Math.trunc(num1(a, 2));
-    return `${mode === 1 || mode === 3 ? '$' : ''}${columnName(col - 1)}${mode === 1 || mode === 2 ? '$' : ''}${row}`;
+    const where = `${mode === 1 || mode === 3 ? '$' : ''}${columnName(col - 1)}${mode === 1 || mode === 2 ? '$' : ''}${row}`;
+    if (a[3] !== undefined && !toBoolean(scalar(a[3]))) fail(ERRORS.value);
+    const sheet = a[4] === undefined ? '' : text1(a, 4);
+    return sheet ? `${/^[A-Za-z_][\w.]*$/.test(sheet) ? sheet : `'${sheet.replace(/'/g, "''")}'`}!${where}` : where;
   },
 
   // Lookup
@@ -713,9 +756,10 @@ Object.assign(FUNCTIONS, MORE);
 /** The most cells an array function makes. */
 const MAX_ARRAY_CELLS = 100_000;
 
-const block = (values: Scalar[][]): RangeValue => ({ kind: 'range', rows: values.length, cols: values[0]?.length ?? 0, values });
+/** An array result: a blank source cell comes out as 0, as it does in Excel. */
+export const block = (values: Scalar[][]): RangeValue => ({ kind: 'range', rows: values.length, cols: values[0]?.length ?? 0, values: values.map((row) => row.map((v) => (v === null ? 0 : v))) });
 
-const transposed = (values: Scalar[][]): Scalar[][] => (values[0] ?? []).map((_x, c) => values.map((row) => row[c]));
+export const transposed = (values: Scalar[][]): Scalar[][] => (values[0] ?? []).map((_x, c) => values.map((row) => row[c]));
 
 /** The same rows twice are one: text compares without regard to case. */
 const rowKey = (row: Scalar[]): string =>
@@ -729,7 +773,7 @@ function compareForSort(a: Scalar, b: Scalar, direction = 1): number {
   return direction * compareValues(a, b);
 }
 
-const flag = (a: Value[], i: number, otherwise = false): boolean => (a[i] === undefined ? otherwise : toBoolean(scalar(a[i])));
+export const flag = (a: Value[], i: number, otherwise = false): boolean => (a[i] === undefined ? otherwise : toBoolean(scalar(a[i])));
 
 const ARRAYS: Record<string, Fn> = {
   SEQUENCE: (a) => {

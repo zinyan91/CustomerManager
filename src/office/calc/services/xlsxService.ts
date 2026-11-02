@@ -1,21 +1,49 @@
 import type { Cell as ExcelCell, Workbook as ExcelWorkbook, Worksheet } from 'exceljs';
 import { cellKey, cellName, columnName, parseCell, parseRange, rangeName, type RangePos } from '../engine/cellRef';
+import { isValidName } from '../engine/definedNames';
 import type { CfRule, CfStyle } from '../engine/conditional';
 import { isError, type Scalar } from '../engine/values';
 import { mergeValidations, parseListItems, type NumberOp, type Validation, type ValidationRule } from '../engine/validation';
 import { addChartsToXlsx, readChartsFromXlsx } from './xlsxCharts';
-import { DEFAULT_COL_WIDTH, pageSetupOf, Workbook, constantValue, newSheet, type Cell, type CellStyle, type Sheet, type WorkbookData } from '../model/workbook';
+import { addZeroHidingToXlsx, readZeroHidingSheets } from './xlsxZeros';
+import { addSparklinesToXlsx, readSparklinesFromXlsx } from './xlsxSparklines';
+import { DEFAULT_COL_WIDTH, pageSetupOf, Workbook, constantValue, newSheet, type BorderLine, type BorderLineStyle, type Borders, type Cell, type CellStyle, type Sheet, type WorkbookData } from '../model/workbook';
+import { BORDER_STYLES, edgeLine, simpleEdge } from '../utils/borderLines';
 import { parseCsv, toCsv } from '../utils/csv';
 import { fromExcelPageSetup, toExcelPageSetup, type ExcelPageSetup } from './pageSetupXlsx';
 import { fromFileFormula, toFileFormula } from './xlfn';
 
 /** Excel's column width unit (characters of the default font) and pixels. */
+/**
+ * Excel's built-in codes as ExcelJS names them, written the way they show: the short date follows this
+ * app's own date format (what a typed date gets), and two codes ExcelJS has misspelled are put right.
+ */
+const BUILT_IN_FORMATS: Record<string, string> = {
+  'mm-dd-yy': 'dd/mm/yyyy',
+  'm/d/yy "h":mm': 'dd/mm/yyyy hh:mm',
+  'mmss.0': 'mm:ss.0',
+};
+const fromFileFormat = (code: string): string => BUILT_IN_FORMATS[code] ?? code;
+
 const pxFromChars = (chars: number) => Math.round(chars * 7 + 5);
+/** ExcelJS leaves out a row that has neither cells nor a height, hidden or not. */
+const HIDDEN_ROW_POINTS = 15;
 const charsFromPx = (px: number) => Math.max(1, (px - 5) / 7);
 
 const UNIX_EPOCH_SERIAL = 25569;
 const serialFromJsDate = (date: Date) => date.getTime() / 86_400_000 + UNIX_EPOCH_SERIAL;
 const jsDateFromSerial = (serial: number) => new Date((serial - UNIX_EPOCH_SERIAL) * 86_400_000);
+
+/** A dotted or hatched fill drawn as the single colour it averages to: the pattern's ink over its paper, by how much of the cell the ink covers. */
+export function patternFill(pattern: string, ink: string | undefined, paper: string | undefined): string | null {
+  const COVER: Record<string, number> = { gray0625: 0.0625, gray125: 0.125, lightGray: 0.25, mediumGray: 0.5, darkGray: 0.75 };
+  const cover = COVER[pattern] ?? (pattern.startsWith('dark') ? 0.5 : pattern.startsWith('light') ? 0.25 : null);
+  if (cover === null) return null;
+  const channels = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const fg = channels(ink ?? '#000000');
+  const bg = channels(paper ?? '#ffffff');
+  return `#${fg.map((c, i) => Math.round(bg[i] * (1 - cover) + c * cover).toString(16).padStart(2, '0')).join('')}`;
+}
 
 const argbToHex = (argb: string | undefined): string | undefined => {
   if (!argb || argb.length < 6) return undefined;
@@ -34,21 +62,47 @@ interface ExcelValueObject {
   error?: string;
 }
 
+/** Text as Calc stores a constant: marked with an apostrophe when it would otherwise be read back as a number, TRUE/FALSE or a formula ("334,495.00" is text in the file). */
+function textRaw(text: string): string {
+  return /^[=']/.test(text) || constantValue(text) !== text ? `'${text}` : text;
+}
+
+const EXTERNAL_LINK = /\[\d+\]/;
+
+/** The value Excel stored with a formula, as the text Calc stores a constant. */
+function storedResult(result: unknown): string {
+  if (typeof result === 'number') return String(result);
+  if (typeof result === 'boolean') return result ? 'TRUE' : 'FALSE';
+  if (result instanceof Date) return String(Number(serialFromJsDate(result).toFixed(6)));
+  if (typeof result === 'string') return textRaw(result);
+  if (result && typeof result === 'object' && 'error' in result) return `=${String((result as { error: string }).error)}`;
+  return '';
+}
+
 /** What a loaded cell holds, as the text Calc stores. */
 function rawOf(cell: ExcelCell): string {
   const value = cell.value as unknown;
   if (value === null || value === undefined) return '';
   if (typeof value === 'number') return String(value);
   if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
-  if (typeof value === 'string') return /^[=']/.test(value) || !Number.isNaN(Number(value)) && value.trim() !== '' ? `'${value}` : value;
+  if (typeof value === 'string') return textRaw(value);
   if (value instanceof Date) return String(Number(serialFromJsDate(value).toFixed(6)));
   const object = value as ExcelValueObject;
   const formula = cell.formula || object.formula;
+  // A formula that reaches into another workbook (`[1]Sheet'!A1`) cannot be worked out here: it keeps the value Excel stored for it.
+  if (formula && EXTERNAL_LINK.test(formula)) return storedResult(object.result);
   if (formula) return `=${fromFileFormula(formula)}`;
-  if (object.richText) return object.richText.map((part) => part.text).join('');
-  if (object.text !== undefined) return String(object.text);
+  if (object.richText) return textRaw(object.richText.map((part) => part.text).join(''));
+  if (object.text !== undefined) return textRaw(String(object.text));
   if (object.error) return `=${object.error}`;
   return '';
+}
+
+/** A note's text: ExcelJS gives a string, or the pieces of a rich text. */
+function noteTextOf(note: ExcelCell['note']): string {
+  if (!note) return '';
+  if (typeof note === 'string') return note;
+  return (note.texts ?? []).map((part) => part.text).join('');
 }
 
 function styleOf(cell: ExcelCell, isDate: boolean): CellStyle {
@@ -64,23 +118,45 @@ function styleOf(cell: ExcelCell, isDate: boolean): CellStyle {
     const color = argbToHex(font.color?.argb);
     if (color && color !== '#000000') style.color = color;
   }
+  if (cell.protection?.locked === false) style.unlocked = true;
   const fill = cell.fill;
   if (fill && fill.type === 'pattern' && fill.pattern === 'solid') {
     const color = argbToHex(fill.fgColor?.argb);
     if (color && color !== '#ffffff') style.fill = color;
+  } else if (fill && fill.type === 'pattern' && fill.pattern && fill.pattern !== 'none') {
+    const mixed = patternFill(fill.pattern, argbToHex(fill.fgColor?.argb), argbToHex(fill.bgColor?.argb));
+    if (mixed && mixed !== '#ffffff') style.fill = mixed;
   }
   const alignment = cell.alignment;
   if (alignment) {
     if (alignment.horizontal === 'left' || alignment.horizontal === 'center' || alignment.horizontal === 'right') style.hAlign = alignment.horizontal;
     if (alignment.vertical === 'top' || alignment.vertical === 'middle' || alignment.vertical === 'bottom') style.vAlign = alignment.vertical;
     if (alignment.wrapText) style.wrap = true;
+    if (alignment.shrinkToFit) style.shrink = true;
+    if (typeof alignment.indent === 'number' && alignment.indent > 0) style.indent = Math.min(15, Math.round(alignment.indent));
+    const turn = alignment.textRotation;
+    // ExcelJS already maps the file's 0 to 180 onto -90 to 90.
+    if (typeof turn === 'number' && turn !== 0 && turn >= -90 && turn <= 90) style.rotation = turn;
   }
-  if (cell.numFmt && cell.numFmt !== 'General') style.numFmt = cell.numFmt;
+  if (cell.numFmt && cell.numFmt !== 'General') style.numFmt = fromFileFormat(cell.numFmt);
   else if (isDate) style.numFmt = 'dd/mm/yyyy';
   const border = cell.border;
   if (border) {
-    const borders = { top: !!border.top?.style, right: !!border.right?.style, bottom: !!border.bottom?.style, left: !!border.left?.style };
-    if (Object.values(borders).some(Boolean)) style.borders = borders;
+    const read = (edge: { style?: string; color?: { argb?: string } } | undefined): boolean | BorderLine | undefined => {
+      if (!edge?.style) return undefined;
+      const known = (BORDER_STYLES as string[]).includes(edge.style) ? (edge.style as BorderLineStyle) : edge.style === 'mediumDashed' || edge.style === 'slantDashDot' || edge.style === 'dashDot' || edge.style === 'dashDotDot' || edge.style === 'mediumDashDot' || edge.style === 'mediumDashDotDot' ? 'dashed' : 'thin';
+      const color = argbToHex(edge.color?.argb);
+      return simpleEdge({ style: known, ...(color && color !== '#000000' ? { color } : {}) });
+    };
+    const borders: Borders = { top: read(border.top), right: read(border.right), bottom: read(border.bottom), left: read(border.left) };
+    const diagonal = border.diagonal as { style?: string; color?: { argb?: string }; up?: boolean; down?: boolean } | undefined;
+    const diagonalLine = read(diagonal);
+    if (diagonalLine && diagonal?.up) borders.diagonalUp = diagonalLine;
+    if (diagonalLine && diagonal?.down) borders.diagonalDown = diagonalLine;
+    for (const side of ['top', 'right', 'bottom', 'left'] as const) if (!borders[side]) delete borders[side];
+    if (!borders.diagonalUp) delete borders.diagonalUp;
+    if (!borders.diagonalDown) delete borders.diagonalDown;
+    if (Object.keys(borders).length > 0) style.borders = borders;
   }
   return style;
 }
@@ -146,6 +222,11 @@ function ruleOut(rule: CfRule, priority: number): ExcelRule | null {
       const cfvo = rule.mid ? [{ type: 'min' }, { type: 'percentile', value: 50 }, { type: 'max' }] : [{ type: 'min' }, { type: 'max' }];
       return { type: 'colorScale', priority, cfvo, color: colors } as ExcelRule;
     }
+    case 'icons': {
+      const name = { arrows: '3Arrows', lights: '3TrafficLights1', shapes: '3Signs', flags: '3Flags', arrows4: '4Arrows', arrows5: '5Arrows', lights4: '4TrafficLights' }[rule.set];
+      const count = Number(name[0]);
+      return { type: 'iconSet', priority, iconSet: name, cfvo: Array.from({ length: count }, (_, i) => ({ type: 'percent', value: Math.round((100 * i) / count) })) } as ExcelRule;
+    }
     case 'bar':
       return { type: 'dataBar', priority, cfvo: [{ type: 'min' }, { type: 'max' }], color: { argb: hexToArgb(rule.color) } } as ExcelRule;
   }
@@ -174,6 +255,11 @@ function ruleIn(rule: ExcelRule, id: string, range: RangePos): CfRule | null {
       const colors = ((Array.isArray(rule.color) ? rule.color : []) as Array<{ argb?: string }>).map((c) => argbToHex(c.argb));
       if (colors.length < 2 || colors.some((c) => !c)) return null;
       return { id, range, kind: 'scale', low: colors[0] as string, mid: colors.length > 2 ? (colors[1] as string) : undefined, high: colors[colors.length - 1] as string };
+    }
+    case 'iconSet': {
+      const name = String((rule as { iconSet?: string }).iconSet ?? '');
+      const set = /^4Arrows/.test(name) ? 'arrows4' : /^5Arrows/.test(name) ? 'arrows5' : /^4TrafficLights/.test(name) ? 'lights4' : /Arrows/.test(name) ? 'arrows' : /Flags/.test(name) ? 'flags' : /Signs|Symbols|Shapes/.test(name) ? 'shapes' : /Traffic|Rating|Stars|Quarters|Boxes/.test(name) ? 'lights' : null;
+      return set ? { id, range, kind: 'icons', set } : null;
     }
     case 'dataBar': {
       const color = argbToHex((rule.color as { argb?: string } | undefined)?.argb);
@@ -336,28 +422,44 @@ export async function importXlsx(data: ArrayBuffer): Promise<WorkbookData> {
   await book.xlsx.load(data);
   const wb = new Workbook();
   wb.sheets = [];
+  for (const { name, ranges } of book.definedNames.model as Array<{ name: string; ranges: string[] }>) {
+    const [first] = ranges;
+    // A name that points into another workbook (`'[1]Sheet'!$A$1`) has nothing here to point at; keeping it would write a file Excel calls corrupt.
+    if (first && isValidName(name) && !EXTERNAL_LINK.test(first)) wb.names.set(name.toUpperCase(), { name, refersTo: first });
+  }
   book.eachSheet((ws: Worksheet) => {
     const sheet = newSheet(ws.name.slice(0, 31));
+    if ((ws as unknown as { sheetProtection?: unknown }).sheetProtection) sheet.protected = true;
+    const tab = argbToHex(ws.properties?.tabColor?.argb);
+    if (tab) sheet.tabColor = tab;
+    if (ws.state === 'hidden' || ws.state === 'veryHidden') sheet.hidden = true;
     wb.sheets.push(sheet);
-    // Chiều cao dòng trong tệp tính bằng point (1 point = 4/3 pixel); cả dòng không có ô nào cũng giữ chiều cao.
-    ws.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-      if (row.height && row.height > 0) sheet.rowHeights.set(rowNumber - 1, Math.max(8, Math.round((row.height * 4) / 3)));
-    });
     ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
       row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
         // A cell hidden inside a merge has nothing of its own.
         if (cell.isMerged && cell.master !== cell) return;
         const raw = rawOf(cell);
+        const link = (cell.value as { hyperlink?: string } | null)?.hyperlink;
+        if (link) (sheet.links ??= new Map()).set(cellKey(rowNumber - 1, colNumber - 1), link);
+        const note = noteTextOf(cell.note);
+        if (note) (sheet.comments ??= new Map()).set(cellKey(rowNumber - 1, colNumber - 1), { text: note, author: '', at: Date.now() });
         const isDate = (cell.value as unknown) instanceof Date;
         const style = styleOf(cell, isDate);
         if (raw === '' && Object.keys(style).length === 0) return;
         sheet.cells.set(cellKey(rowNumber - 1, colNumber - 1), { raw, style: wb.styleId(style) });
       });
     });
-    for (let c = 1; c <= ws.columnCount; c += 1) {
-      const width = ws.getColumn(c).width;
-      if (width) sheet.colWidths.set(c - 1, pxFromChars(width));
+    for (const [index, column] of (ws.columns ?? []).entries()) {
+      if (column.width) sheet.colWidths.set(index, pxFromChars(column.width));
+      if (column.hidden) (sheet.colsHidden ??= new Set()).add(index);
+      if (column.outlineLevel) (sheet.colLevels ??= new Map()).set(index, Math.min(7, column.outlineLevel));
     }
+    ws.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+      if (row.hidden) (sheet.rowsHidden ??= new Set()).add(rowNumber - 1);
+      if (row.outlineLevel) (sheet.rowLevels ??= new Map()).set(rowNumber - 1, Math.min(7, row.outlineLevel));
+      // A hidden row is written with the default height so that it survives; that is not a height anyone set.
+      if (row.height && !(row.hidden && row.height === HIDDEN_ROW_POINTS)) (sheet.rowHeights ??= new Map()).set(rowNumber - 1, Math.round((row.height * 96) / 72));
+    });
     const formattings = (ws as unknown as { conditionalFormattings?: Array<{ ref?: string; rules?: ExcelRule[] }> }).conditionalFormattings ?? [];
     let counter = 0;
     for (const formatting of formattings) {
@@ -379,6 +481,16 @@ export async function importXlsx(data: ArrayBuffer): Promise<WorkbookData> {
         })()
       : null;
     if (autoRange && autoRange.r2 > autoRange.r1) sheet.filter = { range: autoRange, excluded: {} };
+    // Rows hidden inside a filtered block were hidden by the filter, which SUBTOTAL leaves out and a hand-hidden row it does not.
+    if (sheet.filter && sheet.rowsHidden) {
+      const { r1, r2 } = sheet.filter.range;
+      const inside = [...sheet.rowsHidden].filter((row) => row > r1 && row <= r2);
+      if (inside.length > 0) {
+        sheet.filter.imported = inside;
+        for (const row of inside) sheet.rowsHidden.delete(row);
+        if (sheet.rowsHidden.size === 0) delete sheet.rowsHidden;
+      }
+    }
     // A frozen view: xSplit columns and ySplit rows stay put.
     const view = ws.views?.find((v) => v.state === 'frozen') as { xSplit?: number; ySplit?: number } | undefined;
     const validations = readValidations(ws);
@@ -393,9 +505,16 @@ export async function importXlsx(data: ArrayBuffer): Promise<WorkbookData> {
     }
   });
   if (wb.sheets.length === 0) wb.sheets.push(newSheet('Sheet1'));
+  const zeroHiding = await readZeroHidingSheets(data);
+  for (const sheet of wb.sheets) if (zeroHiding.has(sheet.name)) sheet.hideZeros = true;
   // ExcelJS drops charts, so they are read from the package itself.
   const charts = await readChartsFromXlsx(data, (name, col) => wb.sheets.find((sheet) => sheet.name === name)?.colWidths.get(col) ?? DEFAULT_COL_WIDTH);
   for (const sheet of wb.sheets) sheet.charts = charts.get(sheet.name) ?? [];
+  const sparklines = await readSparklinesFromXlsx(data);
+  for (const sheet of wb.sheets) {
+    const found = sparklines.get(sheet.name);
+    if (found) sheet.sparklines = found;
+  }
   return wb.toData();
 }
 
@@ -425,13 +544,33 @@ function cellsToWrite(wb: Workbook, sheetIndex: number): Map<number, Cell> {
 
 /** Writes the workbook as .xlsx with values, formulas (and their results), formats, merges and widths. */
 export async function exportXlsx(wb: Workbook): Promise<Blob> {
+  const protections: Array<Promise<void>> = [];
   const { default: ExcelJS } = await import('exceljs');
   const book: ExcelWorkbook = new ExcelJS.Workbook();
   book.creator = 'Felix Office';
+  // Names that refer to cells go in the file; one holding a constant or a calculation has no place there yet.
+  for (const { name, refersTo } of wb.names.values()) {
+    const found = /^('[^']*(?:''[^']*)*'|[A-Za-z_][A-Za-z0-9_.]*)!\$?[A-Za-z]{1,3}\$?\d+(:\$?[A-Za-z]{1,3}\$?\d+)?$/.exec(refersTo);
+    if (!found) continue;
+    // A name whose sheet is gone would make the file unreadable.
+    const sheetName = found[1].startsWith("'") ? found[1].slice(1, -1).replace(/''/g, "'") : found[1];
+    if (wb.sheetIndex(sheetName) >= 0) book.definedNames.add(refersTo, name);
+  }
   wb.sheets.forEach((sheet, sheetIndex) => {
-    const ws = book.addWorksheet(sheet.name);
+    // Without a sheet view Excel reads every custom row height as four fifths of what is written.
+    const ws = book.addWorksheet(sheet.name, { ...(sheet.hidden ? { state: 'hidden' as const } : {}), views: [{ state: 'normal' }], ...(sheet.tabColor ? { properties: { tabColor: { argb: `FF${sheet.tabColor.slice(1).toUpperCase()}` } } } : {}) });
+    // No password: the protection is a guard against slips, as it is here.
+    if (sheet.protected) protections.push(ws.protect('', { selectLockedCells: true, selectUnlockedCells: true }));
     for (const [col, width] of sheet.colWidths) ws.getColumn(col + 1).width = charsFromPx(width);
-    for (const [row, height] of sheet.rowHeights) ws.getRow(row + 1).height = (height * 3) / 4;
+    for (const col of sheet.colsHidden ?? []) ws.getColumn(col + 1).hidden = true;
+    for (const [col, level] of sheet.colLevels ?? []) ws.getColumn(col + 1).outlineLevel = level;
+    for (const [row, level] of sheet.rowLevels ?? []) ws.getRow(row + 1).outlineLevel = level;
+    for (const [row, height] of sheet.rowHeights ?? []) ws.getRow(row + 1).height = (height * 72) / 96;
+    for (const row of sheet.rowsHidden ?? []) {
+      const target = ws.getRow(row + 1);
+      target.hidden = true;
+      target.height ||= HIDDEN_ROW_POINTS;
+    }
     for (const [key, cell] of cellsToWrite(wb, sheetIndex)) {
       const row = Math.floor(key / 16384);
       const col = key % 16384;
@@ -450,6 +589,12 @@ export async function exportXlsx(wb: Workbook): Promise<Blob> {
           target.value = dateFormat && typeof value === 'number' ? jsDateFromSerial(value) : value;
         }
       }
+      const link = sheet.links?.get(key);
+      // A formula cell cannot carry a link in this library; its value is what the file keeps.
+      if (link && !(cell.raw.startsWith('=') && cell.raw.length > 1)) target.value = { text: String(target.value ?? cell.raw), hyperlink: link } as ExcelCell['value'];
+      const note = sheet.comments?.get(key)?.text;
+      if (note) target.note = note;
+      if (style.unlocked) target.protection = { locked: false };
       if (style.numFmt) target.numFmt = style.numFmt;
       if (style.bold || style.italic || style.underline || style.strike || style.fontFamily || style.fontSize || style.color) {
         target.font = {
@@ -463,12 +608,29 @@ export async function exportXlsx(wb: Workbook): Promise<Blob> {
         };
       }
       if (style.fill) target.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: hexToArgb(style.fill) } };
-      if (style.hAlign || style.vAlign || style.wrap) {
-        target.alignment = { horizontal: style.hAlign, vertical: style.vAlign, wrapText: style.wrap };
+      if (style.hAlign || style.vAlign || style.wrap || style.indent || style.rotation || style.shrink) {
+        target.alignment = {
+          horizontal: style.hAlign ?? (style.indent ? 'left' : undefined),
+          vertical: style.vAlign,
+          wrapText: style.wrap,
+          ...(style.shrink ? { shrinkToFit: true } : {}),
+          ...(style.indent ? { indent: style.indent } : {}),
+          ...(style.rotation ? { textRotation: style.rotation } : {}),
+        };
       }
       if (style.borders) {
-        const edge = (on: boolean | undefined) => (on ? { style: 'thin' as const } : undefined);
-        target.border = { top: edge(style.borders.top), right: edge(style.borders.right), bottom: edge(style.borders.bottom), left: edge(style.borders.left) };
+        const edge = (on: boolean | BorderLine | undefined) => {
+          const line = edgeLine(on);
+          return line ? { style: line.style, ...(line.color ? { color: { argb: hexToArgb(line.color) } } : {}) } : undefined;
+        };
+        const diagonal = edge(style.borders.diagonalUp ?? style.borders.diagonalDown);
+        target.border = {
+          top: edge(style.borders.top),
+          right: edge(style.borders.right),
+          bottom: edge(style.borders.bottom),
+          left: edge(style.borders.left),
+          ...(diagonal ? { diagonal: { ...diagonal, up: !!style.borders.diagonalUp, down: !!style.borders.diagonalDown } } : {}),
+        };
       }
     }
     for (const merge of sheet.merges) ws.mergeCells(rangeName(merge));
@@ -489,7 +651,8 @@ export async function exportXlsx(wb: Workbook): Promise<Blob> {
       if (converted) ws.addConditionalFormatting({ ref: rangeName(rule.range), rules: [converted] } as unknown as Parameters<Worksheet['addConditionalFormatting']>[0]);
     });
   });
-  const buffer = await addChartsToXlsx((await book.xlsx.writeBuffer()) as ArrayBuffer, wb);
+  await Promise.all(protections);
+  const buffer = await addSparklinesToXlsx(await addZeroHidingToXlsx(await addChartsToXlsx((await book.xlsx.writeBuffer()) as ArrayBuffer, wb), wb), wb);
   return new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
 

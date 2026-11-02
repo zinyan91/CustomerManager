@@ -3,21 +3,33 @@ import type { Validation } from '../engine/validation';
 import { adjustFormula, type Edit } from '../engine/adjust';
 import type { ChartObject } from '../engine/chartData';
 import { computeStats, evaluateRules, shiftRange, type CfResult, type CfRule, type CfStats } from '../engine/conditional';
+import { isValidName } from '../engine/definedNames';
 import { cellKey, keyCol, keyRow, MAX_COLS, MAX_ROWS, type RangePos } from '../engine/cellRef';
 import { ELEMENTWISE, evaluateFormulaValue, type EvalContext } from '../engine/evaluate';
 import { matchesCondition, type FilterCondition } from '../engine/filterCondition';
-import { formatValue } from '../engine/numberFormat';
+import { formatValue, hasZeroSection } from '../engine/numberFormat';
 import { parseFormula, type Node } from '../engine/parser';
 import { ERRORS, isRange, parseNumber, type RangeValue, type Scalar } from '../engine/values';
 
 export type HAlign = 'left' | 'center' | 'right';
 export type VAlign = 'top' | 'middle' | 'bottom';
 
+export type BorderLineStyle = 'hair' | 'thin' | 'dotted' | 'dashed' | 'medium' | 'thick' | 'double';
+
+/** One edge of a cell: `true` is a thin line in the ink colour, a line says more (a thick or double one, in a colour). */
+export interface BorderLine {
+  style: BorderLineStyle;
+  color?: string;
+}
+
 export interface Borders {
-  top?: boolean;
-  right?: boolean;
-  bottom?: boolean;
-  left?: boolean;
+  top?: boolean | BorderLine;
+  right?: boolean | BorderLine;
+  bottom?: boolean | BorderLine;
+  left?: boolean | BorderLine;
+  /** The diagonals across the cell: from bottom-left to top-right, and from top-left to bottom-right. */
+  diagonalUp?: boolean | BorderLine;
+  diagonalDown?: boolean | BorderLine;
 }
 
 export interface CellStyle {
@@ -32,8 +44,16 @@ export interface CellStyle {
   hAlign?: HAlign;
   vAlign?: VAlign;
   wrap?: boolean;
+  /** Text is made smaller until it fits the cell width (Excel's Shrink to fit). */
+  shrink?: boolean;
+  /** Indent from the aligned edge, in Excel's steps (0 to 15). */
+  indent?: number;
+  /** Text turned this many degrees counter-clockwise, -90 to 90. */
+  rotation?: number;
   numFmt?: string;
   borders?: Borders;
+  /** Cells are locked until a protected sheet is told otherwise: this one may be changed even then. */
+  unlocked?: boolean;
 }
 
 export interface Cell {
@@ -67,6 +87,16 @@ export interface FilterState {
   excluded: Record<number, string[]>;
   /** A condition per column (contains, greater than...), alongside the checklist. */
   conditions?: Record<number, FilterCondition>;
+  /** Rows a file had hidden under its filter, whose criteria are not known: they stay hidden until the filter is changed. */
+  imported?: number[];
+}
+
+/** A tiny line or column chart of a range, drawn inside one cell (Insert > Sparklines). */
+export interface Sparkline {
+  type: 'line' | 'column';
+  source: RangePos;
+  row: number;
+  col: number;
 }
 
 export type PaperSize = 'A3' | 'A4' | 'A5' | 'Letter' | 'Legal';
@@ -121,7 +151,20 @@ export interface Sheet {
   /** Pixel widths of columns that are not the default. */
   colWidths: Map<number, number>;
   /** Pixel heights of rows that are not the default. */
-  rowHeights: Map<number, number>;
+  rowHeights?: Map<number, number>;
+  /** The colour of the sheet's tab, as #rrggbb. */
+  tabColor?: string;
+  /** Left out of the tabs (Hide in the tab menu); formulas still read it. */
+  hidden?: boolean;
+  /** Web addresses cells link to (Ctrl+K), by cell key. */
+  links?: Map<number, string>;
+  /** Rows and columns the user hid (Ctrl+9, Ctrl+0); a filter hides rows of its own. */
+  rowsHidden?: Set<number>;
+  /** Outline level (1 to 7) of the rows and columns that are grouped, as Data > Group makes them. */
+  rowLevels?: Map<number, number>;
+  colLevels?: Map<number, number>;
+  sparklines?: Sparkline[];
+  colsHidden?: Set<number>;
   merges: RangePos[];
   /** Conditional formatting rules, first rule first. */
   cf: CfRule[];
@@ -141,6 +184,8 @@ export interface Sheet {
   comments?: Map<number, CellComment>;
   /** Trang tính đang được bảo vệ: không sửa được ô, định dạng hay cấu trúc. */
   protected?: boolean;
+  /** Cells that hold zero show nothing (Excel's "show a zero in cells that have a zero value", turned off). */
+  hideZeros?: boolean;
 }
 
 export const pageSetupOf = (sheet: Pick<Sheet, 'pageSetup'>): PageSetup => ({
@@ -154,10 +199,12 @@ const NO_ROWS: ReadonlySet<number> = new Set();
 export const DEFAULT_COL_WIDTH = 100;
 export const ROW_HEIGHT = 24;
 
-export const rowHeightOf = (sheet: Pick<Sheet, 'rowHeights'>, row: number): number => sheet.rowHeights.get(row) ?? ROW_HEIGHT;
+export const rowHeightOf = (sheet: Pick<Sheet, 'rowHeights'>, row: number): number => sheet.rowHeights?.get(row) ?? ROW_HEIGHT;
 
 /** Plain JSON for the whole workbook: undo snapshots and drafts. */
 export interface WorkbookData {
+  /** Defined names: the name and what it refers to. Absent in drafts saved before names existed. */
+  names?: Array<[string, string]>;
   styles: CellStyle[];
   sheets: Array<{
     name: string;
@@ -165,6 +212,14 @@ export interface WorkbookData {
     colWidths: Array<[number, number]>;
     /** Absent in drafts saved before row heights could be set. */
     rowHeights?: Array<[number, number]>;
+    tabColor?: string;
+    hidden?: boolean;
+    links?: Array<[number, string]>;
+    rowsHidden?: number[];
+    rowLevels?: Array<[number, number]>;
+    sparklines?: Sparkline[];
+    colLevels?: Array<[number, number]>;
+    colsHidden?: number[];
     merges: RangePos[];
     /** Absent in drafts saved before conditional formatting existed. */
     cf?: CfRule[];
@@ -177,6 +232,7 @@ export interface WorkbookData {
     pageSetup?: PageSetup;
     comments?: Array<[number, CellComment]>;
     protected?: boolean;
+    hideZeros?: boolean;
   }>;
 }
 
@@ -211,14 +267,20 @@ export function constantValue(raw: string): Scalar {
 }
 
 /** Functions that make a block of cells whatever they are given. */
-const BLOCK_FUNCTIONS = new Set(['UNIQUE', 'SORT', 'SORTBY', 'FILTER', 'SEQUENCE', 'TRANSPOSE', 'OFFSET', 'INDIRECT', 'XLOOKUP']);
+const BLOCK_FUNCTIONS = new Set([
+  'UNIQUE', 'SORT', 'SORTBY', 'FILTER', 'SEQUENCE', 'TRANSPOSE', 'OFFSET', 'INDIRECT', 'XLOOKUP', 'INDEX', 'ROW', 'COLUMN', 'TOCOL', 'TOROW', 'TAKE', 'DROP',
+  'BYROW', 'BYCOL', 'MAP', 'REDUCE', 'SCAN', 'MAKEARRAY', 'LINEST', 'LOGEST', 'TREND', 'GROWTH', 'WRAPROWS', 'WRAPCOLS', 'CHOOSECOLS', 'CHOOSEROWS', 'VSTACK', 'HSTACK', 'EXPAND', 'RANDARRAY', 'FREQUENCY', 'TEXTSPLIT', 'MMULT', 'MINVERSE', 'MUNIT',
+]);
 /** Functions that hand a block on from the branch they pick. */
-const PASS_THROUGH = new Set(['IF', 'IFS', 'IFERROR', 'IFNA', 'CHOOSE', 'SWITCH']);
+const PASS_THROUGH = new Set(['IF', 'IFS', 'IFERROR', 'IFNA', 'CHOOSE', 'SWITCH', 'LET']);
 
 function producesBlock(node: Node): boolean {
   switch (node.t) {
     case 'range':
+    case 'array':
       return true;
+    case 'name':
+      return node.v !== '';
     case 'call':
       return BLOCK_FUNCTIONS.has(node.name) || ((PASS_THROUGH.has(node.name) || ELEMENTWISE.has(node.name)) && node.args.some(producesBlock));
     case 'bin':
@@ -308,15 +370,27 @@ export class Workbook {
     this.cfCache.clear();
   }
 
-  /** The rows the sheet's filter hides; empty when it has none or nothing is excluded. */
+  /** The rows that take no room: the ones the user hid and the ones the filter hides. */
   hiddenRows(sheetIndex: number): ReadonlySet<number> {
+    const manual = this.sheets[sheetIndex]?.rowsHidden;
+    const filtered = this.filteredRows(sheetIndex);
+    if (!manual?.size) return filtered;
+    return new Set([...manual, ...filtered]);
+  }
+
+  hiddenCols(sheetIndex: number): ReadonlySet<number> {
+    return this.sheets[sheetIndex]?.colsHidden ?? NO_ROWS;
+  }
+
+  /** The rows the sheet's filter hides; empty when it has none or nothing is excluded. */
+  filteredRows(sheetIndex: number): ReadonlySet<number> {
     const filter = this.sheets[sheetIndex]?.filter;
     const columns = filter ? Object.entries(filter.excluded).filter(([, values]) => values.length > 0) : [];
     const conditions = filter ? Object.entries(filter.conditions ?? {}) : [];
-    if (!filter || (columns.length === 0 && conditions.length === 0)) return NO_ROWS;
+    if (!filter || (columns.length === 0 && conditions.length === 0 && !filter.imported?.length)) return NO_ROWS;
     const cached = this.hiddenCache.get(sheetIndex);
     if (cached && cached.version === this.version) return cached.rows;
-    const rows = new Set<number>();
+    const rows = new Set<number>(filter.imported ?? []);
     for (let r = filter.range.r1 + 1; r <= filter.range.r2; r += 1) {
       if (
         columns.some(([col, values]) => values.includes(this.displayAt(sheetIndex, r, Number(col)))) ||
@@ -349,6 +423,24 @@ export class Workbook {
     return range;
   }
 
+  private extentCache = new Map<number, { version: number; rows: number; cols: number }>();
+
+  /** Rows and columns up to the last cell holding something, spills not counted (they are computed from the very formulas that ask). */
+  private extentOf(sheet: number): { rows: number; cols: number } {
+    if (!this.sheets[sheet]) return { rows: 0, cols: 0 };
+    const cached = this.extentCache.get(sheet);
+    if (cached && cached.version === this.version) return cached;
+    let rows = 0;
+    let cols = 0;
+    for (const key of this.sheets[sheet].cells.keys()) {
+      rows = Math.max(rows, keyRow(key) + 1);
+      cols = Math.max(cols, keyCol(key) + 1);
+    }
+    const entry = { version: this.version, rows, cols };
+    this.extentCache.set(sheet, entry);
+    return entry;
+  }
+
   // ----- Values
 
   private context(sheetName: string, row: number, col: number): EvalContext {
@@ -358,7 +450,14 @@ export class Workbook {
       col,
       now: this.now,
       sheetExists: (name) => this.sheetIndex(name) >= 0,
+      sheetIndex: (name) => this.sheetIndex(name),
+      sheetCount: () => this.sheets.length,
+      isSubtotalAt: (name, r, c) => /(?:^|[^A-Za-z0-9_.])(?:SUBTOTAL|AGGREGATE)\s*\(/i.test(this.getCell(this.sheetIndex(name), r, c)?.raw ?? ''),
+      rawAt: (name, r, c) => this.getCell(this.sheetIndex(name), r, c)?.raw ?? '',
+      extent: (name) => this.extentOf(this.sheetIndex(name)),
+      nameTree: (name) => this.nameTree(name),
       valueAt: (name, r, c) => this.valueAt(this.sheetIndex(name), r, c),
+      rowHidden: (name, r, includeManual) => (includeManual ? this.hiddenRows(this.sheetIndex(name)) : this.filteredRows(this.sheetIndex(name))).has(r),
     };
   }
 
@@ -449,7 +548,10 @@ export class Workbook {
       if (spilled) return formatValue(spilled.value, this.styleOf(spilled.style).numFmt);
       if (!cell) return '';
     }
-    return formatValue(this.valueAt(sheet, row, col), this.styleOf(cell!.style).numFmt);
+    const value = this.valueAt(sheet, row, col);
+    const numFmt = this.styleOf(cell!.style).numFmt;
+    if (value === 0 && this.sheets[sheet]?.hideZeros && !hasZeroSection(numFmt)) return '';
+    return formatValue(value, numFmt);
   }
 
   // ----- Conditional formatting
@@ -488,19 +590,23 @@ export class Workbook {
       moved.set(cellKey(row, col), cell);
     }
     sheet.cells = moved;
-    if (sheet.comments?.size) {
-      const movedComments = new Map<number, CellComment>();
-      for (const [key, comment] of sheet.comments) {
+    // What hangs on a cell moves with it.
+    const follow = <T,>(attached: Map<number, T> | undefined): Map<number, T> | undefined => {
+      if (!attached) return attached;
+      const next = new Map<number, T>();
+      for (const [key, value] of attached) {
         const at = axisOf(key);
-        let next = at;
-        if (edit.mode === 'insert') {
-          if (at >= edit.at) next = at + edit.count;
-        } else if (at >= edit.at && at < edit.at + edit.count) continue;
-        else if (at >= edit.at + edit.count) next = at - edit.count;
-        movedComments.set(cellKey(edit.axis === 'row' ? next : keyRow(key), edit.axis === 'col' ? next : keyCol(key)), comment);
+        let to: number | null = at;
+        if (edit.mode === 'insert') to = at >= edit.at ? at + edit.count : at;
+        else if (at >= edit.at && at < edit.at + edit.count) to = null;
+        else if (at >= edit.at + edit.count) to = at - edit.count;
+        if (to === null) continue;
+        next.set(cellKey(edit.axis === 'row' ? to : keyRow(key), edit.axis === 'col' ? to : keyCol(key)), value);
       }
-      sheet.comments = movedComments;
-    }
+      return next;
+    };
+    sheet.links = follow(sheet.links);
+    sheet.comments = follow(sheet.comments);
 
     if (edit.axis === 'col') {
       const widths = new Map<number, number>();
@@ -510,15 +616,32 @@ export class Workbook {
         else if (col >= edit.at + edit.count) widths.set(col - edit.count, width);
       }
       sheet.colWidths = widths;
-    } else {
+    }
+    const shiftIndex = (index: number): number | null => {
+      if (edit.mode === 'insert') return index >= edit.at ? index + edit.count : index;
+      if (index < edit.at) return index;
+      return index >= edit.at + edit.count ? index - edit.count : null;
+    };
+    if (edit.axis === 'row' && sheet.rowHeights) {
       const heights = new Map<number, number>();
-      for (const [row, height] of sheet.rowHeights) {
-        if (edit.mode === 'insert') heights.set(row >= edit.at ? row + edit.count : row, height);
-        else if (row < edit.at) heights.set(row, height);
-        else if (row >= edit.at + edit.count) heights.set(row - edit.count, height);
+      for (const [row, height] of sheet.rowHeights ?? []) {
+        const to = shiftIndex(row);
+        if (to !== null) heights.set(to, height);
       }
       sheet.rowHeights = heights;
     }
+    if (sheet.sparklines) {
+      sheet.sparklines = sheet.sparklines.flatMap((s) => {
+        const source = shiftRange(s.source, edit.axis, edit.at, edit.count, edit.mode);
+        const at = shiftIndex(edit.axis === 'row' ? s.row : s.col);
+        if (!source || at === null) return [];
+        return [{ ...s, source, row: edit.axis === 'row' ? at : s.row, col: edit.axis === 'col' ? at : s.col }];
+      });
+    }
+    const levelKey = edit.axis === 'row' ? 'rowLevels' : 'colLevels';
+    if (sheet[levelKey]) sheet[levelKey] = new Map([...sheet[levelKey]!].flatMap(([index, level]) => { const to = shiftIndex(index); return to === null ? [] : [[to, level] as [number, number]]; }));
+    const hiddenKey = edit.axis === 'row' ? 'rowsHidden' : 'colsHidden';
+    if (sheet[hiddenKey]) sheet[hiddenKey] = new Set([...sheet[hiddenKey]!].flatMap((index) => shiftIndex(index) ?? []));
 
     sheet.merges = sheet.merges.flatMap((m) => {
       const lo = edit.axis === 'row' ? m.r1 : m.c1;
@@ -549,6 +672,12 @@ export class Workbook {
         return range ? [{ ...validation, range }] : [];
       });
       if (sheet.validations.length === 0) delete sheet.validations;
+    }
+
+    if (sheet.pageSetup?.printArea) {
+      const { printArea, ...rest } = sheet.pageSetup;
+      const area = shiftRange(printArea, edit.axis, edit.at, edit.count, edit.mode);
+      sheet.pageSetup = area ? { ...rest, printArea: area } : rest;
     }
 
     sheet.charts = sheet.charts.flatMap((chart) => {
@@ -594,7 +723,8 @@ export class Workbook {
           const at = moveColumn(Number(col));
           if (at !== null) conditions[at] = condition;
         }
-        sheet.filter = { range, excluded, ...(Object.keys(conditions).length ? { conditions } : {}) };
+        const imported = edit.axis === 'row' ? (sheet.filter.imported ?? []).flatMap((row) => shiftIndex(row) ?? []) : sheet.filter.imported;
+        sheet.filter = { range, excluded, ...(Object.keys(conditions).length ? { conditions } : {}), ...(imported?.length ? { imported } : {}) };
       }
     }
 
@@ -606,19 +736,72 @@ export class Workbook {
         if (adjusted !== cell.raw) other.cells.set(key, { ...cell, raw: adjusted });
       }
     }
+    // A name that points at moved cells moves with them.
+    for (const [key, entry] of this.names) {
+      const adjusted = adjustFormula(`=${entry.refersTo}`, '', sheet.name, edit).replace(/^=/, '');
+      if (adjusted !== entry.refersTo) this.names.set(key, { ...entry, refersTo: adjusted });
+    }
     this.touch();
+  }
+
+  // ----- Names
+
+  /** Names given to ranges or values, under their upper-case spelling; each holds what it refers to as a formula without the "=". */
+  names = new Map<string, { name: string; refersTo: string }>();
+  private nameTrees = new Map<string, Node | null>();
+
+  /** Gives a name to what `refersTo` says (an address, or any formula); false when the name is not allowed or the text is not a formula. */
+  setName(name: string, refersTo: string): boolean {
+    const text = refersTo.trim().replace(/^=/, '');
+    if (!isValidName(name) || text === '' || this.treeOf(text) === null) return false;
+    this.names.set(name.toUpperCase(), { name, refersTo: text });
+    this.touch();
+    return true;
+  }
+
+  deleteName(name: string): void {
+    if (this.names.delete(name.toUpperCase())) this.touch();
+  }
+
+  /** What a name refers to as a formula tree, or null when there is no such name. */
+  nameTree(name: string): Node | null {
+    const entry = this.names.get(name.toUpperCase());
+    return entry ? this.treeOf(entry.refersTo) : null;
+  }
+
+  private treeOf(text: string): Node | null {
+    let tree = this.nameTrees.get(text);
+    if (tree === undefined) {
+      try {
+        tree = parseFormula(text);
+      } catch {
+        tree = null;
+      }
+      if (this.nameTrees.size > 500) this.nameTrees.clear();
+      this.nameTrees.set(text, tree);
+    }
+    return tree;
   }
 
   // ----- Snapshots (undo, drafts)
 
   toData(): WorkbookData {
     return {
+      ...(this.names.size ? { names: [...this.names.values()].map(({ name, refersTo }): [string, string] => [name, refersTo]) } : {}),
       styles: this.styles.map((s) => ({ ...s, borders: s.borders ? { ...s.borders } : undefined })),
       sheets: this.sheets.map((sheet) => ({
         name: sheet.name,
         cells: [...sheet.cells].map(([key, cell]) => [key, cell.raw, cell.style]),
         colWidths: [...sheet.colWidths],
-        ...(sheet.rowHeights.size ? { rowHeights: [...sheet.rowHeights] } : {}),
+        ...(sheet.rowHeights?.size ? { rowHeights: [...sheet.rowHeights] } : {}),
+        ...(sheet.tabColor ? { tabColor: sheet.tabColor } : {}),
+        ...(sheet.hidden ? { hidden: true } : {}),
+        ...(sheet.links?.size ? { links: [...sheet.links] } : {}),
+        ...(sheet.rowsHidden?.size ? { rowsHidden: [...sheet.rowsHidden] } : {}),
+        ...(sheet.sparklines?.length ? { sparklines: structuredClone(sheet.sparklines) } : {}),
+        ...(sheet.rowLevels?.size ? { rowLevels: [...sheet.rowLevels] } : {}),
+        ...(sheet.colLevels?.size ? { colLevels: [...sheet.colLevels] } : {}),
+        ...(sheet.colsHidden?.size ? { colsHidden: [...sheet.colsHidden] } : {}),
         merges: sheet.merges.map((m) => ({ ...m })),
         cf: structuredClone(sheet.cf),
         charts: structuredClone(sheet.charts),
@@ -631,11 +814,13 @@ export class Workbook {
         ...(sheet.pageSetup ? { pageSetup: structuredClone(sheet.pageSetup) } : {}),
         ...(sheet.comments?.size ? { comments: [...sheet.comments].map(([key, comment]) => [key, { ...comment }] as [number, CellComment]) } : {}),
         ...(sheet.protected ? { protected: true } : {}),
+        ...(sheet.hideZeros ? { hideZeros: true } : {}),
       })),
     };
   }
 
   loadData(data: WorkbookData): void {
+    this.names = new Map((data.names ?? []).map(([name, refersTo]) => [name.toUpperCase(), { name, refersTo }]));
     this.styles = data.styles.length ? data.styles.map((s) => ({ ...s })) : [{}];
     this.styleIds = new Map(this.styles.map((s, i) => [styleKey(s), i]));
     this.sheets = data.sheets.length
@@ -643,7 +828,15 @@ export class Workbook {
           name: sheet.name,
           cells: new Map(sheet.cells.map(([key, raw, style]) => [key, { raw, style }])),
           colWidths: new Map(sheet.colWidths),
-          rowHeights: new Map(sheet.rowHeights ?? []),
+          ...(sheet.rowHeights?.length ? { rowHeights: new Map(sheet.rowHeights) } : {}),
+          ...(sheet.tabColor ? { tabColor: sheet.tabColor } : {}),
+          ...(sheet.hidden ? { hidden: true } : {}),
+          ...(sheet.links?.length ? { links: new Map(sheet.links) } : {}),
+          ...(sheet.rowsHidden?.length ? { rowsHidden: new Set(sheet.rowsHidden) } : {}),
+          ...(sheet.sparklines?.length ? { sparklines: structuredClone(sheet.sparklines) } : {}),
+          ...(sheet.rowLevels?.length ? { rowLevels: new Map(sheet.rowLevels) } : {}),
+          ...(sheet.colLevels?.length ? { colLevels: new Map(sheet.colLevels) } : {}),
+          ...(sheet.colsHidden?.length ? { colsHidden: new Set(sheet.colsHidden) } : {}),
           merges: sheet.merges.map((m) => ({ ...m })),
           cf: sheet.cf ? structuredClone(sheet.cf) : [],
           charts: sheet.charts ? structuredClone(sheet.charts) : [],
@@ -655,6 +848,7 @@ export class Workbook {
           ...(sheet.pageSetup ? { pageSetup: structuredClone(sheet.pageSetup) } : {}),
           ...(sheet.comments?.length ? { comments: new Map(sheet.comments.map(([key, comment]) => [key, { ...comment }])) } : {}),
           ...(sheet.protected ? { protected: true } : {}),
+          ...(sheet.hideZeros ? { hideZeros: true } : {}),
         }))
       : [newSheet('Sheet1')];
     this.touch();

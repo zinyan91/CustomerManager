@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FUNCTIONS } from '../calc/engine/functions';
+import { FUNCTIONS } from '../calc/engine/functionTable';
 import { allFunctions, FUNCTION_GROUPS } from '../calc/engine/functionCatalog';
 
 const SPECIAL = ['IF', 'IFS', 'IFERROR', 'IFNA', 'CHOOSE', 'OFFSET', 'INDIRECT', 'SWITCH'];

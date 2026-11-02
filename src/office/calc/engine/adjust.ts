@@ -1,5 +1,5 @@
 import { MAX_COLS, MAX_ROWS } from './cellRef';
-import { parseFormula, printFormula, type Node, type RefNode } from './parser';
+import { coversColumns, coversRows, parseFormula, printFormula, type Node, type RefNode } from './parser';
 import { errorFromCode } from './values';
 
 export type Axis = 'row' | 'col';
@@ -51,6 +51,8 @@ export function adjustFormula(formula: string, formulaSheet: string, targetSheet
       }
       case 'range': {
         if (!points(node.sheet)) return node;
+        // A whole column stays whole when rows come and go, a whole row when columns do.
+        if (edit.axis === 'row' ? coversColumns(node) : coversRows(node)) return node;
         const key = edit.axis === 'row' ? 'row' : 'col';
         const lo = Math.min(node.from[key], node.to[key]);
         const hi = Math.max(node.from[key], node.to[key]);

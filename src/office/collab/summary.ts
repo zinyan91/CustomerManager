@@ -49,7 +49,11 @@ export function summarizePatch(patch: Patch, before?: WorkbookData): PatchSummar
         }
         break;
       case 'keyed':
-        summary.changes.push({ kind: op.prop, name: op.sheet });
+        if (op.prop === 'colWidths' || op.prop === 'rowHeights' || op.prop === 'comments') summary.changes.push({ kind: op.prop, name: op.sheet });
+        else summary.changes.push({ kind: 'prop', name: op.prop });
+        break;
+      case 'definedNames':
+        summary.changes.push({ kind: 'prop', name: 'names' });
         break;
       case 'prop':
         summary.changes.push({ kind: 'prop', name: op.prop });

@@ -54,8 +54,8 @@ describe('xlsx', () => {
     wb.putCell(0, 4, 0, { raw: "'007", style: 0 });
     wb.putCell(0, 5, 0, { raw: 'TRUE', style: 0 });
     wb.sheets[0].colWidths.set(0, 140);
-    wb.sheets[0].rowHeights.set(1, 48);
-    wb.sheets[0].rowHeights.set(9, 36);
+    wb.sheets[0].rowHeights!.set(1, 48);
+    wb.sheets[0].rowHeights!.set(9, 36);
     wb.sheets[0].merges.push({ r1: 0, c1: 1, r2: 0, c2: 2 });
     wb.sheets.push({ ...newSheet('Data'), cells: new Map([[cellKey(0, 0), { raw: '=Sheet1!A2+1', style: 0 }]]) });
 
@@ -73,10 +73,10 @@ describe('xlsx', () => {
     expect(loaded.displayAt(0, 4, 0)).toBe('007');
     expect(loaded.displayAt(0, 5, 0)).toBe('TRUE');
     expect(loaded.sheets[0].colWidths.get(0)).toBeGreaterThan(120);
-    expect(loaded.sheets[0].rowHeights.get(1)).toBe(48);
+    expect(loaded.sheets[0].rowHeights?.get(1)).toBe(48);
     // Dòng chỉ có chiều cao, không có ô nào, vẫn giữ
-    expect(loaded.sheets[0].rowHeights.get(9)).toBe(36);
-    expect(loaded.sheets[0].rowHeights.has(0)).toBe(false);
+    expect(loaded.sheets[0].rowHeights?.get(9)).toBe(36);
+    expect(loaded.sheets[0].rowHeights?.has(0)).toBe(false);
     expect(loaded.sheets[0].merges).toEqual([{ r1: 0, c1: 1, r2: 0, c2: 2 }]);
     expect(loaded.displayAt(1, 0, 0)).toBe('1235.5');
   });
@@ -212,7 +212,9 @@ describe('xlsx filter', () => {
     expect(sheetXml).not.toMatch(/<row r="2"[^>]*hidden="1"/);
     const back = new Workbook();
     back.loadData(await importXlsx(buffer));
-    expect(back.sheets[0].filter).toEqual({ range: { r1: 0, c1: 0, r2: 3, c2: 1 }, excluded: {} });
+    expect(back.sheets[0].filter).toEqual({ range: { r1: 0, c1: 0, r2: 3, c2: 1 }, excluded: {}, imported: [2] });
+    expect(back.hiddenRows(0).has(2)).toBe(true);
+    expect(back.sheets[0].rowsHidden).toBeUndefined();
   });
 });
 

@@ -4,6 +4,8 @@ import type { CalcController } from '../controller';
 import { Popover } from '../../shared/ribbon/controls';
 import { useOfficeI18n } from '../../i18n';
 
+const TAB_COLORS = ['#e74c3c', '#f39c12', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6'];
+
 export const SheetTabs: React.FC<{ controller: CalcController; onMessage: (text: string) => void }> = ({ controller, onMessage }) => {
   const { m } = useOfficeI18n();
   const t = m.calc.sheet;
@@ -22,8 +24,8 @@ export const SheetTabs: React.FC<{ controller: CalcController; onMessage: (text:
         <Plus size={16} />
       </button>
       <div className="calc-sheet-tab-list">
-        {sheets.map((sheet, index) => (
-          <div key={sheet.name} className={`calc-sheet-tab${index === controller.active ? ' is-active' : ''}`}>
+        {sheets.map((sheet, index) => sheet.hidden ? null : (
+          <div key={sheet.name} className={`calc-sheet-tab${index === controller.active ? ' is-active' : ''}`} style={sheet.tabColor ? { boxShadow: `inset 0 -3px 0 ${sheet.tabColor}` } : undefined}>
             <button
               type="button"
               role="tab"
@@ -53,6 +55,89 @@ export const SheetTabs: React.FC<{ controller: CalcController; onMessage: (text:
                     >
                       {t.rename}
                     </button>
+                    <button
+                      type="button"
+                      className="wr-menu-item"
+                      onClick={() => {
+                        close();
+                        controller.duplicateSheet(index);
+                      }}
+                    >
+                      {t.duplicate}
+                    </button>
+                    <button
+                      type="button"
+                      className="wr-menu-item"
+                      disabled={index === 0}
+                      onClick={() => {
+                        close();
+                        controller.moveSheet(index, -1);
+                      }}
+                    >
+                      {t.moveLeft}
+                    </button>
+                    <button
+                      type="button"
+                      className="wr-menu-item"
+                      disabled={index === sheets.length - 1}
+                      onClick={() => {
+                        close();
+                        controller.moveSheet(index, 1);
+                      }}
+                    >
+                      {t.moveRight}
+                    </button>
+                    <div className="calc-tab-colors" role="group" aria-label={t.tabColor}>
+                      {TAB_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          className="calc-tab-color"
+                          aria-label={color}
+                          style={{ background: color }}
+                          onClick={() => {
+                            close();
+                            controller.setTabColor(index, color);
+                          }}
+                        />
+                      ))}
+                      <button
+                        type="button"
+                        className="wr-menu-item"
+                        onClick={() => {
+                          close();
+                          controller.setTabColor(index, null);
+                        }}
+                      >
+                        {t.noTabColor}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      className="wr-menu-item"
+                      disabled={sheets.filter((s) => !s.hidden).length <= 1}
+                      onClick={() => {
+                        close();
+                        controller.setSheetHidden(index, true);
+                      }}
+                    >
+                      {t.hide}
+                    </button>
+                    {sheets.map((hiddenSheet, hiddenIndex) =>
+                      hiddenSheet.hidden ? (
+                        <button
+                          key={`show-${hiddenSheet.name}`}
+                          type="button"
+                          className="wr-menu-item"
+                          onClick={() => {
+                            close();
+                            controller.setSheetHidden(hiddenIndex, false);
+                          }}
+                        >
+                          {t.unhide(hiddenSheet.name)}
+                        </button>
+                      ) : null,
+                    )}
                     <button
                       type="button"
                       className="wr-menu-item"

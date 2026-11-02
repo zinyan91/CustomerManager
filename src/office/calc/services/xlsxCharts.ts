@@ -1,4 +1,4 @@
-import { chartLayout, readChartData, type ChartData, type ChartObject, type ChartType } from '../engine/chartData';
+import { chartLayout, readChartData, scatterLayout, type ChartData, type ChartObject, type ChartType } from '../engine/chartData';
 import { columnName, parseRange, type RangePos } from '../engine/cellRef';
 import type { Workbook } from '../model/workbook';
 import { DEFAULT_COL_WIDTH } from '../model/workbook';
@@ -60,7 +60,7 @@ function numberCache(values: Array<number | null>): string {
   return `<c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="${values.length}"/>${points}</c:numCache>`;
 }
 
-export function chartXml(chart: ChartObject, data: ChartData, layout: ReturnType<typeof chartLayout>, sheetName: string): string {
+export function chartXml(chart: ChartObject, data: ChartData, layout: ReturnType<typeof chartLayout> & { xColumn?: boolean }, sheetName: string): string {
   const { range } = chart;
   const first = range.r1 + layout.first;
   const last = range.r2;
@@ -74,6 +74,13 @@ export function chartXml(chart: ChartObject, data: ChartData, layout: ReturnType
         ? `<c:tx><c:strRef><c:f>${escapeXml(reference(sheetName, range.r1, col, range.r1, col))}</c:f>${stringCache([s.name])}</c:strRef></c:tx>`
         : `<c:tx><c:v>${escapeXml(s.name)}</c:v></c:tx>`;
       const values = `<c:val><c:numRef><c:f>${escapeXml(reference(sheetName, first, col, last, col))}</c:f>${numberCache(s.values)}</c:numRef></c:val>`;
+      if (chart.type === 'scatter') {
+        const x = layout.xColumn
+          ? `<c:xVal><c:numRef><c:f>${escapeXml(reference(sheetName, first, range.c1, last, range.c1))}</c:f>${numberCache(data.x ?? [])}</c:numRef></c:xVal>`
+          : '';
+        const y = `<c:yVal><c:numRef><c:f>${escapeXml(reference(sheetName, first, col, last, col))}</c:f>${numberCache(s.values)}</c:numRef></c:yVal>`;
+        return `<c:ser><c:idx val="${i}"/><c:order val="${i}"/>${name}<c:spPr><a:ln w="19050"><a:noFill/></a:ln></c:spPr><c:marker><c:symbol val="circle"/><c:size val="6"/></c:marker>${x}${y}<c:smooth val="0"/></c:ser>`;
+      }
       const extra = chart.type === 'bar' || chart.type === 'column' ? '<c:invertIfNegative val="0"/>' : chart.type === 'line' ? '<c:marker><c:symbol val="circle"/><c:size val="5"/></c:marker>' : '';
       return `<c:ser><c:idx val="${i}"/><c:order val="${i}"/>${name}${extra}${categories}${values}${chart.type === 'line' ? '<c:smooth val="0"/>' : ''}</c:ser>`;
     })
@@ -84,11 +91,18 @@ export function chartXml(chart: ChartObject, data: ChartData, layout: ReturnType
   let plot: string;
   if (chart.type === 'pie') {
     plot = `<c:pieChart><c:varyColors val="1"/>${series}<c:firstSliceAng val="0"/></c:pieChart>`;
+  } else if (chart.type === 'scatter') {
+    plot =
+      `<c:scatterChart><c:scatterStyle val="lineMarker"/><c:varyColors val="0"/>${series}${axes}</c:scatterChart>` +
+      `<c:valAx><c:axId val="50010"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:numFmt formatCode="General" sourceLinked="1"/><c:tickLblPos val="nextTo"/><c:crossAx val="50020"/><c:crosses val="autoZero"/><c:crossBetween val="midCat"/></c:valAx>` +
+      `<c:valAx><c:axId val="50020"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines/><c:numFmt formatCode="General" sourceLinked="1"/><c:tickLblPos val="nextTo"/><c:crossAx val="50010"/><c:crosses val="autoZero"/><c:crossBetween val="midCat"/></c:valAx>`;
   } else {
     const body =
       chart.type === 'line'
         ? `<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>${series}<c:marker val="1"/>${axes}</c:lineChart>`
-        : `<c:barChart><c:barDir val="${horizontal ? 'bar' : 'col'}"/><c:grouping val="clustered"/><c:varyColors val="0"/>${series}${axes}</c:barChart>`;
+        : chart.type === 'area'
+          ? `<c:areaChart><c:grouping val="${chart.stacked ? 'stacked' : 'standard'}"/><c:varyColors val="0"/>${series}${axes}</c:areaChart>`
+          : `<c:barChart><c:barDir val="${horizontal ? 'bar' : 'col'}"/><c:grouping val="${chart.stacked ? 'stacked' : 'clustered'}"/><c:varyColors val="0"/>${series}${chart.stacked ? '<c:overlap val="100"/>' : ''}${axes}</c:barChart>`;
     plot =
       body +
       `<c:catAx><c:axId val="50010"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="${horizontal ? 'l' : 'b'}"/><c:numFmt formatCode="General" sourceLinked="0"/><c:tickLblPos val="nextTo"/><c:crossAx val="50020"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>` +
@@ -164,8 +178,8 @@ export async function addChartsToXlsx(buffer: ArrayBuffer, wb: Workbook): Promis
     let shapeId = 100 + (drawingXml.match(/<xdr:cNvPr\b/g)?.length ?? 0);
     const anchors: string[] = [];
     for (const chart of sheet.charts) {
-      const layout = chartLayout(chart.range, (r, c) => wb.valueAt(index, r, c));
-      const data = readChartData(chart.range, (r, c) => wb.valueAt(index, r, c), (r, c) => wb.displayAt(index, r, c));
+      const layout = chart.type === 'scatter' ? scatterLayout(chart.range, (r, c) => wb.valueAt(index, r, c)) : chartLayout(chart.range, (r, c) => wb.valueAt(index, r, c));
+      const data = readChartData(chart.range, (r, c) => wb.valueAt(index, r, c), (r, c) => wb.displayAt(index, r, c), chart.type);
       if (data.series.length === 0) continue;
       const number = nextNumber(names(), /^xl\/charts\/chart(\d+)\.xml$/);
       const chartPath = `xl/charts/chart${number}.xml`;
@@ -193,7 +207,8 @@ const CHART_KINDS: Array<{ tag: string; type: (xml: string) => ChartType }> = [
   { tag: 'doughnutChart', type: () => 'pie' },
   { tag: 'lineChart', type: () => 'line' },
   { tag: 'line3DChart', type: () => 'line' },
-  { tag: 'areaChart', type: () => 'line' },
+  { tag: 'areaChart', type: () => 'area' },
+  { tag: 'scatterChart', type: () => 'scatter' },
   { tag: 'barChart', type: (xml) => (/<c:barDir val="bar"/.test(xml) ? 'bar' : 'column') },
   { tag: 'bar3DChart', type: (xml) => (/<c:barDir val="bar"/.test(xml) ? 'bar' : 'column') },
 ];
@@ -213,7 +228,8 @@ export function chartFromXml(xml: string, anchor: Pick<ChartObject, 'row' | 'col
   if (!box) return null;
   const titleBlock = /<c:title>([\s\S]*?)<\/c:title>/.exec(xml)?.[1] ?? '';
   const title = unescapeXml([...titleBlock.matchAll(/<a:t>([^<]*)<\/a:t>/g)].map((m) => m[1]).join(''));
-  return { id, type: kind.type(xml), range: box, title: title.slice(0, 120), ...anchor };
+  const stacked = (kind.tag === 'barChart' || kind.tag === 'bar3DChart' || kind.tag === 'areaChart') && /<c:grouping val="(?:stacked|percentStacked)"/.test(xml);
+  return { id, type: kind.type(xml), ...(stacked ? { stacked: true } : {}), range: box, title: title.slice(0, 120), ...anchor };
 }
 
 /** Charts of one sheet, from the package; `widthOf` gives column widths for anchors that run between two cells. */

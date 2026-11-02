@@ -13,6 +13,7 @@ export const ribbonEn: RibbonMessages = {
       lookup: 'Lookup & Reference',
       math: 'Math & Trig',
       statistical: 'Statistical',
+      engineering: 'Engineering',
       information: 'Information',
       array: 'Dynamic arrays',
     },

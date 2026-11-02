@@ -4,6 +4,7 @@ import { chartColor } from '../utils/chartColors';
 
 export interface ChartViewProps {
   type: ChartType;
+  stacked?: boolean;
   title: string;
   data: ChartData;
   /** Size the drawing is laid out at; the SVG scales to its box. */
@@ -25,8 +26,8 @@ function arcPath(cx: number, cy: number, r: number, from: number, to: number): s
   return `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z`;
 }
 
-/** A chart as SVG: column, bar, line or pie over the data a range holds. */
-export const ChartView: React.FC<ChartViewProps> = ({ type, title, data, width, height }) => {
+/** A chart as SVG: column, bar, line, area or pie over the data a range holds. */
+export const ChartView: React.FC<ChartViewProps> = ({ type, stacked = false, title, data, width, height }) => {
   const { categories, series } = data;
   const empty = series.length === 0 || categories.length === 0;
   const titleH = title ? 30 : 8;
@@ -46,6 +47,48 @@ export const ChartView: React.FC<ChartViewProps> = ({ type, title, data, width, 
   );
 
   if (empty) return frame(null);
+
+  /** Points at their x and y, on two numeric axes. */
+  function scatterPlot(): React.ReactNode {
+    const xs = (data.x ?? []).filter((v): v is number => v !== null);
+    const ys = series.flatMap((s) => s.values).filter((v): v is number => v !== null);
+    if (xs.length === 0 || ys.length === 0) return null;
+    const xScale = niceScale(Math.min(...xs), Math.max(...xs), 6, false);
+    const yScale = niceScale(Math.min(...ys), Math.max(...ys), 5, false);
+    const left = 50;
+    const top = titleH + 4;
+    const plotW = Math.max(10, width - left - 14);
+    const plotH = Math.max(10, height - top - 34 - legendH);
+    const px = (v: number) => left + ((v - xScale.min) / (xScale.max - xScale.min)) * plotW;
+    const py = (v: number) => top + plotH - ((v - yScale.min) / (yScale.max - yScale.min)) * plotH;
+    return (
+      <>
+        {yScale.ticks.map((tick) => (
+          <g key={`y${tick}`}>
+            <line x1={left} x2={left + plotW} y1={py(tick)} y2={py(tick)} stroke={GRID} />
+            <text x={left - 6} y={py(tick) + 3} textAnchor="end" fontSize="10" fill={MUTED}>
+              {formatTick(tick)}
+            </text>
+          </g>
+        ))}
+        {xScale.ticks.map((tick) => (
+          <g key={`x${tick}`}>
+            <line x1={px(tick)} x2={px(tick)} y1={top} y2={top + plotH} stroke={GRID} />
+            <text x={px(tick)} y={top + plotH + 14} textAnchor="middle" fontSize="10" fill={MUTED}>
+              {formatTick(tick)}
+            </text>
+          </g>
+        ))}
+        {series.map((s, si) =>
+          s.values.map((v, i) => {
+            const x = data.x?.[i];
+            return v === null || x === null || x === undefined ? null : <circle key={`${si}-${i}`} cx={px(x)} cy={py(v)} r="4" fill={chartColor(si)} fillOpacity="0.85" />;
+          }),
+        )}
+        {legend}
+      </>
+    );
+  }
 
   const legend = showLegend && (
     <g>
@@ -112,7 +155,13 @@ export const ChartView: React.FC<ChartViewProps> = ({ type, title, data, width, 
     );
   }
 
-  const all = series.flatMap((s) => s.values).filter((v): v is number => v !== null);
+  if (type === 'scatter') return frame(scatterPlot());
+
+  // Piled bars reach as far as the sum of the positive values (and of the negative ones) of a category.
+  const piled = stacked && (type === 'column' || type === 'bar' || type === 'area');
+  const all = piled
+    ? categories.flatMap((_, i) => [series.reduce((a, s) => a + Math.max(0, s.values[i] ?? 0), 0), series.reduce((a, s) => a + Math.min(0, s.values[i] ?? 0), 0)])
+    : series.flatMap((s) => s.values).filter((v): v is number => v !== null);
   const scale = niceScale(Math.min(...all), Math.max(...all), 5, type !== 'line');
   const horizontal = type === 'bar';
   const left = horizontal ? 74 : 50;
@@ -158,7 +207,21 @@ export const ChartView: React.FC<ChartViewProps> = ({ type, title, data, width, 
   );
 
   let marks: React.ReactNode;
-  if (type === 'line') {
+  if (type === 'area' && piled) {
+    // Each series is drawn between the running total below it and its own, a missing value counting as 0.
+    const sums = series.map((_, si) => categories.map((__, i) => series.slice(0, si + 1).reduce((a, s) => a + (s.values[i] ?? 0), 0)));
+    const xAt = (i: number) => left + (i + 0.5) * bandSize;
+    marks = series.map((_, si) => {
+      const top = sums[si].map((v, i) => `${xAt(i)},${valuePos(v)}`);
+      const bottom = (si === 0 ? categories.map(() => 0) : sums[si - 1]).map((v, i) => `${xAt(i)},${valuePos(v)}`).reverse();
+      return (
+        <g key={si}>
+          <path d={`M${top.join(' L')} L${bottom.join(' L')} Z`} fill={chartColor(si)} fillOpacity="0.55" stroke="none" />
+          <path d={`M${top.join(' L')}`} fill="none" stroke={chartColor(si)} strokeWidth="2" strokeLinejoin="round" />
+        </g>
+      );
+    });
+  } else if (type === 'line' || type === 'area') {
     marks = series.map((s, si) => {
       const points = s.values.map((v, i) => (v === null ? null : [left + (i + 0.5) * bandSize, valuePos(v)] as const));
       // A missing value lifts the pen: the line breaks there.
@@ -172,26 +235,49 @@ export const ChartView: React.FC<ChartViewProps> = ({ type, title, data, width, 
         path += `${pen ? 'L' : 'M'}${p[0]},${p[1]}`;
         pen = true;
       }
+      // An area is filled down to the zero line, one piece for each unbroken run of values.
+      const base = valuePos(Math.max(scale.min, Math.min(0, scale.max)));
+      const fills: string[] = [];
+      let run: Array<readonly [number, number]> = [];
+      const flush = () => {
+        if (run.length > 0) fills.push(`M${run[0][0]},${base} ${run.map((p) => `L${p[0]},${p[1]}`).join(' ')} L${run[run.length - 1][0]},${base} Z`);
+        run = [];
+      };
+      for (const p of points) {
+        if (p) run.push(p);
+        else flush();
+      }
+      flush();
       return (
         <g key={si}>
+          {type === 'area' && fills.map((d, i) => <path key={i} d={d} fill={chartColor(si)} fillOpacity="0.45" stroke="none" />)}
           <path d={path} fill="none" stroke={chartColor(si)} strokeWidth="2" strokeLinejoin="round" />
-          {points.map((p, i) => p && <circle key={i} cx={p[0]} cy={p[1]} r="3" fill={chartColor(si)} />)}
+          {type === 'line' && points.map((p, i) => p && <circle key={i} cx={p[0]} cy={p[1]} r="3" fill={chartColor(si)} />)}
         </g>
       );
     });
   } else {
     const groupInner = bandSize * 0.72;
-    const barSize = groupInner / series.length;
+    const barSize = piled ? groupInner : groupInner / series.length;
     const zero = valuePos(0);
+    const above = categories.map(() => 0);
+    const below = categories.map(() => 0);
     marks = series.map((s, si) =>
       s.values.map((v, i) => {
         if (v === null) return null;
-        const offset = (bandSize - groupInner) / 2 + si * barSize;
-        const p = valuePos(v);
+        const offset = (bandSize - groupInner) / 2 + (piled ? 0 : si * barSize);
+        let start = zero;
+        let p = valuePos(v);
+        if (piled) {
+          start = valuePos(v >= 0 ? above[i] : below[i]);
+          if (v >= 0) above[i] += v;
+          else below[i] += v;
+          p = valuePos(v >= 0 ? above[i] : below[i]);
+        }
         return horizontal ? (
-          <rect key={`${si}-${i}`} x={Math.min(zero, p)} y={top + i * bandSize + offset} width={Math.abs(p - zero)} height={Math.max(1, barSize - 1)} fill={chartColor(si)} />
+          <rect key={`${si}-${i}`} x={Math.min(start, p)} y={top + i * bandSize + offset} width={Math.abs(p - start)} height={Math.max(1, barSize - 1)} fill={chartColor(si)} />
         ) : (
-          <rect key={`${si}-${i}`} x={left + i * bandSize + offset} y={Math.min(zero, p)} width={Math.max(1, barSize - 1)} height={Math.abs(zero - p)} fill={chartColor(si)} />
+          <rect key={`${si}-${i}`} x={left + i * bandSize + offset} y={Math.min(start, p)} width={Math.max(1, barSize - 1)} height={Math.abs(start - p)} fill={chartColor(si)} />
         );
       }),
     );

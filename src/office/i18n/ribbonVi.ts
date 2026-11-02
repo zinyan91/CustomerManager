@@ -12,6 +12,7 @@ export const ribbonVi = {
       lookup: 'Tra cứu và tham chiếu',
       math: 'Toán và lượng giác',
       statistical: 'Thống kê',
+      engineering: 'Kỹ thuật',
       information: 'Thông tin',
       array: 'Mảng động',
     },

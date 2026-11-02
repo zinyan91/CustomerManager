@@ -1,7 +1,7 @@
 import { compareValues, isError, parseNumber, type Scalar } from './values';
 
 /** "a*b?" → a regular expression matching the whole text, case-insensitively; "~*" is a literal star. */
-function wildcard(pattern: string): RegExp {
+export function wildcard(pattern: string, anchored = true): RegExp {
   let body = '';
   for (let i = 0; i < pattern.length; i += 1) {
     const ch = pattern[i];
@@ -13,8 +13,11 @@ function wildcard(pattern: string): RegExp {
     else if (ch === '?') body += '.';
     else body += ch.replace(/[.+^${}()|[\]\\]/g, '\\$&');
   }
-  return new RegExp(`^${body}$`, 'i');
+  return new RegExp(anchored ? `^${body}$` : body, 'i');
 }
+
+/** Whether a lookup value uses wildcards, so an exact match should read it as a pattern. */
+export const hasWildcard = (text: string): boolean => /[*?~]/.test(text);
 
 /**
  * COUNTIF-style criteria: a number or text for equality, or an operator and

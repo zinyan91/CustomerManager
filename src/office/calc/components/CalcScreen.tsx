@@ -19,7 +19,10 @@ import { formatGeneral, isError } from '../engine/values';
 import type { WorkbookData } from '../model/workbook';
 import { getCalcDraft, newDraftId, saveCalcDraft } from '../services/calcDraftStore';
 import { exportCsv, exportXlsx, importSpreadsheet } from '../services/xlsxService';
+import { OPEN_FORMAT_EVENT, OPEN_NAMES_EVENT } from '../shortcuts';
+import type { GridAction } from '../shortcuts';
 import { CalcFindPanel } from './CalcFindPanel';
+import { promptLink, promptNote } from './linkPrompts';
 import { CalcGrid } from './CalcGrid';
 import { Backstage, type BackstageSection } from './backstage/Backstage';
 import { CalcRibbon } from './CalcRibbon';
@@ -284,8 +287,44 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
   const saveShortcut = useRef<() => void>(() => {});
   saveShortcut.current = () => (archive.link ? void archive.saveToArchive() : setBackstage('save'));
 
+  /** The shortcuts the grid hands up because they open something or change how the sheet is shown. */
+  const onScreenAction = (action: GridAction): boolean => {
+    switch (action.type) {
+      case 'showFormulas':
+        setView((current) => ({ ...current, showFormulas: !current.showFormulas }));
+        return true;
+      case 'hyperlink':
+        promptLink(controller, t.links);
+        return true;
+      case 'note':
+        promptNote(controller, t.notes, author);
+        return true;
+      case 'saveAs':
+        setBackstage('saveAs');
+        return true;
+      case 'formatCells':
+        window.dispatchEvent(new Event(OPEN_FORMAT_EVENT));
+        return true;
+      case 'goTo':
+        document.querySelector<HTMLElement>('.calc-name-box')?.focus();
+        return true;
+      default:
+        return false;
+    }
+  };
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'F3' && event.ctrlKey && !event.shiftKey) {
+        event.preventDefault();
+        window.dispatchEvent(new Event(OPEN_NAMES_EVENT));
+        return;
+      }
+      if (event.key === 'F5' && !event.ctrlKey && !event.altKey) {
+        event.preventDefault();
+        document.querySelector<HTMLElement>('.calc-name-box')?.focus();
+        return;
+      }
       if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
       const key = event.key.toLowerCase();
       if (key === 'h' || (key === 'f' && !event.shiftKey)) {
@@ -303,6 +342,12 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
       } else if (key === '-') {
         event.preventDefault();
         setZoom((z) => clampZoom(z - 10));
+      } else if (key === 'o' && !event.shiftKey) {
+        event.preventDefault();
+        setBackstage('open');
+      } else if (key === 'g') {
+        event.preventDefault();
+        document.querySelector<HTMLElement>('.calc-name-box')?.focus();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -312,18 +357,20 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
 
   // Sum, average and count of the selected numbers, as Excel's status bar shows them.
   const stats = (() => {
-    const { r1, c1, r2, c2 } = controller.selection;
-    if ((r2 - r1 + 1) * (c2 - c1 + 1) < 2 || (r2 - r1 + 1) * (c2 - c1 + 1) > 200_000) return null;
+    const blocks = controller.blocks;
+    const size = blocks.reduce((total, { r1, c1, r2, c2 }) => total + (r2 - r1 + 1) * (c2 - c1 + 1), 0);
+    if (size < 2 || size > 200_000) return null;
     let sum = 0;
     let count = 0;
-    for (let r = r1; r <= r2; r += 1)
-      for (let c = c1; c <= c2; c += 1) {
-        const v = controller.wb.valueAt(controller.active, r, c);
-        if (typeof v === 'number' && !isError(v)) {
-          sum += v;
-          count += 1;
+    for (const { r1, c1, r2, c2 } of blocks)
+      for (let r = r1; r <= r2; r += 1)
+        for (let c = c1; c <= c2; c += 1) {
+          const v = controller.wb.valueAt(controller.active, r, c);
+          if (typeof v === 'number' && !isError(v)) {
+            sum += v;
+            count += 1;
+          }
         }
-      }
     return count > 0 ? { sum, count, average: sum / count } : null;
   })();
 
@@ -473,7 +520,7 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
       {findOpen && <CalcFindPanel controller={controller} onClose={() => setFindOpen(false)} />}
 
       {view.formulaBar && <FormulaBar controller={controller} />}
-      <CalcGrid controller={controller} zoom={zoom} gridlines={view.gridlines} headings={view.headings} showFormulas={view.showFormulas} />
+      <CalcGrid controller={controller} zoom={zoom} gridlines={view.gridlines} headings={view.headings} showFormulas={view.showFormulas} onScreenAction={onScreenAction} onMessage={setMessage} />
       <SheetTabs controller={controller} onMessage={setMessage} />
       {backstage && (
         <Backstage

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Braces, Calculator, CalendarClock, CircleDollarSign, Eye, FunctionSquare, Info, ListTree, Search, Sigma, Type } from 'lucide-react';
+import { Binary, BookOpen, Braces, Calculator, CalendarClock, CircleDollarSign, Eye, FunctionSquare, Info, ListTree, Search, Sigma, Type } from 'lucide-react';
 import { useOfficeI18n } from '../../../i18n';
 import type { CalcController } from '../../controller';
 import { FUNCTION_GROUPS, type FunctionGroup } from '../../engine/functionCatalog';
@@ -17,11 +17,12 @@ const GROUP_ICONS: Record<FunctionGroup, React.ReactNode> = {
   lookup: <Search size={16} />,
   math: <Calculator size={16} />,
   statistical: <BookOpen size={16} />,
+  engineering: <Binary size={16} />,
   information: <Info size={16} />,
   array: <Braces size={16} />,
 };
 
-const LIBRARY_ORDER: FunctionGroup[] = ['financial', 'logical', 'text', 'dateTime', 'lookup', 'math', 'statistical', 'information', 'array'];
+const LIBRARY_ORDER: FunctionGroup[] = ['financial', 'logical', 'text', 'dateTime', 'lookup', 'math', 'statistical', 'engineering', 'information', 'array'];
 
 export interface FormulasTabProps {
   controller: CalcController;

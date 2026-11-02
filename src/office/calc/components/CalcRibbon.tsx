@@ -1,8 +1,13 @@
-import React, { useRef, useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  Target,
+  Minimize2,
+  IndentDecrease,
+  IndentIncrease,
+  RotateCcw,
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
   AlignVerticalJustifyStart,
@@ -20,6 +25,9 @@ import {
   FilterX,
   Grid3x3,
   ImagePlus,
+  AreaChart,
+  ChartColumnStacked,
+  ScatterChart,
   Italic,
   LineChart,
   ListChecks,
@@ -45,7 +53,9 @@ import {
   Undo2,
   WrapText,
 } from 'lucide-react';
+import { cellName, parseCell } from '../engine/cellRef';
 import type { ChartType } from '../engine/chartData';
+import { ICON_GLYPHS, iconColor, type IconSet } from '../engine/conditional';
 import type { BorderPreset, CalcController, NewCfRule } from '../controller';
 import type { CfStyle } from '../engine/conditional';
 import { FORMAT_PRESETS, withDecimals } from '../engine/numberFormat';
@@ -53,7 +63,13 @@ import { NAMED_STYLES, type NamedStyle } from '../utils/cellStyles';
 import { FONT_CHOICES, FONT_SIZES_PT, HIGHLIGHT_COLORS, SPECIAL_CHARACTERS, TEXT_COLORS, stepFontSize } from '../../shared/formatOptions';
 import { Btn, Divider, Group, Popover, SelectBox, Swatches } from '../../shared/ribbon/controls';
 import { prepareImage } from '../../shared/imageImport';
+import { SortDialog } from './SortDialog';
 import { SummaryDialog } from './SummaryDialog';
+import { OPEN_FORMAT_EVENT, OPEN_NAMES_EVENT } from '../shortcuts';
+import { NumberFormatDialog } from './NumberFormatDialog';
+import { NamesDialog } from './NamesDialog';
+import { promptColumnWidth, promptRowHeight } from './layoutPrompts';
+import { DEFAULT_COL_WIDTH, ROW_HEIGHT } from '../model/workbook';
 import { ValidationDialog } from './ValidationDialog';
 import { useOfficeI18n } from '../../i18n';
 import { FormulasTab } from './ribbon/FormulasTab';
@@ -107,7 +123,7 @@ const CF_SCALES = {
 } as const;
 const CF_BARS = { blue: '#638ec6', green: '#63be7b', red: '#f8696b', orange: '#ffb628' } as const;
 
-const BORDER_ICONS: BorderPreset[] = ['all', 'outside', 'none', 'top', 'bottom', 'left', 'right'];
+const BORDER_ICONS: BorderPreset[] = ['all', 'outside', 'thickOutside', 'none', 'top', 'bottom', 'thickBottom', 'doubleBottom', 'topBottom', 'left', 'right', 'diagonalDown', 'diagonalUp'];
 
 export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom, view, onView, author, onFile, onFind, onMessage, gridSize, onNewWindow }) => {
   const { m } = useOfficeI18n();
@@ -115,7 +131,20 @@ export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom
   useSyncExternalStore(controller.subscribe, controller.getVersion);
   const [tab, setTab] = useState<CalcTab>('home');
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const [validationOpen, setValidationOpen] = useState(false);
+  const [namesOpen, setNamesOpen] = useState(false);
+  const [formatOpen, setFormatOpen] = useState(false);
+  useEffect(() => {
+    const openNames = () => setNamesOpen(true);
+    const openFormat = () => setFormatOpen(true);
+    window.addEventListener(OPEN_NAMES_EVENT, openNames);
+    window.addEventListener(OPEN_FORMAT_EVENT, openFormat);
+    return () => {
+      window.removeEventListener(OPEN_NAMES_EVENT, openNames);
+      window.removeEventListener(OPEN_FORMAT_EVENT, openFormat);
+    };
+  }, []);
   const [cfLook, setCfLook] = useState<keyof typeof CF_LOOKS>('red');
   const pictureInput = useRef<HTMLInputElement>(null);
 
@@ -214,6 +243,12 @@ export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom
         <Btn title={t.cmd.paste} onClick={() => void pasteFromClipboard()}>
           <ClipboardPaste size={16} />
         </Btn>
+        {menu(t.cmd.pasteSpecial, <span className="calc-btn-text">123</span>, [
+          { label: t.cmd.pasteValues, run: () => controller.pasteSpecial('values') },
+          { label: t.cmd.pasteFormulas, run: () => controller.pasteSpecial('formulas') },
+          { label: t.cmd.pasteFormats, run: () => controller.pasteSpecial('formats') },
+          { label: t.cmd.pasteTranspose, run: () => controller.pasteSpecial('transpose') },
+        ])}
         <Btn title={t.cmd.cut} onClick={() => copyToClipboard(true)}>
           <Scissors size={16} />
         </Btn>
@@ -341,7 +376,19 @@ export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom
         <Btn title={t.cmd.alignRight} active={style.hAlign === 'right'} onClick={act(() => controller.applyStyle({ hAlign: style.hAlign === 'right' ? undefined : 'right' }))}>
           <AlignRight size={16} />
         </Btn>
+        <Btn title={t.cmd.decreaseIndent} onClick={act(() => controller.changeIndent(-1))}>
+          <IndentDecrease size={16} />
+        </Btn>
+        <Btn title={t.cmd.increaseIndent} onClick={act(() => controller.changeIndent(1))}>
+          <IndentIncrease size={16} />
+        </Btn>
+        <Btn title={t.cmd.rotateUp} active={style.rotation === 45} onClick={act(() => controller.setRotation(style.rotation === 45 ? undefined : 45))}>
+          <RotateCcw size={16} />
+        </Btn>
         <Divider />
+        <Btn title={t.cmd.shrinkToFit} active={!!style.shrink} onClick={act(() => controller.applyStyle({ shrink: !style.shrink || undefined }))}>
+          <Minimize2 size={16} />
+        </Btn>
         <Btn title={t.cmd.wrap} active={!!style.wrap} onClick={act(() => controller.applyStyle({ wrap: !style.wrap }))}>
           <WrapText size={16} />
         </Btn>
@@ -366,6 +413,9 @@ export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom
           onChange={(key) => key !== 'custom' && controller.setNumFmt(FORMAT_PRESETS[key as keyof typeof FORMAT_PRESETS])}
           options={[...FORMAT_CODES.map(({ key }) => ({ value: key, label: formatLabels[key] })), ...(formatKey === 'custom' ? [{ value: 'custom', label: formatLabels.custom }] : [])]}
         />
+        <Btn title={t.numberFormat.open} onClick={() => setFormatOpen(true)}>
+          <span className="calc-btn-text">123…</span>
+        </Btn>
         <Btn title={t.cmd.currency} onClick={act(() => controller.setNumFmt(FORMAT_PRESETS.currency))}>
           <DollarSign size={16} />
         </Btn>
@@ -470,6 +520,14 @@ export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom
                     </button>
                   ))}
                 </div>
+                <div className="calc-menu-heading">{t.cf.icons}</div>
+                <div className="calc-cf-looks">
+                  {(Object.keys(ICON_GLYPHS) as IconSet[]).map((set) => (
+                    <button key={set} type="button" className="calc-style-chip" onClick={run(() => addRule({ kind: 'icons', set }))}>
+                      <span style={{ color: iconColor(ICON_GLYPHS[set].length - 1, ICON_GLYPHS[set].length) }}>{ICON_GLYPHS[set][ICON_GLYPHS[set].length - 1]}</span> {t.cf.iconSet[set]}
+                    </button>
+                  ))}
+                </div>
                 <div className="calc-menu-heading">{t.cf.scales}</div>
                 <div className="calc-cf-looks">
                   {(Object.keys(CF_SCALES) as Array<keyof typeof CF_SCALES>).map((name) => {
@@ -523,17 +581,34 @@ export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom
               for (let c = c1; c <= c2; c += 1) controller.autofitColumn(c);
             },
           },
+          { label: t.cmd.columnWidth, run: () => promptColumnWidth(controller, t.cmd, DEFAULT_COL_WIDTH) },
+          { label: t.cmd.rowHeight, run: () => promptRowHeight(controller, t.cmd, ROW_HEIGHT) },
+          { label: controller.isProtected ? t.protection.unprotect : t.protection.protect, run: () => controller.setProtected(!controller.isProtected) },
+          { label: style.unlocked ? t.protection.lock : t.protection.unlock, run: () => controller.setLocked(!!style.unlocked) },
+          { label: t.cmd.hideRows, run: () => controller.hideRows() },
+          { label: t.cmd.unhideRows, run: () => controller.unhideRows() },
+          { label: t.cmd.hideColumns, run: () => controller.hideColumns() },
+          { label: t.cmd.unhideColumns, run: () => controller.unhideColumns() },
           {
-            label: t.cmd.columnWidth,
+            label: t.subtotal.open,
             run: () => {
-              const answer = window.prompt(t.cmd.columnWidthPrompt, String(controller.wb.sheets[controller.active].colWidths.get(controller.selection.c1) ?? 100));
-              const width = Number(answer);
-              if (answer !== null && Number.isFinite(width) && width > 0) {
-                const { c1, c2 } = controller.selection;
-                for (let c = c1; c <= c2; c += 1) controller.setColumnWidth(c, width);
-              }
+              const by = window.prompt(t.subtotal.group);
+              const on = by === null ? null : window.prompt(t.subtotal.value);
+              const how = on === null ? null : window.prompt(t.subtotal.fn, 'sum');
+              const fn = (['sum', 'count', 'average', 'max', 'min'] as const).find((f) => f === how?.trim().toLowerCase());
+              const columnOf = (text: string | null) => (text ? parseCell(`${text.trim().toUpperCase()}1`)?.col : undefined);
+              const g = columnOf(by);
+              const v = columnOf(on);
+              if (g === undefined || v === undefined || !fn) return;
+              if (controller.addSubtotals(g, v, fn, { total: t.subtotal.total, grand: t.subtotal.grand }) === 0) onMessage(t.charts.noData);
             },
           },
+          { label: t.cmd.groupRows, run: () => controller.groupLines('row', 1) },
+          { label: t.cmd.ungroupRows, run: () => controller.groupLines('row', -1) },
+          { label: t.cmd.groupColumns, run: () => controller.groupLines('col', 1) },
+          { label: t.cmd.ungroupColumns, run: () => controller.groupLines('col', -1) },
+          { label: t.cmd.hideDetail, run: () => controller.showLevel(1) },
+          { label: t.cmd.showDetail, run: () => controller.showLevel(8) },
         ])}
       </Group>
 
@@ -560,6 +635,21 @@ export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom
         {menu(t.cmd.sortFilter, <ArrowDownAZ size={16} />, [
           { label: t.cmd.sortAsc, run: () => controller.sortSelection(0, true) },
           { label: t.cmd.sortDesc, run: () => controller.sortSelection(0, false) },
+          { label: t.sort.open, run: () => setSortOpen(true) },
+          {
+            label: t.cmd.removeDuplicates,
+            run: () => {
+              const removed = controller.removeDuplicates(window.confirm(t.cmd.hasHeader));
+              onMessage(t.cmd.duplicatesRemoved(removed));
+            },
+          },
+          {
+            label: t.cmd.textToColumns,
+            run: () => {
+              const answer = window.prompt(t.cmd.delimiterPrompt, ',');
+              if (answer !== null) controller.textToColumns(answer === '\t' ? '	' : answer);
+            },
+          },
         ])}
         <Btn
           title={t.filter.toggle}
@@ -581,8 +671,12 @@ export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom
     </div>
   );
 
-  const insertChart = (type: ChartType) => {
-    if (!controller.addChart(type)) onMessage(t.charts.noData);
+  const insertSparklines = (type: 'line' | 'column') => {
+    if (!controller.addSparklines(type)) onMessage(t.charts.noData);
+    sheetFocus();
+  };
+  const insertChart = (type: ChartType, stacked = false) => {
+    if (!controller.addChart(type, stacked)) onMessage(t.charts.noData);
     sheetFocus();
   };
   const selectedChart = controller.wb.sheets[controller.active].charts.find((c) => c.id === controller.selectedChart);
@@ -599,15 +693,38 @@ export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom
 
   const insert = (
     <div className="wr-tab-body">
+      <Group label={t.sparklines.group}>
+        <Btn title={t.sparklines.line} onClick={() => insertSparklines('line')}>
+          <LineChart size={16} />
+        </Btn>
+        <Btn title={t.sparklines.column} onClick={() => insertSparklines('column')}>
+          <BarChart3 size={16} />
+        </Btn>
+        <Btn title={t.sparklines.clear} onClick={() => controller.clearSparklines()}>
+          <Eraser size={16} />
+        </Btn>
+      </Group>
       <Group label={t.charts.group}>
         <Btn title={t.charts.column} onClick={() => insertChart('column')}>
           <BarChart3 size={16} />
+        </Btn>
+        <Btn title={t.charts.stackedColumn} onClick={() => insertChart('column', true)}>
+          <ChartColumnStacked size={16} />
         </Btn>
         <Btn title={t.charts.bar} onClick={() => insertChart('bar')}>
           <BarChart3 size={16} className="wr-rot-quarter" />
         </Btn>
         <Btn title={t.charts.line} onClick={() => insertChart('line')}>
           <LineChart size={16} />
+        </Btn>
+        <Btn title={t.charts.area} onClick={() => insertChart('area')}>
+          <AreaChart size={16} />
+        </Btn>
+        <Btn title={t.charts.stackedArea} onClick={() => insertChart('area', true)}>
+          <AreaChart size={16} />
+        </Btn>
+        <Btn title={t.charts.scatter} onClick={() => insertChart('scatter')}>
+          <ScatterChart size={16} />
         </Btn>
         <Btn title={t.charts.pie} onClick={() => insertChart('pie')}>
           <PieChart size={16} />
@@ -630,6 +747,27 @@ export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom
       <Group label={t.validation.title}>
         <Btn title={t.validation.open} onClick={() => setValidationOpen(true)}>
           <ListChecks size={16} />
+        </Btn>
+      </Group>
+      <Group label={t.goalSeek.group}>
+        <Btn
+          title={t.goalSeek.open}
+          onClick={() => {
+            const target = window.prompt(t.goalSeek.target, cellName(controller.activeCell.row, controller.activeCell.col));
+            const wanted = target === null ? null : askNumber(t.goalSeek.value);
+            const changing = wanted === null ? null : window.prompt(t.goalSeek.changing);
+            if (target === null || wanted === null || !changing) return;
+            const result = controller.goalSeek(target.trim(), wanted, changing.trim());
+            onMessage(result === null ? t.goalSeek.none : t.goalSeek.found(result));
+            sheetFocus();
+          }}
+        >
+          <Target size={16} />
+        </Btn>
+      </Group>
+      <Group label={t.names.group}>
+        <Btn title={t.names.open} onClick={() => setNamesOpen(true)}>
+          <Tag size={16} />
         </Btn>
       </Group>
       <Group label={t.pictures.group}>
@@ -728,6 +866,9 @@ export const CalcRibbon: React.FC<CalcRibbonProps> = ({ controller, zoom, onZoom
         ))}
       </div>
       {validationOpen && <ValidationDialog controller={controller} onClose={() => setValidationOpen(false)} />}
+      {namesOpen && <NamesDialog controller={controller} onClose={() => setNamesOpen(false)} />}
+      {formatOpen && <NumberFormatDialog controller={controller} onClose={() => setFormatOpen(false)} />}
+      {sortOpen && <SortDialog controller={controller} onClose={() => setSortOpen(false)} />}
       {summaryOpen && <SummaryDialog controller={controller} onClose={() => setSummaryOpen(false)} onMessage={onMessage} />}
       <div className="wr-tab-panel" role="tabpanel">
         {tab === 'home' && home}

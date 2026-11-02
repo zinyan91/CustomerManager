@@ -16,8 +16,22 @@ export interface DateParts {
   weekday: number;
 }
 
-export function partsFromSerial(serial: number): DateParts {
-  const ms = Math.round(serial * DAY_MS);
+/** The parts of a serial. The clock parts are rounded to the nearest whole second, as HOUR, MINUTE and SECOND do in Excel. */
+export function partsFromSerial(serial: number, wholeSeconds = false): DateParts {
+  // Excel counts 1900 as a leap year: day 60 is 29 February, day 0 is "January 0".
+  if (serial >= 0 && serial < 61) {
+    const day = Math.floor(serial);
+    const clock = calendarParts(serial - day, wholeSeconds);
+    const time = { hour: clock.hour, minute: clock.minute, second: clock.second };
+    if (day === 0) return { year: 1900, month: 1, day: 0, weekday: 6, ...time };
+    if (day === 60) return { year: 1900, month: 2, day: 29, weekday: 3, ...time };
+    return { ...calendarParts(day + 1, false), ...time, weekday: (day + 6) % 7 };
+  }
+  return calendarParts(serial, wholeSeconds);
+}
+
+function calendarParts(serial: number, wholeSeconds: boolean): DateParts {
+  const ms = wholeSeconds ? Math.round(serial * 86_400) * 1000 : Math.round(serial * DAY_MS);
   const d = new Date(EPOCH_UTC + ms);
   return {
     year: d.getUTCFullYear(),
@@ -31,7 +45,9 @@ export function partsFromSerial(serial: number): DateParts {
 }
 
 export function serialFromParts(year: number, month: number, day: number): number {
-  return (Date.UTC(year, month - 1, day) - EPOCH_UTC) / DAY_MS;
+  const serial = (Date.UTC(year, month - 1, day) - EPOCH_UTC) / DAY_MS;
+  // Before 1 March 1900 Excel's days are one fewer than the calendar's (it has a 29 February 1900).
+  return serial >= 2 && serial < 61 ? serial - 1 : serial;
 }
 
 /** "2024-03-05", "5/3/2024" (day first, as in Vietnam) → serial, or null. */

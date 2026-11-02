@@ -36,7 +36,7 @@ export const ViewTab: React.FC<ViewTabProps> = ({ controller, view, onView, zoom
     let width = 0;
     for (let c = c1; c <= c2; c += 1) width += sheet.colWidths.get(c) ?? 100;
     let height = 0;
-    for (let r = r1; r <= r2; r += 1) height += sheet.rowHeights.get(r) ?? 24;
+    for (let r = r1; r <= r2; r += 1) height += sheet.rowHeights?.get(r) ?? 24;
     if (width <= 0 || height <= 0) return;
     onZoom(clampZoom(Math.min(box.width / width, box.height / height) * 100));
   };
@@ -48,6 +48,7 @@ export const ViewTab: React.FC<ViewTabProps> = ({ controller, view, onView, zoom
           <CheckOption label={t.cmd.gridlines} checked={view.gridlines} onChange={(gridlines) => onView({ ...view, gridlines })} />
           <CheckOption label={v.headings} checked={view.headings} onChange={(headings) => onView({ ...view, headings })} />
           <CheckOption label={v.formulaBar} checked={view.formulaBar} onChange={(formulaBar) => onView({ ...view, formulaBar })} />
+          <CheckOption label={t.cmd.showZeros} checked={!controller.hideZeros} onChange={(show) => controller.setHideZeros(!show)} />
         </div>
       </Group>
       <Group label={t.groups.zoom}>

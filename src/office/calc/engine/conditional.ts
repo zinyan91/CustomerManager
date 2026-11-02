@@ -8,6 +8,28 @@ import { isError, type Scalar } from './values';
  * value sits between the range's smallest and largest; a data bar draws a bar
  * as long as that position.
  */
+/** Three-icon sets: the value's place between the range's smallest and largest picks one of three (lowest third, middle, top third). */
+export type IconSet = 'arrows' | 'lights' | 'shapes' | 'flags' | 'arrows4' | 'arrows5' | 'lights4';
+
+export const ICON_GLYPHS: Record<IconSet, readonly string[]> = {
+  arrows4: ['\u25BC', '\u25B6', '\u25B6', '\u25B2'],
+  arrows5: ['\u25BC', '\u25B6', '\u25B6', '\u25B6', '\u25B2'],
+  lights4: ['\u25CF', '\u25CF', '\u25CF', '\u25CF'],
+  arrows: ['\u25BC', '\u25B6', '\u25B2'],
+  lights: ['\u25CF', '\u25CF', '\u25CF'],
+  shapes: ['\u25BC', '\u25C6', '\u25B2'],
+  flags: ['\u2691', '\u2691', '\u2691'],
+};
+
+export const ICON_COLORS = ['#e74c3c', '#f1c40f', '#27ae60'] as const;
+
+/** The colour of icon `step` out of `count`: red at the bottom, green at the top, orange and yellow between. */
+export function iconColor(step: number, count: number): string {
+  if (count === 3) return ICON_COLORS[step];
+  const ramp = count === 4 ? ['#e74c3c', '#e67e22', '#f1c40f', '#27ae60'] : ['#e74c3c', '#e67e22', '#f1c40f', '#9acd32', '#27ae60'];
+  return ramp[step];
+}
+
 export interface CfStyle {
   fill?: string;
   color?: string;
@@ -25,10 +47,13 @@ export type CfRule =
   | (Base & { kind: 'duplicate'; style: CfStyle })
   | (Base & { kind: 'top'; n: number; bottom: boolean; style: CfStyle })
   | (Base & { kind: 'scale'; low: string; mid?: string; high: string })
-  | (Base & { kind: 'bar'; color: string });
+  | (Base & { kind: 'bar'; color: string })
+  | (Base & { kind: 'icons'; set: IconSet });
 
 export interface CfResult extends CfStyle {
   bar?: { fraction: number; color: string };
+  /** The icon drawn beside the value: its glyph and colour. */
+  icon?: { glyph: string; color: string };
 }
 
 /** What a rule needs to know about its whole range, worked out once per workbook version. */
@@ -132,6 +157,16 @@ export function evaluateRules(
   let result: CfResult | null = null;
   for (const rule of rules) {
     if (!inRange(rule.range, row, col)) continue;
+    if (rule.kind === 'icons') {
+      if (typeof value !== 'number') continue;
+      const { min, max } = statsFor(rule);
+      const t = max === min ? 1 : (value - min) / (max - min);
+      const glyphs = ICON_GLYPHS[rule.set];
+      const step = Math.min(glyphs.length - 1, Math.floor(t * glyphs.length));
+      result ??= {};
+      result.icon ??= { glyph: glyphs[step], color: iconColor(step, glyphs.length) };
+      continue;
+    }
     if (rule.kind === 'scale' || rule.kind === 'bar') {
       if (typeof value !== 'number') continue;
       const { min, max } = statsFor(rule);

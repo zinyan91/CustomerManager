@@ -522,13 +522,13 @@ describe('summary (PivotTable-style)', () => {
     const { c, type } = sales();
     make(c, 'sum', null);
     expect(c.summaryConfig?.source).toEqual({ r1: 0, c1: 0, r2: 6, c2: 2 });
-    // The category list is fixed until a refresh, even when a row with a new region is added.
+    // A row with a new region brings its category into the summary by itself.
     c.active = 0;
     type('A8', 'Trung');
     type('B8', 'Q1');
     type('C8', '8');
     c.active = 1;
-    expect(grid(c).map((row) => row[0])).not.toContain('Trung');
+    expect(grid(c).map((row) => row[0])).toContain('Trung');
     expect(c.refreshSummary()).toBe(true);
     const g = grid(c);
     expect(g.slice(0, 4).map((row) => row.slice(0, 2))).toEqual([
@@ -539,15 +539,16 @@ describe('summary (PivotTable-style)', () => {
     ]);
     expect(g[4].slice(0, 2)).toEqual(['Tổng cộng', '65']);
     expect(c.summaryConfig?.source.r2).toBe(7);
-    // A category that is gone from the data is gone from the summary.
+    // A category that is gone from the data is gone from the summary, with no refresh asked for.
     c.active = 0;
     for (const ref of ['A2', 'A4']) type(ref, 'Nam');
     type('A3', 'Nam');
     type('A6', 'Nam');
     c.active = 1;
-    c.refreshSummary();
     expect(grid(c).map((row) => row[0]).slice(0, 4)).toEqual(['Vùng', 'Nam', 'Trung', 'Tổng cộng']);
     c.undo();
+    // Undoing an edit of the data takes the cursor there; the summary has already followed.
+    c.active = 1;
     expect(grid(c).map((row) => row[0]).slice(0, 5)).toEqual(['Vùng', 'Bắc', 'Nam', 'Trung', 'Tổng cộng']);
   });
 
@@ -643,7 +644,7 @@ describe('summary (PivotTable-style)', () => {
 });
 
 describe('row heights', () => {
-  const heights = (s: ReturnType<typeof sheet>) => [...s.c.wb.sheets[0].rowHeights].sort(([a], [b]) => a - b);
+  const heights = (s: ReturnType<typeof sheet>) => [...(s.c.wb.sheets[0].rowHeights ?? [])].sort(([a], [b]) => a - b);
 
   it('sets a height, clamps it, and returns to the default without leaving an entry', () => {
     const s = sheet();
@@ -691,13 +692,13 @@ describe('row heights', () => {
     const data = s.c.wb.toData();
     const again = new Workbook();
     again.loadData(data);
-    expect(again.sheets[0].rowHeights.get(5)).toBe(90);
+    expect(again.sheets[0].rowHeights?.get(5)).toBe(90);
 
     const old = JSON.parse(JSON.stringify(data));
     delete old.sheets[0].rowHeights;
     const legacy = new Workbook();
     legacy.loadData(old);
-    expect(legacy.sheets[0].rowHeights.size).toBe(0);
+    expect(legacy.sheets[0].rowHeights?.size ?? 0).toBe(0);
   });
 });
 
@@ -898,5 +899,47 @@ describe('áp thay đổi từ xa (applyRemote)', () => {
     s.c.applyRemote(data);
     expect(s.c.active).toBe(0);
     expect(s.c.wb.sheets).toHaveLength(1);
+  });
+});
+
+describe('data tools', () => {
+  it('removes duplicate rows by what they show, keeping the first and moving the rest up', () => {
+    const t = sheet();
+    ['Tên', 'An', 'Bình', 'an', 'Cường', 'Bình'].forEach((v, i) => t.type(`A${i + 1}`, v));
+    ['x', '1', '2', '1', '3', '2'].forEach((v, i) => t.type(`B${i + 1}`, v));
+    t.pick('A1', 'B6');
+    expect(t.c.removeDuplicates(true)).toBe(2);
+    expect(['A1', 'A2', 'A3', 'A4', 'A5', 'A6'].map((r) => t.shown(r))).toEqual(['Tên', 'An', 'Bình', 'Cường', '', '']);
+    expect(['B2', 'B3', 'B4'].map((r) => t.shown(r))).toEqual(['1', '2', '3']);
+  });
+
+  it('removes nothing when every row is different', () => {
+    const t = sheet();
+    ['a', 'b'].forEach((v, i) => t.type(`A${i + 1}`, v));
+    t.pick('A1', 'A2');
+    expect(t.c.removeDuplicates(false)).toBe(0);
+  });
+
+  it('splits text at a delimiter into the cells to the right, reading numbers as numbers', () => {
+    const t = sheet();
+    t.type('A1', 'Hà Nội, 12, 3.5');
+    t.type('A2', 'Huế, 7, 1');
+    t.pick('A1', 'A2');
+    expect(t.c.textToColumns(',')).toBe(2);
+    expect(['A1', 'B1', 'C1'].map((r) => t.shown(r))).toEqual(['Hà Nội', '12', '3.5']);
+    expect(t.raw('B2')).toBe('7');
+  });
+});
+
+describe('sorting by several keys', () => {
+  it('orders by the first key, breaks ties with the next, and keeps blanks last either way', () => {
+    const t = sheet();
+    [['Tên', 'Nhóm', 'Điểm'], ['An', 'b', '5'], ['Bình', 'a', '9'], ['Cường', 'b', '7'], ['Dũng', 'a', '']].forEach((row, r) => row.forEach((v, c) => t.type(`${'ABC'[c]}${r + 1}`, v)));
+    t.pick('A1', 'C5');
+    t.c.sortByKeys([{ column: 1, ascending: true }, { column: 2, ascending: false }], true);
+    expect(['A1', 'A2', 'A3', 'A4', 'A5'].map((r) => t.shown(r))).toEqual(['Tên', 'Bình', 'Dũng', 'Cường', 'An']);
+    t.pick('A1', 'C5');
+    t.c.sortByKeys([{ column: 2, ascending: false }], true);
+    expect(['A2', 'A3', 'A4', 'A5'].map((r) => t.shown(r))).toEqual(['Bình', 'Cường', 'An', 'Dũng']);
   });
 });

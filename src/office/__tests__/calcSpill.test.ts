@@ -28,9 +28,9 @@ describe('array functions', () => {
     expect(show(once, 3, 1, 0, 2)).toEqual([['Đà Nẵng'], ['Huế'], ['']]);
   });
 
-  it('SORT orders by a column, either way, blanks last, and SORTBY by another range', () => {
+  it('SORT orders by a column, either way, a blank last and shown as 0, and SORTBY by another range', () => {
     const wb = book([['b', '2', '=SORT(A1:B4,2,-1)'], ['a', '3'], ['c', ''], ['d', '1']]);
-    expect(show(wb, 4, 2, 0, 2)).toEqual([['a', '3'], ['b', '2'], ['d', '1'], ['c', '']]);
+    expect(show(wb, 4, 2, 0, 2)).toEqual([['a', '3'], ['b', '2'], ['d', '1'], ['c', '0']]);
     const by = book([['x', '3', '=SORTBY(A1:A3,B1:B3)'], ['y', '1'], ['z', '2']]);
     expect(show(by, 3, 1, 0, 2)).toEqual([['y'], ['z'], ['x']]);
   });

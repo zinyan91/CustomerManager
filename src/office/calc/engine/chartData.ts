@@ -6,11 +6,13 @@ import { isError, type Scalar } from './values';
  * the series, and if its first column is text beside numbers that column
  * names the categories; the rest are series, one per column.
  */
-export type ChartType = 'column' | 'bar' | 'line' | 'pie';
+export type ChartType = 'column' | 'bar' | 'line' | 'area' | 'scatter' | 'pie';
 
 export interface ChartObject {
   id: string;
   type: ChartType;
+  /** Column and bar charts: the series are piled on one another instead of side by side. */
+  stacked?: boolean;
   range: RangePos;
   title: string;
   /** The cell the chart's top-left corner is in, and how far into that cell, in pixels at 100%. */
@@ -30,6 +32,8 @@ export interface ChartSeries {
 export interface ChartData {
   categories: string[];
   series: ChartSeries[];
+  /** Scatter charts only: the x of each point, shared by every series; absent when the range has one column (the points are then 1, 2, 3…). */
+  x?: Array<number | null>;
 }
 
 export const CHART_MIN_WIDTH = 160;
@@ -79,13 +83,22 @@ export function chartLayout(range: RangePos, valueAt: (row: number, col: number)
   return { headerRow, categoryColumn, first, seriesColumns };
 }
 
+/** A scatter chart's layout: the first column is x when it is numbers beside other numbers, and every other column is a series. */
+export function scatterLayout(range: RangePos, valueAt: (row: number, col: number) => Scalar): ChartLayout & { xColumn: boolean } {
+  const layout = chartLayout(range, valueAt);
+  const xColumn = range.c2 > range.c1 && !layout.categoryColumn && layout.seriesColumns.includes(0);
+  return { ...layout, xColumn, seriesColumns: xColumn ? layout.seriesColumns.filter((c) => c !== 0) : layout.seriesColumns };
+}
+
 export function readChartData(
   range: RangePos,
   valueAt: (row: number, col: number) => Scalar,
   display: (row: number, col: number) => string,
+  type?: ChartType,
 ): ChartData {
   const rows = range.r2 - range.r1 + 1;
-  const { headerRow, categoryColumn, first, seriesColumns } = chartLayout(range, valueAt);
+  const scatter = type === 'scatter' ? scatterLayout(range, valueAt) : null;
+  const { headerRow, categoryColumn, first, seriesColumns } = scatter ?? chartLayout(range, valueAt);
   const at = (r: number, c: number) => valueAt(range.r1 + r, range.c1 + c);
 
   const categories: string[] = [];
@@ -100,6 +113,14 @@ export function readChartData(
     }
     const name = headerRow ? display(range.r1, range.c1 + c) : '';
     series.push({ name: name || `Series ${series.length + 1}`, values });
+  }
+  if (scatter) {
+    const x: Array<number | null> = [];
+    for (let r = first; r < rows; r += 1) {
+      const v = scatter.xColumn ? at(r, 0) : r - first + 1;
+      x.push(typeof v === 'number' ? v : null);
+    }
+    return { categories, series, x };
   }
   return { categories, series };
 }

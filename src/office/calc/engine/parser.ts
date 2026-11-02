@@ -1,5 +1,5 @@
 import { MAX_COLS, MAX_ROWS, columnIndex, columnName } from './cellRef';
-import { errorFromCode, type CellError } from './values';
+import { errorFromCode, type CellError, type Scalar } from './values';
 
 /**
  * Excel formula syntax → a tree, and back to text. The text form is what
@@ -26,6 +26,7 @@ export type Node =
   | { t: 'str'; v: string }
   | { t: 'bool'; v: boolean }
   | { t: 'err'; v: CellError }
+  | { t: 'array'; v: Scalar[][] }
   | { t: 'name'; v: string }
   | RefNode
   | RangeNode
@@ -45,6 +46,40 @@ function refFrom(text: string, sheet: string | null): RefNode | null {
   const row = Number(m[4]) - 1;
   if (col >= MAX_COLS || row >= MAX_ROWS || row < 0) return null;
   return { t: 'ref', sheet, row, col, absRow: m[3] === '$', absCol: m[1] === '$' };
+}
+
+const COLUMN_SPAN = /^(\$?)([A-Za-z]{1,3}):(\$?)([A-Za-z]{1,3})(?![A-Za-z0-9_.(!$])/;
+const ROW_SPAN = /^(\$?)(\d{1,7}):(\$?)(\d{1,7})(?![A-Za-z0-9_.(!$])/;
+
+/** A:C or $1:$3 as the range of every row or column it covers; the fixed far end keeps it whole when copied. */
+function wholeAxis(text: string, sheet: string | null): { node: RangeNode; length: number } | null {
+  const column = COLUMN_SPAN.exec(text);
+  if (column) {
+    const [c1, c2] = [columnIndex(column[2]), columnIndex(column[4])];
+    if (c1 >= MAX_COLS || c2 >= MAX_COLS) return null;
+    const end = (col: number, abs: string, row: number): RefNode => ({ t: 'ref', sheet, row, col, absRow: true, absCol: abs === '$' });
+    return { node: { t: 'range', sheet, from: end(c1, column[1], 0), to: end(c2, column[3], MAX_ROWS - 1) }, length: column[0].length };
+  }
+  const row = ROW_SPAN.exec(text);
+  if (!row) return null;
+  const [r1, r2] = [Number(row[2]) - 1, Number(row[4]) - 1];
+  if (r1 < 0 || r2 < 0 || r1 >= MAX_ROWS || r2 >= MAX_ROWS) return null;
+  const end = (r: number, abs: string, col: number): RefNode => ({ t: 'ref', sheet, row: r, col, absRow: abs === '$', absCol: true });
+  return { node: { t: 'range', sheet, from: end(r1, row[1], 0), to: end(r2, row[3], MAX_COLS - 1) }, length: row[0].length };
+}
+
+export const coversColumns = (node: RangeNode): boolean => Math.min(node.from.row, node.to.row) === 0 && Math.max(node.from.row, node.to.row) === MAX_ROWS - 1;
+export const coversRows = (node: RangeNode): boolean => Math.min(node.from.col, node.to.col) === 0 && Math.max(node.from.col, node.to.col) === MAX_COLS - 1;
+
+/** Excel reads a number typed in a formula to 15 significant digits and drops the rest. */
+function keepFifteenDigits(text: string): string {
+  const m = /^(\d*)\.?(\d*)(.*)$/.exec(text)!;
+  const [whole, fraction, rest] = [m[1], m[2], m[3]];
+  const lead = whole.replace(/^0+/, '').length === 0 ? /^0*/.exec(fraction)![0].length : 0;
+  const room = 15 + lead - whole.replace(/^0+/, '').length;
+  if (room >= fraction.length) return text;
+  const cut = Math.max(0, room);
+  return `${whole}${cut ? `.${fraction.slice(0, cut)}` : ''}${rest}`;
 }
 
 class Parser {
@@ -147,6 +182,12 @@ class Parser {
       return inner;
     }
     if (ch === '"') return this.string();
+    if (ch === '{') return this.arrayConstant();
+    const whole = wholeAxis(this.src.slice(this.pos), null);
+    if (whole) {
+      this.pos += whole.length;
+      return whole.node;
+    }
     if (/[0-9.]/.test(ch)) return this.number();
     if (ch === '#') return this.errorLiteral();
     if (ch === "'") return this.quotedSheet();
@@ -154,11 +195,37 @@ class Parser {
     throw new ParseError(`Unexpected "${ch}"`);
   }
 
+  private arrayConstant(): Node {
+    this.pos += 1;
+    const rows: Scalar[][] = [[]];
+    for (;;) {
+      rows[rows.length - 1].push(this.arrayItem());
+      const sep = this.peek(',', ';', '}');
+      if (!sep) throw new ParseError('Missing }');
+      this.pos += 1;
+      if (sep === '}') break;
+      if (sep === ';') rows.push([]);
+    }
+    if (rows.some((row) => row.length !== rows[0].length)) throw new ParseError('Uneven array');
+    return { t: 'array', v: rows };
+  }
+
+  private arrayItem(): Scalar {
+    this.space();
+    const sign = this.peek('-', '+');
+    if (sign) this.pos += 1;
+    this.space();
+    const item = this.primary();
+    if (item.t === 'num') return sign === '-' ? -item.v : item.v;
+    if (sign || (item.t !== 'str' && item.t !== 'bool' && item.t !== 'err')) throw new ParseError('Bad array item');
+    return item.v;
+  }
+
   private number(): Node {
     const m = /^(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?/.exec(this.src.slice(this.pos));
     if (!m) throw new ParseError('Bad number');
     this.pos += m[0].length;
-    return { t: 'num', v: Number(m[0]) };
+    return { t: 'num', v: Number(keepFifteenDigits(m[0])) };
   }
 
   private string(): Node {
@@ -206,6 +273,8 @@ class Parser {
     }
     if (this.src[this.pos] !== '!') throw new ParseError('Missing !');
     this.pos += 1;
+    // A reference to a deleted sheet or cell is written `'Sheet'!#REF!`.
+    if (this.src[this.pos] === '#') return this.errorLiteral();
     return this.cellOrRange(sheet);
   }
 
@@ -220,6 +289,7 @@ class Parser {
     }
     if (after === '!' && sheet === null) {
       this.pos += word.length + 1;
+      if (this.src[this.pos] === '#') return this.errorLiteral();
       return this.cellOrRange(word);
     }
     const upper = word.toUpperCase();
@@ -233,6 +303,11 @@ class Parser {
   }
 
   private cellOrRange(sheet: string | null): Node {
+    const whole = wholeAxis(this.src.slice(this.pos), sheet);
+    if (whole) {
+      this.pos += whole.length;
+      return whole.node;
+    }
     const m = /^\$?[A-Za-z]{1,3}\$?\d{1,7}/.exec(this.src.slice(this.pos));
     const from = m ? refFrom(m[0], sheet) : null;
     if (!m || !from) throw new ParseError('Bad reference');
@@ -280,6 +355,13 @@ function printRef(ref: RefNode): string {
   return `${ref.absCol ? '$' : ''}${columnName(ref.col)}${ref.absRow ? '$' : ''}${ref.row + 1}`;
 }
 
+function printItem(v: Scalar): string {
+  if (typeof v === 'string') return `"${v.replace(/"/g, '""')}"`;
+  if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+  if (v === null) return '';
+  return typeof v === 'number' ? String(v) : v.code;
+}
+
 /** Operator precedence for adding parentheses only where they change the meaning. */
 const PRECEDENCE: Record<string, number> = { '=': 1, '<>': 1, '<': 1, '>': 1, '<=': 1, '>=': 1, '&': 2, '+': 3, '-': 3, '*': 4, '/': 4, '^': 5 };
 
@@ -293,11 +375,15 @@ export function printNode(node: Node, parent = 0): string {
       return node.v ? 'TRUE' : 'FALSE';
     case 'err':
       return node.v.code;
+    case 'array':
+      return `{${node.v.map((row) => row.map(printItem).join(',')).join(';')}}`;
     case 'name':
       return node.v;
     case 'ref':
       return sheetPrefix(node.sheet) + printRef(node);
     case 'range':
+      if (coversColumns(node)) return `${sheetPrefix(node.sheet)}${node.from.absCol ? '$' : ''}${columnName(node.from.col)}:${node.to.absCol ? '$' : ''}${columnName(node.to.col)}`;
+      if (coversRows(node)) return `${sheetPrefix(node.sheet)}${node.from.absRow ? '$' : ''}${node.from.row + 1}:${node.to.absRow ? '$' : ''}${node.to.row + 1}`;
       return `${sheetPrefix(node.sheet)}${printRef(node.from)}:${printRef(node.to)}`;
     case 'call':
       return `${node.name}(${node.args.map((a) => (a.t === 'name' && a.v === '' ? '' : printNode(a))).join(',')})`;

@@ -79,6 +79,11 @@ function applyOp(data: WorkbookData, op: Op): void {
       data.sheets.sort((a, b) => (rank.get(a.name) ?? op.names.length + original.get(a.name)!) - (rank.get(b.name) ?? op.names.length + original.get(b.name)!));
       return;
     }
+    case 'definedNames': {
+      if (op.value?.length) data.names = structuredClone(op.value);
+      else delete data.names;
+      return;
+    }
   }
 }
 

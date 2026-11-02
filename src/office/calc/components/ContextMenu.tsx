@@ -4,6 +4,7 @@ import type { CalcController } from '../controller';
 import { DEFAULT_COL_WIDTH, ROW_HEIGHT } from '../model/workbook';
 import { promptColumnWidth, promptRowHeight } from './layoutPrompts';
 import { promptLink, promptNote } from './linkPrompts';
+import { OPEN_FORMAT_EVENT } from '../shortcuts';
 
 export type ContextKind = 'cell' | 'row' | 'col';
 
@@ -66,9 +67,25 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ controller, kind, x, y
   const rowSize: Item = { label: t.rowHeight, run: () => promptRowHeight(controller, t, ROW_HEIGHT) };
   const columnSize: Item = { label: t.columnWidth, run: () => promptColumnWidth(controller, t, DEFAULT_COL_WIDTH) };
 
+  const formatCellsItem: Item = {
+    label: m.calc.formatCells.open,
+    run: () => window.dispatchEvent(new Event(OPEN_FORMAT_EVENT)),
+  };
+
   const items: Item[] =
     kind === 'row'
-      ? [...clipboard, 'separator', { label: t.insertRows, run: () => controller.insertRows() }, { label: t.deleteRows, run: () => controller.deleteRows() }, clear, 'separator', rowSize, { label: t.hideRows, run: () => controller.hideRows() }, { label: t.unhideRows, run: () => controller.unhideRows() }]
+      ? [
+          ...clipboard,
+          'separator',
+          { label: t.insertRows, run: () => controller.insertRows() },
+          { label: t.deleteRows, run: () => controller.deleteRows() },
+          clear,
+          'separator',
+          formatCellsItem,
+          rowSize,
+          { label: t.hideRows, run: () => controller.hideRows() },
+          { label: t.unhideRows, run: () => controller.unhideRows() },
+        ]
       : kind === 'col'
         ? [
             ...clipboard,
@@ -77,6 +94,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ controller, kind, x, y
             { label: t.deleteColumns, run: () => controller.deleteColumns() },
             clear,
             'separator',
+            formatCellsItem,
             columnSize,
             {
               label: t.autofit,
@@ -99,6 +117,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ controller, kind, x, y
             { label: t.deleteColumns, run: () => controller.deleteColumns() },
             clear,
             'separator',
+            formatCellsItem,
             { label: m.calc.links.edit, run: () => promptLink(controller, m.calc.links) },
             { label: m.calc.notes.edit, run: () => promptNote(controller, m.calc.notes) },
             'separator',
@@ -111,10 +130,14 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ controller, kind, x, y
   const top = Math.max(4, Math.min(y, window.innerHeight - items.length * 30 - 16));
   return (
     <div ref={root} className="calc-context-menu wr-menu" role="menu" style={{ left, top }} onContextMenu={(event) => event.preventDefault()}>
-      {items.map((item, index) =>
-        item === 'separator' ? (
-          <div key={`s${index}`} className="calc-context-separator" role="separator" />
-        ) : (
+      {items.map((item, index) => {
+        if (item === 'separator') {
+          return <div key={`s${index}`} className="calc-context-separator" role="separator" />;
+        }
+        const match = item.label.match(/^(.*?)\s*(\((?:Ctrl|Shift|Alt)[^)]+\))$/);
+        const mainLabel = match ? match[1] : item.label;
+        const shortcut = match ? match[2].replace(/[()]/g, '') : null;
+        return (
           <button
             key={item.label}
             type="button"
@@ -125,10 +148,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({ controller, kind, x, y
               item.run();
             }}
           >
-            {item.label}
+            <span className="calc-context-label">{mainLabel}</span>
+            {shortcut && <span className="calc-context-shortcut">{shortcut}</span>}
           </button>
-        ),
-      )}
+        );
+      })}
     </div>
   );
 };

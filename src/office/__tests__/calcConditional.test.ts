@@ -99,4 +99,29 @@ describe('conditional formatting rules', () => {
     expect(shiftRange(range, 'row', 2, 4, 'delete')).toBeNull();
     expect(shiftRange(range, 'col', 0, 1, 'delete')).toEqual({ r1: 2, c1: 0, r2: 5, c2: 0 });
   });
+
+  it('matches above and below average, top percent, and gradient data bars', () => {
+    // Data: 5, 1, 9, 5, "x", 3 -> Numbers are [5, 1, 9, 5, 3], sum = 23, avg = 4.6
+    const c = withData();
+    // Above average (avg = 4.6): 5, 9, 5 are above; 1, 3 are below
+    c.addConditionalRule({ kind: 'aboveAverage', below: false, style: { fill: '#ffc7ce' } });
+    expect([0, 1, 2, 3, 5].map((r) => cf(c, r)?.fill)).toEqual(['#ffc7ce', undefined, '#ffc7ce', '#ffc7ce', undefined]);
+    c.clearConditional('sheet');
+
+    // Below average: 1, 3 are below average
+    c.addConditionalRule({ kind: 'aboveAverage', below: true, style: { fill: '#c6efce' } });
+    expect([0, 1, 2, 3, 5].map((r) => cf(c, r)?.fill)).toEqual([undefined, '#c6efce', undefined, undefined, '#c6efce']);
+    c.clearConditional('sheet');
+
+    // Top 30% (5 numbers * 30% = 1.5 -> 2 items): 9 and 5
+    c.addConditionalRule({ kind: 'top', n: 30, bottom: false, percent: true, style: { fill: '#ff0' } });
+    expect([0, 1, 2, 3, 5].map((r) => !!cf(c, r))).toEqual([true, false, true, true, false]);
+    c.clearConditional('sheet');
+
+    // Gradient bar rule
+    c.addConditionalRule({ kind: 'bar', color: '#0078d4', gradient: true });
+    expect(cf(c, 2)?.bar?.gradient).toBe(true);
+    expect(cf(c, 2)?.bar?.color).toBe('#0078d4');
+  });
 });
+

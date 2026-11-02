@@ -24,3 +24,15 @@ export function promptRowHeight(controller: CalcController, labels: Labels, fall
   const height = asSize(window.prompt(labels.rowHeightPrompt, String(current)));
   if (height !== null) controller.setSelectedRowHeights(height);
 }
+
+/** Asks for standard column width in pixels and updates sheet columns. */
+export function promptDefaultWidth(controller: CalcController, promptText: string, fallback: number): void {
+  const answer = window.prompt(promptText, String(fallback));
+  const width = asSize(answer);
+  if (width !== null) {
+    for (let c = 0; c < 50; c += 1) {
+      controller.setColumnWidth(c, width);
+    }
+  }
+}
+

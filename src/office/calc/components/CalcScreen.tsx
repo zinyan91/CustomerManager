@@ -19,7 +19,8 @@ import { formatGeneral, isError } from '../engine/values';
 import type { WorkbookData } from '../model/workbook';
 import { getCalcDraft, newDraftId, saveCalcDraft } from '../services/calcDraftStore';
 import { exportCsv, exportXlsx, importSpreadsheet } from '../services/xlsxService';
-import { OPEN_FORMAT_EVENT, OPEN_NAMES_EVENT } from '../shortcuts';
+import { OPEN_CREATE_TABLE_EVENT, OPEN_FORMAT_EVENT, OPEN_NAMES_EVENT } from '../shortcuts';
+import { CreateTableDialog } from './CreateTableDialog';
 import type { GridAction } from '../shortcuts';
 import { CalcFindPanel } from './CalcFindPanel';
 import { promptLink, promptNote } from './linkPrompts';
@@ -136,6 +137,15 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
   const [savedAt, setSavedAt] = useState<number | null>(loaded.savedAt);
   const [notice, setNotice] = useState<string | null>(null);
   const [findOpen, setFindOpen] = useState(false);
+  const [createTableOpen, setCreateTableOpen] = useState(false);
+  const [draggingFile, setDraggingFile] = useState(false);
+  const dragDepth = useRef(0);
+
+  useEffect(() => {
+    const openCreateTable = () => setCreateTableOpen(true);
+    window.addEventListener(OPEN_CREATE_TABLE_EVENT, openCreateTable);
+    return () => window.removeEventListener(OPEN_CREATE_TABLE_EVENT, openCreateTable);
+  }, []);
   const [message, setMessage] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const [shareOpen, setShareOpen] = useState(false);
@@ -305,6 +315,10 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
       case 'formatCells':
         window.dispatchEvent(new Event(OPEN_FORMAT_EVENT));
         return true;
+      case 'formatAsTable':
+        if (controller.readOnly) return false;
+        setCreateTableOpen(true);
+        return true;
       case 'goTo':
         document.querySelector<HTMLElement>('.calc-name-box')?.focus();
         return true;
@@ -408,8 +422,38 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
   const saveLabel =
     sharedSaveLabel ?? (saveState === 'saving' ? m.writer.saving : saveState === 'saved' ? m.writer.saved : saveState === 'failed' ? m.writer.saveFailed : '');
 
+  const dropFile = (event: React.DragEvent) => {
+    event.preventDefault();
+    dragDepth.current = 0;
+    setDraggingFile(false);
+    const dropped = event.dataTransfer.files?.[0];
+    if (!dropped) return;
+    const extension = dropped.name.split('.').pop()?.toLowerCase() ?? '';
+    if (['xlsx', 'xlsm', 'csv', 'tsv'].includes(extension)) void flush().then(() => onOpenFile(dropped));
+    else setMessage(t.errors.unsupported);
+  };
+
   return (
-    <div className="office-page writer-page calc-page">
+    <div
+      className={`office-page writer-page calc-page${draggingFile ? ' is-dragging-file' : ''}`}
+      onDragEnter={(event) => {
+        if (!event.dataTransfer.types.includes('Files')) return;
+        event.preventDefault();
+        dragDepth.current += 1;
+        setDraggingFile(true);
+      }}
+      onDragOver={(event) => {
+        if (!event.dataTransfer.types.includes('Files')) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+      }}
+      onDragLeave={() => {
+        dragDepth.current = Math.max(0, dragDepth.current - 1);
+        if (dragDepth.current === 0) setDraggingFile(false);
+      }}
+      onDrop={dropFile}
+    >
+      {createTableOpen && <CreateTableDialog controller={controller} onClose={() => setCreateTableOpen(false)} />}
       <OfficeHeader
         onHome={() => {
           void flush().then(onHome);

@@ -49,14 +49,16 @@ describe('diff và apply', () => {
     c.addSparklines('line');
     c.select(0, 0);
     expect(c.defineName('LaiSuat')).toBe(true);
+    c.createTable({ r1: 8, c1: 0, r2: 10, c2: 2 });
     const after = c.wb.toData();
     const rebuilt = applyPatch(before, diffWorkbooks(before, after));
-    const fields = ['links', 'rowsHidden', 'colsHidden', 'rowLevels', 'tabColor', 'hideZeros', 'sparklines', 'hidden'] as const;
+    const fields = ['links', 'rowsHidden', 'colsHidden', 'rowLevels', 'tabColor', 'hideZeros', 'sparklines', 'hidden', 'tables'] as const;
     for (const [index, sheet] of after.sheets.entries()) {
       for (const field of fields) expect(rebuilt.sheets[index]?.[field], `${sheet.name}.${field}`).toEqual(sheet[field]);
     }
     expect(after.sheets[0].links?.length).toBe(1);
     expect(after.sheets[1].hidden).toBe(true);
+    expect(after.sheets[0].tables?.length).toBe(1);
     expect(rebuilt.names).toEqual(after.names);
     expect(after.names?.length).toBe(1);
   });

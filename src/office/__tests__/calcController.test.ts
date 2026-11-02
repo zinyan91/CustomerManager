@@ -943,3 +943,24 @@ describe('sorting by several keys', () => {
     expect(['A2', 'A3', 'A4', 'A5'].map((r) => t.shown(r))).toEqual(['Bình', 'Cường', 'An', 'Dũng']);
   });
 });
+
+describe('merging cells', () => {
+  it('merges across horizontally on each row and unmerges correctly', () => {
+    const t = sheet();
+    t.type('A1', '1');
+    t.type('B1', '2');
+    t.type('A2', '3');
+    t.type('B2', '4');
+    t.pick('A1', 'B2');
+    t.c.mergeAcross();
+    const merges = t.c.wb.sheets[0].merges;
+    expect(merges).toHaveLength(2);
+    expect(merges[0]).toEqual({ r1: 0, r2: 0, c1: 0, c2: 1 });
+    expect(merges[1]).toEqual({ r1: 1, r2: 1, c1: 0, c2: 1 });
+    expect(t.c.isMerged()).toBe(true);
+
+    t.c.unmergeSelection();
+    expect(t.c.wb.sheets[0].merges).toHaveLength(0);
+    expect(t.c.isMerged()).toBe(false);
+  });
+});

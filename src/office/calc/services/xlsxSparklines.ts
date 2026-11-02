@@ -15,14 +15,15 @@ const quoted = (name: string) => (/^[A-Za-z_][A-Za-z0-9_.]*$/.test(name) ? name 
 const absolute = (range: RangePos) => `$${columnName(range.c1)}$${range.r1 + 1}:$${columnName(range.c2)}$${range.r2 + 1}`;
 
 function sparklineXml(sheetName: string, list: readonly Sparkline[]): string {
-  const groups = (['line', 'column'] as const)
+  const groups = (['line', 'column', 'winLoss'] as const)
     .map((type) => {
       const mine = list.filter((s) => s.type === type);
       if (mine.length === 0) return '';
       const items = mine
         .map((s) => `<x14:sparkline><xm:f>${escapeXml(`${quoted(sheetName)}!${absolute(s.source)}`)}</xm:f><xm:sqref>${cellName(s.row, s.col)}</xm:sqref></x14:sparkline>`)
         .join('');
-      return `<x14:sparklineGroup${type === 'column' ? ' type="column"' : ''} displayEmptyCellsAs="gap"><x14:colorSeries rgb="FF376092"/><x14:sparklines>${items}</x14:sparklines></x14:sparklineGroup>`;
+      const typeAttr = type === 'column' ? ' type="column"' : type === 'winLoss' ? ' type="stacked"' : '';
+      return `<x14:sparklineGroup${typeAttr} displayEmptyCellsAs="gap"><x14:colorSeries rgb="FF376092"/><x14:sparklines>${items}</x14:sparklines></x14:sparklineGroup>`;
     })
     .join('');
   return `<ext uri="${URI}" xmlns:x14="http://schemas.microsoft.com/office/spreadsheetml/2009/9/main"><x14:sparklineGroups xmlns:xm="http://schemas.microsoft.com/office/excel/2006/main">${groups}</x14:sparklineGroups></ext>`;
@@ -64,7 +65,8 @@ export async function readSparklinesFromXlsx(buffer: ArrayBuffer): Promise<Map<s
     const xml = await read(target.startsWith('/') ? target.slice(1) : `xl/${target}`);
     const found: Sparkline[] = [];
     for (const group of xml.matchAll(/<x14:sparklineGroup\b([^>]*)>([\s\S]*?)<\/x14:sparklineGroup>/g)) {
-      const type = attribute(group[1], 'type') === 'column' ? 'column' : 'line';
+      const typeAttr = attribute(group[1], 'type');
+      const type: Sparkline['type'] = typeAttr === 'column' ? 'column' : typeAttr === 'stacked' ? 'winLoss' : 'line';
       for (const item of group[2].matchAll(/<x14:sparkline>([\s\S]*?)<\/x14:sparkline>/g)) {
         const formula = unescapeXml(/<xm:f>([^<]*)<\/xm:f>/.exec(item[1])?.[1] ?? '');
         const cell = /<xm:sqref>([^<]*)<\/xm:sqref>/.exec(item[1])?.[1];

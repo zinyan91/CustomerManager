@@ -15,6 +15,10 @@ export interface KeyInput {
 export const OPEN_NAMES_EVENT = 'calc-open-names';
 /** And when one asks for the number format dialog (Ctrl+1). */
 export const OPEN_FORMAT_EVENT = 'calc-open-format';
+/** When a shortcut or button asks to create a table (Ctrl+T, Ctrl+L). */
+export const OPEN_CREATE_TABLE_EVENT = 'calc-open-create-table';
+/** When asking to open options dialog (Alt+F, T). */
+export const OPEN_OPTIONS_EVENT = 'calc-open-options';
 
 export type GridAction =
   | { type: 'sheet'; delta: 1 | -1 }

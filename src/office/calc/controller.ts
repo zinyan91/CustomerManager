@@ -28,6 +28,7 @@ import {
   type Sparkline,
   type FilterState,
   type ImageObject,
+  type SheetTable,
   type WorkbookData,
 } from './model/workbook';
 
@@ -68,6 +69,10 @@ export interface Editing {
   pointFocus?: CellPos;
   /** Where the caret goes after the text changed by pointing. */
   caret?: number;
+  /** The sheet the formula is being typed in (null or active when pointing started). */
+  sourceSheet?: number;
+  /** The sheet currently being pointed to. */
+  pointSheet?: number;
 }
 
 export type BorderPreset = 'all' | 'outside' | 'none' | 'top' | 'bottom' | 'left' | 'right' | 'thickOutside' | 'thickBottom' | 'doubleBottom' | 'topBottom' | 'diagonalDown' | 'diagonalUp';
@@ -102,6 +107,10 @@ export class CalcController {
   anchor: CellPos = { row: 0, col: 0 };
   focus: CellPos = { row: 0, col: 0 };
   editing: Editing | null = null;
+  /** Calculation mode: auto or manual (F9 recalculate). */
+  calcMode: 'auto' | 'manual' = 'auto';
+  /** True when in manual calc mode and formulas need recalculating. */
+  needsRecalc = false;
   /** The style the format painter will paint, while it is armed. */
   painter: CellStyle | null = null;
   /** The chart that is selected (not a cell), if any. */
@@ -130,7 +139,7 @@ export class CalcController {
 
   getVersion = (): number => this.version;
 
-  private emit(): void {
+  emit(): void {
     this.version += 1;
     for (const listener of this.listeners) listener();
   }
@@ -272,6 +281,60 @@ export class CalcController {
     if (hits.length > 0) this.selectBlocks(hits.map(({ row, col }) => ({ r1: row, c1: col, r2: row, c2: col })));
   }
 
+  /** Select all cells with formulas */
+  selectFormulas(): void {
+    const sheet = this.wb.sheets[this.active];
+    const hits: RangePos[] = [];
+    sheet.cells.forEach((cell, key) => {
+      if (cell.raw.startsWith('=')) {
+        const r = keyRow(key);
+        const c = keyCol(key);
+        hits.push({ r1: r, c1: c, r2: r, c2: c });
+      }
+    });
+    if (hits.length > 0) this.selectBlocks(hits);
+  }
+
+  /** Select all cells with constants (non-empty, non-formula) */
+  selectConstants(): void {
+    const sheet = this.wb.sheets[this.active];
+    const hits: RangePos[] = [];
+    sheet.cells.forEach((cell, key) => {
+      if (cell.raw !== '' && !cell.raw.startsWith('=')) {
+        const r = keyRow(key);
+        const c = keyCol(key);
+        hits.push({ r1: r, c1: c, r2: r, c2: c });
+      }
+    });
+    if (hits.length > 0) this.selectBlocks(hits);
+  }
+
+  /** Select all cells that are subject to conditional formatting */
+  selectConditionalCells(): void {
+    const sheet = this.wb.sheets[this.active];
+    if (!sheet.cf?.length) return;
+    const hits: RangePos[] = [];
+    for (const rule of sheet.cf) {
+      if (rule.range) {
+        hits.push({ ...rule.range });
+      }
+    }
+    if (hits.length > 0) this.selectBlocks(hits);
+  }
+
+  /** Select all cells that have data validation rules */
+  selectDataValidationCells(): void {
+    const sheet = this.wb.sheets[this.active];
+    if (!sheet.validations?.length) return;
+    const hits: RangePos[] = [];
+    for (const v of sheet.validations) {
+      if (v.range) {
+        hits.push({ ...v.range });
+      }
+    }
+    if (hits.length > 0) this.selectBlocks(hits);
+  }
+
   /** Selects several blocks at once (the last becomes the selection proper). */
   selectBlocks(blocks: RangePos[]): void {
     if (blocks.length === 0) return;
@@ -329,6 +392,7 @@ export class CalcController {
   recalculate(): void {
     this.commitEdit(null);
     this.wb.touch();
+    this.needsRecalc = false;
     this.emit();
   }
 
@@ -359,16 +423,46 @@ export class CalcController {
     this.emit();
   }
 
-  /** Whole columns of the selection, as far down as `rowLimit`. */
-  selectColumns(rowLimit: number): void {
-    const { c1, c2 } = this.selection;
-    this.selectRange({ r1: 0, c1, r2: rowLimit - 1, c2 });
+  /** Selects a single column, keeping focus at row 0 so viewport does not jump to bottom. */
+  selectColumn(col: number, rowLimit: number): void {
+    this.commitEdit(null);
+    this.anchor = { row: rowLimit - 1, col };
+    this.focus = { row: 0, col };
+    this.cursor = null;
+    this.earlierBlocks = [];
+    this.emit();
   }
 
-  /** Whole rows of the selection, as far right as `colLimit`. */
+  /** Selects a single row, keeping focus at col 0 so viewport does not jump to far right. */
+  selectRow(row: number, colLimit: number): void {
+    this.commitEdit(null);
+    this.anchor = { row, col: colLimit - 1 };
+    this.focus = { row, col: 0 };
+    this.cursor = null;
+    this.earlierBlocks = [];
+    this.emit();
+  }
+
+  /** Whole columns of the selection, as far down as `rowLimit`. Focus stays at top row. */
+  selectColumns(rowLimit: number): void {
+    const { c1, c2 } = this.selection;
+    this.commitEdit(null);
+    this.anchor = { row: rowLimit - 1, col: c2 };
+    this.focus = { row: 0, col: c1 };
+    this.cursor = null;
+    this.earlierBlocks = [];
+    this.emit();
+  }
+
+  /** Whole rows of the selection, as far right as `colLimit`. Focus stays at leftmost column. */
   selectRows(colLimit: number): void {
     const { r1, r2 } = this.selection;
-    this.selectRange({ r1, c1: 0, r2, c2: colLimit - 1 });
+    this.commitEdit(null);
+    this.anchor = { row: r2, col: colLimit - 1 };
+    this.focus = { row: r1, col: 0 };
+    this.cursor = null;
+    this.earlierBlocks = [];
+    this.emit();
   }
 
   /** The block of data around the active cell (Ctrl+Shift+*). */
@@ -427,7 +521,13 @@ export class CalcController {
 
   selectAll(): void {
     const used = this.wb.usedRange(this.active);
-    this.selectRange(used ?? { r1: 0, c1: 0, r2: 0, c2: 0 });
+    const target = used ?? { r1: 0, c1: 0, r2: 0, c2: 0 };
+    this.commitEdit(null);
+    this.anchor = { row: target.r2, col: target.c2 };
+    this.focus = { row: target.r1, col: target.c1 };
+    this.cursor = null;
+    this.earlierBlocks = [];
+    this.emit();
   }
 
   // ----- Typing
@@ -448,6 +548,7 @@ export class CalcController {
       col,
       text: initialText ?? this.rawOfActive(),
       enterMode: initialText !== undefined,
+      sourceSheet: this.active,
     };
     this.emit();
   }
@@ -471,7 +572,7 @@ export class CalcController {
     if (!editing) return false;
     const slot = pointSlot(editing.text, caret, editing.pointing ?? null);
     if (!slot) return false;
-    this.editing = { ...editing, pointing: slot };
+    this.editing = { ...editing, pointing: slot, sourceSheet: editing.sourceSheet ?? this.active };
     return true;
   }
 
@@ -480,8 +581,11 @@ export class CalcController {
     const editing = this.editing;
     if (!editing?.pointing) return;
     const range: RangePos = { r1: Math.min(anchor.row, focus.row), c1: Math.min(anchor.col, focus.col), r2: Math.max(anchor.row, focus.row), c2: Math.max(anchor.col, focus.col) };
-    const next = insertReference(editing.text, editing.pointing, referenceText(range, null));
-    this.editing = { ...editing, text: next.text, pointing: next.slot, pointAnchor: anchor, pointFocus: focus, caret: next.slot.to };
+    const targetSheet = editing.sourceSheet !== undefined && editing.sourceSheet !== this.active
+      ? this.wb.sheets[this.active]?.name ?? null
+      : null;
+    const next = insertReference(editing.text, editing.pointing, referenceText(range, targetSheet));
+    this.editing = { ...editing, text: next.text, pointing: next.slot, pointAnchor: anchor, pointFocus: focus, caret: next.slot.to, pointSheet: this.active };
     this.emit();
   }
 
@@ -502,10 +606,11 @@ export class CalcController {
     const editing = this.editing;
     if (!editing) return;
     this.editing = null;
-    const existing = this.wb.getCell(this.active, editing.row, editing.col);
+    const targetSheet = editing.sourceSheet ?? this.active;
+    const existing = this.wb.getCell(targetSheet, editing.row, editing.col);
     const style = this.wb.styleOf(existing?.style ?? 0);
     if ((existing?.raw ?? '') !== editing.text) {
-      const rule = validationAt(this.wb.sheets[this.active].validations, editing.row, editing.col);
+      const rule = validationAt(this.wb.sheets[targetSheet].validations, editing.row, editing.col);
       if (rule && !acceptsEntry(rule.rule, editing.text, this.validationItems(rule))) {
         // Refused: the cell keeps what it had, and the screen says why.
         this.onReject?.(rule.error);
@@ -516,7 +621,10 @@ export class CalcController {
       // A new line in the text turns wrapping on, as in Excel.
       const wrapped = editing.text.includes('\n') && !style.wrap;
       const styleId = entry.numFmt || wrapped ? this.wb.styleId({ ...style, ...(entry.numFmt ? { numFmt: entry.numFmt } : {}), ...(wrapped ? { wrap: true } : {}) }) : (existing?.style ?? 0);
-      this.apply([{ row: editing.row, col: editing.col, after: { raw: entry.raw, style: styleId } }]);
+      this.apply([{ row: editing.row, col: editing.col, after: { raw: entry.raw, style: styleId } }], targetSheet);
+    }
+    if (editing.sourceSheet !== undefined && editing.sourceSheet !== this.active) {
+      this.active = editing.sourceSheet;
     }
     if (then) {
       const d = { down: [1, 0], up: [-1, 0], right: [0, 1], left: [0, -1] }[then];
@@ -654,8 +762,12 @@ export class CalcController {
   }
 
   cancelEdit(): void {
-    if (!this.editing) return;
+    const editing = this.editing;
+    if (!editing) return;
     this.editing = null;
+    if (editing.sourceSheet !== undefined && editing.sourceSheet !== this.active) {
+      this.active = editing.sourceSheet;
+    }
     this.emit();
   }
 
@@ -704,6 +816,7 @@ export class CalcController {
     for (const c of changes) this.wb.putCell(c.sheet, c.row, c.col, c.after);
     this.pushHistory({ kind: 'cells', changes });
     this.keepSummariesCurrent(changes);
+    if (this.calcMode === 'manual') this.needsRecalc = true;
     this.emit();
   }
 
@@ -925,6 +1038,30 @@ export class CalcController {
     this.apply(this.selectedCells().map(({ row, col }) => ({ row, col, after: undefined })));
   }
 
+  clearComments(): void {
+    const sheet = this.wb.sheets[this.active];
+    if (!sheet?.comments?.size) return;
+    const keys = this.selectedCells().map(({ row, col }) => cellKey(row, col)).filter((key) => sheet.comments!.has(key));
+    if (keys.length === 0) return;
+    this.structural(() => {
+      for (const key of keys) sheet.comments!.delete(key);
+      if (sheet.comments!.size === 0) delete sheet.comments;
+      this.wb.touch();
+    });
+  }
+
+  clearHyperlinks(): void {
+    const sheet = this.wb.sheets[this.active];
+    if (!sheet?.links?.size) return;
+    const keys = this.selectedCells().map(({ row, col }) => cellKey(row, col)).filter((key) => sheet.links!.has(key));
+    if (keys.length === 0) return;
+    this.structural(() => {
+      for (const key of keys) sheet.links!.delete(key);
+      if (sheet.links!.size === 0) delete sheet.links;
+      this.wb.touch();
+    });
+  }
+
   // ----- Formatting
 
   /** The style of the active cell. */
@@ -1025,25 +1162,156 @@ export class CalcController {
     });
   }
 
+  /** Merges cells across each row in the selection horizontally. */
+  mergeAcross(): void {
+    const range = this.selection;
+    if (range.c1 === range.c2) return;
+    const sheet = this.wb.sheets[this.active];
+    const existing = sheet.merges.filter((m) => m.r1 <= range.r2 && m.r2 >= range.r1 && m.c1 <= range.c2 && m.c2 >= range.c1);
+    this.structural(() => {
+      sheet.merges = sheet.merges.filter((m) => !existing.includes(m));
+      for (let r = range.r1; r <= range.r2; r += 1) {
+        sheet.merges.push({ r1: r, r2: r, c1: range.c1, c2: range.c2 });
+        for (let c = range.c1 + 1; c <= range.c2; c += 1) sheet.cells.delete(cellKey(r, c));
+      }
+      this.wb.touch();
+    });
+  }
+
+  /** Splits all merges that intersect the current selection. */
+  unmergeSelection(): void {
+    const range = this.selection;
+    const sheet = this.wb.sheets[this.active];
+    const existing = sheet.merges.filter((m) => m.r1 <= range.r2 && m.r2 >= range.r1 && m.c1 <= range.c2 && m.c2 >= range.c1);
+    if (existing.length === 0) return;
+    this.structural(() => {
+      sheet.merges = sheet.merges.filter((m) => !existing.includes(m));
+      this.wb.touch();
+    });
+  }
+
   isMerged(): boolean {
     const r = this.selection;
     return this.wb.sheets[this.active].merges.some((m) => m.r1 <= r.r2 && m.r2 >= r.r1 && m.c1 <= r.c2 && m.c2 >= r.c1);
   }
 
-  /** A header row and banded rows with thin borders over the selection. */
-  formatAsTable(): void {
-    const { r1 } = this.selection;
-    this.restyle((style, row) => {
-      const header = row === r1;
-      const banded = !header && (row - r1) % 2 === 0;
-      return {
-        ...style,
-        bold: header ? true : style.bold,
-        color: header ? '#ffffff' : style.color,
-        fill: header ? '#0f766e' : banded ? '#e6f4f1' : undefined,
-        borders: { top: true, right: true, bottom: true, left: true },
-      };
+  /** Whether the current selection is inside or intersects any formatted table on the active sheet. */
+  isTableActive(): boolean {
+    const sheet = this.wb.sheets[this.active];
+    if (!sheet?.tables || sheet.tables.length === 0) return false;
+    const { r1, r2, c1, c2 } = this.selection;
+    return sheet.tables.some(
+      (t) => Math.max(r1, t.range.r1) <= Math.min(r2, t.range.r2) && Math.max(c1, t.range.c1) <= Math.min(c2, t.range.c2)
+    );
+  }
+
+  /** The table at the active cell / selection, or null if none. */
+  activeTable(): SheetTable | null {
+    const sheet = this.wb.sheets[this.active];
+    if (!sheet?.tables || sheet.tables.length === 0) return null;
+    const { r1, r2, c1, c2 } = this.selection;
+    return (
+      sheet.tables.find(
+        (t) => Math.max(r1, t.range.r1) <= Math.min(r2, t.range.r2) && Math.max(c1, t.range.c1) <= Math.min(c2, t.range.c2)
+      ) ?? null
+    );
+  }
+
+  /** Creates a structured table from a range with optional header row and filter. */
+  createTable(range: RangePos, hasHeaders = true): SheetTable {
+    const sheet = this.wb.sheets[this.active];
+    const finalRange = { ...range };
+
+    this.selectRange(finalRange);
+
+    const tableId = `tbl_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+    const tableName = `Table${(sheet.tables?.length ?? 0) + 1}`;
+    const table: SheetTable = {
+      id: tableId,
+      name: tableName,
+      range: finalRange,
+      headerRow: hasHeaders,
+      totalRow: false,
+      bandedRows: true,
+      firstCol: false,
+      lastCol: false,
+      bandedCols: false,
+    };
+
+    this.structural(() => {
+      if (!sheet.tables) sheet.tables = [];
+      sheet.tables.push(table);
+      if (hasHeaders) {
+        for (let c = finalRange.c1; c <= finalRange.c2; c += 1) {
+          const existing = this.wb.getCell(this.active, finalRange.r1, c);
+          if (!existing || existing.raw.trim() === '') {
+            const defaultName = `Column${c - finalRange.c1 + 1}`;
+            this.wb.putCell(this.active, finalRange.r1, c, { raw: defaultName, style: existing?.style ?? 0 });
+          }
+        }
+      }
+      this.restyle((style, row) => {
+        const isHeader = hasHeaders && row === finalRange.r1;
+        const banded = !isHeader && ((row - finalRange.r1 - (hasHeaders ? 1 : 0)) % 2 === 0);
+        return {
+          ...style,
+          bold: isHeader ? true : style.bold,
+          color: isHeader ? '#ffffff' : style.color,
+          fill: isHeader ? '#107c41' : banded ? '#f2f8f4' : undefined,
+          borders: { top: true, right: true, bottom: true, left: true },
+        };
+      });
+      if (hasHeaders && !sheet.filter) {
+        sheet.filter = { range: finalRange, excluded: {} };
+      }
+      this.wb.touch();
     });
+    this.emit();
+    return table;
+  }
+
+  /** Converts the selection (or current region) into a structured table with header, banded rows, and filter. */
+  formatAsTable(): SheetTable {
+    const sel = this.selection;
+    const single = sel.r1 === sel.r2 && sel.c1 === sel.c2;
+    const filled = (r: number, c: number) => (this.wb.getCell(this.active, r, c)?.raw ?? '') !== '';
+    const range = single ? currentRegion(sel.r1, sel.c1, filled) : { ...sel };
+    return this.createTable(range, true);
+  }
+
+  /** Converts an existing table back into a normal cell range. */
+  convertToRange(): void {
+    const table = this.activeTable();
+    if (!table) return;
+    const sheet = this.wb.sheets[this.active];
+    this.structural(() => {
+      sheet.tables = sheet.tables?.filter((t) => t.id !== table.id);
+      if (sheet.tables && sheet.tables.length === 0) delete sheet.tables;
+      this.wb.touch();
+    });
+    this.emit();
+  }
+
+  /** Resizes the active table to a new range. */
+  resizeTable(newRange: RangePos): void {
+    const table = this.activeTable();
+    if (!table) return;
+    this.structural(() => {
+      table.range = { ...newRange };
+      this.wb.touch();
+    });
+    this.emit();
+  }
+
+  /** Updates the configuration of the active table. */
+  updateActiveTable(update: Partial<SheetTable>): void {
+    const table = this.activeTable();
+    if (!table) return;
+    this.structural(() => {
+      Object.assign(table, update);
+      this.wb.touch();
+    });
+    this.emit();
   }
 
   // ----- Charts
@@ -1163,14 +1431,34 @@ export class CalcController {
     });
   }
 
-  /** Removes the rules that touch the selection, or every rule on the sheet. */
-  clearConditional(scope: 'selection' | 'sheet'): void {
+  /** Removes the rules that touch the selection, active table, or every rule on the sheet. */
+  clearConditional(scope: 'selection' | 'sheet' | 'table'): void {
     const sheet = this.wb.sheets[this.active];
+    if (sheet.cf.length === 0) return;
+    if (scope === 'sheet') {
+      this.structural(() => {
+        sheet.cf = [];
+        this.wb.touch();
+      });
+      return;
+    }
+    if (scope === 'table') {
+      const table = this.activeTable();
+      if (!table) return;
+      const tr = table.range;
+      const touchesTable = (r: CfRule['range']) => r.r1 <= tr.r2 && r.r2 >= tr.r1 && r.c1 <= tr.c2 && r.c2 >= tr.c1;
+      if (!sheet.cf.some((rule) => touchesTable(rule.range))) return;
+      this.structural(() => {
+        sheet.cf = sheet.cf.filter((rule) => !touchesTable(rule.range));
+        this.wb.touch();
+      });
+      return;
+    }
     const sel = this.selection;
     const touches = (r: CfRule['range']) => r.r1 <= sel.r2 && r.r2 >= sel.r1 && r.c1 <= sel.c2 && r.c2 >= sel.c1;
-    if (sheet.cf.length === 0 || (scope === 'selection' && !sheet.cf.some((rule) => touches(rule.range)))) return;
+    if (!sheet.cf.some((rule) => touches(rule.range))) return;
     this.structural(() => {
-      sheet.cf = scope === 'sheet' ? [] : sheet.cf.filter((rule) => !touches(rule.range));
+      sheet.cf = sheet.cf.filter((rule) => !touches(rule.range));
       this.wb.touch();
     });
   }
@@ -1378,6 +1666,28 @@ export class CalcController {
       const source = this.wb.getCell(this.active, r, c1);
       for (let c = c1 + 1; c <= c2; c += 1)
         edits.push({ row: r, col: c, after: source ? { raw: source.raw.startsWith('=') ? shiftFormula(source.raw, 0, c - c1) : source.raw, style: source.style } : undefined });
+    }
+    this.apply(edits);
+  }
+
+  fillUp(): void {
+    const { r1, c1, r2, c2 } = this.selection;
+    const edits: Array<{ row: number; col: number; after: Cell | undefined }> = [];
+    for (let c = c1; c <= c2; c += 1) {
+      const source = this.wb.getCell(this.active, r2, c);
+      for (let r = r1; r < r2; r += 1)
+        edits.push({ row: r, col: c, after: source ? { raw: source.raw.startsWith('=') ? shiftFormula(source.raw, r - r2, 0) : source.raw, style: source.style } : undefined });
+    }
+    this.apply(edits);
+  }
+
+  fillLeft(): void {
+    const { r1, c1, r2, c2 } = this.selection;
+    const edits: Array<{ row: number; col: number; after: Cell | undefined }> = [];
+    for (let r = r1; r <= r2; r += 1) {
+      const source = this.wb.getCell(this.active, r, c2);
+      for (let c = c1; c < c2; c += 1)
+        edits.push({ row: r, col: c, after: source ? { raw: source.raw.startsWith('=') ? shiftFormula(source.raw, 0, c - c2) : source.raw, style: source.style } : undefined });
     }
     this.apply(edits);
   }
@@ -1799,6 +2109,14 @@ export class CalcController {
     });
   }
 
+  reapplyFilter(): void {
+    const sheet = this.wb.sheets[this.active];
+    if (!sheet.filter) return;
+    this.structural(() => {
+      this.wb.touch();
+    });
+  }
+
   /** Sorts the filter's records (everything under the header row) by a column. */
   sortFilterColumn(col: number, ascending: boolean): void {
     const filter = this.filter;
@@ -2061,8 +2379,8 @@ export class CalcController {
     });
   }
 
-  /** Insert > Sparklines: a line or column sparkline for each row of the selection, in the cell just right of it. */
-  addSparklines(type: 'line' | 'column'): boolean {
+  /** Insert > Sparklines: a line, column or winLoss sparkline for each row of the selection, in the cell just right of it. */
+  addSparklines(type: 'line' | 'column' | 'winLoss'): boolean {
     const { r1, c1, r2, c2 } = this.selection;
     const sheet = this.wb.sheets[this.active];
     const wide = c2 > c1;
@@ -2229,6 +2547,23 @@ export class CalcController {
     });
   }
 
+  setSingleRowHeight(row: number, height: number): void {
+    const sheet = this.wb.sheets[this.active];
+    this.structural(() => {
+      sheet.rowHeights ??= new Map();
+      sheet.rowHeights.set(row, clamp(Math.round(height), 8, 600));
+      this.wb.touch();
+    });
+  }
+
+  autofitRow(row: number): void {
+    const sheet = this.wb.sheets[this.active];
+    this.structural(() => {
+      sheet.rowHeights?.delete(row);
+      this.wb.touch();
+    });
+  }
+
   setColumnWidth(col: number, width: number): void {
     const sheet = this.wb.sheets[this.active];
     this.structural(() => {
@@ -2386,6 +2721,24 @@ export class CalcController {
 
   switchSheet(index: number): void {
     if (index === this.active || index < 0 || index >= this.wb.sheets.length) return;
+    if (this.editing && this.editing.text.startsWith('=')) {
+      const sourceSheet = this.editing.sourceSheet ?? this.active;
+      const caret = this.editing.caret ?? this.editing.text.length;
+      const slot = pointSlot(this.editing.text, caret, this.editing.pointing ?? null);
+      this.editing = {
+        ...this.editing,
+        sourceSheet,
+        pointing: slot ?? this.editing.pointing,
+        pointSheet: index,
+      };
+      this.active = index;
+      this.selectedChart = null;
+      this.anchor = this.focus = { row: 0, col: 0 };
+      this.cursor = null;
+      this.earlierBlocks = [];
+      this.emit();
+      return;
+    }
     this.commitEdit(null);
     this.active = index;
     this.selectedChart = null;

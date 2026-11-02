@@ -40,7 +40,7 @@ export const CalcFindPanel: React.FC<{ controller: CalcController; onClose: () =
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           onClose();
-          document.querySelector<HTMLElement>('.calc-grid')?.focus();
+          document.querySelector<HTMLElement>('.calc-grid')?.focus({ preventScroll: true });
         }
       }}
     >

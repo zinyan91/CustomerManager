@@ -93,7 +93,7 @@ export interface FilterState {
 
 /** A tiny line or column chart of a range, drawn inside one cell (Insert > Sparklines). */
 export interface Sparkline {
-  type: 'line' | 'column';
+  type: 'line' | 'column' | 'winLoss';
   source: RangePos;
   row: number;
   col: number;
@@ -145,6 +145,19 @@ export interface CellComment {
   at: number;
 }
 
+export interface SheetTable {
+  id: string;
+  name: string;
+  range: RangePos;
+  style?: string;
+  headerRow?: boolean;
+  totalRow?: boolean;
+  bandedRows?: boolean;
+  firstCol?: boolean;
+  lastCol?: boolean;
+  bandedCols?: boolean;
+}
+
 export interface Sheet {
   name: string;
   cells: Map<number, Cell>;
@@ -169,6 +182,8 @@ export interface Sheet {
   /** Conditional formatting rules, first rule first. */
   cf: CfRule[];
   charts: ChartObject[];
+  /** Tables created on this sheet. */
+  tables?: SheetTable[];
   /** Absent in sheets built before pictures existed. */
   images?: ImageObject[];
   filter?: FilterState;
@@ -224,6 +239,7 @@ export interface WorkbookData {
     /** Absent in drafts saved before conditional formatting existed. */
     cf?: CfRule[];
     charts?: ChartObject[];
+    tables?: SheetTable[];
     images?: ImageObject[];
     filter?: FilterState;
     freeze?: { rows: number; cols: number };
@@ -666,6 +682,14 @@ export class Workbook {
       return range ? [{ ...rule, range }] : [];
     });
 
+    if (sheet.tables) {
+      sheet.tables = sheet.tables.flatMap((table) => {
+        const range = shiftRange(table.range, edit.axis, edit.at, edit.count, edit.mode);
+        return range ? [{ ...table, range }] : [];
+      });
+      if (sheet.tables.length === 0) delete sheet.tables;
+    }
+
     if (sheet.validations) {
       sheet.validations = sheet.validations.flatMap((validation) => {
         const range = shiftRange(validation.range, edit.axis, edit.at, edit.count, edit.mode);
@@ -805,6 +829,7 @@ export class Workbook {
         merges: sheet.merges.map((m) => ({ ...m })),
         cf: structuredClone(sheet.cf),
         charts: structuredClone(sheet.charts),
+        ...(sheet.tables?.length ? { tables: structuredClone(sheet.tables) } : {}),
         // Copied one level deep: the data URLs are shared, not duplicated into every undo snapshot.
         ...(sheet.images?.length ? { images: sheet.images.map((image) => ({ ...image })) } : {}),
         ...(sheet.filter ? { filter: structuredClone(sheet.filter) } : {}),
@@ -840,6 +865,7 @@ export class Workbook {
           merges: sheet.merges.map((m) => ({ ...m })),
           cf: sheet.cf ? structuredClone(sheet.cf) : [],
           charts: sheet.charts ? structuredClone(sheet.charts) : [],
+          ...(sheet.tables?.length ? { tables: structuredClone(sheet.tables) } : {}),
           ...(sheet.images?.length ? { images: sheet.images.map((image) => ({ ...image })) } : {}),
           ...(sheet.filter ? { filter: structuredClone(sheet.filter) } : {}),
           ...(sheet.freeze ? { freeze: { rows: Math.max(0, Math.floor(sheet.freeze.rows) || 0), cols: Math.max(0, Math.floor(sheet.freeze.cols) || 0) } } : {}),

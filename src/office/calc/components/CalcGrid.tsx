@@ -109,8 +109,6 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
   const fillTargetRef = useRef<{ row: number; col: number } | null>(null);
   const resizingRef = useRef<{ col: number; width: number } | null>(null);
   const resizingRowRef = useRef<{ row: number; height: number } | null>(null);
-  // Bấm tiêu đề hàng/cột/góc chọn cả hàng hay cột nên con trỏ nằm ở đầu xa; cuộn theo nó sẽ nhảy đi tuốt phía sau.
-  const skipReveal = useRef<{ row: number; col: number } | null>(null);
 
   // `version` is not read inside: it is what tells these memos the workbook changed.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -148,18 +146,17 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
   }, [colCount, widthOf, version]);
   // Rows a filter hides take no room: `rowY[r]` is where row r starts, in zoomed pixels from the first row.
   const hidden = wb.hiddenRows(sheetIndex);
-  const shownHeightOf = useCallback(
-    (row: number) => (resizingRow?.row === row ? resizingRow.height : rowHeightOf(sheet, row)) * z,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sheet.rowHeights, resizingRow, z],
+  const heightOf = useCallback(
+    (row: number) =>
+      hidden.has(row) ? 0 : (resizingRow?.row === row ? resizingRow.height : (sheet.rowHeights?.get(row) ?? ROW_HEIGHT)) * z,
+    [sheet.rowHeights, hidden, resizingRow, z],
   );
   const rowY = useMemo(() => {
     const starts = [0];
-    for (let r = 0; r < rowCount; r += 1) starts.push(starts[r] + (hidden.has(r) ? 0 : shownHeightOf(r)));
+    for (let r = 0; r < rowCount; r += 1) starts.push(starts[r] + heightOf(r));
     return starts;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rowCount, shownHeightOf, hidden, version]);
-  const heightOf = (row: number) => rowY[row + 1] - rowY[row];
+  }, [rowCount, heightOf, version]);
   const rowStart = (row: number) => (row <= rowCount ? rowY[row] : rowY[rowCount] + (row - rowCount) * rowH);
   const totalW = rowHeadW + colX[colCount];
   const totalH = headH + rowY[rowCount];
@@ -194,19 +191,21 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
     const el = scroller.current;
     if (!el) return;
     const { row, col } = controller.focus;
-    const skip = skipReveal.current;
-    skipReveal.current = null;
-    if (skip && skip.row === row && skip.col === col) return;
+    const sel = controller.selection;
+    const isWholeCol = sel.r1 === 0 && sel.r2 >= rowCount - 1;
+    const isWholeRow = sel.c1 === 0 && sel.c2 >= colCount - 1;
+
     const left = cellLeft(col);
     const right = cellLeft(col + 1);
     const top = cellTop(row);
     const bottom = cellTop(row + 1);
+
     // A cursor in the frozen band is always in view; one beyond it must clear the band.
-    if (col >= fc) {
+    if (col >= fc && !isWholeRow) {
       if (left - rowHeadW - frozenW < el.scrollLeft) el.scrollLeft = left - rowHeadW - frozenW;
       else if (right > el.scrollLeft + el.clientWidth) el.scrollLeft = right - el.clientWidth;
     }
-    if (row >= fr) {
+    if (row >= fr && !isWholeCol) {
       if (top - headH - frozenH < el.scrollTop) el.scrollTop = top - headH - frozenH;
       else if (bottom > el.scrollTop + el.clientHeight) el.scrollTop = bottom - el.clientHeight;
     }
@@ -263,6 +262,16 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
     if (event.button > 2) return;
     const target = event.target as HTMLElement;
     if (target.closest('.calc-edit-input')) return;
+
+    // Ignore clicks on container scrollbars so dragging or clicking scrollbars never triggers cell selection
+    const scrollerEl = scroller.current;
+    if (scrollerEl) {
+      const rect = scrollerEl.getBoundingClientRect();
+      const isVerticalScrollbar = scrollerEl.scrollHeight > scrollerEl.clientHeight && event.clientX >= rect.left + scrollerEl.clientLeft + scrollerEl.clientWidth;
+      const isHorizontalScrollbar = scrollerEl.scrollWidth > scrollerEl.clientWidth && event.clientY >= rect.top + scrollerEl.clientTop + scrollerEl.clientHeight;
+      if (isVerticalScrollbar || isHorizontalScrollbar) return;
+    }
+
     // A right click keeps the selection when it lands inside it, and otherwise selects what was clicked.
     if (event.button === 2) {
       const colHead = target.closest<HTMLElement>('[data-col-head]');
@@ -270,10 +279,14 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
       const sel = controller.selection;
       if (colHead) {
         const c = Number(colHead.dataset.colHead);
-        if (!(c >= sel.c1 && c <= sel.c2 && sel.r1 === 0 && sel.r2 >= rowCount - 1)) controller.selectRange({ r1: 0, c1: c, r2: rowCount - 1, c2: c });
+        if (!(c >= sel.c1 && c <= sel.c2 && sel.r1 === 0 && sel.r2 >= rowCount - 1)) {
+          controller.selectColumn(c, rowCount);
+        }
       } else if (rowHeadEl) {
         const r = Number(rowHeadEl.dataset.rowHead);
-        if (!(r >= sel.r1 && r <= sel.r2 && sel.c1 === 0 && sel.c2 >= colCount - 1)) controller.selectRange({ r1: r, c1: 0, r2: r, c2: colCount - 1 });
+        if (!(r >= sel.r1 && r <= sel.r2 && sel.c1 === 0 && sel.c2 >= colCount - 1)) {
+          controller.selectRow(r, colCount);
+        }
       } else if (!target.closest('[data-corner],.calc-edit-input')) {
         const { row, col: c } = cellAtPoint(event.clientX, event.clientY);
         if (!(row >= sel.r1 && row <= sel.r2 && c >= sel.c1 && c <= sel.c2)) controller.select(row, c);
@@ -351,8 +364,7 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
       const c = Number(col.dataset.colHead);
       if (event.shiftKey) controller.extendTo(rowCount - 1, c);
       else if (event.ctrlKey || event.metaKey) controller.selectBlocks([...controller.blocks, { r1: 0, c1: c, r2: rowCount - 1, c2: c }]);
-      else controller.selectRange({ r1: 0, c1: c, r2: rowCount - 1, c2: c });
-      skipReveal.current = { ...controller.focus };
+      else controller.selectColumn(c, rowCount);
       focusGrid();
       return;
     }
@@ -360,21 +372,20 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
     if (rowHead) {
       const r = Number(rowHead.dataset.rowHead);
       if (event.ctrlKey || event.metaKey) controller.selectBlocks([...controller.blocks, { r1: r, c1: 0, r2: r, c2: colCount - 1 }]);
-      else controller.selectRange({ r1: r, c1: 0, r2: r, c2: colCount - 1 });
-      skipReveal.current = { ...controller.focus };
+      else controller.selectRow(r, colCount);
       focusGrid();
       return;
     }
     if (target.closest('[data-corner]')) {
       controller.selectAll();
-      skipReveal.current = { ...controller.focus };
       focusGrid();
       return;
     }
     // While a formula is typed, a click or drag over cells writes their reference into it instead of leaving the edit.
     const typing = document.activeElement as HTMLInputElement | HTMLTextAreaElement | null;
     const pointer = typing?.matches?.('.calc-edit-input, .calc-formula-input') ? typing : editorInput.current;
-    if (controller.editing?.text.startsWith('=') && pointer && controller.beginPoint(pointer.selectionStart ?? pointer.value.length)) {
+    const isFormula = controller.editing?.text.startsWith('=');
+    if (isFormula && (controller.editing?.pointing || controller.beginPoint(pointer?.selectionStart ?? controller.editing?.caret ?? controller.editing!.text.length))) {
       const at = cellAtPoint(event.clientX, event.clientY);
       event.preventDefault();
       drag.current = { point: at };
@@ -424,12 +435,12 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
                 })()
               : { id: d.chart, x: d.x, y: d.y, width: Math.max(160, d.width + dx), height: Math.max(120, d.height + dy) };
         setChartDrag(chartDragRef.current);
-      } else if ('row' in d) {
-        resizingRowRef.current = { row: d.row, height: Math.max(8, d.startHeight + (event.clientY - d.startY) / z) };
-        setResizingRow(resizingRowRef.current);
-      } else {
+      } else if ('col' in d) {
         resizingRef.current = { col: d.col, width: Math.max(24, d.startWidth + (event.clientX - d.startX) / z) };
         setResizing(resizingRef.current);
+      } else if ('row' in d) {
+        resizingRowRef.current = { row: d.row, height: Math.max(14, d.startHeight + (event.clientY - d.startY) / z) };
+        setResizingRow(resizingRowRef.current);
       }
     };
     const onUp = () => {
@@ -470,10 +481,12 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
         setResizingRow(null);
         if (resized) controller.setRowHeight(resized.row, resized.height);
       } else if (d) {
-        const resized = resizingRef.current;
-        resizingRef.current = null;
-        setResizing(null);
-        if (resized) controller.setColumnWidth(resized.col, resized.width);
+        if ('col' in d) {
+          const resized = resizingRef.current;
+          resizingRef.current = null;
+          setResizing(null);
+          if (resized) controller.setColumnWidth(resized.col, resized.width);
+        }
       }
     };
     window.addEventListener('mousemove', onMove);
@@ -488,14 +501,14 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
 
   const onDoubleClick = (event: React.MouseEvent) => {
     const target = event.target as HTMLElement;
-    const rowHandle = target.closest<HTMLElement>('[data-resize-row]');
-    if (rowHandle) {
-      controller.setRowHeight(Number(rowHandle.dataset.resizeRow), ROW_HEIGHT);
-      return;
-    }
     const handle = target.closest<HTMLElement>('[data-resize-col]');
     if (handle) {
       controller.autofitColumn(Number(handle.dataset.resizeCol));
+      return;
+    }
+    const rowHandle = target.closest<HTMLElement>('[data-resize-row]');
+    if (rowHandle) {
+      controller.autofitRow(Number(rowHandle.dataset.resizeRow));
       return;
     }
     const chartEl = target.closest<HTMLElement>('[data-chart]');
@@ -736,7 +749,13 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
         <div
           key={`d${key}`}
           className="calc-data-bar"
-          style={{ left: left + 2, top: top + 3, width: Math.max(2, (width - 4) * cf.bar.fraction), height: height - 6, background: cf.bar.color }}
+          style={{
+            left: left + 2,
+            top: top + 3,
+            width: Math.max(2, (width - 4) * cf.bar.fraction),
+            height: height - 6,
+            background: cf.bar.gradient ? `linear-gradient(90deg, ${cf.bar.color}, rgba(255, 255, 255, 0.2))` : cf.bar.color,
+          }}
         />,
       );
     }
@@ -922,6 +941,7 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
         {r + 1}
         <span className="calc-resize-handle is-row" data-resize-row={r} />
         {groupButton(r)}
+        <span className="calc-row-resize-handle" data-resize-row={r} />
       </div>,
     );
   }
@@ -929,7 +949,7 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
   // Each reference in a formula being edited is drawn in its own colour over the cells it names.
   const referenceBoxes = editing
     ? referencesIn(editing.text)
-        .filter((reference) => reference.sheet === null || reference.sheet.toLowerCase() === sheet.name.toLowerCase())
+        .filter((reference) => (reference.sheet === null && (editing.sourceSheet ?? sheetIndex) === sheetIndex) || (reference.sheet !== null && reference.sheet.toLowerCase() === sheet.name.toLowerCase()))
         .map((reference) => {
           const box = selBox(reference.range);
           const color = REFERENCE_COLORS[reference.color % REFERENCE_COLORS.length];
@@ -939,7 +959,8 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
 
   // The input that edits the cell, over it.
   let editor: React.ReactNode = null;
-  if (editing) {
+  const isEditingOnThisSheet = editing && (editing.sourceSheet ?? sheetIndex) === sheetIndex;
+  if (isEditingOnThisSheet) {
     const m = covered.get(editing.row * 16384 + editing.col);
     const box = selBox(m ?? { r1: editing.row, c1: editing.col, r2: editing.row, c2: editing.col });
     const style = wb.styleOf(wb.getCell(sheetIndex, editing.row, editing.col)?.style ?? 0);
@@ -1120,6 +1141,7 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
         {r + 1}
         <span className="calc-resize-handle is-row" data-resize-row={r} />
         {groupButton(r)}
+        <span className="calc-row-resize-handle" data-resize-row={r} />
       </div>,
     );
   }
@@ -1211,6 +1233,34 @@ export const CalcGrid: React.FC<CalcGridProps> = ({ controller, zoom, gridlines,
               );
             })}
             {overlay}
+            {resizing && (
+              <>
+                <div
+                  className="calc-resize-guide-v"
+                  style={{ left: cellLeft(resizing.col) + resizing.width * z, height: totalH }}
+                />
+                <div
+                  className="calc-resize-tooltip"
+                  style={{ left: cellLeft(resizing.col) + resizing.width * z + 8, top: headH + 4 }}
+                >
+                  {`Width: ${Math.round(resizing.width)} px (${(resizing.width / 8).toFixed(1)} chars)`}
+                </div>
+              </>
+            )}
+            {resizingRow && (
+              <>
+                <div
+                  className="calc-resize-guide-h"
+                  style={{ top: cellTop(resizingRow.row) + resizingRow.height * z, width: totalW }}
+                />
+                <div
+                  className="calc-resize-tooltip"
+                  style={{ left: rowHeadW + 8, top: cellTop(resizingRow.row) + resizingRow.height * z + 4 }}
+                >
+                  {`Height: ${Math.round(resizingRow.height)} px (${(resizingRow.height * 0.75).toFixed(1)} pt)`}
+                </div>
+              </>
+            )}
             {editRegion === 'main' && editor}
           </div>
         </div>

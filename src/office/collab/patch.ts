@@ -5,7 +5,7 @@ export type SheetData = WorkbookData['sheets'][number];
 /** Thuộc tính của trang tính thay nguyên giá trị khi đổi (người sau thắng). */
 export const WHOLE_PROPS = [
   'merges', 'cf', 'charts', 'images', 'filter', 'freeze', 'summary', 'validations', 'pageSetup', 'protected',
-  'tabColor', 'hidden', 'rowsHidden', 'colsHidden', 'sparklines', 'hideZeros',
+  'tabColor', 'hidden', 'rowsHidden', 'colsHidden', 'sparklines', 'hideZeros', 'tables',
 ] as const;
 export type WholeProp = (typeof WHOLE_PROPS)[number];
 

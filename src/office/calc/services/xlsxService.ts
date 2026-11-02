@@ -1,7 +1,7 @@
 import type { Cell as ExcelCell, Workbook as ExcelWorkbook, Worksheet } from 'exceljs';
 import { cellKey, cellName, columnName, parseCell, parseRange, rangeName, type RangePos } from '../engine/cellRef';
 import { isValidName } from '../engine/definedNames';
-import type { CfRule, CfStyle } from '../engine/conditional';
+import type { CfRule, CfStyle, IconSet } from '../engine/conditional';
 import { isError, type Scalar } from '../engine/values';
 import { mergeValidations, parseListItems, type NumberOp, type Validation, type ValidationRule } from '../engine/validation';
 import { addChartsToXlsx, readChartsFromXlsx } from './xlsxCharts';
@@ -216,19 +216,46 @@ function ruleOut(rule: CfRule, priority: number): ExcelRule | null {
       return { type: 'expression', priority, formulae: [`COUNTIF($${columnName(c1)}$${r1 + 1}:$${columnName(c2)}$${r2 + 1},${cellName(r1, c1)})>1`], style: styleOut(rule.style) };
     }
     case 'top':
-      return { type: 'top10', priority, rank: rule.n, percent: false, bottom: rule.bottom, style: styleOut(rule.style) };
+      return { type: 'top10', priority, rank: rule.n, percent: !!rule.percent, bottom: rule.bottom, style: styleOut(rule.style) };
+    case 'aboveAverage':
+      return { type: 'aboveAverage', priority, aboveAverage: !rule.below, style: styleOut(rule.style) } as ExcelRule;
     case 'scale': {
       const colors = [rule.low, ...(rule.mid ? [rule.mid] : []), rule.high].map((c) => ({ argb: hexToArgb(c) }));
       const cfvo = rule.mid ? [{ type: 'min' }, { type: 'percentile', value: 50 }, { type: 'max' }] : [{ type: 'min' }, { type: 'max' }];
       return { type: 'colorScale', priority, cfvo, color: colors } as ExcelRule;
     }
     case 'icons': {
-      const name = { arrows: '3Arrows', lights: '3TrafficLights1', shapes: '3Signs', flags: '3Flags', arrows4: '4Arrows', arrows5: '5Arrows', lights4: '4TrafficLights' }[rule.set];
-      const count = Number(name[0]);
+      const iconMap: Record<IconSet, string> = {
+        arrows: '3Arrows',
+        arrowsGray: '3ArrowsGray',
+        triangles: '3Triangles',
+        arrows4: '4Arrows',
+        arrows4Gray: '4ArrowsGray',
+        arrows5: '5Arrows',
+        arrows5Gray: '5ArrowsGray',
+        lights: '3TrafficLights1',
+        lightsRim: '3TrafficLights2',
+        shapes: '3Signs',
+        signs: '3Signs',
+        lights4: '4TrafficLights',
+        dots4: '4TrafficLights',
+        flags: '3Flags',
+        symbolsCircled: '3SymbolsCircled',
+        symbols: '3Symbols',
+        stars: '3Stars',
+        pies: '5Quarters',
+        boxes: '5Boxes',
+        bars4: '4Rating',
+        bars5: '5Rating',
+      };
+      const name = iconMap[rule.set] ?? '3Arrows';
+      const count = Number(name[0]) || 3;
       return { type: 'iconSet', priority, iconSet: name, cfvo: Array.from({ length: count }, (_, i) => ({ type: 'percent', value: Math.round((100 * i) / count) })) } as ExcelRule;
     }
     case 'bar':
       return { type: 'dataBar', priority, cfvo: [{ type: 'min' }, { type: 'max' }], color: { argb: hexToArgb(rule.color) } } as ExcelRule;
+    default:
+      return null;
   }
 }
 
@@ -250,7 +277,9 @@ function ruleIn(rule: ExcelRule, id: string, range: RangePos): CfRule | null {
     case 'expression':
       return typeof rule.formulae?.[0] === 'string' && /^COUNTIF\(/i.test(rule.formulae[0]) ? { id, range, kind: 'duplicate', style } : null;
     case 'top10':
-      return rule.rank && !rule.percent ? { id, range, kind: 'top', n: rule.rank, bottom: !!rule.bottom, style } : null;
+      return rule.rank ? { id, range, kind: 'top', n: rule.rank, bottom: !!rule.bottom, percent: !!rule.percent, style } : null;
+    case 'aboveAverage':
+      return { id, range, kind: 'aboveAverage', below: !(rule as { aboveAverage?: boolean }).aboveAverage, style };
     case 'colorScale': {
       const colors = ((Array.isArray(rule.color) ? rule.color : []) as Array<{ argb?: string }>).map((c) => argbToHex(c.argb));
       if (colors.length < 2 || colors.some((c) => !c)) return null;
@@ -258,7 +287,45 @@ function ruleIn(rule: ExcelRule, id: string, range: RangePos): CfRule | null {
     }
     case 'iconSet': {
       const name = String((rule as { iconSet?: string }).iconSet ?? '');
-      const set = /^4Arrows/.test(name) ? 'arrows4' : /^5Arrows/.test(name) ? 'arrows5' : /^4TrafficLights/.test(name) ? 'lights4' : /Arrows/.test(name) ? 'arrows' : /Flags/.test(name) ? 'flags' : /Signs|Symbols|Shapes/.test(name) ? 'shapes' : /Traffic|Rating|Stars|Quarters|Boxes/.test(name) ? 'lights' : null;
+      const set: IconSet | null = /^3ArrowsGray/.test(name)
+        ? 'arrowsGray'
+        : /^3Triangles/.test(name)
+        ? 'triangles'
+        : /^4ArrowsGray/.test(name)
+        ? 'arrows4Gray'
+        : /^5ArrowsGray/.test(name)
+        ? 'arrows5Gray'
+        : /^4Arrows/.test(name)
+        ? 'arrows4'
+        : /^5Arrows/.test(name)
+        ? 'arrows5'
+        : /^4TrafficLights/.test(name)
+        ? 'lights4'
+        : /^3TrafficLights2/.test(name)
+        ? 'lightsRim'
+        : /^3SymbolsCircled/.test(name)
+        ? 'symbolsCircled'
+        : /^3Symbols/.test(name)
+        ? 'symbols'
+        : /^3Stars/.test(name)
+        ? 'stars'
+        : /^5Quarters/.test(name)
+        ? 'pies'
+        : /^5Boxes/.test(name)
+        ? 'boxes'
+        : /^4Rating/.test(name)
+        ? 'bars4'
+        : /^5Rating/.test(name)
+        ? 'bars5'
+        : /Arrows/.test(name)
+        ? 'arrows'
+        : /Flags/.test(name)
+        ? 'flags'
+        : /Signs|Symbols|Shapes/.test(name)
+        ? 'signs'
+        : /Traffic|Rating|Stars|Quarters|Boxes/.test(name)
+        ? 'lights'
+        : null;
       return set ? { id, range, kind: 'icons', set } : null;
     }
     case 'dataBar': {
@@ -680,7 +747,23 @@ export function exportCsv(wb: Workbook, sheetIndex: number): Blob {
       rows.push(line);
     }
   }
-  return new Blob(['﻿', toCsv(rows)], { type: 'text/csv;charset=utf-8' });
+  return new Blob(['\ufeff', toCsv(rows)], { type: 'text/csv;charset=utf-8' });
+}
+
+/** The active sheet as tab-delimited text, with a BOM so Excel reads Unicode. */
+export function exportTsv(wb: Workbook, sheetIndex: number): Blob {
+  const used = wb.usedRange(sheetIndex);
+  const rows: string[] = [];
+  if (used) {
+    for (let r = 0; r <= used.r2; r += 1) {
+      const line: string[] = [];
+      for (let c = 0; c <= used.c2; c += 1) {
+        line.push(wb.displayAt(sheetIndex, r, c).replace(/[\t\r\n]/g, ' '));
+      }
+      rows.push(line.join('\t'));
+    }
+  }
+  return new Blob(['\ufeff', rows.join('\r\n')], { type: 'text/tab-separated-values;charset=utf-8' });
 }
 
 

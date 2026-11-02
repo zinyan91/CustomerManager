@@ -46,7 +46,7 @@ export const FormulaBar: React.FC<{ controller: CalcController }> = ({ controlle
           if (event.key === 'Enter') {
             event.preventDefault();
             goTo(typed ?? shown);
-            document.querySelector<HTMLElement>('.calc-grid')?.focus();
+            document.querySelector<HTMLElement>('.calc-grid')?.focus({ preventScroll: true });
           } else if (event.key === 'Escape') setTyped(null);
         }}
         onBlur={() => setTyped(null)}
@@ -79,7 +79,7 @@ export const FormulaBar: React.FC<{ controller: CalcController }> = ({ controlle
           if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
             event.preventDefault();
             controller.commitEditToSelection();
-            document.querySelector<HTMLElement>('.calc-grid')?.focus();
+            document.querySelector<HTMLElement>('.calc-grid')?.focus({ preventScroll: true });
           } else if (event.key === 'F4') {
             event.preventDefault();
             const input = event.currentTarget;
@@ -92,11 +92,11 @@ export const FormulaBar: React.FC<{ controller: CalcController }> = ({ controlle
           } else if (event.key === 'Enter') {
             event.preventDefault();
             controller.commitEdit('down');
-            document.querySelector<HTMLElement>('.calc-grid')?.focus();
+            document.querySelector<HTMLElement>('.calc-grid')?.focus({ preventScroll: true });
           } else if (event.key === 'Escape') {
             event.preventDefault();
             controller.cancelEdit();
-            document.querySelector<HTMLElement>('.calc-grid')?.focus();
+            document.querySelector<HTMLElement>('.calc-grid')?.focus({ preventScroll: true });
           }
         }}
         onBlur={(event) => {

@@ -111,3 +111,64 @@ describe('protecting a sheet', () => {
     expect(loaded.styleOf(loaded.getCell(0, 0, 0)!.style).unlocked).toBe(true);
   });
 });
+
+describe('cross-sheet formula pointing and calculation modes', () => {
+  it('points to a cell on another sheet while typing a formula', () => {
+    const c = new CalcController();
+    c.addSheet(); // Sheet2 created, c.active is 1
+    c.wb.putCell(1, 0, 0, { raw: '42', style: 0 }); // Sheet2!A1 = 42
+
+    c.switchSheet(0); // active is Sheet1
+    c.startEdit('=');
+    expect(c.editing?.sourceSheet).toBe(0);
+
+    // Click to Sheet2 tab: should NOT commit or cancel edit!
+    c.switchSheet(1);
+    expect(c.active).toBe(1);
+    expect(c.editing).not.toBeNull();
+    expect(c.editing?.sourceSheet).toBe(0);
+
+    // Point to A1 on Sheet2
+    c.pointTo({ row: 0, col: 0 }, { row: 0, col: 0 });
+    expect(c.editing?.text).toBe('=Sheet2!A1');
+
+    // Commit edit with Enter: should return to Sheet1 and save formula in Sheet1
+    c.commitEdit('down');
+    expect(c.active).toBe(0);
+    expect(c.wb.getCell(0, 0, 0)?.raw).toBe('=Sheet2!A1');
+    expect(c.wb.valueAt(0, 0, 0)).toBe(42);
+  });
+
+  it('cancels cross-sheet formula edit and returns to source sheet', () => {
+    const c = new CalcController();
+    c.addSheet();
+    c.switchSheet(0);
+    c.startEdit('=');
+    c.switchSheet(1);
+    expect(c.active).toBe(1);
+
+    c.cancelEdit();
+    expect(c.active).toBe(0);
+    expect(c.editing).toBeNull();
+  });
+
+  it('handles manual calculation mode and F9 recalculation', () => {
+    const c = new CalcController();
+    c.calcMode = 'manual';
+    expect(c.needsRecalc).toBe(false);
+
+    c.wb.putCell(0, 0, 0, { raw: '10', style: 0 });
+    c.wb.putCell(0, 1, 0, { raw: '=A1*2', style: 0 });
+    expect(c.wb.valueAt(0, 1, 0)).toBe(20);
+
+    // Edit cell in manual mode: triggers needsRecalc flag
+    c.apply([{ row: 0, col: 0, after: { raw: '50', style: 0 } }]);
+    expect(c.needsRecalc).toBe(true);
+
+    // F9 recalculate resets flag and updates cached value
+    c.recalculate();
+    expect(c.needsRecalc).toBe(false);
+    expect(c.wb.valueAt(0, 1, 0)).toBe(100);
+  });
+});
+

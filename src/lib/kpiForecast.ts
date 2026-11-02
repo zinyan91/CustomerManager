@@ -8,14 +8,8 @@ import type {
   KpiForecastRegion,
   KpiForecastResult,
   KpiForecastRow,
+  RankPolicy,
 } from '../types/kpiForecast';
-
-type MetricPolicy = Partial<Record<KpiForecastMetricId, number>>;
-
-interface RankPolicy {
-  targets: MetricPolicy;
-  points: MetricPolicy;
-}
 
 const REGION_COEFFICIENT: Record<KpiForecastRegion, number> = { 'Khu vực 5': 1 };
 
@@ -184,7 +178,7 @@ function makeRow(inputs: KpiForecastInputs, id: KpiForecastMetricId, policy: Ran
   };
 }
 
-function bonusTiers(planPoints: number, actualPointsValue: number, growthCompletion: number): KpiForecastBonusTier[] {
+export function kpiBonusTiers(planPoints: number, actualPointsValue: number, growthCompletion: number): KpiForecastBonusTier[] {
   const tier1Points = Math.max(0, Math.min(actualPointsValue - planPoints, planPoints * 0.2));
   const tier2Points = Math.max(0, Math.min(actualPointsValue - planPoints * 1.2, planPoints * 0.2));
   const tier3Points = Math.max(0, actualPointsValue - planPoints * 1.4);
@@ -223,8 +217,7 @@ export function createKpiForecastInputs(): KpiForecastInputs {
   };
 }
 
-export function calculateKpiForecast(inputs: KpiForecastInputs): KpiForecastResult {
-  const policy = RANK_POLICY[inputs.rank];
+export function calculateKpiForecast(inputs: KpiForecastInputs, policy: RankPolicy = RANK_POLICY[inputs.rank]): KpiForecastResult {
   const order: KpiForecastMetricId[] = [
     'netLoan',
     'netDeposit',
@@ -250,7 +243,7 @@ export function calculateKpiForecast(inputs: KpiForecastInputs): KpiForecastResu
   const completion = planPoints === 0 ? 0 : Math.min(6, actualPointsValue / planPoints);
   const growthId: KpiForecastMetricId = inputs.rank.startsWith('RBO') ? 'netLoan' : 'netDeposit';
   const growthCompletion = rows.find(row => row.id === growthId)?.completion ?? 0;
-  const tiers = bonusTiers(planPoints, actualPointsValue, growthCompletion);
+  const tiers = kpiBonusTiers(planPoints, actualPointsValue, growthCompletion);
   return {
     rows,
     feeRows,

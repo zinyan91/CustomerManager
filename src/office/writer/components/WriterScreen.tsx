@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
-import { Download, Printer } from 'lucide-react';
+import { Printer } from 'lucide-react';
 import { canEdit, canManageSharing, createSharedWriter, getSharedWriter, type SharedRole } from '../../collab/collabApi';
 import { PresenceBar } from '../../collab/PresenceBar';
 import { SharedDocActions, SharedDocPanels, type SharedPanel } from '../../collab/SharedDocChrome';
@@ -474,10 +474,6 @@ const WriterBody: React.FC<WriterScreenProps & { loaded: Loaded }> = ({ loaded, 
               onPanel={setPanel}
               onShare={() => void share()}
             />
-            <button type="button" className="office-header-btn" onClick={() => void downloadDocx()} title={t.file.downloadDocx} disabled={!editor}>
-              <Download size={15} />
-              <span>DOCX</span>
-            </button>
             <button type="button" className="office-icon-btn" onClick={print} title={t.file.print} aria-label={t.file.print} disabled={!editor}>
               <Printer size={16} />
             </button>

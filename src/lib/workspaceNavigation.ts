@@ -4,13 +4,13 @@ import { canOpenPath, type ModuleId } from './modules';
 import { parseCustomerPath, screenPathFor } from './customerRoutes';
 import { screenIdOfPath } from './routes';
 import {
-  Boxes, Calculator, ClipboardList, Database, FileSignature, FolderArchive, Landmark, LayoutDashboard,
+  Boxes, Calculator, CalendarRange, ClipboardList, Database, FileSignature, FolderArchive, Landmark, LayoutDashboard,
   Settings, ShieldCheck, TrendingUp, Users, UsersRound,
 } from 'lucide-react';
 import { ADMIN_NAV } from './adminNav';
 
 export const WORKSPACE_SECTIONS = [
-  { id: 'overview', label: 'Tổng quan', items: ['dashboard', 'team-kpi', 'kpi-forecast', 'loan-progress', 'office', 'reports'] },
+  { id: 'overview', label: 'Tổng quan', items: ['dashboard', 'team-kpi', 'kpi-forecast', 'kpi-campaign', 'loan-progress', 'office', 'reports'] },
   { id: 'credit', label: 'Tín dụng', items: ['customers', 'credit-contracts', 'collaterals', 'mortgage-contracts', 'savings-pledge', 'disbursement', 'loans', 'credit-cards', 'post-loan'] },
   { id: 'finance', label: 'Phân tích', items: ['business-plan', 'corporate-financial', 'toi', 'calculators'] },
   { id: 'documents', label: 'Hồ sơ chứng từ', items: ['templates'] },
@@ -56,6 +56,11 @@ const WORKSPACE_ITEMS: WorkspaceItem[] = [
   {
     id: 'kpi-forecast', screenId: 'dashboard' as const, path: '/kpi-forecast',
     icon: Calculator, label: 'Dự báo KPI', keywords: ['dự báo', 'kpi', 'RBO', 'CSO', 'thưởng'],
+    task: true,
+  },
+  {
+    id: 'kpi-campaign', screenId: 'dashboard' as const, path: '/kpi-dot',
+    icon: CalendarRange, label: 'KPI theo đợt', keywords: ['kpi', 'đợt', 'bứt phá', 'điểm thưởng', 'RBO', 'PFC', '3175'],
     task: true,
   },
   ...NAV_ITEMS.map(item => ({

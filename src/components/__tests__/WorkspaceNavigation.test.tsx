@@ -90,7 +90,7 @@ describe('workspace shell navigation', () => {
     const rail = screen.getByRole('navigation', { name: 'Phân hệ' });
     expect(within(rail).queryByRole('link', { name: 'Team & KPI' })).toBeNull();
     const sidebar = screen.getByRole('group', { name: 'Tổng quan' });
-    expect(within(sidebar).getAllByRole('link').map(link => link.textContent)).toEqual(['Tổng quan', 'Team & KPI', 'Dự báo KPI', 'Báo cáo tiến độ', 'Báo cáo', 'Báo cáo Excel']);
+    expect(within(sidebar).getAllByRole('link').map(link => link.textContent)).toEqual(['Tổng quan', 'Team & KPI', 'Dự báo KPI', 'KPI theo đợt', 'Báo cáo tiến độ', 'Báo cáo', 'Báo cáo Excel']);
     expect(within(sidebar).getByRole('link',{name:'Báo cáo'}).getAttribute('href')).toBe('/office');
     fireEvent.click(within(sidebar).getByRole('link',{name:'Báo cáo Excel'}));
     expect(screen.getByTestId('destination').textContent).toBe('/hub/reports');

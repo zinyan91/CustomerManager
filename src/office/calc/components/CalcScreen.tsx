@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { Archive as ArchiveIcon, Download, History, Share2 } from 'lucide-react';
+import { Archive as ArchiveIcon, History, Share2 } from 'lucide-react';
 import { canEdit, canManageSharing, createSharedDocument, type SharedRole } from '../../collab/collabApi';
 import { loadSharedWorkbook } from '../../collab/loadShared';
 import { ActivityPanel } from '../../collab/ActivityPanel';
@@ -478,10 +478,6 @@ const CalcBody: React.FC<CalcScreenProps & { loaded: Loaded }> = ({ loaded, onHo
                 <span>{shareText.button}</span>
               </button>
             )}
-            <button type="button" className="office-header-btn" onClick={() => void downloadXlsx()} title={t.file.downloadXlsx}>
-              <Download size={15} />
-              <span>XLSX</span>
-            </button>
           </>
         }
       >

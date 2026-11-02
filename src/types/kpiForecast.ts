@@ -21,6 +21,14 @@ export type KpiForecastMetricId =
   | 'activeCustomers'
   | 'managedDeposit';
 
+export type MetricPolicy = Partial<Record<KpiForecastMetricId, number>>;
+
+/** Chỉ tiêu (doanh số) và điểm kế hoạch của một cấp bậc. */
+export interface RankPolicy {
+  targets: MetricPolicy;
+  points: MetricPolicy;
+}
+
 export type KpiForecastFeeId =
   | 'beautifulNumber'
   | 'nonLifeInsurance'

@@ -3,7 +3,7 @@ import { useFormatSettings } from '../../context/FormatSettingsContext';
 import { fmtMoney, fmtPercent } from '../../lib/utils';
 import type { KpiForecastRank, KpiForecastResult } from '../../types/kpiForecast';
 
-export function KpiForecastBonus({ result, rank }: { result: KpiForecastResult; rank: KpiForecastRank }) {
+export function KpiForecastBonus({ result, rank }: { result: Pick<KpiForecastResult, 'bonusTiers' | 'bonus' | 'growthCompletion'>; rank: KpiForecastRank }) {
   const { formatSettings } = useFormatSettings();
   const growthLabel = rank.startsWith('RBO') ? 'Tăng ròng dư nợ' : 'Tăng ròng huy động CKH';
   const formatPoints = (value: number) => formatNumberWith(value, formatSettings.decimalDigits, formatSettings.numberStyle);

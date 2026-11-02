@@ -43,13 +43,13 @@ describe('listStorageRepos', () => {
 });
 
 describe('createStorageRepo', () => {
-  it('đăng ký thư mục có sẵn (createRemote=false): không tạo gì, ghi Provider drive và ID thư mục', async () => {
+  it('đăng ký thư mục có sẵn (createRemote=false): không tạo gì, ghi ID thư mục, không gửi cột Provider đã bỏ ở migration 70', async () => {
     const row = { ...ROW, Kind: 'shared', AssignedUserId: null };
     const chain = insertChain({ data: row, error: null });
     sb.from.mockReturnValue(chain);
     const out = await createStorageRepo({ name: 'Kho chung', repoId: FOLDER_ID, kind: 'shared', createRemote: false });
     expect(dr.createDriveFolder).not.toHaveBeenCalled();
-    expect(chain.insert).toHaveBeenCalledWith({ Name: 'Kho chung', RepoId: FOLDER_ID, Kind: 'shared', Provider: 'drive', AssignedUserId: null });
+    expect(chain.insert).toHaveBeenCalledWith({ Name: 'Kho chung', RepoId: FOLDER_ID, Kind: 'shared', AssignedUserId: null });
     expect(out.repoId).toBe(FOLDER_ID);
   });
 
@@ -59,7 +59,7 @@ describe('createStorageRepo', () => {
     sb.from.mockReturnValue(chain);
     await createStorageRepo({ name: '  Kho chung  ', repoId: '', kind: 'shared', createRemote: true });
     expect(dr.createDriveFolder).toHaveBeenCalledWith(expect.anything(), 'DRV', 'Kho chung');
-    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ RepoId: FOLDER_ID, Provider: 'drive' }));
+    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ RepoId: FOLDER_ID }));
   });
 
   it('repo chung/văn thư không mang người được gán', async () => {

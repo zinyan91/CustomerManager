@@ -53,7 +53,6 @@ export async function createStorageRepo(args: CreateRepoArgs): Promise<StorageRe
       Name: args.name.trim(),
       RepoId: repoId,
       Kind: args.kind,
-      Provider: 'drive',
       AssignedUserId: args.kind === 'personal' ? args.assignedUserId : null,
     })
     .select()

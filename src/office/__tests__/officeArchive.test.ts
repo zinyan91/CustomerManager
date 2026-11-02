@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { downloadDriveBlob, listDriveFiles } from '../../lib/drive/driveClient';
+import { downloadDriveBlob, listDriveTree } from '../../lib/drive/driveClient';
 import { entriesToDocuments } from '../../lib/drive/driveDocuments';
 import { buildRepoEntries } from '../../lib/drive/driveTree';
 import { createFakeDrive } from '../../lib/drive/__tests__/fakeDrive';
@@ -25,7 +25,7 @@ describe('lưu vào và mở từ Kho lưu trữ', () => {
     const s = createFakeDrive();
     const root = s.seedFolder('Kho');
     const sub = s.seedFolder('Báo cáo', root.id);
-    const entries = buildRepoEntries(await listDriveFiles(s.ctx), root.id);
+    const entries = buildRepoEntries(await listDriveTree(s.ctx, root.id), root.id);
     const link = await saveNewToArchive(
       s.ctx,
       { rootId: root.id, folder: 'Báo cáo', name: 'so.xlsx', existingPaths: entries.map((e) => e.path), folderIds: new Map([['Báo cáo', sub.id]]) },
@@ -43,7 +43,7 @@ describe('lưu vào và mở từ Kho lưu trữ', () => {
     const s = createFakeDrive();
     const root = s.seedFolder('Kho');
     s.seedFile('so.xlsx', root.id, 'cu');
-    const entries = buildRepoEntries(await listDriveFiles(s.ctx), root.id);
+    const entries = buildRepoEntries(await listDriveTree(s.ctx, root.id), root.id);
     const link = await saveNewToArchive(s.ctx, { rootId: root.id, folder: '', name: 'so.xlsx', existingPaths: entries.map((e) => e.path), folderIds: new Map() }, blobOf('moi'));
     expect(link.path).toBe('so-2.xlsx');
     expect(await (await downloadDriveBlob(s.ctx, link.fileId)).text()).toBe('moi');
@@ -61,7 +61,7 @@ describe('lưu vào và mở từ Kho lưu trữ', () => {
     const s = createFakeDrive();
     const root = s.seedFolder('Kho');
     const file = s.seedFile('thu.docx', root.id, 'noi dung docx', 'application/octet-stream');
-    const entries = buildRepoEntries(await listDriveFiles(s.ctx), root.id);
+    const entries = buildRepoEntries(await listDriveTree(s.ctx, root.id), root.id);
     const doc = entriesToDocuments(entries, root.id, 'now').find((d) => d.fileId === file.id)!;
     const opened = await openFromArchive(s.ctx, doc);
     expect(opened.file.name).toBe('thu.docx');

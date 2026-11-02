@@ -100,11 +100,11 @@ export function createFakeDrive(driveId = 'DRV') {
     if (path === '/drive/v3/files') {
       if (method === 'GET') {
         const q = url.searchParams.get('q') ?? '';
-        const parent = q.match(/'([^']+)' in parents/)?.[1];
+        const parentIds = [...q.matchAll(/'([^']+)' in parents/g)].map((m) => m[1]);
         const name = q.match(/name = '((?:[^'\\]|\\.)*)'/)?.[1]?.replace(/\\(.)/g, '$1');
         const wantFolder = q.includes(FOLDER);
         const list = [...files.values()].filter(
-          (f) => live(f) && (!parent || f.parents.includes(parent)) && (name === undefined || f.name === name) && (!wantFolder || f.mimeType === FOLDER),
+          (f) => live(f) && (parentIds.length === 0 || parentIds.some((p) => f.parents.includes(p))) && (name === undefined || f.name === name) && (!wantFolder || f.mimeType === FOLDER),
         );
         return json({ files: list.map(view) });
       }
@@ -114,7 +114,11 @@ export function createFakeDrive(driveId = 'DRV') {
       }
     }
     if (fileMatch) {
-      const f = files.get(decodeURIComponent(fileMatch[1]));
+      const fid = decodeURIComponent(fileMatch[1]);
+      if (fid === driveId && method === 'GET' && !fileMatch[2] && !url.searchParams.get('alt')) {
+        return json({ id: driveId, name: 'My Drive', mimeType: FOLDER, parents: [] });
+      }
+      const f = files.get(fid);
       if (!f || !live(f)) return notFound();
       if (method === 'GET' && url.searchParams.get('alt') === 'media') return new Response(f.bytes as BlobPart);
       if (method === 'GET') return json(view(f));
@@ -136,7 +140,7 @@ export function createFakeDrive(driveId = 'DRV') {
   }
 
   const ctx: DriveContext = {
-    getAccess: async () => ({ accessToken: 'fake-token', expiresAt: Date.now() + 3_600_000, access: 'write', driveId }),
+    getAccess: async () => ({ accessToken: 'fake-token', expiresAt: Date.now() + 3_600_000, access: 'write', rootFolderId: driveId }),
     invalidate: () => {},
     fetchFn: handle as unknown as typeof fetch,
     sleep: async () => {},

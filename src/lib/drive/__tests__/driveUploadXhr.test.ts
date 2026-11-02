@@ -53,7 +53,7 @@ const CH = 256 * 1024;
 const bytes = (n: number) => new File([new Uint8Array(n)], 'a.pdf', { type: 'application/pdf' });
 // Không có fetchFn: ctx.fetchFn là dấu hiệu "đang chạy test", nên đường XHR chỉ bật khi dùng fetch toàn cục của trình duyệt
 const ctx = (): DriveContext => ({
-  getAccess: async () => ({ accessToken: 't', expiresAt: Date.now() + 3_600_000, access: 'write', driveId: 'D' }),
+  getAccess: async () => ({ accessToken: 't', expiresAt: Date.now() + 3_600_000, access: 'write', rootFolderId: 'D' }),
   invalidate: () => {},
   sleep: async () => {},
 });

@@ -67,7 +67,7 @@ describe('FilePickerModal', () => {
     });
   });
 
-  it('thư mục gốc của kho không có trong Shared Drive thì báo lỗi nói rõ, không hiện kho rỗng', async () => {
+  it('thư mục gốc của kho không có trên Drive thì báo lỗi nói rõ, không hiện kho rỗng', async () => {
     h.listRepos.mockResolvedValue([repo({ repoId: '1ZyXwVuTsRqPoNmLkJiHgFeDcBa98765' })]);
     open();
     expect((await screen.findByRole('alert')).textContent).toMatch(/Không tìm thấy thư mục gốc của kho/);
@@ -77,7 +77,7 @@ describe('FilePickerModal', () => {
   it('Drive từ chối thì hiện thông điệp tiếng Việt', async () => {
     drive.failNext(/^GET \/drive\/v3\/files$/, new Response(JSON.stringify({ error: { code: 403, message: 'x', errors: [{ reason: 'insufficientFilePermissions' }] } }), { status: 403 }));
     open();
-    expect((await screen.findByRole('alert')).textContent).toMatch(/không đủ quyền trong Shared Drive/);
+    expect((await screen.findByRole('alert')).textContent).toMatch(/không có quyền sửa/);
   });
 
   it('tệp gốc: chỉ mở kho Văn thư, không đụng Kho chung hay kho Biểu mẫu', async () => {

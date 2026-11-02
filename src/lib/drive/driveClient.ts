@@ -65,22 +65,44 @@ async function jsonOf<T = Json>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** Mọi mục chưa vào thùng rác của cả Shared Drive, mỗi trang tối đa 1.000 mục. */
-export async function listDriveFiles(ctx: DriveContext, signal?: AbortSignal): Promise<DriveFile[]> {
-  return listDriveQuery(ctx, 'trashed = false', signal);
-}
+export const DRIVE_ROOT_MISSING =
+  'Không tìm thấy thư mục gốc của kho trên Google Drive. Kiểm tra lại ID thư mục và việc tài khoản Google của ứng dụng có quyền với thư mục đó.';
 
-/** Các Shared Drive mà tài khoản đang dùng là thành viên (dùng để chẩn đoán khi ID Shared Drive đã đặt không tìm thấy). */
-export async function listAccessibleDrives(ctx: DriveContext): Promise<Array<{ id: string; name: string }>> {
-  const out: Array<{ id: string; name: string }> = [];
-  let pageToken = '';
-  for (let page = 0; page < 10; page++) {
-    const params = new URLSearchParams({ pageSize: '100', fields: 'nextPageToken,drives(id,name)' });
-    if (pageToken) params.set('pageToken', pageToken);
-    const body = await jsonOf<{ drives?: Json[]; nextPageToken?: string }>(await driveRequest(ctx, `${API}/drives?${params}`));
-    out.push(...(body.drives ?? []).map((d) => ({ id: String(d.id ?? ''), name: String(d.name ?? '') })));
-    if (!body.nextPageToken) break;
-    pageToken = body.nextPageToken;
+/** Số thư mục cha gộp vào một câu truy vấn, và số truy vấn chạy cùng lúc khi đi xuống cây. */
+const TREE_BATCH = 25;
+const TREE_CONCURRENCY = 4;
+
+/**
+ * Thư mục gốc của kho và mọi mục bên dưới nó (chưa vào thùng rác), đọc từng tầng theo thư mục cha thay vì liệt kê cả Drive.
+ * Chạy được với cả My Drive lẫn Shared Drive.
+ */
+export async function listDriveTree(ctx: DriveContext, rootId: string, signal?: AbortSignal): Promise<DriveFile[]> {
+  let root: DriveFile;
+  try {
+    root = await getDriveFile(ctx, rootId, signal);
+  } catch (err) {
+    if (err instanceof DriveApiError && err.status === 404) throw new Error(DRIVE_ROOT_MISSING);
+    throw err;
+  }
+  const out: DriveFile[] = [root];
+  const visited = new Set<string>([rootId]);
+  let frontier = [rootId];
+  while (frontier.length > 0) {
+    const batches: string[][] = [];
+    for (let i = 0; i < frontier.length; i += TREE_BATCH) batches.push(frontier.slice(i, i + TREE_BATCH));
+    const next: string[] = [];
+    for (let i = 0; i < batches.length; i += TREE_CONCURRENCY) {
+      const results = await Promise.all(batches.slice(i, i + TREE_CONCURRENCY).map((ids) =>
+        listDriveQuery(ctx, `trashed = false and (${ids.map((id) => `'${driveQueryLiteral(id)}' in parents`).join(' or ')})`, signal)));
+      for (const file of results.flat()) {
+        out.push(file);
+        if (file.mimeType === DRIVE_FOLDER_MIME && !visited.has(file.id)) {
+          visited.add(file.id);
+          next.push(file.id);
+        }
+      }
+    }
+    frontier = next;
   }
   return out;
 }
@@ -102,13 +124,11 @@ export async function findDriveFolderPath(ctx: DriveContext, rootId: string, pat
 }
 
 async function listDriveQuery(ctx: DriveContext, q: string, signal?: AbortSignal): Promise<DriveFile[]> {
-  const { driveId } = await ctx.getAccess();
   const out: DriveFile[] = [];
   let pageToken = '';
   for (let page = 0; page < MAX_LIST_PAGES; page++) {
     const params = new URLSearchParams({
-      corpora: 'drive',
-      driveId,
+      corpora: 'allDrives',
       includeItemsFromAllDrives: 'true',
       supportsAllDrives: 'true',
       q,
@@ -121,12 +141,12 @@ async function listDriveQuery(ctx: DriveContext, q: string, signal?: AbortSignal
     if (!body.nextPageToken) return out;
     pageToken = body.nextPageToken;
   }
-  throw new Error(`Shared Drive có quá nhiều mục (hơn ${MAX_LIST_PAGES * 1000}). Chia nhỏ hoặc liên hệ người phụ trách kỹ thuật.`);
+  throw new Error(`Kho có quá nhiều mục (hơn ${MAX_LIST_PAGES * 1000}). Chia nhỏ hoặc liên hệ người phụ trách kỹ thuật.`);
 }
 
-export async function getDriveFile(ctx: DriveContext, id: string): Promise<DriveFile> {
+export async function getDriveFile(ctx: DriveContext, id: string, signal?: AbortSignal): Promise<DriveFile> {
   const params = new URLSearchParams({ supportsAllDrives: 'true', fields: FILE_FIELDS });
-  return toDriveFile(await jsonOf(await driveRequest(ctx, `${API}/files/${encodeURIComponent(id)}?${params}`)));
+  return toDriveFile(await jsonOf(await driveRequest(ctx, `${API}/files/${encodeURIComponent(id)}?${params}`, { signal })));
 }
 
 const writeParams = () => new URLSearchParams({ supportsAllDrives: 'true', fields: FILE_FIELDS });
@@ -179,10 +199,8 @@ export async function trashDriveFile(ctx: DriveContext, id: string): Promise<voi
 
 /** Thư mục con theo tên, nếu có (so đúng tên). */
 export async function findDriveChildFolder(ctx: DriveContext, parentId: string, name: string): Promise<DriveFile | null> {
-  const { driveId } = await ctx.getAccess();
   const params = new URLSearchParams({
-    corpora: 'drive',
-    driveId,
+    corpora: 'allDrives',
     includeItemsFromAllDrives: 'true',
     supportsAllDrives: 'true',
     q: `trashed = false and mimeType = '${DRIVE_FOLDER_MIME}' and '${driveQueryLiteral(parentId)}' in parents and name = '${driveQueryLiteral(name)}'`,

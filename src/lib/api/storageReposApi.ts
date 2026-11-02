@@ -20,7 +20,7 @@ function describeInsertError(error: { code?: string; message: string }): string 
 }
 
 export interface CreateRepoArgs extends RepoInput {
-  /** true: tạo thư mục tên `name` ở gốc Shared Drive; false: chỉ đăng ký thư mục đã có (khi đó `repoId` là bắt buộc). */
+  /** true: tạo thư mục tên `name` trong thư mục cha của các kho trên Google Drive; false: chỉ đăng ký thư mục đã có (khi đó `repoId` là bắt buộc). */
   createRemote: boolean;
 }
 
@@ -40,11 +40,11 @@ export async function createStorageRepo(args: CreateRepoArgs): Promise<StorageRe
       import('../drive/driveToken'), import('../drive/driveClient'), import('../drive/driveErrors'),
     ]);
     try {
-      repoId = (await createDriveFolder(driveContext, (await driveContext.getAccess()).driveId, args.name.trim())).id;
+      repoId = (await createDriveFolder(driveContext, (await driveContext.getAccess()).rootFolderId, args.name.trim())).id;
     } catch (err) {
-      throw new Error(describeDriveError(err, 'Tạo thư mục trong Shared Drive'));
+      throw new Error(describeDriveError(err, 'Tạo thư mục trên Google Drive'));
     }
-    createdWhere = `Đã tạo thư mục "${args.name.trim()}" (ID ${repoId}) trong Shared Drive`;
+    createdWhere = `Đã tạo thư mục "${args.name.trim()}" (ID ${repoId}) trên Google Drive`;
   }
 
   const { data, error } = await supabase

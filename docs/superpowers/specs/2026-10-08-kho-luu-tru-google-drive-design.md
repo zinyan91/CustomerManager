@@ -1,5 +1,9 @@
 # Chuyển Kho lưu trữ từ Hugging Face sang Google Drive (Shared Drive)
 
+> **Cập nhật 02/11/2026: chuyển sang My Drive của một Gmail cá nhân.** Shared Drive cần Google Workspace và kết nối mãi không xong, nên Edge Function `drive-token` nay xin token bằng refresh token OAuth của tài khoản giữ kho (secret `GDRIVE_OAUTH_CLIENT_ID`, `GDRIVE_OAUTH_CLIENT_SECRET`, `GDRIVE_OAUTH_REFRESH_TOKEN`, tùy chọn `GDRIVE_ROOT_FOLDER_ID`; lấy refresh token bằng `scripts/google-drive-oauth.mjs`). Chưa đặt các secret này thì hàm vẫn chạy service account với Shared Drive như mô tả bên dưới. Ứng dụng không còn liệt kê cả drive: mỗi kho đọc cây từ thư mục gốc của nó (`listDriveTree`), nên chạy được với cả My Drive lẫn Shared Drive.
+>
+> Khác với service account: token ghi làm được mọi việc trong **toàn bộ** Drive của Gmail đó, không chỉ thư mục kho, nên Gmail này chỉ nên dùng để giữ kho. Tệp thuộc về Gmail đó và tính vào dung lượng của nó. Màn hình đồng ý OAuth phải ở trạng thái In production, ở Testing Google thu hồi refresh token sau 7 ngày.
+
 Ngày: 08/10/2026. Trạng thái: chờ duyệt.
 
 ## Mục tiêu

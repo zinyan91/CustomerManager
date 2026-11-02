@@ -35,14 +35,14 @@ export function describeDriveError(err: unknown, what = 'Thao tác với Google 
     // Status 0 là phản hồi mà trình duyệt không cho đọc (bị chặn CORS hay chuyển hướng mờ), không phải lỗi từ Google
     if (status === 0) return `${what} không được: trình duyệt không đọc được phản hồi của Google Drive. Thử lại; nếu vẫn lỗi hãy báo người phụ trách kỹ thuật.`;
     if (reason === 'storageQuotaExceeded' || reason === 'teamDriveFileLimitExceeded' || reason === 'driveFileLimitExceeded') {
-      return `${what} không được: Shared Drive đã hết dung lượng hoặc đạt giới hạn số tệp.`;
+      return `${what} không được: Google Drive đã hết dung lượng hoặc đạt giới hạn số tệp.`;
     }
     if (reason === 'rateLimitExceeded' || reason === 'userRateLimitExceeded' || reason === 'sharingRateLimitExceeded' || status === 429) {
       return `${what} không được: Google đang giới hạn tốc độ. Đợi một lát rồi thử lại.`;
     }
     if (status === 401) return `${what} không được: phiên truy cập Google Drive đã hết hạn. Tải lại trang rồi thử lại.`;
     if (status === 403) {
-      return `${what} không được: tài khoản dịch vụ không đủ quyền trong Shared Drive (cần quyền Quản lý nội dung) hoặc thư mục này không thuộc Shared Drive.`;
+      return `${what} không được: tài khoản Google của ứng dụng không có quyền sửa ở thư mục này (với Shared Drive cần quyền Quản lý nội dung).`;
     }
     if (status === 404) return `${what} không được: không tìm thấy tệp hoặc thư mục trên Google Drive (có thể đã bị xóa hoặc di chuyển).`;
     if (status >= 500) return `${what} không được: Google Drive đang lỗi (${status}). Thử lại sau ít phút.`;

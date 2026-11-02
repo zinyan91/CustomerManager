@@ -35,7 +35,8 @@ export interface DriveAccess {
   /** Mili giây Unix. */
   expiresAt: number;
   access: 'write' | 'read';
-  driveId: string;
+  /** Thư mục cha để tạo kho mới: gốc My Drive ('root'), một thư mục trong My Drive, hoặc ID Shared Drive. */
+  rootFolderId: string;
 }
 
 /** Ngữ cảnh gọi Drive: nơi lấy token và các hàm có thể thay khi test. */

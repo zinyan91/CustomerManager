@@ -280,7 +280,7 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
 
         <label className="flex items-center gap-2 text-sm text-ink-muted">
           <input type="checkbox" checked={existing} onChange={(e) => setExisting(e.target.checked)} />
-          <span>Thư mục đã có sẵn trong Shared Drive (chỉ đăng ký, không tạo mới)</span>
+          <span>Thư mục đã có sẵn trên Google Drive (chỉ đăng ký, không tạo mới)</span>
         </label>
 
         {error && (
@@ -302,7 +302,7 @@ export function StorageReposSection({ repos, onChanged }: StorageReposSectionPro
           className={`${primaryBtn} flex items-center gap-2`}
         >
           {busy && <Loader2 className="w-4 h-4 animate-spin" />}
-          <span>{busy ? 'Đang xử lý...' : existing ? 'Đăng ký thư mục' : 'Tạo thư mục trong Shared Drive'}</span>
+          <span>{busy ? 'Đang xử lý...' : existing ? 'Đăng ký thư mục' : 'Tạo thư mục trên Google Drive'}</span>
         </button>
       </form>
     </div>

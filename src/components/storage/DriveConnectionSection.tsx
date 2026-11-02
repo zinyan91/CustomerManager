@@ -4,7 +4,7 @@ import { driveContext } from '../../lib/drive/driveToken';
 import { runDriveSelfTest, selfTestPassed, type SelfTestStep } from '../../lib/drive/driveSelfTest';
 import { secondaryBtn } from '../admin/tableStyles';
 
-/** Chạy thử toàn bộ chuỗi thao tác với Shared Drive và hiện từng bước. Tạo rồi xóa một thư mục thử, không đụng dữ liệu thật. */
+/** Chạy thử toàn bộ chuỗi thao tác với Google Drive và hiện từng bước. Tạo rồi xóa một thư mục thử, không đụng dữ liệu thật. */
 export function DriveConnectionSection() {
   const [steps, setSteps] = useState<SelfTestStep[]>([]);
   const [running, setRunning] = useState(false);

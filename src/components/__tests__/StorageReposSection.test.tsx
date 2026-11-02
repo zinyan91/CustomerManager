@@ -128,16 +128,16 @@ describe('StorageReposSection: sửa repo', () => {
 });
 
 describe('StorageReposSection: thêm repo', () => {
-  it('mặc định tạo thư mục mới trong Shared Drive, không đòi ID', () => {
+  it('mặc định tạo thư mục mới trên Google Drive, không đòi ID', () => {
     dung([]);
     expect(screen.queryByLabelText('Nơi lưu')).toBeNull();
     expect(screen.queryByLabelText('ID thư mục Google Drive')).toBeNull();
-    expect((screen.getByRole('button', { name: 'Tạo thư mục trong Shared Drive' }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole('button', { name: 'Tạo thư mục trên Google Drive' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it('tạo thư mục mới: createRemote true, ID rỗng; báo thành công và nạp lại danh sách', async () => {
     dung([]);
-    fireEvent.click(screen.getByRole('button', { name: 'Tạo thư mục trong Shared Drive' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo thư mục trên Google Drive' }));
     await waitFor(() => expect(h.createStorageRepo).toHaveBeenCalledTimes(1));
     expect(h.createStorageRepo).toHaveBeenCalledWith(expect.objectContaining({ createRemote: true, repoId: '', kind: 'shared', name: 'Kho chung' }));
     expect((await screen.findByRole('status')).textContent).toContain('Đã tạo kho 1NewFolderIdAbCdEfGh');
@@ -146,7 +146,7 @@ describe('StorageReposSection: thêm repo', () => {
 
   it('đăng ký thư mục có sẵn: hiện ô ID thư mục, bắt buộc nhập, gửi createRemote false', async () => {
     dung([]);
-    fireEvent.click(screen.getByLabelText(/Thư mục đã có sẵn trong Shared Drive/));
+    fireEvent.click(screen.getByLabelText(/Thư mục đã có sẵn trên Google Drive/));
     const submit = screen.getByRole('button', { name: 'Đăng ký thư mục' }) as HTMLButtonElement;
     expect(submit.disabled).toBe(true);
     fireEvent.change(screen.getByLabelText('ID thư mục Google Drive'), { target: { value: '1AbCdEfGhIjKlMnOpQrStUvWxYz012345' } });
@@ -159,7 +159,7 @@ describe('StorageReposSection: thêm repo', () => {
   it('lỗi tạo thư mục hiện nguyên thông điệp', async () => {
     h.createStorageRepo.mockRejectedValue(new Error('Tạo thư mục trong Shared Drive không được: tài khoản dịch vụ không đủ quyền.'));
     dung([]);
-    fireEvent.click(screen.getByRole('button', { name: 'Tạo thư mục trong Shared Drive' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo thư mục trên Google Drive' }));
     expect((await screen.findByRole('alert')).textContent).toContain('tài khoản dịch vụ không đủ quyền');
   });
 });

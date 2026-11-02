@@ -9,7 +9,7 @@ const m = vi.hoisted(() => ({ listRepos: vi.fn(), listDrive: vi.fn(), access: vi
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ role: 'master_admin', user: { id: 'u1' } }) }));
 vi.mock('../../lib/api/storageReposApi', () => ({ listStorageRepos: m.listRepos }));
 vi.mock('../../lib/drive/driveToken', () => ({ driveContext: { marker: 'ctx', getAccess: m.access } }));
-vi.mock('../../lib/drive/driveClient', () => ({ listDriveFiles: m.listDrive }));
+vi.mock('../../lib/drive/driveClient', async (importOriginal) => ({ ...(await importOriginal<typeof import('../../lib/drive/driveClient')>()), listDriveTree: m.listDrive }));
 
 import { DriveApiError } from '../../lib/drive/driveErrors';
 import { readCachedEntries, writeCachedEntries } from '../../lib/drive/driveEntriesCache';
@@ -76,12 +76,12 @@ describe('useArchive', () => {
       expect(result.current.documents.map(doc=>doc.filePath)).toEqual(['cu.pdf']);
     } finally { vi.useRealTimers(); }
   });
-  it('nạp cây từ Shared Drive: tài liệu có mã tệp, thư mục kể cả rỗng', async () => {
+  it('nạp cây từ Google Drive: tài liệu có mã tệp, thư mục kể cả rỗng', async () => {
     const { result } = renderHook(() => useArchive('storage'));
     await waitFor(() => expect(result.current.status.kind).toBe('ready'));
     expect(result.current.documents.map((d) => [d.filePath, d.storageProvider, d.fileId])).toEqual([['goc.pdf', 'drive', 'G'], ['VB/a.pdf', 'drive', 'A']]);
     expect(result.current.folders).toEqual(['VB']);
-    expect(m.listDrive).toHaveBeenCalledWith(expect.objectContaining({ marker: 'ctx' }), expect.any(AbortSignal));
+    expect(m.listDrive).toHaveBeenCalledWith(expect.objectContaining({ marker: 'ctx' }), ROOT, expect.any(AbortSignal));
   });
 
   it('đưa ra mã thư mục gốc, các mục kèm mã Drive và quyền ghi để màn Kho thao tác', async () => {
@@ -107,7 +107,7 @@ describe('useArchive', () => {
     expect(result.current.driveWrite).toBe(false);
   });
 
-  it('thư mục gốc của kho không có trong Shared Drive thì báo lỗi nói rõ, không hiện kho rỗng', async () => {
+  it('thư mục gốc của kho không có trên Drive thì báo lỗi nói rõ, không hiện kho rỗng', async () => {
     m.listRepos.mockResolvedValue([repo({ repoId: '1ZyXwVuTsRqPoNmLkJiHgFeDcBa98765' })]);
     const { result } = renderHook(() => useArchive('storage'));
     await waitFor(() => expect(result.current.status.kind).toBe('error'));
@@ -115,11 +115,11 @@ describe('useArchive', () => {
     expect(result.current.documents).toEqual([]);
   });
 
-  it('Drive trả lỗi 403 thì thông điệp tiếng Việt về quyền của tài khoản dịch vụ', async () => {
+  it('Drive trả lỗi 403 thì thông điệp tiếng Việt về quyền của tài khoản Google', async () => {
     m.listDrive.mockRejectedValue(new DriveApiError(403, 'forbidden', 'x'));
     const { result } = renderHook(() => useArchive('storage'));
     await waitFor(() => expect(result.current.status.kind).toBe('error'));
-    expect((result.current.status as { message: string }).message).toMatch(/Quản lý nội dung/);
+    expect((result.current.status as { message: string }).message).toMatch(/không có quyền sửa/);
   });
 
   it('lỗi từ Edge Function (chưa đặt secret) hiện nguyên thông điệp', async () => {
@@ -129,7 +129,7 @@ describe('useArchive', () => {
     expect((result.current.status as { message: string }).message).toBe('Chưa đặt secret GDRIVE_SA_EMAIL cho Edge Function drive-token.');
   });
 
-  it('Shared Drive rỗng nhưng có thư mục gốc thì là kho rỗng hợp lệ', async () => {
+  it('Kho rỗng nhưng có thư mục gốc thì là kho rỗng hợp lệ', async () => {
     m.listDrive.mockResolvedValue([dfile(ROOT, 'Gốc', ['DRV'], FOLDER)]);
     const { result } = renderHook(() => useArchive('storage'));
     await waitFor(() => expect(result.current.status.kind).toBe('ready'));

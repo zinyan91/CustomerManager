@@ -7,16 +7,16 @@ import { describeDriveError } from '../driveErrors';
 import { createAccessCache, isAccessFresh, parseDriveAccess } from '../driveToken';
 import type { DriveAccess } from '../driveTypes';
 
-const access = (expiresAt: number, token = 't'): DriveAccess => ({ accessToken: token, expiresAt, access: 'write', driveId: 'D' });
+const access = (expiresAt: number, token = 't'): DriveAccess => ({ accessToken: token, expiresAt, access: 'write', rootFolderId: 'D' });
 
 describe('parseDriveAccess', () => {
   it('đọc phản hồi hợp lệ', () => {
-    expect(parseDriveAccess({ accessToken: 'a', expiresAt: 5, access: 'read', driveId: 'D' })).toEqual({ accessToken: 'a', expiresAt: 5, access: 'read', driveId: 'D' });
+    expect(parseDriveAccess({ accessToken: 'a', expiresAt: 5, access: 'read', rootFolderId: 'D' })).toEqual({ accessToken: 'a', expiresAt: 5, access: 'read', rootFolderId: 'D' });
   });
   it.each([
-    [null], [{}], [{ accessToken: '', expiresAt: 5, access: 'read', driveId: 'D' }], [{ accessToken: 'a', expiresAt: 'x', access: 'read', driveId: 'D' }],
+    [null], [{}], [{ accessToken: '', expiresAt: 5, access: 'read', rootFolderId: 'D' }], [{ accessToken: 'a', expiresAt: 'x', access: 'read', rootFolderId: 'D' }],
     [{ accessToken: 'a', expiresAt: 5, access: 'admin', driveId: 'D' }], [{ accessToken: 'a', expiresAt: 5, access: 'read' }],
-    [{ accessToken: 'a', expiresAt: Number.NaN, access: 'read', driveId: 'D' }],
+    [{ accessToken: 'a', expiresAt: Number.NaN, access: 'read', rootFolderId: 'D' }],
   ])('phản hồi sai dạng %j bị từ chối', (raw) => {
     expect(() => parseDriveAccess(raw)).toThrow(/không hợp lệ/);
   });

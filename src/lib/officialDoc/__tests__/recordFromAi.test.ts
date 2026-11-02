@@ -156,7 +156,7 @@ describe('recordDocFromFile lên kho Drive', () => {
 
   it('Drive từ chối tải lên: ném lỗi tiếng Việt, chưa ghi văn bản', async () => {
     drive.failNext(/^POST \/upload\/drive\/v3\/files$/, new Response(JSON.stringify({ error: { code: 403, message: 'x', errors: [{ reason: 'storageQuotaExceeded' }] } }), { status: 403 }));
-    await expect(recordDocFromFile({ file: pdf('tb.pdf'), fields: FIELDS, target })).rejects.toThrow(/Shared Drive đã hết dung lượng/);
+    await expect(recordDocFromFile({ file: pdf('tb.pdf'), fields: FIELDS, target })).rejects.toThrow(/Google Drive đã hết dung lượng/);
     expect(h.save).not.toHaveBeenCalled();
   });
 

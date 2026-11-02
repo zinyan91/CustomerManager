@@ -2,7 +2,7 @@ import { generateKeyPairSync, createVerify } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   DRIVE_SCOPE_READ, DRIVE_SCOPE_WRITE, TOKEN_URL, base64UrlEncode, buildJwtClaims, cleanPrivateKey, decideDriveAccess,
-  isTokenFresh, jwtSigningInput, pemToPkcs8, scopeOf,
+  isTokenFresh, jwtSigningInput, pemToPkcs8, refreshTokenBody, resolveDriveCredentials, scopeOf,
 } from '../rules';
 
 describe('decideDriveAccess', () => {
@@ -119,5 +119,50 @@ describe('isTokenFresh', () => {
     expect(isTokenFresh(1000 + 301, 1000)).toBe(true);
     expect(isTokenFresh(1000 + 300, 1000)).toBe(false);
     expect(isTokenFresh(900, 1000)).toBe(false);
+  });
+});
+
+describe('resolveDriveCredentials', () => {
+  const envOf = (vars: Record<string, string>) => (name: string) => vars[name];
+  const OAUTH = { GDRIVE_OAUTH_CLIENT_ID: 'cid', GDRIVE_OAUTH_CLIENT_SECRET: 'sec', GDRIVE_OAUTH_REFRESH_TOKEN: 'rt' };
+  const SA = { GDRIVE_SA_EMAIL: 'sa@x.iam', GDRIVE_SA_PRIVATE_KEY: 'pem', GDRIVE_SHARED_DRIVE_ID: 'DRV' };
+
+  it('đủ ba secret OAuth thì dùng tài khoản Google, mặc định tạo kho ở gốc My Drive', () => {
+    expect(resolveDriveCredentials(envOf(OAUTH))).toEqual({
+      ok: true,
+      credentials: { mode: 'oauth', clientId: 'cid', clientSecret: 'sec', refreshToken: 'rt', rootFolderId: 'root' },
+    });
+  });
+
+  it('OAuth thắng service account khi đặt cả hai, và nhận thư mục cha riêng', () => {
+    const r = resolveDriveCredentials(envOf({ ...SA, ...OAUTH, GDRIVE_ROOT_FOLDER_ID: ' F1 ' }));
+    expect(r).toMatchObject({ ok: true, credentials: { mode: 'oauth', rootFolderId: 'F1' } });
+  });
+
+  it('đặt dở OAuth thì báo đúng secret còn thiếu, không lùi về service account', () => {
+    expect(resolveDriveCredentials(envOf({ ...SA, GDRIVE_OAUTH_CLIENT_ID: 'cid', GDRIVE_OAUTH_REFRESH_TOKEN: '  ' }))).toEqual({
+      ok: false,
+      missing: ['GDRIVE_OAUTH_CLIENT_SECRET', 'GDRIVE_OAUTH_REFRESH_TOKEN'],
+    });
+  });
+
+  it('chưa có OAuth thì vẫn chạy service account với Shared Drive', () => {
+    expect(resolveDriveCredentials(envOf(SA))).toEqual({
+      ok: true,
+      credentials: { mode: 'service_account', email: 'sa@x.iam', privateKey: 'pem', rootFolderId: 'DRV' },
+    });
+  });
+
+  it('không có gì thì chỉ cách đặt secret OAuth', () => {
+    expect(resolveDriveCredentials(envOf({ GDRIVE_SA_EMAIL: 'sa@x.iam' }))).toEqual({ ok: false, missing: [...Object.keys(OAUTH)] });
+  });
+});
+
+describe('refreshTokenBody', () => {
+  it('xin token theo đúng phạm vi của mức quyền', () => {
+    expect(refreshTokenBody('cid', 'sec', 'rt', 'write')).toEqual({
+      grant_type: 'refresh_token', client_id: 'cid', client_secret: 'sec', refresh_token: 'rt', scope: DRIVE_SCOPE_WRITE,
+    });
+    expect(refreshTokenBody('cid', 'sec', 'rt', 'read').scope).toBe(DRIVE_SCOPE_READ);
   });
 });

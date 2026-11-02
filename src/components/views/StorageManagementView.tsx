@@ -102,7 +102,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const folderInputRef = useRef<HTMLInputElement>(null);
 
   const canConfigure = can('storage.configure');
-  // Ngoài quyền theo vai trò còn cần token có quyền ghi vào Shared Drive
+  // Ngoài quyền theo vai trò còn cần token có quyền ghi vào Drive
   const canUpload = canUploadToRepo(role, userId, selectedRepo) && Boolean(driveWrite);
   const canDelete = canDeleteInRepo(role, userId, selectedRepo) && Boolean(driveWrite);
   const canEditDrive = canUpload;
@@ -287,7 +287,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
       : only.kind === 'folder'
         ? `Xóa thư mục "${only.name}" cùng toàn bộ nội dung bên trong?`
         : `Xóa tệp "${only.name}"?`;
-    const ok = await confirm({ title: 'Xóa', message: `${question} Mục bị xóa nằm trong thùng rác của Shared Drive, khôi phục được tại đó.`, confirmText: 'Xóa', tone: 'danger' });
+    const ok = await confirm({ title: 'Xóa', message: `${question} Mục bị xóa nằm trong thùng rác của Google Drive, khôi phục được tại đó.`, confirmText: 'Xóa', tone: 'danger' });
     if (!ok) return;
     setActionError(null);
     const failure = await driveOps.trash(tops.map((t) => t.path));

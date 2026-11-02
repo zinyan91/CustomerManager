@@ -88,3 +88,53 @@ export function jwtSigningInput(claims: JwtClaims): string {
 export function isTokenFresh(expiresAtSeconds: number, nowSeconds: number, marginSeconds = 300): boolean {
   return expiresAtSeconds > nowSeconds + marginSeconds;
 }
+
+export type DriveCredentials =
+  | { mode: 'oauth'; clientId: string; clientSecret: string; refreshToken: string; rootFolderId: string }
+  | { mode: 'service_account'; email: string; privateKey: string; rootFolderId: string };
+
+export type CredentialsResult = { ok: true; credentials: DriveCredentials } | { ok: false; missing: string[] };
+
+const OAUTH_SECRETS = ['GDRIVE_OAUTH_CLIENT_ID', 'GDRIVE_OAUTH_CLIENT_SECRET', 'GDRIVE_OAUTH_REFRESH_TOKEN'] as const;
+const SA_SECRETS = ['GDRIVE_SA_EMAIL', 'GDRIVE_SA_PRIVATE_KEY', 'GDRIVE_SHARED_DRIVE_ID'] as const;
+
+/**
+ * Chọn cách xin token Drive từ secret. Có bất kỳ secret OAuth nào thì dùng tài khoản Google thật (My Drive),
+ * thiếu cái nào báo cái đó; không có thì dùng service account với Shared Drive như trước.
+ */
+export function resolveDriveCredentials(env: (name: string) => string | undefined): CredentialsResult {
+  const read = (name: string) => env(name)?.trim() || undefined;
+  const missingOf = (names: readonly string[]) => names.filter((n) => !read(n));
+
+  if (OAUTH_SECRETS.some((n) => read(n))) {
+    const missing = missingOf(OAUTH_SECRETS);
+    if (missing.length > 0) return { ok: false, missing };
+    return {
+      ok: true,
+      credentials: {
+        mode: 'oauth',
+        clientId: read('GDRIVE_OAUTH_CLIENT_ID')!,
+        clientSecret: read('GDRIVE_OAUTH_CLIENT_SECRET')!,
+        refreshToken: read('GDRIVE_OAUTH_REFRESH_TOKEN')!,
+        rootFolderId: read('GDRIVE_ROOT_FOLDER_ID') ?? 'root',
+      },
+    };
+  }
+
+  const missing = missingOf(SA_SECRETS);
+  if (missing.length > 0) return { ok: false, missing: [...OAUTH_SECRETS] };
+  return {
+    ok: true,
+    credentials: {
+      mode: 'service_account',
+      email: read('GDRIVE_SA_EMAIL')!,
+      privateKey: read('GDRIVE_SA_PRIVATE_KEY')!,
+      rootFolderId: read('GDRIVE_SHARED_DRIVE_ID')!,
+    },
+  };
+}
+
+/** Thân yêu cầu đổi refresh token lấy access token, thu hẹp phạm vi theo mức quyền của người gọi. */
+export function refreshTokenBody(clientId: string, clientSecret: string, refreshToken: string, access: DriveAccess): Record<string, string> {
+  return { grant_type: 'refresh_token', client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, scope: scopeOf(access) };
+}

@@ -66,10 +66,10 @@ export function FilePickerModal({ fileKind, title, pickedKeys, onPick, onClose }
     setCurrent('');
 
     const load = Promise.all([import('../../lib/drive/driveToken'), import('../../lib/drive/driveClient'), import('../../lib/drive/driveTree'), import('../../lib/drive/driveDocuments')]).then(
-      async ([{ driveContext }, { listDriveFiles }, { buildRepoEntries, listingOf }, { entriesToDocuments }]) => {
-        const files = await listDriveFiles(driveContext);
+      async ([{ driveContext }, { DRIVE_ROOT_MISSING, listDriveTree }, { buildRepoEntries, listingOf }, { entriesToDocuments }]) => {
+        const files = await listDriveTree(driveContext, repo.repoId);
         if (!files.some((f) => f.id === repo.repoId)) {
-          throw new Error('Không tìm thấy thư mục gốc của kho trong Shared Drive. Kiểm tra lại ID thư mục và việc tài khoản dịch vụ là thành viên của Shared Drive.');
+          throw new Error(DRIVE_ROOT_MISSING);
         }
         const entries = buildRepoEntries(files, repo.repoId);
         return { docs: entriesToDocuments(entries, repo.repoId, new Date().toISOString()), folders: listingOf(entries).folders };

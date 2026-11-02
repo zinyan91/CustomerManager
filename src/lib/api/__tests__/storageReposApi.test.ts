@@ -19,7 +19,7 @@ beforeEach(() => {
   sb.from.mockReset();
   dr.createDriveFolder.mockReset();
   dr.getAccess.mockReset();
-  dr.getAccess.mockResolvedValue({ accessToken: 't', expiresAt: 1, access: 'write', driveId: 'DRV' });
+  dr.getAccess.mockResolvedValue({ accessToken: 't', expiresAt: 1, access: 'write', rootFolderId: 'DRV' });
 });
 
 describe('listStorageRepos', () => {
@@ -53,7 +53,7 @@ describe('createStorageRepo', () => {
     expect(out.repoId).toBe(FOLDER_ID);
   });
 
-  it('tạo thư mục mới (createRemote=true): tạo ở gốc Shared Drive theo tên rồi đăng ký ID vừa tạo', async () => {
+  it('tạo thư mục mới (createRemote=true): tạo trong thư mục cha của các kho theo tên rồi đăng ký ID vừa tạo', async () => {
     dr.createDriveFolder.mockResolvedValue({ id: FOLDER_ID });
     const chain = insertChain({ data: { ...ROW, Kind: 'shared', AssignedUserId: null }, error: null });
     sb.from.mockReturnValue(chain);
@@ -80,7 +80,7 @@ describe('createStorageRepo', () => {
   it('tạo thư mục Drive hỏng: báo thông điệp tiếng Việt và không ghi CSDL', async () => {
     const { DriveApiError } = await import('../../drive/driveErrors');
     dr.createDriveFolder.mockRejectedValue(new DriveApiError(403, 'insufficientFilePermissions', 'x'));
-    await expect(createStorageRepo({ name: 'Kho', repoId: '', kind: 'shared', createRemote: true })).rejects.toThrow(/Tạo thư mục trong Shared Drive không được: .*Quản lý nội dung/);
+    await expect(createStorageRepo({ name: 'Kho', repoId: '', kind: 'shared', createRemote: true })).rejects.toThrow(/Tạo thư mục trên Google Drive không được: .*không có quyền sửa/);
     expect(sb.from).not.toHaveBeenCalled();
   });
 
@@ -88,7 +88,7 @@ describe('createStorageRepo', () => {
     dr.createDriveFolder.mockResolvedValue({ id: FOLDER_ID });
     sb.from.mockReturnValue(insertChain({ data: null, error: { code: '42501', message: 'row-level security' } }));
     await expect(createStorageRepo({ name: 'Kho', repoId: '', kind: 'shared', createRemote: true })).rejects.toThrow(
-      `Đã tạo thư mục "Kho" (ID ${FOLDER_ID}) trong Shared Drive nhưng chưa đăng ký được vào hệ thống`,
+      `Đã tạo thư mục "Kho" (ID ${FOLDER_ID}) trên Google Drive nhưng chưa đăng ký được vào hệ thống`,
     );
   });
 

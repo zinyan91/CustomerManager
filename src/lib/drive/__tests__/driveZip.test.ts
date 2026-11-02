@@ -3,7 +3,7 @@ import { driveOpenEntry } from '../driveZip';
 import type { DriveContext } from '../driveTypes';
 
 const ctxOf = (res: Response | Error): DriveContext => ({
-  getAccess: async () => ({ accessToken: 't', expiresAt: Date.now() + 3_600_000, access: 'read', driveId: 'D' }),
+  getAccess: async () => ({ accessToken: 't', expiresAt: Date.now() + 3_600_000, access: 'read', rootFolderId: 'D' }),
   invalidate: () => {},
   fetchFn: vi.fn(async () => {
     if (res instanceof Error) throw res;

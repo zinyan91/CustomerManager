@@ -29,14 +29,16 @@ async function describeInvokeError(error: InvokeError): Promise<string> {
 
 /** Đọc phản hồi của drive-token. Thiếu trường nào thì báo lỗi, không đoán. */
 export function parseDriveAccess(raw: unknown): DriveAccess {
-  const d = raw as Partial<DriveAccess> | null;
+  const d = raw as (Partial<DriveAccess> & { driveId?: unknown }) | null;
+  // Bản hàm cũ (Shared Drive) trả driveId; bản mới trả rootFolderId.
+  const rootFolderId = d?.rootFolderId ?? d?.driveId;
   if (
     !d || typeof d.accessToken !== 'string' || !d.accessToken || typeof d.expiresAt !== 'number' || !Number.isFinite(d.expiresAt) ||
-    (d.access !== 'write' && d.access !== 'read') || typeof d.driveId !== 'string' || !d.driveId
+    (d.access !== 'write' && d.access !== 'read') || typeof rootFolderId !== 'string' || !rootFolderId
   ) {
     throw new Error('Máy chủ trả về quyền truy cập Google Drive không hợp lệ.');
   }
-  return { accessToken: d.accessToken, expiresAt: d.expiresAt, access: d.access, driveId: d.driveId };
+  return { accessToken: d.accessToken, expiresAt: d.expiresAt, access: d.access, rootFolderId };
 }
 
 export const isAccessFresh = (access: DriveAccess, now = Date.now()): boolean => access.expiresAt > now + REFRESH_MARGIN_MS;

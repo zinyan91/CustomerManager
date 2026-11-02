@@ -118,10 +118,10 @@ export interface FormLookup {
 
 /** Các tệp của kho Biểu mẫu dưới dạng cây phẳng, kèm mã Drive. */
 async function listFormRepoFiles(repo: StorageRepo): Promise<Array<{ type: string; path: string; name: string; fileId?: string; nativeMimeType?: string }>> {
-  const [{ driveContext }, { listDriveFiles }, { buildRepoEntries }] = await Promise.all([
+  const [{ driveContext }, { listDriveTree }, { buildRepoEntries }] = await Promise.all([
     import('../drive/driveToken'), import('../drive/driveClient'), import('../drive/driveTree'),
   ]);
-  const entries = buildRepoEntries(await listDriveFiles(driveContext), repo.repoId);
+  const entries = buildRepoEntries(await listDriveTree(driveContext, repo.repoId), repo.repoId);
   return entries.map((e) => ({ type: e.isFolder ? 'directory' : 'file', path: e.path, name: e.name, fileId: e.id, nativeMimeType: e.nativeMimeType }));
 }
 

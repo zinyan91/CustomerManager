@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listDriveFiles } from '../driveClient';
+import { listDriveTree } from '../driveClient';
 import { planDriveUploads, uploadItemsToDrive } from '../driveUpload';
 import { buildRepoEntries } from '../driveTree';
 import type { UploadItem, UploadProgress } from '../../uploadItems';
@@ -45,7 +45,7 @@ describe('uploadItemsToDrive', () => {
   async function setup() {
     const drive = createFakeDrive();
     const root = drive.seedFolder('Kho');
-    const entries = async () => buildRepoEntries(await listDriveFiles(drive.ctx), root.id);
+    const entries = async () => buildRepoEntries(await listDriveTree(drive.ctx, root.id), root.id);
     return { drive, root, entries };
   }
 
@@ -106,7 +106,7 @@ describe('uploadItemsToDrive', () => {
     }
     const failed = events.filter((e) => e.state === 'failed');
     expect(failed).toHaveLength(1);
-    expect(failed[0].error).toMatch(/Shared Drive đã hết dung lượng/);
+    expect(failed[0].error).toMatch(/Google Drive đã hết dung lượng/);
     expect(events.filter((e) => e.state === 'done')).toHaveLength(1);
   });
 
@@ -171,7 +171,7 @@ describe('uploadItemsToDrive', () => {
     const res = await uploadItemsToDrive(drive.ctx, root.id, '', [item('a.pdf'), item('b.pdf'), item('c.pdf')], []);
     expect(res.uploaded).toHaveLength(2);
     expect(res.failed).toHaveLength(1);
-    expect(res.failed[0].error).toMatch(/Tải lên không được: Shared Drive đã hết dung lượng/);
+    expect(res.failed[0].error).toMatch(/Tải lên không được: Google Drive đã hết dung lượng/);
     expect(['a.pdf', 'b.pdf', 'c.pdf']).toContain(res.failed[0].path);
   });
 

@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   UPLOAD_CHUNK_BYTES, copyDriveFile, createDriveFolder, downloadDriveBlob, driveQueryLiteral, driveRequest, ensureDriveFolderPath, newFolderPathCache,
-  findDriveChildFolder, getDriveFile, listDriveFiles, moveDriveFile, openDriveDownload, receivedBytes, renameDriveFile, toDriveFile,
+  findDriveChildFolder, getDriveFile, listDriveTree, moveDriveFile, openDriveDownload, receivedBytes, renameDriveFile, toDriveFile,
   trashDriveFile, uploadDriveFile,
 } from '../driveClient';
 import { DriveApiError } from '../driveErrors';
-import type { DriveContext } from '../driveTypes';
+import { DRIVE_FOLDER_MIME as FOLDER, type DriveContext } from '../driveTypes';
 
 type Reply = Response | Error | ((url: string, init: RequestInit) => Response | Promise<Response>);
 
@@ -25,7 +25,7 @@ function setup(replies: Reply[]) {
     if (next instanceof Error) throw next;
     return typeof next === 'function' ? next(String(url), init) : next;
   });
-  const access = { accessToken: 'tok-1', expiresAt: Date.now() + 3_600_000, access: 'write' as const, driveId: 'DRIVE' };
+  const access = { accessToken: 'tok-1', expiresAt: Date.now() + 3_600_000, access: 'write' as const, rootFolderId: 'DRIVE' };
   const invalidate = vi.fn();
   const getAccess = vi.fn(async () => access);
   const sleeps: number[] = [];
@@ -51,11 +51,11 @@ describe('toDriveFile / driveQueryLiteral / receivedBytes', () => {
 });
 
 describe('driveRequest', () => {
-  it('chuyển tín hiệu hủy tới mọi trang liệt kê Drive', async () => {
-    const s = setup([json({files:[RAW],nextPageToken:'next'}),json({files:[]})]);
+  it('chuyển tín hiệu hủy tới mọi lời gọi khi đọc cây kho', async () => {
+    const s = setup([json({ ...RAW, id: 'ROOT', mimeType: FOLDER }), json({files:[RAW],nextPageToken:'next'}),json({files:[]})]);
     const controller = new AbortController();
-    await listDriveFiles(s.ctx, controller.signal);
-    expect(s.calls).toHaveLength(2);
+    await listDriveTree(s.ctx, 'ROOT', controller.signal);
+    expect(s.calls).toHaveLength(3);
     expect(s.calls.every(call=>call.init.signal===controller.signal)).toBe(true);
   });
   it('gắn Bearer token', async () => {
@@ -108,29 +108,49 @@ describe('driveRequest', () => {
   });
 });
 
-describe('listDriveFiles', () => {
-  it('gọi theo Shared Drive, lọc thùng rác, phân trang đến hết', async () => {
-    const s = setup([json({ files: [RAW], nextPageToken: 'N1' }), json({ files: [{ ...RAW, id: 'F2' }] })]);
-    const files = await listDriveFiles(s.ctx);
-    expect(files.map((f) => f.id)).toEqual(['F1', 'F2']);
-    const p1 = params(s.calls[0].url);
-    expect(p1.get('corpora')).toBe('drive');
-    expect(p1.get('driveId')).toBe('DRIVE');
+describe('listDriveTree', () => {
+  it('đọc gốc rồi đi từng tầng theo thư mục cha, chạy được với My Drive và Shared Drive', async () => {
+    const s = setup([
+      json({ ...RAW, id: 'ROOT', name: 'Kho', mimeType: FOLDER, parents: [] }),
+      json({ files: [{ ...RAW, id: 'D1', mimeType: FOLDER, parents: ['ROOT'] }, { ...RAW, id: 'F1', parents: ['ROOT'] }], nextPageToken: 'N1' }),
+      json({ files: [{ ...RAW, id: 'F2', parents: ['ROOT'] }] }),
+      json({ files: [{ ...RAW, id: 'F3', parents: ['D1'] }] }),
+    ]);
+    const files = await listDriveTree(s.ctx, 'ROOT');
+    expect(files.map((f) => f.id)).toEqual(['ROOT', 'D1', 'F1', 'F2', 'F3']);
+    const p1 = params(s.calls[1].url);
+    expect(p1.get('corpora')).toBe('allDrives');
+    expect(p1.get('driveId')).toBeNull();
     expect(p1.get('supportsAllDrives')).toBe('true');
     expect(p1.get('includeItemsFromAllDrives')).toBe('true');
-    expect(p1.get('q')).toBe('trashed = false');
+    expect(p1.get('q')).toBe("trashed = false and ('ROOT' in parents)");
     expect(p1.get('pageSize')).toBe('1000');
-    expect(p1.get('pageToken')).toBeNull();
-    expect(params(s.calls[1].url).get('pageToken')).toBe('N1');
+    expect(params(s.calls[2].url).get('pageToken')).toBe('N1');
+    expect(params(s.calls[3].url).get('q')).toBe("trashed = false and ('D1' in parents)");
   });
 
-  it('Shared Drive rỗng thì trả mảng rỗng', async () => {
-    expect(await listDriveFiles(setup([json({})]).ctx)).toEqual([]);
+  it('gộp nhiều thư mục cùng tầng vào một truy vấn', async () => {
+    const folders = Array.from({ length: 3 }, (_, i) => ({ ...RAW, id: `D${i}`, mimeType: FOLDER, parents: ['ROOT'] }));
+    const s = setup([json({ ...RAW, id: 'ROOT', mimeType: FOLDER }), json({ files: folders }), json({})]);
+    await listDriveTree(s.ctx, 'ROOT');
+    expect(params(s.calls[2].url).get('q')).toBe("trashed = false and ('D0' in parents or 'D1' in parents or 'D2' in parents)");
+  });
+
+  it('một thư mục có hai cha không bị đọc lại, không lặp vô tận', async () => {
+    const shared = { ...RAW, id: 'D1', mimeType: FOLDER, parents: ['ROOT'] };
+    const s = setup([json({ ...RAW, id: 'ROOT', mimeType: FOLDER }), json({ files: [shared] }), json({ files: [{ ...shared, parents: ['D1'], id: 'ROOT', mimeType: FOLDER }] })]);
+    const files = await listDriveTree(s.ctx, 'ROOT');
+    expect(s.calls).toHaveLength(3);
+    expect(files.map((f) => f.id)).toEqual(['ROOT', 'D1', 'ROOT']);
+  });
+
+  it('kho rỗng thì chỉ có thư mục gốc', async () => {
+    expect((await listDriveTree(setup([json({ ...RAW, id: 'ROOT', mimeType: FOLDER }), json({})]).ctx, 'ROOT')).map((f) => f.id)).toEqual(['ROOT']);
   });
 
   it('lỗi giữa chừng được ném, không trả danh sách thiếu', async () => {
-    const s = setup([json({ files: [RAW], nextPageToken: 'N1' }), apiError(403, 'forbidden')]);
-    await expect(listDriveFiles(s.ctx)).rejects.toMatchObject({ status: 403 });
+    const s = setup([json({ ...RAW, id: 'ROOT', mimeType: FOLDER }), json({ files: [RAW], nextPageToken: 'N1' }), apiError(403, 'forbidden')]);
+    await expect(listDriveTree(s.ctx, 'ROOT')).rejects.toMatchObject({ status: 403 });
   });
 });
 

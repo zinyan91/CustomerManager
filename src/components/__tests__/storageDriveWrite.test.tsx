@@ -4,7 +4,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import type { StorageRepo } from '../../types/storageRepo';
 import { createFakeDrive } from '../../lib/drive/__tests__/fakeDrive';
-import { listDriveFiles } from '../../lib/drive/driveClient';
+import { listDriveTree } from '../../lib/drive/driveClient';
 import { buildRepoEntries, listingOf } from '../../lib/drive/driveTree';
 import { entriesToDocuments } from '../../lib/drive/driveDocuments';
 
@@ -43,7 +43,7 @@ async function mount(write = true, seed?: (d: Fake, rootId: string) => void) {
   drive.seedFile('b.pdf', vb.id, 'BBBB');
   seed?.(drive, root.id);
 
-  const entries = buildRepoEntries(await listDriveFiles(drive.ctx), root.id);
+  const entries = buildRepoEntries(await listDriveTree(drive.ctx, root.id), root.id);
   const repo: StorageRepo = { id: 7, name: 'Kho chung', repoId: root.id, kind: 'shared', assignedUserId: null, createdAt: '' };
   reload = vi.fn().mockResolvedValue(undefined);
   h.archive = {
@@ -177,7 +177,7 @@ describe('Kho Google Drive: tải lên', () => {
     const input = screen.getByLabelText('Chọn tệp để tải lên') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [new File(['x'], 'moi.pdf', { type: 'application/pdf' })] } });
 
-    expect(await screen.findByText(/Shared Drive đã hết dung lượng/)).toBeTruthy();
+    expect(await screen.findByText(/Google Drive đã hết dung lượng/)).toBeTruthy();
     expect(reload).not.toHaveBeenCalled();
   });
 });
@@ -352,7 +352,7 @@ describe('Kho Google Drive: xóa vào thùng rác', () => {
     drive.failNext(/^PATCH \/drive\/v3\/files\//, new Response(JSON.stringify({ error: { code: 403, message: 'x', errors: [{ reason: 'insufficientFilePermissions' }] } }), { status: 403 }));
     fireEvent.click(screen.getByRole('button', { name: 'Xóa goc.pdf' }));
 
-    expect((await screen.findByRole('alert')).textContent).toMatch(/Xóa không được: tài khoản dịch vụ không đủ quyền/);
+    expect((await screen.findByRole('alert')).textContent).toMatch(/Xóa không được: tài khoản Google của ứng dụng không có quyền sửa/);
   });
 });
 

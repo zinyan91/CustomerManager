@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listDriveFiles } from '../driveClient';
+import { listDriveTree } from '../driveClient';
 import {
   copyFilesInto, createFolderAt, driveNameFor, DriveOpError, folderIdAt, indexEntries, moveInto, renameAt, topMostPaths, trashPaths, validateEntryName,
 } from '../driveOps';
@@ -19,7 +19,7 @@ async function setup() {
   drive.seedFile('b.pdf', vb.id, 'BBBB');
   drive.seedFile('c.pdf', con.id);
   const load = async () => {
-    const entries = buildRepoEntries(await listDriveFiles(drive.ctx), root.id);
+    const entries = buildRepoEntries(await listDriveTree(drive.ctx, root.id), root.id);
     return { entries, index: indexEntries(entries) };
   };
   const paths = async () => (await load()).entries.map((e) => e.path).sort();

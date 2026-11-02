@@ -1,6 +1,5 @@
 import {
-  copyDriveFile, createDriveFolder, downloadDriveBlob, listAccessibleDrives, listDriveFiles, moveDriveFile, renameDriveFile, trashDriveFile,
-  uploadDriveFile,
+  copyDriveFile, createDriveFolder, downloadDriveBlob, getDriveFile, moveDriveFile, renameDriveFile, trashDriveFile, uploadDriveFile,
 } from './driveClient';
 import { DriveApiError, describeDriveError } from './driveErrors';
 import type { DriveContext } from './driveTypes';
@@ -14,26 +13,7 @@ export interface SelfTestStep {
 const PAYLOAD = 'Kiểm tra kết nối Google Drive của Kho lưu trữ.';
 
 /**
- * Không tìm thấy Shared Drive đã đặt: hỏi Google tài khoản dịch vụ đang thấy những Shared Drive nào để phân biệt
- * "chưa là thành viên của ổ nào" với "ID đã đặt không khớp ổ nào". Trả null khi không giải thích thêm được.
- */
-async function diagnoseMissingDrive(ctx: DriveContext, configuredId: string): Promise<string | null> {
-  let drives: Array<{ id: string; name: string }>;
-  try {
-    drives = await listAccessibleDrives(ctx);
-  } catch {
-    return null;
-  }
-  if (drives.length === 0) {
-    return 'Tài khoản dịch vụ chưa là thành viên của Shared Drive nào. Vào Shared Drive, mở Quản lý thành viên và thêm email tài khoản dịch vụ với quyền Quản lý nội dung.';
-  }
-  if (drives.some((d) => d.id === configuredId)) return null;
-  const seen = drives.map((d) => `${d.name} (${d.id})`).join('; ');
-  return `ID Shared Drive đã đặt (${configuredId}) không khớp ổ nào. Tài khoản dịch vụ chỉ thấy: ${seen}. Đặt lại secret GDRIVE_SHARED_DRIVE_ID bằng ID đúng.`;
-}
-
-/**
- * Kiểm tra kết nối thật tới Shared Drive: lấy quyền, liệt kê, tạo thư mục, tải lên, tải về đối chiếu nội dung, đổi tên,
+ * Kiểm tra kết nối thật tới Google Drive: lấy quyền, mở thư mục cha của các kho, tạo thư mục, tải lên, tải về đối chiếu nội dung, đổi tên,
  * sao chép, di chuyển, rồi đưa thư mục thử vào thùng rác. Dừng ở bước đầu tiên hỏng, vẫn cố dọn thư mục thử.
  * `onStep` được gọi ngay khi mỗi bước xong để giao diện hiện dần.
  */
@@ -59,7 +39,7 @@ export async function runDriveSelfTest(ctx: DriveContext, onStep?: (step: SelfTe
 
   const access = await run('Lấy quyền truy cập Google Drive', async () => {
     const a = await ctx.getAccess();
-    rootId = a.driveId;
+    rootId = a.rootFolderId;
     return { value: a, detail: a.access === 'write' ? 'Quyền ghi' : 'Chỉ quyền đọc' };
   });
   if (!access) return steps;
@@ -68,15 +48,13 @@ export async function runDriveSelfTest(ctx: DriveContext, onStep?: (step: SelfTe
     return steps;
   }
 
-  const listed = await run('Liệt kê Shared Drive', async () => {
+  const listed = await run('Mở thư mục cha của các kho', async () => {
     try {
-      const files = await listDriveFiles(ctx);
-      return { value: files, detail: `${files.length} mục` };
+      const folder = await getDriveFile(ctx, rootId);
+      return { value: folder, detail: rootId === 'root' ? 'My Drive' : folder.name };
     } catch (err) {
-      // Google trả 404 cho cả hai lỗi cấu hình phổ biến (ID sai, chưa là thành viên) nên hỏi thêm để nói rõ lỗi nào
       if (err instanceof DriveApiError && err.status === 404) {
-        const why = await diagnoseMissingDrive(ctx, rootId);
-        if (why) throw new Error(why);
+        throw new Error(`Không mở được thư mục ${rootId}. Kiểm tra secret GDRIVE_ROOT_FOLDER_ID và việc tài khoản Google của ứng dụng có quyền với thư mục đó.`);
       }
       throw err;
     }
@@ -132,7 +110,7 @@ export async function runDriveSelfTest(ctx: DriveContext, onStep?: (step: SelfTe
       return { value: true };
     });
     if (cleaned === undefined) {
-      record({ label: 'Dọn thư mục thử', ok: false, detail: `Hãy tự xóa thư mục "_kiem-tra-ket-noi-..." (mã ${id}) trong Shared Drive.` });
+      record({ label: 'Dọn thư mục thử', ok: false, detail: `Hãy tự xóa thư mục "_kiem-tra-ket-noi-..." (mã ${id}) trên Google Drive.` });
     }
   }
   return steps;

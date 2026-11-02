@@ -3,7 +3,7 @@ import type { DispatchDocument } from '../types/dispatch';
 import type { StorageRepo } from '../types/storageRepo';
 import { useAuth } from '../context/AuthContext';
 import { listStorageRepos } from '../lib/api/storageReposApi';
-import { listDriveFiles } from '../lib/drive/driveClient';
+import { DRIVE_ROOT_MISSING, listDriveTree } from '../lib/drive/driveClient';
 import { entriesToDocuments } from '../lib/drive/driveDocuments';
 import { describeDriveError } from '../lib/drive/driveErrors';
 import { readCachedEntries, writeCachedEntries } from '../lib/drive/driveEntriesCache';
@@ -68,7 +68,7 @@ export function useArchive(scope: StorageScope = 'storage') {
     [candidates, selectedRepoId]
   );
 
-  // RepoId là ID thư mục gốc của kho trong Shared Drive
+  // RepoId là ID thư mục gốc của kho trên Google Drive
   const driveRoot = selectedRepo?.repoId ?? null;
 
   const show = useCallback((root: string, entries: DriveEntry[], write: boolean) => {
@@ -80,7 +80,7 @@ export function useArchive(scope: StorageScope = 'storage') {
 
   /**
    * Nạp kho. Lần đầu mở một kho mà trong máy có bản đã lưu thì hiện ngay bản đó rồi lấy bản mới từ Drive ở phía sau
-   * (không chờ liệt kê cả Shared Drive). Lấy bản mới lỗi thì giữ danh sách đang hiện và báo lỗi riêng, không xóa trắng.
+   * (không chờ đọc cây thư mục trên Drive). Lấy bản mới lỗi thì giữ danh sách đang hiện và báo lỗi riêng, không xóa trắng.
    */
   const reload = useCallback(async () => {
     const seq = ++loadSeq.current;
@@ -108,13 +108,13 @@ export function useArchive(scope: StorageScope = 'storage') {
     setRefreshError(null);
     try {
       const [files, access] = await runWithTimeout(
-        signal => Promise.all([listDriveFiles(driveContext, signal), driveContext.getAccess()]),
+        signal => Promise.all([listDriveTree(driveContext, driveRoot, signal), driveContext.getAccess()]),
         60_000,
         'Kết nối danh sách tệp Google Drive phản hồi quá chậm. Thử tải lại kho.',
       );
       if (seq !== loadSeq.current) return;
       if (!files.some((f) => f.id === driveRoot)) {
-        throw new Error('Không tìm thấy thư mục gốc của kho trong Shared Drive. Kiểm tra lại ID thư mục và việc tài khoản dịch vụ là thành viên của Shared Drive.');
+        throw new Error(DRIVE_ROOT_MISSING);
       }
       const entries = buildRepoEntries(files, driveRoot);
       const write = access.access === 'write';
@@ -166,7 +166,7 @@ export function useArchive(scope: StorageScope = 'storage') {
     driveRoot,
     /** Mọi thư mục và tệp của kho Drive đang chọn, kèm mã Drive. */
     driveEntries,
-    /** Token hiện có quyền ghi vào Shared Drive (người chỉ được đọc thì không). */
+    /** Token hiện có quyền ghi vào Drive (người chỉ được đọc thì không). */
     driveWrite,
     selectRepo: setSelectedRepoId,
     documents,

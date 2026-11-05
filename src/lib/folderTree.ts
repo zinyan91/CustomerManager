@@ -1,3 +1,5 @@
+const VI_COLLATOR = new Intl.Collator('vi', { numeric: true });
+
 export interface FolderTreeNode {
   id: string; // Đường dẫn tương đối làm ID duy nhất (vd: '2026/hop-dong')
   name: string; // Tên hiển thị (vd: 'hop-dong')
@@ -56,7 +58,7 @@ export function buildFolderTree(items: Array<{ path: string; size: number }>): F
   }
 
   function sortTree(node: FolderTreeNode) {
-    node.children.sort((a, b) => a.name.localeCompare(b.name, 'vi', { numeric: true }));
+    node.children.sort((a, b) => VI_COLLATOR.compare(a.name, b.name));
     node.children.forEach(sortTree);
   }
   sortTree(root);

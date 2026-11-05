@@ -3,10 +3,10 @@ import { joinArchivePath } from '../lib/archivePath';
 import type { PastePlan } from '../lib/storageClipboard';
 import { describeDriveError } from '../lib/drive/driveErrors';
 import {
-  copyFilesInto, createFolderAt, DriveOpError, folderIdMap, indexEntries, moveInto, renameAt, trashPaths,
+  copyFilesInto, createFolderAt, DriveOpError, folderIdMap, indexEntries, moveInto, prepareCreateFolder, prepareMove, prepareRename, prepareTrash, renameAt, trashPaths,
 } from '../lib/drive/driveOps';
 import { driveFileToEntry, moveRepoEntries, removeRepoEntries, renameRepoEntry, upsertRepoEntries } from '../lib/drive/driveTree';
-import type { DriveContext, DriveEntry } from '../lib/drive/driveTypes';
+import { DRIVE_FOLDER_MIME, type DriveContext, type DriveEntry } from '../lib/drive/driveTypes';
 
 export interface DriveOpsTarget {
   ctx: DriveContext;
@@ -21,8 +21,8 @@ export interface CopyProgress {
 
 /**
  * Thao tác ghi lên một kho Google Drive: thư mục mới, đổi tên, di chuyển, xóa vào thùng rác, sao chép phía Google.
- * Khi có `mutateEntries` và thao tác thành công hoàn toàn, cây được cập nhật ngay tại chỗ mà không quét lại toàn bộ Drive.
- * Mỗi hàm trả thông điệp lỗi tiếng Việt, hoặc null khi xong; nơi gọi quyết định hiện lỗi ở đâu.
+ * Khi có `mutateEntries`: kiểm tra đầu vào đồng bộ trước, cập nhật cây trên màn hình ngay lập tức (Optimistic UI 0ms),
+ * rồi gọi Google Drive; nếu Google báo lỗi thì hoàn tác lại cây cũ và trả thông điệp lỗi tiếng Việt.
  */
 export function useDriveOps(
   target: DriveOpsTarget | null,
@@ -37,8 +37,24 @@ export function useDriveOps(
     async (
       what: string,
       job: (t: DriveOpsTarget) => Promise<{ failure: string | null; apply?: (prev: readonly DriveEntry[]) => DriveEntry[] }>,
+      optimistic?: (t: DriveOpsTarget) => ((prev: readonly DriveEntry[]) => DriveEntry[]) | null,
+      onValidated?: () => void,
     ): Promise<string | null> => {
       if (!target) return 'Chưa có kho Google Drive để thao tác.';
+      const snapshot = target.entries;
+      let appliedOptimistic = false;
+      if (optimistic) {
+        try {
+          const preview = optimistic(target);
+          if (preview && mutateEntries) {
+            mutateEntries(preview);
+            appliedOptimistic = true;
+          }
+          onValidated?.();
+        } catch (err) {
+          return err instanceof DriveOpError ? err.message : describeDriveError(err, what);
+        }
+      }
       setBusy(true);
       let failure: string | null = null;
       let apply: ((prev: readonly DriveEntry[]) => DriveEntry[]) | undefined;
@@ -55,9 +71,12 @@ export function useDriveOps(
         setBusy(false);
         setCopyProgress(null);
       }
+      if (failure && appliedOptimistic && mutateEntries) {
+        mutateEntries(() => [...snapshot]);
+      }
       if (wrote) {
-        if (!failure && apply && mutateEntries) {
-          mutateEntries(apply);
+        if (!failure && (apply || appliedOptimistic) && mutateEntries) {
+          if (apply) mutateEntries(apply);
         } else {
           try {
             await onDone();
@@ -72,39 +91,74 @@ export function useDriveOps(
   );
 
   const createFolder = useCallback(
-    (parentPath: string, name: string) =>
-      run('Tạo thư mục', async (t) => {
-        const created = await createFolderAt(t.ctx, index, t.rootId, parentPath, name);
-        const entry = driveFileToEntry(created, joinArchivePath(parentPath, name.trim()));
-        return { failure: null, apply: (prev) => upsertRepoEntries(prev, [entry]) };
-      }),
-    [run, index]
+    (parentPath: string, name: string, onValidated?: () => void) =>
+      run(
+        'Tạo thư mục',
+        async (t) => {
+          const created = await createFolderAt(t.ctx, index, t.rootId, parentPath, name);
+          const entry = driveFileToEntry(created, joinArchivePath(parentPath, name.trim()));
+          return { failure: null, apply: (prev) => upsertRepoEntries(prev, [entry]) };
+        },
+        () => {
+          const { cleanName, path } = prepareCreateFolder(index, target?.rootId ?? '', parentPath, name);
+          const tempEntry: DriveEntry = {
+            id: `temp-${path}`, name: cleanName, path, isFolder: true, size: 0, modifiedTime: new Date().toISOString(), mimeType: DRIVE_FOLDER_MIME, nativeMimeType: '',
+          };
+          return (prev) => upsertRepoEntries(prev, [tempEntry]);
+        },
+        onValidated,
+      ),
+    [run, index, target?.rootId]
   );
 
   const rename = useCallback(
-    (path: string, newName: string) =>
-      run('Đổi tên', async (t) => {
-        const changed = await renameAt(t.ctx, index, path, newName);
-        return { failure: null, apply: changed ? (prev) => renameRepoEntry(prev, path, newName) : (prev) => [...prev] };
-      }),
+    (path: string, newName: string, onValidated?: () => void) =>
+      run(
+        'Đổi tên',
+        async (t) => {
+          const changed = await renameAt(t.ctx, index, path, newName);
+          return { failure: null, apply: changed ? (prev) => renameRepoEntry(prev, path, newName) : undefined };
+        },
+        () => {
+          const plan = prepareRename(index, path, newName);
+          return plan ? (prev) => renameRepoEntry(prev, path, newName) : null;
+        },
+        onValidated,
+      ),
     [run, index]
   );
 
   const move = useCallback(
-    (paths: readonly string[], destPath: string) =>
-      run('Di chuyển', async (t) => {
-        const moved = await moveInto(t.ctx, index, t.rootId, paths, destPath);
-        return { failure: null, apply: moved > 0 ? (prev) => moveRepoEntries(prev, paths, destPath) : (prev) => [...prev] };
-      }),
+    (paths: readonly string[], destPath: string, onValidated?: () => void) =>
+      run(
+        'Di chuyển',
+        async (t) => {
+          const moved = await moveInto(t.ctx, index, t.rootId, paths, destPath);
+          return { failure: null, apply: moved > 0 ? (prev) => moveRepoEntries(prev, paths, destPath) : undefined };
+        },
+        (t) => {
+          const { todo } = prepareMove(index, t.rootId, paths, destPath);
+          return todo.length > 0 ? (prev) => moveRepoEntries(prev, paths, destPath) : null;
+        },
+        onValidated,
+      ),
     [run, index]
   );
 
   const trash = useCallback(
-    (paths: readonly string[]) =>
-      run('Xóa', async (t) => {
-        await trashPaths(t.ctx, index, paths);
-        return { failure: null, apply: (prev) => removeRepoEntries(prev, paths) };
-      }),
+    (paths: readonly string[], onValidated?: () => void) =>
+      run(
+        'Xóa',
+        async (t) => {
+          await trashPaths(t.ctx, index, paths);
+          return { failure: null, apply: (prev) => removeRepoEntries(prev, paths) };
+        },
+        () => {
+          prepareTrash(index, paths);
+          return (prev) => removeRepoEntries(prev, paths);
+        },
+        onValidated,
+      ),
     [run, index]
   );
 

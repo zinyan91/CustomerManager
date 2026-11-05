@@ -6,7 +6,7 @@ import { listStorageRepos } from '../lib/api/storageReposApi';
 import { DRIVE_ROOT_MISSING, listDriveTree } from '../lib/drive/driveClient';
 import { entriesToDocuments } from '../lib/drive/driveDocuments';
 import { describeDriveError } from '../lib/drive/driveErrors';
-import { readCachedEntries, writeCachedEntries } from '../lib/drive/driveEntriesCache';
+import { readCachedEntries, readCachedRepos, writeCachedEntries, writeCachedRepos } from '../lib/drive/driveEntriesCache';
 import { driveContext } from '../lib/drive/driveToken';
 import { buildRepoEntries, listingOf } from '../lib/drive/driveTree';
 import type { DriveEntry } from '../lib/drive/driveTypes';
@@ -23,32 +23,47 @@ export function useArchive(scope: StorageScope = 'storage') {
   const { role, user } = useAuth();
   const userId = user?.id ?? null;
 
-  const [allRepos, setAllRepos] = useState<StorageRepo[]>([]);
-  const [metaStatus, setMetaStatus] = useState<ArchiveStatus>({ kind: 'loading' });
+  const initialRepos = useMemo(() => (userId ? readCachedRepos(userId) : null), [userId]);
+  const initialSelected = useMemo(() => {
+    if (!initialRepos) return null;
+    const list = reposForScope(initialRepos, role, userId, scope);
+    return list[0] ?? null;
+  }, [initialRepos, role, userId, scope]);
+  const initialCached = useMemo(
+    () => (userId && initialSelected ? readCachedEntries(userId, initialSelected.repoId) : null),
+    [userId, initialSelected],
+  );
+
+  const [allRepos, setAllRepos] = useState<StorageRepo[]>(() => initialRepos ?? []);
+  const [metaStatus, setMetaStatus] = useState<ArchiveStatus>(() => (initialRepos ? { kind: 'ready' } : { kind: 'loading' }));
   const [selectedRepoId, setSelectedRepoId] = useState<number | null>(null);
 
-  const [documents, setDocuments] = useState<DispatchDocument[]>([]);
-  const [folders, setFolders] = useState<string[]>([]);
-  const [driveEntries, setDriveEntries] = useState<DriveEntry[]>([]);
-  const [driveWrite, setDriveWrite] = useState(false);
-  const [fileStatus, setFileStatus] = useState<ArchiveStatus>({ kind: 'loading' });
+  const [documents, setDocuments] = useState<DispatchDocument[]>(() =>
+    initialSelected && initialCached ? entriesToDocuments(initialCached.entries, initialSelected.repoId, new Date().toISOString()) : [],
+  );
+  const [folders, setFolders] = useState<string[]>(() => (initialCached ? listingOf(initialCached.entries).folders : []));
+  const [driveEntries, setDriveEntries] = useState<DriveEntry[]>(() => initialCached?.entries ?? []);
+  const [driveWrite, setDriveWrite] = useState(() => initialCached?.write ?? false);
+  const [fileStatus, setFileStatus] = useState<ArchiveStatus>(() => (initialCached ? { kind: 'ready' } : { kind: 'loading' }));
   // Danh sách đang hiện có thể là bản đã lưu trong máy; `refreshing` bật trong lúc lấy bản mới từ Drive
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
-  const [loadedAt, setLoadedAt] = useState<number | null>(null);
+  const [loadedAt, setLoadedAt] = useState<number | null>(() => initialCached?.savedAt ?? null);
   // Kho đang hiện danh sách (từ bản đã lưu hoặc từ Drive) và số thứ tự lần nạp mới nhất, để bỏ kết quả của lần nạp đã bị thay thế
-  const shownRoot = useRef<string | null>(null);
+  const shownRoot = useRef<string | null>(initialSelected && initialCached ? initialSelected.repoId : null);
   const loadSeq = useRef(0);
 
   const reloadRepos = useCallback(async () => {
-    setMetaStatus({ kind: 'loading' });
+    setMetaStatus((prev) => (prev.kind === 'ready' ? prev : { kind: 'loading' }));
     try {
-      setAllRepos(await runWithTimeout(signal => listStorageRepos(signal), 20_000, 'Kết nối danh sách kho lưu trữ phản hồi quá chậm. Thử tải lại kho.'));
+      const fetched = await runWithTimeout(signal => listStorageRepos(signal), 20_000, 'Kết nối danh sách kho lưu trữ phản hồi quá chậm. Thử tải lại kho.');
+      setAllRepos(fetched);
+      if (userId) writeCachedRepos(userId, fetched);
       setMetaStatus({ kind: 'ready' });
     } catch (err) {
-      setMetaStatus(classifyArchiveError(err));
+      setMetaStatus((prev) => (prev.kind === 'ready' ? prev : classifyArchiveError(err)));
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     void reloadRepos();

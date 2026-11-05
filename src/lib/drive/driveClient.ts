@@ -87,10 +87,14 @@ export async function listDriveTree(ctx: DriveContext, rootId: string, signal?: 
   let root: DriveFile;
   let firstChildren: DriveFile[];
   try {
-    [root, firstChildren] = await Promise.all([
+    const [rootRes, childrenRes] = await Promise.allSettled([
       getDriveFile(ctx, rootId, signal),
       listDriveQuery(ctx, `trashed = false and ('${driveQueryLiteral(rootId)}' in parents)`, signal),
     ]);
+    if (childrenRes.status === 'rejected') throw childrenRes.reason;
+    if (rootRes.status === 'rejected') throw rootRes.reason;
+    root = rootRes.value;
+    firstChildren = childrenRes.value;
   } catch (err) {
     if (err instanceof DriveApiError && err.status === 404) throw new Error(DRIVE_ROOT_MISSING);
     throw err;

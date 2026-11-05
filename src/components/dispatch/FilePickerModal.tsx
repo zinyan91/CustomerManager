@@ -5,7 +5,7 @@ import type { OfficialDocFileKind } from '../../types/officialDoc';
 import { STORAGE_KIND_LABELS, type StorageRepo } from '../../types/storageRepo';
 import { classifyArchiveError, archiveStatusMessage, type ArchiveStatus } from '../../lib/archiveStatus';
 import { describeDriveError } from '../../lib/drive/driveErrors';
-import { readCachedEntries, writeCachedEntries } from '../../lib/drive/driveEntriesCache';
+import { readCachedEntries, readCachedRepos, writeCachedEntries, writeCachedRepos } from '../../lib/drive/driveEntriesCache';
 import { listStorageRepos } from '../../lib/api/storageReposApi';
 import { repoKindOfFile, selectableRepos } from '../../lib/officialDoc/docFiles';
 import { browseFolder } from '../../lib/dispatch/folderBrowse';
@@ -36,12 +36,18 @@ export const pickedKey = (repoId: string, path: string) => `${repoId}/${path}`;
 /** Chọn tệp có sẵn trong kho tương ứng với loại tệp để gắn vào văn bản. Không tải tệp lên. */
 export function FilePickerModal({ fileKind, title, pickedKeys, onPick, onClose }: FilePickerModalProps) {
   const kindLabel = STORAGE_KIND_LABELS[repoKindOfFile(fileKind)];
-  const [repos, setRepos] = useState<StorageRepo[]>([]);
+  const initialRepos = useMemo(() => {
+    const cached = readCachedRepos('picker');
+    return cached ? selectableRepos(cached, fileKind) : null;
+  }, [fileKind]);
+  const [repos, setRepos] = useState<StorageRepo[]>(() => initialRepos ?? []);
   const [repoIndex, setRepoIndex] = useState(0);
   const [docs, setDocs] = useState<DispatchDocument[]>([]);
   const [emptyFolders, setEmptyFolders] = useState<string[]>([]);
   const [current, setCurrent] = useState('');
-  const [status, setStatus] = useState<ArchiveStatus>({ kind: 'loading' });
+  const [status, setStatus] = useState<ArchiveStatus>(() =>
+    initialRepos ? (initialRepos.length === 0 ? { kind: 'no_repo' } : { kind: 'loading' }) : { kind: 'loading' },
+  );
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,11 +55,12 @@ export function FilePickerModal({ fileKind, title, pickedKeys, onPick, onClose }
     listStorageRepos()
       .then((all) => {
         if (!active) return;
+        writeCachedRepos('picker', all);
         const list = selectableRepos(all, fileKind);
         setRepos(list);
-        setStatus(list.length === 0 ? { kind: 'no_repo' } : { kind: 'loading' });
+        if (list.length === 0) setStatus({ kind: 'no_repo' });
       })
-      .catch((err) => active && setStatus(classifyArchiveError(err)));
+      .catch((err) => active && setStatus((prev) => (prev.kind === 'ready' ? prev : classifyArchiveError(err))));
     return () => {
       active = false;
     };

@@ -7,6 +7,7 @@ import { DRIVE_FOLDER_MIME, type DriveContext, type DriveEntry } from './driveTy
 
 export const MAX_ENTRY_NAME_LENGTH = 255;
 const COPY_CONCURRENCY = 3;
+const MUTATION_CONCURRENCY = 6;
 
 const lower = (path: string) => path.replace(/^\/+|\/+$/g, '').toLowerCase();
 export const dirOf = (path: string) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
@@ -73,33 +74,41 @@ export function driveNameFor(entry: Pick<DriveEntry, 'nativeMimeType'>, displayN
   return ext && name.toLowerCase().endsWith(ext) ? name.slice(0, -ext.length) : name;
 }
 
-export async function createFolderAt(ctx: DriveContext, index: EntryIndex, rootId: string, parentPath: string, name: string) {
+export function prepareCreateFolder(index: EntryIndex, rootId: string, parentPath: string, name: string): { parentId: string; cleanName: string; path: string } {
   const invalid = validateEntryName(name);
   if (invalid) throw new DriveOpError(invalid);
-  const clean = name.trim();
+  const cleanName = name.trim();
   const parentId = requireFolderId(index, rootId, parentPath);
-  if (index.has(lower(joinPath(parentPath, clean)))) throw new DriveOpError(`Đã có mục tên "${clean}" ở thư mục này.`);
-  return createDriveFolder(ctx, parentId, clean);
+  const path = joinPath(parentPath, cleanName);
+  if (index.has(lower(path))) throw new DriveOpError(`Đã có mục tên "${cleanName}" ở thư mục này.`);
+  return { parentId, cleanName, path };
+}
+
+export async function createFolderAt(ctx: DriveContext, index: EntryIndex, rootId: string, parentPath: string, name: string) {
+  const { parentId, cleanName } = prepareCreateFolder(index, rootId, parentPath, name);
+  return createDriveFolder(ctx, parentId, cleanName);
+}
+
+export function prepareRename(index: EntryIndex, path: string, newName: string): { entry: DriveEntry; cleanName: string; driveName: string } | null {
+  const invalid = validateEntryName(newName);
+  if (invalid) throw new DriveOpError(invalid);
+  const entry = requireEntry(index, path);
+  const cleanName = newName.trim();
+  if (cleanName === entry.name) return null;
+  const clash = index.get(lower(joinPath(dirOf(entry.path), cleanName)));
+  if (clash && clash.id !== entry.id) throw new DriveOpError(`Đã có mục tên "${cleanName}" ở thư mục này.`);
+  return { entry, cleanName, driveName: driveNameFor(entry, cleanName) };
 }
 
 /** Đổi tên một tệp hay thư mục. Trùng tên với mục khác cùng thư mục thì từ chối. Trả false khi tên không đổi. */
 export async function renameAt(ctx: DriveContext, index: EntryIndex, path: string, newName: string): Promise<boolean> {
-  const invalid = validateEntryName(newName);
-  if (invalid) throw new DriveOpError(invalid);
-  const entry = requireEntry(index, path);
-  const clean = newName.trim();
-  if (clean === entry.name) return false;
-  const clash = index.get(lower(joinPath(dirOf(entry.path), clean)));
-  if (clash && clash.id !== entry.id) throw new DriveOpError(`Đã có mục tên "${clean}" ở thư mục này.`);
-  await renameDriveFile(ctx, entry.id, driveNameFor(entry, clean));
+  const plan = prepareRename(index, path, newName);
+  if (!plan) return false;
+  await renameDriveFile(ctx, plan.entry.id, plan.driveName);
   return true;
 }
 
-/**
- * Di chuyển các mục vào thư mục đích. Kiểm hết trước khi di chuyển để lỗi không để lại việc làm dở: không đưa thư mục vào
- * chính nó hay thư mục con của nó, không đè lên mục cùng tên ở đích. Mục đã nằm sẵn ở đích thì bỏ qua. Trả số mục đã chuyển.
- */
-export async function moveInto(ctx: DriveContext, index: EntryIndex, rootId: string, paths: readonly string[], destPath: string): Promise<number> {
+export function prepareMove(index: EntryIndex, rootId: string, paths: readonly string[], destPath: string): { destId: string; todo: Array<{ entry: DriveEntry; fromId: string }> } {
   const destId = requireFolderId(index, rootId, destPath);
   const dest = lower(destPath);
   const todo: Array<{ entry: DriveEntry; fromId: string }> = [];
@@ -118,8 +127,22 @@ export async function moveInto(ctx: DriveContext, index: EntryIndex, rootId: str
     names.add(target);
     todo.push({ entry, fromId: requireFolderId(index, rootId, from) });
   }
+  return { destId, todo };
+}
 
-  for (const { entry, fromId } of todo) await moveDriveFile(ctx, entry.id, fromId, destId);
+/**
+ * Di chuyển các mục vào thư mục đích. Kiểm hết trước khi di chuyển để lỗi không để lại việc làm dở: không đưa thư mục vào
+ * chính nó hay thư mục con của nó, không đè lên mục cùng tên ở đích. Mục đã nằm sẵn ở đích thì bỏ qua. Trả số mục đã chuyển.
+ */
+export async function moveInto(ctx: DriveContext, index: EntryIndex, rootId: string, paths: readonly string[], destPath: string): Promise<number> {
+  const { destId, todo } = prepareMove(index, rootId, paths, destPath);
+  const queue = [...todo];
+  const worker = async () => {
+    for (let item = queue.shift(); item; item = queue.shift()) {
+      await moveDriveFile(ctx, item.entry.id, item.fromId, destId);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(MUTATION_CONCURRENCY, todo.length) }, worker));
   return todo.length;
 }
 
@@ -129,10 +152,20 @@ export function topMostPaths(paths: readonly string[]): string[] {
   return paths.filter((_, i) => !keys.some((other, j) => j !== i && keys[i].startsWith(`${other}/`)));
 }
 
+export function prepareTrash(index: EntryIndex, paths: readonly string[]): DriveEntry[] {
+  return topMostPaths(paths).map((p) => requireEntry(index, p));
+}
+
 /** Đưa các mục vào thùng rác của Shared Drive (khôi phục được). Trả số mục đã xóa. */
 export async function trashPaths(ctx: DriveContext, index: EntryIndex, paths: readonly string[]): Promise<number> {
-  const entries = topMostPaths(paths).map((p) => requireEntry(index, p));
-  for (const e of entries) await trashDriveFile(ctx, e.id);
+  const entries = prepareTrash(index, paths);
+  const queue = [...entries];
+  const worker = async () => {
+    for (let e = queue.shift(); e; e = queue.shift()) {
+      await trashDriveFile(ctx, e.id);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(MUTATION_CONCURRENCY, entries.length) }, worker));
   return entries.length;
 }
 

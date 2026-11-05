@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { MAX_CACHE_CHARS, cacheKey, clearCachedEntries, readCachedEntries, writeCachedEntries } from '../driveEntriesCache';
+import { MAX_CACHE_CHARS, cacheKey, clearCachedEntries, readCachedEntries, readCachedRepos, writeCachedEntries, writeCachedRepos } from '../driveEntriesCache';
 import type { DriveEntry } from '../driveTypes';
 
 class MemoryStore {
@@ -66,8 +66,18 @@ describe('driveEntriesCache', () => {
     const store = new MemoryStore();
     writeCachedEntries('u1', 'a', { entries: [], write: false }, 1, store);
     writeCachedEntries('u2', 'b', { entries: [], write: false }, 1, store);
+    writeCachedRepos('u1', [{ id: 1, name: 'Kho A', repoId: 'r1', kind: 'shared', assignedUserId: null, createdAt: '' }], store);
     store.setItem('khoa-khac', 'x');
     clearCachedEntries(store);
     expect([...store.data.keys()]).toEqual(['khoa-khac']);
+    expect(readCachedRepos('u1', store)).toBeNull();
+  });
+
+  it('lưu và đọc danh sách kho theo tài khoản để mở kho không chờ mạng', () => {
+    const store = new MemoryStore();
+    const repos = [{ id: 1, name: 'Kho A', repoId: 'r1', kind: 'shared' as const, assignedUserId: null, createdAt: '' }];
+    writeCachedRepos('u1', repos, store);
+    expect(readCachedRepos('u1', store)).toEqual(repos);
+    expect(readCachedRepos('u2', store)).toBeNull();
   });
 });

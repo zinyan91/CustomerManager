@@ -31,7 +31,8 @@ function dirOf(doc: DispatchDocument): string {
   return i === -1 ? '' : fp.slice(0, i);
 }
 
-const byName = (a: string, b: string) => a.localeCompare(b, 'vi', { numeric: true });
+const VI_COLLATOR = new Intl.Collator('vi', { numeric: true });
+const byName = (a: string, b: string) => VI_COLLATOR.compare(a, b);
 
 /**
  * Nội dung một thư mục kiểu trình quản lý tệp: thư mục con hiện thành thư mục,

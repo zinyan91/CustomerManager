@@ -266,9 +266,24 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   };
 
   const createDriveFolder = async (parent: string, name: string): Promise<string | null> => {
-    const failure = await driveOps.createFolder(parent, name);
-    if (!failure) setSelectedFolder(joinArchivePath(parent, name.trim()));
-    return failure;
+    setActionError(null);
+    let closedEarly = false;
+    const prevFolder = selectedFolder;
+    const failure = await driveOps.createFolder(parent, name, () => {
+      closedEarly = true;
+      setDriveDialog(null);
+      setSelectedFolder(joinArchivePath(parent, name.trim()));
+    });
+    if (failure) {
+      if (closedEarly) {
+        setSelectedFolder(prevFolder);
+        setActionError(failure);
+        return null;
+      }
+      return failure;
+    }
+    if (!closedEarly) setSelectedFolder(joinArchivePath(parent, name.trim()));
+    return null;
   };
 
   const handleTreeCreateDriveFolder = async (parent: string, name: string) => {
@@ -291,30 +306,50 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
     const ok = await confirm({ title: 'Xóa', message: `${question} Mục bị xóa nằm trong thùng rác của Google Drive, khôi phục được tại đó.`, confirmText: 'Xóa', tone: 'danger' });
     if (!ok) return;
     setActionError(null);
-    const failure = await driveOps.trash(tops.map((t) => t.path));
-    if (failure) setActionError(failure);
-    else {
-      leaveFolderIfAffected(tops.filter((t) => t.kind === 'folder').map((t) => t.path));
+    const affectedFolders = tops.filter((t) => t.kind === 'folder').map((t) => t.path);
+    const failure = await driveOps.trash(tops.map((t) => t.path), () => {
+      leaveFolderIfAffected(affectedFolders);
       clipboard.clearSelection();
-    }
+    });
+    if (failure) setActionError(failure);
   };
 
   const renameDriveItem = async (path: string, newName: string): Promise<string | null> => {
-    const failure = await driveOps.rename(path, newName);
-    if (!failure) {
+    setActionError(null);
+    let closedEarly = false;
+    const failure = await driveOps.rename(path, newName, () => {
+      closedEarly = true;
+      setDriveDialog(null);
       leaveFolderIfAffected([path]);
       clipboard.clearSelection();
+    });
+    if (failure) {
+      if (closedEarly) {
+        setActionError(failure);
+        return null;
+      }
+      return failure;
     }
-    return failure;
+    return null;
   };
 
   const moveDriveItems = async (paths: string[], dest: string): Promise<string | null> => {
-    const failure = await driveOps.move(paths, dest);
-    if (!failure) {
+    setActionError(null);
+    let closedEarly = false;
+    const failure = await driveOps.move(paths, dest, () => {
+      closedEarly = true;
+      setDriveDialog(null);
       leaveFolderIfAffected(paths);
       clipboard.clearSelection();
+    });
+    if (failure) {
+      if (closedEarly) {
+        setActionError(failure);
+        return null;
+      }
+      return failure;
     }
-    return failure;
+    return null;
   };
 
   // Phải chạy đồng bộ trong sự kiện click: hộp "Lưu thành" cần user activation

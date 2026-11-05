@@ -1,7 +1,8 @@
 import { exportTargetOf, isListable } from './driveExport';
 import { DRIVE_FOLDER_MIME, type DriveEntry, type DriveFile } from './driveTypes';
 
-const compareNames = (a: string, b: string) => a.localeCompare(b, 'vi', { numeric: true, sensitivity: 'base' });
+const VI_COLLATOR = new Intl.Collator('vi', { numeric: true, sensitivity: 'base' });
+const compareNames = (a: string, b: string) => VI_COLLATOR.compare(a, b);
 
 /** Thêm hậu tố trước đuôi: a.pdf thành a (2).pdf. Thư mục không có đuôi. */
 function withSuffix(name: string, n: number, isFolder: boolean): string {

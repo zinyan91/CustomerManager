@@ -5,6 +5,7 @@ import type { OfficialDocFileKind } from '../../types/officialDoc';
 import { STORAGE_KIND_LABELS, type StorageRepo } from '../../types/storageRepo';
 import { classifyArchiveError, archiveStatusMessage, type ArchiveStatus } from '../../lib/archiveStatus';
 import { describeDriveError } from '../../lib/drive/driveErrors';
+import { readCachedEntries, writeCachedEntries } from '../../lib/drive/driveEntriesCache';
 import { listStorageRepos } from '../../lib/api/storageReposApi';
 import { repoKindOfFile, selectableRepos } from '../../lib/officialDoc/docFiles';
 import { browseFolder } from '../../lib/dispatch/folderBrowse';
@@ -41,6 +42,7 @@ export function FilePickerModal({ fileKind, title, pickedKeys, onPick, onClose }
   const [emptyFolders, setEmptyFolders] = useState<string[]>([]);
   const [current, setCurrent] = useState('');
   const [status, setStatus] = useState<ArchiveStatus>({ kind: 'loading' });
+  const [refreshError, setRefreshError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -62,8 +64,22 @@ export function FilePickerModal({ fileKind, title, pickedKeys, onPick, onClose }
   useEffect(() => {
     if (!repo) return;
     let active = true;
-    setStatus({ kind: 'loading' });
     setCurrent('');
+    setRefreshError(null);
+
+    const cached = readCachedEntries('picker', repo.repoId);
+    if (cached) {
+      Promise.all([import('../../lib/drive/driveTree'), import('../../lib/drive/driveDocuments')]).then(
+        ([{ listingOf }, { entriesToDocuments }]) => {
+          if (!active) return;
+          setDocs(entriesToDocuments(cached.entries, repo.repoId, new Date().toISOString()));
+          setEmptyFolders(listingOf(cached.entries).folders);
+          setStatus({ kind: 'ready' });
+        },
+      );
+    } else {
+      setStatus({ kind: 'loading' });
+    }
 
     const load = Promise.all([import('../../lib/drive/driveToken'), import('../../lib/drive/driveClient'), import('../../lib/drive/driveTree'), import('../../lib/drive/driveDocuments')]).then(
       async ([{ driveContext }, { DRIVE_ROOT_MISSING, listDriveTree }, { buildRepoEntries, listingOf }, { entriesToDocuments }]) => {
@@ -72,6 +88,7 @@ export function FilePickerModal({ fileKind, title, pickedKeys, onPick, onClose }
           throw new Error(DRIVE_ROOT_MISSING);
         }
         const entries = buildRepoEntries(files, repo.repoId);
+        writeCachedEntries('picker', repo.repoId, { entries, write: false });
         return { docs: entriesToDocuments(entries, repo.repoId, new Date().toISOString()), folders: listingOf(entries).folders };
       }
     );
@@ -81,13 +98,19 @@ export function FilePickerModal({ fileKind, title, pickedKeys, onPick, onClose }
         if (!active) return;
         setDocs(loaded.docs);
         setEmptyFolders(loaded.folders);
+        setRefreshError(null);
         setStatus({ kind: 'ready' });
       })
       .catch((err) => {
         if (!active) return;
-        setDocs([]);
-        setEmptyFolders([]);
-        setStatus({ kind: 'error', message: describeDriveError(err, 'Nạp kho lưu trữ') });
+        const msg = describeDriveError(err, 'Nạp kho lưu trữ');
+        if (cached) {
+          setRefreshError(msg);
+        } else {
+          setDocs([]);
+          setEmptyFolders([]);
+          setStatus({ kind: 'error', message: msg });
+        }
       });
     return () => {
       active = false;
@@ -99,7 +122,7 @@ export function FilePickerModal({ fileKind, title, pickedKeys, onPick, onClose }
   const message =
     status.kind === 'no_repo'
       ? `Chưa có kho ${kindLabel}. Liên hệ Master Admin để tạo kho ${kindLabel}.`
-      : archiveStatusMessage(status, false);
+      : archiveStatusMessage(status, false) || refreshError;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60">

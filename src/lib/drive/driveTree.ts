@@ -93,3 +93,115 @@ export function findEntryByPath(entries: readonly DriveEntry[], path: string): D
   const wanted = path.replace(/^\/+|\/+$/g, '').toLowerCase();
   return entries.find((e) => e.path.toLowerCase() === wanted) ?? null;
 }
+
+const dirOfPath = (path: string) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
+const baseOfPath = (path: string) => path.slice(path.lastIndexOf('/') + 1);
+const joinRelPath = (dir: string, name: string) => (dir ? `${dir}/${name}` : name);
+
+/** Sắp lại cây theo thứ tự duyệt chiều rộng và tên tự nhiên từng thư mục, khớp với `buildRepoEntries`. */
+export function sortRepoEntries(entries: readonly DriveEntry[]): DriveEntry[] {
+  const byDir = new Map<string, DriveEntry[]>();
+  for (const e of entries) {
+    const dir = dirOfPath(e.path).toLowerCase();
+    const list = byDir.get(dir);
+    if (list) list.push(e);
+    else byDir.set(dir, [e]);
+  }
+  const out: DriveEntry[] = [];
+  const queue = [''];
+  const seen = new Set<string>(['']);
+  for (let head = 0; head < queue.length; head++) {
+    const dir = queue[head];
+    const kids = [...(byDir.get(dir) ?? [])].sort(
+      (a, b) => compareNames(a.name, b.name) || a.id.localeCompare(b.id),
+    );
+    for (const item of kids) {
+      out.push(item);
+      if (item.isFolder) {
+        const key = item.path.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          queue.push(key);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** Chuyển một `DriveFile` mới tạo/tải lên thành `DriveEntry` tại đường dẫn `path`. */
+export function driveFileToEntry(file: DriveFile, path: string): DriveEntry {
+  const isFolder = file.mimeType === DRIVE_FOLDER_MIME;
+  const target = exportTargetOf(file.mimeType);
+  return {
+    id: file.id,
+    name: baseOfPath(path),
+    path,
+    isFolder,
+    size: file.size,
+    modifiedTime: file.modifiedTime,
+    mimeType: target ? target.mimeType : file.mimeType,
+    nativeMimeType: target ? file.mimeType : '',
+  };
+}
+
+/** Gộp hoặc cập nhật các `DriveEntry` mới vào cây hiện tại (trùng ID hoặc đường dẫn thì thay thế), sắp lại đúng thứ tự. */
+export function upsertRepoEntries(entries: readonly DriveEntry[], added: readonly DriveEntry[]): DriveEntry[] {
+  if (added.length === 0) return [...entries];
+  const addedIds = new Set(added.map((a) => a.id));
+  const addedPaths = new Set(added.map((a) => a.path.toLowerCase()));
+  const kept = entries.filter((e) => !addedIds.has(e.id) && !addedPaths.has(e.path.toLowerCase()));
+  return sortRepoEntries([...kept, ...added]);
+}
+
+/** Cập nhật cây sau khi đổi tên một mục tại `path` thành `newName` (nếu là thư mục thì đổi luôn tiền tố của mọi mục con). */
+export function renameRepoEntry(entries: readonly DriveEntry[], path: string, newName: string): DriveEntry[] {
+  const clean = newName.trim();
+  const targetKey = path.replace(/^\/+|\/+$/g, '').toLowerCase();
+  const target = entries.find((e) => e.path.toLowerCase() === targetKey);
+  if (!target || target.name === clean) return [...entries];
+  const newPath = joinRelPath(dirOfPath(target.path), clean);
+  const prefix = `${targetKey}/`;
+  const updated = entries.map((e) => {
+    const low = e.path.toLowerCase();
+    if (low === targetKey) return { ...e, name: clean, path: newPath };
+    if (target.isFolder && low.startsWith(prefix)) {
+      return { ...e, path: `${newPath}/${e.path.slice(target.path.length + 1)}` };
+    }
+    return e;
+  });
+  return sortRepoEntries(updated);
+}
+
+/** Cập nhật cây sau khi di chuyển các mục tại `paths` sang thư mục `destPath` (nếu là thư mục thì mọi mục con đi theo). */
+export function moveRepoEntries(entries: readonly DriveEntry[], paths: readonly string[], destPath: string): DriveEntry[] {
+  const dest = destPath.replace(/^\/+|\/+$/g, '');
+  let current = [...entries];
+  for (const rawPath of paths) {
+    const key = rawPath.replace(/^\/+|\/+$/g, '').toLowerCase();
+    const target = current.find((e) => e.path.toLowerCase() === key);
+    if (!target) continue;
+    const newPath = joinRelPath(dest, target.name);
+    if (newPath.toLowerCase() === key) continue;
+    const prefix = `${key}/`;
+    current = current.map((e) => {
+      const low = e.path.toLowerCase();
+      if (low === key) return { ...e, path: newPath };
+      if (target.isFolder && low.startsWith(prefix)) {
+        return { ...e, path: `${newPath}/${e.path.slice(target.path.length + 1)}` };
+      }
+      return e;
+    });
+  }
+  return sortRepoEntries(current);
+}
+
+/** Cập nhật cây sau khi xóa các mục tại `paths` vào thùng rác (thư mục bị xóa thì mọi mục bên trong cũng bị gỡ). */
+export function removeRepoEntries(entries: readonly DriveEntry[], paths: readonly string[]): DriveEntry[] {
+  const keys = paths.map((p) => p.replace(/^\/+|\/+$/g, '').toLowerCase()).filter(Boolean);
+  if (keys.length === 0) return [...entries];
+  return entries.filter((e) => {
+    const low = e.path.toLowerCase();
+    return !keys.some((k) => low === k || low.startsWith(`${k}/`));
+  });
+}

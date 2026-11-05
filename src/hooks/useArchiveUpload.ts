@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { topLevelNames, type UploadFailure, type UploadItem, type UploadProgress } from '../lib/uploadItems';
 import { uploadItemsToDrive, type UploadFileEvent } from '../lib/drive/driveUpload';
 import { applyDuplicateChoices, findDuplicates, type DuplicateChoice, type DuplicateMatch } from '../lib/drive/driveDuplicates';
+import { upsertRepoEntries } from '../lib/drive/driveTree';
 import type { DriveContext, DriveEntry } from '../lib/drive/driveTypes';
 import { createSpeedMeter, type SpeedMeter } from '../lib/speedMeter';
 
@@ -59,7 +60,11 @@ function summarize(rows: readonly UploadFileRow[], names: string[], skipped: str
 }
 
 /** Trạng thái một lần upload nhiều tệp/folder: tiến độ, kết quả, lỗi từng tệp, hủy và thử lại từng tệp, ghi đè tệp trùng. */
-export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => void | Promise<void>) {
+export function useArchiveUpload(
+  drive: DriveUploadTarget | null,
+  onDone: () => void | Promise<void>,
+  mutateEntries?: (updater: (prev: readonly DriveEntry[]) => DriveEntry[]) => void,
+) {
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [summary, setSummary] = useState<UploadSummary | null>(null);
@@ -132,6 +137,7 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
       const existing = overwrites.size > 0 ? drive.existingPaths.filter((p) => !overwrites.has(lower(p))) : drive.existingPaths;
 
       let uploadedCount = 0;
+      let createdEntries: DriveEntry[] | undefined;
       try {
         const onFile = (event: UploadFileEvent) => {
           const { item, ...rest } = event;
@@ -160,6 +166,7 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
           signalFor: (path) => controllers.current.get(path)?.signal,
         });
         uploadedCount = res.uploaded.length;
+        createdEntries = res.entries;
         flushNow();
         // Thử lại một tệp không đổi thời gian của cả đợt
         if (!append) lastBatch.current.elapsedMs = Date.now() - started;
@@ -176,16 +183,21 @@ export function useArchiveUpload(drive: DriveUploadTarget | null, onDone: () => 
         latestProgress.current = null;
         flushNow();
       }
-      // Nạp lại danh sách chạy sau khi đã mở khóa: liệt kê cả kho có thể chậm, không được giữ nút tải lên chờ nó
+      // Có danh sách mục mới tạo và hàm cập nhật tại chỗ thì ghép ngay vào cây, không phải quét lại cả kho
       if (uploadedCount > 0) {
-        try {
-          await onDone();
-        } catch (err) {
-          setError(`Đã tải lên nhưng chưa nạp lại được danh sách: ${err instanceof Error ? err.message : String(err)}`);
+        if (mutateEntries && createdEntries && createdEntries.length > 0) {
+          const added = createdEntries;
+          mutateEntries((prev) => upsertRepoEntries(prev, added));
+        } else {
+          try {
+            await onDone();
+          } catch (err) {
+            setError(`Đã tải lên nhưng chưa nạp lại được danh sách: ${err instanceof Error ? err.message : String(err)}`);
+          }
         }
       }
     },
-    [drive, onDone, resetBatch, flushNow, scheduleFlush]
+    [drive, onDone, mutateEntries, resetBatch, flushNow, scheduleFlush]
   );
 
   /** Tải lên; có tệp trùng tên với tệp đã có thì dừng lại chờ `resolveDuplicates` hoặc `cancelDuplicates`. */

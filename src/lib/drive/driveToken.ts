@@ -44,17 +44,75 @@ export function parseDriveAccess(raw: unknown): DriveAccess {
 export const isAccessFresh = (access: DriveAccess, now = Date.now()): boolean => access.expiresAt > now + REFRESH_MARGIN_MS;
 
 type Fetcher = (signal: AbortSignal) => Promise<DriveAccess>;
+type TokenStore = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
-/** Giữ token trong bộ nhớ, dùng chung một lần xin cho nhiều lời gọi cùng lúc, xin lại khi gần hết hạn hoặc sau `invalidate`. */
-export function createAccessCache(fetcher: Fetcher, now: () => number = Date.now): Pick<DriveContext, 'getAccess' | 'invalidate'> {
+const SESSION_KEY = 'cm_drive_access';
+
+const defaultSessionStore = (): TokenStore | null => {
+  try {
+    return typeof sessionStorage === 'undefined' ? null : sessionStorage;
+  } catch {
+    return null;
+  }
+};
+
+function readStoredAccess(store: TokenStore | null, now: number): DriveAccess | null {
+  if (!store) return null;
+  try {
+    const raw = store.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const access = parseDriveAccess(JSON.parse(raw));
+    if (isAccessFresh(access, now)) return access;
+    store.removeItem(SESSION_KEY);
+  } catch {
+    try {
+      store.removeItem(SESSION_KEY);
+    } catch {
+      // Bộ nhớ phiên không ghi được: bỏ qua
+    }
+  }
+  return null;
+}
+
+function writeStoredAccess(store: TokenStore | null, access: DriveAccess): void {
+  if (!store) return;
+  try {
+    store.setItem(SESSION_KEY, JSON.stringify(access));
+  } catch {
+    // Đầy hoặc khóa bộ nhớ phiên: vẫn giữ trong RAM
+  }
+}
+
+export function clearStoredAccess(store: TokenStore | null = defaultSessionStore()): void {
+  if (!store) return;
+  try {
+    store.removeItem(SESSION_KEY);
+  } catch {
+    // Bộ nhớ phiên bị khóa: bỏ qua
+  }
+}
+
+/** Giữ token trong bộ nhớ và sessionStorage, dùng chung một lần xin cho nhiều lời gọi cùng lúc, xin lại khi gần hết hạn hoặc sau `invalidate`. */
+export function createAccessCache(
+  fetcher: Fetcher,
+  now: () => number = Date.now,
+  store: TokenStore | null = null,
+): Pick<DriveContext, 'getAccess' | 'invalidate'> {
   let current: DriveAccess | null = null;
   let inflight: Promise<DriveAccess> | null = null;
   return {
     getAccess: async () => {
-      if (current && isAccessFresh(current, now())) return current;
+      const t = now();
+      if (current && isAccessFresh(current, t)) return current;
+      const stored = readStoredAccess(store, t);
+      if (stored) {
+        current = stored;
+        return stored;
+      }
       inflight ??= runWithTimeout(fetcher, 20_000, 'Máy chủ cấp quyền Google Drive phản hồi quá chậm. Thử tải lại kho.')
         .then((a) => {
           current = a;
+          writeStoredAccess(store, a);
           return a;
         })
         .finally(() => {
@@ -64,6 +122,7 @@ export function createAccessCache(fetcher: Fetcher, now: () => number = Date.now
     },
     invalidate: () => {
       current = null;
+      clearStoredAccess(store);
     },
   };
 }
@@ -76,7 +135,7 @@ async function fetchAccessFromFunction(signal: AbortSignal): Promise<DriveAccess
   return parseDriveAccess(res.data);
 }
 
-const shared = createAccessCache(fetchAccessFromFunction);
+const shared = createAccessCache(fetchAccessFromFunction, Date.now, defaultSessionStore());
 
 /** Ngữ cảnh dùng chung cho cả ứng dụng: một token cho mọi lời gọi. */
 export const driveContext: DriveContext = { getAccess: shared.getAccess, invalidate: shared.invalidate };

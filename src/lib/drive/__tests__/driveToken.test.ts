@@ -90,6 +90,30 @@ describe('createAccessCache', () => {
     await expect(cache.getAccess()).rejects.toThrow('Chưa đặt secret');
     await expect(cache.getAccess()).resolves.toBeDefined();
   });
+
+  it('lưu token vào session store để lần mở trang sau dùng ngay không chờ Edge Function; invalidate thì xóa', async () => {
+    const map = new Map<string, string>();
+    const store = {
+      getItem: (k: string) => map.get(k) ?? null,
+      setItem: (k: string, v: string) => void map.set(k, v),
+      removeItem: (k: string) => void map.delete(k),
+    };
+    const fetcher1 = vi.fn(async () => access(10_000_000, 'persisted-tok'));
+    const cache1 = createAccessCache(fetcher1, () => 0, store);
+    expect((await cache1.getAccess()).accessToken).toBe('persisted-tok');
+    expect(fetcher1).toHaveBeenCalledTimes(1);
+
+    // Giả lập tải lại trang: tạo cache mới trên cùng store
+    const fetcher2 = vi.fn(async () => access(10_000_000, 'new-tok'));
+    const cache2 = createAccessCache(fetcher2, () => 1_000, store);
+    expect((await cache2.getAccess()).accessToken).toBe('persisted-tok');
+    expect(fetcher2).not.toHaveBeenCalled();
+
+    // Khi invalidate thì xóa cả trong store
+    cache2.invalidate();
+    expect((await cache2.getAccess()).accessToken).toBe('new-tok');
+    expect(fetcher2).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('describeDriveError', () => {

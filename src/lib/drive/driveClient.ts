@@ -85,15 +85,26 @@ const TREE_CONCURRENCY = 4;
  */
 export async function listDriveTree(ctx: DriveContext, rootId: string, signal?: AbortSignal): Promise<DriveFile[]> {
   let root: DriveFile;
+  let firstChildren: DriveFile[];
   try {
-    root = await getDriveFile(ctx, rootId, signal);
+    [root, firstChildren] = await Promise.all([
+      getDriveFile(ctx, rootId, signal),
+      listDriveQuery(ctx, `trashed = false and ('${driveQueryLiteral(rootId)}' in parents)`, signal),
+    ]);
   } catch (err) {
     if (err instanceof DriveApiError && err.status === 404) throw new Error(DRIVE_ROOT_MISSING);
     throw err;
   }
   const out: DriveFile[] = [root];
   const visited = new Set<string>([rootId]);
-  let frontier = [rootId];
+  let frontier: string[] = [];
+  for (const file of firstChildren) {
+    out.push(file);
+    if (file.mimeType === DRIVE_FOLDER_MIME && !visited.has(file.id)) {
+      visited.add(file.id);
+      frontier.push(file.id);
+    }
+  }
   while (frontier.length > 0) {
     const batches: string[][] = [];
     for (let i = 0; i < frontier.length; i += TREE_BATCH) batches.push(frontier.slice(i, i + TREE_BATCH));

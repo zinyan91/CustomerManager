@@ -78,6 +78,21 @@ export function useArchive(scope: StorageScope = 'storage') {
     setFolders(listingOf(entries).folders);
   }, []);
 
+  /** Cập nhật cục bộ danh sách mục của kho đang mở và lưu lại vào cache mà không cần quét lại toàn bộ cây Drive. */
+  const mutateEntries = useCallback(
+    (updater: (prev: readonly DriveEntry[]) => DriveEntry[]) => {
+      if (!driveRoot) return;
+      setDriveEntries((prev) => {
+        const next = updater(prev);
+        setDocuments(entriesToDocuments(next, driveRoot, new Date().toISOString()));
+        setFolders(listingOf(next).folders);
+        if (userId) writeCachedEntries(userId, driveRoot, { entries: next, write: driveWrite });
+        return next;
+      });
+    },
+    [driveRoot, userId, driveWrite],
+  );
+
   /**
    * Nạp kho. Lần đầu mở một kho mà trong máy có bản đã lưu thì hiện ngay bản đó rồi lấy bản mới từ Drive ở phía sau
    * (không chờ đọc cây thư mục trên Drive). Lấy bản mới lỗi thì giữ danh sách đang hiện và báo lỗi riêng, không xóa trắng.
@@ -172,6 +187,7 @@ export function useArchive(scope: StorageScope = 'storage') {
     documents,
     setDocuments,
     folders,
+    mutateEntries,
     status,
     reload: refresh,
     reloadRepos,

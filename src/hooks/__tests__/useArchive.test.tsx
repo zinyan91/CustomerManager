@@ -192,6 +192,24 @@ describe('useArchive: không có kho', () => {
     expect(result.current.documents).toHaveLength(2);
   });
 
+  it('mutateEntries cập nhật ngay danh sách mục, tài liệu, thư mục và bản lưu trong máy mà không gọi lại Drive', async () => {
+    const { result } = renderHook(() => useArchive('storage'));
+    await waitFor(() => expect(result.current.status.kind).toBe('ready'));
+    await waitFor(() => expect(result.current.refreshing).toBe(false));
+    const callsBefore = m.listDrive.mock.calls.length;
+
+    act(() => {
+      result.current.mutateEntries((prev) => [
+        ...prev,
+        { id: 'NEW', name: 'moi.pdf', path: 'VB/moi.pdf', isFolder: false, size: 42, modifiedTime: '2026-10-08T00:00:00Z', mimeType: 'application/pdf', nativeMimeType: '' },
+      ]);
+    });
+
+    expect(m.listDrive).toHaveBeenCalledTimes(callsBefore);
+    expect(result.current.documents.map((d) => d.filePath)).toContain('VB/moi.pdf');
+    expect(readCachedEntries('u1', ROOT)?.entries.map((e) => e.path)).toContain('VB/moi.pdf');
+  });
+
   it('không có repo nào thì báo chưa có repo, không gọi Drive', async () => {
     m.listRepos.mockResolvedValue([]);
     const { result } = renderHook(() => useArchive('storage'));

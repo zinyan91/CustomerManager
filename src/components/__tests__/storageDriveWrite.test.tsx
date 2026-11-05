@@ -46,10 +46,16 @@ async function mount(write = true, seed?: (d: Fake, rootId: string) => void) {
   const entries = buildRepoEntries(await listDriveTree(drive.ctx, root.id), root.id);
   const repo: StorageRepo = { id: 7, name: 'Kho chung', repoId: root.id, kind: 'shared', assignedUserId: null, createdAt: '' };
   reload = vi.fn().mockResolvedValue(undefined);
+  const mutateEntries = vi.fn((updater: (prev: typeof entries) => typeof entries) => {
+    const next = updater((h.archive as { driveEntries: typeof entries }).driveEntries);
+    (h.archive as { driveEntries: typeof entries }).driveEntries = next;
+    (h.archive as { documents: ReturnType<typeof entriesToDocuments> }).documents = entriesToDocuments(next, root.id, '2026-10-08T00:00:00Z');
+    (h.archive as { folders: string[] }).folders = listingOf(next).folders;
+  });
   h.archive = {
     auth: null, allRepos: [repo], repos: [repo], selectedRepo: repo, isDrive: true, driveRoot: root.id, driveEntries: entries, driveWrite: write,
     selectRepo: vi.fn(), config: null, documents: entriesToDocuments(entries, root.id, '2026-10-08T00:00:00Z'), folders: listingOf(entries).folders,
-    status: { kind: 'ready' }, reload, reloadRepos: vi.fn(), setDocuments: vi.fn(),
+    mutateEntries, status: { kind: 'ready' }, reload, reloadRepos: vi.fn(), setDocuments: vi.fn(),
   };
   drive.requests.length = 0;
   return render(<StorageManagementView />);
@@ -95,16 +101,17 @@ describe('Kho Google Drive: quyền', () => {
 });
 
 describe('Kho Google Drive: tải lên', () => {
-  it('chọn tệp thì tải lên gốc kho đúng nội dung rồi nạp lại danh sách', async () => {
+  it('chọn tệp thì tải lên gốc kho đúng nội dung và cập nhật danh sách tại chỗ không cần quét lại cả kho', async () => {
     await mount();
     const input = screen.getByLabelText('Chọn tệp để tải lên') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [new File(['Xin chào'], 'moi.pdf', { type: 'application/pdf' })] } });
 
-    await waitFor(() => expect(reload).toHaveBeenCalled());
+    await waitFor(() => expect(live('moi.pdf')).toHaveLength(1));
     const created = live('moi.pdf');
-    expect(created).toHaveLength(1);
     expect(created[0].parents).toEqual([rootId]);
     expect(new TextDecoder().decode(created[0].bytes)).toBe('Xin chào');
+    expect((h.archive as { mutateEntries: ReturnType<typeof vi.fn> }).mutateEntries).toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it('tệp trùng tên tệp đã có: hỏi trước; chọn giữ cả hai thì lên với tên mới, tệp cũ còn nguyên', async () => {
@@ -183,7 +190,7 @@ describe('Kho Google Drive: tải lên', () => {
 });
 
 describe('Kho Google Drive: thư mục mới', () => {
-  it('chuột phải vùng trống, đặt tên, tạo thư mục thật trong thư mục đang mở', async () => {
+  it('chuột phải vùng trống, đặt tên, tạo thư mục thật trong thư mục đang mở và cập nhật cây tại chỗ', async () => {
     await mount();
     // Chân bảng không có menu riêng nên sự kiện nổi lên khung thả, chính là vùng trống của danh sách
     fireEvent.contextMenu(screen.getByText(/TỔNG CỘNG/));
@@ -194,7 +201,8 @@ describe('Kho Google Drive: thư mục mới', () => {
 
     await waitFor(() => expect(live('Hồ sơ 2026')).toHaveLength(1));
     expect(live('Hồ sơ 2026')[0].parents).toEqual([rootId]);
-    expect(reload).toHaveBeenCalled();
+    expect((h.archive as { mutateEntries: ReturnType<typeof vi.fn> }).mutateEntries).toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
@@ -223,7 +231,7 @@ describe('Kho Google Drive: thư mục mới', () => {
 });
 
 describe('Kho Google Drive: đổi tên', () => {
-  it('đổi tên tệp trên Drive và nạp lại danh sách', async () => {
+  it('đổi tên tệp trên Drive và cập nhật danh sách tại chỗ', async () => {
     await mount();
     fireEvent.contextMenu(row('goc.pdf'));
     fireEvent.click(menuItem('Đổi tên'));
@@ -234,7 +242,8 @@ describe('Kho Google Drive: đổi tên', () => {
 
     await waitFor(() => expect(live('Công văn 01.pdf')).toHaveLength(1));
     expect(live('goc.pdf')).toHaveLength(0);
-    expect(reload).toHaveBeenCalled();
+    expect((h.archive as { mutateEntries: ReturnType<typeof vi.fn> }).mutateEntries).toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it('tên trùng mục khác thì báo trong hộp thoại, không đổi gì', async () => {
@@ -275,7 +284,8 @@ describe('Kho Google Drive: di chuyển', () => {
     fireEvent.click(submit);
 
     await waitFor(() => expect(live('VB')[0].parents).toEqual([live('Rong')[0].id]));
-    expect(reload).toHaveBeenCalled();
+    expect((h.archive as { mutateEntries: ReturnType<typeof vi.fn> }).mutateEntries).toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it('chuyển cả nhóm đã chọn từ thanh công cụ, về gốc kho', async () => {
@@ -313,7 +323,8 @@ describe('Kho Google Drive: xóa vào thùng rác', () => {
     await waitFor(() => expect(drive.byName('goc.pdf')[0].trashed).toBe(true));
     expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Xóa tệp "goc.pdf"?'));
     expect(drive.requests.some((r) => r.method === 'DELETE')).toBe(false);
-    expect(reload).toHaveBeenCalled();
+    expect((h.archive as { mutateEntries: ReturnType<typeof vi.fn> }).mutateEntries).toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it('không xác nhận thì không đụng tới Drive', async () => {
@@ -368,7 +379,8 @@ describe('Kho Google Drive: sao chép và dán trong cùng Drive', () => {
     const copy = live('goc.pdf').find((f) => f.parents[0] === live('Rong')[0].id)!;
     expect(new TextDecoder().decode(copy.bytes)).toBe('GOC');
     expect(drive.requests.some((r) => r.url.includes('alt=media') || r.url.includes('/upload/'))).toBe(false);
-    expect(reload).toHaveBeenCalled();
+    expect((h.archive as { mutateEntries: ReturnType<typeof vi.fn> }).mutateEntries).toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it('dán thư mục: tạo lại cấu trúc thư mục ở đích và chép mọi tệp bên trong', async () => {

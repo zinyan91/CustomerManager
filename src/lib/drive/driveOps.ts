@@ -2,7 +2,8 @@ import type { PasteFile } from '../storageClipboard';
 import { joinArchivePath } from '../archivePath';
 import { copyDriveFile, createDriveFolder, ensureDriveFolderPath, moveDriveFile, newFolderPathCache, renameDriveFile, trashDriveFile } from './driveClient';
 import { exportTargetOf } from './driveExport';
-import type { DriveContext, DriveEntry } from './driveTypes';
+import { driveFileToEntry } from './driveTree';
+import { DRIVE_FOLDER_MIME, type DriveContext, type DriveEntry } from './driveTypes';
 
 export const MAX_ENTRY_NAME_LENGTH = 255;
 const COPY_CONCURRENCY = 3;
@@ -137,6 +138,7 @@ export async function trashPaths(ctx: DriveContext, index: EntryIndex, paths: re
 
 export interface CopyResult {
   copied: string[];
+  entries?: DriveEntry[];
   failed: Array<{ path: string; error: string }>;
 }
 
@@ -154,6 +156,7 @@ export async function copyFilesInto(
   knownFolders?: ReadonlyMap<string, string>,
 ): Promise<CopyResult> {
   const result: CopyResult = { copied: [], failed: [] };
+  const createdEntries = new Map<string, DriveEntry>();
   const folderCache = newFolderPathCache(knownFolders);
   const queue = [...files];
   let done = 0;
@@ -164,8 +167,24 @@ export async function copyFilesInto(
       const target = joinArchivePath(destFolder, f.relativePath);
       try {
         if (!f.fileId) throw new DriveOpError(`Tệp "${baseOf(f.sourcePath)}" thiếu mã tệp Google Drive.`);
-        const parentId = await ensureDriveFolderPath(ctx, rootId, dirOf(target), folderCache);
-        await copyDriveFile(ctx, f.fileId, parentId, baseOf(target));
+        const dir = dirOf(target);
+        const parentId = await ensureDriveFolderPath(ctx, rootId, dir, folderCache);
+        if (dir) {
+          let walked = '';
+          for (const seg of dir.split('/').filter(Boolean)) {
+            walked = walked ? `${walked}/${seg}` : seg;
+            if (!knownFolders?.has(walked) && !createdEntries.has(lower(walked))) {
+              const fid = await folderCache.get(walked);
+              if (fid) {
+                createdEntries.set(lower(walked), {
+                  id: fid, name: seg, path: walked, isFolder: true, size: 0, modifiedTime: new Date().toISOString(), mimeType: DRIVE_FOLDER_MIME, nativeMimeType: '',
+                });
+              }
+            }
+          }
+        }
+        const copiedFile = await copyDriveFile(ctx, f.fileId, parentId, baseOf(target));
+        createdEntries.set(lower(target), driveFileToEntry(copiedFile, target));
         result.copied.push(target);
       } catch (err) {
         result.failed.push({ path: target, error: err instanceof DriveOpError ? err.message : describe(err, `Sao chép "${baseOf(f.sourcePath)}"`) });
@@ -174,5 +193,6 @@ export async function copyFilesInto(
     }
   };
   await Promise.all(Array.from({ length: Math.min(COPY_CONCURRENCY, files.length) }, worker));
+  if (createdEntries.size > 0) result.entries = [...createdEntries.values()];
   return result;
 }

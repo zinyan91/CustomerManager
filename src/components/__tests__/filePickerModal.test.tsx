@@ -23,6 +23,7 @@ const repo = (over: Partial<StorageRepo>): StorageRepo => ({
 });
 
 beforeEach(() => {
+  localStorage.clear();
   drive = createFakeDrive();
   h.ctx = drive.ctx;
   bm = drive.seedFolder('Biểu mẫu');
@@ -121,5 +122,20 @@ describe('FilePickerModal', () => {
     open(vi.fn(), 'goc');
     expect((await screen.findByRole('alert')).textContent).toMatch(/Chưa có kho Văn thư/);
     expect(drive.requests).toHaveLength(0);
+  });
+
+  it('mở lại lần hai: hiện ngay danh sách từ bản lưu trong máy mà không phải đợi Drive quét xong', async () => {
+    drive.seedFile('mau-nhanh.docx', bm.id);
+    const first = open();
+    expect(await screen.findByText('mau-nhanh.docx')).toBeTruthy();
+    first.unmount();
+
+    // Lần mở thứ hai: giả lập mạng Drive chậm (chưa trả lời ngay)
+    h.ctx = {
+      ...drive.ctx,
+      fetchFn: () => new Promise<Response>(() => {}),
+    };
+    open();
+    expect(await screen.findByText('mau-nhanh.docx')).toBeTruthy();
   });
 });

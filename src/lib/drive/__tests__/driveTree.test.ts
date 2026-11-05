@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { exportTargetOf, isListable, isNativeMime } from '../driveExport';
-import { buildRepoEntries, findEntryByPath, listingOf } from '../driveTree';
+import { buildRepoEntries, driveFileToEntry, findEntryByPath, listingOf, moveRepoEntries, removeRepoEntries, renameRepoEntry, upsertRepoEntries } from '../driveTree';
 import { DRIVE_FOLDER_MIME, type DriveFile } from '../driveTypes';
 
 let counter = 0;
@@ -118,5 +118,43 @@ describe('findEntryByPath', () => {
     expect(findEntryByPath(entries, '/vb/a.pdf/')?.id).toBe('X');
     expect(findEntryByPath(entries, 'VB')?.isFolder).toBe(true);
     expect(findEntryByPath(entries, 'khong-co')).toBeNull();
+  });
+});
+
+describe('biến đổi cây kho tại chỗ (incremental tree mutations)', () => {
+  const seed = () =>
+    buildRepoEntries(
+      [
+        folder('VB', [ROOT], 'F1'),
+        folder('Con', ['F1'], 'F2'),
+        folder('Rong', [ROOT], 'F3'),
+        file('goc.pdf', [ROOT], { id: 'G' }),
+        file('a.pdf', ['F1'], { id: 'A' }),
+        file('c.pdf', ['F2'], { id: 'C' }),
+      ],
+      ROOT,
+    );
+
+  it('upsertRepoEntries: thêm tệp/thư mục mới hoặc ghi đè mục cũ, sắp lại đúng thứ tự chiều rộng và tên', () => {
+    const after = upsertRepoEntries(seed(), [
+      driveFileToEntry(folder('Mới', [ROOT], 'FM'), 'Mới'),
+      driveFileToEntry(file('b.pdf', ['F1'], { id: 'B' }), 'VB/b.pdf'),
+    ]);
+    expect(after.map((e) => e.path)).toEqual(['goc.pdf', 'Mới', 'Rong', 'VB', 'VB/a.pdf', 'VB/b.pdf', 'VB/Con', 'VB/Con/c.pdf']);
+  });
+
+  it('renameRepoEntry: đổi tên tệp hoặc thư mục (thư mục kéo theo đường dẫn con)', () => {
+    const renamed = renameRepoEntry(seed(), 'VB', 'Hồ sơ');
+    expect(renamed.map((e) => e.path)).toEqual(['goc.pdf', 'Hồ sơ', 'Rong', 'Hồ sơ/a.pdf', 'Hồ sơ/Con', 'Hồ sơ/Con/c.pdf']);
+  });
+
+  it('moveRepoEntries: di chuyển tệp và thư mục sang đích mới, mục con đi theo', () => {
+    const moved = moveRepoEntries(seed(), ['goc.pdf', 'VB/Con'], 'Rong');
+    expect(moved.map((e) => e.path)).toEqual(['Rong', 'VB', 'Rong/Con', 'Rong/goc.pdf', 'VB/a.pdf', 'Rong/Con/c.pdf']);
+  });
+
+  it('removeRepoEntries: xóa tệp và thư mục khỏi cây (kèm toàn bộ mục con bên trong thư mục)', () => {
+    const rest = removeRepoEntries(seed(), ['goc.pdf', 'VB']);
+    expect(rest.map((e) => e.path)).toEqual(['Rong']);
   });
 });

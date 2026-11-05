@@ -4,7 +4,8 @@ import type { UploadFailure, UploadProgress, UploadResult } from '../uploadItems
 import { MULTIPART_MAX_BYTES, ensureDriveFolderPath, newFolderPathCache, updateDriveFile, uploadDriveFile, uploadSmallDriveFile } from './driveClient';
 import { describeDriveError } from './driveErrors';
 import { baseOf, dirOf } from './driveOps';
-import type { DriveContext } from './driveTypes';
+import { driveFileToEntry } from './driveTree';
+import { DRIVE_FOLDER_MIME, type DriveContext, type DriveEntry, type DriveFile } from './driveTypes';
 
 const UPLOAD_CONCURRENCY = 6;
 
@@ -79,6 +80,8 @@ function freeName(name: string, takenLower: ReadonlySet<string>): string {
 /** Kết quả tải lên kèm mã Drive của từng tệp đã lên, để văn bản tham chiếu theo mã. */
 export interface DriveUploadResult extends UploadResult {
   files: Array<{ path: string; fileId: string }>;
+  /** Các mục (tệp và thư mục con mới tạo) để cập nhật ngay vào cây kho mà không cần quét lại Drive. */
+  entries?: DriveEntry[];
   /** Tệp người dùng hủy (không tính là lỗi). */
   cancelled: string[];
 }
@@ -101,6 +104,7 @@ export async function uploadItemsToDrive(
   const planned = planDriveUploads(items, targetFolder, existingPaths);
   const uploaded: string[] = [];
   const created: Array<{ path: string; fileId: string }> = [];
+  const createdEntries = new Map<string, DriveEntry>();
   const failed: UploadFailure[] = [];
   const cancelled: string[] = [];
   const folderCache = newFolderPathCache(knownFolders);
@@ -126,17 +130,33 @@ export async function uploadItemsToDrive(
         const file = baseOf(job.path) === job.item.file.name ? job.item.file : new File([job.item.file], baseOf(job.path), { type: job.item.file.type });
         const progress = (sent: number) => onFile?.({ path: job.path, size, state: 'run', loaded: sent });
         const overwriteId = options.overwrite?.get(lower(job.path));
-        let fileId: string;
+        let uploadedFile: DriveFile;
         if (overwriteId) {
-          fileId = (await updateDriveFile(ctx, overwriteId, file, { onProgress: progress, signal })).id;
+          uploadedFile = await updateDriveFile(ctx, overwriteId, file, { onProgress: progress, signal });
         } else {
-          const parentId = await ensureDriveFolderPath(ctx, rootId, dirOf(job.path), folderCache);
-          fileId = size > 0 && size <= MULTIPART_MAX_BYTES
-            ? (await uploadSmallDriveFile(ctx, parentId, file, { signal })).id
-            : (await uploadDriveFile(ctx, parentId, file, { onProgress: progress, signal })).id;
+          const dir = dirOf(job.path);
+          const parentId = await ensureDriveFolderPath(ctx, rootId, dir, folderCache);
+          if (dir) {
+            let walked = '';
+            for (const seg of dir.split('/').filter(Boolean)) {
+              walked = walked ? `${walked}/${seg}` : seg;
+              if (!knownFolders?.has(walked) && !createdEntries.has(lower(walked))) {
+                const fid = await folderCache.get(walked);
+                if (fid) {
+                  createdEntries.set(lower(walked), {
+                    id: fid, name: seg, path: walked, isFolder: true, size: 0, modifiedTime: new Date().toISOString(), mimeType: DRIVE_FOLDER_MIME, nativeMimeType: '',
+                  });
+                }
+              }
+            }
+          }
+          uploadedFile = size > 0 && size <= MULTIPART_MAX_BYTES
+            ? await uploadSmallDriveFile(ctx, parentId, file, { signal })
+            : await uploadDriveFile(ctx, parentId, file, { onProgress: progress, signal });
         }
         uploaded.push(job.path);
-        created.push({ path: job.path, fileId });
+        created.push({ path: job.path, fileId: uploadedFile.id });
+        createdEntries.set(lower(job.path), driveFileToEntry(uploadedFile, job.path));
         onFile?.({ path: job.path, size, state: 'done', loaded: size });
       } catch (err) {
         if (isAbort(err) || signal?.aborted) {
@@ -152,5 +172,5 @@ export async function uploadItemsToDrive(
     }
   };
   await Promise.all(Array.from({ length: Math.min(UPLOAD_CONCURRENCY, planned.length) }, worker));
-  return { uploaded, failed, files: created, cancelled };
+  return { uploaded, failed, files: created, ...(createdEntries.size > 0 ? { entries: [...createdEntries.values()] } : {}), cancelled };
 }

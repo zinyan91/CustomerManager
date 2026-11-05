@@ -64,7 +64,7 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
   const userId = user?.id ?? null;
   const { managedUsers } = useUserScope();
   const {
-    repos, selectedRepo, driveRoot, driveEntries, driveWrite, selectRepo, documents, folders, status, reload, refreshing, refreshError, loadedAt,
+    repos, selectedRepo, driveRoot, driveEntries, driveWrite, selectRepo, documents, folders, mutateEntries, status, reload, refreshing, refreshError, loadedAt,
   } = useArchive(scope);
   const confirm = useConfirm();
   const driveUploadTarget = useMemo<DriveUploadTarget | null>(
@@ -78,8 +78,8 @@ export function StorageManagementView({ scope = 'storage', embedded = false }: S
     () => (driveRoot ? { ctx: driveContext, rootId: driveRoot, entries: driveEntries ?? [] } : null),
     [driveRoot, driveEntries]
   );
-  const upload = useArchiveUpload(driveUploadTarget, reload);
-  const driveOps = useDriveOps(driveOpsTarget, reload);
+  const upload = useArchiveUpload(driveUploadTarget, reload, mutateEntries);
+  const driveOps = useDriveOps(driveOpsTarget, reload, mutateEntries);
   const zipDl = useFolderZipDownload();
   const clipboard = useStorageClipboard();
 

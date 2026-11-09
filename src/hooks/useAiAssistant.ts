@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { AiChatMessage, AiThreadSummary, AiAttachment } from '../types/ai';
 import type { DispatchDocument } from '../types/dispatch';
 import type { CorporateFinancialProfile } from '../types/corporateFinancial';
-import { streamGeminiContent, DEFAULT_AI_MODEL } from '../lib/ai/geminiClient';
+import { streamGeminiContent, DEFAULT_AI_MODEL, type ModelAttempt } from '../lib/ai/geminiClient';
 import { fetchSystemContextData, mentionsCustomers, mentionsDispatch, type SystemContextData } from '../lib/ai/systemContext';
 import { getActiveLiveFinancialProfile, mentionsFinancials } from '../lib/ai/financialContext';
 import { describeAiTiming } from '../lib/ai/aiTiming';
@@ -254,6 +254,7 @@ export function useAiAssistant(userId: string | null = null, assistantOptions: U
 
       const preparedAt = performance.now();
       let firstChunkAt = 0;
+      const attempts: ModelAttempt[] = [];
       let accumulated = '';
       let failed = false;
       let usedFallback = false;
@@ -267,6 +268,7 @@ export function useAiAssistant(userId: string | null = null, assistantOptions: U
           onToolUse: () => {
             usedTools = true;
           },
+          onAttempt: (attempt) => attempts.push(attempt),
         });
         for await (const chunk of stream) {
           if (abortControllerRef.current) break;
@@ -290,6 +292,7 @@ export function useAiAssistant(userId: string | null = null, assistantOptions: U
           totalMs: performance.now() - startedAt,
           files: docs.attachments.length,
           usedTools,
+          attempts,
         }));
 
         if (accumulated.trim()) commitAssistant(accumulated);

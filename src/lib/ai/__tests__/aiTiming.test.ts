@@ -9,6 +9,17 @@ describe('describeAiTiming', () => {
       .toBe('[AI] chuẩn bị 2.3 giây · Gemini trả chữ đầu sau 1.2 giây · tổng 6.1 giây · 2 tệp đính kèm · không gọi công cụ');
     expect(describeAiTiming({ prepareMs: 10, firstChunkMs: null, totalMs: 30, files: 0, usedTools: true })).toContain('chữ đầu sau —');
   });
+
+  it('ghi từng lần thử model để biết thời gian chờ nằm ở model nào', () => {
+    const line = describeAiTiming({
+      prepareMs: 300, firstChunkMs: 33200, totalMs: 41300, files: 0, usedTools: false,
+      attempts: [
+        { model: 'gemini-3.8-flash', ms: 30000, outcome: 'timeout' },
+        { model: 'gemini-3.6-flash', ms: 3100, outcome: 'ok', note: 'gửi lại vì bị từ chối cấu hình suy nghĩ' },
+      ],
+    });
+    expect(line).toContain('model: gemini-3.8-flash quá hạn chờ sau 30.0 giây → gemini-3.6-flash trả lời sau 3.1 giây (gửi lại vì bị từ chối cấu hình suy nghĩ)');
+  });
 });
 
 describe('nhận biết loại câu hỏi', () => {

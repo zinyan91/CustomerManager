@@ -172,6 +172,8 @@ export interface StreamExtras {
   tools?: boolean;
   /** Ép mức suy nghĩ; bỏ trống thì tự chọn theo câu hỏi và tệp đính kèm. */
   depth?: ReasoningDepth;
+  /** Báo từng lần thử model (thời gian, kết quả) để đo chậm ở đâu. */
+  onAttempt?: (attempt: ModelAttempt) => void;
 }
 
 /** Nội dung gửi Gemini: chữ và tệp của từng tin, cộng tệp bổ sung vào tin người dùng cuối. */
@@ -211,9 +213,27 @@ export function thinkingConfigFor(model: string, depth: ReasoningDepth = 'quick'
 
 // Model đã trả 404 trong phiên này thì không thử lại ở mỗi câu hỏi (mỗi lần thử là một vòng mạng)
 const unavailableModels = new Set<string>();
+// Model vừa quá hạn chờ bị xếp cuối một thời gian: không thì câu hỏi nào cũng mất trọn hạn chờ trước khi chuyển model
+const slowModelsUntil = new Map<string, number>();
+export const SLOW_MODEL_PENALTY_MS = 10 * 60_000;
 
 export function resetModelMemory(): void {
   unavailableModels.clear();
+  slowModelsUntil.clear();
+}
+
+export function orderCandidateModels(models: string[], now: number = Date.now()): string[] {
+  const usable = Array.from(new Set(models)).filter((m) => !unavailableModels.has(m));
+  const isSlow = (m: string) => (slowModelsUntil.get(m) ?? 0) > now;
+  return [...usable.filter((m) => !isSlow(m)), ...usable.filter(isSlow)];
+}
+
+export interface ModelAttempt {
+  model: string;
+  ms: number;
+  outcome: 'ok' | 'timeout' | 'error';
+  /** Lý do khi không thành công, hoặc ghi chú như phải gửi lại vì bị từ chối cấu hình suy nghĩ. */
+  note?: string;
 }
 
 export const HEADER_TIMEOUT_MS = 30_000;
@@ -223,7 +243,7 @@ export const HEADER_TIMEOUT_WITH_FILES_MS = 90_000;
  * Mở luồng SSE. Hạn chờ chỉ áp cho tới khi có phản hồi đầu: dùng AbortSignal.timeout sẽ cắt ngang
  * cả luồng trả lời dài. Trả null nếu model không dùng được (đã ghi nhớ nếu là 404).
  */
-type OpenResult = { response: Response } | { failure: string; modelGone: boolean };
+type OpenResult = ({ response: Response } | { failure: string; modelGone: boolean }) & { retriedWithoutThinking?: boolean };
 
 async function openStream(model: string, apiKey: string, payload: any, timeoutMs: number, depth: ReasoningDepth): Promise<OpenResult> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
@@ -240,9 +260,13 @@ async function openStream(model: string, apiKey: string, payload: any, timeoutMs
   const thinking = thinkingConfigFor(model, depth);
   let res = await post(thinking ? { ...payload, generationConfig: { ...payload.generationConfig, thinkingConfig: thinking } } : payload);
   // Cấu hình thinking bị từ chối thì thử lại đúng model đó không kèm thinking
-  if (res.status === 400 && thinking) res = await post(payload);
+  let retriedWithoutThinking = false;
+  if (res.status === 400 && thinking) {
+    retriedWithoutThinking = true;
+    res = await post(payload);
+  }
   if (res.status === 404) unavailableModels.add(model);
-  if (res.ok && res.body) return { response: res };
+  if (res.ok && res.body) return { response: res, retriedWithoutThinking };
   const detail = await res.text().then((text) => {
     try {
       return String((JSON.parse(text) as { error?: { message?: string } }).error?.message ?? '');
@@ -250,7 +274,7 @@ async function openStream(model: string, apiKey: string, payload: any, timeoutMs
       return '';
     }
   }, () => '');
-  return { failure: describeGeminiFailure(res.status, detail), modelGone: res.status === 404 };
+  return { failure: describeGeminiFailure(res.status, detail), modelGone: res.status === 404, retriedWithoutThinking };
 }
 
 async function* readTurn(response: Response): AsyncGenerator<TurnChunk> {
@@ -305,7 +329,7 @@ export async function* streamGeminiContent(
 ): AsyncGenerator<string, void, unknown> {
   const apiKey = getGeminiApiKey();
 
-  const candidateModels = Array.from(new Set([model, ...FALLBACK_AI_MODELS])).filter((m) => !unavailableModels.has(m));
+  const candidateModels = orderCandidateModels([model, ...FALLBACK_AI_MODELS]);
   const contents = buildContents(messages, extras.attachments);
 
   const lastQuestion = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
@@ -370,17 +394,23 @@ ${docContext}`;
   if (apiKey) {
     let modelGone = '';
     for (const cand of candidateModels) {
+      const t0 = Date.now();
       try {
         const opened = await openStream(cand, apiKey, payload, timeoutMs, depth);
+        const note = opened.retriedWithoutThinking ? 'gửi lại vì bị từ chối cấu hình suy nghĩ' : undefined;
         if ('response' in opened) {
+          extras.onAttempt?.({ model: cand, ms: Date.now() - t0, outcome: 'ok', note });
           response = opened.response;
           chosenModel = cand;
           break;
         }
+        extras.onAttempt?.({ model: cand, ms: Date.now() - t0, outcome: 'error', note: [note, opened.failure].filter(Boolean).join('; ') });
         if (opened.modelGone) modelGone ||= opened.failure;
         else failure ||= opened.failure;
       } catch (err) {
         const timedOut = err instanceof Error && err.name === 'AbortError';
+        if (timedOut) slowModelsUntil.set(cand, Date.now() + SLOW_MODEL_PENALTY_MS);
+        extras.onAttempt?.({ model: cand, ms: Date.now() - t0, outcome: timedOut ? 'timeout' : 'error', note: timedOut ? undefined : 'mất kết nối' });
         failure ||= timedOut
           ? `Gemini không phản hồi sau ${Math.round(timeoutMs / 1000)} giây. Thử lại, hoặc gửi ít tệp hơn.`
           : 'Không kết nối được tới Gemini. Kiểm tra mạng rồi thử lại.';

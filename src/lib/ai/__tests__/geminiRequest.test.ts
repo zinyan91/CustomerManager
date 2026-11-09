@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import type { AiAttachment, AiChatMessage } from '../../../types/ai';
-import { AiUnavailableError, MSG_GEMINI_NOT_CONFIGURED, buildContents, describeGeminiFailure, resetModelMemory, streamGeminiContent, thinkingConfigFor, reasoningDepthFor, SYSTEM_INSTRUCTION } from '../geminiClient';
+import { AiUnavailableError, MSG_GEMINI_NOT_CONFIGURED, buildContents, describeGeminiFailure, resetModelMemory, streamGeminiContent, thinkingConfigFor, reasoningDepthFor, SYSTEM_INSTRUCTION, orderCandidateModels, SLOW_MODEL_PENALTY_MS, type ModelAttempt } from '../geminiClient';
 import { mentionsCustomers } from '../systemContext';
 
 const msg = (id: string, role: AiChatMessage['role'], content: string, attachments?: AiAttachment[]): AiChatMessage => ({
@@ -119,6 +119,41 @@ describe('streamGeminiContent khi Gemini không dùng được', () => {
     bodies.length = 0;
     for await (const _ of streamGeminiContent([msg('2', 'user', 'Xin chào')], undefined, 'gemini-3.8-flash', undefined, { tools: false })) { /* đọc hết */ }
     expect(bodies[0].generationConfig).toMatchObject({ maxOutputTokens: 4096, thinkingConfig: { thinkingLevel: 'low' } });
+  });
+
+  it('model treo quá hạn chờ: chuyển model, báo từng lần thử, câu sau hỏi model khác trước; hết hạn phạt thì xếp lại như cũ', async () => {
+    vi.useFakeTimers();
+    try {
+      const calls: string[] = [];
+      vi.stubGlobal('fetch', vi.fn((url: string, init: RequestInit) => {
+        const model = decodeURIComponent(url.split('/models/')[1].split(':')[0]);
+        calls.push(model);
+        if (model === 'gemini-3.8-flash') {
+          return new Promise((_, reject) => init.signal!.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
+        }
+        return Promise.resolve(sse('Được'));
+      }));
+      const attempts: ModelAttempt[] = [];
+      const run = async () => {
+        let out = '';
+        for await (const c of streamGeminiContent([msg('1', 'user', 'Xin chào')], undefined, 'gemini-3.8-flash', undefined, { tools: false, onAttempt: (a) => attempts.push(a) })) out += c;
+        return out;
+      };
+      const first = run();
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(await first).toBe('Được');
+      expect(attempts.map((a) => [a.model, a.outcome])).toEqual([['gemini-3.8-flash', 'timeout'], ['gemini-3.6-flash', 'ok']]);
+      expect(attempts[0].ms).toBeGreaterThanOrEqual(30_000);
+
+      calls.length = 0;
+      expect(await run()).toBe('Được');
+      expect(calls).toEqual(['gemini-3.6-flash']);
+
+      vi.setSystemTime(Date.now() + SLOW_MODEL_PENALTY_MS + 1);
+      expect(orderCandidateModels(['gemini-3.8-flash', 'gemini-3.6-flash'])[0]).toBe('gemini-3.8-flash');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('mất mạng: báo không kết nối được', async () => {

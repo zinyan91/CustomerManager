@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { calcPrepaymentAnalysis } from '../prepaymentAnalysis';
+import {
+  calcPrepaymentAnalysis,
+  penaltyPercentForLoanYear,
+  DEFAULT_PREPAYMENT_PENALTY_BY_YEAR,
+  PREPAYMENT_FEE_YEARS,
+} from '../prepaymentAnalysis';
 
 describe('calcPrepaymentAnalysis', () => {
   it('tính phí phạt và lãi tiết kiệm khi tất toán 100% (Gốc đều)', () => {
@@ -10,10 +15,7 @@ describe('calcPrepaymentAnalysis', () => {
       remainingTenorMonths: 60,
       repayMethod: 'equal_principal',
       loanAgeYear: 2,
-      penaltyYear1: 2.0,
-      penaltyYear2: 1.5,
-      penaltyYear3: 1.0,
-      penaltyYear4Plus: 0.0,
+      penaltyByYear: [2.0, 1.5, 1.0, 0.5, 0.25],
     });
 
     expect(res.currentBalance).toBe(800_000_000);
@@ -99,5 +101,43 @@ describe('calcPrepaymentAnalysis', () => {
     expect(res.penaltyFee).toBe(7_500_000);
     expect(res.totalInterestSaved).toBeGreaterThan(0);
     expect(res.netSavings).toBe(res.totalInterestSaved - 7_500_000);
+  });
+
+  it('biểu phí theo năm: năm 1–5 có phí, từ năm 6 miễn phí', () => {
+    const base = {
+      currentBalance: 1_000_000_000,
+      prepayAmount: 1_000_000_000,
+      rateAnnual: 0.1,
+      remainingTenorMonths: 60,
+      penaltyByYear: [4, 3, 2, 1, 0.5],
+    };
+    expect([1, 2, 3, 4, 5, 6, 7, 10].map(y => calcPrepaymentAnalysis({ ...base, loanAgeYear: y }).penaltyFee))
+      .toEqual([40_000_000, 30_000_000, 20_000_000, 10_000_000, 5_000_000, 0, 0, 0]);
+  });
+
+  it('từ năm 6 miễn phí kể cả khi có mức phí tối thiểu', () => {
+    const res = calcPrepaymentAnalysis({
+      currentBalance: 100_000_000,
+      prepayAmount: 100_000_000,
+      rateAnnual: 0.1,
+      remainingTenorMonths: 12,
+      loanAgeYear: 6,
+      minPenaltyFee: 500_000,
+    });
+    expect(res.activePenaltyPercent).toBe(0);
+    expect(res.penaltyFee).toBe(0);
+  });
+
+  it('mặc định theo biểu phí chương trình 4% · 3% · 2% · 1% · 0,5%', () => {
+    expect(PREPAYMENT_FEE_YEARS).toBe(5);
+    expect(DEFAULT_PREPAYMENT_PENALTY_BY_YEAR).toEqual([4, 3, 2, 1, 0.5]);
+    expect(penaltyPercentForLoanYear(undefined, 1)).toBe(4);
+    expect(penaltyPercentForLoanYear(undefined, 5)).toBe(0.5);
+    expect(penaltyPercentForLoanYear(undefined, 6)).toBe(0);
+  });
+
+  it('năm thiếu trong biểu phí tính là 0, tuổi khoản vay dưới 1 coi là năm 1', () => {
+    expect(penaltyPercentForLoanYear([2, 1], 3)).toBe(0);
+    expect(penaltyPercentForLoanYear([2, 1], 0)).toBe(2);
   });
 });

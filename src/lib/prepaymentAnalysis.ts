@@ -11,10 +11,7 @@ export interface PrepaymentAnalysisInput {
   loanAgeYear?: number;
   disbursementDate?: string;
   prepayDate?: string;
-  penaltyYear1?: number;
-  penaltyYear2?: number;
-  penaltyYear3?: number;
-  penaltyYear4Plus?: number;
+  penaltyByYear?: number[];
   customPenaltyPercent?: number;
   minPenaltyFee?: number;
 }
@@ -40,9 +37,17 @@ export const PREPAYMENT_REPAY_METHOD_LABELS: Record<PrepaymentRepayMethod, strin
   bullet: 'Gốc trả cuối kỳ (Bullet)',
 };
 
-/**
- * Tính toán phân tích trả nợ trước hạn (Phí phạt, Lãi tiết kiệm, Lợi ích ròng)
- */
+export const PREPAYMENT_FEE_YEARS = 5;
+
+export const DEFAULT_PREPAYMENT_PENALTY_BY_YEAR: readonly number[] = [4, 3, 2, 1, 0.5];
+
+export function penaltyPercentForLoanYear(penaltyByYear: readonly number[] | undefined, loanAgeYear: number): number {
+  const year = Math.max(1, Math.floor(loanAgeYear));
+  if (year > PREPAYMENT_FEE_YEARS) return 0;
+  const rates = penaltyByYear ?? DEFAULT_PREPAYMENT_PENALTY_BY_YEAR;
+  return Math.max(0, rates[year - 1] ?? 0);
+}
+
 export function calcPrepaymentAnalysis(input: PrepaymentAnalysisInput): PrepaymentAnalysisResult {
   const currentBalance = Math.max(0, input.currentBalance || 0);
   const requestedPrepay = Math.max(0, input.prepayAmount || 0);
@@ -59,22 +64,13 @@ export function calcPrepaymentAnalysis(input: PrepaymentAnalysisInput): Prepayme
   if (input.feeScheduleType === 'custom_rate') {
     activePenaltyPercent = Math.max(0, input.customPenaltyPercent ?? 0);
   } else {
-    const age = input.loanAgeYear ?? 1;
-    const y1 = input.penaltyYear1 ?? 2.0;
-    const y2 = input.penaltyYear2 ?? 1.5;
-    const y3 = input.penaltyYear3 ?? 1.0;
-    const y4 = input.penaltyYear4Plus ?? 0.0;
-
-    if (age === 1) activePenaltyPercent = y1;
-    else if (age === 2) activePenaltyPercent = y2;
-    else if (age === 3) activePenaltyPercent = y3;
-    else activePenaltyPercent = y4;
+    activePenaltyPercent = penaltyPercentForLoanYear(input.penaltyByYear, input.loanAgeYear ?? 1);
   }
 
   // Tiền phí phạt trả trước hạn
   const rawPenalty = Math.round(actualPrepayAmount * (activePenaltyPercent / 100));
   const minPenalty = Math.max(0, input.minPenaltyFee || 0);
-  const penaltyFee = actualPrepayAmount > 0 && rawPenalty < minPenalty ? minPenalty : rawPenalty;
+  const penaltyFee = actualPrepayAmount > 0 && activePenaltyPercent > 0 && rawPenalty < minPenalty ? minPenalty : rawPenalty;
 
   // Tổng tiền phải thanh toán đợt này
   const totalPaymentRequired = actualPrepayAmount + penaltyFee;

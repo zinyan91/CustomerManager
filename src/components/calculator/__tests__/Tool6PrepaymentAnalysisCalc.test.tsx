@@ -39,6 +39,21 @@ describe('Tool6PrepaymentAnalysisCalc Component', () => {
     expect(screen.getByText('LỢI ÍCH RÒNG')).toBeDefined();
   });
 
+  it('có 5 năm tính phí và từ năm 6 miễn phí', () => {
+    render(<Tool6PrepaymentAnalysisCalc styles={UI} />);
+
+    for (let year = 1; year <= 5; year++) {
+      expect(screen.getByLabelText(`Năm ${year} (%)`)).toBeDefined();
+    }
+    expect(screen.getByText('Miễn phí')).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Từ năm 6' }));
+    expect(screen.getByText('PHÍ PHẠT TRẢ TRƯỚC').parentElement?.parentElement?.textContent).toContain('Tỷ lệ áp dụng: 0%');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Năm 5' }));
+    expect(screen.getByText('PHÍ PHẠT TRẢ TRƯỚC').parentElement?.parentElement?.textContent).toContain('Tỷ lệ áp dụng: 0.5%');
+  });
+
   it('switches fee schedule type between by_year and custom_rate', () => {
     render(<Tool6PrepaymentAnalysisCalc styles={UI} />);
 

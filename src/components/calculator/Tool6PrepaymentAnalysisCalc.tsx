@@ -5,10 +5,17 @@ import type { UiClasses } from '../../lib/uiClasses';
 import { UI } from '../../lib/uiClasses';
 import {
   calcPrepaymentAnalysis,
+  DEFAULT_PREPAYMENT_PENALTY_BY_YEAR,
+  PREPAYMENT_FEE_YEARS,
   PREPAYMENT_REPAY_METHOD_LABELS,
   type PrepaymentRepayMethod,
   type PrepaymentFeeScheduleType,
 } from '../../lib/prepaymentAnalysis';
+
+const LOAN_YEAR_OPTIONS = [
+  ...Array.from({ length: PREPAYMENT_FEE_YEARS }, (_, i) => ({ val: i + 1, label: `Năm ${i + 1}` })),
+  { val: PREPAYMENT_FEE_YEARS + 1, label: `Từ năm ${PREPAYMENT_FEE_YEARS + 1}` },
+];
 
 interface Tool6Props {
   styles?: UiClasses;
@@ -26,10 +33,11 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
   const [customPenaltyPercentStr, setCustomPenaltyPercentStr] = useState<string>('1.5');
   const [minPenaltyFeeStr, setMinPenaltyFeeStr] = useState<string>('0');
 
-  const [penaltyYear1, setPenaltyYear1] = useState<string>('2.0');
-  const [penaltyYear2, setPenaltyYear2] = useState<string>('1.5');
-  const [penaltyYear3, setPenaltyYear3] = useState<string>('1.0');
-  const [penaltyYear4Plus, setPenaltyYear4Plus] = useState<string>('0.0');
+  const [penaltyByYearStr, setPenaltyByYearStr] = useState<string[]>(
+    () => DEFAULT_PREPAYMENT_PENALTY_BY_YEAR.map(rate => String(rate)),
+  );
+  const setPenaltyForYear = (index: number, value: string) =>
+    setPenaltyByYearStr(prev => prev.map((rate, i) => (i === index ? value : rate)));
 
   const balance = parseMoneyInput(balanceStr);
   const prepayAmt = parseMoneyInput(prepayAmountStr);
@@ -45,10 +53,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
       loanAgeYear,
       customPenaltyPercent: parseFloat(customPenaltyPercentStr) || 0,
       minPenaltyFee: parseMoneyInput(minPenaltyFeeStr),
-      penaltyYear1: parseFloat(penaltyYear1) || 0,
-      penaltyYear2: parseFloat(penaltyYear2) || 0,
-      penaltyYear3: parseFloat(penaltyYear3) || 0,
-      penaltyYear4Plus: parseFloat(penaltyYear4Plus) || 0,
+      penaltyByYear: penaltyByYearStr.map(rate => parseFloat(rate) || 0),
     });
   }, [
     balance,
@@ -60,10 +65,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
     loanAgeYear,
     customPenaltyPercentStr,
     minPenaltyFeeStr,
-    penaltyYear1,
-    penaltyYear2,
-    penaltyYear3,
-    penaltyYear4Plus,
+    penaltyByYearStr,
   ]);
 
   const handleFullPrepay = () => {
@@ -294,13 +296,8 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
             <div className="space-y-3">
               <div>
                 <label className={labelCls}>Thời gian hợp đồng đã vay</label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {[
-                    { val: 1, label: 'Năm 1' },
-                    { val: 2, label: 'Năm 2' },
-                    { val: 3, label: 'Năm 3' },
-                    { val: 4, label: 'Năm 4+' },
-                  ].map(item => {
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                  {LOAN_YEAR_OPTIONS.map(item => {
                     const isSel = loanAgeYear === item.val;
                     return (
                       <button
@@ -320,46 +317,23 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {penaltyByYearStr.map((rate, index) => (
+                  <div key={index}>
+                    <label className={labelCls} htmlFor={`prepay-fee-year-${index + 1}`}>Năm {index + 1} (%)</label>
+                    <input
+                      id={`prepay-fee-year-${index + 1}`}
+                      type="number"
+                      step="0.1"
+                      value={rate}
+                      onChange={e => setPenaltyForYear(index, e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
+                ))}
                 <div>
-                  <label className={labelCls}>Năm 1 (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={penaltyYear1}
-                    onChange={e => setPenaltyYear1(e.target.value)}
-                    className={inputCls}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>Năm 2 (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={penaltyYear2}
-                    onChange={e => setPenaltyYear2(e.target.value)}
-                    className={inputCls}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>Năm 3 (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={penaltyYear3}
-                    onChange={e => setPenaltyYear3(e.target.value)}
-                    className={inputCls}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>Từ năm 4+ (%)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={penaltyYear4Plus}
-                    onChange={e => setPenaltyYear4Plus(e.target.value)}
-                    className={inputCls}
-                  />
+                  <span className={labelCls}>Từ năm {PREPAYMENT_FEE_YEARS + 1}</span>
+                  <div className={`${inputCls} text-pos`}>Miễn phí</div>
                 </div>
               </div>
             </div>

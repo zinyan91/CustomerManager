@@ -1,4 +1,4 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useMemo, useState } from 'react';
 import { Building2, Users } from 'lucide-react';
 import { computeReceivableSummary, type ReceivableItem } from '../../lib/debt';
 import type { DebtSortKey } from '../../lib/inventoryLedgerSort';
@@ -6,6 +6,7 @@ import type { SortState } from '../../lib/tableSort';
 import { DebtSummaryCards } from './DebtSummaryCards';
 import { DebtAddPartnerForm } from './DebtAddPartnerForm';
 import { DebtLedgerTable, type DebtKind } from './DebtLedgerTable';
+import { ErrorState, LoadingState } from '../ui/FeedbackStates';
 
 const HEADINGS: Record<DebtKind, { title: string; description: string; added: string }> = {
   receivable: {
@@ -23,13 +24,20 @@ const HEADINGS: Record<DebtKind, { title: string; description: string; added: st
 interface DebtLedgerTabProps {
   kind: DebtKind;
   items: ReceivableItem[];
-  onChange: Dispatch<SetStateAction<ReceivableItem[]>>;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+  onAdd: (item: ReceivableItem) => void;
+  onUpdate: (id: string, patch: Partial<ReceivableItem>) => void;
+  onDelete: (id: string) => void;
   sort: SortState<DebtSortKey> | null;
   onSort: (key: DebtSortKey) => void;
   showNotify: (type: 'success' | 'error', message: string) => void;
 }
 
-export function DebtLedgerTab({ kind, items, onChange, sort, onSort, showNotify }: DebtLedgerTabProps) {
+export function DebtLedgerTab({
+  kind, items, loading, error, onRetry, onAdd, onUpdate, onDelete, sort, onSort, showNotify,
+}: DebtLedgerTabProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const heading = HEADINGS[kind];
   const Icon = kind === 'payable' ? Building2 : Users;
@@ -60,12 +68,14 @@ export function DebtLedgerTab({ kind, items, onChange, sort, onSort, showNotify 
         type={kind}
         itemCount={items.length}
         onAdd={item => {
-          onChange(prev => [item, ...prev]);
+          onAdd(item);
           showNotify('success', `${heading.added}: ${item.name}`);
         }}
         onError={msg => showNotify('error', msg)}
       />
 
+      {error ? <ErrorState title="Không tải được công nợ đã lưu" message={error} onRetry={onRetry} />
+        : loading ? <LoadingState text="Đang tải công nợ…" /> : (
       <DebtLedgerTable
         kind={kind}
         items={filteredItems}
@@ -75,9 +85,10 @@ export function DebtLedgerTab({ kind, items, onChange, sort, onSort, showNotify 
         onSearchChange={setSearchTerm}
         sort={sort}
         onSort={onSort}
-        onUpdate={(id, patch) => onChange(prev => prev.map(it => (it.id === id ? { ...it, ...patch } : it)))}
-        onDelete={id => onChange(prev => prev.filter(it => it.id !== id))}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
       />
+      )}
     </div>
   );
 }

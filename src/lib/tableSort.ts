@@ -33,3 +33,11 @@ export function sortRows<T, K extends string>(
     })
     .map(entry => entry.row);
 }
+
+export function parseSortState<K extends string>(raw: unknown, keys: readonly K[]): SortState<K> | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const { key, direction } = raw as { key?: unknown; direction?: unknown };
+  if (!keys.includes(key as K)) return null;
+  if (direction !== 'asc' && direction !== 'desc') return null;
+  return { key: key as K, direction };
+}

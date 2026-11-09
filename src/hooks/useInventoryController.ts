@@ -8,15 +8,14 @@ import {
   deleteInventoryTemplate, resetInventoryTemplates, fetchInventoryTemplatesFromCloud,
   overwriteInventoryTemplateItems,
 } from '../lib/templateStore';
-import { nextSortState, sortRows, type SortState } from '../lib/tableSort';
-import {
-  INVENTORY_SORT_ACCESSORS, DEBT_SORT_ACCESSORS, type InventorySortKey, type DebtSortKey,
-} from '../lib/inventoryLedgerSort';
+import { sortRows } from '../lib/tableSort';
+import { INVENTORY_SORT_ACCESSORS, DEBT_SORT_ACCESSORS } from '../lib/inventoryLedgerSort';
+import { useInventoryDebts } from './useInventoryDebts';
+import { useInventoryLedgerSorts } from './useInventoryLedgerSorts';
 import {
   fetchInventoryItemsDb, saveInventoryItemDb, saveAllInventoryItemsDb, deleteInventoryItemDb,
 } from '../lib/inventoryDb';
 import { type InventoryCategoryTemplate, type TemplateItem } from '../data/inventoryTemplates';
-import { SAMPLE_RECEIVABLES, type ReceivableItem } from '../lib/debt';
 import {
   buildInventoryLedgerDocHtml, buildInventoryLedgerTabXlsx, buildInventoryLedgerWorkbookXlsx,
   inventoryLedgerFileName, INVENTORY_LEDGER_TITLES, type InventoryLedgerTab,
@@ -45,31 +44,6 @@ export function useInventoryController() {
     const tpl = templates.find(t => t.id === 'htk-lua-gao') || templates[0];
     return tpl ? tpl.items.map(it => ({ ...it, id: nextItemId() })) : [];
   });
-
-  // Accounts Receivable items (TK 131)
-  const [receivables, setReceivables] = useState<ReceivableItem[]>(SAMPLE_RECEIVABLES);
-
-  // Accounts Payable items (TK 331)
-  const [payables, setPayables] = useState<ReceivableItem[]>([
-    {
-      id: 'pay-1',
-      code: 'NCC01',
-      name: 'Công ty TNHH Xi măng Hà Tiên',
-      beginningDebit: 0,
-      beginningCredit: 150000000,
-      occurredDebit: 50000000,
-      occurredCredit: 80000000,
-    },
-    {
-      id: 'pay-2',
-      code: 'NCC02',
-      name: 'Nhà máy Thép Hòa Phát',
-      beginningDebit: 0,
-      beginningCredit: 320000000,
-      occurredDebit: 120000000,
-      occurredCredit: 200000000,
-    },
-  ]);
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -250,13 +224,12 @@ export function useInventoryController() {
     }
   }, [confirm, items, showNotify]);
 
-  const [inventorySort, setInventorySort] = useState<SortState<InventorySortKey> | null>(null);
-  const [receivableSort, setReceivableSort] = useState<SortState<DebtSortKey> | null>(null);
-  const [payableSort, setPayableSort] = useState<SortState<DebtSortKey> | null>(null);
-
-  const toggleInventorySort = useCallback((key: InventorySortKey) => setInventorySort(prev => nextSortState(prev, key)), []);
-  const toggleReceivableSort = useCallback((key: DebtSortKey) => setReceivableSort(prev => nextSortState(prev, key)), []);
-  const togglePayableSort = useCallback((key: DebtSortKey) => setPayableSort(prev => nextSortState(prev, key)), []);
+  const {
+    inventorySort, receivableSort, payableSort,
+    toggleInventorySort, toggleReceivableSort, togglePayableSort,
+  } = useInventoryLedgerSorts();
+  const debts = useInventoryDebts(categoryName, showNotify);
+  const { receivables, payables } = debts;
 
   const sortedItems = useMemo(() => sortRows(items, inventorySort, INVENTORY_SORT_ACCESSORS), [items, inventorySort]);
   const sortedReceivables = useMemo(() => sortRows(receivables, receivableSort, DEBT_SORT_ACCESSORS), [receivables, receivableSort]);
@@ -341,10 +314,7 @@ export function useInventoryController() {
     setRecordDate,
     items,
     setItems,
-    receivables,
-    setReceivables,
-    payables,
-    setPayables,
+    debts,
     searchTerm,
     setSearchTerm,
     notification,

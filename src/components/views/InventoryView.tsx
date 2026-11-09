@@ -31,8 +31,7 @@ export const InventoryView: React.FC = () => {
     setCustomerName,
     recordDate,
     setRecordDate,
-    setReceivables,
-    setPayables,
+    debts,
     searchTerm,
     setSearchTerm,
     notification,
@@ -334,7 +333,12 @@ export const InventoryView: React.FC = () => {
             <DebtLedgerTab
               kind="receivable"
               items={sortedReceivables}
-              onChange={setReceivables}
+              loading={debts.loading}
+              error={debts.error}
+              onRetry={debts.reload}
+              onAdd={item => debts.addDebt('receivable', item)}
+              onUpdate={(id, patch) => debts.updateDebt('receivable', id, patch)}
+              onDelete={id => debts.removeDebt('receivable', id)}
               sort={receivableSort}
               onSort={toggleReceivableSort}
               showNotify={showNotify}
@@ -348,7 +352,12 @@ export const InventoryView: React.FC = () => {
             <DebtLedgerTab
               kind="payable"
               items={sortedPayables}
-              onChange={setPayables}
+              loading={debts.loading}
+              error={debts.error}
+              onRetry={debts.reload}
+              onAdd={item => debts.addDebt('payable', item)}
+              onUpdate={(id, patch) => debts.updateDebt('payable', id, patch)}
+              onDelete={id => debts.removeDebt('payable', id)}
               sort={payableSort}
               onSort={togglePayableSort}
               showNotify={showNotify}

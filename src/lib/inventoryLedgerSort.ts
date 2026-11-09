@@ -30,3 +30,6 @@ export const DEBT_SORT_ACCESSORS: SortAccessors<ReceivableItem, DebtSortKey> = {
   endingDebit: item => computeReceivableItemRow(item).endingDebit,
   endingCredit: item => computeReceivableItemRow(item).endingCredit,
 };
+
+export const INVENTORY_SORT_KEYS = Object.keys(INVENTORY_SORT_ACCESSORS) as InventorySortKey[];
+export const DEBT_SORT_KEYS = Object.keys(DEBT_SORT_ACCESSORS) as DebtSortKey[];

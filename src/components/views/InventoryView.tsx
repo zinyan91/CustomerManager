@@ -251,21 +251,32 @@ export const InventoryView: React.FC = () => {
             <span className="font-bold text-sm text-ink">Quản lý Kiểm kê Hàng tồn kho & Công nợ</span>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={handleExportExcel}
+              type="button"
+              onClick={() => handleExportExcel('tab')}
               className="bg-pos hover:opacity-90 text-white font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-all shadow-xs"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              <span>Xuất Excel</span>
+              <span>Xuất Excel bảng này</span>
             </button>
 
             <button
+              type="button"
+              onClick={() => handleExportExcel('all')}
+              className="border border-pos/40 text-pos hover:bg-pos-soft font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-all"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Xuất Excel cả 3 bảng</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handlePrintHtml}
               className="bg-accent hover:opacity-90 text-accent-ink font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition-all shadow-xs"
             >
               <Printer className="w-4 h-4" />
-              <span>In / Xuất PDF</span>
+              <span>In / Xuất PDF bảng này</span>
             </button>
           </div>
         </div>

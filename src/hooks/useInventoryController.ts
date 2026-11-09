@@ -12,7 +12,10 @@ import {
 } from '../lib/inventoryDb';
 import { type InventoryCategoryTemplate, type TemplateItem } from '../data/inventoryTemplates';
 import { SAMPLE_RECEIVABLES, type ReceivableItem } from '../lib/debt';
-import { buildFullInventoryAndDebtXlsx, buildInventoryDocHtml } from '../lib/inventoryExport';
+import {
+  buildInventoryLedgerDocHtml, buildInventoryLedgerTabXlsx, buildInventoryLedgerWorkbookXlsx,
+  inventoryLedgerFileName, INVENTORY_LEDGER_TITLES, type InventoryLedgerTab,
+} from '../lib/inventoryLedgerExport';
 import { downloadBytes } from '../lib/xlsExport';
 import { MIME_XLSX } from '../lib/xlsxWriter';
 import { printHtmlDoc } from '../lib/printHtmlDoc';
@@ -20,7 +23,7 @@ import { parseMoneyDecimalInput, todayIso } from '../lib/utils';
 import { useConfirm } from '../context/ConfirmContext';
 
 export function useInventoryController() {
-  const [activeSubTab, setActiveSubTab] = useState<'inventory' | 'receivables' | 'payables'>('inventory');
+  const [activeSubTab, setActiveSubTab] = useState<InventoryLedgerTab>('inventory');
 
   // Industry Templates State
   const [templates, setTemplates] = useState<InventoryCategoryTemplate[]>(loadInventoryTemplates);
@@ -252,33 +255,35 @@ export function useInventoryController() {
 
   const summary = useMemo(() => computeInventorySummary(items), [items]);
 
-  const handleExportExcel = useCallback(() => {
+  const exportContext = useMemo(
+    () => ({ categoryName, customerName: customerName.trim() || undefined, recordDate }),
+    [categoryName, customerName, recordDate],
+  );
+  const ledgerData = useMemo(() => ({ items, receivables, payables }), [items, receivables, payables]);
+
+  const handleExportExcel = useCallback((scope: 'tab' | 'all') => {
     try {
-      const bytes = buildFullInventoryAndDebtXlsx(items, receivables, {
-        categoryName,
-        customerName: customerName || 'Khách hàng',
-        recordDate,
-      });
-      const fn = `Bao_Cao_Kiem_Ke_HTK_Va_Cong_No_${categoryName.replace(/\s+/g, '_')}_${recordDate}.xlsx`;
+      const bytes = scope === 'all'
+        ? buildInventoryLedgerWorkbookXlsx(ledgerData, exportContext)
+        : buildInventoryLedgerTabXlsx(activeSubTab, ledgerData, exportContext);
+      const fn = inventoryLedgerFileName(scope === 'all' ? 'all' : activeSubTab, exportContext, 'xlsx');
       downloadBytes(bytes, fn, MIME_XLSX);
-      showNotify('success', `Đã xuất file Excel kiểm kê HTK & Công nợ: ${fn}`);
+      showNotify('success', `Đã xuất file Excel: ${fn}`);
     } catch (err: any) {
       showNotify('error', `Lỗi xuất file Excel: ${err.message}`);
     }
-  }, [categoryName, customerName, recordDate, items, receivables, showNotify]);
+  }, [activeSubTab, ledgerData, exportContext, showNotify]);
 
   const handlePrintHtml = useCallback(() => {
     try {
-      const html = buildInventoryDocHtml(items, {
-        categoryName,
-        customerName: customerName || 'Khách hàng',
-        recordDate,
-      }, receivables);
-      printHtmlDoc(html, `Kiểm kê HTK - ${categoryName}`);
+      const html = buildInventoryLedgerDocHtml(activeSubTab, ledgerData, exportContext);
+      if (!printHtmlDoc(html, INVENTORY_LEDGER_TITLES[activeSubTab])) {
+        showNotify('error', 'Trình duyệt không mở được khung in.');
+      }
     } catch (err: any) {
       showNotify('error', `Lỗi in ấn: ${err.message}`);
     }
-  }, [categoryName, customerName, recordDate, items, receivables, showNotify]);
+  }, [activeSubTab, ledgerData, exportContext, showNotify]);
 
   return {
     activeSubTab,

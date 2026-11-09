@@ -3,8 +3,9 @@ import type { AiChatMessage, AiThreadSummary, AiAttachment } from '../types/ai';
 import type { DispatchDocument } from '../types/dispatch';
 import type { CorporateFinancialProfile } from '../types/corporateFinancial';
 import { streamGeminiContent, DEFAULT_AI_MODEL } from '../lib/ai/geminiClient';
-import { fetchSystemContextData, mentionsCustomers, type SystemContextData } from '../lib/ai/systemContext';
+import { fetchSystemContextData, mentionsCustomers, mentionsDispatch, type SystemContextData } from '../lib/ai/systemContext';
 import { getActiveLiveFinancialProfile, mentionsFinancials } from '../lib/ai/financialContext';
+import { describeAiTiming } from '../lib/ai/aiTiming';
 import { prepareDocContext, lookupSharedAnswer, EMPTY_DOC_CONTEXT, type SharedLookup } from '../lib/ai/docContext';
 import { questionKey, saveCachedAnswer } from '../lib/ai/answerCache';
 import { loadMessages, loadThreads, removeThread, saveMessages, saveThreads } from '../lib/ai/chatStorage';
@@ -205,6 +206,7 @@ export function useAiAssistant(userId: string | null = null, assistantOptions: U
         !hasLiveFinancials &&
         key !== '';
 
+      const startedAt = performance.now();
       setStatusText('Đang tra cứu văn bản...');
       let lookup: SharedLookup | null = null;
       if (shareable && !options.skipCache) {
@@ -229,6 +231,7 @@ export function useAiAssistant(userId: string | null = null, assistantOptions: U
       try {
         const [sys, prepared] = await Promise.all([
           fetchSystemContextData({
+            includeDocs: Boolean(targetDoc) || focusDocIdsRef.current.length > 0 || mentionsDispatch(cleanText),
             includeCustomers: mentionsCustomers(cleanText),
             includeFinancials: hasLiveFinancials || mentionsFinancials(cleanText),
             ...(currentLiveProfile ? { liveFinancialProfile: currentLiveProfile } : {}),
@@ -249,6 +252,8 @@ export function useAiAssistant(userId: string | null = null, assistantOptions: U
       }
       setStatusText(docs.attachments.length > 0 ? 'AI đang đọc nội dung văn bản...' : '');
 
+      const preparedAt = performance.now();
+      let firstChunkAt = 0;
       let accumulated = '';
       let failed = false;
       let usedFallback = false;
@@ -265,6 +270,7 @@ export function useAiAssistant(userId: string | null = null, assistantOptions: U
         });
         for await (const chunk of stream) {
           if (abortControllerRef.current) break;
+          if (!firstChunkAt && chunk.trim()) firstChunkAt = performance.now();
           accumulated += chunk;
           setStreamingText(accumulated);
         }
@@ -278,6 +284,13 @@ export function useAiAssistant(userId: string | null = null, assistantOptions: U
         setIsStreaming(false);
         setStreamingText('');
         setStatusText('');
+        console.info(describeAiTiming({
+          prepareMs: preparedAt - startedAt,
+          firstChunkMs: firstChunkAt ? firstChunkAt - preparedAt : null,
+          totalMs: performance.now() - startedAt,
+          files: docs.attachments.length,
+          usedTools,
+        }));
 
         if (accumulated.trim()) commitAssistant(accumulated);
       }

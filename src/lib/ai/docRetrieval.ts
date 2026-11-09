@@ -40,8 +40,11 @@ export function keywordTokens(question: string): string[] {
   return [...new Set(words(question).filter((t) => t.length >= 2 && !STOPWORDS.has(t) && !/^\d+$/.test(t)))];
 }
 
-/** Số từ khóa phải khớp: câu ngắn cần ít, câu dài cần nhiều để không khớp nhầm do trùng từ. */
-const requiredHits = (tokenCount: number) => (tokenCount <= 2 ? 1 : Math.max(2, Math.ceil(tokenCount * 0.4)));
+/**
+ * Số từ khóa phải khớp. Mỗi văn bản chọn ra là một tệp PDF tải về và gửi kèm, làm câu trả lời chậm hẳn,
+ * nên câu ngắn phải khớp đủ mọi từ khóa; câu dài cần khớp từ 40% trở lên.
+ */
+const requiredHits = (tokenCount: number) => (tokenCount <= 2 ? Math.max(1, tokenCount) : Math.max(2, Math.ceil(tokenCount * 0.4)));
 
 /**
  * Chọn các văn bản liên quan tới câu hỏi để AI đọc. Ưu tiên: số hiệu nêu rõ; rồi từ khóa trong

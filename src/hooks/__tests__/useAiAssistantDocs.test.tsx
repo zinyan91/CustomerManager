@@ -12,6 +12,7 @@ vi.mock('../../lib/ai/geminiClient', () => ({
 vi.mock('../../lib/ai/systemContext', () => ({
   fetchSystemContextData: m.system,
   mentionsCustomers: (q: string) => /khách hàng/i.test(q),
+  mentionsDispatch: (q: string) => /lãi suất|văn bản|thông báo|\d{3,}/i.test(q),
 }));
 vi.mock('../../lib/ai/docContext', () => ({
   EMPTY_DOC_CONTEXT: { attachments: [], contextText: '', focusIds: [], refs: [], complete: false },
@@ -94,8 +95,17 @@ describe('useAiAssistant - đọc văn bản Văn thư', () => {
     const hook = setup();
     await ask(hook, '2848-8 nói về gì');
     await ask(hook, 'Danh sách khách hàng');
-    expect(m.system.mock.calls[0][0]).toEqual({ includeCustomers: false, includeFinancials: false });
-    expect(m.system.mock.calls[1][0]).toEqual({ includeCustomers: true, includeFinancials: false });
+    expect(m.system.mock.calls[0][0]).toMatchObject({ includeCustomers: false, includeFinancials: false });
+    expect(m.system.mock.calls[1][0]).toMatchObject({ includeCustomers: true, includeFinancials: false });
+  });
+
+  it('chỉ tải danh mục Văn thư khi câu hỏi liên quan văn bản', async () => {
+    const hook = setup();
+    await ask(hook, 'Nhóm nợ 2 là gì');
+    expect(m.system.mock.calls[0][0]).toMatchObject({ includeDocs: false });
+    const other = setup();
+    await ask(other, '2848-8 nói về gì');
+    expect(m.system.mock.calls[1][0]).toMatchObject({ includeDocs: true });
   });
 
   it('chỉ nạp báo cáo tài chính khi câu hỏi nhắc tới tài chính doanh nghiệp', async () => {

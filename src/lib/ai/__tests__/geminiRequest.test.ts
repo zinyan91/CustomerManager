@@ -94,6 +94,20 @@ describe('streamGeminiContent khi Gemini không dùng được', () => {
     await expect(drain()).rejects.toThrow('Khóa Gemini bị từ chối (HTTP 403)');
   });
 
+  it('chỉ khai báo công cụ tri thức khi câu hỏi là về cách dùng hệ thống', async () => {
+    const bodies: any[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      return sse('Được');
+    }));
+    for await (const _ of streamGeminiContent([msg('1', 'user', 'Nhóm nợ 2 là gì?')], undefined, 'gemini-3.8-flash')) { /* đọc hết */ }
+    expect(bodies[0].tools).toBeUndefined();
+    expect(bodies[0].system_instruction.parts[0].text).not.toContain('TRI THỨC HỆ THỐNG');
+    bodies.length = 0;
+    for await (const _ of streamGeminiContent([msg('2', 'user', 'Vì sao lịch trả nợ trên hệ thống bị lệch?')], undefined, 'gemini-3.8-flash')) { /* đọc hết */ }
+    expect(bodies[0].tools).toBeDefined();
+  });
+
   it('câu hỏi phân tích gửi kèm mức suy nghĩ cao và giới hạn câu trả lời dài hơn; câu hỏi nhanh giữ mức thấp', async () => {
     const bodies: any[] = [];
     vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
@@ -131,18 +145,18 @@ describe('reasoningDepthFor', () => {
   it.each([
     'Phân tích khả năng trả nợ của công ty này',
     'Có nên cho vay bổ sung vốn lưu động không?',
-    'Vì sao vòng quay hàng tồn kho giảm?',
-    'Tính nhu cầu vốn lưu động giúp tôi',
+    'Tính toán nhu cầu vốn lưu động giúp tôi',
     'Đề xuất tài sản bảo đảm thay thế',
-  ])('"%s" → sâu', (q) => expect(reasoningDepthFor(q, false)).toBe('deep'));
+    'So sánh hai phương án trả nợ',
+  ])('"%s" → sâu', (q) => expect(reasoningDepthFor(q)).toBe('deep'));
 
-  it.each(['Xin chào', 'Có bao nhiêu văn bản?', 'Danh sách khách hàng mới'])('"%s" → nhanh', (q) =>
-    expect(reasoningDepthFor(q, false)).toBe('quick'));
-
-  it('có tệp hoặc câu hỏi dài thì suy nghĩ sâu', () => {
-    expect(reasoningDepthFor('Xem giúp', true)).toBe('deep');
-    expect(reasoningDepthFor('a'.repeat(160), false)).toBe('deep');
-  });
+  it.each([
+    'Xin chào',
+    'Có bao nhiêu văn bản?',
+    'Danh sách khách hàng mới',
+    'Tóm tắt nội dung tài liệu đính kèm.',
+    'Lãi suất cho vay ngắn hạn kỳ hạn 6 tháng hiện nay là bao nhiêu, áp dụng cho khách hàng cá nhân vay sản xuất kinh doanh có tài sản bảo đảm?',
+  ])('"%s" → nhanh (tra cứu, tóm tắt, kể cả câu dài)', (q) => expect(reasoningDepthFor(q)).toBe('quick'));
 });
 
 describe('lời dặn hệ thống', () => {

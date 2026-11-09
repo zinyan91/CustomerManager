@@ -12,6 +12,10 @@ export interface SystemContextData {
   docsByCategory: CategoryCounts;
   customers: Customer[];
   totalCustomers: number;
+  /** false khi câu hỏi không cần nên không tải: không được trình bày như "chưa có văn bản". */
+  docsLoaded?: boolean;
+  /** false khi câu hỏi không nhắc khách hàng nên không tải: không được trình bày như "chưa có khách hàng". */
+  customersLoaded?: boolean;
   /**
    * Báo cáo tài chính doanh nghiệp đã lưu trên trình duyệt này: chuỗi dữ liệu; null = đã hỏi nhưng chưa lưu bản nào;
    * undefined = câu hỏi không liên quan tài chính nên không nạp.
@@ -28,6 +32,8 @@ const DEFAULT_DOC_FILTER: OfficialDocFilter = {
 };
 
 export interface SystemContextOptions {
+  /** Tải danh mục Văn thư. Chỉ cần khi câu hỏi liên quan văn bản. */
+  includeDocs?: boolean;
   /** Tải danh sách khách hàng (nặng nhất). Chỉ bật khi câu hỏi nhắc tới khách hàng. */
   includeCustomers?: boolean;
   /** Nạp bản báo cáo tài chính doanh nghiệp đã lưu trên trình duyệt hoặc đang nhập trực tiếp. */
@@ -53,6 +59,11 @@ export function describeDocFiles(files: OfficialDoc['files'] | undefined): strin
   return parts.join(', ');
 }
 
+/** Câu hỏi liên quan văn bản Văn thư (công văn, thông báo, quyết định, lãi suất, chương trình...). */
+export function mentionsDispatch(question: string): boolean {
+  return /văn thư|công văn|văn bản|thông báo|quyết định|quy định|quy chế|hướng dẫn|tờ trình|chỉ thị|hợp đồng|biểu mẫu|số hiệu|chương trình|lãi suất|hiệu lực|ban hành|(^|[^\p{L}])(vb|ls|tb|qđ)($|[^\p{L}])|\d{3,}\s*[/-]/iu.test(question);
+}
+
 /** Câu hỏi có nhắc tới khách hàng, để quyết định có tải danh sách khách hàng cho AI hay không. */
 export function mentionsCustomers(question: string): boolean {
   // \b của JS không coi chữ có dấu là chữ: "không" sẽ khớp nhầm "kh"; dùng ranh giới theo chữ cái Unicode
@@ -64,13 +75,15 @@ export function mentionsCustomers(question: string): boolean {
  * Các nguồn tải song song; nguồn nào lỗi thì bỏ qua riêng nguồn đó.
  */
 export async function fetchSystemContextData(options: SystemContextOptions = {}): Promise<SystemContextData> {
-  const { includeCustomers = true, includeFinancials = false, liveFinancialProfile } = options;
+  const { includeDocs = true, includeCustomers = true, includeFinancials = false, liveFinancialProfile } = options;
 
   const [docsRes, customers] = await Promise.all([
-    Promise.all([searchOfficialDocs(DEFAULT_DOC_FILTER, 1), countByCategory(DEFAULT_DOC_FILTER)]).catch((err) => {
-      console.warn('Không thể nạp danh sách văn thư cho AI context:', err);
-      return null;
-    }),
+    includeDocs
+      ? Promise.all([searchOfficialDocs(DEFAULT_DOC_FILTER, 1), countByCategory(DEFAULT_DOC_FILTER)]).catch((err) => {
+        console.warn('Không thể nạp danh sách văn thư cho AI context:', err);
+        return null;
+      })
+      : Promise.resolve(null),
     includeCustomers ? fetchCustomersAPI().catch(() => [] as Customer[]) : Promise.resolve([] as Customer[]),
   ]);
 
@@ -86,6 +99,8 @@ export async function fetchSystemContextData(options: SystemContextOptions = {})
     docsByCategory,
     customers,
     totalCustomers: customers.length,
+    docsLoaded: includeDocs && docsRes !== null,
+    customersLoaded: includeCustomers,
     financialProfile: shouldIncludeFinancials ? readFinancialProfile(effectiveLive) : undefined,
   };
 }
@@ -102,10 +117,10 @@ export function formatSystemContextPrompt(data: SystemContextData): string {
   const lines: string[] = [];
 
   lines.push('=== [DỮ LIỆU NỘI BỘ HỆ THỐNG CUSTOMERMANAGER] ===');
-  lines.push('(Lưu ý: Chỉ sử dụng dữ liệu của đúng phân hệ người dùng đang hỏi. Tuyệt đối không nhắc đến kho lưu trữ nếu người dùng hỏi về văn thư).');
+  lines.push('(Chỉ gồm phần dữ liệu cần cho câu hỏi này; phần không có ở đây là chưa được tải, không có nghĩa hệ thống trống.)');
   lines.push('');
 
-  // 1. VĂN THƯ
+  if (data.docsLoaded !== false) {
   lines.push(`## 1. PHÂN HỆ VĂN THƯ (Tổng cộng: ${data.totalOfficialDocs} văn bản):`);
   if (data.totalOfficialDocs === 0) {
     lines.push('- Hiện chưa có văn bản nào được lưu trữ.');
@@ -128,8 +143,9 @@ export function formatSystemContextPrompt(data: SystemContextData): string {
     });
   }
   lines.push('');
+  }
 
-  // 2. KHÁCH HÀNG
+  if (data.customersLoaded !== false) {
   lines.push(`## 2. PHÂN HỆ KHÁCH HÀNG (Tổng cộng: ${data.totalCustomers} khách hàng):`);
   if (data.totalCustomers === 0) {
     lines.push('- Danh sách khách hàng hiện đang trống.');
@@ -145,6 +161,7 @@ export function formatSystemContextPrompt(data: SystemContextData): string {
     if (data.totalCustomers > 50) {
       lines.push(`... và ${data.totalCustomers - 50} khách hàng khác.`);
     }
+  }
   }
 
   // 3. BÁO CÁO TÀI CHÍNH DOANH NGHIỆP
@@ -166,6 +183,7 @@ export function formatSystemContextPrompt(data: SystemContextData): string {
  */
 export function buildDirectSystemDataResponse(query: string, data: SystemContextData): string | null {
   const q = query.toLowerCase().trim();
+  if (data.docsLoaded === false) return null;
 
   // Kiểm tra câu hỏi về số lượng / danh sách văn thư
   const isAskingDispatches =

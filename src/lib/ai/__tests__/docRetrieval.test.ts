@@ -55,6 +55,11 @@ describe('pickRelevantDocs', () => {
     expect(pickRelevantDocs('LTV tối đa của bất động sản loại 1 là bao nhiêu SMS', ALL).docs).toEqual([]);
   });
 
+  it('câu hai từ khóa phải khớp đủ cả hai mới đính kèm văn bản', () => {
+    expect(pickRelevantDocs('lãi vay', [D90]).docs).toEqual([]);
+    expect(pickRelevantDocs('giải ngân SMS', ALL).docs.map((d) => d.id)).toEqual(['90']);
+  });
+
   it('câu nối tiếp mơ hồ: văn bản đang bàn được ưu tiên hơn các văn bản cùng chủ đề', () => {
     const r = pickRelevantDocs('Bảng lãi suất chi tiết', ALL, ['8']);
     expect(r.docs.map((d) => d.id)).toEqual(['8']);

@@ -3,7 +3,7 @@ import type { DispatchDocumentType } from '../../types/dispatch';
 import type { SystemContextData } from './systemContext';
 import { formatSystemContextPrompt, buildDirectSystemDataResponse } from './systemContext';
 import { runToolLoop, type Content, type ModelPart, type OpenTurn, type TurnChunk } from './toolLoop';
-import { KHAI_BAO_CONG_CU, dungChiDanTriThuc, taoCongCuTriThuc } from './tools/traCuuHeThong';
+import { KHAI_BAO_CONG_CU, dungChiDanTriThuc, hoiVeCachDungHeThong, taoCongCuTriThuc } from './tools/traCuuHeThong';
 import { taiKhoTriThuc } from './triThuc/khoTriThuc';
 import type { ChuDe } from './triThuc/phanTichTriThuc';
 
@@ -193,15 +193,14 @@ ${att.textData}` });
 
 export type ReasoningDepth = 'quick' | 'deep';
 
-const DEEP_REASONING_HINTS = /phân tích|đánh giá|thẩm định|so sánh|vì sao|tại sao|giải thích|đề xuất|tư vấn|rủi ro|phương án|kịch bản|tính toán|\btính\b|soạn|kế hoạch|có nên|khả năng trả nợ|dòng tiền|nhu cầu vốn|hạn mức|cơ cấu|chiến lược/;
-const LONG_QUESTION_CHARS = 160;
+const DEEP_REASONING_HINTS = /phân tích|thẩm định|đánh giá|so sánh|có nên|nên hay không|đề xuất|tính toán|phương án|kịch bản|khả năng trả nợ|nhu cầu vốn/;
 
-/** Câu hỏi tra cứu ngắn trả lời nhanh; câu hỏi cần lập luận hoặc có tệp đi kèm được suy nghĩ sâu. */
-export function reasoningDepthFor(question: string, hasFiles: boolean): ReasoningDepth {
-  if (hasFiles) return 'deep';
-  const q = question.trim().toLowerCase();
-  if (q.length >= LONG_QUESTION_CHARS) return 'deep';
-  return DEEP_REASONING_HINTS.test(q) ? 'deep' : 'quick';
+/**
+ * Suy nghĩ sâu làm phản hồi đầu chậm đi nhiều giây, nên chỉ bật khi câu hỏi đòi lập luận; đọc hay tóm
+ * tắt tệp, tra cứu, hỏi đáp thường thì trả lời nhanh.
+ */
+export function reasoningDepthFor(question: string): ReasoningDepth {
+  return DEEP_REASONING_HINTS.test(question.trim().toLowerCase()) ? 'deep' : 'quick';
 }
 
 export function thinkingConfigFor(model: string, depth: ReasoningDepth = 'quick'): Record<string, unknown> | undefined {
@@ -309,8 +308,10 @@ export async function* streamGeminiContent(
   const candidateModels = Array.from(new Set([model, ...FALLBACK_AI_MODELS])).filter((m) => !unavailableModels.has(m));
   const contents = buildContents(messages, extras.attachments);
 
+  const lastQuestion = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+
   let kho: ChuDe[] = [];
-  if (extras.tools !== false) {
+  if (extras.tools !== false && hoiVeCachDungHeThong(lastQuestion)) {
     try {
       kho = await taiKhoTriThuc();
     } catch (err) {
@@ -345,8 +346,7 @@ ${docContext}`;
     messages.some((m) => m.attachments && m.attachments.length > 0) ||
     (docContext && docContext.length > 2000)
   );
-  const lastQuestion = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
-  const depth = extras.depth ?? reasoningDepthFor(lastQuestion, hasAttachmentsOrLongDoc);
+  const depth = extras.depth ?? reasoningDepthFor(lastQuestion);
 
   const payloadFor = (noiDung: unknown[], coCongCu: boolean) => ({
     system_instruction: {
@@ -361,7 +361,7 @@ ${docContext}`;
   });
   const payload = payloadFor(contents, true);
 
-  const timeoutMs = depth === 'deep' ? HEADER_TIMEOUT_WITH_FILES_MS : HEADER_TIMEOUT_MS;
+  const timeoutMs = depth === 'deep' || hasAttachmentsOrLongDoc ? HEADER_TIMEOUT_WITH_FILES_MS : HEADER_TIMEOUT_MS;
   let response: Response | null = null;
   let chosenModel = '';
   // Lý do đáng báo nhất: lỗi không phải "model không còn", vì lỗi đó chỉ nói model này hỏng chứ không nói vì sao cả chuỗi hỏng

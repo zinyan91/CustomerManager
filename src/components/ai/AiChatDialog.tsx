@@ -9,6 +9,7 @@ import { AiComposer, type AiComposerHandle } from './AiComposer';
 import { AiDocProposalCard } from './AiDocProposalCard';
 import { AiCreditProposalCard } from './AiCreditProposalCard';
 import { useAiAssistant } from '../../hooks/useAiAssistant';
+import { AVAILABLE_AI_MODELS } from '../../lib/ai/geminiClient';
 import { useAiDocProposals } from '../../hooks/useAiDocProposals';
 import { useAiCreditProposals } from '../../hooks/useAiCreditProposals';
 import { useFileDrop } from '../../hooks/useFileDrop';
@@ -90,9 +91,7 @@ export function AiChatDialog({
                   className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-teal-500/10 text-teal-800 dark:text-teal-300 border border-teal-500/30 cursor-pointer focus:outline-hidden shrink-0"
                   title="Chọn mô hình AI"
                 >
-                  <option value="gemini-3.8-flash">Gemini 3.8 Flash</option>
-                  <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
-                  <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite</option>
+                  {AVAILABLE_AI_MODELS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
                 </select>
               </div>
               <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[200px] sm:max-w-xs">

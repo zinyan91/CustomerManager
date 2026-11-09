@@ -7,9 +7,14 @@ import { KHAI_BAO_CONG_CU, dungChiDanTriThuc, hoiVeCachDungHeThong, taoCongCuTri
 import { taiKhoTriThuc } from './triThuc/khoTriThuc';
 import type { ChuDe } from './triThuc/phanTichTriThuc';
 
-export const DEFAULT_AI_MODEL = 'gemini-3.8-flash';
-export const AVAILABLE_AI_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
-export const FALLBACK_AI_MODELS = AVAILABLE_AI_MODELS;
+export const DEFAULT_AI_MODEL = 'gemini-3.6-flash';
+export const AVAILABLE_AI_MODELS: ReadonlyArray<{ id: string; label: string }> = [
+  { id: 'gemini-3.6-flash', label: 'Gemini 3.6 Flash' },
+  { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash' },
+  { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite' },
+];
+// 3.8 Flash xếp cuối: đo ngày 09/11/2026 nó chưa trả lời sau trọn 30 giây chờ, trong khi 3.6 Flash trả lời sau 1,2 giây
+export const FALLBACK_AI_MODELS = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash'];
 
 /** Gemini không dùng được: thông điệp tiếng Việt nêu đúng lý do để người dùng biết cần làm gì. */
 export class AiUnavailableError extends Error {

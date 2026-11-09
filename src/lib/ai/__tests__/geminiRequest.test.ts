@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import type { AiAttachment, AiChatMessage } from '../../../types/ai';
-import { AiUnavailableError, MSG_GEMINI_NOT_CONFIGURED, buildContents, describeGeminiFailure, resetModelMemory, streamGeminiContent, thinkingConfigFor, reasoningDepthFor, SYSTEM_INSTRUCTION, orderCandidateModels, SLOW_MODEL_PENALTY_MS, type ModelAttempt } from '../geminiClient';
+import { AiUnavailableError, MSG_GEMINI_NOT_CONFIGURED, buildContents, describeGeminiFailure, resetModelMemory, streamGeminiContent, thinkingConfigFor, reasoningDepthFor, SYSTEM_INSTRUCTION, orderCandidateModels, SLOW_MODEL_PENALTY_MS, DEFAULT_AI_MODEL, FALLBACK_AI_MODELS, AVAILABLE_AI_MODELS, type ModelAttempt } from '../geminiClient';
 import { mentionsCustomers } from '../systemContext';
 
 const msg = (id: string, role: AiChatMessage['role'], content: string, attachments?: AiAttachment[]): AiChatMessage => ({
@@ -173,6 +173,20 @@ describe('thinkingConfigFor', () => {
     expect(thinkingConfigFor('gemini-2.5-flash', 'deep')).toEqual({ thinkingBudget: -1 });
     expect(thinkingConfigFor('gemini-3.8-flash', 'deep')).toEqual({ thinkingLevel: 'high' });
     expect(thinkingConfigFor('gemini-1.5-pro', 'deep')).toBeUndefined();
+  });
+});
+
+describe('chọn mô hình', () => {
+  it('mặc định 3.6 Flash; 3.8 Flash (từng treo trọn hạn chờ) xếp cuối danh sách dự phòng', () => {
+    resetModelMemory();
+    expect(DEFAULT_AI_MODEL).toBe('gemini-3.6-flash');
+    expect(orderCandidateModels([DEFAULT_AI_MODEL, ...FALLBACK_AI_MODELS])).toEqual(['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash']);
+    expect(AVAILABLE_AI_MODELS[0].id).toBe(DEFAULT_AI_MODEL);
+  });
+
+  it('người dùng tự chọn 3.8 thì vẫn thử 3.8 trước', () => {
+    resetModelMemory();
+    expect(orderCandidateModels(['gemini-3.8-flash', ...FALLBACK_AI_MODELS])[0]).toBe('gemini-3.8-flash');
   });
 });
 

@@ -7,8 +7,8 @@ import {
   loadInventoryTemplates, addInventoryTemplate, deleteInventoryTemplate,
 } from '../templateStore';
 
-describe('Accounts Receivable TK 131 & Template Store Tests', () => {
-  it('tính số dư cuối kỳ Nợ/Có công nợ phải thu TK 131 chính xác', () => {
+describe('Công nợ phải thu và mẫu ngành hàng', () => {
+  it('tính số dư cuối kỳ Nợ/Có công nợ phải thu chính xác', () => {
     const item: ReceivableItem = {
       id: 'test-rec-1',
       code: 'KH001',
@@ -26,7 +26,7 @@ describe('Accounts Receivable TK 131 & Template Store Tests', () => {
     expect(computed.endingCredit).toBe(0);
   });
 
-  it('tính tổng cộng bảng Công nợ Phải thu TK 131 chính xác', () => {
+  it('tính tổng cộng bảng công nợ phải thu chính xác', () => {
     const items: ReceivableItem[] = [
       {
         id: '1', code: 'A', name: 'Công ty A',

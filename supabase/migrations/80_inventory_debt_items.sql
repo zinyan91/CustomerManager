@@ -1,5 +1,5 @@
 -- 80_inventory_debt_items.sql
--- Lưu công nợ phải thu (TK 131) và phải trả (TK 331) của màn Hàng tồn kho, gom theo ngành hàng như "InventoryItems".
+-- Lưu công nợ phải thu và phải trả của màn Hàng tồn kho, gom theo ngành hàng như "InventoryItems".
 -- Từ 30/10/2026 bảng mới trong public không tự được GRANT, nên cấp quyền ngay trong migration.
 
 BEGIN;

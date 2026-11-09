@@ -45,12 +45,14 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('KPI reporting page', () => {
-  it('keeps seven report cards and charts even before a period is created', () => {
+  it('gom bảy chỉ tiêu vào một bảng thay cho thẻ KPI, giữ biểu đồ khi chưa có kỳ', () => {
     const { container }=render(<TeamKpiView />);
     expect(screen.getByRole('heading',{ name:'Báo cáo KPI team' })).toBeTruthy();
-    expect(container.querySelectorAll('[data-kpi-hue]')).toHaveLength(7);
+    expect(container.querySelectorAll('[data-kpi-hue]')).toHaveLength(0);
+    const summary = screen.getByRole('region',{ name:'Các chỉ tiêu KPI' });
+    expect(summary.querySelectorAll('tbody tr')).toHaveLength(7);
     expect(screen.queryByRole('region',{ name:'So sánh thành viên' })).toBeNull();
-    expect(screen.getByRole('region',{name:'Báo cáo tiến độ hồ sơ'}).compareDocumentPosition(screen.getByLabelText('Chỉ tiêu phân tích')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByLabelText('Chỉ tiêu phân tích').compareDocumentPosition(screen.getByRole('region',{name:'Báo cáo tiến độ hồ sơ'})) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByRole('region',{ name:'Kết quả theo tháng' })).toBeTruthy();
     expect(screen.getByRole('region',{ name:'Báo cáo KPI theo tháng' })).toBeTruthy();
     expect(container.querySelector('form')).toBeNull();
@@ -60,6 +62,13 @@ describe('KPI reporting page', () => {
     expect(screen.queryByText('Kế hoạch của tôi')).toBeNull();
     expect(screen.queryByRole('button',{ name:'Tạo kỳ KPI' })).toBeNull();
     expect(screen.queryByLabelText('Tệp Excel')).toBeNull();
+  });
+  it('bấm một dòng chỉ tiêu thì đổi chỉ tiêu phân tích', () => {
+    render(<TeamKpiView />);
+    const summary = screen.getByRole('region',{ name:'Các chỉ tiêu KPI' });
+    const row = Array.from(summary.querySelectorAll('tbody tr')).find(tr => tr.textContent?.includes('Thẻ tín dụng'))!;
+    fireEvent.click(row);
+    expect((screen.getByLabelText('Chỉ tiêu phân tích') as HTMLSelectElement).value).toBe('credit_cards');
   });
   it('changes the report period and year without adding a period-creation form', async () => {
     render(<TeamKpiView />);

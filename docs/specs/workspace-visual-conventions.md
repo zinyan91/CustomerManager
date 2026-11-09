@@ -47,3 +47,5 @@ Mở rộng sắc định danh từ dashboard sang KPI của các phân hệ. Kh
 CSS làm phẳng chỉ áp dụng trên màn hình, trong `.workspace-continuous`, loại trừ `.fixed` và `[role="dialog"]`. Thẻ KPI có selector riêng để giữ bo góc và bóng nhẹ. Không thay bố cục bản in hoặc màu của dialog.
 
 Dashboard giữ bố cục, góc bo và nội dung hiện có; viền/bóng dùng cùng công thức màu thông qua `--kpi-hue`, không sửa cấu trúc thẻ để đồng bộ.
+
+Ngoại lệ theo yêu cầu người dùng ngày 09/11/2026: trang Báo cáo KPI team không dùng thẻ KPI. Các chỉ tiêu nằm trong một bảng, tổng số tiến độ hồ sơ nằm trong một dải chia bằng đường kẻ.

@@ -10,7 +10,7 @@ import { Button } from '../ui/Button';
 import { Input, Select } from '../ui/Field';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/Tabs';
 import { ErrorState, LoadingState } from '../ui/FeedbackStates';
-import { TeamKpiSummaryCards } from './TeamKpiSummaryCards';
+import { TeamKpiSummaryTable } from './TeamKpiSummaryTable';
 import { TeamKpiReportCharts } from './TeamKpiReportCharts';
 import { TeamKpiMonthlyReport } from './TeamKpiMonthlyReport';
 import { TeamProgressReport } from '../loanProgress/TeamProgressReport';
@@ -45,8 +45,7 @@ export function TeamKpiDashboard({ teamId,members,viewTeam }: { teamId:string; m
     <TabsContent value={mode} className="space-y-4">
     {report.error ? <div role="alert"><ErrorState message={report.error} onRetry={report.reload} /></div>
       : report.loading ? <div role="status"><LoadingState text="Đang tải báo cáo KPI…" /></div>
-        : model && <TeamKpiSummaryCards cards={model.cards} />}
-    <TeamProgressReport key={progressRevision} month={month} teamId={teamId} ytd={mode==='ytd'} />
+        : model && <TeamKpiSummaryTable cards={model.cards} selectedCode={selected?.Code} onSelect={setMetric} />}
     {!report.loading && !report.error && model && <>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1 px-3">
               <label htmlFor="kpi-report-metric" className="text-xs font-bold text-ink">Chỉ tiêu phân tích</label>
@@ -59,6 +58,7 @@ export function TeamKpiDashboard({ teamId,members,viewTeam }: { teamId:string; m
             <TeamKpiMonthlyReport rows={model.monthlyReports[selected.Code]} unit={selected.Unit} stock={selected.Aggregation==='stock'} />
           </>}
         </>}
+    <TeamProgressReport key={progressRevision} month={month} teamId={teamId} ytd={mode==='ytd'} />
     </TabsContent>
     </Tabs>
   </div>;

@@ -1,30 +1,34 @@
+import { ClipboardList } from 'lucide-react';
 import { useLoanProgress } from '../../hooks/useLoanProgress';
 import { progressNumber, summarizeProgress } from '../../lib/loanProgress';
 import { PROGRESS_STAGES } from '../../types/loanProgress';
-import { KpiCard } from '../ui/KpiCard';
+import { Panel, PanelHeader } from '../ui/Panel';
 import { ErrorState, LoadingState } from '../ui/FeedbackStates';
 import { ProgressTable } from './ProgressTable';
+
+const TOTALS = [['Amount', 'Số tiền hồ sơ (VND)'], ['Cards', 'Thẻ'], ['Fees', 'Phí (VND)'], ['Insurance', 'Bảo hiểm (VND)']] as const;
 
 export function TeamProgressReport({month,teamId,ytd}:{month:string;teamId:string;ytd:boolean}) {
   const report = useLoanProgress(month,[],ytd,teamId);
   const total = summarizeProgress(report.rows);
-  return <section className="space-y-4" aria-label="Báo cáo tiến độ hồ sơ">
-    <h2 className="text-base font-bold text-ink px-3">Báo cáo tiến độ hồ sơ</h2>
-    {report.error ? <ErrorState message={report.error} onRetry={report.reload} />
-      : report.loading ? <LoadingState text="Đang tải tiến độ hồ sơ…" /> : <>
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-          {([['Amount','Số tiền hồ sơ'],['Cards','Thẻ'],['Fees','Phí'],['Insurance','Bảo hiểm']] as const).map(([key,label])=>
-            <KpiCard key={key} label={key==='Cards' ? label : `${label} (VND)`} value={progressNumber(total[key])} />)}
-        </div>
-        <div className="px-3">
-          <h3 className="text-sm font-semibold text-ink">Tiến độ hồ sơ · {total.count}</h3>
-          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-3 mt-3">
-            {PROGRESS_STAGES.map(stage=><div key={stage} className="flex justify-between gap-3 text-xs border-b border-line/50 pb-2">
-              <span className="text-ink-muted">{stage}</span><strong className="text-ink">{report.rows.filter(row=>row.Stage===stage).length}</strong>
+  return <Panel role="region" aria-label="Báo cáo tiến độ hồ sơ">
+    <PanelHeader title={`Báo cáo tiến độ hồ sơ${report.loading || report.error ? '' : ` · ${total.count}`}`} icon={<ClipboardList className="w-4 h-4" />} bordered />
+    <div className="mt-4 space-y-4">
+      {report.error ? <ErrorState message={report.error} onRetry={report.reload} />
+        : report.loading ? <LoadingState text="Đang tải tiến độ hồ sơ…" /> : <>
+          <dl className="grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden rounded-[var(--r-control)] border border-line bg-line">
+            {TOTALS.map(([key,label])=><div key={key} className="bg-panel px-4 py-3 min-w-0">
+              <dt className="text-xs text-ink-muted">{label}</dt>
+              <dd className="mt-1 font-mono tabular-nums text-lg font-bold text-ink truncate">{progressNumber(total[key])}</dd>
             </div>)}
-          </div>
-        </div>
-        <ProgressTable rows={report.rows} showAssignee />
-      </>}
-  </section>;
+          </dl>
+          <dl className="grid sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-2">
+            {PROGRESS_STAGES.map(stage=><div key={stage} className="flex justify-between gap-3 text-xs border-b border-line/50 pb-2">
+              <dt className="text-ink-muted">{stage}</dt><dd className="font-semibold text-ink">{report.rows.filter(row=>row.Stage===stage).length}</dd>
+            </div>)}
+          </dl>
+          <ProgressTable rows={report.rows} showAssignee />
+        </>}
+    </div>
+  </Panel>;
 }

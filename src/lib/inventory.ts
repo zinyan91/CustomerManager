@@ -1,4 +1,5 @@
 import { parseDecimalNumber } from './utils';
+import type { TemplateItem } from '../data/inventoryTemplates';
 
 export interface InventoryItem {
   id: string;
@@ -130,4 +131,10 @@ export function parseInventoryText(text: string): InventoryItem[] {
   });
 
   return items;
+}
+
+export function toTemplateItems(items: readonly InventoryItem[]): TemplateItem[] {
+  return items.map(({ code, name, unit, unitPrice, beginningQty, importQty, exportQty }) => ({
+    code, name, unit, unitPrice, beginningQty, importQty, exportQty,
+  }));
 }

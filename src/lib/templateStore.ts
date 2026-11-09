@@ -152,21 +152,33 @@ export async function fetchInventoryTemplatesFromCloud(): Promise<InventoryCateg
   }
 }
 
+async function upsertInventoryTemplateCloud(tpl: InventoryCategoryTemplate): Promise<void> {
+  const { error } = await supabase
+    .from('InventoryCategoryTemplates')
+    .upsert([{ Id: tpl.id, Name: tpl.name, Items: tpl.items, UpdatedAt: new Date().toISOString() }]);
+  if (error) throw new Error(error.message);
+}
+
 export async function saveInventoryTemplateToCloud(tpl: InventoryCategoryTemplate): Promise<void> {
   try {
-    const payload = {
-      Id: tpl.id,
-      Name: tpl.name,
-      Items: tpl.items,
-      UpdatedAt: new Date().toISOString(),
-    };
-    const { error } = await supabase
-      .from('InventoryCategoryTemplates')
-      .upsert([payload]);
-    if (error) throw error;
+    await upsertInventoryTemplateCloud(tpl);
   } catch (err) {
     console.warn('saveInventoryTemplateToCloud error:', err);
   }
+}
+
+export async function overwriteInventoryTemplateItems(
+  current: InventoryCategoryTemplate[],
+  id: string,
+  items: TemplateItem[],
+): Promise<InventoryCategoryTemplate[]> {
+  const target = current.find(t => t.id === id);
+  if (!target) throw new Error('Không tìm thấy mẫu ngành hàng đang chọn.');
+  const replaced: InventoryCategoryTemplate = { ...target, items };
+  const updated = current.map(t => (t.id === id ? replaced : t));
+  saveInventoryTemplates(updated);
+  await upsertInventoryTemplateCloud(replaced);
+  return updated;
 }
 
 export async function deleteInventoryTemplateFromCloud(id: string): Promise<void> {

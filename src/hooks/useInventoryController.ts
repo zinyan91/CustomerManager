@@ -1,12 +1,17 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  computeInventorySummary, nextItemId,
+  computeInventorySummary, nextItemId, toTemplateItems,
   type InventoryItem,
 } from '../lib/inventory';
 import {
   loadInventoryTemplates, addInventoryTemplate, updateInventoryTemplate,
   deleteInventoryTemplate, resetInventoryTemplates, fetchInventoryTemplatesFromCloud,
+  overwriteInventoryTemplateItems,
 } from '../lib/templateStore';
+import { nextSortState, sortRows, type SortState } from '../lib/tableSort';
+import {
+  INVENTORY_SORT_ACCESSORS, DEBT_SORT_ACCESSORS, type InventorySortKey, type DebtSortKey,
+} from '../lib/inventoryLedgerSort';
 import {
   fetchInventoryItemsDb, saveInventoryItemDb, saveAllInventoryItemsDb, deleteInventoryItemDb,
 } from '../lib/inventoryDb';
@@ -245,21 +250,57 @@ export function useInventoryController() {
     }
   }, [confirm, items, showNotify]);
 
+  const [inventorySort, setInventorySort] = useState<SortState<InventorySortKey> | null>(null);
+  const [receivableSort, setReceivableSort] = useState<SortState<DebtSortKey> | null>(null);
+  const [payableSort, setPayableSort] = useState<SortState<DebtSortKey> | null>(null);
+
+  const toggleInventorySort = useCallback((key: InventorySortKey) => setInventorySort(prev => nextSortState(prev, key)), []);
+  const toggleReceivableSort = useCallback((key: DebtSortKey) => setReceivableSort(prev => nextSortState(prev, key)), []);
+  const togglePayableSort = useCallback((key: DebtSortKey) => setPayableSort(prev => nextSortState(prev, key)), []);
+
+  const sortedItems = useMemo(() => sortRows(items, inventorySort, INVENTORY_SORT_ACCESSORS), [items, inventorySort]);
+  const sortedReceivables = useMemo(() => sortRows(receivables, receivableSort, DEBT_SORT_ACCESSORS), [receivables, receivableSort]);
+  const sortedPayables = useMemo(() => sortRows(payables, payableSort, DEBT_SORT_ACCESSORS), [payables, payableSort]);
+
   const filteredItems = useMemo(() => {
-    if (!searchTerm.trim()) return items;
+    if (!searchTerm.trim()) return sortedItems;
     const term = searchTerm.toLowerCase().trim();
-    return items.filter(
+    return sortedItems.filter(
       it => it.code.toLowerCase().includes(term) || it.name.toLowerCase().includes(term) || it.unit.toLowerCase().includes(term)
     );
-  }, [items, searchTerm]);
+  }, [sortedItems, searchTerm]);
 
   const summary = useMemo(() => computeInventorySummary(items), [items]);
+
+  const handleOverwriteTemplate = useCallback(async () => {
+    const template = templates.find(t => t.id === selectedTemplateId);
+    if (!template) {
+      showNotify('error', 'Chưa chọn mẫu ngành hàng để lưu đè.');
+      return;
+    }
+    const ok = await confirm({
+      title: 'Lưu đè mẫu ngành hàng',
+      message: `${sortedItems.length} mặt hàng đang có trong bảng sẽ thay toàn bộ danh sách của mẫu "${template.name}" (${template.items.length} mặt hàng).`,
+      confirmText: 'Lưu đè mẫu',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    try {
+      setTemplates(await overwriteInventoryTemplateItems(templates, template.id, toTemplateItems(sortedItems)));
+      showNotify('success', `Đã lưu đè mẫu "${template.name}" với ${sortedItems.length} mặt hàng.`);
+    } catch (err: any) {
+      showNotify('error', `Lưu đè mẫu thất bại: ${err.message}`);
+    }
+  }, [templates, selectedTemplateId, sortedItems, confirm, showNotify]);
 
   const exportContext = useMemo(
     () => ({ categoryName, customerName: customerName.trim() || undefined, recordDate }),
     [categoryName, customerName, recordDate],
   );
-  const ledgerData = useMemo(() => ({ items, receivables, payables }), [items, receivables, payables]);
+  const ledgerData = useMemo(
+    () => ({ items: sortedItems, receivables: sortedReceivables, payables: sortedPayables }),
+    [sortedItems, sortedReceivables, sortedPayables],
+  );
 
   const handleExportExcel = useCallback((scope: 'tab' | 'all') => {
     try {
@@ -324,6 +365,15 @@ export function useInventoryController() {
     newExpQtyStr,
     setNewExpQtyStr,
     filteredItems,
+    sortedReceivables,
+    sortedPayables,
+    inventorySort,
+    receivableSort,
+    payableSort,
+    toggleInventorySort,
+    toggleReceivableSort,
+    togglePayableSort,
+    handleOverwriteTemplate,
     summary,
     handleSelectTemplate,
     handleSaveTemplate,

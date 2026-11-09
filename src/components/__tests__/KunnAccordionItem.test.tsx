@@ -84,7 +84,7 @@ describe('Nút giải ngân đọc quyết định từ summarizeCreditContracts
     const cc = hdtd({ ContractEndDate: '2026-08-17' });
     const { summary, nut } = dungThe(cc, []);
 
-    expect(summary.blockReason).toBe('HĐTD hết hiệu lực 17/08/2026');
+    expect(summary.blockReason).toBe('HĐTD hết hiệu lực 17/08/2026, cần tái tục');
     expect(nut).toHaveProperty('disabled', true);
     expect(nut.getAttribute('title')).toBe(summary.blockReason);
   });

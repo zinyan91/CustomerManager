@@ -42,6 +42,16 @@ describe('buildCollateralUsage', () => {
     expect(hetHieuLuc(4)).toBe('released');
   });
 
+  it('HĐTD hết hiệu lực nhưng còn KUNN dư nợ: tài sản khai ở HĐTD vẫn đang bảo đảm', () => {
+    const usage = buildCollateralUsage({
+      loans: [{ CreditContractId: 4, IsSettled: false }],
+      creditContracts: [{ Id: 4, CollateralIds: '4', IsClosed: false, ContractEndDate: '2026-07-24' }],
+      mortgages: [],
+      today: TODAY,
+    });
+    expect(usage(4)).toBe('securing');
+  });
+
   it('HĐTC chưa giải chấp vẫn đang bảo đảm; đã giải chấp thì thả', () => {
     const base = { loans: [{ CollateralIds: '9', IsSettled: true }], creditContracts: [], today: TODAY };
     expect(buildCollateralUsage({ ...base, mortgages: [{ CollateralIds: [9], IsReleased: false }] })(9)).toBe('securing');

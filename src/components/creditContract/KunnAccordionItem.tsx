@@ -7,7 +7,7 @@ import { collateralValue } from '../../lib/collateralMath';
 import { getEffectiveActiveRate } from '../../lib/rateResolution';
 import { kunnPrincipal } from '../../lib/loanMath';
 import {
-  hdtdLifecycle, HDTD_LIFECYCLE_LABEL, canCloseCreditContract,
+  hdtdLifecycle, hdtdStatusLabel, canCloseCreditContract,
   type HdtdLifecycle, type CreditContractSummary,
 } from '../../lib/creditContract';
 import type { Collateral, CreditContract, LoanContract } from '../../types';
@@ -99,7 +99,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
               </span>
               <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-2xs ${LIFECYCLE_BADGE[lifecycle]}`}>
                 {LifecycleIcon && <LifecycleIcon className="w-3 h-3" />}
-                {HDTD_LIFECYCLE_LABEL[lifecycle]}
+                {hdtdStatusLabel(lifecycle, activeKunnCount)}
               </span>
               <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-surface border border-line/70 text-ink-muted">
                 {cc.LoanMethod || 'HĐTD'}

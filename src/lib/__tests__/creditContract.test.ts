@@ -15,6 +15,7 @@ import {
   hdtdLifecycle,
   HDTD_LIFECYCLE_LABEL,
   computeRemainingTenorMonths,
+  hdtdStatusLabel,
 } from '../creditContract';
 import type { CreditContract, LoanContract } from '../../types';
 
@@ -636,6 +637,29 @@ describe('totalsOfCreditContracts — ba con số trên đầu màn hình', () =
     expect(r.available).toBe(16_000_000);
   });
 
+  it('HĐTD hết hiệu lực nhưng KUNN còn dư nợ: vẫn là hạn mức đã cấp, không giải ngân mới, lý do nêu còn dư nợ', () => {
+    const sums = summarizeCreditContracts(
+      [cc({ Id: 4, HdtdNumber: 'HD-A', LoanMethod: 'Hạn mức tín dụng', ContractAmount: 4_000_000_000, ContractEndDate: '2026-07-24' })],
+      [kunn({ Id: 1, CreditContractId: 4, LoanAmount: 2_000_000_000, CurrentBalance: 2_000_000_000 })],
+      { today: HOM_NAY }
+    );
+    const r = totalsOfCreditContracts(sums);
+    expect(r.granted).toBe(4_000_000_000);
+    expect(r.outstanding).toBe(2_000_000_000);
+    expect(r.available).toBe(0);
+    expect(sums[0].blockReason).toBe('HĐTD hết hiệu lực 24/07/2026, còn 1 KUNN chưa tất toán');
+  });
+
+  it('HĐTD hết hiệu lực và KUNN đã tất toán hết: không còn hạn mức, lý do nêu cần tái tục', () => {
+    const sums = summarizeCreditContracts(
+      [cc({ Id: 4, HdtdNumber: 'HD-A', LoanMethod: 'Hạn mức tín dụng', ContractAmount: 4_000_000_000, ContractEndDate: '2026-07-24' })],
+      [kunn({ Id: 1, CreditContractId: 4, LoanAmount: 2_000_000_000, IsSettled: true })],
+      { today: HOM_NAY }
+    );
+    expect(totalsOfCreditContracts(sums).granted).toBe(0);
+    expect(sums[0].blockReason).toBe('HĐTD hết hiệu lực 24/07/2026, cần tái tục');
+  });
+
   it('HĐTD hết hiệu lực không còn tính vào hạn mức đã cấp, không góp vào khả dụng', () => {
     const r = totalsOfCreditContracts(summarizeCreditContracts(
       [cc({ Id: 4, HdtdNumber: 'HD-A', ContractAmount: 4_000_000_000, ContractEndDate: '2026-07-24' })],
@@ -786,5 +810,14 @@ describe('computeRemainingTenorMonths — tính số kỳ KUNN còn lại theo t
     expect(computeRemainingTenorMonths(null, '2046-01-01')).toBe(0);
     expect(computeRemainingTenorMonths('2026-01-01', '')).toBe(0);
     expect(computeRemainingTenorMonths('invalid', '2046-01-01')).toBe(0);
+  });
+});
+
+describe('hdtdStatusLabel — tách hai kiểu hết hiệu lực', () => {
+  it('hết hiệu lực còn dư nợ / cần tái tục; các trạng thái khác giữ nhãn cũ', () => {
+    expect(hdtdStatusLabel('expired', 2)).toBe('HẾT HIỆU LỰC · CÒN DƯ NỢ');
+    expect(hdtdStatusLabel('expired', 0)).toBe('HẾT HIỆU LỰC · CẦN TÁI TỤC');
+    expect(hdtdStatusLabel('active', 0)).toBe('ĐANG HIỆU LỰC');
+    expect(hdtdStatusLabel('closed', 0)).toBe('ĐÃ ĐÓNG');
   });
 });

@@ -11,8 +11,8 @@ import { parseCollateralIds } from './creditLimit';
 export type CollateralUsage = 'securing' | 'released' | 'unlinked';
 
 export interface CollateralUsageSources {
-  loans: Pick<LoanContract, 'CollateralId' | 'CollateralIds' | 'IsSettled'>[];
-  creditContracts: Pick<CreditContract, 'CollateralIds' | 'IsClosed' | 'ContractStartDate' | 'ContractEndDate'>[];
+  loans: (Partial<Pick<LoanContract, 'CollateralId' | 'CollateralIds' | 'CreditContractId'>> & Pick<LoanContract, 'IsSettled'>)[];
+  creditContracts: (Partial<Pick<CreditContract, 'Id'>> & Pick<CreditContract, 'CollateralIds' | 'IsClosed' | 'ContractStartDate' | 'ContractEndDate'>)[];
   mortgages: Pick<MortgageContract, 'CollateralIds' | 'IsReleased'>[];
   today: string;
 }
@@ -27,10 +27,17 @@ export function buildCollateralUsage(sources: CollateralUsageSources): (collater
     }
   };
 
-  for (const loan of sources.loans) mark(parseCollateralIds(loan), !isKunnSettled(loan));
+  const hdtdWithOpenKunn = new Set<number>();
+  for (const loan of sources.loans) {
+    const open = !isKunnSettled(loan);
+    mark(parseCollateralIds(loan), open);
+    if (open && loan.CreditContractId) hdtdWithOpenKunn.add(loan.CreditContractId);
+  }
   for (const cc of sources.creditContracts) {
     const life = hdtdLifecycle(cc, sources.today);
-    mark(parseCollateralIds(cc), life !== 'closed' && life !== 'expired');
+    // HĐTD hết hiệu lực mà KUNN còn dư nợ thì vẫn còn, tài sản vẫn bảo đảm cho dư nợ đó
+    const stillBinding = life !== 'closed' && (life !== 'expired' || (cc.Id !== undefined && hdtdWithOpenKunn.has(cc.Id)));
+    mark(parseCollateralIds(cc), stillBinding);
   }
   for (const m of sources.mortgages) mark(m.CollateralIds, !m.IsReleased);
 

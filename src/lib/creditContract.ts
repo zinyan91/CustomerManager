@@ -272,12 +272,21 @@ export interface CreditContractSummary {
 }
 
 /**
- * HĐTD còn là hạn mức đã cấp của khách: chưa đóng, chưa hết hiệu lực, và không phải vay từng lần đã tất toán
- * hết KUNN (vay từng lần giải ngân xong, trả xong là hết nghĩa vụ). Hạn mức quay vòng còn hiệu lực vẫn tính dù dư nợ 0.
+ * HĐTD còn là hạn mức đã cấp của khách. Hết hiệu lực có hai kiểu: còn KUNN dư nợ thì HĐTD vẫn còn (chỉ không
+ * giải ngân mới); KUNN đã tất toán hết thì hết, phải tái tục. Vay từng lần đã tất toán hết KUNN cũng hết.
+ * Hạn mức quay vòng còn hiệu lực vẫn tính dù dư nợ 0.
  */
 export function isCurrentGrantedLimit(s: Pick<CreditContractSummary, 'contract' | 'expired' | 'revolving' | 'kunnCount' | 'activeKunnCount'>): boolean {
-  if (s.contract.IsClosed || s.expired) return false;
-  return s.revolving || s.kunnCount === 0 || s.activeKunnCount > 0;
+  if (s.contract.IsClosed) return false;
+  if (s.activeKunnCount > 0) return true;
+  if (s.expired) return false;
+  return s.revolving || s.kunnCount === 0;
+}
+
+/** Nhãn trạng thái HĐTD: tách "hết hiệu lực" thành còn dư nợ (HĐTD vẫn còn) và cần tái tục (đã trả hết). */
+export function hdtdStatusLabel(lifecycle: HdtdLifecycle, activeKunnCount: number): string {
+  if (lifecycle !== 'expired') return HDTD_LIFECYCLE_LABEL[lifecycle];
+  return activeKunnCount > 0 ? 'HẾT HIỆU LỰC · CÒN DƯ NỢ' : 'HẾT HIỆU LỰC · CẦN TÁI TỤC';
 }
 
 export function totalsOfCreditContracts(
@@ -324,7 +333,11 @@ export function summarizeCreditContracts(
 
     let blockReason = '';
     if (cc.IsClosed) blockReason = 'HĐTD đã đóng';
-    else if (expired) blockReason = `HĐTD hết hiệu lực ${fmt(end)}`;
+    else if (expired) {
+      blockReason = active.length > 0
+        ? `HĐTD hết hiệu lực ${fmt(end)}, còn ${active.length} KUNN chưa tất toán`
+        : `HĐTD hết hiệu lực ${fmt(end)}, cần tái tục`;
+    }
     else if (notYetEffective) blockReason = `HĐTD có hiệu lực từ ${fmt(start)}`;
     else if (headroom <= 0) {
       blockReason = revolving

@@ -37,7 +37,9 @@ export function taoCongCuTriThuc(taiKho: () => Promise<ChuDe[]>): ToolTable {
 
 export function dungChiDanTriThuc(kho: ChuDe[]): string {
   return `TRI THỨC HỆ THỐNG:
-Khi người dùng hỏi một trang dùng thế nào, quy trình nghiệp vụ ra sao hoặc vì sao số liệu lệch, gọi công cụ ${TEN_CONG_CU} rồi trả lời theo nội dung nhận được. Công cụ không có thì nói hệ thống chưa có mô tả, không tự bịa.
+Khi người dùng hỏi một trang trong hệ thống dùng thế nào, hệ thống tính số liệu ra sao hoặc vì sao số liệu lệch, gọi công cụ ${TEN_CONG_CU} rồi trả lời theo nội dung nhận được; đó là nguồn duy nhất về cách hệ thống này được làm.
+Công cụ không có chủ đề phù hợp thì nói hệ thống chưa có mô tả cho phần đó, không tự bịa tên trang, nút bấm hay cách tính riêng của hệ thống; nhưng nếu câu hỏi là nghiệp vụ chung (quy trình tín dụng, công thức tài chính, quy định pháp luật) thì vẫn trả lời đầy đủ bằng hiểu biết chuyên môn.
+Câu hỏi nghiệp vụ chung không liên quan tới cách dùng hệ thống thì không cần gọi công cụ.
 Các chủ đề:
 ${dungBanDo(kho)}`;
 }

@@ -67,34 +67,32 @@ export function saveCustomGeminiApiKey(key: string): void {
   } catch {}
 }
 
-export const SYSTEM_INSTRUCTION = `Bạn là Trợ lý AI Tín dụng & Văn thư NỘI BỘ của hệ thống CustomerManager.
-Bạn phục vụ các cán bộ tín dụng, chuyên viên thẩm định và quản lý văn thư ngân hàng.
+export const SYSTEM_INSTRUCTION = `Bạn là trợ lý chuyên môn của cán bộ tín dụng, chuyên viên thẩm định và văn thư ngân hàng, làm việc trong hệ thống CustomerManager.
+Hãy làm việc như một chuyên gia tín dụng và tài chính doanh nghiệp nhiều năm kinh nghiệm, không như một máy tra cứu.
 
-QUY TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ TUYỆT ĐỐI):
-1. TRẢ LỜI NGẮN GỌN, TRỌNG TÂM, THỰC DỤNG:
-   - Đi thẳng vào câu trả lời, không mở đầu và kết thúc dài dòng.
-   - TUYỆT ĐỐI CẤM các câu mở đầu sáo rỗng: "Dựa trên dữ liệu thời gian thực...", "Tính đến thời điểm...", "Tôi xin báo cáo...", "Theo thông tin được cung cấp...", "Dưới đây là bảng...".
-   - TUYỆT ĐỐI CẤM các câu kết thúc máy móc thừa thãi: "Nếu bạn cần nhập liệu...", "Vui lòng cung cấp thêm thông tin...", "Tôi luôn sẵn sàng hỗ trợ...".
+CÁCH NGHĨ:
+- Hiểu ý thật của câu hỏi và việc người hỏi đang cần làm, kể cả khi họ hỏi ngắn hoặc chưa rõ. Câu hỏi mơ hồ thì nêu cách hiểu hợp lý nhất rồi trả lời; chỉ hỏi lại khi thiếu dữ kiện mà không thể giả định được.
+- Với câu hỏi cần phân tích (thẩm định, so sánh, đánh giá rủi ro, lập phương án, tính toán, giải thích nguyên nhân): suy luận từng bước, xét nhiều góc (dòng tiền, tài sản bảo đảm, pháp lý, ngành nghề, kịch bản xấu), cân nhắc phương án khác, rồi đưa ra nhận định và đề xuất của riêng bạn kèm lý do.
+- Được tự do dùng hiểu biết chuyên môn rộng của bạn: pháp luật Việt Nam, kế toán, tài chính, kinh tế, đặc thù ngành, kỹ năng soạn văn bản, cách làm phổ biến của các ngân hàng. Không cần đợi tri thức có sẵn của hệ thống mới được trả lời.
+- Khi tính toán, viết rõ công thức và các số đưa vào để người đọc kiểm lại được.
+- Chỉ ra điều người hỏi có thể chưa nghĩ tới (rủi ro, điểm bất thường, câu hỏi nên hỏi khách hàng, giấy tờ cần bổ sung) khi điều đó thật sự hữu ích.
 
-2. PHÂN TÁCH RÀNH MẠCH CÁC PHÂN HỆ (TUYỆT ĐỐI KHÔNG TRỘN LẪN):
-   - Phân hệ Văn thư (Công văn, quyết định, tờ trình, văn bản pháp quy) và Phân hệ Kho lưu trữ cá nhân (tệp lưu trữ) là HAI MẢNG ĐỘC LẬP HOÀN TOÀN.
-   - Khi người dùng hỏi về Văn thư / Công văn / Văn bản: CHỈ TRẢ LỜI VỀ VĂN THƯ. TUYỆT ĐỐI KHÔNG nhắc đến "Kho lưu trữ", "Token", "Dataset" trong câu trả lời.
-   - Khi người dùng hỏi về Kho lưu trữ / File cá nhân: CHỈ trả lời về kho lưu trữ.
-   - Khi người dùng hỏi về Khách hàng: CHỈ trả lời về danh sách / số lượng khách hàng.
-   - Khi người dùng hỏi về Báo cáo tài chính / phân tích doanh nghiệp: trả lời theo mục 8 và 9, không trộn với danh sách văn thư hay khách hàng.
+NGUỒN VÀ ĐỘ TIN CẬY:
+- Dữ liệu của hệ thống (khách hàng, văn bản văn thư, tệp trong kho, báo cáo tài chính) và nội dung tệp đính kèm là căn cứ chính: trích đúng, không bịa số, không suy đoán nội dung tệp chưa đọc được.
+- Phần dựa trên hiểu biết chung chứ không phải dữ liệu hệ thống hay văn bản đính kèm thì cứ trả lời đầy đủ, nhưng nói rõ đó là nhận định hoặc thông lệ chung. Với số hiệu và điều khoản văn bản pháp luật, mức lãi suất, phí, hạn mức hay quy định nội bộ của ngân hàng, nhắc cán bộ đối chiếu bản hiện hành trước khi dùng.
+- Không chắc thì nói không chắc và nói cần kiểm tra ở đâu; không trình bày điều không chắc như sự thật.
+- Không trộn số liệu giữa các phân hệ: văn bản văn thư, tệp trong kho lưu trữ và danh sách khách hàng là các nguồn khác nhau. Được liên hệ giữa chúng khi câu hỏi cần.
 
-3. KHI HỆ THỐNG CHƯA CÓ DỮ LIỆU:
-   - Nếu chưa có văn thư: Trả lời đúng một câu: "Hiện tại trong hệ thống chưa có văn bản nào."
-   - Nếu chưa có khách hàng: Trả lời đúng một câu: "Hiện tại trong hệ thống chưa có khách hàng nào."
-   - TUYỆT ĐỐI KHÔNG vẽ bảng rỗng hoặc bảng xác nhận trạng thái kho khi hệ thống chưa có dữ liệu.
+CÁCH TRÌNH BÀY:
+1. Đi thẳng vào câu trả lời. Độ dài tương xứng với câu hỏi: hỏi nhanh thì đáp gọn; yêu cầu phân tích thì trình bày đủ lập luận, có đề mục.
+   - Không mở đầu sáo rỗng ("Dựa trên dữ liệu thời gian thực...", "Tôi xin báo cáo...", "Dưới đây là bảng...") và không kết bằng câu mời chào máy móc ("Tôi luôn sẵn sàng hỗ trợ...").
+2. Hệ thống chưa có dữ liệu được hỏi (chưa có văn bản, chưa có khách hàng...) thì nói rõ trong một câu, không vẽ bảng rỗng; nếu câu hỏi vẫn trả lời được bằng hiểu biết chuyên môn thì trả lời tiếp phần đó.
+3. Thống kê từ dữ liệu hệ thống: nêu ngay con số, trình bày bảng Markdown tối giản, không thêm cột hay dòng không liên quan.
+4. Phong cách chuẩn mực, gãy gọn, chuyên nghiệp, bằng tiếng Việt.
 
-4. KHI CÓ DỮ LIỆU VÀ CẦN THỐNG KÊ:
-   - Nêu ngay số lượng cụ thể và trình bày bảng Markdown tối giản chuẩn Excel.
-   - Không tự ý thêm các cột hay dòng không liên quan đến câu hỏi.
-
+KIẾN THỨC NGHIỆP VỤ CẦN NẮM (là nền tảng, không phải giới hạn: được mở rộng ra ngoài khi câu hỏi cần):
 5. NGHIỆP VỤ TÍN DỤNG:
-   - Nắm vững Thông tư 39/2016/TT-NHNN, Thông tư 11/2021/TT-NHNN (phân loại nợ Nhóm 1 - 5, trích lập DPRR).
-   - Phong cách giao tiếp chuẩn mực, gãy gọn, chuyên nghiệp.
+   - Nắm vững Thông tư 39/2016/TT-NHNN, Thông tư 11/2021/TT-NHNN (phân loại nợ Nhóm 1 - 5, trích lập DPRR), Luật Các tổ chức tín dụng, quy định về bảo đảm thực hiện nghĩa vụ.
 
 6. ĐỌC VÀ PHÂN TÍCH HÌNH ẢNH / TÀI LIỆU PDF (MULTIMODAL ANALYSIS):
    - Khi người dùng gửi tệp hình ảnh (ảnh scan, chụp tài liệu, CCCD, sổ đỏ, biên bản, hóa đơn) hoặc tệp PDF:
@@ -172,6 +170,8 @@ export interface StreamExtras {
   onToolUse?: () => void;
   /** Đặt false để tắt công cụ tri thức (lời gọi cần đầu ra thuần như tóm tắt, trích JSON). */
   tools?: boolean;
+  /** Ép mức suy nghĩ; bỏ trống thì tự chọn theo câu hỏi và tệp đính kèm. */
+  depth?: ReasoningDepth;
 }
 
 /** Nội dung gửi Gemini: chữ và tệp của từng tin, cộng tệp bổ sung vào tin người dùng cuối. */
@@ -191,10 +191,22 @@ ${att.textData}` });
   });
 }
 
-/** Trả lời hội thoại không cần suy luận dài: giảm "thinking" để phản hồi đầu tiên đến nhanh. */
-export function thinkingConfigFor(model: string): Record<string, unknown> | undefined {
-  if (/^gemini-2\.5/.test(model)) return { thinkingBudget: 0 };
-  if (/^gemini-3/.test(model)) return { thinkingLevel: 'low' };
+export type ReasoningDepth = 'quick' | 'deep';
+
+const DEEP_REASONING_HINTS = /phân tích|đánh giá|thẩm định|so sánh|vì sao|tại sao|giải thích|đề xuất|tư vấn|rủi ro|phương án|kịch bản|tính toán|\btính\b|soạn|kế hoạch|có nên|khả năng trả nợ|dòng tiền|nhu cầu vốn|hạn mức|cơ cấu|chiến lược/;
+const LONG_QUESTION_CHARS = 160;
+
+/** Câu hỏi tra cứu ngắn trả lời nhanh; câu hỏi cần lập luận hoặc có tệp đi kèm được suy nghĩ sâu. */
+export function reasoningDepthFor(question: string, hasFiles: boolean): ReasoningDepth {
+  if (hasFiles) return 'deep';
+  const q = question.trim().toLowerCase();
+  if (q.length >= LONG_QUESTION_CHARS) return 'deep';
+  return DEEP_REASONING_HINTS.test(q) ? 'deep' : 'quick';
+}
+
+export function thinkingConfigFor(model: string, depth: ReasoningDepth = 'quick'): Record<string, unknown> | undefined {
+  if (/^gemini-2\.5/.test(model)) return { thinkingBudget: depth === 'deep' ? -1 : 0 };
+  if (/^gemini-3/.test(model)) return { thinkingLevel: depth === 'deep' ? 'high' : 'low' };
   return undefined;
 }
 
@@ -214,7 +226,7 @@ export const HEADER_TIMEOUT_WITH_FILES_MS = 90_000;
  */
 type OpenResult = { response: Response } | { failure: string; modelGone: boolean };
 
-async function openStream(model: string, apiKey: string, payload: any, timeoutMs: number): Promise<OpenResult> {
+async function openStream(model: string, apiKey: string, payload: any, timeoutMs: number, depth: ReasoningDepth): Promise<OpenResult> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
   const post = async (body: any) => {
     const controller = new AbortController();
@@ -226,7 +238,7 @@ async function openStream(model: string, apiKey: string, payload: any, timeoutMs
     }
   };
 
-  const thinking = thinkingConfigFor(model);
+  const thinking = thinkingConfigFor(model, depth);
   let res = await post(thinking ? { ...payload, generationConfig: { ...payload.generationConfig, thinkingConfig: thinking } } : payload);
   // Cấu hình thinking bị từ chối thì thử lại đúng model đó không kèm thinking
   if (res.status === 400 && thinking) res = await post(payload);
@@ -328,6 +340,14 @@ NGỮ CẢNH VĂN BẢN ĐANG XEM XÉT:
 ${docContext}`;
   }
 
+  const hasAttachmentsOrLongDoc = Boolean(
+    extras.attachments?.length ||
+    messages.some((m) => m.attachments && m.attachments.length > 0) ||
+    (docContext && docContext.length > 2000)
+  );
+  const lastQuestion = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+  const depth = extras.depth ?? reasoningDepthFor(lastQuestion, hasAttachmentsOrLongDoc);
+
   const payloadFor = (noiDung: unknown[], coCongCu: boolean) => ({
     system_instruction: {
       parts: [{ text: systemPrompt }],
@@ -336,17 +356,12 @@ ${docContext}`;
     ...(coTriThuc && coCongCu ? { tools: [KHAI_BAO_CONG_CU] } : {}),
     generationConfig: {
       temperature: 0.4,
-      maxOutputTokens: 4096,
+      maxOutputTokens: depth === 'deep' ? 8192 : 4096,
     },
   });
   const payload = payloadFor(contents, true);
 
-  const hasAttachmentsOrLongDoc = Boolean(
-    extras.attachments?.length ||
-    messages.some((m) => m.attachments && m.attachments.length > 0) ||
-    (docContext && docContext.length > 2000)
-  );
-  const timeoutMs = hasAttachmentsOrLongDoc ? HEADER_TIMEOUT_WITH_FILES_MS : HEADER_TIMEOUT_MS;
+  const timeoutMs = depth === 'deep' ? HEADER_TIMEOUT_WITH_FILES_MS : HEADER_TIMEOUT_MS;
   let response: Response | null = null;
   let chosenModel = '';
   // Lý do đáng báo nhất: lỗi không phải "model không còn", vì lỗi đó chỉ nói model này hỏng chứ không nói vì sao cả chuỗi hỏng
@@ -356,7 +371,7 @@ ${docContext}`;
     let modelGone = '';
     for (const cand of candidateModels) {
       try {
-        const opened = await openStream(cand, apiKey, payload, timeoutMs);
+        const opened = await openStream(cand, apiKey, payload, timeoutMs, depth);
         if ('response' in opened) {
           response = opened.response;
           chosenModel = cand;
@@ -396,7 +411,7 @@ ${docContext}`;
     }
     let opened: OpenResult;
     try {
-      opened = await openStream(chosenModel, apiKey, payloadFor(noiDung, coCongCu), timeoutMs);
+      opened = await openStream(chosenModel, apiKey, payloadFor(noiDung, coCongCu), timeoutMs, depth);
     } catch (err) {
       const timedOut = err instanceof Error && err.name === 'AbortError';
       throw new AiUnavailableError(
@@ -415,57 +430,6 @@ ${docContext}`;
     yield chunk;
   }
   if (!coChu) throw new AiUnavailableError(MSG_GEMINI_EMPTY);
-}
-
-/**
- * AI Tự động tóm tắt văn bản và trích xuất từ khóa
- */
-export async function summarizeDocumentWithAi(
-  title: string,
-  docNumber?: string,
-  issuer?: string,
-  snippet?: string
-): Promise<{ summary: string; keywords: string[] }> {
-  const prompt = `Hãy tóm tắt ngắn gọn và trích xuất 3-5 từ khóa quan trọng cho văn bản sau:
-- Số hiệu: ${docNumber || 'Không rõ'}
-- Tiêu đề: ${title}
-- Cơ quan ban hành: ${issuer || 'Không rõ'}
-- Nội dung trích xuất: ${snippet || 'Không có bản xem trước'}
-
-Định dạng trả về JSON dạng:
-{
-  "summary": "Tóm tắt từ 2-3 câu ngắn gọn về mục đích, đối tượng và nghĩa vụ trọng tâm...",
-  "keywords": ["Từ khóa 1", "Từ khóa 2", "Từ khóa 3"]
-}`;
-
-  const messages: AiChatMessage[] = [
-    {
-      id: 'sum-1',
-      role: 'user',
-      content: prompt,
-      createdAt: new Date().toISOString(),
-    },
-  ];
-
-  let raw = '';
-  for await (const chunk of streamGeminiContent(messages, undefined, undefined, undefined, { tools: false })) {
-    raw += chunk;
-  }
-
-  try {
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      if (parsed.summary && Array.isArray(parsed.keywords)) {
-        return {
-          summary: parsed.summary,
-          keywords: parsed.keywords,
-        };
-      }
-    }
-  } catch {}
-
-  throw new Error('AI trả về nội dung không đọc được. Hãy thử lại.');
 }
 
 /**

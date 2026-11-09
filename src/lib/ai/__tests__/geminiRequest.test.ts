@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import type { AiAttachment, AiChatMessage } from '../../../types/ai';
-import { AiUnavailableError, MSG_GEMINI_NOT_CONFIGURED, buildContents, describeGeminiFailure, resetModelMemory, streamGeminiContent, thinkingConfigFor } from '../geminiClient';
+import { AiUnavailableError, MSG_GEMINI_NOT_CONFIGURED, buildContents, describeGeminiFailure, resetModelMemory, streamGeminiContent, thinkingConfigFor, reasoningDepthFor, SYSTEM_INSTRUCTION } from '../geminiClient';
 import { mentionsCustomers } from '../systemContext';
 
 const msg = (id: string, role: AiChatMessage['role'], content: string, attachments?: AiAttachment[]): AiChatMessage => ({
@@ -94,6 +94,19 @@ describe('streamGeminiContent khi Gemini không dùng được', () => {
     await expect(drain()).rejects.toThrow('Khóa Gemini bị từ chối (HTTP 403)');
   });
 
+  it('câu hỏi phân tích gửi kèm mức suy nghĩ cao và giới hạn câu trả lời dài hơn; câu hỏi nhanh giữ mức thấp', async () => {
+    const bodies: any[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      return sse('Được');
+    }));
+    for await (const _ of streamGeminiContent(user, undefined, 'gemini-3.8-flash', undefined, { tools: false })) { /* đọc hết */ }
+    expect(bodies[0].generationConfig).toMatchObject({ maxOutputTokens: 8192, thinkingConfig: { thinkingLevel: 'high' } });
+    bodies.length = 0;
+    for await (const _ of streamGeminiContent([msg('2', 'user', 'Xin chào')], undefined, 'gemini-3.8-flash', undefined, { tools: false })) { /* đọc hết */ }
+    expect(bodies[0].generationConfig).toMatchObject({ maxOutputTokens: 4096, thinkingConfig: { thinkingLevel: 'low' } });
+  });
+
   it('mất mạng: báo không kết nối được', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch'); }));
     await expect(drain()).rejects.toThrow('Không kết nối được tới Gemini');
@@ -101,10 +114,49 @@ describe('streamGeminiContent khi Gemini không dùng được', () => {
 });
 
 describe('thinkingConfigFor', () => {
-  it('giảm suy nghĩ cho họ Gemini 2.5 và 3, bỏ qua model khác', () => {
+  it('câu hỏi nhanh giữ mức suy nghĩ thấp như cũ', () => {
     expect(thinkingConfigFor('gemini-2.5-flash')).toEqual({ thinkingBudget: 0 });
     expect(thinkingConfigFor('gemini-3.8-flash')).toEqual({ thinkingLevel: 'low' });
     expect(thinkingConfigFor('gemini-1.5-pro')).toBeUndefined();
+  });
+
+  it('câu hỏi cần lập luận được suy nghĩ sâu', () => {
+    expect(thinkingConfigFor('gemini-2.5-flash', 'deep')).toEqual({ thinkingBudget: -1 });
+    expect(thinkingConfigFor('gemini-3.8-flash', 'deep')).toEqual({ thinkingLevel: 'high' });
+    expect(thinkingConfigFor('gemini-1.5-pro', 'deep')).toBeUndefined();
+  });
+});
+
+describe('reasoningDepthFor', () => {
+  it.each([
+    'Phân tích khả năng trả nợ của công ty này',
+    'Có nên cho vay bổ sung vốn lưu động không?',
+    'Vì sao vòng quay hàng tồn kho giảm?',
+    'Tính nhu cầu vốn lưu động giúp tôi',
+    'Đề xuất tài sản bảo đảm thay thế',
+  ])('"%s" → sâu', (q) => expect(reasoningDepthFor(q, false)).toBe('deep'));
+
+  it.each(['Xin chào', 'Có bao nhiêu văn bản?', 'Danh sách khách hàng mới'])('"%s" → nhanh', (q) =>
+    expect(reasoningDepthFor(q, false)).toBe('quick'));
+
+  it('có tệp hoặc câu hỏi dài thì suy nghĩ sâu', () => {
+    expect(reasoningDepthFor('Xem giúp', true)).toBe('deep');
+    expect(reasoningDepthFor('a'.repeat(160), false)).toBe('deep');
+  });
+});
+
+describe('lời dặn hệ thống', () => {
+  it('cho phép dùng hiểu biết chuyên môn và tự suy luận, vẫn giữ ràng buộc không bịa số liệu', () => {
+    expect(SYSTEM_INSTRUCTION).toContain('Được tự do dùng hiểu biết chuyên môn rộng');
+    expect(SYSTEM_INSTRUCTION).toContain('suy luận từng bước');
+    expect(SYSTEM_INSTRUCTION).toContain('không bịa số');
+    expect(SYSTEM_INSTRUCTION).toContain('nhắc cán bộ đối chiếu bản hiện hành');
+  });
+
+  it('bỏ các lệnh gò câu trả lời vào một phân hệ hoặc một câu cố định', () => {
+    expect(SYSTEM_INSTRUCTION).not.toContain('CHỈ TRẢ LỜI VỀ VĂN THƯ');
+    expect(SYSTEM_INSTRUCTION).not.toContain('Trả lời đúng một câu');
+    expect(SYSTEM_INSTRUCTION).not.toContain('BẮT BUỘC TUÂN THỦ TUYỆT ĐỐI');
   });
 });
 

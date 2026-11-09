@@ -26,7 +26,9 @@ export function MathFormula({ tex, display }: { tex: string; display: boolean })
       .then((katex) => {
         if (!active) return;
         try {
-          setHtml(katex.renderToString(tex, { displayMode: display, throwOnError: true, output: 'html' }));
+          // Công thức trong dòng vẫn vẽ phân số đủ cỡ (\displaystyle): mặc định KaTeX thu tử và mẫu còn ~70%, quá nhỏ để đọc
+          const source = display ? tex : `\\displaystyle ${tex}`;
+          setHtml(katex.renderToString(source, { displayMode: display, throwOnError: true, output: 'html' }));
         } catch {
           setHtml(null);
         }
@@ -37,7 +39,7 @@ export function MathFormula({ tex, display }: { tex: string; display: boolean })
 
   const Tag = display ? 'div' : 'span';
   const className = display
-    ? 'block my-1.5 overflow-x-auto overflow-y-hidden text-sm text-slate-900 dark:text-slate-100'
+    ? 'ai-math-block block my-2 overflow-x-auto overflow-y-hidden text-sm text-slate-900 dark:text-slate-100'
     : 'ai-math-inline text-slate-900 dark:text-slate-100';
 
   if (html === null) {

@@ -147,7 +147,7 @@ export function AiMarkdownMessage({ content }: { content: string }) {
     if (line.trim().startsWith('- ') || line.trim().startsWith('* ') || line.trim().startsWith('• ')) {
       const contentText = line.trim().replace(/^[-*•]\s+/, '');
       elements.push(
-        <div key={i} className="flex items-start gap-2 text-xs leading-relaxed my-0.5 text-slate-800 dark:text-slate-200 pl-2">
+        <div key={i} className="flex items-baseline gap-2 text-xs leading-relaxed my-0.5 text-slate-800 dark:text-slate-200 pl-2">
           <span className="text-slate-400 select-none">•</span>
           <span>{renderFormattedInline(contentText)}</span>
         </div>
@@ -160,7 +160,7 @@ export function AiMarkdownMessage({ content }: { content: string }) {
     const numMatch = line.trim().match(/^(\d+)\.\s+(.*)/);
     if (numMatch) {
       elements.push(
-        <div key={i} className="flex items-start gap-2 text-xs leading-relaxed my-0.5 text-slate-800 dark:text-slate-200 pl-2">
+        <div key={i} className="flex items-baseline gap-2 text-xs leading-relaxed my-0.5 text-slate-800 dark:text-slate-200 pl-2">
           <span className="font-semibold text-slate-500 dark:text-slate-400 select-none min-w-[16px]">{numMatch[1]}.</span>
           <span>{renderFormattedInline(numMatch[2])}</span>
         </div>

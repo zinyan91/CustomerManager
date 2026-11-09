@@ -1,4 +1,11 @@
-/* Ngoài @layer để thắng .katex { font-size: 1.21em } của katex.css; công thức trong dòng cao bằng chữ quanh nó */
+/*
+ * Ngoài @layer để thắng .katex { font-size: 1.21em } của katex.css. Phông toán KaTeX có chiều cao chữ nhỏ hơn
+ * phông giao diện, nên cùng cỡ chữ vẫn trông nhỏ: công thức phải lớn hơn chữ quanh nó mới đọc ngang được.
+ */
 .ai-math-inline .katex {
-  font-size: 1.05em;
+  font-size: 1.25em;
+}
+
+.ai-math-block .katex {
+  font-size: 1.3em;
 }

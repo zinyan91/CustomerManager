@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
+import { joinMultilineMath, splitMathSegments } from '../../lib/ai/plainMath';
+import { MathFormula } from './MathFormula';
 
 export function AiMarkdownMessage({ content }: { content: string }) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -11,7 +13,7 @@ export function AiMarkdownMessage({ content }: { content: string }) {
   };
 
   // Tách nội dung thành các dòng hoặc đoạn để parse cơ bản
-  const lines = content.split('\n');
+  const lines = joinMultilineMath(content).split('\n');
 
   // Render bảng nếu gặp khối markdown table
   const renderTable = (tableLines: string[], key: number) => {
@@ -112,7 +114,7 @@ export function AiMarkdownMessage({ content }: { content: string }) {
     if (line.startsWith('### ')) {
       elements.push(
         <h4 key={i} className="font-bold text-sm text-slate-900 dark:text-slate-100 mt-2 mb-1">
-          {line.slice(4)}
+          {renderFormattedInline(line.slice(4))}
         </h4>
       );
       i++;
@@ -123,7 +125,7 @@ export function AiMarkdownMessage({ content }: { content: string }) {
     if (line.startsWith('## ')) {
       elements.push(
         <h3 key={i} className="font-bold text-base text-slate-900 dark:text-slate-100 mt-2.5 mb-1.5 pb-1 border-b border-slate-200 dark:border-slate-800">
-          {line.slice(3)}
+          {renderFormattedInline(line.slice(3))}
         </h3>
       );
       i++;
@@ -134,7 +136,7 @@ export function AiMarkdownMessage({ content }: { content: string }) {
     if (line.startsWith('# ')) {
       elements.push(
         <h2 key={i} className="font-bold text-lg text-slate-900 dark:text-slate-100 mt-3 mb-2">
-          {line.slice(2)}
+          {renderFormattedInline(line.slice(2))}
         </h2>
       );
       i++;
@@ -174,6 +176,14 @@ export function AiMarkdownMessage({ content }: { content: string }) {
       continue;
     }
 
+    // Dòng chỉ có một công thức đứng riêng ($$...$$ hoặc \[...\])
+    const segments = splitMathSegments(line.trim());
+    if (segments.length === 1 && segments[0].kind === 'math' && segments[0].display) {
+      elements.push(<MathFormula key={i} tex={segments[0].tex} display />);
+      i++;
+      continue;
+    }
+
     // Đoạn văn bản thông thường
     elements.push(
       <p key={i} className="text-xs leading-relaxed text-slate-800 dark:text-slate-200 my-0.5">
@@ -186,11 +196,16 @@ export function AiMarkdownMessage({ content }: { content: string }) {
   return <div className="space-y-0.5 text-xs break-words">{elements}</div>;
 }
 
-/**
- * Xử lý định dạng inline: **in đậm**, *in nghiêng*, `inline code`
- */
+/** Định dạng trong dòng: công thức trước (để dấu * trong công thức không bị hiểu là in nghiêng), rồi đậm, nghiêng, code. */
 function renderFormattedInline(text: string): React.ReactNode {
-  // Thay thế các mẫu inline
+  return splitMathSegments(text).map((seg, idx) =>
+    seg.kind === 'math'
+      ? <MathFormula key={`m${idx}`} tex={seg.tex} display={false} />
+      : <span key={`t${idx}`}>{renderEmphasis(seg.value)}</span>
+  );
+}
+
+function renderEmphasis(text: string): React.ReactNode {
   const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);
 
   return parts.map((part, idx) => {

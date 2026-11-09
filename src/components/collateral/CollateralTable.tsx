@@ -6,9 +6,10 @@ import {
 import type { Collateral, Customer } from '../../types';
 import { fmtMoney, fmtDate } from '../../lib/utils';
 import {
-  isLtvException, appraisalStatus, appraisalExpiryDate, assetClassLabel,
+  isLtvException, appraisalExpiryDate, assetClassLabel,
   collateralValue, maxLoanFromCollateral, getEffectiveLtv,
 } from '../../lib/collateralMath';
+import type { DisplayAppraisalStatus } from '../../lib/collateralUsage';
 
 interface CollateralTableProps {
   filteredCollaterals: Collateral[];
@@ -22,6 +23,7 @@ interface CollateralTableProps {
   onDelete: (c: Collateral) => void;
   deletingId: number | null;
   mortgageNumbersOf?: (collateralId: number) => string[];
+  statusOf: (c: Collateral) => DisplayAppraisalStatus;
 }
 
 function getAssetIcon(type: string) {
@@ -46,6 +48,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
   onDelete,
   deletingId,
   mortgageNumbersOf,
+  statusOf,
 }) => {
   const pageTotalValue = paginatedCollaterals.reduce((sum, c) => sum + collateralValue(c), 0);
   const pageTotalMaxLoan = paginatedCollaterals.reduce((sum, c) => sum + maxLoanFromCollateral(c), 0);
@@ -99,7 +102,7 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
               paginatedCollaterals.map(c => {
                 const isSelected = selectedCollateral?.Id === c.Id;
                 const cust = customers.find(x => x.Id === c.CustomerId);
-                const st = appraisalStatus(c);
+                const st = statusOf(c);
                 const isException = isLtvException(c);
                 const ltvVal = getEffectiveLtv(c);
                 const IconComponent = getAssetIcon(c.AssetType || '');
@@ -231,6 +234,11 @@ export const CollateralTable: React.FC<CollateralTableProps> = ({
                       {st === 'missing' && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface text-ink-faint border border-line/60 shadow-2xs">
                           <span>Chưa định giá</span>
+                        </span>
+                      )}
+                      {st === 'released' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-surface text-ink-muted border border-line/60">
+                          <span>Đã tất toán</span>
                         </span>
                       )}
                       {st === 'valid' && (

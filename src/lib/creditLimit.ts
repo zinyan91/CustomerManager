@@ -255,7 +255,7 @@ export interface CollateralCapacityCheck {
   expiredAppraisals: { collateralId: number; assetCode: string; expiryDate: string | null }[];
 }
 
-export function parseCollateralIds(c: LoanContract): number[] {
+export function parseCollateralIds(c: { CollateralId?: number | null; CollateralIds?: string | null }): number[] {
   const ids = new Set<number>();
   if (c.CollateralId) ids.add(c.CollateralId);
   if (c.CollateralIds) {

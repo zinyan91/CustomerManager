@@ -3,6 +3,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { CollateralTable } from '../collateral/CollateralTable';
 import type { Collateral, Customer } from '../../types';
+import type { DisplayAppraisalStatus } from '../../lib/collateralUsage';
 
 afterEach(cleanup);
 
@@ -11,7 +12,7 @@ const ts = [
   { Id: 4, CustomerId: 7, AssetCode: 'TS-04', AssetType: 'BĐS - Loại 1', AppraisedValue: 500_000_000 },
 ] as Collateral[];
 
-function dung(mortgageNumbersOf?: (id: number) => string[]) {
+function dung(mortgageNumbersOf?: (id: number) => string[], statusOf: (c: Collateral) => DisplayAppraisalStatus = () => 'valid') {
   render(
     <CollateralTable
       filteredCollaterals={ts}
@@ -25,9 +26,18 @@ function dung(mortgageNumbersOf?: (id: number) => string[]) {
       onDelete={() => {}}
       deletingId={null}
       mortgageNumbersOf={mortgageNumbersOf}
+      statusOf={statusOf}
     />
   );
 }
+
+describe('CollateralTable — trạng thái định giá', () => {
+  it('tài sản đã tất toán hiện "Đã tất toán", không hiện "Hết hiệu lực"; tài sản đang bảo đảm vẫn cảnh báo', () => {
+    dung(() => [], c => (c.Id === 3 ? 'released' : 'expired'));
+    expect(screen.getAllByText('Đã tất toán')).toHaveLength(1);
+    expect(screen.getAllByText('Hết hiệu lực')).toHaveLength(1);
+  });
+});
 
 describe('CollateralTable — cột HĐTC', () => {
   it('có cột HĐTC, ghi số HĐTC đang chứa tài sản; tài sản không nằm trong HĐTC nào ghi "—"', () => {

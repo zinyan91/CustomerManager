@@ -271,6 +271,15 @@ export interface CreditContractSummary {
   isEmpty: boolean;
 }
 
+/**
+ * HĐTD còn là hạn mức đã cấp của khách: chưa đóng, chưa hết hiệu lực, và không phải vay từng lần đã tất toán
+ * hết KUNN (vay từng lần giải ngân xong, trả xong là hết nghĩa vụ). Hạn mức quay vòng còn hiệu lực vẫn tính dù dư nợ 0.
+ */
+export function isCurrentGrantedLimit(s: Pick<CreditContractSummary, 'contract' | 'expired' | 'revolving' | 'kunnCount' | 'activeKunnCount'>): boolean {
+  if (s.contract.IsClosed || s.expired) return false;
+  return s.revolving || s.kunnCount === 0 || s.activeKunnCount > 0;
+}
+
 export function totalsOfCreditContracts(
   summaries: CreditContractSummary[],
   hdtdNumber?: string | null
@@ -280,7 +289,9 @@ export function totalsOfCreditContracts(
     ? summaries.filter(s => (s.contract.HdtdNumber || '').trim().toLowerCase() === wanted)
     : summaries;
 
-  const granted = scoped.reduce((sum, s) => sum + (s.contract.ContractAmount || 0), 0);
+  // Cộng chung nhiều HĐTD thì chỉ tính hạn mức còn dùng được; xem riêng một HĐTD thì giữ mức ghi trên hợp đồng
+  const counted = wanted ? scoped : scoped.filter(isCurrentGrantedLimit);
+  const granted = counted.reduce((sum, s) => sum + (s.contract.ContractAmount || 0), 0);
   const outstanding = scoped.reduce((sum, s) => sum + s.outstanding, 0);
   const available = scoped.reduce((sum, s) => sum + s.available, 0);
   return { granted, outstanding, available };

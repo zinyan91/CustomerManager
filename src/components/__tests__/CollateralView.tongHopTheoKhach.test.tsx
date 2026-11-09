@@ -7,6 +7,8 @@ import { CollateralView } from '../views/CollateralView';
 
 vi.mock('../../lib/api', () => ({
   fetchMortgageContractsAPI: async () => [],
+  fetchContractsAPI: async () => [],
+  fetchAllCreditContractsAPI: async () => [],
   fetchCollateralsAPI: async () => ([
     {
       Id: 1, CustomerId: 55, AssetCode: 'TS-55', AssetType: 'BĐS - Loại 1',

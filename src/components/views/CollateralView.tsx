@@ -52,6 +52,7 @@ export const CollateralView: React.FC = () => {
     customerScopedCollateralCount,
     totalCollateralVal,
     appraisalStatusCounts,
+    statusOf,
   } = useCollateralController();
 
   const handleOpenCreateForm = () => {
@@ -98,6 +99,7 @@ export const CollateralView: React.FC = () => {
         setColPage={setColPage}
         totalPages={totalPages}
         onDelete={handleDelete}
+        statusOf={statusOf}
         deletingId={deletingId}
         mortgageNumbersOf={mortgageNumbersOf}
       />

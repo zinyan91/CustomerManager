@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI, fetchMortgageContractsAPI } from '../lib/api';
-import { parseAnyDate, fmtDate, parseMoneyInput, formatMoneyInput } from '../lib/utils';
+import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI, fetchMortgageContractsAPI, fetchContractsAPI, fetchAllCreditContractsAPI } from '../lib/api';
+import { buildCollateralUsage, displayAppraisalStatus } from '../lib/collateralUsage';
+import { parseAnyDate, fmtDate, parseMoneyInput, formatMoneyInput, todayIso } from '../lib/utils';
 import { useSelectedCustomerId } from './useSelectedCustomerId';
 import {
   defaultLtvForAssetType, getEffectiveLtv, isRestrictedAsset, collateralValue,
-  maxLoanFromCollateral, totalUsableCapacity, appraisalStatus,
+  maxLoanFromCollateral, totalUsableCapacity,
 } from '../lib/collateralMath';
-import type { Collateral, Customer, MortgageContract } from '../types';
+import type { Collateral, CreditContract, Customer, LoanContract, MortgageContract } from '../types';
 import { mortgagesOfCollateral } from '../lib/mortgageContract';
 import { useConfirm } from '../context/ConfirmContext';
 
@@ -43,10 +44,12 @@ export function useCollateralController() {
     setTimeout(() => setNotification(null), type === 'error' ? 8000 : 4000);
   }, []);
 
+  const [usageSources, setUsageSources] = useState<{ loans: LoanContract[]; creditContracts: CreditContract[] } | null>(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [colList, custList, mcs] = await Promise.all([
+      const [colList, custList, mcs, loans, ccs] = await Promise.all([
         fetchCollateralsAPI(),
         fetchCustomersAPI(),
         // Cột HĐTC chỉ để tham khảo: nạp lỗi thì bảng TSBĐ vẫn hiện, kèm thông báo cột có thể thiếu.
@@ -54,10 +57,20 @@ export function useCollateralController() {
           showNotify('error', 'Không nạp được danh sách HĐTC; cột HĐTC có thể thiếu.');
           return [] as MortgageContract[];
         }),
+        // Thiếu KUNN/HĐTD thì không biết tài sản nào đã tất toán: giữ cảnh báo định giá như cũ và báo rõ
+        fetchContractsAPI().catch((err: Error) => {
+          showNotify('error', `Không nạp được khoản vay nên chưa lọc được tài sản đã tất toán: ${err.message}`);
+          return null;
+        }),
+        fetchAllCreditContractsAPI().catch((err: Error) => {
+          showNotify('error', `Không nạp được HĐTD nên chưa lọc được tài sản đã tất toán: ${err.message}`);
+          return null;
+        }),
       ]);
       setCollaterals(colList);
       setCustomers(custList);
       setMortgages(mcs);
+      setUsageSources(loans && ccs ? { loans, creditContracts: ccs } : null);
     } catch (err: any) {
       showNotify('error', `Lỗi tải dữ liệu TSBĐ: ${err.message}`);
     } finally {
@@ -223,6 +236,14 @@ export function useCollateralController() {
     [collaterals, scopedCustomerId]
   );
 
+  const usageOf = useMemo(
+    () => (usageSources
+      ? buildCollateralUsage({ ...usageSources, mortgages, today: todayIso() })
+      : () => 'unlinked' as const),
+    [usageSources, mortgages]
+  );
+  const statusOf = useCallback((c: Collateral) => displayAppraisalStatus(c, usageOf), [usageOf]);
+
   const filteredCollaterals = useMemo(() => customerScopedCollaterals.filter(col => {
     const cust = customers.find(c => c.Id === col.CustomerId);
     const q = searchText.trim().toLowerCase();
@@ -234,14 +255,14 @@ export function useCollateralController() {
       if (!cif.includes(q) && !name.includes(q) && !code.includes(q) && !addr.includes(q)) return false;
     }
     if (statusFilter !== 'all') {
-      const st = appraisalStatus(col);
+      const st = statusOf(col);
       if (statusFilter === 'expired' && st !== 'expired') return false;
       if (statusFilter === 'expiring_soon' && st !== 'expiring_soon') return false;
       if (statusFilter === 'missing' && st !== 'missing') return false;
       if (statusFilter === 'valid' && st !== 'valid') return false;
     }
     return true;
-  }), [customerScopedCollaterals, customers, searchText, statusFilter]);
+  }), [customerScopedCollaterals, customers, searchText, statusFilter, statusOf]);
 
   const totalPages = Math.ceil(filteredCollaterals.length / COL_PAGE_SIZE) || 1;
   const paginatedCollaterals = useMemo(() =>
@@ -270,15 +291,16 @@ export function useCollateralController() {
   const appraisalStatusCounts = useMemo(() => {
     const counts = { expired: 0, expiring_soon: 0, missing: 0 };
     for (const c of customerScopedCollaterals) {
-      const st = appraisalStatus(c);
+      const st = statusOf(c);
       if (st === 'expired' || st === 'expiring_soon' || st === 'missing') counts[st] += 1;
     }
     return counts;
-  }, [customerScopedCollaterals]);
+  }, [customerScopedCollaterals, statusOf]);
 
   return {
     customers,
     loading,
+    statusOf,
     selectedCollateral,
     formCollapsed,
     setFormCollapsed,

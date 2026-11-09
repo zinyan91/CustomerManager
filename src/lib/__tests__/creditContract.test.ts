@@ -636,24 +636,62 @@ describe('totalsOfCreditContracts — ba con số trên đầu màn hình', () =
     expect(r.available).toBe(16_000_000);
   });
 
-  it('HĐTD hết hiệu lực không góp gì vào khả dụng, dù mức cấp vẫn tính', () => {
+  it('HĐTD hết hiệu lực không còn tính vào hạn mức đã cấp, không góp vào khả dụng', () => {
     const r = totalsOfCreditContracts(summarizeCreditContracts(
       [cc({ Id: 4, HdtdNumber: 'HD-A', ContractAmount: 4_000_000_000, ContractEndDate: '2026-07-24' })],
       [],
       { today: HOM_NAY }
     ));
-    expect(r.granted).toBe(4_000_000_000);
+    expect(r.granted).toBe(0);
     expect(r.outstanding).toBe(0);
     expect(r.available).toBe(0);
   });
 
-  it('HĐTD đã đóng không góp gì vào khả dụng', () => {
+  it('HĐTD đã đóng không tính vào hạn mức đã cấp, không góp vào khả dụng', () => {
     const r = totalsOfCreditContracts(summarizeCreditContracts(
       [cc({ Id: 4, HdtdNumber: 'HD-A', ContractAmount: 800_000_000, IsClosed: true })],
       [],
       { today: HOM_NAY }
     ));
+    expect(r.granted).toBe(0);
     expect(r.available).toBe(0);
+  });
+
+  it('vay từng lần đã tất toán hết KUNN: không còn là hạn mức đã cấp dù HĐTD chưa đóng', () => {
+    const r = totalsOfCreditContracts(summarizeCreditContracts(
+      [cc({ Id: 4, HdtdNumber: 'HD-A', LoanMethod: 'Cho vay từng lần', ContractAmount: 610_000_000, ContractEndDate: '2035-07-24' })],
+      [kunn({ Id: 1, CreditContractId: 4, LoanAmount: 610_000_000, IsSettled: true })],
+      { today: HOM_NAY }
+    ));
+    expect(r.granted).toBe(0);
+  });
+
+  it('hạn mức quay vòng còn hiệu lực: khách trả hết nợ vẫn còn hạn mức đã cấp và khả dụng đủ', () => {
+    const r = totalsOfCreditContracts(summarizeCreditContracts(
+      [cc({ Id: 4, HdtdNumber: 'HD-A', LoanMethod: 'Hạn mức tín dụng', ContractAmount: 2_000_000_000, ContractEndDate: '2027-05-05' })],
+      [kunn({ Id: 1, CreditContractId: 4, LoanAmount: 2_000_000_000, IsSettled: true })],
+      { today: HOM_NAY }
+    ));
+    expect(r.granted).toBe(2_000_000_000);
+    expect(r.available).toBe(2_000_000_000);
+  });
+
+  it('vay từng lần đã ký chưa giải ngân: vẫn là hạn mức đã cấp', () => {
+    const r = totalsOfCreditContracts(summarizeCreditContracts(
+      [cc({ Id: 4, HdtdNumber: 'HD-A', LoanMethod: 'Cho vay từng lần', ContractAmount: 500_000_000, ContractEndDate: '2035-07-24' })],
+      [],
+      { today: HOM_NAY }
+    ));
+    expect(r.granted).toBe(500_000_000);
+  });
+
+  it('xem riêng một HĐTD theo số hợp đồng: giữ mức cấp ghi trên hợp đồng dù đã đóng', () => {
+    const r = totalsOfCreditContracts(summarizeCreditContracts(
+      [cc({ Id: 4, HdtdNumber: 'HD-A', ContractAmount: 800_000_000, IsClosed: true })],
+      [],
+      { today: HOM_NAY }
+    ), 'HD-A');
+    expect(r.granted).toBe(800_000_000);
   });
 
   it('HĐTD chưa tới ngày hiệu lực không góp gì vào khả dụng', () => {
@@ -677,7 +715,7 @@ describe('totalsOfCreditContracts — ba con số trên đầu màn hình', () =
       [kunn({ Id: 2, CreditContractId: 5, LoanAmount: 400_000_000, CurrentBalance: 400_000_000 })],
       { today: HOM_NAY }
     ));
-    expect(r.granted).toBe(4_600_000_000);
+    expect(r.granted).toBe(600_000_000);
     expect(r.outstanding).toBe(400_000_000);
     expect(r.available).toBe(200_000_000);
   });

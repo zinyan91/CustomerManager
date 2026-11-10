@@ -28,6 +28,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
   const [remainingTenorMonths, setRemainingTenorMonths] = useState<number>(60);
   const [repayMethod, setRepayMethod] = useState<PrepaymentRepayMethod>('equal_principal');
 
+  const [isRevolving, setIsRevolving] = useState(false);
   const [feeScheduleType, setFeeScheduleType] = useState<PrepaymentFeeScheduleType>('by_year');
   const [loanAgeYear, setLoanAgeYear] = useState<number>(2);
   const [customPenaltyPercentStr, setCustomPenaltyPercentStr] = useState<string>('1.5');
@@ -49,6 +50,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
       rateAnnual: (parseFloat(rateAnnualStr) || 0) / 100,
       remainingTenorMonths: Math.max(1, remainingTenorMonths || 1),
       repayMethod,
+      isRevolving,
       feeScheduleType,
       loanAgeYear,
       customPenaltyPercent: parseFloat(customPenaltyPercentStr) || 0,
@@ -61,6 +63,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
     rateAnnualStr,
     remainingTenorMonths,
     repayMethod,
+    isRevolving,
     feeScheduleType,
     loanAgeYear,
     customPenaltyPercentStr,
@@ -266,7 +269,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
             </div>
 
             {/* Mode toggle */}
-            <div className="flex items-center gap-1 bg-surface p-1 rounded-xl border border-line">
+            {!isRevolving && <div className="flex items-center gap-1 bg-surface p-1 rounded-xl border border-line">
               <button
                 type="button"
                 onClick={() => setFeeScheduleType('by_year')}
@@ -289,9 +292,35 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
               >
                 Nhập % trực tiếp
               </button>
+            </div>}
+          </div>
+
+          <div>
+            <span className={labelCls}>Hình thức vay</span>
+            <div className="grid grid-cols-2 gap-1.5" role="group" aria-label="Hình thức vay">
+              {([[true, 'Hạn mức tín dụng'], [false, 'Vay từng lần và hình thức khác']] as const).map(([value, label]) => (
+                <button
+                  key={label}
+                  type="button"
+                  aria-pressed={isRevolving === value}
+                  onClick={() => setIsRevolving(value)}
+                  className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isRevolving === value
+                      ? 'bg-neg text-white shadow-2xs ring-1 ring-neg'
+                      : 'bg-surface border border-line text-ink-muted hover:text-ink hover:bg-panel'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
+          {isRevolving ? (
+            <div className="rounded-xl border border-pos/30 bg-pos-soft/30 px-3 py-2.5 text-xs font-semibold text-pos">
+              Hạn mức tín dụng: miễn phí trả nợ trước hạn
+            </div>
+          ) : <>
           {feeScheduleType === 'by_year' ? (
             <div className="space-y-3">
               <div>
@@ -363,6 +392,7 @@ export const Tool6PrepaymentAnalysisCalc: React.FC<Tool6Props> = ({ styles = UI 
               placeholder="0"
             />
           </div>
+          </>}
 
           <div className="pl-4 border-l-2 border-line/40 space-y-1.5 text-xs">
             <div className="flex justify-between items-center text-ink-muted text-[11px]">

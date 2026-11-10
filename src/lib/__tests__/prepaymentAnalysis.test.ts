@@ -136,6 +136,22 @@ describe('calcPrepaymentAnalysis', () => {
     expect(penaltyPercentForLoanYear(undefined, 6)).toBe(0);
   });
 
+  it('hạn mức tín dụng: miễn phí trả nợ trước hạn, không áp phí tối thiểu, lãi tiết kiệm vẫn tính', () => {
+    const res = calcPrepaymentAnalysis({
+      currentBalance: 1_000_000_000,
+      prepayAmount: 1_000_000_000,
+      rateAnnual: 0.1,
+      remainingTenorMonths: 12,
+      loanAgeYear: 1,
+      isRevolving: true,
+      minPenaltyFee: 500_000,
+    });
+    expect(res.activePenaltyPercent).toBe(0);
+    expect(res.penaltyFee).toBe(0);
+    expect(res.totalInterestSaved).toBeGreaterThan(0);
+    expect(res.netSavings).toBe(res.totalInterestSaved);
+  });
+
   it('năm thiếu trong biểu phí tính là 0, tuổi khoản vay dưới 1 coi là năm 1', () => {
     expect(penaltyPercentForLoanYear([2, 1], 3)).toBe(0);
     expect(penaltyPercentForLoanYear([2, 1], 0)).toBe(2);

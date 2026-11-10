@@ -26,7 +26,7 @@ import { parseNumericId } from '../lib/customerRoutes';
 import { checkCollateralCapacity, computeLimitGroups, findLimitGroupFor } from '../lib/creditLimit';
 import type { LoanContract, CreditContract, RateAdjustmentHistoryItem } from '../types';
 import { usePaymentModal } from './usePaymentModal';
-import { useEarlySettlement } from './useEarlySettlement';
+import { useMultiSettlement } from './useMultiSettlement';
 import { useCustomerPortfolio } from './useCustomerPortfolio';
 import {
   blankFormFields, buildKunnPayload, checkLoanAmount, checkMonthlyPrincipal, contractToFormFields,
@@ -164,15 +164,19 @@ export function useLoanPortfolioController() {
     onLoadingChange: setLoading,
   });
 
-  const earlySettlementProps = useEarlySettlement({
-    selectedContract,
-    schedules,
-    onSettled: ({ contract: updatedContract, schedules: newSchedules }) => {
-      setSchedules(newSchedules);
-      if (selectedContract) {
-        setAllSchedulesMap(prev => ({ ...prev, [updatedContract.Id]: newSchedules }));
-        setSelectedContract(updatedContract);
-        setContracts(prev => prev.map(c => c.Id === updatedContract.Id ? updatedContract : c));
+  const openContractsForSettlement = useMemo(() => contracts.filter(c => !c.IsSettled), [contracts]);
+  const multiSettlementProps = useMultiSettlement({
+    openContracts: openContractsForSettlement,
+    creditContracts,
+    schedulesMap: allSchedulesMap,
+    onSettled: (results) => {
+      const byId = new Map(results.map(r => [r.contract.Id, r]));
+      setAllSchedulesMap(prev => ({ ...prev, ...Object.fromEntries(results.map(r => [r.contract.Id, r.schedules])) }));
+      setContracts(prev => prev.map(c => byId.get(c.Id)?.contract ?? c));
+      const current = selectedContract ? byId.get(selectedContract.Id) : undefined;
+      if (current) {
+        setSelectedContract(current.contract);
+        setSchedules(current.schedules);
       }
     },
     onNotify: showNotify,
@@ -938,7 +942,7 @@ export function useLoanPortfolioController() {
     handleSearch,
     handleSelectContract,
     paymentModalProps,
-    earlySettlementProps,
+    multiSettlementProps,
     prefVal,
     baseVal,
     marginVal,

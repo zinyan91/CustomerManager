@@ -11,3 +11,4 @@ export * from './api/rateQuoteApi';
 export * from './api/cofApi';
 export * from './api/quizBankApi';
 export * from './api/customerProgressApi';
+export * from './api/settlementApi';

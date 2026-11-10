@@ -15,7 +15,7 @@ import type { LoanContract } from '../../types';
 const PaymentModal = lazy(() => import('../portfolio/PaymentModal').then(m => ({ default: m.PaymentModal })));
 const KunnForm = lazy(() => import('../portfolio/KunnForm').then(m => ({ default: m.KunnForm })));
 const ScheduleTab = lazy(() => import('../portfolio/ScheduleTab').then(m => ({ default: m.ScheduleTab })));
-const EarlySettlementModal = lazy(() => import('../portfolio/EarlySettlementModal').then(m => ({ default: m.EarlySettlementModal })));
+const MultiSettlementModal = lazy(() => import('../portfolio/MultiSettlementModal').then(m => ({ default: m.MultiSettlementModal })));
 
 const ComponentFallback = () => (
   <div className="flex items-center justify-center p-8 text-ink-muted">
@@ -94,7 +94,7 @@ export const LoanPortfolioView: React.FC = () => {
     handleSearch,
     handleSelectContract,
     paymentModalProps,
-    earlySettlementProps,
+    multiSettlementProps,
     postPrefRate,
     normalRate,
     surchargeVal,
@@ -231,7 +231,7 @@ export const LoanPortfolioView: React.FC = () => {
             schedules={schedules}
             openPaymentModal={paymentModalProps.open}
             onQuickSettleAll={paymentModalProps.quickSettleAllDue}
-            onOpenEarlySettlement={earlySettlementProps.open}
+            onOpenEarlySettlement={() => multiSettlementProps.open(selectedContract?.Id)}
           />
         </Suspense>
       )}
@@ -341,20 +341,19 @@ export const LoanPortfolioView: React.FC = () => {
         </Suspense>
       )}
 
-      {/* Early Settlement Modal */}
-      {earlySettlementProps.isOpen && selectedContract && (
+      {multiSettlementProps.isOpen && (
         <Suspense fallback={<ComponentFallback />}>
-          <EarlySettlementModal
-            isOpen={earlySettlementProps.isOpen}
-            selectedContract={selectedContract}
-            settlementDate={earlySettlementProps.settlementDate}
-            setSettlementDate={earlySettlementProps.setSettlementDate}
-            penaltyRateStr={earlySettlementProps.penaltyRateStr}
-            setPenaltyRateStr={earlySettlementProps.setPenaltyRateStr}
-            quote={earlySettlementProps.quote}
-            isSubmitting={earlySettlementProps.isSubmitting}
-            onClose={earlySettlementProps.close}
-            onConfirm={earlySettlementProps.executeSettlement}
+          <MultiSettlementModal
+            isOpen={multiSettlementProps.isOpen}
+            lines={multiSettlementProps.lines}
+            drafts={multiSettlementProps.drafts}
+            totals={multiSettlementProps.totals}
+            failures={multiSettlementProps.failures}
+            isSubmitting={multiSettlementProps.isSubmitting}
+            onChangeDraft={multiSettlementProps.updateDraft}
+            onSelectAll={multiSettlementProps.setAllSelected}
+            onClose={multiSettlementProps.close}
+            onConfirm={multiSettlementProps.execute}
           />
         </Suspense>
       )}

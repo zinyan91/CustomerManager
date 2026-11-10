@@ -8,6 +8,8 @@ export interface PrepaymentAnalysisInput {
   remainingTenorMonths: number;
   repayMethod?: PrepaymentRepayMethod;
   feeScheduleType?: PrepaymentFeeScheduleType;
+  /** Hạn mức tín dụng (quay vòng): miễn phí trả nợ trước hạn. */
+  isRevolving?: boolean;
   loanAgeYear?: number;
   disbursementDate?: string;
   prepayDate?: string;
@@ -61,7 +63,9 @@ export function calcPrepaymentAnalysis(input: PrepaymentAnalysisInput): Prepayme
 
   // Xác định tỷ lệ % phí phạt
   let activePenaltyPercent = 0;
-  if (input.feeScheduleType === 'custom_rate') {
+  if (input.isRevolving) {
+    activePenaltyPercent = 0;
+  } else if (input.feeScheduleType === 'custom_rate') {
     activePenaltyPercent = Math.max(0, input.customPenaltyPercent ?? 0);
   } else {
     activePenaltyPercent = penaltyPercentForLoanYear(input.penaltyByYear, input.loanAgeYear ?? 1);

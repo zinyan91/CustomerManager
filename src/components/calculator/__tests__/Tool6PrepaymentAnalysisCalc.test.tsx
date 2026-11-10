@@ -54,6 +54,14 @@ describe('Tool6PrepaymentAnalysisCalc Component', () => {
     expect(screen.getByText('PHÍ PHẠT TRẢ TRƯỚC').parentElement?.parentElement?.textContent).toContain('Tỷ lệ áp dụng: 0.5%');
   });
 
+  it('chọn hạn mức tín dụng: miễn phí, ẩn biểu phí theo năm', () => {
+    render(<Tool6PrepaymentAnalysisCalc styles={UI} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Hạn mức tín dụng' }));
+    expect(screen.getByText('Hạn mức tín dụng: miễn phí trả nợ trước hạn')).toBeDefined();
+    expect(screen.queryByLabelText('Năm 1 (%)')).toBeNull();
+    expect(screen.getByText('PHÍ PHẠT TRẢ TRƯỚC').parentElement?.parentElement?.textContent).toContain('Tỷ lệ áp dụng: 0%');
+  });
+
   it('switches fee schedule type between by_year and custom_rate', () => {
     render(<Tool6PrepaymentAnalysisCalc styles={UI} />);
 

@@ -1,6 +1,7 @@
 import type { Customer, LoanContract, CreditContract, Collateral, PledgeBundle } from '../types';
 import { pledgePortfolioRows } from './pledgePortfolio';
-import { buildMultiSheetXlsx, type XlsxCell, type XlsxSheet, type XlsxStyle, MIME_XLSX } from './xlsxWriter';
+import { buildMultiSheetXlsx, columnLetter, type XlsxCell, type XlsxSheet, type XlsxStyle, MIME_XLSX } from './xlsxWriter';
+import { buildDepositPortfolioData, type DepositRowData } from './depositPortfolio';
 import { downloadBytes } from './xlsExport';
 import { fmtDate, todayIso } from './utils';
 import { kunnPrincipal, outstandingOf } from './loanMath';
@@ -239,288 +240,198 @@ export function formatAppraisalDaysRemaining(
   };
 }
 
+type ColKind = 'text' | 'center' | 'money' | 'rate' | 'amount';
+
+/** Một cột của sheet: tiêu đề, độ rộng, kiểu ô, cách lấy giá trị và có cộng dòng TỔNG CỘNG hay không. */
+interface SheetCol<T> {
+  header: string;
+  width: number;
+  kind: ColKind;
+  get: (row: T) => string | number;
+  sum?: boolean;
+}
+
+const NUM_FMT_AMOUNT = '#,##0.00;(#,##0.00);"-"';
+
+function headerStyle(kind: ColKind): XlsxStyle {
+  if (kind === 'text') return styleHeaderLeft;
+  if (kind === 'money' || kind === 'amount') return styleHeaderRight;
+  return styleHeaderCenter;
+}
+
+function bodyCell(kind: ColKind, value: string | number): XlsxCell {
+  if (kind === 'money') return { value, numeric: true, style: styleNumRight };
+  if (kind === 'amount') return { value, numeric: true, style: { ...styleNumRight, numFmt: NUM_FMT_AMOUNT } };
+  if (kind === 'text') return { value, style: styleLeft };
+  if (kind === 'rate') return { value, style: styleRateCenter };
+  return { value, style: styleCenter };
+}
+
 /**
- * Tạo Workbook Excel đa sheet đầy đủ theo quy chuẩn AGENTS.md
+ * Dựng một sheet bảng: hàng tiêu đề, các dòng dữ liệu, hàng TỔNG CỘNG cuối bảng.
+ * Ô "TỔNG CỘNG" gộp từ cột A tới cột ngay trước cột cộng đầu tiên, để số tiền thẳng cột.
+ */
+function buildTableSheet<T>(name: string, cols: SheetCol<T>[], items: T[]): XlsxSheet {
+  const rows: XlsxCell[][] = [cols.map(c => ({ value: c.header, style: headerStyle(c.kind) }))];
+  for (const item of items) rows.push(cols.map(c => bodyCell(c.kind, c.get(item))));
+
+  const firstSum = cols.findIndex(c => c.sum);
+  rows.push(cols.map((c, i) => {
+    if (i === 0) return { value: 'TỔNG CỘNG', style: styleTotalLabel };
+    if (!c.sum) return { value: '', style: styleTotalLabel };
+    const total = items.reduce((acc, item) => acc + Number(c.get(item) || 0), 0);
+    const style = c.kind === 'amount' ? { ...styleTotalNum, numFmt: NUM_FMT_AMOUNT } : styleTotalNum;
+    return { value: total, numeric: true, style };
+  }));
+
+  const mergeTo = firstSum > 1 ? firstSum : 1;
+  return {
+    name,
+    rows,
+    colWidths: cols.map(c => c.width),
+    merges: mergeTo > 1 ? [`A${rows.length}:${columnLetter(mergeTo - 1)}${rows.length}`] : [],
+    rowHeights: reportRowHeights(rows.length),
+  };
+}
+
+const loanMethodOf = (r: PortfolioKunnRowData) =>
+  r.kunn.LoanMethod || (r.kunn.ContractType === 0 ? 'Hạn mức tín dụng' : 'Cho vay từng lần');
+const rateText = (r: PortfolioKunnRowData) => `${r.interestRatePercent.toFixed(2)}%`;
+const joinOr = (parts: string[]) => parts.filter(Boolean).join('; ') || '—';
+
+/** Các cột khách hàng + khoản vay dùng chung cho sheet tổng hợp và sheet ma trận. */
+const LOAN_COLS: SheetCol<PortfolioKunnRowData>[] = [
+  { header: 'Mã CIF KH', width: 14, kind: 'center', get: r => r.customer.CifKh || '—' },
+  { header: 'Họ tên KH', width: 28, kind: 'text', get: r => r.customer.FullName || '—' },
+  { header: 'Phương thức vay', width: 22, kind: 'text', get: loanMethodOf },
+  { header: 'Số KUNN (GNN)', width: 22, kind: 'center', get: r => r.kunn.ContractNumber },
+  { header: 'Số HĐTD gốc', width: 22, kind: 'center', get: r => r.masterHdtdNumber },
+];
+
+const AMOUNT_COLS = (sum: boolean): SheetCol<PortfolioKunnRowData>[] => [
+  { header: 'Tổng mức cấp (VNĐ)', width: 20, kind: 'money', get: r => r.grantedLimit, sum },
+  { header: 'Số tiền nhận nợ (VNĐ)', width: 20, kind: 'money', get: r => r.principalAmount, sum },
+  { header: 'Dư nợ hiện hữu (VNĐ)', width: 20, kind: 'money', get: r => r.currentBalance, sum },
+  { header: 'Lãi suất (%/năm)', width: 15, kind: 'rate', get: rateText },
+  { header: 'Ngày giải ngân', width: 16, kind: 'center', get: r => fmtDate(r.disbursementDate) },
+  { header: 'Thời hạn GNN', width: 15, kind: 'center', get: r => r.kunnTenor },
+  { header: 'Ngày kết thúc GNN', width: 16, kind: 'center', get: r => fmtDate(r.kunnDueDate) },
+  { header: 'Ngày ký HĐTD', width: 16, kind: 'center', get: r => fmtDate(r.hdtdStartDate) },
+  { header: 'Thời hạn HĐTD', width: 15, kind: 'center', get: r => r.hdtdTenor },
+  { header: 'Ngày kết thúc HĐTD', width: 16, kind: 'center', get: r => fmtDate(r.hdtdEndDate) },
+];
+
+const withStt = <T,>(cols: SheetCol<T & { stt: number }>[]): SheetCol<T & { stt: number }>[] => [
+  { header: 'STT', width: 6, kind: 'center', get: r => r.stt },
+  ...cols,
+];
+
+function securedSummarySheet(data: PortfolioKunnRowData[], today: string): XlsxSheet {
+  type Row = PortfolioKunnRowData & { stt: number };
+  const nearest = (r: Row) =>
+    r.matchedCollaterals.length > 0 ? formatAppraisalDaysRemaining(r.matchedCollaterals[0], today) : null;
+  const cols = withStt<PortfolioKunnRowData>([
+    ...LOAN_COLS,
+    ...AMOUNT_COLS(true),
+    { header: 'Mã TSBĐ', width: 18, kind: 'text', get: r => joinOr(r.matchedCollaterals.map(c => c.AssetCode || 'TSBĐ')) },
+    { header: 'Địa chỉ TSBĐ', width: 34, kind: 'text', get: r => joinOr(r.matchedCollaterals.map(c => c.Address || '')) },
+    { header: 'Giá trị định giá (VNĐ)', width: 20, kind: 'money', sum: true,
+      get: r => r.matchedCollaterals.reduce((acc, c) => acc + collateralValue(c), 0) },
+    { header: 'Loại TSBĐ', width: 20, kind: 'text', get: r => joinOr(r.matchedCollaterals.map(c => assetClassLabel(c.AssetType) || '')) },
+    { header: 'Ngày định giá', width: 16, kind: 'center',
+      get: r => joinOr(r.matchedCollaterals.map(c => fmtDate(c.AppraisalDate)).filter(x => x !== '—')) },
+    { header: 'Hiệu lực định giá', width: 16, kind: 'center',
+      get: r => joinOr(r.matchedCollaterals.map(c => `${c.AppraisalTenorMonths || 12} tháng`)) },
+    { header: 'Ngày kết thúc định giá', width: 18, kind: 'center', get: r => nearest(r)?.expiryDate ?? '—' },
+    { header: 'Số ngày còn lại', width: 18, kind: 'center', get: r => nearest(r)?.daysRemainingLabel ?? '—' },
+  ]);
+  return buildTableSheet('Vay_Co_TSBD', cols, data.map((r, i): Row => ({ ...r, stt: i + 1 })));
+}
+
+function securedMatrixSheet(data: PortfolioKunnRowData[], today: string): XlsxSheet {
+  type Row = PortfolioKunnRowData & { stt: number; col: Collateral | null };
+  const expanded: Row[] = [];
+  for (const r of data) {
+    const cols = r.matchedCollaterals.length > 0 ? r.matchedCollaterals : [null];
+    for (const col of cols) expanded.push({ ...r, col, stt: expanded.length + 1 });
+  }
+  const appraisal = (r: Row) => (r.col ? formatAppraisalDaysRemaining(r.col, today) : null);
+  const cols = withStt<PortfolioKunnRowData & { col: Collateral | null }>([
+    ...LOAN_COLS,
+    ...AMOUNT_COLS(false),
+    { header: 'Mã TSBĐ', width: 18, kind: 'center', get: r => r.col?.AssetCode || '—' },
+    { header: 'Địa chỉ TSBĐ', width: 34, kind: 'text', get: r => r.col?.Address || '—' },
+    { header: 'Giá trị định giá (VNĐ)', width: 22, kind: 'money', sum: true, get: r => (r.col ? collateralValue(r.col) : 0) },
+    { header: 'Loại TSBĐ', width: 20, kind: 'text', get: r => (r.col ? assetClassLabel(r.col.AssetType) : '—') },
+    { header: 'Ngày định giá', width: 16, kind: 'center', get: r => (r.col ? fmtDate(r.col.AppraisalDate) : '—') },
+    { header: 'Hiệu lực ĐG', width: 15, kind: 'center', get: r => (r.col ? `${r.col.AppraisalTenorMonths || 12} tháng` : '—') },
+    { header: 'Ngày kết thúc ĐG', width: 18, kind: 'center', get: r => appraisal(r)?.expiryDate ?? '—' },
+    { header: 'Số ngày còn lại', width: 18, kind: 'center', get: r => appraisal(r)?.daysRemainingLabel ?? '—' },
+  ]);
+  return buildTableSheet('Chi_Tiet_KUNN_TSBD', cols, expanded);
+}
+
+function pledgeLoanSheet(data: PortfolioKunnRowData[]): XlsxSheet {
+  type Row = PortfolioKunnRowData & { stt: number };
+  const cols = withStt<PortfolioKunnRowData>([
+    { header: 'Mã CIF KH', width: 14, kind: 'center', get: r => r.customer.CifKh || '—' },
+    { header: 'Họ tên KH', width: 28, kind: 'text', get: r => r.customer.FullName || '—' },
+    { header: 'Số HĐ cầm cố', width: 22, kind: 'center', get: r => r.kunn.ContractNumber },
+    { header: 'Số tiền vay (VNĐ)', width: 20, kind: 'money', get: r => r.principalAmount, sum: true },
+    { header: 'Dư nợ hiện hữu (VNĐ)', width: 20, kind: 'money', get: r => r.currentBalance, sum: true },
+    { header: 'Lãi suất (%/năm)', width: 15, kind: 'rate', get: rateText },
+    { header: 'Ngày giải ngân', width: 16, kind: 'center', get: r => fmtDate(r.disbursementDate) },
+    { header: 'Thời hạn', width: 14, kind: 'center', get: r => r.kunnTenor },
+    { header: 'Ngày đáo hạn', width: 16, kind: 'center', get: r => fmtDate(r.kunnDueDate) },
+    { header: 'Sổ tiết kiệm cầm cố', width: 26, kind: 'text', get: r => joinOr(r.matchedCollaterals.map(c => c.AssetCode || '')) },
+    { header: 'Giá trị sổ cầm cố (VNĐ)', width: 22, kind: 'money', sum: true,
+      get: r => r.matchedCollaterals.reduce((acc, c) => acc + collateralValue(c), 0) },
+  ]);
+  return buildTableSheet('Vay_Cam_Co', cols, data.map((r, i): Row => ({ ...r, stt: i + 1 })));
+}
+
+function depositSheet(data: DepositRowData[]): XlsxSheet {
+  type Row = DepositRowData & { stt: number };
+  const cols = withStt<DepositRowData>([
+    { header: 'Mã CIF KH', width: 14, kind: 'center', get: r => r.customer.CifKh || '—' },
+    { header: 'Họ tên KH', width: 28, kind: 'text', get: r => r.customer.FullName || '—' },
+    { header: 'Số sổ / CCTG', width: 20, kind: 'center', get: r => r.book.BookNumber },
+    { header: 'Loại tiền gửi', width: 24, kind: 'text', get: r => r.depositTypeLabel },
+    { header: 'Loại tiền', width: 10, kind: 'center', get: r => r.book.Currency || 'VND' },
+    { header: 'Số tiền gửi (nguyên tệ)', width: 20, kind: 'amount', get: r => r.book.Amount },
+    { header: 'Quy đổi VNĐ', width: 20, kind: 'money', get: r => r.amountVnd, sum: true },
+    { header: 'Lãi suất (%/năm)', width: 15, kind: 'rate',
+      get: r => (r.book.InterestRate === null ? '—' : `${r.book.InterestRate.toFixed(2)}%`) },
+    { header: 'Ngày mở', width: 14, kind: 'center', get: r => fmtDate(r.book.OpenDate) },
+    { header: 'Kỳ hạn', width: 12, kind: 'center', get: r => r.tenorLabel },
+    { header: 'Ngày đáo hạn', width: 14, kind: 'center', get: r => fmtDate(r.maturityDate) },
+    { header: 'Phương thức lãnh lãi', width: 20, kind: 'text', get: r => r.interestPaymentLabel },
+    { header: 'Đang cầm cố cho HĐ', width: 24, kind: 'text', get: r => joinOr(r.pledgedContracts) },
+  ]);
+  return buildTableSheet('Huy_Dong', cols, data.map((r, i): Row => ({ ...r, stt: i + 1 })));
+}
+
+/**
+ * Workbook danh mục đang vay, tách bốn sheet:
+ * vay có TSBĐ (tổng hợp và ma trận KUNN – TSBĐ), vay cầm cố sổ tiết kiệm, và huy động (mọi sổ đang mở).
  */
 export function generateCustomerPortfolioWorkbook(
   params: CustomerPortfolioExportParams
 ): Uint8Array {
   const today = params.todayStr || todayIso();
-  const portfolioData = buildActivePortfolioData(params);
+  const secured = buildActivePortfolioData({ ...params, pledge: undefined });
+  const activeCustomers = filterActiveCustomers(params.customers);
+  const pledgeRows = params.pledge ? pledgePortfolioRows(params.pledge, activeCustomers) : [];
+  pledgeRows.sort((a, b) => a.customer.FullName.localeCompare(b.customer.FullName, 'vi')
+    || a.kunn.ContractNumber.localeCompare(b.kunn.ContractNumber, 'vi'));
+  const deposits = params.pledge ? buildDepositPortfolioData(params.pledge, params.customers) : [];
 
-  // ==========================================
-  // SHEET 1: DANH MỤC TỔNG HỢP KHÁCH HÀNG & KHOẢN VAY
-  // ==========================================
-  const sheet1Headers: XlsxCell[] = [
-    { value: 'STT', style: styleHeaderCenter },
-    { value: 'Mã CIF KH', style: styleHeaderCenter },
-    { value: 'Mã CIF KHLQ', style: styleHeaderCenter },
-    { value: 'Họ tên KH', style: styleHeaderLeft },
-    { value: 'Họ tên KHLQ', style: styleHeaderLeft },
-    { value: 'Phương thức vay', style: styleHeaderLeft },
-    { value: 'Số KUNN (GNN)', style: styleHeaderCenter },
-    { value: 'Số HĐTD gốc', style: styleHeaderCenter },
-    { value: 'Tổng mức cấp (VNĐ)', style: styleHeaderRight },
-    { value: 'Số tiền nhận nợ (VNĐ)', style: styleHeaderRight },
-    { value: 'Dư nợ hiện hữu (VNĐ)', style: styleHeaderRight },
-    { value: 'Lãi suất (%/năm)', style: styleHeaderCenter },
-    { value: 'Ngày giải ngân', style: styleHeaderCenter },
-    { value: 'Thời hạn GNN', style: styleHeaderCenter },
-    { value: 'Ngày kết thúc GNN', style: styleHeaderCenter },
-    { value: 'Ngày ký HĐTD', style: styleHeaderCenter },
-    { value: 'Thời hạn HĐTD', style: styleHeaderCenter },
-    { value: 'Ngày kết thúc HĐTD', style: styleHeaderCenter },
-    { value: 'Mã TSBĐ', style: styleHeaderLeft },
-    { value: 'Địa chỉ TSBĐ', style: styleHeaderLeft },
-    { value: 'Giá trị định giá (VNĐ)', style: styleHeaderRight },
-    { value: 'Loại TSBĐ', style: styleHeaderLeft },
-    { value: 'Ngày định giá', style: styleHeaderCenter },
-    { value: 'Hiệu lực định giá', style: styleHeaderCenter },
-    { value: 'Ngày kết thúc định giá', style: styleHeaderCenter },
-    { value: 'Số ngày còn lại', style: styleHeaderCenter },
-  ];
-
-  let sumGranted = 0;
-  let sumPrincipal = 0;
-  let sumBalance = 0;
-  let sumColValSheet1 = 0;
-
-  const sheet1Rows: XlsxCell[][] = [sheet1Headers];
-
-  portfolioData.forEach((item, idx) => {
-    sumGranted += item.grantedLimit;
-    sumPrincipal += item.principalAmount;
-    sumBalance += item.currentBalance;
-
-    const totalColVal = item.matchedCollaterals.reduce((acc, c) => acc + collateralValue(c), 0);
-    sumColValSheet1 += totalColVal;
-
-    const assetCodes = item.matchedCollaterals.map(c => c.AssetCode || 'TSBĐ').join('; ') || '—';
-    const addresses = item.matchedCollaterals.map(c => c.Address).filter(Boolean).join('; ') || '—';
-    const assetTypes = item.matchedCollaterals.map(c => assetClassLabel(c.AssetType)).filter(Boolean).join('; ') || '—';
-    const appraisalDates = item.matchedCollaterals.map(c => fmtDate(c.AppraisalDate)).filter(x => x !== '—').join('; ') || '—';
-    const appraisalTenors = item.matchedCollaterals.map(c => c.AppraisalTenorMonths ? `${c.AppraisalTenorMonths} tháng` : '12 tháng').join('; ') || '—';
-
-    // Tìm TSBĐ có ngày hết hạn gần nhất
-    let nearestExpiry = '—';
-    let nearestStatus = '—';
-    if (item.matchedCollaterals.length > 0) {
-      const parsedExp = item.matchedCollaterals.map(c => formatAppraisalDaysRemaining(c, today));
-      nearestExpiry = parsedExp[0].expiryDate;
-      nearestStatus = parsedExp[0].daysRemainingLabel;
-    }
-
-    sheet1Rows.push([
-      { value: idx + 1, style: styleCenter },
-      { value: item.customer.CifKh || '—', style: styleCenter },
-      { value: item.customer.CifKhlq || '—', style: styleCenter },
-      { value: item.customer.FullName || '—', style: styleLeft },
-      { value: item.customer.SpouseName || '—', style: styleLeft },
-      { value: item.kunn.LoanMethod || (item.kunn.ContractType === 0 ? 'Hạn mức tín dụng' : 'Cho vay từng lần'), style: styleLeft },
-      { value: item.kunn.ContractNumber, style: styleCenter },
-      { value: item.masterHdtdNumber, style: styleCenter },
-      { value: item.grantedLimit, numeric: true, style: styleNumRight },
-      { value: item.principalAmount, numeric: true, style: styleNumRight },
-      { value: item.currentBalance, numeric: true, style: styleNumRight },
-      { value: `${item.interestRatePercent.toFixed(2)}%`, style: styleRateCenter },
-      { value: fmtDate(item.disbursementDate), style: styleCenter },
-      { value: item.kunnTenor, style: styleCenter },
-      { value: fmtDate(item.kunnDueDate), style: styleCenter },
-      { value: fmtDate(item.hdtdStartDate), style: styleCenter },
-      { value: item.hdtdTenor, style: styleCenter },
-      { value: fmtDate(item.hdtdEndDate), style: styleCenter },
-      { value: assetCodes, style: styleLeft },
-      { value: addresses, style: styleLeft },
-      { value: totalColVal, numeric: true, style: styleNumRight },
-      { value: assetTypes, style: styleLeft },
-      { value: appraisalDates, style: styleCenter },
-      { value: appraisalTenors, style: styleCenter },
-      { value: nearestExpiry, style: styleCenter },
-      { value: nearestStatus, style: styleCenter },
-    ]);
-  });
-
-  // HÀNG TỔNG CỘNG CHO SHEET 1: Thẳng hàng 100% các cột số tiền theo AGENTS.md
-  sheet1Rows.push([
-    { value: 'TỔNG CỘNG', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: sumGranted, numeric: true, style: styleTotalNum },
-    { value: sumPrincipal, numeric: true, style: styleTotalNum },
-    { value: sumBalance, numeric: true, style: styleTotalNum },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: sumColValSheet1, numeric: true, style: styleTotalNum },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
+  return buildMultiSheetXlsx([
+    securedSummarySheet(secured, today),
+    securedMatrixSheet(secured, today),
+    pledgeLoanSheet(pledgeRows),
+    depositSheet(deposits),
   ]);
-
-  const sheet1: XlsxSheet = {
-    name: 'Danh_Muc_Tin_Dung',
-    rows: sheet1Rows,
-    colWidths: [6, 14, 14, 28, 28, 22, 22, 22, 20, 20, 20, 15, 16, 15, 16, 16, 15, 16, 18, 34, 20, 20, 16, 16, 18, 18],
-    merges: [`A${sheet1Rows.length}:H${sheet1Rows.length}`],
-    rowHeights: reportRowHeights(sheet1Rows.length),
-  };
-
-  // ==========================================
-  // SHEET 2: CHI TIẾT MA TRẬN KUNN - TSBĐ
-  // ==========================================
-  const sheet2Headers: XlsxCell[] = [
-    { value: 'STT', style: styleHeaderCenter },
-    { value: 'Mã CIF KH', style: styleHeaderCenter },
-    { value: 'Mã CIF KHLQ', style: styleHeaderCenter },
-    { value: 'Họ tên KH', style: styleHeaderLeft },
-    { value: 'Họ tên KHLQ', style: styleHeaderLeft },
-    { value: 'Phương thức vay', style: styleHeaderLeft },
-    { value: 'Số KUNN', style: styleHeaderCenter },
-    { value: 'Số HĐTD gốc', style: styleHeaderCenter },
-    { value: 'Tổng mức cấp (VNĐ)', style: styleHeaderRight },
-    { value: 'Số tiền nhận nợ (VNĐ)', style: styleHeaderRight },
-    { value: 'Dư nợ hiện hữu (VNĐ)', style: styleHeaderRight },
-    { value: 'Lãi suất (%/năm)', style: styleHeaderCenter },
-    { value: 'Ngày giải ngân', style: styleHeaderCenter },
-    { value: 'Thời hạn GNN', style: styleHeaderCenter },
-    { value: 'Ngày kết thúc GNN', style: styleHeaderCenter },
-    { value: 'Ngày ký HĐTD', style: styleHeaderCenter },
-    { value: 'Thời hạn HĐTD', style: styleHeaderCenter },
-    { value: 'Ngày kết thúc HĐTD', style: styleHeaderCenter },
-    { value: 'Mã TSBĐ', style: styleHeaderCenter },
-    { value: 'Địa chỉ TSBĐ', style: styleHeaderLeft },
-    { value: 'Giá trị định giá (VNĐ)', style: styleHeaderRight },
-    { value: 'Loại TSBĐ', style: styleHeaderLeft },
-    { value: 'Ngày định giá', style: styleHeaderCenter },
-    { value: 'Hiệu lực ĐG', style: styleHeaderCenter },
-    { value: 'Ngày kết thúc ĐG', style: styleHeaderCenter },
-    { value: 'Số ngày còn lại', style: styleHeaderCenter },
-  ];
-
-  const sheet2Rows: XlsxCell[][] = [sheet2Headers];
-  let matrixStt = 1;
-  let sumColValSheet2 = 0;
-
-  portfolioData.forEach((item) => {
-    if (item.matchedCollaterals.length === 0) {
-      sheet2Rows.push([
-        { value: matrixStt++, style: styleCenter },
-        { value: item.customer.CifKh || '—', style: styleCenter },
-        { value: item.customer.CifKhlq || '—', style: styleCenter },
-        { value: item.customer.FullName || '—', style: styleLeft },
-        { value: item.customer.SpouseName || '—', style: styleLeft },
-        { value: item.kunn.LoanMethod || (item.kunn.ContractType === 0 ? 'Hạn mức tín dụng' : 'Cho vay từng lần'), style: styleLeft },
-        { value: item.kunn.ContractNumber, style: styleCenter },
-        { value: item.masterHdtdNumber, style: styleCenter },
-        { value: item.grantedLimit, numeric: true, style: styleNumRight },
-        { value: item.principalAmount, numeric: true, style: styleNumRight },
-        { value: item.currentBalance, numeric: true, style: styleNumRight },
-        { value: `${item.interestRatePercent.toFixed(2)}%`, style: styleRateCenter },
-        { value: fmtDate(item.disbursementDate), style: styleCenter },
-        { value: item.kunnTenor, style: styleCenter },
-        { value: fmtDate(item.kunnDueDate), style: styleCenter },
-        { value: fmtDate(item.hdtdStartDate), style: styleCenter },
-        { value: item.hdtdTenor, style: styleCenter },
-        { value: fmtDate(item.hdtdEndDate), style: styleCenter },
-        { value: '—', style: styleCenter },
-        { value: '—', style: styleLeft },
-        { value: 0, numeric: true, style: styleNumRight },
-        { value: '—', style: styleLeft },
-        { value: '—', style: styleCenter },
-        { value: '—', style: styleCenter },
-        { value: '—', style: styleCenter },
-        { value: '—', style: styleCenter },
-      ]);
-    } else {
-      item.matchedCollaterals.forEach((col) => {
-        const val = collateralValue(col);
-        sumColValSheet2 += val;
-        const appraisal = formatAppraisalDaysRemaining(col, today);
-
-        sheet2Rows.push([
-          { value: matrixStt++, style: styleCenter },
-          { value: item.customer.CifKh || '—', style: styleCenter },
-          { value: item.customer.CifKhlq || '—', style: styleCenter },
-          { value: item.customer.FullName || '—', style: styleLeft },
-          { value: item.customer.SpouseName || '—', style: styleLeft },
-          { value: item.kunn.LoanMethod || (item.kunn.ContractType === 0 ? 'Hạn mức tín dụng' : 'Cho vay từng lần'), style: styleLeft },
-          { value: item.kunn.ContractNumber, style: styleCenter },
-          { value: item.masterHdtdNumber, style: styleCenter },
-          { value: item.grantedLimit, numeric: true, style: styleNumRight },
-          { value: item.principalAmount, numeric: true, style: styleNumRight },
-          { value: item.currentBalance, numeric: true, style: styleNumRight },
-          { value: `${item.interestRatePercent.toFixed(2)}%`, style: styleRateCenter },
-          { value: fmtDate(item.disbursementDate), style: styleCenter },
-          { value: item.kunnTenor, style: styleCenter },
-          { value: fmtDate(item.kunnDueDate), style: styleCenter },
-          { value: fmtDate(item.hdtdStartDate), style: styleCenter },
-          { value: item.hdtdTenor, style: styleCenter },
-          { value: fmtDate(item.hdtdEndDate), style: styleCenter },
-          { value: col.AssetCode || '—', style: styleCenter },
-          { value: col.Address || '—', style: styleLeft },
-          { value: val, numeric: true, style: styleNumRight },
-          { value: assetClassLabel(col.AssetType), style: styleLeft },
-          { value: fmtDate(col.AppraisalDate), style: styleCenter },
-          { value: col.AppraisalTenorMonths ? `${col.AppraisalTenorMonths} tháng` : '12 tháng', style: styleCenter },
-          { value: appraisal.expiryDate, style: styleCenter },
-          { value: appraisal.daysRemainingLabel, style: styleCenter },
-        ]);
-      });
-    }
-  });
-
-  // HÀNG TỔNG CỘNG CHO SHEET 2
-  sheet2Rows.push([
-    { value: 'TỔNG CỘNG', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: sumColValSheet2, numeric: true, style: styleTotalNum },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-    { value: '', style: styleTotalLabel },
-  ]);
-
-  const sheet2: XlsxSheet = {
-    name: 'Chi_Tiet_KUNN_TSBD',
-    rows: sheet2Rows,
-    colWidths: [6, 14, 14, 28, 28, 22, 22, 22, 20, 20, 20, 15, 16, 15, 16, 16, 15, 16, 18, 34, 22, 20, 16, 15, 18, 18],
-    merges: [`A${sheet2Rows.length}:T${sheet2Rows.length}`],
-    rowHeights: reportRowHeights(sheet2Rows.length),
-  };
-
-  return buildMultiSheetXlsx([sheet1, sheet2]);
 }
 
 /**

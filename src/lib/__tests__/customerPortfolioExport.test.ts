@@ -175,5 +175,38 @@ describe('customerPortfolioExport', () => {
       expect(bytes).toBeInstanceOf(Uint8Array);
       expect(bytes.length).toBeGreaterThan(500);
     });
+
+    it('tách bốn sheet: vay có TSBĐ, ma trận KUNN–TSBĐ, vay cầm cố, huy động; không còn cột KHLQ', () => {
+      const text = new TextDecoder().decode(generateCustomerPortfolioWorkbook({
+        customers: mockCustomers,
+        contracts: mockContracts,
+        creditContracts: mockCreditContracts,
+        collaterals: mockCollaterals,
+        pledge: {
+          loans: [{
+            Id: 7, CustomerId: 1, ContractNumber: 'CC-07', Amount: 90_000_000, InterestRate: 6.5,
+            DisbursementDate: '2026-09-01', DueDate: '2026-12-01', LoanPurpose: null, IsClosed: false,
+            ClosedDate: null, ClosedHow: null, LegacyCreditContractId: null, LegacyLoanContractId: null,
+            Note: null, CreatedAt: '2026-09-01',
+          }],
+          links: [{ Id: 1, PledgeLoanId: 7, SavingsBookId: 5, PrincipalCovered: 90_000_000, ReleasedDate: null }],
+          repayments: [],
+          books: [{
+            Id: 5, CustomerId: 1, BookNumber: 'STK-0005', DepositType: 'tg_vnd', Currency: 'VND', ExchangeRate: null,
+            Amount: 100_000_000, InterestRate: 5.2, OpenDate: '2026-06-01', Tenor: 6, TenorUnit: 'thang',
+            MaturityDate: null, InterestPaymentMethod: 'end_term', PaidInterest: 0, IsClosed: false,
+            ClosedDate: null, ClosingInterest: null, MovedFromCollateralId: null, Note: null, CreatedAt: '2026-06-01',
+          }],
+        },
+      }));
+      for (const name of ['Vay_Co_TSBD', 'Chi_Tiet_KUNN_TSBD', 'Vay_Cam_Co', 'Huy_Dong']) {
+        expect(text).toContain(`name="${name}"`);
+      }
+      expect(text).not.toContain('KHLQ');
+      expect(text).not.toContain('CIFLQ001');
+      expect(text).not.toContain('Trần Thị B');
+      expect(text).toContain('CC-07');
+      expect(text).toContain('STK-0005');
+    });
   });
 });

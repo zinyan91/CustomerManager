@@ -28,7 +28,7 @@ export function ReportSummaryWorkspace({ ctrl, portfolio }: Props) {
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-sm font-semibold text-ink">Danh mục đang vay</h2>
               <span className="px-2 py-0.5 rounded-full bg-panel-muted text-ink-muted font-mono text-[11px] font-semibold">
-                2 sheet · Danh_Muc_Tin_Dung &amp; Chi_Tiet_KUNN_TSBD
+                4 sheet · Vay có TSBĐ, Chi tiết TSBĐ, Cầm cố, Huy động
               </span>
             </div>
           </div>

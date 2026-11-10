@@ -150,7 +150,7 @@ export const KunnTable: React.FC<KunnTableProps> = ({
                   <td className="px-4 py-3.5 whitespace-nowrap text-center">
                     {isSettled && isSettled(c) ? (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-pos-soft text-pos border border-pos/30 shadow-2xs">
-                        ✓ ĐÃ TẤT TOÁN
+                        ✓ ĐÃ TẤT TOÁN{c.SettledDate ? ` · ${fmtDate(c.SettledDate)}` : ''}
                       </span>
                     ) : (
                       <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold shadow-2xs ${DEBT_GROUP_COLORS[effectiveDg]}`}>

@@ -100,6 +100,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
               <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-2xs ${LIFECYCLE_BADGE[lifecycle]}`}>
                 {LifecycleIcon && <LifecycleIcon className="w-3 h-3" />}
                 {hdtdStatusLabel(lifecycle, activeKunnCount)}
+                {cc.IsClosed && cc.ClosedDate && <span className="font-mono font-semibold">· {fmtDate(cc.ClosedDate)}</span>}
               </span>
               <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-surface border border-line/70 text-ink-muted">
                 {cc.LoanMethod || 'HĐTD'}
@@ -358,6 +359,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
                           }`}>
                             {k.IsSettled ? 'ĐÃ TẤT TOÁN' : 'ĐANG VAY'}
                           </span>
+                          {k.IsSettled && k.SettledDate && <div className="mt-0.5 text-[10px] font-mono text-ink-faint">{fmtDate(k.SettledDate)}</div>}
                         </td>
                       </tr>
                     );

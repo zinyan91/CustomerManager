@@ -102,6 +102,8 @@ export interface CreditContract {
 
   IsClosed?: boolean;
   ClosedDate?: string | null;
+  /** Lúc bấm đóng HĐTD, CSDL tự ghi (migration 81). */
+  ClosedAt?: string | null;
   Note?: string | null;
   CreatedAt?: string;
 
@@ -155,6 +157,8 @@ export interface LoanContract {
   DebtGroup?: number;
   IsSettled?: boolean;
   SettledDate?: string | null;
+  /** Lúc bấm tất toán, CSDL tự ghi (migration 81). */
+  SettledAt?: string | null;
   IsRestructured?: boolean;
   Note?: string | null;
 

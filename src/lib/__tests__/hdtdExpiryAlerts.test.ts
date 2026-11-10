@@ -96,4 +96,12 @@ describe('buildHdtdExpiryList', () => {
     const list = buildHdtdExpiryList([{ ...OLD_KUNN, CreditContractId: undefined }], [], TODAY);
     expect(list[0]).toMatchObject({ endDateStr: '2026-03-01', hdtdId: null });
   });
+
+  it('ưu tiên hạn mức ghi trên HĐTD cha thay vì bản chép cũ trên KUNN', () => {
+    const hdtdWithNewLimit = { ...OLD, ContractAmount: 3_500_000_000 };
+    const kunnWithOldLimit = { ...OLD_KUNN, ContractAmount: 1_400_000_000 };
+    const list = buildHdtdExpiryList([kunnWithOldLimit], [hdtdWithNewLimit], TODAY);
+    expect(list).toHaveLength(1);
+    expect(list[0].contract.ContractAmount).toBe(3_500_000_000);
+  });
 });

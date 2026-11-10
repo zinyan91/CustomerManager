@@ -289,6 +289,30 @@ export function hdtdStatusLabel(lifecycle: HdtdLifecycle, activeKunnCount: numbe
   return activeKunnCount > 0 ? 'HẾT HIỆU LỰC · CÒN DƯ NỢ' : 'HẾT HIỆU LỰC · CẦN TÁI TỤC';
 }
 
+function sumGrantedOfSummaries(summaries: CreditContractSummary[], singleHdtd: boolean): number {
+  if (singleHdtd) {
+    return summaries.reduce((sum, s) => sum + (s.contract.ContractAmount || 0), 0);
+  }
+  const sharedByGroup = new Map<string, number>();
+  let standaloneGranted = 0;
+  for (const s of summaries) {
+    const code = (s.contract.ApprovalCode || '').trim().toLowerCase();
+    const contractAmt = s.contract.ContractAmount || 0;
+    if (!code) {
+      standaloneGranted += contractAmt;
+      continue;
+    }
+    const groupKey = `${s.contract.CustomerId ?? 0}:${code}`;
+    const candidate = (s.contract.ApprovalAmount && s.contract.ApprovalAmount > 0)
+      ? s.contract.ApprovalAmount
+      : contractAmt;
+    const prev = sharedByGroup.get(groupKey) ?? 0;
+    if (candidate > prev) sharedByGroup.set(groupKey, candidate);
+  }
+  for (const amt of sharedByGroup.values()) standaloneGranted += amt;
+  return standaloneGranted;
+}
+
 export function totalsOfCreditContracts(
   summaries: CreditContractSummary[],
   hdtdNumber?: string | null
@@ -300,7 +324,7 @@ export function totalsOfCreditContracts(
 
   // Cộng chung nhiều HĐTD thì chỉ tính hạn mức còn dùng được; xem riêng một HĐTD thì giữ mức ghi trên hợp đồng
   const counted = wanted ? scoped : scoped.filter(isCurrentGrantedLimit);
-  const granted = counted.reduce((sum, s) => sum + (s.contract.ContractAmount || 0), 0);
+  const granted = sumGrantedOfSummaries(counted, Boolean(wanted));
   const outstanding = scoped.reduce((sum, s) => sum + s.outstanding, 0);
   const available = scoped.reduce((sum, s) => sum + s.available, 0);
   return { granted, outstanding, available };
@@ -314,10 +338,22 @@ export function summarizeCreditContracts(
   const outstandingOf = options?.getOutstanding
     ?? ((c: LoanContract) => c.CurrentBalance ?? c.LoanAmount ?? 0);
   const today = options?.today ?? null;
+  const contractIds = new Set(contracts.map(cc => cc.Id));
 
   return contracts.map(cc => {
-    const own = kunns.filter(k => k.CreditContractId === cc.Id);
-    const active = own.filter(k => !isKunnSettled(k));
+    const ccHdtdNo = (cc.HdtdNumber || '').trim().toLowerCase();
+    const own = kunns.filter(k => {
+      if (k.CreditContractId === cc.Id) return true;
+      if (k.CreditContractId !== null && k.CreditContractId !== undefined && contractIds.has(k.CreditContractId)) {
+        return false;
+      }
+      return Boolean(
+        ccHdtdNo &&
+        k.CustomerId === cc.CustomerId &&
+        getMasterHdtdNumber(k).trim().toLowerCase() === ccHdtdNo
+      );
+    });
+    const active = own.filter(k => !isKunnSettled(k) && Math.max(0, outstandingOf(k)) > 0);
     const end = toIso(cc.ContractEndDate);
 
     const outstanding = active.reduce((s, k) => s + Math.max(0, outstandingOf(k)), 0);

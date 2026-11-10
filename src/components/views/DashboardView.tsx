@@ -7,16 +7,16 @@ import {
   fetchAllPledgeLoanBundlesAPI,
 } from '../../lib/api';
 import { PLEDGE_LOAN_METHOD, summarizePledgePortfolio } from '../../lib/pledgePortfolio';
-import { dueCutoffIso, type DuePeriodRow } from '../../lib/duePeriod';
+import { dueCutoffIso, UPCOMING_DAYS, type DuePeriodRow } from '../../lib/duePeriod';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
-import { fmtDate, fmtMoney, toIsoDate, daysUntil, todayIso } from '../../lib/utils';
+import { fmtDate, fmtDecimals, fmtMoney, toIsoDate, daysUntil, todayIso, getMasterHdtdNumber } from '../../lib/utils';
 import { assetClassLabel, collateralValue } from '../../lib/collateralMath';
+import { buildCollateralUsage } from '../../lib/collateralUsage';
 import {
   filterByDue, countByDue,
   DUE_FILTER_LABELS, type DueFilter,
 } from '../../lib/dueList';
-import { kunnPrincipal } from '../../lib/loanMath';
-import { outstandingOf, canQuickSettle, debtGroupFromOverdueDays } from '../../lib/loanMath';
+import { kunnPrincipal, outstandingOf, canQuickSettle, debtGroupFromOverdueDays } from '../../lib/loanMath';
 import { useQuickSettle } from '../../hooks/useQuickSettle';
 import { useNavigate } from 'react-router';
 import { customerPath } from '../../lib/customerRoutes';
@@ -62,7 +62,10 @@ export const DashboardView: React.FC = () => {
         fetchContractsStrictAPI(),
         fetchCardContractsStrictAPI(),
         fetchAllCreditContractsAPI(),
-        fetchPaidPrincipalMapAPI().catch(() => ({} as Record<number, number>)),
+        fetchPaidPrincipalMapAPI().catch((err) => {
+          show('error', `Không nạp được gốc đã thu: ${err instanceof Error ? err.message : String(err)}. Dư nợ tạm tính theo số dư ghi nhận.`);
+          return {} as Record<number, number>;
+        }),
       ]);
 
       setCustomers(resCus);
@@ -143,6 +146,7 @@ export const DashboardView: React.FC = () => {
   } = useMemo(() => {
     const duNoCua = (c: LoanContract) => outstandingOf(c, paidPrincipalMap[c.Id]);
     const unSettled = contracts.filter(c => !c.IsSettled);
+    const activeLoans = unSettled.filter(c => duNoCua(c) > 0);
 
     const tongHopDong = totalsOfCreditContracts(
       summarizeCreditContracts(creditContracts, contracts, {
@@ -150,26 +154,59 @@ export const DashboardView: React.FC = () => {
         today: todayIso(),
       })
     );
+    const ccIds = new Set(creditContracts.map(cc => cc.Id));
+    const ccCustomerHdtdSet = new Set(
+      creditContracts.map(cc => `${cc.CustomerId}:${(cc.HdtdNumber || '').trim().toLowerCase()}`)
+    );
+    const orphanLoans = activeLoans.filter(c => {
+      if (c.CreditContractId !== null && c.CreditContractId !== undefined && ccIds.has(c.CreditContractId)) {
+        return false;
+      }
+      const key = `${c.CustomerId}:${getMasterHdtdNumber(c).trim().toLowerCase()}`;
+      return !ccCustomerHdtdSet.has(key);
+    });
+    const orphanGranted = orphanLoans.reduce(
+      (sum, c) => sum + (c.CreditLimitAmount || c.ContractAmount || kunnPrincipal(c)),
+      0
+    );
+
     const camCo = summarizePledgePortfolio(pledge, todayIso());
-    const debt = tongHopDong.outstanding + camCo.outstanding;
-    const limit = tongHopDong.granted + camCo.granted;
-    const colVal = collaterals.reduce((acc, c) => acc + collateralValue(c), 0) + camCo.collateralValue;
+    const debt = activeLoans.reduce((sum, c) => sum + duNoCua(c), 0) + camCo.outstanding;
+    const limit = tongHopDong.granted + orphanGranted + camCo.granted;
+    const usageOf = buildCollateralUsage({
+      loans: contracts,
+      creditContracts,
+      mortgages: [],
+      today: todayIso(),
+    });
+    const activeCollaterals = collaterals.filter(c => usageOf(c.Id) !== 'released');
+    const colVal = activeCollaterals.reduce((acc, c) => acc + collateralValue(c), 0) + camCo.collateralValue;
     const ltv = colVal > 0 ? (debt / colVal) * 100 : 0;
 
     const validCards = cardContracts.filter(c => !c.IsClosed);
     const cardLimit = totalCardGrantedLimit(cardContracts);
 
-    const methodStats = [
+    const knownMethods = [
       'Hạn mức tín dụng',
       'Cho vay từng lần',
       'Cầm cố sổ tiết kiệm',
       'Hạn mức tín dụng từng lần'
-    ].map(method => {
-      const matched = unSettled.filter(c => c.LoanMethod === method);
+    ];
+    const methodStats = knownMethods.map(method => {
+      const matched = activeLoans.filter(c => (c.LoanMethod || 'Cho vay từng lần') === method);
       const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
       const pledgeExtra = method === PLEDGE_LOAN_METHOD ? camCo : { count: 0, outstanding: 0 };
       return { method, count: matched.length + pledgeExtra.count, amount: amount + pledgeExtra.outstanding, isGrantedLimit: false };
     });
+    const otherMethodLoans = activeLoans.filter(c => !knownMethods.includes(c.LoanMethod || 'Cho vay từng lần'));
+    if (otherMethodLoans.length > 0) {
+      methodStats.push({
+        method: 'Phương thức khác',
+        count: otherMethodLoans.length,
+        amount: otherMethodLoans.reduce((sum, c) => sum + duNoCua(c), 0),
+        isGrantedLimit: false,
+      });
+    }
 
     methodStats.push({
       method: 'Hạn mức thẻ tín dụng',
@@ -179,7 +216,7 @@ export const DashboardView: React.FC = () => {
     });
 
     const groupStats = [1, 2, 3, 4, 5].map(group => {
-      const matched = unSettled.filter(c => (debtGroupByContract.get(c.Id) ?? (c.DebtGroup ?? 1)) === group);
+      const matched = activeLoans.filter(c => (debtGroupByContract.get(c.Id) ?? (c.DebtGroup ?? 1)) === group);
       const amount = matched.reduce((sum, c) => sum + duNoCua(c), 0);
       const pledgeGroup = camCo.byDebtGroup[group as 1 | 2 | 3 | 4 | 5];
       return { group, count: matched.length + pledgeGroup.count, amount: amount + pledgeGroup.amount };
@@ -189,13 +226,13 @@ export const DashboardView: React.FC = () => {
       chuaTatToan: unSettled,
       totalCustomersCount: customers.length,
       customersWithDebtCount: new Set([
-        ...unSettled.filter(c => duNoCua(c) > 0).map(c => c.CustomerId),
+        ...activeLoans.map(c => c.CustomerId),
         ...camCo.customerIds,
       ]).size,
       totalDebt: debt,
       totalLimit: limit,
       totalCollateralVal: colVal,
-      collateralsCount: collaterals.length + camCo.collateralCount,
+      collateralsCount: activeCollaterals.length + camCo.collateralCount,
       weightedLtv: ltv,
       theConHieuLuc: validCards,
       hanMucTheDaCap: cardLimit,
@@ -204,7 +241,7 @@ export const DashboardView: React.FC = () => {
     };
   }, [customers, contracts, collaterals, cardContracts, creditContracts, paidPrincipalMap, debtGroupByContract, pledge]);
 
-  const [onlyGroup1, setOnlyGroup1] = useState(true);
+  const [onlyGroup1, setOnlyGroup1] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [dueMonthFilter, setDueMonthFilter] = useState<DueFilter>('all');
   const [kunnFilter, setKunnFilter] = useState<DueFilter>('all');
@@ -343,12 +380,14 @@ export const DashboardView: React.FC = () => {
     } },
   ];
 
+  const duNoKhoanVay = (c: LoanContract) => outstandingOf(c, paidPrincipalMap[c.Id]);
+
   type KunnRowItem = (typeof kunnRows)[number];
   const kunnColumns: ColumnDef<KunnRowItem>[] = [
     { key: 'kh', label: 'Khách hàng vay', priority: 3, render: r => <span className="font-bold">{r.customer?.FullName || 'N/A'}</span> },
     { key: 'so', label: 'Số HĐTD / KUNN', priority: 2, render: r => <span className="font-mono">{r.contract.ContractNumber}</span> },
     { key: 'soTien', label: 'Số tiền KUNN / dư nợ', priority: 1, align: 'right',
-      render: r => <span className="font-mono font-bold text-pos">{fmtMoney(kunnPrincipal(r.contract))}</span> },
+      render: r => <span className="font-mono font-bold text-pos">{fmtMoney(duNoKhoanVay(r.contract))}</span> },
     { key: 'ketThuc', label: 'Ngày kết thúc KUNN', priority: 1, align: 'center',
       render: r => <span className="font-bold text-accent">{fmtDate(r.contract.KunnDueDate)}</span> },
     { key: 'kyHan', label: 'Kỳ hạn KUNN', priority: 2, align: 'center',
@@ -408,8 +447,8 @@ export const DashboardView: React.FC = () => {
   ];
 
   const formatMoney = (val: number) => {
-    if (val >= 1e9) return (val / 1e9).toFixed(2) + ' Tỷ';
-    if (val >= 1e6) return (val / 1e6).toFixed(0) + ' Trđ';
+    if (val >= 1e9) return `${fmtDecimals(val / 1e9, 2)} Tỷ`;
+    if (val >= 1e6) return `${fmtDecimals(val / 1e6, 0)} Trđ`;
     return fmtMoney(val);
   };
 
@@ -429,21 +468,28 @@ export const DashboardView: React.FC = () => {
   };
 
   // HĐTD hết hạn chỉ là hết hạn giải ngân, không phải nợ quá hạn nên không cộng vào đây.
-  const urgentOverdueCount =
-    dueInMonthList.filter(item => (item.state.daysLeft ?? 0) < 0).length +
-    dueKunnList.filter(item => (item.daysLeft ?? 0) < 0).length;
-
+  // Khi kỳ trả nợ cuối của KUNN trùng ngày đáo hạn KUNN, khử trùng theo Contract.Id để không đếm đôi.
+  const overdueDueMonth = dueInMonthList.filter(item => (item.state.daysLeft ?? 0) < 0);
+  const overdueDueContractIds = new Set(overdueDueMonth.map(item => item.contract.Id));
+  const overdueKunnExtra = dueKunnList.filter(
+    item => (item.daysLeft ?? 0) < 0 && !overdueDueContractIds.has(item.contract.Id)
+  );
+  const urgentOverdueCount = overdueDueMonth.length + overdueKunnExtra.length;
   const urgentOverdueAmount =
-    dueInMonthList.filter(item => (item.state.daysLeft ?? 0) < 0).reduce((s, i) => s + (i.state.period?.TotalAmount ?? 0), 0) +
-    dueKunnList.filter(item => (item.daysLeft ?? 0) < 0).reduce((s, i) => s + kunnPrincipal(i.contract), 0);
+    overdueDueMonth.reduce((s, i) => s + (i.state.period?.TotalAmount ?? 0), 0) +
+    overdueKunnExtra.reduce((s, i) => s + duNoKhoanVay(i.contract), 0);
 
-  const upcoming7DaysCount =
-    dueInMonthList.filter(item => (item.state.daysLeft ?? 0) >= 0 && (item.state.daysLeft ?? 0) <= 7).length +
-    dueKunnList.filter(item => (item.daysLeft ?? 0) >= 0 && (item.daysLeft ?? 0) <= 7).length;
-
+  const upcomingDueMonth = dueInMonthList.filter(
+    item => (item.state.daysLeft ?? 0) >= 0 && (item.state.daysLeft ?? 0) <= UPCOMING_DAYS
+  );
+  const upcomingDueContractIds = new Set(upcomingDueMonth.map(item => item.contract.Id));
+  const upcomingKunnExtra = dueKunnList.filter(
+    item => (item.daysLeft ?? 0) >= 0 && (item.daysLeft ?? 0) <= UPCOMING_DAYS && !upcomingDueContractIds.has(item.contract.Id)
+  );
+  const upcoming7DaysCount = upcomingDueMonth.length + upcomingKunnExtra.length;
   const upcoming7DaysAmount =
-    dueInMonthList.filter(item => (item.state.daysLeft ?? 0) >= 0 && (item.state.daysLeft ?? 0) <= 7).reduce((s, i) => s + (i.state.period?.TotalAmount ?? 0), 0) +
-    dueKunnList.filter(item => (item.daysLeft ?? 0) >= 0 && (item.daysLeft ?? 0) <= 7).reduce((s, i) => s + kunnPrincipal(i.contract), 0);
+    upcomingDueMonth.reduce((s, i) => s + (i.state.period?.TotalAmount ?? 0), 0) +
+    upcomingKunnExtra.reduce((s, i) => s + duNoKhoanVay(i.contract), 0);
 
   const expiringCollateralCount =
     dueCollateralList.filter(item => (item.daysLeft ?? 0) <= 30).length;
@@ -556,8 +602,13 @@ export const DashboardView: React.FC = () => {
           {/* Hotspot 1: Quá hạn thu nợ */}
           <div
             onClick={() => {
-              setAlertConsoleTab('due_month');
-              setDueMonthFilter('expired');
+              if (overdueDueMonth.length === 0 && overdueKunnExtra.length > 0) {
+                setAlertConsoleTab('kunn');
+                setKunnFilter('expired');
+              } else {
+                setAlertConsoleTab('due_month');
+                setDueMonthFilter('expired');
+              }
             }}
             className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
               urgentOverdueCount > 0
@@ -584,11 +635,16 @@ export const DashboardView: React.FC = () => {
             </div>
           </div>
 
-          {/* Hotspot 2: Đến hạn 7 ngày tới */}
+          {/* Hotspot 2: Đến hạn 5 ngày tới */}
           <div
             onClick={() => {
-              setAlertConsoleTab('due_month');
-              setDueMonthFilter('upcoming');
+              if (upcomingDueMonth.length === 0 && upcomingKunnExtra.length > 0) {
+                setAlertConsoleTab('kunn');
+                setKunnFilter('upcoming');
+              } else {
+                setAlertConsoleTab('due_month');
+                setDueMonthFilter('upcoming');
+              }
             }}
             className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
               upcoming7DaysCount > 0
@@ -599,7 +655,7 @@ export const DashboardView: React.FC = () => {
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
                 <span className={`w-2 h-2 rounded-full ${upcoming7DaysCount > 0 ? 'bg-warn' : 'bg-pos'}`} />
-                2. Đến hạn 7 ngày tới
+                2. Đến hạn {UPCOMING_DAYS} ngày tới
               </span>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface/60 border border-line text-ink-faint group-hover:text-warn transition-colors">
                 Lên lịch nhắc →
@@ -619,7 +675,7 @@ export const DashboardView: React.FC = () => {
           <div
             onClick={() => {
               setAlertConsoleTab('tsbd');
-              setTsbdFilter('upcoming');
+              setTsbdFilter('all');
             }}
             className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:-translate-y-0.5 group ${
               expiringCollateralCount > 0
@@ -886,9 +942,6 @@ export const DashboardView: React.FC = () => {
                 {dueHmtdList.length} HĐ cần xử lý
               </span>
             </div>
-            <div className="p-2.5 px-4 bg-surface/20 border-b border-line/40 text-[11px] text-ink-muted">
-              Cảnh báo trước 30 ngày để chủ động lập tờ trình tái cấp hoặc gia hạn.
-            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
@@ -903,7 +956,7 @@ export const DashboardView: React.FC = () => {
                   {dueHmtdList.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="py-6 text-center text-ink-faint text-xs">
-                        Không có HĐTD nào sắp hết hạn trong 30 ngày tới.
+                        Không có HĐTD nào sắp hết hạn hoặc đã quá hạn.
                       </td>
                     </tr>
                   ) : (

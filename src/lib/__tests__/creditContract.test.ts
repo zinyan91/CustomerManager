@@ -769,6 +769,53 @@ describe('totalsOfCreditContracts — ba con số trên đầu màn hình', () =
     ));
     expect(r.available).toBe(0);
   });
+
+  it('KUNN chưa tích IsSettled nhưng gốc đã trả hết (dư nợ = 0) thì không còn là KUNN đang hoạt động và không giữ hạn mức HĐTD đã hết hạn / vay từng lần', () => {
+    const sums = summarizeCreditContracts(
+      [
+        cc({ Id: 4, HdtdNumber: 'HD-HET-HAN', LoanMethod: 'Hạn mức tín dụng', ContractAmount: 4_000_000_000, ContractEndDate: '2026-07-24' }),
+        cc({ Id: 5, HdtdNumber: 'HD-TUNG-LAN', LoanMethod: 'Cho vay từng lần', ContractAmount: 1_500_000_000, ContractEndDate: '2035-07-24' }),
+      ],
+      [
+        kunn({ Id: 1, CreditContractId: 4, LoanAmount: 2_000_000_000, CurrentBalance: 2_000_000_000, IsSettled: false }),
+        kunn({ Id: 2, CreditContractId: 5, LoanAmount: 1_500_000_000, CurrentBalance: 1_500_000_000, IsSettled: false }),
+      ],
+      { getOutstanding: () => 0, today: HOM_NAY }
+    );
+    expect(sums[0].activeKunnCount).toBe(0);
+    expect(sums[1].activeKunnCount).toBe(0);
+    expect(totalsOfCreditContracts(sums)).toEqual({ granted: 0, outstanding: 0, available: 0 });
+  });
+
+  it('nhiều HĐTD dùng chung mã phê duyệt (ApprovalCode) thì hạn mức chỉ tính 1 lần theo mức duyệt chung', () => {
+    const sums = summarizeCreditContracts(
+      [
+        cc({ Id: 4, CustomerId: 1, HdtdNumber: 'HD-A', ApprovalCode: 'TT-2026/01', ApprovalAmount: 5_000_000_000, ContractAmount: 3_000_000_000, ContractEndDate: '2027-05-05' }),
+        cc({ Id: 5, CustomerId: 1, HdtdNumber: 'HD-B', ApprovalCode: 'tt-2026/01', ApprovalAmount: 5_000_000_000, ContractAmount: 3_000_000_000, ContractEndDate: '2027-05-05' }),
+        cc({ Id: 6, CustomerId: 1, HdtdNumber: 'HD-LE', ContractAmount: 1_000_000_000, ContractEndDate: '2027-05-05' }),
+      ],
+      [
+        kunn({ Id: 1, CreditContractId: 4, LoanAmount: 2_000_000_000, CurrentBalance: 2_000_000_000 }),
+        kunn({ Id: 2, CreditContractId: 5, LoanAmount: 1_500_000_000, CurrentBalance: 1_500_000_000 }),
+        kunn({ Id: 3, CreditContractId: 6, LoanAmount: 1_000_000_000, CurrentBalance: 800_000_000 }),
+      ],
+      { today: HOM_NAY }
+    );
+    const r = totalsOfCreditContracts(sums);
+    expect(r.granted).toBe(6_000_000_000);
+    expect(r.outstanding).toBe(4_300_000_000);
+  });
+
+  it('KUNN thiếu CreditContractId vẫn được gom về HĐTD cùng khách hàng và số HĐTD gốc', () => {
+    const sums = summarizeCreditContracts(
+      [cc({ Id: 4, CustomerId: 1, HdtdNumber: '2002/HĐTD/9653222', ContractAmount: 2_000_000_000, ContractEndDate: '2027-05-05' })],
+      [kunn({ Id: 1, CustomerId: 1, CreditContractId: null, ContractNumber: '2002/HĐTD/9653222/GNN-01', LoanAmount: 900_000_000, CurrentBalance: 750_000_000 })],
+      { today: HOM_NAY }
+    );
+    expect(sums[0].activeKunnCount).toBe(1);
+    expect(sums[0].outstanding).toBe(750_000_000);
+    expect(totalsOfCreditContracts(sums).outstanding).toBe(750_000_000);
+  });
 });
 
 describe('mức cấp KHÔNG được cộng theo dòng KUNN', () => {

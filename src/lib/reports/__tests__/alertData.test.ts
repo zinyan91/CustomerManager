@@ -64,6 +64,15 @@ describe('cảnh báo báo cáo giữ cùng phạm vi Dashboard',()=>{
     expect(selectAlertRows(data, filters).collateral.map(r => r.collateral.Id)).toEqual([1]);
   });
 
+  it('tài sản gắn trên HĐTD cha (không chép xuống KUNN) vẫn được cảnh báo khi KUNN còn dư nợ', () => {
+    const data: AlertSnapshot = {
+      ...snapshot,
+      contracts: [contract(1, { CollateralIds: null, CollateralId: null, CreditContractId: 1 })],
+      creditContracts: [{ ...snapshot.creditContracts[0], CollateralIds: '1' }],
+    };
+    expect(selectAlertRows(data, filters).collateral.map(r => r.collateral.Id)).toEqual([1]);
+  });
+
   it('hết gốc vẫn giữ kỳ due còn lãi chưa thu; lưu trữ không che khoản còn nợ', () => {
     const rows = selectAlertRows({
       ...snapshot, contracts: [contract(1)], paidPrincipalMap: { 1: 100_000_000 },

@@ -80,7 +80,13 @@ export function selectAlertRows(data: AlertSnapshot, filters: AlertFilters) {
     .sort((a,b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
   const credit = buildHdtdExpiryList(outstandingEligible, data.creditContracts, data.today)
     .map(item => ({ ...item, customer: customerMap.get(item.contract.CustomerId) }));
-  const usedCollateralIds = new Set(active.filter(hasOutstanding).flatMap(parseCollateralIds));
+  const creditById = new Map(data.creditContracts.map(cc => [cc.Id, cc]));
+  const usedCollateralIds = new Set(
+    active.filter(hasOutstanding).flatMap(c => {
+      const parent = c.CreditContractId ? creditById.get(c.CreditContractId) : undefined;
+      return parent ? [...parseCollateralIds(c), ...parseCollateralIds(parent)] : parseCollateralIds(c);
+    })
+  );
   const collateral = data.collaterals.filter(c => usedCollateralIds.has(c.Id)).map(collateral => {
     const expiryDateStr = appraisalExpiryDate(collateral);
     return { collateral, customer: customerMap.get(collateral.CustomerId), expiryDateStr,

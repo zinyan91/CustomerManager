@@ -64,13 +64,16 @@ export function buildHdtdExpiryList(
 
     const endDateStr = toIsoDate(dates.ContractEndDate) || '';
     const key = parent ? `hdtd:${parent.Id}` : `kh:${c.CustomerId}|${prefix}`;
+    const effectiveContract = parent?.ContractAmount !== undefined && parent?.ContractAmount !== null && parent.ContractAmount > 0
+      ? { ...c, ContractAmount: parent.ContractAmount }
+      : c;
     const current = rows.get(key);
-    if (!current || (c.ContractAmount ?? 0) > (current.contract.ContractAmount ?? 0)) {
+    if (!current || (effectiveContract.ContractAmount ?? 0) > (current.contract.ContractAmount ?? 0)) {
       rows.set(key, {
         key,
         hdtdId: parent?.Id ?? null,
         masterNo: parent?.HdtdNumber || prefix,
-        contract: c,
+        contract: effectiveContract,
         endDateStr,
         daysLeft: daysUntil(endDateStr, today),
       });

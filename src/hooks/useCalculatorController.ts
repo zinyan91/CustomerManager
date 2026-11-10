@@ -31,10 +31,10 @@ export const CALCULATOR_CATEGORIES: ToolCategory[] = [
     icon: FileText,
     tools: [
       { id: 'loan', label: '1. Tính Lịch Thu Nợ Khoản Vay', icon: Calculator },
-      { id: 'credit_capacity', label: '5. Thẩm Định Hạn Mức (DTI/LTV)', icon: ShieldCheck },
-      { id: 'prepayment_analysis', label: '6. Phân Tích Trả Nợ Trước Hạn', icon: Award },
-      { id: 'settlement_estimate', label: '10. Ước Tính Tất Toán Nhiều Khoản', icon: CalendarCheck },
-      { id: 'repayment_compare', label: '7. So Sánh Gốc Đều vs Niên Kim', icon: BarChart2 },
+      { id: 'credit_capacity', label: '2. Thẩm Định Hạn Mức (DTI/LTV)', icon: ShieldCheck },
+      { id: 'prepayment_analysis', label: '3. Phân Tích Trả Nợ Trước Hạn', icon: Award },
+      { id: 'settlement_estimate', label: '4. Ước Tính Tất Toán Nhiều Khoản', icon: CalendarCheck },
+      { id: 'repayment_compare', label: '5. So Sánh Gốc Đều vs Niên Kim', icon: BarChart2 },
     ],
   },
   {
@@ -42,8 +42,8 @@ export const CALCULATOR_CATEGORIES: ToolCategory[] = [
     label: '2. Cho Vay Cầm Cố STK',
     icon: PiggyBank,
     tools: [
-      { id: 'stk_single', label: '2. Tính Cầm Cố STK Đơn', icon: Layers },
-      { id: 'stk_multi', label: '3. Tính Cầm Cố STK Tái Tục', icon: TrendingUp },
+      { id: 'stk_single', label: '1. Tính Cầm Cố STK Đơn', icon: Layers },
+      { id: 'stk_multi', label: '2. Tính Cầm Cố STK Tái Tục', icon: TrendingUp },
     ],
   },
   {
@@ -51,9 +51,9 @@ export const CALCULATOR_CATEGORIES: ToolCategory[] = [
     label: '3. Lãi Suất & Phạt Quá Hạn',
     icon: Percent,
     tools: [
-      { id: 'rate_reduction', label: '4. Tính Giảm Lãi Suất Vay', icon: TrendingDown },
-      { id: 'rate_conversion', label: '8. Quy Đổi Lãi Phẳng & EAR', icon: RefreshCw },
-      { id: 'overdue_penalty', label: '9. Tính Phạt Chậm Trả Quá Hạn', icon: AlertTriangle },
+      { id: 'rate_reduction', label: '1. Tính Giảm Lãi Suất Vay', icon: TrendingDown },
+      { id: 'rate_conversion', label: '2. Quy Đổi Lãi Phẳng & EAR', icon: RefreshCw },
+      { id: 'overdue_penalty', label: '3. Tính Phạt Chậm Trả Quá Hạn', icon: AlertTriangle },
     ],
   },
 ];

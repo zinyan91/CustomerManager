@@ -5,6 +5,7 @@ import {
   fetchCardContractsByCustomerAPI, fetchCardSupplementaryHoldersAPI,
   saveCardContractAPI, replaceCardSupplementaryHoldersAPI, deleteCardContractAPI,
 } from '../lib/api';
+import { filterActiveCustomers } from '../lib/customerStatus';
 import {
   CARD_TENOR_MONTHS, SUPPLEMENTARY_RELATIONS,
   cardPoliciesForCollateralKind, cardPolicyOf,
@@ -58,8 +59,9 @@ export function useCardContractController() {
 
   useEffect(() => {
     fetchCustomersAPI().then(list => {
-      list.sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
-      setCustomers(list);
+      const active = filterActiveCustomers(list);
+      active.sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
+      setCustomers(active);
     }).catch(() => { });
   }, []);
 

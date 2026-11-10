@@ -3,7 +3,7 @@ import {
   buildActivePortfolioData,
   type CustomerPortfolioExportParams,
 } from '../../customerPortfolioExport';
-import { ST, headerRow, textCell, moneyCell, numCell, totalRow, sumOf } from '../sheetStyles';
+import { ST, headerRow, textCell, moneyCell, numCell, totalRow, totalMerges, reportRowHeights, sumOf } from '../sheetStyles';
 import type { ReportLoadContext } from '../types';
 
 const COT = [
@@ -31,16 +31,21 @@ export function buildPortfolioSheet(
     numCell(r.interestRatePercent),
   ]);
 
+  const sums = {
+    7: sumOf(data.map(r => r.principalAmount)),
+    8: sumOf(data.map(r => r.currentBalance)),
+  };
+  const sheetRows = [
+    headerRow(COT),
+    ...body,
+    totalRow(COT.length, sums),
+  ];
+
   return {
     name: 'Danh muc dang vay',
-    rows: [
-      headerRow(COT),
-      ...body,
-      totalRow(COT.length, {
-        7: sumOf(data.map(r => r.principalAmount)),
-        8: sumOf(data.map(r => r.currentBalance)),
-      }),
-    ],
-    colWidths: [5, 12, 26, 14, 16, 16, 18, 18, 18, 11],
+    rows: sheetRows,
+    colWidths: [6, 14, 28, 18, 20, 20, 20, 20, 20, 14],
+    merges: totalMerges(sheetRows.length, sums),
+    rowHeights: reportRowHeights(sheetRows.length),
   };
 }

@@ -25,6 +25,19 @@ export function filterCustomersByStatus(
   return customers.filter(c => isCustomerArchived(c) === archived);
 }
 
+export function filterActiveCustomers(
+  customers: Customer[] | null | undefined
+): Customer[] {
+  return filterCustomersByStatus(customers, 'active');
+}
+
+export function archivedCustomerIdSet(
+  customers: Customer[] | null | undefined
+): Set<number> {
+  if (!customers) return new Set();
+  return new Set(customers.filter(isCustomerArchived).map(c => c.Id));
+}
+
 export interface CustomerLinkCounts {
   kunn: number;
   hdtd: number;

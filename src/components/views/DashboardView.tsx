@@ -6,6 +6,7 @@ import {
   fetchOutstandingSchedulesAPI, fetchAllCreditContractsAPI, fetchPaidPrincipalMapAPI,
   fetchAllPledgeLoanBundlesAPI,
 } from '../../lib/api';
+import { archivedCustomerIdSet, filterActiveCustomers, isCustomerArchived } from '../../lib/customerStatus';
 import { PLEDGE_LOAN_METHOD, summarizePledgePortfolio } from '../../lib/pledgePortfolio';
 import { dueCutoffIso, UPCOMING_DAYS, type DuePeriodRow } from '../../lib/duePeriod';
 import { totalCardGrantedLimit } from '../../lib/cardContract';
@@ -68,21 +69,36 @@ export const DashboardView: React.FC = () => {
         }),
       ]);
 
-      setCustomers(resCus);
-      setCollaterals(resCol);
-      setContracts(resCon);
-      setCardContracts(resCard);
-      setCreditContracts(resCc);
+      const archivedIds = archivedCustomerIdSet(resCus);
+      const isRecordOfActiveCustomer = <T extends { CustomerId: number; customer?: Customer }>(item: T) =>
+        !archivedIds.has(item.CustomerId) && !isCustomerArchived(item.customer);
+
+      const activeCus = filterActiveCustomers(resCus);
+      const activeCol = resCol.filter(isRecordOfActiveCustomer);
+      const activeCon = resCon.filter(isRecordOfActiveCustomer);
+      const activeCard = resCard.filter(isRecordOfActiveCustomer);
+      const activeCc = resCc.filter(isRecordOfActiveCustomer);
+
+      setCustomers(activeCus);
+      setCollaterals(activeCol);
+      setContracts(activeCon);
+      setCardContracts(activeCard);
+      setCreditContracts(activeCc);
       setPaidPrincipalMap(resPaid);
       setLoadError(null);
       try {
-        setPledge(await fetchAllPledgeLoanBundlesAPI());
+        const rawPledge = await fetchAllPledgeLoanBundlesAPI();
+        setPledge({
+          ...rawPledge,
+          loans: rawPledge.loans.filter(l => !archivedIds.has(l.CustomerId)),
+          books: rawPledge.books.filter(b => !archivedIds.has(b.CustomerId)),
+        });
       } catch (err) {
         setPledge({ loans: [], links: [], repayments: [], books: [] });
         show('error', `Không nạp được khoản vay cầm cố: ${err instanceof Error ? err.message : String(err)}. Tổng dư nợ chưa gồm phần cầm cố.`);
       }
 
-      const idsChuaTatToan = resCon.filter(c => !c.IsSettled && !isKunnOfClosedHdtd(c, resCc)).map(c => c.Id);
+      const idsChuaTatToan = activeCon.filter(c => !c.IsSettled && !isKunnOfClosedHdtd(c, activeCc)).map(c => c.Id);
       try {
         setDuePeriods(await fetchOutstandingSchedulesAPI(idsChuaTatToan, dueCutoffIso()));
         setScheduleError(null);

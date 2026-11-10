@@ -69,6 +69,7 @@ export function useCustomerListController() {
         cif: searchCif,
         name: searchName,
         nationalId: searchNationalId,
+        includeArchived: true,
       });
       data.sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
       setCustomers(data);

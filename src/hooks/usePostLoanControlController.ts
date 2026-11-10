@@ -5,6 +5,7 @@ import {
   fetchPostLoanControlRecordsAPI, savePostLoanControlRecordAPI,
   saveCollateralAppraisalAPI,
 } from '../lib/api';
+import { archivedCustomerIdSet, filterActiveCustomers, isCustomerArchived } from '../lib/customerStatus';
 import type { Collateral, Customer, LoanContract, PostLoanControlRecord, ControlResult } from '../types';
 import {
   generateControlSchedule, mergeControlRecords, summarizeWithRecords,
@@ -54,12 +55,13 @@ export function usePostLoanControlController() {
       const [cons, cols, custs, recs] = await Promise.all([
         fetchContractsAPI(),
         fetchCollateralsAPI(),
-        fetchCustomersAPI(),
+        fetchCustomersAPI({ includeArchived: true }),
         fetchPostLoanControlRecordsAPI(),
       ]);
-      setContracts(cons);
-      setCollaterals(cols);
-      setCustomers(custs);
+      const archivedIds = archivedCustomerIdSet(custs);
+      setContracts(cons.filter(c => !archivedIds.has(c.CustomerId) && !isCustomerArchived(c.customer)));
+      setCollaterals(cols.filter(c => !archivedIds.has(c.CustomerId) && !isCustomerArchived(c.customer)));
+      setCustomers(filterActiveCustomers(custs));
       setRecords(recs);
     } catch (err: any) {
       showNotify('error', `Lỗi tải dữ liệu kiểm soát sau vay: ${err.message}`);

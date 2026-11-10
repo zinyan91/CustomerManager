@@ -1,8 +1,9 @@
 import type { Collateral, CreditContract, Customer, LoanContract, RepaymentSchedule } from '../../types';
 import { isScheduleFullySettled, outstandingOf } from '../loanMath';
-import { summarizeCreditContracts, resolveMasterHdtdNumber } from '../creditContract';
+import { isKunnOfClosedHdtd, summarizeCreditContracts, resolveMasterHdtdNumber } from '../creditContract';
 import { appraisalExpiryDate, assetClassLabel, getEffectiveLtv, maxLoanFromCollateral } from '../collateralMath';
 import { getEffectiveActiveRate } from '../rateResolution';
+import { archivedCustomerIdSet, filterActiveCustomers, isCustomerArchived } from '../customerStatus';
 import type { KunnSheetRow } from './builders/kunnSheet';
 import type { DueSheetRow } from './builders/dueSheet';
 import type { CreditSheetRow } from './builders/creditSheet';
@@ -11,8 +12,15 @@ import type { CollateralSheetRow } from './builders/collateralSheet';
 type PaidPrincipalMap = Record<number, number>;
 
 function customerLookup(customers: Customer[]): (id: number) => Customer | undefined {
-  const map = new Map(customers.map(c => [c.Id, c]));
+  const map = new Map(filterActiveCustomers(customers).map(c => [c.Id, c]));
   return id => map.get(id);
+}
+
+function isRecordOfActiveCustomer<T extends { CustomerId: number; customer?: Customer }>(
+  item: T,
+  archivedIds: Set<number>
+): boolean {
+  return !archivedIds.has(item.CustomerId) && !isCustomerArchived(item.customer);
 }
 
 function outstandingFor(k: LoanContract, paid: PaidPrincipalMap): number {
@@ -37,11 +45,12 @@ export function mapKunnRows(
   creditContracts: CreditContract[] = [],
   todayIso?: string
 ): KunnSheetRow[] {
+  const archivedIds = archivedCustomerIdSet(customers);
   const khOf = customerLookup(customers);
   const lichOf = schedulesByContract(outstandingSchedules);
 
   return contracts
-    .filter(k => k.IsSettled !== true)
+    .filter(k => k.IsSettled !== true && !isKunnOfClosedHdtd(k, creditContracts) && isRecordOfActiveCustomer(k, archivedIds))
     .map(k => {
       const kh = khOf(k.CustomerId);
       return {
@@ -67,8 +76,13 @@ export function mapDueRows(
   outstandingSchedules: RepaymentSchedule[],
   paid: PaidPrincipalMap
 ): DueSheetRow[] {
+  const archivedIds = archivedCustomerIdSet(customers);
   const khOf = customerLookup(customers);
-  const khoanOf = new Map(contracts.filter(k => k.IsSettled !== true).map(k => [k.Id, k]));
+  const khoanOf = new Map(
+    contracts
+      .filter(k => k.IsSettled !== true && isRecordOfActiveCustomer(k, archivedIds))
+      .map(k => [k.Id, k])
+  );
   const conNo = outstandingSchedules.filter(s => !isScheduleFullySettled(s));
   const lichOf = schedulesByContract(conNo);
 
@@ -101,9 +115,11 @@ export function mapCreditRows(
   paid: PaidPrincipalMap,
   todayIso: string
 ): CreditSheetRow[] {
+  const archivedIds = archivedCustomerIdSet(customers);
   const khOf = customerLookup(customers);
-  const dangMo = creditContracts.filter(c => c.IsClosed !== true);
-  const tomTat = summarizeCreditContracts(dangMo, contracts, {
+  const dangMo = creditContracts.filter(c => c.IsClosed !== true && isRecordOfActiveCustomer(c, archivedIds));
+  const activeContracts = contracts.filter(k => isRecordOfActiveCustomer(k, archivedIds));
+  const tomTat = summarizeCreditContracts(dangMo, activeContracts, {
     getOutstanding: k => outstandingFor(k, paid),
     today: todayIso,
   });
@@ -127,9 +143,12 @@ export function mapCreditRows(
 }
 
 export function mapCollateralRows(customers: Customer[], collaterals: Collateral[]): CollateralSheetRow[] {
+  const archivedIds = archivedCustomerIdSet(customers);
   const khOf = customerLookup(customers);
 
-  return collaterals.map(c => {
+  return collaterals
+    .filter(c => isRecordOfActiveCustomer(c, archivedIds))
+    .map(c => {
     const giaTri = c.AppraisedValue ?? c.Value ?? null;
     const kh = khOf(c.CustomerId);
     return {

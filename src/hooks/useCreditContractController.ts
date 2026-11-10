@@ -7,6 +7,7 @@ import {
   deleteCreditContractAPI, countKunnOfCreditContractAPI,
   fetchCollateralsByCustomerAPI, fetchRepaymentSchedulesAPI, fetchMortgageContractsAPI,
 } from '../lib/api';
+import { filterActiveCustomers } from '../lib/customerStatus';
 import { customerPath } from '../lib/customerRoutes';
 import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
 import { todayIso, parseMoneyInput, formatMoneyInput } from '../lib/utils';
@@ -49,7 +50,7 @@ export function useCreditContractController() {
   }, []);
 
   useEffect(() => {
-    fetchCustomersAPI({}).then(setAllCustomers);
+    fetchCustomersAPI({}).then(list => setAllCustomers(filterActiveCustomers(list)));
   }, []);
 
   const loadTokenRef = useRef(0);

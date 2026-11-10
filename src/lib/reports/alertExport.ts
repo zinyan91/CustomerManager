@@ -4,6 +4,7 @@ import { kunnPrincipal } from '../loanMath';
 import { assetClassLabel, collateralValue } from '../collateralMath';
 import type { DueListSheetInput } from '../dueList';
 import type { AlertReportId, AlertRows } from './alertData';
+import { ST, reportRowHeights } from './sheetStyles';
 
 interface AlertExport {
   sheet: XlsxSheet;
@@ -11,9 +12,9 @@ interface AlertExport {
   print: DueListSheetInput;
 }
 
-const left: XlsxStyle = { align: 'left' };
-const center: XlsxStyle = { align: 'center' };
-const money: XlsxStyle = { align: 'right', numFmt: '#,##0' };
+const left: XlsxStyle = ST.left;
+const center: XlsxStyle = ST.center;
+const money: XlsxStyle = ST.money;
 const timeLeft = (days: number | null, overdue: string, upcoming = 'Còn') =>
   days === null ? '—' : days < 0 ? `${overdue} ${Math.abs(days)} ngày` : `${upcoming} ${days} ngày`;
 const dueTime = (days: number | null) =>
@@ -25,10 +26,17 @@ function assemble(
   printColumns?: string[], printRows?: string[][], printRight?: number[],
 ): AlertExport {
   const styles = headers.map((_,i) => moneyColumns.includes(i) ? money : i === 1 || (name === 'TSBD_Het_Han_DG' && i === 3) ? left : center);
-  const header = headers.map((value,i): XlsxCell => ({ value, style: { bold: true, align: styles[i].align } }));
+  const headerStyles = headers.map((_,i) => moneyColumns.includes(i) ? ST.headerRight : i === 1 || (name === 'TSBD_Het_Han_DG' && i === 3) ? ST.headerLeft : ST.headerCenter);
+  const header = headers.map((value,i): XlsxCell => ({ value, style: headerStyles[i] }));
+  const sheetRows = [header, ...rows.map(row => row.map((value,i): XlsxCell =>
+    ({ value, numeric: typeof value === 'number' && moneyColumns.includes(i), style: styles[i] })))];
   return {
-    sheet: { name, rows: [header, ...rows.map(row => row.map((value,i): XlsxCell =>
-      ({ value, numeric: typeof value === 'number' && moneyColumns.includes(i), style: styles[i] })))], colWidths: widths },
+    sheet: {
+      name,
+      rows: sheetRows,
+      colWidths: widths,
+      rowHeights: reportRowHeights(sheetRows.length, false),
+    },
     fileName: `${fileBase}_${today}.xlsx`,
     print: {
       title, columns: printColumns ?? headers,

@@ -5,6 +5,7 @@ import {
   fetchCardContractsByCustomerAPI,
   fetchCustomersAPI, fetchRepaymentSchedulesAPI,
 } from '../lib/api';
+import { filterActiveCustomers } from '../lib/customerStatus';
 import { recalculateSchedules } from '../lib/loanMath';
 
 interface UseCustomerPortfolioParams {
@@ -44,8 +45,9 @@ export function useCustomerPortfolio({
 
   useEffect(() => {
     fetchCustomersAPI().then(list => {
-      list.sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
-      setAllCustomers(list);
+      const active = filterActiveCustomers(list);
+      active.sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
+      setAllCustomers(active);
     }).catch(() => { });
   }, []);
 

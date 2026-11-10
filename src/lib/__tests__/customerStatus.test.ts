@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   isCustomerArchived, filterCustomersByStatus, countCustomersByStatus,
+  filterActiveCustomers, archivedCustomerIdSet,
   customerDeleteBlockers, customerDeleteBlockedMessage,
   type CustomerStatusFilter,
 } from '../customerStatus';
@@ -115,5 +116,12 @@ describe('countCustomersByStatus', () => {
     const d = countCustomersByStatus(danhSach);
     const nhan: CustomerStatusFilter[] = ['active', 'archived', 'ALL'];
     nhan.forEach(n => expect(typeof d[n]).toBe('number'));
+  });
+});
+
+describe('filterActiveCustomers & archivedCustomerIdSet', () => {
+  it('loại bỏ hồ sơ đã lưu trữ và trả đúng tập ID đã lưu trữ', () => {
+    expect(filterActiveCustomers(danhSach).map(c => c.Id)).toEqual([1, 3]);
+    expect([...archivedCustomerIdSet(danhSach)]).toEqual([2]);
   });
 });

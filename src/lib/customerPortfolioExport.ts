@@ -6,7 +6,9 @@ import { fmtDate, todayIso } from './utils';
 import { kunnPrincipal, outstandingOf } from './loanMath';
 import { getEffectiveActiveRate } from './rateResolution';
 import { collateralValue, appraisalExpiryDate, assetClassLabel } from './collateralMath';
-import { resolveMasterHdtdNumber } from './creditContract';
+import { isKunnOfClosedHdtd, resolveMasterHdtdNumber } from './creditContract';
+import { archivedCustomerIdSet, filterActiveCustomers, isCustomerArchived } from './customerStatus';
+import { reportRowHeights } from './reports/sheetStyles';
 import { diffDays } from './calcMath';
 import {
   fetchCustomersAPI,
@@ -46,8 +48,8 @@ export interface PortfolioKunnRowData {
 }
 
 const NUM_FMT_ACCOUNTING = '#,##0;(#,##0);"-"';
-const HEADER_FILL = 'F1F5F9'; // Light Slate
-const TOTAL_FILL = 'E2E8F0'; // Slate 200
+const HEADER_FILL = 'E2E8F0';
+const TOTAL_FILL = 'CBD5E1';
 
 const styleHeaderCenter: XlsxStyle = { bold: true, align: 'center', vAlign: 'center', fill: HEADER_FILL, wrap: true, border: true };
 const styleHeaderLeft: XlsxStyle = { bold: true, align: 'left', vAlign: 'center', fill: HEADER_FILL, wrap: true, border: true };
@@ -58,7 +60,7 @@ const styleLeft: XlsxStyle = { align: 'left', vAlign: 'center', border: true };
 const styleNumRight: XlsxStyle = { align: 'right', vAlign: 'center', numFmt: NUM_FMT_ACCOUNTING, border: true };
 const styleRateCenter: XlsxStyle = { align: 'center', vAlign: 'center', border: true };
 
-const styleTotalLabel: XlsxStyle = { bold: true, align: 'right', vAlign: 'center', fill: TOTAL_FILL, border: true };
+const styleTotalLabel: XlsxStyle = { bold: true, align: 'center', vAlign: 'center', fill: TOTAL_FILL, border: true };
 const styleTotalNum: XlsxStyle = { bold: true, align: 'right', vAlign: 'center', fill: TOTAL_FILL, numFmt: NUM_FMT_ACCOUNTING, border: true };
 
 /**
@@ -144,10 +146,18 @@ export function buildActivePortfolioData({
   pledge,
 }: CustomerPortfolioExportParams): PortfolioKunnRowData[] {
   const result: PortfolioKunnRowData[] = [];
-  const customerMap = new Map<number, Customer>(customers.map(c => [c.Id, c]));
+  const archivedIds = archivedCustomerIdSet(customers);
+  const activeCustomers = filterActiveCustomers(customers);
+  const customerMap = new Map<number, Customer>(activeCustomers.map(c => [c.Id, c]));
 
-  // Lọc toàn bộ KUNN đang lưu nợ (trừ đã tất toán)
-  const activeKunns = contracts.filter(k => isKunnActiveDebt(k, paidPrincipalMap));
+  // Lọc toàn bộ KUNN đang lưu nợ (trừ đã tất toán, HĐTD đã đóng, hoặc KH đã lưu trữ)
+  const activeKunns = contracts.filter(
+    k =>
+      !archivedIds.has(k.CustomerId) &&
+      !isCustomerArchived(k.customer) &&
+      !isKunnOfClosedHdtd(k, creditContracts) &&
+      isKunnActiveDebt(k, paidPrincipalMap)
+  );
 
   for (const k of activeKunns) {
     const customer = customerMap.get(k.CustomerId);
@@ -190,7 +200,7 @@ export function buildActivePortfolioData({
     });
   }
 
-  if (pledge) result.push(...pledgePortfolioRows(pledge, customers));
+  if (pledge) result.push(...pledgePortfolioRows(pledge, activeCustomers));
 
   // Sắp xếp theo tên khách hàng rồi đến số KUNN
   result.sort((a, b) => {
@@ -363,7 +373,9 @@ export function generateCustomerPortfolioWorkbook(
   const sheet1: XlsxSheet = {
     name: 'Danh_Muc_Tin_Dung',
     rows: sheet1Rows,
-    colWidths: [6, 14, 14, 26, 26, 20, 22, 22, 20, 20, 20, 14, 15, 14, 15, 15, 14, 15, 18, 32, 20, 18, 15, 15, 18, 18],
+    colWidths: [6, 14, 14, 28, 28, 22, 22, 22, 20, 20, 20, 15, 16, 15, 16, 16, 15, 16, 18, 34, 20, 20, 16, 16, 18, 18],
+    merges: [`A${sheet1Rows.length}:H${sheet1Rows.length}`],
+    rowHeights: reportRowHeights(sheet1Rows.length),
   };
 
   // ==========================================
@@ -503,7 +515,9 @@ export function generateCustomerPortfolioWorkbook(
   const sheet2: XlsxSheet = {
     name: 'Chi_Tiet_KUNN_TSBD',
     rows: sheet2Rows,
-    colWidths: [6, 14, 14, 26, 26, 20, 22, 22, 20, 20, 20, 14, 15, 14, 15, 15, 14, 15, 18, 32, 22, 20, 15, 14, 18, 18],
+    colWidths: [6, 14, 14, 28, 28, 22, 22, 22, 20, 20, 20, 15, 16, 15, 16, 16, 15, 16, 18, 34, 22, 20, 16, 15, 18, 18],
+    merges: [`A${sheet2Rows.length}:T${sheet2Rows.length}`],
+    rowHeights: reportRowHeights(sheet2Rows.length),
   };
 
   return buildMultiSheetXlsx([sheet1, sheet2]);

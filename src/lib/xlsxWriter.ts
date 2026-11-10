@@ -27,6 +27,7 @@ export interface XlsxSheet {
   rows: XlsxCell[][];
   colWidths?: number[];
   merges?: string[];
+  rowHeights?: Record<number, number>;
 }
 
 function mergeCellsXml(merges?: string[]): string {
@@ -43,7 +44,9 @@ export function sheetXml(sheet: XlsxSheet, indexFor?: (style?: XlsxStyle) => num
       .map((cell, c) => cellXml(cell, `${columnLetter(c)}${r + 1}`, styleIndex(cell.style)))
       .filter(Boolean)
       .join('');
-    return `<row r="${r + 1}">${cells}</row>`;
+    const ht = sheet.rowHeights?.[r + 1];
+    const htAttr = ht ? ` ht="${ht}" customHeight="1"` : '';
+    return `<row r="${r + 1}"${htAttr}>${cells}</row>`;
   }).join('');
 
   return XML_DECL
@@ -152,7 +155,8 @@ export function buildStyleSheet(rows: XlsxCell[][]): StyleSheetResult {
   const fillsXml = fillKeys.map((hex, i) => {
     if (i === 0) return '<fill><patternFill patternType="none"/></fill>';
     if (i === 1) return '<fill><patternFill patternType="gray125"/></fill>';
-    return `<fill><patternFill patternType="solid"><fgColor rgb="FF${hex}"/>`
+    const cleanHex = hex.replace(/^#/, '').slice(-6).toUpperCase();
+    return `<fill><patternFill patternType="solid"><fgColor rgb="FF${cleanHex}"/>`
       + '<bgColor indexed="64"/></patternFill></fill>';
   }).join('');
 

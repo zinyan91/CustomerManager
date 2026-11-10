@@ -119,6 +119,16 @@ describe('customerPortfolioExport', () => {
       expect(row.matchedCollaterals[0].AssetCode).toBe('TS-BDS-01');
       expect(row.matchedCollaterals[0].AppraisedValue).toBe(800_000_000);
     });
+
+    it('loại trừ khách hàng đã lưu trữ (ArchivedAt != null) khỏi danh mục đang vay', () => {
+      const data = buildActivePortfolioData({
+        customers: mockCustomers.map(c => c.Id === 1 ? { ...c, ArchivedAt: '2026-10-01T00:00:00Z' } : c),
+        contracts: mockContracts,
+        creditContracts: mockCreditContracts,
+        collaterals: mockCollaterals,
+      });
+      expect(data).toHaveLength(0);
+    });
   });
 
   describe('formatAppraisalDaysRemaining', () => {

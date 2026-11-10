@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchCollateralsAPI, fetchCustomersAPI, saveCollateralAPI, deleteCollateralAPI, fetchMortgageContractsAPI, fetchContractsAPI, fetchAllCreditContractsAPI } from '../lib/api';
+import { archivedCustomerIdSet, filterActiveCustomers, isCustomerArchived } from '../lib/customerStatus';
 import { buildCollateralUsage, displayAppraisalStatus } from '../lib/collateralUsage';
 import { parseAnyDate, fmtDate, parseMoneyInput, formatMoneyInput, todayIso } from '../lib/utils';
 import { useSelectedCustomerId } from './useSelectedCustomerId';
@@ -51,7 +52,7 @@ export function useCollateralController() {
     try {
       const [colList, custList, mcs, loans, ccs] = await Promise.all([
         fetchCollateralsAPI(),
-        fetchCustomersAPI(),
+        fetchCustomersAPI({ includeArchived: true }),
         // Cột HĐTC chỉ để tham khảo: nạp lỗi thì bảng TSBĐ vẫn hiện, kèm thông báo cột có thể thiếu.
         fetchMortgageContractsAPI().catch(() => {
           showNotify('error', 'Không nạp được danh sách HĐTC; cột HĐTC có thể thiếu.');
@@ -67,8 +68,9 @@ export function useCollateralController() {
           return null;
         }),
       ]);
-      setCollaterals(colList);
-      setCustomers(custList);
+      const archivedIds = archivedCustomerIdSet(custList);
+      setCollaterals(colList.filter(col => !archivedIds.has(col.CustomerId) && !isCustomerArchived(col.customer)));
+      setCustomers(filterActiveCustomers(custList));
       setMortgages(mcs);
       setUsageSources(loans && ccs ? { loans, creditContracts: ccs } : null);
     } catch (err: any) {
@@ -229,13 +231,6 @@ export function useCollateralController() {
     inputAssetCode, inputAddress, showNotify, handleResetForm, fetchData, confirm,
   ]);
 
-  const customerScopedCollaterals = useMemo(
-    () => scopedCustomerId === null
-      ? collaterals
-      : collaterals.filter(col => col.CustomerId === scopedCustomerId),
-    [collaterals, scopedCustomerId]
-  );
-
   const usageOf = useMemo(
     () => (usageSources
       ? buildCollateralUsage({ ...usageSources, mortgages, today: todayIso() })
@@ -243,6 +238,13 @@ export function useCollateralController() {
     [usageSources, mortgages]
   );
   const statusOf = useCallback((c: Collateral) => displayAppraisalStatus(c, usageOf), [usageOf]);
+
+  const customerScopedCollaterals = useMemo(
+    () => scopedCustomerId === null
+      ? collaterals.filter(col => usageOf(col.Id) !== 'released')
+      : collaterals.filter(col => col.CustomerId === scopedCustomerId),
+    [collaterals, scopedCustomerId, usageOf]
+  );
 
   const filteredCollaterals = useMemo(() => customerScopedCollaterals.filter(col => {
     const cust = customers.find(c => c.Id === col.CustomerId);

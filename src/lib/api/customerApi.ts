@@ -3,8 +3,15 @@ import { applyOwnerScope, type OwnerScope } from '../ownerScope';
 import { getActiveOwnerScope } from '../ownerScopeStore';
 import type { Customer } from '../../types';
 import {
-  customerDeleteBlockers, customerDeleteBlockedMessage, type CustomerLinkCounts,
+  customerDeleteBlockers, customerDeleteBlockedMessage, isCustomerArchived, type CustomerLinkCounts,
 } from '../customerStatus';
+
+export interface CustomerQueryFilters {
+  cif?: string;
+  name?: string;
+  nationalId?: string;
+  includeArchived?: boolean;
+}
 
 /** Mã KH thuộc phạm vi; null = không lọc. Dùng cho bảng con không có cột chủ sở hữu. */
 export async function fetchCustomerIdsInScopeAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<number[] | null> {
@@ -15,7 +22,7 @@ export async function fetchCustomerIdsInScopeAPI(scope: OwnerScope = getActiveOw
 }
 
 export async function fetchCustomersStrictAPI(
-  filters?: { cif?: string; name?: string; nationalId?: string },
+  filters?: CustomerQueryFilters,
   scope: OwnerScope = getActiveOwnerScope()
 ): Promise<Customer[]> {
   let query = applyOwnerScope(supabase.from('Customers').select('*'), scope).limit(1000);
@@ -24,15 +31,20 @@ export async function fetchCustomersStrictAPI(
   if (filters?.nationalId) query = query.ilike('NationalId', `%${filters.nationalId}%`);
   const { data, error } = await query;
   if (error) throw error;
-  return (data || []).sort((a: any, b: any) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
+  const sorted = (data || []).sort((a: any, b: any) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'));
+  if (filters?.includeArchived === false) {
+    return sorted.filter((c: Customer) => !isCustomerArchived(c));
+  }
+  return sorted;
 }
 
 export async function fetchCustomersAPI(
-  filters?: { cif?: string; name?: string; nationalId?: string },
+  filters?: CustomerQueryFilters,
   scope: OwnerScope = getActiveOwnerScope()
 ): Promise<Customer[]> {
   try {
-    return await fetchCustomersStrictAPI(filters, scope);
+    const list = await fetchCustomersStrictAPI(filters, scope);
+    return filters?.includeArchived ? list : list.filter(c => !isCustomerArchived(c));
   } catch (err: any) {
     console.error("fetchCustomersAPI error:", err);
     return [];

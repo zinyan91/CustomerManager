@@ -11,6 +11,7 @@ import { pledgeLoanDueRows } from '../pledgePortfolio';
 import { addDaysToDate } from '../loanMath';
 import { REPORT_UPCOMING_DAYS } from './dueBucket';
 import { mapCollateralRows, mapCreditRows, mapDueRows, mapKunnRows } from './mappers';
+import { filterActiveCustomers } from '../customerStatus';
 import type { ReportLoadContext, ReportRowSet } from './types';
 
 function reportCutoffIso(todayIso: string): string {
@@ -55,7 +56,7 @@ export async function loadDueRows(ctx: ReportLoadContext): Promise<ReportRowSet>
   return {
     rows: [
       ...mapDueRows(customers, dangVay, schedules, paid),
-      ...pledgeLoanDueRows(pledge, customers, ctx.todayIso),
+      ...pledgeLoanDueRows(pledge, filterActiveCustomers(customers), ctx.todayIso),
     ],
   };
 }

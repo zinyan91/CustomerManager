@@ -1,7 +1,7 @@
 import type { XlsxSheet } from '../../xlsxWriter';
 import { fmtDate } from '../../utils';
 import { dueBucketOf, daysLeftOf, matchesBucket, dueStatusLabel, type DueBucketFilter } from '../dueBucket';
-import { ST, headerRow, textCell, moneyCell, numCell, totalRow, sumOf } from '../sheetStyles';
+import { ST, headerRow, textCell, moneyCell, numCell, totalRow, totalMerges, reportRowHeights, sumOf } from '../sheetStyles';
 import type { ReportLoadContext } from '../types';
 
 export interface CollateralSheetRow {
@@ -50,16 +50,21 @@ export function buildCollateralSheet(
     ];
   });
 
+  const sums = {
+    11: sumOf(loc.map(r => r.appraisedValue)),
+    13: sumOf(loc.map(r => r.maxLoan)),
+  };
+  const sheetRows = [
+    headerRow(COT),
+    ...body,
+    totalRow(COT.length, sums),
+  ];
+
   return {
     name: 'Tai san bao dam',
-    rows: [
-      headerRow(COT),
-      ...body,
-      totalRow(COT.length, {
-        11: sumOf(loc.map(r => r.appraisedValue)),
-        13: sumOf(loc.map(r => r.maxLoan)),
-      }),
-    ],
-    colWidths: [5, 10, 26, 14, 18, 30, 13, 13, 15, 9, 13, 18, 9, 18],
+    rows: sheetRows,
+    colWidths: [6, 14, 28, 16, 20, 34, 15, 15, 17, 10, 15, 20, 11, 20],
+    merges: totalMerges(sheetRows.length, sums),
+    rowHeights: reportRowHeights(sheetRows.length),
   };
 }

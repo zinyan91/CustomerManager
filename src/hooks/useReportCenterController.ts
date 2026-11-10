@@ -18,6 +18,14 @@ export function useReportCenterController() {
     setSelected(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
   }, []);
 
+  const selectAll = useCallback(() => {
+    setSelected(REPORTS.map(r => r.id));
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelected([]);
+  }, []);
+
   const exportSelected = useCallback(async () => {
     if (selected.length === 0) return;
     setExporting(true);
@@ -45,5 +53,5 @@ export function useReportCenterController() {
     }
   }, [selected, filter]);
 
-  return { selected, toggle, filter, setFilter, exporting, error, exportSelected };
+  return { selected, toggle, selectAll, clearSelection, filter, setFilter, exporting, error, exportSelected };
 }

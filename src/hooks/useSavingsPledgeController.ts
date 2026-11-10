@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Customer, PledgeLoan, SavingsBook } from '../types';
 import { fetchCustomersAPI, type PledgeLoanLinkInput } from '../lib/api';
+import { filterActiveCustomers } from '../lib/customerStatus';
 import {
   bookKpis, buildBookRows, buildLoanRows, loanKpis, validateBookForm, validateLoanForm,
 } from '../lib/savingsPledgeView';
@@ -37,7 +38,7 @@ export function useSavingsPledgeController() {
 
   useEffect(() => {
     fetchCustomersAPI()
-      .then((list) => setCustomers([...list].sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'))))
+      .then((list) => setCustomers([...filterActiveCustomers(list)].sort((a, b) => (a.FullName || '').localeCompare(b.FullName || '', 'vi'))))
       .catch((err) => setNotification({ type: 'error', message: `Không nạp được danh sách khách hàng: ${errorText(err)}` }));
   }, []);
 

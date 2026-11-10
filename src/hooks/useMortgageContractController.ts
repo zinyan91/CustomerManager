@@ -3,6 +3,7 @@ import {
   fetchMortgageContractsAPI, fetchCollateralsByCustomerAPI, fetchCreditContractsByCustomerAPI,
   saveMortgageContractAPI, deleteMortgageContractAPI, MortgageLinkSaveError, fetchCustomersAPI,
 } from '../lib/api';
+import { filterActiveCustomers } from '../lib/customerStatus';
 import {
   emptyMortgageDraft, filterMortgageContracts, paginate, validateMortgageContract,
   type MortgageContractDraft, type MortgageStatusFilter,
@@ -38,7 +39,7 @@ export function useMortgageContractController() {
 
   // Thanh khách hàng đầu trang chỉ hiện khi đã có khách, nên màn này phải tự có ô chọn khách.
   useEffect(() => {
-    fetchCustomersAPI().then(setAllCustomers).catch((err: Error) =>
+    fetchCustomersAPI().then(list => setAllCustomers(filterActiveCustomers(list))).catch((err: Error) =>
       setNotification({ type: 'error', message: `Không nạp được danh sách khách hàng: ${err.message}` }));
   }, []);
 

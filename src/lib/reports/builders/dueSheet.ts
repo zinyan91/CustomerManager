@@ -3,7 +3,7 @@ import type { RepaymentSchedule } from '../../../types';
 import { getAutoDebtGroupInfo } from '../../loanMath';
 import { fmtDate } from '../../utils';
 import { dueBucketOf, daysLeftOf, matchesBucket, dueStatusLabel, type DueBucketFilter } from '../dueBucket';
-import { ST, headerRow, textCell, moneyCell, numCell, totalRow, sumOf } from '../sheetStyles';
+import { ST, headerRow, textCell, moneyCell, numCell, totalRow, totalMerges, reportRowHeights, sumOf } from '../sheetStyles';
 import type { ReportLoadContext } from '../types';
 
 export interface DueSheetRow {
@@ -60,17 +60,22 @@ export function buildDueSheet(
     ];
   });
 
+  const sums = {
+    8: sumOf(loc.map(r => r.principal)),
+    9: sumOf(loc.map(r => r.interest)),
+    10: sumOf(loc.map(r => r.total)),
+  };
+  const sheetRows = [
+    headerRow(COT),
+    ...body,
+    totalRow(COT.length, sums),
+  ];
+
   return {
     name: 'No due',
-    rows: [
-      headerRow(COT),
-      ...body,
-      totalRow(COT.length, {
-        8: sumOf(loc.map(r => r.principal)),
-        9: sumOf(loc.map(r => r.interest)),
-        10: sumOf(loc.map(r => r.total)),
-      }),
-    ],
-    colWidths: [5, 10, 26, 16, 7, 13, 9, 13, 15, 13, 15, 16, 9],
+    rows: sheetRows,
+    colWidths: [6, 14, 28, 20, 8, 15, 10, 15, 18, 16, 18, 18, 10],
+    merges: totalMerges(sheetRows.length, sums),
+    rowHeights: reportRowHeights(sheetRows.length),
   };
 }

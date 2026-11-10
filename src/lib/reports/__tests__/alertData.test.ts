@@ -73,17 +73,21 @@ describe('cảnh báo báo cáo giữ cùng phạm vi Dashboard',()=>{
     expect(selectAlertRows(data, filters).collateral.map(r => r.collateral.Id)).toEqual([1]);
   });
 
-  it('hết gốc vẫn giữ kỳ due còn lãi chưa thu; lưu trữ không che khoản còn nợ', () => {
+  it('hết gốc vẫn giữ kỳ due còn lãi chưa thu; khách hàng đã lưu trữ bị ẩn khỏi mọi cảnh báo', () => {
     const rows = selectAlertRows({
       ...snapshot, contracts: [contract(1)], paidPrincipalMap: { 1: 100_000_000 },
       periods: [{ ...snapshot.periods[0], TotalAmount: 2_000_000 }],
     }, filters);
     expect(rows.due).toHaveLength(1);
     expect(rows.collateral).toHaveLength(0);
-    expect(selectAlertRows({
+    const archivedRows = selectAlertRows({
       ...snapshot,
       customers: snapshot.customers.map(c => ({ ...c, ArchivedAt: '2026-10-20T00:00:00Z' })),
-    }, filters).collateral).toHaveLength(1);
+    }, filters);
+    expect(archivedRows.due).toHaveLength(0);
+    expect(archivedRows.kunn).toHaveLength(0);
+    expect(archivedRows.credit).toHaveLength(0);
+    expect(archivedRows.collateral).toHaveLength(0);
   });
 
   it('khóa cửa sổ due 5/KUNN 10/HĐTD 45/định giá 30 ngày và loại tất toán',()=>{

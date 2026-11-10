@@ -157,4 +157,41 @@ describe('Dashboard: HĐTD cũ hết hạn khi KUNN còn trong hạn', () => {
     // Nhóm 1 chỉ đếm 2 HĐ (#10 và #11), không đếm thành 3 HĐ
     expect(screen.getByText('(2 HĐ)')).toBeTruthy();
   });
+
+  it('loại trừ hoàn toàn khách hàng đã lưu trữ (ArchivedAt != null) cùng KUNN, HĐTD, TSĐB của họ khỏi Dashboard', async () => {
+    api.fetchCustomersStrictAPI.mockResolvedValue([
+      { Id: 7, FullName: 'NGÔ NHỊ ĐẠT', ArchivedAt: null },
+      { Id: 99, FullName: 'KHÁCH ĐÃ LƯU TRỮ', ArchivedAt: '2026-10-01T00:00:00Z' },
+    ]);
+    api.fetchCollateralsStrictAPI.mockResolvedValue([
+      { Id: 101, CustomerId: 7, AppraisedValue: 2_000_000_000, Value: 2_000_000_000, AssetType: 'BDS_1', AppraisalDate: '2026-06-01', AppraisalTenorMonths: 12 },
+      { Id: 999, CustomerId: 99, AppraisedValue: 10_000_000_000, Value: 10_000_000_000, AssetType: 'BDS_1', AppraisalDate: '2026-06-01', AppraisalTenorMonths: 12 },
+    ]);
+    api.fetchAllCreditContractsAPI.mockResolvedValue([
+      { Id: 1, CustomerId: 7, HdtdNumber: 'HD-01', LoanMethod: 'Hạn mức tín dụng', ContractAmount: 1_500_000_000, ContractStartDate: '2025-01-01', ContractEndDate: '2027-01-01', IsClosed: false, CollateralIds: '101' },
+      { Id: 99, CustomerId: 99, HdtdNumber: 'HD-LUU-TRU', LoanMethod: 'Cho vay từng lần', ContractAmount: 8_000_000_000, ContractStartDate: '2025-01-01', ContractEndDate: '2027-01-01', IsClosed: false, CollateralIds: '999' },
+    ]);
+    api.fetchContractsStrictAPI.mockResolvedValue([
+      {
+        Id: 10, CustomerId: 7, CreditContractId: 1, ContractNumber: 'HD-01/GNN-01',
+        LoanMethod: 'Hạn mức tín dụng', LoanAmount: 1_000_000_000, CurrentBalance: 1_000_000_000,
+        DisbursementDate: '2025-01-05', KunnDueDate: '2027-01-01', IsSettled: false, DebtGroup: 1, CollateralIds: '101',
+      } as LoanContract,
+      {
+        Id: 990, CustomerId: 99, CreditContractId: 99, ContractNumber: 'HD-LUU-TRU/GNN-01',
+        LoanMethod: 'Cho vay từng lần', LoanAmount: 8_000_000_000, CurrentBalance: 8_000_000_000,
+        DisbursementDate: '2025-01-05', KunnDueDate: '2027-01-01', IsSettled: false, DebtGroup: 1, CollateralIds: '999',
+      } as LoanContract,
+    ]);
+    api.fetchCardContractsStrictAPI.mockResolvedValue([]);
+    api.fetchOutstandingSchedulesAPI.mockResolvedValue([]);
+    api.fetchPaidPrincipalMapAPI.mockResolvedValue({});
+
+    render(<MemoryRouter><DashboardView /></MemoryRouter>);
+
+    expect((await screen.findAllByText('1,00 Tỷ')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('2,00 Tỷ')).toBeTruthy();
+    expect(screen.queryByText('9,00 Tỷ')).toBeNull();
+    expect(screen.queryByText('12,00 Tỷ')).toBeNull();
+  });
 });

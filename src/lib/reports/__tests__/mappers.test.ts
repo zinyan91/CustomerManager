@@ -142,4 +142,16 @@ describe('Final review — sua loi', () => {
     }]);
     expect(rows[0].expiryDate).toBe('2026-12-31');
   });
+
+  it('khach hang da luu tru bi loai khoi danh sach KUNN, Due, HDTD va TSBD', () => {
+    const khLuuTru: Customer = { ...KH, ArchivedAt: '2026-10-01T00:00:00Z' };
+    expect(mapKunnRows([khLuuTru], [kunn()], [], {})).toHaveLength(0);
+    expect(mapDueRows([khLuuTru], [kunn()], [ky()], {})).toHaveLength(0);
+    expect(mapCreditRows([khLuuTru], [{
+      Id: 5, CustomerId: 1, HdtdNumber: 'HDTD-01', ContractAmount: 500_000_000,
+    }], [], {}, HOM_NAY)).toHaveLength(0);
+    expect(mapCollateralRows([khLuuTru], [{
+      Id: 7, CustomerId: 1, AssetCode: 'TS-01', AppraisedValue: 1_000_000_000,
+    }])).toHaveLength(0);
+  });
 });

@@ -1,7 +1,7 @@
 import type { XlsxSheet } from '../../xlsxWriter';
 import { fmtDate } from '../../utils';
 import { dueBucketOf, daysLeftOf, matchesBucket, dueStatusLabel, type DueBucketFilter } from '../dueBucket';
-import { ST, headerRow, textCell, moneyCell, numCell, totalRow, sumOf } from '../sheetStyles';
+import { ST, headerRow, textCell, moneyCell, numCell, totalRow, totalMerges, reportRowHeights, sumOf } from '../sheetStyles';
 import type { ReportLoadContext } from '../types';
 
 export interface CreditSheetRow {
@@ -48,17 +48,22 @@ export function buildCreditSheet(
     ];
   });
 
+  const sums = {
+    10: sumOf(loc.map(r => r.granted)),
+    11: sumOf(loc.map(r => r.used)),
+    12: sumOf(loc.map(r => r.available)),
+  };
+  const sheetRows = [
+    headerRow(COT),
+    ...body,
+    totalRow(COT.length, sums),
+  ];
+
   return {
     name: 'HDTD',
-    rows: [
-      headerRow(COT),
-      ...body,
-      totalRow(COT.length, {
-        10: sumOf(loc.map(r => r.granted)),
-        11: sumOf(loc.map(r => r.used)),
-        12: sumOf(loc.map(r => r.available)),
-      }),
-    ],
-    colWidths: [5, 10, 26, 16, 14, 14, 13, 15, 9, 13, 16, 16, 16],
+    rows: sheetRows,
+    colWidths: [6, 14, 28, 20, 16, 18, 15, 17, 10, 15, 18, 18, 18],
+    merges: totalMerges(sheetRows.length, sums),
+    rowHeights: reportRowHeights(sheetRows.length),
   };
 }

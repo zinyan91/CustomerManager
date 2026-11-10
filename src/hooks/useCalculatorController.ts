@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-  Calculator, Layers, TrendingUp, TrendingDown, ShieldCheck, Award, RefreshCw, BarChart2, AlertTriangle, FileText, PiggyBank, Percent,
+  Calculator, CalendarCheck, Layers, TrendingUp, TrendingDown, ShieldCheck, Award, RefreshCw, BarChart2, AlertTriangle, FileText, PiggyBank, Percent,
 } from 'lucide-react';
 
 export type ToolId =
@@ -10,6 +10,7 @@ export type ToolId =
   | 'rate_reduction'
   | 'credit_capacity'
   | 'prepayment_analysis'
+  | 'settlement_estimate'
   | 'repayment_compare'
   | 'rate_conversion'
   | 'overdue_penalty';
@@ -32,6 +33,7 @@ export const CALCULATOR_CATEGORIES: ToolCategory[] = [
       { id: 'loan', label: '1. Tính Lịch Thu Nợ Khoản Vay', icon: Calculator },
       { id: 'credit_capacity', label: '5. Thẩm Định Hạn Mức (DTI/LTV)', icon: ShieldCheck },
       { id: 'prepayment_analysis', label: '6. Phân Tích Trả Nợ Trước Hạn', icon: Award },
+      { id: 'settlement_estimate', label: '10. Ước Tính Tất Toán Nhiều Khoản', icon: CalendarCheck },
       { id: 'repayment_compare', label: '7. So Sánh Gốc Đều vs Niên Kim', icon: BarChart2 },
     ],
   },

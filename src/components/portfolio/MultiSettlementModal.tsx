@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import type { SettlementLine, SettlementTotals } from '../../lib/multiSettlement';
 import type { SettlementDraft } from '../../hooks/useMultiSettlement';
-import { fmtDate, fmtNumber } from '../../lib/utils';
+import { fmtDate, fmtNumber, todayIso } from '../../lib/utils';
 import { DateInput } from '../DateInput';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/Dialog';
 import { Button } from '../ui/Button';
@@ -15,6 +16,7 @@ interface MultiSettlementModalProps {
   isSubmitting: boolean;
   onChangeDraft: (contractId: number, patch: Partial<SettlementDraft>) => void;
   onSelectAll: (selected: boolean) => void;
+  onApplyDateToSelected: (settlementDate: string) => void;
   onClose: () => void;
   onConfirm: () => void;
 }
@@ -23,8 +25,9 @@ const money = (v: number | undefined) => (v === undefined ? '—' : fmtNumber(v)
 const percentText = (v: number) => `${String(v).replace('.', ',')}%`;
 
 export function MultiSettlementModal({
-  isOpen, lines, drafts, totals, failures, isSubmitting, onChangeDraft, onSelectAll, onClose, onConfirm,
+  isOpen, lines, drafts, totals, failures, isSubmitting, onChangeDraft, onSelectAll, onApplyDateToSelected, onClose, onConfirm,
 }: MultiSettlementModalProps) {
+  const [commonDate, setCommonDate] = useState(() => todayIso());
   if (!isOpen) return null;
   const selectedCount = lines.filter(l => drafts[l.contract.Id]?.selected).length;
   const allSelected = selectedCount === lines.length;
@@ -38,6 +41,16 @@ export function MultiSettlementModal({
           </div>
           <DialogTitle className="font-bold text-sm text-ink">Tất toán khoản vay</DialogTitle>
         </DialogHeader>
+
+        <div className="px-4 sm:px-5 pt-4 flex flex-wrap items-end gap-2">
+          <div>
+            <label className="block text-[11px] font-semibold text-ink-muted mb-1" htmlFor="settlement-common-date">Ngày tất toán chung</label>
+            <DateInput id="settlement-common-date" value={commonDate} onChange={setCommonDate} className="w-36 rounded-md border border-line bg-panel px-2 py-1 text-xs" />
+          </div>
+          <Button variant="secondary" onClick={() => onApplyDateToSelected(commonDate)} disabled={selectedCount === 0}>
+            Áp cho các khoản đã chọn
+          </Button>
+        </div>
 
         <div className="flex-1 overflow-auto p-4 sm:p-5">
           <table className="w-full min-w-[1100px] text-xs border-collapse">
@@ -81,6 +94,7 @@ export function MultiSettlementModal({
                     <td className="p-2 align-top text-center font-mono">{fmtDate(line.contract.DisbursementDate || line.contract.ContractStartDate) || '—'}</td>
                     <td className="p-2 align-top">
                       <DateInput
+                        ariaLabel={`Ngày tất toán ${line.contract.ContractNumber}`}
                         value={d?.settlementDate ?? ''}
                         onChange={v => onChangeDraft(id, { settlementDate: v })}
                         className="w-full rounded-md border border-line bg-panel px-2 py-1 text-xs"

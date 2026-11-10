@@ -9,6 +9,7 @@ const Tool3StkMultiCycleCalc = lazy(() => import('../calculator/Tool3StkMultiCyc
 const Tool4RateReductionCalc = lazy(() => import('../calculator/Tool4RateReductionCalc').then(m => ({ default: m.Tool4RateReductionCalc })));
 const Tool5CreditCapacityCalc = lazy(() => import('../calculator/Tool5CreditCapacityCalc').then(m => ({ default: m.Tool5CreditCapacityCalc })));
 const Tool6PrepaymentAnalysisCalc = lazy(() => import('../calculator/Tool6PrepaymentAnalysisCalc').then(m => ({ default: m.Tool6PrepaymentAnalysisCalc })));
+const Tool10SettlementEstimateCalc = lazy(() => import('../calculator/Tool10SettlementEstimateCalc').then(m => ({ default: m.Tool10SettlementEstimateCalc })));
 const Tool7RepaymentMethodCompareCalc = lazy(() => import('../calculator/Tool7RepaymentMethodCompareCalc').then(m => ({ default: m.Tool7RepaymentMethodCompareCalc })));
 const Tool8InterestRateConversionCalc = lazy(() => import('../calculator/Tool8InterestRateConversionCalc').then(m => ({ default: m.Tool8InterestRateConversionCalc })));
 const Tool9OverduePenaltyCalc = lazy(() => import('../calculator/Tool9OverduePenaltyCalc').then(m => ({ default: m.Tool9OverduePenaltyCalc })));
@@ -95,6 +96,7 @@ export const CalculatorView: React.FC = () => {
         {activeTool === 'rate_reduction' && <Tool4RateReductionCalc styles={styles} />}
         {activeTool === 'credit_capacity' && <Tool5CreditCapacityCalc styles={styles} />}
         {activeTool === 'prepayment_analysis' && <Tool6PrepaymentAnalysisCalc styles={styles} />}
+        {activeTool === 'settlement_estimate' && <Tool10SettlementEstimateCalc styles={styles} />}
         {activeTool === 'repayment_compare' && <Tool7RepaymentMethodCompareCalc styles={styles} />}
         {activeTool === 'rate_conversion' && <Tool8InterestRateConversionCalc styles={styles} />}
         {activeTool === 'overdue_penalty' && <Tool9OverduePenaltyCalc styles={styles} />}

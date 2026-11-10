@@ -25,11 +25,12 @@ function dung() {
   const drafts = Object.fromEntries(lines.map(l => [l.contract.Id, { selected: true, settlementDate: '2026-11-10', penaltyInput: '' }]));
   const onChangeDraft = vi.fn();
   const onConfirm = vi.fn();
+  const onApplyDate = vi.fn();
   render(
     <MultiSettlementModal isOpen lines={lines} drafts={drafts} totals={settlementTotals(lines)} failures={{}}
-      isSubmitting={false} onChangeDraft={onChangeDraft} onSelectAll={vi.fn()} onClose={vi.fn()} onConfirm={onConfirm} />
+      isSubmitting={false} onChangeDraft={onChangeDraft} onSelectAll={vi.fn()} onApplyDateToSelected={onApplyDate} onClose={vi.fn()} onConfirm={onConfirm} />
   );
-  return { onChangeDraft, onConfirm };
+  return { onChangeDraft, onConfirm, onApplyDate };
 }
 
 describe('MultiSettlementModal', () => {
@@ -45,6 +46,12 @@ describe('MultiSettlementModal', () => {
     dung();
     expect(screen.getByRole('alert').textContent).toContain('Chưa tải được lịch trả nợ');
     expect(screen.getByRole('button', { name: 'Tất toán 2 khoản' })).toBeTruthy();
+  });
+
+  it('bấm áp ngày tất toán chung gửi ngày đó lên trên', () => {
+    const { onApplyDate } = dung();
+    fireEvent.click(screen.getByRole('button', { name: 'Áp cho các khoản đã chọn' }));
+    expect(onApplyDate).toHaveBeenCalledTimes(1);
   });
 
   it('đổi tỷ lệ phí và bỏ chọn một khoản báo lên trên', () => {

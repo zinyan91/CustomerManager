@@ -352,6 +352,7 @@ export const LoanPortfolioView: React.FC = () => {
             isSubmitting={multiSettlementProps.isSubmitting}
             onChangeDraft={multiSettlementProps.updateDraft}
             onSelectAll={multiSettlementProps.setAllSelected}
+            onApplyDateToSelected={multiSettlementProps.applyDateToSelected}
             onClose={multiSettlementProps.close}
             onConfirm={multiSettlementProps.execute}
           />

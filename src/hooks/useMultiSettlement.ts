@@ -55,6 +55,10 @@ export function useMultiSettlement({ openContracts, creditContracts, schedulesMa
     setDrafts(prev => ({ ...prev, [contractId]: { ...(prev[contractId] ?? { selected: false, settlementDate: todayIso(), penaltyInput: '' }), ...patch } }));
   }, []);
 
+  const applyDateToSelected = useCallback((settlementDate: string) => {
+    setDrafts(prev => Object.fromEntries(Object.entries(prev).map(([id, d]) => [id, d.selected ? { ...d, settlementDate } : d])));
+  }, []);
+
   const setAllSelected = useCallback((selected: boolean) => {
     setDrafts(prev => Object.fromEntries(Object.entries(prev).map(([id, d]) => [id, { ...d, selected }])));
   }, []);
@@ -92,5 +96,5 @@ export function useMultiSettlement({ openContracts, creditContracts, schedulesMa
     }
   }, [selectedLines, onNotify, onLoadingChange, onSettled]);
 
-  return { isOpen, open, close, drafts, updateDraft, setAllSelected, lines, totals, isSubmitting, failures, execute };
+  return { isOpen, open, close, drafts, updateDraft, applyDateToSelected, setAllSelected, lines, totals, isSubmitting, failures, execute };
 }

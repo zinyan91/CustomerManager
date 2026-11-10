@@ -134,6 +134,15 @@ describe('useMultiSettlement', () => {
     expect(result.current.isOpen).toBe(false);
   });
 
+  it('ngày tất toán chung chỉ áp cho các khoản đang chọn', () => {
+    const { result } = setup();
+    act(() => result.current.open(99));
+    act(() => result.current.updateDraft(77, { settlementDate: '2026-03-01' }));
+    act(() => result.current.applyDateToSelected('2026-02-28'));
+    expect(result.current.drafts[99].settlementDate).toBe('2026-02-28');
+    expect(result.current.drafts[77].settlementDate).toBe('2026-03-01');
+  });
+
   it('cán bộ sửa tỷ lệ phí của một khoản thì dùng tỷ lệ đó', () => {
     const { result } = setup();
     act(() => result.current.open(99));

@@ -151,11 +151,16 @@ export function useLoanPortfolioController() {
   const paymentModalProps = usePaymentModal({
     selectedContract,
     schedules,
-    onSaved: ({ schedules: newSchedules, balance, debtGroup }) => {
+    onSaved: ({ schedules: newSchedules, balance, debtGroup, settled }) => {
       setSchedules(newSchedules);
       if (selectedContract) {
         setAllSchedulesMap(prev => ({ ...prev, [selectedContract.Id]: newSchedules }));
-        const updated = { ...selectedContract, CurrentBalance: balance, DebtGroup: debtGroup };
+        const updated = {
+          ...selectedContract,
+          CurrentBalance: balance,
+          DebtGroup: debtGroup,
+          ...(settled ? { IsSettled: true } : {}),
+        };
         setSelectedContract(updated);
         setContracts(prev => prev.map(c => c.Id === updated.Id ? updated : c));
       }

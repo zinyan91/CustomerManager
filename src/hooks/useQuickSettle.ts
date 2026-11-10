@@ -4,7 +4,7 @@ import {
 } from '../lib/api';
 import {
   canQuickSettle, markSchedulePaidOnTime, recalculateSchedules,
-  getAutoDebtGroupInfo, computeOutstandingBalance,
+  getAutoDebtGroupInfo, computeOutstandingBalance, isScheduleFullySettled,
 } from '../lib/loanMath';
 import { todayIso } from '../lib/utils';
 import type { LoanContract, RepaymentSchedule } from '../types';
@@ -57,12 +57,16 @@ export function useQuickSettle({ onNotify, onDone, confirm }: QuickSettleParams)
 
       const moi = await fetchRepaymentSchedulesAPI(contract.Id);
       const nhomNo = getAutoDebtGroupInfo(moi);
+      const balance = computeOutstandingBalance(moi, contract);
+      const fullySettled = Boolean(contract.IsSettled)
+        || (balance <= 0 && moi.length > 0 && moi.every(isScheduleFullySettled));
       await saveContractAPI({
         Id: contract.Id,
         CustomerId: contract.CustomerId,
         ContractNumber: contract.ContractNumber,
-        CurrentBalance: computeOutstandingBalance(moi, contract),
+        CurrentBalance: balance,
         DebtGroup: nhomNo.debtGroup,
+        ...(fullySettled ? { IsSettled: true } : {}),
       });
 
       onNotify('success', `✓ Đã ghi nhận thu kỳ ${period.PeriodNumber} · ${contract.ContractNumber}`);

@@ -116,6 +116,7 @@ describe('Dashboard: HĐTD cũ hết hạn khi KUNN còn trong hạn', () => {
     api.fetchCollateralsStrictAPI.mockResolvedValue([]);
     api.fetchAllCreditContractsAPI.mockResolvedValue([
       { Id: 1, CustomerId: 7, HdtdNumber: 'HD-01', LoanMethod: 'Hạn mức tín dụng', ContractAmount: 3_000_000_000, ContractStartDate: '2025-01-01', ContractEndDate: '2027-01-01', IsClosed: false },
+      { Id: 2, CustomerId: 7, HdtdNumber: 'HD-DONG', LoanMethod: 'Cho vay từng lần', ContractAmount: 4_200_000_000, ContractStartDate: '2024-01-01', ContractEndDate: '2026-01-01', IsClosed: true },
     ]);
     api.fetchContractsStrictAPI.mockResolvedValue([
       {
@@ -135,10 +136,16 @@ describe('Dashboard: HĐTD cũ hết hạn khi KUNN còn trong hạn', () => {
         LoanMethod: 'Hạn mức tín dụng', LoanAmount: 500_000_000, CurrentBalance: 500_000_000,
         DisbursementDate: '2025-03-05', KunnDueDate: '2027-03-01', IsSettled: false, DebtGroup: 1,
       } as LoanContract,
+      {
+        // KUNN thuộc HĐTD đã đóng (IsClosed = true) nhưng cờ IsSettled chưa bật -> không được cộng vào Tổng quy mô dư nợ
+        Id: 13, CustomerId: 7, CreditContractId: 2, ContractNumber: 'HD-DONG/GNN-01',
+        LoanMethod: 'Cho vay từng lần', LoanAmount: 4_200_000_000, CurrentBalance: 4_200_000_000,
+        DisbursementDate: '2024-03-05', KunnDueDate: '2026-03-01', IsSettled: false, DebtGroup: 1,
+      } as LoanContract,
     ]);
     api.fetchCardContractsStrictAPI.mockResolvedValue([]);
     api.fetchOutstandingSchedulesAPI.mockResolvedValue([]);
-    api.fetchPaidPrincipalMapAPI.mockResolvedValue({ 10: 0, 11: 200_000_000, 12: 500_000_000 });
+    api.fetchPaidPrincipalMapAPI.mockResolvedValue({ 10: 0, 11: 200_000_000, 12: 500_000_000, 13: 0 });
 
     render(<MemoryRouter><DashboardView /></MemoryRouter>);
 

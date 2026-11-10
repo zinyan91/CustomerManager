@@ -76,6 +76,27 @@ describe('buildKunnPayload — ngày hiệu lực HĐTD', () => {
     const p = dungPayload({ CreditContractId: 7 });
     expect('HdtdDueDate' in p).toBe(false);
   });
+
+  it('giữ CurrentBalance = 0 khi tích IsSettled hoặc nhập rõ số dư 0, không bị đổi ngược về LoanAmount', () => {
+    const fields = blankFormFields(6);
+    fields.loanAmount = '2.000.000.000';
+    fields.currentBalance = '0';
+    const p1 = buildKunnPayload({
+      fields, customerId: 6, contractNumber: 'GNN-01',
+      prefPercent: 8.5, basePercent: 0, marginPercent: 0, activeRatePercent: 8.5,
+    });
+    expect(p1.CurrentBalance).toBe(0);
+
+    const fieldsSettled = blankFormFields(6);
+    fieldsSettled.loanAmount = '2.000.000.000';
+    fieldsSettled.currentBalance = '2.000.000.000';
+    fieldsSettled.contract.IsSettled = true;
+    const p2 = buildKunnPayload({
+      fields: fieldsSettled, customerId: 6, contractNumber: 'GNN-02',
+      prefPercent: 8.5, basePercent: 0, marginPercent: 0, activeRatePercent: 8.5,
+    });
+    expect(p2.CurrentBalance).toBe(0);
+  });
 });
 
 describe('checkLoanAmount — số tiền vay KUNN', () => {

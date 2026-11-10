@@ -4,7 +4,7 @@ import { fmtDate, fmtMoney, parseMoneyInput, formatMoneyInput, todayIso } from '
 import { initialPaymentDraft, changePaymentDate, changeOverdueDays, buildPaymentUpdate, quickCollectionPlan, type PaymentDraft } from '../lib/paymentCollection';
 import {
   computeOutstandingBalance,
-  getAutoDebtGroupInfo, recalculateSchedules,
+  getAutoDebtGroupInfo, isScheduleFullySettled, recalculateSchedules,
 } from '../lib/loanMath';
 import { bulkSaveRepaymentSchedulesAPI, fetchRepaymentSchedulesAPI, saveContractAPI } from '../lib/api';
 import { useConfirm } from '../context/ConfirmContext';
@@ -14,6 +14,7 @@ export interface PaymentSaveResult {
   schedules: RepaymentSchedule[];
   balance: number;
   debtGroup: number;
+  settled?: boolean;
 }
 
 interface UsePaymentModalParams {
@@ -57,11 +58,14 @@ export function usePaymentModal({
     verifyCollectionPersistence(calculated, refreshed);
     const autoInfo = getAutoDebtGroupInfo(refreshed, todayIso());
     const balance = computeOutstandingBalance(refreshed, contract);
+    const fullySettled = Boolean(contract.IsSettled)
+      || (balance <= 0 && refreshed.length > 0 && refreshed.every(isScheduleFullySettled));
     await saveContractAPI({
       Id: contract.Id, CustomerId: contract.CustomerId, ContractNumber: contract.ContractNumber,
       CurrentBalance: balance, DebtGroup: autoInfo.debtGroup,
+      ...(fullySettled ? { IsSettled: true } : {}),
     });
-    onSaved({ schedules: refreshed, balance, debtGroup: autoInfo.debtGroup });
+    onSaved({ schedules: refreshed, balance, debtGroup: autoInfo.debtGroup, settled: fullySettled });
   };
 
   const save = async () => {

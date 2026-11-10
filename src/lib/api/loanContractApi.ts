@@ -96,9 +96,11 @@ export async function saveContractAPI(contract: Partial<LoanContract>): Promise<
   }
 
   cleanContract.ContractNumber = contractNumber;
-  cleanContract.ContractType = cleanContract.ContractType ?? 0;
-  cleanContract.IsSettled = cleanContract.IsSettled ?? false;
-  cleanContract.IsRestructured = cleanContract.IsRestructured ?? false;
+  if (!isUpdate) {
+    cleanContract.ContractType = cleanContract.ContractType ?? 0;
+    cleanContract.IsSettled = cleanContract.IsSettled ?? false;
+    cleanContract.IsRestructured = cleanContract.IsRestructured ?? false;
+  }
 
   await assertKunnNumberFree(contractNumber, isUpdate ? cleanContract.Id : null);
 

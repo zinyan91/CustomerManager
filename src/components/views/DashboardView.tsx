@@ -20,7 +20,7 @@ import { kunnPrincipal, outstandingOf, canQuickSettle, debtGroupFromOverdueDays 
 import { useQuickSettle } from '../../hooks/useQuickSettle';
 import { useNavigate } from 'react-router';
 import { customerPath } from '../../lib/customerRoutes';
-import { summarizeCreditContracts, totalsOfCreditContracts } from '../../lib/creditContract';
+import { isKunnOfClosedHdtd, summarizeCreditContracts, totalsOfCreditContracts } from '../../lib/creditContract';
 import { Toast, useToast } from '../Toast';
 import { ROUTE_OF } from '../../lib/routes';
 import type { Customer, Collateral, LoanContract, CardContract, CreditContract, PledgeBundle } from '../../types';
@@ -82,7 +82,7 @@ export const DashboardView: React.FC = () => {
         show('error', `Không nạp được khoản vay cầm cố: ${err instanceof Error ? err.message : String(err)}. Tổng dư nợ chưa gồm phần cầm cố.`);
       }
 
-      const idsChuaTatToan = resCon.filter(c => !c.IsSettled).map(c => c.Id);
+      const idsChuaTatToan = resCon.filter(c => !c.IsSettled && !isKunnOfClosedHdtd(c, resCc)).map(c => c.Id);
       try {
         setDuePeriods(await fetchOutstandingSchedulesAPI(idsChuaTatToan, dueCutoffIso()));
         setScheduleError(null);
@@ -116,7 +116,7 @@ export const DashboardView: React.FC = () => {
     const today = todayIso();
     const map = new Map<number, number>();
     for (const c of contracts) {
-      if (c.IsSettled) continue;
+      if (c.IsSettled || isKunnOfClosedHdtd(c, creditContracts)) continue;
       let maxOverdue = 0;
       for (const p of periodsByContract.get(c.Id) || []) {
         if (p.IsPaid) continue;
@@ -128,7 +128,7 @@ export const DashboardView: React.FC = () => {
       map.set(c.Id, Math.max(c.DebtGroup ?? 1, debtGroupFromOverdueDays(maxOverdue)));
     }
     return map;
-  }, [contracts, periodsByContract]);
+  }, [contracts, creditContracts, periodsByContract]);
 
   const {
     chuaTatToan,
@@ -145,7 +145,7 @@ export const DashboardView: React.FC = () => {
     debtGroupStats,
   } = useMemo(() => {
     const duNoCua = (c: LoanContract) => outstandingOf(c, paidPrincipalMap[c.Id]);
-    const unSettled = contracts.filter(c => !c.IsSettled);
+    const unSettled = contracts.filter(c => !c.IsSettled && !isKunnOfClosedHdtd(c, creditContracts));
     const activeLoans = unSettled.filter(c => duNoCua(c) > 0);
 
     const tongHopDong = totalsOfCreditContracts(

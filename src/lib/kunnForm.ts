@@ -233,7 +233,10 @@ export function buildKunnPayload({
   );
   const creditLimit = parseMoneyInput(fields.creditLimit);
   const loanAmount = parseMoneyInput(fields.loanAmount);
-  const currentBalance = parseMoneyInput(fields.currentBalance) || loanAmount;
+  const hasExplicitBalance = fields.currentBalance.trim() !== '';
+  const currentBalance = fields.contract.IsSettled
+    ? 0
+    : (hasExplicitBalance ? parseMoneyInput(fields.currentBalance) : loanAmount);
 
   const prefDec = prefPercent ? prefPercent / 100 : undefined;
   const baseDec = basePercent ? basePercent / 100 : undefined;

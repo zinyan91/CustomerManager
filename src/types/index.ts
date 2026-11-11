@@ -109,6 +109,7 @@ export interface CreditContract {
 
   customer?: Customer;
   MovedToPledgeLoanId?: number | null;
+  RenewsCreditContractId?: number | null;
 }
 
 export interface LoanContract {

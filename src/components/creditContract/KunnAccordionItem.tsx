@@ -59,7 +59,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
 }) => {
   const {
     contract: cc, outstanding, available, kunnCount, activeKunnCount,
-    canDisburse, blockReason, revolving: isRevolving, disbursedCumulative: totalDisbursed,
+    canDisburse, blockReason, revolving: isRevolving, disbursedCumulative: totalDisbursed, renewedBy,
   } = contractSummary;
 
   const assignedCols = collaterals.filter(c =>
@@ -99,7 +99,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
               </span>
               <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-2xs ${LIFECYCLE_BADGE[lifecycle]}`}>
                 {LifecycleIcon && <LifecycleIcon className="w-3 h-3" />}
-                {hdtdStatusLabel(lifecycle, activeKunnCount)}
+                {hdtdStatusLabel(lifecycle, activeKunnCount, Boolean(renewedBy))}
                 {cc.IsClosed && cc.ClosedDate && <span className="font-mono font-semibold">· {fmtDate(cc.ClosedDate)}</span>}
               </span>
               <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-surface border border-line/70 text-ink-muted">

@@ -75,6 +75,7 @@ export interface Database {
           IsClosed: boolean;
           ClosedDate: string | null;
           Note: string | null;
+          RenewsCreditContractId: number | null;
           CreatedAt: string;
           UpdatedAt: string;
         };

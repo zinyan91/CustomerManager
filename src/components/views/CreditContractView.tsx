@@ -51,6 +51,7 @@ export const CreditContractView: React.FC = () => {
     getKunnsForContract,
     outstandingOf,
     closeCheck,
+    renewalOptions,
   } = useCreditContractController();
 
   const [expandedKunnContractIds, setExpandedKunnContractIds] = useState<number[]>([]);
@@ -208,6 +209,7 @@ export const CreditContractView: React.FC = () => {
         tongKhaNangBaoDam={tongKhaNangBaoDam}
         vuotKhaNangBaoDam={vuotKhaNangBaoDam}
         closeCheck={closeCheck}
+        renewalOptions={renewalOptions}
         onSave={handleSave}
         onClose={() => setShowForm(false)}
       />

@@ -1,7 +1,7 @@
 import React from 'react';
 import { UI } from '../../lib/uiClasses';
 import { FileText, Save, AlertTriangle } from 'lucide-react';
-import { fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
+import { fmtDate, fmtMoney, formatMoneyInput, parseMoneyInput, todayIso } from '../../lib/utils';
 import { usableCapacity, collateralValue } from '../../lib/collateralMath';
 import { DateInput } from '../DateInput';
 import { CREDIT_CONTRACT_LOAN_METHODS, loanMethodOptions } from '../../lib/loanProductRules';
@@ -26,6 +26,7 @@ interface CreditContractFormModalProps {
   tongKhaNangBaoDam: number;
   vuotKhaNangBaoDam: boolean;
   closeCheck?: CloseCreditContractCheck;
+  renewalOptions: CreditContract[];
   onSave: (e: React.FormEvent) => void;
   onClose: () => void;
 }
@@ -51,6 +52,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
   tongKhaNangBaoDam,
   vuotKhaNangBaoDam,
   closeCheck,
+  renewalOptions,
   onSave,
   onClose,
 }) => {
@@ -107,6 +109,25 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
               </select>
             </div>
           </div>
+
+          {renewalOptions.length > 0 && (
+            <div>
+              <label htmlFor="hdtd-renews" className={`block mb-1 font-semibold ${UI.labelStyle}`}>Tái tục từ HĐTD</label>
+              <select
+                id="hdtd-renews"
+                value={form.RenewsCreditContractId ?? ''}
+                onChange={e => setForm({ ...form, RenewsCreditContractId: e.target.value ? Number(e.target.value) : null })}
+                className={`w-full rounded-xl p-2.5 ${UI.inputStyle}`}
+              >
+                <option value="">Không tái tục</option>
+                {renewalOptions.map(c => (
+                  <option key={c.Id} value={c.Id}>
+                    {c.HdtdNumber} · hết hạn {fmtDate(c.ContractEndDate)} · {fmtMoney(c.ContractAmount ?? 0)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

@@ -269,22 +269,27 @@ export interface CreditContractSummary {
   expired: boolean;
   notYetEffective: boolean;
   isEmpty: boolean;
+  renewedBy: CreditContract | null;
 }
 
 /**
  * HĐTD còn là hạn mức đã cấp của khách. Hết hiệu lực có hai kiểu: còn KUNN dư nợ thì HĐTD vẫn còn (chỉ không
  * giải ngân mới); KUNN đã tất toán hết thì hết, phải tái tục. Vay từng lần đã tất toán hết KUNN cũng hết.
- * Hạn mức quay vòng còn hiệu lực vẫn tính dù dư nợ 0.
+ * Hạn mức quay vòng còn hiệu lực vẫn tính dù dư nợ 0. HĐTD đã có HĐTD mới tái tục thì không tính nữa (dư nợ vẫn để ở đây).
  */
-export function isCurrentGrantedLimit(s: Pick<CreditContractSummary, 'contract' | 'expired' | 'revolving' | 'kunnCount' | 'activeKunnCount'>): boolean {
+export function isCurrentGrantedLimit(
+  s: Pick<CreditContractSummary, 'contract' | 'expired' | 'revolving' | 'kunnCount' | 'activeKunnCount'> & { renewedBy?: CreditContract | null },
+): boolean {
   if (s.contract.IsClosed) return false;
+  if (s.renewedBy) return false;
   if (s.activeKunnCount > 0) return true;
   if (s.expired) return false;
   return s.revolving || s.kunnCount === 0;
 }
 
 /** Nhãn trạng thái HĐTD: tách "hết hiệu lực" thành còn dư nợ (HĐTD vẫn còn) và cần tái tục (đã trả hết). */
-export function hdtdStatusLabel(lifecycle: HdtdLifecycle, activeKunnCount: number): string {
+export function hdtdStatusLabel(lifecycle: HdtdLifecycle, activeKunnCount: number, renewed = false): string {
+  if (renewed && lifecycle !== 'closed') return activeKunnCount > 0 ? 'ĐÃ TÁI TỤC · CÒN DƯ NỢ' : 'ĐÃ TÁI TỤC';
   if (lifecycle !== 'expired') return HDTD_LIFECYCLE_LABEL[lifecycle];
   return activeKunnCount > 0 ? 'HẾT HIỆU LỰC · CÒN DƯ NỢ' : 'HẾT HIỆU LỰC · CẦN TÁI TỤC';
 }
@@ -339,6 +344,10 @@ export function summarizeCreditContracts(
     ?? ((c: LoanContract) => c.CurrentBalance ?? c.LoanAmount ?? 0);
   const today = options?.today ?? null;
   const contractIds = new Set(contracts.map(cc => cc.Id));
+  const renewerOf = new Map<number, CreditContract>();
+  for (const cc of contracts) {
+    if (!cc.IsClosed && cc.RenewsCreditContractId) renewerOf.set(cc.RenewsCreditContractId, cc);
+  }
 
   return contracts.map(cc => {
     const ccHdtdNo = (cc.HdtdNumber || '').trim().toLowerCase();
@@ -396,6 +405,7 @@ export function summarizeCreditContracts(
       expired,
       notYetEffective,
       isEmpty: active.length === 0,
+      renewedBy: renewerOf.get(cc.Id) ?? null,
     };
   });
 }

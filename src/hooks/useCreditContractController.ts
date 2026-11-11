@@ -12,6 +12,7 @@ import { customerPath } from '../lib/customerRoutes';
 import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
 import { todayIso, parseMoneyInput, formatMoneyInput } from '../lib/utils';
 import { summarizeCreditContracts, canCloseCreditContract } from '../lib/creditContract';
+import { renewalCandidates } from '../lib/hdtdRenewal';
 import { addMonthsToDate, computeOutstandingBalance } from '../lib/loanMath';
 import { totalUsableCapacity } from '../lib/collateralMath';
 import { allowedPurposes, CREDIT_CONTRACT_LOAN_METHODS } from '../lib/loanProductRules';
@@ -162,6 +163,8 @@ export function useCreditContractController() {
       : { allowed: true, unsettledKunnNumbers: [] },
     [editing, kunns]
   );
+
+  const renewalOptions = useMemo(() => renewalCandidates(contracts, editing?.Id), [contracts, editing]);
 
   const openNew = useCallback(() => {
     setEditing(null);
@@ -354,6 +357,7 @@ export function useCreditContractController() {
     visibleSummaries,
     closedCount,
     closeCheck,
+    renewalOptions,
     today,
     purposeOptions,
     tongKhaNangBaoDam,

@@ -34,6 +34,8 @@ interface KunnTableProps {
   hiddenCount?: number;
   showSettled?: boolean;
   onToggleShowSettled?: (v: boolean) => void;
+  loadError?: string | null;
+  schedulesLoadError?: string | null;
 }
 
 export const KunnTable: React.FC<KunnTableProps> = ({
@@ -49,6 +51,8 @@ export const KunnTable: React.FC<KunnTableProps> = ({
   hiddenCount = 0,
   showSettled = true,
   onToggleShowSettled,
+  loadError = null,
+  schedulesLoadError = null,
 }) => {
   const rows = filteredContracts;
 
@@ -102,7 +106,12 @@ export const KunnTable: React.FC<KunnTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-line/40">
-            {rows.length === 0 ? (
+            {!loadError && schedulesLoadError && (
+              <tr><td colSpan={9} className="py-3 px-4 text-neg"><span role="alert">{schedulesLoadError}</span></td></tr>
+            )}
+            {loadError ? (
+              <tr><td colSpan={9} className="py-8 px-4 text-neg"><span role="alert">{loadError}</span></td></tr>
+            ) : rows.length === 0 ? (
               <tr><td colSpan={9} className="text-center p-12 text-ink-faint">
                 {hiddenCount > 0
                   ? `${hiddenCount} khoản đã tất toán đang ẩn. Bấm "Tất cả" để xem lại.`

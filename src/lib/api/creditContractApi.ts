@@ -6,19 +6,14 @@ import { getActiveOwnerScope } from '../ownerScopeStore';
 import { mortgageLinkErrorMessage } from '../mortgageContract';
 
 export async function fetchCreditContractsByCustomerAPI(customerId: number): Promise<CreditContract[]> {
-  try {
-    const { data, error } = await supabase
-      .from('CreditContracts')
-      .select('*')
-      .eq('CustomerId', customerId)
-      .is('MovedToPledgeLoanId', null)
-      .order('HdtdNumber', { ascending: true });
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('fetchCreditContractsByCustomerAPI error:', err);
-    return [];
-  }
+  const { data, error } = await supabase
+    .from('CreditContracts')
+    .select('*')
+    .eq('CustomerId', customerId)
+    .is('MovedToPledgeLoanId', null)
+    .order('HdtdNumber', { ascending: true });
+  if (error) throw new Error(`Không nạp được danh sách HĐTD: ${error.message}`);
+  return data || [];
 }
 
 export async function fetchAllCreditContractsAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<CreditContract[]> {

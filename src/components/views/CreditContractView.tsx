@@ -14,6 +14,7 @@ export const CreditContractView: React.FC = () => {
   const {
     allCustomers,
     customer,
+    loadError,
     collaterals,
     mortgages,
     notify,
@@ -147,7 +148,9 @@ export const CreditContractView: React.FC = () => {
               </div>
             )}
 
-            {visibleSummaries.length === 0 ? (
+            {loadError ? (
+              <div className="py-10 px-4 text-xs text-neg"><span role="alert">{loadError}</span></div>
+            ) : visibleSummaries.length === 0 ? (
               <div className="text-center py-10 text-ink-faint text-xs space-y-2">
                 <p>
                   {showSettled

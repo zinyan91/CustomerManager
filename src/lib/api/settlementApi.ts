@@ -4,7 +4,9 @@ import { bulkSaveRepaymentSchedulesAPI, deleteRepaymentSchedulesByIdsAPI, fetchR
 
 export interface AppliedSettlement {
   contract: LoanContract;
-  schedules: RepaymentSchedule[];
+  /** null khi đã ghi xong mà chưa đọc lại được lịch; lý do ở `reloadError`. */
+  schedules: RepaymentSchedule[] | null;
+  reloadError: string | null;
 }
 
 /** Ghi tất toán một KUNN: xoá các kỳ tương lai, chốt kỳ tất toán, đánh dấu KUNN đã tất toán, đọc lại lịch. */
@@ -25,5 +27,11 @@ export async function applyEarlySettlementAPI(contract: LoanContract, quote: Ear
   };
   await saveContractAPI(patch);
 
-  return { contract: { ...contract, ...patch }, schedules: await fetchRepaymentSchedulesAPI(contract.Id) };
+  const settled = { ...contract, ...patch };
+  // Đã ghi vào CSDL: lỗi đọc lại không được biến khoản đã tất toán thành "chưa ghi được" (ghi lại sẽ tất toán hai lần).
+  try {
+    return { contract: settled, schedules: await fetchRepaymentSchedulesAPI(contract.Id), reloadError: null };
+  } catch (err) {
+    return { contract: settled, schedules: null, reloadError: err instanceof Error ? err.message : String(err) };
+  }
 }

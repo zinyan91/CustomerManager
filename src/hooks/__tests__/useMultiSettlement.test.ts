@@ -167,6 +167,19 @@ describe('useMultiSettlement', () => {
     expect(result.current.drafts[99].selected).toBe(false);
   });
 
+  it('đã ghi tất toán mà đọc lại lịch lỗi: vẫn tính là đã tất toán, báo nguyên lỗi đọc lại', async () => {
+    fetchSchedules.mockRejectedValue(new Error('Không nạp được lịch trả nợ: permission denied'));
+    const { result, onSettled, onNotify } = setup();
+    act(() => result.current.open(99));
+    act(() => result.current.updateDraft(99, { settlementDate: '2026-02-15' }));
+    await act(async () => { await result.current.execute(); });
+    expect(saveContract).toHaveBeenCalledWith(expect.objectContaining({ Id: 99, IsSettled: true }));
+    expect(onSettled).toHaveBeenCalledWith([expect.objectContaining({ schedules: null, reloadError: 'Không nạp được lịch trả nợ: permission denied' })]);
+    expect(result.current.failures).toEqual({});
+    expect(onNotify).toHaveBeenCalledWith('error', 'Đã tất toán 1 khoản vay; chưa đọc lại được lịch trả nợ của KUNN-TT-01: Không nạp được lịch trả nợ: permission denied');
+    expect(result.current.isOpen).toBe(false);
+  });
+
   it('khoản chưa tải được lịch trả nợ thì không được tất toán', async () => {
     const { result, onNotify } = setup({ 99: undefined, 77: lichHanMuc() });
     act(() => result.current.open(99));

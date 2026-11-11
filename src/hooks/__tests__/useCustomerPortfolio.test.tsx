@@ -55,6 +55,32 @@ describe('portfolio retrieval', () => {
     expect(result.current.selectedContract?.Id).toBe(2);
     expect(result.current.schedules.map(row => row.Id)).toEqual([2]);
   });
+  it('shows a KUNN list loading error instead of an empty list', async () => {
+    state.loans.mockRejectedValue(new Error('Không nạp được danh sách KUNN: permission denied'));
+    const { result, notify } = mount();
+    await act(() => result.current.pickCustomer(customer));
+    expect(result.current.loadError).toBe('Không nạp được danh sách KUNN: permission denied');
+    expect(result.current.contracts).toEqual([]);
+    expect(notify).toHaveBeenCalledWith('error', 'Không nạp được danh sách KUNN: permission denied');
+  });
+  it('shows an HĐTD loading error instead of an empty list', async () => {
+    state.credits.mockRejectedValue(new Error('Không nạp được danh sách HĐTD: timeout'));
+    const { result } = mount();
+    await act(() => result.current.pickCustomer(customer));
+    await waitFor(() => expect(result.current.loadError).toBe('Không nạp được danh sách HĐTD: timeout'));
+  });
+  it('leaves a KUNN whose schedule failed to load as not loaded, never as an empty schedule', async () => {
+    state.loans.mockResolvedValue([loan(1), loan(2)]);
+    state.schedules.mockImplementation(async (id: number) => {
+      if (id === 2) throw new Error('Không nạp được lịch trả nợ: network');
+      return [{ Id: 9, ContractId: 1, PeriodNumber: 1, DueDate: '2026-01-01', IsPaid: false } as RepaymentSchedule];
+    });
+    const { result } = mount();
+    await act(() => result.current.pickCustomer(customer));
+    await waitFor(() => expect(result.current.schedulesLoadError).toBe('Chưa nạp được lịch trả nợ của KUNN-2: Không nạp được lịch trả nợ: network'));
+    expect(result.current.allSchedulesMap[1]).toHaveLength(1);
+    expect(result.current.allSchedulesMap[2]).toBeUndefined();
+  });
   it('keeps a schedule loading error separate from an empty result', async () => {
     const { result } = mount();
     state.schedules.mockRejectedValue(new Error('Không nạp được kỳ thu'));

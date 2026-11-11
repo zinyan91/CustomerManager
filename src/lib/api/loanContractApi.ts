@@ -6,6 +6,7 @@ import { findKunnNumberClash } from '../creditContract';
 import { unarchiveCustomer } from './customerApi';
 import { applyOwnerScope, customerEmbed, type OwnerScope } from '../ownerScope';
 import { getActiveOwnerScope } from '../ownerScopeStore';
+import { allPages } from './paging';
 
 export async function fetchContractsStrictAPI(scope: OwnerScope = getActiveOwnerScope()): Promise<LoanContract[]> {
   const { data, error } = await applyOwnerScope(
@@ -27,19 +28,14 @@ export async function fetchContractsAPI(scope: OwnerScope = getActiveOwnerScope(
 }
 
 export async function fetchContractsByCustomerAPI(customerId: number): Promise<LoanContract[]> {
-  try {
-    const { data, error } = await supabase
-      .from('LoanContracts')
-      .select('*, customer:Customers(*)')
-      .eq('CustomerId', customerId)
-      .is('MovedToPledgeLoanId', null)
-      .order('Id', { ascending: false });
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('fetchContractsByCustomerAPI error:', err);
-    return [];
-  }
+  const { data, error } = await supabase
+    .from('LoanContracts')
+    .select('*, customer:Customers(*)')
+    .eq('CustomerId', customerId)
+    .is('MovedToPledgeLoanId', null)
+    .order('Id', { ascending: false });
+  if (error) throw new Error(`Không nạp được danh sách KUNN: ${error.message}`);
+  return data || [];
 }
 
 async function assertKunnNumberFree(contractNumber: string, selfId?: number | null): Promise<void> {
@@ -141,17 +137,15 @@ export async function deleteContractAPI(contractId: number): Promise<void> {
 
 export async function fetchRepaymentSchedulesAPI(contractId: number): Promise<RepaymentSchedule[]> {
   try {
-    const { data, error } = await supabase
+    return await allPages<RepaymentSchedule>((from, to) => supabase
       .from('RepaymentSchedules')
       .select('*')
       .eq('ContractId', contractId)
       .order('PeriodNumber', { ascending: true })
-      .limit(1000);
-    if (error) throw error;
-    return data || [];
+      .order('Id', { ascending: true })
+      .range(from, to));
   } catch (err) {
-    console.error('fetchRepaymentSchedulesAPI error:', err);
-    return [];
+    throw new Error(`Không nạp được lịch trả nợ: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 

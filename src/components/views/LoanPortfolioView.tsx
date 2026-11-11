@@ -218,6 +218,8 @@ export const LoanPortfolioView: React.FC = () => {
           showSettled={showSettledKunn}
           onToggleShowSettled={setShowSettledKunn}
           getEffectiveBalanceForContract={(c) => computeOutstandingBalance(allSchedulesMap[c.Id], c)}
+          loadError={portfolio.loadError}
+          schedulesLoadError={portfolio.schedulesLoadError}
         />
       )}
 

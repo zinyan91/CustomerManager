@@ -87,7 +87,11 @@ export function useMultiSettlement({ openContracts, creditContracts, schedulesMa
     setFailures(failed);
 
     const failedCount = Object.keys(failed).length;
-    if (failedCount === 0) {
+    const reloadFailed = done.filter(d => d.reloadError !== null);
+    if (failedCount === 0 && reloadFailed.length > 0) {
+      onNotify('error', `Đã tất toán ${done.length} khoản vay; chưa đọc lại được lịch trả nợ của ${reloadFailed.map(d => d.contract.ContractNumber).join(', ')}: ${reloadFailed[0].reloadError}`);
+      setIsOpen(false);
+    } else if (failedCount === 0) {
       onNotify('success', `Đã tất toán ${done.length} khoản vay.`);
       setIsOpen(false);
     } else {

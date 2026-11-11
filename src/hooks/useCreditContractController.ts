@@ -31,6 +31,7 @@ export function useCreditContractController() {
   const [mortgages, setMortgages] = useState<MortgageContract[]>([]);
   const [schedulesMap, setSchedulesMap] = useState<Record<number, RepaymentSchedule[]>>({});
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [notify, setNotify] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const [showForm, setShowForm] = useState(false);
@@ -61,6 +62,7 @@ export function useCreditContractController() {
     setCustomer(c);
     setShowForm(false);
     setEditing(null);
+    setLoadError(null);
     if (!c) {
       setContracts([]); setKunns([]); setCollaterals([]); setMortgages([]); setSchedulesMap({});
       return;
@@ -84,11 +86,23 @@ export function useCreditContractController() {
       setMortgages(mcs);
 
       const map: Record<number, RepaymentSchedule[]> = {};
+      const failed: string[] = [];
+      let firstError = '';
       await Promise.all(ks.map(async k => {
-        try { map[k.Id] = await fetchRepaymentSchedulesAPI(k.Id); } catch {}
+        try {
+          map[k.Id] = await fetchRepaymentSchedulesAPI(k.Id);
+        } catch (err) {
+          failed.push(k.ContractNumber);
+          firstError ||= err instanceof Error ? err.message : String(err);
+        }
       }));
       if (loadTokenRef.current !== token) return;
       setSchedulesMap(map);
+      if (failed.length > 0) showNotify('error', `Chưa nạp được lịch trả nợ của ${failed.join(', ')}: ${firstError}`);
+    } catch (err) {
+      if (loadTokenRef.current !== token) return;
+      setContracts([]); setKunns([]); setCollaterals([]); setMortgages([]); setSchedulesMap({});
+      setLoadError(err instanceof Error ? err.message : String(err));
     } finally {
       if (loadTokenRef.current === token) setLoading(false);
     }
@@ -318,6 +332,7 @@ export function useCreditContractController() {
     mortgages,
     schedulesMap,
     loading,
+    loadError,
     notify,
     setNotify,
     showForm,

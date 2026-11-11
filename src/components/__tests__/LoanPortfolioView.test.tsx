@@ -134,3 +134,29 @@ describe('LoanPortfolioView — tab KUNN dựng được lên', () => {
     expect(nghiemTrong).toEqual([]);
   });
 });
+
+describe('LoanPortfolioView — lỗi tải không hiện như danh sách rỗng', () => {
+  it('nạp KUNN lỗi thì hiện nguyên thông điệp lỗi, không hiện câu "Chưa có Giấy Nhận Nợ"', async () => {
+    const api = await import('../../lib/api');
+    vi.mocked(api.fetchContractsByCustomerAPI).mockRejectedValueOnce(new Error('Không nạp được danh sách KUNN: permission denied'));
+    dungLen(1);
+    const alerts = await screen.findAllByRole('alert');
+    expect(alerts.some(a => a.textContent === 'Không nạp được danh sách KUNN: permission denied')).toBe(true);
+    expect(screen.queryByText(/Chưa có Giấy Nhận Nợ/)).toBeNull();
+  });
+
+  it('nạp lịch một KUNN lỗi thì báo trên bảng KUNN', async () => {
+    const api = await import('../../lib/api');
+    vi.mocked(api.fetchRepaymentSchedulesAPI).mockImplementation(async (id: number) => {
+      if (id === 1048) throw new Error('Không nạp được lịch trả nợ: network');
+      return [];
+    });
+    dungLen(1);
+    try {
+      await screen.findByText('Chưa nạp được lịch trả nợ của 2002/HĐTD/9632203/GNN-02: Không nạp được lịch trả nợ: network');
+      expect(screen.getByText('2002/HĐTD/9632203/GNN-01')).toBeTruthy();
+    } finally {
+      vi.mocked(api.fetchRepaymentSchedulesAPI).mockImplementation(async () => []);
+    }
+  });
+});

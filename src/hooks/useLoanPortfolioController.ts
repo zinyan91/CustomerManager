@@ -176,12 +176,21 @@ export function useLoanPortfolioController() {
     schedulesMap: allSchedulesMap,
     onSettled: (results) => {
       const byId = new Map(results.map(r => [r.contract.Id, r]));
-      setAllSchedulesMap(prev => ({ ...prev, ...Object.fromEntries(results.map(r => [r.contract.Id, r.schedules])) }));
+      setAllSchedulesMap(prev => {
+        const next = { ...prev };
+        for (const r of results) {
+          if (r.schedules) next[r.contract.Id] = r.schedules;
+          else delete next[r.contract.Id];
+        }
+        return next;
+      });
       setContracts(prev => prev.map(c => byId.get(c.Id)?.contract ?? c));
       const current = selectedContract ? byId.get(selectedContract.Id) : undefined;
-      if (current) {
+      if (current?.schedules) {
         setSelectedContract(current.contract);
         setSchedules(current.schedules);
+      } else if (current) {
+        portfolio.reloadContractSchedules(current.contract);
       }
     },
     onNotify: showNotify,

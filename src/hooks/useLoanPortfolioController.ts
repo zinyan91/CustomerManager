@@ -55,7 +55,7 @@ export function useLoanPortfolioController() {
   const [daApDeepKunnFor, setDaApDeepKunnFor] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedMasterFilter, setSelectedMasterFilter] = useState<string>('ALL');
-  const [showSettledKunn, setShowSettledKunn] = useState(true);
+  const [showSettledKunn, setShowSettledKunn] = useState(false);
 
   const [form, setForm] = useState<Partial<LoanContract>>({});
   const [formHdtdNumber, setFormHdtdNumber] = useState('');
@@ -115,7 +115,7 @@ export function useLoanPortfolioController() {
     onNotify: showNotify,
     onCustomerChanged: () => {
       setSelectedMasterFilter('ALL');
-      setShowSettledKunn(true);
+      setShowSettledKunn(false);
       setShowForm(false);
       setMainTab('kunn');
     },

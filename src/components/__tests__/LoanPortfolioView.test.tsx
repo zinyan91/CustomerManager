@@ -160,3 +160,38 @@ describe('LoanPortfolioView — lỗi tải không hiện như danh sách rỗng
     }
   });
 });
+
+describe('LoanPortfolioView — mặc định đang vay, đổi khách tại chỗ', () => {
+  it('mặc định chỉ hiện GNN đang vay; bấm "Tất cả" mới hiện khoản đã tất toán', async () => {
+    const api = await import('../../lib/api');
+    vi.mocked(api.fetchContractsByCustomerAPI).mockResolvedValueOnce([
+      ...danhSachKunn,
+      { ...kunn(1050, '2002/HĐTD/9632203/GNN-00', 200_000_000), IsSettled: true, CurrentBalance: 0 },
+    ]);
+    dungLen(1);
+    await screen.findByText('2002/HĐTD/9632203/GNN-01');
+    expect(screen.queryByText('2002/HĐTD/9632203/GNN-00')).toBeNull();
+    const toggle = screen.getByRole('button', { name: 'Đang vay' });
+    expect(toggle.compareDocumentPosition(screen.getByRole('button', { name: 'Tất cả' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Tất cả' }));
+    expect(screen.getByText('2002/HĐTD/9632203/GNN-00')).toBeTruthy();
+  });
+
+  it('đã chọn khách vẫn có ô chọn khách ngay đầu màn; chọn khách khác thì nạp khoản vay của khách đó', async () => {
+    const api = await import('../../lib/api');
+    const khach2 = { Id: 2, CifKh: '1112223', FullName: 'TRẦN THỊ BA' } as Customer;
+    vi.mocked(api.fetchCustomersAPI).mockResolvedValue([khach, khach2]);
+    vi.mocked(api.fetchContractsByCustomerAPI).mockImplementation(async (id: number) =>
+      id === 2 ? [{ ...kunn(2001, 'BA/GNN-01', 50_000_000), CustomerId: 2, CreditContractId: null }] as LoanContract[] : danhSachKunn);
+    dungLen(1);
+    await screen.findByText('2002/HĐTD/9632203/GNN-01');
+    const picker = screen.getByLabelText('KHÁCH HÀNG ĐANG XEM') as HTMLInputElement;
+    expect(picker.value || picker.placeholder).toContain('NGÔ NHỊ ĐẠT');
+    fireEvent.click(picker);
+    fireEvent.mouseDown(await screen.findByText('TRẦN THỊ BA'));
+    await screen.findByText('BA/GNN-01');
+    expect(screen.queryByText('2002/HĐTD/9632203/GNN-01')).toBeNull();
+    vi.mocked(api.fetchCustomersAPI).mockResolvedValue([khach]);
+    vi.mocked(api.fetchContractsByCustomerAPI).mockImplementation(async () => danhSachKunn);
+  });
+});

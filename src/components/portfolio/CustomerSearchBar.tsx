@@ -46,29 +46,29 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
   handleClearSearch,
 }) => {
   return (
-    <details data-workspace-panel open={compact ? undefined : true} className="workspace-toolbar relative z-30 border-b border-line bg-panel">
-      <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-ink">Tìm kiếm khoản vay</summary>
-      <div className="space-y-3 px-4 pb-4">
-
-      {!compact && <div className="relative">
-        <label className="block mb-1 text-[10px] uppercase tracking-wider text-ink-muted font-bold">
-          CHỌN KHÁCH HÀNG TỪ DANH SÁCH
+    <div data-workspace-panel className="workspace-toolbar relative z-30 border-b border-line bg-panel">
+      <div className="relative px-4 pt-3 pb-2">
+        <label htmlFor="loan-customer-picker" className="block mb-1 text-[10px] uppercase tracking-wider text-ink-muted font-bold">
+          {foundCustomer ? 'KHÁCH HÀNG ĐANG XEM' : 'CHỌN KHÁCH HÀNG TỪ DANH SÁCH'}
         </label>
         <div className="relative">
           <input
+            id="loan-customer-picker"
             type="text"
             value={dropdownQuery}
             onChange={e => { setDropdownQuery(e.target.value); setShowDropdown(true); }}
             onClick={() => { setDropdownQuery(''); setShowDropdown(true); }}
             onFocus={() => setShowDropdown(true)}
             onBlur={() => setTimeout(() => setShowDropdown(false), 350)}
-            placeholder={`Nhấp vào đây hoặc gõ tên / Mã CIF để chọn Khách hàng... (${allCustomers.length} KH)`}
-            className={`w-full rounded-xl pl-3.5 pr-10 py-2.5 text-xs transition-colors cursor-pointer border border-line/70 bg-surface/80 focus:border-accent ${UI.inputStyle}`}
+            placeholder={foundCustomer
+              ? `${foundCustomer.FullName} · CIF ${foundCustomer.CifKh || '—'}`
+              : `Nhấp vào đây hoặc gõ tên / Mã CIF để chọn Khách hàng... (${allCustomers.length} KH)`}
+            className={`w-full rounded-xl pl-3.5 pr-10 py-2.5 text-xs transition-colors cursor-pointer border border-line/70 bg-surface/80 focus:border-accent ${foundCustomer ? 'placeholder:text-ink placeholder:font-semibold' : ''} ${UI.inputStyle}`}
           />
           <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint pointer-events-none" />
         </div>
         {showDropdown && dropdownFiltered.length > 0 && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-1.5 border border-line/80 rounded-2xl shadow-2xl max-h-72 overflow-y-auto bg-panel/95 backdrop-blur-2xl text-ink divide-y divide-line/40 ring-1 ring-black/10">
+          <div className="absolute left-4 right-4 top-full z-50 mt-1.5 border border-line/80 rounded-2xl shadow-2xl max-h-72 overflow-y-auto bg-panel/95 backdrop-blur-2xl text-ink divide-y divide-line/40 ring-1 ring-black/10">
             {dropdownFiltered.map(c => (
               <button
                 key={c.Id}
@@ -92,8 +92,11 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
             ))}
           </div>
         )}
-      </div>}
+      </div>
 
+      <details open={compact ? undefined : true}>
+      <summary className="cursor-pointer px-4 py-2 text-xs font-semibold text-ink-muted">Tìm theo CIF, họ tên, số HĐTD</summary>
+      <div className="px-4 pb-4 pt-1">
       <form onSubmit={handleSearch} className="flex flex-wrap gap-3 items-end">
         <div className="flex-1 min-w-[140px]">
           <label className={`block mb-1 text-[10px] font-semibold text-ink-muted uppercase tracking-wider ${UI.labelStyle}`}>Mã CIF</label>
@@ -127,6 +130,7 @@ export const CustomerSearchBar: React.FC<CustomerSearchBarProps> = ({
         )}
       </form>
       </div>
-    </details>
+      </details>
+    </div>
   );
 };

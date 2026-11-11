@@ -69,21 +69,21 @@ export const KunnTable: React.FC<KunnTableProps> = ({
           <div className="flex items-center bg-surface p-1 rounded-xl border border-line/70 shadow-2xs">
             <button
               type="button"
-              onClick={() => onToggleShowSettled(true)}
-              className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${showSettled
-                ? 'bg-accent text-accent-ink shadow-xs'
-                : 'text-ink-faint hover:text-ink'}`}
-            >
-              Tất cả
-            </button>
-            <button
-              type="button"
               onClick={() => onToggleShowSettled(false)}
               className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${!showSettled
                 ? 'bg-accent text-accent-ink shadow-xs'
                 : 'text-ink-faint hover:text-ink'}`}
             >
               Đang vay
+            </button>
+            <button
+              type="button"
+              onClick={() => onToggleShowSettled(true)}
+              className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${showSettled
+                ? 'bg-accent text-accent-ink shadow-xs'
+                : 'text-ink-faint hover:text-ink'}`}
+            >
+              Tất cả
             </button>
           </div>
         ) : (

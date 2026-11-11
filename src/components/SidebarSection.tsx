@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { ChevronRight, ExternalLink } from 'lucide-react';
 import { WORKSPACE_SECTION_ICONS, workspaceItemPath, type WorkspaceItem, type WorkspaceSection } from '../lib/workspaceNavigation';
 
-const ROW = 'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-left border focus-visible:outline-2 focus-visible:outline-accent';
+const ROW = 'w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sidebar text-left border focus-visible:outline-2 focus-visible:outline-accent';
 const ACTIVE = 'bg-accent-soft text-accent font-semibold border-line/70';
 const IDLE = 'border-transparent text-ink-muted hover:text-ink hover:bg-surface';
 

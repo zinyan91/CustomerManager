@@ -28,6 +28,15 @@ describe('ReportCenterView', () => {
     expect(screen.getByRole('button',{name:'Xuất Excel tổng hợp'}).hasAttribute('disabled')).toBe(true);
     await waitFor(()=>expect(screen.getByRole('button',{name:'Xuất danh mục đang vay'}).hasAttribute('disabled')).toBe(false));
   });
+  it('nút xuất danh mục đang vay nằm dưới phần tổng hợp và cùng kiểu với nút Làm mới danh mục', () => {
+    render(<ReportCenterView />);
+    fireEvent.click(screen.getByRole('tab',{name:'Danh mục & tổng hợp'}));
+    const summary = screen.getByRole('button',{name:'Xuất Excel tổng hợp'});
+    const portfolio = screen.getByRole('button',{name:'Xuất danh mục đang vay'});
+    expect(summary.compareDocumentPosition(portfolio) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(portfolio.className).toBe(screen.getByRole('button',{name:'Làm mới danh mục'}).className);
+    expect(portfolio.className).not.toBe(summary.className);
+  });
   it('lỗi nạp hiện nguyên văn và không lẫn với trạng thái rỗng',async()=>{
     vi.mocked(loadAlertSnapshot).mockRejectedValueOnce(new Error('Không nạp được lịch trả nợ: permission denied'));
     render(<ReportCenterView />);

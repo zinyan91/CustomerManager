@@ -20,7 +20,7 @@ export const PrimaryRail = memo(({ isMasterAdmin = false }: { isMasterAdmin?: bo
         const active = current === section.id;
         return (
           <Link key={section.id} to={workspaceItemPath(section.items[0], customerId)} aria-current={active ? 'page' : undefined}
-            className={`w-full min-h-[58px] rounded-lg flex flex-col items-center justify-center gap-1.5 px-1 py-2 text-xs text-center leading-tight border focus-visible:outline-2 focus-visible:outline-accent ${active ? 'bg-accent-soft text-accent border-line/70 font-semibold' : 'text-ink-muted border-transparent hover:bg-surface hover:text-ink'}`}>
+            className={`w-full min-h-[58px] rounded-lg flex flex-col items-center justify-center gap-1.5 px-1 py-2 text-sidebar text-center leading-tight border focus-visible:outline-2 focus-visible:outline-accent ${active ? 'bg-accent-soft text-accent border-line/70 font-semibold' : 'text-ink-muted border-transparent hover:bg-surface hover:text-ink'}`}>
             <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
             <span>{section.label}</span>
           </Link>

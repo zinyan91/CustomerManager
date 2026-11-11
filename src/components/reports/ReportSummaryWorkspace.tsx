@@ -16,54 +16,6 @@ export function ReportSummaryWorkspace({ ctrl, portfolio }: Props) {
 
   return (
     <section aria-label="Báo cáo danh mục và tổng hợp" className="divide-y divide-line">
-      <div
-        data-workspace-panel
-        className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 bg-panel"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-accent-soft text-accent">
-            <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-sm font-semibold text-ink">Danh mục đang vay</h2>
-              <span className="px-2 py-0.5 rounded-full bg-panel-muted text-ink-muted font-mono text-[11px] font-semibold">
-                4 sheet · Vay có TSBĐ, Chi tiết TSBĐ, Cầm cố, Huy động
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="secondary"
-            disabled={portfolio.loading}
-            onClick={() => void portfolio.reload()}
-            leftIcon={<RefreshCw className="w-4 h-4" />}
-          >
-            Làm mới danh mục
-          </Button>
-          <Button
-            loading={portfolio.loading}
-            disabled={Boolean(portfolio.error || !portfolio.snapshot)}
-            onClick={portfolio.exportPortfolio}
-            leftIcon={<FileSpreadsheet className="w-4 h-4" />}
-          >
-            Xuất danh mục đang vay
-          </Button>
-        </div>
-      </div>
-
-      {portfolio.error && (
-        <div role="alert" className="p-4 text-neg">
-          {portfolio.error}
-        </div>
-      )}
-      {portfolio.actionError && (
-        <div role="alert" className="p-4 text-neg">
-          {portfolio.actionError}
-        </div>
-      )}
-
       <div className="workspace-toolbar flex flex-wrap items-end justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-2.5 self-center">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-kpi-cust/15 text-kpi-cust">
@@ -178,6 +130,54 @@ export function ReportSummaryWorkspace({ ctrl, portfolio }: Props) {
           {ctrl.exporting ? 'Đang xuất' : 'Xuất Excel tổng hợp'}
         </Button>
       </div>
+      <div
+        data-workspace-panel
+        className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 mt-4 border-t border-line bg-panel"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-accent-soft text-accent">
+            <FileSpreadsheet className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-sm font-semibold text-ink">Danh mục đang vay</h2>
+              <span className="px-2 py-0.5 rounded-full bg-panel-muted text-ink-muted font-mono text-[11px] font-semibold">
+                4 sheet · Vay có TSBĐ, Chi tiết TSBĐ, Cầm cố, Huy động
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            disabled={portfolio.loading}
+            onClick={() => void portfolio.reload()}
+            leftIcon={<RefreshCw className="w-4 h-4" />}
+          >
+            Làm mới danh mục
+          </Button>
+          <Button
+            variant="secondary"
+            loading={portfolio.loading}
+            disabled={Boolean(portfolio.error || !portfolio.snapshot)}
+            onClick={portfolio.exportPortfolio}
+            leftIcon={<FileSpreadsheet className="w-4 h-4" />}
+          >
+            Xuất danh mục đang vay
+          </Button>
+        </div>
+      </div>
+
+      {portfolio.error && (
+        <div role="alert" className="p-4 text-neg">
+          {portfolio.error}
+        </div>
+      )}
+      {portfolio.actionError && (
+        <div role="alert" className="p-4 text-neg">
+          {portfolio.actionError}
+        </div>
+      )}
     </section>
   );
 }

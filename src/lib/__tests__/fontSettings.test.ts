@@ -66,12 +66,13 @@ describe('fontStackOf', () => {
 
 describe('cssVariablesFor', () => {
   it('trả đủ biến CSS kèm đơn vị px', () => {
-    const v = cssVariablesFor({ family: 'inter', heading: 15, table: 13, small: 11, mono: 12, menu: 14 });
+    const v = cssVariablesFor({ family: 'inter', heading: 15, table: 13, small: 11, mono: 12, menu: 14, sidebar: 15 });
     expect(v['--fs-heading']).toBe('15px');
     expect(v['--fs-table']).toBe('13px');
     expect(v['--fs-small']).toBe('11px');
     expect(v['--fs-mono']).toBe('12px');
     expect(v['--fs-menu']).toBe('14px');
+    expect(v['--fs-sidebar']).toBe('15px');
     expect(v['--app-font']).toContain('Inter');
   });
 
@@ -94,13 +95,13 @@ describe('cssVariablesFor — thang chữ ngữ nghĩa', () => {
   });
 
   it('chữ thân bảng luôn lớn hơn chữ bảng dày đúng 1px', () => {
-    const v = cssVariablesFor({ family: 'system', heading: 14, table: 16, small: 11, mono: 12, menu: 13 });
+    const v = cssVariablesFor({ family: 'system', heading: 14, table: 16, small: 11, mono: 12, menu: 13, sidebar: 12 });
     expect(v['--fs-dense']).toBe('16px');
     expect(v['--fs-body']).toBe('17px');
   });
 
   it('kéo thanh trượt Tiêu đề thì cả hai cỡ tiêu đề cùng đổi', () => {
-    const v = cssVariablesFor({ family: 'system', heading: 18, table: 12, small: 11, mono: 12, menu: 13 });
+    const v = cssVariablesFor({ family: 'system', heading: 18, table: 12, small: 11, mono: 12, menu: 13, sidebar: 12 });
     expect(v['--fs-screen']).toBe('22px');
     expect(v['--fs-title']).toBe('19px');
   });
@@ -130,5 +131,14 @@ describe('cỡ chữ menu phụ', () => {
 
   it('thiết lập cũ chưa có mục menu thì lấy mặc định', () => {
     expect(normalizeFontSettings({ family: 'roboto', heading: 16, table: 12, small: 11, mono: 12 }).menu).toBe(13);
+  });
+});
+
+describe('cỡ chữ menu chính', () => {
+  it('mặc định 12px như trước khi có mục này, kẹp trong 11–18', () => {
+    expect(DEFAULT_FONT_SETTINGS.sidebar).toBe(12);
+    expect(cssVariablesFor(DEFAULT_FONT_SETTINGS)['--fs-sidebar']).toBe('12px');
+    expect(normalizeFontSettings({ sidebar: 99 }).sidebar).toBe(18);
+    expect(normalizeFontSettings({ sidebar: 1 }).sidebar).toBe(11);
   });
 });

@@ -21,6 +21,7 @@ export interface FontSettings {
   small: number;
   mono: number;
   menu: number;
+  sidebar: number;
 }
 
 export const FONT_SIZE_LIMITS = {
@@ -29,6 +30,7 @@ export const FONT_SIZE_LIMITS = {
   small: { min: 10, max: 16, default: 11 },
   mono: { min: 10, max: 18, default: 12 },
   menu: { min: 11, max: 18, default: 13 },
+  sidebar: { min: 11, max: 18, default: 12 },
 } as const;
 
 export const DEFAULT_FONT_SETTINGS: FontSettings = {
@@ -38,6 +40,7 @@ export const DEFAULT_FONT_SETTINGS: FontSettings = {
   small: FONT_SIZE_LIMITS.small.default,
   mono: FONT_SIZE_LIMITS.mono.default,
   menu: FONT_SIZE_LIMITS.menu.default,
+  sidebar: FONT_SIZE_LIMITS.sidebar.default,
 };
 
 export const FONT_PART_LABELS: Record<keyof Omit<FontSettings, 'family'>, string> = {
@@ -45,6 +48,7 @@ export const FONT_PART_LABELS: Record<keyof Omit<FontSettings, 'family'>, string
   table: 'Bảng & nội dung',
   small: 'Nhãn nhỏ, viên trạng thái',
   mono: 'Số tiền, mã hợp đồng',
+  sidebar: 'Menu chính',
   menu: 'Menu phụ',
 };
 
@@ -70,6 +74,7 @@ export function normalizeFontSettings(raw: unknown): FontSettings {
     small: clampFontSize('small', o.small ?? DEFAULT_FONT_SETTINGS.small),
     mono: clampFontSize('mono', o.mono ?? DEFAULT_FONT_SETTINGS.mono),
     menu: clampFontSize('menu', o.menu ?? DEFAULT_FONT_SETTINGS.menu),
+    sidebar: clampFontSize('sidebar', o.sidebar ?? DEFAULT_FONT_SETTINGS.sidebar),
   };
 }
 
@@ -103,6 +108,7 @@ export function cssVariablesFor(s: FontSettings): Record<string, string> {
     '--fs-small': `${n.small}px`,
     '--fs-mono': `${n.mono}px`,
     '--fs-menu': `${n.menu}px`,
+    '--fs-sidebar': `${n.sidebar}px`,
 
     '--fs-screen': `${n.heading + 4}px`,
     '--fs-title': `${n.heading + 1}px`,

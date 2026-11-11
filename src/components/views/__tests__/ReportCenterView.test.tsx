@@ -19,23 +19,27 @@ describe('ReportCenterView', () => {
     expect(screen.getByRole('button',{name:'Xuất Excel'}).hasAttribute('disabled')).toBe(true);
     expect(screen.getByRole('button',{name:'In / PDF'}).hasAttribute('disabled')).toBe(true);
   });
-  it('danh mục có nút mẫu hai sheet và giữ đủ năm lựa chọn xuất tổng hợp', async () => {
+  it('tab Danh mục & tổng hợp chỉ còn năm lựa chọn xuất tổng hợp, không còn nút xuất danh mục riêng', () => {
     render(<ReportCenterView />);
     fireEvent.click(screen.getByRole('tab',{name:'Danh mục & tổng hợp'}));
-    expect(screen.getByRole('button',{name:'Xuất danh mục đang vay'})).toBeTruthy();
     expect(screen.getAllByRole('checkbox')).toHaveLength(5);
     fireEvent.click(screen.getByRole('checkbox',{name:'Danh mục đang vay'}));
     expect(screen.getByRole('button',{name:'Xuất Excel tổng hợp'}).hasAttribute('disabled')).toBe(true);
-    await waitFor(()=>expect(screen.getByRole('button',{name:'Xuất danh mục đang vay'}).hasAttribute('disabled')).toBe(false));
+    expect(screen.queryByRole('button',{name:'Xuất danh mục đang vay'})).toBeNull();
   });
-  it('nút xuất danh mục đang vay nằm dưới phần tổng hợp và cùng kiểu với nút Làm mới danh mục', () => {
+  it('tab Danh mục đang vay có bảng cố định ba cột đầu, lọc nhóm nợ và các sheet; lọc nhóm thì ẩn Huy động', async () => {
     render(<ReportCenterView />);
-    fireEvent.click(screen.getByRole('tab',{name:'Danh mục & tổng hợp'}));
-    const summary = screen.getByRole('button',{name:'Xuất Excel tổng hợp'});
-    const portfolio = screen.getByRole('button',{name:'Xuất danh mục đang vay'});
-    expect(summary.compareDocumentPosition(portfolio) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(portfolio.className).toBe(screen.getByRole('button',{name:'Làm mới danh mục'}).className);
-    expect(portfolio.className).not.toBe(summary.className);
+    fireEvent.click(screen.getByRole('tab',{name:'Danh mục đang vay'}));
+    const sheets = await screen.findByRole('tablist',{name:'Sheet'});
+    expect(sheets.textContent).toContain('Huy động');
+    const headers = screen.getAllByRole('columnheader');
+    expect(headers.slice(0,4).map(h=>h.textContent)).toEqual(['STT','Mã CIF KH','Họ tên KH','Nhóm nợ']);
+    expect(headers.slice(0,3).every(h=>(h as HTMLElement).style.position==='sticky')).toBe(true);
+    expect((headers[3] as HTMLElement).style.position).toBe('');
+    expect(screen.getByText('Không có khoản nào phù hợp bộ lọc.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button',{name:'Nhóm 2–5'}));
+    expect(screen.getByRole('button',{name:'Nhóm 2–5'}).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('tablist',{name:'Sheet'}).textContent).not.toContain('Huy động');
   });
   it('lỗi nạp hiện nguyên văn và không lẫn với trạng thái rỗng',async()=>{
     vi.mocked(loadAlertSnapshot).mockRejectedValueOnce(new Error('Không nạp được lịch trả nợ: permission denied'));

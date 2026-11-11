@@ -5,7 +5,6 @@ import { loadAlertSnapshot } from '../lib/reports/alertLoader';
 import { buildDueListHtml, openPrintWindow, type DueFilter } from '../lib/dueList';
 import { buildXlsx, MIME_XLSX } from '../lib/xlsxWriter';
 import { downloadBytes } from '../lib/xlsExport';
-import { exportActiveCustomerPortfolioExcel } from '../lib/customerPortfolioExport';
 import { todayIso } from '../lib/utils';
 import { runWithTimeout } from '../lib/asyncTimeout';
 import { reportErrorMessage } from '../lib/reports/errorMessage';
@@ -32,6 +31,11 @@ export function useAlertReports() {
   },[]);
   const cancel = useCallback(() => {seq.current++;},[]);
   useEffect(() => {void reload();return cancel;},[reload,cancel]);
+  useEffect(() => {
+    const onVisible = () => {if(document.visibilityState==='visible') void reload();};
+    document.addEventListener('visibilitychange',onVisible);
+    return () => document.removeEventListener('visibilitychange',onVisible);
+  },[reload]);
   const rows = useMemo(() => snapshot ? selectAlertRows(snapshot,{onlyGroup1,due:filter,search}) : null,
     [snapshot,onlyGroup1,filter,search]);
   const output = useMemo(() => rows && snapshot ? buildAlertExport(report,rows,snapshot.today) : null,[rows,snapshot,report]);
@@ -47,10 +51,6 @@ export function useAlertReports() {
     if(loading || error || !output) return;
     run(() => {if(!openPrintWindow(buildDueListHtml(output.print))) throw new Error('Không mở được bản in. Tải lại trang rồi thử lại.');});
   };
-  const exportPortfolio = () => {
-    if(loading || error || !snapshot) return;
-    run(() => exportActiveCustomerPortfolioExcel({...snapshot,todayStr:snapshot.today}));
-  };
   return {report,setReport,filter,setFilter,onlyGroup1,setOnlyGroup1,search,setSearch,
-    snapshot,rows,output,loading,error,actionError,reload,exportExcel,print,exportPortfolio};
+    snapshot,rows,output,loading,error,actionError,reload,exportExcel,print};
 }

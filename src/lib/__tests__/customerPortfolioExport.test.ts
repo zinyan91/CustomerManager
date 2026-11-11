@@ -4,8 +4,13 @@ import {
   isKunnActiveDebt,
   buildActivePortfolioData,
   formatAppraisalDaysRemaining,
-  generateCustomerPortfolioWorkbook,
+  type CustomerPortfolioExportParams,
 } from '../customerPortfolioExport';
+import { buildLoanPortfolioTables } from '../reports/loanPortfolioTables';
+import { buildLoanPortfolioWorkbook, loanPortfolioFileName } from '../reports/loanPortfolioWorkbook';
+
+const generateCustomerPortfolioWorkbook = (params: CustomerPortfolioExportParams, filter?: 'all' | 'group1' | 'group2to5') =>
+  buildLoanPortfolioWorkbook(buildLoanPortfolioTables(params, filter));
 
 const mockCustomers: Customer[] = [
   {
@@ -208,5 +213,90 @@ describe('customerPortfolioExport', () => {
       expect(text).toContain('CC-07');
       expect(text).toContain('STK-0005');
     });
+  });
+});
+
+const PLEDGE_BUNDLE = {
+  loans: [{
+    Id: 7, CustomerId: 1, ContractNumber: 'CC-07', Amount: 90_000_000, InterestRate: 6.5,
+    DisbursementDate: '2026-09-01', DueDate: '2026-12-01', LoanPurpose: null, IsClosed: false,
+    ClosedDate: null, ClosedHow: null, LegacyCreditContractId: null, LegacyLoanContractId: null,
+    Note: null, CreatedAt: '2026-09-01',
+  }],
+  links: [],
+  repayments: [],
+  books: [{
+    Id: 5, CustomerId: 1, BookNumber: 'STK-0005', DepositType: 'tg_vnd', Currency: 'VND', ExchangeRate: null,
+    Amount: 100_000_000, InterestRate: 5.2, OpenDate: '2026-06-01', Tenor: 6, TenorUnit: 'thang',
+    MaturityDate: null, InterestPaymentMethod: 'end_term', PaidInterest: 0, IsClosed: false,
+    ClosedDate: null, ClosingInterest: null, MovedFromCollateralId: null, Note: null, CreatedAt: '2026-06-01',
+  }],
+} as unknown as CustomerPortfolioExportParams['pledge'];
+
+const baseParams = (extra: Partial<CustomerPortfolioExportParams> = {}): CustomerPortfolioExportParams => ({
+  customers: mockCustomers,
+  contracts: mockContracts,
+  creditContracts: mockCreditContracts,
+  collaterals: mockCollaterals,
+  todayStr: '2026-07-28',
+  pledge: PLEDGE_BUNDLE,
+  ...extra,
+});
+
+const col = (table: ReturnType<typeof buildLoanPortfolioTables>[number], header: string) =>
+  table.columns.findIndex(c => c.header === header);
+
+describe('danh mục đang vay — nhóm nợ, lọc, tô màu, cố định cột', () => {
+  it('nhóm nợ lấy mức cao hơn giữa nhóm đã ghi và số ngày quá hạn của kỳ chưa trả', () => {
+    const quaHan = buildActivePortfolioData(baseParams({
+      pledge: undefined,
+      periods: [{ Id: 1, ContractId: 101, PeriodNumber: 3, DueDate: '2026-07-01', TotalAmount: 1, IsPaid: false }],
+    }));
+    expect(quaHan[0].debtGroup).toBe(2);
+    const daGhi = buildActivePortfolioData(baseParams({ pledge: undefined, contracts: [{ ...mockContracts[0], DebtGroup: 3 }] }));
+    expect(daGhi[0].debtGroup).toBe(3);
+  });
+
+  it('bảng có cột Nhóm nợ ngay sau Họ tên KH, ba cột đầu là STT, Mã CIF, Họ tên', () => {
+    const [secured, matrix, pledge] = buildLoanPortfolioTables(baseParams());
+    for (const t of [secured, matrix, pledge]) {
+      expect(t.columns.slice(0, 4).map(c => c.header)).toEqual(['STT', 'Mã CIF KH', 'Họ tên KH', 'Nhóm nợ']);
+    }
+    expect(secured.rows[0][col(secured, 'Nhóm nợ')].value).toBe(1);
+  });
+
+  it('lọc nhóm 2–5 bỏ khoản nhóm 1 và bỏ sheet Huy động; nhóm 1 giữ khoản nhóm 1', () => {
+    const all = buildLoanPortfolioTables(baseParams());
+    expect(all.map(t => t.id)).toEqual(['secured', 'matrix', 'pledge', 'deposit']);
+    const g25 = buildLoanPortfolioTables(baseParams(), 'group2to5');
+    expect(g25.map(t => t.id)).toEqual(['secured', 'matrix', 'pledge']);
+    expect(g25.every(t => t.rows.length === 0)).toBe(true);
+    const g1 = buildLoanPortfolioTables(baseParams(), 'group1');
+    expect(g1.find(t => t.id === 'secured')!.rows).toHaveLength(1);
+    expect(g1.find(t => t.id === 'pledge')!.rows).toHaveLength(1);
+  });
+
+  it('tô màu theo luật dashboard: KUNN còn 4 ngày vàng, HĐTD còn 157 ngày xanh, định giá hết hạn đỏ', () => {
+    const [secured] = buildLoanPortfolioTables(baseParams());
+    const row = secured.rows[0];
+    expect(row[col(secured, 'Ngày kết thúc GNN')].tone).toBe('warn');
+    expect(row[col(secured, 'Ngày kết thúc HĐTD')].tone).toBe('pos');
+    expect(buildLoanPortfolioTables(baseParams({ todayStr: '2027-02-01' }))[0]
+      .rows[0][col(secured, 'Số ngày còn lại')].tone).toBe('neg');
+    expect(row[col(secured, 'Dư nợ hiện hữu (VNĐ)')].tone).toBeNull();
+  });
+
+  it('file Excel cố định 1 hàng tiêu đề + 3 cột đầu và tô nền ô theo màu', () => {
+    const text = new TextDecoder().decode(generateCustomerPortfolioWorkbook(baseParams()));
+    expect(text).toContain('<pane xSplit="3" ySplit="1" topLeftCell="D2" activePane="bottomRight" state="frozen"/>');
+    expect(text).toContain('rgb="FFFEF3C7"');
+    expect(text).toContain('rgb="FFDCFCE7"');
+  });
+
+  it('xuất theo nhóm thì không có sheet Huy_Dong và tên file ghi nhóm', () => {
+    const text = new TextDecoder().decode(generateCustomerPortfolioWorkbook(baseParams(), 'group1'));
+    expect(text).not.toContain('name="Huy_Dong"');
+    expect(loanPortfolioFileName('2026-07-28', 'all')).toBe('Danh_Muc_Dang_Vay_2026-07-28.xlsx');
+    expect(loanPortfolioFileName('2026-07-28', 'group2to5')).toBe('Danh_Muc_Dang_Vay_Nhom_2-5_2026-07-28.xlsx');
   });
 });

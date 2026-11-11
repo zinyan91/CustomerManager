@@ -4,12 +4,13 @@ import { filterByDue, type DueFilter } from '../dueList';
 import { buildHdtdExpiryList } from '../hdtdExpiryAlerts';
 import { appraisalExpiryDate } from '../collateralMath';
 import { parseCollateralIds } from '../creditLimit';
-import { debtGroupFromOverdueDays, outstandingOf } from '../loanMath';
+import { outstandingOf } from '../loanMath';
 import { daysUntil } from '../utils';
 import { openLoans, pledgeLoanAsKunn } from '../pledgePortfolio';
 import { outstandingPrincipal } from '../pledgeLoanMath';
 import { pledgeLoanDebtGroup } from '../pledgeLoan';
 import { archivedCustomerIdSet, filterActiveCustomers, isCustomerArchived } from '../customerStatus';
+import { groupPeriodsByContract, kunnDebtGroup } from './debtGroup';
 
 export const ALERT_REPORTS = [
   { id: 'due', label: 'Kỳ due' },
@@ -43,21 +44,12 @@ export function selectAlertRows(data: AlertSnapshot, filters: AlertFilters) {
   const isActiveRecord = <T extends { CustomerId: number; customer?: Customer }>(item: T) =>
     !archivedIds.has(item.CustomerId) && !isCustomerArchived(item.customer);
 
-  const periodsMap = new Map<number, DuePeriodRow[]>();
-  for (const period of data.periods) {
-    const list = periodsMap.get(period.ContractId) ?? [];
-    list.push(period);
-    periodsMap.set(period.ContractId, list);
-  }
+  const periodsMap = groupPeriodsByContract(data.periods);
   const active = data.contracts.filter(c => !c.IsSettled && isActiveRecord(c));
   const activeCreditContracts = data.creditContracts.filter(isActiveRecord);
   const activeCollaterals = data.collaterals.filter(isActiveRecord);
-  const eligible = active.filter(c => {
-    if (!filters.onlyGroup1) return true;
-    const overdue = Math.max(0, ...(periodsMap.get(c.Id) ?? [])
-      .filter(p => !p.IsPaid).map(p => -(daysUntil(p.DueDate, data.today) ?? 0)));
-    return Math.max(c.DebtGroup ?? 1, debtGroupFromOverdueDays(overdue)) === 1;
-  });
+  const eligible = active.filter(c =>
+    !filters.onlyGroup1 || kunnDebtGroup(c, periodsMap.get(c.Id) ?? [], data.today) === 1);
   const search = filters.search.trim().toLocaleLowerCase('vi');
   const matches = (customer: Customer | undefined, ...values: (string | null | undefined)[]) =>
     !search || [customer?.FullName, customer?.CifKh, ...values]

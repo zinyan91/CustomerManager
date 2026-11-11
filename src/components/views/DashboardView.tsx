@@ -34,6 +34,13 @@ import { DashboardSummaryKpis } from '../dashboard/DashboardSummaryKpis';
 import { ErrorState } from '../ui/FeedbackStates';
 import { DashboardPortfolioStructure } from '../dashboard/DashboardPortfolioStructure';
 import type { ColumnDef } from '../ui/DataTable';
+import { appraisalTone, hdtdEndTone, type PortfolioTone } from '../../lib/reports/portfolioTone';
+
+const STATUS_TONE_CLASS: Record<PortfolioTone, string> = {
+  pos: 'bg-pos-soft text-pos border border-pos/30',
+  warn: 'bg-warn-soft text-warn border border-warn/30 font-bold',
+  neg: 'bg-neg text-surface border border-neg font-bold',
+};
 
 export const DashboardView: React.FC = () => {
   const { toast, show, dismiss } = useToast();
@@ -425,14 +432,12 @@ export const DashboardView: React.FC = () => {
       render: r => <span className="font-bold">{fmtDate(r.endDateStr)}</span> },
     { key: 'trangThai', label: 'Trạng thái hạn mức', priority: 1, align: 'center', render: r => {
       const d = r.daysLeft ?? 0;
-      const style = d < 0 || d < 6 ? 'bg-neg text-surface border border-neg font-bold'
-        : d >= 21 ? 'bg-pos-soft text-pos border border-pos/30'
-        : 'bg-warn-soft text-warn border border-warn/30 font-bold';
+      const tone = hdtdEndTone(d);
       const txt = d < 0 ? `Đã hết hạn ${Math.abs(d)} ngày`
-        : d >= 21 ? `An toàn · còn ${d} ngày`
-        : d >= 6 ? `Cần chú ý · còn ${d} ngày`
+        : tone === 'pos' ? `An toàn · còn ${d} ngày`
+        : tone === 'warn' ? `Cần chú ý · còn ${d} ngày`
         : `Khẩn cấp · còn ${d} ngày`;
-      return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
+      return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${tone ? STATUS_TONE_CLASS[tone] : ''}`}>{txt}</span>;
     } },
   ];
 
@@ -452,13 +457,11 @@ export const DashboardView: React.FC = () => {
       render: r => <span className="font-bold">{r.expiryDateStr ? fmtDate(r.expiryDateStr) : 'N/A'}</span> },
     { key: 'trangThai', label: 'Trạng thái', priority: 1, align: 'center', render: r => {
       const d = r.daysLeft ?? 0;
-      const style = d >= 16 ? 'bg-pos-soft text-pos border border-pos/30'
-        : d >= 1 ? 'bg-warn-soft text-warn border border-warn/30 font-bold'
-        : 'bg-neg text-surface border border-neg font-bold';
-      const txt = d >= 16 ? `An toàn · còn ${d} ngày`
-        : d >= 1 ? `Cần chú ý · còn ${d} ngày`
+      const tone = appraisalTone(d);
+      const txt = tone === 'pos' ? `An toàn · còn ${d} ngày`
+        : tone === 'warn' ? `Cần chú ý · còn ${d} ngày`
         : `Quá hạn ${Math.abs(d)} ngày`;
-      return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${style}`}>{txt}</span>;
+      return <span className={`px-2 py-0.5 rounded-md text-[11px] inline-block ${tone ? STATUS_TONE_CLASS[tone] : ''}`}>{txt}</span>;
     } },
   ];
 

@@ -4,12 +4,13 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { useAlertReports } from '../useAlertReports';
 import { loadAlertSnapshot } from '../../lib/reports/alertLoader';
 import { downloadBytes } from '../../lib/xlsExport';
-import { exportActiveCustomerPortfolioExcel } from '../../lib/customerPortfolioExport';
+import { useLoanPortfolio } from '../useLoanPortfolio';
+import { exportLoanPortfolioExcel } from '../../lib/reports/loanPortfolioWorkbook';
 import { openPrintWindow } from '../../lib/dueList';
 
 vi.mock('../../lib/reports/alertLoader',()=>({loadAlertSnapshot:vi.fn()}));
 vi.mock('../../lib/xlsExport',()=>({downloadBytes:vi.fn()}));
-vi.mock('../../lib/customerPortfolioExport',()=>({exportActiveCustomerPortfolioExcel:vi.fn()}));
+vi.mock('../../lib/reports/loanPortfolioWorkbook',()=>({exportLoanPortfolioExcel:vi.fn()}));
 vi.mock('../../lib/dueList',async importOriginal=>({...await importOriginal<object>(),openPrintWindow:vi.fn(()=>true)}));
 
 const fixture={
@@ -34,23 +35,32 @@ describe('useAlertReports',()=>{
     act(()=>result.current.setSearch('không có'));
     expect(result.current.output?.sheet.rows).toHaveLength(1);
   });
-  it('danh mục đầy đủ giữ gốc đã trả và ngày chốt, không bị ảnh hưởng bởi bộ lọc cảnh báo',async()=>{
+  it('danh mục đang vay xuất theo nhóm nợ đang chọn, giữ gốc đã trả, kỳ trả nợ và ngày chốt, không theo bộ lọc cảnh báo',async()=>{
+    const {result}=renderHook(()=>{const alerts=useAlertReports();return {alerts,portfolio:useLoanPortfolio(alerts)};});
+    await waitFor(()=>expect(result.current.alerts.loading).toBe(false));
+    act(()=>result.current.alerts.setSearch('không có'));
+    expect(result.current.portfolio.table?.rows).toHaveLength(1);
+    act(()=>result.current.portfolio.setFilter('group2to5'));
+    expect(result.current.portfolio.table?.rows).toHaveLength(0);
+    act(()=>result.current.portfolio.exportExcel());
+    expect(exportLoanPortfolioExcel).toHaveBeenCalledWith(expect.objectContaining({
+      contracts:fixture.contracts,paidPrincipalMap:{1:20_000_000},periods:fixture.periods,todayStr:'2026-10-20',
+    }),'group2to5');
+  });
+  it('quay lại tab trình duyệt thì tự nạp lại dữ liệu mới',async()=>{
     const {result}=renderHook(()=>useAlertReports());
     await waitFor(()=>expect(result.current.loading).toBe(false));
-    act(()=>result.current.setSearch('không có'));
-    act(()=>result.current.exportPortfolio());
-    expect(exportActiveCustomerPortfolioExcel).toHaveBeenCalledWith(expect.objectContaining({
-      contracts:fixture.contracts,paidPrincipalMap:{1:20_000_000},todayStr:'2026-10-20',
-    }));
+    expect(loadAlertSnapshot).toHaveBeenCalledTimes(1);
+    act(()=>{document.dispatchEvent(new Event('visibilitychange'));});
+    await waitFor(()=>expect(loadAlertSnapshot).toHaveBeenCalledTimes(2));
   });
   it('lỗi nạp hiện nguyên thông điệp, chặn xuất; thử lại được',async()=>{
     vi.mocked(loadAlertSnapshot).mockRejectedValueOnce({message:'Máy chủ từ chối truy vấn lịch',code:'42501'});
     const {result}=renderHook(()=>useAlertReports());
     await waitFor(()=>expect(result.current.error).toBe('Máy chủ từ chối truy vấn lịch'));
-    act(()=>{result.current.exportExcel();result.current.print();result.current.exportPortfolio();});
+    act(()=>{result.current.exportExcel();result.current.print();});
     expect(downloadBytes).not.toHaveBeenCalled();
     expect(openPrintWindow).not.toHaveBeenCalled();
-    expect(exportActiveCustomerPortfolioExcel).not.toHaveBeenCalled();
     await act(async()=>{await result.current.reload();});
     expect(result.current.error).toBeNull();
     expect(result.current.rows?.due).toHaveLength(1);

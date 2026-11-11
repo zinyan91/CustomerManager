@@ -28,6 +28,20 @@ export interface XlsxSheet {
   colWidths?: number[];
   merges?: string[];
   rowHeights?: Record<number, number>;
+  freeze?: { rows: number; cols: number };
+}
+
+function sheetViewsXml(freeze?: XlsxSheet['freeze']): string {
+  if (!freeze || (freeze.rows <= 0 && freeze.cols <= 0)) return '';
+  const rows = Math.max(0, freeze.rows);
+  const cols = Math.max(0, freeze.cols);
+  const topLeft = `${columnLetter(cols)}${rows + 1}`;
+  const pane = rows > 0 && cols > 0 ? 'bottomRight' : rows > 0 ? 'bottomLeft' : 'topRight';
+  const split = (cols > 0 ? ` xSplit="${cols}"` : '') + (rows > 0 ? ` ySplit="${rows}"` : '');
+  return '<sheetViews><sheetView workbookViewId="0">'
+    + `<pane${split} topLeftCell="${topLeft}" activePane="${pane}" state="frozen"/>`
+    + `<selection pane="${pane}" activeCell="${topLeft}" sqref="${topLeft}"/>`
+    + '</sheetView></sheetViews>';
 }
 
 function mergeCellsXml(merges?: string[]): string {
@@ -51,6 +65,7 @@ export function sheetXml(sheet: XlsxSheet, indexFor?: (style?: XlsxStyle) => num
 
   return XML_DECL
     + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    + sheetViewsXml(sheet.freeze)
     + colsXml(sheet.colWidths)
     + `<sheetData>${rows}</sheetData>`
     + mergeCellsXml(sheet.merges)

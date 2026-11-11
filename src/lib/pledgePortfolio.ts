@@ -4,6 +4,7 @@ import type { PortfolioKunnRowData } from './customerPortfolioExport';
 import { interestBetween, lastInterestDate, outstandingPrincipal, signedDays } from './pledgeLoanMath';
 import { pledgeLoanDebtGroup } from './pledgeLoan';
 import { savingsPrincipalVnd } from './savingsBook';
+import { todayIso } from './utils';
 
 export const PLEDGE_LOAN_METHOD = 'Cầm cố sổ tiết kiệm';
 
@@ -116,7 +117,7 @@ export function pledgeLoanAsKunn(loan: PledgeLoan, outstanding: number): LoanCon
   } as LoanContract;
 }
 
-export function pledgePortfolioRows(bundle: PledgeBundle, customers: Customer[]): PortfolioKunnRowData[] {
+export function pledgePortfolioRows(bundle: PledgeBundle, customers: Customer[], today: string = todayIso()): PortfolioKunnRowData[] {
   const byId = new Map(customers.map((c) => [c.Id, c]));
   const rows: PortfolioKunnRowData[] = [];
   for (const loan of openLoans(bundle)) {
@@ -140,6 +141,7 @@ export function pledgePortfolioRows(bundle: PledgeBundle, customers: Customer[])
       hdtdStartDate: loan.DisbursementDate,
       hdtdTenor: term,
       hdtdEndDate: loan.DueDate,
+      debtGroup: pledgeLoanDebtGroup(loan, bundle.repayments, today),
     });
   }
   return rows;

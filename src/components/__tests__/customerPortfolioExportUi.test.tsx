@@ -25,9 +25,9 @@ vi.mock('../../context/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-vi.mock('../../lib/customerPortfolioExport', async importOriginal => ({
+vi.mock('../../lib/reports/loanPortfolioWorkbook', async importOriginal => ({
   ...await importOriginal<object>(),
-  exportActiveCustomerPortfolioExcel: (...args: unknown[]) => mockDownload(...args),
+  exportLoanPortfolioExcel: (...args: unknown[]) => mockDownload(...args),
 }));
 vi.mock('../../lib/reports/alertLoader',()=>({loadAlertSnapshot:async()=>({
   today:'2026-10-20',customers:[],contracts:[],collaterals:[],creditContracts:[],periods:[],paidPrincipalMap:{},
@@ -60,12 +60,13 @@ describe('Nút xuất danh mục đang vay chuyển về báo cáo', () => {
     expect(screen.queryByRole('button', { name: /XUẤT DANH MỤC ĐANG VAY/i })).toBeNull();
     expect(mockDownload).not.toHaveBeenCalled();
   });
-  it('nút tại trung tâm báo cáo gọi đúng mẫu danh mục đầy đủ',async()=>{
+  it('tab Danh mục đang vay xuất đúng nhóm nợ đang chọn',async()=>{
     const user=userEvent.setup();
     render(<ReportCenterView />);
-    await user.click(screen.getByRole('tab',{name:'Danh mục & tổng hợp'}));
-    await user.click(screen.getByRole('button',{name:'Xuất danh mục đang vay'}));
+    await user.click(screen.getByRole('tab',{name:'Danh mục đang vay'}));
+    await user.click(await screen.findByRole('button',{name:'Nhóm 1'}));
+    await user.click(screen.getByRole('button',{name:'Xuất Excel'}));
     expect(mockDownload).toHaveBeenCalledTimes(1);
-    expect(mockDownload).toHaveBeenCalledWith(expect.objectContaining({todayStr:'2026-10-20',paidPrincipalMap:{}}));
+    expect(mockDownload).toHaveBeenCalledWith(expect.objectContaining({todayStr:'2026-10-20',paidPrincipalMap:{}}),'group1');
   });
 });

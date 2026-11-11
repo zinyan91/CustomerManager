@@ -7,11 +7,14 @@ import { AlertReportWorkspace } from '../reports/AlertReportWorkspace';
 import { ReportSummaryWorkspace } from '../reports/ReportSummaryWorkspace';
 import { BusinessResultWorkspace } from '../reports/BusinessResultWorkspace';
 import { useBusinessResultSheet } from '../../hooks/useBusinessResultSheet';
+import { useLoanPortfolio } from '../../hooks/useLoanPortfolio';
+import { LoanPortfolioWorkspace } from '../reports/LoanPortfolioWorkspace';
 
-type ReportTab = 'alerts' | 'summary' | 'kqkd';
+type ReportTab = 'alerts' | 'portfolio' | 'summary' | 'kqkd';
 
 const TABS: { id: ReportTab; label: string }[] = [
   { id: 'alerts', label: 'Theo dõi đến hạn' },
+  { id: 'portfolio', label: 'Danh mục đang vay' },
   { id: 'summary', label: 'Danh mục & tổng hợp' },
   { id: 'kqkd', label: 'Kết quả kinh doanh' },
 ];
@@ -31,6 +34,7 @@ export function ReportCenterView() {
   };
   const alerts = useAlertReports();
   const summary = useReportCenterController();
+  const portfolio = useLoanPortfolio(alerts);
   return (
     <div data-workspace-page className="text-xs min-w-0 bg-panel font-app pb-8">
       <WorkspacePageHeader title="Báo cáo Excel" icon={FileSpreadsheet} />
@@ -71,11 +75,9 @@ export function ReportCenterView() {
       </div>
       {tab !== 'kqkd' && (
         <div role="tabpanel" id={`report-panel-${tab}`} aria-labelledby={`report-tab-${tab}`}>
-          {tab === 'alerts' ? (
-            <AlertReportWorkspace ctrl={alerts} />
-          ) : (
-            <ReportSummaryWorkspace ctrl={summary} portfolio={alerts} />
-          )}
+          {tab === 'alerts' && <AlertReportWorkspace ctrl={alerts} />}
+          {tab === 'portfolio' && <LoanPortfolioWorkspace ctrl={portfolio} />}
+          {tab === 'summary' && <ReportSummaryWorkspace ctrl={summary} />}
         </div>
       )}
       {kqkdOpened && (

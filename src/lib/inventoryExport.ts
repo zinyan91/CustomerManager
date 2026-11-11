@@ -17,27 +17,27 @@ export function buildPurchaseStatementXlsx(
   const merges: string[] = [];
 
   // Row 1: Quốc hiệu
-  rows.push([{ value: 'CÔNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', style: { bold: true, align: 'center' } }]);
+  rows.push([{ value: 'CÔNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', style: { bold: true, align: 'center', border: false } }]);
   merges.push('A1:I1');
 
   // Row 2: Tiêu ngữ
-  rows.push([{ value: 'Độc lập - Tự do - Hạnh Phúc', style: { bold: true, align: 'center' } }]);
+  rows.push([{ value: 'Độc lập - Tự do - Hạnh Phúc', style: { bold: true, align: 'center', border: false } }]);
   merges.push('A2:I2');
 
   // Row 3: Dấu sao
-  rows.push([{ value: '*************', style: { align: 'center' } }]);
+  rows.push([{ value: '*************', style: { align: 'center', border: false } }]);
   merges.push('A3:I3');
 
   // Row 4: Trống
   rows.push([]);
 
   // Row 5: Tiêu đề Bảng kê
-  rows.push([{ value: 'BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ', style: { bold: true, align: 'center' } }]);
+  rows.push([{ value: 'BẢNG KÊ MUA BÁN HÀNG HÓA DỊCH VỤ', style: { bold: true, align: 'center', border: false } }]);
   merges.push('A5:I5');
 
   rows.push([]);
 
-  rows.push([{ value: `Bên bán hàng: ${info.sellerName || ''}`, style: { bold: true } }]);
+  rows.push([{ value: `Bên bán hàng: ${info.sellerName || ''}`, style: { bold: true, border: false } }]);
   merges.push('A7:I7');
 
   rows.push([{ value: isTransfer ? `Thông tin chuyển khoản: ${stkText}` : `Địa chỉ: ${info.sellerAddress || ''}` }]);
@@ -45,7 +45,7 @@ export function buildPurchaseStatementXlsx(
 
   rows.push([]);
 
-  rows.push([{ value: `Bên mua hàng: ${info.buyerName || ''}`, style: { bold: true } }]);
+  rows.push([{ value: `Bên mua hàng: ${info.buyerName || ''}`, style: { bold: true, border: false } }]);
   merges.push('A10:I10');
 
   rows.push([{ value: `Địa chỉ: ${info.buyerAddress || ''}` }]);
@@ -138,7 +138,7 @@ export function buildPurchaseStatementXlsx(
   const dateRowIndex = totalRowIndex + 2;
   rows.push([
     { value: '' }, { value: '' }, { value: '' }, { value: '' }, { value: '' },
-    { value: 'Tp. HCM, ngày ….. tháng …... năm 20…', style: { align: 'center' } },
+    { value: 'Tp. HCM, ngày ….. tháng …... năm 20…', style: { align: 'center', border: false } },
     { value: '' }, { value: '' }, { value: '' },
   ]);
   merges.push(`F${dateRowIndex}:H${dateRowIndex}`);
@@ -147,9 +147,9 @@ export function buildPurchaseStatementXlsx(
 
   const sigTitleRowIndex = dateRowIndex + 2;
   rows.push([
-    { value: 'Bên bán hàng', style: { bold: true, align: 'center' } },
+    { value: 'Bên bán hàng', style: { bold: true, align: 'center', border: false } },
     { value: '' }, { value: '' }, { value: '' }, { value: '' },
-    { value: 'Bên mua hàng', style: { bold: true, align: 'center' } },
+    { value: 'Bên mua hàng', style: { bold: true, align: 'center', border: false } },
     { value: '' }, { value: '' }, { value: '' },
   ]);
   merges.push(`A${sigTitleRowIndex}:C${sigTitleRowIndex}`);
@@ -361,14 +361,14 @@ export function buildRetailInvoiceXlsx(
   const merges: string[] = [];
 
   // Row 1: Title
-  rows.push([{ value: (header.shopName || 'HÓA ĐƠN BÁN LẺ').toUpperCase(), style: { bold: true, align: 'center' } }]);
+  rows.push([{ value: (header.shopName || 'HÓA ĐƠN BÁN LẺ').toUpperCase(), style: { bold: true, align: 'center', border: false } }]);
   merges.push('A1:F1');
 
   // Row 2: Empty
   rows.push([]);
 
   // Row 3: Buyer name
-  rows.push([{ value: `Họ tên người mua hàng: ${header.buyerName || ''}`, style: { bold: true } }]);
+  rows.push([{ value: `Họ tên người mua hàng: ${header.buyerName || ''}`, style: { bold: true, border: false } }]);
   merges.push('A3:F3');
 
   // Row 4: Address
@@ -434,16 +434,16 @@ export function buildRetailInvoiceXlsx(
   const dateRowIndex = totalRowIndex + 4;
   rows.push([
     { value: '' }, { value: '' }, { value: '' },
-    { value: '…., Ngày …. Tháng …. Năm ….', style: { align: 'center' } },
+    { value: '…., Ngày …. Tháng …. Năm ….', style: { align: 'center', border: false } },
     { value: '' }, { value: '' },
   ]);
   merges.push(`D${dateRowIndex}:F${dateRowIndex}`);
 
   const sigTitleRowIndex = dateRowIndex + 1;
   rows.push([
-    { value: 'KHÁCH HÀNG', style: { bold: true, align: 'center' } },
+    { value: 'KHÁCH HÀNG', style: { bold: true, align: 'center', border: false } },
     { value: '' }, { value: '' },
-    { value: 'NGƯỜI BÁN HÀNG', style: { bold: true, align: 'center' } },
+    { value: 'NGƯỜI BÁN HÀNG', style: { bold: true, align: 'center', border: false } },
     { value: '' }, { value: '' },
   ]);
   merges.push(`A${sigTitleRowIndex}:B${sigTitleRowIndex}`);

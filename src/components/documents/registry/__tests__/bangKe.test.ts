@@ -1,5 +1,6 @@
 import { it, expect } from 'vitest';
 import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
 import { buildPurchaseStatementDocHtml } from '../../../../lib/inventoryExport';
 import type { StatementItem, StatementSellerInfo } from '../../../../lib/statement';
 import { emptyCommon } from '../types';
@@ -118,4 +119,18 @@ it('html chuyển khoản: không in địa chỉ bên bán', () => {
   const html = bangKeTemplate.buildHtml(sampleCommon(), {});
   expect(html).toContain('Thông tin chuyển khoản:</strong> STK: 0123456789');
   expect(html).not.toContain('Q10, TP.HCM');
+});
+
+it('xlsx: chỉ ô trong bảng có viền, phần đầu, dòng ngày, chữ ký không kẻ', async () => {
+  const zip = await JSZip.loadAsync(bangKeTemplate.buildXlsx!(sampleCommon(), {}));
+  const sheetXml = await zip.file('xl/worksheets/sheet1.xml')!.async('string');
+  const stylesXml = await zip.file('xl/styles.xml')!.async('string');
+  const cellXfs = stylesXml.split('<cellXfs')[1].split('</cellXfs>')[0];
+  const borderIds = [...cellXfs.matchAll(/<xf [^>]*borderId="(\d+)"/g)].map(m => Number(m[1]));
+  const hasBorder = (ref: string) => {
+    const m = sheetXml.match(new RegExp(`<c r="${ref}"(?: s="([0-9]+)")?`));
+    return Boolean(m?.[1]) && borderIds[Number(m![1])] > 0;
+  };
+  for (const ref of ['A1', 'A2', 'A5', 'A7', 'A10', 'F19', 'A21', 'F21']) expect(hasBorder(ref), ref).toBe(false);
+  for (const ref of ['A13', 'C15', 'H17']) expect(hasBorder(ref), ref).toBe(true);
 });

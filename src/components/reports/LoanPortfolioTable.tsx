@@ -34,6 +34,10 @@ function cellText(kind: PortfolioColKind, value: string | number): string {
   return String(value);
 }
 
+const ROW_HOVER_BG = 'group-hover:bg-accent-soft';
+const ROW_HOVER_EDGE =
+  'group-hover:shadow-[inset_0_1px_0_var(--color-accent),inset_0_-1px_0_var(--color-accent)]';
+
 const isFrozen = (index: number) => index < PORTFOLIO_FROZEN_COLUMNS;
 const frozenEdge = (index: number) => (index === PORTFOLIO_FROZEN_COLUMNS - 1 ? 'border-r-2 border-r-line' : '');
 
@@ -47,11 +51,11 @@ export function LoanPortfolioTable({ table }: Props) {
 
   const bodyCell = (cell: PortfolioCell, index: number) => {
     const kind = table.columns[index].kind;
-    const frozen = isFrozen(index) ? `z-[1] bg-panel ${frozenEdge(index)}` : '';
-    const tone = cell.tone ? TONE_CLASS[cell.tone] : '';
+    const frozen = isFrozen(index) ? `z-[1] ${frozenEdge(index)}` : '';
+    const background = cell.tone ? TONE_CLASS[cell.tone] : `${isFrozen(index) ? 'bg-panel' : ''} ${ROW_HOVER_BG}`;
     const wrap = kind === 'text' ? 'min-w-[10rem]' : 'whitespace-nowrap';
     return (
-      <td key={index} style={frozenStyle(index)} className={`${ALIGN[kind]} ${wrap} ${frozen} ${tone}`}>
+      <td key={index} style={frozenStyle(index)} className={`${ALIGN[kind]} ${wrap} ${frozen} ${background} ${ROW_HOVER_EDGE}`}>
         {cellText(kind, cell.value)}
       </td>
     );
@@ -81,7 +85,7 @@ export function LoanPortfolioTable({ table }: Props) {
               </td>
             </tr>
           ) : (
-            table.rows.map((row, r) => <tr key={r}>{row.map(bodyCell)}</tr>)
+            table.rows.map((row, r) => <tr key={r} className="group">{row.map(bodyCell)}</tr>)
           )}
           <tr className="font-bold">
             <td colSpan={labelSpan} style={{ position: 'sticky', left: 0 }} className="z-[1] bg-panel-muted text-center">

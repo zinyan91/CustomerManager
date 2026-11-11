@@ -284,6 +284,17 @@ describe('CommonInfoForm — đợt thanh toán theo từng biểu mẫu', () =>
     expect(screen.queryByText('Các đợt thanh toán')).toBeNull();
     expect(screen.queryByLabelText('Thanh toán Lần 1 (VNĐ)')).toBeNull();
   });
+
+  it('Đề nghị thanh toán bảng kê có danh sách đợt như đề nghị thanh toán hợp đồng; thêm đợt thì tạo Đợt 1', () => {
+    vi.spyOn(api, 'fetchCustomersAPI').mockResolvedValue([] as any);
+    const patch = vi.fn();
+    render(<CommonInfoForm common={emptyCommon()} patch={patch} activeDocId="payment_request_bang_ke" dossierId="giai_ngan" />);
+    expect(screen.getByText('Các đợt thanh toán')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Thêm đợt thanh toán/ }));
+    expect(patch).toHaveBeenCalledWith({
+      stages: [expect.objectContaining({ stageName: 'Đợt 1', status: 'future' })],
+    });
+  });
 });
 
 describe('CommonInfoForm — gọn ghi chú và mốc thời gian', () => {

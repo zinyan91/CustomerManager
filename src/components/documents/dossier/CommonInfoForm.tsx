@@ -393,7 +393,7 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
             </Group>
           )}
 
-          {showStages && isPaymentRequest && !isBangKe && (
+          {showStages && isPaymentRequest && (
             <Group title="Các đợt thanh toán" accent="border-warn/50 text-warn">
               <div className="space-y-2">
                 {common.stages.map(stage => (

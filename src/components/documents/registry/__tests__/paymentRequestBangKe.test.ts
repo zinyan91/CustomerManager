@@ -45,3 +45,15 @@ it('buildHtml outputs cash info when the dossier pays in cash', () => {
   expect(html).toContain('079178025859');
   expect(html).toContain('Bộ Công An');
 });
+
+it('buildHtml liệt kê từng đợt khi hồ sơ có các đợt thanh toán', () => {
+  const common = sampleCommon();
+  common.stages = [
+    { id: 's1', stageName: 'Đợt 1', amount: '100.000.000', status: 'paid', note: '' },
+    { id: 's2', stageName: 'Đợt 2', amount: '112.500.000', status: 'current', note: '' },
+  ];
+  const html = paymentRequestBangKeTemplate.buildHtml(common, {});
+  expect(html).not.toContain('Thanh toán một lần');
+  expect(html).toContain('<strong>Đợt 1:</strong> Ông Đạt đã thanh toán số tiền là: <strong>100.000.000 đồng</strong>');
+  expect(html).toContain('<strong>Đợt 2:</strong> Ông Đạt thanh toán số tiền đợt này là: <strong>112.500.000 đồng</strong>');
+});

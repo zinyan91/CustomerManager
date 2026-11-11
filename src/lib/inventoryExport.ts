@@ -11,6 +11,8 @@ export function buildPurchaseStatementXlsx(
   info: StatementSellerInfo
 ): Uint8Array {
   const summary = computeStatementSummary(items);
+  const isTransfer = info.paymentMethod !== 'cash';
+  const stkText = getComputedBankAccText(info);
   const rows: XlsxCell[][] = [];
   const merges: string[] = [];
 
@@ -38,7 +40,7 @@ export function buildPurchaseStatementXlsx(
   rows.push([{ value: `Bên bán hàng: ${info.sellerName || ''}`, style: { bold: true } }]);
   merges.push('A7:I7');
 
-  rows.push([{ value: `Địa chỉ: ${info.sellerAddress || ''}` }]);
+  rows.push([{ value: isTransfer ? `Thông tin chuyển khoản: ${stkText}` : `Địa chỉ: ${info.sellerAddress || ''}` }]);
   merges.push('A8:I8');
 
   rows.push([]);
@@ -67,12 +69,13 @@ export function buildPurchaseStatementXlsx(
   merges.push('B13:D13');
   merges.push('E13:H13');
   merges.push('I13:I14');
+  if (isTransfer) merges.push('C14:D14');
 
   rows.push([
     { value: '', style: bHeaderStyle },
     { value: 'Tên người bán', style: bHeaderStyle },
-    { value: 'Địa chỉ', style: bHeaderStyle },
-    { value: info.paymentMethod === 'cash' ? 'Hình thức\nthanh toán' : 'Thông tin STK /\nNgân hàng', style: bHeaderStyle },
+    { value: isTransfer ? 'Thông tin chuyển khoản' : 'Địa chỉ', style: bHeaderStyle },
+    { value: isTransfer ? '' : 'Hình thức\nthanh toán', style: bHeaderStyle },
     { value: 'Tên hàng hóa, dịch vụ', style: bHeaderStyle },
     { value: 'Số lượng\n(kg)', style: bHeaderStyle },
     { value: 'Đơn giá\n(kg)', style: bHeaderStyle },
@@ -87,23 +90,25 @@ export function buildPurchaseStatementXlsx(
   if (items.length > 0) {
     merges.push(`A${startRow}:A${endRow}`);
     merges.push(`B${startRow}:B${endRow}`);
-    merges.push(`C${startRow}:C${endRow}`);
-    merges.push(`D${startRow}:D${endRow}`);
+    if (isTransfer) {
+      merges.push(`C${startRow}:D${endRow}`);
+    } else {
+      merges.push(`C${startRow}:C${endRow}`);
+      merges.push(`D${startRow}:D${endRow}`);
+    }
   }
-
-  const stkText = getComputedBankAccText(info);
 
   const bCellStyle: XlsxStyle = { border: true };
   const bCenterStyle: XlsxStyle = { align: 'center', vAlign: 'center', border: true };
-  const bValignStyle: XlsxStyle = { vAlign: 'center', border: true };
+  const bValignStyle: XlsxStyle = { vAlign: 'center', wrap: true, border: true };
 
   items.forEach((it, idx) => {
     const c = computeStatementItem(it);
     rows.push([
-      { value: idx === 0 ? (c.dateStr || '…../…../2024') : '', style: bCenterStyle },
+      { value: idx === 0 ? (c.dateStr || '…../…../20…') : '', style: bCenterStyle },
       { value: idx === 0 ? (info.sellerName || '') : '', style: bValignStyle },
-      { value: idx === 0 ? (info.sellerAddress || '') : '', style: bValignStyle },
-      { value: idx === 0 ? stkText : '', style: bValignStyle },
+      { value: idx === 0 ? (isTransfer ? stkText : (info.sellerAddress || '')) : '', style: bValignStyle },
+      { value: idx === 0 && !isTransfer ? stkText : '', style: bValignStyle },
       { value: c.itemName, style: { bold: true, border: true } },
       { value: c.qty, numeric: true, style: { align: 'right', numFmt: '#,##0', border: true } },
       { value: c.unitPrice, numeric: true, style: { align: 'right', numFmt: '#,##0', border: true } },
@@ -133,7 +138,7 @@ export function buildPurchaseStatementXlsx(
   const dateRowIndex = totalRowIndex + 2;
   rows.push([
     { value: '' }, { value: '' }, { value: '' }, { value: '' }, { value: '' },
-    { value: 'Tp. HCM, ngày ….. tháng …... năm 2024', style: { align: 'center' } },
+    { value: 'Tp. HCM, ngày ….. tháng …... năm 20…', style: { align: 'center' } },
     { value: '' }, { value: '' }, { value: '' },
   ]);
   merges.push(`F${dateRowIndex}:H${dateRowIndex}`);
@@ -167,6 +172,8 @@ export function buildPurchaseStatementDocHtml(
   info: StatementSellerInfo
 ): string {
   const summary = computeStatementSummary(items);
+  const isTransfer = info.paymentMethod !== 'cash';
+  const stkText = getComputedBankAccText(info);
 
   const itemRows = items.map((it, idx) => {
     const c = computeStatementItem(it);
@@ -174,8 +181,9 @@ export function buildPurchaseStatementDocHtml(
       <tr>
         <td class="text-center font-mono">${idx === 0 ? (c.dateStr || '&hellip;') : ''}</td>
         <td>${idx === 0 ? (info.sellerName || '') : ''}</td>
-        <td>${idx === 0 ? (info.sellerAddress || '') : ''}</td>
-        <td>${idx === 0 ? getComputedBankAccText(info) : ''}</td>
+        ${isTransfer
+          ? `<td colspan="2">${idx === 0 ? stkText : ''}</td>`
+          : `<td>${idx === 0 ? (info.sellerAddress || '') : ''}</td><td>${idx === 0 ? stkText : ''}</td>`}
         <td class="font-bold">${c.itemName}</td>
         <td class="text-center font-mono">${c.unit || 'Cái'}</td>
         <td class="text-right font-mono">${formatQuantityWith(c.qty)}</td>
@@ -275,10 +283,9 @@ export function buildPurchaseStatementDocHtml(
 
       <div class="party-box">
         <strong>Bên bán hàng:</strong> ${info.sellerName || '....................................'}<br/>
-        <strong>Địa chỉ:</strong> ${info.sellerAddress || '....................................'}<br/>
-        ${info.paymentMethod === 'transfer' 
-          ? `<strong>Thông tin chuyển khoản:</strong> ${getComputedBankAccText(info)}<br/>` 
-          : ''}
+        ${isTransfer
+          ? `<strong>Thông tin chuyển khoản:</strong> ${stkText}<br/>`
+          : `<strong>Địa chỉ:</strong> ${info.sellerAddress || '....................................'}<br/>`}
         <br/>
         <strong>Bên mua hàng:</strong> ${info.buyerName || '....................................'}<br/>
         <strong>Địa chỉ:</strong> ${info.buyerAddress || '....................................'}
@@ -306,8 +313,9 @@ export function buildPurchaseStatementDocHtml(
           </tr>
           <tr>
             <th>Tên người bán</th>
-            <th>Địa chỉ</th>
-            <th>${info.paymentMethod === 'cash' ? 'Hình thức thanh toán' : 'Thông tin STK / Ngân hàng'}</th>
+            ${isTransfer
+              ? '<th colspan="2">Thông tin chuyển khoản</th>'
+              : '<th>Địa chỉ</th><th>Hình thức thanh toán</th>'}
             <th>Tên hàng hóa, dịch vụ</th>
             <th>ĐVT</th>
             <th>Số lượng (kg)</th>

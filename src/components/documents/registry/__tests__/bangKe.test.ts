@@ -1,4 +1,5 @@
 import { it, expect } from 'vitest';
+import * as XLSX from 'xlsx';
 import { buildPurchaseStatementDocHtml } from '../../../../lib/inventoryExport';
 import type { StatementItem, StatementSellerInfo } from '../../../../lib/statement';
 import { emptyCommon } from '../types';
@@ -80,4 +81,41 @@ it('buildPurchaseStatementDocHtml contains robust print setup preventing table c
   expect(html).toContain('<colgroup>');
   expect(html).toContain('class="sig-table"');
   expect(html).toContain('page-break-inside: avoid');
+});
+
+function readSheet(bytes: Uint8Array) {
+  const wb = XLSX.read(bytes, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const cell = (ref: string) => String(ws[ref]?.v ?? '');
+  const merges = (ws['!merges'] ?? []).map(m => XLSX.utils.encode_range(m));
+  return { cell, merges };
+}
+
+it('xlsx chuyển khoản: hiện thông tin chuyển khoản thay địa chỉ bên bán, năm để 20…', () => {
+  const { cell, merges } = readSheet(bangKeTemplate.buildXlsx!(sampleCommon(), {}));
+  const stk = 'STK: 0123456789 - Ngân hàng Vietcombank CN TP.HCM';
+  expect(cell('A8')).toBe(`Thông tin chuyển khoản: ${stk}`);
+  expect(cell('C14')).toBe('Thông tin chuyển khoản');
+  expect(cell('C15')).toBe(stk);
+  expect(merges).toContain('C14:D14');
+  expect(merges).toContain('C15:D16');
+  const all = Array.from({ length: 30 }, (_, i) => `F${i + 1}`).map(cell).join('|');
+  expect(all).toContain('năm 20…');
+  expect(all).not.toContain('2024');
+  expect(cell('A8')).not.toContain('Q10');
+});
+
+it('xlsx tiền mặt: giữ địa chỉ bên bán', () => {
+  const common = sampleCommon();
+  common.payMethod = 'cash';
+  const { cell, merges } = readSheet(bangKeTemplate.buildXlsx!(common, {}));
+  expect(cell('A8')).toBe('Địa chỉ: Q10, TP.HCM');
+  expect(cell('C15')).toBe('Q10, TP.HCM');
+  expect(merges).not.toContain('C14:D14');
+});
+
+it('html chuyển khoản: không in địa chỉ bên bán', () => {
+  const html = bangKeTemplate.buildHtml(sampleCommon(), {});
+  expect(html).toContain('Thông tin chuyển khoản:</strong> STK: 0123456789');
+  expect(html).not.toContain('Q10, TP.HCM');
 });

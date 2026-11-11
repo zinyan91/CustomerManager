@@ -42,7 +42,7 @@ export const TreeRail: React.FC<TreeRailProps> = ({
                 aria-expanded={expanded}
                 onClick={() => toggle(node.id)}
                 style={{ paddingLeft: `${6 + depth * 10}px` }}
-                className="w-full flex items-center gap-1.5 pr-2 py-1 text-xs font-semibold text-ink hover:bg-panel-muted/60 transition-colors text-left cursor-pointer"
+                className="w-full flex items-center gap-1.5 pr-2 py-1 text-menu font-semibold text-ink hover:bg-panel-muted/60 transition-colors text-left cursor-pointer"
               >
                 {expanded
                   ? <ChevronDown size={13} className="text-ink-faint shrink-0" aria-hidden />
@@ -64,7 +64,7 @@ export const TreeRail: React.FC<TreeRailProps> = ({
               onClick={() => onSelect(node.id)}
               title={node.label}
               style={{ paddingLeft: `${6 + depth * 10}px` }}
-              className={`flex-1 min-w-0 text-left pr-2 py-1 text-xs border-l-2 transition-colors truncate ${
+              className={`flex-1 min-w-0 text-left pr-2 py-1 text-menu border-l-2 transition-colors truncate ${
                 selected
                   ? 'border-accent bg-panel-muted font-bold text-ink'
                   : node.disabled

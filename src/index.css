@@ -175,6 +175,7 @@ body {
   --fs-table: 12px;
   --fs-small: 11px;
   --fs-mono: 12px;
+  --fs-menu: 13px;
   --fs-screen: 18px;
   --fs-title: 15px;
   --fs-body: 13px;
@@ -247,6 +248,10 @@ h3, h4, h5, h6 {
 
 .text-heading {
   font-size: var(--fs-heading);
+}
+
+.text-menu {
+  font-size: var(--fs-menu);
 }
 
 .font-mono {

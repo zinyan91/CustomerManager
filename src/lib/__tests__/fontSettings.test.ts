@@ -66,11 +66,12 @@ describe('fontStackOf', () => {
 
 describe('cssVariablesFor', () => {
   it('trả đủ biến CSS kèm đơn vị px', () => {
-    const v = cssVariablesFor({ family: 'inter', heading: 15, table: 13, small: 11, mono: 12 });
+    const v = cssVariablesFor({ family: 'inter', heading: 15, table: 13, small: 11, mono: 12, menu: 14 });
     expect(v['--fs-heading']).toBe('15px');
     expect(v['--fs-table']).toBe('13px');
     expect(v['--fs-small']).toBe('11px');
     expect(v['--fs-mono']).toBe('12px');
+    expect(v['--fs-menu']).toBe('14px');
     expect(v['--app-font']).toContain('Inter');
   });
 
@@ -93,13 +94,13 @@ describe('cssVariablesFor — thang chữ ngữ nghĩa', () => {
   });
 
   it('chữ thân bảng luôn lớn hơn chữ bảng dày đúng 1px', () => {
-    const v = cssVariablesFor({ family: 'system', heading: 14, table: 16, small: 11, mono: 12 });
+    const v = cssVariablesFor({ family: 'system', heading: 14, table: 16, small: 11, mono: 12, menu: 13 });
     expect(v['--fs-dense']).toBe('16px');
     expect(v['--fs-body']).toBe('17px');
   });
 
   it('kéo thanh trượt Tiêu đề thì cả hai cỡ tiêu đề cùng đổi', () => {
-    const v = cssVariablesFor({ family: 'system', heading: 18, table: 12, small: 11, mono: 12 });
+    const v = cssVariablesFor({ family: 'system', heading: 18, table: 12, small: 11, mono: 12, menu: 13 });
     expect(v['--fs-screen']).toBe('22px');
     expect(v['--fs-title']).toBe('19px');
   });
@@ -110,10 +111,24 @@ describe('cssVariablesFor — thang chữ ngữ nghĩa', () => {
     expect(v['--fs-table']).toBe('12px');
     expect(v['--fs-small']).toBe('11px');
     expect(v['--fs-mono']).toBe('12px');
+    expect(v['--fs-menu']).toBe('13px');
   });
 
   it('giá trị vượt khoảng bị kẹp trước khi sinh biến ngữ nghĩa', () => {
     const v = cssVariablesFor({ family: 'system', heading: 999, table: 12, small: 11, mono: 12 } as never);
     expect(v['--fs-screen']).toBe(`${FONT_SIZE_LIMITS.heading.max + 4}px`);
+  });
+});
+
+describe('cỡ chữ menu phụ', () => {
+  it('mặc định 13px, lớn hơn chữ bảng 1px, và kẹp trong 11–18', () => {
+    expect(DEFAULT_FONT_SETTINGS.menu).toBe(13);
+    expect(DEFAULT_FONT_SETTINGS.menu).toBe(DEFAULT_FONT_SETTINGS.table + 1);
+    expect(normalizeFontSettings({ menu: 40 }).menu).toBe(18);
+    expect(normalizeFontSettings({ menu: 2 }).menu).toBe(11);
+  });
+
+  it('thiết lập cũ chưa có mục menu thì lấy mặc định', () => {
+    expect(normalizeFontSettings({ family: 'roboto', heading: 16, table: 12, small: 11, mono: 12 }).menu).toBe(13);
   });
 });

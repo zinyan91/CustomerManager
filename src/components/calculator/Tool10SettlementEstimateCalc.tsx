@@ -1,8 +1,12 @@
 import { useMemo, useState } from 'react';
-import { CalendarCheck, Plus, Trash2 } from 'lucide-react';
+import { CalendarCheck, Database, Download, Plus, Trash2 } from 'lucide-react';
 import { estimateSettlementLine, estimateTotals } from '../../lib/settlementEstimate';
 import { CREDIT_CONTRACT_LOAN_METHODS } from '../../lib/loanProductRules';
-import { fmtNumber, formatMoneyInput, parseDecimalNumber, parseMoneyInput, todayIso } from '../../lib/utils';
+import { fmtDecimals, fmtNumber, formatMoneyInput, parseDecimalNumber, parseMoneyInput, todayIso } from '../../lib/utils';
+import { exportSettlementEstimateExcel } from '../../lib/settlementEstimateExport';
+import type { EstimateSourceLoan } from '../../lib/settlementEstimateSource';
+import { useSettlementEstimateImport } from '../../hooks/useSettlementEstimateImport';
+import { SettlementEstimateImportPanel } from './SettlementEstimateImportPanel';
 import { DateInput } from '../DateInput';
 import type { UiClasses } from '../../lib/uiClasses';
 import { UI } from '../../lib/uiClasses';
@@ -11,6 +15,7 @@ const LOAN_METHODS = CREDIT_CONTRACT_LOAN_METHODS.filter(m => m !== 'Hạn mức
 
 interface Row {
   id: number;
+  contractNumber: string;
   loanMethod: string;
   principal: string;
   rate: string;
@@ -22,14 +27,42 @@ interface Row {
 
 let nextRowId = 1;
 const newRow = (settlementDate: string): Row => ({
-  id: nextRowId++, loanMethod: 'Cho vay từng lần', principal: '', rate: '', disbursementDate: '', interestFromDate: '', settlementDate, penaltyInput: '',
+  id: nextRowId++, contractNumber: '', loanMethod: 'Cho vay từng lần', principal: '', rate: '', disbursementDate: '', interestFromDate: '', settlementDate, penaltyInput: '',
 });
+
+const rowFromLoan = (loan: EstimateSourceLoan, settlementDate: string): Row => ({
+  id: nextRowId++,
+  contractNumber: loan.contractNumber,
+  loanMethod: loan.loanMethod,
+  principal: formatMoneyInput(String(loan.principal)),
+  rate: fmtDecimals(loan.rateAnnualPercent, 2, ''),
+  disbursementDate: loan.disbursementDate,
+  interestFromDate: loan.interestFromDate,
+  settlementDate,
+  penaltyInput: '',
+});
+
+const isBlank = (r: Row) => !r.contractNumber && !r.principal.trim() && !r.rate.trim() && !r.disbursementDate && !r.interestFromDate;
 
 const cellInput = 'w-full rounded-md border border-line bg-panel px-2 py-1 text-xs';
 
 export function Tool10SettlementEstimateCalc({ styles = UI }: { styles?: UiClasses }) {
   const [commonDate, setCommonDate] = useState(() => todayIso());
   const [rows, setRows] = useState<Row[]>(() => [newRow(todayIso()), newRow(todayIso())]);
+  const [importOpen, setImportOpen] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const importer = useSettlementEstimateImport(commonDate);
+
+  const addLoans = (loans: EstimateSourceLoan[]) => {
+    setRows(prev => {
+      const kept = prev.filter(r => !isBlank(r));
+      const have = new Set(kept.map(r => r.contractNumber).filter(Boolean));
+      const fresh = loans.filter(l => !have.has(l.contractNumber)).map(l => rowFromLoan(l, commonDate));
+      const next = [...kept, ...fresh];
+      return next.length > 0 ? next : prev;
+    });
+    setImportOpen(false);
+  };
 
   const update = (id: number, patch: Partial<Row>) => setRows(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
   const remove = (id: number) => setRows(prev => (prev.length > 1 ? prev.filter(r => r.id !== id) : prev));
@@ -44,6 +77,24 @@ export function Tool10SettlementEstimateCalc({ styles = UI }: { styles?: UiClass
     penaltyOverridePercent: r.penaltyInput.trim() === '' ? null : Math.max(0, parseDecimalNumber(r.penaltyInput) || 0),
   })), [rows]);
   const totals = useMemo(() => estimateTotals(lines), [lines]);
+
+  const exportExcel = () => {
+    setExportError(null);
+    try {
+      exportSettlementEstimateExcel(rows.map((r, i) => ({
+        contractNumber: r.contractNumber,
+        loanMethod: r.loanMethod,
+        principal: parseMoneyInput(r.principal),
+        rateAnnualPercent: parseDecimalNumber(r.rate) || 0,
+        disbursementDate: r.disbursementDate,
+        interestFromDate: r.interestFromDate,
+        settlementDate: r.settlementDate,
+        line: lines[i],
+      })), todayIso());
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : String(err));
+    }
+  };
 
   const cardBg = styles.containerCardBg || UI.containerCardBg;
 
@@ -68,6 +119,23 @@ export function Tool10SettlementEstimateCalc({ styles = UI }: { styles?: UiClass
           </button>
           <button
             type="button"
+            aria-expanded={importOpen}
+            onClick={() => setImportOpen(v => !v)}
+            className="px-3 py-1.5 rounded-lg border border-line text-xs font-semibold text-ink hover:bg-panel-muted inline-flex items-center gap-1.5"
+          >
+            <Database className="w-3.5 h-3.5" />
+            Nạp từ khoản vay
+          </button>
+          <button
+            type="button"
+            onClick={exportExcel}
+            className="px-3 py-1.5 rounded-lg border border-line text-xs font-semibold text-ink hover:bg-panel-muted inline-flex items-center gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Xuất Excel
+          </button>
+          <button
+            type="button"
             onClick={() => setRows(prev => [...prev, newRow(commonDate)])}
             className="px-3 py-1.5 rounded-lg bg-accent text-accent-ink text-xs font-bold inline-flex items-center gap-1.5"
           >
@@ -77,11 +145,15 @@ export function Tool10SettlementEstimateCalc({ styles = UI }: { styles?: UiClass
         </div>
       </div>
 
+      {exportError && <div role="alert" className="text-xs text-neg">{exportError}</div>}
+      {importOpen && <SettlementEstimateImportPanel source={importer} onAdd={addLoans} />}
+
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1280px] text-xs border-collapse">
+        <table className="w-full min-w-[1400px] text-xs border-collapse">
           <thead className="bg-surface text-ink-muted font-semibold">
             <tr className="border-b border-line">
               <th className="p-2 w-8 text-center">#</th>
+              <th className="p-2 text-left w-32">Số KUNN</th>
               <th className="p-2 text-left w-44">Hình thức vay</th>
               <th className="p-2 text-right w-36">Dư nợ gốc (VND)</th>
               <th className="p-2 text-right w-20">Lãi suất (%/năm)</th>
@@ -103,8 +175,11 @@ export function Tool10SettlementEstimateCalc({ styles = UI }: { styles?: UiClass
                 <tr key={r.id}>
                   <td className="p-2 text-center align-top text-ink-faint">{idx + 1}</td>
                   <td className="p-2 align-top">
+                    <input aria-label={`Số KUNN ${label}`} value={r.contractNumber} onChange={e => update(r.id, { contractNumber: e.target.value })} className={`${cellInput} font-mono`} />
+                  </td>
+                  <td className="p-2 align-top">
                     <select aria-label={`Hình thức vay ${label}`} value={r.loanMethod} onChange={e => update(r.id, { loanMethod: e.target.value })} className={cellInput}>
-                      {LOAN_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                      {(LOAN_METHODS.includes(r.loanMethod) ? LOAN_METHODS : [r.loanMethod, ...LOAN_METHODS]).map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                     {line.error && <div role="alert" className="mt-1 text-[11px] text-neg">{line.error}</div>}
                   </td>
@@ -144,7 +219,7 @@ export function Tool10SettlementEstimateCalc({ styles = UI }: { styles?: UiClass
               );
             })}
             <tr className="border-t-2 border-line bg-surface font-bold text-ink">
-              <td colSpan={2} className="p-2 text-right">TỔNG CỘNG ({totals.count} khoản)</td>
+              <td colSpan={3} className="p-2 text-right">TỔNG CỘNG ({totals.count} khoản)</td>
               <td className="p-2 text-right font-mono tabular-nums">{fmtNumber(totals.principal)}</td>
               <td colSpan={5} />
               <td className="p-2 text-right font-mono tabular-nums">{fmtNumber(totals.interest)}</td>

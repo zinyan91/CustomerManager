@@ -96,10 +96,8 @@ describe('CommonInfoForm', () => {
     // Có nút Chọn từ Hàng tồn kho
     expect(screen.getByRole('button', { name: /Chọn từ Hàng tồn kho/i })).toBeTruthy();
 
-    // Trong Bên A, không có CCCD
-    // Chỉ có 1 nhãn 'CCCD số' (của Bên B), thay vì 2 nhãn
-    const cccdLabels = screen.getAllByText('CCCD số');
-    expect(cccdLabels.length).toBe(1);
+    // Bên A không có CCCD; Bên B nhận chuyển khoản cũng không cần CCCD
+    expect(screen.queryAllByText('CCCD số')).toHaveLength(0);
 
     // Bên B không có CustomerPicker
     const pickers = screen.getAllByRole('button', { name: /Chọn Khách hàng/i });
@@ -117,25 +115,43 @@ describe('CommonInfoForm', () => {
     expect(screen.queryByText('Các đợt thanh toán')).toBeNull();
   });
 
-  it('hides bank fields when the dossier pays in cash, shows them when transfer', async () => {
+  it('hình thức thanh toán nằm trong Bên B: tiền mặt hiện CCCD, chuyển khoản hiện tài khoản; không có ô chủ tài khoản', async () => {
     vi.spyOn(api, 'fetchCustomersAPI').mockResolvedValue([] as any);
     const patch = vi.fn();
     const cash = { ...emptyCommon(), payMethod: 'cash' as const };
 
     const { rerender } = render(
-      <CommonInfoForm common={cash} patch={patch} activeDocId="bang_ke" />
+      <CommonInfoForm common={cash} patch={patch} activeDocId="sale_contract" dossierId="giai_ngan" />
     );
 
-    expect(screen.getByText('Hình thức thanh toán cho Bên bán')).toBeTruthy();
-    expect(screen.queryByText('Chủ tài khoản')).toBeNull();
+    expect(screen.getByRole('radiogroup', { name: 'Hình thức thanh toán cho Bên bán' })).toBeTruthy();
+    expect(screen.queryByText('Hình thức thanh toán cho Bên bán')).toBeNull();
+    expect(screen.getAllByText('CCCD số')).toHaveLength(2);
+    expect(screen.getAllByText('Nơi cấp CCCD')).toHaveLength(2);
+    expect(screen.queryByLabelText('Số tài khoản')).toBeNull();
 
     rerender(
-      <CommonInfoForm common={emptyCommon()} patch={patch} activeDocId="bang_ke" />
+      <CommonInfoForm common={emptyCommon()} patch={patch} activeDocId="sale_contract" dossierId="giai_ngan" />
     );
-    expect(screen.getByText('Chủ tài khoản')).toBeTruthy();
+    expect(screen.getAllByText('CCCD số')).toHaveLength(1);
+    expect(screen.getByLabelText('Số tài khoản')).toBeTruthy();
+    expect(screen.getByLabelText('Ngân hàng')).toBeTruthy();
+    expect(screen.getByLabelText('Chi nhánh')).toBeTruthy();
+    expect(screen.queryByText('Chủ tài khoản')).toBeNull();
 
     fireEvent.click(screen.getByLabelText('Tiền mặt'));
     expect(patch).toHaveBeenCalledWith({ payMethod: 'cash' });
+  });
+
+  it('đổi tên Bên B thì chủ tài khoản đổi theo', () => {
+    vi.spyOn(api, 'fetchCustomersAPI').mockResolvedValue([] as any);
+    const patch = vi.fn();
+    render(<CommonInfoForm common={emptyCommon()} patch={patch} activeDocId="sale_contract" dossierId="giai_ngan" />);
+    fireEvent.change(document.getElementById('partyB-name')!, { target: { value: 'TRẦN THỊ PHƯƠNG' } });
+    expect(patch).toHaveBeenCalledWith(expect.objectContaining({
+      partyB: expect.objectContaining({ name: 'TRẦN THỊ PHƯƠNG' }),
+      bank: expect.objectContaining({ owner: 'TRẦN THỊ PHƯƠNG' }),
+    }));
   });
 
   it('payment request: shows salutation under Bên A and hides the goods list', async () => {
@@ -185,14 +201,14 @@ describe('CommonInfoForm', () => {
 
     fireEvent.click(screen.getByText('LÊ VĂN TÁM'));
 
-    expect(patch).toHaveBeenCalledWith({
+    expect(patch).toHaveBeenCalledWith(expect.objectContaining({
       partyB: expect.objectContaining({
         name: 'LÊ VĂN TÁM',
         cccd: '079099887766',
         cccdDate: '15/08/2022',
         cccdPlace: 'Bộ Công An',
       }),
-    });
+    }));
 
     expect(patch).toHaveBeenCalledWith({
       bank: expect.objectContaining({
@@ -256,7 +272,7 @@ describe('CommonInfoForm — đợt thanh toán theo từng biểu mẫu', () =>
     expect(screen.queryByText('Các đợt thanh toán')).toBeNull();
     fireEvent.change(screen.getByLabelText('Thanh toán Lần 1 (VNĐ)'), { target: { value: '100000000' } });
     expect(patch).toHaveBeenCalledWith({
-      stages: [expect.objectContaining({ stageName: 'Đợt 1', amount: '100.000.000', status: 'current' })],
+      stages: [expect.objectContaining({ stageName: 'Đợt 1', amount: '100.000.000', status: 'paid' })],
     });
   });
 
@@ -292,7 +308,7 @@ describe('CommonInfoForm — đợt thanh toán theo từng biểu mẫu', () =>
     expect(screen.getByText('Các đợt thanh toán')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Thêm đợt thanh toán/ }));
     expect(patch).toHaveBeenCalledWith({
-      stages: [expect.objectContaining({ stageName: 'Đợt 1', status: 'future' })],
+      stages: [expect.objectContaining({ stageName: 'Đợt 1', status: 'paid' })],
     });
   });
 });
@@ -312,5 +328,44 @@ describe('CommonInfoForm — gọn ghi chú và mốc thời gian', () => {
     vi.spyOn(api, 'fetchCustomersAPI').mockResolvedValue([] as any);
     render(<CommonInfoForm common={emptyCommon()} patch={vi.fn()} activeDocId="construction" dossierId="sua_chua_nha" />);
     expect(screen.getByText('Ngày bắt đầu / giao hàng')).toBeTruthy();
+  });
+});
+
+describe('CommonInfoForm — số tiền giải ngân và đơn giá', () => {
+  it('nhập số tiền giải ngân: Đợt 1 = tổng − giải ngân, đã thanh toán; Đợt 2 = số giải ngân, đề nghị thanh toán', async () => {
+    vi.spyOn(api, 'fetchCustomersAPI').mockResolvedValue([] as any);
+    const patch = vi.fn();
+    const c = { ...emptyCommon(), totalAmount: '500.000.000', disbursementAmount: '350.000.000' };
+    render(<CommonInfoForm common={c} patch={patch} activeDocId="payment_request_sale" dossierId="giai_ngan" />);
+    await waitFor(() => expect(patch).toHaveBeenCalledWith({
+      stages: [
+        expect.objectContaining({ stageName: 'Đợt 1', amount: '150.000.000', status: 'paid' }),
+        expect.objectContaining({ stageName: 'Đợt 2', amount: '350.000.000', status: 'current' }),
+      ],
+    }));
+  });
+
+  it('HĐ mua bán: có ô số tiền giải ngân, Lần 1 tự tính và chỉ đọc', () => {
+    vi.spyOn(api, 'fetchCustomersAPI').mockResolvedValue([] as any);
+    const patch = vi.fn();
+    const c = { ...emptyCommon(), totalAmount: '500.000.000', disbursementAmount: '' };
+    const { rerender } = render(<CommonInfoForm common={c} patch={patch} activeDocId="sale_contract" dossierId="giai_ngan" />);
+    fireEvent.change(screen.getByLabelText('Số tiền giải ngân (VNĐ)'), { target: { value: '350000000' } });
+    expect(patch).toHaveBeenCalledWith({ disbursementAmount: '350.000.000' });
+    rerender(<CommonInfoForm common={{ ...c, disbursementAmount: '350.000.000' }} patch={patch} activeDocId="sale_contract" dossierId="giai_ngan" />);
+    const lan1 = screen.getByLabelText('Thanh toán Lần 1 (VNĐ)') as HTMLInputElement;
+    expect(lan1.value).toBe('150.000.000');
+    expect(lan1.readOnly).toBe(true);
+  });
+
+  it('đơn giá hiện dấu phân cách và lưu thành số', () => {
+    vi.spyOn(api, 'fetchCustomersAPI').mockResolvedValue([] as any);
+    const patch = vi.fn();
+    const c = { ...emptyCommon(), items: [{ id: '1', name: 'Lúa', unit: 'Kg', quantity: 10, price: 8_500_000 }] };
+    render(<CommonInfoForm common={c} patch={patch} activeDocId="sale_contract" dossierId="giai_ngan" />);
+    const price = screen.getByLabelText('Đơn giá Lúa') as HTMLInputElement;
+    expect(price.value).toBe('8.500.000');
+    fireEvent.change(price, { target: { value: '9.200.000' } });
+    expect(patch).toHaveBeenCalledWith({ items: [expect.objectContaining({ price: 9_200_000 })] });
   });
 });

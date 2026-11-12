@@ -82,8 +82,9 @@ describe('Soạn biểu mẫu — tải Word', () => {
       const dossierName = TEMPLATE_DOSSIER_MAP[tpl.id];
       const tree = within(screen.getByRole('navigation', { name: 'Bộ hồ sơ' }));
       if (dossierName) {
-        const folder = tree.getByRole('button', { name: dossierName });
-        if (folder.getAttribute('aria-expanded') !== 'true') await user.click(folder);
+        const back = tree.queryByRole('button', { name: 'Về danh sách bộ hồ sơ' });
+        if (back) await user.click(back);
+        await user.click(tree.getByRole('button', { name: dossierName }));
       }
       await user.click(tree.getByRole('button', { name: tpl.label.replace(/^\d+\.\s*/, '') }));
 

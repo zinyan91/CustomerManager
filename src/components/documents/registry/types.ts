@@ -56,6 +56,8 @@ export interface DossierCommon {
   payMethod: 'cash' | 'transfer';
   bank: { owner: string; accNo: string; name: string; branch: string };
   totalAmount: string;
+  /** Số tiền ngân hàng giải ngân, trả từ Đợt 2; Đợt 1 = tổng giá trị − số này. */
+  disbursementAmount?: string;
   stages: PaymentStageItem[];
   items: LineItem[];
   creditCard?: CreditCardCommon;
@@ -146,6 +148,7 @@ export function emptyCommon(): DossierCommon {
     payMethod: 'transfer',
     bank: { owner: '', accNo: '', name: '', branch: '' },
     totalAmount: '',
+    disbursementAmount: '',
     stages: [],
     items: [],
     creditCard: defaultCreditCardCommon(),

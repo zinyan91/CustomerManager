@@ -6,7 +6,8 @@ import type { PaymentStageItem } from '../../../types/documents';
 import { DateInput } from '../../DateInput';
 import { CustomerPicker } from '../../ui/CustomerPicker';
 import { DisbursementPayeePicker } from '../../ui/DisbursementPayeePicker';
-import { formatMoneyInput, fmtDate, formatMoneyWith } from '../../../lib/utils';
+import { formatMoneyInput, fmtDate, formatMoneyWith, parseMoneyInput } from '../../../lib/utils';
+import { firstStageAmount, newStage, sameStages, stagesWithDisbursement } from '../../../lib/documents/paymentStages';
 import { CCCD_ISSUE_PLACES, BANK_LIST } from '../../../lib/documentOptions';
 import { fetchCustomersAPI } from '../../../lib/api';
 import { fetchDisbursementPayeesDb, type DisbursementPayee } from '../../../lib/disbursementDb';
@@ -165,21 +166,22 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
   const isPaymentRequest = activeDocId?.startsWith('payment_request') ?? false;
 
   const setPartyA = (p: Partial<Party>) => patch({ partyA: { ...common.partyA, ...p } });
-  const setPartyB = (p: Partial<Party>) => patch({ partyB: { ...common.partyB, ...p } });
+  const setPartyB = (p: Partial<Party>) => patch(p.name === undefined
+    ? { partyB: { ...common.partyB, ...p } }
+    : { partyB: { ...common.partyB, ...p }, bank: { ...common.bank, owner: p.name } });
   const setBank = (p: Partial<DossierCommon['bank']>) => patch({ bank: { ...common.bank, ...p } });
 
   const setStage = (id: string, p: Partial<PaymentStageItem>) =>
     patch({ stages: common.stages.map(s => (s.id === id ? { ...s, ...p } : s)) });
-  const addStage = () =>
-    patch({ stages: [...common.stages, {
-      id: Date.now().toString(),
-      stageName: `Đợt ${common.stages.length + 1}`, amount: '0', status: 'future', note: '',
-    }] });
+  const makeStageId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const addStage = () => patch({ stages: [...common.stages, newStage(common.stages, makeStageId())] });
   // "Lần 1" của HĐ mua bán chính là Đợt 1 của Đề nghị thanh toán; chưa có đợt nào thì tạo Đợt 1.
   const setFirstStageAmount = (amount: string) =>
     patch({ stages: common.stages.length > 0
       ? [{ ...common.stages[0], amount }, ...common.stages.slice(1)]
-      : [{ id: Date.now().toString(), stageName: 'Đợt 1', amount, status: 'current', note: '' }] });
+      : [{ ...newStage([], makeStageId()), amount }] });
+  const disbursementAmount = common.disbursementAmount ?? '';
+  const hasDisbursement = parseMoneyInput(disbursementAmount) > 0;
   const removeStage = (id: string) =>
     patch({ stages: common.stages.filter(s => s.id !== id) });
 
@@ -231,6 +233,13 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
   const computedItemsTotal = React.useMemo(() => {
     return common.items.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.price) || 0)), 0);
   }, [common.items]);
+
+  const usesStages = showStages && (activeDocId === 'sale_contract' || isPaymentRequest);
+  React.useEffect(() => {
+    if (!usesStages || !hasDisbursement) return;
+    const next = stagesWithDisbursement(common.stages, common.totalAmount, disbursementAmount, makeStageId);
+    if (!sameStages(next, common.stages)) patch({ stages: next });
+  }, [usesStages, hasDisbursement, common.stages, common.totalAmount, disbursementAmount, patch]);
 
   React.useEffect(() => {
     if (showItems) {
@@ -287,12 +296,48 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
                 placeholder="— Tìm theo tên, CCCD, STK để điền Bên B —"
               />
             </div>
+            {showPayMethod && (
+              <div role="radiogroup" aria-label="Hình thức thanh toán cho Bên bán" className="flex items-center gap-5 mb-2.5 text-xs font-semibold">
+                {([['transfer', 'Chuyển khoản'], ['cash', 'Tiền mặt']] as const).map(([value, label]) => (
+                  <label key={value} className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="radio"
+                      name="dossierPayMethod"
+                      checked={common.payMethod === value}
+                      onChange={() => patch({ payMethod: value })}
+                      className="accent-accent"
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            )}
             <PartyFields
               idPrefix="partyB"
               party={common.partyB}
               set={setPartyB}
+              hideIdCard={showPayMethod && common.payMethod === 'transfer'}
               hideIssueDetails={isBangKe}
             />
+            {showPayMethod && common.payMethod === 'transfer' && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5">
+                <div>
+                  <label htmlFor="partyB-accNo" className={LABEL}>Số tài khoản</label>
+                  <input id="partyB-accNo" className={INPUT} value={common.bank.accNo} onChange={e => setBank({ accNo: e.target.value })} />
+                </div>
+                <div>
+                  <label htmlFor="partyB-bank" className={LABEL}>Ngân hàng</label>
+                  <select id="partyB-bank" className={INPUT} value={common.bank.name} onChange={e => setBank({ name: e.target.value })}>
+                    <option value="">-- Chọn ngân hàng --</option>
+                    {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="partyB-branch" className={LABEL}>Chi nhánh</label>
+                  <input id="partyB-branch" className={INPUT} value={common.bank.branch} onChange={e => setBank({ branch: e.target.value })} />
+                </div>
+              </div>
+            )}
           </Group>
 
           <Group title="Mốc thời gian" accent="border-warn/50 text-warn">
@@ -319,52 +364,6 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
             </div>
           </Group>
 
-          {showPayMethod && (
-            <Group title="Hình thức thanh toán cho Bên bán" accent="border-accent/50 text-accent">
-              <div className="flex items-center gap-5 mb-2.5 text-xs font-semibold">
-                {([['transfer', 'Chuyển khoản'], ['cash', 'Tiền mặt']] as const).map(([value, label]) => (
-                  <label key={value} className="flex items-center gap-1.5 cursor-pointer select-none">
-                    <input
-                      type="radio"
-                      name="dossierPayMethod"
-                      checked={common.payMethod === value}
-                      onChange={() => patch({ payMethod: value })}
-                      className="accent-accent"
-                    />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-              {common.payMethod === 'cash' ? (
-                <p className="text-[11px] text-ink-muted">
-                  Văn bản ghi Họ tên và CCCD của Bên B làm người nhận tiền mặt.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className={LABEL}>Chủ tài khoản</label>
-                    <input className={INPUT} value={common.bank.owner} onChange={e => setBank({ owner: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className={LABEL}>Số tài khoản</label>
-                    <input className={INPUT} value={common.bank.accNo} onChange={e => setBank({ accNo: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className={LABEL}>Ngân hàng</label>
-                    <select className={INPUT} value={common.bank.name} onChange={e => setBank({ name: e.target.value })}>
-                      <option value="">-- Chọn ngân hàng --</option>
-                      {BANK_LIST.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={LABEL}>Chi nhánh</label>
-                    <input className={INPUT} value={common.bank.branch} onChange={e => setBank({ branch: e.target.value })} />
-                  </div>
-                </div>
-              )}
-            </Group>
-          )}
-
           {!showItems && (
             <Group title="Tổng tiền" accent="border-accent/50 text-accent">
               <div className="sm:w-1/2">
@@ -379,16 +378,34 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
             </Group>
           )}
 
-          {activeDocId === 'sale_contract' && (
+          {usesStages && (
             <Group title="Thanh toán" accent="border-warn/50 text-warn">
-              <div className="sm:w-1/2">
-                <label htmlFor="sale-stage1" className={LABEL}>Thanh toán Lần 1 (VNĐ)</label>
-                <input
-                  id="sale-stage1"
-                  className={`${INPUT} font-mono text-right`}
-                  value={common.stages[0]?.amount ?? ''}
-                  onChange={e => setFirstStageAmount(formatMoneyInput(e.target.value))}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <label htmlFor="dossier-disbursement" className={LABEL}>Số tiền giải ngân (VNĐ)</label>
+                  <input
+                    id="dossier-disbursement"
+                    inputMode="numeric"
+                    className={`${INPUT} font-mono text-right`}
+                    value={disbursementAmount}
+                    onChange={e => patch({ disbursementAmount: formatMoneyInput(e.target.value) })}
+                  />
+                </div>
+                {activeDocId === 'sale_contract' && (
+                  <div>
+                    <label htmlFor="sale-stage1" className={LABEL}>Thanh toán Lần 1 (VNĐ)</label>
+                    <input
+                      id="sale-stage1"
+                      inputMode="numeric"
+                      readOnly={hasDisbursement}
+                      className={`${INPUT} font-mono text-right ${hasDisbursement ? 'bg-panel-muted' : ''}`}
+                      value={hasDisbursement
+                        ? formatMoneyInput(String(firstStageAmount(common.totalAmount, disbursementAmount)))
+                        : common.stages[0]?.amount ?? ''}
+                      onChange={e => setFirstStageAmount(formatMoneyInput(e.target.value))}
+                    />
+                  </div>
+                )}
               </div>
             </Group>
           )}
@@ -396,7 +413,9 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
           {showStages && isPaymentRequest && (
             <Group title="Các đợt thanh toán" accent="border-warn/50 text-warn">
               <div className="space-y-2">
-                {common.stages.map(stage => (
+                {common.stages.map((stage, index) => {
+                  const locked = hasDisbursement && index === 0;
+                  return (
                   <div key={stage.id} className="grid grid-cols-12 gap-2 items-end">
                     <div className="col-span-12 sm:col-span-4">
                       <label className={LABEL}>Tên đợt</label>
@@ -405,12 +424,13 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
                     </div>
                     <div className="col-span-6 sm:col-span-3">
                       <label className={LABEL}>Số tiền (VNĐ)</label>
-                      <input className={`${INPUT} font-mono text-right`} value={stage.amount}
+                      <input aria-label={`Số tiền ${stage.stageName}`} readOnly={locked}
+                        className={`${INPUT} font-mono text-right ${locked ? 'bg-panel-muted' : ''}`} value={stage.amount}
                         onChange={e => setStage(stage.id, { amount: formatMoneyInput(e.target.value) })} />
                     </div>
                     <div className="col-span-6 sm:col-span-4">
                       <label className={LABEL}>Trạng thái</label>
-                      <select className={INPUT} value={stage.status}
+                      <select aria-label={`Trạng thái ${stage.stageName}`} disabled={locked} className={INPUT} value={stage.status}
                         onChange={e => setStage(stage.id, { status: e.target.value as PaymentStageItem['status'] })}>
                         {(Object.keys(STATUS_LABELS) as PaymentStageItem['status'][]).map(s => (
                           <option key={s} value={s}>{STATUS_LABELS[s]}</option>
@@ -418,13 +438,14 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
                       </select>
                     </div>
                     <div className="col-span-12 sm:col-span-1 flex justify-end">
-                      <button type="button" onClick={() => removeStage(stage.id)}
-                        className="p-2 rounded-lg text-neg hover:bg-neg-soft transition-colors" title="Xóa đợt">
+                      <button type="button" onClick={() => removeStage(stage.id)} disabled={locked}
+                        className="p-2 rounded-lg text-neg hover:bg-neg-soft transition-colors disabled:opacity-30" title="Xóa đợt">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 <button type="button" onClick={addStage}
                   className="flex items-center gap-1.5 bg-accent hover:opacity-90 text-accent-ink px-3 py-1.5 rounded-xl text-xs font-bold transition-all">
                   <Plus className="w-3.5 h-3.5" /><span>Thêm đợt thanh toán</span>
@@ -455,8 +476,9 @@ export const CommonInfoForm: React.FC<CommonInfoFormProps> = ({
                     </div>
                     <div className="col-span-4 sm:col-span-3">
                       <label className={LABEL}>Đơn giá (VNĐ)</label>
-                      <input type="number" min={0} className={`${INPUT} font-mono text-right`} value={item.price}
-                        onChange={e => setItem(item.id, { price: Number(e.target.value) || 0 })} />
+                      <input inputMode="numeric" aria-label={`Đơn giá ${item.name || 'mặt hàng'}`} className={`${INPUT} font-mono text-right`}
+                        value={item.price ? formatMoneyInput(String(item.price)) : ''}
+                        onChange={e => setItem(item.id, { price: parseMoneyInput(e.target.value) })} />
                     </div>
                     <div className="col-span-12 sm:col-span-1 flex justify-end">
                       <button type="button" onClick={() => removeItem(item.id)}

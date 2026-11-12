@@ -28,7 +28,7 @@ export function bangKeToStatement(common: DossierCommon): { items: StatementItem
     paymentMethod: common.payMethod,
     bankAccNo: common.bank.accNo,
     bankName: common.bank.name,
-    bankOwner: common.bank.owner,
+    bankOwner: common.partyB.name,
     bankBranch: common.bank.branch,
   };
   return { items, info };

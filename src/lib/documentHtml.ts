@@ -6,6 +6,7 @@ import type { SaleItem, ConstItem, PaymentStageItem } from '../types/documents';
 import type { DepositContractData } from '../types/documents';
 import { bm04LogoDataUri } from './bm04Logo';
 import { buildEstimateDocHtml } from './estimateExport';
+import { deliveryDays } from './documents/paymentStages';
 
 const nfc = (str?: string) => (str ? str.normalize('NFC') : '');
 
@@ -1286,7 +1287,7 @@ export function buildDocumentHtml(selectedTemplate: TemplateType, draft: Documen
         <p class="clause-p"><strong>3. Phương thức thanh toán:</strong> Bên A thanh toán cho Bên B bằng hình thức <strong>${salePayMethod === 'cash' ? 'tiền mặt' : 'chuyển khoản'}</strong>, theo thông tin Bên B đã nêu tại phần đầu Hợp đồng này.</p>
 
         <h2>ĐIỀU 4: THỜI ĐIỂM VÀ ĐỊA ĐIỂM CHUYỂN GIAO HÀNG HÓA</h2>
-        <p class="clause-p">Bên Bán chuyển giao hàng hóa cho Bên Mua trong thời hạn 30 ngày kể từ ngày ký kết hợp đồng.</p>
+        <p class="clause-p">Bên Bán chuyển giao hàng hóa cho Bên Mua trong thời hạn ${deliveryDays(saleContractDate, saleEndDate || '') ?? '.....'} ngày kể từ ngày ký kết hợp đồng.</p>
 
         <h2>ĐIỀU 5: NGHĨA VỤ CỦA BÊN BÁN</h2>
         <p class="clause-p no-indent">- Bên Bán chịu trách nhiệm về số lượng, chất lượng đối với toàn bộ các sản phẩm do Bên Bán cung cấp.</p>

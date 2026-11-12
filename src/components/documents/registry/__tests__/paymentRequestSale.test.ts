@@ -24,7 +24,7 @@ it('paymentToLegacyParams lấy đợt, hàng hóa, hình thức và xưng hô t
   expect(d.saleSellerName).toBe('TRẦN THỊ PHƯƠNG');
   expect(d.payStages).toHaveLength(2);
   expect(d.saleItems).toHaveLength(1);
-  expect(d.payBankOwner).toBe('ĐỖ THỊ LAN ANH');
+  expect(d.payBankOwner).toBe('TRẦN THỊ PHƯƠNG');
   expect(d.payMethodType).toBe('transfer');
   expect(d.recipientTitle).toBe('Ông');
 });
@@ -58,7 +58,7 @@ it('buildHtml equals legacy builder for the same data (golden)', () => {
     payStages: common.stages,
     payMethodType: 'transfer',
     recipientTitle: 'Ông',
-    payBankOwner: 'ĐỖ THỊ LAN ANH',
+    payBankOwner: 'TRẦN THỊ PHƯƠNG',
     payBankAccNo: '0123456789',
     payBankName: 'Vietcombank',
     payBankBranch: 'Chi nhánh TP.HCM',

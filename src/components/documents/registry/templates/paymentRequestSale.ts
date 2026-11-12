@@ -21,7 +21,7 @@ export function paymentInfoFromCommon(common: DossierCommon): Partial<DocumentDr
     payCashCccd: common.partyB.cccd,
     payCashCccdDate: common.partyB.cccdDate,
     payCashCccdPlace: common.partyB.cccdPlace,
-    payBankOwner: common.bank.owner,
+    payBankOwner: common.partyB.name,
     payBankAccNo: common.bank.accNo,
     payBankName: common.bank.name,
     payBankBranch: common.bank.branch,

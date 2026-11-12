@@ -7,8 +7,9 @@ import { SidebarCollapseProvider, useSidebarCollapse } from '../../../context/Si
 afterEach(() => { cleanup(); localStorage.clear(); });
 const tree = () => within(screen.getByRole('navigation', { name: 'Bộ hồ sơ' }));
 const openFolder = (name:string) => {
-  const folder=tree().getByRole('button',{name});
-  if(folder.getAttribute('aria-expanded')!=='true') fireEvent.click(folder);
+  const back=tree().queryByRole('button',{name:'Về danh sách bộ hồ sơ'});
+  if(back) fireEvent.click(back);
+  fireEvent.click(tree().getByRole('button',{name}));
 };
 const pick = (name:string) => fireEvent.click(tree().getByRole('button',{name}));
 const included = (dossier:string) => tree().getByRole('checkbox',{name:`Gồm Giấy Cam Kết (${dossier})`}) as HTMLInputElement;
@@ -37,8 +38,21 @@ describe('Hồ sơ chứng từ — cây bộ hồ sơ làm menu phụ',()=>{
     render(<DocumentTemplateView />);
     openFolder('Hồ sơ sửa chữa nhà');fireEvent.click(included('Hồ sơ sửa chữa nhà'));
     expect(included('Hồ sơ sửa chữa nhà').checked).toBe(false);
+    expect(tree().getByRole('button',{name:'Giấy Cam Kết'}).hasAttribute('disabled')).toBe(true);
+    openFolder('Hồ sơ giải ngân');
     expect(included('Hồ sơ giải ngân').checked).toBe(true);
-    expect(tree().getAllByRole('button',{name:'Giấy Cam Kết'}).filter(button=>button.hasAttribute('disabled'))).toHaveLength(1);
+    expect(tree().getByRole('button',{name:'Giấy Cam Kết'}).hasAttribute('disabled')).toBe(false);
+  });
+  it('kiểu Google Drive: mở màn đang ở trong bộ hồ sơ hiện tại, chỉ hiện biểu mẫu của bộ đó; quay ra thấy danh sách bộ',()=>{
+    render(<DocumentTemplateView />);
+    expect(tree().getByRole('button',{name:'HĐ Mua Bán Hàng Hóa'})).toBeTruthy();
+    expect(tree().queryByRole('button',{name:'HĐ Thi Công Nhà Ở'})).toBeNull();
+    fireEvent.click(tree().getByRole('button',{name:'Về danh sách bộ hồ sơ'}));
+    expect(tree().getByRole('button',{name:'Hồ sơ sửa chữa nhà'})).toBeTruthy();
+    expect(tree().queryByRole('button',{name:'HĐ Mua Bán Hàng Hóa'})).toBeNull();
+    fireEvent.click(tree().getByRole('button',{name:'Hồ sơ sửa chữa nhà'}));
+    expect(tree().getByRole('button',{name:'HĐ Thi Công Nhà Ở'})).toBeTruthy();
+    expect(tree().queryByRole('button',{name:'HĐ Mua Bán Hàng Hóa'})).toBeNull();
   });
   it('thu cây và mở lại bằng nút riêng, không phụ thuộc sidebar',()=>{
     localStorage.setItem('cm_sidebar_collapsed','false');

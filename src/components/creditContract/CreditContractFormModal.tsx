@@ -110,7 +110,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
             </div>
           </div>
 
-          {renewalOptions.length > 0 && (
+          {(renewalOptions.length > 0 || Boolean(form.RenewsCreditContractId)) && (
             <div>
               <label htmlFor="hdtd-renews" className={`block mb-1 font-semibold ${UI.labelStyle}`}>Tái tục từ HĐTD</label>
               <select
@@ -316,7 +316,7 @@ export const CreditContractFormModal: React.FC<CreditContractFormModalProps> = (
                   className="rounded border-line text-accent focus:ring-accent w-4 h-4 disabled:opacity-40 disabled:cursor-not-allowed"
                 />
                 <span className="font-bold text-xs text-ink">
-                  Đánh dấu Hợp đồng tín dụng ĐÃ TẤT TOÁN / ĐÃ ĐÓNG
+                  Đánh dấu Hợp đồng tín dụng ĐÃ TẤT TOÁN
                 </span>
               </label>
 

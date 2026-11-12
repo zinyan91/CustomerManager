@@ -48,7 +48,7 @@ function dungThe(cc: CreditContract, kunns: LoanContract[], onDisburse = vi.fn()
     />
   );
 
-  const nut = screen.getByRole('button', { name: /giải ngân|đã đóng|hết hiệu lực|chưa hiệu lực|hết khả dụng/i });
+  const nut = screen.getByRole('button', { name: /giải ngân|đã tất toán|hết hiệu lực|chưa hiệu lực|hết khả dụng/i });
   return { summary, nut, onDisburse };
 }
 
@@ -100,7 +100,7 @@ describe('Nút giải ngân đọc quyết định từ summarizeCreditContracts
   it('HĐTD đã đóng: khoá nút', () => {
     const { summary, nut } = dungThe(hdtd({ IsClosed: true }), []);
 
-    expect(summary.blockReason).toBe('HĐTD đã đóng');
+    expect(summary.blockReason).toBe('HĐTD đã tất toán');
     expect(nut).toHaveProperty('disabled', true);
   });
 

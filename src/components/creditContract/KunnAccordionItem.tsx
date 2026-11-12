@@ -148,7 +148,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
               <Banknote className="w-3.5 h-3.5" />
               <span>
                 {lifecycle === 'closed'
-                  ? 'Đã đóng'
+                  ? 'Đã tất toán'
                   : lifecycle === 'expired'
                   ? 'Hết hiệu lực'
                   : lifecycle === 'not_yet_effective'

@@ -361,7 +361,7 @@ describe('canDisburse — khi nào còn giải ngân được', () => {
       [cc({ Id: 7, LoanMethod: 'Hạn mức tín dụng', ContractAmount: 4_000_000_000, ContractEndDate: '2027-07-24', IsClosed: true })],
       [], { today: HOM_NAY }
     );
-    expect(daDong[0].blockReason).toBe('HĐTD đã đóng');
+    expect(daDong[0].blockReason).toBe('HĐTD đã tất toán');
   });
 });
 
@@ -458,7 +458,7 @@ describe('summarizeCreditContracts — HĐTD đã đóng', () => {
     const dong = dungHd({ IsClosed: true }, 400_000_000);
     expect(dong.available).toBe(0);
     expect(dong.canDisburse).toBe(false);
-    expect(dong.blockReason).toBe('HĐTD đã đóng');
+    expect(dong.blockReason).toBe('HĐTD đã tất toán');
   });
 
   it('KUNN tự tất toán thì mới tính là đã tất toán và dư nợ về 0', () => {
@@ -578,7 +578,7 @@ describe('hdtdLifecycle — một nhãn trạng thái duy nhất cho HĐTD', () 
   });
 
   it('mỗi tình trạng có đúng một nhãn tiếng Việt', () => {
-    expect(HDTD_LIFECYCLE_LABEL.closed).toBe('ĐÃ ĐÓNG');
+    expect(HDTD_LIFECYCLE_LABEL.closed).toBe('ĐÃ TẤT TOÁN');
     expect(HDTD_LIFECYCLE_LABEL.expired).toBe('HẾT HIỆU LỰC');
     expect(HDTD_LIFECYCLE_LABEL.not_yet_effective).toBe('CHƯA HIỆU LỰC');
     expect(HDTD_LIFECYCLE_LABEL.expiring_soon).toBe('SẮP HẾT HẠN');
@@ -865,6 +865,6 @@ describe('hdtdStatusLabel — tách hai kiểu hết hiệu lực', () => {
     expect(hdtdStatusLabel('expired', 2)).toBe('HẾT HIỆU LỰC · CÒN DƯ NỢ');
     expect(hdtdStatusLabel('expired', 0)).toBe('HẾT HIỆU LỰC · CẦN TÁI TỤC');
     expect(hdtdStatusLabel('active', 0)).toBe('ĐANG HIỆU LỰC');
-    expect(hdtdStatusLabel('closed', 0)).toBe('ĐÃ ĐÓNG');
+    expect(hdtdStatusLabel('closed', 0)).toBe('ĐÃ TẤT TOÁN');
   });
 });

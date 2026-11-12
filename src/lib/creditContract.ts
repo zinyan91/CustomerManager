@@ -82,7 +82,7 @@ export type HdtdLifecycle =
   | 'active';
 
 export const HDTD_LIFECYCLE_LABEL: Record<HdtdLifecycle, string> = {
-  closed: 'ĐÃ ĐÓNG',
+  closed: 'ĐÃ TẤT TOÁN',
   expired: 'HẾT HIỆU LỰC',
   not_yet_effective: 'CHƯA HIỆU LỰC',
   expiring_soon: 'SẮP HẾT HẠN',
@@ -377,7 +377,7 @@ export function summarizeCreditContracts(
     const available = (expired || notYetEffective || cc.IsClosed) ? 0 : headroom;
 
     let blockReason = '';
-    if (cc.IsClosed) blockReason = 'HĐTD đã đóng';
+    if (cc.IsClosed) blockReason = 'HĐTD đã tất toán';
     else if (expired) {
       blockReason = active.length > 0
         ? `HĐTD hết hiệu lực ${fmt(end)}, còn ${active.length} KUNN chưa tất toán`

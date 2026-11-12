@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CreditContract, LoanContract } from '../../types';
 import { hdtdStatusLabel, summarizeCreditContracts, totalsOfCreditContracts } from '../creditContract';
-import { renewalCandidates } from '../hdtdRenewal';
+import { hdtdListState, renewalCandidates, renewalError } from '../hdtdRenewal';
 
 const TODAY = '2026-11-11';
 
@@ -56,21 +56,42 @@ describe('HĐTD tái tục không cộng dồn hạn mức cấp', () => {
   });
 });
 
-describe('renewalCandidates', () => {
-  const a = hdtd({ Id: 1, HdtdNumber: 'A', ContractEndDate: '2025-01-01' });
-  const b = hdtd({ Id: 2, HdtdNumber: 'B', ContractEndDate: '2026-07-08' });
-  const c = hdtd({ Id: 3, HdtdNumber: 'C', IsClosed: true });
-  const d = hdtd({ Id: 4, HdtdNumber: 'D', RenewsCreditContractId: 1, ContractEndDate: '2027-01-01' });
+describe('renewalCandidates — chỉ tái tục từ HĐTD cũ hơn', () => {
+  const a = hdtd({ Id: 1, HdtdNumber: 'A', ContractStartDate: '2024-01-01', ContractEndDate: '2025-01-01', IsClosed: true });
+  const b = hdtd({ Id: 2, HdtdNumber: 'B', ContractStartDate: '2025-07-08', ContractEndDate: '2026-07-08' });
+  const d = hdtd({ Id: 4, HdtdNumber: 'D', ContractStartDate: '2025-02-01', ContractEndDate: '2026-02-01', RenewsCreditContractId: 1 });
+  const n = hdtd({ Id: 5, HdtdNumber: 'N', ContractStartDate: '2026-08-22', ContractEndDate: '2027-08-22' });
+  const all = [a, b, d, n];
 
-  it('HĐTD mới: liệt kê HĐTD khác chưa đóng, chưa bị HĐTD khác tái tục, hết hạn gần nhất lên đầu', () => {
-    expect(renewalCandidates([a, b, c, d], null).map(x => x.HdtdNumber)).toEqual(['D', 'B']);
+  it('HĐTD mới bắt đầu 22/08/2026: thấy các HĐTD bắt đầu trước, kể cả đã tất toán; mới gần nhất lên đầu; bỏ HĐTD đã bị tái tục', () => {
+    expect(renewalCandidates(all, null, '2026-08-22').map(x => x.HdtdNumber)).toEqual(['B', 'D']);
   });
 
-  it('sửa HĐTD đang tái tục A: vẫn thấy A, không thấy chính nó', () => {
-    expect(renewalCandidates([a, b, c, d], 4).map(x => x.HdtdNumber)).toEqual(['B', 'A']);
+  it('sửa HĐTD cũ B: không chọn được HĐTD mới N (tái tục ngược)', () => {
+    expect(renewalCandidates(all, 2, '2025-07-08').map(x => x.HdtdNumber)).not.toContain('N');
   });
 
-  it('không cho chọn HĐTD đang tái tục chính HĐTD đang sửa (tránh vòng lặp)', () => {
-    expect(renewalCandidates([a, b, d], 1).map(x => x.HdtdNumber)).toEqual(['B']);
+  it('sửa HĐTD D đang tái tục A: vẫn thấy A dù A đã tất toán', () => {
+    expect(renewalCandidates(all, 4, '2025-02-01').map(x => x.HdtdNumber)).toEqual(['A']);
+  });
+
+  it('chưa có ngày hiệu lực thì chưa có lựa chọn', () => {
+    expect(renewalCandidates(all, null, '')).toEqual([]);
+  });
+
+  it('lưu: chặn chọn HĐTD mới hơn, chặn khi thiếu ngày, cho qua khi hợp lệ hoặc không tái tục', () => {
+    expect(renewalError(all, 2, '2025-07-08', 5)).toBe('HĐTD được tái tục phải bắt đầu trước HĐTD này và chưa được HĐTD khác tái tục.');
+    expect(renewalError(all, null, '', 2)).toBe('Nhập ngày hiệu lực của HĐTD trước khi chọn HĐTD được tái tục.');
+    expect(renewalError(all, 5, '2026-08-22', 2)).toBeNull();
+    expect(renewalError(all, 5, '2026-08-22', null)).toBeNull();
+  });
+});
+
+describe('hdtdListState — tách đã tái tục và đã tất toán', () => {
+  it('đã đóng là đã tất toán (kể cả khi có HĐTD tái tục); chưa đóng mà có HĐTD tái tục là đã tái tục; còn lại đang dùng', () => {
+    const renewer = hdtd({ Id: 9 });
+    expect(hdtdListState({ contract: { IsClosed: true }, renewedBy: renewer })).toBe('settled');
+    expect(hdtdListState({ contract: { IsClosed: false }, renewedBy: renewer })).toBe('renewed');
+    expect(hdtdListState({ contract: { IsClosed: false }, renewedBy: null })).toBe('open');
   });
 });

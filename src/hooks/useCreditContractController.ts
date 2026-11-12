@@ -12,7 +12,7 @@ import { customerPath } from '../lib/customerRoutes';
 import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustomerId';
 import { todayIso, parseMoneyInput, formatMoneyInput } from '../lib/utils';
 import { summarizeCreditContracts, canCloseCreditContract } from '../lib/creditContract';
-import { renewalCandidates } from '../lib/hdtdRenewal';
+import { hdtdListState, renewalCandidates, renewalError } from '../lib/hdtdRenewal';
 import { addMonthsToDate, computeOutstandingBalance } from '../lib/loanMath';
 import { totalUsableCapacity } from '../lib/collateralMath';
 import { allowedPurposes, CREDIT_CONTRACT_LOAN_METHODS } from '../lib/loanProductRules';
@@ -43,6 +43,7 @@ export function useCreditContractController() {
   const [useSharedApproval, setUseSharedApproval] = useState(false);
   const [selectedCollateralIds, setSelectedCollateralIds] = useState<number[]>([]);
   const [showSettled, setShowSettled] = useState(false);
+  const [showRenewed, setShowRenewed] = useState(false);
 
   const today = todayIso();
 
@@ -151,11 +152,15 @@ export function useCreditContractController() {
   );
 
   const visibleSummaries = useMemo(
-    () => showSettled ? summaries : summaries.filter(s => !s.contract.IsClosed),
-    [summaries, showSettled]
+    () => summaries.filter(s => {
+      const state = hdtdListState(s);
+      return state === 'open' || (state === 'renewed' && showRenewed) || (state === 'settled' && showSettled);
+    }),
+    [summaries, showSettled, showRenewed]
   );
 
-  const closedCount = useMemo(() => summaries.filter(s => s.contract.IsClosed).length, [summaries]);
+  const closedCount = useMemo(() => summaries.filter(s => hdtdListState(s) === 'settled').length, [summaries]);
+  const renewedCount = useMemo(() => summaries.filter(s => hdtdListState(s) === 'renewed').length, [summaries]);
 
   const closeCheck = useMemo(
     () => editing
@@ -164,7 +169,10 @@ export function useCreditContractController() {
     [editing, kunns]
   );
 
-  const renewalOptions = useMemo(() => renewalCandidates(contracts, editing?.Id), [contracts, editing]);
+  const renewalOptions = useMemo(
+    () => renewalCandidates(contracts, editing?.Id, form.ContractStartDate),
+    [contracts, editing, form.ContractStartDate],
+  );
 
   const openNew = useCallback(() => {
     setEditing(null);
@@ -206,6 +214,11 @@ export function useCreditContractController() {
       showNotify('error', 'Chọn ít nhất 01 tài sản bảo đảm cho HĐTD.');
       return;
     }
+    const renewProblem = renewalError(contracts, editing?.Id, form.ContractStartDate, form.RenewsCreditContractId);
+    if (renewProblem) {
+      showNotify('error', renewProblem);
+      return;
+    }
     if (form.IsClosed && editing) {
       const check = canCloseCreditContract(editing, kunns);
       if (!check.allowed) {
@@ -236,7 +249,7 @@ export function useCreditContractController() {
     } finally {
       setLoading(false);
     }
-  }, [customer, form, selectedCollateralIds, editing, kunns, formAmount, useSharedApproval, formApprovalAmount, showNotify, loadCustomer]);
+  }, [customer, form, selectedCollateralIds, editing, kunns, contracts, formAmount, useSharedApproval, formApprovalAmount, showNotify, loadCustomer]);
 
   const confirm = useConfirm();
 
@@ -353,6 +366,9 @@ export function useCreditContractController() {
     setSelectedCollateralIds,
     showSettled,
     setShowSettled,
+    showRenewed,
+    setShowRenewed,
+    renewedCount,
     summaries,
     visibleSummaries,
     closedCount,

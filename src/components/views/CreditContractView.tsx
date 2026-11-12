@@ -9,6 +9,7 @@ import { CreditContractFormModal } from '../creditContract/CreditContractFormMod
 import { KunnAccordionItem } from '../creditContract/KunnAccordionItem';
 import { CreditContractKpiStrip } from '../creditContract/CreditContractKpiStrip';
 import { WorkspacePageHeader } from '../ui/WorkspacePageHeader';
+import { hdtdListState } from '../../lib/hdtdRenewal';
 
 export const CreditContractView: React.FC = () => {
   const {
@@ -34,6 +35,9 @@ export const CreditContractView: React.FC = () => {
     setSelectedCollateralIds,
     showSettled,
     setShowSettled,
+    showRenewed,
+    setShowRenewed,
+    renewedCount,
     summaries,
     visibleSummaries,
     closedCount,
@@ -63,7 +67,7 @@ export const CreditContractView: React.FC = () => {
   };
 
   const { granted: totalGranted } = totalsOfCreditContracts(summaries);
-  const activeContractCount = summaries.filter(s => !s.contract.IsClosed).length;
+  const activeContractCount = summaries.filter(s => hdtdListState(s) === 'open').length;
 
   return (
     <div data-workspace-page className="space-y-0 w-full pb-8 font-app">
@@ -135,17 +139,30 @@ export const CreditContractView: React.FC = () => {
             vuotKhaNangBaoDam={vuotKhaNangBaoDam}
           />
           <div data-workspace-panel className="bg-panel">
-            {closedCount > 0 && (
-              <div className="workspace-toolbar flex items-center justify-end px-4 py-3 border-b border-line">
-                <label className="text-[11px] font-semibold text-ink-muted flex items-center space-x-1.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={showSettled}
-                    onChange={e => setShowSettled(e.target.checked)}
-                    className="rounded border-line text-accent focus:ring-accent"
-                  />
-                  <span>Hiện {closedCount} HĐTD đã đóng</span>
-                </label>
+            {(closedCount > 0 || renewedCount > 0) && (
+              <div className="workspace-toolbar flex flex-wrap items-center justify-end gap-4 px-4 py-3 border-b border-line">
+                {renewedCount > 0 && (
+                  <label className="text-[11px] font-semibold text-ink-muted flex items-center space-x-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={showRenewed}
+                      onChange={e => setShowRenewed(e.target.checked)}
+                      className="rounded border-line text-accent focus:ring-accent"
+                    />
+                    <span>Hiện {renewedCount} HĐTD đã tái tục</span>
+                  </label>
+                )}
+                {closedCount > 0 && (
+                  <label className="text-[11px] font-semibold text-ink-muted flex items-center space-x-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={showSettled}
+                      onChange={e => setShowSettled(e.target.checked)}
+                      className="rounded border-line text-accent focus:ring-accent"
+                    />
+                    <span>Hiện {closedCount} HĐTD đã tất toán</span>
+                  </label>
+                )}
               </div>
             )}
 
@@ -154,9 +171,9 @@ export const CreditContractView: React.FC = () => {
             ) : visibleSummaries.length === 0 ? (
               <div className="text-center py-10 text-ink-faint text-xs space-y-2">
                 <p>
-                  {showSettled
+                  {summaries.length === 0
                     ? 'Khách hàng này chưa có Hợp đồng tín dụng nào.'
-                    : 'Không có HĐTD nào đang mở hiệu lực.'}
+                    : 'Không có HĐTD nào đang dùng.'}
                 </p>
                 <button
                   type="button"

@@ -154,7 +154,7 @@ export const KunnAccordionItem: React.FC<KunnAccordionItemProps> = ({
                   : lifecycle === 'not_yet_effective'
                   ? 'Chưa hiệu lực'
                   : available <= 0
-                  ? 'Hết khả dụng'
+                  ? (isRevolving ? 'Hết khả dụng' : 'Đã giải ngân đủ')
                   : 'Giải ngân'}
               </span>
             </button>

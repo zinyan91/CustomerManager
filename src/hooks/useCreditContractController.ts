@@ -13,6 +13,8 @@ import { useSelectedCustomerId, useCustomerNavigate } from './useSelectedCustome
 import { todayIso, parseMoneyInput, formatMoneyInput } from '../lib/utils';
 import { summarizeCreditContracts, canCloseCreditContract } from '../lib/creditContract';
 import { hdtdListState, renewalCandidates, renewalError } from '../lib/hdtdRenewal';
+import { customerCreditCapacity } from '../lib/creditCapacity';
+import { buildCollateralUsage } from '../lib/collateralUsage';
 import { addMonthsToDate, computeOutstandingBalance } from '../lib/loanMath';
 import { totalUsableCapacity } from '../lib/collateralMath';
 import { allowedPurposes, CREDIT_CONTRACT_LOAN_METHODS } from '../lib/loanProductRules';
@@ -158,6 +160,13 @@ export function useCreditContractController() {
     }),
     [summaries, showSettled, showRenewed]
   );
+
+  const creditCapacity = useMemo(() => customerCreditCapacity(
+    summaries,
+    collaterals,
+    buildCollateralUsage({ loans: kunns, creditContracts: contracts, mortgages, today }),
+    today,
+  ), [summaries, collaterals, kunns, contracts, mortgages, today]);
 
   const closedCount = useMemo(() => summaries.filter(s => hdtdListState(s) === 'settled').length, [summaries]);
   const renewedCount = useMemo(() => summaries.filter(s => hdtdListState(s) === 'renewed').length, [summaries]);
@@ -378,6 +387,7 @@ export function useCreditContractController() {
     purposeOptions,
     tongKhaNangBaoDam,
     vuotKhaNangBaoDam,
+    creditCapacity,
     setSelectedCustomerId,
     handleDisburseRequest,
     loadCustomer,

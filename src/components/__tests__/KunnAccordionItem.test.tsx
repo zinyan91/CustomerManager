@@ -198,3 +198,15 @@ describe('dòng hợp đồng thế chấp', () => {
     expect(screen.queryByText('HĐTC:')).toBeNull();
   });
 });
+
+describe('Nhãn nút khi hết hạn mức', () => {
+  it('vay từng lần đã giải ngân hết: "Đã giải ngân đủ"; hạn mức quay vòng: "Hết khả dụng"', () => {
+    const tungLan = hdtd({ LoanMethod: 'Cho vay từng lần', ContractAmount: 100_000_000 });
+    const { nut } = dungThe(tungLan, [kunn({ LoanMethod: 'Cho vay từng lần', LoanAmount: 100_000_000, CurrentBalance: 40_000_000 })]);
+    expect(nut.textContent).toBe('Đã giải ngân đủ');
+    cleanup();
+    const hm = hdtd({ ContractAmount: 100_000_000 });
+    const { nut: nut2 } = dungThe(hm, [kunn({ LoanAmount: 100_000_000, CurrentBalance: 100_000_000 })]);
+    expect(nut2.textContent).toBe('Hết khả dụng');
+  });
+});

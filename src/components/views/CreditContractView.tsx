@@ -56,6 +56,7 @@ export const CreditContractView: React.FC = () => {
     outstandingOf,
     closeCheck,
     renewalOptions,
+    creditCapacity,
   } = useCreditContractController();
 
   const [expandedKunnContractIds, setExpandedKunnContractIds] = useState<number[]>([]);
@@ -135,8 +136,7 @@ export const CreditContractView: React.FC = () => {
             totalGranted={totalGranted}
             activeContractCount={activeContractCount}
             totalContractCount={summaries.length}
-            tongKhaNangBaoDam={tongKhaNangBaoDam}
-            vuotKhaNangBaoDam={vuotKhaNangBaoDam}
+            capacity={creditCapacity}
           />
           <div data-workspace-panel className="bg-panel">
             {(closedCount > 0 || renewedCount > 0) && (
